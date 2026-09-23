@@ -606,6 +606,58 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void AKillRowNamesThePartThatCameOffAndTheAttackersTouchingPart()
+        {
+            // Round 46's K9b: which part came off, and which of the attacker's parts was on it.
+            // The attacker is a two-part armed spine touching with its second part, so a byPart
+            // of 1 can only have come from the contact record and not from a default of 0.
+            RunConfig config = Stage();
+            config.CorpseDecayPerSecond = 0.001f;
+
+            Genome armedSpine = Spine(2, half: 0.25f);
+            armedSpine.Nodes[0].CellTypeId = CellTypeIds.Structural;
+            armedSpine.Nodes[0].Attack = 1f;
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Spine(2), 1, -1f);
+            world.Inoculate(armedSpine, 1, -1f);
+
+            Organism leaf = world.Living[0];
+            Organism claw = world.Living[1];
+            Assert.Equal(2, claw.Phenotype.PartCount);
+
+            world.DrainLineageEvents();
+
+            int took = -1;
+            for (int step = 1; step <= 100 && took < 0; step++)
+            {
+                world.SetContacts(Touching(claw, 1, leaf, 1));
+                world.ApplyMouth(1f);
+                if (world.PartsKilled > 0L) took = step;
+            }
+
+            Assert.True(took > 0, "the limb never came off");
+
+            LineageEvent kill = Assert.Single(KillsIn(world.DrainLineageEvents()));
+            _output.WriteLine(kill.ToJson());
+
+            Assert.Equal(claw.Id, kill.AttackerId);
+            Assert.Equal(1, kill.PartIndex);
+            Assert.Equal(1, kill.AttackerPartIndex);
+
+            JsonNode row = Json.Parse(kill.ToJson());
+            Assert.Equal(1, row["part"].AsInt());
+            Assert.Equal(1, row["byPart"].AsInt());
+
+            // A kill row built without the two, which is what a restored checkpoint's is, says
+            // it cannot tell rather than naming the root.
+            LineageEvent bare = LineageEvent.Kill(1d, 7L, -1L, false, 1, 0d, 0d, 0);
+            Assert.Equal(-1, bare.PartIndex);
+            Assert.Equal(-1, bare.AttackerPartIndex);
+            Assert.Equal(-1, Json.Parse(bare.ToJson())["byPart"].AsInt());
+        }
+
+        [Fact]
         public void ARootKillWritesAKillRowAndTheEatenDeathRowAfterIt()
         {
             // Both rows, in that order: the kill is the event and the death is what it was. A
@@ -648,6 +700,10 @@ namespace Evosim.Core.Tests
             Assert.Equal(leaf.Id, kill.Id);
             Assert.Equal(claw.Id, kill.AttackerId);
             Assert.Equal(1, kill.PartsLost);
+
+            // Round 46's K9b on the root's row: the part is the root, the claw's only part hit it.
+            Assert.Equal(0, kill.PartIndex);
+            Assert.Equal(0, kill.AttackerPartIndex);
             Fixtures.AssertClose(
                 kill.TissueJoulesLost + kill.ReserveJoulesLost, whole,
                 Math.Max(1e-9, 1e-6 * whole));

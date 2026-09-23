@@ -65,8 +65,14 @@ namespace Evosim.Core
         /// than with the wrong one. Read and written only here; no order of iteration is ever
         /// taken from it, so it decides nothing about the trajectory.
         /// </para>
+        /// <para>
+        /// <b>The attacker's part rides with its id</b> (the kill row's <c>byPart</c>, round 46's
+        /// K9b): the index of the attacker's part in this step's contact record, in the attacker's
+        /// body as it stood at the blow, so the two are written and dropped together.
+        /// </para>
         /// </remarks>
-        private readonly Dictionary<long, long[]> _lastAttacker = new Dictionary<long, long[]>();
+        private readonly Dictionary<long, (long By, int Part)[]> _lastAttacker =
+            new Dictionary<long, (long By, int Part)[]>();
 
         /// <summary>Parts ever taken off a living body by a bite — rule 4's counter. Cumulative.</summary>
         public long PartsKilled { get; private set; }
@@ -212,8 +218,12 @@ namespace Evosim.Core
                 NoteContact(a, touch.PartA);
                 NoteContact(b, touch.PartB);
 
-                Wound(b, touch.PartB, hittingB, DamageOf(hittingA, hittingB, seconds), a.Id);
-                Wound(a, touch.PartA, hittingA, DamageOf(hittingB, hittingA, seconds), b.Id);
+                Wound(
+                    b, touch.PartB, hittingB, DamageOf(hittingA, hittingB, seconds),
+                    a.Id, touch.PartA);
+                Wound(
+                    a, touch.PartA, hittingA, DamageOf(hittingB, hittingA, seconds),
+                    b.Id, touch.PartB);
             }
         }
 
@@ -238,11 +248,12 @@ namespace Evosim.Core
         }
 
         private void Wound(
-            Organism creature, int partIndex, PhenotypePart part, float damage, long attackerId)
+            Organism creature, int partIndex, PhenotypePart part, float damage, long attackerId,
+            int attackerPart)
         {
             if (!(damage > 0f)) return;
 
-            NoteAttacker(creature, partIndex, attackerId);
+            NoteAttacker(creature, partIndex, attackerId, attackerPart);
 
             float pool = Metabolism.HealthPool(part, Config);
 
@@ -274,24 +285,29 @@ namespace Evosim.Core
         }
 
         /// <summary>Remembers whose blow this was, for as long as this pass lasts.</summary>
-        private void NoteAttacker(Organism creature, int partIndex, long attackerId)
+        private void NoteAttacker(
+            Organism creature, int partIndex, long attackerId, int attackerPart)
         {
-            if (!_lastAttacker.TryGetValue(creature.Id, out long[] by) ||
+            if (!_lastAttacker.TryGetValue(creature.Id, out (long By, int Part)[] by) ||
                 by.Length != creature.Phenotype.PartCount)
             {
-                by = new long[creature.Phenotype.PartCount];
-                for (int i = 0; i < by.Length; i++) by[i] = -1L;
+                by = new (long By, int Part)[creature.Phenotype.PartCount];
+                for (int i = 0; i < by.Length; i++) by[i] = (-1L, -1);
                 _lastAttacker[creature.Id] = by;
             }
 
-            if (partIndex >= 0 && partIndex < by.Length) by[partIndex] = attackerId;
+            if (partIndex >= 0 && partIndex < by.Length) by[partIndex] = (attackerId, attackerPart);
         }
 
-        /// <summary>Who took this part to zero, or -1 when this pass cannot say.</summary>
-        private long AttackerOf(Organism creature, int partIndex)
+        /// <summary>
+        /// Who took this part to zero and with which of its parts, or (-1, -1) when this pass
+        /// cannot say.
+        /// </summary>
+        private (long By, int Part) AttackerOf(Organism creature, int partIndex)
         {
-            if (!_lastAttacker.TryGetValue(creature.Id, out long[] by)) return -1L;
-            if (partIndex < 0 || partIndex >= by.Length) return -1L;
+            if (!_lastAttacker.TryGetValue(creature.Id, out (long By, int Part)[] by))
+                return (-1L, -1);
+            if (partIndex < 0 || partIndex >= by.Length) return (-1L, -1);
 
             return by[partIndex];
         }
@@ -602,12 +618,13 @@ namespace Evosim.Core
         /// argument, unchanged by there being a third kind of row in it.
         /// </remarks>
         private void NoteKill(
-            Organism creature, long attackerId, bool rootLost, int partsLost,
-            double tissueJoules, double reserveJoules)
+            Organism creature, int partIndex, (long By, int Part) attacker, bool rootLost,
+            int partsLost, double tissueJoules, double reserveJoules)
         {
             _lineageEvents.Add(LineageEvent.Kill(
-                ElapsedSeconds, creature.Id, attackerId, rootLost, partsLost,
-                tissueJoules, reserveJoules, creature.IndeterminateNodes));
+                ElapsedSeconds, creature.Id, attacker.By, rootLost, partsLost,
+                tissueJoules, reserveJoules, creature.IndeterminateNodes,
+                partIndex, attacker.By >= 0L ? attacker.Part : -1));
         }
 
         private static int FirstDeadPart(Organism creature)
@@ -653,7 +670,7 @@ namespace Evosim.Core
         /// </remarks>
         private bool KillPart(Organism creature, int index, int partIndex)
         {
-            long by = AttackerOf(creature, partIndex);
+            (long By, int Part) by = AttackerOf(creature, partIndex);
 
             if (partIndex == 0 || creature.Phenotype.PartCount <= 1)
             {
@@ -665,7 +682,7 @@ namespace Evosim.Core
                 // was worth is what the kill moved, and the two rows then read in the order the
                 // events happened — the kill, and then the death it was.
                 NoteKill(
-                    creature, by, rootLost: true, partsLost: creature.Phenotype.PartCount,
+                    creature, partIndex, by, rootLost: true, partsLost: creature.Phenotype.PartCount,
                     tissueJoules: creature.TissueJoules,
                     reserveJoules: Math.Max(0d, creature.Energy));
 
@@ -712,7 +729,7 @@ namespace Evosim.Core
                 // root: what it means is that the loss took the body, which is what a reader
                 // watching a grazed body for the next thousand seconds has to know.
                 NoteKill(
-                    creature, by, rootLost: true, partsLost: creature.Phenotype.PartCount,
+                    creature, partIndex, by, rootLost: true, partsLost: creature.Phenotype.PartCount,
                     tissueJoules: creature.TissueJoules,
                     reserveJoules: Math.Max(0d, creature.Energy));
 
@@ -766,7 +783,7 @@ namespace Evosim.Core
             // sum to exactly what ShedRemains is about to move. The row goes before the transfer
             // for no reason but reading order — nothing below queues an event of its own except
             // the mass-floor burial, which is a death and belongs after this.
-            NoteKill(creature, by, rootLost: false, partsLost, released, fromReserve);
+            NoteKill(creature, partIndex, by, rootLost: false, partsLost, released, fromReserve);
 
             if (given > 0f && Config.CorpseDecayPerSecond > 0f) CorpsesFromKills++;
             ShedRemains(creature, given);

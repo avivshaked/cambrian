@@ -572,6 +572,26 @@ namespace Evosim.Farm
 
             _text.AppendLine(harnessSplit.ToString());
 
+            // Round 46's K10, on a line of its own so the split above keeps its sum and its
+            // bytes. Each is a share of the bucket it sits inside. Printed only when either
+            // timer read something, so a footer from a build without them (round 42's, which
+            // the tests hold this one to byte for byte) is still that footer.
+            if (h.WallExposureMs > 0L || h.WallLedgerMs > 0L)
+            {
+                long metaboliseMs = 0L;
+                for (int p = 0; p < phaseMs.Count && p < phases.Count; p++)
+                {
+                    if (phases[p] == "metabolise") metaboliseMs = phaseMs[p];
+                }
+
+                _text.AppendLine(
+                    "inner timers: exposure " + h.WallExposureMs.ToString(Inv) + " ms (" +
+                    WallShare(h.WallExposureMs, metaboliseMs) + " of metabolise), ledger " +
+                    h.WallLedgerMs.ToString(Inv) + " ms (" +
+                    WallShare(h.WallLedgerMs, h.WallWorldMs) +
+                    " of world; the bill whose part walk holds the support term)");
+            }
+
             long fluidMs = h.WallFluidGatherMs + h.WallFluidWaterMs +
                            h.WallFluidComputeMs + h.WallFluidApplyMs;
 
@@ -699,6 +719,11 @@ namespace Evosim.Farm
             // instead, because nothing already written ever moves and `analyse-arm.ps1` reads by
             // name, so a reader asking for both gets them side by side all the same.
             "**trickle**",
+
+            // Round 46's K6b: the largest distance of any living part from its root, unweighted,
+            // the bound `reach m`'s mean cannot give. It belongs beside `reach m` and is appended
+            // here for the trickle's reason.
+            "max reach",
         };
     }
 
@@ -821,6 +846,14 @@ namespace Evosim.Farm
         IReadOnlyList<long> HarnessPhaseMs { get; }
         long HarnessBodySteps { get; }
         double HarnessMicrosecondsPerBodyStep { get; }
+
+        /// <summary>
+        /// Round 46's K10: the exposure pass (inside the harness's <c>metabolise</c>) and the
+        /// metabolic bill (inside <c>world</c>, holding D113's support term), ms. Parts of their
+        /// buckets, never added to a split.
+        /// </summary>
+        long WallExposureMs { get; }
+        long WallLedgerMs { get; }
 
         /// <summary>The fluid phase's own four, summing to the harness's `fluid`.</summary>
         long WallFluidGatherMs { get; }

@@ -211,8 +211,9 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
             Assert.Equal(Report.BaseColumns.Length + 4, report.Columns.Count);
             Assert.Equal("t (s)", report.Columns[0]);
-            Assert.Equal("reach m", report.Columns[Report.BaseColumns.Length - 2]);
-            Assert.Equal("**trickle**", report.Columns[Report.BaseColumns.Length - 1]);
+            Assert.Equal("reach m", report.Columns[Report.BaseColumns.Length - 3]);
+            Assert.Equal("**trickle**", report.Columns[Report.BaseColumns.Length - 2]);
+            Assert.Equal("max reach", report.Columns[Report.BaseColumns.Length - 1]);
             Assert.Equal("p0", report.Columns[Report.BaseColumns.Length]);
             Assert.Equal("p3", report.Columns[Report.BaseColumns.Length + 3]);
 
@@ -281,6 +282,9 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
             // D115's window of trickle founders, 0 in every recorded world.
             "**trickle**",
+
+            // Round 46's K6b: the farthest living part from its root.
+            "max reach",
         };
 
         /// <summary>
@@ -610,6 +614,8 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             public IReadOnlyList<long> HarnessPhaseMs { get; set; } = new long[0];
             public long HarnessBodySteps { get; set; }
             public double HarnessMicrosecondsPerBodyStep { get; set; }
+            public long WallExposureMs { get; set; }
+            public long WallLedgerMs { get; set; }
             public long WallFluidGatherMs { get; set; }
             public long WallFluidWaterMs { get; set; }
             public long WallFluidComputeMs { get; set; }

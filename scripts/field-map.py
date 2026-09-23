@@ -26,7 +26,10 @@ this reader adds one number per line, `snow-shelf12`: the share of the marine sn
 stock in the live columns whose floor is within 12 m of the surface (the founders' depth), read
 from the `snow-columns` dump whether or not `--snow` asks for the panel. The header says how much
 of the water those columns are, which is the share a snow spread without regard to the floor
-would read.
+would read. Beside it, `snow-floor12`: the mean density, in J/m3, of those columns' floor cells
+(each column's lowest live cell, its stock over one cell's volume), from the `snow-floor` dump the
+farm writes beside `snow-columns` from round 46's instruments build (0116's K11a). It reads
+`absent` on a run recorded before that build.
 
 Only a second the run dumped at can be drawn; `--at` picks the nearest dump to each second asked
 and says which. The picture is a map and not a census: a body's depth is not drawn.
@@ -245,6 +248,21 @@ def shelf_share(values, layout, mask):
     return over / total if total > 0 else float('nan')
 
 
+def shelf_floor_density(values, layout, mask):
+    """The mean floor-cell density over the shelf's columns, J/m3: each column's lowest live cell's
+    stock over one cell's volume, from a snow-floor dump in the snow's column order."""
+    nz = layout['cellsZ']
+    volume = float(layout['cellMetres']) ** 3
+    total = 0.0
+    n = 0
+    for ix in range(layout['cellsX']):
+        for iz in range(nz):
+            if mask[ix][iz]:
+                total += values[ix * nz + iz] / volume
+                n += 1
+    return total / n if n else float('nan')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('arm')
@@ -279,6 +297,9 @@ def main():
     shelf = shelf_columns(run_dir, layout, config)
     all_snow = dumps_of(run_dir, 'snow-columns') if (args.snow or shelf is not None) else {}
     snow_dumps = all_snow if args.snow else {}
+
+    # Round 46's K11a: the floor cells alone, from the build that dumps them; absent before it.
+    floor_dumps = dumps_of(run_dir, 'snow-floor') if shelf is not None else {}
 
     if args.at:
         seconds = [nearest(matter_dumps.keys(), float(s)) for s in args.at.split(',') if s.strip()]
@@ -316,12 +337,14 @@ def main():
         shelf_mask, live_columns = shelf
         in_shelf = sum(1 for row in shelf_mask for v in row if v)
         print('bed: fields/bed.f32, %d of %d live snow columns have a floor within %g m of the surface '
-              '(%.3f of the columns); snow-shelf12 is the snow stock\'s share in them'
-              % (in_shelf, live_columns, SHELF_METRES, in_shelf / live_columns if live_columns else float('nan')))
+              '(%.3f of the columns); snow-shelf12 is the snow stock\'s share in them, snow-floor12 '
+              'the mean density of their floor cells in J/m3 (%s)'
+              % (in_shelf, live_columns, SHELF_METRES, in_shelf / live_columns if live_columns else float('nan'),
+                 'fields/*.snow-floor.f32' if floor_dumps else 'absent: this run wrote no snow-floor dump'))
 
     print('second  bodies-at  alive  col-cv   max-units/m3  mean-units/m3  in-islands'
           + ('  in-footprint' if footprint else '')
-          + ('  snow-shelf12' if shelf is not None else ''))
+          + ('  snow-shelf12  snow-floor12' if shelf is not None else ''))
     for second in seconds:
         density, cell = column_map(read_floats(matter_dumps[second]), m, args.layers)
         mask, radius = live_mask(config, m['cellsX'], m['cellsZ'], cell)
@@ -363,6 +386,11 @@ def main():
                 line += '  %12s' % ('%.4f' % shelf_share(values, layout['snowColumns'], shelf[0]))
             else:
                 line += '  %12s' % '-'
+            if floor_dumps:
+                values = read_floats(floor_dumps[nearest(floor_dumps.keys(), second)])
+                line += '  %12s' % ('%.4f' % shelf_floor_density(values, layout['snowColumns'], shelf[0]))
+            else:
+                line += '  %12s' % 'absent'
         if plt is not None:
             path, _, _, _ = draw(plt, args.arm, second, sample_t if sample_t is not None else second,
                                  bodies, density, cell, mask, radius, snow, out_dir, args.layers, depth)

@@ -623,6 +623,12 @@ namespace Evosim.Core
             w.Write(e.PartsLost);
             w.Write(e.TissueJoulesLost);
             w.Write(e.ReserveJoulesLost);
+
+            // The kill row's part and byPart (round 46's K9b) are not written, and a restored
+            // kill row reads -1 for both, which the row defines as "cannot say". Writing them
+            // would take StateVersion to 10 and refuse every checkpoint on disk, round 46's
+            // included, for a queue that the farm drains to lineage.jsonl before every
+            // checkpoint (Program.WriteCheckpoint), so no farm checkpoint carries a kill row.
         }
 
         private static LineageEvent ReadLineage(BinaryReader r)

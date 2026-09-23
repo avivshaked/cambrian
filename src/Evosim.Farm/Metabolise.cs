@@ -71,7 +71,14 @@ namespace Evosim.Farm
                 // D110. The pose the world prices this body's light on, read on the pass that
                 // already holds it. Skipped entirely with the tunable off, so the array is never
                 // allocated and the world takes the orientation average it always has.
-                if (byExposure) Exposure(solver, creature);
+                if (byExposure)
+                {
+                    // wallExposureMs' bracket, inside `metabolise` and not a phase of its own, so
+                    // the harness split's sum is unchanged.
+                    long exposureStarted = Now();
+                    Exposure(solver, creature);
+                    _exposureTicks += Now() - exposureStarted;
+                }
 
                 // Unsigned, and drained per interval. The solver reports the magnitude of the
                 // work at each joint precisely because a joint being driven *by* the water is
