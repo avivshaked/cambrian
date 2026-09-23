@@ -142,12 +142,19 @@ namespace Evosim.Theatre
             /// <summary>
             /// Per renderer, what the visual's local scale has to be multiplied by to draw the
             /// genome's three half-extents rather than the collider's one radius. See
-            /// <see cref="Aspect"/>. Never above one on any axis.
+            /// <see cref="Aspect"/>. Never above one on any axis, except the stretch along the
+            /// shaft of a merged cap (<see cref="Merged"/>), which stays inside the capsule.
             /// </summary>
             public Vector3[] Shape;
 
             /// <summary>Per renderer, the local scale this class last wrote. See <see cref="Reshape"/>.</summary>
             public Vector3[] Wrote;
+
+            /// <summary>
+            /// Per renderer, true for the one cap that draws a near-spherical capsule alone, at
+            /// the part's centre; its shaft and other cap are switched off. See <see cref="Dress"/>.
+            /// </summary>
+            public bool[] Merged;
 
             /// <summary>One neck per jointed part, or null when this body has no joint.</summary>
             public Transform[] Necks;
@@ -411,6 +418,7 @@ namespace Evosim.Theatre
                 PinchB = new Vector4[_scratch.Count],
                 Shape = new Vector3[_scratch.Count],
                 Wrote = new Vector3[_scratch.Count],
+                Merged = new bool[_scratch.Count],
             };
 
             for (int i = 0; i < _scratch.Count; i++)
@@ -501,11 +509,17 @@ namespace Evosim.Theatre
             if (Skin == null || !Skin.Ready) return;
 
             Material material = Skin.BodyMaterial;
+            _capTaken.Clear();
 
             for (int i = 0; i < body.Renderers.Length; i++)
             {
                 MeshRenderer renderer = body.Renderers[i];
                 if (renderer == null) continue;
+
+                // Dressed again after the raw shapes were shown: whatever a merge switched off
+                // is switched on before this pass decides afresh.
+                renderer.enabled = true;
+                body.Merged[i] = false;
 
                 renderer.sharedMaterial = material;
                 renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -539,13 +553,43 @@ namespace Evosim.Theatre
                 // one of the solids this theatre generated, and RoundedFor would no longer
                 // recognise it by the engine's name for the primitive it replaced. By name as
                 // well, for the raw shapes.
-                bool isSphere = mesh == TheatreMeshes.Sphere() || mesh.name == "Sphere";
-                bool isCylinder = mesh == TheatreMeshes.Cylinder() || mesh.name == "Cylinder";
+                bool isSphere = mesh == TheatreMeshes.Sphere() || TheatreMeshes.IsPrimitiveSphere(mesh);
+                bool isCylinder = mesh == TheatreMeshes.Cylinder() || TheatreMeshes.IsPrimitiveCylinder(mesh);
 
                 int part = body.Part[i];
                 if (part < 0 || part >= phenotype.PartCount) continue;
 
                 body.Shape[i] = Aspect(phenotype.Parts[part], isSphere, isCylinder);
+
+                // A capsule whose shaft is shorter than its radius is a ball to any eye, and the
+                // three-piece plan draws it badly: the shaft's carve is bounded by its own
+                // thickness while the caps are cut a quarter of the way in, so the shaft's rim
+                // stands out of the carved caps as a thin disc, and a thin disc flashes wide for
+                // one frame when a tumbling body carries it through edge-on (round 46's first
+                // films, 2026-09-23). So one cap draws the whole part, at the part's centre,
+                // stretched along the shaft to the genome's own half-extent there; the shaft and
+                // the other cap are switched off. The ellipsoid with semi-axes (r, r + span, r)
+                // is inside the capsule of radius r and half-span span (the distance from any
+                // of its points to the axis segment is at most r, by a two-line argument on the
+                // convex remainder), so the size bound holds. Not under the raw shapes, which
+                // draw the collider as the physics has it.
+                if (!RawShapes && (isSphere || isCylinder) && NearlyASphere(phenotype.Parts[part]))
+                {
+                    if (isSphere && _capTaken.Add(part))
+                    {
+                        Vector3 h = Abs(phenotype.Parts[part].HalfExtents.ToVector3());
+                        float r = CapsuleShape.Radius(phenotype.Parts[part].HalfExtents);
+                        Vector3 stretched = body.Shape[i];
+                        stretched.y = r > 0f ? Mathf.Max(h.y, r) / r : 1f;
+                        body.Shape[i] = stretched;
+                        body.Merged[i] = true;
+                    }
+                    else
+                    {
+                        renderer.enabled = false;
+                        continue;
+                    }
+                }
 
                 // Squashed before the anchors are measured, not after: Pinches divides by the
                 // visual's scale to reach object units, and the scale it has to divide by is the
@@ -650,7 +694,18 @@ namespace Evosim.Theatre
 
             visual.localScale = next;
             body.Wrote[i] = next;
+
+            // The merged cap draws from the part's centre, and a growth resize puts it back at
+            // the plan's offset along the shaft together with the scale this just corrected.
+            if (body.Merged != null && body.Merged[i]) visual.localPosition = Vector3.zero;
         }
+
+        /// <summary>A capsule whose half-span is under its radius: drawn as one ellipsoid.</summary>
+        private static bool NearlyASphere(PhenotypePart part) =>
+            part.ShapeId == ShapeIds.Capsule &&
+            CapsuleShape.HalfSpan(part.HalfExtents) < CapsuleShape.Radius(part.HalfExtents);
+
+        private readonly HashSet<int> _capTaken = new HashSet<int>();
 
         /// <summary>
         /// The joint anchors that touch one visual, in that visual's own object units.

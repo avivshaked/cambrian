@@ -275,7 +275,33 @@ camera, because the grade's motion blur drew the jump between shots on a shared 
 blur is tuned for the fly camera at screen rate and smears any fast move at a low frame
 rate, so `-MotionBlur 0` for those. And a full orbit at the tank's radius is metres a second,
 far past the owner's rule that nothing moves faster than a body swims, so the default is a
-quarter turn. The `drift` shot compiled and was never filmed.
+quarter turn. The `drift` shot compiled and was never filmed. The film pins
+`Time.captureDeltaTime` to one frame interval, so the shaders' clock (the caustic net, the
+shafts, the ripples) advances one frame per capture whatever the wall clock does; the log
+counts the intervals that missed. Three diagnostics come with it: `-Freeze` (the world is
+not stepped, so a clip's only motion is the camera's), `-Raw` (the colliders as the physics
+has them, the runner's X key) and `-Trace` (one row per link per frame in `trace.tsv` beside
+the shot directories: the solver's pose, the view's transform, every visual's mesh and
+scale, the screen position under the close shot's camera; `scripts/film-trace.py`
+ranks the jumps). They are the order to use them in.
+**No reconstruction and no live frame dressed a sphere or a capsule until 2026-09-23.**
+`TheatrePalette` and `TheatreMeshes` knew the engine's primitives by the names `Sphere` and
+`Cylinder`, which `CreatePrimitive` gives them in `PhenotypeBuilder`; `SnapshotWorld` and
+`LiveWorldView` borrow them through `Resources.GetBuiltinResource`, where Unity 6000.5 calls
+them `pSphere1` and `pCylinder1` (the cube is `Cube` either way, so boxes were right). A
+replay of a Unity recording was dressed as designed, and every snapshot picture and every
+live frame since 2026-09-18 kept the raw meshes, drew a sphere part as the collider's ball
+and never as the genome's three half-extents, gave no joint its pinch, and drew a capsule's
+shaft as a disc standing out of its carved caps (the caps are cut a quarter of the way in,
+the shaft's carve is bounded by its own thickness), which flashed wide for one frame when a
+tumbling body carried it through edge-on: the owner's bulge in round 46's first films. The
+clock, the motion blur and a frozen world were excluded first; the trace named the body and
+its mesh names in one line. The meshes are recognised by reference and by both names now,
+and a capsule whose half-span is under its radius is drawn as one ellipsoid at the part's
+centre, inside the capsule (`TheatrePalette.Dress`). Every reconstruction picture before
+the fix carries the raw look; and a body identified in a picture is identified by the
+trace's screen column, not by which id the shot log names, since the crop that showed the
+bulge held neither of the close shot's two named bodies.
 
 Keys: `Space` pause, `[` `]` pace, `L` pace lock (at or under real time, for filming), `K` seek,
 `C` colour, `X` raw shapes (the colliders as the physics has them, no rounding, carve, taper or

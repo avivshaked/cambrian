@@ -73,6 +73,17 @@
 .PARAMETER WallMinutes
   Wall clock cap on the batch Editor, default 30. The Editor also stops itself at this wall.
 
+.PARAMETER Raw
+  A diagnostic: the bodies are drawn as the colliders the physics has, with no rounding, carve,
+  taper or bend (EVOSIM_THEATRE_FILM_RAW=1), as the runner's X key does.
+.PARAMETER Trace
+  A diagnostic: every living body is logged link by link every
+  frame, as the solver holds it and as the view draws it, to trace.tsv beside the shot directories
+  (EVOSIM_THEATRE_FILM_TRACE=1).
+.PARAMETER Freeze
+  A diagnostic: the world is not stepped during the capture (EVOSIM_THEATRE_FILM_FREEZE=1), so the
+  clip's only motion is the camera's and the shaders' clock. Every frame's label says FROZEN.
+
 .PARAMETER DeleteFrames
   Delete each shot's frames once its mp4 is written.
 
@@ -93,6 +104,9 @@ param(
     [double]$MotionBlur = -1,
     [string]$RunsRoot = 'runs',
     [int]$WallMinutes = 30,
+    [switch]$Freeze,
+    [switch]$Trace,
+    [switch]$Raw,
     [switch]$DeleteFrames
 )
 
@@ -178,7 +192,9 @@ if (Test-Path (Join-Path $proj 'Temp/UnityLockfile')) {
 }
 
 $filmDirectory = Join-Path $root "scratch\films\$Arm"
-$frameDirectory = Join-Path $filmDirectory $checkpointSecond
+# A frozen clip is filed apart, so a diagnostic never overwrites the film it is checking.
+$tag = if ($Freeze) { '-frozen' } else { '' }
+$frameDirectory = Join-Path $filmDirectory "$checkpointSecond$tag"
 
 $logDirectory = Join-Path $root 'scratch\logs'
 New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
@@ -189,7 +205,7 @@ $names = @(
     'EVOSIM_THEATRE_FILM_SECONDS', 'EVOSIM_THEATRE_FILM_FPS', 'EVOSIM_THEATRE_FILM_SIZE',
     'EVOSIM_THEATRE_FILM_SHOTS', 'EVOSIM_THEATRE_FILM_OUT', 'EVOSIM_THEATRE_FILM_TURNS',
     'EVOSIM_THEATRE_WALL_MINUTES', 'EVOSIM_THEATRE_CARVE', 'EVOSIM_THEATRE_SNAP_FROM',
-    'EVOSIM_THEATRE_OVERRIDE', 'EVOSIM_THEATRE_GENOME', 'EVOSIM_THEATRE_MOTION_BLUR')
+    'EVOSIM_THEATRE_OVERRIDE', 'EVOSIM_THEATRE_GENOME', 'EVOSIM_THEATRE_MOTION_BLUR', 'EVOSIM_THEATRE_FILM_FREEZE', 'EVOSIM_THEATRE_FILM_TRACE', 'EVOSIM_THEATRE_FILM_RAW')
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -214,6 +230,13 @@ try {
     $env:EVOSIM_THEATRE_FILM_TURNS = $Turns.ToString($invariant)
     $env:EVOSIM_THEATRE_WALL_MINUTES = "$WallMinutes"
     $env:EVOSIM_THEATRE_CARVE = $Carve.ToString($invariant)
+
+    if ($Freeze) { $env:EVOSIM_THEATRE_FILM_FREEZE = '1' }
+    else { Remove-Item env:EVOSIM_THEATRE_FILM_FREEZE -ErrorAction SilentlyContinue }
+    if ($Trace) { $env:EVOSIM_THEATRE_FILM_TRACE = '1' }
+    else { Remove-Item env:EVOSIM_THEATRE_FILM_TRACE -ErrorAction SilentlyContinue }
+    if ($Raw) { $env:EVOSIM_THEATRE_FILM_RAW = '1' }
+    else { Remove-Item env:EVOSIM_THEATRE_FILM_RAW -ErrorAction SilentlyContinue }
 
     if ($PSBoundParameters.ContainsKey('MotionBlur')) { $env:EVOSIM_THEATRE_MOTION_BLUR = $MotionBlur.ToString($invariant) }
 
@@ -275,7 +298,7 @@ foreach ($shot in $shotList) {
         continue
     }
 
-    $clip = Join-Path $filmDirectory "$Arm-t$checkpointSecond-$shot.mp4"
+    $clip = Join-Path $filmDirectory "$Arm-t$checkpointSecond-$shot$tag.mp4"
     $pattern = Join-Path $shotDirectory 'frame-%06d.png'
 
     & $ffmpeg.Source -hide_banner -loglevel error -y -framerate $Fps -start_number 0 -i $pattern `

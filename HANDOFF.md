@@ -181,12 +181,19 @@ checkpoint ever holds because the lineage queue is drained before one is written
 before the merge, after the seeds end: the three full suites, the crowd regress of
 `r46fixc-s4` on the instruments build (identical in every recorded field, the new ones
 beside them), `r46-read.py` pointed at the new names (K6b at `maxReach`, K9b at `byPart`,
-K10 at the two timers, K11a at `snow-floor12`), the merge. **A film tool is being built
+K10 at the two timers, K11a at `snow-floor12`), the merge. **The film tool is built
 beside it** (`unity/Assets/Theatre/Editor/TheatreFilm.cs` and `scripts/theatre-film.ps1`,
 the owner's request of the evening: clips of live play from a checkpoint at 5,000, 15,000
 and 30,000 s, an orbit and a close portrait, frames through the RenderTexture read-back
-and ffmpeg to mp4; a labelled cousin, as the owner accepted for filming); the round's
-clips are taken after the seeds end, one Editor at a time.
+and ffmpeg to mp4, a contact sheet beside each; a labelled cousin, as the owner accepted
+for filming). The first 5,000 s clips showed the owner a body bulging for one frame in
+three; the film's trace found the skin had never dressed a sphere or a capsule in a
+reconstruction or a live frame (the primitives' names, CLAUDE.md's gotcha), and the fix
+landed with the 5,000 s set refilmed on it. **Open, the owner's**: a reference for the
+camera's own motion in a clip (the owner, 2026-09-23 evening: nothing in frame says
+whether the camera or the creatures move); the options are in the status of that
+evening. The 15,000 and 30,000 s clips are taken after the seeds end, one Editor at a
+time (`scratch/films/film-r46.ps1`).
 
 **Round 45 is read (logbook/0114's read section, 2026-09-23 morning; three seeds ended on
 their budget in 6 to 8 hours at 1.0 to 1.4x).** The mouth works and nobody uses it: J5,

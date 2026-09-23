@@ -199,6 +199,27 @@ namespace Evosim.Theatre
         /// <summary>Whole percents, so the blend above makes a handful of meshes and not one per body.</summary>
         private static int Bucket(float pillow) => Mathf.Clamp(Mathf.RoundToInt(pillow * 100f / 4f) * 4, 0, 50);
 
+        private static Mesh _builtinCube, _builtinSphere, _builtinCylinder;
+
+        /// <summary>The engine's own cube, sphere and cylinder meshes, as the views borrow them.</summary>
+        public static Mesh BuiltinCube() => _builtinCube != null ? _builtinCube : (_builtinCube = Resources.GetBuiltinResource<Mesh>("Cube.fbx"));
+        public static Mesh BuiltinSphere() => _builtinSphere != null ? _builtinSphere : (_builtinSphere = Resources.GetBuiltinResource<Mesh>("Sphere.fbx"));
+        public static Mesh BuiltinCylinder() => _builtinCylinder != null ? _builtinCylinder : (_builtinCylinder = Resources.GetBuiltinResource<Mesh>("Cylinder.fbx"));
+
+        /// <summary>
+        /// True for the engine's cube, sphere or cylinder, by reference or by either name the
+        /// engine gives it (Cube, Sphere and Cylinder from <c>CreatePrimitive</c>; Cube, pSphere1
+        /// and pCylinder1 from <c>GetBuiltinResource</c>). See <see cref="RoundedFor(Mesh, float)"/>.
+        /// </summary>
+        public static bool IsPrimitiveCube(Mesh mesh) =>
+            mesh != null && (mesh == BuiltinCube() || mesh.name == "Cube" || mesh.name == "pCube1");
+
+        public static bool IsPrimitiveSphere(Mesh mesh) =>
+            mesh != null && (mesh == BuiltinSphere() || mesh.name == "Sphere" || mesh.name == "pSphere1");
+
+        public static bool IsPrimitiveCylinder(Mesh mesh) =>
+            mesh != null && (mesh == BuiltinCylinder() || mesh.name == "Cylinder" || mesh.name == "pCylinder1");
+
         /// <summary>True for any cube this class built, whatever its rounding.</summary>
         public static bool IsRoundedCube(Mesh mesh)
         {
@@ -221,12 +242,18 @@ namespace Evosim.Theatre
         /// mesh is not one this class replaces.
         /// </summary>
         /// <remarks>
-        /// By name because that is the only handle the theatre has.
-        /// <c>PhenotypeBuilder.PrimitiveMesh</c> borrows the engine's built in Cube, Sphere and
-        /// Cylinder meshes, which are shared assets called exactly that, and the theatre must not
-        /// reach into <c>Evosim.Sim</c> to be told which is which. A mesh whose name is anything
-        /// else is left alone, so a part drawn with something new goes on being drawn with it
-        /// rather than being silently replaced by a cube.
+        /// By reference to the engine's built in Cube, Sphere and Cylinder, and by the names they
+        /// carry, because the theatre must not reach into <c>Evosim.Sim</c> to be told which is
+        /// which. <c>PhenotypeBuilder.PrimitiveMesh</c> takes them from <c>CreatePrimitive</c>,
+        /// where they are called Cube, Sphere and Cylinder; the snapshot and live views take them
+        /// from <c>Resources.GetBuiltinResource</c>, where the sphere and the cylinder are called
+        /// pSphere1 and pCylinder1 (Unity 6000.5). Matched by name alone, from the look pass of
+        /// 2026-09-16 until 2026-09-23, every sphere and capsule in a snapshot or a live render
+        /// kept the engine's mesh, was never squashed to its half-extents and never got its joint
+        /// pinch, and a capsule's shaft stood out of its carved caps as a thin disc that flashed
+        /// when the body tumbled (the bulge in round 46's first films). A mesh that is none of
+        /// the three is left alone, so a part drawn with something new goes on being drawn with
+        /// it rather than being silently replaced by a cube.
         /// </remarks>
         public static Mesh RoundedFor(Mesh primitive) => RoundedFor(primitive, 0f);
 
@@ -240,13 +267,10 @@ namespace Evosim.Theatre
             if (primitive == null) return null;
             if (IsRoundedCube(primitive)) return RoundedCube(PillowFor(cubicness));
 
-            switch (primitive.name)
-            {
-                case "Cube": return RoundedCube(PillowFor(cubicness));
-                case "Sphere": return Sphere();
-                case "Cylinder": return Cylinder();
-                default: return null;
-            }
+            if (IsPrimitiveCube(primitive)) return RoundedCube(PillowFor(cubicness));
+            if (IsPrimitiveSphere(primitive)) return Sphere();
+            if (IsPrimitiveCylinder(primitive)) return Cylinder();
+            return null;
         }
 
         /// <summary>
@@ -257,9 +281,9 @@ namespace Evosim.Theatre
         public static Mesh PrimitiveFor(Mesh rounded)
         {
             if (rounded == null) return null;
-            if (IsRoundedCube(rounded) || rounded.name == "Cube") return Resources.GetBuiltinResource<Mesh>("Cube.fbx");
-            if (rounded == _sphere || rounded.name == "Sphere") return Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
-            if (rounded == _cylinder || rounded.name == "Cylinder") return Resources.GetBuiltinResource<Mesh>("Cylinder.fbx");
+            if (IsRoundedCube(rounded) || IsPrimitiveCube(rounded)) return BuiltinCube();
+            if (rounded == _sphere || IsPrimitiveSphere(rounded)) return BuiltinSphere();
+            if (rounded == _cylinder || IsPrimitiveCylinder(rounded)) return BuiltinCylinder();
             return null;
         }
 

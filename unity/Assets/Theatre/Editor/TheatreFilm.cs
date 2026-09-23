@@ -86,6 +86,12 @@ namespace Evosim.Theatre.EditorTools
         private static int _height = 1080;
         private static string[] _shotNames = { "orbit", "close" };
         private static string _directory;
+        private static bool _trace;
+        private static bool _raw;
+        private static StreamWriter _traceWriter;
+        private static Vector3 _traceEye;
+        private static Quaternion _traceRotation = Quaternion.identity;
+        private static bool _traceHasCamera;
         private static float _turns = 0.25f;
         private static double _wallSecondsAllowed = 1800d;
 
@@ -93,6 +99,9 @@ namespace Evosim.Theatre.EditorTools
         private static bool _driving;
         private static TheatreRunner _runner;
         private static bool _setUp;
+        private static bool _freeze;
+        private static float _firstClock, _lastClock;
+        private static int _clockSlips;
         private static int _warmFrames;
         private static bool _warmed;
         private static int _dressedLate;
@@ -161,6 +170,103 @@ namespace Evosim.Theatre.EditorTools
         }
 
         /// <summary>Simulated seconds by the physics step: the restore's second plus the steps since.</summary>
+        /// <summary>
+        /// One row per link per frame for every living body (or
+        /// of the largest body when no close shot runs): the solver's position and rotation, and
+        /// the view's part transform and first visual's local scale. Tab-separated, in
+        /// <c>trace.tsv</c> beside the shot directories.
+        /// </summary>
+        private static void Trace(TheatreDynamicsReplay live)
+        {
+            LiveWorldView view = _runner.LiveView;
+            if (view == null || live?.Sim == null) return;
+
+            if (_traceWriter == null)
+            {
+                Directory.CreateDirectory(_directory);
+                _traceWriter = new StreamWriter(Path.Combine(_directory, "trace.tsv"), false);
+                _traceWriter.WriteLine("frame	t	id	link	px	py	pz	rx	ry	rz	rw	vx	vy	vz	qx	qy	qz	qw	sx	sy	sz	lossy	u	v	depth	hx	hy	hz	shape	visuals	visualScales");
+            }
+
+            long subject = -1;
+            foreach (Shot shot in _shots) if (shot.Subject >= 0) { subject = shot.Subject; break; }
+
+            IReadOnlyList<Organism> living = live.Sim.World.Living;
+            Vector3 centre = default;
+            bool haveCentre = false;
+
+            if (subject >= 0 && live.Sim.TryPose(subject, out Evosim.Dynamics.Creature s) && s != null && s.Links > 0)
+            {
+                centre = new Vector3((float)s.Position[0], (float)s.Position[1], (float)s.Position[2]);
+                haveCentre = true;
+            }
+
+            double t = Now(live);
+            float fov = 50f;
+            foreach (Shot shot in _shots) if (shot.Name == "close") fov = shot.FieldOfView;
+            float tanV = Mathf.Tan(0.5f * fov * Mathf.Deg2Rad);
+            float tanH = tanV * _width / (float)_height;
+            Quaternion inverse = Quaternion.Inverse(_traceRotation);
+
+            for (int i = 0; i < living.Count; i++)
+            {
+                long id = living[i].Id;
+                if (!live.Sim.TryPose(id, out Evosim.Dynamics.Creature body) || body == null) continue;
+
+                var root = new Vector3((float)body.Position[0], (float)body.Position[1], (float)body.Position[2]);
+
+                Transform viewRoot = view.RootOf(id);
+
+                for (int l = 0; l < body.Links; l++)
+                {
+                    Transform part = viewRoot != null && l < viewRoot.childCount ? viewRoot.GetChild(l) : null;
+                    Transform visual = part != null && part.childCount > 0 ? part.GetChild(0) : null;
+                    PhenotypePart ph = body.Phenotype != null && l < body.Phenotype.PartCount ? body.Phenotype.Parts[l] : null;
+
+                    Vector3 vp = part != null ? part.localPosition : default;
+                    Quaternion vq = part != null ? part.localRotation : Quaternion.identity;
+                    Vector3 sc = visual != null ? visual.localScale : default;
+                    float lossy = visual != null ? visual.lossyScale.magnitude : 0f;
+
+                    // Screen position under the close shot's camera: u across from the left, v down
+                    // from the top, both 0 to 1 inside the frame; depth along the view axis, m.
+                    var world = new Vector3((float)body.Position[3 * l], (float)body.Position[3 * l + 1], (float)body.Position[3 * l + 2]);
+                    Vector3 cam = inverse * (world - _traceEye);
+                    float u = cam.z > 1e-3f ? 0.5f + 0.5f * (cam.x / cam.z) / tanH : -1f;
+                    float vv = cam.z > 1e-3f ? 0.5f - 0.5f * (cam.y / cam.z) / tanV : -1f;
+
+                    _traceWriter.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                        "{0}	{1:0.###}	{2}	{3}	{4:0.####}	{5:0.####}	{6:0.####}	{7:0.####}	{8:0.####}	{9:0.####}	{10:0.####}" +
+                        "	{11:0.####}	{12:0.####}	{13:0.####}	{14:0.####}	{15:0.####}	{16:0.####}	{17:0.####}	{18:0.####}	{19:0.####}	{20:0.####}	{21:0.####}	{22:0.###}	{23:0.###}	{24:0.##}	{25:0.####}	{26:0.####}	{27:0.####}	{28}	{29}	{30}",
+                        _next, t, id, l,
+                        body.Position[3 * l], body.Position[3 * l + 1], body.Position[3 * l + 2],
+                        body.Rotation[4 * l], body.Rotation[4 * l + 1], body.Rotation[4 * l + 2], body.Rotation[4 * l + 3],
+                        vp.x, vp.y, vp.z, vq.x, vq.y, vq.z, vq.w, sc.x, sc.y, sc.z, lossy, u, vv, cam.z,
+                        ph != null ? ph.HalfExtents.X : 0f, ph != null ? ph.HalfExtents.Y : 0f, ph != null ? ph.HalfExtents.Z : 0f,
+                        ph != null ? ph.ShapeId : "?", part != null ? part.childCount : -1, VisualScales(part)));
+                }
+            }
+
+            _traceWriter.Flush();
+        }
+
+        /// <summary>Every visual under a part: its mesh's name and local scale, semicolon-separated.</summary>
+        private static string VisualScales(Transform part)
+        {
+            if (part == null) return "";
+            var sb = new System.Text.StringBuilder();
+            for (int v = 0; v < part.childCount; v++)
+            {
+                Transform visual = part.GetChild(v);
+                var filter = visual.GetComponent<MeshFilter>();
+                Vector3 sc = visual.localScale;
+                if (v > 0) sb.Append(';');
+                sb.Append(string.Format(CultureInfo.InvariantCulture, "{0}:{1:0.####},{2:0.####},{3:0.####}",
+                    filter != null && filter.sharedMesh != null ? filter.sharedMesh.name.Replace(' ', '_') : "none", sc.x, sc.y, sc.z));
+            }
+            return sb.ToString();
+        }
+
         private static double Now(TheatreDynamicsReplay live) => _t0 + (live.Steps - _steps0) * _dt;
 
         private static int FrameCount() => Math.Max(1, (int)Math.Round(_seconds * _fps));
@@ -254,6 +360,14 @@ namespace Evosim.Theatre.EditorTools
             if (!string.IsNullOrWhiteSpace(text)) int.TryParse(text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out minutes);
             _wallSecondsAllowed = 60d * Mathf.Clamp(minutes, 1, 1440);
 
+            // A diagnostic: the world is not stepped, so a clip's only motion is the camera's and
+            // the shaders' clock. Off by default.
+            _freeze = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_FILM_FREEZE") == "1";
+            _trace = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_FILM_TRACE") == "1";
+            // A diagnostic: the bodies are drawn as the colliders the physics has, no rounding,
+            // carve, taper or bend, as the runner's X key does.
+            _raw = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_FILM_RAW") == "1";
+
             return null;
         }
 
@@ -309,7 +423,10 @@ namespace Evosim.Theatre.EditorTools
             string.Join(",", _shotNames) + "|" +
             (_directory ?? "") + "|" +
             _turns.ToString("R", CultureInfo.InvariantCulture) + "|" +
-            _wallSecondsAllowed.ToString("R", CultureInfo.InvariantCulture);
+            _wallSecondsAllowed.ToString("R", CultureInfo.InvariantCulture) + "|" +
+            (_freeze ? "1" : "0") + "|" +
+            (_trace ? "1" : "0") + "|" +
+            (_raw ? "1" : "0");
 
         /// <summary>
         /// Picks the request back up on the other side of the domain reload Play mode causes, and
@@ -344,6 +461,9 @@ namespace Evosim.Theatre.EditorTools
             _directory = string.IsNullOrEmpty(f[4]) ? null : f[4];
             float.TryParse(f[5], NumberStyles.Float, CultureInfo.InvariantCulture, out _turns);
             double.TryParse(f[6], NumberStyles.Float, CultureInfo.InvariantCulture, out _wallSecondsAllowed);
+            _freeze = f.Length > 7 && f[7] == "1";
+            _trace = f.Length > 8 && f[8] == "1";
+            _raw = f.Length > 9 && f[9] == "1";
 
             if (_seconds <= 0d || _fps < 1 || _width < 64 || _height < 64 || _shotNames.Length == 0)
             {
@@ -424,17 +544,17 @@ namespace Evosim.Theatre.EditorTools
                 double target = _t0 + (double)_next / _fps;
                 float dt = Mathf.Max(1e-4f, live.Sim.PhysicsDt);
 
-                // Stepped here, a frame interval at a time, with a budget so that a heavy world
-                // spreads its steps across ticks rather than looking wedged inside one.
-                double budgetEnds = EditorApplication.timeSinceStartup + 0.5d;
-
+                // Stepped here, a whole frame interval in one tick. There was a wall budget that
+                // spread a heavy frame's steps across ticks; with Time.captureDeltaTime set, every
+                // tick advances the shaders' clock by one frame interval, so a tick without a
+                // capture would be a jump in the caustics and the ripples.
+                //
                 // The film's clock is the physics step's, never World.ElapsedSeconds: the world's
                 // clock moves in metabolic steps of half a second, and a film read off it put five
                 // frames on one instant and then jumped (the first smoke, 2026-09-23).
-                while (Now(live) + 0.5d * dt < target)
+                if (!_freeze)
                 {
-                    live.Step();
-                    if (EditorApplication.timeSinceStartup > budgetEnds) return;
+                    while (Now(live) + 0.5d * dt < target) live.Step();
                 }
 
                 _runner.LiveView?.Sync();
@@ -443,18 +563,32 @@ namespace Evosim.Theatre.EditorTools
                 // it frames later; it is dressed here, before the shutter, instead.
                 if (_runner.LiveView != null) _dressedLate += _runner.LiveView.DressUndressed();
 
+
+                // The shaders' clock against the film's: one frame interval a capture, or the log
+                // says how often it was not.
+                float clock = Time.time;
+                if (_next > 0 && Mathf.Abs(clock - _lastClock - 1f / _fps) > 0.25f / _fps) _clockSlips++;
+                if (_next == 0) _firstClock = clock;
+                _lastClock = clock;
+
                 double at = Now(live);
-                _worstLag = Mathf.Max(_worstLag, (float)Math.Abs(at - target));
+                if (!_freeze) _worstLag = Mathf.Max(_worstLag, (float)Math.Abs(at - target));
                 if (_next == 0) _firstAt = at;
                 _lastAt = at;
 
                 float u = _frames > 1 ? (float)_next / (_frames - 1) : 0f;
-                string label = string.Format(CultureInfo.InvariantCulture, "COUSIN  t={0:0.0} s", at);
+                string label = string.Format(CultureInfo.InvariantCulture, "COUSIN  t={0:0.0} s{1}", at,
+                    _freeze ? "  FROZEN" : "");
                 string frameName = "frame-" + _next.ToString("000000", CultureInfo.InvariantCulture) + ".png";
 
                 foreach (Shot shot in _shots)
                 {
                     shot.Pose(live, _runner.LiveView, u, 1f / _fps, out Vector3 eye, out Quaternion rotation, out float focus);
+
+                    if (_trace && (shot.Name == "close" || !_traceHasCamera))
+                    {
+                        _traceEye = eye; _traceRotation = rotation; _traceHasCamera = true;
+                    }
 
                     shot.Camera.CapturePlaced(live, eye, rotation, shot.FieldOfView, shot.Portrait, focus, label,
                         Path.Combine(shot.Directory, frameName));
@@ -467,6 +601,11 @@ namespace Evosim.Theatre.EditorTools
                             spread < 2f ? " (UNIFORM: the device may have rendered nothing)" : ""));
                     }
                 }
+
+                // A diagnostic trace, off by default: every body within a few metres of the close
+                // shot's subject, link by link, as the solver holds it, as the view draws it and
+                // where the close shot's camera puts it on screen; one row per link per frame.
+                if (_trace) Trace(live);
 
                 _next++;
 
@@ -553,10 +692,26 @@ namespace Evosim.Theatre.EditorTools
             _runner.Rate = 1f;
             _runner.ShowOverlay = false;
 
+            // Unity's offline-recording clock, set before the warm-up so the first capture is
+            // already on it: Time.time, Time.deltaTime and the shaders' _Time then advance one frame
+            // interval per player-loop frame whatever the wall clock does. Without it the caustic
+            // net on the bodies and the bed (TheatreBody.shader, TheatreBed.shader), the shafts'
+            // gain and the surface ripples all ran on the Editor's uneven wall time between
+            // captures, and r46-s1's first clips flickered on every body (2026-09-23). Put back to
+            // 0 in Finish, which every exit goes through.
+            Time.captureDeltaTime = 1f / _fps;
+            _clockSlips = 0;
+
             // The viewer's own camera has nothing to show a batch Editor, and would render the whole
             // world every tick for nobody.
             Camera view = _runner.ViewCamera;
             if (view != null) view.enabled = false;
+
+            if (_raw && _runner.LiveView?.Palette != null)
+            {
+                _runner.LiveView.Palette.RawShapes = true;
+                _runner.LiveView.Palette.Clear();
+            }
 
             _runner.LiveView?.Sync();
 
@@ -609,8 +764,10 @@ namespace Evosim.Theatre.EditorTools
 
         private static void Finish(int code, string verdict)
         {
+            if (_traceWriter != null) { _traceWriter.Dispose(); _traceWriter = null; }
             EditorApplication.update -= Drive;
             _driving = false;
+            Time.captureDeltaTime = 0f;
             SessionState.EraseString(PendingKey);
 
             foreach (Shot shot in _shots)
@@ -621,8 +778,11 @@ namespace Evosim.Theatre.EditorTools
             var report = new System.Text.StringBuilder();
             report.AppendFormat(CultureInfo.InvariantCulture,
                 "\n  first frame at t={0:0.###} s, last at t={1:0.###} s, worst distance from the asked-for second {2:0.####} s; " +
-                "warm-up {3} frames; {4} bodies born during the film dressed before their first frame",
-                _firstAt, _lastAt, _worstLag, _warmFrames, _dressedLate);
+                "warm-up {3} frames; {4} bodies born during the film dressed before their first frame" +
+                "\n  shaders' clock (Time.time) {5:0.####} to {6:0.####} s, {7} capture interval(s) off 1/{8} s{9}",
+                _firstAt, _lastAt, _worstLag, _warmFrames, _dressedLate,
+                _firstClock, _lastClock, _clockSlips, _fps,
+                _freeze ? "; FROZEN: the world was not stepped" : "");
 
             foreach (Shot shot in _shots)
             {
@@ -797,6 +957,9 @@ namespace Evosim.Theatre.EditorTools
 
             // close
             private long _subject = -1;
+
+            /// <summary>The body the close shot follows, or -1 for any other shot.</summary>
+            public long Subject => _subject;
             private Vector3 _offset;
             private Vector3 _forward;
             private float _standoff;
