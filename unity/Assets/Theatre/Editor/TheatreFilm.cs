@@ -1118,17 +1118,17 @@ namespace Evosim.Theatre.EditorTools
                 // framed water and bodies and nothing fixed, so a viewer could not tell the
                 // camera's motion from the creatures' (the owner, 2026-09-23 evening). So when
                 // the surface caps the lift below half of what is wanted, the orbit stays level
-                // at the crowd's depth, as far out as the glass allows, and aims ten degrees
+                // at the crowd's depth, as far out as the glass allows, and aims five degrees
                 // below the centroid: the crowd sits in the upper third of the frame, the bed
                 // and the far glass fill the rest, and the surface's underside crosses the top.
                 if (!drift && headroom < room && most < 0.5f * wanted)
                 {
                     float surfaceCap = most;
                     _elevation = 0f;
-                    _aimDown = 10f * Mathf.Deg2Rad;
+                    _aimDown = 5f * Mathf.Deg2Rad;
                     most = _world.RoomAround(_centre);
                     tilt = string.Format(CultureInfo.InvariantCulture,
-                        "level at the crowd's depth aiming 10 deg down at the bed: the surface capped 12 deg down at {0:0.##} m",
+                        "level at the crowd's depth aiming 5 deg down at the bed: the surface capped 12 deg down at {0:0.##} m",
                         surfaceCap);
                 }
 
@@ -1363,6 +1363,17 @@ namespace Evosim.Theatre.EditorTools
 
                 // A push can cross the glass or the bed again; the walls win, and the tally says so.
                 eye = _world.Keep(eye, ref _glass, ref _bed, ref _surface);
+
+                // A push off a body is a quarter-metre jump in one frame (r46-s1 at 5,000 s: 60
+                // pushes on a 33 m ring inside the crowd, 2.7 m/s at the jump). The moving shots'
+                // eye is smoothed over half a second, so a push becomes a glide at about the arc's
+                // own pace; the smoothed eye may sit inside a body for a few frames, and the
+                // tally counts those. The still close shot never moves and is left alone.
+                if (Name != "close" && _hasLast)
+                {
+                    eye = Vector3.Lerp(_lastEye, eye, 1f - Mathf.Exp(-frameSeconds / 0.5f));
+                }
+
                 if (InsideABody(live, view, eye)) _inside++;
 
                 if (Name != "close") rotation = Quaternion.LookRotation(subject - eye, Vector3.up);
