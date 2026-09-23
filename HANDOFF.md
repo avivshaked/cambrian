@@ -477,9 +477,18 @@ subagent and never in a shell loop.
    draws `poses.jsonl` and the state stream; package A; the Editor replay reads a cousin
    and says so; the live world on the new engine, checkpoints, the Runner's picker and
    `theatre-snap.ps1 -FromCheckpoint`; the interface and click-select in live mode
-   (`91aea20`). Left: the founding live path's check, the timeline label past the record's
-   end, and one Editor run to verify `Mathf.Sin/Cos/Round` bits against `UnityFloatMath`
-   (ckA/ckB/ckC are re-recorded on the reach-bound build, layout 3, acceptance passing).
+   (`91aea20`). Left: the founding live path's check and the timeline label past the
+   record's end (ckA/ckB/ckC are re-recorded on the `StateVersion` 6 build, acceptance
+   passing). The Editor run against `UnityFloatMath` is done (2026-09-23, `FloatMathCheck`
+   and `Evosim.Farm --float-math`, CLAUDE.md's farm gotcha): the functions are the
+   transcription bit for bit in both runtimes, and Mono rounds a float expression at
+   different points from .NET, so `Vector3.Distance` and the farm's distance are an ulp
+   apart in 8% of triples; the placer's port is as exact as a port can be, and the live
+   mode's cousin status is the rule for the rest. `UnityFloatMath.Distance`'s remark
+   promises the same expression, which is true on .NET only; amend it between rounds (a
+   Dynamics edit moves `dynamicsHash`). Found on the way: the farm package did not compile
+   in the Editor since `cc7a87a` (`ReferenceEqualityComparer` is .NET 5+), which would have
+   failed every theatre check; `ByReference` replaces it.
 3. **Done: the base round on the new engine** (round 43, logbook/0111). Its two loose ends
    are closed: `r41d-read.py` reads the sample interval from the rows, and the farm's header
    prints D102's `axes v:h`.
@@ -606,8 +615,13 @@ subagent and never in a shell loop.
    `run-farm.ps1 -Launcher rounds/env-r45.ps1` with `EVOSIM_FIELD_CELL` overridden, the
    snow's explicit-diffusion bound trivially met at 0.02 m²/s) or the transport on the
    card, and the per-body pass parallel. During round 45, the CPU-side pieces that need no
-   clean machine: the full-step kernel design (brain and senses; the step inventory it is
-   built from is being taken, `scratch/gpu-design/`), and the serial water pass cheapened
+   clean machine: the full-step kernel design (done, `logbook/specs/gpu-full-step-spec.md`,
+   from the step inventory in `scratch/gpu-design/step-inventory.txt`: the brain is small,
+   median four neurons a genome and at most 80 a body in round 45's crowd, so the risks are
+   the contact query and the panel loop; size classes rather than one ceiling; the contact
+   grid built on the card with atomics behind the query's own sort; the field uploaded once
+   a metabolic step; four launches a step; acceptance is the transcription proved in double
+   on the CPU device before the precision changes), and the serial water pass cheapened
    without moving a bit (done, `c6cbba8`). The trigger to move it
    earlier: a seed filling to 10,000 and falling under 1x real time.
 7. **Loose ends.** Double accounts in Core for the matter residual (done, `0c19f0d`).

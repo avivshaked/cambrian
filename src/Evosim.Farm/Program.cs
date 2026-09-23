@@ -46,6 +46,13 @@ namespace Evosim.Farm
 
         private static int Run(string[] args)
         {
+            // The placer's float maths on this runtime: --float-math [<out file>]. FloatMathSweep
+            // says what it prints and what the Editor's twin is.
+            if (args.Length >= 1 && args[0] == "--float-math")
+            {
+                return FloatMathSweep.Run(args.Length > 1 ? args[1] : Path.Combine("scratch", "floatmath", "dotnet.txt"));
+            }
+
             // The checkpoint's in-process acceptance: --verify-checkpoint <file> <seconds>
             // [<scratch dir>] [<threads>]. CheckpointFidelity says what it does.
             if (args.Length >= 3 && args[0] == "--verify-checkpoint")

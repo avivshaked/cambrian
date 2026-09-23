@@ -122,7 +122,7 @@ namespace Evosim.Farm
                 }
 
                 int before = differences.Count;
-                Compare("organism " + a.Id, a, b, differences, 0, new HashSet<object>(ReferenceEqualityComparer.Instance));
+                Compare("organism " + a.Id, a, b, differences, 0, new HashSet<object>(ByReference.Instance));
                 if (differences.Count > before) organismsDiffering++;
             }
 
@@ -140,7 +140,7 @@ namespace Evosim.Farm
                 }
 
                 int before = differences.Count;
-                Compare("body " + a.Id, a, b, differences, 0, new HashSet<object>(ReferenceEqualityComparer.Instance));
+                Compare("body " + a.Id, a, b, differences, 0, new HashSet<object>(ByReference.Instance));
                 if (differences.Count > before) bodiesDiffering++;
             }
 

@@ -1173,7 +1173,21 @@ actually verifying it.
   sample and `auditResidual` parts at the first one, before any body has moved. Not threads,
   not tiering: the runtime. A farm run is watched from its record (`positions.jsonl`,
   `poses.jsonl`), and a farm-side identity claim is made on the farm (`digest.jsonl` at 1
-  and N threads), never across the two runtimes. **Live play in the Editor is a cousin by
+  and N threads), never across the two runtimes. **The library functions agree across the two
+  runtimes and the float arithmetic does not** (2026-09-23, `FloatMathCheck` in the Editor
+  against `Evosim.Farm --float-math`, one integer-generated sweep of four million floats and a
+  million angles): `Mathf.Sin/Cos/Sqrt/Round/Floor/FloorToInt/CeilToInt` are bit for bit the
+  farm's `UnityFloatMath` transcription in the Editor and their digests equal .NET 8's, so the
+  transcription is exact; but Mono holds a float expression's intermediates wider than a float
+  and rounds only at an explicit cast (the cast-at-every-operation form's digest equals .NET's,
+  the inline form differs from it in 8% of distances and 25% of `(float)i / n * 2pi` angles by
+  an ulp), and Unity's own `Vector3.Distance` is a third evaluation, an ulp from the inline
+  form in 0.8% of triples and from the farm's in 8%. `SharedVolume`'s fold
+  `d - extent * Round(d / extent)` agrees everywhere because its intermediates pass through a
+  float parameter. So the farm's placer and the Editor's differ by an ulp in a distance now
+  and then, whatever the transcription, which is one more reason the live mode is a cousin.
+  A Unity-side float expression transcribed for the farm is read with this: the functions
+  carry, the expression's rounding points do not, and only a cast pins one. **Live play in the Editor is a cousin by
   construction, and says so** (`a80b1c9`, `dab9b78`): the Runner's live mode steps a farm
   world on `Evosim.Dynamics` inside the Editor from a founding or from a checkpoint
   (`CheckpointPath`/`CheckpointSeconds`, `EVOSIM_THEATRE_CHECKPOINT`; `EVOSIM_THEATRE_SEEK`
