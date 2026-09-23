@@ -68,7 +68,7 @@ namespace Evosim.Core
         /// version 4 and are refused by this build; the farm program that wrote them
         /// (`4300278`) reads them.
         /// </remarks>
-        public const int StateVersion = 5;
+        public const int StateVersion = 6;
 
         /// <summary>
         /// Writes the whole of the world's own state.
@@ -419,6 +419,20 @@ namespace Evosim.Core
                 for (int i = 0; i < health.Length; i++) w.Write(health[i]);
             }
 
+            // The health each part has lost over its life, in the same order and with the same
+            // meaning of 0 — and it is state the next step reads, not a diagnostic: the Damage
+            // sense reports it, so a brain wired to that channel drives on it. Left out until
+            // StateVersion 6 (2026-09-23), when a resume of round 45 seed 2 restored every
+            // wounded body sensing nothing and the two jointed ones among sixteen parted from
+            // the run at the first sample (CheckpointFidelity found it; logbook/0114).
+            float[] damage = creature.PartDamage;
+            w.Write(damage == null ? 0 : damage.Length);
+
+            if (damage != null)
+            {
+                for (int i = 0; i < damage.Length; i++) w.Write(damage[i]);
+            }
+
             w.Write(GenomeJson.Write(creature.Genome, indent: false, id: creature.Id));
         }
 
@@ -485,6 +499,12 @@ namespace Evosim.Core
             for (int i = 0; i < healthCount; i++) health[i] = r.ReadSingle();
 
             creature.PartHealth = health;
+
+            int damageCount = r.ReadInt32();
+            float[] damage = damageCount > 0 ? new float[damageCount] : null;
+            for (int i = 0; i < damageCount; i++) damage[i] = r.ReadSingle();
+
+            creature.PartDamage = damage;
 
             Genome genome = GenomeJson.Read(r.ReadString());
             creature.Genome = genome;

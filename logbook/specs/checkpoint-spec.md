@@ -232,6 +232,41 @@ and then the refusals: truncation at three depths, an empty file, a file that is
 byte changed inside the payload, and a version this build does not read. The rest is the four
 hashes and finding a checkpoint from an arm directory or a second.
 
+## What the acceptance did not see, and the check that does (2026-09-23)
+
+The acceptance above compares rows. On round 45 seed 2 a resume from the 2,500 s checkpoint parted
+from the live run at its first sample, on the old build and on the new one alike, in two bodies of
+1,785. From the 5,000 s checkpoint it parted in six of 1,925. Every one of them was jointed, and
+one of them (868) was in both sets. The rows could say no more than that. The original process is
+gone by the time a resume is read, so which number was put back wrong is not in any file.
+
+`Evosim.Farm.exe --verify-checkpoint <run dir or .ckpt> <seconds> [scratch] [threads]` is the
+check that names it. Given a run directory it founds the world from the run's own config and seed
+and steps it live to the second asked for. Given a checkpoint it restores that and steps on. Either
+way it then writes a checkpoint of the world in hand and restores that into a second world. The
+two are compared member by member through reflection: every body of the solver, every organism of
+the world, and the fields and the placer through one digest of the world's own state writer. What
+one step fills before it reads is skipped by name: the articulated-inertia scratch, the hand-off
+buffers, the brain's output, the step's own overlap list, Core's contact list. A member added
+later that the next step reads before it writes is not on that list and will be named. The table
+it prints is by member with the count of owners, so a fault on two bodies stands apart from a
+scratch array on all of them.
+
+Run from founding to 2,500 s on seed 2's world it named `Organism.PartDamage` on sixteen bodies:
+the health each part has lost over its life, accumulated by `World.Wound`, never cleared, and
+handed to the solver as `Senses.Damage`, which the `Damage` sensor channel reports. The writer
+carried `PartHealth` and not `PartDamage`, so every restored wounded body sensed nothing, and the
+two jointed ones among the sixteen whose brains read that channel drove differently from the first
+step. The row acceptance never saw it because no body in round 42's world is bitten. From
+`StateVersion` 6 the writer carries it beside the health, `WorldStateTests`' wounded round trip
+asserts it, every checkpoint on disk before the bump is refused, and the fixtures below are
+re-recorded on the build.
+
+The general lesson is the one the mouth's spec gave the sensors: a number a sense reports is
+state the next step reads, whatever the economy calls it, and the checkpoint's contract of
+"everything the next step will read" has to be checked against the senses' inputs and not only
+the solver's arrays.
+
 ## What is left
 
 The theatre cannot yet open a checkpoint. Carrying a recorded second forward live in the Editor is

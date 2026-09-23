@@ -150,6 +150,14 @@ namespace Evosim.Core.Tests
                 {
                     foreach (float health in creature.PartHealth) readings.Add(health);
                 }
+
+                // And the health each part has lost, which the Damage sense reports: a brain
+                // wired to it drives on the number, so a restore that drops it is a body that
+                // swims differently from its first step (round 45 seed 2's resume, 2026-09-23).
+                if (creature.PartDamage != null)
+                {
+                    foreach (float lost in creature.PartDamage) readings.Add(lost);
+                }
             }
 
             return readings;
@@ -290,6 +298,13 @@ namespace Evosim.Core.Tests
 
             Assert.Equal(1, restored.Living[0].Phenotype.PartCount);
             Assert.Equal(wounded.PartHealth[0], restored.Living[1].PartHealth[0]);
+
+            // The lost health is what the wounded body senses, and it came back null until
+            // StateVersion 6: every restored wounded body sensed nothing.
+            Assert.NotNull(wounded.PartDamage);
+            Assert.True(wounded.PartDamage[0] > 0f);
+            Assert.NotNull(restored.Living[1].PartDamage);
+            Assert.Equal(wounded.PartDamage[0], restored.Living[1].PartDamage[0]);
 
             Assert.Equal(world.PartsKilled, restored.PartsKilled);
             Assert.Equal(world.BodiesEaten, restored.BodiesEaten);

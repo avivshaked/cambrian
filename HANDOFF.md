@@ -56,6 +56,30 @@ J10 for the islands and the screen's maps. The fixtures are re-recorded on the b
 (`pfix3`, `r45fixc-s4`, `ckA/B/C`), the Farm tests' round 42 hash is `c862fd2c510b82e9`, the
 identity word held. The ideas set aside are in `fable-propose-reef.md`.
 
+**The farm's water pass is parallel (`c6cbba8`, 2026-09-23, while round 45 ran).** At
+1,800 bodies on five threads the serial sampling of the current was 41% of a step against
+27% for the bodies' own phase. `CurrentField` now hands each sampler its memoised instant
+as a value, and the pass runs under a pin that fills both phases a step asks for, so the
+same threads sample it. It is bit-identical: a resume of seed 2's 2,500 s checkpoint on
+the old and the new exe agrees in every value over 30 samples. The water phase reads 15%
+and the window ran 1.6x faster per simulated second on the loaded machine. Round 45's
+three seeds stay on the exe they launched from; the next round gets it.
+
+**A checkpoint did not carry what the Damage sense reads (found 2026-09-23, fixed the same
+morning, `StateVersion` 6).** The identity check above was two resumes of one checkpoint.
+Against the live run both parted at the first sample, in two jointed bodies of 1,785 at
+2,500 s and six of 1,925 at 5,000 s. The new `Evosim.Farm.exe --verify-checkpoint`
+(`CheckpointFidelity`) is the in-process acceptance: it compares a stepped world with its
+restored twin member by member, and it named `Organism.PartDamage`, the health each part
+has lost, never cleared, handed to the solver as `Senses.Damage` and left out of the
+writer, so a restored wounded body sensed nothing. The writer carries it now and
+`WorldStateTests` asserts it. The checkpoint fixtures are re-recorded, and every
+checkpoint on disk before the bump is refused; round 45's own checkpoints are among them
+and were never a continuation of the run. The round itself is unaffected: it never resumed. What it means for the record:
+nothing in rounds 42 to 44 was resumed either, and the theatre's live mode is a cousin by
+construction and says so. `scratch/live-ui/runs/ckUi` (the `LiveUiCheck` fixture) needs
+re-recording before the next Unity live-mode check.
+
 **Streams in a shallow tank** (D102) and **four pinned arms** (D103) are ruled and on
 main. The Unity build's `simHash` has moved with the header token and every worker needs
 a refresh before any Unity arm.

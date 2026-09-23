@@ -46,6 +46,17 @@ namespace Evosim.Farm
 
         private static int Run(string[] args)
         {
+            // The checkpoint's in-process acceptance: --verify-checkpoint <file> <seconds>
+            // [<scratch dir>] [<threads>]. CheckpointFidelity says what it does.
+            if (args.Length >= 3 && args[0] == "--verify-checkpoint")
+            {
+                return CheckpointFidelity.Run(
+                    args[1],
+                    double.Parse(args[2], CultureInfo.InvariantCulture),
+                    args.Length > 3 ? args[3] : Path.Combine("scratch", "checkpoint-fidelity"),
+                    args.Length > 4 ? int.Parse(args[4], CultureInfo.InvariantCulture) : 4);
+            }
+
             var overrides = new Dictionary<string, string>(StringComparer.Ordinal);
 
             foreach (string arg in args)

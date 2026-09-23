@@ -1089,7 +1089,20 @@ actually verifying it.
   environment is ignored except for a cadence it sets by name. A resume across any of the
   four hashes is refused unless `EVOSIM_ALLOW_SOURCE_MISMATCH`, and is then a cousin the
   manifest marks. And the last checkpoint after a `STOP` is the second the run stopped at,
-  because the file is written after the report row and before the stop is acted on. **The
+  because the file is written after the report row and before the stop is acted on.
+  **A checkpoint carried everything the solver reads and not everything a sense reads,
+  until `StateVersion` 6** (2026-09-23): `Organism.PartDamage`, the health each part has
+  lost over its life and what the `Damage` sensor channel reports, was not written, so
+  every restored wounded body sensed nothing, and a resume of round 45 seed 2 parted from
+  the run at its first sample in the two jointed bodies among sixteen wounded whose brains
+  read the channel (six of 1,925 from the 5,000 s checkpoint; one body both times). The
+  row acceptance never saw it because nothing in round 42's world bites. The check that
+  names such a member is `Evosim.Farm.exe --verify-checkpoint <run dir or .ckpt> <seconds>`
+  (`CheckpointFidelity`): it founds or restores a world, steps it, writes it, restores that
+  and compares the two member by member, skipping by name what a step fills before it
+  reads; run it on a world that has the thing you added (a bitten crowd, a grown one)
+  before trusting a resume of it, and every `StateVersion` bump refuses every checkpoint on
+  disk, round 45's included, which are cousins for that reason anyway. **The
   JIT decides the bits**: .NET's
   tiered compilation gives quick-JITted and optimised loops different floating-point
   results on a rounding edge, so every project that reports a digest sets
@@ -1138,8 +1151,18 @@ actually verifying it.
   the pre-threading build's, so Core's thread-identity gate is `-All` and nothing in the
   default run. **`sweep-orphans.ps1` lists a detached farm run's `sh.exe`**
   as an orphan; it is one exiting script, not a loop, and is not killed. **From PowerShell,
-  `bash` is WSL's** (`C:\WINDOWS\system32ash.exe`) and cannot see `D:/`; a detached
-  launcher names `C:\Program Files\Gitinash.exe`.
+  `bash` is WSL's** (`C:\WINDOWS\system32\bash.exe`) and cannot see `D:/`; a detached
+  launcher names `C:\Program Files\Git\bin\bash.exe`. **The water pass runs across the
+  world's threads from 2026-09-23** (`c6cbba8`): it had been serial for `CurrentField`'s
+  sake and was 41% of a step at 1,800 bodies on five threads, more than the bodies' own
+  phase; it now runs under `CurrentField.PinInstant`, which fills a slot for the samplers'
+  phase `2π·s/P` *and* for the analytic acceleration's `(2π/P)·s` (the two differ by an ulp
+  on half the steps of a run, and each grouping is what its recorded worlds replay on),
+  and every lookup under the pin is a read. Bit-identical: a resume of round 45 seed 2's
+  2,500 s checkpoint on the serial and the parallel build agrees in 4,290 values over 30
+  samples. A new current mode has to be samplable under a pin, which means no per-call
+  memo the samplers read back through fields; the bed's one-entry memo is thread-static for
+  that reason. The Unity farm's water pass is untouched and still on its main thread.
 - **Mono and RyuJIT do not agree on a double sum, so the Editor cannot replay a farm run**
   (2026-09-22, `ade13dd`). `Evosim.Farm` and `Evosim.Dynamics` are Unity local packages and
   `DynamicsReplayCheck` runs the farm's own loop in the Editor: the counts agree at every

@@ -100,6 +100,30 @@ committed tree. The three were stopped within a minute, their directories are ke
 the real ones with `-stale-exe` appended, and the farm was rebuilt from the commit before
 the launch above. Every reader takes the newest directory.
 
+## Two things found while it ran
+
+Both are the agent's work between the launch and the read, on the build and not on the
+arms, and neither touches a number the round records.
+
+The farm's water pass went parallel (`c6cbba8`). At 1,800 bodies on five threads the
+serial sampling of the current was 41% of a step against 27% for the bodies' own phase.
+`CurrentField` now hands each sampler its memoised instant as a value and the pass runs
+under a pin that fills both phases a step asks for. The check was a resume of seed 2's
+2,500 s checkpoint on the old exe and on the new one: every value equal over 30 samples,
+the water phase at 15%, the window 1.6 times faster per simulated second.
+
+The same check found the other thing: both resumes parted from the live run at the first
+sample, in two jointed bodies of 1,785. A resume tool written for it, `--verify-checkpoint`,
+founds the world again to 2,500 s in one process, writes it, restores it and compares the
+two member by member. It named `Organism.PartDamage`, the health each part has lost. The
+`Damage` sense reports that number and the checkpoint did not carry it, so a restored
+wounded body sensed nothing, and the two whose brains read the channel swam differently
+from their first step. Sixteen bodies were wounded at 2,500 s (`attack %` 1.3). The writer
+carries it from `StateVersion` 6 (`logbook/specs/checkpoint-spec.md`). The round's own
+checkpoints are of the version before and the fixed build refuses them, which costs the
+round nothing: a continuation from them was never the run. The reading that changes is one
+the entry had not made. A profile taken from a checkpoint of this round is of a cousin.
+
 ## Rules
 
 A manifest reading `error` or `stopped` is censored and read at its last sample. A seed
