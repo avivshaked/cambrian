@@ -75,10 +75,51 @@ namespace Evosim.Dynamics.Tests
 
             (double y, double lowest, double highest) = Run(config, body, steps: 2000, settle: 1500);
 
-            double rest = config.Reefs.CapTopY + r;
+            double rest = config.Reefs.CapTopY(0) + r;
             _out.WriteLine(
                 $"radius {r:0.###} m: rests at y {y:0.####} against {rest:0.####} (cap top + radius), " +
                 $"{lowest:0.####} to {highest:0.####} over the last 5 s; touched rock {body.TouchedBedOrGlass}");
+
+            Assert.True(Math.Abs(y - rest) < 0.02, $"rests at {y}, expected {rest}");
+            Assert.True(lowest > rest - 0.02);
+        }
+
+        [Fact]
+        public void ASphereReleasedOverALobedCapSettlesOnItsTop()
+        {
+            // An irregular cap (r0 3 m, lobes of up to 0.3 of it) at 3 m on a 0.75 m stem: a ball
+            // dropped over a lobe well inside the outline rests on the table at the cap's top.
+            var lobed = new ReefGeometry(2f, 3f, new[]
+            {
+                new ReefGeometry.Reef
+                {
+                    X = 0d, Z = 0d, CapRadius = 3d, CapDepth = 3d, StemRadius = 0.75d,
+                    A2 = 0.12d, A3 = 0.1d, A4 = 0.08d, P2 = 0.4d, P3 = 2.1d, P4 = 5.0d,
+                },
+            });
+
+            SolverConfig config = Water(excessDensity: 100);
+            config.Reefs = lobed;
+
+            // Over the outline's widest lobe, halfway out.
+            double best = 0d, at = 0d;
+            for (int k = 0; k < 360; k++)
+            {
+                double theta = 2d * Math.PI * k / 360d;
+                double o = lobed.OutlineRadius(0, theta);
+                if (o > best) { best = o; at = theta; }
+            }
+
+            double reach = 0.5d * best;
+            Creature body = Ball(config, new Vec3(reach * Math.Cos(at), -1.0, reach * Math.Sin(at)));
+            double r = body.ContactRadius;
+
+            (double y, double lowest, _) = Run(config, body, steps: 2000, settle: 1500);
+
+            double rest = lobed.CapTopY(0) + r;
+            _out.WriteLine(
+                $"over a lobe {best:0.###} m wide at {at * 180d / Math.PI:0} degrees: rests at y {y:0.####} against " +
+                $"{rest:0.####} (cap top + radius)");
 
             Assert.True(Math.Abs(y - rest) < 0.02, $"rests at {y}, expected {rest}");
             Assert.True(lowest > rest - 0.02);
@@ -109,7 +150,7 @@ namespace Evosim.Dynamics.Tests
 
             _out.WriteLine($"per part: the deepest link sphere reaches {-deepest:0.####} m into the rock; touched {body.TouchedBedOrGlass}");
             Assert.True(deepest > -0.02, $"a link sphere is {-deepest} m inside the rock");
-            Assert.True(body.Position[1] > config.Reefs.CapUndersideY, "the chain fell past the cap");
+            Assert.True(body.Position[1] > config.Reefs.CapUndersideY(0), "the chain fell past the cap");
         }
 
         [Fact]
@@ -126,7 +167,7 @@ namespace Evosim.Dynamics.Tests
             still.Reefs = wide;
             Creature probe = Ball(still, Vec3.Zero);
             double r = probe.ContactRadius;
-            double underside = wide.CapUndersideY;
+            double underside = wide.CapUndersideY(0);
 
             Creature pushed = Ball(still, new Vec3(2.5, underside - 0.5 * r, 0.3));
             Run(still, pushed, steps: 300, settle: 0);
@@ -181,7 +222,7 @@ namespace Evosim.Dynamics.Tests
             Assert.Contains("inside reef 0", reason);
 
             // Resting on the cap is touching the rock, not in it.
-            Creature resting = Ball(config, new Vec3(1.0, config.Reefs.CapTopY + 0.9 * body.ContactRadius, 0));
+            Creature resting = Ball(config, new Vec3(1.0, config.Reefs.CapTopY(0) + 0.9 * body.ContactRadius, 0));
             Assert.False(Divergence.Diverged(resting, config, out string none), none);
         }
 
@@ -263,7 +304,7 @@ namespace Evosim.Dynamics.Tests
                     distance >= bodyRadius + PortFloor.ClearanceMetres - 1e-4,
                     $"founder {i} at ({at.X:0.##}, {at.Y:0.##}, {at.Z:0.##}) is {distance:0.###} m from the rock");
 
-                if (Math.Abs(at.Y - (reefs.CapTopY + bodyRadius + PortFloor.ClearanceMetres)) < 1e-4) landed++;
+                if (Math.Abs(at.Y - (reefs.CapTopY(0) + bodyRadius + PortFloor.ClearanceMetres)) < 1e-4) landed++;
             }
 
             _out.WriteLine($"{placed} founders placed, {landed} landed on a cap's table, {volume.Rejections} candidates refused");

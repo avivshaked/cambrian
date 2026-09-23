@@ -70,10 +70,76 @@ namespace Evosim.Core.Tests
 
             float cx = (float)world.Reefs.CentreX(0), cz = (float)world.Reefs.CentreZ(0);
             float under = world.Field.IrradianceAt(-6f, 0, cx, cz);
-            float beside = world.Field.IrradianceAt(-6f, 0, cx + 5f, cz);
 
-            _output.WriteLine($"small tank at 6 m: under a cap {under:0.00} W/m², beside it {beside:0.00} W/m²");
+            // Beside it: the first point east of the axis outside every cap's outline.
+            float bx = cx;
+            while (world.Reefs.LightTransmission(bx, -6f, cz) < 1f) bx += 0.25f;
+            float beside = world.Field.IrradianceAt(-6f, 0, bx, cz);
+
+            _output.WriteLine(
+                $"small tank at 6 m, {world.Reefs.Count} reefs: under a cap {under:0.00} W/m², {bx - cx:0.00} m east " +
+                $"of its axis and clear of every cap {beside:0.00} W/m²");
             Assert.True(under < beside);
+        }
+
+        [Fact]
+        public void AnIrregularCapShadesItsOwnOutlineAndOverlapsShadeOnce()
+        {
+            // Under a lobed cap the water is dark exactly inside the outline and below that cap's
+            // own top; the lens where two caps overlap is dark the same, not darker; outside every
+            // outline the water is the open water's.
+            ReefGeometry reefs = ReefTank.Overlapping();
+            var field = new LightField(new LightModel(200f, 6f), ReefTank.Area, 1f) { Reefs = reefs };
+            var open = new LightField(new LightModel(200f, 6f), ReefTank.Area, 1f);
+
+            int dark = 0, lit = 0;
+
+            for (int reef = 0; reef < reefs.Count; reef++)
+            {
+                ReefGeometry.Reef r = reefs.ReefAt(reef);
+                float below = (float)(-r.CapDepth - 0.01d);
+                float above = (float)(-r.CapDepth + 0.01d);
+
+                for (int k = 0; k < 72; k++)
+                {
+                    double theta = 2d * Math.PI * k / 72d;
+                    double o = reefs.OutlineRadius(reef, theta);
+                    float ix = (float)(r.X + (o - 0.05d) * Math.Cos(theta)), iz = (float)(r.Z + (o - 0.05d) * Math.Sin(theta));
+                    float ox = (float)(r.X + (o + 0.05d) * Math.Cos(theta)), oz = (float)(r.Z + (o + 0.05d) * Math.Sin(theta));
+
+                    Assert.Equal(0f, field.IrradianceAt(below, 0, ix, iz));
+                    dark++;
+
+                    // Just over this cap's top the point is lit, unless a higher cap covers it.
+                    bool shadedFromAbove = false;
+                    for (int other = 0; other < reefs.Count; other++)
+                    {
+                        if (other != reef && reefs.CapTopY(other) > above && reefs.InsideOutline(other, ix, iz)) shadedFromAbove = true;
+                    }
+
+                    if (!shadedFromAbove)
+                    {
+                        Assert.Equal(open.IrradianceAt(above, 0, ix, iz), field.IrradianceAt(above, 0, ix, iz));
+                    }
+
+                    bool underOther = false;
+                    for (int other = 0; other < reefs.Count; other++)
+                    {
+                        if (other != reef && reefs.InsideOutline(other, ox, oz)) underOther = true;
+                    }
+
+                    if (underOther) continue;
+                    Assert.Equal(open.IrradianceAt(-8f, 0, ox, oz), field.IrradianceAt(-8f, 0, ox, oz));
+                    lit++;
+                }
+            }
+
+            float lensX = ReefTank.Radius, lensZ = ReefTank.Radius;
+            Assert.True(reefs.InsideOutline(0, lensX, lensZ) && reefs.InsideOutline(1, lensX, lensZ));
+            Assert.Equal(0f, field.IrradianceAt(-8f, 0, lensX, lensZ));
+            Assert.Equal(ReefGeometry.CapTransmission, reefs.LightTransmission(lensX, -8f, lensZ));
+
+            _output.WriteLine($"{dark} points just inside an outline dark below its cap and lit above it; {lit} just outside lit as open water");
         }
     }
 }

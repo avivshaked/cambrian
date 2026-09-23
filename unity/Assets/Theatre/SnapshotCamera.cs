@@ -1358,8 +1358,8 @@ namespace Evosim.Theatre
 
             float x = (float)_reefs.CentreX(0);
             float z = (float)_reefs.CentreZ(0);
-            float underside = (float)_reefs.CapUndersideY;
-            float radius = (float)_reefs.CapRadiusMetres;
+            float underside = (float)_reefs.CapUndersideY(0);
+            float radius = (float)_reefs.CapRadius(0);
 
             // Off the axis toward the tank's centre, so the glass is behind the camera and the
             // water beyond the rock is the open tank.

@@ -110,7 +110,7 @@ namespace Evosim.Core.Tests
         public void WithNoReefTheMaskIsTheRecordedOne()
         {
             // Test 1's last clause: a grid built with no reefs, the recorded way, and one handed an
-            // explicit null, and a world at ReefCount 0, carry the same mask and one interval a
+            // explicit null, and a world at ReefCover 0, carry the same mask and one interval a
             // column. The crowd fixture's regress (test 7) is the caller's.
             GridField recorded = new GridField(
                 ReefTank.Area, 0f, ReefTank.Depth, 0f, 0f, ReefTank.Patches, ReefTank.Cell,
@@ -132,7 +132,7 @@ namespace Evosim.Core.Tests
                 }
             }
 
-            RunConfig config = ReefTank.Config(count: 0);
+            RunConfig config = ReefTank.Config(cover: 0f);
             config.Current = new CurrentField { Mode = CurrentMode.Transport, Speed = 0.1f, PeriodSeconds = ReefTank.Period, AdvectFields = true };
             var world = new World(config, seed: 3);
 
@@ -150,17 +150,135 @@ namespace Evosim.Core.Tests
             var world = new World(config, seed: 3);
 
             Assert.NotNull(world.Reefs);
-            Assert.Equal(3, world.Reefs.Count);
+            Assert.True(world.Reefs.Count >= 1);
             Assert.Same(world.Reefs, world.Field.Reefs);
             Assert.Same(world.Reefs, config.Current.Reefs);
             Assert.Same(world.Reefs, ((GridField)world.Matter).Reefs);
 
             var again = new World(ReefTank.Config(), seed: 3);
-            for (int i = 0; i < 3; i++)
+            Assert.Equal(world.Reefs.Count, again.Reefs.Count);
+            Assert.Equal(world.Reefs.CoverGot, again.Reefs.CoverGot);
+
+            for (int i = 0; i < world.Reefs.Count; i++)
             {
                 Assert.Equal(world.Reefs.CentreX(i), again.Reefs.CentreX(i));
                 Assert.Equal(world.Reefs.CentreZ(i), again.Reefs.CentreZ(i));
+                Assert.Equal(world.Reefs.OutlineRadius(i, 1.234d), again.Reefs.OutlineRadius(i, 1.234d));
             }
+
+            _output.WriteLine(
+                $"seed 3 in the small tank: {world.Reefs.Count} reefs covering {world.Reefs.CoverGot:0.000} of its columns");
+        }
+
+        [Fact]
+        public void OverlappingCapsAreCutOnceAndSplitTheirColumns()
+        {
+            // The union in the mask: a cell is rock when its centre is in any reef, so the live
+            // count is the tank's less the cells in the union, whatever the overlap, and never less
+            // the sum of the two reefs' cells. A column through the lens holds water over the
+            // higher cap, rock through both slabs, and water under them to the floor.
+            ReefGeometry reefs = ReefTank.Overlapping();
+            GridField plain = ReefTank.Grid(null);
+            GridField rocky = ReefTank.Grid(reefs);
+
+            int union = 0, inA = 0, inB = 0, both = 0, lensColumns = 0;
+
+            for (int ix = 0; ix < plain.CellsX; ix++)
+            for (int iz = 0; iz < plain.CellsZ; iz++)
+            {
+                int firstBoth = -1;
+
+                for (int iy = 0; iy < plain.CellsY; iy++)
+                {
+                    if (!plain.IsLive(ix, iy, iz)) continue;
+
+                    double x = (ix + 0.5d) * plain.CellMetres, y = -((iy + 0.5d) * plain.CellMetres), z = (iz + 0.5d) * plain.CellMetres;
+                    bool a = reefs.OfReef(0, x, y, z).S < 0d;
+                    bool b = reefs.OfReef(1, x, y, z).S < 0d;
+
+                    Assert.Equal(!(a || b), rocky.IsLive(ix, iy, iz));
+                    if (a) inA++;
+                    if (b) inB++;
+                    if (a || b) union++;
+                    if (a && b) { both++; if (firstBoth < 0) firstBoth = iy; }
+                }
+
+                if (firstBoth < 0) continue;
+                lensColumns++;
+
+                // Water from the surface down to the rock, which begins above the lens's first
+                // cell, and the column's water is split by it or ends on it.
+                (int top, int bottom) = rocky.LiveInterval(ix, iz, 0);
+                Assert.Equal(0, top);
+                Assert.True(bottom < firstBoth);
+            }
+
+            _output.WriteLine(
+                $"{plain.LiveCellCount} live cells without the rock, {rocky.LiveCellCount} with it; {inA} cells in reef 0, " +
+                $"{inB} in reef 1, {both} in both, {union} in the union; {lensColumns} columns through the lens");
+
+            Assert.True(both > 10, "the two caps do not overlap in the mask");
+            Assert.Equal(inA + inB - both, union);
+            Assert.Equal(plain.LiveCellCount - union, rocky.LiveCellCount);
+            Assert.True(lensColumns > 3);
+        }
+
+        [Fact]
+        public void SnowSettlesOntoAnIrregularCap()
+        {
+            // Settling onto an irregular cap: snow seeded over the lobed caps ends on each column's
+            // cap-top cell, snow under them on the floor, nothing in rock.
+            ReefGeometry reefs = ReefTank.Overlapping();
+            GridField field = ReefTank.Grid(reefs, sink: 0.5f);
+
+            field.SeedUniform(1f);
+            double initial = field.Recount();
+
+            var above = new Dictionary<(int, int), double>();
+            for (int ix = 0; ix < field.CellsX; ix++)
+            for (int iz = 0; iz < field.CellsZ; iz++)
+            {
+                if (!field.ColumnIsLive(ix, iz) || field.LiveIntervalCount(ix, iz) != 2) continue;
+
+                (int top0, int bottom0) = field.LiveInterval(ix, iz, 0);
+                double a = 0d;
+                for (int iy = top0; iy <= bottom0; iy++) a += field.JoulesAt(ix, iy, iz);
+                above[(ix, iz)] = a;
+            }
+
+            for (int step = 0; step < 1200; step++) field.Settle(0.5f);
+
+            double rock = 0d, worstAbove = 0d;
+            int shallow = 0, deep = 0;
+
+            for (int ix = 0; ix < field.CellsX; ix++)
+            for (int iz = 0; iz < field.CellsZ; iz++)
+            for (int iy = 0; iy < field.CellsY; iy++)
+            {
+                if (!field.IsLive(ix, iy, iz)) rock += field.JoulesAt(ix, iy, iz);
+            }
+
+            foreach (var entry in above)
+            {
+                (int ix, int iz) = entry.Key;
+                (_, int capTop) = field.LiveInterval(ix, iz, 0);
+                if (capTop == 2) shallow++; else deep++;
+
+                // The cap's top cell is the rock's top in the column: the cell under it is rock.
+                Assert.False(field.IsLive(ix, capTop + 1, iz));
+                worstAbove = Math.Max(worstAbove, Math.Abs(field.JoulesAt(ix, capTop, iz) - entry.Value) / entry.Value);
+            }
+
+            _output.WriteLine(
+                $"{above.Count} columns split by a lobed cap ({shallow} resting at 3 m, {deep} deeper); the cap's top cell " +
+                $"holds what fell on it to {worstAbove:0.0e+0}; {rock} J in rock; total moved " +
+                $"{(field.Recount() - initial) / initial:0.0e+0}");
+
+            Assert.Equal(0d, rock);
+            Assert.True(above.Count > 30);
+            Assert.True(deep > 0, "no column rests on the deeper cap");
+            Assert.True(worstAbove < 1e-2, $"a cap's table holds {worstAbove} off what fell on it");
+            Assert.Equal(initial, field.Recount(), 6);
         }
 
         [Fact]

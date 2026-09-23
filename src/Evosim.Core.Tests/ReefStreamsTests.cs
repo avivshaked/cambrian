@@ -8,22 +8,25 @@ namespace Evosim.Core.Tests
     /// <summary>
     /// The streams around the reefs — <c>logbook/specs/reef-spec.md</c> §4, test 4: the curl of
     /// <c>g·A</c> is divergence-free, still in the rock and on it, agrees with the curl of the
-    /// faded potential, and its closed-form acceleration agrees with a stencil; and the fastest
-    /// water within a cap radius of the rock, printed at three fades in round 46's own tank.
+    /// faded potential, and its closed-form acceleration agrees with a stencil; the fastest water
+    /// beside the rock, and the grid's faded maximum and substeps, in round 46's own tank.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Two waters.</b> The small flat tank of <see cref="ReefTank"/> exercises the flat
-    /// streams' path; round 46's floor (<see cref="BedBeachTests.Beach"/>: 22,000 m², 45 m,
-    /// tilt 96 m, the shore at 1 m with a 15 m fade) exercises the sloped path with the shore's
-    /// fade inside the reefs'. Round 46's reef dials are the brief's: three caps 8 m across,
-    /// 2 m thick at 3 m, on stems 1 m in radius, placed by the seed-1 stream.
+    /// <b>Three waters.</b> The small flat tank's three round reefs (<see cref="ReefTank.Reefs"/>)
+    /// exercise the round cap's arithmetic; its two lobed, overlapping reefs
+    /// (<see cref="ReefTank.Overlapping"/>) exercise the outline's and the product fade; round 46's
+    /// floor (<see cref="BedBeachTests.Beach"/>: 22,000 m², 45 m, tilt 96 m, the shore at 1 m with a
+    /// 15 m fade) at the ruled cover (a quarter of the surface in caps 6 to 16 m, 3 m ± 1, 2 m
+    /// thick, stems a quarter of their caps, placed by the seed-1 stream) exercises the sloped path
+    /// with the shore's fade inside the reefs'.
     /// </para>
     /// <para>
-    /// <b>The seams.</b> The rock's distance is C¹ and not C² on the cylinder through the cap
-    /// disc's edge (<c>ρ = r_c − t/2</c>, where the flat top meets the rounded rim), so the
-    /// velocity's Jacobian steps there; the acceleration is held against the stencil away from
-    /// it, and the step is not read.
+    /// <b>The seams, and the tolerances.</b> The rock's distance is C¹ and not C² on the surface
+    /// where each cap's flat top meets its rim (<see cref="ReefTank.FlatEdge"/>), so the velocity's
+    /// Jacobian steps there; the stencils are held away from it, as for the round reef, and every
+    /// tolerance is the first build's. The outline's distance is approximate away from the rock
+    /// but its derivatives are its own, so nothing about the water is looser for it.
     /// </para>
     /// </remarks>
     public class ReefStreamsTests
@@ -33,16 +36,12 @@ namespace Evosim.Core.Tests
         public ReefStreamsTests(ITestOutputHelper output) => _output = output;
 
         private const float Period = 6000f;
-        private const float R46CapRadius = 4f;
-        private const float R46CapDepth = 3f;
-        private const float R46Thickness = 2f;
-        private const float R46Stem = 1f;
 
         /// <summary>Round 46's floor and water, one for the class: the streams' build is seconds.</summary>
         private static readonly Lazy<(BedShape Bed, CurrentField Field)> Round46 =
             new Lazy<(BedShape, CurrentField)>(() =>
             {
-                BedShape bed = BedBeachTests.Beach(1UL);
+                BedShape bed = ReefTank.Beach(1UL);
                 var field = new CurrentField
                 {
                     Mode = CurrentMode.Transport,
@@ -60,37 +59,22 @@ namespace Evosim.Core.Tests
                 return (bed, field);
             });
 
-        private static ReefGeometry Round46Reefs(BedShape bed, float fade)
-        {
-            var config = new RunConfig
-            {
-                SharedSpace = true,
-                WorldShape = WorldShape.Tank,
-                FieldModel = MatterField.Grid,
-                WorldAreaSquareMetres = BedBeachTests.Area,
-                WorldDepthMetres = BedBeachTests.Depth,
-                ReefCount = 3,
-                ReefCapRadiusMetres = R46CapRadius,
-                ReefCapDepthMetres = R46CapDepth,
-                ReefCapThicknessMetres = R46Thickness,
-                ReefStemRadiusMetres = R46Stem,
-                ReefFadeMetres = fade,
-            };
-
-            return ReefGeometry.Place(config, BedBeachTests.Radius, bed, Rng.SeedFor(1UL, World.ReefPlacementIndex));
-        }
+        private static ReefGeometry Round46Reefs(BedShape bed, float fade) =>
+            ReefGeometry.Place(
+                ReefTank.Round46(fade: fade), BedBeachTests.Radius, bed, Rng.SeedFor(1UL, World.ReefPlacementIndex));
 
         /// <summary>
-        /// A point near a reef, uniform in a cylinder around a random axis, with its signed
-        /// distance and horizontal distance from that axis. The floor is <paramref name="bed"/>'s
-        /// or flat at <paramref name="depth"/>.
+        /// A point near a reef, uniform in a cylinder of <paramref name="beyond"/> past a random
+        /// reef's widest outline, with its signed distance and the distance to the nearest seam.
+        /// The floor is <paramref name="bed"/>'s or flat at <paramref name="depth"/>.
         /// </summary>
-        private static (double X, double Y, double Z, double S, double Rho) Near(
-            Rng rng, ReefGeometry reefs, BedShape bed, float depth, double reach, double inset)
+        private static (double X, double Y, double Z, double S, double Seam) Near(
+            Rng rng, ReefGeometry reefs, BedShape bed, float depth, double beyond, double inset)
         {
             while (true)
             {
                 int reef = (int)(rng.NextFloat() * reefs.Count) % reefs.Count;
+                double reach = 1.4d * reefs.CapRadius(reef) + beyond;
                 double r = reach * Math.Sqrt(rng.NextFloat());
                 double theta = 2d * Math.PI * rng.NextFloat();
                 double x = reefs.CentreX(reef) + r * Math.Cos(theta);
@@ -106,7 +90,7 @@ namespace Evosim.Core.Tests
 
                 double y = floor + inset + rng.NextFloat() * (-floor - 2d * inset);
                 double s = reefs.SignedDistance(x, y, z);
-                return (x, y, z, s, r);
+                return (x, y, z, s, ReefTank.SeamDistance(reefs, x, z));
             }
         }
 
@@ -116,13 +100,15 @@ namespace Evosim.Core.Tests
         private static (CurrentField Field, ReefGeometry Reefs, BedShape Bed, float Depth, string Name)[] Waters()
         {
             ReefGeometry small = ReefTank.Reefs();
+            ReefGeometry lobed = ReefTank.Overlapping();
             (BedShape bed, CurrentField big) = Round46.Value;
-            big.SetReefs(Round46Reefs(bed, 15f));
+            big.SetReefs(Round46Reefs(bed, 8f));
 
             return new[]
             {
-                (ReefTank.Streams(small), small, (BedShape)null, ReefTank.Depth, "small flat tank, fade 3 m"),
-                (big, big.Reefs, bed, BedBeachTests.Depth, "round 46's tank, fade 15 m"),
+                (ReefTank.Streams(small), small, (BedShape)null, ReefTank.Depth, "small flat tank, three round reefs, fade 3 m"),
+                (ReefTank.Streams(lobed), lobed, (BedShape)null, ReefTank.Depth, "small flat tank, two lobed reefs overlapping, fade 3 m"),
+                (big, big.Reefs, bed, BedBeachTests.Depth, $"round 46's tank, {big.Reefs.Count} reefs at cover 0.25, fade 8 m"),
             };
         }
 
@@ -135,9 +121,9 @@ namespace Evosim.Core.Tests
                 int inside = 0, surface = 0;
                 double worstSurface = 0d, worstCentimetre = 0d;
 
-                for (int i = 0; i < 20000 && (inside < 500 || surface < 500); i++)
+                for (int i = 0; i < 40000 && (inside < 500 || surface < 500); i++)
                 {
-                    (double x, double y, double z, double s, _) = Near(rng, w.Reefs, w.Bed, w.Depth, w.Reefs.CapRadiusMetres + 0.5d, 0.05d);
+                    (double x, double y, double z, double s, _) = Near(rng, w.Reefs, w.Bed, w.Depth, 0.5d, 0.05d);
                     double t = rng.NextFloat() * 4d * Period;
 
                     if (s < 0d)
@@ -150,17 +136,30 @@ namespace Evosim.Core.Tests
                     }
                     else if (s < 0.5d)
                     {
-                        // Onto the face along the distance's gradient, then 0.1 mm and 1 cm out: the
-                        // water there is of the order of ξ² times the potential over the fade.
-                        w.Reefs.SignedDistance(x, y, z, out _, out ReefGeometry.Distance d);
-                        double fx = x - s * d.Gx, fy = y - s * d.Gy, fz = z - s * d.Gz;
-                        double onFace = w.Reefs.SignedDistance(fx, fy, fz);
+                        // Onto the face by a few Newton steps along the distance's gradient (the
+                        // outline's distance is first order, so one step is not quite there), then
+                        // 0.1 mm and 1 cm out along the normal: the water there is of the order of
+                        // ξ² times the potential over the fade.
+                        double fx = x, fy = y, fz = z;
+                        ReefGeometry.Distance d = default;
+
+                        for (int k = 0; k < 4; k++)
+                        {
+                            double sk = w.Reefs.SignedDistance(fx, fy, fz, out _, out d);
+                            double g2 = d.Gx * d.Gx + d.Gy * d.Gy + d.Gz * d.Gz;
+                            fx -= sk * d.Gx / g2; fy -= sk * d.Gy / g2; fz -= sk * d.Gz / g2;
+                        }
+
+                        double onFace = w.Reefs.SignedDistance(fx, fy, fz, out _, out d);
                         if (Math.Abs(onFace) > 1e-6) continue;
 
+                        double gl = Math.Sqrt(d.Gx * d.Gx + d.Gy * d.Gy + d.Gz * d.Gz);
+                        double nx = d.Gx / gl, ny = d.Gy / gl, nz = d.Gz / gl;
+
                         worstSurface = Math.Max(
-                            worstSurface, V(w.Field, fx + 1e-4 * d.Gx, fy + 1e-4 * d.Gy, fz + 1e-4 * d.Gz, t).Magnitude);
+                            worstSurface, V(w.Field, fx + 1e-4 * nx, fy + 1e-4 * ny, fz + 1e-4 * nz, t).Magnitude);
                         worstCentimetre = Math.Max(
-                            worstCentimetre, V(w.Field, fx + 1e-2 * d.Gx, fy + 1e-2 * d.Gy, fz + 1e-2 * d.Gz, t).Magnitude);
+                            worstCentimetre, V(w.Field, fx + 1e-2 * nx, fy + 1e-2 * ny, fz + 1e-2 * nz, t).Magnitude);
                         surface++;
                     }
                 }
@@ -184,16 +183,14 @@ namespace Evosim.Core.Tests
                 const double H = 0.0125;
                 int n = 0;
 
-                double disc = w.Reefs.CapRadiusMetres - 0.5d * w.Reefs.CapThicknessMetres;
-
                 while (n < 1000)
                 {
-                    (double x, double y, double z, double s, double rho) =
-                        Near(rng, w.Reefs, w.Bed, w.Depth, w.Reefs.CapRadiusMetres + w.Reefs.FadeMetres, 0.2d);
+                    (double x, double y, double z, double s, double seam) =
+                        Near(rng, w.Reefs, w.Bed, w.Depth, w.Reefs.FadeMetres, 0.2d);
                     if (!(s > 0.05d && s < w.Reefs.FadeMetres)) continue;
 
-                    // The stencil straddling the disc-edge seam reads the Jacobian's step there.
-                    if (Math.Abs(rho - disc) < 0.05d) continue;
+                    // The stencil straddling the flat edge's seam reads the Jacobian's step there.
+                    if (seam < 0.05d) continue;
 
                     double t = rng.NextFloat() * 4d * Period;
 
@@ -236,7 +233,7 @@ namespace Evosim.Core.Tests
                 while (n < 500)
                 {
                     (double x, double y, double z, double s, _) =
-                        Near(rng, w.Reefs, w.Bed, w.Depth, w.Reefs.CapRadiusMetres + w.Reefs.FadeMetres, 0.1d);
+                        Near(rng, w.Reefs, w.Bed, w.Depth, w.Reefs.FadeMetres, 0.1d);
                     if (!(s > 4d * H && s < w.Reefs.FadeMetres)) continue;
 
                     double t = rng.NextFloat() * 4d * Period;
@@ -282,16 +279,15 @@ namespace Evosim.Core.Tests
             foreach (var w in Waters())
             {
                 var rng = new Rng(19UL);
-                double disc = w.Reefs.CapRadiusMetres - 0.5d * w.Reefs.CapThicknessMetres;
                 double sumFine = 0d, sumReference = 0d, worst = 0d, worstMagnitude = 0d;
                 int n = 0;
 
                 while (n < 400)
                 {
-                    (double x, double y, double z, double s, double rho) =
-                        Near(rng, w.Reefs, w.Bed, w.Depth, w.Reefs.CapRadiusMetres + w.Reefs.FadeMetres, 0.5d);
+                    (double x, double y, double z, double s, double seam) =
+                        Near(rng, w.Reefs, w.Bed, w.Depth, w.Reefs.FadeMetres, 0.5d);
                     if (!(s > 0.1d && s < w.Reefs.FadeMetres)) continue;
-                    if (Math.Abs(rho - disc) < 0.1d) continue;
+                    if (seam < 0.1d) continue;
                     if (y > -0.5d) continue;
 
                     double t = rng.NextFloat() * 4d * Period;
@@ -335,46 +331,49 @@ namespace Evosim.Core.Tests
         [Fact]
         public void TheOpenWaterIsTheUnfadedWaterToTheBit()
         {
-            // Beyond every reef's fade the sampler is StreamsAt itself.
-            ReefGeometry reefs = ReefTank.Reefs();
-            CurrentField faded = ReefTank.Streams(reefs);
-            CurrentField plain = ReefTank.Streams(null);
-
-            var rng = new Rng(29UL);
-            int n = 0;
-
-            for (int i = 0; i < 4000; i++)
+            // Beyond every reef's fade the sampler is StreamsAt itself: the product fade is 1 there
+            // and the faded route is never entered. Round and lobed, overlapping reefs alike.
+            foreach (ReefGeometry reefs in new[] { ReefTank.Reefs(), ReefTank.Overlapping() })
             {
-                float x = (float)(ReefTank.Radius + (rng.NextFloat() * 2d - 1d) * 0.7d * ReefTank.Radius);
-                float z = (float)(ReefTank.Radius + (rng.NextFloat() * 2d - 1d) * 0.7d * ReefTank.Radius);
-                float y = -rng.NextFloat() * ReefTank.Depth;
-                if (!TankGeometry.Inside(x, z, ReefTank.Radius)) continue;
-                if (reefs.SignedDistance(x, y, z) < reefs.FadeMetres + 1d) continue;
+                CurrentField faded = ReefTank.Streams(reefs);
+                CurrentField plain = ReefTank.Streams(null);
 
-                double t = rng.NextFloat() * 4d * Period;
-                Assert.Equal(plain.VelocityAt(x, y, z, t), faded.VelocityAt(x, y, z, t));
-                Assert.Equal(plain.AccelerationAt(x, y, z, t), faded.AccelerationAt(x, y, z, t));
-                Assert.Equal(plain.PotentialAt(x, y, z, t), faded.PotentialAt(x, y, z, t));
-                n++;
+                var rng = new Rng(29UL);
+                int n = 0;
+
+                for (int i = 0; i < 4000; i++)
+                {
+                    float x = (float)(ReefTank.Radius + (rng.NextFloat() * 2d - 1d) * 0.7d * ReefTank.Radius);
+                    float z = (float)(ReefTank.Radius + (rng.NextFloat() * 2d - 1d) * 0.7d * ReefTank.Radius);
+                    float y = -rng.NextFloat() * ReefTank.Depth;
+                    if (!TankGeometry.Inside(x, z, ReefTank.Radius)) continue;
+                    if (reefs.SignedDistance(x, y, z) < reefs.FadeMetres + 1d) continue;
+
+                    double t = rng.NextFloat() * 4d * Period;
+                    Assert.Equal(1d, reefs.FadeAt(x, y, z));
+                    Assert.Equal(plain.VelocityAt(x, y, z, t), faded.VelocityAt(x, y, z, t));
+                    Assert.Equal(plain.AccelerationAt(x, y, z, t), faded.AccelerationAt(x, y, z, t));
+                    Assert.Equal(plain.PotentialAt(x, y, z, t), faded.PotentialAt(x, y, z, t));
+                    n++;
+                }
+
+                Assert.True(n > 1000);
             }
-
-            Assert.True(n > 1000);
         }
 
         [Fact]
-        public void TheFastestWaterWithinACapRadiusAtThreeFades()
+        public void TheFastestWaterBesideTheRockAtTwoFades()
         {
-            // The brief's reading: three caps 8 m across in round 46's tank, fades of 10, 15 and
-            // 20 m. "Within a cap radius" is read as water within 4 m of the rock (0 < s ≤ r_c),
-            // sampled over the whole fade's cylinder from the surface to the floor across four
-            // periods. The unfaded water at the same points is printed beside it, and the tank's
-            // RMS knob is 0.1 m/s.
+            // The reading the pre-registration names: round 46's tank at the ruled cover, fades of
+            // 8 and 15 m. "Beside the rock" is water within 4 m of it (0 < s ≤ 4), sampled from the
+            // surface to the floor across four periods; the unfaded water at the same points is
+            // printed beside it, and the tank's RMS knob is 0.1 m/s.
             (BedShape bed, CurrentField field) = Round46.Value;
             ReefGeometry saved = field.Reefs;
 
             try
             {
-                foreach (float fade in new[] { 10f, 15f, 20f })
+                foreach (float fade in new[] { 8f, 15f })
                 {
                     ReefGeometry reefs = Round46Reefs(bed, fade);
                     var rng = new Rng(31UL);
@@ -386,7 +385,7 @@ namespace Evosim.Core.Tests
                     for (int i = 0; i < 40000; i++)
                     {
                         (double x, double y, double z, double s, _) =
-                            Near(rng, reefs, bed, BedBeachTests.Depth, R46CapRadius + fade, 0.05d);
+                            Near(rng, reefs, bed, BedBeachTests.Depth, fade, 0.05d);
                         if (!(s > 0d)) continue;
 
                         double t = rng.NextFloat() * 4d * Period;
@@ -399,7 +398,7 @@ namespace Evosim.Core.Tests
                         fastestAnywhere = Math.Max(fastestAnywhere, v.Magnitude);
                         anywhere++;
 
-                        if (s > R46CapRadius) continue;
+                        if (s > 4d) continue;
 
                         within++;
                         sumSquare += (double)v.Magnitude * v.Magnitude;
@@ -414,15 +413,69 @@ namespace Evosim.Core.Tests
                     }
 
                     _output.WriteLine(
-                        $"fade {fade} m: within {R46CapRadius} m of the rock ({within} samples) the fastest water is " +
-                        $"{fastest:0.0000} m/s (at {where.X:0.0}, {where.Y:0.0}, {where.Z:0.0}; the rock's distance there " +
-                        $"{reefs.SignedDistance(where.X, where.Y, where.Z):0.00} m), RMS {Math.Sqrt(sumSquare / within):0.0000} m/s; " +
-                        $"unfaded at the same points: fastest {fastestPlain:0.0000}, RMS {Math.Sqrt(sumPlainSquare / within):0.0000} m/s; " +
-                        $"fastest anywhere in the fade's cylinder {fastestAnywhere:0.0000} m/s ({anywhere} samples); " +
-                        $"Courant bound {field.MaximumTransportSpeed:0.0000} m/s");
+                        $"fade {fade} m, {reefs.Count} reefs covering {reefs.CoverGot:0.000}: within 4 m of the rock " +
+                        $"({within} samples) the fastest water is {fastest:0.0000} m/s (at {where.X:0.0}, {where.Y:0.0}, " +
+                        $"{where.Z:0.0}; the rock's distance there {reefs.SignedDistance(where.X, where.Y, where.Z):0.00} m), " +
+                        $"RMS {Math.Sqrt(sumSquare / within):0.0000} m/s; unfaded at the same points: fastest " +
+                        $"{fastestPlain:0.0000}, RMS {Math.Sqrt(sumPlainSquare / within):0.0000} m/s; fastest anywhere in the " +
+                        $"fades {fastestAnywhere:0.0000} m/s ({anywhere} samples); Courant bound " +
+                        $"{field.MaximumTransportSpeed:0.0000} m/s");
 
                     Assert.True(within > 1000);
                 }
+            }
+            finally
+            {
+                field.SetReefs(saved);
+            }
+        }
+
+        [Fact]
+        public void TheGridsRefusalReadsTheFadedWater()
+        {
+            // The brief's reading: round 46's tank at cover 0.25 and a fade of 8 m, both of the
+            // campaign's grids (1 m detritus, 5 m matter) at the half-second step. The faded
+            // field's sampled maximum is printed against the open water's a-priori ceiling, with
+            // the substep count the conservative transporter takes from its face fluxes.
+            (BedShape bed, CurrentField field) = Round46.Value;
+            ReefGeometry saved = field.Reefs;
+
+            try
+            {
+                ReefGeometry reefs = Round46Reefs(bed, 8f);
+                field.SetReefs(reefs);
+
+                foreach (float cell in new[] { 5f, 1f })
+                {
+                    var grid = new GridField(
+                        BedBeachTests.Area, 0f, BedBeachTests.Depth, 0f, 0f, 4, cell,
+                        patchesAcross: 1, shape: WorldShape.Tank, tankRadiusMetres: BedBeachTests.Radius,
+                        bed: bed, reefs: reefs);
+
+                    Assert.Equal(0d, grid.FadedWaterMaximum);
+
+                    (int substeps, double outflow, double discrete, double analytic, int faces, double worstNet) =
+                        grid.MeasureFaceFluxes(field, 0d, 0.5f);
+
+                    _output.WriteLine(
+                        $"{cell} m cells, {reefs.Count} reefs covering {reefs.CoverGot:0.000}: the faded water's maximum at the " +
+                        $"open faces within the fades {grid.FadedWaterMaximum:0.0000} m/s against the open water's ceiling " +
+                        $"{field.MaximumTransportSpeed:0.0000} m/s; {substeps} substep(s) from the face fluxes (largest " +
+                        $"outflow {outflow:0.000} of a cell), face speeds {discrete:0.0000} / {analytic:0.0000} m/s over " +
+                        $"{faces} faces, worst net flux {worstNet:0.0e+0}");
+
+                    Assert.True(grid.FadedWaterMaximum > 0d);
+                    Assert.Equal(0d, worstNet);
+                    Assert.InRange(substeps, 1, GridField.MaximumSubsteps);
+                }
+
+                // With no reefs the refusal reads the ceiling alone and measures nothing.
+                field.SetReefs(null);
+                var plain = new GridField(
+                    BedBeachTests.Area, 0f, BedBeachTests.Depth, 0f, 0f, 4, 5f,
+                    patchesAcross: 1, shape: WorldShape.Tank, tankRadiusMetres: BedBeachTests.Radius, bed: bed);
+                plain.MeasureFaceFluxes(field, 0d, 0.5f);
+                Assert.Equal(0d, plain.FadedWaterMaximum);
             }
             finally
             {

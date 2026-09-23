@@ -363,7 +363,7 @@ namespace Evosim.Farm
                     (space.HasFloor ? BedToken(space.Bed) : "no bed") +
                     // The reefs after the bed and its shore (logbook/specs/reef-spec.md §1): the
                     // dials as the config holds them, or "no reef".
-                    ", " + ReefGeometry.HeaderToken(config);
+                    ", " + ReefGeometry.HeaderToken(config, space.Reefs);
             }
 
 
@@ -778,6 +778,10 @@ namespace Evosim.Farm
         public bool HasWall;
         public bool HasFloor;
         public BedShape Bed;
+
+        /// <summary>The world's reefs, for the header's count and cover got; null with none.</summary>
+        public ReefGeometry Reefs;
+
         public int Threads;
         public string InoculumHashShort;
 
@@ -795,6 +799,7 @@ namespace Evosim.Farm
                 HasWall = hasWall,
                 HasFloor = hasFloor,
                 Bed = world.Bed,
+                Reefs = world.Reefs,
                 Threads = threads,
                 InoculumHashShort = inoculumHashShort,
                 TileSpacingMetres = 100f,

@@ -40,8 +40,10 @@ namespace Evosim.Dynamics
         {
             ReefGeometry reefs = config.Reefs;
 
+            // Bounded at the radius: a reef whose cheap bound is past it is never evaluated, and
+            // a sphere clear of every reef reads a bound at or past its radius and no push.
             double distance = reefs.SignedDistance(
-                centre.X, centre.Y, centre.Z, out _, out ReefGeometry.Distance at);
+                centre.X, centre.Y, centre.Z, radius, out _, out ReefGeometry.Distance at);
 
             double penetration = radius - distance;
             if (!(penetration > 0)) return Vec3.Zero;
