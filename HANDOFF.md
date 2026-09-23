@@ -73,7 +73,10 @@ the next base round's build with the consumer, the support cost and per-part con
 **The base round's one text is `fable-propose-round-46.md`** (2026-09-23 noon): five rules
 (exposure with the buoyancy offset, a second founding window for consumers at 6,000 s, the
 support cost as the square form at 0.1 W per m² per m², per-part contact, the two
-pre-registration repairs) and five questions for the owner; the reef held for 47.
+pre-registration repairs) and five questions for the owner; the reef held for 47. The build spec for the exposure rule is
+`logbook/specs/light-exposure-spec.md` (the factor, the two sides, the harness hand-over as
+`PartExposure`, the `expo` column, seven tests); it is delegated once the GPU spike returns
+the machine.
 
 **Round 45 is read (logbook/0114's read section, 2026-09-23 morning; three seeds ended on
 their budget in 6 to 8 hours at 1.0 to 1.4x).** The mouth works and nobody uses it: J5,
