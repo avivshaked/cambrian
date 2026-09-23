@@ -8,18 +8,20 @@ then the numbers in brackets are the ones the rulings can move. Round 45's entry
 
 ## What it asks
 
-Five rules land together (D110's light by exposure with the buoyancy offset; the consumer's
-second founding; the support cost; per-part contact; the two repaired clauses), and the
-round asks one thing of each: does the crowd use it. A leaf that can lie flat and is paid
-for it; a consumer that arrives when there is food; a price that stops the fan; a contact
-that touches with the part; a killer read on a window it can meet.
+Six rules land together (D110's light by exposure with the buoyancy offset; the consumer's
+second founding; the support cost; per-part contact; the two repaired clauses; the beach),
+and the round asks one thing of each: does the crowd use it. A leaf that can lie flat and
+is paid for it; a consumer that arrives when there is food, over a floor that holds the
+food in the light; a price that stops the fan; a contact that touches with the part; a
+killer read on a window it can meet.
 
 ## The world
 
 Round 45's (D108, D109: 22,000 m², 45 m, 15,000 units as islands, matter-mix 0.02, shade
 off, the mouth's prices) with the five rules on at the ruled values: `light by exposure`,
 `buoyancy offset [0.02 W/m3]`, `consumers found at [6000] s ([40] over [1000] s)`, `support
-[0.1] W/m2/m2`, `contact per part`. Three seeds, 30,000 s at dt 0.01, five threads each,
+[0.1] W/m2/m2`, `contact per part`, the bed's `tilt [96] m shore [1] m` with the fade at
+[15] m. Three seeds, 30,000 s at dt 0.01, five threads each,
 the runaway ceiling 25,000, checkpoints every 2,500 s, the fields dumped with the snapshots,
 poses recorded. The header is read after the launch and every token above is checked
 against it before the queue is left to run.
@@ -38,6 +40,7 @@ against it before the queue is left to run.
 | K8 | **the books close**: `audit` under 0.1 J at every sample, the matter residual under 1e-5 units at 30,000 s, `diverged` 0, in 3 of 3 (the offset's torque is the new term the divergence check watches) | `stats.jsonl`; the manifests |
 | K9 | **contact is on the part**: `ovl/body` at 30,000 s under round 45's 0.01 in 3 of 3, and every kill row's part index equals the touching link of its overlap pair | the column; the kill rows against the overlap pairs |
 | K10 | **the cost is small**: the exposure and the support terms together under 2% of the wall in the footer's `harness split`, in 3 of 3 | the footer |
+| K11 | **the shelf holds the larder in the light**: at 10,000 s and after, the snow in the columns whose floor lies within 12 m of the surface reads above 0.4 J/m³ (the stomach's break-even) in its lowest live cell, in 3 of 3; and the consumer births of the second window's line, where K3 holds, lie over that shelf in 2 of 3 | `fields/*.snow-columns.f32` with `fields/bed.f32`; the births' positions against the floor under them |
 
 ## The two-sided readings
 
@@ -62,4 +65,5 @@ against it before the queue is left to run.
 
 Whether a leaf turns toward a sun it does not have (the light is straight down). Whether the
 angle costs anything to hold (no price on the pose). Whether the reef would shade anything
-(held for 47).
+(held for 47). Whether a body can live in air (the shoal is wet, and the terrestrial round is
+later).

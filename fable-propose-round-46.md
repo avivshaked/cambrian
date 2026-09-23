@@ -15,9 +15,13 @@ born on edge earns what a flat one does and nothing selects a pose. And the size
 is unbounded (D107), so a self-copying leaf grows into a fourteen-metre fan that the
 one-sphere contact turns into a bulldozer (logbook/0113, 0114's launch note). Each of the
 five rules below answers one of those, and together they are a new realisation of every
-seed, so they land in one base round with one set of fixtures. The shelf reef and turbidity
-(`fable-propose-reef.md`) are held for the round after: five rules read as a world, and a
-sixth that shapes the light would confound the exposure rule's first reading.
+seed, so they land in one base round with one set of fixtures. A sixth joined them on the
+afternoon of 2026-09-23, the beach (rule 6 below), from the first stomach screen's reading
+that the eaters' food is on the floor forty metres under them. The mushroom reef the owner
+described the same afternoon (a rock column with a cap that shades and a top that holds
+snow in the light) is the round after: a solid with an overhang needs a masked column in the
+grid, a shade cast by a cap and the current deflected round a stem, and a rule that shapes
+the light would confound the exposure rule's first reading.
 
 ## 1. Light by exposure, with the one-part leaf's way to lie flat
 
@@ -95,6 +99,27 @@ machine: three seeds at five threads as round 45 ran, at the same 22,000 m² and
 units, about eight hours a seed. The GPU port continues in parallel on the CPU device's
 transcription and takes the machine for its timings between the round's reads.
 
+## 6. The beach: the floor raised to the surface along one side
+
+The owner's rule, proposed on the afternoon of 2026-09-23 after the stomach screen
+(`logbook/specs/beach-spec.md`): "what we need is the gradient floor back, and finally put
+in the beach ... a point where the floor sits closer to the surface, so the initial
+evolving stomachs still have access to the snow." The gradient floor has been on since
+round 39 (D092's tilt at 30 m in a 45 m tank), with its shallow arc 18 m under the band the
+crowd lives in. The beach raises that tilt to about 96 m, the plane that breaks the surface
+at the shore, and clamps the floor at a shoal a metre under the surface, so no column is
+ever dry and no body is ever on sand (the rules for a body in air stay the terrestrial
+round's). The floor then lies inside the founders' 12 m over about a tenth of the disc
+along one side, and the snow that settles there stays in the top cell, in full light. Two
+tunables (`BedShoreDepthMetres`, `BedShoreFadeMetres`), both 0 = the recorded world; the
+current's potential fades to nothing over the shoal so the floor-following map's stretch is
+not a jet at the shore. The recommendation is the beach in this round with the shore at 1 m
+and the fade at 15 m, and the consumer's second window (rule 2) placed over the shelf by
+rule, so that the forty consumers of the window land where the snow lies in the light
+rather than one in ten of them. What it does not do: widen the shelf with a second slope
+(the plane's tenth of the disc is read first), or move the snow downslope (settling stays
+vertical).
+
 ## The questions
 
 1. The buoyancy offset as a genome field: ruled yes (D111).
@@ -102,4 +127,9 @@ transcription and takes the machine for its timings between the round's reads.
    founders, or the larger reserve.
 3. The support cost: the square form at 0.1 W per m² per m², or a price of the owner's.
 4. Per-part contact: yes or no.
-5. The reef held for round 47: agreed, or in this round.
+5. The reef held for round 47: agreed in conversation (2026-09-23 afternoon, "we don't
+   have to do both in the same run"); the mushroom shape is the owner's and its spec follows
+   the beach's.
+6. The beach in this round at a 1 m shoal and a 15 m fade, with the second founding window's
+   cohort placed over the shelf by rule: yes, or the beach alone with the cohort placed as
+   the first founders were.

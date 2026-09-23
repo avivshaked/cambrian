@@ -86,9 +86,34 @@ weight acting off the mass centre, a genome field at format 8, priced) and the c
 second founding's is `logbook/specs/consumer-founding-spec.md` (a second window of random
 consumer-carrying founders when the snow is there, three tunables, `fnd` on the lineage row).
 All five of round 46's specs are written. **The buoyancy offset is ruled (D111, 2026-09-23
-afternoon, "agreed")** and its build follows the exposure build on the same tree; questions
-2 to 5 (the consumer's founding, the support cost's price, per-part contact, the reef held)
-are still the owner's.
+afternoon, "agreed") and built the same afternoon by an Opus subagent** (uncommitted until
+the crowd fixture is re-recorded: `runs/r46fixb-s4` running at 6 threads on the new build,
+then `RunFixture.cs` re-pinned, ckA/B/C re-recorded, the Dynamics suite green; Core 842 and
+Farm 64 pass; the format-8 inocula and the config fixture `c27e2b01`, the Farm hash
+`5e9da13fa5ab246a`); the 3,000 s regress at price 0 and the dt 0.02 screen at 0.02 W/m³
+follow the stomach screens. One thing the solver test found: the leaf rights itself in 1.7 s
+and then rocks about flat with a four-second period, drag being a weak damper at small
+angles. **The stomach screens** (the owner's test of the plant-world hypothesis, HANDOFF's
+"Where things stand" and the chat of 2026-09-23 afternoon): forty copies of a round 45 stomach
+inoculated at 6,000 s into round 45's world at dt 0.02. At 5 m (`r46stom-1m-s1`) all forty
+starved at a median age of 104 s: the snow there is 0.004 J/m³ against the ledger's break-even
+of 0.44, while the bed holds 3.4 J/m³ (R0 34, a first child in 63 s), because the snow sinks
+at 2 mm/s and the floor holds it. The bed-depth screen (`r46stom-bed-s1`, depth 42 m) is the
+decisive one and is running (started 13:50, the inoculation at 6,000 s); the 3 m cell screen
+is dropped (owner, 14:05: the beach does not depend on its answer); the cron pushes B's
+outcome to the owner's phone. The reading so far, marked as inference: the eater's larder
+exists and lies on the bed 45 m below the light, and nothing carries an eater down or the
+food up. **The owner's answer is the beach** (2026-09-23, 14:00: "the gradient floor back,
+and finally put in the beach"): the gradient floor has in fact been on since round 39, its
+shallow arc 30 m down; the beach raises the tilt to about 96 m so the floor breaks the
+surface at the shore, clamped at a shoal a metre deep, with the current's potential faded
+over the shoal so the floor-following map's stretch is not a jet. The spec is
+`logbook/specs/beach-spec.md` (two tunables, 0 = the recorded world; the shelf inside the
+founders' 12 m is about a tenth of the disc), it is rule 6 of the proposal and K11 of the
+prereg draft, and the mushroom reef (a rock column with a shading cap; the owner's shape,
+14:00) is round 47 with its spec after this one. Questions 2 to 4 (the consumer's founding,
+the support cost's price, per-part contact) and 6 (the beach with the second window's
+cohort placed over the shelf) are still the owner's; 5 (the reef held for 47) is agreed.
 The pre-registration is drafted with the ruled values in brackets
 (`logbook/specs/r46-prereg-draft.md`, K1 to K10: the crowd lies down, the offset is the way,
 the second founding founds a line, the killer on the repaired window, the price stops the
