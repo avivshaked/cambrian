@@ -155,7 +155,7 @@ byte-equal and the lineage differing by the founder rows' `src` alone. **Round 4
 0.01, five threads each, a 900-minute wall, `configHash 7300c71be3b6b453`; every header
 token checked). Before it: the fixtures re-recorded on the build (the r42 config from
 `pfix8`, `5062a25baa35c6e1`; the Dynamics crowd `runs/r46fixc-s4`, Dynamics 90 of 90;
-ckA/ckB/ckC under `scratch/checkpoint/runs` re-recorded after the launch), the price
+ckA/ckB/ckC under `scratch/checkpoint/runs` re-recorded after the launch, the resume at 400 s and the plain run both identical to ckA in every row, and `ckUi` under `scratch/live-ui/runs` re-recorded on round 44's world with three checkpoints), the price
 screen read (`support-cost-spec.md` §8, `per-part-contact-spec.md` §7), the round's own
 screen at dt 0.02 read and pictured (0116's screen section: books closed, `expo` 0.88 to
 0.98, the shelf holding 3.75% of the snow, the crowd one clump over its island with a
@@ -168,8 +168,7 @@ are owed to the next build**, found by the reader: a part index on the kill row 
 touching-part clause was dropped from the prereg), a part's largest distance from its root
 in the stats (K6 reads the ledger's `farthest part` instead), a timer for the exposure and
 support terms (K10 reads the pace against round 45's), and the snow's floor cell in the
-dump (K11 reads the column mean). `ckUi` under `scratch/live-ui/runs` is still refused by
-`StateVersion` 9 and is re-recorded before the next `LiveUiCheck`.
+dump (K11 reads the column mean). `LiveUiCheck` has not been run against the new `ckUi` yet; it is the next theatre check.
 
 **Round 45 is read (logbook/0114's read section, 2026-09-23 morning; three seeds ended on
 their budget in 6 to 8 hours at 1.0 to 1.4x).** The mouth works and nobody uses it: J5,

@@ -1395,6 +1395,11 @@ actually verifying it.
   1.9 times the recorded one on one thread and the body phase 19% more at 8 threads
   (`per-part-contact-spec.md` §6); a checkpoint rebuilds the link spheres on restore, and
   `--verify-checkpoint` with the switch on is owed before a resume under it is trusted.
+- **A farm round's pre-registration record is the manifest's `gitCommit` on a clean tree.**
+  `run-farm.ps1` has no `-Prereg`; `launch-queue.ps1 -Prereg` is the Unity queue's. So a
+  farm round is launched only after the entry is committed and `git status` is clean, and
+  the manifest's `gitCommit` is then the pre-registration's commit (round 46: `7bf9064`); a
+  `(DIRTY)` beside the commit in the launch printout means the record is not the tree.
 - **`detritusOnFloor` is a joules total, not a density.** It is `FloorStock`, the refuge
   stock of patch 0 in joules, and the stomach screens of 2026-09-23 were first read as
   3.4 J/m³ on the bed with an R0 of 34 from it, which went to the owner before the units
