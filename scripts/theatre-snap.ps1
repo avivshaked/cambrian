@@ -35,6 +35,10 @@
 .PARAMETER Worker
   Worker number, default 6. Worker 1 is unity/ and is refused.
 
+.PARAMETER RunsRoot
+  The directory the arm lives under, runs by default; a smoke under scratch/ names its own
+  (2026-09-23 night, for round 47's smoke).
+
 .PARAMETER Views
   Any of side, end, top, iso, close, sky, bed. Side, end, top, iso and sky by default. sky looks up from three
   metres under the surface at the box's centre (the skin's fourth day), never by default. side looks along z (length by
@@ -174,6 +178,7 @@ param(
     [Parameter(Mandatory)][string[]]$At,
     [int]$Worker = 6,
     [string[]]$Views = @(),
+    [string]$RunsRoot = 'runs',
     [string]$Size = '1600x900',
     [ValidateSet('replay', 'snapshot')][string]$From = 'replay',
     [string]$FromCheckpoint,
@@ -227,10 +232,10 @@ foreach ($t in $timeList) {
 }
 
 $viewNames = @(Split-List $Views)
-$known = @('side', 'end', 'top', 'iso', 'close', 'sky', 'bed')
+$known = @('side', 'end', 'top', 'iso', 'close', 'sky', 'bed', 'reef')
 foreach ($v in $viewNames) {
     if ($known -notcontains $v.ToLowerInvariant()) {
-        throw "-Views: '$v' is not a view. The views are side, end, top, iso, close, sky, bed."
+        throw "-Views: '$v' is not a view. The views are side, end, top, iso, close, sky, bed, reef."
     }
 }
 
@@ -293,7 +298,7 @@ if (Test-Path (Join-Path $proj 'Temp/UnityLockfile')) {
 if ($continued) {
     $runDirectory = $null
 } else {
-    $runDirectory = Join-Path $root "runs\$Arm"
+    $runDirectory = if ([System.IO.Path]::IsPathRooted($RunsRoot)) { Join-Path $RunsRoot $Arm } else { Join-Path $root "$RunsRoot\$Arm" }
     if (-not (Test-Path $runDirectory)) { throw "No run directory at $runDirectory" }
 }
 

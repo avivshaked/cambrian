@@ -166,6 +166,16 @@ namespace Evosim.Theatre
             /// sand, never a census; not in the default set.
             /// </summary>
             Bed = 6,
+
+            /// <summary>
+            /// Under the first reef's cap (logbook/specs/reef-spec.md), from two and a half cap
+            /// radii off the axis, a metre under the underside, looking a little up at the stem:
+            /// the dark room, the underside over it and the lit water beyond. Named or not taken,
+            /// as the close view is; it is a picture of one rock and never a census. Added
+            /// 2026-09-23 night for the owner's requirement that the caps be looked at before
+            /// round 47 runs.
+            /// </summary>
+            Reef = 7
         }
 
         /// <summary>How many bodies <see cref="View.Close"/> frames.</summary>
@@ -332,7 +342,7 @@ namespace Evosim.Theatre
                 {
                     refusal =
                         "'" + trimmed +
-                        "' is not a view; the views are side, end, top, iso, close, sky, bed.";
+                        "' is not a view; the views are side, end, top, iso, close, sky, bed, reef.";
                     return null;
                 }
 
@@ -382,6 +392,7 @@ namespace Evosim.Theatre
                 : box;
 
             _bedLook = BedLook(frame);
+            _reefs = frame.Reefs;
 
             Frame(view, framed);
 
@@ -442,7 +453,7 @@ namespace Evosim.Theatre
             // Neither the close view nor the sky view carries the box. The close view's frame cuts
             // the water's edges at odd angles, and the sky view stands inside the box looking up,
             // where the wireframe would be stamped straight across the window.
-            if (view != View.Close && view != View.Sky && view != View.Bed) DrawBox(box, frame);
+            if (view != View.Close && view != View.Sky && view != View.Bed && view != View.Reef) DrawBox(box, frame);
 
             DrawBodies(frame, view, out int marked, out int outside, out int bodies);
             DrawLabel(_label);
@@ -769,7 +780,7 @@ namespace Evosim.Theatre
             // and the view is a diagram of the floor, so the wall alone goes.
             bool bedOnly = view == View.Bed;
 
-            if (view == View.Close || view == View.Sky) return hidden;
+            if (view == View.Close || view == View.Sky || view == View.Reef) return hidden;
 
             // From the marker's own list, not the engine's finder: the furniture is created with
             // HideFlags.DontSave and FindObjectsByType leaves such objects out, which is why the
@@ -1055,6 +1066,7 @@ namespace Evosim.Theatre
         }
 
         /// <summary>The bed view's look: down the tilt from the shallow arc, or the first cut's fixed bearing on a flat bed.</summary>
+        private ReefGeometry _reefs;
         private Vector3 _bedLook = new Vector3(-0.7f, -0.21f, 1f).normalized;
 
         private static Vector3 BedLook(ITheatreFrame frame)
@@ -1163,6 +1175,12 @@ namespace Evosim.Theatre
             if (view == View.Sky)
             {
                 FrameTheSky(box);
+                return;
+            }
+
+            if (view == View.Reef)
+            {
+                FrameTheReef(box);
                 return;
             }
 
@@ -1321,6 +1339,45 @@ namespace Evosim.Theatre
 
             _camera.transform.SetPositionAndRotation(
                 eye, Quaternion.LookRotation(forward, Vector3.up));
+        }
+
+        /// <summary>
+        /// The reef view's eye: two and a half cap radii from the first reef's axis, a metre
+        /// under the cap's underside, looking at the stem where it meets the underside, so the
+        /// room under the cap fills the middle of the frame with the lit water beyond it. With
+        /// no reef in the world it stands where the sky view stands and says so in the remark
+        /// through the label's own text (the picture is then the sky's).
+        /// </summary>
+        private void FrameTheReef(Bounds box)
+        {
+            if (_reefs == null || _reefs.Count == 0)
+            {
+                FrameTheSky(box);
+                return;
+            }
+
+            float x = (float)_reefs.CentreX(0);
+            float z = (float)_reefs.CentreZ(0);
+            float underside = (float)_reefs.CapUndersideY;
+            float radius = (float)_reefs.CapRadiusMetres;
+
+            // Off the axis toward the tank's centre, so the glass is behind the camera and the
+            // water beyond the rock is the open tank.
+            var away = new Vector3(box.center.x - x, 0f, box.center.z - z);
+            if (away.sqrMagnitude < 1e-6f) away = Vector3.right;
+            away = away.normalized;
+
+            Vector3 target = new Vector3(x, underside - 0.5f, z);
+            Vector3 eye = target + away * (2.5f * radius) + Vector3.down * 0.5f;
+
+            _camera.orthographic = false;
+            _camera.aspect = (float)_width / _height;
+            _camera.fieldOfView = 55f;
+            _camera.nearClipPlane = 0.05f;
+            _camera.farClipPlane = 4f * box.size.magnitude + 200f;
+
+            _camera.transform.SetPositionAndRotation(
+                eye, Quaternion.LookRotation((target - eye).normalized, Vector3.up));
         }
 
         // ---------------------------------------------------------------- what is stamped
@@ -1505,7 +1562,7 @@ namespace Evosim.Theatre
             // what a body looks like, so a square painted over one would answer its own question,
             // and the sky view stands inside the water at a few metres, where a body is tens of
             // pixels across and a marker would only hide the light falling on it.
-            bool marking = view != View.Close && view != View.Sky;
+            bool marking = view != View.Close && view != View.Sky && view != View.Reef;
 
             int count = frame.BodyCount;
             float tanV = Mathf.Tan(0.5f * _camera.fieldOfView * Mathf.Deg2Rad);

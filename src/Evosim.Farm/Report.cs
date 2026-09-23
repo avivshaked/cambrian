@@ -59,7 +59,7 @@ namespace Evosim.Farm
 
             int patches = Math.Max(1, (int)config.HorizontalPatches);
 
-            // D117's `pool`, after `trickle` and before the patches, and only in a run whose
+            // D117's `pool`, after the last base column and before the patches, and only in a run whose
             // config names a pool: every other run's table is the trickle build's to the byte.
             int pool = config.FoundingTricklePoolCount > 0 ? 1 : 0;
             var columns = new string[BaseColumns.Length + pool + patches];

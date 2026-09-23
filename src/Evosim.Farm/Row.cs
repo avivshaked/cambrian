@@ -1086,7 +1086,7 @@ namespace Evosim.Farm
                 double.IsNaN(maxReach) ? "—" : maxReach.ToString("0.###", c),
             };
 
-            // D117, the window's pool founders, after `trickle` and only when the config names a
+            // D117, the window's pool founders, after the last base column and only when the config names a
             // pool (Report's Columns says the same), bold as its two neighbours are.
             if (world.Config.FoundingTricklePoolCount > 0)
             {

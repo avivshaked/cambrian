@@ -234,7 +234,8 @@ namespace Evosim.Farm.Tests
             });
 
             Assert.Equal(Report.BaseColumns.Length + 3, named.Columns.Count);
-            Assert.Equal("**trickle**", named.Columns[Report.BaseColumns.Length - 1]);
+            // The last base column, `max reach` since the instruments of 2026-09-23, and then the pool.
+            Assert.Equal(Report.BaseColumns[Report.BaseColumns.Length - 1], named.Columns[Report.BaseColumns.Length - 1]);
             Assert.Equal("**pool**", named.Columns[Report.BaseColumns.Length]);
             Assert.Equal("p0", named.Columns[Report.BaseColumns.Length + 1]);
             Assert.Equal("p1", named.Columns[Report.BaseColumns.Length + 2]);

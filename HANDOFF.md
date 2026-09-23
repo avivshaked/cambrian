@@ -197,8 +197,10 @@ run by default and to `--out` otherwise, and the three seeds' guides are under
 `scratch/safari-guide/`. Two of its rules are the agent's own and the owner may overrule
 them: novelty gives full marks to the first clade of a flag triple to reach ten members and
 half to a first appearance that never did, and success is the largest share of the living
-at a sample with at least 100 alive. The `economics` field is null on every card until the
-ledger pass; the trip table's ranks are the global ranks, so a rank whose clade never
+at a sample with at least 100 alive. The `economics` field is the ledger's (standing W, break-even, net W and R0 at 0.5, 1 and
+2 J/m³, about 1.3 s a call, 100 to 140 s a seed), and it is null on every round 46 card,
+because the merged build refuses round 46's `config.json` (the reef and pool tunables, the
+config rule) and the ledger reads the run's config; round 47's guides carry it; the trip table's ranks are the global ranks, so a rank whose clade never
 appears in the positions is skipped in the numbering. **The pool landed at 21:40** (committed on its worktree branch, `213b894`, not merged):
 three tunables in the `population` group (`FoundingTricklePoolShare`, `FoundingTricklePoolCount`,
 `FoundingTricklePoolHash`, the first string tunable), `EVOSIM_TRICKLE_POOL` (a semicolon list
@@ -225,8 +227,24 @@ them", and one constant carries it, `ReefGeometry.CapTransmission`), and the fad
 grid's Courant bound (0.89 against 0.83 m/s; 0.24 within a cap radius at 15 m, 0.13 at
 20 m). Core 916 of 916 and Farm 85 of 85 on the merged tree; the Core fixture is `pfix9`'s
 config (`679f831c59c6f1af`), the crowd fixture `runs/r47fixc-s4` (round 44's world on the
-merged build, everything off) is recording for the Dynamics suite and the regress against
-`r46fixc-s4`, and the theatre is compiling on worker 6. The reef was built in a worktree from `scratch/r47-build/brief.md`; the pool's bodies are
+merged build, everything off) replays `r46fixc-s4` in 149 fields at 2,000 samples with
+the positions byte-equal (`scratch/r45-build/regress.py`; the three fields only the
+candidate has are the instruments' `maxReach`, `wallExposureMs` and `wallLedgerMs`), and
+the theatre compiled on worker 6 with the reef, the pool's loading and the safari (the
+safari's dry run wants a guide beside the run, which `scripts/guide.py <arm>` now writes
+to `<run>/guide/`). The smoke `r47smoke` (600 s, dt 0.02) closed both books with the reef
+and pool tokens in its header and the three reefs in its manifest, and its pictures from
+the side, above and under a cap (a new `reef` view in `SnapshotCamera`, and
+`theatre-snap.ps1 -RunsRoot` for a run under scratch) are in `logbook/images/` and
+reviewed in 0117's smoke section; the 4,000 s screen `r47scr-s1` is what shows the first
+pool founders, since the trickle starts at the floor's close: six in its last thousand
+seconds, one of them bred at a column of 1.74 J/m³ (the ledger's threshold held on its first
+try), four dead by 4,000 s at 18 to 318 s (L1's threshold of 300 s is the ledger's claim and
+the screen reads against it; kept, with the reading written). Dynamics 101 of 101 on
+`r47fixc-s4`; `--verify-checkpoint` at 2,500 s of the screen PASS. **Round 47 is
+pre-registered as `logbook/0117-the-reef-and-the-second-chance.md`** (the draft under
+`logbook/specs/r47-prereg-draft.md` is superseded by it and kept as the draft), committed
+on a clean tree, and launched: seeds 1 and 2 first, seed 3 when one ends. The reef was built in a worktree from `scratch/r47-build/brief.md`; the pool's bodies are
 chosen by the ledger (`logbook/specs/r46-read/ledger-stomachs.md`): the screens' inoculum
 breaks even at 0.44 J/m³ and breeds from 1, and round 46's own longest-lived absorptive
 founders are the other candidates. The night's order after the builds land: merge with the

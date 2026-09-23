@@ -1,10 +1,13 @@
-# Round 47 pre-registration draft: the reef and the second chance
+# The reef and the second chance
 
-*Fable, the night of 2026-09-23, drafted while the reef (`reef-spec.md`) and the pool
-(D117) build. It becomes `logbook/0117-….md` when the smoke has been pictured and the
-reef's readouts are known; the reef clauses below are written against the spec and are
-re-worded to the build's column names before the entry is committed. Nothing here is
-launched until the entry is committed on a clean tree.*
+*2026-09-23, night. Written by the agent as the pre-registration of round 47, the round
+after the base round 46 (0116): the mushroom reef (`logbook/specs/reef-spec.md`) and the
+trickle's pool (D117) land together, both built the same night by subagents in worktrees,
+merged with the four instruments and the safari director, and screened before the
+predictions were committed (the launch section below). The owner asked for the reefs to be
+looked at before the round ran, and for the caps to block the sun under them, and
+delegated the review of the pictures to the agent (the evening's conversation); the smoke
+section is that review.*
 
 ## What it asks
 
@@ -93,13 +96,76 @@ offset earns anything (its price stays, its share is watched).
 
 ## The screen and the smoke
 
-This section is written from the smoke. The smoke is 600 s of the launcher with three
-reefs and the pool at dt 0.02. It has to show both books closed, one pool founder in the
-lineage, the fastest water at the rock, and the light under a cap against the water beside
-it from the build's test. Its pictures from the side and from under a cap are looked at
-before the launch, which is the owner's requirement, delegated to the agent's judgement on
-the night of 2026-09-23.
+The smoke is 600 s of `rounds/env-r47.ps1` at dt 0.02 on the merged build (`r47smoke`,
+`configHash a908f742…`, under `scratch/r47-build/runs`). The header reads `reefs 3 cap r=4 m
+at 3 m t=2 m stem r=1 m fade 15 m` after the bed's shore token and `pool 0.1 of 4` after the
+trickle's, the run directory holds `pool/00.json` to `03.json`, and the manifest places
+the three reefs at (102, 85), (13, 98) and (140, 73) m in the tank's frame, one near the
+axis and two toward the glass, none on the shoal. Both books closed: the audit under 1e-6 J
+and the matter residual at −1.9e-7 units at 600 s, no divergence, no root inside a reef by
+the reader's 0.5 m tolerance in 60 positions samples. No pool founder appears, and none
+can: the trickle starts when the floor closes at 3,000 s, and the smoke ends at 600.
+
+**The screen** is the same launcher to 4,000 s at dt 0.02 (`r47scr-s1`), past the floor's
+close, so that the trickle and the pool fire: 48 trickle founders in the last thousand
+seconds, six of them from the pool (four copies of the screens' inoculum, one of seed 1's
+1182, one of seed 3's 2156; `src: pool` with the index on their lineage rows), which is one
+in eight against the dial's one in ten. One of the six bred, a copy of the inoculum placed
+where the snow column read 1.74 J/m³, and it had two children inside 700 s; five living
+bodies at 4,000 s are rooted in the pool, all of them stomachs, against 24 rooted in the
+random trickle and 717 in the floor. The ledger's prediction that this body breeds from
+about 1 J/m³ held on its first try. Against L1 the screen reads the other way: four of the
+six had died by 4,000 s, at 18, 20, 42 and 318 s, so the median is 30 s and not the
+ledger's hundreds, and the same placer that put one founder in 1.74 J/m³ put three in water
+that starved them in under a minute. The clause stays at 300 s, because it is the ledger's
+claim and the round is the test of it; the reading L1 and L2 together give is already
+written in the two-sided section, and the screen says it is the likely one. No body under
+a cap, none inside a reef, and both books closed at 4,000 s (audit under 2e-6 J, matter
+residual −1.5e-7 units).
+
+**The pictures.** Three, drawn from the 600 s snapshot (`theatre-snap.ps1 -From snapshot`
+with a new `reef` view that stands two and a half cap radii from the first reef's axis, a
+metre under its cap). From the side the three caps sit just under the surface with their
+stems running down to the bed, the nearest one short because the floor under it, on the
+beach's side, is shallow; from above they are three discs in the rings of the tank, the
+founding crowd in one corner of the lit shelf, one cap beside it. From under the cap the
+rock is what the owner described: a thick rounded table on a column, its underside dark,
+the second reef standing beyond it in the open water. My reading is that the shape is
+right and the placement is right, and that the pictures cannot show whether the sun is
+blocked, which is the light field's business and is read from the build's own test.
+
+**The light.** The build's test (`ReefLightTests`, round 46's light: 200 W/m² at the
+surface, attenuation 6 m; the cap 4 m in radius with its top at 3 m and 2 m thick) prints
+the water beside the cap unshaded and the water under it at zero: 79.97 W/m² in the open
+at 5.5 m against 0.00 under the cap's centre, under its rim and beside the stem, and the
+same at 8 and 15 m; the cap's top at 2.99 m is lit as any water is, 121.5 W/m². The first
+cut let e⁻¹ through, the canopy's own arithmetic at a cover of 1, and I made the cap
+opaque on the owner's words ("make sure they block the sun under them"): one constant,
+`ReefGeometry.CapTransmission`, and its test. **The water at the rock.** The same test
+family prints the fastest water within a cap radius of the rock at three fades on round
+46's tank (`ReefStreamsTests`): 0.72 m/s at 10 m, where the fade's own term puts the
+fastest water anywhere in its cylinder at 0.89 m/s, over the grid's Courant bound of
+0.83; 0.24 m/s at 15 m and 0.13 at 20 m, against 0.39 to 0.46 unfaded at the same points.
+The round runs at 15 m, which is L10a's number: 0.24 m/s, 2.4 times the tank's RMS knob
+of 0.1 and under the clause's three.
+
+![The smoke from the side at 600 s](images/r47smoke-t600-recon-side.png)
+
+![The smoke from above at 600 s](images/r47smoke-t600-recon-top.png)
+
+![Under the first reef's cap at 600 s](images/r47smoke-t600-recon-reef.png)
 
 ## The launch
 
-This section is written at the launch, with the commit, the hash and the workers.
+Three seeds of `rounds/env-r47.ps1` on the farm out of Unity, 30,000 s at dt 0.01, five
+threads each, two arms at a time by the owner's ruling on the machine's heat (2026-09-23
+evening) and the third when one ends, checkpoints every 2,500 s, the fields and the poses
+dumped. This entry is committed on a clean tree before the first launch, and each run's
+manifest names that commit as `gitCommit` with no `(DIRTY)` beside it: that is the
+pre-registration's record, as CLAUDE.md's farm rule has it. The build is the merged main
+of the night (the instruments, the pool, the reef, the safari), Core 916 of 916, Farm 85
+of 85 and Dynamics 101 of 101 on the re-recorded fixtures, the crowd regress identical in
+149 fields with the positions byte-equal, and a checkpoint of the screen's reef-and-pool
+world verified member by member (`--verify-checkpoint` at 2,500 s). The wall limit is
+600 minutes a seed, from round 46's slowest seed at 308 minutes beside two others. The
+read is `scripts/reads/r47-read.py`, and the watch calls it at every mark.

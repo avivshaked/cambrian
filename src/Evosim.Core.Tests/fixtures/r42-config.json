@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "5062a25baa35c6e1",
+  "configHash": "679f831c59c6f1af",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -204,10 +204,21 @@
     "founderDepthSpread": 45,
     "founderEnergyJoules": 200,
     "foundingTricklePerSecond": 0,
+    "foundingTricklePoolCount": 0,
+    "foundingTricklePoolHash": "",
+    "foundingTricklePoolShare": 0,
     "maximumPopulation": 8000,
     "maximumTissueJoules": 0,
     "minimumPopulation": 40,
     "offspringDispersalMetres": 5
+  },
+  "reef": {
+    "reefCapDepthMetres": 0,
+    "reefCapRadiusMetres": 0,
+    "reefCapThicknessMetres": 0,
+    "reefCount": 0,
+    "reefFadeMetres": 0,
+    "reefStemRadiusMetres": 0
   },
   "sense": {
     "chemicalHalfScaleJoulesPerCubicMetre": 10,
