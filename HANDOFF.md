@@ -76,7 +76,9 @@ support cost as the square form at 0.1 W per m² per m², per-part contact, the 
 pre-registration repairs) and five questions for the owner; the reef held for 47. The build spec for the exposure rule is
 `logbook/specs/light-exposure-spec.md` (the factor, the two sides, the harness hand-over as
 `PartExposure`, the `expo` column, seven tests); it is delegated once the GPU spike returns
-the machine.
+the machine. The support cost's build spec is `logbook/specs/support-cost-spec.md` (the
+square form as one tunable at 0 = off, `DistanceFromRoot` on the part, `support W` and
+`reach m` in the table, the ledger reproducing the screen to the watt).
 
 **Round 45 is read (logbook/0114's read section, 2026-09-23 morning; three seeds ended on
 their budget in 6 to 8 hours at 1.0 to 1.4x).** The mouth works and nobody uses it: J5,
