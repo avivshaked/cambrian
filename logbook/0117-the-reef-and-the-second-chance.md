@@ -7,7 +7,12 @@ merged with the four instruments and the safari director, and screened before th
 predictions were committed (the launch section below). The owner asked for the reefs to be
 looked at before the round ran, and for the caps to block the sun under them, and
 delegated the review of the pictures to the agent (the evening's conversation); the smoke
-section is that review.*
+section is that review. The entry was first committed with three round caps, and the owner
+ruled on those pictures the same night that the reef should be many, larger, irregular and
+different from one another, a quarter of the surface, overlapping where they fall (D118); the
+reef was rebuilt and dressed as rock before any seed ran, and the world, the smoke and the
+launch sections below are amended to the build that runs. No prediction moved except L10a,
+which the rebuilt water falsified before the launch and which is a reading now.*
 
 ## What it asks
 
@@ -24,12 +29,18 @@ that can live on this snow, does an eater's line found.
 Round 46's (0116's world section: 22,000 m², 45 m, 15,000 units as islands, matter-mix
 0.02, remin 0.0005, the beach at tilt 96 m with a 1 m shore and a 15 m fade, light by
 exposure, the offset at 0.02 W/m³, the trickle at 1/30 s with founders in their food, the
-support cost at 0.1 W/m²/m², contact per part) with two rules on: `reefs 3 cap r=4 m at 3 m
-t=2 m stem r=1 m fade 15 m` (the fade from the build's fastest-water reading: at 10 m the
-fade's own term puts the water beside a reef at 0.89 m/s, over the grid's Courant bound of
-0.83; at 15 m the fastest water within a cap radius is 0.24 m/s and at 20 m 0.13, against
-0.39 to 0.46 unfaded at the same points; the caps are placed at least 38 m apart, so 15 m
-is under half the spacing), the cap opaque to the light under it and `pool 0.1 of 4` (the four bodies of `inocula/pool-r47/`). Three seeds, 30,000 s
+support cost at 0.1 W/m²/m², contact per part) with two rules on. The reef (D118, `reef-spec.md` §6):
+`reefs 15 cover 0.25 (0.251 got) cap r=6-16 m rough 0.15 at 3 m ±1 t=2 m stem 0.25 fade 8 m`,
+which is a quarter of the surface disc under caps. Each cap's radius is drawn between 6 and
+16 m with a lobed outline of three harmonics up to 0.15 of the radius, its top jittered a
+metre about 3 m, 2 m thick on a stem a quarter of its radius, overlapping where they fall,
+opaque to the light under it. The count is derived: fifteen in the smoke and ten to
+twenty-one across seeds in the build's own placing test. The fade is 8 m by my choice, and
+the reason is the open water: the fade of the first build, 15 m round three small caps, would
+reach 70% of the surface columns round fifteen large ones (52% at 8 m, on the smoke's
+manifest), and a tank whose water is mostly fading is not round 46's tank with dark places
+in it. The price of 8 m is the water at the rock, L10a below. And `pool 0.1 of 4` (the four
+bodies of `inocula/pool-r47/`). Three seeds, 30,000 s
 at dt 0.01, five threads each, two arms at a time (the owner's cap), the runaway ceiling
 25,000, checkpoints every 2,500 s, the fields and the poses dumped.
 
@@ -64,7 +75,7 @@ not on whether the body can live.
 | L7 | **nothing lives in the dark room** at these prices: no photosynthetic body under a cap (the light's rule: within a cap radius of an axis and below the cap's top) at 30,000 s in 3 of 3, and any body there is a stomach by its lineage row (`ink` 1, or `abs` 1 with `pho` 0) | `positions.jsonl` with the flags, joined to `lineage.jsonl` |
 | L8 | **the rock is a wall, not a trap**: (a) no root inside a reef by more than 0.5 m at any positions sample, and no divergence dump naming the reef guard, in 3 of 3; (b) a reading, not a clause: `bedOrGlassBodiesPerStep` over the last 2,000 s against round 46's same seed at the window with the nearest crowd, since the rock sets the same flag as the bed and the glass and the column is the three together | `positions.jsonl` with the ported signed distance; `diverged/`; `stats.jsonl` |
 | L9 | **the books close**: `audit` under 0.1 J, the matter residual under 1e-5 units, `diverged` 0, in 3 of 3 | `stats.jsonl`; the manifests |
-| L10 | **the water at the rock is sane**: (a) the fastest water within a cap radius of a reef under three times the tank's RMS, from the build's own test at the round's fade (`ReefStreamsTests`; no run record carries it), printed in the smoke section before the launch; (b) the footer's whole-run pace within 1.5 of round 46's mean (2.2, 1.6 and 1.9x), a reading confounded by the load (round 46 ran three arms at once and round 47 runs two), with the last 2,000 s window against round 46's at the nearest crowd printed beside it | the test's output; the footers and `wallTotalMs` |
+| L10 | **the water at the rock is sane**: (a) a reading, not a clause, since the rebuilt build's own measurement falsified the clause as first written (under three times the tank's RMS) before the launch: the fastest faded water the grid samples at the round's fade is printed in the smoke section, and what the round asks is that the grid's substep refusal does not fire at any resume and no divergence dump names the reef guard (L8a); (b) the footer's whole-run pace within 1.5 of round 46's mean (2.2, 1.6 and 1.9x), a reading confounded by the load (round 46 ran three arms at once and round 47 runs two), with the last 2,000 s window against round 46's at the nearest crowd printed beside it | the test's output; the footers and `wallTotalMs` |
 | L11 | **the angle holds**: `expo` above 1.5 at 30,000 s in 3 of 3 (round 46 read 1.5 to 1.8) | the column |
 
 ## The two-sided readings
@@ -149,23 +160,76 @@ fastest water anywhere in its cylinder at 0.89 m/s, over the grid's Courant boun
 The round runs at 15 m, which is L10a's number: 0.24 m/s, 2.4 times the tank's RMS knob
 of 0.1 and under the clause's three.
 
-![The smoke from the side at 600 s](images/r47smoke-t600-recon-side.png)
+![The first build's smoke from the side at 600 s](images/r47smoke-t600-recon-side.png)
 
-![The smoke from above at 600 s](images/r47smoke-t600-recon-top.png)
+![The first build's smoke from above at 600 s](images/r47smoke-t600-recon-top.png)
 
-![Under the first reef's cap at 600 s](images/r47smoke-t600-recon-reef.png)
+![Under the first build's first cap at 600 s](images/r47smoke-t600-recon-reef.png)
+
+**The smoke on D118's build** (`r47smoke2`, `configHash 6636ef02…`, 600 s of the same
+launcher with the reef block rewritten, under `scratch/r47-build/runs`). The header reads
+the token quoted in the world section, the manifest places fifteen reefs with radii from
+6.3 to 15.6 m and cap tops from 2.0 to 4.0 m, none on the shoal, and the cover got is
+0.2509. Both books closed, the audit at −1.7e-6 J and the matter residual at −1.2e-7 units
+at 600 s, no divergence, 67 births and 96 alive, three self-overlap stillbirths, 4.6x real
+time at eight threads. The pool is untouched by the rebuild, so the screen above stands
+for its founders; the reef changes the light and the water, so the screen's plant counts
+are the first build's world and not this one's. A checkpoint of this world at 300 s was
+verified member by member (`--verify-checkpoint`) before the launch. The reader's first
+read of it is what confirms the names in the predictions.
+
+**The water at the rock, rebuilt.** The grid samples the faded water itself now, at the
+centre of every open face inside any fade at eight clocks of the streams' period, and
+takes its substep count from the larger of that and the open water's ceiling. On round
+46's tank at cover 0.25 and fade 8 m it reads 0.995 m/s against the open water's 0.829, one
+substep. Random points across four periods reached 1.04 m/s within 4 m of the rock, ten
+times the RMS knob, with an RMS of 0.18 against 0.12 unfaded (§6 of the spec). At a 15 m
+fade the same readings are 0.26 within 4 m and 0.66 anywhere in the fades. So the water
+beside a cap runs faster than the first build's, not slower, and L10a's clause as first
+written is failed by the build before any seed runs; it is a reading now, and the round's
+check is the refusal and the guard. My reading of the number: the fade's gradient term
+`∇g×A` puts a shear layer round every cap where the water turns to go round the rock, and
+fifteen caps with a short fade make more of it than three with a long one. Whether the
+crowd feels it is L8b's column and the divergence count.
+
+**The pictures of the rebuilt reef.** Four, from the 600 s snapshot: the side, the top, under
+a cap and, with `EVOSIM_THEATRE_REEF_ABOVE`, over a table. From above the tank is fifteen
+grey rocks of six to sixteen metres, lobed and no two alike, three of them fused into one
+mass on the east side and two more touching, the founding crowd on the lit shelf to the
+south-west with one cap beside it; from the side a row of tables just under the surface with
+their stems running to the bed, the eastern stems in a thicket. Under a cap the table is a
+thick rounded slab of rock on a knobbed column with the light shafts standing beside it and
+none under it; over a table the top is boulders and hollows. My reading is that this is what
+the owner asked for, in every clause: larger, random, irregular, different, a quarter of the
+surface, overlapping, and dark underneath. What the pictures cannot show is the snow on the
+tables, which the skin does not draw, and the light, which is the build's test above: the
+cap's transmission is the same constant, 0.
+
+![The rebuilt smoke from the side at 600 s](images/r47smoke2-t600-recon-side.png)
+
+![The rebuilt smoke from above at 600 s](images/r47smoke2-t600-recon-top.png)
+
+![Under a cap of the rebuilt reef at 600 s](images/r47smoke2-t600-recon-reef.png)
+
+![Over a table of the rebuilt reef at 600 s](images/r47smoke2-t600-recon-reef-above.png)
 
 ## The launch
 
 Three seeds of `rounds/env-r47.ps1` on the farm out of Unity, 30,000 s at dt 0.01, five
 threads each, two arms at a time by the owner's ruling on the machine's heat (2026-09-23
 evening) and the third when one ends, checkpoints every 2,500 s, the fields and the poses
-dumped. This entry is committed on a clean tree before the first launch, and each run's
-manifest names that commit as `gitCommit` with no `(DIRTY)` beside it: that is the
-pre-registration's record, as CLAUDE.md's farm rule has it. The build is the merged main
-of the night (the instruments, the pool, the reef, the safari), Core 916 of 916, Farm 85
-of 85 and Dynamics 101 of 101 on the re-recorded fixtures, the crowd regress identical in
-149 fields with the positions byte-equal, and a checkpoint of the screen's reef-and-pool
-world verified member by member (`--verify-checkpoint` at 2,500 s). The wall limit is
+dumped. This entry was first committed at `b0048dd` with three round caps and a launch
+section that said the seeds were launched; they were not, because the owner's ruling on the
+pictures came first, and the entry is amended here and committed again on a clean tree
+before the first launch. Each run's manifest names that second commit as `gitCommit` with
+no `(DIRTY)` beside it: that is the pre-registration's record, as CLAUDE.md's farm rule has
+it. The build is the merged main of the night (the instruments, the pool, the reef rebuilt
+on D118 and dressed as rock, the safari). Core reads 925 of 925, Farm 85 of 85 and Dynamics
+102 of 102 on the fixtures re-recorded a third time (`r42-config.json` from `pfix10`,
+round 42's hash `256078e816861b27`; the crowd `runs/r47fixd-s4`). The crowd regress against
+`r46fixc-s4` is identical in 149 fields at 2,000 samples with the positions byte-equal, at
+cover 0. A checkpoint of the screen's world was verified at
+2,500 s on the first build and one of the rebuilt smoke's at 300 s. The wall limit is
 600 minutes a seed, from round 46's slowest seed at 308 minutes beside two others. The
-read is `scripts/reads/r47-read.py`, and the watch calls it at every mark.
+read is `scripts/reads/r47-read.py`, rewritten for the manifest's list of reefs and their
+outlines, and the watch calls it at every mark.

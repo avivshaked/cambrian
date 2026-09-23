@@ -27,6 +27,9 @@ namespace Evosim.Theatre
         public double FoundedAt;
         /// <summary>The parent clade's founder id, or -1 for a clade founded by a founder with no parent.</summary>
         public long ParentClade = -1;
+
+        /// <summary>The card's own clade index when the guide numbers its clades (guide.py's `clade`), else -1.</summary>
+        public long Index = -1;
         /// <summary>The founder's own parent body, or -1.</summary>
         public long ParentBody = -1;
         public bool Absorptive, Jointed, Photosynthetic;
@@ -103,6 +106,14 @@ namespace Evosim.Theatre
 
         private readonly List<SafariClade> _clades = new List<SafariClade>();
         private readonly Dictionary<long, SafariClade> _byFounder = new Dictionary<long, SafariClade>();
+        private readonly Dictionary<long, SafariClade> _byIndex = new Dictionary<long, SafariClade>();
+
+        /// <summary>
+        /// A number in the ranking, the picker, the trip or a parent field is a clade index when
+        /// the cards carry one and it names a card (guide.py numbers its clades and refers to
+        /// them by that number everywhere), and a founder's body id otherwise (the spec's form).
+        /// </summary>
+        private long Resolve(long n) => _byIndex.TryGetValue(n, out SafariClade c) ? c.Founder : n;
 
         public SafariClade Find(long founder) => _byFounder.TryGetValue(founder, out SafariClade c) ? c : null;
 
@@ -156,6 +167,7 @@ namespace Evosim.Theatre
         // ---------------------------------------------------------------- reading
 
         private static readonly string[] FounderKeys = { "founder", "founderId", "founder_id" };
+        private static readonly string[] IndexKeys = { "clade", "cladeIndex", "clade_index" };
         private static readonly string[] NameKeys = { "name", "binomial" };
         private static readonly string[] RankKeys = { "rank" };
         private static readonly string[] ScoreKeys = { "score", "interest", "interesting" };
@@ -211,7 +223,11 @@ namespace Evosim.Theatre
                 return null;
             }
 
-            JsonNode clades = Get(root, missing, "the top level", "clades", "cards");
+            // scripts/guide.py writes the cards under `cards` and a count under `clades`; the
+            // spec's own name for the array is `clades`. The array wins whichever key holds it.
+            JsonNode clades = Optional(root, "cards");
+            if (clades == null || clades.Kind != JsonNode.NodeKind.Array)
+                clades = Get(root, missing, "the top level", "clades", "cards");
 
             var guide = new SafariGuide { Path = path };
             guide.Arm = Optional(root, "arm")?.AsString();
@@ -244,11 +260,17 @@ namespace Evosim.Theatre
 
                         guide._clades.Add(c);
                         guide._byFounder[c.Founder] = c;
+                        if (c.Index >= 0 && !guide._byIndex.ContainsKey(c.Index)) guide._byIndex[c.Index] = c;
                     }
 
                     index++;
                 }
             }
+
+            // Parent clades by index become parent founders, now that every card is known.
+            if (guide._byIndex.Count > 0)
+                foreach (SafariClade c in guide._clades)
+                    if (c.ParentClade >= 0) c.ParentClade = guide.Resolve(c.ParentClade);
 
             // The ranking: an array of founder ids, or of cards' ids by whichever key. Absent, the
             // cards' own rank (or score) decides it, which is the same ranking said once.
@@ -264,6 +286,7 @@ namespace Evosim.Theatre
                         : r.Kind == JsonNode.NodeKind.Object && FirstOf(r, FounderKeys) != null
                             ? (long)Math.Round(FirstOf(r, FounderKeys).AsDouble())
                             : long.MinValue;
+                    if (id != long.MinValue) id = guide.Resolve(id);
                     if (id != long.MinValue && guide._byFounder.ContainsKey(id)) order.Add(id);
                 }
             }
@@ -309,6 +332,7 @@ namespace Evosim.Theatre
                     long id = r.Kind == JsonNode.NodeKind.Number ? (long)Math.Round(r.AsDouble())
                         : r.Kind == JsonNode.NodeKind.Object && FirstOf(r, FounderKeys) != null
                             ? (long)Math.Round(FirstOf(r, FounderKeys).AsDouble()) : long.MinValue;
+                    if (id != long.MinValue) id = guide.Resolve(id);
                     if (id != long.MinValue && guide._byFounder.ContainsKey(id) && !pick.Contains(id)) pick.Add(id);
                 }
             }
@@ -355,6 +379,7 @@ namespace Evosim.Theatre
                 Name = name.AsString(),
                 FoundedAt = founded.AsDouble(),
                 ParentClade = parent == null || parent.Kind == JsonNode.NodeKind.Null ? -1 : (long)Math.Round(parent.AsDouble()),
+                Index = FirstOf(card, IndexKeys) is JsonNode ix && ix.Kind == JsonNode.NodeKind.Number ? (long)Math.Round(ix.AsDouble()) : -1,
                 BestSecond = best.AsDouble(),
                 Rank = rank != null && rank.Kind == JsonNode.NodeKind.Number ? rank.AsInt() : 0,
                 Score = score != null && score.Kind == JsonNode.NodeKind.Number ? score.AsDouble() : double.NaN,

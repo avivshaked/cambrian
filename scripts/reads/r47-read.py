@@ -18,15 +18,27 @@ reef's and the pool's were confirmed the same night against the two worktrees th
 in, before either was merged: the reef in .claude/worktrees/agent-a672d6e6d5fecf25d
 (uncommitted), the pool in .claude/worktrees/agent-ab8d64597f3e8e255 (commit 213b894). A merge
 that renames any of them breaks this reader loudly on a round 47 run and not at all on round
-46's, so the first smoke of the merged build is read with this script before the launch.
+46's, so the first smoke of the merged build is read with this script before the launch. The
+rebuilt reef's names (D118) were confirmed against main at 73ab4ea on 2026-09-23 night:
+src/Evosim.Farm/Manifest.cs's writer, src/Evosim.Core/RunConfig.cs's `reef` group and
+src/Evosim.Core/Environment/ReefGeometry.cs.
 
-The reef's geometry is ReefGeometry.OfReef ported line for line (the cap as the points within
-t/2 of a flat disc of radius r_c - t/2 at the cap's mid-plane, the stem a cylinder from below
-the floor to that mid-plane, the two joined by the cubic smooth minimum with a fillet of t/2),
-and only its distance is ported, not its derivatives. The reefs' axes come from run.json's
-`reefs` list, which Manifest.RecordReefs fills from the built world; the dimensions from
-config.json's `reef` group. Every place is in the tank's own frame, the frame positions.jsonl
-and the snow's columns share.
+The reef's geometry is the rebuilt reef of D118 (main from 9a467ce), ReefGeometry.OfReef ported
+line for line, the value only and not its derivatives. Each reef has its own axis, mean radius
+r, cap-top depth (positive down, so the top is at y = -depth), stem radius and lobed outline
+r(theta) = r*(1 + a2 cos(2 theta + p2) + a3 cos(3 theta + p3) + a4 cos(4 theta + p4)), theta
+from +x toward +z. The cap is sqrt(q^2 + v^2) - t/2 where q = (rho - r(theta))*c(theta) + t/2 is
+positive and |v| - t/2 over the flat blob, with c = r/sqrt(r^2 + r'^2) the outline's slope
+cosine and v the height over the cap's mid-plane (a round reef takes the exact rounded-disc
+branch, which is the same arithmetic at c = 1); the stem a cylinder from below the floor to the
+mid-plane; the two joined by the cubic smooth minimum with a fillet of t/2; the rock the union,
+its distance the minimum over the reefs. Every reef comes from run.json's `reefs` list, which
+Manifest.RecordReefs fills from the built world (x, z, r, depth, stem, a2..a4, p2..p4,
+noiseSeed; `reefCover` and `reefCoverGot` after it); the thickness and the fade from
+config.json's `reef` group, which carries no count (the count is the list's length). A config
+with `reefCount` is the first build's round reefs, which this reader no longer reads: every
+reef clause prints absent with that note. Every place is in the tank's own frame, the frame
+positions.jsonl and the snow's columns share.
 
 How each clause is read, and what it cannot be read from as the draft words it:
 
@@ -38,21 +50,32 @@ How each clause is read, and what it cannot be read from as the draft words it:
   - L4 places each pool founder that bred at its first positions row at or after its birth, and
     reads the snow dump at or before that second in its column: the column's joules over its
     water, where the water is the depth from fields/bed.f32 less the rock a reef puts in that
-    column. Held when every breeder read 1 J/m3 or more; the share is printed beside it.
+    column. Held when every breeder read 1 J/m3 or more; the share is printed beside it. The
+    rock in a column is the union over the reefs of each cap's vertical extent at the column's
+    centre and each stem's (floor to its cap's mid-plane) where the centre is inside the stem;
+    the smooth join's fillet is left out, and the grid masks a cell by its centre, so a 1 m
+    grid differs from this by under a cell.
   - L5 cannot be read as worded. The snow is dumped as column sums, and a table's column holds
     the water on the table, the cap's rock (dead cells, no snow) and the shaded room under it,
     down to the floor. So no record says how much snow lies on a table. The row prints two
     readings of the whole column against the open floor's: the column's joules over its water
     (the rock taken out) and its joules over its area. Both are the tables' snow plus the
-    room's, and the second assumes nothing about where in the column the snow sits.
-  - L6 counts bodies per cubic metre in a depth band under the caps and beside them, the band
-    being the cap's underside down --l6-band metres (10 by default, the lit water where round
-    46's crowd lived) and never under the floor. The volumes are summed over the 1 m columns
-    of the bed's grid, with the stem's columns taken out, so a body count and its volume are
-    read on the same lattice. The draft says "at the same depth" and names no band; the band
-    is this script's choice and is printed on the row.
-  - L7 reads "under a cap" as ReefGeometry.LightTransmission does: within a cap's radius of an
-    axis and below the cap's top, which is where the world shades the light. A stomach is a
+    room's, and the second assumes nothing about where in the column the snow sits. A table
+    column is one whose centre is inside any cap's outline; the open floor is the columns off
+    the shelf whose centre is outside every reef's outline scaled by two plus the fade
+    (rho > 2 r(theta) + fade for every reef: "a cap radius beyond the rim, and the fade past
+    it", with the outline scaled as the radius was).
+  - L6 counts bodies per cubic metre in a depth band under the caps and beside them. Under is
+    inside any cap's outline; beside is inside no outline and inside some reef's outline
+    scaled by two (between r(theta) and 2 r(theta)). The band at a place is the union, over
+    the reefs it is under (or beside), of each cap's own underside down --l6-band metres (10
+    by default, the lit water where round 46's crowd lived), less the rock, and never under
+    the floor. The volumes are summed over the 1 m columns of the bed's grid at their
+    centres, so a body count and its volume are read on the same lattice; a stem's column is
+    rock through its own cap's band and adds nothing. The draft says "at the same depth" and
+    names no band; the band is this script's choice and is printed on the row.
+  - L7 reads "under a cap" as ReefGeometry.LightTransmission does: inside some cap's outline and
+    below that cap's own top, which is where the world shades the light. A stomach is a
     body whose birth row reads `ink` 1, or `abs` 1 with `pho` 0; positions.jsonl carries the
     abs, jnt and pho bits and no `ink`, so the join to the lineage is what names a stomach.
   - L8a reads every positions row for a root inside the rock by more than --l8-tolerance metres
@@ -70,7 +93,8 @@ How each clause is read, and what it cannot be read from as the draft words it:
   - L9 is round 46's K8, and L11 reads `meanExposure` at the second read, as K1 does.
 
 A context row per seed prints the crowd, the trickle's and the pool's founders from the stats
-and the lineage, and the header's trickle, pool and reef tokens.
+and the lineage, the header's trickle, pool and reef tokens, and the reefs' count (the
+manifest list's length) with the cover asked and the cover got from the manifest.
 
 Run from anywhere:
 
@@ -139,25 +163,32 @@ NAMES = {
     "stats_wall_total": "wallTotalMs",       # cumulative
 
     # config.json (RunConfigJson: the Tunable group, the key the property's camel case; found
-    # by name anywhere in the tree, as r46-read.py does). The reef group: reef worktree
-    # RunConfig.cs, [Tunable("reef")]. The pool: pool worktree RunConfig.cs,
+    # by name anywhere in the tree, as r46-read.py does). The reef group: main's RunConfig.cs,
+    # [Tunable("reef")], rebuilt on D118: the cover, the ceiling, the radius range, the
+    # roughness, the depth and its jitter, the thickness, the stem's fraction and the fade.
+    # The reader takes the thickness and the fade from it and the cover as a fallback; every
+    # reef's own radius, depth and stem is in the manifest. `reefCount` is the first build's
+    # key (gone from main) and marks a first-build reef config. The pool: RunConfig.cs,
     # [Tunable("population")] FoundingTricklePoolShare / FoundingTricklePoolCount.
     "config_shape": "worldShape",
     "config_area": "worldAreaSquareMetres",
     "config_reef_group": "reef",
-    "config_reef_count": "reefCount",
-    "config_reef_cap_r": "reefCapRadiusMetres",
-    "config_reef_cap_depth": "reefCapDepthMetres",
+    "config_reef_cover": "reefCover",
     "config_reef_cap_t": "reefCapThicknessMetres",
-    "config_reef_stem_r": "reefStemRadiusMetres",
     "config_reef_fade": "reefFadeMetres",
+    "config_reef_first_build": "reefCount",
     "config_pool_count": "foundingTricklePoolCount",
     "config_pool_share": "foundingTricklePoolShare",
 
-    # run.json (reef worktree Manifest.cs, the writer after the bed's block): `"reefs":
-    # [{"x":..,"z":..}, ...]`, an empty list with no reef. The fields are ReefX and ReefZ in
-    # C# and are not written under those names; both spellings are tried, `reefs` first.
-    "manifest_reefs": "reefs", "manifest_reef_x": "x", "manifest_reef_z": "z",
+    # run.json (main's Manifest.cs, the writer after the bed's block): `"reefs": [{"x", "z",
+    # "r", "depth", "stem", "a2", "a3", "a4", "p2", "p3", "p4", "noiseSeed"}, ...]`, an empty
+    # list with no reef, then "reefCover" (asked) and "reefCoverGot" (reached on the grid's
+    # columns), 0 with no reef. `depth` is the cap top's depth below the surface, positive
+    # (ReefGeometry.Reef.CapDepth; CapTopY = -depth); `r` the cap's mean radius r0; `stem`
+    # the stem's radius in metres (0 the floating island); a_k shares of r, p_k radians.
+    "manifest_reefs": "reefs",
+    "manifest_reef_keys": ("x", "z", "r", "depth", "stem", "a2", "a3", "a4", "p2", "p3", "p4"),
+    "manifest_reef_cover": "reefCover", "manifest_reef_cover_got": "reefCoverGot",
     "manifest_status": "status",
 
     # lineage.jsonl (LineageEvent.ToJson). A founder's `k` is "f" and its `p` -1; `src` is
@@ -183,8 +214,9 @@ NAMES = {
     "diverged_dir": "diverged", "diverged_reef_reason": "inside reef",
 
     # The report: the header line starts "engine=" (Report.cs). Its tokens: the reef's is
-    # ReefGeometry.HeaderToken ("reefs 3 cap r=4 m at 3 m t=2 m stem r=1 m fade 15 m", or
-    # "no reef"), the pool's Report.PoolToken ("pool 0.1 of 4", only when a pool is named),
+    # ReefGeometry.HeaderToken ("reefs 15 cover 0.25 (0.251 got) cap r=6-16 m rough 0.15 at
+    # 3 m ±1 t=2 m stem 0.25 fade 8 m", or "no reef"; the first build's "reefs 3 cap r=4 m at
+    # 3 m t=2 m stem r=1 m fade 15 m" is still matched on its runs), the pool's Report.PoolToken ("pool 0.1 of 4", only when a pool is named),
     # the trickle's Report.TrickleToken. The footer's pace: "(2.2x real time)".
     "header_prefix": "engine=",
     "footer_pace": r"\(([\d.]+)x real time\)",
@@ -295,57 +327,174 @@ def median(xs):
 
 # ---------------------------------------------------------------------- the reefs
 
+def interval_union(intervals):
+    """The union of closed intervals (lo, hi) as a sorted list of disjoint ones."""
+    out = []
+    for lo, hi in sorted(i for i in intervals if i[1] > i[0]):
+        if out and lo <= out[-1][1]:
+            if hi > out[-1][1]:
+                out[-1] = (out[-1][0], hi)
+        else:
+            out.append((lo, hi))
+    return out
+
+
+def interval_clip(intervals, lo, hi):
+    return [(max(a, lo), min(b, hi)) for a, b in intervals if min(b, hi) > max(a, lo)]
+
+
+def interval_minus(intervals, cuts):
+    """intervals less the union of cuts; both lists of (lo, hi)."""
+    out = []
+    cuts = interval_union(cuts)
+    for a, b in intervals:
+        pieces = [(a, b)]
+        for c, d in cuts:
+            nxt = []
+            for p, q in pieces:
+                if d <= p or c >= q:
+                    nxt.append((p, q))
+                    continue
+                if c > p:
+                    nxt.append((p, c))
+                if d < q:
+                    nxt.append((d, q))
+            pieces = nxt
+        out.extend(pieces)
+    return out
+
+
+def interval_length(intervals):
+    return sum(b - a for a, b in intervals)
+
+
+def interval_contains(intervals, y):
+    """Half-open [lo, hi), as the first build's band test was."""
+    return any(lo <= y < hi for lo, hi in intervals)
+
+
 class Reefs:
-    """ReefGeometry's distance, ported from the reef worktree's ReefGeometry.OfReef (the value
-    only, not its derivatives)."""
+    """ReefGeometry's distance, ported from main's ReefGeometry (D118, 9a467ce): OfReef, Cap,
+    RoundCap, Stem and SmoothUnion for the value only, not their derivatives; InsideOutline,
+    OutlineRadius and LightTransmission as they are. One record per reef from run.json."""
 
-    def __init__(self, count, cap_r, cap_depth, cap_t, stem_r, fade, xs, zs):
-        self.count = count
-        self.cap_r = cap_r
-        self.cap_depth = cap_depth
+    def __init__(self, recs, cap_t, fade, cover=None, cover_got=None):
+        self.recs = [dict(r) for r in recs]
+        self.count = len(self.recs)
         self.cap_t = cap_t
-        self.stem_r = stem_r
         self.fade = fade
-        self.xs = list(xs)
-        self.zs = list(zs)
+        self.cover = cover
+        self.cover_got = cover_got
         self.half_t = 0.5 * cap_t
-        self.cap_mid_y = -(cap_depth + self.half_t)
-        self.disc_r = cap_r - self.half_t
         self.fillet = self.half_t
-        self.is_island = not (stem_r > 0.0)
+        self.xs = [r["x"] for r in self.recs]
+        self.zs = [r["z"] for r in self.recs]
+        self.mid_y = []
+        self.round = []
+        self.outer_max = []
+        for r in self.recs:
+            self.mid_y.append(-(r["depth"] + self.half_t))
+            is_round = r["a2"] == 0.0 and r["a3"] == 0.0 and r["a4"] == 0.0
+            self.round.append(is_round)
+            if is_round:
+                self.outer_max.append(r["r"])
+            else:
+                # The constructor's sampling: 2,048 angles, a margin of 1e-3 of r0.
+                om = 0.0
+                for s in range(2048):
+                    om = max(om, self._outline(r, 2.0 * math.pi * s / 2048.0)[0])
+                self.outer_max.append(om + 1e-3 * r["r"])
 
-    @property
-    def cap_top_y(self):
-        return -self.cap_depth
+    # ---- the outline
+    @staticmethod
+    def _outline(r, theta):
+        """ReefGeometry.Outline's o and o1 (its first derivative in the angle)."""
+        c2, s2 = math.cos(2.0 * theta + r["p2"]), math.sin(2.0 * theta + r["p2"])
+        c3, s3 = math.cos(3.0 * theta + r["p3"]), math.sin(3.0 * theta + r["p3"])
+        c4, s4 = math.cos(4.0 * theta + r["p4"]), math.sin(4.0 * theta + r["p4"])
+        o = r["r"] * (1.0 + r["a2"] * c2 + r["a3"] * c3 + r["a4"] * c4)
+        o1 = -r["r"] * (2.0 * r["a2"] * s2 + 3.0 * r["a3"] * s3 + 4.0 * r["a4"] * s4)
+        return o, o1
 
-    @property
-    def cap_underside_y(self):
-        return -(self.cap_depth + self.cap_t)
+    def outline_radius(self, i, theta):
+        """ReefGeometry.OutlineRadius: r(theta), theta from +x toward +z."""
+        return self._outline(self.recs[i], theta)[0]
 
-    def _cap(self, rho, y):
-        q = rho - self.disc_r
-        v = y - self.cap_mid_y
-        if q > 0.0:
+    def inside_outline(self, i, x, z, scale=1.0, plus=0.0):
+        """ReefGeometry.InsideOutline at scale 1 and plus 0; otherwise inside the outline
+        scaled about the axis by `scale` and pushed out by `plus` metres: rho <= scale*r(theta)
+        + plus."""
+        r = self.recs[i]
+        dx = x - r["x"]
+        dz = z - r["z"]
+        rho2 = dx * dx + dz * dz
+        if self.round[i]:
+            lim = scale * r["r"] + plus
+            return rho2 <= lim * lim
+        outer = scale * self.outer_max[i] + plus
+        if rho2 > outer * outer:
+            return False
+        if rho2 <= 0.0:
+            return True
+        lim = scale * self._outline(r, math.atan2(dz, dx))[0] + plus
+        return rho2 <= lim * lim
+
+    def inside_any_outline(self, x, z, scale=1.0, plus=0.0):
+        return [i for i in range(self.count) if self.inside_outline(i, x, z, scale, plus)]
+
+    def cap_radius(self, i):
+        return self.recs[i]["r"]
+
+    def cap_top_y(self, i):
+        return -self.recs[i]["depth"]
+
+    def cap_underside_y(self, i):
+        return -(self.recs[i]["depth"] + self.cap_t)
+
+    def stem_radius(self, i):
+        return self.recs[i]["stem"]
+
+    def is_island(self, i):
+        return not (self.recs[i]["stem"] > 0.0)
+
+    # ---- the distance
+    def _cap_q(self, i, x, z):
+        """The cap's q at a horizontal place (None on the axis of a lobed reef, where Cap
+        takes the flat blob), and rho."""
+        r = self.recs[i]
+        dx = x - r["x"]
+        dz = z - r["z"]
+        rho = math.sqrt(dx * dx + dz * dz)
+        if self.round[i]:
+            return rho - (r["r"] - self.half_t), rho        # RoundCap's q
+        if not rho > 0.0:
+            return None, rho
+        o, o1 = self._outline(r, math.atan2(dz, dx))
+        c = o / math.sqrt(o * o + o1 * o1)
+        return (rho - o) * c + self.half_t, rho
+
+    def _cap(self, i, x, y, z):
+        q, rho = self._cap_q(i, x, z)
+        v = y - self.mid_y[i]
+        if q is not None and q > 0.0:
             return math.sqrt(q * q + v * v) - self.half_t
         return abs(v) - self.half_t
 
-    def _stem(self, rho, y):
-        er = rho - self.stem_r
-        ey = y - self.cap_mid_y
+    def _stem(self, i, rho, y):
+        er = rho - self.recs[i]["stem"]
+        ey = y - self.mid_y[i]
         if er > 0.0 and ey > 0.0:
             return math.sqrt(er * er + ey * ey)
         if er > 0.0 or (ey <= 0.0 and er > ey):
             return er
         return ey
 
-    def of_reef(self, reef, x, y, z):
-        dx = x - self.xs[reef]
-        dz = z - self.zs[reef]
-        rho = math.sqrt(dx * dx + dz * dz)
-        cap = self._cap(rho, y)
-        if self.is_island:
+    def of_reef(self, i, x, y, z):
+        cap = self._cap(i, x, y, z)
+        if self.is_island(i):
             return cap
-        stem = self._stem(rho, y)
+        rho = math.hypot(x - self.xs[i], z - self.zs[i])
+        stem = self._stem(i, rho, y)
         k = self.fillet
         gap = cap - stem
         spread = abs(gap)
@@ -354,40 +503,59 @@ class Reefs:
         h = (k - spread) / k
         return min(cap, stem) - k * h * h * h / 6.0
 
-    def signed_distance(self, x, y, z):
-        return min(self.of_reef(i, x, y, z) for i in range(len(self.xs)))
+    def signed_distance(self, x, y, z, reefs=None):
+        """The minimum over the reefs (over `reefs` when given)."""
+        idx = range(self.count) if reefs is None else reefs
+        return min(self.of_reef(i, x, y, z) for i in idx)
 
-    def nearest_rho(self, x, z):
-        return min(math.hypot(x - self.xs[i], z - self.zs[i]) for i in range(len(self.xs)))
-
-    def under_cap_light(self, x, y, z):
-        """ReefGeometry.LightTransmission's test: below a cap's top and within its radius."""
-        if not (y < -self.cap_depth):
-            return False
-        r2 = self.cap_r * self.cap_r
-        for i in range(len(self.xs)):
+    def near(self, x, z, margin):
+        """The reefs whose widest outline, plus margin, reaches the place horizontally; a reef
+        outside it has a positive distance there (the cap's is at least c_min (rho - r_max) and
+        the stem stands inside the outline)."""
+        out = []
+        for i in range(self.count):
             dx = x - self.xs[i]
             dz = z - self.zs[i]
-            if dx * dx + dz * dz <= r2:
+            m = self.outer_max[i] + margin
+            if dx * dx + dz * dz < m * m:
+                out.append(i)
+        return out
+
+    # ---- the light
+    def under_cap_light(self, x, y, z):
+        """ReefGeometry.LightTransmission's test: inside some cap's outline and below that
+        cap's own top."""
+        for i in range(self.count):
+            if not (y < -self.recs[i]["depth"]):
+                continue
+            if self.inside_outline(i, x, z):
                 return True
         return False
 
-    def rock_in_column(self, rho, depth):
-        """How many metres of a column at a horizontal distance rho from an axis are rock, on
-        the analytic shape (the grid masks a cell whose centre is rock, so a 1 m grid differs
-        from this by under a cell). Smooth-union fillet ignored."""
-        if not self.is_island and rho < self.stem_r:
-            return max(0.0, depth - self.cap_depth)
-        if rho <= self.disc_r:
-            return self.cap_t
-        if rho < self.cap_r:
-            q = rho - self.disc_r
-            return 2.0 * math.sqrt(max(0.0, self.half_t * self.half_t - q * q))
-        return 0.0
+    # ---- a column's rock
+    def rock_intervals(self, x, z):
+        """The rock on the vertical line at (x, z): per reef, the cap's extent where the cap's
+        distance is negative (|v| < t/2 over the flat blob, |v| < sqrt((t/2)^2 - q^2) on the
+        rim) and the stem's, from below any floor to the cap's mid-plane, where the line is
+        inside the stem. The smooth join's fillet is left out."""
+        out = []
+        ht = self.half_t
+        for i in range(self.count):
+            q, rho = self._cap_q(i, x, z)
+            if q is None or q <= 0.0:
+                h = ht
+            elif q < ht:
+                h = math.sqrt(ht * ht - q * q)
+            else:
+                h = 0.0
+            if h > 0.0:
+                out.append((self.mid_y[i] - h, self.mid_y[i] + h))
+            if not self.is_island(i) and rho < self.recs[i]["stem"]:
+                out.append((-float("inf"), self.mid_y[i]))
+        return interval_union(out)
 
-    def token(self):
-        return ("reefs %d cap r=%g m at %g m t=%g m stem r=%g m fade %g m"
-                % (self.count, self.cap_r, self.cap_depth, self.cap_t, self.stem_r, self.fade))
+    def rock_in_column(self, x, z, floor_y):
+        return interval_length(interval_clip(self.rock_intervals(x, z), floor_y, 0.0))
 
 
 def read_reefs(config, manifest):
@@ -396,31 +564,30 @@ def read_reefs(config, manifest):
     group = config.get(N["config_reef_group"]) if isinstance(config, dict) else None
     if not isinstance(group, dict):
         return None, "config.json has no `reef` group (a run before the reef build)"
-    count = group.get(N["config_reef_count"])
-    if not count:
-        return None, "the config's reefCount is 0 (no reef in this world)"
-    keys = ["config_reef_cap_r", "config_reef_cap_depth", "config_reef_cap_t",
-            "config_reef_stem_r", "config_reef_fade"]
-    missing = [N[k] for k in keys if group.get(N[k]) is None]
+    if N["config_reef_first_build"] in group:
+        return None, ("a first-build reef config (`reefCount` in the reef group: the round "
+                      "reefs before D118's rebuild, which this reader does not read)")
+    cover = group.get(N["config_reef_cover"])
+    if cover is None:
+        return None, "the reef group has no `reefCover`"
+    if not cover > 0:
+        return None, "the config's reefCover is 0 (no reef in this world)"
+    missing = [N[k] for k in ("config_reef_cap_t", "config_reef_fade") if group.get(N[k]) is None]
     if missing:
         return None, "the reef group lacks %s" % ", ".join(missing)
-    xs, zs = [], []
     listed = (manifest or {}).get(N["manifest_reefs"])
-    if isinstance(listed, list) and listed:
-        xs = [float(r[N["manifest_reef_x"]]) for r in listed]
-        zs = [float(r[N["manifest_reef_z"]]) for r in listed]
-    elif manifest and isinstance(manifest.get("ReefX"), list):
-        xs = [float(v) for v in manifest["ReefX"]]
-        zs = [float(v) for v in manifest.get("ReefZ", [])]
-    if not xs or len(xs) != len(zs):
-        return None, ("the config names %d reef(s) and run.json carries no `reefs` axes" % count)
-    if len(xs) != count:
-        return None, "the config names %d reefs and run.json carries %d" % (count, len(xs))
-    return Reefs(count, float(group[N["config_reef_cap_r"]]),
-                 float(group[N["config_reef_cap_depth"]]),
-                 float(group[N["config_reef_cap_t"]]),
-                 float(group[N["config_reef_stem_r"]]),
-                 float(group[N["config_reef_fade"]]), xs, zs), None
+    if not isinstance(listed, list) or not listed:
+        return None, ("the config asks for a reef cover of %g and run.json carries no `reefs` "
+                      "list" % cover)
+    recs = []
+    for k, r in enumerate(listed):
+        lack = [key for key in N["manifest_reef_keys"] if not isinstance(r, dict) or r.get(key) is None]
+        if lack:
+            return None, "run.json's reef %d lacks %s" % (k, ", ".join(lack))
+        recs.append({key: float(r[key]) for key in N["manifest_reef_keys"]})
+    m = manifest or {}
+    return Reefs(recs, float(group[N["config_reef_cap_t"]]), float(group[N["config_reef_fade"]]),
+                 m.get(N["manifest_reef_cover"], cover), m.get(N["manifest_reef_cover_got"])), None
 
 
 def pool_named(config):
@@ -528,12 +695,11 @@ def snow_dumps(d, cutoff):
 
 def column_water(bed, reefs, ix, iz):
     """A column's water in metres: its depth from the bed less any reef's rock in it."""
-    depth = -bed["floor"][ix * bed["nz"] + iz]
+    floor_y = bed["floor"][ix * bed["nz"] + iz]
     if reefs is None:
-        return depth
+        return -floor_y
     c = bed["cell"]
-    rho = reefs.nearest_rho((ix + 0.5) * c, (iz + 0.5) * c)
-    return depth - reefs.rock_in_column(rho, depth)
+    return -floor_y - reefs.rock_in_column((ix + 0.5) * c, (iz + 0.5) * c, floor_y)
 
 
 # ---------------------------------------------------------------------- positions, one pass
@@ -587,19 +753,12 @@ def positions_pass(d, cutoff, read_t, reefs, bed, L, want_l4, stride, band, tol)
                 earliest_l4 = min(pending.values()) if pending else None
             if need_l8:
                 out["l8_rows"] += 1
-                reach2 = (reefs.cap_r + tol + 1.0) ** 2
                 for b in bodies:
                     x, y, z = b[1], b[2], b[3]
-                    near = False
-                    for i in range(len(reefs.xs)):
-                        dx = x - reefs.xs[i]
-                        dz = z - reefs.zs[i]
-                        if dx * dx + dz * dz < reach2:
-                            near = True
-                            break
+                    near = reefs.near(x, z, tol + 1.0)
                     if not near:
                         continue
-                    s = reefs.signed_distance(x, y, z)
+                    s = reefs.signed_distance(x, y, z, near)
                     if s < 0.0:
                         out["l8_any_negative"] += 1
                         if out["l8_deepest"] is None or s < out["l8_deepest"]:
@@ -611,10 +770,25 @@ def positions_pass(d, cutoff, read_t, reefs, bed, L, want_l4, stride, band, tol)
     return out
 
 
+def l6_region(reefs, x, z, band):
+    """('under' or 'beside' or None, the band's intervals at the place). Under is inside any
+    cap's outline; beside is inside no outline and inside some reef's outline scaled by two.
+    The band is the union, over those reefs, of each cap's underside down `band` metres."""
+    idx = reefs.inside_any_outline(x, z)
+    region = "under"
+    if not idx:
+        idx = reefs.inside_any_outline(x, z, scale=2.0)
+        region = "beside"
+    if not idx:
+        return None, []
+    bands = interval_union([(reefs.cap_underside_y(i) - band, reefs.cap_underside_y(i))
+                            for i in idx])
+    return region, bands
+
+
 def l6_geometry(reefs, bed, band):
-    """The under and beside regions' water volumes in the band, summed over the bed's columns."""
-    top = reefs.cap_underside_y
-    bottom_nominal = top - band
+    """The under and beside regions' water volumes in the band, summed over the bed's columns
+    at their centres: each column's band less the rock in it, never under the floor."""
     c = bed["cell"]
     v_under = v_beside = 0.0
     for ix in range(bed["nx"]):
@@ -622,30 +796,36 @@ def l6_geometry(reefs, bed, band):
             k = ix * bed["nz"] + iz
             if not bed["live"][k]:
                 continue
-            rho = reefs.nearest_rho((ix + 0.5) * c, (iz + 0.5) * c)
-            if rho > 2.0 * reefs.cap_r:
+            x, z = (ix + 0.5) * c, (iz + 0.5) * c
+            region, bands = l6_region(reefs, x, z, band)
+            if region is None:
                 continue
-            bottom = max(bottom_nominal, bed["floor"][k])
-            h = max(0.0, top - bottom) * c * c
-            if rho <= reefs.cap_r:
-                if not reefs.is_island and rho < reefs.stem_r:
-                    continue           # the stem's column is rock through the band
+            water = interval_minus(interval_clip(bands, bed["floor"][k], 0.0),
+                                   reefs.rock_intervals(x, z))
+            h = interval_length(water) * c * c
+            if region == "under":
                 v_under += h
             else:
                 v_beside += h
-    return dict(top=top, bottom=bottom_nominal, v_under=v_under, v_beside=v_beside)
+    undersides = [reefs.cap_underside_y(i) for i in range(reefs.count)]
+    return dict(band=band, v_under=v_under, v_beside=v_beside,
+                shallowest_underside=max(undersides), deepest_underside=min(undersides))
 
 
 def l6_count(t, bodies, reefs, bed, g):
     n_under = n_beside = 0
+    top = g["shallowest_underside"]
+    bottom = g["deepest_underside"] - g["band"]
     for b in bodies:
         x, y, z = b[1], b[2], b[3]
-        if not (g["bottom"] <= y < g["top"]):
+        if not (bottom <= y < top):
+            continue                   # outside every band; saves the outline tests
+        region, bands = l6_region(reefs, x, z, g["band"])
+        if region is None or not interval_contains(bands, y):
             continue
-        rho = reefs.nearest_rho(x, z)
-        if rho <= reefs.cap_r:
+        if region == "under":
             n_under += 1
-        elif rho <= 2.0 * reefs.cap_r:
+        else:
             n_beside += 1
     du = n_under / g["v_under"] if g["v_under"] > 0 else None
     db = n_beside / g["v_beside"] if g["v_beside"] > 0 else None
@@ -781,20 +961,21 @@ def l5(seed, reefs, reef_reason, bed, dumps):
     if not sl or sl["cellsX"] != bed["nx"] or sl["cellsZ"] != bed["nz"]:
         return absent("L5", seed, "the snow's columns and the bed's do not share a layout")
     c = bed["cell"]
-    open_min = 2.0 * reefs.cap_r + reefs.fade      # a cap radius plus the fade past the rim
     tables, opens = [], []
     for ix in range(bed["nx"]):
         for iz in range(bed["nz"]):
             k = ix * bed["nz"] + iz
             if not bed["live"][k]:
                 continue
-            rho = reefs.nearest_rho((ix + 0.5) * c, (iz + 0.5) * c)
+            x, z = (ix + 0.5) * c, (iz + 0.5) * c
             w = column_water(bed, reefs, ix, iz)
             if not w > 0:
                 continue
-            if rho <= reefs.cap_r:
+            if reefs.inside_any_outline(x, z):
                 tables.append((k, w))
-            elif rho >= open_min and not bed["shelf"][k]:
+            elif not bed["shelf"][k] and not reefs.inside_any_outline(x, z, 2.0, reefs.fade):
+                # Open: outside every outline scaled by two plus the fade, i.e. a cap radius
+                # beyond the rim (the outline scaled as the radius was) and the fade past it.
                 opens.append((k, w))
     if not tables or not opens:
         return absent("L5", seed, "no table columns or no open-floor columns on the grid",
@@ -841,8 +1022,10 @@ def l6(seed, reefs, reef_reason, bed, pos, band):
     held = sum(1 for r in rows if r[3] is not None and r[4] is not None and r[3] < r[4])
     ties = sum(1 for r in rows if r[3] is not None and r[3] == r[4])
     last = rows[-1]
-    return dict(clause="L6", seed=seed, band="%.3g to %.3g m" % (reefs.cap_underside_y,
-                                                                reefs.cap_underside_y - band),
+    undersides = [reefs.cap_underside_y(i) for i in range(reefs.count)]
+    return dict(clause="L6", seed=seed,
+                band="each cap's underside down %g m (undersides %.3g to %.3g m)"
+                     % (band, max(undersides), min(undersides)),
                 volume_under_m3=vu, volume_beside_m3=vb, samples=len(rows),
                 samples_fewer_under=held, ties=ties,
                 last_at=last[0], under=last[1], beside=last[2], under_per_m3=last[3],
@@ -865,8 +1048,8 @@ def l7(seed, reefs, reef_reason, pos, L, read_t):
     return dict(clause="L7", seed=seed, at=pos["last_t"], short=pos["last_t"] < read_t,
                 under_caps=len(under), photosynthetic=len(photo), stomachs=len(stomachs),
                 other=len(under) - len(stomachs),
-                note="under a cap is ReefGeometry.LightTransmission's rule: within r_c of an "
-                     "axis and below the cap's top; a stomach is ink 1, or abs 1 with pho 0",
+                note="under a cap is ReefGeometry.LightTransmission's rule: inside a cap's "
+                     "outline and below that cap's own top; a stomach is ink 1, or abs 1 with pho 0",
                 held=not photo and len(stomachs) == len(under))
 
 
@@ -1028,15 +1211,18 @@ def l11(seed, ts, by_t, cutoff):
     return dict(clause="L11", seed=seed, at=t, short=short, expo=v, held=v > L11_EXPO)
 
 
-def context_row(seed, ts, by_t, L, header, reef_reason, pool_reason):
+def context_row(seed, ts, by_t, L, header, reef_reason, pool_reason, manifest):
     tokens = []
     if header:
         for pattern in (r"trickle \S+(?: s)?", r"pool \S+ of \d+",
+                        (r"reefs \d+ cover \S+ \(\S+ got\) cap r=\S+ m rough \S+ at \S+ m "
+                         r"±\S+ t=\S+ m stem \S+ fade \S+ m"),
                         r"reefs \d+ cap r=\S+ m at \S+ m t=\S+ m stem r=\S+ m fade \S+ m",
                         r"no reef", r"founders (?:in their food|in matter|anywhere)"):
             m = re.search(r"(?:^| |, )(%s)" % pattern, header)
             if m:
                 tokens.append(m.group(1).strip())
+    listed = (manifest or {}).get(NAMES["manifest_reefs"])
     last = by_t[ts[-1]]
     by_src = {}
     for s in L["src"].values():
@@ -1047,6 +1233,9 @@ def context_row(seed, ts, by_t, L, header, reef_reason, pool_reason):
                 founders_by_src=" ".join("%s:%d" % (k, v) for k, v in sorted(
                     by_src.items(), key=lambda kv: str(kv[0]))) or None,
                 reef=reef_reason or "on", pool=pool_reason or "on",
+                reef_count=len(listed) if isinstance(listed, list) else None,
+                reef_cover=(manifest or {}).get(NAMES["manifest_reef_cover"]),
+                reef_cover_got=(manifest or {}).get(NAMES["manifest_reef_cover_got"]),
                 header_tokens="; ".join(tokens) if tokens else None)
 
 
@@ -1113,7 +1302,7 @@ def read_arm(runs_root, arm, cutoff, args, base_name, base_root):
         t_end = ts[-1]
 
     return [
-        context_row(arm, ts, by_t, L, header, reef_reason, pool_reason),
+        context_row(arm, ts, by_t, L, header, reef_reason, pool_reason, manifest),
         l1(arm, L, pool_reason),
         l2(arm, L, pool_reason),
         l3(arm, L, pool_reason, pos, read_t),

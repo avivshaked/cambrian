@@ -41,10 +41,10 @@ namespace Evosim.Dynamics.Tests
     internal static class RunFixture
     {
         public const string RunDirectory =
-            @"D:\Projects\experiments\evolution-simulator\runs\r47fixc-s4\2026-09-23-210230-206f9ac1";
+            @"D:\Projects\experiments\evolution-simulator\runs\r47fixd-s4\2026-09-23-221944-9e2d7674";
 
         /// <summary>The recording's name, for the messages that say why it cannot serve.</summary>
-        private const string Recording = "r47fixc-s4 (round 44's world on the round-47 build, the reef and the pool off, with every rule at its default, seed 4)";
+        private const string Recording = "r47fixd-s4 (round 44's world on the round-47 build after D118's reef, the reef cover and the pool at 0, every rule at its default, seed 4)";
 
         public const string Snapshot = "000020000.jsonl";
 

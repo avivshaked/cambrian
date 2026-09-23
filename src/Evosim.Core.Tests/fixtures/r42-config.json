@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "679f831c59c6f1af",
+  "configHash": "256078e816861b27",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -213,12 +213,16 @@
     "offspringDispersalMetres": 5
   },
   "reef": {
-    "reefCapDepthMetres": 0,
-    "reefCapRadiusMetres": 0,
-    "reefCapThicknessMetres": 0,
-    "reefCount": 0,
-    "reefFadeMetres": 0,
-    "reefStemRadiusMetres": 0
+    "reefCapDepthJitterMetres": 1,
+    "reefCapDepthMetres": 3,
+    "reefCapRadiusMaxMetres": 16,
+    "reefCapRadiusMinMetres": 6,
+    "reefCapThicknessMetres": 2,
+    "reefCover": 0,
+    "reefFadeMetres": 8,
+    "reefMaxCount": 64,
+    "reefOutlineRoughness": 0.15,
+    "reefStemRadiusFraction": 0.25
   },
   "sense": {
     "chemicalHalfScaleJoulesPerCubicMetre": 10,

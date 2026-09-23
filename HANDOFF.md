@@ -244,7 +244,51 @@ the screen reads against it; kept, with the reading written). Dynamics 101 of 10
 `r47fixc-s4`; `--verify-checkpoint` at 2,500 s of the screen PASS. **Round 47 is
 pre-registered as `logbook/0117-the-reef-and-the-second-chance.md`** (the draft under
 `logbook/specs/r47-prereg-draft.md` is superseded by it and kept as the draft), committed
-on a clean tree, and launched: seeds 1 and 2 first, seed 3 when one ends. The reef was built in a worktree from `scratch/r47-build/brief.md`; the pool's bodies are
+on a clean tree at `b0048dd`, **and not launched**: the owner woke as it was committed and
+ruled the reef's shape (D118: many caps of random size and irregular outline, overlapping,
+placed to a cover of the surface, the purpose being dark places; and a rock skin on cap and
+stem). **Both rebuilds landed and are merged (23:20)**: the geometry (`9a467ce`, merged
+`8d03ee0`; `ReefCover` with the union on the grid's columns, radii 6 to 16 m, three-harmonic
+outlines up to 0.15, depth 3 ± 1, stems a quarter of the cap, product fades at 8 m, the
+substep refusal on the faded water's sampled maximum, 0.995 m/s on round 46's tank at
+cover 0.25; round 42's hash `256078e816861b27`; `reef-spec.md` §6 is the build) and the rock
+skin (`e15c3ea`, merged `73ab4ea`; `ReefLook` wired to the per-reef members at the merge).
+The launcher's reef block is rewritten to the new dials; `r47-read.py` is rewritten for the
+manifest's per-reef list and the lobed outlines (its outlines give the placer's cover on the
+smoke's fifteen reefs bit for bit, 5,519 of 21,994 columns; a first-build run prints every
+reef clause absent with a note). **The rebuilt smoke `r47smoke2` passed its review (23:30)**:
+fifteen lobed rocks of 6.3 to 15.6 m at a cover of 0.2509, three fused on the east side, dark
+under every cap with the shafts standing beside it, the tops boulders and hollows; both
+books closed, no divergence, `--verify-checkpoint` at 300 s PASS; the four pictures are
+beside 0117 (`logbook/images/r47smoke2-*`). Core 925 of 925 and Farm 85 of 85 on the merged
+tree; the r42 config fixture is from `pfix10` (`256078e816861b27`); 0117 is amended (the
+world and smoke sections, L10a as a reading of the faded water, which at 8 m of fade runs
+to 1.0 m/s beside a cap and fails the clause as first written, and the launch section).
+The crowd fixture `r47fixd-s4` is recorded (round 44's world, seed 4, 20,000 s), Dynamics
+reads 102 of 102 on it, and the regress against `r46fixc-s4` is identical in 149 fields at
+2,000 samples with the positions byte-equal at cover 0. **This commit is the
+pre-registration's record**: the tree is clean at it, the farm exe is rebuilt from it to
+`artifacts/Evosim.Farm/bin/Release-r47e`, and seeds 1 and 2 launch from it (five threads
+each, a 600-minute wall, checkpoints every 2,500 s), seed 3 when one ends; the launch's facts
+(the `configHash`, the header tokens, the manifest's `gitCommit`) go in the next commit. The commit
+`b0048dd` is not pushed; nothing tonight is pushed yet. The safari cannot rehearse on round 46 on
+this build: its live mode reads the run's `config.json` through the strict reader, which
+refuses round 46's for the reef and pool tunables (the config rule), so the rehearsal runs
+on the 4,000 s screen `r47scr-s1` (recorded on this build, checkpoints at 2,500 and 4,000
+s) with its own guide, and the safari of round 47 runs on the build that records it. Two
+fixes to the director landed on the way: the reader takes `guide.py`'s shape (the cards
+under `cards`, the ranking, picker, trip and parent fields as clade indices resolved to
+founders) where it had read the spec's founder ids. **The safari ran end to end on the screen
+(22:49)**: `theatre-safari.ps1 r47scr-s1 -RunsRoot scratch/r47-build/runs -Scenes 1,3` wrote
+two clips with captions and contact sheets under `scratch/safari/r47scr-s1/2026-09-23/`
+(the arrival from outside the glass, dim and mostly the tank's wall and two reef stems;
+a 20 s portrait of a leaf clade with its two captions, the crowd small at 2,500 s), 902
+frames, no frame under the bed or inside a body, three frames over the 0.5 m/s camera
+ceiling at 0.526. Two things to set for round 47's safari: the director snaps a scene to
+the nearest checkpoint when that saves over 300 s of stepping (`EVOSIM_THEATRE_SAFARI_SEEK_MAX`),
+so with checkpoints every 2,500 s a best second of 29,000 is filmed at 27,500, which is
+fine for a portrait and wrong for a time scene; and the arrival wants a brighter framing
+or a later second, since at the founding the tank is empty. The reef was built in a worktree from `scratch/r47-build/brief.md`; the pool's bodies are
 chosen by the ledger (`logbook/specs/r46-read/ledger-stomachs.md`): the screens' inoculum
 breaks even at 0.44 J/m³ and breeds from 1, and round 46's own longest-lived absorptive
 founders are the other candidates. The night's order after the builds land: merge with the

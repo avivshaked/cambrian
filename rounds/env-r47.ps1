@@ -2,10 +2,13 @@
 # 45 m with the beach, 15,000 units as islands stirred at 0.02, light by exposure, the offset
 # priced, the trickle with founders in their food, the support cost, contact per part, the
 # snow at 0.0005 /s) plus two rules, each with its spec under logbook/specs/:
-# - the mushroom reef (reef-spec.md): three rock columns with overhanging caps, 8 m across at
-#   3 m under the surface, 2 m thick, on stems 2 m across, the streams faded over 15 m from
-#   the rock. The cap's top is a lit table where the snow lands and the water under it is
-#   dark. Tokens to check in the header: `reefs 3 cap r=4 m at 3 m t=2 m stem r=1 m fade 15 m`.
+# - the mushroom reef (reef-spec.md, D118): rock columns with overhanging caps drawn from the
+#   seed until a quarter of the surface is under them, each cap 6 to 16 m in radius with a
+#   lobed outline, its top at 3 m plus or minus 1, 2 m thick, on a stem a quarter of its
+#   radius, overlapping where they fall, the streams faded over 8 m from the rock and
+#   multiplied where the fades meet. The cap's top is a lit table where the snow lands and
+#   the water under it is dark. Tokens to check in the header: `reefs N cover 0.25 (x got)
+#   cap r=6-16 m rough 0.15 at 3 m ±1 t=2 m stem 0.25 fade 8 m`, and the manifest's reefs.
 # - the trickle's pool (D117, the pool build of 2026-09-23): one trickle founder in ten is a
 #   copy of one of the four stomachs under inocula/pool-r47/ (the screens' inoculum and round
 #   46's three best absorptive founders by the ledger, logbook/specs/r46-read/ledger-stomachs.md),
@@ -20,8 +23,10 @@
     EVOSIM_FOUNDERS_FOLLOW_MATTER = 0
     EVOSIM_FOUNDERS_FOLLOW_FOOD = 1
     EVOSIM_TRICKLE = '1/30'
-    EVOSIM_REEF_COUNT = 3; EVOSIM_REEF_CAP_RADIUS = 4; EVOSIM_REEF_CAP_DEPTH = 3
-    EVOSIM_REEF_CAP_THICKNESS = 2; EVOSIM_REEF_STEM_RADIUS = 1; EVOSIM_REEF_FADE = 15
+    EVOSIM_REEF_COVER = 0.25; EVOSIM_REEF_MAX_COUNT = 64
+    EVOSIM_REEF_CAP_RADIUS_MIN = 6; EVOSIM_REEF_CAP_RADIUS_MAX = 16; EVOSIM_REEF_ROUGHNESS = 0.15
+    EVOSIM_REEF_CAP_DEPTH = 3; EVOSIM_REEF_CAP_DEPTH_JITTER = 1; EVOSIM_REEF_CAP_THICKNESS = 2
+    EVOSIM_REEF_STEM_FRACTION = 0.25; EVOSIM_REEF_FADE = 8
     EVOSIM_TRICKLE_POOL = 'D:/Projects/experiments/evolution-simulator/inocula/pool-r47/stomach-r45s1-100.json;D:/Projects/experiments/evolution-simulator/inocula/pool-r47/stomach-link-r46s1-1182.json;D:/Projects/experiments/evolution-simulator/inocula/pool-r47/stomach-link-r46s3-1513.json;D:/Projects/experiments/evolution-simulator/inocula/pool-r47/stomach-link-r46s3-2156.json'
     EVOSIM_TRICKLE_POOL_SHARE = 0.1
     EVOSIM_LIGHT_EXPOSURE = 1

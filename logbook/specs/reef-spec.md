@@ -11,6 +11,12 @@ The beach spec (`beach-spec.md`) is the pattern, and the fade it built for the s
 tool this spec reuses for the rock. Nothing here is built; the round-46 read decides what the
 reef is for.*
 
+> **Superseded in part on the night of 2026-09-23 (D118).** §1's count, its fixed radius,
+> its spacing rule and the `r_c + 5 m` clearance, and §3's refusal of overlapping fades,
+> describe the first build, which the owner saw in the smoke's pictures and ruled against.
+> §6 below is the reef as built on the ruling; where §6 and the sections above differ, §6
+> is the build. The tests in §4 were re-pinned to it.
+
 ## 1. The shape
 
 A reef is a solid of revolution about a vertical axis at `(x, z)`: a stem of radius `r_s`
@@ -117,3 +123,68 @@ Where the snow lies: on the caps' tables against the open floor and the beach's 
 the eaters and the plants sit: over, under and beside the caps, from the positions file
 against the reefs' places in the config. Whether anything lives in the dark room under a cap,
 and on what. The pace, and the fastest water at the rock.
+
+## 6. As built on D118 (2026-09-23 night)
+
+The owner's ruling, on the first build's pictures: larger caps with a random radius, no
+perfect circles, every reef different, many of them (about a quarter of the surface), overlap
+allowed, all of it configuration, and the purpose stated: places in the tank that get no
+light. The build, by an agent in a worktree, with these values chosen by the agent as dials:
+
+- **A cover, not a count.** `ReefCover` (0 = off, the recorded world) is the share of the
+  tank's surface disc under caps, measured as the union of the caps' outlines on the grid's
+  own 1 m columns so that overlaps count once; the placer draws reefs from the reef stream
+  until the cover is met, keeping the last reef only if it lands nearer the target, capped by
+  `ReefMaxCount` (64), and refuses when the cap is reached first or no legal spot is found in
+  4,000 tries. The count is derived and the manifest records every reef (`reefs: [{x, z, r,
+  depth, stem, a2, a3, a4, p2, p3, p4, noiseSeed}]`, then `reefCover` and `reefCoverGot`).
+  On round 46's tank at 0.25 the seeds place 10 to 21 reefs at 0.249 to 0.259.
+- **A random radius and a lobed outline.** `r0` uniform between `ReefCapRadiusMinMetres`
+  (6) and `ReefCapRadiusMaxMetres` (16); the outline `r(θ) = r0·(1 + Σ_{k=2..4} a_k cos(kθ +
+  φ_k))` with the amplitudes drawn up to `ReefOutlineRoughness` (0.15) and scaled together if
+  their sum passes 0.4, so the outline stays within 0.6 to 1.4 of `r0` and stays smooth; the
+  phases uniform. The cap's top at `ReefCapDepthMetres` (3) jittered by
+  `ReefCapDepthJitterMetres` (1), never above 0.5 m; the thickness one dial (2 m); the stem
+  `ReefStemRadiusFraction` (0.25) of `r0`. Each reef also draws a noise seed for the skin.
+- **The distance for a lobe.** In the cap's frame `q = (ρ − r(θ))·c(θ) + t/2` with `c =
+  r/√(r² + r′²)` the cosine of the outline's slope against the radial; where `q > 0` the
+  distance is `√(q² + v²) − t/2`, over the flat blob `|v| − t/2`. It is exactly zero on the
+  outline with a unit gradient there, first-order elsewhere (the error of the order of the
+  distance squared over the outline's radius of curvature), C¹ everywhere and C² except on
+  the `q = 0` surface and the stem's top plane; its gradient and Hessian are exact
+  derivatives of it, so the analytic acceleration is the true acceleration of the sampled
+  water. A round reef takes the first build's exact path. The rock is the set where the
+  distance is negative, and every system reads that one shape.
+- **The union.** Inside is inside any reef; the distance is the least over reefs (with a
+  per-reef lower bound so the order does not matter, and a limited overload for the contact,
+  the placer and the guard); the fade is the product of every reef's quintic, 0 in any rock
+  and 1 beyond every fade, so the velocity `g·u + ∇g×A` is divergence-free as before; the
+  light under any cap is `CapTransmission`, 0. Caps overlap where they fall; each keeps its
+  whole outline 2 m inside the glass and stands over floor at least `depth + t + 2 m` deep at
+  its centre and eight points of its outline.
+- **The substep refusal reads the faded water.** `GridField.CourantSubsteps` takes the larger
+  of the open water's a-priori ceiling and the faded field's maximum, sampled once at the
+  first transport step at the centre of every open face inside any fade at eight clocks of
+  the streams' period. It is a sample and not a bound: on round 46's tank at cover 0.25 and
+  fade 8 m it reads 0.995 m/s on the 1 m grid against the open water's 0.829, a Courant
+  number of 0.497, one substep; random points across four periods reached 1.04 m/s within
+  4 m of the rock, ten times the RMS knob, with an RMS of 0.18 against 0.12 unfaded. At a
+  15 m fade the same readings are 0.26 within 4 m and 0.66 anywhere in the fades. The
+  measurement costs about 20 s a world on the 1 m grid, on every resume too.
+- **Refused:** a cover at 0 with any other reef dial off its default; a box or a field that is
+  not a grid; a radius range not above 0 and ascending; `0.6·r_min ≤ t/2` (a ball, not a
+  table); a stem wider than the flat underside; a stemmed cap that could break the surface
+  (`depth − jitter < 0.5`); an island with depth or jitter; a cap without 2 m of water under
+  it at the deepest jitter; a tank too small for the smallest cap; a cover unmet at the count
+  cap; a spot not found.
+- **The skin** (`ReefLook`, `TheatreReefRock`, `TheatreRock.shader`): each reef's cap and stem
+  lathed from its own outline and cut inward by noise from its own seed (boulders, ledges and
+  joints on the table, a broken rim, a pitted underside, a knobbed stem flaring into the cap
+  along the smooth join), never outside the physics' rock; a rock material of the bed's
+  family with a triplanar grain and a solid mottle, an encrusted lit top darkening to a cold
+  underside and stem, the cap's shadow keeping 0.3 of the main light under it; about 42,000
+  triangles a reef at the smoke's size. Marine snow on the table is not drawn.
+- **The dials in the header:** `reefs 15 cover 0.25 (0.251 got) cap r=6-16 m rough 0.15 at
+  3 m ±1 t=2 m stem 0.25 fade 8 m`, or `no reef`; `EVOSIM_REEF_COVER`, `_MAX_COUNT`,
+  `_CAP_RADIUS_MIN`, `_CAP_RADIUS_MAX`, `_ROUGHNESS`, `_CAP_DEPTH`, `_CAP_DEPTH_JITTER`,
+  `_CAP_THICKNESS`, `_STEM_FRACTION`, `_FADE`.

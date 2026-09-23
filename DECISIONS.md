@@ -137,6 +137,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D115](#d115) | The founding trickle: founders keep arriving at a low rate for the whole run (one per 30 s in round 46), booked as matter influx, the floor unchanged, an empty world still the run's end unless founders are being added; replaces the timed second founding window | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 late afternoon (the owner's own proposal; "ok fine. but a world that dies out should be 'game over'") |
 | [D116](#d116) | Founders follow their food: D109's landing rule reads the field the founder's body eats, snow for a stomach and dissolved matter for a leaf, the larger for a mixotroph; replaces placing a cohort by rule | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 late afternoon ("use probability to make it more likely to land in high matter concentrates"; "yes") |
 | [D117](#d117) | The trickle brings back extinct species: with a launcher's share, a trickle founder is an exact copy of an evolved body from a pool the config pins by hash, marked `src: pool` in the lineage | 2026-09-23 | ruled by the owner in conversation on the night of 2026-09-23, on round 46's read ("I like the idea of reintroducing extinct species... yes lets do it") |
+| [D118](#d118) | The reef is many dark places, not three ornaments: caps of random size and irregular outline, overlapping where they fall, placed until a launcher's share of the surface is covered, opaque underneath, dressed as rock | 2026-09-23 | ruled by the owner in conversation on the night of 2026-09-23, on the smoke's pictures of the first build ("the idea is to have areas in the tank that do not get light. That's the reason they are there") |
 
 ---
 
@@ -6228,3 +6229,49 @@ subject, and it keeps every other founder random.
 the eaters back, and a second variable in the reef's round). A stomach founder endowed with a
 reserve sized to its bill (it lengthens the death, since the mouth still earns nothing).
 Waiting for round 48 (the owner chose the same round as the reef).
+
+### D118
+**The reef is many dark places: caps of random size and outline, overlapping, placed to a cover, opaque underneath, dressed as rock** · 2026-09-23
+
+**Status:** ruled by the owner in conversation on the night of 2026-09-23, on the pictures
+of the first reef build's smoke (three identical discs 8 m across, 0.7% of the surface):
+"the reef radius should be larger, and probabilistic. Additionally a perfect circle doesn't
+look natural. Lastly there should be different from one another... why only 3? I'd like to
+have about 25 percent of surface covered"; "reefs overlapping is not such a bad thing but if
+25 is too much, then we could do less. It should all be part of the configuration so we
+could easily change. The idea is to have areas in the tank that do not get light. That's
+the reason they are there"; and the skin: "an appropriate skin to the reefs, so they look
+more like a natural rocky structure. And that can be on the surface as well as the stem."
+The values below the ruling are the agent's, each a dial, taken under "lets follow your
+recommendations" while the owner slept; the spec is `logbook/specs/reef-spec.md` and the
+round's entry (0117) is amended before launch.
+
+**Decision.** The reef group is redesigned whole (no recorded run carries a reef). A
+launcher names a cover, `ReefCover`, the fraction of the tank's surface disc under caps,
+measured as the union of the caps' footprints on the grid's own columns so that overlaps
+count once; the placer draws reefs from the reef stream until the cover is met, capped by
+`ReefMaxCount`, and the count and every reef's parameters are derived and recorded in the
+manifest. Each cap's radius is drawn between `ReefCapRadiusMinMetres` and
+`ReefCapRadiusMaxMetres`; its outline is a radial function with low harmonics up to
+`ReefOutlineRoughness`, so no cap is a circle and no two are alike; its top sits at
+`ReefCapDepthMetres` jittered by `ReefCapDepthJitterMetres`; its stem is
+`ReefStemRadiusFraction` of its radius. Caps may overlap and the rock is their union: inside
+is inside any, the distance is the least, the fade is the product of every reef's, and the
+water under any cap is dark (`CapTransmission` 0, the owner's "block the sun"). The grid's
+substep refusal reads the faded field's own fastest water rather than the open water's
+bound. The theatre dresses each reef from its own outline and noise seed as rock, displaced
+inward only so the picture never stands outside the collider, with a lit encrusted top and a
+dark underside and stem. The agent's values for round 47: cover 0.25, radii 6 to 16 m,
+roughness 0.15, depth 3 ± 1 m, thickness 2 m, stems a quarter of the cap, fade 8 m,
+layouts per seed.
+
+**Why.** The purpose is shade: places in the tank that get no light, enough of them that the
+crowd's use of them can be read (0117's L5 to L7), and enough variety that the reef reads
+as a natural structure in the pictures. Three small discs gave neither. A cover is the dial
+the owner will move; a count is not, because a count says nothing about how much of the
+tank is dark once the radii vary.
+
+**Rejected.** Keeping the caps apart (the owner: overlap is not a bad thing, and 25% cannot
+be placed without it). Floating islands at the surface (the spec's other form; not asked
+for). Marine snow drawn on the tables in the skin (a later pass, once the dump gives the
+table's columns).
