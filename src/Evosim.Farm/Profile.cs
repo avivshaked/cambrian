@@ -70,6 +70,12 @@ namespace Evosim.Farm
         private long _bodyStepSum;
         private long _linkStepSum;
 
+        /// <summary>
+        /// Stopwatch ticks in D110's exposure pass (<c>Exposure</c>, one call a body a metabolic
+        /// step), a part of <c>metabolise</c> and not a phase beside it.
+        /// </summary>
+        private long _exposureTicks;
+
         /// <summary>The run's own clock, which every share is taken against.</summary>
         internal Stopwatch RunClock;
 
@@ -81,6 +87,21 @@ namespace Evosim.Farm
         public long WallHarnessMs => Milliseconds(_harnessTicks);
         public long WallWritersMs => WritersClock.ElapsedMilliseconds;
         public long WallTotalMs => RunClock?.ElapsedMilliseconds ?? 0L;
+
+        /// <summary>
+        /// Round 46's K10, the exposure pass's wall milliseconds: a part of the harness's
+        /// <c>metabolise</c> phase, so it is read as a share of that phase and is never added to
+        /// the split. 0 with <see cref="Core.RunConfig.LightByExposure"/> off, when the pass does
+        /// not run.
+        /// </summary>
+        public long WallExposureMs => Milliseconds(_exposureTicks);
+
+        /// <summary>
+        /// Round 46's K10, the metabolic bill's wall milliseconds (<see cref="Core.World.LedgerTicks"/>):
+        /// a part of <c>world</c>, and the smallest call that contains D113's support term, which
+        /// is one multiply-add a part inside it.
+        /// </summary>
+        public long WallLedgerMs => Milliseconds(World.LedgerTicks);
 
         /// <summary>Living bodies summed over every physics step — the profile's denominator.</summary>
         public long HarnessBodySteps => _bodyStepSum;

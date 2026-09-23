@@ -377,6 +377,56 @@ namespace Evosim.Core.Tests
             Assert.True(r < 0d, $"the rises hold the most: r = {r:0.000}");
         }
 
+        [Fact]
+        public void TheFloorDumpIsEachColumnsFloorCellInColumnOrder()
+        {
+            // Round 46's K11a: the farm's snow-floor.f32 is this copy. One value a column, in the
+            // column sums' own order, each at most its column's sum, and over the live columns
+            // exactly ColumnFloorAndFloorStock's reading in the same walk.
+            const float Area = 100f;
+            const float Cell = 1f;
+
+            BedShape bed = Bed(Area);
+            GridField field = Grid(Area, Cell, bed, sink: 0.2f);
+
+            field.SeedUniform(1f);
+            for (int step = 1; step <= 40; step++) field.Settle(0.5f);
+
+            int columns = field.CellsX * field.CellsZ;
+            var sums = new float[columns];
+            var floor = new float[columns];
+
+            field.CopyColumnStockTo(sums);
+            field.CopyColumnFloorStockTo(floor);
+
+            var (_, floorStock) = field.ColumnFloorAndFloorStock();
+
+            int live = 0;
+            for (int ix = 0; ix < field.CellsX; ix++)
+            {
+                for (int iz = 0; iz < field.CellsZ; iz++)
+                {
+                    int column = ix * field.CellsZ + iz;
+
+                    Assert.True(
+                        floor[column] <= sums[column] * (1f + 1e-6f) + 1e-9f,
+                        $"column ({ix}, {iz}): floor cell {floor[column]} J over the column's {sums[column]} J");
+
+                    if (field.LowestLiveLayer(ix, iz) < 0)
+                    {
+                        Assert.Equal(0f, floor[column]);
+                        continue;
+                    }
+
+                    Assert.Equal((float)floorStock[live], floor[column]);
+                    live++;
+                }
+            }
+
+            Assert.Equal(floorStock.Length, live);
+            Assert.True(live > 0, "no live column to read");
+        }
+
         private static double Min(float[] values)
         {
             double m = double.MaxValue;

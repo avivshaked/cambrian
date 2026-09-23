@@ -27,7 +27,7 @@ namespace Evosim.Farm.Tests
         /// A box rather than a tank, at one patch, with the floor open so the population floor
         /// keeps founding — which is what gives the reconcile something to do on every step.
         /// </remarks>
-        private static RunConfig SmallWorld() =>
+        internal static RunConfig SmallWorld() =>
             EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(new Dictionary<string, string>
             {
                 { "EVOSIM_AREA", "100" },
@@ -48,7 +48,7 @@ namespace Evosim.Farm.Tests
                 { "EVOSIM_SENSE_ENERGY", "1" },
             })));
 
-        private static string Scratch(string name)
+        internal static string Scratch(string name)
         {
             string path = Path.Combine(
                 Path.GetDirectoryName(typeof(SimulationTests).Assembly.Location), "sim-tests", name);
@@ -57,7 +57,7 @@ namespace Evosim.Farm.Tests
             return path;
         }
 
-        private static Simulation Build(out RunDirectory dir, string scratch)
+        internal static Simulation Build(out RunDirectory dir, string scratch)
         {
             RunConfig config = SmallWorld();
             var world = new World(config, 1UL);

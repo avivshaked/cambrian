@@ -88,6 +88,9 @@ namespace Evosim.Farm
         public long HarnessBodySteps => _sim.HarnessBodySteps;
         public double HarnessMicrosecondsPerBodyStep => _sim.HarnessMicrosecondsPerBodyStep;
 
+        public long WallExposureMs => _sim.WallExposureMs;
+        public long WallLedgerMs => _sim.WallLedgerMs;
+
         /// <summary>
         /// The fluid phase's four, which this engine does not have separately — see
         /// <see cref="Simulation.FluidMicrosecondsPerLinkStep"/>. All four read 0 and the split

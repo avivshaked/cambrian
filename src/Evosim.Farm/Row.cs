@@ -227,6 +227,21 @@ namespace Evosim.Farm
         }
 
         /// <summary>
+        /// The largest <see cref="PhenotypePart.DistanceFromRoot"/> over a body's parts, m: 0 for
+        /// a one-part body. The stats row's <c>maxReach</c> is this over every living body.
+        /// </summary>
+        public static double FarthestPartFromRoot(Phenotype body)
+        {
+            double farthest = 0d;
+            foreach (PhenotypePart part in body.Parts)
+            {
+                if (part.DistanceFromRoot > farthest) farthest = part.DistanceFromRoot;
+            }
+
+            return farthest;
+        }
+
+        /// <summary>
         /// Writes the sample and returns the markdown row.
         /// </summary>
         public string Write(Simulation sim, RunDirectory dir, IReadOnlyList<string> columns)
@@ -251,6 +266,10 @@ namespace Evosim.Farm
             double leafArea = 0d, leafOffset = 0d;
             bool supportPriced = world.Config.SupportWattsPerSquareMetrePerSquareMetre > 0f;
             double supportWatts = 0d, reachArea = 0d, reachWeighted = 0d;
+
+            // Round 46's K6b: the farthest any living part stands from its own root. NaN until a
+            // part is seen, so a world with none writes null and a dash, as meanReach does.
+            double maxReach = double.NaN;
             int belowWorld = 0, absorptiveBelowWorld = 0;
 
             double matterLocked = world.StandingJoulesInBodies / world.Config.JoulesPerUnit;
@@ -339,6 +358,11 @@ namespace Evosim.Farm
                     reachArea += part.LitArea;
                     reachWeighted += (double)part.LitArea * part.DistanceFromRoot;
                 }
+
+                // Unweighted, and over the same living phenotype, so it is scaled as the body
+                // stands (Phenotype.Scaled carries DistanceFromRoot by the linear factor).
+                double farthest = FarthestPartFromRoot(creature.Phenotype);
+                if (!(farthest <= maxReach)) maxReach = farthest;
 
                 if (supportPriced) supportWatts += Metabolism.SupportWatts(creature.Phenotype, world.Config);
 
@@ -817,6 +841,11 @@ namespace Evosim.Farm
                 if (double.IsNaN(meanReach)) w.Field("meanReach", (string)null);
                 else w.Field("meanReach", meanReach);
 
+                // Round 46's K6b: the largest distance of any living part from its root, in
+                // metres, null only with no part alive.
+                if (double.IsNaN(maxReach)) w.Field("maxReach", (string)null);
+                else w.Field("maxReach", maxReach);
+
                 // D115. The running total and the window, beside nothing because the stats row is
                 // read by name; 0 in every world with the trickle off.
                 w.Field("trickleSpawns", world.TrickleSpawns)
@@ -830,6 +859,13 @@ namespace Evosim.Farm
                 }
 
                 w.Field("harnessBodySteps", sim.HarnessBodySteps);
+
+                // Round 46's K10, cumulative like the phases beside them and read as a window by
+                // differencing two rows. Neither is a phase: the exposure pass is inside
+                // `metabolise` (wallHarnessMetaboliseMs) and the ledger inside `world`
+                // (wallWorldMs); the ledger is the smallest call that holds D113's support term.
+                w.Field("wallExposureMs", sim.WallExposureMs);
+                w.Field("wallLedgerMs", sim.WallLedgerMs);
 
                 // The fluid phase's own four. This engine has no separate drag pass to time — a
                 // body's drag runs on the body's own thread inside the solver's step — so all
@@ -1024,6 +1060,9 @@ namespace Evosim.Farm
 
                 // D115, the window's trickle founders, bold as `floor` is.
                 "**" + (world.TrickleSpawns - _lastTrickleSpawns).ToString(c) + "**",
+
+                // Round 46's K6b, appended after it: the farthest living part from its root.
+                double.IsNaN(maxReach) ? "—" : maxReach.ToString("0.###", c),
             };
 
             for (int p = 0; p < alivePerPatch.Length; p++) row.Add(alivePerPatch[p].ToString(c));
@@ -1116,7 +1155,8 @@ namespace Evosim.Farm
         /// <b>The matter whole, the snow by column.</b> The matter grid is the coarse one (5 m
         /// cells, about eight thousand of them at 22,000 m²), so every cell is written; the snow's
         /// 1 m grid is a million cells, four megabytes a dump and hundreds a seed, so its column
-        /// sums are written, which is the map a picture wants. Little-endian floats in the grid's
+        /// sums are written, which is the map a picture wants, and beside them each column's floor
+        /// cell alone (<c>snow-floor</c>, round 46's K11a). Little-endian floats in the grid's
         /// own index order, and <c>fields/layout.json</c> once, naming both. A recording
         /// setting: nothing here reaches a config or a hash, and a grid-less world writes
         /// nothing.
@@ -1145,6 +1185,16 @@ namespace Evosim.Farm
                     layout.BeginObject("snowColumns")
                         .Field("cellsX", snow.CellsX).Field("cellsZ", snow.CellsZ)
                         .Field("cellMetres", snow.CellMetres).Field("order", "ix * cellsZ + iz")
+                        .EndObject();
+
+                    // Round 46's K11a: the column's lowest live cell alone, beside every
+                    // snow-columns dump and in its order, so a read has the snow on the floor
+                    // and not the column's mean. A live cell is a whole cube of cellMetres.
+                    layout.BeginObject("snowFloor")
+                        .Field("cellsX", snow.CellsX).Field("cellsZ", snow.CellsZ)
+                        .Field("cellMetres", snow.CellMetres).Field("order", "ix * cellsZ + iz")
+                        .Field("file", "NNNNNNNNN.snow-floor.f32")
+                        .Field("value", "stock of the column's lowest live cell, J (0 where the column holds no water)")
                         .EndObject();
                 }
 
@@ -1198,6 +1248,9 @@ namespace Evosim.Farm
                 if (_fieldScratch.Length < columns) _fieldScratch = new float[columns];
                 snow.CopyColumnStockTo(_fieldScratch);
                 WriteFloats(dir.FieldPath(world.ElapsedSeconds, "snow-columns"), _fieldScratch, columns);
+
+                snow.CopyColumnFloorStockTo(_fieldScratch);
+                WriteFloats(dir.FieldPath(world.ElapsedSeconds, "snow-floor"), _fieldScratch, columns);
             }
         }
 

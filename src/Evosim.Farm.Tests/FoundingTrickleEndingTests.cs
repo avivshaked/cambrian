@@ -142,9 +142,11 @@ namespace Evosim.Farm.Tests
         }
 
         [Fact]
-        public void TheTableEndsWithTheTrickleColumn()
+        public void TheTableCarriesTheTrickleColumnBeforeMaxReach()
         {
-            Assert.Equal("**trickle**", Report.BaseColumns[Report.BaseColumns.Length - 1]);
+            // The trickle column was the last until round 46's `max reach` was appended after it.
+            Assert.Equal("**trickle**", Report.BaseColumns[Report.BaseColumns.Length - 2]);
+            Assert.Equal("max reach", Report.BaseColumns[Report.BaseColumns.Length - 1]);
         }
     }
 }

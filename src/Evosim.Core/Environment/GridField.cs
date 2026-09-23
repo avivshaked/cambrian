@@ -1389,6 +1389,28 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// Every column's floor cell stock (its <see cref="LowestLiveLayer"/>) as floats in column
+        /// order (<c>ix × nz + iz</c>), for a recording; a column with no water reads 0.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="ColumnFloorAndFloorStock"/>'s reading laid out as
+        /// <see cref="CopyColumnStockTo"/> lays out the column sums, so the two dumps index
+        /// alike and a floor cell reads beside its own column's total. A live cell is a whole
+        /// <see cref="CellVolume"/>, so a density is the value over that. Round 46's K11a.
+        /// </remarks>
+        public void CopyColumnFloorStockTo(float[] into)
+        {
+            if (into == null || into.Length < _layerStride)
+                throw new ArgumentException("The array is shorter than the plane.", nameof(into));
+
+            for (int column = 0; column < _layerStride; column++)
+            {
+                int lowest = _lowestLive[column];
+                into[column] = lowest < 0 ? 0f : (float)_stock[lowest * _layerStride + column];
+            }
+        }
+
+        /// <summary>
         /// Spreads an amount equally over the cells whose centres fall inside a box, and returns
         /// what was deposited. The grid's answer to <see cref="VertexField.Emit"/>.
         /// </summary>

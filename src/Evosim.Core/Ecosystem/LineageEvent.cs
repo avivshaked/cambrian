@@ -231,6 +231,31 @@ namespace Evosim.Core
         /// </summary>
         public double ReserveJoulesLost { get; }
 
+        /// <summary>
+        /// Kill only — the index of the part that reached zero health, in the victim's body as it
+        /// stood when the part came off; -1 on a row that cannot say. The kill row's <c>part</c>.
+        /// </summary>
+        /// <remarks>
+        /// 0 is the root. The index is the one <see cref="Phenotype.Parts"/> used at the kill, and
+        /// the rebuild that follows renumbers the survivors, so it is read against the body as it
+        /// stood before the kill (a snapshot's <c>lostPaths</c> after it no longer lists it by
+        /// this number). Round 46's K9b asks it.
+        /// </remarks>
+        public int PartIndex { get; }
+
+        /// <summary>
+        /// Kill only — the index of the attacker's part that dealt the finishing blow, in the
+        /// attacker's body as it stood at the blow; -1 whenever <see cref="AttackerId"/> is -1.
+        /// The kill row's <c>byPart</c>.
+        /// </summary>
+        /// <remarks>
+        /// It is the contact list's own part for the attacker (<see cref="CreatureContact"/>'s
+        /// <c>PartA</c> or <c>PartB</c>): the nearest part under the recorded contact, the
+        /// touching link under contact per part. It is kept and dropped with the attacker's id in
+        /// the same entry, so the two are always a pair.
+        /// </remarks>
+        public int AttackerPartIndex { get; }
+
         private LineageEvent(
             LineageEventKind kind, double elapsedSeconds, long id, long parentId,
             BirthKind birthKind, int generationDepth, uint speciesId,
@@ -240,9 +265,12 @@ namespace Evosim.Core
             DeathCause cause,
             long attackerId, bool rootLost, int partsLost,
             double tissueJoulesLost, double reserveJoulesLost,
-            FounderSource source = FounderSource.None)
+            FounderSource source = FounderSource.None,
+            int partIndex = -1, int attackerPartIndex = -1)
         {
             Source = source;
+            PartIndex = partIndex;
+            AttackerPartIndex = attackerPartIndex;
             AttackerId = attackerId;
             RootLost = rootLost;
             PartsLost = partsLost;
@@ -299,10 +327,13 @@ namespace Evosim.Core
         /// victim's own <c>Organism.IndeterminateNodes</c>, carried here for the same reason the
         /// birth row carries it: whether the gene that regrows a part is what survives losing one
         /// is a question about the body that was bitten, and a snapshot only holds survivors.
+        /// <paramref name="partIndex"/> and <paramref name="attackerPartIndex"/> are
+        /// <see cref="PartIndex"/> and <see cref="AttackerPartIndex"/>, -1 where unknown.
         /// </summary>
         public static LineageEvent Kill(
             double elapsedSeconds, long victimId, long attackerId, bool rootLost, int partsLost,
-            double tissueJoulesLost, double reserveJoulesLost, int indeterminateNodes) =>
+            double tissueJoulesLost, double reserveJoulesLost, int indeterminateNodes,
+            int partIndex = -1, int attackerPartIndex = -1) =>
             new LineageEvent(
                 LineageEventKind.Kill, elapsedSeconds, victimId, parentId: -1, birthKind: default,
                 generationDepth: 0, speciesId: 0, hasAbsorptive: false, hasJoint: false,
@@ -310,7 +341,8 @@ namespace Evosim.Core
                 reserveMargin: 0f, indeterminateNodes: indeterminateNodes,
                 hasAttack: false, hasIntake: false, hasProtection: false, cause: default,
                 attackerId: attackerId, rootLost: rootLost, partsLost: partsLost,
-                tissueJoulesLost: tissueJoulesLost, reserveJoulesLost: reserveJoulesLost);
+                tissueJoulesLost: tissueJoulesLost, reserveJoulesLost: reserveJoulesLost,
+                partIndex: partIndex, attackerPartIndex: attackerPartIndex);
 
         /// <summary>One-letter code for <see cref="BirthKind"/> — "f" floor, "r" reproduction, "i" inoculation.</summary>
         private static string Code(BirthKind kind)
@@ -403,7 +435,13 @@ namespace Evosim.Core
                     .Field("parts", PartsLost)
                     .Field("tj", TissueJoulesLost)
                     .Field("rj", ReserveJoulesLost)
-                    .Field("ind", IndeterminateNodes);
+                    .Field("ind", IndeterminateNodes)
+
+                    // Round 46's K9b: which part came off, and which of the attacker's parts was
+                    // touching it. Appended at the end, so a reader written against the older
+                    // kill row keeps working, and a row without them was recorded before them.
+                    .Field("part", PartIndex)
+                    .Field("byPart", AttackerPartIndex);
             }
             else
             {

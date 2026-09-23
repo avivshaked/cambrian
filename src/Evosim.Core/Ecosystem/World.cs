@@ -2340,6 +2340,29 @@ namespace Evosim.Core
                 overPopulation ? "population" : "tissue");
         }
 
+        /// <summary>
+        /// Wall-clock ticks (<see cref="System.Diagnostics.Stopwatch.Frequency"/> a second) spent
+        /// inside <c>Metabolism.StepAt</c> by <c>Metabolise</c>, both the appetite pass and the rationed re-price.
+        /// Cumulative since the world was built or restored; the farm's <c>wallLedgerMs</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The ledger, because the support term is not a call of its own.</b> D113's term is
+        /// one multiply-add per part inside <c>Metabolism.Bill</c>'s walk, beside the cell's own
+        /// intake and upkeep, the four D106 prices, D111's offset price and the neural cost;
+        /// timing it alone would take a timestamp pair per part inside that loop, which would
+        /// cost more than the term. So the timer brackets the whole bill, and a reading of the
+        /// support term's cost is the ledger's time with the price on against the same with it off
+        /// (round 46's K10).
+        /// </para>
+        /// <para>
+        /// <b>A clock and nothing else.</b> Nothing reads it back inside the world, nothing
+        /// branches on it and no checkpoint carries it, so a world timed and one not timed step
+        /// the same trajectory; a restored world starts it at 0, as the farm's own timers do.
+        /// </para>
+        /// </remarks>
+        public long LedgerTicks { get; private set; }
+
         /// <remarks>
         /// <para>
         /// <b>Three passes, because both resources are finite and shared</b> (§5A.2b, §5A.2c).
@@ -2403,6 +2426,10 @@ namespace Evosim.Core
                 float spent = Matter.DensityAt(creature.Point);
 
                 float[] exposure = byExposure ? creature.CurrentExposure : null;
+
+                // LedgerTicks' bracket: a clock read either side, nothing the bill reads.
+                long billStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+
                 EnergyLedger ledger = exposure == null
                     ? Metabolism.StepAt(
                         creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
@@ -2411,6 +2438,8 @@ namespace Evosim.Core
                         creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
                         density, spent, creature.PendingWorkJoules, seconds, creature.Age,
                         exposure, creature.UpInBody);
+
+                LedgerTicks += System.Diagnostics.Stopwatch.GetTimestamp() - billStarted;
 
                 // The absorptive log's capture, taken where the number is — one field write, on
                 // the pass that already read it, and only for the creatures the file records
@@ -2471,6 +2500,9 @@ namespace Evosim.Core
 
                     // The same work, not more: this replaces the ledger rather than adding to it.
                     float[] exposure = byExposure ? creature.CurrentExposure : null;
+
+                    long billStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+
                     ledger = exposure == null
                         ? Metabolism.StepAt(
                             creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
@@ -2479,6 +2511,8 @@ namespace Evosim.Core
                             creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
                             rationed, rationedSpent, creature.PendingWorkJoules, seconds, age,
                             exposure, creature.UpInBody);
+
+                    LedgerTicks += System.Diagnostics.Stopwatch.GetTimestamp() - billStarted;
 
                     // A share is a fraction of the demand, and scaling the density delivers
                     // exactly that only for an intake linear in density. A saturating mouth
