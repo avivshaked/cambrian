@@ -1324,6 +1324,26 @@ actually verifying it.
   build for the next screen goes to another output (`-o artifacts/Evosim.Farm/bin/Release-b`
   and `run-farm.ps1 -Exe`) while a screen runs; the manifest's `farmHash` is of the source
   and does not care which.
+- **A body's angle is in the poses and, before D110, nowhere in the economy.** A part's lit
+  area is a quarter of its surface (Cauchy's orientation average) on both sides of the light,
+  so a leaf on edge earned what a flat one did through round 45, and nothing selected a pose;
+  the owner saw the leaves standing on edge in the pictures before any instrument did
+  (2026-09-23). `scripts/reads/tilt.py <run dir> <second>` reads each root part's tilt from
+  `poses.jsonl` against the snapshot's genome (0 flat, 90 on edge; the mean flat factor is
+  0.50 for random poses), and round 45's crowds read 90% at their birth rotation at 5,000 s
+  and near random at the end (`logbook/specs/r45-read/tilt.txt`). A picture of a pose is a
+  fact about the solver and not about selection until the economy reads the pose; D110's
+  `light by exposure` is that reading and is off in every recorded config. Read `expo`
+  (1 random, 2 flat) with `tilt.py` as its check from the poses once it exists.
+- **A neuron's value is unbounded, and single precision has a ceiling.** The brain's guard
+  catches a non-finite value and nothing bounds a finite one, so an integrating neuron runs
+  for the body's life: round 45 seed 2's crowd carries one at the order of 1e29 (logbook/0115,
+  found by the card's single-precision check, where it was 5e27 off the double). The drive is
+  clamped and never sees it, but a float reaches infinity at 3.4e38 and the guard there, so
+  the GPU port wants a bound or a count before a run is read on the card. And the card's step
+  at the campaign's crowd is the slowest thread's latency and not throughput (both spike-3
+  kernels flat from 6,145 to 30,000 bodies): a 75-neuron sixteen-link body sets the step for
+  everyone, which is what size classes are for.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
