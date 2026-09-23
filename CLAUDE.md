@@ -1298,7 +1298,13 @@ actually verifying it.
   … --layers 3 --snow` draws the map with the bodies on it and prints the share of bodies
   standing in above-mean columns and, with `--footprint 100`, in the columns that were
   islands when seeded, which is 0114's J8 (the first share is a coin toss once the field
-  is soup; the second still reads). The Unity farm binds none of the six,
+  is soup; the second still reads). **A reader's picture is checked against its numbers
+  before it is reported**: until 2026-09-23 the snow panel closed over the matter grid's
+  mask and cell and drew the snow field's south-west 34 m corner stretched over the tank,
+  a hard-edged wedge at the north-east glass that round 45's first looks reported to the
+  owner as a pile of snow with a gyre to explain it; the column sums, one query, put the
+  densest columns under the crowd and 1% of the snow in the wedge. A straight edge on a
+  field is an index, not a fluid. The Unity farm binds none of the six,
   so a world built there is uniform and its header carries no `matter` token. And **a farm
   smoke holds its exe**: `dotnet build` fails to copy over a running `Evosim.Farm.exe`, so a
   build for the next screen goes to another output (`-o artifacts/Evosim.Farm/bin/Release-b`
