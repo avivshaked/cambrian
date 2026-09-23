@@ -61,6 +61,7 @@ namespace Evosim.Farm
             Restored first;
             CheckpointHeader header;
             RunConfig config;
+            IReadOnlyList<Genome> pool;
 
             if (Directory.Exists(checkpointPath))
             {
@@ -69,13 +70,14 @@ namespace Evosim.Farm
                 // state a live process carries from birth and no checkpoint has ever held,
                 // because the world compared has never been restored.
                 config = RunDirectory.ReadConfig(checkpointPath, out _);
+                pool = TricklePoolFiles.Load(checkpointPath, config)?.Genomes;
                 ulong seed = SeedOf(checkpointPath);
                 header = FoundingHeader(config, seed);
 
                 Console.WriteLine("  founding   " + checkpointPath + " (seed " + seed + ") and stepping live to " + F(seconds) + " s on " + threads + " threads");
                 Console.WriteLine("  then writing a checkpoint and restoring it");
 
-                first = Found(config, header, threads, Path.Combine(scratch, "first"));
+                first = Found(config, pool, header, threads,Path.Combine(scratch, "first"));
 
                 while (first.World.ElapsedSeconds < seconds - 1e-9) first.Sim.Step();
             }
@@ -84,11 +86,12 @@ namespace Evosim.Farm
                 header = CheckpointReader.ReadHeader(checkpointPath);
                 string sourceRun = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetFullPath(checkpointPath)));
                 config = RunDirectory.ReadConfig(sourceRun, out _);
+                pool = TricklePoolFiles.Load(sourceRun, config)?.Genomes;
 
                 Console.WriteLine("  checkpoint " + checkpointPath + " at " + F(header.Seconds) + " s");
                 Console.WriteLine("  stepping   " + F(seconds) + " s on " + threads + " threads, then writing and restoring again");
 
-                first = Restore(checkpointPath, config, header, threads, Path.Combine(scratch, "first"));
+                first = Restore(checkpointPath, config, pool, header,threads, Path.Combine(scratch, "first"));
 
                 double until = first.World.ElapsedSeconds + seconds;
                 while (first.World.ElapsedSeconds < until - 1e-9) first.Sim.Step();
@@ -97,7 +100,7 @@ namespace Evosim.Farm
             string again = Path.Combine(scratch, "again.ckpt");
             WriteAgain(again, first, header, config);
 
-            Restored second = Restore(again, config, CheckpointReader.ReadHeader(again), threads, Path.Combine(scratch, "second"));
+            Restored second = Restore(again, config, pool, CheckpointReader.ReadHeader(again), threads, Path.Combine(scratch, "second"));
 
             Console.WriteLine("  stepped to " + F(first.World.ElapsedSeconds) + " s: " +
                               first.World.Living.Count + " living, " + first.Sim.Dynamics.Creatures.Count + " bodies");
@@ -236,26 +239,33 @@ namespace Evosim.Farm
             };
         }
 
-        private static Restored Found(RunConfig config, CheckpointHeader header, int threads, string runDirectory)
+        private static Restored Found(
+            RunConfig config, IReadOnlyList<Genome> pool, CheckpointHeader header, int threads,
+            string runDirectory)
         {
             Directory.CreateDirectory(runDirectory);
 
-            var world = new World(config, header.Seed);
+            var world = new World(config, header.Seed, pool);
             var sim = new Simulation(
                 world, header.Seed, header.PhysicsStepSeconds, header.StepsPerMetabolicStep, threads, runDirectory);
 
-            return new Restored { World = world, Sim = sim, Sampler = new Sampler() };
+            return new Restored
+            {
+                World = world, Sim = sim,
+                Sampler = new Sampler { PoolNamed = config.FoundingTricklePoolCount > 0 },
+            };
         }
 
         private static Restored Restore(
-            string path, RunConfig config, CheckpointHeader header, int threads, string runDirectory)
+            string path, RunConfig config, IReadOnlyList<Genome> pool, CheckpointHeader header,
+            int threads, string runDirectory)
         {
             Directory.CreateDirectory(runDirectory);
 
-            var world = new World(config, header.Seed);
+            var world = new World(config, header.Seed, pool);
             var sim = new Simulation(
                 world, header.Seed, header.PhysicsStepSeconds, header.StepsPerMetabolicStep, threads, runDirectory);
-            var sampler = new Sampler();
+            var sampler = new Sampler { PoolNamed = config.FoundingTricklePoolCount > 0 };
 
             var restored = new Restored { World = world, Sim = sim, Sampler = sampler };
 

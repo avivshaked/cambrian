@@ -311,6 +311,102 @@ namespace Evosim.Core
         private float _foundingTricklePerSecond;
 
         /// <summary>
+        /// The share of the trickle's founders that are copies of an evolved body from the pool
+        /// the launcher names, rather than a draw from the founding lottery — D117. 0, the default,
+        /// is every recorded world and takes no draw.
+        /// </summary>
+        /// <remarks>
+        /// For each founder the trickle's Poisson count asks for, a world with a share above 0
+        /// draws one uniform from the trickle's own stream; below the share it admits an exact
+        /// copy of a pool genome (a second uniform picks which), otherwise it draws a founder from
+        /// the lottery as D115 does. The pool itself is not in the config: its size is
+        /// <see cref="FoundingTricklePoolCount"/> and its bytes are pinned by
+        /// <see cref="FoundingTricklePoolHash"/>, and the world is handed the genomes. The range is
+        /// the setter's, because it is a fact about the one number; the world refuses a share
+        /// with no pool or with the trickle off, which are facts about two.
+        /// </remarks>
+        [Tunable("population")]
+        public float FoundingTricklePoolShare
+        {
+            get => _foundingTricklePoolShare;
+            set => _foundingTricklePoolShare =
+                value >= 0f && value <= 1f && !float.IsNaN(value)
+                    ? value
+                    : throw new ArgumentOutOfRangeException(
+                        nameof(FoundingTricklePoolShare), value,
+                        "The trickle's pool share is a probability, in [0, 1] (D117); 0 is off.");
+        }
+
+        private float _foundingTricklePoolShare;
+
+        /// <summary>
+        /// How many genomes the trickle's pool holds — D117. 0, the default, is no pool. The farm
+        /// sets it from the files it copies into the run directory's <c>pool/</c>, so that
+        /// <c>configHash</c> names the pool's size as well as its bytes.
+        /// </summary>
+        /// <remarks>
+        /// At most <see cref="MaxTricklePool"/>, because the files are named by a two-digit index
+        /// (<c>pool/NN.json</c>). A count above 0 with the share at 0 is allowed (a pool named
+        /// and unused), and the header says so.
+        /// </remarks>
+        [Tunable("population")]
+        public int FoundingTricklePoolCount
+        {
+            get => _foundingTricklePoolCount;
+            set => _foundingTricklePoolCount =
+                value >= 0 && value <= MaxTricklePool
+                    ? value
+                    : throw new ArgumentOutOfRangeException(
+                        nameof(FoundingTricklePoolCount), value,
+                        "The trickle's pool holds 0 to 100 genomes (D117; its files are named by a " +
+                        "two-digit index); 0 is no pool.");
+        }
+
+        private int _foundingTricklePoolCount;
+
+        /// <summary>The largest pool D117's two-digit file names can carry.</summary>
+        public const int MaxTricklePool = 100;
+
+        /// <summary>
+        /// The pool's fingerprint — D117: a lowercase hex SHA-256 over the pool's genome lines in
+        /// order, as the farm writes them into <c>pool/NN.json</c> (each genome through
+        /// <c>GenomeJson.Write</c>, one line and a newline). Empty, the default, is no pool.
+        /// </summary>
+        /// <remarks>
+        /// In the config so that <c>configHash</c> pins which bodies could arrive, and a resume
+        /// refuses a pool whose files no longer hash to it. Core does not recompute it: the bytes
+        /// are the farm's, and a float's text is not the same on every runtime (CLAUDE.md's
+        /// <c>"R"</c> gotcha).
+        /// </remarks>
+        [Tunable("population")]
+        public string FoundingTricklePoolHash
+        {
+            get => _foundingTricklePoolHash;
+            set => _foundingTricklePoolHash =
+                value != null && (value.Length == 0 || IsLowerHexSha256(value))
+                    ? value
+                    : throw new ArgumentException(
+                        "The trickle's pool hash is empty (no pool) or 64 lowercase hex digits, a " +
+                        "SHA-256 over the pool's lines (D117); '" + (value ?? "null") + "' is neither.",
+                        nameof(FoundingTricklePoolHash));
+        }
+
+        private string _foundingTricklePoolHash = string.Empty;
+
+        private static bool IsLowerHexSha256(string value)
+        {
+            if (value.Length != 64) return false;
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                char c = value[i];
+                if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))) return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// The metabolic step the trickle's bound is read against — the 0.5 s both engines step
         /// the world at (<c>DividesTheMetabolicStep</c>'s constant, stated again rather than
         /// shared because that one is local to its method).

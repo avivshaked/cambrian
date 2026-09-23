@@ -917,7 +917,16 @@ namespace Evosim.Core
             }
         }
 
-        public World(RunConfig config, ulong seed = 1)
+        /// <param name="config">The world's settings, every tunable of the run.</param>
+        /// <param name="seed">The run's seed, from which every stream the world draws is derived.</param>
+        /// <param name="tricklePool">
+        /// D117's pool: the genomes a trickle founder may be an exact copy of, in the order the
+        /// run directory's <c>pool/NN.json</c> names them. Required, with exactly
+        /// <see cref="RunConfig.FoundingTricklePoolCount"/> genomes, when
+        /// <see cref="RunConfig.FoundingTricklePoolShare"/> is above 0; may be null or empty
+        /// otherwise. Validated once, here (<see cref="ValidateTricklePool"/>).
+        /// </param>
+        public World(RunConfig config, ulong seed = 1, IReadOnlyList<Genome> tricklePool = null)
         {
             Config = config ?? throw new ArgumentNullException(nameof(config));
 
@@ -929,6 +938,7 @@ namespace Evosim.Core
             }
 
             ValidateFounding(config);
+            _tricklePool = ValidateTricklePool(config, tricklePool);
 
             // D061: PatchCount reads Config.HorizontalPatches, so it is valid from this point on
             // (Config was just assigned above) and every field below is built with the same K.
@@ -1472,6 +1482,123 @@ namespace Evosim.Core
         /// cannot be refused because of one.
         /// </para>
         /// </remarks>
+        /// <summary>
+        /// Refuses the pools D117 cannot describe, and validates each pool genome once, as
+        /// <see cref="Inoculate"/> would (the genome's own invariants against this world's
+        /// registry, and D111's offset in a world that does not price it). Returns the pool the
+        /// world keeps: a copy of the list, empty when none was handed.
+        /// </summary>
+        /// <remarks>
+        /// Nothing is asked of a world with no pool named and a share of 0, which is every
+        /// recorded world. The share's range, the count's and the hash's shape are the setters';
+        /// these are the facts about two numbers, or about a number and the genomes handed in.
+        /// </remarks>
+        private static IReadOnlyList<Genome> ValidateTricklePool(
+            RunConfig config, IReadOnlyList<Genome> pool)
+        {
+            float share = config.FoundingTricklePoolShare;
+            int count = config.FoundingTricklePoolCount;
+            bool hashed = !string.IsNullOrEmpty(config.FoundingTricklePoolHash);
+            int handed = pool?.Count ?? 0;
+
+            if (share > 0f)
+            {
+                if (count == 0 || !hashed)
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"FoundingTricklePoolShare is {share} and the pool is not named ") +
+                        FormattableString.Invariant(
+                            $"(FoundingTricklePoolCount {count}, FoundingTricklePoolHash ") +
+                        (hashed ? "set" : "empty") + "). A share of the trickle's founders drawn " +
+                        "from a pool needs the pool's size and the hash that pins its bytes (D117); " +
+                        "name the pool with EVOSIM_TRICKLE_POOL, or set the share to 0.",
+                        nameof(config));
+                }
+
+                if (!(config.FoundingTricklePerSecond > 0f))
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"FoundingTricklePoolShare is {share} and FoundingTricklePerSecond is 0. ") +
+                        "The pool is a share of the trickle's founders (D117), and a world with " +
+                        "no trickle would never draw one; a header naming a pool that never " +
+                        "admits anyone would describe a world the run did not have.",
+                        nameof(config));
+                }
+
+                if (handed != count)
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"FoundingTricklePoolShare is {share} and the config names a pool of ") +
+                        FormattableString.Invariant(
+                            $"{count} genomes, but the world was handed {handed}. The pool the ") +
+                        "world draws from has to be the pool the config pins (D117).",
+                        nameof(config));
+                }
+            }
+
+            if (count > 0 && !hashed)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"FoundingTricklePoolCount is {count} and FoundingTricklePoolHash is empty. ") +
+                    "A pool named without the hash of its bytes is a pool configHash cannot pin " +
+                    "(D117).",
+                    nameof(config));
+            }
+
+            if (count == 0 && hashed)
+            {
+                throw new ArgumentException(
+                    "FoundingTricklePoolHash is set and FoundingTricklePoolCount is 0. A hash of " +
+                    "no pool names nothing (D117); clear the hash or set the count.",
+                    nameof(config));
+            }
+
+            if (handed > 0 && handed != count)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"The world was handed a pool of {handed} genomes and the config names ") +
+                    FormattableString.Invariant($"{count}. The pool the world holds has to be ") +
+                    "the pool the config pins (D117).",
+                    nameof(config));
+            }
+
+            if (handed == 0) return Array.Empty<Genome>();
+
+            bool priced = config.BuoyancyOffsetWattsPerCubicMetre > 0f;
+            var kept = new Genome[handed];
+
+            for (int i = 0; i < handed; i++)
+            {
+                Genome genome = pool[i] ?? throw new ArgumentException(
+                    FormattableString.Invariant($"Trickle pool genome {i:00} is null (D117)."),
+                    nameof(pool));
+
+                // Inoculate's two questions, asked once: the genome's own invariants against
+                // this world's registry, and D111's refusal of an offset nothing prices. A pool
+                // genome is named deliberately, as an inoculant is, so a body the world cannot
+                // admit is a mistake in the launcher and not a founder to count as refused.
+                IReadOnlyList<string> issues = genome.Validate(config.CellTypes, priced);
+                if (issues.Count > 0)
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"Trickle pool genome {i:00} (pool/{i:00}.json) is not a body this ") +
+                        "world can admit (D117; an offset in a world that does not price it is " +
+                        "D111's refusal): " + string.Join(" ", issues),
+                        nameof(pool));
+                }
+
+                kept[i] = genome;
+            }
+
+            return kept;
+        }
+
         /// <summary>
         /// Refuses the founding worlds D115 and D116 cannot describe
         /// (<c>logbook/specs/founding-trickle-spec.md</c> §§1–2), before the first step.
@@ -3540,6 +3667,21 @@ namespace Evosim.Core
         public long TrickleSpawns { get; private set; }
 
         /// <summary>
+        /// Of <see cref="TrickleSpawns"/>, the founders that were copies from D117's pool,
+        /// running total — every attempt, refused ones included, as the trickle counts. 0 in every
+        /// world whose pool share is 0.
+        /// </summary>
+        public long PoolSpawns { get; private set; }
+
+        /// <summary>
+        /// D117's pool, in the order of the run directory's <c>pool/NN.json</c>: the genomes a
+        /// trickle founder may be an exact copy of. Empty when none was handed to the world.
+        /// </summary>
+        public IReadOnlyList<Genome> TricklePool => _tricklePool;
+
+        private readonly IReadOnlyList<Genome> _tricklePool;
+
+        /// <summary>
         /// D115's founding trickle (<c>logbook/specs/founding-trickle-spec.md</c> §1): after the
         /// floor has closed, a Poisson count of founders a step at
         /// <see cref="RunConfig.FoundingTricklePerSecond"/>, each spawned through the floor's own
@@ -3581,7 +3723,24 @@ namespace Evosim.Core
 
             EnsureFounderAcceptance();
 
-            for (int i = 0; i < count; i++) SpawnFounder(FounderSource.Trickle);
+            float share = Config.FoundingTricklePoolShare;
+
+            for (int i = 0; i < count; i++)
+            {
+                // D117. Two more uniforms from the trickle's own stream, and only with a share
+                // above 0: the first decides pool or lottery, the second (taken only for the
+                // pool) which genome. At a share of 0 neither is drawn, so the stream, the
+                // genome seeds and the placer's draws are the trickle build's to the bit.
+                if (share > 0f && _trickleRng.NextFloat() < share)
+                {
+                    int pool = _tricklePool.Count;
+                    int index = Math.Min(pool - 1, (int)(_trickleRng.NextFloat() * pool));
+                    SpawnPoolFounder(index);
+                    continue;
+                }
+
+                SpawnFounder(FounderSource.Trickle);
+            }
         }
 
         /// <summary>
@@ -3639,6 +3798,37 @@ namespace Evosim.Core
             // world's geometry, neither of which Core has.
             float height = -rng.Range(0f, Config.FounderDepthSpread);
 
+            AdmitFounder(genome, seed, height, source, poolIndex: -1);
+        }
+
+        /// <summary>
+        /// One of D117's pool founders: an exact copy of pool genome <paramref name="index"/>,
+        /// with a fresh seed from the world's stream, admitted through the floor's own path
+        /// (<see cref="AdmitFounder"/>) so that it is endowed, placed and counted as a trickle
+        /// founder is.
+        /// </summary>
+        /// <remarks>
+        /// The seed labels the birth and draws the founder's depth the way a lottery founder's own
+        /// stream does after its genome; nothing mutates the genome, for
+        /// <see cref="Inoculate"/>'s reason: the point is the body the launcher named.
+        /// </remarks>
+        private void SpawnPoolFounder(int index)
+        {
+            ulong seed = Rng.SeedFor(Seed, _nextIndex++);
+            float height = -new Rng(seed).Range(0f, Config.FounderDepthSpread);
+
+            AdmitFounder(_tricklePool[index], seed, height, FounderSource.Pool, index);
+        }
+
+        /// <summary>
+        /// The half of a founder's spawn that follows its genome and depth: patch, development,
+        /// birth fraction, the placer, <see cref="Admit"/> and the count — shared by the lottery's
+        /// founders (<see cref="SpawnFounder"/>) and D117's pool (<see cref="SpawnPoolFounder"/>),
+        /// so the two cannot drift apart.
+        /// </summary>
+        private void AdmitFounder(
+            Genome genome, ulong seed, float height, FounderSource source, int poolIndex)
+        {
             // D061. A second, independent seed slot, drawn only when there is more than one
             // patch to land in — the CLAUDE.md guard: any new Rng draw on a path that runs at
             // K=1 breaks bit-identity, so this is skipped entirely rather than drawn and
@@ -3699,7 +3889,7 @@ namespace Evosim.Core
                 tissue: tissue, heightY: height, parent: null,
                 patch: patch, adultPhenotype: adult,
                 adultTissue: Metabolism.TissueJoules(adult, Config),
-                founderSource: source);
+                founderSource: source, poolIndex: poolIndex);
 
             if (shared)
             {
@@ -3719,9 +3909,19 @@ namespace Evosim.Core
         /// <see cref="TrickleSpawns"/>, never both, so the table's <c>floor</c> column still
         /// reads the floor alone once the trickle is on.
         /// </summary>
+        /// <remarks>
+        /// A D117 pool founder is a trickle founder in this count and also in
+        /// <see cref="PoolSpawns"/>, so <c>trickle</c> still reads every founder the trickle drew
+        /// and <c>pool</c> the share of them that came from the pool.
+        /// </remarks>
         private void CountFounderAttempt(FounderSource source)
         {
             if (source == FounderSource.Trickle) TrickleSpawns++;
+            else if (source == FounderSource.Pool)
+            {
+                TrickleSpawns++;
+                PoolSpawns++;
+            }
             else FloorSpawns++;
         }
 
@@ -4029,11 +4229,15 @@ namespace Evosim.Core
         /// (D115), carried to its lineage row; <see cref="FounderSource.None"/> for everything
         /// else.
         /// </param>
+        /// <param name="poolIndex">
+        /// For a <see cref="FounderSource.Pool"/> founder, the index of the pool genome it copies
+        /// (D117), carried to its lineage row; -1 for everything else.
+        /// </param>
         private Organism Admit(
             Genome genome, Phenotype phenotype, BirthKind kind, ulong seed, long parentId,
             int generationDepth, double energy, double tissue, float heightY, Organism parent,
             int patch, Phenotype adultPhenotype, double adultTissue,
-            FounderSource founderSource = FounderSource.None)
+            FounderSource founderSource = FounderSource.None, int poolIndex = -1)
         {
             // The owner's ruling of 2026-09-19: a body that would grow into itself is not born.
             // Asked here rather than at each of the three call sites so that a founder and an
@@ -4173,7 +4377,7 @@ namespace Evosim.Core
                 CarriesAttribute(genome, n => n.Attack),
                 CarriesAttribute(genome, n => n.Intake),
                 CarriesAttribute(genome, n => n.Protection),
-                founderSource));
+                founderSource, poolIndex));
 
             return creature;
         }

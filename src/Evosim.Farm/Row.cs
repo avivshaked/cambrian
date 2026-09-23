@@ -87,6 +87,17 @@ namespace Evosim.Farm
         // D115's window, on the same rule.
         private long _lastTrickleSpawns;
 
+        // D117's window, on the same rule, and carried in a checkpoint only when the config
+        // names a pool (PoolNamed), so every other run's sampler state is the trickle build's.
+        private long _lastPoolSpawns;
+
+        /// <summary>
+        /// Whether the run's config names a D117 pool (<c>FoundingTricklePoolCount</c> above 0):
+        /// the sampler's checkpoint state then carries the pool window's baseline. Set by whoever
+        /// builds the sampler, from the config, before a state is written or read.
+        /// </summary>
+        public bool PoolNamed { get; set; }
+
         private readonly List<AbsorptiveSample> _absorptiveRows = new List<AbsorptiveSample>();
 
         private long[] _positionIds = Array.Empty<long>();
@@ -155,6 +166,7 @@ namespace Evosim.Farm
             w.Write(_lastHealingJoules);
 
             w.Write(_lastTrickleSpawns);
+            if (PoolNamed) w.Write(_lastPoolSpawns);
         }
 
         /// <summary>Puts the sampler back.</summary>
@@ -199,6 +211,7 @@ namespace Evosim.Farm
             _lastHealingJoules = r.ReadDouble();
 
             _lastTrickleSpawns = r.ReadInt64();
+            _lastPoolSpawns = PoolNamed ? r.ReadInt64() : 0L;
         }
 
         /// <summary>
@@ -822,6 +835,14 @@ namespace Evosim.Farm
                 w.Field("trickleSpawns", world.TrickleSpawns)
                     .Field("trickleSpawnsWindow", world.TrickleSpawns - _lastTrickleSpawns);
 
+                // D117. Only in a run whose config names a pool, so every other stats row is the
+                // trickle build's; of the trickle's founders, the ones copied from the pool.
+                if (world.Config.FoundingTricklePoolCount > 0)
+                {
+                    w.Field("poolSpawns", world.PoolSpawns)
+                        .Field("poolSpawnsWindow", world.PoolSpawns - _lastPoolSpawns);
+                }
+
                 long[] harnessPhaseMs = sim.HarnessPhaseMs();
 
                 for (int p = 0; p < harnessPhaseMs.Length; p++)
@@ -1026,6 +1047,13 @@ namespace Evosim.Farm
                 "**" + (world.TrickleSpawns - _lastTrickleSpawns).ToString(c) + "**",
             };
 
+            // D117, the window's pool founders, after `trickle` and only when the config names a
+            // pool (Report's Columns says the same), bold as its two neighbours are.
+            if (world.Config.FoundingTricklePoolCount > 0)
+            {
+                row.Add("**" + (world.PoolSpawns - _lastPoolSpawns).ToString(c) + "**");
+            }
+
             for (int p = 0; p < alivePerPatch.Length; p++) row.Add(alivePerPatch[p].ToString(c));
 
             _lastFloorSpawns = world.FloorSpawns;
@@ -1056,6 +1084,7 @@ namespace Evosim.Farm
             _lastCorpsesEaten = world.CorpsesEaten;
             _lastHealingJoules = world.HealingJoules;
             _lastTrickleSpawns = world.TrickleSpawns;
+            _lastPoolSpawns = world.PoolSpawns;
 
             if (row.Count != columns.Count)
             {

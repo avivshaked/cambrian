@@ -56,6 +56,9 @@ namespace Evosim.Core.Tests
                 }
                 else if (p.PropertyType == typeof(int)) p.SetValue(config, (int)p.GetValue(config) + 3);
 
+                // D117's pool hash, the one scalar string, at the only non-empty shape it takes.
+                else if (p.PropertyType == typeof(string)) p.SetValue(config, new string('b', 64));
+
                 // A scalar enum, moved to any member but the one it holds. Skipping enums is how
                 // a knob written by name gets to be in the hash and absent from the file — the
                 // half of the problem this test exists for, and the shape RunConfig.ConceptionOrder

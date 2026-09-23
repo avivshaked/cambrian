@@ -19,4 +19,9 @@
     <ProjectReference Include="..\Evosim.Farm\Evosim.Farm.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- D117's pool fixtures, one copy in the tree: Core's, linked here. -->
+    <None Include="..\Evosim.Core.Tests\fixtures\pool\*.json" Link="fixtures\pool\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

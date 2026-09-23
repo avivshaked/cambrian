@@ -84,6 +84,9 @@ namespace Evosim.Core
                 case int i: w.Field(entry.Key, i); break;
                 case bool b: w.Field(entry.Key, b); break;
 
+                // D117's pool hash, the first scalar string tunable: written as it is.
+                case string text: w.Field(entry.Key, text); break;
+
                 case string[] a:
                     w.BeginArray(entry.Key);
                     foreach (string s in a) w.Value(s);
@@ -157,6 +160,7 @@ namespace Evosim.Core
             if (entry.ValueType == typeof(double)) return node.AsDouble();
             if (entry.ValueType == typeof(int)) return node.AsInt();
             if (entry.ValueType == typeof(bool)) return node.AsBool();
+            if (entry.ValueType == typeof(string)) return node.AsString();
 
             if (entry.ValueType == typeof(string[]))
             {
