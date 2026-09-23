@@ -99,11 +99,18 @@ inoculated at 6,000 s into round 45's world at dt 0.02. At 5 m (`r46stom-1m-s1`)
 starved at a median age of 104 s: the snow there is 0.004 J/m³ against the ledger's break-even
 of 0.44, while the bed holds 3.4 J/m³ (R0 34, a first child in 63 s), because the snow sinks
 at 2 mm/s and the floor holds it. The bed-depth screen (`r46stom-bed-s1`, depth 42 m) is the
-decisive one and is running (started 13:50, the inoculation at 6,000 s); the 3 m cell screen
-is dropped (owner, 14:05: the beach does not depend on its answer); the cron pushes B's
-outcome to the owner's phone. The reading so far, marked as inference: the eater's larder
-exists and lies on the bed 45 m below the light, and nothing carries an eater down or the
-food up. **The owner's answer is the beach** (2026-09-23, 14:00: "the gradient floor back,
+decisive one and has ended; the 3 m cell screen is dropped (owner, 14:05). **The morning's
+reading was a units misread and B overturned it** (`logbook/specs/stomach-screens.md`, the
+owner's phone told at 14:30): `detritusOnFloor` is the centre patch's floor stock in joules
+(3.5 J), the whole floor holds 11 J of 80 kJ, and B's forty at 42 m starved at one age to
+the half second on 0.0001 J/m³. The snow lives eight minutes at remin 0.002/s and falls a
+metre, so the larder is a thin layer under the plant crowd at about 0.5 J/m³, the stomach's
+break-even, and the four stomach mutants born inside it during B broke even and bred
+nothing. The plant world is the snow's thinness, not its depth; placement in the crowd is
+necessary and not sufficient; the beach feeds an eater only if the snow lives long enough to
+land on its shelf, which is the remineralisation rate (question 7 of the proposal, the
+owner's; a ledger and dt 0.02 screen of the plants' side at 0.0005 and 0.0002 per second is
+next). **The owner's answer is the beach** (2026-09-23, 14:00: "the gradient floor back,
 and finally put in the beach"): the gradient floor has in fact been on since round 39, its
 shallow arc 30 m down; the beach raises the tilt to about 96 m so the floor breaks the
 surface at the shore, clamped at a shoal a metre deep, with the current's potential faded

@@ -13,12 +13,18 @@ for the reason in section 1. The mushroom reef is the round after, in its own sp
 
 ## 0. What the screen said, and what the floor already is
 
-The stomach inoculated into round 45's world at 5 m starved in a hundred seconds (40 of 40,
-median age 104 s): the snow at the crowd's depth reads 0.004 J/m³ against a break-even of
-0.44, while the bed forty metres below holds 3.4 J/m³, at which the ledger gives the same
-body an R0 of 34. The snow sinks at 2 mm/s and the floor holds it; the eaters live where they
-are born, at the surface with the plants. The larder went deep, which is D085's finding again
-in the one-substance world.
+*Corrected the same afternoon, after screen B (`logbook/specs/stomach-screens.md`).* The
+stomach inoculated into round 45's world at 5 m starved in a hundred seconds (40 of 40,
+median age 104 s) at a snow density of 0.004 J/m³ against a break-even of 0.44. The morning's
+reading that the bed forty metres below holds 3.4 J/m³ was a units misread of the table's
+`detritusOnFloor`, which is the centre patch's floor stock in joules, 3.5 J; the whole floor
+holds 11 J of the 80 kJ standing. At the round's sink and remineralisation rates the snow
+lives about eight minutes and falls a metre, so it never reaches a floor: it is a thin layer
+under the plant crowd at about 0.5 J/m³ where the crowd is densest, the stomach's break-even,
+and the four stomach mutants born inside it during B broke even and bred nothing. So the
+larder is thin, not deep, and this spec's premise holds only for a floor within a metre or two
+of the crowd or for snow that lives long enough to reach one; the beach stands as the owner's
+rule, and the proposal's rule 6 carries the correction.
 
 The gradient floor is not gone. Every round since 39 has run D092's tilt at 30 m in a 45 m
 tank (round 45's launcher: `EVOSIM_BED_TILT = 30`), so the floor already rises from 60 m on

@@ -110,7 +110,18 @@ crowd lives in. The beach raises that tilt to about 96 m, the plane that breaks 
 at the shore, and clamps the floor at a shoal a metre under the surface, so no column is
 ever dry and no body is ever on sand (the rules for a body in air stay the terrestrial
 round's). The floor then lies inside the founders' 12 m over about a tenth of the disc
-along one side, and the snow that settles there stays in the top cell, in full light. Two
+along one side, and the snow that settles there stays in the top cell, in full light.
+**Corrected the same afternoon** (`logbook/specs/stomach-screens.md`): the snow does not
+reach any floor at the round's rates. It lives about eight minutes (`EVOSIM_REMIN` 0.002 per
+second) and falls a metre in that time (2 mm/s), so the whole floor holds 11 J of 80 kJ, and
+the morning's 3.4 J/m³ on the bed was a units misread. The larder is a thin layer under the
+plant crowd at about 0.5 J/m³, the stomach's break-even; four stomach mutants born inside
+it broke even and bred nothing. The beach therefore feeds an eater only with snow that lives
+long enough to land on its shelf, which is a lower remineralisation rate, the owner's dial:
+in a closed one-substance world it also slows the plants' matter return, so it is screened on
+the ledger and a dt 0.02 seed before a value is proposed. The recommendation below stands
+with that added: the beach, the second window over the shelf, and a remineralisation
+rate screened for the snow to reach the shelf (question 7). Two
 tunables (`BedShoreDepthMetres`, `BedShoreFadeMetres`), both 0 = the recorded world; the
 current's potential fades to nothing over the shoal so the floor-following map's stretch is
 not a jet at the shore. The recommendation is the beach in this round with the shore at 1 m
@@ -133,3 +144,6 @@ vertical).
 6. The beach in this round at a 1 m shoal and a 15 m fade, with the second founding window's
    cohort placed over the shelf by rule: yes, or the beach alone with the cohort placed as
    the first founders were.
+7. The snow's life: a lower remineralisation rate so that snow reaches the shelf (screened;
+   the recommendation follows the screen), or the round's 0.002 per second kept and the beach
+   read as a place only.
