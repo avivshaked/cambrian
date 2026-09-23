@@ -477,7 +477,9 @@ namespace Evosim.Theatre
         /// <param name="portrait">Light and focus the frame as a portrait of one subject.</param>
         /// <param name="focusMetres">The focus distance for a portrait; ignored otherwise.</param>
         /// <param name="label">The one line burnt into the corner.</param>
-        /// <param name="path">The PNG to write. Its directory is created if it is missing.</param>
+        /// <param name="path">
+        /// The PNG to write, its directory created if it is missing; null renders and writes nothing.
+        /// </param>
         /// <returns>The bytes written.</returns>
         public int CapturePlaced(
             ITheatreFrame frame, Vector3 eye, Quaternion rotation, float fieldOfView,
@@ -518,6 +520,10 @@ namespace Evosim.Theatre
                 if (back != null) UnityEngine.Object.DestroyImmediate(back.gameObject);
                 for (int i = 0; i < silenced.Count; i++) silenced[i].enabled = true;
             }
+
+            // A warm-up render: drawn so the grade's history and the scene's first-draw work are
+            // done, read back by nobody (TheatreFilm's warm-up).
+            if (path == null) return 0;
 
             RenderTexture active = RenderTexture.active;
             RenderTexture.active = _target;

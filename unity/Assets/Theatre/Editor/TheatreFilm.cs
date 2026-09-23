@@ -93,6 +93,15 @@ namespace Evosim.Theatre.EditorTools
         private static bool _driving;
         private static TheatreRunner _runner;
         private static bool _setUp;
+        private static int _warmFrames;
+        private static bool _warmed;
+        private static int _dressedLate;
+
+        /// <summary>The fewest throwaway renders before the first captured frame.</summary>
+        public const int LeastWarmUpFrames = 3;
+
+        /// <summary>The most, after which the film refuses rather than capture raw bodies.</summary>
+        public const int MostWarmUpFrames = 60;
         private static double _t0;
         private static long _steps0;
         private static double _dt;
@@ -351,6 +360,9 @@ namespace Evosim.Theatre.EditorTools
             _deadline = EditorApplication.timeSinceStartup + _wallSecondsAllowed;
             _runner = null;
             _setUp = false;
+            _warmed = false;
+            _warmFrames = 0;
+            _dressedLate = 0;
             _next = 0;
 
             if (_driving) return;
@@ -403,6 +415,12 @@ namespace Evosim.Theatre.EditorTools
                     return;
                 }
 
+                if (!_warmed)
+                {
+                    WarmUp(live);
+                    return;
+                }
+
                 double target = _t0 + (double)_next / _fps;
                 float dt = Mathf.Max(1e-4f, live.Sim.PhysicsDt);
 
@@ -420,6 +438,10 @@ namespace Evosim.Theatre.EditorTools
                 }
 
                 _runner.LiveView?.Sync();
+
+                // A body born since the last frame is built plain and the palette's rotation reaches
+                // it frames later; it is dressed here, before the shutter, instead.
+                if (_runner.LiveView != null) _dressedLate += _runner.LiveView.DressUndressed();
 
                 double at = Now(live);
                 _worstLag = Mathf.Max(_worstLag, (float)Math.Abs(at - target));
@@ -463,6 +485,59 @@ namespace Evosim.Theatre.EditorTools
             catch (Exception e)
             {
                 Finish(1, e.GetType().Name + ": " + e.Message + "\n" + e.StackTrace);
+            }
+        }
+
+        /// <summary>
+        /// Renders and discards frames at the first pose, with the world held still, until the skin
+        /// has dressed every restored body; only then does the clock start.
+        /// </summary>
+        /// <remarks>
+        /// A restored body is built with the plain material and the raw shapes, and the palette
+        /// dresses the crowd on a budget of a hundred-odd bodies a frame, so the first frames of
+        /// r46-s1 at 5,000 s (742 bodies) carried white spheres and cubes among skinned bodies
+        /// (2026-09-23). Every undressed body is dressed off budget here, the renderers are
+        /// checked for the plain material, and the film refuses rather than capture raw bodies.
+        /// </remarks>
+        private static void WarmUp(TheatreDynamicsReplay live)
+        {
+            LiveWorldView view = _runner.LiveView;
+            if (view == null)
+            {
+                Finish(1, "no live view in the scene: nothing draws the world");
+                return;
+            }
+
+            view.Sync();
+            view.DressUndressed();
+
+            foreach (Shot shot in _shots)
+            {
+                shot.Pose(live, view, 0f, 1f / _fps, out Vector3 eye, out Quaternion rotation, out float focus);
+                shot.Camera.CapturePlaced(live, eye, rotation, shot.FieldOfView, shot.Portrait, focus, "", null);
+            }
+
+            _warmFrames++;
+
+            int undressed = view.UndressedCount;
+            int plain = view.PlainRendererCount();
+
+            if (_warmFrames >= LeastWarmUpFrames && undressed == 0 && plain == 0)
+            {
+                foreach (Shot shot in _shots) shot.ResetTally();
+                _warmed = true;
+
+                Debug.Log(string.Format(CultureInfo.InvariantCulture,
+                    "[Theatre] film: warm-up {0} frames, every body dressed ({1} bodies drawn, {2} parts, " +
+                    "no renderer on the plain material)", _warmFrames, view.BodyCount, view.PartCount));
+                return;
+            }
+
+            if (_warmFrames >= MostWarmUpFrames)
+            {
+                Finish(1, string.Format(CultureInfo.InvariantCulture,
+                    "warm-up {0} frames and the skin has not dressed the crowd: {1} bodies undressed, " +
+                    "{2} renderers on the plain material", _warmFrames, undressed, plain));
             }
         }
 
@@ -545,8 +620,9 @@ namespace Evosim.Theatre.EditorTools
 
             var report = new System.Text.StringBuilder();
             report.AppendFormat(CultureInfo.InvariantCulture,
-                "\n  first frame at t={0:0.###} s, last at t={1:0.###} s, worst distance from the asked-for second {2:0.####} s",
-                _firstAt, _lastAt, _worstLag);
+                "\n  first frame at t={0:0.###} s, last at t={1:0.###} s, worst distance from the asked-for second {2:0.####} s; " +
+                "warm-up {3} frames; {4} bodies born during the film dressed before their first frame",
+                _firstAt, _lastAt, _worstLag, _warmFrames, _dressedLate);
 
             foreach (Shot shot in _shots)
             {
@@ -825,6 +901,36 @@ namespace Evosim.Theatre.EditorTools
                 float room = _world.RoomAround(_centre) / Mathf.Max(0.2f, Mathf.Cos(_elevation));
                 float headroom = (-Clearance - _centre.y) / Mathf.Max(0.02f, Mathf.Sin(_elevation));
                 float most = Mathf.Min(room, headroom);
+                string tilt = drift ? "drift at 4 deg down" : "12 deg down as planned";
+
+                // A crowd near the surface leaves a tilted-down orbit no room: r46-s1 at 5,000 s,
+                // centroid at -3.4 m, got 11 m against 166 wanted, and the camera orbited inside the
+                // crowd, pushed off a body 98 times. So when the surface is the cap and it caps
+                // below half of what is wanted, the orbit goes level at the crowd's depth, capped
+                // by the glass alone; and if the glass caps that below half too, it looks slightly
+                // up at the crowd from under it, where a 45 m tank has water to spare.
+                if (!drift && headroom < room && most < 0.5f * wanted)
+                {
+                    float surfaceCap = most;
+                    _elevation = 0f;
+                    float level = _world.RoomAround(_centre);
+                    most = level;
+                    tilt = string.Format(CultureInfo.InvariantCulture,
+                        "level at the crowd's depth: the surface capped 12 deg down at {0:0.##} m", surfaceCap);
+
+                    if (level < 0.5f * wanted)
+                    {
+                        _elevation = -15f * Mathf.Deg2Rad;
+                        float glass = _world.RoomAround(_centre) / Mathf.Cos(_elevation);
+                        float floor = _world.FloorAt(_centre.x, _centre.z) + Clearance;
+                        float footroom = (_centre.y - floor) / Mathf.Sin(-_elevation);
+                        most = Mathf.Min(glass, footroom);
+                        tilt = string.Format(CultureInfo.InvariantCulture,
+                            "15 deg up from under the crowd: the surface capped 12 deg down at {0:0.##} m and " +
+                            "the glass capped level at {1:0.##} m (room below {2:0.##} m)",
+                            surfaceCap, level, footroom);
+                    }
+                }
 
                 _distance = Mathf.Max(2f, Mathf.Min(wanted, most));
 
@@ -849,9 +955,10 @@ namespace Evosim.Theatre.EditorTools
                         ? string.Format(CultureInfo.InvariantCulture, "a {0:0.##} m pass, {1:0.###} m/s at its peak",
                             _pass, _pass / _seconds / (1f - EaseShare))
                         : string.Format(CultureInfo.InvariantCulture,
-                            "{0:0.##} turn(s) tilted {1:0} deg down, {2:0.###} m/s along the arc at its peak",
+                            "{0:0.##} turn(s), {3}, {2:0.###} m/s along the arc at its peak",
                             _turns, _elevation * Mathf.Rad2Deg,
-                            _turns * 2f * Mathf.PI * _distance * Mathf.Cos(_elevation) / _seconds / (1f - EaseShare)));
+                            _turns * 2f * Mathf.PI * _distance * Mathf.Cos(_elevation) / _seconds / (1f - EaseShare),
+                            tilt));
             }
 
             /// <summary>
@@ -1049,6 +1156,14 @@ namespace Evosim.Theatre.EditorTools
                 }
 
                 return false;
+            }
+
+            /// <summary>Forgets the warm-up's poses, so the tally counts the film's frames alone.</summary>
+            public void ResetTally()
+            {
+                _frames = _glass = _bed = _surface = _pushed = _inside = 0;
+                _fastest = _fastestRelative = 0f;
+                _hasLast = false;
             }
 
             public string Tally() => string.Format(CultureInfo.InvariantCulture,

@@ -88,6 +88,9 @@ namespace Evosim.Theatre
             /// <summary>The sweep this body was last seen alive in.</summary>
             public long Seen;
 
+            /// <summary>Whether the palette has dressed this body at least once since it was built.</summary>
+            public bool Dressed;
+
             /// <summary>
             /// The reserve tint as of that sweep, read while the living list was already in hand.
             /// </summary>
@@ -416,7 +419,79 @@ namespace Evosim.Theatre
                 if (live.Root == null || live.Body == null) continue;
 
                 Palette.Paint(live.Id, live.Root, live.Body.Phenotype, live.Tint, ColourByCellType);
+                live.Dressed = true;
             }
+        }
+
+        /// <summary>
+        /// How many drawn bodies the palette has not yet dressed: still the plain material and the
+        /// raw shapes, because painting is on a budget of <see cref="RepaintsPerFrame"/> a frame.
+        /// </summary>
+        /// <remarks>
+        /// A body is built plain and the rotation reaches it within <c>count / budget</c> frames,
+        /// so a restored crowd of seven hundred is partly raw for eight frames, which a person
+        /// never notices and a film's first frame did (r46-s1 at 5,000 s, 2026-09-23).
+        /// </remarks>
+        public int UndressedCount
+        {
+            get
+            {
+                int n = 0;
+                foreach (KeyValuePair<long, LiveBody> entry in _bodies)
+                {
+                    if (!entry.Value.Dressed) n++;
+                }
+
+                return n;
+            }
+        }
+
+        /// <summary>
+        /// How many part renderers still carry the plain material a body is built with: the
+        /// renderer-level check behind <see cref="UndressedCount"/>, which is only a flag.
+        /// </summary>
+        public int PlainRendererCount()
+        {
+            if (_plain == null) return 0;
+
+            int n = 0;
+            foreach (KeyValuePair<long, LiveBody> entry in _bodies)
+            {
+                Transform[][] visuals = entry.Value.Visuals;
+                if (visuals == null) continue;
+
+                foreach (Transform[] part in visuals)
+                {
+                    if (part == null) continue;
+                    foreach (Transform visual in part)
+                    {
+                        if (visual == null) continue;
+                        var renderer = visual.GetComponent<MeshRenderer>();
+                        if (renderer != null && renderer.sharedMaterial == _plain) n++;
+                    }
+                }
+            }
+
+            return n;
+        }
+
+        /// <summary>Dresses every body the palette has not reached yet, off budget. Returns how many.</summary>
+        public int DressUndressed()
+        {
+            if (Palette == null) return 0;
+
+            int n = 0;
+            foreach (KeyValuePair<long, LiveBody> entry in _bodies)
+            {
+                LiveBody live = entry.Value;
+                if (live.Dressed || live.Root == null || live.Body == null) continue;
+
+                Palette.Paint(live.Id, live.Root, live.Body.Phenotype, live.Tint, ColourByCellType);
+                live.Dressed = true;
+                n++;
+            }
+
+            return n;
         }
 
         // ---------------------------------------------------------------- the bodies
