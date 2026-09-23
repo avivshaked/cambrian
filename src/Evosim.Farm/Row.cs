@@ -1100,9 +1100,40 @@ namespace Evosim.Farm
                         .Field("cellMetres", snow.CellMetres).Field("order", "ix * cellsZ + iz")
                         .EndObject();
                 }
+
+                // The floor, once (logbook/specs/beach-spec.md §4): one height per detritus
+                // column in the snow's own column order, the floor's y as the grid's mask read it,
+                // so a read can bin births and snow by floor depth without rebuilding BedShape in
+                // Python. Only a shaped floor is written; a flat one is −depth everywhere and the
+                // run's config already says so.
+                bool bedWritten = snow != null && snow.Bed != null;
+                if (bedWritten)
+                {
+                    layout.BeginObject("bed")
+                        .Field("cellsX", snow.CellsX).Field("cellsZ", snow.CellsZ)
+                        .Field("cellMetres", snow.CellMetres).Field("order", "ix * cellsZ + iz")
+                        .Field("file", "bed.f32").Field("value", "floor y, m (negative down)")
+                        .EndObject();
+                }
                 layout.EndObject();
                 System.IO.File.WriteAllText(
                     System.IO.Path.Combine(dir.FieldsPath, "layout.json"), layout.ToString());
+
+                if (bedWritten)
+                {
+                    int columns = snow.CellsX * snow.CellsZ;
+                    var floor = new float[columns];
+                    for (int ix = 0; ix < snow.CellsX; ix++)
+                    {
+                        for (int iz = 0; iz < snow.CellsZ; iz++)
+                        {
+                            floor[ix * snow.CellsZ + iz] = snow.FloorYAtColumn(ix, iz);
+                        }
+                    }
+
+                    WriteFloats(System.IO.Path.Combine(dir.FieldsPath, "bed.f32"), floor, columns);
+                }
+
                 _fieldLayoutWritten = true;
             }
 

@@ -995,14 +995,17 @@ namespace Evosim.Core
                     nameof(config));
             }
 
-            // Its own refusals — a negative or non-finite dial, and a floor that would reach the
-            // surface — are BedShape's, stated at the numbers rather than at the config; the
-            // shelf and the beach are rounds of their own.
+            ValidateShore(config);
+
+            // Its own refusals — a negative or non-finite dial, a floor that would reach the
+            // surface with the shore off, and a shore without its fade — are BedShape's, stated at
+            // the numbers rather than at the config. The beach is logbook/specs/beach-spec.md.
             Bed = config.WorldShape == WorldShape.Tank &&
                   (config.BedReliefMetres > 0f || config.BedTiltMetres > 0f)
                 ? new BedShape(
                     TankRadiusMetres, config.WorldDepthMetres, config.BedReliefMetres,
-                    config.BedTiltMetres, config.BedScaleMetres, Rng.SeedFor(seed, BedShapeIndex))
+                    config.BedTiltMetres, config.BedScaleMetres, Rng.SeedFor(seed, BedShapeIndex),
+                    config.BedShoreDepthMetres, config.BedShoreFadeMetres)
                 : null;
 
             // D111. A negative price is a part paid to float off its centre, which is a free
@@ -1300,6 +1303,60 @@ namespace Evosim.Core
             {
                 int bySurplus = _world._conceptionSurplus[b].CompareTo(_world._conceptionSurplus[a]);
                 return bySurplus != 0 ? bySurplus : a.CompareTo(b);
+            }
+        }
+
+        /// <summary>
+        /// The beach's refusals that need the rest of the config — <c>logbook/specs/beach-spec.md</c>
+        /// §2. BedShape refuses what it can see at its own numbers (a shore at or past the depth, a
+        /// shore without a fade and a fade without a shore); these are the ones only the world can.
+        /// </summary>
+        /// <remarks>
+        /// All skipped with both dials at 0, which is every recorded config: a world that never
+        /// asked for a shore cannot be refused because of one.
+        /// </remarks>
+        private static void ValidateShore(RunConfig config)
+        {
+            float shore = config.BedShoreDepthMetres;
+            float fade = config.BedShoreFadeMetres;
+            if (!(shore > 0f) && !(fade > 0f)) return;
+
+            // The bed is the tank's, and a shore is a clamp on the bed.
+            if (config.WorldShape != WorldShape.Tank)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"WorldShape is {config.WorldShape} and the bed asks for a shore at {shore} m ") +
+                    FormattableString.Invariant($"with a fade of {fade} m. The shore is the tank's ") +
+                    "bed raised to the surface on one side, and the box has no bed to raise. " +
+                    "logbook/specs/beach-spec.md.",
+                    nameof(config));
+            }
+
+            // A shore on a floor with no relief and no tilt would clamp nothing: the header would
+            // name a beach the world does not have.
+            if (!(config.BedReliefMetres > 0f) && !(config.BedTiltMetres > 0f))
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"The bed asks for a shore at {shore} m on a flat floor (relief and tilt 0), ") +
+                    "where it would clamp nothing. Raise the tilt until the plane reaches the " +
+                    "surface, or leave the shore at 0. logbook/specs/beach-spec.md.",
+                    nameof(config));
+            }
+
+            // A shoal thinner than the detritus cell has no live cell over it: the mask keeps a
+            // cell whose centre is above the floor, and a one-metre shoal under two-metre cells
+            // would be rock to the grid and water to the physics.
+            if (config.FieldModel == MatterField.Grid && shore > 0f && shore < config.FieldCellMetres)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"The shoal is {shore} m deep and the detritus cell is {config.FieldCellMetres} m. ") +
+                    "A shoal thinner than a cell has no live cell over it, so the snow could not " +
+                    "settle on it and the water over it would not be in the grid. " +
+                    "logbook/specs/beach-spec.md.",
+                    nameof(config));
             }
         }
 

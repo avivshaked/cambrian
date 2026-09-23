@@ -94,6 +94,11 @@ namespace Evosim.Theatre
                 config.BedReliefMetres = Optional(bed, "bedReliefMetres", 0f, missing, "bed.bedReliefMetres");
                 config.BedTiltMetres = Optional(bed, "bedTiltMetres", 0f, missing, "bed.bedTiltMetres");
                 config.BedScaleMetres = Optional(bed, "bedScaleMetres", 0f, missing, "bed.bedScaleMetres");
+
+                // The beach (logbook/specs/beach-spec.md). Absent is the shore off, which is what
+                // every config written before the dials meant.
+                config.BedShoreDepthMetres = Optional(bed, "bedShoreDepthMetres", 0f, missing, "bed.bedShoreDepthMetres");
+                config.BedShoreFadeMetres = Optional(bed, "bedShoreFadeMetres", 0f, missing, "bed.bedShoreFadeMetres");
             }
             else
             {

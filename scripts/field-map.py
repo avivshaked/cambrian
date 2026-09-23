@@ -20,6 +20,14 @@ tenth of the water — which still reads once the field has become soup and the 
 become a coin toss; a crowd spread evenly reads the footprint's own share of the live columns,
 printed in the header, and a crowd that stayed where it founded reads near 1. 0114's J8.
 
+On a beach run (logbook/specs/beach-spec.md) the farm writes `fields/bed.f32` once, the floor's y
+under every snow column in the snow's column order, and `layout.json` names it. When it is present
+this reader adds one number per line, `snow-shelf12`: the share of the marine snow's standing
+stock in the live columns whose floor is within 12 m of the surface (the founders' depth), read
+from the `snow-columns` dump whether or not `--snow` asks for the panel. The header says how much
+of the water those columns are, which is the share a snow spread without regard to the floor
+would read.
+
 Only a second the run dumped at can be drawn; `--at` picks the nearest dump to each second asked
 and says which. The picture is a map and not a census: a body's depth is not drawn.
 """
@@ -198,6 +206,45 @@ def live_mask_for(field, cell, radius):
              for iz in range(nz)] for ix in range(nx)], radius
 
 
+SHELF_METRES = 12.0
+
+
+def shelf_columns(run_dir, layout, config):
+    """(mask[ix][iz], live) from fields/bed.f32: live snow columns with a floor within 12 m.
+
+    None when the run wrote no floor, which is every run before the beach build and every run on a
+    flat bed. The floor is the grid's own reading at the column centre, so the mask is the one the
+    snow settled against.
+    """
+    bed = layout.get('bed')
+    path = os.path.join(run_dir, 'fields', 'bed.f32')
+    if bed is None or not os.path.isfile(path):
+        return None
+    nx, nz = bed['cellsX'], bed['cellsZ']
+    floor = read_floats(path)
+    if len(floor) != nx * nz:
+        fail('%s: %d floats where the layout names %d by %d columns' % (path, len(floor), nx, nz))
+    _, radius = live_mask(config, 1, 1, 1.0)
+    live, _ = live_mask_for([[0.0] * nz for _ in range(nx)], float(bed['cellMetres']), radius)
+    mask = [[live[ix][iz] and floor[ix * nz + iz] >= -SHELF_METRES for iz in range(nz)] for ix in range(nx)]
+    count = sum(1 for ix in range(nx) for iz in range(nz) if live[ix][iz])
+    return mask, count
+
+
+def shelf_share(values, layout, mask):
+    """The share of the snow's column stock standing over the shelf's columns."""
+    nz = layout['cellsZ']
+    total = 0.0
+    over = 0.0
+    for ix in range(layout['cellsX']):
+        for iz in range(nz):
+            v = values[ix * nz + iz]
+            total += v
+            if mask[ix][iz]:
+                over += v
+    return over / total if total > 0 else float('nan')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('arm')
@@ -226,7 +273,12 @@ def main():
     matter_dumps = dumps_of(run_dir, 'matter')
     if not matter_dumps:
         fail('%s: no matter dumps under fields/' % run_dir)
-    snow_dumps = dumps_of(run_dir, 'snow-columns') if args.snow else {}
+
+    # The beach's floor, when the run wrote one: the snow's column map is then read for the shelf
+    # share whether or not its panel is drawn.
+    shelf = shelf_columns(run_dir, layout, config)
+    all_snow = dumps_of(run_dir, 'snow-columns') if (args.snow or shelf is not None) else {}
+    snow_dumps = all_snow if args.snow else {}
 
     if args.at:
         seconds = [nearest(matter_dumps.keys(), float(s)) for s in args.at.split(',') if s.strip()]
@@ -260,8 +312,16 @@ def main():
         print('footprint: the %d of %d live columns above the mean at %d s (%.2f of the water)'
               % (in_count, live_count, f_second, in_count / live_count if live_count else float('nan')))
 
+    if shelf is not None:
+        shelf_mask, live_columns = shelf
+        in_shelf = sum(1 for row in shelf_mask for v in row if v)
+        print('bed: fields/bed.f32, %d of %d live snow columns have a floor within %g m of the surface '
+              '(%.3f of the columns); snow-shelf12 is the snow stock\'s share in them'
+              % (in_shelf, live_columns, SHELF_METRES, in_shelf / live_columns if live_columns else float('nan')))
+
     print('second  bodies-at  alive  col-cv   max-units/m3  mean-units/m3  in-islands'
-          + ('  in-footprint' if footprint else ''))
+          + ('  in-footprint' if footprint else '')
+          + ('  snow-shelf12' if shelf is not None else ''))
     for second in seconds:
         density, cell = column_map(read_floats(matter_dumps[second]), m, args.layers)
         mask, radius = live_mask(config, m['cellsX'], m['cellsZ'], cell)
@@ -297,6 +357,12 @@ def main():
             ('%.2f' % share) if bodies else '-')
         if footprint:
             line += '  %12s' % (('%.2f' % footprint_share) if bodies else '-')
+        if shelf is not None:
+            if all_snow:
+                values = read_floats(all_snow[nearest(all_snow.keys(), second)])
+                line += '  %12s' % ('%.4f' % shelf_share(values, layout['snowColumns'], shelf[0]))
+            else:
+                line += '  %12s' % '-'
         if plt is not None:
             path, _, _, _ = draw(plt, args.arm, second, sample_t if sample_t is not None else second,
                                  bodies, density, cell, mask, radius, snow, out_dir, args.layers, depth)

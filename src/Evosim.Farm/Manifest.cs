@@ -84,6 +84,14 @@ namespace Evosim.Farm
         public double BedRangeMetres;
         public double BedSteepestDegrees;
 
+        /// <summary>
+        /// The beach's two dials as the bed carried them (logbook/specs/beach-spec.md §2), and the
+        /// shoal's share of the disc the map measured. All 0 with the shore off.
+        /// </summary>
+        public float BedShore;
+        public float BedShoreFade;
+        public double BedShoalFraction;
+
         /// <summary>D102's ratio: the water the streams were built to, read off the built world.</summary>
         /// <remarks>
         /// 1 in a box and in every tank whose axes balance, which is every recording before the
@@ -356,6 +364,9 @@ namespace Evosim.Farm
             manifest.BedRidges = bed.Ridges;
             manifest.BedRangeMetres = bed.RangeMetres;
             manifest.BedSteepestDegrees = bed.SteepestTotalSlopeRadians * 180d / Math.PI;
+            manifest.BedShore = bed.HasShore ? bed.ShoreDepthMetres : 0f;
+            manifest.BedShoreFade = bed.HasShore ? bed.ShoreFadeMetres : 0f;
+            manifest.BedShoalFraction = bed.ShoalAreaFraction;
         }
 
         /// <summary>Writes <c>run.json</c> into the run directory: the first call, or the second.</summary>
@@ -426,6 +437,13 @@ namespace Evosim.Farm
             w.Field("bedRidges", m.BedRidges);
             w.Field("bedRangeMetres", m.BedRangeMetres);
             w.Field("bedSteepestDegrees", m.BedSteepestDegrees);
+
+            // The beach's three, in the bed's block: the shore, its fade and the shoal's share of
+            // the disc (logbook/specs/beach-spec.md §2). 0 on every run before the build and on
+            // every run with the shore off.
+            w.Field("bedShore", m.BedShore);
+            w.Field("bedShoreFade", m.BedShoreFade);
+            w.Field("bedShoalFraction", m.BedShoalFraction);
 
             // D102 — after the bed's seven, per the same append-only rule and in the place
             // EvolutionRun writes it. Derived from the world the launch produced rather than from

@@ -536,6 +536,12 @@ namespace Evosim.Core
             _tankRadiusMetres = shape == WorldShape.Tank ? tankRadiusMetres : 0f;
             _bed = shape == WorldShape.Tank && bed != null && bed.HasRelief ? bed : null;
 
+            // The beach's fade rides on the bed it belongs to (logbook/specs/beach-spec.md §3):
+            // one object hands the water both the floor and how the current dies over its shoal.
+            _fadeOn = _bed != null && _bed.HasShore;
+            _shoreDepth = _fadeOn ? _bed.ShoreDepthMetres : 0d;
+            _shoreFade = _fadeOn ? _bed.ShoreFadeMetres : 0d;
+
             // Built lazily on the first sample, so a Rolls world never pays for it and a config
             // handed to two worlds of different geometry rebuilds rather than describing the first.
             _transportAmplitude = null;
@@ -549,6 +555,168 @@ namespace Evosim.Core
         private WorldShape _shape = WorldShape.Box;
         private float _tankRadiusMetres;
         private BedShape _bed;
+
+        // The shore's fade, logbook/specs/beach-spec.md §3. False on every bed with the shore at
+        // 0, and every sampler tests it before touching anything below, so a bed without a
+        // beach is the arithmetic D092 built to the bit.
+        private bool _fadeOn;
+        private double _shoreDepth;
+        private double _shoreFade;
+
+        /// <summary>
+        /// The shore's fade at a column of water depth <paramref name="d"/>, and its first two
+        /// derivatives in <c>d</c> — <c>logbook/specs/beach-spec.md</c> §3.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What it buys.</b> D092's map stretches the flat field's horizontal velocity by
+        /// <c>D/d</c>, and over a one-metre shoal in a 45 m tank that is a jet at forty-five times
+        /// the flat speed. Multiplying the sloped potential by <c>f(d)</c> stills the water where the
+        /// column is thinner than the shore and leaves it whole where it is thicker than the shore
+        /// plus the fade. The product is still a potential, so its curl is still divergence-free,
+        /// and the extra term <c>∇f × A'</c> is tangential wherever <c>A'</c>'s tangential
+        /// components vanish, which they do on the floor and at the glass: nothing crosses either.
+        /// </para>
+        /// <para>
+        /// <b>The quintic step and not the cubic.</b> The spec names a smoothstep. The cubic's
+        /// second derivative is ±6 at the band's two edges, and the water's Jacobian carries
+        /// <c>f''</c> through <c>∇∇f</c>, so under the cubic the acceleration a body feels would
+        /// jump as it crossed the shore's contour and the contour at shore plus fade, and the crease
+        /// where the plane meets the flat shoal would reach the Jacobian through <c>f''·∇h∇h</c>.
+        /// The quintic <c>6ξ⁵ − 15ξ⁴ + 10ξ³</c> is zero with its first two derivatives at both
+        /// edges, so the velocity, its Jacobian and <c>Du/Dt</c> are continuous across the band's
+        /// two edges and across the crease.
+        /// </para>
+        /// <para>
+        /// <b>Times the depth factor <c>m(d/D)</c></b> (the coordinator's rulings of 2026-09-23,
+        /// on the readings of <c>BedBeachContourReadingTests</c>). What is returned is
+        /// <c>g = q(ξ)·m</c> with <c>q</c> the quintic and <c>m</c> <see cref="DepthFactor"/>, and
+        /// its two derivatives by the product rule in full. Shallower than <c>0.9·D</c>, <c>m</c> is
+        /// <c>d/D</c> and cancels the map's stretch <c>D/d</c> exactly, so the stretched water over
+        /// the shelf runs at the flat field's speed and the contour term is smaller at the same
+        /// fade: at fade 15 the band's RMS read 1.1× the tank's against the plain fade's 2.9×.
+        /// Deeper than <c>1.1·D</c>, <c>m</c> is 1 and the water is the unfaded field's arithmetic
+        /// times the single factor the renormalisation to the knob applies. Between them a C²
+        /// turnover hands one over to the other.
+        /// </para>
+        /// <para>
+        /// <b>Why the turnover.</b> The first cut was <c>min(1, d/D)</c>, whose slope jumps at
+        /// <c>d = D</c>. <c>∇g × A'</c> is part of the velocity itself, so the water had a shear
+        /// sheet along the mean-depth contour: 0.011 m/s on average and 0.047 m/s at worst in round
+        /// 45's tank, 0.46 of its RMS (<c>BedBeachStreamsTests.AcrossTheMeanDepthContour</c>, on
+        /// that build). With <c>m</c> twice continuously differentiable the velocity and its
+        /// Jacobian are continuous across the contour, and the same test now reads the jump at the
+        /// stencil's rounding.
+        /// </para>
+        /// </remarks>
+        private void ShoreFade(double d, out double f, out double fd, out double fdd)
+        {
+            // The depth factor: d/D on the ramp, where it cancels the Piola stretch D/d exactly, 1
+            // deeper than 1.1·D, and a C² turnover between (DepthFactor's remarks).
+            double depth = _depthMetres;
+            DepthFactor(d / depth, out double m, out double mx, out double mxx);
+            double md = mx / depth;
+            double mdd = mxx / (depth * depth);
+
+            double xi = (d - _shoreDepth) / _shoreFade;
+
+            if (xi <= 0d)
+            {
+                f = 0d;
+                fd = 0d;
+                fdd = 0d;
+                return;
+            }
+
+            if (xi >= 1d)
+            {
+                // The quintic is whole here, so the product is m and its derivative m's: 1/D on
+                // the ramp above the band, and exactly 0 in a column deeper than the mean, which
+                // is what lets that water take the unfaded field's arithmetic.
+                f = m;
+                fd = md;
+                fdd = mdd;
+                return;
+            }
+
+            double xi2 = xi * xi;
+            double rest = 1d - xi;
+
+            double q = xi2 * xi * (10d + xi * (-15d + 6d * xi));
+            double qd = 30d * xi2 * rest * rest / _shoreFade;
+            double qdd = 60d * xi * rest * (1d - 2d * xi) / (_shoreFade * _shoreFade);
+
+            // The product rule in full, so a band that reaches into the turnover is still exact.
+            f = q * m;
+            fd = qd * m + q * md;
+            fdd = qdd * m + 2d * qd * md + q * mdd;
+        }
+
+        /// <summary>
+        /// Half the width, in <c>d/D</c>, over which the depth factor hands over from <c>d/D</c> to
+        /// 1 — 0.1, which is 4.5 m of water depth either side of the mean in round 45's tank.
+        /// </summary>
+        /// <remarks>
+        /// <b>A constant and not a tunable.</b> It is the width over which the stretch's
+        /// cancellation hands over to the unfaded field, and nothing a round reads depends on it:
+        /// the shelf the fade exists for lies far above it, and what it buys is that the water has
+        /// no seam at the mean depth. Wide enough that the blend's curvature is gentle against the
+        /// streams' own scales, narrow enough that almost all of the ramp keeps the exact
+        /// cancellation (the coordinator's ruling of 2026-09-23).
+        /// </remarks>
+        private const double DepthTurnover = 0.1d;
+
+        /// <summary>
+        /// The depth factor <c>m(x)</c> at <c>x = d/D</c>, and its first two derivatives in
+        /// <c>x</c>: <c>x</c> below <c>1 − w</c>, 1 above <c>1 + w</c>, and between them the one
+        /// polynomial that matches value, slope and a zero second derivative at both ends.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why a blend and not <c>min(1, x)</c>.</b> The min shipped first and its slope jumps
+        /// from 1 to 0 at the mean depth. The slope enters <c>∇g × A'</c>, which is part of the
+        /// velocity, so the water had a shear sheet along the contour <c>d = D</c>: 0.047 m/s at
+        /// worst, about half the tank's RMS, in round 45's tank. The blend makes <c>m</c> twice
+        /// continuously differentiable, which is what the velocity (one derivative of the potential)
+        /// and its Jacobian (two) need to be continuous there.
+        /// </para>
+        /// <para>
+        /// <b>The polynomial.</b> With <c>s = (x − 1 + w)/2w</c>, the slope runs
+        /// <c>m' = 1 − (3s² − 2s³)</c>, a smoothstep down from 1 to 0 with zero slope at both ends,
+        /// so <c>m''</c> is zero at both ends too; integrated,
+        /// <c>m = 1 − w + 2w·(s − s³ + s⁴/2)</c>, which is <c>1 − w</c> at <c>s</c> = 0 and 1 at
+        /// <c>s</c> = 1. It is the quintic Hermite interpolant of those six end conditions, whose
+        /// fifth-degree coefficient comes out zero.
+        /// </para>
+        /// </remarks>
+        private static void DepthFactor(double x, out double m, out double mx, out double mxx)
+        {
+            const double W = DepthTurnover;
+
+            if (x <= 1d - W)
+            {
+                m = x;
+                mx = 1d;
+                mxx = 0d;
+                return;
+            }
+
+            if (x >= 1d + W)
+            {
+                m = 1d;
+                mx = 0d;
+                mxx = 0d;
+                return;
+            }
+
+            double width = 2d * W;
+            double s = (x - (1d - W)) / width;
+            double s2 = s * s;
+
+            m = 1d - W + width * (s - s2 * s + 0.5d * s2 * s2);
+            mx = 1d - s2 * (3d - 2d * s);
+            mxx = -6d * s * (1d - s) / width;
+        }
 
         // D092's pace. The harness samples every part's velocity and then its acceleration at
         // one point per physics step, and each sampled the bed's twelve cosines on its own: the
@@ -1964,6 +2132,12 @@ namespace Evosim.Core
 
             /// <summary>The water's own depth here, m: <c>D − h</c>.</summary>
             public double Depth;
+
+            /// <summary>
+            /// The shore's fade at this column, <see cref="ShoreFade"/>'s <c>f</c>; 1 and unread
+            /// with the shore off.
+            /// </summary>
+            public double Fade;
         }
 
         /// <summary>
@@ -2093,6 +2267,9 @@ namespace Evosim.Core
             map.A = scale * hx;
             map.B = scale * hz;
 
+            map.Fade = 1d;
+            if (_fadeOn) ShoreFade(d, out map.Fade, out _, out _);
+
             return map;
         }
 
@@ -2126,6 +2303,11 @@ namespace Evosim.Core
             double scale = y * depth / column.DepthSquared;
             map.A = scale * column.SlopeX;
             map.B = scale * column.SlopeZ;
+
+            // From the column's own d, which is the same double MapAt's is, so the precomputed
+            // path and the direct one fade by the same bits.
+            map.Fade = 1d;
+            if (_fadeOn) ShoreFade(column.Depth, out map.Fade, out _, out _);
 
             return map;
         }
@@ -2177,6 +2359,8 @@ namespace Evosim.Core
         {
             BedMap m = MapAt(x, y, z);
 
+            if (_fadeOn) return StreamsFadedUnit(x, z, t, overturning, m);
+
             Float3 u = StreamsUnit(x, m.MappedY, z, t, overturning);
 
             return new Float3(
@@ -2211,12 +2395,92 @@ namespace Evosim.Core
         {
             BedMap m = MapAt(x, y, z);
 
+            if (_fadeOn) return FadedPotential(x, z, t, overturning, m);
+
             Float3 a = StreamsPotentialUnit(x, m.MappedY, z, t, overturning);
 
             return new Float3(
                 (float)(a.X + m.A * a.Y),
                 (float)(m.C * a.Y),
                 (float)(a.Z + m.B * a.Y));
+        }
+
+        /// <summary>
+        /// The sloped potential times the shore's fade, <c>f(d)·A'</c> —
+        /// <c>logbook/specs/beach-spec.md</c> §3. Both the direct path and the column's come here,
+        /// so the grid's precomputed face fluxes and the direct ones fade by the same bits.
+        /// </summary>
+        /// <remarks>
+        /// Still water is returned as exact zeros without reading the flat field at all: over the
+        /// shoal the whole column is still, and the flat potential's twenty-seven terms would be
+        /// bought to be multiplied by nothing.
+        /// </remarks>
+        private Float3 FadedPotential(double x, double z, double t, double overturning, in BedMap m)
+        {
+            if (m.Fade == 0d) return Float3.Zero;
+
+            Float3 a = StreamsPotentialUnit(x, m.MappedY, z, t, overturning);
+
+            return FadedPotentialOf(a, m);
+        }
+
+        private static Float3 FadedPotentialOf(Float3 a, in BedMap m)
+        {
+            double f = m.Fade;
+
+            return new Float3(
+                (float)(f * (a.X + m.A * a.Y)),
+                (float)(f * (m.C * a.Y)),
+                (float)(f * (a.Z + m.B * a.Y)));
+        }
+
+        /// <summary>
+        /// The sloped streams with the shore's fade: the curl of <c>f·A'</c>, which is
+        /// <c>f·u' + ∇f × A'</c> — <c>logbook/specs/beach-spec.md</c> §3.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The second term is what keeps the water divergence-free.</b> Scaling the velocity by
+        /// <c>f</c> alone would not be a curl and would leak through every column the fade is
+        /// changing in; scaling the potential and taking the curl adds <c>∇f × A'</c>, with
+        /// <c>∇f = −f'(d)·(h_x, 0, h_z)</c> horizontal because <c>d</c> is the column's. On the
+        /// floor and at the glass <c>A'</c> is zero, so the term vanishes there and no flux
+        /// crosses either.
+        /// </para>
+        /// <para>
+        /// <b>What it costs.</b> Above the band (<c>f</c> = 1, <c>f'</c> = 0) this is the unfaded
+        /// field's arithmetic, one comparison dearer; over the shoal it is exact zeros and no flat
+        /// sample; only inside the band does it read the flat potential beside the flat velocity.
+        /// </para>
+        /// </remarks>
+        private Float3 StreamsFadedUnit(double x, double z, double t, double overturning, in BedMap m)
+        {
+            ShoreFade(m.Depth, out double f, out double fd, out _);
+
+            if (f == 0d) return Float3.Zero;
+
+            Float3 u = StreamsUnit(x, m.MappedY, z, t, overturning);
+
+            double vx = m.C * u.X;
+            double vy = u.Y - m.A * u.X - m.B * u.Z;
+            double vz = m.C * u.Z;
+
+            if (fd == 0d) return new Float3((float)(f * vx), (float)(f * vy), (float)(f * vz));
+
+            Float3 a = StreamsPotentialUnit(x, m.MappedY, z, t, overturning);
+
+            double px = a.X + m.A * a.Y;
+            double py = m.C * a.Y;
+            double pz = a.Z + m.B * a.Y;
+
+            // ∇f, horizontal: d = D − h(x, z), so ∂f/∂x = −f'(d)·h_x and nothing in y.
+            double gx = -fd * m.SlopeX;
+            double gz = -fd * m.SlopeZ;
+
+            return new Float3(
+                (float)(f * vx - gz * py),
+                (float)(f * vy + gz * px - gx * pz),
+                (float)(f * vz + gx * py));
         }
 
         /// <summary>
@@ -2227,6 +2491,8 @@ namespace Evosim.Core
             double x, double y, double z, double t, double overturning, in BedColumn column)
         {
             BedMap m = MapFrom(column, y);
+
+            if (_fadeOn) return FadedPotential(x, z, t, overturning, m);
 
             Float3 a = StreamsPotentialUnit(x, m.MappedY, z, t, overturning);
 
@@ -2549,6 +2815,16 @@ namespace Evosim.Core
 
             BedMap m = MapFrom(bed, y);
 
+            // The shore's fade, the same arithmetic as the direct path's (FadedPotential): still
+            // water is exact zeros without the flat sum, and the rest is f times the pullback.
+            if (_fadeOn)
+            {
+                if (m.Fade == 0d) return Float3.Zero;
+
+                return FadedPotentialOf(StreamsPotentialFrom(column, depth), m)
+                       * (float)(_speed * _streamsScale * _bedScale);
+            }
+
             Float3 a = StreamsPotentialFrom(column, depth);
 
             return new Float3(
@@ -2803,6 +3079,306 @@ namespace Evosim.Core
             g.Yx = -ax * f.Vx - bx * f.Vz + (dxVy - a * dxVx - b * dxVz);
             g.Yy = -ay * f.Vx - by * f.Vz + (dyVy - a * dyVx - b * dyVz);
             g.Yz = -az * f.Vx - bz * f.Vz + (dzVy - a * dzVx - b * dzVz);
+
+            if (!_fadeOn) return g;
+
+            // The shore's fade, logbook/specs/beach-spec.md §3. Above the band the water is the
+            // unfaded field's to the bit, and over the shoal it is still with every derivative.
+            ShoreFade(d, out double fade, out double fd, out double fdd);
+
+            if (fade == 0d) return default(StreamsGradient);
+            if (fd == 0d && fdd == 0d && fade == 1d) return g;
+
+            return Faded(
+                g, x, y * c, z, t, overturning, fade, fd, fdd,
+                hx, hz, hxx, hxz, hzz, a, b, c, ax, az, bz, cx, cz);
+        }
+
+        /// <summary>
+        /// The faded field's velocity, clock derivative and Jacobian from the unfaded sloped
+        /// field's and the sloped potential's — the chain rule through <c>f·u' + ∇f × A'</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Written out rather than differenced</b>, for the reason the sloped field's own
+        /// Jacobian is (<c>logbook/specs/streams-analytic-spec.md</c>): with
+        /// <c>G = ∇f = −f'(d)·(h_x, 0, h_z)</c> and <c>w = G × A'</c>,
+        /// <c>∂_k u''_i = G_k·u'_i + f·∂_k u'_i + ∂_k w_i</c> and
+        /// <c>∂_t u'' = f·∂_t u' + G × ∂_t A'</c>. <c>∂_k G_i = f''·h_i·h_k − f'·h_ik</c> for the
+        /// two horizontal axes, which is where the bed's Hessian comes in, and <c>∂_y G</c> is zero.
+        /// <c>∂_k A'</c> is the flat potential's Jacobian read along the map's columns and carried
+        /// through <c>A' = Jᵀ·A(Φ)</c>, whose own derivatives are the <c>a</c>, <c>b</c>, <c>c</c>
+        /// derivatives the sloped Jacobian already has.
+        /// </para>
+        /// <para>
+        /// <b>Checked, not argued.</b> <c>BeachStreamsTests</c> holds the assembled acceleration
+        /// against a central difference of the faded velocity and the Jacobian's trace against
+        /// zero over the band.
+        /// </para>
+        /// </remarks>
+        private StreamsGradient Faded(
+            in StreamsGradient u, double x, double mappedY, double z, double t, double overturning,
+            double fade, double fd, double fdd,
+            double hx, double hz, double hxx, double hxz, double hzz,
+            double a, double b, double c,
+            double ax, double az, double bz, double cx, double cz)
+        {
+            StreamsGradient p = StreamsPotentialUnitWithGradient(x, mappedY, z, t, overturning);
+
+            // The flat potential's partials along the map's columns, as the velocity's are read:
+            // d/dx = d/dx̂ + a·d/dŷ, d/dy = c·d/dŷ, d/dz = d/dẑ + b·d/dŷ.
+            double dxAx = p.Xx + a * p.Xy, dyAx = c * p.Xy, dzAx = p.Xz + b * p.Xy;
+            double dxAy = p.Yx + a * p.Yy, dyAy = c * p.Yy, dzAy = p.Yz + b * p.Yy;
+            double dxAz = p.Zx + a * p.Zy, dyAz = c * p.Zy, dzAz = p.Zz + b * p.Zy;
+
+            // A' = (A_x + a·A_y, c·A_y, A_z + b·A_y), and its Jacobian. The map's own derivatives:
+            // ∂a = (a_x, c_x, a_z), ∂b = (a_z, c_z, b_z), ∂c = (c_x, 0, c_z).
+            double px = p.Vx + a * p.Vy;
+            double py = c * p.Vy;
+            double pz = p.Vz + b * p.Vy;
+
+            double pxX = dxAx + ax * p.Vy + a * dxAy;
+            double pxY = dyAx + cx * p.Vy + a * dyAy;
+            double pxZ = dzAx + az * p.Vy + a * dzAy;
+
+            double pyX = cx * p.Vy + c * dxAy;
+            double pyY = c * dyAy;
+            double pyZ = cz * p.Vy + c * dzAy;
+
+            double pzX = dxAz + az * p.Vy + b * dxAy;
+            double pzY = dyAz + cz * p.Vy + b * dyAy;
+            double pzZ = dzAz + bz * p.Vy + b * dzAy;
+
+            double ptX = p.Tx + a * p.Ty;
+            double ptY = c * p.Ty;
+            double ptZ = p.Tz + b * p.Ty;
+
+            // G = ∇f and its Jacobian, horizontal only.
+            double gx = -fd * hx;
+            double gz = -fd * hz;
+
+            double gxX = fdd * hx * hx - fd * hxx;
+            double gxZ = fdd * hx * hz - fd * hxz;
+            double gzX = gxZ;
+            double gzZ = fdd * hz * hz - fd * hzz;
+
+            var g = default(StreamsGradient);
+
+            // u'' = f·u' + G × A', with G × A' = (−G_z·A'_y, G_z·A'_x − G_x·A'_z, G_x·A'_y).
+            g.Vx = fade * u.Vx - gz * py;
+            g.Vy = fade * u.Vy + gz * px - gx * pz;
+            g.Vz = fade * u.Vz + gx * py;
+
+            g.Tx = fade * u.Tx - gz * ptY;
+            g.Ty = fade * u.Ty + gz * ptX - gx * ptZ;
+            g.Tz = fade * u.Tz + gx * ptY;
+
+            // ∂_k u''_i = G_k·u'_i + f·∂_k u'_i + ∂_k w_i, with G_y = 0 and ∂_y G = 0.
+            g.Xx = gx * u.Vx + fade * u.Xx - gzX * py - gz * pyX;
+            g.Xy = fade * u.Xy - gz * pyY;
+            g.Xz = gz * u.Vx + fade * u.Xz - gzZ * py - gz * pyZ;
+
+            g.Yx = gx * u.Vy + fade * u.Yx + gzX * px + gz * pxX - gxX * pz - gx * pzX;
+            g.Yy = fade * u.Yy + gz * pxY - gx * pzY;
+            g.Yz = gz * u.Vy + fade * u.Yz + gzZ * px + gz * pxZ - gxZ * pz - gx * pzZ;
+
+            g.Zx = gx * u.Vz + fade * u.Zx + gxX * py + gx * pyX;
+            g.Zy = fade * u.Zy + gx * pyY;
+            g.Zz = gz * u.Vz + fade * u.Zz + gxZ * py + gx * pyZ;
+
+            return g;
+        }
+
+        /// <summary>
+        /// <see cref="StreamsPotentialUnit"/>'s potential, its clock derivative and its 3×3
+        /// Jacobian at a place in the flat field's coordinates, in closed form — what the shore's
+        /// fade needs for <c>∇f × A'</c>'s derivatives, <c>logbook/specs/beach-spec.md</c> §3.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Returned in a <see cref="StreamsGradient"/></b>: <c>V</c> is the potential,
+        /// <c>T</c> its clock derivative, and the <c>X</c>, <c>Y</c> and <c>Z</c> rows the
+        /// Jacobians of its three components. The struct is the one the velocity uses, with the
+        /// same meaning read one level up.
+        /// </para>
+        /// <para>
+        /// <b>In Cartesian polynomials, as the velocity's gradient is.</b> The eddies' half is
+        /// <c>A_y = −Σ B_k·P_j(u)·(C_m cos ψ_k − S_m sin ψ_k)</c> with <c>u = s²</c>,
+        /// <c>C_m + iS_m = ((x + iz − (1 + i)R)/R)^m</c>, <c>P_1 = 1 − u</c> and
+        /// <c>P_2 = (1 − u)(1 − 2u)</c>, which is <see cref="StreamsPotentialUnit"/>'s
+        /// <c>f_j·cos(mθ + ψ)</c> with <c>s^m</c> folded into the polynomial; its derivatives are
+        /// <c>∂C_m/∂x = m·C_{m−1}/R</c>, <c>∂S_m/∂x = m·S_{m−1}/R</c>, <c>∂C_m/∂z = −m·S_{m−1}/R</c>
+        /// and <c>∂S_m/∂z = m·C_{m−1}/R</c>. The overturning's half is
+        /// <c>(W·Δz, ·, −W·Δx)</c> with <c>W = Σ A_c·(1 − s)²·sin(k_c y)</c>.
+        /// </para>
+        /// <para>
+        /// <b>The clamps are <see cref="StreamsUnitWithGradient"/>'s</b>: <c>y</c> to the box, the
+        /// point onto the glass when it is past it, and the profile zero at a face while its slope
+        /// is kept, so the derivatives are the boundary's own.
+        /// </para>
+        /// </remarks>
+        private StreamsGradient StreamsPotentialUnitWithGradient(
+            double x, double y, double z, double t, double overturning)
+        {
+            double depth = _depthMetres;
+            double radius = _tankRadiusMetres;
+
+            if (y > 0d) y = 0d;
+            else if (y < -depth) y = -depth;
+
+            bool atFace = y >= 0d || y <= -depth;
+
+            double dx = x - radius;
+            double dz = z - radius;
+            double r = Math.Sqrt(dx * dx + dz * dz);
+
+            if (r > radius)
+            {
+                dx = radius * dx / r;
+                dz = radius * dz / r;
+                r = radius;
+            }
+
+            double invR = 1d / radius;
+            double s = r * invR;
+            double u = s * s;
+            double ux = 2d * dx * invR * invR;
+            double uz = 2d * dz * invR * invR;
+
+            // X + iZ, the unit complex offset whose powers are C_n + iS_n.
+            double unitX = dx * invR;
+            double unitZ = dz * invR;
+
+            Instant instant = EnsureInstant(t);
+
+            double phi = Math.PI * y / depth;
+            double cosPhi = Math.Cos(phi);
+            double sinPhi = Math.Sin(phi);
+
+            double sin1 = atFace ? 0d : sinPhi;
+            double sin2 = atFace ? 0d : 2d * sinPhi * cosPhi;
+            double sin3 = atFace ? 0d : sinPhi * (4d * cosPhi * cosPhi - 1d);
+
+            double cos1 = cosPhi;
+            double cos2 = cosPhi * cosPhi - sinPhi * sinPhi;
+            double cos3 = cosPhi * (4d * cosPhi * cosPhi - 3d);
+
+            var g = default(StreamsGradient);
+
+            // 1. The eddies, into A_y. (cPrev, sPrev) is C_{m−1}, S_{m−1}; (cM, sM) is C_m, S_m.
+            double cPrev = 1d, sPrev = 0d;
+            double cM = unitX, sM = unitZ;
+
+            int k = 0;
+
+            for (int m = 1; m <= StreamsAzimuthal; m++)
+            {
+                double mR = m * invR;
+
+                for (int j = 1; j <= StreamsFamilies; j++)
+                {
+                    double poly = j == 1 ? 1d - u : (1d - u) * (1d - 2d * u);
+                    double polyU = j == 1 ? -1d : -3d + 4d * u;
+
+                    double bc = 0d, bs = 0d, yc = 0d, ys = 0d;
+                    double tc = 0d, ts = 0d, wc = 0d, ws = 0d;
+
+                    for (int q = 1; q <= StreamsVertical; q++, k++)
+                    {
+                        double profile = q == 1 ? sin1 : q == 2 ? sin2 : sin3;
+                        double ky = q * Math.PI / depth;
+                        double slope = ky * (q == 1 ? cos1 : q == 2 ? cos2 : cos3);
+
+                        double raw = _streamsEddyWeight * _streamAmplitude[k];
+                        double envelope = EnvelopeOf(instant, k);
+
+                        double bb = raw * envelope * profile;
+                        double by = raw * envelope * slope;
+                        double bt = raw * EnvelopeRateOf(instant, k) * profile;
+                        double bw = bb * _streamRate[k];
+
+                        double cosPsi = instant.Cos[k];
+                        double sinPsi = instant.Sin[k];
+
+                        bc += bb * cosPsi; bs += bb * sinPsi;
+                        yc += by * cosPsi; ys += by * sinPsi;
+                        tc += bt * cosPsi; ts += bt * sinPsi;
+                        wc += bw * cosPsi; ws += bw * sinPsi;
+                    }
+
+                    // Q = Σ B·(C_m cos ψ − S_m sin ψ), and its partials.
+                    double qv = cM * bc - sM * bs;
+                    double qx = mR * (cPrev * bc - sPrev * bs);
+                    double qz = mR * (-sPrev * bc - cPrev * bs);
+
+                    g.Vy -= poly * qv;
+                    g.Yx -= polyU * ux * qv + poly * qx;
+                    g.Yz -= polyU * uz * qv + poly * qz;
+                    g.Yy -= poly * (cM * yc - sM * ys);
+
+                    // The envelope's half of d/dt and the travelling phase's:
+                    // d(C cos ψ − S sin ψ)/dψ = −(C sin ψ + S cos ψ).
+                    g.Ty -= poly * (cM * tc - sM * ts);
+                    g.Ty += poly * (cM * ws + sM * wc);
+                }
+
+                double nextC = cM * unitX - sM * unitZ;
+                double nextS = sM * unitX + cM * unitZ;
+                cPrev = cM; sPrev = sM;
+                cM = nextC; sM = nextS;
+            }
+
+            // 2. The overturning, into the horizontal pair: A = (W·Δz, ·, −W·Δx).
+            if (overturning != 0d)
+            {
+                double wall = 1d - s;
+                double wallSquared = wall * wall;
+
+                // ds/dx and ds/dz, zero on the axis as the velocity's gradient takes them.
+                double sx = r > 0d ? dx / (r * radius) : 0d;
+                double sz = r > 0d ? dz / (r * radius) : 0d;
+
+                double w = 0d, ws = 0d, wy = 0d, wt = 0d;
+
+                for (int cell = 0; cell < StreamsCells; cell++)
+                {
+                    int q = cell + 1;
+                    double ky = q * Math.PI / depth;
+
+                    double raw = overturning * _cellAmplitude[cell];
+                    double envelope = CellEnvelopeOf(instant, cell);
+                    double turn = instant.Cell[cell];
+
+                    double amplitude = raw * envelope * turn;
+                    double rate = raw * (CellEnvelopeRateOf(instant, cell) * turn +
+                                         envelope * instant.CellRate[cell]);
+
+                    double sinKy = q == 1 ? sin1 : q == 2 ? sin2 : sin3;
+                    double cosKy = q == 1 ? cos1 : q == 2 ? cos2 : cos3;
+
+                    w += amplitude * wallSquared * sinKy;
+                    ws += amplitude * -2d * wall * sinKy;
+                    wy += amplitude * wallSquared * ky * cosKy;
+                    wt += rate * wallSquared * sinKy;
+                }
+
+                double wx = ws * sx;
+                double wz = ws * sz;
+
+                g.Vx += w * dz;
+                g.Vz -= w * dx;
+
+                g.Xx += wx * dz;
+                g.Xy += wy * dz;
+                g.Xz += wz * dz + w;
+
+                g.Zx -= wx * dx + w;
+                g.Zy -= wy * dx;
+                g.Zz -= wz * dx;
+
+                g.Tx += wt * dz;
+                g.Tz -= wt * dx;
+            }
 
             return g;
         }

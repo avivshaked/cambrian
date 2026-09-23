@@ -1303,6 +1303,86 @@ namespace Evosim.Core
 
         private float _bedScaleMetres;
 
+        /// <summary>
+        /// The shoal's depth, m: the floor is clamped so that it is never above <c>−this</c>. 0 (the
+        /// default) is off and keeps D092's rule that the floor stays below −1 m everywhere, which
+        /// is every recorded world. The beach, <c>logbook/specs/beach-spec.md</c> §2,
+        /// <c>EVOSIM_BED_SHORE</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What it buys.</b> The stomach screens of 2026-09-23 read the snow as a thin layer
+        /// under the plant crowd that lives eight minutes and never reaches a floor forty metres
+        /// down (<c>logbook/specs/stomach-screens.md</c>). A floor raised on one side into the lit
+        /// water puts a floor under the crowd, and the shoal a metre under the surface is where
+        /// snow that settles stays in full light. With the shore on, <see cref="BedShape"/> lifts
+        /// its refusal of a floor near the surface and clamps the map instead, so the tilt may be
+        /// raised until the plane would break the surface and the part that would is a flat shoal.
+        /// </para>
+        /// <para>
+        /// <b>A shoal and never dry sand.</b> No column is ever dry, so the grid needs no dry mask
+        /// and no body is ever in air; dry sand is the terrestrial round's and is not reachable
+        /// from this dial. <c>World</c> refuses it under the detritus cell (a shoal thinner than a
+        /// cell has no live cell over it), at or above the world's depth, in a box (the bed is the
+        /// tank's), without <see cref="BedShoreFadeMetres"/> (a shoal with no fade is a jet at
+        /// forty-five times the flat speed), and on a floor with neither relief nor tilt, where it
+        /// would be inert and the header would name a shore the world did not have.
+        /// ⚠ Unmeasured (§5A.10).
+        /// </para>
+        /// </remarks>
+        [Tunable("bed", Unit = "m")]
+        public float BedShoreDepthMetres
+        {
+            get => _bedShoreDepthMetres;
+            set => _bedShoreDepthMetres = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(BedShoreDepthMetres), value,
+                    "A shoal depth is finite and not negative; 0 is off, the floor below −1 m everywhere.");
+        }
+
+        private float _bedShoreDepthMetres;
+
+        /// <summary>
+        /// The width in water depth over which the floor-following current fades to still at the
+        /// shore, m. The water is still where a column is thinner than
+        /// <see cref="BedShoreDepthMetres"/>, whole where it is thicker than the shore plus this,
+        /// and smooth between. 0 (the default) is off. <c>logbook/specs/beach-spec.md</c> §3,
+        /// <c>EVOSIM_BED_SHORE_FADE</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why a fade at all.</b> D092's map stretches the flat field's horizontal velocity by
+        /// <c>D/d</c> over a column of depth <c>d</c>, which is right over a rise and a jet over a
+        /// one-metre shoal in a 45 m tank. The fade multiplies the potential by a scalar of the
+        /// column's depth, which keeps the water a curl and so divergence-free, and keeps it off
+        /// the floor and the glass (<see cref="CurrentField"/>'s sloped streams say how). The
+        /// scalar is a quintic step over this width times a depth factor that is <c>d/D</c> on the
+        /// ramp, where it cancels the map's stretch, and turns over to 1 through a C² blend
+        /// between 0.9 and 1.1 of the mean depth (the coordinator's rulings of 2026-09-23). Shore
+        /// plus fade must end above the mean depth.
+        /// </para>
+        /// <para>
+        /// <b>Refused on its own and refused absent.</b> A fade with the shore at 0 names a
+        /// mechanism the world does not run, and a shore with the fade at 0 is the jet, which
+        /// nobody should get by omission (<c>World</c>'s refusals). The spec's recommendation is
+        /// 15 m, at which the water over the lit shelf's 12 m contour runs at about the flat
+        /// field's near-surface speed. ⚠ Unmeasured (§5A.10).
+        /// </para>
+        /// </remarks>
+        [Tunable("bed", Unit = "m")]
+        public float BedShoreFadeMetres
+        {
+            get => _bedShoreFadeMetres;
+            set => _bedShoreFadeMetres = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(BedShoreFadeMetres), value,
+                    "A fade is finite and not negative; 0 is off.");
+        }
+
+        private float _bedShoreFadeMetres;
+
         /// <summary>How fast matter falls, m/s — D048.</summary>
         /// <remarks>
         /// Separate from <see cref="NutrientSinkMetresPerSecond"/> rather than shared. They

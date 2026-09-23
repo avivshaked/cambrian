@@ -244,7 +244,8 @@ namespace Evosim.Theatre
                             TankGeometry.RadiusFor(config.WorldAreaSquareMetres),
                             config.WorldDepthMetres, config.BedReliefMetres,
                             config.BedTiltMetres, config.BedScaleMetres,
-                            Rng.SeedFor(world.Record.Seed, World.BedShapeIndex))
+                            Rng.SeedFor(world.Record.Seed, World.BedShapeIndex),
+                            config.BedShoreDepthMetres, config.BedShoreFadeMetres)
                         : null;
             }
             catch (Exception e)

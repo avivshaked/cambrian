@@ -105,18 +105,50 @@ then tangential. The closed-form acceleration (`StreamsAccelerationAt`) takes th
 terms through `∇f = −f′(d)·∇h` and the Hessian the bed columns already carry
 (`HeightGradientAndHessian`); the finite-difference check that pinned it at 0.06% is the
 test. The grid's transporter reads the potential on its edges and carries the fade by
-construction (`transport-conserves-spec.md`). The recommended fade is 15 m: at the shelf's
-12 m contour the stretch is 3.5 and the fade there about 0.5, so the water over the lit shelf
-moves at about the flat field's near-surface speed and dies toward the shoal. The smoke
-prints the largest water speed over the shelf columns, and the pictures show whether the
-shore carries bodies along it.
+construction (`transport-conserves-spec.md`). The recommended fade is 15 m.
+
+*As built (2026-09-23 afternoon, three passes of the Opus subagent).* The plain fade did not
+give the water the paragraph above expected: the fade's own term `∇f × A` is a current along
+the shore's contours of the order of `|A|/fade`, and at 15 m it read 2.9 times the tank's RMS
+in the band with a peak of 11.4, and 3.5 times over the lit shelf. The shipped fade is the
+quintic `f` times a depth factor `m(d/D)` that equals `d/D` on the ramp (cancelling the
+Piola stretch `D/d` exactly, so the stretched water over the shelf is the flat field's) and
+turns over to 1 across `0.9 D` to `1.1 D` by a C² Hermite blend (`CurrentField.DepthTurnover`,
+0.1, a constant and not a tunable). A hard `min(1, d/D)` was tried first and put a shear
+sheet in the water at the mean depth, 0.047 m/s at worst, because the factor's slope enters
+the velocity; the blend takes it to the stencil's rounding (1.9e-6 m/s). The sweep, round
+45's tank at seed 1 and 0.1 m/s, multiples of each form's own tank RMS:
+
+| form | fade | band RMS / max | contour term RMS / max | shelf 6 to 12 m RMS / max | bound | substeps |
+|---|---|---|---|---|---|---|
+| shipped, `f · m` | 15 | 1.10 / 4.22 | 0.81 / 3.54 | 1.26 / 4.53 | 0.829 m/s | 1 |
+| shipped, `f · m` | 40 | 0.92 / 4.09 | 0.39 / 1.84 | 0.21 / 0.95 | 0.870 m/s | 1 |
+| plain `f` | 15 | 2.90 / 11.44 | 2.03 / 11.39 | 3.53 / 14.60 | 1.70 m/s | 2 |
+| plain `f` | 25 | 1.68 / 6.74 | 0.93 / 4.45 | 1.68 / 6.06 | 1.09 m/s | 2 |
+| plain `f` | 40 | 1.22 / 5.40 | 0.49 / 2.22 | 0.65 / 2.58 | 0.79 m/s | 1 |
+
+The shipped form at 15 m is the round's: the shelf's water at about the flat speed, the
+contour current under one RMS, one substep. Two things follow from the depth factor. A tilt
+that never reaches the shore (round 45's 30 m) is no longer the recorded water when the
+shore is on: every column shallower than the mean is slowed by `m` and the renormalisation
+speeds the rest by a factor (1.0704 at tilt 30), so the shore dial is a change to the whole
+water and not to the shallows alone; shore 0 stays the recorded field bit for bit. And a
+band that runs past the mean depth (shore plus fade at or past `D`) is refused, because it
+would fade the open water. The readings and the sweep are `BedBeachStreamsTests` and the
+Slow `BedBeachContourReadingTests`.
 
 ## 4. What follows without a change
 
 - **The grid.** A cell is live when its centre is above the floor; a shoal column has one
   live cell at 1 m cells. Settling stops at the lowest live cell of a column, so snow that
   reaches the shoal stays in the top cell, in full light, which is the prize. The seeded
-  density is the budget over the live volume, as now.
+  density is the budget over the live volume, as now. *As built:* the 5 m matter grid has no
+  live cell under a column whose floor is shallower than 2.5 m (18 of 880 columns in round
+  45's tank, 2%), and a body there reads, takes from and deposits into the nearest live
+  column inward along its radius, 7 m on average and 11 m at worst (`GridField`'s existing
+  walk for a dead column; nothing throws and nothing reads zero, `BedBeachTests`). So a leaf
+  on the shoal feeds on and fertilises water 2.5 m deep or more a few metres inward, which
+  is stated rather than changed.
 - **The placer.** A founder's height is drawn to `FounderDepthSpread` and the candidate is
   read against the floor at its column as D092 built it (`TryReserveFounder`); a draw under
   the shelf's floor is handled as any draw inside the rock is today. The smoke counts founders
@@ -130,7 +162,8 @@ shore carries bodies along it.
 - **The farm dumps the floor once** beside the fields (`fields/bed.f32`, one height per
   detritus column in the grid's index order, and `layout.json` says so), a recording setting
   that moves no hash, so a read can bin births and snow by floor depth without rebuilding
-  `BedShape` in Python.
+  `BedShape` in Python. *As built:* written with `layout.json` at the first field dump, for a
+  shaped floor on a grid.
 
 ## 5. Tests
 

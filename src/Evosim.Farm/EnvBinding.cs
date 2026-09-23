@@ -217,6 +217,11 @@ namespace Evosim.Farm
             Num("EVOSIM_BED_RELIEF", D.BedReliefMetres, (s, v) => s.BedRelief = v),
             Num("EVOSIM_BED_TILT", D.BedTiltMetres, (s, v) => s.BedTilt = v),
             Num("EVOSIM_BED_SCALE", D.BedScaleMetres, (s, v) => s.BedScale = v),
+
+            // The beach (logbook/specs/beach-spec.md §2), both off by default so that a launcher
+            // which does not name them runs the floor it always ran.
+            Num("EVOSIM_BED_SHORE", D.BedShoreDepthMetres, (s, v) => s.BedShore = v),
+            Num("EVOSIM_BED_SHORE_FADE", D.BedShoreFadeMetres, (s, v) => s.BedShoreFade = v),
             Num("EVOSIM_NEWBORN_RESERVE", D.NewbornReserveFraction, (s, v) => s.NewbornReserve = v),
             Num("EVOSIM_GROWTH_FLOOR", D.GrowthReserveFloor, (s, v) => s.GrowthFloor = v),
             Num("EVOSIM_MIN_NEWBORN_KG", D.MinNewbornPartKilograms, (s, v) => s.MinNewbornKg = v),
@@ -533,6 +538,8 @@ namespace Evosim.Farm
             config.BedReliefMetres = s.BedRelief;
             config.BedTiltMetres = s.BedTilt;
             config.BedScaleMetres = s.BedScale;
+            config.BedShoreDepthMetres = s.BedShore;
+            config.BedShoreFadeMetres = s.BedShoreFade;
 
             config.NewbornReserveFraction = s.NewbornReserve;
             config.GrowthReserveFloor = s.GrowthFloor;
@@ -901,6 +908,8 @@ namespace Evosim.Farm
         public float BedRelief;
         public float BedTilt;
         public float BedScale;
+        public float BedShore;
+        public float BedShoreFade;
         public float NewbornReserve;
         public float GrowthFloor;
         public float MinNewbornKg;

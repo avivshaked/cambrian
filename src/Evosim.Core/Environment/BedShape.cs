@@ -72,6 +72,20 @@ namespace Evosim.Core
     /// recorded world replays.
     /// </para>
     /// <para>
+    /// <b>The beach is a clamp, applied here and nowhere else</b> (<c>logbook/specs/beach-spec.md</c>
+    /// §2). With <see cref="ShoreDepthMetres"/> above 0 the refusal of a floor near the surface is
+    /// lifted and the map is clamped so that <see cref="FloorY"/> is never above
+    /// <c>−ShoreDepthMetres</c>: where the plane would rise past it the floor is a flat shoal, with
+    /// zero slope and zero curvature. Everything that reads the map — the grid's mask, the placer,
+    /// the contact bed, the divergence guard, the water's map and the theatre's sand — reads the
+    /// shoal through <see cref="Height"/>, <see cref="HeightAndGradient"/> and
+    /// <see cref="HeightGradientAndHessian"/> without a change of its own. The mean-zero offset is
+    /// fitted to the plane before the clamp, so the clamp removes a sliver of rock and the mean
+    /// floor sits under <see cref="DepthMetres"/> by <see cref="ShoalSliverMetres"/> and by nothing
+    /// else. With the shore at 0 the clamp's branch is never taken and every number is the
+    /// recorded one.
+    /// </para>
+    /// <para>
     /// <b>A pure function of its arguments.</b> No memo, no mutable state after construction, so
     /// the grid, the water and a body's placer may read it in any order and in any number and all
     /// get the same floor — the property <see cref="CurrentField"/>'s instant memo deliberately
@@ -146,6 +160,20 @@ namespace Evosim.Core
         private readonly double _offset;
         private readonly double _radius;
 
+        // The beach's clamp: the height above the flat bed at which the floor reaches
+        // −ShoreDepthMetres. Read only when _shoreOn, so a bed with the shore at 0 never compares
+        // against it and is the arithmetic it always was.
+        private readonly bool _shoreOn;
+        private readonly double _shoalHeight;
+
+        /// <summary>The depths the shelf's area is read within, m — the beach spec's three bands.</summary>
+        /// <remarks>
+        /// 6 m is the top of the lit band, 12 m the founders' depth and the islands', 24 m the
+        /// bottom of the band the crowd lives in; the smoke prints the three so the shelf's size
+        /// is read from the mask and not from the spec's arithmetic of the plane.
+        /// </remarks>
+        public static readonly double[] ShelfBandsMetres = { 6d, 12d, 24d };
+
         /// <summary>The tank's radius, m — the disc this map is fitted over.</summary>
         public float RadiusMetres { get; }
 
@@ -162,6 +190,46 @@ namespace Evosim.Core
         public float TiltMetres { get; }
 
         /// <summary>
+        /// The shoal's depth, m — <see cref="RunConfig.BedShoreDepthMetres"/>. 0 is off: no clamp,
+        /// and the floor is refused within a metre of the surface.
+        /// </summary>
+        public float ShoreDepthMetres { get; }
+
+        /// <summary>
+        /// The current's fade width at the shore, m — <see cref="RunConfig.BedShoreFadeMetres"/>.
+        /// Carried here so that one object hands the water both the floor and its fade, and read by
+        /// <see cref="CurrentField"/> alone; the map itself does not use it.
+        /// </summary>
+        public float ShoreFadeMetres { get; }
+
+        /// <summary>Whether the beach's clamp is on: <see cref="ShoreDepthMetres"/> above 0.</summary>
+        public bool HasShore => _shoreOn;
+
+        /// <summary>
+        /// The share of the disc's half-metre columns at the clamp: the shoal's area over the
+        /// disc's. 0 with the shore off.
+        /// </summary>
+        public double ShoalAreaFraction { get; }
+
+        /// <summary>
+        /// The share of the disc's columns whose floor is within 6 m of the surface — the first of
+        /// <see cref="ShelfBandsMetres"/>, read on the clamped map.
+        /// </summary>
+        public double ShelfWithin6Fraction { get; }
+
+        /// <summary>The share within 12 m: the founders' depth, the second band.</summary>
+        public double ShelfWithin12Fraction { get; }
+
+        /// <summary>The share within 24 m, the third band.</summary>
+        public double ShelfWithin24Fraction { get; }
+
+        /// <summary>
+        /// The mean over the disc of what the clamp cut off the plane, m: the mean floor is this
+        /// much under <c>−</c><see cref="DepthMetres"/>. 0 with the shore off.
+        /// </summary>
+        public double ShoalSliverMetres { get; }
+
+        /// <summary>
         /// Whether this bed has any shape at all. False is the flat world, which every reader
         /// short-circuits on so that a flat tank is the arithmetic it always was.
         /// </summary>
@@ -170,7 +238,11 @@ namespace Evosim.Core
         /// <summary>The direction the tilt falls along, radians from <c>+x</c> toward <c>+z</c>.</summary>
         public float TiltDirectionRadians { get; }
 
-        /// <summary>The range of the cosine bands over the disc, m — the dial, or less if the slope bound bound.</summary>
+        /// <summary>
+        /// The range of the cosine bands over the disc, m — the dial, or less if the slope bound
+        /// bound. With the shore on, over the columns the clamp left alone: the bands under the
+        /// shoal are not a floor anything stands on.
+        /// </summary>
         public double RangeMetres { get; }
 
         /// <summary>The whole map's range over the disc, m: the bands and the tilt together.</summary>
@@ -252,9 +324,17 @@ namespace Evosim.Core
         /// The run's seed, mixed for this field — every seed gets its own floor and a replay gets
         /// the same one (spec item 1).
         /// </param>
+        /// <param name="shoreDepthMetres">
+        /// <see cref="RunConfig.BedShoreDepthMetres"/>, <c>EVOSIM_BED_SHORE</c>. The shoal's depth;
+        /// 0 is off and keeps the refusal of a floor within a metre of the surface.
+        /// </param>
+        /// <param name="shoreFadeMetres">
+        /// <see cref="RunConfig.BedShoreFadeMetres"/>, <c>EVOSIM_BED_SHORE_FADE</c>. Required with
+        /// the shore and refused without it.
+        /// </param>
         public BedShape(
             float tankRadiusMetres, float depthMetres, float reliefMetres, float tiltMetres,
-            float scaleMetres, ulong seed)
+            float scaleMetres, ulong seed, float shoreDepthMetres = 0f, float shoreFadeMetres = 0f)
         {
             if (!(tankRadiusMetres > 0f) || float.IsInfinity(tankRadiusMetres))
             {
@@ -291,13 +371,77 @@ namespace Evosim.Core
                     "A feature scale is finite and not negative; 0 is a third of the diameter.");
             }
 
+            if (!(shoreDepthMetres >= 0f) || float.IsInfinity(shoreDepthMetres))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(shoreDepthMetres), shoreDepthMetres,
+                    "A shoal depth is finite and not negative; 0 is off.");
+            }
+
+            if (!(shoreFadeMetres >= 0f) || float.IsInfinity(shoreFadeMetres))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(shoreFadeMetres), shoreFadeMetres,
+                    "A fade is finite and not negative; 0 is off.");
+            }
+
+            // The beach's own three (logbook/specs/beach-spec.md §2): a shoal at or under the
+            // world's depth is no shoal, and the shore and its fade come together or not at all —
+            // a fade with no shore names a mechanism the world does not run, and a shore with no
+            // fade is the jet of the spec's §3, forty-five times the flat speed over the shoal.
+            if (shoreDepthMetres > 0f && shoreDepthMetres >= depthMetres)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(shoreDepthMetres), shoreDepthMetres,
+                    FormattableString.Invariant(
+                        $"A shoal {shoreDepthMetres} m deep in a {depthMetres} m world is at or under ") +
+                    "the mean floor, which is no shoal. logbook/specs/beach-spec.md.");
+            }
+
+            // The fade's band has to end above the mean depth. The water's fade is the quintic
+            // times a depth factor that turns over to 1 about D; the product is exact wherever the
+            // band ends, but a band reaching D would fade the tank's open water as well as its
+            // shallows, which is not the beach the spec describes, so it stays refused.
+            if (shoreDepthMetres > 0f && shoreDepthMetres + shoreFadeMetres >= depthMetres)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(shoreFadeMetres), shoreFadeMetres,
+                    FormattableString.Invariant(
+                        $"A shore at {shoreDepthMetres} m with a fade of {shoreFadeMetres} m ends the ") +
+                    FormattableString.Invariant(
+                        $"fade at or past the mean depth of {depthMetres} m, which would fade the ") +
+                    "open water as well as the shallows. logbook/specs/beach-spec.md §3.");
+            }
+
+            if (shoreDepthMetres > 0f && !(shoreFadeMetres > 0f))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(shoreFadeMetres), shoreFadeMetres,
+                    FormattableString.Invariant(
+                        $"A shore at {shoreDepthMetres} m with no fade is the floor-following ") +
+                    FormattableString.Invariant(
+                        $"current's jet: the map stretches the water by {depthMetres / shoreDepthMetres:0.#} ") +
+                    "times over the shoal. Set BedShoreFadeMetres (the spec recommends 15 m). " +
+                    "logbook/specs/beach-spec.md §3.");
+            }
+
+            if (shoreFadeMetres > 0f && !(shoreDepthMetres > 0f))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(shoreFadeMetres), shoreFadeMetres,
+                    FormattableString.Invariant(
+                        $"A fade of {shoreFadeMetres} m with the shore at 0 fades a current toward a ") +
+                    "shore the world does not have. logbook/specs/beach-spec.md §2.");
+            }
+
             // Spec item 5a's last clause and item 3's: the floor stays below the surface with a
             // metre to spare, because the beach is a round of its own and needs a dry mask in the
             // grid, a minimum depth for the floor-following current, and rules for a body on sand.
             // The bound is conservative on purpose — the bands' own maximum is under their range
             // and the tilt reaches half its dial at the rim — so a config that passes here cannot
-            // break the surface however the seed draws.
-            if (reliefMetres + 0.5f * tiltMetres >= depthMetres - 1f)
+            // break the surface however the seed draws. With the shore on it is lifted: the clamp
+            // below keeps the floor at the shoal, and the beach spec is what needed the other two.
+            if (!(shoreDepthMetres > 0f) && reliefMetres + 0.5f * tiltMetres >= depthMetres - 1f)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(reliefMetres), reliefMetres,
@@ -308,7 +452,9 @@ namespace Evosim.Core
                     FormattableString.Invariant($"of the surface of a {depthMetres} m world. ") +
                     "The floor must stay below −1 m everywhere: a floor that reaches the lit band " +
                     "is the shelf and a floor that breaks the surface is the beach, and both are " +
-                    "rounds of their own (logbook/specs/bed-spec.md).");
+                    "rounds of their own (logbook/specs/bed-spec.md). The beach is the shore dial, " +
+                    "BedShoreDepthMetres with its fade, which clamps the floor to a shoal instead " +
+                    "(logbook/specs/beach-spec.md).");
             }
 
             // The tilt's own ramp, bounded on its own — see SteepestTiltSlope. The arithmetic is
@@ -333,8 +479,15 @@ namespace Evosim.Core
             DepthMetres = depthMetres;
             ReliefMetres = reliefMetres;
             TiltMetres = tiltMetres;
+            ShoreDepthMetres = shoreDepthMetres;
+            ShoreFadeMetres = shoreFadeMetres;
 
             _radius = tankRadiusMetres;
+
+            // The flat world keeps the shore off whatever it was handed: a flat floor has nothing
+            // to clamp, and World refuses the combination before it gets here.
+            _shoreOn = shoreDepthMetres > 0f && (reliefMetres > 0f || tiltMetres > 0f);
+            _shoalHeight = (double)depthMetres - shoreDepthMetres;
 
             ScaleMetres = scaleMetres > 0f
                 ? scaleMetres
@@ -555,6 +708,13 @@ namespace Evosim.Core
             // The bands alone, for the hollow count: the tilt is a ramp and makes no basin.
             var bandHeight = new double[columns];
 
+            // The beach's clamp, column by column — null with the shore off, so that every loop
+            // below is the one it always was and every reading the recorded one.
+            bool[] clamped = _shoreOn ? new bool[columns] : null;
+            int shoal = 0;
+            double sliver = 0d;
+            var shelf = new int[ShelfBandsMetres.Length];
+
             for (int i = 0; i < columns; i++)
             {
                 double band = alpha * rawHeight[i];
@@ -562,8 +722,31 @@ namespace Evosim.Core
 
                 bandHeight[i] = band;
 
+                bool atShoal = false;
+
+                if (_shoreOn)
+                {
+                    if (h > _shoalHeight)
+                    {
+                        clamped[i] = true;
+                        atShoal = true;
+                        shoal++;
+                        sliver += h - _shoalHeight;
+                        h = _shoalHeight;
+                    }
+
+                    double floorY = -(double)depthMetres + h;
+                    for (int b = 0; b < ShelfBandsMetres.Length; b++)
+                    {
+                        if (floorY >= -ShelfBandsMetres[b]) shelf[b]++;
+                    }
+                }
+
                 if (h < low2) low2 = h;
                 if (h > high2) high2 = h;
+
+                if (atShoal) continue;
+
                 if (band < bandLow) bandLow = band;
                 if (band > bandHigh) bandHigh = band;
             }
@@ -573,15 +756,56 @@ namespace Evosim.Core
             HighestMetres = high2;
             LowestMetres = low2;
 
+            ShoalAreaFraction = (double)shoal / columns;
+            ShoalSliverMetres = sliver / columns;
+            ShelfWithin6Fraction = _shoreOn ? (double)shelf[0] / columns : ShelfFractionOfUnclamped(0);
+            ShelfWithin12Fraction = _shoreOn ? (double)shelf[1] / columns : ShelfFractionOfUnclamped(1);
+            ShelfWithin24Fraction = _shoreOn ? (double)shelf[2] / columns : ShelfFractionOfUnclamped(2);
+
+            // With the shore off the shelf is read from the same map, so the smoke can print it for
+            // round 45's floor as well as for the beach and the two are one measurement.
+            double ShelfFractionOfUnclamped(int b)
+            {
+                int n = 0;
+                for (int i = 0; i < columns; i++)
+                {
+                    double h = alpha * rawHeight[i] + _tiltX * columnX[i] + _tiltZ * columnZ[i] - _offset;
+                    if (-(double)depthMetres + h >= -ShelfBandsMetres[b]) n++;
+                }
+
+                return (double)n / columns;
+            }
+
             // At the scale the bands were actually given, not at the one they were drawn with.
             // Two readings, and the difference between them is the tilt: the first is the one the
-            // bound holds, the second is the floor a body actually lies on.
-            SteepestSlopeRadians = Math.Atan(SteepestBandsAt(alpha));
-            SteepestTotalSlopeRadians = Math.Atan(SteepestTotalAt(alpha));
+            // bound holds, the second is the floor a body actually lies on. On the beach both are
+            // read over the columns the clamp left alone, since the shoal is flat and a band's
+            // slope under it is not a floor anything lies on.
+            SteepestSlopeRadians = Math.Atan(
+                clamped == null ? SteepestBandsAt(alpha) : SteepestOutsideShoal(alpha, 0d, 0d));
+            SteepestTotalSlopeRadians = Math.Atan(
+                clamped == null ? SteepestTotalAt(alpha) : SteepestOutsideShoal(alpha, _tiltX, _tiltZ));
+
+            double SteepestOutsideShoal(double scale, double tiltX, double tiltZ)
+            {
+                double worst = 0d;
+
+                for (int i = 0; i < columns; i++)
+                {
+                    if (clamped[i]) continue;
+
+                    double gx = scale * rawGradientX[i] + tiltX;
+                    double gz = scale * rawGradientZ[i] + tiltZ;
+                    double slope = Math.Sqrt(gx * gx + gz * gz);
+                    if (slope > worst) worst = slope;
+                }
+
+                return worst;
+            }
 
             HollowRadiusMetres = 0.25d * ScaleMetres;
 
-            (int hollows, int ridges) = CountPlaces(bandHeight, columnX, columnZ, columns);
+            (int hollows, int ridges) = CountPlaces(bandHeight, columnX, columnZ, columns, clamped);
             Hollows = hollows;
             Ridges = ridges;
         }
@@ -590,15 +814,22 @@ namespace Evosim.Core
         /// Counts the hollows and the ridges by the rule <see cref="HollowRadiusMetres"/> states.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// One pass per column over its own neighbourhood, which at the campaign's scale is about
         /// forty lattice columns each — a few hundred thousand comparisons once per world, against
         /// the streams' two and a half million samples. A column whose neighbourhood reaches
         /// outside the disc is skipped rather than judged on a partial ring: the glass is not a
         /// rise, and a rim column called a ridge because half its ring is missing would put the
         /// spec's count in the geometry rather than in the floor.
+        /// </para>
+        /// <para>
+        /// <b>On the beach a column at the shoal is not a candidate</b>: the floor there is flat,
+        /// and a dimple in the bands under the clamp is not a place a body can lie in. Its band
+        /// height still serves as a neighbour's, since the rule reads the bands alone.
+        /// </para>
         /// </remarks>
         private (int Hollows, int Ridges) CountPlaces(
-            double[] height, double[] columnX, double[] columnZ, int columns)
+            double[] height, double[] columnX, double[] columnZ, int columns, bool[] clamped)
         {
             double radius = HollowRadiusMetres;
             double radiusSquared = radius * radius;
@@ -609,6 +840,8 @@ namespace Evosim.Core
 
             for (int i = 0; i < columns; i++)
             {
+                if (clamped != null && clamped[i]) continue;
+
                 // Inside the disc by the whole neighbourhood, or the ring is a half ring.
                 double fromAxis = Math.Sqrt(columnX[i] * columnX[i] + columnZ[i] * columnZ[i]);
                 if (fromAxis + radius > _radius) continue;
@@ -675,6 +908,11 @@ namespace Evosim.Core
                 h += _amplitude[m] * Math.Cos(_kx[m] * dx + _kz[m] * dz + _phase[m]);
             }
 
+            // The beach's shoal (logbook/specs/beach-spec.md §2), and the only place the clamp is
+            // applied: every reader of the floor comes through here or through the two passes
+            // below, which clamp by the same comparison.
+            if (_shoreOn && h > _shoalHeight) return _shoalHeight;
+
             return h;
         }
 
@@ -725,6 +963,16 @@ namespace Evosim.Core
                 h += a * cos;
                 gx -= a * _kx[m] * sin;
                 gz -= a * _kz[m] * sin;
+            }
+
+            // The shoal is flat: its slope is zero, which is what makes the water's map the
+            // identity's stretch there and the contact bed's normal straight up.
+            if (_shoreOn && h > _shoalHeight)
+            {
+                height = _shoalHeight;
+                gradientX = 0d;
+                gradientZ = 0d;
+                return;
             }
 
             height = h;
@@ -793,6 +1041,20 @@ namespace Evosim.Core
                 zz -= a * _kz[m] * _kz[m] * cos;
             }
 
+            // Flat and uncurved on the shoal. The crease where the plane meets it is a jump in the
+            // slope; the water's fade is zero with its first two derivatives at the shoal's depth,
+            // so nothing the current computes sees it (CurrentField's fade).
+            if (_shoreOn && h > _shoalHeight)
+            {
+                height = _shoalHeight;
+                gradientX = 0d;
+                gradientZ = 0d;
+                hessianXX = 0d;
+                hessianXZ = 0d;
+                hessianZZ = 0d;
+                return;
+            }
+
             height = h;
             gradientX = gx;
             gradientZ = gz;
@@ -812,7 +1074,19 @@ namespace Evosim.Core
                   FormattableString.Invariant(
                       $"steepest {SteepestSlopeRadians * 180d / Math.PI:0.#}° in the bands and ") +
                   FormattableString.Invariant(
-                      $"{SteepestTotalSlopeRadians * 180d / Math.PI:0.#}° with the tilt")
+                      $"{SteepestTotalSlopeRadians * 180d / Math.PI:0.#}° with the tilt") +
+                  // The beach's readings, only with the shore on, so that every recorded bed line
+                  // reads as it did (logbook/specs/beach-spec.md §2).
+                  (_shoreOn
+                      ? FormattableString.Invariant(
+                            $", shore {ShoreDepthMetres:0.##} m fade {ShoreFadeMetres:0.##} m, ") +
+                        FormattableString.Invariant(
+                            $"shoal {100d * ShoalAreaFraction:0.00}% of the disc, shelf within 6/12/24 m ") +
+                        FormattableString.Invariant(
+                            $"{100d * ShelfWithin6Fraction:0.0}/{100d * ShelfWithin12Fraction:0.0}/{100d * ShelfWithin24Fraction:0.0}%, ") +
+                        FormattableString.Invariant(
+                            $"floor {LowestMetres - DepthMetres:0.#} to {HighestMetres - DepthMetres:0.##} m")
+                      : "")
                 : "bed flat";
     }
 }

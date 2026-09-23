@@ -358,13 +358,29 @@ namespace Evosim.Farm
             return
                 "bed relief " + bed.ReliefMetres.ToString("0.##", Inv) +
                 " m tilt " + bed.TiltMetres.ToString("0.##", Inv) +
+                // The beach's two, after the tilt and only when on, so that every recorded
+                // header's bed token reads as it did (logbook/specs/beach-spec.md §2).
+                (bed.HasShore
+                    ? " m shore " + bed.ShoreDepthMetres.ToString("0.##", Inv) +
+                      " m fade " + bed.ShoreFadeMetres.ToString("0.##", Inv)
+                    : "") +
                 " m scale " + bed.ScaleMetres.ToString("0.##", Inv) +
                 " m (hollows " + bed.Hollows.ToString(Inv) +
                 ", ridges " + bed.Ridges.ToString(Inv) +
                 ", range " + bed.RangeMetres.ToString("0.00", Inv) +
                 " m, steepest " + (bed.SteepestTotalSlopeRadians * 180d / Math.PI).ToString("0", Inv) +
                 "° bands " + (bed.SteepestSlopeRadians * 180d / Math.PI).ToString("0", Inv) +
-                "°, bound " + (bed.SlopeBoundBinds ? "binds" : "clear") + ")";
+                "°, bound " + (bed.SlopeBoundBinds ? "binds" : "clear") +
+                // The shoal and the shelf by band, read from the map on the half-metre columns
+                // rather than from the spec's arithmetic of the plane; only with the shore on.
+                (bed.HasShore
+                    ? ", shoal " + (100d * bed.ShoalAreaFraction).ToString("0.00", Inv) +
+                      "%, shelf 6/12/24 m " +
+                      (100d * bed.ShelfWithin6Fraction).ToString("0.0", Inv) + "/" +
+                      (100d * bed.ShelfWithin12Fraction).ToString("0.0", Inv) + "/" +
+                      (100d * bed.ShelfWithin24Fraction).ToString("0.0", Inv) + "%"
+                    : "") +
+                ")";
         }
 
         /// <summary>
