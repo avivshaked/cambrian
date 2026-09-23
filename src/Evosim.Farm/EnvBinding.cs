@@ -194,6 +194,13 @@ namespace Evosim.Farm
             // as 1/N, which is how round 46's launcher names one per 30 s without a rounded
             // decimal in it. 0 is the recorded world.
             Custom("EVOSIM_TRICKLE", (s, env) => s.Trickle = RateOf(env, "EVOSIM_TRICKLE")),
+
+            // D117: the trickle's pool of evolved bodies, a semicolon-separated list of genome
+            // files the farm copies into the run's pool/ and pins by hash, and the share of the
+            // trickle's founders drawn from it. The farm's own, like EVOSIM_RUNS_ROOT: the Unity
+            // entry reads neither, and a world built there has no pool.
+            Text("EVOSIM_TRICKLE_POOL", (s, v) => s.TricklePool = v),
+            Num("EVOSIM_TRICKLE_POOL_SHARE", 0f, (s, v) => s.TricklePoolShare = v),
             Int("EVOSIM_MAX_POP", D.MaximumPopulation, (s, v) => s.MaxPopulation = v),
 
             // double from a float read, as EvolutionRun's own cast is: the ceiling is a double on
@@ -526,6 +533,10 @@ namespace Evosim.Farm
             config.PhysicsStepSeconds = physicsDt;
             config.FloorClosesAfterSeconds = s.FloorCloses;
             config.FoundingTricklePerSecond = s.Trickle;
+
+            // D117's share only: the pool's count and hash are the files', and Program sets them
+            // after reading EVOSIM_TRICKLE_POOL, before the config is written.
+            config.FoundingTricklePoolShare = s.TricklePoolShare;
             config.MaximumPopulation = s.MaxPopulation;
             config.MaximumTissueJoules = s.MaxTissue;
             config.SenescenceDoublingSeconds = s.Senescence;
@@ -940,6 +951,12 @@ namespace Evosim.Farm
         public float SurfaceRestore;
         public float FloorCloses;
         public float Trickle;
+
+        /// <summary>D117's pool: genome files, semicolon-separated — <c>EVOSIM_TRICKLE_POOL</c>.</summary>
+        public string TricklePool;
+
+        /// <summary>D117's share of the trickle drawn from the pool — <c>EVOSIM_TRICKLE_POOL_SHARE</c>.</summary>
+        public float TricklePoolShare;
         public int MaxPopulation;
         public double MaxTissue;
         public float Senescence;

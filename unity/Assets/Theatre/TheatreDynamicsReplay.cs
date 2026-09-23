@@ -189,7 +189,22 @@ namespace Evosim.Theatre
             // count as the body pass, and the grid's numbers are the same bits at any count.
             Parallelism.Threads = replay.Threads;
 
-            var world = new World(replay.Record.Config, replay.Record.Seed);
+            // D117's pool comes from the record's own pool/ directory, hash-checked against the
+            // config, so the world drawn from here is the world the run drew from; a run without
+            // a pool named loads null and the World takes an empty pool, which is the recorded
+            // world. The refusals (a missing file, a changed byte) are TricklePoolFiles' own.
+            IReadOnlyList<Genome> pool;
+            try
+            {
+                pool = TricklePoolFiles.Load(replay.Record.Path, replay.Record.Config)?.Genomes;
+            }
+            catch (Exception e)
+            {
+                refusal = e.Message;
+                return null;
+            }
+
+            var world = new World(replay.Record.Config, replay.Record.Seed, pool);
 
             // No run directory, so no divergence dumps: the theatre writes nothing into a record.
             // A body that diverges in the replay still dies as a counted Diverged death, which is

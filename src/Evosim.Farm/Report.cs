@@ -39,6 +39,12 @@ namespace Evosim.Farm
         public IReadOnlyList<string> Columns { get; }
 
         /// <summary>
+        /// D117's column, the window's pool founders (a share of <c>trickle</c>'s), bold as its
+        /// neighbours are; present only when the config names a pool.
+        /// </summary>
+        public const string PoolColumn = "**pool**";
+
+        /// <summary>
         /// Fixes the table's shape for this run — <c>ConfigureColumns</c>.
         /// </summary>
         /// <remarks>
@@ -52,12 +58,18 @@ namespace Evosim.Farm
             if (config == null) throw new ArgumentNullException(nameof(config));
 
             int patches = Math.Max(1, (int)config.HorizontalPatches);
-            var columns = new string[BaseColumns.Length + patches];
+
+            // D117's `pool`, after `trickle` and before the patches, and only in a run whose
+            // config names a pool: every other run's table is the trickle build's to the byte.
+            int pool = config.FoundingTricklePoolCount > 0 ? 1 : 0;
+            var columns = new string[BaseColumns.Length + pool + patches];
 
             Array.Copy(BaseColumns, columns, BaseColumns.Length);
+            if (pool > 0) columns[BaseColumns.Length] = PoolColumn;
+
             for (int p = 0; p < patches; p++)
             {
-                columns[BaseColumns.Length + p] = "p" + p.ToString(CultureInfo.InvariantCulture);
+                columns[BaseColumns.Length + pool + p] = "p" + p.ToString(CultureInfo.InvariantCulture);
             }
 
             Columns = columns;
@@ -249,6 +261,11 @@ namespace Evosim.Farm
                 // D115, beside the floor it follows, and rendered off as well as on so a reader
                 // never has to ask whether a missing token means off or an older build.
                 " · trickle " + TrickleToken(s.Trickle) +
+
+                // D117, after the trickle it is a share of, and only when a pool is named (the
+                // count is the config's, set from the files), so every earlier header is unchanged:
+                // `pool 0.1 of 3`, or `pool 0 of 3` for a pool named and unused.
+                PoolToken(config) +
                 " · ceiling " + F(s.MaxPopulation) +
                 " maxTissue=" + s.MaxTissue.ToString("0.#", Inv) +
                 " · senescence " + (s.Senescence > 0f ? F(s.Senescence) + " s" : "off") +
@@ -359,6 +376,18 @@ namespace Evosim.Farm
             return
                 "shared " + layout + " m, depth " + F(config.WorldDepthMetres) + ", wrap, " +
                 (space.HasFloor ? "bed" : "no bed");
+        }
+
+        /// <summary>
+        /// D117's header token with its separator — <c> · pool 0.1 of 3</c> — or nothing when the
+        /// config names no pool.
+        /// </summary>
+        public static string PoolToken(RunConfig config)
+        {
+            if (config.FoundingTricklePoolCount <= 0) return string.Empty;
+
+            return " · pool " + F(config.FoundingTricklePoolShare) + " of " +
+                config.FoundingTricklePoolCount.ToString(Inv);
         }
 
         /// <summary>

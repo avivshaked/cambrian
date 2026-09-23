@@ -157,6 +157,11 @@ namespace Evosim.Core
             // D115's count, beside the floor's for the same reason the mouth's six are here.
             w.Write(TrickleSpawns);
 
+            // D117's count, only in a world whose config names a pool, so that every world
+            // without one writes the trickle build's bytes and stays version 9. The reader asks
+            // the same config, which a restore takes from the run it continues.
+            if (Config.FoundingTricklePoolCount > 0) w.Write(PoolSpawns);
+
             // Where the sun stands. See LightField.RestoreDayFactor.
             w.Write(Field.DayFactor);
 
@@ -297,6 +302,7 @@ namespace Evosim.Core
             HealingJoules = r.ReadDouble();
 
             TrickleSpawns = r.ReadInt64();
+            PoolSpawns = Config.FoundingTricklePoolCount > 0 ? r.ReadInt64() : 0L;
 
             Field.RestoreDayFactor(r.ReadSingle());
 
@@ -612,6 +618,11 @@ namespace Evosim.Core
             // layout to stay byte-compatible with.
             w.Write((int)e.Source);
 
+            // D117's pool index, written only on a pool founder's row, which is what lets this
+            // stay version 9: every row a world without a pool queues is byte for byte what the
+            // trickle build wrote, and a pool row can only be in a stream this build wrote.
+            if (e.Source == FounderSource.Pool) w.Write(e.PoolIndex);
+
             // The kill's own five, appended and written only on a kill row — which is what lets
             // this stay version 4. A birth and a death are byte for byte what the mouth build
             // wrote, so every checkpoint on disk still restores; a version-4 stream can only carry
@@ -653,6 +664,7 @@ namespace Evosim.Core
             bool protection = r.ReadBoolean();
             var cause = (DeathCause)r.ReadInt32();
             var source = (FounderSource)r.ReadInt32();
+            int poolIndex = source == FounderSource.Pool ? r.ReadInt32() : -1;
 
             if (kind == LineageEventKind.Kill)
             {
@@ -671,7 +683,8 @@ namespace Evosim.Core
                 ? LineageEvent.Birth(
                     seconds, id, parentId, birthKind, generationDepth, speciesId,
                     absorptive, joint, photosynthetic, patch, birthFraction, adultScale,
-                    reserveMargin, indeterminateNodes, attack, intake, protection, source)
+                    reserveMargin, indeterminateNodes, attack, intake, protection, source,
+                    poolIndex)
                 : LineageEvent.Death(seconds, id, cause);
         }
 

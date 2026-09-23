@@ -181,8 +181,10 @@ namespace Evosim.Theatre
                 world.ReadState(r);
                 sim.ReadState(r);
 
-                // Read into a sampler of its own and dropped: see the class remarks.
-                new Sampler().ReadState(r);
+                // Read into a sampler of its own and dropped: see the class remarks. A pool
+                // world's sampler carries the pool window's baseline (D117), so the throwaway
+                // has to know whether one is named or the section is misread.
+                new Sampler { PoolNamed = world.Config.FoundingTricklePoolCount > 0 }.ReadState(r);
 
                 StateIo.Tag(r, "LOOP");
                 MetabolicSteps = r.ReadInt32();

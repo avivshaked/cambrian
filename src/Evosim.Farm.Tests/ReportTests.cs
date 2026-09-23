@@ -131,11 +131,12 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 // under 11602ab76c1e2a19, the mouth's thirteen knobs and four caps under
                 // 4cbb170c61668098, the reach bound under 5b93c47344df9e67, D109's five
                 // island tunables under c862fd2c510b82e9, D110's light by exposure under
-                // 5a456a9e7b2518d3, and D111's buoyancy offset price under this.
+                // 5a456a9e7b2518d3, D111's buoyancy offset price and round 46's rules under
+                // 5062a25baa35c6e1, and D117's three pool tunables under this.
                 .Replace(
                     " · configHash ",
                     " · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + ContactToken + " · configHash ")
-                .Replace("`ff557bce2685293a`", "`5062a25baa35c6e1`");
+                .Replace("`ff557bce2685293a`", "`64f1aaa6b3e170f2`");
 
             Assert.Equal(expected, Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9"));
         }
@@ -175,7 +176,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             Assert.Contains(" · reach off · matter uniform · founders anywhere · shade off · ", line);
             Assert.Contains(" · matter-mix 2 m2/s · area 2200 m2 · ", line);
 
-            Assert.EndsWith(" · configHash `5062a25baa35c6e1`", line);
+            Assert.EndsWith(" · configHash `64f1aaa6b3e170f2`", line);
 
             // D110, off: the light is the orientation average, printed beside the cap.
             Assert.Contains(" · silhouette on · light averaged · ", line);

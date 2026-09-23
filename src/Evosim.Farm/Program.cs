@@ -169,6 +169,7 @@ namespace Evosim.Farm
             CheckpointHeader resume = null;
             string resumeSourceRun = null;
             RunConfig config;
+            TricklePoolFiles.Pool pool = null;
 
             if (resumePath != null)
             {
@@ -189,10 +190,32 @@ namespace Evosim.Farm
                 settings.Seed = resume.Seed;
 
                 InheritRecording(settings, resume);
+
+                // D117. The pool is the source run's, read from its pool/ and refused if its
+                // bytes no longer hash to what the config pins; a launcher's EVOSIM_TRICKLE_POOL
+                // is ignored here as every other world setting is.
+                pool = TricklePoolFiles.Load(resumeSourceRun, config);
+
+                if (!string.IsNullOrEmpty(settings.TricklePool))
+                {
+                    Console.Error.WriteLine(
+                        "warning: EVOSIM_TRICKLE_POOL is set on a resume and is ignored: the pool " +
+                        "is the resumed run's own, from " +
+                        Path.Combine(resumeSourceRun, TricklePoolFiles.DirectoryName) + ".");
+                }
             }
             else
             {
                 config = EnvBinding.BuildConfig(settings);
+
+                // D117. Read, re-serialised in this build's bytes and hashed before the config
+                // is written, so configHash pins the pool; the files follow the directory below.
+                if (!string.IsNullOrEmpty(settings.TricklePool))
+                {
+                    pool = TricklePoolFiles.Prepare(settings.TricklePool);
+                    config.FoundingTricklePoolCount = pool.Genomes.Count;
+                    config.FoundingTricklePoolHash = pool.Hash;
+                }
             }
 
             float physicsDt = resume != null
@@ -217,7 +240,7 @@ namespace Evosim.Farm
             // nowhere else. Constructing it here also means a config the world refuses — a cell
             // that does not divide the box, a tank under rolls — stops the launch before a run
             // directory is made for it.
-            var world = new World(config, settings.Seed);
+            var world = new World(config, settings.Seed, pool?.Genomes);
 
             var space = SpaceFacts.Of(
                 world,
@@ -231,6 +254,10 @@ namespace Evosim.Farm
                     Path.GetDirectoryName(outPath),
                     Path.GetFileNameWithoutExtension(outPath)),
                 config, DateTime.UtcNow);
+
+            // D117. Beside config.json, in the bytes the hash was taken over; a resumed run
+            // carries its source's pool forward so that it can itself be resumed.
+            if (pool != null) TricklePoolFiles.Write(dir.Path, pool.Lines);
 
             RunManifest manifest = Manifest.Build(
                 settings, config.Hash(), inoculumHash, physicsDt, stepsPerMetabolic, threads);
@@ -375,7 +402,7 @@ namespace Evosim.Farm
             }
 
             var readings = new Readings(sim);
-            var sampler = new Sampler();
+            var sampler = new Sampler { PoolNamed = config.FoundingTricklePoolCount > 0 };
 
             // The state stream, off unless a launcher asked for it. Opened here rather than in the
             // sampler because its cadence is not the sample's: it takes a frame from the metabolic

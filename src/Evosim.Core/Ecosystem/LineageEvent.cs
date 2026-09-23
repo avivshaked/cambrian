@@ -39,6 +39,13 @@ namespace Evosim.Core
 
         /// <summary>The founding trickle, after the floor has closed.</summary>
         Trickle = 2,
+
+        /// <summary>
+        /// The founding trickle's pool (D117): an exact copy of an evolved genome the launcher
+        /// named, admitted in place of a lottery draw. A trickle founder in every count, and
+        /// labelled apart on its row, which also carries the pool index.
+        /// </summary>
+        Pool = 3,
     }
 
     /// <summary>
@@ -193,6 +200,12 @@ namespace Evosim.Core
         /// </summary>
         public FounderSource Source { get; }
 
+        /// <summary>
+        /// Birth only — for a <see cref="FounderSource.Pool"/> founder, the index of the pool
+        /// genome it is a copy of (D117, <c>pool/NN.json</c>); -1 on every other row.
+        /// </summary>
+        public int PoolIndex { get; }
+
         /// <summary>Death only — why the creature left the population.</summary>
         public DeathCause Cause { get; }
 
@@ -266,11 +279,12 @@ namespace Evosim.Core
             long attackerId, bool rootLost, int partsLost,
             double tissueJoulesLost, double reserveJoulesLost,
             FounderSource source = FounderSource.None,
-            int partIndex = -1, int attackerPartIndex = -1)
+            int partIndex = -1, int attackerPartIndex = -1, int poolIndex = -1)
         {
             Source = source;
             PartIndex = partIndex;
             AttackerPartIndex = attackerPartIndex;
+            PoolIndex = poolIndex;
             AttackerId = attackerId;
             RootLost = rootLost;
             PartsLost = partsLost;
@@ -303,14 +317,15 @@ namespace Evosim.Core
             bool hasPhotosynthetic, int patch, float birthFraction, float adultScale,
             float reserveMargin, int indeterminateNodes,
             bool hasAttack, bool hasIntake, bool hasProtection,
-            FounderSource source = FounderSource.None) =>
+            FounderSource source = FounderSource.None, int poolIndex = -1) =>
             new LineageEvent(
                 LineageEventKind.Birth, elapsedSeconds, id, parentId, birthKind, generationDepth,
                 speciesId, hasAbsorptive, hasJoint, hasPhotosynthetic, patch,
                 birthFraction, adultScale, reserveMargin, indeterminateNodes,
                 hasAttack, hasIntake, hasProtection, default,
                 attackerId: -1, rootLost: false, partsLost: 0,
-                tissueJoulesLost: 0d, reserveJoulesLost: 0d, source: source);
+                tissueJoulesLost: 0d, reserveJoulesLost: 0d, source: source,
+                poolIndex: source == FounderSource.Pool ? poolIndex : -1);
 
         public static LineageEvent Death(double elapsedSeconds, long id, DeathCause cause) =>
             new LineageEvent(
@@ -356,6 +371,21 @@ namespace Evosim.Core
                     throw new ArgumentOutOfRangeException(
                         nameof(kind), kind, "New BirthKind, new lineage.jsonl code — add one " +
                         "rather than let a birth event fall through unlabelled.");
+            }
+        }
+
+        /// <summary>A founder row's <c>src</c> — D115's two doors and D117's pool.</summary>
+        private static string SourceCode(FounderSource source)
+        {
+            switch (source)
+            {
+                case FounderSource.Floor: return "floor";
+                case FounderSource.Trickle: return "trickle";
+                case FounderSource.Pool: return "pool";
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(source), source, "New FounderSource, new lineage.jsonl code — add " +
+                        "one rather than let a founder fall through unlabelled.");
             }
         }
 
@@ -416,7 +446,14 @@ namespace Evosim.Core
                 // hand; appended at the end for the reason the three above are.
                 if (Source != FounderSource.None)
                 {
-                    w.Field("src", Source == FounderSource.Trickle ? "trickle" : "floor");
+                    w.Field("src", SourceCode(Source));
+                }
+
+                // D117. On a pool founder's row only, so the floor's and the trickle's rows are
+                // byte for byte what they were: the index of the pool file it is a copy of.
+                if (Source == FounderSource.Pool)
+                {
+                    w.Field("pool", PoolIndex);
                 }
             }
             else if (Kind == LineageEventKind.Kill)

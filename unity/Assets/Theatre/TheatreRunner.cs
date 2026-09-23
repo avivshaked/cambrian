@@ -635,6 +635,7 @@ namespace Evosim.Theatre
             // world it evolved in rather than in a default ocean.
             RunConfig config;
             string water;
+            System.Collections.Generic.IReadOnlyList<Genome> pool = null;
 
             if (!string.IsNullOrWhiteSpace(RunDirectory))
             {
@@ -642,6 +643,8 @@ namespace Evosim.Theatre
                 config = record.Config;
                 water = record.ArmName ?? "the run's config";
                 Ecosystem.ConfigurePhysicsStep(record.PhysicsDtSeconds);
+                // D117: a config that names a pool is refused by the World without it.
+                pool = Evosim.Farm.TricklePoolFiles.Load(record.Path, config)?.Genomes;
             }
             else
             {
@@ -654,7 +657,7 @@ namespace Evosim.Theatre
 
             _solo = SoloCreature.Build(
                 genome, config, SoloSeed, SoloDepthMetres, foundId,
-                description + " — water from " + water + ", patch 0", SoloSmellDensity);
+                description + " — water from " + water + ", patch 0", SoloSmellDensity, pool);
 
             _solo.UseTestSine = TestSine;
             _solo.Starving = Starve;

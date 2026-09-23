@@ -198,6 +198,12 @@ namespace Evosim.Core.Tests
             {
                 p.SetValue(target, !(bool)p.GetValue(target));
             }
+            else if (p.PropertyType == typeof(string))
+            {
+                // D117's pool hash, the one scalar string: 64 lowercase hex digits is the only
+                // non-empty value it accepts.
+                p.SetValue(target, new string('a', 64));
+            }
             else if (p.PropertyType == typeof(string[]))
             {
                 p.SetValue(target, new[] { CellTypeIds.Consumer });
@@ -409,7 +415,7 @@ namespace Evosim.Core.Tests
 
                 Assert.True(
                     entry.ValueType == typeof(float) || entry.ValueType == typeof(double) ||
-                    entry.ValueType == typeof(int) ||
+                    entry.ValueType == typeof(int) || entry.ValueType == typeof(string) ||
                     entry.ValueType == typeof(bool) || entry.ValueType == typeof(string[]) ||
                     entry.ValueType.IsEnum ||
                     ConfigSchema.EnumElementOf(entry.ValueType) != null,

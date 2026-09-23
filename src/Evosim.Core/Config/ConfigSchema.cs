@@ -74,6 +74,9 @@ namespace Evosim.Core
                 case double d: return d.ToString("R", c);
                 case int i: return i.ToString(c);
                 case bool b: return b ? "true" : "false";
+
+                // D117's pool hash. Hex only, so it can carry neither the hash's '|' nor '='.
+                case string text: return text;
                 case string[] a: return string.Join(";", a);
 
                 // A scalar enum, by name for the reason the array case below records. It would
