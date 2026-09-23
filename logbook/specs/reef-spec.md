@@ -51,11 +51,20 @@ earlier `config.json`: `ReefCount` (0 = off, the recorded world), `ReefCapRadius
   divergence-free, with no flux through the rock because `g` vanishes there and `∇g × A` is
   tangential to `g`'s level sets. The closed-form acceleration takes the extra terms as the
   shore's does. The cost the beach measured is the price here too: the second term is a
-  current along the rock's contours of the order of `|A|/fade`, which at 15 m of fade read
-  three times the tank's RMS along the shore. The reef's fade is therefore set by that
-  reading (the beach's fade sweep, when it is ruled), and the smoke prints the fastest water
-  within one cap radius of each reef. A fade longer than the caps' spacing makes the tank
-  still, which is the refusal: `ReefFadeMetres` under half the minimum spacing.
+  current along the rock's contours of the order of `|A|/fade`. The beach's sweep (its
+  spec's section 3 as built, 2026-09-23) read that current on round 45's tank at 15 m of
+  fade: a plain quintic in the distance put the water in the crowd's band at 2.9 times the
+  tank's RMS on average and 11.4 at its fastest, the contour term alone at 2.0 and 11.4, and
+  the beach shipped a product of the quintic with a turnover in the depth, which read 1.1
+  and 4.2 in the band. A rock has no depth to turn over, so the reef gets the plain form and
+  its reading, and the plain form only falls to the RMS's order at 40 m of fade (1.2 in the
+  band, 0.5 for the contour term). The refusal binds first: a fade longer than half the
+  caps' spacing makes the tank still, so `ReefFadeMetres` is under half the minimum
+  spacing, and the smoke prints the fastest water within one cap radius of each reef, which
+  is the number to read before the round. Three caps 8 m across in an 84 m tank can be
+  spaced 40 m apart, which allows a fade under 20 m and a band at about twice the RMS around
+  the rock (the plain form at 25 m read 1.7). The pre-registration says whether that is a
+  feature of the reef or a cost to be paid down with fewer, wider-spaced caps.
 - **The contact.** The rock is a static shape in `Contacts`: a sphere against a capped
   cylinder is a signed distance with a closed form (the stem's axis, the cap's slab and its
   rounded rim), and the push is the bed's law with the bed's material, on the existing

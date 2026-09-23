@@ -28,6 +28,27 @@ the runaway ceiling 25,000, checkpoints every 2,500 s, the fields dumped with th
 poses recorded. The header is read after the launch and every token above is checked
 against it before the queue is left to run.
 
+## The ledger at the round's prices
+
+The leaf of the growth ledger (`inocula/growth-ledger-genome.json`, two parts, 0.56 m² lit)
+through `scripts/ledger.ps1` against the round's own `config.json` (the dt 0.02 screen
+`r46scr-s1`'s, every rule on) at 0.5 J/m³ of snow and 0.25 units/m³ of spent matter. The
+support term is 1% of its standing cost (5.4 mW of 0.55 W at a reach of 0.18 m), so the
+price is nothing to a leaf and only the fan's. The pose is the whole of a leaf's margin at
+the light's reach:
+
+| depth | random pose: net W, R0 | flat: net W, R0 |
+|---|---|---|
+| 0 m | 3.43, 60 | 7.40, 189 |
+| 3 m | 1.87, 21 | 4.28, 84 |
+| 6 m | 0.92, 6 | 2.38, 33 |
+| 12 m | −0.01, 0 | 0.53, 0 |
+
+Lying flat doubles the income at every depth and turns a loss at 12 m into a living, which
+is what K1 and K2 are betting the crowd finds. The offset's price is not in these rows (the
+ledger's leaf carries an offset of 0); at the full offset it is 0.02 W per m³, 3.7 mW on
+this body, a tenth of the support term's order and a thousandth of the flat premium.
+
 ## Predictions
 
 | # | prediction | falsified by |
