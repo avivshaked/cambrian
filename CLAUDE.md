@@ -1061,7 +1061,11 @@ actually verifying it.
   terminal windows in twenty minutes took the owner's desktop down. The owner rebooted and round 41e lost its three arms at 10,000 to
   17,000 s (HANDOFF). The rules from it. **A watch is one look that exits**
   (`scripts/watch-round.py <round> --read <read script>`: one Python process, the state in
-  `scratch/logs/<round>-watch.json`, only what is new printed), and **the schedule belongs
+  `scratch/logs/<round>-watch.json`, only what is new printed; **its read call is
+  `<read script> <second> <arm>`**, and a read script written to `--arms` alone prints a
+  usage error at every mark, which rounds 44 and 45 did until 2026-09-23; `r45-read.py`
+  accepts both forms, and a read script also takes the newest run directory of an arm
+  rather than refusing a stopped launch's sibling), and **the schedule belongs
   to the session** (its cron or wake-up, which cannot outlive it), never to a shell loop.
   Run `scripts/sweep-orphans.ps1` at the start of every session and before arming
   anything, and `-Kill` what it lists. A one-off wait (`until grep …; do sleep 20; done`)

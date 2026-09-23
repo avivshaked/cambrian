@@ -186,10 +186,15 @@ def run_dir(runs_root, arm):
     if not os.path.isdir(base):
         raise SystemExit("no run directory for arm %r under %r" % (arm, runs_root))
     dirs = [d for d in sorted(os.listdir(base)) if os.path.isdir(os.path.join(base, d))]
-    if len(dirs) != 1:
-        raise SystemExit(
-            "expected exactly one run directory for %r, saw %r" % (arm, dirs))
-    return os.path.join(base, dirs[0])
+    if not dirs:
+        raise SystemExit("no run directory for arm %r under %r" % (arm, runs_root))
+    # The newest, as every reader of this round takes it (0114's launch section): a stopped
+    # first launch keeps its directory beside the real one with a suffix on its name, and a
+    # reader that refused the pair read nothing of round 45 until 2026-09-23.
+    if len(dirs) > 1:
+        print("%s: %d run directories, reading the newest %r" % (arm, len(dirs), dirs[-1]),
+              file=sys.stderr)
+    return os.path.join(base, dirs[-1])
 
 
 def load_jsonl(path):
@@ -732,7 +737,18 @@ def main():
     ap.add_argument("--out", default=None,
                      help="write the TSV here (creates its directory; nothing is written "
                           "without this flag)")
+    # The watch's form: `<second> <arm>` at a milestone (scripts/watch-round.py --read). The
+    # second is the mark the watch saw the report pass and is printed back; the clauses are
+    # read on the rows there are, which is the state at that mark and not a verdict.
+    ap.add_argument("milestone", nargs="*",
+                     help="the watch's `<second> <arm>`; reads that arm alone")
     args = ap.parse_args()
+
+    if args.milestone:
+        if len(args.milestone) != 2:
+            raise SystemExit("the positional form is `<second> <arm>`; saw %r" % args.milestone)
+        print("milestone %s s, %s" % (args.milestone[0], args.milestone[1]))
+        args.arms = [args.milestone[1]]
 
     clauses = ("J1", "J2", "J3", "J4", "J5", "J6", "J7")
     all_rows = []
