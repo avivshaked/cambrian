@@ -86,6 +86,10 @@ weight acting off the mass centre, a genome field at format 8, priced) and the c
 second founding's is `logbook/specs/consumer-founding-spec.md` (a second window of random
 consumer-carrying founders when the snow is there, three tunables, `fnd` on the lineage row).
 All five of round 46's specs are written; the builds wait on the rulings and the machine.
+The pre-registration is drafted with the ruled values in brackets
+(`logbook/specs/r46-prereg-draft.md`, K1 to K10: the crowd lies down, the offset is the way,
+the second founding founds a line, the killer on the repaired window, the price stops the
+fan, the books, contact on the part, the cost); it becomes 0116 at launch.
 
 **Round 45 is read (logbook/0114's read section, 2026-09-23 morning; three seeds ended on
 their budget in 6 to 8 hours at 1.0 to 1.4x).** The mouth works and nobody uses it: J5,
