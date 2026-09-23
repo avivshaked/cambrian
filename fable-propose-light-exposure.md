@@ -90,6 +90,44 @@ refuses every config written before it, as every tunable does.
   layers are, and the projection is onto the horizontal. No self-shading within a body
   beyond the hull's cap. No cost to the pose itself.
 
+## The owner's ruling and its two conditions (2026-09-23, mid-morning)
+
+"As I often do, I'll support your recommendations. Just consider the implications for the
+computational effort. Also we need to give them some way of affecting the angle. If there is
+none, then basically some plants just die because they are born in the wrong angle."
+
+**The cost.** The exposure is computed once a metabolic step, every fifty physics steps,
+from each link's rotation, which the solver holds and the GPU design already brings down at
+that cadence. An oriented box's projection onto the horizontal is three absolute dot
+products of its axes with the vertical, weighted by its face areas; the hull's shadow is one
+dot product a face over a few dozen faces. At 10,000 bodies of two parts that is of the order
+of a million flops a metabolic step, microseconds on one core, against a physics step of tens
+of milliseconds. The estimate is arithmetic, not a measurement, and the first run's `wall
+split` is the check. A pose sampled once in half a second aliases a body that tumbles faster
+than that; a mean over the block would cost a projection a physics step and is not proposed
+until a tumbling crowd is seen.
+
+**The means to affect the angle.** Three exist in the physics now and one is missing.
+- A float part above a leaf part. The genome's buoyancy cell carries a heritable lift, priced
+  per unit, and the solver applies each link's net weight at that link, so a body with a
+  float above and tissue below has a righting moment, which is the kelp's pneumatocyst above
+  its blade. It needs two parts.
+- Rising or sinking. A body that moves through the water turns broadside to its motion under
+  the drag panels, as a falling leaf does, so a slightly buoyant sheet rises flat and lies
+  flat at the surface under the restoring term, which is the duckweed's way. It needs a lift
+  away from neutral, and costs the drift.
+- A joint and the up sense. `OrientationUp` is a sense channel, and a brain that reads it can
+  hold an angle with a driven joint. It needs a jointed body and pays the drive.
+- What is missing is the one-part leaf's way. A single uniform box has its weight and its
+  buoyancy at the same point, so nothing ever turns it, and the born-on-edge leaf of the
+  poses table has no move to make. The plant's answer is a density gradient within the leaf,
+  air spaces on the upper side, and the proposal adds it: a heritable offset of a part's
+  centre of buoyancy along its thinnest axis, as a fraction of that half-extent, so that the
+  buoyant face turns up. It is Archimedes on a non-uniform body and not a designed torque, it
+  costs one cross product a link a physics step, it is mutable like lift and priced like it
+  (an offset without gas is nothing, so it needs a lift above zero on the same node to act,
+  or a small price of its own), and it is a new genome field, so a format bump.
+
 ## The question for the owner
 
 Whether a part earns and shades on its projected area in its actual pose (the rule above),

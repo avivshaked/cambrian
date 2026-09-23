@@ -63,8 +63,13 @@ read a quarter of a part's surface, Cauchy's orientation average, and never the 
 1 at 5,000 s: 92% on edge) and the end is near random (mean flat factor 0.44 to 0.73 against
 0.50 random; `logbook/specs/r45-read/tilt.txt`). The rule proposed: earn and shade on the
 projected area in the actual pose, the hull's shadow as the cap, a tunable off by default.
-Owner's ruling; goes into the next base round's proposal with the consumer, the support cost
-and per-part contact.
+Ruled the same morning ("I'll support your recommendations"), with two conditions the
+proposal now answers: the computational cost (arithmetic: microseconds a metabolic step) and
+a way for a body to affect its angle (three exist: a float part above tissue, rising or
+sinking under the panels, a joint with the up sense; the one-part leaf's is missing and the
+proposal adds an offset of a part's centre of buoyancy along its thinnest axis, a genome
+field). Build order: the exposure tunable off by default, then the buoyancy offset, both as
+the next base round's build with the consumer, the support cost and per-part contact.
 
 **Round 45 is read (logbook/0114's read section, 2026-09-23 morning; three seeds ended on
 their budget in 6 to 8 hours at 1.0 to 1.4x).** The mouth works and nobody uses it: J5,
@@ -661,8 +666,21 @@ subagent and never in a shell loop.
    grid built on the card with atomics behind the query's own sort; the field uploaded once
    a metabolic step; four launches a step; acceptance is the transcription proved in double
    on the CPU device before the precision changes), and the serial water pass cheapened
-   without moving a bit (done, `c6cbba8`). The trigger to move it
-   earlier: a seed filling to 10,000 and falling under 1x real time.
+   without moving a bit (done, `c6cbba8`). **The measurement is done (logbook/0115, 2026-09-23 late morning, an Opus subagent from
+   the brief):** both kernels bit-exact in double on the CPU device against the library
+   (145,950,406 and 244,692,000 values, 0 mismatches), bit-identical on the card at two
+   group sizes, and in single 2.6x to 8.2x (contacts) and 1.3x to 7.5x (brain) over 16
+   threads from 6,145 to 30,000 bodies, flat in the crowd because the slowest thread
+   sets the step (the 64-cell bodies' sort, the 75-neuron bodies); no overflow at 256
+   candidates and 64 overlaps (max 105 and 4). Together they are about 0.07 µs a
+   body-step at the round's crowd against the CPU's 2.2 to 2.8 for the whole step, so
+   neither is a risk and the ceiling is the launches and the slowest body. Next is the
+   whole step in one kernel at 10,000 and 30,000 (the rest of acceptance item 3), which
+   is the port's first kernel: the spike's ContactF/BrainF and 0112's KernelF joined,
+   proved in double on the CPU device against `DynamicsWorld` on a round 45 world for
+   3,000 s (item 1) before the precision changes. One thing for the port: a neuron in
+   round 45 seed 2's crowd has run to 1e29 (nothing bounds a finite value), which in
+   single reaches infinity at 3e38 and the guard; it wants a bound or a count.
 7. **Loose ends.** Double accounts in Core for the matter residual (done, `0c19f0d`).
    `ParallelIdentityTests` is `Slow` and the overlap probe's `run.ps1` takes `-Snapshots`
    (both done). Close pictures beside the whole-tank views in every entry. DESIGN §11.1 and the ArticulationBody
