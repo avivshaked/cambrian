@@ -78,8 +78,8 @@ checkpoint on disk before the bump is refused; round 45's own checkpoints are am
 and were never a continuation of the run. The round itself is unaffected: it never resumed. What it means for the record:
 nothing in rounds 42 to 44 was resumed either, and the theatre's live mode is a cousin by
 construction and says so. `scratch/live-ui/runs/ckUi` (the `LiveUiCheck` fixture) is
-re-recorded on the build (2026-09-23, 600 s, three checkpoints); `LiveUiCheck` has not been
-rerun against it yet, and is a sixth Unity process when it is.
+re-recorded on the build (2026-09-23, 600 s, three checkpoints), and `LiveUiCheck` passes
+against its 400 s checkpoint (129 passed, 0 failed, 1 skipped, the same night).
 
 **Streams in a shallow tank** (D102) and **four pinned arms** (D103) are ruled and on
 main. The Unity build's `simHash` has moved with the header token and every worker needs
@@ -557,7 +557,19 @@ subagent and never in a shell loop.
    distance), which grows as reach cubed against income as reach squared, so a fan of
    copies loses money past a size the price sets and a compact body pays nearly nothing;
    the ledger screen of the 0.5 m leaf against the 14.6 m giant at a few prices is the
-   first step. And **the tank is ten times larger and the matter is not** from round 45
+   first step. **The screen is done by arithmetic** (2026-09-23, `scratch/support-cost/
+   screen.py`, to be moved beside the proposal when it is written): at the ledger's 10 W/m²
+   of lit area and 3 W/m³ standing, the giant at its ceiling earns 618 W on 62 m² with an
+   area-weighted mean reach of 10.5 m. A cost of price × lit area × distance needs about
+   1 W per m² per metre to put the giant under water (−32 W), and at that price a 1.5 m
+   kelp of four leaf parts keeps 79% of its income and a two-part 0.5 m body 84%. A cost of
+   price × lit area × distance² separates better: at 0.1 W per m² per m² the giant reads
+   −179 W while the kelp keeps 86% and the two-part body 86%, and a copy's own support
+   equals its own income at sqrt(10/price) metres of reach, 10 m at that price. Under the
+   module rule a body whose last copy loses money runs down its reserve and drops a module,
+   so the price sets the reach a lineage settles at rather than killing it outright, my
+   reading. The square form at about 0.1 is the recommendation the proposal will carry;
+   the silhouette cap and shading are not in the screen. And **the tank is ten times larger and the matter is not** from round 45
    (D108): 22,000 m² at 45 m with round 44's 1,500 units, the bed's wavelength held at
    17.64 m; the grid is not the cost (65 ms a step at 4 threads, `scratch/r45-build/runs/
    bigA`). Diluted tenfold the world does not found (`bigC`: one birth in 1,700 s; the
