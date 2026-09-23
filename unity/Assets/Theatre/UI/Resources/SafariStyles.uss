@@ -1,0 +1,198 @@
+/* ============================================================
+   SafariStyles.uss — the safari's panel, its caption line and its
+   corner word (logbook/specs/safari-spec.md item 11).
+
+   Read against TheatreUiStyles.uss, whose :root tokens it uses and
+   whose rules it follows: fonts named in every rule, shorthands
+   written long, no hue (the record button inverts to the plate when
+   it is on and never turns red), flexbox only, no shadows. The
+   spacing is the following sibling's (.lead zeroes a first child).
+
+   The density steps are the interface's classes on the root:
+   .is-wide at 2240 moves the furniture, .is-wider at 3400 moves the
+   furniture and the type by 1.5, the type written literally because
+   a custom property redeclared under .is-wider reached nothing
+   (the stylesheet's note of 2026-09-13).
+
+   The caption is not interface: white, lower third, one sentence,
+   on a quiet plate so it reads over the pale surface frame too.
+   ============================================================ */
+
+.panel--safari {
+    position: absolute;
+    right: var(--pad-edge);
+    bottom: 88px;
+    width: 380px;
+    max-height: 420px;
+}
+
+.safari-row {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: var(--s2);
+}
+
+.safari-button {
+    -unity-font-definition: resource("Fonts/IBMPlexMono-Regular SDF");
+    font-size: var(--t-sm);
+    color: var(--ink);
+    background-color: rgba(0, 0, 0, 0);
+    height: 22px;
+    margin-left: var(--s2);
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: var(--s3);
+    padding-right: var(--s3);
+    padding-top: 0;
+    padding-bottom: 0;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-color: var(--rule-strong);
+    border-right-color: var(--rule-strong);
+    border-bottom-color: var(--rule-strong);
+    border-left-color: var(--rule-strong);
+    border-top-left-radius: var(--radius);
+    border-top-right-radius: var(--radius);
+    border-bottom-left-radius: var(--radius);
+    border-bottom-right-radius: var(--radius);
+}
+
+.safari-button:hover {
+    background-color: var(--row-hover);
+    color: var(--ink-hi);
+}
+
+.safari-button--on {
+    background-color: var(--plate);
+    color: var(--plate-ink);
+}
+
+.safari-picker {
+    flex-grow: 1;
+    margin-left: var(--s2);
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    -unity-font-definition: resource("Fonts/IBMPlexSans-Regular SDF");
+    font-size: var(--t-sm);
+    color: var(--ink);
+}
+
+.safari-scenes {
+    margin-top: var(--s3);
+    max-height: 250px;
+    border-top-width: 1px;
+    border-top-color: var(--rule);
+    padding-top: var(--s2);
+}
+
+.safari-scene {
+    -unity-font-definition: resource("Fonts/IBMPlexMono-Regular SDF");
+    font-size: var(--t-sm);
+    color: var(--ink-lo);
+    white-space: nowrap;
+    margin-top: var(--s1);
+}
+
+.safari-scene:hover {
+    color: var(--ink);
+}
+
+.safari-scene--current {
+    color: var(--ink-hi);
+}
+
+.safari-status {
+    -unity-font-definition: resource("Fonts/IBMPlexSans-Regular SDF");
+    font-size: var(--t-sm);
+    color: var(--ink-lo);
+    margin-top: var(--s3);
+    white-space: normal;
+}
+
+/* ---------- outside the panel: part of the picture ------------- */
+
+.safari-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.safari-caption {
+    position: absolute;
+    left: 15%;
+    right: 15%;
+    bottom: 22%;
+    -unity-font-definition: resource("Fonts/IBMPlexSans-Regular SDF");
+    font-size: 28px;
+    color: rgb(255, 255, 255);
+    -unity-text-align: middle-center;
+    white-space: normal;
+    background-color: rgba(5, 9, 11, 0.45);
+    padding-top: var(--s2);
+    padding-bottom: var(--s2);
+    padding-left: var(--s4);
+    padding-right: var(--s4);
+    border-top-left-radius: var(--radius);
+    border-top-right-radius: var(--radius);
+    border-bottom-left-radius: var(--radius);
+    border-bottom-right-radius: var(--radius);
+}
+
+.safari-provenance {
+    position: absolute;
+    left: var(--pad-edge);
+    top: 12px;
+    -unity-font-definition: resource("Fonts/IBMPlexMono-SemiBold SDF");
+    font-size: var(--t-sm);
+    color: var(--ink);
+    letter-spacing: 1.4px;
+}
+
+/* ---------- RESOLUTION ----------------------------------------- */
+
+.is-wide .panel--safari {
+    right: 20px;
+}
+
+.is-wide .safari-provenance {
+    left: 20px;
+}
+
+.is-wider .panel--safari {
+    right: 30px;
+    bottom: 120px;
+    width: 570px;
+    max-height: 630px;
+}
+
+.is-wider .safari-provenance {
+    left: 30px;
+    top: 18px;
+}
+
+.is-wider .safari-scenes {
+    max-height: 375px;
+}
+
+.is-wider .safari-button {
+    height: 33px;
+}
+
+.is-wider .safari-button,
+.is-wider .safari-picker,
+.is-wider .safari-scene,
+.is-wider .safari-status,
+.is-wider .safari-provenance {
+    font-size: 16px;
+}
+
+.is-wider .safari-caption {
+    font-size: 42px;
+}

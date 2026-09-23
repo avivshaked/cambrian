@@ -214,6 +214,21 @@ namespace Evosim.Theatre
         /// </remarks>
         public Color Water = new Color(0.012f, 0.032f, 0.048f);
 
+        /// <summary>
+        /// A caption burnt into the lower third of the next <see cref="CapturePlaced"/> picture,
+        /// white on a quiet plate, in the label's bitmap font; null or empty draws none, which is
+        /// what the film and every snapshot leave it at. The safari's headless route sets it
+        /// (safari-spec.md item 10).
+        /// </summary>
+        public string Caption;
+
+        /// <summary>
+        /// A portrait's fill light from the camera's side, at this intensity; 0 (the default) adds
+        /// none, so a film's close shot is lit as it always was. The safari's light rule (item 9):
+        /// the skin's sun stands and the portrait adds a fill from the camera's side, low.
+        /// </summary>
+        public float FillIntensity;
+
         // The palette's three guilds. Duplicated as plain fields rather than shared with
         // TheatrePalette, which paints renderers through a MaterialPropertyBlock and has no
         // opinion about a pixel; the values are the same and the runner's inspector owns them.
@@ -502,6 +517,7 @@ namespace Evosim.Theatre
 
             List<WaterBounds> silenced = SilenceTheWater();
             Light back = portrait ? BackLight() : null;
+            Light fill = portrait && FillIntensity > 0f ? FillLight(FillIntensity) : null;
 
             TheatreGrade grade = portrait && focusMetres > 0f ? TheatreGrade.Current : null;
             if (grade != null) grade.Focus(focusMetres, 5.6f);
@@ -518,6 +534,7 @@ namespace Evosim.Theatre
                 if (grade != null) grade.Unfocus();
                 if (skin != null) skin.Aim(lightsWere);
                 if (back != null) UnityEngine.Object.DestroyImmediate(back.gameObject);
+                if (fill != null) UnityEngine.Object.DestroyImmediate(fill.gameObject);
                 for (int i = 0; i < silenced.Count; i++) silenced[i].enabled = true;
             }
 
@@ -540,6 +557,7 @@ namespace Evosim.Theatre
             _pixels = _super > 1 ? BoxDown(_readbackFull.GetPixels32(), _super) : _readbackFull.GetPixels32();
 
             DrawLabel(_label);
+            if (!string.IsNullOrEmpty(Caption)) DrawCaption(Caption);
 
             _readback.SetPixels32(_pixels);
             _readback.Apply(false);
@@ -1079,6 +1097,19 @@ namespace Evosim.Theatre
             light.type = LightType.Directional;
             light.color = new Color(0.55f, 0.85f, 1f);
             light.intensity = TheatreSkin.Dial("EVOSIM_THEATRE_BACK", 2.4f, 0f, 12f);
+            light.shadows = LightShadows.None;
+            return light;
+        }
+
+        /// <summary>The portrait's fill: from the camera's right and a little above, destroyed after the render.</summary>
+        private Light FillLight(float intensity)
+        {
+            var holder = new GameObject("Theatre Fill Light") { hideFlags = HideFlags.HideAndDontSave };
+            holder.transform.rotation = _camera.transform.rotation * Quaternion.Euler(10f, -35f, 0f);
+            var light = holder.AddComponent<Light>();
+            light.type = LightType.Directional;
+            light.color = new Color(0.8f, 0.9f, 1f);
+            light.intensity = intensity;
             light.shadows = LightShadows.None;
             return light;
         }
@@ -1751,6 +1782,67 @@ namespace Evosim.Theatre
                     Glyph(c, x, top, cell);
                     x += 6 * cell;
                     if (x > _width) break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// A caption in the lower third: the label's font at a larger cell, centred, white, over a
+        /// plate that darkens what is behind it rather than covering it.
+        /// </summary>
+        private void DrawCaption(string text)
+        {
+            int cell = Mathf.Max(LabelScale, _height / 216);
+            int advance = 6 * cell;
+            int most = Mathf.Max(8, (int)(0.8f * _width) / advance);
+
+            var lines = new List<string>(3);
+            string rest = text.ToUpperInvariant().Replace('\n', ' ');
+            while (rest.Length > most)
+            {
+                int cut = rest.LastIndexOf(' ', Mathf.Min(most, rest.Length - 1));
+                if (cut <= 0) cut = most;
+                lines.Add(rest.Substring(0, cut).TrimEnd());
+                rest = rest.Substring(cut).TrimStart();
+            }
+            lines.Add(rest);
+
+            int lineHeight = 11 * cell;
+            int longest = 0;
+            foreach (string line in lines) longest = Mathf.Max(longest, line.Length);
+
+            int bottom = (int)(0.18f * _height);
+            int blockTop = bottom + lines.Count * lineHeight;
+            int plateWidth = Mathf.Min(_width, longest * advance - cell + 4 * cell);
+            Darken((_width - plateWidth) / 2, bottom - cell, plateWidth, lines.Count * lineHeight + cell, 0.55f);
+
+            for (int row = 0; row < lines.Count; row++)
+            {
+                string line = lines[row];
+                int x = (_width - (line.Length * advance - cell)) / 2;
+                int top = blockTop - row * lineHeight - 2 * cell;
+                foreach (char c in line)
+                {
+                    Glyph(c, x, top, cell);
+                    x += advance;
+                    if (x > _width) break;
+                }
+            }
+        }
+
+        private void Darken(int x, int y, int width, int height, float by)
+        {
+            int x1 = Mathf.Min(_width - 1, x + width - 1);
+            int y1 = Mathf.Min(_height - 1, y + height - 1);
+            float keep = 1f - Mathf.Clamp01(by);
+
+            for (int py = Mathf.Max(0, y); py <= y1; py++)
+            {
+                int rowStart = py * _width;
+                for (int px = Mathf.Max(0, x); px <= x1; px++)
+                {
+                    Color32 c = _pixels[rowStart + px];
+                    _pixels[rowStart + px] = new Color32((byte)(c.r * keep), (byte)(c.g * keep), (byte)(c.b * keep), 255);
                 }
             }
         }
