@@ -150,35 +150,26 @@ check. The trickle and the food rule are merged (`3f48f6f`, `founding-trickle-sp
 `StateVersion` 9, `Checkpoint.Version` 4), so **every rule of round 46 is on main**, and
 the full-build regress of the crowd fixture's world with every new tunable at its default
 (`r46allreg-s4`, `4467ad6`) is identical in 145 fields at 300 samples with the positions
-byte-equal and the lineage differing by the founder rows' `src` alone. **The fixtures are
-being re-recorded once for all of them** (late afternoon): the r42 config is `pfix8`'s
-(`5062a25baa35c6e1`, the Farm hash and `ReportTests`' line re-pinned, Farm 73 of 73); the
-Dynamics crowd `r46fixc-s4` (round 44's world, 20,000 s at 6 threads on
-`Release-r46`) is running and `RunFixture.cs` is re-pinned to it when it ends, then the
-Dynamics suite; ckA/ckB/ckC and `ckUi` follow one at a time, and `--verify-checkpoint`
-with contact per part on one of them. **The price screen is read** (`r46price-s1`,
-`support-cost-spec.md` §8 and `per-part-contact-spec.md` §7): both books closed, the
-support at 1.2 mW a body over a crowd of small leaves, `ovl/body` under 0.005, and no kill
-in 3,000 s, so the touching-part clause of the kill row stays owed to the round. **The
-launcher is written** (`rounds/env-r46.ps1`, `010adb3`: round 45's block with the seven
-rules and the beach at the ruled values, D109's founder rule set to 0 beside D116's), and a
-3,000 s dt 0.02 screen of it with every rule on (`r46scr-s1`, `configHash e32cf74f`,
-under `scratch/r46-build/runs/`) is running as the books check and the offset spec's
-test 6; its header carries every token. It ends at 3,000 s, when the floor closes, so the
-trickle never fires in it; a second short screen with the floor closing at 300 s reads the
-trickle, the food rule and the extinct ending, after the fixture ends (one farm run beside
-another, no suite). The ledger at the round's prices is in the prereg draft (the leaf's
-support 1% of standing cost; flat doubles its income and turns a loss at 12 m into a
-living; the offset 3.7 mW on the body). Then the pictures of the screen (the theatre's
-`-From snapshot` on worker 6, the side and the bed views: where the crowd stands against
-the shore, since the screen's first 800 s put 42% of it in the rim quarter against round
-45's fifth), the prereg as 0116 committed before the queue, and the launch: three seeds,
-30,000 s at dt 0.01, five threads each, checkpoints every 2,500 s.
-The pre-registration is drafted with the ruled values in brackets
-(`logbook/specs/r46-prereg-draft.md`, K1 to K11: the crowd lies down, the offset is the way,
-the trickle founds an eater's line, the killer on the repaired window, the price stops the
-fan, the books, contact on the part, the cost, the shelf's larder); it becomes 0116 at
-launch.
+byte-equal and the lineage differing by the founder rows' `src` alone. **Round 46 is launched** (2026-09-23 at 15:22 local from `7bf9064`, the pre-registration
+`logbook/0116-the-angle-the-price-the-second-founding.md`; three seeds, 30,000 s at dt
+0.01, five threads each, a 900-minute wall, `configHash 7300c71be3b6b453`; every header
+token checked). Before it: the fixtures re-recorded on the build (the r42 config from
+`pfix8`, `5062a25baa35c6e1`; the Dynamics crowd `runs/r46fixc-s4`, Dynamics 90 of 90;
+ckA/ckB/ckC under `scratch/checkpoint/runs` re-recorded after the launch), the price
+screen read (`support-cost-spec.md` §8, `per-part-contact-spec.md` §7), the round's own
+screen at dt 0.02 read and pictured (0116's screen section: books closed, `expo` 0.88 to
+0.98, the shelf holding 3.75% of the snow, the crowd one clump over its island with a
+one-body arc along the north rim), the trickle screen (35 founders in 1,200 s, the
+stomachs placed on the snow at four times the field mean), the ledger at the round's
+prices, `--verify-checkpoint` with contact per part (PASS), and the clause reader
+`scripts/reads/r46-read.py`. The watch is a session cron running `watch-round.py r46`
+with that reader; pictures are taken from the snapshots at the marks. **Four instruments
+are owed to the next build**, found by the reader: a part index on the kill row (K9's
+touching-part clause was dropped from the prereg), a part's largest distance from its root
+in the stats (K6 reads the ledger's `farthest part` instead), a timer for the exposure and
+support terms (K10 reads the pace against round 45's), and the snow's floor cell in the
+dump (K11 reads the column mean). `ckUi` under `scratch/live-ui/runs` is still refused by
+`StateVersion` 9 and is re-recorded before the next `LiveUiCheck`.
 
 **Round 45 is read (logbook/0114's read section, 2026-09-23 morning; three seeds ended on
 their budget in 6 to 8 hours at 1.0 to 1.4x).** The mouth works and nobody uses it: J5,

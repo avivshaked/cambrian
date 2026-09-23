@@ -142,3 +142,19 @@ asked; whether a stomach founder placed on its food leaves a line is K3.
 ![The screen from above at 3,000 s: the shelf pale at the north-west, the crowd at the south-west](images/r46scr-s1-t3000-top.png)
 
 ![The screen from the side at 3,000 s: the bed sloping from the shore to the deep wall](images/r46scr-s1-t3000-side.png)
+
+## The launch
+
+Three seeds launched 2026-09-23 at 15:22 local from `7bf9064` (this entry's commit; the
+tree clean, so every manifest's `gitCommit` is the pre-registration's), through
+`run-farm.ps1 -Launcher rounds/env-r46.ps1` on `artifacts/Evosim.Farm/bin/Release-r46`:
+seeds 1 to 3, 30,000 s at dt 0.01, five threads each, a 900-minute wall (round 45's
+footers read 365 to 489 minutes and contact per part costs a fifth more in the body
+phase), the runaway ceiling 25,000, a checkpoint every 2,500 s. `configHash
+7300c71be3b6b453`, `coreHash 429c8674…`, `dynamicsHash 41387d2b…`, `farmHash a5477389…`.
+The header of each seed was read after the launch and carries every token the world
+section names: `dt=0.01`, `light by exposure`, `buoyancy offset 0.02 W/m3`, `founders in
+their food`, `remin 0.0005 /s`, `tilt 96 m shore 1 m fade 15 m`, `trickle 1/30 s`,
+`support 0.1 W/m2/m2`, `contact per part`. The clause reader is
+`scripts/reads/r46-read.py`, the watch is `scripts/watch-round.py r46 --read` it, and the
+read section is written when the seeds end.
