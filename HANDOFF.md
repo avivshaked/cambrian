@@ -70,6 +70,10 @@ sinking under the panels, a joint with the up sense; the one-part leaf's is miss
 proposal adds an offset of a part's centre of buoyancy along its thinnest axis, a genome
 field). Build order: the exposure tunable off by default, then the buoyancy offset, both as
 the next base round's build with the consumer, the support cost and per-part contact.
+**The base round's one text is `fable-propose-round-46.md`** (2026-09-23 noon): five rules
+(exposure with the buoyancy offset, a second founding window for consumers at 6,000 s, the
+support cost as the square form at 0.1 W per m² per m², per-part contact, the two
+pre-registration repairs) and five questions for the owner; the reef held for 47.
 
 **Round 45 is read (logbook/0114's read section, 2026-09-23 morning; three seeds ended on
 their budget in 6 to 8 hours at 1.0 to 1.4x).** The mouth works and nobody uses it: J5,
