@@ -293,6 +293,10 @@ foreach ($shot in $shotList) {
 
     $bytes = (Get-Item $clip).Length
     Write-Host ("  {0,-40} {1} frames, {2} s, {3:N0} bytes" -f (Split-Path $clip -Leaf), $frames.Count, $length, $bytes)
+    # A contact sheet beside the clip, twelve frames spread over it, for a reader of pictures
+    # (scripts/film-sheet.py); a failure here does not fail the film.
+    $sheet = Join-Path $PSScriptRoot 'film-sheet.py'
+    if (Test-Path $sheet) { & python $sheet $clip 2>&1 | Select-Object -Last 1 | ForEach-Object { Write-Host "    sheet: $_" } }
 
     if ($DeleteFrames) { Remove-Item -Path (Join-Path $shotDirectory 'frame-*.png') -Force }
 }
