@@ -56,6 +56,16 @@ J10 for the islands and the screen's maps. The fixtures are re-recorded on the b
 (`pfix3`, `r45fixc-s4`, `ckA/B/C`), the Farm tests' round 42 hash is `c862fd2c510b82e9`, the
 identity word held. The ideas set aside are in `fable-propose-reef.md`.
 
+**Light by exposure is proposed (`fable-propose-light-exposure.md`, 2026-09-23, from the
+owner's observation that leaves stand on edge in the pictures).** The income and the shadow
+read a quarter of a part's surface, Cauchy's orientation average, and never the pose;
+`scripts/reads/tilt.py` on round 45's poses says most of an early crowd stands as born (seed
+1 at 5,000 s: 92% on edge) and the end is near random (mean flat factor 0.44 to 0.73 against
+0.50 random; `logbook/specs/r45-read/tilt.txt`). The rule proposed: earn and shade on the
+projected area in the actual pose, the hull's shadow as the cap, a tunable off by default.
+Owner's ruling; goes into the next base round's proposal with the consumer, the support cost
+and per-part contact.
+
 **Round 45 is read (logbook/0114's read section, 2026-09-23 morning; three seeds ended on
 their budget in 6 to 8 hours at 1.0 to 1.4x).** The mouth works and nobody uses it: J5,
 J6, J10 hold 3 of 3, J8 2 of 3, J9's first clause 3 of 3; J1, J2, J3, J4, J7 and J9's
