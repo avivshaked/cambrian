@@ -80,3 +80,24 @@ phases are the measurement.
 6. With it on, a 3,000 s dt 0.02 screen of round 45's launcher closes both books, `ovl/body`
    is reported, and the mouth's kills name the touching part (the kill rows' part index
    against the overlap's link pair).
+
+## 6. As built (2026-09-23, an Opus subagent in a worktree, merged at `6ae0482`)
+
+Sections 1, 2 and 5 as written, with `PerPartContactTests` (four, and a Slow wall reading).
+Two one-part bodies read the same forces to the bit under both models, in open water and
+against the bed and the glass together; a push on a far link lands in that link's own row
+with the two links' reduced mass (5.33 kg where the two bodies' gave 7.27) and the root's row
+reads zero; the seven-copy fan no longer shoves a leaf eleven metres from its seventh copy
+(640 N under one sphere a body, 0 under a sphere a part); and the digest is equal at 1 and
+16 threads over 1,000 steps of 1,000 bodies (`014abf9e2aa40fc1`). Five departures. The header
+token is at the end of the line before the hash, where a new knob goes, not beside `ovl`.
+The per-body speed cap is applied per link against the link's mass. A one-part body's link
+sphere is a copy of its body sphere, which is what makes bit-for-bit true (the recorded
+velocity is `(v·m)·(1/m)`, an ulp off `v`). Whether a body is in contact at all stays the
+body's flag. And a checkpoint rebuilds the link spheres on restore rather than storing them,
+so `StateVersion` is unchanged by this rule; `--verify-checkpoint` with the switch on has not
+been run and is owed before a resume under it is trusted. **The cost is not what section 4
+expected**: a link's sphere covers fewer cells, but there are 2.8 times as many spheres, so
+the contact phase is 1.9 times the recorded one (1.48 s against 0.79 s for 1,000 steps of
+1,000 bodies on one thread) and the whole body phase 19% more at 8 threads; read on the
+screen's `wallStep*` phases at the round's crowd.

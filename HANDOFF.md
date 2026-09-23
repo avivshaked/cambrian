@@ -143,9 +143,13 @@ fields; the smoke `r46beachsmoke-s1` at tilt 96, shore 1, fade 15, remin 0.0005 
 both books at 600 s with the shelf holding 1.6% of the snow against 0.01% on the old floor;
 its pictures under `scratch/snaps/r46beachsmoke-s1/`) and the support cost (`58161f1`,
 merged from a worktree; the giant nets −90 W at the code's lit area, `support-cost-spec.md`
-§7). Per-part contact is being built in a worktree. The builds that remain: the trickle and
-the food rule (`logbook/specs/founding-trickle-spec.md`); then the fixtures re-recorded
-once for every tunable (`StateVersion` 8 refuses every checkpoint), the ledger screens,
+§7). Per-part contact is merged (`6ae0482`; the body phase 19% dearer at 8 threads,
+`per-part-contact-spec.md` §6), and a 3,000 s dt 0.02 screen of round 45's world with the
+support cost at 0.1 and contact per part (`r46price-s1`, 15:24) is the two rules' books
+check. The trickle and the food rule are being built in a worktree
+(`logbook/specs/founding-trickle-spec.md`). Then: the fixtures re-recorded once for every
+tunable (`StateVersion` 8 refuses every checkpoint; the crowd fixture and the r42 config
+refuse the beach's fields), `--verify-checkpoint` with contact per part, the ledger screens,
 the prereg as 0116, the launch.
 The pre-registration is drafted with the ruled values in brackets
 (`logbook/specs/r46-prereg-draft.md`, K1 to K10: the crowd lies down, the offset is the way,
