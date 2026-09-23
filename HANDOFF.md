@@ -112,8 +112,19 @@ land on its shelf, which is the remineralisation rate. **Ruled the same afternoo
 remineralisation at 0.0005 per second from round 46** ("Agreed"), pending the quarter-rate
 screen `r46remin-5e4-s1` (dt 0.02, 12,000 s, launched 14:32; a one-shot look at 15:41 reads
 the snow's thickness, the floor's stock and the plants' cost against screen B and appends it
-to `stomach-screens.md`). The beach build is on an Opus subagent from
-`scratch/r46-build/beach-brief.md` since 14:31. **The owner's answer is the beach** (2026-09-23, 14:00: "the gradient floor back,
+to `stomach-screens.md`). The beach build came back at 15:00 from the Opus subagent
+(`scratch/r46-build/beach-brief.md`; two tunables, the clamp in `BedShape.Height`, the fade on the
+sloped potential with the acceleration analytic, `fields/bed.f32`, thirteen new Core tests
+green, uncommitted) with one finding that gates the fade's value: the fade's own term
+`∇f × A` is a current along the shore's contours at 2.8 times the tank's RMS with a peak of
+12 times at 15 m of fade. A sweep of the fade (15, 25, 40 m, and the fade times `d/D`) and
+the matter grid's mask over the shoal (the 5 m cells have no live cell there) are with the
+subagent; the regress (spec test 5) is a one-shot cron at 15:51 behind the quarter-rate
+screen; the smoke, its pictures and the commit follow the fade ruling. The mushroom reef's
+spec for round 47 is written (`logbook/specs/reef-spec.md`): a rock column with an
+overhanging cap, dead cells in the grid with live intervals a column, the cap an opaque body
+in the light field, the beach's fade around the rock, a signed-distance contact; the beach's
+fade sweep sets its fade. **The owner's answer is the beach** (2026-09-23, 14:00: "the gradient floor back,
 and finally put in the beach"): the gradient floor has in fact been on since round 39, its
 shallow arc 30 m down; the beach raises the tilt to about 96 m so the floor breaks the
 surface at the shore, clamped at a shoal a metre deep, with the current's potential faded
