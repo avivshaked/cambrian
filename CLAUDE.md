@@ -285,7 +285,17 @@ not stepped, so a clip's only motion is the camera's), `-Raw` (the colliders as 
 has them, the runner's X key) and `-Trace` (one row per link per frame in `trace.tsv` beside
 the shot directories: the solver's pose, the view's transform, every visual's mesh and
 scale, the screen position under the close shot's camera; `scripts/film-trace.py`
-ranks the jumps). They are the order to use them in.
+ranks the jumps). They are the order to use them in. **From the evening of 2026-09-23 the
+shots carry a fixed reference** (the owner: nothing in the first clips said whether the
+camera or the creatures moved). An orbit whose lift the surface caps stays level at the
+crowd's depth and aims ten degrees below the centroid, so the bed and the far glass fill
+the lower frame; its ring shrinks until every point of it clears the bed by two metres
+(the beach's shoal rises into a ring at the glass's room) and its turn is cut to hold the
+arc under 0.5 m/s, so a 60 s orbit at a 60 m ring is about six hundredths of a turn. The
+close shot is held still, a quarter further back than the following framing, for
+`-CloseSeconds` (20 s; a drifting subject leaves a still frame in tens of seconds);
+`-CloseFollow` restores the follow and the dolly. The plan line in the log says what was
+shrunk and cut.
 **No reconstruction and no live frame dressed a sphere or a capsule until 2026-09-23.**
 `TheatrePalette` and `TheatreMeshes` knew the engine's primitives by the names `Sphere` and
 `Cylinder`, which `CreatePrimitive` gives them in `PhenotypeBuilder`; `SnapshotWorld` and

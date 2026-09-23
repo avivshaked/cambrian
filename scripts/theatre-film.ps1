@@ -73,6 +73,13 @@
 .PARAMETER WallMinutes
   Wall clock cap on the batch Editor, default 30. The Editor also stops itself at this wall.
 
+.PARAMETER CloseSeconds
+  The close shot's length, s (default 20, never past -Seconds): held still, its subject drifts out
+  of frame in tens of seconds.
+.PARAMETER CloseFollow
+  Restores the close shot's follow and dolly (EVOSIM_THEATRE_FILM_CLOSE_FOLLOW=1). Off by default
+  since 2026-09-23 evening: with the camera following its subject nothing in the frame said whether
+  the camera or the creatures moved (the owner).
 .PARAMETER Raw
   A diagnostic: the bodies are drawn as the colliders the physics has, with no rounding, carve,
   taper or bend (EVOSIM_THEATRE_FILM_RAW=1), as the runner's X key does.
@@ -107,6 +114,8 @@ param(
     [switch]$Freeze,
     [switch]$Trace,
     [switch]$Raw,
+    [double]$CloseSeconds = 20,
+    [switch]$CloseFollow,
     [switch]$DeleteFrames
 )
 
@@ -205,7 +214,8 @@ $names = @(
     'EVOSIM_THEATRE_FILM_SECONDS', 'EVOSIM_THEATRE_FILM_FPS', 'EVOSIM_THEATRE_FILM_SIZE',
     'EVOSIM_THEATRE_FILM_SHOTS', 'EVOSIM_THEATRE_FILM_OUT', 'EVOSIM_THEATRE_FILM_TURNS',
     'EVOSIM_THEATRE_WALL_MINUTES', 'EVOSIM_THEATRE_CARVE', 'EVOSIM_THEATRE_SNAP_FROM',
-    'EVOSIM_THEATRE_OVERRIDE', 'EVOSIM_THEATRE_GENOME', 'EVOSIM_THEATRE_MOTION_BLUR', 'EVOSIM_THEATRE_FILM_FREEZE', 'EVOSIM_THEATRE_FILM_TRACE', 'EVOSIM_THEATRE_FILM_RAW')
+    'EVOSIM_THEATRE_OVERRIDE', 'EVOSIM_THEATRE_GENOME', 'EVOSIM_THEATRE_MOTION_BLUR', 'EVOSIM_THEATRE_FILM_FREEZE', 'EVOSIM_THEATRE_FILM_TRACE', 'EVOSIM_THEATRE_FILM_RAW',
+    'EVOSIM_THEATRE_FILM_CLOSE_SECONDS', 'EVOSIM_THEATRE_FILM_CLOSE_FOLLOW')
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -237,6 +247,9 @@ try {
     else { Remove-Item env:EVOSIM_THEATRE_FILM_TRACE -ErrorAction SilentlyContinue }
     if ($Raw) { $env:EVOSIM_THEATRE_FILM_RAW = '1' }
     else { Remove-Item env:EVOSIM_THEATRE_FILM_RAW -ErrorAction SilentlyContinue }
+    $env:EVOSIM_THEATRE_FILM_CLOSE_SECONDS = ([Math]::Min($CloseSeconds, $Seconds)).ToString($invariant)
+    if ($CloseFollow) { $env:EVOSIM_THEATRE_FILM_CLOSE_FOLLOW = '1' }
+    else { Remove-Item env:EVOSIM_THEATRE_FILM_CLOSE_FOLLOW -ErrorAction SilentlyContinue }
 
     if ($PSBoundParameters.ContainsKey('MotionBlur')) { $env:EVOSIM_THEATRE_MOTION_BLUR = $MotionBlur.ToString($invariant) }
 

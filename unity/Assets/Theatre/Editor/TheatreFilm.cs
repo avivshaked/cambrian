@@ -71,6 +71,9 @@ namespace Evosim.Theatre.EditorTools
         /// <summary>The camera's ceiling against its subject in a close shot, m/s (the owner's rule).</summary>
         public const float CloseSpeedCeiling = 0.3f;
 
+        /// <summary>The orbit's peak speed along its arc, m/s: about what a body swims.</summary>
+        public const float OrbitSpeedCeiling = 0.5f;
+
         /// <summary>How far above the bed and below the surface the camera keeps, m.</summary>
         public const float Clearance = 1f;
 
@@ -88,6 +91,8 @@ namespace Evosim.Theatre.EditorTools
         private static string _directory;
         private static bool _trace;
         private static bool _raw;
+        private static double _closeSeconds = 20d;
+        private static bool _closeStill = true;
         private static StreamWriter _traceWriter;
         private static Vector3 _traceEye;
         private static Quaternion _traceRotation = Quaternion.identity;
@@ -368,6 +373,23 @@ namespace Evosim.Theatre.EditorTools
             // carve, taper or bend, as the runner's X key does.
             _raw = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_FILM_RAW") == "1";
 
+            // The close shot: held still by default (the owner, 2026-09-23 evening: with the
+            // camera following its subject nothing in the frame said whether the camera or the
+            // creatures moved), and shorter, since a drifting subject leaves a still frame in
+            // tens of seconds. EVOSIM_THEATRE_FILM_CLOSE_FOLLOW=1 restores the follow and the
+            // dolly; EVOSIM_THEATRE_FILM_CLOSE_SECONDS sets its length (default 20, never past
+            // the film's own).
+            _closeStill = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_FILM_CLOSE_FOLLOW") != "1";
+            text = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_FILM_CLOSE_SECONDS");
+            _closeSeconds = Math.Min(_seconds, 20d);
+            if (!string.IsNullOrWhiteSpace(text) &&
+                (!double.TryParse(text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out _closeSeconds) ||
+                 !(_closeSeconds > 0d) || _closeSeconds > _seconds))
+            {
+                return "EVOSIM_THEATRE_FILM_CLOSE_SECONDS: '" + text + "' is not a length between 0 and the film's " +
+                       _seconds.ToString("0.###", CultureInfo.InvariantCulture) + " s.";
+            }
+
             return null;
         }
 
@@ -426,7 +448,9 @@ namespace Evosim.Theatre.EditorTools
             _wallSecondsAllowed.ToString("R", CultureInfo.InvariantCulture) + "|" +
             (_freeze ? "1" : "0") + "|" +
             (_trace ? "1" : "0") + "|" +
-            (_raw ? "1" : "0");
+            (_raw ? "1" : "0") + "|" +
+            _closeSeconds.ToString("R", CultureInfo.InvariantCulture) + "|" +
+            (_closeStill ? "1" : "0");
 
         /// <summary>
         /// Picks the request back up on the other side of the domain reload Play mode causes, and
@@ -464,6 +488,8 @@ namespace Evosim.Theatre.EditorTools
             _freeze = f.Length > 7 && f[7] == "1";
             _trace = f.Length > 8 && f[8] == "1";
             _raw = f.Length > 9 && f[9] == "1";
+            if (f.Length > 10) double.TryParse(f[10], NumberStyles.Float, CultureInfo.InvariantCulture, out _closeSeconds);
+            _closeStill = f.Length <= 11 || f[11] == "1";
 
             if (_seconds <= 0d || _fps < 1 || _width < 64 || _height < 64 || _shotNames.Length == 0)
             {
@@ -583,6 +609,9 @@ namespace Evosim.Theatre.EditorTools
 
                 foreach (Shot shot in _shots)
                 {
+                    if (_next >= shot.Frames) continue;
+                    u = shot.Frames > 1 ? (float)_next / (shot.Frames - 1) : 0f;
+
                     shot.Pose(live, _runner.LiveView, u, 1f / _fps, out Vector3 eye, out Quaternion rotation, out float focus);
 
                     if (_trace && (shot.Name == "close" || !_traceHasCamera))
@@ -593,7 +622,7 @@ namespace Evosim.Theatre.EditorTools
                     shot.Camera.CapturePlaced(live, eye, rotation, shot.FieldOfView, shot.Portrait, focus, label,
                         Path.Combine(shot.Directory, frameName));
 
-                    if (_next == 0 || _next == _frames / 2 || _next == _frames - 1)
+                    if (_next == 0 || _next == shot.Frames / 2 || _next == shot.Frames - 1)
                     {
                         shot.Camera.LastPictureSpread(out float mean, out float spread);
                         shot.Spreads.Add(string.Format(CultureInfo.InvariantCulture,
@@ -738,7 +767,10 @@ namespace Evosim.Theatre.EditorTools
 
             foreach (string name in _shotNames)
             {
-                Shot shot = Shot.Plan(name, live, _runner.LiveView, world, (float)_seconds, _width / (float)_height, _turns);
+                bool close = name == "close";
+                Shot shot = Shot.Plan(name, live, _runner.LiveView, world,
+                    (float)(close ? _closeSeconds : _seconds), _width / (float)_height, _turns, close && _closeStill);
+                shot.Frames = close ? Math.Max(1, (int)Math.Round(_closeSeconds * _fps)) : _frames;
                 shot.Directory = Path.Combine(_directory, name);
 
                 // A camera of its own per shot, never one camera posed for each in turn: the
@@ -940,6 +972,8 @@ namespace Evosim.Theatre.EditorTools
             public string Plan_;
             public float FieldOfView;
             public bool Portrait;
+            /// <summary>Frames this shot captures; the close shot's are fewer than the film's.</summary>
+            public int Frames;
             public SnapshotCamera Camera;
             public readonly List<string> Spreads = new List<string>();
 
@@ -966,6 +1000,13 @@ namespace Evosim.Theatre.EditorTools
             private float _dolly;
             private Vector3 _followed;
             private bool _hasFollowed;
+            private bool _still;
+            private Vector3 _stillEye;
+            private Quaternion _stillRotation;
+            private bool _hasStill;
+
+            // the orbit's aim below the crowd, so the bed and the far glass share the frame
+            private float _aimDown;
 
             // the tally
             private int _frames, _glass, _bed, _surface, _pushed, _inside;
@@ -975,9 +1016,9 @@ namespace Evosim.Theatre.EditorTools
 
             public static Shot Plan(
                 string name, TheatreDynamicsReplay live, LiveWorldView view, WorldBounds world,
-                float seconds, float aspect, float turns)
+                float seconds, float aspect, float turns, bool still = false)
             {
-                var shot = new Shot { Name = name, _world = world, _seconds = seconds };
+                var shot = new Shot { Name = name, _world = world, _seconds = seconds, _still = still };
 
                 var positions = new List<Vector3>();
                 var reaches = new List<float>();
@@ -1072,33 +1113,60 @@ namespace Evosim.Theatre.EditorTools
                 // below half of what is wanted, the orbit goes level at the crowd's depth, capped
                 // by the glass alone; and if the glass caps that below half too, it looks slightly
                 // up at the crowd from under it, where a 45 m tank has water to spare.
+                // A crowd near the surface leaves a tilted-down orbit no room, and the two
+                // fallbacks this had (level at the crowd's depth, then 15 deg up from under it)
+                // framed water and bodies and nothing fixed, so a viewer could not tell the
+                // camera's motion from the creatures' (the owner, 2026-09-23 evening). So when
+                // the surface caps the lift below half of what is wanted, the orbit stays level
+                // at the crowd's depth, as far out as the glass allows, and aims ten degrees
+                // below the centroid: the crowd sits in the upper third of the frame, the bed
+                // and the far glass fill the rest, and the surface's underside crosses the top.
                 if (!drift && headroom < room && most < 0.5f * wanted)
                 {
                     float surfaceCap = most;
                     _elevation = 0f;
-                    float level = _world.RoomAround(_centre);
-                    most = level;
+                    _aimDown = 10f * Mathf.Deg2Rad;
+                    most = _world.RoomAround(_centre);
                     tilt = string.Format(CultureInfo.InvariantCulture,
-                        "level at the crowd's depth: the surface capped 12 deg down at {0:0.##} m", surfaceCap);
-
-                    if (level < 0.5f * wanted)
-                    {
-                        _elevation = -15f * Mathf.Deg2Rad;
-                        float glass = _world.RoomAround(_centre) / Mathf.Cos(_elevation);
-                        float floor = _world.FloorAt(_centre.x, _centre.z) + Clearance;
-                        float footroom = (_centre.y - floor) / Mathf.Sin(-_elevation);
-                        most = Mathf.Min(glass, footroom);
-                        tilt = string.Format(CultureInfo.InvariantCulture,
-                            "15 deg up from under the crowd: the surface capped 12 deg down at {0:0.##} m and " +
-                            "the glass capped level at {1:0.##} m (room below {2:0.##} m)",
-                            surfaceCap, level, footroom);
-                    }
+                        "level at the crowd's depth aiming 10 deg down at the bed: the surface capped 12 deg down at {0:0.##} m",
+                        surfaceCap);
                 }
 
                 _distance = Mathf.Max(2f, Mathf.Min(wanted, most));
 
                 _azimuth = -0.5f * Mathf.PI;
                 _turns = turns;
+
+                string ring = "";
+                if (!drift)
+                {
+                    // The ring must clear the bed all the way round: a tank with a beach has a
+                    // shoal that rises to the surface, and a level orbit at the glass's room
+                    // crossed it (r46-s2 at 5,000 s: the bed clamp lifted the camera 396 times
+                    // in 360 frames and the last frames skimmed the sand). Sampled every five
+                    // degrees; the ring shrinks until every sample's floor is two metres and the
+                    // clearance below the eye, and never under twenty metres.
+                    float asked = _distance;
+                    float eyeY = _centre.y + _distance * Mathf.Sin(_elevation);
+                    while (_distance > 20f && !RingClearsTheBed(eyeY)) _distance -= 2f;
+                    if (_distance < asked)
+                    {
+                        ring = string.Format(CultureInfo.InvariantCulture,
+                            ", ring shrunk from {0:0.##} to {1:0.##} m to clear the bed", asked, _distance);
+                    }
+
+                    // The owner's rule: nothing moves faster than a body swims. The arc's peak
+                    // speed is capped at half a metre a second, which at the tank's radius is a
+                    // few degrees of turn a minute; the film says what it turned.
+                    float peakPerTurn = 2f * Mathf.PI * _distance * Mathf.Cos(_elevation) / _seconds / (1f - EaseShare);
+                    float allowed = peakPerTurn > 1e-6f ? OrbitSpeedCeiling / peakPerTurn : turns;
+                    if (_turns > allowed)
+                    {
+                        ring += string.Format(CultureInfo.InvariantCulture,
+                            ", turn cut from {0:0.###} to {1:0.###} for the {2:0.##} m/s ceiling", _turns, allowed, OrbitSpeedCeiling);
+                        _turns = allowed;
+                    }
+                }
 
                 if (drift)
                 {
@@ -1118,10 +1186,10 @@ namespace Evosim.Theatre.EditorTools
                         ? string.Format(CultureInfo.InvariantCulture, "a {0:0.##} m pass, {1:0.###} m/s at its peak",
                             _pass, _pass / _seconds / (1f - EaseShare))
                         : string.Format(CultureInfo.InvariantCulture,
-                            "{0:0.##} turn(s), {3}, {2:0.###} m/s along the arc at its peak",
+                            "{0:0.##} turn(s), {3}, {2:0.###} m/s along the arc at its peak{4}",
                             _turns, _elevation * Mathf.Rad2Deg,
                             _turns * 2f * Mathf.PI * _distance * Mathf.Cos(_elevation) / _seconds / (1f - EaseShare),
-                            tilt));
+                            tilt, ring));
             }
 
             /// <summary>
@@ -1195,12 +1263,27 @@ namespace Evosim.Theatre.EditorTools
 
                 Plan_ = string.Format(CultureInfo.InvariantCulture,
                     "body {0} (reach {1:0.###} m){2}, framed over {3:0.##} m, standoff {4:0.##} m, dolly in {5:0.##} m " +
-                    "({6:0.###} m/s at its peak), following the subject",
+                    "({6:0.###} m/s at its peak), {7}",
                     _subject, reaches[anchor],
                     neighbour >= 0
                         ? string.Format(CultureInfo.InvariantCulture, " and body {0} (reach {1:0.###} m)", ids[neighbour], reaches[neighbour])
                         : ", no neighbour within reach",
-                    framed.size.magnitude, _standoff, _dolly, _dolly / _seconds / (1f - EaseShare));
+                    framed.size.magnitude, _standoff, _dolly, _dolly / _seconds / (1f - EaseShare),
+                    _still ? "held still a quarter further back, no dolly, no follow" : "following the subject");
+            }
+
+            /// <summary>True when every point of the orbit's ring stands over a floor two metres and the clearance below the eye.</summary>
+            private bool RingClearsTheBed(float eyeY)
+            {
+                float horizontal = _distance * Mathf.Cos(_elevation);
+                for (int i = 0; i < 72; i++)
+                {
+                    float theta = i * (2f * Mathf.PI / 72f);
+                    float x = _centre.x + horizontal * Mathf.Cos(theta);
+                    float z = _centre.z + horizontal * Mathf.Sin(theta);
+                    if (_world.FloorAt(x, z) + Clearance + 2f > eyeY) return false;
+                }
+                return true;
             }
 
             /// <summary>The camera at a point of the clip, kept inside the water and off every body.</summary>
@@ -1227,9 +1310,29 @@ namespace Evosim.Theatre.EditorTools
 
                     subject = _followed + _offset;
                     float distance = _standoff - _dolly * Ease(u);
-                    eye = subject - _forward * distance;
-                    rotation = Quaternion.LookRotation(_forward, Vector3.up);
-                    focus = distance;
+
+                    if (_still)
+                    {
+                        // Framed once, a quarter further back than the following shot so the
+                        // subject's drift has room, and never moved: every motion in the clip
+                        // is a creature's or the water's.
+                        if (!_hasStill)
+                        {
+                            _stillEye = subject - _forward * (1.25f * _standoff);
+                            _stillRotation = Quaternion.LookRotation(_forward, Vector3.up);
+                            _hasStill = true;
+                        }
+
+                        eye = _stillEye;
+                        rotation = _stillRotation;
+                        focus = 1.25f * _standoff;
+                    }
+                    else
+                    {
+                        eye = subject - _forward * distance;
+                        rotation = Quaternion.LookRotation(_forward, Vector3.up);
+                        focus = distance;
+                    }
                 }
                 else if (Name == "drift")
                 {
@@ -1250,7 +1353,8 @@ namespace Evosim.Theatre.EditorTools
                     eye = _centre + _distance * new Vector3(
                         Mathf.Cos(_elevation) * Mathf.Cos(theta), Mathf.Sin(_elevation),
                         Mathf.Cos(_elevation) * Mathf.Sin(theta));
-                    rotation = Quaternion.LookRotation(_centre - eye, Vector3.up);
+                    subject = _centre - Vector3.up * (_distance * Mathf.Tan(_aimDown));
+                    rotation = Quaternion.LookRotation(subject - eye, Vector3.up);
                     focus = 0f;
                 }
 
