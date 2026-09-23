@@ -1222,8 +1222,8 @@ actually verifying it.
   in 141 fields at 300 samples with the lineage byte-equal. **A part's size is unbounded
   above** (`MaxPartVolume` is a million cubic metres and thin sheets never reach it), so a
   self-copying leaf whose edge scale mutates above 1 grows geometrically once the module
-  gene lets it copy past its recursive limit; the bound is a world rule in front of the
-  owner (`fable-propose-body-reach.md`). **The checkpoint writer refused a body that was a
+  gene lets it copy past its recursive limit; the owner ruled no bound (D107, 2026-09-22
+  night): the price is to bound it, the support cost of the next base round's proposal. **The checkpoint writer refused a body that was a
   copy of its adult at scale exactly 1** (round 45's first launch, three seeds within
   7,000 s): a volume fraction within a float's rounding of 1 has a cube root of exactly
   1f, and `Grow`, `AtTheSameFraction` and the newborn's scaling all built a copy that read
