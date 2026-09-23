@@ -454,6 +454,30 @@ namespace Evosim.Core
         [Tunable("world", Unit = "W/m2/m2")]
         public float SupportWattsPerSquareMetrePerSquareMetre { get; set; }
 
+        /// <summary>
+        /// Whether the farm's contact puts a sphere on every part rather than one on the whole
+        /// body — D114, 2026-09-23, <c>logbook/specs/per-part-contact-spec.md</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// With it off a body touches the world with one bounding sphere centred on its root and
+        /// reaching its farthest part, so a fan of seven leaves is a ball twenty metres across to
+        /// every neighbour, and the mouth's <c>NearestParts</c> finds the touching parts by a
+        /// search after the fact. With it on each part carries its own sphere, the push acts pair
+        /// by pair between parts on the part it touches, and the overlap list hands the mouth the
+        /// part that touched. A one-part body is the same body under both models to the bit.
+        /// </para>
+        /// <para>
+        /// <b>Off by default, so every recorded world replays</b>, and off it adds no float to the
+        /// solver's path: the per-part spheres are never allocated. It is a tunable rather than an
+        /// engine version so that the run's config says which contact ran. Only the farm binds it
+        /// (<c>EVOSIM_CONTACT_PER_PART</c>); the Unity farm's contact is PhysX's colliders and
+        /// ignores it.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public bool ContactPerPart { get; set; }
+
         /// <summary>How deep the world is, metres — DESIGN.md §5A.2c.</summary>
         /// <remarks>
         /// <b>The world's first vertical bound, and it exists because detritus has to land

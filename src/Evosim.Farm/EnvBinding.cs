@@ -256,6 +256,9 @@ namespace Evosim.Farm
             Num("EVOSIM_PRICE_PROTECTION", D.ProtectionWattsPerUnit, (s, v) => s.PriceProtection = v),
             Num("EVOSIM_PRICE_TOUGHNESS", D.ToughnessWattsPerUnit, (s, v) => s.PriceToughness = v),
             Num("EVOSIM_ATTRIBUTE_MUT", MutationRates.Default.AttributeMutationChance, (s, v) => s.AttributeMutation = v),
+
+            // D114: a contact sphere on every part rather than one a body. Off is the recorded world.
+            Flag("EVOSIM_CONTACT_PER_PART", (s, v) => s.ContactPerPart = v),
             Num("EVOSIM_NEUTRAL_VOLUME", 0f, (s, v) => s.NeutralVolume = v),
             Num("EVOSIM_FOUNDER_DEPTH", D.FounderDepthSpread, (s, v) => s.FounderDepth = v),
             Num("EVOSIM_MATTER_INITIAL", 1f, (s, v) => s.InitialMatter = v),
@@ -570,6 +573,7 @@ namespace Evosim.Farm
             config.ProtectionWattsPerUnit = s.PriceProtection;
             config.ToughnessWattsPerUnit = s.PriceToughness;
             config.Mutation.AttributeMutationChance = s.AttributeMutation;
+            config.ContactPerPart = s.ContactPerPart;
 
             config.InoculateAtSeconds = s.InoculateAt;
             config.InoculateCount = s.InoculateCount;
@@ -938,6 +942,7 @@ namespace Evosim.Farm
         public float PriceProtection;
         public float PriceToughness;
         public float AttributeMutation;
+        public bool ContactPerPart;
         public float NeutralVolume;
         public float FounderDepth;
         public float InitialMatter;

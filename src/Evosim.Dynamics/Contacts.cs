@@ -73,6 +73,7 @@ namespace Evosim.Dynamics
         {
             _creatures = creatures;
             _count = creatures.Count;
+            _perPart = false;
 
             if (_count == 0) return;
 
@@ -143,8 +144,18 @@ namespace Evosim.Dynamics
 
             Entries = (int)entries;
 
+            Fill(_count);
+        }
+
+        /// <summary>
+        /// The buckets, from the ranges already in <c>_lo</c> and <c>_hi</c> for rows 0 to
+        /// <paramref name="rows"/>: a row is a body under the body sphere and a link under
+        /// per-part contact, and the bucketing does not care which.
+        /// </summary>
+        private void Fill(int rows)
+        {
             int buckets = 1;
-            while (buckets < _count * 2) buckets <<= 1;
+            while (buckets < rows * 2) buckets <<= 1;
             _mask = buckets - 1;
 
             if (_bucketStart.Length < buckets + 1)
@@ -156,7 +167,7 @@ namespace Evosim.Dynamics
 
             Array.Clear(_bucketStart, 0, buckets + 1);
 
-            for (int i = 0; i < _count; i++)
+            for (int i = 0; i < rows; i++)
             {
                 for (int x = _lo[3 * i]; x <= _hi[3 * i]; x++)
                 for (int y = _lo[3 * i + 1]; y <= _hi[3 * i + 1]; y++)
@@ -176,7 +187,7 @@ namespace Evosim.Dynamics
             }
             _bucketStart[buckets] = running;
 
-            for (int i = 0; i < _count; i++)
+            for (int i = 0; i < rows; i++)
             {
                 for (int x = _lo[3 * i]; x <= _hi[3 * i]; x++)
                 for (int y = _lo[3 * i + 1]; y <= _hi[3 * i + 1]; y++)
@@ -185,6 +196,207 @@ namespace Evosim.Dynamics
                     _items[_cursor[Hash(x, y, z) & _mask]++] = i;
                 }
             }
+        }
+
+        // ------------------------------------------------------------ per-part contact, D114
+
+        private bool _perPart;
+        private int _rows;
+        private int[] _rowStart = new int[1];          // a body's first row; count + 1 entries
+        private int[] _rowBody = Array.Empty<int>();   // the body a row belongs to
+        private int[] _rowLink = Array.Empty<int>();   // and which of its links
+
+        /// <summary>Whether the last build entered links rather than bodies.</summary>
+        public bool PerPart => _perPart;
+
+        /// <summary>
+        /// The grid over every active body's link spheres rather than its body sphere — D114,
+        /// <c>logbook/specs/per-part-contact-spec.md</c> section 2.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A row per link, numbered body by body and link by link</b>, so that ascending row
+        /// order is ascending <c>(body, link)</c> order and <see cref="NeighbourLinks"/>'s sort is
+        /// the fixed order the spec asks the sum to be taken in. Every body gets its rows whether
+        /// or not it is active, so a body's first row is a prefix sum of the links before it and
+        /// needs no search; an inactive body's rows are not entered and are never a candidate.
+        /// </para>
+        /// <para>
+        /// <b>The cell is two of the mean link radius</b>, <see cref="Build"/>'s rule read on
+        /// links, with the same floor: a link is smaller than the body it belongs to, so a body's
+        /// queries read fewer cells each and the giant pays for its own parts.
+        /// </para>
+        /// </remarks>
+        public void BuildLinks(IReadOnlyList<Creature> creatures, double cellOverride = 0.0)
+        {
+            _creatures = creatures;
+            _count = creatures.Count;
+            _perPart = true;
+
+            if (_rowStart.Length < _count + 1) _rowStart = new int[_count + 1];
+
+            int rows = 0;
+            for (int b = 0; b < _count; b++)
+            {
+                _rowStart[b] = rows;
+                rows += creatures[b].Links;
+            }
+            _rowStart[_count] = rows;
+            _rows = rows;
+
+            if (_count == 0) return;
+
+            if (_rowBody.Length < rows)
+            {
+                _rowBody = new int[rows];
+                _rowLink = new int[rows];
+            }
+
+            double largest = 0, sum = 0;
+            int active = 0;
+            for (int b = 0; b < _count; b++)
+            {
+                Creature body = creatures[b];
+                int first = _rowStart[b];
+
+                for (int i = 0; i < body.Links; i++)
+                {
+                    _rowBody[first + i] = b;
+                    _rowLink[first + i] = i;
+                }
+
+                if (!body.ContactActive) continue;
+
+                for (int i = 0; i < body.Links; i++)
+                {
+                    double r = body.LinkContactRadius[i];
+                    if (r > largest) largest = r;
+                    sum += r;
+                    active++;
+                }
+            }
+
+            LargestRadius = largest;
+            MeanRadius = active > 0 ? sum / active : 0;
+
+            double rule = MeanRadius > 0.125 ? 2.0 * MeanRadius : 0.25;
+            _cellSize = cellOverride > 0 ? cellOverride : rule;
+
+            if (_lo.Length < 3 * rows)
+            {
+                _lo = new int[3 * rows];
+                _hi = new int[3 * rows];
+            }
+
+            long entries = 0;
+            for (int row = 0; row < rows; row++)
+            {
+                Creature body = creatures[_rowBody[row]];
+
+                if (!body.ContactActive)
+                {
+                    _lo[3 * row] = 1; _hi[3 * row] = 0;
+                    _lo[3 * row + 1] = 1; _hi[3 * row + 1] = 0;
+                    _lo[3 * row + 2] = 1; _hi[3 * row + 2] = 0;
+                    continue;
+                }
+
+                int link = _rowLink[row];
+                double r = body.LinkContactRadius[link];
+                double cx = body.LinkContactCentre[3 * link];
+                double cy = body.LinkContactCentre[3 * link + 1];
+                double cz = body.LinkContactCentre[3 * link + 2];
+
+                int lx = Floor((cx - r) / _cellSize), hx = Floor((cx + r) / _cellSize);
+                int ly = Floor((cy - r) / _cellSize), hy = Floor((cy + r) / _cellSize);
+                int lz = Floor((cz - r) / _cellSize), hz = Floor((cz + r) / _cellSize);
+
+                _lo[3 * row] = lx; _hi[3 * row] = hx;
+                _lo[3 * row + 1] = ly; _hi[3 * row + 1] = hy;
+                _lo[3 * row + 2] = lz; _hi[3 * row + 2] = hz;
+
+                entries += (long)(hx - lx + 1) * (hy - ly + 1) * (hz - lz + 1);
+            }
+
+            if (entries > int.MaxValue / 2)
+            {
+                throw new InvalidOperationException(
+                    FormattableString.Invariant(
+                        $"The contact grid would hold {entries} cell entries for {rows} links ") +
+                    FormattableString.Invariant($"at a cell of {_cellSize:0.###} m: a part's sphere is ") +
+                    "so far out of scale with the crowd's that the grid cannot hold it. A radius " +
+                    "that size is a diverged body, which the divergence check should have taken " +
+                    "out before this step.");
+            }
+
+            Entries = (int)entries;
+
+            Fill(rows);
+        }
+
+        /// <summary>A body's first row under per-part contact; its links follow in order.</summary>
+        public int FirstRow(int body) => _rowStart[body];
+
+        /// <summary>The body a row belongs to, by its index in the world's list.</summary>
+        public int RowBody(int row) => _rowBody[row];
+
+        /// <summary>Which of that body's links a row is.</summary>
+        public int RowLink(int row) => _rowLink[row];
+
+        /// <summary>
+        /// Fills <paramref name="into"/> with every row whose link sphere covers a cell that row
+        /// <paramref name="self"/>'s covers, the rows of <paramref name="self"/>'s own body
+        /// excluded, sorted ascending and each once: the (body, link) candidates of one link.
+        /// </summary>
+        /// <remarks>
+        /// A body's own links never pair: self-contact is not modelled, and D101's stillbirth rule
+        /// is what keeps a folded body out of the world (the spec, section 1).
+        /// </remarks>
+        public int NeighbourLinks(int self, ref int[] into)
+        {
+            if (_rows == 0) return 0;
+
+            int owner = _rowBody[self];
+            int lx = _lo[3 * self], hx = _hi[3 * self];
+            int ly = _lo[3 * self + 1], hy = _hi[3 * self + 1];
+            int lz = _lo[3 * self + 2], hz = _hi[3 * self + 2];
+            int found = 0;
+
+            for (int x = lx; x <= hx; x++)
+            for (int y = ly; y <= hy; y++)
+            for (int z = lz; z <= hz; z++)
+            {
+                int h = Hash(x, y, z) & _mask;
+
+                for (int k = _bucketStart[h]; k < _bucketStart[h + 1]; k++)
+                {
+                    int other = _items[k];
+                    if (_rowBody[other] == owner) continue;
+
+                    if (x < _lo[3 * other] || x > _hi[3 * other] ||
+                        y < _lo[3 * other + 1] || y > _hi[3 * other + 1] ||
+                        z < _lo[3 * other + 2] || z > _hi[3 * other + 2])
+                    {
+                        continue;
+                    }
+
+                    if (found == into.Length) Array.Resize(ref into, into.Length * 2);
+                    into[found++] = other;
+                }
+            }
+
+            if (found < 2) return found;
+
+            Array.Sort(into, 0, found);
+
+            int unique = 1;
+            for (int i = 1; i < found; i++)
+            {
+                if (into[i] == into[unique - 1]) continue;
+                into[unique++] = into[i];
+            }
+
+            return unique;
         }
 
         /// <summary>
@@ -280,6 +492,14 @@ namespace Evosim.Dynamics
         public static void Apply(
             Creature body, int index, ContactGrid grid, SolverConfig config, ref int[] scratch)
         {
+            // D114. A branch and nothing else on the recorded path: below it is the body sphere
+            // exactly as every recorded world ran it.
+            if (config.ContactPerPart)
+            {
+                ApplyPerPart(body, index, grid, config, ref scratch);
+                return;
+            }
+
             Vec3 force = Vec3.Zero;
 
             bool instrument = config.ContactInstrument;
@@ -393,6 +613,166 @@ namespace Evosim.Dynamics
                 for (int i = 0; i < body.Links; i++)
                 {
                     Vec3.Add(body.Fext, 6 * i + 3, force * (body.Mass[i] * scale));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Per-part contact, D114 (<c>logbook/specs/per-part-contact-spec.md</c> section 1): each
+        /// link its own sphere, pushed by each other body's links that overlap it and by the bed
+        /// and the glass, and the push put on that link.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The body sphere's law, read on a link.</b> The same spring and damper, the reduced
+        /// mass taken from the two links' masses rather than the two bodies', and the same two
+        /// bounds: <see cref="ContactLaw.PairPush"/> on each pair and
+        /// <see cref="ContactLaw.BodyPush"/> on each link's total against that link's mass, so no
+        /// pile may change a link's speed by more than the world allows in a step. The spec is
+        /// silent on the second bound; a link is the unit the push now lands on, so it is the unit
+        /// the bound is read on.
+        /// </para>
+        /// <para>
+        /// <b>Applied at the link's origin, into its own <c>Fext</c> row, with no torque</b>,
+        /// because the sphere is centred there. The solver carries it through the joints from
+        /// there, which is the point: a leaf struck at its tip turns the body about its root
+        /// rather than sliding the whole body sideways. The body sphere spread its force over the
+        /// links by mass for the opposite reason, that a whole-body approximation should strain no
+        /// joint (the remarks in <see cref="Apply"/>). A one-link body keeps that spread's
+        /// arithmetic, <c>F (m (1/m))</c>, which is 1 to within an ulp, so that it is the recorded
+        /// body to the bit.
+        /// </para>
+        /// <para>
+        /// <b>A fixed order, so the thread count stays invisible.</b> Links in index order, and
+        /// for each the grid's candidates in ascending (body, link) order; everything read is the
+        /// committed spheres, frozen before the parallel phase, and everything written is this
+        /// body's own.
+        /// </para>
+        /// </remarks>
+        private static void ApplyPerPart(
+            Creature body, int index, ContactGrid grid, SolverConfig config, ref int[] scratch)
+        {
+            if (!grid.PerPart || !body.LinkContactActive)
+            {
+                throw new InvalidOperationException(
+                    "Per-part contact was asked of a grid built over body spheres, or of a body " +
+                    "built without link spheres. Both are set from SolverConfig.ContactPerPart, " +
+                    "which has to be set before the first creature is built and not changed after.");
+            }
+
+            bool instrument = config.ContactInstrument;
+            if (instrument) body.BeginContactStep();
+
+            int first = grid.FirstRow(index);
+
+            for (int i = 0; i < body.Links; i++)
+            {
+                Vec3 centre = Vec3.Read(body.LinkContactCentre, 3 * i);
+                double radius = body.LinkContactRadius[i];
+                Vec3 velocity = Vec3.Read(body.LinkContactVelocity, 3 * i);
+                double mass = body.Mass[i];
+
+                Vec3 force = Vec3.Zero;
+
+                if (config.CreatureContact)
+                {
+                    int n = grid.NeighbourLinks(first + i, ref scratch);
+                    for (int k = 0; k < n; k++)
+                    {
+                        int row = scratch[k];
+                        Creature other = grid.At(grid.RowBody(row));
+                        if (!other.ContactActive) continue;
+
+                        int j = grid.RowLink(row);
+
+                        Vec3 between = centre - Vec3.Read(other.LinkContactCentre, 3 * j);
+                        double distance = between.Magnitude;
+                        double penetration = radius + other.LinkContactRadius[j] - distance;
+                        if (penetration <= 0) continue;
+
+                        if (instrument) body.NoteOverlapPart(other.Id, i, j);
+
+                        Vec3 normal = distance > 1e-9
+                            ? between * (1.0 / distance)
+                            : Vec3.UnitY;
+
+                        double otherMass = other.Mass[j];
+                        double reduced = mass * otherMass / (mass + otherMass);
+
+                        double stiffness = reduced * config.ContactOmega * config.ContactOmega;
+                        double damping = 2.0 * config.ContactDampingRatio * reduced * config.ContactOmega;
+
+                        double approach = Vec3.Dot(
+                            velocity - Vec3.Read(other.LinkContactVelocity, 3 * j), normal);
+
+                        force += normal * ContactLaw.PairPush(
+                            stiffness * penetration - damping * approach,
+                            reduced, approach, config);
+                    }
+                }
+
+                double bedStiffness = mass * config.ContactOmega * config.ContactOmega;
+                double bedDamping = 2.0 * config.ContactDampingRatio * mass * config.ContactOmega;
+
+                // The bed, on this link's sphere: the flat slab, or the height map's surface.
+                if (config.Bed == null)
+                {
+                    double below = -config.WorldDepthMetres - (centre.Y - radius);
+                    if (below > 0)
+                    {
+                        double up = ContactLaw.PairPush(
+                            bedStiffness * below - bedDamping * velocity.Y,
+                            mass, velocity.Y, config);
+
+                        force += new Vec3(0, up, 0);
+
+                        if (instrument) body.TouchedBedOrGlass = true;
+                    }
+                }
+                else
+                {
+                    Vec3 rock = ContactBed.Push(
+                        centre, radius, velocity, mass, config, bedStiffness, bedDamping);
+
+                    if (rock.X != 0 || rock.Y != 0 || rock.Z != 0)
+                    {
+                        force += rock;
+                        if (instrument) body.TouchedBedOrGlass = true;
+                    }
+                }
+
+                // The glass, on this link's sphere.
+                if (config.TankRadiusMetres > 0)
+                {
+                    double x = centre.X - config.TankAxisX;
+                    double z = centre.Z - config.TankAxisZ;
+                    double radial = System.Math.Sqrt(x * x + z * z);
+                    double outside = radial + radius - config.TankRadiusMetres;
+
+                    if (outside > 0)
+                    {
+                        Vec3 inward = radial > 1e-9
+                            ? new Vec3(-x / radial, 0, -z / radial)
+                            : Vec3.UnitX;
+
+                        double approach = Vec3.Dot(velocity, inward);
+
+                        force += inward * ContactLaw.PairPush(
+                            bedStiffness * outside - bedDamping * approach, mass, approach, config);
+
+                        if (instrument) body.TouchedBedOrGlass = true;
+                    }
+                }
+
+                force = ContactLaw.BodyPush(force, mass, config);
+
+                if (force.X != 0 || force.Y != 0 || force.Z != 0)
+                {
+                    Vec3 applied = body.Links == 1
+                        ? force * (body.Mass[0] * (1.0 / body.TotalMass))
+                        : force;
+
+                    Vec3.Add(body.Fext, 6 * i + 3, applied);
                 }
             }
         }

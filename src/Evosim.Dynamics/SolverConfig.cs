@@ -163,6 +163,19 @@ namespace Evosim.Dynamics
         /// <summary>Whether creature-creature pushes act at all.</summary>
         public bool CreatureContact = true;
 
+        /// <summary>
+        /// Whether every link carries its own contact sphere — D114,
+        /// <c>logbook/specs/per-part-contact-spec.md</c>. <c>RunConfig.ContactPerPart</c>.
+        /// </summary>
+        /// <remarks>
+        /// Off is the recorded contact, one sphere a body, and takes the recorded arithmetic path
+        /// with nothing added to it. On, <see cref="Contacts"/> pushes link against link with the
+        /// two links' reduced mass, applies each push on its own link, and reads the bed and the
+        /// glass against each link's sphere. Read at a body's construction, so it is set before
+        /// the first creature is built and never changed after.
+        /// </remarks>
+        public bool ContactPerPart;
+
         // ---- sensors
 
         public double FlowFullScaleMetresPerSecond = 0.3;
@@ -229,6 +242,7 @@ namespace Evosim.Dynamics
                 SurfaceRestoringFraction = fluid.SurfaceRestoringFraction,
                 WaterHoldSeconds = fluid.WaterHoldSeconds,
                 BuoyancyOffsetTorque = config.BuoyancyOffsetWattsPerCubicMetre > 0f,
+                ContactPerPart = config.ContactPerPart,
 
                 WorldDepthMetres = config.WorldDepthMetres,
                 FloorIsSolid = config.SharedSpace,

@@ -270,6 +270,28 @@ namespace Evosim.Dynamics
         private Vec3 _pendingVelocity;
         private bool _pendingActive = true;
 
+        // Per-part contact, D114 (logbook/specs/per-part-contact-spec.md): a sphere on every link,
+        // committed and pending exactly as the body's is and for the same reason. Null unless the
+        // world asked for it, so a recorded world's body carries nothing new and its path adds no
+        // float. The body's own sphere stays either way: the placer, Volume.Note and the
+        // divergence check read it.
+
+        /// <summary>Each link's sphere centre as of the last commit, 3 per link; null unless per-part.</summary>
+        public double[] LinkContactCentre;
+
+        /// <summary>Each link's sphere radius, metres, as of the last commit; 0 on a lost body.</summary>
+        public double[] LinkContactRadius;
+
+        /// <summary>Each link's velocity as of the last commit, 3 per link, for the damper.</summary>
+        public double[] LinkContactVelocity;
+
+        private double[] _pendingLinkCentre;
+        private double[] _pendingLinkRadius;
+        private double[] _pendingLinkVelocity;
+
+        /// <summary>Whether this body carries a contact sphere per link — the world's D114 switch.</summary>
+        public bool LinkContactActive => LinkContactRadius != null;
+
         /// <summary>Total mass of the body, kg — the contact spring is scaled by it.</summary>
         public double TotalMass { get; private set; }
 
@@ -396,6 +418,16 @@ namespace Evosim.Dynamics
             BasePosition = ToVec(phenotype.Parts[0].Position);
             BaseRotation = QuatD.From(phenotype.Parts[0].Rotation);
 
+            if (config.ContactPerPart)
+            {
+                LinkContactCentre = new double[3 * Links];
+                LinkContactRadius = new double[Links];
+                LinkContactVelocity = new double[3 * Links];
+                _pendingLinkCentre = new double[3 * Links];
+                _pendingLinkRadius = new double[Links];
+                _pendingLinkVelocity = new double[3 * Links];
+            }
+
             Kinematics.Refresh(this);
             RefreshContactSphere();
             CommitContactSphere();
@@ -469,6 +501,44 @@ namespace Evosim.Dynamics
             _pendingRadius = radius;
             _pendingVelocity = TotalMass > 0 ? momentum * (1.0 / TotalMass) : Vec3.Zero;
             _pendingActive = Alive;
+
+            if (_pendingLinkRadius != null) RefreshLinkSpheres();
+        }
+
+        /// <summary>
+        /// Each link's sphere, from the poses as they now stand: centred on the link's own origin,
+        /// which is its centre of mass, with <see cref="LinkReach"/> for a radius and the link's
+        /// own velocity for the damper. D114.
+        /// </summary>
+        /// <remarks>
+        /// <b>A one-link body's link sphere is its body sphere, copied rather than recomputed.</b>
+        /// The two are the same sphere, and the body's velocity is its momentum over its mass,
+        /// <c>(v m)(1/m)</c>, which can sit an ulp from <c>v</c>. Copying is what makes a crowd of
+        /// one-part bodies the recorded crowd to the bit under either model, which is the spec's
+        /// first acceptance (section 1).
+        /// </remarks>
+        private void RefreshLinkSpheres()
+        {
+            if (Links == 1)
+            {
+                Vec3.Write(_pendingLinkCentre, 0, _pendingCentre);
+                _pendingLinkRadius[0] = _pendingRadius;
+                Vec3.Write(_pendingLinkVelocity, 0, _pendingVelocity);
+                return;
+            }
+
+            double[] reach = LinkReach;
+
+            for (int i = 0; i < Links; i++)
+            {
+                _pendingLinkCentre[3 * i] = Position[3 * i];
+                _pendingLinkCentre[3 * i + 1] = Position[3 * i + 1];
+                _pendingLinkCentre[3 * i + 2] = Position[3 * i + 2];
+                _pendingLinkRadius[i] = reach[i];
+                _pendingLinkVelocity[3 * i] = Velocity[3 * i];
+                _pendingLinkVelocity[3 * i + 1] = Velocity[3 * i + 1];
+                _pendingLinkVelocity[3 * i + 2] = Velocity[3 * i + 2];
+            }
         }
 
         /// <summary>Takes a body the solver has lost out of everyone else's contact set.</summary>
@@ -476,6 +546,8 @@ namespace Evosim.Dynamics
         {
             _pendingActive = false;
             _pendingRadius = 0;
+
+            if (_pendingLinkRadius != null) Array.Clear(_pendingLinkRadius, 0, Links);
         }
 
         /// <summary>Makes this step's sphere the one other bodies will read. Serial, between steps.</summary>
@@ -485,6 +557,35 @@ namespace Evosim.Dynamics
             ContactRadius = _pendingRadius;
             ContactVelocity = _pendingVelocity;
             ContactActive = _pendingActive;
+
+            if (_pendingLinkRadius != null)
+            {
+                Array.Copy(_pendingLinkCentre, LinkContactCentre, 3 * Links);
+                Array.Copy(_pendingLinkRadius, LinkContactRadius, Links);
+                Array.Copy(_pendingLinkVelocity, LinkContactVelocity, 3 * Links);
+            }
+        }
+
+        /// <summary>
+        /// Rebuilds the per-link spheres after a checkpoint restore, pending and committed.
+        /// </summary>
+        /// <remarks>
+        /// <b>Derived rather than written, so the checkpoint's layout does not move.</b> Between
+        /// steps the committed link spheres are exactly what <see cref="RefreshLinkSpheres"/> makes
+        /// of the poses, the velocities and the body's own pending sphere, all of which the
+        /// checkpoint holds; a lost body's are zero-radius. Writing them down would bump
+        /// <c>StateVersion</c> and orphan every checkpoint on disk for no information.
+        /// </remarks>
+        internal void RestoreLinkSpheres()
+        {
+            if (_pendingLinkRadius == null) return;
+
+            RefreshLinkSpheres();
+            if (!_pendingActive) Array.Clear(_pendingLinkRadius, 0, Links);
+
+            Array.Copy(_pendingLinkCentre, LinkContactCentre, 3 * Links);
+            Array.Copy(_pendingLinkRadius, LinkContactRadius, Links);
+            Array.Copy(_pendingLinkVelocity, LinkContactVelocity, 3 * Links);
         }
 
         /// <summary>Half the diagonal of each link's own extent, metres — the sphere's padding.</summary>

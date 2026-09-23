@@ -380,6 +380,9 @@ namespace Evosim.Farm
             "DragForce", "DragTorque", "DriveTorque", "LimitImplicit",
             "_preVelocity", "_preSpin", "_preRelativeSpin", "_preJointRate", "_passiveTorque",
             "DriveSignal", "_overlapIds", "_overlapCount", "_heldIds", "AppliedTorque",
+
+            // D114's link pair beside each overlap id: the same step's list, filled with it.
+            "_overlapParts",
             "<PartContact>k__BackingField",
             "<PartExposure>k__BackingField", "<UpInBody>k__BackingField",
         };

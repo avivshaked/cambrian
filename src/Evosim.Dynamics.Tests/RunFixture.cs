@@ -205,25 +205,36 @@ namespace Evosim.Dynamics.Tests
         /// instrument's own test, which needs overlaps to count.
         /// </para>
         /// </remarks>
+        /// <param name="config">
+        /// The world to scatter into, or null for the recording's own. Handed in by a test whose
+        /// build refuses the recording's config (<see cref="Why"/>) and reads it with the missing
+        /// tunable supplied — D114's crowd test, <c>PerPartContactTests</c>.
+        /// </param>
+        /// <param name="bodies">The bodies to scatter, or null for <see cref="Bodies"/>.</param>
         public static DynamicsWorld Scatter(
             SolverConfig solver, int count, int threads, ulong seed = 4242424242,
-            double drop = 10.0, bool crowd = false)
+            double drop = 10.0, bool crowd = false,
+            RunConfig config = null, IReadOnlyList<Phenotype> bodies = null)
         {
+            RunConfig run = config ?? Config;
+            IReadOnlyList<Phenotype> pool = bodies ?? Bodies;
+
             var world = new DynamicsWorld(solver) { Threads = threads };
-            var floor = new PlacementFloor(Config.WorldDepthMetres, solver.Bed);
+            var floor = new PlacementFloor(run.WorldDepthMetres, solver.Bed);
             var rng = new Rng(seed);
 
-            double axis = TankRadius;
+            double tank = TankGeometry.RadiusFor(run.WorldAreaSquareMetres);
+            double axis = tank;
 
             // Inside the glass with room: the placer keeps a body's whole sphere in the water,
             // and a body started outside it would be a test of the wall's push and not of the
             // bed's.
-            double reach = TankRadius - 2.0;
+            double reach = tank - 2.0;
 
             for (int i = 0; i < count; i++)
             {
-                Phenotype adult = Bodies[i % Bodies.Count];
-                var body = new Creature(i, adult, solver, Config.Shapes);
+                Phenotype adult = pool[i % pool.Count];
+                var body = new Creature(i, adult, solver, run.Shapes);
 
                 for (int draw = 0; ; draw++)
                 {

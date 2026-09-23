@@ -19,6 +19,11 @@ resolves a name, not a measurement -- the two counts never compare across the ch
         print(note(subject='this run'))
         SAID.clear()
 
+`contact_model` says which contact a run's overlap numbers came from (D114, 2026-09-23):
+the body sphere, one bounding sphere a body, or per-part contact, a sphere on every part, under
+which the same columns count pairs of bodies touching part to part. The two models' counts do
+not compare either, and a read that prints an overlap number prints `model_note` beside it.
+
 `field` and `note`/`SAID` are for stats.jsonl rows (plain dicts). `COLUMN_ALIASES` is
 the same four pairs for a run report's markdown table column names, for a script that
 parses `runs/<arm>.md` directly instead of `stats.jsonl` (analyse-arm.ps1's own
@@ -90,3 +95,42 @@ def note(subject='this report'):
     return (f'{subject} names them differently: ' +
             '; '.join(f'{k} read as {v}' for k, v in sorted(SAID.items())) +
             ' -- a different census, not the same number')
+
+
+# D114's two contact models. The report's settings line carries `contact per part` or
+# `contact per body`; config.json carries world.contactPerPart. A farm run from before the
+# token has neither and ran the body sphere, the only contact there was; a Unity run is PhysX's
+# colliders and is neither model.
+PER_PART = 'contact per part'
+PER_BODY = 'contact per body'
+
+
+def contact_model(header_line=None, config=None):
+    """PER_PART or PER_BODY for a farm run, from its settings line or its config.json dict.
+
+    Either argument will do; the header wins when both are given. Returns None when neither
+    says (a Unity report, or nothing handed in) -- a farm header written before the token
+    (it starts `engine=dynamics`) is PER_BODY.
+    """
+    if header_line:
+        if ' contact per part ' in header_line:
+            return PER_PART
+        if ' contact per body ' in header_line:
+            return PER_BODY
+        if header_line.startswith('engine=dynamics'):
+            return PER_BODY
+    if config is not None:
+        world = config.get('world', {}) if isinstance(config, dict) else {}
+        if 'contactPerPart' in world:
+            return PER_PART if world['contactPerPart'] else PER_BODY
+    return None
+
+
+def model_note(header_line=None, config=None, subject='this run'):
+    """The one line to print beside an overlap number, or None when the model is unknown."""
+    model = contact_model(header_line, config)
+    if model is None:
+        return None
+    what = ('a sphere on every part (D114)' if model == PER_PART else 'one sphere a body')
+    return (f"{subject}'s overlap columns: {model}, {what} -- the two models' counts "
+            "do not compare")
