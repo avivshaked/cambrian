@@ -601,15 +601,18 @@ subagent and never in a shell loop.
    1.05 million cells at about 0.13 s per simulated second whatever the crowd, which caps
    that tank near 8x real time on its own), and the per-body CPU pass. The card alone gives
    10,000 bodies at perhaps 3 to 5x; ~10x needs all three: the solver on the card, the snow
-   grid at 2 m cells for the large tank (a screen, between rounds) or the transport on the
+   grid at coarser cells for the large tank (a screen, between rounds; 2.5 m or 3 m, since a
+   tank refuses a cell its 45 m depth is not a whole number of, so 2 m is out; the command is
+   `run-farm.ps1 -Launcher rounds/env-r45.ps1` with `EVOSIM_FIELD_CELL` overridden, the
+   snow's explicit-diffusion bound trivially met at 0.02 m²/s) or the transport on the
    card, and the per-body pass parallel. During round 45, the CPU-side pieces that need no
-   clean machine: the full-step kernel design (brain and senses), the serial water pass
-   cheapened without moving a bit, the 2 m cell screen prepared. The trigger to move it
+   clean machine: the full-step kernel design (brain and senses; the step inventory it is
+   built from is being taken, `scratch/gpu-design/`), and the serial water pass cheapened
+   without moving a bit (done, `c6cbba8`). The trigger to move it
    earlier: a seed filling to 10,000 and falling under 1x real time.
-7. **Loose ends.** Double accounts in Core for the matter residual (a new realisation of
-   every seed, so between rounds and pre-registered). `ParallelIdentityTests` (50 s) kept
-   or moved to Slow. The overlap probe's `run.ps1` taking its path argument. Close pictures
-   beside the whole-tank views in every entry. DESIGN §11.1 and the ArticulationBody
+7. **Loose ends.** Double accounts in Core for the matter residual (done, `0c19f0d`).
+   `ParallelIdentityTests` is `Slow` and the overlap probe's `run.ps1` takes `-Snapshots`
+   (both done). Close pictures beside the whole-tank views in every entry. DESIGN §11.1 and the ArticulationBody
    decision superseded in DESIGN once the own-solver proposal is ruled.
 
 
