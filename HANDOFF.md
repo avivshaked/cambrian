@@ -146,11 +146,14 @@ merged from a worktree; the giant nets −90 W at the code's lit area, `support-
 §7). Per-part contact is merged (`6ae0482`; the body phase 19% dearer at 8 threads,
 `per-part-contact-spec.md` §6), and a 3,000 s dt 0.02 screen of round 45's world with the
 support cost at 0.1 and contact per part (`r46price-s1`, 15:24) is the two rules' books
-check. The trickle and the food rule are being built in a worktree
-(`logbook/specs/founding-trickle-spec.md`). Then: the fixtures re-recorded once for every
-tunable (`StateVersion` 8 refuses every checkpoint; the crowd fixture and the r42 config
-refuse the beach's fields), `--verify-checkpoint` with contact per part, the ledger screens,
-the prereg as 0116, the launch.
+check. The trickle and the food rule are merged (`3f48f6f`, `founding-trickle-spec.md` §5;
+`StateVersion` 9, `Checkpoint.Version` 4), so **every rule of round 46 is on main**, and the
+full-build regress of the crowd fixture's world with every new tunable at its default
+(`r46allreg-s4`) is the last identity check before the fixtures are re-recorded once for
+all of them: the r42 config (`fixtures/r42-config.json`, the Farm hash `53802564a815df27`
+and `ReportTests`' line), the Dynamics crowd (a 20,000 s `r46fixc-s4` of round 44's world),
+ckA/ckB/ckC and `ckUi`; then `--verify-checkpoint` with contact per part, the ledger
+screens, the prereg as 0116, the launch.
 The pre-registration is drafted with the ruled values in brackets
 (`logbook/specs/r46-prereg-draft.md`, K1 to K10: the crowd lies down, the offset is the way,
 the second founding founds a line, the killer on the repaired window, the price stops the

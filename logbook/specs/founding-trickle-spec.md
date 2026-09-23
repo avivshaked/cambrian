@@ -79,3 +79,26 @@ founder with a stomach leaves an inherited consumer line (`ink` inherited on a b
 parent's source is the trickle), which is the pre-registration's K3 in its new form; and
 whether the crowd's evolution is contaminated (the inherited columns against the founders'
 share of births, under 5%).
+
+## 5. As built (2026-09-23 evening, an Opus subagent in a worktree, merged at `3f48f6f`)
+
+Sections 1 to 3 as written, with 25 tests: eleven for the trickle (the draw at 1/30 gives
+1,006, 1,024 and 1,007 founders over 30,000 s for seeds 1 to 3, never more than two a step,
+and repeats; the stream is not drawn at rate 0; a trickle founder is booked as influx to
+1e-9 and its row reads `k: "f", src: "trickle"`; both books close under a trickle of 0.2 a
+second over 3,000 s; the floor closes as before; a world emptied by hand is refounded with
+the trickle on and stays empty with it off; the refusals), five for the food rule (a stomach
+lands on the snow 8.3 to 1, a leaf on the matter 8.9 to 1, a mixotroph about evenly, bare
+tissue anywhere; under D109 the acceptance equals the old arithmetic exactly for every body),
+and nine in the farm (the `extinct` decision under each setting; `EVOSIM_TRICKLE` as a number
+or `1/N`; the tokens and the column). Eight departures. `WorldState.StateVersion` is 9 and
+`Checkpoint.Version` 4, because a resume that did not carry the trickle's generator and its
+count would redraw founders the unbroken run had drawn. The `trickle` column is appended at
+the table's end, not beside `floor`. A rate above 0 with a floor that never closes is
+refused rather than left inert, and the food rule off a grid is refused where D109's did
+nothing. The rate·dt bound is checked at the setter against the half-second step and again at
+`EnforceTrickle`. `MaxColumnStock` is recomputed for every candidate spot as D109's was, a
+full pass over the 1 m snow grid, milliseconds at one founder per 30 s and not timed.
+`EVOSIM_TRICKLE=1/30` is read as `1f/30`, so a decimal spelling hashes the same only if it
+parses to that float; the header prints `1/30 s` either way. And the Unity farm binds
+neither variable; its founder rows carry `src: "floor"` from this build.
