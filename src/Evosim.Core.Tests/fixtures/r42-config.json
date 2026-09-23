@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "c27e2b01db83f457",
+  "configHash": "5062a25baa35c6e1",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -9,6 +9,8 @@
   "bed": {
     "bedReliefMetres": 1.5,
     "bedScaleMetres": 0,
+    "bedShoreDepthMetres": 0,
+    "bedShoreFadeMetres": 0,
     "bedTiltMetres": 30
   },
   "current": {
@@ -65,7 +67,7 @@
     "panelsPerAxis": 2,
     "surfaceRestoringFraction": 1,
     "tissueExcessDensity": 0.02,
-    "waterHoldSeconds": 0
+    "waterHoldSeconds": 0.5
   },
   "genome": {
     "bodyCellTypes": [
@@ -201,6 +203,7 @@
     "floorSpawnsPerStep": 2,
     "founderDepthSpread": 45,
     "founderEnergyJoules": 200,
+    "foundingTricklePerSecond": 0,
     "maximumPopulation": 8000,
     "maximumTissueJoules": 0,
     "minimumPopulation": 40,
@@ -226,7 +229,9 @@
   "world": {
     "buoyancyOffsetWattsPerCubicMetre": 0,
     "conceptionOrder": "Age",
+    "contactPerPart": false,
     "floorRefugeMetres": 0,
+    "foundersFollowFood": false,
     "foundersFollowMatter": false,
     "handlingCostPerJouleEaten": 0.1,
     "initialMatterPerCubicMetre": 1,
@@ -252,6 +257,7 @@
     "reserveCapSeconds": 0,
     "senescenceDoublingSeconds": 3000,
     "sharedSpace": true,
+    "supportWattsPerSquareMetrePerSquareMetre": 0,
     "uptakeHalfSaturation": 0.05,
     "uptakeRatePerSquareMetre": 0.3,
     "worldAreaSquareMetres": 2200,

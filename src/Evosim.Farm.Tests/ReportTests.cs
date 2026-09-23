@@ -134,8 +134,8 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 // 5a456a9e7b2518d3, and D111's buoyancy offset price under this.
                 .Replace(
                     " · configHash ",
-                    " · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + " · configHash ")
-                .Replace("`ff557bce2685293a`", "`5e9da13fa5ab246a`");
+                    " · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + ContactToken + " · configHash ")
+                .Replace("`ff557bce2685293a`", "`5062a25baa35c6e1`");
 
             Assert.Equal(expected, Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9"));
         }
@@ -165,7 +165,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             // D106's, last before the hash and all at their defaults: a reader verifying an arm
             // has to be able to see from the header alone that the module gene is off and that
             // nothing bites, eats, heals or is charged for an attribute.
-            Assert.Contains(" · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + " · configHash", line);
+            Assert.Contains(" · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + ContactToken + " · configHash", line);
 
             // The reach bound, off: a reader has to see from the header that no body was cut.
             Assert.Contains(" · selfOverlap 0.1 · reach off · ", line);
@@ -175,7 +175,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             Assert.Contains(" · reach off · matter uniform · founders anywhere · shade off · ", line);
             Assert.Contains(" · matter-mix 2 m2/s · area 2200 m2 · ", line);
 
-            Assert.EndsWith(" · configHash `5e9da13fa5ab246a`", line);
+            Assert.EndsWith(" · configHash `5062a25baa35c6e1`", line);
 
             // D110, off: the light is the orientation average, printed beside the cap.
             Assert.Contains(" · silhouette on · light averaged · ", line);
@@ -292,6 +292,8 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
         /// <summary>D113's header token at the recorded world's price, after the mouth's.</summary>
         private const string SupportToken = " · support off";
+        // D114: after the support price and before the hash, the model the census counted under.
+        private const string ContactToken = " · contact per body";
 
         /// <summary>
         /// The recorded table's header row, column for column but for the four that were renamed
