@@ -1363,6 +1363,46 @@ actually verifying it.
   the loss. The farm's own digest at 1 and N threads is one compilation and does not see
   this; a digest compared across the CPU and the card, or across two builds, hashes a lost
   body's NaNs as one pattern or leaves lost bodies out.
+- **From round 46's build (2026-09-23) seven tunables and a genome field land together, and
+  every config and checkpoint written before them is refused.** The beach
+  (`RunConfig.BedShoreDepthMetres` and `BedShoreFadeMetres`, `EVOSIM_BED_SHORE` and
+  `EVOSIM_BED_SHORE_FADE`, header `shore 1 m fade 15 m` after the tilt; refused without a
+  fade, at or past the depth, or in a box; `logbook/specs/beach-spec.md`), the support cost
+  (`EVOSIM_SUPPORT`, header `support 0.1 W/m2/m2`), contact per part
+  (`EVOSIM_CONTACT_PER_PART`, header `contact per part` before the hash), the trickle
+  (`EVOSIM_TRICKLE` as a number or `1/N`, header `trickle 1/30 s` after the floor token),
+  founders in their food (`EVOSIM_FOUNDERS_FOLLOW_FOOD`, refused beside
+  `EVOSIM_FOUNDERS_FOLLOW_MATTER`, which a launcher that inherits round 45's block has to
+  set to 0), the offset price (`EVOSIM_BUOYANCY_OFFSET_COST`, genome format 8) and light by
+  exposure (`EVOSIM_LIGHT_EXPOSURE`). `WorldState.StateVersion` is 9 and
+  `Checkpoint.Version` 4, so ckA/ckB/ckC, `ckUi` and every checkpoint of rounds 44 and 45
+  are refused; the fixtures are `fixtures/r42-config.json` from `pfix8` (round 42's hash
+  `5062a25baa35c6e1`) and the crowd `runs/r46fixc-s4`. Every rule at its default replays
+  the crowd fixture's world in 145 fields at 300 samples with the positions byte-equal
+  (`r46allreg-s4`), and the lineage differs in one field: every founder row carries `src`
+  (`floor` or `trickle`) from this build, so a byte comparison of lineages across the
+  build is off by that field alone. Three things about the rules bite. **The beach's
+  current is a product, not a clamp**: the streams fade by a quintic in the distance to the
+  shore times a turnover in the depth (`CurrentField.ShoreFade`), because a hard `min(1,
+  d/D)` left a 0.047 m/s velocity shear sheet where the fade met the full depth, so a shore
+  on at any tilt is a new realisation of every seed (deep columns scaled by 1.07 at tilt
+  30) and a shore at 0 is bit-identical; the 5 m matter cells over the shoal are dead and a
+  body there reads the nearest live column inward, up to 11 m. **A world under the trickle
+  never ends `extinct`**: `Program.EndsExtinct` takes the ending only when nobody is alive
+  and no founders are arriving, so an emptied world refounds at the trickle's pace and
+  reads as a crash with a gap in every inherited column; the manifest's ending says which.
+  **Contact per part is dearer**: 2.8 times as many spheres in the grid, the contact phase
+  1.9 times the recorded one on one thread and the body phase 19% more at 8 threads
+  (`per-part-contact-spec.md` §6); a checkpoint rebuilds the link spheres on restore, and
+  `--verify-checkpoint` with the switch on is owed before a resume under it is trusted.
+- **`detritusOnFloor` is a joules total, not a density.** It is `FloorStock`, the refuge
+  stock of patch 0 in joules, and the stomach screens of 2026-09-23 were first read as
+  3.4 J/m³ on the bed with an R0 of 34 from it, which went to the owner before the units
+  were checked; the true floor held 11 J of 79,744 J of snow and the eaters' larder is a
+  thin layer under the plant crowd at about 0.5 J/m³ against a break-even of 0.44
+  (`logbook/specs/stomach-screens.md`). A field total in the stats is joules or units over
+  the whole bin; divide by the bin's live volume before calling it a density, and say which
+  bin.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
