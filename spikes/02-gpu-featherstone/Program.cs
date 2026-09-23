@@ -49,6 +49,10 @@ namespace Gpu.Spike
 
         private static int Main(string[] args)
         {
+            // The third spike's two kernels (spike3/): contacts, then the brain and the senses.
+            if (args.Length > 0 && args[0] == "contact") return Gpu.Spike3.ContactSpike.Run(args[1..]);
+            if (args.Length > 0 && args[0] == "brain") return Gpu.Spike3.BrainSpike.Run(args[1..]);
+
             string run = DefaultRun;
             string snapshot = null;
             int genomeLimit = 2000;

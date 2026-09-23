@@ -1,0 +1,80 @@
+THE CONTACT KERNEL ON THE CARD (spike 3, gpu-full-step-spec.md acceptance item 3), 2026-09-23
+Crowd: round 45 seed 2's snapshot and poses at 30,000 s (runs\r45-s2\2026-09-22-232754-e51997d5),
+6,145 bodies rebuilt from 6,146 genomes, 0 refused, 0 dof mismatches, tank radius 83.6828 m, bed relief.
+Contact constants: omega 20, zeta 1, max separation 1, max dv 1; dt 0.01. Capacities: 256 candidates, 64 overlaps a body.
+Host: 32 logical processors, .NET 8.0.24, server GC. Card: RTX 4090, 128 SMs, SM_89, driver 13.1. ILGPU 1.5.3.
+
+Kernels: memset, mean radius (a fixed tree, or serial as the CPU sums), ranges plus histogram (each sphere
+into every cell it covers), one-group prefix scan, scatter, then the query and push (the candidates are
+sorted and deduplicated as ContactGrid does, then the pair loop, the bed, the glass, the body's cap and the spread to links).
+
+1. TRANSCRIPTION, double on ILGPU's CPU device against the library, 1,000 steps of the moving library world
+   (each query variant checked at every step; 6,145,000 body-steps each)
+   quantity                                  values        mismatches
+   candidate lists (ContactGrid.Neighbours)  39,434,302    0
+   overlap ids (library instrument)           6,226,026    0
+   per-pair push vectors (copy of Apply)        243,078    0
+   pair sums (copy)                          18,435,000    0
+   capped body force (copy)                  18,435,000    0
+   per-link Fext (library Contacts.Apply)    57,030,000    0
+   bed/glass flag (library)                   6,145,000    0
+   TOTAL, global scratch                    145,950,406    0
+   TOTAL, local-memory scratch              145,950,406    0
+   the copy against the library itself       57,030,000    0
+   grid cell over the run 2.335576 .. 2.335631 m; overflow 0 body-steps; CPU-device wall 259 s.
+
+2. SINGLE ON THE CARD
+   identity: two runs each at group 32 and auto, global and local scratch, tree and serial mean: all bit-identical
+   (tree 22946c6237b9a261 at rest, 30d93df7efff9ea0 after 999 steps). Group 32 = auto; global = local.
+   Tree mean against serial mean differs in the cell's last bit only (as expected).
+   deviation from double                     at rest (as recorded)       after 999 library steps
+   candidate lists differing                 0 of 6,145                  0 of 6,145
+   overlap sets differing                    0 bodies                    4 bodies
+   pairs / bodies with a force               650 / 610                   50 / 50
+   body force, relative error                max 4.24e-2, p99 1.60e-2,   max 44.2, median 1.00
+                                             median 3.86e-4
+   body force, absolute error (N)            max 0.385, median 0.0227    max 0.133, median 0.0312
+   error as speed change in one step (m/s)   max 2.85e-5, median 2.87e-6 max 2.12e-5, median 2.99e-6
+   penetration of the overlapping pairs (m)  median 3.69e-3, max 1.11   median 6.87e-4, max 5.56e-3
+   (a float's spacing at 166.5 m is 1.53e-5 m. After 999 steps the pairs are grazing, so the relative error
+   is large on tiny forces; the absolute error and the speed change are the readings that matter.)
+
+3. OCCUPANCY (the crowd at rest, single on the card)
+   N        raw candidates p99/max   unique p99/max   overlaps p99/max   entries   buckets   cells covered a body
+   6,145    53 / 85                  16 / 25          1 / 4              58,602    16,384    mean 9.54, p99 27, max 64
+   10,000   52 / 86                  16 / 27          2 / 2              93,063    32,768    mean 9.31, p99 27, max 64
+   30,000   52 / 105                 16 / 29          2 / 2             274,471    65,536    mean 9.15, p99 27, max 64
+   Overflow at 256 candidates and 64 overlaps: 0 bodies at every N. Zero overflow needs candidates >= 85 / 86 / 105
+   and overlaps >= 4 / 2 / 2. Largest bounding radius 3.00 m; unique lists equal the library's at every N.
+
+4. PACE, card single at group 32, 200 steps, median of 3 (us per body-step; us per step in brackets)
+   N        whole step wall   kernels summed   query+push   scan      tree mean  serial mean  CPU 1 thr   CPU 16 thr
+            (tree mean)                                                                     (grid+apply, instrument on)
+   6,145    0.0542 (333)      0.0562 (346)     0.0462 (284) (26.9)    (5.8)      (213)        0.960 (5,899)  0.143 (878)
+   10,000   0.0436 (436)      0.0415 (415)     0.0304 (304) (77.7)    (6.5)      (346)        0.899 (8,987)  0.131 (1,315)
+   30,000   0.0176 (528)      0.0179 (537)     0.0114 (342) (151.0)   (10.9)     (1,027)      1.088 (32,625) 0.144 (4,316)
+   Other pieces per step at 6,145 / 10,000 / 30,000: memset 3.4 / 3.3 / 3.3 us; ranges 7.0 / 7.1 / 9.3 us;
+   scatter 18.4 / 16.4 / 20.1 us; query at the auto group 362 / 356 / 372 us; query with local-memory scratch
+   270 / 290 / 331 us; whole step with the serial mean 542 / 745 / 1,549 us.
+   Launch overhead: one empty launch 4.5 / 4.5 / 4.3 us; host cost of enqueueing a whole step 20.0 / 17.5 / 17.8 us.
+   Per-step upload if the host fed the spheres (8 reals and a flag a body): 132 / 139 / 145 us.
+   CPU with the instrument off: 0.962 / 0.896 / 1.071 (1 thread), 0.138 / 0.130 / 0.145 (16 threads) us/body-step.
+   The card's whole step is 2.6x / 3.0x / 8.2x faster than 16 threads.
+
+NOTES
+ - 10,000 and 30,000 are made by tiling: the 3,945 bodies of the inscribed 118.35 m square are repeated, the
+   N nearest the axis kept, in discs of radius 106.37 and 185.45 m. The bed there is the recorded tank's map
+   read outside the tank. The density matches; the bed is not a real world's.
+ - The serial mean (the CPU's summing order) runs on one thread and does not pay on the card. The tree mean
+   moves only the cell's last bit, which can move candidate lists but never an overlap or a force.
+ - Inference, not measured: the query is almost flat in N (284 to 342 us) and 30,000 bodies do not fill the
+   card, so the time is the slowest thread's latency: the 64-cell bodies and their sort. The scan's single
+   group is the next piece to grow with N.
+
+COMMANDS (from spikes\02-gpu-featherstone; the SDK is Unity's)
+   python spike3/gen3.py
+   "C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe" build featherstone.csproj -c Release
+   out\bin\Release\net8.0\featherstone.exe contact --check-steps 1000 --no-time --tag contact-check
+       -> scratch\gpu-spike3\contact-check-20260923-105045.txt (sections 1, 2)
+   out\bin\Release\net8.0\featherstone.exe contact --no-check --no-card --sizes 0,10000,30000 --time-steps 200 --cpu-steps 100 --repeats 3 --tag contact-pace
+       -> scratch\gpu-spike3\contact-pace-20260923-105308.txt (sections 3, 4)
