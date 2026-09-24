@@ -182,7 +182,7 @@ namespace Evosim.Theatre
         public const float LeafThinness = 0.4f;
 
         /// <summary>Stations along a leaf, base to tip.</summary>
-        private const int LeafStations = 64;
+        private const int LeafStations = 96;
 
         /// <summary>Rows across one face of a leaf, rim to rim.</summary>
         private const int LeafRows = 16;

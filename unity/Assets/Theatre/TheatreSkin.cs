@@ -186,6 +186,12 @@ namespace Evosim.Theatre
         public float VeinStrength = Dial("EVOSIM_THEATRE_VEINS", 0.6f, 0f, 1f);
 
         /// <summary>
+        /// How strongly a blade glows with the light from the surface coming through it when seen
+        /// from below (<c>EVOSIM_THEATRE_LEAF_GLOW</c>, 0 to 2).
+        /// </summary>
+        public float LeafSkyGlow = Dial("EVOSIM_THEATRE_LEAF_GLOW", 0.6f, 0f, 2f);
+
+        /// <summary>
         /// Points the key and the fill from wherever the viewer now looks, keeping the offsets
         /// <see cref="Apply"/> chose. Until 2026-09-16 the two were placed once from the fly
         /// camera's starting rotation and never moved, so five of the six snapshot views and
@@ -1590,6 +1596,7 @@ namespace Evosim.Theatre
             material.SetFloat("_BendFraction", Mathf.Clamp(BendFraction, 0f, 0.4f));
             material.SetFloat("_CurlFraction", Mathf.Clamp(CurlFraction, 0f, 0.1f));
             material.SetFloat("_VeinStrength", Mathf.Clamp01(VeinStrength));
+            material.SetFloat("_LeafSkyGlow", Mathf.Clamp(LeafSkyGlow, 0f, 2f));
 
             // The one depth the surface's light reaches, the same number the sand, the shafts and
             // the window fade on. The net itself now comes from the sea overhead rather than from

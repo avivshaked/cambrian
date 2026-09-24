@@ -149,9 +149,17 @@ Shader "Evosim/Theatre Body"
         _CurlFraction("Leaf curl, fraction of its width", Range(0, 0.1)) = 0.1
         _VeinStrength("Leaf veins", Range(0, 1)) = 0.6
 
+        // The light from the surface coming through a blade seen from below: the glow of a kelp
+        // canopy looked up at. Transmitted, so it follows the blade's thinness.
+        _LeafSkyGlow("Leaf glow from above", Range(0, 2)) = 0.6
+
         // Per body: the part's own joint anchor in its object units, w one when it hangs from a
         // parent. A leaf's base is drawn at the end its joint is on.
         _Leaf("Leaf: own anchor, w one when it has one", Vector) = (0, 0, 0, 0)
+
+        // Per part, from the creature's id rather than its plan: a blade's own small departure
+        // from its family's outline, curl and tone, so no two siblings are drawn alike.
+        _Individual("Individual seed", Range(0, 1)) = 0
     }
 
     SubShader
@@ -200,6 +208,8 @@ Shader "Evosim/Theatre Body"
                 float _TransPower;
                 float _TransDistortion;
                 float _TransMetres;
+                float _LeafSkyGlow;
+                float _Individual;
                 float _MottleCellsPerMetre;
                 float _MottleStrength;
                 float4 _CausticColor;
@@ -274,6 +284,20 @@ Shader "Evosim/Theatre Body"
             // another. The cap is the only thing that stops the two compounding into a body cut
             // through its own middle; it says nothing about the collider, which the sign of the
             // displacement already settles.
+            // The creature's own departure from its family's impressions (2026-09-24, the
+            // owner: the small variations for every cell, not only the blades). The carve's
+            // noise is read a little off where the plan's seed puts it: about a seventh of a
+            // lobe, so the lobes stay the family's, and most of a wrinkle, so the wrinkles are
+            // the individual's. The pinch at a joint is not moved, and nothing about the sign
+            // changes, so the carve still only cuts inward.
+            float3 OwnShift()
+            {
+                return (float3(
+                    frac(_Individual * 11.31 + 0.17),
+                    frac(_Individual * 23.93 + 0.61),
+                    frac(_Individual * 37.17 + 0.43)) - 0.5) * 0.16;
+            }
+
             float CarveDepth(float3 positionOS, float smallest)
             {
                 float pinch = EvoPinch(positionOS, _PinchA) + EvoPinch(positionOS, _PinchB);
@@ -408,19 +432,26 @@ Shader "Evosim/Theatre Body"
             // leaves the box by at most that much. That is the owner's ruling of 2026-09-24 and
             // nothing else in this shader leaves a collider.
 
+            // A seaweed's blade, not a land plant's leaf (2026-09-24, the second pass: the first
+            // pass's pointed tip, toothed margin and pinnate veins read as a tree's leaf, and
+            // its teeth seen at an angle hung like legs). Kelp and sea lettuce have no veins
+            // and no teeth; their tips are round, their bases taper to the stalk, their margins
+            // are ruffled, and they let the light through.
             struct LeafShape
             {
-                float widest;   // where the leaf is widest: the exponent on s
-                float fullness; // how full the outline is: under one is rounder
-                float teeth;    // how deep the margin's teeth cut, zero for an entire margin
-                float count;    // how many teeth
+                float widest;   // where the blade is widest: the exponent on s
+                float baseFull; // how the base tapers: near one a wedge, under it rounder
+                float tipFull;  // how round the tip is: smaller is blunter
+                float lobe;     // how deep the lobes are, as a fraction of the width
+                float lobes;    // how many lobes along the blade
                 float cup;      // the curl across the width, signed
                 float arch;     // the curl along the length, signed
-                float wave;     // a wave along the margin
+                float wave;     // the frill at the margin
+                float frills;   // how many ruffles along the margin
                 float phase;
             };
 
-            LeafShape LeafOf(float seed)
+            LeafShape LeafOf(float seed, float own)
             {
                 LeafShape l;
 
@@ -434,16 +465,37 @@ Shader "Evosim/Theatre Body"
                 float r8 = frac(seed * 97.103 + 0.883);
                 float r9 = frac(seed * 101.51 + 0.447);
 
-                l.widest = lerp(0.7, 1.45, r1);
-                l.fullness = lerp(0.45, 0.95, r2);
-                l.teeth = r3 < 0.45 ? 0.0 : lerp(0.02, 0.07, r4);
-                l.count = floor(lerp(5.0, 11.99, r5));
+                l.widest = lerp(0.75, 1.3, r1);
+                l.baseFull = lerp(0.65, 1.1, r2);
+                l.tipFull = lerp(0.22, 0.5, r3);
+                l.lobe = r4 < 0.35 ? 0.0 : lerp(0.04, 0.13, r4);
+                l.lobes = lerp(1.5, 3.5, r5);
+                l.frills = lerp(3.0, 5.5, frac(r5 * 7.31 + r8));
+
+                // The individual's departure from its family's blade: every term moved a little,
+                // none so far that a sibling stops looking like its parent.
+                float o1 = frac(own * 13.713 + 0.11);
+                float o2 = frac(own * 27.191 + 0.53);
+                float o3 = frac(own * 39.517 + 0.29);
+                float o4 = frac(own * 51.313 + 0.71);
+                float o5 = frac(own * 67.919 + 0.37);
+                float o6 = frac(own * 79.137 + 0.83);
+                float o7 = frac(own * 91.373 + 0.19);
+                l.widest *= lerp(0.88, 1.12, o1);
+                l.baseFull *= lerp(0.85, 1.15, o2);
+                l.tipFull *= lerp(0.8, 1.2, o3);
+                l.lobe *= lerp(0.6, 1.4, o4);
+                l.frills += lerp(-0.6, 0.6, o5);
+                r6 = saturate(r6 + lerp(-0.2, 0.2, o6));
+                r7 = saturate(r7 + lerp(-0.2, 0.2, o7));
+                r9 = frac(r9 + 0.3 * o5 + 0.2 * o6);
 
                 // The three curls share one budget, so together they never lift a point by more
-                // than the dial allows: each term below is at most its weight in size.
-                float cup = lerp(-1.0, 1.0, r6);
-                float arch = lerp(-0.6, 0.6, r7);
-                float wave = lerp(0.0, 0.35, r8);
+                // than the dial allows: each term below is at most its weight in size. The frill
+                // takes the largest share: a ruffled margin is what says seaweed.
+                float cup = lerp(-0.6, 0.6, r6);
+                float arch = lerp(-0.4, 0.4, r7);
+                float wave = lerp(0.35, 0.8, r8);
                 float sum = abs(cup) + abs(arch) + wave;
                 float k = sum > 1.0 ? 1.0 / sum : 1.0;
 
@@ -455,14 +507,19 @@ Shader "Evosim/Theatre Body"
                 return l;
             }
 
-            // The outline's half width at s, as a fraction of the box's half width: zero at the
-            // base and the tip, one at most, and cut inward by the teeth.
+            // The outline's half width at s (0 the base, 1 the tip), as a fraction of the box's
+            // half width: zero at both ends, one at most. The base tapers as a wedge and the tip
+            // is round, from two exponents on one arch that meet at its crown, where the arch is
+            // flat, so the join has no kink. The lobes cut inward only, so the outline stays
+            // inside the box.
             float LeafWidth(float s, LeafShape l)
             {
                 s = saturate(s);
-                float g = pow(max(1e-4, sin(PI * pow(s, l.widest))), l.fullness);
-                float tooth = pow(0.5 + 0.5 * sin(6.2831853 * l.count * s), 6.0);
-                return g * (1.0 - l.teeth * tooth * sin(PI * s));
+                float u = pow(s, l.widest);
+                float arch = max(1e-4, sin(PI * u));
+                float g = pow(arch, u < 0.5 ? l.baseFull : l.tipFull);
+                float lobes = 0.5 + 0.5 * sin(6.2831853 * (l.lobes * s + l.phase));
+                return g * (1.0 - l.lobe * lobes * sin(PI * s));
             }
 
             // The leaf's frame: T the thinnest axis, L the longer of the other two, W their
@@ -493,7 +550,7 @@ Shader "Evosim/Theatre Body"
             // the frame stays a rotation. flat drops the curl, for the carve's field, which is a
             // property of the tissue and should not move when the leaf is drawn curled.
             float3 LeafPoint(float s, float t, float side, LeafShape l, float baseSign,
-                             float meshHalf, float curlObj, float flat, out float thickness)
+                             float meshHalf, float curlObj, float flat, float flesh, out float thickness)
             {
                 float w = LeafWidth(s, l);
                 float ends = pow(max(1e-4, sin(PI * pow(saturate(s), l.widest))), 0.3);
@@ -502,11 +559,22 @@ Shader "Evosim/Theatre Body"
                 // The lens: full at the midrib, which stands a little proud, and thinning to
                 // nothing at the rim; thinner towards the tip.
                 float lens = sqrt(saturate(1.0 - t * t)) * (0.6 + 0.4 * exp(-t * t / 0.012));
-                thickness = meshHalf * lens * ends * lerp(1.0, 0.55, saturate(s));
+                thickness = meshHalf * lens * ends * lerp(1.0, 0.55, saturate(s)) * flesh;
 
                 float arch = 1.0 - (2.0 * s - 1.0) * (2.0 * s - 1.0);
-                float wave = sin(6.2831853 * (2.5 * s + l.phase));
-                float lift = l.cup * across * across + l.arch * arch + l.wave * across * across * wave;
+
+                // The frill: ruffles along the margin, out of step on the two sides, growing from
+                // nothing at the stalk and strongest at the rim. It is still; the owner ruled out
+                // a flutter, and the curl budget bounds it.
+                // Two ruffles at incommensurate lengths and a slow swell over them, so the margin
+                // never repeats the way a crimped ribbon does.
+                float a = abs(across);
+                float side2 = across < 0.0 ? 0.37 : 0.0;
+                float x = l.frills * s + l.phase + side2;
+                float ruffle = 0.72 * sin(6.2831853 * x) + 0.28 * sin(6.2831853 * (2.37 * x + 0.21));
+                float swell = 0.6 + 0.4 * sin(6.2831853 * (0.61 * x + l.phase * 1.7));
+                float frill = a * a * ruffle * swell * smoothstep(0.04, 0.3, s);
+                float lift = l.cup * across * across + l.arch * arch + l.wave * frill;
 
                 float along = baseSign * meshHalf * (1.0 - 2.0 * s);
 
@@ -518,7 +586,7 @@ Shader "Evosim/Theatre Body"
             void ShapeLamina(
                 float4 leafOS, float3 halfExtents, float meshHalf,
                 out float3 positionOS, out float3 flatOS, out float3 normalWS,
-                out float halfThickMetres, out float4 leafOut)
+                out float halfThickMetres, out float halfWidthMetres, out float4 leafOut)
             {
                 float3 axisL, axisT, axisW;
                 LeafAxes(halfExtents, axisL, axisT, axisW);
@@ -527,12 +595,7 @@ Shader "Evosim/Theatre Body"
                 float hT = dot(halfExtents, abs(axisT));
                 float hW = dot(halfExtents, abs(axisW));
 
-                LeafShape l = LeafOf(_Carve.x);
-
-                // Teeth belong to a thin blade. On a plump leaf (a succulent's, drawn for a
-                // photosynthetic box that is not flat) a toothed rim reads as the segments of a
-                // caterpillar, so the teeth fade out as the leaf thickens.
-                l.teeth *= saturate((0.65 - hT / max(1e-6, hW)) / 0.35);
+                LeafShape l = LeafOf(_Carve.x, _Individual);
 
                 // The base at the end the part's own joint is on, and by the seed for a root or a
                 // joint on the middle of a face.
@@ -544,14 +607,21 @@ Shader "Evosim/Theatre Body"
                 // units of the full thickness.
                 float curlObj = _CurlFraction * hW / max(1e-6, hT);
 
+                // A blade is drawn at most fleshy: its half thickness at the midrib is at most a
+                // third of its half width. Round 47's photosynthetic boxes are nearly as thick as
+                // they are wide, and a lens that fills one is a pillow, not a blade. Thinner is
+                // inside the box, so the collider's bound holds.
+                float flesh = min(1.0, 0.35 * hW / max(1e-6, hT));
+                halfWidthMetres = hW;
+
                 float s = leafOS.x;
                 float t = leafOS.y;
                 float side = leafOS.z;
 
                 float thick;
-                float3 p = LeafPoint(s, t, side, l, baseSign, meshHalf, curlObj, 0.0, thick);
+                float3 p = LeafPoint(s, t, side, l, baseSign, meshHalf, curlObj, 0.0, flesh, thick);
                 float unused;
-                float3 f = LeafPoint(s, t, side, l, baseSign, meshHalf, curlObj, 1.0, unused);
+                float3 f = LeafPoint(s, t, side, l, baseSign, meshHalf, curlObj, 1.0, flesh, unused);
 
                 positionOS = axisL * p.x + axisT * p.y + axisW * p.z;
                 flatOS = axisL * f.x + axisT * f.y + axisW * f.z;
@@ -563,9 +633,9 @@ Shader "Evosim/Theatre Body"
                 float3 metres = 2.0 * float3(hL, hT, hW);
                 float sd = clamp(s, 0.01, 0.98);
                 float td = clamp(t, -0.985, 0.975);
-                float3 q = LeafPoint(sd, td, side, l, baseSign, meshHalf, curlObj, 0.0, unused) * metres;
-                float3 qs = LeafPoint(sd + 0.01, td, side, l, baseSign, meshHalf, curlObj, 0.0, unused) * metres;
-                float3 qt = LeafPoint(sd, td + 0.01, side, l, baseSign, meshHalf, curlObj, 0.0, unused) * metres;
+                float3 q = LeafPoint(sd, td, side, l, baseSign, meshHalf, curlObj, 0.0, flesh, unused) * metres;
+                float3 qs = LeafPoint(sd + 0.01, td, side, l, baseSign, meshHalf, curlObj, 0.0, flesh, unused) * metres;
+                float3 qt = LeafPoint(sd, td + 0.01, side, l, baseSign, meshHalf, curlObj, 0.0, flesh, unused) * metres;
 
                 // Outward on either face: the parametrisation's own handedness, fixed by the frame
                 // being a rotation and the width turning with the base (TheatreMeshes.BuildLamina).
@@ -585,11 +655,11 @@ Shader "Evosim/Theatre Body"
                 leafOut = float4(s, t * LeafWidth(s, l), t, 1.0 + hW / max(1e-6, 2.0 * hL));
             }
 
-            // The veins and the margin: a midrib, pinnate side veins running from it towards the
-            // tip, and a darker rim. On the face they are a little lighter than the lamina; in the
-            // light that comes through a leaf they are the shadow, which is how a backlit leaf
-            // shows its veins. Faded out when a vein is finer than a pixel, so a distant crowd
-            // does not shimmer.
+            // The midrib and the margin: a midrib from the stalk that fades up the blade, and a
+            // rim barely darker than the lamina, since a blade's thin edge lets the light through.
+            // On the face the midrib is a little lighter than the lamina; in the light that comes
+            // through the blade it is the shadow. Faded out when it is finer than a pixel, so a
+            // distant crowd does not shimmer.
             void LeafVeins(float4 leaf, out float face, out float through)
             {
                 face = 1.0;
@@ -600,28 +670,15 @@ Shader "Evosim/Theatre Body"
                 float v = leaf.y;
                 float t = leaf.z;
 
-                float midrib = exp(-v * v / 0.0012) * (1.0 - 0.7 * s);
+                // A blade has no pinnate veins. What it has, in kelps like Alaria, is a thickened
+                // midrib from the stalk that fades up the blade; nothing past half way.
+                float midrib = exp(-v * v / 0.0012) * (1.0 - smoothstep(0.1, 0.55, s));
                 midrib *= saturate(1.0 - 20.0 * fwidth(v));
 
-                // A side vein leaves the midrib at about 55 degrees and curves toward the tip, to
-                // about 25 degrees at the margin: along = cot(angle) x across in metres, and
-                // the aspect turns metres into the leaf's own s and v. g(u) = 0.7 u + 0.7 u^2 has
-                // slope cot(55) at the midrib and cot(25) at the rim.
-                float aspect = max(0.05, leaf.w - 1.0);
-                float u = abs(v);
-                float count = 7.0 + floor(frac(_Carve.x * 71.3 + 0.19) * 5.0);
-                float phase = count * (s - aspect * (0.7 * u + 0.7 * u * u));
-                float d = abs(frac(phase) - 0.5);
-                float width = 0.0022 * (1.0 - 0.65 * saturate(abs(t)));
-                float sideVein = exp(-d * d / width);
-                sideVein *= (1.0 - smoothstep(0.5, 0.92, abs(t))) * smoothstep(0.02, 0.12, u);
-                sideVein *= 1.0 - 0.5 * saturate(abs(t));
-                sideVein *= saturate(1.0 - 4.0 * fwidth(phase));
-
-                float vein = saturate(midrib + 0.7 * sideVein) * _VeinStrength;
+                float vein = saturate(midrib) * _VeinStrength;
                 float margin = smoothstep(0.8, 1.0, abs(t));
 
-                face = 1.0 + 0.35 * vein - 0.25 * margin;
+                face = 1.0 + 0.35 * vein - 0.08 * margin;
                 through = 1.0 - 0.6 * vein;
             }
 
@@ -651,12 +708,13 @@ Shader "Evosim/Theatre Body"
                 // position so an impression stays on the tissue whatever the curl does.
                 float3 carveOS = input.positionOS.xyz;
                 float halfThickMetres = smallest;
+                float halfWidthMetres = 0.0;
                 float4 leaf = float4(0, 0, 0, 0);
 
                 if (lamina)
                 {
                     ShapeLamina(input.leafOS, halfExtents, meshHalf,
-                        shapedOS, carveOS, normalWS, halfThickMetres, leaf);
+                        shapedOS, carveOS, normalWS, halfThickMetres, halfWidthMetres, leaf);
                     positionWS = TransformObjectToWorld(shapedOS);
                 }
 
@@ -689,7 +747,7 @@ Shader "Evosim/Theatre Body"
 
                 float3 unusedGradient;
                 float carve = EvoCarve(
-                    carveOS, _Carve.x, _Carve.y, _Carve.z,
+                    carveOS + OwnShift(), _Carve.x, _Carve.y, _Carve.z,
                     EvoCarveDetail(smallest), unusedGradient);
 
                 // Along the deformed normal, so the impressions cut into the bent surface rather
@@ -725,7 +783,11 @@ Shader "Evosim/Theatre Body"
                 // than from a baked thickness map, which is what the single pass approximation
                 // leaves to the author [JA]: there is no unwrapped mesh here to bake into. On a
                 // leaf the thickness is the lens's here, so the rim glows more than the midrib.
-                float thickness = saturate(_TransMetres / max(1e-4, halfThickMetres));
+                // A blade is translucent by its own size as well: a twelfth of its half width is
+                // added to the threshold, so a large blade still lets the light through where it
+                // is thin, as kelp does.
+                float transMetres = _TransMetres + 0.08 * halfWidthMetres;
+                float thickness = saturate(transMetres / max(1e-4, halfThickMetres));
 
                 output.fogAndThickness = float2(ComputeFogFactor(output.positionCS.z), thickness);
 
@@ -758,7 +820,7 @@ Shader "Evosim/Theatre Body"
                 float smallest = min(he.x, min(he.y, he.z));
 
                 float3 gradientOS;
-                EvoCarve(positionOS, _Carve.x, _Carve.y, _Carve.z, EvoCarveDetail(smallest), gradientOS);
+                EvoCarve(positionOS + OwnShift(), _Carve.x, _Carve.y, _Carve.z, EvoCarveDetail(smallest), gradientOS);
 
                 float3 cx = UNITY_MATRIX_M._m00_m10_m20;
                 float3 cy = UNITY_MATRIX_M._m01_m11_m21;
@@ -831,10 +893,40 @@ Shader "Evosim/Theatre Body"
                 body *= veinFace;
                 thickness *= veinThrough;
 
+                // A blade's tone: denser and darker toward the stalk and along the middle, where
+                // the tissue is thickest, and lighter and a little warmer at the ruffled edge,
+                // where it is one or two cells thick, as a backlit kelp's edge goes gold. Applied
+                // to the whole of the blade's light at the end, not to the body colour alone: on a
+                // blade the rim, the glow and the light through it outweigh the diffuse term, so
+                // a tone on the body colour alone moved no pixel by more than 3 in 255.
+                float3 leafTone = float3(1.0, 1.0, 1.0);
+                float rimScale = 1.0;
+                if (input.leaf.w > 0.5)
+                {
+                    float across = saturate(abs(input.leaf.z));
+                    float edge = smoothstep(0.35, 1.0, across);
+                    float stalk = 1.0 - smoothstep(0.0, 0.4, input.leaf.x);
+                    float tone = lerp(0.5, 1.12, edge) * (1.0 - 0.35 * stalk);
+                    leafTone = tone * lerp(float3(1.0, 1.0, 1.0), float3(1.12, 1.06, 0.78), 0.5 * edge);
+                    leafTone *= lerp(1.0, mottle, 0.7);
+
+
+                    // The guild's rim is at the edge of a solid; on a blade's face it is paint.
+                    rimScale = 0.45;
+                }
+
                 // Key light.
                 Light main = GetMainLight();
                 float3 lit = body * main.color * (Wrapped(n, main.direction) * _KeyGain);
                 lit += _TransTint.rgb * (_TransGain * Transmission(n, v, main.direction, main.color, thickness));
+
+                // The light from the surface through a blade, seen from below or beside it: the
+                // world's light comes from above, whatever the key does for the camera.
+                if (input.leaf.w > 0.5)
+                {
+                    lit += _TransTint.rgb * (_TransGain * _LeafSkyGlow *
+                        Transmission(n, v, float3(0.0, 1.0, 0.0), main.color, thickness));
+                }
 
                 // The sheen: a tight highlight off the key, white rather than the body's colour,
                 // so it reads as wet skin catching the light and not as paint.
@@ -865,12 +957,12 @@ Shader "Evosim/Theatre Body"
                 float facing = 1.0 - saturate(dot(n, v));
                 float rim = pow(facing, _RimPower);
 
-                lit += _RimColor.rgb * (rim * _RimStrength);
+                lit += _RimColor.rgb * (rim * _RimStrength * rimScale);
 
                 // The inner glow: a well fed body is lit from inside, a starving one is pale.
                 // The same reading the palette's tint already carries, on the same per body
                 // property, so the two cannot disagree.
-                lit += _RimColor.rgb * (_GlowStrength * _Reserve * (0.30 + 0.70 * pow(facing, 0.7)));
+                lit += _RimColor.rgb * (_GlowStrength * _Reserve * rimScale * (0.30 + 0.70 * pow(facing, 0.7)));
 
                 // Caustics, on the upward faces of whatever is in the top few metres.
                 //
@@ -888,6 +980,14 @@ Shader "Evosim/Theatre Body"
 
                     lit += _CausticColor.rgb * (net * fade * saturate(n.y) * _CausticStrength);
                 }
+
+                lit *= leafTone;
+
+                // Every cell's own shade: a little lighter or darker, a little warmer or cooler
+                // than its family's, so a clade that shares one plan is a crowd and not copies.
+                float shade = frac(_Individual * 17.37 + 0.41) * 2.0 - 1.0;
+                float warmth = frac(_Individual * 31.91 + 0.07) * 2.0 - 1.0;
+                lit *= (1.0 + 0.08 * shade) * float3(1.0 + 0.05 * warmth, 1.0, 1.0 - 0.07 * warmth);
 
                 lit = EvoMixFog(lit, input.fogAndThickness.x, input.positionWS);
 

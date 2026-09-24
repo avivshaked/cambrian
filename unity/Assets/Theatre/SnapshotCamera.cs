@@ -542,6 +542,8 @@ namespace Evosim.Theatre
             TheatreSkin skin = TheatreSkin.Current;
             Quaternion lightsWere = skin != null ? skin.Aim(rotation) : Quaternion.identity;
 
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+
             try
             {
                 _camera.Render();
@@ -571,6 +573,10 @@ namespace Evosim.Theatre
                 RenderTexture.active = active;
             }
 
+            // The render and the read-back, which waits for the device, so this is the frame's
+            // drawing cost on the CPU and the GPU together, without the encoding and the write.
+            LastRenderMs = watch.Elapsed.TotalMilliseconds;
+
             _pixels = _super > 1 ? BoxDown(_readbackFull.GetPixels32(), _super) : _readbackFull.GetPixels32();
 
             DrawLabel(_label);
@@ -587,6 +593,9 @@ namespace Evosim.Theatre
 
             return png.Length;
         }
+
+        /// <summary>The last placed capture's render and read-back, milliseconds.</summary>
+        public double LastRenderMs { get; private set; }
 
         /// <summary>
         /// How far the last written picture's pixels spread, as the standard deviation of their

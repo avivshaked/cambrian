@@ -218,6 +218,9 @@ namespace Evosim.Theatre
             public SnapshotCamera Camera;
             public readonly List<string> Spreads = new List<string>();
 
+            /// <summary>Each written frame's render and read-back, milliseconds.</summary>
+            public readonly List<double> RenderMs = new List<double>();
+
             private WorldBounds _world;
             private float _seconds;
 
@@ -529,6 +532,13 @@ namespace Evosim.Theatre
                 Portrait = true;
                 _forward = new Vector3(-0.78f, -0.34f, 1f).normalized;
 
+                // A study of one body (2026-09-24, the leaves): EVOSIM_THEATRE_FILM_CLOSE_LOOK=up
+                // looks up at the subject from below, where a blade's glow from the surface shows,
+                // and =down looks steeply down on it, at the blade's upper face.
+                string look = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_FILM_CLOSE_LOOK");
+                if (look == "up") _forward = new Vector3(-0.55f, 0.62f, 0.78f).normalized;
+                else if (look == "down") _forward = new Vector3(-0.45f, -0.8f, 0.55f).normalized;
+
                 int anchor = -1;
                 for (int i = 0; i < positions.Count; i++)
                 {
@@ -579,6 +589,16 @@ namespace Evosim.Theatre
                 }
 
                 _standoff = 1.06f * Mathf.Max(need, reachZ + 0.5f);
+
+                // EVOSIM_THEATRE_FILM_CLOSE_NEAR brings the eye in to that fraction of the fitted
+                // distance (0.2 to 1, 1 the fit), never nearer than the subject's reach and a
+                // third of a metre, so it stays outside the body.
+                string nearText = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_FILM_CLOSE_NEAR");
+                if (!string.IsNullOrWhiteSpace(nearText) &&
+                    float.TryParse(nearText, NumberStyles.Float, CultureInfo.InvariantCulture, out float near))
+                {
+                    _standoff = Mathf.Max(Mathf.Clamp(near, 0.2f, 1f) * _standoff, reaches[anchor] + 0.33f);
+                }
 
                 // A few metres in at most, never past two fifths of the standoff (the subject is
                 // there), and never faster on average than a quarter of the ceiling.

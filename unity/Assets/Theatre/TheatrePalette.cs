@@ -133,6 +133,15 @@ namespace Evosim.Theatre
             public float Seed;
 
             /// <summary>
+            /// This creature's own seed, from its id and not its plan. <see cref="Seed"/> comes from
+            /// the body plan (the skin genes), so every blade of a clade that shares a plan would be
+            /// drawn with one outline; this one perturbs a blade's outline, curl and tone a little,
+            /// so siblings are similar and never identical (the owner, 2026-09-24: "something that
+            /// doesn't look exactly the same for every leaf, just similar").
+            /// </summary>
+            public float Own;
+
+            /// <summary>
             /// Per renderer, the two joint anchors nearest it, in that visual's own object units,
             /// with a reach in w, or a zero reach for none. See <see cref="Pinches"/>.
             /// </summary>
@@ -204,6 +213,7 @@ namespace Evosim.Theatre
         private static readonly int TransGainId = Shader.PropertyToID("_TransGain");
         private static readonly int SheenId = Shader.PropertyToID("_Sheen");
         private static readonly int CarveId = Shader.PropertyToID("_Carve");
+        private static readonly int IndividualId = Shader.PropertyToID("_Individual");
         private static readonly int PinchAId = Shader.PropertyToID("_PinchA");
         private static readonly int PinchBId = Shader.PropertyToID("_PinchB");
         private static readonly int LeafId = Shader.PropertyToID("_Leaf");
@@ -335,9 +345,11 @@ namespace Evosim.Theatre
 
                 Vector4 carve = Character(cellType, seed);
 
+                float own = OwnOf(body, part);
+
                 Set(renderer, guild, brightness, on ? reserve : 1f, on,
                     carve, body.PinchA[i], body.PinchB[i], on ? TransmissionOf(cellType) : 0.4f,
-                    on ? SheenOf(cellType) : 0.1f, body.Leaf[i]);
+                    on ? SheenOf(cellType) : 0.1f, body.Leaf[i], own);
             }
 
             RefreshNecks(body, phenotype, brightness, on ? reserve : 1f, on, dim, turn);
@@ -354,7 +366,7 @@ namespace Evosim.Theatre
         private void Set(
             Renderer renderer, Color guild, float brightness, float reserve, bool on,
             Vector4 carve, Vector4 pinchA, Vector4 pinchB, float transmission, float sheen = 0.1f,
-            Vector4 leaf = default)
+            Vector4 leaf = default, float individual = 0f)
         {
             Color rim = on
                 ? Muted(guild, RimSaturation, RimLightness)
@@ -388,6 +400,7 @@ namespace Evosim.Theatre
             _block.SetVector(PinchAId, pinchA);
             _block.SetVector(PinchBId, pinchB);
             _block.SetVector(LeafId, leaf);
+            _block.SetFloat(IndividualId, individual);
 
             renderer.SetPropertyBlock(_block);
         }
@@ -429,6 +442,13 @@ namespace Evosim.Theatre
         /// would then land on the same offset and a cohort of siblings would wear one carving.
         /// The multiplier is Knuth's, the odd integer nearest 2^32 over the golden ratio.
         /// </remarks>
+        /// <summary>A part's own seed: the creature's, turned by the part's index.</summary>
+        private static float OwnOf(Body body, int part)
+        {
+            float own = body.Own + 0.38196601f * Mathf.Max(0, part);
+            return own - Mathf.Floor(own);
+        }
+
         private static float SeedOf(long id)
         {
             long mixed = unchecked(id * 2654435761L);
@@ -498,6 +518,7 @@ namespace Evosim.Theatre
                 Renderers = _scratch.ToArray(),
                 Part = new int[_scratch.Count],
                 Seed = SeedOf(phenotype, id),
+                Own = SeedOf(id),
                 PinchA = new Vector4[_scratch.Count],
                 PinchB = new Vector4[_scratch.Count],
                 Leaf = new Vector4[_scratch.Count],
@@ -1091,7 +1112,7 @@ namespace Evosim.Theatre
 
                 Set(renderer, guild, KnuckleShade * brightness, reserve, true,
                     Character(cellType, seed), Vector4.zero, Vector4.zero,
-                    TransmissionOf(cellType), SheenOf(cellType));
+                    TransmissionOf(cellType), SheenOf(cellType), default, OwnOf(body, own));
             }
         }
 

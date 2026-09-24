@@ -622,6 +622,7 @@ namespace Evosim.Theatre.EditorTools
 
                     shot.Camera.CapturePlaced(live, eye, rotation, shot.FieldOfView, shot.Portrait, focus, label,
                         Path.Combine(shot.Directory, frameName));
+                    shot.RenderMs.Add(shot.Camera.LastRenderMs);
 
                     if (_next == 0 || _next == shot.Frames / 2 || _next == shot.Frames - 1)
                     {
@@ -822,6 +823,16 @@ namespace Evosim.Theatre.EditorTools
                 report.Append("\n  ").Append(shot.Name).Append(" -> ").Append(shot.Directory);
                 report.Append("\n    ").Append(shot.Tally());
                 foreach (string s in shot.Spreads) report.Append("\n    ").Append(s);
+                if (shot.RenderMs.Count > 0)
+                {
+                    var sorted = new List<double>(shot.RenderMs);
+                    sorted.Sort();
+                    double sum = 0.0;
+                    foreach (double ms in sorted) sum += ms;
+                    report.Append("\n    ").Append(string.Format(CultureInfo.InvariantCulture,
+                        "render and read-back: median {0:0.0} ms, mean {1:0.0} ms, slowest {2:0.0} ms a frame over {3} frames",
+                        sorted[sorted.Count / 2], sum / sorted.Count, sorted[sorted.Count - 1], sorted.Count));
+                }
             }
 
             Debug.Log("[Theatre] film: " + verdict + report);
