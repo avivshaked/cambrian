@@ -283,6 +283,19 @@ namespace Evosim.Core
         /// </remarks>
         public int AttackerPartIndex { get; }
 
+        /// <summary>
+        /// Birth only — the cell type of each bud this birth's mutation made, joined by
+        /// <c>+</c> in the order they were made; null when there was none. The birth row's
+        /// <c>bud</c> (the owner's ruling of 2026-09-24: a new cell type arrives only as a bud).
+        /// </summary>
+        public string BudCells { get; }
+
+        /// <summary>
+        /// Birth only — how many of this birth's buds the developed body built at least one part
+        /// of; the birth row's <c>budx</c>, written beside <see cref="BudCells"/>.
+        /// </summary>
+        public int BudsExpressed { get; }
+
         private LineageEvent(
             LineageEventKind kind, double elapsedSeconds, long id, long parentId,
             BirthKind birthKind, int generationDepth, uint speciesId,
@@ -294,8 +307,11 @@ namespace Evosim.Core
             double tissueJoulesLost, double reserveJoulesLost,
             FounderSource source = FounderSource.None,
             int partIndex = -1, int attackerPartIndex = -1, int poolIndex = -1,
-            double endowmentJoules = 0d)
+            double endowmentJoules = 0d,
+            string budCells = null, int budsExpressed = 0)
         {
+            BudCells = budCells;
+            BudsExpressed = budsExpressed;
             Source = source;
             EndowmentJoules = endowmentJoules;
             PartIndex = partIndex;
@@ -334,7 +350,8 @@ namespace Evosim.Core
             float reserveMargin, int indeterminateNodes,
             bool hasAttack, bool hasIntake, bool hasProtection,
             FounderSource source = FounderSource.None, int poolIndex = -1,
-            double endowmentJoules = 0d) =>
+            double endowmentJoules = 0d,
+            string budCells = null, int budsExpressed = 0) =>
             new LineageEvent(
                 LineageEventKind.Birth, elapsedSeconds, id, parentId, birthKind, generationDepth,
                 speciesId, hasAbsorptive, hasJoint, hasPhotosynthetic, patch,
@@ -343,7 +360,8 @@ namespace Evosim.Core
                 attackerId: -1, rootLost: false, partsLost: 0,
                 tissueJoulesLost: 0d, reserveJoulesLost: 0d, source: source,
                 poolIndex: source == FounderSource.Pool ? poolIndex : -1,
-                endowmentJoules: endowmentJoules);
+                endowmentJoules: endowmentJoules,
+                budCells: budCells, budsExpressed: budCells != null ? budsExpressed : 0);
 
         public static LineageEvent Death(double elapsedSeconds, long id, DeathCause cause) =>
             new LineageEvent(
@@ -480,6 +498,14 @@ namespace Evosim.Core
                 if (EndowmentJoules > 0d)
                 {
                     w.Field("endow", EndowmentJoules);
+                }
+
+                // The owner's ruling of 2026-09-24. On a row whose birth budded only, so every
+                // other row is byte for byte what it was: the new cell types, joined by "+", and
+                // how many of the buds the body built.
+                if (BudCells != null)
+                {
+                    w.Field("bud", BudCells).Field("budx", BudsExpressed);
                 }
             }
             else if (Kind == LineageEventKind.Kill)

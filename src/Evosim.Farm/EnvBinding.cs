@@ -84,6 +84,10 @@ namespace Evosim.Farm
             Num("EVOSIM_SELF_OVERLAP", 0f, (s, v) => s.SelfOverlap = v),
             Num("EVOSIM_MAX_REACH", 0f, (s, v) => s.MaxReach = v),
 
+            // The owner's ruling of 2026-09-24 (buds): both floors weigh the rigid body a welded
+            // part is carried in. Off is the recorded world.
+            Flag("EVOSIM_RIGID_FLOORS", (s, v) => s.RigidFloors = v),
+
             // D109: the matter seeded as islands, founders planted in them, and the light's shade
             // map from the same noise, drifting or not. Every default is the recorded world.
             Num("EVOSIM_MATTER_ISLANDS", 0f, (s, v) => s.MatterIslands = v),
@@ -544,6 +548,7 @@ namespace Evosim.Farm
             config.SupportWattsPerSquareMetrePerSquareMetre = s.Support;
             config.SelfOverlapDepthFraction = s.SelfOverlap;
             config.Development.MaxBodyReachMetres = s.MaxReach;
+            config.Development.FloorsWeighRigidGroups = s.RigidFloors;
 
             config.MatterIslandWavelengthMetres = s.MatterIslands;
             config.MatterIslandCover = s.MatterIslandCover;
@@ -894,6 +899,7 @@ namespace Evosim.Farm
         public float Support;
         public float SelfOverlap;
         public float MaxReach;
+        public bool RigidFloors;
         public float MatterIslands;
         public float MatterIslandCover;
         public float MatterIslandDepth;

@@ -134,21 +134,23 @@ namespace Evosim.Core.Tests
             // it is noise, and no lineage can specialise around a body whose parts keep changing
             // what they do. Measured rather than asserted from the constant, because what
             // matters is the rate per birth, not per node.
+            //
+            // Since the owner's ruling of 2026-09-24 the event is a bud (a new small node of
+            // another type) rather than a node retyped in place, drawn at the same per-node rate,
+            // so the per-birth rate this measures is the one it always measured.
             int changed = 0;
             const int births = 1000;
+            var log = new MutationLog();
 
             for (ulong seed = 1; seed <= births; seed++)
             {
                 Genome parent = Parent(seed % 25 + 1);
-                Genome child = Mutator.Mutate(parent, new Rng(seed));
+                Mutator.Mutate(parent, new Rng(seed), log: log);
 
-                for (int i = 0; i < Math.Min(parent.Nodes.Count, child.Nodes.Count); i++)
-                {
-                    if (parent.Nodes[i].CellTypeId != child.Nodes[i].CellTypeId) { changed++; break; }
-                }
+                if (log.Buds > 0) changed++;
             }
 
-            _output.WriteLine($"{changed}/{births} births changed a cell type " +
+            _output.WriteLine($"{changed}/{births} births budded a new cell type " +
                               $"({changed / (float)births:P1})");
 
             Assert.True(changed > 0, "cell type never changes — the predator valley has no bridge");
@@ -721,6 +723,132 @@ namespace Evosim.Core.Tests
             float m = 0f;
             for (int i = 0; i < xs.Count; i++) m = Math.Max(m, xs[i]);
             return m;
+        }
+
+        // ---------------------------------------------------------------- buds (2026-09-24)
+
+        [Fact]
+        public void NoMutationEverChangesAnExistingNodesCellType()
+        {
+            // The owner's ruling of 2026-09-24: a cell type is never changed in place, only added
+            // (a bud) or removed (a node shrinking out). Scalars are held still so nothing shrinks
+            // out and renumbers the nodes, which lets every parent node be compared with the node
+            // at its own index in the child, through a hundred generations of twenty lineages at
+            // three hundred times the world's cell-type rate.
+            var rates = new MutationRates
+            {
+                CellTypeChance = 0.3f, JointTypeChance = 0.3f, ScalarChance = 0f,
+            };
+
+            int buds = 0;
+            for (ulong lineage = 1; lineage <= 20; lineage++)
+            {
+                // One settling birth first: a founder node already under the extinction size is
+                // pruned on the first birth whatever the rates, and that renumbers.
+                Genome g = Mutator.Mutate(
+                    Parent(lineage), new Rng(lineage), new MutationRates { CellTypeChance = 0f });
+
+                for (ulong birth = 1; birth <= 100; birth++)
+                {
+                    var log = new MutationLog();
+                    Genome child = Mutator.Mutate(g, new Rng(lineage * 1000 + birth), rates, log: log);
+
+                    Assert.True(child.Nodes.Count >= g.Nodes.Count);
+                    for (int i = 0; i < g.Nodes.Count; i++)
+                    {
+                        Assert.Equal(g.Nodes[i].CellTypeId, child.Nodes[i].CellTypeId);
+                    }
+
+                    buds += log.Buds;
+                    g = child;
+                }
+            }
+
+            _output.WriteLine($"{buds} buds over 2,000 births, no node retyped");
+            Assert.True(buds > 100, $"only {buds} buds: the cell-type rate is not reaching the bud");
+        }
+
+        [Fact]
+        public void ABudArrivesSmallWeldedAndOfAnotherType()
+        {
+            var rates = new MutationRates
+            {
+                CellTypeChance = 1f, AddNodeChance = 0f, ScalarChance = 0f, JointTypeChance = 0f,
+                AddEdgeChance = 0f, RemoveEdgeChance = 0f, RecursiveLimitChance = 0f,
+                FlagChance = 0f, ShapeChance = 0f,
+            };
+
+            var types = new HashSet<string>();
+
+            for (ulong seed = 1; seed <= 300; seed++)
+            {
+                Genome parent = Fixtures.SingleBox();
+                parent.Nodes[0].CellTypeId = CellTypeIds.Photosynthetic;
+
+                var log = new MutationLog();
+                Genome child = Mutator.Mutate(parent, new Rng(seed), rates, log: log);
+
+                Assert.Empty(child.Validate());
+                Assert.Equal(2, child.Nodes.Count);
+                Assert.Equal(CellTypeIds.Photosynthetic, child.Nodes[0].CellTypeId);
+
+                MorphNode bud = child.Nodes[1];
+                Assert.NotEqual(CellTypeIds.Photosynthetic, bud.CellTypeId);
+                Assert.Equal(rates.NewNodeHalfExtent, bud.Dimensions.X);
+                Assert.Equal(rates.NewNodeHalfExtent, bud.Dimensions.Y);
+                Assert.Equal(rates.NewNodeHalfExtent, bud.Dimensions.Z);
+                Assert.Equal(JointType.Fixed, bud.JointType);
+                Assert.Equal(0f, bud.Power);
+                Assert.Equal(1, bud.RecursiveLimit);
+                Assert.Equal(ModuleGrowth.Determinate, bud.Growth);
+                Assert.Empty(bud.Edges);
+                Assert.Equal(bud.CellTypeId == CellTypeIds.Buoyancy, bud.Lift > 0f);
+                Assert.Contains(child.Nodes[0].Edges, e => e.Child == 1);
+
+                Assert.Equal(new[] { 1 }, log.BudNodes);
+                Assert.Equal(new[] { bud.CellTypeId }, log.BudCellTypes);
+
+                // Developed on the default limits, so a bud the volume floor would prune is still a
+                // genome that develops.
+                Developer.Develop(child, DevelopmentLimits.Default);
+
+                types.Add(bud.CellTypeId);
+            }
+
+            _output.WriteLine("bud types seen: " + string.Join(", ", types));
+            Assert.True(types.Count >= 3, "the bud's type is not being drawn from the registry");
+        }
+
+        [Fact]
+        public void ABudIsNeverHungOnANodeDevelopmentCannotEnter()
+        {
+            // Round 47's commonest dead stomach was a node with a recursive limit of 0: nothing
+            // enters it, and nothing hung on it is ever built. A bud's host is drawn from the nodes
+            // development can enter, so a root with a dormant child gets every bud on the root.
+            var rates = new MutationRates
+            {
+                CellTypeChance = 1f, AddNodeChance = 0f, ScalarChance = 0f,
+                AddEdgeChance = 0f, RemoveEdgeChance = 0f, RecursiveLimitChance = 0f, FlagChance = 0f,
+            };
+
+            for (ulong seed = 1; seed <= 200; seed++)
+            {
+                Genome parent = Fixtures.SingleBox();
+                parent.Nodes[0].CellTypeId = CellTypeIds.Photosynthetic;
+                MorphNode dormant = Fixtures.Box(0.2f, recursiveLimit: 0);
+                parent.Nodes.Add(dormant);
+                parent.Nodes[0].Edges.Add(Fixtures.FaceToFace(1));
+
+                var log = new MutationLog();
+                Genome child = Mutator.Mutate(parent, new Rng(seed), rates, log: log);
+
+                Assert.Equal(2, log.Buds);
+                Assert.Empty(child.Nodes[1].Edges);
+                foreach (int bud in log.BudNodes)
+                {
+                    Assert.Contains(child.Nodes[0].Edges, e => e.Child == bud);
+                }
+            }
         }
     }
 }

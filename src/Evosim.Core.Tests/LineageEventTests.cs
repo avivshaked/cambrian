@@ -155,6 +155,58 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void ABirthRowSaysWhatItBuddedAndOnlyWhenItBudded()
+        {
+            // The owner's ruling of 2026-09-24: a new cell type arrives only as a bud, and the
+            // round's reader counts bud births by cell type from lineage.jsonl. The fields are on
+            // a budding birth's row alone, so every other row is byte for byte what it was.
+            LineageEvent plain = LineageEvent.Birth(
+                1.0, 5, 4, BirthKind.Reproduction, 2, 0, false, false, true, 0,
+                0.3f, 1f, 50f, 0, false, false, false);
+            Assert.DoesNotContain("\"bud\":", plain.ToJson());
+            Assert.DoesNotContain("\"budx\":", plain.ToJson());
+
+            LineageEvent budded = LineageEvent.Birth(
+                1.0, 6, 4, BirthKind.Reproduction, 2, 0, true, false, true, 0,
+                0.3f, 1f, 50f, 0, false, false, false,
+                budCells: CellTypeIds.Absorptive + "+" + CellTypeIds.Link, budsExpressed: 1);
+
+            var row = Json.Parse(budded.ToJson());
+            Assert.Equal("absorptive+link", row["bud"].AsString());
+            Assert.Equal(1d, row["budx"].AsDouble());
+        }
+
+        [Fact]
+        public void AWorldsBuddingBirthsAreLoggedWithTheirTypes()
+        {
+            // Through the world's own conception path, at a cell-type rate high enough that most
+            // births bud, so a row carrying "bud" is what the drain returns and not a fixture.
+            var config = new RunConfig { MinimumPopulation = 20, MaximumPopulation = 400 };
+            config.Light = new LightModel(4000f, 40f);
+            config.Mutation.CellTypeChance = 0.5f;
+
+            var world = new World(config, seed: 3);
+            int budded = 0;
+
+            for (int step = 0; step < 400 && budded == 0; step++)
+            {
+                world.Step(1f);
+
+                foreach (LineageEvent evt in world.DrainLineageEvents())
+                {
+                    if (evt.Kind != LineageEventKind.Birth || evt.BudCells == null) continue;
+
+                    Assert.Equal(BirthKind.Reproduction, evt.BirthKind);
+                    Assert.InRange(evt.BudsExpressed, 0, evt.BudCells.Split('+').Length);
+                    Assert.Contains("\"bud\":", evt.ToJson());
+                    budded++;
+                }
+            }
+
+            Assert.True(budded > 0, "no budding birth reached the lineage queue");
+        }
+
+        [Fact]
         public void DeathEventsCarryTheStarvedCause()
         {
             // A dark world: nothing can earn, so everything that is not a fresh floor spawn runs

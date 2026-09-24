@@ -640,6 +640,8 @@ namespace Evosim.Core
             // would take StateVersion to 10 and refuse every checkpoint on disk, round 46's
             // included, for a queue that the farm drains to lineage.jsonl before every
             // checkpoint (Program.WriteCheckpoint), so no farm checkpoint carries a kill row.
+            // A birth row's bud and budx (the owner's ruling of 2026-09-24) are not written for
+            // the same reason, and a restored birth row reads as one that did not bud.
         }
 
         private static LineageEvent ReadLineage(BinaryReader r)

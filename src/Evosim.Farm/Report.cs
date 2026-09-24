@@ -190,6 +190,8 @@ namespace Evosim.Farm
                     : "off") +
                 " · selfOverlap " + (s.SelfOverlap > 0f ? s.SelfOverlap.ToString("0.###", Inv) : "off") +
                 " · reach " + (s.MaxReach > 0f ? s.MaxReach.ToString("0.##", Inv) + " m" : "off") +
+                // The owner's ruling of 2026-09-24: what the volume and newborn floors weigh.
+                " · floors " + (s.RigidFloors ? "rigid groups" : "per part") +
 
                 // D109's three tokens, all reading the recorded world at their defaults.
                 " · matter " + (s.MatterIslands > 0f

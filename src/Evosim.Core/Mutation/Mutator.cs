@@ -43,13 +43,24 @@ namespace Evosim.Core
         /// birth investment where it perturbed the offspring endowment, and draws once more for
         /// the adult scale, so every seed after this operator reproduces a different child from
         /// the one it reproduced before it.
+        /// <para>
+        /// 4 — the owner's ruling of 2026-09-24 on round 47's stomachs: a cell type is never
+        /// changed in place. What <c>CellTypeChance</c> used to fire on a node now buds a small
+        /// copy of it of another type (<see cref="Bud"/>), drawn after the node pass, so every
+        /// seed whose birth fired the rate reproduces a different child.
+        /// </para>
         /// </remarks>
-        public const int CodeVersion = 3;
+        public const int CodeVersion = 4;
 
+        /// <param name="log">
+        /// Filled, when it is not null, with what this birth gained by budding: each bud's cell
+        /// type and its index in the returned genome. Cleared first. The lineage row reads it
+        /// (<c>World.Conceive</c>); nothing about the mutation depends on it.
+        /// </param>
         public static Genome Mutate(
             Genome parent, Rng rng, MutationRates rates = null, CellTypeRegistry cellTypes = null,
             RandomGenomeOptions genome = null, SensorChannel[] sensorPool = null,
-            bool buoyancyOffsetPriced = false)
+            bool buoyancyOffsetPriced = false, MutationLog log = null)
         {
             if (parent == null) throw new ArgumentNullException(nameof(parent));
             if (rng == null) throw new ArgumentNullException(nameof(rng));
@@ -57,6 +68,7 @@ namespace Evosim.Core
             rates = rates ?? MutationRates.Default;
             cellTypes = cellTypes ?? CellTypeRegistry.Standard;
             genome = genome ?? RandomGenomeOptions.Default;
+            log?.Clear();
 
             Genome child = parent.Clone();
 
@@ -77,11 +89,36 @@ namespace Evosim.Core
             // location, and a placeless brain undercut the one thing it set up.
             child.GlobalBrain = Array.Empty<NeuronDef>();
 
-            for (int n = 0; n < child.Nodes.Count; n++)
+            // The owner's ruling of 2026-09-24: the per-node cell-type draw is rolled here, in the
+            // node's own place in the stream, and answered by a bud after the pass. Rolled inline
+            // so the rate stays a per-node rate and the expected number of type events per birth is
+            // what CellTypeChance always meant; answered afterwards so a bud is neither mutated on
+            // the birth it arrives nor shifts the indices the pass is walking.
+            List<int> budSources = null;
+            int nodesBeforeBuds = child.Nodes.Count;
+
+            for (int n = 0; n < nodesBeforeBuds; n++)
             {
-                MutateNode(
-                    child, child.Nodes[n], rng, rates, cellTypes, genome, sensorPool,
-                    buoyancyOffsetPriced);
+                if (MutateNode(
+                        child, child.Nodes[n], rng, rates, cellTypes, genome, sensorPool,
+                        buoyancyOffsetPriced))
+                {
+                    (budSources ??= new List<int>()).Add(n);
+                }
+            }
+
+            List<MorphNode> buds = null;
+            if (budSources != null)
+            {
+                List<int> hosts = EnterableNodes(child);
+
+                foreach (int source in budSources)
+                {
+                    if (child.Nodes.Count >= rates.MaxNodes) break;
+
+                    MorphNode bud = Bud(child, source, hosts, rng, rates, cellTypes, genome);
+                    if (bud != null) (buds ??= new List<MorphNode>()).Add(bud);
+                }
             }
 
             if (rng.Chance(rates.AddNodeChance) && child.Nodes.Count < rates.MaxNodes)
@@ -90,6 +127,20 @@ namespace Evosim.Core
             }
 
             PruneVanishedNodes(child, rates);
+
+            // After the prune, which renumbers: the log names each bud by where it now stands. A
+            // bud is born above the extinction size, so it survives the prune unless a launcher
+            // set NewNodeHalfExtent under NodeExtinctionHalfExtent, and then it is not logged.
+            if (log != null && buds != null)
+            {
+                foreach (MorphNode bud in buds)
+                {
+                    int at = child.Nodes.IndexOf(bud);
+                    if (at < 0) continue;
+                    log.BudNodes.Add(at);
+                    log.BudCellTypes.Add(bud.CellTypeId);
+                }
+            }
 
             IReadOnlyList<string> issues = child.Validate(cellTypes, buoyancyOffsetPriced);
             if (issues.Count > 0)
@@ -153,7 +204,11 @@ namespace Evosim.Core
 
         // ---------------------------------------------------------------- nodes
 
-        private static void MutateNode(
+        /// <returns>
+        /// True when the cell-type rate fired on this node, which asks the caller for a bud
+        /// (<see cref="Bud"/>). The node's own type never changes here.
+        /// </returns>
+        private static bool MutateNode(
             Genome g, MorphNode node, Rng rng, MutationRates rates, CellTypeRegistry cellTypes,
             RandomGenomeOptions genome, SensorChannel[] sensorPool, bool buoyancyOffsetPriced)
         {
@@ -172,15 +227,16 @@ namespace Evosim.Core
             if (rng.Chance(rates.ShapeChance)) node.ShapeId = PickOther(
                 PartShapeRegistry.Standard, node.ShapeId, rng);
 
-            if (rng.Chance(rates.CellTypeChance)) ChangeCellType(node, rng, cellTypes, genome);
+            // The owner's ruling of 2026-09-24: a cell type is never changed in place, only added
+            // or removed. The draw stays here, in the stream where the in-place change drew it, so
+            // the rate is per node as it always was; what it asks for is a bud of another type,
+            // which Mutate makes after the node pass. The node itself keeps what it is made of.
+            bool budRequested = rng.Chance(rates.CellTypeChance);
 
-            // After a possible cell-type change, for the same reason the joint is: an attribute's
-            // ceiling is a property of what the part is now made of, and a claw stepped under the
-            // old type's cap and then re-typed would be a genome Validate refuses.
+            // Under the node's own type's caps, which no longer change on this birth.
             MutateAttributes(node, rng, rates, cellTypes);
 
-            // After a possible cell-type change, because whether a joint is even legal here
-            // depends on what the part is now made of.
+            // Whether a joint is legal here depends on what the part is made of.
             if (rng.Chance(rates.JointTypeChance)) ChangeJointType(node, rng, cellTypes, genome);
 
             if (node.JointType.DofCount() > 0)
@@ -229,6 +285,8 @@ namespace Evosim.Core
 
             MutateNeuronSet(node.Neurons, node, g, rng, rates, sensorPool, out NeuronDef[] neurons);
             node.Neurons = neurons;
+
+            return budRequested;
         }
 
         /// <summary>
@@ -304,60 +362,118 @@ namespace Evosim.Core
             return others.Count == 0 ? current : others[rng.Range(others.Count)];
         }
 
+        /// <summary>
+        /// A small copy of a node, of another cell type, attached to the body: the one route by
+        /// which a lineage acquires a cell type it does not have (the owner's ruling of
+        /// 2026-09-24).
+        /// </summary>
         /// <remarks>
-        /// The awkward operator, because cell type and joint are coupled: only a link may move
-        /// (§5A.1). Turning a link into a stomach must therefore also weld its joint shut and
-        /// surrender its capacity — a real cost, and the right one. It is what makes this a
-        /// genuine trade rather than a free relabelling.
+        /// <para>
+        /// <b>Additions and removals only.</b> Until this ruling the draw changed an existing
+        /// node's type in place, so a leaf became a stomach whole: a full-sized organ of a new
+        /// kind, with the upkeep of its whole volume, in a body whose every other part was tuned
+        /// to the leaf it had been. Round 47's dissection read the result. A bud instead arrives
+        /// at <see cref="MutationRates.NewNodeHalfExtent"/>, the size <see cref="AddNode"/>'s
+        /// duplicate arrives at, so its upkeep is small on the birth it happens and it grows only
+        /// if selection holds it; it leaves by the same door every node leaves by, shrinking
+        /// under <see cref="MutationRates.NodeExtinctionHalfExtent"/>.
+        /// </para>
+        /// <para>
+        /// <b>The repairs are the ones the in-place change made</b>, for their reasons: a lift is
+        /// drawn for a buoyancy cell and zeroed on anything else (a trait that can only arrive
+        /// useless is one selection never sees), and D106's four attributes are clamped down under
+        /// the new type's caps with nothing handed out. <b>The joint is always welded</b>, where
+        /// the in-place change welded it only for a type that disallows one: a bud is a small
+        /// thing fixed to its host, a link bud earns a joint the way any jointless link does
+        /// (<see cref="ChangeJointType"/>), and a welded part is what the rigid-group floors
+        /// (<see cref="DevelopmentLimits.FloorsWeighRigidGroups"/>) carry on its host.
+        /// </para>
+        /// <para>
+        /// <b>It enters once on a path</b> (recursive limit 1, determinate): a copy of a node with
+        /// a limit of 0 would never be entered and a copy of an indeterminate one would arrive
+        /// already modular. Its host is drawn from the nodes development can enter
+        /// (<see cref="EnterableNodes"/>), not from every node as <see cref="AddNode"/> draws,
+        /// because round 47's unexpressed stomachs were mostly nodes no developed part led to; a
+        /// bud hung on a dormant node is a gene nobody sees. The edge is
+        /// <see cref="RandomEdgeTo"/>'s, as <see cref="AddNode"/>'s is.
+        /// </para>
         /// </remarks>
-        private static void ChangeCellType(
-            MorphNode node, Rng rng, CellTypeRegistry cellTypes, RandomGenomeOptions genome)
+        /// <returns>The bud, already in the genome, or null when no other type is registered.</returns>
+        private static MorphNode Bud(
+            Genome g, int sourceIndex, List<int> hosts, Rng rng, MutationRates rates,
+            CellTypeRegistry cellTypes, RandomGenomeOptions genome)
         {
+            MorphNode source = g.Nodes[sourceIndex];
+
             var ids = new List<string>();
-            foreach (string id in cellTypes.Ids()) if (id != node.CellTypeId) ids.Add(id);
-            if (ids.Count == 0) return;
+            foreach (string id in cellTypes.Ids()) if (id != source.CellTypeId) ids.Add(id);
+            if (ids.Count == 0) return null;
 
-            node.CellTypeId = ids[rng.Range(ids.Count)];
+            MorphNode bud = source.Clone();
+            bud.Edges.Clear();
 
-            // Lift belongs to a buoyancy cell and to nothing else — Genome.Validate rejects it
-            // anywhere else — so a type change repairs it rather than leaving an invalid genome
-            // for the assertion at the end of Mutate to catch.
-            //
-            // A cell becoming buoyant is *drawn* a lift rather than started at zero, for the same
-            // reason a node acquiring a joint is drawn a capacity: PerturbPositive is relative,
-            // so from 0 it reaches 1e-4 and never climbs out. A trait that can only arrive
-            // useless is a trait selection never sees. Bounds come from the same options founders
-            // use, which is D045's rule after two hardcoded ceilings drifted apart.
-            node.Lift = node.CellTypeId == CellTypeIds.Buoyancy
+            bud.CellTypeId = ids[rng.Range(ids.Count)];
+
+            bud.Lift = bud.CellTypeId == CellTypeIds.Buoyancy
                 ? rng.Range(genome.MinBuoyancyLift, genome.MaxBuoyancyLift)
                 : 0f;
 
-            CellType became = cellTypes.Resolve(node.CellTypeId);
+            bud.JointType = JointType.Fixed;
+            bud.JointLimits = Array.Empty<Float2>();
+            bud.Power = 0f;
 
-            if (!became.AllowsJoint && node.JointType.DofCount() > 0)
+            bud.RecursiveLimit = 1;
+            bud.Growth = ModuleGrowth.Determinate;
+            bud.MaxModules = 1;
+
+            CellType became = cellTypes.Resolve(bud.CellTypeId);
+            bud.Attack = Clamp(bud.Attack, 0f, became.AttackMax);
+            bud.Intake = Clamp(bud.Intake, 0f, became.IntakeMax);
+            bud.Protection = Clamp(bud.Protection, 0f, became.ProtectionMax);
+            bud.Toughness = Clamp(bud.Toughness, 1f, became.ToughnessMax);
+
+            bud.Dimensions = new Float3(rates.NewNodeHalfExtent);
+
+            g.Nodes.Add(bud);
+            int host = hosts[rng.Range(hosts.Count)];
+            g.Nodes[host].Edges.Add(RandomEdgeTo(g, rng, child: g.Nodes.Count - 1));
+
+            return bud;
+        }
+
+        /// <summary>
+        /// The nodes development can enter at birth: the root, and every node an edge from an
+        /// enterable node leads to whose recursive limit lets it be entered at all.
+        /// </summary>
+        /// <remarks>
+        /// Read from the graph alone, so it is cheap and needs no limits: it does not ask whether
+        /// a terminal-only edge ever fires or whether a part clears the volume floor, which
+        /// development alone can answer. It removes the commonest dead host in round 47's snapshots,
+        /// a node with a recursive limit of 0, and every node only such a node leads to. In index
+        /// order, so the draw over it is deterministic in the genome.
+        /// </remarks>
+        private static List<int> EnterableNodes(Genome g)
+        {
+            var enterable = new bool[g.Nodes.Count];
+            var stack = new Stack<int>();
+
+            enterable[g.RootIndex] = true;
+            stack.Push(g.RootIndex);
+
+            while (stack.Count > 0)
             {
-                node.JointType = JointType.Fixed;
-                node.JointLimits = Array.Empty<Float2>();
-                node.Power = 0f;
+                foreach (MorphEdge edge in g.Nodes[stack.Pop()].Edges)
+                {
+                    int child = edge.Child;
+                    if (enterable[child] || g.Nodes[child].RecursiveLimit < 1) continue;
+                    enterable[child] = true;
+                    stack.Push(child);
+                }
             }
 
-            // D106 item 3. A node that has just changed type is under a different set of caps, and
-            // a claw that became a leaf is a genome Genome.Validate refuses — so the four are
-            // brought under the new ceilings here, beside the joint and the lift and for their
-            // reason: an operator repairs what it disturbs rather than leaving the assertion at
-            // the end of Mutate to catch it.
-            //
-            // <b>Down only, and no draw.</b> Unlike lift, an attribute is not given to a node that
-            // has just acquired the type for it: the type change already bought the *capacity* to
-            // evolve one, and handing over the cap as well would make a single cell-type mutation
-            // the whole of becoming a predator. What climbs out of zero is MutateAttributes below,
-            // whose step is absolute rather than relative for exactly the reason stated here about
-            // lift. A consumer's intake is the founder rule's one exception and stays the founder
-            // rule's: GenomeFactory draws it, mutation does not hand it out.
-            node.Attack = Clamp(node.Attack, 0f, became.AttackMax);
-            node.Intake = Clamp(node.Intake, 0f, became.IntakeMax);
-            node.Protection = Clamp(node.Protection, 0f, became.ProtectionMax);
-            node.Toughness = Clamp(node.Toughness, 1f, became.ToughnessMax);
+            var result = new List<int>();
+            for (int i = 0; i < enterable.Length; i++) if (enterable[i]) result.Add(i);
+            return result;
         }
 
         /// <summary>
@@ -811,5 +927,26 @@ namespace Evosim.Core
         private static Float3 PerturbVector(Float3 v, Rng rng, MutationRates rates) =>
             new Float3(
                 Perturb(v.X, rng, rates), Perturb(v.Y, rng, rates), Perturb(v.Z, rng, rates));
+    }
+
+    /// <summary>
+    /// What one call to <see cref="Mutator.Mutate"/> gained by budding — the owner's ruling of
+    /// 2026-09-24, read by the lineage row so a round can count bud births by cell type.
+    /// </summary>
+    public sealed class MutationLog
+    {
+        /// <summary>Each bud's cell type, in the order the buds were made.</summary>
+        public List<string> BudCellTypes { get; } = new List<string>();
+
+        /// <summary>Each bud's node index in the returned genome, beside its type.</summary>
+        public List<int> BudNodes { get; } = new List<int>();
+
+        public int Buds => BudNodes.Count;
+
+        public void Clear()
+        {
+            BudCellTypes.Clear();
+            BudNodes.Clear();
+        }
     }
 }

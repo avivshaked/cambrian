@@ -98,6 +98,10 @@ namespace Evosim.Core
         /// </summary>
         private List<LineageEvent> _lineageEvents = new List<LineageEvent>();
 
+        // One log reused across conceptions (Conceive runs on the world's one thread); cleared by
+        // every Mutate call that is handed it. The owner's ruling of 2026-09-24, for the lineage row.
+        private readonly MutationLog _mutationLog = new MutationLog();
+
         /// <summary>This step's ledgers, parallel to <c>_living</c>. Reused, never reallocated.</summary>
         private readonly List<EnergyLedger> _ledgers = new List<EnergyLedger>();
 
@@ -3412,6 +3416,14 @@ namespace Evosim.Core
         /// Mass is <see cref="RunConfig.PartDensityKilogramsPerCubicMetre"/> times volume, which is
         /// the mass the harness gives the articulation body. Asked of the newborn and never of the
         /// adult: what the solver has to carry is the body that will exist.
+        /// <para>
+        /// Under <see cref="DevelopmentLimits.FloorsWeighRigidGroups"/> the floor weighs each rigid
+        /// group instead of each part: the root or a jointed part, with every part welded to it by
+        /// a joint of no degree of freedom summed in. That is the body the farm's solver carries
+        /// (a welded part's inertia is folded into its host's), and it is what lets a bud born
+        /// small be born at all (the owner's ruling of 2026-09-24). Off, each part alone, as every
+        /// recorded world weighed it.
+        /// </para>
         /// </remarks>
         private bool IsUnderTheMassFloor(Phenotype body)
         {
@@ -3421,9 +3433,43 @@ namespace Evosim.Core
             float minVolume = floor / RunConfig.PartDensityKilogramsPerCubicMetre;
             IReadOnlyList<PhenotypePart> parts = body.Parts;
 
+            if (Config.Development.FloorsWeighRigidGroups)
+            {
+                return RigidGroupsUnder(parts, minVolume);
+            }
+
             for (int i = 0; i < parts.Count; i++)
             {
                 if (parts[i].Volume < minVolume) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Whether any rigid group of a body holds less than <paramref name="minVolume"/>: each
+        /// part's volume is summed into the group of the nearest part at or above it that is the
+        /// root or carries a joint with a degree of freedom. Summed in double, in part order.
+        /// </summary>
+        public static bool RigidGroupsUnder(IReadOnlyList<PhenotypePart> parts, float minVolume)
+        {
+            var groupVolume = new double[parts.Count];
+
+            for (int i = 0; i < parts.Count; i++)
+            {
+                int head = i;
+                while (parts[head].ParentIndex >= 0 && parts[head].JointType.DofCount() == 0)
+                {
+                    head = parts[head].ParentIndex;
+                }
+
+                groupVolume[head] += parts[i].Volume;
+            }
+
+            for (int i = 0; i < parts.Count; i++)
+            {
+                bool isHead = parts[i].ParentIndex < 0 || parts[i].JointType.DofCount() > 0;
+                if (isHead && groupVolume[i] < minVolume) return true;
             }
 
             return false;
@@ -3560,10 +3606,32 @@ namespace Evosim.Core
             Genome childGenome = Mutator.Mutate(
                 parent.Genome, new Rng(seed), Config.Mutation, Config.CellTypes, Config.Genome,
                 Config.SensorPool(),
-                buoyancyOffsetPriced: Config.BuoyancyOffsetWattsPerCubicMetre > 0f);
+                buoyancyOffsetPriced: Config.BuoyancyOffsetWattsPerCubicMetre > 0f,
+                log: _mutationLog);
 
             Phenotype body = Developer.Develop(
                 childGenome, Config.Development, null, Config.Shapes);
+
+            // The owner's ruling of 2026-09-24: what this birth gained by budding, for the lineage
+            // row — each bud's cell type, and how many of the buds the body built. Read off the
+            // adult development, which is the body the newborn is a scaled copy of, so a bud built
+            // here is a bud the newborn carries. Instrumentation: nothing branches on it.
+            string budCells = null;
+            int budsExpressed = 0;
+            if (_mutationLog.Buds > 0)
+            {
+                budCells = string.Join("+", _mutationLog.BudCellTypes);
+                foreach (int budNode in _mutationLog.BudNodes)
+                {
+                    IReadOnlyList<PhenotypePart> built = body.Parts;
+                    for (int i = 0; i < built.Count; i++)
+                    {
+                        if (built[i].SourceNode != budNode) continue;
+                        budsExpressed++;
+                        break;
+                    }
+                }
+            }
 
             // A body of no parts is a stillbirth (§4.5's extinction-by-shrinking; Admit counts it
             // and settles the energy). Read here rather than further down because everything
@@ -3709,7 +3777,8 @@ namespace Evosim.Core
             Organism child = Admit(
                 childGenome, newborn, BirthKind.Reproduction, seed, parent.Id,
                 parent.GenerationDepth + 1, reserve, tissue, childHeight, parent,
-                patch: childPatch, adultPhenotype: body, adultTissue: adultTissue);
+                patch: childPatch, adultPhenotype: body, adultTissue: adultTissue,
+                budCells: budCells, budsExpressed: budsExpressed);
 
             // D077. The reservation belongs to a creature now, or to nobody. Admit could not
             // refuse a body with parts until the self-overlap rule of 2026-09-19, and this
@@ -4385,7 +4454,8 @@ namespace Evosim.Core
             int generationDepth, double energy, double tissue, float heightY, Organism parent,
             int patch, Phenotype adultPhenotype, double adultTissue,
             FounderSource founderSource = FounderSource.None, int poolIndex = -1,
-            double endowment = 0d)
+            double endowment = 0d,
+            string budCells = null, int budsExpressed = 0)
         {
             // The owner's ruling of 2026-09-19: a body that would grow into itself is not born.
             // Asked here rather than at each of the three call sites so that a founder and an
@@ -4525,7 +4595,7 @@ namespace Evosim.Core
                 CarriesAttribute(genome, n => n.Attack),
                 CarriesAttribute(genome, n => n.Intake),
                 CarriesAttribute(genome, n => n.Protection),
-                founderSource, poolIndex, endowment));
+                founderSource, poolIndex, endowment, budCells, budsExpressed));
 
             return creature;
         }

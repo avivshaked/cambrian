@@ -170,6 +170,14 @@ namespace Evosim.Core
         /// <c>CellTypeMutationChance</c>, at ten times this value and with nothing reading it —
         /// setting it changed the hash, so two runs looked different in the record and were
         /// identical in fact. Which is §7 failing in the direction it least wants to (logbook/0013).
+        ///
+        /// <b>Since the owner's ruling of 2026-09-24 it adds a cell type and never changes one.</b>
+        /// When it fires on a node, that node keeps its type and the body gains a bud: a copy of
+        /// the node at <see cref="NewNodeHalfExtent"/>, of another registered type, welded to a
+        /// node development can enter (<c>Mutator.Bud</c>). Same rate, same draw per node, so the
+        /// expected number of type events per birth is unchanged; what changed is that the event
+        /// is an addition small enough to cost almost nothing, and removal stays the shrinking
+        /// under <see cref="NodeExtinctionHalfExtent"/> that removes any node.
         /// </remarks>
         [Tunable("mutation")]
         public float CellTypeChance { get; set; } = 0.001f;
