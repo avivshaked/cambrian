@@ -274,8 +274,14 @@ manifests naming the commit with `gitDirty` false and the `dynamicsHash` checked
 (`c45b0d58…`). The header tokens read `reefs 15 cover 0.25 (0.251 got)` on seed 1 (the
 smoke's fifteen, 6.3 to 15.6 m) and `reefs 21 cover 0.25 (0.249 got)` on seed 2 (6.4 to
 14.8 m, fourteen of them under 9 m), `pool 0.1 of 4`, `trickle 1/30 s`, `founders in their
-food`, the shore at 1 m with a 15 m fade. Seed 3 launches when one ends (two arms at a
-time). The watch is a session cron running `watch-round.py r47 --read
+food`, the shore at 1 m with a 15 m fade. **Seed 1 ended at 30,000 s** (03:22, 177 min wall at 2.8x real time, 2,619 alive,
+16,140 births, no divergence, both books closed): the pool's 99 founders all died at a
+median 46 s, three bred, none of their line lived to the end; the tables held more snow than
+the open floor at 37 of 201 dumps and at the last one; fewer bodies under the caps than
+beside them at all 41 samples; 257 bodies under caps at the end, one a stomach; `expo`
+1.62. **Seed 3 launched at 03:25** from `d7e3b6e` (the HANDOFF commit after the
+pre-registration's `50102ba`; every hash equal, `gitDirty` false, sixteen reefs at a cover
+of 0.255, 6.3 to 16.0 m), two arms at a time. The watch is a session cron running `watch-round.py r47 --read
 scripts/reads/r47-read.py --seeds 1,2,3` every half hour; frames are taken from the
 snapshots at the marks on worker 6, one at a time. The films of round 47 (the safari,
 `theatre-safari.ps1 r47-sN` with `guide.py`'s guide per seed) come after its end. The commit
