@@ -140,6 +140,14 @@ namespace Evosim.Farm
             // whether a build mismatch is a warning rather than a refusal. None of them reaches
             // RunConfig or its hash (logbook/specs/checkpoint-spec.md).
             Num("EVOSIM_CHECKPOINT_EVERY", 0f, (s, v) => s.CheckpointEvery = v),
+
+            // Which record the run writes (logbook/specs/record-and-film-spec.md, Part A): 2, the
+            // default from round 49's build, writes each genome once, slim snapshots, gzipped
+            // positions, the state stream in place of poses.jsonl and compressed checkpoints; 1
+            // writes the record every earlier run wrote. A recording setting like the cadences
+            // above it: EnvSettings and run.json's recordFormat, never RunConfig or its hash.
+            Custom("EVOSIM_RECORD_FORMAT", (s, env) => s.RecordFormat = RecordFormatOf(env)),
+
             Text("EVOSIM_RESUME", (s, v) => s.ResumeFrom = v),
             Num("EVOSIM_RESUME_AT", 0f, (s, v) => s.ResumeAt = v),
             Flag("EVOSIM_ALLOW_SOURCE_MISMATCH", (s, v) => s.AllowSourceMismatch = v),
@@ -884,6 +892,23 @@ namespace Evosim.Farm
             return floor;
         }
 
+        /// <summary>
+        /// <c>EVOSIM_RECORD_FORMAT</c>: 1 or 2, and 2 when unset. Anything else refuses the launch
+        /// rather than writing a record nobody asked for.
+        /// </summary>
+        private static int RecordFormatOf(Lookup env)
+        {
+            float v = Num(env, "EVOSIM_RECORD_FORMAT", RunRecordFormat.Newest);
+
+            if (v == RunRecordFormat.Jsonl) return RunRecordFormat.Jsonl;
+            if (v == RunRecordFormat.Compact) return RunRecordFormat.Compact;
+
+            throw new ArgumentException(
+                "EVOSIM_RECORD_FORMAT is '" + env("EVOSIM_RECORD_FORMAT") + "'. The records are 1 " +
+                "(every genome in every snapshot, positions.jsonl and poses.jsonl) and 2 (each " +
+                "genome once, slim snapshots, gzip in members, the state stream); unset is 2.");
+        }
+
         private static Knob Num(string name, float fallback, Action<EnvSettings, float> set) =>
             new Knob(name, (s, env) => set(s, Num(env, name, fallback)));
 
@@ -977,6 +1002,12 @@ namespace Evosim.Farm
         /// writes none.
         /// </summary>
         public float CheckpointEvery;
+
+        /// <summary>
+        /// Which record the run writes, <c>EVOSIM_RECORD_FORMAT</c>:
+        /// <see cref="RunRecordFormat.Compact"/> unless a launcher says 1.
+        /// </summary>
+        public int RecordFormat = RunRecordFormat.Newest;
 
         /// <summary>
         /// Where to start from: a <c>.ckpt</c> file, a run directory, or an arm directory. Null
@@ -1224,6 +1255,39 @@ namespace Evosim.Farm
         /// </remarks>
         public float ResolveCheckpointEvery() =>
             CheckpointEvery > 0f ? Math.Max(CheckpointEvery, MetabolicStep) : 0f;
+
+        /// <summary>
+        /// The report interval in simulated seconds: <see cref="ReportEvery"/> metabolic steps.
+        /// </summary>
+        public float ReportIntervalSeconds => Math.Max(1, ReportEvery) * MetabolicStep;
+
+        /// <summary>
+        /// Record format 2's one default: the state stream on at the report interval, in a shared
+        /// world, when the launcher did not name <c>EVOSIM_POSE_EVERY</c>. True when it applied.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Format 2 does not write <c>poses.jsonl</c>, and the stream at the report interval
+        /// carries what that file carried, at the same seconds, plus the body fraction
+        /// (<c>logbook/specs/record-and-film-spec.md</c> A4). A shared world only, because
+        /// <c>poses.jsonl</c> was written only beside <c>positions.jsonl</c>, and a tiled world's
+        /// places are a lattice and not a place.
+        /// </para>
+        /// <para>
+        /// Called after a resume has inherited its source's cadences, so a stream the source was
+        /// already writing keeps its own cadence. A launcher that names the variable wins,
+        /// including one that names 0 to write no stream at all; <see cref="Provided"/> is what
+        /// tells that apart from the unset default.
+        /// </para>
+        /// </remarks>
+        public bool ApplyRecordDefaults(bool sharedSpace)
+        {
+            if (RecordFormat != RunRecordFormat.Compact || !sharedSpace) return false;
+            if (Provided.Contains("EVOSIM_POSE_EVERY") || PoseEvery > 0f) return false;
+
+            PoseEvery = ReportIntervalSeconds;
+            return true;
+        }
 
         private const float MetabolicStep = EnvBinding.MetabolicStepSeconds;
     }

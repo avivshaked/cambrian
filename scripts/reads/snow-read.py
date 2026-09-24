@@ -9,7 +9,7 @@ Per arm and mark:
                   scratch/r47-stomachs/stomachs.py's tank_mean.
   >0.44, >1       share of live columns whose own density exceeds the value.
   top10 plant     mean column density over the densest 10% of occupied columns by photosynthetic
-                  body count (positions.jsonl flag 4 at the mark), stomachs.py's definition.
+                  body count (the positions' flag 4 at the mark), stomachs.py's definition.
   alive, photo, upt lim (uptakeLimitedShare), mat resid (matterResidual), audit (auditResidual)
                   from stats.jsonl's row at or before the mark.
   stomach founders: founders (p = -1) with the abs flag and src trickle or pool, born in the
@@ -23,6 +23,12 @@ REPO = r"D:\Projects\experiments\evolution-simulator"
 spec = importlib.util.spec_from_file_location("r47read", os.path.join(REPO, "scripts", "reads", "r47-read.py"))
 R = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(R)
+
+# The positions through runrec.py, which reads positions.jsonl or record format 2's
+# positions.jsonl.gz and says which.
+sys.path.insert(0, os.path.join(REPO, "scripts", "reads"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import runrec  # noqa: E402  (path set above)
 
 
 def med(xs):
@@ -51,7 +57,7 @@ def read_arm(root, arm, marks):
     # positions rows at the marks
     want = set(marks)
     pos = {}
-    for row in R.stream_jsonl(os.path.join(d, "positions.jsonl")):
+    for row in runrec.positions(d):
         t = row["t"]
         if abs(t - round(t)) < 1e-9 and int(round(t)) in want:
             pos[int(round(t))] = row["b"]

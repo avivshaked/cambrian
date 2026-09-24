@@ -18,6 +18,15 @@ namespace Evosim.Theatre
     /// </summary>
     /// <remarks>
     /// <para>
+    /// <b>Either record.</b> A run of record format 2 (<c>logbook/specs/record-and-film-spec.md</c>)
+    /// writes <c>snapshots/NNNNNNNNN.jsonl.gz</c>, slim rows of an id, the body's plan and its
+    /// body fraction, and every genome once in <c>genomes.jsonl.gz</c>, and its positions as
+    /// gzip members in <c>positions.jsonl.gz</c>. <see cref="RecordFiles"/> reads both records,
+    /// dispatching on the manifest and never on a guess inside a file, and a format 2 snapshot
+    /// joins to format 1's rows to the byte, so everything below reads one kind of row. What
+    /// format 2 adds is the body fraction, and a picture of it is drawn at the recorded size.
+    /// </para>
+    /// <para>
     /// <b>Why it exists.</b> A picture of a world at 30,000 s cost a full re-simulation from the
     /// first second, which is a day of an Editor's life for one frame, and round 41's first early
     /// look timed out on the snapshot tool's wall with nothing written (2026-09-18). The farm
@@ -190,6 +199,21 @@ namespace Evosim.Theatre
         private Dictionary<long, RecordedPose> _poses;
         private string _firstPoseRefusal;
 
+        /// <summary>The run's record (<see cref="RunRecordFormat"/>), read once a <see cref="Begin"/>.</summary>
+        private int _format = RunRecordFormat.Jsonl;
+
+        /// <summary>
+        /// Each body's recorded fraction of its adult size, from a format 2 slim row's
+        /// <c>bf</c>. Empty for a format 1 snapshot, which never recorded one.
+        /// </summary>
+        private readonly Dictionary<long, float> _fractionOf = new Dictionary<long, float>();
+
+        /// <summary>A format 2 snapshot's slim rows with no genome in <c>genomes.jsonl.gz</c>.</summary>
+        private int _slimWithoutAGenome;
+
+        /// <summary>Where the genomes came from, for the log: one file, or a join of two.</summary>
+        private string _genomeSource = "";
+
         private SnapshotWorld() { }
 
         // ---------------------------------------------------------------- opening
@@ -305,24 +329,49 @@ namespace Evosim.Theatre
 
             string directory = Record.Path;
 
+            // Which record the run holds, from its manifest and never from guessing inside a file
+            // (logbook/specs/record-and-film-spec.md): format 1's JSON lines, or format 2's gzip
+            // members with the snapshots' slim rows joined to genomes.jsonl.gz. A record this
+            // build does not know is refused here rather than read as the nearest one.
+            try
+            {
+                _format = RecordFiles.FormatOf(directory, out string how);
+                Debug.Log("[Theatre] record format " + _format + " (" + how + ") in " + directory);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("[Theatre] the record in " + directory + " cannot be read: " + e.Message);
+                Ready = true;
+                return;
+            }
+
             // The state stream first, when the run wrote one and it holds this second. Its frames
             // are half a second apart where a snapshot is a thousand, so this is the path that
             // makes a second between snapshots drawable at all.
             if (BeginFromStream(directory, second)) return;
 
-            string snapshot = SnapshotFileAt(directory, second);
-
-            if (snapshot == null)
+            if (!ReadGenomes(directory, second, out string failure))
             {
                 Debug.LogError(
-                    "[Theatre] no snapshot at " + Seconds(second) + " s in " + directory);
+                    "[Theatre] " + (failure ?? "no snapshot at " + Seconds(second) + " s") +
+                    " in " + directory);
                 Ready = true;
                 return;
             }
 
-            ReadGenomes(snapshot);
+            string line;
 
-            string line = PositionsRowAt(directory, second);
+            try
+            {
+                line = PositionsRowAt(directory, second);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(
+                    "[Theatre] the positions in " + directory + " cannot be read: " + e.Message);
+                Ready = true;
+                return;
+            }
 
             if (line == null)
             {
@@ -361,8 +410,9 @@ namespace Evosim.Theatre
                     At = at,
                     Flags = entry[4].AsInt(),
 
-                    // Nothing in positions.jsonl says how far a body had grown, so this path draws
-                    // the adult, as it always has.
+                    // Nothing in the positions says how far a body had grown. A format 2 slim
+                    // row does (its bf), and is applied below only when every joined body has
+                    // one; otherwise this path draws the adult, as it always has.
                     Fraction = 1f,
                 });
             }
@@ -375,6 +425,35 @@ namespace Evosim.Theatre
             JoinedCount = _queue.Count;
             _built = 0;
 
+            // The recorded size, all or nothing, because the label has two words for it and not
+            // three: "recorded size" on a frame where some bodies were drawn adult would be the
+            // quiet kind of wrong the label exists to prevent. A format 1 snapshot has no
+            // fractions at all and reads exactly as it did.
+            int sized = 0;
+
+            foreach (Pending pending in _queue)
+            {
+                if (_fractionOf.TryGetValue(pending.Id, out float f) && f > 0f && f <= 1f) sized++;
+            }
+
+            if (sized > 0 && sized == _queue.Count)
+            {
+                for (int i = 0; i < _queue.Count; i++)
+                {
+                    Pending pending = _queue[i];
+                    pending.Fraction = _fractionOf[pending.Id];
+                    _queue[i] = pending;
+                }
+
+                RecordedSize = true;
+            }
+            else if (sized > 0)
+            {
+                Debug.LogWarning(
+                    "[Theatre] " + sized + " of " + _queue.Count + " joined bodies carry a " +
+                    "recorded body fraction, so every body is drawn at its adult size");
+            }
+
             // The third file of the join, and the only optional one: a run recorded before
             // 2026-09-21 has none, and a body is then drawn in the developer's frame as every
             // reconstruction was before poses existed.
@@ -382,15 +461,20 @@ namespace Evosim.Theatre
             PosesRecorded = _poses != null;
 
             Debug.Log(
-                "[Theatre] snapshot from snapshots/" + _snapshotName + ": " +
+                "[Theatre] snapshot from " + _genomeSource + ": " +
                 _rows.Length + " genomes, " + bodies.Count + " positions, " +
                 JoinedCount + " joined, " + WithoutAGenome + " without a genome, " +
                 WithoutAPosition + " without a position; " +
+                (_slimWithoutAGenome > 0
+                    ? _slimWithoutAGenome + " slim row(s) with no genome in " +
+                      RecordFiles.GenomesName + ", refused; "
+                    : "") +
+                (RecordedSize ? "every body at its recorded size; " : "") +
                 (PosesRecorded
                     ? _poses.Count + " poses at this second"
                     : RecordedPoses.Has(directory)
-                        ? "poses.jsonl carries no row at this second, so every body is drawn upright"
-                        : "no poses.jsonl, so every body is drawn upright"));
+                        ? "the poses carry no row at this second, so every body is drawn upright"
+                        : "no poses, so every body is drawn upright"));
 
             if (Unreadable > 0)
             {
@@ -462,7 +546,16 @@ namespace Evosim.Theatre
             RecordedSize = true;
             SnapshotSecond = SecondOfSnapshot(snapshot);
 
-            ReadGenomes(snapshot);
+            if (!ReadGenomes(directory, SnapshotSecond, out string failure))
+            {
+                Debug.LogError(
+                    "[Theatre] the stream has a frame at " + Seconds(second) + " s and its " +
+                    "snapshot cannot be read: " + (failure ?? "no snapshot at " +
+                    Seconds(SnapshotSecond) + " s"));
+
+                Ready = true;
+                return true;
+            }
 
             _poses = new Dictionary<long, RecordedPose>(frame.Bodies.Length);
 
@@ -507,7 +600,7 @@ namespace Evosim.Theatre
 
             Debug.Log(
                 "[Theatre] pose t=" + Seconds(second) + " s from poses.bin of snapshot " +
-                Seconds(SnapshotSecond) + " s (snapshots/" + _snapshotName + "): " +
+                Seconds(SnapshotSecond) + " s (" + _genomeSource + "): " +
                 _rows.Length + " genomes, " + frame.Bodies.Length + " poses, " +
                 JoinedCount + " joined, " + WithoutAGenome + " born after the snapshot and " +
                 "skipped, " + WithoutAPosition + " in the snapshot and not in the frame; every " +
@@ -523,13 +616,63 @@ namespace Evosim.Theatre
             return true;
         }
 
-        /// <summary>Reads a snapshot file's rows and builds the id-to-row map.</summary>
-        private void ReadGenomes(string snapshot)
+        /// <summary>
+        /// Reads the snapshot at a second in the run's record and builds the id-to-row map. False,
+        /// with the reason in <paramref name="failure"/> when there is one, when there is no
+        /// snapshot there or it cannot be read.
+        /// </summary>
+        /// <remarks>
+        /// Through <see cref="RecordFiles.ReadSnapshot"/>, which reads either record: format 1's
+        /// rows as they are, and format 2's slim rows joined to <c>genomes.jsonl.gz</c>, where the
+        /// join is format 1's row to the byte. A slim row whose genome is not in the file is
+        /// refused and counted there, never drawn as another body's genome; that body then
+        /// counts again here as a position <i>without a genome</i>, because it has no row, so the
+        /// refusal is logged beside the join and not added to the unmatched count twice.
+        /// </remarks>
+        private bool ReadGenomes(string directory, double second, out string failure)
         {
-            _snapshotName = Path.GetFileName(snapshot);
+            failure = null;
+            _fractionOf.Clear();
+            _slimWithoutAGenome = 0;
 
-            // ReadRows, never File.ReadAllLines: a snapshot of a live run has a writer on it.
-            _rows = JsonlWriter.ReadRows(snapshot);
+            SnapshotRead read;
+
+            try
+            {
+                // Never File.ReadAllLines: a snapshot of a live run has a writer on it, and the
+                // reader shares the file the way JsonlWriter.ReadRows does.
+                read = RecordFiles.ReadSnapshot(directory, second, _format);
+            }
+            catch (Exception e)
+            {
+                failure = "the snapshot at " + Seconds(second) + " s cannot be read: " + e.Message;
+                return false;
+            }
+
+            if (read == null) return false;
+
+            _snapshotName = Path.GetFileName(read.File);
+            _genomeSource = read.Source;
+            _slimWithoutAGenome = read.WithoutAGenome;
+
+            foreach (string note in read.Notes) Debug.LogWarning("[Theatre] " + note);
+
+            if (read.WithoutAGenome > 0)
+            {
+                Debug.LogWarning(
+                    "[Theatre] " + read.WithoutAGenome + " slim row(s) of " + _snapshotName +
+                    " have no genome in " + RecordFiles.GenomesName + " and are refused, not " +
+                    "drawn; the first ids: " +
+                    string.Join(", ", read.RefusedIds.GetRange(0, Math.Min(5, read.RefusedIds.Count))));
+            }
+
+            for (int i = 0; i < read.Ids.Length; i++)
+            {
+                float f = read.BodyFractions[i];
+                if (!float.IsNaN(f) && !float.IsInfinity(f)) _fractionOf[read.Ids[i]] = f;
+            }
+
+            _rows = read.Rows;
             _rowOf.Clear();
 
             for (int i = 0; i < _rows.Length; i++)
@@ -567,6 +710,8 @@ namespace Evosim.Theatre
 
                 if (!_rowOf.ContainsKey(id)) _rowOf[id] = i;
             }
+
+            return true;
         }
 
         // ---------------------------------------------------------------- the bodies
@@ -604,7 +749,7 @@ namespace Evosim.Theatre
 
             Debug.Log(
                 "[Theatre] reconstructed " + _bodies.Count + " bodies at t=" + Seconds(Second) +
-                " s, every one at its adult size; " +
+                (RecordedSize ? " s, every one at its recorded size; " : " s, every one at its adult size; ") +
                 (PosedCount == 0
                     ? "every one in the developer's own frame"
                     : PosedCount == _bodies.Count
@@ -1107,36 +1252,18 @@ namespace Evosim.Theatre
         public static string Resolve(string path) => RunRecord.ResolveRunDirectory(path);
 
         /// <summary>Every second a snapshot was written at, ascending. Empty when there are none.</summary>
-        public static double[] SnapshotSeconds(string runDirectory)
-        {
-            string directory = Path.Combine(runDirectory, "snapshots");
-            if (!Directory.Exists(directory)) return new double[0];
+        /// <remarks>
+        /// In the run's own record (<see cref="RecordFiles.FormatOf(string)"/>): format 1's
+        /// <c>snapshots/NNNNNNNNN.jsonl</c> or format 2's <c>snapshots/NNNNNNNNN.jsonl.gz</c>, so a
+        /// converted run, which holds both, lists each second once. A record this build does not
+        /// know throws, as every reader of it does.
+        /// </remarks>
+        public static double[] SnapshotSeconds(string runDirectory) =>
+            RecordFiles.SnapshotSeconds(runDirectory, RecordFiles.FormatOf(runDirectory));
 
-            var seconds = new List<double>();
-
-            foreach (string file in Directory.GetFiles(directory, "*.jsonl"))
-            {
-                if (long.TryParse(
-                        Path.GetFileNameWithoutExtension(file), NumberStyles.Integer,
-                        CultureInfo.InvariantCulture, out long t))
-                {
-                    seconds.Add(t);
-                }
-            }
-
-            seconds.Sort();
-            return seconds.ToArray();
-        }
-
-        /// <summary>The snapshot file at a second, or null.</summary>
-        public static string SnapshotFileAt(string runDirectory, double second)
-        {
-            string file = Path.Combine(
-                Path.Combine(runDirectory, "snapshots"),
-                string.Format(CultureInfo.InvariantCulture, "{0:000000000}.jsonl", (long)second));
-
-            return File.Exists(file) ? file : null;
-        }
+        /// <summary>The snapshot file at a second in the run's own record, or null.</summary>
+        public static string SnapshotFileAt(string runDirectory, double second) =>
+            RecordFiles.SnapshotFile(runDirectory, second, RecordFiles.FormatOf(runDirectory));
 
         /// <summary>
         /// The last snapshot file written at or before a second, or null when there is none.
@@ -1160,13 +1287,20 @@ namespace Evosim.Theatre
             return double.IsNaN(best) ? null : SnapshotFileAt(runDirectory, best);
         }
 
-        /// <summary>The second a snapshot file's name states.</summary>
-        private static double SecondOfSnapshot(string path) =>
-            long.TryParse(
-                Path.GetFileNameWithoutExtension(path), NumberStyles.Integer,
-                CultureInfo.InvariantCulture, out long t)
+        /// <summary>
+        /// The second a snapshot file's name states: its digits up to the first dot, so
+        /// <c>.jsonl</c> and <c>.jsonl.gz</c> read the same.
+        /// </summary>
+        private static double SecondOfSnapshot(string path)
+        {
+            string name = Path.GetFileName(path);
+            int dot = name.IndexOf('.');
+            if (dot >= 0) name = name.Substring(0, dot);
+
+            return long.TryParse(name, NumberStyles.Integer, CultureInfo.InvariantCulture, out long t)
                 ? t
                 : 0d;
+        }
 
         /// <summary>Whether the run wrote a state stream.</summary>
         public static bool HasStream(string runDirectory) => PoseStream.Has(runDirectory);
@@ -1199,7 +1333,8 @@ namespace Evosim.Theatre
         }
 
         /// <summary>
-        /// Every sample time in <c>positions.jsonl</c>, ascending, read without loading the file.
+        /// Every sample time in the positions (either record), ascending, read without loading the
+        /// file.
         /// </summary>
         /// <remarks>
         /// Streamed rather than taken through <c>JsonlWriter.ReadRows</c>, which reads the whole
@@ -1233,33 +1368,27 @@ namespace Evosim.Theatre
             return null;
         }
 
-        /// <summary>Whether the run wrote positions at all. A tiled world writes none.</summary>
+        /// <summary>
+        /// Whether the run wrote positions at all, in its own record: <c>positions.jsonl</c>, or
+        /// <c>positions.jsonl.gz</c> in format 2. A tiled world writes neither.
+        /// </summary>
         public static bool HasPositions(string runDirectory) =>
-            File.Exists(Path.Combine(runDirectory, "positions.jsonl"));
+            RecordFiles.PositionsFile(runDirectory, RecordFiles.FormatOf(runDirectory)) != null;
 
-        private static IEnumerable<string> Rows(string runDirectory)
-        {
-            string path = Path.Combine(runDirectory, "positions.jsonl");
-            if (!File.Exists(path)) yield break;
-
-            using (var stream = new FileStream(
-                       path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            using (var reader = new StreamReader(stream, new System.Text.UTF8Encoding(false)))
-            {
-                string line;
-
-                while ((line = reader.ReadLine()) != null)
-                {
-                    line = line.Trim();
-
-                    // A row being written is half a row, and half a row parsed as a world is
-                    // worse than no world. Every complete row ends its body array and its object.
-                    if (line.Length == 0 || !line.EndsWith("}", StringComparison.Ordinal)) continue;
-
-                    yield return line;
-                }
-            }
-        }
+        /// <summary>
+        /// Every complete positions row, in either record, through
+        /// <see cref="RecordFiles.PositionLines"/>.
+        /// </summary>
+        /// <remarks>
+        /// A row being written is half a row, and half a row parsed as a world is worse than no
+        /// world: format 1 skips a last line that does not close its object, and format 2 skips a
+        /// torn last member, which is said in the log. A damaged member that is not the last one
+        /// is refused with an exception rather than skipped.
+        /// </remarks>
+        private static IEnumerable<string> Rows(string runDirectory) =>
+            RecordFiles.PositionLines(
+                runDirectory, RecordFiles.FormatOf(runDirectory),
+                torn => Debug.LogWarning("[Theatre] " + torn));
 
         /// <summary>A row's <c>t</c> without parsing the rest of it, or NaN.</summary>
         private static double TimeOf(string line)
@@ -1358,6 +1487,10 @@ namespace Evosim.Theatre
 
             FromStream = false;
             RecordedSize = false;
+
+            _fractionOf.Clear();
+            _slimWithoutAGenome = 0;
+            _genomeSource = "";
         }
 
         public void Dispose()

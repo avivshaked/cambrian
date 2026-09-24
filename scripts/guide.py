@@ -45,8 +45,9 @@ readings' definitions are below and printed in the guide. The top `--top` by sco
 the positions ever show are the default trip; every clade with PICKER_MIN_MEMBERS members ever is
 in the picker.
 
-Standard library only. lineage.jsonl, positions.jsonl and the snapshots are streamed one row at a
-time. Exits 0 on a run it could read and 2 when it could not find or read one.
+Standard library only. lineage.jsonl, the positions and the snapshots are streamed one row at a
+time, in either record (reads/runrec.py: record format 1's JSON lines, or format 2's gzip members
+with the snapshots' slim rows joined to genomes.jsonl.gz). Exits 0 on a run it could read and 2 when it could not find or read one.
 """
 import argparse
 import bisect
@@ -60,6 +61,10 @@ import re
 import shutil
 import subprocess
 import time
+
+# Either record, the JSON lines or the gzip members: one reader for both (reads/runrec.py).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'reads'))
+import runrec  # noqa: E402
 
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -477,8 +482,9 @@ def scorer_clades(births, trait):
     return out
 
 
-def read_positions(path, clade_of, n_clades, radius, bed):
-    """One pass over positions.jsonl: per-clade peaks, success share and location histograms."""
+def read_positions(run_dir, clade_of, n_clades, radius, bed):
+    """One pass over the positions (either record, runrec.py): per-clade peaks, success share and
+    location histograms."""
     peak = [0] * n_clades
     peak_t = [None] * n_clades
     peak_living = [0] * n_clades
@@ -495,53 +501,49 @@ def read_positions(path, clade_of, n_clades, radius, bed):
     cx = cz = radius
     if bed is not None:
         bed_values, bnx, bnz, bcell = bed
-    with open(path, 'r', encoding='utf-8') as f:
-        for line in f:
-            if not line.strip():
+    for row in runrec.positions(run_dir):
+        t = row['t']
+        bodies = row['b']
+        living = len(bodies)
+        samples.append((t, living))
+        counts = {}
+        for body in bodies:
+            c = clade_of.get(body[0])
+            if c is None:
+                unknown_ids += 1
                 continue
-            row = json.loads(line)
-            t = row['t']
-            bodies = row['b']
-            living = len(bodies)
-            samples.append((t, living))
-            counts = {}
-            for body in bodies:
-                c = clade_of.get(body[0])
-                if c is None:
-                    unknown_ids += 1
-                    continue
-                counts[c] = counts.get(c, 0) + 1
-                y = body[2]
-                dh = depth_h[c]
-                if dh is None:
-                    dh = depth_h[c] = {}
-                    radius_h[c] = {}
-                    height_h[c] = {}
-                k = int(round(-y * 10))
-                dh[k] = dh.get(k, 0) + 1
-                if radius is not None:
-                    r = math.hypot(body[1] - cx, body[3] - cz)
-                    k = int(round(r * 10))
-                    rh = radius_h[c]
-                    rh[k] = rh.get(k, 0) + 1
-                if bed is not None:
-                    ix = min(max(int(body[1] / bcell), 0), bnx - 1)
-                    iz = min(max(int(body[3] / bcell), 0), bnz - 1)
-                    k = int(round((y - bed_values[ix * bnz + iz]) * 10))
-                    hh = height_h[c]
-                    hh[k] = hh.get(k, 0) + 1
-            for c, n in counts.items():
-                seen_samples[c] += 1
-                if n > peak[c]:
-                    peak[c] = n
-                    peak_t[c] = t
-                    peak_living[c] = living
-                if living >= MIN_LIVING_FOR_SHARE and n / living > best_share[c]:
-                    best_share[c] = n / living
-                if first_seen[c] is None:
-                    first_seen[c] = t
-                last_seen[c] = t
-            last_counts = counts
+            counts[c] = counts.get(c, 0) + 1
+            y = body[2]
+            dh = depth_h[c]
+            if dh is None:
+                dh = depth_h[c] = {}
+                radius_h[c] = {}
+                height_h[c] = {}
+            k = int(round(-y * 10))
+            dh[k] = dh.get(k, 0) + 1
+            if radius is not None:
+                r = math.hypot(body[1] - cx, body[3] - cz)
+                k = int(round(r * 10))
+                rh = radius_h[c]
+                rh[k] = rh.get(k, 0) + 1
+            if bed is not None:
+                ix = min(max(int(body[1] / bcell), 0), bnx - 1)
+                iz = min(max(int(body[3] / bcell), 0), bnz - 1)
+                k = int(round((y - bed_values[ix * bnz + iz]) * 10))
+                hh = height_h[c]
+                hh[k] = hh.get(k, 0) + 1
+        for c, n in counts.items():
+            seen_samples[c] += 1
+            if n > peak[c]:
+                peak[c] = n
+                peak_t[c] = t
+                peak_living[c] = living
+            if living >= MIN_LIVING_FOR_SHARE and n / living > best_share[c]:
+                best_share[c] = n / living
+            if first_seen[c] is None:
+                first_seen[c] = t
+            last_seen[c] = t
+        last_counts = counts
     return {
         'peak': peak, 'peak_t': peak_t, 'peak_living': peak_living, 'best_share': best_share,
         'first_seen': first_seen, 'last_seen': last_seen, 'seen_samples': seen_samples,
@@ -551,14 +553,7 @@ def read_positions(path, clade_of, n_clades, radius, bed):
 
 
 def snapshot_seconds(run_dir):
-    d = os.path.join(run_dir, 'snapshots')
-    if not os.path.isdir(d):
-        return []
-    out = []
-    for name in os.listdir(d):
-        if name.endswith('.jsonl') and name.split('.')[0].isdigit():
-            out.append(int(name.split('.')[0]))
-    return sorted(out)
+    return runrec.snapshot_seconds(run_dir)
 
 
 def first_snapshot_holding(snaps, born, died):
@@ -576,25 +571,26 @@ def read_snapshot_rows(run_dir, requests, raw=None):
     """{(second, id): row} for every requested id, one pass per requested file.
 
     When `raw` is a dict, the row's own line is kept in it under the same key, so a genome file
-    written for the ledger is the snapshot's bytes and not a re-serialisation.
+    written for the ledger is the snapshot's bytes and not a re-serialisation. Either record
+    (runrec.py): in record format 2 a row is the slim row joined to its genome, which is format
+    1's row to the byte, and the body fraction the slim row adds is left out of the dict so that
+    a name hashes the same genome in both records.
     """
     found = {}
+    index = None
+    if runrec.record_format(run_dir)[0] == runrec.COMPACT:
+        index = runrec.genome_index(run_dir, set().union(*requests.values()) if requests else set())
     for s in sorted(requests):
         wanted = requests[s]
-        path = os.path.join(run_dir, 'snapshots', '%09d.jsonl' % s)
-        with open(path, 'r', encoding='utf-8') as f:
-            for line in f:
-                if not line.startswith('{"id":'):
-                    continue
-                comma = line.find(',', 6)
-                try:
-                    i = int(line[6:comma])
-                except ValueError:
-                    continue
-                if i in wanted:
-                    found[(s, i)] = json.loads(line)
-                    if raw is not None:
-                        raw[(s, i)] = line.rstrip('\r\n')
+        snap = runrec.snapshot(run_dir, s, genomes=index, ids=wanted)
+        if snap is None:
+            continue
+        for line, i, row in zip(snap.lines, snap.ids, snap):
+            if i in wanted:
+                row.pop('bf', None)
+                found[(s, i)] = row
+                if raw is not None:
+                    raw[(s, i)] = line.rstrip('\r\n')
     return found
 
 
@@ -867,10 +863,12 @@ def main():
     started = time.time()
     run_dir = resolve_run(args.runs_root, args.arm, args.run)
     lineage_path = os.path.join(run_dir, 'lineage.jsonl')
-    positions_path = os.path.join(run_dir, 'positions.jsonl')
-    for p in (lineage_path, positions_path, os.path.join(run_dir, 'config.json')):
+    for p in (lineage_path, os.path.join(run_dir, 'config.json')):
         if not os.path.isfile(p):
             fail('%s: no %s' % (args.arm, p))
+    if not runrec.has_positions(run_dir):
+        fail('%s: no positions in %s (positions.jsonl, or positions.jsonl.gz in record format 2)'
+             % (args.arm, run_dir))
 
     with open(os.path.join(run_dir, 'config.json'), 'r', encoding='utf-8') as f:
         config = json.load(f)
@@ -911,7 +909,7 @@ def main():
     t_lineage = time.time()
 
     # 3. Where they lived, and their peaks, from the positions.
-    pos = read_positions(positions_path, clade_of, len(clades), radius, bed)
+    pos = read_positions(run_dir, clade_of, len(clades), radius, bed)
     t_positions = time.time()
     samples = pos['samples']
     run_end = samples[-1][0] if samples else max(b['t'] for b in births.values())

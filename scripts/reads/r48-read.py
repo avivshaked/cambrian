@@ -119,6 +119,7 @@ REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 
 sys.path.insert(0, HERE)
 from contact_aliases import field as _aliased_field  # noqa: E402  (path set above)
+import runrec  # noqa: E402  (either record: positions.jsonl or positions.jsonl.gz)
 
 DEFAULT_ARMS = ["r48-s1", "r48-s2", "r48-s3"]
 
@@ -746,11 +747,11 @@ def column_water(bed, reefs, ix, iz):
 # ---------------------------------------------------------------------- positions, one pass
 
 def positions_pass(d, cutoff, read_t, reefs, bed, want_first, stride, band):
-    """One pass over positions.jsonl. Collects the row at the read second (M3, F3), the R1b
+    """One pass over the positions, in either record (runrec.py: positions.jsonl, or
+    positions.jsonl.gz's members). Collects the row at the read second (M3, F3), the R1b
     samples and each wanted id's first place at or after its birth (F4). A row is parsed only
     when one of those needs it."""
-    path = os.path.join(d, "positions.jsonl")
-    out = dict(present=os.path.exists(path), last_line=None, last_t=None, l6=[], first={})
+    out = dict(present=runrec.has_positions(d), last_line=None, last_t=None, l6=[], first={})
     if not out["present"]:
         return out
     pending = dict(want_first)         # id -> birth t
@@ -759,39 +760,38 @@ def positions_pass(d, cutoff, read_t, reefs, bed, want_first, stride, band):
     l6_geom = l6_geometry(reefs, bed, band) if (reefs is not None and bed is not None) else None
     if l6_geom is not None:
         out["l6_volumes"] = (l6_geom["v_under"], l6_geom["v_beside"])
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            if not line.startswith('{"t":'):
-                continue
-            comma = line.find(",", 5)
-            try:
-                t = float(line[5:comma])
-            except ValueError:
-                continue
-            if t > cutoff:
-                break
-            if t <= read_t:
-                out["last_line"] = line
-                out["last_t"] = t
-            need_l6 = (l6_geom is not None and t >= L5_FROM and t <= read_t
-                       and abs(t / stride - round(t / stride)) < 1e-9)
-            need_first = bool(pending) and t >= earliest
-            if not (need_l6 or need_first):
-                continue
-            try:
-                row = json.loads(line)
-            except json.JSONDecodeError:
-                break                  # a half-written last line
-            bodies = row.get(N["positions_bodies"], [])
-            if need_first:
-                for b in bodies:
-                    bt = pending.get(b[0])
-                    if bt is not None and t >= bt:
-                        out["first"][b[0]] = (t, b[1], b[2], b[3])
-                        del pending[b[0]]
-                earliest = min(pending.values()) if pending else None
-            if need_l6:
-                out["l6"].append(l6_count(t, bodies, reefs, bed, l6_geom))
+    for line in runrec.positions_lines(d):
+        if not line.startswith('{"t":'):
+            continue
+        comma = line.find(",", 5)
+        try:
+            t = float(line[5:comma])
+        except ValueError:
+            continue
+        if t > cutoff:
+            break
+        if t <= read_t:
+            out["last_line"] = line
+            out["last_t"] = t
+        need_l6 = (l6_geom is not None and t >= L5_FROM and t <= read_t
+                   and abs(t / stride - round(t / stride)) < 1e-9)
+        need_first = bool(pending) and t >= earliest
+        if not (need_l6 or need_first):
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            break                  # a half-written last line
+        bodies = row.get(N["positions_bodies"], [])
+        if need_first:
+            for b in bodies:
+                bt = pending.get(b[0])
+                if bt is not None and t >= bt:
+                    out["first"][b[0]] = (t, b[1], b[2], b[3])
+                    del pending[b[0]]
+            earliest = min(pending.values()) if pending else None
+        if need_l6:
+            out["l6"].append(l6_count(t, bodies, reefs, bed, l6_geom))
     if out["last_line"] is not None:
         try:
             json.loads(out["last_line"])
@@ -927,7 +927,7 @@ def l6(seed, reefs, reef_reason, bed, pos, band):
     if bed is None:
         return absent("L6", seed, "no fields/bed.f32, so no volumes")
     if not pos["present"]:
-        return absent("L6", seed, "no positions.jsonl")
+        return absent("L6", seed, "no positions in either record")
     rows = pos["l6"]
     if not rows:
         return absent("L6", seed, "no positions sample at or after 10,000 s yet")
@@ -1543,7 +1543,7 @@ def reef_readings(seed, d, config, manifest, cutoff, read_t, args, pos=None):
         if reefs is not None and bed is not None:
             pos = positions_pass(d, cutoff, read_t, reefs, bed, {}, args.stride, args.l6_band)
         else:
-            pos = dict(present=os.path.exists(os.path.join(d, "positions.jsonl")), l6=[])
+            pos = dict(present=runrec.has_positions(d), l6=[])
     return (l5(seed, reefs, reef_reason, bed, dumps),
             l6(seed, reefs, reef_reason, bed, pos, args.l6_band))
 

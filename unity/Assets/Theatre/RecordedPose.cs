@@ -70,9 +70,14 @@ namespace Evosim.Theatre
     /// </remarks>
     public static class RecordedPoses
     {
-        /// <summary>Whether the run recorded poses at all. Every run before 2026-09-21 did not.</summary>
+        /// <summary>
+        /// Whether the run recorded poses at all: <c>poses.jsonl</c>, or the state stream, which
+        /// is the only pose record a run of record format 2 writes. Every run before 2026-09-21
+        /// has neither.
+        /// </summary>
         public static bool Has(string runDirectory) =>
-            File.Exists(Path.Combine(runDirectory, "poses.jsonl"));
+            File.Exists(Path.Combine(runDirectory, RecordFiles.PosesName)) ||
+            PoseStream.Has(runDirectory);
 
         /// <summary>
         /// One body's pose out of the state stream, which carries the same three quantities the
@@ -102,11 +107,17 @@ namespace Evosim.Theatre
         /// positions, and one row of them is ever wanted. The share mode is that method's, so a
         /// live run is readable under its writer, and a half-written last row is skipped by the
         /// same closing-brace test the positions reader uses.
+        /// <para>
+        /// A run of record format 2 writes no <c>poses.jsonl</c> (logbook/specs/record-and-film-spec.md
+        /// A4): its poses are the state stream's, at the report interval unless the launcher set
+        /// a cadence. So a run without the JSONL is read from the stream's frame at the second,
+        /// through <see cref="From"/>; a run with the JSONL reads it, as it always has.
+        /// </para>
         /// </remarks>
         public static Dictionary<long, RecordedPose> At(string runDirectory, double second)
         {
-            string path = Path.Combine(runDirectory, "poses.jsonl");
-            if (!File.Exists(path)) return null;
+            string path = Path.Combine(runDirectory, RecordFiles.PosesName);
+            if (!File.Exists(path)) return FromStreamAt(runDirectory, second);
 
             string found = null;
 
@@ -167,6 +178,46 @@ namespace Evosim.Theatre
 
                 poses[(long)body["id"].AsDouble()] = pose;
             }
+
+            return poses;
+        }
+
+        /// <summary>
+        /// Every body's pose in the state stream's frame at a second, by organism id, or null when
+        /// the run wrote no stream, the stream holds no frame there, or it cannot be read.
+        /// </summary>
+        /// <remarks>
+        /// A stream that cannot be read is said in the log and answered as no poses, which draws
+        /// every body upright under the label's <i>default orientation</i>: the same answer a run
+        /// with no pose record at all gets, and never a guess.
+        /// </remarks>
+        private static Dictionary<long, RecordedPose> FromStreamAt(string runDirectory, double second)
+        {
+            string streamPath = PoseStream.PathIn(runDirectory);
+            if (streamPath == null) return null;
+
+            PoseFrame frame;
+
+            try
+            {
+                using (PoseStreamReader reader = PoseStreamReader.Open(streamPath))
+                {
+                    frame = reader.At(second);
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning(
+                    "[Theatre] " + Path.GetFileName(streamPath) + " could not be read, so no body " +
+                    "wears a recorded pose: " + e.Message);
+
+                return null;
+            }
+
+            if (frame == null) return null;
+
+            var poses = new Dictionary<long, RecordedPose>(frame.Bodies.Length);
+            foreach (PoseBody body in frame.Bodies) poses[body.Id] = From(body);
 
             return poses;
         }

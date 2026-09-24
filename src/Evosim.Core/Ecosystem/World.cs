@@ -98,6 +98,13 @@ namespace Evosim.Core
         /// </summary>
         private List<LineageEvent> _lineageEvents = new List<LineageEvent>();
 
+        /// <summary>
+        /// Genomes admitted since the last <see cref="DrainAdmittedGenomes"/>, filled only while
+        /// <see cref="QueueAdmittedGenomes"/> is on. Pure instrumentation, like the lineage queue
+        /// beside it, and not state: a checkpoint is written after the farm drains both.
+        /// </summary>
+        private List<AdmittedGenome> _admittedGenomes = new List<AdmittedGenome>();
+
         // One log reused across conceptions (Conceive runs on the world's one thread); cleared by
         // every Mutate call that is handed it. The owner's ruling of 2026-09-24, for the lineage row.
         private readonly MutationLog _mutationLog = new MutationLog();
@@ -4774,6 +4781,11 @@ namespace Evosim.Core
                 founderSource, poolIndex, endowment, budCells, budsExpressed,
                 genome.Reproduction.Mode, genome.Reproduction.GestationShare));
 
+            // Record format 2's genome file, beside the lineage row and under the same guarantee:
+            // exactly one per id assigned. A reference, not a copy, and nothing is read or drawn,
+            // so a world that queues and one that does not step the same trajectory.
+            if (QueueAdmittedGenomes) _admittedGenomes.Add(new AdmittedGenome(creature.Id, genome));
+
             return creature;
         }
 
@@ -4813,6 +4825,33 @@ namespace Evosim.Core
 
             List<LineageEvent> taken = _lineageEvents;
             _lineageEvents = new List<LineageEvent>();
+            return taken;
+        }
+
+        /// <summary>
+        /// Whether each admitted body's genome is queued for <see cref="DrainAdmittedGenomes"/> —
+        /// record format 2's <c>genomes.jsonl.gz</c> (<c>logbook/specs/record-and-film-spec.md</c>
+        /// A1). Off unless the console farm turns it on.
+        /// </summary>
+        /// <remarks>
+        /// <b>Off by default, because a queue nobody drains is a leak.</b> The Unity farm drains
+        /// the lineage and never this, so with the queue always on it would hold a reference to
+        /// every genome the world ever admitted. Not written into a checkpoint: the farm drains
+        /// the queue beside the lineage before it writes one, and a resumed run writes its living
+        /// roster's genomes first, so nothing a checkpoint would carry is missing.
+        /// </remarks>
+        public bool QueueAdmittedGenomes { get; set; }
+
+        /// <summary>
+        /// Hands over every genome admitted since the last call and forgets them —
+        /// <see cref="DrainLineageEvents"/>' pattern, and called beside it.
+        /// </summary>
+        public IReadOnlyList<AdmittedGenome> DrainAdmittedGenomes()
+        {
+            if (_admittedGenomes.Count == 0) return Array.Empty<AdmittedGenome>();
+
+            List<AdmittedGenome> taken = _admittedGenomes;
+            _admittedGenomes = new List<AdmittedGenome>();
             return taken;
         }
 

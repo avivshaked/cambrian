@@ -37,6 +37,14 @@ namespace Evosim.Farm
     /// bodies instead of standing every one of them upright in the developer's frame. It moves no
     /// hash and refuses no config.
     /// </para>
+    /// <para>
+    /// <b>In record format 2 (from round 49's build) three of those files change and one goes.</b>
+    /// The positions rows go to <c>positions.jsonl.gz</c>, a member a sample; each body's genome is
+    /// written once, to <c>genomes.jsonl.gz</c>, at the drain after its admission; a snapshot is
+    /// slim rows joined to it by id; and <c>poses.jsonl</c> is not written, the state stream at
+    /// the report interval carrying the same poses and the body fraction
+    /// (<c>logbook/specs/record-and-film-spec.md</c>, Part A). Nothing a sample computes changes.
+    /// </para>
     /// </remarks>
     public sealed class Sampler
     {
@@ -290,7 +298,7 @@ namespace Evosim.Farm
             var speciesSeen = new HashSet<uint>();
             var absorptiveNow = new HashSet<long>();
 
-            bool recordPositions = dir?.Positions != null;
+            bool recordPositions = dir != null && dir.RecordsPositions;
             int positionCount = 0;
 
             if (recordPositions) EnsurePositionCapacity(world.Living.Count);
@@ -920,11 +928,13 @@ namespace Evosim.Farm
 
             if (recordPositions)
             {
-                dir.Positions.Write(PositionsRow.Write(
+                dir.WritePositions(PositionsRow.Write(
                     world.ElapsedSeconds, positionCount,
                     _positionIds, _positionX, _positionY, _positionZ, _positionFlags));
 
-                WritePoses(sim, dir);
+                // Record format 2 retires poses.jsonl for the state stream, which the farm runs at
+                // the report interval by default in that record (EnvSettings.ApplyRecordDefaults).
+                if (dir.Format == RunRecordFormat.Jsonl) WritePoses(sim, dir);
             }
 
             IReadOnlyList<LineageEvent> lineageEvents = world.DrainLineageEvents();
@@ -935,6 +945,8 @@ namespace Evosim.Farm
                     dir.Lineage.Write(lineageEvents[i].ToJson());
                 }
             }
+
+            DrainGenomes(world, dir);
 
             // ---------------------------------------------------------------- the markdown row
 
@@ -1159,6 +1171,13 @@ namespace Evosim.Farm
             if (world.ElapsedSeconds == _lastSnapshotSeconds) return;
             _lastSnapshotSeconds = world.ElapsedSeconds;
 
+            if (dir.Format == RunRecordFormat.Compact)
+            {
+                SlimSnapshot(dir, world);
+                DumpFields(dir, world);
+                return;
+            }
+
             string path = System.IO.Path.ChangeExtension(
                 dir.SnapshotPath(world.ElapsedSeconds), ".jsonl");
 
@@ -1178,6 +1197,85 @@ namespace Evosim.Farm
             }
 
             DumpFields(dir, world);
+        }
+
+        /// <summary>
+        /// Record format 2's snapshot, <c>snapshots/&lt;t&gt;.jsonl.gz</c>: one slim row per
+        /// living body, written as one member.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What changes in a life, and nothing that does not.</b> The genome is in
+        /// <c>genomes.jsonl.gz</c> from the drain at the body's admission; this row carries the id,
+        /// the module counts and the lost part paths when the body has them, and the body
+        /// fraction, which no snapshot carried before (<see cref="RecordFiles.SlimRow"/>). A reader
+        /// joins the two by id and gets format 1's row back to the byte
+        /// (<see cref="RecordFiles.Join"/>).
+        /// </para>
+        /// <para>
+        /// Every living body's genome has been written by the time this runs: the loop takes a
+        /// snapshot after the report row, whose sampler drains the genome queue, and a resumed run
+        /// writes its roster's genomes before its first step.
+        /// </para>
+        /// </remarks>
+        private static void SlimSnapshot(RunDirectory dir, World world)
+        {
+            string path = dir.SnapshotFilePath(world.ElapsedSeconds);
+
+            using (var writer = new JsonlGzWriter(path, memberEachRow: false))
+            {
+                foreach (Organism creature in world.Living)
+                {
+                    writer.Write(RecordFiles.SlimRow(
+                        creature.Id, creature.ModuleCounts, creature.LostPartPaths,
+                        creature.BodyFraction));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Record format 2's genome rows for every body admitted since the last drain, as one
+        /// member of <c>genomes.jsonl.gz</c>. Nothing in format 1.
+        /// </summary>
+        /// <remarks>
+        /// Called wherever the lineage is drained (at every report row, before every checkpoint
+        /// and at the run's end), so the genome file and <c>lineage.jsonl</c> hold the same bodies
+        /// at every point a reader can stop at. The row is <see cref="GenomeJson.Write"/> with the
+        /// id alone, the form a snapshot row's join expects.
+        /// </remarks>
+        public static void DrainGenomes(World world, RunDirectory dir)
+        {
+            IReadOnlyList<AdmittedGenome> admitted = world.DrainAdmittedGenomes();
+            if (dir?.Genomes == null || admitted.Count == 0) return;
+
+            for (int i = 0; i < admitted.Count; i++)
+            {
+                dir.Genomes.Write(GenomeJson.Write(admitted[i].Genome, indent: false, id: admitted[i].Id));
+            }
+
+            dir.Genomes.EndMember();
+        }
+
+        /// <summary>
+        /// Every living body's genome row, as one member: what a run that did not admit them
+        /// itself (a resumed one) writes before its first step, so its own snapshots join.
+        /// </summary>
+        /// <remarks>
+        /// A resumed run is a new directory, and the bodies it inherits were admitted in the run it
+        /// continues. Without this, every slim row of those bodies would find no genome in this
+        /// directory and be refused. The same genome is also in the source run's file; each
+        /// directory reads on its own.
+        /// </remarks>
+        public static void WriteLivingGenomes(World world, RunDirectory dir)
+        {
+            if (dir?.Genomes == null || world.Living.Count == 0) return;
+
+            foreach (Organism creature in world.Living)
+            {
+                dir.Genomes.Write(GenomeJson.Write(creature.Genome, indent: false, id: creature.Id));
+            }
+
+            dir.Genomes.EndMember();
         }
 
         private float[] _fieldScratch = System.Array.Empty<float>();
