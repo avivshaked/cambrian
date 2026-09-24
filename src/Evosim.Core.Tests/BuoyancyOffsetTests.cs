@@ -37,7 +37,9 @@ namespace Evosim.Core.Tests
             string text = GenomeJson.Write(g);
 
             Assert.Contains("\"buoyancyOffset\":-0.375", text);
-            Assert.Equal(8, GenomeJson.FormatVersion);
+            // D111 took the format to 8; D120's gestation gene took it to 9 the next day. What
+            // this test pins is that a format-7 file is refused by name, not the number itself.
+            Assert.True(GenomeJson.FormatVersion >= 8);
             Assert.Equal(-0.375f, GenomeJson.Read(text).Nodes[0].BuoyancyOffset);
 
             // §9: the missing field refused, never defaulted, and the message says what it was.
