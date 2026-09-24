@@ -370,6 +370,21 @@ is what the next session works from. Everything below it in this section is hist
   also a hardware test: a replay that reproduces the minus infinity at the same step is a code
   fault, and one that runs clean past 13,700 s says the run's arithmetic went wrong once on
   this machine (an inference until the replay runs).
+- **Round 48's story film is being made tonight, for the owner to watch in the morning of
+  2026-09-25** (the owner: a story "from all arms", filmed without reading the text first,
+  comments after). The writer's story and shot list are `scratch/story/r48/story.md` and
+  `story.json` (22 scenes, eight chapters, about 8.5 minutes; `checks.tsv` has every caption's
+  source; seed 3's numbers are provisional at 26,800 s). Story mode is on the safari branch
+  (`453ec7d`, `974236d`: `theatre-safari.ps1 -Story <json> [-StoryRun] -Folder`,
+  `scripts/story-assemble.py`), which has main merged in (`b5b0ba1`) so it reads round 48.
+  Render chain 1 (`scratch/story/r48/render-chain-1.ps1`, detached, log beside it) films
+  seed 2's scenes 4, 14, 15 and 16, then seed 1's 1, 2, 3, 8, 12, 13, 17, 18, 19 and 21, into
+  `scratch/wt-safari2/scratch/safari/<arm>/story-final/`. **Still to do**: when seed 3 ends,
+  run `guide.py` on it, have the story's seed 3 numbers and names made final (scenes 5, 6, 7,
+  10 and 20, and the seed 3 claims in 9, 11 and 22: "one is still running" must go), film
+  seed 1's 9, 11 and 22 and seed 3's five, then `python scripts/story-assemble.py
+  scratch/story/r48/story.json <film> <the three story-final folders>` from the worktree, and
+  copy the film and `story.md` to `scratch/owner/`.
 - **Round 48 is running.** The pre-registration is `logbook/0119-a-stomach-on-a-plant-and-paying-as-you-go.md`,
   committed at `d35c248` on a clean tree and pushed. Seeds 1 and 2 launched at 12:51 from
   it (`gitCommit d35c248`, `gitDirty` false, `configHash e5a30c15db9fc4db`, five threads each,
