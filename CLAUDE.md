@@ -1509,6 +1509,18 @@ actually verifying it.
   (`logbook/specs/stomach-screens.md`). A field total in the stats is joules or units over
   the whole bin; divide by the bin's live volume before calling it a density, and say which
   bin.
+- **A farm run started from VS Code gets the fast cores only while VS Code has focus.** The
+  machine is an i9-13900K: eight fast cores (logical 0 to 15) and sixteen efficiency cores (16
+  to 31). With VS Code in front, round 48's two farm runs sat about 44% on the fast cores and
+  26% on the efficiency ones; with any other window in front (Task Manager, the search box,
+  another app) about 30% and 37%, at the same total CPU (2026-09-24, `scratch/cpu-watch/`,
+  a two-second recorder of load per core type and the focused window). The fast cores boost
+  to about 5.5 GHz and draw several times the power, so the fans follow the focus: the owner
+  heard it as the machine "hiding" when Task Manager opened. Nothing was hiding. The cause is
+  Windows 11's hybrid scheduling, most likely because the runs were launched from inside VS
+  Code's process tree (an inference). It bites a pace or timing read: the same run is faster
+  with VS Code in front, so a wall split or a pace compared across two windows of time
+  compares the focus as well.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
