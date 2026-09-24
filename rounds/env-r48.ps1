@@ -14,16 +14,20 @@
 #   EVOSIM_GESTATION_SHARE_CHANCE 0.08; every founder is a lump breeder and draws its share
 #   at 0.5; header `gestation mut=0.08 share=0.5-0.5 at 0.08` before the hash; birth rows
 #   carry `gm` and `gs`, stats rows gestationBirths, gestatedJoules, gestationJoulesHeld),
-#   and the child's overhead is max(floor, k x the child's tissue at birth): the floor 10 J
-#   where every round from 41 charged a flat 100 J, k = 2, so a 12 J stomach child pays
-#   24 J and a 50 J leaf child pays 100 J (EVOSIM_OVERHEAD is the floor, EVOSIM_OVERHEAD_PER_TISSUE
-#   the factor; header `overhead 10 J` and `overhead scale x2 floor 10 J`). With it the
-#   birth-investment and newborn-mass floors come down by a factor of five and ten
-#   (EVOSIM_INVEST_MIN 0.05, EVOSIM_MIN_NEWBORN_KG 0.05; header `minkg=0.05` and
-#   `invest=0.05-1`) so that a lineage can choose many small children. THESE THREE VALUES ARE
-#   THE SCREEN'S TO CONFIRM (scratch/r48-build: the count's plateau at dt 0.02 under the
-#   proportional overhead, and whether 50 g links hold in the solver; the 0.5 kg floor came
-#   from PhysX divergences in Unity, CLAUDE.md).
+#   and the child's overhead is max(floor, k x the child's tissue at birth): the floor 50 J
+#   where every round from 41 charged a flat 100 J, k = 2, so a 12 J stomach child pays the
+#   50 J floor and a 50 J leaf child pays 100 J (EVOSIM_OVERHEAD is the floor,
+#   EVOSIM_OVERHEAD_PER_TISSUE the factor; header `overhead 50 J` and `overhead scale x2 floor
+#   50 J`). With it the birth-investment and newborn-mass floors come down by a factor of five
+#   and ten (EVOSIM_INVEST_MIN 0.05, EVOSIM_MIN_NEWBORN_KG 0.05; header `minkg=0.05` and
+#   `invest=0.05-1`) so that a lineage can choose many small children.
+#   The floor is the count screen's (scratch/r48-build/runs, seed 2 at dt 0.02, logbook/0119's
+#   screen section): at 10 J the count doubled every 100 s to 6,111 at 680 s (r48plat-s2);
+#   at 50 J it peaked at 3,670 at 1,300 s and eased to 3,229 at 1,800 s with the mean
+#   investment at 0.26 and no divergence (r48plat2-s2), against round 47's world at the same
+#   seed and step peaking at 1,575 (scratch/r48-snow/runs/base). A fee proportional to a child
+#   a lineage can make as small as it likes is no floor, so the floor is what bounds the count
+#   (0107's finding), and the small-child floors stay down.
 # - D121, senescence on upkeep alone (EVOSIM_SENESCENCE_WEARS_INTAKE 0; header
 #   `senescence 3000 s on upkeep` where round 47 read `on upkeep and intake`).
 # - D122, every founder at the richest cell of its food, depth included
@@ -32,9 +36,10 @@
 #   `endowment 600 s`; founder rows carry `endow`). 600 s is the breeding margin's ceiling
 #   and about ten times the 20 to 35 s round 47's stomach founders lived; a screen reads
 #   what the endowed founders do with it.
-# The snow's two knobs (EVOSIM_REMIN, EVOSIM_SINK / EVOSIM_MATTER_SINK) stay at round 47's
-# until the snow screen (scratch/r48-snow) says otherwise; the owner asked for the larder to
-# be a world rule, not a stomach rule, and those are the two dials that shape it.
+# The snow's two knobs (EVOSIM_REMIN, EVOSIM_SINK / EVOSIM_MATTER_SINK) stay at round 47's:
+# the snow screen's base (scratch/r48-snow/runs/base) read the stomach founders dying long
+# before the snow's slow decline could matter, so the founders' arrival (D122) is what this
+# round changes and the dials are a between-rounds screen (HANDOFF's snow bullet).
 #
 # Everything else is round 47's, including the checkpoint every 2,500 s (a recording setting).
 # The shape scripts/run-farm.ps1 -Launcher wants; overrides go on the command line.
@@ -42,7 +47,7 @@
     EVOSIM_RIGID_FLOORS = 1
     EVOSIM_GESTATION_MODE_CHANCE = 0.08; EVOSIM_GESTATION_SHARE_CHANCE = 0.08
     EVOSIM_GESTATION_SHARE_MIN = 0.5; EVOSIM_GESTATION_SHARE_MAX = 0.5
-    EVOSIM_OVERHEAD = 10; EVOSIM_OVERHEAD_PER_TISSUE = 2
+    EVOSIM_OVERHEAD = 50; EVOSIM_OVERHEAD_PER_TISSUE = 2
     EVOSIM_INVEST_MIN = 0.05; EVOSIM_INVEST_MAX = 1.0
     EVOSIM_MIN_NEWBORN_KG = 0.05
     EVOSIM_SENESCENCE_WEARS_INTAKE = 0

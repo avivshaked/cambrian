@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The clause reader for round 48 (logbook/specs/r48-prereg-draft.md, M1 to P1): round 47's
+"""The clause reader for round 48 (logbook/0119-a-stomach-on-a-plant-and-paying-as-you-go.md, M1 to P1): round 47's
 world with the owner's four rulings of 2026-09-24 on (D119 the bud and the rigid-group floors,
 D120 reproduction paid as it goes and the proportional overhead, D121 senescence on upkeep
 alone, D122 founders at the richest cell of their food with a 600 s endowment).
