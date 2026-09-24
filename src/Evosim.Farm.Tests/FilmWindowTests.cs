@@ -428,31 +428,28 @@ namespace Evosim.Farm.Tests
             new CheckpointHeader { ConfigHash = config, CoreHash = core, DynamicsHash = dynamics, FarmHash = farm };
 
         /// <summary>
-        /// The farm's hash is named and never decides; the config's, Core's and Dynamics' decide.
+        /// The config's hash decides; Core's, Dynamics' and the farm's are named and never do.
         /// </summary>
         [Fact]
-        public void OnlyTheConfigCoreAndDynamicsDecideTheSource()
+        public void OnlyTheConfigDecidesTheSource()
         {
             FilmWindow.SourceComparison same = FilmWindow.CompareSources(
                 Hashes("c", "core", "dyn", "farm"), "c", "core", "dyn", "farm");
-            Assert.Empty(same.Deciding);
-            Assert.Null(same.Farm);
+            Assert.Null(same.Config);
+            Assert.Empty(same.Sources);
 
-            FilmWindow.SourceComparison farm = FilmWindow.CompareSources(
-                Hashes("c", "core", "dyn", "farm-old"), "c", "core", "dyn", "farm-new");
-            Assert.Empty(farm.Deciding);
-            Assert.StartsWith("farmHash:", farm.Farm, StringComparison.Ordinal);
-
-            FilmWindow.SourceComparison core = FilmWindow.CompareSources(
+            FilmWindow.SourceComparison sources = FilmWindow.CompareSources(
                 Hashes("c", "core-old", "dyn-old", "farm-old"), "c", "core-new", "dyn-new", "farm-new");
-            Assert.Equal(2, core.Deciding.Count);
-            Assert.StartsWith("coreHash:", core.Deciding[0], StringComparison.Ordinal);
-            Assert.StartsWith("dynamicsHash:", core.Deciding[1], StringComparison.Ordinal);
-            Assert.NotNull(core.Farm);
+            Assert.Null(sources.Config);
+            Assert.Equal(3, sources.Sources.Count);
+            Assert.StartsWith("coreHash:", sources.Sources[0], StringComparison.Ordinal);
+            Assert.StartsWith("dynamicsHash:", sources.Sources[1], StringComparison.Ordinal);
+            Assert.StartsWith("farmHash:", sources.Sources[2], StringComparison.Ordinal);
 
             FilmWindow.SourceComparison config = FilmWindow.CompareSources(
                 Hashes("c-old", "core", "dyn", "farm"), "c-new", "core", "dyn", "farm");
-            Assert.Single(config.Deciding);
+            Assert.StartsWith("configHash:", config.Config, StringComparison.Ordinal);
+            Assert.Empty(config.Sources);
         }
 
         private static FilmWindow.Result AgreeingResult() =>
@@ -469,39 +466,66 @@ namespace Evosim.Farm.Tests
             new FilmWindow.Options { Run = "run", Out = "out", FromSeconds = 10d, ToSeconds = 40d };
 
         /// <summary>
-        /// A window whose rows all agree is faithful under a differing farm hash, which its
-        /// verdict names, and exits 0.
+        /// A window with a differing Core and Dynamics is filmed without the override, and when
+        /// its rows all agree it is faithful, names both hashes and exits 0.
         /// </summary>
         [Fact]
-        public void AFarmHashAloneLeavesAFaithfulWindowFaithfulAndNamed()
+        public void ADifferingCoreOrDynamicsWithAgreeingRowsIsFaithfulAndNamed()
         {
+            FilmWindow.SourceComparison sources = FilmWindow.CompareSources(
+                Hashes("c", "74eff56e6a9d", "0e9243bb8c60", "8f04d32857fa"),
+                "c", "aaaaaaaaaaaa", "bbbbbbbbbbbb", "8f04d32857fa");
+
             FilmWindow.Result result = AgreeingResult();
-            result.FarmNote = "farmHash: checkpoint 8f04d32857fa…, this build 1234567890ab…";
+            FilmWindow.ApplySources(result, sources, allowSourceMismatch: false, fromCheckpoint: true, log: null);
+
+            Assert.False(result.SourceMismatch);
+            Assert.Equal(2, result.SourcesDiffer.Count);
 
             FilmWindow.Decide(result, Window);
 
             Assert.Equal(FilmWindow.Faithful, result.Verdict);
-            Assert.Contains("farm's source differs", result.Reason, StringComparison.Ordinal);
-            Assert.Contains("8f04d32857fa", result.Reason, StringComparison.Ordinal);
+            Assert.Contains("coreHash: checkpoint 74eff56e6a9d", result.Reason, StringComparison.Ordinal);
+            Assert.Contains("dynamicsHash: checkpoint 0e9243bb8c60", result.Reason, StringComparison.Ordinal);
+            Assert.DoesNotContain("farmHash", result.Reason, StringComparison.Ordinal);
             Assert.Equal(FilmWindow.ExitFaithful, FilmWindow.ExitCodeOf(result.Verdict));
         }
 
-        /// <summary>A differing Core or Dynamics, filmed anyway, is a cousin whatever its rows say.</summary>
+        /// <summary>A differing config is refused without the override, as a resume refuses it.</summary>
         [Fact]
-        public void ASourceMismatchIsACousinWhateverItsRowsSay()
+        public void AConfigMismatchIsRefused()
         {
+            FilmWindow.SourceComparison sources = FilmWindow.CompareSources(
+                Hashes("c-old", "core", "dyn", "farm"), "c-new", "core", "dyn", "farm");
+
+            var error = Assert.Throws<InvalidOperationException>(() =>
+                FilmWindow.ApplySources(
+                    AgreeingResult(), sources, allowSourceMismatch: false, fromCheckpoint: true, log: null));
+
+            Assert.Contains("configHash", error.Message, StringComparison.Ordinal);
+            Assert.Contains("EVOSIM_ALLOW_SOURCE_MISMATCH", error.Message, StringComparison.Ordinal);
+        }
+
+        /// <summary>A differing config filmed under the override is a cousin whatever its rows say.</summary>
+        [Fact]
+        public void AConfigMismatchUnderTheOverrideIsACousinWhateverItsRowsSay()
+        {
+            FilmWindow.SourceComparison sources = FilmWindow.CompareSources(
+                Hashes("c-old", "core", "dyn", "farm"), "c-new", "core", "dyn", "farm");
+
             FilmWindow.Result result = AgreeingResult();
-            result.SourceMismatch = true;
-            result.SourceNote = "coreHash: checkpoint aaaa, this build bbbb";
+            FilmWindow.ApplySources(result, sources, allowSourceMismatch: true, fromCheckpoint: true, log: null);
+
+            Assert.True(result.SourceMismatch);
 
             FilmWindow.Decide(result, Window);
 
             Assert.Equal(FilmWindow.Cousin, result.Verdict);
-            Assert.Contains("coreHash", result.Reason, StringComparison.Ordinal);
+            Assert.Contains("configHash", result.Reason, StringComparison.Ordinal);
             Assert.Equal(FilmWindow.ExitCousin, FilmWindow.ExitCodeOf(result.Verdict));
         }
 
-        /// <summary>A parted row is a cousin that names the second and the field, farm hash or none.</summary>
+        /// <summary>A parted row is a cousin that names the second and the field, and any source hash.</summary>
         [Fact]
         public void APartedRowIsACousinWithTheSecondAndTheField()
         {
@@ -509,13 +533,31 @@ namespace Evosim.Farm.Tests
             result.RowsAgreed = 2;
             result.PartedAtSeconds = 30d;
             result.PartedField = "auditResidual";
-            result.FarmNote = "farmHash: checkpoint aaaa, this build bbbb";
+            result.SourcesDiffer.Add("coreHash: checkpoint aaaa, this build bbbb");
 
             FilmWindow.Decide(result, Window);
 
             Assert.Equal(FilmWindow.Cousin, result.Verdict);
             Assert.Contains("t=30 s in auditResidual", result.Reason, StringComparison.Ordinal);
-            Assert.Contains("farm's source differs", result.Reason, StringComparison.Ordinal);
+            Assert.Contains("coreHash: checkpoint aaaa", result.Reason, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// A window that compared no row is unverified under a differing source, because nothing
+        /// stands in for the rows.
+        /// </summary>
+        [Fact]
+        public void NoComparedRowIsUnverifiedWhateverTheSource()
+        {
+            FilmWindow.Result result = AgreeingResult();
+            result.Rows = 0;
+            result.RowsAgreed = 0;
+            result.SourcesDiffer.Add("dynamicsHash: checkpoint aaaa, this build bbbb");
+
+            FilmWindow.Decide(result, Window);
+
+            Assert.Equal(FilmWindow.Unverified, result.Verdict);
+            Assert.Equal(FilmWindow.ExitUnverified, FilmWindow.ExitCodeOf(result.Verdict));
         }
 
         [Fact]

@@ -69,19 +69,22 @@ namespace Evosim.Farm
     /// drains and drops whatever is left on the steps the run's sampler drained it.
     /// </para>
     /// <para>
-    /// <b>Faithful is measured, not assumed.</b> A window reads <c>faithful</c> when its
-    /// <c>configHash</c>, <c>coreHash</c> and <c>dynamicsHash</c> equal the run's and every
-    /// identity row agrees with the run's to the bit. A differing <c>farmHash</c> is named in the
-    /// verdict and does not disqualify the window: the rows are the evidence, and the farm's
-    /// source is mostly recording (the owner's ruling, 2026-09-24). A differing config, Core or
-    /// Dynamics is refused as a resume refuses it, unless <c>EVOSIM_ALLOW_SOURCE_MISMATCH</c> is
-    /// set, and the window is then a cousin whatever its rows say. A row that parts, before the
-    /// window or inside it, makes a <c>cousin</c>, and the verdict says the second and the field.
-    /// A window with no report second inside it steps on to the run's next one and compares that.
-    /// A window that runs past the run's last row, or finds no row at all, is <c>unverified</c>.
+    /// <b>Faithful is measured, not assumed.</b> The config is the world, so a window whose
+    /// <c>configHash</c> differs from the run's is refused, unless
+    /// <c>EVOSIM_ALLOW_SOURCE_MISMATCH</c> is set, and is then a cousin whatever its rows say.
+    /// The three source hashes, <c>coreHash</c>, <c>dynamicsHash</c> and <c>farmHash</c>, decide
+    /// nothing on their own. A window reads <c>faithful</c> when every identity row it compared
+    /// agrees with the run's to the bit, and every source hash that differs is named in its
+    /// verdict. The rows are the evidence: a change to the solver or the economy parts the audit
+    /// residual or the mean height at the first row, and a build that only added a reader or a
+    /// queue does not (the owner's ruling, 2026-09-24). A row that parts, before the window or
+    /// inside it, makes a <c>cousin</c>, and the verdict says the second and the field. A window
+    /// with no report second inside it steps on to the run's next one and compares that. A
+    /// window that compared no row, or runs past the run's last row, is <c>unverified</c>. A
+    /// resume still refuses all four hashes, because it writes the run's continuation.
     /// </para>
     /// <para>
-    /// <b>Exit codes.</b> 0 for a faithful window, a differing <c>farmHash</c> included. 2 for a
+    /// <b>Exit codes.</b> 0 for a faithful window, differing source hashes included. 2 for a
     /// cousin and 3 for an unverified window, both written whole. 1 for a refusal or a failure,
     /// which writes nothing or stops part way.
     /// </para>
@@ -141,19 +144,20 @@ namespace Evosim.Farm
             public int Threads;
 
             /// <summary>
-            /// Whether the config, Core or Dynamics differ from the run's: a refusal unless
+            /// Whether the config differs from the run's: a refusal unless
             /// <c>EVOSIM_ALLOW_SOURCE_MISMATCH</c> is set, and a cousin when it is.
             /// </summary>
             public bool SourceMismatch;
 
-            /// <summary>What differed among the config, Core and Dynamics, or null.</summary>
+            /// <summary>The config's hash line when it differs, or null.</summary>
             public string SourceNote;
 
             /// <summary>
-            /// The farm's hash line when it differs from the run's, or null. Named in the verdict
-            /// and never a reason to call the window a cousin.
+            /// The line of every source hash (Core, Dynamics, farm) that differs from the run's.
+            /// Named in the verdict and never a reason on its own to call the window a cousin:
+            /// the identity rows decide.
             /// </summary>
-            public string FarmNote;
+            public readonly List<string> SourcesDiffer = new List<string>();
 
             public int Frames;
 
@@ -345,45 +349,15 @@ namespace Evosim.Farm
                 Threads = threads,
             };
 
-            // A resume's refusal for the three hashes that decide a trajectory. The farm's is named
-            // and not refused: the rows below are the evidence (the faithful rule, in the remarks).
+            // The config's hash is refused as a resume refuses it; the three source hashes are
+            // named and the rows below decide (the faithful rule, in the remarks).
             RunManifest build = Manifest.Build(
                 settings, config.Hash(), null, physicsDt, stepsPerMetabolic, threads);
 
             SourceComparison sources = CompareSources(
                 header, config.Hash(), build.CoreHash, build.DynamicsHash, build.FarmHash);
 
-            if (sources.Deciding.Count > 0)
-            {
-                string note = string.Join("; ", sources.Deciding);
-
-                if (!settings.AllowSourceMismatch)
-                {
-                    throw new InvalidOperationException(
-                        "This " + (checkpoint != null ? "checkpoint" : "run") + " was not written " +
-                        "by this build's config, Core and Dynamics, so a window of it would step a " +
-                        "trajectory the recording never had: " + note + ". Set " +
-                        "EVOSIM_ALLOW_SOURCE_MISMATCH=1 to film it anyway; the window is then marked " +
-                        "a cousin.");
-                }
-
-                result.SourceMismatch = true;
-                result.SourceNote = note;
-
-                log.WriteLine(
-                    "film-window: warning: filming across a source mismatch, so this window is a " +
-                    "cousin of the recording: " + note);
-            }
-
-            if (sources.Farm != null)
-            {
-                result.FarmNote = sources.Farm;
-
-                log.WriteLine(
-                    "film-window: the farm's source differs from the run's (" + sources.Farm + "). " +
-                    "It is named in the verdict and does not make the window a cousin; the identity " +
-                    "rows decide.");
-            }
+            ApplySources(result, sources, settings.AllowSourceMismatch, checkpoint != null, log);
 
             // The run's rows, from the restore on, keyed by their second.
             SortedList<double, RunRow> runRows = ReadRunRows(runDirectory, header.Seconds - Eps);
@@ -911,9 +885,9 @@ namespace Evosim.Farm
         /// so the rule can be tested on a result without filming one.
         /// </summary>
         /// <remarks>
-        /// A differing <c>farmHash</c> never decides the word. It is named at the end of the
-        /// reason whatever the word is, so a window of a run recorded on an older farm build says
-        /// so on its verdict line and in <c>identity.jsonl</c>.
+        /// A differing source hash never decides the word. Each one is named at the end of the
+        /// reason whatever the word is, so a window of a run recorded on an older build says so
+        /// on its verdict line and in <c>identity.jsonl</c>.
         /// </remarks>
         public static void Decide(Result result, Options options)
         {
@@ -929,11 +903,11 @@ namespace Evosim.Farm
                     "window stopped there";
             }
 
-            if (result.FarmNote != null)
+            if (result.SourcesDiffer.Count > 0)
             {
                 result.Reason +=
-                    "; the farm's source differs from the run's (" + result.FarmNote + "), which " +
-                    "the rules for a faithful window do not count against it";
+                    "; the source differs from the run's (" + string.Join("; ", result.SourcesDiffer) +
+                    "), and the identity rows decide rather than the hashes";
             }
         }
 
@@ -943,30 +917,39 @@ namespace Evosim.Farm
         public sealed class SourceComparison
         {
             /// <summary>
-            /// Differences in <c>configHash</c>, <c>coreHash</c> or <c>dynamicsHash</c>, each a line
-            /// naming the hash, the run's value and this build's. Any one refuses the window unless
-            /// <c>EVOSIM_ALLOW_SOURCE_MISMATCH</c> is set, and makes it a cousin when it is.
+            /// The <c>configHash</c> line when it differs, naming the run's value and this build's,
+            /// or null. It refuses the window unless <c>EVOSIM_ALLOW_SOURCE_MISMATCH</c> is set,
+            /// and makes it a cousin when it is.
             /// </summary>
-            public readonly List<string> Deciding = new List<string>();
+            public string Config;
 
-            /// <summary>The <c>farmHash</c> line when it differs, or null. Named and never decisive.</summary>
-            public string Farm;
+            /// <summary>
+            /// The <c>coreHash</c>, <c>dynamicsHash</c> and <c>farmHash</c> lines that differ, in
+            /// that order. Named in the verdict and never decisive on their own.
+            /// </summary>
+            public readonly List<string> Sources = new List<string>();
         }
 
         /// <summary>
         /// Splits a checkpoint's (or a founded run's) four hashes against this build's into the
-        /// three that decide a trajectory and the farm's, which does not.
+        /// config's, which decides, and the three source hashes, which are named.
         /// </summary>
         /// <remarks>
-        /// <b>Why the farm's is left out.</b> The config is the world, Core the economy and the
-        /// development, Dynamics the solver: a window stepped under a different one of those steps
-        /// another trajectory whatever its first rows say. The farm's source is the loop and mostly
-        /// the recording around it, and every build that adds a file or a column moves its hash,
-        /// so the hash alone would make a cousin of every window of a run recorded before the
-        /// window's build. The identity rows are what show whether the loop stepped the world as
-        /// the run did, and they are compared bit for bit (the owner's ruling, 2026-09-24). A
-        /// resume still refuses all four (<c>Program.RecordResume</c>), because it writes the
-        /// run's continuation and not a film of it.
+        /// <para>
+        /// <b>Why the config decides.</b> The config is the world. A window stepped under another
+        /// one is another world, whatever its first rows say.
+        /// </para>
+        /// <para>
+        /// <b>Why the source hashes do not.</b> Core, Dynamics and the farm are hashed as source
+        /// trees, so a build that adds a reader, a queue or a column moves a hash without moving
+        /// any trajectory. Round 49's build moves Core's and the farm's for recording alone, and a
+        /// rule on the hashes would make a cousin of every window of every earlier run. The identity rows show
+        /// whether the world stepped as the run did, and they are compared bit for bit: a change
+        /// to the solver or the economy parts the audit residual or the mean height at the first
+        /// row (the owner's ruling, 2026-09-24). A resume still refuses all four
+        /// (<c>Program.RecordResume</c>), because it writes the run's continuation and not a film
+        /// of it.
+        /// </para>
         /// </remarks>
         public static SourceComparison CompareSources(
             CheckpointHeader header, string configHash, string coreHash, string dynamicsHash, string farmHash)
@@ -975,15 +958,60 @@ namespace Evosim.Farm
 
             var comparison = new SourceComparison();
 
-            // Differences reads the four in a fixed order and names each; the farm's line is the
-            // only one that starts with its name.
+            // Differences reads the four in a fixed order, each line starting with its hash's name.
             foreach (string line in header.Differences(configHash, coreHash, dynamicsHash, farmHash))
             {
-                if (line.StartsWith("farmHash:", StringComparison.Ordinal)) comparison.Farm = line;
-                else comparison.Deciding.Add(line);
+                if (line.StartsWith("configHash:", StringComparison.Ordinal)) comparison.Config = line;
+                else comparison.Sources.Add(line);
             }
 
             return comparison;
+        }
+
+        /// <summary>
+        /// Books a comparison on a result: refuses a differing config unless the override is set,
+        /// marks the window a cousin when it is, and names every differing source hash.
+        /// </summary>
+        /// <remarks>
+        /// Public so the refusal can be tested without a run to film. The source hashes never
+        /// refuse a window, which is the whole of its difference from a resume's check.
+        /// </remarks>
+        public static void ApplySources(
+            Result result, SourceComparison sources, bool allowSourceMismatch, bool fromCheckpoint,
+            TextWriter log)
+        {
+            if (result == null) throw new ArgumentNullException(nameof(result));
+            if (sources == null) throw new ArgumentNullException(nameof(sources));
+            if (log == null) log = TextWriter.Null;
+
+            if (sources.Config != null)
+            {
+                if (!allowSourceMismatch)
+                {
+                    throw new InvalidOperationException(
+                        "This " + (fromCheckpoint ? "checkpoint" : "run") + " was written under " +
+                        "another config, so a window of it would step another world: " +
+                        sources.Config + ". Set EVOSIM_ALLOW_SOURCE_MISMATCH=1 to film it anyway; " +
+                        "the window is then marked a cousin.");
+                }
+
+                result.SourceMismatch = true;
+                result.SourceNote = sources.Config;
+
+                log.WriteLine(
+                    "film-window: warning: filming under another config, so this window is a " +
+                    "cousin of the recording: " + sources.Config);
+            }
+
+            if (sources.Sources.Count > 0)
+            {
+                result.SourcesDiffer.AddRange(sources.Sources);
+
+                log.WriteLine(
+                    "film-window: the source differs from the run's (" +
+                    string.Join("; ", sources.Sources) + "). It is named in the verdict and does " +
+                    "not make the window a cousin; the identity rows decide.");
+            }
         }
 
         private static void Judge(Result result, Options options)
@@ -998,7 +1026,7 @@ namespace Evosim.Farm
             {
                 result.Verdict = Cousin;
                 result.Reason =
-                    "the config, Core or Dynamics differ from the run's (" + result.SourceNote +
+                    "the config differs from the run's (" + result.SourceNote +
                     "), filmed under EVOSIM_ALLOW_SOURCE_MISMATCH; " + counts;
                 return;
             }
@@ -1331,8 +1359,10 @@ namespace Evosim.Farm
                 else w.Field("partedAt", result.PartedAtSeconds);
 
                 w.Field("partedField", result.PartedField);
-                w.Field("sourceMismatch", result.SourceNote);
-                w.Field("farmHashDiffers", result.FarmNote);
+                w.Field("configDiffers", result.SourceNote);
+                w.BeginArray("sourcesDiffer");
+                foreach (string line in result.SourcesDiffer) w.Value(line);
+                w.EndArray();
                 w.Field("endedExtinct", result.EndedExtinct);
                 w.Field("threads", result.Threads);
                 w.Field("wallSeconds", result.WallSeconds);

@@ -187,18 +187,25 @@ no solver body yet and is not drawn. The window restores the settled harness, an
 that second draws the newborn. A frame from the window and one from the run at a checkpoint second
 are therefore compared on the bodies both hold.
 
-**The faithful rule** is the owner's, of 2026-09-24. A window reads faithful when its
-`configHash`, `coreHash` and `dynamicsHash` equal the run's and every identity row agrees bit for
-bit. The film's provenance word then says faithful. A differing `farmHash` is named in the
-verdict and does not disqualify the window. The rows are the evidence, and the farm's source is
-mostly recording: every build that adds a column moves it, round 48's among them.
+**The faithful rule** is the owner's, of 2026-09-24, revised the same day. The config is the world.
+A window whose `configHash` differs from the run's is refused as a resume refuses it, unless
+`EVOSIM_ALLOW_SOURCE_MISMATCH` is set, and it then reads cousin whatever its rows say. The three
+source hashes, Core's, Dynamics' and the farm's, decide nothing on their own. A window reads
+faithful when every identity row it compared agrees bit for bit, and the film's provenance word then
+says faithful. Each source hash that differs is named in the verdict's reason and in its
+`sourcesDiffer` list.
 
-A differing config, Core or Dynamics is refused as a resume refuses it, unless
-`EVOSIM_ALLOW_SOURCE_MISMATCH` is set, and the window then reads cousin whatever its rows say. A
-row that parts, in the pre-roll or inside the window, makes a cousin, and the verdict names the
-second and the field. A window that runs past the run's last row, or finds no row to compare,
-reads unverified. The window exits 0 when faithful, 2 for a cousin, 3 when unverified and 1 on a
-refusal.
+The rows are the evidence. A change to the solver or the economy parts `auditResidual` or
+`meanHeight` at the first row. A build that only adds a reader, a queue or a column moves the source
+hashes and no row. This build is one of them, since Core gained only the admission queue, the gzip
+writers and the format 2 readers, and Dynamics is untouched. A rule on the hashes would have made a
+cousin of every window of round 48. A resume keeps its own refusal of all four hashes, because it
+writes the run's continuation and not a film of it.
+
+A row that parts, in the pre-roll or inside the window, makes a cousin, and the verdict names the
+second and the field. A window needs at least one compared row, inside it or the first after
+`to`. With none it reads unverified, and so does a window whose end lies past the run's last
+row. The window exits 0 when faithful, 2 for a cousin, 3 when unverified and 1 on a refusal.
 
 B2. **Playback in the theatre.** A `StreamWorld` in `Evosim.Theatre` reads a window and gives
 the cameras the same bodies the live world does. A body appears at its birth and goes at its
@@ -221,7 +228,9 @@ at the campaign's crowd has to be measured before it is proposed.
 Acceptance for Part B has three parts. A window of a run recorded on this build reads faithful
 at every report second inside it. That run is a fixture still to be recorded: `r48fix-s4` wrote
 no checkpoints, so it can be filmed only from its founding. The fixture is its world recorded on
-this build in format 2 with a checkpoint every 500 s. The playback's frame at a stream second
+this build in format 2 with a checkpoint every 500 s. A window of round 48's third seed, which
+checkpoints every 500 s on the round 48 build, reads faithful too, with its source hashes named.
+That is the test of the claim that this build moves no trajectory. The playback's frame at a stream second
 draws the same parts as `-From snapshot` does from the run's own stream at that second, to a
 millimetre and a tenth of a degree. At a checkpoint's second the comparison is made on the bodies
 both frames hold. And the wall time of a 60 s window is recorded at 5, 10 and 16 threads on a

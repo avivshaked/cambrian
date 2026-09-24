@@ -185,6 +185,13 @@ metabolic grid. Frame *k* is written at the first physics step whose time is at 
 after *k* / fps rather than for an exact second. The run's own stream keeps the half-second
 floor that `ResolvePoseEvery` sets. The window samples inside its own loop and never calls it.
 
+The stream does not say whether its film is faithful to the run. The verdict line at the end of
+the window's `identity.jsonl` does, and a player takes its provenance word from there. The word
+rests on the identity rows (the faithful rule in `record-and-film-spec.md`, B1). A window of a
+run recorded on an older build can read faithful, with the differing source hashes named on the
+same line. A window under another config is refused, or reads cousin when the launcher overrides
+the refusal.
+
 ## What it costs
 
 A body with three degrees of freedom is 49 bytes, so a thousand of them make a frame of about
