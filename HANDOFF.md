@@ -420,7 +420,24 @@ is what the next session works from. Everything below it in this section is hist
   (branch `record-format`: A1 to A3, A5 to A7 and the retirement of `poses.jsonl`) and
   `scratch/wt-farmfilm` (branch `farm-film`: the stream's version 2 and `--film-window`). They
   build and do not run tests: no suite may run beside two farm runs, so the suites, the regress
-  and the timings wait for round 48's gap. B2 and B3 (theatre playback and the safari on
+  and the timings wait for round 48's gap. **`farm-film` is built** (`67d5303`, `0e98d09`, 0 errors, nothing
+  run). Stream version 2 deflates the body records after an uncompressed time, count and raw
+  length, so the scan and index still read the second, and it adds the guild flags. It reads
+  version 1. `--film-window` restores through a `Program.ReadCheckpoint` factored out of the
+  resume, steps the loop's own sequence (the assay, the extinction test and the sampler's drain
+  at the run's report steps, with the file writers off), and writes a frame at the first physics
+  step at or after each `k/fps`, so up to one step late and never early. It prints faithful,
+  cousin or unverified from `identity.jsonl` and exits 0, 2 or 1. Four things at the gap. The
+  tests (`PoseStreamTests`, `FilmWindowTests`, then the whole farm suite, since `Program.cs`
+  moved). One resume regress, since `ReadCheckpoint` moved. A fixture recorded on the merged
+  build with checkpoints (`r48fix-s4` has none). And the merge with `record-format`: the window
+  must drain the genome queue that branch adds, and its film genomes should use Core's gzip
+  member format. **A ruling of mine, on the agent's question**: the new build's `farmHash`
+  differs from every recorded run's, round 48's included, so the hash rule alone would make every
+  window of them a cousin. A window reads faithful when `coreHash` and `dynamicsHash` match and
+  every identity row agrees bit for bit. A differing `farmHash` is then named and does not
+  disqualify it, because the rows are the evidence and the farm's source is mostly recording.
+  This goes into the spec with the agent's seven corrections at the merge. B2 and B3 (theatre playback and the safari on
   windows) follow once the safari branch has merged.
 - **The review's second and third items are built and not yet seen** (`d5540e6` on the safari
   branch, an Opus subagent, compiled clean on the worktree's `unity-w6` with every pass of the
