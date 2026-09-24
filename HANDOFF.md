@@ -346,51 +346,54 @@ carrying a developed 3 cm part, so no born-small addition was ever born in round
 47, and under it a whole plant is refused at investment 0.02 unless its adult is at least
 0.031 m³; hence the rigid-group floors and the lowered floors, both to be screened.
 
-**State at the switch (2026-09-24, about 12:30; the session was handed from Fable to Opus
-here, and this block is what the next session works from).** Everything below it in this
-section is history.
+**State (2026-09-24, about 13:55; the session runs on Opus 5.5 since midday).** This block
+is what the next session works from. Everything below it in this section is history.
 
-- **Main is clean and pushed** through the round 48 merges, the launcher, the reader, the
-  draft and the fixtures. The fixtures on the merged build: `fixtures/r42-config.json` from
-  `pfix11` (`53f8234cb554f0ba`); the crowd `runs/r48fix-s4` (round 44's world, seed 4,
-  20,000 s), `RunFixture.cs` pointing at it; Dynamics 109 of 109 on it. The regress against `r47fixd-s4` (`scratch/r45-build/regress.py`) is identical in every shared field for 140 samples and parts at 1,410 s, where the new build refused one conception under the 0.5 kg per-part mass floor (`conceptionsUnderMassFloor` 5 against 4) that the old build admitted: a mutant drawn with a bud where the old mutator changed a type. That is D119 by construction (the type change is gone at every setting, so the recorded world cannot be replayed on this build once a cell-type draw fires), not a fault; every rule that has an off replays. The Slow identity word held on the new config fixture (`ParallelIdentityTests`, `c9b0cabce249c1dd` at 1, 4 and 16 threads).
-- **The pre-registration is a draft**, `logbook/specs/r48-prereg-draft.md`, seventeen
-  clauses with their reader `scripts/reads/r48-read.py` (checked on the smoke and on
-  `r47-s1`). Two things in it are not settled and the launch waits on both. First, the
-  overhead floor: the launcher's 10 J at x2 does not bound the count (the count screen,
-  `scratch/r48-build/runs/r48plat-s2`: doubling every 100 s to 6,111 at 680 s, stopped by
-  hand); the second pass screens `EVOSIM_OVERHEAD` 50 with `EVOSIM_OVERHEAD_PER_TISSUE` 2
-  and the small-child floors kept (`-Env @{ EVOSIM_OVERHEAD = 50 }` on `env-r48.ps1`, seed 2,
-  dt 0.02, four threads, to a plateau or 5,000 s), and 75 J if that settles above ten
-  thousand bodies; the winning value is written into `env-r48.ps1` and the draft's world
-  and screen sections before the commit. Second, the snow dials: the snow screen
-  (`scratch/r48-snow`, an Opus agent's, held after its base run at the owner's request)
-  reads whether remineralisation or the sink should move; if the reading is not in hand,
-  the draft says the dials stay at round 47's and the round proceeds. The draft's long
-  sentences flagged by `scripts/style-check.py` are fixed at promotion.
-- **The launch, in order:** the second-pass screen read; the values written; the draft
-  promoted to `logbook/0119-a-stomach-on-a-plant-and-paying-as-you-go.md` with the launch
-  section filled (the commit, Core 955 of 955, Farm 88 of 88, the Dynamics count, the
-  fixtures, the exe `artifacts/Evosim.Farm/bin/Release-r48`, the wall from the screen's
-  pace); the README key row; committed on a clean tree; then
-  `./scripts/run-farm.ps1 r48-s1 -Seed 1 -Threads 5 -Launcher rounds/env-r48.ps1 -Exe
-  artifacts/Evosim.Farm/bin/Release-r48/Evosim.Farm.exe -WallMinutes <from the pace>` and
-  seed 2 the same, two arms at a time (the owner's cap), seed 3 when one ends; the watch is
-  `python scripts/watch-round.py 48 --read scripts/reads/r48-read.py` from the session's
-  cron every half hour, never a shell loop. The manifest's `gitCommit` with no `(DIRTY)`
-  is the pre-registration's record.
-- **The safari's implementing pass is committed on its branch and not merged**
-  (`worktree-safari2-r47` at `41ed512`, worktree `.claude/worktrees/safari2-r47`; its
-  report is in the commit message). Before merging: rerender seed 1's scenes 14 and 20 (the
-  vibaresa birth, the plaguplax colony) and the descent from the worktree's worker 5 with
-  `theatre-safari.ps1 ... -Guide <guide.json> -Scenes 14,20` (the guide from
-  `python scripts/guide.py r47-s1 --out <dir>` in the worktree; `scratch/safari-impl/` has
-  the compile trip and the facts), look at the contact sheets, and decide the call-outs
-  (built behind `EVOSIM_THEATRE_SAFARI_CALLOUTS=1`, off; the owner's ruling, the agent's
-  recommendation to allow the colony tint and the sparkline). Then merge, refresh worker 6
-  from main, and reshoot round 47's three seeds (`theatre-safari.ps1 r47-sN -Worker 6
-  -WallMinutes 360 -SeekMax 300`, one at a time, never beside a full set of arms). Seed 2's
-  old-safari films are under `scratch/safari/r47-s2/2026-09-24`; videos are never committed.
+- **Round 48 is running.** The pre-registration is `logbook/0119-a-stomach-on-a-plant-and-paying-as-you-go.md`,
+  committed at `d35c248` on a clean tree and pushed. Seeds 1 and 2 launched at about 13:51 from
+  it (`gitCommit d35c248`, `gitDirty` false, `configHash e5a30c15db9fc4db`, five threads each,
+  900-minute walls); every header token was checked from the reports. Seed 3 goes when one of
+  them ends, with the same command and `-Seed 3`. The overhead floor is 50 J: the second count
+  screen (`scratch/r48-build/runs/r48plat2-s2`) peaked at 3,670 and settled near 2,450, about
+  twice round 47's crowd at the same seed and step, and the entry's screen section has the
+  numbers. The pool's ledger at the round's prices is `logbook/specs/r48-read/ledger-pool.md`.
+- **The watch** is a session cron at 17 and 47 past the hour running
+  `python scripts/watch-round.py r48 --read scripts/reads/r48-read.py --seeds 1,2,3`. The round
+  argument is `r48`, not `48` (this block's predecessor had it wrong: `48` looks for arms named
+  `48-s1`). It dies with the session and expires after seven days; re-arm it after a restart,
+  never as a shell loop.
+- **The safari branch carries two new skin passes, uncommitted** (`worktree-safari2-r47`,
+  worktree `.claude/worktrees/safari2-r47`, on top of `41ed512`). First, joints: the pink marker
+  cylinder is gone and each free joint carries a knuckle of each part's own tissue, an
+  ellipsoid on the anchor that hides when the limb is straight and rounds over the crease when
+  it bends (the owner: "we don't have a proper skin for joints... something that would make it
+  look organic"); rendered in seed 1's scenes 14 and 20 with every camera check clean, but no
+  shot is close enough to judge it. Second, leaves (the owner's ruling of the same afternoon on
+  "these flat leaves": items 1 to 4 and the curl): a leaf mesh the shader shapes per body, an
+  outline, a lens cross-section, veins, a curl of up to a tenth of the width (the one visual
+  outside a collider, ruled), and a hue turn per clade set by the safari. **It does not yet
+  show**: the first close film (`scratch/films/r47-s1` in the worktree) drew no leaves, because
+  the test took a leaf to be a sheet, and round 47's photosynthetic boxes are not sheets
+  (smallest side over the next, median 0.79, none under 0.4, in seed 1's 5,000 s snapshot).
+  The next step is to draw every photosynthetic box with the leaf path, whatever its
+  thickness, so a thick one reads as a succulent leaf, then film the close shot again.
+- **Round 47's safari reshoot has to run from the worktree.** Main's round 48 build refuses
+  round 47's checkpoints and config (`StateVersion` 10 and the new tunables), so a worker
+  refreshed from main after the merge cannot seek a round 47 scene. Reshoot from the
+  worktree's worker 5 (its Core predates round 48), then merge; or merge and shoot round 48
+  instead. The call-outs stay off until the owner rules.
+- **The review of the films for "breathtaking" is back** (an Opus subagent over seed 2's 24
+  safari sheets and a dozen full frames; its findings and ranked changes are
+  `logbook/specs/theatre-review-2026-09-24.md`). Its reading: the water is murky and lit from
+  the lens, the bodies read as cut card, and the camera never gets close. Its first three are
+  light from the world's sun with shadows (a ruling: it moves off the accepted key "from above
+  and slightly behind the camera"), a canopy shot looking up at the crowd under Snell's
+  window, and close portraits with real depth of field. Six rulings are listed there; the
+  agent work in it is queued behind the leaves.
+- **A question to the owner, not gating**: "videos for the background" is not in the record.
+  The nearest is the Leonardo backdrop stills of 2026-09-16 (`design/leonardo-prompts.md`, none
+  generated). Asked whether it means footage for the YouTube edit, outside the world
+  (recommended), or moving water behind the creatures (recommended against).
 - **The snow screen read its base and nothing else** (the Opus agent's report, 12:45; the
   five alternatives were held at the owner's request). The base is round 47's launcher at
   dt 0.02, seed 2, 15,000 s (`scratch/r48-snow/runs/base`, `6636ef0289fae2de`; its reads
@@ -415,13 +418,15 @@ section is history.
   (added mass as a per-link tensor in the solver's inertia). Not for round 48.
 - **Machine and load, the owner's rulings today:** at most two farm runs, none beside a
   test suite, at most half the machine while the owner is at it, and "let's not leave it
-  churning for hours". Nothing runs at the switch but what the owner allowed to finish.
+  churning for hours". Two farm arms run (round 48's seeds 1 and 2); renders go one at a
+  time beside them.
   `scripts/sweep-orphans.ps1` first, every session.
-- **Loose ends worth an hour each, none gating:** the draft's G2 is a weak clause by
+- **Loose ends worth an hour each, none gating:** the entry's G2 is a weak clause by
   design; F4 reads the founder's fed density (crowding lowers it); the ledger is a lump
   reading; the Unity farm binds none of the eight new tunables; `EVOSIM_OVERHEAD`'s code
   default is 25 J.
- **Seed 2 ended at 30,000 s** (about 06:20, 357 min wall at 1.4x real time, 5,602 alive,
+
+**Seed 2 ended at 30,000 s** (about 06:20, 357 min wall at 1.4x real time, 5,602 alive,
 45,675 births, no divergence, both books closed): the pool's 78 founders all died at a
 median 24 s and none bred; the tables held more snow than the open floor at 192 of 201
 dumps and at the last one (0.53 against 0.47 J/m³); fewer bodies under the caps than beside
