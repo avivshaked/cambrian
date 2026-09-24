@@ -120,5 +120,9 @@
     EVOSIM_PRICE_ATTACK = 0.1; EVOSIM_PRICE_INTAKE = 0.1; EVOSIM_PRICE_PROTECTION = 1; EVOSIM_PRICE_TOUGHNESS = 0.1
     EVOSIM_ATTRIBUTE_MUT = 0.005
     EVOSIM_SENSE_CONTACT = 1; EVOSIM_SENSE_DAMAGE = 1
-    EVOSIM_CHECKPOINT_EVERY = 2500
+    # Seeds 1 and 2 were launched at 2,500 s (12:51, 2026-09-24). Seed 3 and anything after
+    # it write a checkpoint every 500 s, by the owner's ruling of 15:40 that day, so that a
+    # film never re-runs more than 500 s of the world to reach a scene. A recording setting:
+    # it moves no hash and changes no trajectory.
+    EVOSIM_CHECKPOINT_EVERY = 500
 }

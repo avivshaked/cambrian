@@ -258,3 +258,11 @@ from `dff084e`.
 The watch is `python scripts/watch-round.py 48 --read scripts/reads/r48-read.py` from the
 session's cron every half hour, never a shell loop, and frames of the live seeds are taken
 every few thousand seconds.
+
+**One change after the launch, to the recording only** (2026-09-24, 15:40). Seed 3 writes a
+checkpoint every 500 s where seeds 1 and 2 write one every 2,500 s: the owner's ruling, after
+a safari of round 47 spent 20 minutes re-running 916 s of the world to reach a scene that fell
+before its first checkpoint. The cadence is a recording setting. It moves no hash, the
+`configHash` stays `e5a30c15…`, and no trajectory changes, so no prediction is touched. It is
+in `rounds/env-r48.ps1` from the commit that adds this paragraph, and seed 3's manifest
+records it as `checkpointEverySeconds`.
