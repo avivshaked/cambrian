@@ -38,32 +38,44 @@ namespace Evosim.Theatre.EditorTools
                 if (!string.IsNullOrWhiteSpace(run))
                 {
                     string dir = RunRecord.ResolveRunDirectory(run.Trim()) ?? run.Trim();
+                    string storyPath = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_STORY");
                     string path = SafariGuide.Locate(dir, out string why);
+                    SafariGuide guide = null;
                     if (path == null)
                     {
+                        // A story is read without a guide, as the safari reads it (a seed whose
+                        // guide is written after its run ends); a template trip cannot be.
                         log.Append("\n  no guide: ").Append(why);
-                        code = 1;
+                        if (!string.IsNullOrWhiteSpace(storyPath))
+                        {
+                            guide = SafariGuide.Empty(why);
+                            log.Append("\n  the story is read without one: every subject is placed from the lineage");
+                        }
+                        else code = 1;
                     }
                     else
                     {
-                        SafariGuide guide = SafariGuide.Read(path, out string refusal);
+                        guide = SafariGuide.Read(path, out string refusal);
                         if (guide == null)
                         {
                             log.Append("\n  guide REFUSED: ").Append(refusal);
                             code = 1;
                         }
-                        else
+                    }
+
+                    {
+                        if (guide != null)
                         {
                             RunRecord record = RunRecord.Load(dir);
                             var checkpoints = SafariDirector.ReadCheckpoints(dir).Select(c => c.seconds).ToList();
                             SafariClades clades = SafariClades.Read(dir);
-                            log.Append("\n  guide ").Append(path).Append(": ").Append(guide.Clades.Count).Append(" clades, ")
+                            log.Append("\n  guide ").Append(path ?? guide.Path).Append(": ").Append(guide.Clades.Count).Append(" clades, ")
                                .Append(guide.Picker.Count).Append(" in the picker")
                                .Append(guide.Ignored.Count > 0 ? "; keys not read: " + string.Join(", ", guide.Ignored) : "")
                                .Append("\n  lineage: ").Append(clades.Note)
                                .Append("\n  checkpoints: ").Append(string.Join(", ", checkpoints.Select(s => s.ToString("0", CultureInfo.InvariantCulture))));
 
-                            foreach (SafariHeuristic h in Enum.GetValues(typeof(SafariHeuristic)))
+                            foreach (SafariHeuristic h in path == null ? new SafariHeuristic[0] : (SafariHeuristic[])Enum.GetValues(typeof(SafariHeuristic)))
                             {
                                 var scenes = SafariTripBuilder.Build(guide, SafariTripBuilder.Choose(guide, h), checkpoints,
                                     record?.RequestedSeconds ?? 0d);
@@ -90,7 +102,6 @@ namespace Evosim.Theatre.EditorTools
 
                             // A story, when one is named: its trip for the arm, its clips' names and
                             // every note the reader made, so a shot list can be read before a frame is.
-                            string storyPath = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_STORY");
                             if (!string.IsNullOrWhiteSpace(storyPath))
                             {
                                 storyPath = storyPath.Trim().Trim('"');
