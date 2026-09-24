@@ -362,7 +362,11 @@ is what the next session works from. Everything below it in this section is hist
   passwords, fan curves) and is not to be called. **Until the owner has flashed a BIOS carrying
   0x12B or later: seeds 1 and 3 of round 48 finish; nothing new starts, which the agent reads
   as no farm run (the seed 2 probe included), no render, no test suite and none of round 49's
-  gap work.** The owner will choose Intel Default Settings after the flash. Seed 2's probe is
+  gap work.** The owner will choose Intel Default Settings after the flash, over the weekend
+  of 2026-09-26. **One release from the hold** (the owner, the same evening: "proceed without
+  bios changes"): the story safari of round 48, its compile and its render, tonight, for the
+  owner to watch in the morning; the power plan is left as it is. The probe, farm runs, test
+  suites and round 49's gap work stay held. Seed 2's probe is
   also a hardware test: a replay that reproduces the minus infinity at the same step is a code
   fault, and one that runs clean past 13,700 s says the run's arithmetic went wrong once on
   this machine (an inference until the replay runs).
