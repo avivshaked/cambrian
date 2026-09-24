@@ -379,12 +379,14 @@ is what the next session works from. Everything below it in this section is hist
   `scripts/story-assemble.py`), which has main merged in (`b5b0ba1`) so it reads round 48.
   Render chain 1 (`scratch/story/r48/render-chain-1.ps1`, detached, log beside it) films
   seed 2's scenes 4, 14, 15 and 16, then seed 1's 1, 2, 3, 8, 12, 13, 17, 18, 19 and 21, into
-  `scratch/wt-safari2/scratch/safari/<arm>/story-final/`. **Still to do**: when seed 3 ends,
-  run `guide.py` on it, have the story's seed 3 numbers and names made final (scenes 5, 6, 7,
-  10 and 20, and the seed 3 claims in 9, 11 and 22: "one is still running" must go), film
-  seed 1's 9, 11 and 22 and seed 3's five, then `python scripts/story-assemble.py
-  scratch/story/r48/story.json <film> <the three story-final folders>` from the worktree, and
-  copy the film and `story.md` to `scratch/owner/`.
+  `scratch/wt-safari2/scratch/safari/<arm>/story-final/`. Seed 3 ended (budget, 30,000 s,
+  8,589 alive), its guide was built (`--no-economics`), and the story was made final in place
+  (seed 3's names and numbers, scenes 6, 7, 10, 20 and 22; no filmed scene changed).
+  **Render chain 2** (`render-chain-2.ps1`, detached, waits for chain 1's pid) films seed 3's
+  five scenes and seed 1's 9, 11 and 22, runs `story-assemble.py` into
+  `scratch/owner/round-48-story.mp4` and copies `story.md` beside it as `round-48-story.md`. If
+  a session restarts before it ends, read `render-chain-1.log` and `render-chain-2.log` in
+  `scratch/story/r48/` before running anything.
 - **Round 48 is running.** The pre-registration is `logbook/0119-a-stomach-on-a-plant-and-paying-as-you-go.md`,
   committed at `d35c248` on a clean tree and pushed. Seeds 1 and 2 launched at 12:51 from
   it (`gitCommit d35c248`, `gitDirty` false, `configHash e5a30c15db9fc4db`, five threads each,
