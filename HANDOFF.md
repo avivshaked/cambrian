@@ -302,7 +302,41 @@ refilmed on it (07:27, the same 24 clips under `scratch/safari/r47-s1/2026-09-24
 first set overwritten): 15,935 frames, none over the ceiling (fastest 0.485 m/s), no dark
 frame in any clip, 26 frames inside a body, the arrival's 301 outside the glass by design.
 Worker 5 carries the same theatre for the pictures. The guide (`guide.py r47-s1`, 106 clades priced
-by the ledger, none failed) is under the run directory. **Seed 2 ended at 30,000 s** (about 06:20, 357 min wall at 1.4x real time, 5,602 alive,
+by the ledger, none failed) is under the run directory. **Seed 3 ended at 30,000 s** (about 08:00, 279 min at 1.8x, 2,501 alive, 15,992 births, no
+divergence, both books closed): the pool's 84 founders all died at a median 42 s and none bred;
+the tables held more snow than the open floor at every one of 201 dumps (0.34 against 0.27
+J/m³ at the end); fewer bodies under the caps than beside them at all 41 samples; 93 under
+caps at the end, none a stomach; `expo` 1.16. The three seeds' final reads are
+`logbook/specs/r47-read/r47-s{1,2,3}-30000.txt` and their end pictures are beside the entry
+to come (`logbook/images/r47-s*-t30000-*`). **The round is read and not yet written** (the
+entry is 0118, owed this morning): the pool's stomachs live a minute where they land and
+only seed 1's three that landed above 1 J/m³ bred; the tables gather snow under a crowd;
+the shade reads as thinner water under every cap at every sample; nothing lives in the dark.
+**The dissection of the stomachs** (an Opus subagent, 2026-09-24 morning;
+`logbook/specs/r47-read/tables.txt` and `ages.txt`, `scripts/reads/stomachs.py`, `tables.py`,
+`ages.py`) answers the owner's "why are stomachs not evolving": they do, one per thousand plant
+births, and mixotrophs are the form nearest replacement (R0 0.98 in seed 2); the larder is
+transient (rich only under the founding bloom, 2,000 to 8,000 s); senescence divides intake
+as well as multiplying upkeep, so the break-even rises as wear squared; eight in ten stomach
+births are founders born with 10 to 45 J at a random depth into 0.12 J/m³, dead in 20 to
+35 s; and dispersal is exonerated (seed 1's pool children were born 2 to 5 m from their
+parents in matching columns). **Round 48 is ruled** (the owner, 2026-09-24, "lets proceed
+with your recommendations"; D119 to D122): a cell type arrives only as a bud (no in-place
+type change), reproduction paid as it goes as a gene beside the lump with the overhead
+proportional to the child above a floor and the investment and newborn-mass floors lowered,
+senescence on upkeep alone, and every founder at the richest cell of its food with an
+endowment; the reef, the pool, joint work at zero and the seeds' shape unchanged. **In
+flight (from about 09:30):** three Opus builds in worktrees `.claude/worktrees/{bud,repro,
+found}-r48` (D119; D120; D121 and D122), the snow-knob screen (`scratch/r48-snow`, seed 2 at
+dt 0.02 to 15,000 s on remineralisation and the sink, one run at a time), the swim
+measurement (`scratch/r48-swim`: round 47's most active jointed bodies alone in still water
+in the farm's solver, on the owner's "creatures wag and stay in place"), and the safari
+review (`scratch/safari-review`: what the films show and how to make them interesting,
+procedural against a language model; the owner: an implementing agent follows it, then
+round 47 is reshot). Seed 2's safari is filming on worker 6; seed 3's follows. Then: the
+merges, the suites, the fixtures re-recorded (every tunable and the genome format 9 refuse
+the old ones), a dt 0.02 screen of the count's plateau under the proportional overhead, the
+pre-registration (0119), the launch. **Seed 2 ended at 30,000 s** (about 06:20, 357 min wall at 1.4x real time, 5,602 alive,
 45,675 births, no divergence, both books closed): the pool's 78 founders all died at a
 median 24 s and none bred; the tables held more snow than the open floor at 192 of 201
 dumps and at the last one (0.53 against 0.47 J/m³); fewer bodies under the caps than beside

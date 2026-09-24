@@ -138,6 +138,10 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D116](#d116) | Founders follow their food: D109's landing rule reads the field the founder's body eats, snow for a stomach and dissolved matter for a leaf, the larger for a mixotroph; replaces placing a cohort by rule | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 late afternoon ("use probability to make it more likely to land in high matter concentrates"; "yes") |
 | [D117](#d117) | The trickle brings back extinct species: with a launcher's share, a trickle founder is an exact copy of an evolved body from a pool the config pins by hash, marked `src: pool` in the lineage | 2026-09-23 | ruled by the owner in conversation on the night of 2026-09-23, on round 46's read ("I like the idea of reintroducing extinct species... yes lets do it") |
 | [D118](#d118) | The reef is many dark places, not three ornaments: caps of random size and irregular outline, overlapping where they fall, placed until a launcher's share of the surface is covered, opaque underneath, dressed as rock | 2026-09-23 | ruled by the owner in conversation on the night of 2026-09-23, on the smoke's pictures of the first build ("the idea is to have areas in the tank that do not get light. That's the reason they are there") |
+| [D119](#d119) | A cell type arrives only as a bud: no mutation changes an existing part's type; a new type is a small new part, and a part leaves by shrinking | 2026-09-24 | ruled by the owner in conversation on 2026-09-24, on the dissection of round 47's stomachs ("we should never change a full cell type from one to another, it should only be additions, or removals") |
+| [D120](#d120) | Reproduction paid as it goes, as a gene beside the lump, and the child's overhead scales with the child above a floor | 2026-09-24 | ruled by the owner in conversation on 2026-09-24 ("lets proceed with your recommendations") on the agent's proposal after the dissection |
+| [D121](#d121) | Senescence wears upkeep alone, not income | 2026-09-24 | ruled with D120 |
+| [D122](#d122) | Every founder lands at the richest cell of its food, depth included, and is born with an endowment | 2026-09-24 | ruled with D120; the generic form of a stomach-only rule the owner refused ("if we could come up with some generic rule or configuration, then I'd be much more inclined") |
 
 ---
 
@@ -6275,3 +6279,119 @@ tank is dark once the radii vary.
 be placed without it). Floating islands at the surface (the spec's other form; not asked
 for). Marine snow drawn on the tables in the skin (a later pass, once the dump gives the
 table's columns).
+
+### D119
+**A cell type arrives only as a bud: no mutation changes an existing part's type; a new type is a small new part, and a part leaves by shrinking** · 2026-09-24
+
+**Status:** ruled by the owner in conversation on 2026-09-24, on the dissection of round 47's
+stomachs (`logbook/specs/r47-read/tables.txt`, `scripts/reads/stomachs.py`): "we should never
+change a full cell type from one to another, it should only be additions, or removals (a cell
+can be removed by evolution if it grows too small. i think we already have that rule)"; and
+before it, "new cells evolving should start really small, which means their upkeep should not
+be dramatic for the creature". Built for round 48.
+
+**Decision.** `Mutator.ChangeCellType`, which turned an existing node into another type at its
+full size at `CellTypeChance` per node, is retired. At the same per-node rate a **bud** is
+added instead: a copy of a node at `NewNodeHalfExtent` (the born-small size `AddNode` already
+uses) with a different cell type drawn from the registry, attached by a random edge as a
+duplicate is, with the repairs a type change made (lift for a buoyancy cell, no joint where the
+type disallows one, D106's attribute caps). Same-type duplication and extinction by shrinking
+under `NodeExtinctionHalfExtent` stand. The bud must be expressed in the newborn: the build
+finds why round 47 seed 2 carried about a hundred plant genomes with a reachable absorptive
+node that no body developed, and sets the rule so a bud clears the part-volume floor at the
+smallest birth investment. A lineage birth row says whether the birth carried a bud.
+
+**Why.** A stomach's income and upkeep both scale with its volume, so a small stomach costs
+little and its break-even density is the same as a large one's; a leaf that becomes a stomach
+whole loses its whole income in one birth. The dissection read 90 stomach births from plant
+parents in round 47 and 112 mixotrophs, leaves carrying a small stomach, which were the only
+absorptive form near replacement (R0 0.98 in seed 2). The path the owner expects, a small
+new organ on a viable body, was two rare events in order; it is one now.
+
+**Rejected.** Keeping the type change beside the bud (the owner: never). A bud of the same
+type (that is duplication, kept as it is).
+
+### D120
+**Reproduction paid as it goes, as a gene beside the lump, and the child's overhead scales with the child above a floor** · 2026-09-24
+
+**Status:** ruled by the owner in conversation on 2026-09-24 ("lets proceed with your
+recommendations. i'm curious to see how it all works out") on the agent's proposal, which
+followed the owner's question: "we should rethink how these creatures grow and reproduce...
+when plants have material, matter, they usually continue to grow, right? and how do they
+reproduce? in water? do they create mini versions of themselves? and since our world has
+composite creatures, how might that be translated to our world?" Built for round 48.
+
+**Decision.** Two generic rules. First, a reproduction mode gene on `ReproductionTraits`:
+`Lump`, the recorded rule (the child's whole price, tissue at the birth investment plus the
+overhead plus the margin, saved in the reserve and paid at once), and `Gestation`, in which a
+share of every positive net income (`GestationShare`, a mutable trait) is moved into a
+gestation account that upkeep cannot draw on, and the child is conceived when the account
+holds its price; the account is charged matter in both books and goes to the corpse at
+death. The mode mutates with the other reproduction traits and founders draw `Lump`, so the
+gene enters by mutation. Second, the overhead becomes `max(floor, k × child's tissue at
+birth)` (`PerOffspringOverheadFloorJoules`, `PerOffspringOverheadPerTissueJoule`; the floor at
+100 with k at 0 is the recorded flat price). The birth-investment and newborn-mass floors are
+launcher knobs already and are lowered in round 48 so a lineage can choose many small children.
+The physical bud, a child grown as an attached subtree of the parent and detached at a gene's
+size, is the second cut and waits for a round on the first.
+
+**Why.** The dissection: a stomach's child is about 12 J of tissue against a flat 100 J fee,
+its reserve peaks at 100 to 150 J, and senescence closes its window at about 1,000 s, so a
+body at the margin never saves the lump; a leaf pays the same fee as a fraction of a large
+child. Paying as it goes spends the young body's best income on offspring rather than on a
+hoard that senescence burns (round 40 read 190 J of reserve a body against 0.37 J of tissue),
+and a proportional fee prices a small child as a small child. The count bound the flat fee
+gave (0107) is loosened for small bodies and is screened at dt 0.02 before pre-registration,
+with the runaway and tissue ceilings standing.
+
+**Rejected.** A stomach-specific placement of the pool's founders (the owner: "that is again
+a rule made for stomachs. i don't like that"), superseded by D122's generic rule. A guild-aware
+dispersal (the owner: "evolution, selection and randomisation should take care of it,
+otherwise we are giving an unfair advantage to a cell type"; and the dissection exonerated
+dispersal: seed 1's pool children were born 2 to 5 m from their parents in matching columns).
+The reserve cap as the larder lever (kept off; the gestation account is the generic route for
+the surplus).
+
+### D121
+**Senescence wears upkeep alone, not income** · 2026-09-24
+
+**Status:** ruled with D120. Built for round 48 as a tunable, `SenescenceWearsIntake`, true
+for every recorded config.
+
+**Decision.** `Metabolism.StepAt` multiplied upkeep and neural cost by `wear = 1 + age /
+SenescenceDoublingSeconds` and divided every intake by the same factor. With the tunable
+false, intake is not divided; upkeep and neural still wear.
+
+**Why.** The dissection: with both sides worn, a body's break-even density rises as wear
+squared, a stomach's 0.44 J/m³ at birth reaching about 1.0 by 1,500 s and 1.8 by 3,000 s,
+and the absorptive log confirms the intake per unit of density falling from 9.95 at birth
+to 4.6 past 3,000 s. A body that eats less as it ages and pays more is the same rule twice,
+and it falls hardest on whoever lives at the margin, which is a generic rule with a
+guild-shaped effect. D038's purpose, that ageing end a body so that selection sees
+generations, is served by the upkeep side alone.
+
+**Rejected.** A longer doubling time (it keeps the square).
+
+### D122
+**Every founder lands at the richest cell of its food, depth included, and is born with an endowment** · 2026-09-24
+
+**Status:** ruled with D120, as the generic form of a rule the owner refused in its
+stomach-only form ("if we could come up with some generic rule or configuration, then I'd be
+much more inclined"). Built for round 48 as two tunables, `FoundersFollowFoodDepth` and
+`FounderEndowmentSeconds`, off for every recorded config.
+
+**Decision.** D116's rule accepted a column by its stock and drew the depth separately, so a
+founder's own cell read about half its column's mean and a stomach founder landed in about
+0.12 J/m³. With the depth rule on, an accepted founder is placed at the richest cell of its
+food in that column, jittered within the cell, under the placer's clearances; a body that
+eats nothing keeps the drawn depth. With the endowment on, every founder (floor, trickle,
+pool) is born with that many seconds of its own standing watts in reserve, booked as its
+tissue is so both books close; the founder row carries it.
+
+**Why.** Eight in ten stomach births in round 47 were trickle and pool founders, born with 10
+to 45 J of reserve into thin water at a random depth, dead in 20 to 35 s; the trickle was
+spending its founders on nothing. Both rules are one rule for every guild: leaves earn from
+their first second and will not notice either.
+
+**Rejected.** Placing pool stomachs in the top-decile snow columns and raising the pool's
+share (the stomach-only form).

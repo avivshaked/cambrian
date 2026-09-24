@@ -1,0 +1,29 @@
+milestone 30000 s, r47-s1 (every record read up to that second)
+ctx  r47-s1     last_t=30000  alive=2619  trickle_spawns=919  pool_spawns=99  founders_by_src=floor:87 pool:99 trickle:820  reef=on  pool=on  reef_count=15  reef_cover=0.25  reef_cover_got=0.250932  header_tokens=trickle 1/30 s; pool 0.1 of 4; reefs 15 cover 0.25 (0.251 got) cap r=6-16 m rough 0.15 at 3 m ±1 t=2 m stem 0.25 fade 8 m; founders in their food
+L1   r47-s1     pool_founders=99  dead=99  still_alive=0  median_age_at_death_s=45.5  quartiles=18 to 141  held=False
+L2   r47-s1     pool_founders=99  bred=3  children=6  bred_by_pool_index=0:1 3:2  held=True
+L3   r47-s1     at=30000  short=False  living=2619  rooted_in_pool=0  of_them_stomachs=0  by_pool_index=  held=False
+L4   r47-s1     bred=3  placed=3  unplaced=0  at_or_over_1=3  share=1  snow_J_m3=1079@3350s:1.99 1221@3880s:1.65 1559@5260s:1.23  note=column mean (joules over the column's water), dump at or before the founder's first positions row  held=True
+L5   r47-s1     table_columns=5519  open_columns=3159  dumps=201  dumps_held_J_m3=37  dumps_held_J_m2=55  min_ratio_J_m3=0.382002  last_at=30000  table_J_m3=0.38516  open_J_m3=0.357997  table_J_m2=15.3512  open_J_m2=12.5499  note=a table column's sum is the snow on the table plus the room under the cap down to the floor; no record isolates the table's top. J/m3 is over the column's water (rock out), J/m2 over its area; held on J/m3  held=False
+L6   r47-s1     band=each cap's underside down 10 m (undersides -4.01 to -5.95 m)  volume_under_m3=51104.2  volume_beside_m3=82413.3  samples=41  samples_fewer_under=41  ties=0  last_at=30000  under=198  beside=706  under_per_m3=0.00387444  beside_per_m3=0.00856658  mean_under_per_m3=0.00134207  mean_beside_per_m3=0.00336732  held=True
+L7   r47-s1     at=30000  short=False  under_caps=257  photosynthetic=256  stomachs=1  other=256  note=under a cap is ReefGeometry.LightTransmission's rule: inside a cap's outline and below that cap's own top; a stomach is ink 1, or abs 1 with pho 0  held=False
+L8a  r47-s1     rows_read=3000  tolerance_m=0.5  roots_inside_past_tolerance=0  first=  roots_with_negative_distance=0  deepest_m=  diverged_dumps=0  dumps_inside_reef=0  held=True
+L8b  r47-s1     window=28000 to 30000 s  crowd=2490.66  bed_or_glass_per_step=4.13448  baseline=r46-s1  baseline_window=18320 to 20320 s  baseline_crowd=2491.31  baseline_per_step=0.90594  ratio=4.56375  note=a reading: the column counts the bed, the glass and the rock together  held=False
+L9   r47-s1     audit_absmax_J=9.23884e-06  matter_resid_at=30000  matter_resid=-9.86032e-08  short=False  diverged=0  manifest_status=ended  censored=False  provisional=False  held=True
+L10a r47-s1     held=absent  note=no run record carries the fastest water near a reef: no stats field, report column or manifest field of the reef build names it; the reading is ReefStreamsTests' printout
+L10b r47-s1     window=28000 to 30000 s  crowd=2490.66  pace_x_real=1.97711  footer_x_real=  baseline=r46-s1  baseline_window=18320 to 20320 s  baseline_crowd=2491.31  baseline_pace_x_real=1.74436  slower_by=0.882279  note=a timing reading; valid only under the same load as round 46's  held=True
+L11  r47-s1     at=30000  short=False  expo=1.62141  held=True
+
+L1:   held in 0 of 1 -- needs 3 of 3
+L2:   held in 1 of 1 -- needs 3 of 3
+L3:   held in 0 of 1 -- needs 1 of 3 or more
+L4:   held in 1 of 1 -- needs 3 of 3 where any breeds
+L5:   held in 0 of 1 -- needs 3 of 3
+L6:   held in 1 of 1 -- needs 3 of 3
+L7:   held in 0 of 1 -- needs 3 of 3
+L8a:  held in 1 of 1 -- needs 3 of 3
+L8b:  held in 0 of 1 -- needs 3 of 3
+L9:   held in 1 of 1 -- needs 3 of 3
+L10a: held in 0 of 1 (1 absent) -- needs 3 of 3
+L10b: held in 1 of 1 -- needs 3 of 3
+L11:  held in 1 of 1 -- needs 3 of 3
