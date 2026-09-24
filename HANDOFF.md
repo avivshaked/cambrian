@@ -437,7 +437,17 @@ is what the next session works from. Everything below it in this section is hist
   window of them a cousin. A window reads faithful when `coreHash` and `dynamicsHash` match and
   every identity row agrees bit for bit. A differing `farmHash` is then named and does not
   disqualify it, because the rows are the evidence and the farm's source is mostly recording.
-  This goes into the spec with the agent's seven corrections at the merge. B2 and B3 (theatre playback and the safari on
+  This goes into the spec with the agent's seven corrections at the merge. **`record-format` is built** (`0329316`, 0
+  warnings, nothing run). On `r48fix-s4` the snapshots fall from 430.3 MB to 3.2 MB (slim rows
+  0.3 MB, genomes 2.9 MB), and the positions from 29.5 MB to 11.4 MB (2.6x at one gzip member a
+  row). The converter's check passed over 111,940 snapshot rows, and every moved script reads the
+  same from both records. **Both branches are merged in `scratch/wt-r49`** (branch
+  `r49-record-film`, no textual conflicts). An Opus agent is wiring them together there, compile
+  only. Its jobs: the window takes genomes from the world's admission queue and writes them in
+  Core's member format; the faithful rule above; the converter writes the JSON poses as a
+  version 2 stream with a NaN fraction meaning not recorded; a resume inherits its source's
+  record format; and the spec is corrected in place. Its report is to end with the one ordered
+  list of what runs at the gap. B2 and B3 (theatre playback and the safari on
   windows) follow once the safari branch has merged.
 - **The review's second and third items are built and not yet seen** (`d5540e6` on the safari
   branch, an Opus subagent, compiled clean on the worktree's `unity-w6` with every pass of the
