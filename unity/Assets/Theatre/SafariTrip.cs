@@ -118,7 +118,14 @@ namespace Evosim.Theatre
         public const double PortraitSeconds = 20d;
         public const double ColonySeconds = 20d;
         public const double ChapterSeconds = 8d;
-        public const double FloorSeconds = 20d;
+
+        /// <summary>
+        /// The floor's length. Ten seconds, from twenty: round 47 seed 2's reshoot showed twenty
+        /// seconds of empty sand at 5,000 s, which is what the floor is in that world and too long
+        /// to watch; ten still carries the caption and the truck across the hollow.
+        /// </summary>
+        public const double FloorSeconds = 10d;
+
         public const double BirthLeadSeconds = 8d;
         public const double BirthTailSeconds = 10d;
         public const double TimeTakeSeconds = 8d;
