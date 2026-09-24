@@ -35,8 +35,18 @@ def ceiling_of(run_dir):
         config = json.load(open(run_dir + '/config.json', encoding='utf-8'))
     except (OSError, ValueError):
         return None
-    value = config.get('maximumPopulation')
-    return int(value) if isinstance(value, (int, float)) and value > 0 else None
+    # The field sits inside a group, so look through every level.
+    stack = [config]
+    while stack:
+        node = stack.pop()
+        if isinstance(node, dict):
+            value = node.get('maximumPopulation')
+            if isinstance(value, (int, float)) and value > 0:
+                return int(value)
+            stack.extend(node.values())
+        elif isinstance(node, list):
+            stack.extend(node)
+    return None
 
 
 def last_row(report):
