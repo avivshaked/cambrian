@@ -122,9 +122,9 @@ namespace Evosim.Farm.Tests
         public void AnUnreadableOrMissingPoolFileIsRefusedAtLaunch()
         {
             string dir = Scratch("unreadable");
-            string old = Path.Combine(dir, "format7.json");
+            string old = Path.Combine(dir, "format8.json");
             File.WriteAllText(
-                old, File.ReadAllText(Fixture("r45s1-stomach-100.json")).Replace("\"format\":8", "\"format\":7"));
+                old, File.ReadAllText(Fixture("r45s1-stomach-100.json")).Replace("\"format\":9", "\"format\":8"));
 
             var unreadable = Assert.Throws<InvalidOperationException>(() => TricklePoolFiles.Prepare(old));
             Assert.Contains("is not a genome this build reads", unreadable.Message);

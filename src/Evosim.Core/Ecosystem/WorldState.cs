@@ -86,7 +86,12 @@ namespace Evosim.Core
         /// founder source. A version-8 stream has none of the three, and a resumed trickle whose
         /// stream restarted from its seed would draw the unbroken run's founders a second time.
         /// </remarks>
-        public const int StateVersion = 9;
+        /// <remarks>
+        /// 10 with reproduction paid as it goes (2026-09-24): every creature carries its gestation
+        /// account, every queued birth row its mode and share, and the world its two cumulative
+        /// gestation counters. A version-9 stream has none of them.
+        /// </remarks>
+        public const int StateVersion = 10;
 
         /// <summary>
         /// Writes the whole of the world's own state.
@@ -156,6 +161,10 @@ namespace Evosim.Core
 
             // D115's count, beside the floor's for the same reason the mouth's six are here.
             w.Write(TrickleSpawns);
+
+            // The ruling of 2026-09-24's two cumulative counters, version 10.
+            w.Write(GestationBirths);
+            w.Write(GestatedTotal);
 
             // D117's count, only in a world whose config names a pool, so that every world
             // without one writes the trickle build's bytes and stays version 9. The reader asks
@@ -302,6 +311,9 @@ namespace Evosim.Core
             HealingJoules = r.ReadDouble();
 
             TrickleSpawns = r.ReadInt64();
+
+            GestationBirths = r.ReadInt64();
+            GestatedTotal = r.ReadDouble();
             PoolSpawns = Config.FoundingTricklePoolCount > 0 ? r.ReadInt64() : 0L;
 
             Field.RestoreDayFactor(r.ReadSingle());
@@ -370,6 +382,7 @@ namespace Evosim.Core
             w.Write(creature.SpeciesId);
 
             w.Write(creature.Energy);
+            w.Write(creature.GestationJoules);
             w.Write(creature.TissueJoules);
             w.Write(creature.AdultTissueJoules);
             w.Write(creature.BodyFraction);
@@ -481,6 +494,7 @@ namespace Evosim.Core
                 SpeciesId = r.ReadUInt32(),
 
                 Energy = r.ReadDouble(),
+                GestationJoules = r.ReadDouble(),
                 TissueJoules = r.ReadDouble(),
                 AdultTissueJoules = r.ReadDouble(),
                 BodyFraction = r.ReadSingle(),
@@ -618,6 +632,20 @@ namespace Evosim.Core
             // layout to stay byte-compatible with.
             w.Write((int)e.Source);
 
+            // Version 10: the birth row's mode and share, on every row as the row carries them;
+            // and, merged the same day, the founder's endowment (D122) and the bud fields (D119),
+            // on every row too, so that a row queued before a checkpoint and written after the
+            // restore is byte for byte the row the unbroken run would have written.
+            w.Write((int)e.ReproductionMode);
+            w.Write(e.GestationShare);
+            w.Write(e.EndowmentJoules);
+            w.Write(e.BudCells != null);
+            if (e.BudCells != null)
+            {
+                w.Write(e.BudCells);
+                w.Write(e.BudsExpressed);
+            }
+
             // D117's pool index, written only on a pool founder's row, which is what lets this
             // stay version 9: every row a world without a pool queues is byte for byte what the
             // trickle build wrote, and a pool row can only be in a stream this build wrote.
@@ -640,6 +668,8 @@ namespace Evosim.Core
             // would take StateVersion to 10 and refuse every checkpoint on disk, round 46's
             // included, for a queue that the farm drains to lineage.jsonl before every
             // checkpoint (Program.WriteCheckpoint), so no farm checkpoint carries a kill row.
+            // A birth row's bud and budx (the owner's ruling of 2026-09-24) are not written for
+            // the same reason, and a restored birth row reads as one that did not bud.
         }
 
         private static LineageEvent ReadLineage(BinaryReader r)
@@ -664,6 +694,16 @@ namespace Evosim.Core
             bool protection = r.ReadBoolean();
             var cause = (DeathCause)r.ReadInt32();
             var source = (FounderSource)r.ReadInt32();
+            var reproductionMode = (ReproductionMode)r.ReadInt32();
+            float gestationShare = r.ReadSingle();
+            double endowmentJoules = r.ReadDouble();
+            string budCells = null;
+            int budsExpressed = 0;
+            if (r.ReadBoolean())
+            {
+                budCells = r.ReadString();
+                budsExpressed = r.ReadInt32();
+            }
             int poolIndex = source == FounderSource.Pool ? r.ReadInt32() : -1;
 
             if (kind == LineageEventKind.Kill)
@@ -684,7 +724,8 @@ namespace Evosim.Core
                     seconds, id, parentId, birthKind, generationDepth, speciesId,
                     absorptive, joint, photosynthetic, patch, birthFraction, adultScale,
                     reserveMargin, indeterminateNodes, attack, intake, protection, source,
-                    poolIndex)
+                    poolIndex, endowmentJoules, budCells, budsExpressed,
+                    reproductionMode, gestationShare)
                 : LineageEvent.Death(seconds, id, cause);
         }
 

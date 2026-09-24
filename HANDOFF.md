@@ -325,18 +325,273 @@ with your recommendations"; D119 to D122): a cell type arrives only as a bud (no
 type change), reproduction paid as it goes as a gene beside the lump with the overhead
 proportional to the child above a floor and the investment and newborn-mass floors lowered,
 senescence on upkeep alone, and every founder at the richest cell of its food with an
-endowment; the reef, the pool, joint work at zero and the seeds' shape unchanged. **In
-flight (from about 09:30):** three Opus builds in worktrees `.claude/worktrees/{bud,repro,
-found}-r48` (D119; D120; D121 and D122), the snow-knob screen (`scratch/r48-snow`, seed 2 at
-dt 0.02 to 15,000 s on remineralisation and the sink, one run at a time), the swim
-measurement (`scratch/r48-swim`: round 47's most active jointed bodies alone in still water
-in the farm's solver, on the owner's "creatures wag and stay in place"), and the safari
-review (`scratch/safari-review`: what the films show and how to make them interesting,
-procedural against a language model; the owner: an implementing agent follows it, then
-round 47 is reshot). Seed 2's safari is filming on worker 6; seed 3's follows. Then: the
-merges, the suites, the fixtures re-recorded (every tunable and the genome format 9 refuse
-the old ones), a dt 0.02 screen of the count's plateau under the proportional overhead, the
-pre-registration (0119), the launch. **Seed 2 ended at 30,000 s** (about 06:20, 357 min wall at 1.4x real time, 5,602 alive,
+endowment; the reef, the pool, joint work at zero and the seeds' shape unchanged. **The
+three builds are merged on main (2026-09-24, 10:00 to 10:45):** D121 and D122 at `51ab953`
+(`EVOSIM_SENESCENCE_WEARS_INTAKE`, `EVOSIM_FOUNDERS_FOLLOW_FOOD_DEPTH`,
+`EVOSIM_FOUNDER_ENDOWMENT`; the founder row's `endow`), D119 at `8eb6b87`
+(`Mutator.ChangeCellType` retired, the bud at the same rate, `EVOSIM_RIGID_FLOORS` for the
+floors that weigh rigid groups, header `floors rigid groups`, the birth row's `bud` and
+`budx`), D120 at `18d9b3d` (the reproduction mode and share, genome format 9,
+`EVOSIM_GESTATION_MODE_CHANCE` and `_SHARE_CHANCE`, `EVOSIM_OVERHEAD_PER_TISSUE` beside
+`EVOSIM_OVERHEAD` as the floor, header `overhead scale x0 floor 100 J · gestation off`,
+the birth row's `gm` and `gs`, `StateVersion` 10, and the checkpoint's queued rows carrying
+the endowment and the bud fields too). Round 42's hash is re-pinned to `53f8234cb554f0ba`;
+the ten inocula are format 9 by the converter's text edit; Farm 88 of 88, the default Core
+suite 955 of 955 after one format pin moved. The launcher is `rounds/env-r48.ps1` (the
+overhead floor 10 J at x2, the investment and newborn floors at 0.05, the endowment 600 s,
+the snow at round 47's; every one of those values is the screen's to confirm), and its
+dry run passes every new variable. **What the bud build found** (its report,
+`scratch/r48-bud`): the 0.5 kg newborn mass floor, applied per part, refused every birth
+carrying a developed 3 cm part, so no born-small addition was ever born in rounds 41 to
+47, and under it a whole plant is refused at investment 0.02 unless its adult is at least
+0.031 m³; hence the rigid-group floors and the lowered floors, both to be screened.
+
+**State (2026-09-24, about 13:00; the session runs on Opus 5.5 since midday).** This block
+is what the next session works from. Everything below it in this section is history.
+
+- **The machine is on hold for its firmware (the owner, 2026-09-24, about 20:05: "finish what
+  you're currently doing, but i'll come back later to do the updates. don't start new runs").**
+  The i9-13900K runs ASUS PRIME Z790-P WIFI BIOS 0806 of 2022-11-22 with microcode 0x10E
+  (`HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor `, `Update Revision`), which predates
+  Intel's fixes for the 13th and 14th generation's voltage degradation (0x129 of August 2024,
+  0x12B of September 2024, and later); the damage accumulates under long boosted loads, which
+  is this campaign's load. Measured at the ruling: no throttling (`Performance Limit Flags` 0,
+  every core at full frequency), no WHEA hardware-error events, the one crash on record
+  2026-09-22's; the CPU's own temperature is not readable without an admin tool, and the ASUS
+  WMI surface Armoury Crate uses is a firmware control panel (bus writes, boot order,
+  passwords, fan curves) and is not to be called. **Until the owner has flashed a BIOS carrying
+  0x12B or later: seeds 1 and 3 of round 48 finish; nothing new starts, which the agent reads
+  as no farm run (the seed 2 probe included), no render, no test suite and none of round 49's
+  gap work.** The owner will choose Intel Default Settings after the flash, over the weekend
+  of 2026-09-26. **One release from the hold** (the owner, the same evening: "proceed without
+  bios changes"): the story safari of round 48, its compile and its render, tonight, for the
+  owner to watch in the morning; the power plan is left as it is. The probe, farm runs, test
+  suites and round 49's gap work stay held. Seed 2's probe is
+  also a hardware test: a replay that reproduces the minus infinity at the same step is a code
+  fault, and one that runs clean past 13,700 s says the run's arithmetic went wrong once on
+  this machine (an inference until the replay runs).
+- **Round 48 is running.** The pre-registration is `logbook/0119-a-stomach-on-a-plant-and-paying-as-you-go.md`,
+  committed at `d35c248` on a clean tree and pushed. Seeds 1 and 2 launched at 12:51 from
+  it (`gitCommit d35c248`, `gitDirty` false, `configHash e5a30c15db9fc4db`, five threads each,
+  900-minute walls); every header token was checked from the reports. **Seed 2 ended `error` at
+  13,700 s** (15:05 UTC): the absorptive log's writer refused a `densityHere` of minus infinity
+  (`scratch/logs/r48-s2.err`, `Json.Writer.Field` from `AbsorptiveSample.ToJson`), eight rows
+  into that sample, so the failing body is the ninth living absorptive body in list order,
+  most likely 23037. Its stats row at 13,690 s is ordinary: audit −8.5e-06, `det cv` 0.688
+  and steady for 100 s, `diverged` 0, and the snow dump at 13,600 s has no negative or
+  non-finite column. So it was one event inside twenty metabolic steps, not a slow
+  instability. Every field deposit and take is guarded against a non-positive or NaN amount,
+  so a snow cell can reach minus infinity only through the grid's own passes (transport,
+  mixing, settling, remineralisation); that is an inference, not yet found. The seed is
+  censored at 13,690 s, and B1 ("nothing breaks, 3 of 3") is falsified on it. **Seed 3
+  launched at 17:06** into the freed slot (pid 61384, `gitCommit 4652627`, clean, the same
+  `dynamicsHash`, `farmHash`, `coreHash` and `configHash e5a30c15db9fc4db` as seeds 1 and 2,
+  checkpoints every 500 s). **The probe is built**: `--film-window … --probe <file>` on
+  `r49-record-film` (`f941f53`, exe `scratch/wt-r49/artifacts/Evosim.Farm/bin/Release-probe`)
+  scans every body, corpse and cell after each metabolic step and stops at the first value
+  that is not finite. Its run replays seed 2 from the 12,500 s checkpoint to 13,705 s, and
+  it waits for seed 1's slot (seed 1 at 22,820 s at 17:10, about 27 minutes a 1,000 s):
+  `Evosim.Farm.exe --film-window runs/r48-s2 13695 13705 scratch/film/r48-s2-probe --fps 1
+  --threads 5 --probe scratch/film/r48-s2-probe.txt`. Whether seed 2 is resumed on a fixed build
+  (a new realisation from the fault on), replaced by a fourth seed, or read censored is the
+  owner's decision once the cause is known. The overhead floor is 50 J: the second count
+  screen (`scratch/r48-build/runs/r48plat2-s2`) peaked at 3,670 and settled near 2,450, about
+  twice round 47's crowd at the same seed and step, and the entry's screen section has the
+  numbers. The pool's ledger at the round's prices is `logbook/specs/r48-read/ledger-pool.md`.
+- **The watch** is a session cron at 17 and 47 past the hour running
+  `python scripts/watch-round.py r48 --read scripts/reads/r48-read.py --seeds 1,2,3`. The round
+  argument is `r48`, not `48` (this block's predecessor had it wrong: `48` looks for arms named
+  `48-s1`). It dies with the session and expires after seven days; re-arm it after a restart,
+  never as a shell loop.
+- **The safari branch carries three skin passes** (`worktree-safari2-r47`, worktree
+  `scratch/wt-safari2`, moved there from `.claude/worktrees/safari2-r47` on 2026-09-24 because
+  every write under `.claude` asks the owner, CLAUDE.md's worktree gotcha; `ce8d690`, `98f73c6`
+  and `91de2a8` on top of `41ed512`, not merged). First, joints: the pink marker cylinder is
+  gone and each free joint carries a knuckle of each part's own tissue, an ellipsoid on the
+  anchor that hides when the limb is straight and rounds over the crease when it bends (the
+  owner: "we don't have a proper skin for joints... something that would make it look
+  organic"); no shot has yet been close enough to judge it. Second, leaves: every
+  photosynthetic box, whatever its thickness, is drawn as a seaweed blade the shader shapes per
+  body (a round tip, a wedge base into the stalk, shallow lobes, a still frill at the margin
+  inside the ruled curl of a tenth of the width, a midrib that fades up the blade, a lens at
+  most a third as thick as it is wide), lit through by its size and glowing from the surface
+  seen from below. The plan's seed sets the family's blade and the creature's id moves it a
+  little, and every cell, not only a blade, takes its own shade, warmth and wrinkle placement
+  from the id (the owner: "something that doesn't look exactly the same for every leaf just
+  similar", and "the minor variations" for all cells). The blades cost nothing measurable: 33.4
+  ms a frame on against 36.2 off on seed 1's 2,619 bodies. The owner has the sheet
+  (`scratch/leaf-look/seaweed-blades-sheet.png`) and has not yet weighed in. Third, the ground
+  under a shaped bed is earth (the owner, on a round 48 picture: "everything under the ground
+  [should] be full of earth ... the camera should not actually be allowed in there"): a ring
+  wall inside the glass in a shader of its own, layered sediment under a grey sand band
+  (`scratch/leaf-look/earth/side-4.png`), `EVOSIM_THEATRE_EARTH=0` to see through the shoal
+  for a census, and the free-fly camera held 0.3 m above the bed (the films and the safari
+  already were).
+- **Round 47 seed 2's safari reshoot is done** (launched 14:29, ended 18:56): 29 scenes,
+  18,647 frames, nothing under the bed or inside a body, no camera over 0.5 m/s. The clips and
+  sheets are in `scratch/wt-safari2/scratch/safari/r47-s2/2026-09-24/`, joined as
+  `r47-s2-safari-reshoot-all.mp4` (173 MB, 10 min 21 s) and sent to the owner as a 720p copy.
+  Scene 14, the floor at 5,000 s, is twenty seconds of empty sand, which is the floor in that
+  world; the floor scene is ten seconds from `c0259c5`. Moving it to where the crowd meets the
+  shoal would show bodies over sand, but its caption would have to change with it, so that is
+  offered to the owner and not built. The call-outs stay off until the owner rules. Merge the
+  branch after the films are seen; round 48's safari then runs from main.
+- **Faster film frames, built and not yet measured** (`2a118b9` on the safari branch, an Opus
+  subagent, compiled on the worktree's `unity-w6`). The reshoot's frames cost about 200 ms each
+  where the render and read-back is 33 ms. The rest was a CPU box filter over a 4K array, a
+  33 MB allocation and a PNG encode, all on the main thread. The new path filters on the GPU in
+  the stored bytes' own arithmetic, which is identical to `BoxDown` and not a bilinear blit (the
+  target is sRGB, so a blit would average light and brighten every edge). It then reads back at
+  1x and encodes on two writer threads, flushed at every take's end and before any file that
+  lists frames. The estimate is 70 to 90 ms a safari frame. The old paths stay behind
+  `-CpuDownsample` and `-SyncEncode`, and `-DownsampleCheck` compares both on the same render. A
+  safari seek now holds the view (`TheatreRunner.HoldView`) and logs its split. A flexible scene
+  may move forward to a checkpoint up to `EVOSIM_THEATRE_SAFARI_SNAP_AHEAD` seconds (600) ahead,
+  so scene 7's 20.5 minutes of stepping becomes one restore. The agent's reading, unmeasured:
+  most of the seek's slowness is Mono itself, which is Part B's case. The measurement commands
+  are in the agent's report as run at the reshoot's end: a 10 s close film with and without the
+  old paths on worker 5, refreshed first. **Checked at 19:40** on worker 5 refreshed from
+  `2a118b9`: `theatre-film.ps1 r47-s2 -At 30000 -Shots canopy,close -Seconds 10
+  -DownsampleCheck -RunsRoot <main>/runs`. The card's filter equals the CPU's in all six
+  checked frames (0 of 2,073,600 pixels differ). A frame cost 17.8 ms (canopy) and 29.7 ms
+  (close) on the main thread at the median, against the reshoot's 200 ms, and the writer never
+  made the film wait. Those numbers were taken beside two farm arms, so they are indicative
+  and are re-taken at the gap. The canopy shot, under the caps looking up through a gap at
+  the leaves against the light, reads well; the close shot's depth of field is mild at the
+  matched lens. The director check `-Check -Scenes 3,23,4` passed with and without `-Canopy`
+  (37 frames each, none under the bed, inside a body or over 0.5 m/s), so the closer portraits
+  never put the eye inside a body. The canopy hook acts on the arrival and the descent only,
+  so the `-Canopy` pass on those three scenes does not exercise it; a check of scenes 1 and 2
+  with `-Canopy` waits for the firmware hold to lift.
+- **Round 49's record and films, being built** (the owner's rulings of 15:40 to 16:00: checkpoints
+  every 500 s from round 48 seed 3, a record that stays small, and safari films soon after an arm
+  ends, at the scale of 300,000 s runs). The design is `logbook/specs/record-and-film-spec.md`.
+  Part A is a smaller record: genomes written once at birth, slim snapshots, gzipped positions,
+  the binary pose stream in place of `poses.jsonl`, compressed checkpoints, one reader per
+  language, and a converter that deletes nothing. It should take a seed from 6 GB to about 1 GB.
+  Part B is films the farm moves and Unity draws: the farm restores a checkpoint and writes every
+  body's pose thirty times a second for a scene's window, checked faithful against the run's own
+  rows, and the theatre plays it back. Two Opus builders are working in `scratch/wt-record`
+  (branch `record-format`: A1 to A3, A5 to A7 and the retirement of `poses.jsonl`) and
+  `scratch/wt-farmfilm` (branch `farm-film`: the stream's version 2 and `--film-window`). They
+  build and do not run tests: no suite may run beside two farm runs, so the suites, the regress
+  and the timings wait for round 48's gap. **`farm-film` is built** (`67d5303`, `0e98d09`, 0 errors, nothing
+  run). Stream version 2 deflates the body records after an uncompressed time, count and raw
+  length, so the scan and index still read the second, and it adds the guild flags. It reads
+  version 1. `--film-window` restores through a `Program.ReadCheckpoint` factored out of the
+  resume, steps the loop's own sequence (the assay, the extinction test and the sampler's drain
+  at the run's report steps, with the file writers off), and writes a frame at the first physics
+  step at or after each `k/fps`, so up to one step late and never early. It prints faithful,
+  cousin or unverified from `identity.jsonl` and exits 0, 2 or 1. Four things at the gap. The
+  tests (`PoseStreamTests`, `FilmWindowTests`, then the whole farm suite, since `Program.cs`
+  moved). One resume regress, since `ReadCheckpoint` moved. A fixture recorded on the merged
+  build with checkpoints (`r48fix-s4` has none). And the merge with `record-format`: the window
+  must drain the genome queue that branch adds, and its film genomes should use Core's gzip
+  member format. **A ruling of mine, on the agent's question**: the new build's `farmHash`
+  differs from every recorded run's, round 48's included, so the hash rule alone would make every
+  window of them a cousin. A window reads faithful when `coreHash` and `dynamicsHash` match and
+  every identity row agrees bit for bit. A differing `farmHash` is then named and does not
+  disqualify it, because the rows are the evidence and the farm's source is mostly recording.
+  This goes into the spec with the agent's seven corrections at the merge. **`record-format` is built** (`0329316`, 0
+  warnings, nothing run). On `r48fix-s4` the snapshots fall from 430.3 MB to 3.2 MB (slim rows
+  0.3 MB, genomes 2.9 MB), and the positions from 29.5 MB to 11.4 MB (2.6x at one gzip member a
+  row). The converter's check passed over 111,940 snapshot rows, and every moved script reads the
+  same from both records. **Both branches are merged in `scratch/wt-r49`** (branch
+  `r49-record-film`, no textual conflicts). An Opus agent is wiring them together there, compile
+  only. **The integration is built** (`3d5d471`, 0 errors, nothing run). The window takes
+  genomes from the world's admission queue and writes them in Core's member format. The
+  converter now writes the JSON poses as a version 2 stream with a NaN fraction meaning not
+  recorded. A resume inherits its source's record format, and the spec is corrected in place.
+  On `r48fix-s4` the converter's check passed: poses 125.3 MB to 42.6 MB, snapshots 430.3 MB to
+  3.2 MB, positions 29.5 MB to 11.4 MB. The window exits 0 faithful, 2 cousin, 3 unverified,
+  1 refused. **The faithful rule is revised** (the agent found that Core's hash moves with this
+  build for recording-only reasons, so the first rule would have made every window of round 48 a
+  cousin). `configHash` decides, since another config is another world. The code hashes do not
+  decide on their own: a window whose identity rows all agree bit for bit reads faithful, with
+  every differing hash named in `sourcesDiffer` (`4301032`; this build moves `coreHash` and
+  `farmHash`, not `dynamicsHash`). The acceptance gains a window of round 48 seed 3, which
+  checkpoints every 500 s: it should read faithful with those two hashes named, which tests
+  the claim that the build moves no trajectory.
+
+  **At round 48's gap, in order, from `scratch/wt-r49`, one farm run at a time**:
+  1. the filtered tests (`FilmWindowTests`, `PoseStreamTests`, `RecordFormatFarmTests`,
+     `CheckpointTests`; Core's `RecordFormatTests`);
+  2. the full suites (`core-test.ps1 -All`, `Evosim.Farm.Tests`, `Evosim.Dynamics.Tests`);
+  3. the regress: `rfmt1-s4` and `rfmt2-s4`, round 44's launcher, seed 4, 3,000 s, with
+     `EVOSIM_RECORD_FORMAT` 1 and 2 and `EVOSIM_DIGEST_EVERY` 100, which must be
+     digest-identical (`digest-diff.py`, `compare-det.py`);
+  4. a checkpointed fixture, `rfilm-s4` with `-CheckpointEvery 500`;
+  5. a window `--film-window runs/rfilm-s4/<run> 1000 1060 scratch/film/rfilm-1000 --fps 30
+     --threads 4`, which must read faithful;
+  6. a v5 checkpoint through `--verify-checkpoint`, and a resume `rfilm-s4r` compared with
+     the unbroken run;
+  7. the theatre's first Unity compile of the new readers, with a `-From snapshot` picture of
+     `rfilm-s4`;
+  8. then B2 and B3, the theatre's playback and the safari on windows, on top of the merged
+     safari branch. B2 and B3 (theatre playback and the safari on
+  windows) follow once the safari branch has merged.
+- **The review's second and third items are built and not yet seen** (`d5540e6` on the safari
+  branch, an Opus subagent, compiled clean on the worktree's `unity-w6` with every pass of the
+  four shaders compiling). Close shots have real depth of field: one body at 1.5 to 3 body
+  lengths through a 50 degree lens at f/2 (`EVOSIM_THEATRE_DOF`, `_DOF_APERTURE`,
+  `_DOF_FORMAT`, `_PORTRAIT_LENS`, `_PORTRAIT_FILL`), with depth and depth-normals passes on
+  the body, bed, rock and earth shaders that share each forward pass's displacement. Before
+  this, the depth texture held the bodies undisplaced or not at all, which is why the depth of
+  field and the occlusion never woke. There is also a `canopy` film shot (8 to 15 m under the
+  densest column, looking up about 68 degrees; `EVOSIM_THEATRE_CANOPY_LENS`, `_TILT`,
+  `_MOVE`) and a safari hook for the arrival and the descent behind
+  `EVOSIM_THEATRE_SAFARI_CANOPY`, off. No shadows and no change to the key, which wait on
+  ruling 1. The checks run on worker 5 after the reshoot: `theatre-film.ps1 r47-s2 -At 30000
+  -Shots canopy,close`, and `theatre-safari.ps1 r47-s2 -Check -Scenes 3,23,4` with and without
+  `-Canopy`. The risks the agent named: the blur may be faint at a matched lens (raise
+  `_DOF_FORMAT`), portraits stand closer inside the crowd so the eye may land inside a body
+  for a few frames, and in the canopy the key follows the camera and lights the leaves from
+  below. The commit's trailer lacks its blank line, which is cosmetic.
+- **The review of the films for "breathtaking" is back** (an Opus subagent over seed 2's 24
+  safari sheets and a dozen full frames; its findings and ranked changes are
+  `logbook/specs/theatre-review-2026-09-24.md`). Its reading: the water is murky and lit from
+  the lens, the bodies read as cut card, and the camera never gets close. Its first three are
+  light from the world's sun with shadows (a ruling: it moves off the accepted key "from above
+  and slightly behind the camera"), a canopy shot looking up at the crowd under Snell's
+  window, and close portraits with real depth of field. Six rulings are listed there; the
+  agent work in it is queued behind the leaves.
+- **A question to the owner, not gating**: "videos for the background" is not in the record.
+  The nearest is the Leonardo backdrop stills of 2026-09-16 (`design/leonardo-prompts.md`, none
+  generated). Asked whether it means footage for the YouTube edit, outside the world
+  (recommended), or moving water behind the creatures (recommended against).
+- **The snow screen read its base and nothing else** (the Opus agent's report, 12:45; the
+  five alternatives were held at the owner's request). The base is round 47's launcher at
+  dt 0.02, seed 2, 15,000 s (`scratch/r48-snow/runs/base`, `6636ef0289fae2de`; its reads
+  are `scripts/reads/snow-read.py` and `snow-timeline.py`, checked against round 47 seed
+  2's tables): the tank's snow peaks at 0.33 J/m³ under the founding bloom at 4,000 s and
+  settles at about 0.25 from 10,000 s with 24% of columns over the 0.44 break-even and 2%
+  over 1 at 15,000 s; the bed layer drains from 15.1 kJ to 5.4 kJ (0.25 J/m³); the few
+  living eaters read 0.6 to 0.7 at the body against 0.27 to 0.3 in their columns (a thin
+  layer the column mean averages away); trickle and pool stomach founders die in a median
+  21 to 206 s, long before the snow's slow decline could matter; `upt lim` holds at 77 to
+  84%, so the plants are matter-bound, and a lower remineralisation would cost them. The
+  agent's reading, and mine: the snow's decline is not the first thing to fix, the founders'
+  arrival is, which is what D122 does; so round 48 runs the snow dials at round 47's, and the
+  alternatives (`remin-half` first: `./scratch/r48-snow/run-farm-snow.ps1 -Arm remin-half
+  -Seed 2 -Seconds 15000 -WallMinutes 120 -Threads 6 -RunsRoot scratch/r48-snow/runs -Exe
+  artifacts/Evosim.Farm/bin/Release-snow/Evosim.Farm.exe -Launcher
+  scratch/r48-snow/env-snow.ps1 -Env @{EVOSIM_REMIN=0.00025}`, read with `python
+  scripts/reads/snow-read.py scratch/r48-snow/runs base remin-half`) are a between-rounds
+  screen if round 48's eaters still starve with the founders placed. A dt 0.02 result about
+  depth is confirmed at 0.01 before it is a result.
+- **A proposal waits on the owner** for the round after 48: `fable-propose-reactive-thrust.md`
+  (added mass as a per-link tensor in the solver's inertia). Not for round 48.
+- **Machine and load, the owner's rulings today:** at most two farm runs, none beside a
+  test suite, at most half the machine while the owner is at it, and "let's not leave it
+  churning for hours". Two farm arms run (round 48's seeds 1 and 2); renders go one at a
+  time beside them.
+  `scripts/sweep-orphans.ps1` first, every session.
+- **Loose ends worth an hour each, none gating:** the entry's G2 is a weak clause by
+  design; F4 reads the founder's fed density (crowding lowers it); the ledger is a lump
+  reading; the Unity farm binds none of the eight new tunables; `EVOSIM_OVERHEAD`'s code
+  default is 25 J.
+
+**Seed 2 ended at 30,000 s** (about 06:20, 357 min wall at 1.4x real time, 5,602 alive,
 45,675 births, no divergence, both books closed): the pool's 78 founders all died at a
 median 24 s and none bred; the tables held more snow than the open floor at 192 of 201
 dumps and at the last one (0.53 against 0.47 J/m³); fewer bodies under the caps than beside

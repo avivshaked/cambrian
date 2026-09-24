@@ -84,6 +84,10 @@ namespace Evosim.Farm
             Num("EVOSIM_SELF_OVERLAP", 0f, (s, v) => s.SelfOverlap = v),
             Num("EVOSIM_MAX_REACH", 0f, (s, v) => s.MaxReach = v),
 
+            // The owner's ruling of 2026-09-24 (buds): both floors weigh the rigid body a welded
+            // part is carried in. Off is the recorded world.
+            Flag("EVOSIM_RIGID_FLOORS", (s, v) => s.RigidFloors = v),
+
             // D109: the matter seeded as islands, founders planted in them, and the light's shade
             // map from the same noise, drifting or not. Every default is the recorded world.
             Num("EVOSIM_MATTER_ISLANDS", 0f, (s, v) => s.MatterIslands = v),
@@ -94,6 +98,13 @@ namespace Evosim.Farm
             // D116: the founder rule reads the field the founder's body eats. Off is the recorded
             // world, and the world refuses it beside D109's.
             Flag("EVOSIM_FOUNDERS_FOLLOW_FOOD", (s, v) => s.FoundersFollowFood = v),
+
+            // The round 48 founding ruling (owner, 2026-09-24): a founder accepted in a column is
+            // set at the richest cell of its food there, and every founder is born holding that
+            // many seconds of its own standing cost. Off and 0 are the recorded world; the depth
+            // rule is refused without D116's.
+            Flag("EVOSIM_FOUNDERS_FOLLOW_FOOD_DEPTH", (s, v) => s.FoundersFollowFoodDepth = v),
+            Num("EVOSIM_FOUNDER_ENDOWMENT", 0f, (s, v) => s.FounderEndowment = v),
             Num("EVOSIM_LIGHT_SHADE", 0f, (s, v) => s.LightShade = v),
             Num("EVOSIM_LIGHT_SHADE_DRIFT", 0f, (s, v) => s.LightShadeDrift = v),
             Num("EVOSIM_SECONDS", 4000f, (s, v) => s.BudgetSeconds = v),
@@ -209,10 +220,29 @@ namespace Evosim.Farm
             Num("EVOSIM_MAX_TISSUE", (float)D.MaximumTissueJoules, (s, v) => s.MaxTissue = v),
 
             Num("EVOSIM_SENESCENCE", 0f, (s, v) => s.Senescence = v),
+
+            // The round 48 ruling: 0 wears upkeep alone. Unset is 1, D038 and the recorded world,
+            // which is why this switch reads its fallback as on where every other flag reads off.
+            FlagOn("EVOSIM_SENESCENCE_WEARS_INTAKE", (s, v) => s.SenescenceWearsIntake = v),
             Num("EVOSIM_CELLTYPE_MUTATION", MutationRates.Default.CellTypeChance, (s, v) => s.CellTypeMutation = v),
             Num("EVOSIM_CLEARANCE", 1.0f, (s, v) => s.Clearance = v),
             Num("EVOSIM_TISSUE_ENERGY", 0f, (s, v) => s.TissueEnergy = v),
             Num("EVOSIM_OVERHEAD", D.PerOffspringOverheadJoules, (s, v) => s.Overhead = v),
+
+            // The ruling of 2026-09-24. EVOSIM_OVERHEAD is the overhead's floor and stays its
+            // name, because every launcher on file sets it; EVOSIM_OVERHEAD_FLOOR is the same
+            // setting under the ruling's word. Either alone sets the floor, and both set to
+            // different numbers is refused rather than one quietly winning.
+            Custom("EVOSIM_OVERHEAD_FLOOR", (s, env) => s.Overhead = OverheadFloorOf(env, s.Overhead)),
+            Num("EVOSIM_OVERHEAD_PER_TISSUE", D.PerOffspringOverheadPerTissueJoule, (s, v) => s.OverheadPerTissue = v),
+
+            // Reproduction paid as it goes, the same ruling. Both chances are 0 by default, and 0
+            // draws nothing, so a launcher that does not name them runs the world it always ran;
+            // the share range is 0.5 to 0.5, which a founder takes without a draw.
+            Num("EVOSIM_GESTATION_MODE_CHANCE", MutationRates.Default.GestationModeChance, (s, v) => s.GestationModeChance = v),
+            Num("EVOSIM_GESTATION_SHARE_CHANCE", MutationRates.Default.GestationShareChance, (s, v) => s.GestationShareChance = v),
+            Num("EVOSIM_GESTATION_SHARE_MIN", RandomGenomeOptions.Default.MinGestationShare, (s, v) => s.GestationShareMin = v),
+            Num("EVOSIM_GESTATION_SHARE_MAX", RandomGenomeOptions.Default.MaxGestationShare, (s, v) => s.GestationShareMax = v),
             Num("EVOSIM_FOUNDER_EXTENT_MIN", 0f, (s, v) => s.FounderExtentMin = v),
             Num("EVOSIM_FOUNDER_EXTENT_MAX", 0f, (s, v) => s.FounderExtentMax = v),
             Num("EVOSIM_EXCESS_DENSITY", 0f, (s, v) => s.ExcessDensity = v),
@@ -477,6 +507,11 @@ namespace Evosim.Farm
             }
 
             config.PerOffspringOverheadJoules = s.Overhead;
+            config.PerOffspringOverheadPerTissueJoule = s.OverheadPerTissue;
+            config.Mutation.GestationModeChance = s.GestationModeChance;
+            config.Mutation.GestationShareChance = s.GestationShareChance;
+            config.Genome.MinGestationShare = Math.Min(s.GestationShareMin, s.GestationShareMax);
+            config.Genome.MaxGestationShare = Math.Max(s.GestationShareMin, s.GestationShareMax);
             if (s.FounderExtentMin > 0f) config.Genome.MinHalfExtent = s.FounderExtentMin;
             if (s.FounderExtentMax > 0f) config.Genome.MaxHalfExtent = s.FounderExtentMax;
 
@@ -533,12 +568,15 @@ namespace Evosim.Farm
             config.SupportWattsPerSquareMetrePerSquareMetre = s.Support;
             config.SelfOverlapDepthFraction = s.SelfOverlap;
             config.Development.MaxBodyReachMetres = s.MaxReach;
+            config.Development.FloorsWeighRigidGroups = s.RigidFloors;
 
             config.MatterIslandWavelengthMetres = s.MatterIslands;
             config.MatterIslandCover = s.MatterIslandCover;
             config.MatterIslandDepthMetres = s.MatterIslandDepth;
             config.FoundersFollowMatter = s.FoundersFollowMatter;
             config.FoundersFollowFood = s.FoundersFollowFood;
+            config.FoundersFollowFoodDepth = s.FoundersFollowFoodDepth;
+            config.FounderEndowmentSeconds = s.FounderEndowment;
             config.LightShadeDepth = s.LightShade;
             config.LightShadeDriftMetresPerHour = s.LightShadeDrift;
             config.WorldAreaSquareMetres = s.Area;
@@ -555,6 +593,7 @@ namespace Evosim.Farm
             config.MaximumPopulation = s.MaxPopulation;
             config.MaximumTissueJoules = s.MaxTissue;
             config.SenescenceDoublingSeconds = s.Senescence;
+            config.SenescenceWearsIntake = s.SenescenceWearsIntake;
             config.Mutation.CellTypeChance = s.CellTypeMutation;
             config.SenseChemical = s.SenseChemical;
             config.SenseEnergy = s.SenseEnergy;
@@ -824,6 +863,27 @@ namespace Evosim.Farm
             public void Apply(EnvSettings s, Lookup env) => _apply(s, env);
         }
 
+        /// <summary>
+        /// <c>EVOSIM_OVERHEAD_FLOOR</c>, read after <c>EVOSIM_OVERHEAD</c>: unset keeps what that
+        /// said, set alone replaces it, and set beside a different <c>EVOSIM_OVERHEAD</c> is refused.
+        /// </summary>
+        private static float OverheadFloorOf(Lookup env, float fromOverhead)
+        {
+            if (string.IsNullOrEmpty(env("EVOSIM_OVERHEAD_FLOOR"))) return fromOverhead;
+
+            float floor = Num(env, "EVOSIM_OVERHEAD_FLOOR", fromOverhead);
+
+            if (!string.IsNullOrEmpty(env("EVOSIM_OVERHEAD")) && floor != fromOverhead)
+            {
+                throw new ArgumentException(
+                    "EVOSIM_OVERHEAD (" + fromOverhead.ToString("R", CultureInfo.InvariantCulture) +
+                    ") and EVOSIM_OVERHEAD_FLOOR (" + floor.ToString("R", CultureInfo.InvariantCulture) +
+                    ") name the same setting, the overhead's floor, and disagree. Set one.");
+            }
+
+            return floor;
+        }
+
         private static Knob Num(string name, float fallback, Action<EnvSettings, float> set) =>
             new Knob(name, (s, env) => set(s, Num(env, name, fallback)));
 
@@ -836,6 +896,13 @@ namespace Evosim.Farm
         /// <summary>A switch: <c>Env(name, 0f) &gt; 0.5f</c>, which is how EvolutionRun spells one.</summary>
         private static Knob Flag(string name, Action<EnvSettings, bool> set) =>
             new Knob(name, (s, env) => set(s, Num(env, name, 0f) > 0.5f));
+
+        /// <summary>
+        /// A switch whose unset value is on: <c>Env(name, 1f) &gt; 0.5f</c>. For a knob whose
+        /// recorded world is the true side (<c>EVOSIM_SENESCENCE_WEARS_INTAKE</c>).
+        /// </summary>
+        private static Knob FlagOn(string name, Action<EnvSettings, bool> set) =>
+            new Knob(name, (s, env) => set(s, Num(env, name, 1f) > 0.5f));
 
         private static Knob Text(string name, Action<EnvSettings, string> set) =>
             new Knob(name, (s, env) => set(s, env(name)));
@@ -873,11 +940,18 @@ namespace Evosim.Farm
         public float Support;
         public float SelfOverlap;
         public float MaxReach;
+        public bool RigidFloors;
         public float MatterIslands;
         public float MatterIslandCover;
         public float MatterIslandDepth;
         public bool FoundersFollowMatter;
         public bool FoundersFollowFood;
+
+        /// <summary>The round 48 founding ruling's depth — <c>EVOSIM_FOUNDERS_FOLLOW_FOOD_DEPTH</c>.</summary>
+        public bool FoundersFollowFoodDepth;
+
+        /// <summary>The round 48 founding ruling's endowment, s — <c>EVOSIM_FOUNDER_ENDOWMENT</c>.</summary>
+        public float FounderEndowment;
         public float LightShade;
         public float LightShadeDrift;
         public float BudgetSeconds;
@@ -986,10 +1060,18 @@ namespace Evosim.Farm
         public int MaxPopulation;
         public double MaxTissue;
         public float Senescence;
+
+        /// <summary>Whether senescence divides intake too — <c>EVOSIM_SENESCENCE_WEARS_INTAKE</c>, on when unset.</summary>
+        public bool SenescenceWearsIntake;
         public float CellTypeMutation;
         public float Clearance;
         public float TissueEnergy;
         public float Overhead;
+        public float OverheadPerTissue;
+        public float GestationModeChance;
+        public float GestationShareChance;
+        public float GestationShareMin;
+        public float GestationShareMax;
         public float FounderExtentMin;
         public float FounderExtentMax;
         public float ExcessDensity;

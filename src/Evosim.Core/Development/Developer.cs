@@ -175,7 +175,14 @@ namespace Evosim.Core
             // Both tails, one counter. A part is dropped for being unrepresentably small (§4.5's
             // extinction by shrinking) or unrepresentably large (DevelopmentLimits.MaxPartVolume),
             // and in both cases the whole subtree goes with it.
-            if (volume < limits.MinPartVolume || volume > limits.MaxPartVolume)
+            //
+            // DevelopmentLimits.FloorsWeighRigidGroups: a part welded to its parent is weighed with
+            // the rigid body it is welded into, which its parent has already cleared, so the lower
+            // tail does not prune it; the upper tail still does. Off, every part is weighed alone.
+            bool welded =
+                limits.FloorsWeighRigidGroups && parentPartIndex >= 0 && jointType.DofCount() == 0;
+
+            if ((!welded && volume < limits.MinPartVolume) || volume > limits.MaxPartVolume)
             {
                 phenotype.PrunedForVolume++;
                 return;

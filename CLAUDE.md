@@ -1452,6 +1452,50 @@ actually verifying it.
   1.9 times the recorded one on one thread and the body phase 19% more at 8 threads
   (`per-part-contact-spec.md` §6); a checkpoint rebuilds the link spheres on restore, and
   `--verify-checkpoint` with the switch on is owed before a resume under it is trusted.
+- **From round 48's build (2026-09-24, D119 to D122) eight tunables and a genome field land
+  together, and every config, genome and checkpoint written before them is refused.** The
+  bud (`Mutator.ChangeCellType` is gone; a bud is a welded copy of a node at the born-small
+  size with another type, drawn at `CellTypeChance`; `EVOSIM_RIGID_FLOORS`, header `floors
+  rigid groups` after the reach, the birth row's `bud` and `budx`), gestation
+  (`ReproductionTraits.Mode` and `GestationShare`, genome format 9; `EVOSIM_GESTATION_MODE_CHANCE`
+  and `_SHARE_CHANCE` at 0 draw nothing, `_SHARE_MIN`/`_MAX` the founders' range; every
+  birth row carries `gm` and `gs`; stats rows `gestationBirths`, `gestatedJoules`,
+  `gestationJoulesHeld`), the scaled overhead (`EVOSIM_OVERHEAD_PER_TISSUE`; `EVOSIM_OVERHEAD`
+  is the floor and `EVOSIM_OVERHEAD_FLOOR` its second name, the two refused at different
+  values; header `overhead scale x2 floor 10 J · gestation …` before the hash), senescence
+  on upkeep alone (`EVOSIM_SENESCENCE_WEARS_INTAKE`, on when unset; header `senescence
+  3000 s on upkeep` or `on upkeep and intake`), founders at their food's depth
+  (`EVOSIM_FOUNDERS_FOLLOW_FOOD_DEPTH`, header `founders in their food at its depth`) and
+  the endowment (`EVOSIM_FOUNDER_ENDOWMENT` seconds of standing watts, header `endowment
+  600 s`; the founder row's `endow`). `WorldState.StateVersion` is 10 and the checkpoint's
+  queued lineage rows carry the endowment and the bud fields (version 10 is the first to
+  carry any of them, so nothing older is byte-compatible anyway). The fixtures are
+  `fixtures/r42-config.json` from `pfix11` (round 42's hash `53f8234cb554f0ba`) and the crowd
+  `runs/r48fix-s4`; the ten inocula were taken to format 9 by a text edit that added
+  `"mode":"Lump","gestation":0.5` and no other byte (`scratch/r48-repro/convert-format8-to-9.py`).
+  **The crowd regress no longer reads IDENTICAL, and that is the bud's design**: `r48fix-s4`
+  against `r47fixd-s4` is identical for 140 samples and parts at 1,410 s, where the build
+  refused a bud-carrying mutant under the per-part mass floor that the old build admitted
+  with its type changed; the type change has no off, so a world recorded before D119
+  replays on this build only until its first cell-type draw. Read a regress across the
+  build as identical up to that sample, and take the fixture's identity from the
+  rules that have an off. Six things bite. **The newborn mass floor was applied per part and refused every born-small
+  part** (`MinNewbornPartKilograms` 0.5 kg is 5e-4 m³ a part; a 3 cm bud or duplicate is
+  2e-4 m³), so in rounds 41 to 47 no birth carrying a developed 3 cm part was ever admitted
+  and a whole plant at investment 0.02 was refused unless its adult was 0.031 m³ or more:
+  every "unexpressed gene" read from a snapshot in those rounds is read with this. With the
+  rigid-group floors on, a welded part is exempt from `MinPartVolume` and the newborn floor
+  weighs a rigid group as one. **The endowment is an influx**: a closed world's `mat in`
+  reads the founders' endowments over ρ (90.9 units for fifty floor founders in the smoke),
+  and `matterStanding` is the seed plus it; both books close by it. **The overhead's code
+  default is 25 J**, not the 100 J every launcher from round 41 set; a config carries its
+  value, so nothing recorded moves, but a world built from defaults prices a child at 25.
+  **The mutation rates for gestation default to 0**, so a launcher that does not set
+  `EVOSIM_GESTATION_MODE_CHANCE` runs a world in which every body is a lump breeder and the
+  header reads `gestation off`. And **the ledger is a lump reading**: `LedgerForecast` prices
+  the new overhead and knows the mode, but a gestating body's account is not modelled, so
+  an R0 from `ledger.ps1` is the lump lineage's. The Unity farm binds none of the eight, so
+  a world built there has them at their defaults and its header carries none of the tokens.
 - **A farm round's pre-registration record is the manifest's `gitCommit` on a clean tree.**
   `run-farm.ps1` has no `-Prereg`; `launch-queue.ps1 -Prereg` is the Unity queue's. So a
   farm round is launched only after the entry is committed and `git status` is clean, and
@@ -1465,6 +1509,56 @@ actually verifying it.
   (`logbook/specs/stomach-screens.md`). A field total in the stats is joules or units over
   the whole bin; divide by the bin's live volume before calling it a density, and say which
   bin.
+- **A farm run started from VS Code gets the fast cores only while VS Code has focus.** The
+  machine is an i9-13900K: eight fast cores (logical 0 to 15) and sixteen efficiency cores (16
+  to 31). With VS Code in front, round 48's two farm runs sat about 44% on the fast cores and
+  26% on the efficiency ones; with any other window in front (Task Manager, the search box,
+  another app) about 30% and 37%, at the same total CPU (2026-09-24, `scratch/cpu-watch/`,
+  a two-second recorder of load per core type and the focused window). The fast cores boost
+  to about 5.5 GHz and draw several times the power, so the fans follow the focus: the owner
+  heard it as the machine "hiding" when Task Manager opened. Nothing was hiding. The cause is
+  Windows 11's hybrid scheduling, most likely because the runs were launched from inside VS
+  Code's process tree (an inference). It bites a pace or timing read: the same run is faster
+  with VS Code in front, so a wall split or a pace compared across two windows of time
+  compares the focus as well.
+- **Read the CPU's microcode before a long run.** The i9-13900K is a 13th-generation chip,
+  and Intel's fixes for that generation's voltage degradation (microcode 0x129 and 0x12B,
+  2024) come only with a BIOS update. On 2026-09-24 the board (ASUS PRIME Z790-P WIFI) was on
+  BIOS 0806 of 2022 with microcode 0x10E after weeks of boosted all-core load, and the owner
+  held every new run until the flash (HANDOFF). The revision is `Update Revision` under
+  `HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor `, little-endian (`0E 01 00 00` is
+  0x10E); throttling is `\Processor Information(_Total)\Performance Limit Flags` (0 is none).
+  The ASUS WMI classes in `root\wmi` (`ASUSManagement`, `AsusAtkWmi_WMNB`) write the SMBus,
+  boot order, passwords and fan curves and are never called.
+- **Report the machine's CPU as Task Manager does: `% Processor Utility`, not `% Processor
+  Time`.** On 2026-09-24 the agent read 41% from `\Processor(_Total)\% Processor Time` while
+  the owner's Task Manager showed 75%. Both were right: `Time` is the share of time a core is
+  busy, and `Utility` (`\Processor Information(_Total)\% Processor Utility`, what Task Manager
+  has shown since Windows 11 22H2) scales it by the clock against the 3.0 GHz base, and the
+  cores were boosting to 1.6 times base (`% Processor Performance` 161). Heat and fan noise
+  follow `Utility`, so a load quoted to the owner is that counter.
+- **A worktree goes under `scratch/wt-<name>`, never under `.claude/`.** Claude Code treats
+  `.claude` as a protected path: every write inside it asks the owner, and neither an allow
+  rule nor bypass mode lifts that. The Agent tool's `isolation: "worktree"` and
+  `EnterWorktree` put a worktree there, and the safari branch's, at
+  `.claude/worktrees/safari2-r47`, asked on every edit and every render on 2026-09-24 until it
+  was moved. The owner had already said "you have full permission to write in this folder";
+  the permission was never the problem, the path was. `scratch/` is inside the project and gitignored, so a
+  worktree there is written freely, as `scratch/wt-bed` to `scratch/wt-trace2` always were.
+  Make one with `git worktree add scratch/wt-<name> -b <branch>`; move one with `git worktree
+  move <old> scratch/wt-<name>`, which refuses while any shell's working directory is inside
+  it (the PowerShell tool keeps its directory between calls, so `Set-Location` to the main
+  tree first). Two more things follow from a worktree being its own checkout. Its scripts take
+  the worktree's root as the repository, so `theatre-snap.ps1` and `theatre-film.ps1` run from
+  it write under its own `scratch/` and refuse an output path outside it; copy the pictures
+  out. They also read runs from the worktree's own `runs/`, which holds none, so a film or
+  a snapshot from a worktree takes `-RunsRoot <main tree>/runs` (a canopy check on
+  2026-09-24 died on `No arm directory` without it). And its worker (`<worktree>/unity-wN`) takes an edit only by a refresh from the
+  worktree. The Agent tool's worktrees still land under `.claude/worktrees/` unless a
+  `WorktreeCreate` hook in the settings sends them elsewhere, and that setting is the owner's.
+  Until it exists, a subagent that needs a worktree gets one the caller made under `scratch/`,
+  named by its absolute path in the brief, and not `isolation: "worktree"`. The fifteen older
+  worktrees under `.claude/worktrees/` are left where they are; removing one is the owner's.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

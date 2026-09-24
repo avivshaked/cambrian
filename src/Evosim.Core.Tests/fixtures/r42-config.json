@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "256078e816861b27",
+  "configHash": "53f8234cb554f0ba",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -28,6 +28,7 @@
     "ventSpeed": 0
   },
   "development": {
+    "floorsWeighRigidGroups": false,
     "maxBodyReachMetres": 0,
     "maxDepth": 8,
     "maxPartVolume": 1000000,
@@ -40,6 +41,7 @@
     "neuralCostPerConnectionWatts": 0,
     "neuralCostPerNeuronWatts": 0,
     "perOffspringOverheadJoules": 100,
+    "perOffspringOverheadPerTissueJoule": 0,
     "workCostMultiplier": 0
   },
   "feeding": {
@@ -103,6 +105,7 @@
     "maxEdgeScale": 1,
     "maxEdgeTiltDegrees": 50,
     "maxEdgesPerNode": 2,
+    "maxGestationShare": 0.5,
     "maxHalfExtent": 0.4,
     "maxJointLimit": 1.4,
     "maxLinkHalfExtent": 0.26,
@@ -116,6 +119,7 @@
     "minBroodSize": 1,
     "minBuoyancyLift": 0.25,
     "minEdgeScale": 0.6,
+    "minGestationShare": 0.5,
     "minHalfExtent": 0.15,
     "minJointLimit": 0.4,
     "minLinkHalfExtent": 0.1,
@@ -170,6 +174,8 @@
     "broodSizeChance": 0.05,
     "cellTypeChance": 0.005,
     "flagChance": 0.03,
+    "gestationModeChance": 0,
+    "gestationShareChance": 0,
     "investmentChance": 0.08,
     "jointTypeChance": 0.04,
     "marginChance": 0.08,
@@ -202,6 +208,7 @@
     "floorClosesAfterSeconds": 3000,
     "floorSpawnsPerStep": 2,
     "founderDepthSpread": 45,
+    "founderEndowmentSeconds": 0,
     "founderEnergyJoules": 200,
     "foundingTricklePerSecond": 0,
     "foundingTricklePoolCount": 0,
@@ -247,6 +254,7 @@
     "contactPerPart": false,
     "floorRefugeMetres": 0,
     "foundersFollowFood": false,
+    "foundersFollowFoodDepth": false,
     "foundersFollowMatter": false,
     "handlingCostPerJouleEaten": 0.1,
     "initialMatterPerCubicMetre": 1,
@@ -271,6 +279,7 @@
     "remineralisationPerSecond": 0.002,
     "reserveCapSeconds": 0,
     "senescenceDoublingSeconds": 3000,
+    "senescenceWearsIntake": true,
     "sharedSpace": true,
     "supportWattsPerSquareMetrePerSquareMetre": 0,
     "uptakeHalfSaturation": 0.05,

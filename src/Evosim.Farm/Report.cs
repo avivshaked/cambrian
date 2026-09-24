@@ -190,6 +190,8 @@ namespace Evosim.Farm
                     : "off") +
                 " · selfOverlap " + (s.SelfOverlap > 0f ? s.SelfOverlap.ToString("0.###", Inv) : "off") +
                 " · reach " + (s.MaxReach > 0f ? s.MaxReach.ToString("0.##", Inv) + " m" : "off") +
+                // The owner's ruling of 2026-09-24: what the volume and newborn floors weigh.
+                " · floors " + (s.RigidFloors ? "rigid groups" : "per part") +
 
                 // D109's three tokens, all reading the recorded world at their defaults.
                 " · matter " + (s.MatterIslands > 0f
@@ -199,7 +201,12 @@ namespace Evosim.Farm
                 // D116 takes the token's own slot: one founder rule or the other, never both.
                 " · founders " + (s.FoundersFollowMatter
                     ? "in matter"
-                    : s.FoundersFollowFood ? "in their food" : "anywhere") +
+                    : s.FoundersFollowFood
+                        ? s.FoundersFollowFoodDepth ? "in their food at its depth" : "in their food"
+                        : "anywhere") +
+                // The round 48 founding ruling's endowment, beside the rule that places the
+                // founders it is given to; rendered off as well as on, as the trickle is.
+                " · endowment " + (s.FounderEndowment > 0f ? F(s.FounderEndowment) + " s" : "off") +
                 " · shade " + (s.LightShade > 0f
                     ? s.LightShade.ToString("0.##", Inv) + " drift " + s.LightShadeDrift.ToString("0.#", Inv) + " m/h"
                     : "off") +
@@ -268,7 +275,10 @@ namespace Evosim.Farm
                 PoolToken(config) +
                 " · ceiling " + F(s.MaxPopulation) +
                 " maxTissue=" + s.MaxTissue.ToString("0.#", Inv) +
-                " · senescence " + (s.Senescence > 0f ? F(s.Senescence) + " s" : "off") +
+                // The round 48 ruling says which sides the wear takes: D038's two, or upkeep alone.
+                " · senescence " + (s.Senescence > 0f
+                    ? F(s.Senescence) + " s on " + (s.SenescenceWearsIntake ? "upkeep and intake" : "upkeep")
+                    : "off") +
                 " · cellType mut " + F(s.CellTypeMutation) +
                 " · clearance " + F(s.Clearance) +
                 " · linkPhoto " + F(s.LinkPhoto) +
@@ -335,6 +345,19 @@ namespace Evosim.Farm
                 // count a different thing under each model, and analyse-arm.ps1 and
                 // contact_aliases.py read which from this token.
                 " · contact " + (config.ContactPerPart ? "per part" : "per body") +
+
+                // The ruling of 2026-09-24, at the end before the hash and rendered either way.
+                // The floor is the `overhead` token above, which is unchanged; this says whether
+                // the overhead scales with the child (`x0` is the flat fee of every recorded
+                // world) and whether any lineage can pay as it goes.
+                " · overhead scale x" + F(config.PerOffspringOverheadPerTissueJoule) +
+                " floor " + config.PerOffspringOverheadJoules.ToString("0.###", Inv) + " J" +
+                " · gestation " + (config.Mutation.GestationModeChance > 0f
+                    ? "mut=" + F(config.Mutation.GestationModeChance) +
+                      " share=" + F(config.Genome.MinGestationShare) + "-" +
+                      F(config.Genome.MaxGestationShare) +
+                      " at " + F(config.Mutation.GestationShareChance)
+                    : "off") +
                 " · configHash `" + config.Hash() + "`";
         }
 

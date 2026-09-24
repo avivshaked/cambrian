@@ -136,6 +136,47 @@ namespace Evosim.Core
         [Tunable("development", Unit = "m")]
         public float MaxBodyReachMetres { get; set; } = 0f;
 
+        /// <summary>
+        /// Whether a part welded to its parent (a joint of no degree of freedom) is weighed with
+        /// the rigid body it is welded into, by both floors: development's
+        /// <see cref="MinPartVolume"/> and the newborn's <c>RunConfig.MinNewbornPartKilograms</c>.
+        /// Off is the recorded world, where every part is weighed alone.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why it exists: a bud cannot be born under the per-part floors.</b> The owner's
+        /// ruling of 2026-09-24 makes a new cell type arrive as a bud at
+        /// <c>MutationRates.NewNodeHalfExtent</c>, 3 cm, which is 2.16e-4 m³ before any scale:
+        /// development prunes it under <see cref="MinPartVolume"/> (1e-4 m³) whenever the scales
+        /// above it multiply to under 0.77, and a newborn carrying it at any birth fraction under
+        /// 1 holds a part lighter than round 47's 0.5 kg newborn floor, which refuses the whole
+        /// conception. No bud small enough to be cheap clears both at the investments rounds 47
+        /// and 48 run.
+        /// </para>
+        /// <para>
+        /// <b>Why the rigid body is the right thing to weigh.</b> Both floors guard the solver: a
+        /// tiny or light <i>articulated</i> link driven by a joint sized for an adult is what spun
+        /// up and diverged (logbook/0059, 0077). A welded part has no degree of freedom; in the
+        /// farm's solver (<c>Evosim.Dynamics</c>, articulated-body algorithm) its inertia is summed
+        /// into the body it is welded to and nothing about it can spin alone. So on, a welded
+        /// part is exempt from <see cref="MinPartVolume"/> (it is still thickened to
+        /// <see cref="MinPartHalfExtent"/> and still bounded by <see cref="MaxPartVolume"/>), and
+        /// the newborn floor weighs each rigid group: a jointed part or the root, with every part
+        /// welded to it, summed. Removal is untouched: a node leaves by shrinking under
+        /// <c>MutationRates.NodeExtinctionHalfExtent</c> in the genome, as the ruling says.
+        /// </para>
+        /// <para>
+        /// <b>What it changes beyond buds, and why it is the owner's.</b> Every non-link cell is
+        /// welded, so on, a plant's newborn is refused only when the whole welded body, not its
+        /// lightest leaf, is under the floor; and a welded part a recorded genome's development
+        /// pruned for volume is built. A stored genome's body is therefore a property of this
+        /// switch as well as of the build. The Unity farm (PhysX articulations, where a fixed
+        /// joint is still its own link) does not bind it. ⚠ Unmeasured (§5A.10).
+        /// </para>
+        /// </remarks>
+        [Tunable("development")]
+        public bool FloorsWeighRigidGroups { get; set; }
+
         public static DevelopmentLimits Default => new DevelopmentLimits();
 
         public DevelopmentLimits Clone() => new DevelopmentLimits
@@ -146,6 +187,7 @@ namespace Evosim.Core
             MaxPartVolume = MaxPartVolume,
             MinPartHalfExtent = MinPartHalfExtent,
             MaxBodyReachMetres = MaxBodyReachMetres,
+            FloorsWeighRigidGroups = FloorsWeighRigidGroups,
         };
 
         public override string ToString() =>
@@ -155,6 +197,7 @@ namespace Evosim.Core
             System.FormattableString.Invariant($"thickness>={MinPartHalfExtent:0.###}") +
             (MaxBodyReachMetres > 0f
                 ? System.FormattableString.Invariant($" reach<={MaxBodyReachMetres:0.##}")
-                : " reach=off");
+                : " reach=off") +
+            (FloorsWeighRigidGroups ? " floors=rigid" : "");
     }
 }

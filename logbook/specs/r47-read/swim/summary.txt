@@ -1,0 +1,54 @@
+==== s1: jointed bodies alive at 30000 = 268
+  with >=20 pose samples in [28000,30000]: 239
+  joints per body: {1: 247, 2: 19, 3: 1, 4: 1}
+  joint types: {'Spherical': 73, 'Hinge': 131, 'TwistHinge': 39, 'Twist': 14, 'HingeTwist': 24, 'Universal': 11}
+  ACTIVE joints (pose amp >=0.05 rad) per body: {0: 175, 1: 59, 2: 4, 4: 1}
+  pose joint amplitude (sqrt2*sd) rad: median 0.010 p75 0.066 p90 0.154 max 0.827; share >=0.05: 0.27
+  pose pairs (c=parent-child, s=other) by corr class: {('c', 'in'): 4, ('s', 'in'): 5, ('c', 'anti'): 1}
+  multi-active bodies: {'all in/anti': 5}
+  alone brain: lost 0
+  alone active (lead amp>=0.05): 10 of 268; Hz median 1.49 p10 0.05 p90 2.61
+  alone active joints per body: {0: 258, 1: 6, 2: 4}
+  alone pair lags: {('s', 'in'): 1, ('c', 'in'): 3} {'all in/anti': 4}
+  run water   stroking     n=  10  net horiz speed m/s median 0.00418 p90 0.00860 max 0.00860; per stroke median 0.00319 m
+  run water   not stroking n= 258  net horiz speed m/s median 0.00209 p90 0.00609 max 0.01453; per stroke median 0.01876 m
+  run water stroke asymmetry S (lead joint) median 0.198 p90 |S| 1.000
+  clean water stroking     n=   7  net horiz speed m/s median 0.00322 p90 0.00822 max 0.00822; per stroke median 0.00243 m
+  clean water not stroking n= 261  net horiz speed m/s median 0.00000 p90 0.00075 max 0.00245; per stroke median 0.00474 m
+  clean water stroke asymmetry S (lead joint) median 0.119 p90 |S| 0.181
+==== s2: jointed bodies alive at 30000 = 82
+  with >=20 pose samples in [28000,30000]: 74
+  joints per body: {1: 77, 2: 5}
+  joint types: {'Universal': 15, 'Spherical': 55, 'Hinge': 9, 'HingeTwist': 7, 'TwistHinge': 1}
+  ACTIVE joints (pose amp >=0.05 rad) per body: {0: 23, 1: 46, 2: 5}
+  pose joint amplitude (sqrt2*sd) rad: median 0.305 p75 0.983 p90 1.285 max 1.454; share >=0.05: 0.71
+  pose pairs (c=parent-child, s=other) by corr class: {('s', 'in'): 5}
+  multi-active bodies: {'all in/anti': 5}
+  alone brain: lost 0
+  alone active (lead amp>=0.05): 45 of 82; Hz median 1.19 p10 0.21 p90 1.82
+  alone active joints per body: {0: 37, 1: 43, 2: 2}
+  alone pair lags: {('s', 'in'): 2} {'all in/anti': 2}
+  run water   stroking     n=  45  net horiz speed m/s median 0.00891 p90 0.02040 max 0.03686; per stroke median 0.01059 m
+  run water   not stroking n=  37  net horiz speed m/s median 0.00130 p90 0.00507 max 0.01034; per stroke median 0.01724 m
+  run water stroke asymmetry S (lead joint) median -0.005 p90 |S| 0.128
+  clean water stroking     n=  45  net horiz speed m/s median 0.00557 p90 0.01893 max 0.03414; per stroke median 0.00411 m
+  clean water not stroking n=  37  net horiz speed m/s median 0.00050 p90 0.00348 max 0.00492; per stroke median 0.03724 m
+  clean water stroke asymmetry S (lead joint) median -0.001 p90 |S| 0.146
+==== s3: jointed bodies alive at 30000 = 1422
+  with >=20 pose samples in [28000,30000]: 1348
+  joints per body: {1: 1076, 2: 315, 3: 22, 4: 6, 6: 3}
+  joint types: {'Spherical': 253, 'TwistHinge': 761, 'HingeTwist': 191, 'Twist': 467, 'Universal': 77, 'Hinge': 65}
+  ACTIVE joints (pose amp >=0.05 rad) per body: {0: 793, 1: 432, 2: 112, 3: 7, 4: 4}
+  pose joint amplitude (sqrt2*sd) rad: median 0.020 p75 0.142 p90 0.777 max 1.722; share >=0.05: 0.40
+  pose pairs (c=parent-child, s=other) by corr class: {('s', 'in'): 109, ('s', 'lag'): 22, ('c', 'anti'): 4, ('s', 'anti'): 9, ('c', 'in'): 11, ('c', 'lag'): 2}
+  multi-active bodies: {'all in/anti': 102, 'any lag': 21}
+  alone brain: lost 0
+  alone active (lead amp>=0.05): 274 of 1422; Hz median 1.02 p10 0.05 p90 1.45
+  alone active joints per body: {0: 1148, 1: 221, 2: 47, 3: 3, 4: 3}
+  alone pair lags: {('s', 'in'): 65, ('s', 'lag'): 7, ('s', 'anti'): 1, ('c', 'in'): 1} {'all in/anti': 49, 'any lag': 4}
+  run water   stroking     n= 274  net horiz speed m/s median 0.00346 p90 0.01167 max 0.07524; per stroke median 0.00394 m
+  run water   not stroking n=1148  net horiz speed m/s median 0.00201 p90 0.00428 max 0.00930; per stroke median 0.01077 m
+  run water stroke asymmetry S (lead joint) median 0.023 p90 |S| 0.952
+  clean water stroking     n= 245  net horiz speed m/s median 0.00393 p90 0.01651 max 0.04125; per stroke median 0.00427 m
+  clean water not stroking n=1177  net horiz speed m/s median 0.00035 p90 0.00224 max 0.00576; per stroke median 0.01067 m
+  clean water stroke asymmetry S (lead joint) median 0.001 p90 |S| 0.102

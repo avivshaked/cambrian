@@ -55,6 +55,10 @@ namespace Evosim.Core.Bench
                 Long(ref h, creature.Id);
                 Double(ref h, creature.Energy);
                 Double(ref h, creature.TissueJoules);
+
+                // The gestation account (2026-09-24), hashed only when it holds anything, so a
+                // world without a gestating lineage keeps the word it always had.
+                if (creature.GestationJoules != 0d) Double(ref h, creature.GestationJoules);
                 Float(ref h, creature.Age);
                 Float(ref h, creature.HeightY);
                 Float(ref h, creature.X);

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The swim probe (round 47, 2026-09-24): do the jointed bodies of a run swim? Reads a run's
+    poses.jsonl for the joint angles in the water, develops the last snapshot's genomes with
+    Core's Developer and the recorded plan, and steps each alone in still water under its own
+    brain and under hand-made strokes. Writes nothing into the run it reads. Built with Unity's
+    bundled SDK, as the bench and the overlap probe are.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <AssemblyName>Evosim.SwimProbe</AssemblyName>
+    <RootNamespace>Evosim.SwimProbe</RootNamespace>
+    <Nullable>disable</Nullable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <TieredCompilation>false</TieredCompilation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Evosim.Core\Evosim.Core.csproj" />
+    <ProjectReference Include="..\Evosim.Dynamics\Evosim.Dynamics.csproj" />
+  </ItemGroup>
+
+</Project>

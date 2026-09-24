@@ -684,7 +684,7 @@ namespace Evosim.Core
                 NoteKill(
                     creature, partIndex, by, rootLost: true, partsLost: creature.Phenotype.PartCount,
                     tissueJoules: creature.TissueJoules,
-                    reserveJoules: Math.Max(0d, creature.Energy));
+                    reserveJoules: Math.Max(0d, creature.Energy) + creature.GestationJoules);
 
                 Bury(creature, index, DeathCause.Eaten);
                 return true;
@@ -731,7 +731,7 @@ namespace Evosim.Core
                 NoteKill(
                     creature, partIndex, by, rootLost: true, partsLost: creature.Phenotype.PartCount,
                     tissueJoules: creature.TissueJoules,
-                    reserveJoules: Math.Max(0d, creature.Energy));
+                    reserveJoules: Math.Max(0d, creature.Energy) + creature.GestationJoules);
 
                 Bury(creature, index, DeathCause.Eaten);
                 return true;

@@ -94,6 +94,37 @@ namespace Evosim.Core
         public float ReserveMargin;
 
         /// <summary>
+        /// How the parent pays for a child — the owner's ruling of 2026-09-24 on round 47's
+        /// dissection. Serialised by name.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="ReproductionMode.Lump"/> is the world as recorded: the whole price is taken
+        /// from the reserve at the moment of conception, which binds a small body whose reserve
+        /// never holds the overhead before senescence closes its window. Every founder and every
+        /// stored genome is a lump breeder.
+        /// </para>
+        /// <para>
+        /// <see cref="ReproductionMode.Gestation"/> pays as it goes: on every metabolic step whose
+        /// net income is positive, <see cref="GestationShare"/> of that net moves from the reserve
+        /// into <see cref="Organism.GestationJoules"/>, and the child is conceived from that
+        /// account once it holds the child's price. Upkeep never draws on the account.
+        /// </para>
+        /// </remarks>
+        public ReproductionMode Mode;
+
+        /// <summary>
+        /// The share of each step's positive net income a gestating parent moves into its
+        /// gestation account, in (0, 1]. Read only in <see cref="ReproductionMode.Gestation"/>.
+        /// </summary>
+        /// <remarks>
+        /// Carried on a lump breeder too, so that a mutation that flips the mode starts from the
+        /// share the lineage last walked rather than from a constant. Zero is legal only in
+        /// <see cref="ReproductionMode.Lump"/>: a gestating parent that banks nothing never breeds.
+        /// </remarks>
+        public float GestationShare;
+
+        /// <summary>
         /// Total energy a reproduction event costs the parent, in joules.
         /// </summary>
         /// <param name="parentTissueJoules">
@@ -125,10 +156,59 @@ namespace Evosim.Core
         public double CostJoules(double parentTissueJoules, float perOffspringOverhead) =>
             BirthInvestment * parentTissueJoules + (double)BroodSize * perOffspringOverhead;
 
+        /// <summary>
+        /// The litter's price under a config's overhead rule — the owner's ruling of 2026-09-24:
+        /// the overhead scales with the child, above a floor.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The overhead per child is <see cref="RunConfig.OverheadFor"/> of the tissue a child is
+        /// born with, which cannot be known before the mutant is developed. So this is the
+        /// estimate the gate needs: each child's tissue is taken at its share less the newborn
+        /// reserve, <c>BirthInvestment × parentTissue / BroodSize × (1 − NewbornReserveFraction)</c>,
+        /// which is the most a child can be born with. The exact price is asked again at
+        /// conception.
+        /// </para>
+        /// <para>
+        /// At <see cref="RunConfig.PerOffspringOverheadPerTissueJoule"/> 0 this is exactly
+        /// <see cref="CostJoules(double, float)"/> at the floor, bit for bit, so every recorded
+        /// config breeds at the gate it was recorded at.
+        /// </para>
+        /// </remarks>
+        public double CostJoules(double parentTissueJoules, RunConfig config)
+        {
+            if (!(config.PerOffspringOverheadPerTissueJoule > 0f))
+            {
+                return CostJoules(parentTissueJoules, config.PerOffspringOverheadJoules);
+            }
+
+            double share = BirthInvestment * parentTissueJoules / BroodSize;
+            double childTissue = share * (1d - config.NewbornReserveFraction);
+            return BirthInvestment * parentTissueJoules +
+                   (double)BroodSize * config.OverheadFor(childTissue);
+        }
+
         public ReproductionTraits Clone() => this;
 
         public override string ToString() =>
             System.FormattableString.Invariant(
-                $"brood {BroodSize} at {BirthInvestment:0.###} of tissue, keeping {ReserveMargin:0.#} s of standing cost");
+                $"brood {BroodSize} at {BirthInvestment:0.###} of tissue, keeping {ReserveMargin:0.#} s of standing cost, ") +
+            (Mode == ReproductionMode.Gestation
+                ? System.FormattableString.Invariant($"gestating {GestationShare:0.###} of net")
+                : "paid in one lump");
+    }
+
+    /// <summary>How a parent pays for a child — see <see cref="ReproductionTraits.Mode"/>.</summary>
+    /// <remarks>
+    /// Serialised by name (the genome file and nothing else), so the order here is free; Lump is
+    /// first so that <c>default</c> is the recorded behaviour.
+    /// </remarks>
+    public enum ReproductionMode
+    {
+        /// <summary>The whole price from the reserve at conception. Every world before 2026-09-24.</summary>
+        Lump = 0,
+
+        /// <summary>Paid as it goes into <see cref="Organism.GestationJoules"/>, conceived from it.</summary>
+        Gestation = 1,
     }
 }
