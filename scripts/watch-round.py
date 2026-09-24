@@ -22,7 +22,21 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 QUEUE = re.compile(r'launching|launched|FAILED|refus|error|every seed|exited|stopped', re.I)
 LOG = re.compile(r'error CS|Exception|could not be found|\*\*Ended')
 STALL_SECONDS = 1800
+# The count warning fires at this share of the run's own runaway ceiling (config.json's
+# maximumPopulation). Until 2026-09-24 it was a fixed 3,500 labelled "stop rule at 4,000",
+# round 41e's rule, and it went on printing that label under round 48, whose only ceiling
+# is 25,000. A run whose config names no ceiling falls back to the old number.
+COUNT_WARNING_SHARE = 0.9
 COUNT_WARNING = 3500
+
+
+def ceiling_of(run_dir):
+    try:
+        config = json.load(open(run_dir + '/config.json', encoding='utf-8'))
+    except (OSError, ValueError):
+        return None
+    value = config.get('maximumPopulation')
+    return int(value) if isinstance(value, (int, float)) and value > 0 else None
 
 
 def last_row(report):
@@ -94,8 +108,11 @@ def main():
         if status != 'running':
             emit(f'{arm} manifest: {status} {manifest.get("reason") or ""}'.strip())
         t, alive = last_row(report)
-        if alive is not None and alive > COUNT_WARNING:
-            emit(f'{arm} count: alive {alive} at {t} s (stop rule at 4,000)')
+        ceiling = ceiling_of(runs[-1])
+        warning = int(COUNT_WARNING_SHARE * ceiling) if ceiling else COUNT_WARNING
+        if alive is not None and alive > warning:
+            said = f'runaway ceiling {ceiling:,}' if ceiling else 'no ceiling in the config'
+            emit(f'{arm} count: alive {alive} at {t} s (warning at {warning:,}; {said})')
         if t is not None and a.read:
             for m in marks:
                 key = f'{arm} reached {m}'
