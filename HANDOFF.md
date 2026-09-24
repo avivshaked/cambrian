@@ -393,6 +393,21 @@ is what the next session works from. Everything below it in this section is hist
   films into `scratch/wt-safari2/scratch/safari/r47-s2/2026-09-24/`. The call-outs stay off
   until the owner rules. Merge the branch after the films are seen; round 48's safari then
   runs from main.
+- **Faster film frames, built and not yet measured** (`2a118b9` on the safari branch, an Opus
+  subagent, compiled on the worktree's `unity-w6`). The reshoot's frames cost about 200 ms each
+  where the render and read-back is 33 ms. The rest was a CPU box filter over a 4K array, a
+  33 MB allocation and a PNG encode, all on the main thread. The new path filters on the GPU in
+  the stored bytes' own arithmetic, which is identical to `BoxDown` and not a bilinear blit (the
+  target is sRGB, so a blit would average light and brighten every edge). It then reads back at
+  1x and encodes on two writer threads, flushed at every take's end and before any file that
+  lists frames. The estimate is 70 to 90 ms a safari frame. The old paths stay behind
+  `-CpuDownsample` and `-SyncEncode`, and `-DownsampleCheck` compares both on the same render. A
+  safari seek now holds the view (`TheatreRunner.HoldView`) and logs its split. A flexible scene
+  may move forward to a checkpoint up to `EVOSIM_THEATRE_SAFARI_SNAP_AHEAD` seconds (600) ahead,
+  so scene 7's 20.5 minutes of stepping becomes one restore. The agent's reading, unmeasured:
+  most of the seek's slowness is Mono itself, which is Part B's case. The measurement commands
+  are in the agent's report as run at the reshoot's end: a 10 s close film with and without the
+  old paths on worker 5, refreshed first.
 - **Round 49's record and films, being built** (the owner's rulings of 15:40 to 16:00: checkpoints
   every 500 s from round 48 seed 3, a record that stays small, and safari films soon after an arm
   ends, at the scale of 300,000 s runs). The design is `logbook/specs/record-and-film-spec.md`.
