@@ -475,6 +475,16 @@ namespace Evosim.Theatre
             return n;
         }
 
+        /// <summary>
+        /// Marks every body undressed, so the next <see cref="DressUndressed"/> paints the whole
+        /// crowd again: what a change of <see cref="TheatrePalette.InFocus"/> needs to reach every
+        /// body at once rather than a slice a frame.
+        /// </summary>
+        public void Redress()
+        {
+            foreach (KeyValuePair<long, LiveBody> entry in _bodies) entry.Value.Dressed = false;
+        }
+
         /// <summary>Dresses every body the palette has not reached yet, off budget. Returns how many.</summary>
         public int DressUndressed()
         {

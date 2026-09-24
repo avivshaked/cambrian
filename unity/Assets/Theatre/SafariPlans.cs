@@ -94,6 +94,12 @@ namespace Evosim.Theatre
             public string Plan;
             /// <summary>The body the take is about, or -1.</summary>
             public long Subject = -1;
+            /// <summary>
+            /// The eye at a fraction of the take, 0 to 1, for a plan whose path is known in closed
+            /// form (the descent's dolly), so the director can time a caption to a depth; null for
+            /// the rest.
+            /// </summary>
+            public Func<float, Vector3> EyeAt;
         }
 
         // ---------------------------------------------------------------- the check
@@ -362,7 +368,7 @@ namespace Evosim.Theatre
                     bearing * Mathf.Rad2Deg, -from.y, -to.y, (to - from).magnitude, seconds,
                     (to - from).magnitude / seconds / (1f - FilmPlans.EaseShare), shortened, lifted));
 
-            return new Take { Shot = shot, Seconds = seconds, Plan = shot.Plan_ };
+            return new Take { Shot = shot, Seconds = seconds, Plan = shot.Plan_, EyeAt = u => Vector3.Lerp(from, to, FilmPlans.Ease(Mathf.Clamp01(u))) };
         }
 
         // ---------------------------------------------------------------- portrait

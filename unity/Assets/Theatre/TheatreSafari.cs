@@ -178,9 +178,9 @@ namespace Evosim.Theatre
             double runSeconds = Runner.Live.Record.RequestedSeconds ?? (seconds.Count > 0 ? seconds[seconds.Count - 1] : 0d);
 
             List<SafariScene> scenes = one != null
-                ? SafariTripBuilder.One(one, seconds)
+                ? SafariTripBuilder.One(one, seconds, _guide)
                 : SafariTripBuilder.Build(_guide, SafariTripBuilder.Choose(_guide, Heuristics[_heuristic]), seconds, runSeconds,
-                    Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_ORDER") == "time");
+                    SafariTripBuilder.TimeOrder);
 
             RunConfigFacts(out float depth, out float radius);
             foreach (SafariScene s in scenes)
@@ -330,6 +330,7 @@ namespace Evosim.Theatre
 
             Fill(pose.Portrait, pose.Rotation);
             _panel?.SetCaption(pose.Caption);
+            _panel?.SetSparkline(pose.Callout, pose.Second);
         }
 
         /// <summary>The portrait's fill: from the camera's side, low, theatre only (item 9's light rule).</summary>
@@ -364,6 +365,7 @@ namespace Evosim.Theatre
             TheatreGrade.Current?.Unfocus();
             if (_fill != null) _fill.enabled = false;
             _panel?.SetCaption(null);
+            _panel?.SetSparkline(null, 0d);
             Runner.Paused = false;
         }
 

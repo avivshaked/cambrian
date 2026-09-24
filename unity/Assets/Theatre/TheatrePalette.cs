@@ -197,6 +197,23 @@ namespace Evosim.Theatre
         public int Painted => _bodies.Count;
 
         /// <summary>
+        /// The safari's colony tint (its call-outs, <c>EVOSIM_THEATRE_SAFARI_CALLOUTS=1</c>): when
+        /// set, a body it answers false for is painted grey and darker, so the subject clade stands
+        /// in full colour among the rest. Null paints every body as it always was.
+        /// </summary>
+        public System.Func<long, bool> InFocus;
+
+        /// <summary>How much of a body's brightness a body out of focus keeps.</summary>
+        public float OutOfFocusBrightness = 0.5f;
+
+        /// <summary>A colour's grey of the same luminance.</summary>
+        public static Color Grey(Color c)
+        {
+            float y = 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
+            return new Color(y, y, y, c.a);
+        }
+
+        /// <summary>
         /// The reserve tint, 0 (at the gate) to 1 (sated) — the same squash
         /// <c>CreatureSensors</c> puts on <see cref="SensorChannel.Energy"/>, so what a viewer
         /// sees and what a creature feels are the same number.
@@ -230,6 +247,8 @@ namespace Evosim.Theatre
 
             float reserve = Mathf.Clamp01(tint);
             float brightness = on ? Mathf.Lerp(Starving, 1f, reserve) : 1f;
+            bool dim = on && InFocus != null && !InFocus(id);
+            if (dim) brightness *= OutOfFocusBrightness;
 
             if (_block == null) _block = new MaterialPropertyBlock();
 
@@ -243,6 +262,7 @@ namespace Evosim.Theatre
 
                 Color guild = Color.white;
                 if (on) guild = known ? ColourOf(phenotype.Parts[part].CellTypeId) : Structural;
+                if (dim) guild = Grey(guild);
 
                 Reshape(body, i, renderer.transform);
 
@@ -258,7 +278,7 @@ namespace Evosim.Theatre
                     on ? SheenOf(cellType) : 0.1f);
             }
 
-            RefreshNecks(body, phenotype, brightness, on ? reserve : 1f, on);
+            RefreshNecks(body, phenotype, brightness, on ? reserve : 1f, on, dim);
         }
 
         /// <summary>Writes one renderer's per-body properties into the shared block.</summary>
@@ -882,7 +902,7 @@ namespace Evosim.Theatre
         /// and would end up outside the part it is supposed to sit in. Three transform writes on
         /// a jointed part, inside a repaint budget that is already capped per frame.
         /// </remarks>
-        private void RefreshNecks(Body body, Phenotype phenotype, float brightness, float reserve, bool on)
+        private void RefreshNecks(Body body, Phenotype phenotype, float brightness, float reserve, bool on, bool dim = false)
         {
             if (body.Necks == null) return;
 
@@ -918,7 +938,7 @@ namespace Evosim.Theatre
                 // impressions in it is a marker that lies about being tissue.
                 if (renderer != null)
                 {
-                    Set(renderer, Jointed, brightness, reserve, true,
+                    Set(renderer, dim ? Grey(Jointed) : Jointed, brightness, reserve, true,
                         new Vector4(0f, 1f, 0f, 0f), Vector4.zero, Vector4.zero, 0f);
                 }
             }

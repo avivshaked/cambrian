@@ -41,6 +41,8 @@ namespace Evosim.Theatre
         public double PeakShare = double.NaN;
         public int GenerationDepth = -1;
         public bool? AliveAtEnd;
+        /// <summary>Members alive at the run's end, when the guide counts them (guide.py writes an int); -1 otherwise.</summary>
+        public int AliveAtEndCount = -1;
         public double ExtinctAt = double.NaN;
         public string Split;
         public double MedianDepth = double.NaN;
@@ -48,9 +50,35 @@ namespace Evosim.Theatre
         public double MedianAboveFloor = double.NaN;
         public double AdultVolume = double.NaN;
         public int Parts = -1;
+        /// <summary>The founder's parts with a joint that moves (degrees of freedom above 0), or -1.</summary>
+        public int JointedParts = -1;
         public double Speed = double.NaN;
         public long Exemplar = -1;
         public readonly List<string> Firsts = new List<string>();
+
+        /// <summary>The guild in plain words ("a leaf with a stomach", "green muscle, no leaf"), or null.</summary>
+        public string GuildPlain;
+        /// <summary>What the genus means ("Pinnifrons means fin-frond: ..."), or null.</summary>
+        public string GenusGloss;
+        /// <summary>The card's facts, most interesting first (guide.py's `facts`); empty when the guide wrote none.</summary>
+        public readonly List<SafariFact> Facts = new List<SafariFact>();
+        /// <summary>The clade's count over its life, (second, members alive), for the sparkline; empty when not written.</summary>
+        public readonly List<(double t, int n)> Series = new List<(double, int)>();
+        /// <summary>The share of its jointed members whose joints move (poses.jsonl's spread), or NaN.</summary>
+        public double JointsMovingShare = double.NaN;
+        /// <summary>The exemplar's own joints, from the recording's poses: true moving, false still, null unknown.</summary>
+        public bool? ExemplarJointsMove;
+        /// <summary>The share of its income from eating, or NaN.</summary>
+        public double EatingShare = double.NaN;
+        /// <summary>The ledger's standing cost of the founder, W, or NaN (the card's `economics`).</summary>
+        public double StandingWatts = double.NaN;
+        /// <summary>The ledger's net watts at 1 J/m3, or NaN.</summary>
+        public double NetWatts = double.NaN;
+        /// <summary>The ledger's R0 at 1 J/m3, or NaN.</summary>
+        public double LedgerR0 = double.NaN;
+
+        /// <summary>A fact of the card by id, or null.</summary>
+        public SafariFact Fact(string id) => Facts.FirstOrDefault(f => f.Id == id);
 
         /// <summary>The flag triple as the guild's short word: a, j, p for each flag held.</summary>
         public string Guild =>
@@ -70,6 +98,35 @@ namespace Evosim.Theatre
                 return (int)(x & 0x7FFFFFFF);
             }
         }
+    }
+
+    /// <summary>
+    /// One fact of a card or of the world, as <c>scripts/guide.py</c> writes it: a sentence whose
+    /// every number is one of its own slots (the guide's checker rule), a role saying where a
+    /// caption may use it, and how interesting it is.
+    /// </summary>
+    public sealed class SafariFact
+    {
+        public string Id;
+        public string Kind;
+        /// <summary>what, origin, special, does, fate, count, world, descent, floor.</summary>
+        public string Role;
+        public string Text;
+        public double Interest;
+        public double Percentile = double.NaN;
+        public double Value = double.NaN;
+        public double Normal = double.NaN;
+        /// <summary>The depth a descent's light mark sits at, m, or NaN.</summary>
+        public double DepthMetres = double.NaN;
+        public readonly Dictionary<string, string> Slots = new Dictionary<string, string>(StringComparer.Ordinal);
+    }
+
+    /// <summary>A chapter of the time-ordered trip: a title and the seconds its best seconds fall in.</summary>
+    public sealed class SafariChapter
+    {
+        public string Title;
+        public double From;
+        public double To;
     }
 
     /// <summary>
@@ -103,6 +160,23 @@ namespace Evosim.Theatre
         public IReadOnlyList<long> Picker { get; private set; }
         /// <summary>Keys this reader did not use, for the log (tolerated, never an error).</summary>
         public IReadOnlyList<string> Ignored { get; private set; }
+
+        /// <summary>The world's own facts (the light's depth marks, the bed, the snow, the arrivals); empty when not written.</summary>
+        public readonly List<SafariFact> WorldFacts = new List<SafariFact>();
+        /// <summary>The trip's chapters in time order; empty when not written.</summary>
+        public readonly List<SafariChapter> Chapters = new List<SafariChapter>();
+        /// <summary>Half of all bodies ever born were dead by this age, s, or NaN.</summary>
+        public double CrowdMedianLife = double.NaN;
+        /// <summary>The share of jointed bodies whose joints move, or NaN.</summary>
+        public double CrowdJointsMovingShare = double.NaN;
+
+        /// <summary>The chapter a second falls in, as an index into <see cref="Chapters"/>, or -1.</summary>
+        public int ChapterOf(double second)
+        {
+            for (int i = 0; i < Chapters.Count; i++)
+                if (second >= Chapters[i].From && second < Chapters[i].To) return i;
+            return Chapters.Count > 0 && second >= Chapters[Chapters.Count - 1].From ? Chapters.Count - 1 : -1;
+        }
 
         private readonly List<SafariClade> _clades = new List<SafariClade>();
         private readonly Dictionary<long, SafariClade> _byFounder = new Dictionary<long, SafariClade>();
@@ -235,7 +309,38 @@ namespace Evosim.Theatre
             var known = new HashSet<string>(StringComparer.Ordinal)
             {
                 "clades", "cards", "arm", "ranking", "rank", "order", "picker", "pickerList", "picker_list",
+                "world_facts", "worldFacts", "chapters", "crowd",
             };
+
+            // The world's facts, the chapters and the crowd's normals: optional, read if written.
+            JsonNode worldFacts = FirstOf(root, "world_facts", "worldFacts");
+            if (worldFacts != null && worldFacts.Kind == JsonNode.NodeKind.Array)
+                foreach (JsonNode f in worldFacts.Items())
+                    if (ReadFact(f) is SafariFact wf) guide.WorldFacts.Add(wf);
+
+            JsonNode chapters = FirstOf(root, "chapters");
+            if (chapters != null && chapters.Kind == JsonNode.NodeKind.Array)
+            {
+                foreach (JsonNode ch in chapters.Items())
+                {
+                    if (ch.Kind != JsonNode.NodeKind.Object) continue;
+                    JsonNode title = FirstOf(ch, "title");
+                    if (title == null || title.Kind != JsonNode.NodeKind.String) continue;
+                    guide.Chapters.Add(new SafariChapter
+                    {
+                        Title = title.AsString(),
+                        From = Double(ch, 0d, "from"),
+                        To = Double(ch, double.PositiveInfinity, "to"),
+                    });
+                }
+            }
+
+            JsonNode crowd = FirstOf(root, "crowd");
+            if (crowd != null && crowd.Kind == JsonNode.NodeKind.Object)
+            {
+                guide.CrowdMedianLife = Double(crowd, double.NaN, "median_life_s", "medianLifeSeconds");
+                guide.CrowdJointsMovingShare = Double(crowd, double.NaN, "joint_moving_share", "jointMovingShare");
+            }
             foreach (string k in root.Keys()) if (!known.Contains(k)) ignored.Add(k);
 
             if (clades != null)
@@ -409,9 +514,22 @@ namespace Evosim.Theatre
             }
             if (double.IsNaN(c.PeakAt)) c.PeakAt = c.BestSecond;
 
-            c.GenerationDepth = Int(card, -1, "generationDepth", "generation_depth", "generations");
+            // guide.py writes `generations` as {founder, max, depth}; the spec's form is one number.
+            JsonNode generations = FirstOf(card, "generationDepth", "generation_depth", "generations");
+            if (generations != null && generations.Kind == JsonNode.NodeKind.Object)
+                c.GenerationDepth = Int(generations, -1, "depth");
+            else
+                c.GenerationDepth = Int(card, -1, "generationDepth", "generation_depth", "generations");
+
+            // `alive_at_end` is a count in guide.py (881 for a clade alive at the end, 0 for one
+            // gone) and a bool in the spec; either says whether it was alive.
             JsonNode alive = FirstOf(card, "aliveAtEnd", "alive_at_end");
             if (alive != null && alive.Kind == JsonNode.NodeKind.Bool) c.AliveAtEnd = alive.AsBool();
+            else if (alive != null && alive.Kind == JsonNode.NodeKind.Number)
+            {
+                c.AliveAtEndCount = (int)Math.Round(alive.AsDouble());
+                c.AliveAtEnd = c.AliveAtEndCount > 0;
+            }
             c.ExtinctAt = Double(card, double.NaN, "extinctAt", "extinct_at");
             if (!double.IsNaN(c.ExtinctAt) && c.AliveAtEnd == null) c.AliveAtEnd = false;
 
@@ -423,19 +541,78 @@ namespace Evosim.Theatre
                 {
                     JsonNode text = FirstOf(split, "text", "summary", "changed");
                     if (text != null && text.Kind == JsonNode.NodeKind.String) c.Split = text.AsString();
+                    else
+                    {
+                        // guide.py's split object: the flags gained and lost, in words.
+                        var said = new List<string>();
+                        JsonNode gained = FirstOf(split, "flags_gained", "flagsGained");
+                        JsonNode lost = FirstOf(split, "flags_lost", "flagsLost");
+                        string Words(JsonNode n) => n != null && n.Kind == JsonNode.NodeKind.Array && n.Count > 0
+                            ? string.Join(" and ", n.Items().Where(x => x.Kind == JsonNode.NodeKind.String).Select(x => x.AsString()))
+                            : null;
+                        if (Words(gained) is string g) said.Add("gained " + g);
+                        if (Words(lost) is string l) said.Add("lost " + l);
+                        if (said.Count > 0) c.Split = string.Join(" and ", said);
+                    }
                 }
             }
 
-            c.MedianDepth = Median(card, "depth", "medianDepth", "median_depth");
-            c.MedianRadius = Median(card, "radius", "medianRadius", "median_radius");
-            c.MedianAboveFloor = Median(card, "aboveFloor", "medianAboveFloor", "above_floor");
+            // guide.py puts the medians under `where` as median_depth_m, median_radius_m and
+            // median_height_above_floor_m; the spec's keys sit on the card itself.
+            JsonNode whereNode = FirstOf(card, "where");
+            JsonNode whereHost = whereNode != null && whereNode.Kind == JsonNode.NodeKind.Object ? whereNode : card;
+            c.MedianDepth = Median(whereHost, "median_depth_m", "depth", "medianDepth", "median_depth");
+            c.MedianRadius = Median(whereHost, "median_radius_m", "radius", "medianRadius", "median_radius");
+            c.MedianAboveFloor = Median(whereHost, "median_height_above_floor_m", "aboveFloor", "medianAboveFloor", "above_floor");
 
+            // guide.py's body is {founder: {parts, adult_volume_m3, jointed_parts, ...}, at_peak}.
             JsonNode body = FirstOf(card, "body");
             JsonNode bodyHost = body != null && body.Kind == JsonNode.NodeKind.Object ? body : card;
-            c.AdultVolume = Double(bodyHost, double.NaN, "adultVolume", "adult_volume", "volume");
+            JsonNode founderBody = FirstOf(bodyHost, "founder");
+            if (founderBody != null && founderBody.Kind == JsonNode.NodeKind.Object) bodyHost = founderBody;
+            c.AdultVolume = Double(bodyHost, double.NaN, "adult_volume_m3", "adultVolume", "adult_volume", "volume");
             c.Parts = Int(bodyHost, -1, "parts", "partCount", "part_count");
+            c.JointedParts = Int(bodyHost, -1, "jointed_parts", "jointedParts");
             c.Speed = Double(card, double.NaN, "speed", "meanSpeed", "mean_speed");
             c.Exemplar = Long(card, -1, "exemplar", "exemplarId", "exemplar_id", "bestBody", "best_body");
+
+            c.GuildPlain = FirstOf(card, "guild_plain", "guildPlain") is JsonNode gp && gp.Kind == JsonNode.NodeKind.String ? gp.AsString() : null;
+            c.GenusGloss = FirstOf(card, "genus_gloss", "genusGloss") is JsonNode gg && gg.Kind == JsonNode.NodeKind.String ? gg.AsString() : null;
+            c.EatingShare = Double(card, double.NaN, "eating_share", "eatingShare");
+
+            JsonNode joints = FirstOf(card, "joint_use", "jointUse");
+            if (joints != null && joints.Kind == JsonNode.NodeKind.Object)
+                c.JointsMovingShare = Double(joints, double.NaN, "moving_share", "movingShare");
+            JsonNode exemplarFacts = FirstOf(card, "exemplar_facts", "exemplarFacts");
+            if (exemplarFacts != null && exemplarFacts.Kind == JsonNode.NodeKind.Object &&
+                FirstOf(exemplarFacts, "joints_moving") is JsonNode jm && jm.Kind == JsonNode.NodeKind.Bool)
+                c.ExemplarJointsMove = jm.AsBool();
+
+            JsonNode economics = FirstOf(card, "economics");
+            if (economics != null && economics.Kind == JsonNode.NodeKind.Object)
+            {
+                c.StandingWatts = Double(economics, double.NaN, "standing_w", "standingWatts");
+                JsonNode net = FirstOf(economics, "net_w", "netWatts");
+                if (net != null && net.Kind == JsonNode.NodeKind.Object) c.NetWatts = Double(net, double.NaN, "1");
+                JsonNode r0 = FirstOf(economics, "r0");
+                if (r0 != null && r0.Kind == JsonNode.NodeKind.Object) c.LedgerR0 = Double(r0, double.NaN, "1");
+            }
+
+            JsonNode facts = FirstOf(card, "facts");
+            if (facts != null && facts.Kind == JsonNode.NodeKind.Array)
+                foreach (JsonNode f in facts.Items())
+                    if (ReadFact(f) is SafariFact sf) c.Facts.Add(sf);
+
+            JsonNode series = FirstOf(card, "series");
+            if (series != null && series.Kind == JsonNode.NodeKind.Array)
+            {
+                foreach (JsonNode p in series.Items())
+                {
+                    if (p.Kind == JsonNode.NodeKind.Array && p.Count >= 2 &&
+                        p[0].Kind == JsonNode.NodeKind.Number && p[1].Kind == JsonNode.NodeKind.Number)
+                        c.Series.Add((p[0].AsDouble(), (int)Math.Round(p[1].AsDouble())));
+                }
+            }
 
             JsonNode firsts = FirstOf(card, "firsts");
             if (firsts == null && body != null && body.Kind == JsonNode.NodeKind.Object) firsts = FirstOf(body, "firsts");
@@ -450,6 +627,34 @@ namespace Evosim.Theatre
             }
 
             return c;
+        }
+
+        /// <summary>One fact as guide.py writes it, or null when it has no text.</summary>
+        private static SafariFact ReadFact(JsonNode f)
+        {
+            if (f == null || f.Kind != JsonNode.NodeKind.Object) return null;
+            JsonNode text = FirstOf(f, "text");
+            if (text == null || text.Kind != JsonNode.NodeKind.String || string.IsNullOrWhiteSpace(text.AsString())) return null;
+
+            var fact = new SafariFact
+            {
+                Id = FirstOf(f, "id") is JsonNode id && id.Kind == JsonNode.NodeKind.String ? id.AsString() : "",
+                Kind = FirstOf(f, "kind") is JsonNode k && k.Kind == JsonNode.NodeKind.String ? k.AsString() : "",
+                Role = FirstOf(f, "role") is JsonNode r && r.Kind == JsonNode.NodeKind.String ? r.AsString() : "",
+                Text = text.AsString(),
+                Interest = Double(f, 0d, "interest"),
+                Percentile = Double(f, double.NaN, "percentile"),
+                Value = Double(f, double.NaN, "value"),
+                Normal = Double(f, double.NaN, "normal"),
+                DepthMetres = Double(f, double.NaN, "depth_m"),
+            };
+
+            JsonNode slots = FirstOf(f, "slots");
+            if (slots != null && slots.Kind == JsonNode.NodeKind.Object)
+                foreach (string key in slots.Keys())
+                    if (slots[key].Kind == JsonNode.NodeKind.String) fact.Slots[key] = slots[key].AsString();
+
+            return fact;
         }
 
         private static bool ReadFlags(JsonNode flags, SafariClade c)

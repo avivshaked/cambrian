@@ -34,6 +34,11 @@ namespace Evosim.Theatre
         public double Second;
         /// <summary>The take's shot, for a check that reads its tally.</summary>
         public FilmPlans.Shot Shot;
+        /// <summary>
+        /// The clade the call-outs are about (its sparkline), or null: set only when
+        /// <see cref="SafariOptions.Callouts"/> is on and the scene has a clade with a count series.
+        /// </summary>
+        public SafariClade Callout;
     }
 
     /// <summary>What the director may do, set by its host.</summary>
@@ -56,6 +61,13 @@ namespace Evosim.Theatre
 
         /// <summary>True in the Editor's own Play mode, false in a batch Editor (the log goes to the console either way).</summary>
         public bool Interactive;
+
+        /// <summary>
+        /// The on-screen call-outs (the safari review's item 7), off by default: the subject clade
+        /// in full colour and every other body grey, and the clade's count over the run as a
+        /// sparkline with the filmed second marked. <c>EVOSIM_THEATRE_SAFARI_CALLOUTS=1</c>.
+        /// </summary>
+        public bool Callouts = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_CALLOUTS") == "1";
     }
 
     /// <summary>
@@ -136,6 +148,7 @@ namespace Evosim.Theatre
         private enum Rehearsal { None, Watching, Recurring }
         private Rehearsal _rehearsal;
         private long _birthParent = -1, _birthChild = -1;
+        private byte _birthChildFlags = 255;
         private double _birthAt = double.NaN;
         private double _watchFrom;
         private bool _birthRecurred;
@@ -232,6 +245,7 @@ namespace Evosim.Theatre
             _sceneOffsetBase = 0d;
             _rehearsal = Rehearsal.None;
             _birthParent = _birthChild = -1;
+            _birthChildFlags = 255;
             _birthAt = double.NaN;
             _birthRecurred = false;
             _takeCount = 0;
@@ -265,7 +279,7 @@ namespace Evosim.Theatre
                     break;
 
                 case SafariStation.Descent:
-                    yield return new Segment { At = scene.At, Flexible = true, Build = s => One(SafariPlans.Descent(s, hash)) };
+                    yield return new Segment { At = scene.At, Flexible = true, Build = s => DescentTakes(s, scene, hash) };
                     break;
 
                 case SafariStation.Floor:
@@ -562,6 +576,7 @@ namespace Evosim.Theatre
                 {
                     child = o.Id;
                     parent = o.ParentId;
+                    _birthChildFlags = SafariClades.FlagsOf(o);
                 }
                 else if (_rehearsal == Rehearsal.Recurring && o.ParentId == _birthParent &&
                          Math.Abs(live.ElapsedSeconds - _birthAt) < 2d)
@@ -585,6 +600,7 @@ namespace Evosim.Theatre
             view?.DressUndressed();
 
             _stageLiving = null;
+            Focus(view, Current.Clade);
             var stage = SafariPlans.Stage.Of(live, view, _options.Aspect, Current.Index);
             List<SafariPlans.Take> takes;
 
@@ -701,6 +717,7 @@ namespace Evosim.Theatre
                 SceneOffset = offset,
                 Second = Now(live),
                 Shot = take.Shot,
+                Callout = _options.Callouts && Current.Clade != null && Current.Clade.Series.Count > 1 ? Current.Clade : null,
             };
 
             _takeFrame++;
@@ -743,9 +760,7 @@ namespace Evosim.Theatre
             int subject = Subject(stage, scene, out string why);
             if (subject < 0) { Missed(why); return null; }
 
-            bool swimmer = scene.Clade != null && !double.IsNaN(scene.Clade.Speed)
-                ? scene.Clade.Speed > SafariPlans.SwimmerSpeed
-                : scene.Clade != null && scene.Clade.Jointed;
+            bool swimmer = Swimmer(scene, stage.Ids[subject]);
 
             int hash = scene.Clade?.Hash ?? (int)(stage.Ids[subject] & 0x7FFFFFFF);
             SafariPlans.Take t = SafariPlans.Portrait(stage, subject, (float)scene.Seconds, swimmer, hash);
@@ -754,8 +769,140 @@ namespace Evosim.Theatre
                 Say(string.Format(CultureInfo.InvariantCulture, "the portrait's subject is body {0} of {1}{2}",
                     stage.Ids[subject], scene.Clade.Name, scene.Body >= 0 ? " (the guide's exemplar " + scene.Body + " is not alive in this cousin)" : ""));
             }
+            Say(string.Format(CultureInfo.InvariantCulture, "the portrait films body {0} as {1}", stage.Ids[subject],
+                swimmer ? "a swimmer (its joints move)" : "a body that holds still"));
+            ThisBody(stage, scene, stage.Ids[subject]);
             return One(t);
         }
+
+        /// <summary>
+        /// Films the portrait as a swimmer only when its joints move: the clade's share of members
+        /// that work their joints (the guide's reading of poses.jsonl) at half or more, or the
+        /// exemplar's own reading when the subject is the exemplar the recording carried over.
+        /// A body with a joint it holds still is not a swimmer (round 47's body 355, sd 0.00 over
+        /// 194 samples, was filmed as one). With no reading, a jointed clade is, as before.
+        /// </summary>
+        private bool Swimmer(SafariScene scene, long subjectId)
+        {
+            SafariClade c = scene.Clade;
+            if (c == null) return false;
+            if (!double.IsNaN(c.Speed)) return c.Speed > SafariPlans.SwimmerSpeed;
+            if (!c.Jointed) return false;
+            if (subjectId == c.Exemplar && c.ExemplarJointsMove.HasValue && _clades.IsRecorded(subjectId)) return c.ExemplarJointsMove.Value;
+            if (!double.IsNaN(c.JointsMovingShare)) return c.JointsMovingShare >= 0.5d;
+            return true;
+        }
+
+        /// <summary>
+        /// The body on screen, said from the live organism: its age against the crowd's, and
+        /// whether it is the founder. A restored world is a cousin, so its bodies' ages and
+        /// children are its own; the founder is claimed only for the recorded body the
+        /// checkpoint carried over (<see cref="SafariClades.IsRecorded"/>), never for a cousin's
+        /// body that happens to carry the founder's id. Said only when it is worth a caption: the
+        /// founder, or a body older than half of all bodies ever get. It takes the place of the
+        /// portrait's least interesting caption that is not a first, and the fact it displaces
+        /// moves to the clade's colony when one is still to come.
+        /// </summary>
+        private void ThisBody(SafariPlans.Stage stage, SafariScene scene, long id)
+        {
+            SafariClade c = scene.Clade;
+            if (c == null || double.IsNaN(_guide.CrowdMedianLife)) return;
+
+            Organism o = null;
+            foreach (Organism l in stage.Live.Sim.World.Living) if (l.Id == id) { o = l; break; }
+            if (o == null) return;
+
+            bool founder = id == c.Founder && _clades.IsRecorded(id);
+            double normal = Math.Round(_guide.CrowdMedianLife / 100d) * 100d;
+            if (!founder && o.Age < normal) return;
+
+            string text = "Half of all bodies die by " + SafariCaptions.Clock(normal) + "; this " +
+                          (founder ? "founder" : "one") + " is " + SafariCaptions.Clock(Math.Round(o.Age)) + " old.";
+
+            // Slots 1 to 3 hold the scene's facts; the least interesting non-first gives way.
+            int give = -1;
+            double least = double.PositiveInfinity;
+            for (int i = 0; i < scene.Facts.Count && i < 3; i++)
+            {
+                SafariFact f = scene.Facts[i];
+                if (f.Kind == "first") continue;
+                if (f.Interest < least) { least = f.Interest; give = i; }
+            }
+
+            if (give < 0)
+            {
+                if (!SafariCaptions.AddFree(scene, SafariCaptions.Slot(1), text, scene.Seconds))
+                    Say("the portrait had no room for the body's own caption: " + text);
+                else Say("the portrait's own caption: " + text);
+                return;
+            }
+
+            SafariFact displaced = scene.Facts[give];
+            SafariCaptions.Replace(scene, SafariCaptions.Slot(give + 1), text);
+            Say("the portrait's own caption, in place of '" + displaced.Text + "': " + text);
+
+            SafariScene colony = null;
+            for (int k = scene.Index + 1; k < _scenes.Count; k++)
+                if (_scenes[k].Clade == c && _scenes[k].Station == SafariStation.Colony) { colony = _scenes[k]; break; }
+            if (colony != null && colony.Facts.Count < 4 && !colony.Facts.Contains(displaced))
+            {
+                colony.Facts.Add(displaced);
+                colony.Refill?.Invoke();
+            }
+        }
+
+        /// <summary>The descent, its captions timed to the depths the light's marks sit at.</summary>
+        private List<SafariPlans.Take> DescentTakes(SafariPlans.Stage stage, SafariScene scene, int hash)
+        {
+            SafariPlans.Take t = SafariPlans.Descent(stage, hash);
+            if (t.EyeAt == null) return One(t);
+
+            float startY = t.EyeAt(0f).y;
+            foreach (SafariFact f in scene.Facts.Where(f => !double.IsNaN(f.DepthMetres)).OrderBy(f => f.DepthMetres))
+            {
+                float y = -(float)f.DepthMetres;
+                if (startY <= y) continue; // the dolly starts below the mark
+                float at = -1f;
+                for (int k = 0; k <= 480; k++)
+                {
+                    float u = k / 480f;
+                    if (t.EyeAt(u).y <= y) { at = u; break; }
+                }
+                if (at < 0f) continue; // it never gets that deep
+                if (SafariCaptions.AddFree(scene, Math.Max(SafariCaptions.FirstOffset, at * t.Seconds - 1d), f.Text, t.Seconds))
+                    Say(string.Format(CultureInfo.InvariantCulture, "descent: '{0}' at {1:0.#} s of {2:0} s", f.Text, at * t.Seconds, t.Seconds));
+            }
+            return One(t);
+        }
+
+        /// <summary>The call-outs' tint: the clade in full colour and the rest grey, or everyone as before.</summary>
+        private void Focus(LiveWorldView view, SafariClade clade)
+        {
+            if (view?.Palette == null) return;
+            System.Func<long, bool> wanted = null;
+            if (_options.Callouts && clade != null)
+            {
+                long founder = clade.Founder;
+                wanted = id =>
+                {
+                    World world = _runner.Live?.Sim.World;
+                    if (world == null) return true;
+                    if (_focusLiving == null || _focusLiving.Count != world.Living.Count || !_focusLiving.ContainsKey(id))
+                    {
+                        _focusLiving = new Dictionary<long, Organism>(world.Living.Count);
+                        foreach (Organism o in world.Living) _focusLiving[o.Id] = o;
+                    }
+                    return _focusLiving.TryGetValue(id, out Organism body) && _clades.CladeOf(body, _focusLiving) == founder;
+                };
+            }
+
+            if (wanted == null && view.Palette.InFocus == null) return;
+            view.Palette.InFocus = wanted;
+            view.Redress();
+            view.DressUndressed();
+        }
+
+        private Dictionary<long, Organism> _focusLiving;
 
         private List<SafariPlans.Take> ColonyTakes(SafariPlans.Stage stage, SafariScene scene)
         {
@@ -763,6 +910,15 @@ namespace Evosim.Theatre
             if (members.Count == 0)
             {
                 Missed(scene.Clade.Name + " has no member alive in this cousin at " + SafariCaptions.Seconds(stage.Live.ElapsedSeconds));
+                return null;
+            }
+
+            // A colony of one is refused: a pull-back on one body says nothing its portrait did
+            // not (round 47's first safari filmed Gastrophylla sefecis's "colony of 1 members").
+            if (members.Count == 1)
+            {
+                Missed(scene.Clade.Name + " has one member alive in this cousin at " + SafariCaptions.Seconds(stage.Live.ElapsedSeconds) +
+                       ": a colony of one is refused");
                 return null;
             }
 
@@ -774,11 +930,10 @@ namespace Evosim.Theatre
             int anchor = inner[0];
             foreach (int i in inner) if (stage.Reaches[i] > stage.Reaches[anchor]) anchor = i;
 
-            var takes = new List<SafariPlans.Take>
-            {
-                SafariPlans.PullBack(stage, members, anchor, (float)SafariTripBuilder.ColonySeconds, scene.Clade.Hash),
-            };
+            // The chapter card opens the chapter, so it plays first, and the captions wait for it.
+            var takes = new List<SafariPlans.Take>();
             if (scene.ChapterCard) takes.Add(SafariPlans.FromAbove(stage, (float)SafariTripBuilder.ChapterSeconds));
+            takes.Add(SafariPlans.PullBack(stage, members, anchor, (float)SafariTripBuilder.ColonySeconds, scene.Clade.Hash));
             return takes;
         }
 
@@ -793,9 +948,16 @@ namespace Evosim.Theatre
             }
 
             float dispersal = stage.Live.Record.Config.OffspringDispersalMetres;
-            SafariCaptions.Add(scene, SafariTripBuilder.BirthLeadSeconds + 0.5d, string.Format(CultureInfo.InvariantCulture,
-                "In this cousin: body {0} born to body {1} of {2} at {3}.", _birthChild, _birthParent,
-                ParentName(scene.Clade), SafariCaptions.Seconds(_birthAt)));
+
+            // What the replay got, said as what it is: a birth in this cousin to a member of the
+            // parent line, and whether the child is the clade's kind, as the recorded founder
+            // was, or its parent's (the rehearsal takes the first birth in the parent line).
+            SafariCaptions.Replace(scene, SafariTripBuilder.BirthLeadSeconds + SafariCaptions.Slot(0),
+                "In this replay a member of " + ParentName(scene.Clade) + " gives birth.");
+            bool same = _birthChildFlags == SafariClades.FlagsOf(scene.Clade);
+            SafariCaptions.Replace(scene, SafariTripBuilder.BirthLeadSeconds + SafariCaptions.Slot(1), same
+                ? "This child is " + SafariCaptions.Guild(scene.Clade) + ", as the founder was."
+                : "This child kept its parent's body; the founder did not.");
 
             return One(SafariPlans.Hold(stage, parent, (float)(SafariTripBuilder.BirthLeadSeconds + SafariTripBuilder.BirthTailSeconds),
                 Mathf.Max(0.5f, dispersal), scene.Clade.Hash, "birth"));

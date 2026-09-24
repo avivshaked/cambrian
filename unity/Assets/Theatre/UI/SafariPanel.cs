@@ -39,6 +39,7 @@ namespace Evosim.Theatre
         private readonly VisualElement _overlay;
         private readonly Label _caption;
         private readonly Label _provenance;
+        private readonly SafariSparkline _sparkline;
         private readonly List<Label> _rows = new List<Label>();
         private int _marked = -1;
 
@@ -101,6 +102,9 @@ namespace Evosim.Theatre
             _provenance.AddToClassList("safari-provenance");
             _provenance.AddToClassList("is-gone");
             _overlay.Add(_provenance);
+
+            _sparkline = new SafariSparkline();
+            _overlay.Add(_sparkline);
         }
 
         /// <summary>Builds the panel into the interface, or returns null when there is no interface to build it in.</summary>
@@ -206,6 +210,9 @@ namespace Evosim.Theatre
             if (show && _provenance.text != text) _provenance.text = text;
         }
 
+        /// <summary>The call-outs' sparkline for a clade at a second, or nothing for null.</summary>
+        public void SetSparkline(SafariClade clade, double second) => _sparkline?.Set(clade, second);
+
         /// <summary>Copies the interface root's density step onto the caption layer.</summary>
         public void SyncWidth(VisualElement interfaceRoot)
         {
@@ -218,6 +225,125 @@ namespace Evosim.Theatre
         {
             _panel?.RemoveFromHierarchy();
             _overlay?.RemoveFromHierarchy();
+        }
+    }
+
+    /// <summary>
+    /// The safari's sparkline call-out (<c>EVOSIM_THEATRE_SAFARI_CALLOUTS=1</c>): a clade's count
+    /// of living members over its life, the filmed second marked by an upright line, and its
+    /// extinction as a cut, the line stopping at a bar down to the baseline.
+    /// </summary>
+    /// <remarks>
+    /// Drawn with the panel's own painter, top right, in the interface's ink and no hue: it is a
+    /// reading, not a decoration. It sits on the document's root, beside the caption layer, so it
+    /// is composited with the rest of the interface's layer (<see cref="SafariComposite"/> in the
+    /// Editor, <see cref="TheatreUiCapture.ArmOver"/> headless) and hidden by nothing but itself.
+    /// </remarks>
+    public sealed class SafariSparkline : VisualElement
+    {
+        private readonly List<(double t, int n)> _series = new List<(double, int)>();
+        private double _at = double.NaN;
+        private double _end = double.NaN;
+        private SafariClade _clade;
+
+        public SafariSparkline()
+        {
+            name = "safari-sparkline";
+            pickingMode = PickingMode.Ignore;
+            style.position = Position.Absolute;
+            style.right = 40;
+            style.top = 40;
+            style.width = 420;
+            style.height = 110;
+            style.backgroundColor = new Color(0f, 0f, 0f, 0.45f);
+            style.display = DisplayStyle.None;
+            generateVisualContent += Draw;
+        }
+
+        /// <summary>Shows a clade's series with a second marked, or hides the line for null.</summary>
+        public void Set(SafariClade clade, double second)
+        {
+            bool show = clade != null && clade.Series.Count > 1;
+            style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!show) { _clade = null; return; }
+
+            if (!ReferenceEquals(clade, _clade))
+            {
+                _clade = clade;
+                _series.Clear();
+                _series.AddRange(clade.Series);
+                _end = clade.ExtinctAt;
+            }
+
+            if (Math.Abs(second - _at) > 1e-3 || double.IsNaN(_at))
+            {
+                _at = second;
+                MarkDirtyRepaint();
+            }
+        }
+
+        private void Draw(MeshGenerationContext context)
+        {
+            if (_series.Count < 2) return;
+            Rect r = contentRect;
+            if (r.width < 8f || r.height < 8f) return;
+
+            float pad = 10f;
+            double t0 = _series[0].t;
+            double t1 = _series[_series.Count - 1].t;
+            if (!double.IsNaN(_end)) t1 = Math.Max(t1, _end);
+            if (!double.IsNaN(_at)) t1 = Math.Max(t1, _at);
+            if (t1 <= t0) t1 = t0 + 1d;
+            int most = 1;
+            foreach (var p in _series) most = Math.Max(most, p.n);
+
+            float X(double t) => r.xMin + pad + (float)((t - t0) / (t1 - t0)) * (r.width - 2f * pad);
+            float Y(int n) => r.yMax - pad - (n / (float)most) * (r.height - 2f * pad);
+
+            Painter2D painter = context.painter2D;
+
+            // The baseline, faint.
+            painter.strokeColor = new Color(1f, 1f, 1f, 0.25f);
+            painter.lineWidth = 1f;
+            painter.BeginPath();
+            painter.MoveTo(new Vector2(X(t0), Y(0)));
+            painter.LineTo(new Vector2(X(t1), Y(0)));
+            painter.Stroke();
+
+            // The count, stopping at the extinction.
+            painter.strokeColor = new Color(1f, 1f, 1f, 0.85f);
+            painter.lineWidth = 2f;
+            painter.BeginPath();
+            bool started = false;
+            foreach (var p in _series)
+            {
+                if (!double.IsNaN(_end) && p.t > _end + 1e-6) break;
+                var v = new Vector2(X(p.t), Y(p.n));
+                if (!started) { painter.MoveTo(v); started = true; }
+                else painter.LineTo(v);
+            }
+            painter.Stroke();
+
+            // The extinction as a cut: a short bar across the baseline where the line stops.
+            if (!double.IsNaN(_end))
+            {
+                painter.lineWidth = 3f;
+                painter.BeginPath();
+                painter.MoveTo(new Vector2(X(_end), Y(0) + 6f));
+                painter.LineTo(new Vector2(X(_end), Y(0) - 14f));
+                painter.Stroke();
+            }
+
+            // The filmed second.
+            if (!double.IsNaN(_at))
+            {
+                painter.strokeColor = new Color(1f, 1f, 1f, 1f);
+                painter.lineWidth = 2f;
+                painter.BeginPath();
+                painter.MoveTo(new Vector2(X(_at), r.yMin + pad * 0.5f));
+                painter.LineTo(new Vector2(X(_at), r.yMax - pad * 0.5f));
+                painter.Stroke();
+            }
         }
     }
 }

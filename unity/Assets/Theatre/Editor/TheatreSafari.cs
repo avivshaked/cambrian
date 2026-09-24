@@ -103,6 +103,13 @@ namespace Evosim.Theatre.EditorTools
         private static bool _warm;
         private static int _warmFrames;
         private static StreamWriter _captions, _checkLog;
+
+        // the call-outs (EVOSIM_THEATRE_SAFARI_CALLOUTS=1): the sparkline on the interface's
+        // document, composited over each written frame through TheatreUiCapture.ArmOver, the
+        // -Chrome route, and landed on the next tick
+        private static SafariSparkline _sparkline;
+        private static string _calloutPath;
+        private static int _calloutsLanded, _calloutsFailed;
         private static readonly List<string> _outcomes = new List<string>();
         private static readonly Dictionary<int, int> _takesByScene = new Dictionary<int, int>();
 
@@ -240,13 +247,13 @@ namespace Evosim.Theatre.EditorTools
             {
                 SafariClade one = _guide.FindByName(_clade);
                 if (one == null) { why = "EVOSIM_THEATRE_SAFARI_CLADE: no clade named '" + _clade + "' in the guide."; return null; }
-                scenes = SafariTripBuilder.One(one, checkpoints);
+                scenes = SafariTripBuilder.One(one, checkpoints, _guide);
             }
             else
             {
                 SafariTripBuilder.TryParse(_heuristic, out SafariHeuristic h);
                 scenes = SafariTripBuilder.Build(_guide, SafariTripBuilder.Choose(_guide, h), checkpoints, runSeconds,
-                    Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_ORDER") == "time");
+                    SafariTripBuilder.TimeOrder);
             }
 
             RunConfig config = record?.Config;
@@ -400,6 +407,7 @@ namespace Evosim.Theatre.EditorTools
                         return;
 
                     case SafariPhase.Playing:
+                        if (_calloutPath != null) { LandTheCallout(); return; }
                         if (!_warm) { WarmUp(); return; }
                         Shoot();
                         return;
@@ -457,6 +465,23 @@ namespace Evosim.Theatre.EditorTools
             {
                 _checkLog = new StreamWriter(Path.Combine(_out, "check.tsv"), false);
                 _checkLog.WriteLine("scene\ttake\tframe\tt\tx\ty\tz\tfloor\tabove_bed\tnearest_gap\tspeed\toutside_glass");
+            }
+
+            _sparkline = null;
+            _calloutPath = null;
+            _calloutsLanded = _calloutsFailed = 0;
+            if (Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_CALLOUTS") == "1")
+            {
+                if (_runner.Ui?.Document != null && _runner.Ui.Panel != null)
+                {
+                    _sparkline = new SafariSparkline();
+                    _runner.Ui.Document.rootVisualElement.Add(_sparkline);
+                    Debug.Log("[Theatre] safari: call-outs on: the subject clade in colour, the rest grey, and its sparkline composited over each frame");
+                }
+                else
+                {
+                    Debug.LogWarning("[Theatre] safari: call-outs asked for, but the interface did not load: the tint only, no sparkline");
+                }
             }
 
             _playAt = 0;
@@ -522,7 +547,26 @@ namespace Evosim.Theatre.EditorTools
             string path = Path.Combine(_takeDirectory, "frame-" + pose.TakeFrame.ToString("000000", CultureInfo.InvariantCulture) + ".png");
             _camera.CapturePlaced(live, pose.Eye, pose.Rotation, pose.FieldOfView, pose.Portrait, pose.Focus, pose.Label, path);
 
+            if (_sparkline != null)
+            {
+                _sparkline.Set(pose.Callout, pose.Second);
+                if (pose.Callout != null)
+                {
+                    if (TheatreUiCapture.ArmOver(_camera.LastFrame, _runner.Ui.Panel, out string note)) _calloutPath = path;
+                    else if (_calloutsFailed++ == 0) Debug.LogWarning("[Theatre] safari: the call-out composite was not armed: " + note);
+                }
+            }
+
             Assess(live, pose);
+        }
+
+        /// <summary>Reads the composite back over the frame it was armed on: the frame with its call-outs.</summary>
+        private static void LandTheCallout()
+        {
+            string path = _calloutPath;
+            _calloutPath = null;
+            if (TheatreUiCapture.Shoot(path, out string note) > 0) _calloutsLanded++;
+            else if (_calloutsFailed++ == 0) Debug.LogWarning("[Theatre] safari: the call-out composite was not written: " + note);
         }
 
         /// <summary>The check's three assertions, on every frame, in both modes (the run's log carries them too).</summary>
@@ -619,6 +663,15 @@ namespace Evosim.Theatre.EditorTools
             _driving = false;
             Time.captureDeltaTime = 0f;
             SessionState.EraseString(PendingKey);
+
+            TheatreUiCapture.Disarm();
+            _calloutPath = null;
+            if (_sparkline != null)
+            {
+                verdict += string.Format(CultureInfo.InvariantCulture, "; call-outs composited on {0} frames, {1} failed", _calloutsLanded, _calloutsFailed);
+                _sparkline.RemoveFromHierarchy();
+                _sparkline = null;
+            }
 
             _camera?.Dispose();
             _camera = null;

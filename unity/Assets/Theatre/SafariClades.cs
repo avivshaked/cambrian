@@ -112,6 +112,13 @@ namespace Evosim.Theatre
         /// <summary>The recorded birth second of an id, or NaN.</summary>
         public double RecordedBirth(long id) => _recorded.TryGetValue(id, out Born b) ? b.At : double.NaN;
 
+        /// <summary>
+        /// True when a living id is the recording's own body: born at or before the restore, so
+        /// the cousin carried it over from the checkpoint. Anything else is the cousin's, and a
+        /// fact about it comes from the live organism, never from the lineage.
+        /// </summary>
+        public bool IsRecorded(long id) => _recorded.TryGetValue(id, out Born b) && b.At <= _restoredAt + 1e-6;
+
         /// <summary>The founder's parent as the recording has it, or -1.</summary>
         public long RecordedParent(long id) => _recorded.TryGetValue(id, out Born b) ? b.Parent : -1;
 

@@ -233,6 +233,12 @@ namespace Evosim.Theatre
         public string Caption;
 
         /// <summary>
+        /// The last picture written, label and caption burnt in: what a composite puts the
+        /// interface's layer over (the safari's call-outs, through <see cref="TheatreUiCapture.ArmOver"/>).
+        /// </summary>
+        public Texture2D LastFrame => _readback;
+
+        /// <summary>
         /// A portrait's fill light from the camera's side, at this intensity; 0 (the default) adds
         /// none, so a film's close shot is lit as it always was. The safari's light rule (item 9):
         /// the skin's sun stands and the portrait adds a fill from the camera's side, low.
