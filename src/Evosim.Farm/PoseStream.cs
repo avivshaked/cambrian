@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 
 namespace Evosim.Farm
@@ -31,7 +32,17 @@ namespace Evosim.Farm
     /// <para>
     /// <b>No dependency but <c>System.IO</c></b>, because the Unity project consumes
     /// <c>Evosim.Farm</c> as a local package and the theatre reads the stream through this class
-    /// rather than through a second copy of the layout.
+    /// rather than through a second copy of the layout. Version 2's deflate is
+    /// <c>System.IO.Compression</c>, which is part of the same standard library on both runtimes.
+    /// </para>
+    /// <para>
+    /// <b>Two versions, and the header's version field decides which a reader parses</b>
+    /// (<c>logbook/specs/state-stream-spec.md</c>, "Version 2"). Version 1 wrote each body raw.
+    /// Version 2 deflates the bodies of each frame and gives every body one byte of guild flags,
+    /// so a reader of the stream needs no second file to tell a leaf from a stomach. The frame's
+    /// magic, its length, its time, its body count and its trailer stay uncompressed in both, so
+    /// the index, the scan and the torn-frame rule are one rule for both versions. This build
+    /// writes version 2 and reads both.
     /// </para>
     /// </remarks>
     public static class PoseStream
@@ -42,10 +53,13 @@ namespace Evosim.Farm
         /// <summary>The index's file name inside a run directory.</summary>
         public const string IndexFileName = "poses.idx";
 
-        /// <summary>The format this build writes and the only one it reads.</summary>
-        public const int Version = 1;
+        /// <summary>The format this build writes. It reads this one and every one before it.</summary>
+        public const int Version = 2;
 
-        /// <summary>Bytes before the first frame.</summary>
+        /// <summary>The oldest format this build reads.</summary>
+        public const int OldestVersion = 1;
+
+        /// <summary>Bytes before the first frame, in every version.</summary>
         public const int HeaderBytes = 80;
 
         /// <summary>Bytes before the index's first entry.</summary>
@@ -54,11 +68,48 @@ namespace Evosim.Farm
         /// <summary>Bytes per index entry: a time and an offset.</summary>
         public const int IndexEntryBytes = 16;
 
-        /// <summary>Bytes a body costs before its joint coordinates.</summary>
-        public const int BodyFixedBytes = 37;
+        /// <summary>Bytes a body costs before its joint coordinates in a version 1 frame.</summary>
+        public const int BodyFixedBytesVersion1 = 37;
+
+        /// <summary>
+        /// Bytes a body costs before its joint coordinates in a version 2 frame, once inflated:
+        /// version 1's thirty-seven and the flags byte.
+        /// </summary>
+        public const int BodyFixedBytesVersion2 = 38;
 
         /// <summary>Bytes of frame framing: the magic, the length and the length again.</summary>
         public const int FrameOverheadBytes = 12;
+
+        /// <summary>
+        /// Bytes at the head of a version 1 payload before its first body: the time and the count.
+        /// </summary>
+        public const int PayloadPrefixBytesVersion1 = 12;
+
+        /// <summary>
+        /// Bytes at the head of a version 2 payload before its deflated bodies: the time, the
+        /// count and the bodies' length before deflating.
+        /// </summary>
+        public const int PayloadPrefixBytesVersion2 = 16;
+
+        /// <summary>Flag bit 0: a part of the developed body is absorptive (a stomach).</summary>
+        /// <remarks>
+        /// The three bits are <c>positions.jsonl</c>'s, <c>PositionsRow</c>'s constants, and
+        /// <c>PoseStreamTests</c> holds the two equal. They are declared again here rather than
+        /// read from Core because this file touches nothing but the standard library.
+        /// </remarks>
+        public const int AbsorptiveBit = 1;
+
+        /// <summary>Flag bit 1: the developed body has at least one actuated joint.</summary>
+        public const int JointedBit = 2;
+
+        /// <summary>Flag bit 2: a part of the developed body is photosynthetic (a leaf).</summary>
+        public const int PhotosyntheticBit = 4;
+
+        /// <summary>Every flag bit version 2 defines. A writer refuses any other.</summary>
+        public const int AllFlagBits = AbsorptiveBit | JointedBit | PhotosyntheticBit;
+
+        /// <summary>What <see cref="PoseBody.Flags"/> reads on a version 1 stream, which carries none.</summary>
+        public const int FlagsNotRecorded = -1;
 
         internal static readonly byte[] FileMagic =
         {
@@ -89,17 +140,34 @@ namespace Evosim.Farm
             return File.Exists(path) ? path : null;
         }
 
-        /// <summary>What a body of this many degrees of freedom costs in a frame.</summary>
-        public static int BodyBytes(int dof) => BodyFixedBytes + 4 * dof;
+        /// <summary>Whether this build reads a stream of this version.</summary>
+        public static bool Reads(int version) => version >= OldestVersion && version <= Version;
+
+        /// <summary>Bytes a body costs before its joint coordinates in a frame of this version.</summary>
+        public static int BodyFixedBytes(int version) =>
+            version >= 2 ? BodyFixedBytesVersion2 : BodyFixedBytesVersion1;
+
+        /// <summary>
+        /// What a body of this many degrees of freedom costs in a frame of this version, before
+        /// any deflating.
+        /// </summary>
+        public static int BodyBytes(int dof, int version) => BodyFixedBytes(version) + 4 * dof;
+
+        /// <summary>Bytes at the head of a payload of this version before its bodies.</summary>
+        public static int PayloadPrefixBytes(int version) =>
+            version >= 2 ? PayloadPrefixBytesVersion2 : PayloadPrefixBytesVersion1;
     }
 
     /// <summary>What <c>poses.bin</c>'s header says about the run that wrote it.</summary>
     public sealed class PoseStreamHeader
     {
-        /// <summary>The format version. This build reads <see cref="PoseStream.Version"/> alone.</summary>
+        /// <summary>The format version, which decides the layout a frame is parsed by.</summary>
         public int Version;
 
-        /// <summary>The cadence the run recorded at, seconds.</summary>
+        /// <summary>
+        /// The cadence the run recorded at, seconds. A film window's is its nominal frame
+        /// interval, one over the frame rate, and its frames sit on physics steps near it.
+        /// </summary>
         public float CadenceSeconds;
 
         /// <summary>The run's <c>configHash</c>, so a frame can be told from a cousin's.</summary>
@@ -137,6 +205,13 @@ namespace Evosim.Farm
         /// <summary>Tissue over adult tissue: 1 is grown, and a newborn is a third of it.</summary>
         public float BodyFraction;
 
+        /// <summary>
+        /// The guild flags, <see cref="PoseStream.AbsorptiveBit"/>,
+        /// <see cref="PoseStream.JointedBit"/> and <see cref="PoseStream.PhotosyntheticBit"/>, or
+        /// <see cref="PoseStream.FlagsNotRecorded"/> on a version 1 stream, which carries none.
+        /// </summary>
+        public int Flags;
+
         /// <summary>Joint coordinates in the solver's own order. Never null; empty for a rigid body.</summary>
         public float[] Joints;
     }
@@ -164,6 +239,14 @@ namespace Evosim.Farm
     /// <see cref="PoseStreamReader"/> rebuilds one by scanning. It exists so that opening a
     /// finished 2 GB stream does not read 2 GB.
     /// </para>
+    /// <para>
+    /// <b>Version 2 deflates each frame's bodies and nothing else.</b> The body records are built
+    /// raw, as version 1 built them with one more byte each, and deflated as one block when the
+    /// frame closes. The time, the count and the raw length stay in front of the block, so a scan
+    /// reads a frame's second without inflating anything, and each frame is its own deflate
+    /// stream, so any frame inflates without the ones before it. The compressed bytes depend on
+    /// the runtime's deflate and are not a thing to compare two files by; the inflated bodies are.
+    /// </para>
     /// </remarks>
     public sealed class PoseStreamWriter : IDisposable
     {
@@ -171,10 +254,16 @@ namespace Evosim.Farm
         private readonly string _indexPath;
         private FileStream _file;
 
+        // The frame as it is built: the framing and the payload's prefix at the head, then the
+        // raw body records. Version 1 writes it as it stands; version 2 deflates the records.
         private byte[] _buffer = new byte[1 << 16];
         private int _at;
         private int _bodies;
         private bool _framing;
+
+        // Version 2's deflated records, and the frame assembled around them, both reused.
+        private MemoryStream _deflated;
+        private byte[] _frame = new byte[0];
 
         private readonly List<double> _times = new List<double>();
         private readonly List<long> _offsets = new List<long>();
@@ -185,8 +274,21 @@ namespace Evosim.Farm
         /// <summary>The cadence recorded in the header.</summary>
         public float CadenceSeconds { get; }
 
-        /// <summary>Opens the stream and writes its header.</summary>
+        /// <summary>The format this writer writes, <see cref="PoseStream.Version"/> unless asked otherwise.</summary>
+        public int Version { get; }
+
+        /// <summary>Opens the stream and writes its header, in this build's format.</summary>
         public PoseStreamWriter(string path, float cadenceSeconds, string configHash)
+            : this(path, cadenceSeconds, configHash, PoseStream.Version)
+        {
+        }
+
+        /// <summary>Opens the stream and writes its header, in the format named.</summary>
+        /// <remarks>
+        /// Version 1 is kept writable for the tests that prove it is still read, and for nothing
+        /// else: a run writes <see cref="PoseStream.Version"/>.
+        /// </remarks>
+        public PoseStreamWriter(string path, float cadenceSeconds, string configHash, int version)
         {
             if (string.IsNullOrEmpty(path)) throw new ArgumentNullException(nameof(path));
 
@@ -198,9 +300,18 @@ namespace Evosim.Farm
                     "EVOSIM_POSE_EVERY at 0 writes no file at all.");
             }
 
+            if (!PoseStream.Reads(version))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(version), version,
+                    "This build writes pose stream versions " + PoseStream.OldestVersion + " to " +
+                    PoseStream.Version + ".");
+            }
+
             _path = path;
             _indexPath = Path.ChangeExtension(path, ".idx");
             CadenceSeconds = cadenceSeconds;
+            Version = version;
 
             string directory = Path.GetDirectoryName(Path.GetFullPath(path));
             if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
@@ -211,7 +322,7 @@ namespace Evosim.Farm
 
             var header = new byte[PoseStream.HeaderBytes];
             Buffer.BlockCopy(PoseStream.FileMagic, 0, header, 0, 8);
-            Put16(header, 8, (ushort)PoseStream.Version);
+            Put16(header, 8, (ushort)version);
             Put16(header, 10, PoseStream.HeaderBytes);
             PutFloat(header, 12, cadenceSeconds);
 
@@ -223,7 +334,7 @@ namespace Evosim.Farm
             _file.Flush();
         }
 
-        /// <summary>Starts a frame. Every <see cref="Body"/> after it belongs to this instant.</summary>
+        /// <summary>Starts a frame. Every body written after it belongs to this instant.</summary>
         public void BeginFrame(double seconds)
         {
             if (_framing) throw new InvalidOperationException("A frame is already open.");
@@ -232,22 +343,76 @@ namespace Evosim.Farm
             _bodies = 0;
             _at = 8;                 // the magic and the length are patched in by EndFrame
 
-            Reserve(12);
+            Reserve(PoseStream.PayloadPrefixBytes(Version));
             PutDouble(_buffer, _at, seconds);
             _at += 8;
             PutU32(_buffer, _at, 0); // the body count, patched in by EndFrame
             _at += 4;
+
+            if (Version >= 2)
+            {
+                PutU32(_buffer, _at, 0); // the records' raw length, patched in by EndFrame
+                _at += 4;
+            }
         }
 
-        /// <summary>One body, in the order the world holds its living.</summary>
+        /// <summary>One body of a version 1 stream, in the order the world holds its living.</summary>
         /// <remarks>
-        /// The joint coordinates arrive as the solver's own doubles and are narrowed here, which
-        /// is the only place a number loses anything between the run and the file.
+        /// Refused on a version 2 stream, which carries every body's guild flags: a body written
+        /// without them would read as a body of no guild, which is a claim and not a gap.
         /// </remarks>
         public void Body(
             long id, float x, float y, float z,
             float qx, float qy, float qz, float qw,
             float bodyFraction, int dof, double[] joints)
+        {
+            if (Version >= 2)
+            {
+                throw new InvalidOperationException(
+                    "A version " + Version + " stream carries every body's guild flags. Call the " +
+                    "overload that takes them; a body written without them would read as " +
+                    "belonging to no guild.");
+            }
+
+            Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, PoseStream.FlagsNotRecorded, dof, joints);
+        }
+
+        /// <summary>One body of a version 2 stream, with its guild flags.</summary>
+        /// <param name="flags">
+        /// <see cref="PoseStream.AbsorptiveBit"/>, <see cref="PoseStream.JointedBit"/> and
+        /// <see cref="PoseStream.PhotosyntheticBit"/>, decided as <c>positions.jsonl</c> decides
+        /// them. Any other bit is refused, for <c>PositionsRow.AllBits</c>' reason.
+        /// </param>
+        public void Body(
+            long id, float x, float y, float z,
+            float qx, float qy, float qz, float qw,
+            float bodyFraction, int flags, int dof, double[] joints)
+        {
+            if (Version < 2)
+            {
+                throw new InvalidOperationException(
+                    "A version 1 stream has no field for a body's guild flags, and dropping them " +
+                    "here would lose them without saying so.");
+            }
+
+            if (flags < 0 || (flags & ~PoseStream.AllFlagBits) != 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(flags), flags,
+                    "A body's flags are the three guild bits and nothing else.");
+            }
+
+            Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, flags, dof, joints);
+        }
+
+        /// <remarks>
+        /// The joint coordinates arrive as the solver's own doubles and are narrowed here, which
+        /// is the only place a number loses anything between the run and the file.
+        /// </remarks>
+        private void Put(
+            long id, float x, float y, float z,
+            float qx, float qy, float qz, float qw,
+            float bodyFraction, int flags, int dof, double[] joints)
         {
             if (!_framing) throw new InvalidOperationException("No frame is open.");
 
@@ -265,7 +430,7 @@ namespace Evosim.Farm
                     nameof(dof), dof, "A body's degrees of freedom are recorded in one byte.");
             }
 
-            Reserve(PoseStream.BodyBytes(dof) + 4);
+            Reserve(PoseStream.BodyBytes(dof, Version) + 4);
 
             PutU32(_buffer, _at, unchecked((uint)(int)id));
             _at += 4;
@@ -280,6 +445,12 @@ namespace Evosim.Farm
             PutFloat(_buffer, _at, qw); _at += 4;
 
             PutFloat(_buffer, _at, bodyFraction); _at += 4;
+
+            if (Version >= 2)
+            {
+                _buffer[_at] = (byte)flags;
+                _at += 1;
+            }
 
             _buffer[_at] = (byte)dof;
             _at += 1;
@@ -301,20 +472,70 @@ namespace Evosim.Farm
 
             PutU32(_buffer, 16, (uint)_bodies);
 
+            double seconds = ReadDouble(_buffer, 8);
+            long offset = _file.Position;
+
+            if (Version >= 2)
+            {
+                WriteDeflated();
+            }
+            else
+            {
+                WriteRaw();
+            }
+
+            _file.Flush();
+
+            _times.Add(seconds);
+            _offsets.Add(offset);
+        }
+
+        /// <summary>Version 1's frame: the buffer as it stands, and the trailer after it.</summary>
+        private void WriteRaw()
+        {
+            Reserve(4);
+
             int payload = _at - 8;
 
             PutU32(_buffer, 0, PoseStream.FrameMagic);
             PutU32(_buffer, 4, (uint)payload);
             PutU32(_buffer, _at, (uint)payload);
 
-            long offset = _file.Position;
-
             _file.Write(_buffer, 0, _at + 4);
-            _file.Flush();
+        }
 
-            double seconds = ReadDouble(_buffer, 8);
-            _times.Add(seconds);
-            _offsets.Add(offset);
+        /// <summary>
+        /// Version 2's frame: the prefix raw, the body records deflated, and the trailer, put
+        /// together in one array so the file still takes the frame in one write.
+        /// </summary>
+        private void WriteDeflated()
+        {
+            int start = 8 + PoseStream.PayloadPrefixBytesVersion2;
+            int raw = _at - start;
+
+            PutU32(_buffer, 20, (uint)raw);
+
+            if (_deflated == null) _deflated = new MemoryStream();
+            else _deflated.SetLength(0);
+
+            using (var deflate = new DeflateStream(_deflated, CompressionLevel.Optimal, true))
+            {
+                if (raw > 0) deflate.Write(_buffer, start, raw);
+            }
+
+            int packed = (int)_deflated.Length;
+            int payload = PoseStream.PayloadPrefixBytesVersion2 + packed;
+            int total = 8 + payload + 4;
+
+            if (_frame.Length < total) _frame = new byte[Math.Max(total, 2 * _frame.Length)];
+
+            PutU32(_frame, 0, PoseStream.FrameMagic);
+            PutU32(_frame, 4, (uint)payload);
+            Buffer.BlockCopy(_buffer, 8, _frame, 8, PoseStream.PayloadPrefixBytesVersion2);
+            Buffer.BlockCopy(_deflated.GetBuffer(), 0, _frame, start, packed);
+            PutU32(_frame, start + packed, (uint)payload);
+
+            _file.Write(_frame, 0, total);
         }
 
         /// <summary>Writes <c>poses.idx</c>. Called by <see cref="Dispose"/>.</summary>
@@ -324,7 +545,7 @@ namespace Evosim.Farm
                                  PoseStream.IndexEntryBytes * _times.Count];
 
             Buffer.BlockCopy(PoseStream.IndexMagic, 0, bytes, 0, 8);
-            Put16(bytes, 8, (ushort)PoseStream.Version);
+            Put16(bytes, 8, (ushort)Version);
             Put16(bytes, 10, PoseStream.IndexHeaderBytes);
             PutU32(bytes, 12, (uint)_times.Count);
 
@@ -427,7 +648,13 @@ namespace Evosim.Farm
     /// <para>
     /// <b>A scan reads twenty bytes a frame, not a frame.</b> It walks the framing and the time
     /// and skips each payload, and it stops at the first frame whose magic, length or trailer does
-    /// not hold. That stop is how a torn last write is dropped.
+    /// not hold. That stop is how a torn last write is dropped. It is the same walk for both
+    /// versions, because version 2 keeps the time in front of what it deflates.
+    /// </para>
+    /// <para>
+    /// <b>A version 2 frame is inflated when it is read and checked when it is inflated.</b> The
+    /// bodies have to inflate to exactly the length the frame states, and to exactly the bodies
+    /// its count says; a frame that disagrees with itself is refused rather than read short.
     /// </para>
     /// </remarks>
     public sealed class PoseStreamReader : IDisposable
@@ -473,7 +700,7 @@ namespace Evosim.Farm
             return reader;
         }
 
-        /// <summary>Frame <c>i</c>, read whole.</summary>
+        /// <summary>Frame <c>i</c>, read whole, in the layout the header's version names.</summary>
         public PoseFrame Read(int i)
         {
             if (i < 0 || i >= Frames.Length)
@@ -491,38 +718,131 @@ namespace Evosim.Farm
             var frame = new PoseFrame { Seconds = Get.Double(payload, 0) };
 
             long count = Get.U32(payload, 8);
-            int at = 12;
+            int version = Header.Version;
+
+            byte[] records;
+            int at;
+            int end;
+
+            if (version >= 2)
+            {
+                long raw = Get.U32(payload, 12);
+
+                if (raw > int.MaxValue)
+                {
+                    throw new InvalidDataException(
+                        "The frame at byte " + reference.Offset + " says its bodies are " + raw +
+                        " bytes before deflating, which no frame this format writes can be.");
+                }
+
+                records = Inflate(payload, PoseStream.PayloadPrefixBytesVersion2, (int)raw, reference.Offset);
+                at = 0;
+                end = records.Length;
+            }
+            else
+            {
+                records = payload;
+                at = PoseStream.PayloadPrefixBytesVersion1;
+                end = payload.Length;
+            }
+
+            int fixedBytes = PoseStream.BodyFixedBytes(version);
+
+            // Refused rather than trusted: a count the records cannot hold is a frame that is not
+            // what its header says, and an array sized off it would be a guess.
+            if (count > (end - at) / fixedBytes)
+            {
+                throw new InvalidDataException(
+                    "The frame at byte " + reference.Offset + " says " + count + " bodies and " +
+                    "holds " + (end - at) + " bytes of them.");
+            }
 
             var bodies = new PoseBody[count];
 
             for (long b = 0; b < count; b++)
             {
+                if (at + fixedBytes > end) throw Short(reference.Offset, count);
+
                 var body = new PoseBody
                 {
-                    Id = unchecked((int)Get.U32(payload, at)),
-                    X = Get.Float(payload, at + 4),
-                    Y = Get.Float(payload, at + 8),
-                    Z = Get.Float(payload, at + 12),
-                    Qx = Get.Float(payload, at + 16),
-                    Qy = Get.Float(payload, at + 20),
-                    Qz = Get.Float(payload, at + 24),
-                    Qw = Get.Float(payload, at + 28),
-                    BodyFraction = Get.Float(payload, at + 32),
+                    Id = unchecked((int)Get.U32(records, at)),
+                    X = Get.Float(records, at + 4),
+                    Y = Get.Float(records, at + 8),
+                    Z = Get.Float(records, at + 12),
+                    Qx = Get.Float(records, at + 16),
+                    Qy = Get.Float(records, at + 20),
+                    Qz = Get.Float(records, at + 24),
+                    Qw = Get.Float(records, at + 28),
+                    BodyFraction = Get.Float(records, at + 32),
+                    Flags = version >= 2 ? records[at + 36] : PoseStream.FlagsNotRecorded,
                 };
 
-                int dof = payload[at + 36];
-                at += PoseStream.BodyFixedBytes;
+                int dof = records[at + fixedBytes - 1];
+                at += fixedBytes;
+
+                if (at + 4 * dof > end) throw Short(reference.Offset, count);
 
                 var joints = new float[dof];
-                for (int d = 0; d < dof; d++) joints[d] = Get.Float(payload, at + 4 * d);
+                for (int d = 0; d < dof; d++) joints[d] = Get.Float(records, at + 4 * d);
                 at += 4 * dof;
 
                 body.Joints = joints;
                 bodies[b] = body;
             }
 
+            if (at != end)
+            {
+                throw new InvalidDataException(
+                    "The frame at byte " + reference.Offset + " says " + count + " bodies and " +
+                    "they end " + (end - at) + " bytes before its records do.");
+            }
+
             frame.Bodies = bodies;
             return frame;
+        }
+
+        private static InvalidDataException Short(long offset, long count) =>
+            new InvalidDataException(
+                "The frame at byte " + offset + " says " + count + " bodies and its records end " +
+                "inside one of them.");
+
+        /// <summary>
+        /// A version 2 frame's body records, inflated, and checked to be exactly as long as the
+        /// frame says they are.
+        /// </summary>
+        private static byte[] Inflate(byte[] payload, int start, int raw, long offset)
+        {
+            var records = new byte[raw];
+            var extra = new byte[1];
+
+            using (var source = new MemoryStream(payload, start, payload.Length - start, false))
+            using (var inflate = new DeflateStream(source, CompressionMode.Decompress))
+            {
+                int got = 0;
+
+                while (got < raw)
+                {
+                    int n = inflate.Read(records, got, raw - got);
+                    if (n <= 0) break;
+                    got += n;
+                }
+
+                if (got != raw)
+                {
+                    throw new InvalidDataException(
+                        "The frame at byte " + offset + " says its bodies inflate to " + raw +
+                        " bytes and they inflate to " + got + ".");
+                }
+
+                if (inflate.Read(extra, 0, 1) > 0)
+                {
+                    throw new InvalidDataException(
+                        "The frame at byte " + offset + " says its bodies inflate to " + raw +
+                        " bytes and they inflate to more.");
+                }
+            }
+
+            return records;
         }
 
         /// <summary>The frame at a second, or null when the stream has none there.</summary>
@@ -592,12 +912,13 @@ namespace Evosim.Farm
 
             int version = Get.U16(header, 8);
 
-            if (version != PoseStream.Version)
+            if (!PoseStream.Reads(version))
             {
                 throw new InvalidDataException(
-                    "The stream is version " + version + " and this build reads version " +
-                    PoseStream.Version + ". A stream is refused rather than read with a field " +
-                    "guessed at, under the rule the config reader follows.");
+                    "The stream is version " + version + " and this build reads versions " +
+                    PoseStream.OldestVersion + " to " + PoseStream.Version + ". A stream is " +
+                    "refused rather than read with a field guessed at, under the rule the config " +
+                    "reader follows.");
             }
 
             int headerBytes = Get.U16(header, 10);
@@ -669,7 +990,9 @@ namespace Evosim.Farm
                 if (bytes[i] != PoseStream.IndexMagic[i]) return null;
             }
 
-            if (Get.U16(bytes, 8) != PoseStream.Version) return null;
+            // The index is the stream's own: one written beside a stream of another version is
+            // not this stream's index, whatever its entries say.
+            if (Get.U16(bytes, 8) != Header.Version) return null;
             if (Get.U16(bytes, 10) != PoseStream.IndexHeaderBytes) return null;
 
             long count = Get.U32(bytes, 12);
@@ -729,7 +1052,7 @@ namespace Evosim.Farm
 
             long payload = Get.U32(_small, 4);
 
-            if (payload < 12 ||
+            if (payload < PoseStream.PayloadPrefixBytes(Header.Version) ||
                 reference.Offset + 8 + payload + 4 > _file.Length)
             {
                 return false;
@@ -759,7 +1082,11 @@ namespace Evosim.Farm
                 if (Get.U32(_small, 0) != PoseStream.FrameMagic) break;
 
                 long payload = Get.U32(_small, 4);
-                if (payload < 12 || at + 8 + payload + 4 > _file.Length) break;
+                if (payload < PoseStream.PayloadPrefixBytes(Header.Version) ||
+                    at + 8 + payload + 4 > _file.Length)
+                {
+                    break;
+                }
 
                 // The sixteen bytes just read are the magic, the length and the payload's first
                 // eight, which are the frame's time. Taken before the trailer read overwrites it.

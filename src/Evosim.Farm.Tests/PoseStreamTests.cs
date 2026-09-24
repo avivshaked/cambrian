@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
+using System.Text;
 using Evosim.Core;
 using Evosim.Farm;
 using Xunit;
@@ -13,9 +15,18 @@ namespace Evosim.Farm.Tests
     /// than read (<c>logbook/specs/state-stream-spec.md</c>).
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Every test writes into a directory of its own under <c>artifacts/</c> and deletes it, which
     /// is <c>ManifestTests</c>' rule: nothing of the project's is written outside the repository,
     /// the system's temporary directory included.
+    /// </para>
+    /// <para>
+    /// <b>Both versions, through one set of tests.</b> The round trip, the killed run, the index
+    /// and the frame found by its second hold for version 1 and version 2 alike, so they are
+    /// theories over the version. What only one version has (version 1's raw size, version 2's
+    /// deflate and its flags) has tests of its own, and a version 1 file laid out by hand from
+    /// the spec checks the reader against something the writer did not produce.
+    /// </para>
     /// </remarks>
     public class PoseStreamTests : IDisposable
     {
@@ -48,9 +59,10 @@ namespace Evosim.Farm.Tests
 
         /// <summary>
         /// A deterministic crowd: ids, places, attitudes and joint coordinates that are not round
-        /// numbers, so a float that took a detour through a decimal shows up.
+        /// numbers, so a float that took a detour through a decimal shows up. Every combination
+        /// of the three guild bits turns up across a frame.
         /// </summary>
-        private static PoseBody[] Crowd(int frame, int bodies)
+        private static PoseBody[] Crowd(int frame, int bodies, int version)
         {
             var crowd = new PoseBody[bodies];
 
@@ -75,6 +87,7 @@ namespace Evosim.Farm.Tests
                     Qz = -0.4472136f,
                     Qw = 0.7071068f,
                     BodyFraction = (float)(0.3123 + 0.01 * i),
+                    Flags = version >= 2 ? (i + 3 * frame) % 8 : PoseStream.FlagsNotRecorded,
                     Joints = joints,
                 };
             }
@@ -83,16 +96,19 @@ namespace Evosim.Farm.Tests
         }
 
         /// <summary>Writes a stream of <paramref name="frames"/> frames and returns what it wrote.</summary>
-        private List<PoseFrame> WriteStream(int frames, int bodies, float cadence, string hash)
+        private List<PoseFrame> WriteStream(
+            int frames, int bodies, float cadence, string hash, int version = PoseStream.Version)
         {
             var written = new List<PoseFrame>();
 
-            using (var writer = new PoseStreamWriter(Path_, cadence, hash))
+            using (var writer = new PoseStreamWriter(Path_, cadence, hash, version))
             {
+                Assert.Equal(version, writer.Version);
+
                 for (int f = 0; f < frames; f++)
                 {
                     double t = cadence * (f + 1);
-                    PoseBody[] crowd = Crowd(f, bodies);
+                    PoseBody[] crowd = Crowd(f, bodies, version);
 
                     writer.BeginFrame(t);
 
@@ -101,10 +117,20 @@ namespace Evosim.Farm.Tests
                         var joints = new double[body.Joints.Length];
                         for (int d = 0; d < joints.Length; d++) joints[d] = body.Joints[d];
 
-                        writer.Body(
-                            body.Id, body.X, body.Y, body.Z,
-                            body.Qx, body.Qy, body.Qz, body.Qw,
-                            body.BodyFraction, joints.Length, joints);
+                        if (version >= 2)
+                        {
+                            writer.Body(
+                                body.Id, body.X, body.Y, body.Z,
+                                body.Qx, body.Qy, body.Qz, body.Qw,
+                                body.BodyFraction, body.Flags, joints.Length, joints);
+                        }
+                        else
+                        {
+                            writer.Body(
+                                body.Id, body.X, body.Y, body.Z,
+                                body.Qx, body.Qy, body.Qz, body.Qw,
+                                body.BodyFraction, joints.Length, joints);
+                        }
                     }
 
                     writer.EndFrame();
@@ -143,6 +169,8 @@ namespace Evosim.Farm.Tests
                     BitConverter.SingleToInt32Bits(a.BodyFraction),
                     BitConverter.SingleToInt32Bits(b.BodyFraction));
 
+                Assert.Equal(a.Flags, b.Flags);
+
                 Assert.Equal(a.Joints.Length, b.Joints.Length);
 
                 for (int d = 0; d < a.Joints.Length; d++)
@@ -157,25 +185,32 @@ namespace Evosim.Farm.Tests
         // ------------------------------------------------------------------ the round trip
 
         [Fact]
-        public void HeaderCarriesTheCadenceAndTheConfigHash()
+        public void HeaderCarriesTheVersionTheCadenceAndTheConfigHash()
         {
-            WriteStream(3, 2, 0.5f, "ff557bce2685293a");
+            using (var writer = new PoseStreamWriter(Path_, 0.5f, "ff557bce2685293a"))
+            {
+                Assert.Equal(2, writer.Version);
+            }
 
             using (PoseStreamReader reader = PoseStreamReader.Open(Path_))
             {
+                Assert.Equal(2, PoseStream.Version);
                 Assert.Equal(PoseStream.Version, reader.Header.Version);
                 Assert.Equal(0.5f, reader.Header.CadenceSeconds);
                 Assert.Equal("ff557bce2685293a", reader.Header.ConfigHash);
             }
         }
 
-        [Fact]
-        public void EveryFrameComesBackBitExact()
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void EveryFrameComesBackBitExact(int version)
         {
-            List<PoseFrame> written = WriteStream(12, 7, 0.5f, "ff557bce2685293a");
+            List<PoseFrame> written = WriteStream(12, 7, 0.5f, "ff557bce2685293a", version);
 
             using (PoseStreamReader reader = PoseStreamReader.Open(Path_))
             {
+                Assert.Equal(version, reader.Header.Version);
                 Assert.Equal(written.Count, reader.Frames.Length);
 
                 for (int f = 0; f < written.Count; f++)
@@ -185,16 +220,21 @@ namespace Evosim.Farm.Tests
             }
         }
 
-        [Fact]
-        public void AFrameOfNobodyIsAFrame()
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void AFrameOfNobodyIsAFrame(int version)
         {
-            using (var writer = new PoseStreamWriter(Path_, 0.5f, "abc"))
+            using (var writer = new PoseStreamWriter(Path_, 0.5f, "abc", version))
             {
                 writer.BeginFrame(0.5);
                 writer.EndFrame();
 
                 writer.BeginFrame(1.0);
-                writer.Body(7, 1f, 2f, 3f, 0f, 0f, 0f, 1f, 1f, 0, new double[0]);
+
+                if (version >= 2) writer.Body(7, 1f, 2f, 3f, 0f, 0f, 0f, 1f, 1f, 5, 0, new double[0]);
+                else writer.Body(7, 1f, 2f, 3f, 0f, 0f, 0f, 1f, 1f, 0, new double[0]);
+
                 writer.EndFrame();
             }
 
@@ -204,13 +244,16 @@ namespace Evosim.Farm.Tests
                 Assert.Empty(reader.Read(0).Bodies);
                 Assert.Single(reader.Read(1).Bodies);
                 Assert.Empty(reader.Read(1).Bodies[0].Joints);
+                Assert.Equal(version >= 2 ? 5 : PoseStream.FlagsNotRecorded, reader.Read(1).Bodies[0].Flags);
             }
         }
 
-        [Fact]
-        public void AFrameIsFoundByItsSecond()
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void AFrameIsFoundByItsSecond(int version)
         {
-            WriteStream(10, 3, 0.5f, "abc");
+            WriteStream(10, 3, 0.5f, "abc", version);
 
             using (PoseStreamReader reader = PoseStreamReader.Open(Path_))
             {
@@ -221,16 +264,21 @@ namespace Evosim.Farm.Tests
             }
         }
 
-        [Fact]
-        public void TheIndexOnDiskIsWrittenAndUsed()
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void TheIndexOnDiskIsWrittenAndUsed(int version)
         {
-            List<PoseFrame> written = WriteStream(6, 4, 0.5f, "abc");
+            List<PoseFrame> written = WriteStream(6, 4, 0.5f, "abc", version);
 
             Assert.True(File.Exists(IndexPath));
 
             Assert.Equal(
                 PoseStream.IndexHeaderBytes + PoseStream.IndexEntryBytes * written.Count,
                 new FileInfo(IndexPath).Length);
+
+            // The index carries its stream's version.
+            Assert.Equal(version, File.ReadAllBytes(IndexPath)[8]);
 
             using (PoseStreamReader reader = PoseStreamReader.Open(Path_))
             {
@@ -249,12 +297,31 @@ namespace Evosim.Farm.Tests
             }
         }
 
+        [Fact]
+        public void AnIndexOfAnotherVersionIsDropped()
+        {
+            List<PoseFrame> written = WriteStream(5, 3, 0.5f, "abc", 2);
+
+            byte[] index = File.ReadAllBytes(IndexPath);
+            index[8] = 1;
+            File.WriteAllBytes(IndexPath, index);
+
+            using (PoseStreamReader reader = PoseStreamReader.Open(Path_))
+            {
+                Assert.False(reader.IndexRead);
+                Assert.Equal(written.Count, reader.Frames.Length);
+                AssertSameFrame(written[4], reader.Read(4));
+            }
+        }
+
         // ------------------------------------------------------------------ the killed run
 
-        [Fact]
-        public void AKilledRunIsReadToItsLastCompleteFrame()
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void AKilledRunIsReadToItsLastCompleteFrame(int version)
         {
-            List<PoseFrame> written = WriteStream(8, 5, 0.5f, "abc");
+            List<PoseFrame> written = WriteStream(8, 5, 0.5f, "abc", version);
 
             long whole;
             long lastFrameStart;
@@ -284,10 +351,12 @@ namespace Evosim.Farm.Tests
             }
         }
 
-        [Fact]
-        public void AFrameWithNoTrailerIsNotAFrame()
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void AFrameWithNoTrailerIsNotAFrame(int version)
         {
-            WriteStream(4, 3, 0.5f, "abc");
+            WriteStream(4, 3, 0.5f, "abc", version);
             File.Delete(IndexPath);
 
             // Four bytes short: every byte of the payload is there and the trailer is not.
@@ -299,10 +368,12 @@ namespace Evosim.Farm.Tests
             }
         }
 
-        [Fact]
-        public void AnIndexThatDisagreesWithItsFileIsDropped()
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void AnIndexThatDisagreesWithItsFileIsDropped(int version)
         {
-            List<PoseFrame> written = WriteStream(6, 4, 0.5f, "abc");
+            List<PoseFrame> written = WriteStream(6, 4, 0.5f, "abc", version);
 
             // The index of a longer stream against a file that was cut short: the last entry
             // points past the end, and the whole index has to go rather than half of it stand.
@@ -324,10 +395,12 @@ namespace Evosim.Farm.Tests
             }
         }
 
-        [Fact]
-        public void AnIndexOfTheWrongLengthIsDropped()
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void AnIndexOfTheWrongLengthIsDropped(int version)
         {
-            WriteStream(5, 2, 0.5f, "abc");
+            WriteStream(5, 2, 0.5f, "abc", version);
 
             byte[] index = File.ReadAllBytes(IndexPath);
             var shortened = new byte[index.Length - 3];
@@ -339,6 +412,234 @@ namespace Evosim.Farm.Tests
                 Assert.False(reader.IndexRead);
                 Assert.Equal(5, reader.Frames.Length);
             }
+        }
+
+        // ------------------------------------------------------------------ version 1 by hand
+
+        /// <summary>
+        /// A version 1 stream laid out byte by byte from the spec's tables, with no writer
+        /// involved, is read: the stream every run recorded before version 2 stays readable.
+        /// </summary>
+        [Fact]
+        public void AVersionOneFileLaidOutByHandIsRead()
+        {
+            var bytes = new List<byte>();
+
+            bytes.AddRange(Encoding.ASCII.GetBytes("EVOPOSE"));
+            bytes.Add(0);
+            bytes.AddRange(BitConverter.GetBytes((ushort)1));
+            bytes.AddRange(BitConverter.GetBytes((ushort)80));
+            bytes.AddRange(BitConverter.GetBytes(0.5f));
+
+            var hash = new byte[64];
+            Encoding.ASCII.GetBytes("0861387741b94259").CopyTo(hash, 0);
+            bytes.AddRange(hash);
+
+            Assert.Equal(80, bytes.Count);
+
+            // One frame, two bodies: a rigid one and one with two joint coordinates.
+            var payload = new List<byte>();
+            payload.AddRange(BitConverter.GetBytes(100.5));
+            payload.AddRange(BitConverter.GetBytes(2u));
+
+            payload.AddRange(BitConverter.GetBytes(41));
+            foreach (float v in new[] { 1.25f, -30.5f, 7f, 0f, 0f, 0f, 1f, 0.75f }) payload.AddRange(BitConverter.GetBytes(v));
+            payload.Add(0);
+
+            payload.AddRange(BitConverter.GetBytes(42));
+            foreach (float v in new[] { -3f, -12.125f, 9.5f, 0.5f, 0.5f, 0.5f, 0.5f, 1f }) payload.AddRange(BitConverter.GetBytes(v));
+            payload.Add(2);
+            payload.AddRange(BitConverter.GetBytes(0.3f));
+            payload.AddRange(BitConverter.GetBytes(-0.7f));
+
+            Assert.Equal(12 + 37 + 37 + 8, payload.Count);
+
+            bytes.AddRange(Encoding.ASCII.GetBytes("FRAM"));
+            bytes.AddRange(BitConverter.GetBytes((uint)payload.Count));
+            bytes.AddRange(payload);
+            bytes.AddRange(BitConverter.GetBytes((uint)payload.Count));
+
+            File.WriteAllBytes(Path_, bytes.ToArray());
+
+            using (PoseStreamReader reader = PoseStreamReader.Open(Path_))
+            {
+                Assert.Equal(1, reader.Header.Version);
+                Assert.Equal("0861387741b94259", reader.Header.ConfigHash);
+                Assert.False(reader.IndexRead);
+                Assert.Single(reader.Frames);
+
+                PoseFrame frame = reader.Read(0);
+                Assert.Equal(100.5, frame.Seconds);
+                Assert.Equal(2, frame.Bodies.Length);
+
+                Assert.Equal(41, frame.Bodies[0].Id);
+                Assert.Equal(-30.5f, frame.Bodies[0].Y);
+                Assert.Equal(0.75f, frame.Bodies[0].BodyFraction);
+                Assert.Equal(PoseStream.FlagsNotRecorded, frame.Bodies[0].Flags);
+                Assert.Empty(frame.Bodies[0].Joints);
+
+                Assert.Equal(42, frame.Bodies[1].Id);
+                Assert.Equal(-12.125f, frame.Bodies[1].Y);
+                Assert.Equal(PoseStream.FlagsNotRecorded, frame.Bodies[1].Flags);
+                Assert.Equal(new[] { 0.3f, -0.7f }, frame.Bodies[1].Joints);
+            }
+        }
+
+        [Fact]
+        public void VersionOneIsItsOwnSize()
+        {
+            // 37 bytes a body plus four a degree of freedom, and twelve of framing a frame.
+            Assert.Equal(49, PoseStream.BodyBytes(3, 1));
+            Assert.Equal(37, PoseStream.BodyBytes(0, 1));
+
+            WriteStream(4, 10, 0.5f, "abc", 1);
+
+            long expected = PoseStream.HeaderBytes;
+
+            for (int f = 0; f < 4; f++)
+            {
+                expected += PoseStream.FrameOverheadBytes + 12; // the framing, the time, the count
+
+                foreach (PoseBody body in Crowd(f, 10, 1))
+                {
+                    expected += PoseStream.BodyBytes(body.Joints.Length, 1);
+                }
+            }
+
+            Assert.Equal(expected, new FileInfo(Path_).Length);
+        }
+
+        // ------------------------------------------------------------------ version 2's own
+
+        /// <summary>
+        /// A version 2 frame is the time, the count and the raw length uncompressed, then the
+        /// body records deflated, and they inflate to the records the spec lays out: 38 bytes a
+        /// body and four a degree of freedom, the flags byte before the count of joints.
+        /// </summary>
+        [Fact]
+        public void AVersionTwoFrameIsItsPrefixAndItsDeflatedBodies()
+        {
+            Assert.Equal(50, PoseStream.BodyBytes(3, 2));
+            Assert.Equal(38, PoseStream.BodyBytes(0, 2));
+
+            List<PoseFrame> written = WriteStream(3, 40, 0.5f, "abc", 2);
+
+            byte[] file = File.ReadAllBytes(Path_);
+
+            using (PoseStreamReader reader = PoseStreamReader.Open(Path_))
+            {
+                for (int f = 0; f < reader.Frames.Length; f++)
+                {
+                    PoseFrameRef frame = reader.Frames[f];
+                    int at = (int)frame.Offset;
+
+                    Assert.Equal("FRAM", Encoding.ASCII.GetString(file, at, 4));
+                    Assert.Equal(frame.PayloadBytes, (int)BitConverter.ToUInt32(file, at + 4));
+                    Assert.Equal(written[f].Seconds, BitConverter.ToDouble(file, at + 8));
+                    Assert.Equal(40u, BitConverter.ToUInt32(file, at + 16));
+
+                    int raw = (int)BitConverter.ToUInt32(file, at + 20);
+                    int expectedRaw = 0;
+                    foreach (PoseBody body in written[f].Bodies) expectedRaw += PoseStream.BodyBytes(body.Joints.Length, 2);
+                    Assert.Equal(expectedRaw, raw);
+
+                    // Deflated, and smaller for it: forty bodies of near-repeated numbers.
+                    Assert.True(frame.PayloadBytes - 16 < raw, "the bodies were not compressed");
+
+                    byte[] records = Inflate(file, at + 24, frame.PayloadBytes - 16);
+                    Assert.Equal(raw, records.Length);
+
+                    // The first body, read off the inflated bytes by the spec's offsets.
+                    PoseBody first = written[f].Bodies[0];
+                    Assert.Equal(first.Id, BitConverter.ToInt32(records, 0));
+                    Assert.Equal(first.BodyFraction, BitConverter.ToSingle(records, 32));
+                    Assert.Equal(first.Flags, records[36]);
+                    Assert.Equal(first.Joints.Length, records[37]);
+
+                    Assert.Equal(frame.PayloadBytes, (int)BitConverter.ToUInt32(file, at + 8 + frame.PayloadBytes));
+                }
+            }
+        }
+
+        [Fact]
+        public void AVersionTwoFrameThatInflatesShortIsRefused()
+        {
+            WriteStream(2, 5, 0.5f, "abc", 2);
+
+            byte[] file = File.ReadAllBytes(Path_);
+            long second;
+
+            using (PoseStreamReader reader = PoseStreamReader.Open(Path_))
+            {
+                second = reader.Frames[1].Offset;
+            }
+
+            // The raw length one byte longer than the deflated bodies inflate to.
+            uint raw = BitConverter.ToUInt32(file, (int)second + 20);
+            BitConverter.GetBytes(raw + 1).CopyTo(file, (int)second + 20);
+            File.WriteAllBytes(Path_, file);
+
+            using (PoseStreamReader reader = PoseStreamReader.Open(Path_))
+            {
+                Assert.Equal(2, reader.Frames.Length);
+                reader.Read(0);
+
+                InvalidDataException e = Assert.Throws<InvalidDataException>(() => reader.Read(1));
+                Assert.Contains("inflate", e.Message, StringComparison.Ordinal);
+            }
+        }
+
+        [Fact]
+        public void AVersionTwoFrameWhoseCountDisagreesWithItsBodiesIsRefused()
+        {
+            WriteStream(1, 5, 0.5f, "abc", 2);
+
+            byte[] file = File.ReadAllBytes(Path_);
+            BitConverter.GetBytes(4u).CopyTo(file, PoseStream.HeaderBytes + 16);
+            File.WriteAllBytes(Path_, file);
+
+            using (PoseStreamReader reader = PoseStreamReader.Open(Path_))
+            {
+                Assert.Throws<InvalidDataException>(() => reader.Read(0));
+            }
+        }
+
+        [Fact]
+        public void TheFlagBitsArePositionsJsonls()
+        {
+            Assert.Equal(PositionsRow.AbsorptiveBit, PoseStream.AbsorptiveBit);
+            Assert.Equal(PositionsRow.JointedBit, PoseStream.JointedBit);
+            Assert.Equal(PositionsRow.PhotosyntheticBit, PoseStream.PhotosyntheticBit);
+            Assert.Equal(PositionsRow.AllBits, PoseStream.AllFlagBits);
+        }
+
+        [Fact]
+        public void AVersionTwoWriterWantsFlagsAndAVersionOneWriterRefusesThem()
+        {
+            using (var writer = new PoseStreamWriter(Path_, 0.5f, "abc", 2))
+            {
+                writer.BeginFrame(0.5);
+
+                Assert.Throws<InvalidOperationException>(
+                    () => writer.Body(1, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 0, new double[0]));
+
+                Assert.Throws<ArgumentOutOfRangeException>(
+                    () => writer.Body(1, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 8, 0, new double[0]));
+
+                Assert.Throws<ArgumentOutOfRangeException>(
+                    () => writer.Body(1, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, -1, 0, new double[0]));
+            }
+
+            using (var writer = new PoseStreamWriter(Path_, 0.5f, "abc", 1))
+            {
+                writer.BeginFrame(0.5);
+
+                Assert.Throws<InvalidOperationException>(
+                    () => writer.Body(1, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 3, 0, new double[0]));
+            }
+
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new PoseStreamWriter(Path_, 0.5f, "abc", 3));
         }
 
         // ------------------------------------------------------------------ the refusals
@@ -397,34 +698,64 @@ namespace Evosim.Farm.Tests
 
                 Assert.Throws<ArgumentOutOfRangeException>(
                     () => writer.Body(
-                        1, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 256, new double[256]));
+                        1, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 0, 256, new double[256]));
             }
         }
 
-        // ------------------------------------------------------------------ the size
+        // ------------------------------------------------------------------ the run's stream
 
+        /// <summary>
+        /// A run's own stream is version 2 and carries, for every body, the guild flags the
+        /// sampler wrote to <c>positions.jsonl</c> at the same second.
+        /// </summary>
+        /// <remarks>
+        /// The stream and the positions row are taken at the same metabolic step from the same
+        /// living bodies, so every body in both has to carry the same three bits. The positions
+        /// file is read whether it is plain or gzipped, so the test outlives the record's change
+        /// to <c>positions.jsonl.gz</c>.
+        /// </remarks>
         [Fact]
-        public void TheSizeIsWhatTheSpecSaysItIs()
+        public void TheRunsStreamCarriesTheFlagsPositionsJsonlCarries()
         {
-            // 37 bytes a body plus four a degree of freedom, and twelve of framing a frame.
-            Assert.Equal(49, PoseStream.BodyBytes(3));
-            Assert.Equal(37, PoseStream.BodyBytes(0));
+            string runsRoot = Path.Combine(_directory, "runs");
 
-            WriteStream(4, 10, 0.5f, "abc");
+            string[] settings = FilmWindowTests.SmallRun(runsRoot, "flags", seconds: 40, checkpointEvery: 0);
+            var withStream = new List<string>(settings) { "EVOSIM_POSE_EVERY=1" };
 
-            long expected = PoseStream.HeaderBytes;
+            Assert.Equal(0, Program.Main(withStream.ToArray()));
 
-            for (int f = 0; f < 4; f++)
+            string runDirectory = Directory.GetDirectories(Path.Combine(runsRoot, "flags"))[0];
+
+            Dictionary<double, Dictionary<long, int>> positions = FilmWindowTests.PositionFlags(runDirectory);
+            Assert.NotEmpty(positions);
+
+            int compared = 0;
+            var seen = new HashSet<int>();
+
+            using (PoseStreamReader reader = PoseStreamReader.Open(Path.Combine(runDirectory, PoseStream.FileName)))
             {
-                expected += PoseStream.FrameOverheadBytes + 12; // the framing, the time, the count
+                Assert.Equal(2, reader.Header.Version);
 
-                foreach (PoseBody body in Crowd(f, 10))
+                for (int f = 0; f < reader.Frames.Length; f++)
                 {
-                    expected += PoseStream.BodyBytes(body.Joints.Length);
+                    PoseFrame frame = reader.Read(f);
+                    if (!positions.TryGetValue(frame.Seconds, out Dictionary<long, int> flags)) continue;
+
+                    foreach (PoseBody body in frame.Bodies)
+                    {
+                        if (!flags.TryGetValue(body.Id, out int expected)) continue;
+
+                        Assert.Equal(expected, body.Flags);
+                        seen.Add(body.Flags);
+                        compared++;
+                    }
                 }
             }
 
-            Assert.Equal(expected, new FileInfo(Path_).Length);
+            Assert.True(compared > 100, "only " + compared + " bodies were compared");
+
+            // A crowd of one guild would pass with every flag written as a constant.
+            Assert.True(seen.Count >= 2, "every body compared carried the same flags, " + string.Join(",", seen));
         }
 
         // ------------------------------------------------------------------ the cadence binding
@@ -478,6 +809,17 @@ namespace Evosim.Farm.Tests
         }
 
         // ------------------------------------------------------------------
+
+        private static byte[] Inflate(byte[] bytes, int start, int count)
+        {
+            using (var source = new MemoryStream(bytes, start, count, false))
+            using (var inflate = new DeflateStream(source, CompressionMode.Decompress))
+            using (var into = new MemoryStream())
+            {
+                inflate.CopyTo(into);
+                return into.ToArray();
+            }
+        }
 
         private static void Truncate(string path, long length)
         {

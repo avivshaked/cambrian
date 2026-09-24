@@ -79,6 +79,14 @@ namespace Evosim.Farm
                     args.Length > 4 ? int.Parse(args[4], CultureInfo.InvariantCulture) : 4);
             }
 
+            // A stretch of a recorded run, replayed from its checkpoint and written down thirty
+            // times a second for the theatre: --film-window <run dir> <from s> <to s> <out dir>
+            // [--fps N] [--threads N]. FilmWindow says what it writes and what it refuses.
+            if (args.Length >= 1 && args[0] == "--film-window")
+            {
+                return FilmWindow.Run(args);
+            }
+
             var overrides = new Dictionary<string, string>(StringComparer.Ordinal);
 
             foreach (string arg in args)
@@ -467,23 +475,12 @@ namespace Evosim.Farm
             // one (logbook/specs/checkpoint-spec.md).
             if (resumePath != null)
             {
-                using (CheckpointReader reader = CheckpointReader.Open(resumePath))
-                {
-                    System.IO.BinaryReader r = reader.Reader;
+                LoopState restored = ReadCheckpoint(resumePath, world, sim, sampler);
 
-                    Evosim.Core.StateIo.Tag(r, "PAYL");
-                    world.ReadState(r);
-                    sim.ReadState(r);
-                    sampler.ReadState(r);
-
-                    Evosim.Core.StateIo.Tag(r, "LOOP");
-                    metabolicSteps = r.ReadInt32();
-                    bestSpeedEver = r.ReadDouble();
-                    bestSpeedAt = r.ReadDouble();
-                    assayFired = r.ReadBoolean();
-
-                    Evosim.Core.StateIo.Tag(r, "PEND");
-                }
+                metabolicSteps = restored.MetabolicSteps;
+                bestSpeedEver = restored.BestSpeedEver;
+                bestSpeedAt = restored.BestSpeedAt;
+                assayFired = restored.AssayFired;
             }
 
             // The bodies this run did not admit itself: a resumed run's inherited roster (and, in a
@@ -557,14 +554,11 @@ namespace Evosim.Farm
 
                     // D060. Fires once — the first metabolic step whose elapsed time reaches the
                     // pre-registered instant — and checked before the extinction test below, so an
-                    // assay that lands on an empty world rescues it by design.
-                    if (inoculateOn && !assayFired && world.ElapsedSeconds >= settings.InoculateAt)
-                    {
-                        world.Inoculate(
-                            inoculum, settings.InoculateCount, -settings.InoculateDepth);
-
-                        assayFired = true;
-                    }
+                    // assay that lands on an empty world rescues it by design. The inoculum is null
+                    // unless inoculateOn, which is the gate ActOnWorld reads.
+                    assayFired = ActOnWorld(
+                        world, inoculum, settings.InoculateAt, settings.InoculateCount,
+                        settings.InoculateDepth, assayFired);
 
                     // Checked every step, not only at a report row: an empty world would
                     // otherwise sit doing nothing for up to reportEvery more steps. A crash to
@@ -938,6 +932,76 @@ namespace Evosim.Farm
 
                     StateIo.Tag(w, "PEND");
                 });
+        }
+
+        /// <summary>The loop's own four numbers, which a checkpoint carries under <c>LOOP</c>.</summary>
+        public struct LoopState
+        {
+            public int MetabolicSteps;
+            public double BestSpeedEver;
+            public double BestSpeedAt;
+            public bool AssayFired;
+        }
+
+        /// <summary>
+        /// Puts the world, the harness, the sampler and the loop's four numbers back out of one
+        /// checkpoint: <see cref="WriteCheckpoint"/> read backwards.
+        /// </summary>
+        /// <remarks>
+        /// Shared by a resume and by <see cref="FilmWindow"/>, so the two read one layout and a
+        /// section added to the writer is added to one reader.
+        /// </remarks>
+        internal static LoopState ReadCheckpoint(
+            string path, World world, Simulation sim, Sampler sampler)
+        {
+            var restored = new LoopState();
+
+            using (CheckpointReader reader = CheckpointReader.Open(path))
+            {
+                System.IO.BinaryReader r = reader.Reader;
+
+                StateIo.Tag(r, "PAYL");
+                world.ReadState(r);
+                sim.ReadState(r);
+                sampler.ReadState(r);
+
+                StateIo.Tag(r, "LOOP");
+                restored.MetabolicSteps = r.ReadInt32();
+                restored.BestSpeedEver = r.ReadDouble();
+                restored.BestSpeedAt = r.ReadDouble();
+                restored.AssayFired = r.ReadBoolean();
+
+                StateIo.Tag(r, "PEND");
+            }
+
+            return restored;
+        }
+
+        /// <summary>
+        /// What the loop does to the world at a metabolic step beyond stepping it: D060's assay,
+        /// fired once at the first step whose second reaches the pre-registered instant.
+        /// </summary>
+        /// <returns>Whether the assay has fired, this step or before.</returns>
+        /// <remarks>
+        /// <b>One method, called by the loop and by <see cref="FilmWindow"/></b>, so that a window
+        /// replays every change the run made to its world and not only the ones
+        /// <see cref="Simulation.Step"/> makes. Anything new the loop does that writes to the world
+        /// belongs here; left in the loop, it would make every film window of a run that has it
+        /// part from the run at the first step it acts on. A null inoculum is the assay switched
+        /// off.
+        /// </remarks>
+        internal static bool ActOnWorld(
+            World world, Genome inoculum, float inoculateAt, int inoculateCount,
+            float inoculateDepth, bool assayFired)
+        {
+            if (inoculum != null && inoculateAt > 0f && !assayFired &&
+                world.ElapsedSeconds >= inoculateAt)
+            {
+                world.Inoculate(inoculum, inoculateCount, -inoculateDepth);
+                assayFired = true;
+            }
+
+            return assayFired;
         }
 
         private static string StopReason(string path)
