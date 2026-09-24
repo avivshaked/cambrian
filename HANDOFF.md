@@ -393,6 +393,23 @@ is what the next session works from. Everything below it in this section is hist
   films into `scratch/wt-safari2/scratch/safari/r47-s2/2026-09-24/`. The call-outs stay off
   until the owner rules. Merge the branch after the films are seen; round 48's safari then
   runs from main.
+- **The review's second and third items are built and not yet seen** (`d5540e6` on the safari
+  branch, an Opus subagent, compiled clean on the worktree's `unity-w6` with every pass of the
+  four shaders compiling). Close shots have real depth of field: one body at 1.5 to 3 body
+  lengths through a 50 degree lens at f/2 (`EVOSIM_THEATRE_DOF`, `_DOF_APERTURE`,
+  `_DOF_FORMAT`, `_PORTRAIT_LENS`, `_PORTRAIT_FILL`), with depth and depth-normals passes on
+  the body, bed, rock and earth shaders that share each forward pass's displacement. Before
+  this, the depth texture held the bodies undisplaced or not at all, which is why the depth of
+  field and the occlusion never woke. There is also a `canopy` film shot (8 to 15 m under the
+  densest column, looking up about 68 degrees; `EVOSIM_THEATRE_CANOPY_LENS`, `_TILT`,
+  `_MOVE`) and a safari hook for the arrival and the descent behind
+  `EVOSIM_THEATRE_SAFARI_CANOPY`, off. No shadows and no change to the key, which wait on
+  ruling 1. The checks run on worker 5 after the reshoot: `theatre-film.ps1 r47-s2 -At 30000
+  -Shots canopy,close`, and `theatre-safari.ps1 r47-s2 -Check -Scenes 3,23,4` with and without
+  `-Canopy`. The risks the agent named: the blur may be faint at a matched lens (raise
+  `_DOF_FORMAT`), portraits stand closer inside the crowd so the eye may land inside a body
+  for a few frames, and in the canopy the key follows the camera and lights the leaves from
+  below. The commit's trailer lacks its blank line, which is cosmetic.
 - **The review of the films for "breathtaking" is back** (an Opus subagent over seed 2's 24
   safari sheets and a dozen full frames; its findings and ranked changes are
   `logbook/specs/theatre-review-2026-09-24.md`). Its reading: the water is murky and lit from
