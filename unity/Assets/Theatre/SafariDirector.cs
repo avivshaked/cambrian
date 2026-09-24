@@ -68,6 +68,15 @@ namespace Evosim.Theatre
         /// sparkline with the filmed second marked. <c>EVOSIM_THEATRE_SAFARI_CALLOUTS=1</c>.
         /// </summary>
         public bool Callouts = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_CALLOUTS") == "1";
+
+        /// <summary>
+        /// The canopy shot for the arrival and the descent (the films review's second item,
+        /// 2026-09-24), off by default: the arrival rises toward the leaves and the descent sinks
+        /// away from them, each 8 to 15 m under the densest column near the surface, looking up
+        /// at Snell's window, in place of the look through the glass and the dolly down the
+        /// shallow side. <c>EVOSIM_THEATRE_SAFARI_CANOPY=1</c>.
+        /// </summary>
+        public bool Canopy = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_CANOPY") == "1";
     }
 
     /// <summary>
@@ -150,6 +159,8 @@ namespace Evosim.Theatre
         private long _birthParent = -1, _birthChild = -1;
         private byte _birthChildFlags = 255;
         private double _birthAt = double.NaN;
+        /// <summary>Where the rehearsal's child landed from its parent's root, or NaN when no rehearsal saw it.</summary>
+        private Vector3 _birthOffset = new Vector3(float.NaN, float.NaN, float.NaN);
         private double _watchFrom;
         private bool _birthRecurred;
         /// <summary>Where the rehearsal started: a checkpoint's path and second, or a null path for the founding.</summary>
@@ -247,6 +258,7 @@ namespace Evosim.Theatre
             _birthParent = _birthChild = -1;
             _birthChildFlags = 255;
             _birthAt = double.NaN;
+            _birthOffset = new Vector3(float.NaN, float.NaN, float.NaN);
             _birthRecurred = false;
             _takeCount = 0;
 
@@ -275,7 +287,13 @@ namespace Evosim.Theatre
             switch (scene.Station)
             {
                 case SafariStation.Arrival:
-                    yield return new Segment { At = scene.At, Flexible = true, Build = s => One(SafariPlans.Arrival(s, (float)SafariTripBuilder.ArrivalSeconds, hash)) };
+                    yield return new Segment
+                    {
+                        At = scene.At, Flexible = true,
+                        Build = s => One(_options.Canopy
+                            ? SafariPlans.Canopy(s, (float)SafariTripBuilder.ArrivalSeconds, FilmPlans.CanopyMove.Rise, "arrival")
+                            : SafariPlans.Arrival(s, (float)SafariTripBuilder.ArrivalSeconds, hash)),
+                    };
                     break;
 
                 case SafariStation.Descent:
@@ -577,6 +595,7 @@ namespace Evosim.Theatre
                     child = o.Id;
                     parent = o.ParentId;
                     _birthChildFlags = SafariClades.FlagsOf(o);
+                    _birthOffset = new Vector3(o.X - p.X, o.HeightY - p.HeightY, o.Z - p.Z);
                 }
                 else if (_rehearsal == Rehearsal.Recurring && o.ParentId == _birthParent &&
                          Math.Abs(live.ElapsedSeconds - _birthAt) < 2d)
@@ -851,10 +870,16 @@ namespace Evosim.Theatre
             }
         }
 
-        /// <summary>The descent, its captions timed to the depths the light's marks sit at.</summary>
+        /// <summary>
+        /// The descent, its captions timed to the depths the light's marks sit at: the dolly down
+        /// the shallow side, or the canopy's sink when <see cref="SafariOptions.Canopy"/> is on
+        /// (whose captions are the marks its eye passes, fewer than the dolly's).
+        /// </summary>
         private List<SafariPlans.Take> DescentTakes(SafariPlans.Stage stage, SafariScene scene, int hash)
         {
-            SafariPlans.Take t = SafariPlans.Descent(stage, hash);
+            SafariPlans.Take t = _options.Canopy
+                ? SafariPlans.Canopy(stage, SafariPlans.CanopyDescentSeconds, FilmPlans.CanopyMove.Sink, "descent")
+                : SafariPlans.Descent(stage, hash);
             if (t.EyeAt == null) return One(t);
 
             float startY = t.EyeAt(0f).y;
@@ -966,8 +991,6 @@ namespace Evosim.Theatre
                 return null;
             }
 
-            float dispersal = stage.Live.Record.Config.OffspringDispersalMetres;
-
             // What the replay got, said as what it is: a birth in this cousin to a member of the
             // parent line, and whether the child is the clade's kind, as the recorded founder
             // was, or its parent's (the rehearsal takes the first birth in the parent line).
@@ -978,8 +1001,10 @@ namespace Evosim.Theatre
                 ? "This child is " + SafariCaptions.Guild(scene.Clade) + ", as the founder was."
                 : "This child kept its parent's body; the founder did not.");
 
+            // The child's spot from the rehearsal: the filmed pass is the same trajectory from the
+            // same checkpoint, so it lands there again when the birth recurs.
             return One(SafariPlans.Hold(stage, parent, (float)(SafariTripBuilder.BirthLeadSeconds + SafariTripBuilder.BirthTailSeconds),
-                Mathf.Max(0.5f, dispersal), scene.Clade.Hash, "birth"));
+                (float)SafariTripBuilder.BirthLeadSeconds, _birthOffset, scene.Clade.Hash, "birth"));
         }
 
         /// <summary>The scene's body: the named one when alive, else the clade's largest member.</summary>

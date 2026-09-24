@@ -66,8 +66,12 @@ namespace Evosim.Theatre.EditorTools
         private const string PendingKey = "Evosim.Theatre.Film.Pending";
         private const string ExitKey = "Evosim.Theatre.Film.Exit";
 
-        /// <summary>The shots this entry knows, in the order they are named in its errors.</summary>
-        public static readonly string[] KnownShots = { "orbit", "close", "drift" };
+        /// <summary>
+        /// The shots this entry knows, in the order they are named in its errors. The canopy
+        /// (2026-09-24) looks up through the leaves at Snell's window; its move is
+        /// <c>EVOSIM_THEATRE_CANOPY_MOVE</c> (<see cref="FilmPlans.FilmCanopyMove"/>).
+        /// </summary>
+        public static readonly string[] KnownShots = { "orbit", "close", "drift", "canopy" };
 
         /// <summary>The camera's ceiling against its subject in a close shot, m/s (the owner's rule).</summary>
         public const float CloseSpeedCeiling = FilmPlans.CloseSpeedCeiling;
@@ -340,6 +344,14 @@ namespace Evosim.Theatre.EditorTools
 
             if (names.Count == 0) return "EVOSIM_THEATRE_FILM_SHOTS: no shot was named.";
             _shotNames = names.ToArray();
+
+            // The canopy's move is read again when the shot is planned; a bad word fails here, in
+            // seconds, rather than after the Play-mode reload.
+            if (names.Contains("canopy"))
+            {
+                try { FilmPlans.FilmCanopyMove(); }
+                catch (ArgumentException e) { return e.Message + "."; }
+            }
 
             text = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_FILM_TURNS");
             _turns = 0.25f;   // a quarter turn over the clip, the safari spec's default; nothing faster than a body swims

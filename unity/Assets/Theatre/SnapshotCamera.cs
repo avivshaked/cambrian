@@ -536,8 +536,10 @@ namespace Evosim.Theatre
             Light back = portrait ? BackLight() : null;
             Light fill = portrait && FillIntensity > 0f ? FillLight(FillIntensity) : null;
 
+            // A film's or a safari's portrait is focused on its subject's depth with the lens the
+            // field of view makes (TheatreGrade.FocusPortrait); the census views above never are.
             TheatreGrade grade = portrait && focusMetres > 0f ? TheatreGrade.Current : null;
-            if (grade != null) grade.Focus(focusMetres, 5.6f);
+            if (grade != null) grade.FocusPortrait(focusMetres, _camera.fieldOfView);
 
             TheatreSkin skin = TheatreSkin.Current;
             Quaternion lightsWere = skin != null ? skin.Aim(rotation) : Quaternion.identity;

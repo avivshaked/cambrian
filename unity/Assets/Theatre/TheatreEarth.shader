@@ -43,24 +43,12 @@ Shader "Evosim/Theatre Earth"
             "Queue" = "Geometry"
         }
 
-        Pass
-        {
-            Name "ForwardLit"
-            Tags { "LightMode" = "UniversalForward" }
-
-            // The mesh carries both faces, each with its own normal.
-            Cull Back
-            ZWrite On
-
-            HLSLPROGRAM
-            #pragma vertex Vertex
-            #pragma fragment Fragment
-            #pragma target 3.0
-
-            #pragma multi_compile_fog
-
+        // The material and the mesh's inputs, shared by the forward pass and the two depth
+        // passes (2026-09-24). The earth had no depth pass and no fallback, so it was missing
+        // from the depth texture outright: a portrait's depth of field read the water behind it,
+        // and the shafts and the snow did not soften against it.
+        HLSLINCLUDE
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "TheatreWater.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
@@ -80,6 +68,25 @@ Shader "Evosim/Theatre Earth"
                 float3 normalOS   : NORMAL;
                 float2 uv         : TEXCOORD0; // x: the bed's height over this column
             };
+        ENDHLSL
+
+        Pass
+        {
+            Name "ForwardLit"
+            Tags { "LightMode" = "UniversalForward" }
+
+            // The mesh carries both faces, each with its own normal.
+            Cull Back
+            ZWrite On
+
+            HLSLPROGRAM
+            #pragma vertex Vertex
+            #pragma fragment Fragment
+            #pragma target 3.0
+
+            #pragma multi_compile_fog
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
             struct Varyings
             {
@@ -156,6 +163,76 @@ Shader "Evosim/Theatre Earth"
                 lit = EvoMixFog(lit, input.fogFactor, p);
 
                 return half4(lit, 1.0);
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthOnly"
+            Tags { "LightMode" = "DepthOnly" }
+
+            Cull Back
+            ZWrite On
+            ColorMask R
+
+            HLSLPROGRAM
+            #pragma vertex DepthVertex
+            #pragma fragment DepthFragment
+            #pragma target 3.0
+
+            float4 DepthVertex(Attributes input) : SV_POSITION
+            {
+                return TransformWorldToHClip(TransformObjectToWorld(input.positionOS.xyz));
+            }
+
+            half DepthFragment(float4 positionCS : SV_POSITION) : SV_Target
+            {
+                return positionCS.z;
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthNormals"
+            Tags { "LightMode" = "DepthNormals" }
+
+            Cull Back
+            ZWrite On
+
+            HLSLPROGRAM
+            #pragma vertex DepthNormalsVertex
+            #pragma fragment DepthNormalsFragment
+            #pragma target 3.0
+
+            #pragma multi_compile_fragment _ _GBUFFER_NORMALS_OCT
+
+            struct DepthNormalsVaryings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 normalWS   : TEXCOORD0;
+            };
+
+            DepthNormalsVaryings DepthNormalsVertex(Attributes input)
+            {
+                DepthNormalsVaryings output;
+                output.positionCS = TransformWorldToHClip(TransformObjectToWorld(input.positionOS.xyz));
+                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+
+                return output;
+            }
+
+            half4 DepthNormalsFragment(DepthNormalsVaryings input) : SV_Target
+            {
+                float3 normalWS = normalize(input.normalWS);
+
+                #if defined(_GBUFFER_NORMALS_OCT)
+                    float2 octahedral = saturate(PackNormalOctQuadEncode(normalWS) * 0.5 + 0.5);
+                    return half4(PackFloat2To888(octahedral), 0.0);
+                #else
+                    return half4(normalWS, 0.0);
+                #endif
             }
             ENDHLSL
         }

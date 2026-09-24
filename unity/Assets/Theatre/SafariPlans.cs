@@ -374,17 +374,37 @@ namespace Evosim.Theatre
         // ---------------------------------------------------------------- portrait
 
         /// <summary>
-        /// A named body a third of the frame, orbited a quarter turn (a sitter) or two fifths (a
-        /// swimmer), the subject a third off centre with room ahead of it, the lens from the
-        /// radius, lit from one side by the portrait's back light and fill.
+        /// A named body about two fifths of the frame's height at 1.5 to 3 of its own lengths
+        /// through the portrait's lens (the films review's third item, 2026-09-24), orbited a
+        /// quarter turn (a sitter) or two fifths (a swimmer), the subject a third off centre with
+        /// room ahead of it, lit from one side by the portrait's back light and fill, and focused
+        /// on at every frame.
         /// </summary>
+        /// <remarks>
+        /// Until then the radius was ten reaches, at least 2.5 m, and the lens came from the radius,
+        /// which stood round 47's portraits 5 to 31 m off through the fog, small in the frame. The
+        /// orbit now follows the body's drawn centre rather than its root, which can sit at one
+        /// end of it, and among the bearings that clear everything it prefers one with no body
+        /// across the lens.
+        /// </remarks>
         public static Take Portrait(Stage stage, int subjectIndex, float seconds, bool swimmer, int cladeHash)
         {
             long id = stage.Ids[subjectIndex];
             float reach = Mathf.Max(0.05f, stage.Reaches[subjectIndex]);
-            Vector3 centre0 = stage.Positions[subjectIndex];
+            Vector3 root0 = stage.Positions[subjectIndex];
+            FilmPlans.Subject(stage.View, id, root0, reach, out Vector3 centre0, out float length);
+            Vector3 rootToCentre = centre0 - root0;
 
-            float radius = Mathf.Max(2.5f, 10f * reach) * (swimmer ? 1.3f : 1f);
+            // The lens is the portrait's, and the distance fills the frame's height with the body's
+            // longest side, a fifth less for a swimmer, which needs room to swim into; never inside
+            // the body's reach from its root.
+            float fov = FilmPlans.PortraitLens;
+            float fill = swimmer ? 0.8f * FilmPlans.PortraitFill : FilmPlans.PortraitFill;
+            float inside = rootToCentre.magnitude + reach + BodyMargin + 0.1f;
+            float nearest = Mathf.Max(inside, FilmPlans.PortraitNearest * length);
+            float farthest = Mathf.Max(inside, FilmPlans.PortraitFarthest * length);
+            float radius = Mathf.Clamp(FilmPlans.PortraitDistance(length, fov, fill), nearest, farthest);
+
             float turns = swimmer ? 0.4f : 0.25f;
             int family = (cladeHash % 3 + stage.SceneIndex % 3) % 3;      // 0 horizontal, 1 vertical, 2 both
             float sense = ((cladeHash % 2 + (stage.SceneIndex / 3) % 2) % 2 == 0) ? 1f : -1f;
@@ -421,14 +441,30 @@ namespace Evosim.Theatre
             Vector3 EyeAt(float u, float r, float az0, float el0, float elSweep) =>
                 SubjectAt(u) + r * Direction(az0 + azimuthSweep * FilmPlans.Ease(u), el0 + elSweep * FilmPlans.Ease(u));
 
+            // Bodies across the lens at the start, the middle and the end of the arc.
+            int Across(float r, float az0, float el0, float elSweep)
+            {
+                int n = 0;
+                for (int k = 0; k <= 2; k++)
+                {
+                    float u = 0.5f * k;
+                    n += FilmPlans.Occluders(stage.Positions, stage.Reaches, stage.Ids, id, EyeAt(u, r, az0, el0, elSweep), SubjectAt(u));
+                }
+                return n;
+            }
+
             float baseRadius = radius, baseElevation = elevation0, baseAzimuth = azimuth0, baseSweep = elevationSweep;
-            float[] radiusScales = { 1f, 1.2f, 1.45f, 0.8f, 1.75f, 0.65f, 2.1f };
+            float[] radiusScales = { 1f, 1.15f, 0.87f, 1.3f, 0.77f };
             float[] elevationSteps = { 0f, -5f, 5f, -10f, 10f, -15f, 15f, -20f, 20f, -30f, 30f, -40f, 40f };
             float[] azimuthSteps = { 0f, 30f, -30f, 60f, -60f, 90f, -90f, 135f, -135f, 180f };
             float[] senses = baseSweep != 0f ? new[] { 1f, -1f } : new[] { 1f };
             float steepest = 65f * Mathf.Deg2Rad;
+            float lensTan = Mathf.Tan(0.5f * fov * Mathf.Deg2Rad) * stage.Aspect;
 
-            int fewest = int.MaxValue;
+            // The first bearing clear of everything with no body across the lens is taken; failing
+            // that, the clear one with the fewest across it among the first two dozen clear ones;
+            // failing that, the one with the fewest clashing samples.
+            int fewest = int.MaxValue, fewestAcross = int.MaxValue, clearSeen = 0;
             string clash = null;
             bool Search()
             {
@@ -437,19 +473,25 @@ namespace Evosim.Theatre
                 foreach (float de in elevationSteps)
                 foreach (float da in azimuthSteps)
                 {
-                    float r = baseRadius * scale, e0 = baseElevation + de * Mathf.Deg2Rad;
+                    float r = Mathf.Clamp(baseRadius * scale, nearest, farthest), e0 = baseElevation + de * Mathf.Deg2Rad;
                     float a0 = baseAzimuth + da * Mathf.Deg2Rad, es = sense * baseSweep;
                     if (Mathf.Abs(e0) > steepest || Mathf.Abs(e0 + es) > steepest) continue;
 
-                    // The lens this radius will get (below), for the frame's cone.
-                    float lensTan = Mathf.Tan(0.5f * Mathf.Clamp(2f * Mathf.Atan(3f * reach / r) * Mathf.Rad2Deg, 12f, 50f) * Mathf.Deg2Rad) * stage.Aspect;
                     int n = PathClashes(stage, u => EyeAt(u, r, a0, e0, es), id, SubjectAt, SurfaceMargin, out string why, lensTan);
-                    if (n >= fewest) continue;
+                    if (n > fewest) continue;
 
-                    fewest = n;
-                    clash = why;
-                    radius = r; elevation0 = e0; azimuth0 = a0; elevationSweep = es;
-                    if (n == 0) return true;
+                    int across = n == 0 ? Across(r, a0, e0, es) : int.MaxValue;
+                    if (n == 0) clearSeen++;
+
+                    if (n < fewest || across < fewestAcross)
+                    {
+                        fewest = n;
+                        fewestAcross = across;
+                        clash = why;
+                        radius = r; elevation0 = e0; azimuth0 = a0; elevationSweep = es;
+                    }
+
+                    if (fewest == 0 && (fewestAcross == 0 || clearSeen >= 24)) return true;
                 }
                 return false;
             }
@@ -476,9 +518,8 @@ namespace Evosim.Theatre
             }
 
             if (fewest > 0) notes += ", STILL CLASHES (" + clash + ", " + fewest + " of 25 samples): the film's per-frame walls take it from here";
+            else if (fewestAcross > 0) notes += string.Format(CultureInfo.InvariantCulture, ", {0} body sightings across the lens at the arc's start, middle and end", fewestAcross);
 
-            // The lens from the radius: the body's diameter a third of the frame's height.
-            float fov = Mathf.Clamp(2f * Mathf.Atan(3f * reach / radius) * Mathf.Rad2Deg, 12f, 50f);
             float tanH = Mathf.Tan(0.5f * fov * Mathf.Deg2Rad) * stage.Aspect;
 
             // A third off centre, on the side the subject came from, so it swims into the frame.
@@ -490,15 +531,20 @@ namespace Evosim.Theatre
             Vector3 followed = centre0;
             bool hasFollowed = false;
             LiveWorldView view = stage.View;
-            TheatreDynamicsReplay live = stage.Live;
             float r0 = radius, el = elevation0;
 
             FilmPlans.Shot shot = FilmPlans.Shot.Custom("portrait", stage.World, seconds, fov, true,
                 (float u, float dt, out Vector3 eye, out Vector3 at) =>
                 {
+                    // The drawn centre, or the root and the planned offset when it is not drawn.
                     Vector3 now = followed;
-                    Transform root = view?.RootOf(id);
-                    if (root != null && FilmPlans.Shot.Finite(root.position)) now = root.position;
+                    if (FilmPlans.DrawnBounds(view, id, out Bounds drawn)) now = drawn.center;
+                    else
+                    {
+                        Transform root = view?.RootOf(id);
+                        if (root != null && FilmPlans.Shot.Finite(root.position)) now = root.position + rootToCentre;
+                    }
+
                     float k = 1f - Mathf.Exp(-Mathf.Max(1e-3f, dt) / 1.5f);
                     followed = hasFollowed ? Vector3.Lerp(followed, now, k) : now;
                     hasFollowed = true;
@@ -510,15 +556,22 @@ namespace Evosim.Theatre
                     at = followed + across * offset;
                 },
                 string.Format(CultureInfo.InvariantCulture,
-                    "portrait of body {0} (reach {1:0.###} m, {2}), a {3} arc of {4:0.###} turn and {5:0} deg of elevation at {6:0.##} m, " +
-                    "lens {7:0} deg, subject a third off centre on the {8} with room ahead, {9:0.###} m/s along the arc at the peak{10}",
-                    id, reach, swimmer ? "a swimmer" : "a sitter",
+                    "portrait of body {0} ({1:0.##} m long, reach {2:0.###} m, {3}), a {4} arc of {5:0.###} turn and {6:0} deg of elevation " +
+                    "at {7:0.##} m ({8:0.#} body lengths, {9:0}% of the frame's height), lens {10:0} deg, subject a third off centre " +
+                    "on the {11} with room ahead, {12:0.###} m/s along the arc at the peak{13}; {14}",
+                    id, length, reach, swimmer ? "a swimmer" : "a sitter",
                     family == 0 ? "horizontal" : family == 1 ? "vertical" : "diagonal",
-                    Mathf.Abs(azimuthSweep) / (2f * Mathf.PI), elevationSweep * Mathf.Rad2Deg, radius, fov,
-                    lead > 0f ? "left" : "right", Arc(radius), notes));
+                    Mathf.Abs(azimuthSweep) / (2f * Mathf.PI), elevationSweep * Mathf.Rad2Deg, radius, radius / length,
+                    100f * length / (2f * radius * Mathf.Tan(0.5f * fov * Mathf.Deg2Rad)), fov,
+                    lead > 0f ? "left" : "right", Arc(radius), notes, DepthOfField(radius, fov)),
+                focusOn: id);
 
             return new Take { Shot = shot, Seconds = seconds, Plan = shot.Plan_, Subject = id };
         }
+
+        /// <summary>The portrait's depth of field in words for a plan line.</summary>
+        private static string DepthOfField(float distance, float fov) =>
+            TheatreGrade.Current != null ? TheatreGrade.Current.DescribePortrait(distance, fov) : "no grade, so no depth of field";
 
         // ---------------------------------------------------------------- the floor
 
@@ -592,36 +645,158 @@ namespace Evosim.Theatre
         // ---------------------------------------------------------------- a still
 
         /// <summary>
-        /// A held frame on a body: the birth's parent, with room for the child's disc. The camera
-        /// does not move; the parent does what it does.
+        /// A held frame on a birth's parent at a portrait's lens and distance, with the child's
+        /// landing spot in the frame when the rehearsal saw where it landed. The camera does not
+        /// move; the parent does what it does, and the lens stays focused on its drawn centre.
         /// </summary>
-        public static Take Hold(Stage stage, int subjectIndex, float seconds, float roomAround, int hash, string name)
+        /// <remarks>
+        /// Until the films review (2026-09-24) the frame was a 35 degree lens at the distance that
+        /// put a dispersal's disc round the parent, which at round 47's five metres stood the eye
+        /// about 17 m off, the parent a speck in the fog. Now the look is the parent's drawn
+        /// centre where its drift carries it at the birth, or the middle of it and the child's
+        /// spot; the bearing is square to the line between the two, so both stand at one depth
+        /// and in one focus; and the distance is the portrait's, pushed out only as far as the
+        /// child's spot and the parent's drift need to stay in the frame.
+        /// </remarks>
+        /// <param name="leadSeconds">How far into the take the birth comes, s.</param>
+        /// <param name="childOffset">Where the rehearsal's child landed from its parent's root, or NaN in any component when unknown.</param>
+        public static Take Hold(Stage stage, int subjectIndex, float seconds, float leadSeconds, Vector3 childOffset, int hash, string name)
         {
             long id = stage.Ids[subjectIndex];
-            Vector3 at0 = stage.Positions[subjectIndex];
             float reach = Mathf.Max(0.05f, stage.Reaches[subjectIndex]);
-            float half = Mathf.Max(1.2f, roomAround + reach);
-            float fov = 35f;
-            float distance = half / Mathf.Tan(0.5f * fov * Mathf.Deg2Rad);
-            float azimuth = ((hash >> 5) % 360) * Mathf.Deg2Rad;
-            float elevation = 15f * Mathf.Deg2Rad;
+            Vector3 root0 = stage.Positions[subjectIndex];
+            FilmPlans.Subject(stage.View, id, root0, reach, out Vector3 centre0, out float length);
+            Vector3 rootToCentre = centre0 - root0;
 
-            int lifts = 0, turns = 0;
-            Vector3 eye0 = at0 + distance * Direction(azimuth, elevation);
-            string clash = Clash(stage, eye0, id);
-            while (clash != null && lifts < 8) { lifts++; elevation += 6f * Mathf.Deg2Rad; eye0 = at0 + distance * Direction(azimuth, elevation); clash = Clash(stage, eye0, id); }
-            while (clash != null && turns < 12) { turns++; azimuth += 30f * Mathf.Deg2Rad; eye0 = at0 + distance * Direction(azimuth, elevation); clash = Clash(stage, eye0, id); }
+            Vector3 drift = VelocityOf(stage.Live, id);
+            leadSeconds = Mathf.Clamp(leadSeconds, 0f, seconds);
+            Vector3 centreAtBirth = centre0 + drift * leadSeconds;
+            bool child = FilmPlans.Shot.Finite(childOffset);
+            Vector3 childSpot = child ? root0 + drift * leadSeconds + childOffset : centreAtBirth;
+            Vector3 look = child ? 0.5f * (centreAtBirth + childSpot) : centreAtBirth;
 
-            Vector3 fixedEye = eye0;
+            float fov = FilmPlans.PortraitLens;
+            float tanV = Mathf.Tan(0.5f * fov * Mathf.Deg2Rad), tanH = tanV * stage.Aspect;
+            float inside = rootToCentre.magnitude + reach + BodyMargin + 0.1f;
+
+            // What must stay in the frame round the look: the parent's half length, the child's
+            // spot, and the parent's drift either side of the birth; a tenth of the frame kept
+            // clear at each edge.
+            float travel = Mathf.Max(leadSeconds, seconds - leadSeconds);
+            Vector3 offset = child ? childSpot - centreAtBirth : Vector3.zero;
+            var offsetFlat = new Vector2(offset.x, offset.z);
+            float halfAcross = 0.5f * offsetFlat.magnitude + 0.5f * length + 0.3f + new Vector2(drift.x, drift.z).magnitude * travel;
+            float halfUp = 0.5f * Mathf.Abs(offset.y) + 0.5f * length + 0.3f + Mathf.Abs(drift.y) * travel;
+            float fits = Mathf.Max(halfAcross / (0.8f * tanH), halfUp / (0.8f * tanV));
+            float portrait = FilmPlans.PortraitDistance(length, fov, FilmPlans.PortraitFill);
+            float baseDistance = Mathf.Max(inside, Mathf.Max(portrait, fits));
+
+            // Square to the child's line when there is one, else a bearing from the hash.
+            float baseAzimuth = child && offsetFlat.magnitude > 0.05f
+                ? Mathf.Atan2(offsetFlat.y, offsetFlat.x) + ((hash >> 5) % 2 == 0 ? 0.5f : -0.5f) * Mathf.PI
+                : ((hash >> 5) % 360) * Mathf.Deg2Rad;
+
+            // The parent where its drift carries it, for the check: at the take's start, the
+            // birth and the end.
+            bool NearParent(Vector3 eye)
+            {
+                foreach (float t in new[] { 0f, leadSeconds, seconds })
+                {
+                    if ((eye - (root0 + drift * t)).magnitude < reach + BodyMargin) return true;
+                }
+                return false;
+            }
+
+            float[] distanceScales = { 1f, 1.15f, 1.3f };
+            float[] elevations = { 15f, 5f, 25f, -5f, 35f, -15f };
+            float[] azimuthSteps = child ? new[] { 0f, 180f, 20f, -20f, 160f, -160f, 40f, -40f } : new[] { 0f, 30f, -30f, 60f, -60f, 90f, -90f, 135f, -135f, 180f };
+
+            float distance = baseDistance, azimuth = baseAzimuth, elevation = 15f * Mathf.Deg2Rad;
+            int fewestAcross = int.MaxValue, clearSeen = 0;
+            string clash = null;
+            bool clear = false;
+
+            // The first bearing clear of everything with no body across the lens is taken; failing
+            // that, the clear one with the fewest across it among the first two dozen clear ones.
+            bool Search()
+            {
+                foreach (float scale in distanceScales)
+                foreach (float el in elevations)
+                foreach (float da in azimuthSteps)
+                {
+                    float d = baseDistance * scale, a = baseAzimuth + da * Mathf.Deg2Rad, e = el * Mathf.Deg2Rad;
+                    Vector3 eye = look + d * Direction(a, e);
+
+                    string why = Clash(stage, eye, id);
+                    if (why == null && NearParent(eye)) why = "in the parent";
+                    if (why == null && child && (eye - childSpot).magnitude < BodyMargin + 0.5f) why = "on the child's spot";
+                    if (why == null) why = Hidden(stage, eye, look, tanH);
+                    if (why != null)
+                    {
+                        if (clash == null) clash = why;
+                        continue;
+                    }
+
+                    int across = FilmPlans.Occluders(stage.Positions, stage.Reaches, stage.Ids, id, eye, look);
+                    clearSeen++;
+                    if (!clear || across < fewestAcross)
+                    {
+                        clear = true;
+                        fewestAcross = across;
+                        distance = d; azimuth = a; elevation = e;
+                    }
+
+                    if (fewestAcross == 0 || clearSeen >= 24) return true;
+                }
+                return false;
+            }
+
+            Search();
+
+            Vector3 fixedEye = look + distance * Direction(azimuth, elevation);
+            Vector3 fixedLook = look;
+
+            string notes = "";
+            if (distance != baseDistance || azimuth != baseAzimuth || elevation != 15f * Mathf.Deg2Rad)
+            {
+                notes += string.Format(CultureInfo.InvariantCulture, ", moved to clear: turned {0:0} deg, {1:0} deg of elevation, at {2:0.##} m (from {3:0.##})",
+                    (azimuth - baseAzimuth) * Mathf.Rad2Deg, elevation * Mathf.Rad2Deg, distance, baseDistance);
+            }
+            if (!clear) notes += ", STILL CLASHES (" + clash + "): the film's per-frame walls take it from here";
+            else if (fewestAcross > 0) notes += string.Format(CultureInfo.InvariantCulture, ", {0} bod{1} across the lens", fewestAcross, fewestAcross == 1 ? "y" : "ies");
+
             FilmPlans.Shot shot = FilmPlans.Shot.Custom(name, stage.World, seconds, fov, true,
-                (float u, float dt, out Vector3 eye, out Vector3 at) => { eye = fixedEye; at = at0; },
+                (float u, float dt, out Vector3 eye, out Vector3 at) => { eye = fixedEye; at = fixedLook; },
                 string.Format(CultureInfo.InvariantCulture,
-                    "a held frame on body {0} at {1:0.##} m, {2:0} deg down, {3:0.#} m of room round it, lens {4:0} deg{5}{6}",
-                    id, distance, elevation * Mathf.Rad2Deg, half, fov,
-                    lifts + turns > 0 ? string.Format(CultureInfo.InvariantCulture, ", moved {0} step(s) to clear", lifts + turns) : "",
-                    clash != null ? ", STILL CLASHES (" + clash + ")" : ""));
+                    "a held frame on body {0} ({1:0.##} m long) at {2:0.##} m from the look ({3:0.#} body lengths), lens {4:0} deg, " +
+                    "{5:0} deg {6}, {7}; the parent drifting {8:0.###} m/s{9}; {10}",
+                    id, length, distance, distance / length, fov,
+                    Mathf.Abs(elevation * Mathf.Rad2Deg), elevation >= 0f ? "down" : "up",
+                    child ? string.Format(CultureInfo.InvariantCulture, "the child's spot {0:0.##} m off, square across the frame", offset.magnitude)
+                          : "no child's spot known, the parent alone",
+                    drift.magnitude, notes, DepthOfField(distance, fov)),
+                focusOn: id);
 
             return new Take { Shot = shot, Seconds = seconds, Plan = shot.Plan_, Subject = id };
+        }
+
+        // ---------------------------------------------------------------- the canopy
+
+        /// <summary>How long the descent's canopy take runs when the canopy stands in for the dolly, s.</summary>
+        public const float CanopyDescentSeconds = 30f;
+
+        /// <summary>
+        /// The film's canopy shot as a take (the films review's second item, 2026-09-24): the eye
+        /// 8 to 15 m under the densest column of bodies near the surface, looking up through them
+        /// at Snell's window with the sun's bearing behind the leaves, one slow move. The director
+        /// plays it for the arrival (a rise) and the descent (a sink) when
+        /// <see cref="SafariOptions.Canopy"/> is on.
+        /// </summary>
+        public static Take Canopy(Stage stage, float seconds, FilmPlans.CanopyMove move, string name)
+        {
+            FilmPlans.Shot shot = FilmPlans.Shot.Canopy(name, stage.World, stage.Positions, stage.Reaches, stage.Ids,
+                seconds, stage.Aspect, move, out Func<float, Vector3> eyeAt);
+            return new Take { Shot = shot, Seconds = seconds, Plan = shot.Plan_, EyeAt = eyeAt };
         }
 
         // ---------------------------------------------------------------- the colony
@@ -644,7 +819,9 @@ namespace Evosim.Theatre
 
             float fov = 40f;
             float tanV = Mathf.Tan(0.5f * fov * Mathf.Deg2Rad);
-            // The portrait's own distance for this body, so the pull-back starts where a portrait sat.
+            // Ten reaches, at least 2.5 m: the portrait's distance until the films review
+            // (2026-09-24) brought portraits in to 1.5 to 3 body lengths; kept, so the colony's
+            // pull-back is the one round 47's first safari planned.
             float r0 = Mathf.Max(2.5f, 10f * reach);
             float wanted = 1.1f * spread / Mathf.Min(tanV, tanV * stage.Aspect) + spread;
 

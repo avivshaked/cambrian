@@ -58,6 +58,16 @@
   With -Check, simulated seconds between frames (default 2).
 .PARAMETER RunsRoot
   Where the arm lives, default runs/.
+.PARAMETER Canopy
+  The arrival and the descent filmed as the canopy shot, looking up through the leaves at
+  Snell's window (EVOSIM_THEATRE_SAFARI_CANOPY=1; the films review's second item, 2026-09-24).
+  Off by default. The frames, the check's files and the log carry "-canopy" after the arm, so a
+  trip with it and one without sit side by side.
+.PARAMETER Aperture
+  The portraits' and the birth's f-number (EVOSIM_THEATRE_DOF_APERTURE), 1 to 32; the theatre's
+  default is 2. Left to the theatre when not given.
+.PARAMETER NoDepthOfField
+  The portraits and the birth sharp from front to back (EVOSIM_THEATRE_DOF=0), for a comparison.
 .PARAMETER DeleteFrames
   Delete each take's frames once its scene's clip is written.
 
@@ -82,6 +92,9 @@ param(
     [switch]$Check,
     [double]$Every = 2,
     [string]$RunsRoot = 'runs',
+    [switch]$Canopy,
+    [double]$Aperture = -1,
+    [switch]$NoDepthOfField,
     [switch]$DeleteFrames
 )
 
@@ -112,6 +125,7 @@ if ($Size -and $Size -notmatch '^(\d+)[xX](\d+)$') { throw "-Size: '$Size' is no
 if ($Size -and (([int]$Matches[1]) % 2 -ne 0 -or ([int]$Matches[2]) % 2 -ne 0)) { throw "-Size: both sides must be even for yuv420p." }
 if ($Fps -lt 1 -or $Fps -gt 120) { throw "-Fps: $Fps is outside 1 to 120." }
 if ($Every -lt 0.05 -or $Every -gt 30) { throw "-Every: $Every is outside 0.05 to 30." }
+if ($PSBoundParameters.ContainsKey('Aperture') -and ($Aperture -lt 1 -or $Aperture -gt 32)) { throw "-Aperture: $Aperture is outside 1 to 32." }
 if ($Worker -eq 1) { throw "Worker 1 is unity/, which the owner keeps open in the Editor. Use a worker from 2 up." }
 
 $ffmpeg = Get-Command ffmpeg -ErrorAction SilentlyContinue
@@ -152,11 +166,13 @@ if (Test-Path (Join-Path $proj 'Temp/UnityLockfile')) {
 }
 
 $date = (Get-Date).ToString('yyyy-MM-dd', $invariant)
-$outDirectory = if ($Check) { Join-Path $root "scratch\snaps\safari\$Arm" } else { Join-Path $root "scratch\safari\$Arm\$date" }
+# A canopy trip is filed apart, so it never overwrites the trip it is compared with.
+$tag = if ($Canopy) { '-canopy' } else { '' }
+$outDirectory = if ($Check) { Join-Path $root "scratch\snaps\safari\$Arm$tag" } else { Join-Path $root "scratch\safari\$Arm$tag\$date" }
 
 $logDirectory = Join-Path $root 'scratch\logs'
 New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
-$log = Join-Path $logDirectory ("theatre-safari{0}-$Arm.log" -f $(if ($Check) { '-check' } else { '' }))
+$log = Join-Path $logDirectory ("theatre-safari{0}-$Arm$tag.log" -f $(if ($Check) { '-check' } else { '' }))
 
 $names = @(
     'EVOSIM_THEATRE_RUN', 'EVOSIM_THEATRE_CHECKPOINT', 'EVOSIM_THEATRE_SEEK', 'EVOSIM_REPO_ROOT',
@@ -164,7 +180,8 @@ $names = @(
     'EVOSIM_THEATRE_SAFARI_HEURISTIC', 'EVOSIM_THEATRE_SAFARI_SCENES', 'EVOSIM_THEATRE_SAFARI_CLADE',
     'EVOSIM_THEATRE_SAFARI_FPS', 'EVOSIM_THEATRE_SAFARI_SIZE', 'EVOSIM_THEATRE_SAFARI_WALL_MINUTES',
     'EVOSIM_THEATRE_SAFARI_GUIDE', 'EVOSIM_THEATRE_SAFARI_OUT', 'EVOSIM_THEATRE_SAFARI_CAPTIONS',
-    'EVOSIM_THEATRE_SAFARI_SEEK_MAX', 'EVOSIM_THEATRE_SAFARI_EVERY', 'EVOSIM_THEATRE_WALL_MINUTES')
+    'EVOSIM_THEATRE_SAFARI_SEEK_MAX', 'EVOSIM_THEATRE_SAFARI_EVERY', 'EVOSIM_THEATRE_WALL_MINUTES',
+    'EVOSIM_THEATRE_SAFARI_CANOPY', 'EVOSIM_THEATRE_DOF', 'EVOSIM_THEATRE_DOF_APERTURE')
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -186,6 +203,9 @@ try {
     if ($NoCaptions) { $env:EVOSIM_THEATRE_SAFARI_CAPTIONS = 'off' }
     $env:EVOSIM_THEATRE_SAFARI_SEEK_MAX = $SeekMax.ToString($invariant)
     $env:EVOSIM_THEATRE_SAFARI_EVERY = $Every.ToString($invariant)
+    if ($Canopy) { $env:EVOSIM_THEATRE_SAFARI_CANOPY = '1' }
+    if ($NoDepthOfField) { $env:EVOSIM_THEATRE_DOF = '0' }
+    if ($PSBoundParameters.ContainsKey('Aperture')) { $env:EVOSIM_THEATRE_DOF_APERTURE = $Aperture.ToString($invariant) }
 
     $entry = if ($Check) { 'Evosim.Theatre.EditorTools.TheatreSafariCheck.Run' } else { 'Evosim.Theatre.EditorTools.TheatreSafari.Run' }
 

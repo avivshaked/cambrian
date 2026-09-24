@@ -325,7 +325,7 @@ namespace Evosim.Theatre
             TheatreSkin.Current?.Aim(pose.Rotation);
 
             TheatreGrade grade = TheatreGrade.Current;
-            if (pose.Portrait && pose.Focus > 0f) grade?.Focus(pose.Focus, 5.6f);
+            if (pose.Portrait && pose.Focus > 0f) grade?.FocusPortrait(pose.Focus, pose.FieldOfView);
             else grade?.Unfocus();
 
             Fill(pose.Portrait, pose.Rotation);

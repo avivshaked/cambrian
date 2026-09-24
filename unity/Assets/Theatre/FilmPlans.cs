@@ -21,6 +21,15 @@ namespace Evosim.Theatre
     /// cameras exactly as it did, which the caller checks by rendering one.
     /// </para>
     /// <para>
+    /// <b>Two changes of 2026-09-24</b>, the films review's second and third items
+    /// (<c>logbook/specs/theatre-review-2026-09-24.md</c>). The close shot frames one body at 1.5
+    /// to 3 of its lengths through a 45 to 60 degree lens and every portrait pulls its focus to its
+    /// subject at every frame (<see cref="Shot.PlanClose"/>). And a fourth film shot, the canopy,
+    /// looks up through the leaves at Snell's window along a planned path, the same kind of path a
+    /// safari take hands in (<see cref="Shot.PlanCanopy"/>); the director may use it for its
+    /// arrival and descent. The orbit and the drift are unchanged.
+    /// </para>
+    /// <para>
     /// The owner's rules stand as the film wrote them (safari-spec.md §9): one move per shot,
     /// eased at both ends over a fifth; nothing faster than a body swims; the camera kept inside
     /// the glass, over the bed, under the surface and pushed off any body it would stand in; and
@@ -50,6 +59,147 @@ namespace Evosim.Theatre
 
         /// <summary>The share of a strong move spent easing in, and again easing out (safari-spec §9).</summary>
         public const float EaseShare = 0.2f;
+
+        // ------------------------------------------------------------------ the portrait's lens
+
+        /// <summary>
+        /// A portrait's lens, degrees across the frame's height: <c>EVOSIM_THEATRE_PORTRAIT_LENS</c>,
+        /// 45 to 60, default 50 (the films review's third item, 2026-09-24). Until then the close
+        /// shot used 28 degrees framed on a pair, and the safari's portrait took its lens from a
+        /// radius of ten reaches, which stood the camera 5 to 31 m off through the fog.
+        /// </summary>
+        public static float PortraitLens => TheatreSkin.Dial("EVOSIM_THEATRE_PORTRAIT_LENS", 50f, 45f, 60f);
+
+        /// <summary>
+        /// How much of the frame's height a portrait's subject fills, by the longest side of its
+        /// drawn box: <c>EVOSIM_THEATRE_PORTRAIT_FILL</c>, 0.3 to 0.5, default 0.4.
+        /// </summary>
+        public static float PortraitFill => TheatreSkin.Dial("EVOSIM_THEATRE_PORTRAIT_FILL", 0.4f, 0.3f, 0.5f);
+
+        /// <summary>The nearest and farthest a portrait stands from its subject's centre, in body lengths.</summary>
+        public const float PortraitNearest = 1.5f, PortraitFarthest = 3f;
+
+        /// <summary>
+        /// The distance from a subject's centre at which a body <paramref name="length"/> long fills
+        /// <paramref name="fill"/> of a lens's height, held between 1.5 and 3 body lengths.
+        /// </summary>
+        public static float PortraitDistance(float length, float fieldOfView, float fill)
+        {
+            length = Mathf.Max(0.05f, length);
+            float fit = length / (Mathf.Max(0.05f, fill) * 2f * Mathf.Tan(0.5f * fieldOfView * Mathf.Deg2Rad));
+            return Mathf.Clamp(fit, PortraitNearest * length, PortraitFarthest * length);
+        }
+
+        private static readonly List<Renderer> _renderers = new List<Renderer>();
+
+        /// <summary>
+        /// The drawn body's box in the world, from its renderers, or false when it is not drawn.
+        /// A portrait looks at and focuses on this box's centre rather than on the root, which
+        /// can sit at one end of its body.
+        /// </summary>
+        public static bool DrawnBounds(LiveWorldView view, long id, out Bounds bounds)
+        {
+            bounds = default;
+            Transform root = view?.RootOf(id);
+            if (root == null) return false;
+
+            bool any = false;
+            root.GetComponentsInChildren(false, _renderers);
+            foreach (Renderer r in _renderers)
+            {
+                if (r == null || !r.enabled) continue;
+                Bounds b = r.bounds;
+                if (!Shot.Finite(b.center) || !Shot.Finite(b.size)) continue;
+                if (any) bounds.Encapsulate(b);
+                else { bounds = b; any = true; }
+            }
+
+            _renderers.Clear();
+            return any;
+        }
+
+        /// <summary>
+        /// A portrait's subject: the centre and the longest side of its drawn box, or its root and
+        /// a reach's diameter when it is not drawn.
+        /// </summary>
+        public static void Subject(LiveWorldView view, long id, Vector3 root, float reach, out Vector3 centre, out float length)
+        {
+            if (DrawnBounds(view, id, out Bounds b))
+            {
+                centre = b.center;
+                length = Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z));
+            }
+            else
+            {
+                centre = root;
+                length = 2f * reach;
+            }
+
+            length = Mathf.Max(0.05f, length);
+        }
+
+        /// <summary>
+        /// How many bodies other than the subject stand across the line of sight: a body whose
+        /// reach, at four fifths, crosses the line between a twentieth and nine tenths of the way
+        /// from the eye to what it looks at. A neighbour across the lens is the risk the films
+        /// review named for close portraits, so a portrait prefers a bearing with none.
+        /// </summary>
+        public static int Occluders(
+            List<Vector3> positions, List<float> reaches, List<long> ids, long subject, Vector3 eye, Vector3 target)
+        {
+            Vector3 line = target - eye;
+            float length = line.magnitude;
+            if (length < 1e-4f) return 0;
+
+            Vector3 along = line / length;
+            int n = 0;
+
+            for (int i = 0; i < positions.Count; i++)
+            {
+                if (ids[i] == subject) continue;
+                Vector3 d = positions[i] - eye;
+                float t = Vector3.Dot(d, along);
+                if (t < 0.05f * length || t > 0.9f * length) continue;
+                float r = 0.8f * reaches[i];
+                if ((d - along * t).sqrMagnitude < r * r) n++;
+            }
+
+            return n;
+        }
+
+        /// <summary>A direction from an azimuth about the vertical and an elevation above the horizontal, radians.</summary>
+        public static Vector3 Direction(float azimuth, float elevation) =>
+            new Vector3(Mathf.Cos(elevation) * Mathf.Cos(azimuth), Mathf.Sin(elevation), Mathf.Cos(elevation) * Mathf.Sin(azimuth));
+
+        // ------------------------------------------------------------------ the canopy's lens
+
+        /// <summary>How the canopy shot moves, one move a shot: up toward the leaves, down away from them, or round under them.</summary>
+        public enum CanopyMove { Rise, Sink, Turn }
+
+        /// <summary>The canopy shot's lens, degrees across the frame's height: <c>EVOSIM_THEATRE_CANOPY_LENS</c>, 60 to 70, default 65.</summary>
+        public static float CanopyLens => TheatreSkin.Dial("EVOSIM_THEATRE_CANOPY_LENS", 65f, 60f, 70f);
+
+        /// <summary>How far above the horizontal the canopy shot looks: <c>EVOSIM_THEATRE_CANOPY_TILT</c>, 60 to 75 degrees, default 68.</summary>
+        public static float CanopyTilt => TheatreSkin.Dial("EVOSIM_THEATRE_CANOPY_TILT", 68f, 60f, 75f);
+
+        /// <summary>The nearest and farthest the canopy shot's eye stands under the canopy's layer, m (the review's 8 to 15).</summary>
+        public const float CanopyNearest = 8f, CanopyFarthest = 15f;
+
+        /// <summary>How deep below the surface a body still counts as the canopy, m.</summary>
+        public const float CanopyBand = 10f;
+
+        /// <summary>The film's canopy move, from <c>EVOSIM_THEATRE_CANOPY_MOVE</c>: <c>rise</c> (the default), <c>sink</c> or <c>turn</c>.</summary>
+        public static CanopyMove FilmCanopyMove()
+        {
+            string text = (Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CANOPY_MOVE") ?? "").Trim().ToLowerInvariant();
+            switch (text)
+            {
+                case "": case "rise": return CanopyMove.Rise;
+                case "sink": return CanopyMove.Sink;
+                case "turn": return CanopyMove.Turn;
+                default: throw new ArgumentException("EVOSIM_THEATRE_CANOPY_MOVE is rise, sink or turn, not '" + text + "'");
+            }
+        }
 
         // ------------------------------------------------------------------ the water's walls
 
@@ -252,9 +402,13 @@ namespace Evosim.Theatre
             // the orbit's aim below the crowd, so the bed and the far glass share the frame
             private float _aimDown;
 
-            // a path handed in by the safari's director (Custom), null for the film's own shots
+            // a path handed in by the safari's director (Custom) or planned for the canopy, null
+            // for the film's other shots
             private CameraPath _path;
             private bool _mayLeaveTheGlass;
+
+            // the body a portrait focuses on, when it is not the close shot's subject; -1 for none
+            private long _focusId = -1;
 
             // the tally
             private int _frames, _glass, _bed, _surface, _pushed, _inside, _reef, _limited, _over;
@@ -279,9 +433,13 @@ namespace Evosim.Theatre
             /// True for the arrival, which stands outside the tank looking in: while the eye is
             /// beyond the glass neither the walls nor the bodies are asked of it.
             /// </param>
+            /// <param name="focusOn">
+            /// For a portrait, the body whose drawn centre the lens is focused on at every frame
+            /// (a focus pull, the camera does not move for it); -1 focuses on the look point.
+            /// </param>
             public static Shot Custom(
                 string name, WorldBounds world, float seconds, float fieldOfView, bool portrait,
-                CameraPath path, string plan, bool mayLeaveTheGlass = false)
+                CameraPath path, string plan, bool mayLeaveTheGlass = false, long focusOn = -1)
             {
                 if (path == null) throw new ArgumentNullException(nameof(path));
                 if (name == "close" || name == "drift") throw new ArgumentException("'" + name + "' names a film shot", nameof(name));
@@ -290,7 +448,23 @@ namespace Evosim.Theatre
                 {
                     Name = name, _world = world, _seconds = seconds, FieldOfView = fieldOfView,
                     Portrait = portrait, _path = path, _mayLeaveTheGlass = mayLeaveTheGlass, Plan_ = plan,
+                    _focusId = focusOn,
                 };
+            }
+
+            /// <summary>
+            /// The canopy shot for a caller with its own crowd (the safari's director): the eye 8 to
+            /// 15 m under the densest column of bodies near the surface, looking up through the
+            /// leaves at Snell's window, one slow move (<see cref="PlanCanopy"/>).
+            /// </summary>
+            /// <param name="eyeAt">The eye at a fraction of the shot, 0 to 1, before the walls and the smoothing.</param>
+            public static Shot Canopy(
+                string name, WorldBounds world, List<Vector3> positions, List<float> reaches, List<long> ids,
+                float seconds, float aspect, CanopyMove move, out Func<float, Vector3> eyeAt)
+            {
+                var shot = new Shot { Name = name, _world = world, _seconds = seconds };
+                shot.PlanCanopy(positions, reaches, ids, aspect, move, out eyeAt);
+                return shot;
             }
 
             /// <summary>Where the eye stood at the last pose.</summary>
@@ -318,8 +492,9 @@ namespace Evosim.Theatre
 
                 switch (name)
                 {
-                    case "close": shot.PlanClose(positions, reaches, ids, aspect, CloseSubject(live)); break;
+                    case "close": shot.PlanClose(live, view, positions, reaches, ids, aspect, CloseSubject(live)); break;
                     case "drift": shot.PlanCrowd(positions, reaches, aspect, 0f, true); break;
+                    case "canopy": shot.PlanCanopy(positions, reaches, ids, aspect, FilmCanopyMove(), out _); break;
                     default: shot.PlanCrowd(positions, reaches, aspect, turns, false); break;
                 }
 
@@ -521,20 +696,34 @@ namespace Evosim.Theatre
             }
 
             /// <summary>
-            /// The close view's framing: the largest body and the largest of its neighbours, from
-            /// a three-quarter angle, the frame fitted to the pair and a slow dolly in.
+            /// The close shot (the films review's third item, 2026-09-24): one body at 1.5 to 3 of
+            /// its own lengths through a 45 to 60 degree lens, filling about two fifths of the
+            /// frame's height, from the bearing nearest the three-quarter view that keeps the eye
+            /// off the walls, the rock and every body with nothing across the lens, and focused on
+            /// the body at every frame.
             /// </summary>
+            /// <remarks>
+            /// Until then it framed the largest body and the largest of its neighbours through a 28
+            /// degree lens from as far off as the pair needed, which put the fog between the lens
+            /// and the subject. The neighbour is no longer framed: a body in a crowd has neighbours
+            /// in its frame anyway, and the lens's blur now sets them behind or in front of it. The
+            /// still shot (the owner's default since 2026-09-23 evening) is framed where the
+            /// subject's drift will carry it at the clip's middle, so the subject crosses the frame
+            /// rather than leaving it, and the focus is pulled to it at every frame.
+            /// </remarks>
             private void PlanClose(
+                TheatreDynamicsReplay live, LiveWorldView view,
                 List<Vector3> positions, List<float> reaches, List<long> ids, float aspect,
                 Func<long, bool> eligible = null)
             {
-                FieldOfView = 28f;
+                FieldOfView = PortraitLens;
                 Portrait = true;
                 _forward = new Vector3(-0.78f, -0.34f, 1f).normalized;
 
                 // A study of one body (2026-09-24, the leaves): EVOSIM_THEATRE_FILM_CLOSE_LOOK=up
                 // looks up at the subject from below, where a blade's glow from the surface shows,
-                // and =down looks steeply down on it, at the blade's upper face.
+                // and =down looks steeply down on it, at the blade's upper face. Either is where the
+                // bearing search below starts.
                 string look = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_FILM_CLOSE_LOOK");
                 if (look == "up") _forward = new Vector3(-0.55f, 0.62f, 0.78f).normalized;
                 else if (look == "down") _forward = new Vector3(-0.45f, -0.8f, 0.55f).normalized;
@@ -558,66 +747,440 @@ namespace Evosim.Theatre
                     return;
                 }
 
-                float around = Mathf.Max(1.2f, 6f * reaches[anchor]);
-                int neighbour = -1;
-                for (int i = 0; i < positions.Count && eligible == null; i++)
-                {
-                    if (i == anchor) continue;
-                    if ((positions[i] - positions[anchor]).sqrMagnitude > around * around) continue;
-                    if (neighbour < 0 || reaches[i] > reaches[neighbour]) neighbour = i;
-                }
+                long id = ids[anchor];
+                float reach = reaches[anchor];
+                Subject(view, id, positions[anchor], reach, out Vector3 centre, out float length);
 
-                var framed = new Bounds(positions[anchor], 2.4f * reaches[anchor] * Vector3.one);
-                if (neighbour >= 0) framed.Encapsulate(new Bounds(positions[neighbour], 2.4f * reaches[neighbour] * Vector3.one));
-
-                // The snapshot's perspective fit (SnapshotCamera.Frame), with its 6% margin.
-                Quaternion rotation = Quaternion.LookRotation(_forward, Vector3.up);
-                Quaternion inverse = Quaternion.Inverse(rotation);
-                float tanV = Mathf.Tan(0.5f * FieldOfView * Mathf.Deg2Rad);
-                float tanH = tanV * aspect;
-                Vector3 half = 0.5f * framed.size;
-                float need = 0f, reachZ = 0f;
-
-                for (int sx = -1; sx <= 1; sx += 2)
-                for (int sy = -1; sy <= 1; sy += 2)
-                for (int sz = -1; sz <= 1; sz += 2)
-                {
-                    Vector3 c = inverse * new Vector3(sx * half.x, sy * half.y, sz * half.z);
-                    need = Mathf.Max(need, Mathf.Abs(c.y) / tanV - c.z);
-                    need = Mathf.Max(need, Mathf.Abs(c.x) / tanH - c.z);
-                    reachZ = Mathf.Max(reachZ, Mathf.Abs(c.z));
-                }
-
-                _standoff = 1.06f * Mathf.Max(need, reachZ + 0.5f);
+                // The distance: the body's longest side two fifths of the frame's height, held
+                // between 1.5 and 3 of its lengths, and never inside the body's own reach from its
+                // root, where the per-frame push would throw the eye out again.
+                float inside = (centre - positions[anchor]).magnitude + reach + 0.4f;
+                float fitted = PortraitDistance(length, FieldOfView, PortraitFill);
 
                 // EVOSIM_THEATRE_FILM_CLOSE_NEAR brings the eye in to that fraction of the fitted
-                // distance (0.2 to 1, 1 the fit), never nearer than the subject's reach and a
-                // third of a metre, so it stays outside the body.
+                // distance (0.2 to 1, 1 the fit), never inside the body.
                 string nearText = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_FILM_CLOSE_NEAR");
                 if (!string.IsNullOrWhiteSpace(nearText) &&
                     float.TryParse(nearText, NumberStyles.Float, CultureInfo.InvariantCulture, out float near))
                 {
-                    _standoff = Mathf.Max(Mathf.Clamp(near, 0.2f, 1f) * _standoff, reaches[anchor] + 0.33f);
+                    fitted *= Mathf.Clamp(near, 0.2f, 1f);
                 }
 
-                // A few metres in at most, never past two fifths of the standoff (the subject is
-                // there), and never faster on average than a quarter of the ceiling.
-                _dolly = Mathf.Min(3f, Mathf.Min(0.4f * _standoff, 0.25f * CloseSpeedCeiling * _seconds));
+                float standoff = Mathf.Max(fitted, inside);
 
-                _subject = ids[anchor];
-                _offset = framed.center - positions[anchor];
-                _followed = positions[anchor];
+                // Where the still shot looks: the subject's centre where its drift at this second
+                // carries it at the clip's middle. A following shot looks at the subject itself.
+                Vector3 drift = _still ? SafariPlans.VelocityOf(live, id) : Vector3.zero;
+                Vector3 target = centre + drift * (0.5f * _seconds);
+
+                // The bodies that could stand in the eye's way or across the lens.
+                float around = 1.3f * Mathf.Max(standoff, PortraitFarthest * length) + drift.magnitude * _seconds + 2f;
+                var nearPositions = new List<Vector3>();
+                var nearReaches = new List<float>();
+                var nearIds = new List<long>();
+                for (int i = 0; i < positions.Count; i++)
+                {
+                    if ((positions[i] - target).magnitude > around + reaches[i]) continue;
+                    nearPositions.Add(positions[i]);
+                    nearReaches.Add(reaches[i]);
+                    nearIds.Add(ids[i]);
+                }
+
+                // The bearing, nearest the three-quarter view first: the distance as fitted, then a
+                // little nearer and farther; the elevation in steps of fifteen degrees; the azimuth
+                // in steps of thirty. The first bearing with no clash and nothing across the lens is
+                // taken, else the one with the fewest of both.
+                float baseAzimuth = Mathf.Atan2(_forward.z, _forward.x);
+                float baseElevation = Mathf.Asin(Mathf.Clamp(_forward.y, -1f, 1f));
+                float[] scales = { 1f, 0.85f, 1.2f };
+                float[] elevationSteps = { 0f, 15f, -15f, 30f, -30f };
+                float[] azimuthSteps = { 0f, 30f, -30f, 60f, -60f, 90f, -90f, 120f, -120f, 150f, -150f, 180f };
+                float steepest = 60f * Mathf.Deg2Rad;
+
+                int bestScore = int.MaxValue, bestClashes = 0, bestAcross = 0;
+                string bestWhy = null;
+                Vector3 bestForward = _forward;
+                float bestDistance = standoff, bestTurn = 0f, bestTilt = 0f;
+
+                bool Search()
+                {
+                    foreach (float scale in scales)
+                    foreach (float de in elevationSteps)
+                    foreach (float da in azimuthSteps)
+                    {
+                        float elevation = Mathf.Clamp(baseElevation + de * Mathf.Deg2Rad, -steepest, steepest);
+                        Vector3 forward = Direction(baseAzimuth + da * Mathf.Deg2Rad, elevation);
+                        float distance = Mathf.Max(inside,
+                            Mathf.Clamp(standoff * scale, PortraitNearest * length, PortraitFarthest * length));
+
+                        int clashes = CloseClashes(target - forward * distance, target, nearPositions, nearReaches, nearIds, id, out string why);
+                        if (!_still)
+                        {
+                            // The follow's dolly ends two fifths of the standoff further in.
+                            clashes += CloseClashes(target - forward * Mathf.Max(inside, 0.6f * distance), target, nearPositions, nearReaches, nearIds, id, out string whyEnd);
+                            if (why == null) why = whyEnd;
+                        }
+
+                        int across = Occluders(nearPositions, nearReaches, nearIds, id, target - forward * distance, target);
+                        int score = 1000 * clashes + across;
+                        if (score >= bestScore) continue;
+
+                        bestScore = score;
+                        bestClashes = clashes;
+                        bestAcross = across;
+                        bestWhy = why;
+                        bestForward = forward;
+                        bestDistance = distance;
+                        bestTurn = da;
+                        bestTilt = (elevation - baseElevation) * Mathf.Rad2Deg;
+                        if (score == 0) return true;
+                    }
+
+                    return false;
+                }
+
+                Search();
+
+                _forward = bestForward;
+                _standoff = bestDistance;
+
+                // A few metres in at most, never past two fifths of the standoff (the subject is
+                // there) or into the body's reach, and never faster on average than a quarter of
+                // the ceiling.
+                _dolly = Mathf.Max(0f, Mathf.Min(Mathf.Min(3f, _standoff - inside),
+                    Mathf.Min(0.4f * _standoff, 0.25f * CloseSpeedCeiling * _seconds)));
+
+                _subject = id;
+                _offset = centre - positions[anchor];
+                _followed = centre;
                 _hasFollowed = true;
 
+                if (_still)
+                {
+                    _stillEye = target - _forward * _standoff;
+                    _stillRotation = Quaternion.LookRotation(_forward, Vector3.up);
+                    _hasStill = true;
+                }
+
+                float fill = length / (2f * _standoff * Mathf.Tan(0.5f * FieldOfView * Mathf.Deg2Rad));
+                TheatreGrade grade = TheatreGrade.Current;
+
                 Plan_ = string.Format(CultureInfo.InvariantCulture,
-                    "body {0} (reach {1:0.###} m){2}, framed over {3:0.##} m, standoff {4:0.##} m, dolly in {5:0.##} m " +
-                    "({6:0.###} m/s at its peak), {7}",
-                    _subject, reaches[anchor],
-                    neighbour >= 0
-                        ? string.Format(CultureInfo.InvariantCulture, " and body {0} (reach {1:0.###} m)", ids[neighbour], reaches[neighbour])
-                        : ", no neighbour within reach",
-                    framed.size.magnitude, _standoff, _dolly, _dolly / _seconds / (1f - EaseShare),
-                    _still ? "held still a quarter further back, no dolly, no follow" : "following the subject");
+                    "body {0} ({1:0.##} m long, reach {2:0.###} m) at {3:0.##} m, {4:0.#} body lengths, {5:0}% of the frame's height " +
+                    "through a {6:0} deg lens; the bearing turned {7:0} deg and tilted {8:0} deg from the three-quarter view, " +
+                    "{9} {10} across the lens{11}; {12}; {13}",
+                    id, length, reach, _standoff, _standoff / length, 100f * fill, FieldOfView, bestTurn, bestTilt,
+                    bestAcross, bestAcross == 1 ? "body" : "bodies",
+                    bestClashes > 0 ? ", STILL CLASHES (" + bestWhy + "): the per-frame walls and push take it from here" : "",
+                    _still
+                        ? string.Format(CultureInfo.InvariantCulture,
+                            "held still on where its drift ({0:0.###} m/s) carries it at the clip's middle, the focus pulled to it every frame",
+                            drift.magnitude)
+                        : string.Format(CultureInfo.InvariantCulture,
+                            "following the subject, dolly in {0:0.##} m ({1:0.###} m/s at its peak)",
+                            _dolly, _dolly / _seconds / (1f - EaseShare)),
+                    grade != null ? grade.DescribePortrait(_standoff, FieldOfView) : "no grade, so no depth of field");
+            }
+
+            /// <summary>
+            /// How many of a close shot's rules an eye breaks, and the first: the glass, the surface
+            /// and the bed by the film's clearance, the rock by its own and between the eye and the
+            /// subject, and every other body's reach and a third of a metre.
+            /// </summary>
+            private int CloseClashes(
+                Vector3 eye, Vector3 target, List<Vector3> positions, List<float> reaches, List<long> ids, long subject,
+                out string why)
+            {
+                why = null;
+                int n = 0;
+
+                int glass = 0, bed = 0, surface = 0;
+                _world.Keep(eye, ref glass, ref bed, ref surface);
+                if (glass > 0) { n++; why = why ?? "at the glass"; }
+                if (surface > 0) { n++; why = why ?? "at the surface"; }
+                if (bed > 0) { n++; why = why ?? "in the bed"; }
+                if (_world.ReefDistance(eye) < ReefClearance) { n++; why = why ?? "in the reef"; }
+
+                if (_world.Reefs != null)
+                {
+                    for (int k = 1; k <= 6; k++)
+                    {
+                        if (_world.ReefDistance(Vector3.Lerp(eye, target, k / 7f)) < 0f)
+                        {
+                            n++;
+                            why = why ?? "the reef hides the subject";
+                            break;
+                        }
+                    }
+                }
+
+                for (int i = 0; i < positions.Count; i++)
+                {
+                    if (ids[i] == subject) continue;
+                    if ((eye - positions[i]).magnitude < reaches[i] + 0.35f)
+                    {
+                        n++;
+                        why = why ?? "in body " + ids[i];
+                        break;
+                    }
+                }
+
+                return n;
+            }
+
+            /// <summary>
+            /// The canopy shot (the films review's second item, 2026-09-24): the eye 8 to 15 m under
+            /// the densest column of bodies near the surface, looking up 60 to 75 degrees through a
+            /// 60 to 70 degree lens so the leaves stand against Snell's window, with one slow move.
+            /// </summary>
+            /// <remarks>
+            /// <para>
+            /// <b>Why.</b> At 30,000 s of round 47, 97% of the living sit in the top 4 m, most of
+            /// them leaves. A leaf is a line from the side and a whole shape from below, and a blade
+            /// looked up at glows with the surface's light (<c>TheatreBody.shader</c>,
+            /// <c>_LeafSkyGlow</c>), which is what keeps it from going black against the window.
+            /// </para>
+            /// <para>
+            /// <b>The column.</b> The bodies within <see cref="CanopyBand"/> of the surface (the
+            /// highest quarter of the crowd when fewer than eight are), binned on three-metre
+            /// squares; a square weighs its own and its eight neighbours' count, and the heaviest
+            /// squares are tried first. The canopy's layer is the median height of the bodies in
+            /// the nine squares, and the look passes through their centre.
+            /// </para>
+            /// <para>
+            /// <b>The move</b> (<see cref="CanopyMove"/>). A rise is a crane straight up from 12 to 9
+            /// m under the layer with the lens held; a sink goes the other way, from 9 to 14 m; a
+            /// turn goes a quarter of the way round the column's axis at 11 m under, looking in at
+            /// it. Each is eased at both ends and held under nine tenths of the ceiling at its peak,
+            /// which shortens a short clip's rise. The bearing is the sun's first (the global the
+            /// snapshot's sky view reads), so the sun's disc sits in the window behind the leaves,
+            /// then turned in steps of 45 degrees until the whole path stands clear of the glass,
+            /// the bed, the surface, the rock and every body, with no rock across the view.
+            /// </para>
+            /// </remarks>
+            private void PlanCanopy(
+                List<Vector3> positions, List<float> reaches, List<long> ids, float aspect,
+                CanopyMove move, out Func<float, Vector3> eyeAt)
+            {
+                FieldOfView = CanopyLens;
+                Portrait = false;
+
+                float tilt = CanopyTilt * Mathf.Deg2Rad;
+                float tanTilt = Mathf.Tan(tilt);
+                float halfTanV = Mathf.Tan(0.5f * FieldOfView * Mathf.Deg2Rad);
+
+                // The canopy's bodies.
+                var canopy = new List<int>();
+                for (int i = 0; i < positions.Count; i++) if (positions[i].y >= -CanopyBand) canopy.Add(i);
+                string band = string.Format(CultureInfo.InvariantCulture, "{0} bodies in the top {1:0} m", canopy.Count, CanopyBand);
+
+                if (canopy.Count < 8 && positions.Count > 0)
+                {
+                    var byHeight = new List<int>(positions.Count);
+                    for (int i = 0; i < positions.Count; i++) byHeight.Add(i);
+                    byHeight.Sort((a, b) => positions[b].y.CompareTo(positions[a].y));
+                    canopy = byHeight.GetRange(0, Mathf.Min(byHeight.Count, Mathf.Max(8, byHeight.Count / 4)));
+                    band = string.Format(CultureInfo.InvariantCulture,
+                        "too few in the top {0:0} m, so the highest {1} bodies", CanopyBand, canopy.Count);
+                }
+
+                // The squares, and their weights with their neighbours.
+                const float cell = 3f;
+                var squares = new Dictionary<(int, int), List<int>>();
+                foreach (int i in canopy)
+                {
+                    var key = (Mathf.FloorToInt(positions[i].x / cell), Mathf.FloorToInt(positions[i].z / cell));
+                    if (!squares.TryGetValue(key, out List<int> list)) squares[key] = list = new List<int>();
+                    list.Add(i);
+                }
+
+                var weights = new List<((int x, int z) key, int weight)>();
+                foreach (KeyValuePair<(int, int), List<int>> square in squares)
+                {
+                    int weight = 0;
+                    for (int dx = -1; dx <= 1; dx++)
+                    for (int dz = -1; dz <= 1; dz++)
+                    {
+                        if (squares.TryGetValue((square.Key.Item1 + dx, square.Key.Item2 + dz), out List<int> near)) weight += near.Count;
+                    }
+                    weights.Add((square.Key, weight));
+                }
+
+                weights.Sort((a, b) =>
+                {
+                    int byWeight = b.weight.CompareTo(a.weight);
+                    if (byWeight != 0) return byWeight;
+                    int byX = a.key.x.CompareTo(b.key.x);
+                    return byX != 0 ? byX : a.key.z.CompareTo(b.key.z);
+                });
+
+                // The sun's bearing, as the snapshot's sky view reads it.
+                Vector4 sun = Shader.GetGlobalVector("_EvoSun");
+                float sunBearing = sun.x * sun.x + sun.z * sun.z > 1e-8f ? Mathf.Atan2(sun.z, sun.x) : 0f;
+
+                // The move's depths under the layer, and the most the ceiling lets the eye travel.
+                float travel = 0.9f * OrbitSpeedCeiling * _seconds * (1f - EaseShare);
+                float h0, h1;
+                switch (move)
+                {
+                    case CanopyMove.Rise: h0 = 12f; h1 = Mathf.Max(9f, h0 - travel); break;
+                    case CanopyMove.Sink: h0 = 9f; h1 = Mathf.Min(14f, h0 + travel); break;
+                    default: h0 = h1 = 11f; break;
+                }
+
+                float turnRadius = h0 / tanTilt;
+                float turn = move == CanopyMove.Turn ? Mathf.Min(0.5f * Mathf.PI, travel / Mathf.Max(0.5f, turnRadius)) : 0f;
+
+                // The eye at a point of the move, and which way it looks.
+                Vector3 EyeOf(Vector3 column, float bearing, float u, out Vector3 forward)
+                {
+                    float e = Ease(u);
+
+                    if (move == CanopyMove.Turn)
+                    {
+                        float b = bearing + turn * e;
+                        forward = Direction(b, tilt);
+                        return column - new Vector3(Mathf.Cos(b), 0f, Mathf.Sin(b)) * (h0 / tanTilt) - Vector3.up * h0;
+                    }
+
+                    // A crane: the lens held and the eye straight up or down, the look passing
+                    // through the column's centre at the move's middle.
+                    forward = Direction(bearing, tilt);
+                    float middleH = 0.5f * (h0 + h1);
+                    Vector3 middle = column - new Vector3(Mathf.Cos(bearing), 0f, Mathf.Sin(bearing)) * (middleH / tanTilt) - Vector3.up * middleH;
+                    return middle + Vector3.up * (middleH - Mathf.Lerp(h0, h1, e));
+                }
+
+                // How many of the path's five samples break a rule, and the first rule broken.
+                int Clashes(Vector3 column, float bearing, out string why)
+                {
+                    why = null;
+                    int n = 0;
+
+                    for (int s = 0; s <= 4; s++)
+                    {
+                        Vector3 eye = EyeOf(column, bearing, s / 4f, out Vector3 forward);
+                        string broke = null;
+
+                        if (_world.Tank)
+                        {
+                            if (new Vector2(eye.x - _world.Axis.x, eye.z - _world.Axis.y).magnitude > _world.Radius - GlassClearance - 0.5f) broke = "at the glass";
+                        }
+                        else if (eye.x < _world.Box.min.x + GlassClearance || eye.x > _world.Box.max.x - GlassClearance ||
+                                 eye.z < _world.Box.min.z + GlassClearance || eye.z > _world.Box.max.z - GlassClearance)
+                        {
+                            broke = "at the glass";
+                        }
+
+                        if (broke == null && eye.y > -Clearance - 0.5f) broke = "at the surface";
+                        if (broke == null && eye.y < _world.FloorAt(eye.x, eye.z) + Clearance + 0.5f) broke = "in the bed";
+                        if (broke == null && _world.ReefDistance(eye) < ReefClearance + 0.5f) broke = "in the reef";
+
+                        if (broke == null)
+                        {
+                            for (int i = 0; i < positions.Count; i++)
+                            {
+                                if ((eye - positions[i]).magnitude < reaches[i] + 0.35f) { broke = "in body " + ids[i]; break; }
+                            }
+                        }
+
+                        if (broke == null && _world.Reefs != null)
+                        {
+                            // The rock across the view, up to the canopy's layer: in the line, or
+                            // filling seven tenths of the frame's cone round it.
+                            float h = Mathf.Max(1f, column.y - eye.y);
+                            float ray = h / Mathf.Max(0.2f, Mathf.Sin(tilt));
+                            for (int k = 1; k <= 8 && broke == null; k++)
+                            {
+                                float f = k / 9f;
+                                float d = _world.ReefDistance(eye + forward * (f * ray));
+                                if (d < 0f) broke = "the reef hides the canopy";
+                                else if (d < 0.7f * halfTanV * Mathf.Min(f, 1f - f) * ray) broke = "the reef fills the frame";
+                            }
+                        }
+
+                        if (broke == null) continue;
+                        n++;
+                        if (why == null) why = broke + " at " + (s * 25) + "% of the move";
+                    }
+
+                    return n;
+                }
+
+                Vector3 bestColumn = new Vector3(_world.Box.center.x, -Clearance - 2f, _world.Box.center.z);
+                if (_world.Tank) bestColumn = new Vector3(_world.Axis.x, -Clearance - 2f, _world.Axis.y);
+                float bestBearing = sunBearing;
+                int best = int.MaxValue, bestWeight = 0, bestRank = -1, bestStep = 0;
+                string bestWhy = null;
+                float[] steps = { 0f, 45f, -45f, 90f, -90f, 135f, -135f, 180f };
+
+                for (int c = 0; c < Mathf.Min(16, weights.Count) && best > 0; c++)
+                {
+                    var members = new List<int>();
+                    for (int dx = -1; dx <= 1; dx++)
+                    for (int dz = -1; dz <= 1; dz++)
+                    {
+                        if (squares.TryGetValue((weights[c].key.x + dx, weights[c].key.z + dz), out List<int> near)) members.AddRange(near);
+                    }
+
+                    float sx = 0f, sz = 0f;
+                    var heights = new List<float>(members.Count);
+                    foreach (int i in members) { sx += positions[i].x; sz += positions[i].z; heights.Add(positions[i].y); }
+                    heights.Sort();
+                    var column = new Vector3(sx / members.Count, heights[heights.Count / 2], sz / members.Count);
+
+                    for (int k = 0; k < steps.Length && best > 0; k++)
+                    {
+                        float bearing = sunBearing + steps[k] * Mathf.Deg2Rad;
+                        int n = Clashes(column, bearing, out string why);
+                        if (n >= best) continue;
+
+                        best = n;
+                        bestWhy = why;
+                        bestColumn = column;
+                        bestBearing = bearing;
+                        bestWeight = weights[c].weight;
+                        bestRank = c;
+                        bestStep = (int)steps[k];
+                    }
+                }
+
+                if (bestRank < 0) best = Clashes(bestColumn, bestBearing, out bestWhy);
+
+                Vector3 chosen = bestColumn;
+                float chosenBearing = bestBearing;
+                _path = (float u, float dt, out Vector3 eye, out Vector3 at) =>
+                {
+                    eye = EyeOf(chosen, chosenBearing, u, out Vector3 forward);
+                    at = eye + forward * 10f;
+                };
+                eyeAt = u => EyeOf(chosen, chosenBearing, Mathf.Clamp01(u), out _);
+
+                string moved;
+                switch (move)
+                {
+                    case CanopyMove.Rise:
+                    case CanopyMove.Sink:
+                        moved = string.Format(CultureInfo.InvariantCulture,
+                            "a crane {0} from {1:0.#} to {2:0.#} m under the leaves with the lens held, {3:0.###} m/s at its peak",
+                            move == CanopyMove.Rise ? "up" : "down", h0, h1, Mathf.Abs(h1 - h0) / _seconds / (1f - EaseShare));
+                        break;
+                    default:
+                        moved = string.Format(CultureInfo.InvariantCulture,
+                            "{0:0.###} of a turn round the column's axis at {1:0.#} m out and {2:0.#} m under the leaves, {3:0.###} m/s at its peak",
+                            turn / (2f * Mathf.PI), turnRadius, h0, turn * turnRadius / _seconds / (1f - EaseShare));
+                        break;
+                }
+
+                Plan_ = string.Format(CultureInfo.InvariantCulture,
+                    "canopy: {0}; the column {1} ({2} bodies in its nine squares) about ({3:0.#}, {4:0.#}) with its leaves at {5:0.#} m; " +
+                    "looking {6:0} deg up at bearing {7:0} deg ({8}), lens {9:0} deg, straight up {10:0.#} deg inside the frame's top edge " +
+                    "so Snell's window is in frame; {11}{12}",
+                    band, bestRank >= 0 ? "ranked " + (bestRank + 1) : "(none: the tank's axis)", bestWeight,
+                    chosen.x, chosen.z, chosen.y, CanopyTilt, chosenBearing * Mathf.Rad2Deg,
+                    bestStep == 0 ? "the sun's" : string.Format(CultureInfo.InvariantCulture, "turned {0} deg from the sun's", bestStep),
+                    FieldOfView, CanopyTilt + 0.5f * FieldOfView - 90f, moved,
+                    best > 0 ? ", STILL CLASHES (" + bestWhy + ", " + best + " of 5 samples): the per-frame walls take it from here" : "");
             }
 
             /// <summary>True when every point of the orbit's ring stands over a floor two metres and the clearance below the eye.</summary>
@@ -649,37 +1212,42 @@ namespace Evosim.Theatre
                 }
                 else if (Name == "close")
                 {
-                    // The subject's root, smoothed over a second and a half so the frame follows a
-                    // swimmer without copying every stroke.
+                    // The subject's drawn centre (its root and the planned offset when it is not
+                    // drawn), smoothed over a second and a half so the frame follows a swimmer
+                    // without copying every stroke.
                     Vector3 now = _followed;
                     if (_subject >= 0)
                     {
-                        Transform root = view?.RootOf(_subject);
-                        if (root != null && Finite(root.position)) now = root.position;
+                        if (DrawnBounds(view, _subject, out Bounds drawn)) now = drawn.center;
+                        else
+                        {
+                            Transform root = view?.RootOf(_subject);
+                            if (root != null && Finite(root.position)) now = root.position + _offset;
+                        }
                     }
 
                     float k = 1f - Mathf.Exp(-frameSeconds / 1.5f);
                     _followed = _hasFollowed ? Vector3.Lerp(_followed, now, k) : now;
                     _hasFollowed = true;
 
-                    subject = _followed + _offset;
+                    subject = _followed;
                     float distance = _standoff - _dolly * Ease(u);
 
                     if (_still)
                     {
-                        // Framed once, a quarter further back than the following shot so the
-                        // subject's drift has room, and never moved: every motion in the clip
-                        // is a creature's or the water's.
+                        // Framed once, on where the subject's drift carries it at the clip's
+                        // middle (PlanClose), and never moved: every motion in the clip is a
+                        // creature's or the water's. The focus follows the subject (below).
                         if (!_hasStill)
                         {
-                            _stillEye = subject - _forward * (1.25f * _standoff);
+                            _stillEye = subject - _forward * _standoff;
                             _stillRotation = Quaternion.LookRotation(_forward, Vector3.up);
                             _hasStill = true;
                         }
 
                         eye = _stillEye;
                         rotation = _stillRotation;
-                        focus = 1.25f * _standoff;
+                        focus = _standoff;
                     }
                     else
                     {
@@ -754,6 +1322,19 @@ namespace Evosim.Theatre
                 if (InsideABody(live, view, eye)) _inside++;
 
                 if (Name != "close") rotation = Quaternion.LookRotation(subject - eye, Vector3.up);
+
+                // A portrait's focus is pulled to its subject at every frame: the depth along the
+                // lens of the drawn centre of the body it is about, from where the eye stands after
+                // the walls, the pushes and the smoothing. URP focuses on a plane, so a depth and
+                // not a distance; a still camera stays still and only the focus moves.
+                if (Portrait)
+                {
+                    long about = _focusId >= 0 ? _focusId : _subject;
+                    Vector3 point = subject;
+                    if (about >= 0 && DrawnBounds(view, about, out Bounds body)) point = body.center;
+                    float depth = Vector3.Dot(point - eye, rotation * Vector3.forward);
+                    focus = depth > 0.1f ? depth : Mathf.Max(0.1f, (subject - eye).magnitude);
+                }
 
                 if (_hasLast)
                 {

@@ -17,9 +17,16 @@
   The shots, each one move (logbook/specs/safari-spec.md section 9, the owner's rules):
     orbit  one slow turn round the crowd's centroid, tilted down, at a distance that frames the
            crowd's spread, pulled in where the glass or the surface leave no room.
-    close  the snapshot's close framing (the largest body and its largest neighbour, three
-           quarters), held, following the subject, with a slow dolly in.
+    close  a portrait of the largest body (or EVOSIM_THEATRE_FILM_SUBJECT's): its longest side about two fifths of
+           the frame at 1.5 to 3 body lengths through a 50 degree lens, held still, the lens
+           focused on the body's drawn centre with a shallow depth of field (the films review's
+           third item, 2026-09-24), from a bearing with no other body across the lens where
+           one is clear.
     drift  a slow lateral pass at the crowd's depth, a quarter metre a second at most.
+    canopy the eye 8 to 15 m under the densest column of bodies near the surface, looking up
+           60 to 75 degrees through a 65 degree lens so the leaves stand against Snell's window,
+           at the sun's bearing where it is clear; one slow move, -CanopyMove (the films
+           review's second item).
   No box, no rings, no markers; the interface is hidden except COUSIN and the second, burnt into
   the corner. The camera is kept inside the glass, over the bed, under the surface and off every
   body, and the Editor's log carries a tally per shot of how often each rule bound and how fast
@@ -43,7 +50,7 @@
   Worker number, default 6.
 
 .PARAMETER Shots
-  Any of orbit, close, drift. Default orbit,close.
+  Any of orbit, close, drift, canopy. Default orbit,close.
 
 .PARAMETER Seconds
   Simulated seconds to film, default 60.
@@ -91,6 +98,18 @@
   A diagnostic: the world is not stepped during the capture (EVOSIM_THEATRE_FILM_FREEZE=1), so the
   clip's only motion is the camera's and the shaders' clock. Every frame's label says FROZEN.
 
+.PARAMETER CanopyMove
+  The canopy shot's one move (EVOSIM_THEATRE_CANOPY_MOVE): rise (the default, a crane up toward
+  the leaves from 12 m under them), sink (down, away from them) or turn (a slow arc round the
+  column under them).
+
+.PARAMETER Aperture
+  The close shot's f-number (EVOSIM_THEATRE_DOF_APERTURE), 1 to 32; the theatre's default is 2.
+  Smaller is shallower. Left to the theatre when not given.
+
+.PARAMETER NoDepthOfField
+  The close shot sharp from front to back (EVOSIM_THEATRE_DOF=0), for a comparison.
+
 .PARAMETER DeleteFrames
   Delete each shot's frames once its mp4 is written.
 
@@ -116,6 +135,9 @@ param(
     [switch]$Raw,
     [double]$CloseSeconds = 20,
     [switch]$CloseFollow,
+    [ValidateSet('rise', 'sink', 'turn')][string]$CanopyMove = 'rise',
+    [double]$Aperture = -1,
+    [switch]$NoDepthOfField,
     [switch]$DeleteFrames
 )
 
@@ -136,9 +158,9 @@ foreach ($value in $Shots) {
         if ($trimmed) { $shotList += $trimmed }
     }
 }
-if ($shotList.Count -eq 0) { throw "-Shots needs at least one of orbit, close, drift." }
+if ($shotList.Count -eq 0) { throw "-Shots needs at least one of orbit, close, drift, canopy." }
 foreach ($s in $shotList) {
-    if (@('orbit', 'close', 'drift') -notcontains $s) { throw "-Shots: '$s' is not a shot. The shots are orbit, close, drift." }
+    if (@('orbit', 'close', 'drift', 'canopy') -notcontains $s) { throw "-Shots: '$s' is not a shot. The shots are orbit, close, drift, canopy." }
 }
 $shotList = @($shotList | Select-Object -Unique)
 
@@ -149,6 +171,7 @@ if ($Fps -lt 1 -or $Fps -gt 120) { throw "-Fps: $Fps is outside 1 to 120." }
 if ($Carve -lt 0 -or $Carve -gt 0.5) { throw "-Carve: $Carve is outside 0 to 0.5." }
 if ($Turns -lt 0 -or $Turns -gt 4) { throw "-Turns: $Turns is outside 0 to 4." }
 if ($PSBoundParameters.ContainsKey('MotionBlur') -and ($MotionBlur -lt 0 -or $MotionBlur -gt 1)) { throw "-MotionBlur: $MotionBlur is outside 0 to 1." }
+if ($PSBoundParameters.ContainsKey('Aperture') -and ($Aperture -lt 1 -or $Aperture -gt 32)) { throw "-Aperture: $Aperture is outside 1 to 32." }
 
 if ($Worker -eq 1) { throw "Worker 1 is unity/, which the owner keeps open in the Editor. Use a worker from 2 up." }
 
@@ -215,7 +238,8 @@ $names = @(
     'EVOSIM_THEATRE_FILM_SHOTS', 'EVOSIM_THEATRE_FILM_OUT', 'EVOSIM_THEATRE_FILM_TURNS',
     'EVOSIM_THEATRE_WALL_MINUTES', 'EVOSIM_THEATRE_CARVE', 'EVOSIM_THEATRE_SNAP_FROM',
     'EVOSIM_THEATRE_OVERRIDE', 'EVOSIM_THEATRE_GENOME', 'EVOSIM_THEATRE_MOTION_BLUR', 'EVOSIM_THEATRE_FILM_FREEZE', 'EVOSIM_THEATRE_FILM_TRACE', 'EVOSIM_THEATRE_FILM_RAW',
-    'EVOSIM_THEATRE_FILM_CLOSE_SECONDS', 'EVOSIM_THEATRE_FILM_CLOSE_FOLLOW')
+    'EVOSIM_THEATRE_FILM_CLOSE_SECONDS', 'EVOSIM_THEATRE_FILM_CLOSE_FOLLOW',
+    'EVOSIM_THEATRE_CANOPY_MOVE', 'EVOSIM_THEATRE_DOF', 'EVOSIM_THEATRE_DOF_APERTURE')
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -252,6 +276,12 @@ try {
     else { Remove-Item env:EVOSIM_THEATRE_FILM_CLOSE_FOLLOW -ErrorAction SilentlyContinue }
 
     if ($PSBoundParameters.ContainsKey('MotionBlur')) { $env:EVOSIM_THEATRE_MOTION_BLUR = $MotionBlur.ToString($invariant) }
+
+    $env:EVOSIM_THEATRE_CANOPY_MOVE = $CanopyMove
+    if ($NoDepthOfField) { $env:EVOSIM_THEATRE_DOF = '0' }
+    else { Remove-Item env:EVOSIM_THEATRE_DOF -ErrorAction SilentlyContinue }
+    if ($PSBoundParameters.ContainsKey('Aperture')) { $env:EVOSIM_THEATRE_DOF_APERTURE = $Aperture.ToString($invariant) }
+    else { Remove-Item env:EVOSIM_THEATRE_DOF_APERTURE -ErrorAction SilentlyContinue }
 
     Write-Host "$Arm -> worker $Worker ($proj)"
     Write-Host "  run    $($run.FullName)"

@@ -70,26 +70,12 @@ Shader "Evosim/Theatre Bed"
             "Queue" = "Geometry"
         }
 
-        Pass
-        {
-            Name "ForwardLit"
-            Tags { "LightMode" = "UniversalForward" }
-
-            // Two sided, for WaterBounds' reason: the free fly camera can go under the world, and
-            // a back face culled bed would leave a hole to fall through with nothing in it.
-            Cull Off
-            ZWrite On
-
-            HLSLPROGRAM
-            #pragma vertex Vertex
-            #pragma fragment Fragment
-            #pragma target 3.0
-
-            #pragma multi_compile_fog
-            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
-
+        // The carved surface, shared by the forward pass and the two depth passes (2026-09-24).
+        // Until then the depth texture took the bed from the fallback's passes, which draw the
+        // quad before the carve, up to the carve's depth above the sand on screen; a portrait's
+        // depth of field and the soft edges of the shafts and the snow read that texture.
+        HLSLINCLUDE
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "TheatreWater.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
@@ -111,14 +97,6 @@ Shader "Evosim/Theatre Bed"
             {
                 float4 positionOS : POSITION;
                 float3 normalOS   : NORMAL;
-            };
-
-            struct Varyings
-            {
-                float4 positionCS : SV_POSITION;
-                float3 positionWS : TEXCOORD0;
-                float3 normalWS   : TEXCOORD1;
-                float fogFactor   : TEXCOORD2;
             };
 
             // How far the bed is cut down at a point, in metres, and the slope of that cut.
@@ -145,11 +123,11 @@ Shader "Evosim/Theatre Bed"
                 return saturate(value);
             }
 
-            Varyings Vertex(Attributes input)
+            // Where a vertex of the bed is drawn, and its normal: the one place the carve is
+            // applied, so every pass draws the same sand.
+            void BedSurface(Attributes input, out float3 positionWS, out float3 surfaceNormalWS)
             {
-                Varyings output = (Varyings)0;
-
-                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                positionWS = TransformObjectToWorld(input.positionOS.xyz);
                 float3 normalWS = normalize(TransformObjectToWorldNormal(input.normalOS));
 
                 float2 slope;
@@ -172,8 +150,47 @@ Shader "Evosim/Theatre Bed"
                 float3 up = normalWS.y < 0.0 ? -normalWS : normalWS;
                 float3 tilted = normalize(float3(up.x - gradient.x, up.y, up.z - gradient.y));
 
+                surfaceNormalWS = normalWS.y < 0.0 ? -tilted : tilted;
+            }
+        ENDHLSL
+
+        Pass
+        {
+            Name "ForwardLit"
+            Tags { "LightMode" = "UniversalForward" }
+
+            // Two sided, for WaterBounds' reason: the free fly camera can go under the world, and
+            // a back face culled bed would leave a hole to fall through with nothing in it.
+            Cull Off
+            ZWrite On
+
+            HLSLPROGRAM
+            #pragma vertex Vertex
+            #pragma fragment Fragment
+            #pragma target 3.0
+
+            #pragma multi_compile_fog
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 positionWS : TEXCOORD0;
+                float3 normalWS   : TEXCOORD1;
+                float fogFactor   : TEXCOORD2;
+            };
+
+            Varyings Vertex(Attributes input)
+            {
+                Varyings output = (Varyings)0;
+
+                float3 positionWS, normalWS;
+                BedSurface(input, positionWS, normalWS);
+
                 output.positionWS = positionWS;
-                output.normalWS = normalWS.y < 0.0 ? -tilted : tilted;
+                output.normalWS = normalWS;
                 output.positionCS = TransformWorldToHClip(positionWS);
                 output.fogFactor = ComputeFogFactor(output.positionCS.z);
 
@@ -290,6 +307,83 @@ Shader "Evosim/Theatre Bed"
                 lit = EvoMixFog(lit, input.fogFactor, input.positionWS);
 
                 return half4(lit, 1.0);
+            }
+            ENDHLSL
+        }
+
+        // The bed in the depth texture at its carved height, two sided as the forward pass is.
+        Pass
+        {
+            Name "DepthOnly"
+            Tags { "LightMode" = "DepthOnly" }
+
+            Cull Off
+            ZWrite On
+            ColorMask R
+
+            HLSLPROGRAM
+            #pragma vertex DepthVertex
+            #pragma fragment DepthFragment
+            #pragma target 3.0
+
+            float4 DepthVertex(Attributes input) : SV_POSITION
+            {
+                float3 positionWS, normalWS;
+                BedSurface(input, positionWS, normalWS);
+                return TransformWorldToHClip(positionWS);
+            }
+
+            half DepthFragment(float4 positionCS : SV_POSITION) : SV_Target
+            {
+                return positionCS.z;
+            }
+            ENDHLSL
+        }
+
+        // The depth and the carve's normal; the ripple and the grain stay in the forward pass.
+        Pass
+        {
+            Name "DepthNormals"
+            Tags { "LightMode" = "DepthNormals" }
+
+            Cull Off
+            ZWrite On
+
+            HLSLPROGRAM
+            #pragma vertex DepthNormalsVertex
+            #pragma fragment DepthNormalsFragment
+            #pragma target 3.0
+
+            #pragma multi_compile_fragment _ _GBUFFER_NORMALS_OCT
+
+            struct DepthNormalsVaryings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 normalWS   : TEXCOORD0;
+            };
+
+            DepthNormalsVaryings DepthNormalsVertex(Attributes input)
+            {
+                float3 positionWS, normalWS;
+                BedSurface(input, positionWS, normalWS);
+
+                DepthNormalsVaryings output;
+                output.positionCS = TransformWorldToHClip(positionWS);
+                output.normalWS = normalWS;
+
+                return output;
+            }
+
+            half4 DepthNormalsFragment(DepthNormalsVaryings input) : SV_Target
+            {
+                float3 normalWS = normalize(input.normalWS);
+
+                #if defined(_GBUFFER_NORMALS_OCT)
+                    float2 octahedral = saturate(PackNormalOctQuadEncode(normalWS) * 0.5 + 0.5);
+                    return half4(PackFloat2To888(octahedral), 0.0);
+                #else
+                    return half4(normalWS, 0.0);
+                #endif
             }
             ENDHLSL
         }

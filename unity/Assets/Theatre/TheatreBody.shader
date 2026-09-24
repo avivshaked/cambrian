@@ -40,7 +40,12 @@
 // There is no shadow caster pass. Bodies do not cast shadows here: at a couple of thousand of
 // them that is a second full draw of the world for an effect a dark field cannot show anyway,
 // and the key light is raking, so a cast shadow would fall out of frame in every view the
-// snapshot camera takes.
+// snapshot camera takes. (Whether the key moves to the world's sun and casts is the owner's
+// open ruling on the films review's first item; nothing here decides it.)
+//
+// There are depth passes, from 2026-09-24: DepthOnly and DepthNormals draw the body at exactly
+// the shape the forward pass does, through one shared function (ShapeBody), so the camera's
+// depth texture holds the carved, tapered, bent and leaf-shaped body a portrait focuses on.
 
 Shader "Evosim/Theatre Body"
 {
@@ -171,24 +176,17 @@ Shader "Evosim/Theatre Body"
             "Queue" = "Geometry"
         }
 
-        Pass
-        {
-            Name "ForwardLit"
-            Tags { "LightMode" = "UniversalForward" }
-
-            Cull Back
-            ZWrite On
-
-            HLSLPROGRAM
-            #pragma vertex Vertex
-            #pragma fragment Fragment
-            #pragma target 3.0
-
-            #pragma multi_compile_fog
-            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
-
+        // The shape of a body, shared by all three passes (2026-09-24, the films review's third
+        // item). Until then the shader had the forward pass alone, and the camera's depth texture
+        // (which the depth of field, the ambient occlusion and the soft edges of the shafts and
+        // the snow all read) took each body from the fallback's depth passes. Those draw the mesh
+        // as it arrives: a box before its taper, bend and carve, and a leaf as the plain oval the
+        // mesh is baked with, on the mesh's own axes rather than the part's (an inference from
+        // how a fallback resolves a pass, not a frame debugger's reading). A portrait focused on
+        // a leaf would have focused on a shape that is not on screen. So the displacement is one
+        // function, ShapeBody, and the forward pass and the two depth passes below all call it.
+        HLSLINCLUDE
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "TheatreWater.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
@@ -243,23 +241,6 @@ Shader "Evosim/Theatre Body"
                 // Where the vertex is on a leaf, for the leaf mesh alone (TheatreMeshes.Lamina):
                 // s from base to tip, t from rim to rim, and which face. Zero on every other mesh.
                 float4 leafOS     : TEXCOORD4;
-            };
-
-            struct Varyings
-            {
-                float4 positionCS : SV_POSITION;
-                float3 positionWS : TEXCOORD0;
-                float3 normalWS   : TEXCOORD1;
-                // x is the fog factor, y is how translucent this part's thickness makes it.
-                float2 fogAndThickness : TEXCOORD2;
-                // The undisplaced object position, so the fragment can ask the carve field the
-                // same question the vertex asked it, and the depth in metres it was asked with.
-                float3 positionOS : TEXCOORD3;
-                float carveDepth  : TEXCOORD4;
-
-                // On a leaf: s, the distance across the half width (-1 to 1), t, and one. Zero
-                // elsewhere, which draws no veins.
-                float4 leaf       : TEXCOORD5;
             };
 
             // The part's half extents in metres, taken from the object to world matrix rather
@@ -655,36 +636,28 @@ Shader "Evosim/Theatre Body"
                 leafOut = float4(s, t * LeafWidth(s, l), t, 1.0 + hW / max(1e-6, 2.0 * hL));
             }
 
-            // The midrib and the margin: a midrib from the stalk that fades up the blade, and a
-            // rim barely darker than the lamina, since a blade's thin edge lets the light through.
-            // On the face the midrib is a little lighter than the lamina; in the light that comes
-            // through the blade it is the shadow. Faded out when it is finer than a pixel, so a
-            // distant crowd does not shimmer.
-            void LeafVeins(float4 leaf, out float face, out float through)
+            // ---------------------------------------------------------------- the shape
+
+            // Where one vertex of a body is drawn, and what the forward pass needs to know about
+            // it afterwards. Every pass takes its position from here and from nowhere else, so
+            // the depth the depth of field reads is the depth the colour was drawn at.
+            struct BodyVertex
             {
-                face = 1.0;
-                through = 1.0;
-                if (leaf.w < 0.5) return;
+                float3 positionWS;
+                float3 normalWS;
+                // The undisplaced object position the carve field was read at, and the depth in
+                // metres it was read with, for the fragment's rebuilt normal.
+                float3 carveOS;
+                float carveDepth;
+                // On a leaf: s, the distance across the half width, t, and the flag; zero elsewhere.
+                float4 leaf;
+                float halfThickMetres;
+                float halfWidthMetres;
+            };
 
-                float s = leaf.x;
-                float v = leaf.y;
-                float t = leaf.z;
-
-                // A blade has no pinnate veins. What it has, in kelps like Alaria, is a thickened
-                // midrib from the stalk that fades up the blade; nothing past half way.
-                float midrib = exp(-v * v / 0.0012) * (1.0 - smoothstep(0.1, 0.55, s));
-                midrib *= saturate(1.0 - 20.0 * fwidth(v));
-
-                float vein = saturate(midrib) * _VeinStrength;
-                float margin = smoothstep(0.8, 1.0, abs(t));
-
-                face = 1.0 + 0.35 * vein - 0.08 * margin;
-                through = 1.0 - 0.6 * vein;
-            }
-
-            Varyings Vertex(Attributes input)
+            BodyVertex ShapeBody(Attributes input)
             {
-                Varyings output = (Varyings)0;
+                BodyVertex body = (BodyVertex)0;
 
                 float3 halfExtents = HalfExtentsWS();
                 float smallest = min(halfExtents.x, min(halfExtents.y, halfExtents.z));
@@ -772,12 +745,92 @@ Shader "Evosim/Theatre Body"
                     positionWS += inward;
                 }
 
-                output.positionWS = positionWS;
-                output.normalWS = normalWS;
-                output.positionOS = carveOS;
-                output.carveDepth = depth;
-                output.positionCS = TransformWorldToHClip(positionWS);
-                output.leaf = leaf;
+                body.positionWS = positionWS;
+                body.normalWS = normalWS;
+                body.carveOS = carveOS;
+                body.carveDepth = depth;
+                body.leaf = leaf;
+                body.halfThickMetres = halfThickMetres;
+                body.halfWidthMetres = halfWidthMetres;
+
+                return body;
+            }
+        ENDHLSL
+
+        Pass
+        {
+            Name "ForwardLit"
+            Tags { "LightMode" = "UniversalForward" }
+
+            Cull Back
+            ZWrite On
+
+            HLSLPROGRAM
+            #pragma vertex Vertex
+            #pragma fragment Fragment
+            #pragma target 3.0
+
+            #pragma multi_compile_fog
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 positionWS : TEXCOORD0;
+                float3 normalWS   : TEXCOORD1;
+                // x is the fog factor, y is how translucent this part's thickness makes it.
+                float2 fogAndThickness : TEXCOORD2;
+                // The undisplaced object position, so the fragment can ask the carve field the
+                // same question the vertex asked it, and the depth in metres it was asked with.
+                float3 positionOS : TEXCOORD3;
+                float carveDepth  : TEXCOORD4;
+
+                // On a leaf: s, the distance across the half width (-1 to 1), t, and one. Zero
+                // elsewhere, which draws no veins.
+                float4 leaf       : TEXCOORD5;
+            };
+
+            // The midrib and the margin: a midrib from the stalk that fades up the blade, and a
+            // rim barely darker than the lamina, since a blade's thin edge lets the light through.
+            // On the face the midrib is a little lighter than the lamina; in the light that comes
+            // through the blade it is the shadow. Faded out when it is finer than a pixel, so a
+            // distant crowd does not shimmer.
+            void LeafVeins(float4 leaf, out float face, out float through)
+            {
+                face = 1.0;
+                through = 1.0;
+                if (leaf.w < 0.5) return;
+
+                float s = leaf.x;
+                float v = leaf.y;
+                float t = leaf.z;
+
+                // A blade has no pinnate veins. What it has, in kelps like Alaria, is a thickened
+                // midrib from the stalk that fades up the blade; nothing past half way.
+                float midrib = exp(-v * v / 0.0012) * (1.0 - smoothstep(0.1, 0.55, s));
+                midrib *= saturate(1.0 - 20.0 * fwidth(v));
+
+                float vein = saturate(midrib) * _VeinStrength;
+                float margin = smoothstep(0.8, 1.0, abs(t));
+
+                face = 1.0 + 0.35 * vein - 0.08 * margin;
+                through = 1.0 - 0.6 * vein;
+            }
+
+            Varyings Vertex(Attributes input)
+            {
+                Varyings output = (Varyings)0;
+
+                BodyVertex body = ShapeBody(input);
+
+                output.positionWS = body.positionWS;
+                output.normalWS = body.normalWS;
+                output.positionOS = body.carveOS;
+                output.carveDepth = body.carveDepth;
+                output.positionCS = TransformWorldToHClip(body.positionWS);
+                output.leaf = body.leaf;
 
                 // A thin part transmits and a thick one does not. Faked from the geometry rather
                 // than from a baked thickness map, which is what the single pass approximation
@@ -786,8 +839,8 @@ Shader "Evosim/Theatre Body"
                 // A blade is translucent by its own size as well: a twelfth of its half width is
                 // added to the threshold, so a large blade still lets the light through where it
                 // is thin, as kelp does.
-                float transMetres = _TransMetres + 0.08 * halfWidthMetres;
-                float thickness = saturate(transMetres / max(1e-4, halfThickMetres));
+                float transMetres = _TransMetres + 0.08 * body.halfWidthMetres;
+                float thickness = saturate(transMetres / max(1e-4, body.halfThickMetres));
 
                 output.fogAndThickness = float2(ComputeFogFactor(output.positionCS.z), thickness);
 
@@ -992,6 +1045,86 @@ Shader "Evosim/Theatre Body"
                 lit = EvoMixFog(lit, input.fogAndThickness.x, input.positionWS);
 
                 return half4(lit, 1.0);
+            }
+            ENDHLSL
+        }
+
+        // The body in the depth texture, at the shape the forward pass draws. URP renders this
+        // pass when it needs a depth prepass and the DepthNormals pass below when a feature asks
+        // for normals too (the renderer's ambient occlusion does, so that is the one a film's
+        // depth of field reads today). Both are the vertex stage and nothing else.
+        Pass
+        {
+            Name "DepthOnly"
+            Tags { "LightMode" = "DepthOnly" }
+
+            Cull Back
+            ZWrite On
+            ColorMask R
+
+            HLSLPROGRAM
+            #pragma vertex DepthVertex
+            #pragma fragment DepthFragment
+            #pragma target 3.0
+
+            float4 DepthVertex(Attributes input) : SV_POSITION
+            {
+                return TransformWorldToHClip(ShapeBody(input).positionWS);
+            }
+
+            half DepthFragment(float4 positionCS : SV_POSITION) : SV_Target
+            {
+                return positionCS.z;
+            }
+            ENDHLSL
+        }
+
+        // The depth and the normal. The normal is the shaped surface's (the taper, the bend and
+        // the leaf's own), not the carve's per pixel relief: that relief is a noise read a pixel
+        // at a time, and nothing reads the normals texture's fine detail today, so the prepass is
+        // spared it. It is the forward pass's CarvedNormal away if the occlusion ever wants it.
+        Pass
+        {
+            Name "DepthNormals"
+            Tags { "LightMode" = "DepthNormals" }
+
+            Cull Back
+            ZWrite On
+
+            HLSLPROGRAM
+            #pragma vertex DepthNormalsVertex
+            #pragma fragment DepthNormalsFragment
+            #pragma target 3.0
+
+            #pragma multi_compile_fragment _ _GBUFFER_NORMALS_OCT
+
+            struct DepthNormalsVaryings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 normalWS   : TEXCOORD0;
+            };
+
+            DepthNormalsVaryings DepthNormalsVertex(Attributes input)
+            {
+                BodyVertex body = ShapeBody(input);
+
+                DepthNormalsVaryings output;
+                output.positionCS = TransformWorldToHClip(body.positionWS);
+                output.normalWS = body.normalWS;
+
+                return output;
+            }
+
+            half4 DepthNormalsFragment(DepthNormalsVaryings input) : SV_Target
+            {
+                float3 normalWS = normalize(input.normalWS);
+
+                #if defined(_GBUFFER_NORMALS_OCT)
+                    float2 octahedral = saturate(PackNormalOctQuadEncode(normalWS) * 0.5 + 0.5);
+                    return half4(PackFloat2To888(octahedral), 0.0);
+                #else
+                    return half4(normalWS, 0.0);
+                #endif
             }
             ENDHLSL
         }
