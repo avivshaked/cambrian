@@ -344,21 +344,64 @@ dry run passes every new variable. **What the bud build found** (its report,
 `scratch/r48-bud`): the 0.5 kg newborn mass floor, applied per part, refused every birth
 carrying a developed 3 cm part, so no born-small addition was ever born in rounds 41 to
 47, and under it a whole plant is refused at investment 0.02 unless its adult is at least
-0.031 m³; hence the rigid-group floors and the lowered floors, both to be screened. **In
-flight:** the config fixture is re-recorded (`pfix11` under `scratch/r48-build/runs`,
-`53f8234cb554f0ba`, copied to `fixtures/r42-config.json`); the crowd fixture `r48fix-s4`
-(round 44's world, seed 4, 20,000 s at 6 threads, launched 10:48, about an hour) runs, and
-`RunFixture.cs` points at it; then the Dynamics suite on it, the regress against
-`r47fixd-s4` (`scratch/r45-build/regress.py`), and the Slow identity word. The snow-knob
-screen (`scratch/r48-snow`, seed 2 at dt 0.02 to 15,000 s on remineralisation and the
-sink, one run at a time; its base run started 10:12) and the safari's implementing pass
-(worktree `safari2-r47`, thirteen files touched at 10:45) are still running. Seed 2's safari
-is filmed on worker 6 (24 clips, 0 under the bed, 0 inside a body, 0 over the ceiling;
-`scratch/safari/r47-s2/2026-09-24`); seed 3's waits for the new safari. Then: a 600 s smoke
-of `env-r48.ps1` at dt 0.02 and a screen of the count's plateau under the proportional
-overhead and the lowered floors (and whether 50 g links hold in the solver), the
-pre-registration (0119), the launch of seeds 1 and 2, the push (main is nine commits ahead
-of origin at 10:50). **Seed 2 ended at 30,000 s** (about 06:20, 357 min wall at 1.4x real time, 5,602 alive,
+0.031 m³; hence the rigid-group floors and the lowered floors, both to be screened.
+
+**State at the switch (2026-09-24, about 12:30; the session was handed from Fable to Opus
+here, and this block is what the next session works from).** Everything below it in this
+section is history.
+
+- **Main is clean and pushed** through the round 48 merges, the launcher, the reader, the
+  draft and the fixtures. The fixtures on the merged build: `fixtures/r42-config.json` from
+  `pfix11` (`53f8234cb554f0ba`); the crowd `runs/r48fix-s4` (round 44's world, seed 4,
+  20,000 s), `RunFixture.cs` pointing at it; Dynamics 109 of 109 on it. The regress against `r47fixd-s4` (`scratch/r45-build/regress.py`) is identical in every shared field for 140 samples and parts at 1,410 s, where the new build refused one conception under the 0.5 kg per-part mass floor (`conceptionsUnderMassFloor` 5 against 4) that the old build admitted: a mutant drawn with a bud where the old mutator changed a type. That is D119 by construction (the type change is gone at every setting, so the recorded world cannot be replayed on this build once a cell-type draw fires), not a fault; every rule that has an off replays. The Slow identity word held on the new config fixture (`ParallelIdentityTests`, `c9b0cabce249c1dd` at 1, 4 and 16 threads).
+- **The pre-registration is a draft**, `logbook/specs/r48-prereg-draft.md`, seventeen
+  clauses with their reader `scripts/reads/r48-read.py` (checked on the smoke and on
+  `r47-s1`). Two things in it are not settled and the launch waits on both. First, the
+  overhead floor: the launcher's 10 J at x2 does not bound the count (the count screen,
+  `scratch/r48-build/runs/r48plat-s2`: doubling every 100 s to 6,111 at 680 s, stopped by
+  hand); the second pass screens `EVOSIM_OVERHEAD` 50 with `EVOSIM_OVERHEAD_PER_TISSUE` 2
+  and the small-child floors kept (`-Env @{ EVOSIM_OVERHEAD = 50 }` on `env-r48.ps1`, seed 2,
+  dt 0.02, four threads, to a plateau or 5,000 s), and 75 J if that settles above ten
+  thousand bodies; the winning value is written into `env-r48.ps1` and the draft's world
+  and screen sections before the commit. Second, the snow dials: the snow screen
+  (`scratch/r48-snow`, an Opus agent's, held after its base run at the owner's request)
+  reads whether remineralisation or the sink should move; if the reading is not in hand,
+  the draft says the dials stay at round 47's and the round proceeds. The draft's long
+  sentences flagged by `scripts/style-check.py` are fixed at promotion.
+- **The launch, in order:** the second-pass screen read; the values written; the draft
+  promoted to `logbook/0119-a-stomach-on-a-plant-and-paying-as-you-go.md` with the launch
+  section filled (the commit, Core 955 of 955, Farm 88 of 88, the Dynamics count, the
+  fixtures, the exe `artifacts/Evosim.Farm/bin/Release-r48`, the wall from the screen's
+  pace); the README key row; committed on a clean tree; then
+  `./scripts/run-farm.ps1 r48-s1 -Seed 1 -Threads 5 -Launcher rounds/env-r48.ps1 -Exe
+  artifacts/Evosim.Farm/bin/Release-r48/Evosim.Farm.exe -WallMinutes <from the pace>` and
+  seed 2 the same, two arms at a time (the owner's cap), seed 3 when one ends; the watch is
+  `python scripts/watch-round.py 48 --read scripts/reads/r48-read.py` from the session's
+  cron every half hour, never a shell loop. The manifest's `gitCommit` with no `(DIRTY)`
+  is the pre-registration's record.
+- **The safari's implementing pass is committed on its branch and not merged**
+  (`worktree-safari2-r47` at `41ed512`, worktree `.claude/worktrees/safari2-r47`; its
+  report is in the commit message). Before merging: rerender seed 1's scenes 14 and 20 (the
+  vibaresa birth, the plaguplax colony) and the descent from the worktree's worker 5 with
+  `theatre-safari.ps1 ... -Guide <guide.json> -Scenes 14,20` (the guide from
+  `python scripts/guide.py r47-s1 --out <dir>` in the worktree; `scratch/safari-impl/` has
+  the compile trip and the facts), look at the contact sheets, and decide the call-outs
+  (built behind `EVOSIM_THEATRE_SAFARI_CALLOUTS=1`, off; the owner's ruling, the agent's
+  recommendation to allow the colony tint and the sparkline). Then merge, refresh worker 6
+  from main, and reshoot round 47's three seeds (`theatre-safari.ps1 r47-sN -Worker 6
+  -WallMinutes 360 -SeekMax 300`, one at a time, never beside a full set of arms). Seed 2's
+  old-safari films are under `scratch/safari/r47-s2/2026-09-24`; videos are never committed.
+- **A proposal waits on the owner** for the round after 48: `fable-propose-reactive-thrust.md`
+  (added mass as a per-link tensor in the solver's inertia). Not for round 48.
+- **Machine and load, the owner's rulings today:** at most two farm runs, none beside a
+  test suite, at most half the machine while the owner is at it, and "let's not leave it
+  churning for hours". Nothing runs at the switch but what the owner allowed to finish.
+  `scripts/sweep-orphans.ps1` first, every session.
+- **Loose ends worth an hour each, none gating:** the draft's G2 is a weak clause by
+  design; F4 reads the founder's fed density (crowding lowers it); the ledger is a lump
+  reading; the Unity farm binds none of the eight new tunables; `EVOSIM_OVERHEAD`'s code
+  default is 25 J.
+ **Seed 2 ended at 30,000 s** (about 06:20, 357 min wall at 1.4x real time, 5,602 alive,
 45,675 births, no divergence, both books closed): the pool's 78 founders all died at a
 median 24 s and none bred; the tables held more snow than the open floor at 192 of 201
 dumps and at the last one (0.53 against 0.47 J/m³); fewer bodies under the caps than beside

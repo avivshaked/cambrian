@@ -1473,7 +1473,13 @@ actually verifying it.
   `fixtures/r42-config.json` from `pfix11` (round 42's hash `53f8234cb554f0ba`) and the crowd
   `runs/r48fix-s4`; the ten inocula were taken to format 9 by a text edit that added
   `"mode":"Lump","gestation":0.5` and no other byte (`scratch/r48-repro/convert-format8-to-9.py`).
-  Five things bite. **The newborn mass floor was applied per part and refused every born-small
+  **The crowd regress no longer reads IDENTICAL, and that is the bud's design**: `r48fix-s4`
+  against `r47fixd-s4` is identical for 140 samples and parts at 1,410 s, where the build
+  refused a bud-carrying mutant under the per-part mass floor that the old build admitted
+  with its type changed; the type change has no off, so a world recorded before D119
+  replays on this build only until its first cell-type draw. Read a regress across the
+  build as identical up to that sample, and take the fixture's identity from the
+  rules that have an off. Six things bite. **The newborn mass floor was applied per part and refused every born-small
   part** (`MinNewbornPartKilograms` 0.5 kg is 5e-4 m³ a part; a 3 cm bud or duplicate is
   2e-4 m³), so in rounds 41 to 47 no birth carrying a developed 3 cm part was ever admitted
   and a whole plant at investment 0.02 was refused unless its adult was 0.031 m³ or more:
