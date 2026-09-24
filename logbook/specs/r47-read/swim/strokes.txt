@@ -1,0 +1,30 @@
+s1 non-stroking 258: brain drive-signal RMS on lead dof: median 0.000; share <0.05 0.77; share >0.3 0.12
+   jointed body length m median 1.01, mass kg median 75.40
+  s1 run water, 25 chosen: median net horizontal speed m/s (and in body lengths/s) by variant; multi-joint bodies separately
+    all        n=25 brain=0.0035 (0.0026) passive=0.0016 (0.0018) servoSineIn=0.0044 (0.0041) servoSineLag90=0.0044 (0.0041) servoAsym=0.0056 (0.0048) openSineIn=0.0050 (0.0061) openSineLag90=0.0050 (0.0059) 
+    >=2 joints n= 6 brain=0.0026 (0.0015) passive=0.0015 (0.0017) servoSineIn=0.0047 (0.0052) servoSineLag90=0.0045 (0.0043) servoAsym=0.0067 (0.0068) openSineIn=0.0052 (0.0065) openSineLag90=0.0065 (0.0067) 
+    1 joint    n=19 brain=0.0039 (0.0027) passive=0.0017 (0.0019) servoSineIn=0.0044 (0.0041) servoSineLag90=0.0044 (0.0041) servoAsym=0.0044 (0.0047) openSineIn=0.0050 (0.0056) openSineLag90=0.0050 (0.0056) 
+  s1 clean water, 25 chosen: median net horizontal speed m/s (and in body lengths/s) by variant; multi-joint bodies separately
+    all        n=25 brain=0.0004 (0.0004) passive=0.0000 (0.0000) servoSineIn=0.0026 (0.0023) servoSineLag90=0.0021 (0.0018) servoAsym=0.0028 (0.0024) openSineIn=0.0019 (0.0018) openSineLag90=0.0025 (0.0027) 
+    >=2 joints n= 6 brain=0.0014 (0.0006) passive=0.0000 (0.0000) servoSineIn=0.0033 (0.0039) servoSineLag90=0.0026 (0.0026) servoAsym=0.0029 (0.0028) openSineIn=0.0042 (0.0047) openSineLag90=0.0048 (0.0053) 
+    1 joint    n=19 brain=0.0003 (0.0004) passive=0.0000 (0.0000) servoSineIn=0.0013 (0.0012) servoSineLag90=0.0013 (0.0012) servoAsym=0.0027 (0.0022) openSineIn=0.0008 (0.0009) openSineLag90=0.0008 (0.0009) 
+s2 non-stroking 37: brain drive-signal RMS on lead dof: median 0.017; share <0.05 0.62; share >0.3 0.30
+   jointed body length m median 1.13, mass kg median 47.38
+  s2 run water, 25 chosen: median net horizontal speed m/s (and in body lengths/s) by variant; multi-joint bodies separately
+    all        n=25 brain=0.0122 (0.0102) passive=0.0003 (0.0002) servoSineIn=0.0080 (0.0065) servoSineLag90=0.0055 (0.0058) servoAsym=0.0081 (0.0069) openSineIn=0.0165 (0.0128) openSineLag90=0.0165 (0.0128) 
+    >=2 joints n= 2 brain=0.0074 (0.0070) passive=0.0000 (0.0000) servoSineIn=0.0065 (0.0063) servoSineLag90=0.0036 (0.0036) servoAsym=0.0095 (0.0091) openSineIn=0.0069 (0.0064) openSineLag90=0.0091 (0.0085) 
+    1 joint    n=23 brain=0.0123 (0.0105) passive=0.0004 (0.0003) servoSineIn=0.0080 (0.0065) servoSineLag90=0.0080 (0.0065) servoAsym=0.0055 (0.0044) openSineIn=0.0173 (0.0131) openSineLag90=0.0173 (0.0131) 
+  s2 clean water, 25 chosen: median net horizontal speed m/s (and in body lengths/s) by variant; multi-joint bodies separately
+    all        n=25 brain=0.0022 (0.0025) passive=0.0000 (0.0000) servoSineIn=0.0069 (0.0054) servoSineLag90=0.0069 (0.0056) servoAsym=0.0057 (0.0044) openSineIn=0.0049 (0.0032) openSineLag90=0.0049 (0.0032) 
+    >=2 joints n= 2 brain=0.0075 (0.0071) passive=0.0000 (0.0000) servoSineIn=0.0034 (0.0030) servoSineLag90=0.0049 (0.0048) servoAsym=0.0042 (0.0038) openSineIn=0.0112 (0.0109) openSineLag90=0.0075 (0.0068) 
+    1 joint    n=23 brain=0.0016 (0.0019) passive=0.0000 (0.0000) servoSineIn=0.0070 (0.0056) servoSineLag90=0.0070 (0.0056) servoAsym=0.0067 (0.0044) openSineIn=0.0035 (0.0029) openSineLag90=0.0035 (0.0029) 
+s3 non-stroking 1148: brain drive-signal RMS on lead dof: median 0.007; share <0.05 0.76; share >0.3 0.11
+   jointed body length m median 0.70, mass kg median 52.68
+  s3 run water, 25 chosen: median net horizontal speed m/s (and in body lengths/s) by variant; multi-joint bodies separately
+    all        n=25 brain=0.0048 (0.0056) passive=0.0019 (0.0022) servoSineIn=0.0033 (0.0040) servoSineLag90=0.0051 (0.0059) servoAsym=0.0038 (0.0043) openSineIn=0.0053 (0.0056) openSineLag90=0.0053 (0.0078) 
+    >=2 joints n=23 brain=0.0050 (0.0057) passive=0.0019 (0.0022) servoSineIn=0.0040 (0.0047) servoSineLag90=0.0057 (0.0062) servoAsym=0.0061 (0.0067) openSineIn=0.0053 (0.0056) openSineLag90=0.0073 (0.0080) 
+    1 joint    n= 2 brain=0.0021 (0.0031) passive=0.0004 (0.0005) servoSineIn=0.0019 (0.0028) servoSineLag90=0.0019 (0.0028) servoAsym=0.0023 (0.0033) openSineIn=0.0046 (0.0065) openSineLag90=0.0046 (0.0065) 
+  s3 clean water, 25 chosen: median net horizontal speed m/s (and in body lengths/s) by variant; multi-joint bodies separately
+    all        n=25 brain=0.0037 (0.0047) passive=0.0000 (0.0000) servoSineIn=0.0041 (0.0048) servoSineLag90=0.0062 (0.0074) servoAsym=0.0061 (0.0067) openSineIn=0.0093 (0.0113) openSineLag90=0.0150 (0.0179) 
+    >=2 joints n=23 brain=0.0051 (0.0070) passive=0.0000 (0.0000) servoSineIn=0.0041 (0.0048) servoSineLag90=0.0066 (0.0075) servoAsym=0.0078 (0.0094) openSineIn=0.0137 (0.0146) openSineLag90=0.0166 (0.0183) 
+    1 joint    n= 2 brain=0.0017 (0.0025) passive=0.0000 (0.0000) servoSineIn=0.0024 (0.0034) servoSineLag90=0.0024 (0.0034) servoAsym=0.0026 (0.0037) openSineIn=0.0051 (0.0074) openSineLag90=0.0051 (0.0074) 

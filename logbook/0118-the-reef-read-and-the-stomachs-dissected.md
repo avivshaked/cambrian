@@ -153,9 +153,28 @@ was dim. The refilm reads 15,935 frames with no dark frame and none over the cei
 Watching the films, the owner saw jointed bodies wag and stay in place, and asked why. Two
 reasons are known: nothing pays for going anywhere in this world (joint work is priced at
 zero and no prize reads position), and a single joint driven back and forth meets the same
-drag both ways under a lift-free fluid, so a wag is not a stroke. Whether these bodies
-produce any thrust at all is being measured in the farm's own solver as this is written,
-and the result is HANDOFF's until it is an entry's.
+drag both ways under a lift-free fluid, so a wag is not a stroke. The measurement
+followed the same morning (an Opus subagent; the probe is `src/Evosim.SwimProbe`, its
+summaries `logbook/specs/r47-read/swim/`, its reads `scripts/reads/swim-*.py`): every
+jointed body alive at 30,000 s, developed as the run stepped it, run alone for 120 s in
+still, neutrally buoyant water in `Evosim.Dynamics` under its own brain, bit-identical to
+the farm's step. Most do not stroke at all (258 of 268 in seed 1, 1,148 of 1,422 in seed 3),
+and their joints in the run are moved by the water and by contact, a free damped hinge and
+not a muscle, which the probe reads as inference since a resume recording the drive would
+settle it. The ones that stroke move 2 to 6 mm/s, a few millimetres a stroke, half a
+percent of a body length a second, against a current of 100 mm/s; the strokes are
+single-joint or in phase with mirror-image halves, and two parent-and-child pairs in three
+seeds look like a travelling wave. Hand-made strokes on the same bodies, a 90-degree lag
+down the chain or a fast out and slow back, add a factor of 1.2 to 1.6 and the best single
+body reaches 70 mm/s. The reason is the fluid model as coded: quadratic pressure drag on a
+link's leading panels and nothing else, the added mass folded into the link's mass as a
+scalar, no lift, no circulation, no reactive push from water shed by a moving limb; so a
+symmetric stroke averages to zero and even an asymmetric one earns millimetres. The bodies
+wag because wagging is free and goes nowhere because the water gives nothing back. That is
+a finding about the world's physics and not about selection, and it is the owner's to rule
+on: a reactive term (the added mass of a limb's lateral motion, Lighthill's elongated-body
+thrust) is the missing half of swimming, and the prize side of movement cannot be tested
+until it exists.
 
 ## What the round taught
 
