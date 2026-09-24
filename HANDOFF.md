@@ -391,6 +391,26 @@ section is history.
   from main, and reshoot round 47's three seeds (`theatre-safari.ps1 r47-sN -Worker 6
   -WallMinutes 360 -SeekMax 300`, one at a time, never beside a full set of arms). Seed 2's
   old-safari films are under `scratch/safari/r47-s2/2026-09-24`; videos are never committed.
+- **The snow screen read its base and nothing else** (the Opus agent's report, 12:45; the
+  five alternatives were held at the owner's request). The base is round 47's launcher at
+  dt 0.02, seed 2, 15,000 s (`scratch/r48-snow/runs/base`, `6636ef0289fae2de`; its reads
+  are `scripts/reads/snow-read.py` and `snow-timeline.py`, checked against round 47 seed
+  2's tables): the tank's snow peaks at 0.33 J/m³ under the founding bloom at 4,000 s and
+  settles at about 0.25 from 10,000 s with 24% of columns over the 0.44 break-even and 2%
+  over 1 at 15,000 s; the bed layer drains from 15.1 kJ to 5.4 kJ (0.25 J/m³); the few
+  living eaters read 0.6 to 0.7 at the body against 0.27 to 0.3 in their columns (a thin
+  layer the column mean averages away); trickle and pool stomach founders die in a median
+  21 to 206 s, long before the snow's slow decline could matter; `upt lim` holds at 77 to
+  84%, so the plants are matter-bound, and a lower remineralisation would cost them. The
+  agent's reading, and mine: the snow's decline is not the first thing to fix, the founders'
+  arrival is, which is what D122 does; so round 48 runs the snow dials at round 47's, and the
+  alternatives (`remin-half` first: `./scratch/r48-snow/run-farm-snow.ps1 -Arm remin-half
+  -Seed 2 -Seconds 15000 -WallMinutes 120 -Threads 6 -RunsRoot scratch/r48-snow/runs -Exe
+  artifacts/Evosim.Farm/bin/Release-snow/Evosim.Farm.exe -Launcher
+  scratch/r48-snow/env-snow.ps1 -Env @{EVOSIM_REMIN=0.00025}`, read with `python
+  scripts/reads/snow-read.py scratch/r48-snow/runs base remin-half`) are a between-rounds
+  screen if round 48's eaters still starve with the founders placed. A dt 0.02 result about
+  depth is confirmed at 0.01 before it is a result.
 - **A proposal waits on the owner** for the round after 48: `fable-propose-reactive-thrust.md`
   (added mass as a per-link tensor in the solver's inertia). Not for round 48.
 - **Machine and load, the owner's rulings today:** at most two farm runs, none beside a

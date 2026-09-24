@@ -53,9 +53,13 @@ token's `minkg=0.05` and `invest=0.05-1`. The bud has no token: `Mutator.ChangeC
 gone from the build and a bud is drawn at the cell-type rate (0.005 per node) in its place.
 Three seeds, 30,000 s at dt 0.01, five threads each, two arms at a time, the runaway
 ceiling 25,000, checkpoints every 2,500 s, the fields and the poses dumped. The snow's two
-dials (remineralisation 0.0005 /s, the sink 0.002 m/s) are round 47's unless the snow
-screen running beside this draft (`scratch/r48-snow`) says one of them should move; if it
-does, the change is written here before the commit and the reading it rests on is cited.
+dials (remineralisation 0.0005 /s, the sink 0.002 m/s) are round 47's: the snow screen's
+base run (round 47's launcher at dt 0.02, seed 2, 15,000 s; `scripts/reads/snow-read.py`,
+HANDOFF's snow bullet) read the tank's snow settling at about 0.25 J/m³ from 10,000 s with
+the plants matter-bound (`upt lim` 77 to 84%), and the stomach founders dying in a median
+21 to 206 s, long before that decline could matter; so the founders' arrival is what this
+round changes (D122), and the dials are a between-rounds screen if the eaters still starve
+with the founders placed.
 
 ## The ledger at the round's prices
 
