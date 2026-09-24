@@ -1452,6 +1452,44 @@ actually verifying it.
   1.9 times the recorded one on one thread and the body phase 19% more at 8 threads
   (`per-part-contact-spec.md` §6); a checkpoint rebuilds the link spheres on restore, and
   `--verify-checkpoint` with the switch on is owed before a resume under it is trusted.
+- **From round 48's build (2026-09-24, D119 to D122) eight tunables and a genome field land
+  together, and every config, genome and checkpoint written before them is refused.** The
+  bud (`Mutator.ChangeCellType` is gone; a bud is a welded copy of a node at the born-small
+  size with another type, drawn at `CellTypeChance`; `EVOSIM_RIGID_FLOORS`, header `floors
+  rigid groups` after the reach, the birth row's `bud` and `budx`), gestation
+  (`ReproductionTraits.Mode` and `GestationShare`, genome format 9; `EVOSIM_GESTATION_MODE_CHANCE`
+  and `_SHARE_CHANCE` at 0 draw nothing, `_SHARE_MIN`/`_MAX` the founders' range; every
+  birth row carries `gm` and `gs`; stats rows `gestationBirths`, `gestatedJoules`,
+  `gestationJoulesHeld`), the scaled overhead (`EVOSIM_OVERHEAD_PER_TISSUE`; `EVOSIM_OVERHEAD`
+  is the floor and `EVOSIM_OVERHEAD_FLOOR` its second name, the two refused at different
+  values; header `overhead scale x2 floor 10 J · gestation …` before the hash), senescence
+  on upkeep alone (`EVOSIM_SENESCENCE_WEARS_INTAKE`, on when unset; header `senescence
+  3000 s on upkeep` or `on upkeep and intake`), founders at their food's depth
+  (`EVOSIM_FOUNDERS_FOLLOW_FOOD_DEPTH`, header `founders in their food at its depth`) and
+  the endowment (`EVOSIM_FOUNDER_ENDOWMENT` seconds of standing watts, header `endowment
+  600 s`; the founder row's `endow`). `WorldState.StateVersion` is 10 and the checkpoint's
+  queued lineage rows carry the endowment and the bud fields (version 10 is the first to
+  carry any of them, so nothing older is byte-compatible anyway). The fixtures are
+  `fixtures/r42-config.json` from `pfix11` (round 42's hash `53f8234cb554f0ba`) and the crowd
+  `runs/r48fix-s4`; the ten inocula were taken to format 9 by a text edit that added
+  `"mode":"Lump","gestation":0.5` and no other byte (`scratch/r48-repro/convert-format8-to-9.py`).
+  Five things bite. **The newborn mass floor was applied per part and refused every born-small
+  part** (`MinNewbornPartKilograms` 0.5 kg is 5e-4 m³ a part; a 3 cm bud or duplicate is
+  2e-4 m³), so in rounds 41 to 47 no birth carrying a developed 3 cm part was ever admitted
+  and a whole plant at investment 0.02 was refused unless its adult was 0.031 m³ or more:
+  every "unexpressed gene" read from a snapshot in those rounds is read with this. With the
+  rigid-group floors on, a welded part is exempt from `MinPartVolume` and the newborn floor
+  weighs a rigid group as one. **The endowment is an influx**: a closed world's `mat in`
+  reads the founders' endowments over ρ (90.9 units for fifty floor founders in the smoke),
+  and `matterStanding` is the seed plus it; both books close by it. **The overhead's code
+  default is 25 J**, not the 100 J every launcher from round 41 set; a config carries its
+  value, so nothing recorded moves, but a world built from defaults prices a child at 25.
+  **The mutation rates for gestation default to 0**, so a launcher that does not set
+  `EVOSIM_GESTATION_MODE_CHANCE` runs a world in which every body is a lump breeder and the
+  header reads `gestation off`. And **the ledger is a lump reading**: `LedgerForecast` prices
+  the new overhead and knows the mode, but a gestating body's account is not modelled, so
+  an R0 from `ledger.ps1` is the lump lineage's. The Unity farm binds none of the eight, so
+  a world built there has them at their defaults and its header carries none of the tokens.
 - **A farm round's pre-registration record is the manifest's `gitCommit` on a clean tree.**
   `run-farm.ps1` has no `-Prereg`; `launch-queue.ps1 -Prereg` is the Unity queue's. So a
   farm round is launched only after the entry is committed and `git status` is clean, and
