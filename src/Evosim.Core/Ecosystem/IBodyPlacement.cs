@@ -100,6 +100,23 @@ namespace Evosim.Core
         Func<Phenotype, float, float, float> FounderAcceptance { get => null; set { } }
 
         /// <summary>
+        /// The round 48 founding ruling's depth (<see cref="RunConfig.FoundersFollowFoodDepth"/>):
+        /// for a founder accepted at (x, z), the height span <c>(Top, Bottom)</c> of the richest
+        /// cell of the developed adult's food in that column, or null to keep the depth the world
+        /// drew. Null as a whole, the default, leaves every founder at its drawn depth.
+        /// </summary>
+        /// <remarks>
+        /// Asked only after <see cref="FounderAcceptance"/> has kept the spot, so the column is
+        /// D116's. A placer that honours it sets the founder at one uniform draw of its own
+        /// stream inside the span, held under the surface by the body's radius, and then applies
+        /// the bed, the reefs and the free-spot test as to any founder; the height it hands back
+        /// may then be lower than the one it was given, which is the one exception to
+        /// <see cref="TryReserveFounder"/>'s raise-only rule. Only asked for a body the span is
+        /// not null for, so a founder that eats nothing takes no draw.
+        /// </remarks>
+        Func<Phenotype, float, float, (float Top, float Bottom)?> FounderDepth { get => null; set { } }
+
+        /// <summary>
         /// The patch a living creature's body is actually in — D077's "a patch is a region".
         /// </summary>
         /// <remarks>

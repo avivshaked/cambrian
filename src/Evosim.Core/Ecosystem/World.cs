@@ -367,19 +367,7 @@ namespace Evosim.Core
 
                 Placement.FounderAcceptance = (body, x, z) =>
                 {
-                    bool eatsSnow = false;
-                    bool eatsMatter = false;
-
-                    if (body != null)
-                    {
-                        IReadOnlyList<PhenotypePart> parts = body.Parts;
-                        for (int i = 0; i < parts.Count; i++)
-                        {
-                            string type = parts[i].CellTypeId;
-                            if (type == CellTypeIds.Absorptive) eatsSnow = true;
-                            else if (type == CellTypeIds.Photosynthetic) eatsMatter = true;
-                        }
-                    }
+                    FoodOf(body, out bool eatsSnow, out bool eatsMatter);
 
                     if (!eatsSnow && !eatsMatter) return 1f;
 
@@ -388,6 +376,53 @@ namespace Evosim.Core
                     if (eatsMatter) share = Math.Max(share, ShareOfRichestColumn(matter, x, z));
                     return share;
                 };
+
+                // The round 48 founding ruling: the accepted column's richest cell of the same
+                // food, the field chosen as the acceptance chose it (a mixotroph takes the larger
+                // share, the snow on a tie). Null, and the drawn depth kept, for a body that eats
+                // nothing and for a column whose food field holds nothing there. Off, nothing is
+                // handed over and the placer takes no draw for it.
+                if (Config.FoundersFollowFoodDepth)
+                {
+                    Placement.FounderDepth = (body, x, z) =>
+                    {
+                        FoodOf(body, out bool eatsSnow, out bool eatsMatter);
+
+                        if (!eatsSnow && !eatsMatter) return null;
+
+                        GridField field = eatsSnow && eatsMatter
+                            ? ShareOfRichestColumn(snow, x, z) >= ShareOfRichestColumn(matter, x, z)
+                                ? snow
+                                : matter
+                            : eatsSnow ? snow : matter;
+
+                        int layer = field.RichestLayerInColumn(x, z);
+                        if (layer < 0) return null;
+
+                        float cell = field.CellMetres;
+                        return (-layer * cell, -(layer + 1) * cell);
+                    };
+                }
+            }
+        }
+
+        /// <summary>
+        /// Which of the two fields a developed body eats — D116's reading: the snow for an
+        /// absorptive part, the dissolved matter for a photosynthetic one, both for a mixotroph.
+        /// </summary>
+        private static void FoodOf(Phenotype body, out bool eatsSnow, out bool eatsMatter)
+        {
+            eatsSnow = false;
+            eatsMatter = false;
+
+            if (body == null) return;
+
+            IReadOnlyList<PhenotypePart> parts = body.Parts;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                string type = parts[i].CellTypeId;
+                if (type == CellTypeIds.Absorptive) eatsSnow = true;
+                else if (type == CellTypeIds.Photosynthetic) eatsMatter = true;
             }
         }
 
@@ -1691,6 +1726,18 @@ namespace Evosim.Core
                         "has columns; run a grid, or turn the rule off.",
                         nameof(config));
                 }
+            }
+
+            // The round 48 ruling's depth refines D116's column, so it has no column to refine
+            // without it; refused rather than ignored, for the trickle's reason above.
+            if (config.FoundersFollowFoodDepth && !config.FoundersFollowFood)
+            {
+                throw new ArgumentException(
+                    "FoundersFollowFoodDepth is on and FoundersFollowFood is off. The depth rule " +
+                    "sets a founder at the richest cell of its food in the column D116 accepted it " +
+                    "in, so it needs D116's rule on; a header naming it would describe a world the " +
+                    "run did not have.",
+                    nameof(config));
             }
         }
 
@@ -3953,13 +4000,22 @@ namespace Evosim.Core
                 return;
             }
 
+            // The round 48 founding ruling (RunConfig.FounderEndowmentSeconds): seconds of the
+            // newborn body's own standing cost, at age 0, on top of the floor's purse. Created
+            // where the purse is — Admit credits the whole start to EnergyIn and, over ρ, to
+            // MatterInfluxedTotal (D098's leg 9) — so both books close with no new term. At 0
+            // nothing is computed and the purse is the recorded expression, bit for bit.
+            double endowment = FounderEndowmentFor(body);
+
             Organism founder = Admit(
                 genome, body, BirthKind.Floor, seed, parentId: -1, generationDepth: 0,
-                energy: Config.FounderEnergyJoules * birthFraction,
+                energy: endowment > 0d
+                    ? Config.FounderEnergyJoules * birthFraction + endowment
+                    : Config.FounderEnergyJoules * birthFraction,
                 tissue: tissue, heightY: height, parent: null,
                 patch: patch, adultPhenotype: adult,
                 adultTissue: Metabolism.TissueJoules(adult, Config),
-                founderSource: source, poolIndex: poolIndex);
+                founderSource: source, poolIndex: poolIndex, endowment: endowment);
 
             if (shared)
             {
@@ -3972,6 +4028,21 @@ namespace Evosim.Core
             // developed, which is the floor quietly selecting for viability.
             CountFounderAttempt(source);
             if (founder != null) _living.Add(founder);
+        }
+
+        /// <summary>
+        /// A founder's endowment in joules — <see cref="RunConfig.FounderEndowmentSeconds"/> times
+        /// <see cref="Metabolism.StandingWatts"/> of the body it is born with, at age 0. Zero, and
+        /// nothing computed, with the endowment off.
+        /// </summary>
+        public double FounderEndowmentFor(Phenotype newborn)
+        {
+            if (newborn == null) throw new ArgumentNullException(nameof(newborn));
+
+            float seconds = Config.FounderEndowmentSeconds;
+            if (!(seconds > 0f)) return 0d;
+
+            return Math.Max(0d, (double)seconds * Metabolism.StandingWatts(newborn, Config));
         }
 
         /// <summary>
@@ -4303,11 +4374,18 @@ namespace Evosim.Core
         /// For a <see cref="FounderSource.Pool"/> founder, the index of the pool genome it copies
         /// (D117), carried to its lineage row; -1 for everything else.
         /// </param>
+        /// <param name="endowment">
+        /// The part of <paramref name="energy"/> that is the founder's endowment
+        /// (<see cref="RunConfig.FounderEndowmentSeconds"/>), in joules, carried to its lineage
+        /// row as <c>endow</c>. Already inside <paramref name="energy"/>, and booked with it; 0
+        /// for everything else.
+        /// </param>
         private Organism Admit(
             Genome genome, Phenotype phenotype, BirthKind kind, ulong seed, long parentId,
             int generationDepth, double energy, double tissue, float heightY, Organism parent,
             int patch, Phenotype adultPhenotype, double adultTissue,
-            FounderSource founderSource = FounderSource.None, int poolIndex = -1)
+            FounderSource founderSource = FounderSource.None, int poolIndex = -1,
+            double endowment = 0d)
         {
             // The owner's ruling of 2026-09-19: a body that would grow into itself is not born.
             // Asked here rather than at each of the three call sites so that a founder and an
@@ -4447,7 +4525,7 @@ namespace Evosim.Core
                 CarriesAttribute(genome, n => n.Attack),
                 CarriesAttribute(genome, n => n.Intake),
                 CarriesAttribute(genome, n => n.Protection),
-                founderSource, poolIndex));
+                founderSource, poolIndex, endowment));
 
             return creature;
         }

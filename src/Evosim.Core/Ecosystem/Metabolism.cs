@@ -412,7 +412,9 @@ namespace Evosim.Core
             // that kills (D038). It moves both sides of the ledger from one knob and by the same
             // factor: an old body spends more and converts less, which is what ageing is. Death
             // stays exactly where §5A.6 puts it, at a reserve of zero, so how long a creature
-            // lasts depends on how well it earns rather than on a lifespan we picked.
+            // lasts depends on how well it earns rather than on a lifespan we picked. Since the
+            // round 48 ruling the income side is a switch (RunConfig.SenescenceWearsIntake);
+            // the cost side always wears.
             float wear = config.SenescenceDoublingSeconds > 0f && ageSeconds > 0f
                 ? 1f + ageSeconds / config.SenescenceDoublingSeconds
                 : 1f;
@@ -504,7 +506,12 @@ namespace Evosim.Core
             // and the difference leaves the world through EnergyLedger.Wasted — the same route
             // §5A.3's transfer loss already takes, so §5A.2's audit closes without a new term.
             // Scaling the draw instead would make ageing a discount on the world's groceries.
-            if (wear > 1f)
+            //
+            // The round 48 ruling (RunConfig.SenescenceWearsIntake false) wears the costs alone:
+            // the whole intake, the capacity with it, is left undivided, so the capacity and the
+            // income it bounds stay comparable in that mode too. True is D038 and the recorded
+            // world, and its branch is the recorded expression.
+            if (wear > 1f && config.SenescenceWearsIntake)
             {
                 // The capacity wears with the income it bounds, so the two stay comparable and
                 // "uptake bound this step" does not become a statement about the body's age.

@@ -206,6 +206,20 @@ namespace Evosim.Core
         /// </summary>
         public int PoolIndex { get; }
 
+        /// <summary>
+        /// Birth only — a founder's endowment in joules
+        /// (<see cref="RunConfig.FounderEndowmentSeconds"/>), already inside the reserve it was
+        /// born with; 0 on every other row and on every founder of a world with the endowment off.
+        /// The row's <c>endow</c>, written only when above 0.
+        /// </summary>
+        /// <remarks>
+        /// Not written to a checkpoint (<c>WorldState.WriteLineage</c>), for the kill row's part
+        /// index's reason: the farm drains the queue to <c>lineage.jsonl</c> before every
+        /// checkpoint, so no farm checkpoint carries a birth row, and writing it would move
+        /// <c>StateVersion</c>. A restored row reads 0.
+        /// </remarks>
+        public double EndowmentJoules { get; }
+
         /// <summary>Death only — why the creature left the population.</summary>
         public DeathCause Cause { get; }
 
@@ -279,9 +293,11 @@ namespace Evosim.Core
             long attackerId, bool rootLost, int partsLost,
             double tissueJoulesLost, double reserveJoulesLost,
             FounderSource source = FounderSource.None,
-            int partIndex = -1, int attackerPartIndex = -1, int poolIndex = -1)
+            int partIndex = -1, int attackerPartIndex = -1, int poolIndex = -1,
+            double endowmentJoules = 0d)
         {
             Source = source;
+            EndowmentJoules = endowmentJoules;
             PartIndex = partIndex;
             AttackerPartIndex = attackerPartIndex;
             PoolIndex = poolIndex;
@@ -317,7 +333,8 @@ namespace Evosim.Core
             bool hasPhotosynthetic, int patch, float birthFraction, float adultScale,
             float reserveMargin, int indeterminateNodes,
             bool hasAttack, bool hasIntake, bool hasProtection,
-            FounderSource source = FounderSource.None, int poolIndex = -1) =>
+            FounderSource source = FounderSource.None, int poolIndex = -1,
+            double endowmentJoules = 0d) =>
             new LineageEvent(
                 LineageEventKind.Birth, elapsedSeconds, id, parentId, birthKind, generationDepth,
                 speciesId, hasAbsorptive, hasJoint, hasPhotosynthetic, patch,
@@ -325,7 +342,8 @@ namespace Evosim.Core
                 hasAttack, hasIntake, hasProtection, default,
                 attackerId: -1, rootLost: false, partsLost: 0,
                 tissueJoulesLost: 0d, reserveJoulesLost: 0d, source: source,
-                poolIndex: source == FounderSource.Pool ? poolIndex : -1);
+                poolIndex: source == FounderSource.Pool ? poolIndex : -1,
+                endowmentJoules: endowmentJoules);
 
         public static LineageEvent Death(double elapsedSeconds, long id, DeathCause cause) =>
             new LineageEvent(
@@ -454,6 +472,14 @@ namespace Evosim.Core
                 if (Source == FounderSource.Pool)
                 {
                     w.Field("pool", PoolIndex);
+                }
+
+                // The round 48 founding ruling's endowment, in joules, on a founder's row and only
+                // when above 0, so every row of a world with the endowment off is byte for byte
+                // what it was.
+                if (EndowmentJoules > 0d)
+                {
+                    w.Field("endow", EndowmentJoules);
                 }
             }
             else if (Kind == LineageEventKind.Kill)
