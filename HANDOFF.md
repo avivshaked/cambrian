@@ -393,6 +393,20 @@ is what the next session works from. Everything below it in this section is hist
   films into `scratch/wt-safari2/scratch/safari/r47-s2/2026-09-24/`. The call-outs stay off
   until the owner rules. Merge the branch after the films are seen; round 48's safari then
   runs from main.
+- **Round 49's record and films, being built** (the owner's rulings of 15:40 to 16:00: checkpoints
+  every 500 s from round 48 seed 3, a record that stays small, and safari films soon after an arm
+  ends, at the scale of 300,000 s runs). The design is `logbook/specs/record-and-film-spec.md`.
+  Part A is a smaller record: genomes written once at birth, slim snapshots, gzipped positions,
+  the binary pose stream in place of `poses.jsonl`, compressed checkpoints, one reader per
+  language, and a converter that deletes nothing. It should take a seed from 6 GB to about 1 GB.
+  Part B is films the farm moves and Unity draws: the farm restores a checkpoint and writes every
+  body's pose thirty times a second for a scene's window, checked faithful against the run's own
+  rows, and the theatre plays it back. Two Opus builders are working in `scratch/wt-record`
+  (branch `record-format`: A1 to A3, A5 to A7 and the retirement of `poses.jsonl`) and
+  `scratch/wt-farmfilm` (branch `farm-film`: the stream's version 2 and `--film-window`). They
+  build and do not run tests: no suite may run beside two farm runs, so the suites, the regress
+  and the timings wait for round 48's gap. B2 and B3 (theatre playback and the safari on
+  windows) follow once the safari branch has merged.
 - **The review's second and third items are built and not yet seen** (`d5540e6` on the safari
   branch, an Opus subagent, compiled clean on the worktree's `unity-w6` with every pass of the
   four shaders compiling). Close shots have real depth of field: one body at 1.5 to 3 body
