@@ -94,6 +94,13 @@ namespace Evosim.Farm
             // D116: the founder rule reads the field the founder's body eats. Off is the recorded
             // world, and the world refuses it beside D109's.
             Flag("EVOSIM_FOUNDERS_FOLLOW_FOOD", (s, v) => s.FoundersFollowFood = v),
+
+            // The round 48 founding ruling (owner, 2026-09-24): a founder accepted in a column is
+            // set at the richest cell of its food there, and every founder is born holding that
+            // many seconds of its own standing cost. Off and 0 are the recorded world; the depth
+            // rule is refused without D116's.
+            Flag("EVOSIM_FOUNDERS_FOLLOW_FOOD_DEPTH", (s, v) => s.FoundersFollowFoodDepth = v),
+            Num("EVOSIM_FOUNDER_ENDOWMENT", 0f, (s, v) => s.FounderEndowment = v),
             Num("EVOSIM_LIGHT_SHADE", 0f, (s, v) => s.LightShade = v),
             Num("EVOSIM_LIGHT_SHADE_DRIFT", 0f, (s, v) => s.LightShadeDrift = v),
             Num("EVOSIM_SECONDS", 4000f, (s, v) => s.BudgetSeconds = v),
@@ -209,6 +216,10 @@ namespace Evosim.Farm
             Num("EVOSIM_MAX_TISSUE", (float)D.MaximumTissueJoules, (s, v) => s.MaxTissue = v),
 
             Num("EVOSIM_SENESCENCE", 0f, (s, v) => s.Senescence = v),
+
+            // The round 48 ruling: 0 wears upkeep alone. Unset is 1, D038 and the recorded world,
+            // which is why this switch reads its fallback as on where every other flag reads off.
+            FlagOn("EVOSIM_SENESCENCE_WEARS_INTAKE", (s, v) => s.SenescenceWearsIntake = v),
             Num("EVOSIM_CELLTYPE_MUTATION", MutationRates.Default.CellTypeChance, (s, v) => s.CellTypeMutation = v),
             Num("EVOSIM_CLEARANCE", 1.0f, (s, v) => s.Clearance = v),
             Num("EVOSIM_TISSUE_ENERGY", 0f, (s, v) => s.TissueEnergy = v),
@@ -539,6 +550,8 @@ namespace Evosim.Farm
             config.MatterIslandDepthMetres = s.MatterIslandDepth;
             config.FoundersFollowMatter = s.FoundersFollowMatter;
             config.FoundersFollowFood = s.FoundersFollowFood;
+            config.FoundersFollowFoodDepth = s.FoundersFollowFoodDepth;
+            config.FounderEndowmentSeconds = s.FounderEndowment;
             config.LightShadeDepth = s.LightShade;
             config.LightShadeDriftMetresPerHour = s.LightShadeDrift;
             config.WorldAreaSquareMetres = s.Area;
@@ -555,6 +568,7 @@ namespace Evosim.Farm
             config.MaximumPopulation = s.MaxPopulation;
             config.MaximumTissueJoules = s.MaxTissue;
             config.SenescenceDoublingSeconds = s.Senescence;
+            config.SenescenceWearsIntake = s.SenescenceWearsIntake;
             config.Mutation.CellTypeChance = s.CellTypeMutation;
             config.SenseChemical = s.SenseChemical;
             config.SenseEnergy = s.SenseEnergy;
@@ -837,6 +851,13 @@ namespace Evosim.Farm
         private static Knob Flag(string name, Action<EnvSettings, bool> set) =>
             new Knob(name, (s, env) => set(s, Num(env, name, 0f) > 0.5f));
 
+        /// <summary>
+        /// A switch whose unset value is on: <c>Env(name, 1f) &gt; 0.5f</c>. For a knob whose
+        /// recorded world is the true side (<c>EVOSIM_SENESCENCE_WEARS_INTAKE</c>).
+        /// </summary>
+        private static Knob FlagOn(string name, Action<EnvSettings, bool> set) =>
+            new Knob(name, (s, env) => set(s, Num(env, name, 1f) > 0.5f));
+
         private static Knob Text(string name, Action<EnvSettings, string> set) =>
             new Knob(name, (s, env) => set(s, env(name)));
 
@@ -878,6 +899,12 @@ namespace Evosim.Farm
         public float MatterIslandDepth;
         public bool FoundersFollowMatter;
         public bool FoundersFollowFood;
+
+        /// <summary>The round 48 founding ruling's depth — <c>EVOSIM_FOUNDERS_FOLLOW_FOOD_DEPTH</c>.</summary>
+        public bool FoundersFollowFoodDepth;
+
+        /// <summary>The round 48 founding ruling's endowment, s — <c>EVOSIM_FOUNDER_ENDOWMENT</c>.</summary>
+        public float FounderEndowment;
         public float LightShade;
         public float LightShadeDrift;
         public float BudgetSeconds;
@@ -986,6 +1013,9 @@ namespace Evosim.Farm
         public int MaxPopulation;
         public double MaxTissue;
         public float Senescence;
+
+        /// <summary>Whether senescence divides intake too — <c>EVOSIM_SENESCENCE_WEARS_INTAKE</c>, on when unset.</summary>
+        public bool SenescenceWearsIntake;
         public float CellTypeMutation;
         public float Clearance;
         public float TissueEnergy;

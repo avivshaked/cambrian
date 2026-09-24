@@ -429,6 +429,43 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("population", Unit = "J")]
         public float FounderEnergyJoules { get; set; } = 200f;
+        /// <summary>
+        /// Seconds of its own standing cost every founder is born holding on top of
+        /// <see cref="FounderEnergyJoules"/> — the round 48 founding ruling (owner, 2026-09-24,
+        /// "proceed with your recommendations"). 0, the default, is every recorded world.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The founder's reserve at birth is <c>FounderEnergyJoules · birthFraction</c> plus this
+        /// times <see cref="Metabolism.StandingWatts"/> of the body it is born with (at age 0, so
+        /// unworn). Round 47's founders read 9 to 45 J of reserve against a net of about −0.25 W
+        /// and died in 20 to 35 s, too soon to have been anywhere; this gives each one a runway
+        /// measured in its own cost, so a large body and a small one get the same number of
+        /// seconds rather than the same joules.
+        /// </para>
+        /// <para>
+        /// Floor, trickle and D117's pool founders alike (<c>World.AdmitFounder</c>); not an
+        /// inoculant, which is an assay's hand and keeps its named purse. Booked where the rest of
+        /// a founder's start is: created in <c>World.Admit</c>, credited to <c>EnergyIn</c> and,
+        /// over ρ, to <c>MatterInfluxedTotal</c> (D098's leg 9), so both identities close. The
+        /// founder's lineage row carries it as <c>endow</c>, in joules, when it is above 0.
+        /// </para>
+        /// </remarks>
+        [Tunable("population", Unit = "s")]
+        public float FounderEndowmentSeconds
+        {
+            get => _founderEndowmentSeconds;
+            set => _founderEndowmentSeconds =
+                value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                    ? value
+                    : throw new ArgumentOutOfRangeException(
+                        nameof(FounderEndowmentSeconds), value,
+                        "A founder's endowment is a finite, non-negative number of seconds of its " +
+                        "own standing cost; 0 is off.");
+        }
+
+        private float _founderEndowmentSeconds;
+
 
         /// <summary>Depth range founders are scattered through, metres.</summary>
         /// <remarks>
@@ -1306,6 +1343,30 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("world")]
         public bool FoundersFollowFood { get; set; }
+        /// <summary>
+        /// Whether a founder accepted in a column under <see cref="FoundersFollowFood"/> is set at
+        /// the depth of that column's richest cell of its food — the round 48 founding ruling
+        /// (owner, 2026-09-24). Off by default, which is every recorded world.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// D116 chooses the column and leaves the depth to <see cref="FounderDepthSpread"/>'s
+        /// draw, so a founder's own cell read about half its column's mean and a stomach founder
+        /// landed in about 0.12 J/m³ (round 47's dissection). With this on, a founder whose body
+        /// eats is placed at the centre of the richest cell of its food in the accepted column,
+        /// jittered within that cell by one draw of the placer's stream; a mixotroph takes the
+        /// field whose column share is the larger, as D116's acceptance does. The placer's floor,
+        /// reef and free-spot tests then apply as to any founder, and the height is held below
+        /// the surface by the body's own radius. A body that eats nothing keeps the drawn depth.
+        /// </para>
+        /// <para>
+        /// Refused without <see cref="FoundersFollowFood"/>, whose column it refines. A new
+        /// realisation of every seed when on.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public bool FoundersFollowFoodDepth { get; set; }
+
 
         /// <summary>
         /// How dark the darkest column is under the light's shade map, in [0, 1) — D109. 0 is no
@@ -2356,6 +2417,25 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("world", Unit = "s")]
         public float SenescenceDoublingSeconds { get; set; }
+        /// <summary>
+        /// Whether senescence divides intake as well as multiplying upkeep — D038's second side.
+        /// True, the default, is D038 and every recorded world; false is the round 48 ruling
+        /// (owner, 2026-09-24): senescence wears upkeep alone.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// With both sides worn a body's break-even density rises as the square of the wear: a
+        /// stomach's 0.44 J/m³ at birth is about 1.0 by 1,500 s and 1.8 by 3,000 s at a 3,000 s
+        /// doubling, so an eater is priced out of the larder by its age before the larder is
+        /// read. False leaves upkeep and neural cost multiplied by <c>1 + t/T</c> and the light,
+        /// the food and the light capacity undivided, so the capacity and the income it bounds
+        /// stay comparable in either mode (<c>Metabolism.Bill</c>'s wear block). Read only when
+        /// <see cref="SenescenceDoublingSeconds"/> is above 0.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public bool SenescenceWearsIntake { get; set; } = true;
+
 
         /// <summary>
         /// Drift threshold θ for D057's species boundary — a child founds a new species when its

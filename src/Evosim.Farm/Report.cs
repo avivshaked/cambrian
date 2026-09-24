@@ -199,7 +199,12 @@ namespace Evosim.Farm
                 // D116 takes the token's own slot: one founder rule or the other, never both.
                 " · founders " + (s.FoundersFollowMatter
                     ? "in matter"
-                    : s.FoundersFollowFood ? "in their food" : "anywhere") +
+                    : s.FoundersFollowFood
+                        ? s.FoundersFollowFoodDepth ? "in their food at its depth" : "in their food"
+                        : "anywhere") +
+                // The round 48 founding ruling's endowment, beside the rule that places the
+                // founders it is given to; rendered off as well as on, as the trickle is.
+                " · endowment " + (s.FounderEndowment > 0f ? F(s.FounderEndowment) + " s" : "off") +
                 " · shade " + (s.LightShade > 0f
                     ? s.LightShade.ToString("0.##", Inv) + " drift " + s.LightShadeDrift.ToString("0.#", Inv) + " m/h"
                     : "off") +
@@ -268,7 +273,10 @@ namespace Evosim.Farm
                 PoolToken(config) +
                 " · ceiling " + F(s.MaxPopulation) +
                 " maxTissue=" + s.MaxTissue.ToString("0.#", Inv) +
-                " · senescence " + (s.Senescence > 0f ? F(s.Senescence) + " s" : "off") +
+                // The round 48 ruling says which sides the wear takes: D038's two, or upkeep alone.
+                " · senescence " + (s.Senescence > 0f
+                    ? F(s.Senescence) + " s on " + (s.SenescenceWearsIntake ? "upkeep and intake" : "upkeep")
+                    : "off") +
                 " · cellType mut " + F(s.CellTypeMutation) +
                 " · clearance " + F(s.Clearance) +
                 " · linkPhoto " + F(s.LinkPhoto) +

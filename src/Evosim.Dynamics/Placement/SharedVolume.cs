@@ -204,6 +204,15 @@ namespace Evosim.Dynamics.Placement
         /// </remarks>
         public Func<Phenotype, float, float, float> FounderAcceptance { get; set; }
 
+        /// <summary>
+        /// The round 48 founding ruling's depth, or null: see
+        /// <see cref="IBodyPlacement.FounderDepth"/>. Set by the world beside
+        /// <see cref="FounderAcceptance"/>, and only when <c>FoundersFollowFoodDepth</c> is on.
+        /// One more draw of the stream per accepted candidate whose span is not null; none
+        /// otherwise, so the recorded stream is untouched with it off.
+        /// </summary>
+        public Func<Phenotype, float, float, (float Top, float Bottom)?> FounderDepth { get; set; }
+
         /// <summary>The spatial hash's cell side, metres: 2× the largest body, floored at 1.</summary>
         public float CellMetres => _cellSize;
 
@@ -536,6 +545,7 @@ namespace Evosim.Dynamics.Placement
             bool reefs = Floor != null && Floor.HasReefs;
 
             Func<Phenotype, float, float, float> accept = FounderAcceptance;
+            Func<Phenotype, float, float, (float Top, float Bottom)?> depthOf = FounderDepth;
             int budget = accept == null ? AttemptBudget : AttemptBudget * 8;
 
             for (int attempt = 0; attempt < budget; attempt++)
@@ -568,12 +578,37 @@ namespace Evosim.Dynamics.Placement
                     if (!(p > 0f) || _rng.NextFloat() >= p) { DesertRefusals++; continue; }
                 }
 
+                // The round 48 founding ruling: at the richest cell of the founder's food in the
+                // column just accepted, one draw inside the cell, held under the surface by the
+                // body's radius and above a flat bed as the drawn depth is. Null (the rule off, or
+                // a body that eats nothing, or an empty column) keeps the drawn depth and takes no
+                // draw, so a world without the rule is the recorded stream.
+                float baseY = y;
+                bool atFood = false;
+
+                if (depthOf != null)
+                {
+                    (float Top, float Bottom)? cell = depthOf(body, candidate.X, candidate.Z);
+                    if (cell.HasValue)
+                    {
+                        float top = cell.Value.Top;
+                        float bottom = cell.Value.Bottom;
+                        float at = bottom + (top - bottom) * _rng.NextFloat();
+
+                        if (at > -radius) at = -radius;
+                        baseY = UnityFloatMath.Max(at, LowestPlacement(radius));
+                        atFood = true;
+
+                        candidate = new Float3(candidate.X, baseY, candidate.Z);
+                    }
+                }
+
                 // The floor under the point — D092. The disc draw above is untouched.
-                float placedY = y;
+                float placedY = baseY;
 
                 if (shaped)
                 {
-                    placedY = UnityFloatMath.Max(y, LowestPlacement(candidate.X, candidate.Z, radius));
+                    placedY = UnityFloatMath.Max(baseY, LowestPlacement(candidate.X, candidate.Z, radius));
 
                     // See TryReserveOffspring: the readonly rebuild of `candidate.y = placedY`.
                     candidate = new Float3(candidate.X, placedY, candidate.Z);
@@ -587,7 +622,10 @@ namespace Evosim.Dynamics.Placement
                 Reserve(candidate, radius);
                 patch = PatchOf(candidate.X, candidate.Z);
 
-                if (placedY > heightY) heightY = placedY;
+                // A founder set at its food is admitted at the height it was set at, deeper or
+                // shallower than the draw; any other is only ever raised, as before.
+                if (atFood) heightY = placedY;
+                else if (placedY > heightY) heightY = placedY;
 
                 return true;
             }

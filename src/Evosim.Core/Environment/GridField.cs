@@ -1529,6 +1529,38 @@ namespace Evosim.Core
             return total;
         }
 
+        /// <summary>
+        /// The layer of the richest live cell in the column under a position — by what a body can
+        /// reach of it (a refuge layer counts at its edible fraction) — or -1 when the column's
+        /// live cells hold nothing. Ties go to the shallower cell. The round 48 founding ruling's
+        /// depth (<see cref="RunConfig.FoundersFollowFoodDepth"/>). Layer <c>iy</c> spans heights
+        /// <c>[−(iy + 1)·CellMetres, −iy·CellMetres]</c>.
+        /// </summary>
+        public int RichestLayerInColumn(float x, float z)
+        {
+            int column = ColumnAt(x, z);
+            int ix = column / _nz;
+            int iz = column % _nz;
+
+            int best = -1;
+            double most = 0d;
+
+            for (int iy = 0; iy < _ny; iy++)
+            {
+                int cell = Index(ix, iy, iz);
+                if (_live != null && !_live[cell]) continue;
+
+                double edible = Edible(cell);
+                if (edible > most)
+                {
+                    most = edible;
+                    best = iy;
+                }
+            }
+
+            return best;
+        }
+
         /// <summary>The fullest column's stock, J — what <see cref="ColumnStockAt"/> is a share of.</summary>
         public double MaxColumnStock()
         {
