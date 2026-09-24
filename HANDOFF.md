@@ -406,13 +406,15 @@ is what the next session works from. Everything below it in this section is hist
   (`scratch/leaf-look/earth/side-4.png`), `EVOSIM_THEATRE_EARTH=0` to see through the shoal
   for a census, and the free-fly camera held 0.3 m above the bed (the films and the safari
   already were).
-- **Round 47 seed 2's safari reshoot is running** on those passes, from the worktree's worker 5
-  (its Core predates round 48; main's build refuses round 47's checkpoints), launched 14:29,
-  29 scenes at 1920x1080 with `-DeleteFrames`, detached, log
-  `scratch/wt-safari2/scratch/logs/safari-r47-s2-reshoot.out` and `theatre-safari-r47-s2.log`,
-  films into `scratch/wt-safari2/scratch/safari/r47-s2/2026-09-24/`. The call-outs stay off
-  until the owner rules. Merge the branch after the films are seen; round 48's safari then
-  runs from main.
+- **Round 47 seed 2's safari reshoot is done** (launched 14:29, ended 18:56): 29 scenes,
+  18,647 frames, nothing under the bed or inside a body, no camera over 0.5 m/s. The clips and
+  sheets are in `scratch/wt-safari2/scratch/safari/r47-s2/2026-09-24/`, joined as
+  `r47-s2-safari-reshoot-all.mp4` (173 MB, 10 min 21 s) and sent to the owner as a 720p copy.
+  Scene 14, the floor at 5,000 s, is twenty seconds of empty sand, which is the floor in that
+  world; the floor scene is ten seconds from `c0259c5`. Moving it to where the crowd meets the
+  shoal would show bodies over sand, but its caption would have to change with it, so that is
+  offered to the owner and not built. The call-outs stay off until the owner rules. Merge the
+  branch after the films are seen; round 48's safari then runs from main.
 - **Faster film frames, built and not yet measured** (`2a118b9` on the safari branch, an Opus
   subagent, compiled on the worktree's `unity-w6`). The reshoot's frames cost about 200 ms each
   where the render and read-back is 33 ms. The rest was a CPU box filter over a 4K array, a
@@ -427,7 +429,16 @@ is what the next session works from. Everything below it in this section is hist
   so scene 7's 20.5 minutes of stepping becomes one restore. The agent's reading, unmeasured:
   most of the seek's slowness is Mono itself, which is Part B's case. The measurement commands
   are in the agent's report as run at the reshoot's end: a 10 s close film with and without the
-  old paths on worker 5, refreshed first.
+  old paths on worker 5, refreshed first. **Checked at 19:40** on worker 5 refreshed from
+  `2a118b9`: `theatre-film.ps1 r47-s2 -At 30000 -Shots canopy,close -Seconds 10
+  -DownsampleCheck -RunsRoot <main>/runs`. The card's filter equals the CPU's in all six
+  checked frames (0 of 2,073,600 pixels differ). A frame cost 17.8 ms (canopy) and 29.7 ms
+  (close) on the main thread at the median, against the reshoot's 200 ms, and the writer never
+  made the film wait. Those numbers were taken beside two farm arms, so they are indicative
+  and are re-taken at the gap. The canopy shot, under the caps looking up through a gap at
+  the leaves against the light, reads well; the close shot's depth of field is mild at the
+  matched lens. The director check `-Check -Scenes 3,23,4`, with and without `-Canopy`,
+  followed on the same worker.
 - **Round 49's record and films, being built** (the owner's rulings of 15:40 to 16:00: checkpoints
   every 500 s from round 48 seed 3, a record that stays small, and safari films soon after an arm
   ends, at the scale of 300,000 s runs). The design is `logbook/specs/record-and-film-spec.md`.
