@@ -1521,6 +1521,13 @@ actually verifying it.
   Code's process tree (an inference). It bites a pace or timing read: the same run is faster
   with VS Code in front, so a wall split or a pace compared across two windows of time
   compares the focus as well.
+- **Report the machine's CPU as Task Manager does: `% Processor Utility`, not `% Processor
+  Time`.** On 2026-09-24 the agent read 41% from `\Processor(_Total)\% Processor Time` while
+  the owner's Task Manager showed 75%. Both were right: `Time` is the share of time a core is
+  busy, and `Utility` (`\Processor Information(_Total)\% Processor Utility`, what Task Manager
+  has shown since Windows 11 22H2) scales it by the clock against the 3.0 GHz base, and the
+  cores were boosting to 1.6 times base (`% Processor Performance` 161). Heat and fan noise
+  follow `Utility`, so a load quoted to the owner is that counter.
 - **A worktree goes under `scratch/wt-<name>`, never under `.claude/`.** Claude Code treats
   `.claude` as a protected path: every write inside it asks the owner, and neither an allow
   rule nor bypass mode lifts that. The Agent tool's `isolation: "worktree"` and
