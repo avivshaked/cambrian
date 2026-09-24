@@ -41,6 +41,13 @@ namespace Evosim.Theatre
         /// <summary>How far inside the glass the camera keeps, m.</summary>
         public const float GlassClearance = 1f;
 
+        /// <summary>
+        /// How far outside a reef's rock the camera keeps, m: the signed distance of the eye to the
+        /// rock (<c>ReefGeometry.SignedDistance</c>). Round 47's safari put two clips' eyes inside
+        /// a stem or a cap, and half their frames were black (2026-09-24).
+        /// </summary>
+        public const float ReefClearance = 1.5f;
+
         /// <summary>The share of a strong move spent easing in, and again easing out (safari-spec §9).</summary>
         public const float EaseShare = 0.2f;
 
@@ -55,9 +62,12 @@ namespace Evosim.Theatre
             public readonly Bounds Box;
             public readonly BedShape Bed;
             public readonly float Depth;
+            /// <summary>The world's reefs, or null: the rock is one more thing the camera keeps off.</summary>
+            public readonly ReefGeometry Reefs;
 
             public WorldBounds(TheatreDynamicsReplay live)
             {
+                Reefs = live.Reefs != null && live.Reefs.Count > 0 ? live.Reefs : null;
                 RunConfig config = live.Record.Config;
                 Box = SnapshotCamera.BoxOf(live, out _);
                 Bed = live.Bed;
@@ -115,6 +125,49 @@ namespace Evosim.Theatre
                 float floor = FloorAt(eye.x, eye.z) + Clearance;
                 if (eye.y < floor) { eye.y = floor; bed++; }
 
+                return eye;
+            }
+
+            /// <summary>The signed distance from a place to the nearest reef's rock, m, or infinity with no reef.</summary>
+            public float ReefDistance(Vector3 p) =>
+                Reefs == null ? float.PositiveInfinity : (float)Reefs.SignedDistance(p.x, p.y, p.z);
+
+            /// <summary>
+            /// The nearest place at least <see cref="ReefClearance"/> outside every reef's rock,
+            /// moved along the rock's outward normal, or across it when the normal would carry the
+            /// eye into the surface's clearance (over a shallow table); the count says the rock
+            /// moved it.
+            /// </summary>
+            public Vector3 OffTheReef(Vector3 eye, ref int reef)
+            {
+                if (Reefs == null) return eye;
+                bool moved = false;
+
+                for (int pass = 0; pass < 6; pass++)
+                {
+                    double s = Reefs.SignedDistance(eye.x, eye.y, eye.z, ReefClearance + 0.25d, out int nearest, out ReefGeometry.Distance at);
+                    if (nearest < 0 || s >= ReefClearance) break;
+
+                    float need = ReefClearance - (float)s + 0.02f;
+                    var g = new Vector3((float)at.Gx, (float)at.Gy, (float)at.Gz);
+                    if (!Shot.Finite(g) || g.sqrMagnitude < 1e-10f) g = Vector3.up;
+                    Vector3 next = eye + g.normalized * need;
+
+                    if (next.y > -Clearance)
+                    {
+                        var across = new Vector3(g.x, 0f, g.z);
+                        if (across.sqrMagnitude < 1e-8f)
+                            across = new Vector3(eye.x - (float)Reefs.CentreX(nearest), 0f, eye.z - (float)Reefs.CentreZ(nearest));
+                        if (across.sqrMagnitude < 1e-8f) across = Vector3.right;
+                        next = eye + across.normalized * need;
+                        next.y = Mathf.Min(next.y, -Clearance);
+                    }
+
+                    eye = next;
+                    moved = true;
+                }
+
+                if (moved) reef++;
                 return eye;
             }
 
@@ -201,7 +254,7 @@ namespace Evosim.Theatre
             private bool _mayLeaveTheGlass;
 
             // the tally
-            private int _frames, _glass, _bed, _surface, _pushed, _inside;
+            private int _frames, _glass, _bed, _surface, _pushed, _inside, _reef, _limited, _over;
             private float _fastest, _fastestRelative;
             private Vector3 _lastEye, _lastSubject;
             private bool _hasLast;
@@ -604,6 +657,9 @@ namespace Evosim.Theatre
                     eye = _world.Keep(eye, ref _glass, ref _bed, ref _surface);
                     eye = OffTheBodies(live, view, eye);
 
+                    // The reef's rock, a metre and a half off (nothing in a world with no reef).
+                    eye = _world.OffTheReef(eye, ref _reef);
+
                     // A push can cross the glass or the bed again; the walls win, and the tally says so.
                     eye = _world.Keep(eye, ref _glass, ref _bed, ref _surface);
                 }
@@ -618,13 +674,32 @@ namespace Evosim.Theatre
                     eye = Vector3.Lerp(_lastEye, eye, 1f - Mathf.Exp(-frameSeconds / 0.5f));
                 }
 
+                // A safari path's corrections are speed-limited too: a wall's clamp or a push that
+                // would carry the eye faster than a body swims moves it at the ceiling instead, and
+                // the eye catches up over the frames that follow, which is a slower dolly. Round
+                // 47's colonies at the surface moved at 1.2 to 5.3 m/s under the surface's clamp
+                // (2026-09-24). The film's own shots are left as they were.
+                if (_path != null && _hasLast)
+                {
+                    float most = OrbitSpeedCeiling * 0.97f * Mathf.Max(1e-3f, frameSeconds);
+                    Vector3 step = eye - _lastEye;
+                    float length = step.magnitude;
+                    if (length > most)
+                    {
+                        eye = _lastEye + step * (most / length);
+                        _limited++;
+                    }
+                }
+
                 if (InsideABody(live, view, eye)) _inside++;
 
                 if (Name != "close") rotation = Quaternion.LookRotation(subject - eye, Vector3.up);
 
                 if (_hasLast)
                 {
-                    _fastest = Mathf.Max(_fastest, (eye - _lastEye).magnitude / frameSeconds);
+                    float speed = (eye - _lastEye).magnitude / frameSeconds;
+                    if (speed > OrbitSpeedCeiling * 1.05f) _over++;
+                    _fastest = Mathf.Max(_fastest, speed);
                     _fastestRelative = Mathf.Max(_fastestRelative,
                         ((eye - subject) - (_lastEye - _lastSubject)).magnitude / frameSeconds);
                 }
@@ -683,16 +758,18 @@ namespace Evosim.Theatre
             /// <summary>Forgets the warm-up's poses, so the tally counts the film's frames alone.</summary>
             public void ResetTally()
             {
-                _frames = _glass = _bed = _surface = _pushed = _inside = 0;
+                _frames = _glass = _bed = _surface = _pushed = _inside = _reef = _limited = _over = 0;
                 _fastest = _fastestRelative = 0f;
                 _hasLast = false;
             }
 
             public string Tally() => string.Format(CultureInfo.InvariantCulture,
-                "{0} frames; the glass bound {1}, the bed {2}, the surface {3}; pushed off a body {4}, " +
-                "still inside one {5}; fastest camera {6:0.###} m/s, fastest against the subject {7:0.###} m/s{8}",
+                "{0} frames; the glass bound {1}, the bed {2}, the surface {3}, the reef {9}; pushed off a body {4}, " +
+                "still inside one {5}; fastest camera {6:0.###} m/s, fastest against the subject {7:0.###} m/s; " +
+                "speed-limited {10}, over the ceiling {11}{8}",
                 _frames, _glass, _bed, _surface, _pushed, _inside, _fastest, _fastestRelative,
-                Name == "close" && _fastestRelative > CloseSpeedCeiling ? " (OVER the 0.3 m/s ceiling)" : "");
+                Name == "close" && _fastestRelative > CloseSpeedCeiling ? " (OVER the 0.3 m/s ceiling)" : "",
+                _reef, _limited, _over);
         }
     }
 }

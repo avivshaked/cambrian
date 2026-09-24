@@ -38,6 +38,10 @@ namespace Evosim.Theatre
         public long Body = -1;
         /// <summary>The second the scene opens at.</summary>
         public double At;
+        /// <summary>The second the trip asked for, when the director moved the scene off it; NaN otherwise.</summary>
+        public double AskedAt = double.NaN;
+        /// <summary>Writes the captions again from the scene's facts (set by <see cref="SafariCaptions.Fill"/>), for a scene the director moved.</summary>
+        public Action Refill;
         /// <summary>For Time, the second of the second take; NaN otherwise.</summary>
         public double SecondAt = double.NaN;
         /// <summary>True when the second may move to a checkpoint or to the world already on screen.</summary>
@@ -329,7 +333,13 @@ namespace Evosim.Theatre
             float depthMetres, float radiusMetres)
         {
             scene.Captions.Clear();
+            scene.Refill = () => Fill(scene, guide, arm, alive, depthMetres, radiusMetres);
             SafariClade c = scene.Clade;
+
+            // Every second a caption states is the second the clip is filmed at (the scene's At,
+            // which the director moves to a checkpoint and then writes the captions again), or
+            // is said to be another second.
+            bool moved = !double.IsNaN(scene.AskedAt) && Math.Abs(scene.AskedAt - scene.At) > 0.5d;
 
             switch (scene.Station)
             {
@@ -353,8 +363,16 @@ namespace Evosim.Theatre
                     Add(scene, 1d, c.Name + ", " + Guild(c) + ", founded at " + Seconds(c.FoundedAt) + from + ".");
                     if (c.PeakCount >= 0)
                     {
-                        Add(scene, 7d, "Its peak was " + Grouped(c.PeakCount) + " alive at " + Seconds(c.PeakAt) +
+                        // Filmed at its peak, the peak's second is the clip's; filmed elsewhere,
+                        // the caption says where first.
+                        bool atPeak = !double.IsNaN(c.PeakAt) && Math.Abs(c.PeakAt - scene.At) <= 0.5d;
+                        Add(scene, 7d, (atPeak ? "Its peak was " : "Filmed at " + Seconds(scene.At) + "; its peak was ") +
+                                       Grouped(c.PeakCount) + " alive at " + Seconds(c.PeakAt) +
                                        (double.IsNaN(c.PeakShare) ? "." : string.Format(CultureInfo.InvariantCulture, ", {0:0.#}% of the living.", 100d * c.PeakShare)));
+                    }
+                    else if (moved)
+                    {
+                        Add(scene, 7d, "Filmed at " + Seconds(scene.At) + "; the trip chose " + Seconds(scene.AskedAt) + ".");
                     }
                     if (!double.IsNaN(c.MedianDepth))
                     {
@@ -382,6 +400,13 @@ namespace Evosim.Theatre
                     Add(scene, 1d, c.Name + (facts.Count > 0 ? ": " + string.Join(", ", facts) + "." : "."));
                     if (c.AliveAtEnd == true) Add(scene, 7d, "It was alive at the end of the run.");
                     else if (!double.IsNaN(c.ExtinctAt)) Add(scene, 7d, "It was gone by " + Seconds(c.ExtinctAt) + ".");
+                    if (moved)
+                    {
+                        Add(scene, 13d, "Filmed at " + Seconds(scene.At) +
+                                        (c.PeakCount >= 0 && !double.IsNaN(c.PeakAt)
+                                            ? "; its peak was " + Grouped(c.PeakCount) + " alive at " + Seconds(c.PeakAt) + "."
+                                            : "; the trip chose " + Seconds(scene.AskedAt) + "."));
+                    }
                     break;
                 }
 

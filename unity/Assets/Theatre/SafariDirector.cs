@@ -325,6 +325,7 @@ namespace Evosim.Theatre
                 Say(string.Format(CultureInfo.InvariantCulture,
                     "opening on the world on screen at {0:0.#} s ({1:+0.#;-0.#} s from the scene's {2:0.#} s, inside the {3:0} s slack)",
                     now, now - target, target, _options.SlackSeconds));
+                if (Math.Abs(now - target) > 0.5d) Refiled(scene, segment, target, now);
                 StartSeek(now);
                 return;
             }
@@ -337,9 +338,8 @@ namespace Evosim.Theatre
                     "moved from {0:0.#} s to the checkpoint at {1:0.#} s, which saves {2:0} s of stepping; {3}",
                     target, ck.seconds, target - ck.seconds,
                     scene.Clade != null ? scene.Clade.Name + " was alive there by the guide's dates" : "the world scene has no clade to lose"));
+                Refiled(scene, segment, target, ck.seconds);
                 target = ck.seconds;
-                segment.At = target;
-                if (scene.Station != SafariStation.Time) scene.At = target;
             }
 
             // 3. A step forward from the world on screen, when it is shorter than a restore.
@@ -377,6 +377,23 @@ namespace Evosim.Theatre
             AfterOpen(0d);
             _rehearsalFrom = (0d, null);
             StartSeek(target);
+        }
+
+        /// <summary>
+        /// Moves a scene to the second it will be filmed at and writes its captions again from
+        /// that second, so a caption never states a second the clip was not filmed at: round 47's
+        /// first safari moved its arrival from 4,860 s to the checkpoint at 2,500 s and still
+        /// captioned it at 4,860 s with 4,860 s's count (2026-09-24).
+        /// </summary>
+        private void Refiled(SafariScene scene, Segment segment, double asked, double filmed)
+        {
+            segment.At = filmed;
+            if (scene.Station == SafariStation.Time) return;
+            if (double.IsNaN(scene.AskedAt)) scene.AskedAt = asked;
+            scene.At = filmed;
+            scene.Refill?.Invoke();
+            Say(string.Format(CultureInfo.InvariantCulture, "captions written again for {0:0.#} s: {1}",
+                filmed, string.Join(" | ", scene.Captions.Select(c => c.Text))));
         }
 
         private (double seconds, string path) CheckpointAtOrBefore(double second)
@@ -749,8 +766,13 @@ namespace Evosim.Theatre
                 return null;
             }
 
-            int anchor = members[0];
-            foreach (int i in members) if (stage.Reaches[i] > stage.Reaches[anchor]) anchor = i;
+            // The largest member among the half nearest the members' centre: the pull-back's look
+            // travels from it to the centre inside the ceiling, and the colony's largest body can
+            // stand tens of metres out at the colony's edge.
+            Vector3 centre = stage.Centroid(members);
+            List<int> inner = members.OrderBy(i => (stage.Positions[i] - centre).sqrMagnitude).Take(Math.Max(1, (members.Count + 1) / 2)).ToList();
+            int anchor = inner[0];
+            foreach (int i in inner) if (stage.Reaches[i] > stage.Reaches[anchor]) anchor = i;
 
             var takes = new List<SafariPlans.Take>
             {
