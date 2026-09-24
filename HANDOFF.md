@@ -346,11 +346,11 @@ carrying a developed 3 cm part, so no born-small addition was ever born in round
 47, and under it a whole plant is refused at investment 0.02 unless its adult is at least
 0.031 m³; hence the rigid-group floors and the lowered floors, both to be screened.
 
-**State (2026-09-24, about 13:55; the session runs on Opus 5.5 since midday).** This block
+**State (2026-09-24, about 13:00; the session runs on Opus 5.5 since midday).** This block
 is what the next session works from. Everything below it in this section is history.
 
 - **Round 48 is running.** The pre-registration is `logbook/0119-a-stomach-on-a-plant-and-paying-as-you-go.md`,
-  committed at `d35c248` on a clean tree and pushed. Seeds 1 and 2 launched at about 13:51 from
+  committed at `d35c248` on a clean tree and pushed. Seeds 1 and 2 launched at 12:51 from
   it (`gitCommit d35c248`, `gitDirty` false, `configHash e5a30c15db9fc4db`, five threads each,
   900-minute walls); every header token was checked from the reports. Seed 3 goes when one of
   them ends, with the same command and `-Seed 3`. The overhead floor is 50 J: the second count
