@@ -660,5 +660,63 @@ namespace Evosim.Core.Tests
 
             return GenomeJson.Read(System.IO.File.ReadAllText(path));
         }
+
+        [Fact]
+        public void ABornSmallBudIsBuiltAndBornAtTheSmallestInvestmentWhenTheFloorsWeighRigidGroups()
+        {
+            // The owner's ruling of 2026-09-24: a new cell type arrives as a 3 cm bud. On its
+            // smallest edge scale (RandomEdgeTo draws 0.6 to 1) it develops at 1.8 cm, 4.7e-5 m3,
+            // under the 1e-4 m3 volume floor; and a newborn at round 48's smallest investment
+            // (0.02 of the body, less the 0.2 reserve) holds it at 7.5e-7 m3, far under round
+            // 47's 0.5 kg per-part floor. Weighed with the leaf it is welded to, it clears both.
+            var g = new Genome();
+            MorphNode leaf = Fixtures.Box();
+            leaf.CellTypeId = CellTypeIds.Photosynthetic;
+            leaf.Dimensions = new Float3(0.5f, 0.05f, 0.5f);
+
+            MorphNode bud = Fixtures.Box(0.03f);
+            bud.CellTypeId = CellTypeIds.Absorptive;
+
+            MorphEdge edge = Fixtures.FaceToFace(1);
+            edge.Scale = new Float3(0.6f, 0.6f, 0.6f);
+            leaf.Edges.Add(edge);
+
+            g.Nodes.Add(leaf);
+            g.Nodes.Add(bud);
+            g.RootIndex = 0;
+
+            float floorVolume = 0.5f / RunConfig.PartDensityKilogramsPerCubicMetre;
+            float linear = (float)System.Math.Pow(0.02 * (1 - 0.2), 1d / 3d);
+
+            // Off, the recorded world: the bud is pruned at adult size.
+            Phenotype off = Developer.Develop(g, DevelopmentLimits.Default);
+            Assert.DoesNotContain(off.Parts, p => p.CellTypeId == CellTypeIds.Absorptive);
+
+            // On: built at adult size, carried by the scaled newborn, and the newborn's one rigid
+            // group (a leaf and its welded bud) clears the floor that the bud alone does not.
+            var on = new DevelopmentLimits { FloorsWeighRigidGroups = true };
+            Phenotype adult = Developer.Develop(g, on);
+            Assert.Contains(adult.Parts, p => p.CellTypeId == CellTypeIds.Absorptive);
+
+            Phenotype newborn = adult.Scaled(linear);
+            PhenotypePart born = newborn.Parts.Single(p => p.CellTypeId == CellTypeIds.Absorptive);
+
+            _output.WriteLine(
+                $"bud adult {adult.Parts[1].Volume:E2} m3, newborn {born.Volume:E2} m3; " +
+                $"newborn body {newborn.Parts.Sum(p => p.Volume):E2} m3 against a floor of {floorVolume:E1}");
+
+            Assert.True(born.Volume < floorVolume, "the per-part floor would have refused it");
+            Assert.False(World.RigidGroupsUnder(newborn.Parts, floorVolume));
+
+            // The floor still guards what it was built for: the same bud as a jointed link is
+            // its own rigid body, and under the floor. On an edge of scale 1, so the volume floor,
+            // which still weighs a jointed part alone, builds it.
+            MorphNode link = Fixtures.Box(0.03f, JointType.Hinge);
+            g.Nodes[1] = link;
+            edge.Scale = Float3.One;
+            Phenotype jointed = Developer.Develop(g, on).Scaled(linear);
+            Assert.Equal(2, jointed.PartCount);
+            Assert.True(World.RigidGroupsUnder(jointed.Parts, floorVolume));
+        }
     }
 }

@@ -114,7 +114,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 // the shade map, all off in the recorded world), and the matter grid's own stirring
                 // before the area — a hard default of 2 m²/s that no launcher could name until the
                 // islands needed it lower, so the recording never printed it.
-                .Replace(" · reach off · ", " · reach off · matter uniform · founders anywhere · shade off · ")
+                .Replace(" · reach off · ", " · reach off · floors per part · matter uniform · founders anywhere · shade off · ")
 
                 // D110's token, beside the silhouette cap it shares the shadow with; averaged in
                 // every recorded world.
@@ -140,11 +140,12 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 // and the reefs' six dials (logbook/specs/reef-spec.md) under 9036f75aa700b784
                 // alone, and the two together, merged 2026-09-23 night, under 679f831c59c6f1af,
                 // and the reef group redesigned under the owner's cover ruling (cover 0 here)
-                // under this.
+                // under 256078e816861b27, and the rigid-group floors of the bud ruling (2026-09-24,
+                // off here) under this.
                 .Replace(
                     " · configHash ",
                     " · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + ContactToken + " · configHash ")
-                .Replace("`ff557bce2685293a`", "`256078e816861b27`");
+                .Replace("`ff557bce2685293a`", "`2344505ef17eb250`");
 
             Assert.Equal(expected, Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9"));
         }
@@ -181,10 +182,10 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
             // D109, all off: the matter uniform, founders anywhere, no shade map, and the matter
             // grid stirring at the rate every recorded world stirred at.
-            Assert.Contains(" · reach off · matter uniform · founders anywhere · shade off · ", line);
+            Assert.Contains(" · reach off · floors per part · matter uniform · founders anywhere · shade off · ", line);
             Assert.Contains(" · matter-mix 2 m2/s · area 2200 m2 · ", line);
 
-            Assert.EndsWith(" · configHash `256078e816861b27`", line);
+            Assert.EndsWith(" · configHash `2344505ef17eb250`", line);
 
             // D110, off: the light is the orientation average, printed beside the cap.
             Assert.Contains(" · silhouette on · light averaged · ", line);
