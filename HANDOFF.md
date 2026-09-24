@@ -443,11 +443,34 @@ is what the next session works from. Everything below it in this section is hist
   row). The converter's check passed over 111,940 snapshot rows, and every moved script reads the
   same from both records. **Both branches are merged in `scratch/wt-r49`** (branch
   `r49-record-film`, no textual conflicts). An Opus agent is wiring them together there, compile
-  only. Its jobs: the window takes genomes from the world's admission queue and writes them in
-  Core's member format; the faithful rule above; the converter writes the JSON poses as a
-  version 2 stream with a NaN fraction meaning not recorded; a resume inherits its source's
-  record format; and the spec is corrected in place. Its report is to end with the one ordered
-  list of what runs at the gap. B2 and B3 (theatre playback and the safari on
+  only. **The integration is built** (`3d5d471`, 0 errors, nothing run). The window takes
+  genomes from the world's admission queue and writes them in Core's member format. The
+  converter now writes the JSON poses as a version 2 stream with a NaN fraction meaning not
+  recorded. A resume inherits its source's record format, and the spec is corrected in place.
+  On `r48fix-s4` the converter's check passed: poses 125.3 MB to 42.6 MB, snapshots 430.3 MB to
+  3.2 MB, positions 29.5 MB to 11.4 MB. The window exits 0 faithful, 2 cousin, 3 unverified,
+  1 refused. **The faithful rule is revised** (the agent found that Core's hash moves with this
+  build for recording-only reasons, so the first rule would have made every window of round 48 a
+  cousin). `configHash` decides, since another config is another world. The code hashes do not
+  decide on their own: a window whose identity rows all agree bit for bit reads faithful, with
+  every differing hash named in `sourcesDiffer`. The same agent is making that change now.
+
+  **At round 48's gap, in order, from `scratch/wt-r49`, one farm run at a time**:
+  1. the filtered tests (`FilmWindowTests`, `PoseStreamTests`, `RecordFormatFarmTests`,
+     `CheckpointTests`; Core's `RecordFormatTests`);
+  2. the full suites (`core-test.ps1 -All`, `Evosim.Farm.Tests`, `Evosim.Dynamics.Tests`);
+  3. the regress: `rfmt1-s4` and `rfmt2-s4`, round 44's launcher, seed 4, 3,000 s, with
+     `EVOSIM_RECORD_FORMAT` 1 and 2 and `EVOSIM_DIGEST_EVERY` 100, which must be
+     digest-identical (`digest-diff.py`, `compare-det.py`);
+  4. a checkpointed fixture, `rfilm-s4` with `-CheckpointEvery 500`;
+  5. a window `--film-window runs/rfilm-s4/<run> 1000 1060 scratch/film/rfilm-1000 --fps 30
+     --threads 4`, which must read faithful;
+  6. a v5 checkpoint through `--verify-checkpoint`, and a resume `rfilm-s4r` compared with
+     the unbroken run;
+  7. the theatre's first Unity compile of the new readers, with a `-From snapshot` picture of
+     `rfilm-s4`;
+  8. then B2 and B3, the theatre's playback and the safari on windows, on top of the merged
+     safari branch. B2 and B3 (theatre playback and the safari on
   windows) follow once the safari branch has merged.
 - **The review's second and third items are built and not yet seen** (`d5540e6` on the safari
   branch, an Opus subagent, compiled clean on the worktree's `unity-w6` with every pass of the
