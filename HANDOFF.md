@@ -352,8 +352,28 @@ is what the next session works from. Everything below it in this section is hist
 - **Round 48 is running.** The pre-registration is `logbook/0119-a-stomach-on-a-plant-and-paying-as-you-go.md`,
   committed at `d35c248` on a clean tree and pushed. Seeds 1 and 2 launched at 12:51 from
   it (`gitCommit d35c248`, `gitDirty` false, `configHash e5a30c15db9fc4db`, five threads each,
-  900-minute walls); every header token was checked from the reports. Seed 3 goes when one of
-  them ends, with the same command and `-Seed 3`. The overhead floor is 50 J: the second count
+  900-minute walls); every header token was checked from the reports. **Seed 2 ended `error` at
+  13,700 s** (15:05 UTC): the absorptive log's writer refused a `densityHere` of minus infinity
+  (`scratch/logs/r48-s2.err`, `Json.Writer.Field` from `AbsorptiveSample.ToJson`), eight rows
+  into that sample, so the failing body is the ninth living absorptive body in list order,
+  most likely 23037. Its stats row at 13,690 s is ordinary: audit −8.5e-06, `det cv` 0.688
+  and steady for 100 s, `diverged` 0, and the snow dump at 13,600 s has no negative or
+  non-finite column. So it was one event inside twenty metabolic steps, not a slow
+  instability. Every field deposit and take is guarded against a non-positive or NaN amount,
+  so a snow cell can reach minus infinity only through the grid's own passes (transport,
+  mixing, settling, remineralisation); that is an inference, not yet found. The seed is
+  censored at 13,690 s, and B1 ("nothing breaks, 3 of 3") is falsified on it. **Seed 3
+  launched at 17:06** into the freed slot (pid 61384, `gitCommit 4652627`, clean, the same
+  `dynamicsHash`, `farmHash`, `coreHash` and `configHash e5a30c15db9fc4db` as seeds 1 and 2,
+  checkpoints every 500 s). **The probe is built**: `--film-window … --probe <file>` on
+  `r49-record-film` (`f941f53`, exe `scratch/wt-r49/artifacts/Evosim.Farm/bin/Release-probe`)
+  scans every body, corpse and cell after each metabolic step and stops at the first value
+  that is not finite. Its run replays seed 2 from the 12,500 s checkpoint to 13,705 s, and
+  it waits for seed 1's slot (seed 1 at 22,820 s at 17:10, about 27 minutes a 1,000 s):
+  `Evosim.Farm.exe --film-window runs/r48-s2 13695 13705 scratch/film/r48-s2-probe --fps 1
+  --threads 5 --probe scratch/film/r48-s2-probe.txt`. Whether seed 2 is resumed on a fixed build
+  (a new realisation from the fault on), replaced by a fourth seed, or read censored is the
+  owner's decision once the cause is known. The overhead floor is 50 J: the second count
   screen (`scratch/r48-build/runs/r48plat2-s2`) peaked at 3,670 and settled near 2,450, about
   twice round 47's crowd at the same seed and step, and the entry's screen section has the
   numbers. The pool's ledger at the round's prices is `logbook/specs/r48-read/ledger-pool.md`.
