@@ -1,6 +1,6 @@
 # The state stream
 
-*Build spec. 2026-09-22.*
+*Build spec. 2026-09-22; version 2 added 2026-09-24.*
 
 ## Why
 
@@ -31,7 +31,7 @@ write is dropped rather than parsed as a body count of two billion.
 | Offset | Bytes | Type | Field |
 |---|---|---|---|
 | 0 | 8 | ascii | magic, `EVOPOSE` and a zero byte |
-| 8 | 2 | uint16 | version, 1 |
+| 8 | 2 | uint16 | version, 1 or 2 (below) |
 | 10 | 2 | uint16 | header length, 80 |
 | 12 | 4 | float32 | cadence, seconds |
 | 16 | 64 | ascii | the run's `configHash`, zero padded |
@@ -45,7 +45,7 @@ Then, repeated to the end of the file:
 | 8 | *n* | payload | the frame |
 | 8 + *n* | 4 | uint32 | *n* again, the completeness trailer |
 
-A payload is a time, a count and then that many bodies:
+A version 1 payload is a time, a count and then that many bodies:
 
 | Offset | Bytes | Type | Field |
 |---|---|---|---|
@@ -83,7 +83,7 @@ entry per frame.
 | Offset | Bytes | Type | Field |
 |---|---|---|---|
 | 0 | 8 | ascii | magic, `EVOPOSX` and a zero byte |
-| 8 | 2 | uint16 | version, 1 |
+| 8 | 2 | uint16 | version, the stream's own |
 | 10 | 2 | uint16 | header length, 24 |
 | 12 | 4 | uint32 | frame count |
 | 16 | 8 | — | reserved, zero |
@@ -97,6 +97,78 @@ failure falls back to a scan of `poses.bin`. The scan walks frame by frame from 
 stops at the first frame whose magic, length or trailer does not hold. That is the rule a live
 run's last row is already read under. A bad magic or an unknown version in `poses.bin` itself is
 refused rather than skipped, under the loading rule the config reader follows.
+
+## Version 2
+
+Version 2 (2026-09-24, items A4 and B1 of `logbook/specs/record-and-film-spec.md`) changes two
+things inside a frame and nothing around it. It deflates the bodies, and it gives each body one
+byte of guild flags. The file's header, the frame magic, the length, the trailer and the index
+are written as before. The scan, the torn-frame rule and the index checks therefore read a
+version 2 file as they read a version 1 file. The version field in the file's header decides
+which layout the payloads carry. The reader takes both, and a writer asked for version 1 still
+writes one.
+
+A version 2 payload keeps a sixteen-byte prefix uncompressed. The bodies follow it as one raw
+deflate stream, RFC 1951 with no zlib or gzip wrapper, the form .NET's `DeflateStream` writes:
+
+| Offset | Bytes | Type | Field |
+|---|---|---|---|
+| 0 | 8 | float64 | *t*, simulated seconds |
+| 8 | 4 | uint32 | living bodies in this frame |
+| 12 | 4 | uint32 | the body records' length before deflating, *r* |
+| 16 | *n* − 16 | deflate | the body records, *r* bytes once inflated |
+
+The prefix stays raw because the scan reads a frame's time from the payload's first eight bytes,
+and the index check reads it too. Deflating the whole payload, as A4's wording has it, would make
+a reader inflate every frame to find one second.
+
+Inflated, the records are version 1's with one byte inserted before the degree-of-freedom count:
+
+| Offset | Bytes | Type | Field |
+|---|---|---|---|
+| 0 | 4 | int32 | organism id |
+| 4 | 12 | 3 × float32 | root link position, metres |
+| 16 | 16 | 4 × float32 | root link quaternion, x y z w |
+| 32 | 4 | float32 | body fraction, tissue over adult tissue |
+| 36 | 1 | uint8 | guild flags: absorptive 1, jointed 2, photosynthetic 4 |
+| 37 | 1 | uint8 | degrees of freedom, *d* |
+| 38 | 4 × *d* | float32 | joint coordinates, the solver's own order |
+
+The flag bits are `positions.jsonl`'s, `PositionsRow`'s constants, and the writer sets them by the
+sampler's definition. A body is absorptive when any part is absorptive tissue, jointed when its
+joints' degrees of freedom sum above zero, and photosynthetic when it carries photosynthetic
+tissue. A writer refuses a flag value above 7. A version 1 frame read by this build reports every
+body's flags as −1, meaning not recorded, and never as 0, which would claim a body with no guild.
+
+The reader refuses three things in a version 2 frame that a version 1 frame cannot have. The
+records must inflate to *r* bytes, no fewer and no more. The count must fit in them at 38 bytes a
+body. And the last body must end where the records end. A frame whose trailer holds while its
+deflate stream is damaged is refused with its byte offset, and never read as a shorter frame. The
+trailer says the frame was written whole, so a frame that will not inflate is damage and cannot be
+a torn write.
+
+The index's version equals the file's. An index of the other version is dropped and the file
+scanned, under the fall-back rule above.
+
+`scripts/poses-read.py` reads both versions with Python's `zlib` (raw deflate, `wbits` −15) and its
+own tables, still written from this page. Its `--check` reads every frame and names the first
+that fails, and its summary prints a version 2 file's deflate ratio.
+
+What deflate buys has not been measured. A body's floats resemble their neighbours' only in their
+high bytes. The ratio on a real crowd is therefore a reading to take from the first stream this
+build writes, and not an arithmetic to carry. The cost table above is version 1's, and it stays the
+upper bound at one byte a body more.
+
+### The film window
+
+`Evosim.Farm.exe --film-window` (B1, `src/Evosim.Farm/FilmWindow.cs`) writes a version 2 stream
+named `film.poses.bin` into its own output directory, never beside a run's `poses.bin`. The
+header's cadence is the nominal frame interval, `1 / fps` as a float32. The frames are not on the
+metabolic grid. Frame *k* is written at the first physics step whose time is at or after
+*k* / fps, and it carries that step's own time. A frame therefore sits up to one physics step
+(0.01 or 0.02 s) after its nominal second, and never before it. A reader asks for the frame at or
+after *k* / fps rather than for an exact second. The run's own stream keeps the half-second
+floor that `ResolvePoseEvery` sets. The window samples inside its own loop and never calls it.
 
 ## What it costs
 
@@ -128,7 +200,8 @@ reads `adult size`: the phenotype is scaled by the cube root of the body fractio
 One thing is lost by drawing from the stream rather than from `positions.jsonl`. That file carries
 the harness's own guild flags and the stream does not, so in stream mode a body's guild is read
 off the developed phenotype. The disagreement count that a snapshot picture prints has nothing to
-compare and stays at zero.
+compare and stays at zero. A version 2 stream carries the flags, and the theatre does not read
+them yet: `SnapshotWorld` still takes the guild off the phenotype in stream mode.
 
 ## How it was checked
 
@@ -148,6 +221,11 @@ with the stream off, so the recording moved nothing. Both runs carry `configHash
 and the frame at 100 seconds agrees with `poses.jsonl`'s row at 100 seconds to the JSONL's own
 rounding. The theatre drew 105 seconds from the frame and 100 seconds from the snapshot, joined
 38 of the 40 bodies, skipped the two born after the snapshot, and posed all 38.
+
+Version 2 was built beside two live arms, and its tests were written and not run. Until they
+run, and until `poses-read.py` reads a stream this build wrote, its layout is the code's claim
+and not a checked one. The one reading taken is that the Python reader still reads version 1:
+the 300 second smoke's 600 frames and 23,383 bodies, with the index agreeing.
 
 ## What is not here
 
