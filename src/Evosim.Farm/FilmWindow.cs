@@ -111,7 +111,7 @@ namespace Evosim.Farm
         private const double Eps = 1e-9;
 
         private const string Usage =
-            "Usage: Evosim.Farm --film-window <run dir> <from s> <to s> <out dir> [--fps N] [--threads N]";
+            "Usage: Evosim.Farm --film-window <run dir> <from s> <to s> <out dir> [--fps N] [--threads N] [--probe <report file>]";
 
         /// <summary>What a window was asked for.</summary>
         public sealed class Options
@@ -129,6 +129,13 @@ namespace Evosim.Farm
 
             /// <summary>0 for <c>EVOSIM_THREADS</c>, or half the machine's logical processors.</summary>
             public int Threads;
+
+            /// <summary>
+            /// Where <see cref="NonFiniteProbe"/>'s report goes, or null for no probe. With one, every
+            /// metabolic step from the restore on is scanned, and the window stops at the first
+            /// finding, with the report written here and to the log.
+            /// </summary>
+            public string Probe;
         }
 
         /// <summary>What a window wrote and what it found.</summary>
@@ -257,6 +264,10 @@ namespace Evosim.Farm
 
                     case "--threads":
                         options.Threads = int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                        break;
+
+                    case "--probe":
+                        options.Probe = value;
                         break;
 
                     default:
@@ -411,6 +422,8 @@ namespace Evosim.Farm
                 bool extinct = false;
                 double afterSecond = double.NaN;
 
+                NonFiniteProbe probe = options.Probe == null ? null : new NonFiniteProbe();
+
                 // The restored instant is itself the end of a step: a row the run wrote there, and
                 // a frame due there, are taken before anything moves.
                 double t = Now();
@@ -450,6 +463,22 @@ namespace Evosim.Farm
                         if (film.Started && !windowDone) film.CaptureBodies(world, t);
 
                         Compare(world, runRows, options, film, result, afterSecond);
+
+                        if (probe != null)
+                        {
+                            string finding = probe.Scan(world, t);
+                            if (finding != null)
+                            {
+                                log.WriteLine(finding);
+                                File.WriteAllText(options.Probe, finding);
+                                break;
+                            }
+
+                            if (probe.Scans % 200 == 0)
+                            {
+                                log.WriteLine(FormattableString.Invariant($"probe: {t:0.#} s clean, {probe.Scans} scans"));
+                            }
+                        }
 
                         // The loop's report step, or its last row at an extinction. The window's
                         // events are taken off the lineage queue first, and its genomes were taken
