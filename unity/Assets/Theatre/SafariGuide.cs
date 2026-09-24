@@ -191,6 +191,21 @@ namespace Evosim.Theatre
 
         public SafariClade Find(long founder) => _byFounder.TryGetValue(founder, out SafariClade c) ? c : null;
 
+        /// <summary>A clade by the guide's own number for it (guide.py's `clade`), or null.</summary>
+        public SafariClade FindByIndex(long index) => _byIndex.TryGetValue(index, out SafariClade c) ? c : null;
+
+        /// <summary>
+        /// A guide with no cards, for a story filmed on a run whose guide is not written yet (a
+        /// seed still running): every subject is then placed from the lineage alone.
+        /// </summary>
+        public static SafariGuide Empty(string why) => new SafariGuide
+        {
+            Path = "(no guide: " + why + ")",
+            Ranking = new List<long>(),
+            Picker = new List<long>(),
+            Ignored = new List<string>(),
+        };
+
         public SafariClade FindByName(string name)
         {
             if (string.IsNullOrWhiteSpace(name)) return null;

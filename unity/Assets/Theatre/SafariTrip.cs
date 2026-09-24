@@ -5,8 +5,12 @@ using System.Linq;
 
 namespace Evosim.Theatre
 {
-    /// <summary>The seven stations the owner accepted (safari-spec.md item 6), each a plan template.</summary>
-    public enum SafariStation { Arrival, Descent, Portrait, Floor, Birth, Colony, Time }
+    /// <summary>
+    /// The seven stations the owner accepted (safari-spec.md item 6), each a plan template, and
+    /// the card: a held title from above that only a story's shot list asks for
+    /// (<see cref="SafariStory"/>).
+    /// </summary>
+    public enum SafariStation { Arrival, Descent, Portrait, Floor, Birth, Colony, Time, Card }
 
     /// <summary>The trip's heuristics (item 7).</summary>
     public enum SafariHeuristic { Top10, Guild, Depth, Age, Firsts }
@@ -51,7 +55,10 @@ namespace Evosim.Theatre
         /// <summary>The plan the director made, for the log and the scene list; empty until planned.</summary>
         public string Plan = "";
         public readonly List<SafariCaption> Captions = new List<SafariCaption>();
-        /// <summary>A chapter card before the colony: the disc from above, held, with the chapter's title.</summary>
+        /// <summary>
+        /// A chapter card before the scene, the disc from above, held, with the chapter's title:
+        /// the template gives one to a colony, and a story to any scene that carries a chapter.
+        /// </summary>
         public bool ChapterCard;
         /// <summary>The chapter's number from 1 and its title, when <see cref="ChapterCard"/> is set.</summary>
         public int Chapter = -1;
@@ -63,30 +70,94 @@ namespace Evosim.Theatre
         /// </summary>
         public readonly List<SafariFact> Facts = new List<SafariFact>();
 
+        // ---------------------------------------------------------------- a story's scene
+
+        /// <summary>The shot list's number for a scene from a story, from 1 across the whole film; -1 for the template's.</summary>
+        public int StoryNumber = -1;
+        /// <summary>The arm a story's scene is filmed on, for its clip's name.</summary>
+        public string StoryArm;
+        /// <summary>The story's act, for the log.</summary>
+        public string Act;
+        /// <summary>
+        /// A story's captions, which take the place of the guide's facts and the template's
+        /// explanatory lines; <see cref="SafariCaptions.Fill"/> copies them in whatever second the
+        /// scene is filmed at, and the director writes none of its own over them. Null for the
+        /// template's scenes.
+        /// </summary>
+        public List<SafariCaption> StoryCaptions;
+        /// <summary>
+        /// For a birth, the clade whose member the rehearsal waits on for a child: -1 is the
+        /// clade's parent clade (the template's birth, the clade's own founding), and a story's
+        /// birth far from its clade's founding names the clade itself.
+        /// </summary>
+        public long BirthFrom = -1;
+        /// <summary>
+        /// For a story's birth, the parent body its writer named, or -1: when it is alive where
+        /// the rehearsal starts, its child is taken before any other in the line.
+        /// </summary>
+        public long BirthParentBody = -1;
+        /// <summary>A story's own canopy switch for its arrival or descent; null leaves it to <see cref="SafariOptions.Canopy"/>.</summary>
+        public bool? Canopy;
+        /// <summary>How much a story's held card darkens its picture under the captions, 0 to 1 (0.6 dimmed, 1 black).</summary>
+        public float Dim;
+
+        /// <summary>True for a scene a story's shot list asked for.</summary>
+        public bool FromStory => StoryNumber >= 0;
+
+        /// <summary>The clade a birth's parent belongs to (<see cref="BirthFrom"/>), or -1.</summary>
+        public long BirthLine => BirthFrom >= 0 ? BirthFrom : Clade?.ParentClade ?? -1;
+
         /// <summary>The subject as the scene list says it.</summary>
         public string Subject => Clade != null ? Clade.Name : Body >= 0 ? "body " + Body : "the world";
 
-        /// <summary>A short name for a directory: 03-portrait-ostrea-lenta.</summary>
+        /// <summary>
+        /// A short name for a directory: 03-portrait-ostrea-lenta; a story's scene carries its
+        /// number and its arm first, story-07-r48-s1-portrait-ostrea-lenta, so the clips of every
+        /// run sort into the story's order.
+        /// </summary>
         public string Slug
         {
             get
             {
-                string subject = Clade != null ? Clade.Name : "world";
-                var sb = new System.Text.StringBuilder();
-                foreach (char ch in subject.ToLowerInvariant())
+                string subject = Clade != null ? Clade.Name
+                    : Station == SafariStation.Card && !string.IsNullOrEmpty(ChapterTitle) ? ChapterTitle
+                    : Body >= 0 ? "body " + Body.ToString(CultureInfo.InvariantCulture) : "world";
+                string words = Words(subject);
+                if (words.Length > 40) words = words.Substring(0, 40).TrimEnd('-');
+                if (words.Length == 0) words = "world";
+                string station = Station.ToString().ToLowerInvariant();
+
+                if (FromStory)
                 {
-                    if (char.IsLetterOrDigit(ch)) sb.Append(ch);
-                    else if (sb.Length > 0 && sb[sb.Length - 1] != '-') sb.Append('-');
+                    return "story-" + StoryNumber.ToString("00", CultureInfo.InvariantCulture) + "-" +
+                           Words(StoryArm ?? "run") + "-" + station + "-" + words;
                 }
-                return (Index + 1).ToString("00", CultureInfo.InvariantCulture) + "-" +
-                       Station.ToString().ToLowerInvariant() + "-" + sb.ToString().Trim('-');
+
+                return (Index + 1).ToString("00", CultureInfo.InvariantCulture) + "-" + station + "-" + words;
             }
         }
 
+        /// <summary>Lower case letters and digits, every other run of characters one dash.</summary>
+        private static string Words(string text)
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (char ch in text.ToLowerInvariant())
+            {
+                if (ch < 128 && char.IsLetterOrDigit(ch)) sb.Append(ch);
+                else if (sb.Length > 0 && sb[sb.Length - 1] != '-') sb.Append('-');
+            }
+            return sb.ToString().Trim('-');
+        }
+
         public string Line() => string.Format(CultureInfo.InvariantCulture,
-            "{0,2}. {1,-8} {2,-28} at {3,8:0.#} s{4}{5}", Index + 1, Station, Subject, At,
+            "{0,2}. {1,-8} {2,-28} at {3,8:0.#} s{4}{5}{6}", Index + 1, Station, Subject, At,
             double.IsNaN(SecondAt) ? "" : string.Format(CultureInfo.InvariantCulture, " and {0:0.#} s", SecondAt),
-            ChapterCard && ChapterTitle != null ? "  [chapter " + Chapter + ": " + ChapterTitle + "]" : "");
+            ChapterCard && ChapterTitle != null ? "  [chapter " + Chapter + ": " + ChapterTitle + "]" : "",
+            FromStory
+                ? string.Format(CultureInfo.InvariantCulture, "  [story {0}{1}, {2:0.#} s on screen{3}]", StoryNumber,
+                    string.IsNullOrEmpty(Act) ? "" : ", " + Act, Seconds,
+                    Station == SafariStation.Card ? ": " + ChapterTitle : "")
+                : "");
     }
 
     /// <summary>
@@ -570,6 +641,16 @@ namespace Evosim.Theatre
             scene.Refill = () => Fill(scene, guide, arm, alive, depthMetres, radiusMetres);
             SafariClade c = scene.Clade;
 
+            // A story's scene says what its writer wrote, at the writer's offsets, and nothing
+            // else: no fact, no count and no explanation of the corner's word, which every frame
+            // still carries.
+            if (scene.StoryCaptions != null)
+            {
+                foreach (SafariCaption s in scene.StoryCaptions)
+                    scene.Captions.Add(new SafariCaption { Offset = s.Offset, Text = s.Text, Seconds = s.Seconds });
+                return;
+            }
+
             // Every second a caption states is the second the clip is filmed at (the scene's At,
             // which the director moves to a checkpoint and then writes the captions again), or
             // is said to be another second. The arm's code is never in the frame.
@@ -675,6 +756,10 @@ namespace Evosim.Theatre
                     Add(scene, SafariTripBuilder.TimeTakeSeconds + Slot(0), Clock(scene.SecondAt) + " into the run" + (b >= 0 ? ": " + Grouped(b) + " alive." : "."));
                     break;
                 }
+
+                case SafariStation.Card:
+                    if (!string.IsNullOrEmpty(scene.ChapterTitle)) Add(scene, Slot(0), scene.ChapterTitle);
+                    break;
             }
         }
 

@@ -32,7 +32,8 @@
   top10 (default), guild, depth, age or firsts (safari-spec item 7).
 .PARAMETER Scenes
   1-based indices of the trip's scenes to play, e.g. 1,3,4; all of them when not given. The
-  Editor's log prints the whole trip first, so a first run with -Scenes 1 shows the list.
+  Editor's log prints the whole trip first, so a first run with -Scenes 1 shows the list. With
+  -Story they are the story's own numbers, and only this run's scenes among them.
 .PARAMETER Clade
   A clade's name from the guide: a trip of one (its portrait, a birth if one can be sought, its
   colony), in place of the heuristic's trip.
@@ -84,11 +85,28 @@
 .PARAMETER DownsampleCheck
   On each take's first three frames, also filter on the CPU and encode the old way, and write to
   the log how far the two paths are apart (EVOSIM_THEATRE_DOWNSAMPLE_CHECK=1).
+.PARAMETER Story
+  A writer's shot list (story.json) to film in place of the heuristic's trip
+  (EVOSIM_THEATRE_SAFARI_STORY): its scenes for -StoryRun, in the story's order, each at its
+  own second and length with its own captions. -Scenes then names the story's numbers. Each clip
+  is story-NN-<arm>-<station>-<subject>.mp4, so the clips of every run sort into the story's
+  order, and scripts/story-assemble.py joins them. -Check works on a story as on a trip. The
+  Editor's log prints every note the reader made ("[Theatre] safari story:"), which is where a
+  field it could not map is named.
+.PARAMETER StoryRun
+  The run the story's scenes are chosen for (EVOSIM_THEATRE_SAFARI_STORY_RUN); the Arm when not
+  given.
+.PARAMETER Folder
+  The folder the clips go in, in place of the date (scratch/safari/<Arm>/<Folder>), or with
+  -Check a folder inside the check's (scratch/snaps/safari/<Arm>/<Folder>), so a trial never
+  mixes with a film. Letters, digits, dots, dashes and underscores.
 
 .EXAMPLE
   ./scripts/theatre-safari.ps1 r46-s1 -Scenes 1,3 -Fps 30 -Worker 6 -WallMinutes 90
 .EXAMPLE
   ./scripts/theatre-safari.ps1 r46-s1 -Check -Scenes 1,2,3 -Guide scratch/safari-director/guide-r46-s1.json
+.EXAMPLE
+  ./scripts/theatre-safari.ps1 r48-s1 -Story scratch/story/story.json -Check -Worker 5 -RunsRoot D:\Projects\experiments\evolution-simulator\runs
 #>
 [CmdletBinding()]
 param(
@@ -113,7 +131,10 @@ param(
     [double]$SnapAhead = 600,
     [switch]$CpuDownsample,
     [switch]$SyncEncode,
-    [switch]$DownsampleCheck
+    [switch]$DownsampleCheck,
+    [string]$Story = '',
+    [string]$StoryRun = '',
+    [string]$Folder = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -149,6 +170,21 @@ if ($Worker -eq 1) { throw "Worker 1 is unity/, which the owner keeps open in th
 $ffmpeg = Get-Command ffmpeg -ErrorAction SilentlyContinue
 if (-not $Check -and -not $ffmpeg) { throw "ffmpeg is not on PATH." }
 
+if ($Folder -and $Folder -notmatch '^[A-Za-z0-9._-]+$') { throw "-Folder: '$Folder' is not one folder name (letters, digits, dots, dashes, underscores)." }
+
+# The story: a path from here, or from the repository's root.
+$storyPath = ''
+if ($Story) {
+    $candidates = if ([System.IO.Path]::IsPathRooted($Story)) { @($Story) } else { @((Join-Path (Get-Location) $Story), (Join-Path $root $Story)) }
+    $storyPath = $candidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+    if (-not $storyPath) { throw "-Story: no file at $($candidates -join ' or ')" }
+    $storyPath = (Resolve-Path -LiteralPath $storyPath).Path
+    if (-not $StoryRun) { $StoryRun = $Arm }
+    if ($Clade) { Write-Warning "-Clade is ignored: the story decides the trip." }
+} elseif ($StoryRun) {
+    throw "-StoryRun needs -Story."
+}
+
 # ---------------------------------------------------------------- the run and its guide
 
 $runsDirectory = if ([System.IO.Path]::IsPathRooted($RunsRoot)) { $RunsRoot } else { Join-Path $root $RunsRoot }
@@ -163,7 +199,11 @@ if ($Guide) {
     if (-not (Test-Path $guidePath)) { throw "-Guide: no file at $guidePath" }
 } else {
     $own = Join-Path $run.FullName 'guide\guide.json'
-    if (-not (Test-Path $own)) { throw "No guide at $own. Run scripts/guide.py $Arm first, or name one with -Guide." }
+    if (-not (Test-Path $own)) {
+        # A story places its subjects by their roots, from the lineage when there is no guide.
+        if ($storyPath) { Write-Warning "No guide at $own : the story's subjects are placed from the lineage alone." }
+        else { throw "No guide at $own. Run scripts/guide.py $Arm first, or name one with -Guide." }
+    }
 }
 
 $checkpoints = @(Get-ChildItem -Path (Join-Path $run.FullName 'checkpoints') -Filter '*.ckpt' -File -ErrorAction SilentlyContinue)
@@ -190,6 +230,7 @@ $tag = if ($Canopy) { '-canopy' } else { '' }
 if ($CpuDownsample) { $tag += '-cpudown' }
 if ($SyncEncode) { $tag += '-sync' }
 $outDirectory = if ($Check) { Join-Path $root "scratch\snaps\safari\$Arm$tag" } else { Join-Path $root "scratch\safari\$Arm$tag\$date" }
+if ($Folder) { $outDirectory = if ($Check) { Join-Path $outDirectory $Folder } else { Join-Path $root "scratch\safari\$Arm$tag\$Folder" } }
 
 $logDirectory = Join-Path $root 'scratch\logs'
 New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
@@ -204,7 +245,7 @@ $names = @(
     'EVOSIM_THEATRE_SAFARI_SEEK_MAX', 'EVOSIM_THEATRE_SAFARI_EVERY', 'EVOSIM_THEATRE_WALL_MINUTES',
     'EVOSIM_THEATRE_SAFARI_CANOPY', 'EVOSIM_THEATRE_DOF', 'EVOSIM_THEATRE_DOF_APERTURE',
     'EVOSIM_THEATRE_SAFARI_SNAP_AHEAD', 'EVOSIM_THEATRE_CPU_DOWNSAMPLE', 'EVOSIM_THEATRE_SYNC_ENCODE',
-    'EVOSIM_THEATRE_DOWNSAMPLE_CHECK')
+    'EVOSIM_THEATRE_DOWNSAMPLE_CHECK', 'EVOSIM_THEATRE_SAFARI_STORY', 'EVOSIM_THEATRE_SAFARI_STORY_RUN')
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -233,13 +274,19 @@ try {
     if ($CpuDownsample) { $env:EVOSIM_THEATRE_CPU_DOWNSAMPLE = '1' }
     if ($SyncEncode) { $env:EVOSIM_THEATRE_SYNC_ENCODE = '1' }
     if ($DownsampleCheck) { $env:EVOSIM_THEATRE_DOWNSAMPLE_CHECK = '1' }
+    if ($storyPath) {
+        $env:EVOSIM_THEATRE_SAFARI_STORY = $storyPath
+        $env:EVOSIM_THEATRE_SAFARI_STORY_RUN = $StoryRun
+    }
 
     $entry =if ($Check) { 'Evosim.Theatre.EditorTools.TheatreSafariCheck.Run' } else { 'Evosim.Theatre.EditorTools.TheatreSafari.Run' }
 
     Write-Host "$Arm -> worker $Worker ($proj)"
     Write-Host "  run      $($run.FullName)"
     Write-Host "  guide    $(if ($guidePath) { $guidePath } else { 'guide/guide.json beside the run' })"
-    Write-Host "  trip     $(if ($Clade) { "one clade: $Clade" } else { $Heuristic })$(if ($sceneList.Count -gt 0) { ", scenes $($sceneList -join ',')" } else { ', every scene' })"
+    $tripWord = if ($storyPath) { "story $storyPath for $StoryRun" } elseif ($Clade) { "one clade: $Clade" } else { $Heuristic }
+    $sceneWord = if ($sceneList.Count -gt 0) { ", scenes $($sceneList -join ',')" } else { ', every scene' }
+    Write-Host "  trip     $tripWord$sceneWord"
     Write-Host "  frames   $outDirectory"
     Write-Host "  entry    $entry"
     Write-Host "  log      $log"
@@ -322,16 +369,26 @@ foreach ($line in (Get-Content $sceneFile | Select-Object -Skip 1)) {
     }
     if ($parts.Count -eq 0) { Write-Warning "$slug : no frames"; $failed++; continue }
 
-    $clip = Join-Path $outDirectory "$Arm-$slug.mp4"
+    # A story's scene carries its number and its arm in its name already.
+    $clip = if ($slug.StartsWith('story-')) { Join-Path $outDirectory "$slug.mp4" } else { Join-Path $outDirectory "$Arm-$slug.mp4" }
     if ($parts.Count -eq 1) {
         Copy-Item -Path $parts[0] -Destination $clip -Force
-    } elseif ($station -eq 'Time' -and $parts.Count -eq 2) {
-        # The time station: the same shot at two seconds, a one-second crossfade (safari-spec item 6).
-        $offset = [Math]::Max(0.0, (Length-Of $parts[0]) - 1.0).ToString('0.###', $invariant)
-        & $ffmpeg.Source -hide_banner -loglevel error -y -i $parts[0] -i $parts[1] `
+    } elseif ($station -eq 'Time' -and $parts.Count -ge 2) {
+        # The time station: the same shot at two seconds, a one-second crossfade (safari-spec item 6);
+        # a story's chapter card before the two takes is a cut.
+        $first = $parts[$parts.Count - 2]; $second = $parts[$parts.Count - 1]
+        $faded = if ($parts.Count -eq 2) { $clip } else { Join-Path $sceneDirectory 'time-xfade.mp4' }
+        $offset = [Math]::Max(0.0, (Length-Of $first) - 1.0).ToString('0.###', $invariant)
+        & $ffmpeg.Source -hide_banner -loglevel error -y -i $first -i $second `
             -filter_complex "[0:v][1:v]xfade=transition=fade:duration=1:offset=$offset,format=yuv420p[v]" -map '[v]' `
-            -c:v libx264 -crf 18 -r $Fps -movflags +faststart $clip
+            -c:v libx264 -crf 18 -r $Fps -movflags +faststart $faded
         if ($LASTEXITCODE -ne 0) { Write-Warning "$slug : the crossfade failed"; $failed++; continue }
+        if ($parts.Count -gt 2) {
+            $list = Join-Path $sceneDirectory 'parts.txt'
+            (@($parts[0..($parts.Count - 3)]) + @($faded) | ForEach-Object { "file '" + ($_ -replace '\\', '/') + "'" }) | Set-Content -Path $list -Encoding ascii
+            & $ffmpeg.Source -hide_banner -loglevel error -y -f concat -safe 0 -i $list -c copy -movflags +faststart $clip
+            if ($LASTEXITCODE -ne 0) { Write-Warning "$slug : the join after the crossfade failed"; $failed++; continue }
+        }
     } else {
         # A colony and its chapter card: a cut.
         $list = Join-Path $sceneDirectory 'parts.txt'

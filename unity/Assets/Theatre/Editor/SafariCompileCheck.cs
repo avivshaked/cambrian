@@ -87,6 +87,48 @@ namespace Evosim.Theatre.EditorTools
                                         log.Append("\n        +").Append(c.Offset.ToString("0.#", CultureInfo.InvariantCulture)).Append(" s: ").Append(c.Text);
                                 }
                             }
+
+                            // A story, when one is named: its trip for the arm, its clips' names and
+                            // every note the reader made, so a shot list can be read before a frame is.
+                            string storyPath = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_STORY");
+                            if (!string.IsNullOrWhiteSpace(storyPath))
+                            {
+                                storyPath = storyPath.Trim().Trim('"');
+                                if (!Path.IsPathRooted(storyPath)) storyPath = Path.Combine(BuildIdentity.RepositoryRoot(), storyPath);
+                                string arm = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_STORY_RUN");
+                                if (string.IsNullOrWhiteSpace(arm)) arm = record?.ArmName ?? new DirectoryInfo(dir).Parent?.Name;
+                                arm = arm.Trim();
+
+                                SafariStory story = SafariStory.Read(storyPath, out string storyRefusal);
+                                if (story == null)
+                                {
+                                    log.Append("\n  story REFUSED: ").Append(storyRefusal);
+                                    code = 1;
+                                }
+                                else
+                                {
+                                    RunConfig config = record?.Config;
+                                    float depth = config?.WorldDepthMetres ?? 0f;
+                                    float radius = config != null && config.SharedSpace && config.WorldShape == WorldShape.Tank
+                                        ? TankGeometry.RadiusFor(config.WorldAreaSquareMetres) : 0f;
+                                    var scenes = story.Trip(arm, guide, () => clades, checkpoints, record?.RequestedSeconds ?? 0d, out var notes);
+                                    foreach (SafariScene s in scenes)
+                                        SafariCaptions.Fill(s, guide, arm, t => SafariDirector.RecordedAlive(record, t), depth, radius);
+
+                                    log.Append("\n  story ").Append(storyPath).Append(" ('").Append(story.Title ?? "untitled").Append("', ")
+                                       .Append(story.Shots.Count).Append(" scenes over ").Append(string.Join(", ", story.Runs))
+                                       .Append("): ").Append(scenes.Count).Append(" for ").Append(arm).Append(':');
+                                    foreach (SafariScene s in scenes)
+                                    {
+                                        log.Append("\n    ").Append(s.Line()).Append("\n        clip ").Append(s.Slug).Append(".mp4");
+                                        foreach (SafariCaption c in s.Captions)
+                                            log.Append("\n        +").Append(c.Offset.ToString("0.#", CultureInfo.InvariantCulture)).Append(" s for ")
+                                               .Append(c.Seconds.ToString("0.#", CultureInfo.InvariantCulture)).Append(" s: ").Append(c.Text);
+                                    }
+                                    foreach (string note in story.Notes.Concat(notes)) log.Append("\n    note: ").Append(note);
+                                    if (scenes.Count == 0) code = 1;
+                                }
+                            }
                         }
                     }
                 }

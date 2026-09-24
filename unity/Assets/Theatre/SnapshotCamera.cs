@@ -234,6 +234,13 @@ namespace Evosim.Theatre
         public string Caption;
 
         /// <summary>
+        /// How much of the next <see cref="CapturePlaced"/> picture is darkened before its label
+        /// and caption are drawn, 0 (none, what everything but a story's held card leaves it at)
+        /// to 1 (black).
+        /// </summary>
+        public float Dim;
+
+        /// <summary>
         /// The last picture written, label and caption burnt in: what a composite puts the
         /// interface's layer over (the safari's call-outs, through <see cref="TheatreUiCapture.ArmOver"/>).
         /// </summary>
@@ -728,6 +735,7 @@ namespace Evosim.Theatre
 
             LastPixelsMs = Since(ref mark);
 
+            if (Dim > 0f) Darken(0, 0, _width, _height, Dim);
             DrawLabel(_label);
             if (!string.IsNullOrEmpty(Caption)) DrawCaption(Caption);
 

@@ -301,8 +301,15 @@ namespace Evosim.Theatre
         /// rising ahead, ending a metre above the clearance over the floor. The look keeps its
         /// bearing (outward and down), so nothing pans. The length comes from the ceiling.
         /// </summary>
-        public static Take Descent(Stage stage, int hash, float mostSeconds = 120f)
+        /// <param name="exactSeconds">
+        /// A length the take must have, s (a story's shot list sets it): the dolly starts lower on
+        /// the same line when the whole of it would pass the ceiling in that time, and runs slower
+        /// when it would not. 0 lets the ceiling decide, the template's rule.
+        /// </param>
+        public static Take Descent(Stage stage, int hash, float mostSeconds = 120f, float exactSeconds = 0f)
         {
+            if (exactSeconds > 0f) mostSeconds = exactSeconds;
+
             FilmPlans.WorldBounds w = stage.World;
             float room = stage.Room;
 
@@ -333,7 +340,7 @@ namespace Evosim.Theatre
                 length = keep;
             }
 
-            float seconds = Mathf.Max(20f, length / mean);
+            float seconds = exactSeconds > 0f ? exactSeconds : Mathf.Max(20f, length / mean);
 
             // Lifted clear of the bed wherever the straight line would cut it.
             string lifted = "";
