@@ -1521,6 +1521,26 @@ actually verifying it.
   Code's process tree (an inference). It bites a pace or timing read: the same run is faster
   with VS Code in front, so a wall split or a pace compared across two windows of time
   compares the focus as well.
+- **A worktree goes under `scratch/wt-<name>`, never under `.claude/`.** Claude Code treats
+  `.claude` as a protected path: every write inside it asks the owner, and neither an allow
+  rule nor bypass mode lifts that. The Agent tool's `isolation: "worktree"` and
+  `EnterWorktree` put a worktree there, and the safari branch's, at
+  `.claude/worktrees/safari2-r47`, asked on every edit and every render on 2026-09-24 until it
+  was moved. The owner had already said "you have full permission to write in this folder";
+  the permission was never the problem, the path was. `scratch/` is inside the project and gitignored, so a
+  worktree there is written freely, as `scratch/wt-bed` to `scratch/wt-trace2` always were.
+  Make one with `git worktree add scratch/wt-<name> -b <branch>`; move one with `git worktree
+  move <old> scratch/wt-<name>`, which refuses while any shell's working directory is inside
+  it (the PowerShell tool keeps its directory between calls, so `Set-Location` to the main
+  tree first). Two more things follow from a worktree being its own checkout. Its scripts take
+  the worktree's root as the repository, so `theatre-snap.ps1` and `theatre-film.ps1` run from
+  it write under its own `scratch/` and refuse an output path outside it; copy the pictures
+  out. And its worker (`<worktree>/unity-wN`) takes an edit only by a refresh from the
+  worktree. The Agent tool's worktrees still land under `.claude/worktrees/` unless a
+  `WorktreeCreate` hook in the settings sends them elsewhere, and that setting is the owner's.
+  Until it exists, a subagent that needs a worktree gets one the caller made under `scratch/`,
+  named by its absolute path in the brief, and not `isolation: "worktree"`. The fifteen older
+  worktrees under `.claude/worktrees/` are left where they are; removing one is the owner's.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

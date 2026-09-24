@@ -362,8 +362,10 @@ is what the next session works from. Everything below it in this section is hist
   argument is `r48`, not `48` (this block's predecessor had it wrong: `48` looks for arms named
   `48-s1`). It dies with the session and expires after seven days; re-arm it after a restart,
   never as a shell loop.
-- **The safari branch carries two new skin passes, uncommitted** (`worktree-safari2-r47`,
-  worktree `.claude/worktrees/safari2-r47`, on top of `41ed512`). First, joints: the pink marker
+- **The safari branch carries two new skin passes** (`worktree-safari2-r47`, worktree
+  `scratch/wt-safari2`, moved there from `.claude/worktrees/safari2-r47` on 2026-09-24 because
+  every write under `.claude` asks the owner, CLAUDE.md's worktree gotcha; `ce8d690` and
+  `98f73c6` on top of `41ed512`, and the earth under the bed uncommitted). First, joints: the pink marker
   cylinder is gone and each free joint carries a knuckle of each part's own tissue, an
   ellipsoid on the anchor that hides when the limb is straight and rounds over the crease when
   it bends (the owner: "we don't have a proper skin for joints... something that would make it
