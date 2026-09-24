@@ -352,8 +352,9 @@ namespace Evosim.Core
         /// </summary>
         /// <remarks>
         /// The same argument <see cref="FounderTailChance"/> makes, for the organ that is three
-        /// billion years older. A bladder is reachable by mutation — a node added, then its cell
-        /// type changed at <c>CellTypeChance</c> = 0.001 — and the intermediate is viable, so
+        /// billion years older. A bladder is reachable by mutation — a buoyancy bud added at
+        /// <c>CellTypeChance</c> = 0.001 (D119; before it, a node added and then its type changed
+        /// at the same rate) — and the intermediate is viable, so
         /// there is no valley to cross; but "reachable eventually" and "reachable inside a run"
         /// are different claims, and the tail is handed out at even odds precisely because the
         /// difference matters.
