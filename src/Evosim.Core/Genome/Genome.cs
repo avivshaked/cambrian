@@ -34,7 +34,11 @@ namespace Evosim.Core
 
         /// <summary>How surplus energy is turned into offspring — DESIGN.md §5A.6.</summary>
         public ReproductionTraits Reproduction { get; set; } =
-            new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.5f, ReserveMargin = 0f };
+            new ReproductionTraits
+            {
+                BroodSize = 1, BirthInvestment = 0.5f, ReserveMargin = 0f,
+                Mode = ReproductionMode.Lump, GestationShare = 0.5f,
+            };
 
         /// <summary>
         /// How big this body plan grows up to be: one scalar the developer multiplies into every
@@ -142,6 +146,30 @@ namespace Evosim.Core
                     $"Reserve margin {Reproduction.ReserveMargin} must be finite and " +
                     "non-negative. It is seconds of the parent's own standing cost held back " +
                     "after a birth, and a negative span of time is not caution.");
+            }
+
+            // The ruling of 2026-09-24. A share above 1 would bank more than the step earned, and
+            // a gestating parent that banks nothing never breeds; a lump breeder carries its
+            // share inert, so zero is legal there and a genome built by hand need not name one.
+            if (float.IsNaN(Reproduction.GestationShare) ||
+                Reproduction.GestationShare < 0f || Reproduction.GestationShare > 1f)
+            {
+                issues.Add(
+                    $"Gestation share {Reproduction.GestationShare} must lie in [0, 1]: it is " +
+                    "the share of a step's positive net income moved into the gestation account.");
+            }
+
+            if (Reproduction.Mode == ReproductionMode.Gestation && !(Reproduction.GestationShare > 0f))
+            {
+                issues.Add(
+                    "A gestating genome with a gestation share of 0 banks nothing and can never " +
+                    "breed; the share must be above 0 in Gestation mode.");
+            }
+
+            if (Reproduction.Mode != ReproductionMode.Lump &&
+                Reproduction.Mode != ReproductionMode.Gestation)
+            {
+                issues.Add($"Reproduction mode {(int)Reproduction.Mode} is not a mode this build knows.");
             }
 
             // A body plan with no size is not a small creature, it is an arithmetic hole: every

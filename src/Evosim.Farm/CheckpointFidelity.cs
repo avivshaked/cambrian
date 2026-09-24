@@ -395,6 +395,10 @@ namespace Evosim.Farm
             "_overlapParts",
             "<PartContact>k__BackingField",
             "<PartExposure>k__BackingField", "<UpInBody>k__BackingField",
+
+            // The reserve a gestating body started the step with (2026-09-24), filled at the top
+            // of World.Step before Gestate reads it.
+            "ReserveAtStepStart",
         };
 
         private static bool IsSkippedName(string name) =>

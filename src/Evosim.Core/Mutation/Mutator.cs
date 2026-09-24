@@ -194,6 +194,30 @@ namespace Evosim.Core
                 r.ReserveMargin = Step(r.ReserveMargin, rng, rates);
             }
 
+            // The ruling of 2026-09-24. Both tested against zero before anything is rolled, so a
+            // world that leaves them at their defaults takes exactly the draws every recorded
+            // run took and its children are byte for byte what they were. The share is walked
+            // before the mode is flipped, so a lineage flipping into gestation starts from the
+            // share it carried; a share Step leaves above 1 is clamped.
+            if (rates.GestationShareChance > 0f && rng.Chance(rates.GestationShareChance))
+            {
+                r.GestationShare = Math.Min(1f, Step(r.GestationShare, rng, rates));
+            }
+
+            if (rates.GestationModeChance > 0f && rng.Chance(rates.GestationModeChance))
+            {
+                r.Mode = r.Mode == ReproductionMode.Lump
+                    ? ReproductionMode.Gestation
+                    : ReproductionMode.Lump;
+
+                // A lump genome may carry a share of 0 (one built by hand); it cannot gestate
+                // on it, so it arrives at the smallest share Step would ever leave.
+                if (r.Mode == ReproductionMode.Gestation && !(r.GestationShare > 0f))
+                {
+                    r.GestationShare = 1e-4f;
+                }
+            }
+
             g.Reproduction = r;
 
             if (rng.Chance(rates.AdultScaleChance))

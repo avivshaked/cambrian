@@ -83,7 +83,16 @@ namespace Evosim.Core
         /// inocula were re-extracted once, at 0 (the build's converter under
         /// <c>scratch/r46-build/</c>).
         /// </remarks>
-        public const int FormatVersion = 8;
+        /// <remarks>
+        /// 9 — the owner's ruling of 2026-09-24, reproduction paid as it goes. Two fields in the
+        /// reproduction object: <c>mode</c> (<see cref="ReproductionMode"/>, by name) and
+        /// <c>gestation</c> (<see cref="ReproductionTraits.GestationShare"/>). A format-8 genome
+        /// is a lump breeder whose share is unknowable, so it is refused rather than defaulted;
+        /// a format-8 file is brought forward by adding <c>"mode":"Lump","gestation":0.5</c>
+        /// after its <c>margin</c> and changing nothing else, which is what every founder of the
+        /// defaults carries.
+        /// </remarks>
+        public const int FormatVersion = 9;
 
         /// <summary>Written for a row that carries no organism id.</summary>
         public const long NoId = -1;
@@ -147,6 +156,8 @@ namespace Evosim.Core
                 .Field("brood", genome.Reproduction.BroodSize)
                 .Field("investment", genome.Reproduction.BirthInvestment)
                 .Field("margin", genome.Reproduction.ReserveMargin)
+                .Field("mode", genome.Reproduction.Mode.ToString())
+                .Field("gestation", genome.Reproduction.GestationShare)
                 .EndObject();
 
             w.BeginArray("nodes");
@@ -171,7 +182,10 @@ namespace Evosim.Core
                 throw new FormatException(
                     $"Genome is format {format}, this build reads {FormatVersion}. There is no " +
                     "migration path: re-run, or check out the revision that wrote it. " +
-                    "(Format 8 added the buoyancy offset (`BuoyancyOffset`, D111): where along " +
+                    "(Format 9 added the reproduction mode and the gestation share (`Mode`, " +
+                    "`GestationShare`, 2026-09-24): whether a parent pays for a child in one " +
+                    "lump or as it goes. " +
+                    "Format 8 added the buoyancy offset (`BuoyancyOffset`, D111): where along " +
                     "its thinnest axis a part floats from. " +
                     "Format 7 added the module gene (`Growth`, `MaxModules`) and the four cell " +
                     "attributes (`Attack`, `Intake`, `Protection`, `Toughness`) of D106, so a " +
@@ -193,6 +207,8 @@ namespace Evosim.Core
                     BroodSize = root["reproduction"]["brood"].AsInt(),
                     BirthInvestment = root["reproduction"]["investment"].AsFloat(),
                     ReserveMargin = root["reproduction"]["margin"].AsFloat(),
+                    Mode = ParseEnum<ReproductionMode>(root["reproduction"]["mode"].AsString()),
+                    GestationShare = root["reproduction"]["gestation"].AsFloat(),
                 },
             };
 

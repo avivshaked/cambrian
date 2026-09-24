@@ -345,6 +345,19 @@ namespace Evosim.Farm
                 // count a different thing under each model, and analyse-arm.ps1 and
                 // contact_aliases.py read which from this token.
                 " · contact " + (config.ContactPerPart ? "per part" : "per body") +
+
+                // The ruling of 2026-09-24, at the end before the hash and rendered either way.
+                // The floor is the `overhead` token above, which is unchanged; this says whether
+                // the overhead scales with the child (`x0` is the flat fee of every recorded
+                // world) and whether any lineage can pay as it goes.
+                " · overhead scale x" + F(config.PerOffspringOverheadPerTissueJoule) +
+                " floor " + config.PerOffspringOverheadJoules.ToString("0.###", Inv) + " J" +
+                " · gestation " + (config.Mutation.GestationModeChance > 0f
+                    ? "mut=" + F(config.Mutation.GestationModeChance) +
+                      " share=" + F(config.Genome.MinGestationShare) + "-" +
+                      F(config.Genome.MaxGestationShare) +
+                      " at " + F(config.Mutation.GestationShareChance)
+                    : "off") +
                 " · configHash `" + config.Hash() + "`";
         }
 

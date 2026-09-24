@@ -264,6 +264,14 @@ namespace Evosim.Core
                 RelativeDiff(a.Reproduction.ReserveMargin, b.Reproduction.ReserveMargin) +
                 RelativeDiff(a.AdultScale, b.AdultScale);
 
+            // The ruling of 2026-09-24's two, in their own statement so that a pair that agrees
+            // on both adds exactly 0 to the sum above and every recorded world's species replay.
+            // A mode flip counts one unit, as a brood-size step at its largest does.
+            float gestation =
+                (a.Reproduction.Mode != b.Reproduction.Mode ? 1f : 0f) +
+                RelativeDiff(a.Reproduction.GestationShare, b.Reproduction.GestationShare);
+            if (gestation != 0f) units += gestation;
+
             int minNodes = Math.Min(a.Nodes.Count, b.Nodes.Count);
             for (int i = 0; i < minNodes; i++)
             {

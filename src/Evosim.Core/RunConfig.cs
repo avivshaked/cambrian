@@ -141,9 +141,74 @@ namespace Evosim.Core
         /// converge on the largest brood it could express.
         /// </para>
         /// <para>⚠ Unmeasured — §5A.10.</para>
+        /// <para>
+        /// <b>The floor of the overhead since the owner's ruling of 2026-09-24.</b> The overhead
+        /// is <see cref="OverheadFor"/>: the larger of this and
+        /// <see cref="PerOffspringOverheadPerTissueJoule"/> times the child's tissue at birth. At
+        /// a per-tissue factor of 0 it is this number exactly, which is every recorded world. The
+        /// name stays, and with it the key in <c>config.json</c>, <c>EVOSIM_OVERHEAD</c> and the
+        /// Unity farm's binding, because renaming a tunable that the Unity project sets by name
+        /// would break its compile for nothing a reader gains; <c>EVOSIM_OVERHEAD_FLOOR</c> is the
+        /// farm's second name for it.
+        /// </para>
         /// </remarks>
         [Tunable("economy", Unit = "J")]
         public float PerOffspringOverheadJoules { get; set; } = 25f;
+
+        /// <summary>
+        /// Overhead per joule of the child's tissue at birth, above the floor — the owner's ruling
+        /// of 2026-09-24. Joules per joule; 0 is the flat overhead of every recorded world.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why the overhead scales.</b> A flat fee binds a small body: round 47's stomach
+        /// child is 12 J of tissue against 100 J of fee, its reserve peaks at 100 to 150 J and
+        /// senescence closes its window before it can hold the price, so it never breeds. A fee
+        /// proportional to the child keeps a large child dear and lets a small one be cheap, and
+        /// the floor keeps a brood of forty specks from being free.
+        /// </para>
+        /// <para>
+        /// Still a world constant and not a gene, for the reason the floor is: a lineage allowed
+        /// to set its own overhead would set it to zero.
+        /// </para>
+        /// <para>⚠ Unmeasured — §5A.10.</para>
+        /// </remarks>
+        [Tunable("economy", Unit = "J/J")]
+        public float PerOffspringOverheadPerTissueJoule
+        {
+            get => _perOffspringOverheadPerTissueJoule;
+            set
+            {
+                if (float.IsNaN(value) || float.IsInfinity(value) || value < 0f)
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(PerOffspringOverheadPerTissueJoule), value,
+                        "The overhead per joule of a child's tissue must be finite and " +
+                        "non-negative; a negative one pays a parent for breeding.");
+                }
+
+                _perOffspringOverheadPerTissueJoule = value;
+            }
+        }
+
+        private float _perOffspringOverheadPerTissueJoule;
+
+        /// <summary>
+        /// The overhead one child costs, joules: <c>max(PerOffspringOverheadJoules,
+        /// PerOffspringOverheadPerTissueJoule × childTissueJoules)</c>.
+        /// </summary>
+        /// <remarks>
+        /// Returns the floor itself, as a double of the float, whenever the per-tissue factor is 0,
+        /// so a recorded world's price is the recorded price bit for bit.
+        /// </remarks>
+        public double OverheadFor(double childTissueJoules)
+        {
+            double floor = PerOffspringOverheadJoules;
+            if (!(PerOffspringOverheadPerTissueJoule > 0f)) return floor;
+
+            double scaled = (double)PerOffspringOverheadPerTissueJoule * childTissueJoules;
+            return scaled > floor ? scaled : floor;
+        }
 
         /// <summary>
         /// Metabolic joules charged per joule of mechanical work at the joints — §5A.2.
