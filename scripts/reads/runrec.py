@@ -40,9 +40,11 @@ The gzip members carry their own length in an extra header field (RFC 1952's FEX
 trailer), so a torn member is known before a byte of it is inflated. Standard gzip readers skip
 the field. A member without it (a file gzipped by hand) is walked with zlib instead.
 
-Poses come from poses.jsonl when the run has one (format 1, or a converted run, which keeps it)
-and from the state stream otherwise, read through scripts/poses-read.py's own functions, which
-are the stream's independent reader. Standard library only.
+Poses come from poses.jsonl when the run has one (format 1, or a run converted in place, which
+keeps it) and from the state stream otherwise, read through scripts/poses-read.py's own functions,
+which are the stream's independent reader; `source=` names one. A stream body's `bodyFraction` is
+None where the stream recorded NaN, "not recorded": every body of a stream the converter wrote
+from poses.jsonl, which never carried a fraction. Standard library only.
 """
 import gzip
 import hashlib
@@ -606,7 +608,7 @@ def _stream_reader():
 
 
 def _stream_frames(run):
-    """[(seconds, offset, payload bytes)] of poses.bin, scanned, and the open reader module."""
+    """[(seconds, offset, payload bytes)] of poses.bin, scanned."""
     reader = _stream_reader()
     path = os.path.join(run, STREAM)
     with open(path, 'rb') as f:
@@ -631,16 +633,24 @@ def poses_source(run):
     return None
 
 
-def poses(run, second=None, tolerance=1e-3, keep=None):
+def poses(run, second=None, tolerance=1e-3, keep=None, source=None):
     """Poses rows {'t', 'bodies': [{'id', 'p', 'r', 'q'} ...]}: every row as a Rows when `second`
     is None, else the row at that second or None.
 
     From poses.jsonl when the run has one, else from the state stream, whose bodies also carry
-    'bodyFraction' and whose numbers are the solver's floats rather than the JSONL's rounding.
-    `keep(index, t)`, when given, decides which rows are parsed at all: a row it refuses is
-    skipped on its time alone, which is what a reader taking every tenth row wants.
+    'bodyFraction' and 'flags' and whose numbers are the solver's floats rather than the JSONL's
+    rounding. A stream's 'bodyFraction' is None where it recorded NaN ("not recorded", every body
+    of a stream converted from poses.jsonl, whose numbers are the JSONL's rounding as float32).
+    `source` (POSES or STREAM) reads that file and no other, which is how the converter compares
+    the two. `keep(index, t)`, when given, decides which rows are parsed at all: a row it refuses
+    is skipped on its time alone, which is what a reader taking every tenth row wants.
     """
-    source = poses_source(run)
+    if source is None:
+        source = poses_source(run)
+    elif source not in (POSES, STREAM):
+        raise Refusal('poses source %r: the sources are %s and %s' % (source, POSES, STREAM))
+    elif not os.path.isfile(os.path.join(run, source)):
+        raise Refusal('%s holds no %s' % (run, source))
 
     if source == POSES:
         path = os.path.join(run, POSES)

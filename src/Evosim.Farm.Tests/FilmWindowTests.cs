@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Text;
 using Evosim.Core;
 using Evosim.Farm;
@@ -112,38 +111,22 @@ namespace Evosim.Farm.Tests
             return bySecond;
         }
 
-        /// <summary>A run file's complete lines, plain or gzipped.</summary>
+        /// <summary>
+        /// A run file's complete lines: plain JSONL, or record format 2's gzip members through
+        /// Core's one reader.
+        /// </summary>
         private static IEnumerable<string> Lines(string runDirectory, string name)
         {
             string plain = Path.Combine(runDirectory, name);
-            string gzipped = plain + ".gz";
 
-            string text;
+            IEnumerable<string> lines = File.Exists(plain)
+                ? Encoding.UTF8.GetString(File.ReadAllBytes(plain)).Split('\n')
+                : GzipMemberReader.ReadLines(plain + ".gz", out _);
 
-            if (File.Exists(plain))
-            {
-                text = Encoding.UTF8.GetString(File.ReadAllBytes(plain));
-            }
-            else
-            {
-                text = Encoding.UTF8.GetString(Gunzip(gzipped));
-            }
-
-            foreach (string line in text.Split('\n'))
+            foreach (string line in lines)
             {
                 string trimmed = line.TrimEnd('\r');
                 if (trimmed.Length > 0 && trimmed[trimmed.Length - 1] == '}') yield return trimmed;
-            }
-        }
-
-        private static byte[] Gunzip(string path)
-        {
-            using (var file = File.OpenRead(path))
-            using (var gzip = new GZipStream(file, CompressionMode.Decompress))
-            using (var into = new MemoryStream())
-            {
-                gzip.CopyTo(into);
-                return into.ToArray();
             }
         }
 
@@ -233,8 +216,9 @@ namespace Evosim.Farm.Tests
         }
 
         /// <summary>
-        /// Every body a frame draws has a genome row, and the rows are complete gzip members that
-        /// read back as one stream of genomes this build reads.
+        /// Every body a frame draws, and every body born inside the window, has a genome row. The
+        /// rows are Core's gzip members, read by the reader that reads a run's own
+        /// <c>genomes.jsonl.gz</c>, and each is the row the run's file holds for the same id.
         /// </summary>
         [Fact]
         public void EveryFramedBodyHasAGenome()
@@ -245,19 +229,50 @@ namespace Evosim.Farm.Tests
             Assert.Equal(FilmWindow.Faithful, result.Verdict);
 
             var ids = new HashSet<long>();
-            string text = Encoding.UTF8.GetString(Gunzip(Path.Combine(outDirectory, FilmWindow.GenomesFileName)));
+            var rows = new Dictionary<long, string>();
 
-            foreach (string line in text.Split('\n'))
+            using (GzipMemberReader reader = GzipMemberReader.Open(Path.Combine(outDirectory, FilmWindow.GenomesFileName)))
             {
-                if (line.Length == 0) continue;
+                foreach (string line in reader.Lines())
+                {
+                    long id = GenomeJson.ReadId(line);
+                    Assert.True(ids.Add(id), "a genome row written twice");
+                    rows[id] = line;
+                    GenomeJson.Read(line);
+                }
 
-                JsonNode row = Json.Parse(line);
-                Assert.True(ids.Add((long)row["id"].AsDouble()), "a genome row written twice");
-                GenomeJson.Read(line);
+                Assert.False(reader.Torn, reader.TornNote);
+                Assert.True(reader.CompleteMembers > 0, "no member was written");
             }
 
             Assert.Equal(result.Bodies, ids.Count);
             Assert.Equal(0, result.BirthsWithoutAGenome);
+
+            // Every birth the window's events hold, whether or not the body lived to a frame.
+            foreach (string line in File.ReadAllLines(Path.Combine(outDirectory, FilmWindow.EventsFileName)))
+            {
+                if (line.Length == 0) continue;
+
+                JsonNode e = Json.Parse(line);
+                if (e["e"].AsString() == "b") Assert.Contains((long)e["id"].AsDouble(), ids);
+            }
+
+            // The run records in format 2 by default, so its genomes file holds the same row for
+            // every id: one writer, one reader.
+            string runGenomes = Path.Combine(_run.RunDirectory, RecordFiles.GenomesName);
+            Assert.True(File.Exists(runGenomes), "the recording wrote no genomes.jsonl.gz");
+
+            var runRows = new Dictionary<long, string>();
+            foreach (string line in GzipMemberReader.ReadLines(runGenomes, out _))
+            {
+                runRows[GenomeJson.ReadId(line)] = line;
+            }
+
+            foreach (KeyValuePair<long, string> row in rows)
+            {
+                Assert.True(runRows.TryGetValue(row.Key, out string runRow), "body " + row.Key + " is not in the run's genomes");
+                Assert.Equal(runRow, row.Value);
+            }
 
             int framed = 0;
 
@@ -407,27 +422,108 @@ namespace Evosim.Farm.Tests
                 Program.Main(new[] { "--film-window", _run.RunDirectory, "30", "31", Out("bad"), "--speed", "2" }));
         }
 
+        // ------------------------------------------------------------------ the faithful rule
+
+        private static CheckpointHeader Hashes(string config, string core, string dynamics, string farm) =>
+            new CheckpointHeader { ConfigHash = config, CoreHash = core, DynamicsHash = dynamics, FarmHash = farm };
+
+        /// <summary>
+        /// The farm's hash is named and never decides; the config's, Core's and Dynamics' decide.
+        /// </summary>
         [Fact]
-        public void GzipRowsReadBackAsOneStream()
+        public void OnlyTheConfigCoreAndDynamicsDecideTheSource()
         {
-            string path = Path.Combine(Out("members"), "rows.jsonl.gz");
+            FilmWindow.SourceComparison same = FilmWindow.CompareSources(
+                Hashes("c", "core", "dyn", "farm"), "c", "core", "dyn", "farm");
+            Assert.Empty(same.Deciding);
+            Assert.Null(same.Farm);
 
-            using (var members = new GzipRowWriter(path))
+            FilmWindow.SourceComparison farm = FilmWindow.CompareSources(
+                Hashes("c", "core", "dyn", "farm-old"), "c", "core", "dyn", "farm-new");
+            Assert.Empty(farm.Deciding);
+            Assert.StartsWith("farmHash:", farm.Farm, StringComparison.Ordinal);
+
+            FilmWindow.SourceComparison core = FilmWindow.CompareSources(
+                Hashes("c", "core-old", "dyn-old", "farm-old"), "c", "core-new", "dyn-new", "farm-new");
+            Assert.Equal(2, core.Deciding.Count);
+            Assert.StartsWith("coreHash:", core.Deciding[0], StringComparison.Ordinal);
+            Assert.StartsWith("dynamicsHash:", core.Deciding[1], StringComparison.Ordinal);
+            Assert.NotNull(core.Farm);
+
+            FilmWindow.SourceComparison config = FilmWindow.CompareSources(
+                Hashes("c-old", "core", "dyn", "farm"), "c-new", "core", "dyn", "farm");
+            Assert.Single(config.Deciding);
+        }
+
+        private static FilmWindow.Result AgreeingResult() =>
+            new FilmWindow.Result
             {
-                members.Add("{\"a\":1}");
-                members.Flush();
-                members.Flush();
-                members.Add("{\"a\":2}");
-                members.Add("{\"a\":3}");
-                members.Flush();
-                members.Add("{\"a\":4}");
+                RunDirectory = "run",
+                Rows = 3,
+                RowsAgreed = 3,
+                LastRunRowSeconds = 100d,
+                LastSecond = 50d,
+            };
 
-                Assert.Equal(2, members.Members);
-                Assert.Equal(3, members.Rows);
-            }
+        private static readonly FilmWindow.Options Window =
+            new FilmWindow.Options { Run = "run", Out = "out", FromSeconds = 10d, ToSeconds = 40d };
 
-            Assert.Equal("{\"a\":1}\n{\"a\":2}\n{\"a\":3}\n{\"a\":4}\n", Encoding.UTF8.GetString(Gunzip(path)));
-            Assert.Throws<IOException>(() => new GzipRowWriter(path));
+        /// <summary>
+        /// A window whose rows all agree is faithful under a differing farm hash, which its
+        /// verdict names, and exits 0.
+        /// </summary>
+        [Fact]
+        public void AFarmHashAloneLeavesAFaithfulWindowFaithfulAndNamed()
+        {
+            FilmWindow.Result result = AgreeingResult();
+            result.FarmNote = "farmHash: checkpoint 8f04d32857fa…, this build 1234567890ab…";
+
+            FilmWindow.Decide(result, Window);
+
+            Assert.Equal(FilmWindow.Faithful, result.Verdict);
+            Assert.Contains("farm's source differs", result.Reason, StringComparison.Ordinal);
+            Assert.Contains("8f04d32857fa", result.Reason, StringComparison.Ordinal);
+            Assert.Equal(FilmWindow.ExitFaithful, FilmWindow.ExitCodeOf(result.Verdict));
+        }
+
+        /// <summary>A differing Core or Dynamics, filmed anyway, is a cousin whatever its rows say.</summary>
+        [Fact]
+        public void ASourceMismatchIsACousinWhateverItsRowsSay()
+        {
+            FilmWindow.Result result = AgreeingResult();
+            result.SourceMismatch = true;
+            result.SourceNote = "coreHash: checkpoint aaaa, this build bbbb";
+
+            FilmWindow.Decide(result, Window);
+
+            Assert.Equal(FilmWindow.Cousin, result.Verdict);
+            Assert.Contains("coreHash", result.Reason, StringComparison.Ordinal);
+            Assert.Equal(FilmWindow.ExitCousin, FilmWindow.ExitCodeOf(result.Verdict));
+        }
+
+        /// <summary>A parted row is a cousin that names the second and the field, farm hash or none.</summary>
+        [Fact]
+        public void APartedRowIsACousinWithTheSecondAndTheField()
+        {
+            FilmWindow.Result result = AgreeingResult();
+            result.RowsAgreed = 2;
+            result.PartedAtSeconds = 30d;
+            result.PartedField = "auditResidual";
+            result.FarmNote = "farmHash: checkpoint aaaa, this build bbbb";
+
+            FilmWindow.Decide(result, Window);
+
+            Assert.Equal(FilmWindow.Cousin, result.Verdict);
+            Assert.Contains("t=30 s in auditResidual", result.Reason, StringComparison.Ordinal);
+            Assert.Contains("farm's source differs", result.Reason, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void AnUnverifiedWindowExitsThree()
+        {
+            Assert.Equal(3, FilmWindow.ExitCodeOf(FilmWindow.Unverified));
+            Assert.Equal(2, FilmWindow.ExitCodeOf(FilmWindow.Cousin));
+            Assert.Equal(0, FilmWindow.ExitCodeOf(FilmWindow.Faithful));
         }
 
         // ------------------------------------------------------------------

@@ -17,10 +17,16 @@ It reads both versions. Version 1 writes every body raw. Version 2 deflates each
 (a raw deflate stream, zlib's window bits -15) behind an uncompressed time, count and raw length,
 and gives every body a flags byte: 1 absorptive, 2 jointed, 4 photosynthetic.
 
+A body fraction of NaN means "not recorded". The farm never writes one; a stream converted from a
+run's poses.jsonl (scripts/record-convert.py) writes it for every body, because that file never
+carried one. read_frame() hands it over as None, the way runrec.py's snapshots say a fraction the
+record does not hold, and a picture draws such a body at its adult size.
+
 The index is a shortcut and never the truth, so this scans the stream by default and reads the
 index only under --index, where it checks the two against each other.
 """
 import argparse
+import math
 import os
 import struct
 import sys
@@ -232,6 +238,8 @@ def read_frame(f, offset, payload_bytes, version=None):
         x, y, z = struct.unpack_from('<3f', records, at + 4)
         qx, qy, qz, qw = struct.unpack_from('<4f', records, at + 16)
         fraction = struct.unpack_from('<f', records, at + 32)[0]
+        if math.isnan(fraction):
+            fraction = None   # not recorded: a stream converted from poses.jsonl
 
         if version >= 2:
             flags = records[at + 36]
@@ -260,6 +268,11 @@ def read_frame(f, offset, payload_bytes, version=None):
                       % (offset, count, len(records) - at))
 
     return seconds, bodies
+
+
+def frac(fraction):
+    """A body fraction for print: four places, or n/r when the stream did not record one."""
+    return 'n/r' if fraction is None else '%.4f' % fraction
 
 
 def guild(flags):
@@ -320,13 +333,21 @@ def main():
                     return 1
 
         if args.check:
+            bodies = 0
+            unrecorded = 0
+
             try:
-                bodies = sum(len(read_frame(f, o, n, version)[1]) for _, o, n in frames)
+                for _, o, n in frames:
+                    read = read_frame(f, o, n, version)[1]
+                    bodies += len(read)
+                    unrecorded += sum(1 for body in read if body['bodyFraction'] is None)
             except Refusal as e:
                 print('refused: %s' % e)
                 return 2
 
-            print('read %d frame(s) whole, %d bodies in all' % (len(frames), bodies))
+            print('read %d frame(s) whole, %d bodies in all%s'
+                  % (len(frames), bodies,
+                     ', %d with no recorded body fraction (NaN)' % unrecorded if unrecorded else ''))
 
         if args.summary or not (args.seconds or args.at is not None or args.index or args.check):
             try:
@@ -355,6 +376,10 @@ def main():
                 print('  t from %g to %g s' % (frames[0][0], frames[-1][0]))
                 print('  bodies in the first frame %d, in the last %d' % (crowd[0], crowd[-1]))
 
+                first = read_frame(f, frames[0][1], frames[0][2], version)[1]
+                if first and all(b['bodyFraction'] is None for b in first):
+                    print('  body fractions not recorded (NaN): a stream converted from poses.jsonl')
+
             tail = HEADER_BYTES + sum(8 + n + 4 for _, _, n in frames)
             if tail != size:
                 print('  %d byte(s) after the last complete frame: a killed run\'s torn write'
@@ -382,10 +407,10 @@ def main():
             print('t=%.6f s, %d bodies' % (seconds, len(bodies)))
 
             for body in bodies[:args.bodies]:
-                print('  id %-8d p %8.3f %8.3f %8.3f  r %6.3f %6.3f %6.3f %6.3f  frac %.4f  %s  q %s'
+                print('  id %-8d p %8.3f %8.3f %8.3f  r %6.3f %6.3f %6.3f %6.3f  frac %s  %s  q %s'
                       % (body['id'], body['p'][0], body['p'][1], body['p'][2],
                          body['r'][0], body['r'][1], body['r'][2], body['r'][3],
-                         body['bodyFraction'], guild(body['flags']),
+                         frac(body['bodyFraction']), guild(body['flags']),
                          ' '.join('%.4f' % v for v in body['q']) if body['q'] else '(rigid)'))
 
     return 0

@@ -111,6 +111,22 @@ namespace Evosim.Farm
         /// <summary>What <see cref="PoseBody.Flags"/> reads on a version 1 stream, which carries none.</summary>
         public const int FlagsNotRecorded = -1;
 
+        /// <summary>
+        /// A body fraction the stream does not know: NaN, written as float32 NaN in the body's
+        /// fraction field (<c>logbook/specs/state-stream-spec.md</c>, "Not recorded").
+        /// </summary>
+        /// <remarks>
+        /// The farm always knows a body's fraction and never writes this. A stream converted from
+        /// a run's <c>poses.jsonl</c> (<c>scripts/record-convert.py</c>) does, for every body,
+        /// because that file never carried one. A reader takes NaN as "not recorded" and draws the
+        /// body at its adult size, which is what every picture drew before the stream existed;
+        /// it never takes it as a size.
+        /// </remarks>
+        public const float FractionNotRecorded = float.NaN;
+
+        /// <summary>Whether a fraction read from a stream is a recorded one, rather than NaN.</summary>
+        public static bool FractionRecorded(float fraction) => !float.IsNaN(fraction);
+
         internal static readonly byte[] FileMagic =
         {
             (byte)'E', (byte)'V', (byte)'O', (byte)'P', (byte)'O', (byte)'S', (byte)'E', 0,
@@ -202,8 +218,15 @@ namespace Evosim.Farm
         public float Qz;
         public float Qw;
 
-        /// <summary>Tissue over adult tissue: 1 is grown, and a newborn is a third of it.</summary>
+        /// <summary>
+        /// Tissue over adult tissue: 1 is grown, and a newborn is a third of it. NaN
+        /// (<see cref="PoseStream.FractionNotRecorded"/>) when the stream did not record one, as in
+        /// a stream converted from <c>poses.jsonl</c>; test it with <see cref="FractionRecorded"/>.
+        /// </summary>
         public float BodyFraction;
+
+        /// <summary>Whether <see cref="BodyFraction"/> was recorded, rather than NaN.</summary>
+        public bool FractionRecorded => PoseStream.FractionRecorded(BodyFraction);
 
         /// <summary>
         /// The guild flags, <see cref="PoseStream.AbsorptiveBit"/>,
@@ -407,7 +430,9 @@ namespace Evosim.Farm
 
         /// <remarks>
         /// The joint coordinates arrive as the solver's own doubles and are narrowed here, which
-        /// is the only place a number loses anything between the run and the file.
+        /// is the only place a number loses anything between the run and the file. A body fraction
+        /// of NaN is written as it is, and means "not recorded"
+        /// (<see cref="PoseStream.FractionNotRecorded"/>); the farm never writes one.
         /// </remarks>
         private void Put(
             long id, float x, float y, float z,
@@ -655,6 +680,13 @@ namespace Evosim.Farm
     /// <b>A version 2 frame is inflated when it is read and checked when it is inflated.</b> The
     /// bodies have to inflate to exactly the length the frame states, and to exactly the bodies
     /// its count says; a frame that disagrees with itself is refused rather than read short.
+    /// </para>
+    /// <para>
+    /// <b>A NaN body fraction is read as NaN and means "not recorded"</b>
+    /// (<see cref="PoseStream.FractionNotRecorded"/>). A stream converted from a run's
+    /// <c>poses.jsonl</c> carries it for every body. The reader hands it over unchanged rather
+    /// than as 1, so a caller can tell a grown body from one whose size nobody wrote down, and
+    /// <see cref="PoseBody.FractionRecorded"/> is the test.
     /// </para>
     /// </remarks>
     public sealed class PoseStreamReader : IDisposable

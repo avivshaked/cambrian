@@ -197,7 +197,7 @@ namespace Evosim.Farm
                 // derives from it and World.ReadState refuses a checkpoint from another one.
                 settings.Seed = resume.Seed;
 
-                InheritRecording(settings, resume);
+                InheritRecording(settings, resume, resumeSourceRun);
 
                 // D117. The pool is the source run's, read from its pool/ and refused if its
                 // bytes no longer hash to what the config pins; a launcher's EVOSIM_TRICKLE_POOL
@@ -308,6 +308,9 @@ namespace Evosim.Farm
             Console.WriteLine("report:        " + outPath);
             Console.WriteLine(
                 "record:        " + RunRecordFormat.Describe(settings.RecordFormat) +
+                (resume != null && !settings.Provided.Contains("EVOSIM_RECORD_FORMAT")
+                    ? ", the resumed run's own"
+                    : "") +
                 (streamByDefault
                     ? "; the state stream in place of poses.jsonl, every " +
                       settings.PoseEvery.ToString(CultureInfo.InvariantCulture) + " s (the report interval)"
@@ -810,10 +813,9 @@ namespace Evosim.Farm
             return 0;
         }
 
-        /// <summary>The stop file's first line, or a word that says it had none.</summary>
         /// <summary>
-        /// A resumed run keeps the cadences the run it continues was recording at, except where
-        /// this launcher named one itself.
+        /// A resumed run keeps the cadences and the record the run it continues was recording at,
+        /// except where this launcher named one itself.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -825,13 +827,25 @@ namespace Evosim.Farm
         /// did not carry fails it for a reason that has nothing to do with the world.
         /// </para>
         /// <para>
+        /// The record format carries for the same reason (<see cref="SourceRecordFormat"/>): a
+        /// continuation of a format 1 run written in format 2 would be a directory no reader
+        /// written against its source could follow, and its checkpoints would change version
+        /// between two files of one run.
+        /// </para>
+        /// <para>
         /// A launcher that names one wins, because <see cref="EnvSettings.Provided"/> records
         /// which names were actually set rather than which values differ from a default. Resuming
-        /// at a finer cadence to watch something closely is a real thing to want.
+        /// at a finer cadence to watch something closely is a real thing to want, and so is
+        /// resuming an old run into the compact record.
         /// </para>
         /// </remarks>
-        private static void InheritRecording(EnvSettings settings, CheckpointHeader resume)
+        private static void InheritRecording(EnvSettings settings, CheckpointHeader resume, string sourceRun)
         {
+            if (!settings.Provided.Contains("EVOSIM_RECORD_FORMAT"))
+            {
+                settings.RecordFormat = SourceRecordFormat(sourceRun, resume);
+            }
+
             if (!settings.Provided.Contains("EVOSIM_REPORT_EVERY") && resume.ReportEvery > 0)
             {
                 settings.ReportEvery = resume.ReportEvery;
@@ -852,6 +866,53 @@ namespace Evosim.Farm
             {
                 settings.CheckpointEvery = (float)resume.CheckpointEverySeconds;
             }
+        }
+
+        /// <summary>
+        /// The record the source run wrote: its <c>run.json</c>'s <c>recordFormat</c>, format 1
+        /// when the manifest names none, and the checkpoint's own version when there is no
+        /// manifest to ask.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The manifest first, because it is where the record is recorded and what every reader
+        /// dispatches on. A manifest without the field was written before record format 2 existed,
+        /// so its run is format 1. A manifest this build cannot read is a refusal, under the rule
+        /// that a resume never guesses at its source.
+        /// </para>
+        /// <para>
+        /// The checkpoint's version stands in only when the source directory has lost its
+        /// manifest. Format 1 writes version 4 and format 2 writes version 5
+        /// (<c>WriteCheckpoint</c>), and every checkpoint before this build is version 4 and
+        /// format 1, so the one maps to the other without a guess.
+        /// </para>
+        /// </remarks>
+        public static int SourceRecordFormat(string sourceRun, CheckpointHeader resume)
+        {
+            string manifestPath = sourceRun != null ? Path.Combine(sourceRun, "run.json") : null;
+
+            if (manifestPath != null && File.Exists(manifestPath))
+            {
+                JsonNode manifest = Json.Parse(File.ReadAllText(manifestPath));
+
+                if (!manifest.Has("recordFormat")) return RunRecordFormat.Jsonl;
+
+                JsonNode field = manifest["recordFormat"];
+                int format = field.Kind == JsonNode.NodeKind.Number ? field.AsInt() : -1;
+
+                if (!RunRecordFormat.IsKnown(format))
+                {
+                    throw new InvalidDataException(
+                        manifestPath + " says recordFormat " + field + ", and this build writes " +
+                        "records 1 and 2. Name EVOSIM_RECORD_FORMAT to resume it anyway.");
+                }
+
+                return format;
+            }
+
+            return resume != null && resume.Version == Checkpoint.Version
+                ? RunRecordFormat.Compact
+                : RunRecordFormat.Jsonl;
         }
 
         /// <summary>
@@ -1004,6 +1065,7 @@ namespace Evosim.Farm
             return assayFired;
         }
 
+        /// <summary>The stop file's first line, or a word that says it had none.</summary>
         private static string StopReason(string path)
         {
             try

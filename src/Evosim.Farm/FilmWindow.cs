@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.IO.Compression;
 using System.Text;
 using System.Text.RegularExpressions;
 using Evosim.Core;
@@ -49,26 +48,42 @@ namespace Evosim.Farm
     /// <para>
     /// <b>What it writes, all into the out directory and never into the run's.</b>
     /// <c>film.poses.bin</c>, a version 2 state stream. <c>genomes.jsonl.gz</c>, one genome row
-    /// per body alive at the window's start or born inside it, in gzip members written at each
-    /// report second, so a killed window keeps every member before the last. <c>plans.jsonl</c>,
-    /// each body's module counts and lost parts at the start where they differ from the genome's,
-    /// and every change after. <c>events.jsonl</c>, the run's own lineage rows for every birth,
-    /// death and bite inside the window. <c>identity.jsonl</c>, the window's count of the living,
-    /// its births, its deaths, its audit residual and its mean height against the run's own
-    /// <c>stats.jsonl</c> row at every report second inside the window, and a verdict line last.
+    /// per body alive at the window's start or born inside it, in Core's gzip members
+    /// (<see cref="JsonlGzWriter"/>, the run's own <c>genomes.jsonl.gz</c> format) written at each
+    /// report second, so a killed window keeps every member before the last and one reader
+    /// (<see cref="GzipMemberReader"/>, <c>runrec.py</c>) reads a run's genomes and a window's
+    /// alike. <c>plans.jsonl</c>, each body's module counts and lost parts at the start where they
+    /// differ from the genome's, and every change after. <c>events.jsonl</c>, the run's own
+    /// lineage rows for every birth, death and bite inside the window. <c>identity.jsonl</c>, the
+    /// window's count of the living, its births, its deaths, its audit residual and its mean
+    /// height against the run's own <c>stats.jsonl</c> row at every report second inside the
+    /// window, and a verdict line last.
     /// </para>
     /// <para>
-    /// <b>Faithful is measured, not assumed.</b> A window whose rows all agree with the run's to
-    /// the bit is <c>faithful</c>. One that parts, before the window or inside it, is a
-    /// <c>cousin</c>, and the verdict says the second and the field. A checkpoint this build did
-    /// not write is refused as a resume refuses it, unless <c>EVOSIM_ALLOW_SOURCE_MISMATCH</c> is
-    /// set, and the window is then a cousin whatever its rows say. A window with no report second
-    /// inside it steps on to the run's next one and compares that. A window that runs past the
-    /// run's last row, or finds no row at all, is <c>unverified</c>.
+    /// <b>The genomes come from the world's admission queue</b>
+    /// (<see cref="World.QueueAdmittedGenomes"/>), turned on before the restore as the run's loop
+    /// turns it on, so a body born and dead between two metabolic steps still has its genome. The
+    /// bodies alive at the start were admitted before the window and are written from the living
+    /// roster, which is what a resumed run does with its own. The window takes the queue at every
+    /// metabolic step inside it, before the sampler's drain at a report step, and the sampler
+    /// drains and drops whatever is left on the steps the run's sampler drained it.
     /// </para>
     /// <para>
-    /// <b>Exit codes.</b> 0 for a faithful window, 2 for one written and not faithful, 1 for a
-    /// refusal or a failure, which writes nothing or stops part way.
+    /// <b>Faithful is measured, not assumed.</b> A window reads <c>faithful</c> when its
+    /// <c>configHash</c>, <c>coreHash</c> and <c>dynamicsHash</c> equal the run's and every
+    /// identity row agrees with the run's to the bit. A differing <c>farmHash</c> is named in the
+    /// verdict and does not disqualify the window: the rows are the evidence, and the farm's
+    /// source is mostly recording (the owner's ruling, 2026-09-24). A differing config, Core or
+    /// Dynamics is refused as a resume refuses it, unless <c>EVOSIM_ALLOW_SOURCE_MISMATCH</c> is
+    /// set, and the window is then a cousin whatever its rows say. A row that parts, before the
+    /// window or inside it, makes a <c>cousin</c>, and the verdict says the second and the field.
+    /// A window with no report second inside it steps on to the run's next one and compares that.
+    /// A window that runs past the run's last row, or finds no row at all, is <c>unverified</c>.
+    /// </para>
+    /// <para>
+    /// <b>Exit codes.</b> 0 for a faithful window, a differing <c>farmHash</c> included. 2 for a
+    /// cousin and 3 for an unverified window, both written whole. 1 for a refusal or a failure,
+    /// which writes nothing or stops part way.
     /// </para>
     /// </remarks>
     public static class FilmWindow
@@ -83,7 +98,8 @@ namespace Evosim.Farm
 
         public const int ExitFaithful = 0;
         public const int ExitRefused = 1;
-        public const int ExitNotFaithful = 2;
+        public const int ExitCousin = 2;
+        public const int ExitUnverified = 3;
 
         public const string Faithful = "faithful";
         public const string Cousin = "cousin";
@@ -124,8 +140,20 @@ namespace Evosim.Farm
             public double RestoredSeconds;
             public int Threads;
 
+            /// <summary>
+            /// Whether the config, Core or Dynamics differ from the run's: a refusal unless
+            /// <c>EVOSIM_ALLOW_SOURCE_MISMATCH</c> is set, and a cousin when it is.
+            /// </summary>
             public bool SourceMismatch;
+
+            /// <summary>What differed among the config, Core and Dynamics, or null.</summary>
             public string SourceNote;
+
+            /// <summary>
+            /// The farm's hash line when it differs from the run's, or null. Named in the verdict
+            /// and never a reason to call the window a cousin.
+            /// </summary>
+            public string FarmNote;
 
             public int Frames;
 
@@ -179,8 +207,14 @@ namespace Evosim.Farm
 
             Console.WriteLine(Summary(result, options));
 
-            return result.Verdict == Faithful ? ExitFaithful : ExitNotFaithful;
+            return ExitCodeOf(result.Verdict);
         }
+
+        /// <summary>The exit code for a verdict: 0 faithful, 2 cousin, 3 unverified.</summary>
+        public static int ExitCodeOf(string verdict) =>
+            verdict == Faithful ? ExitFaithful
+            : verdict == Unverified ? ExitUnverified
+            : ExitCousin;
 
         /// <summary>
         /// <c>--film-window &lt;run dir&gt; &lt;from s&gt; &lt;to s&gt; &lt;out dir&gt; [--fps N] [--threads N]</c>.
@@ -311,24 +345,26 @@ namespace Evosim.Farm
                 Threads = threads,
             };
 
-            // A resume's own refusal: all four hashes, and the refusal is the default.
+            // A resume's refusal for the three hashes that decide a trajectory. The farm's is named
+            // and not refused: the rows below are the evidence (the faithful rule, in the remarks).
             RunManifest build = Manifest.Build(
                 settings, config.Hash(), null, physicsDt, stepsPerMetabolic, threads);
 
-            IReadOnlyList<string> differences = header.Differences(
-                config.Hash(), build.CoreHash, build.DynamicsHash, build.FarmHash);
+            SourceComparison sources = CompareSources(
+                header, config.Hash(), build.CoreHash, build.DynamicsHash, build.FarmHash);
 
-            if (differences.Count > 0)
+            if (sources.Deciding.Count > 0)
             {
-                string note = string.Join("; ", differences);
+                string note = string.Join("; ", sources.Deciding);
 
                 if (!settings.AllowSourceMismatch)
                 {
                     throw new InvalidOperationException(
                         "This " + (checkpoint != null ? "checkpoint" : "run") + " was not written " +
-                        "by this build, so a window of it would step a trajectory the recording " +
-                        "never had: " + note + ". Set EVOSIM_ALLOW_SOURCE_MISMATCH=1 to film it " +
-                        "anyway; the window is then marked a cousin.");
+                        "by this build's config, Core and Dynamics, so a window of it would step a " +
+                        "trajectory the recording never had: " + note + ". Set " +
+                        "EVOSIM_ALLOW_SOURCE_MISMATCH=1 to film it anyway; the window is then marked " +
+                        "a cousin.");
                 }
 
                 result.SourceMismatch = true;
@@ -337,6 +373,16 @@ namespace Evosim.Farm
                 log.WriteLine(
                     "film-window: warning: filming across a source mismatch, so this window is a " +
                     "cousin of the recording: " + note);
+            }
+
+            if (sources.Farm != null)
+            {
+                result.FarmNote = sources.Farm;
+
+                log.WriteLine(
+                    "film-window: the farm's source differs from the run's (" + sources.Farm + "). " +
+                    "It is named in the verdict and does not make the window a cousin; the identity " +
+                    "rows decide.");
             }
 
             // The run's rows, from the restore on, keyed by their second.
@@ -350,7 +396,10 @@ namespace Evosim.Farm
 
             Parallelism.Threads = threads;
 
-            var world = new World(config, header.Seed, pool?.Genomes);
+            // The admission queue on before the restore and before the first step, as the run's
+            // loop turns it on, so no admission comes before it. Recording only: a world that
+            // queues and one that does not step the same trajectory.
+            var world = new World(config, header.Seed, pool?.Genomes) { QueueAdmittedGenomes = true };
             var sim = new Simulation(
                 world, header.Seed, physicsDt, stepsPerMetabolic, threads, runDirectory: null);
             var sampler = new Sampler { PoolNamed = config.FoundingTricklePoolCount > 0 };
@@ -422,12 +471,16 @@ namespace Evosim.Farm
 
                         extinct = Program.EndsExtinct(world);
 
+                        // After the assay, whose inoculants are admissions too: this step's genomes
+                        // off the admission queue, and every plan that moved.
                         if (film.Started && !windowDone) film.CaptureBodies(world, t);
 
                         Compare(world, runRows, options, film, result, afterSecond);
 
                         // The loop's report step, or its last row at an extinction. The window's
-                        // events are taken off the queue first, because the sampler drains it.
+                        // events are taken off the lineage queue first, and its genomes were taken
+                        // off the admission queue above, because the sampler drains both: with
+                        // nowhere to write, as the run's sampler drained them into its files.
                         if (loop.MetabolicSteps % reportEvery == 0 || extinct)
                         {
                             if (film.Started) film.TakeEvents(world);
@@ -443,8 +496,7 @@ namespace Evosim.Farm
                     if (film.Started && !windowDone && t + Eps >= options.ToSeconds)
                     {
                         windowDone = true;
-                        film.TakeEvents(world);
-                        film.FlushMembers();
+                        film.EndWindow(world);
                         afterSecond = AfterSecond(runRows, options, result);
                     }
 
@@ -854,9 +906,20 @@ namespace Evosim.Farm
             return double.NaN;
         }
 
-        /// <summary>The verdict: faithful, cousin or unverified, and why.</summary>
-        private static void Decide(Result result, Options options)
+        /// <summary>
+        /// The verdict, faithful, cousin or unverified, and why, from what a window found. Public
+        /// so the rule can be tested on a result without filming one.
+        /// </summary>
+        /// <remarks>
+        /// A differing <c>farmHash</c> never decides the word. It is named at the end of the
+        /// reason whatever the word is, so a window of a run recorded on an older farm build says
+        /// so on its verdict line and in <c>identity.jsonl</c>.
+        /// </remarks>
+        public static void Decide(Result result, Options options)
         {
+            if (result == null) throw new ArgumentNullException(nameof(result));
+            if (options == null) throw new ArgumentNullException(nameof(options));
+
             Judge(result, options);
 
             if (result.EndedExtinct)
@@ -865,6 +928,62 @@ namespace Evosim.Farm
                     "; the world went extinct at t=" + Seconds(result.LastSecond) + " s and the " +
                     "window stopped there";
             }
+
+            if (result.FarmNote != null)
+            {
+                result.Reason +=
+                    "; the farm's source differs from the run's (" + result.FarmNote + "), which " +
+                    "the rules for a faithful window do not count against it";
+            }
+        }
+
+        /// <summary>
+        /// A window's source hashes against the run's, split by what each one decides.
+        /// </summary>
+        public sealed class SourceComparison
+        {
+            /// <summary>
+            /// Differences in <c>configHash</c>, <c>coreHash</c> or <c>dynamicsHash</c>, each a line
+            /// naming the hash, the run's value and this build's. Any one refuses the window unless
+            /// <c>EVOSIM_ALLOW_SOURCE_MISMATCH</c> is set, and makes it a cousin when it is.
+            /// </summary>
+            public readonly List<string> Deciding = new List<string>();
+
+            /// <summary>The <c>farmHash</c> line when it differs, or null. Named and never decisive.</summary>
+            public string Farm;
+        }
+
+        /// <summary>
+        /// Splits a checkpoint's (or a founded run's) four hashes against this build's into the
+        /// three that decide a trajectory and the farm's, which does not.
+        /// </summary>
+        /// <remarks>
+        /// <b>Why the farm's is left out.</b> The config is the world, Core the economy and the
+        /// development, Dynamics the solver: a window stepped under a different one of those steps
+        /// another trajectory whatever its first rows say. The farm's source is the loop and mostly
+        /// the recording around it, and every build that adds a file or a column moves its hash,
+        /// so the hash alone would make a cousin of every window of a run recorded before the
+        /// window's build. The identity rows are what show whether the loop stepped the world as
+        /// the run did, and they are compared bit for bit (the owner's ruling, 2026-09-24). A
+        /// resume still refuses all four (<c>Program.RecordResume</c>), because it writes the
+        /// run's continuation and not a film of it.
+        /// </remarks>
+        public static SourceComparison CompareSources(
+            CheckpointHeader header, string configHash, string coreHash, string dynamicsHash, string farmHash)
+        {
+            if (header == null) throw new ArgumentNullException(nameof(header));
+
+            var comparison = new SourceComparison();
+
+            // Differences reads the four in a fixed order and names each; the farm's line is the
+            // only one that starts with its name.
+            foreach (string line in header.Differences(configHash, coreHash, dynamicsHash, farmHash))
+            {
+                if (line.StartsWith("farmHash:", StringComparison.Ordinal)) comparison.Farm = line;
+                else comparison.Deciding.Add(line);
+            }
+
+            return comparison;
         }
 
         private static void Judge(Result result, Options options)
@@ -878,7 +997,9 @@ namespace Evosim.Farm
             if (result.SourceMismatch)
             {
                 result.Verdict = Cousin;
-                result.Reason = "source mismatch (" + result.SourceNote + "); " + counts;
+                result.Reason =
+                    "the config, Core or Dynamics differ from the run's (" + result.SourceNote +
+                    "), filmed under EVOSIM_ALLOW_SOURCE_MISMATCH; " + counts;
                 return;
             }
 
@@ -947,7 +1068,7 @@ namespace Evosim.Farm
             private readonly Result _result;
 
             private PoseRecorder _poses;
-            private GzipRowWriter _genomes;
+            private JsonlGzWriter _genomes;
             private JsonlWriter _plans;
             private JsonlWriter _events;
             private JsonlWriter _identity;
@@ -955,6 +1076,13 @@ namespace Evosim.Farm
             private readonly HashSet<long> _withGenome = new HashSet<long>();
             private readonly Dictionary<long, Plan> _plansWritten = new Dictionary<long, Plan>();
             private readonly List<long> _born = new List<long>();
+
+            /// <summary>
+            /// Genomes taken off the world's admission queue and not yet written: each is written
+            /// when its body's birth row turns out to lie inside the window, so the file holds the
+            /// bodies alive at the start and those born inside, and no other.
+            /// </summary>
+            private readonly Dictionary<long, Genome> _admitted = new Dictionary<long, Genome>();
 
             private long _nextFrame;
             private readonly long _lastFrame;
@@ -980,7 +1108,9 @@ namespace Evosim.Farm
                 _poses = PoseRecorder.AtPath(
                     Path.Combine(_outDirectory, PosesFileName), (float)(1d / _options.FramesPerSecond),
                     _configHash);
-                _genomes = new GzipRowWriter(Path.Combine(_outDirectory, GenomesFileName));
+                // Core's members, the run's own genomes.jsonl.gz format: a member at each report
+                // second, each carrying its length, so one reader reads both files.
+                _genomes = new JsonlGzWriter(Path.Combine(_outDirectory, GenomesFileName), memberEachRow: false);
                 _plans = new JsonlWriter(Path.Combine(_outDirectory, PlansFileName), flushEachRow: false);
                 _events = new JsonlWriter(Path.Combine(_outDirectory, EventsFileName), flushEachRow: false);
                 OpenIdentity();
@@ -994,7 +1124,18 @@ namespace Evosim.Farm
                 _identity = new JsonlWriter(Path.Combine(_outDirectory, IdentityFileName), flushEachRow: true);
             }
 
-            /// <summary>The window opens: every living body's genome, and its plan where it has moved.</summary>
+            /// <summary>
+            /// The window opens: every living body's genome from the roster, and its plan where it
+            /// has moved. What the admission queue holds is kept for <see cref="TakeEvents"/>.
+            /// </summary>
+            /// <remarks>
+            /// The bodies alive at the start were admitted before it, so the queue does not have
+            /// them all: the sampler drained it at the run's last report step and dropped what it
+            /// held. The roster has them, as a resumed run's roster has its own
+            /// (<c>Sampler.WriteLivingGenomes</c>). The queue is taken here as well, because the
+            /// step the window opens on may have admitted bodies of its own, and one born and dead
+            /// inside that step stands in no roster.
+            /// </remarks>
             public void Start(World world, double t)
             {
                 if (Started) return;
@@ -1002,24 +1143,44 @@ namespace Evosim.Farm
                 Open();
                 Started = true;
 
+                TakeAdmissions(world);
+
                 for (int i = 0; i < world.Living.Count; i++)
                 {
                     Organism creature = world.Living[i];
-                    WriteGenome(creature);
+                    WriteGenome(creature.Id, creature.Genome);
                     WritePlanIfChanged(creature, t);
                 }
 
-                _genomes.Flush();
+                _genomes.EndMember();
             }
 
-            /// <summary>After a metabolic step inside the window: the newborns' genomes and every plan that moved.</summary>
+            /// <summary>
+            /// After a metabolic step inside the window: that step's admissions off the queue,
+            /// before the sampler can drain them, and every plan that moved.
+            /// </summary>
             public void CaptureBodies(World world, double t)
             {
+                TakeAdmissions(world);
+
+                // A step past the window's end (an end between two metabolic steps) moves no plan
+                // a frame will draw.
+                if (t > _options.ToSeconds + Eps) return;
+
                 for (int i = 0; i < world.Living.Count; i++)
                 {
-                    Organism creature = world.Living[i];
-                    if (!_withGenome.Contains(creature.Id)) WriteGenome(creature);
-                    WritePlanIfChanged(creature, t);
+                    WritePlanIfChanged(world.Living[i], t);
+                }
+            }
+
+            /// <summary>Everything on the world's admission queue, held until its birth row is read.</summary>
+            private void TakeAdmissions(World world)
+            {
+                IReadOnlyList<AdmittedGenome> admitted = world.DrainAdmittedGenomes();
+
+                for (int i = 0; i < admitted.Count; i++)
+                {
+                    _admitted[admitted[i].Id] = admitted[i].Genome;
                 }
             }
 
@@ -1037,7 +1198,17 @@ namespace Evosim.Farm
                 while (_nextFrame <= _lastFrame && _nextFrame / fps <= t + Eps) _nextFrame++;
             }
 
-            /// <summary>The lineage queue's births, deaths and bites inside the window.</summary>
+            /// <summary>
+            /// The lineage queue's births, deaths and bites inside the window, and the genome of
+            /// every body born inside it.
+            /// </summary>
+            /// <remarks>
+            /// A bite (<see cref="LineageEventKind.Kill"/>) rides the same queue as a birth and a
+            /// death, is written to <c>events.jsonl</c> as the run wrote it to its lineage, and is
+            /// counted apart from both. Every admission is a birth row and a queued genome, one of
+            /// each per id (<c>World.Admit</c>), so a birth row inside the window finds its genome
+            /// among those taken off the admission queue.
+            /// </remarks>
             public void TakeEvents(World world)
             {
                 if (!Started) return;
@@ -1062,6 +1233,12 @@ namespace Evosim.Farm
                     {
                         _result.Births++;
                         _born.Add(e.Id);
+
+                        if (_admitted.TryGetValue(e.Id, out Genome genome))
+                        {
+                            WriteGenome(e.Id, genome);
+                            _admitted.Remove(e.Id);
+                        }
                     }
                     else if (e.Kind == LineageEventKind.Death)
                     {
@@ -1074,11 +1251,22 @@ namespace Evosim.Farm
                 }
             }
 
+            /// <summary>
+            /// The window's end: its last events and their genomes, every file's member closed,
+            /// and the admissions held for a birth that can no longer fall inside it let go.
+            /// </summary>
+            public void EndWindow(World world)
+            {
+                TakeEvents(world);
+                FlushMembers();
+                _admitted.Clear();
+            }
+
             public void FlushMembers()
             {
                 if (!Started) return;
 
-                _genomes.Flush();
+                _genomes.EndMember();
                 _plans.Flush();
                 _events.Flush();
             }
@@ -1091,14 +1279,16 @@ namespace Evosim.Farm
 
             public void Close()
             {
-                // A birth whose body was born and gone inside one metabolic step never stood in
-                // the living list the genomes are taken from.
+                // A check, and it reads 0: every admission queues its genome beside its birth row,
+                // so a body born and dead between two metabolic steps has its genome too. A birth
+                // counted here is a genome the queue did not hand over, which is a fault to find.
                 for (int i = 0; i < _born.Count; i++)
                 {
                     if (!_withGenome.Contains(_born[i])) _result.BirthsWithoutAGenome++;
                 }
 
                 _born.Clear();
+                _admitted.Clear();
 
                 _poses?.Dispose();
                 _poses = null;
@@ -1142,6 +1332,7 @@ namespace Evosim.Farm
 
                 w.Field("partedField", result.PartedField);
                 w.Field("sourceMismatch", result.SourceNote);
+                w.Field("farmHashDiffers", result.FarmNote);
                 w.Field("endedExtinct", result.EndedExtinct);
                 w.Field("threads", result.Threads);
                 w.Field("wallSeconds", result.WallSeconds);
@@ -1153,11 +1344,12 @@ namespace Evosim.Farm
                 _identity = null;
             }
 
-            private void WriteGenome(Organism creature)
+            /// <summary>One genome row, the run's own form (<c>Sampler.DrainGenomes</c>), once per id.</summary>
+            private void WriteGenome(long id, Genome genome)
             {
-                if (!_withGenome.Add(creature.Id)) return;
+                if (!_withGenome.Add(id)) return;
 
-                _genomes.Add(GenomeJson.Write(creature.Genome, indent: false, id: creature.Id));
+                _genomes.Write(GenomeJson.Write(genome, indent: false, id: id));
                 _result.Bodies++;
             }
 
@@ -1258,89 +1450,6 @@ namespace Evosim.Farm
 
                 return true;
             }
-        }
-    }
-
-    /// <summary>
-    /// A gzip file written as a run of complete members: each <see cref="Flush"/> closes one.
-    /// </summary>
-    /// <remarks>
-    /// Concatenated members are one valid gzip file (RFC 1952, section 2.2), so a reader takes
-    /// the whole file as one stream, and a process killed between two flushes leaves every
-    /// member before the kill complete. What was added and not yet flushed is lost with it, which
-    /// is the JSONL writers' contract at a coarser grain. Named apart from the record branch's
-    /// <c>Evosim.Core.GzipMembers</c> (scratch/wt-record, 2026-09-24): a class of that name in this
-    /// namespace would take every unqualified use of Core's in the farm once the two merge. The
-    /// film should move onto Core's writer then, so that one reader reads both files.
-    /// </remarks>
-    public sealed class GzipRowWriter : IDisposable
-    {
-        private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
-
-        private FileStream _file;
-        private readonly StringBuilder _pending = new StringBuilder();
-        private int _pendingRows;
-
-        /// <summary>Rows in complete members.</summary>
-        public int Rows { get; private set; }
-
-        /// <summary>Complete members written.</summary>
-        public int Members { get; private set; }
-
-        /// <summary>Creates the file. Refuses one that exists rather than appending a member to it.</summary>
-        public GzipRowWriter(string path)
-        {
-            if (string.IsNullOrEmpty(path)) throw new ArgumentNullException(nameof(path));
-
-            string directory = Path.GetDirectoryName(Path.GetFullPath(path));
-            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
-
-            _file = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
-        }
-
-        /// <summary>One row, held until the next member. One row is one line, as in every JSONL file.</summary>
-        public void Add(string row)
-        {
-            if (row == null) throw new ArgumentNullException(nameof(row));
-
-            if (row.IndexOf('\n') >= 0 || row.IndexOf('\r') >= 0)
-            {
-                throw new ArgumentException("A row contains a line break.", nameof(row));
-            }
-
-            _pending.Append(row).Append('\n');
-            _pendingRows++;
-        }
-
-        /// <summary>Writes whatever is held as one complete member. Nothing held, nothing written.</summary>
-        public void Flush()
-        {
-            if (_file == null) throw new ObjectDisposedException(nameof(GzipRowWriter));
-            if (_pendingRows == 0) return;
-
-            byte[] bytes = Utf8.GetBytes(_pending.ToString());
-
-            using (var member = new GZipStream(_file, CompressionLevel.Optimal, true))
-            {
-                member.Write(bytes, 0, bytes.Length);
-            }
-
-            _file.Flush();
-
-            Rows += _pendingRows;
-            Members++;
-
-            _pending.Clear();
-            _pendingRows = 0;
-        }
-
-        public void Dispose()
-        {
-            if (_file == null) return;
-
-            Flush();
-            _file.Dispose();
-            _file = null;
         }
     }
 }

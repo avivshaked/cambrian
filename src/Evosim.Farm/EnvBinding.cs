@@ -145,7 +145,8 @@ namespace Evosim.Farm
             // default from round 49's build, writes each genome once, slim snapshots, gzipped
             // positions, the state stream in place of poses.jsonl and compressed checkpoints; 1
             // writes the record every earlier run wrote. A recording setting like the cadences
-            // above it: EnvSettings and run.json's recordFormat, never RunConfig or its hash.
+            // above it: EnvSettings and run.json's recordFormat, never RunConfig or its hash. A
+            // resume inherits its source's, as it inherits the cadences, unless this names one.
             Custom("EVOSIM_RECORD_FORMAT", (s, env) => s.RecordFormat = RecordFormatOf(env)),
 
             Text("EVOSIM_RESUME", (s, v) => s.ResumeFrom = v),

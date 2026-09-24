@@ -229,5 +229,97 @@ namespace Evosim.Farm.Tests
             Assert.Contains("\"recordFormat\": 2", two, StringComparison.Ordinal);
             Assert.Contains("\"recordFormat\": 1", one, StringComparison.Ordinal);
         }
+
+        // ------------------------------------------------------------------ a resume's record
+
+        /// <summary>
+        /// The source's record is its manifest's <c>recordFormat</c>, format 1 when the manifest
+        /// has none, the checkpoint's version when there is no manifest, and a refusal when the
+        /// manifest names a record this build does not write.
+        /// </summary>
+        [Fact]
+        public void AResumeReadsItsSourcesRecordFromTheManifestFirst()
+        {
+            string run = SimulationTests.Scratch("record-source");
+            Directory.CreateDirectory(run);
+            string manifest = Path.Combine(run, "run.json");
+
+            var five = new CheckpointHeader { Version = Checkpoint.Version };
+            var four = new CheckpointHeader { Version = Checkpoint.UncompressedVersion };
+
+            File.WriteAllText(manifest, "{\"arm\": \"a\", \"recordFormat\": 1}");
+            Assert.Equal(RunRecordFormat.Jsonl, Program.SourceRecordFormat(run, five));
+
+            File.WriteAllText(manifest, "{\"arm\": \"a\", \"recordFormat\": 2}");
+            Assert.Equal(RunRecordFormat.Compact, Program.SourceRecordFormat(run, four));
+
+            // Every manifest before the record existed.
+            File.WriteAllText(manifest, "{\"arm\": \"a\"}");
+            Assert.Equal(RunRecordFormat.Jsonl, Program.SourceRecordFormat(run, five));
+
+            File.WriteAllText(manifest, "{\"arm\": \"a\", \"recordFormat\": 7}");
+            Assert.Throws<InvalidDataException>(() => Program.SourceRecordFormat(run, five));
+
+            File.Delete(manifest);
+            Assert.Equal(RunRecordFormat.Compact, Program.SourceRecordFormat(run, five));
+            Assert.Equal(RunRecordFormat.Jsonl, Program.SourceRecordFormat(run, four));
+        }
+
+        /// <summary>
+        /// A format 1 run resumed with no <c>EVOSIM_RECORD_FORMAT</c> is continued in format 1,
+        /// its checkpoints still version 4; a launcher that names 2 gets 2.
+        /// </summary>
+        [Fact]
+        public void AResumeKeepsItsSourcesRecordUnlessTheLauncherNamesOne()
+        {
+            string root = SimulationTests.Scratch("record-resume-" + Guid.NewGuid().ToString("N"));
+            string runsRoot = Path.Combine(root, "runs");
+
+            var source = new List<string>(FilmWindowTests.SmallRun(runsRoot, "old", seconds: 40, checkpointEvery: 20))
+            {
+                "EVOSIM_RECORD_FORMAT=1",
+            };
+            Assert.Equal(0, Program.Main(source.ToArray()));
+
+            string sourceRun = Directory.GetDirectories(Path.Combine(runsRoot, "old"))[0];
+            Assert.True(File.Exists(Path.Combine(sourceRun, "positions.jsonl")));
+
+            string Resumed(string arm, params string[] extra)
+            {
+                var settings = new List<string>
+                {
+                    "EVOSIM_RUNS_ROOT=" + runsRoot,
+                    "EVOSIM_OUT=" + arm + ".md",
+                    "EVOSIM_SECONDS=30",
+                    "EVOSIM_WALL_MINUTES=10",
+                    "EVOSIM_THREADS=2",
+                    "EVOSIM_RESUME=" + sourceRun,
+                    "EVOSIM_RESUME_AT=20",
+                };
+                settings.AddRange(extra);
+
+                Assert.Equal(0, Program.Main(settings.ToArray()));
+                return Directory.GetDirectories(Path.Combine(runsRoot, arm))[0];
+            }
+
+            string kept = Resumed("kept");
+            JsonNode keptManifest = Json.Parse(File.ReadAllText(Path.Combine(kept, "run.json")));
+            Assert.Equal(RunRecordFormat.Jsonl, keptManifest["recordFormat"].AsInt());
+            Assert.True(File.Exists(Path.Combine(kept, "positions.jsonl")));
+            Assert.False(File.Exists(Path.Combine(kept, RecordFiles.GenomesName)));
+
+            string keptCheckpoints = Checkpoint.DirectoryIn(kept);
+            Assert.True(Directory.Exists(keptCheckpoints), "the resumed run wrote no checkpoint");
+
+            foreach (string checkpoint in Directory.GetFiles(keptCheckpoints, "*.ckpt"))
+            {
+                Assert.Equal(Checkpoint.UncompressedVersion, CheckpointReader.ReadHeader(checkpoint).Version);
+            }
+
+            string named = Resumed("named", "EVOSIM_RECORD_FORMAT=2");
+            JsonNode namedManifest = Json.Parse(File.ReadAllText(Path.Combine(named, "run.json")));
+            Assert.Equal(RunRecordFormat.Compact, namedManifest["recordFormat"].AsInt());
+            Assert.True(File.Exists(Path.Combine(named, RecordFiles.GenomesName)));
+        }
     }
 }

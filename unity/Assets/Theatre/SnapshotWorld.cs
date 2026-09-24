@@ -500,7 +500,10 @@ namespace Evosim.Theatre
         /// <para>
         /// <b>What this path can do that the other cannot.</b> The stream carries the body
         /// fraction, which no other file ever has, so a body is drawn at the size it was rather
-        /// than at its adult size. What it loses is the harness's guild flags: those are in
+        /// than at its adult size. A stream converted from <c>poses.jsonl</c> records the fraction
+        /// as NaN, "not recorded", and its bodies are drawn at their adult size under the label's
+        /// <i>adult size</i>, as a picture from <c>positions.jsonl</c> draws them. What it loses
+        /// is the harness's guild flags: those are in
         /// <c>positions.jsonl</c> at the sample cadence and not in the stream, so a body's guild
         /// here is the development's answer and the disagreement count has nothing to compare.
         /// </para>
@@ -543,7 +546,9 @@ namespace Evosim.Theatre
             }
 
             FromStream = true;
-            RecordedSize = true;
+
+            // Decided below from the frame's own fractions: a converted stream records none.
+            RecordedSize = false;
             SnapshotSecond = SecondOfSnapshot(snapshot);
 
             if (!ReadGenomes(directory, SnapshotSecond, out string failure))
@@ -560,6 +565,7 @@ namespace Evosim.Theatre
             _poses = new Dictionary<long, RecordedPose>(frame.Bodies.Length);
 
             var seen = new HashSet<long>();
+            int sized = 0;
 
             for (int i = 0; i < frame.Bodies.Length; i++)
             {
@@ -576,6 +582,11 @@ namespace Evosim.Theatre
                     continue;
                 }
 
+                // NaN is "not recorded" (PoseStream.FractionNotRecorded): a stream converted
+                // from poses.jsonl carries it for every body, and such a body is the adult.
+                bool recorded = body.FractionRecorded && body.BodyFraction > 0f;
+                if (recorded) sized++;
+
                 _queue.Add(new Pending
                 {
                     Id = id,
@@ -585,8 +596,29 @@ namespace Evosim.Theatre
                     // The stream carries no guild flags. Build takes the development's answer and
                     // makes no comparison, which is what a negative here means.
                     Flags = -1,
-                    Fraction = body.BodyFraction > 0f ? body.BodyFraction : 1f,
+                    Fraction = recorded ? body.BodyFraction : 1f,
                 });
+            }
+
+            // The recorded size, all or nothing, by the positions path's rule: "recorded size" on
+            // a frame where some bodies were drawn adult would be the quiet kind of wrong the
+            // label exists to prevent. A converted stream has no fractions and draws the adult.
+            if (sized > 0 && sized == _queue.Count)
+            {
+                RecordedSize = true;
+            }
+            else if (sized > 0)
+            {
+                for (int i = 0; i < _queue.Count; i++)
+                {
+                    Pending pending = _queue[i];
+                    pending.Fraction = 1f;
+                    _queue[i] = pending;
+                }
+
+                Debug.LogWarning(
+                    "[Theatre] " + sized + " of " + _queue.Count + " joined bodies carry a " +
+                    "recorded body fraction in the stream, so every body is drawn at its adult size");
             }
 
             foreach (long id in _rowOf.Keys)
@@ -603,8 +635,10 @@ namespace Evosim.Theatre
                 Seconds(SnapshotSecond) + " s (" + _genomeSource + "): " +
                 _rows.Length + " genomes, " + frame.Bodies.Length + " poses, " +
                 JoinedCount + " joined, " + WithoutAGenome + " born after the snapshot and " +
-                "skipped, " + WithoutAPosition + " in the snapshot and not in the frame; every " +
-                "body at the size the stream recorded for it");
+                "skipped, " + WithoutAPosition + " in the snapshot and not in the frame; " +
+                (RecordedSize
+                    ? "every body at the size the stream recorded for it"
+                    : "the stream records no body fraction here, so every body at its adult size"));
 
             if (Unreadable > 0)
             {

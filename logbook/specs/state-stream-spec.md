@@ -119,8 +119,8 @@ deflate stream, RFC 1951 with no zlib or gzip wrapper, the form .NET's `DeflateS
 | 16 | *n* − 16 | deflate | the body records, *r* bytes once inflated |
 
 The prefix stays raw because the scan reads a frame's time from the payload's first eight bytes,
-and the index check reads it too. Deflating the whole payload, as A4's wording has it, would make
-a reader inflate every frame to find one second.
+and the index check reads it too. Deflating the whole payload, as A4's first wording had it, would
+make a reader inflate every frame to find one second.
 
 Inflated, the records are version 1's with one byte inserted before the degree-of-freedom count:
 
@@ -149,6 +149,21 @@ a torn write.
 
 The index's version equals the file's. An index of the other version is dropped and the file
 scanned, under the fall-back rule above.
+
+### A body fraction that was not recorded
+
+A body fraction of float32 NaN means the stream does not know how far the body had grown. The
+farm always knows, and never writes one. The converter (`scripts/record-convert.py`) writes one
+for every body of a stream it makes from a run's JSON poses. That file never carried a fraction,
+and a number there would be invented. Any NaN reads this way, whatever its sign and payload bits.
+Python's `struct` writes `00 00 c0 7f`, and .NET's `float.NaN` is `00 00 c0 ff`.
+
+A reader takes NaN as "not recorded" and never as a size. The C# reader hands the NaN over
+unchanged, and `PoseBody.FractionRecorded` is the test. The Python reader returns None, the way
+`runrec.py` reports a snapshot's missing fraction, and prints `n/r`. The theatre draws such a body
+at its adult size, as every picture drew bodies before the stream existed, and its label says
+adult size. A frame in which some bodies carry a fraction and others NaN is drawn all adult, under
+the all-or-nothing rule the snapshot path already keeps.
 
 `scripts/poses-read.py` reads both versions with Python's `zlib` (raw deflate, `wbits` −15) and its
 own tables, still written from this page. Its `--check` reads every frame and names the first
@@ -195,7 +210,8 @@ come from the stream frame at *t*. A body born after that snapshot has no genome
 and counted as unmatched. The label says which two seconds the picture was built from, as
 `pose t=105 of snapshot 100`. It also reads `recorded size` where a snapshot-only reconstruction
 reads `adult size`: the phenotype is scaled by the cube root of the body fraction, the scaling
-`World.Grow` applies to a growing body.
+`World.Grow` applies to a growing body. A converted stream records no fraction, so its label reads
+`adult size` like a snapshot's.
 
 One thing is lost by drawing from the stream rather than from `positions.jsonl`. That file carries
 the harness's own guild flags and the stream does not, so in stream mode a body's guild is read
@@ -223,9 +239,12 @@ rounding. The theatre drew 105 seconds from the frame and 100 seconds from the s
 38 of the 40 bodies, skipped the two born after the snapshot, and posed all 38.
 
 Version 2 was built beside two live arms, and its tests were written and not run. Until they
-run, and until `poses-read.py` reads a stream this build wrote, its layout is the code's claim
-and not a checked one. The one reading taken is that the Python reader still reads version 1:
-the 300 second smoke's 600 frames and 23,383 bodies, with the index agreeing.
+run, and until `poses-read.py` reads a stream the farm wrote, its layout is the C# code's claim
+and not a checked one. Two readings were taken. The Python reader still reads version 1: the 300
+second smoke's 600 frames and 23,383 bodies, with the index agreeing. And the converter's version
+2 stream of `runs/r48fix-s4`, written in Python from this page, reads back through `poses-read.py`
+frame for frame against the `poses.jsonl` it came from. That second reading checks the page and
+the Python reader against each other, and not the C# writer.
 
 ## What is not here
 

@@ -604,6 +604,41 @@ namespace Evosim.Farm.Tests
             }
         }
 
+        /// <summary>
+        /// A NaN body fraction is "not recorded": written as it is, read back as NaN and never as
+        /// a size. The quiet NaN Python's <c>struct</c> writes (<c>0x7FC00000</c>, what
+        /// <c>scripts/record-convert.py</c> puts in a converted stream) comes back bit for bit.
+        /// </summary>
+        [Fact]
+        public void ANaNFractionIsReadAsNotRecorded()
+        {
+            float pythonNaN = BitConverter.Int32BitsToSingle(0x7FC00000);
+
+            using (var writer = new PoseStreamWriter(Path_, 10f, "abc", 2))
+            {
+                writer.BeginFrame(10d);
+                writer.Body(1, 1f, 2f, 3f, 0f, 0f, 0f, 1f, pythonNaN, 4, 0, new double[0]);
+                writer.Body(2, 1f, 2f, 3f, 0f, 0f, 0f, 1f, PoseStream.FractionNotRecorded, 0, 1, new[] { 0.5 });
+                writer.Body(3, 1f, 2f, 3f, 0f, 0f, 0f, 1f, 0.42f, 2, 0, new double[0]);
+                writer.EndFrame();
+            }
+
+            using (PoseStreamReader reader = PoseStreamReader.Open(Path_))
+            {
+                PoseBody[] bodies = reader.Read(0).Bodies;
+
+                Assert.False(bodies[0].FractionRecorded);
+                Assert.Equal(0x7FC00000, BitConverter.SingleToInt32Bits(bodies[0].BodyFraction));
+                Assert.False(bodies[1].FractionRecorded);
+                Assert.True(float.IsNaN(bodies[1].BodyFraction));
+                Assert.True(bodies[2].FractionRecorded);
+                Assert.Equal(0.42f, bodies[2].BodyFraction);
+            }
+
+            Assert.False(PoseStream.FractionRecorded(PoseStream.FractionNotRecorded));
+            Assert.True(PoseStream.FractionRecorded(1f));
+        }
+
         [Fact]
         public void TheFlagBitsArePositionsJsonls()
         {
