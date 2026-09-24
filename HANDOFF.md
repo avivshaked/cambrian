@@ -454,8 +454,11 @@ is what the next session works from. Everything below it in this section is hist
   made the film wait. Those numbers were taken beside two farm arms, so they are indicative
   and are re-taken at the gap. The canopy shot, under the caps looking up through a gap at
   the leaves against the light, reads well; the close shot's depth of field is mild at the
-  matched lens. The director check `-Check -Scenes 3,23,4`, with and without `-Canopy`,
-  followed on the same worker.
+  matched lens. The director check `-Check -Scenes 3,23,4` passed with and without `-Canopy`
+  (37 frames each, none under the bed, inside a body or over 0.5 m/s), so the closer portraits
+  never put the eye inside a body. The canopy hook acts on the arrival and the descent only,
+  so the `-Canopy` pass on those three scenes does not exercise it; a check of scenes 1 and 2
+  with `-Canopy` waits for the firmware hold to lift.
 - **Round 49's record and films, being built** (the owner's rulings of 15:40 to 16:00: checkpoints
   every 500 s from round 48 seed 3, a record that stays small, and safari films soon after an arm
   ends, at the scale of 300,000 s runs). The design is `logbook/specs/record-and-film-spec.md`.
