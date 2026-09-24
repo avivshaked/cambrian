@@ -453,7 +453,10 @@ is what the next session works from. Everything below it in this section is hist
   build for recording-only reasons, so the first rule would have made every window of round 48 a
   cousin). `configHash` decides, since another config is another world. The code hashes do not
   decide on their own: a window whose identity rows all agree bit for bit reads faithful, with
-  every differing hash named in `sourcesDiffer`. The same agent is making that change now.
+  every differing hash named in `sourcesDiffer` (`4301032`; this build moves `coreHash` and
+  `farmHash`, not `dynamicsHash`). The acceptance gains a window of round 48 seed 3, which
+  checkpoints every 500 s: it should read faithful with those two hashes named, which tests
+  the claim that the build moves no trajectory.
 
   **At round 48's gap, in order, from `scratch/wt-r49`, one farm run at a time**:
   1. the filtered tests (`FilmWindowTests`, `PoseStreamTests`, `RecordFormatFarmTests`,
