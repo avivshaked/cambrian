@@ -193,6 +193,7 @@ namespace Evosim.Theatre
                 Aspect = Screen.height > 0 ? Screen.width / (float)Screen.height : 16f / 9f,
                 Interactive = true,
                 MostSeekSeconds = Dial("EVOSIM_THEATRE_SAFARI_SEEK_MAX", 300d),
+                MostSnapAheadSeconds = Dial("EVOSIM_THEATRE_SAFARI_SNAP_AHEAD", 600d),
             });
             _director.CaptionShown += OnCaption;
             _director.TakeStarted += OnTakeStarted;

@@ -113,8 +113,23 @@
 .PARAMETER DeleteFrames
   Delete each shot's frames once its mp4 is written.
 
+.PARAMETER CpuDownsample
+  Box-filter the supersampled frames on the CPU, as every frame was until 2026-09-24, instead of
+  on the card (EVOSIM_THEATRE_CPU_DOWNSAMPLE=1). For a comparison of the two; the frames and the
+  clip carry "-cpudown" in their names so they sit beside the fast path's.
+
+.PARAMETER SyncEncode
+  Encode and write each PNG on the Editor's main thread, as every frame was until 2026-09-24,
+  instead of on the frame writer's threads (EVOSIM_THEATRE_SYNC_ENCODE=1). The names carry "-sync".
+
+.PARAMETER DownsampleCheck
+  On each shot's first three frames, also filter on the CPU and encode the old way, and write to
+  the log how far the two paths are apart (EVOSIM_THEATRE_DOWNSAMPLE_CHECK=1). Changes no frame.
+
 .EXAMPLE
   ./scripts/theatre-film.ps1 ckUi -At 400 -RunsRoot scratch/live-ui/runs -Seconds 20 -Fps 10
+.EXAMPLE
+  ./scripts/theatre-film.ps1 r47-s2 -At 5000 -Worker 5 -Shots close -Seconds 10 -CpuDownsample -SyncEncode
 #>
 [CmdletBinding()]
 param(
@@ -138,7 +153,10 @@ param(
     [ValidateSet('rise', 'sink', 'turn')][string]$CanopyMove = 'rise',
     [double]$Aperture = -1,
     [switch]$NoDepthOfField,
-    [switch]$DeleteFrames
+    [switch]$DeleteFrames,
+    [switch]$CpuDownsample,
+    [switch]$SyncEncode,
+    [switch]$DownsampleCheck
 )
 
 $ErrorActionPreference = 'Stop'
@@ -224,13 +242,16 @@ if (Test-Path (Join-Path $proj 'Temp/UnityLockfile')) {
 }
 
 $filmDirectory = Join-Path $root "scratch\films\$Arm"
-# A frozen clip is filed apart, so a diagnostic never overwrites the film it is checking.
+# A frozen clip is filed apart, so a diagnostic never overwrites the film it is checking; so are
+# the old frame paths, so a comparison with the fast path has both sets of frames on disk.
 $tag = if ($Freeze) { '-frozen' } else { '' }
+if ($CpuDownsample) { $tag += '-cpudown' }
+if ($SyncEncode) { $tag += '-sync' }
 $frameDirectory = Join-Path $filmDirectory "$checkpointSecond$tag"
 
 $logDirectory = Join-Path $root 'scratch\logs'
 New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
-$log = Join-Path $logDirectory "theatre-film-$Arm.log"
+$log = Join-Path $logDirectory "theatre-film-$Arm$tag.log"
 
 $names = @(
     'EVOSIM_THEATRE_RUN', 'EVOSIM_THEATRE_CHECKPOINT', 'EVOSIM_THEATRE_SEEK', 'EVOSIM_REPO_ROOT',
@@ -239,7 +260,8 @@ $names = @(
     'EVOSIM_THEATRE_WALL_MINUTES', 'EVOSIM_THEATRE_CARVE', 'EVOSIM_THEATRE_SNAP_FROM',
     'EVOSIM_THEATRE_OVERRIDE', 'EVOSIM_THEATRE_GENOME', 'EVOSIM_THEATRE_MOTION_BLUR', 'EVOSIM_THEATRE_FILM_FREEZE', 'EVOSIM_THEATRE_FILM_TRACE', 'EVOSIM_THEATRE_FILM_RAW',
     'EVOSIM_THEATRE_FILM_CLOSE_SECONDS', 'EVOSIM_THEATRE_FILM_CLOSE_FOLLOW',
-    'EVOSIM_THEATRE_CANOPY_MOVE', 'EVOSIM_THEATRE_DOF', 'EVOSIM_THEATRE_DOF_APERTURE')
+    'EVOSIM_THEATRE_CANOPY_MOVE', 'EVOSIM_THEATRE_DOF', 'EVOSIM_THEATRE_DOF_APERTURE',
+    'EVOSIM_THEATRE_CPU_DOWNSAMPLE', 'EVOSIM_THEATRE_SYNC_ENCODE', 'EVOSIM_THEATRE_DOWNSAMPLE_CHECK')
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -282,6 +304,13 @@ try {
     else { Remove-Item env:EVOSIM_THEATRE_DOF -ErrorAction SilentlyContinue }
     if ($PSBoundParameters.ContainsKey('Aperture')) { $env:EVOSIM_THEATRE_DOF_APERTURE = $Aperture.ToString($invariant) }
     else { Remove-Item env:EVOSIM_THEATRE_DOF_APERTURE -ErrorAction SilentlyContinue }
+
+    if ($CpuDownsample) { $env:EVOSIM_THEATRE_CPU_DOWNSAMPLE = '1' }
+    else { Remove-Item env:EVOSIM_THEATRE_CPU_DOWNSAMPLE -ErrorAction SilentlyContinue }
+    if ($SyncEncode) { $env:EVOSIM_THEATRE_SYNC_ENCODE = '1' }
+    else { Remove-Item env:EVOSIM_THEATRE_SYNC_ENCODE -ErrorAction SilentlyContinue }
+    if ($DownsampleCheck) { $env:EVOSIM_THEATRE_DOWNSAMPLE_CHECK = '1' }
+    else { Remove-Item env:EVOSIM_THEATRE_DOWNSAMPLE_CHECK -ErrorAction SilentlyContinue }
 
     Write-Host "$Arm -> worker $Worker ($proj)"
     Write-Host "  run    $($run.FullName)"

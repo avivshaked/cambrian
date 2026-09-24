@@ -648,7 +648,12 @@ namespace Evosim.Theatre.EditorTools
                 // A diagnostic trace, off by default: every body within a few metres of the close
                 // shot's subject, link by link, as the solver holds it, as the view draws it and
                 // where the close shot's camera puts it on screen; one row per link per frame.
-                if (_trace) Trace(live);
+                // Its rows name the frame, so the frame is on disk first.
+                if (_trace)
+                {
+                    SnapshotCamera.FlushWrites();
+                    Trace(live);
+                }
 
                 _next++;
 
@@ -816,6 +821,25 @@ namespace Evosim.Theatre.EditorTools
             Time.captureDeltaTime = 0f;
             SessionState.EraseString(PendingKey);
 
+            // Every frame on disk before the report and before the Editor quits; a frame the
+            // writer failed on fails the film, whatever else went right.
+            try
+            {
+                SnapshotCamera.FlushWrites();
+            }
+            catch (Exception e)
+            {
+                code = 1;
+                verdict += "; FRAMES NOT WRITTEN: " + e.Message;
+            }
+
+            // Each shot's frames stage by stage, read before its camera goes.
+            var stages = new Dictionary<Shot, string>();
+            foreach (Shot shot in _shots)
+            {
+                if (shot.Camera != null) stages[shot] = shot.Camera.Route + "; " + shot.Camera.Times.Line();
+            }
+
             foreach (Shot shot in _shots)
             {
                 if (shot.Camera != null) { shot.Camera.Dispose(); shot.Camera = null; }
@@ -845,7 +869,13 @@ namespace Evosim.Theatre.EditorTools
                         "render and read-back: median {0:0.0} ms, mean {1:0.0} ms, slowest {2:0.0} ms a frame over {3} frames",
                         sorted[sorted.Count / 2], sum / sorted.Count, sorted[sorted.Count - 1], sorted.Count));
                 }
+
+                if (stages.TryGetValue(shot, out string stage)) report.Append("\n    frames: ").Append(stage);
             }
+
+            report.Append(string.Format(CultureInfo.InvariantCulture,
+                "\n  the frame writer: {0} frame(s) written off the main thread, the film waited {1:0.0} s in all for a free slot",
+                FrameWriter.Written, FrameWriter.WaitedMs / 1000d));
 
             Debug.Log("[Theatre] film: " + verdict + report);
             if (code != 0) Debug.LogError("[Theatre] film FAILED: " + verdict);

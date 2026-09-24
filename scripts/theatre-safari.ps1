@@ -70,6 +70,20 @@
   The portraits and the birth sharp from front to back (EVOSIM_THEATRE_DOF=0), for a comparison.
 .PARAMETER DeleteFrames
   Delete each take's frames once its scene's clip is written.
+.PARAMETER SnapAhead
+  A flexible scene that would cost more than -SeekMax seconds of stepping to reach opens at the
+  next checkpoint after it instead, when that checkpoint is no more than this many seconds ahead
+  and the scene's clade is alive there (EVOSIM_THEATRE_SAFARI_SNAP_AHEAD, default 600; -1 never
+  moves a scene forward).
+.PARAMETER CpuDownsample
+  Box-filter the supersampled frames on the CPU, the path before 2026-09-24
+  (EVOSIM_THEATRE_CPU_DOWNSAMPLE=1). The frames and the log carry "-cpudown".
+.PARAMETER SyncEncode
+  Encode and write each PNG on the Editor's main thread, the path before 2026-09-24
+  (EVOSIM_THEATRE_SYNC_ENCODE=1). The frames and the log carry "-sync".
+.PARAMETER DownsampleCheck
+  On each take's first three frames, also filter on the CPU and encode the old way, and write to
+  the log how far the two paths are apart (EVOSIM_THEATRE_DOWNSAMPLE_CHECK=1).
 
 .EXAMPLE
   ./scripts/theatre-safari.ps1 r46-s1 -Scenes 1,3 -Fps 30 -Worker 6 -WallMinutes 90
@@ -95,7 +109,11 @@ param(
     [switch]$Canopy,
     [double]$Aperture = -1,
     [switch]$NoDepthOfField,
-    [switch]$DeleteFrames
+    [switch]$DeleteFrames,
+    [double]$SnapAhead = 600,
+    [switch]$CpuDownsample,
+    [switch]$SyncEncode,
+    [switch]$DownsampleCheck
 )
 
 $ErrorActionPreference = 'Stop'
@@ -168,6 +186,9 @@ if (Test-Path (Join-Path $proj 'Temp/UnityLockfile')) {
 $date = (Get-Date).ToString('yyyy-MM-dd', $invariant)
 # A canopy trip is filed apart, so it never overwrites the trip it is compared with.
 $tag = if ($Canopy) { '-canopy' } else { '' }
+# So are the old frame paths, so a comparison with the fast path has both sets on disk.
+if ($CpuDownsample) { $tag += '-cpudown' }
+if ($SyncEncode) { $tag += '-sync' }
 $outDirectory = if ($Check) { Join-Path $root "scratch\snaps\safari\$Arm$tag" } else { Join-Path $root "scratch\safari\$Arm$tag\$date" }
 
 $logDirectory = Join-Path $root 'scratch\logs'
@@ -181,7 +202,9 @@ $names = @(
     'EVOSIM_THEATRE_SAFARI_FPS', 'EVOSIM_THEATRE_SAFARI_SIZE', 'EVOSIM_THEATRE_SAFARI_WALL_MINUTES',
     'EVOSIM_THEATRE_SAFARI_GUIDE', 'EVOSIM_THEATRE_SAFARI_OUT', 'EVOSIM_THEATRE_SAFARI_CAPTIONS',
     'EVOSIM_THEATRE_SAFARI_SEEK_MAX', 'EVOSIM_THEATRE_SAFARI_EVERY', 'EVOSIM_THEATRE_WALL_MINUTES',
-    'EVOSIM_THEATRE_SAFARI_CANOPY', 'EVOSIM_THEATRE_DOF', 'EVOSIM_THEATRE_DOF_APERTURE')
+    'EVOSIM_THEATRE_SAFARI_CANOPY', 'EVOSIM_THEATRE_DOF', 'EVOSIM_THEATRE_DOF_APERTURE',
+    'EVOSIM_THEATRE_SAFARI_SNAP_AHEAD', 'EVOSIM_THEATRE_CPU_DOWNSAMPLE', 'EVOSIM_THEATRE_SYNC_ENCODE',
+    'EVOSIM_THEATRE_DOWNSAMPLE_CHECK')
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -206,8 +229,12 @@ try {
     if ($Canopy) { $env:EVOSIM_THEATRE_SAFARI_CANOPY = '1' }
     if ($NoDepthOfField) { $env:EVOSIM_THEATRE_DOF = '0' }
     if ($PSBoundParameters.ContainsKey('Aperture')) { $env:EVOSIM_THEATRE_DOF_APERTURE = $Aperture.ToString($invariant) }
+    $env:EVOSIM_THEATRE_SAFARI_SNAP_AHEAD = $SnapAhead.ToString($invariant)
+    if ($CpuDownsample) { $env:EVOSIM_THEATRE_CPU_DOWNSAMPLE = '1' }
+    if ($SyncEncode) { $env:EVOSIM_THEATRE_SYNC_ENCODE = '1' }
+    if ($DownsampleCheck) { $env:EVOSIM_THEATRE_DOWNSAMPLE_CHECK = '1' }
 
-    $entry = if ($Check) { 'Evosim.Theatre.EditorTools.TheatreSafariCheck.Run' } else { 'Evosim.Theatre.EditorTools.TheatreSafari.Run' }
+    $entry =if ($Check) { 'Evosim.Theatre.EditorTools.TheatreSafariCheck.Run' } else { 'Evosim.Theatre.EditorTools.TheatreSafari.Run' }
 
     Write-Host "$Arm -> worker $Worker ($proj)"
     Write-Host "  run      $($run.FullName)"

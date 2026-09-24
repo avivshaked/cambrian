@@ -87,6 +87,12 @@ namespace Evosim.Theatre.EditorTools
         private static string _out;
         private static bool _burn = true;
         private static double _seekMax = 300d;
+        private static double _snapAhead = 600d;
+
+        // every frame of the trip, stage by stage, folded in at each take's end; the camera last
+        // folded in, so a take is never counted twice
+        private static SnapshotCamera.StageTimes _tripTimes = new SnapshotCamera.StageTimes();
+        private static SnapshotCamera _timedCamera;
 
         // the drive
         private static bool _driving;
@@ -210,6 +216,14 @@ namespace Evosim.Theatre.EditorTools
             _seekMax = 300d;
             if (!string.IsNullOrWhiteSpace(text)) double.TryParse(text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out _seekMax);
 
+            // How far ahead a flexible scene may move to the next checkpoint rather than be
+            // stepped to (SafariOptions.MostSnapAheadSeconds); negative never moves one forward.
+            text = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_SNAP_AHEAD");
+            _snapAhead = 600d;
+            if (!string.IsNullOrWhiteSpace(text) &&
+                !double.TryParse(text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out _snapAhead))
+                return "EVOSIM_THEATRE_SAFARI_SNAP_AHEAD: '" + text + "' is not a number of seconds.";
+
             string arm = new DirectoryInfo(_run).Parent?.Name ?? "run";
             string root = Path.Combine(BuildIdentity.RepositoryRoot(), "scratch");
             string allowed = _check ? Path.Combine(Path.Combine(root, "snaps"), "safari") : Path.Combine(root, "safari");
@@ -304,7 +318,8 @@ namespace Evosim.Theatre.EditorTools
             _fps.ToString(CultureInfo.InvariantCulture), _checkEvery.ToString("R", CultureInfo.InvariantCulture),
             _width.ToString(CultureInfo.InvariantCulture), _height.ToString(CultureInfo.InvariantCulture),
             _wallSeconds.ToString("R", CultureInfo.InvariantCulture), _out, _burn ? "1" : "0",
-            _seekMax.ToString("R", CultureInfo.InvariantCulture));
+            _seekMax.ToString("R", CultureInfo.InvariantCulture),
+            _snapAhead.ToString("R", CultureInfo.InvariantCulture));
 
         [InitializeOnLoadMethod]
         private static void ResumeAcrossTheDomainReload()
@@ -337,6 +352,8 @@ namespace Evosim.Theatre.EditorTools
             _out = f[10];
             _burn = f[11] == "1";
             double.TryParse(f[12], NumberStyles.Float, CultureInfo.InvariantCulture, out _seekMax);
+            _snapAhead = 600d;
+            if (f.Length > 13) double.TryParse(f[13], NumberStyles.Float, CultureInfo.InvariantCulture, out _snapAhead);
 
             Arm();
         }
@@ -355,6 +372,8 @@ namespace Evosim.Theatre.EditorTools
             _firstFaults.Clear();
             _outcomes.Clear();
             _takesByScene.Clear();
+            _tripTimes = new SnapshotCamera.StageTimes();
+            _timedCamera = null;
 
             if (_driving) return;
             _driving = true;
@@ -393,6 +412,12 @@ namespace Evosim.Theatre.EditorTools
                     SetUp();
                     return;
                 }
+
+                // Nothing is drawn while the world is carried to a scene's second, so the runner's
+                // once-a-tick posing, building, painting and panel are held until the director has
+                // planned the take, which brings the view up to date itself (2026-09-24).
+                bool seeking = _director.Phase == SafariPhase.Seeking || _director.Phase == SafariPhase.Rehearsing;
+                _runner.HoldView = seeking;
 
                 switch (_director.Phase)
                 {
@@ -453,9 +478,10 @@ namespace Evosim.Theatre.EditorTools
                 Aspect = _width / (float)_height,
                 Interactive = false,
                 MostSeekSeconds = _seekMax,
+                MostSnapAheadSeconds = _snapAhead,
             });
             _director.TakeStarted += OnTakeStarted;
-            _director.TakeEnded += (scene, take, tally) => { };
+            _director.TakeEnded += OnTakeEnded;
             _director.CaptionShown += OnCaption;
 
             Directory.CreateDirectory(_out);
@@ -507,8 +533,27 @@ namespace Evosim.Theatre.EditorTools
             foreach (string stale in Directory.GetFiles(_takeDirectory, "frame-*.png")) File.Delete(stale);
         }
 
+        /// <summary>
+        /// The take's frames all on disk before anything else happens, and what they cost said:
+        /// a failed write fails the safari here, at the take it belongs to.
+        /// </summary>
+        private static void OnTakeEnded(SafariScene scene, int take, string tally)
+        {
+            SnapshotCamera.FlushWrites();
+
+            if (_camera == null || _camera == _timedCamera) return;
+            _tripTimes.Add(_camera.Times);
+            _timedCamera = _camera;
+            Debug.Log(string.Format(CultureInfo.InvariantCulture, "[Theatre] safari: take {0} of {1}, frames: {2}; {3}",
+                take + 1, scene.Slug, _camera.Route, _camera.Times.Line()));
+        }
+
         private static void OnCaption(SafariScene scene, double second, string text, double offset)
         {
+            // Every frame handed to the writer is on disk before a row that points into the
+            // take's clip is written.
+            if (_captions != null) SnapshotCamera.FlushWrites();
+
             _captions?.WriteLine(string.Join("\t", scene.Slug, second.ToString("0.###", CultureInfo.InvariantCulture), text,
                 (second - _takeStartSecond).ToString("0.###", CultureInfo.InvariantCulture)));
             _captions?.Flush();
@@ -565,6 +610,11 @@ namespace Evosim.Theatre.EditorTools
         {
             string path = _calloutPath;
             _calloutPath = null;
+
+            // The composite is written over the frame's own file, so the frame must be on disk
+            // first, or the writer's copy would land after it and undo the call-outs.
+            SnapshotCamera.FlushWrites();
+
             if (TheatreUiCapture.Shoot(path, out string note) > 0) _calloutsLanded++;
             else if (_calloutsFailed++ == 0) Debug.LogWarning("[Theatre] safari: the call-out composite was not written: " + note);
         }
@@ -663,6 +713,27 @@ namespace Evosim.Theatre.EditorTools
             _driving = false;
             Time.captureDeltaTime = 0f;
             SessionState.EraseString(PendingKey);
+            if (_runner != null) _runner.HoldView = false;
+
+            // Every frame on disk before scenes.tsv lists the scenes and before the Editor quits;
+            // a frame the writer failed on fails the safari, whatever else went right.
+            try
+            {
+                SnapshotCamera.FlushWrites();
+            }
+            catch (Exception e)
+            {
+                code = 1;
+                verdict += "; FRAMES NOT WRITTEN: " + e.Message;
+            }
+
+            if (_camera != null && _camera != _timedCamera)
+            {
+                _tripTimes.Add(_camera.Times);
+                _timedCamera = _camera;
+            }
+
+            verdict += "; every frame: " + _tripTimes.Line();
 
             TheatreUiCapture.Disarm();
             _calloutPath = null;

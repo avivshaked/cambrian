@@ -50,6 +50,19 @@ namespace Evosim.Theatre
         /// </summary>
         public double MostSeekSeconds = 300d;
 
+        /// <summary>
+        /// A flexible scene that would cost more than <see cref="MostSeekSeconds"/> of stepping
+        /// opens at the next checkpoint after its second instead, when that checkpoint is no
+        /// more than this far ahead and its clade is alive there, s. Negative never moves a scene
+        /// forward. <c>EVOSIM_THEATRE_SAFARI_SNAP_AHEAD</c>, default 600.
+        /// </summary>
+        /// <remarks>
+        /// Added 2026-09-24. Round 47 seed 2's portrait at 2,240 s had no checkpoint behind it
+        /// but the founding, and the next was at 2,500 s, so the safari stepped the world on
+        /// screen forward 916 s, which took 20.5 minutes; opening at 2,500 s costs a restore.
+        /// </remarks>
+        public double MostSnapAheadSeconds = 600d;
+
         /// <summary>A flexible scene opens on the world already on screen when it is within this of the scene's second, s.</summary>
         public double SlackSeconds = 300d;
 
@@ -103,7 +116,11 @@ namespace Evosim.Theatre
     /// <see cref="SafariOptions.MostSeekSeconds"/> behind it opens at the checkpoint when its
     /// clade is alive there, and the log says so: this is the agent's addition to the spec,
     /// taken because the round's checkpoints are 2,500 s apart and the Editor steps a crowd of
-    /// thousands at around real time.
+    /// thousands at around real time. A flexible scene that would cost more than that to reach
+    /// opens at the next checkpoint after it instead, when that checkpoint is within
+    /// <see cref="SafariOptions.MostSnapAheadSeconds"/> and the clade is alive there
+    /// (2026-09-24); where both moves are open, the nearer to the scene's own second is taken.
+    /// Every seek ends with a line saying where its wall time went.
     /// </para>
     /// <para>
     /// <b>A birth is rehearsed.</b> A cousin's births are its own, so the director restores from
@@ -148,6 +165,15 @@ namespace Evosim.Theatre
         private double _seekTarget = double.NaN;
         private double _seekFrom;
         private double _seekWallFrom;
+
+        // Where a seek's wall time goes (2026-09-24): inside the world's own steps, inside the
+        // seek's loop (the steps and the director's bookkeeping between them), and the rest,
+        // which is the Editor's tick outside Advance. Read against the solver's own split.
+        private long _seekStepTicks;
+        private long _seekLoopTicks;
+        private int _seekTicks;
+        private int _seekCollections0;
+        private long _seekPhysicsMs0, _seekEconomyMs0, _seekHarnessMs0;
         private double _restoredAt = double.NaN;
         private long _maxSeenId = -1;
         private long _birthsSeen;
@@ -362,16 +388,48 @@ namespace Evosim.Theatre
                 return;
             }
 
-            // 2. Moved to its checkpoint, for a flexible scene far past one with its clade alive there.
-            if (segment.Flexible && haveCk && _options.MostSeekSeconds >= 0d && target - ck.seconds > _options.MostSeekSeconds &&
-                (scene.Clade == null || scene.Clade.AliveAt(ck.seconds + 60d)))
+            // 2. Moved to a checkpoint, for a flexible scene with its clade alive there: back to the
+            //    checkpoint at or before it when that is far behind (the rule since the first
+            //    safari), or forward to the next one when reaching the scene's own second would
+            //    cost too much stepping and the next checkpoint is near enough ahead (2026-09-24).
+            //    Either move is a restore and no stepping, so where both are open the one nearer
+            //    the asked second is taken, and back wins a tie, as the older rule.
+            if (segment.Flexible && _options.MostSeekSeconds >= 0d)
             {
-                Say(string.Format(CultureInfo.InvariantCulture,
-                    "moved from {0:0.#} s to the checkpoint at {1:0.#} s, which saves {2:0} s of stepping; {3}",
-                    target, ck.seconds, target - ck.seconds,
-                    scene.Clade != null ? scene.Clade.Name + " was alive there by the guide's dates" : "the world scene has no clade to lose"));
-                Refiled(scene, segment, target, ck.seconds);
-                target = ck.seconds;
+                bool back = haveCk && target - ck.seconds > _options.MostSeekSeconds &&
+                            (scene.Clade == null || scene.Clade.AliveAt(ck.seconds + 60d));
+
+                double stay = SteppingAt(target, live != null ? now : double.NaN, ck);
+                (double seconds, string path) next = CheckpointAfter(target);
+                bool forward = next.path != null && _options.MostSnapAheadSeconds >= 0d &&
+                               next.seconds - target <= _options.MostSnapAheadSeconds &&
+                               stay > _options.MostSeekSeconds &&
+                               (scene.Clade == null || scene.Clade.AliveAt(next.seconds + 60d));
+
+                if (back && forward && next.seconds - target < target - ck.seconds) back = false;
+
+                string alive = scene.Clade != null
+                    ? scene.Clade.Name + " was alive there by the guide's dates"
+                    : "the world scene has no clade to lose";
+
+                if (back)
+                {
+                    Say(string.Format(CultureInfo.InvariantCulture,
+                        "moved from {0:0.#} s to the checkpoint at {1:0.#} s, which saves {2:0} s of stepping; {3}",
+                        target, ck.seconds, target - ck.seconds, alive));
+                    Refiled(scene, segment, target, ck.seconds);
+                    target = ck.seconds;
+                }
+                else if (forward)
+                {
+                    Say(string.Format(CultureInfo.InvariantCulture,
+                        "moved from {0:0.#} s forward to the checkpoint at {1:0.#} s, which saves {2:0} s of stepping; {3}",
+                        target, next.seconds, stay, alive));
+                    Refiled(scene, segment, target, next.seconds);
+                    target = next.seconds;
+                    ck = next;
+                    haveCk = true;
+                }
             }
 
             // 3. A step forward from the world on screen, when it is shorter than a restore.
@@ -435,6 +493,27 @@ namespace Evosim.Theatre
             return best;
         }
 
+        /// <summary>The first checkpoint after a second, or a null path when there is none.</summary>
+        private (double seconds, string path) CheckpointAfter(double second)
+        {
+            foreach (var c in _checkpoints) if (c.seconds > second + 1e-6) return c;
+            return (double.NaN, null);
+        }
+
+        /// <summary>
+        /// The simulated seconds a scene at <paramref name="target"/> would be stepped through by
+        /// the route that reaches it with the least: forward from the world on screen (rule 3),
+        /// from the checkpoint at or before it (rule 4), or from the founding (rule 5).
+        /// </summary>
+        /// <param name="now">The world on screen's second, or NaN when there is none.</param>
+        private static double SteppingAt(double target, double now, (double seconds, string path) ck)
+        {
+            if (!double.IsNaN(now) && now <= target + 1e-6 && (ck.path == null || now >= ck.seconds - 1e-6))
+                return Math.Max(0d, target - now);
+
+            return ck.path != null ? Math.Max(0d, target - ck.seconds) : Math.Max(0d, target);
+        }
+
         private bool Restore(string path, double seconds)
         {
             _runner.OpenCheckpoint(path, seconds);
@@ -464,6 +543,7 @@ namespace Evosim.Theatre
             _seekTarget = target;
             _seekFrom = live.ElapsedSeconds;
             _seekWallFrom = _wall.Elapsed.TotalSeconds;
+            StartTheSeekClock(live);
             _runner.Paused = true;
 
             if (_segment.Rehearse && _rehearsal == Rehearsal.None)
@@ -501,18 +581,29 @@ namespace Evosim.Theatre
             double deadline = _wall.Elapsed.TotalSeconds + Math.Max(0.01d, wallBudgetSeconds);
             float dt = Mathf.Max(1e-4f, live.Sim.PhysicsDt);
 
+            // The world's own steps are timed one by one and the loop as a whole, so the seek's
+            // last line can say how much of its wall time was the world and how much was not.
+            long entered = Stopwatch.GetTimestamp();
+            _seekTicks++;
+
             while (live.ElapsedSeconds + 0.5d * dt < _seekTarget && _wall.Elapsed.TotalSeconds < deadline)
             {
-                if (live.Step() && Births(live, out long child, out long parent) && Phase == SafariPhase.Rehearsing)
+                long stepped = Stopwatch.GetTimestamp();
+                bool metabolic = live.Step();
+                _seekStepTicks += Stopwatch.GetTimestamp() - stepped;
+
+                if (metabolic && Births(live, out long child, out long parent) && Phase == SafariPhase.Rehearsing)
                 {
                     if (child >= 0)
                     {
+                        _seekLoopTicks += Stopwatch.GetTimestamp() - entered;
                         _birthAt = live.ElapsedSeconds;
                         _birthParent = parent;
                         _birthChild = child;
                         Say(string.Format(CultureInfo.InvariantCulture,
-                            "the rehearsal got a birth at {0:0.#} s: body {1} to body {2}, a member of {3}; restoring again to film it",
-                            _birthAt, child, parent, ParentName(Current.Clade)));
+                            "the rehearsal got a birth at {0:0.#} s: body {1} to body {2}, a member of {3}; restoring again to film it; " +
+                            "the rehearsal: {4}",
+                            _birthAt, child, parent, ParentName(Current.Clade), SeekCost()));
                         _rehearsal = Rehearsal.Recurring;
                         RestoreForTheBirth();
                         return;
@@ -520,24 +611,33 @@ namespace Evosim.Theatre
                 }
             }
 
+            _seekLoopTicks += Stopwatch.GetTimestamp() - entered;
+
             double wallSoFar = _wall.Elapsed.TotalSeconds - _seekWallFrom;
             double done = live.ElapsedSeconds - _seekFrom;
             double left = _seekTarget - live.ElapsedSeconds;
             double pace = wallSoFar > 0.5d ? done / wallSoFar : double.NaN;
-            Status = string.Format(CultureInfo.InvariantCulture, "{0} {1:0.#} of {2:0.#} s{3}",
+            double world = WorldShare();
+            Status = string.Format(CultureInfo.InvariantCulture, "{0} {1:0.#} of {2:0.#} s{3}{4}",
                 Phase == SafariPhase.Rehearsing ? "rehearsing, at" : "seeking, at",
                 live.ElapsedSeconds, _seekTarget,
-                double.IsNaN(pace) || pace <= 0d ? "" : string.Format(CultureInfo.InvariantCulture, ", {0:0.##}x, {1} left", pace, Minutes(left / pace)));
+                double.IsNaN(pace) || pace <= 0d ? "" : string.Format(CultureInfo.InvariantCulture, ", {0:0.##}x, {1} left", pace, Minutes(left / pace)),
+                double.IsNaN(world) || !(wallSoFar > 0.5d) ? "" : string.Format(CultureInfo.InvariantCulture, ", the world's steps {0:0}% of the wall", 100d * world));
 
             if (live.ElapsedSeconds + 0.5d * dt < _seekTarget) return;
 
             if (Phase == SafariPhase.Rehearsing)
             {
+                Say("the rehearsal: " + SeekCost());
                 Missed(string.Format(CultureInfo.InvariantCulture,
                     "no birth to a member of {0} came between {1:0.#} s and {2:0.#} s in this cousin",
                     ParentName(Current.Clade), _watchFrom, _seekTarget));
                 return;
             }
+
+            // A seek of any length says where its wall time went; opening on the world already
+            // on screen steps nothing and says nothing.
+            if (done >= 1d) Say("the seek to " + _seekTarget.ToString("0.#", CultureInfo.InvariantCulture) + " s: " + SeekCost());
 
             Plan();
         }
@@ -561,8 +661,60 @@ namespace Evosim.Theatre
             _seekTarget = _birthAt - lead;
             _seekFrom = _runner.Live.ElapsedSeconds;
             _seekWallFrom = _wall.Elapsed.TotalSeconds;
+            StartTheSeekClock(_runner.Live);
             Phase = SafariPhase.Seeking;
         }
+
+        private void StartTheSeekClock(TheatreDynamicsReplay live)
+        {
+            _seekStepTicks = 0L;
+            _seekLoopTicks = 0L;
+            _seekTicks = 0;
+            _seekCollections0 = GC.CollectionCount(0);
+            _seekPhysicsMs0 = live?.Sim != null ? live.Sim.WallPhysicsMs : 0L;
+            _seekEconomyMs0 = live?.Sim != null ? live.Sim.WallWorldMs : 0L;
+            _seekHarnessMs0 = live?.Sim != null ? live.Sim.WallHarnessMs : 0L;
+        }
+
+        /// <summary>The share of the seek's wall time spent inside the world's own steps, 0 to 1.</summary>
+        private double WorldShare()
+        {
+            double wall = _wall.Elapsed.TotalSeconds - _seekWallFrom;
+            return wall > 0d ? Seconds(_seekStepTicks) / wall : double.NaN;
+        }
+
+        /// <summary>
+        /// Where the seek's wall time went, for the log: inside the world's own steps (and, of
+        /// those, the solver, the economy and the harness, the three parts of the farm's own
+        /// footer), the director's bookkeeping between steps, and the rest of each Editor tick,
+        /// which is everything the Editor does between two calls of <see cref="Advance"/>.
+        /// </summary>
+        private string SeekCost()
+        {
+            TheatreDynamicsReplay live = _runner.Live;
+            double wall = _wall.Elapsed.TotalSeconds - _seekWallFrom;
+            if (live == null || !(wall > 0d)) return "no wall time";
+
+            double steps = Seconds(_seekStepTicks);
+            double loop = Seconds(_seekLoopTicks);
+            double simulated = live.ElapsedSeconds - _seekFrom;
+
+            long physics = live.Sim.WallPhysicsMs - _seekPhysicsMs0;
+            long economy = live.Sim.WallWorldMs - _seekEconomyMs0;
+            long harness = live.Sim.WallHarnessMs - _seekHarnessMs0;
+            double parts = Math.Max(1d, physics + economy + harness);
+
+            return string.Format(CultureInfo.InvariantCulture,
+                "{0:0.#} s simulated in {1} of wall ({2:0.##}x); the world's own steps {3:0.#}% of the wall " +
+                "(of those, the solver {4:0}%, the economy {5:0}%, the harness {6:0}%), the director's bookkeeping between steps {7:0.#}%, " +
+                "the rest of the Editor's {8} ticks {9:0.#}%; {10} garbage collections",
+                simulated, Minutes(wall), simulated / wall, 100d * steps / wall,
+                100d * physics / parts, 100d * economy / parts, 100d * harness / parts,
+                100d * Math.Max(0d, loop - steps) / wall, _seekTicks, 100d * Math.Max(0d, wall - loop) / wall,
+                GC.CollectionCount(0) - _seekCollections0);
+        }
+
+        private static double Seconds(long stopwatchTicks) => (double)stopwatchTicks / Stopwatch.Frequency;
 
         /// <summary>
         /// Notes every body born since the last look, and, in a rehearsal, returns the first born
