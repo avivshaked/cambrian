@@ -325,18 +325,40 @@ with your recommendations"; D119 to D122): a cell type arrives only as a bud (no
 type change), reproduction paid as it goes as a gene beside the lump with the overhead
 proportional to the child above a floor and the investment and newborn-mass floors lowered,
 senescence on upkeep alone, and every founder at the richest cell of its food with an
-endowment; the reef, the pool, joint work at zero and the seeds' shape unchanged. **In
-flight (from about 09:30):** three Opus builds in worktrees `.claude/worktrees/{bud,repro,
-found}-r48` (D119; D120; D121 and D122), the snow-knob screen (`scratch/r48-snow`, seed 2 at
-dt 0.02 to 15,000 s on remineralisation and the sink, one run at a time), the swim
-measurement (`scratch/r48-swim`: round 47's most active jointed bodies alone in still water
-in the farm's solver, on the owner's "creatures wag and stay in place"), and the safari
-review (`scratch/safari-review`: what the films show and how to make them interesting,
-procedural against a language model; the owner: an implementing agent follows it, then
-round 47 is reshot). Seed 2's safari is filming on worker 6; seed 3's follows. Then: the
-merges, the suites, the fixtures re-recorded (every tunable and the genome format 9 refuse
-the old ones), a dt 0.02 screen of the count's plateau under the proportional overhead, the
-pre-registration (0119), the launch. **Seed 2 ended at 30,000 s** (about 06:20, 357 min wall at 1.4x real time, 5,602 alive,
+endowment; the reef, the pool, joint work at zero and the seeds' shape unchanged. **The
+three builds are merged on main (2026-09-24, 10:00 to 10:45):** D121 and D122 at `51ab953`
+(`EVOSIM_SENESCENCE_WEARS_INTAKE`, `EVOSIM_FOUNDERS_FOLLOW_FOOD_DEPTH`,
+`EVOSIM_FOUNDER_ENDOWMENT`; the founder row's `endow`), D119 at `8eb6b87`
+(`Mutator.ChangeCellType` retired, the bud at the same rate, `EVOSIM_RIGID_FLOORS` for the
+floors that weigh rigid groups, header `floors rigid groups`, the birth row's `bud` and
+`budx`), D120 at `18d9b3d` (the reproduction mode and share, genome format 9,
+`EVOSIM_GESTATION_MODE_CHANCE` and `_SHARE_CHANCE`, `EVOSIM_OVERHEAD_PER_TISSUE` beside
+`EVOSIM_OVERHEAD` as the floor, header `overhead scale x0 floor 100 J · gestation off`,
+the birth row's `gm` and `gs`, `StateVersion` 10, and the checkpoint's queued rows carrying
+the endowment and the bud fields too). Round 42's hash is re-pinned to `53f8234cb554f0ba`;
+the ten inocula are format 9 by the converter's text edit; Farm 88 of 88, the default Core
+suite 955 of 955 after one format pin moved. The launcher is `rounds/env-r48.ps1` (the
+overhead floor 10 J at x2, the investment and newborn floors at 0.05, the endowment 600 s,
+the snow at round 47's; every one of those values is the screen's to confirm), and its
+dry run passes every new variable. **What the bud build found** (its report,
+`scratch/r48-bud`): the 0.5 kg newborn mass floor, applied per part, refused every birth
+carrying a developed 3 cm part, so no born-small addition was ever born in rounds 41 to
+47, and under it a whole plant is refused at investment 0.02 unless its adult is at least
+0.031 m³; hence the rigid-group floors and the lowered floors, both to be screened. **In
+flight:** the config fixture is re-recorded (`pfix11` under `scratch/r48-build/runs`,
+`53f8234cb554f0ba`, copied to `fixtures/r42-config.json`); the crowd fixture `r48fix-s4`
+(round 44's world, seed 4, 20,000 s at 6 threads, launched 10:48, about an hour) runs, and
+`RunFixture.cs` points at it; then the Dynamics suite on it, the regress against
+`r47fixd-s4` (`scratch/r45-build/regress.py`), and the Slow identity word. The snow-knob
+screen (`scratch/r48-snow`, seed 2 at dt 0.02 to 15,000 s on remineralisation and the
+sink, one run at a time; its base run started 10:12) and the safari's implementing pass
+(worktree `safari2-r47`, thirteen files touched at 10:45) are still running. Seed 2's safari
+is filmed on worker 6 (24 clips, 0 under the bed, 0 inside a body, 0 over the ceiling;
+`scratch/safari/r47-s2/2026-09-24`); seed 3's waits for the new safari. Then: a 600 s smoke
+of `env-r48.ps1` at dt 0.02 and a screen of the count's plateau under the proportional
+overhead and the lowered floors (and whether 50 g links hold in the solver), the
+pre-registration (0119), the launch of seeds 1 and 2, the push (main is nine commits ahead
+of origin at 10:50). **Seed 2 ended at 30,000 s** (about 06:20, 357 min wall at 1.4x real time, 5,602 alive,
 45,675 births, no divergence, both books closed): the pool's 78 founders all died at a
 median 24 s and none bred; the tables held more snow than the open floor at 192 of 201
 dumps and at the last one (0.53 against 0.47 J/m³); fewer bodies under the caps than beside
