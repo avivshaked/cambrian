@@ -290,7 +290,16 @@ bound every frame; a scene snapped to a checkpoint keeps the caption of its best
 mostly the wall. An Opus subagent is fixing all four in the worktree
 `.claude/worktrees/safari-r47` (`unity/Assets/Theatre/` only; verification on scenes 1, 3,
 4 and 17 of seed 1 from a worker refreshed from the worktree) before seeds 2 and 3 are
-filmed; seed 1 is refilmed after the merge. The guide (`guide.py r47-s1`, 106 clades priced
+filmed. **The fix is merged (`419cb4f`, 05:50)**: the reef is a bound of the eye (1.5 m
+outside any rock, a line-of-sight test through the rock and the lens cone), every correction
+is speed-limited under the ceiling, portraits and colony pull-backs are re-planned rather
+than clamped (radius, elevation to negative, bearing and sweep searched until the whole
+path clears the glass, the bed, the reef, the bodies and 1.5 m of water), the arrival is
+framed on the bearing that shows the most bodies and tables, and a scene moved to a
+checkpoint has its captions rewritten from the filmed second; on seed 1's scenes 1, 3, 4,
+9 to 12 and 17: no dark frames, none over the ceiling, the bounds never engaged. Seed 1 is
+being refilmed on it from worker 6 (05:56); worker 5 carries the same theatre for the
+pictures. The guide (`guide.py r47-s1`, 106 clades priced
 by the ledger, none failed) is under the run directory. **Seed 3 launched at 03:25** from `d7e3b6e` (the HANDOFF commit after the
 pre-registration's `50102ba`; every hash equal, `gitDirty` false, sixteen reefs at a cover
 of 0.255, 6.3 to 16.0 m), two arms at a time. The watch is a session cron running `watch-round.py r47 --read
