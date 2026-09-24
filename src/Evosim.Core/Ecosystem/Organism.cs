@@ -113,6 +113,34 @@ namespace Evosim.Core
         /// </remarks>
         public double Energy { get; internal set; }
 
+        /// <summary>
+        /// Joules banked toward the next child by a gestating parent — the owner's ruling of
+        /// 2026-09-24. Zero for every lump breeder and every body in the record.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Charged matter held by the body, exactly as the reserve is.</b> It is in
+        /// <c>World.StandingJoules</c> and <c>World.StandingJoulesInBodies</c> beside
+        /// <see cref="Energy"/> and <see cref="TissueJoules"/>, so both identities see it; it goes
+        /// to the corpse (or the water) with the reserve at death; and a conception that is
+        /// refused leaves it where it is, as a refused lump leaves the reserve.
+        /// </para>
+        /// <para>
+        /// <b>Upkeep never draws on it.</b> A body whose reserve reaches zero starves holding its
+        /// account, and the account feeds whoever finds the corpse. A lost limb takes a share of
+        /// the reserve and none of this, and so does a dropped module: the account is the litter's
+        /// and not the body's.
+        /// </para>
+        /// </remarks>
+        public double GestationJoules { get; internal set; }
+
+        /// <summary>
+        /// The reserve as it stood when this metabolic step began — read by <c>World.Gestate</c>
+        /// to find the step's net, and filled before it is read on every step. Not state: a
+        /// checkpoint does not carry it, and a restored body's first step fills it.
+        /// </summary>
+        internal double ReserveAtStepStart;
+
         /// <summary>Simulated seconds since birth.</summary>
         public float Age { get; internal set; }
 
@@ -566,6 +594,30 @@ namespace Evosim.Core
         public double ReproductionThreshold(float perOffspringOverheadJoules) =>
             Genome.Reproduction.CostJoules(TissueJoules, perOffspringOverheadJoules) +
             (double)Genome.Reproduction.ReserveMargin * StandingWatts;
+
+        /// <summary>
+        /// The same threshold under a config's overhead rule — the floor and the per-tissue
+        /// factor of 2026-09-24. Equal to <see cref="ReproductionThreshold(float)"/> at the floor
+        /// whenever the factor is 0.
+        /// </summary>
+        public double ReproductionThreshold(RunConfig config) =>
+            Genome.Reproduction.CostJoules(TissueJoules, config) +
+            (double)Genome.Reproduction.ReserveMargin * StandingWatts;
+
+        /// <summary>
+        /// What a gestating parent's account must hold before it is worth attempting the litter:
+        /// the litter's price as the gate estimates it, and no margin.
+        /// </summary>
+        /// <remarks>
+        /// The margin is left out because it is a statement about the reserve a parent walks away
+        /// with, and a gestating parent pays nothing out of its reserve. The gene is carried and
+        /// inert in that mode, as the share is in the other.
+        /// </remarks>
+        public double GestationThreshold(RunConfig config) =>
+            Genome.Reproduction.CostJoules(TissueJoules, config);
+
+        /// <summary>Whether this body pays for its children as it goes.</summary>
+        public bool Gestates => Genome.Reproduction.Mode == ReproductionMode.Gestation;
 
         public override string ToString() =>
             FormattableString.Invariant(

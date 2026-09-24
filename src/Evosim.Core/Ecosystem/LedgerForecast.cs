@@ -221,7 +221,10 @@ namespace Evosim.Core
             double share = reproduction.BirthInvestment * tissue / reproduction.BroodSize;
             double newbornReserve = share * config.NewbornReserveFraction;
             double childBody = Math.Min(share - newbornReserve, tissue);
-            double childPrice = childBody + newbornReserve + config.PerOffspringOverheadJoules;
+            // The overhead is World.Conceive's since the ruling of 2026-09-24: the larger of the
+            // floor and the per-tissue factor times the child's body, quantised to the float the
+            // world books it as. At a factor of 0 it is the floor, as it always was.
+            double childPrice = childBody + newbornReserve + (float)config.OverheadFor(childBody);
 
             // D098. The price is in one unit and it is the whole price: a child is charged matter
             // given by its parent, so what it costs in units is what it costs in joules over rho.
@@ -229,7 +232,15 @@ namespace Evosim.Core
             // a figure hung beside a forecast that never enforced it — it is the same number the
             // lifetime loop below already spends.
             var unitsPerChild = (float)(childPrice / config.JoulesPerUnit);
-            double reproductionGate = reproduction.CostJoules(tissue, config.PerOffspringOverheadJoules);
+            double reproductionGate = reproduction.CostJoules(tissue, config);
+
+            // A gestating lineage (2026-09-24) banks its share of every step's positive net and
+            // breeds from the account, with no margin asked; a lump breeder breeds from the
+            // reserve under its margin, as before. The forecast's body does not grow, so the net
+            // here is the metabolic net alone, which is World.Gestate's net for a body that does
+            // not eat or get bitten.
+            bool gestating = reproduction.Mode == ReproductionMode.Gestation;
+            double account = 0d;
 
             double energy = newbornReserve;
             float age = 0f;
@@ -252,6 +263,7 @@ namespace Evosim.Core
                 // could not pay in full dies that step with nothing left. Handling is already in
                 // the ledger's Expenditure, so eating's cost reaches this loop for free.
                 double burnable = Math.Max(0d, energy + ledger.Income - ledger.Exuded);
+                double before = energy;
                 energy = burnable - Math.Min(ledger.Expenditure, burnable);
                 age += StepSeconds;
                 elapsed += StepSeconds;
@@ -269,6 +281,30 @@ namespace Evosim.Core
                 // own step to refresh Organism.StandingWatts, taken from this loop's own ledger
                 // rather than recomputed, so senescence reaches the margin as it reaches
                 // everything else and the forecast's gate is the world's gate.
+                if (gestating)
+                {
+                    double net = energy - before;
+                    if (net > 0d)
+                    {
+                        double moved = net * reproduction.GestationShare;
+                        energy -= moved;
+                        account += moved;
+                    }
+
+                    if (reproductionGate <= 0d || account < reproductionGate) continue;
+
+                    for (int n = 0; n < reproduction.BroodSize; n++)
+                    {
+                        if (account < childPrice) break;
+
+                        account -= childPrice;
+                        children++;
+                        if (firstChildSeconds == null) firstChildSeconds = elapsed;
+                    }
+
+                    continue;
+                }
+
                 float standingWatts = (ledger.Upkeep + ledger.Neural) / StepSeconds;
                 double gate = reproductionGate + (double)reproduction.ReserveMargin * standingWatts;
 

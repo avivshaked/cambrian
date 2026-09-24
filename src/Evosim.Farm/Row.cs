@@ -658,6 +658,13 @@ namespace Evosim.Farm
                 .Field("t", world.ElapsedSeconds)
                 .Field("alive", alive)
                 .Field("births", world.Births)
+
+                // The ruling of 2026-09-24, beside the births it is a subset of: cumulative, so
+                // a window is two rows differenced; the joules banked, cumulative; and what the
+                // living hold in their accounts now.
+                .Field("gestationBirths", world.GestationBirths)
+                .Field("gestatedJoules", world.GestatedTotal)
+                .Field("gestationJoulesHeld", world.GestationJoulesInBodies)
                 .Field("deaths", world.Deaths)
                 .Field("jointed", jointed)
                 .Field("jointedInherited", jointedInherited)

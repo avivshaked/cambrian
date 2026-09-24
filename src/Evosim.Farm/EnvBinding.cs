@@ -213,6 +213,21 @@ namespace Evosim.Farm
             Num("EVOSIM_CLEARANCE", 1.0f, (s, v) => s.Clearance = v),
             Num("EVOSIM_TISSUE_ENERGY", 0f, (s, v) => s.TissueEnergy = v),
             Num("EVOSIM_OVERHEAD", D.PerOffspringOverheadJoules, (s, v) => s.Overhead = v),
+
+            // The ruling of 2026-09-24. EVOSIM_OVERHEAD is the overhead's floor and stays its
+            // name, because every launcher on file sets it; EVOSIM_OVERHEAD_FLOOR is the same
+            // setting under the ruling's word. Either alone sets the floor, and both set to
+            // different numbers is refused rather than one quietly winning.
+            Custom("EVOSIM_OVERHEAD_FLOOR", (s, env) => s.Overhead = OverheadFloorOf(env, s.Overhead)),
+            Num("EVOSIM_OVERHEAD_PER_TISSUE", D.PerOffspringOverheadPerTissueJoule, (s, v) => s.OverheadPerTissue = v),
+
+            // Reproduction paid as it goes, the same ruling. Both chances are 0 by default, and 0
+            // draws nothing, so a launcher that does not name them runs the world it always ran;
+            // the share range is 0.5 to 0.5, which a founder takes without a draw.
+            Num("EVOSIM_GESTATION_MODE_CHANCE", MutationRates.Default.GestationModeChance, (s, v) => s.GestationModeChance = v),
+            Num("EVOSIM_GESTATION_SHARE_CHANCE", MutationRates.Default.GestationShareChance, (s, v) => s.GestationShareChance = v),
+            Num("EVOSIM_GESTATION_SHARE_MIN", RandomGenomeOptions.Default.MinGestationShare, (s, v) => s.GestationShareMin = v),
+            Num("EVOSIM_GESTATION_SHARE_MAX", RandomGenomeOptions.Default.MaxGestationShare, (s, v) => s.GestationShareMax = v),
             Num("EVOSIM_FOUNDER_EXTENT_MIN", 0f, (s, v) => s.FounderExtentMin = v),
             Num("EVOSIM_FOUNDER_EXTENT_MAX", 0f, (s, v) => s.FounderExtentMax = v),
             Num("EVOSIM_EXCESS_DENSITY", 0f, (s, v) => s.ExcessDensity = v),
@@ -477,6 +492,11 @@ namespace Evosim.Farm
             }
 
             config.PerOffspringOverheadJoules = s.Overhead;
+            config.PerOffspringOverheadPerTissueJoule = s.OverheadPerTissue;
+            config.Mutation.GestationModeChance = s.GestationModeChance;
+            config.Mutation.GestationShareChance = s.GestationShareChance;
+            config.Genome.MinGestationShare = Math.Min(s.GestationShareMin, s.GestationShareMax);
+            config.Genome.MaxGestationShare = Math.Max(s.GestationShareMin, s.GestationShareMax);
             if (s.FounderExtentMin > 0f) config.Genome.MinHalfExtent = s.FounderExtentMin;
             if (s.FounderExtentMax > 0f) config.Genome.MaxHalfExtent = s.FounderExtentMax;
 
@@ -824,6 +844,27 @@ namespace Evosim.Farm
             public void Apply(EnvSettings s, Lookup env) => _apply(s, env);
         }
 
+        /// <summary>
+        /// <c>EVOSIM_OVERHEAD_FLOOR</c>, read after <c>EVOSIM_OVERHEAD</c>: unset keeps what that
+        /// said, set alone replaces it, and set beside a different <c>EVOSIM_OVERHEAD</c> is refused.
+        /// </summary>
+        private static float OverheadFloorOf(Lookup env, float fromOverhead)
+        {
+            if (string.IsNullOrEmpty(env("EVOSIM_OVERHEAD_FLOOR"))) return fromOverhead;
+
+            float floor = Num(env, "EVOSIM_OVERHEAD_FLOOR", fromOverhead);
+
+            if (!string.IsNullOrEmpty(env("EVOSIM_OVERHEAD")) && floor != fromOverhead)
+            {
+                throw new ArgumentException(
+                    "EVOSIM_OVERHEAD (" + fromOverhead.ToString("R", CultureInfo.InvariantCulture) +
+                    ") and EVOSIM_OVERHEAD_FLOOR (" + floor.ToString("R", CultureInfo.InvariantCulture) +
+                    ") name the same setting, the overhead's floor, and disagree. Set one.");
+            }
+
+            return floor;
+        }
+
         private static Knob Num(string name, float fallback, Action<EnvSettings, float> set) =>
             new Knob(name, (s, env) => set(s, Num(env, name, fallback)));
 
@@ -990,6 +1031,11 @@ namespace Evosim.Farm
         public float Clearance;
         public float TissueEnergy;
         public float Overhead;
+        public float OverheadPerTissue;
+        public float GestationModeChance;
+        public float GestationShareChance;
+        public float GestationShareMin;
+        public float GestationShareMax;
         public float FounderExtentMin;
         public float FounderExtentMax;
         public float ExcessDensity;

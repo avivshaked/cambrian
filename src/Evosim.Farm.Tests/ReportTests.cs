@@ -140,11 +140,13 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 // and the reefs' six dials (logbook/specs/reef-spec.md) under 9036f75aa700b784
                 // alone, and the two together, merged 2026-09-23 night, under 679f831c59c6f1af,
                 // and the reef group redesigned under the owner's cover ruling (cover 0 here)
-                // under this.
+                // under 256078e816861b27, and the ruling of 2026-09-24 (the overhead's per-tissue
+                // factor at 0, the two gestation rates at 0 and the share range 0.5 to 0.5) under
+                // this.
                 .Replace(
                     " · configHash ",
-                    " · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + ContactToken + " · configHash ")
-                .Replace("`ff557bce2685293a`", "`256078e816861b27`");
+                    " · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + ContactToken + ReproductionToken + " · configHash ")
+                .Replace("`ff557bce2685293a`", "`b99b2aa6efa1de44`");
 
             Assert.Equal(expected, Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9"));
         }
@@ -174,7 +176,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             // D106's, last before the hash and all at their defaults: a reader verifying an arm
             // has to be able to see from the header alone that the module gene is off and that
             // nothing bites, eats, heals or is charged for an attribute.
-            Assert.Contains(" · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + ContactToken + " · configHash", line);
+            Assert.Contains(" · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + ContactToken + ReproductionToken + " · configHash", line);
 
             // The reach bound, off: a reader has to see from the header that no body was cut.
             Assert.Contains(" · selfOverlap 0.1 · reach off · ", line);
@@ -184,7 +186,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             Assert.Contains(" · reach off · matter uniform · founders anywhere · shade off · ", line);
             Assert.Contains(" · matter-mix 2 m2/s · area 2200 m2 · ", line);
 
-            Assert.EndsWith(" · configHash `256078e816861b27`", line);
+            Assert.EndsWith(" · configHash `b99b2aa6efa1de44`", line);
 
             // D110, off: the light is the orientation average, printed beside the cap.
             Assert.Contains(" · silhouette on · light averaged · ", line);
@@ -307,6 +309,12 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
         private const string SupportToken = " · support off";
         // D114: after the support price and before the hash, the model the census counted under.
         private const string ContactToken = " · contact per body";
+
+        /// <summary>
+        /// The ruling of 2026-09-24's token, after the contact token and before the hash: the
+        /// overhead flat at its floor (<c>x0</c>) and no lineage able to gestate.
+        /// </summary>
+        private const string ReproductionToken = " · overhead scale x0 floor 100 J · gestation off";
 
         /// <summary>
         /// The recorded table's header row, column for column but for the four that were renamed

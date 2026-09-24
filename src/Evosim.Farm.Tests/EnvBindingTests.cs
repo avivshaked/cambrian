@@ -38,7 +38,10 @@ namespace Evosim.Farm.Tests
         /// <c>5a456a9e7b2518d3</c>, and D111's buoyancy offset price (0 here, <c>pfix7</c>), and
         /// what followed to <c>679f831c59c6f1af</c>, and the reef group redesigned under the
         /// owner's cover ruling (2026-09-23 night: a cover in place of a count, a radius range, an
-        /// outline roughness, a depth jitter, a stem fraction; cover 0 here) to this. A tunable is
+        /// outline roughness, a depth jitter, a stem fraction; cover 0 here) to
+        /// <c>256078e816861b27</c>, and the ruling of 2026-09-24 (the overhead's per-tissue factor,
+        /// the two gestation rates and the gestation-share range, all at the values that change
+        /// nothing) to this. A tunable is
         /// part of the hash whatever
         /// its default, which is §9's rule and the reason a config written before a tunable is
         /// refused rather than defaulted. What this constant still pins is the thing the test was
@@ -48,7 +51,7 @@ namespace Evosim.Farm.Tests
         /// world, filed under a new name. <c>scratch/r45-build</c>'s regress is what says the
         /// world did not move — every shared field of a 1,000 s run identical at every sample.
         /// </remarks>
-        private const string Round42ConfigHash = "256078e816861b27";
+        private const string Round42ConfigHash = "b99b2aa6efa1de44";
 
         /// <summary>Round 42 seed 1's environment, from <c>rounds/launch-r42.ps1</c>.</summary>
         /// <remarks>
@@ -458,6 +461,50 @@ namespace Evosim.Farm.Tests
             }
 
             Assert.Equal(a.Length, b.Length);
+        }
+
+        /// <summary>
+        /// The ruling of 2026-09-24: EVOSIM_OVERHEAD and EVOSIM_OVERHEAD_FLOOR are one setting,
+        /// the per-tissue factor and the gestation knobs reach the config, and a launcher that
+        /// names neither gets the flat overhead and no gestation.
+        /// </summary>
+        [Fact]
+        public void TheOverheadFloorHasTwoNamesAndTheGestationKnobsReachTheConfig()
+        {
+            RunConfig Built(Dictionary<string, string> env) =>
+                EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(env)));
+
+            RunConfig none = Built(new Dictionary<string, string>());
+            Assert.Equal(new RunConfig().PerOffspringOverheadJoules, none.PerOffspringOverheadJoules);
+            Assert.Equal(0f, none.PerOffspringOverheadPerTissueJoule);
+            Assert.Equal(0f, none.Mutation.GestationModeChance);
+            Assert.Equal(0f, none.Mutation.GestationShareChance);
+
+            Assert.Equal(100f, Built(new Dictionary<string, string> { { "EVOSIM_OVERHEAD", "100" } })
+                .PerOffspringOverheadJoules);
+            Assert.Equal(40f, Built(new Dictionary<string, string> { { "EVOSIM_OVERHEAD_FLOOR", "40" } })
+                .PerOffspringOverheadJoules);
+            Assert.Equal(40f, Built(new Dictionary<string, string>
+                { { "EVOSIM_OVERHEAD", "40" }, { "EVOSIM_OVERHEAD_FLOOR", "40" } })
+                .PerOffspringOverheadJoules);
+            Assert.Throws<ArgumentException>(() => Built(new Dictionary<string, string>
+                { { "EVOSIM_OVERHEAD", "100" }, { "EVOSIM_OVERHEAD_FLOOR", "40" } }));
+
+            RunConfig on = Built(new Dictionary<string, string>
+            {
+                { "EVOSIM_OVERHEAD_PER_TISSUE", "2" },
+                { "EVOSIM_GESTATION_MODE_CHANCE", "0.08" },
+                { "EVOSIM_GESTATION_SHARE_CHANCE", "0.08" },
+                { "EVOSIM_GESTATION_SHARE_MIN", "0.8" },
+                { "EVOSIM_GESTATION_SHARE_MAX", "0.2" },
+            });
+
+            Assert.Equal(2f, on.PerOffspringOverheadPerTissueJoule);
+            Assert.Equal(0.08f, on.Mutation.GestationModeChance);
+            Assert.Equal(0.08f, on.Mutation.GestationShareChance);
+            Assert.Equal(0.2f, on.Genome.MinGestationShare);
+            Assert.Equal(0.8f, on.Genome.MaxGestationShare);
+            Assert.NotEqual(none.Hash(), on.Hash());
         }
 
         /// <summary>

@@ -154,6 +154,18 @@ namespace Evosim.Core
         public float ReserveMargin { get; }
 
         /// <summary>
+        /// Birth only — the genome's <see cref="ReproductionTraits.Mode"/>, the row's <c>gm</c>
+        /// (0 lump, 1 gestation). The owner's ruling of 2026-09-24.
+        /// </summary>
+        public ReproductionMode ReproductionMode { get; }
+
+        /// <summary>
+        /// Birth only — the genome's <see cref="ReproductionTraits.GestationShare"/>, the row's
+        /// <c>gs</c>. Carried on a lump breeder's row too, where it is inert.
+        /// </summary>
+        public float GestationShare { get; }
+
+        /// <summary>
         /// Birth only — how many nodes of the genome are
         /// <see cref="ModuleGrowth.Indeterminate"/>. D106 item 2, rule 8's <c>ind</c>.
         /// </summary>
@@ -279,8 +291,11 @@ namespace Evosim.Core
             long attackerId, bool rootLost, int partsLost,
             double tissueJoulesLost, double reserveJoulesLost,
             FounderSource source = FounderSource.None,
-            int partIndex = -1, int attackerPartIndex = -1, int poolIndex = -1)
+            int partIndex = -1, int attackerPartIndex = -1, int poolIndex = -1,
+            ReproductionMode reproductionMode = ReproductionMode.Lump, float gestationShare = 0f)
         {
+            ReproductionMode = reproductionMode;
+            GestationShare = gestationShare;
             Source = source;
             PartIndex = partIndex;
             AttackerPartIndex = attackerPartIndex;
@@ -317,7 +332,8 @@ namespace Evosim.Core
             bool hasPhotosynthetic, int patch, float birthFraction, float adultScale,
             float reserveMargin, int indeterminateNodes,
             bool hasAttack, bool hasIntake, bool hasProtection,
-            FounderSource source = FounderSource.None, int poolIndex = -1) =>
+            FounderSource source = FounderSource.None, int poolIndex = -1,
+            ReproductionMode reproductionMode = ReproductionMode.Lump, float gestationShare = 0.5f) =>
             new LineageEvent(
                 LineageEventKind.Birth, elapsedSeconds, id, parentId, birthKind, generationDepth,
                 speciesId, hasAbsorptive, hasJoint, hasPhotosynthetic, patch,
@@ -325,7 +341,8 @@ namespace Evosim.Core
                 hasAttack, hasIntake, hasProtection, default,
                 attackerId: -1, rootLost: false, partsLost: 0,
                 tissueJoulesLost: 0d, reserveJoulesLost: 0d, source: source,
-                poolIndex: source == FounderSource.Pool ? poolIndex : -1);
+                poolIndex: source == FounderSource.Pool ? poolIndex : -1,
+                reproductionMode: reproductionMode, gestationShare: gestationShare);
 
         public static LineageEvent Death(double elapsedSeconds, long id, DeathCause cause) =>
             new LineageEvent(
@@ -455,6 +472,12 @@ namespace Evosim.Core
                 {
                     w.Field("pool", PoolIndex);
                 }
+
+                // The ruling of 2026-09-24, on every birth row as bf and as are, appended at the
+                // end so that a reader written against an older row keeps working: how the
+                // lineage pays for its children (0 lump, 1 gestation) and the share it banks.
+                w.Field("gm", ReproductionMode == ReproductionMode.Gestation ? 1 : 0)
+                    .Field("gs", GestationShare);
             }
             else if (Kind == LineageEventKind.Kill)
             {

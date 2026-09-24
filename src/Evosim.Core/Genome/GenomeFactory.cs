@@ -284,6 +284,27 @@ namespace Evosim.Core
         public float MaxReserveMargin { get; set; } = 600f;
 
         /// <summary>
+        /// Gestation-share range for the initial population, in (0, 1] — the owner's ruling of
+        /// 2026-09-24.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Every founder is a lump breeder, so the share it carries is inert until a mutation
+        /// flips its lineage's mode; what this range sets is where such a lineage starts.
+        /// </para>
+        /// <para>
+        /// <b>Drawn only when the range is a range.</b> At the defaults, 0.5 to 0.5, a founder
+        /// takes 0.5 without touching the stream, so every recorded founding lottery draws the
+        /// genomes it drew; a launcher that opens the range makes every seed a new realisation.
+        /// ⚠ Unmeasured (§5A.10).
+        /// </para>
+        /// </remarks>
+        [Tunable("genome")]
+        public float MinGestationShare { get; set; } = 0.5f;
+        [Tunable("genome")]
+        public float MaxGestationShare { get; set; } = 0.5f;
+
+        /// <summary>
         /// Adult size a founder is drawn at — fable-propose-growth.md rule 7.
         /// </summary>
         /// <remarks>
@@ -405,6 +426,8 @@ namespace Evosim.Core
                     BirthInvestment =
                         rng.Range(options.MinBirthInvestment, options.MaxBirthInvestment),
                     ReserveMargin = DrawReserveMargin(rng, options),
+                    Mode = ReproductionMode.Lump,
+                    GestationShare = DrawGestationShare(rng, options),
                 },
             };
 
@@ -557,6 +580,8 @@ namespace Evosim.Core
                     BirthInvestment =
                         rng.Range(options.MinBirthInvestment, options.MaxBirthInvestment),
                     ReserveMargin = DrawReserveMargin(rng, options),
+                    Mode = ReproductionMode.Lump,
+                    GestationShare = DrawGestationShare(rng, options),
                 },
             };
 
@@ -664,6 +689,25 @@ namespace Evosim.Core
             }
 
             return rng.Range(options.MinReserveMargin, options.MaxReserveMargin);
+        }
+
+        /// <summary>
+        /// A founder's gestation share — drawn only when the range is a range, so the defaults
+        /// leave the founding stream untouched. See <see cref="RandomGenomeOptions.MinGestationShare"/>.
+        /// </summary>
+        private static float DrawGestationShare(Rng rng, RandomGenomeOptions options)
+        {
+            float min = options.MinGestationShare, max = options.MaxGestationShare;
+
+            if (!(min > 0f) || !(max <= 1f) || min > max)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(options),
+                    $"Gestation-share range [{min}, {max}] must lie in (0, 1] and not be " +
+                    "inverted: it is the share of a step's net income a gestating parent banks.");
+            }
+
+            return max > min ? rng.Range(min, max) : min;
         }
 
         /// <summary>

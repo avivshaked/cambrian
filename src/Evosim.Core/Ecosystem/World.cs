@@ -511,7 +511,13 @@ namespace Evosim.Core
             get
             {
                 double sum = 0.0;
-                for (int i = 0; i < _living.Count; i++) sum += _living[i].Energy + _living[i].TissueJoules;
+                for (int i = 0; i < _living.Count; i++)
+                {
+                    // The gestation account (2026-09-24) is charged matter the body holds. It is
+                    // exactly 0 on every lump breeder, and x + 0 is x, so a world without a
+                    // gestating body sums to the same bits it always did.
+                    sum += _living[i].Energy + _living[i].TissueJoules + _living[i].GestationJoules;
+                }
                 return sum;
             }
         }
@@ -848,6 +854,31 @@ namespace Evosim.Core
         public long Deaths { get; private set; }
 
         /// <summary>
+        /// Children conceived from a gestation account rather than from the reserve — the owner's
+        /// ruling of 2026-09-24. Cumulative, and a subset of <see cref="Births"/>; a window is two
+        /// rows differenced, and 0 in every world without a gestating lineage.
+        /// </summary>
+        public long GestationBirths { get; private set; }
+
+        /// <summary>
+        /// Joules ever moved from reserves into gestation accounts. Cumulative; an instrument for
+        /// reading how much of a gestating lineage's income is banked, and not a leg of either
+        /// book (it is a transfer inside one body).
+        /// </summary>
+        public double GestatedTotal { get; private set; }
+
+        /// <summary>Joules standing in the living's gestation accounts. O(n), for a report row.</summary>
+        public double GestationJoulesInBodies
+        {
+            get
+            {
+                double sum = 0.0;
+                for (int i = 0; i < _living.Count; i++) sum += _living[i].GestationJoules;
+                return sum;
+            }
+        }
+
+        /// <summary>
         /// Creatures killed by <see cref="KillDiverged"/> — bodies the solver blew up. Included in
         /// <see cref="Deaths"/>, and 0 for every healthy run.
         /// </summary>
@@ -901,7 +932,9 @@ namespace Evosim.Core
                 double sum = Nutrients.TotalJoules;
                 for (int i = 0; i < _living.Count; i++)
                 {
-                    sum += _living[i].Energy + _living[i].TissueJoules;
+                    // The gestation account is standing like the reserve: see
+                    // StandingJoulesInBodies for why adding it moves no recorded world.
+                    sum += _living[i].Energy + _living[i].TissueJoules + _living[i].GestationJoules;
                 }
 
                 // The fourth account, and only ever nonzero where a corpse exists: a body's
@@ -1902,6 +1935,10 @@ namespace Evosim.Core
             // paying for it, and would present as a slow trend nobody chose (§5A.4).
             Field.Advance(ElapsedSeconds);
 
+            // The ruling of 2026-09-24. The reserve each gestating body starts the step with, so
+            // Gestate can read the step's net after the mouth. Touches nothing on a lump breeder.
+            MarkReserveAtStepStart();
+
             Metabolise(seconds);
 
             // D106 items 1, 3, 4 and 5 (WorldMouth.cs). After Metabolise, so a repair is paid out
@@ -1911,6 +1948,12 @@ namespace Evosim.Core
             // healing and no wound anywhere — it is two walks of the living and no arithmetic,
             // which is what lets it be called unconditionally.
             ApplyMouth(seconds);
+
+            // The ruling of 2026-09-24: a gestating body banks its share of this step's net, after
+            // everything that earns or spends on the step (light, eating, upkeep, repair, a bite)
+            // and before growth, so the account and the body draw on the same surplus in a fixed
+            // order. A no-op on every lump breeder, which is every recorded world.
+            Gestate();
 
             // fable-propose-growth.md rule 5. After feeding and upkeep, so a body invests what
             // this step actually left it; before Reproduce, so growth has first claim on the
@@ -2834,25 +2877,11 @@ namespace Evosim.Core
                 // heat (logbook/0101). Counted with exudation, because to the charged field's
                 // flux identity it is the same event: a living body putting charged matter in.
                 // Off at ReserveCapSeconds 0, which is every world before this one.
-                if (Config.ReserveCapSeconds > 0f && creature.StandingWatts > 0f)
-                {
-                    double cap = (double)Config.ReserveCapSeconds * creature.StandingWatts;
-                    if (creature.Energy > cap)
-                    {
-                        // The trim is the float the water is handed, and the reserve gives up
-                        // exactly that rather than being set to the cap: what leaves one account
-                        // is what arrives in the other, and the reserve ends within an ulp of the
-                        // cap instead of the transfer ending within an ulp of exact.
-                        float excess = (float)(creature.Energy - cap);
-                        if (excess > 0f)
-                        {
-                            creature.Energy -= excess;
-                            Nutrients.Deposit(creature.Point, excess);
-                            DetritusExudedTotal += excess;
-                            ReserveTrimmedTotal += excess;
-                        }
-                    }
-                }
+                //
+                // A gestating body (2026-09-24) is trimmed in Gestate instead, after it has banked
+                // its share: trimmed here, a body at its cap would clear nothing on the step, bank
+                // nothing, and never breed. Every lump breeder is trimmed here as it always was.
+                if (!creature.Gestates) TrimReserve(creature);
 
                 if (creature.Energy > 0d) continue;
 
@@ -2861,6 +2890,93 @@ namespace Evosim.Core
                 // than opening a second way to die. DeathCause.Diverged is not a second way
                 // either: it is the solver failing, and it enters through KillDiverged below.
                 Bury(creature, i, DeathCause.Starved);
+            }
+        }
+
+        /// <summary>
+        /// D098's leg 10 for one body: a reserve above <see cref="RunConfig.ReserveCapSeconds"/> of
+        /// its standing cost is released to the water as charged matter.
+        /// </summary>
+        private void TrimReserve(Organism creature)
+        {
+            if (!(Config.ReserveCapSeconds > 0f && creature.StandingWatts > 0f)) return;
+
+            double cap = (double)Config.ReserveCapSeconds * creature.StandingWatts;
+            if (!(creature.Energy > cap)) return;
+
+            // The trim is the float the water is handed, and the reserve gives up exactly that
+            // rather than being set to the cap: what leaves one account is what arrives in the
+            // other, and the reserve ends within an ulp of the cap instead of the transfer ending
+            // within an ulp of exact.
+            float excess = (float)(creature.Energy - cap);
+            if (excess > 0f)
+            {
+                creature.Energy -= excess;
+                Nutrients.Deposit(creature.Point, excess);
+                DetritusExudedTotal += excess;
+                ReserveTrimmedTotal += excess;
+            }
+        }
+
+        /// <summary>Fills <see cref="Organism.ReserveAtStepStart"/> for every gestating body.</summary>
+        private void MarkReserveAtStepStart()
+        {
+            for (int i = 0; i < _living.Count; i++)
+            {
+                Organism creature = _living[i];
+                if (creature.Gestates) creature.ReserveAtStepStart = creature.Energy;
+            }
+        }
+
+        /// <summary>
+        /// Moves each gestating body's share of this step's positive net from its reserve into its
+        /// gestation account — the owner's ruling of 2026-09-24.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The net is the reserve's own change over the step</b>, from
+        /// <see cref="MarkReserveAtStepStart"/> to here: light fixed and food eaten, less the
+        /// burn, the exudation, the reserve cap's trim, a repair and a bite. That is what the
+        /// body actually cleared, whatever route the income took, so an eater's meal counts the
+        /// way a leaf's light does. A step that cleared nothing banks nothing, and the account is
+        /// never drawn back into the reserve: upkeep does not touch it.
+        /// </para>
+        /// <para>
+        /// <b>A transfer inside one body, so neither book moves.</b> Both accounts are in
+        /// <see cref="StandingJoules"/>; the reserve can only shrink toward what it began the
+        /// step at, which is above zero for any body alive to reach this pass.
+        /// </para>
+        /// <para>
+        /// <b>The reserve cap bites here for a gestating body</b>, after the banking, so a body
+        /// standing at its cap still banks its share of what it cleared; the step's trim is part
+        /// of this pass and not of the net it reads.
+        /// </para>
+        /// </remarks>
+        private void Gestate()
+        {
+            for (int i = 0; i < _living.Count; i++)
+            {
+                Organism creature = _living[i];
+                if (!creature.Gestates) continue;
+
+                double net = creature.Energy - creature.ReserveAtStepStart;
+
+                if (net > 0d)
+                {
+                    double moved = net * creature.Genome.Reproduction.GestationShare;
+                    if (moved > creature.Energy) moved = creature.Energy;
+
+                    if (moved > 0d)
+                    {
+                        creature.Energy -= moved;
+                        creature.GestationJoules += moved;
+                        GestatedTotal += moved;
+                    }
+                }
+
+                // The reserve cap, after the banking: see Metabolise's leg 10 for why a gestating
+                // body is trimmed here. The account is not trimmed; it is the litter's.
+                TrimReserve(creature);
             }
         }
 
@@ -3013,6 +3129,12 @@ namespace Evosim.Core
             // the line that stopped throwing its savings away.
             double remains = creature.TissueJoules + Math.Max(0d, creature.Energy);
             creature.Energy = 0d;
+
+            // The gestation account (2026-09-24) goes with the reserve, because it is the same
+            // charged matter set aside. Added in its own statement so that at 0 — every lump
+            // breeder — the corpse is the same number it always was.
+            if (creature.GestationJoules > 0d) remains += creature.GestationJoules;
+            creature.GestationJoules = 0d;
 
             // Rule 6 of fable-propose-grid.md: above zero the body leaves a corpse instead, and
             // the deposit below happens in instalments from wherever the corpse has drifted to.
@@ -3399,8 +3521,7 @@ namespace Evosim.Core
         /// </remarks>
         private void Brood(Organism parent)
         {
-            double gate = parent.ReproductionThreshold(Config.PerOffspringOverheadJoules);
-            if (gate <= 0d || parent.Energy < gate) return;
+            if (!IsSolvent(parent, out _)) return;
 
             for (int n = 0; n < parent.Genome.Reproduction.BroodSize; n++)
             {
@@ -3412,6 +3533,35 @@ namespace Evosim.Core
                 // behind this one, so it ends the brood as it always has.
                 if (Conceive(parent) == Conception.Refused) break;
             }
+        }
+
+        /// <summary>
+        /// Whether a parent clears its breeding gate, and by how much — the one expression
+        /// <see cref="Brood"/> and <see cref="RankConceptionOrderByReserve"/> both read.
+        /// </summary>
+        /// <remarks>
+        /// A lump breeder is asked of its reserve against <see cref="Organism.ReproductionThreshold(RunConfig)"/>
+        /// (the price plus its margin); a gestating one of its account against
+        /// <see cref="Organism.GestationThreshold"/> (the price alone). At the per-tissue factor
+        /// of 0 the first is the recorded gate bit for bit.
+        /// </remarks>
+        private bool IsSolvent(Organism parent, out double surplus)
+        {
+            double gate, funds;
+
+            if (parent.Gestates)
+            {
+                gate = parent.GestationThreshold(Config);
+                funds = parent.GestationJoules;
+            }
+            else
+            {
+                gate = parent.ReproductionThreshold(Config);
+                funds = parent.Energy;
+            }
+
+            surplus = funds - gate;
+            return gate > 0d && funds >= gate;
         }
 
         /// <summary>
@@ -3472,10 +3622,9 @@ namespace Evosim.Core
             {
                 Organism parent = _living[i];
 
-                double gate = parent.ReproductionThreshold(Config.PerOffspringOverheadJoules);
-                if (gate <= 0d || parent.Energy < gate) continue;
+                if (!IsSolvent(parent, out double surplus)) continue;
 
-                _conceptionSurplus[i] = parent.Energy - gate;
+                _conceptionSurplus[i] = surplus;
                 _conceptionOrder[solvent++] = i;
             }
 
@@ -3580,14 +3729,38 @@ namespace Evosim.Core
             // In double, so that what the parent gives up is exactly what the child carries plus
             // what the overhead burns. In float this sum rounded against a price of order the
             // overhead — 100 J against a 0.4 J body — and the missing joule was in neither book.
-            double price = tissue + reserve + Config.PerOffspringOverheadJoules;
+            //
+            // The overhead scales with the child above a floor since the owner's ruling of
+            // 2026-09-24: max(floor, per-tissue x the child's tissue at birth). It is quantised to
+            // the float the field's door takes once, here, and that one number is what the parent
+            // pays, what EnergyOut books and what returns to the water over rho, so the two books
+            // see the same joules. At a per-tissue factor of 0 it is the float floor itself and
+            // every recorded price is the price it was.
+            float overheadPaid = (float)Config.OverheadFor(tissue);
+            double overhead = overheadPaid;
+            double price = tissue + reserve + overhead;
+
+            // The ruling of 2026-09-24: a gestating parent pays from its account and nothing else,
+            // so its reserve and its margin are not asked. A shortfall is counted with the margin's
+            // refusals, which is the counter for "the parent could not pay", and the account is
+            // kept, as a refused lump keeps the reserve.
+            bool gestating = parent.Gestates;
+
+            if (gestating)
+            {
+                if (parent.GestationJoules < price)
+                {
+                    ConceptionsUnderMargin++;
+                    return Conception.Refused;
+                }
+            }
 
             // D098 §3. The price plus what the genome insists on keeping — the same expression
             // Organism.ReproductionThreshold applies, so a parent that got here has already
             // cleared its margin once and this is the exact check rather than a second rule. The
             // margin is read off the parent's current standing cost, not the one it was born
             // with, because a body that has grown is a body with more to keep back.
-            if (parent.Energy <
+            else if (parent.Energy <
                 price + (double)parent.Genome.Reproduction.ReserveMargin * parent.StandingWatts)
             {
                 ConceptionsUnderMargin++;
@@ -3640,7 +3813,8 @@ namespace Evosim.Core
                 return Conception.Refused;
             }
 
-            parent.Energy -= price;
+            if (gestating) parent.GestationJoules -= price;
+            else parent.Energy -= price;
 
             // The child's body and its first reserve are transferred and stay in the world; the
             // overhead is burnt. It is paid per offspring, so it does not by itself tell one
@@ -3651,10 +3825,10 @@ namespace Evosim.Core
             // D098's leg 2, at the parent's own point: the overhead is a charged unit burnt like
             // any other, so the joules leave the world and the spent unit returns to the water
             // where the parent is. It is the largest single burn this world makes.
-            if (Config.PerOffspringOverheadJoules > 0f)
+            if (overheadPaid > 0f)
             {
-                EnergyOut += Config.PerOffspringOverheadJoules;
-                float returnedUnits = Config.PerOffspringOverheadJoules / Config.JoulesPerUnit;
+                EnergyOut += overhead;
+                float returnedUnits = overheadPaid / Config.JoulesPerUnit;
                 Matter.Deposit(parent.Point, returnedUnits);
                 BurntTotal += returnedUnits;
             }
@@ -3685,6 +3859,8 @@ namespace Evosim.Core
                 // child however much energy it cost. Pure instrumentation: nothing branches on it.
                 parent.Children++;
                 parent.LastChildSeconds = ElapsedSeconds;
+
+                if (gestating) GestationBirths++;
             }
 
             return Conception.Born;
@@ -4447,7 +4623,8 @@ namespace Evosim.Core
                 CarriesAttribute(genome, n => n.Attack),
                 CarriesAttribute(genome, n => n.Intake),
                 CarriesAttribute(genome, n => n.Protection),
-                founderSource, poolIndex));
+                founderSource, poolIndex,
+                genome.Reproduction.Mode, genome.Reproduction.GestationShare));
 
             return creature;
         }

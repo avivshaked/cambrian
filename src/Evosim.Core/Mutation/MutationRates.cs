@@ -264,6 +264,32 @@ namespace Evosim.Core
         [Tunable("mutation")]
         public float MarginChance { get; set; } = 0.08f;
 
+        /// <summary>
+        /// Chance per birth that the child's <see cref="ReproductionTraits.Mode"/> flips between
+        /// lump and gestation — the owner's ruling of 2026-09-24.
+        /// </summary>
+        /// <remarks>
+        /// <b>Zero by default, and zero means no draw at all</b>, the rule
+        /// <see cref="ModuleGeneMutationChance"/> set: <c>Mutator.MutateReproduction</c> tests it
+        /// against zero before it rolls, so a world that leaves it alone takes exactly the numbers
+        /// out of its stream that every recorded run took. The ruling asks for the reproduction
+        /// traits' rate (<see cref="InvestmentChance"/>, 0.08), which is a launcher's to set.
+        /// ⚠ Unmeasured (§5A.10).
+        /// </remarks>
+        [Tunable("mutation")]
+        public float GestationModeChance { get; set; }
+
+        /// <summary>
+        /// Chance per birth that <see cref="ReproductionTraits.GestationShare"/> takes a step.
+        /// </summary>
+        /// <remarks>
+        /// Zero by default and zero draws nothing, as <see cref="GestationModeChance"/>. Stepped
+        /// by <c>Mutator.Step</c> like the investment and the margin and clamped to at most 1.
+        /// ⚠ Unmeasured (§5A.10).
+        /// </remarks>
+        [Tunable("mutation")]
+        public float GestationShareChance { get; set; }
+
         /// <summary>Chance the genome's adult size is perturbed — fable-propose-growth.md rule 1.</summary>
         /// <remarks>
         /// The investment's rate, deliberately, and not the per-scalar rate a dimension gets.
