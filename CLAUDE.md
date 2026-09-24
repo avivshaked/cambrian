@@ -1535,7 +1535,9 @@ actually verifying it.
   tree first). Two more things follow from a worktree being its own checkout. Its scripts take
   the worktree's root as the repository, so `theatre-snap.ps1` and `theatre-film.ps1` run from
   it write under its own `scratch/` and refuse an output path outside it; copy the pictures
-  out. And its worker (`<worktree>/unity-wN`) takes an edit only by a refresh from the
+  out. They also read runs from the worktree's own `runs/`, which holds none, so a film or
+  a snapshot from a worktree takes `-RunsRoot <main tree>/runs` (a canopy check on
+  2026-09-24 died on `No arm directory` without it). And its worker (`<worktree>/unity-wN`) takes an edit only by a refresh from the
   worktree. The Agent tool's worktrees still land under `.claude/worktrees/` unless a
   `WorktreeCreate` hook in the settings sends them elsewhere, and that setting is the owner's.
   Until it exists, a subagent that needs a worktree gets one the caller made under `scratch/`,
