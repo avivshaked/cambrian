@@ -124,6 +124,12 @@ namespace Evosim.Farm
         public int LastCheckpoints;
 
         /// <summary>
+        /// Which record the run directory holds (<see cref="RunRecordFormat"/>): what a reader
+        /// dispatches on. A manifest without the field is format 1, every run before this build.
+        /// </summary>
+        public int RecordFormat = RunRecordFormat.Newest;
+
+        /// <summary>
         /// Where this run started from, when it did not start from a founding lottery — the arm,
         /// the run directory, the second and the digest of the checkpoint it read.
         /// </summary>
@@ -509,6 +515,11 @@ namespace Evosim.Farm
             // run's world came from if it did not come from a founding lottery
             // (logbook/specs/checkpoint-spec.md).
             w.Field("checkpointEverySeconds", m.CheckpointEverySeconds);
+
+            // The record the directory holds, which readers dispatch on rather than guessing from
+            // the bytes of a file (logbook/specs/record-and-film-spec.md, Part A). Absent from
+            // every manifest before this build, and a reader takes absent as format 1.
+            w.Field("recordFormat", m.RecordFormat);
 
             if (m.ResumedFromArm != null || m.ResumedFromRun != null)
             {

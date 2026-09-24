@@ -218,6 +218,11 @@ namespace Evosim.Farm
                 }
             }
 
+            // Record format 2 retires poses.jsonl for the state stream at the report interval,
+            // unless the launcher named a cadence. After InheritRecording, so a resumed run keeps
+            // the stream its source was writing (logbook/specs/record-and-film-spec.md A4).
+            bool streamByDefault = settings.ApplyRecordDefaults(config.SharedSpace);
+
             float physicsDt = resume != null
                 ? resume.PhysicsStepSeconds
                 : settings.PhysicsDt;
@@ -253,7 +258,7 @@ namespace Evosim.Farm
                 Path.Combine(
                     Path.GetDirectoryName(outPath),
                     Path.GetFileNameWithoutExtension(outPath)),
-                config, DateTime.UtcNow);
+                config, DateTime.UtcNow, settings.RecordFormat);
 
             // D117. Beside config.json, in the bytes the hash was taken over; a resumed run
             // carries its source's pool forward so that it can itself be resumed.
@@ -276,6 +281,7 @@ namespace Evosim.Farm
             // stream beside it was written at.
             manifest.PoseEverySeconds = settings.ResolvePoseEvery();
             manifest.CheckpointEverySeconds = settings.ResolveCheckpointEvery();
+            manifest.RecordFormat = settings.RecordFormat;
 
             if (resume != null)
             {
@@ -292,6 +298,12 @@ namespace Evosim.Farm
             Console.WriteLine();
             Console.WriteLine("run directory: " + dir.Path);
             Console.WriteLine("report:        " + outPath);
+            Console.WriteLine(
+                "record:        " + RunRecordFormat.Describe(settings.RecordFormat) +
+                (streamByDefault
+                    ? "; the state stream in place of poses.jsonl, every " +
+                      settings.PoseEvery.ToString(CultureInfo.InvariantCulture) + " s (the report interval)"
+                    : ""));
             Console.WriteLine(
                 "threads:       " + threads.ToString(CultureInfo.InvariantCulture) +
                 "   dt " + physicsDt.ToString(CultureInfo.InvariantCulture) +
@@ -405,6 +417,11 @@ namespace Evosim.Farm
             var readings = new Readings(sim);
             var sampler = new Sampler { PoolNamed = config.FoundingTricklePoolCount > 0 };
 
+            // Record format 2's genome file is fed from the world's admission queue, which is off
+            // unless a run asks for it (a queue nobody drains is a leak). Before the first step and
+            // before a restore, so no admission can come before it.
+            world.QueueAdmittedGenomes = dir.Genomes != null;
+
             // The state stream, off unless a launcher asked for it. Opened here rather than in the
             // sampler because its cadence is not the sample's: it takes a frame from the metabolic
             // loop, where the sampler is called once a report row.
@@ -468,6 +485,11 @@ namespace Evosim.Farm
                     Evosim.Core.StateIo.Tag(r, "PEND");
                 }
             }
+
+            // The bodies this run did not admit itself: a resumed run's inherited roster (and, in a
+            // founded one, nobody). Their genomes go into this directory's genomes.jsonl.gz first,
+            // so every slim snapshot row this run writes has its genome in its own directory.
+            Sampler.WriteLivingGenomes(world, dir);
 
             float checkpointEvery = settings.ResolveCheckpointEvery();
             int checkpoints = 0;
@@ -705,6 +727,7 @@ namespace Evosim.Farm
             // birth row).
             IReadOnlyList<LineageEvent> lineageTail = world.DrainLineageEvents();
             for (int i = 0; i < lineageTail.Count; i++) dir.Lineage.Write(lineageTail[i].ToJson());
+            Sampler.DrainGenomes(world, dir);
 
             // One last checkpoint at the second the run actually stopped at, unless the cadence
             // already wrote one there. A run stopped or walled between two cadence seconds is
@@ -868,9 +891,17 @@ namespace Evosim.Farm
             IReadOnlyList<LineageEvent> queued = world.DrainLineageEvents();
             for (int i = 0; i < queued.Count; i++) dir.Lineage.Write(queued[i].ToJson());
 
+            // The genome queue with it, for the same reason: it is not in the checkpoint, so what
+            // it holds belongs on this side of the line.
+            Sampler.DrainGenomes(world, dir);
+
             var header = new CheckpointHeader
             {
-                Version = Checkpoint.Version,
+                // Record format 1 writes the checkpoint every earlier run wrote, uncompressed;
+                // format 2 gzips the payload after digesting it (Checkpoint.Version 5).
+                Version = settings.RecordFormat == RunRecordFormat.Jsonl
+                    ? Checkpoint.UncompressedVersion
+                    : Checkpoint.Version,
                 Seconds = world.ElapsedSeconds,
                 Seed = manifest.Seed,
                 PhysicsSteps = sim.Steps,

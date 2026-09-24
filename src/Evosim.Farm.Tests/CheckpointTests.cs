@@ -204,6 +204,124 @@ namespace Evosim.Farm.Tests
             Assert.Contains("version", thrown.Message, StringComparison.OrdinalIgnoreCase);
         }
 
+        // ------------------------------------------------------------------ versions 4 and 5
+
+        /// <summary>A payload the size and repetitiveness of a world's, in miniature.</summary>
+        private static void LargePayload(BinaryWriter w)
+        {
+            StateIo.Tag(w, "PAYL");
+            for (int i = 0; i < 20000; i++)
+            {
+                w.Write((double)(i % 97) * 0.125);
+                w.Write(i);
+            }
+            StateIo.Tag(w, "PEND");
+        }
+
+        private static void CheckLargePayload(BinaryReader r)
+        {
+            StateIo.Tag(r, "PAYL");
+            for (int i = 0; i < 20000; i++)
+            {
+                Assert.Equal((double)(i % 97) * 0.125, r.ReadDouble());
+                Assert.Equal(i, r.ReadInt32());
+            }
+            StateIo.Tag(r, "PEND");
+        }
+
+        [Fact]
+        public void VersionFiveStoresThePayloadGzippedAndDigestsItAsWritten()
+        {
+            CheckpointHeader written = Header();
+            written.Version = Checkpoint.Version;
+
+            string path = Checkpoint.PathFor(_directory, written.Seconds);
+            CheckpointWriter.Write(path, written, LargePayload);
+
+            byte[] all = File.ReadAllBytes(path);
+            Assert.Equal(5, all[8]);
+            Assert.True(written.StoredBytes < written.PayloadBytes, "the stored payload is not smaller");
+            Assert.True(all.Length < written.PayloadBytes, "the file is not smaller than its payload");
+
+            using (CheckpointReader reader = CheckpointReader.Open(path))
+            {
+                Assert.Equal(5, reader.Header.Version);
+                Assert.Equal(written.PayloadBytes, reader.Header.PayloadBytes);
+                Assert.Equal(written.StoredBytes, reader.Header.StoredBytes);
+                Assert.Equal(written.PayloadDigest, reader.Header.PayloadDigest);
+
+                CheckLargePayload(reader.Reader);
+            }
+        }
+
+        [Fact]
+        public void VersionFourIsStillWrittenOnRequestAndStillRead()
+        {
+            CheckpointHeader written = Header();
+            written.Version = Checkpoint.UncompressedVersion;
+
+            string path = Checkpoint.PathFor(_directory, written.Seconds);
+            CheckpointWriter.Write(path, written, LargePayload);
+
+            byte[] all = File.ReadAllBytes(path);
+            Assert.Equal(4, all[8]);
+            Assert.Equal(written.PayloadBytes, written.StoredBytes);
+            Assert.True(all.Length > written.PayloadBytes);
+
+            using (CheckpointReader reader = CheckpointReader.Open(path))
+            {
+                Assert.Equal(4, reader.Header.Version);
+                Assert.Equal(written.PayloadBytes, reader.Header.StoredBytes);
+                Assert.Equal(written.PayloadDigest, reader.Header.PayloadDigest);
+
+                CheckLargePayload(reader.Reader);
+            }
+        }
+
+        [Fact]
+        public void BothVersionsDigestTheSamePayloadTheSame()
+        {
+            CheckpointHeader four = Header();
+            four.Version = Checkpoint.UncompressedVersion;
+            CheckpointWriter.Write(Path.Combine(_directory, "four.ckpt"), four, LargePayload);
+
+            CheckpointHeader five = Header();
+            five.Version = Checkpoint.Version;
+            CheckpointWriter.Write(Path.Combine(_directory, "five.ckpt"), five, LargePayload);
+
+            Assert.Equal(four.PayloadBytes, five.PayloadBytes);
+            Assert.Equal(four.PayloadDigest, five.PayloadDigest);
+        }
+
+        [Fact]
+        public void ADamagedCompressedPayloadIsRefused()
+        {
+            CheckpointHeader written = Header();
+            written.Version = Checkpoint.Version;
+
+            string path = Checkpoint.PathFor(_directory, written.Seconds);
+            CheckpointWriter.Write(path, written, LargePayload);
+
+            byte[] all = File.ReadAllBytes(path);
+
+            // The middle of the stored member: after the header, before the trailer's 16 bytes.
+            long storedStart = all.Length - 16 - written.StoredBytes;
+            all[storedStart + written.StoredBytes / 2] ^= 0x21;
+            File.WriteAllBytes(path, all);
+
+            Assert.Throws<InvalidDataException>(() => CheckpointReader.Open(path));
+        }
+
+        [Fact]
+        public void AVersionTheWriterDoesNotKnowIsRefusedAtTheWrite()
+        {
+            CheckpointHeader written = Header();
+            written.Version = 3;
+
+            Assert.Throws<ArgumentException>(() => CheckpointWriter.Write(
+                Checkpoint.PathFor(_directory, written.Seconds), written, Payload));
+        }
+
         // ------------------------------------------------------------------ the four hashes
 
         [Fact]

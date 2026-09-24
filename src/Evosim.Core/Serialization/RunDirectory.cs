@@ -21,6 +21,13 @@ namespace Evosim.Core
     /// </code>
     /// </para>
     /// <para>
+    /// That is record format 1. Format 2 (<see cref="RunRecordFormat"/>, the console farm's from
+    /// its round 49 build) writes <c>genomes.jsonl.gz</c> beside them, one row per body admitted,
+    /// keeps its snapshots as slim rows in <c>snapshots/NNNNNNNNN.jsonl.gz</c>, and its positions
+    /// in <c>positions.jsonl.gz</c>, all gzip in members (<see cref="GzipMembers"/>).
+    /// <see cref="RecordFiles"/> reads either.
+    /// </para>
+    /// <para>
     /// <b>The two high-volume files are line-oriented and append-only, and that is the design.</b>
     /// A run killed with ctrl-C, or one that crashes, leaves every completed row valid and
     /// readable — a single rewritten document would leave a truncated file that parses as
@@ -77,6 +84,39 @@ namespace Evosim.Core
         /// </remarks>
         public JsonlWriter Positions { get; }
 
+        /// <summary>
+        /// Which record this directory is written in: <see cref="RunRecordFormat.Jsonl"/>
+        /// unless the creator asked for another. The Unity farm never does.
+        /// </summary>
+        public int Format { get; }
+
+        /// <summary>
+        /// Record format 2's positions, <c>positions.jsonl.gz</c>: <see cref="Positions"/>'s rows,
+        /// one gzip member per sample. Null in format 1 and in a tiled world.
+        /// </summary>
+        public JsonlGzWriter PositionMembers { get; }
+
+        /// <summary>
+        /// Record format 2's genomes, <c>genomes.jsonl.gz</c>: one row per body admitted, written
+        /// as one member per drain. Null in format 1.
+        /// </summary>
+        public JsonlGzWriter Genomes { get; }
+
+        /// <summary>Whether this directory records positions at all, in either record.</summary>
+        public bool RecordsPositions => Positions != null || PositionMembers != null;
+
+        /// <summary>One positions row, into whichever file this record keeps them in.</summary>
+        public void WritePositions(string row)
+        {
+            if (Positions != null) Positions.Write(row);
+            else if (PositionMembers != null) PositionMembers.Write(row);
+            else throw new InvalidOperationException("This run directory records no positions: a tiled world.");
+        }
+
+        /// <summary>Where the snapshot at a simulated second is written in this directory's record.</summary>
+        public string SnapshotFilePath(double simulatedSeconds) =>
+            System.IO.Path.Combine(SnapshotsPath, RecordFiles.SnapshotName(simulatedSeconds, Format));
+
         public string SnapshotsPath => System.IO.Path.Combine(Path, "snapshots");
 
         /// <summary>
@@ -91,10 +131,17 @@ namespace Evosim.Core
                 FieldsPath,
                 string.Format(CultureInfo.InvariantCulture, "{0:000000000}.{1}.f32", (long)simulatedSeconds, kind));
 
-        private RunDirectory(string path, RunConfig config)
+        private RunDirectory(string path, RunConfig config, int format)
         {
+            if (!RunRecordFormat.IsKnown(format))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(format), format, "A run is written in record format 1 or 2.");
+            }
+
             Path = path;
             Config = config;
+            Format = format;
 
             Directory.CreateDirectory(path);
             Directory.CreateDirectory(SnapshotsPath);
@@ -119,8 +166,26 @@ namespace Evosim.Core
             // the point, not an oversight: see the remark on Positions.
             if (config.SharedSpace)
             {
-                Positions = new JsonlWriter(
-                    System.IO.Path.Combine(path, "positions.jsonl"), flushEachRow: true);
+                if (format == RunRecordFormat.Compact)
+                {
+                    // A member per row is Positions' flush per row: one sample a member, so a
+                    // killed run keeps every sample it finished.
+                    PositionMembers = new JsonlGzWriter(
+                        System.IO.Path.Combine(path, RecordFiles.PositionsMembersName), memberEachRow: true);
+                }
+                else
+                {
+                    Positions = new JsonlWriter(
+                        System.IO.Path.Combine(path, "positions.jsonl"), flushEachRow: true);
+                }
+            }
+
+            // Record format 2's genome file, in a tiled world as in a shared one: the snapshots of
+            // both are slim and join to it.
+            if (format == RunRecordFormat.Compact)
+            {
+                Genomes = new JsonlGzWriter(
+                    System.IO.Path.Combine(path, RecordFiles.GenomesName), memberEachRow: false);
             }
         }
 
@@ -140,7 +205,18 @@ namespace Evosim.Core
         /// in a directory listing, which is the case you most want to spot by eye and the one
         /// where a timestamp alone tells you nothing.
         /// </remarks>
-        public static RunDirectory Create(string root, RunConfig config, DateTime startedUtc)
+        public static RunDirectory Create(string root, RunConfig config, DateTime startedUtc) =>
+            Create(root, config, startedUtc, RunRecordFormat.Jsonl);
+
+        /// <summary>
+        /// Creates a new run directory written in the given record
+        /// (<c>logbook/specs/record-and-film-spec.md</c> Part A).
+        /// </summary>
+        /// <remarks>
+        /// The three-argument form above is format 1 and writes exactly what it always wrote, so the
+        /// Unity farm and every test built on it are untouched. Only the console farm asks for 2.
+        /// </remarks>
+        public static RunDirectory Create(string root, RunConfig config, DateTime startedUtc, int recordFormat)
         {
             if (root == null) throw new ArgumentNullException(nameof(root));
             if (config == null) throw new ArgumentNullException(nameof(config));
@@ -149,7 +225,7 @@ namespace Evosim.Core
                 CultureInfo.InvariantCulture,
                 "{0:yyyy-MM-dd-HHmmss}-{1}", startedUtc, config.Hash().Substring(0, 8));
 
-            return new RunDirectory(System.IO.Path.Combine(root, name), config);
+            return new RunDirectory(System.IO.Path.Combine(root, name), config, recordFormat);
         }
 
         /// <summary>Reopens an existing run directory for reading.</summary>
@@ -186,6 +262,8 @@ namespace Evosim.Core
             Stats?.Dispose();
             Absorptive?.Dispose();
             Positions?.Dispose();
+            PositionMembers?.Dispose();
+            Genomes?.Dispose();
         }
     }
 

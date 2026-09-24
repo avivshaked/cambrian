@@ -9,9 +9,13 @@ at a few hundred bodies in two thousand columns nearly every body has a column t
 the large pattern, so `cols` read 0.94 on round 42's seed 2 at 15,000 s while the picture from
 above showed a crescent with the centre empty (HANDOFF, 2026-09-20). The count is taken over the
 cells whose centre lies inside the disc, from the run's config. The second column splits the
-index by the jointed flag, since a cloud is usually one clade. Streams positions.jsonl row by row.
+index by the jointed flag, since a cloud is usually one clade. Streams the positions row by row
+through runrec.py, from positions.jsonl or record format 2's positions.jsonl.gz.
 """
-import argparse, glob, json, math
+import argparse, glob, json, math, os, sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import runrec  # noqa: E402  (path set above)
 
 ROOT = 'D:/Projects/experiments/evolution-simulator'
 
@@ -54,42 +58,37 @@ def main():
     area = find(config, 'worldAreaSquareMetres') or find(config, 'areaSquareMetres') or find(config, 'area')
     print(f'{a.arm}: cell {a.cell} m, every {a.every} s' + (f', disc of {area} m2' if area else ''))
     print('      t  alive  clumping  jointed  unjointed   centre offset m')
-    with open(run + '/positions.jsonl', encoding='utf-8') as f:
-        first = True
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            row = json.loads(line)
-            t = int(row['t'])
-            if t % a.every:
-                continue
-            key = next(k for k in row if isinstance(row[k], list))
-            bodies = row[key]
-            if not bodies:
-                continue
-            if first:
-                # The disc's centre and radius from the config if it names an area, else from the
-                # first sample's own extent; positions are in the tank's frame, centred on its axis
-                # or on its bounding square, so the centre is read from the data's midrange once.
-                xs = [b[1] for b in bodies]; zs = [b[3] for b in bodies]
-                radius = math.sqrt(area / math.pi) if area else max(max(xs) - min(xs), max(zs) - min(zs)) / 2
-                cx = 0.0 if min(xs) < -radius / 2 else radius
-                cz = 0.0 if min(zs) < -radius / 2 else radius
-                reach = int(math.ceil(radius / a.cell)) + 1
-                cells = [(i + math.floor(cx / a.cell), j + math.floor(cz / a.cell))
-                         for i in range(-reach, reach + 1) for j in range(-reach, reach + 1)
-                         if math.hypot((i + 0.5 + math.floor(cx / a.cell)) * a.cell - cx,
-                                       (j + 0.5 + math.floor(cz / a.cell)) * a.cell - cz) <= radius]
-                first = False
-            pts = [(b[1], b[3]) for b in bodies]
-            # flags: bit 1 is jointed in positions.jsonl's packing (absorptive 1, jointed 2, photosynthetic 4)
-            jointed = [(b[1], b[3]) for b in bodies if int(b[4]) & 2]
-            rigid = [(b[1], b[3]) for b in bodies if not int(b[4]) & 2]
-            mx = sum(p[0] for p in pts) / len(pts) - cx
-            mz = sum(p[1] for p in pts) / len(pts) - cz
-            print(f'{t:7d} {len(pts):6d} {index(pts, cells, a.cell):9.2f} {index(jointed, cells, a.cell):8.2f} '
-                  f'{index(rigid, cells, a.cell):10.2f} {math.hypot(mx, mz):17.1f}')
+    first = True
+    for row in runrec.positions(run):
+        t = int(row['t'])
+        if t % a.every:
+            continue
+        key = next(k for k in row if isinstance(row[k], list))
+        bodies = row[key]
+        if not bodies:
+            continue
+        if first:
+            # The disc's centre and radius from the config if it names an area, else from the
+            # first sample's own extent; positions are in the tank's frame, centred on its axis
+            # or on its bounding square, so the centre is read from the data's midrange once.
+            xs = [b[1] for b in bodies]; zs = [b[3] for b in bodies]
+            radius = math.sqrt(area / math.pi) if area else max(max(xs) - min(xs), max(zs) - min(zs)) / 2
+            cx = 0.0 if min(xs) < -radius / 2 else radius
+            cz = 0.0 if min(zs) < -radius / 2 else radius
+            reach = int(math.ceil(radius / a.cell)) + 1
+            cells = [(i + math.floor(cx / a.cell), j + math.floor(cz / a.cell))
+                     for i in range(-reach, reach + 1) for j in range(-reach, reach + 1)
+                     if math.hypot((i + 0.5 + math.floor(cx / a.cell)) * a.cell - cx,
+                                   (j + 0.5 + math.floor(cz / a.cell)) * a.cell - cz) <= radius]
+            first = False
+        pts = [(b[1], b[3]) for b in bodies]
+        # flags: bit 1 is jointed in positions.jsonl's packing (absorptive 1, jointed 2, photosynthetic 4)
+        jointed = [(b[1], b[3]) for b in bodies if int(b[4]) & 2]
+        rigid = [(b[1], b[3]) for b in bodies if not int(b[4]) & 2]
+        mx = sum(p[0] for p in pts) / len(pts) - cx
+        mz = sum(p[1] for p in pts) / len(pts) - cz
+        print(f'{t:7d} {len(pts):6d} {index(pts, cells, a.cell):9.2f} {index(jointed, cells, a.cell):8.2f} '
+              f'{index(rigid, cells, a.cell):10.2f} {math.hypot(mx, mz):17.1f}')
 
 
 if __name__ == '__main__':
