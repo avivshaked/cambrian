@@ -19,6 +19,9 @@
 //                            with the normal rebuilt per pixel from the same field         [CY]
 //   taper and bend of a box part in its own object space, inward by construction and clamped
 //                            into the mesh's box afterwards (logbook/specs/skin-spec-3.md)
+//   a flat box drawn as a leaf (2026-09-24, the owner's "these flat leaves" and his ruling on
+//                            the curl): an outline, a lens cross-section, veins, and a curl of
+//                            up to a tenth of the width, the one thing drawn outside a collider
 //
 // The third day is about the box. The owner looked at the close views and said the spheres looked
 // alive and the boxes still looked manufactured: six flat faces at right angles with a small
@@ -137,6 +140,18 @@ Shader "Evosim/Theatre Body"
         // is "no joint on this part", which is most of them.
         _PinchA("Joint anchor A", Vector) = (0, 0, 0, 0)
         _PinchB("Joint anchor B", Vector) = (0, 0, 0, 0)
+
+        [Header(The leaf)]
+        // A flat box is drawn as a leaf (TheatreMeshes.Lamina, ShapeLamina below). The curl is
+        // the owner's ruling of 2026-09-24 and the only term in this shader that can put a
+        // vertex outside the collider: a fraction of the leaf's width, at most a tenth, spent on
+        // the thin axis. TheatreSkin clamps it again.
+        _CurlFraction("Leaf curl, fraction of its width", Range(0, 0.1)) = 0.1
+        _VeinStrength("Leaf veins", Range(0, 1)) = 0.6
+
+        // Per body: the part's own joint anchor in its object units, w one when it hangs from a
+        // parent. A leaf's base is drawn at the end its joint is on.
+        _Leaf("Leaf: own anchor, w one when it has one", Vector) = (0, 0, 0, 0)
     }
 
     SubShader
@@ -198,6 +213,9 @@ Shader "Evosim/Theatre Body"
                 float4 _Carve;
                 float4 _PinchA;
                 float4 _PinchB;
+                float _CurlFraction;
+                float _VeinStrength;
+                float4 _Leaf;
             CBUFFER_END
 
             struct Attributes
@@ -211,6 +229,10 @@ Shader "Evosim/Theatre Body"
                 // answer that leaves it undeformed, so an unrecognised mesh drawn with this
                 // material gets the carve and nothing else.
                 float2 shapeOS    : TEXCOORD3;
+
+                // Where the vertex is on a leaf, for the leaf mesh alone (TheatreMeshes.Lamina):
+                // s from base to tip, t from rim to rim, and which face. Zero on every other mesh.
+                float4 leafOS     : TEXCOORD4;
             };
 
             struct Varyings
@@ -224,6 +246,10 @@ Shader "Evosim/Theatre Body"
                 // same question the vertex asked it, and the depth in metres it was asked with.
                 float3 positionOS : TEXCOORD3;
                 float carveDepth  : TEXCOORD4;
+
+                // On a leaf: s, the distance across the half width (-1 to 1), t, and one. Zero
+                // elsewhere, which draws no veins.
+                float4 leaf       : TEXCOORD5;
             };
 
             // The part's half extents in metres, taken from the object to world matrix rather
@@ -366,6 +392,239 @@ Shader "Evosim/Theatre Body"
                 normalOS = n / scale - axisA * dot(shear, n);
             }
 
+
+            // ---------------------------------------------------------------- the leaf
+            //
+            // A flat box part is drawn as a leaf. The mesh is a sheet laid out by where each
+            // vertex is on a leaf (s base to tip, t rim to rim, and a face), and everything a
+            // leaf looks like is built from those here, per body, from the seed the carve
+            // already draws from, so a crowd of one genome is not a crowd of one leaf.
+            //
+            // What is inside the collider and what is not. The outline is a width at most one
+            // times the box's half width at every station, the cross-section a thickness at
+            // most one times its half thickness, and the length exactly the box's: all of that is
+            // inside. The curl lifts the whole sheet along the thin axis by up to _CurlFraction
+            // of the leaf's width, both faces together, so the leaf keeps its thickness and
+            // leaves the box by at most that much. That is the owner's ruling of 2026-09-24 and
+            // nothing else in this shader leaves a collider.
+
+            struct LeafShape
+            {
+                float widest;   // where the leaf is widest: the exponent on s
+                float fullness; // how full the outline is: under one is rounder
+                float teeth;    // how deep the margin's teeth cut, zero for an entire margin
+                float count;    // how many teeth
+                float cup;      // the curl across the width, signed
+                float arch;     // the curl along the length, signed
+                float wave;     // a wave along the margin
+                float phase;
+            };
+
+            LeafShape LeafOf(float seed)
+            {
+                LeafShape l;
+
+                float r1 = frac(seed * 17.137 + 0.371);
+                float r2 = frac(seed * 29.713 + 0.113);
+                float r3 = frac(seed * 41.307 + 0.731);
+                float r4 = frac(seed * 53.911 + 0.293);
+                float r5 = frac(seed * 61.717 + 0.537);
+                float r6 = frac(seed * 73.019 + 0.619);
+                float r7 = frac(seed * 83.231 + 0.157);
+                float r8 = frac(seed * 97.103 + 0.883);
+                float r9 = frac(seed * 101.51 + 0.447);
+
+                l.widest = lerp(0.7, 1.45, r1);
+                l.fullness = lerp(0.45, 0.95, r2);
+                l.teeth = r3 < 0.45 ? 0.0 : lerp(0.02, 0.07, r4);
+                l.count = floor(lerp(5.0, 11.99, r5));
+
+                // The three curls share one budget, so together they never lift a point by more
+                // than the dial allows: each term below is at most its weight in size.
+                float cup = lerp(-1.0, 1.0, r6);
+                float arch = lerp(-0.6, 0.6, r7);
+                float wave = lerp(0.0, 0.35, r8);
+                float sum = abs(cup) + abs(arch) + wave;
+                float k = sum > 1.0 ? 1.0 / sum : 1.0;
+
+                l.cup = cup * k;
+                l.arch = arch * k;
+                l.wave = wave * k;
+                l.phase = r9;
+
+                return l;
+            }
+
+            // The outline's half width at s, as a fraction of the box's half width: zero at the
+            // base and the tip, one at most, and cut inward by the teeth.
+            float LeafWidth(float s, LeafShape l)
+            {
+                s = saturate(s);
+                float g = pow(max(1e-4, sin(PI * pow(s, l.widest))), l.fullness);
+                float tooth = pow(0.5 + 0.5 * sin(6.2831853 * l.count * s), 6.0);
+                return g * (1.0 - l.teeth * tooth * sin(PI * s));
+            }
+
+            // The leaf's frame: T the thinnest axis, L the longer of the other two, W their
+            // cross, so the frame is a rotation of the mesh's own and the winding survives it.
+            void LeafAxes(float3 he, out float3 axisL, out float3 axisT, out float3 axisW)
+            {
+                if (he.x <= he.y && he.x <= he.z)
+                {
+                    axisT = float3(1, 0, 0);
+                    axisL = he.y >= he.z ? float3(0, 1, 0) : float3(0, 0, 1);
+                }
+                else if (he.y <= he.z)
+                {
+                    axisT = float3(0, 1, 0);
+                    axisL = he.x >= he.z ? float3(1, 0, 0) : float3(0, 0, 1);
+                }
+                else
+                {
+                    axisT = float3(0, 0, 1);
+                    axisL = he.x >= he.y ? float3(1, 0, 0) : float3(0, 1, 0);
+                }
+
+                axisW = cross(axisL, axisT);
+            }
+
+            // One point of the leaf in its own frame (x along, y thick, z across), object units.
+            // baseSign says which end of the box the base is at; the width axis turns with it so
+            // the frame stays a rotation. flat drops the curl, for the carve's field, which is a
+            // property of the tissue and should not move when the leaf is drawn curled.
+            float3 LeafPoint(float s, float t, float side, LeafShape l, float baseSign,
+                             float meshHalf, float curlObj, float flat, out float thickness)
+            {
+                float w = LeafWidth(s, l);
+                float ends = pow(max(1e-4, sin(PI * pow(saturate(s), l.widest))), 0.3);
+                float across = t * w;
+
+                // The lens: full at the midrib, which stands a little proud, and thinning to
+                // nothing at the rim; thinner towards the tip.
+                float lens = sqrt(saturate(1.0 - t * t)) * (0.6 + 0.4 * exp(-t * t / 0.012));
+                thickness = meshHalf * lens * ends * lerp(1.0, 0.55, saturate(s));
+
+                float arch = 1.0 - (2.0 * s - 1.0) * (2.0 * s - 1.0);
+                float wave = sin(6.2831853 * (2.5 * s + l.phase));
+                float lift = l.cup * across * across + l.arch * arch + l.wave * across * across * wave;
+
+                float along = baseSign * meshHalf * (1.0 - 2.0 * s);
+
+                return float3(along, side * thickness + (1.0 - flat) * curlObj * lift, baseSign * meshHalf * across);
+            }
+
+            // The leaf's shaped position (object units), its flat position for the carve, its
+            // world normal, and its local half thickness in metres.
+            void ShapeLamina(
+                float4 leafOS, float3 halfExtents, float meshHalf,
+                out float3 positionOS, out float3 flatOS, out float3 normalWS,
+                out float halfThickMetres, out float4 leafOut)
+            {
+                float3 axisL, axisT, axisW;
+                LeafAxes(halfExtents, axisL, axisT, axisW);
+
+                float hL = dot(halfExtents, abs(axisL));
+                float hT = dot(halfExtents, abs(axisT));
+                float hW = dot(halfExtents, abs(axisW));
+
+                LeafShape l = LeafOf(_Carve.x);
+
+                // Teeth belong to a thin blade. On a plump leaf (a succulent's, drawn for a
+                // photosynthetic box that is not flat) a toothed rim reads as the segments of a
+                // caterpillar, so the teeth fade out as the leaf thickens.
+                l.teeth *= saturate((0.65 - hT / max(1e-6, hW)) / 0.35);
+
+                // The base at the end the part's own joint is on, and by the seed for a root or a
+                // joint on the middle of a face.
+                float anchorAlong = dot(_Leaf.xyz, axisL);
+                float baseSign = frac(_Carve.x * 13.37 + 0.271) < 0.5 ? -1.0 : 1.0;
+                if (_Leaf.w > 0.5 && abs(anchorAlong) > 0.05) baseSign = anchorAlong > 0.0 ? 1.0 : -1.0;
+
+                // The curl in object units on the thin axis: a fraction of the full width, in
+                // units of the full thickness.
+                float curlObj = _CurlFraction * hW / max(1e-6, hT);
+
+                float s = leafOS.x;
+                float t = leafOS.y;
+                float side = leafOS.z;
+
+                float thick;
+                float3 p = LeafPoint(s, t, side, l, baseSign, meshHalf, curlObj, 0.0, thick);
+                float unused;
+                float3 f = LeafPoint(s, t, side, l, baseSign, meshHalf, curlObj, 1.0, unused);
+
+                positionOS = axisL * p.x + axisT * p.y + axisW * p.z;
+                flatOS = axisL * f.x + axisT * f.y + axisW * f.z;
+
+                // The normal from two differences in metres, not object units: the sheet is
+                // stretched by the part's three sizes, and a normal taken before the stretch would
+                // shade a long leaf as if it were square. Off the ends and the rim, where the
+                // outline's width and the lens's slope run to nothing and infinity.
+                float3 metres = 2.0 * float3(hL, hT, hW);
+                float sd = clamp(s, 0.01, 0.98);
+                float td = clamp(t, -0.985, 0.975);
+                float3 q = LeafPoint(sd, td, side, l, baseSign, meshHalf, curlObj, 0.0, unused) * metres;
+                float3 qs = LeafPoint(sd + 0.01, td, side, l, baseSign, meshHalf, curlObj, 0.0, unused) * metres;
+                float3 qt = LeafPoint(sd, td + 0.01, side, l, baseSign, meshHalf, curlObj, 0.0, unused) * metres;
+
+                // Outward on either face: the parametrisation's own handedness, fixed by the frame
+                // being a rotation and the width turning with the base (TheatreMeshes.BuildLamina).
+                float3 n = cross(qs - q, qt - q) * side;
+
+                float3 nOS = axisL * n.x + axisT * n.y + axisW * n.z;
+
+                float3 cx = normalize(UNITY_MATRIX_M._m00_m10_m20);
+                float3 cy = normalize(UNITY_MATRIX_M._m01_m11_m21);
+                float3 cz = normalize(UNITY_MATRIX_M._m02_m12_m22);
+
+                normalWS = normalize(nOS.x * cx + nOS.y * cy + nOS.z * cz + 1e-12);
+
+                halfThickMetres = thick * 2.0 * hT;
+                // w carries the flag (above a half) and the leaf's aspect, its half width over
+                // its length, which the veins need to hold their angle in metres.
+                leafOut = float4(s, t * LeafWidth(s, l), t, 1.0 + hW / max(1e-6, 2.0 * hL));
+            }
+
+            // The veins and the margin: a midrib, pinnate side veins running from it towards the
+            // tip, and a darker rim. On the face they are a little lighter than the lamina; in the
+            // light that comes through a leaf they are the shadow, which is how a backlit leaf
+            // shows its veins. Faded out when a vein is finer than a pixel, so a distant crowd
+            // does not shimmer.
+            void LeafVeins(float4 leaf, out float face, out float through)
+            {
+                face = 1.0;
+                through = 1.0;
+                if (leaf.w < 0.5) return;
+
+                float s = leaf.x;
+                float v = leaf.y;
+                float t = leaf.z;
+
+                float midrib = exp(-v * v / 0.0012) * (1.0 - 0.7 * s);
+                midrib *= saturate(1.0 - 20.0 * fwidth(v));
+
+                // A side vein leaves the midrib at about 55 degrees and curves toward the tip, to
+                // about 25 degrees at the margin: along = cot(angle) x across in metres, and
+                // the aspect turns metres into the leaf's own s and v. g(u) = 0.7 u + 0.7 u^2 has
+                // slope cot(55) at the midrib and cot(25) at the rim.
+                float aspect = max(0.05, leaf.w - 1.0);
+                float u = abs(v);
+                float count = 7.0 + floor(frac(_Carve.x * 71.3 + 0.19) * 5.0);
+                float phase = count * (s - aspect * (0.7 * u + 0.7 * u * u));
+                float d = abs(frac(phase) - 0.5);
+                float width = 0.0022 * (1.0 - 0.65 * saturate(abs(t)));
+                float sideVein = exp(-d * d / width);
+                sideVein *= (1.0 - smoothstep(0.5, 0.92, abs(t))) * smoothstep(0.02, 0.12, u);
+                sideVein *= 1.0 - 0.5 * saturate(abs(t));
+                sideVein *= saturate(1.0 - 4.0 * fwidth(phase));
+
+                float vein = saturate(midrib + 0.7 * sideVein) * _VeinStrength;
+                float margin = smoothstep(0.8, 1.0, abs(t));
+
+                face = 1.0 + 0.35 * vein - 0.25 * margin;
+                through = 1.0 - 0.6 * vein;
+            }
+
             Varyings Vertex(Attributes input)
             {
                 Varyings output = (Varyings)0;
@@ -376,7 +635,8 @@ Shader "Evosim/Theatre Body"
                 // Which solid this is, from the mesh itself, and how big the mesh is in its own
                 // units. Anything that is not the box, the engine's own primitives included, reads
                 // zero here and is left to the carve alone (TheatreMeshes.Finish).
-                bool box = input.shapeOS.x > 0.5;
+                bool lamina = input.shapeOS.x > 1.5;
+                bool box = input.shapeOS.x > 0.5 && !lamina;
                 float meshHalf = max(1e-4, input.shapeOS.y);
 
                 float3 shapedOS = input.positionOS.xyz;
@@ -386,6 +646,19 @@ Shader "Evosim/Theatre Body"
 
                 float3 positionWS = TransformObjectToWorld(shapedOS);
                 float3 normalWS = normalize(TransformObjectToWorldNormal(shapedNormalOS));
+
+                // The leaf: shaped here from where the vertex is on it, and carved at its flat
+                // position so an impression stays on the tissue whatever the curl does.
+                float3 carveOS = input.positionOS.xyz;
+                float halfThickMetres = smallest;
+                float4 leaf = float4(0, 0, 0, 0);
+
+                if (lamina)
+                {
+                    ShapeLamina(input.leafOS, halfExtents, meshHalf,
+                        shapedOS, carveOS, normalWS, halfThickMetres, leaf);
+                    positionWS = TransformObjectToWorld(shapedOS);
+                }
 
                 // The carve, and the whole of the second day in four lines.
                 //
@@ -408,11 +681,15 @@ Shader "Evosim/Theatre Body"
                 // impression stays on the same piece of tissue when the part is tapered and bent:
                 // the field is a property of the body, and the fragment stage asks it the same
                 // question at the same place to rebuild the normal.
-                float depth = CarveDepth(input.positionOS.xyz, smallest);
+                float depth = CarveDepth(carveOS, smallest);
+
+                // A leaf thins to nothing at its rim, so the carve there is bounded by the
+                // thickness the lens left, or it would cut through to the other face.
+                if (lamina) depth = min(depth, 0.5 * halfThickMetres);
 
                 float3 unusedGradient;
                 float carve = EvoCarve(
-                    input.positionOS.xyz, _Carve.x, _Carve.y, _Carve.z,
+                    carveOS, _Carve.x, _Carve.y, _Carve.z,
                     EvoCarveDetail(smallest), unusedGradient);
 
                 // Along the deformed normal, so the impressions cut into the bent surface rather
@@ -439,14 +716,16 @@ Shader "Evosim/Theatre Body"
 
                 output.positionWS = positionWS;
                 output.normalWS = normalWS;
-                output.positionOS = input.positionOS.xyz;
+                output.positionOS = carveOS;
                 output.carveDepth = depth;
                 output.positionCS = TransformWorldToHClip(positionWS);
+                output.leaf = leaf;
 
                 // A thin part transmits and a thick one does not. Faked from the geometry rather
                 // than from a baked thickness map, which is what the single pass approximation
-                // leaves to the author [JA]: there is no unwrapped mesh here to bake into.
-                float thickness = saturate(_TransMetres / max(1e-4, smallest));
+                // leaves to the author [JA]: there is no unwrapped mesh here to bake into. On a
+                // leaf the thickness is the lens's here, so the rim glows more than the midrib.
+                float thickness = saturate(_TransMetres / max(1e-4, halfThickMetres));
 
                 output.fogAndThickness = float2(ComputeFogFactor(output.positionCS.z), thickness);
 
@@ -546,6 +825,11 @@ Shader "Evosim/Theatre Body"
                 mottle *= lerp(1.0 - _MottleStrength * 0.7, 1.0, wall);
 
                 body *= mottle;
+
+                float veinFace, veinThrough;
+                LeafVeins(input.leaf, veinFace, veinThrough);
+                body *= veinFace;
+                thickness *= veinThrough;
 
                 // Key light.
                 Light main = GetMainLight();

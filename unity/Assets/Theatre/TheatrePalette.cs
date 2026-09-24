@@ -156,11 +156,23 @@ namespace Evosim.Theatre
             /// </summary>
             public bool[] Merged;
 
+            /// <summary>
+            /// Per renderer, the part's own joint anchor in that visual's object units, w one when
+            /// it hangs from a parent: a leaf's base is drawn at that end (<c>ShapeLamina</c>).
+            /// </summary>
+            public Vector4[] Leaf;
+
             /// <summary>One neck per jointed part, or null when this body has no joint.</summary>
             public Transform[] Necks;
 
             /// <summary>The part each neck's joint attaches. Parallel to <see cref="Necks"/>.</summary>
             public int[] NeckPart;
+
+            /// <summary>
+            /// True where the knuckle sits in the child part's frame, false in the parent's.
+            /// Parallel to <see cref="Necks"/>.
+            /// </summary>
+            public bool[] NeckChildSide;
         }
 
         private readonly Dictionary<long, Body> _bodies = new Dictionary<long, Body>();
@@ -182,6 +194,7 @@ namespace Evosim.Theatre
         private readonly List<MeshRenderer> _scratch = new List<MeshRenderer>();
         private readonly List<Transform> _necks = new List<Transform>();
         private readonly List<int> _neckPart = new List<int>();
+        private readonly List<bool> _neckSide = new List<bool>();
 
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int ColorId = Shader.PropertyToID("_Color");
@@ -193,6 +206,7 @@ namespace Evosim.Theatre
         private static readonly int CarveId = Shader.PropertyToID("_Carve");
         private static readonly int PinchAId = Shader.PropertyToID("_PinchA");
         private static readonly int PinchBId = Shader.PropertyToID("_PinchB");
+        private static readonly int LeafId = Shader.PropertyToID("_Leaf");
 
         public int Painted => _bodies.Count;
 
@@ -205,6 +219,51 @@ namespace Evosim.Theatre
 
         /// <summary>How much of a body's brightness a body out of focus keeps.</summary>
         public float OutOfFocusBrightness = 0.5f;
+
+        /// <summary>
+        /// A body's lineage, for its hue (item 4 of the owner's leaf ruling, 2026-09-24): the
+        /// safari sets it to the clade its guide names, so a clade reads as one kind of plant
+        /// among others of its guild. -1, or null, paints the guild's own colour.
+        /// </summary>
+        public System.Func<long, long> LineageOf;
+
+        /// <summary>
+        /// How far a lineage's hue turns from its guild's, either way, as a fraction of the
+        /// colour wheel (<c>EVOSIM_THEATRE_LINEAGE_HUE</c>, 0 to 0.2, default 0.06: about twenty
+        /// degrees, so a leaf is still green and a stomach still amber).
+        /// </summary>
+        public float LineageHue = TheatreSkin.Dial("EVOSIM_THEATRE_LINEAGE_HUE", 0.06f, 0f, 0.2f);
+
+        /// <summary>A lineage's turn of the hue, from its key: the same key, the same turn.</summary>
+        private float TurnOf(long id)
+        {
+            if (LineageOf == null || LineageHue <= 0f) return 0f;
+
+            long key = LineageOf(id);
+            if (key < 0) return 0f;
+
+            ulong h = unchecked((ulong)key * 0x9E3779B97F4A7C15UL);
+            h ^= h >> 29;
+            h = unchecked(h * 0xBF58476D1CE4E5B9UL);
+            h ^= h >> 32;
+
+            float signed = (h & 0xFFFFF) / (float)0x80000 - 1f;
+            return LineageHue * signed;
+        }
+
+        /// <summary>A colour with its hue turned and its saturation nudged the same way.</summary>
+        public static Color Turned(Color c, float turn)
+        {
+            if (turn == 0f) return c;
+
+            Color.RGBToHSV(c, out float h, out float s, out float v);
+            h = Mathf.Repeat(h + turn, 1f);
+            s = Mathf.Clamp01(s * (1f + 1.5f * turn));
+
+            Color turned = Color.HSVToRGB(h, s, v);
+            turned.a = c.a;
+            return turned;
+        }
 
         /// <summary>A colour's grey of the same luminance.</summary>
         public static Color Grey(Color c)
@@ -250,6 +309,8 @@ namespace Evosim.Theatre
             bool dim = on && InFocus != null && !InFocus(id);
             if (dim) brightness *= OutOfFocusBrightness;
 
+            float turn = on ? TurnOf(id) : 0f;
+
             if (_block == null) _block = new MaterialPropertyBlock();
 
             for (int i = 0; i < body.Renderers.Length; i++)
@@ -262,6 +323,7 @@ namespace Evosim.Theatre
 
                 Color guild = Color.white;
                 if (on) guild = known ? ColourOf(phenotype.Parts[part].CellTypeId) : Structural;
+                if (on) guild = Turned(guild, turn);
                 if (dim) guild = Grey(guild);
 
                 Reshape(body, i, renderer.transform);
@@ -275,10 +337,10 @@ namespace Evosim.Theatre
 
                 Set(renderer, guild, brightness, on ? reserve : 1f, on,
                     carve, body.PinchA[i], body.PinchB[i], on ? TransmissionOf(cellType) : 0.4f,
-                    on ? SheenOf(cellType) : 0.1f);
+                    on ? SheenOf(cellType) : 0.1f, body.Leaf[i]);
             }
 
-            RefreshNecks(body, phenotype, brightness, on ? reserve : 1f, on, dim);
+            RefreshNecks(body, phenotype, brightness, on ? reserve : 1f, on, dim, turn);
         }
 
         /// <summary>Writes one renderer's per-body properties into the shared block.</summary>
@@ -291,7 +353,8 @@ namespace Evosim.Theatre
         /// </remarks>
         private void Set(
             Renderer renderer, Color guild, float brightness, float reserve, bool on,
-            Vector4 carve, Vector4 pinchA, Vector4 pinchB, float transmission, float sheen = 0.1f)
+            Vector4 carve, Vector4 pinchA, Vector4 pinchB, float transmission, float sheen = 0.1f,
+            Vector4 leaf = default)
         {
             Color rim = on
                 ? Muted(guild, RimSaturation, RimLightness)
@@ -324,6 +387,7 @@ namespace Evosim.Theatre
             _block.SetVector(CarveId, carve);
             _block.SetVector(PinchAId, pinchA);
             _block.SetVector(PinchBId, pinchB);
+            _block.SetVector(LeafId, leaf);
 
             renderer.SetPropertyBlock(_block);
         }
@@ -436,6 +500,7 @@ namespace Evosim.Theatre
                 Seed = SeedOf(phenotype, id),
                 PinchA = new Vector4[_scratch.Count],
                 PinchB = new Vector4[_scratch.Count],
+                Leaf = new Vector4[_scratch.Count],
                 Shape = new Vector3[_scratch.Count],
                 Wrote = new Vector3[_scratch.Count],
                 Merged = new bool[_scratch.Count],
@@ -564,8 +629,29 @@ namespace Evosim.Theatre
                     float largest = Mathf.Max(Mathf.Abs(sides.x), Mathf.Max(Mathf.Abs(sides.y), Mathf.Abs(sides.z)));
                     float cubicness = largest > 1e-6f ? smallest / largest : 1f;
 
-                    Mesh rounded = TheatreMeshes.RoundedFor(mesh, cubicness);
+                    // A leaf (TheatreMeshes.Lamina) is a box that is flat or photosynthetic
+                    // (DrawnAsLeaf). Asked of the genome's part and the visual's mesh together: the
+                    // engine's cube stands for a box only.
+                    int leafPart = body.Part[i];
+                    bool leaf = leafPart >= 0 && leafPart < phenotype.PartCount &&
+                                (TheatreMeshes.IsPrimitiveCube(mesh) || TheatreMeshes.IsRoundedCube(mesh) ||
+                                 TheatreMeshes.IsLamina(mesh)) &&
+                                DrawnAsLeaf(phenotype.Parts[leafPart], sides);
+
+                    Mesh rounded = leaf ? TheatreMeshes.Lamina() : TheatreMeshes.RoundedFor(mesh, cubicness);
                     if (rounded != null) { filter.sharedMesh = rounded; mesh = rounded; }
+                }
+
+                // A leaf's curl is drawn outside its box, so its bounds carry it; anything else
+                // keeps the mesh's own.
+                if (TheatreMeshes.IsLamina(mesh))
+                {
+                    renderer.localBounds = TheatreMeshes.LeafBounds(
+                        renderer.transform.localScale, Skin != null ? Skin.CurlFraction : 0.1f);
+                }
+                else
+                {
+                    renderer.ResetLocalBounds();
                 }
 
                 // Which solid this visual draws, by reference and not by name, so that dressing a
@@ -617,6 +703,7 @@ namespace Evosim.Theatre
                 Reshape(body, i, renderer.transform);
 
                 Pinches(body, i, phenotype, part, renderer.transform);
+                body.Leaf[i] = OwnAnchor(phenotype, part, renderer.transform);
             }
 
             BuildNecks(body, phenotype);
@@ -810,42 +897,90 @@ namespace Evosim.Theatre
             body.PinchB[i] = second;
         }
 
+        /// <summary>
+        /// The part's own joint anchor in its visual's object units, with w one, or zero for a
+        /// root: which end of a leaf is its base.
+        /// </summary>
+        private static Vector4 OwnAnchor(Phenotype phenotype, int part, Transform visual)
+        {
+            if (visual == null || part < 0 || part >= phenotype.PartCount) return Vector4.zero;
+
+            PhenotypePart mine = phenotype.Parts[part];
+            if (mine.ParentIndex < 0) return Vector4.zero;
+
+            Vector3 scale = visual.localScale;
+            if (Mathf.Abs(scale.x) < 1e-6f || Mathf.Abs(scale.y) < 1e-6f || Mathf.Abs(scale.z) < 1e-6f)
+            {
+                return Vector4.zero;
+            }
+
+            Vector3 local = mine.ChildAnchorLocal.ToVector3() - visual.localPosition;
+            return new Vector4(local.x / scale.x, local.y / scale.y, local.z / scale.z, 1f);
+        }
+
         // ---------------------------------------------------------------- joints
 
         /// <summary>
-        /// A short neck at every joint, so that a jointed body can be told from a rigid one.
+        /// The joint skin: two knuckles of tissue at every free joint, one in each part.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <b>Presentation only.</b> It is a renderer with no collider and no rigid body, drawn by
-        /// the theatre from the phenotype the run already carries; nothing about the simulation
-        /// changes and nothing under <c>Assets/Evosim</c> is touched.
+        /// <b>Presentation only.</b> Renderers with no collider and no rigid body, drawn by the
+        /// theatre from the phenotype the run already carries; nothing about the simulation changes
+        /// and nothing under <c>Assets/Evosim</c> is touched.
         /// </para>
         /// <para>
-        /// <b>Where it goes, and why it stays inside.</b> The neck lies on the axis from the
-        /// parent part's centre out through the joint anchor, and its outer face stops exactly at
-        /// the anchor. The anchor is on the parent part's half-extent box, so the whole neck is
-        /// inside that box: <see cref="Fit"/> shrinks the radius until the cylinder's own footprint
-        /// fits on the two axes across the neck, and clips the length so its inner end cannot pass
-        /// the far face. For a box part that box is the collider exactly; for a sphere or a capsule
-        /// the collider is inscribed in it, and the box is the extent the rest of the theatre
-        /// already measures a body by (<c>SnapshotCamera.Radius</c>).
+        /// <b>What it replaces, and why.</b> Until 2026-09-24 a joint was marked by a short
+        /// cylinder in the jointed colour, sunk inside the parent part so it could never leave the
+        /// collider. In the safari films that read as two solids meeting at a crease with a bead
+        /// of paint in it; the owner asked for a joint skin that looks organic. So each side of a
+        /// joint now carries an ellipsoid of its own tissue (<see cref="TheatreSkin.JointMaterial"/>,
+        /// the part's own guild colour, mottle and rim), centred on the joint anchor in that part's
+        /// frame and moving rigidly with the part. With the limb straight, the half of each knuckle
+        /// that leaves its own part lies inside the other part and is hidden. As the joint bends,
+        /// the two knuckles round over the opening side of the crease, like skin over a knuckle,
+        /// and the inset rounded meshes and the pinch at each anchor read as a waist into it.
         /// </para>
         /// <para>
-        /// <b>What makes it visible.</b> The bodies are drawn inset and with rounded edges
-        /// (<see cref="TheatreMeshes"/>), so at a joint the two drawn surfaces pull away from the
-        /// contact and leave a gap the neck shows through. It is a narrow gap on a small part, and
-        /// it is the honest one: a neck drawn long enough to be unmissable would be a visual
-        /// outside its collider, which is the one thing these pictures must not do.
+        /// <b>The size bound, and the one place it is spent.</b> Every other visual is drawn inside
+        /// its collider. A knuckle's inner half is inside its own part's box (<see cref="Knuckle"/>:
+        /// its cross radii are the anchor's clearance to the box's side faces and its length is
+        /// clipped to the room behind the face), and its outer half is inside the other part while
+        /// the joint is straight. When the joint bends, the outer half shows in the wedge that opens
+        /// between the two parts, which is outside both colliders by at most the knuckle's length.
+        /// That length is capped at the smaller of the two cross radii, which the other part bounds
+        /// too, so on a thin leaf it is the leaf's own thickness. It is the one deliberate exception,
+        /// made because a joint drawn without it shows the crease the owner saw.
+        /// </para>
+        /// <para>
+        /// <b>Hidden under the raw shapes</b> (<see cref="RawShapes"/>), which draw the colliders
+        /// and nothing else, and under the plain look. Built afresh at every dressing, and the
+        /// previous set destroyed first: the raw shapes' toggle dresses a body again, and each
+        /// toggle used to leave another set of necks behind.
         /// </para>
         /// </remarks>
         private void BuildNecks(Body body, Phenotype phenotype)
         {
+            if (body.Necks != null)
+            {
+                foreach (Transform old in body.Necks)
+                {
+                    if (old == null) continue;
+                    if (Application.isPlaying) UnityEngine.Object.Destroy(old.gameObject);
+                    else UnityEngine.Object.DestroyImmediate(old.gameObject);
+                }
+
+                body.Necks = null;
+                body.NeckPart = null;
+                body.NeckChildSide = null;
+            }
+
             _necks.Clear();
             _neckPart.Clear();
+            _neckSide.Clear();
 
-            Mesh mesh = TheatreMeshes.Cylinder();
-            Material material = Skin != null ? Skin.NeckMaterial : null;
+            Mesh mesh = TheatreMeshes.Sphere();
+            Material material = Skin != null ? (Skin.JointMaterial ?? Skin.BodyMaterial) : null;
             if (mesh == null || material == null) return;
 
             var partTransform = new Transform[phenotype.PartCount];
@@ -860,16 +995,11 @@ namespace Evosim.Theatre
                 }
             }
 
-            for (int p = 0; p < phenotype.PartCount; p++)
+            void Add(Transform host, int p, bool childSide)
             {
-                PhenotypePart part = phenotype.Parts[p];
+                if (host == null) return;
 
-                if (part.ParentIndex < 0 || part.JointType == JointType.Fixed) continue;
-
-                Transform host = partTransform[part.ParentIndex];
-                if (host == null) continue;
-
-                var go = new GameObject("Neck")
+                var go = new GameObject(childSide ? "Knuckle (child)" : "Knuckle (parent)")
                 {
                     layer = host.gameObject.layer,
                 };
@@ -884,25 +1014,39 @@ namespace Evosim.Theatre
 
                 _necks.Add(go.transform);
                 _neckPart.Add(p);
+                _neckSide.Add(childSide);
+            }
+
+            for (int p = 0; p < phenotype.PartCount; p++)
+            {
+                PhenotypePart part = phenotype.Parts[p];
+
+                if (part.ParentIndex < 0 || part.JointType == JointType.Fixed) continue;
+
+                Add(partTransform[part.ParentIndex], p, false);
+                Add(partTransform[p], p, true);
             }
 
             if (_necks.Count == 0) return;
 
             body.Necks = _necks.ToArray();
             body.NeckPart = _neckPart.ToArray();
+            body.NeckChildSide = _neckSide.ToArray();
         }
 
         /// <summary>
-        /// Sizes and colours every neck from the phenotype as it is now.
+        /// Sizes and paints every knuckle from the phenotype as it is now.
         /// </summary>
         /// <remarks>
         /// Recomputed on each paint rather than once, because a body grows: D087 rebuilds a
         /// creature's phenotype at its new size and <c>ResizeColliderAndVisual</c> moves the
-        /// visuals to match, so a neck placed once would keep a newborn's dimensions on an adult
-        /// and would end up outside the part it is supposed to sit in. Three transform writes on
-        /// a jointed part, inside a repaint budget that is already capped per frame.
+        /// visuals to match, so a knuckle placed once would keep a newborn's dimensions on an
+        /// adult. Three transform writes a knuckle, inside a repaint budget already capped per
+        /// frame. Each knuckle takes its own part's colour, carve character and light through the
+        /// tissue, a little darker than the part, so a joint between a leaf and a stomach shades
+        /// from one into the other across the crease.
         /// </remarks>
-        private void RefreshNecks(Body body, Phenotype phenotype, float brightness, float reserve, bool on, bool dim = false)
+        private void RefreshNecks(Body body, Phenotype phenotype, float brightness, float reserve, bool on, bool dim = false, float turn = 0f)
         {
             if (body.Necks == null) return;
 
@@ -912,8 +1056,9 @@ namespace Evosim.Theatre
                 if (neck == null) continue;
 
                 int p = body.NeckPart[i];
+                bool childSide = body.NeckChildSide != null && body.NeckChildSide[i];
 
-                if (p < 0 || p >= phenotype.PartCount)
+                if (p < 0 || p >= phenotype.PartCount || phenotype.Parts[p].ParentIndex < 0)
                 {
                     neck.gameObject.SetActive(false);
                     continue;
@@ -922,58 +1067,132 @@ namespace Evosim.Theatre
                 PhenotypePart part = phenotype.Parts[p];
                 PhenotypePart parent = phenotype.Parts[part.ParentIndex];
 
-                bool fitted = Fit(part, parent, out Vector3 centre, out Quaternion rotation, out Vector3 scale);
+                bool fitted = Knuckle(part, parent, childSide, out Vector3 centre, out Vector3 scale);
+                bool show = fitted && on && !RawShapes;
 
-                neck.gameObject.SetActive(fitted && on);
-                if (!fitted || !on) continue;
+                neck.gameObject.SetActive(show);
+                if (!show) continue;
 
                 neck.localPosition = centre;
-                neck.localRotation = rotation;
+                neck.localRotation = Quaternion.identity;
                 neck.localScale = scale;
 
                 var renderer = neck.GetComponent<MeshRenderer>();
+                if (renderer == null) continue;
 
-                // A neck takes no carve: its character's fourth component is zero, so whatever
-                // the dial says the depth comes out zero. It is a marker, and a marker with
-                // impressions in it is a marker that lies about being tissue.
-                if (renderer != null)
-                {
-                    Set(renderer, dim ? Grey(Jointed) : Jointed, brightness, reserve, true,
-                        new Vector4(0f, 1f, 0f, 0f), Vector4.zero, Vector4.zero, 0f);
-                }
+                int own = childSide ? p : part.ParentIndex;
+                string cellType = phenotype.Parts[own].CellTypeId;
+
+                Color guild = Turned(ColourOf(cellType), turn);
+                if (dim) guild = Grey(guild);
+
+                float seed = body.Seed + 0.61803399f * own + 0.5f;
+                seed -= Mathf.Floor(seed);
+
+                Set(renderer, guild, KnuckleShade * brightness, reserve, true,
+                    Character(cellType, seed), Vector4.zero, Vector4.zero,
+                    TransmissionOf(cellType), SheenOf(cellType));
             }
         }
 
+        /// <summary>How much of its part's brightness a knuckle keeps: a crease reads a shade darker.</summary>
+        private const float KnuckleShade = 0.85f;
+
         /// <summary>
-        /// Where one neck sits in its parent part's local frame, and how big it is allowed to be.
+        /// One knuckle's centre and scale in its own part's frame, or false when nothing fits.
         /// </summary>
         /// <remarks>
-        /// The bound is enforced here and nowhere else. The cylinder mesh is a unit solid of
-        /// diameter one and height two already inset by <see cref="TheatreMeshes.Inset"/>, so a
-        /// local scale of (2r, L/2, 2r) makes a cylinder of radius at most r and length at most L.
-        /// The radius is then the smallest clearance from the anchor to the box's faces on the two
-        /// axes across the neck, capped so a neck is never wider than the part it joins, and the
-        /// length is clipped so the inner end cannot pass the far face. Returns false when nothing
-        /// visible fits, in which case the neck is hidden rather than drawn at a size that lies.
+        /// The mesh is <see cref="TheatreMeshes.Sphere"/>, a unit sphere of diameter one, so the
+        /// scale is the ellipsoid's three diameters on the part's own box axes and no rotation is
+        /// needed. The joint's face is the box axis the anchor reaches furthest along (the axis whose reach, over that
+        /// axis's own half extent, is largest); the two cross radii are the anchor's clearance to the side
+        /// faces on the other two axes, each capped at the other part's smaller clearance so the
+        /// knuckle is never wider than the limb across the joint, and taken at nine tenths so its
+        /// widest ring stays under the inset rounded edge; the half-length along the face's axis is
+        /// the smaller cross radius, clipped to the room behind the face in both parts.
         /// </remarks>
-        private static bool Fit(
-            PhenotypePart part, PhenotypePart parent,
-            out Vector3 centre, out Quaternion rotation, out Vector3 scale)
+        /// <summary>
+        /// Whether a part is drawn as a leaf. A box that is flat is one whatever its tissue, and
+        /// a photosynthetic box is one whatever its thickness: round 47's leaves are not sheets
+        /// (smallest side over the next, median 0.79 in seed 1's 5,000 s snapshot, none under
+        /// 0.4), so a thick one is drawn as a plump leaf, a succulent's, inside its box.
+        /// </summary>
+        public static bool DrawnAsLeaf(PhenotypePart part, Vector3 sides)
+        {
+            if (!TheatreMeshes.Leaves || part.ShapeId != ShapeIds.Box) return false;
+            return TheatreMeshes.LeafShaped(sides) || part.CellTypeId == CellTypeIds.Photosynthetic;
+        }
+
+        private static bool Knuckle(
+            PhenotypePart part, PhenotypePart parent, bool childSide,
+            out Vector3 centre, out Vector3 scale)
         {
             centre = Vector3.zero;
-            rotation = Quaternion.identity;
             scale = Vector3.one;
 
-            Vector3 h = Abs(parent.HalfExtents.ToVector3());
-            Vector3 anchor = part.ParentAnchorLocal.ToVector3();
+            PhenotypePart own = childSide ? part : parent;
+            PhenotypePart other = childSide ? parent : part;
+            Vector3 ownAnchor = (childSide ? part.ChildAnchorLocal : part.ParentAnchorLocal).ToVector3();
+            Vector3 otherAnchor = (childSide ? part.ParentAnchorLocal : part.ChildAnchorLocal).ToVector3();
 
+            if (!Face(own, other, ownAnchor, out int axis, out float ca, out float cb, out float room))
+            {
+                return false;
+            }
+
+            if (!Face(other, own, otherAnchor, out _, out float oa, out float ob, out float otherRoom))
+            {
+                return false;
+            }
+
+            float across = Mathf.Min(oa, ob);
+            float ra = 0.9f * Mathf.Min(ca, across);
+            float rb = 0.9f * Mathf.Min(cb, across);
+
+            // A leaf narrows to a point at its base (TheatreBody.shader, ShapeLamina), so a
+            // knuckle as wide as its box would stand out of the drawn leaf as a flat lozenge.
+            // On a leaf-shaped part it is a swelling at the stalk: a fifth of the half width.
+            Vector3 ownHalf = Abs(own.HalfExtents.ToVector3());
+            if (DrawnAsLeaf(own, ownHalf))
+            {
+                float halfWidth = ownHalf.x + ownHalf.y + ownHalf.z
+                    - Mathf.Min(ownHalf.x, Mathf.Min(ownHalf.y, ownHalf.z))
+                    - Mathf.Max(ownHalf.x, Mathf.Max(ownHalf.y, ownHalf.z));
+                ra = Mathf.Min(ra, 0.2f * halfWidth);
+                rb = Mathf.Min(rb, 0.2f * halfWidth);
+            }
+            float length = Mathf.Min(Mathf.Min(ra, rb), Mathf.Min(room, otherRoom));
+
+            if (ra <= 1e-4f || rb <= 1e-4f || length <= 1e-4f) return false;
+
+            int a = (axis + 1) % 3;
+            int b = (axis + 2) % 3;
+
+            centre = ownAnchor;
+            scale = Vector3.zero;
+            scale[axis] = 2f * length;
+            scale[a] = 2f * ra;
+            scale[b] = 2f * rb;
+
+            return true;
+        }
+
+        /// <summary>
+        /// The face of <paramref name="host"/>'s box a joint anchor sits on, the anchor's clearance
+        /// to the side faces across it, and the room behind it.
+        /// </summary>
+        private static bool Face(
+            PhenotypePart host, PhenotypePart across, Vector3 anchor,
+            out int axis, out float clearA, out float clearB, out float room)
+        {
+            axis = 0; clearA = 0f; clearB = 0f; room = 0f;
+
+            Vector3 h = Abs(host.HalfExtents.ToVector3());
             if (h.x <= 0f || h.y <= 0f || h.z <= 0f) return false;
 
-            // Which face the joint sits on: the axis the anchor reaches furthest along, measured
-            // against that axis's own half extent so a long thin part is not read as an end-on
-            // joint just because the box is long.
-            Vector3 towards = Direction(part, parent, anchor);
-            int axis = 0;
+            // The direction from the host's centre towards the other part, in the host's frame:
+            // Direction's second argument is the part whose frame it measures in.
+            Vector3 towards = Direction(across, host, anchor);
             float best = -1f;
 
             for (int j = 0; j < 3; j++)
@@ -983,37 +1202,14 @@ namespace Evosim.Theatre
             }
 
             float sign = towards[axis] >= 0f ? 1f : -1f;
-
             int a = (axis + 1) % 3;
             int b = (axis + 2) % 3;
 
-            float radius = Mathf.Min(h[a] - Mathf.Abs(anchor[a]), h[b] - Mathf.Abs(anchor[b]));
+            clearA = h[a] - Mathf.Abs(anchor[a]);
+            clearB = h[b] - Mathf.Abs(anchor[b]);
+            room = sign > 0f ? anchor[axis] + h[axis] : h[axis] - anchor[axis];
 
-            // Never wider than the part it joins, and never more than a third of the parent
-            // across: a collar wider than the limb it holds reads as a part rather than a joint.
-            Vector3 childHalf = Abs(part.HalfExtents.ToVector3());
-
-            radius = Mathf.Min(radius, 0.34f * Mathf.Min(h[a], h[b]));
-            radius = Mathf.Min(radius, 0.9f * Mathf.Min(childHalf.x, Mathf.Min(childHalf.y, childHalf.z)));
-
-            if (radius <= 1e-4f) return false;
-
-            // Short: three radii, or as much of the box as is left in front of the far face.
-            float outer = anchor[axis];
-            float room = sign > 0f ? outer + h[axis] : h[axis] - outer;
-            float length = Mathf.Min(3f * radius, room);
-
-            if (length <= 1e-4f) return false;
-
-            Vector3 up = Vector3.zero;
-            up[axis] = sign;
-
-            Vector3 tip = anchor;
-            centre = tip - up * (0.5f * length);
-            rotation = Quaternion.FromToRotation(Vector3.up, up);
-            scale = new Vector3(2f * radius, 0.5f * length, 2f * radius);
-
-            return true;
+            return clearA > 0f && clearB > 0f && room > 0f;
         }
 
         /// <summary>

@@ -166,6 +166,26 @@ namespace Evosim.Theatre
         private static readonly Dictionary<int, Mesh> _cubes = new Dictionary<int, Mesh>();
         private static Mesh _sphere;
         private static Mesh _cylinder;
+        private static Mesh _lamina;
+
+        /// <summary>
+        /// Whether a flat box part is drawn as a leaf (<see cref="Lamina"/>).
+        /// <c>EVOSIM_THEATRE_LEAVES</c>, 1 by default; 0 draws every box as the rounded cube, as
+        /// before 2026-09-24.
+        /// </summary>
+        public static readonly bool Leaves = TheatreSkin.Dial("EVOSIM_THEATRE_LEAVES", 1f, 0f, 1f) >= 0.5f;
+
+        /// <summary>
+        /// How thin a box has to be to be drawn as a leaf: its smallest side over the next one.
+        /// A slab is a leaf; a rod, whose two small sides are alike, is not.
+        /// </summary>
+        public const float LeafThinness = 0.4f;
+
+        /// <summary>Stations along a leaf, base to tip.</summary>
+        private const int LeafStations = 64;
+
+        /// <summary>Rows across one face of a leaf, rim to rim.</summary>
+        private const int LeafRows = 16;
 
         /// <summary>
         /// A unit cube of side one, rounded by the whole pillow, inset, centred on the origin.
@@ -238,6 +258,49 @@ namespace Evosim.Theatre
         public static Mesh Cylinder() => _cylinder != null ? _cylinder : (_cylinder = BuildCylinder());
 
         /// <summary>
+        /// A leaf: a sheet of vertices laid out by where they are on a leaf rather than where
+        /// they are in space, which <c>TheatreBody.shader</c> shapes per body. See
+        /// <see cref="BuildLamina"/>.
+        /// </summary>
+        public static Mesh Lamina() => _lamina != null ? _lamina : (_lamina = BuildLamina());
+
+        /// <summary>True for the leaf mesh.</summary>
+        public static bool IsLamina(Mesh mesh) => mesh != null && mesh == _lamina;
+
+        /// <summary>
+        /// True when a box of these three sides is drawn as a leaf: the thinnest side under
+        /// <see cref="LeafThinness"/> of the next.
+        /// </summary>
+        public static bool LeafShaped(Vector3 sides)
+        {
+            float a = Mathf.Abs(sides.x), b = Mathf.Abs(sides.y), c = Mathf.Abs(sides.z);
+            float small = Mathf.Min(a, Mathf.Min(b, c));
+            float large = Mathf.Max(a, Mathf.Max(b, c));
+            float middle = a + b + c - small - large;
+            return middle > 1e-6f && small <= LeafThinness * middle;
+        }
+
+        /// <summary>
+        /// A leaf's bounds in its own object units: the unit cube, and on the thinnest axis the
+        /// curl as well, which is the one thing drawn outside the collider
+        /// (<c>TheatreBody.shader</c>, <c>ShapeLamina</c>). Without it the engine would cull a leaf
+        /// whose box is off screen and whose curl is not.
+        /// </summary>
+        public static Bounds LeafBounds(Vector3 sides, float curlFraction)
+        {
+            var abs = new Vector3(Mathf.Abs(sides.x), Mathf.Abs(sides.y), Mathf.Abs(sides.z));
+
+            // The thinnest axis the way the shader picks it: x first on a tie, then y.
+            int thin = abs.x <= abs.y && abs.x <= abs.z ? 0 : (abs.y <= abs.z ? 1 : 2);
+            float width = Mathf.Min(abs[(thin + 1) % 3], abs[(thin + 2) % 3]);
+
+            Vector3 extents = new Vector3(0.5f, 0.5f, 0.5f);
+            if (abs[thin] > 1e-6f) extents[thin] += Mathf.Max(0f, curlFraction) * width / abs[thin];
+
+            return new Bounds(Vector3.zero, 2f * extents);
+        }
+
+        /// <summary>
         /// The rounded stand-in for one of Unity's primitives, matched by name, or null when the
         /// mesh is not one this class replaces.
         /// </summary>
@@ -284,6 +347,7 @@ namespace Evosim.Theatre
             if (IsRoundedCube(rounded) || IsPrimitiveCube(rounded)) return BuiltinCube();
             if (rounded == _sphere || IsPrimitiveSphere(rounded)) return BuiltinSphere();
             if (rounded == _cylinder || IsPrimitiveCylinder(rounded)) return BuiltinCylinder();
+            if (rounded == _lamina) return BuiltinCube();
             return null;
         }
 
@@ -299,6 +363,7 @@ namespace Evosim.Theatre
             _cubes.Clear();
             Discard(ref _sphere);
             Discard(ref _cylinder);
+            Discard(ref _lamina);
         }
 
         private static void Discard(ref Mesh mesh)
@@ -392,6 +457,104 @@ namespace Evosim.Theatre
                     triangles.Add(b); triangles.Add(c); triangles.Add(d);
                 }
             }
+        }
+
+        // ---------------------------------------------------------------- the leaf
+
+        /// <summary>
+        /// The leaf's sheet: two faces of <see cref="LeafStations"/> by <see cref="LeafRows"/>,
+        /// each vertex carrying where it is on a leaf in its fifth UV channel.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why the shape is not in the mesh.</b> A leaf's outline, its cross-section and its
+        /// curl differ from body to body (drawn from the carve's seed), and which of the box's
+        /// three axes is its length, its width and its thickness differs from part to part. One
+        /// mesh per combination would be thousands, so the mesh carries (s, t, side): s from the
+        /// base (0) to the tip (1), t from rim (-1) to rim (1), and which face. The shader builds
+        /// the leaf from those (<c>TheatreBody.shader</c>, <c>ShapeLamina</c>). The positions baked
+        /// here are a plain oval, for the bounds and for a shader that does not know the flag.
+        /// </para>
+        /// <para>
+        /// <b>Rows crowd the rim</b>: t is the sine of an even step, so the rows close up where
+        /// the cross-section thins to the edge and the silhouette is drawn from most of them.
+        /// The two faces meet at the rim, where both have no thickness; they share no vertex,
+        /// and a leaf's edge is a crease, which is what a leaf's edge is.
+        /// </para>
+        /// <para>
+        /// <b>Winding.</b> The canonical frame is x the length (s runs towards -x), y the
+        /// thickness and z the width. For a triangle (p0, p1, p2) the cube's faces pass the test
+        /// <c>Cross(p1 - p0, p2 - p0)</c> outward; with s decreasing x and t increasing z, the
+        /// order (a, c, b), (b, c, d) is outward on the +y face and (a, b, c), (b, d, c) on the
+        /// -y face. The shader keeps the frame a rotation of this one (its width axis is the
+        /// cross of the length and the thickness), so the winding holds on every part.
+        /// </para>
+        /// </remarks>
+        private static Mesh BuildLamina()
+        {
+            float half = 0.5f * Inset;
+
+            var vertices = new List<Vector3>();
+            var normals = new List<Vector3>();
+            var leaf = new List<Vector4>();
+            var triangles = new List<int>();
+
+            int stride = LeafRows + 1;
+
+            for (int face = 0; face < 2; face++)
+            {
+                float side = face == 0 ? 1f : -1f;
+                int start = vertices.Count;
+
+                for (int i = 0; i <= LeafStations; i++)
+                {
+                    float s = (float)i / LeafStations;
+                    float w = Mathf.Sin(Mathf.PI * s);
+
+                    for (int j = 0; j <= LeafRows; j++)
+                    {
+                        float step = 2f * j / LeafRows - 1f;
+                        float t = Mathf.Sin(0.5f * Mathf.PI * step);
+                        float thick = Mathf.Sqrt(Mathf.Max(0f, 1f - t * t)) * Mathf.Sqrt(w);
+
+                        vertices.Add(new Vector3(half * (1f - 2f * s), side * half * thick, half * t * w));
+                        normals.Add(new Vector3(0f, side, 0f));
+                        leaf.Add(new Vector4(s, t, side, 0f));
+                    }
+                }
+
+                for (int i = 0; i < LeafStations; i++)
+                {
+                    for (int j = 0; j < LeafRows; j++)
+                    {
+                        int a = start + i * stride + j;
+                        int b = a + 1;
+                        int c = a + stride;
+                        int d = c + 1;
+
+                        if (side > 0f)
+                        {
+                            triangles.Add(a); triangles.Add(c); triangles.Add(b);
+                            triangles.Add(b); triangles.Add(c); triangles.Add(d);
+                        }
+                        else
+                        {
+                            triangles.Add(a); triangles.Add(b); triangles.Add(c);
+                            triangles.Add(b); triangles.Add(d); triangles.Add(c);
+                        }
+                    }
+                }
+            }
+
+            Mesh mesh = Finish("Theatre Lamina", vertices, normals, triangles, 2f);
+            mesh.SetUVs(4, leaf);
+
+            // The shader turns the sheet onto whichever axes the part has, so any axis may carry
+            // the length: the bounds are the whole unit cube, and a part's curl is added to them
+            // per renderer (LeafBounds).
+            mesh.bounds = new Bounds(Vector3.zero, Vector3.one);
+
+            return mesh;
         }
 
         // ---------------------------------------------------------------- the sphere

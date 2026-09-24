@@ -315,12 +315,49 @@ namespace Evosim.Theatre
 
                 switch (name)
                 {
-                    case "close": shot.PlanClose(positions, reaches, ids, aspect); break;
+                    case "close": shot.PlanClose(positions, reaches, ids, aspect, CloseSubject(live)); break;
                     case "drift": shot.PlanCrowd(positions, reaches, aspect, 0f, true); break;
                     default: shot.PlanCrowd(positions, reaches, aspect, turns, false); break;
                 }
 
                 return shot;
+            }
+
+            /// <summary>
+            /// The close shot's subject by dial, <c>EVOSIM_THEATRE_FILM_SUBJECT</c>: a body's id,
+            /// or <c>leaf</c> for any body carrying a photosynthetic box, of which the largest is
+            /// framed. Null when unset: the largest body, as the shot always chose. A subject
+            /// named by the dial is framed alone, with no neighbour, as a portrait.
+            /// </summary>
+            private static Func<long, bool> CloseSubject(TheatreDynamicsReplay live)
+            {
+                string pick = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_FILM_SUBJECT");
+                if (string.IsNullOrWhiteSpace(pick)) return null;
+                pick = pick.Trim();
+
+                if (long.TryParse(pick, NumberStyles.Integer, CultureInfo.InvariantCulture, out long wanted))
+                {
+                    return id => id == wanted;
+                }
+
+                if (pick != "leaf") throw new ArgumentException("EVOSIM_THEATRE_FILM_SUBJECT is a body id or 'leaf', not '" + pick + "'");
+
+                var leafy = new HashSet<long>();
+                foreach (Organism o in live.Sim.World.Living)
+                {
+                    Phenotype body = o.Phenotype;
+                    if (body == null) continue;
+                    for (int k = 0; k < body.PartCount; k++)
+                    {
+                        if (body.Parts[k].ShapeId == ShapeIds.Box && body.Parts[k].CellTypeId == CellTypeIds.Photosynthetic)
+                        {
+                            leafy.Add(o.Id);
+                            break;
+                        }
+                    }
+                }
+
+                return leafy.Contains;
             }
 
             /// <summary>Every living body's root, its reach and its id, from the drawn scene where it can.</summary>
@@ -484,7 +521,9 @@ namespace Evosim.Theatre
             /// The close view's framing: the largest body and the largest of its neighbours, from
             /// a three-quarter angle, the frame fitted to the pair and a slow dolly in.
             /// </summary>
-            private void PlanClose(List<Vector3> positions, List<float> reaches, List<long> ids, float aspect)
+            private void PlanClose(
+                List<Vector3> positions, List<float> reaches, List<long> ids, float aspect,
+                Func<long, bool> eligible = null)
             {
                 FieldOfView = 28f;
                 Portrait = true;
@@ -493,6 +532,7 @@ namespace Evosim.Theatre
                 int anchor = -1;
                 for (int i = 0; i < positions.Count; i++)
                 {
+                    if (eligible != null && !eligible(ids[i])) continue;
                     if (anchor < 0 || reaches[i] > reaches[anchor]) anchor = i;
                 }
 
@@ -510,7 +550,7 @@ namespace Evosim.Theatre
 
                 float around = Mathf.Max(1.2f, 6f * reaches[anchor]);
                 int neighbour = -1;
-                for (int i = 0; i < positions.Count; i++)
+                for (int i = 0; i < positions.Count && eligible == null; i++)
                 {
                     if (i == anchor) continue;
                     if ((positions[i] - positions[anchor]).sqrMagnitude > around * around) continue;

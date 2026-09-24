@@ -896,7 +896,26 @@ namespace Evosim.Theatre
                 };
             }
 
-            if (wanted == null && view.Palette.InFocus == null) return;
+            // The lineage's hue is not a call-out: it is the owner's leaf ruling (2026-09-24), so
+            // it is set whatever the call-outs say, once, and every body is painted by its clade.
+            bool lineageNew = false;
+            if (view.Palette.LineageOf == null && _clades != null)
+            {
+                view.Palette.LineageOf = id =>
+                {
+                    World world = _runner.Live?.Sim.World;
+                    if (world == null) return -1;
+                    if (_focusLiving == null || _focusLiving.Count != world.Living.Count || !_focusLiving.ContainsKey(id))
+                    {
+                        _focusLiving = new Dictionary<long, Organism>(world.Living.Count);
+                        foreach (Organism o in world.Living) _focusLiving[o.Id] = o;
+                    }
+                    return _focusLiving.TryGetValue(id, out Organism body) ? _clades.CladeOf(body, _focusLiving) : -1;
+                };
+                lineageNew = true;
+            }
+
+            if (wanted == null && view.Palette.InFocus == null && !lineageNew) return;
             view.Palette.InFocus = wanted;
             view.Redress();
             view.DressUndressed();

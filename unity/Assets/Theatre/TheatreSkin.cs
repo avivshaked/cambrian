@@ -170,6 +170,22 @@ namespace Evosim.Theatre
         public float BendFraction = Dial("EVOSIM_THEATRE_BEND", 0.15f, 0f, 0.4f);
 
         /// <summary>
+        /// How far a leaf may curl, as a fraction of its width (<c>EVOSIM_THEATRE_CURL</c>, 0 to
+        /// 0.1, default 0.1).
+        /// </summary>
+        /// <remarks>
+        /// The one dial here that draws a body outside its collider, and it is the owner's ruling
+        /// (2026-09-24): a flat box a centimetre or two thick has no room inside it to curve, and
+        /// a flat leaf is what made the crowd read as cut card. The curl is fixed for a body's
+        /// life (drawn from the carve's seed), it is hidden under the raw shapes, and it is
+        /// bounded here at a tenth of the leaf's width whatever the environment says.
+        /// </remarks>
+        public float CurlFraction = Dial("EVOSIM_THEATRE_CURL", 0.1f, 0f, 0.1f);
+
+        /// <summary>How strongly a leaf's veins are drawn (<c>EVOSIM_THEATRE_VEINS</c>, 0 to 1).</summary>
+        public float VeinStrength = Dial("EVOSIM_THEATRE_VEINS", 0.6f, 0f, 1f);
+
+        /// <summary>
         /// Points the key and the fill from wherever the viewer now looks, keeping the offsets
         /// <see cref="Apply"/> chose. Until 2026-09-16 the two were placed once from the fly
         /// camera's starting rotation and never moved, so five of the six snapshot views and
@@ -348,6 +364,7 @@ namespace Evosim.Theatre
 
         private Material _body;
         private Material _neck;
+        private Material _joint;
         private Material _bedMaterial;
         private Material _snowMaterial;
         private Material _surfaceMaterial;
@@ -388,6 +405,12 @@ namespace Evosim.Theatre
 
         /// <summary>The joint neck's material. Its colour is set per neck by the palette.</summary>
         public Material NeckMaterial => _neck != null ? _neck : (_neck = MakeNeckMaterial());
+
+        /// <summary>
+        /// The joint skin's material: the body's own tissue, mottle and caustics included, with
+        /// the taper and the bend off and half the carve. See <c>TheatrePalette.BuildNecks</c>.
+        /// </summary>
+        public Material JointMaterial => _joint != null ? _joint : (_joint = MakeJointMaterial());
 
         /// <summary>True when the shaders resolved and bodies can be repainted.</summary>
         public bool Ready => BodyMaterial != null;
@@ -1522,6 +1545,7 @@ namespace Evosim.Theatre
 
             Discard(_body); _body = null;
             Discard(_neck); _neck = null;
+            Discard(_joint); _joint = null;
             Discard(_bedMaterial); _bedMaterial = null;
             Discard(_snowMaterial); _snowMaterial = null;
             Discard(_surfaceMaterial); _surfaceMaterial = null;
@@ -1564,6 +1588,8 @@ namespace Evosim.Theatre
             material.SetFloat("_CarveFraction", Mathf.Clamp(CarveFraction, 0f, 0.5f));
             material.SetFloat("_TaperFraction", Mathf.Clamp(TaperFraction, 0f, 0.8f));
             material.SetFloat("_BendFraction", Mathf.Clamp(BendFraction, 0f, 0.4f));
+            material.SetFloat("_CurlFraction", Mathf.Clamp(CurlFraction, 0f, 0.1f));
+            material.SetFloat("_VeinStrength", Mathf.Clamp01(VeinStrength));
 
             // The one depth the surface's light reaches, the same number the sand, the shafts and
             // the window fade on. The net itself now comes from the sea overhead rather than from
@@ -1612,6 +1638,24 @@ namespace Evosim.Theatre
             material.SetFloat("_RimPower", 1.6f);
             material.SetFloat("_GlowStrength", 0.5f);
             material.SetFloat("_TransScale", 0f);
+
+            return material;
+        }
+
+        private Material MakeJointMaterial()
+        {
+            Material material = MakeBodyMaterial();
+            if (material == null) return null;
+
+            material.name = "Theatre Joint";
+
+            // Tissue, not a marker: the body's mottle, rim and light through it are kept, so a
+            // knuckle reads as the same flesh as the parts it joins. The taper and the bend are
+            // off because they shape a part along its own long axis and a knuckle has none, and
+            // the carve is halved so the joint reads as smoother skin stretched over a hinge.
+            material.SetFloat("_TaperFraction", 0f);
+            material.SetFloat("_BendFraction", 0f);
+            material.SetFloat("_CarveFraction", 0.5f * Mathf.Clamp(CarveFraction, 0f, 0.5f));
 
             return material;
         }
