@@ -60,18 +60,20 @@ How each clause is read, and what cannot be read as the draft words it:
     it and left out of the median.
   - F1, F2, F3 are round 47's L1, L2, L3 as they were: a pool founder is a founder row with
     `src` "pool".
-  - F4 cannot be read as worded. It asks whether every pool founder's first positions row lies
-    within one 1 m layer of the richest snow layer of its column, and no record of the build
-    holds the snow by layer: the farm dumps the snow's column sums (`.snow-columns.f32`) and
-    the column's lowest live cell (`.snow-floor.f32`) and nothing between them. A per-layer
-    snow dump (every live 1 m cell of the snow grid, `NNNNNNNNN.snow.f32` in the grid's own
-    order, as `.matter.f32` is for the matter) is the file that would be needed. The row
-    prints `absent` and, as a reading, each pool founder's first positions row at or after its
-    birth: how many are within the top 12 m (the depth draw's band, which the rule replaces),
-    the median depth, the median height above the floor, and the column's snow as its mean
-    (J over the column's water, rock out) and its floor cell (J in the lowest 1 m cell), from
-    the dump at or before that row. The positions are sampled, so the first row is up to one
-    positions interval after the placing.
+  - F4 is the draft's wording at cf72687: every pool founder's first absorptive.jsonl row
+    (the smallest t at or after its birth; `densityHere`, the snow density the body was fed at)
+    reads at least its column's mean snow (the column sum in the snow-columns dump at or before
+    its birth over the column's water, rock removed, as round 47's L4 read it). The layer the
+    rule places a founder in cannot be read itself, since no record holds the snow by layer
+    (the farm dumps the column sums and the lowest live cell only); the body's own sample
+    stands in for it. Three things to read it with: `densityHere` is share-multiplied, so a
+    founder in a crowded cell reads under the cell's density; the absorptive row carries y and
+    no x or z, so the column is the one under the founder's first positions row; and a founder
+    that died before its first sample has only its death row, which is counted. Held over the
+    founders that have both readings, the rest counted beside it. Printed beside it: the
+    median first reading against round 47's 0.12 J/m3, the depth reading (the first positions
+    row: how many in the top 12 m, the median depth and height above the floor), and round 47's
+    L4 (the breeders' column mean at their first positions row, at or over 1 J/m3).
   - E1 is a reading: the founder rows' `endow` (count, median, range; all founders and the pool
     founders apart) against the endowed founders' median age at death and the share that bred.
   - B1 is round 47's L9: the largest |auditResidual| over every sample under 0.1 J,
@@ -201,6 +203,12 @@ NAMES = {
 
     # positions.jsonl (PositionsRow.Write): {"t":..,"n":..,"b":[[id, x, y, z, flags], ...]};
     # flags: AbsorptiveBit 1, JointedBit 2, PhotosyntheticBit 4.
+    # absorptive.jsonl (AbsorptiveSample.cs's row): one row per absorptive body per sample and
+    # a final row at its death ("dead": true); densityHere is the snow density the body was fed
+    # at, J/m3, already share-multiplied. A truncation marker row carries no id.
+    "absorptive_t": "t", "absorptive_id": "id", "absorptive_age": "age",
+    "absorptive_density": "densityHere", "absorptive_dead": "dead", "absorptive_y": "y",
+
     "positions_bodies": "b", "flag_abs": 1, "flag_jnt": 2, "flag_pho": 4,
 
     # fields/ (Row.cs DumpFields).
@@ -1311,65 +1319,145 @@ def f3(seed, L, pool_reason, pos, read_t):
                 held=len(rooted) >= L3_LIVING)
 
 
-F4_NOTE = ("cannot be read as worded: no record holds the snow by layer (the farm dumps "
-           "`.snow-columns.f32`, the column sums, and `.snow-floor.f32`, the lowest live cell); "
-           "a per-layer snow dump, every live 1 m cell of the snow grid in its own order as "
-           "`.matter.f32` is for the matter, is the file that would be needed. Printed instead: "
-           "each pool founder's first positions row against its column's snow")
+F4_R47_MEDIAN = 0.12               # F4: round 47's founders' own first snow reading, J/m3
 
 
-def f4(seed, L, pool_reason, pos, bed, reefs, config, snow, snow_floor):
+def first_absorptive(d, cutoff, births):
+    """Each wanted id's first absorptive.jsonl row at or after its birth: id -> (t, age,
+    densityHere, dead, y). A row without an id (the truncation marker) is skipped."""
+    path = os.path.join(d, "absorptive.jsonl")
+    out = {}
+    if not os.path.exists(path):
+        return None
+    for row in stream_jsonl(path):
+        i = row.get(NAMES["absorptive_id"])
+        bt = births.get(i)
+        if bt is None:
+            continue
+        t = row.get(NAMES["absorptive_t"])
+        if t is None or t > cutoff or t < bt:
+            continue
+        v = row.get(NAMES["absorptive_density"])
+        if v is None:
+            continue
+        if i not in out or t < out[i][0]:
+            out[i] = (t, row.get(NAMES["absorptive_age"]), v, bool(row.get(NAMES["absorptive_dead"])),
+                      row.get(NAMES["absorptive_y"]))
+    return out
+
+
+def f4(seed, L, pool_reason, pos, bed, reefs, config, snow, snow_floor, d, cutoff):
+    """F4 as reworded at cf72687: each pool founder's first absorptive.jsonl reading of the
+    snow at its body against its column's mean snow in the dump at or before its birth. The
+    depth reading (the founder's first positions row) and round 47's L4 (the breeders' column
+    snow at or over 1 J/m3) are printed beside it."""
     if pool_reason:
         return absent("F4", seed, pool_reason)
     founders = L["pool_founders"]
     if not founders:
-        return absent("F4", seed, "no pool founder yet; " + F4_NOTE)
-    extra = dict(pool_founders=len(founders),
-                 depth_rule=("on" if find_field(config, NAMES["config_marker_depth"]) else
-                             "off" if marker(config, "config_marker_depth") else
-                             "absent (a run before D122's build)"))
-    if not pos["present"]:
-        return absent("F4", seed, "no positions.jsonl; " + F4_NOTE, **extra)
-    places = [(i, pos["first"][i]) for i in founders if i in pos["first"]]
-    if not places:
-        return absent("F4", seed, "no pool founder has a positions row; " + F4_NOTE, **extra)
-    top = sum(1 for _, p in places if p[2] >= -F4_TOP)
-    lags = [p[0] - L["birth"][i] for i, p in places]
-    extra.update(placed=len(places), in_top_12m=top,
-                 median_depth_m=median([-p[2] for _, p in places]),
-                 median_row_lag_s=median(lags))
+        return absent("F4", seed, "no pool founder yet")
+    births = {i: L["birth"][i] for i in founders}
+    first = first_absorptive(d, cutoff, births)
+    out = dict(clause="F4", seed=seed, pool_founders=len(founders),
+               depth_rule=("on" if find_field(config, NAMES["config_marker_depth"]) else
+                           "off" if marker(config, "config_marker_depth") else
+                           "absent (a run before D122's build)"))
+    if first is None:
+        return absent("F4", seed, "no absorptive.jsonl", **out)
     if bed is None:
-        return absent("F4", seed, "no fields/bed.f32; " + F4_NOTE, **extra)
+        return absent("F4", seed, "no fields/bed.f32 or layout.json", **out)
+    sl = bed["snow_layout"]
+    if not sl or sl["cellsX"] != bed["nx"] or sl["cellsZ"] != bed["nz"]:
+        return absent("F4", seed, "the snow's columns and the bed's do not share a layout", **out)
     c = bed["cell"]
-    above_floor, col_mean, floor_cell, samples = [], [], [], []
     cache = {}
-    for i, (t, x, y, z) in places:
-        ix = min(bed["nx"] - 1, max(0, int(x // c)))
-        iz = min(bed["nz"] - 1, max(0, int(z // c)))
-        k = ix * bed["nz"] + iz
-        above_floor.append(y - bed["floor"][k])
-        for kind, dumps, sink in (("col", snow, col_mean), ("floor", snow_floor, floor_cell)):
-            earlier = [s for s in dumps if s <= t]
-            if not earlier:
-                continue
-            s = max(earlier)
-            key = (kind, s)
-            if key not in cache:
-                cache[key] = read_floats(dumps[s])
-            v = cache[key][k]
-            if kind == "col":
-                w = column_water(bed, reefs, ix, iz)
-                if w > 0:
-                    sink.append(v / (w * c * c))
-                    if len(samples) < 8:
-                        samples.append("%d@%gs:y=%.1f,col=%.3g" % (i, t, y, v / (w * c * c)))
-            else:
-                sink.append(v / (c * c))    # the lowest live cell, 1 m on a side
-    extra.update(median_above_floor_m=median(above_floor),
-                 within_1m_of_floor=sum(1 for h in above_floor if h <= 1.0),
-                 median_column_J_m3=median(col_mean), median_floor_cell_J_m3=median(floor_cell),
-                 samples=" ".join(samples) or None)
-    return absent("F4", seed, F4_NOTE, **extra)
+
+    def dump_at(dumps, kind, t):
+        earlier = [s for s in dumps if s <= t]
+        if not earlier:
+            return None
+        s = max(earlier)
+        if (kind, s) not in cache:
+            cache[(kind, s)] = read_floats(dumps[s])
+        return cache[(kind, s)]
+
+    def column_of(i):
+        """(ix, iz, k) of the founder's column, from its first positions row (the absorptive
+        row carries y and no x or z)."""
+        p = pos.get("first", {}).get(i) if pos.get("present") else None
+        if p is None:
+            return None
+        ix = min(bed["nx"] - 1, max(0, int(p[1] // c)))
+        iz = min(bed["nz"] - 1, max(0, int(p[3] // c)))
+        return ix, iz, ix * bed["nz"] + iz
+
+    reads, no_row, no_column, dead_first, samples = [], 0, 0, 0, []
+    for i in founders:
+        fr = first.get(i)
+        if fr is None:
+            no_row += 1
+            continue
+        col = column_of(i)
+        cols = dump_at(snow, "col", L["birth"][i])
+        if col is None or cols is None:
+            no_column += 1
+            continue
+        ix, iz, k = col
+        w = column_water(bed, reefs, ix, iz)
+        if not w > 0:
+            no_column += 1
+            continue
+        mean = cols[k] / (w * c * c)
+        reads.append((i, fr[2], mean))
+        dead_first += fr[3]
+        if len(samples) < 8:
+            samples.append("%d@%gs:%.3g/%.3g" % (i, fr[0], fr[2], mean))
+    over = sum(1 for _, v, m in reads if v >= m)
+    out.update(read=len(reads), no_absorptive_row=no_row, no_column=no_column,
+               first_row_is_death_row=dead_first, at_or_over_mean=over,
+               share=(over / len(reads) if reads else None),
+               median_first_J_m3=median([v for _, v, _ in reads]),
+               median_column_mean_J_m3=median([m for _, _, m in reads]),
+               r47_median_first_J_m3=F4_R47_MEDIAN,
+               samples_first_vs_mean=" ".join(samples) or None)
+
+    # The depth reading: the founder's first positions row.
+    places = [(i, pos["first"][i]) for i in founders if pos.get("present") and i in pos["first"]]
+    if places:
+        above = []
+        for i, p in places:
+            ix = min(bed["nx"] - 1, max(0, int(p[1] // c)))
+            iz = min(bed["nz"] - 1, max(0, int(p[3] // c)))
+            above.append(p[2] - bed["floor"][ix * bed["nz"] + iz])
+        out.update(placed=len(places), in_top_12m=sum(1 for _, p in places if p[2] >= -F4_TOP),
+                   median_depth_m=median([-p[2] for _, p in places]),
+                   median_above_floor_m=median(above),
+                   median_row_lag_s=median([p[0] - L["birth"][i] for i, p in places]))
+
+    # Round 47's L4, a second reading: the breeders' column mean at their first positions row.
+    bred = [i for i in founders if L["children"].get(i, 0) > 0]
+    l4 = []
+    for i in bred:
+        p = pos.get("first", {}).get(i) if pos.get("present") else None
+        col = column_of(i)
+        cols = dump_at(snow, "col", p[0]) if p else None
+        if col is None or cols is None:
+            continue
+        w = column_water(bed, reefs, col[0], col[1])
+        if w > 0:
+            l4.append(cols[col[2]] / (w * c * c))
+    out.update(l4_breeders=len(bred), l4_placed=len(l4),
+               l4_at_or_over_1=sum(1 for v in l4 if v >= 1.0))
+
+    out["note"] = ("densityHere is what the body was fed at, share-multiplied (a crowded cell "
+                   "reads under its density); the column is the founder's first positions row's; "
+                   "held over the founders read")
+    if not reads:
+        out["held"] = "absent"
+        out["note"] = "no pool founder has both a first absorptive row and a column; " + out["note"]
+    else:
+        out["held"] = over == len(reads)
+    return out
 
 
 # ---- E1: the endowment
@@ -1612,7 +1700,7 @@ def read_arm(runs_root, arm, i, cutoff, args, base_root):
         f1(arm, L, pool_reason),
         f2(arm, L, pool_reason),
         f3(arm, L, pool_reason, pos, read_t),
-        f4(arm, L, pool_reason, pos, bed, reefs, config, snow, snow_floor),
+        f4(arm, L, pool_reason, pos, bed, reefs, config, snow, snow_floor, d, cutoff),
         e1(arm, L, config),
         b1(arm, ts, by_t, manifest, cutoff, d),
         as_reading(r5, "R1a", base_l5),
@@ -1653,7 +1741,7 @@ CLAUSE_THRESHOLD_TEXT = {
     "M1": "3 of 3", "M2": "3 of 3", "M3": "1 of 3 or more", "G1": "3 of 3", "G2": "2 of 3",
     "O1": "3 of 3", "O2a": "2 of 3", "O2b": "3 of 3", "S1": "3 of 3", "S2": "2 of 3",
     "F1": "3 of 3", "F2": "3 of 3", "F3": "1 of 3 or more",
-    "F4": "3 of 3 (not readable as worded)", "E1": "a reading", "B1": "3 of 3",
+    "F4": "3 of 3", "E1": "a reading", "B1": "3 of 3",
     "R1a": "a reading", "R1b": "a reading", "P1": "3 of 3",
 }
 
