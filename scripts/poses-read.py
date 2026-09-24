@@ -97,10 +97,23 @@ def read_header(f):
     return {'version': version, 'cadence': cadence, 'configHash': config_hash}
 
 
-def scan(f, size, version):
+def file_version(f, version):
+    """The version a caller named, or the file's own when it named none.
+
+    scan() and read_frame() were called without one before version 2 (runrec.py still calls them
+    so), and a reader that guessed version 1 would misread every version 2 frame."""
+    if version is not None:
+        return version
+
+    f.seek(0)
+    return read_header(f)['version']
+
+
+def scan(f, size, version=None):
     """Every complete frame as (seconds, offset, payload bytes), stopping at a torn write.
 
     The same walk for both versions: the time is the payload's first eight bytes in both."""
+    version = file_version(f, version)
     frames = []
     at = HEADER_BYTES
     least = PAYLOAD_PREFIX[version]
@@ -191,7 +204,8 @@ def raw_length(f, offset, version):
     return None
 
 
-def read_frame(f, offset, payload_bytes, version):
+def read_frame(f, offset, payload_bytes, version=None):
+    version = file_version(f, version)
     f.seek(offset + 8)
     payload = f.read(payload_bytes)
 

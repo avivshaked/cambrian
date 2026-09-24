@@ -408,11 +408,11 @@ namespace Evosim.Farm.Tests
         }
 
         [Fact]
-        public void GzipMembersReadBackAsOneStream()
+        public void GzipRowsReadBackAsOneStream()
         {
             string path = Path.Combine(Out("members"), "rows.jsonl.gz");
 
-            using (var members = new GzipMembers(path))
+            using (var members = new GzipRowWriter(path))
             {
                 members.Add("{\"a\":1}");
                 members.Flush();
@@ -427,7 +427,7 @@ namespace Evosim.Farm.Tests
             }
 
             Assert.Equal("{\"a\":1}\n{\"a\":2}\n{\"a\":3}\n{\"a\":4}\n", Encoding.UTF8.GetString(Gunzip(path)));
-            Assert.Throws<IOException>(() => new GzipMembers(path));
+            Assert.Throws<IOException>(() => new GzipRowWriter(path));
         }
 
         // ------------------------------------------------------------------

@@ -947,7 +947,7 @@ namespace Evosim.Farm
             private readonly Result _result;
 
             private PoseRecorder _poses;
-            private GzipMembers _genomes;
+            private GzipRowWriter _genomes;
             private JsonlWriter _plans;
             private JsonlWriter _events;
             private JsonlWriter _identity;
@@ -980,7 +980,7 @@ namespace Evosim.Farm
                 _poses = PoseRecorder.AtPath(
                     Path.Combine(_outDirectory, PosesFileName), (float)(1d / _options.FramesPerSecond),
                     _configHash);
-                _genomes = new GzipMembers(Path.Combine(_outDirectory, GenomesFileName));
+                _genomes = new GzipRowWriter(Path.Combine(_outDirectory, GenomesFileName));
                 _plans = new JsonlWriter(Path.Combine(_outDirectory, PlansFileName), flushEachRow: false);
                 _events = new JsonlWriter(Path.Combine(_outDirectory, EventsFileName), flushEachRow: false);
                 OpenIdentity();
@@ -1268,9 +1268,12 @@ namespace Evosim.Farm
     /// Concatenated members are one valid gzip file (RFC 1952, section 2.2), so a reader takes
     /// the whole file as one stream, and a process killed between two flushes leaves every
     /// member before the kill complete. What was added and not yet flushed is lost with it, which
-    /// is the JSONL writers' contract at a coarser grain.
+    /// is the JSONL writers' contract at a coarser grain. Named apart from the record branch's
+    /// <c>Evosim.Core.GzipMembers</c> (scratch/wt-record, 2026-09-24): a class of that name in this
+    /// namespace would take every unqualified use of Core's in the farm once the two merge. The
+    /// film should move onto Core's writer then, so that one reader reads both files.
     /// </remarks>
-    public sealed class GzipMembers : IDisposable
+    public sealed class GzipRowWriter : IDisposable
     {
         private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
 
@@ -1285,7 +1288,7 @@ namespace Evosim.Farm
         public int Members { get; private set; }
 
         /// <summary>Creates the file. Refuses one that exists rather than appending a member to it.</summary>
-        public GzipMembers(string path)
+        public GzipRowWriter(string path)
         {
             if (string.IsNullOrEmpty(path)) throw new ArgumentNullException(nameof(path));
 
@@ -1312,7 +1315,7 @@ namespace Evosim.Farm
         /// <summary>Writes whatever is held as one complete member. Nothing held, nothing written.</summary>
         public void Flush()
         {
-            if (_file == null) throw new ObjectDisposedException(nameof(GzipMembers));
+            if (_file == null) throw new ObjectDisposedException(nameof(GzipRowWriter));
             if (_pendingRows == 0) return;
 
             byte[] bytes = Utf8.GetBytes(_pending.ToString());
