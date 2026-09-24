@@ -349,6 +349,23 @@ carrying a developed 3 cm part, so no born-small addition was ever born in round
 **State (2026-09-24, about 13:00; the session runs on Opus 5.5 since midday).** This block
 is what the next session works from. Everything below it in this section is history.
 
+- **The machine is on hold for its firmware (the owner, 2026-09-24, about 20:05: "finish what
+  you're currently doing, but i'll come back later to do the updates. don't start new runs").**
+  The i9-13900K runs ASUS PRIME Z790-P WIFI BIOS 0806 of 2022-11-22 with microcode 0x10E
+  (`HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor `, `Update Revision`), which predates
+  Intel's fixes for the 13th and 14th generation's voltage degradation (0x129 of August 2024,
+  0x12B of September 2024, and later); the damage accumulates under long boosted loads, which
+  is this campaign's load. Measured at the ruling: no throttling (`Performance Limit Flags` 0,
+  every core at full frequency), no WHEA hardware-error events, the one crash on record
+  2026-09-22's; the CPU's own temperature is not readable without an admin tool, and the ASUS
+  WMI surface Armoury Crate uses is a firmware control panel (bus writes, boot order,
+  passwords, fan curves) and is not to be called. **Until the owner has flashed a BIOS carrying
+  0x12B or later: seeds 1 and 3 of round 48 finish; nothing new starts, which the agent reads
+  as no farm run (the seed 2 probe included), no render, no test suite and none of round 49's
+  gap work.** The owner will choose Intel Default Settings after the flash. Seed 2's probe is
+  also a hardware test: a replay that reproduces the minus infinity at the same step is a code
+  fault, and one that runs clean past 13,700 s says the run's arithmetic went wrong once on
+  this machine (an inference until the replay runs).
 - **Round 48 is running.** The pre-registration is `logbook/0119-a-stomach-on-a-plant-and-paying-as-you-go.md`,
   committed at `d35c248` on a clean tree and pushed. Seeds 1 and 2 launched at 12:51 from
   it (`gitCommit d35c248`, `gitDirty` false, `configHash e5a30c15db9fc4db`, five threads each,

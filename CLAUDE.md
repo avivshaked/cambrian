@@ -1521,6 +1521,15 @@ actually verifying it.
   Code's process tree (an inference). It bites a pace or timing read: the same run is faster
   with VS Code in front, so a wall split or a pace compared across two windows of time
   compares the focus as well.
+- **Read the CPU's microcode before a long run.** The i9-13900K is a 13th-generation chip,
+  and Intel's fixes for that generation's voltage degradation (microcode 0x129 and 0x12B,
+  2024) come only with a BIOS update. On 2026-09-24 the board (ASUS PRIME Z790-P WIFI) was on
+  BIOS 0806 of 2022 with microcode 0x10E after weeks of boosted all-core load, and the owner
+  held every new run until the flash (HANDOFF). The revision is `Update Revision` under
+  `HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor `, little-endian (`0E 01 00 00` is
+  0x10E); throttling is `\Processor Information(_Total)\Performance Limit Flags` (0 is none).
+  The ASUS WMI classes in `root\wmi` (`ASUSManagement`, `AsusAtkWmi_WMNB`) write the SMBus,
+  boot order, passwords and fan curves and are never called.
 - **Report the machine's CPU as Task Manager does: `% Processor Utility`, not `% Processor
   Time`.** On 2026-09-24 the agent read 41% from `\Processor(_Total)\% Processor Time` while
   the owner's Task Manager showed 75%. Both were right: `Time` is the share of time a core is
