@@ -297,10 +297,17 @@ than clamped (radius, elevation to negative, bearing and sweep searched until th
 path clears the glass, the bed, the reef, the bodies and 1.5 m of water), the arrival is
 framed on the bearing that shows the most bodies and tables, and a scene moved to a
 checkpoint has its captions rewritten from the filmed second; on seed 1's scenes 1, 3, 4,
-9 to 12 and 17: no dark frames, none over the ceiling, the bounds never engaged. Seed 1 is
-being refilmed on it from worker 6 (05:56); worker 5 carries the same theatre for the
-pictures. The guide (`guide.py r47-s1`, 106 clades priced
-by the ledger, none failed) is under the run directory. **Seed 3 launched at 03:25** from `d7e3b6e` (the HANDOFF commit after the
+9 to 12 and 17: no dark frames, none over the ceiling, the bounds never engaged. Seed 1 was
+refilmed on it (07:27, the same 24 clips under `scratch/safari/r47-s1/2026-09-24/`, the
+first set overwritten): 15,935 frames, none over the ceiling (fastest 0.485 m/s), no dark
+frame in any clip, 26 frames inside a body, the arrival's 301 outside the glass by design.
+Worker 5 carries the same theatre for the pictures. The guide (`guide.py r47-s1`, 106 clades priced
+by the ledger, none failed) is under the run directory. **Seed 2 ended at 30,000 s** (about 06:20, 357 min wall at 1.4x real time, 5,602 alive,
+45,675 births, no divergence, both books closed): the pool's 78 founders all died at a
+median 24 s and none bred; the tables held more snow than the open floor at 192 of 201
+dumps and at the last one (0.53 against 0.47 J/m³); fewer bodies under the caps than beside
+them at all 41 samples; 592 bodies under caps at the end, none a stomach; `expo` 1.87. Its
+guide and safari follow seed 1's. **Seed 3 launched at 03:25** from `d7e3b6e` (the HANDOFF commit after the
 pre-registration's `50102ba`; every hash equal, `gitDirty` false, sixteen reefs at a cover
 of 0.255, 6.3 to 16.0 m), two arms at a time. The watch is a session cron running `watch-round.py r47 --read
 scripts/reads/r47-read.py --seeds 1,2,3` every half hour; frames are taken from the
