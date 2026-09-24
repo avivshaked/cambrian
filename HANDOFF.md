@@ -279,7 +279,19 @@ food`, the shore at 1 m with a 15 m fade. **Seed 1 ended at 30,000 s** (03:22, 1
 median 46 s, three bred, none of their line lived to the end; the tables held more snow than
 the open floor at 37 of 201 dumps and at the last one; fewer bodies under the caps than
 beside them at all 41 samples; 257 bodies under caps at the end, one a stomach; `expo`
-1.62. **Seed 3 launched at 03:25** from `d7e3b6e` (the HANDOFF commit after the
+1.62. **Seed 1's safari was filmed (04:54, 24 clips, `scratch/safari/r47-s1/2026-09-24/`)
+and shows four defects of the director on this world**: the eye enters the reef rock (two
+clips about half black, scenes 03 and 17; the director bounds the bed, the glass, the surface
+and bodies, not the reef); the crowd in the top 4 m makes every lifted colony pull-back
+clash with the surface and the surface bound then throws the camera at up to 5.3 m/s, 5,381
+of 15,935 frames over the 0.5 m/s ceiling, and portraits of surface subjects sit on the
+bound every frame; a scene snapped to a checkpoint keeps the caption of its best second
+(the arrival says 4,860 s and 546 alive over a frame at 2,500 s); and the arrival is dim and
+mostly the wall. An Opus subagent is fixing all four in the worktree
+`.claude/worktrees/safari-r47` (`unity/Assets/Theatre/` only; verification on scenes 1, 3,
+4 and 17 of seed 1 from a worker refreshed from the worktree) before seeds 2 and 3 are
+filmed; seed 1 is refilmed after the merge. The guide (`guide.py r47-s1`, 106 clades priced
+by the ledger, none failed) is under the run directory. **Seed 3 launched at 03:25** from `d7e3b6e` (the HANDOFF commit after the
 pre-registration's `50102ba`; every hash equal, `gitDirty` false, sixteen reefs at a cover
 of 0.255, 6.3 to 16.0 m), two arms at a time. The watch is a session cron running `watch-round.py r47 --read
 scripts/reads/r47-read.py --seeds 1,2,3` every half hour; frames are taken from the
