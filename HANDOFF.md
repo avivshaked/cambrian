@@ -362,28 +362,37 @@ is what the next session works from. Everything below it in this section is hist
   argument is `r48`, not `48` (this block's predecessor had it wrong: `48` looks for arms named
   `48-s1`). It dies with the session and expires after seven days; re-arm it after a restart,
   never as a shell loop.
-- **The safari branch carries two new skin passes** (`worktree-safari2-r47`, worktree
+- **The safari branch carries three skin passes** (`worktree-safari2-r47`, worktree
   `scratch/wt-safari2`, moved there from `.claude/worktrees/safari2-r47` on 2026-09-24 because
-  every write under `.claude` asks the owner, CLAUDE.md's worktree gotcha; `ce8d690` and
-  `98f73c6` on top of `41ed512`, and the earth under the bed uncommitted). First, joints: the pink marker
-  cylinder is gone and each free joint carries a knuckle of each part's own tissue, an
-  ellipsoid on the anchor that hides when the limb is straight and rounds over the crease when
-  it bends (the owner: "we don't have a proper skin for joints... something that would make it
-  look organic"); rendered in seed 1's scenes 14 and 20 with every camera check clean, but no
-  shot is close enough to judge it. Second, leaves (the owner's ruling of the same afternoon on
-  "these flat leaves": items 1 to 4 and the curl): a leaf mesh the shader shapes per body, an
-  outline, a lens cross-section, veins, a curl of up to a tenth of the width (the one visual
-  outside a collider, ruled), and a hue turn per clade set by the safari. **It does not yet
-  show**: the first close film (`scratch/films/r47-s1` in the worktree) drew no leaves, because
-  the test took a leaf to be a sheet, and round 47's photosynthetic boxes are not sheets
-  (smallest side over the next, median 0.79, none under 0.4, in seed 1's 5,000 s snapshot).
-  The next step is to draw every photosynthetic box with the leaf path, whatever its
-  thickness, so a thick one reads as a succulent leaf, then film the close shot again.
-- **Round 47's safari reshoot has to run from the worktree.** Main's round 48 build refuses
-  round 47's checkpoints and config (`StateVersion` 10 and the new tunables), so a worker
-  refreshed from main after the merge cannot seek a round 47 scene. Reshoot from the
-  worktree's worker 5 (its Core predates round 48), then merge; or merge and shoot round 48
-  instead. The call-outs stay off until the owner rules.
+  every write under `.claude` asks the owner, CLAUDE.md's worktree gotcha; `ce8d690`, `98f73c6`
+  and `91de2a8` on top of `41ed512`, not merged). First, joints: the pink marker cylinder is
+  gone and each free joint carries a knuckle of each part's own tissue, an ellipsoid on the
+  anchor that hides when the limb is straight and rounds over the crease when it bends (the
+  owner: "we don't have a proper skin for joints... something that would make it look
+  organic"); no shot has yet been close enough to judge it. Second, leaves: every
+  photosynthetic box, whatever its thickness, is drawn as a seaweed blade the shader shapes per
+  body (a round tip, a wedge base into the stalk, shallow lobes, a still frill at the margin
+  inside the ruled curl of a tenth of the width, a midrib that fades up the blade, a lens at
+  most a third as thick as it is wide), lit through by its size and glowing from the surface
+  seen from below. The plan's seed sets the family's blade and the creature's id moves it a
+  little, and every cell, not only a blade, takes its own shade, warmth and wrinkle placement
+  from the id (the owner: "something that doesn't look exactly the same for every leaf just
+  similar", and "the minor variations" for all cells). The blades cost nothing measurable: 33.4
+  ms a frame on against 36.2 off on seed 1's 2,619 bodies. The owner has the sheet
+  (`scratch/leaf-look/seaweed-blades-sheet.png`) and has not yet weighed in. Third, the ground
+  under a shaped bed is earth (the owner, on a round 48 picture: "everything under the ground
+  [should] be full of earth ... the camera should not actually be allowed in there"): a ring
+  wall inside the glass in a shader of its own, layered sediment under a grey sand band
+  (`scratch/leaf-look/earth/side-4.png`), `EVOSIM_THEATRE_EARTH=0` to see through the shoal
+  for a census, and the free-fly camera held 0.3 m above the bed (the films and the safari
+  already were).
+- **Round 47 seed 2's safari reshoot is running** on those passes, from the worktree's worker 5
+  (its Core predates round 48; main's build refuses round 47's checkpoints), launched 14:29,
+  29 scenes at 1920x1080 with `-DeleteFrames`, detached, log
+  `scratch/wt-safari2/scratch/logs/safari-r47-s2-reshoot.out` and `theatre-safari-r47-s2.log`,
+  films into `scratch/wt-safari2/scratch/safari/r47-s2/2026-09-24/`. The call-outs stay off
+  until the owner rules. Merge the branch after the films are seen; round 48's safari then
+  runs from main.
 - **The review of the films for "breathtaking" is back** (an Opus subagent over seed 2's 24
   safari sheets and a dozen full frames; its findings and ranked changes are
   `logbook/specs/theatre-review-2026-09-24.md`). Its reading: the water is murky and lit from
