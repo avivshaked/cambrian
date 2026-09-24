@@ -26,9 +26,11 @@ namespace Evosim.Theatre
     /// <para>
     /// <b>The check before the take.</b> Every plan's path is sampled and each sample asked
     /// whether it stands over the bed by the film's clearance, inside the glass, under the
-    /// surface and outside every other body's reach at the scene's second. A plan that fails is
-    /// lifted, then pulled back, in small steps, and the plan's line says how far. The film's
-    /// per-frame walls stay on behind it for what moves after the check.
+    /// surface, a metre and a half outside every reef's rock and outside every other body's reach
+    /// at the scene's second. A portrait or a colony that fails is re-planned, not clamped: its
+    /// height (down to under the subject, looking up), its bearing and its distance are searched
+    /// nearest first, and the plan's line says what moved. The film's per-frame walls stay on
+    /// behind it for what moves after the check, and their corrections are held to the ceiling.
     /// </para>
     /// </remarks>
     public static class SafariPlans
@@ -96,15 +98,24 @@ namespace Evosim.Theatre
 
         // ---------------------------------------------------------------- the check
 
+        /// <summary>
+        /// The extra room under the surface a moving plan keeps at the scene's second, m, over the
+        /// film's metre: a followed subject rises and falls a little during its take, and a plan
+        /// that grazes the metre at the second it was made sits on the surface's clamp after.
+        /// </summary>
+        public const float SurfaceMargin = 0.5f;
+
         /// <summary>Why a planned eye would clip, or null when it is clear.</summary>
-        public static string Clash(Stage stage, Vector3 eye, long ignore = -1)
+        /// <param name="topMargin">Extra room under the surface's clearance, m.</param>
+        public static string Clash(Stage stage, Vector3 eye, long ignore = -1, float topMargin = 0f)
         {
             FilmPlans.WorldBounds w = stage.World;
 
             if (w.Outside(eye)) return "outside the glass";
             if (w.Tank && new Vector2(eye.x - w.Axis.x, eye.z - w.Axis.y).magnitude > w.Radius - FilmPlans.GlassClearance) return "at the glass";
-            if (eye.y > -FilmPlans.Clearance) return "at the surface";
+            if (eye.y > -FilmPlans.Clearance - topMargin) return "at the surface";
             if (eye.y < w.FloorAt(eye.x, eye.z) + FilmPlans.Clearance) return "in the bed";
+            if (w.ReefDistance(eye) < FilmPlans.ReefClearance) return "in the reef";
 
             for (int i = 0; i < stage.Positions.Count; i++)
             {
@@ -115,49 +126,167 @@ namespace Evosim.Theatre
             return null;
         }
 
+        /// <summary>
+        /// Whether the rock stands between an eye and what it looks at, sampled at eight points of
+        /// the line short of both ends (a sitter on a table touches the rock it sits on).
+        /// </summary>
+        /// <param name="halfTan">
+        /// With a lens: the tangent of the frame's half-width, and the rock must also stand clear
+        /// of seven tenths of the frame's cone round the line, tapered to nothing at the subject
+        /// (a table under a sitter is its background). Round 47's second portrait of
+        /// Pinnifrons febofila kept its eye out of the rock and still filled half its frames
+        /// with a stem a few metres off the lens.
+        /// </param>
+        public static string Hidden(Stage stage, Vector3 eye, Vector3 look, float halfTan = 0f)
+        {
+            if (stage.World.Reefs == null) return null;
+            float length = (look - eye).magnitude;
+            for (int k = 1; k <= 8; k++)
+            {
+                float f = 0.05f + 0.85f * k / 8f;
+                Vector3 p = Vector3.Lerp(eye, look, f);
+                float room = 0.7f * halfTan * Mathf.Min(f, 1f - f) * length;
+                float d = stage.World.ReefDistance(p);
+                if (d < 0f) return "the reef hides the subject";
+                if (d < room) return "the reef fills the frame";
+            }
+            return null;
+        }
+
         /// <summary>The first clash along a path sampled at 25 points, or null.</summary>
         private static string PathClash(Stage stage, Func<float, Vector3> eyeAt, long ignore)
         {
+            PathClashes(stage, eyeAt, ignore, null, 0f, out string first);
+            return first;
+        }
+
+        /// <summary>
+        /// How many of a path's 25 samples clash (with the rock between the eye and the look
+        /// counted when a look is given), and the first of them, or null.
+        /// </summary>
+        private static int PathClashes(Stage stage, Func<float, Vector3> eyeAt, long ignore,
+            Func<float, Vector3> lookAt, float topMargin, out string first, float halfTan = 0f)
+        {
+            first = null;
+            int n = 0;
             for (int k = 0; k <= 24; k++)
             {
-                string why = Clash(stage, eyeAt(k / 24f), ignore);
-                if (why != null) return why + " at " + (k * 100 / 24) + "% of the path";
+                float u = k / 24f;
+                Vector3 eye = eyeAt(u);
+                string why = Clash(stage, eye, ignore, topMargin);
+                if (why == null && lookAt != null) why = Hidden(stage, eye, lookAt(u), halfTan);
+                if (why == null) continue;
+                n++;
+                if (first == null) first = why + " at " + (k * 100 / 24) + "% of the path";
             }
-            return null;
+            return n;
         }
 
         // ---------------------------------------------------------------- arrival
 
         /// <summary>
-        /// Outside the glass at the surface, the rim a line and the crowd a haze below it; a
-        /// ten-second hold with a push of a metre and a half, linear, since it is a drift.
+        /// Outside the glass just over the waterline, at the bearing whose frame holds the most
+        /// bodies and reef tables, looking down at that crowd; a ten-second hold with a push of a
+        /// metre and a half, linear, since it is a drift.
         /// </summary>
         public static Take Arrival(Stage stage, float seconds, int hash)
         {
-            float bearing = (hash % 360) * Mathf.Deg2Rad;
-            var outward = new Vector3(Mathf.Cos(bearing), 0f, Mathf.Sin(bearing));
-            float outside = stage.Room + FilmPlans.GlassClearance + 4f;
+            // The first cut stood at a bearing from the hash, looked at the axis 88 m away through
+            // the fog and framed the glass's seams and a dim haze (round 47 seed 1, 2026-09-24).
+            // Now the bearing is the one whose frame holds the most bodies and reef tables within
+            // the distance the water shows, the look is at those bodies, and the eye stands over
+            // the waterline, outside the glass, so the tables' tops face it rather than their rims.
+            const float fov = 50f;
+            float outside = stage.Room + FilmPlans.GlassClearance + 2.5f;
             float push = 1.5f;
+            float tanV = Mathf.Tan(0.5f * fov * Mathf.Deg2Rad), tanH = tanV * stage.Aspect;
+            ReefGeometry reefs = stage.World.Reefs;
 
-            Vector3 crowd = stage.Centroid(null);
-            Vector3 start = stage.Axis(-0.6f) + outward * outside;
-            Vector3 end = start - outward * push;
-            Vector3 look = stage.Axis(Mathf.Min(-2f, 0.5f * crowd.y));
+            float bestBearing = (hash % 360) * Mathf.Deg2Rad;
+            Vector3 bestLook = stage.Axis(-3f);
+            int bestBodies = -1, bestTables = 0;
+            float bestScore = -1f;
 
-            FilmPlans.Shot shot = FilmPlans.Shot.Custom("arrival", stage.World, seconds, 50f, false,
+            for (int k = 0; k < 72; k++)
+            {
+                float b = (hash % 5 + k * 5f) * Mathf.Deg2Rad;
+                var outward = new Vector3(Mathf.Cos(b), 0f, Mathf.Sin(b));
+                Vector3 eye = stage.Axis(ArrivalEyeHeight) + outward * outside;
+
+                // The crowd on this side: bodies within sight, inside a wide cone inward.
+                Vector3 sum = Vector3.zero;
+                int near = 0;
+                for (int i = 0; i < stage.Positions.Count; i++)
+                {
+                    Vector3 d = stage.Positions[i] - eye;
+                    float dist = d.magnitude;
+                    if (dist > ArrivalSightMetres || dist < 1f) continue;
+                    if (Vector3.Dot(new Vector3(d.x, 0f, d.z).normalized, -outward) < 0.7f) continue;
+                    sum += stage.Positions[i];
+                    near++;
+                }
+
+                Vector3 look = near > 0 ? sum / near : eye - outward * (0.5f * ArrivalSightMetres);
+                look.y = Mathf.Min(look.y, -2.5f);
+                Quaternion inverse = Quaternion.Inverse(Quaternion.LookRotation(look - eye, Vector3.up));
+
+                bool InFrame(Vector3 p)
+                {
+                    Vector3 c = inverse * (p - eye);
+                    return c.z > 1f && c.z < ArrivalSightMetres && Mathf.Abs(c.x) < c.z * tanH && Mathf.Abs(c.y) < c.z * tanV;
+                }
+
+                int bodies = 0;
+                foreach (Vector3 p in stage.Positions) if (InFrame(p)) bodies++;
+
+                int tables = 0;
+                if (reefs != null)
+                {
+                    for (int r = 0; r < reefs.Count; r++)
+                    {
+                        if (InFrame(new Vector3((float)reefs.CentreX(r), (float)reefs.CapTopY(r), (float)reefs.CentreZ(r)))) tables++;
+                    }
+                }
+
+                float score = bodies + 25f * tables;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestBearing = b;
+                    bestLook = look;
+                    bestBodies = bodies;
+                    bestTables = tables;
+                }
+            }
+
+            var outwardBest = new Vector3(Mathf.Cos(bestBearing), 0f, Mathf.Sin(bestBearing));
+            Vector3 start = stage.Axis(ArrivalEyeHeight) + outwardBest * outside;
+            Vector3 end = start - outwardBest * push;
+            Vector3 lookAt = bestLook;
+
+            FilmPlans.Shot shot = FilmPlans.Shot.Custom("arrival", stage.World, seconds, fov, false,
                 (float u, float dt, out Vector3 eye, out Vector3 at) =>
                 {
                     eye = Vector3.Lerp(start, end, Mathf.Clamp01(u));
-                    at = look + (eye - start);
+                    at = lookAt + (eye - start);
                 },
                 string.Format(CultureInfo.InvariantCulture,
-                    "arrival from outside the glass at bearing {0:0} deg, {1:0.#} m from the axis at 0.6 m under the waterline, " +
-                    "a {2:0.#} m linear push over {3:0} s ({4:0.###} m/s)",
-                    bearing * Mathf.Rad2Deg, outside, push, seconds, push / seconds),
+                    "arrival from outside the glass at bearing {0:0} deg, {1:0.#} m from the axis at {2:0.#} m {3} the waterline, " +
+                    "looking {4:0} deg down at ({5:0.#}, {6:0.#}, {7:0.#}) where the frame holds {8} bodies and {9} reef tables within {10:0} m, " +
+                    "a {11:0.#} m linear push over {12:0} s ({13:0.###} m/s)",
+                    bestBearing * Mathf.Rad2Deg, outside, Mathf.Abs(ArrivalEyeHeight), ArrivalEyeHeight >= 0f ? "over" : "under",
+                    Mathf.Atan2(start.y - lookAt.y, new Vector2(lookAt.x - start.x, lookAt.z - start.z).magnitude) * Mathf.Rad2Deg,
+                    lookAt.x, lookAt.y, lookAt.z, bestBodies, bestTables, ArrivalSightMetres, push, seconds, push / seconds),
                 mayLeaveTheGlass: true);
 
             return new Take { Shot = shot, Seconds = seconds, Plan = shot.Plan_ };
         }
+
+        /// <summary>The arrival's eye over the waterline, m (negative is under it).</summary>
+        public const float ArrivalEyeHeight = 1.5f;
+
+        /// <summary>How far the arrival counts bodies and tables as seen, m: past it the water is haze.</summary>
+        public const float ArrivalSightMetres = 55f;
 
         // ---------------------------------------------------------------- descent
 
@@ -265,7 +394,7 @@ namespace Evosim.Theatre
             // The ceiling: arc speed at its peak plus the subject's drift, under half a metre a second.
             string notes = "";
             float Arc(float r) => (Mathf.Abs(azimuthSweep) * r * Mathf.Cos(elevation0) + elevationSweep * r) / seconds / (1f - FilmPlans.EaseShare);
-            float allowed = Mathf.Max(0.12f, FilmPlans.OrbitSpeedCeiling - driftSpeed);
+            float allowed = Mathf.Max(0.12f, 0.95f * (FilmPlans.OrbitSpeedCeiling - driftSpeed));   // under the per-frame limiter (0.97 of the ceiling)
             if (Arc(radius) > allowed)
             {
                 float cut = allowed / Arc(radius);
@@ -274,25 +403,80 @@ namespace Evosim.Theatre
                 notes += string.Format(CultureInfo.InvariantCulture, ", the arc cut to {0:0.##} of itself for the ceiling with {1:0.###} m/s of drift", cut, driftSpeed);
             }
 
-            // The check: lift in five-degree steps, then pull back by fifteen percent, until every
-            // sample of the ring is clear at the scene's second.
-            Vector3 EyeAt(float u, float r, float el0) =>
-                centre0 + r * Direction(azimuth0 + azimuthSweep * FilmPlans.Ease(u), el0 + elevationSweep * FilmPlans.Ease(u));
+            // The check re-plans rather than clamps: the arc's height (down to under the subject,
+            // looking up), its bearing, the sense of a vertical sweep and its distance are searched
+            // nearest first until every sample of the ring is clear of the glass, the bed, the
+            // reef's rock and the bodies, a metre and a half under the surface, with no rock
+            // between the eye and the subject, at the scene's second. Round 47's first safari
+            // lifted surface portraits into the surface's clamp and orbited two into the rock.
+            // The subject where its drift at the scene's second carries it, for the check: a
+            // swimmer crosses metres in a take, and the eye goes with it.
+            Vector3 SubjectAt(float u) => centre0 + drift * (u * seconds);
+            Vector3 EyeAt(float u, float r, float az0, float el0, float elSweep) =>
+                SubjectAt(u) + r * Direction(az0 + azimuthSweep * FilmPlans.Ease(u), el0 + elSweep * FilmPlans.Ease(u));
 
-            int lifts = 0, pulls = 0;
-            string clash = PathClash(stage, u => EyeAt(u, radius, elevation0), id);
-            while (clash != null && lifts < 6) { lifts++; elevation0 += 5f * Mathf.Deg2Rad; clash = PathClash(stage, u => EyeAt(u, radius, elevation0), id); }
-            while (clash != null && pulls < 6) { pulls++; radius *= 1.15f; clash = PathClash(stage, u => EyeAt(u, radius, elevation0), id); }
-            if (lifts > 0) notes += string.Format(CultureInfo.InvariantCulture, ", lifted {0} deg", 5 * lifts);
-            if (pulls > 0) notes += string.Format(CultureInfo.InvariantCulture, ", pulled back to {0:0.##} m", radius);
-            if (clash != null) notes += ", STILL CLASHES (" + clash + "): the film's per-frame walls take it from here";
+            float baseRadius = radius, baseElevation = elevation0, baseAzimuth = azimuth0, baseSweep = elevationSweep;
+            float[] radiusScales = { 1f, 1.2f, 1.45f, 0.8f, 1.75f, 0.65f, 2.1f };
+            float[] elevationSteps = { 0f, -5f, 5f, -10f, 10f, -15f, 15f, -20f, 20f, -30f, 30f, -40f, 40f };
+            float[] azimuthSteps = { 0f, 30f, -30f, 60f, -60f, 90f, -90f, 135f, -135f, 180f };
+            float[] senses = baseSweep != 0f ? new[] { 1f, -1f } : new[] { 1f };
+            float steepest = 65f * Mathf.Deg2Rad;
+
+            int fewest = int.MaxValue;
+            string clash = null;
+            bool Search()
+            {
+                foreach (float scale in radiusScales)
+                foreach (float sense in senses)
+                foreach (float de in elevationSteps)
+                foreach (float da in azimuthSteps)
+                {
+                    float r = baseRadius * scale, e0 = baseElevation + de * Mathf.Deg2Rad;
+                    float a0 = baseAzimuth + da * Mathf.Deg2Rad, es = sense * baseSweep;
+                    if (Mathf.Abs(e0) > steepest || Mathf.Abs(e0 + es) > steepest) continue;
+
+                    // The lens this radius will get (below), for the frame's cone.
+                    float lensTan = Mathf.Tan(0.5f * Mathf.Clamp(2f * Mathf.Atan(3f * reach / r) * Mathf.Rad2Deg, 12f, 50f) * Mathf.Deg2Rad) * stage.Aspect;
+                    int n = PathClashes(stage, u => EyeAt(u, r, a0, e0, es), id, SubjectAt, SurfaceMargin, out string why, lensTan);
+                    if (n >= fewest) continue;
+
+                    fewest = n;
+                    clash = why;
+                    radius = r; elevation0 = e0; azimuth0 = a0; elevationSweep = es;
+                    if (n == 0) return true;
+                }
+                return false;
+            }
+
+            Search();
+
+            bool replanned = radius != baseRadius || elevation0 != baseElevation || azimuth0 != baseAzimuth || elevationSweep != baseSweep;
+            if (replanned)
+            {
+                notes += string.Format(CultureInfo.InvariantCulture,
+                    ", re-planned clear: {0:0} deg of elevation (from {1:0}), turned {2:0} deg, at {3:0.##} m (from {4:0.##}){5}",
+                    elevation0 * Mathf.Rad2Deg, baseElevation * Mathf.Rad2Deg, (azimuth0 - baseAzimuth) * Mathf.Rad2Deg,
+                    radius, baseRadius, elevationSweep != baseSweep ? ", sweeping down" : "");
+            }
+
+            // A longer radius makes the arc faster: cut it again (a shorter arc is a part of the
+            // one checked, so it stays clear).
+            if (Arc(radius) > allowed)
+            {
+                float cut = allowed / Arc(radius);
+                azimuthSweep *= cut;
+                elevationSweep *= cut;
+                notes += string.Format(CultureInfo.InvariantCulture, ", cut again to {0:0.##} for the ceiling at the new radius", cut);
+            }
+
+            if (fewest > 0) notes += ", STILL CLASHES (" + clash + ", " + fewest + " of 25 samples): the film's per-frame walls take it from here";
 
             // The lens from the radius: the body's diameter a third of the frame's height.
             float fov = Mathf.Clamp(2f * Mathf.Atan(3f * reach / radius) * Mathf.Rad2Deg, 12f, 50f);
             float tanH = Mathf.Tan(0.5f * fov * Mathf.Deg2Rad) * stage.Aspect;
 
             // A third off centre, on the side the subject came from, so it swims into the frame.
-            Vector3 firstEye = EyeAt(0f, radius, elevation0);
+            Vector3 firstEye = EyeAt(0f, radius, azimuth0, elevation0, elevationSweep);
             Vector3 right = Vector3.Cross(Vector3.up, (centre0 - firstEye).normalized).normalized;
             float lead = Vector3.Dot(drift, right) >= 0f ? 1f : -1f;
             float offset = lead * radius * tanH / 3f;
@@ -457,41 +641,97 @@ namespace Evosim.Theatre
             // The portrait's own distance for this body, so the pull-back starts where a portrait sat.
             float r0 = Mathf.Max(2.5f, 10f * reach);
             float wanted = 1.1f * spread / Mathf.Min(tanV, tanV * stage.Aspect) + spread;
-            float most = r0 + 0.8f * FilmPlans.OrbitSpeedCeiling * seconds;
-            float r1 = Mathf.Clamp(wanted, r0 + 1f, most);
 
-            float azimuth = ((hash >> 7) % 360) * Mathf.Deg2Rad;
-            float elevation = 20f * Mathf.Deg2Rad;
+            // The eye's whole travel under the ceiling: the eased peak is 1/(1 - share) of the mean,
+            // and the travel is the look's move plus the pull-back's, both at once. The first
+            // safari counted the pull-back alone and let the look cross a colony tens of metres
+            // wide in twenty seconds, which moved the camera at up to 5.3 m/s (2026-09-24).
+            float peakShare = 1f / (1f - FilmPlans.EaseShare);
+            float travel = 0.95f * FilmPlans.OrbitSpeedCeiling * seconds / peakShare;
+            float r1Full = Mathf.Clamp(wanted, r0 + 1f, r0 + travel);
+            Vector3 toCentre = centre - anchor;
+
+            float baseAzimuth = ((hash >> 7) % 360) * Mathf.Deg2Rad;
+            const float baseElevation = 20f;
+            long anchorId = stage.Ids[anchorIndex];
+
+            // The share of the way from the anchor to the members' centre the look may travel with
+            // a given pull-back, the most that keeps the eye's whole move under the travel.
+            float LookShare(Vector3 pull)
+            {
+                if (pull.magnitude >= travel) return 0f;
+                if ((toCentre + pull).magnitude <= travel) return 1f;
+                float lo = 0f, hi = 1f;
+                for (int i = 0; i < 24; i++)
+                {
+                    float mid = 0.5f * (lo + hi);
+                    if ((mid * toCentre + pull).magnitude <= travel) lo = mid; else hi = mid;
+                }
+                return lo;
+            }
+
+            // The rock is kept out of the frame's cone as far as its half-height (a milder test
+            // than the portrait's half-width: a colony round a table has the table beside it).
+            // Re-planned rather than clamped: the pull-back's height (down to under the colony,
+            // looking up at it and the surface's underside), its bearing and its length are
+            // searched nearest first until the whole path is clear of the glass, the bed, the
+            // reef's rock and the bodies, a metre and a half under the surface, with no rock
+            // between the eye and the look.
+            float[] pullScales = { 1f, 0.7f, 0.45f, 0.2f };
+            float[] elevations = { 20f, 10f, 30f, 0f, -10f, 40f, -20f, -30f, -40f, -50f };
+            float[] azimuthSteps = { 0f, 45f, -45f, 90f, -90f, 135f, -135f, 180f };
+
+            int fewest = int.MaxValue;
+            string clash = null;
+            float r1 = r1Full, elevation = baseElevation * Mathf.Deg2Rad, azimuth = baseAzimuth, share = 0f;
             Vector3 dir = Direction(azimuth, elevation);
 
-            // The look travels from the anchor to the members' centre as the eye pulls back, so the
-            // colony gathers round the body the portrait showed.
-            string notes = "";
-            int lifts = 0;
-            string clash = PathClash(stage, u => Vector3.Lerp(anchor, centre, u) + Mathf.Lerp(r0, r1, u) * dir, stage.Ids[anchorIndex]);
-            while (clash != null && lifts < 8)
+            bool Search()
             {
-                lifts++;
-                elevation += 5f * Mathf.Deg2Rad;
-                dir = Direction(azimuth, elevation);
-                Vector3 d = dir;
-                clash = PathClash(stage, u => Vector3.Lerp(anchor, centre, u) + Mathf.Lerp(r0, r1, u) * d, stage.Ids[anchorIndex]);
+                foreach (float scale in pullScales)
+                foreach (float el in elevations)
+                foreach (float da in azimuthSteps)
+                {
+                    float r = r0 + (r1Full - r0) * scale;
+                    float e = el * Mathf.Deg2Rad, a = baseAzimuth + da * Mathf.Deg2Rad;
+                    Vector3 d = Direction(a, e);
+                    float f = LookShare((r - r0) * d);
+                    Vector3 look1 = anchor + f * toCentre;
+
+                    int n = PathClashes(stage, u => Vector3.Lerp(anchor, look1, u) + Mathf.Lerp(r0, r, u) * d, anchorId,
+                        u => Vector3.Lerp(anchor, look1, u), SurfaceMargin, out string why, tanV);
+                    if (n >= fewest) continue;
+
+                    fewest = n;
+                    clash = why;
+                    r1 = r; elevation = e; azimuth = a; dir = d; share = f;
+                    if (n == 0) return true;
+                }
+                return false;
             }
-            if (lifts > 0) notes += string.Format(CultureInfo.InvariantCulture, ", lifted {0} deg", 5 * lifts);
-            if (clash != null) notes += ", STILL CLASHES (" + clash + ")";
+
+            Search();
+
+            string notes = string.Format(CultureInfo.InvariantCulture, ", from {0:0} deg of elevation at a bearing turned {1:0} deg",
+                elevation * Mathf.Rad2Deg, (azimuth - baseAzimuth) * Mathf.Rad2Deg);
+            if (elevation != baseElevation * Mathf.Deg2Rad || azimuth != baseAzimuth || r1 != r1Full)
+                notes += string.Format(CultureInfo.InvariantCulture, " (re-planned clear from {0:0} deg, {1:0.##} m)", baseElevation, r1Full);
+            if (fewest > 0) notes += ", STILL CLASHES (" + clash + ", " + fewest + " of 25 samples)";
 
             Vector3 fixedDir = dir;
+            Vector3 lookEnd = anchor + share * toCentre;
+            float peak = (share * toCentre + (r1 - r0) * dir).magnitude / seconds * peakShare;
             FilmPlans.Shot shot = FilmPlans.Shot.Custom("colony", stage.World, seconds, fov, false,
                 (float u, float dt, out Vector3 eye, out Vector3 at) =>
                 {
                     float e = FilmPlans.Ease(u);
-                    at = Vector3.Lerp(anchor, centre, e);
+                    at = Vector3.Lerp(anchor, lookEnd, e);
                     eye = at + Mathf.Lerp(r0, r1, e) * fixedDir;
                 },
                 string.Format(CultureInfo.InvariantCulture,
                     "colony of {0} members: a pull-back from {1:0.##} m to {2:0.##} m (their spread wants {3:0.##} m), " +
-                    "{4:0.###} m/s at the peak{5}",
-                    members.Count, r0, r1, wanted, (r1 - r0) / seconds / (1f - FilmPlans.EaseShare), notes));
+                    "the look carried {4:0}% of the {5:0.#} m from body {6} to the members' centre, {7:0.###} m/s at the peak{8}",
+                    members.Count, r0, r1, wanted, 100f * share, toCentre.magnitude, anchorId, peak, notes));
 
             return new Take { Shot = shot, Seconds = seconds, Plan = shot.Plan_, Subject = stage.Ids[anchorIndex] };
         }
