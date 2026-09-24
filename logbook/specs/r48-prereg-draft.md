@@ -177,10 +177,23 @@ working as intended; whether the world's 15,000 units bound the count under the 
 ceiling, or the ceiling ends every seed as a runaway before 30,000 s, is the plateau
 screen's question and not the smoke's.
 
-**The plateau screen** (`r48plat-s2`, seed 2, the launcher at dt 0.02 to 15,000 s, four
-threads). *Running at the time of writing; its reading is written here before the commit:
-the count at every 1,000 s, whether the ceiling fired, `upt lim`, the mean investment, and
-the median snow at the eaters.*
+**The count screen, first pass** (`r48plat-s2`, seed 2, the launcher at dt 0.02, four
+threads, stopped by hand at 680 s once it had answered). The count doubled every hundred
+seconds from 300 s: 940 alive at 300 s, 1,934 at 400, 3,854 at 500, 5,592 at 600, 6,111 at
+680 with 6,565 births, the mean birth investment down to 0.19 and still falling, and 2,557
+of the births paid from gestation accounts (the founders' first income fills an account
+faster than a reserve). The matter had begun to bind (`upt lim` 0.85, 3,175 of 15,072 units
+in bodies, deaths rising to 497), which is the closed world's bound and not the price's,
+and it would have bound somewhere above ten thousand bodies. So the launcher's prices as
+first written do not bound the count where a seed can run: round 47's seed 2 ran 1.4x real
+time at 5,600 bodies, and a crowd twice or three times that runs under 1x and past its wall.
+This is 0107's finding again, that a closed one-substance world's count is the budget over
+what a breeder must hold, and the floor of the overhead is that holding; a fee proportional
+to a child that a lineage can make as small as it likes is no floor at all. The value that
+moved is the floor: the second pass screens 50 J at x2 with the small-child floors kept
+(the ruling's point is that a small child is allowed, and the floor is what bounds the
+count), and 75 J if that settles above ten thousand. *The second pass's reading is written
+here before the commit.*
 
 ## The launch
 
