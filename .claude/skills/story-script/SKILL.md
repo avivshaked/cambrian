@@ -20,9 +20,18 @@ Checklist:
 4. The session writes the page to `script.md` through the shell, then
    `story-script.py apply <folder>` (the first apply keeps `story.draft.json`), then
    `story-script.py check <folder>`. Every ERROR goes back to the editor before the cold read.
-5. **The cold reader**: a Sonnet subagent, told to write no file, given only `script.cold.md`
-   (the page without its `>` lines: `grep -v '^>' script.md`). It returns its stumbles, the three
-   most machine-like lines and the story in two sentences. Save its answer as `cold-read-N.md`.
+   Then read `edits.tsv`'s new rows for meaning, since the check sees numbers and words, not
+   claims. Every fact a line gains is checked against `story.md` and `checks.tsv`, and against
+   the clip's plan and contact sheet once the story is filmed: where the body sits in the frame,
+   the provenance word, whether the chart is drawn. The session fixes a false line itself and
+   tells the editor. Round 48's trial found four this way: "the corner says COUSIN" on a film
+   whose every scene read FAITHFUL, "in the middle" for a body the director framed on the left,
+   and a naming rule narrowed to one line.
+5. **The cold reader**: a Sonnet subagent, told to use no tool and write no file.
+   `story-script.py cold <folder>` writes `script.cold.md`: the page without its notes, each
+   scene's heading cut to its number. Paste that page into the prompt, so the reader sees
+   nothing else. It returns its stumbles, the three most machine-like lines and the story in two
+   sentences. Save its answer as `cold-read-N.md`.
 6. Compare the cold reader's two sentences with the arc. Another round from step 3 if it missed
    the turn or stumbled, at most three rounds in all.
 7. Hand on `script.md`, `story.json`, `story.draft.json`, `edits.tsv`, the cold reads and the

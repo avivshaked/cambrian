@@ -67,7 +67,8 @@ Its rules:
 ## The cold reader
 
 The cold reader is a Sonnet subagent, a different model on purpose, given only the page with its notes stripped
-(`script.cold.md`). It never sees the runs, the glossary or this brief. It is told it is watching a
+and each scene's heading cut to its number (`script.cold.md`, from `story-script.py cold`), pasted
+into its prompt. It never sees the runs, the glossary or this brief. It is told it is watching a
 short film about a simulated tank of water and reading its narration. It returns:
 
 - every stumble, as scene, line and kind: a word it cannot define, a line it had to read twice, a

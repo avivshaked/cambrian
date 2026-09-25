@@ -4,6 +4,7 @@
     python scripts/story-script.py render <story folder> [--force]
     python scripts/story-script.py apply  <story folder>
     python scripts/story-script.py check  <story folder> [--stats]
+    python scripts/story-script.py cold   <story folder>
 
 The script stage of the story-film flow (`.claude/skills/story-script/SKILL.md`,
 `logbook/specs/story-script-brief.md`) edits the captions a writer wrote until they read as a
@@ -13,14 +14,20 @@ person's script. Editing captions inside JSON is error-prone, so the edit happen
   chapter, and under each scene's heading one line per caption. It refuses to overwrite a
   `script.md` whose edits are not applied yet, unless `--force`.
 - `apply` reads `script.md` back into `story.json`. The first apply keeps the writer's version as
-  `story.draft.json`. A caption whose words changed is re-timed by the reading-pace rule (4 s at
-  least, 14 characters a second, 1 s between captions), later captions move only as far as they
-  must, and a scene too short to hold its captions is lengthened and named. Every change is a row
+  `story.draft.json`. Every apply times a changed scene from a fixed base, the story as filmed
+  (`story.filmed.json`) once there is one and the writer's draft before that, so a round's result
+  depends on the page alone and not on the rounds before it. A caption whose words changed is
+  re-timed by the reading-pace rule (4 s at least, 14 characters a second, 1 s between captions),
+  later captions move only as far as they must, and a scene too short to hold its captions is
+  lengthened and named; one that needs less goes back to the base's length. Every change is a row
   of `edits.tsv` (round, scene, line, before, after). The headings are the structure: a scene
   heading may not be added, removed or renumbered.
 - `check` runs the mechanical checks on `story.json` against the draft and `checks.tsv`, prints
   each finding as ERROR, WARN or INFO, and exits 1 on any ERROR. `--stats` prints the draft's and
   the script's counts side by side.
+- `cold` writes `script.cold.md`, the page as the cold reader gets it: the title, the chapters and
+  the captions, each scene's heading cut to its number, and no note. A viewer never sees a scene's
+  run, second or subject, so the reader does not either.
 
 The page's form: `## Chapter K: <title>` opens a chapter, `### Scene N · ...` a scene (only N is
 read), each non-empty line under it is a caption, a blank line between two captions starts a new
@@ -208,6 +215,7 @@ def retime(old, new):
     ends later. A caption removed leaves its time empty; the picture holds.
     """
     result, prev_end = [], None
+    old = [dict(c, text=" ".join(str(c.get("text", "")).split())) for c in old]
     matched = origins(old, new)
     for k, (text, brk) in enumerate(new):
         o = matched[k]
@@ -260,6 +268,10 @@ def cmd_apply(folder):
         shutil.copyfile(story_path, draft)
         out("kept the writer's version as " + draft)
 
+    filmed = os.path.join(folder, "story.filmed.json")
+    base_path = filmed if os.path.isfile(filmed) else draft
+    base = {b["n"]: b for b in scenes_of(load(base_path))}
+
     edits_path = os.path.join(folder, "edits.tsv")
     rnd = 1
     if os.path.isfile(edits_path):
@@ -267,7 +279,7 @@ def cmd_apply(folder):
             rounds = [int(l.split("\t", 1)[0]) for l in f.read().splitlines()[1:] if l.split("\t", 1)[0].isdigit()]
         rnd = max(rounds, default=0) + 1
 
-    rows, lengthened, changed_scenes = [], [], 0
+    rows, lengthened, restored, changed_scenes = [], [], [], 0
     if page["title"] and isinstance(story, dict) and page["title"] != story.get("title"):
         rows.append((0, "title", story.get("title", ""), page["title"]))
         story["title"] = page["title"]
@@ -282,17 +294,25 @@ def cmd_apply(folder):
             s["act"] = renamed[s["act"]]
         old = captions_of(s)
         new = page["scenes"][n]
-        if [(c.get("text"), bool(c.get("new_paragraph")) and k > 0) for k, c in enumerate(old)] == \
+        if [(" ".join(str(c.get("text", "")).split()), bool(c.get("new_paragraph")) and k > 0) for k, c in enumerate(old)] == \
                 [(t, b) for t, b in new]:
             continue
         changed_scenes += 1
         rows += edit_rows(n, [c.get("text", "") for c in old], [t for t, _ in new])
-        s["captions"], end = retime(old, new)
+        b = base.get(n)
+        if b is None or any(b.get(k) != s.get(k) for k in ("run", "second", "station", "subject")):
+            b = s   # the base holds another scene under this number: time from the story as it stands
+        s["captions"], end = retime(captions_of(b), new)
         need = math.ceil(end + TAIL) if end is not None else 0
-        length = float(s.get("seconds") or 0)
+        length = float(b.get("seconds") or 0)
+        was_len = float(s.get("seconds") or 0)
         if need > length:
-            lengthened.append((n, length, need))
+            if need != was_len:
+                lengthened.append((n, length, need))
             s["seconds"] = need
+        elif was_len != length:
+            restored.append((n, was_len, length))
+            s["seconds"] = b.get("seconds")
     save(story_path, story)
     new_file = not os.path.isfile(edits_path)
     with io.open(edits_path, "a", encoding="utf-8", newline="\n") as f:
@@ -305,6 +325,9 @@ def cmd_apply(folder):
     out("applied round %d: %d scene(s) changed, %d edit row(s) in %s" % (rnd, changed_scenes, len(rows), edits_path))
     for n, a, b in lengthened:
         out("  scene %d lengthened from %g s to %g s to hold its captions" % (n, a, b))
+    for n, a, b in restored:
+        out("  scene %d back from %g s to %g s, the %s length" % (
+            n, a, b, "filmed" if base_path == filmed else "writer's"))
     total = sum(float(s.get("seconds") or 0) for s in scenes_of(story))
     out("  the scenes now run %d s (%d min %02d s), chapter cards and title not counted" % (total, total // 60, total % 60))
 
@@ -497,6 +520,23 @@ def cmd_check(folder, with_stats):
     return 1 if counts["ERROR"] else 0
 
 
+def cmd_cold(folder):
+    lines = []
+    for line in render(load(os.path.join(folder, "story.json"))).splitlines():
+        if line.startswith(">") or line.startswith("<!--"):
+            continue
+        m = re.match(r"### Scene (\d+)", line)
+        if m:
+            line = "### Scene " + m.group(1)
+        if not line.strip() and lines and not lines[-1].strip():
+            continue
+        lines.append(line)
+    path = os.path.join(folder, "script.cold.md")
+    with io.open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(lines).strip() + "\n")
+    out("wrote " + path)
+
+
 def main():
     for stream in (sys.stdout, sys.stderr):
         try:
@@ -507,8 +547,8 @@ def main():
     force = "--force" in args
     with_stats = "--stats" in args
     args = [a for a in args if a not in ("--force", "--stats")]
-    if len(args) != 2 or args[0] not in ("render", "apply", "check"):
-        out(__doc__.strip().splitlines()[2:5] and "\n".join(l.strip() for l in __doc__.strip().splitlines()[2:5]))
+    if len(args) != 2 or args[0] not in ("render", "apply", "check", "cold"):
+        out("\n".join(l.strip() for l in __doc__.strip().splitlines()[2:6]))
         sys.exit(2)
     command, folder = args
     if not os.path.isfile(os.path.join(folder, "story.json")):
@@ -517,6 +557,8 @@ def main():
         cmd_render(folder, force)
     elif command == "apply":
         cmd_apply(folder)
+    elif command == "cold":
+        cmd_cold(folder)
     else:
         sys.exit(cmd_check(folder, with_stats))
 
