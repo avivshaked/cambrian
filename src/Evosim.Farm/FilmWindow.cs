@@ -954,7 +954,9 @@ namespace Evosim.Farm
 
             /// <summary>
             /// The <c>coreHash</c>, <c>dynamicsHash</c> and <c>farmHash</c> lines that differ, in
-            /// that order. Named in the verdict and never decisive on their own.
+            /// that order, after a <c>checkpointVersion</c> line when the checkpoint is round 48's
+            /// version 4, read lossily (<see cref="CheckpointHeader.ReadLossily"/>). Named in the
+            /// verdict and never decisive on their own: the identity rows decide.
             /// </summary>
             public readonly List<string> Sources = new List<string>();
         }
@@ -1040,6 +1042,20 @@ namespace Evosim.Farm
                     "film-window: the source differs from the run's (" +
                     string.Join("; ", sources.Sources) + "). It is named in the verdict and does " +
                     "not make the window a cousin; the identity rows decide.");
+
+                // Round 48's checkpoints (version 4) restore without the contact record, so any
+                // body whose brain reads the Contact or Damage sense steps differently from the
+                // first step. The rows still decide, and are expected to part at the first one.
+                foreach (string line in sources.Sources)
+                {
+                    if (!line.StartsWith("checkpointVersion:", StringComparison.Ordinal)) continue;
+
+                    log.WriteLine(
+                        "film-window: warning: this checkpoint is read lossily (" + line + "); " +
+                        "a body that reads its contact or damage sense steps differently from the " +
+                        "recording, and the window is faithful only if every identity row still " +
+                        "agrees.");
+                }
             }
         }
 

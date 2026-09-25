@@ -95,11 +95,21 @@ stream needs no second file for guilds. Version 1 streams stay readable, and the
 says which. A body fraction of NaN means "not recorded" (`logbook/specs/state-stream-spec.md`),
 and a picture draws that body at its adult size.
 
-A5. **Checkpoints are compressed.** `Checkpoint.Version` 5 gzips the payload after digesting it.
+A5. **Checkpoints are compressed.** `Checkpoint.Version` 6 gzips the payload after digesting it.
 The digest stays over the uncompressed payload, so the verification is unchanged. Version 4
 files stay readable, and the version field says which, so no reader guesses from the bytes.
-Format 1 still writes version 4, so a run in the old record writes the checkpoint every earlier
-run wrote. `WorldState.StateVersion` does not move: the world's layout is untouched.
+This part moves no `WorldState.StateVersion`.
+
+*Corrected at the merge with the checkpoint fix (2026-09-25).* This part was built as version 5,
+with format 1 still writing version 4. The checkpoint fix was built at the same time on
+`checkpoint-senses` (CLAUDE.md's checkpoint gotcha), as another version 5. It adds the contact
+record, the sense wiring, the size a growing body was stepping and the rebuild count
+(`StateVersion` 11), stored as it is. Round 49's build carries both as version 6: the new
+payload, gzipped. Both records write it, because the payload's layout is the world's and version
+4's lacks the contact record. A version-4 file (round 48's) is read lossily and names itself
+among the header's differences. A resume refuses it without the override, and a film window
+names it in the verdict and lets the rows decide. A file that says 5 is refused by name, since
+its version cannot say which of the two layouts it holds; no run kept one.
 
 A6. **One reader per language.** `scripts/reads/runrec.py` becomes the one way a Python script
 reads a run: `genomes(run)`, `snapshot(run, second)` (rows with the genome joined, so an old
@@ -242,7 +252,7 @@ Round 48 holds two farm runs until its third seed ends, and the machine's rule i
 beside two farm runs. The build, the compile, the converter's dry check and the fixtures' recipes
 are done now. Everything that runs the farm waits for the gap, or for a slot beside one farm run
 with nothing else. That is the suites, the regress (format 1 against format 2), the checkpointed
-fixture, the first faithful window, a resume from a version 5 checkpoint, the digests and every
+fixture, the first faithful window, a resume from a version 6 checkpoint, the digests and every
 timing. A timing taken beside anything is taken again. The theatre's readers have been
 type-checked outside Unity and never compiled by it. The first Unity compile, and a `-From
 snapshot` picture of a format 2 run, wait for the gap too.

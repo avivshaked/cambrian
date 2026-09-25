@@ -465,7 +465,7 @@ namespace Evosim.Core.Tests
         [Fact]
         public void TheAdmissionQueueIsOffByDefaultAndOnGivesOneGenomePerBirthRow()
         {
-            var config = new RunConfig { MinimumPopulation = 20, MaximumPopulation = 400 };
+            var config = new RunConfig { MinimumPopulation = 20, MaximumPopulation = 2_000 };
             config.Light = new LightModel(4000f, 40f);
 
             var off = new World(config, seed: 1);
@@ -478,7 +478,9 @@ namespace Evosim.Core.Tests
             var births = new List<long>();
             var genomes = new List<long>();
 
-            for (int i = 0; i < 200; i++)
+            // Sixty seconds: the light is generous enough that the crowd passes four hundred
+            // near 80 s, and a short run holds hundreds of births without a runaway.
+            for (int i = 0; i < 60; i++)
             {
                 on.Step(1f);
 
@@ -501,13 +503,13 @@ namespace Evosim.Core.Tests
         [Fact]
         public void TheQueueChangesNothingTheWorldDoes()
         {
-            var config = new RunConfig { MinimumPopulation = 20, MaximumPopulation = 400 };
+            var config = new RunConfig { MinimumPopulation = 20, MaximumPopulation = 2_000 };
             config.Light = new LightModel(4000f, 40f);
 
             var off = new World(config, seed: 3);
             var on = new World(config, seed: 3) { QueueAdmittedGenomes = true };
 
-            for (int i = 0; i < 150; i++)
+            for (int i = 0; i < 60; i++)
             {
                 off.Step(1f);
                 on.Step(1f);

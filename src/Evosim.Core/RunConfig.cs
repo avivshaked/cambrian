@@ -2923,7 +2923,8 @@ namespace Evosim.Core
 
         /// <summary>
         /// Whether a genome in this run may draw <see cref="SensorChannel.Damage"/> — the share of
-        /// this part's health pool it lost this step, D106 item 5. See <see cref="SenseContact"/>.
+        /// this part's health pool it has lost, D106 item 5, summed since the body's plan last
+        /// changed (<see cref="Organism.PartDamage"/>). See <see cref="SenseContact"/>.
         /// </summary>
         [Tunable("sense")]
         public bool SenseDamage

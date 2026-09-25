@@ -91,15 +91,60 @@ namespace Evosim.Core
         /// account, every queued birth row its mode and share, and the world its two cumulative
         /// gestation counters. A version-9 stream has none of them.
         /// </remarks>
-        public const int StateVersion = 10;
+        /// <remarks>
+        /// 11 with the contact record (2026-09-25): every creature carries
+        /// <see cref="Organism.PartContact"/> after its damage. The flag is sticky until a plan
+        /// change, so it is history and not a step's reading, and a version-10 stream put every
+        /// body back touching nothing; round 48's resume parted from the run at its first sample
+        /// in the jointed bodies whose brains read the channel. Version 10 is still read, as
+        /// <see cref="LossyStateVersion"/>: round 48's checkpoints are version 10, and the
+        /// theatre's story mode opens them as the cousins they already are.
+        /// </remarks>
+        public const int StateVersion = 11;
+
+        /// <summary>
+        /// The one older layout this build still reads: version 10, the layout of round 48's
+        /// checkpoints. It is read with every creature's contact record null, which is what the
+        /// build that wrote it restored, so a world read from it is a cousin of the run and not
+        /// its continuation; the farm refuses to resume from one unless told to take a cousin
+        /// (<c>EVOSIM_ALLOW_SOURCE_MISMATCH</c>).
+        /// </summary>
+        public const int LossyStateVersion = 10;
+
+        /// <summary>
+        /// The layout <see cref="ReadState"/> last read: <see cref="StateVersion"/> for a world
+        /// that has never been restored or was restored from this build's stream, and
+        /// <see cref="LossyStateVersion"/> for one restored from a round 48 checkpoint.
+        /// </summary>
+        /// <remarks>
+        /// Public because the harness's own layout moved with this one (the farm's
+        /// <c>Checkpoint.Version</c> 6) and the harness reads its half of the same file after
+        /// this has read its own, so this is how it knows which half it holds.
+        /// </remarks>
+        public int StateVersionRead { get; private set; } = StateVersion;
 
         /// <summary>
         /// Writes the whole of the world's own state.
         /// </summary>
-        public void WriteState(BinaryWriter w)
+        public void WriteState(BinaryWriter w) => WriteState(w, StateVersion);
+
+        /// <summary>
+        /// Writes the world in a layout this build reads: <see cref="StateVersion"/>, or
+        /// <see cref="LossyStateVersion"/> for the test that holds the lossy reader to what the
+        /// build before it wrote. Nothing in a run writes the older one.
+        /// </summary>
+        internal void WriteState(BinaryWriter w, int layout)
         {
+            if (layout != StateVersion && layout != LossyStateVersion)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(layout), layout,
+                    "This build writes version " + StateVersion + " and, for a test, version " +
+                    LossyStateVersion + ".");
+            }
+
             StateIo.Tag(w, "WRLD");
-            w.Write(StateVersion);
+            w.Write(layout);
             w.Write(Seed);
 
             // ---- the clock, the counters and the two books
@@ -186,7 +231,7 @@ namespace Evosim.Core
 
             StateIo.Tag(w, "LIVE");
             w.Write(_living.Count);
-            for (int i = 0; i < _living.Count; i++) WriteOrganism(w, _living[i]);
+            for (int i = 0; i < _living.Count; i++) WriteOrganism(w, _living[i], layout);
 
             // ---- the species registry
 
@@ -243,12 +288,13 @@ namespace Evosim.Core
             StateIo.Tag(r, "WRLD");
 
             int version = r.ReadInt32();
-            if (version != StateVersion)
+            if (version != StateVersion && version != LossyStateVersion)
             {
                 throw new InvalidDataException(
                     "The checkpoint's world state is version " + version + " and this build " +
-                    "reads version " + StateVersion + ". A checkpoint is refused rather than " +
-                    "read with a field guessed at, under the rule the config reader follows.");
+                    "reads version " + StateVersion + " (and version " + LossyStateVersion +
+                    ", without the contact record). A checkpoint is refused rather than read " +
+                    "with a field guessed at, under the rule the config reader follows.");
             }
 
             ulong seed = r.ReadUInt64();
@@ -324,7 +370,7 @@ namespace Evosim.Core
             StateIo.Tag(r, "LIVE");
             int living = r.ReadInt32();
             _living.Clear();
-            for (int i = 0; i < living; i++) _living.Add(ReadOrganism(r));
+            for (int i = 0; i < living; i++) _living.Add(ReadOrganism(r, version));
 
             StateIo.Tag(r, "SPEC");
             int species = r.ReadInt32();
@@ -369,11 +415,13 @@ namespace Evosim.Core
             ReadField(r, Matter);
 
             StateIo.Tag(r, "WEND");
+
+            StateVersionRead = version;
         }
 
         // ------------------------------------------------------------------ one creature
 
-        private void WriteOrganism(BinaryWriter w, Organism creature)
+        private void WriteOrganism(BinaryWriter w, Organism creature, int layout)
         {
             w.Write(creature.Id);
             w.Write(creature.ParentId);
@@ -480,10 +528,26 @@ namespace Evosim.Core
                 for (int i = 0; i < damage.Length; i++) w.Write(damage[i]);
             }
 
+            // What each part has touched, in the same order and with the same meaning of 0: the
+            // Contact sense reports it, and the flag stays set until a plan change, so it is
+            // history the next step reads. Left out until StateVersion 11 (2026-09-25), when a
+            // resume of round 48 put every body back touching nothing and the jointed ones
+            // whose brains read the channel parted from the run at the first sample.
+            if (layout >= 11)
+            {
+                bool[] contact = creature.PartContact;
+                w.Write(contact == null ? 0 : contact.Length);
+
+                if (contact != null)
+                {
+                    for (int i = 0; i < contact.Length; i++) w.Write(contact[i]);
+                }
+            }
+
             w.Write(GenomeJson.Write(creature.Genome, indent: false, id: creature.Id));
         }
 
-        private Organism ReadOrganism(BinaryReader r)
+        private Organism ReadOrganism(BinaryReader r, int version)
         {
             var creature = new Organism
             {
@@ -554,6 +618,19 @@ namespace Evosim.Core
 
             creature.PartDamage = damage;
 
+            // A version-10 stream has no contact record, and the body comes back touching
+            // nothing, which is what the build that wrote it restored. See LossyStateVersion.
+            bool[] contact = null;
+
+            if (version >= 11)
+            {
+                int contactCount = r.ReadInt32();
+                contact = contactCount > 0 ? new bool[contactCount] : null;
+                for (int i = 0; i < contactCount; i++) contact[i] = r.ReadBoolean();
+            }
+
+            creature.PartContact = contact;
+
             Genome genome = GenomeJson.Read(r.ReadString());
             creature.Genome = genome;
 
@@ -577,6 +654,20 @@ namespace Evosim.Core
                     "A body's health array is indexed by its part index, so the two disagreeing " +
                     "means the development this build performs is not the one that was saved — " +
                     "a restored creature would be wounded in the wrong places.");
+            }
+
+            // The contact record is indexed the same way, and asked the same question for the
+            // same reason: a flag on the wrong index is a touch felt by the wrong part.
+            if (contact != null && contact.Length != creature.Phenotype.PartCount)
+            {
+                throw new InvalidOperationException(
+                    FormattableString.Invariant(
+                        $"Creature {creature.Id}: the checkpoint holds {contact.Length} contact ") +
+                    FormattableString.Invariant(
+                        $"flags and its body develops to {creature.Phenotype.PartCount} parts. ") +
+                    "A body's contact record is indexed by its part index, so the two disagreeing " +
+                    "means the development this build performs is not the one that was saved — " +
+                    "a restored creature would feel a touch on the wrong part.");
             }
 
             // Cached at birth and therefore cached again here — see Organism.IndeterminateNodes.

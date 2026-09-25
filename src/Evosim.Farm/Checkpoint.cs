@@ -57,23 +57,53 @@ namespace Evosim.Farm
         /// its count and a founder source on every queued lineage row.
         /// </remarks>
         /// <remarks>
-        /// 5 with record format 2 (2026-09-24, <c>logbook/specs/record-and-film-spec.md</c> A5):
-        /// the payload is gzipped after it is digested, and the header carries the stored length
-        /// beside the payload's. The digest is still over the payload, so the check is the one
-        /// version 4 made; the world's layout (<c>World.StateVersion</c>) is untouched. Version 4
-        /// is still read and still written, for a run in record format 1, and the version field
-        /// alone says which a file is.
+        /// 5 was two layouts on two branches, and neither reached a run: record format 2's
+        /// (2026-09-24, <c>logbook/specs/record-and-film-spec.md</c> A5), which gzipped version
+        /// 4's payload after digesting it and put the stored length in the header, and the
+        /// contact record's (2026-09-25), which added state to the payload and stored it as it
+        /// was. The two met at the merge of round 49's build and version 6 carries both. A file
+        /// that says 5 is refused by name (<see cref="RefusedVersion"/>), because its version
+        /// field alone cannot say which of the two it is.
         /// </remarks>
-        public const int Version = 5;
+        /// <remarks>
+        /// 6 with round 49's build (2026-09-25, <c>World.StateVersion</c> 11): the contact
+        /// record's payload, stored gzipped. Every body in the harness's section carries the plan
+        /// revision its solver was built on, the size it was last resized to when the organism
+        /// has grown since, and whether its contact and damage senses were wired, and the harness
+        /// its module rebuild count; the world carries each creature's contact record. A
+        /// version-4 file restored every body with both senses unwired and nothing touched, and
+        /// round 48's resume parted from the run at the first sample; one taken between two
+        /// growth steps also restored every growing body at its organism's size and not the size
+        /// the solver was stepping. The payload is gzipped after it is digested, and the header
+        /// carries the stored length beside the payload's; the digest is still over the payload
+        /// as the world wrote it, so the check is the one version 4 made. Both records write
+        /// version 6: record format 1 keeps the old run files, and a checkpoint's layout is the
+        /// world's, which has only one writer. Version 4 is still read, as
+        /// <see cref="LossyVersion"/>.
+        /// </remarks>
+        public const int Version = 6;
 
         /// <summary>
-        /// The last version whose payload is stored as it is: what record format 1 writes, and the
-        /// oldest this build reads.
+        /// The one older format this build still reads: version 4, round 48's, whose world is
+        /// <c>World.LossyStateVersion</c> and whose payload is stored as it is. It is read as the
+        /// build that wrote it restored it, with every body's contact record, contact and damage
+        /// senses and the harness's rebuild count empty, and
+        /// <see cref="CheckpointHeader.Differences"/> names it, so a farm resume refuses it unless
+        /// told to take a cousin and the theatre labels it as one. This build never writes it.
         /// </summary>
-        public const int UncompressedVersion = 4;
+        public const int LossyVersion = 4;
+
+        /// <summary>
+        /// The version no build of this project wrote a run at and two branches wrote in two
+        /// layouts (see <see cref="Version"/>'s remarks). Refused with its own message.
+        /// </summary>
+        public const int RefusedVersion = 5;
 
         /// <summary>Whether this build reads a checkpoint of the given version.</summary>
-        public static bool Reads(int version) => version == Version || version == UncompressedVersion;
+        public static bool Reads(int version) => version == Version || version == LossyVersion;
+
+        /// <summary>Whether a version stores its payload gzipped: 6 does, 4 does not.</summary>
+        public static bool Compressed(int version) => version == Version;
 
         /// <summary>Bytes before the header's own fields.</summary>
         public const int MagicBytes = 12;
@@ -234,7 +264,7 @@ namespace Evosim.Farm
             return hash;
         }
 
-        /// <summary>Version 5's stored form of a payload: one gzip member of it.</summary>
+        /// <summary>Version 6's stored form of a payload: one gzip member of it.</summary>
         /// <remarks>
         /// <see cref="System.IO.Compression.CompressionLevel.Optimal"/>, which is zlib's level 6 on
         /// .NET: 43.1 MB of round 47's world to 11.7 MB in 0.6 s on the spec's measurement. A plain
@@ -255,7 +285,7 @@ namespace Evosim.Farm
         }
 
         /// <summary>
-        /// The payload out of version 5's stored member, exactly <paramref name="payloadBytes"/>
+        /// The payload out of version 6's stored member, exactly <paramref name="payloadBytes"/>
         /// long, or an <see cref="InvalidDataException"/> saying why not.
         /// </summary>
         internal static byte[] Decompress(byte[] file, int at, int storedBytes, long payloadBytes)
@@ -370,7 +400,7 @@ namespace Evosim.Farm
         public ulong PayloadDigest;
 
         /// <summary>
-        /// Bytes of state as stored in the file: the gzip member in version 5, and
+        /// Bytes of state as stored in the file: the gzip member in version 6, and
         /// <see cref="PayloadBytes"/> itself in version 4.
         /// </summary>
         public long StoredBytes;
@@ -386,14 +416,42 @@ namespace Evosim.Farm
         /// rather than its continuation, which is the theatre's own word for the same thing.
         /// </remarks>
         public bool Matches(string configHash, string coreHash, string dynamicsHash, string farmHash) =>
+            !ReadLossily &&
             Same(ConfigHash, configHash) && Same(CoreHash, coreHash) &&
             Same(DynamicsHash, dynamicsHash) && Same(FarmHash, farmHash);
 
-        /// <summary>Which of the four differ, for a refusal that says what is wrong.</summary>
+        /// <summary>
+        /// Whether this file is <see cref="Checkpoint.LossyVersion"/>, read without the state the
+        /// format after it added — a restore from it is a cousin whatever the four hashes say.
+        /// </summary>
+        public bool ReadLossily => Version == Checkpoint.LossyVersion;
+
+        /// <summary>
+        /// Which of the four differ, for a refusal that says what is wrong — and, first, whether
+        /// the file is a format this build reads only lossily.
+        /// </summary>
+        /// <remarks>
+        /// The lossy format is a line here rather than a refusal of its own so that the two
+        /// readers of this list treat it as they treat a hash: the farm's resume refuses it
+        /// unless <c>EVOSIM_ALLOW_SOURCE_MISMATCH</c> is set and then marks the run a cousin,
+        /// and the theatre, whose live world is a cousin anyway, names it in the label. Its first
+        /// word before the colon is the name a label shows, as with the hashes.
+        /// </remarks>
         public IReadOnlyList<string> Differences(
             string configHash, string coreHash, string dynamicsHash, string farmHash)
         {
             var differences = new List<string>();
+
+            if (ReadLossily)
+            {
+                differences.Add(
+                    "checkpointVersion: checkpoint " +
+                    Version.ToString(CultureInfo.InvariantCulture) + ", this build " +
+                    Checkpoint.Version.ToString(CultureInfo.InvariantCulture) +
+                    " (read without each body's contact record, its contact and damage senses, " +
+                    "the size a growing body was stepping between growth steps, and the module " +
+                    "rebuild count)");
+            }
 
             if (!Same(ConfigHash, configHash)) differences.Add(Line("configHash", ConfigHash, configHash));
             if (!Same(CoreHash, coreHash)) differences.Add(Line("coreHash", CoreHash, coreHash));
@@ -447,29 +505,26 @@ namespace Evosim.Farm
             header.PayloadBytes = count;
             header.PayloadDigest = Checkpoint.Digest(bytes, count);
 
-            // The version the header asks for, or this build's when it asks for none. Version 5
-            // stores the payload gzipped, after the digest above was taken over it as written;
-            // version 4 stores it as it is.
+            // This build writes one version, 6, whatever the record: the payload's layout is the
+            // world's and has one writer, and version 4's (round 48's) is only read. The payload
+            // is stored gzipped, after the digest above was taken over it as written. A header
+            // that asks for another version is refused rather than written under a number that
+            // would make a reader take the payload for another layout.
             int version = header.Version == 0 ? Checkpoint.Version : header.Version;
 
-            if (!Checkpoint.Reads(version))
+            if (version != Checkpoint.Version)
             {
                 throw new ArgumentException(
-                    "A checkpoint is written as version " + Checkpoint.UncompressedVersion + " or " +
-                    Checkpoint.Version + ", and this header asks for " + version + ".",
+                    "A checkpoint is written as version " + Checkpoint.Version + ", and this header " +
+                    "asks for " + version + ". Version " + Checkpoint.LossyVersion + " is read and " +
+                    "never written.",
                     nameof(header));
             }
 
             header.Version = version;
 
-            byte[] stored = bytes;
-            int storedCount = count;
-
-            if (version == Checkpoint.Version)
-            {
-                stored = Checkpoint.Compress(bytes, count);
-                storedCount = stored.Length;
-            }
+            byte[] stored = Checkpoint.Compress(bytes, count);
+            int storedCount = stored.Length;
 
             header.StoredBytes = storedCount;
 
@@ -508,8 +563,8 @@ namespace Evosim.Farm
                 w.Write(header.PayloadBytes);
                 w.Write(header.PayloadDigest);
 
-                // Version 5 names what the file holds beside what the world wrote.
-                if (version == Checkpoint.Version) w.Write(header.StoredBytes);
+                // Version 6 names what the file holds beside what the world wrote.
+                w.Write(header.StoredBytes);
 
                 w.Write(stored, 0, storedCount);
 
@@ -578,12 +633,25 @@ namespace Evosim.Farm
             int version = r.ReadUInt16();
             int magicBytes = r.ReadUInt16();
 
+            if (version == Checkpoint.RefusedVersion)
+            {
+                throw new InvalidDataException(
+                    "The checkpoint is version 5, which two branches of round 49's build wrote in " +
+                    "two layouts (a gzipped version-4 payload, and the contact record stored as it " +
+                    "was) and no run kept; its version field cannot say which it holds. This build " +
+                    "writes version " + Checkpoint.Version + ", which carries both, and reads " +
+                    "version " + Checkpoint.LossyVersion + " lossily. Write the checkpoint again " +
+                    "from its run.");
+            }
+
+            // The lossy version is let through here and named by the header's own Differences,
+            // which is what a resume and the theatre both already ask; see Checkpoint.LossyVersion.
             if (!Checkpoint.Reads(version))
             {
                 throw new InvalidDataException(
-                    "The checkpoint is version " + version + " and this build reads versions " +
-                    Checkpoint.UncompressedVersion + " and " + Checkpoint.Version + ". A " +
-                    "checkpoint is refused rather than read with a field guessed at, under the " +
+                    "The checkpoint is version " + version + " and this build reads version " +
+                    Checkpoint.Version + " (and version " + Checkpoint.LossyVersion + ", lossily). " +
+                    "A checkpoint is refused rather than read with a field guessed at, under the " +
                     "rule the config reader follows.");
             }
 
@@ -625,9 +693,9 @@ namespace Evosim.Farm
                 header.PayloadBytes = r.ReadInt64();
                 header.PayloadDigest = r.ReadUInt64();
 
-                // Version 5 names the stored length beside the payload's; in version 4 they are
+                // Version 6 names the stored length beside the payload's; in version 4 they are
                 // one number.
-                header.StoredBytes = version == Checkpoint.Version ? r.ReadInt64() : header.PayloadBytes;
+                header.StoredBytes = Checkpoint.Compressed(version) ? r.ReadInt64() : header.PayloadBytes;
             }
             catch (Exception e) when (e is EndOfStreamException || e is IOException ||
                                       e is ArgumentException || e is FormatException)
@@ -683,7 +751,7 @@ namespace Evosim.Farm
 
             try
             {
-                payload = version == Checkpoint.Version
+                payload = Checkpoint.Compressed(version)
                     ? Checkpoint.Decompress(all, (int)storedStart, (int)header.StoredBytes, header.PayloadBytes)
                     : Slice(all, (int)storedStart, (int)header.PayloadBytes);
             }

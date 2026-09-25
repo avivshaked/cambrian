@@ -234,8 +234,9 @@ namespace Evosim.Farm.Tests
 
         /// <summary>
         /// The source's record is its manifest's <c>recordFormat</c>, format 1 when the manifest
-        /// has none, the checkpoint's version when there is no manifest, and a refusal when the
-        /// manifest names a record this build does not write.
+        /// has none, and a refusal when the manifest names a record this build does not write.
+        /// With no manifest, a version-4 checkpoint is format 1 and a version-6 one is what the
+        /// directory's files say.
         /// </summary>
         [Fact]
         public void AResumeReadsItsSourcesRecordFromTheManifestFirst()
@@ -244,30 +245,39 @@ namespace Evosim.Farm.Tests
             Directory.CreateDirectory(run);
             string manifest = Path.Combine(run, "run.json");
 
-            var five = new CheckpointHeader { Version = Checkpoint.Version };
-            var four = new CheckpointHeader { Version = Checkpoint.UncompressedVersion };
+            var six = new CheckpointHeader { Version = Checkpoint.Version };
+            var four = new CheckpointHeader { Version = Checkpoint.LossyVersion };
+            string genomes = Path.Combine(run, RecordFiles.GenomesName);
+            if (File.Exists(genomes)) File.Delete(genomes);
 
             File.WriteAllText(manifest, "{\"arm\": \"a\", \"recordFormat\": 1}");
-            Assert.Equal(RunRecordFormat.Jsonl, Program.SourceRecordFormat(run, five));
+            Assert.Equal(RunRecordFormat.Jsonl, Program.SourceRecordFormat(run, six));
 
             File.WriteAllText(manifest, "{\"arm\": \"a\", \"recordFormat\": 2}");
             Assert.Equal(RunRecordFormat.Compact, Program.SourceRecordFormat(run, four));
 
             // Every manifest before the record existed.
             File.WriteAllText(manifest, "{\"arm\": \"a\"}");
-            Assert.Equal(RunRecordFormat.Jsonl, Program.SourceRecordFormat(run, five));
+            Assert.Equal(RunRecordFormat.Jsonl, Program.SourceRecordFormat(run, six));
 
             File.WriteAllText(manifest, "{\"arm\": \"a\", \"recordFormat\": 7}");
-            Assert.Throws<InvalidDataException>(() => Program.SourceRecordFormat(run, five));
+            Assert.Throws<InvalidDataException>(() => Program.SourceRecordFormat(run, six));
 
+            // No manifest: version 4 predates record format 2; version 6 is written in both, so
+            // the directory's files decide.
             File.Delete(manifest);
-            Assert.Equal(RunRecordFormat.Compact, Program.SourceRecordFormat(run, five));
+            Assert.Equal(RunRecordFormat.Jsonl, Program.SourceRecordFormat(run, six));
             Assert.Equal(RunRecordFormat.Jsonl, Program.SourceRecordFormat(run, four));
+
+            File.WriteAllBytes(genomes, new byte[0]);
+            Assert.Equal(RunRecordFormat.Compact, Program.SourceRecordFormat(run, six));
+            Assert.Equal(RunRecordFormat.Jsonl, Program.SourceRecordFormat(run, four));
+            File.Delete(genomes);
         }
 
         /// <summary>
         /// A format 1 run resumed with no <c>EVOSIM_RECORD_FORMAT</c> is continued in format 1,
-        /// its checkpoints still version 4; a launcher that names 2 gets 2.
+        /// its checkpoints version 6 as every run's are; a launcher that names 2 gets 2.
         /// </summary>
         [Fact]
         public void AResumeKeepsItsSourcesRecordUnlessTheLauncherNamesOne()
@@ -313,7 +323,7 @@ namespace Evosim.Farm.Tests
 
             foreach (string checkpoint in Directory.GetFiles(keptCheckpoints, "*.ckpt"))
             {
-                Assert.Equal(Checkpoint.UncompressedVersion, CheckpointReader.ReadHeader(checkpoint).Version);
+                Assert.Equal(Checkpoint.Version, CheckpointReader.ReadHeader(checkpoint).Version);
             }
 
             string named = Resumed("named", "EVOSIM_RECORD_FORMAT=2");
