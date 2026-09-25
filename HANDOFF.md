@@ -424,6 +424,25 @@ in this section is history.
     changed shape". The mouth spec (item 5) and `Organism`'s doc say "in contact now". Rounds
     45 to 48 ran with it on. Making it per-step is a new realisation of every seed. The agent
     proposes landing it at round 49's gap, and it is put to the owner.
+  - **Story v2, writing: done.** The brief and glossary are `logbook/specs/story-writer-brief.md`
+    and `story-glossary.md` (`fc1c843`). STYLE.md §7 has a story-film note, and the reader's
+    key's birth-fraction row is corrected. Round 48's second story is `scratch/story-v2/`
+    (`story.json`, `story.md`, `checks.tsv`, 140 rows), with a copy in
+    `logbook/specs/story-r48-v2/`. It runs 9 min 39 s: 20 scenes, 7 chapters and 15 charts. Its
+    arc is bittersweet: every stored eater's line died out, and what lasted was a leaf that
+    budded a speck of stomach, a line of 29 living almost wholly on light. The opening chapter
+    runs 104 s of scenes, against the "about a minute" asked. Scene 4, the price card, is the
+    cut if it must be shorter. The glossary corrects the first film in six places, among them:
+    links catch light, living leaves make three quarters of the snow, the tank is 45 m deep
+    only on average, and the gift did pay for a first child. Scene 19's third caption says
+    seed 2's cause is not found; it changes with the re-run's verdict.
+  - **The story's machine-track order**, once the re-run has ended with a code fault (a clean
+    run pauses everything instead):
+    1. the visuals' compile and four-scene test render; look at every frame;
+    2. the GPU port's acceptance, as handed over;
+    3. the checkpoint fix's acceptance;
+    4. round 48's second story film, about two hours on one worker, from
+       `scratch/story-v2/story.json`.
   - **Story v2, visuals: done** (`fc236a7`, `91d3b08`, `ac33d7a` on `worktree-safari2-r47`),
     compiled outside Unity with Roslyn and not yet seen in Unity. It adds a story look that
     lightens the water, ambient light and fog, a camera lamp on portraits and births, and a
