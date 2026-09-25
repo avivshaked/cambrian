@@ -156,10 +156,19 @@ namespace Evosim.Farm
             World.Step(seconds);
             _worldTicks += Now() - worldStarted;
 
+            // Round 49. A body the mouth took a part off inside World.Step is rebuilt on its new
+            // plan here, before any physics step reads it, as a newborn is built before its first.
+            // Until round 49 it waited for the growth step below, and for up to ten seconds the
+            // contact list, the two senses and a checkpoint all read one plan's indices against
+            // the other's. Timed with the growth step's rebuilds, which are the same work.
+            long rebuildStarted = Now();
+            RebuildChangedPlans();
+            _phaseTicks[PhaseGrowth] += Now() - rebuildStarted;
+
             // And the other direction, once the world has settled what was hurt: what each body
             // felt goes onto its own senses, for the physics steps that follow to read. After
-            // World.Step because the mouth's damage pass is inside it, and before the growth step
-            // below, whose rebuild would otherwise hand a new body the old one's arrays.
+            // World.Step because the mouth's damage pass is inside it, and after the rebuild just
+            // above, so that a rebuilt body is handed its organism's arrays like any other.
             HandBackWhatWasFelt();
 
             // D066. After the world has stepped, because that is where a creature's patch changes
@@ -216,10 +225,11 @@ namespace Evosim.Farm
         /// frame is its part's (<c>Creature</c>'s remarks), so link <i>i</i> is part <i>i</i>.
         /// </para>
         /// <para>
-        /// <b>Only while the solver holds the creature's plan.</b> A bite or a module inside the
-        /// last world step re-indexed the parts, and the solver is rebuilt only at the next growth
-        /// step; until then link <i>i</i> need not be part <i>i</i>, so the array is dropped and
-        /// the body earns and shades on the orientation average, both sides together.
+        /// <b>Only while the solver holds the creature's plan.</b> Link <i>i</i> is part <i>i</i>
+        /// only on the plan the solver was built on. Since round 49 the harness rebuilds a changed
+        /// plan on the metabolic step that changed it, so the two always agree here; the test
+        /// stays as the guard, and on a disagreement the array is dropped and the body earns and
+        /// shades on the orientation average, both sides together.
         /// </para>
         /// </remarks>
         private static void Exposure(Creature solver, Organism creature)
@@ -268,6 +278,13 @@ namespace Evosim.Farm
         /// <b>The solver's ids are the organisms' ids</b> (<c>Reconcile.Build</c> makes them so),
         /// and a body's links are its phenotype's parts in the same order, so the translation is
         /// the identity in both directions and there is no map to keep in step.
+        /// </para>
+        /// <para>
+        /// <b>That holds because every body is on its organism's plan when this runs</b>
+        /// (<see cref="RebuildChangedPlans"/>). Until round 49 a body bitten inside the last
+        /// world step kept its old solver until the growth step. The list then named the old
+        /// plan's links, Core read them as the new plan's parts, and a bite could land on
+        /// whichever part now held the index.
         /// </para>
         /// </remarks>
         private void HandOverContacts()
@@ -362,7 +379,8 @@ namespace Evosim.Farm
                 // Rule 7. A changed plan is rebuilt rather than resized, and the revision rather
                 // than the part count is what says so: a re-development can move a body's shape
                 // without moving its count, and a resize of that body would write one part's size
-                // onto another.
+                // onto another. A bite's change was rebuilt straight after World.Step, so what
+                // reaches this branch is the module rule's, a few lines up.
                 if (creature.PlanRevision != body.Solver.AppliedPlanRevision)
                 {
                     RebuildOnTheNewPlan(body, creature);

@@ -137,16 +137,17 @@ namespace Evosim.Farm
                 while (first.World.ElapsedSeconds < until - 1e-9) first.Sim.Step();
             }
 
-            // A checkpoint cannot be restored while a body waits for the growth step that
-            // rebuilds it on a changed plan (Simulation.PlanChangesPending), and the run loop
-            // defers one until the count is zero; so does this.
+            // A checkpoint cannot be restored while a body's solver is off its organism's plan
+            // (Simulation.PlanChangesPending), and the run loop defers one until the count is
+            // zero; so does this. From round 49 the harness rebuilds on the metabolic step of
+            // the change, so the count is zero here and this steps nothing.
             int extra = StepToARebuiltPlan(first);
 
             if (extra > 0)
             {
                 Console.WriteLine(
                     "  stepped on " + extra + " physics steps to " + F(first.World.ElapsedSeconds) +
-                    " s: a body's plan had changed since the last growth step");
+                    " s: a body's solver was off its plan, which the harness should never leave");
             }
 
             string again = Path.Combine(scratch, "again.ckpt");
@@ -434,8 +435,8 @@ namespace Evosim.Farm
         private static int StepToARebuiltPlan(Restored world)
         {
             // Two growth steps' worth of physics steps is a guard on this code, not a tolerance:
-            // the first growth step rebuilds every changed plan, a bite in its own world step
-            // included, so the count is zero straight after it.
+            // every metabolic step rebuilds the plans its world step changed and every growth
+            // step the module rule's, so the count is zero after the first of either.
             int limit = 2 * (int)Math.Ceiling(
                             Math.Max(world.World.Config.GrowthStepSeconds, Simulation.MetabolicStepSeconds) /
                             world.Sim.PhysicsDt) + 2 * world.Sim.StepsPerMetabolicStep;
@@ -448,8 +449,8 @@ namespace Evosim.Farm
                 {
                     throw new InvalidOperationException(
                         "A body's plan was still waiting for its rebuild after " + limit +
-                        " physics steps, two growth steps' worth. The growth step rebuilds every " +
-                        "changed plan, so this is a body the harness has stopped rebuilding.");
+                        " physics steps, two growth steps' worth. Every metabolic step rebuilds " +
+                        "the plans it changed, so this is a body the harness has stopped rebuilding.");
                 }
 
                 world.Sim.Step();

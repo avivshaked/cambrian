@@ -1104,5 +1104,100 @@ namespace Evosim.Core.Tests
             Assert.Equal(new[] { 0f, 0f }, leaf.PartDamage);
             Assert.True(leaf.PartHealth[1] < 1f, "the wound itself should stand");
         }
+
+        // ----------------------------------------------------- the map the harness rebuilds on
+
+        /// <summary>
+        /// A photosynthetic root with two spines of three boxes, one off its +X face and one off
+        /// its +Y face: seven parts, the second branch indexed after the first.
+        /// </summary>
+        private static Genome Fork()
+        {
+            MorphNode root = Fixtures.Box(0.2f);
+            root.CellTypeId = CellTypeIds.Photosynthetic;
+
+            MorphNode link = Fixtures.Box(0.2f, JointType.Fixed, recursiveLimit: 3);
+            link.CellTypeId = CellTypeIds.Photosynthetic;
+            link.Edges.Add(Fixtures.FaceToFace(1));
+
+            root.Edges.Add(Fixtures.FaceToFace(1));
+            root.Edges.Add(new MorphEdge
+            {
+                Child = 1,
+                ParentAnchor = new Float3(0f, 1f, 0f),
+                ChildAnchor = new Float3(-1f, 0f, 0f),
+                Orientation = Quat.FromAxisAngle(new Float3(0f, 0f, 1f), (float)(Math.PI / 2d)),
+                Scale = Float3.One,
+            });
+
+            var genome = new Genome { RootIndex = 0 };
+            genome.Nodes.Add(root);
+            genome.Nodes.Add(link);
+            genome.AdultScale = 1f;
+            genome.Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 2f };
+            return genome;
+        }
+
+        /// <summary>
+        /// Two parts taken off one body in one pass leave one map, from the plan the body stood on
+        /// before the pass (round 49). The second change's map is composed with the first's, not
+        /// written over it.
+        /// </summary>
+        /// <remarks>
+        /// The harness rebuilds a bitten body once, after the world's step, and carries its joints
+        /// and its brain across on this map. Until round 49 the second kill's map, from the plan
+        /// the first kill left, overwrote the first's, and the harness read it against the solver
+        /// built on the plan before either.
+        /// </remarks>
+        [Fact]
+        public void TwoPartsLostInOnePassLeaveOneMapFromThePlanBefore()
+        {
+            RunConfig config = Stage(healthPerCubicMetre: 1f);
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Fork(), 1, -1f);
+            world.Inoculate(Armed(attack: 1f), 1, -1f);
+            world.Inoculate(Armed(attack: 1f), 1, -1f);
+
+            Organism fork = world.Living[0];
+            Organism first = world.Living[1];
+            Organism second = world.Living[2];
+
+            // The layout the expectation is written against: 0 the root, 1 to 3 the +X branch,
+            // 4 to 6 the +Y branch.
+            var parents = new int[fork.Phenotype.PartCount];
+            for (int p = 0; p < parents.Length; p++) parents[p] = fork.Phenotype.Parts[p].ParentIndex;
+            Assert.Equal(new[] { -1, 0, 1, 2, 0, 4, 5 }, parents);
+
+            Assert.Null(fork.PartMapFromPreviousPlan);
+
+            // One bite in each branch, in one pass: part 2 takes 3 with it, and part 5 takes 6.
+            world.SetContacts(new List<CreatureContact>
+            {
+                new CreatureContact(first.Id, 0, fork.Id, 2),
+                new CreatureContact(second.Id, 0, fork.Id, 5),
+            });
+            world.ApplyMouth(1f);
+
+            Assert.Equal(2L, world.PartsKilled);
+            Assert.Contains(world.Living, c => c.Id == fork.Id);
+            Assert.Equal(2, fork.PlanRevision);
+            Assert.Equal(3, fork.Phenotype.PartCount);
+
+            // The root, the +X branch's first box and the +Y branch's first box, which stood at
+            // 0, 1 and 4. The second kill alone would say 0, 1 and 2.
+            int[] map = fork.TakePartMapFromPreviousPlan();
+            Assert.Equal(new[] { 0, 1, 4 }, map);
+
+            // Taken is gone, and the next change starts a map of its own.
+            Assert.Null(fork.PartMapFromPreviousPlan);
+
+            world.SetContacts(Touching(first, 0, fork, 2));
+            world.ApplyMouth(1f);
+
+            Assert.Equal(3, fork.PlanRevision);
+            Assert.Equal(new[] { 0, 1 }, fork.TakePartMapFromPreviousPlan());
+            AssertBooksClose(world, "after the three kills");
+        }
     }
 }

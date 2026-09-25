@@ -160,10 +160,15 @@ namespace Evosim.Farm
             solver.AppliedBodyFraction = creature.BodyFraction;
 
             // D106 item 2, rule 7, and the same argument one field along: a newborn is built at
-            // whatever plan revision its organism already carries — which is 0 for every birth,
-            // since a body cannot have changed plan before it had one — so the growth step's
-            // comparison is false until the module rule moves it.
+            // whatever plan revision its organism already carries, so the growth step's
+            // comparison is false until the module rule moves it. That is 0 for most births, and
+            // 1 or more for a newborn the module rule reached in the growth step of the metabolic
+            // step it was conceived on, before it had a body. Such a body is built on the plan it
+            // has now, so the map from the plan before is nothing to carry. It is taken and
+            // dropped, because Core composes a pending map with the next change's and a stale
+            // one would be composed into it.
             solver.AppliedPlanRevision = creature.PlanRevision;
+            creature.TakePartMapFromPreviousPlan();
 
             // §4.4's two world channels, wired here because this is the one place a body and its
             // organism are both in hand. Reads of World state from inside the parallel region,
@@ -216,6 +221,52 @@ namespace Evosim.Farm
         }
 
         /// <summary>
+        /// Rebuilds every living body whose plan moved inside the world's step: a part bitten off
+        /// by the mouth (D106 item 1). Called between <c>World.Step</c> and the next physics step.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Round 49, and why the rebuild used to wait.</b> The rebuild was written for the
+        /// module gene (round 44), whose rule runs at the growth step, so the growth step was
+        /// where a changed plan was rebuilt, and a module's rebuild never waited. The mouth
+        /// (round 45) changes a plan inside <c>World.Step</c>, on any metabolic step, and nothing
+        /// moved the rebuild with it. So a bitten body kept its old solver for up to
+        /// <see cref="RunConfig.GrowthStepSeconds"/>. Nothing needed the wait: the solver
+        /// rebuilds a body between any two physics steps, as it builds a newborn, and the
+        /// module rule's rebuild at the growth step is the same call.
+        /// </para>
+        /// <para>
+        /// <b>What the wait cost.</b> The contact list is built from the solver's links and Core
+        /// reads each index as a part of the organism's plan, so a bite in the window landed on
+        /// whichever part now held the index and was priced against that part's pool. The two
+        /// senses were the new plan's arrays read by the old plan's links. And a checkpoint
+        /// taken in the window could not be restored, so the run loop deferred it to the growth
+        /// step.
+        /// </para>
+        /// <para>
+        /// <b>A world with no bite never enters the loop's branch</b>: nothing inside
+        /// <c>World.Step</c> changes a plan but a kill, so this is one walk of the living and one
+        /// comparison a body, and the trajectory is the one the tree before it stepped.
+        /// </para>
+        /// </remarks>
+        private void RebuildChangedPlans()
+        {
+            System.Collections.Generic.IReadOnlyList<Organism> living = World.Living;
+
+            for (int i = 0; i < living.Count; i++)
+            {
+                Organism creature = living[i];
+
+                // A newborn has no body yet and is built on its plan by the next Reconcile; a body
+                // that died in the step is not among the living.
+                if (!_bodies.TryGetValue(creature.Id, out Body body)) continue;
+                if (creature.PlanRevision == body.Solver.AppliedPlanRevision) continue;
+
+                RebuildOnTheNewPlan(body, creature);
+            }
+        }
+
+        /// <summary>
         /// Builds a living body again on the plan Core has just given it, keeping where it is and
         /// what it was doing — D106 item 2, rule 7.
         /// </summary>
@@ -235,6 +286,8 @@ namespace Evosim.Farm
         /// run rather than to the object holding them. The mechanical work needs no draining —
         /// this runs inside the same metabolic step that drained it, after
         /// <c>World.Observe</c> and before the next physics step, so there is none standing.
+        /// That holds at both callers, <see cref="RebuildChangedPlans"/> after the world's step
+        /// and the growth step after the module rule.
         /// </para>
         /// </remarks>
         private void RebuildOnTheNewPlan(Body body, Organism creature)
@@ -250,9 +303,13 @@ namespace Evosim.Farm
             var solver = new Creature((int)creature.Id, creature.Phenotype, Solver, Config.Shapes);
 
             // The developer's own match between the two plans. Core writes it whenever it moves
-            // a count; a body that arrives without one is rebuilt with every joint at rest and
-            // says so, rather than being handed a map that names the wrong parts.
-            int[] map = creature.PartMapFromPreviousPlan;
+            // a plan, composed across every change since the harness last took it, so it runs
+            // from the plan this solver was built on even when a pass took two parts off one
+            // body. Taken and not just read: Core composes a pending map with the next change's,
+            // so one left behind would be composed into the next. A body that arrives without
+            // one is rebuilt with every joint at rest and says so, rather than being handed a
+            // map that names the wrong parts.
+            int[] map = creature.TakePartMapFromPreviousPlan();
 
             if (map == null || map.Length < solver.Links)
             {
@@ -265,10 +322,6 @@ namespace Evosim.Farm
                 for (int i = 0; i < map.Length; i++) map[i] = -1;
             }
 
-            // Read and not cleared: the organism's fields are Core's to write, and a map left
-            // behind is never read again — the next growth step compares the plan revision,
-            // which this line's caller has just brought level, and Core overwrites the map on
-            // the next plan change.
             solver.AdoptStateFrom(previous, map);
 
             solver.Patch = creature.Patch;

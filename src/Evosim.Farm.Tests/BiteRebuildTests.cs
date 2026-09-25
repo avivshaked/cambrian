@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -28,15 +27,18 @@ namespace Evosim.Farm.Tests
     /// read by the old solver's links. A checkpoint taken in the window could not be restored.
     /// </para>
     /// <para>
-    /// <b>The bite world</b> is <c>CheckpointRestoreTests</c>' crowded box with eight claws and
-    /// eight forked, jointed victims put in after the founding. Health is left at its default of
-    /// 1 per cubic metre, so a capped claw takes any part it touches in one metabolic step, and
-    /// a victim can lose one part on one step and another on the next. The victim forks at its
-    /// root, so a part lost from the first branch moves every index of the second.
+    /// <b>The bite world</b> is <c>CheckpointRestoreTests</c>' crowded box with eight forked,
+    /// jointed victims and eight claws put in after the founding, and each claw held against a
+    /// victim before every contact census until metabolic step 150 (<see cref="StepBiting"/>
+    /// says why and how). Health is left at its default of 1 per cubic metre, so a capped claw
+    /// takes any part it touches in one metabolic step, and a victim loses one part on one step
+    /// and another on the next. A fork's first branch is indexed before its second, so a part
+    /// lost from the first moves every index of the second.
     /// </para>
     /// <para>
     /// <b>And the worlds with no bite</b> step exactly as they did before the rebuild moved.
-    /// Their digests are pinned from the tree the fix was built on (<c>1f06a67</c>).
+    /// Their digests were pinned on the tree the fix was built on (<c>1f06a67</c>'s code, the
+    /// test added in <c>72b3087</c>), where the four bite tests fail.
     /// </para>
     /// </remarks>
     public class BiteRebuildTests
@@ -70,28 +72,96 @@ namespace Evosim.Farm.Tests
         }
 
         /// <summary>
-        /// One physics step, with the inoculants put in after metabolic step
-        /// <see cref="InoculateAt"/>. True on the steps the economy ran.
+        /// One physics step of a world with no bite, with its inoculants put in after metabolic
+        /// step <see cref="InoculateAt"/>. True on the steps the economy ran.
         /// </summary>
-        private static bool Step(Pair pair, ref int metabolic, Action<World> inoculate)
+        private static bool Step(Pair pair, ref int metabolic, Action<Pair> inoculate)
         {
             if (!pair.Sim.Step()) return false;
 
             metabolic++;
-            if (metabolic == InoculateAt) inoculate?.Invoke(pair.World);
+            if (metabolic == InoculateAt) inoculate?.Invoke(pair);
 
             return true;
         }
 
-        private static void Biters(World world)
+        /// <summary>
+        /// One physics step of the bite world: the forks and the claws put in after metabolic
+        /// step <see cref="InoculateAt"/>, and from then until <see cref="LastAttack"/> every
+        /// claw held against a victim for each metabolic step's contact census. True on the steps
+        /// the economy ran.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why the claws are moved.</b> The placer keeps newborns apart and the box is full,
+        /// and the soft push parts two bodies within the half-second between two censuses, so
+        /// left to the current a claw bites something a few times a minute and almost never on
+        /// two steps running. So on the last physics step before each metabolic step, each claw
+        /// is moved against a living body of two or more parts, as the seam wrap moves a body:
+        /// its root and its poses, with its contact sphere committed.
+        /// </para>
+        /// <para>
+        /// <b>Where.</b> Just beyond the body's link 1 (a fork's first branch, a founder's first
+        /// limb), read off the solver, so the bite takes a part whose loss moves the indices of
+        /// the parts after it. The same claw goes against the same body on the next step, which
+        /// is the step after a bite: on the tree before round 49 the solver still held the old
+        /// plan then, and the claw was put against, and named, one of the old plan's links.
+        /// </para>
+        /// </remarks>
+        private static bool StepBiting(Pair pair, ref int metabolic)
         {
-            world.Inoculate(Claw(), count: 8, heightY: -2.5f);
-            world.Inoculate(Fork(), count: 8, heightY: -2.5f);
+            bool censusNext = (pair.Sim.Steps + 1) % pair.Sim.StepsPerMetabolicStep == 0;
+            if (censusNext && metabolic >= InoculateAt && metabolic < LastAttack) Attack(pair);
+
+            if (!pair.Sim.Step()) return false;
+
+            metabolic++;
+
+            if (metabolic == InoculateAt)
+            {
+                pair.World.Inoculate(Fork(), count: 8, heightY: -2.5f);
+                pair.World.Inoculate(Claw(), count: 8, heightY: -2.5f);
+            }
+
+            return true;
         }
 
-        private static void Leaves(World world)
+        /// <summary>The metabolic step after which the claws are left to the current.</summary>
+        private const int LastAttack = 150;
+
+        private static void Attack(Pair pair)
         {
-            world.Inoculate(IndeterminateLeaf(), count: 8, heightY: -2.5f);
+            var claws = new List<Creature>();
+            var victims = new List<Creature>();
+
+            foreach (Organism o in pair.World.Living)
+            {
+                if (!pair.Sim.TryPose(o.Id, out Creature body)) continue;
+
+                if (o.HasAttack) claws.Add(body);
+                else if (body.Links >= 2) victims.Add(body);
+            }
+
+            for (int i = 0; i < claws.Count && i < victims.Count; i++)
+            {
+                Creature claw = claws[i];
+                Creature victim = victims[i];
+
+                Vec3 root = Vec3.Read(victim.Position, 0);
+                Vec3 limb = Vec3.Read(victim.Position, 3);
+                Vec3 outward = limb - root;
+                Vec3 along = outward.Magnitude > 1e-9 ? outward.Normalized : new Vec3(1d, 0d, 0d);
+
+                claw.BasePosition = limb + along * 0.2;
+                Kinematics.Poses(claw);
+                claw.RefreshContactSphere();
+                claw.CommitContactSphere();
+            }
+        }
+
+        private static void Leaves(Pair pair)
+        {
+            pair.World.Inoculate(IndeterminateLeaf(), count: 8, heightY: -2.5f);
         }
 
         /// <summary>The touching world with the module rule switched on.</summary>
@@ -131,7 +201,7 @@ namespace Evosim.Farm.Tests
         {
             var root = new MorphNode
             {
-                Dimensions = new Float3(0.25f, 0.25f, 0.25f),
+                Dimensions = new Float3(0.1f, 0.1f, 0.1f),
                 JointType = JointType.Fixed,
                 RecursiveLimit = 1,
                 CellTypeId = CellTypeIds.Structural,
@@ -141,7 +211,7 @@ namespace Evosim.Farm.Tests
 
             var link = new MorphNode
             {
-                Dimensions = new Float3(0.2f, 0.2f, 0.2f),
+                Dimensions = new Float3(0.08f, 0.08f, 0.08f),
                 JointType = JointType.Hinge,
                 RecursiveLimit = 3,
                 CellTypeId = CellTypeIds.Link,
@@ -319,7 +389,7 @@ namespace Evosim.Farm.Tests
                         before = Revisions(pair.World);
                     }
 
-                    if (!Step(pair, ref metabolic, Biters)) continue;
+                    if (!StepBiting(pair, ref metabolic)) continue;
 
                     bool grew = GrewThisStep(pair.Sim);
 
@@ -388,7 +458,7 @@ namespace Evosim.Farm.Tests
                         before = Revisions(pair.World);
                     }
 
-                    if (!Step(pair, ref metabolic, Biters)) continue;
+                    if (!StepBiting(pair, ref metabolic)) continue;
 
                     // The list this step handed Core, against the plans that stood when it was
                     // built: the ones read at the close of the last step.
@@ -469,7 +539,7 @@ namespace Evosim.Farm.Tests
                         before = Revisions(pair.World);
                     }
 
-                    if (!Step(pair, ref metabolic, Biters)) continue;
+                    if (!StepBiting(pair, ref metabolic)) continue;
 
                     foreach (Organism o in pair.World.Living)
                     {
@@ -599,7 +669,7 @@ namespace Evosim.Farm.Tests
                         before = Revisions(live.World);
                     }
 
-                    if (!Step(live, ref metabolic, Biters)) continue;
+                    if (!StepBiting(live, ref metabolic)) continue;
                     if (GrewThisStep(live.Sim)) continue;
 
                     foreach (Organism o in live.World.Living)
@@ -703,8 +773,7 @@ namespace Evosim.Farm.Tests
                 ReportEvery = 20,
             };
 
-            string path = Evosim.Farm.Checkpoint.PathFor(
-                Path.Combine(run, "checkpoints"), pair.World.ElapsedSeconds);
+            string path = Evosim.Farm.Checkpoint.PathFor(run, pair.World.ElapsedSeconds);
 
             var sampler = new Sampler();
 
@@ -760,7 +829,7 @@ namespace Evosim.Farm.Tests
 
                 for (int step = 0; step < 4_000; step++)
                 {
-                    bool ran = Step(pair, ref metabolic, modules ? Leaves : (Action<World>)null);
+                    bool ran = Step(pair, ref metabolic, modules ? Leaves : (Action<Pair>)null);
 
                     into.Write(pair.Sim.Dynamics.Digest());
                     if (!ran) continue;

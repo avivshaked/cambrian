@@ -457,11 +457,13 @@ namespace Evosim.Core
             // add". Null in, null out, so a world that has never been bitten allocates nothing.
             creature.PartHealth = Remap(creature.PartHealth, map);
 
-            // D123. The step's two sensed records are dropped rather than remapped. Their indices
-            // name the old plan's parts, and the harness's solver stays on the old plan until the
-            // growth step rebuilds it, so a remapped array would be read by the wrong links. A
-            // body that changes plan therefore senses no contact and no damage for the step it
-            // changed on; the farm's next hand-back gives its senses whatever replaces these.
+            // D123. The step's two sensed records are dropped rather than remapped, so a body that
+            // changes plan senses no contact and no damage for the step it changed on; the farm's
+            // next hand-back gives its senses whatever replaces these. The drop was chosen while
+            // the harness's solver stayed on the old plan until the growth step, when a remapped
+            // array would have been read by the wrong links. Since round 49 the harness rebuilds
+            // on the step itself, so a remap would be read by the right ones; the drop is kept
+            // until that is ruled, because it changes what a brain reads.
             creature.PartDamage = null;
             creature.PartContact = null;
 
@@ -470,7 +472,13 @@ namespace Evosim.Core
             // world with the tunable off.
             creature.PartExposure = null;
 
-            creature.PartMapFromPreviousPlan = map;
+            // Round 49. Composed with a map the harness has not taken yet, so what it takes runs
+            // from the plan its solver was built on: the mouth's pass can take two parts off one
+            // body before the harness sees either. Null in is null out.
+            int[] pending = creature.PartMapFromPreviousPlan;
+            creature.PartMapFromPreviousPlan = pending != null && map != null
+                ? Compose(pending, map)
+                : map;
 
             creature.AdultPhenotype = adult;
             creature.AdultTissueJoules = adultTissue;
@@ -498,6 +506,26 @@ namespace Evosim.Core
             creature.HasPhotosyntheticTissue = photosynthetic;
             ReadAttributeFlags(creature, body);
             creature.PlanRevision++;
+        }
+
+        /// <summary>
+        /// Two plan changes' maps as one: part <c>i</c> of the newest plan stood at
+        /// <c>earlier[later[i]]</c> in the oldest, or nowhere (-1) if either change had no place
+        /// for it.
+        /// </summary>
+        /// <param name="earlier">The pending map, from the oldest plan to the middle one.</param>
+        /// <param name="later">This change's map, from the middle plan to the newest.</param>
+        internal static int[] Compose(int[] earlier, int[] later)
+        {
+            var map = new int[later.Length];
+
+            for (int i = 0; i < later.Length; i++)
+            {
+                int middle = later[i];
+                map[i] = middle >= 0 && middle < earlier.Length ? earlier[middle] : -1;
+            }
+
+            return map;
         }
 
         /// <summary>

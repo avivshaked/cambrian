@@ -202,17 +202,38 @@ namespace Evosim.Core
 
         /// <summary>
         /// For each part of the body as it now is, the index of the same part in the body as it
-        /// stood before the last plan change — or -1 for a part that has just appeared. D106
-        /// item 2, rule 7.
+        /// stood when the harness last took this map — or -1 for a part that has appeared since.
+        /// D106 item 2, rule 7. Null is a body whose plan has not changed since.
         /// </summary>
         /// <remarks>
-        /// <b>Transient, and deliberately not in the checkpoint.</b> It is written by
-        /// <c>World.ApplyModuleRule</c> and read by the harness in the same growth step, which
-        /// rebuilds the articulation and carries the joint state and the brain across on it. A
-        /// restored world has no half-finished plan change to describe, so there is nothing for
-        /// a checkpoint to carry; null is what a body that has not just changed plan holds.
+        /// <para>
+        /// <b>Composed, not overwritten</b> (round 49). <c>World.AdoptPlan</c> writes one change's
+        /// map, and when a map is already pending it composes the two, so the map runs from the
+        /// plan the harness's solver was built on. The mouth can take two parts off one body in
+        /// one pass, and before round 49 the second change's map overwrote the first's. The
+        /// harness then carried the joints and the brain across from the wrong links.
+        /// </para>
+        /// <para>
+        /// <b>Transient, and deliberately not in the checkpoint.</b> The harness takes it with
+        /// <see cref="TakePartMapFromPreviousPlan"/> on the metabolic step it was written,
+        /// straight after <c>World.Step</c> for a bite and at the growth step for the module rule,
+        /// and a checkpoint is written after that. So no restored world has a half-finished plan
+        /// change to describe.
+        /// </para>
         /// </remarks>
         public int[] PartMapFromPreviousPlan { get; internal set; }
+
+        /// <summary>
+        /// Hands over <see cref="PartMapFromPreviousPlan"/> and forgets it, so the next plan
+        /// change starts a map of its own. The harness calls it when it rebuilds a body, or
+        /// builds one, on the plan the organism holds.
+        /// </summary>
+        public int[] TakePartMapFromPreviousPlan()
+        {
+            int[] map = PartMapFromPreviousPlan;
+            PartMapFromPreviousPlan = null;
+            return map;
+        }
 
         /// <summary>
         /// What share of its own health pool each part still holds, 0 to 1 — D106 item 3's rule 3.
