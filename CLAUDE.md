@@ -1173,10 +1173,11 @@ actually verifying it.
   harness's own members, then steps the two worlds side by side for two metabolic steps. Two
   more faults came out of that. A checkpoint taken between growth steps restored a growing
   body at its organism's size, one the solver had not been given yet; it now carries the size.
-  One taken after a bite and before the growth step that rebuilds the body cannot be
-  restored at all. The loop now defers a cadence checkpoint to the next growth step, and
-  writes no last one at a stop or a wall that lands there. A cadence that is a multiple of
-  the growth step meets neither. The fix was version 5 on its branch, and so was the record's
+  One taken after a bite and before the growth step that rebuilt the body could not be
+  restored at all. The loop deferred a cadence checkpoint to the next growth step, and wrote
+  no last one at a stop or a wall in between. A cadence that is a multiple of the growth step
+  never met it. The bite rebuild below closed that window.
+  The fix was version 5 on its branch, and so was the record's
   gzipped checkpoint on another; the two met at round 49's merge as version 6, the new payload
   gzipped, which both records write, and a file saying 5 is refused by name because it could
   be either layout. Round 48's files are version 4 and still open, lossily. A
@@ -1187,7 +1188,16 @@ actually verifying it.
   pass. The layout did not move, because the physics steps after a restore still read them
   before the next metabolic step rewrites them. Round 49's instruments then took
   `StateVersion` to 12, since queued lineage rows carry the death row's `ga` and `res` and a
-  founder's landing readings, and 11 is refused. **The
+  founder's landing readings, and 11 is refused. **A bitten body is rebuilt on the step that
+  bit it, from round 49's bite rebuild** (2026-09-25). Until then the farm rebuilt its solver
+  only at the next growth step, up to ten seconds later. In that window the contact list
+  named the old plan's links, so a bite could land on the wrong part. The brain read senses
+  indexed by the new plan, and a checkpoint could not be restored. Now the farm rebuilds it
+  straight after the world's step, before any physics step, as it builds a newborn, and the
+  checkpoint deferral stays as a guard that never fires. A new path that changes a plan must
+  rebuild the body before the next physics step and take the organism's part map as it does
+  (`TakePartMapFromPreviousPlan`). Core composes a pending map with the next change's, so a
+  map left behind corrupts the next one. **The
   JIT decides the bits**: .NET's
   tiered compilation gives quick-JITted and optimised loops different floating-point
   results on a rounding edge, so every project that reports a digest sets
