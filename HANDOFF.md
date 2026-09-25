@@ -46,13 +46,17 @@ card work runs by day, with the card alone on the machine.
 round launches tonight on its own build, without step 2; step 3 is in its launcher. The queue
 runs on its own, one heavy job at a time:
 1. `scratch/r49-film-debug/after-pace.ps1`, the film chain above.
-2. `after-film.ps1` beside it: scenes 2, 8 and 11 again, then the whole film joined to
+2. `after-film2.ps1` behind it (pid 41544): every scene again into `story-v5`, since the
+   windows' picture reader dropped round 48's rigid-group floors and pruned every bud (the
+   leaf's stomach in scenes 16 to 18; `9f5bfe8`, CLAUDE.md), then the whole film joined to
    `scratch/owner/r48-story-full/r48-story-full-v2.mp4`, then `scratch/r49-launch/checks.ps1`
    (the build, the suites, the two record formats, the smoke with its witness, checkpoint
-   check and resume, the crowd fixture), logged to `scratch/logs/r49-checks.log`.
-3. `scratch/r49-launch/post-checks.ps1`: the no-bite regress (`r48fix-s4` against
-   `r49fixb-s4`) and round 49's world checkpointed every 95 s (`r49ck95-s2`), which must print
-   no wait. Logged to `scratch/logs/r49-post-checks.log`.
+   check and resume, the crowd fixture; `scratch/logs/r49-checks.log`), then
+   `post-checks.ps1` (the no-bite regress `r48fix-s4` against `r49fixb-s4`, and round 49's
+   world checkpointed every 95 s, `r49ck95-s2`, which must print no wait;
+   `scratch/logs/r49-post-checks.log`).
+3. The v4 renders stay as the reference: v5 against v4 should differ in the buds and the
+   three charts only.
 4. By hand, once the logs are read: 0121's launch section filled from
    `scratch/r49-launch/launch-a.md` and `launch-b.md`, then `env-r49.ps1`, 0121 and
    `RunFixture.cs` committed on `r49-record-film`, then `scratch/r49-launch/seeds.ps1`

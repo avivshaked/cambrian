@@ -260,6 +260,13 @@ owner's ruling of 2026-09-18). Picture-only readers take the water's shape from 
 strict reader refuses, and the bodies' plans from a genome of format 4 or 5. Both are tried after
 the strict readers, and the label's first line then ends `· OLD-RUN READ`. The rule that loading
 refuses rather than defaults is untouched for everything that simulates.
+**The picture-only config reader must take every development limit, or a picture prunes
+what the run carried.** `PictureConfig` read five of `DevelopmentLimits`' seven until
+2026-09-25 and left `floorsWeighRigidGroups` off, so every picture of round 48 on a build
+that refuses its config (every film window and reconstruction after D124) dropped every
+3 cm bud under `minPartVolume`: the story's leaf with a stomach was drawn without it, and
+the first film, on the strict reader, had it (`9f5bfe8`). A development limit added to Core
+is added to `PictureConfig` in the same change; nothing checks it.
 
 **A run is filmed from a checkpoint** (2026-09-23 evening, the owner's request for clips at
 5,000, 15,000 and 30,000 s): `./scripts/theatre-film.ps1 r46-s1 -At 5000 [-Worker 6] [-Shots
