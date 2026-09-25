@@ -56,12 +56,19 @@ anything, so finish when your files are written.
 3. **Nothing about wanting.** A body with no leaf "lives on snow";
    it does not "choose" snow. A line's recipe "bets on small children" only as a figure of speech
    the viewer can see through, and only once the numbers behind it are on screen.
-4. **The screen is a cousin**: every scene is re-run from a checkpoint and drifts from what was
-   recorded. The first chapter says so once: every scene is re-run from a saved moment, and the
-   numbers are the original run's. After that a caption says "in the run" only where the
-   difference matters, a birth or a count the replay may not show as it happened (STYLE.md §7,
-   2026-09-25). A scene that must show a particular body is set at a checkpoint second with
-   `flexible: false`.
+4. **The corner word says what the screen is.** A scene played from a window the farm recorded
+   reads FAITHFUL and shows what happened: round 48's second film was filmed that way, and all
+   twenty of its scenes read FAITHFUL. A scene stepped live in the Editor reads COUSIN and drifts
+   from the recording. Write for the window. The film says once, where rounds and tanks are
+   introduced, that every scene is re-run from a saved moment. A caption says "in the run" only
+   on a scene the film reports as COUSIN, and where the difference matters (a birth, a count the
+   replay may not show as it happened); captions stay editable after filming, so that hedge is
+   added then (STYLE.md §7, 2026-09-25). A scene that must show a particular body is set at a
+   checkpoint second with `flexible: false`.
+4a. **A time in a caption is counted from when it is read.** A viewer hears "44.5 s from here"
+   at the moment the line is on screen, not at the scene's start: round 48's first script put a
+   death at 74 s into a 46 s scene that way. Say "about to", "before this scene is over", or give
+   the run's second.
 5. **The code outranks an earlier film**: before you repeat a claim from an earlier film or entry,
    find it in the code or the settings. Round 48's first film said the dead make the snow; living
    leaves made three quarters of it. The glossary lists what else changed.

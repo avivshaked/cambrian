@@ -187,8 +187,9 @@ each one found is a reason to rewrite the sentence, and a page with several of t
   glossary's word and never a synonym or a code name, and where the picture can show the thing,
   the caption says what the viewer is looking at rather than defining it after a colon. A
   creature never wants, tries or chooses. The film says once, early, that every scene is re-run
-  from a saved moment and the numbers are the original run's; after that "in the run" appears
-  only where the difference matters. A chapter title states what happens. The story has a shape
+  from a saved moment; a scene played from a recorded window shows what happened, and "in the
+  run" is kept for a scene the film marks COUSIN, where the difference matters. A time a caption
+  names is counted from the moment it is read. A chapter title states what happens. The story has a shape
   (hope, obstacle, turn, end) and its kind is named; a turn is never invented. The §5 tells apply
   at caption length too, with one allowance: a fragment and a genuine question, one of each a
   chapter at most, and neither as a scene's last line. The measures (reading pace, rounding, the
