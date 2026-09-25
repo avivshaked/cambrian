@@ -2,8 +2,8 @@
 
 *Written 2026-09-25, after round 48's film (`scratch/owner/round-48-story.mp4`, 22 scenes and a
 title in 8 min 47 s). The owner asked for the process to be repeatable. This is the procedure; the
-writer's rules are in [`story-writer-brief.md`](story-writer-brief.md), once that file exists (it
-is being drafted). A skill under `.claude/skills/story-film/` will point here. It waits for the
+writer's rules are in [`story-writer-brief.md`](story-writer-brief.md) and a film's words in
+[`story-glossary.md`](story-glossary.md). A skill under `.claude/skills/story-film/` will point here. It waits for the
 owner, because every write under `.claude/` asks them.*
 
 A story film tells one round across all its seeds. A writer reads the runs and writes a shot list;
@@ -41,9 +41,10 @@ three files:
 - `story.json`, the shot list the director films;
 - `checks.tsv`, every number on screen with the file and query it came from.
 
-The scripts that produced round 48's numbers are in `scratch/story/r48/` (`lin.py`, `clades.py`,
-`stats_series.py`, `statat.py`, `cladeat.py`, `linecount.py`, `snapinv.py`, `make_checks.py`). A new
-writer starts from them.
+The scripts that produced the numbers of round 48's second film are in
+[`story-r48-v2/`](story-r48-v2/) (`runlib.py`, `facts.py`, `extras.py`, `make_story.py`), beside the
+story, shot list and checks they wrote. A new writer copies them and starts from them. The first
+film's scripts, which they replace, stayed in `scratch/story/r48/`.
 
 The fields the director reads are in `unity/Assets/Theatre/SafariStory.cs`. Each scene carries:
 
@@ -73,7 +74,8 @@ prints one verdict line. The Editor's log prints every field the story reader co
 ## 5. The render
 
 Render one seed at a time, in a chain started detached so that it survives the session
-(`scratch/story/r48/render-chain-1.ps1` and `render-chain-2.ps1` are the pattern):
+(`logbook/specs/story-render-chains/render-chain-1.ps1` and `render-chain-2.ps1`, round 48's first
+film's, are the pattern):
 
 ```powershell
 ./scripts/theatre-safari.ps1 r48-s1 -Story <story.json> -Worker 5 -RunsRoot <main tree>\runs `
@@ -111,5 +113,10 @@ After the first film the owner asked for four things:
 - a real story shape: hope, setback, turn and ending; triumph, tragedy or bittersweet.
 
 The first and fourth belong to the writer's brief. The second and third are theatre code: the
-`chart` field in `story.json` and a story look with an exposure meter. Both are being built on
-2026-09-25, and this file will name their dials when they land.
+`chart` field in `story.json` and a story look with an exposure meter. Both were written on
+2026-09-25 on the safari branch (`fc236a7`, `91d3b08`, `ac33d7a`) and have not yet been seen in
+Unity. The chart's form is in the writer's brief. The look is on for stories only. `EVOSIM_THEATRE_STORY_LOOK` unset
+means on for a story, `1` means on for any safari and `0` off. Its dials are `EVOSIM_THEATRE_STORY_DEEP`, `_SHALLOW`, `_AMBIENT`, `_FOG`, `_REACH`, `_VIGNETTE`,
+`_LAMP`, `_LUMA`, `_LUMA_DEPTH`, `_EV_MIN` and `_EV_MAX`. `theatre-safari.ps1 -NoStoryLook` films
+the old look for a comparison. Round 48's second story, written to the new brief, is
+[`story-r48-v2/`](story-r48-v2/): 20 scenes, 7 chapters and 15 charts in 9 min 39 s.
