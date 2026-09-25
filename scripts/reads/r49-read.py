@@ -45,7 +45,9 @@ How each clause is read:
     neuron input of kind Sensor on the Contact or the Damage channel.
   - C2 (item 8): no `the checkpoint due at ... waits` line in <logs-dir>/<arm>.err, and the
     manifest's `checkpoints` equal to its simulated seconds over its cadence at a cadence of
-    100 s. A running arm is absent (the manifest's count is written at the end); the files on
+    100 s. Without the log in --logs-dir, the newest <repo>/scratch/wt-*/scratch/logs/<arm>.err
+    is read, since run-farm.ps1 logs under the tree it runs from. A running arm is absent
+    (the manifest's count is written at the end); the files on
     disk, `partsKilled` and `moduleRebuilds` are printed beside it.
   - C3 (item 9): no `starved` death row carries `res`; the deaths by cause with the solvent
     ones and their median reserve are printed.
@@ -1507,6 +1509,13 @@ def c2(seed, d, manifest, last, logs_dir, arm):
     N = NAMES
     m = manifest or {}
     err = os.path.join(logs_dir, arm + ".err")
+    if not os.path.exists(err):
+        # A seed launched from a worktree logs under that worktree (run-farm.ps1 writes to
+        # its own tree's scratch/logs): the newest such log, named in the row.
+        found = sorted(glob.glob(os.path.join(REPO, "scratch", "wt-*", "scratch", "logs", arm + ".err")),
+                       key=os.path.getmtime)
+        if found:
+            err = found[-1]
     waits = None
     if os.path.exists(err):
         with open(err, encoding="utf-8", errors="replace") as f:
