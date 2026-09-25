@@ -67,8 +67,9 @@ namespace Evosim.Theatre
         /// bright (2026-09-25); the first film's 0.06 to 0.19 was too dark. 0.26 gave frames of
         /// 0.23 to 0.29 and was still too bright; of 0.20 and 0.155 rendered side by side the owner
         /// chose 0.155 ("luma15 is better").
+        /// With the starving shade on, which dims most bodies, 0.18 over 0.155 ("this is pretty good").
         /// </summary>
-        public float TargetLuma = TheatreSkin.Dial("EVOSIM_THEATRE_STORY_LUMA", 0.155f, 0f, 0.8f);
+        public float TargetLuma = TheatreSkin.Dial("EVOSIM_THEATRE_STORY_LUMA", 0.18f, 0f, 0.8f);
 
         /// <summary>
         /// How much the target falls from the surface to the bed, as a fraction of it: 0.4 aims a
