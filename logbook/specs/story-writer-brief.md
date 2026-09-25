@@ -192,6 +192,10 @@ in the scene where they first matter.
   chapter's line as its caption.
 - A scene carrying `chapter` plays an 8 s chapter card before it.
 - A Time scene plays two halves of its `seconds`, at `from` and at `to`.
+- A scene whose picture holds an event at a known second (a birth, a death, a reserve reaching
+  zero) carries `least_seconds`, the event's second into the scene plus two. The narration sets
+  every scene's length later, and a scene timed from its words alone can end before its event:
+  round 48's scene 11 holds a death at 44.5 s under captions that end at 33.5 s.
 
 ## Length
 

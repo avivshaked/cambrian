@@ -23,7 +23,9 @@ scenes' lengths. The service that speaks them is separate; this is the flow's si
   0.1 s before the next caption. It prints each scene's length against the one before. The
   narration sets the length (the owner, 2026-09-25); a scene cut by more than a quarter is named,
   because its picture may need the time (a descent's dolly, a birth's wait), and `--keep-length`
-  keeps every scene at least as long as it was.
+  keeps every scene at least as long as it was. A scene's `least_seconds`, which the writer sets
+  where the picture holds an event at a known second (a birth, a death), is a floor the narration
+  never cuts under.
 - `check` reports, without writing, whether the manifest matches the story, and every flag
   `timing` would raise.
 
@@ -175,6 +177,10 @@ def plan(folder, lead, gap, tail, keep=False):
             new_caps.append(new)
         old = float(s.get("seconds") or 0)
         seconds = math.ceil((t + tail) * 10.0) / 10.0
+        least = float(s.get("least_seconds") or 0)
+        if seconds < least:
+            flags.append(("INFO", n, "held at %g s, the scene's least_seconds, past its narration's %g s" % (least, seconds)))
+            seconds = least
         if keep:
             seconds = max(seconds, old)
         elif old and seconds < 0.75 * old:
