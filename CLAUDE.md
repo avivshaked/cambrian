@@ -1586,7 +1586,7 @@ actually verifying it.
   follow. **A subagent that edits or writes files is not launched** until the owner says the
   prompts are gone; the main session writes the code itself, and read-only agents (`Explore`,
   `claude-code-guide`, a reader that only reports) are fine. This overrides the delegation memory
-  for any editing task. **Every write under `C:\Users\shake\.claude\` asks the owner**, the
+  for any editing task. **Every write under `~/.claude/` asks the owner**, the
   memory directory included, because the whole tree is protected: keep memory edits rare and
   batched, and put durable rules here instead. **The fix is the owner's setting, never the
   agent's**: the documented form of an allow rule for this tree, untested here, is
