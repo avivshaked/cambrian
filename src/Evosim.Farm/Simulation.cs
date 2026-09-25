@@ -393,7 +393,8 @@ namespace Evosim.Farm
                 Creature solver = body.Solver;
                 if (solver.Links == 0) continue;
 
-                if (!Divergence.Diverged(solver, Solver, body.Radius, out string reason))
+                if (!Divergence.Diverged(solver, Solver, body.Radius, out string reason) &&
+                    !RefusedByTheEngine(solver, out reason))
                 {
                     // The centre of mass, by the same bound the root was just held to, because
                     // it is the centre and not the root that Metabolise hands to World.Observe
@@ -429,6 +430,26 @@ namespace Evosim.Farm
             {
                 HandleDivergence(_condemned[i], reasons[i]);
             }
+        }
+
+        /// <summary>
+        /// A body a step backend would not take: finite, and not being stepped. The gpu engine
+        /// refuses a body over its largest size class (logbook/specs/gpu-port-spec.md section 2)
+        /// and leaves it as the CPU leaves a lost one, so it dies here as a counted divergence
+        /// with a reason that names the engine. Never on the CPU, whose only unstepped body is a
+        /// non-finite one and has already been caught above.
+        /// </summary>
+        private bool RefusedByTheEngine(Creature solver, out string reason)
+        {
+            if (Dynamics.Backend == null || solver.Alive)
+            {
+                reason = null;
+                return false;
+            }
+
+            reason = "refused by the " + Dynamics.Backend.Name + " engine: over its largest size class " +
+                     "(links, neurons or inputs a neuron), so never stepped";
+            return true;
         }
 
         /// <summary>Dumps a diverged body's post-mortem and kills it as a counted death.</summary>

@@ -144,6 +144,18 @@ namespace Evosim.Farm
             Num("EVOSIM_RESUME_AT", 0f, (s, v) => s.ResumeAt = v),
             Flag("EVOSIM_ALLOW_SOURCE_MISMATCH", (s, v) => s.AllowSourceMismatch = v),
 
+            // Which engine steps the bodies, and how the gpu one runs (logbook/specs/
+            // gpu-port-spec.md). Farm settings like the thread count, never tunables: an engine is
+            // recorded in run.json and the header, and a run's config and its hash are the world's
+            // whatever steps it. The gpu names are read on every build and applied only by one
+            // compiled with the engine (EVOSIM_GPU); the Unity farm reads none of them.
+            Text("EVOSIM_ENGINE", (s, v) => s.Engine = string.IsNullOrEmpty(v) ? "cpu" : v.Trim().ToLowerInvariant()),
+            Text("EVOSIM_GPU_DEVICE", (s, v) => s.GpuDevice = string.IsNullOrEmpty(v) ? "cuda" : v.Trim().ToLowerInvariant()),
+            Text("EVOSIM_GPU_PRECISION", (s, v) => s.GpuPrecision = string.IsNullOrEmpty(v) ? "single" : v.Trim().ToLowerInvariant()),
+            Int("EVOSIM_GPU_GROUP", 32f, (s, v) => s.GpuGroup = v),
+            Text("EVOSIM_GPU_MEAN", (s, v) => s.GpuMean = string.IsNullOrEmpty(v) ? "" : v.Trim().ToLowerInvariant()),
+            Flag("EVOSIM_GPU_RESYNC", (s, v) => s.GpuResync = v),
+
             Num("EVOSIM_IDLE", 0.02f, (s, v) => s.Idle = v),
             Num("EVOSIM_MAXPOWER", RandomGenomeOptions.Default.MaxLinkPower, (s, v) => s.MaxPower = v),
             Num("EVOSIM_MINPOWER", RandomGenomeOptions.Default.MinLinkPower, (s, v) => s.MinPower = v),
@@ -997,6 +1009,30 @@ namespace Evosim.Farm
         /// <c>Allow Source Mismatch</c> follows.
         /// </remarks>
         public bool AllowSourceMismatch;
+
+        /// <summary>
+        /// Which engine steps the bodies: <c>cpu</c> (the solver, every recorded run) or
+        /// <c>gpu</c> (logbook/specs/gpu-port-spec.md). A farm setting, recorded in run.json.
+        /// </summary>
+        public string Engine = "cpu";
+
+        /// <summary>The gpu engine's device: <c>cuda</c>, or <c>cpu</c> for ILGPU's CPU accelerator.</summary>
+        public string GpuDevice = "cuda";
+
+        /// <summary>The gpu engine's arithmetic: <c>single</c> or <c>double</c>.</summary>
+        public string GpuPrecision = "single";
+
+        /// <summary>Threads a group on the card; 0 lets ILGPU choose.</summary>
+        public int GpuGroup = 32;
+
+        /// <summary>The contact grid's mean: <c>serial</c>, <c>chunked</c>, or empty for the precision's default.</summary>
+        public string GpuMean = "";
+
+        /// <summary>A diagnostic: every body uploaded again at every block.</summary>
+        public bool GpuResync;
+
+        /// <summary>Whether this run asks for the gpu engine; anything but cpu or gpu is refused by the farm.</summary>
+        public bool EngineIsGpu => string.Equals(Engine, "gpu", System.StringComparison.Ordinal);
 
         public float Idle;
         public float MaxPower;

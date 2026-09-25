@@ -79,11 +79,16 @@ namespace Evosim.Farm
         public string Text => _text.ToString();
 
         /// <summary>The title, the settings header and the table's header row.</summary>
-        public void Begin(EnvSettings s, RunConfig config, SpaceFacts space, string engineVersion)
+        /// <param name="engine">
+        /// The engine's words after <c>engine=</c>: null for the solver (<c>dynamics</c>, every
+        /// recorded run), or the gpu engine's <c>gpu single 4090 g32 classes 2/4/8/16</c>.
+        /// </param>
+        public void Begin(
+            EnvSettings s, RunConfig config, SpaceFacts space, string engineVersion, string engine = null)
         {
             _text.AppendLine("# Evolution run — " + s.Irradiance.ToString("0", Inv) + " W/m2");
             _text.AppendLine();
-            _text.AppendLine(HeaderLine(s, config, space, engineVersion));
+            _text.AppendLine(HeaderLine(s, config, space, engineVersion, engine));
             _text.AppendLine();
             _text.AppendLine(TableHeader());
         }
@@ -165,7 +170,7 @@ namespace Evosim.Farm
         /// repeated is the text, character for character.
         /// </remarks>
         public static string HeaderLine(
-            EnvSettings s, RunConfig config, SpaceFacts space, string engineVersion)
+            EnvSettings s, RunConfig config, SpaceFacts space, string engineVersion, string engine = null)
         {
             if (s == null) throw new ArgumentNullException(nameof(s));
             if (config == null) throw new ArgumentNullException(nameof(config));
@@ -175,7 +180,7 @@ namespace Evosim.Farm
             float metabolicStep = stepsPerMetabolic * physicsDt;
 
             return
-                "engine=" + RunManifest.EngineName + " " + (engineVersion ?? "unknown") +
+                "engine=" + (engine ?? RunManifest.EngineName) + " " + (engineVersion ?? "unknown") +
                 " · dt=" + F(physicsDt) +
                 " · metabolic step " + F(metabolicStep) +
                 " s · seed " + s.Seed.ToString(Inv) + " · idle " + F(s.Idle) + " W/N·m · power " +

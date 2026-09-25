@@ -92,7 +92,8 @@ namespace Evosim.Dynamics
                 "{\"digestEvery\": " + everySteps.ToString(CultureInfo.InvariantCulture) +
                 ", \"dumpSteps\": [" +
                 string.Join(",", named.ConvertAll(x => x.ToString(CultureInfo.InvariantCulture))) +
-                "], \"precision\": \"double\", \"engine\": \"Evosim.Dynamics\"}\n",
+                "], \"precision\": \"" + (Backend != null ? Backend.Precision : "double") +
+                "\", \"engine\": \"" + (Backend != null ? Backend.Name : "Evosim.Dynamics") + "\"}\n",
                 new UTF8Encoding(false));
         }
 

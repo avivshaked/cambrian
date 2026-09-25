@@ -1,0 +1,129 @@
+using System;
+using System.Collections.Generic;
+using ILGPU;
+using ILGPU.Runtime;
+
+namespace Evosim.Farm.Gpu
+{
+    /// <summary>One array the card holds and its copy on the host, moved as a whole.</summary>
+    internal interface IColumn : IDisposable
+    {
+        void Resize(int cap);
+
+        void Up();
+
+        void Down();
+
+        long Bytes { get; }
+    }
+
+    /// <summary>
+    /// A column of <typeparamref name="T"/> laid out <c>[k·Cap + slot]</c> for <c>k</c> below
+    /// <see cref="Width"/>: the kernel's structure-of-arrays stride, which keeps a warp's reads of
+    /// one quantity for neighbouring bodies adjacent.
+    /// </summary>
+    /// <remarks>
+    /// The host copy is the mirror's staging area and is kept equal to the card's after every
+    /// download, so an upload of the whole column carries every slot the host did not touch
+    /// back as it was. Growing the capacity re-lays every row; growing the width appends rows,
+    /// which leaves every existing index where it was.
+    /// </remarks>
+    internal sealed class Col<T> : IColumn where T : unmanaged
+    {
+        private readonly Accelerator _acc;
+        private readonly T _fill;
+
+        public int Width { get; private set; }
+
+        public int Cap { get; private set; }
+
+        public T[] Host;
+
+        public MemoryBuffer1D<T, Stride1D.Dense> Dev;
+
+        public Col(Accelerator acc, int width, int cap, T fill = default)
+        {
+            _acc = acc;
+            _fill = fill;
+            Width = Math.Max(1, width);
+            Cap = Math.Max(1, cap);
+            Host = new T[Width * Cap];
+            if (!EqualityComparer<T>.Default.Equals(fill, default)) Array.Fill(Host, fill);
+            Dev = _acc.Allocate1D<T>(Host.Length);
+        }
+
+        public ArrayView<T> View => Dev.View;
+
+        public long Bytes => (long)Host.Length * System.Runtime.CompilerServices.Unsafe.SizeOf<T>();
+
+        public void Resize(int cap)
+        {
+            cap = Math.Max(1, cap);
+            if (cap == Cap) return;
+
+            var next = new T[Width * cap];
+            if (!EqualityComparer<T>.Default.Equals(_fill, default)) Array.Fill(next, _fill);
+
+            int keep = Math.Min(Cap, cap);
+            for (int k = 0; k < Width; k++) Array.Copy(Host, k * Cap, next, k * cap, keep);
+
+            Host = next;
+            Cap = cap;
+            Dev.Dispose();
+            Dev = _acc.Allocate1D<T>(Host.Length);
+        }
+
+        /// <summary>More rows at the end; every existing index keeps its place.</summary>
+        public void Widen(int width)
+        {
+            if (width <= Width) return;
+
+            var next = new T[width * Cap];
+            if (!EqualityComparer<T>.Default.Equals(_fill, default)) Array.Fill(next, _fill);
+            Array.Copy(Host, next, Host.Length);
+
+            Host = next;
+            Width = width;
+            Dev.Dispose();
+            Dev = _acc.Allocate1D<T>(Host.Length);
+        }
+
+        public void Up() => Dev.View.CopyFromCPU(Host);
+
+        public void Down() => Dev.View.CopyToCPU(Host);
+
+        public void Dispose() => Dev?.Dispose();
+    }
+
+    /// <summary>A flat device buffer with no host copy of its own: the grid's scratch.</summary>
+    internal sealed class Scratch<T> : IDisposable where T : unmanaged
+    {
+        private readonly Accelerator _acc;
+
+        public MemoryBuffer1D<T, Stride1D.Dense> Dev;
+
+        public long Length { get; private set; }
+
+        public Scratch(Accelerator acc, long length)
+        {
+            _acc = acc;
+            Length = Math.Max(1, length);
+            Dev = _acc.Allocate1D<T>(Length);
+        }
+
+        public ArrayView<T> View => Dev.View;
+
+        /// <summary>At least <paramref name="length"/>, grown by half again so a growing crowd reallocates rarely.</summary>
+        public bool Ensure(long length)
+        {
+            if (length <= Length) return false;
+
+            Length = Math.Max(length, Length + Length / 2);
+            Dev.Dispose();
+            Dev = _acc.Allocate1D<T>(Length);
+            return true;
+        }
+
+        public void Dispose() => Dev?.Dispose();
+    }
+}

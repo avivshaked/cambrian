@@ -33,6 +33,9 @@ namespace Evosim.Dynamics
         /// <summary>The engine's name for the manifest: "gpu".</summary>
         string Name { get; }
 
+        /// <summary>The arithmetic the engine steps in: "double" or "single".</summary>
+        string Precision { get; }
+
         /// <summary>
         /// How many physics steps the backend would take in one call. The farm asks for no more
         /// than the steps left to its next metabolic step.

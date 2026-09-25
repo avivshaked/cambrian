@@ -242,6 +242,34 @@ namespace Evosim.Farm
             // directory is made for it.
             var world = new World(config, settings.Seed, pool?.Genomes);
 
+            // The engine, before the directory, for the same reason as the world: a gpu world the
+            // engine refuses (a box, a water hold, a dt it was not written for) or a device it
+            // cannot find stops the launch before a run directory is made for it
+            // (logbook/specs/gpu-port-spec.md section 3). Its solver config is the one the
+            // simulation will build, from the same factory and the same world.
+            Evosim.Dynamics.IStepBackend engine = null;
+            string engineToken = null;
+
+            if (!settings.EngineIsGpu && settings.Engine != "cpu")
+            {
+                throw new ArgumentException(
+                    "EVOSIM_ENGINE is '" + settings.Engine + "'; the farm knows 'cpu' (the solver) and 'gpu'.");
+            }
+
+            if (settings.EngineIsGpu)
+            {
+#if EVOSIM_GPU
+                Evosim.Farm.Gpu.GpuBackend gpu = FarmGpu.Open(
+                    settings, Evosim.Dynamics.SolverConfig.FromWorld(config, physicsDt, world.Bed, world));
+                engine = gpu;
+                engineToken = gpu.HeaderToken();
+#else
+                throw new NotSupportedException(
+                    "EVOSIM_ENGINE is gpu and this build of the farm has no gpu engine: it is compiled " +
+                    "in by src/Evosim.Farm's own csproj (EVOSIM_GPU), and never into Unity.");
+#endif
+            }
+
             var space = SpaceFacts.Of(
                 world,
                 hasWall: config.SharedSpace && config.WorldShape == WorldShape.Tank,
@@ -263,6 +291,14 @@ namespace Evosim.Farm
                 settings, config.Hash(), inoculumHash, physicsDt, stepsPerMetabolic, threads);
 
             Manifest.RecordBed(manifest, world.Bed);
+
+#if EVOSIM_GPU
+            if (engine is Evosim.Farm.Gpu.GpuBackend opened)
+            {
+                manifest.Engine = "gpu";
+                manifest.Gpu = FarmGpu.Facts(opened, manifest.RepoRoot);
+            }
+#endif
             Manifest.RecordReefs(manifest, world.Reefs);
 
             // D102, set here for RecordBed's reason and from the same world: the ratio the streams
@@ -285,7 +321,7 @@ namespace Evosim.Farm
             Manifest.Write(dir, manifest, ending: null);
 
             var report = new Report(outPath, config);
-            report.Begin(settings, config, space, manifest.EngineVersion);
+            report.Begin(settings, config, space, manifest.EngineVersion, engineToken);
             report.Flush();
 
             Console.WriteLine(report.Text.TrimEnd());
@@ -312,8 +348,10 @@ namespace Evosim.Farm
                     manifest.CheckpointEverySeconds.ToString(CultureInfo.InvariantCulture) + " s");
             }
 
+            if (engineToken != null) Console.WriteLine("engine:        " + engineToken);
+
             return Loop(settings, config, world, dir, report, manifest, outPath,
-                physicsDt, stepsPerMetabolic, threads, resumePath);
+                physicsDt, stepsPerMetabolic, threads, resumePath, engine);
         }
 
         /// <summary>
@@ -341,8 +379,18 @@ namespace Evosim.Farm
             manifest.ResumedFromSeconds = resume.Seconds;
             manifest.ResumedFromCheckpointHash = Manifest.HashBytes(File.ReadAllBytes(resumePath));
 
-            IReadOnlyList<string> differences = resume.Differences(
-                config.Hash(), manifest.CoreHash, manifest.DynamicsHash, manifest.FarmHash);
+            var differences = new List<string>(resume.Differences(
+                config.Hash(), manifest.CoreHash, manifest.DynamicsHash, manifest.FarmHash));
+
+            // Across engines, as across hashes (logbook/specs/gpu-port-spec.md section 5): the
+            // checkpoint is the same file whichever engine wrote it, and what carries on from it
+            // on another engine, or at another precision, is a cousin of the recording.
+            string sourceEngine = EngineOf(sourceRun);
+            string thisEngine = EngineOf(manifest);
+            if (sourceEngine != null && sourceEngine != thisEngine)
+            {
+                differences.Add("engine " + sourceEngine + " against this run's " + thisEngine);
+            }
 
             if (differences.Count == 0) return;
 
@@ -365,6 +413,34 @@ namespace Evosim.Farm
                 "produces is a cousin of the recording and not its continuation, and run.json " +
                 "says so.");
         }
+
+        /// <summary>The engine a run directory's run.json names, with the gpu's precision; null when unreadable.</summary>
+        private static string EngineOf(string runDirectory)
+        {
+            try
+            {
+                string path = Path.Combine(runDirectory, "run.json");
+                if (!File.Exists(path)) return null;
+
+                JsonNode node = Json.Parse(File.ReadAllText(path));
+                if (!node.Has("engine")) return null;
+
+                string engine = node["engine"].AsString();
+                if (node.Has("gpu") && node["gpu"].Has("precision"))
+                {
+                    engine += " " + node["gpu"]["precision"].AsString();
+                }
+
+                return engine;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static string EngineOf(RunManifest manifest) =>
+            (manifest.Engine ?? RunManifest.EngineName) + (manifest.Gpu != null ? " " + manifest.Gpu.Precision : "");
 
         /// <summary>
         /// The run — <c>EvolutionRun.RunBody</c>'s loop, its footer and the second half of the
@@ -392,10 +468,14 @@ namespace Evosim.Farm
         private static int Loop(
             EnvSettings settings, RunConfig config, World world, RunDirectory dir, Report report,
             RunManifest manifest, string outPath, float physicsDt, int stepsPerMetabolic,
-            int threads, string resumePath)
+            int threads, string resumePath, Evosim.Dynamics.IStepBackend engine = null)
         {
             var sim = new Simulation(
                 world, settings.Seed, physicsDt, stepsPerMetabolic, threads, dir.Path);
+
+            // The gpu engine takes the solver's blocks from the first one; a restore below reads
+            // into the same creatures, which the engine's first block uploads whole.
+            if (engine != null) sim.Dynamics.UseBackend(engine);
 
             if (settings.DigestEvery > 0)
             {
@@ -532,6 +612,9 @@ namespace Evosim.Farm
                     manifest.LastWallHarnessMs = sim.WallHarnessMs;
                     manifest.LastWallWritersMs = sim.WallWritersMs;
                     manifest.LastWallTotalMs = clock.ElapsedMilliseconds;
+#if EVOSIM_GPU
+                    FarmGpu.Note(manifest, sim.Dynamics.Backend);
+#endif
 
                     // D060. Fires once — the first metabolic step whose elapsed time reaches the
                     // pre-registered instant — and checked before the extinction test below, so an
@@ -677,6 +760,9 @@ namespace Evosim.Farm
                 manifest.LastPoseFrames = poses?.FrameCount ?? 0;
                 poses?.Dispose();
 
+#if EVOSIM_GPU
+                FarmGpu.Note(manifest, sim.Dynamics.Backend);
+#endif
                 Manifest.Write(dir, manifest, Manifest.ErrorEnding(manifest, e));
 
                 report.AppendLine();
@@ -685,6 +771,7 @@ namespace Evosim.Farm
 
                 sampler.Close();
                 sim.Dispose();
+                engine?.Dispose();
                 dir.Dispose();
 
                 Console.Error.WriteLine(e.ToString());
@@ -696,6 +783,14 @@ namespace Evosim.Farm
             report.Footer(
                 config, readings, ending, clock.ElapsedMilliseconds, sim.WallWritersMs,
                 bestSpeedEver, bestSpeedAt);
+
+#if EVOSIM_GPU
+            FarmGpu.Note(manifest, sim.Dynamics.Backend);
+#endif
+
+            // The gpu engine's capacities (logbook/specs/gpu-port-spec.md section 2): a nonzero
+            // overflow is a step that dropped a candidate or an overlap, and is read first.
+            if (manifest.Gpu != null) report.AppendLine(manifest.Gpu.OverflowLine());
 
             report.Flush();
 
@@ -785,6 +880,7 @@ namespace Evosim.Farm
             report.Flush();
 
             sim.Dispose();
+            engine?.Dispose();
             dir.Dispose();
 
             Console.WriteLine();

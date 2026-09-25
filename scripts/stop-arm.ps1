@@ -99,12 +99,14 @@ else {
 
 # The farm out of Unity. Told apart by what the run itself recorded, never by the arm's name or
 # by which directory it sits in: the engine is a fact of the run and the other two are habits.
-if ($manifest -and $manifest.engine -eq 'dynamics') {
+# The gpu engine (logbook/specs/gpu-port-spec.md) is the same program with the solver's step on
+# the card, and it stops the same way.
+if ($manifest -and $manifest.engine -in @('dynamics', 'gpu')) {
     $stopPath = Join-Path $runDir.FullName 'STOP'
 
     Write-Host "$Name"
     Write-Host "  run     $($runDir.FullName)"
-    Write-Host "  engine  dynamics (src/Evosim.Farm), threads $($manifest.threads), pid $($manifest.processId)"
+    Write-Host "  engine  $($manifest.engine) (src/Evosim.Farm), threads $($manifest.threads), pid $($manifest.processId)"
     Write-Host "  stop    $stopPath"
     Write-Host "  reason  $Reason"
 

@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The farm's `gpu` engine (logbook/specs/gpu-port-spec.md): the whole physics step of
+    Evosim.Dynamics as ILGPU kernels, behind DynamicsWorld's step backend, in double or single.
+
+    Not a Unity package and never will be: ILGPU is a NuGet dependency the Editor has no
+    reason to load, so this sits beside Evosim.Farm rather than inside it, and Evosim.Farm
+    reaches it only through code under EVOSIM_GPU, which only its own csproj defines.
+
+    The kernels are generated, not written: gpu-*.template holds one source for both
+    precisions and KernelGenerator writes Kernels.D.g.cs and Kernels.F.g.cs from it. The
+    generated files are committed so the build needs nothing but the SDK, and
+    Evosim.Farm.Tests' GpuKernelSourceTests fails if they are not the template's output
+    (EVOSIM_GPU_REGENERATE=1 on that test rewrites them).
+
+    TieredCompilation off, for every project here that reports a digest: the quick JIT and
+    the optimised one disagree on a rounding edge, and the CPU accelerator's acceptance is a
+    bit-for-bit one.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>Evosim.Farm.Gpu</AssemblyName>
+    <RootNamespace>Evosim.Farm.Gpu</RootNamespace>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <TieredCompilation>false</TieredCompilation>
+    <!-- CS1718: `x != x` is the kernel's NaN test, written as the spike wrote it. -->
+    <NoWarn>$(NoWarn);CS1718</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ILGPU" Version="1.5.3" />
+    <PackageReference Include="ILGPU.Algorithms" Version="1.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Evosim.Core\Evosim.Core.csproj" />
+    <ProjectReference Include="..\Evosim.Dynamics\Evosim.Dynamics.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="*.template" />
+  </ItemGroup>
+
+</Project>

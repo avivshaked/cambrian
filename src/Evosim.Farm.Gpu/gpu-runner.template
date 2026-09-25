@@ -1,0 +1,1473 @@
+// ---------------------------------------------------------------------------------------------
+// The host side of the __PREC__ engine: the card's columns, the mirror's pack and unpack, and a
+// block of physics steps in the CPU's order (DynamicsWorld.StepOnCpu, then AfterStep).
+// ---------------------------------------------------------------------------------------------
+
+namespace __NS__
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Evosim.Core;
+    using Evosim.Dynamics;
+    using Evosim.Farm.Gpu;
+    using ILGPU;
+    using ILGPU.Runtime;
+    using Real = __REALT__;
+
+    /// <summary>One size class's columns, strided by the class's capacity.</summary>
+    internal sealed class ClassSet : IDisposable
+    {
+        public const int Constant = 0, Down = 1, Block = 2;
+
+        private readonly Accelerator _acc;
+        private readonly List<IColumn> _all = new List<IColumn>();
+        private readonly List<IColumn> _down = new List<IColumn>();
+        private readonly List<IColumn> _block = new List<IColumn>();
+
+        public readonly int Class, L, D, M;
+
+        public int Cap { get; private set; }
+
+        /// <summary>Every column goes up at the next block: a pack, a growth or the first block.</summary>
+        public bool Dirty = true;
+
+        public int Panels { get; private set; } = 1;
+
+        public readonly Col<int> Links, Dof, SigLen, Mask, GSlot, Parent, DofCount, DofStart, PanelStart, ThinAxis,
+            NOff, NCnt, BParent, FirstChild, BDofStart, BDofCount;
+
+        public readonly Col<Real> Mass, Lift, Volume, SmallI, Reach, Arm, Inertia, ChildAnchor, ParentAnchor,
+            JointFrame, RestFrame, LimitLo, LimitHi, LimitStiff, LimitDamp, Excess, TotalMass;
+
+        public readonly Col<float> TorquePerUnit, PowerScale;
+
+        public readonly Col<Real> PCentre, PNormal, PArea;
+
+        public readonly Col<Real> BasePos, BaseRot, Q, Qd, Tau, LimitImplicit, BallRot, Pos, Rot, RotM, Spin, Vel,
+            Sang, Slin, Cbias, RelVel, Water, WaterAcc, Fext, Applied;
+
+        public readonly Col<float> Signal, History, RunSum;
+        public readonly Col<int> Cursor, Filled;
+        public readonly Col<long> DriveLimited, DragLimited;
+        public readonly Col<double> Work, Signed, Dissipated, Passive;
+
+        public readonly Col<int> Op, NIn, Kind, NIndex, Channel;
+        public readonly Col<float> Freq, Phase, Amp, Bias, Const, Weight;
+
+        public readonly Col<float> S, Mem, Reserve, Damage;
+        public readonly Col<int> Parity, Contact, Gates;
+        public readonly Col<double> Clock;
+
+        public readonly Col<Real> Ring;
+        public readonly Col<long> TStep, FirstBadStep;
+        public readonly Col<double> TTime;
+        public readonly Col<int> Enabled, Held, TCursor, FirstBadLink, Resized, Poison, Pending;
+
+        public ClassSet(Accelerator acc, int index, int links, int neurons, int cap)
+        {
+            _acc = acc;
+            Class = index;
+            L = links;
+            D = 3 * links;
+            M = neurons;
+            Cap = Math.Max(1, cap);
+
+            Links = C<int>(1, Constant); Dof = C<int>(1, Constant); SigLen = C<int>(1, Constant);
+            Mask = C<int>(1, Constant); GSlot = C<int>(1, Block, -1);
+            Parent = C<int>(L, Constant); DofCount = C<int>(L, Constant); DofStart = C<int>(L, Constant);
+            PanelStart = C<int>(L + 1, Constant); ThinAxis = C<int>(L, Constant);
+            NOff = C<int>(L, Constant); NCnt = C<int>(L, Constant); BParent = C<int>(L, Constant);
+            FirstChild = C<int>(L, Constant); BDofStart = C<int>(L, Constant); BDofCount = C<int>(L, Constant);
+
+            Mass = C<Real>(L, Constant); Lift = C<Real>(L, Constant); Volume = C<Real>(L, Constant);
+            SmallI = C<Real>(L, Constant); Reach = C<Real>(L, Constant); Arm = C<Real>(L, Constant);
+            Inertia = C<Real>(3 * L, Constant); ChildAnchor = C<Real>(3 * L, Constant);
+            ParentAnchor = C<Real>(3 * L, Constant);
+            JointFrame = C<Real>(4 * L, Constant); RestFrame = C<Real>(4 * L, Constant);
+            LimitLo = C<Real>(D, Constant); LimitHi = C<Real>(D, Constant);
+            LimitStiff = C<Real>(D, Constant); LimitDamp = C<Real>(D, Constant);
+            Excess = C<Real>(1, Constant); TotalMass = C<Real>(1, Constant);
+            TorquePerUnit = C<float>(D, Constant); PowerScale = C<float>(1, Block);
+
+            PCentre = C<Real>(3, Constant); PNormal = C<Real>(3, Constant); PArea = C<Real>(1, Constant);
+
+            BasePos = C<Real>(3, Down); BaseRot = C<Real>(4, Down);
+            Q = C<Real>(D, Down); Qd = C<Real>(D, Down); Tau = C<Real>(D, Down); LimitImplicit = C<Real>(D, Down);
+            BallRot = C<Real>(4 * L, Down); Pos = C<Real>(3 * L, Down); Rot = C<Real>(4 * L, Down);
+            RotM = C<Real>(9 * L, Down); Spin = C<Real>(3 * L, Down); Vel = C<Real>(3 * L, Down);
+            Sang = C<Real>(9 * L, Down); Slin = C<Real>(9 * L, Down); Cbias = C<Real>(6 * L, Down);
+            RelVel = C<Real>(3 * L, Down); Water = C<Real>(3 * L, Down); WaterAcc = C<Real>(3 * L, Down);
+            Fext = C<Real>(6 * L, Down); Applied = C<Real>(3 * L, Down);
+
+            Signal = C<float>(D, Down); History = C<float>(D * WholeStep.Window, Down); RunSum = C<float>(D, Down);
+            Cursor = C<int>(1, Down); Filled = C<int>(1, Down);
+            DriveLimited = C<long>(1, Down); DragLimited = C<long>(1, Down);
+            Work = C<double>(1, Down); Signed = C<double>(1, Down);
+            Dissipated = C<double>(1, Down); Passive = C<double>(1, Down);
+
+            Op = C<int>(M, Constant); NIn = C<int>(M, Constant);
+            Kind = C<int>(3 * M, Constant); NIndex = C<int>(3 * M, Constant); Channel = C<int>(3 * M, Constant);
+            Freq = C<float>(M, Constant); Phase = C<float>(M, Constant); Amp = C<float>(M, Constant);
+            Bias = C<float>(M, Constant); Const = C<float>(3 * M, Constant); Weight = C<float>(3 * M, Constant);
+
+            S = C<float>(2 * M, Down); Mem = C<float>(M, Down);
+            Reserve = C<float>(1, Block); Damage = C<float>(L, Block);
+            Parity = C<int>(1, Down); Contact = C<int>(L, Block); Gates = C<int>(1, Block);
+            Clock = C<double>(1, Down);
+
+            int frames = WholeStep.TraceFrames;
+            Ring = C<Real>(frames * L * WholeStep.TraceValues, Down);
+            TStep = C<long>(frames, Down); FirstBadStep = C<long>(1, Down, -1L);
+            TTime = C<double>(frames, Down);
+            Enabled = C<int>(1, Block); Held = C<int>(1, Down); TCursor = C<int>(1, Down);
+            FirstBadLink = C<int>(1, Down, -1); Resized = C<int>(frames, Down);
+            Poison = C<int>(1, Block, -1); Pending = C<int>(1, Block | Down);
+        }
+
+        private Col<T> C<T>(int width, int kind, T fill = default) where T : unmanaged
+        {
+            var column = new Col<T>(_acc, width, Cap, fill);
+            _all.Add(column);
+            if ((kind & Down) != 0) _down.Add(column);
+            if ((kind & Block) != 0) _block.Add(column);
+            return column;
+        }
+
+        public long Bytes
+        {
+            get
+            {
+                long total = 0;
+                foreach (IColumn c in _all) total += c.Bytes;
+                return total;
+            }
+        }
+
+        /// <summary>Room for <paramref name="used"/> slots: every column re-laid, and all of it goes up.</summary>
+        public void Ensure(int used)
+        {
+            if (used <= Cap) return;
+
+            int cap = Math.Max(used, 2 * Cap);
+            foreach (IColumn c in _all) c.Resize(cap);
+            Cap = cap;
+            Dirty = true;
+        }
+
+        /// <summary>Room for a body of <paramref name="panels"/> drag panels.</summary>
+        public void WidenPanels(int panels)
+        {
+            if (panels <= Panels) return;
+
+            int width = Math.Max(panels, Panels + Panels / 2);
+            PCentre.Widen(3 * width);
+            PNormal.Widen(3 * width);
+            PArea.Widen(width);
+            Panels = width;
+            Dirty = true;
+        }
+
+        public void Upload()
+        {
+            List<IColumn> columns = Dirty ? _all : _block;
+            foreach (IColumn c in columns) c.Up();
+            Dirty = false;
+        }
+
+        public void Download()
+        {
+            foreach (IColumn c in _down) c.Down();
+        }
+
+        public STopo Topo => new STopo
+        {
+            Links = Links.View, Dof = Dof.View, SigLen = SigLen.View, Mask = Mask.View, GSlot = GSlot.View,
+            Parent = Parent.View, DofCount = DofCount.View, DofStart = DofStart.View, PanelStart = PanelStart.View,
+            ThinAxis = ThinAxis.View, NOff = NOff.View, NCnt = NCnt.View, BParent = BParent.View,
+            FirstChild = FirstChild.View, BDofStart = BDofStart.View, BDofCount = BDofCount.View,
+        };
+
+        public SConst ConstSet => new SConst
+        {
+            Mass = Mass.View, Lift = Lift.View, Volume = Volume.View, SmallI = SmallI.View, Reach = Reach.View,
+            Arm = Arm.View, Inertia = Inertia.View, ChildAnchor = ChildAnchor.View, ParentAnchor = ParentAnchor.View,
+            JointFrame = JointFrame.View, RestFrame = RestFrame.View, LimitLo = LimitLo.View, LimitHi = LimitHi.View,
+            LimitStiff = LimitStiff.View, LimitDamp = LimitDamp.View, Excess = Excess.View,
+            TotalMass = TotalMass.View, TorquePerUnit = TorquePerUnit.View, PowerScale = PowerScale.View,
+        };
+
+        public SPanels PanelSet => new SPanels { Centre = PCentre.View, Normal = PNormal.View, Area = PArea.View };
+
+        public SState StateSet => new SState
+        {
+            BasePos = BasePos.View, BaseRot = BaseRot.View, Q = Q.View, Qd = Qd.View, Tau = Tau.View,
+            LimitImplicit = LimitImplicit.View, BallRot = BallRot.View, Pos = Pos.View, Rot = Rot.View,
+            RotM = RotM.View, Spin = Spin.View, Vel = Vel.View, Sang = Sang.View, Slin = Slin.View,
+            Cbias = Cbias.View, RelVel = RelVel.View, Water = Water.View, WaterAcc = WaterAcc.View,
+            Fext = Fext.View, Applied = Applied.View,
+        };
+
+        public SDrive DriveSet => new SDrive
+        {
+            Signal = Signal.View, History = History.View, RunSum = RunSum.View, Cursor = Cursor.View,
+            Filled = Filled.View, DriveLimited = DriveLimited.View, DragLimited = DragLimited.View,
+            Work = Work.View, Signed = Signed.View, Dissipated = Dissipated.View, Passive = Passive.View,
+        };
+
+        public SNeur NeurSet => new SNeur
+        {
+            Op = Op.View, NIn = NIn.View, Kind = Kind.View, Index = NIndex.View, Channel = Channel.View,
+            Freq = Freq.View, Phase = Phase.View, Amp = Amp.View, Bias = Bias.View, Const = Const.View,
+            Weight = Weight.View,
+        };
+
+        public SBrain BrainSet => new SBrain
+        {
+            S = S.View, Mem = Mem.View, Reserve = Reserve.View, Damage = Damage.View, Parity = Parity.View,
+            Contact = Contact.View, Gates = Gates.View, Clock = Clock.View,
+        };
+
+        public STrace TraceSet => new STrace
+        {
+            Ring = Ring.View, Step = TStep.View, FirstBadStep = FirstBadStep.View, Time = TTime.View,
+            Enabled = Enabled.View, Held = Held.View, Cursor = TCursor.View, FirstBadLink = FirstBadLink.View,
+            Resized = Resized.View, Poison = Poison.View, Pending = Pending.View,
+        };
+
+        public void Dispose()
+        {
+            foreach (IColumn c in _all) c.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// The __PREC__ engine's host: the mirror's pack and unpack and one block of steps
+    /// (logbook/specs/gpu-port-spec.md sections 2, 4 and 5).
+    /// </summary>
+    internal sealed class Runner : IGpuRunner
+    {
+        private readonly Accelerator _acc;
+        private readonly GpuWorld _w;
+        private readonly GpuOptions _o;
+        private readonly GpuSlots _slots;
+        private readonly ClassSet[] _classes;
+        private readonly bool _onCpu;
+        private readonly int _scanGroup;
+        private readonly int _chunk = 256;
+
+        public int GroupSize { get; }
+
+        public double CompileMs { get; }
+
+        public long[] Overflow { get; } = new long[4];
+
+        public long RefusedForClass => _slots.RefusedForClass;
+
+        public long NeuronsAtCeiling { get; private set; }
+
+        public long NeuronsAtCeilingMost { get; private set; }
+
+        // ---- the globals, by global slot
+        private int _gcap = 16;
+        private readonly List<IColumn> _gBody = new List<IColumn>();
+        private readonly List<IColumn> _gLink = new List<IColumn>();
+        private readonly List<IColumn> _gDown = new List<IColumn>();
+
+        private readonly Col<int> _gLinks, _gId, _gRank, _gAlive, _gJointed;
+        private readonly Col<int> _nOver, _ovSlot, _ovId, _ovPart, _ovHeld, _nHeld, _heldId, _bedGlass;
+        private readonly Col<Real> _gTotalMass, _linkMass;
+        private readonly Col<int> _rankToSlot;
+        private readonly Col<long> _census, _overflow;
+
+        // ---- two sphere sets: [set][Cx, Cy, Cz, R, Vx, Vy, Vz, LCx, LCy, LCz, LR, LVx, LVy, LVz]
+        private readonly Col<Real>[][] _sph = new Col<Real>[2][];
+        private readonly Col<int>[] _active = new Col<int>[2];
+        private int _committed;
+
+        // ---- the grid
+        private readonly Scratch<int> _lo, _hi, _counts, _start, _gcursor, _items, _partialN;
+        private readonly Scratch<Real> _cell, _partial;
+        private int _entryCap;
+        private readonly int[] _one = new int[1];
+
+        // ---- the world
+        private readonly Col<Real> _inst, _wr, _stock;
+        private readonly Col<int> _wi;
+        private int _fieldVersion = -1;
+        private readonly double[] _instD = new double[GpuWorld.InstStride];
+        private double[] _stockD = new double[1];
+
+        // ---- the kernels
+        private readonly Action<Index1D, SSph, SGlob, SGrid, SCfg> _meanSerial, _meanChunks, _ranges;
+        private readonly Action<Index1D, SGrid, SCfg> _meanCombine;
+        private readonly Action<KernelConfig, SGrid, SCfg> _scan;
+        private readonly Action<Index1D, SGlob, SGrid, SCfg> _scatter;
+        private readonly Action<Index1D, SGlob, SCfg> _censusKernel;
+        private readonly Action<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace, SGlob,
+            SSph, SSph, SGrid, SWorld, SCfg>[] _step;
+
+        private SCfg _base;
+
+        [ThreadStatic] private static long[] _idScratch;
+        [ThreadStatic] private static int[] _partScratch;
+
+        public Runner(Accelerator accelerator, GpuWorld world, GpuOptions options)
+        {
+            _acc = accelerator;
+            _w = world;
+            _o = options;
+            _onCpu = accelerator.AcceleratorType == AcceleratorType.CPU;
+            _slots = new GpuSlots(options.ClassLinks, options.ClassNeurons);
+
+            _classes = new ClassSet[options.ClassLinks.Length];
+            for (int k = 0; k < _classes.Length; k++)
+            {
+                _classes[k] = new ClassSet(accelerator, k, options.ClassLinks[k], options.ClassNeurons[k], 16);
+            }
+
+            int oc = options.OverlapCap;
+            _gLinks = G<int>(_gBody, 1, true); _gId = G<int>(_gBody, 1, false); _gRank = G<int>(_gBody, 1, false);
+            _gAlive = G<int>(_gBody, 1, true); _gJointed = G<int>(_gBody, 1, false);
+            _gTotalMass = G<Real>(_gBody, 1, false);
+            _linkMass = G<Real>(_gLink, 1, false);
+            _nOver = G<int>(_gBody, 1, true); _ovSlot = G<int>(_gBody, oc, true, -1); _ovId = G<int>(_gBody, oc, true);
+            _ovPart = G<int>(_gBody, 2 * oc, true, -1); _ovHeld = G<int>(_gBody, oc, true);
+            _nHeld = G<int>(_gBody, 1, true); _heldId = G<int>(_gBody, oc, true); _bedGlass = G<int>(_gBody, 1, true);
+
+            _rankToSlot = new Col<int>(_acc, 1, 16, -1);
+            _census = new Col<long>(_acc, 1, WholeStep.CensusFields * GpuBackend.BlockCeiling);
+            _overflow = new Col<long>(_acc, 1, 4);
+
+            for (int set = 0; set < 2; set++)
+            {
+                var columns = new Col<Real>[14];
+                for (int k = 0; k < 7; k++) columns[k] = new Col<Real>(_acc, 1, _gcap);
+                for (int k = 7; k < 14; k++) columns[k] = new Col<Real>(_acc, 1, WholeStep.LinkStride * _gcap);
+                _sph[set] = columns;
+                _active[set] = new Col<int>(_acc, 1, _gcap);
+            }
+
+            _lo = new Scratch<int>(_acc, 3 * 16);
+            _hi = new Scratch<int>(_acc, 3 * 16);
+            _counts = new Scratch<int>(_acc, 17);
+            _start = new Scratch<int>(_acc, 17);
+            _gcursor = new Scratch<int>(_acc, 17);
+            _entryCap = 1024;
+            _items = new Scratch<int>(_acc, _entryCap);
+            _partial = new Scratch<Real>(_acc, 1);
+            _partialN = new Scratch<int>(_acc, 1);
+            _cell = new Scratch<Real>(_acc, 1);
+
+            _inst = new Col<Real>(_acc, 1, GpuWorld.InstStride * GpuBackend.BlockCeiling);
+            _wr = new Col<Real>(_acc, 1, world.WR.Length);
+            for (int k = 0; k < world.WR.Length; k++) _wr.Host[k] = (Real)world.WR[k];
+            _wr.Up();
+            _wi = new Col<int>(_acc, 1, 1);
+            _stock = new Col<Real>(_acc, 1, 1);
+
+            _scanGroup = Math.Max(1, Math.Min(1024, accelerator.MaxNumThreadsPerGroup));
+
+            _base = BaseConfig(world, options);
+
+            // ---- the kernels: every launch shape compiled before the first step is timed.
+            var watch = Stopwatch.StartNew();
+            bool grouped = !_onCpu && options.GroupSize > 0;
+            int g = options.GroupSize;
+            GroupSize = _onCpu ? accelerator.MaxNumThreadsPerGroup : g;
+
+            _meanSerial = _acc.LoadAutoGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.MeanSerial);
+            _meanCombine = _acc.LoadAutoGroupedStreamKernel<Index1D, SGrid, SCfg>(WholeStep.MeanCombine);
+            _scan = _acc.LoadStreamKernel<SGrid, SCfg>(WholeStep.Scan);
+
+            if (grouped)
+            {
+                _meanChunks = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.MeanChunks, g);
+                _ranges = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.Ranges, g);
+                _scatter = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SGlob, SGrid, SCfg>(WholeStep.Scatter, g);
+                _censusKernel = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SGlob, SCfg>(WholeStep.Census, g);
+            }
+            else
+            {
+                _meanChunks = _acc.LoadAutoGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.MeanChunks);
+                _ranges = _acc.LoadAutoGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.Ranges);
+                _scatter = _acc.LoadAutoGroupedStreamKernel<Index1D, SGlob, SGrid, SCfg>(WholeStep.Scatter);
+                _censusKernel = _acc.LoadAutoGroupedStreamKernel<Index1D, SGlob, SCfg>(WholeStep.Census);
+            }
+
+            _step = new Action<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace, SGlob,
+                SSph, SSph, SGrid, SWorld, SCfg>[KernelGenerator.ClassCount];
+
+//@CLASS
+            _step[__CI__] = grouped
+                ? _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+                    STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step__CI__, g)
+                : _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+                    STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step__CI__);
+//@ENDCLASS
+
+            _acc.Synchronize();
+            CompileMs = watch.Elapsed.TotalMilliseconds;
+        }
+
+        private Col<T> G<T>(List<IColumn> list, int width, bool down, T fill = default) where T : unmanaged
+        {
+            int cap = ReferenceEquals(list, _gLink) ? WholeStep.LinkStride * _gcap : _gcap;
+            var column = new Col<T>(_acc, width, cap, fill);
+            list.Add(column);
+            if (down) _gDown.Add(column);
+            return column;
+        }
+
+        private static SCfg BaseConfig(GpuWorld w, GpuOptions o)
+        {
+            return new SCfg
+            {
+                OverCap = o.OverlapCap,
+                PerPart = w.PerPart ? 1 : 0,
+
+                HasCurrent = w.HasCurrent ? 1 : 0, Accelerating = w.Accelerating ? 1 : 0, Sloped = w.Sloped ? 1 : 0,
+                HasBed = w.HasBed ? 1 : 0, BedRelief = w.BedRelief ? 1 : 0, BedModes = w.BedModes,
+                ShoreOn = w.ShoreOn ? 1 : 0, FadeOn = w.FadeOn ? 1 : 0, ReefCount = w.ReefCount,
+                LimitDrive = w.LimitDrive ? 1 : 0, LimitDrag = w.LimitDrag ? 1 : 0,
+                UseRestore = w.UseRestore ? 1 : 0, FloorRestores = w.FloorRestores ? 1 : 0,
+                CreatureContact = w.CreatureContact ? 1 : 0, OffsetTorque = w.OffsetTorque ? 1 : 0,
+
+                DtD = w.Dt,
+                Dt = (Real)w.Dt, Density = (Real)w.Density, DragK = (Real)w.DragK, AddedMass = (Real)w.AddedMass,
+                FluidAccel = (Real)w.FluidAccel, Gravity = (Real)w.Gravity, WorldDepth = (Real)w.WorldDepth,
+                Damping = (Real)w.Damping, SpinBudget = (Real)w.SpinBudget,
+                RestoringDensity = (Real)w.RestoringDensity, TissueDensity = (Real)w.TissueDensity,
+
+                Omega = (Real)w.Omega, Zeta = (Real)w.Zeta, MaxSep = (Real)w.MaxSep, MaxDv = (Real)w.MaxDv,
+                TankRadius = (Real)w.TankRadius, AxisX = (Real)w.AxisX, AxisZ = (Real)w.AxisZ, CellOverride = 0,
+                BedRadius = (Real)w.BedRadius, BedDepth = (Real)w.BedDepth, TiltX = (Real)w.TiltX,
+                TiltZ = (Real)w.TiltZ, Offset = (Real)w.Offset, ShoalHeight = (Real)w.ShoalHeight,
+
+                CurDepth = (Real)w.CurDepth, CurTankR = (Real)w.CurTankR, EddyWeight = (Real)w.EddyWeight,
+                Overturning = (Real)w.Overturning, PerSecond = (Real)w.PerSecond, Squared = (Real)w.Squared,
+                ShoreDepth = (Real)w.ShoreDepth, ShoreFadeW = (Real)w.ShoreFadeW,
+                HalfThickness = (Real)w.HalfThickness, Fillet = (Real)w.Fillet, ReefFade = (Real)w.ReefFade,
+                SigmaSloped = w.SigmaSloped, SigmaFlat = w.SigmaFlat, Speed = w.Speed,
+
+                SWorldDepth = w.SWorldDepth, ChemHalf = w.ChemHalf, EnergyScale = w.EnergyScale,
+                FlowScale = w.FlowScale, RateScale = w.RateScale, ConstCE = w.ConstCE, DtF = w.DtF,
+
+                StreamAmpAt = w.StreamAmpAt, StreamRateAt = w.StreamRateAt, CellAmpAt = w.CellAmpAt,
+                BedAt = w.BedAt, ReefAt = w.ReefAt,
+            };
+        }
+
+        // ============================================================== the block
+
+        public void Block(DynamicsWorld world, int steps)
+        {
+            int done = 0;
+            while (done < steps)
+            {
+                // A digest row is written from the mirror, so a block ends on every step that writes one.
+                int n = steps - done;
+                for (int k = 1; k <= n; k++)
+                {
+                    if (world.DigestDue(world.Steps + k))
+                    {
+                        n = k;
+                        break;
+                    }
+                }
+
+                Run(world, n);
+                done += n;
+            }
+        }
+
+        private void Run(DynamicsWorld world, int steps)
+        {
+            long t0 = Stopwatch.GetTimestamp();
+            IReadOnlyList<Creature> list = world.Creatures;
+            _list = list;
+            int threads = Math.Max(1, world.Threads);
+            var parallel = new ParallelOptions { MaxDegreeOfParallelism = threads };
+
+            // ---- 1. slots, refusals and room
+            _slots.Sync(list, _o.Resync);
+
+            foreach (Creature refused in _slots.Refused)
+            {
+                // Not stepped, so not in anyone's contact set: the CPU's lost body. The farm kills
+                // it at its next divergence check (Simulation.CheckFinite's gpu clause).
+                refused.Alive = false;
+                refused.MarkLost();
+                refused.CommitContactSphere();
+            }
+
+            EnsureGlobal(_slots.Used);
+            if (_rankToSlot.Cap < Math.Max(1, list.Count)) _rankToSlot.Resize(Math.Max(list.Count, 2 * _rankToSlot.Cap));
+            for (int k = 0; k < _classes.Length; k++) _classes[k].Ensure(_slots.Classes[k].Used);
+
+            if (_census.Cap < WholeStep.CensusFields * steps) _census.Resize(WholeStep.CensusFields * steps);
+            if (_inst.Cap < GpuWorld.InstStride * steps) _inst.Resize(GpuWorld.InstStride * steps);
+
+            // ---- 2. freed slots, then new and resized bodies
+            foreach ((int g, int k, int local) in _slots.Freed)
+            {
+                _classes[k].GSlot.Host[local] = -1;
+                _gLinks.Host[g] = 0;
+                _gAlive.Host[g] = 0;
+                _nOver.Host[g] = 0;
+                _nHeld.Host[g] = 0;
+                _active[_committed].Host[g] = 0;
+                _sph[_committed][3].Host[g] = 0;
+            }
+
+            for (int r = 0; r < list.Count; r++)
+            {
+                Creature c = list[r];
+                if (c.Senses.Nutrients != null) _w.AttachField(c.Senses.Nutrients);
+            }
+
+            foreach (int g in _slots.Packs)
+            {
+                ClassSet set = _classes[_slots.ClassOf[g]];
+                set.Dirty = true;
+                set.WidenPanels(_slots.Body[g].PanelStart[_slots.Body[g].Links]);
+            }
+
+            Parallel.For(0, _slots.Packs.Count, parallel, p => Pack(_slots.Packs[p]));
+
+            // ---- 3. what every body carries into every block, and the roster
+            Parallel.For(0, _slots.Used, parallel, g =>
+            {
+                if (_slots.Body[g] != null) PackBlock(g);
+            });
+
+            for (int r = 0; r < list.Count; r++) _rankToSlot.Host[r] = _slots.RankToSlot[r];
+
+            // ---- 4. the world: the snow as it stands, the instants of this block
+            if (_w.FieldVersion != _fieldVersion)
+            {
+                _wi.Resize(Math.Max(_w.WI.Length, 1));
+                Array.Copy(_w.WI, _wi.Host, _w.WI.Length);
+                _wi.Up();
+                _fieldVersion = _w.FieldVersion;
+
+                _base.Nx = _w.Nx; _base.Ny = _w.Ny; _base.Nz = _w.Nz; _base.LayerCount = _w.LayerCount;
+                _base.RefugeLayers = _w.RefugeLayers; _base.LayerStride = _w.LayerStride;
+                _base.CellMetres = _w.CellMetres; _base.FieldTankR = _w.FieldTankR;
+                _base.RefugeFraction = _w.RefugeFraction; _base.CellVolume = _w.CellVolume;
+                _base.SplitColumns = _w.SplitColumns ? 1 : 0;
+                _base.LowestAt = _w.LowestAt; _base.IntervalFirstAt = _w.IntervalFirstAt;
+                _base.IntervalTopAt = _w.IntervalTopAt; _base.IntervalBottomAt = _w.IntervalBottomAt;
+            }
+
+            int stockLength = _w.StockLength;
+            if (_stockD.Length != stockLength) _stockD = new double[stockLength];
+            if (_stock.Cap != stockLength) _stock.Resize(stockLength);
+            _w.ReadStock(_stockD);
+            for (int k = 0; k < stockLength; k++) _stock.Host[k] = (Real)_stockD[k];
+
+            double dt = world.Config.StepSeconds;
+            double seconds = world.ElapsedSeconds;
+            for (int k = 0; k < steps; k++)
+            {
+                _w.Instant(seconds, _instD, 0);
+                int at = k * GpuWorld.InstStride;
+                for (int v = 0; v < GpuWorld.InstStride; v++) _inst.Host[at + v] = (Real)_instD[v];
+                seconds += dt;
+            }
+
+            Array.Clear(_census.Host, 0, _census.Host.Length);
+
+            // ---- 5. up
+            foreach (IColumn c in _gBody) c.Up();
+            foreach (IColumn c in _gLink) c.Up();
+            _rankToSlot.Up();
+            _census.Up();
+            _overflow.Up();
+            foreach (Col<Real> c in _sph[_committed]) c.Up();
+            _active[_committed].Up();
+            for (int k = 0; k < _classes.Length; k++) _classes[k].Upload();
+            _stock.Up();
+            _inst.Up();
+
+            // ---- 6. the grid's room
+            int gUsed = _slots.Used;
+            int rows = _base.PerPart != 0 ? WholeStep.LinkStride * gUsed : gUsed;
+            int buckets = 16;
+            while (buckets < 2 * rows) buckets <<= 1;
+
+            _lo.Ensure(3L * Math.Max(1, rows));
+            _hi.Ensure(3L * Math.Max(1, rows));
+            _counts.Ensure(buckets + 1);
+            _start.Ensure(buckets + 1);
+            _gcursor.Ensure(buckets + 1);
+            if (_entryCap < 16 * rows) _entryCap = 16 * rows;
+            _items.Ensure(_entryCap);
+
+            int chunks = Math.Max(1, (list.Count + _chunk - 1) / _chunk);
+            _partial.Ensure(chunks);
+            _partialN.Ensure(chunks);
+
+            SCfg cfg = _base;
+            cfg.GN = _gcap;
+            cfg.GUsed = gUsed;
+            cfg.Count = list.Count;
+            cfg.Rows = rows;
+            cfg.Buckets = buckets;
+            cfg.Mask = buckets - 1;
+            cfg.EntryCap = _entryCap;
+            cfg.Chunk = _chunk;
+            cfg.Chunks = chunks;
+            cfg.CellOverride = (Real)world.ContactCellOverrideMetres;
+
+            // The farm switches the instrument on after it builds the solver's config, so it is
+            // read from the world being stepped and not from the one the kernels were built for.
+            cfg.Instrument = world.Config.ContactInstrument ? 1 : 0;
+
+            SGlob gl = Glob;
+            SGrid grid = Grid;
+            SWorld sw = new SWorld { Inst = _inst.View, WR = _wr.View, Stock = _stock.View, WI = _wi.View };
+
+            long t1 = Stopwatch.GetTimestamp();
+
+            // ---- 7. the steps
+            long steps0 = world.Steps;
+            bool serial = _o.SerialMean;
+            bool instrument = world.Config.ContactInstrument;
+
+            for (int k = 0; k < steps; k++)
+            {
+                cfg.InstBase = k * GpuWorld.InstStride;
+                cfg.StepIndex = k;
+                cfg.TraceStep = steps0 + k + 1;
+                cfg.TraceTime = (steps0 + k + 1) * dt;
+
+                SSph committed = Sph(_committed), pending = Sph(1 - _committed);
+
+                _counts.View.MemSetToZero();
+                if (rows > 0)
+                {
+                    if (serial)
+                    {
+                        _meanSerial(1, committed, gl, grid, cfg);
+                    }
+                    else
+                    {
+                        _meanChunks(chunks, committed, gl, grid, cfg);
+                        _meanCombine(1, grid, cfg);
+                    }
+
+                    _ranges(rows, committed, gl, grid, cfg);
+                    _scan(new KernelConfig(1, _scanGroup), grid, cfg);
+                    _scatter(rows, gl, grid, cfg);
+                }
+
+                for (int c = 0; c < _classes.Length; c++)
+                {
+                    int used = _slots.Classes[c].Used;
+                    if (used == 0) continue;
+
+                    ClassSet set = _classes[c];
+                    SCfg cc = cfg;
+                    cc.N = set.Cap;
+                    cc.MaxN = set.M;
+
+                    _step[c](used, set.Topo, set.ConstSet, set.PanelSet, set.StateSet, set.DriveSet, set.NeurSet,
+                             set.BrainSet, set.TraceSet, gl, committed, pending, grid, sw, cc);
+                }
+
+                if (instrument && gUsed > 0) _censusKernel(gUsed, gl, cfg);
+
+                _committed = 1 - _committed;
+            }
+
+            _acc.Synchronize();
+            long t2 = Stopwatch.GetTimestamp();
+
+            // ---- 8. down
+            for (int k = 0; k < _classes.Length; k++)
+            {
+                if (_slots.Classes[k].Used > 0) _classes[k].Download();
+            }
+
+            foreach (IColumn c in _gDown) c.Down();
+            foreach (Col<Real> c in _sph[_committed]) c.Down();
+            _active[_committed].Down();
+            _census.Down();
+            _overflow.Down();
+
+            if (rows > 0)
+            {
+                _start.View.SubView(buckets, 1).CopyToCPU(_one);
+                if (_one[0] > _entryCap / 2) _entryCap = 2 * _one[0];
+            }
+
+            long t3 = Stopwatch.GetTimestamp();
+
+            // ---- 9. the mirror, the census, the clock
+            long ceiling = 0;
+            Parallel.For(0, _slots.Used, parallel,
+                () => 0L,
+                (g, _, local) => _slots.Body[g] != null ? local + Unpack(g, instrument) : local,
+                local => Interlocked.Add(ref ceiling, local));
+
+            NeuronsAtCeiling = ceiling;
+            if (ceiling > NeuronsAtCeilingMost) NeuronsAtCeilingMost = ceiling;
+
+            for (int k = 0; k < 4; k++) Overflow[k] = _overflow.Host[k];
+
+            if (instrument)
+            {
+                // CommitOverlaps for a body the card never held: its list is its last one.
+                for (int r = 0; r < list.Count; r++)
+                {
+                    if (_slots.RankToSlot[r] >= 0) continue;
+                    Creature c = list[r];
+                    CommitOwnList(c);
+                }
+            }
+
+            for (int k = 0; k < steps; k++)
+            {
+                world.BackendAdvanceClock();
+
+                if (instrument)
+                {
+                    int at = k * WholeStep.CensusFields;
+                    world.BackendCensus(_census.Host[at], _census.Host[at + 1], _census.Host[at + 2],
+                                        _census.Host[at + 3], _census.Host[at + 4]);
+                }
+                else
+                {
+                    world.BackendCensus(0, 0, 0, 0, 0);
+                }
+            }
+
+            BuildEvents(world, list, instrument);
+
+            if (world.DigestDue(world.Steps)) world.BackendWriteDigestRow();
+
+            long t4 = Stopwatch.GetTimestamp();
+
+            // The five phases, as the CPU names them: the pack and the uploads stand for the grid,
+            // the kernels for the bodies, the download for the commit, the rest for the tail.
+            world.BackendPhaseTicks(0, t1 - t0);
+            world.BackendPhaseTicks(2, t2 - t1);
+            world.BackendPhaseTicks(3, t3 - t2);
+            world.BackendPhaseTicks(4, t4 - t3);
+        }
+
+        private void EnsureGlobal(int used)
+        {
+            if (used <= _gcap) return;
+
+            int cap = Math.Max(used, 2 * _gcap);
+            foreach (IColumn c in _gBody) c.Resize(cap);
+            foreach (IColumn c in _gLink) c.Resize(WholeStep.LinkStride * cap);
+
+            for (int set = 0; set < 2; set++)
+            {
+                for (int k = 0; k < 7; k++) _sph[set][k].Resize(cap);
+                for (int k = 7; k < 14; k++) _sph[set][k].Resize(WholeStep.LinkStride * cap);
+                _active[set].Resize(cap);
+            }
+
+            _gcap = cap;
+        }
+
+        private SGlob Glob => new SGlob
+        {
+            Links = _gLinks.View, Id = _gId.View, Rank = _gRank.View, Alive = _gAlive.View, Jointed = _gJointed.View,
+            RankToSlot = _rankToSlot.View, TotalMass = _gTotalMass.View, LinkMass = _linkMass.View,
+            NOver = _nOver.View, OvSlot = _ovSlot.View, OvId = _ovId.View, OvPart = _ovPart.View,
+            OvHeld = _ovHeld.View, NHeld = _nHeld.View, HeldId = _heldId.View, BedGlass = _bedGlass.View,
+            Census = _census.View, Overflow = _overflow.View,
+        };
+
+        private SGrid Grid => new SGrid
+        {
+            Lo = _lo.View, Hi = _hi.View, Counts = _counts.View, Start = _start.View, Cursor = _gcursor.View,
+            Items = _items.View, PartialN = _partialN.View, Cell = _cell.View, Partial = _partial.View,
+        };
+
+        private SSph Sph(int set)
+        {
+            Col<Real>[] s = _sph[set];
+            return new SSph
+            {
+                Cx = s[0].View, Cy = s[1].View, Cz = s[2].View, R = s[3].View,
+                Vx = s[4].View, Vy = s[5].View, Vz = s[6].View,
+                LCx = s[7].View, LCy = s[8].View, LCz = s[9].View, LR = s[10].View,
+                LVx = s[11].View, LVy = s[12].View, LVz = s[13].View,
+                Active = _active[set].View,
+            };
+        }
+
+        // ============================================================== the mirror
+
+        /// <summary>A body onto the card whole: its plan, its brain, its state and its spheres.</summary>
+        private void Pack(int g)
+        {
+            Creature c = _slots.Body[g];
+            ClassSet s = _classes[_slots.ClassOf[g]];
+            int i = _slots.LocalOf[g];
+            int N = s.Cap;
+            int links = c.Links;
+            int dof = c.Dof;
+
+            // ---- the plan
+            s.Links.Host[i] = links;
+            s.Dof.Host[i] = dof;
+            s.SigLen.Host[i] = c.DriveSignal.Length;
+            s.Mask.Host[i] = c.Brain.SensorMask;
+
+            Brain brain = c.Brain;
+            NeuronDef[][] neurons = BrainAccess.Neurons(brain);
+            int[] offset = BrainAccess.Offset(brain);
+            int[] bParent = BrainAccess.Parent(brain);
+            int[] firstChild = BrainAccess.FirstChild(brain);
+            int[] bDofStart = BrainAccess.DofStart(brain);
+            int[] bDofCount = BrainAccess.DofCount(brain);
+
+            for (int l = 0; l < links; l++)
+            {
+                int at = l * N + i;
+                s.Parent.Host[at] = c.Parent[l];
+                s.DofCount.Host[at] = c.DofCount[l];
+                s.DofStart.Host[at] = c.DofStart[l];
+                s.PanelStart.Host[at] = c.PanelStart[l];
+                s.ThinAxis.Host[at] = c.ThinAxis[l];
+
+                bool grouped = l < neurons.Length;
+                s.NOff.Host[at] = grouped ? offset[l] : 0;
+                s.NCnt.Host[at] = grouped ? neurons[l].Length : 0;
+                s.BParent.Host[at] = grouped ? bParent[l] : -1;
+                s.FirstChild.Host[at] = grouped ? firstChild[l] : -1;
+                s.BDofStart.Host[at] = grouped ? bDofStart[l] : -1;
+                s.BDofCount.Host[at] = grouped ? bDofCount[l] : 0;
+
+                s.Mass.Host[at] = (Real)c.Mass[l];
+                s.Lift.Host[at] = (Real)c.Lift[l];
+                s.Volume.Host[at] = (Real)c.Volume[l];
+                s.SmallI.Host[at] = (Real)c.SmallestInertia[l];
+                s.Reach.Host[at] = (Real)c.LinkReach[l];
+                s.Arm.Host[at] = (Real)c.BuoyancyArm[l];
+
+                for (int k = 0; k < 3; k++)
+                {
+                    int a3 = (3 * l + k) * N + i;
+                    s.Inertia.Host[a3] = (Real)c.InertiaLocal[3 * l + k];
+                    s.ChildAnchor.Host[a3] = (Real)c.ChildAnchor[3 * l + k];
+                    s.ParentAnchor.Host[a3] = (Real)c.ParentAnchor[3 * l + k];
+                }
+
+                for (int k = 0; k < 4; k++)
+                {
+                    int a4 = (4 * l + k) * N + i;
+                    s.JointFrame.Host[a4] = (Real)c.JointFrame[4 * l + k];
+                    s.RestFrame.Host[a4] = (Real)c.RestFrame[4 * l + k];
+                }
+            }
+
+            s.PanelStart.Host[links * N + i] = c.PanelStart[links];
+
+            for (int d = 0; d < dof; d++)
+            {
+                int at = d * N + i;
+                s.LimitLo.Host[at] = (Real)c.LimitLo[d];
+                s.LimitHi.Host[at] = (Real)c.LimitHi[d];
+                s.LimitStiff.Host[at] = (Real)c.LimitStiffness[d];
+                s.LimitDamp.Host[at] = (Real)c.LimitDamping[d];
+            }
+
+            // Fluid.Apply's excess, once per creature (D064).
+            SolverConfig config = _w.Config;
+            double excess = config.TissueExcessDensity;
+            if (config.NeutralBodyVolume > 0)
+            {
+                excess *= BuoyancyModel.ExcessDensityFactor((float)c.TotalVolume, (float)config.NeutralBodyVolume);
+            }
+
+            s.Excess.Host[i] = (Real)excess;
+            s.TotalMass.Host[i] = (Real)c.TotalMass;
+
+            float[] perUnit = c.Drive.MirrorTorquePerUnit;
+            for (int d = 0; d < s.D; d++) s.TorquePerUnit.Host[d * N + i] = d < perUnit.Length ? perUnit[d] : 0f;
+
+            int panels = c.PanelStart[links];
+            for (int p = 0; p < panels; p++)
+            {
+                for (int k = 0; k < 3; k++)
+                {
+                    s.PCentre.Host[(3 * p + k) * N + i] = (Real)c.PanelCentre[3 * p + k];
+                    s.PNormal.Host[(3 * p + k) * N + i] = (Real)c.PanelNormal[3 * p + k];
+                }
+
+                s.PArea.Host[p * N + i] = (Real)c.PanelArea[p];
+            }
+
+            // ---- the neurons
+            for (int p = 0; p < neurons.Length && p < links; p++)
+            {
+                NeuronDef[] set = neurons[p];
+                for (int n = 0; n < set.Length; n++)
+                {
+                    NeuronDef def = set[n];
+                    int self = offset[p] + n;
+                    int slot = self * N + i;
+                    NeuronInput[] inputs = def.Inputs ?? Array.Empty<NeuronInput>();
+
+                    s.Op.Host[slot] = (int)def.Op;
+                    s.NIn.Host[slot] = inputs.Length;
+                    s.Freq.Host[slot] = def.Frequency;
+                    s.Phase.Host[slot] = def.Phase;
+                    s.Amp.Host[slot] = def.Amplitude;
+                    s.Bias.Host[slot] = def.Bias;
+
+                    for (int k = 0; k < 3; k++)
+                    {
+                        int ks = (3 * self + k) * N + i;
+                        bool has = k < inputs.Length;
+                        s.Kind.Host[ks] = has ? (int)inputs[k].Kind : 0;
+                        s.NIndex.Host[ks] = has ? inputs[k].Index : 0;
+                        s.Channel.Host[ks] = has ? (int)inputs[k].Channel : 0;
+                        s.Const.Host[ks] = has ? inputs[k].Constant : 0f;
+                        s.Weight.Host[ks] = has ? inputs[k].Weight : 0f;
+                    }
+                }
+            }
+
+            // ---- the state
+            s.BasePos.Host[i] = (Real)c.BasePosition.X;
+            s.BasePos.Host[N + i] = (Real)c.BasePosition.Y;
+            s.BasePos.Host[2 * N + i] = (Real)c.BasePosition.Z;
+            s.BaseRot.Host[i] = (Real)c.BaseRotation.X;
+            s.BaseRot.Host[N + i] = (Real)c.BaseRotation.Y;
+            s.BaseRot.Host[2 * N + i] = (Real)c.BaseRotation.Z;
+            s.BaseRot.Host[3 * N + i] = (Real)c.BaseRotation.W;
+
+            for (int d = 0; d < dof; d++)
+            {
+                int at = d * N + i;
+                s.Q.Host[at] = (Real)c.Q[d];
+                s.Qd.Host[at] = (Real)c.Qd[d];
+                s.Tau.Host[at] = (Real)c.Tau[d];
+                s.LimitImplicit.Host[at] = (Real)c.LimitImplicit[d];
+            }
+
+            double[] applied = c.Drive.AppliedTorque;
+
+            for (int l = 0; l < links; l++)
+            {
+                for (int k = 0; k < 3; k++)
+                {
+                    int a3 = (3 * l + k) * N + i;
+                    int h3 = 3 * l + k;
+                    s.Pos.Host[a3] = (Real)c.Position[h3];
+                    s.Spin.Host[a3] = (Real)c.Spin[h3];
+                    s.Vel.Host[a3] = (Real)c.Velocity[h3];
+                    s.RelVel.Host[a3] = (Real)c.RelativeVelocity[h3];
+                    s.Water.Host[a3] = (Real)c.Water[h3];
+                    s.WaterAcc.Host[a3] = (Real)c.WaterAcceleration[h3];
+                    s.Applied.Host[a3] = (Real)applied[h3];
+                }
+
+                for (int k = 0; k < 4; k++)
+                {
+                    int a4 = (4 * l + k) * N + i;
+                    s.BallRot.Host[a4] = (Real)c.BallRotation[4 * l + k];
+                    s.Rot.Host[a4] = (Real)c.Rotation[4 * l + k];
+                }
+
+                for (int k = 0; k < 9; k++)
+                {
+                    int a9 = (9 * l + k) * N + i;
+                    s.RotM.Host[a9] = (Real)c.RotationMatrix[9 * l + k];
+                    s.Sang.Host[a9] = (Real)c.Sang[9 * l + k];
+                    s.Slin.Host[a9] = (Real)c.Slin[9 * l + k];
+                }
+
+                for (int k = 0; k < 6; k++)
+                {
+                    int a6 = (6 * l + k) * N + i;
+                    s.Cbias.Host[a6] = (Real)c.Cbias[6 * l + k];
+                    s.Fext.Host[a6] = (Real)c.Fext[6 * l + k];
+                }
+            }
+
+            // ---- the drive
+            float[] signal = c.DriveSignal;
+            for (int d = 0; d < s.D; d++) s.Signal.Host[d * N + i] = d < signal.Length ? signal[d] : 0f;
+
+            float[] history = c.Drive.MirrorHistory;
+            float[] runSum = c.Drive.MirrorRunningSum;
+            int window = WholeStep.Window;
+            for (int d = 0; d < s.D; d++)
+            {
+                s.RunSum.Host[d * N + i] = d < runSum.Length ? runSum[d] : 0f;
+                for (int k = 0; k < window; k++)
+                {
+                    int h = d * window + k;
+                    s.History.Host[h * N + i] = h < history.Length ? history[h] : 0f;
+                }
+            }
+
+            s.Cursor.Host[i] = c.Drive.MirrorCursor;
+            s.Filled.Host[i] = c.Drive.MirrorFilled;
+            s.DriveLimited.Host[i] = c.DriveImpulsesLimited;
+            s.DragLimited.Host[i] = c.DragImpulsesLimited;
+            s.Work.Host[i] = c.MechanicalWorkJoules;
+            s.Signed.Host[i] = c.SignedWorkJoules;
+            s.Dissipated.Host[i] = c.DissipatedJoules;
+            s.Passive.Host[i] = c.PassiveJointWorkJoules;
+
+            // ---- the brain: parity 0 reads the previous outputs from the first half
+            float[] previous = BrainAccess.Previous(brain);
+            float[] current = BrainAccess.Current(brain);
+            float[] memory = BrainAccess.Memory(brain);
+            int M = s.M;
+            for (int n = 0; n < M; n++)
+            {
+                bool has = n < previous.Length;
+                s.S.Host[n * N + i] = has ? previous[n] : 0f;
+                s.S.Host[(M + n) * N + i] = has ? current[n] : 0f;
+                s.Mem.Host[n * N + i] = has ? memory[n] : 0f;
+            }
+
+            s.Parity.Host[i] = 0;
+            s.Clock.Host[i] = brain.ElapsedSeconds;
+
+            // ---- the trace
+            int frames = WholeStep.TraceFrames;
+            int values = WholeStep.TraceValues;
+            if (c.HasTrace)
+            {
+                double[] trace = c.MirrorTrace;
+                for (int f = 0; f < frames; f++)
+                {
+                    for (int b = 0; b < links; b++)
+                    {
+                        for (int k = 0; k < values; k++)
+                        {
+                            s.Ring.Host[((f * s.L + b) * values + k) * N + i] =
+                                (Real)trace[(f * links + b) * values + k];
+                        }
+                    }
+
+                    s.TStep.Host[f * N + i] = c.MirrorTraceSteps[f];
+                    s.TTime.Host[f * N + i] = c.MirrorTraceTimes[f];
+                    s.Resized.Host[f * N + i] = c.MirrorTraceResized[f] ? 1 : 0;
+                }
+            }
+
+            s.Held.Host[i] = c.MirrorTraceHeld;
+            s.TCursor.Host[i] = c.MirrorTraceCursor;
+            s.FirstBadStep.Host[i] = c.MirrorFirstNonFiniteStep;
+            s.FirstBadLink.Host[i] = c.MirrorFirstNonFiniteLink;
+
+            // ---- the overlap and held lists, as the body carries them
+            int oc = _o.OverlapCap;
+            int GN = _gcap;
+            int nOver = Math.Min(c.OverlapCount, oc);
+            _nOver.Host[g] = nOver;
+            for (int k = 0; k < nOver; k++)
+            {
+                _ovId.Host[k * GN + g] = (int)c.OverlapId(k);
+                _ovPart.Host[(2 * k) * GN + g] = c.OverlapPart(k);
+                _ovPart.Host[(2 * k + 1) * GN + g] = c.OverlapOtherPart(k);
+                _ovHeld.Host[k * GN + g] = 0;
+            }
+
+            int nHeld = Math.Min(c.MirrorHeldCount, oc);
+            _nHeld.Host[g] = nHeld;
+            for (int k = 0; k < nHeld; k++) _heldId.Host[k * GN + g] = (int)c.MirrorHeldId(k);
+
+            _bedGlass.Host[g] = c.TouchedBedOrGlass ? 1 : 0;
+
+            // ---- the committed spheres, which this block's first step reads
+            Col<Real>[] sph = _sph[_committed];
+            sph[0].Host[g] = (Real)c.ContactCentre.X;
+            sph[1].Host[g] = (Real)c.ContactCentre.Y;
+            sph[2].Host[g] = (Real)c.ContactCentre.Z;
+            sph[3].Host[g] = (Real)c.ContactRadius;
+            sph[4].Host[g] = (Real)c.ContactVelocity.X;
+            sph[5].Host[g] = (Real)c.ContactVelocity.Y;
+            sph[6].Host[g] = (Real)c.ContactVelocity.Z;
+            _active[_committed].Host[g] = c.ContactActive ? 1 : 0;
+
+            int row = g * WholeStep.LinkStride;
+            if (c.LinkContactActive)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    sph[7].Host[row + l] = (Real)c.LinkContactCentre[3 * l];
+                    sph[8].Host[row + l] = (Real)c.LinkContactCentre[3 * l + 1];
+                    sph[9].Host[row + l] = (Real)c.LinkContactCentre[3 * l + 2];
+                    sph[10].Host[row + l] = (Real)c.LinkContactRadius[l];
+                    sph[11].Host[row + l] = (Real)c.LinkContactVelocity[3 * l];
+                    sph[12].Host[row + l] = (Real)c.LinkContactVelocity[3 * l + 1];
+                    sph[13].Host[row + l] = (Real)c.LinkContactVelocity[3 * l + 2];
+                }
+            }
+            else
+            {
+                for (int l = 0; l < WholeStep.LinkStride; l++) sph[10].Host[row + l] = 0;
+            }
+        }
+
+        /// <summary>What the farm may change between two blocks without a resize, for every body.</summary>
+        private void PackBlock(int g)
+        {
+            Creature c = _slots.Body[g];
+            ClassSet s = _classes[_slots.ClassOf[g]];
+            int i = _slots.LocalOf[g];
+            int N = s.Cap;
+            int links = c.Links;
+
+            s.GSlot.Host[i] = g;
+            s.PowerScale.Host[i] = c.Drive.PowerScale;
+
+            CreatureSenses senses = c.Senses;
+            IReserveSource reserve = senses.Reserve;
+            s.Reserve.Host[i] = reserve != null ? reserve.SecondsOfReserve : 0f;
+            s.Gates.Host[i] = (senses.Nutrients != null ? 1 : 0) | (reserve != null ? 2 : 0);
+
+            bool[] contact = senses.Contact;
+            float[] damage = senses.Damage;
+            for (int l = 0; l < links; l++)
+            {
+                s.Contact.Host[l * N + i] = contact != null && l < contact.Length && contact[l] ? 1 : 0;
+                s.Damage.Host[l * N + i] = damage != null && l < damage.Length ? damage[l] : 0f;
+            }
+
+            s.Enabled.Host[i] = c.HasTrace ? 1 : 0;
+            s.Poison.Host[i] = c.MirrorPoisonedLink;
+            s.Pending.Host[i] = c.MirrorResizedSinceLastFrame ? 1 : 0;
+
+            _gLinks.Host[g] = links;
+            _gId.Host[g] = c.Id;
+            _gRank.Host[g] = _slots.Rank[g];
+            _gAlive.Host[g] = c.Alive ? 1 : 0;
+            _gJointed.Host[g] = c.Jointed ? 1 : 0;
+            _gTotalMass.Host[g] = (Real)c.TotalMass;
+
+            int row = g * WholeStep.LinkStride;
+            for (int l = 0; l < links; l++) _linkMass.Host[row + l] = (Real)c.Mass[l];
+
+            // An overlap entry's slot, found again: a rebuilt body keeps its id and not its slot.
+            int GN = _gcap;
+            int n = Math.Min(_nOver.Host[g], _o.OverlapCap);
+            for (int k = 0; k < n; k++)
+            {
+                _ovSlot.Host[k * GN + g] = SlotOfId(_ovId.Host[k * GN + g]);
+            }
+        }
+
+        /// <summary>The global slot of the body with this id in the block's list, or -1.</summary>
+        private int SlotOfId(int id)
+        {
+            // The list is in ascending id order (DynamicsWorld's contract), so the rank is a search.
+            IReadOnlyList<Creature> list = _list;
+            int lo = 0, hi = list.Count - 1;
+            while (lo <= hi)
+            {
+                int mid = (lo + hi) >> 1;
+                int at = list[mid].Id;
+                if (at == id) return _slots.RankToSlot[mid];
+                if (at < id) lo = mid + 1;
+                else hi = mid - 1;
+            }
+
+            return -1;
+        }
+
+        private IReadOnlyList<Creature> _list = Array.Empty<Creature>();
+
+        /// <summary>A body back from the card: everything the CPU step would have left in it.</summary>
+        private long Unpack(int g, bool instrument)
+        {
+            Creature c = _slots.Body[g];
+            ClassSet s = _classes[_slots.ClassOf[g]];
+            int i = _slots.LocalOf[g];
+            int N = s.Cap;
+            int links = c.Links;
+            int dof = c.Dof;
+
+            c.BasePosition = new Vec3(s.BasePos.Host[i], s.BasePos.Host[N + i], s.BasePos.Host[2 * N + i]);
+            c.BaseRotation = new QuatD(s.BaseRot.Host[i], s.BaseRot.Host[N + i], s.BaseRot.Host[2 * N + i],
+                                       s.BaseRot.Host[3 * N + i]);
+
+            for (int d = 0; d < dof; d++)
+            {
+                int at = d * N + i;
+                c.Q[d] = s.Q.Host[at];
+                c.Qd[d] = s.Qd.Host[at];
+                c.Tau[d] = s.Tau.Host[at];
+                c.LimitImplicit[d] = s.LimitImplicit.Host[at];
+            }
+
+            double[] applied = c.Drive.AppliedTorque;
+
+            for (int l = 0; l < links; l++)
+            {
+                for (int k = 0; k < 3; k++)
+                {
+                    int a3 = (3 * l + k) * N + i;
+                    int h3 = 3 * l + k;
+                    c.Position[h3] = s.Pos.Host[a3];
+                    c.Spin[h3] = s.Spin.Host[a3];
+                    c.Velocity[h3] = s.Vel.Host[a3];
+                    c.RelativeVelocity[h3] = s.RelVel.Host[a3];
+                    c.Water[h3] = s.Water.Host[a3];
+                    c.WaterAcceleration[h3] = s.WaterAcc.Host[a3];
+                    applied[h3] = s.Applied.Host[a3];
+                }
+
+                for (int k = 0; k < 4; k++)
+                {
+                    int a4 = (4 * l + k) * N + i;
+                    c.BallRotation[4 * l + k] = s.BallRot.Host[a4];
+                    c.Rotation[4 * l + k] = s.Rot.Host[a4];
+                }
+
+                for (int k = 0; k < 9; k++)
+                {
+                    int a9 = (9 * l + k) * N + i;
+                    c.RotationMatrix[9 * l + k] = s.RotM.Host[a9];
+                    c.Sang[9 * l + k] = s.Sang.Host[a9];
+                    c.Slin[9 * l + k] = s.Slin.Host[a9];
+                }
+
+                for (int k = 0; k < 6; k++)
+                {
+                    int a6 = (6 * l + k) * N + i;
+                    c.Cbias[6 * l + k] = s.Cbias.Host[a6];
+                    c.Fext[6 * l + k] = s.Fext.Host[a6];
+                }
+            }
+
+            // ---- the drive
+            float[] signal = c.DriveSignal;
+            int signals = Math.Min(signal.Length, s.D);
+            for (int d = 0; d < signals; d++) signal[d] = s.Signal.Host[d * N + i];
+
+            float[] history = c.Drive.MirrorHistory;
+            float[] runSum = c.Drive.MirrorRunningSum;
+            int window = WholeStep.Window;
+            int sums = Math.Min(runSum.Length, s.D);
+            for (int d = 0; d < sums; d++)
+            {
+                runSum[d] = s.RunSum.Host[d * N + i];
+                for (int k = 0; k < window; k++)
+                {
+                    int h = d * window + k;
+                    if (h < history.Length) history[h] = s.History.Host[h * N + i];
+                }
+            }
+
+            c.Drive.MirrorCursor = s.Cursor.Host[i];
+            c.Drive.MirrorFilled = s.Filled.Host[i];
+            c.DriveImpulsesLimited = s.DriveLimited.Host[i];
+            c.DragImpulsesLimited = s.DragLimited.Host[i];
+            c.MechanicalWorkJoules = s.Work.Host[i];
+            c.SignedWorkJoules = s.Signed.Host[i];
+            c.DissipatedJoules = s.Dissipated.Host[i];
+            c.PassiveJointWorkJoules = s.Passive.Host[i];
+
+            // ---- the brain
+            Brain brain = c.Brain;
+            float[] previous = BrainAccess.Previous(brain);
+            float[] current = BrainAccess.Current(brain);
+            float[] memory = BrainAccess.Memory(brain);
+            int M = s.M;
+            int parity = s.Parity.Host[i];
+            int prev = parity * M, cur = (1 - parity) * M;
+            long ceiling = 0;
+
+            for (int n = 0; n < previous.Length && n < M; n++)
+            {
+                float p = s.S.Host[(prev + n) * N + i];
+                previous[n] = p;
+                current[n] = s.S.Host[(cur + n) * N + i];
+                memory[n] = s.Mem.Host[n * N + i];
+
+                // A bound on a neuron's value is a world rule and the owner's; this counts.
+                if (!(Math.Abs(p) < 1e36f)) ceiling++;
+            }
+
+            BrainAccess.SetElapsedSeconds(brain, s.Clock.Host[i]);
+
+            // ---- the trace
+            if (c.HasTrace)
+            {
+                int frames = WholeStep.TraceFrames;
+                int values = WholeStep.TraceValues;
+                double[] trace = c.MirrorTrace;
+                long[] traceSteps = c.MirrorTraceSteps;
+                double[] traceTimes = c.MirrorTraceTimes;
+                bool[] traceResized = c.MirrorTraceResized;
+
+                for (int f = 0; f < frames; f++)
+                {
+                    for (int b = 0; b < links; b++)
+                    {
+                        for (int k = 0; k < values; k++)
+                        {
+                            trace[(f * links + b) * values + k] = s.Ring.Host[((f * s.L + b) * values + k) * N + i];
+                        }
+                    }
+
+                    traceSteps[f] = s.TStep.Host[f * N + i];
+                    traceTimes[f] = s.TTime.Host[f * N + i];
+                    traceResized[f] = s.Resized.Host[f * N + i] != 0;
+                }
+
+                c.MirrorTraceHeld = s.Held.Host[i];
+                c.MirrorTraceCursor = s.TCursor.Host[i];
+            }
+
+            c.MirrorFirstNonFiniteStep = s.FirstBadStep.Host[i];
+            c.MirrorFirstNonFiniteLink = s.FirstBadLink.Host[i];
+            c.MirrorResizedSinceLastFrame = s.Pending.Host[i] != 0;
+
+            // ---- alive, and the contact instrument's lists
+            c.Alive = _gAlive.Host[g] != 0;
+
+            if (instrument)
+            {
+                int GN = _gcap;
+                int oc = _o.OverlapCap;
+                long[] ids = _idScratch ??= new long[oc];
+                int[] parts = _partScratch ??= new int[2 * oc];
+                if (ids.Length < oc) ids = _idScratch = new long[oc];
+                if (parts.Length < 2 * oc) parts = _partScratch = new int[2 * oc];
+
+                int nOver = Math.Min(_nOver.Host[g], oc);
+                for (int k = 0; k < nOver; k++)
+                {
+                    ids[k] = _ovId.Host[k * GN + g];
+                    parts[2 * k] = _ovPart.Host[(2 * k) * GN + g];
+                    parts[2 * k + 1] = _ovPart.Host[(2 * k + 1) * GN + g];
+                }
+
+                c.MirrorSetOverlaps(nOver, ids, _base.PerPart != 0 ? parts : null);
+
+                int nHeld = Math.Min(_nHeld.Host[g], oc);
+                for (int k = 0; k < nHeld; k++) ids[k] = _heldId.Host[k * GN + g];
+                c.MirrorSetHeld(nHeld, ids);
+
+                c.TouchedBedOrGlass = _bedGlass.Host[g] != 0;
+            }
+
+            // ---- the spheres: after the commit the pending ones equal the committed ones
+            Col<Real>[] sph = _sph[_committed];
+            var centre = new Vec3(sph[0].Host[g], sph[1].Host[g], sph[2].Host[g]);
+            double radius = sph[3].Host[g];
+            var velocity = new Vec3(sph[4].Host[g], sph[5].Host[g], sph[6].Host[g]);
+            bool active = _active[_committed].Host[g] != 0;
+
+            c.ContactCentre = centre;
+            c.ContactRadius = radius;
+            c.ContactVelocity = velocity;
+            c.ContactActive = active;
+            c.MirrorPendingCentre = centre;
+            c.MirrorPendingRadius = radius;
+            c.MirrorPendingVelocity = velocity;
+            c.MirrorPendingActive = active;
+
+            if (c.LinkContactActive)
+            {
+                int row = g * WholeStep.LinkStride;
+                double[] pc = c.MirrorPendingLinkCentre, pr = c.MirrorPendingLinkRadius, pv = c.MirrorPendingLinkVelocity;
+
+                for (int l = 0; l < links; l++)
+                {
+                    double x = sph[7].Host[row + l], y = sph[8].Host[row + l], z = sph[9].Host[row + l];
+                    double r = sph[10].Host[row + l];
+                    double vx = sph[11].Host[row + l], vy = sph[12].Host[row + l], vz = sph[13].Host[row + l];
+
+                    c.LinkContactCentre[3 * l] = x; c.LinkContactCentre[3 * l + 1] = y; c.LinkContactCentre[3 * l + 2] = z;
+                    c.LinkContactRadius[l] = r;
+                    c.LinkContactVelocity[3 * l] = vx; c.LinkContactVelocity[3 * l + 1] = vy; c.LinkContactVelocity[3 * l + 2] = vz;
+
+                    pc[3 * l] = x; pc[3 * l + 1] = y; pc[3 * l + 2] = z;
+                    pr[l] = r;
+                    pv[3 * l] = vx; pv[3 * l + 1] = vy; pv[3 * l + 2] = vz;
+                }
+            }
+
+            return ceiling;
+        }
+
+        /// <summary>Creature.CommitOverlaps for a body the card does not hold.</summary>
+        private static void CommitOwnList(Creature c)
+        {
+            int n = c.OverlapCount;
+            var ids = new long[Math.Max(1, n)];
+            for (int k = 0; k < n; k++) ids[k] = c.OverlapId(k);
+            c.MirrorSetHeld(n, ids);
+        }
+
+        /// <summary>
+        /// DynamicsWorld.CloseContactStep's event list for the block's last step, which is the only
+        /// one the farm reads: from the lists and the held flags the census left.
+        /// </summary>
+        private void BuildEvents(DynamicsWorld world, IReadOnlyList<Creature> list, bool instrument)
+        {
+            List<OverlapPair> events = world.BackendOverlapList;
+            events.Clear();
+
+            if (!instrument || !world.Config.ContactEvents) return;
+
+            bool perPart = world.Config.ContactPerPart;
+            int GN = _gcap;
+
+            for (int r = 0; r < list.Count; r++)
+            {
+                int g = _slots.RankToSlot[r];
+                if (g < 0) continue;
+
+                Creature a = list[r];
+                if (!a.Alive) continue;
+
+                int n = Math.Min(_nOver.Host[g], _o.OverlapCap);
+                for (int k = 0; k < n; k++)
+                {
+                    long id = _ovId.Host[k * GN + g];
+                    Creature b = world.ById(id);
+                    if (b == null || !b.Alive) continue;
+                    if (id <= a.Id) continue;
+
+                    bool jointed = a.Jointed || b.Jointed;
+                    bool held = _ovHeld.Host[k * GN + g] != 0;
+
+                    events.Add(perPart
+                        ? new OverlapPair(a.Id, id, jointed, held,
+                            _ovPart.Host[(2 * k) * GN + g], _ovPart.Host[(2 * k + 1) * GN + g])
+                        : new OverlapPair(a.Id, id, jointed, held));
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            foreach (ClassSet s in _classes) s.Dispose();
+            foreach (IColumn c in _gBody) c.Dispose();
+            foreach (IColumn c in _gLink) c.Dispose();
+            _rankToSlot.Dispose();
+            _census.Dispose();
+            _overflow.Dispose();
+            for (int set = 0; set < 2; set++)
+            {
+                foreach (Col<Real> c in _sph[set]) c.Dispose();
+                _active[set].Dispose();
+            }
+
+            _lo.Dispose(); _hi.Dispose(); _counts.Dispose(); _start.Dispose(); _gcursor.Dispose();
+            _items.Dispose(); _partial.Dispose(); _partialN.Dispose(); _cell.Dispose();
+            _inst.Dispose(); _wr.Dispose(); _wi.Dispose(); _stock.Dispose();
+        }
+    }
+}
