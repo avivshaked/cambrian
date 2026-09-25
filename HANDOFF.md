@@ -53,8 +53,11 @@ Every token 0121 lists is in its header, with record format 2 and a checkpoint e
   resume to 16,000 s with the recording (`--skip wall harnessBodySteps fluidLinkSteps`), logged
   to `scratch/logs/r49-v2.log`. At the speed test's 1.08x, seed 1 would end near 04:00 and V2
   by about 04:30. The crowd sets the real pace.
-- Seeds 2 and 3 take the next two nights: `seeds.ps1 -Seeds 2`, then `-Seeds 3`, started by
-  hand in the evening after the day's card work. Only seed 1 runs V2.
+- Seeds 2 and 3 follow straight on (the owner, 20:12: "let's finish the three seeds first").
+  `scratch/r49-launch/after-s1.ps1` (pid 48092, log `scratch/wt-r49/scratch/logs/r49-queue2.out`)
+  waits for the first queue's `== queue done` line, then runs `seeds.ps1 -Seeds 2,3`. It gives
+  up without launching after 20 hours. Only seed 1 runs V2. At about eight hours a seed, seed 3
+  would end near 21:00 on 2026-09-26.
 - The checks behind the launch are 0121's "Before the launch", and all of them passed. One
   slip: the fixture script lost a backslash and did not run, and 12 Dynamics tests failed on
   the old crowd. Re-pointed at `r49fixb-s4`, 112 of 112 pass.
@@ -65,7 +68,8 @@ Every token 0121 lists is in its header, with record format 2 and a checkpoint e
   the reader takes the main tree's `runs/` (`d7d36d7`). The full read at the round's end adds
   `--windows-root` (V1) and `--v2-log scratch/logs/r49-v2.log` (V2).
 
-**Tomorrow by day (option A).** These run after V2, with the card alone on the machine.
+**After seed 3 (the owner's ruling puts the three seeds first).** These run with the card alone
+on the machine.
 1. The card's probe, `scratch/wt-probe` (`gpu-probe`, `ccebf3c`): regenerate the kernels
    (`EVOSIM_GPU_REGENERATE=1`, `GpuKernelSourceTests`), build, and run each class's launch time
    and the largest link's cell count under per-part contact.
