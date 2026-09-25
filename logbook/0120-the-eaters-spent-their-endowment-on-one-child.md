@@ -296,8 +296,8 @@ into its cell. My reading is inference: a placing rule aimed at a cell's stock a
 wrong quantity, and the flow round the cell is the one to aim at.
 
 How far a feeder empties its own cell I then measured outside the run. The experiment built
-round 48 seed 1's world from its config, filled the snow evenly and set eight mouths to draw
-from their cells by the world's rule, at 3 and 10 m and at 0.8 and 1.6 m³/s. An untouched
+round 48 seed 1's world from its config and filled the snow evenly. Eight mouths drew from
+their cells by the world's rule, at 3 and 10 m and at 0.8 and 1.6 m³/s. An untouched
 copy of the world stepped beside it. After a minute each mouth's cell held 5 to 25% of what
 the same cell held in the copy. With the water's transport off it held 5 to 11%, refilled
 by the stirring alone at 0.06 to 0.1 of the gap a second. The transport lifted it to 20 or
@@ -308,7 +308,7 @@ water speeds it is not.
 
 Two readings follow, and both are inference. The founders read four tenths of their
 column's mean, and a mouth's cell holds a twentieth to a quarter of its water. So the water
-round them held 1.6 to 8 times their column's mean, which is what D122 was meant to give.
+round them held 1.6 to 8 times their column's mean, and D122 was meant to give that.
 That rests on an even field, and round 48's was not. The second is about the ledger. A
 break-even density from `ledger.ps1` is a density at the mouth, in the emptied cell. Set
 against a field's density, as the stomach screens of 2026-09-23 did, it overstates what an
