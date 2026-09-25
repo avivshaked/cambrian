@@ -1617,7 +1617,10 @@ actually verifying it.
   implications"): the topic in plain words for someone who has not read the proposal, the
   recommendation and why, what each option implies for the record, the rounds, the machine
   and the risk, and the exact question to answer. A pointer to a proposal file is not a
-  request for a ruling. Then say what is being worked on meanwhile. Never end a turn idle while anything not gated
+  request for a ruling. A decision still open is set out in full again in every message that
+  asks for it, and each option carries its own implications. "Unchanged from my last message"
+  is shorthand too (the owner, 2026-09-25 afternoon: "You know how I prefer to get decision
+  topics right?"). Then say what is being worked on meanwhile. Never end a turn idle while anything not gated
   remains: loose ends, instruments, measurements, the round-gap changes that are a new
   realisation of every seed and land best while no arm runs, pre-registration drafts and
   ledger screens for the round that waits.
