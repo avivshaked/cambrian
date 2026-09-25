@@ -76,11 +76,22 @@ namespace Evosim.Theatre
         /// </summary>
         public float LumaDepthSlope = TheatreSkin.Dial("EVOSIM_THEATRE_STORY_LUMA_DEPTH", 0.4f, 0f, 1f);
 
+        /// <summary>
+        /// How bright a body with no reserve is drawn, as a fraction of a sated one's
+        /// (<see cref="TheatrePalette.Starving"/>, the census's 0.45 by default). A story film shades
+        /// its bodies by reserve since the window stream carries it (2026-09-25), and at 0.45 a
+        /// crowd of starving leaves took the frame's highlights with it: the owner found the
+        /// picture "slightly dark again" at the brightness chosen before the shading came back.
+        /// </summary>
+        public float StarvingBrightness = TheatreSkin.Dial("EVOSIM_THEATRE_STORY_STARVING", 0.45f, 0f, 1f);
+
         /// <summary>The post-exposure the meter may use, EV, lowest and highest.</summary>
         public float LowestEv = TheatreSkin.Dial("EVOSIM_THEATRE_STORY_EV_MIN", -1f, -6f, 6f);
         public float HighestEv = TheatreSkin.Dial("EVOSIM_THEATRE_STORY_EV_MAX", 3.5f, -6f, 8f);
 
         // what Apply changed, for Restore
+        private TheatrePalette _palette;
+        private float _starving;
         private TheatreSkin _skin;
         private TheatreGrade _grade;
         private Color _water, _ambient;
@@ -148,8 +159,25 @@ namespace Evosim.Theatre
         }
 
         /// <summary>Puts back what <see cref="Apply"/> changed, the exposure included.</summary>
+        /// <summary>Sets the palette's starving brightness to <see cref="StarvingBrightness"/>, restored by <see cref="Restore"/>.</summary>
+        public string ApplyTo(TheatrePalette palette)
+        {
+            if (palette == null || _palette != null) return "the palette is not reached";
+            _palette = palette;
+            _starving = palette.Starving;
+            palette.Starving = StarvingBrightness;
+            return string.Format(CultureInfo.InvariantCulture,
+                "a starving body at {0:0.##} of a sated one's brightness (census {1:0.##})", StarvingBrightness, _starving);
+        }
+
         public void Restore()
         {
+            if (_palette != null)
+            {
+                _palette.Starving = _starving;
+                _palette = null;
+            }
+
             if (!_applied) return;
             _applied = false;
 

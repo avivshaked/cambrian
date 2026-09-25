@@ -724,6 +724,8 @@ namespace Evosim.Theatre.EditorTools
             {
                 _look = new StoryLook();
                 Debug.Log("[Theatre] safari: " + _look.Apply(TheatreSkin.Current, TheatreGrade.Current));
+                TheatreRunner painter = _runner != null ? _runner : UnityEngine.Object.FindAnyObjectByType<TheatreRunner>();
+                Debug.Log("[Theatre] safari: " + _look.ApplyTo(painter != null ? painter.Palette : null));
                 if (_look.TargetLuma > 0f && TheatreGrade.Current != null)
                     _exposure = new StoryExposure(_look, TheatreGrade.Current.Exposure);
             }

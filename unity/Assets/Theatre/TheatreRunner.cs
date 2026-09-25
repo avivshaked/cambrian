@@ -187,6 +187,9 @@ namespace Evosim.Theatre
         private readonly CreatureIdMap _map = new CreatureIdMap();
         private readonly TheatrePalette _palette = new TheatrePalette();
 
+        /// <summary>The palette every body is painted with, for a look that changes it (StoryLook).</summary>
+        public TheatrePalette Palette => _palette;
+
         /// <summary>
         /// The look: dark field lighting, the water's fog, the sea bed, the snow, and the
         /// materials the palette paints with.
