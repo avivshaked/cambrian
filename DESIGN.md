@@ -765,9 +765,9 @@ the step closed. Damage is the health the part lost on that step, as a share of 
 hands both to the body once a metabolic step. Every physics step until the next one reads them,
 so they are one metabolic step stale at the brain, as flow is. In rounds 45 to 48 both were
 kept from the body's last change of plan: a flag stayed set and a loss added up. The
-specification had asked for the step. A change of plan on the step, a bite or a module coming
-or going, carries each surviving part's reading onto its index in the new plan; a lost part's
-reading goes with it, and a new part reads nothing. The farm rebuilds a changed body before
+specification had asked for the step. A bite or a module coming or going changes a body's
+plan, and each surviving part's reading is carried onto its index in the new plan. A lost
+part's reading goes with it, and a new part reads nothing. The farm rebuilds a changed body before
 its next physics step, so the brain reads the records by the plan they are indexed by.
 
 **Depth is not redundant with the photosensor, and the reason is the night.** Irradiance is a
