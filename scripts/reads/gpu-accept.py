@@ -16,7 +16,9 @@ newest run directory under it is read. What it prints:
     (a 300 s check against a recorded seed: the prefix is the claim, as for the stats);
   - with --every N, alive, births, light, food, mean height and the audit at every Nth shared
     sample side by side, which is the read when the two are not meant to be identical (single
-    against double).
+    against double);
+  - with --pace-at N, each run's times real time and wall split over the samples whose living
+    count is within a tenth of N, which is acceptance 3's read.
 
 Exit codes: 0 identical on everything both runs recorded; 1 a difference; 2 a usage or data
 problem. A single-precision run against a double one exits 1 by design: the spec's reading of
@@ -168,12 +170,33 @@ def side_by_side(a, b, shared, every):
         print(f'{t:>8} ' + ' '.join(cells))
 
 
+def pace_at(label, stats, crowd):
+    """Times real time over the samples whose living count is within a tenth of the crowd."""
+    inside = [r for r in stats if abs((r.get('alive') or 0) - crowd) <= 0.1 * crowd]
+    if len(inside) < 2:
+        print(f'pace {label}   never held {crowd} bodies within a tenth for two samples')
+        return
+    first, last = inside[0], inside[-1]
+    wall = ((last.get('wallTotalMs') or 0) - (first.get('wallTotalMs') or 0)) / 1000.0
+    sim = last['t'] - first['t']
+    if wall <= 0:
+        print(f'pace {label}   no wall clock in the rows')
+        return
+    split = ', '.join(
+        f'{k[4:-2].lower()} {100.0 * ((last.get(k) or 0) - (first.get(k) or 0)) / (wall * 1000.0):.0f}%'
+        for k in ('wallPhysicsMs', 'wallWorldMs', 'wallHarnessMs', 'wallWritersMs'))
+    print(f'pace {label}   {sim / wall:.3f} x real time at {crowd} bodies (t {first["t"]} to {last["t"]}, '
+          f'{len(inside)} samples; {split})')
+
+
 def main():
     p = argparse.ArgumentParser(description='The gpu engine acceptance reads: two farm runs of one world.')
     p.add_argument('a')
     p.add_argument('b')
     p.add_argument('--runs-root', default='runs')
     p.add_argument('--every', type=int, default=0, help='print the side-by-side columns every Nth shared sample')
+    p.add_argument('--pace-at', type=int, default=0, metavar='BODIES',
+                   help='times real time and the wall split over the samples holding this many bodies (a tenth either way)')
     args = p.parse_args()
 
     da, db = run_dir(args.a, args.runs_root), run_dir(args.b, args.runs_root)
@@ -193,6 +216,10 @@ def main():
 
     if args.every > 0:
         side_by_side(sa, sb, shared, args.every)
+
+    if args.pace_at > 0:
+        pace_at('A', sa, args.pace_at)
+        pace_at('B', sb, args.pace_at)
 
     return 0 if same else 1
 
