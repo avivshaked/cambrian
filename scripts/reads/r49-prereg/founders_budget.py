@@ -7,7 +7,7 @@ import json
 import os
 import statistics
 
-ROOT = os.path.join(os.path.dirname(__file__), '..', '..', 'runs')
+ROOT = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'runs')
 
 
 def newest(arm):
@@ -98,6 +98,46 @@ def pool0_counterfactual(arm, gap=64.0, span=180.0):
                med(dens) or 0, gap, span, reach))
 
 
+def pool0_cap(arm, span=180.0, frac=0.9, gate=100.42, standing=0.3596, handling=0.1, senescence=3000.0):
+    """Under D124 at `frac`, the one-part pool stomach holds `frac` of its gate after it grows and
+    must save the rest, (1 - frac) x 100.42 J, out of food less upkeep. How many of round 48's
+    one-part pool stomachs ate enough over their first `span` s to do it at their own mean foodW:
+    net = (1 - handling) x foodW - standing x the mean wear over the span. The gate's own rise
+    with the wear (its margin is 88.28 s of the worn standing cost) is left out. Inference with
+    round 48's caveat: each ate beside its own child."""
+    d = newest(arm)
+    births, deaths, kids = lineage(d)
+    pool0 = {i: r for i, r in births.items() if r.get('src') == 'pool' and r.get('pool') == 0}
+    rows = collections.defaultdict(list)
+    with open(os.path.join(d, 'absorptive.jsonl'), encoding='utf-8') as f:
+        for line in f:
+            k = line.find('"id":')
+            if k < 0:
+                continue
+            try:
+                i = int(line[k + 5:line.find(',', k)])
+            except ValueError:
+                continue
+            if i not in pool0:
+                continue
+            r = json.loads(line)
+            rows[i].append((r['t'] - pool0[i]['t'], r.get('foodW') or 0.0, r.get('dead')))
+    need = (1.0 - frac) * gate
+    wear = 1.0 + 0.5 * span / senescence
+    saves, nets = 0, []
+    for i, rs in rows.items():
+        early = [x for x in rs if x[0] <= span and not x[2]]
+        m = sum(x[1] for x in early) / len(early) if early else 0.0
+        net = (1.0 - handling) * m - standing * wear
+        nets.append(net)
+        if net * span >= need:
+            saves += 1
+    nets.sort()
+    return ('%-8s pool-0 under the cap at %.2f: to save %.2f J in %g s needs a net %.4f W; median net %.3f W;'
+            ' max %.3f W; would save it: %d of %d'
+            % (arm, frac, need, span, need / span, nets[len(nets) // 2], nets[-1], saves, len(rows)))
+
+
 if __name__ == '__main__':
     for arm in ['r47-s1', 'r47-s2', 'r47-s3', 'r48-s1', 'r48-s2', 'r48-s3']:
         for line in founders_table(arm):
@@ -105,3 +145,6 @@ if __name__ == '__main__':
         print()
     for arm in ['r48-s1', 'r48-s2', 'r48-s3']:
         print(pool0_counterfactual(arm))
+    print()
+    for arm in ['r48-s1', 'r48-s2', 'r48-s3']:
+        print(pool0_cap(arm))

@@ -16,7 +16,7 @@ import glob
 import json
 import os
 
-ROOT = os.path.join(os.path.dirname(__file__), '..', '..', 'runs')
+ROOT = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'runs')
 PURSE = 200.0
 FLOOR = 50.0
 PER_TISSUE = 2.0
