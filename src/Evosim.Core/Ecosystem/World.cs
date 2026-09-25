@@ -818,6 +818,24 @@ namespace Evosim.Core
         /// </remarks>
         public long FoundersUnderMassFloor { get; private set; }
 
+        /// <summary>
+        /// Founders admitted with their start cut by D124's cap
+        /// (<see cref="RunConfig.FounderReserveCapFraction"/>), running total. 0 with the cap off,
+        /// and a founder already under its cap is not counted.
+        /// </summary>
+        /// <remarks>
+        /// Admitted founders only: a stillborn founder has no start, so it cannot have been cut.
+        /// Carried by a checkpoint only in a world whose config turns the cap on, as D117's pool
+        /// count is, so every other world writes the bytes it wrote before.
+        /// </remarks>
+        public long FoundersCapped { get; private set; }
+
+        /// <summary>
+        /// The joules D124's cap took from founders' starts, running total: purse and endowment
+        /// that were never created. 0 with the cap off. See <see cref="FoundersCapped"/>.
+        /// </summary>
+        public double FounderJoulesCapped { get; private set; }
+
         /// <summary>Mean <see cref="Genome.AdultScale"/> over the living — rule 9. NaN when empty.</summary>
         /// <remarks>
         /// <b>The three dials and the body scale, computed on demand rather than tracked.</b> They
@@ -3656,18 +3674,10 @@ namespace Evosim.Core
         /// </remarks>
         private bool IsSolvent(Organism parent, out double surplus)
         {
-            double gate, funds;
-
-            if (parent.Gestates)
-            {
-                gate = parent.GestationThreshold(Config);
-                funds = parent.GestationJoules;
-            }
-            else
-            {
-                gate = parent.ReproductionThreshold(Config);
-                funds = parent.Energy;
-            }
+            // The gate is Organism.BreedingGate, the one expression D124's founder cap also reads
+            // (AdmitFounder), so the cap is asked of the gate this check applies.
+            double gate = parent.BreedingGate(Config);
+            double funds = parent.Gestates ? parent.GestationJoules : parent.Energy;
 
             surplus = funds - gate;
             return gate > 0d && funds >= gate;
@@ -4268,6 +4278,34 @@ namespace Evosim.Core
             // nothing is computed and the purse is the recorded expression, bit for bit.
             double endowment = FounderEndowmentFor(body);
 
+            // The adult's tissue, measured once here for the cap below and for Admit. A pure
+            // function of the adult and the config, so hoisting it moves no number.
+            double adultTissue = Metabolism.TissueJoules(adult, Config);
+
+            // D124, the owner's ruling for round 49: the start, purse and endowment together, is
+            // at most f of the founder's own breeding gate plus what its growth will cost, so that
+            // after it has grown it holds at most f of its gate and has to earn the rest. The cut
+            // comes out of the endowment first and then the purse, and is made here, before Admit,
+            // so that what is created is what Admit credits to EnergyIn and, over ρ, to the matter
+            // influx: both books close with no new term. At 0 nothing is computed and the start is
+            // the recorded expression, bit for bit.
+            double capCut = 0d;
+            double start = endowment > 0d
+                ? Config.FounderEnergyJoules * birthFraction + endowment
+                : Config.FounderEnergyJoules * birthFraction;
+
+            if (Config.FounderReserveCapFraction > 0f)
+            {
+                double cap = FounderStartCap(genome, adult, adultTissue, tissue);
+
+                if (start > cap)
+                {
+                    capCut = start - cap;
+                    endowment = capCut < endowment ? endowment - capCut : 0d;
+                    start = cap;
+                }
+            }
+
             // Round 49's landing point: the reservation's x and z at the height the placer handed
             // back, which is the height the founder is admitted at. Read here, with the
             // reservation outstanding, because nothing in Core holds a founder's x and z until
@@ -4281,19 +4319,25 @@ namespace Evosim.Core
 
             Organism founder = Admit(
                 genome, body, BirthKind.Floor, seed, parentId: -1, generationDepth: 0,
-                energy: endowment > 0d
-                    ? Config.FounderEnergyJoules * birthFraction + endowment
-                    : Config.FounderEnergyJoules * birthFraction,
+                energy: start,
                 tissue: tissue, heightY: height, parent: null,
                 patch: patch, adultPhenotype: adult,
-                adultTissue: Metabolism.TissueJoules(adult, Config),
+                adultTissue: adultTissue,
                 founderSource: source, poolIndex: poolIndex, endowment: endowment,
-                landing: landing);
+                landing: landing, capCut: capCut);
 
             if (shared)
             {
                 if (founder != null) Placement.Commit(founder.Id);
                 else Placement.Release();
+            }
+
+            // D124's two counters, of admitted founders only: a stillborn founder was given
+            // nothing, so nothing was cut from it.
+            if (founder != null && capCut > 0d)
+            {
+                FoundersCapped++;
+                FounderJoulesCapped += capCut;
             }
 
             // A stillborn founder is still an attempt, and counting it keeps the floor's
@@ -4316,6 +4360,46 @@ namespace Evosim.Core
             if (!(seconds > 0f)) return 0d;
 
             return Math.Max(0d, (double)seconds * Metabolism.StandingWatts(newborn, Config));
+        }
+
+        /// <summary>
+        /// The most a founder may start with under D124's cap, J:
+        /// <c>f × G + (adultTissue − newbornTissue)</c>, with <c>f</c>
+        /// <see cref="RunConfig.FounderReserveCapFraction"/>. Infinite with the cap off.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b><c>G</c> is the gate the founder will meet once grown</b>:
+        /// <see cref="Organism.BreedingGate(ReproductionTraits, double, float, RunConfig)"/> at
+        /// the adult's tissue and the adult's <see cref="Metabolism.StandingWatts"/> at age 0,
+        /// which is the expression <see cref="IsSolvent"/> reads off a living body. For a lump
+        /// breeder that is the litter's price plus the margin; for a gestating one the price
+        /// alone, asked of its account. Age 0 is the unworn cost, so the gate read here is never
+        /// above the one the grown body meets.
+        /// </para>
+        /// <para>
+        /// <b>The growth term is what <see cref="Grow"/> takes from the reserve in all</b>: each
+        /// step debits the re-measured tissue less the tissue before it, and the steps telescope
+        /// to the adult's tissue less the newborn's, whether the body grows in one step or ten.
+        /// Nothing else is charged for growing: no field is drawn since D098, and the buffer
+        /// <see cref="RunConfig.GrowthReserveFloor"/> keeps is a pace and not a price.
+        /// </para>
+        /// </remarks>
+        public double FounderStartCap(
+            Genome genome, Phenotype adult, double adultTissue, double newbornTissue)
+        {
+            if (genome == null) throw new ArgumentNullException(nameof(genome));
+            if (adult == null) throw new ArgumentNullException(nameof(adult));
+
+            float fraction = Config.FounderReserveCapFraction;
+            if (!(fraction > 0f)) return double.PositiveInfinity;
+
+            double gate = Organism.BreedingGate(
+                genome.Reproduction, adultTissue, Metabolism.StandingWatts(adult, Config), Config);
+
+            double growth = Math.Max(0d, adultTissue - newbornTissue);
+
+            return (double)fraction * gate + growth;
         }
 
         /// <summary>
@@ -4658,6 +4742,12 @@ namespace Evosim.Core
         /// at the admitted height), for round 49's landing readings on its lineage row; null for
         /// everything else and for a founder whose placer keeps no coordinates.
         /// </param>
+        /// <param name="capCut">
+        /// For a founder, the joules D124's cap took from its start
+        /// (<see cref="RunConfig.FounderReserveCapFraction"/>), carried to its lineage row as
+        /// <c>capcut</c>. Never created, so not inside <paramref name="energy"/>; 0 for
+        /// everything else and for a founder the cap did not cut.
+        /// </param>
         private Organism Admit(
             Genome genome, Phenotype phenotype, BirthKind kind, ulong seed, long parentId,
             int generationDepth, double energy, double tissue, float heightY, Organism parent,
@@ -4665,7 +4755,7 @@ namespace Evosim.Core
             FounderSource founderSource = FounderSource.None, int poolIndex = -1,
             double endowment = 0d,
             string budCells = null, int budsExpressed = 0,
-            Float3? landing = null)
+            Float3? landing = null, double capCut = 0d)
         {
             // The owner's ruling of 2026-09-19: a body that would grow into itself is not born.
             // Asked here rather than at each of the three call sites so that a founder and an
@@ -4822,7 +4912,8 @@ namespace Evosim.Core
                 CarriesAttribute(genome, n => n.Protection),
                 founderSource, poolIndex, endowment, budCells, budsExpressed,
                 genome.Reproduction.Mode, genome.Reproduction.GestationShare,
-                landingSnow, landingSnowColumn, landingMatter, landingMatterColumn));
+                landingSnow, landingSnowColumn, landingMatter, landingMatterColumn,
+                capCut));
 
             // Record format 2's genome file, beside the lineage row and under the same guarantee:
             // exactly one per id assigned. A reference, not a copy, and nothing is read or drawn,
