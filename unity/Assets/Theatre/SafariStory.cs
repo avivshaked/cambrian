@@ -83,6 +83,8 @@ namespace Evosim.Theatre
             public double Seconds = double.NaN;
             /// <summary>The story's captions, or null when it gave none.</summary>
             public List<SafariCaption> Captions;
+            /// <summary>The scene's chart (<see cref="SafariChart"/>), or null when it asks for none or none can be drawn.</summary>
+            public SafariChart Chart;
         }
 
         public string Path { get; private set; }
@@ -121,6 +123,7 @@ namespace Evosim.Theatre
         private static readonly string[] CaptionKeys = { "captions", "caption", "lines", "narration", "subtitles", "text" };
         private static readonly string[] TitleKeys = { "title", "card_title", "cardTitle", "heading" };
         private static readonly string[] DescriptionKeys = { "description", "desc", "new", "note", "notes", "what" };
+        private static readonly string[] ChartKeys = { "chart", "graph", "plot" };
 
         /// <summary>Keys a scene may carry that the director has no use for: read past, never noted.</summary>
         private static readonly string[] Unused = { "sources", "source", "refs", "references", "id", "transition", "mood", "music", "comment" };
@@ -129,7 +132,7 @@ namespace Evosim.Theatre
             NumberKeys.Concat(RunKeys).Concat(ActKeys).Concat(StationKeys).Concat(SecondKeys).Concat(FromKeys).Concat(ToKeys)
                 .Concat(SpanKeys).Concat(SubjectKeys).Concat(RootKeys).Concat(BodyKeys).Concat(LengthKeys).Concat(CaptionKeys)
                 .Concat(TitleKeys).Concat(DescriptionKeys).Concat(ChapterKeys).Concat(FlexibleKeys).Concat(CanopyKeys).Concat(WhyKeys)
-                .Concat(Unused), StringComparer.Ordinal);
+                .Concat(ChartKeys).Concat(Unused), StringComparer.Ordinal);
 
         /// <summary>Reads a shot list, or refuses a file that is not JSON or holds no scenes.</summary>
         public static SafariStory Read(string path, out string refusal)
@@ -281,6 +284,7 @@ namespace Evosim.Theatre
 
             ReadSubject(node, shot);
             shot.Captions = ReadCaptions(FirstOf(node, CaptionKeys), shot.Number);
+            shot.Chart = SafariChart.Read(FirstOf(node, ChartKeys), shot.Number, Notes);
             return shot;
         }
 
@@ -843,6 +847,10 @@ namespace Evosim.Theatre
                 }
             }
 
+            // The chart: its seconds are the scene's, as its captions' are, so a chapter card
+            // moves it by the card's length; an open end is the scene's.
+            if (shot.Chart != null) scene.Chart = ChartOf(shot.Chart, scene, station, who, notes);
+
             if (scene.Seconds > 0d)
             {
                 // The scene's length is its own; a chapter card's seconds come before it.
@@ -857,6 +865,39 @@ namespace Evosim.Theatre
 
         /// <summary>How much a card asked to be dimmed is darkened, 0 to 1.</summary>
         public const float DimmedCard = 0.6f;
+
+        /// <summary>
+        /// A shot's chart as its scene will play it: moved by the chapter card's length when the
+        /// scene opens a chapter, its open end made the scene's end, and a note for anything the
+        /// scene cannot show (an account on a scene that follows no body, a chart past the end).
+        /// </summary>
+        private static SafariChart ChartOf(SafariChart asked, SafariScene scene, SafariStation station, string who, List<string> notes)
+        {
+            double card = scene.ChapterCard ? SafariTripBuilder.ChapterSeconds : 0d;
+            SafariChart chart = asked.Shifted(card);
+            double end = scene.Seconds > 0d ? scene.Seconds + card : double.NaN;
+
+            if (double.IsNaN(chart.Until) && !double.IsNaN(end)) chart.Until = end;
+            if (!double.IsNaN(end) && chart.At >= end)
+            {
+                notes.Add(string.Format(CultureInfo.InvariantCulture,
+                    "{0}: WARNING: its chart opens at {1:0.#} s, after the scene's {2:0.#} s, and is never shown", who, chart.At, end));
+            }
+            else if (!double.IsNaN(end) && chart.Until > end + 1e-6)
+            {
+                notes.Add(string.Format(CultureInfo.InvariantCulture,
+                    "{0}: its chart's 'until' {1:0.#} s is past the scene's {2:0.#} s: it is shown to the end", who, chart.Until, end));
+                chart.Until = end;
+            }
+
+            if (chart.Kind == SafariChartKind.Account && station != SafariStation.Portrait && station != SafariStation.Birth)
+                notes.Add(who + ": an account chart on a " + station + ", which follows " +
+                          (station == SafariStation.Colony ? "the colony's anchor body" : "no body") + ": it draws " +
+                          (station == SafariStation.Colony ? "that body's reserve" : "nothing"));
+
+            notes.Add(who + ": chart " + chart.Line() + (card > 0d ? " (moved by the chapter card's " + card.ToString("0", CultureInfo.InvariantCulture) + " s)" : ""));
+            return chart;
+        }
 
         /// <summary>A chapter's number from 1, counted over every scene of the story that opens one, in the story's order.</summary>
         private int ChapterNumber(Shot shot)

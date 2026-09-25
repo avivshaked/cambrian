@@ -136,6 +136,15 @@ namespace Evosim.Theatre.EditorTools
         private static readonly List<string> _outcomes = new List<string>();
         private static readonly Dictionary<int, int> _takesByScene = new Dictionary<int, int>();
 
+        // the story look (StoryLook.cs: on for a story unless EVOSIM_THEATRE_STORY_LOOK=0), its
+        // exposure meter, and the story's charts (SafariChartLayer.cs), made the first time a
+        // scene with a chart starts a take (the owner, 2026-09-25)
+        private static StoryLook _look;
+        private static StoryExposure _exposure;
+        private static SafariChartLayer _charts;
+        private static bool _chartsRefused;
+        private static int _settleFrames;
+
         // the check's tally
         private static int _frames, _underBed, _inBody, _overCeiling, _outsideGlassFrames;
         private static float _fastest;
@@ -593,8 +602,34 @@ namespace Evosim.Theatre.EditorTools
                 }
             }
 
+            // The story look, after the skin and the grade are up (the runner's Start) and before
+            // the first take renders anything.
+            _look = null;
+            _exposure = null;
+            _charts = null;
+            _chartsRefused = false;
+            if (StoryLook.Wanted(!string.IsNullOrEmpty(_story)))
+            {
+                _look = new StoryLook();
+                Debug.Log("[Theatre] safari: " + _look.Apply(TheatreSkin.Current, TheatreGrade.Current));
+                if (_look.TargetLuma > 0f && TheatreGrade.Current != null)
+                    _exposure = new StoryExposure(_look, TheatreGrade.Current.Exposure);
+            }
+            else if (!string.IsNullOrEmpty(_story))
+            {
+                Debug.Log("[Theatre] safari: the story look is off (EVOSIM_THEATRE_STORY_LOOK=0): the census's dark field, no meter, no lamp");
+            }
+
             _playAt = 0;
             _director.Begin(_playList[0]);
+        }
+
+        /// <summary>How far down the world the camera stands, 0 at the surface and 1 at the bed, for the meter's target.</summary>
+        private static float DepthOf(TheatreDynamicsReplay live, Vector3 eye)
+        {
+            Bounds box = SnapshotCamera.BoxOf(live, out _);
+            if (!(box.size.y > 0.01f)) return 0.5f;
+            return Mathf.Clamp01((box.max.y - eye.y) / box.size.y);
         }
 
         private static double _takeStartSecond;
@@ -608,8 +643,40 @@ namespace Evosim.Theatre.EditorTools
             _takeStartSecond = _runner.Live.ElapsedSeconds;
             _takesByScene[scene.Index] = take + 1;
 
+            // The story's lamp rides with the camera on a portrait and a birth and takes the place
+            // of the safari's fill there, so a close body carries two lights of the camera's and
+            // not three (URP's per-object limit is four, the skin's sun and fill among them).
+            bool lamp = _look != null && _look.Lamp > 0f && (scene.Station == SafariStation.Portrait || scene.Station == SafariStation.Birth);
+
             _camera?.Dispose();
-            _camera = new SnapshotCamera(_width, _height) { FillIntensity = 0.6f };
+            _camera = new SnapshotCamera(_width, _height)
+            {
+                FillIntensity = lamp ? 0f : 0.6f,
+                LampIntensity = lamp ? _look.Lamp : 0f,
+                Meter = _exposure != null,
+            };
+            if (_look != null && TheatreSkin.Current != null) _camera.Water = TheatreSkin.Current.Water;
+
+            _settleFrames = 0;
+            _exposure?.BeginTake(scene.Slug + " take " + (take + 1));
+
+            // The chart's panel is made once, at the camera's supersampled size, the first time a
+            // scene carries a chart; each take builds its scene's chart (or clears the last) now,
+            // so the panel has drawn it during the warm-up, before the take's first frame.
+            if (scene.Chart != null && _charts == null && !_chartsRefused)
+            {
+                _charts = SafariChartLayer.Create(_camera.TargetWidth, _camera.TargetHeight, out string note);
+                if (_charts == null)
+                {
+                    _chartsRefused = true;
+                    Debug.LogWarning("[Theatre] safari: the charts are off: " + note);
+                }
+                else
+                {
+                    Debug.Log("[Theatre] safari: charts: " + note);
+                }
+            }
+            _charts?.Begin(scene, SafariChartLayer.InkFor(scene.Clade, _runner.LiveView?.Palette));
 
             _takeDirectory = Path.Combine(Path.Combine(_out, scene.Slug), "take-" + (take + 1));
             Directory.CreateDirectory(_takeDirectory);
@@ -623,6 +690,8 @@ namespace Evosim.Theatre.EditorTools
         private static void OnTakeEnded(SafariScene scene, int take, string tally)
         {
             SnapshotCamera.FlushWrites();
+
+            if (_exposure != null) Debug.Log("[Theatre] safari: " + _exposure.TakeLine());
 
             if (_camera == null || _camera == _timedCamera) return;
             _tripTimes.Add(_camera.Times);
@@ -650,20 +719,36 @@ namespace Evosim.Theatre.EditorTools
             FilmPlans.Shot shot = _director.CurrentShot;
             if (view == null || shot == null) { _warm = true; return; }
 
+            // The take starts at the exposure the last take ended on.
+            if (_warmFrames == 0 && _exposure != null) TheatreGrade.Current?.SetExposure(_exposure.Ev);
+
             view.Sync();
             view.DressUndressed();
             shot.Pose(live, view, 0f, Interval, out Vector3 eye, out Quaternion rotation, out float focus);
             _camera.CapturePlaced(live, eye, rotation, shot.FieldOfView, shot.Portrait, focus, "", null);
             _warmFrames++;
 
-            if (_warmFrames >= 3 && view.UndressedCount == 0 && view.PlainRendererCount() == 0)
+            bool dressed = _warmFrames >= 3 && view.UndressedCount == 0 && view.PlainRendererCount() == 0;
+            if (!dressed)
             {
-                shot.ResetTally();
-                _warm = true;
+                if (_warmFrames >= 60) Finish(1, "warm-up 60 frames and the skin has not dressed the crowd: " + view.UndressedCount + " bodies undressed");
                 return;
             }
 
-            if (_warmFrames >= 60) Finish(1, "warm-up 60 frames and the skin has not dressed the crowd: " + view.UndressedCount + " bodies undressed");
+            // The story's meter settles on the dressed first pose before the first frame is kept:
+            // each warm-up render is measured (the camera reads it back when metering) and the
+            // exposure stepped toward the target, until two renders running are within
+            // StoryExposure.SettledWithinEv or the cap is reached.
+            if (_exposure != null && !_exposure.Settled && _settleFrames < StoryExposure.MostSettleFrames)
+            {
+                _exposure.Settle(_camera.LastMeanLuma, DepthOf(live, eye));
+                TheatreGrade.Current?.SetExposure(_exposure.Ev);
+                _settleFrames++;
+                if (!_exposure.Settled && _settleFrames < StoryExposure.MostSettleFrames) return;
+            }
+
+            shot.ResetTally();
+            _warm = true;
         }
 
         private static void Shoot()
@@ -673,8 +758,24 @@ namespace Evosim.Theatre.EditorTools
 
             _camera.Caption = _burn ? pose.Caption : null;
             _camera.Dim = pose.Dim;
+
+            // The scene's chart, if it shows on this frame: composited into the render before the
+            // box filter, and a corner card left out of the meter.
+            bool chart = _charts != null && _charts.Frame(pose, live, Interval);
+            _camera.OverRender = chart ? _charts.Composite : null;
+            _camera.MeterExclude = chart ? _charts.MeterExclude(_width, _height) : new RectInt(0, 0, 0, 0);
+
             string path = Path.Combine(_takeDirectory, "frame-" + pose.TakeFrame.ToString("000000", CultureInfo.InvariantCulture) + ".png");
             _camera.CapturePlaced(live, pose.Eye, pose.Rotation, pose.FieldOfView, pose.Portrait, pose.Focus, pose.Label, path);
+
+            // The meter follows the picture slowly, and holds under a full chart, whose dimmed
+            // world it must not answer.
+            if (_exposure != null)
+            {
+                if (chart && _charts.FullVisible) _exposure.Hold(_camera.LastMeanLuma);
+                else _exposure.Track(_camera.LastMeanLuma, DepthOf(live, pose.Eye));
+                TheatreGrade.Current?.SetExposure(_exposure.Ev);
+            }
 
             if (_sparkline != null)
             {
@@ -827,6 +928,18 @@ namespace Evosim.Theatre.EditorTools
                 _sparkline.RemoveFromHierarchy();
                 _sparkline = null;
             }
+
+            if (_charts != null)
+            {
+                _charts.Dispose();
+                _charts = null;
+            }
+            if (_look != null)
+            {
+                _look.Restore();
+                _look = null;
+            }
+            _exposure = null;
 
             _camera?.Dispose();
             _camera = null;

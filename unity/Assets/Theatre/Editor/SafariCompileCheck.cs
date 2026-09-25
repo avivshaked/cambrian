@@ -132,6 +132,7 @@ namespace Evosim.Theatre.EditorTools
                                     foreach (SafariScene s in scenes)
                                     {
                                         log.Append("\n    ").Append(s.Line()).Append("\n        clip ").Append(s.Slug).Append(".mp4");
+                                        if (s.Chart != null) log.Append("\n        chart ").Append(s.Chart.Line());
                                         foreach (SafariCaption c in s.Captions)
                                             log.Append("\n        +").Append(c.Offset.ToString("0.#", CultureInfo.InvariantCulture)).Append(" s for ")
                                                .Append(c.Seconds.ToString("0.#", CultureInfo.InvariantCulture)).Append(" s: ").Append(c.Text);

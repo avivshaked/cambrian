@@ -271,6 +271,50 @@ namespace Evosim.Theatre
         /// </summary>
         public float FillIntensity;
 
+        /// <summary>
+        /// A lamp that rides with the camera, for a story's portrait and birth (the owner,
+        /// 2026-09-25: "everything looks a bit darkish"): a soft spot light a little above and to
+        /// the right of the lens, aimed at the focus distance, whose intensity is scaled by the
+        /// square of that distance so the subject receives about this much light whatever the
+        /// standoff, and what stands nearer receives more and what stands farther less, so the
+        /// water's depth still reads. 0 (the default) adds none, so every film, snapshot and
+        /// census picture is lit as it always was. <see cref="StoryLook"/> sets it.
+        /// </summary>
+        public float LampIntensity;
+
+        /// <summary>
+        /// Called with the rendered target (at the supersampled size, before it is box-filtered and
+        /// read back) when a placed frame is to be written: whatever it draws into the target is
+        /// in the picture, under the label and the caption, which are stamped after the read-back.
+        /// A story's chart is composited this way (<see cref="SafariChartLayer"/>). Null, the
+        /// default, draws nothing.
+        /// </summary>
+        public Action<RenderTexture> OverRender;
+
+        /// <summary>
+        /// Measure each placed frame's mean luma (<see cref="LastMeanLuma"/>) after the read-back,
+        /// before the dim, the label and the caption are stamped; and read a warm-up render back
+        /// (a null path) so it can be measured too. Off by default: nothing but a story's exposure
+        /// meter (<see cref="StoryExposure"/>) reads it.
+        /// </summary>
+        public bool Meter;
+
+        /// <summary>
+        /// Pixels the meter leaves out (a chart's card), in output pixels with the origin at the
+        /// bottom left as the read-back holds them; an empty rectangle leaves nothing out.
+        /// </summary>
+        public RectInt MeterExclude;
+
+        /// <summary>
+        /// The last measured frame's mean luma, 0 to 1 of full scale: Rec. 709 weights on the
+        /// stored sRGB bytes, every fourth pixel of every fourth row. NaN until one is measured.
+        /// </summary>
+        public float LastMeanLuma { get; private set; } = float.NaN;
+
+        /// <summary>The render target's size, the output's times the supersample.</summary>
+        public int TargetWidth => _target.width;
+        public int TargetHeight => _target.height;
+
         // The palette's three guilds. Duplicated as plain fields rather than shared with
         // TheatrePalette, which paints renderers through a MaterialPropertyBlock and has no
         // opinion about a pixel; the values are the same and the runner's inspector owns them.
@@ -654,6 +698,7 @@ namespace Evosim.Theatre
             List<WaterBounds> silenced = SilenceTheWater();
             Light back = portrait ? BackLight() : null;
             Light fill = portrait && FillIntensity > 0f ? FillLight(FillIntensity) : null;
+            Light lamp = LampIntensity > 0f ? Lamp(eye, rotation, focusMetres) : null;
 
             // A film's or a safari's portrait is focused on its subject's depth with the lens the
             // field of view makes (TheatreGrade.FocusPortrait); the census views above never are.
@@ -675,12 +720,17 @@ namespace Evosim.Theatre
                 if (skin != null) skin.Aim(lightsWere);
                 if (back != null) UnityEngine.Object.DestroyImmediate(back.gameObject);
                 if (fill != null) UnityEngine.Object.DestroyImmediate(fill.gameObject);
+                if (lamp != null) UnityEngine.Object.DestroyImmediate(lamp.gameObject);
                 for (int i = 0; i < silenced.Count; i++) silenced[i].enabled = true;
             }
 
             // A warm-up render: drawn so the grade's history and the scene's first-draw work are
-            // done, read back by nobody (TheatreFilm's warm-up).
-            if (path == null) return 0;
+            // done, read back by nobody (TheatreFilm's warm-up), unless the meter wants it.
+            if (path == null && !Meter) return 0;
+
+            // What is drawn over the render (a story's chart), on the supersampled target, so the
+            // box filter smooths its edges with the world's.
+            if (path != null && OverRender != null) OverRender(_target);
 
             RenderTexture active = RenderTexture.active;
 
@@ -731,7 +781,11 @@ namespace Evosim.Theatre
                 else Array.Copy(full, _pixels, _pixels.Length);
             }
 
-            if (_check && _checked < CheckedFrames) CheckTheFilter();
+            if (_check && _checked < CheckedFrames && path != null) CheckTheFilter();
+
+            // The meter reads the picture as rendered, before anything is stamped on it.
+            if (Meter) LastMeanLuma = MeanLuma(MeterExclude);
+            if (path == null) return 0;
 
             LastPixelsMs = Since(ref mark);
 
@@ -1663,6 +1717,77 @@ namespace Evosim.Theatre
             light.intensity = intensity;
             light.shadows = LightShadows.None;
             return light;
+        }
+
+        /// <summary>
+        /// The story's lamp (<see cref="LampIntensity"/>): a soft spot light from just above and to
+        /// the right of the lens, aimed at the focus distance, destroyed after the render.
+        /// </summary>
+        /// <remarks>
+        /// A spot and not a directional light, because a directional light lifts the whole water
+        /// column equally and the depth of the picture goes with it; this one falls off with the
+        /// square of the distance, as the lamp on a diver's camera does. URP gives a punctual light
+        /// <c>intensity / d²</c>, so the intensity is <see cref="LampIntensity"/> times the square
+        /// of the distance to the aim point, and the subject there receives about that much. Its
+        /// inner cone is narrow and its outer wide, so the edge of the pool of light is soft.
+        /// Forced per pixel, so URP's per-object light limit keeps it: a story's portrait turns the
+        /// safari's directional fill off when the lamp is on (<see cref="StoryLook"/>), which keeps
+        /// the count at the key, the skin's fill, the portrait's back light and this.
+        /// </remarks>
+        private Light Lamp(Vector3 eye, Quaternion rotation, float focusMetres)
+        {
+            float focus = focusMetres > 0.1f ? Mathf.Min(focusMetres, 40f) : 3f;
+            Vector3 up = rotation * Vector3.up;
+            Vector3 right = rotation * Vector3.right;
+            Vector3 forward = rotation * Vector3.forward;
+
+            Vector3 at = eye + up * (0.15f * focus) + right * (0.1f * focus);
+            Vector3 aim = eye + forward * focus;
+            Vector3 towards = aim - at;
+            float reach = Mathf.Max(0.1f, towards.magnitude);
+
+            var holder = new GameObject("Theatre Story Lamp") { hideFlags = HideFlags.HideAndDontSave };
+            holder.transform.SetPositionAndRotation(at, Quaternion.LookRotation(towards / reach, up));
+
+            var light = holder.AddComponent<Light>();
+            light.type = LightType.Spot;
+            light.color = new Color(1f, 0.97f, 0.92f);
+            light.intensity = LampIntensity * reach * reach;
+            light.range = Mathf.Max(4f, 3f * reach);
+            light.spotAngle = 80f;
+            light.innerSpotAngle = 20f;
+            light.shadows = LightShadows.None;
+            light.renderMode = LightRenderMode.ForcePixel;
+            return light;
+        }
+
+        /// <summary>
+        /// The mean luma of the frame's pixels, 0 to 1: Rec. 709 weights on the stored sRGB bytes,
+        /// every fourth pixel of every fourth row, staggered, the rectangle left out.
+        /// </summary>
+        private float MeanLuma(RectInt skip)
+        {
+            if (_pixels == null || _pixels.Length < _width * _height) return float.NaN;
+
+            const int step = 4;
+            bool skipping = skip.width > 0 && skip.height > 0;
+            double sum = 0d;
+            int n = 0;
+
+            for (int y = 0; y < _height; y += step)
+            {
+                int row = y * _width;
+                bool inRows = skipping && y >= skip.yMin && y < skip.yMax;
+                for (int x = (y / step) % step; x < _width; x += step)
+                {
+                    if (inRows && x >= skip.xMin && x < skip.xMax) continue;
+                    Color32 c = _pixels[row + x];
+                    sum += 0.2126d * c.r + 0.7152d * c.g + 0.0722d * c.b;
+                    n++;
+                }
+            }
+
+            return n > 0 ? (float)(sum / n / 255d) : float.NaN;
         }
 
         private Light RakeTheFloor()

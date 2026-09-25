@@ -100,6 +100,11 @@ namespace Evosim.Theatre
         public bool? Canopy;
         /// <summary>How much a story's held card darkens its picture under the captions, 0 to 1 (0.6 dimmed, 1 black).</summary>
         public float Dim;
+        /// <summary>
+        /// A story's chart (<see cref="SafariChart"/>), its seconds the scene's own as its captions'
+        /// are (a chapter card's length already added), or null.
+        /// </summary>
+        public SafariChart Chart;
 
         /// <summary>True for a scene a story's shot list asked for.</summary>
         public bool FromStory => StoryNumber >= 0;

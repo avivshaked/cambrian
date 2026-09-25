@@ -41,6 +41,10 @@ namespace Evosim.Theatre
         /// <see cref="SafariOptions.Callouts"/> is on and the scene has a clade with a count series.
         /// </summary>
         public SafariClade Callout;
+        /// <summary>The body the take is about (a portrait's subject, a birth's parent, a colony's anchor), or -1.</summary>
+        public long Subject;
+        /// <summary>The scene the frame belongs to, for what is drawn over it (a story's chart, its station).</summary>
+        public SafariScene Scene;
     }
 
     /// <summary>What the director may do, set by its host.</summary>
@@ -1048,6 +1052,8 @@ namespace Evosim.Theatre
                 Shot = take.Shot,
                 Dim = _segment != null && _segment.Held && Current.Station == SafariStation.Card ? Mathf.Clamp01(Current.Dim) : 0f,
                 Callout = _options.Callouts && Current.Clade != null && Current.Clade.Series.Count > 1 ? Current.Clade : null,
+                Subject = take.Subject,
+                Scene = Current,
             };
 
             _takeFrame++;

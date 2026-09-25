@@ -96,6 +96,14 @@
 .PARAMETER StoryRun
   The run the story's scenes are chosen for (EVOSIM_THEATRE_SAFARI_STORY_RUN); the Arm when not
   given.
+.PARAMETER NoStoryLook
+  Film a story in the census's dark field (EVOSIM_THEATRE_STORY_LOOK=0): no lighter water, no
+  lamp, no exposure meter. A story takes the look by default (StoryLook.cs, 2026-09-25); a trip
+  does not. The look's dials (EVOSIM_THEATRE_STORY_LUMA, _DEEP, _SHALLOW, _AMBIENT, _FOG, _REACH,
+  _VIGNETTE, _LAMP, _LUMA_DEPTH, _EV_MIN, _EV_MAX) are read from the caller's environment and
+  passed through untouched. A story's charts are drawn with or without the look.
+.PARAMETER StoryLook
+  Give a heuristic's trip the story look too (EVOSIM_THEATRE_STORY_LOOK=1).
 .PARAMETER Folder
   The folder the clips go in, in place of the date (scratch/safari/<Arm>/<Folder>), or with
   -Check a folder inside the check's (scratch/snaps/safari/<Arm>/<Folder>), so a trial never
@@ -134,6 +142,8 @@ param(
     [switch]$DownsampleCheck,
     [string]$Story = '',
     [string]$StoryRun = '',
+    [switch]$NoStoryLook,
+    [switch]$StoryLook,
     [string]$Folder = ''
 )
 
@@ -245,7 +255,8 @@ $names = @(
     'EVOSIM_THEATRE_SAFARI_SEEK_MAX', 'EVOSIM_THEATRE_SAFARI_EVERY', 'EVOSIM_THEATRE_WALL_MINUTES',
     'EVOSIM_THEATRE_SAFARI_CANOPY', 'EVOSIM_THEATRE_DOF', 'EVOSIM_THEATRE_DOF_APERTURE',
     'EVOSIM_THEATRE_SAFARI_SNAP_AHEAD', 'EVOSIM_THEATRE_CPU_DOWNSAMPLE', 'EVOSIM_THEATRE_SYNC_ENCODE',
-    'EVOSIM_THEATRE_DOWNSAMPLE_CHECK', 'EVOSIM_THEATRE_SAFARI_STORY', 'EVOSIM_THEATRE_SAFARI_STORY_RUN')
+    'EVOSIM_THEATRE_DOWNSAMPLE_CHECK', 'EVOSIM_THEATRE_SAFARI_STORY', 'EVOSIM_THEATRE_SAFARI_STORY_RUN',
+    'EVOSIM_THEATRE_STORY_LOOK')
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -278,6 +289,9 @@ try {
         $env:EVOSIM_THEATRE_SAFARI_STORY = $storyPath
         $env:EVOSIM_THEATRE_SAFARI_STORY_RUN = $StoryRun
     }
+    if ($NoStoryLook -and $StoryLook) { throw '-NoStoryLook and -StoryLook together: pick one.' }
+    if ($NoStoryLook) { $env:EVOSIM_THEATRE_STORY_LOOK = '0' }
+    if ($StoryLook) { $env:EVOSIM_THEATRE_STORY_LOOK = '1' }
 
     $entry =if ($Check) { 'Evosim.Theatre.EditorTools.TheatreSafariCheck.Run' } else { 'Evosim.Theatre.EditorTools.TheatreSafari.Run' }
 
