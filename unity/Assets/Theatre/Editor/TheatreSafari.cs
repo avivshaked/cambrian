@@ -34,8 +34,15 @@ namespace Evosim.Theatre.EditorTools
     /// <c>EVOSIM_THEATRE_SAFARI_OUT</c>, which must lie inside <c>scratch/safari</c>):
     /// <c>&lt;scene&gt;/take-N/frame-NNNNNN.png</c> per take; <c>scenes.tsv</c> (index, slug,
     /// station, subject, the second asked and the second played, the outcome, the takes, the
-    /// plan); and <c>captions.tsv</c> (scene, second, text, and the offset into the take's clip).
+    /// plan); and <c>captions.tsv</c> (every take's length and first second, and every caption's
+    /// span in it, appended a session at a time; <see cref="SafariHeadless.CaptionHeader"/>).
     /// <c>scripts/theatre-safari.ps1</c> launches it and encodes the takes.
+    /// </para>
+    /// <para>
+    /// <b>Text in the frames.</b> A trip's frames carry its captions and its provenance label in
+    /// the bitmap font, as they always did; a story's carry neither by default, and
+    /// <c>scripts/story-assemble.py</c> sets both as subtitles from <c>captions.tsv</c>
+    /// (<see cref="SafariCaptions.TextInFrames"/>, <c>EVOSIM_THEATRE_STORY_BURN_TEXT</c>).
     /// </para>
     /// <para>
     /// <b>Story mode.</b> With <c>EVOSIM_THEATRE_SAFARI_STORY</c> naming a writer's shot list
@@ -95,7 +102,12 @@ namespace Evosim.Theatre.EditorTools
         private static int _width = 1920, _height = 1080;
         private static double _wallSeconds = 3600d;
         private static string _out;
-        private static bool _burn = true;
+
+        // What is stamped into the frames (SafariCaptions.TextInFrames): both for a trip, neither
+        // for a story, whose captions and label the join sets as subtitles from captions.tsv;
+        // EVOSIM_THEATRE_SAFARI_CAPTIONS=off takes the captions out of a trip's frames alone.
+        private static bool _burnCaptions = true;
+        private static bool _burnLabel = true;
         private static double _seekMax = 300d;
         private static double _snapAhead = 600d;
 
@@ -135,6 +147,15 @@ namespace Evosim.Theatre.EditorTools
         private static int _calloutsLanded, _calloutsFailed;
         private static readonly List<string> _outcomes = new List<string>();
         private static readonly Dictionary<int, int> _takesByScene = new Dictionary<int, int>();
+
+        // the story look (StoryLook.cs: on for a story unless EVOSIM_THEATRE_STORY_LOOK=0), its
+        // exposure meter, and the story's charts (SafariChartLayer.cs), made the first time a
+        // scene with a chart starts a take (the owner, 2026-09-25)
+        private static StoryLook _look;
+        private static StoryExposure _exposure;
+        private static SafariChartLayer _charts;
+        private static bool _chartsRefused;
+        private static int _settleFrames;
 
         // the check's tally
         private static int _frames, _underBed, _inBody, _overCeiling, _outsideGlassFrames;
@@ -229,8 +250,6 @@ namespace Evosim.Theatre.EditorTools
             if (!string.IsNullOrWhiteSpace(text)) int.TryParse(text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out minutes);
             _wallSeconds = 60d * Mathf.Clamp(minutes, 1, 2880);
 
-            _burn = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_CAPTIONS") != "off";
-
             text = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_SEEK_MAX");
             _seekMax = 300d;
             if (!string.IsNullOrWhiteSpace(text)) double.TryParse(text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out _seekMax);
@@ -257,6 +276,13 @@ namespace Evosim.Theatre.EditorTools
                 if (!string.IsNullOrEmpty(_clade))
                     Debug.LogWarning("[Theatre] safari: EVOSIM_THEATRE_SAFARI_CLADE is ignored: the story decides the trip.");
             }
+
+            text = (Environment.GetEnvironmentVariable(SafariCaptions.BurnTextVariable) ?? "").Trim();
+            if (text.Length > 0 && text != "0" && text != "1")
+                return SafariCaptions.BurnTextVariable + ": '" + text + "' is neither 0 nor 1.";
+            bool inFrames = SafariCaptions.TextInFrames(_story.Length > 0);
+            _burnLabel = inFrames;
+            _burnCaptions = inFrames && Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_CAPTIONS") != "off";
 
             string root = Path.Combine(BuildIdentity.RepositoryRoot(), "scratch");
             string allowed = _check ? Path.Combine(Path.Combine(root, "snaps"), "safari") : Path.Combine(root, "safari");
@@ -394,10 +420,10 @@ namespace Evosim.Theatre.EditorTools
             _check ? "1" : "0", _run, _heuristic, _scenesWanted, _clade,
             _fps.ToString(CultureInfo.InvariantCulture), _checkEvery.ToString("R", CultureInfo.InvariantCulture),
             _width.ToString(CultureInfo.InvariantCulture), _height.ToString(CultureInfo.InvariantCulture),
-            _wallSeconds.ToString("R", CultureInfo.InvariantCulture), _out, _burn ? "1" : "0",
+            _wallSeconds.ToString("R", CultureInfo.InvariantCulture), _out, _burnCaptions ? "1" : "0",
             _seekMax.ToString("R", CultureInfo.InvariantCulture),
             _snapAhead.ToString("R", CultureInfo.InvariantCulture),
-            _story ?? "", _storyRun ?? "");
+            _story ?? "", _storyRun ?? "", _burnLabel ? "1" : "0");
 
         [InitializeOnLoadMethod]
         private static void ResumeAcrossTheDomainReload()
@@ -428,12 +454,13 @@ namespace Evosim.Theatre.EditorTools
             int.TryParse(f[8], NumberStyles.Integer, CultureInfo.InvariantCulture, out _height);
             double.TryParse(f[9], NumberStyles.Float, CultureInfo.InvariantCulture, out _wallSeconds);
             _out = f[10];
-            _burn = f[11] == "1";
+            _burnCaptions = f[11] == "1";
             double.TryParse(f[12], NumberStyles.Float, CultureInfo.InvariantCulture, out _seekMax);
             _snapAhead = 600d;
             if (f.Length > 13) double.TryParse(f[13], NumberStyles.Float, CultureInfo.InvariantCulture, out _snapAhead);
             _story = f.Length > 14 ? f[14] : "";
             _storyRun = f.Length > 15 ? f[15] : "";
+            _burnLabel = f.Length > 16 ? f[16] == "1" : true;
             _lineage = null;
 
             Arm();
@@ -565,11 +592,14 @@ namespace Evosim.Theatre.EditorTools
             });
             _director.TakeStarted += OnTakeStarted;
             _director.TakeEnded += OnTakeEnded;
-            _director.CaptionShown += OnCaption;
 
             Directory.CreateDirectory(_out);
-            _captions = new StreamWriter(Path.Combine(_out, "captions.tsv"), false);
-            _captions.WriteLine("scene\tsecond\ttext\tclip_offset_s");
+            OpenTheCaptions();
+            Debug.Log("[Theatre] safari: text in the frames: " +
+                      (_burnCaptions && _burnLabel ? "the captions and the label, in the bitmap font"
+                          : _burnLabel ? "the label only (EVOSIM_THEATRE_SAFARI_CAPTIONS=off)"
+                          : "none: the captions and the label are in captions.tsv for scripts/story-assemble.py to set as subtitles") +
+                      " (" + SafariCaptions.BurnTextVariable + "=" + (Environment.GetEnvironmentVariable(SafariCaptions.BurnTextVariable) ?? "unset") + ")");
             if (_check)
             {
                 _checkLog = new StreamWriter(Path.Combine(_out, "check.tsv"), false);
@@ -593,14 +623,47 @@ namespace Evosim.Theatre.EditorTools
                 }
             }
 
+            // The story look, after the skin and the grade are up (the runner's Start) and before
+            // the first take renders anything.
+            _look = null;
+            _exposure = null;
+            _charts = null;
+            _chartsRefused = false;
+            if (StoryLook.Wanted(!string.IsNullOrEmpty(_story)))
+            {
+                _look = new StoryLook();
+                Debug.Log("[Theatre] safari: " + _look.Apply(TheatreSkin.Current, TheatreGrade.Current));
+                if (_look.TargetLuma > 0f && TheatreGrade.Current != null)
+                    _exposure = new StoryExposure(_look, TheatreGrade.Current.Exposure);
+            }
+            else if (!string.IsNullOrEmpty(_story))
+            {
+                Debug.Log("[Theatre] safari: the story look is off (EVOSIM_THEATRE_STORY_LOOK=0): the census's dark field, no meter, no lamp");
+            }
+
             _playAt = 0;
             _director.Begin(_playList[0]);
+        }
+
+        /// <summary>How far down the world the camera stands, 0 at the surface and 1 at the bed, for the meter's target.</summary>
+        private static float DepthOf(TheatreDynamicsReplay live, Vector3 eye)
+        {
+            Bounds box = SnapshotCamera.BoxOf(live, out _);
+            if (!(box.size.y > 0.01f)) return 0.5f;
+            return Mathf.Clamp01((box.max.y - eye.y) / box.size.y);
         }
 
         private static double _takeStartSecond;
 
         private static void OnTakeStarted(SafariScene scene, int take, string plan)
         {
+            CloseTheTake();
+            _takeScene = scene;
+            _takeIndex = take;
+            _takeOpen = true;
+            _takeFrames = 0;
+            _spanText = null;
+
             _warm = false;
             _warmFrames = 0;
             _hasLastEye = false;
@@ -608,8 +671,40 @@ namespace Evosim.Theatre.EditorTools
             _takeStartSecond = _runner.Live.ElapsedSeconds;
             _takesByScene[scene.Index] = take + 1;
 
+            // The story's lamp rides with the camera on a portrait and a birth and takes the place
+            // of the safari's fill there, so a close body carries two lights of the camera's and
+            // not three (URP's per-object limit is four, the skin's sun and fill among them).
+            bool lamp = _look != null && _look.Lamp > 0f && (scene.Station == SafariStation.Portrait || scene.Station == SafariStation.Birth);
+
             _camera?.Dispose();
-            _camera = new SnapshotCamera(_width, _height) { FillIntensity = 0.6f };
+            _camera = new SnapshotCamera(_width, _height)
+            {
+                FillIntensity = lamp ? 0f : 0.6f,
+                LampIntensity = lamp ? _look.Lamp : 0f,
+                Meter = _exposure != null,
+            };
+            if (_look != null && TheatreSkin.Current != null) _camera.Water = TheatreSkin.Current.Water;
+
+            _settleFrames = 0;
+            _exposure?.BeginTake(scene.Slug + " take " + (take + 1));
+
+            // The chart's panel is made once, at the camera's supersampled size, the first time a
+            // scene carries a chart; each take builds its scene's chart (or clears the last) now,
+            // so the panel has drawn it during the warm-up, before the take's first frame.
+            if (scene.Chart != null && _charts == null && !_chartsRefused)
+            {
+                _charts = SafariChartLayer.Create(_camera.TargetWidth, _camera.TargetHeight, out string note);
+                if (_charts == null)
+                {
+                    _chartsRefused = true;
+                    Debug.LogWarning("[Theatre] safari: the charts are off: " + note);
+                }
+                else
+                {
+                    Debug.Log("[Theatre] safari: charts: " + note);
+                }
+            }
+            _charts?.Begin(scene, SafariChartLayer.InkFor(scene.Clade, _runner.LiveView?.Palette));
 
             _takeDirectory = Path.Combine(Path.Combine(_out, scene.Slug), "take-" + (take + 1));
             Directory.CreateDirectory(_takeDirectory);
@@ -623,6 +718,9 @@ namespace Evosim.Theatre.EditorTools
         private static void OnTakeEnded(SafariScene scene, int take, string tally)
         {
             SnapshotCamera.FlushWrites();
+            CloseTheTake();
+
+            if (_exposure != null) Debug.Log("[Theatre] safari: " + _exposure.TakeLine());
 
             if (_camera == null || _camera == _timedCamera) return;
             _tripTimes.Add(_camera.Times);
@@ -631,15 +729,105 @@ namespace Evosim.Theatre.EditorTools
                 take + 1, scene.Slug, _camera.Route, _camera.Times.Line()));
         }
 
-        private static void OnCaption(SafariScene scene, double second, string text, double offset)
-        {
-            // Every frame handed to the writer is on disk before a row that points into the
-            // take's clip is written.
-            if (_captions != null) SnapshotCamera.FlushWrites();
+        // ---------------------------------------------------------------- captions.tsv
+        //
+        // What the join needs to set a story's text as subtitles (scripts/story-assemble.py), one
+        // row each, the times in seconds into the take's own clip (the frame's index over the frame
+        // rate, so a row lands on the frame it names):
+        //
+        //   format   the session: the file's version, the frame rate, what the frames carry
+        //   take     a take that wrote frames: from 0 to its length, the world's second at its
+        //            first frame, and the provenance word; the join counts the takes in order to
+        //            place each in the scene's clip, and ticks the label's second from here
+        //   caption  a caption's span in one take: its first frame to the frame after its last
+        //
+        // The file is appended to, a session at a time, so a render chain that films a story's
+        // scenes into one folder in two sittings keeps both sittings' rows (round 48's second
+        // chain overwrote its first's); the join takes each scene's rows from the last session
+        // that filmed it. A file in the version-1 form (scene, second, text, clip_offset_s) is
+        // moved aside first, not appended to.
 
-            _captions?.WriteLine(string.Join("\t", scene.Slug, second.ToString("0.###", CultureInfo.InvariantCulture), text,
-                (second - _takeStartSecond).ToString("0.###", CultureInfo.InvariantCulture)));
+        /// <summary>The header of captions.tsv since 2026-09-25.</summary>
+        public const string CaptionHeader = "kind\tscene\tstory\tarm\tstation\ttake\tfrom_s\tto_s\tsecond\ttext";
+
+        private static string _spanText;
+        private static int _spanFrom;
+        private static int _takeFrames;
+        private static double _takeFirstSecond = double.NaN;
+        private static SafariScene _takeScene;
+        private static int _takeIndex = -1;
+        private static bool _takeOpen;
+
+        private static void OpenTheCaptions()
+        {
+            string path = Path.Combine(_out, "captions.tsv");
+            string first = null;
+            if (File.Exists(path))
+            {
+                using (var reader = new StreamReader(path)) first = reader.ReadLine();
+                if (first != CaptionHeader)
+                {
+                    string aside = Path.Combine(_out, "captions-v1-" + DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture) + ".tsv");
+                    File.Move(path, aside);
+                    Debug.Log("[Theatre] safari: captions.tsv in the older form is moved aside to " + aside);
+                    first = null;
+                }
+            }
+
+            _captions = new StreamWriter(path, true);
+            if (first == null) _captions.WriteLine(CaptionHeader);
+            _captions.WriteLine(string.Join("\t", "format", "-", "-", "-", "-", "-", "-", "-", "-",
+                string.Format(CultureInfo.InvariantCulture, "v2 fps={0:0.######} captions_in_frames={1} label_in_frames={2} session={3:yyyy-MM-ddTHH:mm:ss}",
+                    1d / Interval, _burnCaptions ? 1 : 0, _burnLabel ? 1 : 0, DateTime.Now)));
+            _captions.Flush();
+        }
+
+        private static string Tsv(string text) => (text ?? "").Replace('\t', ' ').Replace('\r', ' ').Replace('\n', ' ');
+
+        private static string ArmOf(SafariScene scene) =>
+            !string.IsNullOrEmpty(scene?.StoryArm) ? scene.StoryArm : new DirectoryInfo(_run ?? "").Parent?.Name ?? "run";
+
+        private static void CaptionRow(string kind, int fromFrame, int toFrame, double second, string text)
+        {
+            if (_captions == null || _takeScene == null) return;
+            _captions.WriteLine(string.Join("\t", kind, _takeScene.Slug,
+                _takeScene.StoryNumber.ToString(CultureInfo.InvariantCulture), Tsv(ArmOf(_takeScene)), _takeScene.Station.ToString(),
+                (_takeIndex + 1).ToString(CultureInfo.InvariantCulture),
+                (fromFrame * (double)Interval).ToString("0.######", CultureInfo.InvariantCulture),
+                (toFrame * (double)Interval).ToString("0.######", CultureInfo.InvariantCulture),
+                double.IsNaN(second) ? "" : second.ToString("0.###", CultureInfo.InvariantCulture), Tsv(text)));
+        }
+
+        /// <summary>One frame's caption: a span closes when the caption on screen changes and opens with the next.</summary>
+        private static void Span(string caption, int frame, double second)
+        {
+            if (_takeFrames == 0) _takeFirstSecond = second;
+            if (caption != _spanText)
+            {
+                if (_spanText != null) CaptionRow("caption", _spanFrom, frame, _spanSecond, _spanText);
+                _spanText = caption;
+                _spanFrom = frame;
+                _spanSecond = second;
+            }
+            _takeFrames = Math.Max(_takeFrames, frame + 1);
+        }
+
+        private static double _spanSecond;
+
+        /// <summary>The take's rows: the open caption closed at its last frame, and the take's own row. Once per take.</summary>
+        private static void CloseTheTake()
+        {
+            if (!_takeOpen) return;
+            _takeOpen = false;
+            if (_takeFrames > 0)
+            {
+                if (_spanText != null) CaptionRow("caption", _spanFrom, _takeFrames, _spanSecond, _spanText);
+                CaptionRow("take", 0, _takeFrames, _takeFirstSecond, "COUSIN");
+            }
             _captions?.Flush();
+            _spanText = null;
+            _takeFrames = 0;
+            _takeFirstSecond = double.NaN;
         }
 
         /// <summary>Renders the take's first pose until every body is dressed, as the film's warm-up does.</summary>
@@ -650,20 +838,36 @@ namespace Evosim.Theatre.EditorTools
             FilmPlans.Shot shot = _director.CurrentShot;
             if (view == null || shot == null) { _warm = true; return; }
 
+            // The take starts at the exposure the last take ended on.
+            if (_warmFrames == 0 && _exposure != null) TheatreGrade.Current?.SetExposure(_exposure.Ev);
+
             view.Sync();
             view.DressUndressed();
             shot.Pose(live, view, 0f, Interval, out Vector3 eye, out Quaternion rotation, out float focus);
             _camera.CapturePlaced(live, eye, rotation, shot.FieldOfView, shot.Portrait, focus, "", null);
             _warmFrames++;
 
-            if (_warmFrames >= 3 && view.UndressedCount == 0 && view.PlainRendererCount() == 0)
+            bool dressed = _warmFrames >= 3 && view.UndressedCount == 0 && view.PlainRendererCount() == 0;
+            if (!dressed)
             {
-                shot.ResetTally();
-                _warm = true;
+                if (_warmFrames >= 60) Finish(1, "warm-up 60 frames and the skin has not dressed the crowd: " + view.UndressedCount + " bodies undressed");
                 return;
             }
 
-            if (_warmFrames >= 60) Finish(1, "warm-up 60 frames and the skin has not dressed the crowd: " + view.UndressedCount + " bodies undressed");
+            // The story's meter settles on the dressed first pose before the first frame is kept:
+            // each warm-up render is measured (the camera reads it back when metering) and the
+            // exposure stepped toward the target, until two renders running are within
+            // StoryExposure.SettledWithinEv or the cap is reached.
+            if (_exposure != null && !_exposure.Settled && _settleFrames < StoryExposure.MostSettleFrames)
+            {
+                _exposure.Settle(_camera.LastMeanLuma, DepthOf(live, eye));
+                TheatreGrade.Current?.SetExposure(_exposure.Ev);
+                _settleFrames++;
+                if (!_exposure.Settled && _settleFrames < StoryExposure.MostSettleFrames) return;
+            }
+
+            shot.ResetTally();
+            _warm = true;
         }
 
         private static void Shoot()
@@ -671,10 +875,27 @@ namespace Evosim.Theatre.EditorTools
             TheatreDynamicsReplay live = _runner.Live;
             if (!_director.Frame(Interval, double.PositiveInfinity, out SafariPose pose)) return;
 
-            _camera.Caption = _burn ? pose.Caption : null;
+            Span(pose.Caption, pose.TakeFrame, pose.Second);
+            _camera.Caption = _burnCaptions ? pose.Caption : null;
             _camera.Dim = pose.Dim;
+
+            // The scene's chart, if it shows on this frame: composited into the render before the
+            // box filter, and a corner card left out of the meter.
+            bool chart = _charts != null && _charts.Frame(pose, live, Interval);
+            _camera.OverRender = chart ? _charts.Composite : null;
+            _camera.MeterExclude = chart ? _charts.MeterExclude(_width, _height) : new RectInt(0, 0, 0, 0);
+
             string path = Path.Combine(_takeDirectory, "frame-" + pose.TakeFrame.ToString("000000", CultureInfo.InvariantCulture) + ".png");
-            _camera.CapturePlaced(live, pose.Eye, pose.Rotation, pose.FieldOfView, pose.Portrait, pose.Focus, pose.Label, path);
+            _camera.CapturePlaced(live, pose.Eye, pose.Rotation, pose.FieldOfView, pose.Portrait, pose.Focus, _burnLabel ? pose.Label : null, path);
+
+            // The meter follows the picture slowly, and holds under a full chart, whose dimmed
+            // world it must not answer.
+            if (_exposure != null)
+            {
+                if (chart && _charts.FullVisible) _exposure.Hold(_camera.LastMeanLuma);
+                else _exposure.Track(_camera.LastMeanLuma, DepthOf(live, pose.Eye));
+                TheatreGrade.Current?.SetExposure(_exposure.Ev);
+            }
 
             if (_sparkline != null)
             {
@@ -757,6 +978,7 @@ namespace Evosim.Theatre.EditorTools
 
         private static void SceneOver()
         {
+            CloseTheTake();
             SafariScene scene = _director.Current;
             _outcomes.Add(string.Join("\t",
                 (scene.Index + 1).ToString(CultureInfo.InvariantCulture), scene.Slug, scene.Station.ToString(), scene.Subject,
@@ -828,8 +1050,22 @@ namespace Evosim.Theatre.EditorTools
                 _sparkline = null;
             }
 
+            if (_charts != null)
+            {
+                _charts.Dispose();
+                _charts = null;
+            }
+            if (_look != null)
+            {
+                _look.Restore();
+                _look = null;
+            }
+            _exposure = null;
+
             _camera?.Dispose();
             _camera = null;
+            CloseTheTake();
+            _takeScene = null;
             _captions?.Dispose();
             _captions = null;
             _checkLog?.Dispose();

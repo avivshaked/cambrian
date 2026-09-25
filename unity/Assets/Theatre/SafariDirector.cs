@@ -41,6 +41,10 @@ namespace Evosim.Theatre
         /// <see cref="SafariOptions.Callouts"/> is on and the scene has a clade with a count series.
         /// </summary>
         public SafariClade Callout;
+        /// <summary>The body the take is about (a portrait's subject, a birth's parent, a colony's anchor), or -1.</summary>
+        public long Subject;
+        /// <summary>The scene the frame belongs to, for what is drawn over it (a story's chart, its station).</summary>
+        public SafariScene Scene;
     }
 
     /// <summary>What the director may do, set by its host.</summary>
@@ -347,14 +351,15 @@ namespace Evosim.Theatre
             bool flexible = scene.Flexible;
             bool canopy = scene.Canopy ?? _options.Canopy;
 
-            // A story's chapter card plays first, a held take of its own before the scene's; the
-            // template's colony carries its card inside its own takes (ColonyTakes).
+            // A story's chapter card plays first, a take of its own before the scene's, a slow drift
+            // through the crowd since 2026-09-25 (it was the disc from above, held); the template's
+            // colony carries its card inside its own takes (ColonyTakes), from above as before.
             if (scene.FromStory && scene.ChapterCard)
             {
                 yield return new Segment
                 {
                     At = scene.At, Flexible = true, Held = true,
-                    Build = s => One(SafariPlans.FromAbove(s, (float)SafariTripBuilder.ChapterSeconds)),
+                    Build = s => One(SafariPlans.Wide(s, (float)SafariTripBuilder.ChapterSeconds, hash ^ 0x5bd1, "chapter")),
                 };
             }
 
@@ -379,12 +384,15 @@ namespace Evosim.Theatre
                     break;
 
                 case SafariStation.Card:
-                    // A story's title: the chapter card's look, the disc from above, held, and
-                    // darkened under its captions when the writer asked for that.
+                    // A story's card: a slow drift through the crowd (SafariPlans.Wide), opened like
+                    // a chapter card without stepping to its second, and darkened only when its
+                    // writer asked for that and no full chart dims it already (SafariStory). It was
+                    // the disc from above, held, until the owner asked for the world behind the
+                    // explanations (2026-09-25).
                     yield return new Segment
                     {
                         At = scene.At, Flexible = true, Held = true,
-                        Build = s => One(SafariPlans.FromAbove(s, LengthOf(scene, SafariTripBuilder.ChapterSeconds))),
+                        Build = s => One(SafariPlans.Wide(s, LengthOf(scene, SafariTripBuilder.ChapterSeconds), hash, "card")),
                     };
                     break;
 
@@ -1048,6 +1056,8 @@ namespace Evosim.Theatre
                 Shot = take.Shot,
                 Dim = _segment != null && _segment.Held && Current.Station == SafariStation.Card ? Mathf.Clamp01(Current.Dim) : 0f,
                 Callout = _options.Callouts && Current.Clade != null && Current.Clade.Series.Count > 1 ? Current.Clade : null,
+                Subject = take.Subject,
+                Scene = Current,
             };
 
             _takeFrame++;

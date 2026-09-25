@@ -26,16 +26,17 @@ namespace Evosim.Theatre
     /// counts from 1 across the whole film and <c>seconds</c> is the length on screen.
     /// </para>
     /// <para>
-    /// <b>What a scene becomes.</b> The station by its name. <c>NEW:&lt;kind&gt;</c> is a held
-    /// title card (<see cref="SafariStation.Card"/>) when its kind, or failing that its
-    /// description, is a title, a card or a chapter, and otherwise the nearest station by the
-    /// words it uses. The subject is the root id its text carries, matched to the guide's clade by
-    /// its founder. A root the guide has no card for gets a clade built from the lineage, a body
-    /// id is followed inside its clade, and <c>world</c> is a world scene. A subject that cannot
-    /// be placed is filmed as the world. Every scene but a birth is flexible within the
-    /// director's snap rules, and a birth keeps its rehearsal near the story's second. The
-    /// story's captions replace the guide's facts, and the corner still says COUSIN on every
-    /// frame. Each such decision is one line of the notes.
+    /// <b>What a scene becomes.</b> The station by its name. <c>NEW:&lt;kind&gt;</c> is a title
+    /// card (<see cref="SafariStation.Card"/>, a slow drift through the crowd since 2026-09-25)
+    /// when its kind, or failing that its description, is a title, a card or a chapter, and
+    /// otherwise the nearest station by the words it uses. The subject is the root id its text
+    /// carries, matched to the guide's clade by its founder. A root the guide has no card for gets
+    /// a clade built from the lineage, a body id is followed inside its clade, and <c>world</c> is
+    /// a world scene. A subject that cannot be placed is filmed as the world. Every scene but a
+    /// birth is flexible within the director's snap rules, and a birth keeps its rehearsal near
+    /// the story's second. The story's captions replace the guide's facts, and every frame is a
+    /// cousin whose label says so: stamped in the corner, or set as a subtitle at the join
+    /// (<see cref="SafariCaptions.TextInFrames"/>). Each such decision is one line of the notes.
     /// </para>
     /// </remarks>
     public sealed class SafariStory
@@ -83,6 +84,8 @@ namespace Evosim.Theatre
             public double Seconds = double.NaN;
             /// <summary>The story's captions, or null when it gave none.</summary>
             public List<SafariCaption> Captions;
+            /// <summary>The scene's chart (<see cref="SafariChart"/>), or null when it asks for none or none can be drawn.</summary>
+            public SafariChart Chart;
         }
 
         public string Path { get; private set; }
@@ -121,6 +124,7 @@ namespace Evosim.Theatre
         private static readonly string[] CaptionKeys = { "captions", "caption", "lines", "narration", "subtitles", "text" };
         private static readonly string[] TitleKeys = { "title", "card_title", "cardTitle", "heading" };
         private static readonly string[] DescriptionKeys = { "description", "desc", "new", "note", "notes", "what" };
+        private static readonly string[] ChartKeys = { "chart", "graph", "plot" };
 
         /// <summary>Keys a scene may carry that the director has no use for: read past, never noted.</summary>
         private static readonly string[] Unused = { "sources", "source", "refs", "references", "id", "transition", "mood", "music", "comment" };
@@ -129,7 +133,7 @@ namespace Evosim.Theatre
             NumberKeys.Concat(RunKeys).Concat(ActKeys).Concat(StationKeys).Concat(SecondKeys).Concat(FromKeys).Concat(ToKeys)
                 .Concat(SpanKeys).Concat(SubjectKeys).Concat(RootKeys).Concat(BodyKeys).Concat(LengthKeys).Concat(CaptionKeys)
                 .Concat(TitleKeys).Concat(DescriptionKeys).Concat(ChapterKeys).Concat(FlexibleKeys).Concat(CanopyKeys).Concat(WhyKeys)
-                .Concat(Unused), StringComparer.Ordinal);
+                .Concat(ChartKeys).Concat(Unused), StringComparer.Ordinal);
 
         /// <summary>Reads a shot list, or refuses a file that is not JSON or holds no scenes.</summary>
         public static SafariStory Read(string path, out string refusal)
@@ -281,6 +285,7 @@ namespace Evosim.Theatre
 
             ReadSubject(node, shot);
             shot.Captions = ReadCaptions(FirstOf(node, CaptionKeys), shot.Number);
+            shot.Chart = SafariChart.Read(FirstOf(node, ChartKeys), shot.Number, Notes);
             return shot;
         }
 
@@ -439,12 +444,28 @@ namespace Evosim.Theatre
         private const string FontCharacters = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:;-+=_/()[]%!?'\\*#\u00B7";
 
         /// <summary>
-        /// A caption in the characters the burned-in font has: typographic dashes, quotes and
-        /// ellipses as their plain forms, and a note naming anything still outside the font,
-        /// which draws as a hollow box.
+        /// Whether this story's captions will be stamped into its frames in the bitmap font
+        /// (<see cref="SafariCaptions.TextInFrames"/>): read once, when the story is read.
+        /// </summary>
+        private readonly bool _stamped = SafariCaptions.TextInFrames(story: true);
+
+        /// <summary>
+        /// A caption as it will be shown. Set as a subtitle at the join (the default for a story
+        /// since 2026-09-25), it is the writer's own text with its line breaks and tabs made
+        /// spaces, and every character stands: IBM Plex Sans has the dashes, the curly quotes,
+        /// the superscripts and the accents. Stamped into the frames
+        /// (<c>EVOSIM_THEATRE_STORY_BURN_TEXT=1</c>), it is put into the characters the bitmap font
+        /// has, typographic dashes, quotes and ellipses as their plain forms, with a note naming
+        /// anything still outside the font, which draws as a hollow box.
         /// </summary>
         private string Printable(string text, int number)
         {
+            if (!_stamped)
+            {
+                string kept = Regex.Replace(text.Replace('\t', ' ').Replace('\r', ' ').Replace('\n', ' '), @" {2,}", " ").Trim();
+                return kept;
+            }
+
             var sb = new StringBuilder(text.Length + 8);
             foreach (char ch in text)
             {
@@ -767,14 +788,22 @@ namespace Evosim.Theatre
                 notes.Add(who + ": the rehearsal takes a child of body " + shot.ParentBody + ", the parent the subject names, when it is alive");
             }
 
-            // A held card's picture, darkened when its writer asks for that ("dimmed", "black").
+            // A card is a slow drift through the crowd (SafariPlans.Wide, 2026-09-25), darkened
+            // only when its writer asks for that ("dimmed", "black"). A full chart dims the world
+            // under it by itself (SafariChartLayer.FullWorldDim), so a card that carries one takes
+            // no dim of its own unless it asks for black: the first story's "dimmed" cards under a
+            // full chart were darkened twice and read as a black screen (the owner, 2026-09-25).
             if (station == SafariStation.Card)
             {
                 string asked = (shot.StationText ?? "") + " " + (description ?? "");
-                scene.Dim = HasWord(asked, "dim") || HasWord(asked, "dimmed") || HasWord(asked, "darkened") ? DimmedCard
-                    : HasWord(asked, "black") ? 1f : 0f;
+                bool black = HasWord(asked, "black");
+                bool dim = HasWord(asked, "dim") || HasWord(asked, "dimmed") || HasWord(asked, "darkened");
+                bool fullChart = shot.Chart != null && shot.Chart.Place == SafariChartPlace.Full;
+                scene.Dim = black ? 1f : dim && !fullChart ? DimmedCard : 0f;
+                if (dim && fullChart && !black)
+                    notes.Add(who + ": 'dimmed' on a card under a full chart, which dims the world itself: the card adds no dim of its own");
                 if (scene.Dim > 0f)
-                    notes.Add(string.Format(CultureInfo.InvariantCulture, "{0}: the card's disc is {1}", who,
+                    notes.Add(string.Format(CultureInfo.InvariantCulture, "{0}: the card's picture is {1}", who,
                         scene.Dim >= 1f ? "black" : "dimmed to " + (1f - scene.Dim).ToString("0.##", CultureInfo.InvariantCulture) + " of itself"));
             }
 
@@ -843,6 +872,10 @@ namespace Evosim.Theatre
                 }
             }
 
+            // The chart: its seconds are the scene's, as its captions' are, so a chapter card
+            // moves it by the card's length; an open end is the scene's.
+            if (shot.Chart != null) scene.Chart = ChartOf(shot.Chart, scene, station, who, notes);
+
             if (scene.Seconds > 0d)
             {
                 // The scene's length is its own; a chapter card's seconds come before it.
@@ -855,8 +888,51 @@ namespace Evosim.Theatre
             return scene;
         }
 
-        /// <summary>How much a card asked to be dimmed is darkened, 0 to 1.</summary>
-        public const float DimmedCard = 0.6f;
+        /// <summary>
+        /// How much a card asked to be dimmed is darkened, 0 to 1: a quarter since the card became
+        /// moving footage and its captions subtitles with their own outline (2026-09-25); 0.6
+        /// before, over the held disc from above.
+        /// </summary>
+        public const float DimmedCard = 0.25f;
+
+        /// <summary>
+        /// A shot's chart as its scene will play it: moved by the chapter card's length when the
+        /// scene opens a chapter, its open end made the scene's end, and a note for anything the
+        /// scene cannot show (an account on a scene that follows no body, a chart past the end).
+        /// </summary>
+        private static SafariChart ChartOf(SafariChart asked, SafariScene scene, SafariStation station, string who, List<string> notes)
+        {
+            double card = scene.ChapterCard ? SafariTripBuilder.ChapterSeconds : 0d;
+            SafariChart chart = asked.Shifted(card);
+            double end = scene.Seconds > 0d ? scene.Seconds + card : double.NaN;
+
+            if (double.IsNaN(chart.Until) && !double.IsNaN(end)) chart.Until = end;
+            if (!double.IsNaN(end) && chart.At >= end)
+            {
+                notes.Add(string.Format(CultureInfo.InvariantCulture,
+                    "{0}: WARNING: its chart opens at {1:0.#} s, after the scene's {2:0.#} s, and is never shown", who, chart.At, end));
+            }
+            else if (!double.IsNaN(end) && chart.Until > end + 1e-6)
+            {
+                notes.Add(string.Format(CultureInfo.InvariantCulture,
+                    "{0}: its chart's 'until' {1:0.#} s is past the scene's {2:0.#} s: it is shown to the end", who, chart.Until, end));
+                chart.Until = end;
+            }
+
+            // A full chart may sit on any station since 2026-09-25, the world playing under it at
+            // two thirds of its light; on a portrait or a birth its card covers the body the scene
+            // is about, which the writer's brief rules out and this only says.
+            if (chart.Place == SafariChartPlace.Full && (station == SafariStation.Portrait || station == SafariStation.Birth))
+                notes.Add(who + ": WARNING: a full chart on a " + station + ": its card covers the middle of the frame, where the scene's body is");
+
+            if (chart.Kind == SafariChartKind.Account && station != SafariStation.Portrait && station != SafariStation.Birth)
+                notes.Add(who + ": an account chart on a " + station + ", which follows " +
+                          (station == SafariStation.Colony ? "the colony's anchor body" : "no body") + ": it draws " +
+                          (station == SafariStation.Colony ? "that body's reserve" : "nothing"));
+
+            notes.Add(who + ": chart " + chart.Line() + (card > 0d ? " (moved by the chapter card's " + card.ToString("0", CultureInfo.InvariantCulture) + " s)" : ""));
+            return chart;
+        }
 
         /// <summary>A chapter's number from 1, counted over every scene of the story that opens one, in the story's order.</summary>
         private int ChapterNumber(Shot shot)

@@ -11,8 +11,13 @@
   heuristic, seeks each scene's second from the run's checkpoints (a cousin from every restore,
   and every frame says so), plans each take against the bed and the bodies at that second, and
   writes its frames through the film's render-texture read-back into
-  scratch/safari/<Arm>/<date>/<scene>/take-N/frame-NNNNNN.png, with captions.tsv (scene, second,
-  text, offset into the take's clip) and scenes.tsv (what each scene did) beside them.
+  scratch/safari/<Arm>/<date>/<scene>/take-N/frame-NNNNNN.png, with captions.tsv (each take's
+  length and first second, each caption's span in its take, appended a session at a time) and
+  scenes.tsv (what each scene did) beside them.
+
+  A trip's frames carry its captions and the provenance label in the bitmap font. A story's
+  (-Story) carry neither: scripts/story-assemble.py sets both as subtitles in IBM Plex Sans from
+  captions.tsv when it joins the film (EVOSIM_THEATRE_STORY_BURN_TEXT; -BurnText and -NoBurnText).
 
   Then ffmpeg (on PATH) encodes each take and joins a scene's takes: the time station's two takes
   with a one-second crossfade, any other scene's with a cut. The clips are
@@ -52,7 +57,15 @@
   A flexible scene more than this many seconds past its checkpoint opens at the checkpoint
   instead when its clade is alive there (default 300; -1 never moves a scene).
 .PARAMETER NoCaptions
-  Do not burn the captions into the frames; captions.tsv is written either way.
+  Do not burn the captions into a trip's frames (the label stays); captions.tsv is written either
+  way. A story's captions are not burned by default: see -BurnText.
+.PARAMETER BurnText
+  Stamp the captions and the provenance label into the frames in the bitmap font, as every film
+  before 2026-09-25 was (EVOSIM_THEATRE_STORY_BURN_TEXT=1). A story leaves them out by default
+  for scripts/story-assemble.py to set as subtitles; a trip stamps them by default.
+.PARAMETER NoBurnText
+  Stamp neither the captions nor the label into a trip's frames either
+  (EVOSIM_THEATRE_STORY_BURN_TEXT=0): clean frames, the text only in captions.tsv.
 .PARAMETER Check
   Run the headless check instead of the record.
 .PARAMETER Every
@@ -96,6 +109,14 @@
 .PARAMETER StoryRun
   The run the story's scenes are chosen for (EVOSIM_THEATRE_SAFARI_STORY_RUN); the Arm when not
   given.
+.PARAMETER NoStoryLook
+  Film a story in the census's dark field (EVOSIM_THEATRE_STORY_LOOK=0): no lighter water, no
+  lamp, no exposure meter. A story takes the look by default (StoryLook.cs, 2026-09-25); a trip
+  does not. The look's dials (EVOSIM_THEATRE_STORY_LUMA, _DEEP, _SHALLOW, _AMBIENT, _FOG, _REACH,
+  _VIGNETTE, _LAMP, _LUMA_DEPTH, _EV_MIN, _EV_MAX) are read from the caller's environment and
+  passed through untouched. A story's charts are drawn with or without the look.
+.PARAMETER StoryLook
+  Give a heuristic's trip the story look too (EVOSIM_THEATRE_STORY_LOOK=1).
 .PARAMETER Folder
   The folder the clips go in, in place of the date (scratch/safari/<Arm>/<Folder>), or with
   -Check a folder inside the check's (scratch/snaps/safari/<Arm>/<Folder>), so a trial never
@@ -134,7 +155,11 @@ param(
     [switch]$DownsampleCheck,
     [string]$Story = '',
     [string]$StoryRun = '',
-    [string]$Folder = ''
+    [switch]$NoStoryLook,
+    [switch]$StoryLook,
+    [string]$Folder = '',
+    [switch]$BurnText,
+    [switch]$NoBurnText
 )
 
 $ErrorActionPreference = 'Stop'
@@ -245,7 +270,8 @@ $names = @(
     'EVOSIM_THEATRE_SAFARI_SEEK_MAX', 'EVOSIM_THEATRE_SAFARI_EVERY', 'EVOSIM_THEATRE_WALL_MINUTES',
     'EVOSIM_THEATRE_SAFARI_CANOPY', 'EVOSIM_THEATRE_DOF', 'EVOSIM_THEATRE_DOF_APERTURE',
     'EVOSIM_THEATRE_SAFARI_SNAP_AHEAD', 'EVOSIM_THEATRE_CPU_DOWNSAMPLE', 'EVOSIM_THEATRE_SYNC_ENCODE',
-    'EVOSIM_THEATRE_DOWNSAMPLE_CHECK', 'EVOSIM_THEATRE_SAFARI_STORY', 'EVOSIM_THEATRE_SAFARI_STORY_RUN')
+    'EVOSIM_THEATRE_DOWNSAMPLE_CHECK', 'EVOSIM_THEATRE_SAFARI_STORY', 'EVOSIM_THEATRE_SAFARI_STORY_RUN',
+    'EVOSIM_THEATRE_STORY_LOOK', 'EVOSIM_THEATRE_STORY_BURN_TEXT')
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -278,6 +304,13 @@ try {
         $env:EVOSIM_THEATRE_SAFARI_STORY = $storyPath
         $env:EVOSIM_THEATRE_SAFARI_STORY_RUN = $StoryRun
     }
+    if ($NoStoryLook -and $StoryLook) { throw '-NoStoryLook and -StoryLook together: pick one.' }
+    if ($NoStoryLook) { $env:EVOSIM_THEATRE_STORY_LOOK = '0' }
+    if ($StoryLook) { $env:EVOSIM_THEATRE_STORY_LOOK = '1' }
+    if ($BurnText -and $NoBurnText) { throw '-BurnText and -NoBurnText together: pick one.' }
+    if ($BurnText) { $env:EVOSIM_THEATRE_STORY_BURN_TEXT = '1' }
+    if ($NoBurnText) { $env:EVOSIM_THEATRE_STORY_BURN_TEXT = '0' }
+    $textWord = if ($BurnText -or (-not $storyPath -and -not $NoBurnText)) { 'captions and label stamped into the frames' } else { 'none in the frames: captions.tsv, for scripts/story-assemble.py' }
 
     $entry =if ($Check) { 'Evosim.Theatre.EditorTools.TheatreSafariCheck.Run' } else { 'Evosim.Theatre.EditorTools.TheatreSafari.Run' }
 
@@ -288,6 +321,7 @@ try {
     $sceneWord = if ($sceneList.Count -gt 0) { ", scenes $($sceneList -join ',')" } else { ', every scene' }
     Write-Host "  trip     $tripWord$sceneWord"
     Write-Host "  frames   $outDirectory"
+    Write-Host "  text     $textWord"
     Write-Host "  entry    $entry"
     Write-Host "  log      $log"
 
@@ -404,6 +438,6 @@ foreach ($line in (Get-Content $sceneFile | Select-Object -Skip 1)) {
     if ($DeleteFrames) { foreach ($take in $takes) { Remove-Item -Path (Join-Path $take.FullName 'frame-*.png') -Force } }
 }
 
-Write-Host "  captions: $(Join-Path $outDirectory 'captions.tsv') (offsets are into each take's clip; a time scene's second take starts one second early in the crossfade)"
+Write-Host "  captions: $(Join-Path $outDirectory 'captions.tsv') (each take's length and each caption's span in it, in seconds into the take's clip; a time scene's last take starts one second early in the crossfade, which scripts/story-assemble.py allows for)"
 if ($failed -gt 0) { exit 1 }
 exit 0

@@ -102,6 +102,8 @@ namespace Evosim.Theatre
         private Volume _volume;
         private VolumeProfile _profile;
         private DepthOfField _depthOfField;
+        private ColorAdjustments _adjust;
+        private Vignette _vignette;
 
         /// <summary>Builds the global volume and its profile, once, and remembers itself as current.</summary>
         public void Apply()
@@ -130,6 +132,7 @@ namespace Evosim.Theatre
             var adjust = _profile.Add<ColorAdjustments>(true);
             adjust.postExposure.Override(PostExposure);
             adjust.contrast.Override(Contrast);
+            _adjust = adjust;
 
             var bloom = _profile.Add<Bloom>(true);
             bloom.intensity.Override(BloomIntensity);
@@ -140,6 +143,7 @@ namespace Evosim.Theatre
             var vignette = _profile.Add<Vignette>(true);
             vignette.intensity.Override(VignetteIntensity);
             vignette.smoothness.Override(0.5f);
+            _vignette = vignette;
 
             // Held ready and off: a portrait turns it on with a focus distance; a census view
             // never does, since a diagram in focus everywhere is the point of a diagram.
@@ -243,6 +247,27 @@ namespace Evosim.Theatre
             if (_depthOfField != null) _depthOfField.active = false;
         }
 
+        /// <summary>
+        /// The post-exposure the next render takes, EV: <see cref="PostExposure"/> until a story's
+        /// exposure meter moves it (<see cref="StoryExposure"/>), and nothing else does.
+        /// </summary>
+        public float Exposure => _adjust != null ? _adjust.postExposure.value : PostExposure;
+
+        /// <summary>Sets the post-exposure for the renders that follow, EV, clamped to URP's own range.</summary>
+        public void SetExposure(float ev)
+        {
+            if (_adjust != null) _adjust.postExposure.Override(Mathf.Clamp(ev, -8f, 8f));
+        }
+
+        /// <summary>The vignette the next render takes, 0 to 1.</summary>
+        public float VignetteNow => _vignette != null ? _vignette.intensity.value : VignetteIntensity;
+
+        /// <summary>Sets the vignette for the renders that follow, 0 to 1 (a story's lighter look).</summary>
+        public void SetVignette(float intensity)
+        {
+            if (_vignette != null) _vignette.intensity.Override(Mathf.Clamp01(intensity));
+        }
+
         /// <summary>The look's token for a picture's label: <c>look 2</c>, or <c>look 1</c> with the grade off.</summary>
         public string LabelToken => string.Format(CultureInfo.InvariantCulture, "look {0}", Enabled ? LookVersion : 1);
 
@@ -251,7 +276,7 @@ namespace Evosim.Theatre
             if (Current == this) Current = null;
             if (_profile != null) UnityEngine.Object.DestroyImmediate(_profile);
             if (_holder != null) UnityEngine.Object.DestroyImmediate(_holder);
-            _profile = null; _holder = null; _volume = null; _depthOfField = null;
+            _profile = null; _holder = null; _volume = null; _depthOfField = null; _adjust = null; _vignette = null;
         }
     }
 }

@@ -945,6 +945,144 @@ namespace Evosim.Theatre
             return new Take { Shot = shot, Seconds = seconds, Plan = shot.Plan_ };
         }
 
+        /// <summary>How fast a card's drift carries the eye, m/s: a tenth of what a swimmer does, well under the ceiling.</summary>
+        public const float WideDriftSpeed = 0.15f;
+
+        /// <summary>How far a card's drift may carry the eye in all, m, however long the card.</summary>
+        public const float WideMostTravel = 6f;
+
+        /// <summary>The radius within which a card counts the bodies round a candidate for the crowd's heart, m.</summary>
+        public const float WideHeartRadius = 10f;
+
+        /// <summary>
+        /// A story's card and chapter card (the owner, 2026-09-25: "why can't we do this while
+        /// showing cool world videos? must it be on a black screen?"): a slow sideways drift through
+        /// the water in front of the densest part of the crowd, the look carried with the eye so
+        /// nothing pans, linear, at <see cref="WideDriftSpeed"/>. The world keeps stepping under it
+        /// as under every take.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Where it looks.</b> The heart of the crowd: of up to 256 bodies taken evenly through
+        /// the crowd, the one with the most bodies within <see cref="WideHeartRadius"/>, and the
+        /// centroid of those. A world with no bodies looks at the axis a third of the way down.
+        /// </para>
+        /// <para>
+        /// <b>Where it stands.</b> Fourteen metres off the heart, a little above it and looking
+        /// down, at a bearing from the scene's hash; a path that clashes (the glass, the surface,
+        /// the bed, the reef, a body, or the rock between the eye and the heart) is re-planned
+        /// nearest first over the bearing, the height (down to under the heart, looking up at the
+        /// crowd against the surface) and the distance, as the colony's pull-back is. It replaced
+        /// the disc from above (<see cref="FromAbove"/>), which a story's full chart dimmed on top
+        /// of the card's own dim into a black screen.
+        /// </para>
+        /// </remarks>
+        public static Take Wide(Stage stage, float seconds, int hash, string name)
+        {
+            const float fov = 58f;
+            float tanV = Mathf.Tan(0.5f * fov * Mathf.Deg2Rad);
+            seconds = Mathf.Max(1f, seconds);
+            float travel = Mathf.Min(WideMostTravel, WideDriftSpeed * seconds);
+
+            // The crowd's heart.
+            Vector3 heart = stage.Axis(-0.33f * stage.World.Depth);
+            int around = 0;
+            int n = stage.Positions.Count;
+            if (n > 0)
+            {
+                float r2 = WideHeartRadius * WideHeartRadius;
+                int step = Mathf.Max(1, n / 256);
+                int best = 0, bestCount = -1;
+                for (int i = 0; i < n; i += step)
+                {
+                    Vector3 c = stage.Positions[i];
+                    int count = 0;
+                    for (int j = 0; j < n; j++) if ((stage.Positions[j] - c).sqrMagnitude <= r2) count++;
+                    if (count > bestCount) { bestCount = count; best = i; }
+                }
+
+                Vector3 sum = Vector3.zero;
+                Vector3 centre = stage.Positions[best];
+                for (int j = 0; j < n; j++)
+                {
+                    if ((stage.Positions[j] - centre).sqrMagnitude > r2) continue;
+                    sum += stage.Positions[j];
+                    around++;
+                }
+                if (around > 0) heart = sum / around;
+            }
+
+            // Never looking at a point in the bed or above the surface.
+            float floorUnder = stage.World.FloorAt(heart.x, heart.z) + FilmPlans.Clearance + 0.5f;
+            heart.y = Mathf.Clamp(heart.y, Mathf.Min(floorUnder, -FilmPlans.Clearance - 1f), -FilmPlans.Clearance - 1f);
+
+            float[] distances = { 14f, 10f, 18f, 7f, 24f };
+            float[] elevations = { 10f, 0f, 20f, -10f, -20f, 30f, -30f };
+            float baseAzimuth = ((hash >> 5) % 360 + 360) % 360 * Mathf.Deg2Rad;
+            float sense = ((hash >> 3) & 1) == 0 ? 1f : -1f;
+
+            int fewest = int.MaxValue;
+            string clash = null;
+            Vector3 eye0 = heart + distances[0] * Direction(baseAzimuth, elevations[0] * Mathf.Deg2Rad);
+            Vector3 side = Vector3.right;
+            float usedDistance = distances[0], usedElevation = elevations[0], usedTurn = 0f;
+
+            bool clear = false;
+            foreach (float d in distances)
+            {
+                if (clear) break;
+                foreach (float el in elevations)
+                {
+                    if (clear) break;
+                    for (int k = 0; k < 12 && !clear; k++)
+                    {
+                        float turn = (k % 2 == 0 ? 1f : -1f) * 30f * ((k + 1) / 2);
+                        float az = baseAzimuth + turn * Mathf.Deg2Rad;
+                        Vector3 start = heart + d * Direction(az, el * Mathf.Deg2Rad);
+                        Vector3 view = heart - start;
+                        Vector3 across = Vector3.Cross(Vector3.up, new Vector3(view.x, 0f, view.z)).normalized * sense;
+                        if (across.sqrMagnitude < 0.5f) across = Vector3.right;
+
+                        Vector3 s0 = start, a0 = across, gaze = view;
+                        int clashes = PathClashes(stage, u => s0 + (u - 0.5f) * travel * a0, -1,
+                            u => s0 + (u - 0.5f) * travel * a0 + gaze, SurfaceMargin, out string why, tanV);
+                        if (clashes >= fewest) continue;
+
+                        fewest = clashes;
+                        clash = why;
+                        eye0 = start;
+                        side = across;
+                        usedDistance = d;
+                        usedElevation = el;
+                        usedTurn = turn;
+                        clear = clashes == 0;
+                    }
+                }
+            }
+
+            Vector3 from = eye0 - 0.5f * travel * side, to = eye0 + 0.5f * travel * side;
+            Vector3 look = heart - eye0;
+
+            string notes = "";
+            if (usedTurn != 0f || usedElevation != elevations[0] || usedDistance != distances[0])
+                notes += string.Format(CultureInfo.InvariantCulture, " (re-planned clear from {0:0} m at {1:0} deg)", distances[0], elevations[0]);
+            if (fewest > 0) notes += ", STILL CLASHES (" + clash + ", " + fewest + " of 25 samples)";
+
+            FilmPlans.Shot shot = FilmPlans.Shot.Custom(name, stage.World, seconds, fov, false,
+                (float u, float dt, out Vector3 eye, out Vector3 at) =>
+                {
+                    eye = Vector3.Lerp(from, to, Mathf.Clamp01(u));
+                    at = eye + look;
+                },
+                string.Format(CultureInfo.InvariantCulture,
+                    "{0}: a drift of {1:0.#} m across the crowd's heart at ({2:0.#}, {3:0.#}, {4:0.#}) ({5} bodies within {6:0} m), " +
+                    "{7:0.#} m off at {8:0} deg of elevation, bearing turned {9:0} deg, lens {10:0} deg, {11:0.###} m/s{12}",
+                    name, travel, heart.x, heart.y, heart.z, around, WideHeartRadius, usedDistance, usedElevation, usedTurn, fov,
+                    travel / seconds, notes));
+
+            return new Take { Shot = shot, Seconds = seconds, Plan = shot.Plan_, EyeAt = u => Vector3.Lerp(from, to, Mathf.Clamp01(u)) };
+        }
+
         /// <summary>
         /// The time station's shot: fixed by the tank's shape alone, never by the crowd, so the two
         /// takes thousands of seconds apart are one shot. Held.

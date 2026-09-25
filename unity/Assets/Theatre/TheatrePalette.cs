@@ -252,13 +252,24 @@ namespace Evosim.Theatre
             long key = LineageOf(id);
             if (key < 0) return 0f;
 
+            return TurnFor(key, LineageHue);
+        }
+
+        /// <summary>
+        /// A lineage key's turn of the hue at a strength: the one arithmetic every body of the
+        /// lineage is painted by, so a story's chart can draw a clade in the colour its bodies wear.
+        /// </summary>
+        public static float TurnFor(long key, float lineageHue)
+        {
+            if (key < 0 || lineageHue <= 0f) return 0f;
+
             ulong h = unchecked((ulong)key * 0x9E3779B97F4A7C15UL);
             h ^= h >> 29;
             h = unchecked(h * 0xBF58476D1CE4E5B9UL);
             h ^= h >> 32;
 
             float signed = (h & 0xFFFFF) / (float)0x80000 - 1f;
-            return LineageHue * signed;
+            return lineageHue * signed;
         }
 
         /// <summary>A colour with its hue turned and its saturation nudged the same way.</summary>

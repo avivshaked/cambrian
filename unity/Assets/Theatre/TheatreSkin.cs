@@ -524,6 +524,39 @@ namespace Evosim.Theatre
             PushWater();
         }
 
+        /// <summary>
+        /// Puts the water, the fog, the ambient and the two lights' strengths back into the scene
+        /// from this skin's fields, after something has changed them since <see cref="Apply"/>: a
+        /// story's lighter look (<see cref="StoryLook"/>) does, and puts them back the same way.
+        /// The lights keep their bearings; the sea's globals are pushed again, and the surface's
+        /// mirrored deep colour follows the water.
+        /// </summary>
+        public void Relight()
+        {
+            RenderSettings.fogColor = Water;
+            RenderSettings.fogDensity = FogDensity;
+
+            if (LitWater)
+            {
+                RenderSettings.ambientMode = AmbientMode.Trilight;
+                RenderSettings.ambientSkyColor = ShallowAsLit * 0.9f;
+                RenderSettings.ambientEquatorColor = Ambient;
+                RenderSettings.ambientGroundColor = Water;
+            }
+            else
+            {
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = Ambient;
+            }
+
+            if (_key != null) _key.intensity = KeyIntensity;
+            if (_fill != null) _fill.intensity = FillIntensity;
+            if (_surfaceMaterial != null) _surfaceMaterial.SetColor("_DeepColor", Water);
+
+            PushWater();
+            DynamicGI.UpdateEnvironment();
+        }
+
         // ---------------------------------------------------------------- the sea above
 
         /// <summary>Unit, pointing at the sun from the water.</summary>
