@@ -6403,8 +6403,11 @@ share (the stomach-only form).
 **Status:** ruled by the owner on 2026-09-25 ("fix for 49"). To be built before round 49,
 as a change of behaviour and not a tunable: a new realisation of every world with either
 sense on. It is built on `d123-senses` (`fe22619`). The mouth's pass zeroes both records
-in place before it writes the step's, and the checkpoint's layout is unchanged. The farm run
-that accepts it is still to come.
+in place before it writes the step's, and the checkpoint's layout is unchanged. A change of
+plan on the step carries the surviving parts' records through the part map, where the build
+before dropped them, since a bitten body would otherwise feel nothing on the step it was
+bitten (the agent's reading of this entry, `6df7ea8` on `r49-bite-rebuild`, with the rebuild
+moved to the bite's step in `6c381cb`). The farm run that accepts it is still to come.
 
 **Decision.** `Contact` reads whether a part touched another body's part on the last
 metabolic step. `Damage` reads the part's health lost on that step over its pool. That is
