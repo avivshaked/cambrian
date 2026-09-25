@@ -30,8 +30,10 @@ starting. The flow before this one (writer, check, render, ffmpeg join) is tagge
    `checks.tsv` (the procedure says how, under CLAUDE.md's rule on subagents that write files).
    Read `story.md` against `checks.tsv`; a number with no row is not filmed.
 6. **Script.** The `story-script` skill.
-7. **Narrate.** Placeholder until the narration service exists
-   (`logbook/specs/story-narration.md`): `story-flow.py skip <folder> narrate`.
+7. **Narrate.** `python scripts/story-narration.py segments <folder>` writes what the service
+   speaks; the service's results go into `narration/narration.json` (its form is in the script's
+   help); `story-narration.py timing <folder>` times the story from them
+   (`logbook/specs/story-narration.md`). Until the service exists: `story-flow.py skip <folder> narrate`.
 8. **Script approved.** The owner's second review: `script.md`, the narration and the
    writer's-against-script counts together. Then `story-flow.py approve <folder> script`.
 9. **Check.** `scripts/theatre-safari.ps1 <arm> -Story <story.json> -Check` for each run with

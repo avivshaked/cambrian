@@ -3,7 +3,8 @@
 
     python scripts/story-assemble.py <story.json> <output.mp4> <clips folder> [<clips folder> ...]
         [--title-seconds 5] [--no-title] [--subtitles auto|burn|file|off] [--no-label]
-        [--ass-only] [--captions filmed|story] [--filmed <story.filmed.json>] [--fonts <folder>] [--threads N]
+        [--ass-only] [--captions filmed|story] [--filmed <story.filmed.json>] [--no-narration]
+        [--fonts <folder>] [--threads N]
     python scripts/story-assemble.py --reburn <film.clean.mp4> <film.ass> <output.mp4> [--fonts <folder>] [--threads N]
 
 The safari's story mode (`scripts/theatre-safari.ps1 <arm> -Story <story.json>`) writes one clip
@@ -56,6 +57,12 @@ there is one; without it, a filmed line that is not in the story now and lies in
 story leaves free is taken for the director's. The table says how many captions changed since
 filming, and a note names every caption the filmed clip is too short to hold. A scene whose
 frames carry stamped text is not helped by this: its old words are in the pixels.
+
+The narration (logbook/specs/story-narration.md): where `scripts/story-narration.py timing` has
+timed the story from its narration, each scene carries its clips under `narration`, and the film
+gets them as its sound, each delayed to its scene's start plus its offset (after the chapter card
+as filmed, or on it for a spoken chapter title). `--no-narration` leaves the film silent. Resolve
+is where the narration is mixed with music; this is the fallback's plain mix.
 
 Each scene's provenance word is read from its take rows in `captions.tsv` (B3, 2026-09-25): a
 scene filmed from the farm's film windows carries its window's verdict (FAITHFUL, COUSIN or
@@ -610,6 +617,40 @@ def burn(clean, ass, output, fonts_dir, threads):
         os.path.basename(ass), fonts_dir, threads)
 
 
+# ---------------------------------------------------------------- the narration
+
+def narration_entries(rows, story_path):
+    """Every narration clip of the joined scenes as (path, film second, segment), from the story's timing."""
+    folder = os.path.dirname(os.path.abspath(story_path))
+    out = []
+    for r in rows:
+        if r.get("status") != "joined" or r["n"] == 0:
+            continue
+        own = number(r.get("own_start")) or 0.0
+        for e in r["raw"].get("narration") or []:
+            path = e.get("file", "")
+            path = path if os.path.isabs(path) else os.path.join(folder, path)
+            at = float(r["start"]) + (0.0 if e.get("on_card") else own) + float(e.get("at", 0.0))
+            out.append((path, at, e.get("segment_id", "")))
+    return out
+
+
+def mix_narration(film, spoken, output, threads):
+    """The film with its narration mixed as its sound, each clip delayed to its second. (ok, note)."""
+    cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", os.path.abspath(film)]
+    for path, _, _ in spoken:
+        cmd += ["-i", os.path.abspath(path)]
+    # Mono before the delay, and the delay on every channel: the stereo output otherwise turns the
+    # voice to stereo upstream, and adelay alone delays the first channel only (found 2026-09-25).
+    chains = ["[%d:a]aresample=48000,aformat=channel_layouts=mono,adelay=delays=%d:all=1[a%d]" % (i, int(round(t * 1000.0)), i)
+              for i, (_, t, _) in enumerate(spoken, 1)]
+    graph = ";".join(chains) + ";" + "".join("[a%d]" % i for i in range(1, len(spoken) + 1)) +         "amix=inputs=%d:normalize=0:dropout_transition=0,apad[aout]" % len(spoken)
+    cmd += ["-filter_complex", graph, "-map", "0:v:0", "-map", "[aout]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+            "-ac", "2", "-shortest", "-threads", str(threads), "-movflags", "+faststart", os.path.abspath(output)]
+    r = subprocess.run(cmd)
+    return r.returncode == 0 and os.path.isfile(output), "the narration mixed in (%d clips)" % len(spoken)
+
+
 # ---------------------------------------------------------------- the whole
 
 def option(args, name, default=None, cast=str):
@@ -659,6 +700,7 @@ def main():
         sys.exit("--subtitles is one of auto, burn, file, off")
     with_label = not flag(args, "--no-label")
     ass_only = flag(args, "--ass-only")
+    with_narration = not flag(args, "--no-narration")
     captions_from = option(args, "--captions", "filmed")
     if captions_from not in ("filmed", "story"):
         sys.exit("--captions is one of filmed, story")
@@ -806,10 +848,12 @@ def main():
                 lengths = take_lengths(entry, folder, slug, notes)
                 c, l = events_from_rows(entry, lengths, s0, length, with_label)
                 labels += l
+                # The scene's own time starts after its chapter card as filmed: the second take's
+                # start, a whole number of frames past 8 s.
+                order = sorted(lengths)
+                lead = layout(lengths, entry.get("station", ""))[order[1]] if chapters.get(r["n"]) and len(order) >= 2 else None
+                r["own_start"] = "%.3f" % (lead or 0.0)
                 if captions_from == "story":
-                    # The chapter card as filmed: the second take's start, a whole number of frames past 8 s.
-                    order = sorted(lengths)
-                    lead = layout(lengths, entry.get("station", ""))[order[1]] if chapters.get(r["n"]) and len(order) >= 2 else None
                     c, changed, own, how = recaption(r, c, chapters.get(r["n"]), (filmed or {}).get(r["n"]),
                                                      filmed_chapters.get(r["n"]), s0, length, notes, lead)
                     edited[0] += changed
@@ -826,6 +870,7 @@ def main():
             else:
                 c = story_captions(r, chapters.get(r["n"]), s0, length)
                 captions += c
+                r["own_start"] = "%.3f" % (CHAPTER_SECONDS if chapters.get(r["n"]) and r["station"].strip().lower() != "card" else 0.0)
                 stamped.append(r["n"])
                 r["subtitles"] = "%d caption(s) from the story (no captions.tsv rows: %s); no label" % (len(c), read[folder][1])
 
@@ -847,11 +892,11 @@ def main():
 
     def write_table():
         with open(table, "w", encoding="utf-8", newline="\n") as f:
-            f.write("n\trun\tact\tstation\tsubject\tclip\tstart_s\tlength_s\tstatus\tpath\tsubtitles\tprovenance\n")
+            f.write("n\trun\tact\tstation\tsubject\tclip\tstart_s\tlength_s\tstatus\tpath\tsubtitles\tprovenance\town_start_s\n")
             for r in rows:
                 f.write("\t".join(str(x) for x in (r["n"], r["run"], r["act"], r["station"], r["subject"], r["clip"],
                                                     r["start"], r["length"], r["status"], r["path"], r.get("subtitles", ""),
-                                                    r.get("provenance", ""))) + "\n")
+                                                    r.get("provenance", ""), r.get("own_start", ""))) + "\n")
 
     if captions_from == "story" and mode != "off":
         print("captions: the story as it stands, %d changed since filming; the director's own lines told by %s" % (
@@ -866,6 +911,19 @@ def main():
     ok, how = join(clips, shapes, joined)
     if not ok:
         sys.exit("ffmpeg failed to join the clips (" + how + ")")
+
+    spoken = narration_entries(rows, story_path) if with_narration else []
+    lost = [p for p, _, _ in spoken if not os.path.isfile(p)]
+    if lost:
+        notes.append("%d narration clip(s) not on disk, left out: %s" % (len(lost), ", ".join(lost)))
+        spoken = [x for x in spoken if os.path.isfile(x[0])]
+    if spoken:
+        voiced = stem + ".voiced.mp4"
+        ok, said = mix_narration(joined, spoken, voiced, threads)
+        if not ok:
+            sys.exit("ffmpeg failed to mix the narration; the film without it is " + joined)
+        os.replace(voiced, joined)
+        how += "; " + said
 
     if burning:
         ok, said = burn(joined, ass, output, fonts_dir, threads)

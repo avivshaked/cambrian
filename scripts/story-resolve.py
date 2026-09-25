@@ -18,6 +18,7 @@ same film out in Resolve instead of joining it with ffmpeg:
     V3 Charts    empty, kept for the chart overlays
     ST1 Captions the captions as Resolve subtitles, from an SRT written here
     A1 Music     the configured music, faded out at the film's end
+    A2 Narration the story's narration, a clip a paragraph, where scripts/story-narration.py timed it
 
 with a marker at every scene. Nothing is burned: the subtitles are burned at render (Deliver,
 Video, Subtitle Settings, Burn into video) or exported as a file.
@@ -336,6 +337,11 @@ def make_plan(args, cfg):
 
     strip = label_canvas(width, height)
     labels_dir = os.path.join(out, "labels")
+    # The narration, where the story is timed from it (scripts/story-narration.py): each scene's
+    # segments with their offsets in its own time, which starts after its chapter card.
+    listed = root.get("scenes") if isinstance(root, dict) else root
+    by_n = {s["n"]: s for s in listed or [] if isinstance(s, dict) and "n" in s}
+    story_dir = os.path.dirname(story)
     scenes, at, missing = [], title_frames, {}
     for r in rows:
         if r["n"] == "0":
@@ -354,7 +360,20 @@ def make_plan(args, cfg):
         start_s, end_s = at / fps, (at + frames) / fps
         scene = {"n": int(r["n"]), "run": r["run"], "act": r["act"], "station": r["station"], "subject": r["subject"],
                  "clip": r["path"], "frames": frames, "record": at, "provenance": r.get("provenance", ""),
-                 "captions": [c["text"] for c in captions if start_s - 1e-3 <= c["start"] < end_s - 1e-3], "label": ""}
+                 "captions": [c["text"] for c in captions if start_s - 1e-3 <= c["start"] < end_s - 1e-3], "label": "",
+                 "narration": []}
+        own = float(r.get("own_start_s") or 0.0)
+        for e in (by_n.get(int(r["n"])) or {}).get("narration") or []:
+            path = e["file"] if os.path.isabs(e["file"]) else os.path.join(story_dir, e["file"])
+            offset = float(e.get("at", 0.0)) + (0.0 if e.get("on_card") else own)
+            if not os.path.isfile(path):
+                notes.append("scene %s: its narration %s is not on disk; left out" % (r["n"], path))
+                continue
+            if offset + float(e.get("seconds", 0.0)) > frames / fps + 1e-3:
+                notes.append("scene %s: its narration %s runs %.1f s past the clip; the scene was filmed shorter than "
+                             "its narration" % (r["n"], e.get("segment_id", ""), offset + float(e.get("seconds", 0.0)) - frames / fps))
+            scene["narration"].append({"segment": e.get("segment_id", ""), "file": os.path.abspath(path),
+                                       "record": at + int(round(offset * fps))})
         mine = [(max(0.0, e["start"] - start_s), min(end_s, e["end"]) - start_s, e["text"])
                 for e in ticks if start_s - 1e-3 <= e["start"] < end_s - 1e-3]
         if with_label and mine:
@@ -580,11 +599,16 @@ def make_timeline(project, mp, cfg, bin_, name, plan, report):
         report["notes"].append("the timeline set to %sx%s at %s fps (custom settings)%s" % (
             want["timelineResolutionWidth"], want["timelineResolutionHeight"], want["timelineFrameRate"],
             "" if ok else ": REFUSED, the project's settings stand"))
-    for kind, count in (("video", 3), ("audio", 1), ("subtitle", 1)):
+    for kind, count in (("video", 3), ("audio", 2), ("subtitle", 1)):
         while tl.GetTrackCount(kind) < count:
-            if not (tl.AddTrack(kind, "stereo") if kind == "audio" else tl.AddTrack(kind)):
+            if kind == "audio":
+                added = tl.AddTrack(kind, "stereo" if tl.GetTrackCount(kind) == 0 else "mono")
+            else:
+                added = tl.AddTrack(kind)
+            if not added:
                 break
-    for kind, index, label in (("video", 1, "Picture"), ("video", 2, "Label"), ("video", 3, "Charts"), ("audio", 1, "Music")):
+    for kind, index, label in (("video", 1, "Picture"), ("video", 2, "Label"), ("video", 3, "Charts"), ("audio", 1, "Music"),
+                               ("audio", 2, "Narration")):
         tl.SetTrackName(kind, index, label)
     if tl.GetTrackName("subtitle", 1) in ("", "Subtitle 1", "Subtitle"):
         tl.SetTrackName("subtitle", 1, "Captions")
@@ -630,6 +654,28 @@ def place_scenes(mp, tl, media, plan, start, report):
             report["errors"].append("scene %d's label did not land" % s["n"])
             continue
         tl.SetClipsLinked([got[0], lab[0]], True)
+    return placed
+
+
+def place_narration(mp, tl, media, plan, start, report):
+    """Each scene's narration on A2 at its own frame; returns how many landed."""
+    fps, placed = plan["fps"], 0
+    for s in plan["scenes"]:
+        for e in s.get("narration") or []:
+            item = media.get(key_of(e["file"]))
+            if item is None:
+                report["errors"].append("the narration %s was not imported" % e["segment"])
+                continue
+            frames = item_frames(item, fps)
+            got = mp.AppendToTimeline([{"mediaPoolItem": item, "startFrame": 0, "endFrame": frames,
+                                        "recordFrame": start + e["record"], "trackIndex": 2, "mediaType": 2}]) or []
+            if not got:
+                report["errors"].append("the narration %s did not land" % e["segment"])
+            elif abs(got[0].GetStart() - (start + e["record"])) > 1:
+                report["errors"].append("the narration %s landed at frame %d, not %d" % (
+                    e["segment"], got[0].GetStart(), start + e["record"]))
+            else:
+                placed += 1
     return placed
 
 
@@ -709,6 +755,9 @@ def build(plan_path, cfg, switch):
     extras = [p for p in wanted if os.path.isfile(p)]
     if extras:
         media.update(import_files(mp, child_folder(mp, bin_, "assets"), extras))
+    spoken = [e["file"] for s in plan["scenes"] for e in s.get("narration") or []]
+    if spoken:
+        media.update(import_files(mp, child_folder(mp, bin_, "narration"), spoken))
 
     # the order matters: the title, then the captions while the timeline still ends at the title,
     # then everything placed at its own frame
@@ -720,6 +769,7 @@ def build(plan_path, cfg, switch):
     if plan["captions"]:
         place_captions(mp, tl, media, plan, start, report)
     placed = place_scenes(mp, tl, media, plan, start, report)
+    report["narration"] = place_narration(mp, tl, media, plan, start, report)
     place_extras(mp, tl, media, plan, cfg, start, report)
 
     # a marker at every scene, red where a chapter opens; the note carries the scene's captions
@@ -738,9 +788,9 @@ def build(plan_path, cfg, switch):
     with open(out, "w", encoding="utf-8", newline="\n") as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
         f.write("\n")
-    print("built '%s' in %s, bin %s: %d of %d scenes, %d labels, %d captions, %d markers, %.1f s"
+    print("built '%s' in %s, bin %s: %d of %d scenes, %d labels, %d captions, %d narration clips, %d markers, %.1f s"
           % (name, report["project"], report["bin"], len(placed), len(plan["scenes"]), report["labels"],
-             report["captions"], report["markers"], (report["end_frame"] - start) / fps))
+             report["captions"], report["narration"], report["markers"], (report["end_frame"] - start) / fps))
     for note in report["notes"]:
         print("  note: " + note)
     for err in report["errors"]:

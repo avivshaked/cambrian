@@ -376,6 +376,11 @@ def findings(folder):
     def add(level, n, k, message):
         found.append((level, n, k, message))
 
+    # A narrated story's captions follow the speech (logbook/specs/story-narration.md): readable at
+    # 17 characters a second, with no least hold and no gap to keep, since the voice sets both.
+    narrated = isinstance(story, dict) and bool(story.get("narration"))
+    pace, least, gap = (17.0, 0.3, 0.05) if narrated else (PACE, LEAST, GAP)
+
     questions, shorts, in_run = {}, {}, []
     for s in scenes_of(story):
         n, caps = s["n"], captions_of(s)
@@ -393,11 +398,12 @@ def findings(folder):
                 add("ERROR", n, line, "%d characters; keep a caption under about %d" % (len(text), LONG))
             elif len(text) > LONG:
                 add("WARN", n, line, "%d characters; keep a caption under about %d" % (len(text), LONG))
-            if h < LEAST - 1e-9 or len(text) / PACE > h + 0.25:
-                add("ERROR", n, line, "held %g s; it needs %g s at %g characters a second" % (h, hold(text), PACE))
+            if h < least - 1e-9 or len(text) / pace > h + 0.25:
+                add("ERROR", n, line, "held %g s; it needs %.1f s at %g characters a second" % (
+                    h, max(least, len(text) / pace), pace))
             if prev_end is not None and at < prev_end - 1e-6:
                 add("ERROR", n, line, "starts at %g s, before the caption before it ends (%g s)" % (at, prev_end))
-            elif prev_end is not None and at < prev_end + GAP - 0.05:
+            elif prev_end is not None and at < prev_end + gap - 0.05:
                 add("WARN", n, line, "only %.1f s after the caption before it" % (at - prev_end))
             if length and at + h > length + 1e-6:
                 add("ERROR", n, line, "runs to %g s, past the scene's %g s" % (at + h, length))

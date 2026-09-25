@@ -111,7 +111,8 @@ says where it stumbled and tells the story back, for at most three rounds.
 
 ## 3b. The narration
 
-Not built: the narration service is being written. The stage, and what it needs from the service,
+The narration service is being written. The stage, what it needs from the service and this
+repository's side of it (`scripts/story-narration.py`, built and tested on a synthetic narration)
 are [`story-narration.md`](story-narration.md). Each scene's paragraphs are spoken
 before filming; their lengths, with a fixed padding, set each scene's length, and the captions are
 timed to the speech. Until the service exists the stage is skipped

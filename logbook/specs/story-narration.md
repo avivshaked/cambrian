@@ -170,7 +170,13 @@ the owner approved and times the film from that cut only.
 
 The other questions are the owner's and do not change what the flow needs.
 
-## Part 3: this repository's side (not built)
+## Part 3: this repository's side
+
+Built on 2026-09-25 and tested on a synthetic narration only (tones of the right lengths, with cue
+times spread by characters, on round 48's story), because the service does not exist yet. The
+stage's own tool is `scripts/story-narration.py`: `segments` writes what is sent, `timing` times the
+story from what came back, and `check` reports without writing. What is not built is the step
+between them, the calls to the service, since its interface is still being written.
 
 - **A scene's captions** are split into paragraphs where the script has a blank line
   between two captions (`new_paragraph: true` on the caption that opens one, in `story.json`). One
@@ -189,13 +195,23 @@ The other questions are the owner's and do not change what the flow needs.
   and hash, the approved cut, the padding, and per segment its scene, paragraph, cues (written,
   spoken, start, end), take id, hash, samples and sample rate, with the take copied beside it as
   `narration/sNN-pK.wav`.
-- **The timing** is a script to write, `scripts/story-timing.py`. From the manifest it sets each
-  caption's `at` and `seconds` and each scene's `seconds` in `story.json`, keeping the version before
-  it as `story.pre-timing.json`. It prints each scene's length against the writer's and the film's
-  total. A chart whose `until` falls past its scene's new end is named.
-- **On the timeline**, `story-resolve.py` places each take on an audio track, Narration, at its scene's
-  record frame plus its offset in the scene. The ffmpeg join, the fallback without Resolve, mixes
-  the same takes with a delay each.
+- **The timing** is `story-narration.py timing`. From the manifest it sets each caption's `at` and
+  `seconds` and each scene's `seconds` in `story.json`, with the scene's clips and their offsets
+  under `narration`, keeping the version before it as `story.pre-timing.json`. It prints each
+  scene's length against the one before and the film's total, cuts a chart's `until` to its
+  scene's new end, and names a scene the narration shortens by more than a quarter, since its
+  picture may need the time; `--keep-length` keeps every scene at least as long as it was. On the
+  synthetic narration of round 48's story the film came to 7 min 35 s against the writer's 9 min
+  39 s, and six scenes were named. Once a story is timed, the script check reads its captions by
+  the speech (17 characters a second, no least hold) and not by the writer's pace rule.
+- **On the timeline**, `story-resolve.py` places each clip on the audio track A2, Narration, at its
+  scene's record frame plus its offset: after the chapter card as filmed (the assembler's table
+  gives each scene's own start, `own_start_s`), or on the card for a spoken chapter title. The plan
+  names a clip that runs past its scene's filmed end, which happens when a scene was filmed before
+  its narration. The ffmpeg join, the fallback without Resolve, mixes the same clips as the film's
+  sound, each delayed to its second; the mix was checked to the hundredth of a second on a test
+  tone. The Resolve build of the narration track has not been run: the owner's Resolve was left
+  alone while another agent was working in it.
 - **The machine's load is this flow's concern, not the service's.** The owner's rulings on load
   (HANDOFF carries the current one) bind whoever starts a job, so the agent running the flow reads
   the machine before it submits a narration job, the way it would before a render: nothing heavy

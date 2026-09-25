@@ -163,8 +163,14 @@ def stages(folder, flow):
         out.append(("narrate", "skipped", marks["narrate"].get("note", ""), ""))
     elif os.path.isfile(narration) and story is not None:
         current = load_json(narration).get("story_captions") == captions_hash(story)
-        out.append(("narrate", "done" if current else "stale", "narration.json" + ("" if current else ", older than the captions"),
-                    "narrate the changed paragraphs again (logbook/specs/story-narration.md)"))
+        timed = isinstance(story, dict) and (story.get("narration") or {}).get("manifest") == hashlib.sha256(
+            open(narration, "rb").read()).hexdigest()[:16]
+        if not current:
+            out.append(("narrate", "stale", "narration.json is older than the captions",
+                        "story-narration.py segments, narrate the changed paragraphs, then timing"))
+        else:
+            out.append(("narrate", "done" if timed else "open", "narrated and timed" if timed else "narrated, not timed",
+                        "python scripts/story-narration.py timing <folder>"))
     else:
         out.append(("narrate", "waiting", "no narration.json; the service is not built yet",
                     "narrate (logbook/specs/story-narration.md), or `story-flow.py skip narrate`"))

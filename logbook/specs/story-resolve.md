@@ -31,6 +31,7 @@ render showed the round's 53-character title inside the frame.
 | V3 Charts | nothing yet | kept for the chart overlays |
 | ST1 Captions | every caption as a Resolve subtitle | an SRT the builder writes |
 | A1 Music | the configured tracks in order, cut and faded at the film's end | files from `assets/music/` |
+| A2 Narration | the story's narration, a clip a paragraph, where the story was timed from it | `narration/` in the story's folder |
 
 Every scene also gets a marker, red where a chapter opens, whose note carries the scene's
 captions. The build makes a bin and a timeline of one name, `<name> vK`, under the configured
