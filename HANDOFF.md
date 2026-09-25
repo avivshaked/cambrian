@@ -538,6 +538,22 @@ in this section is history.
     - **B3 is being built** (an Opus agent in `scratch/wt-r49`, code only): the safari branch
       merged in, a planner that writes and records each scene's window, and the director's
       `-FromWindows` mode.
+  - **Two more code-only builds for round 49 run beside B3** (Opus agents, each in its own
+    worktree off `61426cf`, filtered tests only):
+    - D123's per-step senses, on `d123-senses` in `scratch/wt-d123`;
+    - two recording-only instruments, on `r49-instruments` in `scratch/wt-instr`. A death row
+      gets `ga`, the gestation account at death, for G2's open half. A founder row gets
+      `fsnow`/`fcol` (and `fmat`/`fmcol`), its food at the landing point and its column's
+      mean, for any check of a placing rule.
+    - Both merge into `r49-record-film` when back.
+  - **F4's cause is found, and it was the witness** (`b3b9914`, 0120's F4 section,
+    `scripts/reads/r48-entry/f4draw.py`).
+    - A pool founder draws at least 45 to 52% of its own 1 m cell's snow per half-second
+      step (medians by seed). So its first reading, ten steps after landing, is the refill of
+      a cell it is emptying, and says nothing about the placement.
+    - F4's failure therefore says nothing about D122 either way.
+    - Inference, for round 49's design: a stomach in this world is fed by the flow into its
+      cell, so a placing rule aimed at the richest cell's stock aims at the wrong quantity.
   - **Round 48's entry is drafted and reviewed, and waits for the re-run's verdict before it
     is committed:** `logbook/0120-the-eaters-spent-their-endowment-on-one-child.md`, with its
     index row in `logbook/README.md` and four pictures `logbook/images/r48-*.png`, all
