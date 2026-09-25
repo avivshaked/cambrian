@@ -1509,6 +1509,17 @@ actually verifying it.
   (`logbook/specs/stomach-screens.md`). A field total in the stats is joules or units over
   the whole bin; divide by the bin's live volume before calling it a density, and say which
   bin.
+- **A mouth is priced at the cell it is emptying, not at the water round it.** A stomach
+  draws `density × clearance × dt` from its own 1 m cell, and round 48's pool founders drew
+  45 to 52% of it per half-second step (`scripts/reads/r48-entry/f4draw.py`). So
+  `densityHere` in `absorptive.jsonl`, and the density a ledger break-even is stated at, are
+  both the emptied cell's. In round 48's water that cell holds 5 to 25% of an untouched
+  copy's after a minute: the stirring refills it at 0.06 to 0.1 of the gap a second, and the
+  transport adds some only where the water moves (`FeederRefillExperiments`, logbook/0120).
+  Three things follow. Set a break-even against a field's density and you overstate an
+  eater's intake four- to twentyfold. A body's first reading cannot witness where it was
+  placed. And past the refill rate, a bigger clearance buys little, since the steady intake
+  is `c·k/(c + k)` of the water round it, with k the refill rate.
 - **A farm run started from VS Code gets the fast cores only while VS Code has focus.** The
   machine is an i9-13900K: eight fast cores (logical 0 to 15) and sixteen efficiency cores (16
   to 31). With VS Code in front, round 48's two farm runs sat about 44% on the fast cores and
