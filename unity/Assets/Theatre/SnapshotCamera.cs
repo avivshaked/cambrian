@@ -306,8 +306,9 @@ namespace Evosim.Theatre
         public RectInt MeterExclude;
 
         /// <summary>
-        /// The last measured frame's mean luma, 0 to 1 of full scale: Rec. 709 weights on the
-        /// stored sRGB bytes, every fourth pixel of every fourth row. NaN until one is measured.
+        /// The last measured frame's centre-weighted mean luma, 0 to 1 of full scale: Rec. 709
+        /// weights on the stored sRGB bytes, every fourth pixel of every fourth row, the middle
+        /// counting about three times the corners (<c>MeanLuma</c>). NaN until one is measured.
         /// </summary>
         public float LastMeanLuma { get; private set; } = float.NaN;
 
@@ -1762,32 +1763,44 @@ namespace Evosim.Theatre
         }
 
         /// <summary>
-        /// The mean luma of the frame's pixels, 0 to 1: Rec. 709 weights on the stored sRGB bytes,
-        /// every fourth pixel of every fourth row, staggered, the rectangle left out.
+        /// The centre-weighted mean luma of the frame's pixels, 0 to 1: Rec. 709 weights on the
+        /// stored sRGB bytes, every fourth pixel of every fourth row, staggered, the rectangle left
+        /// out.
         /// </summary>
+        /// <remarks>
+        /// Centre-weighted as a camera's meter is: a pixel counts <c>1 - 0.5 r²</c>, where r is its
+        /// distance from the centre with the half-width and half-height as one, and never under a
+        /// quarter. A frame's middle then counts about three times its corners, so a tank seen
+        /// whole against the dark water beyond the glass is metered on the tank and not on the
+        /// dark, which a flat mean would answer by opening to the ceiling.
+        /// </remarks>
         private float MeanLuma(RectInt skip)
         {
             if (_pixels == null || _pixels.Length < _width * _height) return float.NaN;
 
             const int step = 4;
             bool skipping = skip.width > 0 && skip.height > 0;
-            double sum = 0d;
-            int n = 0;
+            double sum = 0d, weights = 0d;
+            double cx = 0.5d * (_width - 1), cy = 0.5d * (_height - 1);
+            double hx = Math.Max(1d, 0.5d * _width), hy = Math.Max(1d, 0.5d * _height);
 
             for (int y = 0; y < _height; y += step)
             {
                 int row = y * _width;
                 bool inRows = skipping && y >= skip.yMin && y < skip.yMax;
+                double ny = (y - cy) / hy;
                 for (int x = (y / step) % step; x < _width; x += step)
                 {
                     if (inRows && x >= skip.xMin && x < skip.xMax) continue;
+                    double nx = (x - cx) / hx;
+                    double w = Math.Max(0.25d, 1d - 0.5d * (nx * nx + ny * ny));
                     Color32 c = _pixels[row + x];
-                    sum += 0.2126d * c.r + 0.7152d * c.g + 0.0722d * c.b;
-                    n++;
+                    sum += w * (0.2126d * c.r + 0.7152d * c.g + 0.0722d * c.b);
+                    weights += w;
                 }
             }
 
-            return n > 0 ? (float)(sum / n / 255d) : float.NaN;
+            return weights > 0d ? (float)(sum / weights / 255d) : float.NaN;
         }
 
         private Light RakeTheFloor()
