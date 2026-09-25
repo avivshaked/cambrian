@@ -2527,6 +2527,22 @@ so a format-5 one is refused the same way; every genome stored before that date 
 re-extracted from a new snapshot. This stops the theatre's Mode A on every run recorded
 before it.
 
+A lineage row is only ever added to at its end. A field that only some rows carry is
+written on those rows alone. Every other row stays the bytes it was, and a reader written
+against an older row keeps working. Round 49's build (2026-09-25) added six such fields,
+listed below. The landing readings are taken as a founder is admitted and before it has
+fed. That is the only instant at which they can check a placing rule. A founder empties
+about half of its own 1 m snow cell in each half-second step, so any later reading shows
+the refill (logbook/0120). A founder that eats both foods carries both pairs. Queued rows
+carry all six through a checkpoint (the world's state layout 12).
+
+| field | row | written when | holds |
+|---|---|---|---|
+| `ga` | death | above 0 | the gestation account the body died holding, J |
+| `res` | death | above 0 | the reserve of a body that died solvent (diverged, eaten, or left under the newborn mass floor by a bite), J |
+| `fsnow`, `fcol` | a founder's birth | the body has an absorptive part, the snow is a grid, and the placer can say where it put the founder | the edible snow density at the landing point, and its column's mean over the column's live water, J/m³ |
+| `fmat`, `fmcol` | a founder's birth | the same, for a photosynthetic part and the dissolved matter | the same pair for the dissolved matter, units/m³ |
+
 ---
 
 ## 10. Milestones
