@@ -1381,6 +1381,10 @@ namespace Evosim.Farm
                 w.Field("verdict", result.Verdict);
                 w.Field("reason", result.Reason);
                 w.Field("run", Path.GetFileName(result.RunDirectory));
+
+                // The full path, so a player can find the run's config, seed and floor without
+                // being told (FilmWindowReader); the name above stays for every reader of it.
+                w.Field("runDirectory", result.RunDirectory);
                 w.Field("arm", header.SourceArm);
                 w.Field("from", options.FromSeconds);
                 w.Field("to", options.ToSeconds);

@@ -223,6 +223,21 @@ death. It takes its plan from `plans.jsonl`, its size from the frame's body frac
 from `RecordedPoses.Apply`, and it is rebuilt only when its fraction or plan changes. Nothing in it steps
 physics. The film tool and the safari take it with `-FromFarm`.
 
+*As built (2026-09-25).* The class is `FilmWindowWorld`, since `SnapshotWorld` already reads the
+run's own stream and a second "stream world" would name the wrong one. The window's files are
+read by `FilmWindowReader` in `Evosim.Farm`, so a farm test reads what a window wrote with the
+theatre's own reader. The bodies are drawn by `LiveWorldView`, the live mode's view, fed a
+frame at a time rather than synced to a solver. So one body tree, one skin and one pick serve both.
+A frame takes the newest plan row written strictly before it, and the rows written as the window
+opened. The farm changes a plan at a metabolic step and rebuilds the body at the start of the next
+physics step. A frame due on the metabolic step is written between the two. The label's first
+line is `FARM FILM WINDOW` and the verdict's word. The theatre opens a window with
+`EVOSIM_THEATRE_WINDOW`, and `theatre-snap.ps1 -From window -Window <dir>` photographs one.
+`TheatreWindowCheck` plays every frame headless. The film tool and the safari are B3's. The
+verdict now carries `runDirectory`, the run's full path, so the player finds the config without
+being told. At a stream second the window's frame equals the run's own frame to the bit
+(`FilmWindowTests`), so the third acceptance reduces to the plan's source and the Unity compile.
+
 B3. **The safari on windows.** The director plans each scene from the guide and the checkpoint
 list as it does now, then asks for each scene's window: from the scene's second, less the take's
 lead, to its end. A birth scene asks for a window long enough to hold the birth the guide

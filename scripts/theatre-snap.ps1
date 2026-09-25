@@ -85,6 +85,25 @@
   when the second is not one of them, naming the seconds either side. Pictures land beside the
   replay's with -recon- in the name before the view.
 
+  window draws a farm film window instead: a stretch of a run the console farm stepped again from
+  a checkpoint and wrote down at a frame rate (Evosim.Farm --film-window, logbook/specs/
+  record-and-film-spec.md B1). Name the window's directory with -Window. Every body stands where
+  the farm's solver put it, in its recorded pose and at its recorded size, drawn from the window's
+  own genomes and plans; nothing is simulated in the Editor. The label's first line reads FARM
+  FILM WINDOW and the window's own verdict: FAITHFUL only when every row the farm compared agreed
+  with the run's, COUSIN when one parted, UNVERIFIED when none was compared or the window has no
+  verdict. Each -At second is drawn at the frame nearest it and must lie inside the window. The
+  close view is allowed, -Chrome is refused, and pictures land with -window- in the name before
+  the view.
+
+.PARAMETER Window
+  The film window's directory, with -From window: the out directory Evosim.Farm --film-window
+  wrote (film.poses.bin, genomes.jsonl.gz, plans.jsonl, events.jsonl, identity.jsonl).
+
+.PARAMETER WindowRun
+  The run the window was filmed from, with -From window, when its verdict does not name one or
+  names a path on another machine. Left out, the path the verdict names is drawn over.
+
 .PARAMETER FromCheckpoint
   Photograph a live world continued from a farm checkpoint instead of a recorded run: a run
   directory holding a checkpoints/ directory, the arm directory above it, or one .ckpt file.
@@ -171,6 +190,10 @@
 .EXAMPLE
   ./scripts/theatre-snap.ps1 ckA -FromCheckpoint scratch/checkpoint/runs/ckA -At 400 -Carry 100 `
       -Views side,top,close -Worker 6
+
+.EXAMPLE
+  ./scripts/theatre-snap.ps1 rfilm-s4 -From window -Window scratch/film/rfilm-1000 -At 1000,1030,1060 `
+      -Views iso,close -Worker 6
 #>
 [CmdletBinding()]
 param(
@@ -180,7 +203,9 @@ param(
     [string[]]$Views = @(),
     [string]$RunsRoot = 'runs',
     [string]$Size = '1600x900',
-    [ValidateSet('replay', 'snapshot')][string]$From = 'replay',
+    [ValidateSet('replay', 'snapshot', 'window')][string]$From = 'replay',
+    [string]$Window,
+    [string]$WindowRun,
     [string]$FromCheckpoint,
     [double]$Carry = 0,
     [double]$Carve = 0.35,
@@ -272,6 +297,52 @@ if ($continued) {
 
 if ($Carry -lt 0) { throw "-Carry: a carry cannot be negative; $Carry is." }
 
+# A film window is a fourth kind of picture: drawn from the farm's own frames, never stepped here.
+# Its refusals are made here for the reason the continuation's are.
+$windowed = $From -eq 'window'
+
+if ($windowed) {
+    if ($continued) {
+        throw "-From window and -FromCheckpoint are different pictures: one draws the farm's frames and the other steps a cousin live. Ask for one of them."
+    }
+
+    if ([string]::IsNullOrWhiteSpace($Window)) {
+        throw "-From window needs -Window, the directory Evosim.Farm --film-window wrote."
+    }
+
+    if ($Chrome) {
+        throw "-Chrome is refused with -From window: the interface reads a replay's or a live world's census, and a film window has frames and a verdict."
+    }
+
+    $windowDirectory = if ([System.IO.Path]::IsPathRooted($Window)) { $Window } else { Join-Path $root $Window }
+
+    if (-not (Test-Path (Join-Path $windowDirectory 'film.poses.bin'))) {
+        throw "-Window: no film.poses.bin in $windowDirectory, so it is not a film window."
+    }
+
+    # The verdict's span, when there is one, so a second outside the window is refused before the
+    # Editor starts rather than a minute after.
+    $identity = Join-Path $windowDirectory 'identity.jsonl'
+    if (Test-Path $identity) {
+        $verdictLine = Get-Content $identity | Where-Object { $_ -match '"verdict"' } | Select-Object -Last 1
+        if ($verdictLine) {
+            $verdict = $verdictLine | ConvertFrom-Json
+            $slack = if ($verdict.fps -gt 0) { 1.0 / $verdict.fps } else { 0.1 }
+            foreach ($t in $timeList) {
+                $value = [double]::Parse($t, $float, $invariant)
+                if ($value -lt ($verdict.from - $slack) -or $value -gt ($verdict.to + $slack)) {
+                    throw "-At: $t s is outside the window, which was filmed from $($verdict.from) s to $($verdict.to) s."
+                }
+            }
+            Write-Host "  window verdict: $($verdict.verdict) ($($verdict.reason))"
+        } else {
+            Write-Warning "The window has no verdict line, so every frame will read UNVERIFIED."
+        }
+    }
+} elseif (-not [string]::IsNullOrWhiteSpace($Window) -or -not [string]::IsNullOrWhiteSpace($WindowRun)) {
+    throw "-Window and -WindowRun name a film window, so they need -From window."
+}
+
 if ($Worker -eq 1) {
     throw "Worker 1 is unity/, which the owner keeps open in the Editor. Use a worker from 2 up."
 }
@@ -294,9 +365,16 @@ if (Test-Path (Join-Path $proj 'Temp/UnityLockfile')) {
 }
 
 # A checkpoint carries its own run directory with it, so a continuation names none and the arm is
-# only what the pictures are filed under.
+# only what the pictures are filed under. A film window's verdict names its run the same way, and
+# -WindowRun names it when the verdict cannot.
 if ($continued) {
     $runDirectory = $null
+} elseif ($windowed) {
+    $runDirectory = $null
+    if (-not [string]::IsNullOrWhiteSpace($WindowRun)) {
+        $runDirectory = if ([System.IO.Path]::IsPathRooted($WindowRun)) { $WindowRun } else { Join-Path $root $WindowRun }
+        if (-not (Test-Path $runDirectory)) { throw "-WindowRun: no run directory at $runDirectory" }
+    }
 } else {
     $runDirectory = if ([System.IO.Path]::IsPathRooted($RunsRoot)) { Join-Path $RunsRoot $Arm } else { Join-Path $root "$RunsRoot\$Arm" }
     if (-not (Test-Path $runDirectory)) { throw "No run directory at $runDirectory" }
@@ -321,14 +399,18 @@ $names = @(
     'EVOSIM_THEATRE_SNAP_OUT', 'EVOSIM_THEATRE_SNAP_SIZE', 'EVOSIM_THEATRE_WALL_MINUTES',
     'EVOSIM_THEATRE_OVERRIDE', 'EVOSIM_THEATRE_SEEK', 'EVOSIM_REPO_ROOT',
     'EVOSIM_THEATRE_CARVE', 'EVOSIM_THEATRE_CHROME', 'EVOSIM_THEATRE_SNAP_FROM',
-    'EVOSIM_THEATRE_CHECKPOINT', 'EVOSIM_THEATRE_SNAP_CARRY')
+    'EVOSIM_THEATRE_CHECKPOINT', 'EVOSIM_THEATRE_SNAP_CARRY', 'EVOSIM_THEATRE_WINDOW')
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
 
 try {
-    if ($continued) { Remove-Item env:EVOSIM_THEATRE_RUN -ErrorAction SilentlyContinue }
+    if ($null -eq $runDirectory) { Remove-Item env:EVOSIM_THEATRE_RUN -ErrorAction SilentlyContinue }
     else { $env:EVOSIM_THEATRE_RUN = $runDirectory }
+
+    # Set or removed, never left: the runner opens a window whenever one is named.
+    if ($windowed) { $env:EVOSIM_THEATRE_WINDOW = $windowDirectory }
+    else { Remove-Item env:EVOSIM_THEATRE_WINDOW -ErrorAction SilentlyContinue }
 
     $env:EVOSIM_THEATRE_SNAP_TIMES = ($timeList -join ',')
     $env:EVOSIM_THEATRE_SNAP_OUT = $snapDirectory
@@ -373,13 +455,17 @@ try {
     if ($continued) {
         Write-Host "  ckpt   $checkpoint"
         Write-Host "  at     $($timeList[0]) s, carried $Carry s live (a cousin, and every label says so)"
+    } elseif ($windowed) {
+        Write-Host "  window $windowDirectory"
+        Write-Host "  run    $(if ($runDirectory) { $runDirectory } else { 'the one its verdict names' })"
+        Write-Host "  at     $($timeList -join ', ') s (each at the nearest frame)"
     } else {
         Write-Host "  run    $runDirectory"
         Write-Host "  at     $($timeList -join ', ') s"
     }
     Write-Host "  views  $(if ($viewNames.Count -gt 0) { $viewNames -join ', ' } else { 'side, end, top, iso' })"
     Write-Host "  size   $Size"
-    Write-Host "  from   $(if ($continued) { 'checkpoint (the world restored and stepped live on Evosim.Dynamics; a cousin, never the run)' } else { "$From$(if ($From -eq 'snapshot') { ' (drawn from the run''s files; adult size, recorded pose where poses.jsonl has one)' })" })"
+    Write-Host "  from   $(if ($continued) { 'checkpoint (the world restored and stepped live on Evosim.Dynamics; a cousin, never the run)' } elseif ($windowed) { 'window (the farm''s film window: every body where the farm put it; the word on the label is the window''s verdict)' } else { "$From$(if ($From -eq 'snapshot') { ' (drawn from the run''s files; adult size, recorded pose where poses.jsonl has one)' })" })"
     Write-Host "  carve  $($env:EVOSIM_THEATRE_CARVE)"
     Write-Host "  out    $snapDirectory"
     Write-Host "  log    $log"

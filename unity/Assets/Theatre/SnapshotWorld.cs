@@ -262,30 +262,9 @@ namespace Evosim.Theatre
             // World allocates on the way are a hundred thousand cells nothing here would read.
             try
             {
-                RunConfig config = world.Record.Config;
-
-                world.Bed =
-                    config.WorldShape == WorldShape.Tank &&
-                    (config.BedReliefMetres > 0f || config.BedTiltMetres > 0f)
-                        ? new BedShape(
-                            TankGeometry.RadiusFor(config.WorldAreaSquareMetres),
-                            config.WorldDepthMetres, config.BedReliefMetres,
-                            config.BedTiltMetres, config.BedScaleMetres,
-                            Rng.SeedFor(world.Record.Seed, World.BedShapeIndex),
-                            config.BedShoreDepthMetres, config.BedShoreFadeMetres)
-                        : null;
-
-                // The reefs, drawn as World draws them: the same stream of the run's seed over the
-                // same floor to the same cover, counted on the same grid columns, so every cap
-                // stands where the run's stood with the run's size, depth and outline (the
-                // manifest's `reefs` list is the record to check a picture against). The two
-                // refusals about the rest of the world are skipped (worldRules: false), because a
-                // picture-only config does not carry the field model and the farm already ran it.
-                world.Reefs = config.ReefCover > 0f
-                    ? ReefGeometry.Place(
-                        config, TankGeometry.RadiusFor(config.WorldAreaSquareMetres), world.Bed,
-                        Rng.SeedFor(world.Record.Seed, World.ReefPlacementIndex), worldRules: false)
-                    : null;
+                BuildFloor(world.Record, out BedShape bed, out ReefGeometry reefs);
+                world.Bed = bed;
+                world.Reefs = reefs;
             }
             catch (Exception e)
             {
@@ -304,6 +283,42 @@ namespace Evosim.Theatre
             Debug.Log("[Theatre] no identity check: nothing was simulated");
 
             return world;
+        }
+
+        /// <summary>
+        /// The floor and the reefs of a recorded run, built as <c>World</c> builds them, without a
+        /// <c>World</c>. Throws when the config does not describe a floor this build can draw.
+        /// </summary>
+        /// <remarks>
+        /// Shared with the film window's player (<see cref="FilmWindowWorld"/>), which draws the
+        /// same run's water under bodies the farm moved.
+        /// </remarks>
+        public static void BuildFloor(RunRecord record, out BedShape bed, out ReefGeometry reefs)
+        {
+            RunConfig config = record.Config;
+
+            bed =
+                config.WorldShape == WorldShape.Tank &&
+                (config.BedReliefMetres > 0f || config.BedTiltMetres > 0f)
+                    ? new BedShape(
+                        TankGeometry.RadiusFor(config.WorldAreaSquareMetres),
+                        config.WorldDepthMetres, config.BedReliefMetres,
+                        config.BedTiltMetres, config.BedScaleMetres,
+                        Rng.SeedFor(record.Seed, World.BedShapeIndex),
+                        config.BedShoreDepthMetres, config.BedShoreFadeMetres)
+                    : null;
+
+            // The reefs, drawn as World draws them: the same stream of the run's seed over the
+            // same floor to the same cover, counted on the same grid columns, so every cap
+            // stands where the run's stood with the run's size, depth and outline (the
+            // manifest's `reefs` list is the record to check a picture against). The two
+            // refusals about the rest of the world are skipped (worldRules: false), because a
+            // picture-only config does not carry the field model and the farm already ran it.
+            reefs = config.ReefCover > 0f
+                ? ReefGeometry.Place(
+                    config, TankGeometry.RadiusFor(config.WorldAreaSquareMetres), bed,
+                    Rng.SeedFor(record.Seed, World.ReefPlacementIndex), worldRules: false)
+                : null;
         }
 
         // ---------------------------------------------------------------- the join
@@ -805,6 +820,47 @@ namespace Evosim.Theatre
             return true;
         }
 
+        /// <summary>
+        /// A genome developed at a body's plan: its module counts, and without the parts it has
+        /// lost. Both null is the genome's own minimum, <see cref="Developer.Develop"/> and nothing
+        /// more.
+        /// </summary>
+        /// <remarks>
+        /// <c>World.DevelopPlan</c>'s arithmetic, which is private to Core's world: develop at the
+        /// counts with each part's path, then drop every part whose path is a lost one, with its
+        /// subtree. Shared by a reconstruction and by the film window's player
+        /// (<see cref="FilmWindowWorld"/>), which develops a body again whenever its plan row moves.
+        /// </remarks>
+        public static Phenotype DevelopWithPlan(Genome genome, RunConfig config, int[] counts, List<int[]> lost)
+        {
+            if (counts == null && lost == null)
+            {
+                return Developer.Develop(genome, config.Development, null, config.Shapes);
+            }
+
+            var paths = new List<int[]>();
+            Phenotype phenotype = Developer.Develop(
+                genome, config.Development, null, config.Shapes, counts, paths);
+
+            if (lost == null || lost.Count == 0) return phenotype;
+
+            var drop = new bool[phenotype.PartCount];
+            bool any = false;
+
+            for (int i = 0; i < phenotype.PartCount; i++)
+            {
+                foreach (int[] path in lost)
+                {
+                    if (!SamePath(paths[i], path)) continue;
+                    drop[i] = true;
+                    any = true;
+                    break;
+                }
+            }
+
+            return any ? phenotype.WithoutSubtrees(drop, out _) : phenotype;
+        }
+
         /// <summary>Two developer paths name the same part — <c>World.DevelopPlan</c>'s test.</summary>
         private static bool SamePath(int[] a, int[] b)
         {
@@ -860,35 +916,7 @@ namespace Evosim.Theatre
                 int[] counts = GenomeJson.ReadModuleCounts(_rows[pending.Row]);
                 List<int[]> lost = GenomeJson.ReadLostPartPaths(_rows[pending.Row]);
 
-                if (counts == null && lost == null)
-                {
-                    phenotype = Developer.Develop(
-                        genome, Record.Config.Development, null, Record.Config.Shapes);
-                }
-                else
-                {
-                    var paths = new List<int[]>();
-                    phenotype = Developer.Develop(
-                        genome, Record.Config.Development, null, Record.Config.Shapes, counts, paths);
-
-                    if (lost != null && lost.Count > 0)
-                    {
-                        var drop = new bool[phenotype.PartCount];
-                        bool any = false;
-                        for (int i = 0; i < phenotype.PartCount; i++)
-                        {
-                            foreach (int[] path in lost)
-                            {
-                                if (!SamePath(paths[i], path)) continue;
-                                drop[i] = true;
-                                any = true;
-                                break;
-                            }
-                        }
-
-                        if (any) phenotype = phenotype.WithoutSubtrees(drop, out _);
-                    }
-                }
+                phenotype = DevelopWithPlan(genome, Record.Config, counts, lost);
             }
             catch (Exception e)
             {

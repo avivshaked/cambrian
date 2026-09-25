@@ -140,6 +140,24 @@ namespace Evosim.Theatre.EditorTools
         /// </remarks>
         private static bool _fromCheckpoint;
 
+        /// <summary>
+        /// Draw a farm film window's frames instead —
+        /// <c>EVOSIM_THEATRE_SNAP_FROM=window</c> with <c>EVOSIM_THEATRE_WINDOW</c>,
+        /// <c>theatre-snap.ps1 -From window -Window &lt;dir&gt;</c>.
+        /// </summary>
+        /// <remarks>
+        /// <b>Why a fourth way.</b> A window is a stretch of a run the farm stepped again from a
+        /// checkpoint and wrote down at a frame rate (<c>Evosim.Farm --film-window</c>, B1): every
+        /// body where the farm's solver put it, joints and size included. The picture draws that
+        /// (<see cref="Evosim.Theatre.FilmWindowWorld"/>), so it is neither a replay, which the
+        /// Editor cannot make of a farm run, nor a reconstruction, which guesses the pose. Its
+        /// label opens with FARM FILM WINDOW and the window's own verdict: FAITHFUL only when the
+        /// farm's rows agreed with the run's, COUSIN or UNVERIFIED otherwise. Each second asked for
+        /// is drawn at the frame nearest it, and a second outside the window is refused before
+        /// Play mode.
+        /// </remarks>
+        private static bool _fromWindow;
+
         /// <summary>The checkpoint named: a <c>.ckpt</c>, a run directory or an arm directory.</summary>
         /// <remarks>
         /// Kept for the log alone. What opens the world is the runner, from the same environment
@@ -193,11 +211,12 @@ namespace Evosim.Theatre.EditorTools
             // continuation names no run at all and EVOSIM_THEATRE_RUN has nothing left to say —
             // the same rule the runner opens under.
             if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_RUN")) &&
-                string.IsNullOrEmpty(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHECKPOINT")))
+                string.IsNullOrEmpty(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHECKPOINT")) &&
+                string.IsNullOrEmpty(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_WINDOW")))
             {
                 Debug.LogError(
-                    "[Theatre] neither EVOSIM_THEATRE_RUN nor EVOSIM_THEATRE_CHECKPOINT is set: " +
-                    "nothing to photograph.");
+                    "[Theatre] none of EVOSIM_THEATRE_RUN, EVOSIM_THEATRE_CHECKPOINT and " +
+                    "EVOSIM_THEATRE_WINDOW is set: nothing to photograph.");
 
                 if (Application.isBatchMode) EditorApplication.Exit(1);
                 return;
@@ -239,6 +258,8 @@ namespace Evosim.Theatre.EditorTools
                 (_directory ?? "scratch/snaps/<arm>") +
                 (_fromSnapshot
                     ? ", drawn from the run's own snapshots and positions"
+                    : _fromWindow
+                    ? ", drawn from the film window's frames"
                     : _fromCheckpoint
                         ? ", continued from the checkpoint at " + Seconds(_times[0]) +
                           " s and carried " + Seconds(_carrySeconds) + " s live"
@@ -309,6 +330,33 @@ namespace Evosim.Theatre.EditorTools
             _checkpoint = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHECKPOINT");
             _fromCheckpoint = !string.IsNullOrWhiteSpace(_checkpoint);
 
+            _fromWindow = string.Equals(
+                Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SNAP_FROM"), "window",
+                StringComparison.OrdinalIgnoreCase);
+
+            string window = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_WINDOW");
+
+            // The runner opens a window whenever one is named, so a window named under another
+            // mode would open something other than what this waits for.
+            if (!_fromWindow && !string.IsNullOrWhiteSpace(window))
+            {
+                return
+                    "EVOSIM_THEATRE_WINDOW is set, so the theatre will open that film window; ask " +
+                    "for it with -From window (EVOSIM_THEATRE_SNAP_FROM=window), or unset it.";
+            }
+
+            if (_fromWindow)
+            {
+                if (_fromCheckpoint)
+                {
+                    return
+                        "a film window is drawn from its own frames and a checkpoint is carried " +
+                        "on live, never both. Drop the checkpoint or drop -From window.";
+                }
+
+                return WhatTheWindowCannotDo(window);
+            }
+
             if (_fromSnapshot && _fromCheckpoint)
             {
                 return
@@ -353,6 +401,60 @@ namespace Evosim.Theatre.EditorTools
             // (TheatreUi.OpenLive), and a chrome frame of a continuation is the picture that
             // carries its own provenance: the strip says COUSIN and names the second it was
             // picked up from.
+            return null;
+        }
+
+        /// <summary>
+        /// Why this request cannot be drawn from a film window, or null: no window, one this build
+        /// cannot read, a second outside it, or the interface asked for.
+        /// </summary>
+        /// <remarks>
+        /// Answered before Play mode, as the reconstruction's refusals are. The close view is
+        /// allowed, where a reconstruction refuses it: a window's bodies wear the pose and the
+        /// size the farm's solver had, which is what a portrait needs.
+        /// </remarks>
+        private static string WhatTheWindowCannotDo(string window)
+        {
+            if (string.IsNullOrWhiteSpace(window))
+            {
+                return "-From window names no window: set EVOSIM_THEATRE_WINDOW (-Window).";
+            }
+
+            if (_chrome)
+            {
+                return
+                    "-Chrome is refused with a film window: the interface reads a replay's or a " +
+                    "live world's census, and a window has frames and a verdict and neither.";
+            }
+
+            try
+            {
+                using (Evosim.Farm.FilmWindowReader reader = Evosim.Farm.FilmWindowReader.Open(window))
+                {
+                    if (reader.FrameCount == 0) return "the window at " + window + " holds no frame.";
+
+                    double first = reader.SecondOf(0);
+                    double last = reader.SecondOf(reader.FrameCount - 1);
+                    double slack = reader.Stream.Header.CadenceSeconds > 0f
+                        ? reader.Stream.Header.CadenceSeconds
+                        : 0.1d;
+
+                    foreach (double t in _times)
+                    {
+                        if (t < first - slack || t > last + slack)
+                        {
+                            return
+                                Seconds(t) + " s is outside the window, whose frames run from " +
+                                Seconds(first) + " s to " + Seconds(last) + " s.";
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                return "the window cannot be read: " + e.Message;
+            }
+
             return null;
         }
 
@@ -680,7 +782,7 @@ namespace Evosim.Theatre.EditorTools
                    _wallSecondsAllowed.ToString("R", CultureInfo.InvariantCulture) + "|" +
                    _next.ToString(CultureInfo.InvariantCulture) + "|" +
                    (_chrome ? "1" : "0") + "|" +
-                   (_fromSnapshot ? "snapshot" : _fromCheckpoint ? "checkpoint" : "replay") + "|" +
+                   (_fromSnapshot ? "snapshot" : _fromCheckpoint ? "checkpoint" : _fromWindow ? "window" : "replay") + "|" +
                    _carrySeconds.ToString("R", CultureInfo.InvariantCulture);
         }
 
@@ -736,6 +838,7 @@ namespace Evosim.Theatre.EditorTools
             _chrome = fields.Length > 6 && fields[6] == "1";
             _fromSnapshot = fields.Length > 7 && fields[7] == "snapshot";
             _fromCheckpoint = fields.Length > 7 && fields[7] == "checkpoint";
+            _fromWindow = fields.Length > 7 && fields[7] == "window";
 
             _carrySeconds =
                 fields.Length > 8 &&
@@ -808,6 +911,12 @@ namespace Evosim.Theatre.EditorTools
                 if (_fromSnapshot)
                 {
                     DriveTheReconstruction();
+                    return;
+                }
+
+                if (_fromWindow)
+                {
+                    DriveTheWindow();
                     return;
                 }
 
@@ -976,6 +1085,108 @@ namespace Evosim.Theatre.EditorTools
                         ? "every one in the developer's own frame"
                         : world.PosedCount + " in the pose poses.jsonl recorded") +
                     "; no identity check: nothing was simulated");
+            }
+        }
+
+        // ------------------------------------------------------------------ the film window
+
+        /// <summary>
+        /// One editor tick with a film window in front of it: show the frame nearest the next
+        /// second, dress every body, shoot.
+        /// </summary>
+        /// <remarks>
+        /// Nothing is stepped or waited for: a frame is shown in one call, transforms and all, and
+        /// the palette's budget is lifted for the still (<see cref="Evosim.Theatre.FilmWindowWorld.DressAll"/>)
+        /// so no body is photographed in the plain material. The runner is paused, so its own
+        /// playback holds the frame that was asked for.
+        /// </remarks>
+        private static void DriveTheWindow()
+        {
+            FilmWindowWorld world = _runner.Window;
+
+            if (world == null)
+            {
+                if (!string.IsNullOrEmpty(_runner.Error)) Finish(1, "refused: " + _runner.Error);
+                return;
+            }
+
+            if (!_paceSet)
+            {
+                _paceSet = true;
+                _runner.Paused = true;
+                _runner.ShowOverlay = false;
+
+                Debug.Log(
+                    "[Theatre] " + world.Window.Directory + "\n" +
+                    "  over " + world.Record.Path + ", arm " + world.Record.ArmName + ", seed " +
+                    world.Record.Seed + "\n" +
+                    "  drawn from the farm's film window; the word is the window's verdict: " +
+                    world.ProvenanceWord);
+            }
+
+            double target = _times[_next];
+            int frame = world.Window.NearestFrame(target);
+
+            if (frame < 0)
+            {
+                Finish(1, "the window holds no frame");
+                return;
+            }
+
+            // Shown on this tick and photographed on the next, so the scene has had a frame to
+            // settle whatever the view built.
+            if (world.FrameIndex != frame)
+            {
+                _runner.ShowWindowFrame(frame);
+                return;
+            }
+
+            world.DressAll();
+            ShootTheWindow(world, target);
+
+            _next++;
+            SessionState.SetString(PendingKey, Pack());
+
+            if (_next >= _times.Length) Finish(0, _written.Count + " picture(s) written");
+        }
+
+        /// <summary>Every requested view of the window's frame, written out.</summary>
+        /// <remarks>
+        /// <c>-window-</c> stands in the file name where a reconstruction's <c>-recon-</c> stands,
+        /// so a directory can hold a replay's, a reconstruction's and a window's picture of one
+        /// second and the name says which is which.
+        /// </remarks>
+        private static void ShootTheWindow(FilmWindowWorld world, double asked)
+        {
+            string arm = world.Record.ArmName ?? "run";
+
+            if (_directory == null)
+            {
+                _directory = Path.Combine(
+                    Path.Combine(BuildIdentity.RepositoryRoot(), "scratch"), "snaps");
+
+                _directory = Path.Combine(_directory, arm);
+            }
+
+            if (_camera == null) _camera = new SnapshotCamera(_width, _height);
+
+            string stamp = asked.ToString("0.###", CultureInfo.InvariantCulture);
+
+            foreach (SnapshotCamera.View view in _views)
+            {
+                string path = Path.Combine(
+                    _directory,
+                    arm + "-t" + stamp + "-window-" + SnapshotCamera.NameOf(view) + ".png");
+
+                int bytes = _camera.Capture(world, view, path, out string remark);
+                _written.Add(path);
+
+                Debug.Log(
+                    "[Theatre] wrote " + path + " (" + bytes + " bytes) at t=" + stamp +
+                    " s, frame t=" + world.Second.ToString("0.###", CultureInfo.InvariantCulture) +
+                    " s, FARM FILM WINDOW · " + world.ProvenanceWord + "\n" +
+                    "  " + remark + "\n" +
+                    "  " + world.Describe());
             }
         }
 

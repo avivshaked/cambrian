@@ -63,6 +63,15 @@ namespace Evosim.Theatre
     /// transform poisons the hierarchy and takes the camera with it, and the world is about to
     /// kill that body as a counted <c>Diverged</c> death anyway.
     /// </para>
+    /// <para>
+    /// <b>Fed, it draws what it is handed.</b> Built with a config and no simulation, the view
+    /// steps nothing and reads no solver: a caller hands it each frame's bodies between
+    /// <see cref="BeginFrame"/> and <see cref="EndFrame"/>, each with a phenotype and its parts'
+    /// places and rotations, and the view builds, resizes, poses, sweeps and paints them exactly
+    /// as <see cref="Sync"/> does a solver's. That is the film window's player
+    /// (<see cref="FilmWindowWorld"/>): the farm stepped the world and wrote its poses, and this
+    /// draws them. One body tree, one paint budget and one pick serve both.
+    /// </para>
     /// </remarks>
     public sealed class LiveWorldView : IDisposable
     {
@@ -71,8 +80,12 @@ namespace Evosim.Theatre
         {
             public long Id;
 
-            /// <summary>The solver body this was built from. A different one is a rebuild.</summary>
-            public Solver Body;
+            /// <summary>
+            /// What this was built from: the solver body when the view syncs a simulation, or the
+            /// caller's key (the body's unscaled phenotype) when it is fed. A different one is a
+            /// rebuild.
+            /// </summary>
+            public object Source;
 
             public Transform Root;
 
@@ -102,7 +115,12 @@ namespace Evosim.Theatre
             public float Tint;
         }
 
+        /// <summary>The simulation synced, or null when the view is fed.</summary>
         private readonly Simulation _sim;
+
+        /// <summary>The world's rules: the part shapes a body is drawn with.</summary>
+        private readonly RunConfig _config;
+
         private readonly Dictionary<long, LiveBody> _bodies = new Dictionary<long, LiveBody>();
         private readonly List<long> _gone = new List<long>();
         private readonly List<LiveBody> _order = new List<LiveBody>();
@@ -145,8 +163,22 @@ namespace Evosim.Theatre
         public LiveWorldView(Simulation sim)
         {
             _sim = sim ?? throw new ArgumentNullException(nameof(sim));
+            _config = sim.Config;
             _holder = new GameObject("Live World");
         }
+
+        /// <summary>
+        /// A fed view: no simulation, and every frame's bodies handed in by the caller
+        /// (<see cref="BeginFrame"/>, <see cref="Place"/>, <see cref="EndFrame"/>).
+        /// </summary>
+        public LiveWorldView(RunConfig config, string name = "Fed World")
+        {
+            _config = config ?? throw new ArgumentNullException(nameof(config));
+            _holder = new GameObject(string.IsNullOrEmpty(name) ? "Fed World" : name);
+        }
+
+        /// <summary>Whether this view is fed rather than synced to a simulation.</summary>
+        public bool Fed => _sim == null;
 
         /// <summary>Whether a body with this id is on screen.</summary>
         public bool Holds(long id) => _bodies.ContainsKey(id);
@@ -187,7 +219,7 @@ namespace Evosim.Theatre
             foreach (KeyValuePair<long, LiveBody> entry in _bodies)
             {
                 LiveBody live = entry.Value;
-                Phenotype phenotype = live.Body?.Phenotype;
+                Phenotype phenotype = live.Sized;
                 if (phenotype == null) continue;
 
                 int parts = System.Math.Min(live.Parts.Length, phenotype.PartCount);
@@ -274,6 +306,13 @@ namespace Evosim.Theatre
         {
             if (_holder == null) return;
 
+            if (_sim == null)
+            {
+                throw new InvalidOperationException(
+                    "A fed view has no simulation to sync: hand it each frame through BeginFrame, " +
+                    "Place and EndFrame.");
+            }
+
             World world = _sim.World;
             IReadOnlyList<Organism> living = world.Living;
 
@@ -289,29 +328,9 @@ namespace Evosim.Theatre
                 // drawn at the origin would be a creature the world does not have there.
                 if (!_sim.TryPose(creature.Id, out Solver body) || body == null) continue;
 
-                if (!_bodies.TryGetValue(creature.Id, out LiveBody live))
-                {
-                    live = Build(creature.Id, body);
-                    _bodies[creature.Id] = live;
-                    Built++;
-                }
-                else if (!ReferenceEquals(live.Body, body) ||
-                         live.Parts.Length != body.Phenotype.PartCount)
-                {
-                    Destroy(live);
-                    live = Build(creature.Id, body);
-                    _bodies[creature.Id] = live;
-                    Rebuilt++;
-                }
-
-                live.Seen = _sweep;
-                live.Tint = TheatrePalette.Tint(creature.SecondsOfReserve, reserveScale);
-
-                if (!ReferenceEquals(live.Sized, body.Phenotype))
-                {
-                    Resize(live, body.Phenotype);
-                    Resized++;
-                }
+                LiveBody live = Ensure(
+                    creature.Id, body, body.Phenotype,
+                    TheatrePalette.Tint(creature.SecondsOfReserve, reserveScale));
 
                 Pose(live, body);
                 parts += live.Parts.Length;
@@ -322,6 +341,165 @@ namespace Evosim.Theatre
             Sweep();
             Paint();
         }
+
+        /// <summary>
+        /// The body on screen for an id, built, rebuilt or resized so that it draws
+        /// <paramref name="phenotype"/>: the one path both <see cref="Sync"/> and a fed frame take.
+        /// </summary>
+        /// <remarks>
+        /// A different <paramref name="source"/>, or a part count that no longer matches, is a
+        /// rebuild; the same source with a different phenotype object is a growth, answered by a
+        /// resize in place.
+        /// </remarks>
+        private LiveBody Ensure(long id, object source, Phenotype phenotype, float tint)
+        {
+            if (!_bodies.TryGetValue(id, out LiveBody live))
+            {
+                live = Build(id, source, phenotype);
+                _bodies[id] = live;
+                Built++;
+            }
+            else if (!ReferenceEquals(live.Source, source) ||
+                     live.Parts.Length != phenotype.PartCount)
+            {
+                Destroy(live);
+                live = Build(id, source, phenotype);
+                _bodies[id] = live;
+                Rebuilt++;
+            }
+
+            live.Seen = _sweep;
+            live.Tint = tint;
+
+            if (!ReferenceEquals(live.Sized, phenotype))
+            {
+                Resize(live, phenotype);
+                Resized++;
+            }
+
+            return live;
+        }
+
+        // ---------------------------------------------------------------- a fed frame
+
+        private int _fedParts;
+        private bool _inFrame;
+
+        /// <summary>Opens a fed frame: every body not placed before <see cref="EndFrame"/> is removed.</summary>
+        public void BeginFrame()
+        {
+            if (_sim != null)
+            {
+                throw new InvalidOperationException("A synced view takes its frames from Sync.");
+            }
+
+            _sweep++;
+            _fedParts = 0;
+            _inFrame = true;
+        }
+
+        /// <summary>
+        /// One body in a fed frame: <paramref name="phenotype"/> drawn with its root link at
+        /// <paramref name="root"/>, each part at <paramref name="root"/> plus its entry in
+        /// <paramref name="positions"/> and turned by its entry in <paramref name="rotations"/>,
+        /// which is what <see cref="RecordedPoses.Apply"/> hands back. False, and the body left
+        /// where it last stood, when a number is not finite or the arrays are short.
+        /// </summary>
+        /// <param name="source">
+        /// What the body is, for the rebuild test: a different object is a different body (a plan
+        /// that moved), the same one with a different <paramref name="phenotype"/> is a growth.
+        /// </param>
+        public bool Place(
+            long id, object source, Phenotype phenotype, Vector3 root,
+            Vector3[] positions, Quaternion[] rotations, float tint = 1f)
+        {
+            if (!_inFrame) throw new InvalidOperationException("Place outside BeginFrame and EndFrame.");
+            if (_holder == null || phenotype == null || source == null) return false;
+
+            int count = phenotype.PartCount;
+            if (count == 0 || positions == null || rotations == null ||
+                positions.Length < count || rotations.Length < count)
+            {
+                return false;
+            }
+
+            // Checked before anything is built, so a body whose first pose is not finite is never
+            // drawn at the origin, and one already standing stays where it last stood (the
+            // synced path's rule for a link gone non-finite).
+            bool finite = Finite(root.x) && Finite(root.y) && Finite(root.z);
+
+            for (int i = 0; finite && i < count; i++)
+            {
+                Vector3 p = positions[i];
+                Quaternion r = rotations[i];
+
+                finite =
+                    Finite(p.x) && Finite(p.y) && Finite(p.z) &&
+                    Finite(r.x) && Finite(r.y) && Finite(r.z) && Finite(r.w);
+            }
+
+            if (!finite)
+            {
+                SkippedNonFinite++;
+
+                if (_bodies.TryGetValue(id, out LiveBody standing))
+                {
+                    standing.Seen = _sweep;
+                    _fedParts += standing.Parts.Length;
+                }
+
+                return false;
+            }
+
+            LiveBody live = Ensure(id, source, phenotype, tint);
+            _fedParts += live.Parts.Length;
+
+            live.Root.position = root;
+
+            for (int i = 0; i < count && i < live.Parts.Length; i++)
+            {
+                Transform part = live.Parts[i];
+                if (part == null) continue;
+
+                part.localPosition = positions[i];
+                part.localRotation = rotations[i];
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Keeps a body standing where it last stood through a fed frame that could not place it,
+        /// rather than letting the frame's sweep remove it. False when there is no such body.
+        /// </summary>
+        /// <remarks>
+        /// For a frame whose pose does not fit the body the caller can develop, which a film
+        /// window has for one frame where the farm rebuilt a body after the frame was written: a
+        /// body that vanished for a thirtieth of a second would be a flicker nothing happened in.
+        /// </remarks>
+        public bool Keep(long id)
+        {
+            if (!_inFrame) throw new InvalidOperationException("Keep outside BeginFrame and EndFrame.");
+            if (!_bodies.TryGetValue(id, out LiveBody standing)) return false;
+
+            standing.Seen = _sweep;
+            _fedParts += standing.Parts.Length;
+            return true;
+        }
+
+        /// <summary>Closes a fed frame: the bodies not placed in it are removed, and a slice is painted.</summary>
+        public void EndFrame()
+        {
+            if (!_inFrame) return;
+
+            _inFrame = false;
+            PartCount = _fedParts;
+
+            Sweep();
+            Paint();
+        }
+
+        private static bool Finite(float v) => !float.IsNaN(v) && !float.IsInfinity(v);
 
         /// <summary>Destroys the bodies that were not in the living list this sweep.</summary>
         private void Sweep()
@@ -416,9 +594,9 @@ namespace Evosim.Theatre
             for (int i = 0; i < budget; i++)
             {
                 LiveBody live = _order[(int)(_paintCursor++ % _order.Count)];
-                if (live.Root == null || live.Body == null) continue;
+                if (live.Root == null || live.Sized == null) continue;
 
-                Palette.Paint(live.Id, live.Root, live.Body.Phenotype, live.Tint, ColourByCellType);
+                Palette.Paint(live.Id, live.Root, live.Sized, live.Tint, ColourByCellType);
                 live.Dressed = true;
             }
         }
@@ -494,9 +672,9 @@ namespace Evosim.Theatre
             foreach (KeyValuePair<long, LiveBody> entry in _bodies)
             {
                 LiveBody live = entry.Value;
-                if (live.Dressed || live.Root == null || live.Body == null) continue;
+                if (live.Dressed || live.Root == null || live.Sized == null) continue;
 
-                Palette.Paint(live.Id, live.Root, live.Body.Phenotype, live.Tint, ColourByCellType);
+                Palette.Paint(live.Id, live.Root, live.Sized, live.Tint, ColourByCellType);
                 live.Dressed = true;
                 n++;
             }
@@ -510,9 +688,8 @@ namespace Evosim.Theatre
         /// One body as transforms and renderers — <see cref="SnapshotWorld.Assemble"/>'s tree,
         /// flattened, and without the pose: <see cref="Pose"/> puts it where it is.
         /// </summary>
-        private LiveBody Build(long id, Solver body)
+        private LiveBody Build(long id, object source, Phenotype phenotype)
         {
-            Phenotype phenotype = body.Phenotype;
             int count = phenotype.PartCount;
 
             var root = new GameObject(
@@ -527,7 +704,7 @@ namespace Evosim.Theatre
             var live = new LiveBody
             {
                 Id = id,
-                Body = body,
+                Source = source,
                 Root = root.transform,
                 Parts = new Transform[count],
                 Visuals = new Transform[count][],
@@ -548,7 +725,7 @@ namespace Evosim.Theatre
                 go.transform.SetParent(root.transform, false);
                 live.Parts[i] = go.transform;
 
-                Plan(part, _sim.Config.Shapes.Resolve(part.ShapeId));
+                Plan(part, _config.Shapes.Resolve(part.ShapeId));
 
                 var visuals = new Transform[_meshes.Count];
 
@@ -595,7 +772,7 @@ namespace Evosim.Theatre
             for (int i = 0; i < live.Parts.Length; i++)
             {
                 PhenotypePart part = grown.Parts[i];
-                Plan(part, _sim.Config.Shapes.Resolve(part.ShapeId));
+                Plan(part, _config.Shapes.Resolve(part.ShapeId));
 
                 Transform[] visuals = live.Visuals[i];
                 if (visuals == null || visuals.Length != _meshes.Count) continue;
