@@ -179,6 +179,15 @@ each one found is a reason to rewrite the sentence, and a page with several of t
   what the owner is asked to rule on at the end.
 - **Commit messages.** A title under seventy characters that says what changed and why;
   a body in plain sentences. No bullet lists of files.
+- **Story films.** Captions are prose the viewer cannot reread, so each carries one idea and
+  stays on screen long enough to read. Every term is explained at or before its first use, in
+  the glossary's word and never a synonym or a code name. "I" is the reader of the runs and
+  "we" the project. A creature never wants, tries or chooses. A caption about a recorded
+  event says "in the run", because every frame is a cousin. A chapter title states what
+  happens. The story has a shape (hope, obstacle, turn, end) and its kind is named; a turn is
+  never invented. The §5 tells apply at caption length too. The measures (reading pace,
+  rounding, the font, charts) are in `logbook/specs/story-writer-brief.md`, and the words are
+  in `logbook/specs/story-glossary.md`.
 
 ## 8. Rewriting what already exists
 

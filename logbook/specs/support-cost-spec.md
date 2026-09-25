@@ -66,7 +66,7 @@ build's acceptance beside the tests.
 2. A two-part body with the second part's centre 0.5 m from the root at 0.1 W per m² per
    m² pays `0.1 · LitArea · 0.25` W, to 1e-6, and a grown copy at scale 2 pays four times
    the distance term on four times the area (sixteen times).
-3. The giant of `scratch/logs/giant-7597.txt` (its genome under `inocula/` if it is not
+3. The giant of `logbook/specs/giant-7597.txt` (its genome under `inocula/` if it is not
    there yet: extract it) reads −179 W net through `StandingWatts` at the screen's income
    assumptions, within a watt.
 4. With the price at 0 the crowd fixture's 3,000 s regress is identical in every field and

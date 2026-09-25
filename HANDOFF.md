@@ -21,7 +21,7 @@ is on main from 2026-09-22 (`9eb262a`, `bd608d8`; the proposal is
 | round 42 seed 1's world, 30,000 s | 24.4 min at 16 threads (20.5x); Unity took ten hours; `lineage.jsonl` and `positions.jsonl` byte-equal between the 8-thread run before the grid work and the 16-thread one after |
 | both books | energy audit closed (peak residual 0.042 J); matter residual −3.2e-04 of 1,500 units, float rounding at the body's account, not a handoff fault |
 | identity | digest, lineage, positions and poses byte-equal at 1, 8 and 24 threads; state hash of the grid equal before the change and at 1, 4 and 16 threads |
-| parity with PhysX | forty of round 42's jointed bodies alone in still water, 60 s: 40 of 40 within 0.05 rad with PhysX's self-collision off, 12 of 40 with it on; two hand-built strokes agree to 1e-4 rad and 0.1 mm (`scratch/solver-spike/stroker/`) |
+| parity with PhysX | forty of round 42's jointed bodies alone in still water, 60 s: 40 of 40 within 0.05 rad with PhysX's self-collision off, 12 of 40 with it on; two hand-built strokes agree to 1e-4 rad and 0.1 mm (`logbook/specs/reactive-thrust-stroker/`) |
 | wall split at 1,100 bodies | physics 73%, world 26%, harness 2%: the solver is the ceiling |
 | nothing lost | 0 diverged in 3,000,000 steps, both full seeds |
 
@@ -228,7 +228,7 @@ grid's Courant bound (0.89 against 0.83 m/s; 0.24 within a cap radius at 15 m, 0
 20 m). Core 916 of 916 and Farm 85 of 85 on the merged tree; the Core fixture is `pfix9`'s
 config (`679f831c59c6f1af`), the crowd fixture `runs/r47fixc-s4` (round 44's world on the
 merged build, everything off) replays `r46fixc-s4` in 149 fields at 2,000 samples with
-the positions byte-equal (`scratch/r45-build/regress.py`; the three fields only the
+the positions byte-equal (`logbook/specs/r45-build-regress.py`; the three fields only the
 candidate has are the instruments' `maxReach`, `wallExposureMs` and `wallLedgerMs`), and
 the theatre compiled on worker 6 with the reef, the pool's loading and the safari (the
 safari's dry run wants a guide beside the run, which `scripts/guide.py <arm>` now writes
@@ -346,14 +346,267 @@ carrying a developed 3 cm part, so no born-small addition was ever born in round
 47, and under it a whole plant is refused at investment 0.02 unless its adult is at least
 0.031 m³; hence the rigid-group floors and the lowered floors, both to be screened.
 
-**State (2026-09-24, about 13:00; the session runs on Opus 5.5 since midday).** This block
-is what the next session works from. Everything below it in this section is history.
+**State (2026-09-24, about 13:00; the session runs on Opus 5.5 since midday; updated
+2026-09-25 about 10:40).** This block is what the next session works from. Everything below it
+in this section is history.
 
+- **The work of 2026-09-25, started on the owner's go at 10:13 ("go ahead and start the work"),
+  with the owner away and reachable by phone notification.** The owner set Intel's power limits
+  in BIOS 0806 at 10:11. The restart is confirmed; the setting itself cannot be read from
+  Windows without admin tools. The machine track runs one heavy job at a time, owned by the
+  session; subagents write code and run only builds and fast filtered tests. The stop rule
+  (proposed, and taken as accepted with the go): if seed 2's replay runs clean past 13,700 s,
+  every heavy job pauses and the owner is told.
+  - **Machine track:**
+    - the seed 2 probe replay at 10 threads (`scratch/film/r48-s2-probe.log`, the report
+      `r48-s2-probe.txt`), built from `scratch/wt-r49`. It was a cousin: it parted from the
+      recording at 12,510 s and then ran clean past 13,700 s, which says nothing about the
+      chip. A resume from the 12,500 s checkpoint on round 48's own build (`Release-r48`, all
+      four hashes equal) also parted at its first sample, by about 1e-8 relative. So a round 48
+      checkpoint does not restore everything exactly. `--verify-checkpoint` names only
+      `TouchedBedOrGlass`, an instrument flag reset every step, so the cause is open. The
+      test is therefore a full re-run from founding: `scratch/r48s2-rerun/runs/r48s2-rerun/`,
+      8 threads, started 10:29. It was identical through 1,160 s at 10:36, and
+      `python scratch/r48s2-rerun/check.py` is the one look;
+    - then the GPU port's checks as its subagent hands them over;
+    - then story-mode compiles and renders.
+  - **The GPU port** (Opus subagent, `scratch/wt-gpu`, branch `gpu-port`, notes in
+    `scratch/gpu-port/`): catch spike 4's kernel up to round 48's world, then build the port per
+    `logbook/specs/gpu-port-spec.md`. It runs no GPU code and no farm run; it hands over the
+    commands for acceptance 1 to 3.
+  - **Story v2, writing** (Opus subagent, `scratch/story-v2/`): a glossary checked against the
+    code, the writer brief v2 (it becomes `logbook/specs/story-writer-brief.md`), and round 48's
+    story rewritten with an opening chapter on how the world works, charts and a bittersweet
+    arc. The procedure is `logbook/specs/story-film.md`. The skill's text waits in
+    `scratch/story-skill/SKILL.md` for the owner, since writes under `.claude/` ask them.
+  - **Story v2, visuals** (Opus subagent, `scratch/wt-safari2`, level with main): a story look
+    with a per-shot exposure meter, lighter water and a camera key light, plus the `chart` field
+    (line, bars, and a live energy account) drawn with UI Toolkit. It starts no Unity process;
+    the session compiles.
+  - **Scratch cleanup** (the owner's request of 10:25): `scratch/` held 107 GB in 298 entries.
+    Three Sonnet surveys, read-only, write `scratch/cleanup/media.tsv`, `worktrees.tsv` and
+    `rest.tsv`, marking each entry delete, extract, keep or ask. The session reviews the tables
+    before deleting anything. Extraction into git follows CLAUDE.md's conventions, and anything
+    uncertain waits for the owner. The permission classifier refused the agent's first deletion,
+    so every deletion is the owner's to run. The extract set (22 items) is in git with its
+    citations repointed. `scratch/research-throws/notes.txt` stays in scratch until the three
+    comments under `unity/Assets/Evosim` that cite it are repointed at a round gap, because that
+    edit moves `simHash`. The delete script is `scratch/cleanup/run-cleanup.ps1`. It reads
+    `delete-list.tsv` (built by `make-list.py`) and does a dry run unless given `-Execute`. Its
+    default group is 103 GB: frame sequences whose clips and contact sheets stay, superseded
+    directories, logs older than 2026-09-24, and 25 merged worktrees removed without `--force`.
+    `-IncludeAsk` adds `scratch/wt-shallow` and `.claude/worktrees/` (16 GB). The dry run
+    listed 103.3 GB of scratch's 112 GB and refused nothing. The owner was notified at 11:10.
+    The extraction commits (`4355869`, `dc8606b`) are not pushed: they carry a picture,
+    genomes, logs and trajectory tables, and pushing anything that is not code or prose is the
+    owner's call.
+  - **Checkpoint fidelity: found, and the fix is being built.** A round 48 resume parts at its
+    first sample because the `Contact` sense is not restored. First, `Organism.PartContact` is
+    not written by `WorldState.WriteOrganism` (health and damage are). Second, a restored
+    body's `Senses.Contact` and `Senses.Damage` stay unwired until the first metabolic step,
+    because only `HandBackWhatWasFelt` wires them and `Build` does not. `--verify-checkpoint`
+    could not see either: `PartContact` is on its filled-before-read list, and its
+    `ISensorField` clause skips the body's own senses. The data agree. At 12,510 s only four
+    bodies of about 4,220 differ at pose precision. Each is a one-joint body whose hinge
+    neuron reads `Contact` at a weight near −1.05, with its joint stop to stop against the
+    recording. Also unwritten: `Simulation.ModuleRebuilds`, an instrument only.
+    - **The fix** is being built by an Opus subagent in `scratch/wt-ckfix` (branch
+      `checkpoint-senses`). It writes and restores only, so no live trajectory moves.
+      `StateVersion` becomes 11 and `Checkpoint.Version` 5. Version 10/4 files are read as
+      today, lossy: the farm refuses them without `EVOSIM_ALLOW_SOURCE_MISMATCH`, and the
+      theatre, always a cousin, takes them.
+    - **What it means for round 48's checkpoints:** no build can resume one faithfully,
+      because the files lack the contact history.
+    - **What follows on the machine track:** a founding of seed 2 to 1,000 s, a resume from
+      800 s, the extended check, and the four fixtures re-recorded.
+  - **The checkpoint fix is built** (`a55c36c`, `2a105f5` on `checkpoint-senses`,
+    `scratch/wt-ckfix`, not merged). What it does:
+    - `StateVersion` 11 and `Checkpoint.Version` 5 save the contact record and re-wire the
+      senses on restore.
+    - `ModuleRebuilds` is saved.
+    - It fixed a fourth fault found by its new twin-step check. A checkpoint taken between
+      growth steps restored every growing body at the organism's size, not the smaller one
+      the solver was stepping, so the restore parted at its first physics step. Round
+      cadences (multiples of 10 s) never hit this; a stop or wall between growth steps did.
+    - A checkpoint with a plan change pending after a bite cannot be restored at all, since
+      the old plan is not kept. So the loop defers a cadence checkpoint to the next growth
+      step, skips a final one in that state, and the reader refuses one with a clear message.
+    - Version 10/4 files are read lossily, as the old build restored them, and are marked
+      as a cousin.
+    - Tests: the filtered Core tests pass 83 of 83 and the Farm tests 44 of 44, with new
+      restore and fidelity tests that failed before the fix.
+
+    Its acceptance is three farm runs on the machine track, the commands in the agent's
+    report: a founding of seed 2 to 1,000 s that must equal `r48-s2`, a resume from 800 s
+    that must be identical after 800, and `--verify-checkpoint` on the 800 s checkpoint.
+    After the merge, ckA, ckB, ckC and ckUi are re-recorded from the main tree.
+  - **The `Damage` sense is cumulative too**, verified: `lost[part] +=` in `WorldMouth`, cleared
+    only by `AdoptPlan`, where D106 item 5 asks for the step's loss. The owner's question on
+    the contact sense covers both.
+  - **The `Contact` sense is sticky, against its spec.** `NoteContact` sets a part's flag and
+    nothing clears it but a plan change, so the sense reads "touched since the body last
+    changed shape". The mouth spec (item 5) and `Organism`'s doc say "in contact now". Rounds
+    45 to 48 ran with it on. Making it per-step is a new realisation of every seed. The agent
+    proposes landing it at round 49's gap, and it is put to the owner.
+  - **Story v2, writing: done.** The brief and glossary are `logbook/specs/story-writer-brief.md`
+    and `story-glossary.md` (`fc1c843`). STYLE.md §7 has a story-film note, and the reader's
+    key's birth-fraction row is corrected. Round 48's second story is `scratch/story-v2/`
+    (`story.json`, `story.md`, `checks.tsv`, 140 rows), with a copy in
+    `logbook/specs/story-r48-v2/`. It runs 9 min 39 s: 20 scenes, 7 chapters and 15 charts. Its
+    arc is bittersweet: every stored eater's line died out, and what lasted was a leaf that
+    budded a speck of stomach, a line of 29 living almost wholly on light. The opening chapter
+    runs 104 s of scenes, against the "about a minute" asked. Scene 4, the price card, is the
+    cut if it must be shorter. The glossary corrects the first film in six places, among them:
+    links catch light, living leaves make three quarters of the snow, the tank is 45 m deep
+    only on average, and the gift did pay for a first child. Scene 19's third caption says
+    seed 2's cause is not found; it changes with the re-run's verdict.
+  - **Seed 2 of round 48 stays censored** (the owner, 2026-09-25 midday, agreeing with the
+    agent's recommendation): if the re-run shows a code fault, the fix goes into round 49,
+    and seed 2 is neither resumed nor replaced. A resume could not be faithful anyway,
+    because round 48's checkpoints lack the contact history.
+  - **The scratch cleanup ran** (the owner ran `run-cleanup.ps1 -Execute -IncludeAsk`, since
+    the permission classifier refused the agent). `scratch/` went from 113 GB to 9.4 GB. Six
+    worktrees failed on long paths (`wt-lever1`, `wt-profile`, `wt-shallow`, and
+    `.claude/worktrees/` `agent-a0a5…`, `safari-r47`, `skin-r47`). Git unregistered them,
+    but about 520 MB each of long-path files stay on disk. `agent-a7b7…` was refused for an
+    untracked stale `scripts/guide.py` (1,429 lines, against main's 2,220). The owner has the
+    commands for both.
+  - **The story-film skill is in the project**, at `.claude/skills/story-film/SKILL.md` (the
+    owner: "inside this project, as a project level skill").
+  - **Films recorded by the farm, drawn by Unity** (the owner: "lets do that!"). This is
+    round 49's Part B. B1 is built on `r49-record-film`. B2 (the theatre plays a window) and
+    B3 (the safari films from windows) are next. Round 48's second film is made the current
+    way today.
+  - **Round 48's entry is drafted and reviewed, and waits for the re-run's verdict before it
+    is committed:** `logbook/0120-the-eaters-spent-their-endowment-on-one-child.md`, with its
+    index row in `logbook/README.md` and four pictures `logbook/images/r48-*.png`, all
+    uncommitted. Its reads are committed in `scripts/reads/r48-entry/` and
+    `logbook/specs/r48-read/`. One marked `[PENDING …]` paragraph in its seed 2 section takes
+    the verdict. Five clauses hold, three fail and eight are censored on seed 2's stop. The
+    round's reader prints `short` for those, and the second story's verdict table now says
+    censored too. The main finding: the endowment paid for every one-part pool stomach's
+    child at its first half-second, and the founder then starved. The review corrected the
+    tank's depth, what the snow is, the prediction count (fifteen and two readings) and the
+    pool line's peak (5,903.5 s). It also rewrote the resume section with the cause found.
+  - **The story's machine-track order**, once the re-run has ended with a code fault (a clean
+    run pauses everything instead):
+    1. the visuals' compile and four-scene test render; look at every frame;
+    2. the GPU port's acceptance, as handed over;
+    3. the checkpoint fix's acceptance;
+    4. round 48's second story film, about two hours on one worker, from
+       `scratch/story-v2/story.json`.
+  - **Story v2, visuals: done** (`fc236a7`, `91d3b08`, `ac33d7a` on `worktree-safari2-r47`),
+    compiled outside Unity with Roslyn and not yet seen in Unity. It adds a story look that
+    lightens the water, ambient light and fog, a camera lamp on portraits and births, and a
+    centre-weighted per-shot exposure meter. The look is on for stories only
+    (`EVOSIM_THEATRE_STORY_LOOK`, dials `EVOSIM_THEATRE_STORY_*`). Charts come in three
+    kinds, `line`, `bars` and a live `account`, drawn in their own UI Toolkit panel and
+    composited before the downscale. The test is
+    `scratch/story-visuals/run-test.ps1 -Step refresh|compile|render|dark` with a four-scene
+    `test-story.json` of seed 1. It is a Unity compile and a render, so it waits for the
+    machine track. The report's list of Unity APIs not yet seen working is the checklist for
+    the first frames: panel repaint in batchmode, alpha, orientation, the lamp under URP, and
+    exposure on a manual render.
+  - **Outside `scratch/`, for the owner:** `runs/` holds 67 GB, `.claude/worktrees/` 13.7 GB,
+    and the six Unity workers 1.7 GB each.
+  - **Merged:** the safari branch is in main (`d995433`, pushed), so story mode is on main.
+
+- **The machine runs under the owner's option B, not a full hold (2026-09-25, late morning:
+  "Lets go for B then").** The owner declined the flash for now ("if this is not critical i'd
+  rather not do it"; no USB stick to hand), after the agent's answer that it is important
+  and not urgent. Of the three options put, B is:
+  - no flash for now;
+  - the owner sets ASUS MultiCore Enhancement to "Disabled - Enforce All limits" in BIOS 0806,
+    which holds the chip to Intel's power limits (still to do at this writing);
+  - the agent resumes at a lighter load: one heavy job at a time (a farm run, a render or a
+    test suite), at about a third of the machine, which is 10 threads for a farm run;
+  - the agent watches for the warning signs and reports any: WHEA events, a crash with no
+    other cause, a run that fails to replay identically, seed 2's replay running clean;
+  - the flash when a stick turns up.
+
+  The steps, written to be followed blind, are on the owner's Desktop
+  (`BIOS update - step by step.txt`; a copy is at `scratch/owner/`):
+  - part 1 is the MultiCore setting; part 2 is the flash;
+  - the target is 1836 (2026-05-14), the newest non-beta, SHA-256 `9CAE4C6A…84AF4`; 1840 of
+    2026-09-23 is a beta;
+  - the flash is EZ Flash 3 from a FAT32 stick carrying the file renamed `PZ790PW.CAP`, which
+    is CrashFree BIOS 3's name; this board has no FlashBack button;
+  - after the flash: VMD back on, then Intel Default Settings with the Performance profile.
+
+  Read the same morning:
+  - memory 2 × 32 GB at 4800 (XMP off);
+  - both 980 PROs healthy on firmware 5B2QGXA7;
+  - Secure Boot off, and no encryption found;
+  - the Intel RST VMD controller present, with `stornvme` and `iaStorVD` both boot-start.
+
+  **The first launch under B, the seed 2 probe at 10 threads, was refused by Claude Code's
+  auto-mode permission classifier ("Interfere With Workloads") and waits for the owner.**
+  The hold's history follows.
+- **The machine was on hold for its firmware (the owner, 2026-09-24, about 20:05: "finish what
+  you're currently doing, but i'll come back later to do the updates. don't start new runs").**
+  The i9-13900K runs ASUS PRIME Z790-P WIFI BIOS 0806 of 2022-11-22 with microcode 0x10E
+  (`HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor `, `Update Revision`), which predates
+  Intel's fixes for the 13th and 14th generation's voltage degradation (0x129 of August 2024,
+  0x12B of September 2024, and later); the damage accumulates under long boosted loads, which
+  is this campaign's load. Measured at the ruling: no throttling (`Performance Limit Flags` 0,
+  every core at full frequency), no WHEA hardware-error events, the one crash on record
+  2026-09-22's; the CPU's own temperature is not readable without an admin tool, and the ASUS
+  WMI surface Armoury Crate uses is a firmware control panel (bus writes, boot order,
+  passwords, fan curves) and is not to be called. **Until the owner has flashed a BIOS carrying
+  0x12B or later: seeds 1 and 3 of round 48 finish; nothing new starts, which the agent reads
+  as no farm run (the seed 2 probe included), no render, no test suite and none of round 49's
+  gap work.** The owner will choose Intel Default Settings after the flash, over the weekend
+  of 2026-09-26. **One release from the hold** (the owner, the same evening: "proceed without
+  bios changes"): the story safari of round 48, its compile and its render, tonight, for the
+  owner to watch in the morning; the power plan is left as it is. The probe, farm runs, test
+  suites and round 49's gap work stay held. Seed 2's probe is
+  also a hardware test: a replay that reproduces the minus infinity at the same step is a code
+  fault, and one that runs clean past 13,700 s says the run's arithmetic went wrong once on
+  this machine (an inference until the replay runs).
+- **Round 48's story film is made (01:58 on 2026-09-25) and waits for the owner's comments**:
+  `scratch/owner/round-48-story.mp4` (22 of 22 scenes and a title, 8 min 47 s, every scene's
+  camera clear of the bed, the bodies and the speed ceiling) and `round-48-story.md`. It was made
+  for the owner to watch in the morning of 2026-09-25 (the owner: a story "from all arms", filmed without reading the text first,
+  comments after). The writer's story and shot list are `scratch/story/r48/story.md` and
+  `story.json` (22 scenes, eight chapters, about 8.5 minutes; `checks.tsv` has every caption's
+  source; seed 3's numbers are provisional at 26,800 s). Story mode is on the safari branch
+  (`453ec7d`, `974236d`: `theatre-safari.ps1 -Story <json> [-StoryRun] -Folder`,
+  `scripts/story-assemble.py`), which has main merged in (`b5b0ba1`) so it reads round 48.
+  Render chain 1 (`scratch/story/r48/render-chain-1.ps1`, detached, log beside it) films
+  seed 2's scenes 4, 14, 15 and 16, then seed 1's 1, 2, 3, 8, 12, 13, 17, 18, 19 and 21, into
+  `scratch/wt-safari2/scratch/safari/<arm>/story-final/`. Seed 3 ended (budget, 30,000 s,
+  8,589 alive), its guide was built (`--no-economics`), and the story was made final in place
+  (seed 3's names and numbers, scenes 6, 7, 10, 20 and 22; no filmed scene changed).
+  **Render chain 2** (`render-chain-2.ps1`, detached, waits for chain 1's pid) films seed 3's
+  five scenes and seed 1's 9, 11 and 22, runs `story-assemble.py` into
+  `scratch/owner/round-48-story.mp4` and copies `story.md` beside it as `round-48-story.md`. If
+  a session restarts before it ends, read `render-chain-1.log` and `render-chain-2.log` in
+  `scratch/story/r48/` before running anything.
 - **Round 48 is running.** The pre-registration is `logbook/0119-a-stomach-on-a-plant-and-paying-as-you-go.md`,
   committed at `d35c248` on a clean tree and pushed. Seeds 1 and 2 launched at 12:51 from
   it (`gitCommit d35c248`, `gitDirty` false, `configHash e5a30c15db9fc4db`, five threads each,
-  900-minute walls); every header token was checked from the reports. Seed 3 goes when one of
-  them ends, with the same command and `-Seed 3`. The overhead floor is 50 J: the second count
+  900-minute walls); every header token was checked from the reports. **Seed 2 ended `error` at
+  13,700 s** (15:05 UTC): the absorptive log's writer refused a `densityHere` of minus infinity
+  (`scratch/logs/r48-s2.err`, `Json.Writer.Field` from `AbsorptiveSample.ToJson`), eight rows
+  into that sample, so the failing body is the ninth living absorptive body in list order,
+  most likely 23037. Its stats row at 13,690 s is ordinary: audit −8.5e-06, `det cv` 0.688
+  and steady for 100 s, `diverged` 0, and the snow dump at 13,600 s has no negative or
+  non-finite column. So it was one event inside twenty metabolic steps, not a slow
+  instability. Every field deposit and take is guarded against a non-positive or NaN amount,
+  so a snow cell can reach minus infinity only through the grid's own passes (transport,
+  mixing, settling, remineralisation); that is an inference, not yet found. The seed is
+  censored at 13,690 s, and B1 ("nothing breaks, 3 of 3") is falsified on it. **Seed 3
+  launched at 17:06** into the freed slot (pid 61384, `gitCommit 4652627`, clean, the same
+  `dynamicsHash`, `farmHash`, `coreHash` and `configHash e5a30c15db9fc4db` as seeds 1 and 2,
+  checkpoints every 500 s). **The probe is built**: `--film-window … --probe <file>` on
+  `r49-record-film` (`f941f53`, exe `scratch/wt-r49/artifacts/Evosim.Farm/bin/Release-probe`)
+  scans every body, corpse and cell after each metabolic step and stops at the first value
+  that is not finite. Its run replays seed 2 from the 12,500 s checkpoint to 13,705 s, and
+  it waits for seed 1's slot (seed 1 at 22,820 s at 17:10, about 27 minutes a 1,000 s):
+  `Evosim.Farm.exe --film-window runs/r48-s2 13695 13705 scratch/film/r48-s2-probe --fps 1
+  --threads 5 --probe scratch/film/r48-s2-probe.txt`. Whether seed 2 is resumed on a fixed build
+  (a new realisation from the fault on), replaced by a fourth seed, or read censored is the
+  owner's decision once the cause is known. The overhead floor is 50 J: the second count
   screen (`scratch/r48-build/runs/r48plat2-s2`) peaked at 3,670 and settled near 2,450, about
   twice round 47's crowd at the same seed and step, and the entry's screen section has the
   numbers. The pool's ledger at the round's prices is `logbook/specs/r48-read/ledger-pool.md`.
@@ -386,13 +639,15 @@ is what the next session works from. Everything below it in this section is hist
   (`scratch/leaf-look/earth/side-4.png`), `EVOSIM_THEATRE_EARTH=0` to see through the shoal
   for a census, and the free-fly camera held 0.3 m above the bed (the films and the safari
   already were).
-- **Round 47 seed 2's safari reshoot is running** on those passes, from the worktree's worker 5
-  (its Core predates round 48; main's build refuses round 47's checkpoints), launched 14:29,
-  29 scenes at 1920x1080 with `-DeleteFrames`, detached, log
-  `scratch/wt-safari2/scratch/logs/safari-r47-s2-reshoot.out` and `theatre-safari-r47-s2.log`,
-  films into `scratch/wt-safari2/scratch/safari/r47-s2/2026-09-24/`. The call-outs stay off
-  until the owner rules. Merge the branch after the films are seen; round 48's safari then
-  runs from main.
+- **Round 47 seed 2's safari reshoot is done** (launched 14:29, ended 18:56): 29 scenes,
+  18,647 frames, nothing under the bed or inside a body, no camera over 0.5 m/s. The clips and
+  sheets are in `scratch/wt-safari2/scratch/safari/r47-s2/2026-09-24/`, joined as
+  `r47-s2-safari-reshoot-all.mp4` (173 MB, 10 min 21 s) and sent to the owner as a 720p copy.
+  Scene 14, the floor at 5,000 s, is twenty seconds of empty sand, which is the floor in that
+  world; the floor scene is ten seconds from `c0259c5`. Moving it to where the crowd meets the
+  shoal would show bodies over sand, but its caption would have to change with it, so that is
+  offered to the owner and not built. The call-outs stay off until the owner rules. Merge the
+  branch after the films are seen; round 48's safari then runs from main.
 - **Faster film frames, built and not yet measured** (`2a118b9` on the safari branch, an Opus
   subagent, compiled on the worktree's `unity-w6`). The reshoot's frames cost about 200 ms each
   where the render and read-back is 33 ms. The rest was a CPU box filter over a 4K array, a
@@ -407,7 +662,19 @@ is what the next session works from. Everything below it in this section is hist
   so scene 7's 20.5 minutes of stepping becomes one restore. The agent's reading, unmeasured:
   most of the seek's slowness is Mono itself, which is Part B's case. The measurement commands
   are in the agent's report as run at the reshoot's end: a 10 s close film with and without the
-  old paths on worker 5, refreshed first.
+  old paths on worker 5, refreshed first. **Checked at 19:40** on worker 5 refreshed from
+  `2a118b9`: `theatre-film.ps1 r47-s2 -At 30000 -Shots canopy,close -Seconds 10
+  -DownsampleCheck -RunsRoot <main>/runs`. The card's filter equals the CPU's in all six
+  checked frames (0 of 2,073,600 pixels differ). A frame cost 17.8 ms (canopy) and 29.7 ms
+  (close) on the main thread at the median, against the reshoot's 200 ms, and the writer never
+  made the film wait. Those numbers were taken beside two farm arms, so they are indicative
+  and are re-taken at the gap. The canopy shot, under the caps looking up through a gap at
+  the leaves against the light, reads well; the close shot's depth of field is mild at the
+  matched lens. The director check `-Check -Scenes 3,23,4` passed with and without `-Canopy`
+  (37 frames each, none under the bed, inside a body or over 0.5 m/s), so the closer portraits
+  never put the eye inside a body. The canopy hook acts on the arrival and the descent only,
+  so the `-Canopy` pass on those three scenes does not exercise it; a check of scenes 1 and 2
+  with `-Canopy` waits for the firmware hold to lift.
 - **Round 49's record and films, being built** (the owner's rulings of 15:40 to 16:00: checkpoints
   every 500 s from round 48 seed 3, a record that stays small, and safari films soon after an arm
   ends, at the scale of 300,000 s runs). The design is `logbook/specs/record-and-film-spec.md`.
@@ -437,7 +704,43 @@ is what the next session works from. Everything below it in this section is hist
   window of them a cousin. A window reads faithful when `coreHash` and `dynamicsHash` match and
   every identity row agrees bit for bit. A differing `farmHash` is then named and does not
   disqualify it, because the rows are the evidence and the farm's source is mostly recording.
-  This goes into the spec with the agent's seven corrections at the merge. B2 and B3 (theatre playback and the safari on
+  This goes into the spec with the agent's seven corrections at the merge. **`record-format` is built** (`0329316`, 0
+  warnings, nothing run). On `r48fix-s4` the snapshots fall from 430.3 MB to 3.2 MB (slim rows
+  0.3 MB, genomes 2.9 MB), and the positions from 29.5 MB to 11.4 MB (2.6x at one gzip member a
+  row). The converter's check passed over 111,940 snapshot rows, and every moved script reads the
+  same from both records. **Both branches are merged in `scratch/wt-r49`** (branch
+  `r49-record-film`, no textual conflicts). An Opus agent is wiring them together there, compile
+  only. **The integration is built** (`3d5d471`, 0 errors, nothing run). The window takes
+  genomes from the world's admission queue and writes them in Core's member format. The
+  converter now writes the JSON poses as a version 2 stream with a NaN fraction meaning not
+  recorded. A resume inherits its source's record format, and the spec is corrected in place.
+  On `r48fix-s4` the converter's check passed: poses 125.3 MB to 42.6 MB, snapshots 430.3 MB to
+  3.2 MB, positions 29.5 MB to 11.4 MB. The window exits 0 faithful, 2 cousin, 3 unverified,
+  1 refused. **The faithful rule is revised** (the agent found that Core's hash moves with this
+  build for recording-only reasons, so the first rule would have made every window of round 48 a
+  cousin). `configHash` decides, since another config is another world. The code hashes do not
+  decide on their own: a window whose identity rows all agree bit for bit reads faithful, with
+  every differing hash named in `sourcesDiffer` (`4301032`; this build moves `coreHash` and
+  `farmHash`, not `dynamicsHash`). The acceptance gains a window of round 48 seed 3, which
+  checkpoints every 500 s: it should read faithful with those two hashes named, which tests
+  the claim that the build moves no trajectory.
+
+  **At round 48's gap, in order, from `scratch/wt-r49`, one farm run at a time**:
+  1. the filtered tests (`FilmWindowTests`, `PoseStreamTests`, `RecordFormatFarmTests`,
+     `CheckpointTests`; Core's `RecordFormatTests`);
+  2. the full suites (`core-test.ps1 -All`, `Evosim.Farm.Tests`, `Evosim.Dynamics.Tests`);
+  3. the regress: `rfmt1-s4` and `rfmt2-s4`, round 44's launcher, seed 4, 3,000 s, with
+     `EVOSIM_RECORD_FORMAT` 1 and 2 and `EVOSIM_DIGEST_EVERY` 100, which must be
+     digest-identical (`digest-diff.py`, `compare-det.py`);
+  4. a checkpointed fixture, `rfilm-s4` with `-CheckpointEvery 500`;
+  5. a window `--film-window runs/rfilm-s4/<run> 1000 1060 scratch/film/rfilm-1000 --fps 30
+     --threads 4`, which must read faithful;
+  6. a v5 checkpoint through `--verify-checkpoint`, and a resume `rfilm-s4r` compared with
+     the unbroken run;
+  7. the theatre's first Unity compile of the new readers, with a `-From snapshot` picture of
+     `rfilm-s4`;
+  8. then B2 and B3, the theatre's playback and the safari on windows, on top of the merged
+     safari branch. B2 and B3 (theatre playback and the safari on
   windows) follow once the safari branch has merged.
 - **The review's second and third items are built and not yet seen** (`d5540e6` on the safari
   branch, an Opus subagent, compiled clean on the worktree's `unity-w6` with every pass of the
@@ -732,7 +1035,7 @@ from the resumed run and the four recording cadences from the checkpoint's heade
 acceptance (`scratch/checkpoint/runs/ckA,ckB,ckC`): a restore at 400 s of a 600 s seed writes
 the same lineage, positions, poses, absorptive and stats rows as the unbroken run, a run
 with checkpointing off is byte-identical to one with it on, and a fresh 300 s seed 1 of round
-43's world on the build reproduces round 43 seed 1's rows (`scratch/checkpoint/regress.py`).
+43's world on the build reproduces round 43 seed 1's rows (`logbook/specs/checkpoint-regress.py`).
 A hash mismatch refuses the resume unless `EVOSIM_ALLOW_SOURCE_MISMATCH`, which marks the
 manifest. The build moved `coreHash`, `dynamicsHash` and `farmHash`, so round 43's manifests
 no longer match the tree and a resume of a round 43 run would be a marked cousin; a run is
@@ -1079,8 +1382,8 @@ subagent and never in a shell loop.
    distance), which grows as reach cubed against income as reach squared, so a fan of
    copies loses money past a size the price sets and a compact body pays nearly nothing;
    the ledger screen of the 0.5 m leaf against the 14.6 m giant at a few prices is the
-   first step. **The screen is done by arithmetic** (2026-09-23, `scratch/support-cost/
-   screen.py`, to be moved beside the proposal when it is written): at the ledger's 10 W/m²
+   first step. **The screen is done by arithmetic** (2026-09-23, `logbook/specs/r45-read/
+   support-cost-screen.py`): at the ledger's 10 W/m²
    of lit area and 3 W/m³ standing, the giant at its ceiling earns 618 W on 62 m² with an
    area-weighted mean reach of 10.5 m. A cost of price × lit area × distance needs about
    1 W per m² per metre to put the giant under water (−32 W), and at that price a 1.5 m
@@ -1150,7 +1453,7 @@ subagent and never in a shell loop.
    snow's explicit-diffusion bound trivially met at 0.02 m²/s) or the transport on the
    card, and the per-body pass parallel. During round 45, the CPU-side pieces that need no
    clean machine: the full-step kernel design (done, `logbook/specs/gpu-full-step-spec.md`,
-   from the step inventory in `scratch/gpu-design/step-inventory.txt`: the brain is small,
+   from the step inventory in `logbook/specs/gpu-step-inventory.txt`: the brain is small,
    median four neurons a genome and at most 80 a body in round 45's crowd, so the risks are
    the contact query and the panel loop; size classes rather than one ceiling; the contact
    grid built on the card with atomics behind the query's own sort; the field uploaded once

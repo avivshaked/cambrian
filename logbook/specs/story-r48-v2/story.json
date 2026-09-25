@@ -1,0 +1,5516 @@
+{
+ "run": "r48 (r48-s1, r48-s2, r48-s3)",
+ "runs": {
+  "r48-s1": "runs/r48-s1/2026-09-24-115115-e5a30c15",
+  "r48-s2": "runs/r48-s2/2026-09-24-115119-e5a30c15",
+  "r48-s3": "runs/r48-s3/2026-09-24-160650-e5a30c15"
+ },
+ "title": "Round 48: the eaters faded, and a leaf kept a stomach",
+ "version": "2 (2026-09-25): the glossary rule, an opening chapter on how the world works, a story arc (bittersweet), charts",
+ "arc": "Bittersweet. We changed four rules so that eaters of snow could found a lasting line; stored eaters landed well, lived minutes, bred and grew lines of up to 45, and every one of those lines died out. What lasted was a leaf that budded a speck of stomach and founded a line of 29, the largest stomach line in any tank, living almost wholly on light.",
+ "final": "all three seeds read at their ends: r48-s1 and r48-s3 ended at 30,000 s (budget); r48-s2 stopped on an error at 13,700 s, last good row 13,690 s",
+ "screen_seconds": 574.0,
+ "chapter_cards": "each scene carrying 'chapter' plays an 8 s chapter card first; screen_seconds includes them and not the 5 s title",
+ "scenes": [
+  {
+   "n": 1,
+   "act": "How this world works",
+   "chapter": "How this world works",
+   "station": "Descent",
+   "canopy": true,
+   "run": "r48-s1",
+   "second": 2500,
+   "subject": "world",
+   "seconds": 16.0,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "This is a tank of water 167 m across, lit from above."
+    },
+    {
+     "at": 5.5,
+     "text": "Light fades with depth. At 12 m, about 14% of it is left.",
+     "seconds": 5
+    },
+    {
+     "at": 11.5,
+     "text": "Each body is built from a recipe its children inherit."
+    }
+   ],
+   "chart": {
+    "kind": "line",
+    "title": "Light at depth, % of the surface",
+    "place": "corner",
+    "at": 5.5,
+    "until": 16.0,
+    "x": {
+     "label": "depth, m"
+    },
+    "y": {
+     "label": "% of surface light"
+    },
+    "series": [
+     {
+      "name": "open water",
+      "points": [
+       [
+        0,
+        100.0
+       ],
+       [
+        3,
+        60.7
+       ],
+       [
+        6,
+        36.8
+       ],
+       [
+        9,
+        22.3
+       ],
+       [
+        12,
+        13.5
+       ],
+       [
+        15,
+        8.2
+       ],
+       [
+        18,
+        5.0
+       ],
+       [
+        24,
+        1.8
+       ],
+       [
+        30,
+        0.7
+       ]
+      ],
+      "highlight": true
+     }
+    ]
+   },
+   "why": "Opens on the thing everything here lives on, light, and how fast it runs out with depth.",
+   "sources": [
+    "167 m: config/run header radius 83.68 m, 2 x 83.68 = 167.4 m",
+    "14% at 12 m: light 200 W/m2 x exp(-depth/6 m) (config light.surfaceIrradiance 200, attenuationDepth 6); exp(-2) = 0.135",
+    "recipe: the genome (Genome.cs) is inherited through Mutator"
+   ]
+  },
+  {
+   "n": 2,
+   "act": "How this world works",
+   "station": "Portrait",
+   "run": "r48-s1",
+   "second": 2500,
+   "flexible": false,
+   "subject": "body 201",
+   "seconds": 32.0,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "A child's recipe can change a little. What breeds more, spreads.",
+     "seconds": 5
+    },
+    {
+     "at": 6.5,
+     "text": "Body 201 has two parts: a leaf and a tiny stomach."
+    },
+    {
+     "at": 11.5,
+     "text": "A leaf earns energy from light, counted in joules, J."
+    },
+    {
+     "at": 16.5,
+     "text": "A stomach eats snow: dead matter drifting in the water."
+    },
+    {
+     "at": 21.5,
+     "text": "It pays upkeep to live, and saves what is left: the corner line.",
+     "seconds": 5
+    },
+    {
+     "at": 27.5,
+     "text": "Right now it earns 0.54 J a second and spends 0.49 J."
+    }
+   ],
+   "chart": {
+    "kind": "account",
+    "title": "Body 201's reserve, J",
+    "place": "corner",
+    "at": 21.5,
+    "until": 32.0
+   },
+   "why": "Meets one ordinary body and uses it to teach a part, a leaf, a stomach, upkeep and the reserve. Body 201 carries the same kit as the story's last body, 48048, so the film opens and closes on it.",
+   "sources": [
+    "body 201: lineage born 523 s to parent 119 (Frondium marufubens), bud absorptive, died 3,206.5 s; alive at the 2,500 s checkpoint",
+    "two parts, a leaf and a stomach: absorptive.jsonl t=2500 parts 2, snapshot 2500 nodes photosynthetic + absorptive",
+    "tiny stomach: absVolume 0.000199 of volume 0.0821 m3 = 0.24%",
+    "0.54 and 0.49: absorptive.jsonl t=2500 lightW 0.539 + foodW 0.0018; upkeepW 0.409 + exudedW 0.081"
+   ]
+  },
+  {
+   "n": 3,
+   "act": "How this world works",
+   "station": "Card",
+   "description": "a title card, dimmed, under a full chart",
+   "run": "r48-s1",
+   "second": 2500,
+   "subject": "world",
+   "seconds": 33.0,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "The life of body 201"
+    },
+    {
+     "at": 5.5,
+     "text": "Born small, it put its savings into growing."
+    },
+    {
+     "at": 10.5,
+     "text": "Grown, it saved for its children's price plus a cushion."
+    },
+    {
+     "at": 15.5,
+     "text": "At 850 s it had two, for 129 J. The 14 J cushion was left.",
+     "seconds": 5
+    },
+    {
+     "at": 21.5,
+     "text": "Upkeep rises with age, and it drifted down into dimmer light.",
+     "seconds": 5
+    },
+    {
+     "at": 27.5,
+     "text": "At zero reserve a body dies. Body 201 starved at 3,207 s.",
+     "seconds": 5
+    }
+   ],
+   "chart": {
+    "kind": "line",
+    "title": "Body 201's reserve over its life, J",
+    "place": "full",
+    "at": 5.5,
+    "until": 33.0,
+    "x": {
+     "label": "time in the run, s"
+    },
+    "y": {
+     "label": "reserve, J"
+    },
+    "series": [
+     {
+      "name": "body 201",
+      "points": [
+       [
+        530,
+        2.5
+       ],
+       [
+        540,
+        3.71
+       ],
+       [
+        550,
+        15.6
+       ],
+       [
+        560,
+        26.13
+       ],
+       [
+        570,
+        32.85
+       ],
+       [
+        580,
+        43.1
+       ],
+       [
+        590,
+        55.75
+       ],
+       [
+        600,
+        65.16
+       ],
+       [
+        610,
+        71.85
+       ],
+       [
+        620,
+        76.91
+       ],
+       [
+        630,
+        80.99
+       ],
+       [
+        640,
+        84.43
+       ],
+       [
+        650,
+        86.49
+       ],
+       [
+        660,
+        87.96
+       ],
+       [
+        670,
+        89.3
+       ],
+       [
+        680,
+        90.49
+       ],
+       [
+        690,
+        91.55
+       ],
+       [
+        700,
+        92.49
+       ],
+       [
+        710,
+        93.34
+       ],
+       [
+        720,
+        94.14
+       ],
+       [
+        730,
+        94.88
+       ],
+       [
+        740,
+        95.6
+       ],
+       [
+        750,
+        97.6
+       ],
+       [
+        760,
+        102.29
+       ],
+       [
+        770,
+        106.74
+       ],
+       [
+        780,
+        111.17
+       ],
+       [
+        790,
+        115.71
+       ],
+       [
+        800,
+        120.43
+       ],
+       [
+        810,
+        125.29
+       ],
+       [
+        820,
+        130.05
+       ],
+       [
+        830,
+        134.62
+       ],
+       [
+        840,
+        139.05
+       ],
+       [
+        850,
+        14.0
+       ],
+       [
+        860,
+        25.23
+       ],
+       [
+        870,
+        30.97
+       ],
+       [
+        880,
+        35.03
+       ],
+       [
+        890,
+        38.33
+       ],
+       [
+        900,
+        40.76
+       ],
+       [
+        910,
+        43.11
+       ],
+       [
+        920,
+        45.15
+       ],
+       [
+        930,
+        46.27
+       ],
+       [
+        940,
+        47.11
+       ],
+       [
+        950,
+        47.98
+       ],
+       [
+        960,
+        48.8
+       ],
+       [
+        970,
+        49.61
+       ],
+       [
+        980,
+        50.43
+       ],
+       [
+        990,
+        51.19
+       ],
+       [
+        1000,
+        51.91
+       ],
+       [
+        1010,
+        52.73
+       ],
+       [
+        1020,
+        53.75
+       ],
+       [
+        1030,
+        54.48
+       ],
+       [
+        1040,
+        55.11
+       ],
+       [
+        1050,
+        55.72
+       ],
+       [
+        1060,
+        56.33
+       ],
+       [
+        1070,
+        56.93
+       ],
+       [
+        1080,
+        57.47
+       ],
+       [
+        1090,
+        57.95
+       ],
+       [
+        1100,
+        58.37
+       ],
+       [
+        1110,
+        58.73
+       ],
+       [
+        1120,
+        59.02
+       ],
+       [
+        1130,
+        59.26
+       ],
+       [
+        1140,
+        59.46
+       ],
+       [
+        1150,
+        59.63
+       ],
+       [
+        1160,
+        59.79
+       ],
+       [
+        1170,
+        59.87
+       ],
+       [
+        1180,
+        59.83
+       ],
+       [
+        1190,
+        59.76
+       ],
+       [
+        1200,
+        59.68
+       ],
+       [
+        1210,
+        59.58
+       ],
+       [
+        1220,
+        59.48
+       ],
+       [
+        1230,
+        59.39
+       ],
+       [
+        1240,
+        59.3
+       ],
+       [
+        1250,
+        59.22
+       ],
+       [
+        1260,
+        59.17
+       ],
+       [
+        1270,
+        59.14
+       ],
+       [
+        1280,
+        59.12
+       ],
+       [
+        1290,
+        59.1
+       ],
+       [
+        1300,
+        59.06
+       ],
+       [
+        1310,
+        59.01
+       ],
+       [
+        1320,
+        58.97
+       ],
+       [
+        1330,
+        59.44
+       ],
+       [
+        1340,
+        60.16
+       ],
+       [
+        1350,
+        60.62
+       ],
+       [
+        1360,
+        60.91
+       ],
+       [
+        1370,
+        61.12
+       ],
+       [
+        1380,
+        61.24
+       ],
+       [
+        1390,
+        61.25
+       ],
+       [
+        1400,
+        61.2
+       ],
+       [
+        1410,
+        61.37
+       ],
+       [
+        1420,
+        61.48
+       ],
+       [
+        1430,
+        61.55
+       ],
+       [
+        1440,
+        61.62
+       ],
+       [
+        1450,
+        61.64
+       ],
+       [
+        1460,
+        61.6
+       ],
+       [
+        1470,
+        61.53
+       ],
+       [
+        1480,
+        61.45
+       ],
+       [
+        1490,
+        61.36
+       ],
+       [
+        1500,
+        61.24
+       ],
+       [
+        1510,
+        61.13
+       ],
+       [
+        1520,
+        61.03
+       ],
+       [
+        1530,
+        60.97
+       ],
+       [
+        1540,
+        60.85
+       ],
+       [
+        1550,
+        60.69
+       ],
+       [
+        1560,
+        60.53
+       ],
+       [
+        1570,
+        60.37
+       ],
+       [
+        1580,
+        60.17
+       ],
+       [
+        1590,
+        59.91
+       ],
+       [
+        1600,
+        59.64
+       ],
+       [
+        1610,
+        59.36
+       ],
+       [
+        1620,
+        59.1
+       ],
+       [
+        1630,
+        58.99
+       ],
+       [
+        1640,
+        58.85
+       ],
+       [
+        1650,
+        58.72
+       ],
+       [
+        1660,
+        58.62
+       ],
+       [
+        1670,
+        58.55
+       ],
+       [
+        1680,
+        58.5
+       ],
+       [
+        1690,
+        58.44
+       ],
+       [
+        1700,
+        58.34
+       ],
+       [
+        1710,
+        58.18
+       ],
+       [
+        1720,
+        57.96
+       ],
+       [
+        1730,
+        57.7
+       ],
+       [
+        1740,
+        57.49
+       ],
+       [
+        1750,
+        57.33
+       ],
+       [
+        1760,
+        57.07
+       ],
+       [
+        1770,
+        56.83
+       ],
+       [
+        1780,
+        56.59
+       ],
+       [
+        1790,
+        56.39
+       ],
+       [
+        1800,
+        56.23
+       ],
+       [
+        1810,
+        56.09
+       ],
+       [
+        1820,
+        55.96
+       ],
+       [
+        1830,
+        55.83
+       ],
+       [
+        1840,
+        55.7
+       ],
+       [
+        1850,
+        55.55
+       ],
+       [
+        1860,
+        55.36
+       ],
+       [
+        1870,
+        55.15
+       ],
+       [
+        1880,
+        54.93
+       ],
+       [
+        1890,
+        54.7
+       ],
+       [
+        1900,
+        54.46
+       ],
+       [
+        1910,
+        54.23
+       ],
+       [
+        1920,
+        53.99
+       ],
+       [
+        1930,
+        53.75
+       ],
+       [
+        1940,
+        53.48
+       ],
+       [
+        1950,
+        53.22
+       ],
+       [
+        1960,
+        53.28
+       ],
+       [
+        1970,
+        53.38
+       ],
+       [
+        1980,
+        53.47
+       ],
+       [
+        1990,
+        53.56
+       ],
+       [
+        2000,
+        53.65
+       ],
+       [
+        2010,
+        53.73
+       ],
+       [
+        2020,
+        53.81
+       ],
+       [
+        2030,
+        53.78
+       ],
+       [
+        2040,
+        53.3
+       ],
+       [
+        2050,
+        52.62
+       ],
+       [
+        2060,
+        51.84
+       ],
+       [
+        2070,
+        51.0
+       ],
+       [
+        2080,
+        50.2
+       ],
+       [
+        2090,
+        49.64
+       ],
+       [
+        2100,
+        49.27
+       ],
+       [
+        2110,
+        48.94
+       ],
+       [
+        2120,
+        48.64
+       ],
+       [
+        2130,
+        48.33
+       ],
+       [
+        2140,
+        47.64
+       ],
+       [
+        2150,
+        46.92
+       ],
+       [
+        2160,
+        46.12
+       ],
+       [
+        2170,
+        45.58
+       ],
+       [
+        2180,
+        45.14
+       ],
+       [
+        2190,
+        44.66
+       ],
+       [
+        2200,
+        43.95
+       ],
+       [
+        2210,
+        43.32
+       ],
+       [
+        2220,
+        42.57
+       ],
+       [
+        2230,
+        41.95
+       ],
+       [
+        2240,
+        41.39
+       ],
+       [
+        2250,
+        40.89
+       ],
+       [
+        2260,
+        40.38
+       ],
+       [
+        2270,
+        39.68
+       ],
+       [
+        2280,
+        39.06
+       ],
+       [
+        2290,
+        40.66
+       ],
+       [
+        2300,
+        41.11
+       ],
+       [
+        2310,
+        41.23
+       ],
+       [
+        2320,
+        41.22
+       ],
+       [
+        2330,
+        40.81
+       ],
+       [
+        2340,
+        40.67
+       ],
+       [
+        2350,
+        40.83
+       ],
+       [
+        2360,
+        40.99
+       ],
+       [
+        2370,
+        41.18
+       ],
+       [
+        2380,
+        41.34
+       ],
+       [
+        2390,
+        41.51
+       ],
+       [
+        2400,
+        41.61
+       ],
+       [
+        2410,
+        41.69
+       ],
+       [
+        2420,
+        41.69
+       ],
+       [
+        2430,
+        41.85
+       ],
+       [
+        2440,
+        41.88
+       ],
+       [
+        2450,
+        41.87
+       ],
+       [
+        2460,
+        41.77
+       ],
+       [
+        2470,
+        42.73
+       ],
+       [
+        2480,
+        43.5
+       ],
+       [
+        2490,
+        44.1
+       ],
+       [
+        2500,
+        44.64
+       ],
+       [
+        2510,
+        45.12
+       ],
+       [
+        2520,
+        45.53
+       ],
+       [
+        2530,
+        45.82
+       ],
+       [
+        2540,
+        46.05
+       ],
+       [
+        2550,
+        46.17
+       ],
+       [
+        2560,
+        46.21
+       ],
+       [
+        2570,
+        46.06
+       ],
+       [
+        2580,
+        46.06
+       ],
+       [
+        2590,
+        47.19
+       ],
+       [
+        2600,
+        48.49
+       ],
+       [
+        2610,
+        49.68
+       ],
+       [
+        2620,
+        51.14
+       ],
+       [
+        2630,
+        52.54
+       ],
+       [
+        2640,
+        53.86
+       ],
+       [
+        2650,
+        55.09
+       ],
+       [
+        2660,
+        56.66
+       ],
+       [
+        2670,
+        58.55
+       ],
+       [
+        2680,
+        60.27
+       ],
+       [
+        2690,
+        61.77
+       ],
+       [
+        2700,
+        63.06
+       ],
+       [
+        2710,
+        64.17
+       ],
+       [
+        2720,
+        65.19
+       ],
+       [
+        2730,
+        66.28
+       ],
+       [
+        2740,
+        67.56
+       ],
+       [
+        2750,
+        69.15
+       ],
+       [
+        2760,
+        71.16
+       ],
+       [
+        2770,
+        73.59
+       ],
+       [
+        2780,
+        76.86
+       ],
+       [
+        2790,
+        80.03
+       ],
+       [
+        2800,
+        82.99
+       ],
+       [
+        2810,
+        85.85
+       ],
+       [
+        2820,
+        87.56
+       ],
+       [
+        2830,
+        89.04
+       ],
+       [
+        2840,
+        91.78
+       ],
+       [
+        2850,
+        94.86
+       ],
+       [
+        2860,
+        97.31
+       ],
+       [
+        2870,
+        99.1
+       ],
+       [
+        2880,
+        98.76
+       ],
+       [
+        2890,
+        94.36
+       ],
+       [
+        2900,
+        89.96
+       ],
+       [
+        2910,
+        85.55
+       ],
+       [
+        2920,
+        81.13
+       ],
+       [
+        2930,
+        76.7
+       ],
+       [
+        2940,
+        72.26
+       ],
+       [
+        2950,
+        67.82
+       ],
+       [
+        2960,
+        63.99
+       ],
+       [
+        2970,
+        61.35
+       ],
+       [
+        2980,
+        58.83
+       ],
+       [
+        2990,
+        56.43
+       ],
+       [
+        3000,
+        54.15
+       ],
+       [
+        3010,
+        51.94
+       ],
+       [
+        3020,
+        49.74
+       ],
+       [
+        3030,
+        47.51
+       ],
+       [
+        3040,
+        45.24
+       ],
+       [
+        3050,
+        42.92
+       ],
+       [
+        3060,
+        40.54
+       ],
+       [
+        3070,
+        38.1
+       ],
+       [
+        3080,
+        35.57
+       ],
+       [
+        3090,
+        32.96
+       ],
+       [
+        3100,
+        30.27
+       ],
+       [
+        3110,
+        27.52
+       ],
+       [
+        3120,
+        24.72
+       ],
+       [
+        3130,
+        21.88
+       ],
+       [
+        3140,
+        19.0
+       ],
+       [
+        3150,
+        16.1
+       ],
+       [
+        3160,
+        13.19
+       ],
+       [
+        3170,
+        10.29
+       ],
+       [
+        3180,
+        7.4
+       ],
+       [
+        3190,
+        4.55
+       ],
+       [
+        3200,
+        1.74
+       ],
+       [
+        3206.5,
+        0
+       ]
+      ],
+      "highlight": true
+     }
+    ],
+    "marks": [
+     {
+      "x": 550,
+      "label": "full grown"
+     },
+     {
+      "x": 850,
+      "label": "two children"
+     },
+     {
+      "x": 2500,
+      "label": "we met it here"
+     },
+     {
+      "x": 3206.5,
+      "label": "starved"
+     }
+    ]
+   },
+   "why": "Answers two of the owner's questions with one line: what it takes to have a child, and what it takes to die.",
+   "sources": [
+    "absorptive.jsonl, every row of id 201 from 530 to 3,206.5 s: energy (reserve), tissue, y",
+    "full grown at 550 s: tissue 41.034 J from t 550 on (25.5 J at 530)",
+    "850 s: lineage children 402 and 403 born 850; reserve 139.05 J at 840, 14.00 J at 850",
+    "cushion: genome reserve margin 51.21 s x standing watts 0.2736 at 850 s = 14.0 J",
+    "died 3,206.5 s starved, at 15.0 m (y -15.02); at 2,500 s it was at 3.2 m"
+   ]
+  },
+  {
+   "n": 4,
+   "act": "How this world works",
+   "station": "Card",
+   "description": "a title card, dimmed, under a full chart",
+   "run": "r48-s1",
+   "second": 2500,
+   "subject": "world",
+   "seconds": 23.0,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "What one child cost"
+    },
+    {
+     "at": 5.5,
+     "text": "The parent gives each child a share of its own body's worth.",
+     "seconds": 5
+    },
+    {
+     "at": 11.5,
+     "text": "Four fifths build the child's body. One fifth is its first reserve.",
+     "seconds": 5
+    },
+    {
+     "at": 17.5,
+     "text": "On top, a fee of twice the child's body, at least 50 J, is burnt.",
+     "seconds": 5
+    }
+   ],
+   "chart": {
+    "kind": "bars",
+    "title": "One child of body 201, J",
+    "place": "full",
+    "at": 0.5,
+    "until": 23.0,
+    "bars": [
+     {
+      "label": "the child's body",
+      "value": 11.7
+     },
+     {
+      "label": "its first reserve",
+      "value": 2.9
+     },
+     {
+      "label": "the fee, burnt",
+      "value": 50,
+      "highlight": true
+     }
+    ]
+   },
+   "why": "The owner asked what it takes to have a child. This is the price, in the parts the code charges.",
+   "sources": [
+    "share = BirthInvestment 0.7159 x tissue 41.034 J / brood 2 = 14.69 J (snapshot 2500, absorptive.jsonl)",
+    "reserve = 0.2 of the share (growth.newbornReserveFraction), body = 0.8",
+    "fee = max(50 J, 2 x the child's tissue) (economy.perOffspringOverheadJoules 50, perOffspringOverheadPerTissueJoule 2; RunConfig.OverheadFor)"
+   ]
+  },
+  {
+   "n": 5,
+   "act": "What we hoped for",
+   "chapter": "What we hoped for",
+   "station": "Arrival",
+   "run": "r48-s3",
+   "second": 3000,
+   "subject": "world",
+   "seconds": 18.0,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "Round 48 is one experiment: three tanks under the same rules.",
+     "seconds": 5
+    },
+    {
+     "at": 6.5,
+     "text": "Each runs 30,000 s, about eight hours. This is tank 3 at 3,000 s.",
+     "seconds": 5
+    },
+    {
+     "at": 12.5,
+     "text": "COUSIN in the corner: each scene is re-run from a saved moment.",
+     "seconds": 5
+    }
+   ],
+   "why": "Says what a round and a tank are, and what the COUSIN mark means, before any caption says 'in the run'. 3,000 s is a checkpoint of seed 3.",
+   "sources": [
+    "three tanks: r48-s1, r48-s2, r48-s3, one config hash e5a30c15 across the three run directories",
+    "COUSIN: the theatre's provenance word for a scene stepped live in the Editor from a checkpoint (CLAUDE.md, live play)"
+   ]
+  },
+  {
+   "n": 6,
+   "act": "What we hoped for",
+   "station": "Floor",
+   "run": "r48-s3",
+   "second": 3000,
+   "subject": "world",
+   "seconds": 12.0,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "Most snow leaks from living leaves: 15% of what they catch.",
+     "seconds": 5
+    },
+    {
+     "at": 6.5,
+     "text": "The rest comes from the dead. A corpse crumbles into snow.",
+     "seconds": 5
+    }
+   ],
+   "chart": {
+    "kind": "bars",
+    "title": "Tank 3's snow over its whole run, %",
+    "place": "corner",
+    "at": 0.5,
+    "until": 12.0,
+    "bars": [
+     {
+      "label": "leaked by leaves",
+      "value": 75.9,
+      "highlight": true
+     },
+     {
+      "label": "from the dead",
+      "value": 24.1
+     }
+    ]
+   },
+   "why": "Corrects the first film, which said the dead make the snow. Three quarters of it is leaked by living leaves.",
+   "sources": [
+    "stats.jsonl t=30000 detritusExudedTotal 4154978 J (leaked by the living) and detritusDepositedTotal 1322172 J (corpses and shed parts); detritusReturnedTotal 417 J (feeders' waste)",
+    "15%: feeding.exudationFraction 0.15; 201 at 2,500 s leaked 0.0809 of 0.539 W light",
+    "a corpse decays at 0.5%/s (corpseDecayPerSecond 0.005, half in 139 s)",
+    "snow sinks 2 mm/s; remineralises 0.05%/s back into dissolved matter"
+   ]
+  },
+  {
+   "n": 7,
+   "act": "What we hoped for",
+   "station": "Colony",
+   "run": "r48-s3",
+   "second": 3000,
+   "subject": "Thallus legatribens (guide clade 52), founder body 63",
+   "seconds": 51.0,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "A line is a family of bodies with the same kinds of part.",
+     "seconds": 5
+    },
+    {
+     "at": 6.5,
+     "text": "These leaves are one line, Thallus legatribens: 217 alive.",
+     "seconds": 5
+    },
+    {
+     "at": 12.5,
+     "text": "The names are made up. The first word tells the kind of body.",
+     "seconds": 5
+    },
+    {
+     "at": 18.5,
+     "text": "A child that gains or loses a leaf, stomach or joint starts a new line.",
+     "seconds": 6
+    },
+    {
+     "at": 25.5,
+     "text": "An eater is a body with a stomach and no leaf. It lives on snow.",
+     "seconds": 5
+    },
+    {
+     "at": 31.5,
+     "text": "Last round, no line of eaters lasted."
+    },
+    {
+     "at": 36.5,
+     "text": "So we changed four rules in the eaters' favour."
+    },
+    {
+     "at": 41.5,
+     "text": "We hoped for a line of eaters, ten strong at the end."
+    },
+    {
+     "at": 46.5,
+     "text": "Or at least a leaf that grew a stomach and kept it."
+    }
+   ],
+   "why": "States the hope, and defines an eater and a line over a line the viewer can see (the leaf line that later wins tank 3). Each of the four rules is explained later, at the scene where it matters.",
+   "sources": [
+    "line: the guide's clade rule (scripts/guide.py build_clades): a child whose abs, jnt and pho flags equal its parent's joins the parent's clade, otherwise founds one",
+    "Thallus legatribens at 3,000 s: lineage clade walk, clade 63, 217 alive; guide index 52, founded 139 s by a child that dropped its parent's joint",
+    "names: scripts/guide.py GENERA, the genus from the flags, the epithet from a hash of the founder's genome",
+    "last round: logbook/0119 F3 row, round 47 0 of 3",
+    "four rules: D119 to D122 (logbook/0119 'What it asks')",
+    "ten strong: logbook/0119 predictions M3 and F3 (ten or more living at 30,000 s in 1 of 3)"
+   ]
+  },
+  {
+   "n": 8,
+   "act": "The eaters arrive",
+   "chapter": "The eaters arrive",
+   "station": "Portrait",
+   "run": "r48-s3",
+   "second": 3500,
+   "flexible": false,
+   "subject": "founder body 3318",
+   "seconds": 46.0,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "Body 3318 is a newcomer: an eater copied from past rounds.",
+     "seconds": 5
+    },
+    {
+     "at": 6.5,
+     "text": "Its reserve is in the corner. In the run it bred 11.5 s in.",
+     "seconds": 5
+    },
+    {
+     "at": 12.5,
+     "text": "Random newcomers drop in every 30 s or so. One in ten is a stored eater.",
+     "seconds": 6
+    },
+    {
+     "at": 19.5,
+     "text": "It eats 1.25 J a second and pays 0.50 J of upkeep."
+    },
+    {
+     "at": 24.5,
+     "text": "New rule four: a newcomer lands at the richest depth for its food.",
+     "seconds": 5
+    },
+    {
+     "at": 30.5,
+     "text": "It landed 157 s ago, with 66 J of its own and a gift of 72 J.",
+     "seconds": 5
+    },
+    {
+     "at": 36.5,
+     "text": "Half a second later it was full grown and had a child."
+    },
+    {
+     "at": 41.5,
+     "text": "That cost 99 J, more than its own 66 J. The gift paid."
+    }
+   ],
+   "chart": {
+    "kind": "account",
+    "title": "Body 3318's reserve, J",
+    "place": "corner",
+    "at": 0.5,
+    "until": 46.0
+   },
+   "why": "The first eater of the story, at a checkpoint where it is 156.5 s old and about to breed. Rule four and the gift are explained on the body they helped.",
+   "sources": [
+    "lineage: 3318 born 3,343.5 s, kind f, src pool, pool 0, bf 0.3323, endow 71.69 J; child 3319 at 3,344 s; child 3392 at 3,511.5 s",
+    "absorptive.jsonl id 3318 t 3500: age 156.5, parts 1, lightW 0, foodW 1.252, upkeepW 0.5035, energy 94.16",
+    "purse 200 J x bf 0.3323 = 66.45 J (population.founderEnergyJoules 200)",
+    "growth 44.952 - 14.936 = 30.0 J; child = share 18.67 (0.4153 x 44.952) + fee 50 = 68.67 J"
+   ]
+  },
+  {
+   "n": 9,
+   "act": "The eaters arrive",
+   "station": "Colony",
+   "run": "r48-s3",
+   "second": 4000,
+   "subject": "Gastrella cidutis (guide clade 362), founder body 3318",
+   "seconds": 17.0,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "Its line, Gastrella cidutis, has 24 alive, 11 minutes on.",
+     "seconds": 5
+    },
+    {
+     "at": 6.5,
+     "text": "This round, a typical stored eater lived about five minutes.",
+     "seconds": 5
+    },
+    {
+     "at": 12.5,
+     "text": "Last round, under one minute. And 56 of them bred."
+    }
+   ],
+   "chart": {
+    "kind": "bars",
+    "title": "A stored eater's typical life, s",
+    "place": "corner",
+    "at": 6.5,
+    "until": 17.0,
+    "bars": [
+     {
+      "label": "tank 1, last round",
+      "value": 46
+     },
+     {
+      "label": "tank 1, this round",
+      "value": 312,
+      "highlight": true
+     },
+     {
+      "label": "tank 2, last round",
+      "value": 24
+     },
+     {
+      "label": "tank 2, this round",
+      "value": 298,
+      "highlight": true
+     },
+     {
+      "label": "tank 3, last round",
+      "value": 42
+     },
+     {
+      "label": "tank 3, this round",
+      "value": 335,
+      "highlight": true
+     }
+    ]
+   },
+   "why": "The first eater line at its size in tank 3 (it peaked at 26 at 4,049 s), and the first half of the round's hope coming true: stored eaters now live and breed.",
+   "sources": [
+    "24: lineage clade walk (guide rule), clade of 3318 alive at t=4000",
+    "11 minutes: 4,000 - 3,343.5 = 656.5 s",
+    "median life: lineage, pool founders' age at death (s1 312, s2 297.75, s3 335 s); round 47: logbook/0119 F1",
+    "56 bred: pool founders with a child, 30 + 8 + 18"
+   ]
+  },
+  {
+   "n": 10,
+   "act": "The eaters arrive",
+   "station": "Colony",
+   "run": "r48-s1",
+   "second": 6000,
+   "flexible": false,
+   "subject": "Gastrella cidutis III (guide clade 180), founder body 4185",
+   "seconds": 30.0,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "Tank 1 drew the same stored eater at 4,057 s. It bred at once too.",
+     "seconds": 5
+    },
+    {
+     "at": 6.5,
+     "text": "Its line is Gastrella cidutis III, the third of that name here.",
+     "seconds": 5
+    },
+    {
+     "at": 12.5,
+     "text": "In the run it reached 45, the largest eater line of any tank.",
+     "seconds": 5
+    },
+    {
+     "at": 18.5,
+     "text": "The same tank had a jointed eater line, Natogastrum plocrele.",
+     "seconds": 5
+    },
+    {
+     "at": 24.5,
+     "text": "A joint lets two parts swing, driven by the body's small brain.",
+     "seconds": 5
+    }
+   ],
+   "why": "The same stored recipe in another tank, so it was not luck; the numeral in a name; and the high point of the eaters' story, the largest eater line of the round at its peak.",
+   "sources": [
+    "lineage: 4185 born 4,057 s, src pool, pool 0, the same bf and endow as 3318; child 4186 at 4,057.5 s",
+    "guide.json: Gastrella cidutis (founder 3445, 3,336.5 s), II (3456, 3,345 s), III (4185, 4,057 s)",
+    "45: lineage clade of 4185 alive at 6,000 s; peak 45 at 5,903.5 s",
+    "largest eater line: the largest clade with flags (1,0,0) in any tank, s1 45, s2 2, s3 26",
+    "Natogastrum plocrele: founder 3575 (trickle, 3,462.5 s), flags abs 1 jnt 1 pho 0, 2 parts; peak 14 at 7,391.5 s",
+    "joint: jnt = the body has a degree of freedom; only a link part carries a moving joint, and the brain's neurons live on links"
+   ]
+  },
+  {
+   "n": 11,
+   "act": "The eaters fade",
+   "chapter": "The eaters fade",
+   "station": "Portrait",
+   "run": "r48-s3",
+   "second": 6500,
+   "flexible": false,
+   "subject": "body 3559",
+   "seconds": 46,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "Tank 3, 6,500 s. Body 3559 is the last of Gastrella cidutis.",
+     "seconds": 5
+    },
+    {
+     "at": 6.5,
+     "text": "It is 2,655 s old. Upkeep rises with age, doubling by 3,000 s.",
+     "seconds": 5
+    },
+    {
+     "at": 12.5,
+     "text": "It pays 0.73 J a second. Young, the line's first body paid 0.50 J.",
+     "seconds": 5
+    },
+    {
+     "at": 18.5,
+     "text": "The snow here is thinner. It eats 0.55 J a second."
+    },
+    {
+     "at": 23.5,
+     "text": "Its reserve is 9 J, and falling."
+    },
+    {
+     "at": 28.5,
+     "text": "In the run it starved 44.5 s from here, and the line ended.",
+     "seconds": 5
+    },
+    {
+     "at": 34.5,
+     "text": "No living body was eaten this round. Every death was starving.",
+     "seconds": 5
+    }
+   ],
+   "chart": {
+    "kind": "account",
+    "title": "Body 3559's reserve, J",
+    "place": "corner",
+    "at": 0.5,
+    "until": 46
+   },
+   "why": "Rule three and death shown on one body: an old eater in thinner snow, its reserve running out on screen. 6,500 s is a checkpoint of seed 3. The scene runs 46 s so that the recorded death (44.5 s in) falls inside it; in the cousin it may come a little earlier or later.",
+   "sources": [
+    "lineage: 3559 born 3,845.5 s, died 6,544.5 s starved; founder of its line 3318; at 6,500 s the only living member",
+    "absorptive.jsonl id 3559 t 6500: age 2654.5, foodW 0.547, upkeepW 0.7325, energy 9.256, densityHere 0.609",
+    "3318 at 3,500 s: upkeepW 0.5035, densityHere 1.393",
+    "senescence: upkeep x (1 + age / 3000 s), D121; config senescence 3000",
+    "stats.jsonl end rows: bodiesEaten 0 in all three; deaths all 'starved'"
+   ]
+  },
+  {
+   "n": 12,
+   "act": "The eaters fade",
+   "station": "Card",
+   "description": "a title card, dimmed, under a full chart",
+   "run": "r48-s3",
+   "second": 6500,
+   "subject": "world",
+   "seconds": 26.0,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "Every eater line died out"
+    },
+    {
+     "at": 5.5,
+     "text": "The last, the jointed one, was gone by 10,912 s."
+    },
+    {
+     "at": 10.5,
+     "text": "No stored eater had a line alive at the end."
+    },
+    {
+     "at": 15.5,
+     "text": "I don't know why the eater lines faded."
+    },
+    {
+     "at": 20.5,
+     "text": "My guess: as they aged, they thinned the snow around them.",
+     "seconds": 5
+    }
+   ],
+   "chart": {
+    "kind": "line",
+    "title": "Eater lines, bodies alive",
+    "place": "full",
+    "at": 0.5,
+    "until": 26.0,
+    "x": {
+     "label": "time in the run, s"
+    },
+    "y": {
+     "label": "alive"
+    },
+    "series": [
+     {
+      "name": "Gastrella cidutis, tank 3",
+      "points": [
+       [
+        3000,
+        0
+       ],
+       [
+        3100,
+        0
+       ],
+       [
+        3200,
+        0
+       ],
+       [
+        3300,
+        0
+       ],
+       [
+        3400,
+        3
+       ],
+       [
+        3500,
+        5
+       ],
+       [
+        3600,
+        8
+       ],
+       [
+        3700,
+        12
+       ],
+       [
+        3800,
+        17
+       ],
+       [
+        3900,
+        21
+       ],
+       [
+        4000,
+        24
+       ],
+       [
+        4100,
+        26
+       ],
+       [
+        4200,
+        25
+       ],
+       [
+        4300,
+        26
+       ],
+       [
+        4400,
+        25
+       ],
+       [
+        4500,
+        22
+       ],
+       [
+        4600,
+        19
+       ],
+       [
+        4700,
+        15
+       ],
+       [
+        4800,
+        15
+       ],
+       [
+        4900,
+        14
+       ],
+       [
+        5000,
+        15
+       ],
+       [
+        5100,
+        15
+       ],
+       [
+        5200,
+        15
+       ],
+       [
+        5300,
+        12
+       ],
+       [
+        5400,
+        9
+       ],
+       [
+        5500,
+        7
+       ],
+       [
+        5600,
+        6
+       ],
+       [
+        5700,
+        5
+       ],
+       [
+        5800,
+        4
+       ],
+       [
+        5900,
+        4
+       ],
+       [
+        6000,
+        3
+       ],
+       [
+        6100,
+        2
+       ],
+       [
+        6200,
+        2
+       ],
+       [
+        6300,
+        2
+       ],
+       [
+        6400,
+        2
+       ],
+       [
+        6500,
+        1
+       ],
+       [
+        6600,
+        0
+       ],
+       [
+        6700,
+        0
+       ],
+       [
+        6800,
+        0
+       ],
+       [
+        6900,
+        0
+       ],
+       [
+        7000,
+        0
+       ],
+       [
+        7100,
+        0
+       ],
+       [
+        7200,
+        0
+       ],
+       [
+        7300,
+        0
+       ],
+       [
+        7400,
+        0
+       ],
+       [
+        7500,
+        0
+       ],
+       [
+        7600,
+        0
+       ],
+       [
+        7700,
+        0
+       ],
+       [
+        7800,
+        0
+       ],
+       [
+        7900,
+        0
+       ],
+       [
+        8000,
+        0
+       ],
+       [
+        8100,
+        0
+       ],
+       [
+        8200,
+        0
+       ],
+       [
+        8300,
+        0
+       ],
+       [
+        8400,
+        0
+       ],
+       [
+        8500,
+        0
+       ],
+       [
+        8600,
+        0
+       ],
+       [
+        8700,
+        0
+       ],
+       [
+        8800,
+        0
+       ],
+       [
+        8900,
+        0
+       ],
+       [
+        9000,
+        0
+       ],
+       [
+        9100,
+        0
+       ],
+       [
+        9200,
+        0
+       ],
+       [
+        9300,
+        0
+       ],
+       [
+        9400,
+        0
+       ],
+       [
+        9500,
+        0
+       ],
+       [
+        9600,
+        0
+       ],
+       [
+        9700,
+        0
+       ],
+       [
+        9800,
+        0
+       ],
+       [
+        9900,
+        0
+       ],
+       [
+        10000,
+        0
+       ],
+       [
+        10100,
+        0
+       ],
+       [
+        10200,
+        0
+       ],
+       [
+        10300,
+        0
+       ],
+       [
+        10400,
+        0
+       ],
+       [
+        10500,
+        0
+       ],
+       [
+        10600,
+        0
+       ],
+       [
+        10700,
+        0
+       ],
+       [
+        10800,
+        0
+       ],
+       [
+        10900,
+        0
+       ],
+       [
+        11000,
+        0
+       ]
+      ],
+      "highlight": true
+     },
+     {
+      "name": "Gastrella cidutis III, tank 1",
+      "points": [
+       [
+        3000,
+        0
+       ],
+       [
+        3100,
+        0
+       ],
+       [
+        3200,
+        0
+       ],
+       [
+        3300,
+        0
+       ],
+       [
+        3400,
+        0
+       ],
+       [
+        3500,
+        0
+       ],
+       [
+        3600,
+        0
+       ],
+       [
+        3700,
+        0
+       ],
+       [
+        3800,
+        0
+       ],
+       [
+        3900,
+        0
+       ],
+       [
+        4000,
+        0
+       ],
+       [
+        4100,
+        2
+       ],
+       [
+        4200,
+        2
+       ],
+       [
+        4300,
+        2
+       ],
+       [
+        4400,
+        2
+       ],
+       [
+        4500,
+        3
+       ],
+       [
+        4600,
+        3
+       ],
+       [
+        4700,
+        4
+       ],
+       [
+        4800,
+        6
+       ],
+       [
+        4900,
+        7
+       ],
+       [
+        5000,
+        8
+       ],
+       [
+        5100,
+        10
+       ],
+       [
+        5200,
+        11
+       ],
+       [
+        5300,
+        15
+       ],
+       [
+        5400,
+        20
+       ],
+       [
+        5500,
+        22
+       ],
+       [
+        5600,
+        29
+       ],
+       [
+        5700,
+        36
+       ],
+       [
+        5800,
+        38
+       ],
+       [
+        5900,
+        44
+       ],
+       [
+        6000,
+        45
+       ],
+       [
+        6100,
+        44
+       ],
+       [
+        6200,
+        43
+       ],
+       [
+        6300,
+        41
+       ],
+       [
+        6400,
+        40
+       ],
+       [
+        6500,
+        38
+       ],
+       [
+        6600,
+        35
+       ],
+       [
+        6700,
+        30
+       ],
+       [
+        6800,
+        27
+       ],
+       [
+        6900,
+        28
+       ],
+       [
+        7000,
+        27
+       ],
+       [
+        7100,
+        27
+       ],
+       [
+        7200,
+        25
+       ],
+       [
+        7300,
+        23
+       ],
+       [
+        7400,
+        20
+       ],
+       [
+        7500,
+        17
+       ],
+       [
+        7600,
+        14
+       ],
+       [
+        7700,
+        11
+       ],
+       [
+        7800,
+        6
+       ],
+       [
+        7900,
+        2
+       ],
+       [
+        8000,
+        2
+       ],
+       [
+        8100,
+        1
+       ],
+       [
+        8200,
+        1
+       ],
+       [
+        8300,
+        0
+       ],
+       [
+        8400,
+        0
+       ],
+       [
+        8500,
+        0
+       ],
+       [
+        8600,
+        0
+       ],
+       [
+        8700,
+        0
+       ],
+       [
+        8800,
+        0
+       ],
+       [
+        8900,
+        0
+       ],
+       [
+        9000,
+        0
+       ],
+       [
+        9100,
+        0
+       ],
+       [
+        9200,
+        0
+       ],
+       [
+        9300,
+        0
+       ],
+       [
+        9400,
+        0
+       ],
+       [
+        9500,
+        0
+       ],
+       [
+        9600,
+        0
+       ],
+       [
+        9700,
+        0
+       ],
+       [
+        9800,
+        0
+       ],
+       [
+        9900,
+        0
+       ],
+       [
+        10000,
+        0
+       ],
+       [
+        10100,
+        0
+       ],
+       [
+        10200,
+        0
+       ],
+       [
+        10300,
+        0
+       ],
+       [
+        10400,
+        0
+       ],
+       [
+        10500,
+        0
+       ],
+       [
+        10600,
+        0
+       ],
+       [
+        10700,
+        0
+       ],
+       [
+        10800,
+        0
+       ],
+       [
+        10900,
+        0
+       ],
+       [
+        11000,
+        0
+       ]
+      ]
+     },
+     {
+      "name": "Natogastrum plocrele, tank 1",
+      "points": [
+       [
+        3000,
+        0
+       ],
+       [
+        3100,
+        0
+       ],
+       [
+        3200,
+        0
+       ],
+       [
+        3300,
+        0
+       ],
+       [
+        3400,
+        0
+       ],
+       [
+        3500,
+        1
+       ],
+       [
+        3600,
+        2
+       ],
+       [
+        3700,
+        2
+       ],
+       [
+        3800,
+        3
+       ],
+       [
+        3900,
+        3
+       ],
+       [
+        4000,
+        4
+       ],
+       [
+        4100,
+        5
+       ],
+       [
+        4200,
+        5
+       ],
+       [
+        4300,
+        5
+       ],
+       [
+        4400,
+        5
+       ],
+       [
+        4500,
+        4
+       ],
+       [
+        4600,
+        4
+       ],
+       [
+        4700,
+        5
+       ],
+       [
+        4800,
+        5
+       ],
+       [
+        4900,
+        5
+       ],
+       [
+        5000,
+        7
+       ],
+       [
+        5100,
+        7
+       ],
+       [
+        5200,
+        7
+       ],
+       [
+        5300,
+        6
+       ],
+       [
+        5400,
+        6
+       ],
+       [
+        5500,
+        4
+       ],
+       [
+        5600,
+        6
+       ],
+       [
+        5700,
+        6
+       ],
+       [
+        5800,
+        8
+       ],
+       [
+        5900,
+        8
+       ],
+       [
+        6000,
+        8
+       ],
+       [
+        6100,
+        8
+       ],
+       [
+        6200,
+        9
+       ],
+       [
+        6300,
+        9
+       ],
+       [
+        6400,
+        9
+       ],
+       [
+        6500,
+        9
+       ],
+       [
+        6600,
+        9
+       ],
+       [
+        6700,
+        11
+       ],
+       [
+        6800,
+        10
+       ],
+       [
+        6900,
+        10
+       ],
+       [
+        7000,
+        10
+       ],
+       [
+        7100,
+        10
+       ],
+       [
+        7200,
+        10
+       ],
+       [
+        7300,
+        9
+       ],
+       [
+        7400,
+        14
+       ],
+       [
+        7500,
+        12
+       ],
+       [
+        7600,
+        12
+       ],
+       [
+        7700,
+        12
+       ],
+       [
+        7800,
+        12
+       ],
+       [
+        7900,
+        12
+       ],
+       [
+        8000,
+        9
+       ],
+       [
+        8100,
+        7
+       ],
+       [
+        8200,
+        6
+       ],
+       [
+        8300,
+        5
+       ],
+       [
+        8400,
+        5
+       ],
+       [
+        8500,
+        5
+       ],
+       [
+        8600,
+        5
+       ],
+       [
+        8700,
+        5
+       ],
+       [
+        8800,
+        5
+       ],
+       [
+        8900,
+        5
+       ],
+       [
+        9000,
+        5
+       ],
+       [
+        9100,
+        4
+       ],
+       [
+        9200,
+        4
+       ],
+       [
+        9300,
+        4
+       ],
+       [
+        9400,
+        6
+       ],
+       [
+        9500,
+        6
+       ],
+       [
+        9600,
+        6
+       ],
+       [
+        9700,
+        5
+       ],
+       [
+        9800,
+        5
+       ],
+       [
+        9900,
+        3
+       ],
+       [
+        10000,
+        2
+       ],
+       [
+        10100,
+        2
+       ],
+       [
+        10200,
+        2
+       ],
+       [
+        10300,
+        2
+       ],
+       [
+        10400,
+        2
+       ],
+       [
+        10500,
+        2
+       ],
+       [
+        10600,
+        1
+       ],
+       [
+        10700,
+        1
+       ],
+       [
+        10800,
+        1
+       ],
+       [
+        10900,
+        1
+       ],
+       [
+        11000,
+        0
+       ]
+      ]
+     }
+    ],
+    "marks": [
+     {
+      "x": 6544.5,
+      "label": "body 3559 starves"
+     }
+    ]
+   },
+   "why": "The obstacle, in one picture: three eater lines rise and fall. The why is marked as a guess.",
+   "sources": [
+    "counts: lineage event sweep every 100 s from 3,000 to 11,000 s, clades 3318 (s3), 4185 and 3575 (s1)",
+    "10,912 s: guide.json Natogastrum plocrele extinct_at 10912",
+    "no line alive at the end: bodies rooted in pool founders alive at each end are pool founders themselves (s1 63980, 74343; s2 26745; s3 none)",
+    "the guess rests on two bodies: 3318 fed at 1.39 J/m3 at 156 s old, 3559 at 0.61 at 2,655 s old"
+   ]
+  },
+  {
+   "n": 13,
+   "act": "Two leaves, two bets",
+   "chapter": "Two leaves, two bets",
+   "station": "Colony",
+   "run": "r48-s1",
+   "second": 10000,
+   "subject": "Frondium marufubens (guide clade 38), founder body 39",
+   "seconds": 20.0,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "Tank 1, 10,000 s. Two leaf lines hold nearly half each."
+    },
+    {
+     "at": 5.5,
+     "text": "Frondium marufubens bets on two big children at a time."
+    },
+    {
+     "at": 10.5,
+     "text": "Frondium nisimocrax bets on one small child."
+    },
+    {
+     "at": 15.5,
+     "text": "Their children start at 38% and 6% of adult size."
+    }
+   ],
+   "chart": {
+    "kind": "bars",
+    "title": "A child's size at birth, % of adult",
+    "place": "corner",
+    "at": 10.5,
+    "until": 20.0,
+    "bars": [
+     {
+      "label": "marufubens",
+      "value": 38.5,
+      "highlight": true
+     },
+     {
+      "label": "nisimocrax",
+      "value": 5.6
+     }
+    ]
+   },
+   "why": "Meanwhile, the leaves. The line that wins tank 1 is the one whose leaf later grows the stomach that lasts (chapter 6).",
+   "sources": [
+    "1,315 and 1,386 of 2,859 alive at 10,000 s (lineage clade walk; stats alive 2859)",
+    "snapshot 10,000: marufubens median investment 0.911 brood 2 (n 1,315); nisimocrax 0.0703 brood 1 (n 1,386)",
+    "birth sizes: lineage 'bf' median of births in each line, 5,000 to 15,000 s: 0.385 (5,077 births) and 0.056 (11,060)"
+   ]
+  },
+  {
+   "n": 14,
+   "act": "Two leaves, two bets",
+   "station": "Card",
+   "description": "a title card, dimmed, under a full chart",
+   "run": "r48-s1",
+   "second": 30000,
+   "subject": "world",
+   "seconds": 20.0,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "Tank 1: the small children won"
+    },
+    {
+     "at": 5.5,
+     "text": "Marufubens peaked at 1,441 bodies, then fell to 2."
+    },
+    {
+     "at": 10.5,
+     "text": "Nisimocrax ended with 8,461 of the tank's 8,618 bodies."
+    },
+    {
+     "at": 15.5,
+     "text": "It had already led at 2,500 s, by 773 to 134."
+    }
+   ],
+   "chart": {
+    "kind": "line",
+    "title": "Tank 1's two leaf lines, alive",
+    "place": "full",
+    "at": 0.5,
+    "until": 20.0,
+    "x": {
+     "label": "time in the run, s"
+    },
+    "y": {
+     "label": "alive"
+    },
+    "series": [
+     {
+      "name": "Frondium nisimocrax, small children",
+      "points": [
+       [
+        0,
+        0
+       ],
+       [
+        500,
+        5
+       ],
+       [
+        1000,
+        69
+       ],
+       [
+        1500,
+        513
+       ],
+       [
+        2000,
+        733
+       ],
+       [
+        2500,
+        773
+       ],
+       [
+        3000,
+        669
+       ],
+       [
+        3500,
+        639
+       ],
+       [
+        4000,
+        697
+       ],
+       [
+        4500,
+        788
+       ],
+       [
+        5000,
+        953
+       ],
+       [
+        5500,
+        1080
+       ],
+       [
+        6000,
+        1175
+       ],
+       [
+        6500,
+        1338
+       ],
+       [
+        7000,
+        1399
+       ],
+       [
+        7500,
+        1360
+       ],
+       [
+        8000,
+        1337
+       ],
+       [
+        8500,
+        1358
+       ],
+       [
+        9000,
+        1418
+       ],
+       [
+        9500,
+        1473
+       ],
+       [
+        10000,
+        1386
+       ],
+       [
+        10500,
+        1409
+       ],
+       [
+        11000,
+        1470
+       ],
+       [
+        11500,
+        1643
+       ],
+       [
+        12000,
+        1831
+       ],
+       [
+        12500,
+        2059
+       ],
+       [
+        13000,
+        2335
+       ],
+       [
+        13500,
+        2458
+       ],
+       [
+        14000,
+        2644
+       ],
+       [
+        14500,
+        2750
+       ],
+       [
+        15000,
+        2969
+       ],
+       [
+        15500,
+        3161
+       ],
+       [
+        16000,
+        3301
+       ],
+       [
+        16500,
+        3228
+       ],
+       [
+        17000,
+        3313
+       ],
+       [
+        17500,
+        3531
+       ],
+       [
+        18000,
+        3923
+       ],
+       [
+        18500,
+        4337
+       ],
+       [
+        19000,
+        4540
+       ],
+       [
+        19500,
+        4642
+       ],
+       [
+        20000,
+        4805
+       ],
+       [
+        20500,
+        5084
+       ],
+       [
+        21000,
+        5435
+       ],
+       [
+        21500,
+        5652
+       ],
+       [
+        22000,
+        5913
+       ],
+       [
+        22500,
+        6110
+       ],
+       [
+        23000,
+        6333
+       ],
+       [
+        23500,
+        6633
+       ],
+       [
+        24000,
+        6908
+       ],
+       [
+        24500,
+        7226
+       ],
+       [
+        25000,
+        7511
+       ],
+       [
+        25500,
+        7781
+       ],
+       [
+        26000,
+        7951
+       ],
+       [
+        26500,
+        7923
+       ],
+       [
+        27000,
+        8139
+       ],
+       [
+        27500,
+        8232
+       ],
+       [
+        28000,
+        8218
+       ],
+       [
+        28500,
+        8207
+       ],
+       [
+        29000,
+        7928
+       ],
+       [
+        29500,
+        8238
+       ],
+       [
+        30000,
+        8461
+       ]
+      ],
+      "highlight": true
+     },
+     {
+      "name": "Frondium marufubens, big children",
+      "points": [
+       [
+        0,
+        0
+       ],
+       [
+        500,
+        91
+       ],
+       [
+        1000,
+        182
+       ],
+       [
+        1500,
+        191
+       ],
+       [
+        2000,
+        163
+       ],
+       [
+        2500,
+        134
+       ],
+       [
+        3000,
+        138
+       ],
+       [
+        3500,
+        125
+       ],
+       [
+        4000,
+        121
+       ],
+       [
+        4500,
+        145
+       ],
+       [
+        5000,
+        212
+       ],
+       [
+        5500,
+        289
+       ],
+       [
+        6000,
+        381
+       ],
+       [
+        6500,
+        502
+       ],
+       [
+        7000,
+        676
+       ],
+       [
+        7500,
+        846
+       ],
+       [
+        8000,
+        996
+       ],
+       [
+        8500,
+        1175
+       ],
+       [
+        9000,
+        1323
+       ],
+       [
+        9500,
+        1425
+       ],
+       [
+        10000,
+        1315
+       ],
+       [
+        10500,
+        1341
+       ],
+       [
+        11000,
+        1393
+       ],
+       [
+        11500,
+        1433
+       ],
+       [
+        12000,
+        1389
+       ],
+       [
+        12500,
+        1418
+       ],
+       [
+        13000,
+        1326
+       ],
+       [
+        13500,
+        1196
+       ],
+       [
+        14000,
+        1032
+       ],
+       [
+        14500,
+        939
+       ],
+       [
+        15000,
+        829
+       ],
+       [
+        15500,
+        691
+       ],
+       [
+        16000,
+        616
+       ],
+       [
+        16500,
+        561
+       ],
+       [
+        17000,
+        494
+       ],
+       [
+        17500,
+        417
+       ],
+       [
+        18000,
+        338
+       ],
+       [
+        18500,
+        290
+       ],
+       [
+        19000,
+        236
+       ],
+       [
+        19500,
+        187
+       ],
+       [
+        20000,
+        156
+       ],
+       [
+        20500,
+        122
+       ],
+       [
+        21000,
+        108
+       ],
+       [
+        21500,
+        93
+       ],
+       [
+        22000,
+        81
+       ],
+       [
+        22500,
+        68
+       ],
+       [
+        23000,
+        62
+       ],
+       [
+        23500,
+        45
+       ],
+       [
+        24000,
+        38
+       ],
+       [
+        24500,
+        28
+       ],
+       [
+        25000,
+        28
+       ],
+       [
+        25500,
+        23
+       ],
+       [
+        26000,
+        17
+       ],
+       [
+        26500,
+        9
+       ],
+       [
+        27000,
+        7
+       ],
+       [
+        27500,
+        6
+       ],
+       [
+        28000,
+        5
+       ],
+       [
+        28500,
+        4
+       ],
+       [
+        29000,
+        2
+       ],
+       [
+        29500,
+        3
+       ],
+       [
+        30000,
+        2
+       ]
+      ]
+     }
+    ]
+   },
+   "why": "The bets compared over the whole run in tank 1.",
+   "sources": [
+    "lineage event sweep every 500 s, clades 43 and 39 (the guide's rule)",
+    "peaks: 1,441 at 11,460 s; nisimocrax 8,480 at 29,955 s",
+    "end: nisimocrax 8,461, marufubens 2, stats alive 8,618"
+   ]
+  },
+  {
+   "n": 15,
+   "act": "Two leaves, two bets",
+   "station": "Time",
+   "run": "r48-s3",
+   "from": 3000,
+   "to": 30000,
+   "subject": "world",
+   "seconds": 22.0,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "Tank 3 ran the same contest, and big children won."
+    },
+    {
+     "at": 5.5,
+     "text": "Thallus legatribens: children at 59% of adult, 6,165 at the end.",
+     "seconds": 5
+    },
+    {
+     "at": 11.5,
+     "text": "Thallus migugis: children at 9%, 2,340 at the end."
+    },
+    {
+     "at": 16.5,
+     "text": "I don't know why. Here too the winner led early, 280 to 30.",
+     "seconds": 5
+    }
+   ],
+   "chart": {
+    "kind": "line",
+    "title": "Tank 3's two leaf lines, alive",
+    "place": "corner",
+    "at": 0.5,
+    "until": 22.0,
+    "x": {
+     "label": "time in the run, s"
+    },
+    "y": {
+     "label": "alive"
+    },
+    "series": [
+     {
+      "name": "Thallus legatribens, big children",
+      "points": [
+       [
+        0,
+        0
+       ],
+       [
+        500,
+        7
+       ],
+       [
+        1000,
+        149
+       ],
+       [
+        1500,
+        299
+       ],
+       [
+        2000,
+        295
+       ],
+       [
+        2500,
+        280
+       ],
+       [
+        3000,
+        217
+       ],
+       [
+        3500,
+        218
+       ],
+       [
+        4000,
+        204
+       ],
+       [
+        4500,
+        206
+       ],
+       [
+        5000,
+        243
+       ],
+       [
+        5500,
+        289
+       ],
+       [
+        6000,
+        306
+       ],
+       [
+        6500,
+        308
+       ],
+       [
+        7000,
+        382
+       ],
+       [
+        7500,
+        410
+       ],
+       [
+        8000,
+        417
+       ],
+       [
+        8500,
+        458
+       ],
+       [
+        9000,
+        531
+       ],
+       [
+        9500,
+        594
+       ],
+       [
+        10000,
+        641
+       ],
+       [
+        10500,
+        682
+       ],
+       [
+        11000,
+        758
+       ],
+       [
+        11500,
+        850
+       ],
+       [
+        12000,
+        986
+       ],
+       [
+        12500,
+        1086
+       ],
+       [
+        13000,
+        1243
+       ],
+       [
+        13500,
+        1398
+       ],
+       [
+        14000,
+        1560
+       ],
+       [
+        14500,
+        1770
+       ],
+       [
+        15000,
+        1880
+       ],
+       [
+        15500,
+        1952
+       ],
+       [
+        16000,
+        2131
+       ],
+       [
+        16500,
+        2389
+       ],
+       [
+        17000,
+        2692
+       ],
+       [
+        17500,
+        3057
+       ],
+       [
+        18000,
+        3323
+       ],
+       [
+        18500,
+        3676
+       ],
+       [
+        19000,
+        3897
+       ],
+       [
+        19500,
+        4075
+       ],
+       [
+        20000,
+        4013
+       ],
+       [
+        20500,
+        4163
+       ],
+       [
+        21000,
+        4439
+       ],
+       [
+        21500,
+        4839
+       ],
+       [
+        22000,
+        4967
+       ],
+       [
+        22500,
+        5206
+       ],
+       [
+        23000,
+        5428
+       ],
+       [
+        23500,
+        5597
+       ],
+       [
+        24000,
+        5601
+       ],
+       [
+        24500,
+        5688
+       ],
+       [
+        25000,
+        5600
+       ],
+       [
+        25500,
+        5762
+       ],
+       [
+        26000,
+        5952
+       ],
+       [
+        26500,
+        6016
+       ],
+       [
+        27000,
+        6004
+       ],
+       [
+        27500,
+        6009
+       ],
+       [
+        28000,
+        6076
+       ],
+       [
+        28500,
+        6140
+       ],
+       [
+        29000,
+        6320
+       ],
+       [
+        29500,
+        6293
+       ],
+       [
+        30000,
+        6165
+       ]
+      ],
+      "highlight": true
+     },
+     {
+      "name": "Thallus migugis, small children",
+      "points": [
+       [
+        0,
+        0
+       ],
+       [
+        500,
+        61
+       ],
+       [
+        1000,
+        90
+       ],
+       [
+        1500,
+        61
+       ],
+       [
+        2000,
+        51
+       ],
+       [
+        2500,
+        30
+       ],
+       [
+        3000,
+        32
+       ],
+       [
+        3500,
+        40
+       ],
+       [
+        4000,
+        49
+       ],
+       [
+        4500,
+        80
+       ],
+       [
+        5000,
+        97
+       ],
+       [
+        5500,
+        108
+       ],
+       [
+        6000,
+        114
+       ],
+       [
+        6500,
+        130
+       ],
+       [
+        7000,
+        138
+       ],
+       [
+        7500,
+        162
+       ],
+       [
+        8000,
+        191
+       ],
+       [
+        8500,
+        212
+       ],
+       [
+        9000,
+        236
+       ],
+       [
+        9500,
+        282
+       ],
+       [
+        10000,
+        337
+       ],
+       [
+        10500,
+        386
+       ],
+       [
+        11000,
+        396
+       ],
+       [
+        11500,
+        451
+       ],
+       [
+        12000,
+        536
+       ],
+       [
+        12500,
+        631
+       ],
+       [
+        13000,
+        733
+       ],
+       [
+        13500,
+        819
+       ],
+       [
+        14000,
+        931
+       ],
+       [
+        14500,
+        1003
+       ],
+       [
+        15000,
+        1069
+       ],
+       [
+        15500,
+        1088
+       ],
+       [
+        16000,
+        1117
+       ],
+       [
+        16500,
+        1154
+       ],
+       [
+        17000,
+        1175
+       ],
+       [
+        17500,
+        1199
+       ],
+       [
+        18000,
+        1211
+       ],
+       [
+        18500,
+        1216
+       ],
+       [
+        19000,
+        1224
+       ],
+       [
+        19500,
+        1237
+       ],
+       [
+        20000,
+        1204
+       ],
+       [
+        20500,
+        1160
+       ],
+       [
+        21000,
+        1103
+       ],
+       [
+        21500,
+        1088
+       ],
+       [
+        22000,
+        1019
+       ],
+       [
+        22500,
+        959
+       ],
+       [
+        23000,
+        929
+       ],
+       [
+        23500,
+        877
+       ],
+       [
+        24000,
+        836
+       ],
+       [
+        24500,
+        818
+       ],
+       [
+        25000,
+        793
+       ],
+       [
+        25500,
+        812
+       ],
+       [
+        26000,
+        914
+       ],
+       [
+        26500,
+        1021
+       ],
+       [
+        27000,
+        1160
+       ],
+       [
+        27500,
+        1343
+       ],
+       [
+        28000,
+        1519
+       ],
+       [
+        28500,
+        1736
+       ],
+       [
+        29000,
+        1916
+       ],
+       [
+        29500,
+        2098
+       ],
+       [
+        30000,
+        2340
+       ]
+      ]
+     }
+    ]
+   },
+   "why": "The same two bets with the opposite result, over a jump from 3,000 to 30,000 s in tank 3.",
+   "sources": [
+    "snapshot 30,000: legatribens median investment 0.681 brood 1 (n 6,165); migugis 0.111 brood 1 (n 2,340)",
+    "birth sizes 20,000 to 30,000 s: 0.586 (24,106 births) and 0.088 (5,255)",
+    "280 and 30 at 2,500 s: lineage clade walk"
+   ]
+  },
+  {
+   "n": 16,
+   "act": "A leaf keeps a stomach",
+   "chapter": "A leaf keeps a stomach",
+   "station": "Birth",
+   "run": "r48-s1",
+   "second": 23300.5,
+   "subject": "Vorafrons vabecrepis (guide clade 958), from Frondium nisimocrax; parent body 44820, child body 48048",
+   "seconds": 18,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "Tank 1, 23,300 s. A nisimocrax leaf has a child."
+    },
+    {
+     "at": 5.5,
+     "text": "The child, body 48048, carries a bud: a speck of stomach.",
+     "seconds": 5
+    },
+    {
+     "at": 11.5,
+     "text": "Rule one: a new kind of part arrives only as a small bud.",
+     "seconds": 5
+    }
+   ],
+   "why": "The turn of the story: the birth that founds the one stomach line that lasts. A cousin will not reproduce this exact bud; the captions describe the recorded birth.",
+   "sources": [
+    "lineage: 48048 born 23,300.5 s to 44820 (clade 43, Frondium nisimocrax), bud absorptive, budx 1, flags (1,0,1)",
+    "D119: a cell type arrives only as a bud, a small welded part at the born-small size"
+   ]
+  },
+  {
+   "n": 17,
+   "act": "A leaf keeps a stomach",
+   "station": "Portrait",
+   "run": "r48-s1",
+   "second": 27500,
+   "flexible": false,
+   "subject": "body 48048",
+   "seconds": 22.0,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "Body 48048, 4,200 s old: over twice the average age."
+    },
+    {
+     "at": 5.5,
+     "text": "It lives at the surface, and has had six children."
+    },
+    {
+     "at": 10.5,
+     "text": "Its stomach brings in 0.13% of its income. Light brings the rest.",
+     "seconds": 5
+    },
+    {
+     "at": 16.5,
+     "text": "Like body 201 at the start: a leaf with a speck of stomach.",
+     "seconds": 5
+    }
+   ],
+   "chart": {
+    "kind": "bars",
+    "title": "Body 48048's income, %",
+    "place": "corner",
+    "at": 10.5,
+    "until": 22.0,
+    "bars": [
+     {
+      "label": "light",
+      "value": 99.87,
+      "highlight": true
+     },
+     {
+      "label": "snow",
+      "value": 0.13
+     }
+    ]
+   },
+   "why": "The founder of the lasting stomach line, at a checkpoint, read from its own row: it lives on light. The callback to body 201 closes the loop the opening started.",
+   "sources": [
+    "absorptive.jsonl id 48048 t 27500: age 4199.5, y -0.19, children 6, lightW 0.1396, foodW 0.000184",
+    "stats meanAge 1,893.8 s at 27,500"
+   ]
+  },
+  {
+   "n": 18,
+   "act": "A leaf keeps a stomach",
+   "station": "Colony",
+   "run": "r48-s1",
+   "second": 30000,
+   "subject": "Vorafrons vabecrepis (guide clade 958), founder body 48048",
+   "seconds": 27.0,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "Its line, Vorafrons vabecrepis, ended with 29 alive."
+    },
+    {
+     "at": 5.5,
+     "text": "No tank ended with a larger line carrying a stomach."
+    },
+    {
+     "at": 10.5,
+     "text": "Nine more descendants had dropped the stomach."
+    },
+    {
+     "at": 15.5,
+     "text": "Three other stomach buds on nisimocrax leaves left ten or more too.",
+     "seconds": 5
+    },
+    {
+     "at": 21.5,
+     "text": "That second hope held here: a budded stomach founded a line.",
+     "seconds": 5
+    }
+   ],
+   "chart": {
+    "kind": "line",
+    "title": "Vorafrons vabecrepis, alive",
+    "place": "corner",
+    "at": 0.5,
+    "until": 27.0,
+    "x": {
+     "label": "time in the run, s"
+    },
+    "y": {
+     "label": "alive"
+    },
+    "series": [
+     {
+      "name": "Vorafrons vabecrepis",
+      "points": [
+       [
+        23000,
+        0
+       ],
+       [
+        23250,
+        0
+       ],
+       [
+        23500,
+        1
+       ],
+       [
+        23750,
+        1
+       ],
+       [
+        24000,
+        2
+       ],
+       [
+        24250,
+        3
+       ],
+       [
+        24500,
+        3
+       ],
+       [
+        24750,
+        4
+       ],
+       [
+        25000,
+        6
+       ],
+       [
+        25250,
+        10
+       ],
+       [
+        25500,
+        13
+       ],
+       [
+        25750,
+        14
+       ],
+       [
+        26000,
+        16
+       ],
+       [
+        26250,
+        21
+       ],
+       [
+        26500,
+        22
+       ],
+       [
+        26750,
+        23
+       ],
+       [
+        27000,
+        25
+       ],
+       [
+        27250,
+        26
+       ],
+       [
+        27500,
+        31
+       ],
+       [
+        27750,
+        36
+       ],
+       [
+        28000,
+        37
+       ],
+       [
+        28250,
+        37
+       ],
+       [
+        28500,
+        36
+       ],
+       [
+        28750,
+        33
+       ],
+       [
+        29000,
+        27
+       ],
+       [
+        29250,
+        25
+       ],
+       [
+        29500,
+        28
+       ],
+       [
+        29750,
+        29
+       ],
+       [
+        30000,
+        29
+       ]
+      ],
+      "highlight": true
+     }
+    ]
+   },
+   "why": "The turn's payoff: the prediction M3 holds in tank 1.",
+   "sources": [
+    "29: lineage clade of 48048 at 30,000 s (guide alive_at_end 29)",
+    "largest: the stomach-carrying clades alive at each end, s1 29 / 19 / 10, s2 6, s3 3",
+    "38 descendants alive: 29 with flags (1,0,1) and 9 with (0,0,1)",
+    "M3: logbook/0119 (ten or more living in a budded stomach's line at 30,000 s in 1 of 3)"
+   ]
+  },
+  {
+   "n": 19,
+   "act": "What the round found",
+   "chapter": "What the round found",
+   "station": "Arrival",
+   "run": "r48-s1",
+   "second": 30000,
+   "subject": "world",
+   "seconds": 15.0,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "Tanks 1 and 3 each ended with about 8,600 bodies alive."
+    },
+    {
+     "at": 5.5,
+     "text": "Tank 2 stopped at 13,700 s on a software error."
+    },
+    {
+     "at": 10.5,
+     "text": "We have not found its cause yet."
+    }
+   ],
+   "chart": {
+    "kind": "line",
+    "title": "Bodies alive in each tank",
+    "place": "corner",
+    "at": 0.5,
+    "until": 15.0,
+    "x": {
+     "label": "time in the run, s"
+    },
+    "y": {
+     "label": "alive"
+    },
+    "series": [
+     {
+      "name": "tank 1",
+      "points": [
+       [
+        0,
+        0
+       ],
+       [
+        250,
+        44
+       ],
+       [
+        500,
+        159
+       ],
+       [
+        750,
+        279
+       ],
+       [
+        1000,
+        520
+       ],
+       [
+        1250,
+        1061
+       ],
+       [
+        1500,
+        1478
+       ],
+       [
+        1750,
+        1783
+       ],
+       [
+        2000,
+        1785
+       ],
+       [
+        2250,
+        1802
+       ],
+       [
+        2500,
+        1776
+       ],
+       [
+        2750,
+        1778
+       ],
+       [
+        3000,
+        1583
+       ],
+       [
+        3250,
+        1464
+       ],
+       [
+        3500,
+        1546
+       ],
+       [
+        3750,
+        1566
+       ],
+       [
+        4000,
+        1582
+       ],
+       [
+        4250,
+        1648
+       ],
+       [
+        4500,
+        1727
+       ],
+       [
+        4750,
+        1796
+       ],
+       [
+        5000,
+        1874
+       ],
+       [
+        5250,
+        1951
+       ],
+       [
+        5500,
+        2053
+       ],
+       [
+        5750,
+        2133
+       ],
+       [
+        6000,
+        2144
+       ],
+       [
+        6250,
+        2217
+       ],
+       [
+        6500,
+        2323
+       ],
+       [
+        6750,
+        2380
+       ],
+       [
+        7000,
+        2475
+       ],
+       [
+        7250,
+        2470
+       ],
+       [
+        7500,
+        2539
+       ],
+       [
+        7750,
+        2557
+       ],
+       [
+        8000,
+        2619
+       ],
+       [
+        8250,
+        2715
+       ],
+       [
+        8500,
+        2795
+       ],
+       [
+        8750,
+        2871
+       ],
+       [
+        9000,
+        2953
+       ],
+       [
+        9250,
+        3042
+       ],
+       [
+        9500,
+        3091
+       ],
+       [
+        9750,
+        2933
+       ],
+       [
+        10000,
+        2859
+       ],
+       [
+        10250,
+        2887
+       ],
+       [
+        10500,
+        2879
+       ],
+       [
+        10750,
+        2905
+       ],
+       [
+        11000,
+        2970
+       ],
+       [
+        11250,
+        3106
+       ],
+       [
+        11500,
+        3165
+       ],
+       [
+        11750,
+        3210
+       ],
+       [
+        12000,
+        3282
+       ],
+       [
+        12250,
+        3429
+       ],
+       [
+        12500,
+        3527
+       ],
+       [
+        12750,
+        3586
+       ],
+       [
+        13000,
+        3701
+       ],
+       [
+        13250,
+        3750
+       ],
+       [
+        13500,
+        3690
+       ],
+       [
+        13750,
+        3713
+       ],
+       [
+        14000,
+        3705
+       ],
+       [
+        14250,
+        3721
+       ],
+       [
+        14500,
+        3714
+       ],
+       [
+        14750,
+        3790
+       ],
+       [
+        15000,
+        3832
+       ],
+       [
+        15250,
+        3852
+       ],
+       [
+        15500,
+        3892
+       ],
+       [
+        15750,
+        3867
+       ],
+       [
+        16000,
+        3946
+       ],
+       [
+        16250,
+        3889
+       ],
+       [
+        16500,
+        3813
+       ],
+       [
+        16750,
+        3741
+       ],
+       [
+        17000,
+        3822
+       ],
+       [
+        17250,
+        3901
+       ],
+       [
+        17500,
+        3973
+       ],
+       [
+        17750,
+        4101
+       ],
+       [
+        18000,
+        4286
+       ],
+       [
+        18250,
+        4529
+       ],
+       [
+        18500,
+        4664
+       ],
+       [
+        18750,
+        4690
+       ],
+       [
+        19000,
+        4822
+       ],
+       [
+        19250,
+        4807
+       ],
+       [
+        19500,
+        4877
+       ],
+       [
+        19750,
+        4928
+       ],
+       [
+        20000,
+        5003
+       ],
+       [
+        20250,
+        5045
+       ],
+       [
+        20500,
+        5256
+       ],
+       [
+        20750,
+        5429
+       ],
+       [
+        21000,
+        5598
+       ],
+       [
+        21250,
+        5741
+       ],
+       [
+        21500,
+        5816
+       ],
+       [
+        21750,
+        5881
+       ],
+       [
+        22000,
+        6060
+       ],
+       [
+        22250,
+        6053
+       ],
+       [
+        22500,
+        6242
+       ],
+       [
+        22750,
+        6430
+       ],
+       [
+        23000,
+        6448
+       ],
+       [
+        23250,
+        6649
+       ],
+       [
+        23500,
+        6728
+       ],
+       [
+        23750,
+        6796
+       ],
+       [
+        24000,
+        6999
+       ],
+       [
+        24250,
+        7147
+       ],
+       [
+        24500,
+        7308
+       ],
+       [
+        24750,
+        7416
+       ],
+       [
+        25000,
+        7581
+       ],
+       [
+        25250,
+        7741
+       ],
+       [
+        25500,
+        7857
+       ],
+       [
+        25750,
+        7954
+       ],
+       [
+        26000,
+        8028
+       ],
+       [
+        26250,
+        8039
+       ],
+       [
+        26500,
+        8008
+       ],
+       [
+        26750,
+        8201
+       ],
+       [
+        27000,
+        8242
+       ],
+       [
+        27250,
+        8307
+       ],
+       [
+        27500,
+        8363
+       ],
+       [
+        27750,
+        8392
+       ],
+       [
+        28000,
+        8377
+       ],
+       [
+        28250,
+        8406
+       ],
+       [
+        28500,
+        8365
+       ],
+       [
+        28750,
+        8097
+       ],
+       [
+        29000,
+        8067
+       ],
+       [
+        29250,
+        8259
+       ],
+       [
+        29500,
+        8386
+       ],
+       [
+        29750,
+        8476
+       ],
+       [
+        30000,
+        8618
+       ]
+      ],
+      "highlight": true
+     },
+     {
+      "name": "tank 2",
+      "points": [
+       [
+        0,
+        0
+       ],
+       [
+        250,
+        94
+       ],
+       [
+        500,
+        674
+       ],
+       [
+        750,
+        1973
+       ],
+       [
+        1000,
+        3058
+       ],
+       [
+        1250,
+        3443
+       ],
+       [
+        1500,
+        3435
+       ],
+       [
+        1750,
+        3276
+       ],
+       [
+        2000,
+        3150
+       ],
+       [
+        2250,
+        3004
+       ],
+       [
+        2500,
+        2862
+       ],
+       [
+        2750,
+        2711
+       ],
+       [
+        3000,
+        2630
+       ],
+       [
+        3250,
+        2580
+       ],
+       [
+        3500,
+        2558
+       ],
+       [
+        3750,
+        2495
+       ],
+       [
+        4000,
+        2407
+       ],
+       [
+        4250,
+        2395
+       ],
+       [
+        4500,
+        2387
+       ],
+       [
+        4750,
+        2390
+       ],
+       [
+        5000,
+        2381
+       ],
+       [
+        5250,
+        2392
+       ],
+       [
+        5500,
+        2459
+       ],
+       [
+        5750,
+        2471
+       ],
+       [
+        6000,
+        2585
+       ],
+       [
+        6250,
+        2652
+       ],
+       [
+        6500,
+        2695
+       ],
+       [
+        6750,
+        2779
+       ],
+       [
+        7000,
+        2869
+       ],
+       [
+        7250,
+        2943
+       ],
+       [
+        7500,
+        3018
+       ],
+       [
+        7750,
+        3136
+       ],
+       [
+        8000,
+        3252
+       ],
+       [
+        8250,
+        3377
+       ],
+       [
+        8500,
+        3412
+       ],
+       [
+        8750,
+        3464
+       ],
+       [
+        9000,
+        3478
+       ],
+       [
+        9250,
+        3500
+       ],
+       [
+        9500,
+        3487
+       ],
+       [
+        9750,
+        3568
+       ],
+       [
+        10000,
+        3621
+       ],
+       [
+        10250,
+        3729
+       ],
+       [
+        10500,
+        3732
+       ],
+       [
+        10750,
+        3752
+       ],
+       [
+        11000,
+        3871
+       ],
+       [
+        11250,
+        3943
+       ],
+       [
+        11500,
+        3974
+       ],
+       [
+        11750,
+        4031
+       ],
+       [
+        12000,
+        4048
+       ],
+       [
+        12250,
+        4130
+       ],
+       [
+        12500,
+        4203
+       ],
+       [
+        12750,
+        4315
+       ],
+       [
+        13000,
+        4360
+       ],
+       [
+        13250,
+        4461
+       ],
+       [
+        13500,
+        4601
+       ],
+       [
+        13690,
+        4583
+       ]
+      ],
+      "highlight": false
+     },
+     {
+      "name": "tank 3",
+      "points": [
+       [
+        0,
+        0
+       ],
+       [
+        250,
+        62
+       ],
+       [
+        500,
+        294
+       ],
+       [
+        750,
+        748
+       ],
+       [
+        1000,
+        1289
+       ],
+       [
+        1250,
+        1663
+       ],
+       [
+        1500,
+        1617
+       ],
+       [
+        1750,
+        1522
+       ],
+       [
+        2000,
+        1350
+       ],
+       [
+        2250,
+        1225
+       ],
+       [
+        2500,
+        1165
+       ],
+       [
+        2750,
+        1027
+       ],
+       [
+        3000,
+        954
+       ],
+       [
+        3250,
+        956
+       ],
+       [
+        3500,
+        973
+       ],
+       [
+        3750,
+        964
+       ],
+       [
+        4000,
+        965
+       ],
+       [
+        4250,
+        984
+       ],
+       [
+        4500,
+        979
+       ],
+       [
+        4750,
+        1010
+       ],
+       [
+        5000,
+        1057
+       ],
+       [
+        5250,
+        1103
+       ],
+       [
+        5500,
+        1093
+       ],
+       [
+        5750,
+        1103
+       ],
+       [
+        6000,
+        1100
+       ],
+       [
+        6250,
+        1110
+       ],
+       [
+        6500,
+        1148
+       ],
+       [
+        6750,
+        1148
+       ],
+       [
+        7000,
+        1231
+       ],
+       [
+        7250,
+        1254
+       ],
+       [
+        7500,
+        1276
+       ],
+       [
+        7750,
+        1280
+       ],
+       [
+        8000,
+        1257
+       ],
+       [
+        8250,
+        1310
+       ],
+       [
+        8500,
+        1343
+       ],
+       [
+        8750,
+        1396
+       ],
+       [
+        9000,
+        1480
+       ],
+       [
+        9250,
+        1533
+       ],
+       [
+        9500,
+        1583
+       ],
+       [
+        9750,
+        1693
+       ],
+       [
+        10000,
+        1764
+       ],
+       [
+        10250,
+        1802
+       ],
+       [
+        10500,
+        1831
+       ],
+       [
+        10750,
+        1852
+       ],
+       [
+        11000,
+        1901
+       ],
+       [
+        11250,
+        2005
+       ],
+       [
+        11500,
+        2060
+       ],
+       [
+        11750,
+        2167
+       ],
+       [
+        12000,
+        2288
+       ],
+       [
+        12250,
+        2384
+       ],
+       [
+        12500,
+        2481
+       ],
+       [
+        12750,
+        2564
+       ],
+       [
+        13000,
+        2686
+       ],
+       [
+        13250,
+        2772
+       ],
+       [
+        13500,
+        2908
+       ],
+       [
+        13750,
+        3035
+       ],
+       [
+        14000,
+        3164
+       ],
+       [
+        14250,
+        3348
+       ],
+       [
+        14500,
+        3414
+       ],
+       [
+        14750,
+        3464
+       ],
+       [
+        15000,
+        3496
+       ],
+       [
+        15250,
+        3475
+       ],
+       [
+        15500,
+        3541
+       ],
+       [
+        15750,
+        3617
+       ],
+       [
+        16000,
+        3730
+       ],
+       [
+        16250,
+        3883
+       ],
+       [
+        16500,
+        4006
+       ],
+       [
+        16750,
+        4197
+       ],
+       [
+        17000,
+        4319
+       ],
+       [
+        17250,
+        4489
+       ],
+       [
+        17500,
+        4704
+       ],
+       [
+        17750,
+        4816
+       ],
+       [
+        18000,
+        4944
+       ],
+       [
+        18250,
+        5053
+       ],
+       [
+        18500,
+        5271
+       ],
+       [
+        18750,
+        5407
+       ],
+       [
+        19000,
+        5432
+       ],
+       [
+        19250,
+        5560
+       ],
+       [
+        19500,
+        5569
+       ],
+       [
+        19750,
+        5517
+       ],
+       [
+        20000,
+        5426
+       ],
+       [
+        20250,
+        5446
+       ],
+       [
+        20500,
+        5497
+       ],
+       [
+        20750,
+        5632
+       ],
+       [
+        21000,
+        5693
+       ],
+       [
+        21250,
+        5801
+       ],
+       [
+        21500,
+        6064
+       ],
+       [
+        21750,
+        6092
+       ],
+       [
+        22000,
+        6114
+       ],
+       [
+        22250,
+        6228
+       ],
+       [
+        22500,
+        6283
+       ],
+       [
+        22750,
+        6409
+       ],
+       [
+        23000,
+        6475
+       ],
+       [
+        23250,
+        6613
+       ],
+       [
+        23500,
+        6603
+       ],
+       [
+        23750,
+        6590
+       ],
+       [
+        24000,
+        6549
+       ],
+       [
+        24250,
+        6597
+       ],
+       [
+        24500,
+        6602
+       ],
+       [
+        24750,
+        6547
+       ],
+       [
+        25000,
+        6470
+       ],
+       [
+        25250,
+        6525
+       ],
+       [
+        25500,
+        6644
+       ],
+       [
+        25750,
+        6785
+       ],
+       [
+        26000,
+        6940
+       ],
+       [
+        26250,
+        6993
+       ],
+       [
+        26500,
+        7126
+       ],
+       [
+        26750,
+        7194
+       ],
+       [
+        27000,
+        7237
+       ],
+       [
+        27250,
+        7404
+       ],
+       [
+        27500,
+        7434
+       ],
+       [
+        27750,
+        7529
+       ],
+       [
+        28000,
+        7685
+       ],
+       [
+        28250,
+        7802
+       ],
+       [
+        28500,
+        7976
+       ],
+       [
+        28750,
+        8177
+       ],
+       [
+        29000,
+        8322
+       ],
+       [
+        29250,
+        8356
+       ],
+       [
+        29500,
+        8483
+       ],
+       [
+        29750,
+        8461
+       ],
+       [
+        30000,
+        8589
+       ]
+      ],
+      "highlight": false
+     }
+    ],
+    "marks": [
+     {
+      "x": 3000,
+      "label": "newcomers begin"
+     },
+     {
+      "x": 13700,
+      "label": "tank 2 stops"
+     }
+    ]
+   },
+   "why": "The whole round in one chart, over the end of tank 1.",
+   "sources": [
+    "stats.jsonl alive every 250 s, all three runs (seed 2 to its last row, 13,690 s)",
+    "ends: 8,618 (s1), 8,589 (s3); s2 4,583 at 13,690",
+    "13,700 s: r48-s2 run.json status error, simulatedSeconds 13700, ending 'Field densityHere is -Infinity'"
+   ]
+  },
+  {
+   "n": 20,
+   "act": "What the round found",
+   "station": "Descent",
+   "run": "r48-s1",
+   "second": 30000,
+   "subject": "world",
+   "seconds": 24.0,
+   "captions": [
+    {
+     "at": 0.5,
+     "text": "Tank 1 at the end. All but three of its bodies carry a leaf.",
+     "seconds": 5
+    },
+    {
+     "at": 6.5,
+     "text": "The eaters landed well, lived longer and bred, then died out.",
+     "seconds": 5
+    },
+    {
+     "at": 12.5,
+     "text": "Nearly every stomach left at the end rides on a leaf."
+    },
+    {
+     "at": 17.5,
+     "text": "The round got its stomach on a leaf. It did not get its eaters.",
+     "seconds": 5
+    }
+   ],
+   "why": "The bittersweet verdict, over the crowd of leaves that won.",
+   "sources": [
+    "stats.jsonl s1 t 30000: alive 8,618, photosynthetic 8,615",
+    "bodies with a stomach at the ends: s1 121 (at least 118 with a leaf), s2 35 (at least 30), s3 29 (at least 25): alive - photosynthetic bounds the leafless"
+   ]
+  }
+ ]
+}

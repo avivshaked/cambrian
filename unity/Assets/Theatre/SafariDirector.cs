@@ -34,6 +34,13 @@ namespace Evosim.Theatre
         public double Second;
         /// <summary>The take's shot, for a check that reads its tally.</summary>
         public FilmPlans.Shot Shot;
+        /// <summary>How much the picture is darkened under its captions, 0 to 1: a story's held card only.</summary>
+        public float Dim;
+        /// <summary>
+        /// The clade the call-outs are about (its sparkline), or null: set only when
+        /// <see cref="SafariOptions.Callouts"/> is on and the scene has a clade with a count series.
+        /// </summary>
+        public SafariClade Callout;
     }
 
     /// <summary>What the director may do, set by its host.</summary>
@@ -44,6 +51,19 @@ namespace Evosim.Theatre
         /// instead, when its clade is alive there, s. Negative never moves a scene.
         /// </summary>
         public double MostSeekSeconds = 300d;
+
+        /// <summary>
+        /// A flexible scene that would cost more than <see cref="MostSeekSeconds"/> of stepping
+        /// opens at the next checkpoint after its second instead, when that checkpoint is no
+        /// more than this far ahead and its clade is alive there, s. Negative never moves a scene
+        /// forward. <c>EVOSIM_THEATRE_SAFARI_SNAP_AHEAD</c>, default 600.
+        /// </summary>
+        /// <remarks>
+        /// Added 2026-09-24. Round 47 seed 2's portrait at 2,240 s had no checkpoint behind it
+        /// but the founding, and the next was at 2,500 s, so the safari stepped the world on
+        /// screen forward 916 s, which took 20.5 minutes; opening at 2,500 s costs a restore.
+        /// </remarks>
+        public double MostSnapAheadSeconds = 600d;
 
         /// <summary>A flexible scene opens on the world already on screen when it is within this of the scene's second, s.</summary>
         public double SlackSeconds = 300d;
@@ -56,6 +76,22 @@ namespace Evosim.Theatre
 
         /// <summary>True in the Editor's own Play mode, false in a batch Editor (the log goes to the console either way).</summary>
         public bool Interactive;
+
+        /// <summary>
+        /// The on-screen call-outs (the safari review's item 7), off by default: the subject clade
+        /// in full colour and every other body grey, and the clade's count over the run as a
+        /// sparkline with the filmed second marked. <c>EVOSIM_THEATRE_SAFARI_CALLOUTS=1</c>.
+        /// </summary>
+        public bool Callouts = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_CALLOUTS") == "1";
+
+        /// <summary>
+        /// The canopy shot for the arrival and the descent (the films review's second item,
+        /// 2026-09-24), off by default: the arrival rises toward the leaves and the descent sinks
+        /// away from them, each 8 to 15 m under the densest column near the surface, looking up
+        /// at Snell's window, in place of the look through the glass and the dolly down the
+        /// shallow side. <c>EVOSIM_THEATRE_SAFARI_CANOPY=1</c>.
+        /// </summary>
+        public bool Canopy = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_CANOPY") == "1";
     }
 
     /// <summary>
@@ -82,7 +118,11 @@ namespace Evosim.Theatre
     /// <see cref="SafariOptions.MostSeekSeconds"/> behind it opens at the checkpoint when its
     /// clade is alive there, and the log says so: this is the agent's addition to the spec,
     /// taken because the round's checkpoints are 2,500 s apart and the Editor steps a crowd of
-    /// thousands at around real time.
+    /// thousands at around real time. A flexible scene that would cost more than that to reach
+    /// opens at the next checkpoint after it instead, when that checkpoint is within
+    /// <see cref="SafariOptions.MostSnapAheadSeconds"/> and the clade is alive there
+    /// (2026-09-24); where both moves are open, the nearer to the scene's own second is taken.
+    /// Every seek ends with a line saying where its wall time went.
     /// </para>
     /// <para>
     /// <b>A birth is rehearsed.</b> A cousin's births are its own, so the director restores from
@@ -92,6 +132,13 @@ namespace Evosim.Theatre
     /// in the same Editor steps the same trajectory, so the birth recurs; the caption names what
     /// was got, or that it did not recur. The rehearsal doubles the seek, and the log says so.
     /// </para>
+    /// <para>
+    /// <b>A story's scenes</b> (<see cref="SafariStory"/>) take the same routes. Each takes its
+    /// length on screen from the scene rather than the station, and the director writes no caption
+    /// of its own over a story's: no body's age on a portrait and no word on what a birth got,
+    /// both of which the log says instead. A story's birth far from its clade's founding waits
+    /// for a child of the clade's own members (<see cref="SafariScene.BirthLine"/>).
+    /// </para>
     /// </remarks>
     public sealed class SafariDirector
     {
@@ -100,6 +147,11 @@ namespace Evosim.Theatre
             public double At;
             public bool Flexible;
             public bool Rehearse;
+            /// <summary>
+            /// A held card (a story's title, or its chapter card): never stepped to, filmed on the
+            /// world on screen or at the checkpoint nearest its second, and needing no clade alive.
+            /// </summary>
+            public bool Held;
             public Func<SafariPlans.Stage, List<SafariPlans.Take>> Build;
         }
 
@@ -127,6 +179,15 @@ namespace Evosim.Theatre
         private double _seekTarget = double.NaN;
         private double _seekFrom;
         private double _seekWallFrom;
+
+        // Where a seek's wall time goes (2026-09-24): inside the world's own steps, inside the
+        // seek's loop (the steps and the director's bookkeeping between them), and the rest,
+        // which is the Editor's tick outside Advance. Read against the solver's own split.
+        private long _seekStepTicks;
+        private long _seekLoopTicks;
+        private int _seekTicks;
+        private int _seekCollections0;
+        private long _seekPhysicsMs0, _seekEconomyMs0, _seekHarnessMs0;
         private double _restoredAt = double.NaN;
         private long _maxSeenId = -1;
         private long _birthsSeen;
@@ -136,9 +197,21 @@ namespace Evosim.Theatre
         private enum Rehearsal { None, Watching, Recurring }
         private Rehearsal _rehearsal;
         private long _birthParent = -1, _birthChild = -1;
+        private byte _birthChildFlags = 255;
         private double _birthAt = double.NaN;
+        /// <summary>Where the rehearsal's child landed from its parent's root, or NaN when no rehearsal saw it.</summary>
+        private Vector3 _birthOffset = new Vector3(float.NaN, float.NaN, float.NaN);
         private double _watchFrom;
         private bool _birthRecurred;
+        /// <summary>A story's named parent, and whether it was alive where the rehearsal started.</summary>
+        private long _namedParent = -1;
+        private bool _namedAlive;
+        /// <summary>The line's first birth, kept while the rehearsal waits for the named parent's.</summary>
+        private bool _hasCandidate;
+        private (long child, long parent, byte flags, Vector3 offset, double at) _candidate;
+
+        /// <summary>How long past a story's birth second the rehearsal waits for its named parent before taking the line's first birth, s.</summary>
+        public const double NamedParentWaitSeconds = 120d;
         /// <summary>Where the rehearsal started: a checkpoint's path and second, or a null path for the founding.</summary>
         private (double seconds, string path) _rehearsalFrom;
 
@@ -232,7 +305,9 @@ namespace Evosim.Theatre
             _sceneOffsetBase = 0d;
             _rehearsal = Rehearsal.None;
             _birthParent = _birthChild = -1;
+            _birthChildFlags = 255;
             _birthAt = double.NaN;
+            _birthOffset = new Vector3(float.NaN, float.NaN, float.NaN);
             _birthRecurred = false;
             _takeCount = 0;
 
@@ -253,31 +328,72 @@ namespace Evosim.Theatre
             if (_runner != null) _runner.Paused = true;
         }
 
+        /// <summary>
+        /// A scene's length on screen when it gives one, else the station's own: the template's
+        /// scenes carry the station's length, so this is the same number for them, and a story's
+        /// scene carries its writer's.
+        /// </summary>
+        private static float LengthOf(SafariScene scene, double station) =>
+            (float)(scene.Seconds > 0d ? scene.Seconds : station);
+
         private IEnumerable<Segment> SegmentsOf(SafariScene scene)
         {
             SafariClade clade = scene.Clade;
             int hash = clade != null ? clade.Hash : scene.Index * 7919 + 17;
 
+            // The template's arrival, descent, floor, portrait and colony are always flexible; a
+            // story's are unless its writer held one at its second. The canopy is the options'
+            // unless a story's scene asks for it itself.
+            bool flexible = scene.Flexible;
+            bool canopy = scene.Canopy ?? _options.Canopy;
+
+            // A story's chapter card plays first, a held take of its own before the scene's; the
+            // template's colony carries its card inside its own takes (ColonyTakes).
+            if (scene.FromStory && scene.ChapterCard)
+            {
+                yield return new Segment
+                {
+                    At = scene.At, Flexible = true, Held = true,
+                    Build = s => One(SafariPlans.FromAbove(s, (float)SafariTripBuilder.ChapterSeconds)),
+                };
+            }
+
             switch (scene.Station)
             {
                 case SafariStation.Arrival:
-                    yield return new Segment { At = scene.At, Flexible = true, Build = s => One(SafariPlans.Arrival(s, (float)SafariTripBuilder.ArrivalSeconds, hash)) };
+                    yield return new Segment
+                    {
+                        At = scene.At, Flexible = flexible,
+                        Build = s => One(canopy
+                            ? SafariPlans.Canopy(s, LengthOf(scene, SafariTripBuilder.ArrivalSeconds), FilmPlans.CanopyMove.Rise, "arrival")
+                            : SafariPlans.Arrival(s, LengthOf(scene, SafariTripBuilder.ArrivalSeconds), hash)),
+                    };
                     break;
 
                 case SafariStation.Descent:
-                    yield return new Segment { At = scene.At, Flexible = true, Build = s => One(SafariPlans.Descent(s, hash)) };
+                    yield return new Segment { At = scene.At, Flexible = flexible, Build = s => DescentTakes(s, scene, hash, canopy) };
                     break;
 
                 case SafariStation.Floor:
-                    yield return new Segment { At = scene.At, Flexible = true, Build = s => One(SafariPlans.Floor(s, (float)SafariTripBuilder.FloorSeconds, hash)) };
+                    yield return new Segment { At = scene.At, Flexible = flexible, Build = s => One(SafariPlans.Floor(s, LengthOf(scene, SafariTripBuilder.FloorSeconds), hash)) };
+                    break;
+
+                case SafariStation.Card:
+                    // A story's title: the chapter card's look, the disc from above, held, and
+                    // darkened under its captions when the writer asked for that.
+                    yield return new Segment
+                    {
+                        At = scene.At, Flexible = true, Held = true,
+                        Build = s => One(SafariPlans.FromAbove(s, LengthOf(scene, SafariTripBuilder.ChapterSeconds))),
+                    };
                     break;
 
                 case SafariStation.Portrait:
-                    yield return new Segment { At = scene.At, Flexible = true, Build = s => PortraitTakes(s, scene) };
+                    yield return new Segment { At = scene.At, Flexible = flexible, Build = s => PortraitTakes(s, scene) };
                     break;
 
                 case SafariStation.Colony:
-                    yield return new Segment { At = scene.At, Flexible = true, Build = s => ColonyTakes(s, scene) };
+                    yield return new Segment { At = scene.At, Flexible = flexible, Build = s => ColonyTakes(s, scene) };
                     break;
 
                 case SafariStation.Birth:
@@ -285,9 +401,14 @@ namespace Evosim.Theatre
                     break;
 
                 case SafariStation.Time:
-                    yield return new Segment { At = scene.At, Flexible = false, Build = s => One(SafariPlans.Fixed(s, (float)SafariTripBuilder.TimeTakeSeconds, hash, "time-a")) };
-                    yield return new Segment { At = scene.SecondAt, Flexible = false, Build = s => One(SafariPlans.Fixed(s, (float)SafariTripBuilder.TimeTakeSeconds, hash, "time-b")) };
+                {
+                    // The template's time scene is not flexible (its two seconds are checkpoints);
+                    // a story's may move within the snap rules like any other.
+                    float take = scene.Seconds > 0d ? (float)(0.5d * scene.Seconds) : (float)SafariTripBuilder.TimeTakeSeconds;
+                    yield return new Segment { At = scene.At, Flexible = flexible, Build = s => One(SafariPlans.Fixed(s, take, hash, "time-a")) };
+                    yield return new Segment { At = scene.SecondAt, Flexible = flexible, Build = s => One(SafariPlans.Fixed(s, take, hash, "time-b")) };
                     break;
+                }
             }
         }
 
@@ -318,6 +439,33 @@ namespace Evosim.Theatre
             (double seconds, string path) ck = CheckpointAtOrBefore(target);
             bool haveCk = ck.path != null;
 
+            // 0. A held card (a story's title or chapter card) is never stepped to: it opens on the
+            //    world on screen when that is near its second, or at the checkpoint nearest its
+            //    second, restored and filmed as it opens. Round 48 seed 2's card at 13,700 s lies
+            //    1,200 s past the run's last checkpoint, where the run stopped on an error.
+            if (segment.Held && live != null)
+            {
+                (double seconds, string path) near = CheckpointNearest(target);
+                if (near.path == null || Math.Abs(now - target) <= _options.SlackSeconds)
+                {
+                    Say(string.Format(CultureInfo.InvariantCulture,
+                        "the card opens on the world on screen at {0:0.#} s ({1:+0.#;-0.#} s from its {2:0.#} s); nothing is stepped",
+                        now, now - target, target));
+                    if (Math.Abs(now - target) > 0.5d) Refiled(scene, segment, target, now);
+                    StartSeek(now);
+                    return;
+                }
+
+                Say(string.Format(CultureInfo.InvariantCulture,
+                    "the card: restoring the checkpoint at {0:0.#} s, the nearest to its {1:0.#} s; nothing is stepped; a cousin from here",
+                    near.seconds, target));
+                Refiled(scene, segment, target, near.seconds);
+                if (!Restore(near.path, near.seconds)) return;
+                _rehearsalFrom = near;
+                StartSeek(near.seconds);
+                return;
+            }
+
             // 1. The world on screen, for a flexible scene near enough with its clade in it.
             if (segment.Flexible && !segment.Rehearse && live != null && Math.Abs(now - target) <= _options.SlackSeconds &&
                 (scene.Clade == null || MembersAlive(live, scene.Clade.Founder) > 0))
@@ -330,16 +478,48 @@ namespace Evosim.Theatre
                 return;
             }
 
-            // 2. Moved to its checkpoint, for a flexible scene far past one with its clade alive there.
-            if (segment.Flexible && haveCk && _options.MostSeekSeconds >= 0d && target - ck.seconds > _options.MostSeekSeconds &&
-                (scene.Clade == null || scene.Clade.AliveAt(ck.seconds + 60d)))
+            // 2. Moved to a checkpoint, for a flexible scene with its clade alive there: back to the
+            //    checkpoint at or before it when that is far behind (the rule since the first
+            //    safari), or forward to the next one when reaching the scene's own second would
+            //    cost too much stepping and the next checkpoint is near enough ahead (2026-09-24).
+            //    Either move is a restore and no stepping, so where both are open the one nearer
+            //    the asked second is taken, and back wins a tie, as the older rule.
+            if (segment.Flexible && _options.MostSeekSeconds >= 0d)
             {
-                Say(string.Format(CultureInfo.InvariantCulture,
-                    "moved from {0:0.#} s to the checkpoint at {1:0.#} s, which saves {2:0} s of stepping; {3}",
-                    target, ck.seconds, target - ck.seconds,
-                    scene.Clade != null ? scene.Clade.Name + " was alive there by the guide's dates" : "the world scene has no clade to lose"));
-                Refiled(scene, segment, target, ck.seconds);
-                target = ck.seconds;
+                bool back = haveCk && target - ck.seconds > _options.MostSeekSeconds &&
+                            (scene.Clade == null || scene.Clade.AliveAt(ck.seconds + 60d));
+
+                double stay = SteppingAt(target, live != null ? now : double.NaN, ck);
+                (double seconds, string path) next = CheckpointAfter(target);
+                bool forward = next.path != null && _options.MostSnapAheadSeconds >= 0d &&
+                               next.seconds - target <= _options.MostSnapAheadSeconds &&
+                               stay > _options.MostSeekSeconds &&
+                               (scene.Clade == null || scene.Clade.AliveAt(next.seconds + 60d));
+
+                if (back && forward && next.seconds - target < target - ck.seconds) back = false;
+
+                string alive = scene.Clade != null
+                    ? scene.Clade.Name + " was alive there by the guide's dates"
+                    : "the world scene has no clade to lose";
+
+                if (back)
+                {
+                    Say(string.Format(CultureInfo.InvariantCulture,
+                        "moved from {0:0.#} s to the checkpoint at {1:0.#} s, which saves {2:0} s of stepping; {3}",
+                        target, ck.seconds, target - ck.seconds, alive));
+                    Refiled(scene, segment, target, ck.seconds);
+                    target = ck.seconds;
+                }
+                else if (forward)
+                {
+                    Say(string.Format(CultureInfo.InvariantCulture,
+                        "moved from {0:0.#} s forward to the checkpoint at {1:0.#} s, which saves {2:0} s of stepping; {3}",
+                        target, next.seconds, stay, alive));
+                    Refiled(scene, segment, target, next.seconds);
+                    target = next.seconds;
+                    ck = next;
+                    haveCk = true;
+                }
             }
 
             // 3. A step forward from the world on screen, when it is shorter than a restore.
@@ -388,7 +568,9 @@ namespace Evosim.Theatre
         private void Refiled(SafariScene scene, Segment segment, double asked, double filmed)
         {
             segment.At = filmed;
-            if (scene.Station == SafariStation.Time) return;
+            // The time scene's two takes are two seconds by design, and a chapter card is not the
+            // scene it opens, so neither moves the scene's own second.
+            if (scene.Station == SafariStation.Time || (segment.Held && scene.Station != SafariStation.Card)) return;
             if (double.IsNaN(scene.AskedAt)) scene.AskedAt = asked;
             scene.At = filmed;
             scene.Refill?.Invoke();
@@ -396,11 +578,45 @@ namespace Evosim.Theatre
                 filmed, string.Join(" | ", scene.Captions.Select(c => c.Text))));
         }
 
+        /// <summary>The checkpoint nearest a second, the earlier on a tie, or a null path when there is none.</summary>
+        private (double seconds, string path) CheckpointNearest(double second)
+        {
+            (double, string) best = (double.NaN, null);
+            double gap = double.PositiveInfinity;
+            foreach (var c in _checkpoints)
+            {
+                double d = Math.Abs(c.seconds - second);
+                if (d < gap - 1e-6) { gap = d; best = c; }
+            }
+            return best;
+        }
+
         private (double seconds, string path) CheckpointAtOrBefore(double second)
         {
             (double, string) best = (double.NaN, null);
             foreach (var c in _checkpoints) if (c.seconds <= second + 1e-6) best = c;
             return best;
+        }
+
+        /// <summary>The first checkpoint after a second, or a null path when there is none.</summary>
+        private (double seconds, string path) CheckpointAfter(double second)
+        {
+            foreach (var c in _checkpoints) if (c.seconds > second + 1e-6) return c;
+            return (double.NaN, null);
+        }
+
+        /// <summary>
+        /// The simulated seconds a scene at <paramref name="target"/> would be stepped through by
+        /// the route that reaches it with the least: forward from the world on screen (rule 3),
+        /// from the checkpoint at or before it (rule 4), or from the founding (rule 5).
+        /// </summary>
+        /// <param name="now">The world on screen's second, or NaN when there is none.</param>
+        private static double SteppingAt(double target, double now, (double seconds, string path) ck)
+        {
+            if (!double.IsNaN(now) && now <= target + 1e-6 && (ck.path == null || now >= ck.seconds - 1e-6))
+                return Math.Max(0d, target - now);
+
+            return ck.path != null ? Math.Max(0d, target - ck.seconds) : Math.Max(0d, target);
         }
 
         private bool Restore(string path, double seconds)
@@ -432,6 +648,7 @@ namespace Evosim.Theatre
             _seekTarget = target;
             _seekFrom = live.ElapsedSeconds;
             _seekWallFrom = _wall.Elapsed.TotalSeconds;
+            StartTheSeekClock(live);
             _runner.Paused = true;
 
             if (_segment.Rehearse && _rehearsal == Rehearsal.None)
@@ -441,9 +658,20 @@ namespace Evosim.Theatre
                 _rehearsal = Rehearsal.Watching;
                 _watchFrom = Math.Max(live.ElapsedSeconds + SafariTripBuilder.BirthLeadSeconds + 0.5d, _segment.At - 120d);
                 _seekTarget = _segment.At + _options.MostBirthWaitSeconds;
+                _namedParent = Current.BirthParentBody;
+                _namedAlive = false;
+                _hasCandidate = false;
+                if (_namedParent >= 0)
+                    foreach (Organism o in live.Sim.World.Living) if (o.Id == _namedParent) { _namedAlive = true; break; }
                 Say(string.Format(CultureInfo.InvariantCulture,
-                    "rehearsing: stepping from {0:0.#} s for a birth to a member of {1} after {2:0.#} s, until {3:0.#} s at most",
-                    live.ElapsedSeconds, ParentName(Current.Clade), _watchFrom, _seekTarget));
+                    "rehearsing: stepping from {0:0.#} s for a birth to a member of {1} after {2:0.#} s, until {3:0.#} s at most{4}",
+                    live.ElapsedSeconds, LineName(Current), _watchFrom, _seekTarget,
+                    _namedParent < 0 ? ""
+                        : _namedAlive
+                            ? string.Format(CultureInfo.InvariantCulture,
+                                "; body {0}, the story's parent, is alive here, so its child is taken first, and the line's first birth only if it has none by {1:0.#} s",
+                                _namedParent, _segment.At + NamedParentWaitSeconds)
+                            : "; body " + _namedParent + ", the story's parent, is not alive here, so the line's first birth is taken"));
                 Phase = SafariPhase.Rehearsing;
                 return;
             }
@@ -469,18 +697,36 @@ namespace Evosim.Theatre
             double deadline = _wall.Elapsed.TotalSeconds + Math.Max(0.01d, wallBudgetSeconds);
             float dt = Mathf.Max(1e-4f, live.Sim.PhysicsDt);
 
+            // The world's own steps are timed one by one and the loop as a whole, so the seek's
+            // last line can say how much of its wall time was the world and how much was not.
+            long entered = Stopwatch.GetTimestamp();
+            _seekTicks++;
+
             while (live.ElapsedSeconds + 0.5d * dt < _seekTarget && _wall.Elapsed.TotalSeconds < deadline)
             {
-                if (live.Step() && Births(live, out long child, out long parent) && Phase == SafariPhase.Rehearsing)
+                long stepped = Stopwatch.GetTimestamp();
+                bool metabolic = live.Step();
+                _seekStepTicks += Stopwatch.GetTimestamp() - stepped;
+
+                if (metabolic && Phase == SafariPhase.Rehearsing && _hasCandidate && live.ElapsedSeconds > _segment.At + NamedParentWaitSeconds)
+                {
+                    _seekLoopTicks += Stopwatch.GetTimestamp() - entered;
+                    TakeTheCandidate("by " + (_segment.At + NamedParentWaitSeconds).ToString("0.#", CultureInfo.InvariantCulture) + " s");
+                    return;
+                }
+
+                if (metabolic && Births(live, out long child, out long parent) && Phase == SafariPhase.Rehearsing)
                 {
                     if (child >= 0)
                     {
+                        _seekLoopTicks += Stopwatch.GetTimestamp() - entered;
                         _birthAt = live.ElapsedSeconds;
                         _birthParent = parent;
                         _birthChild = child;
                         Say(string.Format(CultureInfo.InvariantCulture,
-                            "the rehearsal got a birth at {0:0.#} s: body {1} to body {2}, a member of {3}; restoring again to film it",
-                            _birthAt, child, parent, ParentName(Current.Clade)));
+                            "the rehearsal got a birth at {0:0.#} s: body {1} to body {2}, a member of {3}; restoring again to film it; " +
+                            "the rehearsal: {4}",
+                            _birthAt, child, parent, LineName(Current), SeekCost()));
                         _rehearsal = Rehearsal.Recurring;
                         RestoreForTheBirth();
                         return;
@@ -488,26 +734,57 @@ namespace Evosim.Theatre
                 }
             }
 
+            _seekLoopTicks += Stopwatch.GetTimestamp() - entered;
+
             double wallSoFar = _wall.Elapsed.TotalSeconds - _seekWallFrom;
             double done = live.ElapsedSeconds - _seekFrom;
             double left = _seekTarget - live.ElapsedSeconds;
             double pace = wallSoFar > 0.5d ? done / wallSoFar : double.NaN;
-            Status = string.Format(CultureInfo.InvariantCulture, "{0} {1:0.#} of {2:0.#} s{3}",
+            double world = WorldShare();
+            Status = string.Format(CultureInfo.InvariantCulture, "{0} {1:0.#} of {2:0.#} s{3}{4}",
                 Phase == SafariPhase.Rehearsing ? "rehearsing, at" : "seeking, at",
                 live.ElapsedSeconds, _seekTarget,
-                double.IsNaN(pace) || pace <= 0d ? "" : string.Format(CultureInfo.InvariantCulture, ", {0:0.##}x, {1} left", pace, Minutes(left / pace)));
+                double.IsNaN(pace) || pace <= 0d ? "" : string.Format(CultureInfo.InvariantCulture, ", {0:0.##}x, {1} left", pace, Minutes(left / pace)),
+                double.IsNaN(world) || !(wallSoFar > 0.5d) ? "" : string.Format(CultureInfo.InvariantCulture, ", the world's steps {0:0}% of the wall", 100d * world));
 
             if (live.ElapsedSeconds + 0.5d * dt < _seekTarget) return;
 
-            if (Phase == SafariPhase.Rehearsing)
+            if (Phase == SafariPhase.Rehearsing && _hasCandidate)
             {
-                Missed(string.Format(CultureInfo.InvariantCulture,
-                    "no birth to a member of {0} came between {1:0.#} s and {2:0.#} s in this cousin",
-                    ParentName(Current.Clade), _watchFrom, _seekTarget));
+                TakeTheCandidate("by the rehearsal's end");
                 return;
             }
 
+            if (Phase == SafariPhase.Rehearsing)
+            {
+                Say("the rehearsal: " + SeekCost());
+                Missed(string.Format(CultureInfo.InvariantCulture,
+                    "no birth to a member of {0} came between {1:0.#} s and {2:0.#} s in this cousin",
+                    LineName(Current), _watchFrom, _seekTarget));
+                return;
+            }
+
+            // A seek of any length says where its wall time went; opening on the world already
+            // on screen steps nothing and says nothing.
+            if (done >= 1d) Say("the seek to " + _seekTarget.ToString("0.#", CultureInfo.InvariantCulture) + " s: " + SeekCost());
+
             Plan();
+        }
+
+        /// <summary>The line's first birth, filmed in place of a named parent's that did not come.</summary>
+        private void TakeTheCandidate(string when)
+        {
+            _birthChild = _candidate.child;
+            _birthParent = _candidate.parent;
+            _birthChildFlags = _candidate.flags;
+            _birthOffset = _candidate.offset;
+            _birthAt = _candidate.at;
+            Say(string.Format(CultureInfo.InvariantCulture,
+                "body {0}, the story's parent, gave no birth {1} in this cousin: the line's first, body {2} to body {3} at {4:0.#} s, is filmed; " +
+                "restoring again; the rehearsal: {5}",
+                _namedParent, when, _birthChild, _birthParent, _birthAt, SeekCost()));
+            _rehearsal = Rehearsal.Recurring;
+            RestoreForTheBirth();
         }
 
         private void RestoreForTheBirth()
@@ -529,8 +806,60 @@ namespace Evosim.Theatre
             _seekTarget = _birthAt - lead;
             _seekFrom = _runner.Live.ElapsedSeconds;
             _seekWallFrom = _wall.Elapsed.TotalSeconds;
+            StartTheSeekClock(_runner.Live);
             Phase = SafariPhase.Seeking;
         }
+
+        private void StartTheSeekClock(TheatreDynamicsReplay live)
+        {
+            _seekStepTicks = 0L;
+            _seekLoopTicks = 0L;
+            _seekTicks = 0;
+            _seekCollections0 = GC.CollectionCount(0);
+            _seekPhysicsMs0 = live?.Sim != null ? live.Sim.WallPhysicsMs : 0L;
+            _seekEconomyMs0 = live?.Sim != null ? live.Sim.WallWorldMs : 0L;
+            _seekHarnessMs0 = live?.Sim != null ? live.Sim.WallHarnessMs : 0L;
+        }
+
+        /// <summary>The share of the seek's wall time spent inside the world's own steps, 0 to 1.</summary>
+        private double WorldShare()
+        {
+            double wall = _wall.Elapsed.TotalSeconds - _seekWallFrom;
+            return wall > 0d ? Seconds(_seekStepTicks) / wall : double.NaN;
+        }
+
+        /// <summary>
+        /// Where the seek's wall time went, for the log: inside the world's own steps (and, of
+        /// those, the solver, the economy and the harness, the three parts of the farm's own
+        /// footer), the director's bookkeeping between steps, and the rest of each Editor tick,
+        /// which is everything the Editor does between two calls of <see cref="Advance"/>.
+        /// </summary>
+        private string SeekCost()
+        {
+            TheatreDynamicsReplay live = _runner.Live;
+            double wall = _wall.Elapsed.TotalSeconds - _seekWallFrom;
+            if (live == null || !(wall > 0d)) return "no wall time";
+
+            double steps = Seconds(_seekStepTicks);
+            double loop = Seconds(_seekLoopTicks);
+            double simulated = live.ElapsedSeconds - _seekFrom;
+
+            long physics = live.Sim.WallPhysicsMs - _seekPhysicsMs0;
+            long economy = live.Sim.WallWorldMs - _seekEconomyMs0;
+            long harness = live.Sim.WallHarnessMs - _seekHarnessMs0;
+            double parts = Math.Max(1d, physics + economy + harness);
+
+            return string.Format(CultureInfo.InvariantCulture,
+                "{0:0.#} s simulated in {1} of wall ({2:0.##}x); the world's own steps {3:0.#}% of the wall " +
+                "(of those, the solver {4:0}%, the economy {5:0}%, the harness {6:0}%), the director's bookkeeping between steps {7:0.#}%, " +
+                "the rest of the Editor's {8} ticks {9:0.#}%; {10} garbage collections",
+                simulated, Minutes(wall), simulated / wall, 100d * steps / wall,
+                100d * physics / parts, 100d * economy / parts, 100d * harness / parts,
+                100d * Math.Max(0d, loop - steps) / wall, _seekTicks, 100d * Math.Max(0d, wall - loop) / wall,
+                GC.CollectionCount(0) - _seekCollections0);
+        }
+
+        private static double Seconds(long stopwatchTicks) => (double)stopwatchTicks / Stopwatch.Frequency;
 
         /// <summary>
         /// Notes every body born since the last look, and, in a rehearsal, returns the first born
@@ -557,11 +886,26 @@ namespace Evosim.Theatre
                 _clades.Saw(o, byId);
 
                 SafariClade clade = Current?.Clade;
+                long line = Current?.BirthLine ?? -1;
                 if (Phase == SafariPhase.Rehearsing && clade != null && child < 0 && live.ElapsedSeconds >= _watchFrom &&
-                    o.ParentId >= 0 && byId.TryGetValue(o.ParentId, out Organism p) && _clades.CladeOf(p, byId) == clade.ParentClade)
+                    o.ParentId >= 0 && byId.TryGetValue(o.ParentId, out Organism p) &&
+                    ((_namedAlive && o.ParentId == _namedParent) || (line >= 0 && _clades.CladeOf(p, byId) == line)))
                 {
-                    child = o.Id;
-                    parent = o.ParentId;
+                    var offset = new Vector3(o.X - p.X, o.HeightY - p.HeightY, o.Z - p.Z);
+                    if (!_namedAlive || o.ParentId == _namedParent)
+                    {
+                        child = o.Id;
+                        parent = o.ParentId;
+                        _birthChildFlags = SafariClades.FlagsOf(o);
+                        _birthOffset = offset;
+                    }
+                    else if (!_hasCandidate)
+                    {
+                        // The story named a parent that is alive: the line's first birth waits in
+                        // case the named one does not come.
+                        _hasCandidate = true;
+                        _candidate = (o.Id, o.ParentId, SafariClades.FlagsOf(o), offset, live.ElapsedSeconds);
+                    }
                 }
                 else if (_rehearsal == Rehearsal.Recurring && o.ParentId == _birthParent &&
                          Math.Abs(live.ElapsedSeconds - _birthAt) < 2d)
@@ -585,6 +929,7 @@ namespace Evosim.Theatre
             view?.DressUndressed();
 
             _stageLiving = null;
+            Focus(view, Current.Clade);
             var stage = SafariPlans.Stage.Of(live, view, _options.Aspect, Current.Index);
             List<SafariPlans.Take> takes;
 
@@ -701,6 +1046,8 @@ namespace Evosim.Theatre
                 SceneOffset = offset,
                 Second = Now(live),
                 Shot = take.Shot,
+                Dim = _segment != null && _segment.Held && Current.Station == SafariStation.Card ? Mathf.Clamp01(Current.Dim) : 0f,
+                Callout = _options.Callouts && Current.Clade != null && Current.Clade.Series.Count > 1 ? Current.Clade : null,
             };
 
             _takeFrame++;
@@ -743,9 +1090,7 @@ namespace Evosim.Theatre
             int subject = Subject(stage, scene, out string why);
             if (subject < 0) { Missed(why); return null; }
 
-            bool swimmer = scene.Clade != null && !double.IsNaN(scene.Clade.Speed)
-                ? scene.Clade.Speed > SafariPlans.SwimmerSpeed
-                : scene.Clade != null && scene.Clade.Jointed;
+            bool swimmer = Swimmer(scene, stage.Ids[subject]);
 
             int hash = scene.Clade?.Hash ?? (int)(stage.Ids[subject] & 0x7FFFFFFF);
             SafariPlans.Take t = SafariPlans.Portrait(stage, subject, (float)scene.Seconds, swimmer, hash);
@@ -754,8 +1099,170 @@ namespace Evosim.Theatre
                 Say(string.Format(CultureInfo.InvariantCulture, "the portrait's subject is body {0} of {1}{2}",
                     stage.Ids[subject], scene.Clade.Name, scene.Body >= 0 ? " (the guide's exemplar " + scene.Body + " is not alive in this cousin)" : ""));
             }
+            Say(string.Format(CultureInfo.InvariantCulture, "the portrait films body {0} as {1}", stage.Ids[subject],
+                swimmer ? "a swimmer (its joints move)" : "a body that holds still"));
+            ThisBody(stage, scene, stage.Ids[subject]);
             return One(t);
         }
+
+        /// <summary>
+        /// Films the portrait as a swimmer only when its joints move: the clade's share of members
+        /// that work their joints (the guide's reading of poses.jsonl) at half or more, or the
+        /// exemplar's own reading when the subject is the exemplar the recording carried over.
+        /// A body with a joint it holds still is not a swimmer (round 47's body 355, sd 0.00 over
+        /// 194 samples, was filmed as one). With no reading, a jointed clade is, as before.
+        /// </summary>
+        private bool Swimmer(SafariScene scene, long subjectId)
+        {
+            SafariClade c = scene.Clade;
+            if (c == null) return false;
+            if (!double.IsNaN(c.Speed)) return c.Speed > SafariPlans.SwimmerSpeed;
+            if (!c.Jointed) return false;
+            if (subjectId == c.Exemplar && c.ExemplarJointsMove.HasValue && _clades.IsRecorded(subjectId)) return c.ExemplarJointsMove.Value;
+            if (!double.IsNaN(c.JointsMovingShare)) return c.JointsMovingShare >= 0.5d;
+            return true;
+        }
+
+        /// <summary>
+        /// The body on screen, said from the live organism: its age against the crowd's, and
+        /// whether it is the founder. A restored world is a cousin, so its bodies' ages and
+        /// children are its own; the founder is claimed only for the recorded body the
+        /// checkpoint carried over (<see cref="SafariClades.IsRecorded"/>), never for a cousin's
+        /// body that happens to carry the founder's id. Said only when it is worth a caption: the
+        /// founder, or a body older than half of all bodies ever get. It takes the place of the
+        /// portrait's least interesting caption that is not a first, and the fact it displaces
+        /// moves to the clade's colony when one is still to come.
+        /// </summary>
+        private void ThisBody(SafariPlans.Stage stage, SafariScene scene, long id)
+        {
+            SafariClade c = scene.Clade;
+            if (scene.FromStory) return; // a story's captions are its writer's alone
+            if (c == null || double.IsNaN(_guide.CrowdMedianLife)) return;
+
+            Organism o = null;
+            foreach (Organism l in stage.Live.Sim.World.Living) if (l.Id == id) { o = l; break; }
+            if (o == null) return;
+
+            bool founder = id == c.Founder && _clades.IsRecorded(id);
+            double normal = Math.Round(_guide.CrowdMedianLife / 100d) * 100d;
+            if (!founder && o.Age < normal) return;
+
+            string text = "Half of all bodies die by " + SafariCaptions.Clock(normal) + "; this " +
+                          (founder ? "founder" : "one") + " is " + SafariCaptions.Clock(Math.Round(o.Age)) + " old.";
+
+            // Slots 1 to 3 hold the scene's facts; the least interesting non-first gives way.
+            int give = -1;
+            double least = double.PositiveInfinity;
+            for (int i = 0; i < scene.Facts.Count && i < 3; i++)
+            {
+                SafariFact f = scene.Facts[i];
+                if (f.Kind == "first") continue;
+                if (f.Interest < least) { least = f.Interest; give = i; }
+            }
+
+            if (give < 0)
+            {
+                if (!SafariCaptions.AddFree(scene, SafariCaptions.Slot(1), text, scene.Seconds))
+                    Say("the portrait had no room for the body's own caption: " + text);
+                else Say("the portrait's own caption: " + text);
+                return;
+            }
+
+            SafariFact displaced = scene.Facts[give];
+            SafariCaptions.Replace(scene, SafariCaptions.Slot(give + 1), text);
+            Say("the portrait's own caption, in place of '" + displaced.Text + "': " + text);
+
+            SafariScene colony = null;
+            for (int k = scene.Index + 1; k < _scenes.Count; k++)
+                if (_scenes[k].Clade == c && _scenes[k].Station == SafariStation.Colony) { colony = _scenes[k]; break; }
+            if (colony != null && colony.Facts.Count < 4 && !colony.Facts.Contains(displaced))
+            {
+                colony.Facts.Add(displaced);
+                colony.Refill?.Invoke();
+            }
+        }
+
+        /// <summary>
+        /// The descent, its captions timed to the depths the light's marks sit at: the dolly down
+        /// the shallow side, or the canopy's sink when <see cref="SafariOptions.Canopy"/> is on
+        /// (whose captions are the marks its eye passes, fewer than the dolly's).
+        /// </summary>
+        private List<SafariPlans.Take> DescentTakes(SafariPlans.Stage stage, SafariScene scene, int hash, bool canopy)
+        {
+            // The template's descent has no length of its own (the ceiling sets the dolly's); a
+            // story's has its writer's.
+            SafariPlans.Take t = canopy
+                ? SafariPlans.Canopy(stage, LengthOf(scene, SafariPlans.CanopyDescentSeconds), FilmPlans.CanopyMove.Sink, "descent")
+                : scene.Seconds > 0d
+                    ? SafariPlans.Descent(stage, hash, exactSeconds: (float)scene.Seconds)
+                    : SafariPlans.Descent(stage, hash);
+            if (t.EyeAt == null) return One(t);
+
+            float startY = t.EyeAt(0f).y;
+            foreach (SafariFact f in scene.Facts.Where(f => !double.IsNaN(f.DepthMetres)).OrderBy(f => f.DepthMetres))
+            {
+                float y = -(float)f.DepthMetres;
+                if (startY <= y) continue; // the dolly starts below the mark
+                float at = -1f;
+                for (int k = 0; k <= 480; k++)
+                {
+                    float u = k / 480f;
+                    if (t.EyeAt(u).y <= y) { at = u; break; }
+                }
+                if (at < 0f) continue; // it never gets that deep
+                if (SafariCaptions.AddFree(scene, Math.Max(SafariCaptions.FirstOffset, at * t.Seconds - 1d), f.Text, t.Seconds))
+                    Say(string.Format(CultureInfo.InvariantCulture, "descent: '{0}' at {1:0.#} s of {2:0} s", f.Text, at * t.Seconds, t.Seconds));
+            }
+            return One(t);
+        }
+
+        /// <summary>The call-outs' tint: the clade in full colour and the rest grey, or everyone as before.</summary>
+        private void Focus(LiveWorldView view, SafariClade clade)
+        {
+            if (view?.Palette == null) return;
+            System.Func<long, bool> wanted = null;
+            if (_options.Callouts && clade != null)
+            {
+                long founder = clade.Founder;
+                wanted = id =>
+                {
+                    World world = _runner.Live?.Sim.World;
+                    if (world == null) return true;
+                    if (_focusLiving == null || _focusLiving.Count != world.Living.Count || !_focusLiving.ContainsKey(id))
+                    {
+                        _focusLiving = new Dictionary<long, Organism>(world.Living.Count);
+                        foreach (Organism o in world.Living) _focusLiving[o.Id] = o;
+                    }
+                    return _focusLiving.TryGetValue(id, out Organism body) && _clades.CladeOf(body, _focusLiving) == founder;
+                };
+            }
+
+            // The lineage's hue is not a call-out: it is the owner's leaf ruling (2026-09-24), so
+            // it is set whatever the call-outs say, once, and every body is painted by its clade.
+            bool lineageNew = false;
+            if (view.Palette.LineageOf == null && _clades != null)
+            {
+                view.Palette.LineageOf = id =>
+                {
+                    World world = _runner.Live?.Sim.World;
+                    if (world == null) return -1;
+                    if (_focusLiving == null || _focusLiving.Count != world.Living.Count || !_focusLiving.ContainsKey(id))
+                    {
+                        _focusLiving = new Dictionary<long, Organism>(world.Living.Count);
+                        foreach (Organism o in world.Living) _focusLiving[o.Id] = o;
+                    }
+                    return _focusLiving.TryGetValue(id, out Organism body) ? _clades.CladeOf(body, _focusLiving) : -1;
+                };
+                lineageNew = true;
+            }
+
+            if (wanted == null && view.Palette.InFocus == null && !lineageNew) return;
+            view.Palette.InFocus = wanted;
+            view.Redress();
+            view.DressUndressed();
+        }
+
+        private Dictionary<long, Organism> _focusLiving;
 
         private List<SafariPlans.Take> ColonyTakes(SafariPlans.Stage stage, SafariScene scene)
         {
@@ -763,6 +1270,15 @@ namespace Evosim.Theatre
             if (members.Count == 0)
             {
                 Missed(scene.Clade.Name + " has no member alive in this cousin at " + SafariCaptions.Seconds(stage.Live.ElapsedSeconds));
+                return null;
+            }
+
+            // A colony of one is refused: a pull-back on one body says nothing its portrait did
+            // not (round 47's first safari filmed Gastrophylla sefecis's "colony of 1 members").
+            if (members.Count == 1)
+            {
+                Missed(scene.Clade.Name + " has one member alive in this cousin at " + SafariCaptions.Seconds(stage.Live.ElapsedSeconds) +
+                       ": a colony of one is refused");
                 return null;
             }
 
@@ -774,11 +1290,17 @@ namespace Evosim.Theatre
             int anchor = inner[0];
             foreach (int i in inner) if (stage.Reaches[i] > stage.Reaches[anchor]) anchor = i;
 
-            var takes = new List<SafariPlans.Take>
-            {
-                SafariPlans.PullBack(stage, members, anchor, (float)SafariTripBuilder.ColonySeconds, scene.Clade.Hash),
-            };
-            if (scene.ChapterCard) takes.Add(SafariPlans.FromAbove(stage, (float)SafariTripBuilder.ChapterSeconds));
+            // The chapter card opens the chapter, so it plays first, and the captions wait for it.
+            // The pull-back is the scene's length less the card's (the template's colony carries
+            // the two summed).
+            // A story's chapter card is a take of its own before this one (SegmentsOf).
+            bool card = scene.ChapterCard && !scene.FromStory;
+            float pull = scene.Seconds > 0d
+                ? (float)Math.Max(2d, scene.Seconds - (card ? SafariTripBuilder.ChapterSeconds : 0d))
+                : (float)SafariTripBuilder.ColonySeconds;
+            var takes = new List<SafariPlans.Take>();
+            if (card) takes.Add(SafariPlans.FromAbove(stage, (float)SafariTripBuilder.ChapterSeconds));
+            takes.Add(SafariPlans.PullBack(stage, members, anchor, pull, scene.Clade.Hash));
             return takes;
         }
 
@@ -792,13 +1314,39 @@ namespace Evosim.Theatre
                 return null;
             }
 
-            float dispersal = stage.Live.Record.Config.OffspringDispersalMetres;
-            SafariCaptions.Add(scene, SafariTripBuilder.BirthLeadSeconds + 0.5d, string.Format(CultureInfo.InvariantCulture,
-                "In this cousin: body {0} born to body {1} of {2} at {3}.", _birthChild, _birthParent,
-                ParentName(scene.Clade), SafariCaptions.Seconds(_birthAt)));
+            // What the replay got, said as what it is: a birth in this cousin to a member of the
+            // parent line, and whether the child is the clade's kind, as the recorded founder
+            // was, or its parent's (the rehearsal takes the first birth in the parent line). A
+            // story's birth says only what its writer wrote, and the log says what was got.
+            bool same = _birthChildFlags == SafariClades.FlagsOf(scene.Clade);
+            double lead = SafariTripBuilder.BirthLeadSeconds;
+            float hold = (float)(scene.Seconds > 0d ? Math.Max(lead + 2d, scene.Seconds) : lead + SafariTripBuilder.BirthTailSeconds);
+            if (scene.FromStory)
+            {
+                // The writer's captions stand, and the one line a story's birth keeps is the
+                // director's own at the lead: what this replay got is a cousin's birth, which the
+                // writer left the lead's slot for (round 48's story, scene 17). A chapter card
+                // before the birth moves it by the card's length.
+                double card = scene.ChapterCard ? SafariTripBuilder.ChapterSeconds : 0d;
+                string said = "In this replay a member of " + LineName(scene) + " gives birth.";
+                if (!SafariCaptions.AddFree(scene, card + lead + SafariCaptions.Slot(0), said, card + hold))
+                    Say("the story's birth had no free slot for the replay's line: " + said);
+                Say(string.Format(CultureInfo.InvariantCulture, "the story's birth: body {0}, a member of {1}, gives birth; the child is {2}",
+                    _birthParent, LineName(scene), same ? "the clade's kind" : "not the clade's kind"));
+            }
+            else
+            {
+                SafariCaptions.Replace(scene, SafariTripBuilder.BirthLeadSeconds + SafariCaptions.Slot(0),
+                    "In this replay a member of " + ParentName(scene.Clade) + " gives birth.");
+                SafariCaptions.Replace(scene, SafariTripBuilder.BirthLeadSeconds + SafariCaptions.Slot(1), same
+                    ? "This child is " + SafariCaptions.Guild(scene.Clade) + ", as the founder was."
+                    : "This child kept its parent's body; the founder did not.");
+            }
 
-            return One(SafariPlans.Hold(stage, parent, (float)(SafariTripBuilder.BirthLeadSeconds + SafariTripBuilder.BirthTailSeconds),
-                Mathf.Max(0.5f, dispersal), scene.Clade.Hash, "birth"));
+            // The child's spot from the rehearsal: the filmed pass is the same trajectory from the
+            // same checkpoint, so it lands there again when the birth recurs. The birth comes at
+            // the lead whatever the scene's length.
+            return One(SafariPlans.Hold(stage, parent, hold, (float)lead, _birthOffset, scene.Clade.Hash, "birth"));
         }
 
         /// <summary>The scene's body: the named one when alive, else the clade's largest member.</summary>
@@ -864,8 +1412,17 @@ namespace Evosim.Theatre
         private string ParentName(SafariClade c)
         {
             if (c == null || c.ParentClade < 0) return "no parent clade";
-            SafariClade p = _guide.Find(c.ParentClade);
+            SafariClade p = _guide?.Find(c.ParentClade);
             return p != null ? p.Name : "the clade founded by body " + c.ParentClade;
+        }
+
+        /// <summary>The clade a birth scene waits on for a parent (<see cref="SafariScene.BirthLine"/>), by name.</summary>
+        private string LineName(SafariScene scene)
+        {
+            if (scene == null) return "no clade";
+            if (scene.BirthFrom < 0) return ParentName(scene.Clade);
+            SafariClade c = scene.Clade != null && scene.Clade.Founder == scene.BirthFrom ? scene.Clade : _guide?.Find(scene.BirthFrom);
+            return c != null ? c.Name : "the clade founded by body " + scene.BirthFrom;
         }
 
         // ---------------------------------------------------------------- endings

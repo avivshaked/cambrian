@@ -4,7 +4,7 @@
 100,000 bodies, validated at 10,000 to 30,000 with the grid on the CPU) and said the brain and
 the senses are measured as a kernel before the port is sized. This is the design that
 measurement is made against. Nothing here is built. The inventory it rests on is
-`scratch/gpu-design/step-inventory.txt`, taken from the code on 2026-09-23 with file and line
+`logbook/specs/gpu-step-inventory.txt`, taken from the code on 2026-09-23 with file and line
 for every claim; the spike it extends is `spikes/02-gpu-featherstone/` (logbook/0112).*
 
 ## What the step is

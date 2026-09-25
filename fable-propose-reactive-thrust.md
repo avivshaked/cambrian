@@ -67,7 +67,7 @@ articulated inertias are already 6×6 in the recursion, so the change is at the 
 link's own `I` becomes a full matrix and the places that read `Mass[i]` as the translational
 inertia (the drag limiter's `allowed`, the contact's push, the founder's mass floor, the
 growth resize) are asked which mass they mean. Two or three days with the tests, and a
-bench of the hand-built stroker (`scratch/solver-spike/stroker/`) before and after. It is a
+bench of the hand-built stroker (`logbook/specs/reactive-thrust-stroker/`) before and after. It is a
 per-step change, a new realisation of every seed, and the parity with PhysX (forty bodies
 40 of 40) no longer holds by construction, since PhysX has no added mass at all.
 

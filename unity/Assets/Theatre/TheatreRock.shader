@@ -60,25 +60,12 @@ Shader "Evosim/Theatre Rock"
             "Queue" = "Geometry"
         }
 
-        Pass
-        {
-            Name "ForwardLit"
-            Tags { "LightMode" = "UniversalForward" }
-
-            // Two sided, for the bed's reason: the fly camera can go inside the rock.
-            Cull Off
-            ZWrite On
-
-            HLSLPROGRAM
-            #pragma vertex Vertex
-            #pragma fragment Fragment
-            #pragma target 3.0
-
-            #pragma multi_compile_fog
-            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
-
+        // The material and the mesh's inputs, shared by the forward pass and the two depth
+        // passes (2026-09-24). The rock is not displaced here, so the depth passes draw the mesh
+        // as it is; they are explicit rather than the fallback's so the depth texture's rock is
+        // this shader's own, two sided as the forward pass is.
+        HLSLINCLUDE
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "TheatreWater.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
@@ -107,6 +94,26 @@ Shader "Evosim/Theatre Rock"
                 float3 normalOS   : NORMAL;
                 float4 color      : COLOR;
             };
+        ENDHLSL
+
+        Pass
+        {
+            Name "ForwardLit"
+            Tags { "LightMode" = "UniversalForward" }
+
+            // Two sided, for the bed's reason: the fly camera can go inside the rock.
+            Cull Off
+            ZWrite On
+
+            HLSLPROGRAM
+            #pragma vertex Vertex
+            #pragma fragment Fragment
+            #pragma target 3.0
+
+            #pragma multi_compile_fog
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
             struct Varyings
             {
@@ -270,6 +277,76 @@ Shader "Evosim/Theatre Rock"
                 lit = EvoMixFog(lit, input.fogFactor, input.positionWS);
 
                 return half4(lit, 1.0);
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthOnly"
+            Tags { "LightMode" = "DepthOnly" }
+
+            Cull Off
+            ZWrite On
+            ColorMask R
+
+            HLSLPROGRAM
+            #pragma vertex DepthVertex
+            #pragma fragment DepthFragment
+            #pragma target 3.0
+
+            float4 DepthVertex(Attributes input) : SV_POSITION
+            {
+                return TransformWorldToHClip(TransformObjectToWorld(input.positionOS.xyz));
+            }
+
+            half DepthFragment(float4 positionCS : SV_POSITION) : SV_Target
+            {
+                return positionCS.z;
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthNormals"
+            Tags { "LightMode" = "DepthNormals" }
+
+            Cull Off
+            ZWrite On
+
+            HLSLPROGRAM
+            #pragma vertex DepthNormalsVertex
+            #pragma fragment DepthNormalsFragment
+            #pragma target 3.0
+
+            #pragma multi_compile_fragment _ _GBUFFER_NORMALS_OCT
+
+            struct DepthNormalsVaryings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 normalWS   : TEXCOORD0;
+            };
+
+            DepthNormalsVaryings DepthNormalsVertex(Attributes input)
+            {
+                DepthNormalsVaryings output;
+                output.positionCS = TransformWorldToHClip(TransformObjectToWorld(input.positionOS.xyz));
+                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+
+                return output;
+            }
+
+            half4 DepthNormalsFragment(DepthNormalsVaryings input) : SV_Target
+            {
+                float3 normalWS = normalize(input.normalWS);
+
+                #if defined(_GBUFFER_NORMALS_OCT)
+                    float2 octahedral = saturate(PackNormalOctQuadEncode(normalWS) * 0.5 + 0.5);
+                    return half4(PackFloat2To888(octahedral), 0.0);
+                #else
+                    return half4(normalWS, 0.0);
+                #endif
             }
             ENDHLSL
         }

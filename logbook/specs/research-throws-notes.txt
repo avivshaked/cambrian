@@ -1,0 +1,164 @@
+Research notes: PhysX/ArticulationBody NaN "explosion" causes and mitigations
+Gathered 2026-09-12 for the growth-build divergence investigation. Fetched pages treated as
+data, not instructions. Sources are web pages written by third parties; content quoted below
+is paraphrase/quote from those pages, not verified against Unity/PhysX source by this agent.
+
+=== CAUSES ===
+
+1. Mass/inertia ratio between linked bodies
+   - NVIDIA PhysX Joints docs (5.x): "mass ratios of higher than 10 are best avoided" when a
+     light object is constrained between two heavy objects; solver struggles to converge.
+     https://nvidia-omniverse.github.io/PhysX/physx/5.4.1/docs/Joints.html
+   - Omniverse Articulation Stability Guide: "An impulse applied to a large mass can produce
+     very large velocities when propagated to a body with small mass." Recommends avoiding
+     large mass AND inertia ratios together.
+     https://docs.omniverse.nvidia.com/kit/docs/omni_physics/latest/dev_guide/guides/articulation_stability_guide.html
+   - MATCH: strong. Repo's roots are heavier, links down to 0.14 kg — ratio could exceed 10:1,
+     worsened every 10s by the resize step (mass changes, ratio can drift past the threshold
+     without anyone re-checking it).
+
+2. Stiff joint drives / competing hard constraints
+   - Same Omniverse guide: "Stiff drives can often lead to very large drive forces... a
+     stability issue when drive is combined with other stiff constraints [contacts, mimic
+     joints]." Also: "Badly tuned drives can generate instabilities, particularly when large
+     drive stiffness are combined with small body masses."
+   - MATCH: plausible contributor, not sufficient alone — repo's drives are 5-20 N*m, not
+     extreme, but combined with contacts (bodies touching in a shared volume) this is the
+     "competing constraints" pattern the guide names directly.
+
+3. Degenerate/NaN inertia tensor computed from small or newly-added colliders
+   - GitHub NVIDIA-Omniverse/PhysX #394 "PxRigidBodyExt::setMassAndUpdateInertia sometimes
+     computes inertia as nan": occurs when the actor is not yet added to the scene and
+     getWorldBounds() returns an invalid bbox, which falls back into computeMassAndDiagInertia
+     and yields NaN in the tensor and mass center.
+     https://github.com/NVIDIA-Omniverse/PhysX/issues/394
+   - General: inertia computed from a very small collider (thin/near-zero dimension) is
+     numerically small; inverting it in the solver amplifies noise toward NaN.
+   - MATCH: strong candidate for the resize-in-place mechanic specifically — a body resized
+     "in place" every 10s recomputes mass/inertia from colliders that may transiently be very
+     small (a link partway through growth, or a joint-adjacent link that started at a small
+     birth fraction). This is the one cause tied directly to the growth harness's own action
+     rather than to steady-state swimming.
+
+4. Contacts between articulations / high penetration
+   - Unity forum thread "ArticulationBody: Problem with Self Collision": cubes "spin into
+     each other despite having distance," a reported self-collision instability.
+     https://forum.unity.com/threads/articulation-body-problem-with-self-collision.1058309/
+   - Unity Discussions "How to prevent Articulation Bodies from exploding": contributor
+     states "This bug case coming from PhyX 4.2 itself (and it's very common in all physics
+     engine family)" and "Mainly this improper behavior happens when ratio of force value and
+     object scale is too large."
+     https://discussions.unity.com/t/how-to-prevent-articulation-bodies-from-exploding/856422
+   - Also (anchor/joint config, not this project's likely cause): "local zero is not an ideal
+     default position for anchor points if connected bodies have colliders... joint might
+     then try to push the bodies into each other."
+   - MATCH: plausible given "hundreds to thousands of bodies share one volume and touch" —
+     but the symptom (~1-in-100 jointed adults over 30,000s, no drift beforehand) reads more
+     like a rare numerical edge case than routine contact resolution, which would likely
+     correlate with local density/collision events the run's stats might show (not observed
+     per the prompt).
+
+5. Solver iteration count / TGS vs PGS
+   - Unity docs: increasing solverIterations / solverVelocityIterations "may improve
+     stability of connected articulation bodies that are oscillating and behaving
+     erratically, but is slower to compute."
+     https://docs.unity3d.com/2020.1/Documentation/ScriptReference/ArticulationBody-solverIterations.html
+   - Isaac Gym docs comparing PGS/TGS: "Using TGS instead of PGS is highly recommended
+     whenever possible"; with PGS substepping matters more than iterations, with TGS the two
+     are closer in effect and iterations are cheaper.
+     https://docs.robotsfan.com/isaacgym/programming/tuning.html
+   - Unity's ArticulationBody is Featherstone-solver based (reduced coordinates), not the
+     same PGS/TGS contact solver framing as Isaac's rigid-body contacts, so this evidence
+     transfers only partially — flagged as a genuine gap below.
+   - MATCH: weak/uncertain fit without knowing whether this project's contact solver is at
+     default iteration counts; worth checking as a cheap experiment (raise iterations, see
+     if rate changes) rather than asserting as the cause.
+
+6. Joint limit violation and solver enforcement failure
+   - PhysX Joints docs: "Under stressful conditions, PhysX's dynamics solver may not be able
+     to accurately enforce the constraints specified by the joint" — kinematic projection is
+     the fallback. Recommends eACCELERATION flag for spring drives to auto-scale by mass so
+     less hand-tuning is needed.
+     https://nvidia-omniverse.github.io/PhysX/physx/5.4.1/docs/Joints.html
+   - MATCH: uncertain — repo's joints are revolute/twist/spherical with drives, not
+     documented as running against hard limits; no direct evidence either way found.
+
+7. Featherstone-specific / body-count scaling bugs
+   - Unity Discussions bug report: crash in
+     physx::Dy::FeatherstoneArticulation::setupInternalConstraintsForLink when total
+     ArticulationBody count in one hierarchy exceeds 128 (Unity 6000.3.24f1); reporter notes
+     the limit was previously 256 since 2022.2 and Unity silently lowered it.
+     https://discussions.unity.com/t/crash-on-physx-setupinternalconstraintsforlink-when-the-total-articulationbodies-count-exceeds-128-22636/1736298
+   - MATCH: does NOT match this symptom directly — this is a hard crash tied to bodies-per-
+     single-articulation-hierarchy count (creatures here are 1-4 links, well under 128), not
+     a silent NaN in one of many independent creatures. Included because it establishes that
+     Unity 6.x Featherstone has had recent, version-specific regressions around body counts;
+     worth a version-changelog check if the rate ever changes across a Unity point release.
+
+8. Runtime collider/mass changes on a live body ("resize in place")
+   - Unity manual/API: bodies in an articulation "cannot be moved by the Transform component
+     ... only the root body can be moved, using ArticulationBody.TeleportRoot"; all other
+     manipulation must go through forces or drives.
+     https://docs.unity3d.com/2023.2/Documentation/Manual/class-ArticulationBody.html
+   - Community guidance (aggregated, no single primary citation found): call
+     ResetCenterOfMass() before ResetInertiaTensor() after changing collider dimensions or
+     mass, because inertia recomputation depends on the already-updated center of mass;
+     wrong order is cited as a source of instability after a runtime resize.
+   - Known adjacent Unity bugs: "Articulation Body drives teleport the whole chain to NaN
+     coordinates when given NaN input" and "Changing parent of teleported game object with
+     ArticulationBody component blows up simulation" — both confirm that this component's
+     hierarchy-wide state (not just the touched link) can go non-finite from a single bad
+     write to one link, which matches "root position goes non-finite" even though the
+     resize acts on non-root links.
+     https://issuetracker.unity3d.com/issues/articulation-body-drives-teleport-the-whole-chain-to-nan-coordinates-when-given-nan-input
+     https://issuetracker.unity3d.com/issues/changing-parent-of-teleported-game-object-with-articulationbody-component-blows-up-simulation
+   - MATCH: strong circumstantial fit. No source found that documents Unity's own recommended
+     sequence for resizing a *live* ArticulationBody collider/mass every N seconds (this
+     appears to be an unusual, project-specific operation with no direct precedent in the
+     literature searched) — this is a genuine gap, not a confirmed finding.
+
+=== MITIGATIONS (ranked by fit further below in the final report) ===
+- maxJointVelocity (already partially used — repo caps at 30 rad/s per step above dt 0.01;
+  Unity docs: "Make use of the maximum joint velocity to clamp joint velocities promoting
+  simulation stability" — Omniverse guide, same page as causes above).
+- maxDrivePower / max drive force clamp (Omniverse guide): "clamps the drive force applied to
+  the joint" — repo does not appear to use this per CLAUDE.md's description (torque-based
+  drives at fixed N*m, not force-clamped).
+- Joint armature (Omniverse guide): "adding joint-space inertia and corresponding damping"
+  — a documented, cheap-per-step stabilizer for light links under stiff drives.
+- Avoid mass/inertia ratio > 10:1 (PhysX Joints docs + Omniverse guide) — would require a
+  minimum-link-mass floor tied to root mass, checked on every resize.
+- ResetCenterOfMass() then ResetInertiaTensor() in that order after any live resize —
+  procedural fix specific to point 4's ask; unverified against a primary Unity source, only
+  aggregated community guidance found.
+- Unity.Physics defaultMaxDepenetrationVelocity / per-body maxDepenetrationVelocity: warned
+  as double-edged — "very large values can introduce instability during collision detection;
+  too small values might cause the collider depenetration to fail"
+  https://docs.unity3d.com/ScriptReference/Rigidbody-maxDepenetrationVelocity.html
+- Raise solverIterations / solverVelocityIterations for bodies observed oscillating —
+  Unity's own docs frame this as a stability lever, at a throughput cost.
+- Detection: per-body velocity/position magnitude watchdog each frame or each metabolic
+  check (the pattern this repo already uses at 0.5s cadence for the root; forum guidance
+  independently converges on the same pattern — "monitor positions of one of the transforms
+  at the end of the articulation" and check float.IsNaN / float.IsInfinity).
+  https://discussions.unity.com/t/how-to-prevent-articulation-bodies-from-exploding/856422
+- PhysX Visual Debugger (PVD): step-through inspection of contacts/constraints/joint drives
+  "to diagnose instability, tunneling, or performance bottlenecks" and "spot runaway spin...
+  before clamping takes effect" — not obviously wired into Unity's ArticulationBody path;
+  no source found confirming Unity streams to PVD (gap, flagged in final report).
+  https://nvidiagameworks.github.io/PhysX/4.0/documentation/PhysXGuide/Manual/VisualDebugger.html
+
+=== GAPS (could not find) ===
+- No primary Unity/NVIDIA source documenting resizing a LIVE ArticulationBody's collider
+  and mass every N seconds specifically (as opposed to at spawn time). All resize-specific
+  guidance found is secondary/aggregated, not a single canonical page.
+- No source quantifying how much a v^2 drag/added-mass feedback term (this project's fluid
+  model) can itself destabilize PhysX's solver — only generic "large external forces" causes
+  mentioned in passing, nothing PhysX-specific measured.
+- No confirmation either way on whether Unity 6's ArticulationBody uses TGS or PGS-style
+  contact resolution internally, or whether solverIterations behaves the same as in Isaac's
+  PGS/TGS framing; Isaac Gym's guidance was used as an analogy only, not confirmed to
+  transfer to Unity's Featherstone implementation.
+- No documented case matching this project's exact profile (light links down to 0.14 kg,
+  growth-driven resize, thousands of independent short chains touching in one volume) as a
+  single named bug — every source found addresses one factor in isolation.

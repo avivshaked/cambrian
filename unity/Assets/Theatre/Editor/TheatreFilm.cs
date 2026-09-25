@@ -66,8 +66,12 @@ namespace Evosim.Theatre.EditorTools
         private const string PendingKey = "Evosim.Theatre.Film.Pending";
         private const string ExitKey = "Evosim.Theatre.Film.Exit";
 
-        /// <summary>The shots this entry knows, in the order they are named in its errors.</summary>
-        public static readonly string[] KnownShots = { "orbit", "close", "drift" };
+        /// <summary>
+        /// The shots this entry knows, in the order they are named in its errors. The canopy
+        /// (2026-09-24) looks up through the leaves at Snell's window; its move is
+        /// <c>EVOSIM_THEATRE_CANOPY_MOVE</c> (<see cref="FilmPlans.FilmCanopyMove"/>).
+        /// </summary>
+        public static readonly string[] KnownShots = { "orbit", "close", "drift", "canopy" };
 
         /// <summary>The camera's ceiling against its subject in a close shot, m/s (the owner's rule).</summary>
         public const float CloseSpeedCeiling = FilmPlans.CloseSpeedCeiling;
@@ -340,6 +344,14 @@ namespace Evosim.Theatre.EditorTools
 
             if (names.Count == 0) return "EVOSIM_THEATRE_FILM_SHOTS: no shot was named.";
             _shotNames = names.ToArray();
+
+            // The canopy's move is read again when the shot is planned; a bad word fails here, in
+            // seconds, rather than after the Play-mode reload.
+            if (names.Contains("canopy"))
+            {
+                try { FilmPlans.FilmCanopyMove(); }
+                catch (ArgumentException e) { return e.Message + "."; }
+            }
 
             text = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_FILM_TURNS");
             _turns = 0.25f;   // a quarter turn over the clip, the safari spec's default; nothing faster than a body swims
@@ -622,6 +634,7 @@ namespace Evosim.Theatre.EditorTools
 
                     shot.Camera.CapturePlaced(live, eye, rotation, shot.FieldOfView, shot.Portrait, focus, label,
                         Path.Combine(shot.Directory, frameName));
+                    shot.RenderMs.Add(shot.Camera.LastRenderMs);
 
                     if (_next == 0 || _next == shot.Frames / 2 || _next == shot.Frames - 1)
                     {
@@ -635,7 +648,12 @@ namespace Evosim.Theatre.EditorTools
                 // A diagnostic trace, off by default: every body within a few metres of the close
                 // shot's subject, link by link, as the solver holds it, as the view draws it and
                 // where the close shot's camera puts it on screen; one row per link per frame.
-                if (_trace) Trace(live);
+                // Its rows name the frame, so the frame is on disk first.
+                if (_trace)
+                {
+                    SnapshotCamera.FlushWrites();
+                    Trace(live);
+                }
 
                 _next++;
 
@@ -803,6 +821,25 @@ namespace Evosim.Theatre.EditorTools
             Time.captureDeltaTime = 0f;
             SessionState.EraseString(PendingKey);
 
+            // Every frame on disk before the report and before the Editor quits; a frame the
+            // writer failed on fails the film, whatever else went right.
+            try
+            {
+                SnapshotCamera.FlushWrites();
+            }
+            catch (Exception e)
+            {
+                code = 1;
+                verdict += "; FRAMES NOT WRITTEN: " + e.Message;
+            }
+
+            // Each shot's frames stage by stage, read before its camera goes.
+            var stages = new Dictionary<Shot, string>();
+            foreach (Shot shot in _shots)
+            {
+                if (shot.Camera != null) stages[shot] = shot.Camera.Route + "; " + shot.Camera.Times.Line();
+            }
+
             foreach (Shot shot in _shots)
             {
                 if (shot.Camera != null) { shot.Camera.Dispose(); shot.Camera = null; }
@@ -822,7 +859,23 @@ namespace Evosim.Theatre.EditorTools
                 report.Append("\n  ").Append(shot.Name).Append(" -> ").Append(shot.Directory);
                 report.Append("\n    ").Append(shot.Tally());
                 foreach (string s in shot.Spreads) report.Append("\n    ").Append(s);
+                if (shot.RenderMs.Count > 0)
+                {
+                    var sorted = new List<double>(shot.RenderMs);
+                    sorted.Sort();
+                    double sum = 0.0;
+                    foreach (double ms in sorted) sum += ms;
+                    report.Append("\n    ").Append(string.Format(CultureInfo.InvariantCulture,
+                        "render and read-back: median {0:0.0} ms, mean {1:0.0} ms, slowest {2:0.0} ms a frame over {3} frames",
+                        sorted[sorted.Count / 2], sum / sorted.Count, sorted[sorted.Count - 1], sorted.Count));
+                }
+
+                if (stages.TryGetValue(shot, out string stage)) report.Append("\n    frames: ").Append(stage);
             }
+
+            report.Append(string.Format(CultureInfo.InvariantCulture,
+                "\n  the frame writer: {0} frame(s) written off the main thread, the film waited {1:0.0} s in all for a free slot",
+                FrameWriter.Written, FrameWriter.WaitedMs / 1000d));
 
             Debug.Log("[Theatre] film: " + verdict + report);
             if (code != 0) Debug.LogError("[Theatre] film FAILED: " + verdict);

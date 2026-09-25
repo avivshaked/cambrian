@@ -1,0 +1,29 @@
+=== the senses and the brain on the card
+  command     D:\Projects\experiments\evolution-simulator\spikes\02-gpu-featherstone\out\bin\Release\net8.0\featherstone.dll brain --check-steps 5 --no-card --no-time --tag brain-smoke
+  host        MAINPC, 32 logical processors, .NET 8.0.24
+  run         D:\Projects\experiments\evolution-simulator\runs\r45-s2\2026-09-22-232754-e51997d5 at 30000 s
+  crowd       genomes 6146, rebuilt 6145, no genome 0, undeveloped 0
+  snow field  168 x 61 x 168 cells of 1 m, 989717 live; recorded column sums total 160910.8 J over 21994 columns, the field holds 160910.8 J (spread evenly down each column: SYNTHETIC vertical profile)
+  births      36142 birth rows read from lineage.jsonl for the brain clocks
+  card        NVIDIA GeForce RTX 4090, SMs 128, SM_89, driver 13.1
+  brains      neurons a body: mean 5.64, p50 4, p99 21, max 75; total 34686; jointed bodies 280 of 6145
+              inputs a neuron: 0 -> 10218, 1 -> 24394, 2 -> 74, 3 -> 0, more -> 0
+              ops: Abs 466, Cos 295, Differentiate 1841, Divide 1477, GreaterThan 542, If 3836, Integrate 953, Interpolate 448, Max 4237, Memory 494, Min 749, OscillateSaw 720, OscillateWave 1034, Product 406, Sigmoid 2162, SignOf 548, Sin 4281, Smooth 4554, Sum 4511, SumThreshold 1132
+              bodies whose brain reads any sense: 1790; by channel: JointAngle 48, JointAngularVelocity 429, Contact 68, OrientationUp 66, Damage 152, Chemical 56, Energy 84, Flow 89, Depth 835
+
+--- 1. transcription: the kernel's double build on ILGPU's CPU device against the library, 5 steps
+    each step: the kernel steps every body once; the library runs Senses.Sample and
+    Brain.Step on every body; then every neuron's two buffers and memory, the clock, the
+    drive targets and every sense value (through CreatureSenses.Read) are compared to the bit.
+    N 6145, max links 16, max dof 12, max neurons 75; kernel compile 289 ms
+    step     0: values        244,692  mismatches 0  (wall 0 s)
+    step     4: values      1,223,460  mismatches 0  (wall 0 s)
+
+    neuron outputs, both buffers          346,860 values, 0 mismatches
+    neuron memories                       173,430 values, 0 mismatches
+    brain clocks (double)                  30,725 values, 0 mismatches
+    drive targets                           2,365 values, 0 mismatches
+    sense values (Read)                   670,080 values, 0 mismatches
+    TOTAL                               1,223,460 values, 0 mismatches
+    wall 0 s
+

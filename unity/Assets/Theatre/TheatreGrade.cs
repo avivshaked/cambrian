@@ -67,6 +67,37 @@ namespace Evosim.Theatre
         /// </summary>
         public float MotionBlurIntensity = TheatreSkin.Dial("EVOSIM_THEATRE_MOTION_BLUR", 0.3f, 0f, 1f);
 
+        /// <summary>
+        /// Depth of field on a film's or a safari's portrait (<see cref="FocusPortrait"/>):
+        /// <c>EVOSIM_THEATRE_DOF</c>, 1 on (the default) and 0 off, for a comparison pair. A
+        /// census picture is never focused whatever this says; only a portrait shot asks.
+        /// </summary>
+        public bool PortraitDepthOfField = TheatreSkin.Dial("EVOSIM_THEATRE_DOF", 1f, 0f, 1f) >= 0.5f;
+
+        /// <summary>
+        /// The portrait's aperture as an f-number, <c>EVOSIM_THEATRE_DOF_APERTURE</c>, default 2
+        /// (the films review asked for f/1.4 to f/2.8; URP accepts 1 to 32).
+        /// </summary>
+        public float PortraitAperture = TheatreSkin.Dial("EVOSIM_THEATRE_DOF_APERTURE", 2f, 1f, 32f);
+
+        /// <summary>
+        /// The height of the film frame the lens is matched against, in millimetres,
+        /// <c>EVOSIM_THEATRE_DOF_FORMAT</c>: 24, a full-frame still camera's, by default. The focal
+        /// length is the one that gives the camera's own vertical field of view on this frame, so
+        /// a wide lens is a short one and focuses deep, as a real one does. A larger format at
+        /// the same field of view is a longer lens and a shallower focus.
+        /// </summary>
+        /// <remarks>
+        /// URP's Bokeh pass counts the blur circle in millimetres on the frame and draws one
+        /// millimetre as 14 pixels of radius on the render target, clamped there
+        /// (<c>DepthOfFieldBokehProcessPass.GetMaxBokehRadiusInPixels</c>). A full frame at 1080
+        /// lines puts about 22 pixels of radius in a millimetre, so URP draws a matched lens's
+        /// blur at about two thirds of a camera's at 1080 lines and a third of it on the film's
+        /// 2x supersampled target (the agent's arithmetic from the package source, not a
+        /// measurement). This dial is the one to raise if a portrait's background reads too sharp.
+        /// </remarks>
+        public float FormatMillimetres = TheatreSkin.Dial("EVOSIM_THEATRE_DOF_FORMAT", 24f, 8f, 120f);
+
         private GameObject _holder;
         private Volume _volume;
         private VolumeProfile _profile;
@@ -149,6 +180,62 @@ namespace Evosim.Theatre
             _depthOfField.aperture.Override(Mathf.Clamp(aperture, 1f, 32f));
             _depthOfField.focalLength.Override(50f);
             _depthOfField.active = true;
+        }
+
+        /// <summary>
+        /// A portrait's focus, for a film shot or a safari take (the films review's third item,
+        /// 2026-09-24): URP's Bokeh depth of field focused at a distance along the view axis, at
+        /// <see cref="PortraitAperture"/>, with the focal length the camera's own field of view
+        /// makes on <see cref="FormatMillimetres"/>. Off again with <see cref="Unfocus"/>, and not
+        /// turned on at all when <see cref="PortraitDepthOfField"/> is off.
+        /// </summary>
+        /// <param name="distanceMetres">
+        /// The subject's depth along the view axis, not its distance: URP's circle of confusion
+        /// is taken from the depth buffer's eye depth, which is planar.
+        /// </param>
+        /// <param name="fieldOfView">The camera's vertical field of view, degrees.</param>
+        public void FocusPortrait(float distanceMetres, float fieldOfView)
+        {
+            if (_depthOfField == null) return;
+            if (!PortraitDepthOfField) { Unfocus(); return; }
+
+            float focal = Mathf.Clamp(FocalLengthFor(fieldOfView), 1f, 300f);
+
+            // The lens model divides by the focus distance less the focal length, so a focus
+            // inside the lens's own length would turn the blur inside out.
+            float focus = Mathf.Max(Mathf.Max(0.1f, distanceMetres), focal / 1000f + 0.05f);
+
+            _depthOfField.focusDistance.Override(focus);
+            _depthOfField.aperture.Override(Mathf.Clamp(PortraitAperture, 1f, 32f));
+            _depthOfField.focalLength.Override(focal);
+            _depthOfField.active = true;
+        }
+
+        /// <summary>The focal length, mm, that gives a vertical field of view on <see cref="FormatMillimetres"/>.</summary>
+        public float FocalLengthFor(float fieldOfView) =>
+            Camera.FieldOfViewToFocalLength(Mathf.Clamp(fieldOfView, 1f, 179f), FormatMillimetres);
+
+        /// <summary>
+        /// The portrait's depth of field in one line for a plan or a log: the lens, the stop and
+        /// what a subject at a distance keeps sharp, by the thin-lens hyperfocal distance with a
+        /// circle of confusion of a 1,500th of the frame's height.
+        /// </summary>
+        public string DescribePortrait(float distanceMetres, float fieldOfView)
+        {
+            if (!PortraitDepthOfField) return "depth of field off";
+
+            float f = FocalLengthFor(fieldOfView) / 1000f;
+            float n = Mathf.Clamp(PortraitAperture, 1f, 32f);
+            float c = FormatMillimetres / 1500f / 1000f;
+            float h = f * f / (n * c) + f;
+            float s = Mathf.Max(distanceMetres, f + 0.05f);
+            float near = h * s / (h + (s - f));
+            float far = s < h ? h * s / (h - (s - f)) : float.PositiveInfinity;
+
+            return string.Format(CultureInfo.InvariantCulture,
+                "{0:0} mm at f/{1:0.#} on a {2:0} mm frame, sharp from {3:0.##} to {4} m at {5:0.##} m",
+                f * 1000f, n, FormatMillimetres, near,
+                float.IsInfinity(far) ? "infinity" : far.ToString("0.##", CultureInfo.InvariantCulture), s);
         }
 
         public void Unfocus()

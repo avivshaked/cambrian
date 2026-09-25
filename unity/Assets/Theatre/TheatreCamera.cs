@@ -76,11 +76,33 @@ namespace Evosim.Theatre
 
                 transform.position = target + Quaternion.Euler(0f, _yaw, 0f) * _followOffset;
                 transform.rotation = Quaternion.Euler(_pitch, _yaw, 0f);
+                KeepAboveGround();
                 return;
             }
 
             ReadFlight();
+            KeepAboveGround();
             transform.rotation = Quaternion.Euler(_pitch, _yaw, 0f);
+        }
+
+        /// <summary>How far above the floor the camera keeps inside the world, m.</summary>
+        public float GroundClearance = 0.3f;
+
+        /// <summary>
+        /// The ground is earth, not water (the owner, 2026-09-24), so inside the tank the camera
+        /// never goes below the bed. Outside the glass it flies free, for the views from outside.
+        /// </summary>
+        private void KeepAboveGround()
+        {
+            TheatreSkin skin = TheatreSkin.Current;
+            if (skin == null) return;
+
+            Vector3 p = transform.position;
+            if (skin.GroundUnder(p.x, p.z, out float floor) && p.y < floor + GroundClearance)
+            {
+                p.y = floor + GroundClearance;
+                transform.position = p;
+            }
         }
 
         private void ReadLook()

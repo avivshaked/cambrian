@@ -1,0 +1,13 @@
+    body 7597: adultScale 0.66, 5 nodes, 7 parts, root at (20.25, -7.97, 17.27)
+      node 0: photosynthetic box growth Indeterminate limit 3 maxModules 7 dims (0.364, 0.375, 0.069) edges 1
+      node 1: link box growth Determinate limit 1 maxModules 1 dims (0.124, 0.166, 0.14) edges 3
+      node 2: absorptive box growth Determinate limit 1 maxModules 1 dims (0.025, 0.023, 0.027) edges 2
+      node 3: photosynthetic capsule growth Determinate limit 3 maxModules 1 dims (0.033, 0.035, 0.034) edges 0
+      node 4: absorptive box growth Determinate limit 1 maxModules 1 dims (0.03, 0.03, 0.03) edges 0
+      part  0: node 0 parent -1 depth 0 Fixed at (0, 0, 0) half-extents (0.24, 0.248, 0.045) rot (0, 0, 0, 1)
+      part  1: node 0 parent 0 depth 1 Fixed at (-0.417, 0.244, 0.126) half-extents (0.314, 0.436, 0.034) rot (-0.2527, 0.4304, 0.6639, 0.5569)
+      part  2: node 0 parent 1 depth 2 Fixed at (-0.61, 0.047, 0.959) half-extents (0.411, 0.765, 0.025) rot (-0.2814, 0.4794, 0.7394, -0.3798)
+      part  3: node 0 parent 2 depth 3 Fixed at (0.017, 1.121, 1.87) half-extents (0.536, 1.345, 0.019) rot (0.0608, -0.1035, -0.1596, 0.9799)
+      part  4: node 0 parent 3 depth 4 Fixed at (-1.837, 3.044, 2.322) half-extents (0.701, 2.364, 0.014) rot (-0.2138, 0.3641, 0.5617, 0.7115)
+      part  5: node 0 parent 4 depth 5 Fixed at (-4.136, 1.991, 6.357) half-extents (0.916, 4.155, 0.011) rot (-0.2989, 0.509, 0.7851, -0.1874)
+      part  6: node 0 parent 5 depth 6 Fixed at (-0.326, 5.948, 12.67) half-extents (1.197, 7.303, 0.01) rot (0.1191, -0.2028, -0.3128, 0.9203)

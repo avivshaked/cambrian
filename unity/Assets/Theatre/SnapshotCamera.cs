@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using Evosim.Core;
 using Evosim.Sim;
 
@@ -233,6 +234,37 @@ namespace Evosim.Theatre
         public string Caption;
 
         /// <summary>
+        /// How much of the next <see cref="CapturePlaced"/> picture is darkened before its label
+        /// and caption are drawn, 0 (none, what everything but a story's held card leaves it at)
+        /// to 1 (black).
+        /// </summary>
+        public float Dim;
+
+        /// <summary>
+        /// The last picture written, label and caption burnt in: what a composite puts the
+        /// interface's layer over (the safari's call-outs, through <see cref="TheatreUiCapture.ArmOver"/>).
+        /// </summary>
+        /// <remarks>
+        /// Uploaded when asked for. A frame that went to the background writer never passed
+        /// through this texture, so its pixels are copied in here, once, the first time a
+        /// composite wants them.
+        /// </remarks>
+        public Texture2D LastFrame
+        {
+            get
+            {
+                if (_readbackStale && _pixels != null && _pixels.Length == _width * _height)
+                {
+                    _readback.SetPixels32(_pixels);
+                    _readback.Apply(false);
+                    _readbackStale = false;
+                }
+
+                return _readback;
+            }
+        }
+
+        /// <summary>
         /// A portrait's fill light from the camera's side, at this intensity; 0 (the default) adds
         /// none, so a film's close shot is lit as it always was. The safari's light rule (item 9):
         /// the skin's sun stands and the portrait adds a fill from the camera's side, low.
@@ -260,7 +292,7 @@ namespace Evosim.Theatre
         public static int Supersample => Mathf.Clamp(Mathf.RoundToInt(TheatreSkin.Dial("EVOSIM_THEATRE_SUPERSAMPLE", 2f, 1f, 3f)), 1, 3);
 
         private readonly int _super;
-        private readonly Texture2D _readbackFull;
+        private Texture2D _readbackFull;
         private readonly GameObject _holder;
         private readonly Camera _camera;
 
@@ -268,6 +300,63 @@ namespace Evosim.Theatre
 
         /// <summary>The largest picture this will make. A 4K frame is 33 MB of readback.</summary>
         public const int MaximumSide = 4096;
+
+        /// <summary>
+        /// The supersampled picture box-filtered on the CPU, as every picture was until 2026-09-24,
+        /// in place of the card's pass (<c>TheatreBoxDown.shader</c>).
+        /// <c>EVOSIM_THEATRE_CPU_DOWNSAMPLE=1</c>, for a comparison of the two; the census views
+        /// (<see cref="Capture"/>) are on the CPU either way.
+        /// </summary>
+        public static bool CpuDownsample => Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CPU_DOWNSAMPLE") == "1";
+
+        /// <summary>
+        /// A placed frame encoded and written on the main thread, as every frame was until
+        /// 2026-09-24, in place of <see cref="FrameWriter"/>'s threads.
+        /// <c>EVOSIM_THEATRE_SYNC_ENCODE=1</c>.
+        /// </summary>
+        public static bool SyncEncode => Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SYNC_ENCODE") == "1";
+
+        /// <summary>
+        /// On the first <see cref="CheckedFrames"/> placed frames of each camera, the picture is
+        /// also filtered on the CPU and encoded on the main thread, and the log says how far the
+        /// two paths are apart: the check that the fast path changed no pixel.
+        /// <c>EVOSIM_THEATRE_DOWNSAMPLE_CHECK=1</c>.
+        /// </summary>
+        public static bool DownsampleCheck => Environment.GetEnvironmentVariable("EVOSIM_THEATRE_DOWNSAMPLE_CHECK") == "1";
+
+        /// <summary>How many frames a camera checks under <see cref="DownsampleCheck"/>.</summary>
+        public const int CheckedFrames = 3;
+
+        private const string BoxDownShader = "Hidden/Evosim/Theatre Box Down";
+        private static readonly int FactorId = Shader.PropertyToID("_Factor");
+        private static readonly int EncodeId = Shader.PropertyToID("_Encode");
+        private static Material _boxDown;
+        private static bool _boxDownRefused;
+
+        // The card's box filter: the supersampled target filtered into a 1x linear target, read
+        // back into a 1x linear texture. Null on the CPU path.
+        private readonly RenderTexture _down;
+        private readonly Texture2D _readbackDown;
+        private readonly bool _sync;
+        private readonly bool _check;
+        private int _checked;
+
+        // Pixel buffers for placed frames. The one being drawn is _pixels; a buffer handed to the
+        // writer comes back here when the writer is done reading it.
+        private readonly Stack<Color32[]> _free = new Stack<Color32[]>();
+        private bool _pixelsInFlight;
+        private bool _readbackStale;
+
+        /// <summary>
+        /// How this camera makes a placed frame, for the log: where the box filter runs and where
+        /// the PNG is encoded.
+        /// </summary>
+        public string Route =>
+            (_super == 1 ? "no supersample" : _down != null ? "box filter on the card (" + _super + "x)" : "box filter on the CPU (" + _super + "x)") +
+            (_sync ? ", PNG encoded on the main thread" : ", PNG encoded on " + FrameWriter.ThreadCount + " writer threads");
+
+        /// <summary>Every placed frame this camera wrote, stage by stage.</summary>
+        public StageTimes Times { get; } = new StageTimes();
 
         public SnapshotCamera(int width, int height)
         {
@@ -284,9 +373,36 @@ namespace Evosim.Theatre
             };
 
             _readback = new Texture2D(_width, _height, TextureFormat.RGBA32, false);
-            _readbackFull = _super > 1
-                ? new Texture2D(_width * _super, _height * _super, TextureFormat.RGBA32, false)
-                : _readback;
+
+            // The full-size read-back is made when a path asks for it: the card's filter never
+            // does, and at a 2x supersample of 1920x1080 it is a 33 MB texture a take.
+            _readbackFull = _super > 1 ? null : _readback;
+
+            _sync = SyncEncode;
+            _check = DownsampleCheck;
+
+            if (_super > 1 && !CpuDownsample && BoxDownMaterial() != null)
+            {
+                // Linear, so the filter's output is stored as the byte it is and read back as one:
+                // the bytes are already the sRGB-encoded ones the CPU path averaged.
+                _down = new RenderTexture(_width, _height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
+                {
+                    name = "Theatre Snapshot (box filtered)",
+                    antiAliasing = 1,
+                    filterMode = FilterMode.Point,
+                };
+
+                if (_down.sRGB || !_down.Create())
+                {
+                    Debug.LogWarning("[Theatre] snapshot: the box filter's 1x target could not be made linear; filtering on the CPU.");
+                    Discard(_down);
+                    _down = null;
+                }
+                else
+                {
+                    _readbackDown = new Texture2D(_width, _height, TextureFormat.RGBA32, false, true);
+                }
+            }
 
             // Hidden and not saved: this camera belongs to one call and must never be caught by
             // a scene save or turn up in the hierarchy the owner is flying around in.
@@ -441,14 +557,18 @@ namespace Evosim.Theatre
 
             try
             {
-                _readbackFull.ReadPixels(new Rect(0f, 0f, _width * _super, _height * _super), 0, 0, false);
+                Full.ReadPixels(new Rect(0f, 0f, _width * _super, _height * _super), 0, 0, false);
             }
             finally
             {
                 RenderTexture.active = active;
             }
 
-            _pixels = _super > 1 ? BoxDown(_readbackFull.GetPixels32(), _super) : _readbackFull.GetPixels32();
+            // A fresh array, never one of the placed frames' buffers: a buffer the writer holds
+            // is read on its thread until it comes back.
+            _pixels = _super > 1 ? BoxDown(Full.GetPixels32(), _super) : Full.GetPixels32();
+            _pixelsInFlight = false;
+            _readbackStale = false;
 
             // Neither the close view nor the sky view carries the box. The close view's frame cuts
             // the water's edges at odd angles, and the sky view stands inside the box looking up,
@@ -506,12 +626,17 @@ namespace Evosim.Theatre
         /// <param name="path">
         /// The PNG to write, its directory created if it is missing; null renders and writes nothing.
         /// </param>
-        /// <returns>The bytes written.</returns>
+        /// <returns>
+        /// The bytes written, or 0 when the frame went to <see cref="FrameWriter"/>, which writes it
+        /// on its own thread; <see cref="FlushWrites"/> waits for it to be on disk.
+        /// </returns>
         public int CapturePlaced(
             ITheatreFrame frame, Vector3 eye, Quaternion rotation, float fieldOfView,
             bool portrait, float focusMetres, string label, string path)
         {
             if (frame == null) throw new ArgumentNullException(nameof(frame));
+
+            long entered = System.Diagnostics.Stopwatch.GetTimestamp();
 
             _label = LabelLines(label);
 
@@ -530,11 +655,15 @@ namespace Evosim.Theatre
             Light back = portrait ? BackLight() : null;
             Light fill = portrait && FillIntensity > 0f ? FillLight(FillIntensity) : null;
 
+            // A film's or a safari's portrait is focused on its subject's depth with the lens the
+            // field of view makes (TheatreGrade.FocusPortrait); the census views above never are.
             TheatreGrade grade = portrait && focusMetres > 0f ? TheatreGrade.Current : null;
-            if (grade != null) grade.Focus(focusMetres, 5.6f);
+            if (grade != null) grade.FocusPortrait(focusMetres, _camera.fieldOfView);
 
             TheatreSkin skin = TheatreSkin.Current;
             Quaternion lightsWere = skin != null ? skin.Aim(rotation) : Quaternion.identity;
+
+            var watch = System.Diagnostics.Stopwatch.StartNew();
 
             try
             {
@@ -554,32 +683,442 @@ namespace Evosim.Theatre
             if (path == null) return 0;
 
             RenderTexture active = RenderTexture.active;
-            RenderTexture.active = _target;
 
             try
             {
-                _readbackFull.ReadPixels(new Rect(0f, 0f, _width * _super, _height * _super), 0, 0, false);
+                if (_down != null)
+                {
+                    // The card averages each block of the supersampled picture into one pixel of
+                    // the 1x target (TheatreBoxDown.shader, the CPU's arithmetic to the bit), and
+                    // only the 1x picture comes back: 8 MB at 1920x1080 where the CPU path read
+                    // back 33 MB.
+                    _boxDown.SetFloat(FactorId, _super);
+                    _boxDown.SetFloat(EncodeId, _target.sRGB ? 1f : 0f);
+                    Graphics.Blit(_target, _down, _boxDown);
+
+                    RenderTexture.active = _down;
+                    _readbackDown.ReadPixels(new Rect(0f, 0f, _width, _height), 0, 0, false);
+                }
+                else
+                {
+                    RenderTexture.active = _target;
+                    Full.ReadPixels(new Rect(0f, 0f, _width * _super, _height * _super), 0, 0, false);
+                }
             }
             finally
             {
                 RenderTexture.active = active;
             }
 
-            _pixels = _super > 1 ? BoxDown(_readbackFull.GetPixels32(), _super) : _readbackFull.GetPixels32();
+            // The render and the read-back, which waits for the device, so this is the frame's
+            // drawing cost on the CPU and the GPU together, without the encoding and the write.
+            // On the card's path the box filter is inside it.
+            LastRenderMs = watch.Elapsed.TotalMilliseconds;
+            long mark = System.Diagnostics.Stopwatch.GetTimestamp();
 
+            _pixels = Acquire();
+
+            if (_down != null)
+            {
+                // A view of the texture's own memory, copied into the frame's buffer: no 8 MB
+                // array made and thrown away a frame, as GetPixels32 would.
+                _readbackDown.GetPixelData<Color32>(0).CopyTo(_pixels);
+            }
+            else
+            {
+                Color32[] full = Full.GetPixels32();
+                if (_super > 1) BoxDown(full, _super, _pixels);
+                else Array.Copy(full, _pixels, _pixels.Length);
+            }
+
+            if (_check && _checked < CheckedFrames) CheckTheFilter();
+
+            LastPixelsMs = Since(ref mark);
+
+            if (Dim > 0f) Darken(0, 0, _width, _height, Dim);
             DrawLabel(_label);
             if (!string.IsNullOrEmpty(Caption)) DrawCaption(Caption);
 
-            _readback.SetPixels32(_pixels);
-            _readback.Apply(false);
-
-            byte[] png = _readback.EncodeToPNG();
+            LastLabelMs = Since(ref mark);
 
             string directory = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
-            File.WriteAllBytes(path, png);
 
-            return png.Length;
+            int written = 0;
+
+            if (_sync)
+            {
+                _readback.SetPixels32(_pixels);
+                _readback.Apply(false);
+                _readbackStale = false;
+
+                byte[] png = _readback.EncodeToPNG();
+                LastEncodeMs = Since(ref mark);
+
+                File.WriteAllBytes(path, png);
+                LastWriteMs = Since(ref mark);
+                written = png.Length;
+            }
+            else
+            {
+                if (_check && _checked < CheckedFrames) CheckTheEncoder();
+
+                // To the writer's threads, which encode and write it while the next frame is
+                // stepped and drawn. This waits only when four frames are already in flight, and
+                // throws the first failure an earlier frame met.
+                FrameWriter.Enqueue(_pixels, _readback.graphicsFormat, _width, _height, path, Times, Release);
+                _pixelsInFlight = true;
+                _readbackStale = true;
+
+                LastEncodeMs = Since(ref mark);
+                LastWriteMs = 0d;
+            }
+
+            if (_check && _checked < CheckedFrames) _checked++;
+
+            LastCaptureMs = 1000d * (System.Diagnostics.Stopwatch.GetTimestamp() - entered) / System.Diagnostics.Stopwatch.Frequency;
+            Times.Add(LastRenderMs, LastPixelsMs, LastLabelMs, LastEncodeMs, LastWriteMs, LastCaptureMs);
+
+            return written;
+        }
+
+        /// <summary>The last placed capture's render and read-back, milliseconds.</summary>
+        public double LastRenderMs { get; private set; }
+
+        /// <summary>
+        /// The last placed capture's 1x pixels into the frame's buffer, ms: a copy on the card's
+        /// path, the full read-back's array and the box filter on the CPU's.
+        /// </summary>
+        public double LastPixelsMs { get; private set; }
+
+        /// <summary>The last placed capture's label and caption, burnt into the pixels, ms.</summary>
+        public double LastLabelMs { get; private set; }
+
+        /// <summary>
+        /// The last placed capture's encode on the main thread, ms: the upload and the PNG encode
+        /// on the synchronous path, the hand-off to the writer (its wait for a free slot included)
+        /// otherwise.
+        /// </summary>
+        public double LastEncodeMs { get; private set; }
+
+        /// <summary>The last placed capture's file write on the main thread, ms; 0 when the writer wrote it.</summary>
+        public double LastWriteMs { get; private set; }
+
+        /// <summary>The whole of the last placed capture, from the call to its return, ms.</summary>
+        public double LastCaptureMs { get; private set; }
+
+        /// <summary>
+        /// Waits for every frame handed to the writer to be on disk, and throws the first failure
+        /// any of them met. The film and the safari call it at the end of every take, before
+        /// they write anything that lists frames, and before they quit.
+        /// </summary>
+        public static void FlushWrites() => FrameWriter.Flush();
+
+        private static double Since(ref long mark)
+        {
+            long now = System.Diagnostics.Stopwatch.GetTimestamp();
+            double ms = 1000d * (now - mark) / System.Diagnostics.Stopwatch.Frequency;
+            mark = now;
+            return ms;
+        }
+
+        /// <summary>
+        /// A buffer for the next placed frame: the last one again when nothing else reads it,
+        /// else one the writer has handed back, else a new one. The writer holds at most
+        /// <see cref="FrameWriter.MostInFlight"/>, so a camera never makes more than five.
+        /// </summary>
+        private Color32[] Acquire()
+        {
+            int n = _width * _height;
+
+            if (_pixels != null && !_pixelsInFlight && _pixels.Length == n) return _pixels;
+
+            lock (_free)
+            {
+                while (_free.Count > 0)
+                {
+                    Color32[] spare = _free.Pop();
+                    if (spare.Length == n) { _pixelsInFlight = false; return spare; }
+                }
+            }
+
+            _pixelsInFlight = false;
+            return new Color32[n];
+        }
+
+        /// <summary>The writer's thread handing a buffer back.</summary>
+        private void Release(Color32[] pixels)
+        {
+            lock (_free) _free.Push(pixels);
+        }
+
+        /// <summary>The full-size read-back texture, made the first time a path needs it.</summary>
+        private Texture2D Full
+        {
+            get
+            {
+                if (_readbackFull == null)
+                {
+                    _readbackFull = new Texture2D(_width * _super, _height * _super, TextureFormat.RGBA32, false);
+                }
+
+                return _readbackFull;
+            }
+        }
+
+        /// <summary>
+        /// The card's box filter, or null when its shader is missing or refused here, in which
+        /// case every camera filters on the CPU and the log says so once.
+        /// </summary>
+        private static Material BoxDownMaterial()
+        {
+            if (_boxDown != null) return _boxDown;
+            if (_boxDownRefused) return null;
+
+            Shader shader = Shader.Find(BoxDownShader);
+            if (shader == null || !shader.isSupported)
+            {
+                _boxDownRefused = true;
+                Debug.LogWarning("[Theatre] snapshot: '" + BoxDownShader + "' is " +
+                                 (shader == null ? "not in the project" : "not supported by this device") +
+                                 "; every picture is box-filtered on the CPU.");
+                return null;
+            }
+
+            _boxDown = new Material(shader) { name = "Theatre Box Down", hideFlags = HideFlags.HideAndDontSave };
+            return _boxDown;
+        }
+
+        /// <summary>
+        /// The CPU's box filter run on the same render the card just filtered, and the two
+        /// compared pixel by pixel (<see cref="DownsampleCheck"/>). Called before the label is
+        /// drawn, so it compares the filters and nothing else.
+        /// </summary>
+        private void CheckTheFilter()
+        {
+            if (_down == null)
+            {
+                Debug.Log("[Theatre] frame check: " + Route + ", so there is no card filter to compare.");
+                return;
+            }
+
+            RenderTexture active = RenderTexture.active;
+            try
+            {
+                RenderTexture.active = _target;
+                Full.ReadPixels(new Rect(0f, 0f, _width * _super, _height * _super), 0, 0, false);
+            }
+            finally
+            {
+                RenderTexture.active = active;
+            }
+
+            var cpu = new Color32[_width * _height];
+            BoxDown(Full.GetPixels32(), _super, cpu);
+
+            int worst = 0, differ = 0, worstAlpha = 0;
+            for (int i = 0; i < cpu.Length; i++)
+            {
+                Color32 a = cpu[i], b = _pixels[i];
+                int d = Math.Max(Math.Abs(a.r - b.r), Math.Max(Math.Abs(a.g - b.g), Math.Abs(a.b - b.b)));
+                if (d > 0) differ++;
+                if (d > worst) worst = d;
+                worstAlpha = Math.Max(worstAlpha, Math.Abs(a.a - b.a));
+            }
+
+            Debug.Log(string.Format(CultureInfo.InvariantCulture,
+                "[Theatre] frame check {0} of {1} ({2}x{3}, {4}x supersample, target sRGB {5}): the card's box filter against the CPU's: " +
+                "largest channel difference {6}, {7} of {8} pixels differ, largest alpha difference {9}{10}",
+                _checked + 1, CheckedFrames, _width, _height, _super, _target.sRGB, worst, differ, cpu.Length, worstAlpha,
+                worst == 0 ? " (identical)" : ""));
+        }
+
+        /// <summary>
+        /// The frame encoded as the writer will encode it and as the synchronous path did, and
+        /// both decoded and compared with the pixels (<see cref="DownsampleCheck"/>): the check
+        /// that the writer's encoder keeps the rows the right way up and the bytes unchanged.
+        /// </summary>
+        private void CheckTheEncoder()
+        {
+            byte[] writers = ImageConversion.EncodeArrayToPNG(_pixels, _readback.graphicsFormat, (uint)_width, (uint)_height);
+
+            _readback.SetPixels32(_pixels);
+            _readback.Apply(false);
+            byte[] old = _readback.EncodeToPNG();
+
+            bool sameBytes = writers != null && old != null && writers.Length == old.Length;
+            if (sameBytes)
+            {
+                for (int i = 0; i < old.Length; i++)
+                {
+                    if (writers[i] != old[i]) { sameBytes = false; break; }
+                }
+            }
+
+            string decoded = Decodes(writers, "the writer's") + "; " + Decodes(old, "the old encoder's");
+
+            Debug.Log(string.Format(CultureInfo.InvariantCulture,
+                "[Theatre] frame check {0} of {1}: the writer's PNG ({2} bytes) {3} the old encoder's ({4} bytes); {5}",
+                _checked + 1, CheckedFrames, writers?.Length ?? 0, sameBytes ? "is byte for byte" : "differs from", old?.Length ?? 0, decoded));
+        }
+
+        /// <summary>Whether a PNG decodes to exactly the frame's pixels, said for the log.</summary>
+        private string Decodes(byte[] png, string whose)
+        {
+            if (png == null || png.Length == 0) return whose + " is empty";
+
+            var read = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            try
+            {
+                if (!read.LoadImage(png, false)) return whose + " does not decode";
+                if (read.width != _width || read.height != _height) return whose + " decodes to " + read.width + "x" + read.height;
+
+                Color32[] back = read.GetPixels32();
+                int worst = 0, differ = 0, flipped = 0;
+                for (int i = 0; i < back.Length; i++)
+                {
+                    Color32 a = back[i], b = _pixels[i];
+                    int d = Math.Max(Math.Abs(a.r - b.r), Math.Max(Math.Abs(a.g - b.g), Math.Max(Math.Abs(a.b - b.b), Math.Abs(a.a - b.a))));
+                    if (d > 0) differ++;
+                    if (d > worst) worst = d;
+
+                    int y = i / _width, x = i - y * _width;
+                    Color32 m = _pixels[(_height - 1 - y) * _width + x];
+                    if (a.r == m.r && a.g == m.g && a.b == m.b) flipped++;
+                }
+
+                if (differ == 0) return whose + " decodes to the frame's pixels exactly";
+                return string.Format(CultureInfo.InvariantCulture,
+                    "{0} decodes with {1} pixels off by up to {2}{3}", whose, differ, worst,
+                    flipped == back.Length ? " (UPSIDE DOWN)" : "");
+            }
+            finally
+            {
+                Discard(read);
+            }
+        }
+
+        /// <summary>
+        /// What each placed frame cost, stage by stage: the main thread's stages from
+        /// <see cref="CapturePlaced"/>, and the writer's encode and write when the frame went to
+        /// <see cref="FrameWriter"/>.
+        /// </summary>
+        /// <remarks>
+        /// Every figure is wall time, and a wall time is a fact about the machine as it was: one
+        /// taken beside two farm runs is a reading of that machine and not of the code
+        /// (CLAUDE.md, "Cap the load a build puts on the machine").
+        /// </remarks>
+        public sealed class StageTimes
+        {
+            private readonly object _gate = new object();
+            private readonly List<double> _render = new List<double>();
+            private readonly List<double> _pixels = new List<double>();
+            private readonly List<double> _label = new List<double>();
+            private readonly List<double> _encode = new List<double>();
+            private readonly List<double> _write = new List<double>();
+            private readonly List<double> _total = new List<double>();
+            private readonly List<double> _writerEncode = new List<double>();
+            private readonly List<double> _writerWrite = new List<double>();
+
+            /// <summary>Frames recorded on the main thread.</summary>
+            public int Frames
+            {
+                get { lock (_gate) return _total.Count; }
+            }
+
+            internal void Add(double render, double pixels, double label, double encode, double write, double total)
+            {
+                lock (_gate)
+                {
+                    _render.Add(render);
+                    _pixels.Add(pixels);
+                    _label.Add(label);
+                    _encode.Add(encode);
+                    _write.Add(write);
+                    _total.Add(total);
+                }
+            }
+
+            /// <summary>Called on a writer thread with one frame's encode and write.</summary>
+            internal void AddWriter(double encode, double write)
+            {
+                lock (_gate)
+                {
+                    _writerEncode.Add(encode);
+                    _writerWrite.Add(write);
+                }
+            }
+
+            /// <summary>Folds another camera's frames into these: the safari's whole-trip line.</summary>
+            public void Add(StageTimes other)
+            {
+                if (other == null || ReferenceEquals(other, this)) return;
+
+                lock (other._gate)
+                {
+                    lock (_gate)
+                    {
+                        _render.AddRange(other._render);
+                        _pixels.AddRange(other._pixels);
+                        _label.AddRange(other._label);
+                        _encode.AddRange(other._encode);
+                        _write.AddRange(other._write);
+                        _total.AddRange(other._total);
+                        _writerEncode.AddRange(other._writerEncode);
+                        _writerWrite.AddRange(other._writerWrite);
+                    }
+                }
+            }
+
+            /// <summary>
+            /// One line for the log: the median of each stage on the main thread, the whole call's
+            /// median, mean and slowest, and the writer's medians when it wrote any.
+            /// </summary>
+            public string Line()
+            {
+                lock (_gate)
+                {
+                    if (_total.Count == 0) return "no frames written";
+
+                    string line = string.Format(CultureInfo.InvariantCulture,
+                        "{0} frames; a frame on the main thread: median {1:0.0} ms, mean {2:0.0} ms, slowest {3:0.0} ms " +
+                        "(medians: render and read-back {4:0.0}, pixels {5:0.0}, label and caption {6:0.0}, encode or hand-off {7:0.0}, write {8:0.0})",
+                        _total.Count, Median(_total), Mean(_total), Max(_total),
+                        Median(_render), Median(_pixels), Median(_label), Median(_encode), Median(_write));
+
+                    if (_writerEncode.Count > 0)
+                    {
+                        line += string.Format(CultureInfo.InvariantCulture,
+                            "; off it, {0} frames: encode median {1:0.0} ms (slowest {2:0.0}), write median {3:0.0} ms (slowest {4:0.0})",
+                            _writerEncode.Count, Median(_writerEncode), Max(_writerEncode), Median(_writerWrite), Max(_writerWrite));
+                    }
+
+                    return line;
+                }
+            }
+
+            private static double Median(List<double> values)
+            {
+                if (values.Count == 0) return 0d;
+                var sorted = new List<double>(values);
+                sorted.Sort();
+                return sorted[sorted.Count / 2];
+            }
+
+            private static double Mean(List<double> values)
+            {
+                if (values.Count == 0) return 0d;
+                double sum = 0d;
+                foreach (double v in values) sum += v;
+                return sum / values.Count;
+            }
+
+            private static double Max(List<double> values)
+            {
+                double most = 0d;
+                foreach (double v in values) most = Math.Max(most, v);
+                return most;
+            }
         }
 
         /// <summary>
@@ -1665,10 +2204,12 @@ namespace Evosim.Theatre
         /// the readback's own bottom-up order, so the markers and the label stamp into output
         /// pixels as they always did.
         /// </summary>
-        private Color32[] BoxDown(Color32[] full, int factor)
+        private Color32[] BoxDown(Color32[] full, int factor) => BoxDown(full, factor, new Color32[_width * _height]);
+
+        /// <summary>The same filter into a buffer the caller holds, which it returns.</summary>
+        private Color32[] BoxDown(Color32[] full, int factor, Color32[] down)
         {
             int wide = _width * factor;
-            var down = new Color32[_width * _height];
             int n = factor * factor;
 
             for (int y = 0; y < _height; y++)
@@ -2025,14 +2566,21 @@ namespace Evosim.Theatre
             return font;
         }
 
+        /// <remarks>
+        /// Frames this camera handed to <see cref="FrameWriter"/> are not waited for here: their
+        /// buffers are the writer's until it hands them back, and a failure among them is thrown
+        /// by the host's next <see cref="FlushWrites"/>, never swallowed by a disposal.
+        /// </remarks>
         public void Dispose()
         {
             if (_camera != null) _camera.targetTexture = null;
 
             Discard(_holder);
             Discard(_target);
-            if (_readbackFull != _readback) Discard(_readbackFull);
+            if (_readbackFull != null && _readbackFull != _readback) Discard(_readbackFull);
             Discard(_readback);
+            Discard(_down);
+            Discard(_readbackDown);
         }
 
         /// <summary>Immediate outside Play mode, deferred inside it, which is what each allows.</summary>

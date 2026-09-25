@@ -158,7 +158,7 @@ rather than a spike at all.
 
 | claim | source |
 |---|---|
-| every number above | `spikes/02-gpu-featherstone/results/contact-kernel.txt`, `results/brain-kernel.txt`; the logs under `scratch/gpu-spike3/` |
+| every number above | `spikes/02-gpu-featherstone/results/contact-kernel.txt`, `results/brain-kernel.txt`; the logs under `logbook/specs/gpu-spike3-logs/` |
 | the design and the acceptance | `logbook/specs/gpu-full-step-spec.md` |
 | the reduced step's numbers | logbook/0112 |
 | the ruling | D105 |

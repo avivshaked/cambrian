@@ -744,8 +744,29 @@ namespace Evosim.Theatre
             else if (_solo != null) StepSolo();
             else if (_recon != null) _recon.BuildSome(FrameBudgetSeconds);
 
-            DrawTheInterface();
+            if (!HoldView) DrawTheInterface();
         }
+
+        /// <summary>
+        /// True while a host carries the live world a long way with nothing to show: the runner
+        /// then neither brings the scene up to the world nor ticks the interface once a frame.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why it exists.</b> The safari's batch host seeks a scene's second by stepping the
+        /// paused world itself, up to a second and a half of wall time a tick, and until
+        /// 2026-09-24 this component went on posing every body, building every newborn's scene
+        /// objects, destroying every dead one's and repainting a slice of the crowd after each of
+        /// those ticks, for a camera that was switched off. None of it touches the world.
+        /// </para>
+        /// <para>
+        /// <b>The host brings the view up to date itself</b> (<see cref="LiveWorldView.Sync"/>
+        /// and <see cref="LiveWorldView.DressUndressed"/>) before it plans or draws anything, and
+        /// clears this before the take plays, so the runner's once-a-frame work resumes where
+        /// frames are made. Off unless a host sets it; the Editor's own Play mode never does.
+        /// </para>
+        /// </remarks>
+        public bool HoldView { get; set; }
 
         /// <summary>The lights follow the viewer: the key rakes from behind wherever the fly camera looks.</summary>
         private void LateUpdate()
@@ -911,6 +932,10 @@ namespace Evosim.Theatre
             }
 
             MeasurePace(before, wallBefore);
+
+            // A host carrying the world forward with nothing on screen syncs the view itself
+            // when it next needs it (HoldView).
+            if (HoldView) return;
 
             // Once a frame, and never per physics step: the solver takes tens of steps between
             // two frames and a viewer sees the last of them.

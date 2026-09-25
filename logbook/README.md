@@ -150,7 +150,7 @@ leaves the world instead of being fixed.
 | ***fine step*** | dt 0.01 s, the step at which results count |
 | ***fast step*** | 0.02, a screening step, three times quicker and less trustworthy on depth and movement |
 | ***added mass*** | the water a body drags with it when it accelerates, priced from the movement build onward (D081) |
-| ***birth fraction*** and ***adult scale*** | a child's start as a fraction of the parent's own tissue, and the scalar that grows its body plan to its adult size, both genome dials from round 33 onward (D087) |
+| ***birth investment***, ***birth fraction*** and ***adult scale*** | the share of its own tissue a parent spends on one litter, a genome dial; the share of its own adult body a child is born with, which the investment and the litter decide and each birth row records as `bf`; and the scalar that grows a body plan to its adult size, a genome dial. All three from round 33 onward (D087) |
 
 Last, the vocabulary of reproducibility, from
 [0069](0069-the-shared-world-does-not-replay.md) onward.

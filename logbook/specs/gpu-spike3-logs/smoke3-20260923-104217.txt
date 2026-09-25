@@ -1,0 +1,39 @@
+=== the contact kernel: the grid on the card, the query and the push
+  command     D:\Projects\experiments\evolution-simulator\spikes\02-gpu-featherstone\out\bin\Release\net8.0\featherstone.dll contact --no-check --no-card --sizes 0 --time-steps 50 --cpu-steps 20 --repeats 1 --tag smoke3
+  host        MAINPC, 32 logical processors, .NET 8.0.24, server GC True
+  run         D:\Projects\experiments\evolution-simulator\runs\r45-s2\2026-09-22-232754-e51997d5 at 30000 s
+  crowd       genomes 6146 (refused 0, 218 with a recorded plan); rebuilt 6145, no genome 0, undeveloped 0 (3.8 s)
+  solver      dt 0.01, tank radius 83.6828 m, bed relief, omega 20, zeta 1, max separation 1, max dv 1
+  capacities  candidates 256, overlaps 64 per body
+  cpu device  CPUAccelerator, max threads/group 128
+  card        NVIDIA GeForce RTX 4090, SMs 128, SM_89, driver 13.1, max threads/group 1024
+
+=== pace at N = 6145: the recorded crowd
+    library grid: cell 2.3356 m (2 x mean radius 1.1678), largest radius 3.000 m, 58602 cell entries (9.54 a body)
+    occupancy (single on the card, this crowd at rest):
+      candidates before dedup (what the scratch holds): mean 13.25, p50 10, p99 53, max 85
+      candidates after dedup:                          mean 5.43, p50 5, p99 16, max 25   library after dedup: mean 5.43, p50 5, p99 16, max 25
+      overlaps:                                        mean 0.11, p50 0, p99 1, max 4
+      overflow at candidates 256: 0 bodies; at overlaps 64: 0 bodies; zero overflow needs candidates >= 85 and overlaps >= 4; entry overflow 0
+      cell on the card 2.335631 m, entries 58602, buckets 16384
+    card, single, group 32, 50 steps, median of 1; microseconds per body-step (and per step):
+      whole step, tree mean (memset + 4 launches), wall     0.05998  (    368.6 us/step)
+      whole step, serial mean, wall                         0.10576  (    649.9 us/step)
+      kernel time on the card, tree mean (sum of pieces)    0.06595  (    405.2 us/step)
+        memset counts                                       0.00239  (     14.7 us/step)
+        mean, tree                                          0.00194  (     11.9 us/step)
+        mean, serial                                        0.03810  (    234.1 us/step)
+        ranges + histogram                                  0.00151  (      9.3 us/step)
+        scan                                                0.00546  (     33.5 us/step)
+        scatter                                             0.00295  (     18.1 us/step)
+        query + push                                        0.05170  (    317.7 us/step)
+        query + push at the auto group                      0.06485  (    398.5 us/step)
+      query launched alone, wall                            0.05084  (    312.4 us/step)
+      one empty launch, wall                                0.00442  (     27.2 us/launch)
+      launch overhead of the whole step (wall - kernels)   -0.00597  (    -36.7 us/step)
+      sphere upload if the host fed it (8 reals + flag)     0.01983  (    121.9 us/step)
+    CPU,  1 thread(s), instrument on : grid build    0.07092, apply    0.92605, phase    0.99697 us/body-step  (6126.4 us/step, 20 steps)
+    CPU,  1 thread(s), instrument off: grid build    0.06696, apply    0.89570, phase    0.96265 us/body-step  (5915.5 us/step, 20 steps)
+    CPU, 16 thread(s), instrument on : grid build    0.06494, apply    0.12200, phase    0.18694 us/body-step  (1148.8 us/step, 20 steps)
+    CPU, 16 thread(s), instrument off: grid build    0.06190, apply    0.09586, phase    0.15776 us/body-step  (969.5 us/step, 20 steps)
+
