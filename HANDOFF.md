@@ -928,10 +928,11 @@ in this section is history.
         <main>/runs`, then `story-assemble.py`.
       - The agent expects FAITHFUL for both. Given the version-4 checkpoint I expect COUSIN
         (step 6's prediction), and which one it reads is the first thing to look at;
-  11. the farm checks owed by D123 and the instruments: `--verify-checkpoint` on a bitten
+  11. the farm checks owed by D123, the instruments and the bite fix: `--verify-checkpoint` on a bitten
       crowd with both senses on, a 300 s smoke with the depth rule on read by
       `r49-witness.py` (every snow-only founder `fsnow ≥ fcol`), and identity against the
-      build before with the six new keys stripped;
+      build before with the six new keys stripped, a short run with bites on and a checkpoint
+      cadence off the growth step (no "checkpoint waits" warning), and a no-bite regress;
   12. re-record ckA, ckB, ckC and ckUi on this build (`StateVersion` 12, `Checkpoint.Version`
       6; CLAUDE.md's checkpoint gotcha).
 - **The review's second and third items are built and not yet seen** (`d5540e6` on the safari
