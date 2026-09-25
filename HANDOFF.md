@@ -460,6 +460,23 @@ in this section is history.
     links catch light, living leaves make three quarters of the snow, the tank is 45 m deep
     only on average, and the gift did pay for a first child. Scene 19's third caption says
     seed 2's cause is not found; it changes with the re-run's verdict.
+  - **Seed 2 of round 48 stays censored** (the owner, 2026-09-25 midday, agreeing with the
+    agent's recommendation): if the re-run shows a code fault, the fix goes into round 49,
+    and seed 2 is neither resumed nor replaced. A resume could not be faithful anyway,
+    because round 48's checkpoints lack the contact history.
+  - **The scratch cleanup ran** (the owner ran `run-cleanup.ps1 -Execute -IncludeAsk`, since
+    the permission classifier refused the agent). `scratch/` went from 113 GB to 9.4 GB. Six
+    worktrees failed on long paths (`wt-lever1`, `wt-profile`, `wt-shallow`, and
+    `.claude/worktrees/` `agent-a0a5…`, `safari-r47`, `skin-r47`). Git unregistered them,
+    but about 520 MB each of long-path files stay on disk. `agent-a7b7…` was refused for an
+    untracked stale `scripts/guide.py` (1,429 lines, against main's 2,220). The owner has the
+    commands for both.
+  - **The story-film skill is in the project**, at `.claude/skills/story-film/SKILL.md` (the
+    owner: "inside this project, as a project level skill").
+  - **Films recorded by the farm, drawn by Unity** (the owner: "lets do that!"). This is
+    round 49's Part B. B1 is built on `r49-record-film`. B2 (the theatre plays a window) and
+    B3 (the safari films from windows) are next. Round 48's second film is made the current
+    way today.
   - **Round 48's entry is drafted and reviewed, and waits for the re-run's verdict before it
     is committed:** `logbook/0120-the-eaters-spent-their-endowment-on-one-child.md`, with its
     index row in `logbook/README.md` and four pictures `logbook/images/r48-*.png`, all
