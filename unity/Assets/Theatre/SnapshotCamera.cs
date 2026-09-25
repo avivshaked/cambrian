@@ -229,7 +229,8 @@ namespace Evosim.Theatre
         /// A caption burnt into the lower third of the next <see cref="CapturePlaced"/> picture,
         /// white on a quiet plate, in the label's bitmap font; null or empty draws none, which is
         /// what the film and every snapshot leave it at. The safari's headless route sets it
-        /// (safari-spec.md item 10).
+        /// (safari-spec.md item 10), except for a story, whose captions are set as subtitles at
+        /// the join (<see cref="SafariCaptions.TextInFrames"/>, 2026-09-25).
         /// </summary>
         public string Caption;
 
@@ -667,7 +668,7 @@ namespace Evosim.Theatre
         /// <param name="fieldOfView">The vertical field of view, degrees.</param>
         /// <param name="portrait">Light and focus the frame as a portrait of one subject.</param>
         /// <param name="focusMetres">The focus distance for a portrait; ignored otherwise.</param>
-        /// <param name="label">The one line burnt into the corner.</param>
+        /// <param name="label">The one line burnt into the corner; null or empty burns no label.</param>
         /// <param name="path">
         /// The PNG to write, its directory created if it is missing; null renders and writes nothing.
         /// </param>
@@ -2505,6 +2506,12 @@ namespace Evosim.Theatre
         private void DrawLabel(string[] lines)
         {
             if (lines == null || lines.Length == 0) return;
+
+            // No words, no bar: a story whose label is set as a subtitle at the join passes none
+            // (SafariCaptions.TextInFrames), and an empty bar would still stamp a black nick.
+            bool any = false;
+            foreach (string line in lines) any |= !string.IsNullOrEmpty(line);
+            if (!any) return;
 
             int cell = LabelScale;
             int pad = 2 * cell;

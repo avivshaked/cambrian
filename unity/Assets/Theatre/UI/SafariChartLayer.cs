@@ -68,8 +68,8 @@ namespace Evosim.Theatre
         /// <summary>
         /// The corner card, reference pixels from the top left: at the right, its foot 400 px above
         /// the frame's, clear of the captions' band (a three-line caption's plate reaches 359 px up
-        /// the 1080 frame, <see cref="SnapshotCamera"/>'s <c>DrawCaption</c>) and of the label bar at
-        /// the top left.
+        /// the 1080 frame, <see cref="SnapshotCamera"/>'s <c>DrawCaption</c>; the join's two-line
+        /// subtitle about 210 px, <c>scripts/story-assemble.py</c>) and of the label at the top left.
         /// </summary>
         public static readonly Rect CornerCard = new Rect(ReferenceWidth - 44f - 640f, 280f, 640f, 400f);
 
@@ -80,8 +80,13 @@ namespace Evosim.Theatre
         public const float CornerPlateAlpha = 0.78f;
         public const float FullPlateAlpha = 0.6f;
 
-        /// <summary>How much of the whole picture a full chart takes away before its plate, in linear light.</summary>
-        public const float FullWorldDim = 0.55f;
+        /// <summary>
+        /// How much of the whole picture a full chart takes away before its plate, in linear light:
+        /// a third, so the world stays moving and visible round and through the card on any station
+        /// (the owner, 2026-09-25: "why can't we do this while showing cool world videos?"). It was
+        /// 0.55 when a full chart sat only on a card whose own dim of 0.6 was stamped on top.
+        /// </summary>
+        public const float FullWorldDim = 0.33f;
 
         private static readonly int FadeId = Shader.PropertyToID("_Fade");
         private static readonly int WorldDimId = Shader.PropertyToID("_WorldDim");

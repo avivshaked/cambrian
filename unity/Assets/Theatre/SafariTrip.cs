@@ -515,7 +515,8 @@ namespace Evosim.Theatre
     /// <b>Facts about the body on screen are the director's</b>, from the live organism: a
     /// restored world is a cousin, and its bodies' ages and children are its own
     /// (<see cref="SafariDirector"/>). The bitmap font has an apostrophe, so a caption keeps its
-    /// apostrophes.
+    /// apostrophes. A story's captions are set as subtitles at the join by default and are not
+    /// held to the bitmap font at all (<see cref="TextInFrames"/>).
     /// </para>
     /// </remarks>
     public static class SafariCaptions
@@ -531,6 +532,30 @@ namespace Evosim.Theatre
 
         /// <summary>The offset of the n-th caption from 0 in a run of captions starting at <paramref name="from"/>.</summary>
         public static double Slot(int n, double from = 0d) => from + FirstOffset + n * (OnScreenSeconds + GapSeconds);
+
+        /// <summary>The switch that stamps the captions and the corner's label into the frames, or leaves them to the join.</summary>
+        public const string BurnTextVariable = "EVOSIM_THEATRE_STORY_BURN_TEXT";
+
+        /// <summary>
+        /// Whether a trip's captions and its provenance label are stamped into its frames by
+        /// <see cref="SnapshotCamera"/>'s bitmap font, or left out of the pixels for
+        /// <c>scripts/story-assemble.py</c> to set as subtitles (the owner, 2026-09-25: "why do the
+        /// subtitles look so bad? like a really weird font").
+        /// </summary>
+        /// <remarks>
+        /// <see cref="BurnTextVariable"/> unset: a story's frames carry no text and every other
+        /// trip's carry both, as before; <c>1</c> stamps both into any trip's frames (a story as its
+        /// first film was); <c>0</c> stamps neither. <c>captions.tsv</c> is written either way, with
+        /// every caption's span and every take's second, and says which was stamped.
+        /// </remarks>
+        /// <param name="story">True for a writer's shot list.</param>
+        public static bool TextInFrames(bool story)
+        {
+            string text = (Environment.GetEnvironmentVariable(BurnTextVariable) ?? "").Trim();
+            if (text == "1") return true;
+            if (text == "0") return false;
+            return !story;
+        }
 
         public static string Seconds(double s) => Grouped(Math.Round(s)) + " s";
 
