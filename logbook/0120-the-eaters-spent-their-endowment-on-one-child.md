@@ -172,6 +172,15 @@ line with a stomach. It passes this one on three. It fails the
 fourth, ten members at every sample of the last 6,000 s, because the line only began at
 23,300 s. Seed 2's best such line had 9 living at its cut and seed 3's had 6.
 
+*Added the same afternoon.* None of the four lines grew its stomach while it lasted. I read
+the members logged with a stomach in each 1,000 s window. In the line of 48048 the stomach
+stayed at 0.17% of the body from 23,000 s to the end. Its share of the income went from
+0.1% to between 0.2% and 0.3%. The line of 52803 held 0.11 to 0.14% of the body and under 0.2%
+of the income. The line of 61200 held 0.4% of the body and under 0.6% of the income. The
+line of 59978 carried the largest stomach, 0.7 to 0.9% of the body and 1.1 to 1.7% of the
+income. Six of its ten living had shed it. Four to seven thousand seconds is short, but
+nothing in these numbers says selection had started on the stomach.
+
 ### Gestation entered every seed, and selection pushed it down
 
 G1 held in every seed: 7,234 births in seed 1 were paid from gestation accounts, a tenth of
@@ -477,7 +486,7 @@ loss as this world's default rather than as something round 48 did.
   cause was found the same afternoon: the check read the wrong witness, as F4's section now
   says. A record of the landing cell's snow is still owed to any check of a placing rule. G2's
   open half needs the gestating bodies' accounts at death. The stomach's share in the bud
-  lines wants reading over time.
+  lines wants reading over time, and was read the same afternoon (the bud section).
 - **The owner rules** on what round 49 changes, since that is a world rule. This read raises
   three questions for it: whether an endowment should be able to pay for a child, and
   whether an eater's upkeep should still wear with age. The third is whether the contact
@@ -500,6 +509,7 @@ written for this entry, and the run directories are under `runs/`, round 48's an
 | round 47 seed 2 at 13,690 s; pool founders by arrival window | `logbook/specs/r48-read/late.txt` | `python scripts/reads/r48-entry/late.py` |
 | pool founders over a table | `logbook/specs/r48-read/overtables.txt` | `python scripts/reads/r48-entry/overtables.py r48-s1 r48-s2 r48-s3` |
 | the twelve pool founders that first read 1 J/m³ or more, their children and lines; the bud lines 59978 and 61200 not nested | `logbook/specs/r48-read/richlanders.txt` | `python scripts/reads/r48-entry/richlanders.py` |
+| the stomach's share of body and income by 1,000 s window in the four bud lines | `logbook/specs/r48-read/budshare.txt` | `python scripts/reads/r48-entry/budshare.py r48-s1 <root> --every 1000` for 48048, 52803, 59978, 61200 |
 | F4's witness: the share of its 1 m cell a pool founder draws per step (45%, 45%, 52% at least), the landing stock left after ten steps | `logbook/specs/r48-read/f4draw.txt` | `python scripts/reads/r48-entry/f4draw.py r48-s1 r48-s2 r48-s3` |
 | a child's birth fraction early and late | `logbook/specs/r48-read/birthfraction.txt` | `python scripts/reads/r48-entry/birthfraction.py` |
 | matter locked, the shading share, uptake-limited share, snow totals | `logbook/specs/r48-read/context.txt` | `python scripts/reads/r48-entry/context.py` |

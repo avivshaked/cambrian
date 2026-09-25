@@ -1,0 +1,37 @@
+r48-s1 line of 48048: 114 bodies ever
+window_s	living_at_end	logged_bodies	median_abs_volume_share	median_food_income_share
+23000	2	3	0.0017	0.0010
+24000	6	7	0.0017	0.0016
+25000	18	21	0.0017	0.0018
+26000	28	27	0.0017	0.0019
+27000	43	45	0.0017	0.0019
+28000	33	55	0.0017	0.0029
+29000	38	42	0.0017	0.0028
+30000	38	29	0.0017	0.0024
+
+r48-s1 line of 52803: 90 bodies ever
+window_s	living_at_end	logged_bodies	median_abs_volume_share	median_food_income_share
+24000	3	1	0.0011	0.0007
+25000	4	3	0.0011	0.0010
+26000	25	12	0.0012	0.0008
+27000	42	24	0.0012	0.0013
+28000	34	32	0.0013	0.0016
+29000	31	33	0.0013	0.0013
+30000	31	19	0.0014	0.0010
+
+r48-s1 line of 59978: 50 bodies ever
+window_s	living_at_end	logged_bodies	median_abs_volume_share	median_food_income_share
+26000	5	5	0.0074	0.0109
+27000	8	27	0.0090	0.0153
+28000	11	10	0.0091	0.0170
+29000	10	5	0.0090	0.0143
+30000	10	4	0.0084	0.0113
+
+r48-s1 line of 61200: 20 bodies ever
+window_s	living_at_end	logged_bodies	median_abs_volume_share	median_food_income_share
+26000	2	2	0.0044	0.0033
+27000	2	3	0.0044	0.0055
+28000	5	7	0.0044	0.0038
+29000	10	16	0.0044	0.0043
+30000	10	10	0.0041	0.0047
+
