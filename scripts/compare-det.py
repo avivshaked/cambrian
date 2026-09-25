@@ -1,6 +1,14 @@
 """Replay-identity check between two arms: first stats.jsonl sample whose fields differ.
 Usage: python3 scripts/compare-det.py det0-a det0-b [--allow-partial] [--run NAME]
        python3 scripts/compare-det.py r39-s5 r39-s5 --run-a <killed dir> --run-b <rerun dir> --allow-partial
+       python3 scripts/compare-det.py r49-s1 r49-s1R --allow-partial --skip wall harnessBodySteps fluidLinkSteps
+
+  --skip leaves out every field whose name starts with one of the prefixes given, and the
+  verdict line says how many (2026-09-25). No two runs share their wall-clock timings
+  (`wall*`), and a resume restarts the two cumulative work counters at zero
+  (`harnessBodySteps`, `fluidLinkSteps`, a constant gap equal to the resumed run's count at
+  the checkpoint), so neither says anything about identity. Without --skip every field is
+  compared, as before.
 
   --run-a and --run-b name a run directory for one side each, which is how one arm's rerun is
   checked against its own censored copy (2026-09-17: a run Windows killed, relaunched on the
@@ -74,13 +82,19 @@ def main():
                               'one under runs/<arm>/')
     parser.add_argument('--run-a', metavar='NAME', help='run directory for arm a alone')
     parser.add_argument('--run-b', metavar='NAME', help='run directory for arm b alone')
+    parser.add_argument('--skip', nargs='+', default=[], metavar='PREFIX',
+                         help='leave out every field whose name starts with a prefix given')
     args = parser.parse_args()
 
     path_a = find_run_dir(args.a, args.run_a or args.run)
     path_b = find_run_dir(args.b, args.run_b or args.run)
 
-    A = {r['t']: r for r in rows(path_a)}
-    B = {r['t']: r for r in rows(path_b)}
+    def kept(r):
+        return {k: v for k, v in r.items() if k == 't' or not any(k.startswith(p) for p in args.skip)}
+
+    A = {r['t']: kept(r) for r in rows(path_a)}
+    B = {r['t']: kept(r) for r in rows(path_b)}
+    skipped = sorted({k for r in rows(path_a)[:1] for k in r if k != 't' and any(k.startswith(p) for p in args.skip)})
 
     ta = sorted(A)
     tb = sorted(B)
@@ -132,7 +146,8 @@ def main():
 
     contacts_at_end = alias_field(A[shared[-1]], 'contactPairsPerStep', None)
     print(f'{args.a} vs {args.b}: identical on all {same} shared samples '
-          f'(to t={shared[-1]}); contacts/step at end {contacts_at_end}')
+          f'(to t={shared[-1]}); contacts/step at end {contacts_at_end}'
+          + (f'; {len(skipped)} field(s) left out by --skip' if skipped else ''))
     if SAID:
         print('  (' + note(subject='this run') + ')')
         SAID.clear()
