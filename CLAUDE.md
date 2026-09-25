@@ -1152,8 +1152,8 @@ actually verifying it.
   manifest marks. And the last checkpoint after a `STOP` is the second the run stopped at,
   because the file is written after the report row and before the stop is acted on.
   **A checkpoint carried everything the solver reads and not everything a sense reads,
-  until `StateVersion` 6** (2026-09-23): `Organism.PartDamage`, the health each part has
-  lost over its life and what the `Damage` sensor channel reports, was not written, so
+  until `StateVersion` 6** (2026-09-23): `Organism.PartDamage`, the health each part had
+  lost and what the `Damage` sensor channel reports, was not written, so
   every restored wounded body sensed nothing, and a resume of round 45 seed 2 parted from
   the run at its first sample in the two jointed bodies among sixteen wounded whose brains
   read the channel (six of 1,925 from the 5,000 s checkpoint; one body both times). The
@@ -1165,7 +1165,7 @@ actually verifying it.
   before trusting a resume of it, and every `StateVersion` bump refuses every checkpoint on
   disk, round 45's included, which are cousins for that reason anyway. **It happened again,
   and `StateVersion` 11 and `Checkpoint.Version` 6 close it** (2026-09-25). The contact flag
-  (`Organism.PartContact`) stays set until a plan change, and the writer left it out. The
+  (`Organism.PartContact`) stayed set until a plan change then, and the writer left it out. The
   restore also left each body's contact and damage senses unwired until its first metabolic
   step. Round 48's resume parted from the run at its first sample for it, in jointed bodies
   whose brains read contact. The check missed both: it skipped every sense, and it had the
@@ -1182,7 +1182,10 @@ actually verifying it.
   be either layout. Round 48's files are version 4 and still open, lossily. A
   farm resume refuses one unless `EVOSIM_ALLOW_SOURCE_MISMATCH` is set, and then marks the
   run a cousin. The theatre labels one as a cousin. The fixtures ckA, ckB, ckC, `ckUi` and
-  the theatre's live fixture need re-recording on this build. **The
+  the theatre's live fixture need re-recording on this build. From round 49 (D123) both
+  records are the last metabolic step's alone, zeroed in place at the top of the mouth's
+  pass. The layout did not move, because the physics steps after a restore still read them
+  before the next metabolic step rewrites them. **The
   JIT decides the bits**: .NET's
   tiered compilation gives quick-JITted and optimised loops different floating-point
   results on a rounding edge, so every project that reports a digest sets
