@@ -1283,7 +1283,7 @@ actually verifying it.
   grid's cell, and it is fixed** (2026-09-22 night, the bench's `--mode record`): the grid
   entered each body's bounding sphere in one cell and sized the cell at two of the
   *largest* radius, and seed 1's module chains, one a fan of seven leaves each 1.75 times
-  the last with the seventh 14.6 m long (`scratch/logs/giant-7597.txt`, drawn by
+  the last with the seventh 14.6 m long (`logbook/specs/giant-7597.txt`, drawn by
   `scripts/plot-body.py`), took the largest radius to 21 m, the cell to 43 m in a 53 m
   tank and every body's candidate list to the whole crowd: 9.9 µs a body-step against 0.33
   on the same crowd at the genome minimum. The grid now enters a sphere in every cell it
