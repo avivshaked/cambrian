@@ -307,6 +307,58 @@ namespace Evosim.Dynamics.Tests
             Assert.Equal(0L, anywhere.DesertRefusals);
         }
 
+        /// <summary>
+        /// The round 48 founding ruling's depth over a tilted bed: a founder whose food is richest
+        /// a few metres above the bed under it is set there, not lifted to the bed at the tank's
+        /// centre. Round 49's W1 misses were leaves over beds as deep as -77 m set at -44.4 m,
+        /// just above the centre's bed, because the founder path clamped to
+        /// <c>LowestPlacement(radius)</c>, which reads the centre and which a flat floor makes the
+        /// same everywhere. Fails on that tree: every founder here lands above the centre's bed.
+        /// </summary>
+        [Fact]
+        public void AFounderAtItsFoodIsHeldAboveTheBedUnderItNotTheCentres()
+        {
+            const float radius = 20f;
+            var bed = new BedShape(radius, DepthMetres, 0.5f, 30f, 0f, Rng.SeedFor(3UL, 99UL));
+            var floor = new PortFloor(DepthMetres, bed);
+            Assert.True(floor.HasRelief);
+
+            float centre = floor.FloorYAt(radius, radius);
+
+            var tank = new PortVolume(Patches, 5f, DepthMetres, 3UL, 0f, 1, WorldShape.Tank, radius)
+            {
+                Floor = floor,
+                FounderAcceptance = (body, x, z) => floor.FloorYAt(x, z) < centre - 8f ? 1f : 0f,
+                FounderDepth = (body, x, z) =>
+                {
+                    float under = floor.FloorYAt(x, z);
+                    return (under + 6f, under + 4f);
+                },
+            };
+
+            Phenotype[] bodies = Bodies(12, 3UL);
+
+            for (int i = 0; i < bodies.Length; i++)
+            {
+                float height = -5f;
+                Assert.True(tank.TryReserveFounder(bodies[i], ref height, out _));
+                tank.Commit(i);
+
+                Assert.True(tank.TryTakePlacement(i, out Float3 at));
+                float under = floor.FloorYAt(at.X, at.Z);
+
+                Assert.True(under < centre - 8f, $"founder {i} accepted over a bed at {under:0.##}");
+                Assert.Equal(at.Y, height);
+                Assert.True(
+                    at.Y < centre - 1f,
+                    $"founder {i} at y {at.Y:0.##} over a bed at {under:0.##}: lifted toward the " +
+                    $"bed at the centre, {centre:0.##}");
+                Assert.True(
+                    at.Y >= floor.MinimumPlacementY(at.X, at.Z, 0f),
+                    $"founder {i} at y {at.Y:0.##} under the bed at {under:0.##}");
+            }
+        }
+
         [Fact]
         public void TheBedRaisesAPlacementAndNeverLowersIt()
         {
