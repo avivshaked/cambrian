@@ -100,7 +100,16 @@ namespace Evosim.Core
         /// <see cref="LossyStateVersion"/>: round 48's checkpoints are version 10, and the
         /// theatre's story mode opens them as the cousins they already are.
         /// </remarks>
-        public const int StateVersion = 11;
+        /// <remarks>
+        /// 12 with round 49's two instruments (2026-09-25): every queued lineage row carries the
+        /// gestation account and the reserve a body died with and a founder's four landing
+        /// readings, so a row queued before a checkpoint is the row the unbroken run writes. They
+        /// are records and not state, and the farm drains the queue before every checkpoint, so a
+        /// version-11 stream would restore the same world; it is refused all the same, as every
+        /// layout this build does not write is, because the harness's half of the file is keyed on
+        /// the world's version. Nothing on disk that is read again was written at 11.
+        /// </remarks>
+        public const int StateVersion = 12;
 
         /// <summary>
         /// The one older layout this build still reads: version 10, the layout of round 48's
@@ -266,7 +275,7 @@ namespace Evosim.Core
 
             StateIo.Tag(w, "LNGE");
             w.Write(_lineageEvents.Count);
-            for (int i = 0; i < _lineageEvents.Count; i++) WriteLineage(w, _lineageEvents[i]);
+            for (int i = 0; i < _lineageEvents.Count; i++) WriteLineage(w, _lineageEvents[i], layout);
 
             StateIo.Tag(w, "ABSD");
             w.Write(_absorptiveDeaths.Count);
@@ -404,7 +413,7 @@ namespace Evosim.Core
             StateIo.Tag(r, "LNGE");
             int events = r.ReadInt32();
             _lineageEvents.Clear();
-            for (int i = 0; i < events; i++) _lineageEvents.Add(ReadLineage(r));
+            for (int i = 0; i < events; i++) _lineageEvents.Add(ReadLineage(r, version));
 
             StateIo.Tag(r, "ABSD");
             int deaths = r.ReadInt32();
@@ -697,7 +706,7 @@ namespace Evosim.Core
                 r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(),
                 r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
 
-        private static void WriteLineage(BinaryWriter w, LineageEvent e)
+        private static void WriteLineage(BinaryWriter w, LineageEvent e, int layout)
         {
             w.Write((int)e.Kind);
             w.Write(e.ElapsedSeconds);
@@ -742,6 +751,20 @@ namespace Evosim.Core
             // trickle build wrote, and a pool row can only be in a stream this build wrote.
             if (e.Source == FounderSource.Pool) w.Write(e.PoolIndex);
 
+            // Version 12, round 49's two instruments, on every row as version 10's fields are:
+            // the gestation account and the reserve a body died with (0 on every other row), and
+            // a founder's four landing readings (NaN on every row that has none, and a NaN goes
+            // through the stream bit for bit). The lossy layout is written without them.
+            if (layout >= 12)
+            {
+                w.Write(e.GestationJoulesAtDeath);
+                w.Write(e.ReserveJoulesAtDeath);
+                w.Write(e.LandingSnowDensity);
+                w.Write(e.LandingSnowColumnDensity);
+                w.Write(e.LandingMatterDensity);
+                w.Write(e.LandingMatterColumnDensity);
+            }
+
             // The kill's own five, appended and written only on a kill row — which is what lets
             // this stay version 4. A birth and a death are byte for byte what the mouth build
             // wrote, so every checkpoint on disk still restores; a version-4 stream can only carry
@@ -759,11 +782,11 @@ namespace Evosim.Core
             // would take StateVersion to 10 and refuse every checkpoint on disk, round 46's
             // included, for a queue that the farm drains to lineage.jsonl before every
             // checkpoint (Program.WriteCheckpoint), so no farm checkpoint carries a kill row.
-            // A birth row's bud and budx (the owner's ruling of 2026-09-24) are not written for
-            // the same reason, and a restored birth row reads as one that did not bud.
+            // A birth row's bud and budx (the owner's ruling of 2026-09-24) are written, from
+            // version 10, above.
         }
 
-        private static LineageEvent ReadLineage(BinaryReader r)
+        private static LineageEvent ReadLineage(BinaryReader r, int version)
         {
             var kind = (LineageEventKind)r.ReadInt32();
             double seconds = r.ReadDouble();
@@ -797,6 +820,21 @@ namespace Evosim.Core
             }
             int poolIndex = source == FounderSource.Pool ? r.ReadInt32() : -1;
 
+            // Version 12's six; a version-10 row has none, and reads as a row that carries none.
+            double accountAtDeath = 0d, reserveAtDeath = 0d;
+            float landingSnow = float.NaN, landingSnowColumn = float.NaN;
+            float landingMatter = float.NaN, landingMatterColumn = float.NaN;
+
+            if (version >= 12)
+            {
+                accountAtDeath = r.ReadDouble();
+                reserveAtDeath = r.ReadDouble();
+                landingSnow = r.ReadSingle();
+                landingSnowColumn = r.ReadSingle();
+                landingMatter = r.ReadSingle();
+                landingMatterColumn = r.ReadSingle();
+            }
+
             if (kind == LineageEventKind.Kill)
             {
                 long attackerId = r.ReadInt64();
@@ -816,8 +854,9 @@ namespace Evosim.Core
                     absorptive, joint, photosynthetic, patch, birthFraction, adultScale,
                     reserveMargin, indeterminateNodes, attack, intake, protection, source,
                     poolIndex, endowmentJoules, budCells, budsExpressed,
-                    reproductionMode, gestationShare)
-                : LineageEvent.Death(seconds, id, cause);
+                    reproductionMode, gestationShare,
+                    landingSnow, landingSnowColumn, landingMatter, landingMatterColumn)
+                : LineageEvent.Death(seconds, id, cause, accountAtDeath, reserveAtDeath);
         }
 
         private static void WriteAbsorptive(BinaryWriter w, AbsorptiveSample s)

@@ -1561,6 +1561,38 @@ namespace Evosim.Core
             return best;
         }
 
+        /// <summary>
+        /// The mean edible density of the column under a position over its live water, per m³ —
+        /// the column's edible stock summed over its live cells, over their volume — or 0 for a
+        /// column with no live cell. The column, the mask and the refuge's edible fraction are
+        /// <see cref="RichestLayerInColumn"/>'s, so the richest cell it names reads at least this
+        /// mean. Round 49's <c>fcol</c> and <c>fmcol</c> on a founder's lineage row.
+        /// </summary>
+        /// <remarks>
+        /// A read: nothing is moved. Summed in doubles in layer order and divided once, so a
+        /// column of equal cells can read its mean an ulp either side of its cells' density.
+        /// </remarks>
+        public float MeanEdibleDensityInColumn(float x, float z)
+        {
+            int column = ColumnAt(x, z);
+            int ix = column / _nz;
+            int iz = column % _nz;
+
+            double edible = 0d;
+            int cells = 0;
+
+            for (int iy = 0; iy < _ny; iy++)
+            {
+                int cell = Index(ix, iy, iz);
+                if (_live != null && !_live[cell]) continue;
+
+                edible += Edible(cell);
+                cells++;
+            }
+
+            return cells > 0 ? (float)(edible / ((double)cells * CellVolume)) : 0f;
+        }
+
         /// <summary>The fullest column's stock, J — what <see cref="ColumnStockAt"/> is a share of.</summary>
         public double MaxColumnStock()
         {

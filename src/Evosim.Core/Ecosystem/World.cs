@@ -3181,6 +3181,13 @@ namespace Evosim.Core
             // nothing among these rows — this row is what does.
             if (creature.HasAbsorptiveTissue) BufferAbsorptiveDeath(creature);
 
+            // Round 49's two readings for the death row, taken before the lines below zero both
+            // accounts: the gestation account the body died holding (ga) and the reserve of a body
+            // that died solvent (res). Each is written only when above 0, so a lump breeder's
+            // starvation row is the row it always was.
+            double accountAtDeath = creature.GestationJoules;
+            double reserveAtDeath = creature.Energy;
+
             // What the body is worth, in one account: the tissue it grew and whatever reserve it
             // still held. A starved body's reserve is 0 by leg 2, so a starvation corpse is the
             // tissue exactly as it always was; a diverged body is generally solvent, and this is
@@ -3235,7 +3242,8 @@ namespace Evosim.Core
             _dead.Add(creature);
             Deaths++;
 
-            _lineageEvents.Add(LineageEvent.Death(ElapsedSeconds, creature.Id, cause));
+            _lineageEvents.Add(LineageEvent.Death(
+                ElapsedSeconds, creature.Id, cause, accountAtDeath, reserveAtDeath));
         }
 
         /// <summary>
@@ -4259,6 +4267,17 @@ namespace Evosim.Core
             // nothing is computed and the purse is the recorded expression, bit for bit.
             double endowment = FounderEndowmentFor(body);
 
+            // Round 49's landing point: the reservation's x and z at the height the placer handed
+            // back, which is the height the founder is admitted at. Read here, with the
+            // reservation outstanding, because nothing in Core holds a founder's x and z until
+            // the harness has built its body; a placer that keeps no coordinates says so and the
+            // row carries no landing reading. A read of the slot, so nothing moves.
+            Float3? landing = null;
+            if (shared && Placement.TryReservedPosition(out Float3 reserved))
+            {
+                landing = new Float3(reserved.X, height, reserved.Z);
+            }
+
             Organism founder = Admit(
                 genome, body, BirthKind.Floor, seed, parentId: -1, generationDepth: 0,
                 energy: endowment > 0d
@@ -4267,7 +4286,8 @@ namespace Evosim.Core
                 tissue: tissue, heightY: height, parent: null,
                 patch: patch, adultPhenotype: adult,
                 adultTissue: Metabolism.TissueJoules(adult, Config),
-                founderSource: source, poolIndex: poolIndex, endowment: endowment);
+                founderSource: source, poolIndex: poolIndex, endowment: endowment,
+                landing: landing);
 
             if (shared)
             {
@@ -4632,13 +4652,19 @@ namespace Evosim.Core
         /// row as <c>endow</c>. Already inside <paramref name="energy"/>, and booked with it; 0
         /// for everything else.
         /// </param>
+        /// <param name="landing">
+        /// For a founder, where it was placed (<see cref="IBodyPlacement.TryReservedPosition"/>,
+        /// at the admitted height), for round 49's landing readings on its lineage row; null for
+        /// everything else and for a founder whose placer keeps no coordinates.
+        /// </param>
         private Organism Admit(
             Genome genome, Phenotype phenotype, BirthKind kind, ulong seed, long parentId,
             int generationDepth, double energy, double tissue, float heightY, Organism parent,
             int patch, Phenotype adultPhenotype, double adultTissue,
             FounderSource founderSource = FounderSource.None, int poolIndex = -1,
             double endowment = 0d,
-            string budCells = null, int budsExpressed = 0)
+            string budCells = null, int budsExpressed = 0,
+            Float3? landing = null)
         {
             // The owner's ruling of 2026-09-19: a body that would grow into itself is not born.
             // Asked here rather than at each of the three call sites so that a founder and an
@@ -4770,6 +4796,21 @@ namespace Evosim.Core
             // means. The photosynthetic flag is the same local the pass above computed for
             // Organism.HasPhotosyntheticTissue, passed rather than recomputed, so a row and the
             // creature it describes can never disagree about what the body is made of.
+            //
+            // Round 49's landing readings go on the same row: for a founder placed where the
+            // placer can say, the food its body eats at that point and its column's mean, read
+            // now, before the body has fed once. The flags are the row's own abs and pho.
+            float landingSnow = float.NaN, landingSnowColumn = float.NaN;
+            float landingMatter = float.NaN, landingMatterColumn = float.NaN;
+
+            if (landing.HasValue && founderSource != FounderSource.None)
+            {
+                ReadLanding(
+                    landing.Value, patch, creature.HasAbsorptiveTissue, photosynthetic,
+                    out landingSnow, out landingSnowColumn,
+                    out landingMatter, out landingMatterColumn);
+            }
+
             _lineageEvents.Add(LineageEvent.Birth(
                 ElapsedSeconds, creature.Id, parentId, kind, generationDepth, creature.SpeciesId,
                 HasAbsorptive(phenotype), phenotype.TotalDof > 0, photosynthetic, patch,
@@ -4779,7 +4820,8 @@ namespace Evosim.Core
                 CarriesAttribute(genome, n => n.Intake),
                 CarriesAttribute(genome, n => n.Protection),
                 founderSource, poolIndex, endowment, budCells, budsExpressed,
-                genome.Reproduction.Mode, genome.Reproduction.GestationShare));
+                genome.Reproduction.Mode, genome.Reproduction.GestationShare,
+                landingSnow, landingSnowColumn, landingMatter, landingMatterColumn));
 
             // Record format 2's genome file, beside the lineage row and under the same guarantee:
             // exactly one per id assigned. A reference, not a copy, and nothing is read or drawn,
@@ -4787,6 +4829,41 @@ namespace Evosim.Core
             if (QueueAdmittedGenomes) _admittedGenomes.Add(new AdmittedGenome(creature.Id, genome));
 
             return creature;
+        }
+
+        /// <summary>
+        /// Round 49's landing readings for a founder at <paramref name="at"/>: the edible density
+        /// of each food its body eats at the point (<c>fsnow</c>, <c>fmat</c>) and the mean over
+        /// the point's column (<c>fcol</c>, <c>fmcol</c>), each NaN when the body does not eat that
+        /// food or the field is not a grid.
+        /// </summary>
+        /// <remarks>
+        /// Reads only. It is called between the placer's reservation and the admission of the
+        /// body, and the step's field passes have all run by then (founders are spawned at the end
+        /// of <see cref="Step"/>), so the field it reads is the one the founder rule read when it
+        /// chose the spot. The body's first meal is taken in the next step, from the same field
+        /// plus whatever a body the solver killed in between left in it, at wherever the physics
+        /// has moved the body by then.
+        /// </remarks>
+        private void ReadLanding(
+            Float3 at, int patch, bool eatsSnow, bool eatsMatter,
+            out float snowHere, out float snowColumn, out float matterHere, out float matterColumn)
+        {
+            snowHere = snowColumn = matterHere = matterColumn = float.NaN;
+
+            var point = new FieldPoint(at, patch);
+
+            if (eatsSnow && Nutrients is GridField snow)
+            {
+                snowHere = snow.EdibleDensityAt(point);
+                snowColumn = snow.MeanEdibleDensityInColumn(at.X, at.Z);
+            }
+
+            if (eatsMatter && Matter is GridField matter)
+            {
+                matterHere = matter.EdibleDensityAt(point);
+                matterColumn = matter.MeanEdibleDensityInColumn(at.X, at.Z);
+            }
         }
 
         /// <summary>
