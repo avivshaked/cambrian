@@ -7,44 +7,54 @@ is queued; it is rewritten, never appended to. The notes it carried before this 
 
 ## Where things stand
 
-**Speed first (the owner, 2026-09-25 at about 16:30: "speed first").** The owner asked why a
-film of round 48's last seconds takes hours when the aim was 10,000 creatures fast and 100,000
-as a stretch, and ruled speed ahead of round 49, whose rules are ready and wait. The solver proposal estimated
-10,000 bodies at 1 to 2x real time on the CPU and 20 to 50x on the 4090. The spikes then
-measured about 1.1x on the CPU at 16 threads and about 5x on the card in single (logbook/0115:
-0.90 and 0.19 µs a body-step). The card estimate was four to ten times too high, and the agent
-had not told the owner so plainly. Round 48 ran at 5 threads and read 2.5 µs a body-step at
-8,600 bodies, 0.47x. At dt 0.01 every body is stepped 100 times a simulated second, so real
-time at 10,000 needs 1 µs a body-step and 10x needs 0.1. The speed
-track, in order:
-1. GPU acceptance 0 (running from 16:37, `scratch/gpu-accept/acc0.ps1`): round 48's launcher,
-   seed 1, 300 s, the CPU backend against the gpu engine's kernel in double on ILGPU's CPU
-   accelerator, which must be identical (`scripts/reads/gpu-accept.py`, on `gpu-port` in
-   `scratch/wt-gpu`). D105 already ruled single precision; the port's three questions (a body
-   over the classes dies as a divergence, no bound on a neuron, per-part contact in scope) are
-   still the owner's.
-2. The pace on round 48's own late crowd, with nothing else on the machine (the owner's GPU
-   rule): a resume of `r48-s1` from its 27,500 s checkpoint for 500 s on the CPU at 16 threads
-   and on the card in single. The gpu branch reads round 48's checkpoints (state version 10 on
-   both). It waits for the film recorder below.
-3. A proposal, measured before it goes to the owner: step a body with no working joint far more
-   coarsely than dt 0.01. At the end of round 48 all but 3 to 7 of about 8,600 bodies a seed had
-   no working joint. It is the only route the agent sees to 100,000 (inference), and it is a new
-   realisation of every seed. A read-only map of the solver's per-body work is being made.
+**Speed first (the owner, 2026-09-25, about 16:30), then option A (17:30).** The owner asked why a
+film of round 48's last seconds takes hours when the aim was 10,000 creatures fast and 100,000 as
+a stretch. They ruled speed ahead of round 49. At dt 0.01 a body is stepped 100 times a simulated
+second, so real time at 10,000 needs 1 µs a body-step and 10x needs 0.1. The afternoon's runs are
+under `scratch/gpu-accept/runs/`, read with `scratch/gpu-accept/pace-read.py`.
+- GPU acceptance 0 passed: the kernel in double on ILGPU's CPU accelerator equals the CPU solver
+  bit for bit over 300 s of round 48's launcher, so the port is a faithful transcription.
+- Round 48 seed 1, resumed at 27,500 s for 500 s with nothing else running. The CPU at 16 threads
+  ran 8,375 bodies at 1.08x real time, 1.10 µs a body-step. Three serial phases took 31% of the
+  wall: the contact grid's build, the commit and the census. Core's grids took 180 ms a simulated
+  second.
+- The card in single ran the same crowd at 0.81x. Its kernels cost about 9 ms a physics step,
+  five times 0115's spike; transfers were 5%. The agent edited the worktree's source while the
+  run launched, so its manifest's `dynamicsHash` is dirty (`dce842…`). The binary was 019504b's.
+- With 15,500 copies of one leaf inoculated, the CPU read 0.27 to 0.30x at 23,870 bodies. Then
+  8,600 of the copies died at once, 150 s after they landed.
+- The earlier estimate of 20 to 50x on the card was never available for this world. The 1 m grid
+  alone costs about 150 ms of every simulated second at 16 threads, a ceiling near 6x.
 
-**Round 48's story film, from farm windows.** The windows are re-recorded as stream version 3
-(the reserve and the funds over the gate) in `scratch/wt-r49/scratch/story-windows/r48-v4`,
-every one faithful so far. The late seed-1 scenes (14, 18, 19, 20) each restart from the
-27,500 s checkpoint, because seed 1 predates the 500 s cadence, and a merged plan that records
-the four once (`scratch/r49-film-debug/merge-late.py`) waits on the owner stopping the running
-recorder (the permission classifier refused the agent). Scenes 1 to 12 are delivered
-(`scratch/owner/r48-story-part1/`, the check sheet beside it). The reserve charts of scenes 2, 8
-and 11 were empty, and stream version 4 (`740e9da`) carries the reserve in joules. The three are
-re-recorded on a pre-cap exe (`scratch/wt-r49film`, branch `r49-film-v4`, because D124's
-tunable refuses round 48's config) by `scratch/r49-film-debug/chart-fix.ps1`. The look is the
-owner's pick, target luma 0.18 (variant B, "this is pretty good"). ffmpeg took every core per
-encode and put the machine at 100% beside a farm run; every encoder in the render scripts is at
-four threads now.
+A Fable review, read-only and relayed to the owner in full, ranked the work:
+1. Instrument the card: each class's launch time, and the largest link's cell count under
+   per-part contact. Its suspects are the four classes launched in sequence and the cubic cell
+   loops a big link runs on one thread.
+2. Land the CPU's serial phases in parallel. The draft is in `scratch/speed-host/wip/`, reviewed,
+   and keeps identity.
+3. Checkpoints every 100 s for the next round, a recording setting at 8 to 16 GB a seed, so that
+   a film window costs minutes.
+4. About two weeks on the card for 2 to 3x at 10,000: concurrent class streams, a layered contact
+   grid, a lazy mirror, and the harness's per-body passes in parallel.
+5. Later, as one ruling, coarse steps for jointless bodies (at most every fourth). It is the only
+   route it sees to 100,000 near real time: two to three months, ending near 1 to 1.5x.
+
+**The owner chose option A.** Round 49 runs overnight on the CPU once steps 2 and 3 are in. The
+card work runs by day, with the card alone on the machine.
+
+**Round 48's story film, from farm windows.** The windows are re-recorded as stream version 4,
+which carries the reserve in joules (`740e9da`), in `scratch/wt-r49/scratch/story-windows/r48-v4`.
+Every one so far is faithful: scenes 1 to 13, and the chart fixes of 2, 8 and 11. The fixes ran
+on a pre-cap exe (`scratch/wt-r49film`), because D124's tunable refuses round 48's config. The
+owner stopped the recorder at 16:49 to give the card the machine. Seed 1's late scenes (14, 18,
+19 and 20) each restart from the 27,500 s checkpoint, so `scratch/r49-film-debug/after-pace.ps1`
+merges them into one recording (`merge-late.py`, tested on a copy) and records 14 to 20. It
+renders scenes 2, 8 and 11 and joins part 1 v2 meanwhile, then renders 13 to 20 and joins the
+whole film into `scratch/owner/r48-story-full/`. It waits until the card's instrument runs are
+done. Scenes 1 to 12 are delivered in `scratch/owner/r48-story-part1/`, with the check sheet. The
+look is the owner's pick, target luma 0.18. Every encoder in the render scripts runs at four
+threads. For the owner's narration trial, the prose story and the captions are copied to
+`scratch/owner/r48-story-prose.md` and `r48-story-captions-by-scene.md`.
 
 **The farm has left Unity.** On 2026-09-21 the owner ruled the engine before the world
 ("I'd prioritise this before making the world more complex"): pace first, staggered, with
@@ -762,7 +772,7 @@ in this section is history.
 - **The machine was on hold for its firmware (the owner, 2026-09-24, about 20:05: "finish what
   you're currently doing, but i'll come back later to do the updates. don't start new runs").**
   The i9-13900K runs ASUS PRIME Z790-P WIFI BIOS 0806 of 2022-11-22 with microcode 0x10E
-  (`HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor `, `Update Revision`), which predates
+  (`HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor\0`, `Update Revision`), which predates
   Intel's fixes for the 13th and 14th generation's voltage degradation (0x129 of August 2024,
   0x12B of September 2024, and later); the damage accumulates under long boosted loads, which
   is this campaign's load. Measured at the ruling: no throttling (`Performance Limit Flags` 0,
