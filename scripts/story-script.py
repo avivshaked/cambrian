@@ -470,6 +470,10 @@ def findings(folder):
                     add("WARN", n, line, "an intensifier: '%s'" % w)
             if re.search(r",\s*(and\s+)?not\s+[^,]+[.!]?$", text) or re.search(r"\brather than\b[^,]*[.!]?$", text):
                 add("WARN", n, line, "a closing contrast ('X, not Y')")
+            rel = re.search(r"(\d[\d.,]*) ?s (from here|from now|in)\b(?! tank)", text)
+            if rel and float(rel.group(1).replace(",", "")) <= max(60.0, 2 * length):
+                add("WARN", n, line, "'%s' is heard at %g s into the scene: is that time true when the line is read?" % (
+                    rel.group(0), at))
             if "which is why" in text.lower():
                 add("WARN", n, line, "'which is why'")
             if ":" in re.sub(r"\d:\d", "", text) and not card_title(s, k):
