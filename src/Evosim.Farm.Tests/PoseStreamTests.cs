@@ -92,6 +92,7 @@ namespace Evosim.Farm.Tests
                         ? i % 5 == 4 ? float.PositiveInfinity : (float)(12.345678 * i + 0.1 * frame)
                         : PoseStream.ReserveNotRecorded,
                     BreedFraction = version >= 3 ? (float)(0.0371 * i + 0.013 * frame) : PoseStream.ReserveNotRecorded,
+                    ReserveJoules = version >= 4 ? (float)(41.5 * i + 0.25 * frame) : PoseStream.ReserveNotRecorded,
                     Joints = joints,
                 };
             }
@@ -121,7 +122,15 @@ namespace Evosim.Farm.Tests
                         var joints = new double[body.Joints.Length];
                         for (int d = 0; d < joints.Length; d++) joints[d] = body.Joints[d];
 
-                        if (version >= 3)
+                        if (version >= 4)
+                        {
+                            writer.Body(
+                                body.Id, body.X, body.Y, body.Z,
+                                body.Qx, body.Qy, body.Qz, body.Qw,
+                                body.BodyFraction, body.Flags, body.ReserveSeconds, body.BreedFraction,
+                                body.ReserveJoules, joints.Length, joints);
+                        }
+                        else if (version >= 3)
                         {
                             writer.Body(
                                 body.Id, body.X, body.Y, body.Z,
@@ -189,6 +198,9 @@ namespace Evosim.Farm.Tests
                 Assert.Equal(
                     BitConverter.SingleToInt32Bits(a.BreedFraction),
                     BitConverter.SingleToInt32Bits(b.BreedFraction));
+                Assert.Equal(
+                    BitConverter.SingleToInt32Bits(a.ReserveJoules),
+                    BitConverter.SingleToInt32Bits(b.ReserveJoules));
 
                 Assert.Equal(a.Joints.Length, b.Joints.Length);
 
@@ -208,12 +220,12 @@ namespace Evosim.Farm.Tests
         {
             using (var writer = new PoseStreamWriter(Path_, 0.5f, "ff557bce2685293a"))
             {
-                Assert.Equal(3, writer.Version);
+                Assert.Equal(4, writer.Version);
             }
 
             using (PoseStreamReader reader = PoseStreamReader.Open(Path_))
             {
-                Assert.Equal(3, PoseStream.Version);
+                Assert.Equal(4, PoseStream.Version);
                 Assert.Equal(PoseStream.Version, reader.Header.Version);
                 Assert.Equal(0.5f, reader.Header.CadenceSeconds);
                 Assert.Equal("ff557bce2685293a", reader.Header.ConfigHash);
@@ -224,6 +236,7 @@ namespace Evosim.Farm.Tests
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
+        [InlineData(4)]
         public void EveryFrameComesBackBitExact(int version)
         {
             List<PoseFrame> written = WriteStream(12, 7, 0.5f, "ff557bce2685293a", version);
@@ -244,6 +257,7 @@ namespace Evosim.Farm.Tests
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
+        [InlineData(4)]
         public void AFrameOfNobodyIsAFrame(int version)
         {
             using (var writer = new PoseStreamWriter(Path_, 0.5f, "abc", version))
@@ -273,6 +287,7 @@ namespace Evosim.Farm.Tests
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
+        [InlineData(4)]
         public void AFrameIsFoundByItsSecond(int version)
         {
             WriteStream(10, 3, 0.5f, "abc", version);
@@ -290,6 +305,7 @@ namespace Evosim.Farm.Tests
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
+        [InlineData(4)]
         public void TheIndexOnDiskIsWrittenAndUsed(int version)
         {
             List<PoseFrame> written = WriteStream(6, 4, 0.5f, "abc", version);
@@ -343,6 +359,7 @@ namespace Evosim.Farm.Tests
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
+        [InlineData(4)]
         public void AKilledRunIsReadToItsLastCompleteFrame(int version)
         {
             List<PoseFrame> written = WriteStream(8, 5, 0.5f, "abc", version);
@@ -379,6 +396,7 @@ namespace Evosim.Farm.Tests
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
+        [InlineData(4)]
         public void AFrameWithNoTrailerIsNotAFrame(int version)
         {
             WriteStream(4, 3, 0.5f, "abc", version);
@@ -397,6 +415,7 @@ namespace Evosim.Farm.Tests
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
+        [InlineData(4)]
         public void AnIndexThatDisagreesWithItsFileIsDropped(int version)
         {
             List<PoseFrame> written = WriteStream(6, 4, 0.5f, "abc", version);
@@ -425,6 +444,7 @@ namespace Evosim.Farm.Tests
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
+        [InlineData(4)]
         public void AnIndexOfTheWrongLengthIsDropped(int version)
         {
             WriteStream(5, 2, 0.5f, "abc", version);
@@ -701,7 +721,7 @@ namespace Evosim.Farm.Tests
             }
 
             Assert.Throws<ArgumentOutOfRangeException>(
-                () => new PoseStreamWriter(Path_, 0.5f, "abc", 4));
+                () => new PoseStreamWriter(Path_, 0.5f, "abc", 5));
         }
 
         /// <summary>
@@ -747,6 +767,52 @@ namespace Evosim.Farm.Tests
             {
                 Assert.True(float.IsNaN(reader.Read(0).Bodies[0].ReserveSeconds));
                 Assert.True(float.IsNaN(reader.Read(0).Bodies[0].BreedFraction));
+            }
+        }
+
+        /// <summary>
+        /// Version 4 carries each body's reserve in joules after version 3's two fields, NaN (not
+        /// recorded) included; a version 4 writer refuses version 3's overload, which would drop
+        /// the joules, and a version 3 writer refuses version 4's, and every version 3 body reads NaN.
+        /// </summary>
+        [Fact]
+        public void VersionFourCarriesTheReserveInJoulesAndVersionThreeReadsItAsNotRecorded()
+        {
+            using (var writer = new PoseStreamWriter(Path_, 0.5f, "abc", 4))
+            {
+                writer.BeginFrame(0.5);
+                Assert.Throws<InvalidOperationException>(
+                    () => writer.Body(9, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 1, 5f, 0.5f, 0, new double[0]));
+                writer.Body(1, 1f, 2f, 3f, 0f, 0f, 0f, 1f, 0.5f, 4, 188.25f, 0.625f, 45.125f, 1, new[] { 0.25 });
+                writer.Body(2, 1f, 2f, 3f, 0f, 0f, 0f, 1f, 1f, 1, 12f, 1.5f, PoseStream.ReserveNotRecorded, 0, new double[0]);
+                writer.EndFrame();
+            }
+
+            using (PoseStreamReader reader = PoseStreamReader.Open(Path_))
+            {
+                PoseBody[] bodies = reader.Read(0).Bodies;
+                Assert.Equal(2, bodies.Length);
+                Assert.Equal(45.125f, bodies[0].ReserveJoules);
+                Assert.Equal(188.25f, bodies[0].ReserveSeconds);
+                Assert.Equal(0.625f, bodies[0].BreedFraction);
+                Assert.Equal(new[] { 0.25f }, bodies[0].Joints);
+                Assert.True(float.IsNaN(bodies[1].ReserveJoules));
+                Assert.Equal(1.5f, bodies[1].BreedFraction);
+            }
+
+            using (var writer = new PoseStreamWriter(Path_, 0.5f, "abc", 3))
+            {
+                writer.BeginFrame(0.5);
+                Assert.Throws<InvalidOperationException>(
+                    () => writer.Body(1, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 1, 5f, 0.5f, 20f, 0, new double[0]));
+                writer.Body(1, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 1, 5f, 0.5f, 0, new double[0]);
+                writer.EndFrame();
+            }
+
+            using (PoseStreamReader reader = PoseStreamReader.Open(Path_))
+            {
+                Assert.True(float.IsNaN(reader.Read(0).Bodies[0].ReserveJoules));
+                Assert.Equal(5f, reader.Read(0).Bodies[0].ReserveSeconds);
             }
         }
 
@@ -853,6 +919,7 @@ namespace Evosim.Farm.Tests
                     {
                         Assert.False(float.IsNaN(body.ReserveSeconds));
                         Assert.False(float.IsNaN(body.BreedFraction));
+                        Assert.False(float.IsNaN(body.ReserveJoules));
                     }
 
                     if (!positions.TryGetValue(frame.Seconds, out Dictionary<long, int> flags)) continue;

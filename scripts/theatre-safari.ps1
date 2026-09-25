@@ -50,6 +50,9 @@
   colony), in place of the heuristic's trip.
 .PARAMETER Fps
   Frames per simulated second, default 30.
+.PARAMETER EncodeThreads
+  Threads each ffmpeg encode may use (default 4). ffmpeg takes every core by default, which put
+  the machine at 100% beside a farm run on 2026-09-25, against the owner's half-machine ruling.
 .PARAMETER Size
   Frame size as WxH, both even. Default 1920x1080 (960x540 with -Check).
 .PARAMETER Worker
@@ -147,6 +150,7 @@ param(
     [string[]]$Scenes = @(),
     [string]$Clade = '',
     [int]$Fps = 30,
+    [int]$EncodeThreads = 4,
     [string]$Size = '',
     [int]$Worker = 6,
     [int]$WallMinutes = 60,
@@ -400,7 +404,7 @@ $failed = 0
 function Encode-Take([string]$takeDirectory, [string]$clip) {
     $pattern = Join-Path $takeDirectory 'frame-%06d.png'
     & $ffmpeg.Source -hide_banner -loglevel error -y -framerate $Fps -start_number 0 -i $pattern `
-        -c:v libx264 -pix_fmt yuv420p -crf 18 -r $Fps -movflags +faststart $clip
+        -c:v libx264 -pix_fmt yuv420p -crf 18 -r $Fps -threads $EncodeThreads -movflags +faststart $clip
     return ($LASTEXITCODE -eq 0 -and (Test-Path $clip))
 }
 
@@ -440,7 +444,7 @@ foreach ($line in (Get-Content $sceneFile | Select-Object -Skip 1)) {
         $offset = [Math]::Max(0.0, (Length-Of $first) - 1.0).ToString('0.###', $invariant)
         & $ffmpeg.Source -hide_banner -loglevel error -y -i $first -i $second `
             -filter_complex "[0:v][1:v]xfade=transition=fade:duration=1:offset=$offset,format=yuv420p[v]" -map '[v]' `
-            -c:v libx264 -crf 18 -r $Fps -movflags +faststart $faded
+            -c:v libx264 -crf 18 -r $Fps -threads $EncodeThreads -movflags +faststart $faded
         if ($LASTEXITCODE -ne 0) { Write-Warning "$slug : the crossfade failed"; $failed++; continue }
         if ($parts.Count -gt 2) {
             $list = Join-Path $sceneDirectory 'parts.txt'

@@ -366,7 +366,8 @@ namespace Evosim.Theatre
             // Nothing is sampled until two frames before the chart opens.
             if (offset < _chart.At - 2d * interval) { _card?.SetAccount(_account, _births, _domainStart, _domainStart + span, _gone); return; }
 
-            // A film window records no reserve (IFilmWorld.TryAccount), so there the account marks
+            // A film window older than the stream's version 4 records no reserve
+            // (IFilmWorld.TryAccount), so there the account marks
             // the body's births in the window and draws no line, and says so once.
             if (live == null || !live.TryAccount(_subject, out double reserve, out int children))
             {

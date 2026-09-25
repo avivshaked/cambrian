@@ -94,6 +94,7 @@ namespace Evosim.Theatre
             public Vector3 Centre;
             public bool Absorptive;
             public bool Photosynthetic;
+            public double ReserveJoules;
         }
 
         private readonly Dictionary<long, Grown> _grown = new Dictionary<long, Grown>();
@@ -419,6 +420,10 @@ namespace Evosim.Theatre
                     Photosynthetic = body.Flags >= 0
                         ? (body.Flags & PoseStream.PhotosyntheticBit) != 0
                         : Carries(phenotype, CellTypeIds.Photosynthetic),
+
+                    // The stream's version 4 field; NaN on an older window, whose account then
+                    // marks the births and draws no line, as every window's did before it.
+                    ReserveJoules = body.ReserveJoules,
                 });
             }
 
@@ -690,14 +695,16 @@ namespace Evosim.Theatre
         }
 
         /// <summary>
-        /// A drawn body's account: no reserve (a window does not record one) and its children in
-        /// the window up to the frame on screen. False when the frame does not draw the body.
+        /// A drawn body's account: its reserve in joules as the frame recorded it (NaN on a window
+        /// older than the stream's version 4) and its children in the window up to the frame on
+        /// screen. False when the frame does not draw the body.
         /// </summary>
         public bool TryAccount(long id, out double reserve, out int children)
         {
             reserve = double.NaN;
             children = 0;
-            if (!_indexOf.ContainsKey(id)) return false;
+            if (!_indexOf.TryGetValue(id, out int index)) return false;
+            reserve = _drawn[index].ReserveJoules;
             children = Window.ChildrenOf(id, Second);
             return true;
         }

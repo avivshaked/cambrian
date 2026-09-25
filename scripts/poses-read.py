@@ -13,12 +13,13 @@ from the C#. That is most of what it is for: a reader that agrees with the write
 it was written beside it checks nothing. It is also the quickest way to ask a live run what it
 has recorded without opening the Editor.
 
-It reads all three versions. Version 1 writes every body raw. Version 2 deflates each frame's
+It reads all four versions. Version 1 writes every body raw. Version 2 deflates each frame's
 bodies (a raw deflate stream, zlib's window bits -15) behind an uncompressed time, count and raw
 length, and gives every body a flags byte: 1 absorptive, 2 jointed, 4 photosynthetic. Version 3
 (2026-09-25) adds each body's seconds of reserve and its funds over its own breeding gate, two float32s
 after the flags byte, which the theatre shades a body by; read_frame() hands them over as
-reserveSeconds and breedFraction, None on a version 1 or 2 stream.
+reserveSeconds and breedFraction, None on a version 1 or 2 stream. Version 4 (the same day) adds
+the reserve in joules, a third float32 after those two, handed over as reserveJoules.
 
 A body fraction of NaN means "not recorded". The farm never writes one; a stream converted from a
 run's poses.jsonl (scripts/record-convert.py) writes it for every body, because that file never
@@ -38,14 +39,14 @@ import zlib
 FILE_MAGIC = b'EVOPOSE\x00'
 INDEX_MAGIC = b'EVOPOSX\x00'
 FRAME_MAGIC = b'FRAM'
-VERSIONS = (1, 2, 3)
+VERSIONS = (1, 2, 3, 4)
 HEADER_BYTES = 80
 INDEX_HEADER_BYTES = 24
 INDEX_ENTRY_BYTES = 16
 
 # Per version: the payload's bytes before its bodies, and a body's bytes before its joints.
 PAYLOAD_PREFIX = {1: 12, 2: 16, 3: 16}
-BODY_FIXED = {1: 37, 2: 38, 3: 46}
+BODY_FIXED = {1: 37, 2: 38, 3: 46, 4: 50}
 
 FLAG_BITS = 1 | 2 | 4
 STREAM_NAMES = ('poses.bin', 'film.poses.bin')
@@ -254,13 +255,20 @@ def read_frame(f, offset, payload_bytes, version=None):
                 reserve, breed = struct.unpack_from('<2f', records, at + 37)
                 reserve = None if math.isnan(reserve) else reserve
                 breed = None if math.isnan(breed) else breed
-                dof = records[at + 45]
+                if version >= 4:
+                    # Version 4 (the same day): the reserve in joules after the other two.
+                    joules = struct.unpack_from('<f', records, at + 45)[0]
+                    joules = None if math.isnan(joules) else joules
+                    dof = records[at + 49]
+                else:
+                    joules = None
+                    dof = records[at + 45]
             else:
-                reserve = breed = None
+                reserve = breed = joules = None
                 dof = records[at + 37]
         else:
             flags = None
-            reserve = breed = None
+            reserve = breed = joules = None
             dof = records[at + 36]
 
         at += fixed
@@ -273,7 +281,7 @@ def read_frame(f, offset, payload_bytes, version=None):
         at += 4 * dof
 
         bodies.append({'id': ident, 'p': (x, y, z), 'r': (qx, qy, qz, qw),
-                       'bodyFraction': fraction, 'flags': flags, 'reserveSeconds': reserve, 'breedFraction': breed,
+                       'bodyFraction': fraction, 'flags': flags, 'reserveSeconds': reserve, 'breedFraction': breed, 'reserveJoules': joules,
                        'q': list(joints)})
 
     if at != len(records):

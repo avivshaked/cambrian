@@ -42,7 +42,8 @@ quiet at the top left in Plex Mono. `--no-label` leaves the label out.
 A burnt film is made from a joined film without text, which is kept beside it as
 `<output stem>.clean.mp4`, so the `.ass` can be edited and burnt again without filming anything:
 `--reburn <clean> <ass> <output>`. The burn re-encodes the whole film (H.264, crf 18) on
-`--threads` threads, a third of the machine's by default (the owner's load ruling of 2026-09-25).
+`--threads` threads, four by default: the owner's half-machine ruling of 2026-09-25 counts a farm
+run beside it, and a third of the machine on top of one put it at 100% that afternoon.
 `--ass-only` writes the `.ass` and the table from the clips' lengths and joins nothing.
 
 Each scene's provenance word is read from its take rows in `captions.tsv` (B3, 2026-09-25): a
@@ -67,6 +68,10 @@ import os
 import re
 import subprocess
 import sys
+
+# Threads for the title card and a re-encoded join. ffmpeg takes every core unasked, which put the
+# machine at 100% beside a farm run on 2026-09-25, against the owner's half-machine ruling.
+ENCODE_THREADS = 4
 
 CLIP = re.compile(r"^story-(\d+)-(.+)\.mp4$", re.IGNORECASE)
 
@@ -165,7 +170,7 @@ def title_card(title, shape, seconds, output, fonts_dir):
           "fade=t=in:st=0:d=0.5,fade=t=out:st=%g:d=0.5,format=yuv420p" % (escaped(font), escaped(words), size, max(0.0, seconds - 0.5)))
     cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi",
            "-i", "color=c=black:s=%dx%d:r=%s:d=%g" % (width, height, shape["rate"], seconds),
-           "-vf", vf, "-c:v", "libx264",
+           "-vf", vf, "-c:v", "libx264", "-threads", str(ENCODE_THREADS),
            "-pix_fmt", "yuv420p", "-crf", "18", "-r", "%g" % rate_value(shape["rate"]), "-movflags", "+faststart", card]
     r = subprocess.run(cmd)
     os.remove(words)
@@ -282,8 +287,8 @@ def join(clips, shapes, output):
                       "setsar=1,fps=%s,format=yuv420p[v%d]" % (i, width, height, width, height, shapes[0]["rate"], i))
     graph = ";".join(chains) + ";" + "".join("[v%d]" % i for i in range(len(clips))) + \
         "concat=n=%d:v=1:a=0[out]" % len(clips)
-    cmd += ["-filter_complex", graph, "-map", "[out]", "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p",
-            "-r", "%g" % fps, "-movflags", "+faststart", output]
+    cmd += ["-filter_complex", graph, "-map", "[out]", "-c:v", "libx264", "-threads", str(ENCODE_THREADS),
+            "-crf", "18", "-pix_fmt", "yuv420p", "-r", "%g" % fps, "-movflags", "+faststart", output]
     r = subprocess.run(cmd)
     odd = sorted({"%s %dx%d at %s, %s" % k for k in keys})
     return r.returncode == 0, "re-encoded to %dx%d at %s fps (the clips differ: %s)" % (
@@ -581,7 +586,7 @@ def main():
             pass
     args = sys.argv[1:]
     fonts_dir = os.path.abspath(option(args, "--fonts", FONTS_DIR))
-    threads = option(args, "--threads", max(2, (os.cpu_count() or 6) // 3), int)
+    threads = option(args, "--threads", ENCODE_THREADS, int)
 
     if flag(args, "--reburn"):
         if len(args) != 3:

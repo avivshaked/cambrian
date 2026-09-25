@@ -366,7 +366,10 @@ namespace Evosim.Theatre.EditorTools
             }
 
             var checkpoints = SafariDirector.ReadCheckpoints(_run).Select(c => c.seconds).ToList();
-            RunRecord record = RunRecord.Load(_run);
+            // Only the requested length is read here. A trip from film windows steps nothing, so it
+            // reads the run as a picture does and takes a run recorded before a tunable (the snapshot
+            // spec's §11); a live trip is still refused by the runner's own strict load.
+            RunRecord record = _windows.Length > 0 ? RunRecord.LoadForPicture(_run, out _) : RunRecord.Load(_run);
             double runSeconds = record?.RequestedSeconds ?? (checkpoints.Count > 0 ? checkpoints[checkpoints.Count - 1] : 0d);
 
             List<SafariScene> scenes;

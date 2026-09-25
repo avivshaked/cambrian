@@ -430,7 +430,7 @@ foreach ($shot in $shotList) {
     $pattern = Join-Path $shotDirectory 'frame-%06d.png'
 
     & $ffmpeg.Source -hide_banner -loglevel error -y -framerate $Fps -start_number 0 -i $pattern `
-        -c:v libx264 -pix_fmt yuv420p -crf 18 -r $Fps -movflags +faststart $clip
+        -c:v libx264 -pix_fmt yuv420p -crf 18 -r $Fps -threads 4 -movflags +faststart $clip
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path $clip)) {
         Write-Warning "$shot : ffmpeg failed ($LASTEXITCODE)"
         $failed++

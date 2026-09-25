@@ -124,6 +124,7 @@ namespace Evosim.Farm
                     GuildFlags(creature),
                     creature.SecondsOfReserve,
                     BreedFraction(creature, sim.World.Config),
+                    (float)creature.Energy,
                     body.Dof,
                     body.Q);
 
