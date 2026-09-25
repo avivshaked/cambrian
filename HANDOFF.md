@@ -460,32 +460,40 @@ in this section is history.
     links catch light, living leaves make three quarters of the snow, the tank is 45 m deep
     only on average, and the gift did pay for a first child. Scene 19's third caption says
     seed 2's cause is not found; it changes with the re-run's verdict.
-  - **Round 49's world is proposed** (`fable-propose-round-49.md`, `e936b52`). It asks three
-    questions:
-    - whether the endowment should pay upkeep only and never a child (recommended);
-    - whether to keep the wear on upkeep for one more round (recommended);
-    - whether anything is wanted on the snow's stirring (recommended: nothing yet).
-    - It also keeps D122 and measures it with the new instruments. These rulings gate round
-      49's pre-registration and launcher, and the machine ruling gates its launch.
-  - **I am blocked on the machine from the owner (12:30, 2026-09-25; pinged by phone).** Seed
-    2's re-run from founding ran clean past the fault, which fires the stop rule.
-    - It ran on the same build as the recording, all four hashes equal, with its config hash
-      `e5a30c15…`.
-    - Every stats field of every sample agreed with the recording to the bit through
-      13,690 s, and it ran on to its 13,800 s budget, finite, with the audit closed.
-    - The recording's 13,700 s sample shows its world broke within one window. All eight
-      rows it wrote read zero light, where the same bodies earned 0.2 to 0.56 W in the
-      re-run. Two bodies alive at 13,690 s were gone, and the ninth read a snow density of
-      minus infinity.
-    - Inference: a one-off wrong computation in the recording's process. That is either the
-      processor (the 13900K's degradation on microcode 0x10E) or a rare thread race. The
-      recording ran at 5 threads beside seed 1, the re-run at 8 alone. No WHEA events since
-      2026-09-22, but a silent miscalculation would not log one.
-    - Heavy work is paused: nothing heavy was running when the re-run ended. That covers
-      the story film's compile and render, the GPU port's acceptance, the checkpoint fix's
-      acceptance and round 49's gap list.
-    - The code is cleared of this fault, so no fix is owed to round 49. Seed 2 could be
-      finished honestly by a full re-run from founding, about a day of the machine.
+  - **Round 49's world is ruled (the owner, 2026-09-25 afternoon).** On
+    `fable-propose-round-49.md`:
+    - question 1, the owner's alternative to (b): every founder starts with at most a fraction
+      of its own breeding threshold, purse and endowment together, after its first growth, so
+      it earns the rest itself ("ok lets go with that"); the fraction is a tunable like every
+      other knob ("that value, the 90, should be configurable"), 0.9 in round 49. The agent's
+      arithmetic for the one-part stomach (`scripts/reads/r49-prereg/gift_cap.py`): at 0.9 it never
+      breeds at 0.5 J/m³ or below in its own cell, breeds at 44 s at 0.75 and 24 s at 1; a no-child
+      period of 600 s, the owner's other idea, lets the gift pay a child at 0.5 after 600 s.
+      Being built on `r49-founder-cap` (`scratch/wt-r49cap`), D124 to be written with it;
+    - question 2: the wear stays on upkeep ("agree with your recommendation");
+    - question 3: no change to the snow's stirring ("leave as is for now and evaluate"). The
+      owner's note for the round after next: a mouth fed from its one 1 m cell reads as if a
+      cell had a limit, "i wonder if we could come up with something smarter". The agent's
+      answer: no cell has a cap; the limit is the refill of the cell a mouth empties. Round 50
+      candidates: a mouth fed from a neighbourhood, intake by the water passing the mouth, a
+      finer grid near mouths.
+  - **The machine: option 2, up to half of it (the owner, 2026-09-25 afternoon: "lets go with
+    option 2 for now. aand you can go up to half the machine").** No flash for now, the risk
+    accepted; the total heavy load at most 16 of 32 logical processors. Seed 2's re-run from
+    founding ran clean past the fault (every stats field equal to the bit through 13,690 s, on
+    the same build), so the recording's broken 13,700 s window is read as a one-off wrong
+    computation, the processor or a rare thread race; seed 2 stays censored at 13,690 s.
+  - **Pushed (the owner: "push everything"):** main to `2a0ce25`.
+  - **The story film renders from farm windows (the owner: "render now", and the two-hour
+    route is not to be quoted again).** Round 48's 21 windows are recorded on
+    `scratch/wt-r49/artifacts/Evosim.Farm/bin/Release`, the exe built before the founder cap's
+    tunable, every one FAITHFUL so far; the trial scenes 1 and 3 took about five minutes in
+    Unity. The owner's review of the trial clips found two faults, both fixed in the theatre on
+    `r49-record-film` (uncommitted at this writing): a growing body drawn large and then small
+    each growth step, because a resize left the palette's reshape to a 96-a-frame rotation
+    that a crowd of 1,800 took 19 frames to go round (`LiveWorldView.Ensure` now marks a resized
+    body undressed), and a picture too bright (mean luma 0.43 against the story look's target
+    0.38; the target is now 0.26). Every test clip goes to `scratch/owner/` with its path.
   - **The GPU port is built** (`c9f4e13`, `bc9196a`, `a6793cd`, `019504b` on `gpu-port`,
     `scratch/wt-gpu`). It has all 20 missing kernel items, per-part contact, reefs, the beach
     and D111 included. Its 14 GPU tests pass on ILGPU's CPU accelerator, double bit for bit
@@ -680,8 +688,9 @@ in this section is history.
     and the six Unity workers 1.7 GB each.
   - **Merged:** the safari branch is in main (`d995433`, pushed), so story mode is on main.
 
-- **The machine runs under the owner's option B, not a full hold (2026-09-25, late morning:
-  "Lets go for B then").** The owner declined the flash for now ("if this is not critical i'd
+- **Superseded that afternoon by option 2 at up to half the machine (above).** The machine
+  ran under the owner's option B, not a full hold (2026-09-25, late morning: "Lets go for B
+  then"). The owner declined the flash for now ("if this is not critical i'd
   rather not do it"; no USB stick to hand), after the agent's answer that it is important
   and not urgent. Of the three options put, B is:
   - no flash for now;

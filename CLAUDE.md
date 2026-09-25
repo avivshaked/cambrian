@@ -1574,6 +1574,25 @@ actually verifying it.
   Until it exists, a subagent that needs a worktree gets one the caller made under `scratch/`,
   named by its absolute path in the brief, and not `isolation: "worktree"`. The fifteen older
   worktrees under `.claude/worktrees/` are left where they are; removing one is the owner's.
+- **A background agent that edits files asks the owner for every edit, even in auto mode.**
+  On 2026-09-25 an Opus subagent (`general-purpose`, `run_in_background`, no `isolation`) building
+  a tunable in `scratch/wt-r49cap` put a "Make this edit to ...?" prompt in front of the owner
+  for each Edit, while the main session's own edits in the same kind of worktree went through
+  unprompted; the owner, on auto mode, asked three times why. The documentation (a
+  `claude-code-guide` read of code.claude.com's sub-agents, permissions and permission-modes
+  pages) says a subagent inherits the parent's auto mode, and that the only paths that always ask
+  are the protected ones: `.claude` (except `.claude/worktrees`), where an allow rule is checked
+  too late to help. `scratch/wt-r49cap` is under neither, so the cause is not known. Three rules
+  follow. **A subagent that edits or writes files is not launched** until the owner says the
+  prompts are gone; the main session writes the code itself, and read-only agents (`Explore`,
+  `claude-code-guide`, a reader that only reports) are fine. This overrides the delegation memory
+  for any editing task. **Every write under `C:\Users\shake\.claude\` asks the owner**, the
+  memory directory included, because the whole tree is protected: keep memory edits rare and
+  batched, and put durable rules here instead. **The fix is the owner's setting, never the
+  agent's**: the documented form of an allow rule for this tree, untested here, is
+  `Edit(//d/Projects/experiments/evolution-simulator/**)` (and the same for `Write`) under
+  `permissions.allow` in the owner's `~/.claude/settings.json`; the agent never edits a
+  permission setting, whoever asks.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
