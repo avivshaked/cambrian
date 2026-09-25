@@ -350,22 +350,23 @@ namespace Evosim.Core.Tests
         }
 
         /// <summary>
-        /// The wounded world again with the contact sense open: what each part has touched is
-        /// carried by the checkpoint, and it stays set after a step in which nothing touches.
+        /// The wounded world again with the contact sense open: what each part touched on the last
+        /// step is carried by the checkpoint, and a step in which nothing touches clears it in
+        /// both worlds alike.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <b>Sticky, and that is why it has to be written.</b> <c>World.NoteContact</c> sets a
-        /// part's flag and nothing clears it but a plan change (<c>World.AdoptPlan</c>), so the
-        /// array is a property of the body's history and not of the step. Until StateVersion 11 the
-        /// writer left it out, every restored body came back touching nothing, and a hinge driven
-        /// by a neuron reading the channel swung stop to stop at the first step of round 48's
-        /// resume (2026-09-25).
+        /// <b>Read before it is rewritten, and that is why it has to be written.</b> The farm hands
+        /// the record to a body's senses after the metabolic step, and every physics step until
+        /// the next metabolic step reads it, so a restore between the two must put it back. Until
+        /// StateVersion 11 the writer left it out, every restored body came back touching nothing,
+        /// and a hinge driven by a neuron reading the channel swung stop to stop at the first step
+        /// of round 48's resume (2026-09-25). The flag was sticky then, cleared only by a plan
+        /// change; from D123 (round 49) it is the last metabolic step's alone.
         /// </para>
         /// <para>
         /// The step after the round trip hands the mouth no contacts at all, and both worlds must
-        /// still read every flag they read before it. That pins the behaviour this test does not
-        /// judge: whether the flag should be the step's alone is a world rule and the owner's.
+        /// then read no flag anywhere, with each array still the one the step before held.
         /// </para>
         /// </remarks>
         [Fact]
@@ -397,14 +398,22 @@ namespace Evosim.Core.Tests
             Assert.Equal(wounded.PartContact, restoredWounded.PartContact);
             Assert.Null(restored.Living[0].PartContact);
 
-            // One more step with no contacts handed over, on both worlds alike.
+            // One more step with no contacts handed over, on both worlds alike. D123: the step's
+            // record is cleared in place, so the arrays stay and every flag reads false.
+            bool[] liveArray = wounded.PartContact;
+            bool[] restoredArray = restoredWounded.PartContact;
+
             world.SetContacts(new List<CreatureContact>());
             restored.SetContacts(new List<CreatureContact>());
             world.ApplyMouth(0.5f);
             restored.ApplyMouth(0.5f);
 
-            Assert.Equal(new[] { false, true }, wounded.PartContact);
-            Assert.Equal(new[] { false, true }, restoredWounded.PartContact);
+            Assert.Same(liveArray, wounded.PartContact);
+            Assert.Same(restoredArray, restoredWounded.PartContact);
+            Assert.Equal(new[] { false, false }, wounded.PartContact);
+            Assert.Equal(new[] { false, false }, restoredWounded.PartContact);
+            Assert.False(claw.PartContact[0]);
+            Assert.Equal(new[] { 0f, 0f }, wounded.PartDamage);
             Assert.Equal(Readings(world), Readings(restored));
             Assert.Equal(StateOf(world), StateOf(restored));
         }

@@ -2003,8 +2003,9 @@ namespace Evosim.Core
             // of the reserve this step actually left the body and a body that could not pay its
             // upkeep is already dead; before Grow, so a body that has just lost a limb invests in
             // the body it now has. At the defaults — nothing armed, nothing with a mouth, no
-            // healing and no wound anywhere — it is two walks of the living and no arithmetic,
-            // which is what lets it be called unconditionally.
+            // healing and no wound anywhere — it is three walks of the living and no arithmetic,
+            // which is what lets it be called unconditionally. The third, from D123, zeroes the
+            // contact and damage records so the senses read this step's alone.
             ApplyMouth(seconds);
 
             // The ruling of 2026-09-24: a gestating body banks its share of this step's net, after

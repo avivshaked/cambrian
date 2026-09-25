@@ -158,6 +158,10 @@ namespace Evosim.Core
         {
             _lastAttacker.Clear();
 
+            // D123. The two records the senses read are this step's and no older one's, so the
+            // last step's are forgotten before the damage pass writes this one's.
+            ForgetWhatWasFelt();
+
             ApplyDamage(seconds);
             ApplyIntake(seconds);
             ApplyHealing(seconds);
@@ -165,6 +169,51 @@ namespace Evosim.Core
             _contacts = null;
 
             return CollectTheDead();
+        }
+
+        /// <summary>
+        /// Zeroes every living body's contact and damage record, so that what the pass after it
+        /// writes is this step's alone — D123.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The ruling of 2026-09-25 ("fix for 49").</b> <see cref="SensorChannel.Contact"/>
+        /// reads whether a part touched another body's part on the last metabolic step and
+        /// <see cref="SensorChannel.Damage"/> the health it lost on that step over its pool, as
+        /// D106 item 5 and the mouth's specification asked. Until round 49 nothing cleared either
+        /// record but a plan change, so a brain read "touched since the body last changed shape"
+        /// and "hurt since then".
+        /// </para>
+        /// <para>
+        /// <b>At the top of the pass, and not after the harness has read them.</b> The farm hands
+        /// the records to a body's senses right after <see cref="Step"/> and the physics steps of
+        /// the next interval read them; the next <see cref="Step"/> comes here before it writes
+        /// anything. So a brain on every physics step of step n+1 reads what happened on step n,
+        /// and a checkpoint written between the two carries what those steps will read.
+        /// </para>
+        /// <para>
+        /// <b>Zeroed in place, never dropped.</b> The farm hands a body's senses these very arrays
+        /// by reference (<c>Metabolise.HandBackWhatWasFelt</c>), and a restore wires them back by
+        /// reference; an array replaced here would leave a sense reading the old one until the
+        /// next hand-back. The only things that replace one are its first allocation, on a body's
+        /// first touch or wound, and <c>AdoptPlan</c>, which drops both because their indices
+        /// named the old plan's parts. The hand-back follows both. A world in which nothing ever
+        /// touches still allocates nothing, and this is one walk of the living with two null
+        /// tests a body.
+        /// </para>
+        /// </remarks>
+        private void ForgetWhatWasFelt()
+        {
+            for (int i = 0; i < _living.Count; i++)
+            {
+                Organism creature = _living[i];
+
+                bool[] touched = creature.PartContact;
+                if (touched != null) Array.Clear(touched, 0, touched.Length);
+
+                float[] lost = creature.PartDamage;
+                if (lost != null) Array.Clear(lost, 0, lost.Length);
+            }
         }
 
         // ------------------------------------------------------------------ rule 5: the damage
@@ -281,6 +330,9 @@ namespace Evosim.Core
             float now = was - share;
             health[partIndex] = now > 0f ? now : 0f;
 
+            // Summed over this step's blows only: ForgetWhatWasFelt zeroed the array at the top of
+            // the pass (D123). Health is a share of the pool, so the loss already is one, and the
+            // step's sum cannot pass 1 because healing comes after this pass.
             lost[partIndex] += was - health[partIndex];
         }
 
@@ -312,6 +364,10 @@ namespace Evosim.Core
             return by[partIndex];
         }
 
+        /// <summary>
+        /// Flags a part as touched on this step — the <see cref="SensorChannel.Contact"/> record,
+        /// cleared at the top of every pass by <see cref="ForgetWhatWasFelt"/> (D123).
+        /// </summary>
         private void NoteContact(Organism creature, int partIndex)
         {
             if (!Config.SenseContact) return;

@@ -93,12 +93,18 @@ namespace Evosim.Core
         /// </remarks>
         /// <remarks>
         /// 11 with the contact record (2026-09-25): every creature carries
-        /// <see cref="Organism.PartContact"/> after its damage. The flag is sticky until a plan
-        /// change, so it is history and not a step's reading, and a version-10 stream put every
+        /// <see cref="Organism.PartContact"/> after its damage. The flag was sticky until a plan
+        /// change, so it was history and not a step's reading, and a version-10 stream put every
         /// body back touching nothing; round 48's resume parted from the run at its first sample
         /// in the jointed bodies whose brains read the channel. Version 10 is still read, as
         /// <see cref="LossyStateVersion"/>: round 48's checkpoints are version 10, and the
         /// theatre's story mode opens them as the cousins they already are.
+        /// </remarks>
+        /// <remarks>
+        /// Still 11 after D123 (round 49), which made both records the last metabolic step's
+        /// alone. The physics steps after a restore read that step's record before the next
+        /// metabolic step rewrites it, so it is saved exactly as before and the layout is the
+        /// same; what moved is the rule that fills it, and <c>coreHash</c> is what says so.
         /// </remarks>
         public const int StateVersion = 11;
 
@@ -514,9 +520,11 @@ namespace Evosim.Core
                 for (int i = 0; i < health.Length; i++) w.Write(health[i]);
             }
 
-            // The health each part has lost over its life, in the same order and with the same
-            // meaning of 0 — and it is state the next step reads, not a diagnostic: the Damage
-            // sense reports it, so a brain wired to that channel drives on it. Left out until
+            // The health each part lost on the last metabolic step (D123; before round 49, since
+            // the body's plan last changed), in the same order and with the same meaning of 0 —
+            // and it is state the next step reads, not a diagnostic: the Damage sense reports it
+            // on every physics step until the next metabolic step rewrites it, so a brain wired
+            // to that channel drives on it. The layout did not move with D123. Left out until
             // StateVersion 6 (2026-09-23), when a resume of round 45 seed 2 restored every
             // wounded body sensing nothing and the two jointed ones among sixteen parted from
             // the run at the first sample (CheckpointFidelity found it; logbook/0114).
@@ -528,9 +536,11 @@ namespace Evosim.Core
                 for (int i = 0; i < damage.Length; i++) w.Write(damage[i]);
             }
 
-            // What each part has touched, in the same order and with the same meaning of 0: the
-            // Contact sense reports it, and the flag stays set until a plan change, so it is
-            // history the next step reads. Left out until StateVersion 11 (2026-09-25), when a
+            // What each part touched on the last metabolic step, in the same order and with the
+            // same meaning of 0: the Contact sense reports it, and the physics steps after a
+            // restore read it before the next metabolic step rewrites it. Until D123 the flag
+            // stayed set until a plan change; either way it is state the next step reads, so the
+            // layout did not move with D123. Left out until StateVersion 11 (2026-09-25), when a
             // resume of round 48 put every body back touching nothing and the jointed ones
             // whose brains read the channel parted from the run at the first sample.
             if (layout >= 11)

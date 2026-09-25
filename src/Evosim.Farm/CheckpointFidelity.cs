@@ -44,9 +44,11 @@ namespace Evosim.Farm
     /// <b>The senses and the harness are compared too, from 2026-09-25.</b> Until then every
     /// <c>ISensorField</c> was skipped as a shared service, which took each body's
     /// <c>CreatureSenses</c> out of the comparison, and <c>Organism.PartContact</c> was on the
-    /// list of members a step fills before it reads, which it is not: it is sticky until a plan
-    /// change. So a restore that put every body back touching nothing and sensing neither
-    /// contact nor damage passed, and round 48's resume parted at its first sample. Now a body's
+    /// list of members a step fills before it reads, which it is not: it was sticky until a plan
+    /// change then, and since D123 it is the last metabolic step's record, which the physics
+    /// steps after a restore read before the next metabolic step rewrites it. So a restore that
+    /// put every body back touching nothing and sensing neither contact nor damage passed, and
+    /// round 48's resume parted at its first sample. Now a body's
     /// senses are compared member by member, less the per-step arrays <c>Sample</c> fills before
     /// the brain reads them; a wired contact or damage sense must be its own organism's array
     /// in both worlds; and the harness's own members are compared, bodies matched by id, which
@@ -806,8 +808,9 @@ namespace Evosim.Farm
             "DriveSignal", "_overlapIds", "_overlapCount", "_heldIds", "AppliedTorque",
 
             // D114's link pair beside each overlap id: the same step's list, filled with it.
-            // Organism.PartContact stood here until 2026-09-25 and does not belong: it is sticky
-            // until a plan change and the next step reads it, so it is compared.
+            // Organism.PartContact stood here until 2026-09-25 and does not belong: the physics
+            // steps read it before the next metabolic step writes it (sticky until a plan change
+            // then, the last metabolic step's record since D123), so it is compared.
             "_overlapParts",
             "<PartExposure>k__BackingField", "<UpInBody>k__BackingField",
 

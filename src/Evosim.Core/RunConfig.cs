@@ -2905,8 +2905,9 @@ namespace Evosim.Core
 
         /// <summary>
         /// Whether a genome in this run may draw <see cref="SensorChannel.Contact"/> — whether
-        /// this part is touching another body, D106 item 5. See <see cref="SenseChemical"/> for
-        /// what the gate is.
+        /// this part touched another body's part on the last metabolic step, D106 item 5 and
+        /// D123 (<see cref="Organism.PartContact"/>). See <see cref="SenseChemical"/> for what
+        /// the gate is.
         /// </summary>
         /// <remarks>
         /// <b>Appended after <see cref="SenseFlow"/> in <see cref="SensorPool"/>, and that is the
@@ -2923,8 +2924,9 @@ namespace Evosim.Core
 
         /// <summary>
         /// Whether a genome in this run may draw <see cref="SensorChannel.Damage"/> — the share of
-        /// this part's health pool it has lost, D106 item 5, summed since the body's plan last
-        /// changed (<see cref="Organism.PartDamage"/>). See <see cref="SenseContact"/>.
+        /// this part's health pool it lost on the last metabolic step, D106 item 5 and D123
+        /// (<see cref="Organism.PartDamage"/>; rounds 45 to 48 summed it since the body's plan
+        /// last changed). See <see cref="SenseContact"/>.
         /// </summary>
         [Tunable("sense")]
         public bool SenseDamage

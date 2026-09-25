@@ -456,6 +456,12 @@ namespace Evosim.Core
             // a part that has just appeared (map -1) is whole, which is rule 3's "full at a module
             // add". Null in, null out, so a world that has never been bitten allocates nothing.
             creature.PartHealth = Remap(creature.PartHealth, map);
+
+            // D123. The step's two sensed records are dropped rather than remapped. Their indices
+            // name the old plan's parts, and the harness's solver stays on the old plan until the
+            // growth step rebuilds it, so a remapped array would be read by the wrong links. A
+            // body that changes plan therefore senses no contact and no damage for the step it
+            // changed on; the farm's next hand-back gives its senses whatever replaces these.
             creature.PartDamage = null;
             creature.PartContact = null;
 

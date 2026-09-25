@@ -972,5 +972,137 @@ namespace Evosim.Core.Tests
             Assert.True(leaf.PartDamage[1] > 0f, "the bitten part took no readable damage");
             Assert.Equal(0f, leaf.PartDamage[0]);
         }
+
+        /// <summary>
+        /// D123: both senses read the last metabolic step alone. A part touched and bitten on
+        /// step n reads the touch and that step's loss over its pool after step n, which is what
+        /// the physics steps of n+1 read, and reads nothing after a step n+1 with no contact.
+        /// </summary>
+        /// <remarks>
+        /// Until round 49 both records were cleared only by a plan change, so the second step's
+        /// reading was the first step's again and a second bite read the sum of both. The arrays
+        /// are asked to be the same objects from step to step as well, because the farm hands a
+        /// body's senses these arrays by reference and a replaced one would be read stale.
+        /// </remarks>
+        [Fact]
+        public void ContactAndDamageReadTheLastStepAlone()
+        {
+            RunConfig config = Stage();
+            config.SenseContact = true;
+            config.SenseDamage = true;
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Spine(2), 1, -1f);
+            world.Inoculate(Armed(attack: 1f), 1, -1f);
+            world.Inoculate(Armed(attack: 1f), 1, -1f);
+
+            Organism leaf = world.Living[0];
+            Organism claw = world.Living[1];
+            Organism second = world.Living[2];
+
+            PhenotypePart bitten = leaf.Phenotype.Parts[1];
+            PhenotypePart tooth = claw.Phenotype.Parts[0];
+
+            const float seconds = 0.1f;
+            float pool = Metabolism.HealthPool(bitten, config);
+            float oneBite =
+                (tooth.Attack * tooth.SurfaceArea - bitten.Protection * bitten.SurfaceArea) *
+                seconds / pool;
+
+            Assert.True(oneBite > 0f && 3f * oneBite < 1f, $"a bite takes {oneBite} of the pool");
+
+            // Step n: one claw bites part 1.
+            world.SetContacts(Touching(claw, 0, leaf, 1));
+            world.ApplyMouth(seconds);
+
+            bool[] touched = leaf.PartContact;
+            float[] lost = leaf.PartDamage;
+
+            Assert.Equal(new[] { false, true }, touched);
+            Assert.True(claw.PartContact[0], "the claw felt nothing of its own bite");
+            Fixtures.AssertClose(oneBite, lost[1], 1e-6f);
+            Assert.Equal(0f, lost[0]);
+            Fixtures.AssertClose(1f - leaf.PartHealth[1], lost[1], 1e-6f);
+
+            float woundAfterN = leaf.PartHealth[1];
+
+            // Step n+1: nothing touches. Both records read nothing, the wound stands (healing is
+            // off in this stage), and the arrays are the ones the farm was handed.
+            world.SetContacts(new List<CreatureContact>());
+            world.ApplyMouth(seconds);
+
+            Assert.Same(touched, leaf.PartContact);
+            Assert.Same(lost, leaf.PartDamage);
+            Assert.Equal(new[] { false, false }, leaf.PartContact);
+            Assert.False(claw.PartContact[0], "the claw still reads a touch a step later");
+            Assert.Equal(new[] { 0f, 0f }, leaf.PartDamage);
+            Assert.Equal(woundAfterN, leaf.PartHealth[1]);
+
+            // A step with no list handed over at all is the same step as far as the senses go.
+            world.ApplyMouth(seconds);
+
+            Assert.Equal(new[] { false, false }, leaf.PartContact);
+            Assert.Equal(new[] { 0f, 0f }, leaf.PartDamage);
+
+            // Step n+3: two claws on part 1 in one step. The step's loss is both blows and not a
+            // running total, so it reads two bites and not three.
+            world.SetContacts(new List<CreatureContact>
+            {
+                new CreatureContact(claw.Id, 0, leaf.Id, 1),
+                new CreatureContact(second.Id, 0, leaf.Id, 1),
+            });
+            world.ApplyMouth(seconds);
+
+            _output.WriteLine(
+                $"a bite takes {oneBite:0.######} of a pool of {pool:0.####}; two in one step read " +
+                $"{leaf.PartDamage[1]:0.######}, health {leaf.PartHealth[1]:0.######}");
+
+            Fixtures.AssertClose(2f * oneBite, leaf.PartDamage[1], 1e-6f);
+            Fixtures.AssertClose(woundAfterN - leaf.PartHealth[1], leaf.PartDamage[1], 1e-6f);
+            Assert.Equal(new[] { false, true }, leaf.PartContact);
+
+            // Step n+4: the claw moves to part 0. Part 0 reads this step's bite, and part 1's flag
+            // and loss are gone although its wound stands.
+            world.SetContacts(Touching(claw, 0, leaf, 0));
+            world.ApplyMouth(seconds);
+
+            Assert.Equal(new[] { true, false }, leaf.PartContact);
+            Assert.True(leaf.PartDamage[0] > 0f, "part 0 took no readable damage");
+            Assert.Equal(0f, leaf.PartDamage[1]);
+        }
+
+        /// <summary>
+        /// D123 through the world's own step: the records are cleared by <see cref="World.Step"/>
+        /// and not only by a test calling the mouth's pass.
+        /// </summary>
+        [Fact]
+        public void TheWorldsStepClearsTheRecordsBeforeItWritesThem()
+        {
+            RunConfig config = Stage();
+            config.SenseContact = true;
+            config.SenseDamage = true;
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Spine(2), 1, -1f);
+            world.Inoculate(Armed(attack: 1f), 1, -1f);
+
+            Organism leaf = world.Living[0];
+            Organism claw = world.Living[1];
+
+            // A tenth of a second, which the test above shows is well short of a kill, so no plan
+            // change drops the records and what is read is the clearing alone.
+            world.SetContacts(Touching(claw, 0, leaf, 1));
+            world.Step(0.1f);
+
+            Assert.Contains(world.Living, c => c.Id == leaf.Id);
+            Assert.Equal(new[] { false, true }, leaf.PartContact);
+            Assert.True(leaf.PartDamage[1] > 0f, "the step's bite read nothing");
+
+            world.Step(0.1f);
+
+            Assert.Equal(new[] { false, false }, leaf.PartContact);
+            Assert.Equal(new[] { 0f, 0f }, leaf.PartDamage);
+            Assert.True(leaf.PartHealth[1] < 1f, "the wound itself should stand");
+        }
     }
 }
