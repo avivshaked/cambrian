@@ -167,15 +167,72 @@ namespace Evosim.Dynamics
 
             Array.Clear(_bucketStart, 0, buckets + 1);
 
-            for (int i = 0; i < rows; i++)
+            // Every entry's bucket and row, across threads, at the entry's place in the serial
+            // order (row by row, then x, y and z), which each row slab starts at from the integer
+            // sum of the entries in the slabs before it.
+            int rowSlabs = Slabs.CountFor(rows, Threads);
+            if (_slabFirst.Length < rowSlabs + 1) _slabFirst = new int[rowSlabs + 1];
+            if (_entryKey.Length < Entries)
             {
-                for (int x = _lo[3 * i]; x <= _hi[3 * i]; x++)
-                for (int y = _lo[3 * i + 1]; y <= _hi[3 * i + 1]; y++)
-                for (int z = _lo[3 * i + 2]; z <= _hi[3 * i + 2]; z++)
-                {
-                    _bucketStart[Hash(x, y, z) & _mask]++;
-                }
+                int size = System.Math.Max(Entries, 2 * _entryKey.Length);
+                _entryKey = new int[size];
+                _entryRow = new int[size];
             }
+
+            Slabs.Run(rows, rowSlabs, (s, from, to) =>
+            {
+                int mine = 0;
+                for (int i = from; i < to; i++)
+                {
+                    mine += (_hi[3 * i] - _lo[3 * i] + 1) *
+                            (_hi[3 * i + 1] - _lo[3 * i + 1] + 1) *
+                            (_hi[3 * i + 2] - _lo[3 * i + 2] + 1);
+                }
+                _slabFirst[s + 1] = mine;
+            });
+
+            _slabFirst[0] = 0;
+            for (int s = 0; s < rowSlabs; s++) _slabFirst[s + 1] += _slabFirst[s];
+
+            if (_slabFirst[rowSlabs] != Entries)
+            {
+                throw new InvalidOperationException(
+                    FormattableString.Invariant($"The contact grid counted {Entries} cell entries ") +
+                    FormattableString.Invariant($"and its rows cover {_slabFirst[rowSlabs]}."));
+            }
+
+            int mask = _mask;
+            Slabs.Run(rows, rowSlabs, (s, from, to) =>
+            {
+                int e = _slabFirst[s];
+                for (int i = from; i < to; i++)
+                {
+                    for (int x = _lo[3 * i]; x <= _hi[3 * i]; x++)
+                    for (int y = _lo[3 * i + 1]; y <= _hi[3 * i + 1]; y++)
+                    for (int z = _lo[3 * i + 2]; z <= _hi[3 * i + 2]; z++)
+                    {
+                        _entryKey[e] = Hash(x, y, z) & mask;
+                        _entryRow[e] = i;
+                        e++;
+                    }
+                }
+            });
+
+            // The counting sort, split by bucket: each thread owns a range of buckets and reads
+            // every entry in order, taking only its own. So each bucket counts and fills in
+            // ascending entry order, which is the order the single loop filled it in, and
+            // _items comes out the same array at any thread count.
+            int entries = Entries;
+            int owners = Slabs.CountFor(buckets, Threads);
+
+            Slabs.Run(buckets, owners, (s, low, high) =>
+            {
+                for (int e = 0; e < entries; e++)
+                {
+                    int key = _entryKey[e];
+                    if (key >= low && key < high) _bucketStart[key]++;
+                }
+            });
 
             int running = 0;
             for (int b = 0; b < buckets; b++)
@@ -187,15 +244,14 @@ namespace Evosim.Dynamics
             }
             _bucketStart[buckets] = running;
 
-            for (int i = 0; i < rows; i++)
+            Slabs.Run(buckets, owners, (s, low, high) =>
             {
-                for (int x = _lo[3 * i]; x <= _hi[3 * i]; x++)
-                for (int y = _lo[3 * i + 1]; y <= _hi[3 * i + 1]; y++)
-                for (int z = _lo[3 * i + 2]; z <= _hi[3 * i + 2]; z++)
+                for (int e = 0; e < entries; e++)
                 {
-                    _items[_cursor[Hash(x, y, z) & _mask]++] = i;
+                    int key = _entryKey[e];
+                    if (key >= low && key < high) _items[_cursor[key]++] = _entryRow[e];
                 }
-            }
+            });
         }
 
         // ------------------------------------------------------------ per-part contact, D114
@@ -205,6 +261,20 @@ namespace Evosim.Dynamics
         private int[] _rowStart = new int[1];          // a body's first row; count + 1 entries
         private int[] _rowBody = Array.Empty<int>();   // the body a row belongs to
         private int[] _rowLink = Array.Empty<int>();   // and which of its links
+        private int[] _bodyLinks = Array.Empty<int>(); // each body's link count, gathered
+        private bool[] _rowActive = Array.Empty<bool>();     // whether a row's body is in contact
+        private double[] _rowRadius = Array.Empty<double>(); // a row's sphere, gathered flat
+        private double[] _rowCentre = Array.Empty<double>(); // 3 per row
+        private long[] _slabEntries = Array.Empty<long>();   // a row slab's cell entries
+        private int[] _slabFirst = Array.Empty<int>();       // a row slab's first entry
+        private int[] _entryKey = Array.Empty<int>();        // an entry's bucket
+        private int[] _entryRow = Array.Empty<int>();        // and its row
+
+        /// <summary>
+        /// Threads the build and the fill may split across (<see cref="Slabs"/>); a pace setting
+        /// that moves no number. The world sets it from its own before every build.
+        /// </summary>
+        public int Threads { get; set; } = 1;
 
         /// <summary>Whether the last build entered links rather than bodies.</summary>
         public bool PerPart => _perPart;
@@ -234,12 +304,22 @@ namespace Evosim.Dynamics
             _perPart = true;
 
             if (_rowStart.Length < _count + 1) _rowStart = new int[_count + 1];
+            if (_bodyLinks.Length < _count) _bodyLinks = new int[_count];
+
+            // Every read of a body is across threads, into flat arrays that each body writes only
+            // its own slots of; everything summed over them is summed serially, in the order the
+            // single loop this replaced summed it, so the cell and every row are the same bits.
+            int bodySlabs = Slabs.CountFor(_count, Threads);
+            Slabs.Run(_count, bodySlabs, (s, from, to) =>
+            {
+                for (int b = from; b < to; b++) _bodyLinks[b] = creatures[b].Links;
+            });
 
             int rows = 0;
             for (int b = 0; b < _count; b++)
             {
                 _rowStart[b] = rows;
-                rows += creatures[b].Links;
+                rows += _bodyLinks[b];
             }
             _rowStart[_count] = rows;
             _rows = rows;
@@ -251,29 +331,49 @@ namespace Evosim.Dynamics
                 _rowBody = new int[rows];
                 _rowLink = new int[rows];
             }
+            if (_rowActive.Length < rows)
+            {
+                _rowActive = new bool[rows];
+                _rowRadius = new double[rows];
+                _rowCentre = new double[3 * rows];
+            }
 
+            Slabs.Run(_count, bodySlabs, (s, from, to) =>
+            {
+                for (int b = from; b < to; b++)
+                {
+                    Creature body = creatures[b];
+                    int first = _rowStart[b];
+                    bool live = body.ContactActive;
+
+                    for (int i = 0; i < body.Links; i++)
+                    {
+                        int row = first + i;
+                        _rowBody[row] = b;
+                        _rowLink[row] = i;
+                        _rowActive[row] = live;
+                        if (!live) continue;
+
+                        _rowRadius[row] = body.LinkContactRadius[i];
+                        _rowCentre[3 * row] = body.LinkContactCentre[3 * i];
+                        _rowCentre[3 * row + 1] = body.LinkContactCentre[3 * i + 1];
+                        _rowCentre[3 * row + 2] = body.LinkContactCentre[3 * i + 2];
+                    }
+                }
+            });
+
+            // Body by body and link by link, inactive bodies skipped: the order of the loop this
+            // replaced, so the mean radius, and the cell made of it, keep their bits.
             double largest = 0, sum = 0;
             int active = 0;
-            for (int b = 0; b < _count; b++)
+            for (int row = 0; row < rows; row++)
             {
-                Creature body = creatures[b];
-                int first = _rowStart[b];
+                if (!_rowActive[row]) continue;
 
-                for (int i = 0; i < body.Links; i++)
-                {
-                    _rowBody[first + i] = b;
-                    _rowLink[first + i] = i;
-                }
-
-                if (!body.ContactActive) continue;
-
-                for (int i = 0; i < body.Links; i++)
-                {
-                    double r = body.LinkContactRadius[i];
-                    if (r > largest) largest = r;
-                    sum += r;
-                    active++;
-                }
+                double r = _rowRadius[row];
+                if (r > largest) largest = r;
+                sum += r;
+                active++;
             }
 
             LargestRadius = largest;
@@ -288,35 +388,47 @@ namespace Evosim.Dynamics
                 _hi = new int[3 * rows];
             }
 
-            long entries = 0;
-            for (int row = 0; row < rows; row++)
-            {
-                Creature body = creatures[_rowBody[row]];
+            // The cells each row covers, across threads over the flat arrays; the entry count is
+            // an integer, summed per slab and then over the slabs in order.
+            int rowSlabs = Slabs.CountFor(rows, Threads);
+            if (_slabEntries.Length < rowSlabs) _slabEntries = new long[rowSlabs];
+            double cell = _cellSize;
 
-                if (!body.ContactActive)
+            Slabs.Run(rows, rowSlabs, (s, from, to) =>
+            {
+                long mine = 0;
+
+                for (int row = from; row < to; row++)
                 {
-                    _lo[3 * row] = 1; _hi[3 * row] = 0;
-                    _lo[3 * row + 1] = 1; _hi[3 * row + 1] = 0;
-                    _lo[3 * row + 2] = 1; _hi[3 * row + 2] = 0;
-                    continue;
+                    if (!_rowActive[row])
+                    {
+                        _lo[3 * row] = 1; _hi[3 * row] = 0;
+                        _lo[3 * row + 1] = 1; _hi[3 * row + 1] = 0;
+                        _lo[3 * row + 2] = 1; _hi[3 * row + 2] = 0;
+                        continue;
+                    }
+
+                    double r = _rowRadius[row];
+                    double cx = _rowCentre[3 * row];
+                    double cy = _rowCentre[3 * row + 1];
+                    double cz = _rowCentre[3 * row + 2];
+
+                    int lx = Floor((cx - r) / cell), hx = Floor((cx + r) / cell);
+                    int ly = Floor((cy - r) / cell), hy = Floor((cy + r) / cell);
+                    int lz = Floor((cz - r) / cell), hz = Floor((cz + r) / cell);
+
+                    _lo[3 * row] = lx; _hi[3 * row] = hx;
+                    _lo[3 * row + 1] = ly; _hi[3 * row + 1] = hy;
+                    _lo[3 * row + 2] = lz; _hi[3 * row + 2] = hz;
+
+                    mine += (long)(hx - lx + 1) * (hy - ly + 1) * (hz - lz + 1);
                 }
 
-                int link = _rowLink[row];
-                double r = body.LinkContactRadius[link];
-                double cx = body.LinkContactCentre[3 * link];
-                double cy = body.LinkContactCentre[3 * link + 1];
-                double cz = body.LinkContactCentre[3 * link + 2];
+                _slabEntries[s] = mine;
+            });
 
-                int lx = Floor((cx - r) / _cellSize), hx = Floor((cx + r) / _cellSize);
-                int ly = Floor((cy - r) / _cellSize), hy = Floor((cy + r) / _cellSize);
-                int lz = Floor((cz - r) / _cellSize), hz = Floor((cz + r) / _cellSize);
-
-                _lo[3 * row] = lx; _hi[3 * row] = hx;
-                _lo[3 * row + 1] = ly; _hi[3 * row + 1] = hy;
-                _lo[3 * row + 2] = lz; _hi[3 * row + 2] = hz;
-
-                entries += (long)(hx - lx + 1) * (hy - ly + 1) * (hz - lz + 1);
-            }
+            long entries = 0;
+            for (int s = 0; s < rowSlabs; s++) entries += _slabEntries[s];
 
             if (entries > int.MaxValue / 2)
             {
