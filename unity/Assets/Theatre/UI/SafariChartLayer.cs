@@ -117,6 +117,7 @@ namespace Evosim.Theatre
         private double _domainStart = double.NaN;
         private bool _gone;
         private bool _saidNoBody;
+        private bool _saidNoReserve;
         private readonly List<(double t, double j)> _account = new List<(double, double)>();
         private readonly List<double> _births = new List<double>();
 
@@ -279,7 +280,7 @@ namespace Evosim.Theatre
         /// One frame: the chart's fade at the frame's second in its scene, and an account's sample
         /// of the followed body. Call it before the capture; true when the chart is on screen.
         /// </summary>
-        public bool Frame(SafariPose pose, TheatreDynamicsReplay live, float interval)
+        public bool Frame(SafariPose pose, IFilmWorld live, float interval)
         {
             if (!ReferenceEquals(pose.Scene, _scene)) Begin(pose.Scene, InkFor(pose.Scene?.Clade, null));
             if (_chart == null) { _fade = 0f; return false; }
@@ -334,11 +335,12 @@ namespace Evosim.Theatre
             _domainStart = double.NaN;
             _gone = false;
             _saidNoBody = false;
+            _saidNoReserve = false;
             _account.Clear();
             _births.Clear();
         }
 
-        private void Account(SafariPose pose, TheatreDynamicsReplay live, double offset, float interval)
+        private void Account(SafariPose pose, IFilmWorld live, double offset, float interval)
         {
             if (pose.Subject != _subject)
             {
@@ -364,17 +366,9 @@ namespace Evosim.Theatre
             // Nothing is sampled until two frames before the chart opens.
             if (offset < _chart.At - 2d * interval) { _card?.SetAccount(_account, _births, _domainStart, _domainStart + span, _gone); return; }
 
-            Organism body = null;
-            if (live?.Sim?.World != null)
-            {
-                IReadOnlyList<Organism> living = live.Sim.World.Living;
-                for (int i = 0; i < living.Count; i++)
-                {
-                    if (living[i].Id == _subject) { body = living[i]; break; }
-                }
-            }
-
-            if (body == null)
+            // A film window records no reserve (IFilmWorld.TryAccount), so there the account marks
+            // the body's births in the window and draws no line, and says so once.
+            if (live == null || !live.TryAccount(_subject, out double reserve, out int children))
             {
                 if (!_gone && _account.Count > 0)
                     Say(string.Format(CultureInfo.InvariantCulture, "body {0} is gone at {1:0.#} s: the account's line stops there", _subject, pose.Second));
@@ -382,14 +376,21 @@ namespace Evosim.Theatre
             }
             else
             {
-                if (_children >= 0 && body.Children > _children)
+                if (_children >= 0 && children > _children)
                 {
                     _births.Add(pose.Second);
                     Say(string.Format(CultureInfo.InvariantCulture, "body {0} gave birth at {1:0.#} s ({2} children now): marked on its account",
-                        _subject, pose.Second, body.Children));
+                        _subject, pose.Second, children));
                 }
-                _children = body.Children;
-                _account.Add((pose.Second, body.Energy));
+                _children = children;
+
+                if (!double.IsNaN(reserve)) _account.Add((pose.Second, reserve));
+                else if (!_saidNoReserve)
+                {
+                    _saidNoReserve = true;
+                    Say(string.Format(CultureInfo.InvariantCulture,
+                        "body {0}'s reserve is not recorded in a film window: the account marks its births and draws no line", _subject));
+                }
             }
 
             _card?.SetAccount(_account, _births, _domainStart, _domainStart + span, _gone);

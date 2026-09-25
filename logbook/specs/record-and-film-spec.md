@@ -246,6 +246,36 @@ re-running. The windows are independent, so they are written in parallel, severa
 processes at a few threads each, before Unity opens. Unity then films every scene from its
 window without stepping anything.
 
+*As built (2026-09-25).* The windows are planned from the story and recorded one at a time, not in
+parallel, under the machine's load ruling. `scripts/story-windows.py` reads a story and each run's
+lineage and writes `windows.json`, which `StoryWindows` in `Evosim.Farm` reads. It holds one
+window a scene, and one for each of a time scene's two takes. Each names its run, its span, its
+frame rate, the second its takes start and its chapter card's length. The span covers the card and
+the takes as the director times them, and one second more.
+
+A birth's window is set on a birth that the lineage records. That is the story's child, else the
+named parent's child nearest the second, else a child of the clade's line. A flexible scene past
+the run's last row is moved back to end on it. A held one is left, and reads unverified.
+`scripts/story-windows.ps1` runs `--film-window` once a window, and skips a window whose verdict
+names the same run, span and rate.
+
+The safari films them with `theatre-safari.ps1 -FromWindows`. The director opens each scene's
+window through the runner and poses the cameras on its frames. The plans that look ahead (the still
+close shot, the portrait's drift, the birth's hold) read the body's recorded path. The live world
+extrapolates its velocity there instead. Both worlds serve the plans through one interface,
+`IFilmWorld`.
+
+A scene with no recorded window is skipped and named in `scenes.tsv`, never stepped. Each take's
+label carries its window's word, and so does a new `provenance` column in `scenes.tsv`. A story
+can therefore hold faithful and cousin scenes side by side and say which is which, and
+`story-assemble.py` notes a film that mixes them. A birth take from a faithful window shows the
+recorded birth. A window holds no body's reserve, so a chart of one draws its births alone.
+
+`theatre-film.ps1 -FromFarm <window>` films one window with the film tool's shots, cut to the
+window's length. Its `-Trace` reads the solver, and is refused there. None of this has run in
+Unity or on the farm. The theatre compiles outside Unity with no errors, and the planner and the
+window reader's new calls have their own tests.
+
 B4. **During the run, later.** Once B1 is measured, the farm can write a short window at each
 checkpoint as it runs, so a safari needs no farm time at all after the arm ends. Its disk cost
 at the campaign's crowd has to be measured before it is proposed.

@@ -7,9 +7,12 @@ writer's rules are in [`story-writer-brief.md`](story-writer-brief.md) and a fil
 owner, because every write under `.claude/` asks them.*
 
 A story film tells one round across all its seeds. A writer reads the runs and writes a shot list;
-the safari's director films each scene from the runs' checkpoints; one script joins the clips. Every
-frame is a cousin, because the Editor steps each scene live from the nearest checkpoint. A birth on
-screen need not be the recorded one, and the captions say "in the run" where that matters.
+the safari's director films each scene; one script joins the clips. A scene is filmed one of two
+ways. Stepped live in the Editor from the nearest checkpoint, every frame is a cousin. A birth on
+screen then need not be the recorded one, and the captions say "in the run" where that matters.
+Played from a window the farm recorded (section 5's second half), nothing is stepped in the Editor.
+The scene then carries its window's verdict, which reads FAITHFUL when the farm's replay agreed
+with the run's own rows.
 
 ## 1. Before starting
 
@@ -90,6 +93,32 @@ film's, are the pattern):
 - **Look before joining.** The caller opens each contact sheet: this is the "watch it in the theatre"
   of CLAUDE.md, and the round's logbook entry says what was seen.
 
+### From the farm's film windows
+
+Built on 2026-09-25 (B3 of [`record-and-film-spec.md`](record-and-film-spec.md)) and not yet run
+in Unity or on the farm. Three steps replace the render's one: plan, record, film.
+
+```powershell
+python scripts/story-windows.py <story.json> --out scratch/story-windows/<round> `
+    --runs-root <main tree>\runs --runs r48-s1 --scenes 1,3
+./scripts/story-windows.ps1 scratch/story-windows/<round> -Threads 10
+./scripts/theatre-safari.ps1 r48-s1 -Story <story.json> -FromWindows scratch/story-windows/<round> `
+    -Worker 5 -RunsRoot <main tree>\runs -Folder story-final -DeleteFrames
+```
+
+- **The plan** is `windows.json`: one window a scene, and two for a time scene. Each spans the
+  scene's chapter card and takes as the director times them, and one second more.
+- **A birth's window** is set on a birth the lineage holds. That is the story's child, else the
+  named parent's child nearest the second, else a child of the clade's line.
+- **The recording** runs the farm once a window, one window at a time, at a third of the machine
+  by default. A window already recorded over the same span is skipped. Anything else in its
+  folder is moved aside, never deleted.
+- **The film.** Each scene opens its own window. A scene with no recorded window is skipped, and
+  `scenes.tsv` says why; nothing is stepped in its place.
+- **The word.** The corner shows the window's verdict: FAITHFUL, COUSIN or UNVERIFIED. A held scene
+  past the run's last row reads UNVERIFIED. `scenes.tsv` carries the word a scene.
+- **What a window lacks.** It holds no body's reserve, so a chart of one draws its births alone.
+
 ## 6. The join and the delivery
 
 ```powershell
@@ -98,7 +127,8 @@ python scripts/story-assemble.py scratch/story/r48/story.json scratch/owner/roun
 ```
 
 The script opens on the story's title, joins the clips in story order, marks every missing scene
-as skipped, and writes `<film>.scenes.tsv` beside the film.
+as skipped, and writes `<film>.scenes.tsv` beside the film. Its table gives each scene's
+provenance word. A film whose scenes carry more than one word says so in a note and a last line.
 
 To deliver, copy `story.md` beside the film in `scratch/owner/` and give the owner the full path as
 plain text. Neither file links nor attachment cards reach the owner.

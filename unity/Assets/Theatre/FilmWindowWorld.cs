@@ -60,7 +60,7 @@ namespace Evosim.Theatre
     /// volume-weighted centre of the posed parts, without the water a swimming body entrains.
     /// </para>
     /// </remarks>
-    public sealed class FilmWindowWorld : IDisposable, ITheatreFrame
+    public sealed class FilmWindowWorld : IDisposable, IFilmWorld
     {
         /// <summary>A body developed at one plan, and the arrays its pose is laid into.</summary>
         private sealed class Adult
@@ -630,6 +630,83 @@ namespace Evosim.Theatre
 
         /// <summary>The window's births, deaths and bites in (from, to]: what a story's cut is timed on.</summary>
         public IEnumerable<FilmWindowEvent> EventsBetween(double from, double to) => Window.EventsBetween(from, to);
+
+        // ---------------------------------------------------------------- the film's world (IFilmWorld)
+
+        /// <summary>How far apart the two points of a velocity are read, s.</summary>
+        public const float VelocitySpanSeconds = 1f;
+
+        /// <summary>
+        /// A body's root velocity at the frame on screen, from its recorded path: the move over the
+        /// next second, or over the last second of the window at its end. Zero when the window
+        /// never holds the body.
+        /// </summary>
+        public Vector3 VelocityOf(long id)
+        {
+            if (double.IsNaN(Second) || FrameCount < 2) return Vector3.zero;
+
+            double t0 = Second, t1 = Second + VelocitySpanSeconds;
+            if (t1 > LastSecond)
+            {
+                t1 = LastSecond;
+                t0 = Math.Max(FirstSecond, t1 - VelocitySpanSeconds);
+            }
+
+            if (!(t1 - t0 > 1e-6)) return Vector3.zero;
+            if (!RootAt(id, t0, out Vector3 a) || !RootAt(id, t1, out Vector3 b)) return Vector3.zero;
+
+            Vector3 v = (b - a) / (float)(t1 - t0);
+            return FilmPlans.Shot.Finite(v) ? v : Vector3.zero;
+        }
+
+        /// <summary>
+        /// Where a body's recorded path carries its root from the frame on screen in
+        /// <paramref name="seconds"/>: the farm's own path, and not a straight line. Held at its last
+        /// frame past the window's end or its death. Zero when the window never holds it.
+        /// </summary>
+        public Vector3 DisplacementOf(long id, float seconds)
+        {
+            if (double.IsNaN(Second)) return Vector3.zero;
+            if (!RootAt(id, Second, out Vector3 a) || !RootAt(id, Second + seconds, out Vector3 b)) return Vector3.zero;
+            Vector3 d = b - a;
+            return FilmPlans.Shot.Finite(d) ? d : Vector3.zero;
+        }
+
+        /// <summary>A body's recorded root at a second (<see cref="FilmWindowReader.TryRootAt"/>).</summary>
+        public bool RootAt(long id, double second, out Vector3 root)
+        {
+            bool found = Window.TryRootAt(id, second, out float x, out float y, out float z);
+            root = found ? new Vector3(x, y, z) : Vector3.zero;
+            return found;
+        }
+
+        /// <summary>
+        /// A drawn body's account: no reserve (a window does not record one) and its children in
+        /// the window up to the frame on screen. False when the frame does not draw the body.
+        /// </summary>
+        public bool TryAccount(long id, out double reserve, out int children)
+        {
+            reserve = double.NaN;
+            children = 0;
+            if (!_indexOf.ContainsKey(id)) return false;
+            children = Window.ChildrenOf(id, Second);
+            return true;
+        }
+
+        /// <summary>
+        /// A body's parent and its guild flags as the window has them, for a clade walk: the parent
+        /// from its birth row in the window, or -1 for a body alive at the window's start (whose
+        /// clade is the recording's); the flags from the last frame that held it, in
+        /// <see cref="SafariClades.FlagsOf(bool, bool, bool)"/>'s bits.
+        /// </summary>
+        public bool TryLineageOf(long id, out long parent, out byte flags)
+        {
+            parent = Window.TryBirthOf(id, out FilmWindowEvent birth) ? birth.Parent : -1;
+            flags = 255;
+            if (!Window.TryFlagsOf(id, out int bits)) return false;
+            flags = (byte)(bits & PoseStream.AllFlagBits);
+            return true;
+        }
 
         /// <summary>
         /// Two lines: what this is and how far to trust it, then which world, when, and how much

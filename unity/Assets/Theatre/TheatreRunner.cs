@@ -1275,6 +1275,34 @@ namespace Evosim.Theatre
             OpenWhateverModeSays();
         }
 
+        /// <summary>
+        /// Opens a farm film window, as <c>EVOSIM_THEATRE_WINDOW</c> would: the safari's director
+        /// films a story's scene from one this way (<c>record-and-film-spec.md</c>, B3).
+        /// </summary>
+        /// <remarks>
+        /// Synchronous, as <see cref="OpenCheckpoint"/> is: the old world is closed and the window
+        /// opened, dressed and showing its first frame before this returns, and
+        /// <see cref="Window"/> is null with <see cref="Error"/> set when it was refused. A window
+        /// already on screen is kept, so a scene's second segment does not open it again.
+        /// </remarks>
+        public void OpenWindowAt(string windowDirectory, string runDirectory)
+        {
+            if (_window != null && !string.IsNullOrEmpty(windowDirectory) &&
+                string.Equals(
+                    System.IO.Path.GetFullPath(windowDirectory).TrimEnd('/', '\\'),
+                    _window.Window.Directory.TrimEnd('/', '\\'),
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            Mode = ViewMode.Window;
+            WindowDirectory = windowDirectory ?? "";
+            WindowRunDirectory = runDirectory ?? "";
+            SeekToSeconds = 0f;
+            OpenWhateverModeSays();
+        }
+
         /// <summary>Space, without the key: pause or carry on.</summary>
         public void TogglePause() => Paused = !Paused;
 

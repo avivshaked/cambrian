@@ -23,6 +23,12 @@
   with a one-second crossfade, any other scene's with a cut. The clips are
   scratch/safari/<Arm>/<date>/<Arm>-<scene>.mp4, each with a contact sheet (scripts/film-sheet.py).
 
+  With -FromWindows a story's scenes are played from the farm's film windows instead of stepped
+  (logbook/specs/record-and-film-spec.md, B3): scripts/story-windows.py plans them and
+  scripts/story-windows.ps1 records them, and each scene then opens its own window, shows the
+  farm's frames, and carries the window's verdict (FAITHFUL, COUSIN or UNVERIFIED) as its word. A
+  scene with no recorded window is skipped and scenes.tsv says why; nothing is stepped live.
+
   With -Check it runs Evosim.Theatre.EditorTools.TheatreSafariCheck.Run instead: a frame every two
   seconds (or -Every) into scratch/snaps/safari/<Arm>/, the camera asserted above the bed, outside
   every body and under the 0.5 m/s ceiling in every frame, one verdict line, and nothing encoded.
@@ -109,6 +115,9 @@
 .PARAMETER StoryRun
   The run the story's scenes are chosen for (EVOSIM_THEATRE_SAFARI_STORY_RUN); the Arm when not
   given.
+.PARAMETER FromWindows
+  The folder scripts/story-windows.py planned (its windows.json), or the file, from here or from
+  the repository's root (EVOSIM_THEATRE_SAFARI_WINDOWS). Needs -Story.
 .PARAMETER NoStoryLook
   Film a story in the census's dark field (EVOSIM_THEATRE_STORY_LOOK=0): no lighter water, no
   lamp, no exposure meter. A story takes the look by default (StoryLook.cs, 2026-09-25); a trip
@@ -128,6 +137,8 @@
   ./scripts/theatre-safari.ps1 r46-s1 -Check -Scenes 1,2,3 -Guide scratch/safari-director/guide-r46-s1.json
 .EXAMPLE
   ./scripts/theatre-safari.ps1 r48-s1 -Story scratch/story/story.json -Check -Worker 5 -RunsRoot D:\Projects\experiments\evolution-simulator\runs
+.EXAMPLE
+  ./scripts/theatre-safari.ps1 r48-s1 -Story scratch/story-v2/story.json -FromWindows scratch/story-windows/r48-v2 -Scenes 1,3 -Worker 5 -Folder windows-trial -RunsRoot D:/Projects/experiments/evolution-simulator/runs
 #>
 [CmdletBinding()]
 param(
@@ -155,6 +166,7 @@ param(
     [switch]$DownsampleCheck,
     [string]$Story = '',
     [string]$StoryRun = '',
+    [string]$FromWindows = '',
     [switch]$NoStoryLook,
     [switch]$StoryLook,
     [string]$Folder = '',
@@ -210,6 +222,16 @@ if ($Story) {
     throw "-StoryRun needs -Story."
 }
 
+# The farm's film windows for the story: a folder holding windows.json, or the file.
+$windowsPath = ''
+if ($FromWindows) {
+    if (-not $storyPath) { throw "-FromWindows needs -Story: the windows are a story's, planned by scripts/story-windows.py." }
+    $candidates = if ([System.IO.Path]::IsPathRooted($FromWindows)) { @($FromWindows) } else { @((Join-Path (Get-Location) $FromWindows), (Join-Path $root $FromWindows)) }
+    $windowsPath = $candidates | Where-Object { (Test-Path -LiteralPath $_ -PathType Leaf) -or (Test-Path -LiteralPath (Join-Path $_ 'windows.json') -PathType Leaf) } | Select-Object -First 1
+    if (-not $windowsPath) { throw "-FromWindows: no windows.json at $($candidates -join ' or '). Plan it with scripts/story-windows.py and record it with scripts/story-windows.ps1." }
+    $windowsPath = (Resolve-Path -LiteralPath $windowsPath).Path
+}
+
 # ---------------------------------------------------------------- the run and its guide
 
 $runsDirectory = if ([System.IO.Path]::IsPathRooted($RunsRoot)) { $RunsRoot } else { Join-Path $root $RunsRoot }
@@ -232,7 +254,7 @@ if ($Guide) {
 }
 
 $checkpoints = @(Get-ChildItem -Path (Join-Path $run.FullName 'checkpoints') -Filter '*.ckpt' -File -ErrorAction SilentlyContinue)
-if ($checkpoints.Count -eq 0) {
+if ($checkpoints.Count -eq 0 -and -not $windowsPath) {
     Write-Warning "The run has no checkpoints: every scene replays from the founding, and the Editor's log says how long each will take."
 }
 
@@ -271,7 +293,8 @@ $names = @(
     'EVOSIM_THEATRE_SAFARI_CANOPY', 'EVOSIM_THEATRE_DOF', 'EVOSIM_THEATRE_DOF_APERTURE',
     'EVOSIM_THEATRE_SAFARI_SNAP_AHEAD', 'EVOSIM_THEATRE_CPU_DOWNSAMPLE', 'EVOSIM_THEATRE_SYNC_ENCODE',
     'EVOSIM_THEATRE_DOWNSAMPLE_CHECK', 'EVOSIM_THEATRE_SAFARI_STORY', 'EVOSIM_THEATRE_SAFARI_STORY_RUN',
-    'EVOSIM_THEATRE_STORY_LOOK', 'EVOSIM_THEATRE_STORY_BURN_TEXT')
+    'EVOSIM_THEATRE_STORY_LOOK', 'EVOSIM_THEATRE_STORY_BURN_TEXT', 'EVOSIM_THEATRE_SAFARI_WINDOWS',
+    'EVOSIM_THEATRE_WINDOW')
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -304,6 +327,7 @@ try {
         $env:EVOSIM_THEATRE_SAFARI_STORY = $storyPath
         $env:EVOSIM_THEATRE_SAFARI_STORY_RUN = $StoryRun
     }
+    if ($windowsPath) { $env:EVOSIM_THEATRE_SAFARI_WINDOWS = $windowsPath }
     if ($NoStoryLook -and $StoryLook) { throw '-NoStoryLook and -StoryLook together: pick one.' }
     if ($NoStoryLook) { $env:EVOSIM_THEATRE_STORY_LOOK = '0' }
     if ($StoryLook) { $env:EVOSIM_THEATRE_STORY_LOOK = '1' }
@@ -320,6 +344,7 @@ try {
     $tripWord = if ($storyPath) { "story $storyPath for $StoryRun" } elseif ($Clade) { "one clade: $Clade" } else { $Heuristic }
     $sceneWord = if ($sceneList.Count -gt 0) { ", scenes $($sceneList -join ',')" } else { ', every scene' }
     Write-Host "  trip     $tripWord$sceneWord"
+    if ($windowsPath) { Write-Host "  windows  $windowsPath (the farm's frames; a scene without one is skipped, never stepped)" }
     Write-Host "  frames   $outDirectory"
     Write-Host "  text     $textWord"
     Write-Host "  entry    $entry"

@@ -96,6 +96,11 @@ namespace Evosim.Theatre
         /// the rehearsal starts, its child is taken before any other in the line.
         /// </summary>
         public long BirthParentBody = -1;
+        /// <summary>
+        /// For a story's birth, the child body its writer named, or -1: a film window's birth
+        /// (B3) is that child's when the window holds it.
+        /// </summary>
+        public long BirthChildBody = -1;
         /// <summary>A story's own canopy switch for its arrival or descent; null leaves it to <see cref="SafariOptions.Canopy"/>.</summary>
         public bool? Canopy;
         /// <summary>How much a story's held card darkens its picture under the captions, 0 to 1 (0.6 dimmed, 1 black).</summary>

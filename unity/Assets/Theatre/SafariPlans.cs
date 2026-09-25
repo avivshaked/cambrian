@@ -44,7 +44,11 @@ namespace Evosim.Theatre
         /// <summary>Everything a plan needs to know about the world at the scene's second.</summary>
         public sealed class Stage
         {
-            public TheatreDynamicsReplay Live;
+            /// <summary>
+            /// The world at the scene's second: the live world, or a farm film window
+            /// (<see cref="IFilmWorld"/>), whose recorded paths are what a plan's look ahead reads.
+            /// </summary>
+            public IFilmWorld Frame;
             public LiveWorldView View;
             public FilmPlans.WorldBounds World;
             public float Aspect = 16f / 9f;
@@ -53,9 +57,9 @@ namespace Evosim.Theatre
             public readonly List<float> Reaches = new List<float>();
             public readonly List<long> Ids = new List<long>();
 
-            public static Stage Of(TheatreDynamicsReplay live, LiveWorldView view, float aspect, int sceneIndex)
+            public static Stage Of(IFilmWorld live, LiveWorldView view, float aspect, int sceneIndex)
             {
-                var s = new Stage { Live = live, View = view, World = new FilmPlans.WorldBounds(live), Aspect = aspect, SceneIndex = sceneIndex };
+                var s = new Stage { Frame = live, View = view, World = new FilmPlans.WorldBounds(live), Aspect = aspect, SceneIndex = sceneIndex };
                 FilmPlans.Shot.Crowd(live, view, s.Positions, s.Reaches, s.Ids);
                 return s;
             }
@@ -420,8 +424,9 @@ namespace Evosim.Theatre
             float elevationSweep = family == 0 ? 0f : family == 1 ? 40f * Mathf.Deg2Rad : 20f * Mathf.Deg2Rad;
             float azimuthSweep = family == 1 ? 0f : sense * turns * 2f * Mathf.PI;
 
-            // The subject's drift through the tank at the scene's second, from the solver.
-            Vector3 drift = VelocityOf(stage.Live, id);
+            // The subject's drift through the tank at the scene's second: from the solver in the
+            // live world, from the recorded path in a film window.
+            Vector3 drift = stage.Frame.VelocityOf(id);
             float driftSpeed = drift.magnitude;
 
             // The ceiling: arc speed at its peak plus the subject's drift, under half a metre a second.
@@ -443,8 +448,9 @@ namespace Evosim.Theatre
             // between the eye and the subject, at the scene's second. Round 47's first safari
             // lifted surface portraits into the surface's clamp and orbited two into the rock.
             // The subject where its drift at the scene's second carries it, for the check: a
-            // swimmer crosses metres in a take, and the eye goes with it.
-            Vector3 SubjectAt(float u) => centre0 + drift * (u * seconds);
+            // swimmer crosses metres in a take, and the eye goes with it. A film window knows
+            // where the body went, so there it is the recorded path and not a straight line.
+            Vector3 SubjectAt(float u) => centre0 + stage.Frame.DisplacementOf(id, u * seconds);
             Vector3 EyeAt(float u, float r, float az0, float el0, float elSweep) =>
                 SubjectAt(u) + r * Direction(az0 + azimuthSweep * FilmPlans.Ease(u), el0 + elSweep * FilmPlans.Ease(u));
 
@@ -675,11 +681,14 @@ namespace Evosim.Theatre
             FilmPlans.Subject(stage.View, id, root0, reach, out Vector3 centre0, out float length);
             Vector3 rootToCentre = centre0 - root0;
 
-            Vector3 drift = VelocityOf(stage.Live, id);
+            // The parent's drift, and where it carries the parent: forward in a straight line in
+            // the live world, along the recorded path in a film window.
+            Vector3 drift = stage.Frame.VelocityOf(id);
             leadSeconds = Mathf.Clamp(leadSeconds, 0f, seconds);
-            Vector3 centreAtBirth = centre0 + drift * leadSeconds;
+            Vector3 atBirth = stage.Frame.DisplacementOf(id, leadSeconds);
+            Vector3 centreAtBirth = centre0 + atBirth;
             bool child = FilmPlans.Shot.Finite(childOffset);
-            Vector3 childSpot = child ? root0 + drift * leadSeconds + childOffset : centreAtBirth;
+            Vector3 childSpot = child ? root0 + atBirth + childOffset : centreAtBirth;
             Vector3 look = child ? 0.5f * (centreAtBirth + childSpot) : centreAtBirth;
 
             float fov = FilmPlans.PortraitLens;
@@ -709,7 +718,7 @@ namespace Evosim.Theatre
             {
                 foreach (float t in new[] { 0f, leadSeconds, seconds })
                 {
-                    if ((eye - (root0 + drift * t)).magnitude < reach + BodyMargin) return true;
+                    if ((eye - (root0 + stage.Frame.DisplacementOf(id, t))).magnitude < reach + BodyMargin) return true;
                 }
                 return false;
             }
@@ -1109,17 +1118,7 @@ namespace Evosim.Theatre
         public static Vector3 Direction(float azimuth, float elevation) =>
             new Vector3(Mathf.Cos(elevation) * Mathf.Cos(azimuth), Mathf.Sin(elevation), Mathf.Cos(elevation) * Mathf.Sin(azimuth));
 
-        /// <summary>A body's root velocity from the solver, m/s, or zero.</summary>
-        public static Vector3 VelocityOf(TheatreDynamicsReplay live, long id)
-        {
-            if (live?.Sim == null || !live.Sim.TryPose(id, out Evosim.Dynamics.Creature body) || body == null ||
-                body.Velocity == null || body.Velocity.Length < 3)
-            {
-                return Vector3.zero;
-            }
-
-            var v = new Vector3((float)body.Velocity[0], (float)body.Velocity[1], (float)body.Velocity[2]);
-            return FilmPlans.Shot.Finite(v) ? v : Vector3.zero;
-        }
+        /// <summary>A body's root velocity from the solver, m/s, or zero (<see cref="TheatreDynamicsReplay.VelocityOf"/>).</summary>
+        public static Vector3 VelocityOf(TheatreDynamicsReplay live, long id) => live != null ? live.VelocityOf(id) : Vector3.zero;
     }
 }

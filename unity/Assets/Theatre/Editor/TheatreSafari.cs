@@ -54,6 +54,15 @@ namespace Evosim.Theatre.EditorTools
     /// <c>story-NN-&lt;arm&gt;-&lt;station&gt;-&lt;subject&gt;</c>, so the clips of every run sort
     /// into the story's order for <c>scripts/story-assemble.py</c>.
     /// </para>
+    /// <para>
+    /// <b>From farm film windows</b> (<c>EVOSIM_THEATRE_SAFARI_WINDOWS</c>, a folder
+    /// <c>scripts/story-windows.py</c> planned and <c>scripts/story-windows.ps1</c> recorded; B3),
+    /// a story's scenes are filmed from the windows and the live world is never opened: the runner
+    /// opens the first recorded window, the director opens each scene's in turn, and every take's
+    /// row in <c>captions.tsv</c> carries its window's word (FAITHFUL, COUSIN or UNVERIFIED), as
+    /// <c>scenes.tsv</c>'s last column carries each scene's. A scene with no recorded window is
+    /// missed and listed.
+    /// </para>
     /// <code>
     /// # NO -quit and NO -nographics, as the film.
     /// $env:EVOSIM_THEATRE_RUN = "$PWD/runs/r46-s1"
@@ -117,6 +126,11 @@ namespace Evosim.Theatre.EditorTools
         private static string _story = "";
         private static string _storyRun = "";
         private static SafariClades _lineage;
+
+        // Film windows (EVOSIM_THEATRE_SAFARI_WINDOWS, B3): the plan's folder, or empty to step the
+        // world live; and the word the open take's frames carry.
+        private static string _windows = "";
+        private static string _takeWord = "COUSIN";
 
         // every frame of the trip, stage by stage, folded in at each take's end; the camera last
         // folded in, so a take is never counted twice
@@ -191,19 +205,31 @@ namespace Evosim.Theatre.EditorTools
             List<SafariScene> scenes = BuildTrip(out string why);
             if (scenes == null) { Fail(why); return; }
 
+            // From film windows the runner opens the first recorded window of the scenes asked for
+            // and never the live world; a list with none recorded fails here, before Play mode.
+            string firstWindow = null;
+            if (_windows.Length > 0)
+            {
+                firstWindow = FirstRecordedWindow(scenes, out string none);
+                if (firstWindow == null) { Fail(none); return; }
+            }
+
             if (!OpenTheTheatreScene()) return;
 
-            // The live world opens from the run's founding and the director restores from there.
+            // The live world opens from the run's founding and the director restores from there,
+            // or the first window opens and the director opens each scene's.
             Environment.SetEnvironmentVariable("EVOSIM_THEATRE_RUN", _run);
             Environment.SetEnvironmentVariable("EVOSIM_THEATRE_CHECKPOINT", null);
             Environment.SetEnvironmentVariable("EVOSIM_THEATRE_SEEK", null);
+            Environment.SetEnvironmentVariable("EVOSIM_THEATRE_WINDOW", firstWindow);
 
             Debug.Log(string.Format(CultureInfo.InvariantCulture,
                 "[Theatre] safari{0}: {1} of {2} scenes of the {3} trip, {4}, into {5}. Entering Play mode.\n  {6}",
                 _check ? " check" : "", _playList.Count, scenes.Count,
                 !string.IsNullOrEmpty(_story) ? "story (" + Path.GetFileName(_story) + " for " + _storyRun + ")"
                     : string.IsNullOrEmpty(_clade) ? _heuristic : "one-clade (" + _clade + ")",
-                _check ? "a frame every " + _checkEvery.ToString("0.#", CultureInfo.InvariantCulture) + " s" : _fps + " fps at " + _width + "x" + _height,
+                (_check ? "a frame every " + _checkEvery.ToString("0.#", CultureInfo.InvariantCulture) + " s" : _fps + " fps at " + _width + "x" + _height) +
+                (_windows.Length > 0 ? ", from the farm's film windows in " + _windows : ", stepping the world live"),
                 _out, string.Join("\n  ", _playList.Select(i => scenes[i].Line()))));
 
             SessionState.SetString(PendingKey, Pack());
@@ -275,6 +301,24 @@ namespace Evosim.Theatre.EditorTools
                 if (_storyRun.Length == 0) _storyRun = arm;
                 if (!string.IsNullOrEmpty(_clade))
                     Debug.LogWarning("[Theatre] safari: EVOSIM_THEATRE_SAFARI_CLADE is ignored: the story decides the trip.");
+            }
+
+            // Film windows (B3): a story's scenes from the farm's recorded windows, nothing stepped.
+            _windows = (Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_WINDOWS") ?? "").Trim().Trim('"');
+            if (_windows.Length > 0)
+            {
+                if (_story.Length == 0)
+                    return "EVOSIM_THEATRE_SAFARI_WINDOWS: film windows are planned for a story's scenes; name the story (EVOSIM_THEATRE_SAFARI_STORY) too.";
+                if (!Path.IsPathRooted(_windows)) _windows = Path.Combine(BuildIdentity.RepositoryRoot(), _windows);
+                _windows = Path.GetFullPath(_windows);
+                try
+                {
+                    Evosim.Farm.StoryWindows.Read(_windows);
+                }
+                catch (Exception e)
+                {
+                    return "EVOSIM_THEATRE_SAFARI_WINDOWS: " + e.Message;
+                }
             }
 
             text = (Environment.GetEnvironmentVariable(SafariCaptions.BurnTextVariable) ?? "").Trim();
@@ -401,6 +445,37 @@ namespace Evosim.Theatre.EditorTools
             return scenes;
         }
 
+        /// <summary>
+        /// The directory of the first scene asked for whose main window is recorded, or null with
+        /// every scene's reason: what the runner opens first, so the live world is never opened.
+        /// </summary>
+        private static string FirstRecordedWindow(List<SafariScene> scenes, out string why)
+        {
+            why = null;
+            Evosim.Farm.StoryWindows plan = Evosim.Farm.StoryWindows.Read(_windows);
+            var lines = new List<string>();
+
+            foreach (int i in _playList)
+            {
+                SafariScene s = scenes[i];
+                Evosim.Farm.StoryWindow w = plan.Find(s.StoryNumber, Evosim.Farm.StoryWindows.MainPart, s.StoryArm);
+                if (w == null)
+                {
+                    string skipped = plan.SkippedWhy(s.StoryNumber, s.StoryArm);
+                    lines.Add("story " + s.StoryNumber + ": no window planned" + (skipped != null ? " (" + skipped + ")" : ""));
+                    continue;
+                }
+
+                string not = Evosim.Farm.StoryWindows.Recorded(w, out _);
+                if (not == null) return w.Directory;
+                lines.Add("story " + s.StoryNumber + ": " + not);
+            }
+
+            why = "no scene asked for has a recorded film window in " + plan.Path + " (record them with scripts/story-windows.ps1):\n  " +
+                  string.Join("\n  ", lines);
+            return null;
+        }
+
         private static bool OpenTheTheatreScene()
         {
             if (SceneManager.GetActiveScene().path == TheatreSceneBuilder.ScenePath) return true;
@@ -423,7 +498,7 @@ namespace Evosim.Theatre.EditorTools
             _wallSeconds.ToString("R", CultureInfo.InvariantCulture), _out, _burnCaptions ? "1" : "0",
             _seekMax.ToString("R", CultureInfo.InvariantCulture),
             _snapAhead.ToString("R", CultureInfo.InvariantCulture),
-            _story ?? "", _storyRun ?? "", _burnLabel ? "1" : "0");
+            _story ?? "", _storyRun ?? "", _burnLabel ? "1" : "0", _windows ?? "");
 
         [InitializeOnLoadMethod]
         private static void ResumeAcrossTheDomainReload()
@@ -461,6 +536,7 @@ namespace Evosim.Theatre.EditorTools
             _story = f.Length > 14 ? f[14] : "";
             _storyRun = f.Length > 15 ? f[15] : "";
             _burnLabel = f.Length > 16 ? f[16] == "1" : true;
+            _windows = f.Length > 17 ? f[17] : "";
             _lineage = null;
 
             Arm();
@@ -510,6 +586,18 @@ namespace Evosim.Theatre.EditorTools
 
                 if (_director == null)
                 {
+                    if (_windows.Length > 0)
+                    {
+                        if (_runner.Window == null)
+                        {
+                            if (!string.IsNullOrEmpty(_runner.Error)) Finish(1, "refused: " + _runner.Error);
+                            return;
+                        }
+
+                        SetUp();
+                        return;
+                    }
+
                     if (_runner.Live == null)
                     {
                         if (!string.IsNullOrEmpty(_runner.Error)) Finish(1, "refused: " + _runner.Error);
@@ -589,7 +677,10 @@ namespace Evosim.Theatre.EditorTools
                 Interactive = false,
                 MostSeekSeconds = _seekMax,
                 MostSnapAheadSeconds = _snapAhead,
+                WindowsDirectory = _windows.Length > 0 ? _windows : null,
             });
+            if (_windows.Length > 0)
+                Debug.Log("[Theatre] safari: filming from the farm's film windows in " + _windows + ": nothing is stepped, and each scene's label carries its window's verdict");
             _director.TakeStarted += OnTakeStarted;
             _director.TakeEnded += OnTakeEnded;
 
@@ -646,7 +737,7 @@ namespace Evosim.Theatre.EditorTools
         }
 
         /// <summary>How far down the world the camera stands, 0 at the surface and 1 at the bed, for the meter's target.</summary>
-        private static float DepthOf(TheatreDynamicsReplay live, Vector3 eye)
+        private static float DepthOf(ITheatreFrame live, Vector3 eye)
         {
             Bounds box = SnapshotCamera.BoxOf(live, out _);
             if (!(box.size.y > 0.01f)) return 0.5f;
@@ -668,7 +759,8 @@ namespace Evosim.Theatre.EditorTools
             _warmFrames = 0;
             _hasLastEye = false;
             _takeNumber = take;
-            _takeStartSecond = _runner.Live.ElapsedSeconds;
+            _takeStartSecond = _director.World?.Second ?? double.NaN;
+            _takeWord = _director.ProvenanceWord;
             _takesByScene[scene.Index] = take + 1;
 
             // The story's lamp rides with the camera on a portrait and a birth and takes the place
@@ -704,7 +796,7 @@ namespace Evosim.Theatre.EditorTools
                     Debug.Log("[Theatre] safari: charts: " + note);
                 }
             }
-            _charts?.Begin(scene, SafariChartLayer.InkFor(scene.Clade, _runner.LiveView?.Palette));
+            _charts?.Begin(scene, SafariChartLayer.InkFor(scene.Clade, _director.View?.Palette));
 
             _takeDirectory = Path.Combine(Path.Combine(_out, scene.Slug), "take-" + (take + 1));
             Directory.CreateDirectory(_takeDirectory);
@@ -822,7 +914,7 @@ namespace Evosim.Theatre.EditorTools
             if (_takeFrames > 0)
             {
                 if (_spanText != null) CaptionRow("caption", _spanFrom, _takeFrames, _spanSecond, _spanText);
-                CaptionRow("take", 0, _takeFrames, _takeFirstSecond, "COUSIN");
+                CaptionRow("take", 0, _takeFrames, _takeFirstSecond, _takeWord);
             }
             _captions?.Flush();
             _spanText = null;
@@ -833,16 +925,15 @@ namespace Evosim.Theatre.EditorTools
         /// <summary>Renders the take's first pose until every body is dressed, as the film's warm-up does.</summary>
         private static void WarmUp()
         {
-            LiveWorldView view = _runner.LiveView;
-            TheatreDynamicsReplay live = _runner.Live;
+            LiveWorldView view = _director.View;
+            IFilmWorld live = _director.World;
             FilmPlans.Shot shot = _director.CurrentShot;
-            if (view == null || shot == null) { _warm = true; return; }
+            if (view == null || live == null || shot == null) { _warm = true; return; }
 
             // The take starts at the exposure the last take ended on.
             if (_warmFrames == 0 && _exposure != null) TheatreGrade.Current?.SetExposure(_exposure.Ev);
 
-            view.Sync();
-            view.DressUndressed();
+            _director.SyncView();
             shot.Pose(live, view, 0f, Interval, out Vector3 eye, out Quaternion rotation, out float focus);
             _camera.CapturePlaced(live, eye, rotation, shot.FieldOfView, shot.Portrait, focus, "", null);
             _warmFrames++;
@@ -872,8 +963,8 @@ namespace Evosim.Theatre.EditorTools
 
         private static void Shoot()
         {
-            TheatreDynamicsReplay live = _runner.Live;
             if (!_director.Frame(Interval, double.PositiveInfinity, out SafariPose pose)) return;
+            IFilmWorld live = _director.World;
 
             Span(pose.Caption, pose.TakeFrame, pose.Second);
             _camera.Caption = _burnCaptions ? pose.Caption : null;
@@ -925,7 +1016,7 @@ namespace Evosim.Theatre.EditorTools
         }
 
         /// <summary>The check's three assertions, on every frame, in both modes (the run's log carries them too).</summary>
-        private static void Assess(TheatreDynamicsReplay live, SafariPose pose)
+        private static void Assess(IFilmWorld live, SafariPose pose)
         {
             _frames++;
             var world = new FilmPlans.WorldBounds(live);
@@ -939,12 +1030,13 @@ namespace Evosim.Theatre.EditorTools
 
             float nearest = float.PositiveInfinity;
             long nearestId = -1;
-            foreach (Organism o in live.Sim.World.Living)
+            LiveWorldView view = _director.View;
+            for (int i = 0; i < live.BodyCount; i++)
             {
-                Vector3 at = FilmPlans.Shot.Where(o, _runner.LiveView);
+                Vector3 at = FilmPlans.Shot.Where(live, i, view);
                 if (!FilmPlans.Shot.Finite(at)) continue;
-                float gap = (eye - at).magnitude - SnapshotCamera.ReachOf(o.Phenotype);
-                if (gap < nearest) { nearest = gap; nearestId = o.Id; }
+                float gap = (eye - at).magnitude - SnapshotCamera.ReachOf(live.PhenotypeOf(i));
+                if (gap < nearest) { nearest = gap; nearestId = live.IdAt(i); }
             }
             if (nearest < 0f) Fault(ref _inBody, pose, string.Format(CultureInfo.InvariantCulture, "inside body {0} by {1:0.###} m", nearestId, -nearest));
 
@@ -983,10 +1075,11 @@ namespace Evosim.Theatre.EditorTools
             _outcomes.Add(string.Join("\t",
                 (scene.Index + 1).ToString(CultureInfo.InvariantCulture), scene.Slug, scene.Station.ToString(), scene.Subject,
                 scene.At.ToString("0.###", CultureInfo.InvariantCulture),
-                _runner.Live != null ? _runner.Live.ElapsedSeconds.ToString("0.###", CultureInfo.InvariantCulture) : "",
+                _director.World != null ? _director.World.Second.ToString("0.###", CultureInfo.InvariantCulture) : "",
                 _director.Phase == SafariPhase.Parked ? "played" : _director.Phase.ToString().ToLowerInvariant() + ": " + _director.Status,
                 (_takesByScene.TryGetValue(scene.Index, out int t) ? t : 0).ToString(CultureInfo.InvariantCulture),
-                scene.Plan.Replace('\t', ' ')));
+                scene.Plan.Replace('\t', ' '),
+                _director.SceneProvenance));
 
             _warm = false;
             NextScene();
@@ -1075,7 +1168,7 @@ namespace Evosim.Theatre.EditorTools
             {
                 if (_out != null && Directory.Exists(_out))
                 {
-                    var sb = new StringBuilder("index\tslug\tstation\tsubject\tat\tplayed_to\toutcome\ttakes\tplan\n");
+                    var sb = new StringBuilder("index\tslug\tstation\tsubject\tat\tplayed_to\toutcome\ttakes\tplan\tprovenance\n");
                     foreach (string o in _outcomes) sb.Append(o).Append('\n');
                     File.WriteAllText(Path.Combine(_out, "scenes.tsv"), sb.ToString());
                 }

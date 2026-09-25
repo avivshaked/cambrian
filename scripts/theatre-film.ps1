@@ -1,6 +1,7 @@
 ﻿<#
 .SYNOPSIS
-  Film a live world continued from a farm checkpoint: numbered frames per shot, then an mp4 each.
+  Film a live world continued from a farm checkpoint, or a farm film window as the farm recorded
+  it (-FromFarm): numbered frames per shot, then an mp4 each.
 
 .DESCRIPTION
   The owner wants films of the world (logbook/specs/video-tools-notes.md). The safari's director
@@ -35,6 +36,13 @@
   Then ffmpeg (on PATH) encodes scratch/films/<Arm>/<Arm>-t<checkpoint s>-<shot>.mp4 per shot:
   H.264, yuv420p, -Fps, -crf 18.
 
+  With -FromFarm nothing is stepped (logbook/specs/record-and-film-spec.md, B3). The theatre opens
+  the window the farm recorded (Evosim.Farm --film-window), shows its frame nearest each film
+  frame's second, and burns the window's own verdict into the corner: FAITHFUL, COUSIN or
+  UNVERIFIED. The film starts at the window's first frame, or at -At when it is given, and a film
+  longer than the window is cut to it. The frames go to scratch/films/<Arm>/farm-<window>/<shot>/
+  and the clips are <Arm>-<window>-<shot>.mp4. -Trace reads the solver and is refused here.
+
   The launch is the snapshot's: -batchmode without -quit (the entry quits itself) and without
   -nographics (a picture needs a graphics device), four job workers. It refuses worker 1 (unity/,
   the owner's Editor) and a worker a Unity process already holds.
@@ -44,7 +52,12 @@
 
 .PARAMETER At
   Simulated seconds. The checkpoint at or before it is the one restored, and the file names carry
-  the checkpoint's second, not this one.
+  the checkpoint's second, not this one. With -FromFarm, the second inside the window to start
+  from (optional there).
+
+.PARAMETER FromFarm
+  A farm film window's directory (film.poses.bin and identity.jsonl in it), relative to the
+  repository root or absolute. Films the window as recorded instead of continuing a checkpoint.
 
 .PARAMETER Worker
   Worker number, default 6.
@@ -129,12 +142,15 @@
 .EXAMPLE
   ./scripts/theatre-film.ps1 ckUi -At 400 -RunsRoot scratch/live-ui/runs -Seconds 20 -Fps 10
 .EXAMPLE
+  ./scripts/theatre-film.ps1 r48-s1 -FromFarm scratch/story-windows/r48-v2/story-01-r48-s1-main -Shots close -Seconds 20
+.EXAMPLE
   ./scripts/theatre-film.ps1 r47-s2 -At 5000 -Worker 5 -Shots close -Seconds 10 -CpuDownsample -SyncEncode
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory, Position = 0)][string]$Arm,
-    [Parameter(Mandatory)][double]$At,
+    [double]$At = -1,
+    [string]$FromFarm,
     [int]$Worker = 6,
     [string[]]$Shots = @('orbit', 'close'),
     [double]$Seconds = 60,
@@ -192,40 +208,65 @@ if ($PSBoundParameters.ContainsKey('MotionBlur') -and ($MotionBlur -lt 0 -or $Mo
 if ($PSBoundParameters.ContainsKey('Aperture') -and ($Aperture -lt 1 -or $Aperture -gt 32)) { throw "-Aperture: $Aperture is outside 1 to 32." }
 
 if ($Worker -eq 1) { throw "Worker 1 is unity/, which the owner keeps open in the Editor. Use a worker from 2 up." }
+if (-not $FromFarm -and -not $PSBoundParameters.ContainsKey('At')) { throw "-At or -FromFarm: a film is shot from a checkpoint or from a farm film window." }
+if ($FromFarm -and $Trace) { throw "-Trace reads the solver, and a farm film window has none. Drop -Trace, or film from a checkpoint." }
 
 $ffmpeg = Get-Command ffmpeg -ErrorAction SilentlyContinue
 if (-not $ffmpeg) { throw "ffmpeg is not on PATH." }
 
-# ---------------------------------------------------------------- the run and the checkpoint
+# ---------------------------------------------------------------- the run and the checkpoint, or the window
+
+$windowDirectory = $null
+$windowName = $null
+if ($FromFarm) {
+    $windowDirectory = if ([System.IO.Path]::IsPathRooted($FromFarm)) { $FromFarm } else { Join-Path $root $FromFarm }
+    $windowDirectory = [System.IO.Path]::GetFullPath($windowDirectory)
+    if (-not (Test-Path -LiteralPath (Join-Path $windowDirectory 'film.poses.bin'))) { throw "-FromFarm: no film.poses.bin in $windowDirectory. Record the window with Evosim.Farm --film-window (or scripts/story-windows.ps1)." }
+
+    $verdictLine = $null
+    $identity = Join-Path $windowDirectory 'identity.jsonl'
+    if (Test-Path -LiteralPath $identity) {
+        foreach ($line in [System.IO.File]::ReadAllLines($identity)) {
+            $t = $line.Trim()
+            if ($t.EndsWith('}') -and $t.Contains('"verdict"')) { $verdictLine = $t }
+        }
+    }
+    if ($null -eq $verdictLine) { throw "-FromFarm: $windowDirectory holds no verdict (identity.jsonl's last line). The farm stopped before the window ended; record it again." }
+    $verdict = $verdictLine | ConvertFrom-Json
+    $windowName = Split-Path -Leaf $windowDirectory
+}
 
 $runsDirectory = if ([System.IO.Path]::IsPathRooted($RunsRoot)) { $RunsRoot } else { Join-Path $root $RunsRoot }
-$armDirectory = Join-Path $runsDirectory $Arm
-if (-not (Test-Path $armDirectory)) { throw "No arm directory at $armDirectory" }
+# A window names its run in its verdict, and the arm is then only the films' folder.
+if (-not $FromFarm) {
+    $armDirectory = Join-Path $runsDirectory $Arm
+    if (-not (Test-Path $armDirectory)) { throw "No arm directory at $armDirectory" }
 
-# Run directories are named by their start time, so the newest sorts last.
-$run = Get-ChildItem -Path $armDirectory -Directory | Sort-Object Name | Select-Object -Last 1
-if (-not $run) { throw "No run directory inside $armDirectory" }
+    # Run directories are named by their start time, so the newest sorts last.
+    $run = Get-ChildItem -Path $armDirectory -Directory | Sort-Object Name | Select-Object -Last 1
+    if (-not $run) { throw "No run directory inside $armDirectory" }
 
-$checkpointDirectory = Join-Path $run.FullName 'checkpoints'
-if (-not (Test-Path $checkpointDirectory)) { throw "The run $($run.FullName) has no checkpoints/ directory, so there is nothing to continue from." }
+    $checkpointDirectory = Join-Path $run.FullName 'checkpoints'
+    if (-not (Test-Path $checkpointDirectory)) { throw "The run $($run.FullName) has no checkpoints/ directory, so there is nothing to continue from." }
 
-$candidates = @()
-foreach ($file in (Get-ChildItem -Path $checkpointDirectory -Filter '*.ckpt' -File)) {
-    $second = 0.0
-    if ([double]::TryParse($file.BaseName, [System.Globalization.NumberStyles]::Float, $invariant, [ref]$second)) {
-        $candidates += [pscustomobject]@{ Second = $second; File = $file }
+    $candidates = @()
+    foreach ($file in (Get-ChildItem -Path $checkpointDirectory -Filter '*.ckpt' -File)) {
+        $second = 0.0
+        if ([double]::TryParse($file.BaseName, [System.Globalization.NumberStyles]::Float, $invariant, [ref]$second)) {
+            $candidates += [pscustomobject]@{ Second = $second; File = $file }
+        }
     }
-}
 
-$held = @($candidates | Sort-Object Second)
-$chosen = @($held | Where-Object { $_.Second -le $At + 1e-6 }) | Select-Object -Last 1
-if (-not $chosen) {
-    $list = ($held | ForEach-Object { $_.Second.ToString('0.###', $invariant) }) -join ', '
-    throw "No checkpoint at or before $At s in $checkpointDirectory. It holds: $(if ($list) { $list } else { 'none' })."
-}
+    $held = @($candidates | Sort-Object Second)
+    $chosen = @($held | Where-Object { $_.Second -le $At + 1e-6 }) | Select-Object -Last 1
+    if (-not $chosen) {
+        $list = ($held | ForEach-Object { $_.Second.ToString('0.###', $invariant) }) -join ', '
+        throw "No checkpoint at or before $At s in $checkpointDirectory. It holds: $(if ($list) { $list } else { 'none' })."
+    }
 
-$checkpointSecond = $chosen.Second.ToString('0.###', $invariant)
-$checkpointFile = $chosen.File.FullName
+    $checkpointSecond = $chosen.Second.ToString('0.###', $invariant)
+    $checkpointFile = $chosen.File.FullName
+}
 
 # ---------------------------------------------------------------- the worker
 
@@ -247,7 +288,8 @@ $filmDirectory = Join-Path $root "scratch\films\$Arm"
 $tag = if ($Freeze) { '-frozen' } else { '' }
 if ($CpuDownsample) { $tag += '-cpudown' }
 if ($SyncEncode) { $tag += '-sync' }
-$frameDirectory = Join-Path $filmDirectory "$checkpointSecond$tag"
+$frameDirectory = if ($FromFarm) { Join-Path $filmDirectory "farm-$windowName$tag" } else { Join-Path $filmDirectory "$checkpointSecond$tag" }
+$clipStem = if ($FromFarm) { "$Arm-$windowName" } else { "$Arm-t$checkpointSecond" }
 
 $logDirectory = Join-Path $root 'scratch\logs'
 New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
@@ -261,7 +303,8 @@ $names = @(
     'EVOSIM_THEATRE_OVERRIDE', 'EVOSIM_THEATRE_GENOME', 'EVOSIM_THEATRE_MOTION_BLUR', 'EVOSIM_THEATRE_FILM_FREEZE', 'EVOSIM_THEATRE_FILM_TRACE', 'EVOSIM_THEATRE_FILM_RAW',
     'EVOSIM_THEATRE_FILM_CLOSE_SECONDS', 'EVOSIM_THEATRE_FILM_CLOSE_FOLLOW',
     'EVOSIM_THEATRE_CANOPY_MOVE', 'EVOSIM_THEATRE_DOF', 'EVOSIM_THEATRE_DOF_APERTURE',
-    'EVOSIM_THEATRE_CPU_DOWNSAMPLE', 'EVOSIM_THEATRE_SYNC_ENCODE', 'EVOSIM_THEATRE_DOWNSAMPLE_CHECK')
+    'EVOSIM_THEATRE_CPU_DOWNSAMPLE', 'EVOSIM_THEATRE_SYNC_ENCODE', 'EVOSIM_THEATRE_DOWNSAMPLE_CHECK',
+    'EVOSIM_THEATRE_WINDOW')
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -271,12 +314,19 @@ $code = 1
 try {
     # A checkpoint carries its own run directory; the rest are removed so that a shell which did
     # something else first cannot turn the film into a replay, a reconstruction or a solo body.
-    foreach ($name in @('EVOSIM_THEATRE_RUN', 'EVOSIM_THEATRE_SNAP_FROM', 'EVOSIM_THEATRE_OVERRIDE', 'EVOSIM_THEATRE_GENOME')) {
+    foreach ($name in @('EVOSIM_THEATRE_RUN', 'EVOSIM_THEATRE_SNAP_FROM', 'EVOSIM_THEATRE_OVERRIDE', 'EVOSIM_THEATRE_GENOME',
+                        'EVOSIM_THEATRE_WINDOW', 'EVOSIM_THEATRE_CHECKPOINT', 'EVOSIM_THEATRE_SEEK')) {
         Remove-Item "env:$name" -ErrorAction SilentlyContinue
     }
 
-    $env:EVOSIM_THEATRE_CHECKPOINT = $checkpointFile
-    $env:EVOSIM_THEATRE_SEEK = $checkpointSecond
+    if ($FromFarm) {
+        # The window carries its run directory in its verdict, as a checkpoint carries its own.
+        $env:EVOSIM_THEATRE_WINDOW = $windowDirectory
+        if ($PSBoundParameters.ContainsKey('At')) { $env:EVOSIM_THEATRE_SEEK = $At.ToString($invariant) }
+    } else {
+        $env:EVOSIM_THEATRE_CHECKPOINT = $checkpointFile
+        $env:EVOSIM_THEATRE_SEEK = $checkpointSecond
+    }
     $env:EVOSIM_REPO_ROOT = $root
     $env:EVOSIM_THEATRE_FILM_SECONDS = $Seconds.ToString($invariant)
     $env:EVOSIM_THEATRE_FILM_FPS = "$Fps"
@@ -313,8 +363,14 @@ try {
     else { Remove-Item env:EVOSIM_THEATRE_DOWNSAMPLE_CHECK -ErrorAction SilentlyContinue }
 
     Write-Host "$Arm -> worker $Worker ($proj)"
-    Write-Host "  run    $($run.FullName)"
-    Write-Host "  ckpt   $checkpointFile (asked for $At s; a cousin from here, and every frame says so)"
+    if ($FromFarm) {
+        Write-Host "  window $windowDirectory"
+        Write-Host ("  from   {0} s to {1} s at {2} fps of run {3}, recorded {4}; every frame says so" -f `
+            $verdict.from, $verdict.to, $verdict.fps, $verdict.run, $verdict.verdict.ToUpperInvariant())
+    } else {
+        Write-Host "  run    $($run.FullName)"
+        Write-Host "  ckpt   $checkpointFile (asked for $At s; a cousin from here, and every frame says so)"
+    }
     Write-Host "  shots  $($shotList -join ', ')"
     Write-Host "  film   $Seconds s at $Fps fps, $Size"
     Write-Host "  frames $frameDirectory"
@@ -370,7 +426,7 @@ foreach ($shot in $shotList) {
         continue
     }
 
-    $clip = Join-Path $filmDirectory "$Arm-t$checkpointSecond-$shot$tag.mp4"
+    $clip = Join-Path $filmDirectory "$clipStem-$shot$tag.mp4"
     $pattern = Join-Path $shotDirectory 'frame-%06d.png'
 
     & $ffmpeg.Source -hide_banner -loglevel error -y -framerate $Fps -start_number 0 -i $pattern `

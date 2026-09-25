@@ -69,6 +69,8 @@ namespace Evosim.Theatre
             public long GuideIndex = -1;
             /// <summary>A birth's parent named in the subject (<c>parent body 44820</c>), or -1.</summary>
             public long ParentBody = -1;
+            /// <summary>A birth's child named in the subject (<c>child body 48048</c>), or -1.</summary>
+            public long ChildBody = -1;
             /// <summary>The chapter the scene opens (<c>chapter</c>), or null.</summary>
             public string Chapter;
             /// <summary>The writer's own switch: false holds the scene at its second; null leaves it to the station.</summary>
@@ -347,10 +349,12 @@ namespace Evosim.Theatre
             Match root = RootWord.Match(t);
             Match body = BodyWord.Match(t);
             Match parent = ParentBodyWord.Match(t);
+            Match child = ChildBodyWord.Match(t);
             Match guide = GuideIndexWord.Match(t);
             if (root.Success) shot.Root = long.Parse(root.Groups[1].Value, CultureInfo.InvariantCulture);
             if (body.Success) shot.Body = long.Parse(body.Groups[1].Value, CultureInfo.InvariantCulture);
             if (parent.Success) shot.ParentBody = long.Parse(parent.Groups[1].Value, CultureInfo.InvariantCulture);
+            if (child.Success) shot.ChildBody = long.Parse(child.Groups[1].Value, CultureInfo.InvariantCulture);
             if (guide.Success) shot.GuideIndex = long.Parse(guide.Groups[1].Value, CultureInfo.InvariantCulture);
 
             // The world, when the text opens with a world word and names no id by its kind; a
@@ -787,6 +791,10 @@ namespace Evosim.Theatre
                 scene.BirthParentBody = shot.ParentBody;
                 notes.Add(who + ": the rehearsal takes a child of body " + shot.ParentBody + ", the parent the subject names, when it is alive");
             }
+
+            // The child is read by a film window's birth (B3), which the farm recorded, and not by
+            // the live rehearsal, whose cousin's children are its own.
+            if (station == SafariStation.Birth && shot.ChildBody >= 0) scene.BirthChildBody = shot.ChildBody;
 
             // A card is a slow drift through the crowd (SafariPlans.Wide, 2026-09-25), darkened
             // only when its writer asks for that ("dimmed", "black"). A full chart dims the world

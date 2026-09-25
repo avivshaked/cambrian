@@ -45,6 +45,12 @@ A burnt film is made from a joined film without text, which is kept beside it as
 `--threads` threads, a third of the machine's by default (the owner's load ruling of 2026-09-25).
 `--ass-only` writes the `.ass` and the table from the clips' lengths and joins nothing.
 
+Each scene's provenance word is read from its take rows in `captions.tsv` (B3, 2026-09-25): a
+scene filmed from the farm's film windows carries its window's verdict (FAITHFUL, COUSIN or
+UNVERIFIED), and a scene stepped live carries COUSIN. The label ticks say it, the table gains a
+`provenance` column, and a film whose scenes do not all carry one word says so in a note and a
+closing line, because a viewer reading the corner of one scene should not take it for the film's.
+
 Where a clip's folder has no `captions.tsv` rows for it in the 2026-09-25 form (every clip filmed
 before it, whose captions are stamped into its frames), its captions are placed from the story
 itself as the director places them (the chapter card's 8 s, a card's title, a time scene's
@@ -334,6 +340,16 @@ def read_captions(folder):
             out[slug] = dict(entry, fps=s["fps"], captions_in_frames=s["captions_in_frames"],
                              label_in_frames=s["label_in_frames"])
     return out, "captions.tsv with %d session(s)" % len(sessions)
+
+
+def scene_words(entry):
+    """The provenance words of one scene's take rows, in take order, each once; COUSIN for a row without one."""
+    words = []
+    for t in sorted(entry["takes"]):
+        word = (entry["takes"][t]["text"] or "COUSIN").strip().upper()
+        if word not in words:
+            words.append(word)
+    return words
 
 
 def take_lengths(entry, folder, slug, notes):
@@ -677,11 +693,31 @@ def main():
                         "path": os.path.abspath(card) if card else "", "start": "0.000", "length": "%.3f" % title_length,
                         "status": "joined" if card else "not made (--ass-only)", "subtitles": ""})
 
+    # Each joined scene's provenance, from its take rows; "-" where the folder has none (a clip
+    # filmed before 2026-09-25 carries its word stamped in its frames and nowhere else).
+    read = {}
+    for r in rows:
+        if r["status"] != "joined" or r["n"] == 0:
+            continue
+        folder = os.path.dirname(r["path"])
+        if folder not in read:
+            read[folder] = read_captions(folder)
+        entry = read[folder][0].get(os.path.splitext(r["clip"])[0])
+        r["provenance"] = "+".join(scene_words(entry)) if entry and entry["takes"] else "-"
+    words_seen = {}
+    for r in rows:
+        for word in (r.get("provenance") or "-").split("+"):
+            if word != "-":
+                words_seen.setdefault(word, []).append(r["n"])
+    mixed = len(words_seen) > 1
+    if mixed:
+        notes.append("the scenes do not share one provenance word: " + "; ".join(
+            "%s in scene(s) %s" % (w, ", ".join(str(n) for n in ns)) for w, ns in words_seen.items()))
+
     # The subtitles: each joined scene's rows from its folder's captions.tsv, or the story's own.
     captions, labels = [], []
     stamped = []
     if mode != "off":
-        read = {}
         for r in rows:
             if r["status"] != "joined" or r["n"] == 0:
                 continue
@@ -717,20 +753,21 @@ def main():
         notes.append("not burnt: %d scene(s) carry text stamped into their frames (%s); the .ass is written beside the film; "
                      "--subtitles burn burns it over them" % (len(stamped), ", ".join(str(n) for n in stamped)))
 
-    print("%4s  %-8s  %-10s  %-44s  %8s  %s" % ("n", "run", "station", "clip", "length", "status"))
+    print("%4s  %-8s  %-10s  %-44s  %8s  %-10s  %s" % ("n", "run", "station", "clip", "length", "provenance", "status"))
     for r in rows:
-        print("%4d  %-8s  %-10s  %-44s  %8s  %s" % (
+        print("%4d  %-8s  %-10s  %-44s  %8s  %-10s  %s" % (
             r["n"], r["run"][:8], r["station"][:10], (r["clip"] or "-")[:44],
-            ("%.1f s" % float(r["length"])) if r["length"] else "-", r["status"]))
+            ("%.1f s" % float(r["length"])) if r["length"] else "-", r.get("provenance") or "-", r["status"]))
     for note in notes:
         print("  note: " + note)
 
     def write_table():
         with open(table, "w", encoding="utf-8", newline="\n") as f:
-            f.write("n\trun\tact\tstation\tsubject\tclip\tstart_s\tlength_s\tstatus\tpath\tsubtitles\n")
+            f.write("n\trun\tact\tstation\tsubject\tclip\tstart_s\tlength_s\tstatus\tpath\tsubtitles\tprovenance\n")
             for r in rows:
                 f.write("\t".join(str(x) for x in (r["n"], r["run"], r["act"], r["station"], r["subject"], r["clip"],
-                                                    r["start"], r["length"], r["status"], r["path"], r.get("subtitles", ""))) + "\n")
+                                                    r["start"], r["length"], r["status"], r["path"], r.get("subtitles", ""),
+                                                    r.get("provenance", ""))) + "\n")
 
     if ass_only:
         write_table()
@@ -758,6 +795,9 @@ def main():
         film["duration"] if film else start, how, skipped))
     if mode != "off":
         print("subtitles: %s (%d captions, %d label ticks)%s" % (ass, len(captions), len(labels), " burnt in" if burning else ", not burnt"))
+    if words_seen:
+        print("provenance: %s%s" % (", ".join("%s %d" % (w, len(ns)) for w, ns in words_seen.items()),
+                                    " (MIXED: each scene's corner names its own)" if mixed else ""))
     print("table: " + table)
 
 
