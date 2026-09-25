@@ -185,6 +185,13 @@ namespace Evosim.Theatre
                     MinPartVolume = Optional(limits, "minPartVolume", DevelopmentLimits.Default.MinPartVolume, missing, "development.minPartVolume"),
                     MaxPartVolume = Optional(limits, "maxPartVolume", DevelopmentLimits.Default.MaxPartVolume, missing, "development.maxPartVolume"),
                     MinPartHalfExtent = Optional(limits, "minPartHalfExtent", DevelopmentLimits.Default.MinPartHalfExtent, missing, "development.minPartHalfExtent"),
+                    MaxBodyReachMetres = Optional(limits, "maxBodyReachMetres", DevelopmentLimits.Default.MaxBodyReachMetres, missing, "development.maxBodyReachMetres"),
+
+                    // Round 48's rule (D119): a welded part is weighed with its group and not
+                    // alone. Until 2026-09-25 this reader left it off, so every 3 cm bud fell
+                    // under minPartVolume and was pruned from every picture of a round 48 run,
+                    // the stomach on a leaf included, while the run itself carried it.
+                    FloorsWeighRigidGroups = OptionalBool(limits, "floorsWeighRigidGroups", DevelopmentLimits.Default.FloorsWeighRigidGroups, missing, "development.floorsWeighRigidGroups"),
                 };
             }
             else
@@ -283,6 +290,16 @@ namespace Evosim.Theatre
 
             missing.Add(
                 name + " (" + fallback.ToString("0.####", CultureInfo.InvariantCulture) + " used)");
+
+            return fallback;
+        }
+
+        private static bool OptionalBool(
+            JsonNode group, string key, bool fallback, List<string> missing, string name)
+        {
+            if (group.Has(key)) return group[key].AsBool();
+
+            missing.Add(name + " (" + (fallback ? "on" : "off") + " used)");
 
             return fallback;
         }
