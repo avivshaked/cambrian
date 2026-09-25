@@ -321,7 +321,8 @@ namespace Evosim.Farm
         /// round 49): Core's mouth pass zeroes both arrays in place at its top and writes the
         /// step's contacts and losses into them, so the reference handed here stays the one the
         /// next pass writes. It is handed again every step all the same, because Core replaces an
-        /// array on a body's first touch or wound and drops both on a plan change.
+        /// array on a body's first touch or wound, and replaces both on a plan change with arrays
+        /// on the new plan's indices (which the rebuild above has already handed a rebuilt body).
         /// </para>
         /// </remarks>
         private void HandBackWhatWasFelt()

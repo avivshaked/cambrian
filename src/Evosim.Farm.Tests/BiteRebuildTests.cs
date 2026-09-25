@@ -38,7 +38,9 @@ namespace Evosim.Farm.Tests
     /// <para>
     /// <b>And the worlds with no bite</b> step exactly as they did before the rebuild moved.
     /// Their digests were pinned on the tree the fix was built on (<c>1f06a67</c>'s code, the
-    /// test added in <c>72b3087</c>), where the four bite tests fail.
+    /// test added in <c>72b3087</c>), where the four bite tests fail. The module world's state
+    /// then moved with the ruling that a plan change carries the step's records, and its
+    /// trajectory did not (<see cref="AWorldWithNoBiteStepsAsItDidBefore"/>).
     /// </para>
     /// </remarks>
     public class BiteRebuildTests
@@ -108,10 +110,18 @@ namespace Evosim.Farm.Tests
         /// plan then, and the claw was put against, and named, one of the old plan's links.
         /// </para>
         /// </remarks>
-        private static bool StepBiting(Pair pair, ref int metabolic)
+        private static bool StepBiting(Pair pair, ref int metabolic) =>
+            StepBiting(pair, ref metabolic, Fork, Attack);
+
+        /// <summary>
+        /// <see cref="StepBiting(Pair, ref int)"/> with the victims' genome and the attack named:
+        /// the tough forks and the paired claws of the records test.
+        /// </summary>
+        private static bool StepBiting(
+            Pair pair, ref int metabolic, Func<Genome> victim, Action<Pair> attack)
         {
             bool censusNext = (pair.Sim.Steps + 1) % pair.Sim.StepsPerMetabolicStep == 0;
-            if (censusNext && metabolic >= InoculateAt && metabolic < LastAttack) Attack(pair);
+            if (censusNext && metabolic >= InoculateAt && metabolic < LastAttack) attack(pair);
 
             if (!pair.Sim.Step()) return false;
 
@@ -119,7 +129,7 @@ namespace Evosim.Farm.Tests
 
             if (metabolic == InoculateAt)
             {
-                pair.World.Inoculate(Fork(), count: 8, heightY: -2.5f);
+                pair.World.Inoculate(victim(), count: 8, heightY: -2.5f);
                 pair.World.Inoculate(Claw(), count: 8, heightY: -2.5f);
             }
 
@@ -157,6 +167,57 @@ namespace Evosim.Farm.Tests
                 claw.RefreshContactSphere();
                 claw.CommitContactSphere();
             }
+        }
+
+        /// <summary>
+        /// Two claws to a victim: one just beyond its link 1, as <see cref="Attack"/> puts one, and
+        /// one on the far side of its root, so that on the step a limb comes off the root takes a
+        /// blow it survives (<see cref="WoundedWorld"/> and <see cref="ToughFork"/> size the two).
+        /// </summary>
+        private static void AttackInPairs(Pair pair)
+        {
+            var claws = new List<Creature>();
+            var victims = new List<Creature>();
+
+            foreach (Organism o in pair.World.Living)
+            {
+                if (!pair.Sim.TryPose(o.Id, out Creature body)) continue;
+
+                if (o.HasAttack) claws.Add(body);
+                else if (body.Links >= 2) victims.Add(body);
+            }
+
+            for (int i = 0; 2 * i + 1 < claws.Count && i < victims.Count; i++)
+            {
+                Creature victim = victims[i];
+
+                Vec3 root = Vec3.Read(victim.Position, 0);
+                Vec3 limb = Vec3.Read(victim.Position, 3);
+                Vec3 outward = limb - root;
+                Vec3 along = outward.Magnitude > 1e-9 ? outward.Normalized : new Vec3(1d, 0d, 0d);
+
+                Place(claws[2 * i], limb + along * 0.2);
+                Place(claws[2 * i + 1], root - along * 0.3);
+            }
+        }
+
+        private static void Place(Creature claw, Vec3 at)
+        {
+            claw.BasePosition = at;
+            Kinematics.Poses(claw);
+            claw.RefreshContactSphere();
+            claw.CommitContactSphere();
+        }
+
+        /// <summary>
+        /// The touching world with health three hundred times as deep, so a claw needs two
+        /// metabolic steps to take a fork's limb and many to take a tough root. Nothing heals.
+        /// </summary>
+        private static RunConfig WoundedWorld()
+        {
+            RunConfig config = CheckpointRestoreTests.TouchingWorld();
+            config.HealthPerCubicMetre = 300f;
+            return config;
         }
 
         private static void Leaves(Pair pair)
@@ -255,6 +316,17 @@ namespace Evosim.Farm.Tests
         }
 
         /// <summary>
+        /// <see cref="Fork"/> with its root at structural tissue's toughest, four times the pool of
+        /// its own volume, so the root outlasts a claw that takes a limb in two steps.
+        /// </summary>
+        private static Genome ToughFork()
+        {
+            Genome genome = Fork();
+            genome.Nodes[0].Toughness = 4f;
+            return genome;
+        }
+
+        /// <summary>
         /// One photosynthetic box whose count is a rule: room for three more if the body can pay
         /// for them (D106 item 2).
         /// </summary>
@@ -340,6 +412,166 @@ namespace Evosim.Farm.Tests
             }
 
             return null;
+        }
+
+        /// <summary>What a body stood on and had lost before a metabolic step.</summary>
+        private sealed class Stood
+        {
+            public int Revision;
+            public Phenotype Plan;
+            public float[] Health;
+            public List<int[]> Lost;
+            public int[] Counts;
+        }
+
+        private static Dictionary<long, Stood> Capture(World world)
+        {
+            var stood = new Dictionary<long, Stood>();
+
+            foreach (Organism o in world.Living)
+            {
+                stood[o.Id] = new Stood
+                {
+                    Revision = o.PlanRevision,
+                    Plan = o.Phenotype,
+                    Health = o.PartHealth == null ? null : (float[])o.PartHealth.Clone(),
+                    Lost = o.LostPartPaths == null ? null : new List<int[]>(o.LostPartPaths),
+                    Counts = (int[])CountsOf(o).Clone(),
+                };
+            }
+
+            return stood;
+        }
+
+        /// <summary>A body's module counts, at its genome's minimum where it has none: Core's rule.</summary>
+        private static int[] CountsOf(Organism o)
+        {
+            List<MorphNode> nodes = o.Genome.Nodes;
+            int[] counts = o.ModuleCounts;
+
+            if (counts != null && counts.Length == nodes.Count) return counts;
+
+            var fresh = new int[nodes.Count];
+            for (int n = 0; n < nodes.Count; n++)
+            {
+                fresh[n] = nodes[n].RecursiveLimit;
+                if (counts != null && n < counts.Length && counts[n] > fresh[n]) fresh[n] = counts[n];
+            }
+
+            return fresh;
+        }
+
+        /// <summary>
+        /// The developer's path to each part of a plan, with the lost parts' subtrees taken out:
+        /// what Core matches two plans on, derived here from the public developer because the
+        /// harness takes Core's own map.
+        /// </summary>
+        private static List<int[]> PlanPaths(
+            Organism o, RunConfig config, int[] counts, List<int[]> lost)
+        {
+            var paths = new List<int[]>();
+            Phenotype whole = Developer.Develop(
+                o.Genome, config.Development, null, config.Shapes, counts, paths);
+
+            if (lost == null || lost.Count == 0) return paths;
+
+            var drop = new bool[whole.PartCount];
+            for (int i = 0; i < drop.Length; i++)
+            {
+                foreach (int[] gone in lost)
+                {
+                    if (gone.Length != paths[i].Length) continue;
+
+                    bool same = true;
+                    for (int k = 0; k < gone.Length && same; k++) same = gone[k] == paths[i][k];
+                    if (same) drop[i] = true;
+                }
+            }
+
+            whole.WithoutSubtrees(drop, out int[] kept);
+
+            var survived = new List<int[]>(kept.Length);
+            foreach (int k in kept) survived.Add(paths[k]);
+            return survived;
+        }
+
+        /// <summary>Where each part of a body's new plan stood in the plan it had before the step.</summary>
+        private static int[] MapAcross(Organism o, Stood was, RunConfig config)
+        {
+            List<int[]> from = PlanPaths(o, config, was.Counts, was.Lost);
+            List<int[]> to = PlanPaths(o, config, CountsOf(o), o.LostPartPaths);
+
+            Assert.Equal(was.Plan.PartCount, from.Count);
+            Assert.Equal(o.Phenotype.PartCount, to.Count);
+
+            return Developer.MatchParts(from, to);
+        }
+
+        /// <summary>
+        /// The parts of body <paramref name="id"/> the list names, by the index it gives them;
+        /// only against a partner still living when <paramref name="livingPartner"/> is set.
+        /// </summary>
+        private static HashSet<int> Named(
+            List<CreatureContact> list, long id, Dictionary<long, Organism> living, bool livingPartner)
+        {
+            var parts = new HashSet<int>();
+
+            foreach (CreatureContact c in list)
+            {
+                if (c.BodyA == id && (!livingPartner || living.ContainsKey(c.BodyB))) parts.Add(c.PartA);
+                if (c.BodyB == id && (!livingPartner || living.ContainsKey(c.BodyA))) parts.Add(c.PartB);
+            }
+
+            return parts;
+        }
+
+        /// <summary>
+        /// Asserts that a changed body's contact record is the step's contacts carried through the
+        /// map: a flag only where the list named the part it stood as, and every such part
+        /// flagged whose partner lived through the step. Returns how many flags were carried.
+        /// </summary>
+        private static int AssertContactCarried(
+            Organism o, int[] map, List<CreatureContact> list, Dictionary<long, Organism> living,
+            string where)
+        {
+            HashSet<int> named = Named(list, o.Id, living, livingPartner: false);
+            HashSet<int> namedLiving = Named(list, o.Id, living, livingPartner: true);
+            bool[] contact = o.PartContact;
+            int carried = 0;
+
+            if (contact == null)
+            {
+                for (int i = 0; i < map.Length; i++)
+                {
+                    Assert.False(
+                        map[i] >= 0 && namedLiving.Contains(map[i]),
+                        where + FormattableString.Invariant(
+                            $": body {o.Id} holds no contact record and its part {i} was named as {map[i]}"));
+                }
+
+                return 0;
+            }
+
+            Assert.Equal(o.Phenotype.PartCount, contact.Length);
+
+            for (int i = 0; i < contact.Length; i++)
+            {
+                bool wasNamed = map[i] >= 0 && named.Contains(map[i]);
+                bool mustBe = map[i] >= 0 && namedLiving.Contains(map[i]);
+
+                Assert.True(
+                    !contact[i] || wasNamed,
+                    where + FormattableString.Invariant(
+                        $": body {o.Id} part {i} (was {map[i]}) reads a contact the list never named"));
+                Assert.True(
+                    contact[i] || !mustBe,
+                    where + FormattableString.Invariant(
+                        $": body {o.Id} part {i} (was {map[i]}) was named and reads no contact"));
+
+                if (contact[i]) carried++;
+            }
+
+            return carried;
         }
 
         /// <summary>Null when a body's solver is built on its organism's plan; otherwise how not.</summary>
@@ -599,6 +831,270 @@ namespace Evosim.Farm.Tests
             }
         }
 
+        // ------------------------------------------------------------------ the records carried
+
+        private static float Clamp(float v) => v < -1f ? -1f : v > 1f ? 1f : v;
+
+        /// <summary>
+        /// A body bitten on metabolic step n reads, on every physics step of step n+1, what its
+        /// surviving parts felt on step n, on the new plan's indices: the loss on each, and contact
+        /// where the list named it. The lost part's entries are gone. And on step n+1 the list the
+        /// harness hands over, built from the rebuilt solver, agrees with the records it writes.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The ruling (round 49).</b> D123 says the damage channel reads the share of its pool
+        /// a part lost on the last metabolic step, and the contact channel whether it touched on
+        /// that step. Until this change a plan change dropped both, so a body read nothing on
+        /// exactly the step a part came off. Core now carries both through the part map, and the
+        /// harness hands the rebuilt body the carried arrays.
+        /// </para>
+        /// <para>
+        /// <b>The world.</b> <see cref="WoundedWorld"/> with <see cref="ToughFork"/>s and two claws
+        /// to each (<see cref="AttackInPairs"/>). A limb takes two steps to come off, and on the
+        /// step it does the root takes a blow it survives, so a bitten body has a surviving part
+        /// with a loss and a contact to carry. The map is derived from the public developer
+        /// (<see cref="MapAcross"/>). The loss is the health before the step less the health after
+        /// it, since nothing heals.
+        /// </para>
+        /// </remarks>
+        [Fact]
+        public void ABittenBodyReadsWhatItsSurvivingPartsFeltOnTheNextPhysicsSteps()
+        {
+            RunConfig config = WoundedWorld();
+            Assert.Equal(0f, config.HealingPerSecond);
+
+            using (Pair pair = Found(config))
+            {
+                int metabolic = 0;
+                int bitten = 0, wounded = 0, touched = 0, reads = 0, agreed = 0;
+
+                Dictionary<long, Stood> before = null;
+
+                // The bodies bitten on the last metabolic step, with what their records read.
+                var watching = new Dictionary<long, (bool[] Contact, float[] Damage)>();
+
+                for (int step = 0; step < 12_000 && metabolic < 240; step++)
+                {
+                    if ((pair.Sim.Steps + 1) % pair.Sim.StepsPerMetabolicStep == 0)
+                    {
+                        before = Capture(pair.World);
+                    }
+
+                    if (!StepBiting(pair, ref metabolic, ToughFork, AttackInPairs))
+                    {
+                        // A physics step of step n+1: what each bitten body's brain reads.
+                        foreach (KeyValuePair<long, (bool[] Contact, float[] Damage)> w in watching)
+                        {
+                            if (!pair.Sim.TryPose(w.Key, out Creature solver)) continue;
+
+                            for (int p = 0; p < solver.Links; p++)
+                            {
+                                float touch = w.Value.Contact != null && w.Value.Contact[p] ? 1f : 0f;
+                                float hurt = Clamp(w.Value.Damage[p]);
+
+                                Assert.Equal(touch, solver.Senses.Read(p, SensorChannel.Contact, 0));
+                                Assert.Equal(hurt, solver.Senses.Read(p, SensorChannel.Damage, 0));
+                                reads++;
+                            }
+                        }
+
+                        continue;
+                    }
+
+                    Dictionary<long, Organism> living = LivingById(pair.World);
+                    List<CreatureContact> handed = Handed(pair.Sim);
+                    string where = FormattableString.Invariant($"t={pair.World.ElapsedSeconds}");
+
+                    // Step n+1's list, built from the rebuilt solvers, against the records it wrote,
+                    // for each body bitten on step n that kept its plan through this step. One that
+                    // was bitten again is read below, through its new map.
+                    foreach (long id in watching.Keys)
+                    {
+                        if (!living.TryGetValue(id, out Organism o)) continue;
+                        if (!before.TryGetValue(id, out Stood stood) || stood.Revision != o.PlanRevision) continue;
+
+                        var same = new int[o.Phenotype.PartCount];
+                        for (int i = 0; i < same.Length; i++) same[i] = i;
+
+                        foreach (int part in Named(handed, id, living, livingPartner: false))
+                        {
+                            Assert.True(
+                                part >= 0 && part < o.Phenotype.PartCount,
+                                where + FormattableString.Invariant(
+                                    $": the list names part {part} of body {id}, which has {o.Phenotype.PartCount}"));
+                        }
+
+                        AssertContactCarried(o, same, handed, living, where + " (the step after a bite)");
+                        agreed++;
+                    }
+
+                    watching.Clear();
+
+                    foreach (Organism o in pair.World.Living)
+                    {
+                        if (!before.TryGetValue(o.Id, out Stood was)) continue;
+                        if (was.Revision == o.PlanRevision) continue;
+                        if (!pair.Sim.TryPose(o.Id, out Creature solver)) continue;
+
+                        bitten++;
+                        int[] map = MapAcross(o, was, config);
+
+                        // Contact: the step's list, carried through the map.
+                        if (AssertContactCarried(o, map, handed, living, where) > 0) touched++;
+
+                        // Damage: a survivor's loss is its health before the step less its health
+                        // after, on the part it stood as; a part new to the plan was not there to
+                        // be hurt.
+                        float[] damage = o.PartDamage;
+                        Assert.NotNull(damage);
+                        Assert.Equal(o.Phenotype.PartCount, damage.Length);
+
+                        bool anyLoss = false;
+
+                        for (int i = 0; i < damage.Length; i++)
+                        {
+                            float expected = 0f;
+
+                            if (map[i] >= 0)
+                            {
+                                float then = was.Health != null ? was.Health[map[i]] : 1f;
+                                float now = o.PartHealth != null ? o.PartHealth[i] : 1f;
+                                expected = then - now;
+                            }
+
+                            Assert.True(
+                                Math.Abs(expected - damage[i]) <= 1e-6f,
+                                where + FormattableString.Invariant(
+                                    $": body {o.Id} part {i} (was {map[i]}) reads a loss of {damage[i]:R} ") +
+                                FormattableString.Invariant($"where its health says {expected:R}"));
+
+                            if (damage[i] > 0f) anyLoss = true;
+                        }
+
+                        if (anyLoss) wounded++;
+
+                        // What the brain reads is these arrays, by reference, on the plan its solver
+                        // was built on.
+                        Assert.Null(OffPlan(solver, o));
+                        Assert.Same(o.PartContact, solver.Senses.Contact);
+                        Assert.Same(o.PartDamage, solver.Senses.Damage);
+
+                        watching[o.Id] = (
+                            o.PartContact == null ? null : (bool[])o.PartContact.Clone(),
+                            (float[])damage.Clone());
+                    }
+                }
+
+                _out.WriteLine(
+                    FormattableString.Invariant(
+                        $"{metabolic} metabolic steps to t={pair.World.ElapsedSeconds} s, {pair.World.PartsKilled} parts ") +
+                    FormattableString.Invariant(
+                        $"killed: {bitten} plan changes read, {wounded} carrying a loss and {touched} a contact on a ") +
+                    FormattableString.Invariant(
+                        $"surviving part; {reads} part-readings on the physics steps after; {agreed} lists read the step after"));
+
+                Assert.True(bitten > 0, "no body lost a part; the fixture tests nothing");
+                Assert.True(wounded > 0, "no bitten body carried a loss on a surviving part; the fixture tests nothing");
+                Assert.True(touched > 0, "no bitten body carried a contact on a surviving part; the fixture tests nothing");
+                Assert.True(reads > 0, "no physics step read a bitten body's senses; the fixture tests nothing");
+                Assert.True(agreed > 0, "no list was read on the step after a bite; the fixture tests nothing");
+            }
+        }
+
+        /// <summary>
+        /// The module rule's half of the ruling: a body rebuilt on a new plan at the growth step is
+        /// handed the records Core carried onto that plan and reads them on the physics steps that
+        /// follow, a standing part's contact where the step's list named it and a new part reading
+        /// nothing.
+        /// </summary>
+        /// <remarks>
+        /// The growth step's rebuild comes after the step's hand-back, so until round 49 a body
+        /// rebuilt there sensed nothing until the next metabolic step, and Core had dropped its
+        /// records anyway. The module world's leaves have no brain, so what they read moves
+        /// nothing, which is why the world's trajectory is the one it was
+        /// (<see cref="AWorldWithNoBiteStepsAsItDidBefore"/>). A body with a brain and a module
+        /// gene reads the carried contact from this build on.
+        /// </remarks>
+        [Fact]
+        public void AModuleRebuildHandsTheBodyTheRecordsCarriedOntoItsNewPlan()
+        {
+            RunConfig config = ModuleWorld();
+
+            using (Pair pair = Found(config))
+            {
+                int metabolic = 0;
+                int rebuilt = 0, carried = 0, newParts = 0, reads = 0;
+
+                Dictionary<long, Stood> before = null;
+                var watching = new Dictionary<long, bool[]>();
+
+                for (int step = 0; step < 4_000; step++)
+                {
+                    if ((pair.Sim.Steps + 1) % pair.Sim.StepsPerMetabolicStep == 0)
+                    {
+                        before = Capture(pair.World);
+                    }
+
+                    if (!Step(pair, ref metabolic, Leaves))
+                    {
+                        foreach (KeyValuePair<long, bool[]> w in watching)
+                        {
+                            if (!pair.Sim.TryPose(w.Key, out Creature solver)) continue;
+
+                            for (int p = 0; p < solver.Links; p++)
+                            {
+                                float touch = w.Value != null && w.Value[p] ? 1f : 0f;
+                                Assert.Equal(touch, solver.Senses.Read(p, SensorChannel.Contact, 0));
+                                reads++;
+                            }
+                        }
+
+                        continue;
+                    }
+
+                    watching.Clear();
+
+                    Dictionary<long, Organism> living = LivingById(pair.World);
+                    List<CreatureContact> handed = Handed(pair.Sim);
+                    string where = FormattableString.Invariant($"t={pair.World.ElapsedSeconds}");
+
+                    foreach (Organism o in pair.World.Living)
+                    {
+                        if (!before.TryGetValue(o.Id, out Stood was)) continue;
+                        if (was.Revision == o.PlanRevision) continue;
+                        if (!pair.Sim.TryPose(o.Id, out Creature solver)) continue;
+
+                        rebuilt++;
+                        int[] map = MapAcross(o, was, config);
+
+                        for (int i = 0; i < map.Length; i++) if (map[i] < 0) newParts++;
+
+                        // A new part is never named as a part it stood as, so this also asserts that
+                        // it reads no contact.
+                        if (AssertContactCarried(o, map, handed, living, where) > 0) carried++;
+
+                        Assert.Null(OffPlan(solver, o));
+                        Assert.Same(o.PartContact, solver.Senses.Contact);
+                        Assert.Same(o.PartDamage, solver.Senses.Damage);
+
+                        watching[o.Id] = o.PartContact == null ? null : (bool[])o.PartContact.Clone();
+                    }
+                }
+
+                _out.WriteLine(
+                    FormattableString.Invariant(
+                        $"{metabolic} metabolic steps to t={pair.World.ElapsedSeconds} s: {rebuilt} module rebuilds read, ") +
+                    FormattableString.Invariant(
+                        $"{carried} carrying a contact, {newParts} new parts; {reads} part-readings on the physics steps after"));
+
+                Assert.True(rebuilt > 0, "no plan changed; the fixture tests nothing");
+                Assert.True(carried > 0, "no rebuilt body carried a contact; the fixture tests nothing");
+                Assert.True(newParts > 0, "no module was added; the fixture tests nothing");
+                Assert.True(reads > 0, "no physics step read a rebuilt body's senses; the fixture tests nothing");
+            }
+        }
+
         // ------------------------------------------------------------------ the checkpoint
 
         private static byte[] Checkpoint(Pair pair)
@@ -711,6 +1207,18 @@ namespace Evosim.Farm.Tests
                     Assert.True(restored.Sim.TryPose(bitten, out Creature solver));
                     Assert.Null(OffPlan(solver, b));
 
+                    // The records the bite carried onto the new plan come through the restore, and
+                    // the restored body senses them by reference as the live one does.
+                    Assert.True(live.Sim.TryPose(bitten, out Creature liveSolver));
+                    Assert.NotNull(a.PartContact);
+                    Assert.NotNull(a.PartDamage);
+                    Assert.Same(a.PartContact, liveSolver.Senses.Contact);
+                    Assert.Same(a.PartDamage, liveSolver.Senses.Damage);
+                    Assert.Equal(a.PartContact, b.PartContact);
+                    Assert.Equal(a.PartDamage, b.PartDamage);
+                    Assert.Same(b.PartContact, solver.Senses.Contact);
+                    Assert.Same(b.PartDamage, solver.Senses.Damage);
+
                     Assert.Equal(live.Sim.Dynamics.Digest(), restored.Sim.Dynamics.Digest());
 
                     int twinMetabolic = 0;
@@ -802,20 +1310,38 @@ namespace Evosim.Farm.Tests
         // ------------------------------------------------------------------ the worlds with no bite
 
         /// <summary>
-        /// A world in which nothing bites steps exactly as it did before the rebuild moved: the
-        /// solver's digest at every physics step and the world's state at every metabolic step,
-        /// folded into one hash and pinned from <c>1f06a67</c>.
+        /// A world in which nothing bites steps exactly as it did before the rebuild moved. Two
+        /// hashes are pinned: the solver's digest at every physics step alone, which is the
+        /// trajectory, and that folded with the world's state at every metabolic step.
         /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Both were pinned from <c>1f06a67</c></b>, the tree the rebuild fix was built on, and
+        /// the fix left both worlds' hashes where they were.
+        /// </para>
+        /// <para>
+        /// <b>The module world's folded hash then moved, and by design.</b> From the ruling that
+        /// a plan change carries the step's contact and damage records through the part map
+        /// rather than dropping them (round 49), a leaf that gains a module keeps its contact
+        /// record, and the world's state holds that array where it held null. The folded hash
+        /// went from <c>91576b1700773a1aa2990de3d6de3e78</c> to the one pinned here. Its solver
+        /// hash did not move, because the leaves have no brain to read what they carry: the
+        /// trajectory is the one <c>1f06a67</c> stepped. The touching world changes no plan, and
+        /// both its hashes are <c>1f06a67</c>'s.
+        /// </para>
+        /// </remarks>
         /// <param name="world">
         /// <c>touching</c>, the crowded box with the contact and damage senses open and no claw, so
         /// that the contact list is handed and the records written at every step; or
         /// <c>modules</c>, the same box with indeterminate leaves put in and the module rule on, so
         /// that plans change and are rebuilt at the growth step.
         /// </param>
+        /// <param name="pinned">The solver's digests folded with the world's states.</param>
+        /// <param name="trajectory">The solver's digests alone.</param>
         [Theory]
-        [InlineData("touching", "ebbc4299be5adeb889a1d478458deb99")]
-        [InlineData("modules", "91576b1700773a1aa2990de3d6de3e78")]
-        public void AWorldWithNoBiteStepsAsItDidBefore(string world, string pinned)
+        [InlineData("touching", "ebbc4299be5adeb889a1d478458deb99", "1de02f3f7ab7cd2fd2b5b4b83922d153")]
+        [InlineData("modules", "ff558cf1332d129005b2a2e8988137a2", "c2072f14f54654181d54d218124c4dd3")]
+        public void AWorldWithNoBiteStepsAsItDidBefore(string world, string pinned, string trajectory)
         {
             bool modules = world == "modules";
             RunConfig config = modules ? ModuleWorld() : CheckpointRestoreTests.TouchingWorld();
@@ -826,12 +1352,15 @@ namespace Evosim.Farm.Tests
                 int metabolic = 0;
                 var fold = new MemoryStream();
                 var into = new BinaryWriter(fold);
+                var solverFold = new MemoryStream();
+                var intoSolver = new BinaryWriter(solverFold);
 
                 for (int step = 0; step < 4_000; step++)
                 {
                     bool ran = Step(pair, ref metabolic, modules ? Leaves : (Action<Pair>)null);
 
                     into.Write(pair.Sim.Dynamics.Digest());
+                    intoSolver.Write(pair.Sim.Dynamics.Digest());
                     if (!ran) continue;
 
                     into.Write(WorldDigest(pair.World));
@@ -842,7 +1371,10 @@ namespace Evosim.Farm.Tests
                 }
 
                 into.Flush();
+                intoSolver.Flush();
                 string digest = BitConverter.ToString(sha.ComputeHash(fold.ToArray()), 0, 16)
+                    .Replace("-", string.Empty).ToLowerInvariant();
+                string solverDigest = BitConverter.ToString(sha.ComputeHash(solverFold.ToArray()), 0, 16)
                     .Replace("-", string.Empty).ToLowerInvariant();
 
                 _out.WriteLine(
@@ -851,12 +1383,14 @@ namespace Evosim.Farm.Tests
                     FormattableString.Invariant(
                         $"{pair.World.Living.Count} living, {pair.World.PartsKilled} parts killed, ") +
                     FormattableString.Invariant(
-                        $"{pair.World.ModuleAdds} module adds, {pair.Sim.ModuleRebuilds} rebuilds; digest {digest}"));
+                        $"{pair.World.ModuleAdds} module adds, {pair.Sim.ModuleRebuilds} rebuilds; digest {digest}, ") +
+                    FormattableString.Invariant($"solver {solverDigest}"));
 
                 Assert.Equal(0L, pair.World.PartsKilled);
                 Assert.Equal(0L, pair.World.BodiesEaten);
                 if (modules) Assert.True(pair.Sim.ModuleRebuilds > 0, "no plan changed; the fixture tests nothing");
 
+                Assert.Equal(trajectory, solverDigest);
                 Assert.Equal(pinned, digest);
             }
         }

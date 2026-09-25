@@ -331,6 +331,20 @@ namespace Evosim.Farm
             solver.Senses.Nutrients = World.Nutrients;
             solver.Senses.Reserve = creature;
 
+            // D123 through a plan change (round 49). Core has carried the step's contact and
+            // damage records onto the new plan's indices, so the rebuilt body reads, on every
+            // physics step until the next metabolic step, what its surviving parts felt on the
+            // step that changed its plan: the bite that took a part, or the step before a module
+            // came or went. Handed here and not left to the next hand-back, because the growth
+            // step's rebuild comes after this step's hand-back and the body would otherwise sense
+            // nothing for the rest of the interval. Under the hand-back's own condition, so a
+            // world with both senses shut wires nothing, as before.
+            if (Config.SenseContact || Config.SenseDamage)
+            {
+                solver.Senses.Contact = creature.PartContact;
+                solver.Senses.Damage = creature.PartDamage;
+            }
+
             if (solver.Jointed) solver.EnableTrace();
 
             if (solver.Brain.TotalDof != solver.Dof)

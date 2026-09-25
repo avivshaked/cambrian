@@ -196,10 +196,11 @@ namespace Evosim.Core
         /// by reference (<c>Metabolise.HandBackWhatWasFelt</c>), and a restore wires them back by
         /// reference; an array replaced here would leave a sense reading the old one until the
         /// next hand-back. The only things that replace one are its first allocation, on a body's
-        /// first touch or wound, and <c>AdoptPlan</c>, which drops both because their indices
-        /// named the old plan's parts. The hand-back follows both. A world in which nothing ever
-        /// touches still allocates nothing, and this is one walk of the living with two null
-        /// tests a body.
+        /// first touch or wound, and <c>AdoptPlan</c>, which carries both onto the new plan's
+        /// indices because the old ones named the old plan's parts. The farm's hand-back and its
+        /// rebuild of a body on a new plan both follow. A world in which nothing ever touches
+        /// still allocates nothing, and this is one walk of the living with two null tests a
+        /// body.
         /// </para>
         /// </remarks>
         private void ForgetWhatWasFelt()

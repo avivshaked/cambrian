@@ -282,8 +282,10 @@ namespace Evosim.Core
         /// </para>
         /// <para>
         /// <b>Zeroed in place and never replaced by a step</b>, because the harness hands a
-        /// body's sense this very array by reference. A plan change drops it, since its indices
-        /// named the old plan's parts, and the harness's next hand-back follows.
+        /// body's sense this very array by reference. A plan change replaces it with one on the
+        /// new plan's indices (<c>World.AdoptPlan</c>, round 49): each surviving part keeps its
+        /// entry, a lost part's goes with it, and a part new to the plan reads 0. The harness's
+        /// rebuild of the body hands its senses the new array.
         /// </para>
         /// <para>
         /// The physics steps after a checkpoint read it before the next metabolic step rewrites
@@ -295,8 +297,8 @@ namespace Evosim.Core
         /// <summary>
         /// Whether each part touched another body's part on the last metabolic step — what
         /// <see cref="SensorChannel.Contact"/> reports, D106 item 5 and D123. Null is a body that
-        /// has touched nothing since it was born or last changed plan, and every body in a world
-        /// with <see cref="RunConfig.SenseContact"/> off.
+        /// has touched nothing since it was born, and every body in a world with
+        /// <see cref="RunConfig.SenseContact"/> off.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -312,7 +314,8 @@ namespace Evosim.Core
         /// </para>
         /// <para>
         /// <b>Cleared in place and never replaced by a step</b>, for the reason
-        /// <see cref="PartDamage"/> gives.
+        /// <see cref="PartDamage"/> gives, and carried through a plan change as it is: a
+        /// surviving part keeps its flag, and a part new to the plan reads false.
         /// </para>
         /// <para>
         /// The physics steps after a checkpoint read it before the next metabolic step rewrites

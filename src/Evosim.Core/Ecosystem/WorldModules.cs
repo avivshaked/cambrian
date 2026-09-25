@@ -457,15 +457,15 @@ namespace Evosim.Core
             // add". Null in, null out, so a world that has never been bitten allocates nothing.
             creature.PartHealth = Remap(creature.PartHealth, map);
 
-            // D123. The step's two sensed records are dropped rather than remapped, so a body that
-            // changes plan senses no contact and no damage for the step it changed on; the farm's
-            // next hand-back gives its senses whatever replaces these. The drop was chosen while
-            // the harness's solver stayed on the old plan until the growth step, when a remapped
-            // array would have been read by the wrong links. Since round 49 the harness rebuilds
-            // on the step itself, so a remap would be read by the right ones; the drop is kept
-            // until that is ruled, because it changes what a brain reads.
-            creature.PartDamage = null;
-            creature.PartContact = null;
+            // D123. The step's two sensed records, carried onto the survivors' new indices, so a
+            // brain reads on the next physics steps what its parts felt on the step that changed
+            // the plan, which for a bite is the step it lost a part. A lost part's entries go with
+            // it, and a part that has just appeared felt nothing: 0 and false. The harness hands
+            // a rebuilt body these very arrays, on the plan they are indexed by (round 49). Until
+            // round 49 both were dropped, because the solver stayed on the old plan until the
+            // growth step and a carried array would have been read by the wrong links.
+            creature.PartDamage = RemapFelt(creature.PartDamage, map);
+            creature.PartContact = RemapFelt(creature.PartContact, map);
 
             // D110. The old plan's poses name the old plan's parts; until the harness reads the
             // new body's, it earns and shades on the orientation average. Null already in every
@@ -546,6 +546,31 @@ namespace Evosim.Core
             {
                 int from = map[i];
                 now[i] = from >= 0 && from < was.Length ? was[from] : 1f;
+            }
+
+            return now;
+        }
+
+        /// <summary>
+        /// One of the step's two sensed records carried onto a new plan: a surviving part keeps
+        /// what it felt, and a part that has just appeared (map -1) felt nothing, which is the
+        /// element type's default (0 and false). A lost part's entry is simply not copied.
+        /// </summary>
+        /// <remarks>
+        /// Null in is null out, as for health: a body that felt nothing on this step stays one
+        /// that allocates nothing, which is every body in a world with neither sense open and
+        /// nothing armed. A new array rather than the old one rewritten, because the length
+        /// changes with the plan; the farm hands the rebuilt body's senses the new one.
+        /// </remarks>
+        internal static T[] RemapFelt<T>(T[] was, int[] map)
+        {
+            if (was == null || map == null) return null;
+
+            var now = new T[map.Length];
+            for (int i = 0; i < map.Length; i++)
+            {
+                int from = map[i];
+                if (from >= 0 && from < was.Length) now[i] = was[from];
             }
 
             return now;

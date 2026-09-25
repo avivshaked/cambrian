@@ -378,8 +378,10 @@ namespace Evosim.Core.Tests
             Organism wounded = world.Living[1];
             Organism claw = world.Living[2];
 
-            // The maimed body's flags went with its plan; the two others are touching.
-            Assert.Null(maimed.PartContact);
+            // The maimed body's flags came through its plan change onto the one part it kept,
+            // which touched nothing (round 49; they were dropped before); the two others are
+            // touching.
+            Assert.Equal(new[] { false }, maimed.PartContact);
             Assert.NotNull(wounded.PartContact);
             Assert.Equal(new[] { false, true }, wounded.PartContact);
             Assert.NotNull(claw.PartContact);
@@ -396,7 +398,7 @@ namespace Evosim.Core.Tests
             Assert.Equal(wounded.Id, restoredWounded.Id);
             Assert.NotNull(restoredWounded.PartContact);
             Assert.Equal(wounded.PartContact, restoredWounded.PartContact);
-            Assert.Null(restored.Living[0].PartContact);
+            Assert.Equal(new[] { false }, restored.Living[0].PartContact);
 
             // One more step with no contacts handed over, on both worlds alike. D123: the step's
             // record is cleared in place, so the arrays stay and every flag reads false.
@@ -478,7 +480,8 @@ namespace Evosim.Core.Tests
 
         /// <summary>
         /// The wounded world's fixture with the contact sense open: a spine that has lost a part,
-        /// whose flags went with its plan; a spine touched on its second part; and the claw.
+        /// whose flags came through the plan change on the part it kept; a spine touched on its
+        /// second part; and the claw.
         /// </summary>
         private static World TouchedWorld()
         {

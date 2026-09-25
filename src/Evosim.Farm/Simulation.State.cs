@@ -253,17 +253,19 @@ namespace Evosim.Farm
         /// <para>
         /// <b>Flags and not the arrays.</b> The arrays are the organism's, carried by the world's
         /// own state (<c>Organism.PartContact</c> and <c>PartDamage</c>), and a sense is either
-        /// null or that very array: <c>HandBackWhatWasFelt</c> is the only thing that sets one,
-        /// and it sets it to the organism's. So what the harness has to carry is which of the two
-        /// the body holds, and <see cref="ReadState"/> puts the restored organism's array back
-        /// wherever the flag is set.
+        /// null or that very array: <c>HandBackWhatWasFelt</c> and the rebuild of a body on a new
+        /// plan (<c>RebuildOnTheNewPlan</c>) are the only things that set one, and both set it to
+        /// the organism's. So what the harness has to carry is which of the two the body holds,
+        /// and <see cref="ReadState"/> puts the restored organism's array back wherever the flag
+        /// is set.
         /// </para>
         /// <para>
         /// <b>Not a blanket re-wire</b>, because null is a real state here that the organism's
-        /// array does not predict: a newborn the checkpoint's own reconcile has just built, and a
-        /// body rebuilt on a new plan at this growth step, hold null senses until the next
-        /// metabolic step hands them the arrays, while their organisms may already hold one. A
-        /// restore that wired them would sense a step early.
+        /// array does not predict: a newborn the checkpoint's own reconcile has just built holds
+        /// null senses until the next metabolic step hands it the arrays, while its organism may
+        /// already hold one. A restore that wired it would sense a step early. A body rebuilt on
+        /// a new plan was a second such case until round 49, when the rebuild began handing it
+        /// the organism's carried arrays itself.
         /// </para>
         /// <para>
         /// <b>A wired sense that is not its organism's array is refused.</b> Nothing in the loop
