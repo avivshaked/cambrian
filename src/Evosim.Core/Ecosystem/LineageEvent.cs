@@ -225,15 +225,78 @@ namespace Evosim.Core
         /// The row's <c>endow</c>, written only when above 0.
         /// </summary>
         /// <remarks>
-        /// Not written to a checkpoint (<c>WorldState.WriteLineage</c>), for the kill row's part
-        /// index's reason: the farm drains the queue to <c>lineage.jsonl</c> before every
-        /// checkpoint, so no farm checkpoint carries a birth row, and writing it would move
-        /// <c>StateVersion</c>. A restored row reads 0.
+        /// Written to a checkpoint's queued rows from <c>StateVersion</c> 10
+        /// (<c>WorldState.WriteLineage</c>), so a row queued before a checkpoint is the same row
+        /// after the restore.
         /// </remarks>
         public double EndowmentJoules { get; }
 
+        /// <summary>
+        /// Birth only — for a founder whose body eats the snow, the edible snow density at the
+        /// point it was admitted at, J/m³, read at admission and before any feeding; NaN on every
+        /// other row. The row's <c>fsnow</c> (round 49's instrument for 0120's F4).
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why at admission.</b> A founder draws about half of its own 1 m cell's snow in each
+        /// half-second step (0120, <c>f4draw.py</c>), so its first <c>absorptive.jsonl</c> row,
+        /// about five seconds later, reads the flow back into a cell it has been emptying and
+        /// cannot show what a placing rule found. This is the one reading that can.
+        /// </para>
+        /// <para>
+        /// Written only in a world whose snow is a <see cref="GridField"/> and whose placer can say
+        /// where it put the founder (<see cref="IBodyPlacement.TryReservedPosition"/>), so the
+        /// Unity farm's rows, every vertex world's and every recorded run's are what they were.
+        /// </para>
+        /// </remarks>
+        public float LandingSnowDensity { get; }
+
+        /// <summary>
+        /// Birth only — beside <see cref="LandingSnowDensity"/>, the mean edible snow density of
+        /// the landing point's column over the column's live water, J/m³
+        /// (<see cref="GridField.MeanEdibleDensityInColumn"/>); NaN when that is. The row's
+        /// <c>fcol</c>. At the instant of landing, a founder the depth rule set in its column's
+        /// richest cell reads <c>fsnow ≥ fcol</c>, which is the rule's own claim.
+        /// </summary>
+        public float LandingSnowColumnDensity { get; }
+
+        /// <summary>
+        /// Birth only — <see cref="LandingSnowDensity"/>'s reading of the dissolved matter, for a
+        /// founder whose body takes it up (a photosynthetic part), in units/m³; NaN on every
+        /// other row. The row's <c>fmat</c>.
+        /// </summary>
+        public float LandingMatterDensity { get; }
+
+        /// <summary>
+        /// Birth only — <see cref="LandingSnowColumnDensity"/>'s reading of the dissolved matter,
+        /// in units/m³; NaN when <see cref="LandingMatterDensity"/> is. The row's <c>fmcol</c>.
+        /// </summary>
+        public float LandingMatterColumnDensity { get; }
+
         /// <summary>Death only — why the creature left the population.</summary>
         public DeathCause Cause { get; }
+
+        /// <summary>
+        /// Death only — the body's gestation account at death, J, read before <c>World.Bury</c>
+        /// hands it to the remains and zeroes it; 0 on every other row. The row's <c>ga</c>,
+        /// written only when above 0, so every lump breeder's death row is byte for byte what it
+        /// was. Round 48's G2 could not ask whether gestating bodies died with their accounts
+        /// unspent (0120) because no row carried it.
+        /// </summary>
+        public double GestationJoulesAtDeath { get; }
+
+        /// <summary>
+        /// Death only — the body's reserve at death when above 0, J, read before
+        /// <c>World.Bury</c> zeroes it; 0 on every other row. The row's <c>res</c>, written only
+        /// when above 0.
+        /// </summary>
+        /// <remarks>
+        /// A starved body dies at a reserve of 0 or below (§5A.6), so a starvation row never
+        /// carries it. A body that dies solvent does: one the solver threw (<c>diverged</c>), one
+        /// whose root was bitten off (<c>eaten</c>, whose kill row's <c>rj</c> already carries the
+        /// reserve and the account together), and one a bite left under the newborn mass floor.
+        /// </remarks>
+        public double ReserveJoulesAtDeath { get; }
 
         /// <summary>
         /// Kill only — the body whose part did the damage that finished this one, or -1 when
@@ -321,8 +384,17 @@ namespace Evosim.Core
             int partIndex = -1, int attackerPartIndex = -1, int poolIndex = -1,
             double endowmentJoules = 0d,
             string budCells = null, int budsExpressed = 0,
-            ReproductionMode reproductionMode = ReproductionMode.Lump, float gestationShare = 0f)
+            ReproductionMode reproductionMode = ReproductionMode.Lump, float gestationShare = 0f,
+            float landingSnow = float.NaN, float landingSnowColumn = float.NaN,
+            float landingMatter = float.NaN, float landingMatterColumn = float.NaN,
+            double gestationJoulesAtDeath = 0d, double reserveJoulesAtDeath = 0d)
         {
+            LandingSnowDensity = landingSnow;
+            LandingSnowColumnDensity = landingSnowColumn;
+            LandingMatterDensity = landingMatter;
+            LandingMatterColumnDensity = landingMatterColumn;
+            GestationJoulesAtDeath = gestationJoulesAtDeath;
+            ReserveJoulesAtDeath = reserveJoulesAtDeath;
             BudCells = budCells;
             BudsExpressed = budsExpressed;
             ReproductionMode = reproductionMode;
@@ -367,7 +439,9 @@ namespace Evosim.Core
             FounderSource source = FounderSource.None, int poolIndex = -1,
             double endowmentJoules = 0d,
             string budCells = null, int budsExpressed = 0,
-            ReproductionMode reproductionMode = ReproductionMode.Lump, float gestationShare = 0.5f) =>
+            ReproductionMode reproductionMode = ReproductionMode.Lump, float gestationShare = 0.5f,
+            float landingSnow = float.NaN, float landingSnowColumn = float.NaN,
+            float landingMatter = float.NaN, float landingMatterColumn = float.NaN) =>
             new LineageEvent(
                 LineageEventKind.Birth, elapsedSeconds, id, parentId, birthKind, generationDepth,
                 speciesId, hasAbsorptive, hasJoint, hasPhotosynthetic, patch,
@@ -378,9 +452,18 @@ namespace Evosim.Core
                 poolIndex: source == FounderSource.Pool ? poolIndex : -1,
                 endowmentJoules: endowmentJoules,
                 budCells: budCells, budsExpressed: budCells != null ? budsExpressed : 0,
-                reproductionMode: reproductionMode, gestationShare: gestationShare);
+                reproductionMode: reproductionMode, gestationShare: gestationShare,
+                landingSnow: landingSnow, landingSnowColumn: landingSnowColumn,
+                landingMatter: landingMatter, landingMatterColumn: landingMatterColumn);
 
-        public static LineageEvent Death(double elapsedSeconds, long id, DeathCause cause) =>
+        /// <summary>
+        /// One death. <paramref name="gestationJoules"/> and <paramref name="reserveJoules"/> are
+        /// the body's gestation account and its reserve as <c>World.Bury</c> found them, the
+        /// row's <c>ga</c> and <c>res</c>; each is written only when above 0.
+        /// </summary>
+        public static LineageEvent Death(
+            double elapsedSeconds, long id, DeathCause cause,
+            double gestationJoules = 0d, double reserveJoules = 0d) =>
             new LineageEvent(
                 LineageEventKind.Death, elapsedSeconds, id, parentId: -1, birthKind: default,
                 generationDepth: 0, speciesId: 0, hasAbsorptive: false, hasJoint: false,
@@ -388,7 +471,8 @@ namespace Evosim.Core
                 reserveMargin: 0f, indeterminateNodes: 0,
                 hasAttack: false, hasIntake: false, hasProtection: false, cause: cause,
                 attackerId: -1, rootLost: false, partsLost: 0,
-                tissueJoulesLost: 0d, reserveJoulesLost: 0d);
+                tissueJoulesLost: 0d, reserveJoulesLost: 0d,
+                gestationJoulesAtDeath: gestationJoules, reserveJoulesAtDeath: reserveJoules);
 
         /// <summary>
         /// One part off one body — D106 item 1. <paramref name="indeterminateNodes"/> is the
@@ -530,6 +614,20 @@ namespace Evosim.Core
                 // lineage pays for its children (0 lump, 1 gestation) and the share it banks.
                 w.Field("gm", ReproductionMode == ReproductionMode.Gestation ? 1 : 0)
                     .Field("gs", GestationShare);
+
+                // Round 49's landing readings, on a founder's row only and only for the food its
+                // body eats in a grid world, each pair written whole or not at all, so every
+                // other row is byte for byte what it was. Appended at the end for the reason
+                // every field above is.
+                if (Recorded(LandingSnowDensity, LandingSnowColumnDensity))
+                {
+                    w.Field("fsnow", LandingSnowDensity).Field("fcol", LandingSnowColumnDensity);
+                }
+
+                if (Recorded(LandingMatterDensity, LandingMatterColumnDensity))
+                {
+                    w.Field("fmat", LandingMatterDensity).Field("fmcol", LandingMatterColumnDensity);
+                }
             }
             else if (Kind == LineageEventKind.Kill)
             {
@@ -561,10 +659,23 @@ namespace Evosim.Core
                     .Field("t", ElapsedSeconds)
                     .Field("id", Id)
                     .Field("c", Code(Cause));
+
+                // Round 49's two, appended and each written only when above 0, so a lump
+                // breeder's starvation row is byte for byte what it was: the gestation account
+                // the body died holding, and the reserve of a body that died solvent. A NaN
+                // fails the test and is left out rather than written as something JSON cannot
+                // hold.
+                if (GestationJoulesAtDeath > 0d) w.Field("ga", GestationJoulesAtDeath);
+                if (ReserveJoulesAtDeath > 0d) w.Field("res", ReserveJoulesAtDeath);
             }
 
             w.EndObject();
             return w.ToString();
         }
+
+        /// <summary>Whether a landing pair was recorded: both readings finite.</summary>
+        private static bool Recorded(float here, float column) =>
+            !float.IsNaN(here) && !float.IsInfinity(here) &&
+            !float.IsNaN(column) && !float.IsInfinity(column);
     }
 }

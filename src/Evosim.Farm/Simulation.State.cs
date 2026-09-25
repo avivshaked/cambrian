@@ -301,7 +301,8 @@ namespace Evosim.Farm
         /// </summary>
         /// <remarks>
         /// <b>The layout is the world's.</b> A file of <c>Checkpoint.Version</c> 6 holds a world of
-        /// <c>World.StateVersion</c> 11 and a harness with the rebuild count, each body's plan
+        /// <c>World.StateVersion</c> 12 (11 before round 49's instruments, which the world refuses)
+        /// and a harness with the rebuild count, each body's plan
         /// revision and its two sense flags; a file of version 4, round 48's, holds a version-10
         /// world and a harness without them. The world has just read its version, so this reads
         /// the half that goes with it: from a version-4 file every body comes back with its

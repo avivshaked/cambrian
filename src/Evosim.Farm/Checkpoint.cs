@@ -81,6 +81,12 @@ namespace Evosim.Farm
         /// world's, which has only one writer. Version 4 is still read, as
         /// <see cref="LossyVersion"/>.
         /// </remarks>
+        /// <remarks>
+        /// Still 6 when the world went to <c>World.StateVersion</c> 12 with round 49's two
+        /// lineage instruments (2026-09-25): the harness's half did not change, so a version-6
+        /// file of either world is laid out alike up to the world's own version field, and one
+        /// holding a version-11 world is refused there, a few bytes into the payload.
+        /// </remarks>
         public const int Version = 6;
 
         /// <summary>

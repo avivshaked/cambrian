@@ -583,15 +583,21 @@ namespace Evosim.Core.Tests
         {
             byte[] state = StateOf(Stepped(Stage(), seed: 11, seconds: 10f));
 
-            // The version sits immediately after the four-byte section tag.
-            state[4] = (byte)(World.StateVersion + 1);
-
-            var world = new World(Stage(), seed: 11);
-
-            using (var buffer = new MemoryStream(state, writable: false))
-            using (var r = new BinaryReader(buffer, Encoding.UTF8))
+            // The version sits immediately after the four-byte section tag. The one after this
+            // build's, and the one before it (11, before round 49's lineage instruments), which
+            // is not the lossy layout and is refused as every other one is.
+            foreach (int version in new[] { World.StateVersion + 1, World.StateVersion - 1 })
             {
-                Assert.Throws<InvalidDataException>(() => world.ReadState(r));
+                Assert.NotEqual(World.LossyStateVersion, version);
+                state[4] = (byte)version;
+
+                var world = new World(Stage(), seed: 11);
+
+                using (var buffer = new MemoryStream(state, writable: false))
+                using (var r = new BinaryReader(buffer, Encoding.UTF8))
+                {
+                    Assert.Throws<InvalidDataException>(() => world.ReadState(r));
+                }
             }
         }
 
