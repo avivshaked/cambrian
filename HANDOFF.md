@@ -68,8 +68,21 @@ Every token 0121 lists is in its header, with record format 2 and a checkpoint e
   the reader takes the main tree's `runs/` (`d7d36d7`). The full read at the round's end adds
   `--windows-root` (V1) and `--v2-log scratch/logs/r49-v2.log` (V2).
 
+**W1 fails on a build fault (found 2026-09-25, evening).** The founder depth rule clamps a
+founder to the bed at the tank's centre, which a flat floor makes the same everywhere
+(`SharedVolume.TryReserveFounder`, `LowestPlacement(radius)`). The tilted bed's centre is at
+-45.02 m. So every founder whose food is richest deeper than that is lifted to just above it. At
+least 31 of seed 1's trickle leaves, over beds as deep as -77 m, were set at -44.4 to -44.7 m. No
+snow eater was lifted, so the pool stomachs and the cap's clauses are untouched. Round 48 ran the
+same code. The round goes on as pre-registered, since a stop is the owner's call. The fix is on
+`founder-depth-bed` (`scratch/wt-founderbed`, `b873cb5`). The clamp reads the bed under the
+candidate, which is bit-identical on a flat floor, and a tilted-bed test should fail on the old
+tree. It is unbuilt and untested. The reads that found it are in `scripts/reads/r49-entry/`.
+
 **After seed 3 (the owner's ruling puts the three seeds first).** These run with the card alone
 on the machine.
+0. Build `founder-depth-bed`, run its new test on the old tree (it should fail) and on the
+   branch (it should pass), then the Dynamics suite; it lands before round 50.
 1. The card's probe, `scratch/wt-probe` (`gpu-probe`, `ccebf3c`): regenerate the kernels
    (`EVOSIM_GPU_REGENERATE=1`, `GpuKernelSourceTests`), build, and run each class's launch time
    and the largest link's cell count under per-part contact.
