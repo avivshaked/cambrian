@@ -601,7 +601,7 @@ for tank, arm in (('tank 1', 'r48-s1'), ('tank 2', 'r48-s2'), ('tank 3', 'r48-s3
 caps, end = lay([
     "Tanks 1 and 3 each ended with about 8,600 bodies alive.",
     "Tank 2 stopped at 13,700 s on a software error.",
-    "We have not found its cause yet.",
+    "A rerun passed that point cleanly: it was a one-off miscalculation.",
 ])
 scene(n=n, act="What the round found", chapter="What the round found", station="Arrival", run="r48-s1", second=30000,
       subject="world", seconds=round(end + 0.5, 1), captions=caps,

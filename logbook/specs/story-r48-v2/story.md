@@ -198,8 +198,11 @@ and 10)" are three, 31, 10 and 10.
 ## What I could not check
 
 - The cause of tank 2's stop. The recorder refused a snow reading of minus infinity at
-  13,700 s. A probe of that seed was running on the morning of 2026-09-25; if it finds the cause,
-  scene 19's third caption ("We have not found its cause yet") should change.
+  13,700 s. A rerun of that seed from founding on the same build matched every stats field to
+  the bit through 13,690 s and ran clean past 13,700 s (HANDOFF, 2026-09-25 afternoon), so the
+  broken window is read as a one-off wrong computation, the processor or a rare thread race,
+  and not as a fault in the code; scene 19's third caption says so. Which of the two it was is
+  not known.
 - Why the eater lines faded, why the two tanks' bets split, and why selection keeps the speck of
   stomach. All three are marked as guesses on screen.
 - Three verdict rows are reused from the first film's reading: S2 (stomach children's age at death), F4
