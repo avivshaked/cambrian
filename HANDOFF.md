@@ -617,11 +617,19 @@ in this section is history.
       map, so joints and brain state were carried from the wrong links.
     - A world with no bite is bit-identical, pinned by two digests taken on the unfixed
       code. No version moves; `coreHash` and `farmHash` do.
-    - Being finished: `AdoptPlan` still wiped the contact and damage records, so a bitten
-      body sensed nothing on the step it lost a part. D123 says the damage sense reads that
-      step's loss, so I ruled to carry the surviving parts' records through the part map.
-    - Merges into `r49-record-film` when back. Owed on the farm: a short run with bites on,
-      `--verify-checkpoint` on it, and a no-bite regress.
+    - A plan change now carries the surviving parts' contact and damage records through the
+      part map (`6df7ea8`, `8e96289`), where `AdoptPlan` had wiped them and a bitten body
+      sensed nothing on the step it lost a part. I ruled it as D123's reading, and the
+      branch's D123 status and DESIGN's senses paragraph say so (`b3db38a`).
+    - It also covers module changes. So the no-bite module world's digest moved
+      (`91576b17…` to `ff558cf1…`), in world state only: the solver digest `c2072f14…` is
+      unchanged, and the moved arrays belong to leaves with no brain. Re-pinned, with the
+      solver digest pinned beside it.
+    - **Merged** into `r49-record-film` at `ccccc01`. The branch head is `7739745`. It builds
+      clean, 215 filtered tests pass (Core 94, farm 111, Dynamics 10), and the six assemblies
+      compile with 0 errors outside Unity.
+    - Owed on the farm: a short run with bites on, `--verify-checkpoint` on it, and a no-bite
+      regress.
   - **A feeder's own cell holds 5 to 25% of the water round it** (`212a82f`, 0120's F4
     section; `FeederRefillExperiments`; a CLAUDE.md gotcha, `baa6341`).
     - With the transport off the stirring refills the cell at 0.06 to 0.1 of the gap a
