@@ -780,6 +780,167 @@ namespace Evosim.Farm.Tests
             Assert.Throws<FileNotFoundException>(() => FilmWindowReader.Open(Path.Combine(_run.Root, "nowhere")));
         }
 
+        // ------------------------------------------------------------------ B3: paths and story windows
+
+        /// <summary>
+        /// A body's path is read from the frames (B3): at a frame's second it is the frame's root
+        /// to the bit, between two frames it is the line between them, and outside the frames
+        /// that hold the body it is held at the first or the last. A body's children in the
+        /// window are its birth rows in it.
+        /// </summary>
+        [Fact]
+        public void ABodysPathAndChildrenAreReadFromTheWindow()
+        {
+            string outDirectory = Out("paths");
+            Film(21d, 39d, outDirectory);
+
+            // Two births to one parent beside the window's own rows, so the count has something
+            // to count in a minute of a small world whose births are mostly the floor's founders.
+            File.AppendAllText(Path.Combine(outDirectory, FilmWindow.EventsFileName),
+                "\n{\"e\":\"b\",\"t\":30.5,\"id\":900001,\"p\":77}\n{\"e\":\"b\",\"t\":36.5,\"id\":900002,\"p\":77}\n");
+
+            using (FilmWindowReader window = FilmWindowReader.Open(outDirectory))
+            {
+                Assert.True(window.FrameCount > 10);
+
+                // A body in the first frame and the last, and one born inside.
+                PoseFrame first = window.ReadFrame(0);
+                PoseFrame last = window.ReadFrame(window.FrameCount - 1);
+                var atEnd = new HashSet<long>();
+                foreach (PoseBody b in last.Bodies) atEnd.Add(b.Id);
+
+                long throughout = -1;
+                foreach (PoseBody b in first.Bodies)
+                {
+                    if (atEnd.Contains(b.Id)) { throughout = b.Id; break; }
+                }
+
+                Assert.True(throughout >= 0, "no body lived through the window");
+                Assert.True(window.TryFramesOf(throughout, out int f0, out int f1));
+                Assert.Equal(0, f0);
+                Assert.Equal(window.FrameCount - 1, f1);
+
+                for (int f = 0; f < window.FrameCount; f += 7)
+                {
+                    PoseFrame frame = window.ReadFrame(f);
+                    foreach (PoseBody b in frame.Bodies)
+                    {
+                        if (b.Id != throughout) continue;
+                        Assert.True(window.TryRootAt(throughout, frame.Seconds, out float x, out float y, out float z));
+                        Assert.Equal(b.X, x);
+                        Assert.Equal(b.Y, y);
+                        Assert.Equal(b.Z, z);
+                    }
+                }
+
+                // Halfway between frames 3 and 4, on the line between them.
+                PoseBody a3 = Find(window.ReadFrame(3), throughout);
+                PoseBody a4 = Find(window.ReadFrame(4), throughout);
+                double mid = 0.5d * (window.SecondOf(3) + window.SecondOf(4));
+                Assert.True(window.TryRootAt(throughout, mid, out float mx, out float my, out float mz));
+                Assert.Equal(0.5f * (a3.X + a4.X), mx, 4);
+                Assert.Equal(0.5f * (a3.Y + a4.Y), my, 4);
+                Assert.Equal(0.5f * (a3.Z + a4.Z), mz, 4);
+
+                // Held before the first frame and after the last.
+                Assert.True(window.TryRootAt(throughout, 0d, out float bx, out _, out _));
+                Assert.Equal(Find(first, throughout).X, bx);
+                Assert.True(window.TryRootAt(throughout, 1e6, out float ex, out _, out _));
+                Assert.Equal(Find(last, throughout).X, ex);
+
+                // A body no frame holds.
+                Assert.False(window.TryRootAt(-5, 30d, out _, out _, out _));
+                Assert.False(window.TryFramesOf(-5, out _, out _));
+
+                // A body born inside starts no earlier than its birth.
+                foreach (FilmWindowEvent e in window.Events)
+                {
+                    if (e.Kind != 'b' || !window.TryFramesOf(e.Id, out int born, out _)) continue;
+                    Assert.True(window.SecondOf(born) >= e.Seconds - 1e-9, "body " + e.Id + " is framed before its birth");
+                    Assert.True(window.TryFlagsOf(e.Id, out int flags));
+                    Assert.InRange(flags, 0, PoseStream.AllFlagBits);
+                }
+
+                // Children: the birth rows naming the parent, up to the second.
+                var byParent = new Dictionary<long, int>();
+                foreach (FilmWindowEvent e in window.Events)
+                {
+                    if (e.Kind == 'b' && e.Parent >= 0) byParent[e.Parent] = (byParent.TryGetValue(e.Parent, out int n) ? n : 0) + 1;
+                }
+
+                Assert.Equal(2, byParent[77]);
+                Assert.Equal(1, window.ChildrenOf(77, 31d));
+                foreach (KeyValuePair<long, int> pair in byParent)
+                {
+                    Assert.Equal(pair.Value, window.ChildrenOf(pair.Key, 39d));
+                    Assert.Equal(0, window.ChildrenOf(pair.Key, 20d));
+                }
+            }
+        }
+
+        private static PoseBody Find(PoseFrame frame, long id)
+        {
+            foreach (PoseBody b in frame.Bodies) if (b.Id == id) return b;
+            throw new InvalidOperationException("body " + id + " is not in the frame at " + frame.Seconds);
+        }
+
+        /// <summary>
+        /// A story's window counts as recorded only over its own span, rate and run (B3): the
+        /// window the manifest names reads recorded and faithful, and the same directory asked
+        /// for over another span or rate, or a directory with nothing in it, reads why not.
+        /// </summary>
+        [Fact]
+        public void AStoryWindowIsRecordedOnlyOverItsOwnSpan()
+        {
+            string plan = Path.Combine(_run.Root, "story-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(plan);
+            string recorded = Path.Combine(plan, "story-01-filmed-main");
+            Film(25d, 30d, recorded);
+
+            string run = _run.RunDirectory.Replace('\\', '/');
+            string manifest =
+                "{\"format\": \"story-windows 1\", \"story\": \"story.json\", \"windows\": [\n" +
+                "  {\"scene\": 1, \"part\": \"main\", \"arm\": \"filmed\", \"station\": \"Portrait\", \"run\": \"" + run + "\", " +
+                "\"from\": 25.0, \"to\": 30.0, \"fps\": 10, \"start\": 25.0, \"card\": 0, \"seconds\": 4.0, \"out\": \"story-01-filmed-main\", " +
+                "\"birth\": {\"parent\": 7, \"child\": 9, \"at\": 27.5}, \"notes\": [\"a note\"]},\n" +
+                "  {\"scene\": 2, \"part\": \"main\", \"arm\": \"filmed\", \"station\": \"Card\", \"run\": \"" + run + "\", " +
+                "\"from\": 25.0, \"to\": 31.0, \"fps\": 10, \"start\": 25.0, \"out\": \"story-01-filmed-main\"},\n" +
+                "  {\"scene\": 3, \"part\": \"main\", \"arm\": \"filmed\", \"station\": \"Card\", \"run\": \"" + run + "\", " +
+                "\"from\": 25.0, \"to\": 30.0, \"fps\": 5, \"start\": 25.0, \"out\": \"story-01-filmed-main\"},\n" +
+                "  {\"scene\": 4, \"part\": \"time-b\", \"arm\": \"filmed\", \"station\": \"Time\", \"run\": \"" + run + "\", " +
+                "\"from\": 50.0, \"to\": 55.0, \"fps\": 10, \"start\": 50.0, \"out\": \"story-04-filmed-time-b\"}\n" +
+                "], \"skipped\": [{\"scene\": 5, \"arm\": \"filmed\", \"why\": \"no run\"}]}";
+            File.WriteAllText(Path.Combine(plan, StoryWindows.FileName), manifest);
+
+            StoryWindows windows = StoryWindows.Read(plan);
+            Assert.Equal(4, windows.Windows.Count);
+
+            StoryWindow one = windows.Find(1, StoryWindows.MainPart, "filmed");
+            Assert.NotNull(one);
+            Assert.Equal(Path.GetFullPath(recorded), one.Directory);
+            Assert.True(one.HasBirth);
+            Assert.Equal(7L, one.BirthParent);
+            Assert.Equal(9L, one.BirthChild);
+            Assert.Equal(27.5d, one.BirthAt);
+            Assert.Equal(4d, one.Seconds);
+            Assert.Equal(new[] { "a note" }, one.Notes);
+            Assert.Null(StoryWindows.Recorded(one, out FilmWindowVerdict verdict));
+            Assert.Equal(FilmWindow.Faithful, verdict.Verdict);
+
+            Assert.Contains("was filmed from 25 to 30 s", StoryWindows.Recorded(windows.Find(2, StoryWindows.MainPart), out _));
+            Assert.Contains("fps", StoryWindows.Recorded(windows.Find(3, StoryWindows.MainPart), out _));
+            Assert.Contains("no window at", StoryWindows.Recorded(windows.Find(4, StoryWindows.SecondPart), out _));
+            Assert.Null(windows.Find(4, StoryWindows.MainPart));
+            Assert.Null(windows.Find(1, StoryWindows.MainPart, "another-arm"));
+            Assert.Equal("no run", windows.SkippedWhy(5));
+            Assert.Null(windows.SkippedWhy(1));
+
+            // A window from another run of the same span is not this scene's.
+            string elsewhere = Path.Combine(_run.Root, "runs", "filmed", "another-run");
+            var other = new StoryWindow { Run = elsewhere, From = 25d, To = 30d, Fps = 10d, Directory = one.Directory };
+            Assert.Contains("was filmed from run", StoryWindows.Recorded(other, out _));
+        }
+
         // ------------------------------------------------------------------
 
         /// <summary>Every file under a directory, with its length and its last write.</summary>

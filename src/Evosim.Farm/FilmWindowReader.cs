@@ -213,14 +213,22 @@ namespace Evosim.Farm
         /// <summary>Whether the verdict says faithful. The only test a caller may use to claim it.</summary>
         public bool Faithful => Verdict != null && Verdict.Verdict == FilmWindow.Faithful;
 
-        private void ReadVerdict()
+        private void ReadVerdict() => Verdict = ReadVerdictIn(Directory, _notes);
+
+        /// <summary>
+        /// A window's verdict read alone, without its frames: what a planner asks of a window it
+        /// may not have to film again (<see cref="StoryWindows.Recorded"/>). Null when the
+        /// directory holds no <c>identity.jsonl</c> or the file ends without a verdict, each said
+        /// in <paramref name="notes"/> when a list is given.
+        /// </summary>
+        public static FilmWindowVerdict ReadVerdictIn(string directory, List<string> notes = null)
         {
-            string path = Path.Combine(Directory, FilmWindow.IdentityFileName);
+            string path = Path.Combine(directory ?? "", FilmWindow.IdentityFileName);
 
             if (!File.Exists(path))
             {
-                _notes.Add("no " + FilmWindow.IdentityFileName + ", so the window has no verdict");
-                return;
+                notes?.Add("no " + FilmWindow.IdentityFileName + ", so the window has no verdict");
+                return null;
             }
 
             string last = null;
@@ -234,8 +242,8 @@ namespace Evosim.Farm
 
             if (last == null)
             {
-                _notes.Add(FilmWindow.IdentityFileName + " ends without a verdict: the window stopped before its end");
-                return;
+                notes?.Add(FilmWindow.IdentityFileName + " ends without a verdict: the window stopped before its end");
+                return null;
             }
 
             JsonNode v = Json.Parse(last);
@@ -276,7 +284,7 @@ namespace Evosim.Farm
                 }
             }
 
-            Verdict = verdict;
+            return verdict;
         }
 
         private static string Str(JsonNode v, string name) =>
@@ -336,6 +344,131 @@ namespace Evosim.Farm
             if (before >= count - 1) return count - 1;
 
             return seconds - SecondOf(before) <= SecondOf(before + 1) - seconds ? before : before + 1;
+        }
+
+        // ---------------------------------------------------------------- the paths
+
+        /// <summary>One body's root at every frame that holds it, and the last flags it carried.</summary>
+        private sealed class Track
+        {
+            public readonly List<int> Frames = new List<int>();
+            public readonly List<float> Xyz = new List<float>();
+            public int Flags = PoseStream.FlagsNotRecorded;
+        }
+
+        private Dictionary<long, Track> _tracks;
+
+        /// <summary>
+        /// Whether any frame holds a body, and the first and last frame that do. Reads every
+        /// frame once, the first time a path is asked for (<see cref="TryRootAt"/>).
+        /// </summary>
+        public bool TryFramesOf(long id, out int first, out int last)
+        {
+            EnsureTracks();
+
+            if (_tracks.TryGetValue(id, out Track track) && track.Frames.Count > 0)
+            {
+                first = track.Frames[0];
+                last = track.Frames[track.Frames.Count - 1];
+                return true;
+            }
+
+            first = last = -1;
+            return false;
+        }
+
+        /// <summary>
+        /// Where a body's root stood at a second, as the frames have it: linear between the two
+        /// frames around the second, and held at the body's first frame before it and at its last
+        /// after it, so a body that dies inside the window stays where it died. False when no
+        /// frame holds the body.
+        /// </summary>
+        /// <remarks>
+        /// This is how a camera plan looks ahead in a window: the path the farm's solver took,
+        /// read from the frames, where the live mode carries the velocity at the plan's second
+        /// forward in a straight line. The first call reads every frame of the window once and
+        /// keeps every body's root, 16 bytes a body a frame.
+        /// </remarks>
+        public bool TryRootAt(long id, double seconds, out float x, out float y, out float z)
+        {
+            EnsureTracks();
+            x = y = z = float.NaN;
+
+            if (!_tracks.TryGetValue(id, out Track track) || track.Frames.Count == 0) return false;
+
+            List<int> frames = track.Frames;
+            int n = frames.Count;
+
+            if (seconds <= SecondOf(frames[0]) + Eps) { RootAt(track, 0, out x, out y, out z); return true; }
+            if (seconds >= SecondOf(frames[n - 1]) - Eps) { RootAt(track, n - 1, out x, out y, out z); return true; }
+
+            // The last of the body's frames at or before the second, and the one after it.
+            int lo = 0, hi = n - 1;
+            while (hi - lo > 1)
+            {
+                int mid = (lo + hi) >> 1;
+                if (SecondOf(frames[mid]) <= seconds) lo = mid;
+                else hi = mid;
+            }
+
+            double t0 = SecondOf(frames[lo]), t1 = SecondOf(frames[hi]);
+            float u = t1 - t0 > 1e-9 ? (float)((seconds - t0) / (t1 - t0)) : 0f;
+            int a = 3 * lo, b = 3 * hi;
+            List<float> p = track.Xyz;
+            x = p[a] + (p[b] - p[a]) * u;
+            y = p[a + 1] + (p[b + 1] - p[a + 1]) * u;
+            z = p[a + 2] + (p[b + 2] - p[a + 2]) * u;
+            return true;
+        }
+
+        private static void RootAt(Track track, int k, out float x, out float y, out float z)
+        {
+            x = track.Xyz[3 * k];
+            y = track.Xyz[3 * k + 1];
+            z = track.Xyz[3 * k + 2];
+        }
+
+        /// <summary>
+        /// The guild flags a body carried at the last frame that held it
+        /// (<see cref="PoseStream.AbsorptiveBit"/>, <see cref="PoseStream.JointedBit"/>,
+        /// <see cref="PoseStream.PhotosyntheticBit"/>), or false when no frame holds it or the
+        /// stream did not record them.
+        /// </summary>
+        public bool TryFlagsOf(long id, out int flags)
+        {
+            EnsureTracks();
+            flags = PoseStream.FlagsNotRecorded;
+            if (!_tracks.TryGetValue(id, out Track track) || track.Flags < 0) return false;
+            flags = track.Flags;
+            return true;
+        }
+
+        private void EnsureTracks()
+        {
+            if (_tracks != null) return;
+            _tracks = new Dictionary<long, Track>();
+
+            for (int f = 0; f < FrameCount; f++)
+            {
+                PoseFrame frame = ReadFrame(f);
+
+                for (int i = 0; i < frame.Bodies.Length; i++)
+                {
+                    PoseBody body = frame.Bodies[i];
+
+                    if (!_tracks.TryGetValue(body.Id, out Track track))
+                    {
+                        track = new Track();
+                        _tracks[body.Id] = track;
+                    }
+
+                    track.Frames.Add(f);
+                    track.Xyz.Add(body.X);
+                    track.Xyz.Add(body.Y);
+                    track.Xyz.Add(body.Z);
+                    if (body.Flags >= 0) track.Flags = body.Flags;
+                }
+            }
         }
 
         // ---------------------------------------------------------------- the genomes
@@ -501,6 +634,24 @@ namespace Evosim.Farm
 
             death = default;
             return false;
+        }
+
+        /// <summary>
+        /// How many children a body had inside the window up to a second: its births in the
+        /// window at or before it. A child born before the window opened is not in the window's
+        /// files, so the count starts at the window's start.
+        /// </summary>
+        public int ChildrenOf(long parent, double through)
+        {
+            int n = 0;
+
+            for (int i = 0; i < _events.Count; i++)
+            {
+                FilmWindowEvent e = _events[i];
+                if (e.Kind == 'b' && e.Parent == parent && e.Seconds <= through + Eps) n++;
+            }
+
+            return n;
         }
 
         /// <summary>The events in (from, to], in the window's order.</summary>
