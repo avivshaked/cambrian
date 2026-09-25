@@ -42,6 +42,30 @@ A Fable review, read-only and relayed to the owner in full, ranked the work:
 **The owner chose option A.** Round 49 runs overnight on the CPU once steps 2 and 3 are in. The
 card work runs by day, with the card alone on the machine.
 
+**Then the owner said to finish the story film and launch round 49 (about 17:45).** So the
+round launches tonight on its own build, without step 2; step 3 is in its launcher. The queue
+runs on its own, one heavy job at a time:
+1. `scratch/r49-film-debug/after-pace.ps1`, the film chain above.
+2. `after-film.ps1` beside it: scenes 2, 8 and 11 again, then the whole film joined to
+   `scratch/owner/r48-story-full/r48-story-full-v2.mp4`, then `scratch/r49-launch/checks.ps1`
+   (the build, the suites, the two record formats, the smoke with its witness, checkpoint
+   check and resume, the crowd fixture), logged to `scratch/logs/r49-checks.log`.
+3. `scratch/r49-launch/post-checks.ps1`: the no-bite regress (`r48fix-s4` against
+   `r49fixb-s4`) and round 49's world checkpointed every 95 s (`r49ck95-s2`), which must print
+   no wait. Logged to `scratch/logs/r49-post-checks.log`.
+4. By hand, once the logs are read: 0121's launch section filled from
+   `scratch/r49-launch/launch-a.md` and `launch-b.md`, then `env-r49.ps1`, 0121 and
+   `RunFixture.cs` committed on `r49-record-film`, then `scratch/r49-launch/seeds.ps1`
+   detached. It launches seed 1 at 16 threads with a 780-minute wall, then `v2.ps1` (seed
+   1's 15,000 s checkpoint checked, and a resume to 16,000 s compared). Seeds 2 and 3 take the
+   next two nights, since one seed at this crowd fills a night.
+
+The round's reader is `scripts/reads/r49-read.py` on the branch `r49-read`
+(`scratch/wt-r49read`), read against round 48 and the cap build's fixture. It merges to main
+before the watch, which runs it from main. A seed's error log is under
+`scratch/wt-r49/scratch/logs/`, and C2 finds it there. Step 2's patch is committed, unbuilt, on
+`speed-serial` (`scratch/wt-speed`, `a61cb07`), for tomorrow's first slot after V2.
+
 **Round 48's story film, from farm windows.** The windows are re-recorded as stream version 4,
 which carries the reserve in joules (`740e9da`), in `scratch/wt-r49/scratch/story-windows/r48-v4`.
 Every one so far is faithful: scenes 1 to 13, and the chart fixes of 2, 8 and 11. The fixes ran
@@ -55,6 +79,14 @@ done. Scenes 1 to 12 are delivered in `scratch/owner/r48-story-part1/`, with the
 look is the owner's pick, target luma 0.18. Every encoder in the render scripts runs at four
 threads. For the owner's narration trial, the prose story and the captions are copied to
 `scratch/owner/r48-story-prose.md` and `r48-story-captions-by-scene.md`.
+
+**The chart fix did not reach part 1 v2.** Its check sheet showed the reserve charts of scenes
+2, 8 and 11 still empty, frame for frame the old ones. The render worker `scratch/wt-r49/unity-w5`
+held old copies of `FilmWindowWorld.cs` and `UI/SafariChartLayer.cs`, which never hand the
+window's reserve to the chart (CLAUDE.md, "A worker's Assets/Theatre goes stale silently"). Both
+were copied in at 17:50, with no Unity process running, so scenes 13 to 20 render with them.
+Part 1 v2 was not delivered. The three windows do carry the reserve (body 201 at 45 J at
+mid-window), which `scripts/poses-read.py` can now read (`b09e05c`: version 4's prefix).
 
 **The farm has left Unity.** On 2026-09-21 the owner ruled the engine before the world
 ("I'd prioritise this before making the world more complex"): pace first, staggered, with
