@@ -391,7 +391,19 @@ in this section is history.
     so every deletion is the owner's to run. The extract set (22 items) is in git with its
     citations repointed. `scratch/research-throws/notes.txt` stays in scratch until the three
     comments under `unity/Assets/Evosim` that cite it are repointed at a round gap, because that
-    edit moves `simHash`.
+    edit moves `simHash`. The delete script is `scratch/cleanup/run-cleanup.ps1`. It reads
+    `delete-list.tsv` (built by `make-list.py`) and does a dry run unless given `-Execute`. Its
+    default group is 103 GB: frame sequences whose clips and contact sheets stay, superseded
+    directories, logs older than 2026-09-24, and 25 merged worktrees removed without `--force`.
+    `-IncludeAsk` adds `scratch/wt-shallow` and `.claude/worktrees/` (16 GB). The dry run
+    listed 103.3 GB of scratch's 112 GB and refused nothing. The owner was notified at 11:10.
+    The extraction commits (`4355869`, `dc8606b`) are not pushed: they carry a picture,
+    genomes, logs and trajectory tables, and pushing anything that is not code or prose is the
+    owner's call.
+  - **Checkpoint fidelity** (Opus subagent, read-only): why a round 48 resume parts at its first
+    sample. The jointed bodies part first (`speedJointed` 2.2e-4 relative at 12,510 s) while the
+    rigid ones agree to 1e-10, and `--verify-checkpoint` sees nothing but a census flag. It
+    returns a cause, a fix and a test for the session to build once the machine track is free.
   - **Outside `scratch/`, for the owner:** `runs/` holds 67 GB, `.claude/worktrees/` 13.7 GB,
     and the six Unity workers 1.7 GB each.
   - **Merged:** the safari branch is in main (`d995433`, pushed), so story mode is on main.
