@@ -114,6 +114,20 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 
+
+def _default_runs_root():
+    """<repo>/runs, or the main tree's when this copy sits in a worktree under scratch/wt-*.
+
+    The round's seeds are launched from the worktree `scratch/wt-r49` with the main tree's runs
+    root, and the watch runs this script from the worktree (where the seeds' logs are), passing
+    `<second> <arm>` and nothing else; the worktree's own runs/ holds no run."""
+    parent = os.path.dirname(REPO)
+    if os.path.basename(parent) == "scratch" and os.path.basename(REPO).startswith("wt-"):
+        main_runs = os.path.join(os.path.dirname(parent), "runs")
+        if os.path.isdir(main_runs):
+            return main_runs
+    return os.path.join(REPO, "runs")
+
 sys.path.insert(0, HERE)
 from contact_aliases import field as _aliased_field  # noqa: E402  (path set above)
 import runrec  # noqa: E402  (either record: positions.jsonl or positions.jsonl.gz)
@@ -2189,11 +2203,11 @@ def show(r):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--runs-root", default=os.path.join(REPO, "runs"),
-                    help="defaults to <repo>/runs")
+    ap.add_argument("--runs-root", default=_default_runs_root(),
+                    help="defaults to <repo>/runs, or the main tree's from a scratch/wt-* worktree")
     ap.add_argument("--arms", nargs="+", default=DEFAULT_ARMS)
-    ap.add_argument("--baseline-runs-root", default=os.path.join(REPO, "runs"),
-                    help="where round 48's runs are, for O1, O3, S1, X1 and R1; defaults to <repo>/runs")
+    ap.add_argument("--baseline-runs-root", default=_default_runs_root(),
+                    help="where round 48's runs are, for O1, O3, S1, X1 and R1; defaults as --runs-root")
     ap.add_argument("--baseline-arms", nargs="+", default=None,
                     help="round 48's arms in the order of --arms; default r48-s<N> for seed N")
     ap.add_argument("--no-baseline-reefs", action="store_true",
