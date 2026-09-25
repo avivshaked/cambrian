@@ -61,8 +61,12 @@ namespace Evosim.Theatre
         /// <summary>The lamp on a portrait and a birth (<see cref="SnapshotCamera.LampIntensity"/>); 0 none.</summary>
         public float Lamp = TheatreSkin.Dial("EVOSIM_THEATRE_STORY_LAMP", 1.2f, 0f, 8f);
 
-        /// <summary>The meter's target mean luma at mid-depth, 0 to 1 of full scale; 0 turns the meter off.</summary>
-        public float TargetLuma = TheatreSkin.Dial("EVOSIM_THEATRE_STORY_LUMA", 0.38f, 0f, 0.8f);
+        /// <summary>
+        /// The meter's target mean luma at mid-depth, 0 to 1 of full scale; 0 turns the meter off.
+        /// 0.38 at first, whose frames of round 48 measured 0.43 and which the owner called too
+        /// bright (2026-09-25); the first film's 0.06 to 0.19 was too dark. 0.26 is between.
+        /// </summary>
+        public float TargetLuma = TheatreSkin.Dial("EVOSIM_THEATRE_STORY_LUMA", 0.26f, 0f, 0.8f);
 
         /// <summary>
         /// How much the target falls from the surface to the bed, as a fraction of it: 0.4 aims a

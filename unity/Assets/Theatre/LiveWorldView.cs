@@ -375,6 +375,15 @@ namespace Evosim.Theatre
             {
                 Resize(live, phenotype);
                 Resized++;
+
+                // A resize writes the plan's raw scales, and only the palette's reshape squashes
+                // them to the genome's three half-extents. Left to the rotation's budget, a crowd
+                // of 1,800 at 96 a frame waited up to 19 frames for it, and every growth step
+                // (15 frames apart at 30 fps) drew a growing body large and then small again: the
+                // owner's "grow back and forth" in round 48's window films (2026-09-25). Marked
+                // undressed, it is reshaped by the next DressUndressed, which runs before every
+                // captured frame.
+                live.Dressed = false;
             }
 
             return live;
