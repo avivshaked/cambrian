@@ -243,45 +243,61 @@ namespace Evosim.Core
         public float[] PartHealth { get; internal set; }
 
         /// <summary>
-        /// What share of its pool each part has lost since the body's plan last changed — what
-        /// <see cref="SensorChannel.Damage"/> reports, D106 item 5. Null is a body nothing has
-        /// hurt since then.
+        /// What share of its pool each part lost on the last metabolic step — what
+        /// <see cref="SensorChannel.Damage"/> reports, D106 item 5 and D123. Null is a body
+        /// nothing has hurt since it was born or last changed plan; an array of zeros is one
+        /// hurt before and not on the last step.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <b>Summed over steps, and not the step's loss.</b> <c>World.Wound</c> adds each blow to
-        /// the part's entry and nothing clears the array but a plan change
-        /// (<c>World.AdoptPlan</c>), so a part hurt once reads its loss for as long as the plan
-        /// stands, healing or not. D106 item 5 asked for the step's loss; this is what the code
-        /// does, recorded so that a reader of the channel knows which one it is reading.
-        /// Written by the mouth's damage pass and read by the harness's sensors on the physics
-        /// steps that follow, so it is one metabolic step stale at the brain, as <c>Flow</c> is.
+        /// <b>The step's loss, from round 49 (D123).</b> <c>World.ForgetWhatWasFelt</c> zeroes
+        /// the array at the top of every mouth pass and <c>World.Wound</c> then adds each of the
+        /// step's blows to the part's entry, so the entry is the health the step took, as a
+        /// share of the pool, before the same step's healing. Rounds 45 to 48 summed it over
+        /// every step since the body's plan last changed, because nothing cleared it but
+        /// <c>World.AdoptPlan</c>. Written by the mouth's damage pass and read by the harness's
+        /// sensors on the physics steps that follow, so it is one metabolic step stale at the
+        /// brain, as <c>Flow</c> is.
         /// </para>
         /// <para>
-        /// A property of the body's history and not of the step, so the checkpoint carries it
-        /// (StateVersion 6).
+        /// <b>Zeroed in place and never replaced by a step</b>, because the harness hands a
+        /// body's sense this very array by reference. A plan change drops it, since its indices
+        /// named the old plan's parts, and the harness's next hand-back follows.
+        /// </para>
+        /// <para>
+        /// The physics steps after a checkpoint read it before the next metabolic step rewrites
+        /// it, so the checkpoint carries it (StateVersion 6).
         /// </para>
         /// </remarks>
         public float[] PartDamage { get; internal set; }
 
         /// <summary>
-        /// Whether each part has touched another body since the body's plan last changed — what
-        /// <see cref="SensorChannel.Contact"/> reports. Null is a body that has touched nothing
-        /// since then, and every body in a world with <see cref="RunConfig.SenseContact"/> off.
+        /// Whether each part touched another body's part on the last metabolic step — what
+        /// <see cref="SensorChannel.Contact"/> reports, D106 item 5 and D123. Null is a body that
+        /// has touched nothing since it was born or last changed plan, and every body in a world
+        /// with <see cref="RunConfig.SenseContact"/> off.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <b>Sticky, and not the last step's contact.</b> <c>World.NoteContact</c> sets a part's
-        /// flag on a step it touches and nothing clears it but a plan change
-        /// (<c>World.AdoptPlan</c>), so a part touched once reads 1 until the body gains or loses
-        /// a part. Whether the flag should be the step's alone is a world rule and the owner's;
-        /// this records what the code does.
+        /// <b>The step's contact, from round 49 (D123).</b> <c>World.ForgetWhatWasFelt</c> clears
+        /// every flag at the top of the mouth pass and <c>World.NoteContact</c> then sets the flag
+        /// of each part named in the step's contact list. That list is the solver's overlap census
+        /// on the last physics step before the metabolic step, with one pair of parts for each
+        /// pair of bodies overlapping (the nearest by origins, or under per-part contact the first
+        /// pair the contact pass met). So a flag says the part was touching at the step's close,
+        /// not that it touched at some moment inside it; and where two bodies touch at several
+        /// pairs of parts, only the named pair's two parts read it. Rounds 45 to 48 kept every flag set until a plan
+        /// change, and the sense read "touched since the body last changed shape".
         /// </para>
         /// <para>
-        /// A property of the body's history for that reason, so the checkpoint carries it. It did
-        /// not until StateVersion 11 (2026-09-25): every restored body came back touching nothing,
-        /// and round 48's resume parted from the run at its first sample in jointed bodies whose
-        /// brains read the channel.
+        /// <b>Cleared in place and never replaced by a step</b>, for the reason
+        /// <see cref="PartDamage"/> gives.
+        /// </para>
+        /// <para>
+        /// The physics steps after a checkpoint read it before the next metabolic step rewrites
+        /// it, so the checkpoint carries it. It did not until StateVersion 11 (2026-09-25): every
+        /// restored body came back touching nothing, and round 48's resume parted from the run at
+        /// its first sample in jointed bodies whose brains read the channel.
         /// </para>
         /// </remarks>
         public bool[] PartContact { get; internal set; }

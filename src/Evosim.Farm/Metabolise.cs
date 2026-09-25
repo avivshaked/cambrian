@@ -292,11 +292,20 @@ namespace Evosim.Farm
         /// channels.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// <b>Skipped entirely unless the run has opened one of the two channels.</b> The arrays
         /// are Core's and are handed over by reference, so this is a pointer per body per
         /// metabolic step and nothing else — but a run that nothing can draw them in is a run in
         /// which no neuron will ever ask, and the whole of what the walk would buy is a field
         /// assignment nobody reads.
+        /// </para>
+        /// <para>
+        /// <b>What the physics steps of the next interval read is this step's record</b> (D123,
+        /// round 49): Core's mouth pass zeroes both arrays in place at its top and writes the
+        /// step's contacts and losses into them, so the reference handed here stays the one the
+        /// next pass writes. It is handed again every step all the same, because Core replaces an
+        /// array on a body's first touch or wound and drops both on a plan change.
+        /// </para>
         /// </remarks>
         private void HandBackWhatWasFelt()
         {

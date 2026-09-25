@@ -757,6 +757,16 @@ which channel a given seed yields and the historical record stops replaying (§7
 relative velocity the drag pass computed on the previous physics step; a newborn's first step
 reads zero.
 
+Contact and damage are answered by the farm that runs outside Unity, since round 45's mouth
+([D106](DECISIONS.md#d106) item 5). Each has its own switch at the end of the drawable list,
+for the same reason. From round 49 both read the last metabolic step alone
+([D123](DECISIONS.md#d123)). Contact says whether the part was touching another body's part when
+the step closed. Damage is the health the part lost on that step, as a share of its pool. The farm
+hands both to the body once a metabolic step. Every physics step until the next one reads them,
+so they are one metabolic step stale at the brain, as flow is. In rounds 45 to 48 both were
+kept from the body's last change of plan: a flag stayed set and a loss added up. The
+specification had asked for the step.
+
 **Depth is not redundant with the photosensor, and the reason is the night.** Irradiance is a
 usable depth proxy only while the sun is up; once §5A.4's diurnal cycle exists, light at night
 says nothing about depth at all. This channel is what makes **diel vertical migration**
@@ -809,9 +819,11 @@ assembled from, and `CreatureSensors.Sample` skips what is not in it.
 **Damage is readable on every part, not only on links.** Once creatures eat each other
 (§5A.3), being bitten is the most consequential thing that happens to a body cell, and a
 cell that cannot report it leaves the creature unable to distinguish a good photosynthetic
-pose from being slowly eaten in one. It reads as the fraction of the part's own stored
-energy taken over the last step, so it is scale-free and does not need a separate
-normalisation constant.
+pose from being slowly eaten in one. It reads as the share of the part's health pool lost
+over the last metabolic step, so it is scale-free and does not need a separate
+normalisation constant. The pool took the place of the part's stored energy when the mouth
+made health a state of its own ([D106](DECISIONS.md#d106)). The step has been the window since
+round 49 ([D123](DECISIONS.md#d123)).
 
 Contact moves forward with it. Draft 3 scoped contact to terrain and Milestone 5; §5A makes
 it aquatic, because contact is how a consumer cell finds tissue to bite. Both channels are
@@ -2545,7 +2557,7 @@ because they are physics, and physics does not care how selection happens.
 | **4** ✅ | World: current field, light/depth gradient, nutrient particles and absorption | A creature that survives by drifting into food, and one that doesn't |
 | | ~~⚠ **The join is done; the work term must wait for 6.**~~ **Superseded.** The deferral was correct on the day: billing work under one shared test sine exterminated every jointed creature in sixty seconds ([D029](DECISIONS.md#d029), logbook/0015), because a uniform flap yields no net thrust. [D030](DECISIONS.md#d030) then built the brain evaluator, work has been billed in every embodied run since, and the current field arrived with [D036](DECISIONS.md#d036)/[D037](DECISIONS.md#d037). Kept because the lesson generalises: a cost is only meaningful once its benefit is reachable | |
 | **5** ✅ | Life cycle: death returns tissue to the nutrient pool, reproduction on an energy threshold, mutation on reproduction | **A population that persists without intervention.** The first open-ended run, and where it stops being a project and becomes fun — reached, and verifiable since the floor report ([D047](DECISIONS.md#d047)): worlds exist whose floor goes silent and stays silent (logbook/0033) |
-| **6** ⚠ *partial* | Perception: photosensors, evolvable colour, closed-loop brain graph (§4.3, §4.4) | Directed foraging — a creature that moves *toward* something. The loop is closed and all seven of §4.4's channels are answered by `CreatureSensors` ([D033](DECISIONS.md#d033), [D075](DECISIONS.md#d075) item 1, logbook/0062); photosensors, evolvable colour, contact and damage do not exist |
+| **6** ⚠ *partial* | Perception: photosensors, evolvable colour, closed-loop brain graph (§4.3, §4.4) | Directed foraging — a creature that moves *toward* something. The loop is closed and all seven of §4.4's channels are answered by `CreatureSensors` ([D033](DECISIONS.md#d033), [D075](DECISIONS.md#d075) item 1, logbook/0062); photosensors and evolvable colour do not exist, and contact and damage are answered only by the farm outside Unity ([D106](DECISIONS.md#d106) item 5; the last metabolic step's reading from [D123](DECISIONS.md#d123)) |
 | **7** | Food web: `Consumer` cells, carrion, predation, attack and defence | Trophic levels, or clear evidence of why not (§5A.7) |
 | **8** ⚠ *partial* | Theatre: replay, gallery, charts, lineage, export, **fluid validation harness (§5.4)** | Showpiece + research instrument. Replay with the identity check on screen is built ([D075](DECISIONS.md#d075) item 2, logbook/0063); the gallery, the charts and the fluid validation harness are not |
 | **9** | Land: contact, gravity | Deferred. Water first, and the ecosystem is a water design |
