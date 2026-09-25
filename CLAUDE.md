@@ -1197,7 +1197,11 @@ actually verifying it.
   checkpoint deferral stays as a guard that never fires. A new path that changes a plan must
   rebuild the body before the next physics step and take the organism's part map as it does
   (`TakePartMapFromPreviousPlan`). Core composes a pending map with the next change's, so a
-  map left behind corrupts the next one. **The
+  map left behind corrupts the next one. The step's contact and damage records now go through
+  the same map, where they were dropped. A surviving part keeps what it felt, and the rebuild
+  hands the body the carried arrays, a module rebuild at the growth step included. From this
+  build on, a world whose plans change with a sense open writes a different world state. Its
+  trajectory moves only where a body that changes plan has a brain reading either channel. **The
   JIT decides the bits**: .NET's
   tiered compilation gives quick-JITted and optimised loops different floating-point
   results on a rounding edge, so every project that reports a digest sets

@@ -209,9 +209,18 @@ here because a reader of the code would otherwise go looking for what the map pr
   links, and a checkpoint taken then could not be restored. From round 49's bite rebuild
   (2026-09-25) the farm rebuilds the body straight after the world's step, before any physics
   step. A body that loses two parts in one pass now carries one part map, from the plan it
-  stood on before the pass. The second kill's map used to overwrite the first's. The farm's
-  tests hold the rebuild, with two worlds with no bite held to the digests they stepped before
-  the change (`BiteRebuildTests`), and Core's hold the map (`MouthTests`).
+  stood on before the pass. The second kill's map used to overwrite the first's. The step's
+  contact and damage records now go through the same map, where the build had dropped them on
+  every plan change. A surviving part keeps what it felt, a lost part's entries go with it, and
+  a part new to the plan reads 0 and false. The farm hands the rebuilt body the carried arrays,
+  at the growth step's rebuild as well. So on the physics steps after a bite a body reads the
+  loss and the contact of the step it lost the part on. Those are the readings rule 5 gives the
+  two senses. A module change carries them the same way. The module world with no bite steps
+  the trajectory it stepped before, since its leaves have no brain to read them. Its world
+  state now holds the carried records where it held nothing. The farm's tests hold the
+  rebuild and the carried records, with two worlds with no bite held to the trajectories they
+  stepped before the change (`BiteRebuildTests`). Core's hold the map and the records
+  (`MouthTests`).
 
 The regress: round 44's world at every mouth default, 1,000 s, 4 threads, against a run of the
 same launcher recorded on the tree before any of this was written — 132 shared fields at each of
