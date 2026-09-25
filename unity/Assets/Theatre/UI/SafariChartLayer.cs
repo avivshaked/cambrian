@@ -243,12 +243,12 @@ namespace Evosim.Theatre
 
         /// <summary>
         /// A take is starting: the scene's chart is built now, so the panel has drawn it by the
-        /// take's first frame. The same scene and chart again (its next take) changes nothing.
+        /// take's first frame. A scene's next take builds it again, so an account starts afresh
+        /// with the world restored rather than carrying the last take's samples.
         /// </summary>
         public void Begin(SafariScene scene, Color ink)
         {
             SafariChart chart = scene?.Chart;
-            if (ReferenceEquals(scene, _scene) && ReferenceEquals(chart, _chart)) return;
 
             SayDone();
 
