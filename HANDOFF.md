@@ -535,17 +535,71 @@ in this section is history.
       the contact or damage sense steps differently after the restore. That would mean round
       48's pictures come from windows marked cousin, and round 49's are the first faithful
       ones.
-    - **B3 is being built** (an Opus agent in `scratch/wt-r49`, code only): the safari branch
-      merged in, a planner that writes and records each scene's window, and the director's
-      `-FromWindows` mode.
-  - **Two more code-only builds for round 49 run beside B3** (Opus agents, each in its own
+    - **B3 is built** (`7782aaf`, `25d3f29`; the safari branch merged at `61426cf` with no
+      conflicts). Nothing of it has run in Unity or on the farm.
+      - `scripts/story-windows.py` plans each scene's window into `windows.json`.
+      - `scripts/story-windows.ps1` records the windows one at a time at a third of the
+        machine. It skips a window already recorded over the same span, and moves anything
+        else aside, never deleting it.
+      - `theatre-safari.ps1 -FromWindows <plan>` films from the windows. A scene whose window
+        is missing is skipped and reported, never stepped live.
+      - Each scene carries its window's word (FAITHFUL, COUSIN or UNVERIFIED) in its label,
+        `captions.tsv` and `scenes.tsv`. `story-assemble.py` prints a `provenance:` line and
+        notes a film whose scenes differ.
+      - A birth scene reads the birth from the window's `events.jsonl`, and look-ahead camera
+        plans read the recorded path.
+      - `theatre-film.ps1 -FromFarm <window dir>` plays one window through the film tool.
+      - 58 farm tests and 5 planner tests pass, and every assembly compiles outside Unity.
+    - **Everything is merged on `r49-record-film` at `1f06a67`**: D123 (`3baadd7`) and the
+      instruments (`69cce37`, one conflict at `StateVersion`, resolved to 12 with both notes
+      kept). Checks on the merged tree:
+      - builds clean;
+      - 187 filtered tests pass: Core 81 (world state, mouth, gestation, lineage, record
+        format), farm 96 (checkpoints, restore, felt senses, film windows, poses, record
+        format) and Dynamics 10 (founder depth);
+      - the off-Unity compile reads 0 errors in all six assemblies, the Unity farm's
+        `Evosim.Sim` included.
+  - **Two more code-only builds for round 49 ran beside B3** (Opus agents, each in its own
     worktree off `61426cf`, filtered tests only):
-    - D123's per-step senses, on `d123-senses` in `scratch/wt-d123`;
+    - D123's per-step senses, on `d123-senses` in `scratch/wt-d123`. **Built** (`fe22619`
+      code and tests, `41e9a0e` docs; 103 filtered tests pass, and the new farm test fails
+      with the clear removed). `World.ForgetWhatWasFelt` zeroes both records in place at the
+      top of `ApplyMouth`, so the arrays and the senses' references survive. `StateVersion`
+      stays 11 and `coreHash` moves. Four things from its report:
+      - "Contact on the last metabolic step" is, as built, touching when the step closed:
+        the farm hands over the overlap census of the interval's last physics step, as the
+        bites already read it. Touching at any moment in the interval would need a census
+        summed over the physics steps, and would change which bites land.
+      - Damage is this step's loss as a share of the part's pool, 0 to 1 by construction,
+        where it was a running total the sensor clamped.
+      - A fault that was already there: after a bite takes a part off, until the next growth
+        step (up to 10 s) the contact list names the old plan's link indices and Core applies
+        them to the new plan's parts, so a bite in that window lands on the wrong part.
+        Queued as agent work for round 49, fixed by mapping through the part's path rather
+        than dropping the contacts.
+      - The GPU port copies the senses from the host each block and needs no kernel change,
+        but must never skip the upload when the array reference is unchanged.
+      - Still owed, on the farm: `--verify-checkpoint` on a bitten crowd with both senses on,
+        and a short senses-on run.
     - two recording-only instruments, on `r49-instruments` in `scratch/wt-instr`. A death row
       gets `ga`, the gestation account at death, for G2's open half. A founder row gets
       `fsnow`/`fcol` (and `fmat`/`fmcol`), its food at the landing point and its column's
       mean, for any check of a placing rule.
-    - Both merge into `r49-record-film` when back.
+    - **The instruments are built** (`c71ec5b` code and tests, `b20a8b8` the read and
+      DESIGN §9; 181 filtered tests pass, all builds clean). Every added line only reads
+      state. Each field is appended at the end of its row:
+      - on a death row, `ga` (gestation account) and `res` (reserve), each only above 0;
+      - on a founder row with a grid position, `fsnow`/`fcol` and `fmat`/`fmcol`.
+      - `WorldState.StateVersion` goes to 12, so queued lineage rows keep the fields, and 11
+        is refused; ckA, ckB, ckC and ckUi are re-recorded after the merge. A Dynamics test
+        places 26 stomachs and 25 leaves by the depth rule, and every one lands at its
+        column's mean or above (the first read 4.14 against 0.31).
+      - The read is `scripts/reads/r49-witness.py`. It says "absent" on round 48's runs
+        rather than printing zeros.
+      - Still owed, on the farm: a 300 s smoke with the depth rule on (every snow-only
+        founder `fsnow ≥ fcol`), identity against the build before with the six keys
+        stripped, and a checkpoint resume.
+    - Both are merged into `r49-record-film` (below).
   - **F4's cause is found, and it was the witness** (`b3b9914`, 0120's F4 section,
     `scripts/reads/r48-entry/f4draw.py`).
     - A pool founder draws at least 45 to 52% of its own 1 m cell's snow per half-second
@@ -823,9 +877,25 @@ in this section is history.
      of it, compared with `-From snapshot` at a stream second;
   9. the wall time of a 60 s window at 5 and 10 threads, with nothing else running (16, as
      the spec asks, only if the load ruling then allows it);
-  10. B3's first trial, two scenes from windows, once B3 is built;
-  11. re-record ckA, ckB, ckC and ckUi on this build's version 6 (CLAUDE.md's checkpoint
-      gotcha).
+  10. B3's first trial, two scenes of `scratch/story-v2/story.json` on r48-s1, both at
+      2,500 s, where the run has a checkpoint:
+      - build the farm (Release, `-m:4`);
+      - `python scripts/story-windows.py <story.json> --out scratch/story-windows/r48-v2
+        --runs-root <main>/runs --runs r48-s1 --scenes 1,3`;
+      - `./scripts/story-windows.ps1 scratch/story-windows/r48-v2 -Threads 10`;
+      - refresh a worktree worker (`new-worker.ps1 -Workers 5` from inside PowerShell) and
+        compile it;
+      - `theatre-safari.ps1 r48-s1 -Story <story.json> -FromWindows
+        scratch/story-windows/r48-v2 -Scenes 1,3 -Worker 5 -Folder windows-trial -RunsRoot
+        <main>/runs`, then `story-assemble.py`.
+      - The agent expects FAITHFUL for both. Given the version-4 checkpoint I expect COUSIN
+        (step 6's prediction), and which one it reads is the first thing to look at;
+  11. the farm checks owed by D123 and the instruments: `--verify-checkpoint` on a bitten
+      crowd with both senses on, a 300 s smoke with the depth rule on read by
+      `r49-witness.py` (every snow-only founder `fsnow ≥ fcol`), and identity against the
+      build before with the six new keys stripped;
+  12. re-record ckA, ckB, ckC and ckUi on this build (`StateVersion` 12, `Checkpoint.Version`
+      6; CLAUDE.md's checkpoint gotcha).
 - **The review's second and third items are built and not yet seen** (`d5540e6` on the safari
   branch, an Opus subagent, compiled clean on the worktree's `unity-w6` with every pass of the
   four shaders compiling). Close shots have real depth of field: one body at 1.5 to 3 body
