@@ -1574,25 +1574,28 @@ actually verifying it.
   Until it exists, a subagent that needs a worktree gets one the caller made under `scratch/`,
   named by its absolute path in the brief, and not `isolation: "worktree"`. The fifteen older
   worktrees under `.claude/worktrees/` are left where they are; removing one is the owner's.
-- **A background agent that edits files asks the owner for every edit, even in auto mode.**
-  On 2026-09-25 an Opus subagent (`general-purpose`, `run_in_background`, no `isolation`) building
-  a tunable in `scratch/wt-r49cap` put a "Make this edit to ...?" prompt in front of the owner
-  for each Edit, while the main session's own edits in the same kind of worktree went through
-  unprompted; the owner, on auto mode, asked three times why. The documentation (a
+- **The Write and Edit tools ask the owner for every file, even in auto mode; a write through
+  the shell does not.** On 2026-09-25 the owner, on auto mode, saw "Make this edit to ...?" and
+  "Allow write to ...?" prompts, first for an Opus subagent's edits in `scratch/wt-r49cap` and
+  then for the main session's own Write and Edit calls under `scratch/` (a worktree's source
+  and a helper script alike), and asked five times why. The agent first told the owner its own
+  edits did not ask; that was wrong, and the owner's screenshot of a prompt for the agent's own
+  file showed it. Files changed through the Bash tool (a Python or heredoc write, the way
+  HANDOFF and this file were edited that day) raised no prompt. The documentation (a
   `claude-code-guide` read of code.claude.com's sub-agents, permissions and permission-modes
-  pages) says a subagent inherits the parent's auto mode, and that the only paths that always ask
-  are the protected ones: `.claude` (except `.claude/worktrees`), where an allow rule is checked
-  too late to help. `scratch/wt-r49cap` is under neither, so the cause is not known. Three rules
-  follow. **A subagent that edits or writes files is not launched** until the owner says the
-  prompts are gone; the main session writes the code itself, and read-only agents (`Explore`,
-  `claude-code-guide`, a reader that only reports) are fine. This overrides the delegation memory
-  for any editing task. **Every write under `~/.claude/` asks the owner**, the
-  memory directory included, because the whole tree is protected: keep memory edits rare and
-  batched, and put durable rules here instead. **The fix is the owner's setting, never the
-  agent's**: the documented form of an allow rule for this tree, untested here, is
-  `Edit(//d/Projects/experiments/evolution-simulator/**)` (and the same for `Write`) under
-  `permissions.allow` in the owner's `~/.claude/settings.json`; the agent never edits a
-  permission setting, whoever asks.
+  pages) says a subagent inherits the parent's auto mode and that only protected paths
+  (`.claude`, except `.claude/worktrees`) always ask, so the cause is not known (whether it is
+  `scratch/` being gitignored is a guess). The rules until the owner says the prompts are gone:
+  **write files through the shell**, not with Write or Edit (a Python script written by a
+  heredoc, with the heredoc's backslash halving in mind); **launch no subagent that edits
+  files**, since its tools are Write and Edit, and write the code in the main session (read-only
+  agents such as `Explore` and `claude-code-guide` are fine; this overrides the delegation
+  memory for editing tasks); and **every write under `~/.claude/` asks the owner** whatever the
+  tool, the memory directory included, so memory edits are rare and batched and durable rules
+  go here. The fix is the owner's setting and never the agent's: the documented allow rule for
+  this tree, untested here, is `Edit(//d/Projects/experiments/evolution-simulator/**)` (and the
+  same for `Write`) under `permissions.allow` in the owner's `~/.claude/settings.json`; the
+  agent never edits a permission setting, whoever asks.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
