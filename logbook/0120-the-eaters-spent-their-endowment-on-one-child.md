@@ -473,9 +473,9 @@ loss as this world's default rather than as something round 48 did.
   a resume from 800 s that must match the founding row for row. Round 49's film windows can
   be faithful on it, and round 48's cannot.
 - **Agent work** comes before the next round. F4's cause needs the placer read against a
-  founding in a small test world, and the snow recorded by layer at a founder's birth (the
+  founding in a small test world, and the snow recorded by layer at a founder's birth. The
   cause was found the same afternoon: the check read the wrong witness, as F4's section now
-  says; a record of the landing cell's snow is still owed to any check of a placing rule). G2's
+  says. A record of the landing cell's snow is still owed to any check of a placing rule. G2's
   open half needs the gestating bodies' accounts at death. The stomach's share in the bud
   lines wants reading over time.
 - **The owner rules** on what round 49 changes, since that is a world rule. This read raises
