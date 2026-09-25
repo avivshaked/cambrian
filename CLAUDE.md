@@ -1626,6 +1626,18 @@ actually verifying it.
   on a worker the queue is not using, one frame at a time on a loaded machine) and look at
   them, and say in the status what was seen. Round 37's crust at the glass was in the table
   for hours before anyone read it as a crust.
+- **Check every test render against a reference before the owner sees it** (the owner,
+  2026-09-25: "why are you not picking these problems up yourself using a png sheet?"). The
+  first window-route clips of round 48 went to the owner with bodies popping in size every
+  growth step and the picture too bright, and the second with the scenery in question, each
+  found by the owner and not by the agent, who had looked at the contact sheets only for the
+  fault last reported. The check: a side-by-side sheet of the new frames and the reference
+  (the last film the owner accepted, at the same run and second where there is one), read for
+  size, brightness, the bed, the reef, the caustics and the shafts, the bodies' shapes and
+  motion between consecutive frames, and the captions; a number for what a number can say
+  (mean luma, the largest frame-to-frame jump against its neighbours); and what was checked
+  said in the same message as the clip's path. A change to a render path is checked against
+  the path it replaces before anything else is judged.
 - **Say when a ruling blocks the work, and keep working on the rest** (owner, 2026-09-22
   evening: "If you're waiting on me, I want an explicit message saying you are blocked by a
   decision you need from me. I want you working all the time."). A status that lists open
