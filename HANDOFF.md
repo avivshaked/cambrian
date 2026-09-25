@@ -419,6 +419,30 @@ in this section is history.
       because the files lack the contact history.
     - **What follows on the machine track:** a founding of seed 2 to 1,000 s, a resume from
       800 s, the extended check, and the four fixtures re-recorded.
+  - **The checkpoint fix is built** (`a55c36c`, `2a105f5` on `checkpoint-senses`,
+    `scratch/wt-ckfix`, not merged). What it does:
+    - `StateVersion` 11 and `Checkpoint.Version` 5 save the contact record and re-wire the
+      senses on restore.
+    - `ModuleRebuilds` is saved.
+    - It fixed a fourth fault found by its new twin-step check. A checkpoint taken between
+      growth steps restored every growing body at the organism's size, not the smaller one
+      the solver was stepping, so the restore parted at its first physics step. Round
+      cadences (multiples of 10 s) never hit this; a stop or wall between growth steps did.
+    - A checkpoint with a plan change pending after a bite cannot be restored at all, since
+      the old plan is not kept. So the loop defers a cadence checkpoint to the next growth
+      step, skips a final one in that state, and the reader refuses one with a clear message.
+    - Version 10/4 files are read lossily, as the old build restored them, and are marked
+      as a cousin.
+    - Tests: the filtered Core tests pass 83 of 83 and the Farm tests 44 of 44, with new
+      restore and fidelity tests that failed before the fix.
+
+    Its acceptance is three farm runs on the machine track, the commands in the agent's
+    report: a founding of seed 2 to 1,000 s that must equal `r48-s2`, a resume from 800 s
+    that must be identical after 800, and `--verify-checkpoint` on the 800 s checkpoint.
+    After the merge, ckA, ckB, ckC and ckUi are re-recorded from the main tree.
+  - **The `Damage` sense is cumulative too**, verified: `lost[part] +=` in `WorldMouth`, cleared
+    only by `AdoptPlan`, where D106 item 5 asks for the step's loss. The owner's question on
+    the contact sense covers both.
   - **The `Contact` sense is sticky, against its spec.** `NoteContact` sets a part's flag and
     nothing clears it but a plan change, so the sense reads "touched since the body last
     changed shape". The mouth spec (item 5) and `Organism`'s doc say "in contact now". Rounds
