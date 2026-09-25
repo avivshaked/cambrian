@@ -600,6 +600,29 @@ in this section is history.
         founder `fsnow ≥ fcol`), identity against the build before with the six keys
         stripped, and a checkpoint resume.
     - Both are merged into `r49-record-film` (below).
+  - **The bite's stale-plan window is closed** (`r49-bite-rebuild` in `scratch/wt-bite`:
+    `72b3087` the failing tests, `6c381cb` the fix, `b09f654` the docs; 43 farm and 42 Core
+    filtered tests pass).
+    - A bitten body's solver is now rebuilt right after `World.Step`, on the step that bit
+      it. The rebuild had waited for the growth step only because it was written for the
+      module rule.
+    - A second fault went with it: two parts lost in one pass overwrote each other's part
+      map, so joints and brain state were carried from the wrong links.
+    - A world with no bite is bit-identical, pinned by two digests taken on the unfixed
+      code. No version moves; `coreHash` and `farmHash` do.
+    - Being finished: `AdoptPlan` still wiped the contact and damage records, so a bitten
+      body sensed nothing on the step it lost a part. D123 says the damage sense reads that
+      step's loss, so I ruled to carry the surviving parts' records through the part map.
+    - Merges into `r49-record-film` when back. Owed on the farm: a short run with bites on,
+      `--verify-checkpoint` on it, and a no-bite regress.
+  - **A feeder's own cell holds 5 to 25% of the water round it** (`212a82f`, 0120's F4
+    section; `FeederRefillExperiments`; a CLAUDE.md gotcha, `baa6341`).
+    - With the transport off the stirring refills the cell at 0.06 to 0.1 of the gap a
+      second. The transport lifts it only where the water moves.
+    - I had told the owner the refill was mostly the grid's smearing. At round 48's water
+      speeds it is not, and the entry says so.
+    - For round 49's screens: a ledger break-even is a density at the mouth, so set against
+      a field's density it overstates an eater's intake four- to twentyfold.
   - **F4's cause is found, and it was the witness** (`b3b9914`, 0120's F4 section,
     `scripts/reads/r48-entry/f4draw.py`).
     - A pool founder draws at least 45 to 52% of its own 1 m cell's snow per half-second
