@@ -460,6 +460,13 @@ in this section is history.
     links catch light, living leaves make three quarters of the snow, the tank is 45 m deep
     only on average, and the gift did pay for a first child. Scene 19's third caption says
     seed 2's cause is not found; it changes with the re-run's verdict.
+  - **Round 49's world is proposed** (`fable-propose-round-49.md`, `e936b52`). It asks three
+    questions:
+    - whether the endowment should pay upkeep only and never a child (recommended);
+    - whether to keep the wear on upkeep for one more round (recommended);
+    - whether anything is wanted on the snow's stirring (recommended: nothing yet).
+    - It also keeps D122 and measures it with the new instruments. These rulings gate round
+      49's pre-registration and launcher, and the machine ruling gates its launch.
   - **I am blocked on the machine from the owner (12:30, 2026-09-25; pinged by phone).** Seed
     2's re-run from founding ran clean past the fault, which fires the stop rule.
     - It ran on the same build as the recording, all four hashes equal, with its config hash
