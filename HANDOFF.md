@@ -400,10 +400,42 @@ in this section is history.
     The extraction commits (`4355869`, `dc8606b`) are not pushed: they carry a picture,
     genomes, logs and trajectory tables, and pushing anything that is not code or prose is the
     owner's call.
-  - **Checkpoint fidelity** (Opus subagent, read-only): why a round 48 resume parts at its first
-    sample. The jointed bodies part first (`speedJointed` 2.2e-4 relative at 12,510 s) while the
-    rigid ones agree to 1e-10, and `--verify-checkpoint` sees nothing but a census flag. It
-    returns a cause, a fix and a test for the session to build once the machine track is free.
+  - **Checkpoint fidelity: found, and the fix is being built.** A round 48 resume parts at its
+    first sample because the `Contact` sense is not restored. First, `Organism.PartContact` is
+    not written by `WorldState.WriteOrganism` (health and damage are). Second, a restored
+    body's `Senses.Contact` and `Senses.Damage` stay unwired until the first metabolic step,
+    because only `HandBackWhatWasFelt` wires them and `Build` does not. `--verify-checkpoint`
+    could not see either: `PartContact` is on its filled-before-read list, and its
+    `ISensorField` clause skips the body's own senses. The data agree. At 12,510 s only four
+    bodies of about 4,220 differ at pose precision. Each is a one-joint body whose hinge
+    neuron reads `Contact` at a weight near −1.05, with its joint stop to stop against the
+    recording. Also unwritten: `Simulation.ModuleRebuilds`, an instrument only.
+    - **The fix** is being built by an Opus subagent in `scratch/wt-ckfix` (branch
+      `checkpoint-senses`). It writes and restores only, so no live trajectory moves.
+      `StateVersion` becomes 11 and `Checkpoint.Version` 5. Version 10/4 files are read as
+      today, lossy: the farm refuses them without `EVOSIM_ALLOW_SOURCE_MISMATCH`, and the
+      theatre, always a cousin, takes them.
+    - **What it means for round 48's checkpoints:** no build can resume one faithfully,
+      because the files lack the contact history.
+    - **What follows on the machine track:** a founding of seed 2 to 1,000 s, a resume from
+      800 s, the extended check, and the four fixtures re-recorded.
+  - **The `Contact` sense is sticky, against its spec.** `NoteContact` sets a part's flag and
+    nothing clears it but a plan change, so the sense reads "touched since the body last
+    changed shape". The mouth spec (item 5) and `Organism`'s doc say "in contact now". Rounds
+    45 to 48 ran with it on. Making it per-step is a new realisation of every seed. The agent
+    proposes landing it at round 49's gap, and it is put to the owner.
+  - **Story v2, visuals: done** (`fc236a7`, `91d3b08`, `ac33d7a` on `worktree-safari2-r47`),
+    compiled outside Unity with Roslyn and not yet seen in Unity. It adds a story look that
+    lightens the water, ambient light and fog, a camera lamp on portraits and births, and a
+    centre-weighted per-shot exposure meter. The look is on for stories only
+    (`EVOSIM_THEATRE_STORY_LOOK`, dials `EVOSIM_THEATRE_STORY_*`). Charts come in three
+    kinds, `line`, `bars` and a live `account`, drawn in their own UI Toolkit panel and
+    composited before the downscale. The test is
+    `scratch/story-visuals/run-test.ps1 -Step refresh|compile|render|dark` with a four-scene
+    `test-story.json` of seed 1. It is a Unity compile and a render, so it waits for the
+    machine track. The report's list of Unity APIs not yet seen working is the checklist for
+    the first frames: panel repaint in batchmode, alpha, orientation, the lamp under URP, and
+    exposure on a manual render.
   - **Outside `scratch/`, for the owner:** `runs/` holds 67 GB, `.claude/worktrees/` 13.7 GB,
     and the six Unity workers 1.7 GB each.
   - **Merged:** the safari branch is in main (`d995433`, pushed), so story mode is on main.
