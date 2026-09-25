@@ -98,7 +98,17 @@ namespace Evosim.Dynamics
             return body;
         }
 
+        /// <summary>
+        /// One physics step: the CPU solver's, or one step of the <see cref="Backend"/> when a
+        /// world has one.
+        /// </summary>
         public void Step()
+        {
+            if (Backend == null) StepOnCpu();
+            else Backend.StepBlock(this, 1);
+        }
+
+        private void StepOnCpu()
         {
             double dt = Config.StepSeconds;
 

@@ -93,6 +93,10 @@ namespace Evosim.Farm
 
         private long _reconciledAt = -1;
         private bool _movedOutsideTheSolver;
+
+        // Physics steps the solver has already taken past this simulation's own count: 0 on the
+        // CPU after every call, and up to a block's length less one on the GPU engine.
+        private int _solverAhead;
         private float _sinceGrowthStep;
 
         private bool[] _columnHeld;
@@ -274,7 +278,27 @@ namespace Evosim.Farm
             _linkStepSum += Dynamics.TotalLinks();
 
             long physicsStarted = Now();
-            Dynamics.Step();
+
+            // The spec's one call site (logbook/specs/gpu-port-spec.md section 1). On the CPU a
+            // block is one step and this is the step every recorded run took. On the GPU engine
+            // the block runs to the next metabolic step on the first call and the calls after it
+            // only count: nothing between two metabolic steps reads a body, and the reconcile and
+            // the divergence check above are keyed on the world's own counts, which do not move
+            // inside a block.
+            if (_solverAhead == 0)
+            {
+                int block = Dynamics.BlockSteps;
+                if (block > 1)
+                {
+                    int left = StepsPerMetabolicStep - (int)(Steps % StepsPerMetabolicStep);
+                    if (block > left) block = left;
+                }
+
+                Dynamics.StepBlock(block);
+                _solverAhead = block;
+            }
+
+            _solverAhead--;
             _physicsTicks += Now() - physicsStarted;
 
             phaseStarted = Now();
