@@ -243,23 +243,47 @@ namespace Evosim.Core
         public float[] PartHealth { get; internal set; }
 
         /// <summary>
-        /// What share of its pool each part lost on the last metabolic step — what
-        /// <see cref="SensorChannel.Damage"/> reports, D106 item 5. Null is a body nothing
-        /// touched.
+        /// What share of its pool each part has lost since the body's plan last changed — what
+        /// <see cref="SensorChannel.Damage"/> reports, D106 item 5. Null is a body nothing has
+        /// hurt since then.
         /// </summary>
         /// <remarks>
-        /// <b>The step's loss and not the standing wound</b>, which is what §4.4 asks for in as
-        /// many words: a creature that could read only its own health would have no way to tell
-        /// being eaten from having been eaten. Written by the mouth's damage pass and read by the
-        /// harness's sensors on the physics steps that follow, so it is one metabolic step stale
-        /// at the brain — the same staleness <c>Flow</c> already has.
+        /// <para>
+        /// <b>Summed over steps, and not the step's loss.</b> <c>World.Wound</c> adds each blow to
+        /// the part's entry and nothing clears the array but a plan change
+        /// (<c>World.AdoptPlan</c>), so a part hurt once reads its loss for as long as the plan
+        /// stands, healing or not. D106 item 5 asked for the step's loss; this is what the code
+        /// does, recorded so that a reader of the channel knows which one it is reading.
+        /// Written by the mouth's damage pass and read by the harness's sensors on the physics
+        /// steps that follow, so it is one metabolic step stale at the brain, as <c>Flow</c> is.
+        /// </para>
+        /// <para>
+        /// A property of the body's history and not of the step, so the checkpoint carries it
+        /// (StateVersion 6).
+        /// </para>
         /// </remarks>
         public float[] PartDamage { get; internal set; }
 
         /// <summary>
-        /// Whether each part was in contact with another body's on the last metabolic step — what
-        /// <see cref="SensorChannel.Contact"/> reports. Null is a body touching nothing.
+        /// Whether each part has touched another body since the body's plan last changed — what
+        /// <see cref="SensorChannel.Contact"/> reports. Null is a body that has touched nothing
+        /// since then, and every body in a world with <see cref="RunConfig.SenseContact"/> off.
         /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Sticky, and not the last step's contact.</b> <c>World.NoteContact</c> sets a part's
+        /// flag on a step it touches and nothing clears it but a plan change
+        /// (<c>World.AdoptPlan</c>), so a part touched once reads 1 until the body gains or loses
+        /// a part. Whether the flag should be the step's alone is a world rule and the owner's;
+        /// this records what the code does.
+        /// </para>
+        /// <para>
+        /// A property of the body's history for that reason, so the checkpoint carries it. It did
+        /// not until StateVersion 11 (2026-09-25): every restored body came back touching nothing,
+        /// and round 48's resume parted from the run at its first sample in jointed bodies whose
+        /// brains read the channel.
+        /// </para>
+        /// </remarks>
         public bool[] PartContact { get; internal set; }
 
         /// <summary>

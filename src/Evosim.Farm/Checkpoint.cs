@@ -56,7 +56,27 @@ namespace Evosim.Farm
         /// carries the trickle's window baseline after the mouth's, and the world its generator,
         /// its count and a founder source on every queued lineage row.
         /// </remarks>
-        public const int Version = 4;
+        /// <remarks>
+        /// 5 with the contact record (2026-09-25, <c>World.StateVersion</c> 11): every body in the
+        /// harness's section carries the plan revision its solver was built on, the size it was
+        /// last resized to when the organism has grown since, and whether its contact and damage
+        /// senses were wired, and the harness its module rebuild count; the world carries each
+        /// creature's contact record. A version-4 file restored every body with both senses
+        /// unwired and nothing touched, and round 48's resume parted from the run at the first
+        /// sample; one taken between two growth steps also restored every growing body at its
+        /// organism's size and not the size the solver was stepping. Version 4 is still read, as
+        /// <see cref="LossyVersion"/>.
+        /// </remarks>
+        public const int Version = 5;
+
+        /// <summary>
+        /// The one older format this build still reads: version 4, round 48's, whose world is
+        /// <c>World.LossyStateVersion</c>. It is read as the build that wrote it restored it,
+        /// with every body's contact record, contact and damage senses and the harness's rebuild
+        /// count empty, and <see cref="CheckpointHeader.Differences"/> names it, so a farm resume
+        /// refuses it unless told to take a cousin and the theatre labels it as one.
+        /// </summary>
+        public const int LossyVersion = 4;
 
         /// <summary>Bytes before the header's own fields.</summary>
         public const int MagicBytes = 12;
@@ -284,14 +304,42 @@ namespace Evosim.Farm
         /// rather than its continuation, which is the theatre's own word for the same thing.
         /// </remarks>
         public bool Matches(string configHash, string coreHash, string dynamicsHash, string farmHash) =>
+            !ReadLossily &&
             Same(ConfigHash, configHash) && Same(CoreHash, coreHash) &&
             Same(DynamicsHash, dynamicsHash) && Same(FarmHash, farmHash);
 
-        /// <summary>Which of the four differ, for a refusal that says what is wrong.</summary>
+        /// <summary>
+        /// Whether this file is <see cref="Checkpoint.LossyVersion"/>, read without the state the
+        /// format after it added — a restore from it is a cousin whatever the four hashes say.
+        /// </summary>
+        public bool ReadLossily => Version == Checkpoint.LossyVersion;
+
+        /// <summary>
+        /// Which of the four differ, for a refusal that says what is wrong — and, first, whether
+        /// the file is a format this build reads only lossily.
+        /// </summary>
+        /// <remarks>
+        /// The lossy format is a line here rather than a refusal of its own so that the two
+        /// readers of this list treat it as they treat a hash: the farm's resume refuses it
+        /// unless <c>EVOSIM_ALLOW_SOURCE_MISMATCH</c> is set and then marks the run a cousin,
+        /// and the theatre, whose live world is a cousin anyway, names it in the label. Its first
+        /// word before the colon is the name a label shows, as with the hashes.
+        /// </remarks>
         public IReadOnlyList<string> Differences(
             string configHash, string coreHash, string dynamicsHash, string farmHash)
         {
             var differences = new List<string>();
+
+            if (ReadLossily)
+            {
+                differences.Add(
+                    "checkpointVersion: checkpoint " +
+                    Version.ToString(CultureInfo.InvariantCulture) + ", this build " +
+                    Checkpoint.Version.ToString(CultureInfo.InvariantCulture) +
+                    " (read without each body's contact record, its contact and damage senses, " +
+                    "the size a growing body was stepping between growth steps, and the module " +
+                    "rebuild count)");
+            }
 
             if (!Same(ConfigHash, configHash)) differences.Add(Line("configHash", ConfigHash, configHash));
             if (!Same(CoreHash, coreHash)) differences.Add(Line("coreHash", CoreHash, coreHash));
@@ -446,12 +494,15 @@ namespace Evosim.Farm
             int version = r.ReadUInt16();
             int magicBytes = r.ReadUInt16();
 
-            if (version != Checkpoint.Version)
+            // The lossy version is let through here and named by the header's own Differences,
+            // which is what a resume and the theatre both already ask; see Checkpoint.LossyVersion.
+            if (version != Checkpoint.Version && version != Checkpoint.LossyVersion)
             {
                 throw new InvalidDataException(
                     "The checkpoint is version " + version + " and this build reads version " +
-                    Checkpoint.Version + ". A checkpoint is refused rather than read with a " +
-                    "field guessed at, under the rule the config reader follows.");
+                    Checkpoint.Version + " (and version " + Checkpoint.LossyVersion + ", lossily). " +
+                    "A checkpoint is refused rather than read with a field guessed at, under the " +
+                    "rule the config reader follows.");
             }
 
             if (magicBytes != Checkpoint.MagicBytes)

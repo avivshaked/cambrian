@@ -1163,7 +1163,23 @@ actually verifying it.
   and compares the two member by member, skipping by name what a step fills before it
   reads; run it on a world that has the thing you added (a bitten crowd, a grown one)
   before trusting a resume of it, and every `StateVersion` bump refuses every checkpoint on
-  disk, round 45's included, which are cousins for that reason anyway. **The
+  disk, round 45's included, which are cousins for that reason anyway. **It happened again,
+  and `StateVersion` 11 and `Checkpoint.Version` 5 close it** (2026-09-25). The contact flag
+  (`Organism.PartContact`) stays set until a plan change, and the writer left it out. The
+  restore also left each body's contact and damage senses unwired until its first metabolic
+  step. Round 48's resume parted from the run at its first sample for it, in jointed bodies
+  whose brains read contact. The check missed both: it skipped every sense, and it had the
+  flag on its list of what a step fills before it reads. It now compares the senses and the
+  harness's own members, then steps the two worlds side by side for two metabolic steps. Two
+  more faults came out of that. A checkpoint taken between growth steps restored a growing
+  body at its organism's size, one the solver had not been given yet; it now carries the size.
+  One taken after a bite and before the growth step that rebuilds the body cannot be
+  restored at all. The loop now defers a cadence checkpoint to the next growth step, and
+  writes no last one at a stop or a wall that lands there. A cadence that is a multiple of
+  the growth step meets neither. Round 48's files are version 4 and still open, lossily. A
+  farm resume refuses one unless `EVOSIM_ALLOW_SOURCE_MISMATCH` is set, and then marks the
+  run a cousin. The theatre labels one as a cousin. The fixtures ckA, ckB, ckC, `ckUi` and
+  the theatre's live fixture need re-recording on this build. **The
   JIT decides the bits**: .NET's
   tiered compilation gives quick-JITted and optimised loops different floating-point
   results on a rounding edge, so every project that reports a digest sets

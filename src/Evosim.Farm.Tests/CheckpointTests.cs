@@ -204,6 +204,38 @@ namespace Evosim.Farm.Tests
             Assert.Contains("version", thrown.Message, StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Round 48's format, one version back, is opened and named as read lossily, so that a
+        /// resume refuses it unless told to take a cousin and the theatre labels it; the version
+        /// before that is refused as any other.
+        /// </summary>
+        [Fact]
+        public void TheLossyVersionOpensAndSaysSoAndTheOneBeforeItIsRefused()
+        {
+            string path = Write(Header());
+
+            byte[] all = File.ReadAllBytes(path);
+            all[8] = (byte)Checkpoint.LossyVersion;
+            File.WriteAllBytes(path, all);
+
+            CheckpointHeader h = CheckpointReader.ReadHeader(path);
+
+            Assert.Equal(Checkpoint.LossyVersion, h.Version);
+            Assert.True(h.ReadLossily);
+            Assert.False(h.Matches(h.ConfigHash, h.CoreHash, h.DynamicsHash, h.FarmHash));
+            Assert.StartsWith(
+                "checkpointVersion:",
+                Assert.Single(h.Differences(h.ConfigHash, h.CoreHash, h.DynamicsHash, h.FarmHash)));
+
+            all[8] = (byte)(Checkpoint.LossyVersion - 1);
+            File.WriteAllBytes(path, all);
+
+            InvalidDataException thrown =
+                Assert.Throws<InvalidDataException>(() => CheckpointReader.Open(path));
+
+            Assert.Contains("version", thrown.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
         // ------------------------------------------------------------------ the four hashes
 
         [Fact]

@@ -472,6 +472,7 @@ namespace Evosim.Farm
             float checkpointEvery = settings.ResolveCheckpointEvery();
             int checkpoints = 0;
             double lastCheckpointSeconds = double.NegativeInfinity;
+            double deferredCheckpointAt = double.NaN;
 
             // The next second a checkpoint is due at, taken from the clock rather than counted
             // from the start, so a resumed run's checkpoints land on the same seconds the
@@ -597,7 +598,30 @@ namespace Evosim.Farm
                     // restore exists to avoid. It is also after the stop check has been read and
                     // before the loop acts on it, so a stopped arm's last checkpoint is the
                     // instant it stopped at.
-                    if (world.ElapsedSeconds + 1e-9 >= nextCheckpointAt)
+                    // Deferred, not skipped, while a body waits for the growth step that rebuilds
+                    // it on a changed plan: such a checkpoint cannot be restored
+                    // (Simulation.PlanChangesPending). The next metabolic step asks again, so a
+                    // deferred checkpoint lands at most one growth step late, and a cadence that
+                    // is a multiple of the growth step never waits at all.
+                    bool checkpointDue = world.ElapsedSeconds + 1e-9 >= nextCheckpointAt;
+
+                    if (checkpointDue && sim.PlanChangesPending() > 0)
+                    {
+                        if (deferredCheckpointAt != nextCheckpointAt)
+                        {
+                            deferredCheckpointAt = nextCheckpointAt;
+
+                            Console.Error.WriteLine(
+                                "note: the checkpoint due at " +
+                                nextCheckpointAt.ToString("0.#", CultureInfo.InvariantCulture) +
+                                " s waits for the next growth step: a body's plan has changed " +
+                                "since the last one and its solver has not been rebuilt yet.");
+                        }
+
+                        checkpointDue = false;
+                    }
+
+                    if (checkpointDue)
                     {
                         sim.WritersClock.Start();
 
@@ -710,14 +734,33 @@ namespace Evosim.Farm
             // already wrote one there. A run stopped or walled between two cadence seconds is
             // exactly the case a resume is for, and without this it would resume from the last
             // round number and re-simulate everything after it.
+            //
+            // Not while a body waits for the growth step that rebuilds it on a changed plan: a
+            // checkpoint then cannot be restored (Simulation.PlanChangesPending), and it would be
+            // the newest file, the one a resume picks by default. The last cadence checkpoint
+            // stands instead, and the run says so.
             if (checkpointEvery > 0f && world.Living.Count > 0 &&
                 world.ElapsedSeconds > lastCheckpointSeconds + 1e-9)
             {
-                checkpoints++;
+                int pending = sim.PlanChangesPending();
 
-                WriteCheckpoint(
-                    sim, sampler, dir, manifest, config, settings, physicsDt, stepsPerMetabolic,
-                    metabolicSteps, bestSpeedEver, bestSpeedAt, assayFired);
+                if (pending > 0)
+                {
+                    Console.Error.WriteLine(
+                        "note: no checkpoint at the second the run ended (" +
+                        world.ElapsedSeconds.ToString("0.#", CultureInfo.InvariantCulture) +
+                        " s): " + pending.ToString(CultureInfo.InvariantCulture) + " bodies had " +
+                        "changed plan since the last growth step, and a checkpoint of that moment " +
+                        "cannot be restored. A resume reads the last cadence checkpoint instead.");
+                }
+                else
+                {
+                    checkpoints++;
+
+                    WriteCheckpoint(
+                        sim, sampler, dir, manifest, config, settings, physicsDt, stepsPerMetabolic,
+                        metabolicSteps, bestSpeedEver, bestSpeedAt, assayFired);
+                }
             }
 
             manifest.LastCheckpoints = checkpoints;
