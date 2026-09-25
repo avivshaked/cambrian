@@ -7,6 +7,45 @@ is queued; it is rewritten, never appended to. The notes it carried before this 
 
 ## Where things stand
 
+**Speed first (the owner, 2026-09-25 at about 16:30: "speed first").** The owner asked why a
+film of round 48's last seconds takes hours when the aim was 10,000 creatures fast and 100,000
+as a stretch, and ruled speed ahead of round 49, whose rules are ready and wait. The solver proposal estimated
+10,000 bodies at 1 to 2x real time on the CPU and 20 to 50x on the 4090. The spikes then
+measured about 1.1x on the CPU at 16 threads and about 5x on the card in single (logbook/0115:
+0.90 and 0.19 µs a body-step). The card estimate was four to ten times too high, and the agent
+had not told the owner so plainly. Round 48 ran at 5 threads and read 2.5 µs a body-step at
+8,600 bodies, 0.47x. At dt 0.01 every body is stepped 100 times a simulated second, so real
+time at 10,000 needs 1 µs a body-step and 10x needs 0.1. The speed
+track, in order:
+1. GPU acceptance 0 (running from 16:37, `scratch/gpu-accept/acc0.ps1`): round 48's launcher,
+   seed 1, 300 s, the CPU backend against the gpu engine's kernel in double on ILGPU's CPU
+   accelerator, which must be identical (`scripts/reads/gpu-accept.py`, on `gpu-port` in
+   `scratch/wt-gpu`). D105 already ruled single precision; the port's three questions (a body
+   over the classes dies as a divergence, no bound on a neuron, per-part contact in scope) are
+   still the owner's.
+2. The pace on round 48's own late crowd, with nothing else on the machine (the owner's GPU
+   rule): a resume of `r48-s1` from its 27,500 s checkpoint for 500 s on the CPU at 16 threads
+   and on the card in single. The gpu branch reads round 48's checkpoints (state version 10 on
+   both). It waits for the film recorder below.
+3. A proposal, measured before it goes to the owner: step a body with no working joint far more
+   coarsely than dt 0.01. At the end of round 48 all but 3 to 7 of about 8,600 bodies a seed had
+   no working joint. It is the only route the agent sees to 100,000 (inference), and it is a new
+   realisation of every seed. A read-only map of the solver's per-body work is being made.
+
+**Round 48's story film, from farm windows.** The windows are re-recorded as stream version 3
+(the reserve and the funds over the gate) in `scratch/wt-r49/scratch/story-windows/r48-v4`,
+every one faithful so far. The late seed-1 scenes (14, 18, 19, 20) each restart from the
+27,500 s checkpoint, because seed 1 predates the 500 s cadence, and a merged plan that records
+the four once (`scratch/r49-film-debug/merge-late.py`) waits on the owner stopping the running
+recorder (the permission classifier refused the agent). Scenes 1 to 12 are delivered
+(`scratch/owner/r48-story-part1/`, the check sheet beside it). The reserve charts of scenes 2, 8
+and 11 were empty, and stream version 4 (`740e9da`) carries the reserve in joules. The three are
+re-recorded on a pre-cap exe (`scratch/wt-r49film`, branch `r49-film-v4`, because D124's
+tunable refuses round 48's config) by `scratch/r49-film-debug/chart-fix.ps1`. The look is the
+owner's pick, target luma 0.18 (variant B, "this is pretty good"). ffmpeg took every core per
+encode and put the machine at 100% beside a farm run; every encoder in the render scripts is at
+four threads now.
+
 **The farm has left Unity.** On 2026-09-21 the owner ruled the engine before the world
 ("I'd prioritise this before making the world more complex"): pace first, staggered, with
 10,000 creatures the committed target and 100,000 a stretch. The same day the agent built
