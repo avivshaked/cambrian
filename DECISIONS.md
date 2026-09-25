@@ -142,6 +142,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D120](#d120) | Reproduction paid as it goes, as a gene beside the lump, and the child's overhead scales with the child above a floor | 2026-09-24 | ruled by the owner in conversation on 2026-09-24 ("lets proceed with your recommendations") on the agent's proposal after the dissection |
 | [D121](#d121) | Senescence wears upkeep alone, not income | 2026-09-24 | ruled with D120 |
 | [D122](#d122) | Every founder lands at the richest cell of its food, depth included, and is born with an endowment | 2026-09-24 | ruled with D120; the generic form of a stomach-only rule the owner refused ("if we could come up with some generic rule or configuration, then I'd be much more inclined") |
+| [D123](#d123) | The contact and damage senses read the step, from round 49: contact now and the health lost this step, as the mouth's specification asked | 2026-09-25 | ruled by the owner in conversation ("fix for 49"), after the checkpoint-fidelity read found both senses cumulative |
 
 ---
 
@@ -6395,3 +6396,27 @@ their first second and will not notice either.
 
 **Rejected.** Placing pool stomachs in the top-decile snow columns and raising the pool's
 share (the stomach-only form).
+
+### D123
+**The contact and damage senses read the step, from round 49** · 2026-09-25
+
+**Status:** ruled by the owner on 2026-09-25 ("fix for 49"). To be built before round 49,
+as a change of behaviour and not a tunable: a new realisation of every world with either
+sense on.
+
+**Decision.** `Contact` reads whether a part touched another body's part on the last
+metabolic step. `Damage` reads the part's health lost on that step over its pool. That is
+what D106 item 5 and the mouth's specification (`logbook/specs/mouth-spec.md`, item 5)
+asked. Until round 49 both were cumulative. `World.NoteContact` set a part's contact flag,
+the damage pass added to a part's loss, and only `AdoptPlan` on a plan change cleared
+either. So a brain read "touched since the body last changed shape" and "hurt since then".
+
+**Why.** The code did not do what the ruling said. It was found on 2026-09-25 while reading
+why a resume of round 48 parted from its recording (`logbook/0120`): the contact record was
+not in the checkpoint, and reading it showed the record never reset. Rounds 45 to 48 ran
+with both senses on, so every brain in them that read either sense read a history. The
+checkpoint fix (StateVersion 11) saves the records as they are, so the rule change and the
+fidelity fix are separate.
+
+**Rejected.** Keeping the cumulative senses and rewriting the specification to match them.
+The owner chose the specification.
