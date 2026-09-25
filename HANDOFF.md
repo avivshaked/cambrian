@@ -370,8 +370,10 @@ is what the next session works from. Everything below it in this section is hist
   also a hardware test: a replay that reproduces the minus infinity at the same step is a code
   fault, and one that runs clean past 13,700 s says the run's arithmetic went wrong once on
   this machine (an inference until the replay runs).
-- **Round 48's story film is being made tonight, for the owner to watch in the morning of
-  2026-09-25** (the owner: a story "from all arms", filmed without reading the text first,
+- **Round 48's story film is made (01:58 on 2026-09-25) and waits for the owner's comments**:
+  `scratch/owner/round-48-story.mp4` (22 of 22 scenes and a title, 8 min 47 s, every scene's
+  camera clear of the bed, the bodies and the speed ceiling) and `round-48-story.md`. It was made
+  for the owner to watch in the morning of 2026-09-25 (the owner: a story "from all arms", filmed without reading the text first,
   comments after). The writer's story and shot list are `scratch/story/r48/story.md` and
   `story.json` (22 scenes, eight chapters, about 8.5 minutes; `checks.tsv` has every caption's
   source; seed 3's numbers are provisional at 26,800 s). Story mode is on the safari branch
