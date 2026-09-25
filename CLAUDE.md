@@ -1185,7 +1185,9 @@ actually verifying it.
   the theatre's live fixture need re-recording on this build. From round 49 (D123) both
   records are the last metabolic step's alone, zeroed in place at the top of the mouth's
   pass. The layout did not move, because the physics steps after a restore still read them
-  before the next metabolic step rewrites them. **The
+  before the next metabolic step rewrites them. Round 49's instruments then took
+  `StateVersion` to 12, since queued lineage rows carry the death row's `ga` and `res` and a
+  founder's landing readings, and 11 is refused. **The
   JIT decides the bits**: .NET's
   tiered compilation gives quick-JITted and optimised loops different floating-point
   results on a rounding edge, so every project that reports a digest sets
