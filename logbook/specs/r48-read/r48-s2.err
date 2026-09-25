@@ -1,0 +1,5 @@
+System.ArgumentException: Field 'densityHere' is -Infinity, which JSON cannot represent. A non-finite number here means something upstream produced one and nothing noticed. (Parameter 'value')
+   at Evosim.Core.Json.Writer.Field(String name, Single value) in D:\Projects\experiments\evolution-simulator\src\Evosim.Core\Serialization\Json.cs:line 185
+   at Evosim.Core.AbsorptiveSample.ToJson() in D:\Projects\experiments\evolution-simulator\src\Evosim.Core\Ecosystem\AbsorptiveSample.cs:line 259
+   at Evosim.Farm.Sampler.Write(Simulation sim, RunDirectory dir, IReadOnlyList`1 columns) in D:\Projects\experiments\evolution-simulator\src\Evosim.Farm\Row.cs:line 584
+   at Evosim.Farm.Program.Loop(EnvSettings settings, RunConfig config, World world, RunDirectory dir, Report report, RunManifest manifest, String outPath, Single physicsDt, Int32 stepsPerMetabolic, Int32 threads, String resumePath) in D:\Projects\experiments\evolution-simulator\src\Evosim.Farm\Program.cs:line 581

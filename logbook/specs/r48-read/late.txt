@@ -1,0 +1,10 @@
+r47-s2 t 13690 alive 3145 meanAge 1473 invest 0.306 jointed 443 absorptive 3
+r48-s2 t 13690 alive 4583 meanAge 1511 invest 0.19 jointed 680 absorptive 35
+r48-s1 pool founders born 3000-10000 s: n=24 first densityHere median 0.336 (>=0.44: 8), median age at death 644.0 s, bred 10
+r48-s1 pool founders born 10000-20000 s: n=33 first densityHere median 0.196 (>=0.44: 8), median age at death 312.0 s, bred 6
+r48-s1 pool founders born 20000-30001 s: n=42 first densityHere median 0.180 (>=0.44: 6), median age at death 271.0 s, bred 14
+r48-s2 pool founders born 3000-10000 s: n=20 first densityHere median 0.265 (>=0.44: 6), median age at death 297.75 s, bred 5
+r48-s2 pool founders born 10000-20000 s: n=9 first densityHere median 0.217 (>=0.44: 2), median age at death 292.25 s, bred 3
+r48-s3 pool founders born 3000-10000 s: n=24 first densityHere median 0.211 (>=0.44: 3), median age at death 368.5 s, bred 6
+r48-s3 pool founders born 10000-20000 s: n=30 first densityHere median 0.193 (>=0.44: 3), median age at death 509.0 s, bred 5
+r48-s3 pool founders born 20000-30001 s: n=30 first densityHere median 0.146 (>=0.44: 5), median age at death 240.0 s, bred 7

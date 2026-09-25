@@ -1,0 +1,45 @@
+# r48-s1 runs\r48-s1\2026-09-24-115115-e5a30c15\ last stats t=30000 births=75654 deaths=67036
+bloom peak 1830 at 2120 s; trough 1464 at 3250 s; fall 0.20
+leafless max 76 at 5910 s; at end 3; absorptive at end 121 (inherited 95)
+jointed max 403 at 2100 s; at end 3
+founders src=floor: n=54 bred=10 (0.185) children=92 first-child lag median=307.0 s, within 1 s 1, within 10 s 1; median age at death 329.75 s of 54 dead; endow median 82.6 J
+founders src=pool: n=99 bred=30 (0.303) children=36 first-child lag median=0.5 s, within 1 s 28, within 10 s 28; median age at death 312.0 s of 97 dead; endow median 117.8 J
+  pool index x bred: {(0, True): 28, (1, False): 23, (2, False): 19, (3, False): 27, (3, True): 2}
+  pool breeders' children more than 10 s after landing: 8
+founders src=trickle: n=820 bred=67 (0.082) children=95 first-child lag median=0.5 s, within 1 s 62, within 10 s 62; median age at death 116.25 s of 816 dead; endow median 76.7 J
+pool clades: deepest 7 generations below the founder; largest 55 descendants (founder 4185)
+absorptive bud roots on plants: 161; with >=10 living at the end: 4; top five (living, ever, id, born): [(38, 114, 48048, 23300.5), (31, 90, 52803, 24487), (10, 50, 59978, 26217), (10, 20, 61200, 26522.5), (7, 11, 61701, 26627.5)]
+  root 48048: living flags (abs,pho) {(1, 1): 29, (0, 1): 9}; generations below root 7
+  root 52803: living flags (abs,pho) {(0, 1): 12, (1, 1): 19}; generations below root 6
+  root 59978: living flags (abs,pho) {(1, 1): 4, (0, 1): 6}; generations below root 6
+
+# r48-s2 runs\r48-s2\2026-09-24-115119-e5a30c15\ last stats t=13690 births=27087 deaths=22504
+bloom peak 3527 at 1320 s; trough 2358 at 4630 s; fall 0.33
+leafless max 15 at 30 s; at end 5; absorptive at end 35 (inherited 19)
+jointed max 1315 at 1320 s; at end 680
+founders src=floor: n=45 bred=17 (0.378) children=135 first-child lag median=123.5 s, within 1 s 2, within 10 s 2; median age at death 546.5 s of 45 dead; endow median 61.6 J
+founders src=pool: n=29 bred=8 (0.276) children=8 first-child lag median=0.5 s, within 1 s 8, within 10 s 8; median age at death 297.75 s of 28 dead; endow median 71.7 J
+  pool index x bred: {(0, True): 8, (1, False): 8, (2, False): 7, (3, False): 6}
+  pool breeders' children more than 10 s after landing: 0
+founders src=trickle: n=332 bred=26 (0.078) children=31 first-child lag median=0.5 s, within 1 s 26, within 10 s 26; median age at death 134.5 s of 329 dead; endow median 73.3 J
+pool clades: deepest 1 generations below the founder; largest 1 descendants (founder 9424)
+absorptive bud roots on plants: 60; with >=10 living at the end: 0; top five (living, ever, id, born): [(9, 9, 21093, 11400), (4, 6, 17778, 9776), (4, 5, 17686, 9714), (3, 3, 24320, 12647), (3, 3, 23532, 12375)]
+  root 21093: living flags (abs,pho) {(0, 1): 3, (1, 1): 6}; generations below root 2
+  root 17778: living flags (abs,pho) {(1, 1): 4}; generations below root 2
+  root 17686: living flags (abs,pho) {(1, 1): 4}; generations below root 2
+
+# r48-s3 runs\r48-s3\2026-09-24-160650-e5a30c15\ last stats t=30000 births=56003 deaths=47414
+bloom peak 1709 at 1360 s; trough 950 at 3020 s; fall 0.44
+leafless max 39 at 4310 s; at end 4; absorptive at end 29 (inherited 8)
+jointed max 1064 at 1300 s; at end 7
+founders src=floor: n=52 bred=16 (0.308) children=165 first-child lag median=185.0 s, within 1 s 2, within 10 s 2; median age at death 275.75 s of 52 dead; endow median 66.3 J
+founders src=pool: n=84 bred=18 (0.214) children=23 first-child lag median=0.5 s, within 1 s 18, within 10 s 18; median age at death 335.0 s of 84 dead; endow median 117.8 J
+  pool index x bred: {(0, True): 18, (1, False): 28, (2, False): 22, (3, False): 16}
+  pool breeders' children more than 10 s after landing: 5
+founders src=trickle: n=817 bred=65 (0.080) children=88 first-child lag median=0.5 s, within 1 s 65, within 10 s 65; median age at death 106.0 s of 811 dead; endow median 75.2 J
+pool clades: deepest 4 generations below the founder; largest 29 descendants (founder 3318)
+absorptive bud roots on plants: 73; with >=10 living at the end: 0; top five (living, ever, id, born): [(6, 10, 43138, 26307.5), (3, 4, 31375, 21995), (3, 3, 39963, 25213), (2, 3, 42357, 26032.5), (2, 2, 45444, 27016)]
+  root 43138: living flags (abs,pho) {(0, 1): 4, (1, 1): 2}; generations below root 5
+  root 31375: living flags (abs,pho) {(1, 1): 3}; generations below root 3
+  root 39963: living flags (abs,pho) {(1, 1): 3}; generations below root 1
+

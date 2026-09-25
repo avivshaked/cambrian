@@ -141,25 +141,27 @@ not removed it, and it is a guess.
 
 The table reads each prediction for the three tanks against what it needed. Tank 2 stopped on a
 software error at 13,700 s, so its column is its last good row at 13,690 s; the others are at
-30,000 s. Round 47's values are its same seed.
+30,000 s. Round 47's values are its same seed. A clause about the end of the run that tank 2
+could still have decided is censored, which is how the round's reader marks it (`short`) and
+how the logbook entry, 0120, reads it; tank 2's reading at its cut is a state, not a verdict.
 
 | clause | what it asked | tank 1 | tank 2 | tank 3 | result |
 |---|---|---|---|---|---|
 | M1 | 50 buds born, 3 of 3 | 987 | 301 | 491 | held |
-| M2 | half the buds grown, 3 of 3 | 986 | 252 | 481 | held |
+| M2 | half the buds grown, 3 of 3 | 986 | 252 | 481 | censored; held in tanks 1 and 3 |
 | M3 | a budded stomach's line of 10, 1 of 3 | 38 | 9 | 6 | held (tank 1) |
 | G1 | births paid by gestation, 3 of 3 | 7,234 | 3,158 | 3,683 | held |
 | G2 | gestation not selected out, 2 of 3 | 27% to 13% | 19% to 17% | 20% to 12% | failed |
-| O1 | smaller children than round 47, 3 of 3 | 0.077 vs 0.82 | 0.19 vs 0.48 | 0.56 vs 0.78 | held |
-| O2 | more bodies than round 47, 2 of 3 | 8,618 vs 2,619 | 4,583 vs 5,602 | 8,589 vs 2,501 | held |
-| S1 | the old live longer, 3 of 3 | 1,998 vs 1,459 s | 1,511 vs 1,891 s | 2,006 vs 1,778 s | failed (tank 2) |
-| S2 | stomach children die past 600 s, 2 of 3 | 1,118 s | 95 s | 455 s | failed |
-| F1 | stored eaters live past 300 s, 3 of 3 | 312 s | 298 s | 335 s | failed (tank 2, by 2 s) |
+| O1 | smaller children than round 47, 3 of 3 | 0.077 vs 0.82 | 0.19 vs 0.48 | 0.56 vs 0.78 | censored; held in tanks 1 and 3 |
+| O2 | more bodies than round 47, 2 of 3 | 8,618 vs 2,619 | 4,583 vs 5,602 | 8,589 vs 2,501 | held (tanks 1 and 3); the ceiling censored |
+| S1 | the old live longer, 3 of 3 | 1,998 vs 1,459 s | 1,511 vs 1,891 s | 2,006 vs 1,778 s | censored; held in tanks 1 and 3 |
+| S2 | stomach children die past 600 s, 2 of 3 | 1,118 s | 95 s | 455 s | censored; tank 2 decides |
+| F1 | stored eaters live past 300 s, 3 of 3 | 312 s | 298 s | 335 s | censored; held in tanks 1 and 3 |
 | F2 | a stored eater breeds, 3 of 3 | 30 | 8 | 18 | held |
-| F3 | a stored eater's line of 10, 1 of 3 | 2 | 1 | 0 | failed |
+| F3 | a stored eater's line of 10, 1 of 3 | 2 | 1 | 0 | censored; failed in tanks 1 and 3 |
 | F4 | newcomers land at their column's mean snow, 3 of 3 | 19% | 21% | 19% | failed |
 | B1 | books close, nothing breaks, 3 of 3 | closed | stopped on error | closed | failed (tank 2) |
-| P1 | at least real-time pace, 3 of 3 | 1.06x | 1.18x, then stopped | 1.13x | failed (tank 2 never finished) |
+| P1 | at least real-time pace, 3 of 3 | 1.06x | 1.18x, then stopped | 1.13x | censored; held in tanks 1 and 3 |
 
 The round got its buds, its smaller children and its bigger crowd, and in one tank a stomach on a
 leaf that founded a line. It did not get what the rules were mostly for, an eater that lives on

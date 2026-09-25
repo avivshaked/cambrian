@@ -1,0 +1,15 @@
+r48-s1 first-row share: median 1 share<1: 0 of 99
+  pool index 0 dead 28 median age at death 186.0
+  pool index 1 dead 23 median age at death 372
+  pool index 2 dead 19 median age at death 244.5
+  pool index 3 dead 27 median age at death 411.0
+r48-s2 first-row share: median 1 share<1: 0 of 29
+  pool index 0 dead 8 median age at death 167.75
+  pool index 1 dead 8 median age at death 365.5
+  pool index 2 dead 7 median age at death 288.0
+  pool index 3 dead 5 median age at death 572.0
+r48-s3 first-row share: median 1.0 share<1: 0 of 84
+  pool index 0 dead 18 median age at death 179.25
+  pool index 1 dead 28 median age at death 508.75
+  pool index 2 dead 22 median age at death 239.0
+  pool index 3 dead 16 median age at death 721.25

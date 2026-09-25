@@ -436,6 +436,17 @@ in this section is history.
     links catch light, living leaves make three quarters of the snow, the tank is 45 m deep
     only on average, and the gift did pay for a first child. Scene 19's third caption says
     seed 2's cause is not found; it changes with the re-run's verdict.
+  - **Round 48's entry is drafted and reviewed, and waits for the re-run's verdict before it
+    is committed:** `logbook/0120-the-eaters-spent-their-endowment-on-one-child.md`, with its
+    index row in `logbook/README.md` and four pictures `logbook/images/r48-*.png`, all
+    uncommitted. Its reads are committed in `scripts/reads/r48-entry/` and
+    `logbook/specs/r48-read/`. One marked `[PENDING …]` paragraph in its seed 2 section takes
+    the verdict. Five clauses hold, three fail and eight are censored on seed 2's stop. The
+    round's reader prints `short` for those, and the second story's verdict table now says
+    censored too. The main finding: the endowment paid for every one-part pool stomach's
+    child at its first half-second, and the founder then starved. The review corrected the
+    tank's depth, what the snow is, the prediction count (fifteen and two readings) and the
+    pool line's peak (5,903.5 s). It also rewrote the resume section with the cause found.
   - **The story's machine-track order**, once the re-run has ended with a code fault (a clean
     run pauses everything instead):
     1. the visuals' compile and four-scene test render; look at every frame;

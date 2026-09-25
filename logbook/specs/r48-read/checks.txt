@@ -1,0 +1,22 @@
+# r48-s1: pool founders 99, with a first absorptive row 99
+  pool index 0 bred=True n=28: first row age 4.0 s, energy 39.6 J, tissue 45.0 J, children 1.0, densityHere 0.265, foodW 0.238, upkeepW 0.381, netW -0.146
+  pool index 1 bred=False n=23: first row age 7 s, energy 189.9 J, tissue 107.3 J, children 0, densityHere 0.117, foodW 0.190, upkeepW 0.820, netW -0.537
+  pool index 2 bred=False n=19: first row age 6 s, energy 69.2 J, tissue 58.9 J, children 0, densityHere 0.157, foodW 0.162, upkeepW 0.473, netW -0.262
+  pool index 3 bred=False n=27: first row age 5.5 s, energy 123.4 J, tissue 87.9 J, children 0, densityHere 0.249, foodW 0.189, upkeepW 0.615, netW -0.282
+  pool index 3 bred=True n=2: first row age 5.0 s, energy 132.9 J, tissue 87.9 J, children 0.0, densityHere 2.037, foodW 1.623, upkeepW 0.758, netW 1.170
+  bud root 52803: descends from 48048? False; from 52803? False
+  bud root 59978: descends from 48048? False; from 52803? False
+  bud root 61200: descends from 48048? False; from 52803? False
+  bud root 61701: descends from 48048? False; from 52803? False
+  48048 clade at 30,000 s: 58 logged; absVolume/volume median 0.00174; food/(food+light) median 0.00239; densityHere median 0.906
+# r48-s2: pool founders 29, with a first absorptive row 29
+  pool index 0 bred=True n=8: first row age 5.5 s, energy 39.5 J, tissue 45.0 J, children 1.0, densityHere 0.265, foodW 0.239, upkeepW 0.384, netW -0.145
+  pool index 1 bred=False n=8: first row age 4.5 s, energy 191.3 J, tissue 107.3 J, children 0.0, densityHere 0.158, foodW 0.256, upkeepW 0.821, netW -0.356
+  pool index 2 bred=False n=7: first row age 6.5 s, energy 69.2 J, tissue 58.9 J, children 0, densityHere 0.248, foodW 0.255, upkeepW 0.476, netW -0.206
+  pool index 3 bred=False n=6: first row age 4.5 s, energy 124.4 J, tissue 87.9 J, children 0.0, densityHere 0.343, foodW 0.273, upkeepW 0.623, netW -0.035
+# r48-s3: pool founders 84, with a first absorptive row 84
+  pool index 0 bred=True n=18: first row age 5.75 s, energy 39.2 J, tissue 45.0 J, children 1.0, densityHere 0.201, foodW 0.181, upkeepW 0.377, netW -0.197
+  pool index 1 bred=False n=28: first row age 6.5 s, energy 190.9 J, tissue 107.3 J, children 0.0, densityHere 0.134, foodW 0.217, upkeepW 0.818, netW -0.358
+  pool index 2 bred=False n=22: first row age 5.75 s, energy 68.6 J, tissue 58.9 J, children 0.0, densityHere 0.129, foodW 0.133, upkeepW 0.470, netW -0.277
+  pool index 3 bred=False n=16: first row age 7.0 s, energy 124.0 J, tissue 87.9 J, children 0.0, densityHere 0.338, foodW 0.269, upkeepW 0.623, netW -0.074
+  bud root 52803: descends from 48048? False; from 52803? False

@@ -1,0 +1,6 @@
+r48-s1 3000-8000 s: n=6479 median bf 0.064, under 0.1: 0.55; 25000-30001 s: n=20647 median bf 0.062, under 0.1: 0.98
+r48-s2 3000-8000 s: n=7730 median bf 0.171, under 0.1: 0.06; 8690-13691 s: n=11026 median bf 0.143, under 0.1: 0.25
+r48-s3 3000-8000 s: n=2961 median bf 0.216, under 0.1: 0.20; 25000-30001 s: n=16441 median bf 0.508, under 0.1: 0.20
+r47-s1 3000-8000 s: n=933 median bf 0.163, under 0.1: 0.07; 25000-30001 s: n=5979 median bf 0.671, under 0.1: 0.00
+r47-s2 3000-8000 s: n=4135 median bf 0.283, under 0.1: 0.00; 25000-30001 s: n=10595 median bf 0.333, under 0.1: 0.02
+r47-s3 3000-8000 s: n=1310 median bf 0.551, under 0.1: 0.18; 25000-30001 s: n=4067 median bf 0.616, under 0.1: 0.00
