@@ -1,0 +1,960 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using Evosim.Core;
+using Evosim.Farm;
+using Xunit;
+
+namespace Evosim.Farm.Tests
+{
+    /// <summary>
+    /// The film window's acceptance on a world small enough to record in a test: a window of a
+    /// run on its own build reads faithful against the run's own rows, holds the frames its rate
+    /// asks for, and never writes into the run it replays
+    /// (<c>logbook/specs/record-and-film-spec.md</c>, B1).
+    /// </summary>
+    /// <remarks>
+    /// <b>One recording for the class.</b> The fixture runs the farm for sixty seconds with a
+    /// row every second and a checkpoint every twenty, which takes seconds; every test then films
+    /// a window of it into a directory of its own. The recording is made by
+    /// <see cref="Program.Main"/> itself, so the window is compared with what the farm's own loop
+    /// wrote and not with a second copy of it.
+    /// </remarks>
+    public class FilmWindowTests : IClassFixture<FilmWindowTests.RecordedRun>
+    {
+        private static readonly EnvBinding.Lookup NoEnvironment = name => null;
+
+        private readonly RecordedRun _run;
+
+        public FilmWindowTests(RecordedRun run)
+        {
+            _run = run;
+        }
+
+        /// <summary>A sixty second run of the small world, recorded once for the class.</summary>
+        public sealed class RecordedRun : IDisposable
+        {
+            public string Root { get; }
+            public string RunDirectory { get; }
+
+            public RecordedRun()
+            {
+                Root = Path.Combine(AppContext.BaseDirectory, "film-tests", Guid.NewGuid().ToString("N"));
+                string runsRoot = Path.Combine(Root, "runs");
+
+                int exit = Program.Main(SmallRun(runsRoot, "filmed", seconds: 60, checkpointEvery: 20));
+                if (exit != 0) throw new InvalidOperationException("The recording exited " + exit + ".");
+
+                RunDirectory = Directory.GetDirectories(Path.Combine(runsRoot, "filmed"))[0];
+            }
+
+            public void Dispose()
+            {
+                try
+                {
+                    if (Directory.Exists(Root)) Directory.Delete(Root, true);
+                }
+                catch (IOException)
+                {
+                }
+            }
+        }
+
+        /// <summary>
+        /// The small world of <c>SimulationTests</c>' stop test: a box of 100 m² and 20 m at one
+        /// patch, founding from the floor, stepped at 0.02 s, with a row every second.
+        /// </summary>
+        internal static string[] SmallRun(string runsRoot, string arm, int seconds, int checkpointEvery)
+        {
+            var settings = new List<string>
+            {
+                "EVOSIM_RUNS_ROOT=" + runsRoot,
+                "EVOSIM_OUT=" + arm + ".md",
+                "EVOSIM_SECONDS=" + seconds,
+                "EVOSIM_WALL_MINUTES=10",
+                "EVOSIM_REPORT_EVERY=2",
+                "EVOSIM_AREA=100", "EVOSIM_DEPTH=20", "EVOSIM_FOUNDER_DEPTH=20",
+                "EVOSIM_PATCHES=1", "EVOSIM_SHARED_SPACE=1",
+                "EVOSIM_FIELD=grid", "EVOSIM_FIELD_CELL=2", "EVOSIM_FIELD_MATTER_CELL=5",
+                "EVOSIM_IRRADIANCE=200", "EVOSIM_MATTER_BUDGET=300",
+                "EVOSIM_TISSUE_ENERGY=500", "EVOSIM_RHO=100", "EVOSIM_OVERHEAD=100",
+                "EVOSIM_DT=0.02", "EVOSIM_THREADS=2",
+            };
+
+            if (checkpointEvery > 0) settings.Add("EVOSIM_CHECKPOINT_EVERY=" + checkpointEvery);
+
+            return settings.ToArray();
+        }
+
+        /// <summary>
+        /// Every body's flags in <c>positions.jsonl</c> (or <c>positions.jsonl.gz</c>), by
+        /// second and id.
+        /// </summary>
+        internal static Dictionary<double, Dictionary<long, int>> PositionFlags(string runDirectory)
+        {
+            var bySecond = new Dictionary<double, Dictionary<long, int>>();
+
+            foreach (string line in Lines(runDirectory, "positions.jsonl"))
+            {
+                JsonNode row = Json.Parse(line);
+                var flags = new Dictionary<long, int>();
+
+                foreach (JsonNode body in row["b"].Items())
+                {
+                    flags[(long)body[0].AsDouble()] = body[4].AsInt();
+                }
+
+                bySecond[row["t"].AsDouble()] = flags;
+            }
+
+            return bySecond;
+        }
+
+        /// <summary>
+        /// A run file's complete lines: plain JSONL, or record format 2's gzip members through
+        /// Core's one reader.
+        /// </summary>
+        private static IEnumerable<string> Lines(string runDirectory, string name)
+        {
+            string plain = Path.Combine(runDirectory, name);
+
+            IEnumerable<string> lines = File.Exists(plain)
+                ? Encoding.UTF8.GetString(File.ReadAllBytes(plain)).Split('\n')
+                : GzipMemberReader.ReadLines(plain + ".gz", out _);
+
+            foreach (string line in lines)
+            {
+                string trimmed = line.TrimEnd('\r');
+                if (trimmed.Length > 0 && trimmed[trimmed.Length - 1] == '}') yield return trimmed;
+            }
+        }
+
+        private string Out(string name) => Path.Combine(_run.Root, "windows", name + "-" + Guid.NewGuid().ToString("N"));
+
+        private FilmWindow.Result Film(double from, double to, string outDirectory, double fps = 10d) =>
+            FilmWindow.Film(
+                new FilmWindow.Options
+                {
+                    Run = _run.RunDirectory,
+                    FromSeconds = from,
+                    ToSeconds = to,
+                    Out = outDirectory,
+                    FramesPerSecond = fps,
+                    Threads = 2,
+                },
+                NoEnvironment,
+                TextWriter.Null);
+
+        private static List<JsonNode> Identity(string outDirectory)
+        {
+            var rows = new List<JsonNode>();
+            foreach (string line in File.ReadAllLines(Path.Combine(outDirectory, FilmWindow.IdentityFileName)))
+            {
+                if (line.Length > 0) rows.Add(Json.Parse(line));
+            }
+
+            return rows;
+        }
+
+        // ------------------------------------------------------------------ faithful
+
+        /// <summary>
+        /// A window restored from the checkpoint at 20 s and filmed from 25 to 35 s agrees with
+        /// the run at every row from the restore to its end, and holds one frame for every tenth
+        /// of a second, each at the first physics step at or after its nominal second.
+        /// </summary>
+        [Fact]
+        public void AWindowFromACheckpointIsFaithfulAndHoldsEveryFrame()
+        {
+            string outDirectory = Out("from-checkpoint");
+            FilmWindow.Result result = Film(25d, 35d, outDirectory);
+
+            Assert.Equal(FilmWindow.Faithful, result.Verdict);
+            Assert.EndsWith("000000020.ckpt", result.Checkpoint, StringComparison.Ordinal);
+            Assert.Equal(20d, result.RestoredSeconds);
+
+            // Rows every second: 20 to 24 before the window, 25 to 35 inside it.
+            Assert.Equal(5, result.RowsBefore);
+            Assert.Equal(5, result.RowsBeforeAgreed);
+            Assert.Equal(11, result.Rows);
+            Assert.Equal(11, result.RowsAgreed);
+
+            Assert.Equal(101, result.Frames);
+
+            RunConfig config = RunDirectory.ReadConfig(_run.RunDirectory, out _);
+
+            using (PoseStreamReader reader = PoseStreamReader.Open(Path.Combine(outDirectory, FilmWindow.PosesFileName)))
+            {
+                Assert.Equal(PoseStream.Version, reader.Header.Version);
+                Assert.Equal((float)(1d / 10d), reader.Header.CadenceSeconds);
+                Assert.Equal(config.Hash(), reader.Header.ConfigHash);
+                Assert.True(reader.IndexRead);
+                Assert.Equal(101, reader.Frames.Length);
+
+                for (int k = 250; k <= 350; k++)
+                {
+                    double nominal = k / 10d;
+                    double recorded = reader.Frames[k - 250].Seconds;
+
+                    Assert.True(recorded >= nominal - 1e-9, "frame " + k + " at " + recorded + " is before " + nominal);
+                    Assert.True(recorded < nominal + 0.02 - 1e-9, "frame " + k + " at " + recorded + " is a whole physics step after " + nominal);
+                }
+            }
+
+            List<JsonNode> identity = Identity(outDirectory);
+            Assert.Equal(12, identity.Count);
+
+            for (int i = 0; i < 11; i++)
+            {
+                Assert.Equal("window", identity[i]["phase"].AsString());
+                Assert.True(identity[i]["agree"].AsBool());
+                Assert.Equal(25d + i, identity[i]["t"].AsDouble());
+            }
+
+            Assert.Equal(FilmWindow.Faithful, identity[11]["verdict"].AsString());
+        }
+
+        /// <summary>
+        /// Every body a frame draws, and every body born inside the window, has a genome row. The
+        /// rows are Core's gzip members, read by the reader that reads a run's own
+        /// <c>genomes.jsonl.gz</c>, and each is the row the run's file holds for the same id.
+        /// </summary>
+        [Fact]
+        public void EveryFramedBodyHasAGenome()
+        {
+            string outDirectory = Out("genomes");
+            FilmWindow.Result result = Film(41d, 47d, outDirectory);
+
+            Assert.Equal(FilmWindow.Faithful, result.Verdict);
+
+            var ids = new HashSet<long>();
+            var rows = new Dictionary<long, string>();
+
+            using (GzipMemberReader reader = GzipMemberReader.Open(Path.Combine(outDirectory, FilmWindow.GenomesFileName)))
+            {
+                foreach (string line in reader.Lines())
+                {
+                    long id = GenomeJson.ReadId(line);
+                    Assert.True(ids.Add(id), "a genome row written twice");
+                    rows[id] = line;
+                    GenomeJson.Read(line);
+                }
+
+                Assert.False(reader.Torn, reader.TornNote);
+                Assert.True(reader.CompleteMembers > 0, "no member was written");
+            }
+
+            Assert.Equal(result.Bodies, ids.Count);
+            Assert.Equal(0, result.BirthsWithoutAGenome);
+
+            // Every birth the window's events hold, whether or not the body lived to a frame.
+            foreach (string line in File.ReadAllLines(Path.Combine(outDirectory, FilmWindow.EventsFileName)))
+            {
+                if (line.Length == 0) continue;
+
+                JsonNode e = Json.Parse(line);
+                if (e["e"].AsString() == "b") Assert.Contains((long)e["id"].AsDouble(), ids);
+            }
+
+            // The run records in format 2 by default, so its genomes file holds the same row for
+            // every id: one writer, one reader.
+            string runGenomes = Path.Combine(_run.RunDirectory, RecordFiles.GenomesName);
+            Assert.True(File.Exists(runGenomes), "the recording wrote no genomes.jsonl.gz");
+
+            var runRows = new Dictionary<long, string>();
+            foreach (string line in GzipMemberReader.ReadLines(runGenomes, out _))
+            {
+                runRows[GenomeJson.ReadId(line)] = line;
+            }
+
+            foreach (KeyValuePair<long, string> row in rows)
+            {
+                Assert.True(runRows.TryGetValue(row.Key, out string runRow), "body " + row.Key + " is not in the run's genomes");
+                Assert.Equal(runRow, row.Value);
+            }
+
+            int framed = 0;
+
+            using (PoseStreamReader reader = PoseStreamReader.Open(Path.Combine(outDirectory, FilmWindow.PosesFileName)))
+            {
+                for (int f = 0; f < reader.Frames.Length; f++)
+                {
+                    foreach (PoseBody body in reader.Read(f).Bodies)
+                    {
+                        Assert.Contains((long)body.Id, ids);
+                        Assert.InRange(body.Flags, 0, PoseStream.AllFlagBits);
+                        framed++;
+                    }
+                }
+            }
+
+            Assert.True(framed > 0, "no body was ever framed");
+        }
+
+        /// <summary>
+        /// The window's events are the run's own lineage rows inside it, byte for byte and in
+        /// the run's order.
+        /// </summary>
+        [Fact]
+        public void TheEventsAreTheRunsOwnLineageRows()
+        {
+            string outDirectory = Out("events");
+            Film(21d, 39d, outDirectory);
+
+            var expected = new List<string>();
+
+            foreach (string line in Lines(_run.RunDirectory, "lineage.jsonl"))
+            {
+                double t = Json.Parse(line)["t"].AsDouble();
+                if (t > 21d + 1e-9 && t <= 39d + 1e-9) expected.Add(line);
+            }
+
+            var actual = new List<string>();
+            foreach (string line in File.ReadAllLines(Path.Combine(outDirectory, FilmWindow.EventsFileName)))
+            {
+                if (line.Length > 0) actual.Add(line);
+            }
+
+            Assert.Equal(expected, actual);
+        }
+
+        /// <summary>A window before the first checkpoint is founded from the run's config and seed.</summary>
+        [Fact]
+        public void AWindowBeforeTheFirstCheckpointIsFounded()
+        {
+            string outDirectory = Out("founded");
+            FilmWindow.Result result = Film(5d, 8d, outDirectory);
+
+            Assert.Null(result.Checkpoint);
+            Assert.Equal(0d, result.RestoredSeconds);
+            Assert.Equal(FilmWindow.Faithful, result.Verdict);
+            Assert.Equal(4, result.RowsBefore);
+            Assert.Equal(4, result.Rows);
+            Assert.Equal(31, result.Frames);
+        }
+
+        /// <summary>
+        /// A window with no report second inside it steps on to the run's next one and is
+        /// compared there.
+        /// </summary>
+        [Fact]
+        public void AWindowWithNoRowInsideIsComparedAtTheNextOne()
+        {
+            string outDirectory = Out("between-rows");
+            FilmWindow.Result result = Film(25.2d, 25.7d, outDirectory);
+
+            Assert.Equal(FilmWindow.Faithful, result.Verdict);
+            Assert.Equal(1, result.Rows);
+            Assert.Equal(6, result.Frames);
+
+            List<JsonNode> identity = Identity(outDirectory);
+            Assert.Equal("after", identity[0]["phase"].AsString());
+            Assert.Equal(26d, identity[0]["t"].AsDouble());
+        }
+
+        /// <summary>A window that runs past the run's last row cannot be faithful at its end.</summary>
+        [Fact]
+        public void AWindowPastTheRunsLastRowIsUnverified()
+        {
+            string outDirectory = Out("past-the-end");
+            FilmWindow.Result result = Film(55d, 65d, outDirectory, fps: 5d);
+
+            Assert.Equal(FilmWindow.Unverified, result.Verdict);
+            Assert.Equal(6, result.Rows);
+            Assert.Equal(6, result.RowsAgreed);
+            Assert.Equal(51, result.Frames);
+        }
+
+        // ------------------------------------------------------------------ what it will not do
+
+        /// <summary>Filming a window leaves every file of the run exactly as it was.</summary>
+        [Fact]
+        public void TheRunDirectoryIsNotWritten()
+        {
+            Dictionary<string, string> before = Listing(_run.RunDirectory);
+
+            Film(41d, 43d, Out("untouched"));
+
+            Assert.Equal(before, Listing(_run.RunDirectory));
+        }
+
+        [Fact]
+        public void AWindowInsideTheRunDirectoryIsRefused()
+        {
+            string inside = Path.Combine(_run.RunDirectory, "film");
+
+            Assert.Throws<ArgumentException>(() => Film(41d, 42d, inside));
+            Assert.False(Directory.Exists(inside));
+        }
+
+        [Fact]
+        public void AWindowWillNotOverwriteAnother()
+        {
+            string outDirectory = Out("twice");
+            Film(41d, 42d, outDirectory);
+
+            Assert.Throws<IOException>(() => Film(41d, 42d, outDirectory));
+        }
+
+        [Fact]
+        public void ARateAboveThePhysicsRateIsRefused()
+        {
+            // dt 0.02 s is fifty steps a second.
+            Assert.Throws<ArgumentOutOfRangeException>(() => Film(41d, 42d, Out("too-fast"), fps: 60d));
+        }
+
+        [Fact]
+        public void TheEntryPointFilmsAndRefuses()
+        {
+            string outDirectory = Out("entry");
+
+            int exit = Program.Main(new[]
+            {
+                "--film-window", _run.RunDirectory, "30", "31", outDirectory, "--fps", "10", "--threads", "2",
+            });
+
+            Assert.Equal(FilmWindow.ExitFaithful, exit);
+            Assert.True(File.Exists(Path.Combine(outDirectory, FilmWindow.PosesFileName)));
+
+            Assert.Equal(
+                FilmWindow.ExitRefused,
+                Program.Main(new[] { "--film-window", _run.RunDirectory, "30", "31", Out("bad"), "--speed", "2" }));
+        }
+
+        // ------------------------------------------------------------------ the faithful rule
+
+        private static CheckpointHeader Hashes(string config, string core, string dynamics, string farm) =>
+            new CheckpointHeader { ConfigHash = config, CoreHash = core, DynamicsHash = dynamics, FarmHash = farm };
+
+        /// <summary>
+        /// The config's hash decides; Core's, Dynamics' and the farm's are named and never do.
+        /// </summary>
+        [Fact]
+        public void OnlyTheConfigDecidesTheSource()
+        {
+            FilmWindow.SourceComparison same = FilmWindow.CompareSources(
+                Hashes("c", "core", "dyn", "farm"), "c", "core", "dyn", "farm");
+            Assert.Null(same.Config);
+            Assert.Empty(same.Sources);
+
+            FilmWindow.SourceComparison sources = FilmWindow.CompareSources(
+                Hashes("c", "core-old", "dyn-old", "farm-old"), "c", "core-new", "dyn-new", "farm-new");
+            Assert.Null(sources.Config);
+            Assert.Equal(3, sources.Sources.Count);
+            Assert.StartsWith("coreHash:", sources.Sources[0], StringComparison.Ordinal);
+            Assert.StartsWith("dynamicsHash:", sources.Sources[1], StringComparison.Ordinal);
+            Assert.StartsWith("farmHash:", sources.Sources[2], StringComparison.Ordinal);
+
+            FilmWindow.SourceComparison config = FilmWindow.CompareSources(
+                Hashes("c-old", "core", "dyn", "farm"), "c-new", "core", "dyn", "farm");
+            Assert.StartsWith("configHash:", config.Config, StringComparison.Ordinal);
+            Assert.Empty(config.Sources);
+        }
+
+        private static FilmWindow.Result AgreeingResult() =>
+            new FilmWindow.Result
+            {
+                RunDirectory = "run",
+                Rows = 3,
+                RowsAgreed = 3,
+                LastRunRowSeconds = 100d,
+                LastSecond = 50d,
+            };
+
+        private static readonly FilmWindow.Options Window =
+            new FilmWindow.Options { Run = "run", Out = "out", FromSeconds = 10d, ToSeconds = 40d };
+
+        /// <summary>
+        /// A window with a differing Core and Dynamics is filmed without the override, and when
+        /// its rows all agree it is faithful, names both hashes and exits 0.
+        /// </summary>
+        [Fact]
+        public void ADifferingCoreOrDynamicsWithAgreeingRowsIsFaithfulAndNamed()
+        {
+            FilmWindow.SourceComparison sources = FilmWindow.CompareSources(
+                Hashes("c", "74eff56e6a9d", "0e9243bb8c60", "8f04d32857fa"),
+                "c", "aaaaaaaaaaaa", "bbbbbbbbbbbb", "8f04d32857fa");
+
+            FilmWindow.Result result = AgreeingResult();
+            FilmWindow.ApplySources(result, sources, allowSourceMismatch: false, fromCheckpoint: true, log: null);
+
+            Assert.False(result.SourceMismatch);
+            Assert.Equal(2, result.SourcesDiffer.Count);
+
+            FilmWindow.Decide(result, Window);
+
+            Assert.Equal(FilmWindow.Faithful, result.Verdict);
+            Assert.Contains("coreHash: checkpoint 74eff56e6a9d", result.Reason, StringComparison.Ordinal);
+            Assert.Contains("dynamicsHash: checkpoint 0e9243bb8c60", result.Reason, StringComparison.Ordinal);
+            Assert.DoesNotContain("farmHash", result.Reason, StringComparison.Ordinal);
+            Assert.Equal(FilmWindow.ExitFaithful, FilmWindow.ExitCodeOf(result.Verdict));
+        }
+
+        /// <summary>A differing config is refused without the override, as a resume refuses it.</summary>
+        [Fact]
+        public void AConfigMismatchIsRefused()
+        {
+            FilmWindow.SourceComparison sources = FilmWindow.CompareSources(
+                Hashes("c-old", "core", "dyn", "farm"), "c-new", "core", "dyn", "farm");
+
+            var error = Assert.Throws<InvalidOperationException>(() =>
+                FilmWindow.ApplySources(
+                    AgreeingResult(), sources, allowSourceMismatch: false, fromCheckpoint: true, log: null));
+
+            Assert.Contains("configHash", error.Message, StringComparison.Ordinal);
+            Assert.Contains("EVOSIM_ALLOW_SOURCE_MISMATCH", error.Message, StringComparison.Ordinal);
+        }
+
+        /// <summary>A differing config filmed under the override is a cousin whatever its rows say.</summary>
+        [Fact]
+        public void AConfigMismatchUnderTheOverrideIsACousinWhateverItsRowsSay()
+        {
+            FilmWindow.SourceComparison sources = FilmWindow.CompareSources(
+                Hashes("c-old", "core", "dyn", "farm"), "c-new", "core", "dyn", "farm");
+
+            FilmWindow.Result result = AgreeingResult();
+            FilmWindow.ApplySources(result, sources, allowSourceMismatch: true, fromCheckpoint: true, log: null);
+
+            Assert.True(result.SourceMismatch);
+
+            FilmWindow.Decide(result, Window);
+
+            Assert.Equal(FilmWindow.Cousin, result.Verdict);
+            Assert.Contains("configHash", result.Reason, StringComparison.Ordinal);
+            Assert.Equal(FilmWindow.ExitCousin, FilmWindow.ExitCodeOf(result.Verdict));
+        }
+
+        /// <summary>A parted row is a cousin that names the second and the field, and any source hash.</summary>
+        [Fact]
+        public void APartedRowIsACousinWithTheSecondAndTheField()
+        {
+            FilmWindow.Result result = AgreeingResult();
+            result.RowsAgreed = 2;
+            result.PartedAtSeconds = 30d;
+            result.PartedField = "auditResidual";
+            result.SourcesDiffer.Add("coreHash: checkpoint aaaa, this build bbbb");
+
+            FilmWindow.Decide(result, Window);
+
+            Assert.Equal(FilmWindow.Cousin, result.Verdict);
+            Assert.Contains("t=30 s in auditResidual", result.Reason, StringComparison.Ordinal);
+            Assert.Contains("coreHash: checkpoint aaaa", result.Reason, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// A window that compared no row is unverified under a differing source, because nothing
+        /// stands in for the rows.
+        /// </summary>
+        [Fact]
+        public void NoComparedRowIsUnverifiedWhateverTheSource()
+        {
+            FilmWindow.Result result = AgreeingResult();
+            result.Rows = 0;
+            result.RowsAgreed = 0;
+            result.SourcesDiffer.Add("dynamicsHash: checkpoint aaaa, this build bbbb");
+
+            FilmWindow.Decide(result, Window);
+
+            Assert.Equal(FilmWindow.Unverified, result.Verdict);
+            Assert.Equal(FilmWindow.ExitUnverified, FilmWindow.ExitCodeOf(result.Verdict));
+        }
+
+        [Fact]
+        public void AnUnverifiedWindowExitsThree()
+        {
+            Assert.Equal(3, FilmWindow.ExitCodeOf(FilmWindow.Unverified));
+            Assert.Equal(2, FilmWindow.ExitCodeOf(FilmWindow.Cousin));
+            Assert.Equal(0, FilmWindow.ExitCodeOf(FilmWindow.Faithful));
+        }
+
+        // ------------------------------------------------------------------ read back (B2)
+
+        /// <summary>
+        /// A window reads back whole through <see cref="FilmWindowReader"/>, the theatre's reader:
+        /// the verdict and its word, the run's full path, a genome for every framed body, the plans
+        /// and the events, and a frame's bodies are exactly those the events say were alive. The
+        /// window lies in the founding, when the floor's founders arrive two a metabolic step, so
+        /// bodies appear in the middle of it.
+        /// </summary>
+        [Fact]
+        public void AWindowReadsBackWholeForThePlayer()
+        {
+            string outDirectory = Out("read-back");
+            FilmWindow.Result result = Film(2d, 9d, outDirectory);
+
+            Assert.True(FilmWindowReader.IsWindow(outDirectory));
+            Assert.True(result.Births > 0, "the founding window saw no birth");
+
+            using (FilmWindowReader window = FilmWindowReader.Open(outDirectory))
+            {
+                Assert.NotNull(window.Verdict);
+                Assert.Equal(result.Verdict, window.Verdict.Verdict);
+                Assert.Equal(FilmWindow.Faithful, window.Verdict.Verdict);
+                Assert.True(window.Faithful);
+                Assert.Equal("FAITHFUL", window.ProvenanceWord);
+                Assert.Equal(_run.RunDirectory, window.Verdict.RunDirectory);
+                Assert.Equal(Path.GetFileName(_run.RunDirectory), window.Verdict.RunName);
+                Assert.Equal(2d, window.Verdict.From);
+                Assert.Equal(9d, window.Verdict.To);
+                Assert.True(double.IsNaN(window.Verdict.PartedAt));
+
+                Assert.Equal(result.Frames, window.FrameCount);
+                Assert.Equal(result.Frames, window.Verdict.Frames);
+                Assert.Equal(result.Bodies, window.GenomeCount);
+                Assert.Equal(result.PlanRows, window.PlanRows);
+                Assert.Equal(result.Births + result.Deaths + result.Bites, window.Events.Count);
+                Assert.Empty(window.Notes);
+
+                // Every genome develops on this build.
+                foreach (long id in window.GenomeIds)
+                {
+                    Assert.True(window.TryGenome(id, out string row));
+                    GenomeJson.Read(row);
+                }
+
+                // The bodies alive at the start are the genomes of bodies not born inside.
+                var atStart = new HashSet<long>(window.GenomeIds);
+                foreach (FilmWindowEvent e in window.Events)
+                {
+                    if (e.Kind == 'b') atStart.Remove(e.Id);
+                }
+
+                var seenBorn = new HashSet<long>();
+
+                for (int f = 0; f < window.FrameCount; f++)
+                {
+                    double t = window.SecondOf(f);
+                    Assert.Equal(f, window.FrameAtOrBefore(t));
+                    Assert.Equal(f, window.NearestFrame(t));
+
+                    foreach (PoseBody body in window.ReadFrame(f).Bodies)
+                    {
+                        long id = body.Id;
+                        Assert.True(window.TryGenome(id, out _), "body " + id + " is framed with no genome");
+
+                        if (window.TryBirthOf(id, out FilmWindowEvent birth))
+                        {
+                            Assert.True(birth.Seconds <= t + 1e-9, "body " + id + " is framed before its birth");
+                            seenBorn.Add(id);
+                        }
+                        else
+                        {
+                            Assert.Contains(id, atStart);
+                        }
+
+                        if (window.TryDeathOf(id, out FilmWindowEvent death))
+                        {
+                            Assert.True(t < death.Seconds + 1e-9, "body " + id + " is framed after its death");
+                        }
+                    }
+                }
+
+                // A body born inside and living a metabolic step or more before the window's end
+                // is drawn: it appears mid-window.
+                bool anyDrawable = false;
+                foreach (FilmWindowEvent e in window.Events)
+                {
+                    if (e.Kind != 'b' || e.Seconds > 8d) continue;
+                    if (window.TryDeathOf(e.Id, out FilmWindowEvent d) && d.Seconds - e.Seconds < 1d) continue;
+                    anyDrawable = true;
+                }
+
+                Assert.True(anyDrawable, "no body was born early enough in the window to be drawn");
+                Assert.NotEmpty(seenBorn);
+
+                // Before the first frame and after the last.
+                Assert.Equal(-1, window.FrameAtOrBefore(1.5d));
+                Assert.Equal(0, window.NearestFrame(0d));
+                Assert.Equal(window.FrameCount - 1, window.NearestFrame(1e6));
+
+                // A plan is the newest at or before the second, and nothing before the first.
+                foreach (long id in window.GenomeIds)
+                {
+                    IReadOnlyList<FilmWindowPlan> plans = window.PlansOf(id);
+                    if (plans.Count == 0)
+                    {
+                        Assert.Null(window.PlanAt(id, 9d));
+                        continue;
+                    }
+
+                    Assert.Null(window.PlanAt(id, plans[0].Seconds - 0.25d));
+                    Assert.Same(plans[plans.Count - 1], window.PlanAt(id, 1e6));
+                }
+            }
+        }
+
+        /// <summary>
+        /// At a second the run's own stream holds, the window's frame holds the same bodies with
+        /// the same numbers, to the bit: root, attitude, joints, fraction and guild. So the player
+        /// and a <c>-From snapshot</c> picture of the run's stream lay their poses from the same
+        /// inputs (the spec's third acceptance, at the data), and what can still differ between
+        /// the two pictures is the plan's source, a snapshot row against <c>plans.jsonl</c>.
+        /// </summary>
+        [Fact]
+        public void AFrameAtAStreamSecondIsTheRunsOwnFrame()
+        {
+            string outDirectory = Out("stream-seconds");
+            FilmWindow.Result result = Film(25d, 35d, outDirectory);
+
+            Assert.Equal(FilmWindow.Faithful, result.Verdict);
+
+            string runStream = PoseStream.PathIn(_run.RunDirectory);
+            Assert.NotNull(runStream);
+
+            int compared = 0;
+
+            using (PoseStreamReader run = PoseStreamReader.Open(runStream))
+            using (FilmWindowReader window = FilmWindowReader.Open(outDirectory))
+            {
+                // 26 to 35: report seconds inside the window and away from a checkpoint second,
+                // where the run's frame can lack a body admitted at that step (the spec's B1).
+                for (int second = 26; second <= 35; second++)
+                {
+                    PoseFrame ours = window.Stream.At(second);
+                    PoseFrame theirs = run.At(second);
+
+                    Assert.NotNull(ours);
+                    Assert.NotNull(theirs);
+                    Assert.Equal(theirs.Seconds, ours.Seconds);
+                    Assert.Equal(theirs.Bodies.Length, ours.Bodies.Length);
+
+                    var byId = new Dictionary<int, PoseBody>();
+                    foreach (PoseBody body in theirs.Bodies) byId[body.Id] = body;
+
+                    foreach (PoseBody body in ours.Bodies)
+                    {
+                        Assert.True(byId.TryGetValue(body.Id, out PoseBody other), "body " + body.Id + " is not in the run's frame at " + second);
+
+                        Assert.Equal(other.X, body.X);
+                        Assert.Equal(other.Y, body.Y);
+                        Assert.Equal(other.Z, body.Z);
+                        Assert.Equal(other.Qx, body.Qx);
+                        Assert.Equal(other.Qy, body.Qy);
+                        Assert.Equal(other.Qz, body.Qz);
+                        Assert.Equal(other.Qw, body.Qw);
+                        Assert.Equal(other.BodyFraction, body.BodyFraction);
+                        Assert.Equal(other.Flags, body.Flags);
+                        Assert.Equal(other.Joints, body.Joints);
+
+                        compared++;
+                    }
+                }
+            }
+
+            Assert.True(compared > 0, "no body was compared");
+        }
+
+        /// <summary>
+        /// The provenance word is the verdict's and nothing else's: a window with no verdict line,
+        /// one stopped before its end, reads UNVERIFIED, and so does a verdict this build does not
+        /// know.
+        /// </summary>
+        [Fact]
+        public void AWindowWithoutAVerdictIsUnverified()
+        {
+            string outDirectory = Out("no-verdict");
+            Film(30d, 32d, outDirectory);
+
+            string identity = Path.Combine(outDirectory, FilmWindow.IdentityFileName);
+            var kept = new List<string>();
+            foreach (string line in File.ReadAllLines(identity))
+            {
+                if (line.Length > 0 && line.IndexOf("\"verdict\"", StringComparison.Ordinal) < 0) kept.Add(line);
+            }
+
+            File.WriteAllLines(identity, kept);
+
+            using (FilmWindowReader window = FilmWindowReader.Open(outDirectory))
+            {
+                Assert.Null(window.Verdict);
+                Assert.False(window.Faithful);
+                Assert.Equal("UNVERIFIED", window.ProvenanceWord);
+                Assert.Contains(window.Notes, note => note.Contains("without a verdict"));
+            }
+
+            Assert.Equal("COUSIN", FilmWindowReader.WordOf(FilmWindow.Cousin));
+            Assert.Equal("UNVERIFIED", FilmWindowReader.WordOf(FilmWindow.Unverified));
+            Assert.Equal("UNVERIFIED", FilmWindowReader.WordOf("Faithful"));
+            Assert.Equal("UNVERIFIED", FilmWindowReader.WordOf(null));
+            Assert.Throws<FileNotFoundException>(() => FilmWindowReader.Open(Path.Combine(_run.Root, "nowhere")));
+        }
+
+        // ------------------------------------------------------------------ B3: paths and story windows
+
+        /// <summary>
+        /// A body's path is read from the frames (B3): at a frame's second it is the frame's root
+        /// to the bit, between two frames it is the line between them, and outside the frames
+        /// that hold the body it is held at the first or the last. A body's children in the
+        /// window are its birth rows in it.
+        /// </summary>
+        [Fact]
+        public void ABodysPathAndChildrenAreReadFromTheWindow()
+        {
+            string outDirectory = Out("paths");
+            Film(21d, 39d, outDirectory);
+
+            // Two births to one parent beside the window's own rows, so the count has something
+            // to count in a minute of a small world whose births are mostly the floor's founders.
+            File.AppendAllText(Path.Combine(outDirectory, FilmWindow.EventsFileName),
+                "\n{\"e\":\"b\",\"t\":30.5,\"id\":900001,\"p\":77}\n{\"e\":\"b\",\"t\":36.5,\"id\":900002,\"p\":77}\n");
+
+            using (FilmWindowReader window = FilmWindowReader.Open(outDirectory))
+            {
+                Assert.True(window.FrameCount > 10);
+
+                // A body in the first frame and the last, and one born inside.
+                PoseFrame first = window.ReadFrame(0);
+                PoseFrame last = window.ReadFrame(window.FrameCount - 1);
+                var atEnd = new HashSet<long>();
+                foreach (PoseBody b in last.Bodies) atEnd.Add(b.Id);
+
+                long throughout = -1;
+                foreach (PoseBody b in first.Bodies)
+                {
+                    if (atEnd.Contains(b.Id)) { throughout = b.Id; break; }
+                }
+
+                Assert.True(throughout >= 0, "no body lived through the window");
+                Assert.True(window.TryFramesOf(throughout, out int f0, out int f1));
+                Assert.Equal(0, f0);
+                Assert.Equal(window.FrameCount - 1, f1);
+
+                for (int f = 0; f < window.FrameCount; f += 7)
+                {
+                    PoseFrame frame = window.ReadFrame(f);
+                    foreach (PoseBody b in frame.Bodies)
+                    {
+                        if (b.Id != throughout) continue;
+                        Assert.True(window.TryRootAt(throughout, frame.Seconds, out float x, out float y, out float z));
+                        Assert.Equal(b.X, x);
+                        Assert.Equal(b.Y, y);
+                        Assert.Equal(b.Z, z);
+                    }
+                }
+
+                // Halfway between frames 3 and 4, on the line between them.
+                PoseBody a3 = Find(window.ReadFrame(3), throughout);
+                PoseBody a4 = Find(window.ReadFrame(4), throughout);
+                double mid = 0.5d * (window.SecondOf(3) + window.SecondOf(4));
+                Assert.True(window.TryRootAt(throughout, mid, out float mx, out float my, out float mz));
+                Assert.Equal(0.5f * (a3.X + a4.X), mx, 4);
+                Assert.Equal(0.5f * (a3.Y + a4.Y), my, 4);
+                Assert.Equal(0.5f * (a3.Z + a4.Z), mz, 4);
+
+                // Held before the first frame and after the last.
+                Assert.True(window.TryRootAt(throughout, 0d, out float bx, out _, out _));
+                Assert.Equal(Find(first, throughout).X, bx);
+                Assert.True(window.TryRootAt(throughout, 1e6, out float ex, out _, out _));
+                Assert.Equal(Find(last, throughout).X, ex);
+
+                // A body no frame holds.
+                Assert.False(window.TryRootAt(-5, 30d, out _, out _, out _));
+                Assert.False(window.TryFramesOf(-5, out _, out _));
+
+                // A body born inside starts no earlier than its birth.
+                foreach (FilmWindowEvent e in window.Events)
+                {
+                    if (e.Kind != 'b' || !window.TryFramesOf(e.Id, out int born, out _)) continue;
+                    Assert.True(window.SecondOf(born) >= e.Seconds - 1e-9, "body " + e.Id + " is framed before its birth");
+                    Assert.True(window.TryFlagsOf(e.Id, out int flags));
+                    Assert.InRange(flags, 0, PoseStream.AllFlagBits);
+                }
+
+                // Children: the birth rows naming the parent, up to the second.
+                var byParent = new Dictionary<long, int>();
+                foreach (FilmWindowEvent e in window.Events)
+                {
+                    if (e.Kind == 'b' && e.Parent >= 0) byParent[e.Parent] = (byParent.TryGetValue(e.Parent, out int n) ? n : 0) + 1;
+                }
+
+                Assert.Equal(2, byParent[77]);
+                Assert.Equal(1, window.ChildrenOf(77, 31d));
+                foreach (KeyValuePair<long, int> pair in byParent)
+                {
+                    Assert.Equal(pair.Value, window.ChildrenOf(pair.Key, 39d));
+                    Assert.Equal(0, window.ChildrenOf(pair.Key, 20d));
+                }
+            }
+        }
+
+        private static PoseBody Find(PoseFrame frame, long id)
+        {
+            foreach (PoseBody b in frame.Bodies) if (b.Id == id) return b;
+            throw new InvalidOperationException("body " + id + " is not in the frame at " + frame.Seconds);
+        }
+
+        /// <summary>
+        /// A story's window counts as recorded only over its own span, rate and run (B3): the
+        /// window the manifest names reads recorded and faithful, and the same directory asked
+        /// for over another span or rate, or a directory with nothing in it, reads why not.
+        /// </summary>
+        [Fact]
+        public void AStoryWindowIsRecordedOnlyOverItsOwnSpan()
+        {
+            string plan = Path.Combine(_run.Root, "story-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(plan);
+            string recorded = Path.Combine(plan, "story-01-filmed-main");
+            Film(25d, 30d, recorded);
+
+            string run = _run.RunDirectory.Replace('\\', '/');
+            string manifest =
+                "{\"format\": \"story-windows 1\", \"story\": \"story.json\", \"windows\": [\n" +
+                "  {\"scene\": 1, \"part\": \"main\", \"arm\": \"filmed\", \"station\": \"Portrait\", \"run\": \"" + run + "\", " +
+                "\"from\": 25.0, \"to\": 30.0, \"fps\": 10, \"start\": 25.0, \"card\": 0, \"seconds\": 4.0, \"out\": \"story-01-filmed-main\", " +
+                "\"birth\": {\"parent\": 7, \"child\": 9, \"at\": 27.5}, \"notes\": [\"a note\"]},\n" +
+                "  {\"scene\": 2, \"part\": \"main\", \"arm\": \"filmed\", \"station\": \"Card\", \"run\": \"" + run + "\", " +
+                "\"from\": 25.0, \"to\": 31.0, \"fps\": 10, \"start\": 25.0, \"out\": \"story-01-filmed-main\"},\n" +
+                "  {\"scene\": 3, \"part\": \"main\", \"arm\": \"filmed\", \"station\": \"Card\", \"run\": \"" + run + "\", " +
+                "\"from\": 25.0, \"to\": 30.0, \"fps\": 5, \"start\": 25.0, \"out\": \"story-01-filmed-main\"},\n" +
+                "  {\"scene\": 4, \"part\": \"time-b\", \"arm\": \"filmed\", \"station\": \"Time\", \"run\": \"" + run + "\", " +
+                "\"from\": 50.0, \"to\": 55.0, \"fps\": 10, \"start\": 50.0, \"out\": \"story-04-filmed-time-b\"}\n" +
+                "], \"skipped\": [{\"scene\": 5, \"arm\": \"filmed\", \"why\": \"no run\"}]}";
+            File.WriteAllText(Path.Combine(plan, StoryWindows.FileName), manifest);
+
+            StoryWindows windows = StoryWindows.Read(plan);
+            Assert.Equal(4, windows.Windows.Count);
+
+            StoryWindow one = windows.Find(1, StoryWindows.MainPart, "filmed");
+            Assert.NotNull(one);
+            Assert.Equal(Path.GetFullPath(recorded), one.Directory);
+            Assert.True(one.HasBirth);
+            Assert.Equal(7L, one.BirthParent);
+            Assert.Equal(9L, one.BirthChild);
+            Assert.Equal(27.5d, one.BirthAt);
+            Assert.Equal(4d, one.Seconds);
+            Assert.Equal(new[] { "a note" }, one.Notes);
+            Assert.Null(StoryWindows.Recorded(one, out FilmWindowVerdict verdict));
+            Assert.Equal(FilmWindow.Faithful, verdict.Verdict);
+
+            Assert.Contains("was filmed from 25 to 30 s", StoryWindows.Recorded(windows.Find(2, StoryWindows.MainPart), out _));
+            Assert.Contains("fps", StoryWindows.Recorded(windows.Find(3, StoryWindows.MainPart), out _));
+            Assert.Contains("no window at", StoryWindows.Recorded(windows.Find(4, StoryWindows.SecondPart), out _));
+            Assert.Null(windows.Find(4, StoryWindows.MainPart));
+            Assert.Null(windows.Find(1, StoryWindows.MainPart, "another-arm"));
+            Assert.Equal("no run", windows.SkippedWhy(5));
+            Assert.Null(windows.SkippedWhy(1));
+
+            // A window from another run of the same span is not this scene's.
+            string elsewhere = Path.Combine(_run.Root, "runs", "filmed", "another-run");
+            var other = new StoryWindow { Run = elsewhere, From = 25d, To = 30d, Fps = 10d, Directory = one.Directory };
+            Assert.Contains("was filmed from run", StoryWindows.Recorded(other, out _));
+        }
+
+        // ------------------------------------------------------------------
+
+        /// <summary>Every file under a directory, with its length and its last write.</summary>
+        private static Dictionary<string, string> Listing(string directory)
+        {
+            var listing = new Dictionary<string, string>(StringComparer.Ordinal);
+
+            foreach (string path in Directory.GetFiles(directory, "*", SearchOption.AllDirectories))
+            {
+                var info = new FileInfo(path);
+                listing[path] = info.Length + " " + info.LastWriteTimeUtc.Ticks;
+            }
+
+            return listing;
+        }
+    }
+}

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using Evosim.Core;
@@ -334,6 +335,185 @@ namespace Evosim.Core.Tests
             // A death moves joules between accounts and creates none.
             Fixtures.AssertClose(standingBefore, world.StandingJoules, standingBefore * 1e-12);
             Assert.True(Math.Abs(world.AuditResidual) <= 1e-9 * Math.Max(1d, world.EnergyIn));
+        }
+
+        // ---------------------------------------------------------------- the death row
+
+        /// <summary>Steps until the body dies and returns its death row.</summary>
+        private static LineageEvent StepUntilDeath(World world, Organism body, out double heldBefore)
+        {
+            heldBefore = 0d;
+
+            for (int step = 0; step < 100_000; step++)
+            {
+                heldBefore = body.GestationJoules;
+                world.Step(1f);
+
+                foreach (LineageEvent e in world.DrainLineageEvents())
+                {
+                    if (e.Kind == LineageEventKind.Death && e.Id == body.Id) return e;
+                }
+            }
+
+            throw new InvalidOperationException("The body did not die in 100,000 s.");
+        }
+
+        [Fact]
+        public void ADeathRowCarriesTheAccountTheBodyDiedHoldingAndItsReserve()
+        {
+            // Round 49's G2 instrument: a solvent gestating body killed by the solver. Both
+            // accounts are above 0, so both fields are on the row, after the cause.
+            RunConfig config = Stage();
+            config.PerOffspringOverheadJoules = 1e9f;   // it banks and never breeds
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Leaf(ReproductionMode.Gestation, share: 0.5f), count: 1, heightY: -1f);
+            Organism body = world.Living[0];
+
+            for (int step = 0; step < 600; step++) world.Step(1f);
+            world.DrainLineageEvents();
+
+            double account = body.GestationJoules;
+            double reserve = body.Energy;
+            Assert.True(account > 0d, "nothing was banked, so the row would prove nothing");
+            Assert.True(reserve > 0d, "the body is not solvent, so res would prove nothing");
+
+            world.KillDiverged(body);
+
+            var deaths = new List<LineageEvent>();
+            foreach (LineageEvent e in world.DrainLineageEvents())
+            {
+                if (e.Kind == LineageEventKind.Death) deaths.Add(e);
+            }
+
+            LineageEvent death = Assert.Single(deaths);
+            Assert.Equal(account, death.GestationJoulesAtDeath);
+            Assert.Equal(reserve, death.ReserveJoulesAtDeath);
+
+            string row = death.ToJson();
+            _output.WriteLine(row);
+
+            var parsed = Json.Parse(row);
+            Assert.Equal(account, parsed["ga"].AsDouble());
+            Assert.Equal(reserve, parsed["res"].AsDouble());
+            Assert.EndsWith(
+                ",\"c\":\"diverged\",\"ga\":" + account.ToString("R", CultureInfo.InvariantCulture) +
+                ",\"res\":" + reserve.ToString("R", CultureInfo.InvariantCulture) + "}",
+                row);
+
+            // Read before Bury zeroed it: the body's own account is 0 now.
+            Assert.Equal(0d, body.GestationJoules);
+        }
+
+        [Fact]
+        public void AGestatingBodyThatStarvesWritesTheAccountItDiedHoldingAndNoReserve()
+        {
+            // UpkeepNeverDrawsOnTheAccount's body: senescence takes every step's net below zero,
+            // the account stops filling and the reserve alone pays until it runs out. The body
+            // dies inside Metabolise, before Gestate, so the account at death is the account the
+            // fatal step began with.
+            RunConfig config = Stage();
+            config.PerOffspringOverheadJoules = 1e9f;
+            config.SenescenceDoublingSeconds = 150f;
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Leaf(ReproductionMode.Gestation, share: 0.5f), count: 1, heightY: -1f);
+            Organism body = world.Living[0];
+
+            LineageEvent death = StepUntilDeath(world, body, out double held);
+            string row = death.ToJson();
+            _output.WriteLine(row);
+
+            Assert.Equal(DeathCause.Starved, death.Cause);
+            Assert.True(held > 0d, "nothing was banked");
+            Assert.Equal(held, death.GestationJoulesAtDeath);
+            Assert.Equal(held, Json.Parse(row)["ga"].AsDouble());
+
+            // A starved body dies at a reserve of 0 or below, so the row carries no reserve.
+            Assert.Equal(0d, Math.Max(0d, death.ReserveJoulesAtDeath));
+            Assert.DoesNotContain("\"res\":", row);
+        }
+
+        [Fact]
+        public void ALumpBreedersStarvationRowIsTheRowItAlwaysWas()
+        {
+            // The byte-identity the two fields promise: a lump breeder holds no account and a
+            // starved body no reserve, so its death row is the row the build before them wrote.
+            RunConfig config = Stage(surfaceIrradiance: 1e-6f);
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Leaf(ReproductionMode.Lump, share: 0.5f), count: 1, heightY: -1f);
+            Organism body = world.Living[0];
+
+            LineageEvent death = StepUntilDeath(world, body, out _);
+            Assert.Equal(DeathCause.Starved, death.Cause);
+            Assert.Equal(0d, death.GestationJoulesAtDeath);
+
+            // That build's death row, spelled out by hand rather than by the writer under test.
+            string before =
+                "{\"e\":\"d\",\"t\":" + death.ElapsedSeconds.ToString("R", CultureInfo.InvariantCulture) +
+                ",\"id\":" + body.Id.ToString(CultureInfo.InvariantCulture) + ",\"c\":\"starved\"}";
+
+            Assert.Equal(before, death.ToJson());
+
+            // A lump breeder that dies solvent carries its reserve and still no account.
+            var solvent = new World(Stage(), seed: 3);
+            solvent.Inoculate(Leaf(ReproductionMode.Lump, share: 0.5f), count: 1, heightY: -1f);
+            Organism thrown = solvent.Living[0];
+            solvent.Step(1f);
+            solvent.DrainLineageEvents();
+
+            double reserve = thrown.Energy;
+            Assert.True(reserve > 0d);
+            solvent.KillDiverged(thrown);
+
+            string row = null;
+            foreach (LineageEvent e in solvent.DrainLineageEvents())
+            {
+                if (e.Kind == LineageEventKind.Death) row = e.ToJson();
+            }
+
+            Assert.NotNull(row);
+            Assert.DoesNotContain("\"ga\":", row);
+            Assert.EndsWith(
+                ",\"c\":\"diverged\",\"res\":" + reserve.ToString("R", CultureInfo.InvariantCulture) + "}",
+                row);
+        }
+
+        [Fact]
+        public void ACheckpointCarriesTheDeathRowsAccountAndReserve()
+        {
+            // A death row queued before a checkpoint is the same row after the restore
+            // (StateVersion 12), the account and the reserve included.
+            RunConfig Make()
+            {
+                RunConfig c = Stage();
+                c.PerOffspringOverheadJoules = 1e9f;
+                return c;
+            }
+
+            var world = new World(Make(), seed: 3);
+            world.Inoculate(Leaf(ReproductionMode.Gestation, share: 0.5f), count: 1, heightY: -1f);
+            Organism body = world.Living[0];
+
+            for (int step = 0; step < 600; step++) world.Step(1f);
+            world.DrainLineageEvents();
+            world.KillDiverged(body);
+
+            byte[] state = StateOf(world);
+            World restored = Restored(Make(), 3, state);
+            Assert.Equal(state, StateOf(restored));
+
+            var before = new List<string>();
+            foreach (LineageEvent e in world.DrainLineageEvents()) before.Add(e.ToJson());
+
+            var after = new List<string>();
+            foreach (LineageEvent e in restored.DrainLineageEvents()) after.Add(e.ToJson());
+
+            Assert.Single(before);
+            Assert.Contains("\"ga\":", before[0]);
+            Assert.Contains("\"res\":", before[0]);
+            Assert.Equal(before, after);
         }
 
         [Fact]

@@ -200,6 +200,62 @@ namespace Evosim.Theatre
             return clade;
         }
 
+        /// <summary>
+        /// A body's clade from facts its caller holds rather than from a live organism: a farm film
+        /// window's birth rows and recorded flags (<see cref="FilmWindowWorld.TryLineageOf"/>).
+        /// The recording's clade for a body the recording had by the restore, else its parent's
+        /// clade when its flags are its parent's, else its own; -1 when the facts do not know it.
+        /// </summary>
+        /// <remarks>
+        /// A window the farm found faithful is restored here at its last second, so every body in
+        /// it is the recording's and this is a lookup; a cousin's window is restored at its
+        /// checkpoint, and its later births are walked from the window's own rows.
+        /// </remarks>
+        public long CladeOf(long id, Func<long, (bool known, long parent, byte flags)> facts) => CladeOf(id, facts, 0);
+
+        private long CladeOf(long id, Func<long, (bool known, long parent, byte flags)> facts, int depth)
+        {
+            if (_recorded.TryGetValue(id, out Born b) && b.At <= _restoredAt + 1e-6) return b.Clade;
+            if (_cousin.TryGetValue(id, out var cached)) return cached.clade;
+            if (facts == null || depth > 64) return -1;
+
+            (bool known, long parent, byte flags) own = facts(id);
+            if (!own.known) return -1;
+
+            long clade = id;
+
+            if (own.parent >= 0)
+            {
+                byte parentFlags = 255;
+                long parentClade = -1;
+
+                if (_recorded.TryGetValue(own.parent, out Born pb) && pb.At <= _restoredAt + 1e-6)
+                {
+                    parentFlags = pb.Flags;
+                    parentClade = pb.Clade;
+                }
+                else if (_cousin.TryGetValue(own.parent, out var pc))
+                {
+                    parentFlags = pc.flags;
+                    parentClade = pc.clade;
+                }
+                else
+                {
+                    (bool known, long parent, byte flags) up = facts(own.parent);
+                    if (up.known)
+                    {
+                        parentClade = CladeOf(own.parent, facts, depth + 1);
+                        parentFlags = up.flags;
+                    }
+                }
+
+                if (parentClade >= 0 && parentFlags == own.flags) clade = parentClade;
+            }
+
+            _cousin[id] = (clade, own.flags);
+            return clade;
+        }
+
         /// <summary>Notes a cousin body seen alive, so its children can be placed after it dies.</summary>
         public void Saw(Organism o, IReadOnlyDictionary<long, Organism> living) => CladeOf(o, living);
 

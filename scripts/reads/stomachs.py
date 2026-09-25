@@ -1,6 +1,6 @@
 """Why stomachs do not take hold in round 47: a read of lineage, absorptive log, positions,
-snow column dumps and snapshots. Read-only. Writes only scratch/r47-stomachs/<seed>.json and
-prints tables.
+snow column dumps and snapshots, the positions and snapshots in either record (runrec.py).
+Read-only. Writes only scratch/r47-stomachs/<seed>.json and prints tables.
 
 python scratch/r47-stomachs/stomachs.py <arm> <run dir>
 """
@@ -13,6 +13,13 @@ OUT = os.path.join(REPO, "scratch", "r47-stomachs")
 spec = importlib.util.spec_from_file_location("r47read", os.path.join(REPO, "scripts", "reads", "r47-read.py"))
 R = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(R)
+
+# The positions and the snapshots through runrec.py, which reads either record and says which:
+# positions.jsonl or positions.jsonl.gz, a snapshot's own genomes or its slim rows joined to
+# genomes.jsonl.gz.
+sys.path.insert(0, os.path.join(REPO, "scripts", "reads"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import runrec  # noqa: E402  (path set above)
 
 BE = 0.44   # ledger break-even, logbook/specs/r46-read/ledger-stomachs.md
 BREED = 1.0
@@ -140,7 +147,7 @@ def main():
     need_by_t = sorted(want_first.items(), key=lambda kv: kv[1])
     ptr = 0
     pending = {}
-    for row in R.stream_jsonl(os.path.join(d, "positions.jsonl")):
+    for row in runrec.positions(d):
         t = row["t"]
         last_pos_t = t
         while ptr < len(need_by_t) and need_by_t[ptr][1] <= t:
@@ -175,7 +182,7 @@ def main():
     last_t = int(last_pos_t // 100 * 100)
     if last_t not in photo_at:
         # fall back to the last whole-100 row: read again only that row
-        for row in R.stream_jsonl(os.path.join(d, "positions.jsonl")):
+        for row in runrec.positions(d):
             if abs(row["t"] - last_t) < 1e-9:
                 photo_at[last_t] = [(b[1], b[2], b[3], b[4]) for b in row["b"]]
                 flags_at[last_t] = {b[0]: b[4] for b in row["b"]}
@@ -279,14 +286,17 @@ def main():
 
     # ---- Q6 snapshot genomes
     snaps = {}
+    index = None               # record format 2: one walk of genomes.jsonl.gz for every read
+    if runrec.record_format(d)[0] == runrec.COMPACT:
+        index = runrec.genome_index(d, set().union(*(set(fl) for fl in flags_at.values())))
     for tt in sorted(flags_at):
-        sp = os.path.join(d, "snapshots", "%09d.jsonl" % tt)
-        if not os.path.exists(sp):
+        snap = runrec.snapshot(d, tt, genomes=index)
+        if snap is None:
             continue
         fl = flags_at[tt]
         tot = has_abs_reach = has_abs_any = expressed = unexpressed = 0
         unexpressed_ids = []
-        for r in R.stream_jsonl(sp):
+        for r in snap:
             tot += 1
             nodes = r["nodes"]
             seen = set()

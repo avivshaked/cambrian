@@ -245,6 +245,58 @@ namespace Evosim.Core.Tests
             Assert.True(foundDeath, "nothing died in a world with no light");
         }
 
+        [Fact]
+        public void ADeathRowCarriesTheAccountAndTheReserveOnlyWhenAboveZero()
+        {
+            // Round 49's two, appended after the cause. At 0, below 0 or NaN the row is the row
+            // the build before them wrote, byte for byte.
+            const string Before = "{\"e\":\"d\",\"t\":12.5,\"id\":7,\"c\":\"starved\"}";
+
+            Assert.Equal(Before, LineageEvent.Death(12.5, 7, DeathCause.Starved).ToJson());
+            Assert.Equal(Before, LineageEvent.Death(12.5, 7, DeathCause.Starved, 0d, -3d).ToJson());
+            Assert.Equal(Before, LineageEvent.Death(12.5, 7, DeathCause.Starved, double.NaN, double.NaN).ToJson());
+
+            Assert.Equal(
+                "{\"e\":\"d\",\"t\":12.5,\"id\":7,\"c\":\"starved\",\"ga\":40.25}",
+                LineageEvent.Death(12.5, 7, DeathCause.Starved, 40.25, 0d).ToJson());
+
+            Assert.Equal(
+                "{\"e\":\"d\",\"t\":12.5,\"id\":7,\"c\":\"eaten\",\"ga\":40.25,\"res\":3.5}",
+                LineageEvent.Death(12.5, 7, DeathCause.Eaten, 40.25, 3.5).ToJson());
+
+            Assert.Equal(
+                "{\"e\":\"d\",\"t\":12.5,\"id\":7,\"c\":\"diverged\",\"res\":3.5}",
+                LineageEvent.Death(12.5, 7, DeathCause.Diverged, 0d, 3.5).ToJson());
+        }
+
+        [Fact]
+        public void ABirthRowCarriesALandingPairOnlyWhenBothReadingsWereTaken()
+        {
+            LineageEvent Founder(float snow, float snowColumn, float matter, float matterColumn) =>
+                LineageEvent.Birth(
+                    1.0, 5, -1, BirthKind.Floor, 0, 0, true, false, true, 0,
+                    0.3f, 1f, 50f, 0, false, false, false, FounderSource.Trickle,
+                    landingSnow: snow, landingSnowColumn: snowColumn,
+                    landingMatter: matter, landingMatterColumn: matterColumn);
+
+            string none = Founder(float.NaN, float.NaN, float.NaN, float.NaN).ToJson();
+            Assert.DoesNotContain("\"fsnow\":", none);
+            Assert.DoesNotContain("\"fmat\":", none);
+
+            // The row without them is the row with them cut off at the end.
+            string both = Founder(1.25f, 0.5f, 0.75f, 0.25f).ToJson();
+            Assert.Equal(
+                none.Substring(0, none.Length - 1) +
+                ",\"fsnow\":1.25,\"fcol\":0.5,\"fmat\":0.75,\"fmcol\":0.25}",
+                both);
+
+            // A half pair is not a reading.
+            string half = Founder(1.25f, float.NaN, 0f, 0f).ToJson();
+            Assert.DoesNotContain("\"fsnow\":", half);
+            Assert.DoesNotContain("\"fcol\":", half);
+            Assert.EndsWith(",\"fmat\":0,\"fmcol\":0}", half);
+        }
+
         /// <summary>
         /// Both values of the flag, from two bodies that can develop only one way each. How many
         /// leaves a random world founds is the founding lottery's business, so a test asserting

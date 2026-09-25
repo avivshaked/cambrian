@@ -204,6 +204,231 @@ namespace Evosim.Farm.Tests
             Assert.Contains("version", thrown.Message, StringComparison.OrdinalIgnoreCase);
         }
 
+        // ------------------------------------------------------------------ versions 4, 5 and 6
+
+        /// <summary>A payload the size and repetitiveness of a world's, in miniature.</summary>
+        private static void LargePayload(BinaryWriter w)
+        {
+            StateIo.Tag(w, "PAYL");
+            for (int i = 0; i < 20000; i++)
+            {
+                w.Write((double)(i % 97) * 0.125);
+                w.Write(i);
+            }
+            StateIo.Tag(w, "PEND");
+        }
+
+        private static void CheckLargePayload(BinaryReader r)
+        {
+            StateIo.Tag(r, "PAYL");
+            for (int i = 0; i < 20000; i++)
+            {
+                Assert.Equal((double)(i % 97) * 0.125, r.ReadDouble());
+                Assert.Equal(i, r.ReadInt32());
+            }
+            StateIo.Tag(r, "PEND");
+        }
+
+        /// <summary>FNV-1a over a payload, written here from the spec rather than borrowed.</summary>
+        private static ulong Fnv1a(byte[] bytes)
+        {
+            ulong hash = 14695981039346656037UL;
+            foreach (byte b in bytes)
+            {
+                hash ^= b;
+                hash *= 1099511628211UL;
+            }
+            return hash;
+        }
+
+        /// <summary>
+        /// A version-4 file, laid out by hand as round 48's build wrote it: the header, the
+        /// payload's length and digest, the payload as it is, and the trailer. This build's writer
+        /// writes version 6 only, so a test of the lossy reader makes its own file.
+        /// </summary>
+        private static string WriteVersionFour(string path, CheckpointHeader header, Action<BinaryWriter> payload)
+        {
+            byte[] body;
+            using (var buffer = new MemoryStream())
+            {
+                using (var w = new BinaryWriter(buffer, Encoding.UTF8, leaveOpen: true))
+                {
+                    payload(w);
+                }
+                body = buffer.ToArray();
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path)));
+            using (var file = new FileStream(path, FileMode.Create, FileAccess.Write))
+            using (var w = new BinaryWriter(file, Encoding.UTF8))
+            {
+                w.Write(Encoding.ASCII.GetBytes("EVOCKPT"));
+                w.Write((byte)0);
+                w.Write((ushort)4);
+                w.Write((ushort)12);
+                w.Write(header.Seconds);
+                w.Write(header.Seed);
+                w.Write(header.PhysicsSteps);
+                w.Write(header.PhysicsStepSeconds);
+                w.Write(header.StepsPerMetabolicStep);
+                w.Write(header.ConfigHash);
+                w.Write(header.CoreHash);
+                w.Write(header.DynamicsHash);
+                w.Write(header.FarmHash);
+                w.Write(header.EngineVersion);
+                w.Write(header.SourceArm);
+                w.Write(header.SourceRun);
+                w.Write(header.ReportEvery);
+                w.Write(header.PoseEverySeconds);
+                w.Write(header.DigestEverySteps);
+                w.Write(header.CheckpointEverySeconds);
+                w.Write((long)body.Length);
+                w.Write(Fnv1a(body));
+                w.Write(body);
+                w.Write((long)body.Length);
+                w.Write(Encoding.ASCII.GetBytes("EVOCKPT"));
+                w.Write((byte)0);
+            }
+
+            return path;
+        }
+
+        [Fact]
+        public void VersionSixStoresThePayloadGzippedAndDigestsItAsWritten()
+        {
+            CheckpointHeader written = Header();
+            written.Version = Checkpoint.Version;
+
+            string path = Checkpoint.PathFor(_directory, written.Seconds);
+            CheckpointWriter.Write(path, written, LargePayload);
+
+            byte[] all = File.ReadAllBytes(path);
+            Assert.Equal(6, all[8]);
+            Assert.True(written.StoredBytes < written.PayloadBytes, "the stored payload is not smaller");
+            Assert.True(all.Length < written.PayloadBytes, "the file is not smaller than its payload");
+
+            using (CheckpointReader reader = CheckpointReader.Open(path))
+            {
+                Assert.Equal(6, reader.Header.Version);
+                Assert.False(reader.Header.ReadLossily);
+                Assert.Equal(written.PayloadBytes, reader.Header.PayloadBytes);
+                Assert.Equal(written.StoredBytes, reader.Header.StoredBytes);
+                Assert.Equal(written.PayloadDigest, reader.Header.PayloadDigest);
+
+                CheckLargePayload(reader.Reader);
+            }
+        }
+
+        /// <summary>
+        /// A header that asks for no version gets this build's, and one that asks for the lossy
+        /// version, the refused one or any other is refused at the write: the payload is this
+        /// build's layout, and under another number a reader would take it for another.
+        /// </summary>
+        [Theory]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(7)]
+        public void OnlyVersionSixIsWritten(int version)
+        {
+            CheckpointHeader unnamed = Header();
+            unnamed.Version = 0;
+            CheckpointWriter.Write(Path.Combine(_directory, "unnamed.ckpt"), unnamed, Payload);
+            Assert.Equal(Checkpoint.Version, unnamed.Version);
+
+            CheckpointHeader written = Header();
+            written.Version = version;
+
+            Assert.Throws<ArgumentException>(() => CheckpointWriter.Write(
+                Checkpoint.PathFor(_directory, written.Seconds), written, Payload));
+        }
+
+        /// <summary>
+        /// Round 48's version 4, laid out by hand, is read with its payload as it is, digested the
+        /// same as version 6's, and named as read lossily, so that a resume refuses it unless told
+        /// to take a cousin and the theatre labels it; the version before it is refused.
+        /// </summary>
+        [Fact]
+        public void VersionFourIsReadLossilyAndTheOneBeforeItIsRefused()
+        {
+            CheckpointHeader six = Header();
+            CheckpointWriter.Write(Path.Combine(_directory, "six.ckpt"), six, LargePayload);
+
+            string path = WriteVersionFour(Path.Combine(_directory, "four.ckpt"), Header(), LargePayload);
+
+            using (CheckpointReader reader = CheckpointReader.Open(path))
+            {
+                CheckpointHeader h = reader.Header;
+
+                Assert.Equal(Checkpoint.LossyVersion, h.Version);
+                Assert.True(h.ReadLossily);
+                Assert.Equal(h.PayloadBytes, h.StoredBytes);
+                Assert.Equal(six.PayloadBytes, h.PayloadBytes);
+                Assert.Equal(six.PayloadDigest, h.PayloadDigest);
+                Assert.False(h.Matches(h.ConfigHash, h.CoreHash, h.DynamicsHash, h.FarmHash));
+                Assert.StartsWith(
+                    "checkpointVersion:",
+                    Assert.Single(h.Differences(h.ConfigHash, h.CoreHash, h.DynamicsHash, h.FarmHash)));
+
+                CheckLargePayload(reader.Reader);
+            }
+
+            byte[] all = File.ReadAllBytes(path);
+            all[8] = (byte)(Checkpoint.LossyVersion - 1);
+            File.WriteAllBytes(path, all);
+
+            InvalidDataException thrown =
+                Assert.Throws<InvalidDataException>(() => CheckpointReader.Open(path));
+
+            Assert.Contains("version", thrown.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Version 5 was two layouts on two branches and no run kept one, so a file that says 5
+        /// is refused by name, whichever of the two it holds: the payload stored as it is, or
+        /// stored gzipped behind a stored length.
+        /// </summary>
+        [Fact]
+        public void VersionFiveIsRefusedWhicheverLayoutItHolds()
+        {
+            string plain = WriteVersionFour(Path.Combine(_directory, "plain.ckpt"), Header(), Payload);
+            byte[] all = File.ReadAllBytes(plain);
+            all[8] = (byte)Checkpoint.RefusedVersion;
+            File.WriteAllBytes(plain, all);
+
+            InvalidDataException thrown =
+                Assert.Throws<InvalidDataException>(() => CheckpointReader.Open(plain));
+            Assert.Contains("version 5", thrown.Message, StringComparison.Ordinal);
+
+            string gzipped = Path.Combine(_directory, "gzipped.ckpt");
+            CheckpointWriter.Write(gzipped, Header(), Payload);
+            all = File.ReadAllBytes(gzipped);
+            all[8] = (byte)Checkpoint.RefusedVersion;
+            File.WriteAllBytes(gzipped, all);
+
+            thrown = Assert.Throws<InvalidDataException>(() => CheckpointReader.Open(gzipped));
+            Assert.Contains("version 5", thrown.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void ADamagedCompressedPayloadIsRefused()
+        {
+            CheckpointHeader written = Header();
+            written.Version = Checkpoint.Version;
+
+            string path = Checkpoint.PathFor(_directory, written.Seconds);
+            CheckpointWriter.Write(path, written, LargePayload);
+
+            byte[] all = File.ReadAllBytes(path);
+
+            // The middle of the stored member: after the header, before the trailer's 16 bytes.
+            long storedStart = all.Length - 16 - written.StoredBytes;
+            all[storedStart + written.StoredBytes / 2] ^= 0x21;
+            File.WriteAllBytes(path, all);
+
+            Assert.Throws<InvalidDataException>(() => CheckpointReader.Open(path));
+        }
+
         // ------------------------------------------------------------------ the four hashes
 
         [Fact]

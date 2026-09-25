@@ -674,6 +674,17 @@ namespace Evosim.Dynamics.Placement
         public void Release() => _reserved = false;
 
         /// <summary>
+        /// The outstanding reservation's position, for round 49's landing readings on a founder's
+        /// lineage row (<see cref="IBodyPlacement.TryReservedPosition"/>). A read of the slot:
+        /// nothing is drawn or moved.
+        /// </summary>
+        public bool TryReservedPosition(out Float3 position)
+        {
+            position = _reservation.Position;
+            return _reserved;
+        }
+
+        /// <summary>
         /// Hands over — and forgets — where a newborn was promised it could be.
         /// </summary>
         public bool TryTakePlacement(long creatureId, out Float3 position)

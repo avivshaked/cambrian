@@ -54,6 +54,31 @@ namespace Evosim.Core.Tests
             }
         }
 
+        /// <summary>
+        /// The world written at an older layout this build still reads, through the internal
+        /// writer that exists for the test of the lossy reader alone.
+        /// </summary>
+        private static byte[] StateOf(World world, int layout)
+        {
+            System.Reflection.MethodInfo writer = typeof(World).GetMethod(
+                "WriteState",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
+                null, new[] { typeof(BinaryWriter), typeof(int) }, null);
+
+            Assert.NotNull(writer);
+
+            using (var buffer = new MemoryStream())
+            {
+                using (var w = new BinaryWriter(buffer, Encoding.UTF8, leaveOpen: true))
+                {
+                    writer.Invoke(world, new object[] { w, layout });
+                    w.Flush();
+                }
+
+                return buffer.ToArray();
+            }
+        }
+
         private static World Restored(RunConfig config, ulong seed, byte[] state)
         {
             var world = new World(config, seed);
@@ -157,6 +182,16 @@ namespace Evosim.Core.Tests
                 if (creature.PartDamage != null)
                 {
                     foreach (float lost in creature.PartDamage) readings.Add(lost);
+                }
+
+                // And what each part has touched, which the Contact sense reports and which a
+                // restore dropped until StateVersion 11 (round 48's resume, 2026-09-25). Its
+                // length first, so that a null and an array of falses read differently.
+                readings.Add(creature.PartContact == null ? -1 : creature.PartContact.Length);
+
+                if (creature.PartContact != null)
+                {
+                    foreach (bool touched in creature.PartContact) readings.Add(touched ? 1 : 0);
                 }
             }
 
@@ -314,6 +349,175 @@ namespace Evosim.Core.Tests
             Assert.Equal(world.HealingJoules, restored.HealingJoules);
         }
 
+        /// <summary>
+        /// The wounded world again with the contact sense open: what each part touched on the last
+        /// step is carried by the checkpoint, and a step in which nothing touches clears it in
+        /// both worlds alike.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Read before it is rewritten, and that is why it has to be written.</b> The farm hands
+        /// the record to a body's senses after the metabolic step, and every physics step until
+        /// the next metabolic step reads it, so a restore between the two must put it back. Until
+        /// StateVersion 11 the writer left it out, every restored body came back touching nothing,
+        /// and a hinge driven by a neuron reading the channel swung stop to stop at the first step
+        /// of round 48's resume (2026-09-25). The flag was sticky then, cleared only by a plan
+        /// change; from D123 (round 49) it is the last metabolic step's alone.
+        /// </para>
+        /// <para>
+        /// The step after the round trip hands the mouth no contacts at all, and both worlds must
+        /// then read no flag anywhere, with each array still the one the step before held.
+        /// </para>
+        /// </remarks>
+        [Fact]
+        public void ATouchedWorldRestoresWhatEachPartHasTouched()
+        {
+            World world = TouchedWorld();
+
+            Organism maimed = world.Living[0];
+            Organism wounded = world.Living[1];
+            Organism claw = world.Living[2];
+
+            // The maimed body's flags came through its plan change onto the one part it kept,
+            // which touched nothing (round 49; they were dropped before); the two others are
+            // touching.
+            Assert.Equal(new[] { false }, maimed.PartContact);
+            Assert.NotNull(wounded.PartContact);
+            Assert.Equal(new[] { false, true }, wounded.PartContact);
+            Assert.NotNull(claw.PartContact);
+            Assert.True(claw.PartContact[0]);
+
+            byte[] first = StateOf(world);
+            World restored = Restored(Touched(), 11, first);
+
+            Assert.Equal(World.StateVersion, restored.StateVersionRead);
+            Assert.Equal(Readings(world), Readings(restored));
+            Assert.Equal(first, StateOf(restored));
+
+            Organism restoredWounded = restored.Living[1];
+            Assert.Equal(wounded.Id, restoredWounded.Id);
+            Assert.NotNull(restoredWounded.PartContact);
+            Assert.Equal(wounded.PartContact, restoredWounded.PartContact);
+            Assert.Equal(new[] { false }, restored.Living[0].PartContact);
+
+            // One more step with no contacts handed over, on both worlds alike. D123: the step's
+            // record is cleared in place, so the arrays stay and every flag reads false.
+            bool[] liveArray = wounded.PartContact;
+            bool[] restoredArray = restoredWounded.PartContact;
+
+            world.SetContacts(new List<CreatureContact>());
+            restored.SetContacts(new List<CreatureContact>());
+            world.ApplyMouth(0.5f);
+            restored.ApplyMouth(0.5f);
+
+            Assert.Same(liveArray, wounded.PartContact);
+            Assert.Same(restoredArray, restoredWounded.PartContact);
+            Assert.Equal(new[] { false, false }, wounded.PartContact);
+            Assert.Equal(new[] { false, false }, restoredWounded.PartContact);
+            Assert.False(claw.PartContact[0]);
+            Assert.Equal(new[] { 0f, 0f }, wounded.PartDamage);
+            Assert.Equal(Readings(world), Readings(restored));
+            Assert.Equal(StateOf(world), StateOf(restored));
+        }
+
+        /// <summary>
+        /// A version-10 stream, the layout of round 48's checkpoints, is still read, and read as
+        /// the build that wrote it restored it: every body touching nothing, everything else as
+        /// written, and the layout it came from on the world for the harness to read.
+        /// </summary>
+        /// <remarks>
+        /// The stream is written by this build's own writer at the older layout, which leaves out
+        /// the one block version 11 added. A version-9 stream is still refused.
+        /// </remarks>
+        [Fact]
+        public void AVersionTenStreamIsReadWithoutTheContactRecord()
+        {
+            World world = TouchedWorld();
+            Assert.NotNull(world.Living[1].PartContact);
+
+            byte[] lossy = StateOf(world, World.LossyStateVersion);
+            World restored = Restored(Touched(), 11, lossy);
+
+            Assert.Equal(World.LossyStateVersion, restored.StateVersionRead);
+            Assert.Equal(world.Living.Count, restored.Living.Count);
+
+            for (int i = 0; i < restored.Living.Count; i++)
+            {
+                Assert.Null(restored.Living[i].PartContact);
+                Assert.Equal(world.Living[i].PartDamage, restored.Living[i].PartDamage);
+                Assert.Equal(world.Living[i].PartHealth, restored.Living[i].PartHealth);
+            }
+
+            // Written again, it is this build's layout without the record, which is what makes a
+            // world restored from it a cousin and not a continuation.
+            Assert.NotEqual(StateOf(world), StateOf(restored));
+
+            // Nothing older than version 10 is read.
+            lossy[4] = (byte)(World.LossyStateVersion - 1);
+
+            var older = new World(Touched(), seed: 11);
+
+            using (var buffer = new MemoryStream(lossy, writable: false))
+            using (var r = new BinaryReader(buffer, Encoding.UTF8))
+            {
+                Assert.Throws<InvalidDataException>(() => older.ReadState(r));
+            }
+        }
+
+        private static RunConfig Touched() => new RunConfig
+        {
+            MinimumPopulation = 0,
+            MaximumPopulation = 2_000,
+            WorldAreaSquareMetres = 100f,
+            WorldDepthMetres = 20f,
+            Light = new LightModel(400f, 12f),
+            InitialMatterPerCubicMetre = 50f,
+            PerOffspringOverheadJoules = 1e9f,
+            HealthPerCubicMetre = 100f,
+            CorpseDecayPerSecond = 0.0001f,
+            SenseContact = true,
+        };
+
+        /// <summary>
+        /// The wounded world's fixture with the contact sense open: a spine that has lost a part,
+        /// whose flags came through the plan change on the part it kept; a spine touched on its
+        /// second part; and the claw.
+        /// </summary>
+        private static World TouchedWorld()
+        {
+            var world = new World(Touched(), seed: 11);
+
+            // Two spines of two parts: one to lose a part, one to be touched on its second.
+            world.Inoculate(Fixtures.MouthSpine(2), count: 1, heightY: -5f);
+            world.Inoculate(Fixtures.MouthSpine(2), count: 1, heightY: -5f);
+            world.Inoculate(Fixtures.ArmedBox(attack: 1f), count: 1, heightY: -5f);
+
+            Organism maimed = world.Living[0];
+            Organism wounded = world.Living[1];
+            Organism claw = world.Living[2];
+
+            for (int step = 0; step < 100 && maimed.Phenotype.PartCount > 1; step++)
+            {
+                world.SetContacts(new List<CreatureContact>
+                {
+                    new CreatureContact(claw.Id, 0, maimed.Id, 1),
+                });
+
+                world.ApplyMouth(1f);
+            }
+
+            // The spine that has not been bitten is touched on its second part, so the flag set
+            // is not the one at index 0 that a zeroed array would get right by accident.
+            world.SetContacts(new List<CreatureContact>
+            {
+                new CreatureContact(claw.Id, 0, wounded.Id, 1),
+            });
+
+            world.ApplyMouth(0.5f);
+
+            return world;
+        }
+
         [Fact]
         public void ARestoredWorldWritesTheSameStateAgain()
         {
@@ -382,15 +586,21 @@ namespace Evosim.Core.Tests
         {
             byte[] state = StateOf(Stepped(Stage(), seed: 11, seconds: 10f));
 
-            // The version sits immediately after the four-byte section tag.
-            state[4] = (byte)(World.StateVersion + 1);
-
-            var world = new World(Stage(), seed: 11);
-
-            using (var buffer = new MemoryStream(state, writable: false))
-            using (var r = new BinaryReader(buffer, Encoding.UTF8))
+            // The version sits immediately after the four-byte section tag. The one after this
+            // build's, and the one before it (11, before round 49's lineage instruments), which
+            // is not the lossy layout and is refused as every other one is.
+            foreach (int version in new[] { World.StateVersion + 1, World.StateVersion - 1 })
             {
-                Assert.Throws<InvalidDataException>(() => world.ReadState(r));
+                Assert.NotEqual(World.LossyStateVersion, version);
+                state[4] = (byte)version;
+
+                var world = new World(Stage(), seed: 11);
+
+                using (var buffer = new MemoryStream(state, writable: false))
+                using (var r = new BinaryReader(buffer, Encoding.UTF8))
+                {
+                    Assert.Throws<InvalidDataException>(() => world.ReadState(r));
+                }
             }
         }
 

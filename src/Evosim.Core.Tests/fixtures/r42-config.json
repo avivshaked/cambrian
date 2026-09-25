@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "53f8234cb554f0ba",
+  "configHash": "8fd40c21ae758e9e",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -210,6 +210,7 @@
     "founderDepthSpread": 45,
     "founderEndowmentSeconds": 0,
     "founderEnergyJoules": 200,
+    "founderReserveCapFraction": 0,
     "foundingTricklePerSecond": 0,
     "foundingTricklePoolCount": 0,
     "foundingTricklePoolHash": "",

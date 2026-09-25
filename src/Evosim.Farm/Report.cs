@@ -207,6 +207,10 @@ namespace Evosim.Farm
                 // The round 48 founding ruling's endowment, beside the rule that places the
                 // founders it is given to; rendered off as well as on, as the trickle is.
                 " · endowment " + (s.FounderEndowment > 0f ? F(s.FounderEndowment) + " s" : "off") +
+                // D124's cap on the same start, beside it and rendered off as well as on.
+                " · founder cap " + (s.FounderReserveCap > 0f
+                    ? s.FounderReserveCap.ToString("0.###", Inv) + " of the gate"
+                    : "off") +
                 " · shade " + (s.LightShade > 0f
                     ? s.LightShade.ToString("0.##", Inv) + " drift " + s.LightShadeDrift.ToString("0.#", Inv) + " m/h"
                     : "off") +

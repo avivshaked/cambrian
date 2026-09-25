@@ -215,7 +215,7 @@ namespace Evosim.Theatre
             /// <summary>The world's reefs, or null: the rock is one more thing the camera keeps off.</summary>
             public readonly ReefGeometry Reefs;
 
-            public WorldBounds(TheatreDynamicsReplay live)
+            public WorldBounds(ITheatreFrame live)
             {
                 Reefs = live.Reefs != null && live.Reefs.Count > 0 ? live.Reefs : null;
                 RunConfig config = live.Record.Config;
@@ -480,7 +480,7 @@ namespace Evosim.Theatre
             public int InsideCount => _inside;
 
             public static Shot Plan(
-                string name, TheatreDynamicsReplay live, LiveWorldView view, WorldBounds world,
+                string name, IFilmWorld live, LiveWorldView view, WorldBounds world,
                 float seconds, float aspect, float turns, bool still = false)
             {
                 var shot = new Shot { Name = name, _world = world, _seconds = seconds, _still = still };
@@ -507,7 +507,7 @@ namespace Evosim.Theatre
             /// framed. Null when unset: the largest body, as the shot always chose. A subject
             /// named by the dial is framed alone, with no neighbour, as a portrait.
             /// </summary>
-            private static Func<long, bool> CloseSubject(TheatreDynamicsReplay live)
+            private static Func<long, bool> CloseSubject(IFilmWorld live)
             {
                 string pick = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_FILM_SUBJECT");
                 if (string.IsNullOrWhiteSpace(pick)) return null;
@@ -521,15 +521,15 @@ namespace Evosim.Theatre
                 if (pick != "leaf") throw new ArgumentException("EVOSIM_THEATRE_FILM_SUBJECT is a body id or 'leaf', not '" + pick + "'");
 
                 var leafy = new HashSet<long>();
-                foreach (Organism o in live.Sim.World.Living)
+                for (int i = 0; i < live.BodyCount; i++)
                 {
-                    Phenotype body = o.Phenotype;
+                    Phenotype body = live.PhenotypeOf(i);
                     if (body == null) continue;
                     for (int k = 0; k < body.PartCount; k++)
                     {
                         if (body.Parts[k].ShapeId == ShapeIds.Box && body.Parts[k].CellTypeId == CellTypeIds.Photosynthetic)
                         {
-                            leafy.Add(o.Id);
+                            leafy.Add(live.IdAt(i));
                             break;
                         }
                     }
@@ -540,21 +540,29 @@ namespace Evosim.Theatre
 
             /// <summary>Every living body's root, its reach and its id, from the drawn scene where it can.</summary>
             public static void Crowd(
-                TheatreDynamicsReplay live, LiveWorldView view,
+                IFilmWorld live, LiveWorldView view,
                 List<Vector3> positions, List<float> reaches, List<long> ids)
             {
-                IReadOnlyList<Organism> living = live.Sim.World.Living;
-
-                for (int i = 0; i < living.Count; i++)
+                for (int i = 0; i < live.BodyCount; i++)
                 {
-                    Organism o = living[i];
-                    Vector3 at = Where(o, view);
+                    Vector3 at = Where(live, i, view);
                     if (!Finite(at)) continue;
 
                     positions.Add(at);
-                    reaches.Add(SnapshotCamera.ReachOf(o.Phenotype));
-                    ids.Add(o.Id);
+                    reaches.Add(SnapshotCamera.ReachOf(live.PhenotypeOf(i)));
+                    ids.Add(live.IdAt(i));
                 }
+            }
+
+            /// <summary>
+            /// A body's place by its index in the world: its drawn root, which is posed every
+            /// frame, or the world's own place for it (the live world's centre of mass, a window's
+            /// posed centre) when it is not drawn.
+            /// </summary>
+            public static Vector3 Where(IFilmWorld world, int index, LiveWorldView view)
+            {
+                Transform root = view?.RootOf(world.IdAt(index));
+                return root != null ? root.position : world.PositionOf(index);
             }
 
             /// <summary>
@@ -712,7 +720,7 @@ namespace Evosim.Theatre
             /// rather than leaving it, and the focus is pulled to it at every frame.
             /// </remarks>
             private void PlanClose(
-                TheatreDynamicsReplay live, LiveWorldView view,
+                IFilmWorld live, LiveWorldView view,
                 List<Vector3> positions, List<float> reaches, List<long> ids, float aspect,
                 Func<long, bool> eligible = null)
             {
@@ -769,9 +777,10 @@ namespace Evosim.Theatre
                 float standoff = Mathf.Max(fitted, inside);
 
                 // Where the still shot looks: the subject's centre where its drift at this second
-                // carries it at the clip's middle. A following shot looks at the subject itself.
-                Vector3 drift = _still ? SafariPlans.VelocityOf(live, id) : Vector3.zero;
-                Vector3 target = centre + drift * (0.5f * _seconds);
+                // carries it at the clip's middle (in a film window, where its recorded path does).
+                // A following shot looks at the subject itself.
+                Vector3 drift = _still ? live.VelocityOf(id) : Vector3.zero;
+                Vector3 target = centre + (_still ? live.DisplacementOf(id, 0.5f * _seconds) : Vector3.zero);
 
                 // The bodies that could stand in the eye's way or across the lens.
                 float around = 1.3f * Mathf.Max(standoff, PortraitFarthest * length) + drift.magnitude * _seconds + 2f;
@@ -1199,7 +1208,7 @@ namespace Evosim.Theatre
 
             /// <summary>The camera at a point of the clip, kept inside the water and off every body.</summary>
             public void Pose(
-                TheatreDynamicsReplay live, LiveWorldView view, float u, float frameSeconds,
+                IFilmWorld live, LiveWorldView view, float u, float frameSeconds,
                 out Vector3 eye, out Quaternion rotation, out float focus)
             {
                 Vector3 subject;
@@ -1352,21 +1361,21 @@ namespace Evosim.Theatre
             }
 
             /// <summary>Moves the eye out of any body's reach, plus a quarter metre.</summary>
-            private Vector3 OffTheBodies(TheatreDynamicsReplay live, LiveWorldView view, Vector3 eye)
+            private Vector3 OffTheBodies(IFilmWorld live, LiveWorldView view, Vector3 eye)
             {
-                IReadOnlyList<Organism> living = live.Sim.World.Living;
+                int count = live.BodyCount;
                 bool moved = false;
 
                 for (int pass = 0; pass < 3; pass++)
                 {
                     bool again = false;
 
-                    for (int i = 0; i < living.Count; i++)
+                    for (int i = 0; i < count; i++)
                     {
-                        Vector3 at = Where(living[i], view);
+                        Vector3 at = Where(live, i, view);
                         if (!Finite(at)) continue;
 
-                        float keep = SnapshotCamera.ReachOf(living[i].Phenotype) + 0.25f;
+                        float keep = SnapshotCamera.ReachOf(live.PhenotypeOf(i)) + 0.25f;
                         Vector3 away = eye - at;
                         float d = away.magnitude;
                         if (d >= keep) continue;
@@ -1383,14 +1392,13 @@ namespace Evosim.Theatre
                 return eye;
             }
 
-            public static bool InsideABody(TheatreDynamicsReplay live, LiveWorldView view, Vector3 eye)
+            public static bool InsideABody(IFilmWorld live, LiveWorldView view, Vector3 eye)
             {
-                IReadOnlyList<Organism> living = live.Sim.World.Living;
-                for (int i = 0; i < living.Count; i++)
+                for (int i = 0; i < live.BodyCount; i++)
                 {
-                    Vector3 at = Where(living[i], view);
+                    Vector3 at = Where(live, i, view);
                     if (!Finite(at)) continue;
-                    if ((eye - at).magnitude < SnapshotCamera.ReachOf(living[i].Phenotype)) return true;
+                    if ((eye - at).magnitude < SnapshotCamera.ReachOf(live.PhenotypeOf(i))) return true;
                 }
 
                 return false;

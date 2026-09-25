@@ -7,7 +7,7 @@ A farm run on the island build (D109) writes `fields/NNNNNNNNN.matter.f32` besid
 every cell of the matter grid in the grid's own index order, and `fields/layout.json` once naming
 the shape. This reader sums each column over its layers (`--layers N` for the top N only, which is
 where the light is), divides by the volume summed, and draws the map as units per cubic metre with
-the bodies from `positions.jsonl`'s nearest sample scattered over it by guild, in
+the bodies from the positions' nearest sample (either record, runrec.py) scattered over it by guild, in
 positions-read.py's colours. `--snow` adds the marine snow's column map as a second panel, from the
 `snow-columns` dump.
 
@@ -63,6 +63,10 @@ guild_of = positions_read.guild_of
 newest_run = positions_read.newest_run
 find_field = positions_read.find_field
 
+# Either record, the JSON lines or the gzip members: one reader for both (reads/runrec.py).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'reads'))
+import runrec  # noqa: E402
+
 
 def read_floats(path):
     with open(path, 'rb') as f:
@@ -106,16 +110,12 @@ def column_map(values, layout, layers):
 def positions_at(run_dir, second):
     """The nearest positions sample: (t, [(x, y, z, guild)])."""
     best = None
-    with open(os.path.join(run_dir, 'positions.jsonl'), 'r', encoding='utf-8') as f:
-        for line in f:
-            if not line.strip():
-                continue
-            row = json.loads(line)
-            t = float(row['t'])
-            if best is None or abs(t - second) < abs(best[0] - second):
-                best = (t, row['b'])
-            elif t > second:
-                break
+    for row in runrec.positions(run_dir):
+        t = float(row['t'])
+        if best is None or abs(t - second) < abs(best[0] - second):
+            best = (t, row['b'])
+        elif t > second:
+            break
     if best is None:
         return None, []
     return best[0], [(b[1], b[2], b[3], guild_of(int(b[4]))) for b in best[1]]

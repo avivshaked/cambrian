@@ -202,17 +202,38 @@ namespace Evosim.Core
 
         /// <summary>
         /// For each part of the body as it now is, the index of the same part in the body as it
-        /// stood before the last plan change — or -1 for a part that has just appeared. D106
-        /// item 2, rule 7.
+        /// stood when the harness last took this map — or -1 for a part that has appeared since.
+        /// D106 item 2, rule 7. Null is a body whose plan has not changed since.
         /// </summary>
         /// <remarks>
-        /// <b>Transient, and deliberately not in the checkpoint.</b> It is written by
-        /// <c>World.ApplyModuleRule</c> and read by the harness in the same growth step, which
-        /// rebuilds the articulation and carries the joint state and the brain across on it. A
-        /// restored world has no half-finished plan change to describe, so there is nothing for
-        /// a checkpoint to carry; null is what a body that has not just changed plan holds.
+        /// <para>
+        /// <b>Composed, not overwritten</b> (round 49). <c>World.AdoptPlan</c> writes one change's
+        /// map, and when a map is already pending it composes the two, so the map runs from the
+        /// plan the harness's solver was built on. The mouth can take two parts off one body in
+        /// one pass, and before round 49 the second change's map overwrote the first's. The
+        /// harness then carried the joints and the brain across from the wrong links.
+        /// </para>
+        /// <para>
+        /// <b>Transient, and deliberately not in the checkpoint.</b> The harness takes it with
+        /// <see cref="TakePartMapFromPreviousPlan"/> on the metabolic step it was written,
+        /// straight after <c>World.Step</c> for a bite and at the growth step for the module rule,
+        /// and a checkpoint is written after that. So no restored world has a half-finished plan
+        /// change to describe.
+        /// </para>
         /// </remarks>
         public int[] PartMapFromPreviousPlan { get; internal set; }
+
+        /// <summary>
+        /// Hands over <see cref="PartMapFromPreviousPlan"/> and forgets it, so the next plan
+        /// change starts a map of its own. The harness calls it when it rebuilds a body, or
+        /// builds one, on the plan the organism holds.
+        /// </summary>
+        public int[] TakePartMapFromPreviousPlan()
+        {
+            int[] map = PartMapFromPreviousPlan;
+            PartMapFromPreviousPlan = null;
+            return map;
+        }
 
         /// <summary>
         /// What share of its own health pool each part still holds, 0 to 1 — D106 item 3's rule 3.
@@ -244,22 +265,65 @@ namespace Evosim.Core
 
         /// <summary>
         /// What share of its pool each part lost on the last metabolic step — what
-        /// <see cref="SensorChannel.Damage"/> reports, D106 item 5. Null is a body nothing
-        /// touched.
+        /// <see cref="SensorChannel.Damage"/> reports, D106 item 5 and D123. Null is a body
+        /// nothing has hurt since it was born or last changed plan; an array of zeros is one
+        /// hurt before and not on the last step.
         /// </summary>
         /// <remarks>
-        /// <b>The step's loss and not the standing wound</b>, which is what §4.4 asks for in as
-        /// many words: a creature that could read only its own health would have no way to tell
-        /// being eaten from having been eaten. Written by the mouth's damage pass and read by the
-        /// harness's sensors on the physics steps that follow, so it is one metabolic step stale
-        /// at the brain — the same staleness <c>Flow</c> already has.
+        /// <para>
+        /// <b>The step's loss, from round 49 (D123).</b> <c>World.ForgetWhatWasFelt</c> zeroes
+        /// the array at the top of every mouth pass and <c>World.Wound</c> then adds each of the
+        /// step's blows to the part's entry, so the entry is the health the step took, as a
+        /// share of the pool, before the same step's healing. Rounds 45 to 48 summed it over
+        /// every step since the body's plan last changed, because nothing cleared it but
+        /// <c>World.AdoptPlan</c>. Written by the mouth's damage pass and read by the harness's
+        /// sensors on the physics steps that follow, so it is one metabolic step stale at the
+        /// brain, as <c>Flow</c> is.
+        /// </para>
+        /// <para>
+        /// <b>Zeroed in place and never replaced by a step</b>, because the harness hands a
+        /// body's sense this very array by reference. A plan change replaces it with one on the
+        /// new plan's indices (<c>World.AdoptPlan</c>, round 49): each surviving part keeps its
+        /// entry, a lost part's goes with it, and a part new to the plan reads 0. The harness's
+        /// rebuild of the body hands its senses the new array.
+        /// </para>
+        /// <para>
+        /// The physics steps after a checkpoint read it before the next metabolic step rewrites
+        /// it, so the checkpoint carries it (StateVersion 6).
+        /// </para>
         /// </remarks>
         public float[] PartDamage { get; internal set; }
 
         /// <summary>
-        /// Whether each part was in contact with another body's on the last metabolic step — what
-        /// <see cref="SensorChannel.Contact"/> reports. Null is a body touching nothing.
+        /// Whether each part touched another body's part on the last metabolic step — what
+        /// <see cref="SensorChannel.Contact"/> reports, D106 item 5 and D123. Null is a body that
+        /// has touched nothing since it was born, and every body in a world with
+        /// <see cref="RunConfig.SenseContact"/> off.
         /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The step's contact, from round 49 (D123).</b> <c>World.ForgetWhatWasFelt</c> clears
+        /// every flag at the top of the mouth pass and <c>World.NoteContact</c> then sets the flag
+        /// of each part named in the step's contact list. That list is the solver's overlap census
+        /// on the last physics step before the metabolic step, with one pair of parts for each
+        /// pair of bodies overlapping (the nearest by origins, or under per-part contact the first
+        /// pair the contact pass met). So a flag says the part was touching at the step's close,
+        /// not that it touched at some moment inside it; and where two bodies touch at several
+        /// pairs of parts, only the named pair's two parts read it. Rounds 45 to 48 kept every flag set until a plan
+        /// change, and the sense read "touched since the body last changed shape".
+        /// </para>
+        /// <para>
+        /// <b>Cleared in place and never replaced by a step</b>, for the reason
+        /// <see cref="PartDamage"/> gives, and carried through a plan change as it is: a
+        /// surviving part keeps its flag, and a part new to the plan reads false.
+        /// </para>
+        /// <para>
+        /// The physics steps after a checkpoint read it before the next metabolic step rewrites
+        /// it, so the checkpoint carries it. It did not until StateVersion 11 (2026-09-25): every
+        /// restored body came back touching nothing, and round 48's resume parted from the run at
+        /// its first sample in jointed bodies whose brains read the channel.
+        /// </para>
+        /// </remarks>
         public bool[] PartContact { get; internal set; }
 
         /// <summary>
@@ -601,8 +665,7 @@ namespace Evosim.Core
         /// whenever the factor is 0.
         /// </summary>
         public double ReproductionThreshold(RunConfig config) =>
-            Genome.Reproduction.CostJoules(TissueJoules, config) +
-            (double)Genome.Reproduction.ReserveMargin * StandingWatts;
+            LumpGate(Genome.Reproduction, TissueJoules, StandingWatts, config);
 
         /// <summary>
         /// What a gestating parent's account must hold before it is worth attempting the litter:
@@ -614,7 +677,51 @@ namespace Evosim.Core
         /// inert in that mode, as the share is in the other.
         /// </remarks>
         public double GestationThreshold(RunConfig config) =>
-            Genome.Reproduction.CostJoules(TissueJoules, config);
+            GestationGate(Genome.Reproduction, TissueJoules, config);
+
+        /// <summary>
+        /// The gate this body's own mode asks of it: <see cref="GestationThreshold"/> of the
+        /// account for a gestating body, <see cref="ReproductionThreshold(RunConfig)"/> of the
+        /// reserve for a lump breeder. What <c>World.IsSolvent</c> reads.
+        /// </summary>
+        public double BreedingGate(RunConfig config) =>
+            BreedingGate(Genome.Reproduction, TissueJoules, StandingWatts, config);
+
+        /// <summary>
+        /// The breeding gate of a body with these traits, this tissue and this standing cost —
+        /// the one expression the three instance gates above and the founder cap of round 49
+        /// (D124, <c>World.AdmitFounder</c>) all read, so the cap is asked of the gate the body
+        /// will actually meet and the two cannot drift apart.
+        /// </summary>
+        /// <param name="traits">The genome's reproduction traits; the mode picks the gate.</param>
+        /// <param name="tissueJoules">The body's tissue value, J — the parent's, in the price.</param>
+        /// <param name="standingWatts">
+        /// The body's standing cost, W, which the margin is counted in. Read only by a lump
+        /// breeder's gate.
+        /// </param>
+        /// <param name="config">The overhead rule's floor and per-tissue factor.</param>
+        public static double BreedingGate(
+            ReproductionTraits traits, double tissueJoules, float standingWatts, RunConfig config) =>
+            traits.Mode == ReproductionMode.Gestation
+                ? GestationGate(traits, tissueJoules, config)
+                : LumpGate(traits, tissueJoules, standingWatts, config);
+
+        /// <summary>
+        /// A lump breeder's gate: the litter's price plus the margin in seconds of standing cost.
+        /// See <see cref="ReproductionThreshold(RunConfig)"/>.
+        /// </summary>
+        public static double LumpGate(
+            ReproductionTraits traits, double tissueJoules, float standingWatts, RunConfig config) =>
+            traits.CostJoules(tissueJoules, config) +
+            (double)traits.ReserveMargin * standingWatts;
+
+        /// <summary>
+        /// A gestating breeder's gate: the litter's price alone. See
+        /// <see cref="GestationThreshold"/>.
+        /// </summary>
+        public static double GestationGate(
+            ReproductionTraits traits, double tissueJoules, RunConfig config) =>
+            traits.CostJoules(tissueJoules, config);
 
         /// <summary>Whether this body pays for its children as it goes.</summary>
         public bool Gestates => Genome.Reproduction.Mode == ReproductionMode.Gestation;

@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 using Evosim.Core;
+using Evosim.Farm;
 using Debug = UnityEngine.Debug;
 
 namespace Evosim.Theatre
@@ -41,6 +42,10 @@ namespace Evosim.Theatre
         /// <see cref="SafariOptions.Callouts"/> is on and the scene has a clade with a count series.
         /// </summary>
         public SafariClade Callout;
+        /// <summary>The body the take is about (a portrait's subject, a birth's parent, a colony's anchor), or -1.</summary>
+        public long Subject;
+        /// <summary>The scene the frame belongs to, for what is drawn over it (a story's chart, its station).</summary>
+        public SafariScene Scene;
     }
 
     /// <summary>What the director may do, set by its host.</summary>
@@ -92,6 +97,14 @@ namespace Evosim.Theatre
         /// shallow side. <c>EVOSIM_THEATRE_SAFARI_CANOPY=1</c>.
         /// </summary>
         public bool Canopy = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_CANOPY") == "1";
+
+        /// <summary>
+        /// The folder of a story's farm film windows (<c>windows.json</c>, B3), or null to step the
+        /// world live. Set, every scene is filmed from its recorded window and nothing is stepped:
+        /// a scene with no recorded window is missed and said, never stepped live in its place.
+        /// <c>EVOSIM_THEATRE_SAFARI_WINDOWS</c>, <c>theatre-safari.ps1 -FromWindows</c>.
+        /// </summary>
+        public string WindowsDirectory;
     }
 
     /// <summary>
@@ -139,6 +152,17 @@ namespace Evosim.Theatre
     /// both of which the log says instead. A story's birth far from its clade's founding waits
     /// for a child of the clade's own members (<see cref="SafariScene.BirthLine"/>).
     /// </para>
+    /// <para>
+    /// <b>From farm film windows</b> (<see cref="SafariOptions.WindowsDirectory"/>,
+    /// <c>record-and-film-spec.md</c> B3), a story's scene is filmed from the window the farm
+    /// recorded for it (<see cref="StoryWindows"/>) and none of the routes above is taken: the
+    /// window opens at the second its plan names, every frame is the farm's frame nearest the
+    /// frame's second, and nothing is stepped. A birth is the window's own birth row (the
+    /// planner's, else the story's named child, else its named parent's, else the line's first),
+    /// so nothing is rehearsed, and a plan that looks ahead reads the body's recorded path. The
+    /// label's word is the window's verdict, FAITHFUL, COUSIN or UNVERIFIED, scene by scene. A
+    /// scene with no recorded window is missed, and never stepped live in its place.
+    /// </para>
     /// </remarks>
     public sealed class SafariDirector
     {
@@ -153,6 +177,8 @@ namespace Evosim.Theatre
             /// </summary>
             public bool Held;
             public Func<SafariPlans.Stage, List<SafariPlans.Take>> Build;
+            /// <summary>Which of a scene's film windows the segment plays from (<see cref="StoryWindows.MainPart"/> or the time scene's second).</summary>
+            public string Part = StoryWindows.MainPart;
         }
 
         private readonly TheatreRunner _runner;
@@ -215,6 +241,18 @@ namespace Evosim.Theatre
         /// <summary>Where the rehearsal started: a checkpoint's path and second, or a null path for the founding.</summary>
         private (double seconds, string path) _rehearsalFrom;
 
+        // A story filmed from farm film windows (B3): the plan, the window on screen and its entry,
+        // the nominal second the next frame is taken at, and what the scene's frames were labelled.
+        private readonly StoryWindows _windows;
+        private readonly string _windowsError;
+        private FilmWindowWorld _window;
+        private StoryWindow _windowEntry;
+        private double _windowClock;
+        private int _heldPastEnd;
+        /// <summary>How far into a birth's take the birth comes, s: the lead, or less when the window opens later.</summary>
+        private double _birthLead = SafariTripBuilder.BirthLeadSeconds;
+        private readonly List<string> _sceneWords = new List<string>();
+
         public SafariDirector(
             TheatreRunner runner, string runDirectory, SafariGuide guide, SafariClades clades,
             List<SafariScene> scenes, SafariOptions options)
@@ -228,6 +266,51 @@ namespace Evosim.Theatre
             _checkpoints = ReadCheckpoints(_runDirectory);
             _farmPace = ReadFarmPace(_runDirectory);
             Phase = SafariPhase.Idle;
+
+            if (!string.IsNullOrWhiteSpace(_options.WindowsDirectory))
+            {
+                try
+                {
+                    _windows = StoryWindows.Read(_options.WindowsDirectory);
+                }
+                catch (Exception e)
+                {
+                    _windowsError = "the film windows at '" + _options.WindowsDirectory + "' cannot be read: " + e.Message;
+                }
+            }
+        }
+
+        /// <summary>True when the scenes are filmed from farm film windows (<see cref="SafariOptions.WindowsDirectory"/>).</summary>
+        public bool FromWindows => _windows != null || _windowsError != null;
+
+        /// <summary>The film windows' plan, or null when the world is stepped live.</summary>
+        public StoryWindows Windows => _windows;
+
+        /// <summary>The world on screen: the film window playing, or the live world.</summary>
+        public IFilmWorld World => FromWindows ? (IFilmWorld)_runner.Window : _runner.Live;
+
+        /// <summary>The bodies on screen: the window's fed view, or the live world's.</summary>
+        public LiveWorldView View => FromWindows ? _runner.Window?.View : _runner.LiveView;
+
+        /// <summary>
+        /// The word the frames on screen carry: the window's verdict (FAITHFUL, COUSIN or
+        /// UNVERIFIED) when filming from one, and COUSIN in the live world, which every restore is.
+        /// </summary>
+        public string ProvenanceWord => _window != null ? _window.ProvenanceWord : "COUSIN";
+
+        /// <summary>Every word the current scene's frames carried, joined by a plus when its windows differ.</summary>
+        public string SceneProvenance => _sceneWords.Count > 0 ? string.Join("+", _sceneWords) : FromWindows ? "none" : "COUSIN";
+
+        /// <summary>
+        /// Brings the view up to the world before a picture: a live world's view is synced to the
+        /// solver, a window's is fed by its frames and only dressed.
+        /// </summary>
+        public void SyncView()
+        {
+            LiveWorldView view = View;
+            if (view == null) return;
+            if (!view.Fed) view.Sync();
+            view.DressUndressed();
         }
 
         public IReadOnlyList<SafariScene> Scenes => _scenes;
@@ -309,9 +392,19 @@ namespace Evosim.Theatre
             _birthAt = double.NaN;
             _birthOffset = new Vector3(float.NaN, float.NaN, float.NaN);
             _birthRecurred = false;
+            _birthLead = SafariTripBuilder.BirthLeadSeconds;
             _takeCount = 0;
+            _heldPastEnd = 0;
+            _sceneWords.Clear();
 
             SafariScene scene = _scenes[index];
+
+            if (_windowsError != null)
+            {
+                Say("scene " + scene.Line().Trim());
+                Fail(_windowsError);
+                return;
+            }
             _segments = new Queue<Segment>(SegmentsOf(scene));
             Say("scene " + scene.Line().Trim());
             NextSegment();
@@ -347,14 +440,15 @@ namespace Evosim.Theatre
             bool flexible = scene.Flexible;
             bool canopy = scene.Canopy ?? _options.Canopy;
 
-            // A story's chapter card plays first, a held take of its own before the scene's; the
-            // template's colony carries its card inside its own takes (ColonyTakes).
+            // A story's chapter card plays first, a take of its own before the scene's, a slow drift
+            // through the crowd since 2026-09-25 (it was the disc from above, held); the template's
+            // colony carries its card inside its own takes (ColonyTakes), from above as before.
             if (scene.FromStory && scene.ChapterCard)
             {
                 yield return new Segment
                 {
                     At = scene.At, Flexible = true, Held = true,
-                    Build = s => One(SafariPlans.FromAbove(s, (float)SafariTripBuilder.ChapterSeconds)),
+                    Build = s => One(SafariPlans.Wide(s, (float)SafariTripBuilder.ChapterSeconds, hash ^ 0x5bd1, "chapter")),
                 };
             }
 
@@ -379,12 +473,15 @@ namespace Evosim.Theatre
                     break;
 
                 case SafariStation.Card:
-                    // A story's title: the chapter card's look, the disc from above, held, and
-                    // darkened under its captions when the writer asked for that.
+                    // A story's card: a slow drift through the crowd (SafariPlans.Wide), opened like
+                    // a chapter card without stepping to its second, and darkened only when its
+                    // writer asked for that and no full chart dims it already (SafariStory). It was
+                    // the disc from above, held, until the owner asked for the world behind the
+                    // explanations (2026-09-25).
                     yield return new Segment
                     {
                         At = scene.At, Flexible = true, Held = true,
-                        Build = s => One(SafariPlans.FromAbove(s, LengthOf(scene, SafariTripBuilder.ChapterSeconds))),
+                        Build = s => One(SafariPlans.Wide(s, LengthOf(scene, SafariTripBuilder.ChapterSeconds), hash, "card")),
                     };
                     break;
 
@@ -406,7 +503,7 @@ namespace Evosim.Theatre
                     // a story's may move within the snap rules like any other.
                     float take = scene.Seconds > 0d ? (float)(0.5d * scene.Seconds) : (float)SafariTripBuilder.TimeTakeSeconds;
                     yield return new Segment { At = scene.At, Flexible = flexible, Build = s => One(SafariPlans.Fixed(s, take, hash, "time-a")) };
-                    yield return new Segment { At = scene.SecondAt, Flexible = flexible, Build = s => One(SafariPlans.Fixed(s, take, hash, "time-b")) };
+                    yield return new Segment { At = scene.SecondAt, Flexible = flexible, Part = StoryWindows.SecondPart, Build = s => One(SafariPlans.Fixed(s, take, hash, "time-b")) };
                     break;
                 }
             }
@@ -431,6 +528,12 @@ namespace Evosim.Theatre
 
         private void Route(Segment segment)
         {
+            if (FromWindows)
+            {
+                WindowRoute(segment);
+                return;
+            }
+
             SafariScene scene = Current;
             TheatreDynamicsReplay live = _runner.Live;
             double target = segment.At;
@@ -923,14 +1026,14 @@ namespace Evosim.Theatre
 
         private void Plan()
         {
-            TheatreDynamicsReplay live = _runner.Live;
-            LiveWorldView view = _runner.LiveView;
-            view?.Sync();
-            view?.DressUndressed();
+            IFilmWorld world = World;
+            LiveWorldView view = View;
+            if (world == null) { Fail("there is no world to plan on: " + _runner.Error); return; }
+            SyncView();
 
             _stageLiving = null;
             Focus(view, Current.Clade);
-            var stage = SafariPlans.Stage.Of(live, view, _options.Aspect, Current.Index);
+            var stage = SafariPlans.Stage.Of(world, view, _options.Aspect, Current.Index);
             List<SafariPlans.Take> takes;
 
             try
@@ -957,12 +1060,25 @@ namespace Evosim.Theatre
 
         private void StartTake()
         {
-            TheatreDynamicsReplay live = _runner.Live;
             SafariPlans.Take take = _takes[_take];
             take.Shot.ResetTally();
 
-            _takeT0 = live.ElapsedSeconds;
-            _takeSteps0 = live.Steps;
+            if (_window != null)
+            {
+                // A window's take is timed on its nominal clock, so its length is exact; the frame
+                // shown at each nominal second is the farm's nearest.
+                _takeT0 = _windowClock;
+                _takeSteps0 = 0L;
+            }
+            else
+            {
+                TheatreDynamicsReplay live = _runner.Live;
+                _takeT0 = live.ElapsedSeconds;
+                _takeSteps0 = live.Steps;
+            }
+
+            string word = ProvenanceWord;
+            if (!_sceneWords.Contains(word)) _sceneWords.Add(word);
             _takeTarget = _takeT0;
             _takeFrame = 0;
             _endPending = false;
@@ -1004,6 +1120,8 @@ namespace Evosim.Theatre
                 EndTake();
                 return false;
             }
+
+            if (FromWindows) return WindowFrame(interval, out pose);
 
             TheatreDynamicsReplay live = _runner.Live;
             if (live == null) { Fail("the world went away mid-take"); return false; }
@@ -1048,6 +1166,8 @@ namespace Evosim.Theatre
                 Shot = take.Shot,
                 Dim = _segment != null && _segment.Held && Current.Station == SafariStation.Card ? Mathf.Clamp01(Current.Dim) : 0f,
                 Callout = _options.Callouts && Current.Clade != null && Current.Clade.Series.Count > 1 ? Current.Clade : null,
+                Subject = take.Subject,
+                Scene = Current,
             };
 
             _takeFrame++;
@@ -1072,6 +1192,14 @@ namespace Evosim.Theatre
             }
 
             _takeCount += _takes.Count;
+
+            if (_window != null && _heldPastEnd > 0)
+            {
+                Say(string.Format(CultureInfo.InvariantCulture,
+                    "WARNING: {0} frame(s) of {1} were asked for past the window's last frame at {2:0.###} s and show it held; plan the window longer",
+                    _heldPastEnd, Current.Slug, _window.LastSecond));
+                _heldPastEnd = 0;
+            }
 
             if (Current.Station == SafariStation.Birth && _rehearsal == Rehearsal.Recurring)
             {
@@ -1139,8 +1267,9 @@ namespace Evosim.Theatre
             if (scene.FromStory) return; // a story's captions are its writer's alone
             if (c == null || double.IsNaN(_guide.CrowdMedianLife)) return;
 
+            if (!(stage.Frame is TheatreDynamicsReplay live)) return;
             Organism o = null;
-            foreach (Organism l in stage.Live.Sim.World.Living) if (l.Id == id) { o = l; break; }
+            foreach (Organism l in live.Sim.World.Living) if (l.Id == id) { o = l; break; }
             if (o == null) return;
 
             bool founder = id == c.Founder && _clades.IsRecorded(id);
@@ -1226,14 +1355,8 @@ namespace Evosim.Theatre
                 long founder = clade.Founder;
                 wanted = id =>
                 {
-                    World world = _runner.Live?.Sim.World;
-                    if (world == null) return true;
-                    if (_focusLiving == null || _focusLiving.Count != world.Living.Count || !_focusLiving.ContainsKey(id))
-                    {
-                        _focusLiving = new Dictionary<long, Organism>(world.Living.Count);
-                        foreach (Organism o in world.Living) _focusLiving[o.Id] = o;
-                    }
-                    return _focusLiving.TryGetValue(id, out Organism body) && _clades.CladeOf(body, _focusLiving) == founder;
+                    if (!FromWindows && _runner.Live?.Sim.World == null) return true;
+                    return CladeOfId(id) == founder;
                 };
             }
 
@@ -1242,17 +1365,7 @@ namespace Evosim.Theatre
             bool lineageNew = false;
             if (view.Palette.LineageOf == null && _clades != null)
             {
-                view.Palette.LineageOf = id =>
-                {
-                    World world = _runner.Live?.Sim.World;
-                    if (world == null) return -1;
-                    if (_focusLiving == null || _focusLiving.Count != world.Living.Count || !_focusLiving.ContainsKey(id))
-                    {
-                        _focusLiving = new Dictionary<long, Organism>(world.Living.Count);
-                        foreach (Organism o in world.Living) _focusLiving[o.Id] = o;
-                    }
-                    return _focusLiving.TryGetValue(id, out Organism body) ? _clades.CladeOf(body, _focusLiving) : -1;
-                };
+                view.Palette.LineageOf = CladeOfId;
                 lineageNew = true;
             }
 
@@ -1264,12 +1377,41 @@ namespace Evosim.Theatre
 
         private Dictionary<long, Organism> _focusLiving;
 
+        /// <summary>
+        /// A living body's clade by its id: from the live organism in the live world, from the
+        /// window's birth rows and recorded flags in a film window (<c>SafariClades.CladeOf(id, facts)</c>).
+        /// </summary>
+        private long CladeOfId(long id)
+        {
+            if (FromWindows) return _window != null ? _clades.CladeOf(id, WindowFacts) : -1;
+
+            World world = _runner.Live?.Sim.World;
+            if (world == null) return -1;
+            if (_focusLiving == null || _focusLiving.Count != world.Living.Count || !_focusLiving.ContainsKey(id))
+            {
+                _focusLiving = new Dictionary<long, Organism>(world.Living.Count);
+                foreach (Organism o in world.Living) _focusLiving[o.Id] = o;
+            }
+            return _focusLiving.TryGetValue(id, out Organism body) ? _clades.CladeOf(body, _focusLiving) : -1;
+        }
+
+        /// <summary>What the window knows of a body's descent: its parent and flags (<see cref="FilmWindowWorld.TryLineageOf"/>).</summary>
+        private (bool known, long parent, byte flags) WindowFacts(long id)
+        {
+            if (_window == null) return (false, -1, 0);
+            bool known = _window.TryLineageOf(id, out long parent, out byte flags);
+            return (known, parent, flags);
+        }
+
+        /// <summary>"in this cousin", or "in this film window" when filming from one: what a missed scene's line says of the world.</summary>
+        private string InThisWorld => FromWindows ? "in this film window" : "in this cousin";
+
         private List<SafariPlans.Take> ColonyTakes(SafariPlans.Stage stage, SafariScene scene)
         {
             List<int> members = Members(stage, scene.Clade.Founder);
             if (members.Count == 0)
             {
-                Missed(scene.Clade.Name + " has no member alive in this cousin at " + SafariCaptions.Seconds(stage.Live.ElapsedSeconds));
+                Missed(scene.Clade.Name + " has no member alive " + InThisWorld + " at " + SafariCaptions.Seconds(stage.Frame.Second));
                 return null;
             }
 
@@ -1277,7 +1419,7 @@ namespace Evosim.Theatre
             // not (round 47's first safari filmed Gastrophylla sefecis's "colony of 1 members").
             if (members.Count == 1)
             {
-                Missed(scene.Clade.Name + " has one member alive in this cousin at " + SafariCaptions.Seconds(stage.Live.ElapsedSeconds) +
+                Missed(scene.Clade.Name + " has one member alive " + InThisWorld + " at " + SafariCaptions.Seconds(stage.Frame.Second) +
                        ": a colony of one is refused");
                 return null;
             }
@@ -1309,8 +1451,8 @@ namespace Evosim.Theatre
             int parent = stage.IndexOf(_birthParent);
             if (parent < 0)
             {
-                Missed("the rehearsal's parent, body " + _birthParent + ", is not in the world at " +
-                       SafariCaptions.Seconds(stage.Live.ElapsedSeconds) + " on the filmed pass");
+                Missed((FromWindows ? "the window's parent, body " : "the rehearsal's parent, body ") + _birthParent + ", is not in the world at " +
+                       SafariCaptions.Seconds(stage.Frame.Second) + (FromWindows ? " in the window" : " on the filmed pass"));
                 return null;
             }
 
@@ -1319,7 +1461,7 @@ namespace Evosim.Theatre
             // was, or its parent's (the rehearsal takes the first birth in the parent line). A
             // story's birth says only what its writer wrote, and the log says what was got.
             bool same = _birthChildFlags == SafariClades.FlagsOf(scene.Clade);
-            double lead = SafariTripBuilder.BirthLeadSeconds;
+            double lead = FromWindows ? _birthLead : SafariTripBuilder.BirthLeadSeconds;
             float hold = (float)(scene.Seconds > 0d ? Math.Max(lead + 2d, scene.Seconds) : lead + SafariTripBuilder.BirthTailSeconds);
             if (scene.FromStory)
             {
@@ -1327,8 +1469,12 @@ namespace Evosim.Theatre
                 // director's own at the lead: what this replay got is a cousin's birth, which the
                 // writer left the lead's slot for (round 48's story, scene 17). A chapter card
                 // before the birth moves it by the card's length.
+                // From a window the farm found faithful the birth is the run's own, and the line
+                // says so; any other world's birth is a replay's.
                 double card = scene.ChapterCard ? SafariTripBuilder.ChapterSeconds : 0d;
-                string said = "In this replay a member of " + LineName(scene) + " gives birth.";
+                string said = _window != null && _window.Faithful
+                    ? "Here a member of " + LineName(scene) + " gives birth, as it did in the run."
+                    : "In this replay a member of " + LineName(scene) + " gives birth.";
                 if (!SafariCaptions.AddFree(scene, card + lead + SafariCaptions.Slot(0), said, card + hold))
                     Say("the story's birth had no free slot for the replay's line: " + said);
                 Say(string.Format(CultureInfo.InvariantCulture, "the story's birth: body {0}, a member of {1}, gives birth; the child is {2}",
@@ -1344,8 +1490,8 @@ namespace Evosim.Theatre
             }
 
             // The child's spot from the rehearsal: the filmed pass is the same trajectory from the
-            // same checkpoint, so it lands there again when the birth recurs. The birth comes at
-            // the lead whatever the scene's length.
+            // same checkpoint, so it lands there again when the birth recurs (from a window, the
+            // child's first recorded frame). The birth comes at the lead whatever the scene's length.
             return One(SafariPlans.Hold(stage, parent, hold, (float)lead, _birthOffset, scene.Clade.Hash, "birth"));
         }
 
@@ -1358,7 +1504,7 @@ namespace Evosim.Theatre
             {
                 int named = stage.IndexOf(scene.Body);
                 if (named >= 0 && (scene.Clade == null || CladeOfIndex(stage, named) == scene.Clade.Founder)) return named;
-                if (scene.Clade == null) { why = "body " + scene.Body + " is not alive in this cousin"; return -1; }
+                if (scene.Clade == null) { why = "body " + scene.Body + " is not alive " + InThisWorld; return -1; }
             }
 
             if (scene.Clade == null) { why = "a portrait with neither a clade nor a body"; return -1; }
@@ -1366,7 +1512,7 @@ namespace Evosim.Theatre
             List<int> members = Members(stage, scene.Clade.Founder);
             if (members.Count == 0)
             {
-                why = scene.Clade.Name + " has no member alive in this cousin at " + SafariCaptions.Seconds(stage.Live.ElapsedSeconds);
+                why = scene.Clade.Name + " has no member alive " + InThisWorld + " at " + SafariCaptions.Seconds(stage.Frame.Second);
                 return -1;
             }
 
@@ -1389,7 +1535,9 @@ namespace Evosim.Theatre
 
         private long CladeOfIndex(SafariPlans.Stage stage, int index)
         {
-            World world = stage.Live.Sim.World;
+            if (!(stage.Frame is TheatreDynamicsReplay live)) return _clades.CladeOf(stage.Ids[index], WindowFacts);
+
+            World world = live.Sim.World;
             if (_stageLiving == null || _stageLiving.Count != world.Living.Count)
             {
                 _stageLiving = new Dictionary<long, Organism>(world.Living.Count);
@@ -1423,6 +1571,242 @@ namespace Evosim.Theatre
             if (scene.BirthFrom < 0) return ParentName(scene.Clade);
             SafariClade c = scene.Clade != null && scene.Clade.Founder == scene.BirthFrom ? scene.Clade : _guide?.Find(scene.BirthFrom);
             return c != null ? c.Name : "the clade founded by body " + scene.BirthFrom;
+        }
+
+        // ---------------------------------------------------------------- film windows (B3)
+
+        /// <summary>
+        /// Opens a segment on its film window: the window the plan gives the scene's part, at the
+        /// second the plan opens it (the first segment) or where the last take ended (the rest). A
+        /// window that is not planned or not recorded misses the scene; nothing is stepped.
+        /// </summary>
+        private void WindowRoute(Segment segment)
+        {
+            SafariScene scene = Current;
+
+            if (!scene.FromStory)
+            {
+                Missed("film windows are planned for a story's scenes, and this is the template's");
+                return;
+            }
+
+            StoryWindow entry = _windows.Find(scene.StoryNumber, segment.Part, scene.StoryArm);
+            if (entry == null)
+            {
+                string skipped = _windows.SkippedWhy(scene.StoryNumber, scene.StoryArm);
+                Missed("no film window for story " + scene.StoryNumber + " (" + segment.Part + ") in " + _windows.Path +
+                       (skipped != null ? ": the planner skipped it: " + skipped : ": plan it with scripts/story-windows.py"));
+                return;
+            }
+
+            string why = StoryWindows.Recorded(entry, out FilmWindowVerdict verdict);
+            if (why != null)
+            {
+                Missed("its film window is not recorded: " + why + "; record it with scripts/story-windows.ps1");
+                return;
+            }
+
+            bool continuing = ReferenceEquals(entry, _windowEntry) && _window != null && ReferenceEquals(_runner.Window, _window);
+
+            if (!continuing)
+            {
+                _runner.OpenWindowAt(entry.Directory, entry.Run);
+                _window = _runner.Window;
+                _windowEntry = entry;
+
+                if (_window == null)
+                {
+                    _windowEntry = null;
+                    Fail("the film window " + entry.Directory + " would not open: " + _runner.Error);
+                    return;
+                }
+
+                _runner.Paused = true;
+                _windowClock = entry.Start;
+                _heldPastEnd = 0;
+
+                // A window the farm found faithful holds only the recording's bodies, so every one
+                // is the recording's to its last frame; any other is the recording's to its restore.
+                double recorded = _window.Faithful ? _window.LastSecond
+                    : verdict != null && !double.IsNaN(verdict.RestoredAt) ? verdict.RestoredAt : 0d;
+                _restoredAt = recorded;
+                _clades.Restored(recorded);
+
+                Say(string.Format(CultureInfo.InvariantCulture,
+                    "filming from the farm's window {0}: {1} ({2}), frames {3:0.###} to {4:0.###} s at {5:0.##} fps, the part opening at {6:0.###} s; nothing is stepped",
+                    entry.Directory, _window.ProvenanceWord, verdict?.Reason ?? "no verdict", _window.FirstSecond, _window.LastSecond,
+                    verdict?.Fps ?? double.NaN, entry.Start));
+                foreach (string note in entry.Notes) Say("the window's plan: " + note);
+            }
+            else
+            {
+                Say(string.Format(CultureInfo.InvariantCulture, "the next segment continues in the same window at {0:0.###} s", _windowClock));
+            }
+
+            if (segment.Rehearse && !WindowBirth(entry, out string noBirth))
+            {
+                Missed(noBirth);
+                return;
+            }
+
+            // A scene the plan moved (to end on the run's last row) is captioned at the second it is filmed at.
+            if (scene.Station != SafariStation.Birth && Math.Abs(_windowClock - segment.At) > 0.5d)
+                Refiled(scene, segment, segment.At, _windowClock);
+
+            ShowWindowAt(_windowClock);
+            Phase = SafariPhase.Seeking;
+            Plan();
+        }
+
+        /// <summary>
+        /// The birth a window's birth scene films, from the window's own rows: the planner's, the
+        /// child the story names, the named parent's first child, or the first child of a member of
+        /// the line. The child's spot is its first frame's root less its parent's there, and the
+        /// take opens the lead before the birth, or at the window's first frame when that is later.
+        /// </summary>
+        private bool WindowBirth(StoryWindow entry, out string why)
+        {
+            why = null;
+            SafariScene scene = Current;
+            FilmWindowReader w = _window.Window;
+            FilmWindowEvent birth = default;
+            string how = null;
+
+            if (entry.HasBirth && w.TryBirthOf(entry.BirthChild, out FilmWindowEvent planned) &&
+                (entry.BirthParent < 0 || planned.Parent == entry.BirthParent))
+            {
+                birth = planned;
+                how = "the planner's, from the run's lineage";
+            }
+            else if (scene.BirthChildBody >= 0 && w.TryBirthOf(scene.BirthChildBody, out FilmWindowEvent named))
+            {
+                birth = named;
+                how = "the child the story names";
+            }
+            else
+            {
+                long line = scene.BirthLine;
+                foreach (FilmWindowEvent e in w.Events)
+                {
+                    if (e.Kind != 'b' || e.Parent < 0) continue;
+                    if (scene.BirthParentBody >= 0 && e.Parent == scene.BirthParentBody) { birth = e; how = "the first child of body " + e.Parent + ", the parent the story names"; break; }
+                }
+
+                if (how == null && line >= 0)
+                {
+                    foreach (FilmWindowEvent e in w.Events)
+                    {
+                        if (e.Kind != 'b' || e.Parent < 0) continue;
+                        if (_clades.CladeOf(e.Parent, WindowFacts) == line) { birth = e; how = "the window's first birth to a member of " + LineName(scene); break; }
+                    }
+                }
+            }
+
+            if (how == null)
+            {
+                why = "the film window holds no birth to film: " +
+                      (entry.HasBirth ? "not the planner's (body " + entry.BirthChild + ")" : "the planner found none") +
+                      ", and none to the story's parent or to a member of " + LineName(scene) + " between " +
+                      SafariCaptions.Seconds(_window.FirstSecond) + " and " + SafariCaptions.Seconds(_window.LastSecond);
+                return false;
+            }
+
+            _birthAt = birth.Seconds;
+            _birthParent = birth.Parent;
+            _birthChild = birth.Id;
+            _birthRecurred = true;
+            _rehearsal = Rehearsal.None;
+            _birthChildFlags = _window.TryLineageOf(birth.Id, out _, out byte flags) ? flags : (byte)255;
+
+            _birthOffset = new Vector3(float.NaN, float.NaN, float.NaN);
+            if (w.TryFramesOf(birth.Id, out int first, out _))
+            {
+                double t = w.SecondOf(first);
+                if (_window.RootAt(birth.Id, t, out Vector3 child) && _window.RootAt(birth.Parent, t, out Vector3 parent))
+                    _birthOffset = child - parent;
+            }
+
+            double lead = SafariTripBuilder.BirthLeadSeconds;
+            double opens = Math.Max(_window.FirstSecond, _birthAt - lead);
+            _birthLead = _birthAt - opens;
+            _windowClock = opens;
+
+            Say(string.Format(CultureInfo.InvariantCulture,
+                "the birth is {0}: body {1} born to body {2} at {3:0.###} s{4}; the take opens {5:0.#} s before it{6}",
+                how, _birthChild, _birthParent, _birthAt,
+                FilmPlans.Shot.Finite(_birthOffset) ? string.Format(CultureInfo.InvariantCulture, ", landing {0:0.##} m from its parent", _birthOffset.magnitude) : ", no frame of the child to place it by",
+                _birthLead, _birthLead < lead - 0.5d ? " (the window opens too late for the whole lead)" : ""));
+            return true;
+        }
+
+        /// <summary>Shows the window's frame nearest a nominal second through the runner, which keeps its clock there.</summary>
+        private void ShowWindowAt(double second)
+        {
+            if (_window == null || _window.FrameCount == 0) return;
+            int frame = _window.Window.NearestFrame(second);
+            if (frame >= 0 && frame != _window.FrameIndex) _runner.ShowWindowFrame(frame);
+            _window.DressAll();
+        }
+
+        /// <summary>
+        /// A window's frame: the take's nominal second advanced by the interval, the farm's frame
+        /// nearest it shown, and the camera posed on it. A second past the window's last frame
+        /// holds that frame and is counted and said at the take's end.
+        /// </summary>
+        private bool WindowFrame(double interval, out SafariPose pose)
+        {
+            pose = default;
+
+            if (_window == null || !ReferenceEquals(_runner.Window, _window))
+            {
+                Fail("the film window went away mid-take: " + _runner.Error);
+                return false;
+            }
+
+            SafariPlans.Take take = _takes[_take];
+
+            if (_takeFrame > 0) _takeTarget += interval;
+            _windowClock = _takeTarget;
+
+            if (_takeTarget > _window.LastSecond + 0.5d * interval) _heldPastEnd++;
+            ShowWindowAt(_takeTarget);
+
+            double into = _takeTarget - _takeT0;
+            float u = take.Seconds > 0f ? Mathf.Clamp01((float)(into / take.Seconds)) : 1f;
+
+            take.Shot.Pose(_window, _window.View, u, (float)Math.Max(1e-3d, interval), out Vector3 eye, out Quaternion rotation, out float focus);
+
+            double second = _window.Second;
+            double offset = _sceneOffsetBase + into;
+            SafariCaption caption = SafariCaptions.At(Current, offset);
+            if (caption != null && _shown.Add(caption)) CaptionShown?.Invoke(Current, second, caption.Text, offset);
+
+            pose = new SafariPose
+            {
+                Eye = eye,
+                Rotation = rotation,
+                FieldOfView = take.Shot.FieldOfView,
+                Portrait = take.Shot.Portrait,
+                Focus = focus,
+                Caption = caption?.Text,
+                Label = string.Format(CultureInfo.InvariantCulture, "{0}  t={1:0.0} s", _window.ProvenanceWord, second),
+                Take = TakeNumber,
+                TakeFrame = _takeFrame,
+                SceneOffset = offset,
+                Second = second,
+                Shot = take.Shot,
+                Dim = _segment != null && _segment.Held && Current.Station == SafariStation.Card ? Mathf.Clamp01(Current.Dim) : 0f,
+                Callout = _options.Callouts && Current.Clade != null && Current.Clade.Series.Count > 1 ? Current.Clade : null,
+                Subject = take.Subject,
+                Scene = Current,
+            };
+
+            _takeFrame++;
+
+            // The take ends as a live one does, on the physics step nearest its length.
+            double dt = _window.Window.Verdict != null && _window.Window.Verdict.PhysicsDt > 0d ? _window.Window.Verdict.PhysicsDt : 1e-4d;
+            if (into + 0.5d * dt >= take.Seconds) _endPending = true;
+            return true;
         }
 
         // ---------------------------------------------------------------- endings

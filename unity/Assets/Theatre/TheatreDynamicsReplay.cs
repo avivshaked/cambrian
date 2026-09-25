@@ -48,7 +48,7 @@ namespace Evosim.Theatre
     /// is a viewer whose recording cannot be trusted afterwards.
     /// </para>
     /// </remarks>
-    public sealed class TheatreDynamicsReplay : IDisposable, ITheatreFrame
+    public sealed class TheatreDynamicsReplay : IDisposable, IFilmWorld
     {
         /// <summary>The word in <c>run.json</c> this replay is for.</summary>
         public const string EngineName = "dynamics";
@@ -442,6 +442,49 @@ namespace Evosim.Theatre
         public bool AbsorptiveAt(int index) => Sim.World.Living[index].HasAbsorptiveTissue;
 
         public bool PhotosyntheticAt(int index) => Sim.World.Living[index].HasPhotosyntheticTissue;
+
+        // ---------------------------------------------------------------- the film's world (IFilmWorld)
+
+        /// <inheritdoc />
+        public double Second => ElapsedSeconds;
+
+        /// <inheritdoc />
+        public long IdAt(int index) => Sim.World.Living[index].Id;
+
+        /// <summary>A body's root velocity from the solver, m/s, or zero.</summary>
+        public Vector3 VelocityOf(long id)
+        {
+            if (Sim == null || !Sim.TryPose(id, out Evosim.Dynamics.Creature body) || body == null ||
+                body.Velocity == null || body.Velocity.Length < 3)
+            {
+                return Vector3.zero;
+            }
+
+            var v = new Vector3((float)body.Velocity[0], (float)body.Velocity[1], (float)body.Velocity[2]);
+            return FilmPlans.Shot.Finite(v) ? v : Vector3.zero;
+        }
+
+        /// <summary>The velocity at this second carried forward in a straight line: the live world has no future to read.</summary>
+        public Vector3 DisplacementOf(long id, float seconds) => VelocityOf(id) * seconds;
+
+        /// <inheritdoc />
+        public bool TryAccount(long id, out double reserve, out int children)
+        {
+            reserve = double.NaN;
+            children = 0;
+            if (Sim?.World == null) return false;
+
+            IReadOnlyList<Organism> living = Sim.World.Living;
+            for (int i = 0; i < living.Count; i++)
+            {
+                if (living[i].Id != id) continue;
+                reserve = living[i].Energy;
+                children = living[i].Children;
+                return true;
+            }
+
+            return false;
+        }
 
         /// <summary>The one line a replay's picture carries — and which engine drew it.</summary>
         /// <remarks>

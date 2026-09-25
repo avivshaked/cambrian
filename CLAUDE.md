@@ -1159,8 +1159,8 @@ actually verifying it.
   manifest marks. And the last checkpoint after a `STOP` is the second the run stopped at,
   because the file is written after the report row and before the stop is acted on.
   **A checkpoint carried everything the solver reads and not everything a sense reads,
-  until `StateVersion` 6** (2026-09-23): `Organism.PartDamage`, the health each part has
-  lost over its life and what the `Damage` sensor channel reports, was not written, so
+  until `StateVersion` 6** (2026-09-23): `Organism.PartDamage`, the health each part had
+  lost and what the `Damage` sensor channel reports, was not written, so
   every restored wounded body sensed nothing, and a resume of round 45 seed 2 parted from
   the run at its first sample in the two jointed bodies among sixteen wounded whose brains
   read the channel (six of 1,925 from the 5,000 s checkpoint; one body both times). The
@@ -1170,7 +1170,45 @@ actually verifying it.
   and compares the two member by member, skipping by name what a step fills before it
   reads; run it on a world that has the thing you added (a bitten crowd, a grown one)
   before trusting a resume of it, and every `StateVersion` bump refuses every checkpoint on
-  disk, round 45's included, which are cousins for that reason anyway. **The
+  disk, round 45's included, which are cousins for that reason anyway. **It happened again,
+  and `StateVersion` 11 and `Checkpoint.Version` 6 close it** (2026-09-25). The contact flag
+  (`Organism.PartContact`) stayed set until a plan change then, and the writer left it out. The
+  restore also left each body's contact and damage senses unwired until its first metabolic
+  step. Round 48's resume parted from the run at its first sample for it, in jointed bodies
+  whose brains read contact. The check missed both: it skipped every sense, and it had the
+  flag on its list of what a step fills before it reads. It now compares the senses and the
+  harness's own members, then steps the two worlds side by side for two metabolic steps. Two
+  more faults came out of that. A checkpoint taken between growth steps restored a growing
+  body at its organism's size, one the solver had not been given yet; it now carries the size.
+  One taken after a bite and before the growth step that rebuilt the body could not be
+  restored at all. The loop deferred a cadence checkpoint to the next growth step, and wrote
+  no last one at a stop or a wall in between. A cadence that is a multiple of the growth step
+  never met it. The bite rebuild below closed that window.
+  The fix was version 5 on its branch, and so was the record's
+  gzipped checkpoint on another; the two met at round 49's merge as version 6, the new payload
+  gzipped, which both records write, and a file saying 5 is refused by name because it could
+  be either layout. Round 48's files are version 4 and still open, lossily. A
+  farm resume refuses one unless `EVOSIM_ALLOW_SOURCE_MISMATCH` is set, and then marks the
+  run a cousin. The theatre labels one as a cousin. The fixtures ckA, ckB, ckC, `ckUi` and
+  the theatre's live fixture need re-recording on this build. From round 49 (D123) both
+  records are the last metabolic step's alone, zeroed in place at the top of the mouth's
+  pass. The layout did not move, because the physics steps after a restore still read them
+  before the next metabolic step rewrites them. Round 49's instruments then took
+  `StateVersion` to 12, since queued lineage rows carry the death row's `ga` and `res` and a
+  founder's landing readings, and 11 is refused. **A bitten body is rebuilt on the step that
+  bit it, from round 49's bite rebuild** (2026-09-25). Until then the farm rebuilt its solver
+  only at the next growth step, up to ten seconds later. In that window the contact list
+  named the old plan's links, so a bite could land on the wrong part. The brain read senses
+  indexed by the new plan, and a checkpoint could not be restored. Now the farm rebuilds it
+  straight after the world's step, before any physics step, as it builds a newborn, and the
+  checkpoint deferral stays as a guard that never fires. A new path that changes a plan must
+  rebuild the body before the next physics step and take the organism's part map as it does
+  (`TakePartMapFromPreviousPlan`). Core composes a pending map with the next change's, so a
+  map left behind corrupts the next one. The step's contact and damage records now go through
+  the same map, where they were dropped. A surviving part keeps what it felt, and the rebuild
+  hands the body the carried arrays, a module rebuild at the growth step included. From this
+  build on, a world whose plans change with a sense open writes a different world state. Its
+  trajectory moves only where a body that changes plan has a brain reading either channel. **The
   JIT decides the bits**: .NET's
   tiered compilation gives quick-JITted and optimised loops different floating-point
   results on a rounding edge, so every project that reports a digest sets

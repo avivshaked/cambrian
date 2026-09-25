@@ -43,6 +43,13 @@ namespace Evosim.Theatre
             /// <c>TheatreSnapshot</c>, which asks for one second at a time.
             /// </summary>
             Snapshot = 2,
+
+            /// <summary>
+            /// A farm film window played back: every body where the farm's solver put it, frame
+            /// by frame, with nothing stepped here (<c>logbook/specs/record-and-film-spec.md</c>,
+            /// B2). Selected by <c>EVOSIM_THEATRE_WINDOW</c> or by <see cref="WindowDirectory"/>.
+            /// </summary>
+            Window = 3,
         }
 
         [Header("What to show")]
@@ -72,6 +79,18 @@ namespace Evosim.Theatre
                  "before it. 0 takes the last checkpoint the run holds. EVOSIM_THEATRE_SEEK sets " +
                  "this when a checkpoint is named.")]
         public float CheckpointSeconds;
+
+        [Header("Window — a farm film window")]
+        [Tooltip("A film window's directory, as Evosim.Farm --film-window wrote it. " +
+                 "EVOSIM_THEATRE_WINDOW overrides and selects the mode.")]
+        public string WindowDirectory = "";
+
+        [Tooltip("The run the window was filmed from. Blank takes the path the window's verdict " +
+                 "names. EVOSIM_THEATRE_RUN sets it when the window is named from a script.")]
+        public string WindowRunDirectory = "";
+
+        [Tooltip("Start the window again from its first frame when playback reaches its last.")]
+        public bool LoopWindow = true;
 
         [Header("Mode A — one creature")]
         [Tooltip("A snapshots/*.jsonl file, or any file holding one genome. " +
@@ -163,8 +182,13 @@ namespace Evosim.Theatre
         private LiveWorldView _liveView;
         private SoloCreature _solo;
         private SnapshotWorld _recon;
+        private FilmWindowWorld _window;
+        private double _windowClock;
         private readonly CreatureIdMap _map = new CreatureIdMap();
         private readonly TheatrePalette _palette = new TheatrePalette();
+
+        /// <summary>The palette every body is painted with, for a look that changes it (StoryLook).</summary>
+        public TheatrePalette Palette => _palette;
 
         /// <summary>
         /// The look: dark field lighting, the water's fog, the sea bed, the snow, and the
@@ -239,6 +263,13 @@ namespace Evosim.Theatre
         /// </remarks>
         public SnapshotWorld Reconstruction => _recon;
 
+        /// <summary>
+        /// The film window on screen, or null when this is not Mode Window. Read by
+        /// <c>TheatreSnapshot</c>'s window mode and <c>TheatreWindowCheck</c>, which show a frame
+        /// and photograph or count it.
+        /// </summary>
+        public FilmWindowWorld Window => _window;
+
         /// <summary>Why nothing opened, or null. The same string the interface prints.</summary>
         public string Error => _error;
 
@@ -297,6 +328,16 @@ namespace Evosim.Theatre
                 Mode = ViewMode.Snapshot;
             }
 
+            // A farm film window (B2). Named, it is what opens: the run beside it is the one its
+            // verdict names, unless EVOSIM_THEATRE_RUN names another, and nothing is stepped.
+            string window = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_WINDOW");
+            if (!string.IsNullOrEmpty(window))
+            {
+                WindowDirectory = window;
+                WindowRunDirectory = run ?? "";
+                Mode = ViewMode.Window;
+            }
+
             // A checkpoint to carry on from. Named, it decides which world opens — the run
             // directory beside it is the world's, so EVOSIM_THEATRE_RUN has nothing left to say.
             string checkpoint = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHECKPOINT");
@@ -323,7 +364,9 @@ namespace Evosim.Theatre
             // Before the run opens, because opening is what fills it in. Never in the snapshot
             // mode: the interface reads a replay's census and a reconstruction has none, which is
             // also why -Chrome is refused there.
-            if (Mode != ViewMode.Snapshot)
+            // Nor in the window mode, for the same reason: a film window has frames and a verdict,
+            // and no census, audit or ancestry for the panel to read.
+            if (Mode != ViewMode.Snapshot && Mode != ViewMode.Window)
             {
                 _ui = TheatreUi.Create();
                 if (_ui != null) _ui.Visible = ShowOverlay;
@@ -350,6 +393,7 @@ namespace Evosim.Theatre
             {
                 if (Mode == ViewMode.World) OpenWorld();
                 else if (Mode == ViewMode.Snapshot) OpenSnapshot();
+                else if (Mode == ViewMode.Window) OpenWindow();
                 else OpenSolo();
             }
             catch (Exception e)
@@ -626,6 +670,76 @@ namespace Evosim.Theatre
             _recon?.Begin(second);
         }
 
+        /// <summary>
+        /// Mode Window: a farm film window, its run's water and floor, and its first frame, or the
+        /// frame nearest <see cref="SeekToSeconds"/> when that is set.
+        /// </summary>
+        /// <remarks>
+        /// Nothing is stepped and nothing is compared here: the farm compared the window against
+        /// the run when it wrote it, and its verdict is the word on every frame
+        /// (<see cref="FilmWindowWorld"/>). The pace keys play it faster or slower, the pause holds
+        /// a frame, and a click selects a body by the same arithmetic the live mode uses.
+        /// </remarks>
+        private void OpenWindow()
+        {
+            if (string.IsNullOrWhiteSpace(WindowDirectory))
+            {
+                _error =
+                    "No film window. Set Window Directory on the Theatre Runner in the scene, or " +
+                    "launch with EVOSIM_THEATRE_WINDOW pointing at the directory " +
+                    "Evosim.Farm --film-window wrote.";
+                return;
+            }
+
+            _window = FilmWindowWorld.Open(WindowDirectory, WindowRunDirectory, out string refusal);
+
+            if (_window == null)
+            {
+                _error = refusal;
+                Debug.LogWarning("[Theatre] refused: " + refusal);
+                return;
+            }
+
+            _window.Palette = _palette;
+            _window.ColourByCellType = ColourByCellType;
+            _window.View.RepaintsPerFrame = RepaintsPerFrame;
+
+            Debug.Log(
+                "[Theatre] FARM FILM WINDOW · " + _window.ProvenanceWord + " — " +
+                (_window.Record.ArmName ?? "run") + " seed " + _window.Record.Seed + ", " +
+                _window.FrameCount + " frames from " + _window.FirstSecond.ToString("0.###",
+                    System.Globalization.CultureInfo.InvariantCulture) + " s to " +
+                _window.LastSecond.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) +
+                " s" + (_window.Window.Verdict != null ? "; the farm's verdict: " + _window.Window.Verdict.Reason : "; no verdict"));
+
+            DressTheWorld(_window);
+
+            if (_window.FrameCount > 0)
+            {
+                ShowWindowSecond(SeekToSeconds > 0f ? SeekToSeconds : _window.FirstSecond);
+            }
+        }
+
+        /// <summary>Shows the window's frame nearest a second, and holds the playback clock there.</summary>
+        public void ShowWindowSecond(double second)
+        {
+            if (_window == null || _window.FrameCount == 0) return;
+
+            int frame = _window.Window.NearestFrame(second);
+            ShowWindowFrame(frame);
+        }
+
+        /// <summary>Shows one of the window's frames by index, and holds the playback clock there.</summary>
+        public void ShowWindowFrame(int frame)
+        {
+            if (_window == null || _window.FrameCount == 0) return;
+
+            frame = Mathf.Clamp(frame, 0, _window.FrameCount - 1);
+            _windowClock = _window.Window.SecondOf(frame);
+            _window.ColourByCellType = ColourByCellType;
+            _window.Show(frame);
+        }
+
         private void OpenSolo()
         {
             if (string.IsNullOrWhiteSpace(GenomePath))
@@ -700,6 +814,9 @@ namespace Evosim.Theatre
             _solo = null;
             _recon?.Dispose();
             _recon = null;
+            _window?.Dispose();
+            _window = null;
+            _windowClock = 0d;
             _map.Clear();
             _palette.Clear();
             _skin.Undress();
@@ -743,6 +860,7 @@ namespace Evosim.Theatre
             else if (_live != null) StepLive();
             else if (_solo != null) StepSolo();
             else if (_recon != null) _recon.BuildSome(FrameBudgetSeconds);
+            else if (_window != null) StepWindow();
 
             if (!HoldView) DrawTheInterface();
         }
@@ -944,6 +1062,48 @@ namespace Evosim.Theatre
         }
 
         /// <summary>
+        /// The film window's playback: a clock in the window's own seconds, advanced by the pace,
+        /// and the frame at or before it shown when it changes.
+        /// </summary>
+        /// <remarks>
+        /// The frames are the farm's, so playing faster skips frames and never interpolates: a
+        /// frame on screen is always one the solver held. At the last frame the clock goes back
+        /// to the first under <see cref="LoopWindow"/>, and holds otherwise.
+        /// </remarks>
+        private void StepWindow()
+        {
+            if (_window.FrameCount == 0) return;
+
+            double before = _windowClock;
+            double wallBefore = _clock.Elapsed.TotalSeconds;
+            bool looped = false;
+
+            if (!Paused)
+            {
+                _windowClock += Time.unscaledDeltaTime * Mathf.Max(0f, EffectiveRate);
+
+                if (_windowClock > _window.LastSecond + 1e-6)
+                {
+                    looped = LoopWindow;
+                    _windowClock = LoopWindow ? _window.FirstSecond : _window.LastSecond;
+                }
+            }
+
+            if (!looped) MeasurePace(before, wallBefore);
+
+            if (HoldView) return;
+
+            int frame = _window.Window.FrameAtOrBefore(_windowClock);
+            if (frame < 0) frame = 0;
+
+            if (frame != _window.FrameIndex)
+            {
+                _window.ColourByCellType = ColourByCellType;
+                _window.Show(frame);
+            }
+        }
+
+        /// <summary>
         /// The census on the console, on a cadence — the live cut's stand-in for the panel.
         /// </summary>
         /// <remarks>
@@ -1012,7 +1172,8 @@ namespace Evosim.Theatre
         /// <summary>Simulated seconds per wall-clock second, over a window rather than a frame.</summary>
         private void MeasurePace(double simBefore, double wallBefore)
         {
-            double sim = _replay?.ElapsedSeconds ?? _live?.ElapsedSeconds ?? _solo?.ElapsedSeconds ?? 0d;
+            double sim = _replay?.ElapsedSeconds ?? _live?.ElapsedSeconds ?? _solo?.ElapsedSeconds ??
+                         (_window != null ? _windowClock : 0d);
             double wall = _clock.Elapsed.TotalSeconds;
 
             _pacedFrom += sim - simBefore;
@@ -1068,6 +1229,13 @@ namespace Evosim.Theatre
         /// </remarks>
         public void BeginSeek(double target)
         {
+            // A film window has every frame on disk: a seek is a jump, and nothing runs forward.
+            if (_window != null)
+            {
+                ShowWindowSecond(target);
+                return;
+            }
+
             double now = _replay?.ElapsedSeconds ?? _live?.ElapsedSeconds ?? double.NaN;
             if (double.IsNaN(now)) return;
 
@@ -1110,6 +1278,34 @@ namespace Evosim.Theatre
             OpenWhateverModeSays();
         }
 
+        /// <summary>
+        /// Opens a farm film window, as <c>EVOSIM_THEATRE_WINDOW</c> would: the safari's director
+        /// films a story's scene from one this way (<c>record-and-film-spec.md</c>, B3).
+        /// </summary>
+        /// <remarks>
+        /// Synchronous, as <see cref="OpenCheckpoint"/> is: the old world is closed and the window
+        /// opened, dressed and showing its first frame before this returns, and
+        /// <see cref="Window"/> is null with <see cref="Error"/> set when it was refused. A window
+        /// already on screen is kept, so a scene's second segment does not open it again.
+        /// </remarks>
+        public void OpenWindowAt(string windowDirectory, string runDirectory)
+        {
+            if (_window != null && !string.IsNullOrEmpty(windowDirectory) &&
+                string.Equals(
+                    System.IO.Path.GetFullPath(windowDirectory).TrimEnd('/', '\\'),
+                    _window.Window.Directory.TrimEnd('/', '\\'),
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            Mode = ViewMode.Window;
+            WindowDirectory = windowDirectory ?? "";
+            WindowRunDirectory = runDirectory ?? "";
+            SeekToSeconds = 0f;
+            OpenWhateverModeSays();
+        }
+
         /// <summary>Space, without the key: pause or carry on.</summary>
         public void TogglePause() => Paused = !Paused;
 
@@ -1131,6 +1327,14 @@ namespace Evosim.Theatre
             // world's own. What it is not is the recording's, which the interface says and this
             // method has never been the place for.
             if (_live != null)
+            {
+                _selectedId = id;
+                FollowSelection();
+                return true;
+            }
+
+            // A film window's ids are the run's own: the farm stepped the run and wrote them.
+            if (_window != null)
             {
                 _selectedId = id;
                 FollowSelection();
@@ -1236,6 +1440,15 @@ namespace Evosim.Theatre
                 return true;
             }
 
+            if (_window != null)
+            {
+                if (!_window.View.Pick(ray, out long picked)) return false;
+
+                _selectedId = picked;
+                FollowSelection();
+                return true;
+            }
+
             if (_replay == null) return false;
             if (!Physics.Raycast(ray, out RaycastHit hit, 5000f)) return false;
 
@@ -1258,6 +1471,17 @@ namespace Evosim.Theatre
 
                 Organism found = CreatureIdMap.Find(_live.Sim.World, _selectedId);
                 FlyCamera.Follow(body, found != null ? Radius(found.Phenotype) : 1f);
+                return;
+            }
+
+            if (_window != null)
+            {
+                Transform body = _window.RootOf(_selectedId);
+                if (body == null) return;
+
+                FlyCamera.Follow(
+                    body,
+                    _window.TryIndexOf(_selectedId, out int index) ? Radius(_window.PhenotypeOf(index)) : 1f);
                 return;
             }
 

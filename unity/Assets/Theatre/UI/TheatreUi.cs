@@ -2225,21 +2225,24 @@ namespace Evosim.Theatre
             Mathf.Clamp((float)(100d * seconds / _axisEndSeconds), 0f, 100f);
 
         /// <summary>Every snapshot the run wrote, by the second in its file name.</summary>
+        /// <remarks>
+        /// In the run's own record (<see cref="RecordFiles"/>): <c>NNNNNNNNN.jsonl</c> in format 1
+        /// and <c>NNNNNNNNN.jsonl.gz</c> in format 2, so a converted run, which holds both, marks
+        /// each second once. A record this build cannot read marks none rather than guessing, and
+        /// the picture and replay paths say why.
+        /// </remarks>
         private IEnumerable<double> SnapshotSeconds()
         {
-            string directory = Path.Combine(_runDirectory ?? "", "snapshots");
-            if (!Directory.Exists(directory)) yield break;
+            if (string.IsNullOrEmpty(_runDirectory)) return new double[0];
 
-            foreach (string path in Directory.GetFiles(directory))
+            try
             {
-                string name = Path.GetFileNameWithoutExtension(path);
-                if (string.IsNullOrEmpty(name)) continue;
-
-                if (double.TryParse(name, System.Globalization.NumberStyles.Integer,
-                        System.Globalization.CultureInfo.InvariantCulture, out double seconds))
-                {
-                    yield return seconds;
-                }
+                return RecordFiles.SnapshotSeconds(_runDirectory, RecordFiles.FormatOf(_runDirectory));
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[Theatre] no snapshot marks: " + e.Message);
+                return new double[0];
             }
         }
 

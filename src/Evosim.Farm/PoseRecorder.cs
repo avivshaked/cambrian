@@ -23,6 +23,11 @@ namespace Evosim.Farm
     /// <c>Simulation.TryPose</c>. A run with the stream on and a run with it off produce the same
     /// <c>lineage.jsonl</c> to the byte, which is the check the build was accepted on.
     /// </para>
+    /// <para>
+    /// <b>A film window writes through it too</b> (<see cref="FilmWindow"/>), at its own path and
+    /// on physics steps rather than on metabolic ones, through <see cref="WriteFrame"/>: one
+    /// definition of what a frame holds, whoever asks for it.
+    /// </para>
     /// </remarks>
     public sealed class PoseRecorder : IDisposable
     {
@@ -45,6 +50,23 @@ namespace Evosim.Farm
                 Path.Combine(runDirectory, PoseStream.FileName), cadenceSeconds, configHash);
         }
 
+        private PoseRecorder(PoseStreamWriter writer, float cadenceSeconds)
+        {
+            _writer = writer;
+            _cadence = cadenceSeconds;
+            _due = 0d;
+        }
+
+        /// <summary>
+        /// Opens a stream at a path of the caller's choosing, for a writer that decides for itself
+        /// when a frame is due and calls <see cref="WriteFrame"/>.
+        /// </summary>
+        /// <param name="path">The stream's file; its index is written beside it as <c>.idx</c>.</param>
+        /// <param name="cadenceSeconds">The nominal interval the header records.</param>
+        /// <param name="configHash">The recorded run's <c>configHash</c>.</param>
+        public static PoseRecorder AtPath(string path, float cadenceSeconds, string configHash) =>
+            new PoseRecorder(new PoseStreamWriter(path, cadenceSeconds, configHash), cadenceSeconds);
+
         /// <summary>Complete frames written.</summary>
         public int FrameCount => _writer?.FrameCount ?? 0;
 
@@ -59,18 +81,27 @@ namespace Evosim.Farm
             double t = sim.World.ElapsedSeconds;
             if (t + 1e-9 < _due) return;
 
-            Write(sim, t);
+            WriteFrame(sim, t);
 
             // The next multiple of the cadence strictly after this instant, so a run whose steps
             // land on the cadence writes one frame per instant and no more.
             _due = Math.Floor(t / _cadence + 1e-9) * _cadence + _cadence;
         }
 
-        private void Write(Simulation sim, double t)
+        /// <summary>
+        /// Writes one frame of every living body that has a solver body, labelled with the second
+        /// the caller names.
+        /// </summary>
+        /// <returns>The bodies the frame holds.</returns>
+        public int WriteFrame(Simulation sim, double seconds)
         {
-            _writer.BeginFrame(t);
+            if (_writer == null) throw new ObjectDisposedException(nameof(PoseRecorder));
+            if (sim == null) throw new ArgumentNullException(nameof(sim));
+
+            _writer.BeginFrame(seconds);
 
             IReadOnlyList<Organism> living = sim.World.Living;
+            int written = 0;
 
             for (int i = 0; i < living.Count; i++)
             {
@@ -90,11 +121,60 @@ namespace Evosim.Farm
                     (float)body.BaseRotation.Z,
                     (float)body.BaseRotation.W,
                     creature.BodyFraction,
+                    GuildFlags(creature),
+                    creature.SecondsOfReserve,
+                    BreedFraction(creature, sim.World.Config),
+                    (float)creature.Energy,
                     body.Dof,
                     body.Q);
+
+                written++;
             }
 
             _writer.EndFrame();
+            return written;
+        }
+
+        /// <summary>
+        /// How near a body is to its next child, as World.IsSolvent asks it: the account over the
+        /// gestation gate for a gestating body, the reserve over the reproduction gate for a lump
+        /// breeder. NaN where the gate is not positive.
+        /// </summary>
+        private static float BreedFraction(Organism creature, RunConfig config)
+        {
+            double gate = creature.Gestates ? creature.GestationThreshold(config) : creature.ReproductionThreshold(config);
+            double funds = creature.Gestates ? creature.GestationJoules : creature.Energy;
+            return gate > 0d ? (float)(funds / gate) : float.NaN;
+        }
+
+        /// <summary>
+        /// A body's guild flags, decided exactly as the sampler decides them for
+        /// <c>positions.jsonl</c> (<c>Sampler.Write</c>): absorptive when any developed part is
+        /// absorptive, jointed when the parts' joints have any degree of freedom between them, and
+        /// photosynthetic by the organism's own cached flag.
+        /// </summary>
+        /// <remarks>
+        /// Written out again here rather than shared because the sampler computes the three tests
+        /// inline in a loop that feeds a dozen other columns, and the file that loop lives in is
+        /// not this change's to restructure. <c>PoseStreamTests</c> holds the stream's flags equal
+        /// to <c>positions.jsonl</c>'s on a stepped world, which is what keeps the two one rule.
+        /// </remarks>
+        public static int GuildFlags(Organism creature)
+        {
+            if (creature == null) throw new ArgumentNullException(nameof(creature));
+
+            bool absorptive = false;
+            int dof = 0;
+
+            foreach (PhenotypePart part in creature.Phenotype.Parts)
+            {
+                if (part.CellTypeId == CellTypeIds.Absorptive) absorptive = true;
+                dof += part.JointType.DofCount();
+            }
+
+            return (absorptive ? PositionsRow.AbsorptiveBit : 0) |
+                   (dof > 0 ? PositionsRow.JointedBit : 0) |
+                   (creature.HasPhotosyntheticTissue ? PositionsRow.PhotosyntheticBit : 0);
         }
 
         public void Dispose()
