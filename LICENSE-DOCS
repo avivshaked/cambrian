@@ -24,6 +24,7 @@ The written work in this repository:
     design/*.md            (briefs and review notes for the theatre's interface)
     design/reference-frames/**  (frames from the theatre those briefs design against)
     primer/**              (explanatory writing about what was built)
+    assets/README.md       (the manifest of the films' media)
     spikes/**/README.md
     spikes/**/results/FINDINGS.md
 
@@ -33,6 +34,10 @@ Source code is licensed separately under the PolyForm Noncommercial License
 inocula/** is neither prose nor source: it holds evolved genome files, produced
 by this project's own simulations and tracked as experiment inputs (D060). They
 are covered by the code licence alongside the code that reads them.
+
+assets/** apart from its README is neither prose nor source and is not tracked: music,
+cards and graphics for the films, each under its own licence, which assets/README.md
+records beside the file's source. Nothing there is covered by either licence here.
 
 rounds/** is source: one launcher per round, each setting a world's knobs and
 calling scripts/run-arm.ps1. It is covered by the code licence, PolyForm

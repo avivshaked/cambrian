@@ -179,15 +179,22 @@ each one found is a reason to rewrite the sentence, and a page with several of t
   what the owner is asked to rule on at the end.
 - **Commit messages.** A title under seventy characters that says what changed and why;
   a body in plain sentences. No bullet lists of files.
-- **Story films.** Captions are prose the viewer cannot reread, so each carries one idea and
-  stays on screen long enough to read. Every term is explained at or before its first use, in
-  the glossary's word and never a synonym or a code name. "I" is the reader of the runs and
-  "we" the project. A creature never wants, tries or chooses. A caption about a recorded
-  event says "in the run", because every frame is a cousin. A chapter title states what
-  happens. The story has a shape (hope, obstacle, turn, end) and its kind is named; a turn is
-  never invented. The §5 tells apply at caption length too. The measures (reading pace,
-  rounding, the font, charts) are in `logbook/specs/story-writer-brief.md`, and the words are
-  in `logbook/specs/story-glossary.md`.
+- **Story films.** Captions are the film's script: read on screen, and spoken by a narrator
+  once the narration stage exists, so each carries one idea, stays on screen long enough to read
+  and sounds like a person saying it. The voice is detached (the owner, 2026-09-25): no "I" and
+  no "we" in a caption, and a reaction is kept without a narrator, so "I didn't expect that"
+  becomes "That was not expected". Every term is explained at or before its first use, in the
+  glossary's word and never a synonym or a code name, and where the picture can show the thing,
+  the caption says what the viewer is looking at rather than defining it after a colon. A
+  creature never wants, tries or chooses. The film says once, early, that every scene is re-run
+  from a saved moment and the numbers are the original run's; after that "in the run" appears
+  only where the difference matters. A chapter title states what happens. The story has a shape
+  (hope, obstacle, turn, end) and its kind is named; a turn is never invented. The §5 tells apply
+  at caption length too, with one allowance: a fragment and a genuine question, one of each a
+  chapter at most, and neither as a scene's last line. The measures (reading pace, rounding, the
+  font, charts) are in `logbook/specs/story-writer-brief.md`, the edit that makes captions a
+  script in `logbook/specs/story-script-brief.md`, and the words in
+  `logbook/specs/story-glossary.md`.
 
 ## 8. Rewriting what already exists
 

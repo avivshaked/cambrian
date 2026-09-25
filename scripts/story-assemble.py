@@ -3,7 +3,7 @@
 
     python scripts/story-assemble.py <story.json> <output.mp4> <clips folder> [<clips folder> ...]
         [--title-seconds 5] [--no-title] [--subtitles auto|burn|file|off] [--no-label]
-        [--ass-only] [--fonts <folder>] [--threads N]
+        [--ass-only] [--captions filmed|story] [--filmed <story.filmed.json>] [--fonts <folder>] [--threads N]
     python scripts/story-assemble.py --reburn <film.clean.mp4> <film.ass> <output.mp4> [--fonts <folder>] [--threads N]
 
 The safari's story mode (`scripts/theatre-safari.ps1 <arm> -Story <story.json>`) writes one clip
@@ -45,6 +45,17 @@ A burnt film is made from a joined film without text, which is kept beside it as
 `--threads` threads, four by default: the owner's half-machine ruling of 2026-09-25 counts a farm
 run beside it, and a third of the machine on top of one put it at 100% that afternoon.
 `--ass-only` writes the `.ass` and the table from the clips' lengths and joins nothing.
+
+Captions edited after filming (2026-09-25; the owner: captions should stay editable once the
+scenes are filmed). `--captions filmed` (the default) sets what the director placed when it
+filmed, from `captions.tsv`. `--captions story` sets the story as it stands now: each scene's
+captions from `story.json`, placed as the director places them, over the clips already filmed.
+The director's own lines (a story's birth adds one) are kept. They are told apart from the
+writer's by the story as it was filmed, `--filmed`, or `story.filmed.json` beside the story when
+there is one; without it, a filmed line that is not in the story now and lies in a slot the
+story leaves free is taken for the director's. The table says how many captions changed since
+filming, and a note names every caption the filmed clip is too short to hold. A scene whose
+frames carry stamped text is not helped by this: its old words are in the pixels.
 
 Each scene's provenance word is read from its take rows in `captions.tsv` (B3, 2026-09-25): a
 scene filmed from the farm's film windows carries its window's verdict (FAITHFUL, COUSIN or
@@ -423,7 +434,7 @@ def events_from_rows(entry, lengths, start, clip_length, label):
     return captions, labels
 
 
-def story_captions(scene, chapter, start, clip_length):
+def story_captions(scene, chapter, start, clip_length, cut=None, lead_seconds=None):
     """
     A scene's captions as film seconds from the story alone, as the director places them: its
     captions after the chapter card when it opens a chapter, the chapter's line on the card, a
@@ -461,7 +472,7 @@ def story_captions(scene, chapter, start, clip_length):
     lead = 0.0
     chapter_title = text(first(raw, "chapter", "chapter_title", "chapterTitle", "chapter_card"))
     if chapter_title and not card and chapter is not None:
-        lead = CHAPTER_SECONDS
+        lead = CHAPTER_SECONDS if lead_seconds is None else lead_seconds
         for c in listed:
             c[0] += lead
         listed.insert(0, [FIRST_OFFSET, CHAPTER_SECONDS - 2 * FIRST_OFFSET,
@@ -473,11 +484,55 @@ def story_captions(scene, chapter, start, clip_length):
     out = []
     for at, hold, words in listed:
         t0, t1 = at, min(at + hold, end)
+        if cut is not None and at + hold > end + 1e-6:
+            cut.append((words, "dropped" if t1 <= t0 else "cut short by %.1f s" % (at + hold - end)))
         if fade_from is not None and t0 >= fade_from - 1e-6:
             t0, t1 = t0 - CROSSFADE_SECONDS, t1 - CROSSFADE_SECONDS
         if t1 > t0:
             out.append((start + t0, start + t1, words))
     return out
+
+
+def chapter_numbers(scenes):
+    """Each chapter-opening scene's chapter number, counted over the story as the director counts them."""
+    chapters, count = {}, 0
+    for s in scenes:
+        if text(first(s["raw"], "chapter", "chapter_title", "chapterTitle", "chapter_card")):
+            count += 1
+            chapters[s["n"]] = count
+    return chapters
+
+
+def recaption(row, filmed_lines, chapter, filmed, filmed_chapter, start, length, notes, lead=None):
+    """
+    One filmed scene's captions from the story as it is now (--captions story): the story's own,
+    placed as the director places them, and the director's own lines from the filming kept.
+    Returns (captions, the writer's lines changed since filming, the director's lines kept, how
+    the director's were told apart).
+    """
+    cut = []
+    now = story_captions(row, chapter, start, length, cut, lead)
+    for words, what in cut:
+        notes.append("scene %d: the filmed clip is %.1f s and cannot hold '%s' (%s); lengthen the scene and film it "
+                     "again, or shorten the caption" % (row["n"], length, words, what))
+    now_texts = {w for _, _, w in now}
+    if filmed is not None:
+        was_texts = {w for _, _, w in story_captions(filmed, filmed_chapter, start, length)}
+        director = [e for e in filmed_lines if e[2] not in was_texts]
+        how = "the filmed story"
+    else:
+        def free(e):
+            return all(e[1] <= a + 1e-6 or e[0] >= b - 1e-6 for a, b, _ in now)
+        director = [e for e in filmed_lines if e[2] not in now_texts and free(e)]
+        how = "free slots"
+    was = [e for e in filmed_lines if e not in director]
+
+    def same(a, b):
+        return a[2] == b[2] and abs(a[0] - b[0]) < 0.05 and abs(a[1] - b[1]) < 0.05
+    # An edited or moved line is one change; a line added or removed is one change.
+    changed = max(sum(1 for e in now if not any(same(e, w) for w in was)),
+                  sum(1 for w in was if not any(same(w, e) for e in now)))
+    return now + director, changed, len(director), how
 
 
 # ---------------------------------------------------------------- the .ass
@@ -604,6 +659,10 @@ def main():
         sys.exit("--subtitles is one of auto, burn, file, off")
     with_label = not flag(args, "--no-label")
     ass_only = flag(args, "--ass-only")
+    captions_from = option(args, "--captions", "filmed")
+    if captions_from not in ("filmed", "story"):
+        sys.exit("--captions is one of filmed, story")
+    filmed_path = option(args, "--filmed", None)
     if len(args) < 3:
         print("\n".join(l.strip() for l in __doc__.strip().splitlines()[2:6]), file=sys.stderr)
         sys.exit(2)
@@ -619,11 +678,20 @@ def main():
     found = find_clips(folders)
 
     # The chapters are counted over every scene that carries one, as the director counts them.
-    chapters, count = {}, 0
-    for s in scenes:
-        if text(first(s["raw"], "chapter", "chapter_title", "chapterTitle", "chapter_card")):
-            count += 1
-            chapters[s["n"]] = count
+    chapters = chapter_numbers(scenes)
+
+    # The story as filmed, for --captions story: the director's own lines are the filmed ones it did not write.
+    filmed, filmed_chapters = None, {}
+    if captions_from == "story":
+        if filmed_path is None:
+            beside = os.path.join(os.path.dirname(os.path.abspath(story_path)), "story.filmed.json")
+            filmed_path = beside if os.path.isfile(beside) else None
+        elif not os.path.isfile(filmed_path):
+            sys.exit("no filmed story at " + filmed_path)
+        if filmed_path:
+            listed = read_story(filmed_path)
+            filmed = {s["n"]: s for s in listed}
+            filmed_chapters = chapter_numbers(listed)
 
     rows, clips, shapes, notes = [], [], [], []
     numbers = {s["n"] for s in scenes}
@@ -722,6 +790,7 @@ def main():
     # The subtitles: each joined scene's rows from its folder's captions.tsv, or the story's own.
     captions, labels = [], []
     stamped = []
+    edited = [0]
     if mode != "off":
         for r in rows:
             if r["status"] != "joined" or r["n"] == 0:
@@ -736,9 +805,19 @@ def main():
             if entry and entry["takes"]:
                 lengths = take_lengths(entry, folder, slug, notes)
                 c, l = events_from_rows(entry, lengths, s0, length, with_label)
-                captions += c
                 labels += l
-                r["subtitles"] = "%d caption(s), %d label tick(s) from captions.tsv" % (len(c), len(l))
+                if captions_from == "story":
+                    # The chapter card as filmed: the second take's start, a whole number of frames past 8 s.
+                    order = sorted(lengths)
+                    lead = layout(lengths, entry.get("station", ""))[order[1]] if chapters.get(r["n"]) and len(order) >= 2 else None
+                    c, changed, own, how = recaption(r, c, chapters.get(r["n"]), (filmed or {}).get(r["n"]),
+                                                     filmed_chapters.get(r["n"]), s0, length, notes, lead)
+                    edited[0] += changed
+                    r["subtitles"] = ("%d caption(s) from the story now, %d changed since filming, %d of the director's "
+                                      "(told by %s); %d label tick(s) from captions.tsv") % (len(c) - own, changed, own, how, len(l))
+                else:
+                    r["subtitles"] = "%d caption(s), %d label tick(s) from captions.tsv" % (len(c), len(l))
+                captions += c
                 if entry["captions_in_frames"] or entry["label_in_frames"]:
                     stamped.append(r["n"])
                     r["subtitles"] += "; its frames carry stamped %s" % (
@@ -774,6 +853,9 @@ def main():
                                                     r["start"], r["length"], r["status"], r["path"], r.get("subtitles", ""),
                                                     r.get("provenance", ""))) + "\n")
 
+    if captions_from == "story" and mode != "off":
+        print("captions: the story as it stands, %d changed since filming; the director's own lines told by %s" % (
+            edited[0], filmed_path or "their free slots (no story.filmed.json)"))
     if ass_only:
         write_table()
         print("subtitles: %s (%d captions, %d label ticks), nothing joined (--ass-only)" % (ass, len(captions), len(labels)))

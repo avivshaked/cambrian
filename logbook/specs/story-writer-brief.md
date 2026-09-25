@@ -57,8 +57,11 @@ anything, so finish when your files are written.
    it does not "choose" snow. A line's recipe "bets on small children" only as a figure of speech
    the viewer can see through, and only once the numbers behind it are on screen.
 4. **The screen is a cousin**: every scene is re-run from a checkpoint and drifts from what was
-   recorded. So a caption about a particular birth, death or count says "in the run", and a scene that must
-   show a particular body is set at a checkpoint second with `flexible: false`.
+   recorded. The first chapter says so once: every scene is re-run from a saved moment, and the
+   numbers are the original run's. After that a caption says "in the run" only where the
+   difference matters, a birth or a count the replay may not show as it happened (STYLE.md §7,
+   2026-09-25). A scene that must show a particular body is set at a checkpoint second with
+   `flexible: false`.
 5. **The code outranks an earlier film**: before you repeat a claim from an earlier film or entry,
    find it in the code or the settings. Round 48's first film said the dead make the snow; living
    leaves made three quarters of it. The glossary lists what else changed.
@@ -131,7 +134,12 @@ in the scene where they first matter.
   (`theatre-safari.ps1 -BurnText`, the first film's look) is held to the old 5×7 bitmap font:
   capitals, digits and `.,:;-+=_/()[]%!?'\*#·`. Set `STAMPED = True` in the builder for that.
 - **Plain words**, and none of the tells in `STYLE.md` §5: no closing contrasts of the "X, and
-  not Y" kind, no intensifiers, no rhetorical questions.
+  not Y" kind, no intensifiers. One fragment and one genuine question a chapter at most, neither
+  as a scene's last line.
+- **A detached voice**: no "I" and no "we" in a caption. A reaction is kept without a narrator,
+  "That was not expected" (the owner, 2026-09-25). The script stage edits the captions for the
+  ear after you ([`story-script-brief.md`](story-script-brief.md)); write them to be read aloud
+  from the start.
 - **No caption** runs past its scene's end, and the builder checks that.
 
 ## The chart rule
@@ -192,6 +200,11 @@ builder counts it. Round 48's second film came to 9 min 39 s over 20 scenes and 
 chapters.
 
 ## What you hand back
+
+The writer runs twice. The first pass reads the runs and returns only `arc.md`, for the owner's
+ruling before any caption is written: the arc in two sentences and its kind, the stake, who the
+viewer follows, the chapters with one line each on what happens in them, and the predictions'
+verdicts. The second pass, from the arc as ruled, returns the rest:
 
 - `story.md`: the story in prose for the owner, following `STYLE.md`, with the arc first, the
   chapters in order, a verdict table of the round's predictions, what earlier films got wrong,
