@@ -346,8 +346,43 @@ carrying a developed 3 cm part, so no born-small addition was ever born in round
 47, and under it a whole plant is refused at investment 0.02 unless its adult is at least
 0.031 m³; hence the rigid-group floors and the lowered floors, both to be screened.
 
-**State (2026-09-24, about 13:00; the session runs on Opus 5.5 since midday).** This block
-is what the next session works from. Everything below it in this section is history.
+**State (2026-09-24, about 13:00; the session runs on Opus 5.5 since midday; updated
+2026-09-25 about 10:40).** This block is what the next session works from. Everything below it
+in this section is history.
+
+- **The work of 2026-09-25, started on the owner's go at 10:13 ("go ahead and start the work"),
+  with the owner away and reachable by phone notification.** The owner set Intel's power limits
+  in BIOS 0806 at 10:11. The restart is confirmed; the setting itself cannot be read from
+  Windows without admin tools. The machine track runs one heavy job at a time, owned by the
+  session; subagents write code and run only builds and fast filtered tests. The stop rule
+  (proposed, and taken as accepted with the go): if seed 2's replay runs clean past 13,700 s,
+  every heavy job pauses and the owner is told.
+  - **Machine track:**
+    - the seed 2 probe replay at 10 threads (`scratch/film/r48-s2-probe.log`, the report
+      `r48-s2-probe.txt`), built from `scratch/wt-r49`;
+    - then the GPU port's checks as its subagent hands them over;
+    - then story-mode compiles and renders.
+  - **The GPU port** (Opus subagent, `scratch/wt-gpu`, branch `gpu-port`, notes in
+    `scratch/gpu-port/`): catch spike 4's kernel up to round 48's world, then build the port per
+    `logbook/specs/gpu-port-spec.md`. It runs no GPU code and no farm run; it hands over the
+    commands for acceptance 1 to 3.
+  - **Story v2, writing** (Opus subagent, `scratch/story-v2/`): a glossary checked against the
+    code, the writer brief v2 (it becomes `logbook/specs/story-writer-brief.md`), and round 48's
+    story rewritten with an opening chapter on how the world works, charts and a bittersweet
+    arc. The procedure is `logbook/specs/story-film.md`. The skill's text waits in
+    `scratch/story-skill/SKILL.md` for the owner, since writes under `.claude/` ask them.
+  - **Story v2, visuals** (Opus subagent, `scratch/wt-safari2`, level with main): a story look
+    with a per-shot exposure meter, lighter water and a camera key light, plus the `chart` field
+    (line, bars, and a live energy account) drawn with UI Toolkit. It starts no Unity process;
+    the session compiles.
+  - **Scratch cleanup** (the owner's request of 10:25): `scratch/` held 107 GB in 298 entries.
+    Three Sonnet surveys, read-only, write `scratch/cleanup/media.tsv`, `worktrees.tsv` and
+    `rest.tsv`, marking each entry delete, extract, keep or ask. The session reviews the tables
+    before deleting anything. Extraction into git follows CLAUDE.md's conventions, and anything
+    uncertain waits for the owner.
+  - **Outside `scratch/`, for the owner:** `runs/` holds 67 GB, `.claude/worktrees/` 13.7 GB,
+    and the six Unity workers 1.7 GB each.
+  - **Merged:** the safari branch is in main (`d995433`, pushed), so story mode is on main.
 
 - **The machine runs under the owner's option B, not a full hold (2026-09-25, late morning:
   "Lets go for B then").** The owner declined the flash for now ("if this is not critical i'd
