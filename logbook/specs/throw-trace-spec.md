@@ -1,7 +1,7 @@
 # Build spec: the throw trace (owner "sounds good. go ahead", 2026-09-12)
 
 Read `CLAUDE.md` in full first (the gotchas on divergence, the dump cap, growth's in-place
-resize, `simHash`, and the subagent rules), then `scratch/research-throws/notes.txt` in the
+resize, `simHash`, and the subagent rules), then `logbook/specs/research-throws-notes.txt` in the
 main tree (the search this instrument answers), then `unity/Assets/Evosim/Sim/Ecosystem.cs`
 (`CheckFinite`, `Dump`, `DumpBodies`, the resize loop near `GrowthStepSeconds`) and
 `unity/Assets/Evosim/Sim/PhenotypeBuilder.cs` (`Build`, `Resize`, the 0.001 kg mass floor).

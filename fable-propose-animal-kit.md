@@ -5,7 +5,7 @@ written. The owner asked on 2026-09-21 to start adding shapes, cell types and se
 for natural structures on the floor that ecosystems can evolve around. This is the order I
 would build them in and why. It carries `fable-propose-predation.md` forward onto D098's
 economy and replaces its rules 4 and 5; the rest of that text stands and is cited, not
-restated. The survey behind it is `scratch/animal-kit/survey-2026-09-21.md`, checked
+restated. The survey behind it is `logbook/specs/animal-kit-survey-2026-09-21.md`, checked
 against the code where this text leans on it. Absorbed into DECISIONS.md on ruling, then
 deleted.*
 

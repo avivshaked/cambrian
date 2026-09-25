@@ -1,0 +1,66 @@
+=== the contact kernel: the grid on the card, the query and the push
+  command     D:\Projects\experiments\evolution-simulator\spikes\02-gpu-featherstone\out\bin\Release\net8.0\featherstone.dll contact --check-steps 1000 --no-time --tag contact-check
+  host        MAINPC, 32 logical processors, .NET 8.0.24, server GC True
+  run         D:\Projects\experiments\evolution-simulator\runs\r45-s2\2026-09-22-232754-e51997d5 at 30000 s
+  crowd       genomes 6146 (refused 0, 218 with a recorded plan); rebuilt 6145, no genome 0, undeveloped 0 (3.9 s)
+  solver      dt 0.01, tank radius 83.6828 m, bed relief, omega 20, zeta 1, max separation 1, max dv 1
+  capacities  candidates 256, overlaps 64 per body
+  cpu device  CPUAccelerator, max threads/group 128
+  card        NVIDIA GeForce RTX 4090, SMs 128, SM_89, driver 13.1, max threads/group 1024
+
+--- 1. transcription: double on ILGPU's CPU device against the library, 1000 steps
+    the library steps the crowd (DynamicsWorld, contact on, still water); after every step
+    the kernel is handed the committed spheres and its lists and forces are compared
+    with the library's own ContactGrid.Neighbours, Contacts.Apply (Fext, overlap ids,
+    bed/glass flag) and a line-for-line copy of Contacts.Apply for the per-pair pushes.
+    N 6145, max links 16, buckets 16384; kernel compile 269 ms; dof mismatches in the rebuild 0
+    step     0: values        148,289  mismatches 0  (wall 0 s)
+    step   100: values     14,782,337  mismatches 0  (wall 13 s)
+    step   200: values     29,373,127  mismatches 0  (wall 26 s)
+    step   300: values     43,961,747  mismatches 0  (wall 39 s)
+    step   400: values     58,550,589  mismatches 0  (wall 52 s)
+    step   500: values     73,138,705  mismatches 0  (wall 65 s)
+    step   600: values     87,725,431  mismatches 0  (wall 78 s)
+    step   700: values    102,316,291  mismatches 0  (wall 90 s)
+    step   800: values    116,908,357  mismatches 0  (wall 103 s)
+    step   900: values    131,501,641  mismatches 0  (wall 116 s)
+    step   999: values    145,950,406  mismatches 0  (wall 129 s)
+
+    body-steps compared            6,145,000  (bodies lost by the library: 0)
+    grid cell over the run         2.335576 .. 2.335631 m
+    candidate lists (Neighbours)       39,434,302 values, 0 mismatches
+    overlap ids (instrument)            6,226,026 values, 0 mismatches
+    per-pair push vectors (copy)          243,078 values, 0 mismatches
+    pair sums (copy)                   18,435,000 values, 0 mismatches
+    capped body force (copy)           18,435,000 values, 0 mismatches
+    per-link Fext (library)            57,030,000 values, 0 mismatches
+    bed/glass flag (library)            6,145,000 values, 0 mismatches
+    the copy against the library       57,030,000 values, 0 mismatches
+    TOTAL                             145,950,406 values, 0 mismatches
+    overflow: candidate lists 0 body-steps, overlap lists 0 body-steps (excluded from the comparison)
+    cpu-device kernel wall 123.3 s over 1000 steps; total 129 s
+
+--- 2. single precision on the card: the crowd as recorded (at rest), N 6145
+    identity, group 32: tree mean bit-identical (22946c6237b9a261 / 22946c6237b9a261); serial mean bit-identical (538bc3577e5f5a52 / 538bc3577e5f5a52)
+    identity, auto group:  tree mean bit-identical (22946c6237b9a261 / 22946c6237b9a261); serial mean bit-identical (538bc3577e5f5a52 / 538bc3577e5f5a52)
+    group 32 against auto: tree bit-identical, serial bit-identical; tree against serial differs
+    cell: single 2.3356311321258545 m against double 2.335631032501276 m
+    candidate lists differing from the library's: 0 of 6145 bodies
+    overlap sets differing (a pair in one precision and not the other): 0 bodies; overflowed 0
+    per-pair push, relative error |single-double|/|double|, 650 pairs: max 4.24E-002, p99 1.60E-002, median 3.63E-004, mean 1.56E-003
+    body force after the cap, relative error, 610 bodies with a force: max 4.24E-002, p99 1.60E-002, median 3.86E-004, mean 1.67E-003
+    per-link Fext, relative error, 2304 links: max 4.24E-002, p99 1.60E-002, median 3.58E-004, mean 1.57E-003
+    bodies where double reads zero force and single does not: 0; worst absolute force error 3.850E-001 N
+
+--- 2. single precision on the card: the crowd after 999 steps of the library, N 6145
+    identity, group 32: tree mean bit-identical (30d93df7efff9ea0 / 30d93df7efff9ea0); serial mean bit-identical (a75fd40e8615c36f / a75fd40e8615c36f)
+    identity, auto group:  tree mean bit-identical (30d93df7efff9ea0 / 30d93df7efff9ea0); serial mean bit-identical (a75fd40e8615c36f / a75fd40e8615c36f)
+    group 32 against auto: tree bit-identical, serial bit-identical; tree against serial differs
+    cell: single 2.3355953693389893 m against double 2.3355953533928635 m
+    candidate lists differing from the library's: 0 of 6145 bodies
+    overlap sets differing (a pair in one precision and not the other): 4 bodies; overflowed 0
+    per-pair push, relative error |single-double|/|double|, 50 pairs: max 4.42E+001, p99 4.42E+001, median 1.00E+000, mean 5.30E+000
+    body force after the cap, relative error, 50 bodies with a force: max 4.42E+001, p99 4.42E+001, median 1.00E+000, mean 5.23E+000
+    per-link Fext, relative error, 201 links: max 4.42E+001, p99 4.42E+001, median 1.00E+000, mean 5.97E+000
+    bodies where double reads zero force and single does not: 0; worst absolute force error 1.333E-001 N
+

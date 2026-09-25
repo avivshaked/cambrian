@@ -79,7 +79,7 @@ or no plant will ever add one.
 - **Replay of the record**: a round 43 config is refused (the tunables), as §9 says; a
   round 43 world re-run on the new build with the module tunables at their defaults and
   every founder determinate writes the same first thirty rows as round 43 seed 1
-  (`scratch/checkpoint/regress.py` against `runs/r43-s1`), because a determinate world
+  (`logbook/specs/checkpoint-regress.py` against `runs/r43-s1`), because a determinate world
   is the recorded world.
 - **The rule works alone**: in Core, one indeterminate leaf under a constant light adds
   modules to `MaxModules` and no further, at the tissue price, the audit and the matter

@@ -17,7 +17,7 @@ were taken from.
 **Every file in the table below is at genome format 8 since 2026-09-23 (D111).** The
 format-7 files were rewritten by a text edit that changed one byte of the version and added
 `"buoyancyOffset":0` after each node's `toughness` and nothing else
-(`scratch/r46-build/convert/`), and the format-6 ones before them were carried forward the
+(`logbook/specs/format8-conversion/`), and the format-6 ones before them were carried forward the
 same way at D106. The SHA-256s in the table are those of the files as first extracted and
 identify the creature, not the bytes on disk now; a checksum of the current file is
 `sha256sum` away.

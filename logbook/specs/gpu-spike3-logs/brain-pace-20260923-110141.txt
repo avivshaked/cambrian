@@ -1,0 +1,46 @@
+=== the senses and the brain on the card
+  command     D:\Projects\experiments\evolution-simulator\spikes\02-gpu-featherstone\out\bin\Release\net8.0\featherstone.dll brain --no-check --no-card --sizes 0,10000,30000 --time-steps 1000 --cpu-steps 200 --repeats 3 --tag brain-pace
+  host        MAINPC, 32 logical processors, .NET 8.0.24
+  run         D:\Projects\experiments\evolution-simulator\runs\r45-s2\2026-09-22-232754-e51997d5 at 30000 s
+  crowd       genomes 6146, rebuilt 6145, no genome 0, undeveloped 0
+  snow field  168 x 61 x 168 cells of 1 m, 989717 live; recorded column sums total 160910.8 J over 21994 columns, the field holds 160910.8 J (spread evenly down each column: SYNTHETIC vertical profile)
+  births      36142 birth rows read from lineage.jsonl for the brain clocks
+  card        NVIDIA GeForce RTX 4090, SMs 128, SM_89, driver 13.1
+  brains      neurons a body: mean 5.64, p50 4, p99 21, max 75; total 34686; jointed bodies 280 of 6145
+              inputs a neuron: 0 -> 10218, 1 -> 24394, 2 -> 74, 3 -> 0, more -> 0
+              ops: Abs 466, Cos 295, Differentiate 1841, Divide 1477, GreaterThan 542, If 3836, Integrate 953, Interpolate 448, Max 4237, Memory 494, Min 749, OscillateSaw 720, OscillateWave 1034, Product 406, Sigmoid 2162, SignOf 548, Sin 4281, Smooth 4554, Sum 4511, SumThreshold 1132
+              bodies whose brain reads any sense: 1790; by channel: JointAngle 48, JointAngularVelocity 429, Contact 68, OrientationUp 66, Damage 152, Chemical 56, Energy 84, Flow 89, Depth 835
+
+=== pace at N = 6145: the recorded crowd; max neurons 75, max links 16
+    card, single, group 32, 1000 steps, median of 3; microseconds per body-step (and per step):
+      kernel only, one launch of 1000 steps          0.01310  (     80.5 us/step)
+      kernel only, one launch of 1000 steps, auto group    0.01379  (     84.8 us/step)
+      kernel only, 1000 launches of one step       0.01475  (     90.6 us/step)
+      wall, 1000 launches of one step              0.01460  (     89.7 us/step)
+      host launch cost of one step's launch             0.00063  (      3.9 us/step)
+      field stock + reserves up once per 50 steps       0.00131  (    402.6 us per upload of 6.59 MB)
+    CPU,  1 thread(s): senses + brain    0.22520 us/body-step  (1383.9 us/step, 200 steps)
+    CPU, 16 thread(s): senses + brain    0.01886 us/body-step  (115.9 us/step, 200 steps)
+
+=== pace at N = 10000: the recorded crowd repeated at its recorded places (1.63 copies); max neurons 75, max links 16
+    card, single, group 32, 1000 steps, median of 3; microseconds per body-step (and per step):
+      kernel only, one launch of 1000 steps          0.00841  (     84.1 us/step)
+      kernel only, one launch of 1000 steps, auto group    0.00844  (     84.4 us/step)
+      kernel only, 1000 launches of one step       0.00928  (     92.8 us/step)
+      wall, 1000 launches of one step              0.00916  (     91.6 us/step)
+      host launch cost of one step's launch             0.00035  (      3.5 us/step)
+      field stock + reserves up once per 50 steps       0.00077  (    384.3 us per upload of 6.61 MB)
+    CPU,  1 thread(s): senses + brain    0.33988 us/body-step  (3398.8 us/step, 200 steps)
+    CPU, 16 thread(s): senses + brain    0.01837 us/body-step  (183.7 us/step, 200 steps)
+
+=== pace at N = 30000: the recorded crowd repeated at its recorded places (4.88 copies); max neurons 75, max links 16
+    card, single, group 32, 1000 steps, median of 3; microseconds per body-step (and per step):
+      kernel only, one launch of 1000 steps          0.00329  (     98.6 us/step)
+      kernel only, one launch of 1000 steps, auto group    0.00296  (     88.8 us/step)
+      kernel only, 1000 launches of one step       0.00312  (     93.7 us/step)
+      wall, 1000 launches of one step              0.00310  (     92.9 us/step)
+      host launch cost of one step's launch             0.00011  (      3.4 us/step)
+      field stock + reserves up once per 50 steps       0.00026  (    389.2 us per upload of 6.68 MB)
+    CPU,  1 thread(s): senses + brain    0.40578 us/body-step  (12173.4 us/step, 200 steps)
+    CPU, 16 thread(s): senses + brain    0.02335 us/body-step  (700.5 us/step, 200 steps)
+

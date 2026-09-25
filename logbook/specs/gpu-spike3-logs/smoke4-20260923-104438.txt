@@ -1,0 +1,117 @@
+=== the contact kernel: the grid on the card, the query and the push
+  command     D:\Projects\experiments\evolution-simulator\spikes\02-gpu-featherstone\out\bin\Release\net8.0\featherstone.dll contact --check-steps 3 --sizes 0 --time-steps 50 --cpu-steps 10 --repeats 1 --tag smoke4
+  host        MAINPC, 32 logical processors, .NET 8.0.24, server GC True
+  run         D:\Projects\experiments\evolution-simulator\runs\r45-s2\2026-09-22-232754-e51997d5 at 30000 s
+  crowd       genomes 6146 (refused 0, 218 with a recorded plan); rebuilt 6145, no genome 0, undeveloped 0 (3.9 s)
+  solver      dt 0.01, tank radius 83.6828 m, bed relief, omega 20, zeta 1, max separation 1, max dv 1
+  capacities  candidates 256, overlaps 64 per body
+  cpu device  CPUAccelerator, max threads/group 128
+  card        NVIDIA GeForce RTX 4090, SMs 128, SM_89, driver 13.1, max threads/group 1024
+
+--- 1. transcription: double on ILGPU's CPU device against the library, 3 steps
+    the library steps the crowd (DynamicsWorld, contact on, still water); after every step
+    the kernel is handed the committed spheres and its lists and forces are compared
+    with the library's own ContactGrid.Neighbours, Contacts.Apply (Fext, overlap ids,
+    bed/glass flag) and a line-for-line copy of Contacts.Apply for the per-pair pushes.
+    N 6145, max links 16, buckets 16384; kernel compile 284 ms; dof mismatches in the rebuild 0
+    two queries, both checked every step: the candidate scratch strided in global memory,
+    and the same algorithm with the scratch in the thread's local memory
+    step     0: values        148,289 /        148,289  mismatches 0 / 0  (wall 0 s)
+    step     2: values        444,919 /        444,919  mismatches 0 / 0  (wall 1 s)
+
+    grid cell over the run         2.335631 .. 2.335631 m; bodies lost by the library: 0
+    -- query with the scratch strided in global memory
+    body-steps compared            18,435
+    candidate lists (Neighbours)          118,495 values, 0 mismatches
+    overlap ids (instrument)               20,397 values, 0 mismatches
+    per-pair push vectors (copy)            5,886 values, 0 mismatches
+    pair sums (copy)                       55,305 values, 0 mismatches
+    capped body force (copy)               55,305 values, 0 mismatches
+    per-link Fext (library)               171,090 values, 0 mismatches
+    bed/glass flag (library)               18,435 values, 0 mismatches
+    the copy against the library          171,090 values, 0 mismatches
+    TOTAL                                 444,919 values, 0 mismatches
+    overflow: candidate lists 0 body-steps, overlap lists 0 body-steps (excluded from the comparison)
+    -- query with the scratch in local memory
+    body-steps compared            18,435
+    candidate lists (Neighbours)          118,495 values, 0 mismatches
+    overlap ids (instrument)               20,397 values, 0 mismatches
+    per-pair push vectors (copy)            5,886 values, 0 mismatches
+    pair sums (copy)                       55,305 values, 0 mismatches
+    capped body force (copy)               55,305 values, 0 mismatches
+    per-link Fext (library)               171,090 values, 0 mismatches
+    bed/glass flag (library)               18,435 values, 0 mismatches
+    the copy against the library          171,090 values, 0 mismatches
+    TOTAL                                 444,919 values, 0 mismatches
+    overflow: candidate lists 0 body-steps, overlap lists 0 body-steps (excluded from the comparison)
+    cpu-device kernel wall 0.8 s over 3 steps and two queries; total 1 s
+
+--- 2. single precision on the card: the crowd as recorded (at rest), N 6145
+    identity, group 32, global scratch: tree mean bit-identical (22946c6237b9a261 / 22946c6237b9a261); serial mean bit-identical (538bc3577e5f5a52 / 538bc3577e5f5a52)
+    identity, group 32, local scratch:  tree mean bit-identical (22946c6237b9a261 / 22946c6237b9a261); serial mean bit-identical (538bc3577e5f5a52 / 538bc3577e5f5a52)
+    identity, auto group, global scratch: tree mean bit-identical (22946c6237b9a261 / 22946c6237b9a261); serial mean bit-identical (538bc3577e5f5a52 / 538bc3577e5f5a52)
+    identity, auto group, local scratch:  tree mean bit-identical (22946c6237b9a261 / 22946c6237b9a261); serial mean bit-identical (538bc3577e5f5a52 / 538bc3577e5f5a52)
+    group 32 against auto: bit-identical; global against local scratch: bit-identical; tree mean against serial mean: differs (expected: the cell's last bit)
+    cell: single 2.3356311321258545 m against double 2.335631032501276 m
+    candidate lists differing from the library's: 0 of 6145 bodies
+    overlap sets differing (a pair in one precision and not the other): 0 bodies; overflowed 0
+    per-pair push, relative error |single-double|/|double|, 650 pairs: max 4.24E-002, p99 1.60E-002, median 3.63E-004, mean 1.56E-003
+    body force after the cap, relative error, 610 bodies with a force: max 4.24E-002, p99 1.60E-002, median 3.86E-004, mean 1.67E-003
+    per-link Fext, relative error, 2304 links: max 4.24E-002, p99 1.60E-002, median 3.58E-004, mean 1.57E-003
+    bodies where double reads zero force and single does not: 0; worst absolute force error 3.850E-001 N
+    body force, absolute error, N: max 3.85E-001, p99 1.89E-001, median 2.27E-002, mean 3.58E-002
+    body force error as a speed change in one step, |df| dt / m, m/s: max 2.85E-005, p99 1.88E-005, median 2.87E-006, mean 4.29E-006
+    body force error over the body's own cap m * 1 m/s / dt: max 2.85E-005, p99 1.88E-005, median 2.87E-006, mean 4.29E-006
+    penetrations of the overlapping pairs, m: max 1.11E+000, p99 5.78E-001, median 3.69E-003, mean 5.15E-002; a float's spacing at the farthest coordinate (166.5 m) is 1.53E-005 m
+
+--- 2. single precision on the card: the crowd after 2 steps of the library, N 6145
+    identity, group 32, global scratch: tree mean bit-identical (894d8f16f8c20adf / 894d8f16f8c20adf); serial mean bit-identical (21c70808ecffecfd / 21c70808ecffecfd)
+    identity, group 32, local scratch:  tree mean bit-identical (894d8f16f8c20adf / 894d8f16f8c20adf); serial mean bit-identical (21c70808ecffecfd / 21c70808ecffecfd)
+    identity, auto group, global scratch: tree mean bit-identical (894d8f16f8c20adf / 894d8f16f8c20adf); serial mean bit-identical (21c70808ecffecfd / 21c70808ecffecfd)
+    identity, auto group, local scratch:  tree mean bit-identical (894d8f16f8c20adf / 894d8f16f8c20adf); serial mean bit-identical (21c70808ecffecfd / 21c70808ecffecfd)
+    group 32 against auto: bit-identical; global against local scratch: bit-identical; tree mean against serial mean: differs (expected: the cell's last bit)
+    cell: single 2.3356308937072754 m against double 2.3356307783328227 m
+    candidate lists differing from the library's: 0 of 6145 bodies
+    overlap sets differing (a pair in one precision and not the other): 0 bodies; overflowed 0
+    per-pair push, relative error |single-double|/|double|, 650 pairs: max 2.35E-001, p99 7.88E-002, median 1.23E-003, mean 5.82E-003
+    body force after the cap, relative error, 609 bodies with a force: max 2.35E-001, p99 7.88E-002, median 1.38E-003, mean 6.25E-003
+    per-link Fext, relative error, 2291 links: max 2.35E-001, p99 7.88E-002, median 1.31E-003, mean 6.22E-003
+    bodies where double reads zero force and single does not: 0; worst absolute force error 3.557E-001 N
+    body force, absolute error, N: max 3.56E-001, p99 2.07E-001, median 2.33E-002, mean 4.02E-002
+    body force error as a speed change in one step, |df| dt / m, m/s: max 3.36E-005, p99 2.08E-005, median 2.83E-006, mean 4.64E-006
+    body force error over the body's own cap m * 1 m/s / dt: max 3.36E-005, p99 2.08E-005, median 2.83E-006, mean 4.64E-006
+    penetrations of the overlapping pairs, m: max 1.08E+000, p99 5.47E-001, median 3.35E-003, mean 4.70E-002; a float's spacing at the farthest coordinate (166.5 m) is 1.53E-005 m
+
+=== pace at N = 6145: the recorded crowd
+    library grid: cell 2.3356 m (2 x mean radius 1.1678), largest radius 3.000 m, 58602 cell entries (9.54 a body)
+    occupancy (single on the card, this crowd at rest):
+      candidates before dedup (what the scratch holds): mean 13.25, p50 10, p99 53, max 85
+      candidates after dedup:                          mean 5.43, p50 5, p99 16, max 25   library after dedup: mean 5.43, p50 5, p99 16, max 25
+      overlaps:                                        mean 0.11, p50 0, p99 1, max 4
+      overflow at candidates 256: 0 bodies; at overlaps 64: 0 bodies; zero overflow needs candidates >= 85 and overlaps >= 4; entry overflow 0
+      cell on the card 2.335631 m, entries 58602, buckets 16384
+    card, single, group 32, 50 steps, median of 1; microseconds per body-step (and per step):
+      whole step, tree mean (memset + 4 launches), wall     0.06009  (    369.2 us/step)
+      whole step, serial mean, wall                         0.09821  (    603.5 us/step)
+      kernel time on the card, tree mean (sum of pieces)    0.06542  (    402.0 us/step)
+        memset counts                                       0.00188  (     11.6 us/step)
+        mean, tree                                          0.00207  (     12.7 us/step)
+        mean, serial                                        0.03834  (    235.6 us/step)
+        ranges + histogram                                  0.00150  (      9.2 us/step)
+        scan                                                0.00547  (     33.6 us/step)
+        scatter                                             0.00359  (     22.0 us/step)
+        query + push                                        0.05091  (    312.8 us/step)
+        query + push at the auto group                      0.05883  (    361.5 us/step)
+      with the candidate scratch in local memory:
+        whole step, tree mean, wall                         0.05774  (    354.8 us/step)
+        query + push, group 32                             0.04833  (    297.0 us/step)
+        query + push, auto group                            0.06797  (    417.7 us/step)
+      query launched alone, wall                            0.05086  (    312.5 us/step)
+      one empty launch, wall                                0.00472  (     29.0 us/launch)
+      launch overhead of the whole step (wall - kernels)   -0.00533  (    -32.8 us/step)
+      sphere upload if the host fed it (8 reals + flag)     0.02453  (    150.7 us/step)
+    CPU,  1 thread(s), instrument on : grid build    0.08540, apply    1.11625, phase    1.20165 us/body-step  (7384.1 us/step, 10 steps)
+    CPU,  1 thread(s), instrument off: grid build    0.07946, apply    0.98524, phase    1.06470 us/body-step  (6542.6 us/step, 10 steps)
+    CPU, 16 thread(s), instrument on : grid build    0.06722, apply    0.10400, phase    0.17122 us/body-step  (1052.1 us/step, 10 steps)
+    CPU, 16 thread(s), instrument off: grid build    0.06487, apply    0.10290, phase    0.16778 us/body-step  (1031.0 us/step, 10 steps)
+

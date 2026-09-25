@@ -335,7 +335,7 @@ Editor.
 ## Housekeeping
 
 - Nothing was written outside the repository. Unity logs are in `scratch/logs/`; the arms are in
-  `runs/` (gitignored); `rounds/launch-fp.ps1` is the arm launcher and `scratch/edit_cs.py` is
+  `runs/` (gitignored); `rounds/launch-fp.ps1` is the arm launcher and `scripts/edit_cs.py` is
   the byte-preserving editor the source edits were made with (it exists because `git`'s
   `autocrlf` and a careless writer will silently change a file's line endings and therefore its
   `simHash`, for no reason anybody can see).

@@ -1,0 +1,115 @@
+=== the contact kernel: the grid on the card, the query and the push
+  command     D:\Projects\experiments\evolution-simulator\spikes\02-gpu-featherstone\out\bin\Release\net8.0\featherstone.dll contact --no-check --no-card --sizes 0,10000,30000 --time-steps 200 --cpu-steps 100 --repeats 3 --tag contact-pace
+  host        MAINPC, 32 logical processors, .NET 8.0.24, server GC True
+  run         D:\Projects\experiments\evolution-simulator\runs\r45-s2\2026-09-22-232754-e51997d5 at 30000 s
+  crowd       genomes 6146 (refused 0, 218 with a recorded plan); rebuilt 6145, no genome 0, undeveloped 0 (3.8 s)
+  solver      dt 0.01, tank radius 83.6828 m, bed relief, omega 20, zeta 1, max separation 1, max dv 1
+  capacities  candidates 256, overlaps 64 per body
+  cpu device  CPUAccelerator, max threads/group 128
+  card        NVIDIA GeForce RTX 4090, SMs 128, SM_89, driver 13.1, max threads/group 1024
+
+=== pace at N = 6145: the recorded crowd
+    library grid: cell 2.3356 m (2 x mean radius 1.1678), largest radius 3.000 m, 58602 cell entries (9.54 a body)
+    occupancy (single on the card, this crowd at rest):
+      candidates before dedup (what the scratch holds): mean 13.25, p50 10, p99 53, max 85
+      candidates after dedup:                          mean 5.43, p50 5, p99 16, max 25   library after dedup: mean 5.43, p50 5, p99 16, max 25
+      overlaps:                                        mean 0.11, p50 0, p99 1, max 4
+      overflow at candidates 256: 0 bodies; at overlaps 64: 0 bodies; zero overflow needs candidates >= 85 and overlaps >= 4; entry overflow 0
+      cell on the card 2.335631 m, entries 58602, buckets 16384
+      cells covered per body: mean 9.54, p50 8, p99 27, max 64; bounding radius, cm: mean 116.79, p50 115, p99 249, max 300
+    card, single, group 32, 200 steps, median of 3; microseconds per body-step (and per step):
+      whole step, tree mean (memset + 4 launches), wall     0.05424  (    333.3 us/step)
+      whole step, serial mean, wall                         0.08821  (    542.1 us/step)
+      kernel time on the card, tree mean (sum of pieces)    0.05624  (    345.6 us/step)
+        memset counts                                       0.00055  (      3.4 us/step)
+        mean, tree                                          0.00095  (      5.8 us/step)
+        mean, serial                                        0.03472  (    213.3 us/step)
+        ranges + histogram                                  0.00113  (      7.0 us/step)
+        scan                                                0.00438  (     26.9 us/step)
+        scatter                                             0.00299  (     18.4 us/step)
+        query + push                                        0.04624  (    284.1 us/step)
+        query + push at the auto group                      0.05897  (    362.4 us/step)
+      with the candidate scratch in local memory:
+        whole step, tree mean, wall                         0.05202  (    319.7 us/step)
+        query + push, group 32                             0.04388  (    269.7 us/step)
+        query + push, auto group                            0.05477  (    336.5 us/step)
+      query launched alone, wall                            0.04600  (    282.7 us/step)
+      one empty launch, wall                                0.00073  (      4.5 us/launch)
+      host launch cost of a whole step (memset + 5 launches, enqueued behind a busy card)
+                                                            0.00326  (     20.0 us/step)
+      sphere upload if the host fed it (8 reals + flag)     0.02140  (    131.5 us/step)
+    CPU,  1 thread(s), instrument on : grid build    0.06891, apply    0.89111, phase    0.96002 us/body-step  (5899.3 us/step, 100 steps)
+    CPU,  1 thread(s), instrument off: grid build    0.06788, apply    0.89447, phase    0.96235 us/body-step  (5913.6 us/step, 100 steps)
+    CPU, 16 thread(s), instrument on : grid build    0.06095, apply    0.08192, phase    0.14287 us/body-step  (877.9 us/step, 100 steps)
+    CPU, 16 thread(s), instrument off: grid build    0.05959, apply    0.07885, phase    0.13844 us/body-step  (850.7 us/step, 100 steps)
+
+=== pace at N = 10000: tiled: 3945 bodies of the inscribed 118.35 m square, disc radius 106.37 m (recorded 83.68 m)
+    library grid: cell 2.4750 m (2 x mean radius 1.2375), largest radius 3.000 m, 93063 cell entries (9.31 a body)
+    occupancy (single on the card, this crowd at rest):
+      candidates before dedup (what the scratch holds): mean 13.92, p50 11, p99 52, max 86
+      candidates after dedup:                          mean 5.85, p50 5, p99 16, max 27   library after dedup: mean 5.85, p50 5, p99 16, max 27
+      overlaps:                                        mean 0.13, p50 0, p99 2, max 2
+      overflow at candidates 256: 0 bodies; at overlaps 64: 0 bodies; zero overflow needs candidates >= 86 and overlaps >= 2; entry overflow 0
+      cell on the card 2.475019 m, entries 93063, buckets 32768
+      cells covered per body: mean 9.31, p50 8, p99 27, max 64; bounding radius, cm: mean 123.76, p50 131, p99 249, max 300
+    card, single, group 32, 200 steps, median of 3; microseconds per body-step (and per step):
+      whole step, tree mean (memset + 4 launches), wall     0.04358  (    435.8 us/step)
+      whole step, serial mean, wall                         0.07453  (    745.3 us/step)
+      kernel time on the card, tree mean (sum of pieces)    0.04152  (    415.2 us/step)
+        memset counts                                       0.00033  (      3.3 us/step)
+        mean, tree                                          0.00065  (      6.5 us/step)
+        mean, serial                                        0.03457  (    345.7 us/step)
+        ranges + histogram                                  0.00071  (      7.1 us/step)
+        scan                                                0.00777  (     77.7 us/step)
+        scatter                                             0.00164  (     16.4 us/step)
+        query + push                                        0.03043  (    304.3 us/step)
+        query + push at the auto group                      0.03563  (    356.3 us/step)
+      with the candidate scratch in local memory:
+        whole step, tree mean, wall                         0.03898  (    389.8 us/step)
+        query + push, group 32                             0.02897  (    289.7 us/step)
+        query + push, auto group                            0.03342  (    334.2 us/step)
+      query launched alone, wall                            0.03018  (    301.8 us/step)
+      one empty launch, wall                                0.00045  (      4.5 us/launch)
+      host launch cost of a whole step (memset + 5 launches, enqueued behind a busy card)
+                                                            0.00175  (     17.5 us/step)
+      sphere upload if the host fed it (8 reals + flag)     0.01394  (    139.4 us/step)
+    CPU,  1 thread(s), instrument on : grid build    0.08273, apply    0.81594, phase    0.89867 us/body-step  (8986.7 us/step, 100 steps)
+    CPU,  1 thread(s), instrument off: grid build    0.08247, apply    0.81395, phase    0.89642 us/body-step  (8964.2 us/step, 100 steps)
+    CPU, 16 thread(s), instrument on : grid build    0.06176, apply    0.06972, phase    0.13148 us/body-step  (1314.8 us/step, 100 steps)
+    CPU, 16 thread(s), instrument off: grid build    0.06160, apply    0.06868, phase    0.13027 us/body-step  (1302.7 us/step, 100 steps)
+
+=== pace at N = 30000: tiled: 3945 bodies of the inscribed 118.35 m square, disc radius 185.45 m (recorded 83.68 m)
+    library grid: cell 2.5516 m (2 x mean radius 1.2758), largest radius 3.000 m, 274479 cell entries (9.15 a body)
+    occupancy (single on the card, this crowd at rest):
+      candidates before dedup (what the scratch holds): mean 14.40, p50 12, p99 52, max 105
+      candidates after dedup:                          mean 6.15, p50 6, p99 16, max 29   library after dedup: mean 6.15, p50 6, p99 16, max 29
+      overlaps:                                        mean 0.14, p50 0, p99 2, max 2
+      overflow at candidates 256: 0 bodies; at overlaps 64: 0 bodies; zero overflow needs candidates >= 105 and overlaps >= 2; entry overflow 0
+      cell on the card 2.551623 m, entries 274471, buckets 65536
+      cells covered per body: mean 9.15, p50 8, p99 27, max 64; bounding radius, cm: mean 127.59, p50 136, p99 255, max 300
+    card, single, group 32, 200 steps, median of 3; microseconds per body-step (and per step):
+      whole step, tree mean (memset + 4 launches), wall     0.01760  (    527.9 us/step)
+      whole step, serial mean, wall                         0.05164  (   1549.1 us/step)
+      kernel time on the card, tree mean (sum of pieces)    0.01789  (    536.6 us/step)
+        memset counts                                       0.00011  (      3.3 us/step)
+        mean, tree                                          0.00036  (     10.9 us/step)
+        mean, serial                                        0.03424  (   1027.1 us/step)
+        ranges + histogram                                  0.00031  (      9.3 us/step)
+        scan                                                0.00503  (    151.0 us/step)
+        scatter                                             0.00067  (     20.1 us/step)
+        query + push                                        0.01140  (    341.9 us/step)
+        query + push at the auto group                      0.01241  (    372.4 us/step)
+      with the candidate scratch in local memory:
+        whole step, tree mean, wall                         0.01730  (    518.9 us/step)
+        query + push, group 32                             0.01102  (    330.7 us/step)
+        query + push, auto group                            0.01180  (    354.0 us/step)
+      query launched alone, wall                            0.01134  (    340.3 us/step)
+      one empty launch, wall                                0.00014  (      4.3 us/launch)
+      host launch cost of a whole step (memset + 5 launches, enqueued behind a busy card)
+                                                            0.00059  (     17.8 us/step)
+      sphere upload if the host fed it (8 reals + flag)     0.00482  (    144.7 us/step)
+    CPU,  1 thread(s), instrument on : grid build    0.10495, apply    0.98255, phase    1.08750 us/body-step  (32625.0 us/step, 100 steps)
+    CPU,  1 thread(s), instrument off: grid build    0.10383, apply    0.96686, phase    1.07070 us/body-step  (32120.9 us/step, 100 steps)
+    CPU, 16 thread(s), instrument on : grid build    0.06728, apply    0.07658, phase    0.14385 us/body-step  (4315.5 us/step, 100 steps)
+    CPU, 16 thread(s), instrument off: grid build    0.06776, apply    0.07698, phase    0.14474 us/body-step  (4342.2 us/step, 100 steps)
+

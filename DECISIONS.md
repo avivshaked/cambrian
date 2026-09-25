@@ -4692,7 +4692,7 @@ current was not the flow it described. `GridField.Sweep` sampled the horizontal 
 a cell's centre for its east and front faces and applied the three axis passes in sequence.
 A uniform field carried by it developed 30% patchiness on 1 m cells within 600 s at the
 campaign's mixing, and 5% on the 5 m matter cells (reproduced with the reviewer's probe,
-`scratch/astra-check`). The total was conserved throughout, which is what the tests checked.
+`logbook/specs/transport-conserves-probe/`). The total was conserved throughout, which is what the tests checked.
 Rounds 34 to 37 ran on it; their verdicts stand as measured, and every claim in them about
 where food sits relative to bodies carries the artefact. Repaired for round 37b
 (`logbook/specs/transport-conserves-spec.md`): face fluxes from the current's vector

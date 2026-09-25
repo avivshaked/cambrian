@@ -942,7 +942,7 @@ actually verifying it.
   in both campaign cases where the a-priori Courant check asked two, so the transport is
   cheaper per step), and a 5 m grid carries only 0.3 to 0.4 of the water's RMS because it
   samples the eddies about once per wavelength (the 1 m grid carries 0.96 to 1.07). The
-  Astra review's probe that found it is `scratch/astra-check/Program.cs`.
+  Astra review's probe that found it is `logbook/specs/transport-conserves-probe/Program.cs`.
 - **A pre-registration is committed before the queue starts.** Round 37's predictions were
   committed at 08:31:49 and its first manifest written at 08:28:48 (the Astra review of
   2026-09-12): the thresholds were in the working tree and not in history when the world
@@ -1384,7 +1384,7 @@ actually verifying it.
 - **Genome format 8 (D111, 2026-09-23) refuses every format-7 file, and the offset is a
   torque the price switches on.** `buoyancyOffset` sits after `toughness` on every node;
   the six inocula under `inocula/` were rewritten at 0 by a text edit that changed no other
-  byte (`scratch/r46-build/convert/`), and any snapshot row of rounds 44 and 45 is refused by
+  byte (`logbook/specs/format8-conversion/`), and any snapshot row of rounds 44 and 45 is refused by
   this build's reader (the theatre's picture reader still draws them, marked `OLD-RUN READ`).
   With `BuoyancyOffsetWattsPerCubicMetre` at 0 the field is refused above 0, the mutator
   draws nothing for it (children byte-identical), and the solver never enters the torque
@@ -1472,7 +1472,7 @@ actually verifying it.
   carry any of them, so nothing older is byte-compatible anyway). The fixtures are
   `fixtures/r42-config.json` from `pfix11` (round 42's hash `53f8234cb554f0ba`) and the crowd
   `runs/r48fix-s4`; the ten inocula were taken to format 9 by a text edit that added
-  `"mode":"Lump","gestation":0.5` and no other byte (`scratch/r48-repro/convert-format8-to-9.py`).
+  `"mode":"Lump","gestation":0.5` and no other byte (`scripts/convert-format8-to-9.py`).
   **The crowd regress no longer reads IDENTICAL, and that is the bud's design**: `r48fix-s4`
   against `r47fixd-s4` is identical for 140 samples and parts at 1,410 s, where the build
   refused a bud-carrying mutant under the per-part mass floor that the old build admitted
@@ -1513,8 +1513,9 @@ actually verifying it.
   machine is an i9-13900K: eight fast cores (logical 0 to 15) and sixteen efficiency cores (16
   to 31). With VS Code in front, round 48's two farm runs sat about 44% on the fast cores and
   26% on the efficiency ones; with any other window in front (Task Manager, the search box,
-  another app) about 30% and 37%, at the same total CPU (2026-09-24, `scratch/cpu-watch/`,
-  a two-second recorder of load per core type and the focused window). The fast cores boost
+  another app) about 30% and 37%, at the same total CPU (2026-09-24, `scripts/cpu-watch.ps1`,
+  a two-second recorder of load per core type and the focused window, writing under
+  `scratch/cpu-watch/`). The fast cores boost
   to about 5.5 GHz and draw several times the power, so the fans follow the focus: the owner
   heard it as the machine "hiding" when Task Manager opened. Nothing was hiding. The cause is
   Windows 11's hybrid scheduling, most likely because the runs were launched from inside VS

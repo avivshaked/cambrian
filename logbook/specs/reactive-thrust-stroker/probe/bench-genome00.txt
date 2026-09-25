@@ -1,0 +1,6 @@
+[ParitySwim] probe genome=0 step=0 sensors=[] drive=[0.999507] torque=[0,0,0,-0,0,-1.099457] q=[0.004071] qd=[0.407118]
+[ParitySwim] probe genome=0 step=1 sensors=[] drive=[0.998027] torque=[0,0,0,-0,0,-1.098643] q=[0.010702] qd=[0.663074]
+[ParitySwim] probe genome=0 step=10 sensors=[] drive=[0.940881] torque=[0,0,0,-0,0,-1.072765] q=[0.101469] qd=[1.070572]
+[ParitySwim] probe genome=0 step=100 sensors=[] drive=[-0.999507] torque=[0,0,0,0,-0,1.088911] q=[0.096068] qd=[-1.077933]
+[ParitySwim] probe genome=0 step=1000 sensors=[] drive=[0.999507] torque=[0,0,0,-0,0,-1.088911] q=[-0.004418] qd=[1.076986]
+[ParitySwim] probe genome=0 step=5999 sensors=[] drive=[1] torque=[0,0,0,-0,0,-1.084597] q=[0.002146] qd=[1.07082]

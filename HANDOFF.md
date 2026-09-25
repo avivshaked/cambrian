@@ -21,7 +21,7 @@ is on main from 2026-09-22 (`9eb262a`, `bd608d8`; the proposal is
 | round 42 seed 1's world, 30,000 s | 24.4 min at 16 threads (20.5x); Unity took ten hours; `lineage.jsonl` and `positions.jsonl` byte-equal between the 8-thread run before the grid work and the 16-thread one after |
 | both books | energy audit closed (peak residual 0.042 J); matter residual −3.2e-04 of 1,500 units, float rounding at the body's account, not a handoff fault |
 | identity | digest, lineage, positions and poses byte-equal at 1, 8 and 24 threads; state hash of the grid equal before the change and at 1, 4 and 16 threads |
-| parity with PhysX | forty of round 42's jointed bodies alone in still water, 60 s: 40 of 40 within 0.05 rad with PhysX's self-collision off, 12 of 40 with it on; two hand-built strokes agree to 1e-4 rad and 0.1 mm (`scratch/solver-spike/stroker/`) |
+| parity with PhysX | forty of round 42's jointed bodies alone in still water, 60 s: 40 of 40 within 0.05 rad with PhysX's self-collision off, 12 of 40 with it on; two hand-built strokes agree to 1e-4 rad and 0.1 mm (`logbook/specs/reactive-thrust-stroker/`) |
 | wall split at 1,100 bodies | physics 73%, world 26%, harness 2%: the solver is the ceiling |
 | nothing lost | 0 diverged in 3,000,000 steps, both full seeds |
 
@@ -228,7 +228,7 @@ grid's Courant bound (0.89 against 0.83 m/s; 0.24 within a cap radius at 15 m, 0
 20 m). Core 916 of 916 and Farm 85 of 85 on the merged tree; the Core fixture is `pfix9`'s
 config (`679f831c59c6f1af`), the crowd fixture `runs/r47fixc-s4` (round 44's world on the
 merged build, everything off) replays `r46fixc-s4` in 149 fields at 2,000 samples with
-the positions byte-equal (`scratch/r45-build/regress.py`; the three fields only the
+the positions byte-equal (`logbook/specs/r45-build-regress.py`; the three fields only the
 candidate has are the instruments' `maxReach`, `wallExposureMs` and `wallLedgerMs`), and
 the theatre compiled on worker 6 with the reef, the pool's loading and the safari (the
 safari's dry run wants a guide beside the run, which `scripts/guide.py <arm>` now writes
@@ -359,7 +359,15 @@ in this section is history.
   every heavy job pauses and the owner is told.
   - **Machine track:**
     - the seed 2 probe replay at 10 threads (`scratch/film/r48-s2-probe.log`, the report
-      `r48-s2-probe.txt`), built from `scratch/wt-r49`;
+      `r48-s2-probe.txt`), built from `scratch/wt-r49`. It was a cousin: it parted from the
+      recording at 12,510 s and then ran clean past 13,700 s, which says nothing about the
+      chip. A resume from the 12,500 s checkpoint on round 48's own build (`Release-r48`, all
+      four hashes equal) also parted at its first sample, by about 1e-8 relative. So a round 48
+      checkpoint does not restore everything exactly. `--verify-checkpoint` names only
+      `TouchedBedOrGlass`, an instrument flag reset every step, so the cause is open. The
+      test is therefore a full re-run from founding: `scratch/r48s2-rerun/runs/r48s2-rerun/`,
+      8 threads, started 10:29. It was identical through 1,160 s at 10:36, and
+      `python scratch/r48s2-rerun/check.py` is the one look;
     - then the GPU port's checks as its subagent hands them over;
     - then story-mode compiles and renders.
   - **The GPU port** (Opus subagent, `scratch/wt-gpu`, branch `gpu-port`, notes in
@@ -379,7 +387,11 @@ in this section is history.
     Three Sonnet surveys, read-only, write `scratch/cleanup/media.tsv`, `worktrees.tsv` and
     `rest.tsv`, marking each entry delete, extract, keep or ask. The session reviews the tables
     before deleting anything. Extraction into git follows CLAUDE.md's conventions, and anything
-    uncertain waits for the owner.
+    uncertain waits for the owner. The permission classifier refused the agent's first deletion,
+    so every deletion is the owner's to run. The extract set (22 items) is in git with its
+    citations repointed. `scratch/research-throws/notes.txt` stays in scratch until the three
+    comments under `unity/Assets/Evosim` that cite it are repointed at a round gap, because that
+    edit moves `simHash`.
   - **Outside `scratch/`, for the owner:** `runs/` holds 67 GB, `.claude/worktrees/` 13.7 GB,
     and the six Unity workers 1.7 GB each.
   - **Merged:** the safari branch is in main (`d995433`, pushed), so story mode is on main.
@@ -908,7 +920,7 @@ from the resumed run and the four recording cadences from the checkpoint's heade
 acceptance (`scratch/checkpoint/runs/ckA,ckB,ckC`): a restore at 400 s of a 600 s seed writes
 the same lineage, positions, poses, absorptive and stats rows as the unbroken run, a run
 with checkpointing off is byte-identical to one with it on, and a fresh 300 s seed 1 of round
-43's world on the build reproduces round 43 seed 1's rows (`scratch/checkpoint/regress.py`).
+43's world on the build reproduces round 43 seed 1's rows (`logbook/specs/checkpoint-regress.py`).
 A hash mismatch refuses the resume unless `EVOSIM_ALLOW_SOURCE_MISMATCH`, which marks the
 manifest. The build moved `coreHash`, `dynamicsHash` and `farmHash`, so round 43's manifests
 no longer match the tree and a resume of a round 43 run would be a marked cousin; a run is
@@ -1255,8 +1267,8 @@ subagent and never in a shell loop.
    distance), which grows as reach cubed against income as reach squared, so a fan of
    copies loses money past a size the price sets and a compact body pays nearly nothing;
    the ledger screen of the 0.5 m leaf against the 14.6 m giant at a few prices is the
-   first step. **The screen is done by arithmetic** (2026-09-23, `scratch/support-cost/
-   screen.py`, to be moved beside the proposal when it is written): at the ledger's 10 W/m²
+   first step. **The screen is done by arithmetic** (2026-09-23, `logbook/specs/r45-read/
+   support-cost-screen.py`): at the ledger's 10 W/m²
    of lit area and 3 W/m³ standing, the giant at its ceiling earns 618 W on 62 m² with an
    area-weighted mean reach of 10.5 m. A cost of price × lit area × distance needs about
    1 W per m² per metre to put the giant under water (−32 W), and at that price a 1.5 m
@@ -1326,7 +1338,7 @@ subagent and never in a shell loop.
    snow's explicit-diffusion bound trivially met at 0.02 m²/s) or the transport on the
    card, and the per-body pass parallel. During round 45, the CPU-side pieces that need no
    clean machine: the full-step kernel design (done, `logbook/specs/gpu-full-step-spec.md`,
-   from the step inventory in `scratch/gpu-design/step-inventory.txt`: the brain is small,
+   from the step inventory in `logbook/specs/gpu-step-inventory.txt`: the brain is small,
    median four neurons a genome and at most 80 a body in round 45's crowd, so the risks are
    the contact query and the panel loop; size classes rather than one ceiling; the contact
    grid built on the card with atomics behind the query's own sort; the field uploaded once

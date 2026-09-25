@@ -1,0 +1,1091 @@
+================================================================================
+STEP INVENTORY — what DynamicsWorld.Step does, per physics step, in order
+Compiled 2026-09-23 by reading src/Evosim.Dynamics, src/Evosim.Core/Brain,
+src/Evosim.Farm and spikes/02-gpu-featherstone. Inventory only: no design
+proposals, no recommendations. Every claim carries a file:line pointer.
+
+Paths are relative to D:\Projects\experiments\evolution-simulator.
+Symbols used below:
+  L  = links (parts) in one creature.  Bound: DevelopmentLimits.MaxParts = 16
+       (src/Evosim.Core/Development/DevelopmentLimits.cs:10); depth <= 8 (:14).
+  D  = degrees of freedom in one creature = sum of DofCount[1..L-1], each 0..3.
+       Hard bound 3*(L-1) = 45; the root's joint is forced Fixed
+       (Creature.cs:306, `part.IsRoot ? 0 : part.JointType.DofCount()`).
+  P  = drag panels in one creature = PanelStart[L]. See §7.2 for the count rule.
+  N  = neurons in one creature = sum over parts of part.Neurons.Length.
+       NO COMPILE-TIME BOUND — see §6.7.
+================================================================================
+
+
+§0. TOP-LEVEL ORDER OF ONE STEP
+--------------------------------------------------------------------------------
+DynamicsWorld.Step()  —  DynamicsWorld.cs:98-149
+
+  phase 0 "grid"    :104  _grid.Build(_creatures, ContactCellOverrideMetres)
+                            SERIAL, reads every creature's committed sphere.
+  phase 1 "water"   :120  SampleWater(options)
+                            PARALLEL over creatures; reads shared CurrentField
+                            under a pin.
+  phase 2 "bodies"  :126  Parallel.For(0, count, options, i => StepOne(i, dt))
+                            PARALLEL; the whole of the per-creature step.
+  phase 3 "commit"  :133  for i: _creatures[i].CommitContactSphere()
+                            SERIAL.
+  (clock)           :137-138  ElapsedSeconds += dt; Steps++
+  phase 4 "after"   :140  AfterStep()  -> DynamicsWorldAfterStep.cs:24-28
+                            = CloseContactStep(); WriteDigestRow();
+                            SERIAL.
+  Five Stopwatch timestamps t0..t5 accumulate into PhaseTicks[5]
+  (DynamicsWorld.cs:102,106,122,128,135,142,144-148). PhaseNames at :73.
+
+StepOne(index, dt)  —  DynamicsWorld.cs:151-188, in this exact order:
+
+  :154  if (!body.Alive) return;                     -- skip a lost body
+  :156  body.Senses.Sample()                          (§3)
+  :157  body.Brain.Step((float)dt, body.DriveSignal, body.Senses)   (§4)
+  :159  Array.Clear(body.Fext, 0, body.Fext.Length)   -- 6L doubles
+  :160  Array.Clear(body.Tau,  0, body.Tau.Length)    -- D doubles
+  :162  body.Drive.Drive(body.DriveSignal)            (§5)
+  :163  Fluid.Apply(body, Config)                     (§6)
+  :164  Contacts.Apply(body, index, _grid, Config, ref _neighbourScratch[index])  (§7)
+  :165  JointTorques(body)                            (§8)
+  :167  Aba.Solve(body)                               (§9)
+  :168  Aba.Integrate(body, dt)                       (§10)
+  :170  Kinematics.Poses(body)                        (§11)
+  :171  Kinematics.Velocities(body)                   (§11)
+  :176  body.Settle(dt)                               (§12)
+  :178  body.RecordTraceFrame(Steps + 1, (Steps + 1) * dt)   (§13)
+  :180-185  if (!body.IsFinite()) { Alive = false; MarkLost(); return; }  (§14)
+  :187  body.RefreshContactSphere()                   (§15)
+
+NOTE ON ORDERING: the *only* things StepOne reads that another creature can
+write are the contact grid (frozen before phase 2, Contacts.cs:9-26) and, via
+Senses, Core's matter field and the organism's reserve, neither of which is
+written during a physics step (CreatureSenses.cs:26-36). Nothing is accumulated
+into a shared total inside the step: limiter counts live on the creature and are
+summed afterwards in id order (DynamicsWorld.cs:14-19, :321-333;
+DynamicsWorld.Forces.cs:64-110).
+
+
+================================================================================
+PART A — PER-CREATURE WORK ON OWN STATE + READ-ONLY WORLD INPUTS
+================================================================================
+
+§1. (nothing runs before Senses; Fext/Tau clears are at :159-160, trivially
+     own-state: 6L + D doubles zeroed.)
+
+
+§3. SENSES  —  CreatureSenses.Sample()
+--------------------------------------------------------------------------------
+3.1 FILE/METHOD
+    src/Evosim.Dynamics/CreatureSenses.cs:155-253  Sample()
+    src/Evosim.Dynamics/CreatureSenses.cs:255-305  Read(part, channel, index)
+                                                   (called from Brain, §4)
+    src/Evosim.Dynamics/CreatureSenses.cs:307-316  Dof(values, part, index)
+    src/Evosim.Dynamics/CreatureSenses.cs:329-336  Squash(seconds) -> tanh
+
+3.2 INPUTS READ
+    Own state (all double[], per link unless said):
+      Position[3L]              :173-175
+      RotationMatrix[9L]        :207 (element 9b+4 only, for OrientationUp),
+                                :224 (whole 3x3, for Flow)
+      RelativeVelocity[3L]      :226  -- WRITTEN BY LAST STEP'S Fluid.Apply,
+                                        so Flow is one physics step stale
+                                        (class remark :46-49)
+      Q[D], Qd[D]               :246, :250
+      LimitHi[D]                :244
+      DofCount[L], DofStart[L]  :236-237
+      Patch (int)               :169
+    Config, read-only (SolverConfig):
+      WorldDepthMetres, ChemicalHalfScaleJoulesPerCubicMetre,
+      EnergyFullScaleSeconds   (cached at construction :138-142)
+      FlowFullScaleMetresPerSecond, JointRateFullScale  (:166-167, per call)
+      ConstantChemicalAndEnergy (:272, :278)
+    SHARED WORLD STATE (see PART B, §B1):
+      Nutrients : IMatterField  (:216 EdibleDensityAt)
+      Reserve   : IReserveSource (:160 SecondsOfReserve)
+      Contact   : bool[]  handed over at the metabolic step (:115, :290)
+      Damage    : float[] handed over at the metabolic step (:122, :299)
+
+3.3 OUTPUTS WRITTEN
+    Own float arrays only, all allocated once at construction (:144-151):
+      _depth[L], _up[L], _flow[3L], _chemical[L], _angle[D], _rate[D],
+      _energy (scalar)
+    Nothing outside the creature.
+
+3.4 DATA-DEPENDENT CONTROL FLOW
+    - Six precomputed bools from the brain's SensorMask decide whether each
+      channel is computed at all (:130-136, :164 early return, :198,:204,:210,
+      :218,:234). A creature whose brain reads nothing does 0 work here.
+      Skipping is bit-identical by construction (Brain.cs:99-111).
+    - Loop over links b = 0..L-1 (:172).
+    - Per-link finiteness branch: a non-finite position writes zeros and
+      `continue`s (:180-196).
+    - Inner loop over that link's DoF, n = DofCount[b], 0..3 (:240).
+    - `smells` branch also clamps patch into [0, PatchCount) (:170).
+
+3.5 TRANSCENDENTALS / MIXED ARITHMETIC
+    - Math.Tanh  — once per creature per step, only when Energy is read
+      (:335 inside Squash, called at :160).
+    - Division by cached scales throughout; no sin/cos/sqrt here.
+    - MIXED PRECISION IS PERVASIVE: positions/rotations are double, every
+      sensor output is float (casts at :201,:207,:217,:229-231,:247,:250).
+      Nutrients.EdibleDensityAt takes a Core `FieldPoint` built from
+      (float)px,(float)py,(float)pz (:217).
+
+3.6 CADENCE — every physics step. (Contact/Damage arrays are refreshed only at
+    the metabolic step, Metabolise.cs:237-251, so those two channels are one
+    metabolic step stale; the class remark says so at :99-114.)
+
+
+§4. BRAIN  —  Brain.Step()
+--------------------------------------------------------------------------------
+4.1 FILE/METHOD
+    src/Evosim.Core/Brain/Brain.cs:238-286   Step(seconds, drive, sensors)
+    src/Evosim.Core/Brain/Brain.cs:306-334   Evaluate(neuron, self, part, ...)
+    src/Evosim.Core/Brain/Brain.cs:336-406   Apply(neuron, ...)  -- the op switch
+    src/Evosim.Core/Brain/Brain.cs:408-414   Fold(inputs, ...)   -- variable arity
+    src/Evosim.Core/Brain/Brain.cs:417-454   Read(input, part, sensors)
+    src/Evosim.Core/Brain/Brain.cs:468-477   FromGroup(group, index)
+    src/Evosim.Core/Brain/Brain.cs:563-567   Saw(turns)
+    Built once at birth: Brain.For(phenotype), Brain.cs:157-227.
+
+4.2 REPRESENTATION (Brain.cs:66-145)
+    Per creature, allocated once:
+      float[] _previous  [N]      last completed step's outputs
+      float[] _current   [N]      this step's outputs (swapped at :267-269)
+      float[] _memory    [N]      one slot per neuron for the 4 temporal ops
+      double  ElapsedSeconds      the brain's own clock (:126, :250)
+    Topology, all int[L] except the first:
+      NeuronDef[][] _neurons   -- one NeuronDef[] per part
+      int[] _offset    [L]     -- where each part's group starts in the buffers
+      int[] _parent    [L]     -- part.ParentIndex, or -1
+      int[] _firstChild[L]     -- first child by part index (pre-order), or -1
+      int[] _dofStart  [L]     -- or -1 where the joint is fixed
+      int[] _dofCount  [L]
+      int   TotalDof   = D
+      int   SensorMask -- bitmask, bit (1 << (int)SensorChannel) per channel
+                          any neuron references (:113-121, built at :205-222)
+
+    NeuronDef  (src/Evosim.Core/Genome/NeuronDef.cs:13-42) — a REFERENCE TYPE
+    holding: NeuronOp Op; NeuronInput[] Inputs; float Frequency, Phase,
+    Amplitude, Bias.
+    NeuronInput (src/Evosim.Core/Genome/NeuronInput.cs:195-221) — a readonly
+    struct of 5 fields: NeuronInputKind Kind; int Index; SensorChannel Channel;
+    float Constant; float Weight.
+
+4.3 EVALUATION ORDER, AND RECURRENCE
+    - Two nested loops over parts then neurons in that part (:253-263); parts
+      are in depth-first pre-order (Brain.cs:186-188 note).
+    - SYNCHRONOUS / one-step-delayed recurrence: every Read() of a neuron
+      returns `_previous[...]` (:476), and results go into `_current`; the two
+      buffers are swapped after the whole population of neurons is evaluated
+      (:265-269). So the network IS recurrent, but with exactly one step of
+      delay on every edge, and evaluation order does not affect the result.
+      The rationale is at Brain.cs:39-47 ("a signal crosses exactly one node
+      per step").
+    - Drive extraction loop afterwards (:271-285): for each part with
+      _dofStart >= 0, drive[start+d] = Clamp(_previous[offset+d]) for
+      d < dofCount, and 0 where the part has fewer neurons than DoF (:283).
+      So NEURON d OF A PART DRIVES DOF d OF ITS JOINT — the mapping is defined
+      here, not in the genome (Brain.cs:48-56).
+
+4.4 INPUT KINDS (Brain.cs:417-454; enum at NeuronInput.cs:13-32)
+      Constant   -> input.Constant * Weight
+      Sensor     -> sensors.Read(part, Channel, Index) * Weight   (§3)
+      SameNode   -> FromGroup(part, Index) * Weight
+      ParentNode -> FromGroup(_parent[part], Index), 0 at the root
+      ChildNode  -> FromGroup(_firstChild[part], Index), 0 at a leaf
+      GlobalBrain-> always 0 (retired by D081, :446-449)
+    FromGroup wraps the index modulo the group's neuron count (:468-477) —
+    an integer `%` with a negative fixup, per input per step.
+
+4.5 SENSOR CHANNELS (enum src/Evosim.Core/Genome/NeuronInput.cs:52-190)
+      0 JointAngle          3 indices, reads Q[dof]/|LimitHi[dof]|, clamped
+      1 JointAngularVelocity3 indices, reads Qd[dof]/JointRateFullScale
+      2 Contact             1 index, from Organism.PartContact (metabolic)
+      3 OrientationUp       1 index, RotationMatrix[9b+4]
+      4 Photo               3 indices, NOT IMPLEMENTED -> 0
+      5 Damage              1 index, from Organism.PartDamage (metabolic)
+      6 Chemical            1 index, IMatterField.EdibleDensityAt, x/(x+k)
+      7 Energy              1 index, whole-body, tanh(secondsOfReserve/scale)
+      8 Flow                3 indices, RelativeVelocity rotated into part axes
+      9 Depth               1 index, -y/WorldDepthMetres clamped to [0,1]
+    Implemented list: SensorChannels.cs:52-61 (JointAngle, JointAngularVelocity,
+    OrientationUp, Depth, Chemical, Energy, Flow). Founder draw pool:
+    SensorChannels.cs:74-80 (the first four). Index counts: :102-114.
+
+4.6 NEURON OPS (enum src/Evosim.Core/Genome/NeuronOp.cs:8-39; 20 values)
+    Arity table at NeuronOp.cs:65-101. The evaluator's switch, Brain.cs:311-405:
+      OscillateWave  : Math.Sin(2*PI*Frequency*time + Phase)        :316
+      OscillateSaw   : Saw(Frequency*time + Phase/2PI)
+                       -> Math.Floor  (:565)
+      Sum/Product/Min/Max : Fold over ALL inputs, variable arity
+                            (:348-354) — a delegate-driven loop
+      Divide         : |b| < 1e-6 ? 0 : a/b                          :356
+      Abs            : Math.Abs                                       :357
+      GreaterThan, SignOf, If, Interpolate : pure branches           :359-362
+      Sin, Cos       : Math.Sin / Math.Cos                           :364-365
+      Sigmoid        : Math.Tanh                                     :371
+      SumThreshold   : Fold then sign                                :376-377
+      Integrate      : _memory[self] = clamp(_memory+a*dt, -100,100) :383
+      Differentiate  : (a - _memory)/dt; _memory = a                 :386-391
+      Smooth         : _memory += (a - _memory)*clamp01(b)           :393-395
+      Memory         : return old _memory; _memory = a               :397-402
+    After the op: `value * Amplitude + Bias` (:328), then a NaN/Inf guard that
+    returns 0 (:333).
+    NOTE: Apply() unconditionally evaluates inputs[0..2] up front (:340-342)
+    even for ops that ignore them; the Fold ops then re-read every input
+    (:412) — so a variable-arity op reads its first three inputs twice.
+
+4.7 TRANSCENDENTALS
+    Math.Sin, Math.Cos, Math.Tanh, Math.Floor, Math.Abs, Math.Min, Math.Max.
+    ALL IN float, via double casts: `(float)Math.Sin(...)` etc.
+    No sqrt, no exp, no pow, no atan2 in the brain.
+
+4.8 MIXED ARITHMETIC
+    `ElapsedSeconds` is double; `time` is (float)ElapsedSeconds (:251). The
+    oscillator argument is computed in double and narrowed (:316). `seconds`
+    (dt) arrives as (float)dt from DynamicsWorld.cs:157.
+
+4.9 SIZES AND BOUNDS — the important one for a GPU port
+    - Neurons per part: founders draw MinNeuronsPerNode..MaxNeuronsPerNode =
+      1..3 (GenomeFactory.cs:84-85, :734). MUTATION HAS NO CAP: a node gains a
+      neuron with probability AddNeuronChance = 0.05 and loses one with
+      RemoveNeuronChance = 0.04 per mutation (MutationRates.cs:115,:117;
+      Mutator.cs:582-599). Neuron count per node is therefore an unbounded
+      random walk with a slight upward drift. N has no static bound.
+    - Inputs per neuron: set at founding to the op's arity, 0..3
+      (GenomeFactory.cs:752-770). Mutation only *rewires* inputs, never adds or
+      removes them (Mutator.cs:618-635), and an op mutation does not resize the
+      array — so inputs/neuron <= 3 for any lineage descended from a founder,
+      but a neuron may hold fewer inputs than its current op's arity (the
+      evaluator reads the missing ones as 0, Brain.cs:340-342).
+    - Edges per node at founding: MaxEdgesPerNode = 2 (GenomeFactory.cs:16,
+      :783). Mutation may exceed it (options remark, GenomeFactory.cs:60-65).
+    - Parts/joints: MaxParts = 16, MaxDepth = 8 (DevelopmentLimits.cs:10,:14).
+    - DoF per joint: 0..3 (JointType.cs:24-37).
+
+4.10 CADENCE — every physics step. The brain's clock advances by dt each call
+     (:250), so the oscillators are in simulated time.
+
+
+§5. EFFECTOR DRIVE  —  EffectorDrive.Drive()
+--------------------------------------------------------------------------------
+5.1 FILE/METHOD
+    src/Evosim.Dynamics/EffectorDrive.cs:127-193  Drive(float[] raw)
+    src/Evosim.Dynamics/EffectorDrive.cs:107-121  Refresh()  (build/resize only)
+
+5.2 INPUTS READ
+    raw = body.DriveSignal, float[max(1, D)] (Creature.cs:366)
+    Own:
+      _history[D * 10] float, _runningSum[D] float, _torquePerUnit[D] float,
+      _cursor, _filled (ints)
+      body.DofCount[L], body.DofStart[L], body.Parent[L]
+      body.JointFrame[4L]      (:153)
+      body.RotationMatrix[9L]  (:180)
+      body.SmallestInertia[L]  (:158)
+      body.Spin[3L]            via NoteDriveTorque (Creature.Ledger.cs:122-124)
+    Config: LimitersEngage, MaxJointAngularVelocity/StepSeconds
+    (cached at :73-76), PowerScale (:51, diagnostic, 1).
+
+5.3 OUTPUTS WRITTEN
+      _history, _runningSum, _cursor, _filled (the 10-sample moving average)
+      AppliedTorque[3L] double  (:183) — diagnostic, kept not cleared
+      body.DriveTorque[3L] and body._preRelativeSpin[3L] via NoteDriveTorque
+        (:188 -> Creature.Ledger.cs:119-127), sets _drivePending
+      body.Fext[6*b .. +2] += world torque; Fext[6*parent .. +2] -= world
+        (:190-191) — the action/reaction pair
+      body.DriveImpulsesLimited++ on each cap (:171-172)
+
+5.4 DATA-DEPENDENT CONTROL FLOW
+    - `if (dof == 0) return;` (:130) — an unjointed body does nothing here.
+    - Loop over D for the smoothing window (:132-141), then over links
+      b = 1..L-1 (:147), skipping DofCount == 0 (:150), then over n = 0..2
+      (:164).
+    - Limiter branch on `_limitDrive` (:169-173), which is
+      `StepSeconds > 0.0100001 || DriveLimitAtEveryStep` (SolverConfig.cs:250).
+      At the campaign's dt 0.01 with the flag off, it never engages.
+    - `_cursor = (_cursor + 1) % SmoothWindow` — integer modulo, SmoothWindow
+      = 10 (:30, :143).
+
+5.5 TRANSCENDENTALS
+    None. Quaternion rotate + 3x3 matrix multiply only (:175, :181).
+
+5.6 MIXED ARITHMETIC — THE SEAM
+    The whole signal path is float (history, running sum, torque-per-unit);
+    `magnitude = smoothed * _torquePerUnit[index] * PowerScale` promotes to
+    double at :167 and everything downstream is double. Comment at :22-26 says
+    this is deliberate and is the controller/solver seam.
+
+5.7 CADENCE — every physics step. Refresh() runs only at build
+    (Creature.cs:368 via ctor) and at a growth resize (Creature.Growth.cs:135).
+
+
+§6. FLUID  —  Fluid.Apply()
+--------------------------------------------------------------------------------
+6.1 FILE/METHOD
+    src/Evosim.Dynamics/Fluid.cs:31-167   Apply(body, config)
+    src/Evosim.Dynamics/Fluid.cs:187-202  Restore(...)  (D077 surface/floor)
+    (:173-181 is a test-only overload that writes one acceleration everywhere.)
+
+6.2 INPUTS READ
+    Own:
+      RotationMatrix[9L]  (:53)
+      Velocity[3L], Water[3L]      (:55)   -- Water filled by phase 1, §2
+      Spin[3L]                     (:58)
+      PanelStart[L+1], PanelCentre[3P], PanelNormal[3P], PanelArea[P]
+                                   (:66-72)
+      Mass[L], SmallestInertia[L]  (:101, :113)
+      WaterAcceleration[3L]        (:128)  -- filled by phase 1
+      Volume[L], Lift[L]           (:129, :142)
+      Position[3*i+1] (height)     (:122)
+      TotalVolume                  (:42)
+    Config (read-only): Density, DragCoefficient, DragLimiterEngages,
+      StepSeconds, TissueExcessDensity, NeutralBodyVolume,
+      SurfaceRestoringFraction, TissueDensity, FluidAccelerationCoefficient,
+      AddedMassCoefficient, GravityMetresPerSecondSquared, WorldDepthMetres,
+      FloorIsSolid.
+    Core call: BuoyancyModel.ExcessDensityFactor(TotalVolume, NeutralBodyVolume)
+      once per creature (:43-44), in float.
+
+6.3 OUTPUTS WRITTEN
+      RelativeVelocity[3L]  (:56)  -- read by NEXT step's Flow sensor
+      body.DragForce[3L], body.DragTorque[3L], _preVelocity[3L], _preSpin[3L]
+        via NoteDrag (:91 -> Creature.Ledger.cs:133-141); sets _dragPending
+      body.DragImpulsesLimited++ (:104, :117)
+      Fext[6i .. +2] += torque ; Fext[6i+3 .. +5] += force  (:164-165)
+
+6.4 DATA-DEPENDENT CONTROL FLOW
+    - Outer loop over L links; INNER LOOP OVER THIS LINK'S PANELS,
+      from PanelStart[i] to PanelStart[i+1] (:69). Panel count varies by shape
+      (§7.2 of this file) — this is the dominant per-link work.
+    - `if (normalSpeed <= 0) continue;` (:76) — trailing panels contribute
+      nothing. HIGHLY divergent: roughly half the panels skip, and which half
+      depends on the flow direction.
+    - Limiter branch `if (limit)` (:93), with two inner conditionals on
+      speed > 0 and spinRate > 0, and two caps (:102, :114).
+    - `if (accelerating)` (:126) — D090's Morison term, with a further
+      branch on (accelerationForce.Y > 0 && height >= 0) (:132).
+    - Buoyancy: `if (restoringFraction > 0)` / else-if `netDensity < 0 &&
+      height >= 0` (:145-153), then `if (netDensity != 0)` (:155).
+      Restore() itself has four branches (:191-201).
+
+6.5 TRANSCENDENTALS
+      Vec3.Magnitude -> Math.Sqrt, twice per link when the limiter engages
+      (:96, :108; Vec3.cs:37). Nothing else. No trig.
+    Otherwise: 3x3 matrix-vector products, cross products, dot products.
+
+6.6 MIXED ARITHMETIC
+      PanelArea is stored as double[] but written from float areas
+      (Creature.Growth.cs:332; DragPanelSet.Areas is float[]).
+      ExcessDensityFactor takes/returns float (:43-44) inside a double
+      expression.
+
+6.7 CADENCE — every physics step.
+
+6.8 PANEL COUNTS (the per-link inner loop bound)
+    src/Evosim.Core/Shapes/StandardShapes.cs, with n = PanelsPerAxis
+    (SolverConfig.cs:23, default 2):
+      Box     : 6*n*n panels                      (:43-70)   -> 24 at n=2
+      Sphere  : count = 6*n*n, matched to the box (:136-155) -> 24 at n=2
+      Capsule : side (4n around) x (2n along) + caps max(2, 2*n*n)
+                (:241-285)                                   -> 40 at n=2
+    Zero-area panels are dropped once at build (DragPanelSet.cs:63-85), so P
+    is data-dependent but fixed for the life of a body between resizes.
+    Upper bound at n=2, L=16: P <= 640.
+
+
+§8. JOINT TORQUES  —  DynamicsWorld.JointTorques()
+--------------------------------------------------------------------------------
+8.1 FILE/METHOD
+    src/Evosim.Dynamics/DynamicsWorld.cs:204-256
+
+8.2 INPUTS READ
+    Own: DofCount[L], DofStart[L], Q[D], Qd[D], LimitLo[D], LimitHi[D],
+         LimitStiffness[D], LimitDamping[D]
+    Config: JointDriveDamping (1.0 N·m·s/rad), StepSeconds
+
+8.3 OUTPUTS WRITTEN
+    LimitImplicit[D]  (:247) -- (c + k*dt)*dt + damping*dt, consumed by
+                                Aba.Inward (:121-123) and by Settle (:212)
+    Tau[D] += torque  (:253)
+    _passiveTorque[D], _preJointRate[D] via NotePassiveTorque (:251 ->
+      Creature.Ledger.cs:147-152); sets _passivePending
+
+8.4 DATA-DEPENDENT CONTROL FLOW
+    Loop i = 1..L-1, skip n == 0 (:211), inner loop over n dofs (:215).
+    Three-way branch computing `past` (:234-236); `if (past != 0)` (:238).
+
+8.5 TRANSCENDENTALS — none. Pure multiply-add and comparisons.
+
+8.6 CADENCE — every physics step.
+
+
+§9. ABA SOLVE  —  Aba.Solve()
+--------------------------------------------------------------------------------
+9.1 FILE/METHOD
+    src/Evosim.Dynamics/Aba.cs:35-40    Solve = Seed + Inward + Outward
+    src/Evosim.Dynamics/Aba.cs:43-60    Seed
+    src/Evosim.Dynamics/Aba.cs:63-190   Inward   (leaves -> root)
+    src/Evosim.Dynamics/Aba.cs:193-249  Outward  (root -> leaves)
+    src/Evosim.Dynamics/Aba.cs:308-346  InvertSmallSymmetric (k = 1, 2, 3)
+    src/Evosim.Dynamics/Aba.cs:356-423  SolveSixBySix (Gaussian, partial pivot)
+    src/Evosim.Dynamics/Aba.cs:302-305  Outer(a, b) 3x3 outer product
+
+9.2 INPUTS READ (all own, all double[])
+    RotationMatrix[9L], InertiaLocal[3L], Mass[L], Spin[3L], Fext[6L],
+    Parent[L], DofCount[L], DofStart[L], Position[3L], Sang[9L], Slin[9L],
+    Cbias[6L], Tau[D], LimitImplicit[D]
+
+9.3 OUTPUTS WRITTEN (all own scratch)
+    Seed:    IaA[9L], IaB[9L], IaC[9L], Pa[6L]
+    Inward:  Un[9L], Uf[9L], Ubar[3L], Dinv[9L]; folds into parent's
+             IaA/IaB/IaC and Pa
+    Outward: Acc[6L]; AND Tau[D] IS OVERWRITTEN WITH THE JOINT ACCELERATIONS
+             (:240, "parked for the integrator"). This is a live aliasing of
+             the torque array — Settle later reads Tau[j] as q̈ (Ledger:212).
+
+9.4 DATA-DEPENDENT CONTROL FLOW
+    - Inward walks i = L-1 down to 1 (:65). REQUIRES Parent[i] < i, which
+      Creature.cs:52 guarantees ("Always less than the child's index"), so the
+      sequential walk is a valid topological order with no tree traversal.
+    - `if (n > 0) ... else` (:77 / :163) — a fixed joint takes a short path.
+    - Inner k x k loops over n (0..3): four separate nested loops
+      (:82-89, :93-113, :128-145, :154-161).
+    - The D matrix is assembled into six named scalars by an if/else-if chain
+      on (j, k) (:106-111) — an unrolled 3x3 upper triangle.
+    - `if (w == 0) continue;` inside the I^a update (:136).
+    - InvertSmallSymmetric branches on n == 1 / n == 2 / n == 3, with a
+      singular-determinant early return in each (:314-336).
+    - SolveSixBySix: fixed 6x7 elimination with partial pivoting — the pivot
+      search (:383-389) and the row swap (:391-399) are data-dependent; two
+      `if (diagonal == 0) continue` / `x[row] = diagonal != 0 ? ... : 0`
+      guards (:402, :418).
+
+9.5 SCRATCH
+    - `Span<double> residual = stackalloc double[3]` per link in Outward (:224)
+    - `Span<double> m = stackalloc double[42]` and `x = stackalloc double[6]`
+      once per creature in SolveSixBySix (:360, :412)
+
+9.6 TRANSCENDENTALS
+    Math.Abs only, in the pivot search (:384, :387). NO sqrt, sin, cos, exp.
+    This is the one phase that is pure multiply-add.
+
+9.7 CADENCE — every physics step.
+
+
+§10. INTEGRATE  —  Aba.Integrate()
+--------------------------------------------------------------------------------
+10.1 FILE/METHOD  src/Evosim.Dynamics/Aba.cs:259-300
+10.2 INPUTS   DofCount[L], DofStart[L], Tau[D] (= q̈), Qd[D], Q[D],
+              BallRotation[4L], Spin[0..2], Velocity[0..2], Acc[0..5],
+              BasePosition, BaseRotation
+10.3 OUTPUTS  Qd[D], Q[D], BallRotation[4L], Spin[0..2], Velocity[0..2],
+              BasePosition, BaseRotation
+10.4 BRANCHING
+     Loop i = 1..L-1, skip n == 0 (:263). Then `if (n == 3)` — the BALL JOINT
+     path integrates a quaternion and reads back a rotation vector (:269-285);
+     otherwise q += qd*dt (:288). Semi-implicit Euler: velocities first.
+10.5 TRANSCENDENTALS
+     - QuatD.IntegratedByBody -> .Normalized -> Math.Sqrt   (QuatD.cs:145, :64)
+       ONCE PER 3-DOF JOINT.
+     - QuatD.RotationVector -> Vec3.Magnitude (sqrt) + Math.Atan2
+       (QuatD.cs:165, :168), with a small-angle branch at :166.
+       ONCE PER 3-DOF JOINT.
+     - QuatD.IntegratedBy -> Normalized -> Math.Sqrt, once per creature for
+       the root (:299).
+     So: sqrt * (1 + 2*ballJoints), atan2 * ballJoints, per creature per step.
+10.6 CADENCE — every physics step.
+
+
+§11. KINEMATICS  —  Kinematics.Poses() then Kinematics.Velocities()
+--------------------------------------------------------------------------------
+11.1 FILE/METHOD
+     src/Evosim.Dynamics/Kinematics.cs:40-66    Poses
+     src/Evosim.Dynamics/Kinematics.cs:72-140   Velocities
+     src/Evosim.Dynamics/Kinematics.cs:146-162  JointRotation
+     src/Evosim.Dynamics/Kinematics.cs:172-187  SubspaceAxis
+     (Refresh = Poses + Velocities, :33-37, used at build/placement/resize.)
+
+11.2 POSES
+     Reads: BaseRotation, BasePosition, Parent[L], Rotation[4L] (parent's,
+       already written), RestFrame[4L], JointFrame[4L], BallRotation[4L],
+       Q[D], DofCount/DofStart, ParentAnchor[3L], ChildAnchor[3L]
+     Writes: Rotation[4L], RotationMatrix[9L], Position[3L]
+     Branching: sequential walk i = 1..L-1 relying on Parent[i] < i.
+       JointRotation branches on n == 0 / n == 3 / else (:148-161).
+     Transcendentals:
+       - `.Normalized` -> Math.Sqrt, once per non-root link (:55)
+       - QuatD.FromAxisAngle -> Math.Sin + Math.Cos, once per DoF of every
+         1- or 2-DoF joint (:156, :159 -> QuatD.cs:24-25). A 3-DoF joint
+         takes the stored quaternion and costs none.
+       - QuatD.ToMatrix, once per link (:58) — no transcendental.
+
+11.3 VELOCITIES
+     Reads: Rotation[4L], JointFrame[4L], ChildAnchor[3L], Spin[3L] (parent's),
+       Velocity[3L] (parent's), Qd[D], Q[D] (via SubspaceAxis), Position[3L]
+     Writes: Sang[9L], Slin[9L], Spin[3L], Velocity[3L], Cbias[6L]
+     Branching:
+       - loop i = 1..L-1, inner loop d = 0..n-1 (:96)
+       - `if (n == 3) continue;` inside the loop and a separate collapsed
+         sigma afterwards (:106, :119) — the ball joint's bias is one cross
+         product, the 1/2-DoF path accumulates a frame spin
+       - SubspaceAxis: `if (n == 3) return AxisOf(d)` else a backward loop
+         m = n-1 down to d+1 calling FromAxisAngle (:179-186)
+     Transcendentals:
+       - FromAxisAngle (sin + cos) inside SubspaceAxis, for a 2-DoF joint's
+         first axis only: at most 1 per 2-DoF joint per step (:184).
+       - No sqrt.
+
+11.4 CADENCE — every physics step. (Also at build, Creature.cs:373; at
+     placement, :413; at resize, Creature.Growth.cs:140; and after a seam
+     wrap, Simulation.cs:337 — Poses only.)
+
+
+§12. SETTLE (the energy ledger)  —  Creature.Settle()
+--------------------------------------------------------------------------------
+12.1 FILE/METHOD  src/Evosim.Dynamics/Creature.Ledger.cs:160-220
+12.2 INPUTS   DriveTorque[3L], _preRelativeSpin[3L], Spin[3L], Parent[L],
+              DragForce[3L], DragTorque[3L], _preVelocity[3L], _preSpin[3L],
+              Velocity[3L], _passiveTorque[D], _preJointRate[D],
+              LimitImplicit[D], Tau[D] (the parked q̈), Qd[D],
+              three pending flags
+12.3 OUTPUTS  MechanicalWorkJoules, SignedWorkJoules, DissipatedJoules,
+              PassiveJointWorkJoules (4 doubles on the creature);
+              zeroes DriveTorque and _passiveTorque as it goes (:180, :218)
+12.4 BRANCHING
+     `if (dt <= 0) return` (:162); three independent `if (_xPending)` blocks
+     (:164, :184, :200); a zero-torque skip per link (:171) and per dof (:213).
+     Midpoint rule: the integral is closed against (pre + post)/2 velocities
+     (:175, :190-191, :216) — rationale at :19-25.
+12.5 TRANSCENDENTALS — none. Dot products and Math.Abs (:177).
+12.6 CADENCE — every physics step. The accumulators are DRAINED at the
+     metabolic step (Metabolise.cs:74, :78-83 -> Ledger.cs:231-267).
+
+
+§13. THROW TRACE  —  Creature.RecordTraceFrame()
+--------------------------------------------------------------------------------
+13.1 FILE/METHOD  src/Evosim.Dynamics/CreatureTrace.cs:119-195
+     Enabled per body by EnableTrace (:83-92); JOINTED BODIES ONLY
+     (`if (_trace != null || Dof == 0) return;`, :85).
+13.2 COST PER STEP, when enabled
+     - Writes 21 doubles per link into _traceScratch (:131-157): Position 3,
+       Velocity 3, Spin 3, Qd[0..2] 3, Fext linear 3, Fext angular 3, Water 3.
+     - Then tests EVERY ONE of those 21 values for NaN/Inf, one at a time
+       (:162-166) — 21L IsNaN + 21L IsInfinity calls, with an early break.
+     - On success, Array.Copy of 21L doubles into the ring (:184) plus three
+       scalar stores. Ring is 3 frames (TraceFrames = 3, :33).
+     - Memory: _trace[3 * L * 21] + _traceScratch[L * 21] doubles = 84L doubles
+       (~10.5 kB at L = 16), plus 3 longs, 3 doubles, 3 bools.
+     - One extra comparison per link against _poisonedLink (:137), −1 in every
+       real run.
+13.3 BRANCHING  loop over links with an early break on the first bad value;
+     `if (bad >= 0)` records FirstNonFiniteStep/Link and returns without
+     touching the ring (:171-180).
+13.4 TRANSCENDENTALS — none.
+13.5 CADENCE — every physics step, for jointed bodies.
+
+
+§14. DIVERGENCE / FINITENESS
+--------------------------------------------------------------------------------
+14.1 PER PHYSICS STEP (the solver's backstop)
+     Creature.IsFinite()  —  src/Evosim.Dynamics/Creature.cs:575-587
+       Sums 9 doubles per link (Position 3, Spin 3, Velocity 3) and tests the
+       SUM for NaN/Inf — 9L reads, L additions, 2L predicate calls.
+       Called at DynamicsWorld.cs:180. On failure: Alive = false and
+       MarkLost() (Creature.cs:449-453, which zeroes the pending radius so the
+       body leaves everyone's contact set).
+14.2 AT THE METABOLIC CADENCE (the four guards, and the kill)
+     Divergence.Diverged(body, config, boundingRadius, out reason)
+       —  src/Evosim.Dynamics/Divergence.cs:67-176
+       Guard 1 root height via World.HeightIsInTheWorld + root x+z finiteness
+               (:86, :96-101)
+       Guard 2 the glass: dx²+dz² > (R + 1 m)²  (:107-122)
+       Guard 3 the bed: bed.FloorY(rootX, rootZ) — a sum of twelve cosines
+               (ContactBed.cs:30-34) — only when config.Bed != null &&
+               bed.HasRelief (:129-142)
+       Guard 4 every other link's 9 numbers, same summed test as IsFinite
+               (:148-160), then the root's own motion (:165-173)
+     Called from Simulation.CheckFinite (src/Evosim.Farm/Simulation.cs:361-408)
+     which ALSO tests the centre of mass against the world box (:381-397) —
+     this is the round-44 repair. Kill path: HandleDivergence (:411-440) ->
+     World.KillDiverged.
+     CheckFinite runs at the top of Metabolise (Metabolise.cs:33) AND again at
+     the top of any physics step where something moved a body outside the
+     solver (Simulation.cs:261-270, gated by `_movedOutsideTheSolver`).
+14.3 TRANSCENDENTALS  Math.Sqrt in the glass message only; the bed's height map
+     is trig-heavy but is reached only when relief is on.
+
+
+§15. CONTACT SPHERE REFRESH  —  Creature.RefreshContactSphere()
+--------------------------------------------------------------------------------
+15.1 FILE/METHOD  src/Evosim.Dynamics/Creature.cs:427-446
+15.2 READS  Position[3L], Velocity[3L], Mass[L], LinkReach[L], TotalMass, Alive
+15.3 WRITES _pendingCentre, _pendingRadius, _pendingVelocity, _pendingActive —
+     PENDING ONLY. The world commits them serially between steps
+     (DynamicsWorld.cs:133 -> Creature.cs:456-462). The comment at
+     Creature.cs:226-231 states that committing inside the parallel phase was
+     what made the digest depend on the thread count.
+15.4 BRANCHING  one loop over L; one max; one divide guard on TotalMass.
+15.5 TRANSCENDENTALS  Vec3.Magnitude -> Math.Sqrt, once per link (:436).
+     LinkReach itself is sqrt of the half-extent diagonal, cached
+     (Creature.cs:465-479) and rebuilt only on resize (Growth.cs:346-356).
+15.6 CADENCE — every physics step.
+
+
+================================================================================
+PART B — PER-CREATURE WORK THAT READS SHARED MUTABLE WORLD STATE
+================================================================================
+
+§B1. SENSES READING THE WORLD  (inside §3, inside the parallel phase)
+--------------------------------------------------------------------------------
+  CreatureSenses.Nutrients : IMatterField    (CreatureSenses.cs:85)
+    Read: Nutrients.EdibleDensityAt(new FieldPoint(Float3(px,py,pz), patch))
+          — ONE CALL PER LINK PER STEP, at :216, only when some neuron reads
+          SensorChannel.Chemical.
+    Also Nutrients.PatchCount at :170.
+    This is Core's GridField (or VertexField). The class remark at
+    CreatureSenses.cs:26-36 argues it is safe to read in parallel: the field is
+    written only by World.Step and its deposit/transport passes, all serial
+    between physics steps, and EdibleDensityAt is a pure read of _stock through
+    a cell index.
+  CreatureSenses.Reserve : IReserveSource    (CreatureSenses.cs:93)
+    Read: Reserve.SecondsOfReserve — ONCE PER CREATURE PER STEP (:160), only
+    when some neuron reads SensorChannel.Energy. It is a division over two
+    floats the metabolic step writes.
+  CreatureSenses.Contact : bool[L], .Damage : float[L]  (:115, :122)
+    These are Organism.PartContact / Organism.PartDamage, assigned by reference
+    at the metabolic step (Metabolise.cs:248-249). Read at :290, :299.
+  Fallback when unset: SolverConfig.ConstantChemicalAndEnergy = 0.5f
+    (SolverConfig.cs:173; used at CreatureSenses.cs:272, :278).
+
+§B2. WATER SAMPLING  (phase 1, its own Parallel.For)
+--------------------------------------------------------------------------------
+  DynamicsWorld.SampleWater(options)
+    —  src/Evosim.Dynamics/DynamicsWorld.Forces.cs:36-62
+  Water.Sample(body, config, seconds)
+    —  src/Evosim.Dynamics/Water.cs:48-118
+  SHARED OBJECT: SolverConfig.Current, an Evosim.Core.CurrentField — a
+  REFERENCE, not a copy (SolverConfig.cs:73, rationale :56-71).
+  Concurrency protocol: current.PinInstant(ElapsedSeconds) before the
+  Parallel.For and UnpinInstant in a finally (Forces.cs:44, :60). Pinned, every
+  lookup is a pure read; unpinned, a miss fills a memo slot and the pass is
+  single-threaded. The field keeps InstantSlots = 4 memo slots
+  (CurrentField.cs:3561), each holding Cos/Sin/Envelope/Cell arrays for the
+  step's clock (:3575-3588). One clock needs two slots because the samplers
+  scale time as 2π·s/P and the analytic acceleration as (2π/P)·s and the two
+  differ by an ulp (:3605-3609).
+  INPUTS per link: Position[3i..+2], narrowed to float (Water.cs:70-72);
+    body.Patch; config.PatchCount, WaterHoldSeconds,
+    FluidAccelerationCoefficient; current.Mode.
+  OUTPUTS per link: body.Water[3L], body.WaterAcceleration[3L];
+    plus body.HeldWater, body.HeldWaterAcceleration, body.WaterSampledAt
+    when D100's hold is on (Water.cs:80-92; fields at Creature.Water.cs:31-47).
+  BRANCHING:
+    - `if (current == null) return;` — still water, the whole pass is a no-op
+      (:58-63).
+    - `bool transport = current.Mode == CurrentMode.Transport` (:65) picks
+      VelocityAt(x,y,z,t) vs VelocityAt(y,t,patch,patchCount).
+    - `if (holding)` and, inside it, `if (i == 0 && seconds - WaterSampledAt
+      >= WaterHoldSeconds)` (:76-96) — under a hold only link 0 samples.
+    - `if (!accelerating) continue;` (:108).
+  TRANSCENDENTAL PROFILE OF THE FIELD (all on the CPU today, in double):
+    - Rolls mode: 4 Math.Sin + 2 Math.Cos per call (CurrentField.cs:689-698).
+    - Transport (box): 5 modes (TransportModes = 5, :1460); per sample a
+      Math.Sin profile and 2 Math.Cos per mode (:1033-1036, :1633-1641).
+    - Streams (tank): StreamsAzimuthal 4 x StreamsFamilies 2 x StreamsVertical
+      3 = 24 terms plus StreamsCells 3 (:2811-2823). The sampler itself takes
+      ONE Math.Sqrt (:3846) and ONE Math.Cos + ONE Math.Sin (:3866-3867); every
+      other trig value comes from the pinned Instant or from angle-sum
+      recurrences (remark at :3823-3831 — "Math.Atan2 plus three calls a term
+      would be most of it"). Filling one Instant costs 24 cos + 24 sin + ~9
+      more (:3763-3781).
+  CADENCE — every physics step, before the body phase.
+
+§B3. CONTACTS  —  Contacts.Apply()  (inside the parallel phase)
+--------------------------------------------------------------------------------
+B3.1 FILE/METHODS
+     src/Evosim.Dynamics/Contacts.cs:280-398   Contacts.Apply
+     src/Evosim.Dynamics/Contacts.cs:195-244   ContactGrid.Neighbours (query)
+     src/Evosim.Dynamics/ContactLaw.cs:66-81   PairPush
+     src/Evosim.Dynamics/ContactLaw.cs:87-96   BodyPush
+     src/Evosim.Dynamics/ContactBed.cs:46-70   ContactBed.Push
+B3.2 SHARED STATE READ
+     - The ContactGrid, built serially in phase 0 and frozen (Contacts.cs:9-15).
+     - OTHER CREATURES' COMMITTED SPHERES: other.ContactActive, .ContactCentre,
+       .ContactRadius, .ContactVelocity, .TotalMass, .Id
+       (Contacts.cs:293-313). These are the *committed* values, i.e. the state
+       at the end of the previous step, never the live ones.
+     - config.Bed (a BedShape, read-only; its HeightAndGradient is a sum of
+       twelve cosines and a plane, ContactBed.cs:30-34).
+     - _neighbourScratch[index], an int[] owned per creature index
+       (DynamicsWorld.cs:33, :94, :164).
+B3.3 OWN STATE READ/WRITTEN
+     Reads: own ContactCentre/Radius/Velocity, TotalMass, Mass[L], Links
+     Writes: Fext[6i+3..+5] for every link, force spread by mass share
+       (:392-396); _overlapIds/_overlapCount and TouchedBedOrGlass via
+       BeginContactStep/NoteOverlap (:286, :301, :341, :351, :374 ->
+       CreatureContacts.cs:57-72)
+B3.4 BRANCHING — the most divergent phase
+     - `if (config.CreatureContact)` (:288)
+     - Neighbours() walks the cells this body's sphere covers — a triple loop
+       over (hi-lo+1) per axis (Contacts.cs:204-206) — then, per bucket entry,
+       a 6-comparison hash-collision rejection (:217-220), then Array.Sort and
+       a dedup pass (:234-241). NEIGHBOUR COUNT IS UNBOUNDED AND CROWD-DEPENDENT
+       (the round-44 blowup is documented at Contacts.cs:20-29).
+     - per neighbour: `if (!other.ContactActive) continue;` and
+       `if (penetration <= 0) continue;` (:294, :299) — most candidates reject
+     - `distance > 1e-9` normal guard (:303)
+     - bed: `if (config.Bed == null)` flat slab else height-map path
+       (:329-353); `if (below > 0)` / non-zero rock vector
+     - glass: `if (config.TankRadiusMetres > 0)` then `if (outside > 0)`
+       (:356-376)
+     - ContactLaw.PairPush: `if (!(raw > 0)) return 0;`, `if (!(cap > 0))`
+       (:69, :72) — a contact never pulls, and is capped at
+       MaxSeparationSpeed = 1.0 m/s (SolverConfigWorld.cs:79)
+     - ContactLaw.BodyPush: whole-body cap at MaxContactSpeedChange = 1.0 m/s
+       (SolverConfigWorld.cs:105), `magnitude > most` (:94)
+     - `if (force != 0)` before the per-link spread (:380)
+B3.5 TRANSCENDENTALS
+     Vec3.Magnitude -> Math.Sqrt per overlapping pair (:297), Math.Sqrt for the
+     glass radial (:360), Math.Sqrt for the bed's slope (ContactBed.cs:59-60),
+     Vec3.Magnitude in BodyPush (ContactLaw.cs:93). Plus BedShape's twelve
+     cosines when relief is on.
+B3.6 THE MODEL, stated plainly (Contacts.cs:258-277)
+     This is NOT a contact solve. One bounding sphere per creature; one
+     spring-damper force per pair; the force is applied to the whole body,
+     spread over links by mass share; no friction; no depenetration budget.
+     Antisymmetric by construction, so no shared write is needed.
+B3.7 CADENCE — every physics step. `ContactInstrument` off costs one branch per
+     body per step (SolverConfigWorld.cs:110).
+
+
+================================================================================
+PART C — SERIAL WORLD PHASES
+================================================================================
+
+§C1. CONTACT GRID BUILD  (phase 0)
+--------------------------------------------------------------------------------
+  ContactGrid.Build(creatures, cellOverride)  —  Contacts.cs:72-188
+  Reads every creature's ContactActive / ContactRadius / ContactCentre.
+  Work:
+    pass 1 (:81-88)   largest and mean active radius
+    cell rule (:96)   cell = max(0.25, 2 * meanRadius); override for the bench
+    pass 2 (:106-131) per creature, the lo/hi integer cell range on each axis,
+                      via Floor((c ± r)/cell); accumulates `entries`
+    guard (:133-142)  throws if entries > int.MaxValue/2
+    sizing (:146-157) buckets = next power of two >= 2 * count; clears
+    pass 3 (:159-167) counting pass, one increment per covered cell
+    prefix sum (:169-177)
+    pass 4 (:179-187) scatter, one store per covered cell
+  Hash: (x*73856093) ^ (y*19349663) ^ (z*83492791), masked (:254-255).
+  Cost is O(sum over bodies of cells covered), which is data-dependent on the
+  radius distribution.
+  Allocation: only when the population or the entry count grows (:99-103,
+  :150-155).
+
+§C2. CONTACT SPHERE COMMIT  (phase 3)
+--------------------------------------------------------------------------------
+  DynamicsWorld.cs:133 -> Creature.CommitContactSphere (Creature.cs:456-462).
+  Four field copies per creature. Must be serial: see Creature.cs:226-231.
+
+§C3. AFTER-STEP  (phase 4)  —  DynamicsWorldAfterStep.cs:24-28
+--------------------------------------------------------------------------------
+C3.1 CloseContactStep()  —  DynamicsWorldContacts.cs:291-360
+     - Early return unless Config.ContactInstrument (:301).
+     - ASSERTS the creature list is in ascending id order, O(count) (:306-319).
+     - Per living creature: walks its own overlap list; for each id, ById()
+       (binary search, :190-205) to find the other; counts a pair only from the
+       lower id (:338); tests HeldWith (a linear walk of the previous step's
+       list, CreatureContacts.cs:80-84); optionally appends to _overlaps
+       (:347).
+     - Then CommitOverlaps() for every creature (:353) — an Array.Copy per body.
+     - Five running totals and five per-step totals (:355-359).
+C3.2 WriteDigestRow()  —  DynamicsWorldDigest.cs (enabled only by
+     EVOSIM_DIGEST_EVERY). 13 doubles per link hashed (:44). Off in a normal run.
+C3.3 NOT here: the throw trace, which is written inside the parallel region by
+     the body's own thread (DynamicsWorldAfterStep.cs:16-20).
+
+§C4. WHAT THE FARM DOES AROUND THE SOLVER  —  Simulation.Step()
+--------------------------------------------------------------------------------
+  src/Evosim.Farm/Simulation.cs:244-300
+    :250  Reconcile()                      -- births/deaths into the solver list
+    :261-270 if (_movedOutsideTheSolver) { CheckFinite(); Reconcile(); }
+    :273-274 profile denominators (_bodyStepSum, _linkStepSum)
+    :277  Dynamics.Step()                  -- everything above
+    :284  if (box world) WrapAtTheSeams()  -- D077 periodic wrap; per body:
+          BasePosition shift, Kinematics.Poses, RefreshContactSphere,
+          CommitContactSphere (:320-341)
+    :290  if (Steps % StepsPerMetabolicStep != 0) return false;
+    :296  Metabolise()
+
+
+================================================================================
+§D. CADENCE SUMMARY — PER PHYSICS STEP vs PER METABOLIC STEP
+================================================================================
+  MetabolicStepSeconds = 0.5 s, NOT a tunable
+    (src/Evosim.Farm/EnvBinding.cs:60; Simulation.cs:41-42).
+  StepsPerMetabolicStep = MetabolicStepSeconds / PhysicsDt
+    (EnvBinding.cs:365-370) = 50 at dt 0.01, 25 at dt 0.02.
+  Gate: Simulation.cs:290.
+
+  EVERY PHYSICS STEP (the whole of §0 above):
+    grid build, water sample, senses, brain, drive, fluid, contacts, joint
+    torques, ABA, integrate, kinematics, settle, trace, IsFinite,
+    contact-sphere refresh, contact-sphere commit, contact census, digest row,
+    seam wrap.
+
+  EVERY METABOLIC STEP (0.5 s), all SERIAL, all in Evosim.Farm / Evosim.Core:
+    src/Evosim.Farm/Metabolise.cs:29-191
+      :33   CheckFinite()  — the four divergence guards + the centre-of-mass
+                             test (Simulation.cs:361-408)
+      :50   Volume?.Begin() / :66 Note() — the placement census
+      :74   solver.DrainMechanicalWork()
+      :78-79 DrainDriveImpulsesLimited / DrainDragImpulsesLimited
+      :83   DrainDissipated()
+      :87   World.Observe(creature, centreOfMass, interval)  — the economy
+      :94-110 speed statistics (mean/max, jointed vs rigid)
+      :140  HandOverContacts() -> Dynamics.NearestParts per overlapping pair
+            (DynamicsWorldContacts.cs:239-277 — an L x L double loop over the
+            two bodies' link origins, at most 16 x 16) -> World.SetContacts
+      :143  World.Step(seconds)   — Core's economy: feeding, breeding, deaths,
+            the mouth/damage pass, field deposit and transport
+      :150  HandBackWhatWasFelt() — assigns Organism.PartContact /
+            Organism.PartDamage onto each body's CreatureSenses (:237-251);
+            SKIPPED ENTIRELY unless SenseContact or SenseDamage is on (:239)
+      :155-166 patch reassignment when HorizontalPatches > 1
+      :173-187 growth clock; ApplyGrowth every GrowthStepSeconds
+
+  EVERY GROWTH STEP (GrowthStepSeconds, a config tunable; a multiple of the
+  metabolic step), SERIAL — Metabolise.cs:273-327:
+      :280  World.ApplyModuleRule(sinceLastGrowthStep)
+      :293  if PlanRevision moved -> RebuildOnTheNewPlan (a whole new Creature)
+      :299  if BodyFraction unchanged -> skip
+      :304  solver.Resize(creature.Phenotype, creature.BodyFraction)
+            -> Creature.Growth.cs:108-149:
+                 WriteSizedProperties (:178-239) — rewrites Volume, Lift, Power,
+                   PlainMass, Mass, InertiaLocal, SmallestInertia, ChildAnchor,
+                   ParentAnchor, JointFrame, RestFrame, and rebuilds the drag
+                   panel sets per link; uses a [ThreadStatic] scratch list (:86)
+                 WriteJointLimits (:246-298) — LimitLo/Hi/Stiffness/Damping,
+                   with AxisInertia (Creature.cs:490-498) per DoF
+                 WritePanels (:314-337) — reallocates only if P changed
+                 RefreshLinkReach (:346-356) — sqrt per link
+                 Drive.Refresh (EffectorDrive.cs:107-121)
+                 Kinematics.Refresh, RefreshContactSphere, CommitContactSphere
+            Preserved to the bit: BasePosition, BaseRotation, Q, Qd,
+            BallRotation, root Velocity/Spin, brain state, the 10-sample drive
+            history, both limiter counters, Alive, Id (Growth.cs:48-54).
+      :320  body.Radius = SharedVolume.BoundingRadius(phenotype)
+      :325  _movedOutsideTheSolver = true
+
+
+================================================================================
+§E. PER-CREATURE MEMORY — WHAT THE SOLVER HOLDS vs WHAT THE SPIKE FLATTENED
+================================================================================
+
+E.1 WHAT Creature ALLOCATES  (constructor, src/Evosim.Dynamics/Creature.cs:263-376)
+  Per link (double[] unless noted), grouped by role:
+    topology (int[]): Parent, DofCount, DofStart                       3 ints/link
+    inertial : Mass 1, PlainMass 1, InertiaLocal 3, SmallestInertia 1,
+               Volume 1, Lift 1, Power 1                               9
+    joints   : ChildAnchor 3, ParentAnchor 3, JointFrame 4, RestFrame 4,
+               BallRotation 4                                          18
+    pose     : Position 3, Rotation 4, RotationMatrix 9, Spin 3,
+               Velocity 3                                              22
+    ABA scratch: IaA 9, IaB 9, IaC 9, Pa 6, Sang 9, Slin 9, Cbias 6,
+               Un 9, Uf 9, Dinv 9, Ubar 3, Acc 6, Fext 6               99
+    water    : Water 3, RelativeVelocity 3, WaterAcceleration 3         9
+    ledger   : DriveTorque 3, DragForce 3, DragTorque 3,
+               _preRelativeSpin 3, _preVelocity 3, _preSpin 3          18
+    drive    : AppliedTorque 3                                          3
+    contact  : LinkReach 1 (lazy)                                       1
+    ------------------------------------------------------------------------
+    TOTAL ~179 doubles/link (~1.43 kB/link), plus PanelStart[L+1] ints.
+  Per DoF: Q, Qd, Tau, LimitLo, LimitHi, LimitStiffness, LimitDamping,
+    LimitImplicit, _passiveTorque, _preJointRate = 10 doubles/DoF.
+  Per panel: PanelCentre 3, PanelNormal 3, PanelArea 1 = 7 doubles/panel.
+  Controller: Brain (3N floats + the NeuronDef object graph),
+    DriveSignal float[max(1,D)], EffectorDrive (_history D*10, _runningSum D,
+    _torquePerUnit D floats + AppliedTorque above),
+    CreatureSenses (_depth L, _up L, _flow 3L, _chemical L, _angle D,
+    _rate D floats).
+  Trace, jointed bodies only: 84L doubles + 3 longs + 3 doubles + 3 bools.
+  Contact bookkeeping: _overlapIds/_heldIds long[], grown by doubling
+    (CreatureContacts.cs:26-29, :66-71).
+
+E.2 THE ABA WORKING SET (what §9 alone touches)
+  pose (22) + ABA scratch (99) = 121 doubles/link, plus 10 doubles/DoF, plus
+  the stackallocs (42 + 6 in SolveSixBySix, 3 per link in Outward).
+  At L = 16, D = 45: ~1,936 + 450 + 51 ≈ 2,437 doubles ≈ 19.5 kB in double,
+  ~9.8 kB in single. Compare the spike's measurement: "each thread holds
+  12.7 kB of local memory in double" and "about 1,600 words of scratch a
+  thread" (CLAUDE.md's GPU gotcha, logbook/0112).
+
+E.3 WHAT THE SPIKE FLATTENED  —  spikes/02-gpu-featherstone/Flat.cs:17-160
+  Struct-of-arrays, strided `slot * N + creature` (:10-16), so neighbouring
+  threads read neighbouring words.
+  Constant per body (read-only on the card):
+    Links, Dof (int, :45-46)
+    Parent, DofCount, DofStart, PanelStart (int, per link, :47-50)
+    Mass, Lift, Inertia(3), ChildAnchor(3), ParentAnchor(3), JointFrame(4),
+      RestFrame(4), DriveTorque(3)  (:52-59)
+    LimitLo, LimitHi, LimitStiff, LimitDamp (per DoF, :61-64)
+    Excess (1 per creature — D064's buoyancy factor, precomputed on the host at
+      :88-95, exactly as Fluid.Apply takes it)
+    PanelCentre(3), PanelNormal(3), PanelArea (per panel, :67-69)
+  State (in and out):
+    BasePos(3), BaseRot(4), Q, Qd, BallRot(4/link), RootSpin(3), RootVel(3)
+      (:71-77)
+    OutPos(3/link) — the only output read back (:78)
+  Flat.Narrow(double[]) -> float[] for the single-precision runs (:162-167).
+
+  WHAT THE SPIKE DID *NOT* CARRY, and what it means for a full port:
+    - No Mass beyond the link mass (no PlainMass, no SmallestInertia) — so no
+      drag limiter and no drive limiter.
+    - No Volume[] — so D090's acceleration force is absent.
+    - No Water[] / WaterAcceleration[] — still water only (DynamicsWorld.cs:22-27).
+    - No RelativeVelocity[] — so no Flow sensor.
+    - No brain, no NeuronDef graph, no sensor arrays, no drive history: the
+      drive torque arrives precomputed per link per creature (Flat.cs:59, :112)
+      and RefStep.FrozenDrive applies it with the 10-sample average frozen
+      (RefStep.cs:43-60).
+    - No contact state (no sphere, no grid, no overlap lists).
+    - No ledger accumulators, no trace ring, no divergence guard.
+    - No per-body Phenotype reference (the CPU Creature keeps one,
+      Creature.cs:48, and the growth path needs it).
+  The spike's reference step is RefStep.Step (RefStep.cs:27-41): clear Fext/Tau,
+  FrozenDrive, Fluid.Apply, JointTorques (a verbatim private copy,
+  RefStep.cs:66-102), Aba.Solve, Aba.Integrate, Kinematics.Poses,
+  Kinematics.Velocities. That is StepOne minus §3, §4, the limiters in §5,
+  §7 contacts, §12 settle, §13 trace, §14 finiteness and §15 sphere refresh.
+
+E.4 WHAT Creature.State.cs SAYS IS THE PERSISTENT STATE
+  src/Evosim.Dynamics/Creature.State.cs:42-147 (WriteState) is the definitive
+  list of "everything the next step will read":
+    BasePosition(3), BaseRotation(4); Q, Qd, BallRotation;
+    Position, Rotation, RotationMatrix, Spin, Velocity, Sang, Slin, Cbias
+      — WRITTEN DOWN RATHER THAN RE-DERIVED, deliberately (:19-27): "forty-six
+      doubles a link" to remove any question of whether a restore's derivation
+      is the step's;
+    Water, WaterAcceleration, RelativeVelocity, Patch, HeldWater,
+      HeldWaterAcceleration, WaterSampledAt;
+    ContactCentre/Radius/Velocity/Active and their pending twins; _heldIds;
+    the four ledger accumulators and four drain marks; both limiter counters;
+    Alive, AppliedBodyFraction, Resizes, ResizedAtStep, _resizedSinceLastFrame,
+    FirstNonFiniteStep/Link, _poisonedLink;
+    the trace ring; Brain.WriteState (ElapsedSeconds + _previous + _current +
+    _memory, Brain.cs:494-501); Drive.WriteState (the smoothing window,
+    EffectorDrive.cs:204-213).
+  EXPLICITLY EXCLUDED, because one step fills them before it reads them
+  (:29-37): Fext, Tau, the drag hand-off buffers, the passive-torque buffers,
+  the three pending flags, the step's own overlap list, and the senses.
+  This is exactly the "what must cross the PCIe bus" list.
+
+
+================================================================================
+§F. THE SHAPE OF A LINK, AND THE JOINTS
+================================================================================
+F.1 LINK GEOMETRY
+  A link's frame is the developed part's own frame: origin at the part's
+  centre, so the centre of mass is the origin and the inertia tensor is
+  DIAGONAL — which is why the solver carries 3 numbers per link, not 6
+  (Creature.cs:19-25).
+  Shapes are resolved from PhenotypePart.ShapeId through a PartShapeRegistry
+  (Creature.cs:272, Growth.cs:191). The three standard shapes
+  (src/Evosim.Core/Shapes/StandardShapes.cs):
+    Box      — half-extents (hx, hy, hz); inertia k*(hy²+hz²) etc.,
+               k = mass/3 (Creature.cs:558-568)
+    Sphere   — radius = SphereShape.Radius(halfExtents); I = 0.4*m*r²
+               (Creature.cs:528-533)
+    Capsule  — cylinder + two hemispheres about the local Y axis;
+               r = CapsuleShape.Radius(h), s = CapsuleShape.HalfSpan(h);
+               the along/across split is written out at Creature.cs:535-556
+    Unknown  — falls back to the box tensor (Creature.cs:558; "counted nowhere
+               — no run in the record carries one")
+  Half-extents are Float3 (PhenotypePart.cs:28) — FLOAT, widened at use.
+  Mass: plain = max(MinimumLinkMass, volume * TissueDensity); effective =
+  plain + AddedMassCoefficient * Density * volume; the tensor is scaled by
+  effective/plain (Growth.cs:201-211).
+
+F.2 JOINT TYPES AND DoF  (src/Evosim.Core/Genome/JointType.cs:7-38)
+    Fixed 0 | Hinge 1 | Twist 1 | HingeTwist 2 | TwistHinge 2 |
+    Universal 2 | Spherical 3
+  The joint's rotation is Rx(q0) Ry(q1) Rz(q2) truncated to the DoF count
+  (Kinematics.cs:18-25, :146-162) — EXCEPT a 3-DoF joint, which carries a
+  QUATERNION (BallRotation[4L]) because the Euler composition is singular at
+  q1 = ±π/2 and round 42 threw five genomes into it (Creature.cs:155-178).
+  A ball joint's velocity coordinates ARE the relative angular velocity in the
+  child's joint frame, so its motion subspace is the identity and never
+  degenerates (Kinematics.cs:177-179).
+  Joint frames: JointFrame is the child's (anchorRotation), RestFrame the
+  parent's; a hinge's frame is Euler(0, π/2, 0), everything else identity
+  (Creature.cs:27-32, :507-510).
+  Joint limits are penalty SPRINGS here, not hard constraints — stiffness
+  I·ω² per DoF against the two-body reduced inertia about the axis, ω =
+  JointLimitOmegaTimesStep(1.5)/dt, carried implicitly on D's diagonal
+  (DynamicsWorld.cs:190-203, Creature.cs:99-127, Growth.cs:261-296,
+  SolverConfig.cs:105-139).
+
+
+================================================================================
+§G. SUMMARY TABLE
+================================================================================
+Legend: "shared?" = does this phase read state another creature or the world's
+serial passes can write. "branching" = the data-dependent control flow.
+
+PHASE                     | CADENCE      | READS SHARED WORLD STATE?                        | DATA-DEPENDENT BRANCHING                                   | TRANSCENDENTALS
+--------------------------+--------------+--------------------------------------------------+------------------------------------------------------------+----------------------------------------
+C1 contact grid build     | per step     | YES - every creature's committed sphere (serial)  | cells covered per sphere; bucket sizing; overflow guard     | none (integer Floor, hash)
+   Contacts.cs:72         |              |                                                  |                                                            |
+B2 water sample           | per step     | YES - CurrentField, read-only under a pin         | current==null; Rolls vs Transport; hold on/off; i==0 only; | Rolls 4 sin + 2 cos; Transport 5 modes
+   Water.cs:48            |              |                                                  | accelerating on/off                                        | x(1 sin + 2 cos); Streams 1 sqrt +
+                          |              |                                                  |                                                            | 1 sin + 1 cos + pinned tables
+3  senses                 | per step     | YES - IMatterField.EdibleDensityAt (per link),    | 6 mask bools gate whole channels; per-link NaN skip;       | Math.Tanh x1 (Energy only)
+   CreatureSenses.cs:155  |              | IReserveSource (per body), PartContact/PartDamage | inner loop over n=DofCount (0..3)                          |
+                          |              | (metabolic hand-over)                            |                                                            |
+4  brain                  | per step     | no (sensors already sampled into own arrays)      | per-part neuron count (UNBOUNDED); 20-way op switch;       | sin, cos, tanh, floor, abs, min, max
+   Brain.cs:238           |              |                                                  | 6-way input-kind switch; variable-arity Fold; index % count| (all float)
+5  effector drive         | per step     | no                                                | dof==0 early out; DofCount per link; limiter on/off;       | none
+   EffectorDrive.cs:127   |              |                                                  | cursor % 10                                                |
+6  fluid (drag+buoyancy)  | per step     | no (Water[] was filled in phase B2)               | PANEL LOOP per link (24-40 panels); normalSpeed<=0 skip    | Math.Sqrt x2/link when the drag
+   Fluid.cs:31            |              |                                                  | (~half); limiter branches; Morison branch; Restore's 4-way | limiter engages (dt>0.01 only)
+7  contacts               | per step     | YES - other creatures' committed spheres via the  | neighbour count UNBOUNDED and crowd-dependent; sort+dedup; | Math.Sqrt per pair, per glass test,
+   Contacts.cs:280        |              | frozen grid; config.Bed                          | penetration<=0 reject; bed flat vs relief; glass on/off;   | per bed test; 12 cosines if relief
+                          |              |                                                  | two ContactLaw caps                                        |
+8  joint torques          | per step     | no                                                | DofCount per link; three-way limit test; past!=0           | none
+   DynamicsWorld.cs:204   |              |                                                  |                                                            |
+9  ABA solve              | per step     | no                                                | n>0 vs fixed joint; k=1/2/3 inverse; singular guards;      | Math.Abs (6x6 pivot search) only
+   Aba.cs:35              |              |                                                  | 6x6 partial-pivot row swaps                                |
+10 integrate              | per step     | no                                                | n==3 ball-joint quaternion path vs q+=qd*dt;               | sqrt x(1+2*ballJoints);
+   Aba.cs:259             |              |                                                  | small-angle branch in RotationVector                       | atan2 x ballJoints
+11 kinematics             | per step     | no                                                | n==0/3/else in JointRotation; n==3 short-circuit in        | sqrt x L (quaternion normalise);
+   Kinematics.cs:40,72    |              |                                                  | Velocities; SubspaceAxis backward loop                     | sin+cos per DoF of 1/2-DoF joints
+12 settle (ledger)        | per step     | no                                                | 3 pending flags; zero-torque skips                         | Math.Abs
+   Creature.Ledger.cs:160 |              |                                                  |                                                            |
+13 throw trace            | per step     | no                                                | jointed bodies only; early break on first bad value        | none (21L NaN/Inf tests)
+   CreatureTrace.cs:119   |              |                                                  |                                                            |
+14 IsFinite backstop      | per step     | no                                                | early return on first bad link                             | none
+   Creature.cs:575        |              |                                                  |                                                            |
+15 contact sphere refresh | per step     | no (writes PENDING only)                          | none beyond the link loop                                  | Math.Sqrt x L
+   Creature.cs:427        |              |                                                  |                                                            |
+C2 sphere commit          | per step     | YES - this is the serial publish                  | none                                                       | none
+   DynamicsWorld.cs:133   |              |                                                  |                                                            |
+C3 contact census         | per step     | YES - walks every creature, binary-search by id   | instrument on/off; per-body overlap list; held linear walk | none
+   DynWorldContacts.cs:291|              |                                                  |                                                            |
+C3 digest row             | per step     | YES - hashes every link of every body             | off unless EVOSIM_DIGEST_EVERY                             | none
+   DynamicsWorldDigest.cs |              |                                                  |                                                            |
+C4 seam wrap              | per step     | YES - per body, writes and commits the sphere     | box worlds only; TryWrap per body                          | none (Poses re-derived: sqrt x L)
+   Simulation.cs:320      |              |                                                  |                                                            |
+-- divergence guards      | metabolic    | YES - config.Bed, World.HeightIsInTheWorld        | four guards in order, first match wins                     | sqrt (glass msg); bed relief cosines
+   Divergence.cs:67       |              |                                                  |                                                            |
+-- ledger drains + Observe| metabolic    | YES - Core's World, fields, lineage               | per living organism                                        | (Core's own)
+   Metabolise.cs:29       |              |                                                  |                                                            |
+-- nearest-part contacts  | metabolic    | YES - both bodies' Position arrays                | L x L double loop, <= 16x16 per overlapping pair           | none
+   DynWorldContacts.cs:239|              |                                                  |                                                            |
+-- World.Step (economy)   | metabolic    | YES - the whole world                             | (Core)                                                     | (Core)
+   Metabolise.cs:143      |              |                                                  |                                                            |
+-- growth resize          | growth step  | YES - Organism.Phenotype; commits the sphere      | plan revision vs body fraction; panel count change         | sqrt per link (LinkReach); shape
+   Creature.Growth.cs:108 |              |                                                  |                                                            | inertia formulae; panel rebuild
+================================================================================
+END

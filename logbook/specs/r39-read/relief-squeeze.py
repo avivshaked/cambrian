@@ -4,7 +4,7 @@
 0102 says that if E2 fails the entry "reads the streams' speed over a hollow against over a
 ridge from the field itself (Core, from the config) before saying the relief is too small".
 That measurement is `CurrentField`'s, and it needs a Core probe (a console program against
-Evosim.Core, as `scratch/astra-check/Program.cs` was) rather than anything in the run's
+Evosim.Core, as `logbook/specs/transport-conserves-probe/Program.cs` was) rather than anything in the run's
 output — the report carries no per-cell velocity.  This read did not build one, and says so.
 
 What the map alone gives exactly is the squeeze: the streams are the flat field pulled

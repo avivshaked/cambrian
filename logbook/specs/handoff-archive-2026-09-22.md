@@ -108,7 +108,7 @@ bodies; the scale-up with binary recording and a state stream to the theatre.
 
 *Evening, the port under way.* `fable-propose-own-solver.md` is drafted (four gated stages,
 stage 1 in work packages A to K, seven rulings for the owner). The parity swims ran
-(`scratch/solver-spike/parity-swim.ps1`, `unity/Assets/Theatre/Editor/ParitySwim.cs`): two
+(`logbook/specs/solver-parity-swim.ps1`, `unity/Assets/Theatre/Editor/ParitySwim.cs`): two
 still bodies agree exactly, a hinged body settles at 0.605 rad in ours against 0.515 in
 PhysX, two ball-jointed bodies disagree (0.58 against 0), and none of the five strokes in
 either engine, so a hand-built swimmer is owed. Agents at work, each in a worktree of its
@@ -136,7 +136,7 @@ which points at sensor or dof-order wiring; the spike's agent is on it.
 
 *20:35, parity passes, and the farm's joints are jammed by self-collision.* Forty of round 42
 seed 4's jointed genomes swum alone in still water for 60 s in both engines
-(`scratch/solver-spike/parity-swim.ps1 -N 40`, probes at six steps). With PhysX's
+(`logbook/specs/solver-parity-swim.ps1 -N 40`, probes at six steps). With PhysX's
 self-collision ON, as the farm runs it, 12 of 40 agree with our solver within 0.05 rad on
 every joint. With it OFF, 40 of 40 agree, the worst gap 0.046 rad on a seven-part body and
 the typical gap our limit's 0.01 rad. The three classes of disagreement were one cause: a
@@ -257,7 +257,7 @@ is merged into `solver-spike` (fast-forward, `e4423e2`) and the three suites pas
 forty genomes rebuilt on the merged solver (`scratch/solver-spike/traj40-merged`) agree
 with the PhysX recordings 40 of 40 within 0.05 rad with self-collision off (worst 0.043,
 worst root gap 0.115 m in 60 s) and 12 of 40 with it on, as before. **Parity on a stroke
-holds to the fifth decimal.** Two hand-built bodies under `scratch/solver-spike/stroker/`
+holds to the fifth decimal.** Two hand-built bodies under `logbook/specs/reactive-thrust-stroker/`
 (`snapshot.jsonl`, format 6; one `OscillateWave` neuron per hinge at 0.5 Hz, no sensors,
 boxes end to end, no joint on its stop) stroke 0.70 rad, and 0.76 and 0.43 rad with a
 quarter-period lag, for 60 s in both engines: every joint within 1e-4 rad and the root
@@ -320,7 +320,7 @@ past the rule, nothing over five parts, histogram 311, 338, 194, 45, 5); F11 6.7
 eaters. The jointed share went from 40% at 5,000 s to 62%. **The picture from above is not
 uniform**: a crescent of bodies from the left round the top to the right between half the
 radius and the rim, the jointed (grey) bodies thick in it, and the centre and the lower
-right nearly empty (`scratch/snaps/r42-s2/r42-s2-t15000-recon-top.png`). `cols` over
+right nearly empty (`logbook/images/r42-s2-t15000-recon-top.png`). `cols` over
 uniform reads 0.94 and cannot see it, since at 900 bodies in 2,211 columns almost every
 body has a column to itself whatever the large pattern. The agent's reading, as inference:
 a jointed clade spreading from where it arose, its 5 m dispersal slower than the gyre's

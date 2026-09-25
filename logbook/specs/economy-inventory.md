@@ -3,7 +3,7 @@
 *2026-09-18, evening.* A read-only sweep of the repository by an Opus subagent, briefed by
 the agent to map every place a joule or a unit of matter is read, written, reported, tested
 or described, ahead of `economy-spec.md`. Nothing was edited. The scanner it wrote for the
-test count is `scratch/economy-inventory/scan.py`. The agent's own notes on what the sweep
+test count is `logbook/specs/economy-inventory/scan.py`. The agent's own notes on what the sweep
 means for the spec are at the end. Line numbers are the tree at commit `8c75b9a`.
 
 Two structural facts frame everything below:
