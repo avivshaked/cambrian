@@ -349,7 +349,38 @@ carrying a developed 3 cm part, so no born-small addition was ever born in round
 **State (2026-09-24, about 13:00; the session runs on Opus 5.5 since midday).** This block
 is what the next session works from. Everything below it in this section is history.
 
-- **The machine is on hold for its firmware (the owner, 2026-09-24, about 20:05: "finish what
+- **The machine runs under the owner's option B, not a full hold (2026-09-25, late morning:
+  "Lets go for B then").** The owner declined the flash for now ("if this is not critical i'd
+  rather not do it"; no USB stick to hand), after the agent's answer that it is important
+  and not urgent. Of the three options put, B is:
+  - no flash for now;
+  - the owner sets ASUS MultiCore Enhancement to "Disabled - Enforce All limits" in BIOS 0806,
+    which holds the chip to Intel's power limits (still to do at this writing);
+  - the agent resumes at a lighter load: one heavy job at a time (a farm run, a render or a
+    test suite), at about a third of the machine, which is 10 threads for a farm run;
+  - the agent watches for the warning signs and reports any: WHEA events, a crash with no
+    other cause, a run that fails to replay identically, seed 2's replay running clean;
+  - the flash when a stick turns up.
+
+  The steps, written to be followed blind, are on the owner's Desktop
+  (`BIOS update - step by step.txt`; a copy is at `scratch/owner/`):
+  - part 1 is the MultiCore setting; part 2 is the flash;
+  - the target is 1836 (2026-05-14), the newest non-beta, SHA-256 `9CAE4C6A…84AF4`; 1840 of
+    2026-09-23 is a beta;
+  - the flash is EZ Flash 3 from a FAT32 stick carrying the file renamed `PZ790PW.CAP`, which
+    is CrashFree BIOS 3's name; this board has no FlashBack button;
+  - after the flash: VMD back on, then Intel Default Settings with the Performance profile.
+
+  Read the same morning:
+  - memory 2 × 32 GB at 4800 (XMP off);
+  - both 980 PROs healthy on firmware 5B2QGXA7;
+  - Secure Boot off, and no encryption found;
+  - the Intel RST VMD controller present, with `stornvme` and `iaStorVD` both boot-start.
+
+  **The first launch under B, the seed 2 probe at 10 threads, was refused by Claude Code's
+  auto-mode permission classifier ("Interfere With Workloads") and waits for the owner.**
+  The hold's history follows.
+- **The machine was on hold for its firmware (the owner, 2026-09-24, about 20:05: "finish what
   you're currently doing, but i'll come back later to do the updates. don't start new runs").**
   The i9-13900K runs ASUS PRIME Z790-P WIFI BIOS 0806 of 2022-11-22 with microcode 0x10E
   (`HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor `, `Update Revision`), which predates

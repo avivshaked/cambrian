@@ -1524,8 +1524,11 @@ actually verifying it.
 - **Read the CPU's microcode before a long run.** The i9-13900K is a 13th-generation chip,
   and Intel's fixes for that generation's voltage degradation (microcode 0x129 and 0x12B,
   2024) come only with a BIOS update. On 2026-09-24 the board (ASUS PRIME Z790-P WIFI) was on
-  BIOS 0806 of 2022 with microcode 0x10E after weeks of boosted all-core load, and the owner
-  held every new run until the flash (HANDOFF). The revision is `Update Revision` under
+  BIOS 0806 of 2022 with microcode 0x10E after weeks of boosted all-core load. The owner held
+  every new run until the flash. On 2026-09-25 they deferred the flash and ruled a lighter load
+  instead: one heavy job at a time at about a third of the machine, with Intel's power limits
+  set in the old BIOS. HANDOFF carries the current ruling, and the owner's Desktop carries the
+  flash steps. The revision is `Update Revision` under
   `HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor `, little-endian (`0E 01 00 00` is
   0x10E); throttling is `\Processor Information(_Total)\Performance Limit Flags` (0 is none).
   The ASUS WMI classes in `root\wmi` (`ASUSManagement`, `AsusAtkWmi_WMNB`) write the SMBus,
