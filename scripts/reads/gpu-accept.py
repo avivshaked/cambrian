@@ -12,7 +12,8 @@ newest run directory under it is read. What it prints:
   - identity: the first stats.jsonl sample at which any field other than the wall clocks
     differs (every `wall*` field is left out: they time the machine, not the world), the first
     digest.jsonl row whose hash differs (when both runs wrote one), and whether lineage.jsonl
-    and positions.jsonl are byte-equal;
+    and positions.jsonl are byte-equal, on the shorter run's lines when one run goes on longer
+    (a 300 s check against a recorded seed: the prefix is the claim, as for the stats);
   - with --every N, alive, births, light, food, mean height and the audit at every Nth shared
     sample side by side, which is the read when the two are not meant to be identical (single
     against double).
@@ -142,9 +143,11 @@ def compare_bytes(name, pa, pb):
             n += 1
             if la != lb:
                 if not la or not lb:
-                    print(f'{name:<8} equal for {n - 1} lines, then one file ends')
-                else:
-                    print(f'{name:<8} first differs at line {n}')
+                    # A shorter run against a longer one of the same world (a 300 s check
+                    # against a recorded seed): the prefix is the claim, as for the stats.
+                    print(f'{name:<8} byte-equal on the shorter run\'s {n - 1} lines; the other goes on')
+                    return True
+                print(f'{name:<8} first differs at line {n}')
                 return False
             if not la:
                 print(f'{name:<8} byte-equal ({n - 1} lines)')
