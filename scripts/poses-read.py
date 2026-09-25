@@ -13,9 +13,11 @@ from the C#. That is most of what it is for: a reader that agrees with the write
 it was written beside it checks nothing. It is also the quickest way to ask a live run what it
 has recorded without opening the Editor.
 
-It reads both versions. Version 1 writes every body raw. Version 2 deflates each frame's bodies
-(a raw deflate stream, zlib's window bits -15) behind an uncompressed time, count and raw length,
-and gives every body a flags byte: 1 absorptive, 2 jointed, 4 photosynthetic.
+It reads all three versions. Version 1 writes every body raw. Version 2 deflates each frame's
+bodies (a raw deflate stream, zlib's window bits -15) behind an uncompressed time, count and raw
+length, and gives every body a flags byte: 1 absorptive, 2 jointed, 4 photosynthetic. Version 3
+(2026-09-25) adds each body's seconds of reserve, a float32 after the flags byte, which the theatre
+shades a body by; read_frame() hands it over as reserveSeconds, None on a version 1 or 2 stream.
 
 A body fraction of NaN means "not recorded". The farm never writes one; a stream converted from a
 run's poses.jsonl (scripts/record-convert.py) writes it for every body, because that file never
@@ -35,14 +37,14 @@ import zlib
 FILE_MAGIC = b'EVOPOSE\x00'
 INDEX_MAGIC = b'EVOPOSX\x00'
 FRAME_MAGIC = b'FRAM'
-VERSIONS = (1, 2)
+VERSIONS = (1, 2, 3)
 HEADER_BYTES = 80
 INDEX_HEADER_BYTES = 24
 INDEX_ENTRY_BYTES = 16
 
 # Per version: the payload's bytes before its bodies, and a body's bytes before its joints.
-PAYLOAD_PREFIX = {1: 12, 2: 16}
-BODY_FIXED = {1: 37, 2: 38}
+PAYLOAD_PREFIX = {1: 12, 2: 16, 3: 16}
+BODY_FIXED = {1: 37, 2: 38, 3: 42}
 
 FLAG_BITS = 1 | 2 | 4
 STREAM_NAMES = ('poses.bin', 'film.poses.bin')
@@ -246,9 +248,18 @@ def read_frame(f, offset, payload_bytes, version=None):
             if flags & ~FLAG_BITS:
                 raise Refusal('a body at frame %d carries flags %d, outside the three guild bits'
                               % (offset, flags))
-            dof = records[at + 37]
+            if version >= 3:
+                # Version 3 (2026-09-25): the body's seconds of reserve, a float32 after the flags.
+                reserve = struct.unpack_from('<f', records, at + 37)[0]
+                if math.isnan(reserve):
+                    reserve = None
+                dof = records[at + 41]
+            else:
+                reserve = None
+                dof = records[at + 37]
         else:
             flags = None
+            reserve = None
             dof = records[at + 36]
 
         at += fixed
@@ -261,7 +272,8 @@ def read_frame(f, offset, payload_bytes, version=None):
         at += 4 * dof
 
         bodies.append({'id': ident, 'p': (x, y, z), 'r': (qx, qy, qz, qw),
-                       'bodyFraction': fraction, 'flags': flags, 'q': list(joints)})
+                       'bodyFraction': fraction, 'flags': flags, 'reserveSeconds': reserve,
+                       'q': list(joints)})
 
     if at != len(records):
         raise Refusal('the frame at %d says %d bodies and they end %d bytes short of its records'

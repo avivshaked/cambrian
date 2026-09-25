@@ -122,6 +122,7 @@ namespace Evosim.Farm
                     (float)body.BaseRotation.W,
                     creature.BodyFraction,
                     GuildFlags(creature),
+                    creature.SecondsOfReserve,
                     body.Dof,
                     body.Q);
 

@@ -392,8 +392,17 @@ namespace Evosim.Theatre
                     continue;
                 }
 
+                // Shaded by its reserve as the stepped route shades it (LiveWorldView.Sync), from the
+                // stream's version 3 field. A version 2 window carries none and is drawn fully fed,
+                // which is what every window drew until 2026-09-25: the owner's review found every
+                // body of round 48's first window clips bright green where the stepped route drew
+                // the starving ones dark.
+                float tint = float.IsNaN(body.ReserveSeconds)
+                    ? 1f
+                    : TheatrePalette.Tint(body.ReserveSeconds, Record.Config.EnergyFullScaleSeconds);
+
                 // A pose that is not finite leaves the body where it last stood, inside the view.
-                if (!View.Place(id, adult.Body, phenotype, pose.Root, adult.Positions, adult.Rotations)) continue;
+                if (!View.Place(id, adult.Body, phenotype, pose.Root, adult.Positions, adult.Rotations, tint)) continue;
 
                 _indexOf[id] = _drawn.Count;
                 _drawn.Add(new Drawn

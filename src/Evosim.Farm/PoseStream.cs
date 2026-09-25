@@ -42,7 +42,7 @@ namespace Evosim.Farm
     /// so a reader of the stream needs no second file to tell a leaf from a stomach. The frame's
     /// magic, its length, its time, its body count and its trailer stay uncompressed in both, so
     /// the index, the scan and the torn-frame rule are one rule for both versions. This build
-    /// writes version 2 and reads both.
+    /// writes version 3 (version 2 with each body's seconds of reserve) and reads all three.
     /// </para>
     /// </remarks>
     public static class PoseStream
@@ -54,7 +54,12 @@ namespace Evosim.Farm
         public const string IndexFileName = "poses.idx";
 
         /// <summary>The format this build writes. It reads this one and every one before it.</summary>
-        public const int Version = 2;
+        /// <remarks>
+        /// Version 3 (2026-09-25) adds each body's seconds of reserve, which the theatre shades a
+        /// body by: without it a film window drew every body as if fully fed, where the stepped
+        /// route drew a starving body dark (the owner's review of round 48's first window clips).
+        /// </remarks>
+        public const int Version = 3;
 
         /// <summary>The oldest format this build reads.</summary>
         public const int OldestVersion = 1;
@@ -76,6 +81,19 @@ namespace Evosim.Farm
         /// version 1's thirty-seven and the flags byte.
         /// </summary>
         public const int BodyFixedBytesVersion2 = 38;
+
+        /// <summary>
+        /// Bytes a body costs before its joint coordinates in a version 3 frame, once inflated:
+        /// version 2's thirty-eight and a float32 of seconds of reserve after the flags byte.
+        /// </summary>
+        public const int BodyFixedBytesVersion3 = 42;
+
+        /// <summary>
+        /// Seconds of reserve the stream does not know: NaN, on every body of a version 1 or 2
+        /// stream. A reader draws such a body fully fed, which is what every picture of those
+        /// streams drew.
+        /// </summary>
+        public const float ReserveNotRecorded = float.NaN;
 
         /// <summary>Bytes of frame framing: the magic, the length and the length again.</summary>
         public const int FrameOverheadBytes = 12;
@@ -161,6 +179,7 @@ namespace Evosim.Farm
 
         /// <summary>Bytes a body costs before its joint coordinates in a frame of this version.</summary>
         public static int BodyFixedBytes(int version) =>
+            version >= 3 ? BodyFixedBytesVersion3 :
             version >= 2 ? BodyFixedBytesVersion2 : BodyFixedBytesVersion1;
 
         /// <summary>
@@ -234,6 +253,13 @@ namespace Evosim.Farm
         /// <see cref="PoseStream.FlagsNotRecorded"/> on a version 1 stream, which carries none.
         /// </summary>
         public int Flags;
+
+        /// <summary>
+        /// The organism's seconds of reserve (<c>Organism.SecondsOfReserve</c>), which the theatre
+        /// shades a body by; positive infinity for a body with no standing cost, and
+        /// <see cref="PoseStream.ReserveNotRecorded"/> (NaN) on a version 1 or 2 stream.
+        /// </summary>
+        public float ReserveSeconds;
 
         /// <summary>Joint coordinates in the solver's own order. Never null; empty for a rigid body.</summary>
         public float[] Joints;
@@ -397,7 +423,8 @@ namespace Evosim.Farm
                     "belonging to no guild.");
             }
 
-            Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, PoseStream.FlagsNotRecorded, dof, joints);
+            Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, PoseStream.FlagsNotRecorded,
+                PoseStream.ReserveNotRecorded, dof, joints);
         }
 
         /// <summary>One body of a version 2 stream, with its guild flags.</summary>
@@ -425,7 +452,34 @@ namespace Evosim.Farm
                     "A body's flags are the three guild bits and nothing else.");
             }
 
-            Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, flags, dof, joints);
+            Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, flags, PoseStream.ReserveNotRecorded, dof, joints);
+        }
+
+        /// <summary>One body of a version 3 stream, with its guild flags and its seconds of reserve.</summary>
+        /// <param name="reserveSeconds">
+        /// <c>Organism.SecondsOfReserve</c>: positive infinity is allowed (a body with no standing
+        /// cost), and NaN means not recorded.
+        /// </param>
+        public void Body(
+            long id, float x, float y, float z,
+            float qx, float qy, float qz, float qw,
+            float bodyFraction, int flags, float reserveSeconds, int dof, double[] joints)
+        {
+            if (Version < 3)
+            {
+                throw new InvalidOperationException(
+                    "A version " + Version + " stream has no field for a body's reserve, and dropping " +
+                    "it here would lose it without saying so.");
+            }
+
+            if (flags < 0 || (flags & ~PoseStream.AllFlagBits) != 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(flags), flags,
+                    "A body's flags are the three guild bits and nothing else.");
+            }
+
+            Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, flags, reserveSeconds, dof, joints);
         }
 
         /// <remarks>
@@ -437,7 +491,7 @@ namespace Evosim.Farm
         private void Put(
             long id, float x, float y, float z,
             float qx, float qy, float qz, float qw,
-            float bodyFraction, int flags, int dof, double[] joints)
+            float bodyFraction, int flags, float reserveSeconds, int dof, double[] joints)
         {
             if (!_framing) throw new InvalidOperationException("No frame is open.");
 
@@ -475,6 +529,12 @@ namespace Evosim.Farm
             {
                 _buffer[_at] = (byte)flags;
                 _at += 1;
+            }
+
+            if (Version >= 3)
+            {
+                PutFloat(_buffer, _at, reserveSeconds);
+                _at += 4;
             }
 
             _buffer[_at] = (byte)dof;
@@ -807,6 +867,7 @@ namespace Evosim.Farm
                     Qw = Get.Float(records, at + 28),
                     BodyFraction = Get.Float(records, at + 32),
                     Flags = version >= 2 ? records[at + 36] : PoseStream.FlagsNotRecorded,
+                    ReserveSeconds = version >= 3 ? Get.Float(records, at + 37) : PoseStream.ReserveNotRecorded,
                 };
 
                 int dof = records[at + fixedBytes - 1];

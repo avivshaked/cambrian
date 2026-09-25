@@ -186,7 +186,7 @@ namespace Evosim.Farm.Tests
 
             using (PoseStreamReader reader = PoseStreamReader.Open(Path.Combine(outDirectory, FilmWindow.PosesFileName)))
             {
-                Assert.Equal(2, reader.Header.Version);
+                Assert.Equal(PoseStream.Version, reader.Header.Version);
                 Assert.Equal((float)(1d / 10d), reader.Header.CadenceSeconds);
                 Assert.Equal(config.Hash(), reader.Header.ConfigHash);
                 Assert.True(reader.IndexRead);
