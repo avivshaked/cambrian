@@ -460,6 +460,40 @@ in this section is history.
     links catch light, living leaves make three quarters of the snow, the tank is 45 m deep
     only on average, and the gift did pay for a first child. Scene 19's third caption says
     seed 2's cause is not found; it changes with the re-run's verdict.
+  - **I am blocked on the machine from the owner (12:30, 2026-09-25; pinged by phone).** Seed
+    2's re-run from founding ran clean past the fault, which fires the stop rule.
+    - It ran on the same build as the recording, all four hashes equal, with its config hash
+      `e5a30c15…`.
+    - Every stats field of every sample agreed with the recording to the bit through
+      13,690 s, and it ran on to its 13,800 s budget, finite, with the audit closed.
+    - The recording's 13,700 s sample shows its world broke within one window. All eight
+      rows it wrote read zero light, where the same bodies earned 0.2 to 0.56 W in the
+      re-run. Two bodies alive at 13,690 s were gone, and the ninth read a snow density of
+      minus infinity.
+    - Inference: a one-off wrong computation in the recording's process. That is either the
+      processor (the 13900K's degradation on microcode 0x10E) or a rare thread race. The
+      recording ran at 5 threads beside seed 1, the re-run at 8 alone. No WHEA events since
+      2026-09-22, but a silent miscalculation would not log one.
+    - Heavy work is paused: nothing heavy was running when the re-run ended. That covers
+      the story film's compile and render, the GPU port's acceptance, the checkpoint fix's
+      acceptance and round 49's gap list.
+    - The code is cleared of this fault, so no fix is owed to round 49. Seed 2 could be
+      finished honestly by a full re-run from founding, about a day of the machine.
+  - **The GPU port is built** (`c9f4e13`, `bc9196a`, `a6793cd`, `019504b` on `gpu-port`,
+    `scratch/wt-gpu`). It has all 20 missing kernel items, per-part contact, reefs, the beach
+    and D111 included. Its 14 GPU tests pass on ILGPU's CPU accelerator, double bit for bit
+    against the solver, plus 70 farm and 14 Dynamics fast tests. Its acceptances 0 to 3 are in
+    the agent's report: a 300 s CPU-against-accelerator pair on round 48's launcher, then
+    3,000 s card runs at group sizes 32 and 64, then pace. It moves `dynamicsHash` and
+    `farmHash`, not `coreHash`.
+    - Questions for the owner:
+      - a body the engine refuses (over 16 links or 256 neurons) dies as a counted
+        divergence;
+      - no bound on a neuron's value;
+      - per-part contact is in scope, against the spec's §7.
+    - Engineering left: transfers every block are whole columns, which will likely limit
+      pace at 10,000 to 30,000 bodies. Once D123 lands, the kernel must compute the senses
+      per step.
   - **Seed 2 of round 48 stays censored** (the owner, 2026-09-25 midday, agreeing with the
     agent's recommendation): if the re-run shows a code fault, the fix goes into round 49,
     and seed 2 is neither resumed nor replaced. A resume could not be faithful anyway,
