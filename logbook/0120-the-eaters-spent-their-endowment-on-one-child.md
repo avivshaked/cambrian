@@ -295,6 +295,25 @@ also says what the richest cell buys a founder: its first meal, and after that t
 into its cell. My reading is inference: a placing rule aimed at a cell's stock aims at the
 wrong quantity, and the flow round the cell is the one to aim at.
 
+How far a feeder empties its own cell I then measured outside the run. The experiment built
+round 48 seed 1's world from its config, filled the snow evenly and set eight mouths to draw
+from their cells by the world's rule, at 3 and 10 m and at 0.8 and 1.6 m³/s. An untouched
+copy of the world stepped beside it. After a minute each mouth's cell held 5 to 25% of what
+the same cell held in the copy. With the water's transport off it held 5 to 11%, refilled
+by the stirring alone at 0.06 to 0.1 of the gap a second. The transport lifted it to 20 or
+25% where the water moved at 3 to 6 cm/s, and not at all where it stood still. A mouth that
+drifted with the water did no better, because the hole went with it. Before the experiment
+I had told the owner the refill was mostly the grid's own smearing of the current. At these
+water speeds it is not.
+
+Two readings follow, and both are inference. The founders read four tenths of their
+column's mean, and a mouth's cell holds a twentieth to a quarter of its water. So the water
+round them held 1.6 to 8 times their column's mean, which is what D122 was meant to give.
+That rests on an even field, and round 48's was not. The second is about the ledger. A
+break-even density from `ledger.ps1` is a density at the mouth, in the emptied cell. Set
+against a field's density, as the stomach screens of 2026-09-23 did, it overstates what an
+eater gets by four to twenty times.
+
 ### The books closed, the reef read as before, and the pace fell with the crowd
 
 B1 fails on seed 2, which broke. The books themselves closed in all three. The largest
@@ -509,6 +528,7 @@ written for this entry, and the run directories are under `runs/`, round 48's an
 | round 47 seed 2 at 13,690 s; pool founders by arrival window | `logbook/specs/r48-read/late.txt` | `python scripts/reads/r48-entry/late.py` |
 | pool founders over a table | `logbook/specs/r48-read/overtables.txt` | `python scripts/reads/r48-entry/overtables.py r48-s1 r48-s2 r48-s3` |
 | the twelve pool founders that first read 1 J/m³ or more, their children and lines; the bud lines 59978 and 61200 not nested | `logbook/specs/r48-read/richlanders.txt` | `python scripts/reads/r48-entry/richlanders.py` |
+| a mouth's own cell against an untouched copy of round 48 seed 1's water, transport off and on, standing and drifting | `logbook/specs/r48-read/refill-table.txt` | `./scripts/core-test.ps1 -All -Filter FeederRefillExperiments` (`src/Evosim.Core.Tests/FeederRefillExperiments.cs`, about ten minutes, reads `runs/r48-s1`) |
 | the stomach's share of body and income by 1,000 s window in the four bud lines | `logbook/specs/r48-read/budshare.txt` | `python scripts/reads/r48-entry/budshare.py r48-s1 <root> --every 1000` for 48048, 52803, 59978, 61200 |
 | F4's witness: the share of its 1 m cell a pool founder draws per step (45%, 45%, 52% at least), the landing stock left after ten steps | `logbook/specs/r48-read/f4draw.txt` | `python scripts/reads/r48-entry/f4draw.py r48-s1 r48-s2 r48-s3` |
 | a child's birth fraction early and late | `logbook/specs/r48-read/birthfraction.txt` | `python scripts/reads/r48-entry/birthfraction.py` |
