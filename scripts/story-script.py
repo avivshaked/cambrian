@@ -100,6 +100,22 @@ def captions_of(scene):
     return [dict(c) if isinstance(c, dict) else {"text": str(c)} for c in given]
 
 
+def chart_words(chart):
+    """Every piece of a chart's text a viewer reads, as (where, text): its title, axis labels,
+    series names, bar labels and marks."""
+    if not isinstance(chart, dict):
+        return []
+    found = [("title", chart.get("title"))]
+    for axis in ("x", "y"):
+        if isinstance(chart.get(axis), dict):
+            found.append((axis + " label", chart[axis].get("label")))
+    for key, what, field in (("series", "series", "name"), ("bars", "bar", "label"), ("marks", "mark", "label")):
+        for item in chart.get(key) or []:
+            if isinstance(item, dict):
+                found.append((what, item.get(field)))
+    return [(w, str(t)) for w, t in found if t]
+
+
 def render(story):
     """The page for a story: every caption a line, under its scene and chapter."""
     title = story.get("title", "") if isinstance(story, dict) else ""
@@ -121,6 +137,9 @@ def render(story):
         if isinstance(chart, dict):
             lines.append("> chart: %s (%s, %s to %s s)" % (chart.get("title", ""), chart.get("place", "corner"),
                                                           chart.get("at", "?"), chart.get("until", "end")))
+            rest = ["%s \"%s\"" % (w, t) for w, t in chart_words(chart) if w != "title"]
+            if rest:
+                lines.append("> chart words (edit in story.json): " + " · ".join(rest))
         for k, c in enumerate(captions_of(s)):
             if k > 0 and c.get("new_paragraph"):
                 lines.append("")
@@ -407,6 +426,14 @@ def findings(folder):
     questions, shorts, in_run = {}, {}, []
     for s in scenes_of(story):
         n, caps = s["n"], captions_of(s)
+        for where, text in chart_words(s.get("chart")):
+            for w in words(text):
+                if w in CODE_WORDS:
+                    add("ERROR", n, "chart " + where, "a code name on screen: '%s' in \"%s\"" % (w, text))
+                elif w in NARRATOR:
+                    add("ERROR", n, "chart " + where, "a narrator in the chart: '%s' in \"%s\"" % (w, text))
+                elif w in SOFT_CODE_WORDS:
+                    add("WARN", n, "chart " + where, "a word the glossary may not define: '%s' in \"%s\"" % (w, text))
         length = float(s.get("seconds") or 0)
         prev_end = None
         here = pool.get(n, set()) | pool.get(None, set())
