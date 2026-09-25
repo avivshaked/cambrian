@@ -457,20 +457,28 @@ namespace Evosim.Core
             // add". Null in, null out, so a world that has never been bitten allocates nothing.
             creature.PartHealth = Remap(creature.PartHealth, map);
 
-            // D123. The step's two sensed records are dropped rather than remapped. Their indices
-            // name the old plan's parts, and the harness's solver stays on the old plan until the
-            // growth step rebuilds it, so a remapped array would be read by the wrong links. A
-            // body that changes plan therefore senses no contact and no damage for the step it
-            // changed on; the farm's next hand-back gives its senses whatever replaces these.
-            creature.PartDamage = null;
-            creature.PartContact = null;
+            // D123. The step's two sensed records, carried onto the survivors' new indices, so a
+            // brain reads on the next physics steps what its parts felt on the step that changed
+            // the plan, which for a bite is the step it lost a part. A lost part's entries go with
+            // it, and a part that has just appeared felt nothing: 0 and false. The harness hands
+            // a rebuilt body these very arrays, on the plan they are indexed by (round 49). Until
+            // round 49 both were dropped, because the solver stayed on the old plan until the
+            // growth step and a carried array would have been read by the wrong links.
+            creature.PartDamage = RemapFelt(creature.PartDamage, map);
+            creature.PartContact = RemapFelt(creature.PartContact, map);
 
             // D110. The old plan's poses name the old plan's parts; until the harness reads the
             // new body's, it earns and shades on the orientation average. Null already in every
             // world with the tunable off.
             creature.PartExposure = null;
 
-            creature.PartMapFromPreviousPlan = map;
+            // Round 49. Composed with a map the harness has not taken yet, so what it takes runs
+            // from the plan its solver was built on: the mouth's pass can take two parts off one
+            // body before the harness sees either. Null in is null out.
+            int[] pending = creature.PartMapFromPreviousPlan;
+            creature.PartMapFromPreviousPlan = pending != null && map != null
+                ? Compose(pending, map)
+                : map;
 
             creature.AdultPhenotype = adult;
             creature.AdultTissueJoules = adultTissue;
@@ -501,6 +509,26 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// Two plan changes' maps as one: part <c>i</c> of the newest plan stood at
+        /// <c>earlier[later[i]]</c> in the oldest, or nowhere (-1) if either change had no place
+        /// for it.
+        /// </summary>
+        /// <param name="earlier">The pending map, from the oldest plan to the middle one.</param>
+        /// <param name="later">This change's map, from the middle plan to the newest.</param>
+        internal static int[] Compose(int[] earlier, int[] later)
+        {
+            var map = new int[later.Length];
+
+            for (int i = 0; i < later.Length; i++)
+            {
+                int middle = later[i];
+                map[i] = middle >= 0 && middle < earlier.Length ? earlier[middle] : -1;
+            }
+
+            return map;
+        }
+
+        /// <summary>
         /// A per-part array carried onto a new plan: <c>map[i]</c> is where part <c>i</c> of the
         /// new body stood in the old one, or -1 for a part that has just appeared.
         /// </summary>
@@ -518,6 +546,31 @@ namespace Evosim.Core
             {
                 int from = map[i];
                 now[i] = from >= 0 && from < was.Length ? was[from] : 1f;
+            }
+
+            return now;
+        }
+
+        /// <summary>
+        /// One of the step's two sensed records carried onto a new plan: a surviving part keeps
+        /// what it felt, and a part that has just appeared (map -1) felt nothing, which is the
+        /// element type's default (0 and false). A lost part's entry is simply not copied.
+        /// </summary>
+        /// <remarks>
+        /// Null in is null out, as for health: a body that felt nothing on this step stays one
+        /// that allocates nothing, which is every body in a world with neither sense open and
+        /// nothing armed. A new array rather than the old one rewritten, because the length
+        /// changes with the plan; the farm hands the rebuilt body's senses the new one.
+        /// </remarks>
+        internal static T[] RemapFelt<T>(T[] was, int[] map)
+        {
+            if (was == null || map == null) return null;
+
+            var now = new T[map.Length];
+            for (int i = 0; i < map.Length; i++)
+            {
+                int from = map[i];
+                if (from >= 0 && from < was.Length) now[i] = was[from];
             }
 
             return now;

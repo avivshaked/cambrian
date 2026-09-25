@@ -617,11 +617,11 @@ namespace Evosim.Farm
                     // restore exists to avoid. It is also after the stop check has been read and
                     // before the loop acts on it, so a stopped arm's last checkpoint is the
                     // instant it stopped at.
-                    // Deferred, not skipped, while a body waits for the growth step that rebuilds
-                    // it on a changed plan: such a checkpoint cannot be restored
-                    // (Simulation.PlanChangesPending). The next metabolic step asks again, so a
-                    // deferred checkpoint lands at most one growth step late, and a cadence that
-                    // is a multiple of the growth step never waits at all.
+                    // Deferred, not skipped, while a body's solver is not on its organism's plan:
+                    // such a checkpoint cannot be restored (Simulation.PlanChangesPending). From
+                    // round 49 the harness rebuilds a changed plan on the metabolic step that
+                    // changed it, so this never fires; it stays as the guard for a plan-changing
+                    // path that forgets its rebuild. The next metabolic step asks again.
                     bool checkpointDue = world.ElapsedSeconds + 1e-9 >= nextCheckpointAt;
 
                     if (checkpointDue && sim.PlanChangesPending() > 0)
@@ -631,10 +631,11 @@ namespace Evosim.Farm
                             deferredCheckpointAt = nextCheckpointAt;
 
                             Console.Error.WriteLine(
-                                "note: the checkpoint due at " +
+                                "warning: the checkpoint due at " +
                                 nextCheckpointAt.ToString("0.#", CultureInfo.InvariantCulture) +
-                                " s waits for the next growth step: a body's plan has changed " +
-                                "since the last one and its solver has not been rebuilt yet.");
+                                " s waits: a body's plan has changed and its solver has not been " +
+                                "rebuilt on it, which the harness does on the metabolic step of " +
+                                "the change. A plan-changing path is missing its rebuild.");
                         }
 
                         checkpointDue = false;
@@ -755,10 +756,11 @@ namespace Evosim.Farm
             // exactly the case a resume is for, and without this it would resume from the last
             // round number and re-simulate everything after it.
             //
-            // Not while a body waits for the growth step that rebuilds it on a changed plan: a
-            // checkpoint then cannot be restored (Simulation.PlanChangesPending), and it would be
-            // the newest file, the one a resume picks by default. The last cadence checkpoint
-            // stands instead, and the run says so.
+            // Not while a body's solver is off its organism's plan: a checkpoint then cannot be
+            // restored (Simulation.PlanChangesPending), and it would be the newest file, the one a
+            // resume picks by default. From round 49 no body is, since the harness rebuilds on
+            // the metabolic step of the change; the test stays as the guard, and when it fires
+            // the last cadence checkpoint stands instead and the run says so.
             if (checkpointEvery > 0f && world.Living.Count > 0 &&
                 world.ElapsedSeconds > lastCheckpointSeconds + 1e-9)
             {
@@ -770,8 +772,9 @@ namespace Evosim.Farm
                         "note: no checkpoint at the second the run ended (" +
                         world.ElapsedSeconds.ToString("0.#", CultureInfo.InvariantCulture) +
                         " s): " + pending.ToString(CultureInfo.InvariantCulture) + " bodies had " +
-                        "changed plan since the last growth step, and a checkpoint of that moment " +
-                        "cannot be restored. A resume reads the last cadence checkpoint instead.");
+                        "changed plan without their solver being rebuilt, and a checkpoint of that " +
+                        "moment cannot be restored. A resume reads the last cadence checkpoint " +
+                        "instead.");
                 }
                 else
                 {

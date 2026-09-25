@@ -56,24 +56,24 @@ namespace Evosim.Farm
         public void SettleBeforeCheckpoint() => Reconcile();
 
         /// <summary>
-        /// Living bodies whose plan has changed since their solver was built: a part bitten off
-        /// inside the world's step, waiting for the next growth step to rebuild the body on it
-        /// (D106 item 2, rule 7).
+        /// Living bodies whose plan has changed since their solver was built (D106 item 2,
+        /// rule 7). Zero whenever a metabolic step has finished, from round 49.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <b>A checkpoint cannot be restored while this is above zero</b>, and the run loop
-        /// defers one until it is zero. The world writes the creature on its new plan and the
-        /// harness writes the solver on its old one; a restore builds the body from the new plan,
-        /// with a link count the saved solver state does not have, and
-        /// <see cref="ReadState"/> refuses it. Carrying the old plan through the file instead
-        /// would need the developer's pre-bite plan, which nothing keeps.
+        /// <b>A checkpoint cannot be restored while this is above zero.</b> The world writes the
+        /// creature on its new plan and the harness writes the solver on its old one; a restore
+        /// builds the body from the new plan, with a link count the saved solver state does not
+        /// have, and <see cref="ReadState"/> refuses it. Carrying the old plan through the file
+        /// instead would need the developer's pre-bite plan, which nothing keeps.
         /// </para>
         /// <para>
-        /// Zero at every growth step, because the growth step is where every changed plan is
-        /// rebuilt; so a checkpoint cadence that is a multiple of
-        /// <see cref="RunConfig.GrowthStepSeconds"/> never waits, and only a stop, a wall or a
-        /// cadence off the growth step's can meet a nonzero count.
+        /// <b>Round 49 closed the window this counted.</b> Until then a part bitten off inside
+        /// the world's step waited for the next growth step to be rebuilt, and the run loop
+        /// deferred any checkpoint that fell in between. Now <see cref="RebuildChangedPlans"/>
+        /// rebuilds it on the same metabolic step and the growth step rebuilds the module rule's
+        /// changes, so nothing is pending when the loop asks. The loop still asks, and still
+        /// defers, as the guard for a plan-changing path that forgets its rebuild.
         /// </para>
         /// </remarks>
         public int PlanChangesPending()
@@ -207,7 +207,8 @@ namespace Evosim.Farm
             w.Write(built.ScaledBy);
 
             // A body still on its old plan is written as it stands and refused by the reader on
-            // its plan revision, which is the clearer refusal; the loop does not write one.
+            // its plan revision, which is the clearer refusal. The harness rebuilds a changed
+            // plan on the metabolic step of the change, so the loop never meets one.
             bool onItsPlan = body.Solver.AppliedPlanRevision == creature.PlanRevision;
 
             if (onItsPlan && !adult && built.ScaledBy == 1f)
@@ -252,17 +253,19 @@ namespace Evosim.Farm
         /// <para>
         /// <b>Flags and not the arrays.</b> The arrays are the organism's, carried by the world's
         /// own state (<c>Organism.PartContact</c> and <c>PartDamage</c>), and a sense is either
-        /// null or that very array: <c>HandBackWhatWasFelt</c> is the only thing that sets one,
-        /// and it sets it to the organism's. So what the harness has to carry is which of the two
-        /// the body holds, and <see cref="ReadState"/> puts the restored organism's array back
-        /// wherever the flag is set.
+        /// null or that very array: <c>HandBackWhatWasFelt</c> and the rebuild of a body on a new
+        /// plan (<c>RebuildOnTheNewPlan</c>) are the only things that set one, and both set it to
+        /// the organism's. So what the harness has to carry is which of the two the body holds,
+        /// and <see cref="ReadState"/> puts the restored organism's array back wherever the flag
+        /// is set.
         /// </para>
         /// <para>
         /// <b>Not a blanket re-wire</b>, because null is a real state here that the organism's
-        /// array does not predict: a newborn the checkpoint's own reconcile has just built, and a
-        /// body rebuilt on a new plan at this growth step, hold null senses until the next
-        /// metabolic step hands them the arrays, while their organisms may already hold one. A
-        /// restore that wired them would sense a step early.
+        /// array does not predict: a newborn the checkpoint's own reconcile has just built holds
+        /// null senses until the next metabolic step hands it the arrays, while its organism may
+        /// already hold one. A restore that wired it would sense a step early. A body rebuilt on
+        /// a new plan was a second such case until round 49, when the rebuild began handing it
+        /// the organism's carried arrays itself.
         /// </para>
         /// <para>
         /// <b>A wired sense that is not its organism's array is refused.</b> Nothing in the loop
@@ -432,9 +435,10 @@ namespace Evosim.Farm
                 if (current)
                 {
                     // Asked before the solver's own state is read, so that a checkpoint taken
-                    // between a bite and the growth step that rebuilds the body is refused for
-                    // what it is rather than as "two animals wearing one name". The run loop
-                    // does not write one (PlanChangesPending); this is the guard behind it.
+                    // between a plan change and the rebuild is refused for what it is rather than
+                    // as "two animals wearing one name". Since round 49 the harness rebuilds on
+                    // the metabolic step of the change and the run loop does not write one
+                    // (PlanChangesPending); this is the guard behind both.
                     int applied = r.ReadInt32();
 
                     if (applied != body.Creature.PlanRevision)
@@ -443,8 +447,8 @@ namespace Evosim.Farm
                             "Body " + id + " was saved on plan revision " + applied + " and its " +
                             "creature is on revision " + body.Creature.PlanRevision + ": the " +
                             "checkpoint was taken after the body's plan changed and before the " +
-                            "growth step that rebuilds it, and the restore can build only the " +
-                            "new plan. Resume from an earlier checkpoint.");
+                            "harness rebuilt it, and the restore can build only the new plan. " +
+                            "Resume from an earlier checkpoint.");
                     }
 
                     ReadAsBuilt(r, body);
