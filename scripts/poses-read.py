@@ -16,8 +16,9 @@ has recorded without opening the Editor.
 It reads all three versions. Version 1 writes every body raw. Version 2 deflates each frame's
 bodies (a raw deflate stream, zlib's window bits -15) behind an uncompressed time, count and raw
 length, and gives every body a flags byte: 1 absorptive, 2 jointed, 4 photosynthetic. Version 3
-(2026-09-25) adds each body's seconds of reserve, a float32 after the flags byte, which the theatre
-shades a body by; read_frame() hands it over as reserveSeconds, None on a version 1 or 2 stream.
+(2026-09-25) adds each body's seconds of reserve and its funds over its own breeding gate, two float32s
+after the flags byte, which the theatre shades a body by; read_frame() hands them over as
+reserveSeconds and breedFraction, None on a version 1 or 2 stream.
 
 A body fraction of NaN means "not recorded". The farm never writes one; a stream converted from a
 run's poses.jsonl (scripts/record-convert.py) writes it for every body, because that file never
@@ -44,7 +45,7 @@ INDEX_ENTRY_BYTES = 16
 
 # Per version: the payload's bytes before its bodies, and a body's bytes before its joints.
 PAYLOAD_PREFIX = {1: 12, 2: 16, 3: 16}
-BODY_FIXED = {1: 37, 2: 38, 3: 42}
+BODY_FIXED = {1: 37, 2: 38, 3: 46}
 
 FLAG_BITS = 1 | 2 | 4
 STREAM_NAMES = ('poses.bin', 'film.poses.bin')
@@ -249,17 +250,17 @@ def read_frame(f, offset, payload_bytes, version=None):
                 raise Refusal('a body at frame %d carries flags %d, outside the three guild bits'
                               % (offset, flags))
             if version >= 3:
-                # Version 3 (2026-09-25): the body's seconds of reserve, a float32 after the flags.
-                reserve = struct.unpack_from('<f', records, at + 37)[0]
-                if math.isnan(reserve):
-                    reserve = None
-                dof = records[at + 41]
+                # Version 3 (2026-09-25): the seconds of reserve and the funds over the breeding gate.
+                reserve, breed = struct.unpack_from('<2f', records, at + 37)
+                reserve = None if math.isnan(reserve) else reserve
+                breed = None if math.isnan(breed) else breed
+                dof = records[at + 45]
             else:
-                reserve = None
+                reserve = breed = None
                 dof = records[at + 37]
         else:
             flags = None
-            reserve = None
+            reserve = breed = None
             dof = records[at + 36]
 
         at += fixed
@@ -272,7 +273,7 @@ def read_frame(f, offset, payload_bytes, version=None):
         at += 4 * dof
 
         bodies.append({'id': ident, 'p': (x, y, z), 'r': (qx, qy, qz, qw),
-                       'bodyFraction': fraction, 'flags': flags, 'reserveSeconds': reserve,
+                       'bodyFraction': fraction, 'flags': flags, 'reserveSeconds': reserve, 'breedFraction': breed,
                        'q': list(joints)})
 
     if at != len(records):

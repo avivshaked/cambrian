@@ -91,6 +91,7 @@ namespace Evosim.Farm.Tests
                     ReserveSeconds = version >= 3
                         ? i % 5 == 4 ? float.PositiveInfinity : (float)(12.345678 * i + 0.1 * frame)
                         : PoseStream.ReserveNotRecorded,
+                    BreedFraction = version >= 3 ? (float)(0.0371 * i + 0.013 * frame) : PoseStream.ReserveNotRecorded,
                     Joints = joints,
                 };
             }
@@ -125,7 +126,7 @@ namespace Evosim.Farm.Tests
                             writer.Body(
                                 body.Id, body.X, body.Y, body.Z,
                                 body.Qx, body.Qy, body.Qz, body.Qw,
-                                body.BodyFraction, body.Flags, body.ReserveSeconds, joints.Length, joints);
+                                body.BodyFraction, body.Flags, body.ReserveSeconds, body.BreedFraction, joints.Length, joints);
                         }
                         else if (version >= 2)
                         {
@@ -184,6 +185,10 @@ namespace Evosim.Farm.Tests
                 Assert.Equal(
                     BitConverter.SingleToInt32Bits(a.ReserveSeconds),
                     BitConverter.SingleToInt32Bits(b.ReserveSeconds));
+
+                Assert.Equal(
+                    BitConverter.SingleToInt32Bits(a.BreedFraction),
+                    BitConverter.SingleToInt32Bits(b.BreedFraction));
 
                 Assert.Equal(a.Joints.Length, b.Joints.Length);
 
@@ -710,9 +715,9 @@ namespace Evosim.Farm.Tests
             using (var writer = new PoseStreamWriter(Path_, 0.5f, "abc", 3))
             {
                 writer.BeginFrame(0.5);
-                writer.Body(1, 1f, 2f, 3f, 0f, 0f, 0f, 1f, 0.5f, 4, 188.25f, 1, new[] { 0.25 });
-                writer.Body(2, 1f, 2f, 3f, 0f, 0f, 0f, 1f, 1f, 1, float.PositiveInfinity, 0, new double[0]);
-                writer.Body(3, 1f, 2f, 3f, 0f, 0f, 0f, 1f, 1f, 1, PoseStream.ReserveNotRecorded, 0, new double[0]);
+                writer.Body(1, 1f, 2f, 3f, 0f, 0f, 0f, 1f, 0.5f, 4, 188.25f, 0.625f, 1, new[] { 0.25 });
+                writer.Body(2, 1f, 2f, 3f, 0f, 0f, 0f, 1f, 1f, 1, float.PositiveInfinity, 1.5f, 0, new double[0]);
+                writer.Body(3, 1f, 2f, 3f, 0f, 0f, 0f, 1f, 1f, 1, PoseStream.ReserveNotRecorded, float.NaN, 0, new double[0]);
                 writer.EndFrame();
             }
 
@@ -720,6 +725,9 @@ namespace Evosim.Farm.Tests
             {
                 PoseBody[] bodies = reader.Read(0).Bodies;
                 Assert.Equal(188.25f, bodies[0].ReserveSeconds);
+                Assert.Equal(0.625f, bodies[0].BreedFraction);
+                Assert.Equal(1.5f, bodies[1].BreedFraction);
+                Assert.True(float.IsNaN(bodies[2].BreedFraction));
                 Assert.Equal(new[] { 0.25f }, bodies[0].Joints);
                 Assert.True(float.IsPositiveInfinity(bodies[1].ReserveSeconds));
                 Assert.True(float.IsNaN(bodies[2].ReserveSeconds));
@@ -730,7 +738,7 @@ namespace Evosim.Farm.Tests
             {
                 writer.BeginFrame(0.5);
                 Assert.Throws<InvalidOperationException>(
-                    () => writer.Body(1, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 1, 5f, 0, new double[0]));
+                    () => writer.Body(1, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 1, 5f, 0.5f, 0, new double[0]));
                 writer.Body(1, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 1f, 1, 0, new double[0]);
                 writer.EndFrame();
             }
@@ -738,6 +746,7 @@ namespace Evosim.Farm.Tests
             using (PoseStreamReader reader = PoseStreamReader.Open(Path_))
             {
                 Assert.True(float.IsNaN(reader.Read(0).Bodies[0].ReserveSeconds));
+                Assert.True(float.IsNaN(reader.Read(0).Bodies[0].BreedFraction));
             }
         }
 
@@ -840,7 +849,11 @@ namespace Evosim.Farm.Tests
                     PoseFrame frame = reader.Read(f);
 
                     // Version 3: the farm records every body's reserve, never NaN.
-                    foreach (PoseBody body in frame.Bodies) Assert.False(float.IsNaN(body.ReserveSeconds));
+                    foreach (PoseBody body in frame.Bodies)
+                    {
+                        Assert.False(float.IsNaN(body.ReserveSeconds));
+                        Assert.False(float.IsNaN(body.BreedFraction));
+                    }
 
                     if (!positions.TryGetValue(frame.Seconds, out Dictionary<long, int> flags)) continue;
 

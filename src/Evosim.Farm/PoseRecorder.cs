@@ -123,6 +123,7 @@ namespace Evosim.Farm
                     creature.BodyFraction,
                     GuildFlags(creature),
                     creature.SecondsOfReserve,
+                    BreedFraction(creature, sim.World.Config),
                     body.Dof,
                     body.Q);
 
@@ -131,6 +132,18 @@ namespace Evosim.Farm
 
             _writer.EndFrame();
             return written;
+        }
+
+        /// <summary>
+        /// How near a body is to its next child, as World.IsSolvent asks it: the account over the
+        /// gestation gate for a gestating body, the reserve over the reproduction gate for a lump
+        /// breeder. NaN where the gate is not positive.
+        /// </summary>
+        private static float BreedFraction(Organism creature, RunConfig config)
+        {
+            double gate = creature.Gestates ? creature.GestationThreshold(config) : creature.ReproductionThreshold(config);
+            double funds = creature.Gestates ? creature.GestationJoules : creature.Energy;
+            return gate > 0d ? (float)(funds / gate) : float.NaN;
         }
 
         /// <summary>

@@ -55,9 +55,10 @@ namespace Evosim.Farm
 
         /// <summary>The format this build writes. It reads this one and every one before it.</summary>
         /// <remarks>
-        /// Version 3 (2026-09-25) adds each body's seconds of reserve, which the theatre shades a
-        /// body by: without it a film window drew every body as if fully fed, where the stepped
-        /// route drew a starving body dark (the owner's review of round 48's first window clips).
+        /// Version 3 (2026-09-25) adds each body's seconds of reserve and its funds over its own
+        /// breeding gate, which the theatre shades a body by: without them a film window drew
+        /// every body as if fully fed, where the stepped route drew a starving body dark (the
+        /// owner's review of round 48's first window clips).
         /// </remarks>
         public const int Version = 3;
 
@@ -84,9 +85,10 @@ namespace Evosim.Farm
 
         /// <summary>
         /// Bytes a body costs before its joint coordinates in a version 3 frame, once inflated:
-        /// version 2's thirty-eight and a float32 of seconds of reserve after the flags byte.
+        /// version 2's thirty-eight and, after the flags byte, two float32s: the seconds of reserve
+        /// and the funds over the breeding gate.
         /// </summary>
-        public const int BodyFixedBytesVersion3 = 42;
+        public const int BodyFixedBytesVersion3 = 46;
 
         /// <summary>
         /// Seconds of reserve the stream does not know: NaN, on every body of a version 1 or 2
@@ -261,6 +263,14 @@ namespace Evosim.Farm
         /// </summary>
         public float ReserveSeconds;
 
+        /// <summary>
+        /// How near the body is to its next child: its funds over the gate its own mode applies
+        /// (the reserve over Organism.ReproductionThreshold for a lump breeder, the account over
+        /// Organism.GestationThreshold for a gestating one), as World.IsSolvent asks it; 1 or
+        /// more breeds. NaN on a version 1 or 2 stream, or where the gate is 0.
+        /// </summary>
+        public float BreedFraction;
+
         /// <summary>Joint coordinates in the solver's own order. Never null; empty for a rigid body.</summary>
         public float[] Joints;
     }
@@ -424,7 +434,7 @@ namespace Evosim.Farm
             }
 
             Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, PoseStream.FlagsNotRecorded,
-                PoseStream.ReserveNotRecorded, dof, joints);
+                PoseStream.ReserveNotRecorded, PoseStream.ReserveNotRecorded, dof, joints);
         }
 
         /// <summary>One body of a version 2 stream, with its guild flags.</summary>
@@ -452,7 +462,8 @@ namespace Evosim.Farm
                     "A body's flags are the three guild bits and nothing else.");
             }
 
-            Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, flags, PoseStream.ReserveNotRecorded, dof, joints);
+            Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, flags,
+                PoseStream.ReserveNotRecorded, PoseStream.ReserveNotRecorded, dof, joints);
         }
 
         /// <summary>One body of a version 3 stream, with its guild flags and its seconds of reserve.</summary>
@@ -460,10 +471,11 @@ namespace Evosim.Farm
         /// <c>Organism.SecondsOfReserve</c>: positive infinity is allowed (a body with no standing
         /// cost), and NaN means not recorded.
         /// </param>
+        /// <param name="breedFraction">Funds over the breeding gate (PoseBody.BreedFraction); NaN means not recorded.</param>
         public void Body(
             long id, float x, float y, float z,
             float qx, float qy, float qz, float qw,
-            float bodyFraction, int flags, float reserveSeconds, int dof, double[] joints)
+            float bodyFraction, int flags, float reserveSeconds, float breedFraction, int dof, double[] joints)
         {
             if (Version < 3)
             {
@@ -479,7 +491,7 @@ namespace Evosim.Farm
                     "A body's flags are the three guild bits and nothing else.");
             }
 
-            Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, flags, reserveSeconds, dof, joints);
+            Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, flags, reserveSeconds, breedFraction, dof, joints);
         }
 
         /// <remarks>
@@ -491,7 +503,7 @@ namespace Evosim.Farm
         private void Put(
             long id, float x, float y, float z,
             float qx, float qy, float qz, float qw,
-            float bodyFraction, int flags, float reserveSeconds, int dof, double[] joints)
+            float bodyFraction, int flags, float reserveSeconds, float breedFraction, int dof, double[] joints)
         {
             if (!_framing) throw new InvalidOperationException("No frame is open.");
 
@@ -534,6 +546,8 @@ namespace Evosim.Farm
             if (Version >= 3)
             {
                 PutFloat(_buffer, _at, reserveSeconds);
+                _at += 4;
+                PutFloat(_buffer, _at, breedFraction);
                 _at += 4;
             }
 
@@ -868,6 +882,7 @@ namespace Evosim.Farm
                     BodyFraction = Get.Float(records, at + 32),
                     Flags = version >= 2 ? records[at + 36] : PoseStream.FlagsNotRecorded,
                     ReserveSeconds = version >= 3 ? Get.Float(records, at + 37) : PoseStream.ReserveNotRecorded,
+                    BreedFraction = version >= 3 ? Get.Float(records, at + 41) : PoseStream.ReserveNotRecorded,
                 };
 
                 int dof = records[at + fixedBytes - 1];
