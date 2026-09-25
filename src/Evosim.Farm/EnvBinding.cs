@@ -105,6 +105,11 @@ namespace Evosim.Farm
             // rule is refused without D116's.
             Flag("EVOSIM_FOUNDERS_FOLLOW_FOOD_DEPTH", (s, v) => s.FoundersFollowFoodDepth = v),
             Num("EVOSIM_FOUNDER_ENDOWMENT", 0f, (s, v) => s.FounderEndowment = v),
+
+            // D124, the owner's ruling for round 49 (2026-09-25): a founder starts with at most
+            // this fraction of its own breeding gate, purse and endowment together, after its
+            // growth. 0 is the recorded world.
+            Num("EVOSIM_FOUNDER_RESERVE_CAP", 0f, (s, v) => s.FounderReserveCap = v),
             Num("EVOSIM_LIGHT_SHADE", 0f, (s, v) => s.LightShade = v),
             Num("EVOSIM_LIGHT_SHADE_DRIFT", 0f, (s, v) => s.LightShadeDrift = v),
             Num("EVOSIM_SECONDS", 4000f, (s, v) => s.BudgetSeconds = v),
@@ -586,6 +591,7 @@ namespace Evosim.Farm
             config.FoundersFollowFood = s.FoundersFollowFood;
             config.FoundersFollowFoodDepth = s.FoundersFollowFoodDepth;
             config.FounderEndowmentSeconds = s.FounderEndowment;
+            config.FounderReserveCapFraction = s.FounderReserveCap;
             config.LightShadeDepth = s.LightShade;
             config.LightShadeDriftMetresPerHour = s.LightShadeDrift;
             config.WorldAreaSquareMetres = s.Area;
@@ -978,6 +984,9 @@ namespace Evosim.Farm
 
         /// <summary>The round 48 founding ruling's endowment, s — <c>EVOSIM_FOUNDER_ENDOWMENT</c>.</summary>
         public float FounderEndowment;
+
+        /// <summary>D124's founder cap, a fraction of the gate — <c>EVOSIM_FOUNDER_RESERVE_CAP</c>.</summary>
+        public float FounderReserveCap;
         public float LightShade;
         public float LightShadeDrift;
         public float BudgetSeconds;

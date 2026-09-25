@@ -143,6 +143,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D121](#d121) | Senescence wears upkeep alone, not income | 2026-09-24 | ruled with D120 |
 | [D122](#d122) | Every founder lands at the richest cell of its food, depth included, and is born with an endowment | 2026-09-24 | ruled with D120; the generic form of a stomach-only rule the owner refused ("if we could come up with some generic rule or configuration, then I'd be much more inclined") |
 | [D123](#d123) | The contact and damage senses read the step, from round 49: contact now and the health lost this step, as the mouth's specification asked | 2026-09-25 | ruled by the owner in conversation ("fix for 49"), after the checkpoint-fidelity read found both senses cumulative |
+| [D124](#d124) | A founder starts with at most a fraction of its own breeding gate, purse and endowment together, after its growth; 0.9 from round 49. The wear stays on upkeep and the snow's stirring is held | 2026-09-25 | ruled by the owner in conversation on the agent's proposal for round 49, question 1 on the owner's own alternative ("can we have the gift come in at slightly less than the child threashold"; "ok lets go with that") |
 
 ---
 
@@ -6425,3 +6426,50 @@ fidelity fix are separate.
 
 **Rejected.** Keeping the cumulative senses and rewriting the specification to match them.
 The owner chose the specification.
+
+### D124
+**A founder starts with at most a fraction of its own breeding gate, from round 49** · 2026-09-25
+
+**Status:** ruled by the owner on 2026-09-25 on `fable-propose-round-49.md`, which it absorbs.
+It is built on `r49-founder-cap` as a tunable, `FounderReserveCapFraction`
+(`EVOSIM_FOUNDER_RESERVE_CAP`). The header reads `founder cap 0.9 of the gate` or `founder cap
+off`. It is 0 in every recorded config and 0.9 in round 49 ("that value, the 90, should be
+configurable, like every other knob").
+
+**Decision.** A founder of the floor, the trickle or D117's pool starts with the lesser of two
+sums. One is its recorded start: the purse (200 J times its birth fraction) and D122's
+endowment. The other is `f × G + growth`. `G` is the gate its own reproduction mode applies once
+it is grown, `Organism.BreedingGate` at the adult body and age 0. For a lump breeder that is the
+litter's price plus the margin; for a gestating one it is the price alone, asked of the account.
+`growth` is the adult's tissue less the newborn's, which is what `World.Grow` takes from the
+reserve in all. So after its growth a founder holds at most `f` of its gate and has to earn the
+rest. The cut comes out of the endowment first and then the purse, before `World.Admit` credits
+the start. Both books therefore see a smaller influx and nothing else. The founder's lineage row
+carries `capcut` beside the endowment actually given, and `stats.jsonl` carries
+`foundersCapped` and `founderJoulesCapped` when the cap is on. An inoculant is not capped.
+
+**Why.** In round 48 (logbook/0120) every one-part pool stomach landed with 138 J against a gate
+of 100 J. It had its child half a second later on the endowment and starved in about three
+minutes. The round tested whether a founder's child could live where the parent landed, and D122
+was written to test whether the founder could. The agent's arithmetic for that stomach is
+`scripts/reads/r49-prereg/gift_cap.py`. At 0.9 the stomach never breeds with 0.5 J/m³ or less in
+its own cell. It breeds at 44 s with 0.75 J/m³ and at 24 s with 1, and where it does not breed it
+lives 7 to 28 minutes on the gift. The leaves earn from their first second and should hardly
+notice (inference).
+
+**Rejected.** (a) Keeping round 48's rule, which repeats round 48. (b) The agent's
+recommendation, an endowment that pays upkeep only and never counts toward a child. It lets a
+founder save its whole food income for three minutes and breed at 0.42 J/m³, under its own
+break-even of 0.44, and it needs a second account. (c) Dropping the endowment, which round 47
+measured: pool founders dead at a median of 24 to 46 s. And the owner's other idea, a no-child
+period of N seconds. At 600 s the stomach at 0.5 J/m³ still has its child at 600 s, paid from
+the gift, and dies at 1,270 s; and every founder's first child waits, the leaves' included.
+
+**Ruled with it.** The wear stays on upkeep for round 49 (question 2, "agree with your
+recommendation"). The new death rows are read before (b) or (c) of that question is considered.
+The snow's stirring is held (question 3, "leave as is for now and evaluate"). The owner added a
+note on it for the round after next. A mouth fed from its one 1 m cell reads as if a cell had a
+limit: "i wonder if we could come up with something smarter". No cell has a cap. The limit is the
+refill of the cell the mouth empties (CLAUDE.md, "A mouth is priced at the cell it is
+emptying"). The candidates for round 50 are a mouth fed from a neighbourhood, intake by the water
+passing the mouth, and a finer grid near mouths.

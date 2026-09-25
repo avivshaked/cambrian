@@ -232,6 +232,21 @@ namespace Evosim.Core
         public double EndowmentJoules { get; }
 
         /// <summary>
+        /// Birth only — the joules D124's cap took from a founder's start
+        /// (<see cref="RunConfig.FounderReserveCapFraction"/>), endowment first and then purse;
+        /// 0 on every other row, on every founder the cap did not cut and on every founder of a
+        /// world with the cap off. The row's <c>capcut</c>, written only when above 0, as
+        /// <c>endow</c> is.
+        /// </summary>
+        /// <remarks>
+        /// Never created, so it is not inside the reserve the founder was born with, and
+        /// <see cref="EndowmentJoules"/> on the same row is the endowment after the cut. Written
+        /// to a checkpoint's queued rows only in a world whose config turns the cap on
+        /// (<c>WorldState.WriteLineage</c>), so every other world's stream is the bytes it was.
+        /// </remarks>
+        public double CapCutJoules { get; }
+
+        /// <summary>
         /// Birth only — for a founder whose body eats the snow, the edible snow density at the
         /// point it was admitted at, J/m³, read at admission and before any feeding; NaN on every
         /// other row. The row's <c>fsnow</c> (round 49's instrument for 0120's F4).
@@ -387,8 +402,10 @@ namespace Evosim.Core
             ReproductionMode reproductionMode = ReproductionMode.Lump, float gestationShare = 0f,
             float landingSnow = float.NaN, float landingSnowColumn = float.NaN,
             float landingMatter = float.NaN, float landingMatterColumn = float.NaN,
-            double gestationJoulesAtDeath = 0d, double reserveJoulesAtDeath = 0d)
+            double gestationJoulesAtDeath = 0d, double reserveJoulesAtDeath = 0d,
+            double capCutJoules = 0d)
         {
+            CapCutJoules = capCutJoules;
             LandingSnowDensity = landingSnow;
             LandingSnowColumnDensity = landingSnowColumn;
             LandingMatterDensity = landingMatter;
@@ -441,7 +458,8 @@ namespace Evosim.Core
             string budCells = null, int budsExpressed = 0,
             ReproductionMode reproductionMode = ReproductionMode.Lump, float gestationShare = 0.5f,
             float landingSnow = float.NaN, float landingSnowColumn = float.NaN,
-            float landingMatter = float.NaN, float landingMatterColumn = float.NaN) =>
+            float landingMatter = float.NaN, float landingMatterColumn = float.NaN,
+            double capCutJoules = 0d) =>
             new LineageEvent(
                 LineageEventKind.Birth, elapsedSeconds, id, parentId, birthKind, generationDepth,
                 speciesId, hasAbsorptive, hasJoint, hasPhotosynthetic, patch,
@@ -454,7 +472,8 @@ namespace Evosim.Core
                 budCells: budCells, budsExpressed: budCells != null ? budsExpressed : 0,
                 reproductionMode: reproductionMode, gestationShare: gestationShare,
                 landingSnow: landingSnow, landingSnowColumn: landingSnowColumn,
-                landingMatter: landingMatter, landingMatterColumn: landingMatterColumn);
+                landingMatter: landingMatter, landingMatterColumn: landingMatterColumn,
+                capCutJoules: capCutJoules);
 
         /// <summary>
         /// One death. <paramref name="gestationJoules"/> and <paramref name="reserveJoules"/> are
@@ -627,6 +646,14 @@ namespace Evosim.Core
                 if (Recorded(LandingMatterDensity, LandingMatterColumnDensity))
                 {
                     w.Field("fmat", LandingMatterDensity).Field("fmcol", LandingMatterColumnDensity);
+                }
+
+                // D124's cut, in joules, on a founder's row and only when above 0, as endow is, so
+                // every row of a world with the cap off is byte for byte what it was. Appended at
+                // the end for the reason every field above is.
+                if (CapCutJoules > 0d)
+                {
+                    w.Field("capcut", CapCutJoules);
                 }
             }
             else if (Kind == LineageEventKind.Kill)

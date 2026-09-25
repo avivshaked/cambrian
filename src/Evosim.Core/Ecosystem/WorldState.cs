@@ -231,6 +231,15 @@ namespace Evosim.Core
             // the same config, which a restore takes from the run it continues.
             if (Config.FoundingTricklePoolCount > 0) w.Write(PoolSpawns);
 
+            // D124's two counters, for the pool count's reason and the same way: only in a world
+            // whose config turns the founder cap on, so every other world writes the bytes it
+            // wrote before and the layout stays version 12. The reader asks the same config.
+            if (Config.FounderReserveCapFraction > 0f)
+            {
+                w.Write(FoundersCapped);
+                w.Write(FounderJoulesCapped);
+            }
+
             // Where the sun stands. See LightField.RestoreDayFactor.
             w.Write(Field.DayFactor);
 
@@ -281,7 +290,8 @@ namespace Evosim.Core
 
             StateIo.Tag(w, "LNGE");
             w.Write(_lineageEvents.Count);
-            for (int i = 0; i < _lineageEvents.Count; i++) WriteLineage(w, _lineageEvents[i], layout);
+            bool capped = Config.FounderReserveCapFraction > 0f;
+            for (int i = 0; i < _lineageEvents.Count; i++) WriteLineage(w, _lineageEvents[i], layout, capped);
 
             StateIo.Tag(w, "ABSD");
             w.Write(_absorptiveDeaths.Count);
@@ -377,6 +387,18 @@ namespace Evosim.Core
             GestatedTotal = r.ReadDouble();
             PoolSpawns = Config.FoundingTricklePoolCount > 0 ? r.ReadInt64() : 0L;
 
+            // D124's two counters, read under the config the writer asked (see Write).
+            if (Config.FounderReserveCapFraction > 0f)
+            {
+                FoundersCapped = r.ReadInt64();
+                FounderJoulesCapped = r.ReadDouble();
+            }
+            else
+            {
+                FoundersCapped = 0L;
+                FounderJoulesCapped = 0d;
+            }
+
             Field.RestoreDayFactor(r.ReadSingle());
 
             ReadRng(r, _conceptionRng);
@@ -419,7 +441,8 @@ namespace Evosim.Core
             StateIo.Tag(r, "LNGE");
             int events = r.ReadInt32();
             _lineageEvents.Clear();
-            for (int i = 0; i < events; i++) _lineageEvents.Add(ReadLineage(r, version));
+            bool capped = Config.FounderReserveCapFraction > 0f;
+            for (int i = 0; i < events; i++) _lineageEvents.Add(ReadLineage(r, version, capped));
 
             StateIo.Tag(r, "ABSD");
             int deaths = r.ReadInt32();
@@ -716,7 +739,7 @@ namespace Evosim.Core
                 r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(),
                 r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
 
-        private static void WriteLineage(BinaryWriter w, LineageEvent e, int layout)
+        private static void WriteLineage(BinaryWriter w, LineageEvent e, int layout, bool capped)
         {
             w.Write((int)e.Kind);
             w.Write(e.ElapsedSeconds);
@@ -775,6 +798,11 @@ namespace Evosim.Core
                 w.Write(e.LandingMatterColumnDensity);
             }
 
+            // D124's cut, on every row (0 on all but a cut founder's), and only in a world whose
+            // config turns the cap on: every other world's rows are the bytes they were, and the
+            // layout stays version 12. The reader asks the same config.
+            if (capped) w.Write(e.CapCutJoules);
+
             // The kill's own five, appended and written only on a kill row — which is what lets
             // this stay version 4. A birth and a death are byte for byte what the mouth build
             // wrote, so every checkpoint on disk still restores; a version-4 stream can only carry
@@ -796,7 +824,7 @@ namespace Evosim.Core
             // version 10, above.
         }
 
-        private static LineageEvent ReadLineage(BinaryReader r, int version)
+        private static LineageEvent ReadLineage(BinaryReader r, int version, bool capped)
         {
             var kind = (LineageEventKind)r.ReadInt32();
             double seconds = r.ReadDouble();
@@ -845,6 +873,8 @@ namespace Evosim.Core
                 landingMatterColumn = r.ReadSingle();
             }
 
+            double capCut = capped ? r.ReadDouble() : 0d;
+
             if (kind == LineageEventKind.Kill)
             {
                 long attackerId = r.ReadInt64();
@@ -865,7 +895,8 @@ namespace Evosim.Core
                     reserveMargin, indeterminateNodes, attack, intake, protection, source,
                     poolIndex, endowmentJoules, budCells, budsExpressed,
                     reproductionMode, gestationShare,
-                    landingSnow, landingSnowColumn, landingMatter, landingMatterColumn)
+                    landingSnow, landingSnowColumn, landingMatter, landingMatterColumn,
+                    capCut)
                 : LineageEvent.Death(seconds, id, cause, accountAtDeath, reserveAtDeath);
         }
 

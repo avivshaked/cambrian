@@ -665,8 +665,7 @@ namespace Evosim.Core
         /// whenever the factor is 0.
         /// </summary>
         public double ReproductionThreshold(RunConfig config) =>
-            Genome.Reproduction.CostJoules(TissueJoules, config) +
-            (double)Genome.Reproduction.ReserveMargin * StandingWatts;
+            LumpGate(Genome.Reproduction, TissueJoules, StandingWatts, config);
 
         /// <summary>
         /// What a gestating parent's account must hold before it is worth attempting the litter:
@@ -678,7 +677,51 @@ namespace Evosim.Core
         /// inert in that mode, as the share is in the other.
         /// </remarks>
         public double GestationThreshold(RunConfig config) =>
-            Genome.Reproduction.CostJoules(TissueJoules, config);
+            GestationGate(Genome.Reproduction, TissueJoules, config);
+
+        /// <summary>
+        /// The gate this body's own mode asks of it: <see cref="GestationThreshold"/> of the
+        /// account for a gestating body, <see cref="ReproductionThreshold(RunConfig)"/> of the
+        /// reserve for a lump breeder. What <c>World.IsSolvent</c> reads.
+        /// </summary>
+        public double BreedingGate(RunConfig config) =>
+            BreedingGate(Genome.Reproduction, TissueJoules, StandingWatts, config);
+
+        /// <summary>
+        /// The breeding gate of a body with these traits, this tissue and this standing cost —
+        /// the one expression the three instance gates above and the founder cap of round 49
+        /// (D124, <c>World.AdmitFounder</c>) all read, so the cap is asked of the gate the body
+        /// will actually meet and the two cannot drift apart.
+        /// </summary>
+        /// <param name="traits">The genome's reproduction traits; the mode picks the gate.</param>
+        /// <param name="tissueJoules">The body's tissue value, J — the parent's, in the price.</param>
+        /// <param name="standingWatts">
+        /// The body's standing cost, W, which the margin is counted in. Read only by a lump
+        /// breeder's gate.
+        /// </param>
+        /// <param name="config">The overhead rule's floor and per-tissue factor.</param>
+        public static double BreedingGate(
+            ReproductionTraits traits, double tissueJoules, float standingWatts, RunConfig config) =>
+            traits.Mode == ReproductionMode.Gestation
+                ? GestationGate(traits, tissueJoules, config)
+                : LumpGate(traits, tissueJoules, standingWatts, config);
+
+        /// <summary>
+        /// A lump breeder's gate: the litter's price plus the margin in seconds of standing cost.
+        /// See <see cref="ReproductionThreshold(RunConfig)"/>.
+        /// </summary>
+        public static double LumpGate(
+            ReproductionTraits traits, double tissueJoules, float standingWatts, RunConfig config) =>
+            traits.CostJoules(tissueJoules, config) +
+            (double)traits.ReserveMargin * standingWatts;
+
+        /// <summary>
+        /// A gestating breeder's gate: the litter's price alone. See
+        /// <see cref="GestationThreshold"/>.
+        /// </summary>
+        public static double GestationGate(
+            ReproductionTraits traits, double tissueJoules, RunConfig config) =>
+            traits.CostJoules(tissueJoules, config);
 
         /// <summary>Whether this body pays for its children as it goes.</summary>
         public bool Gestates => Genome.Reproduction.Mode == ReproductionMode.Gestation;

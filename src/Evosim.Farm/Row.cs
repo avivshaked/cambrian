@@ -887,6 +887,15 @@ namespace Evosim.Farm
                         .Field("poolSpawnsWindow", world.PoolSpawns - _lastPoolSpawns);
                 }
 
+                // D124. Only in a run whose config turns the founder cap on, so every other stats
+                // row is the bytes it was: founders whose start the cap cut, and the joules cut,
+                // both running totals.
+                if (world.Config.FounderReserveCapFraction > 0f)
+                {
+                    w.Field("foundersCapped", world.FoundersCapped)
+                        .Field("founderJoulesCapped", world.FounderJoulesCapped);
+                }
+
                 long[] harnessPhaseMs = sim.HarnessPhaseMs();
 
                 for (int p = 0; p < harnessPhaseMs.Length; p++)
