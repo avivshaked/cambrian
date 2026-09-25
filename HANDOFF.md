@@ -508,9 +508,36 @@ in this section is history.
   - **The story-film skill is in the project**, at `.claude/skills/story-film/SKILL.md` (the
     owner: "inside this project, as a project level skill").
   - **Films recorded by the farm, drawn by Unity** (the owner: "lets do that!"). This is
-    round 49's Part B. B1 is built on `r49-record-film`. B2 (the theatre plays a window) and
-    B3 (the safari films from windows) are next. Round 48's second film is made the current
-    way today.
+    round 49's Part B. B1 is built on `r49-record-film`. Round 48's second film is made the
+    current way.
+    - **Round 49's branch now carries main and the checkpoint fix** (`e5c4926`, merging main
+      at `9730721`, and `b93d5d4`, merging `checkpoint-senses`). Both branches had made
+      their checkpoint version 5, one for the gzip and one for the senses. The merge settles
+      on one scheme. Version 6, the senses' payload gzipped after its digest, is the only
+      version written, by both record formats. Version 4 (round 48's) is read lossily and
+      named among the differences: a resume refuses it without
+      `EVOSIM_ALLOW_SOURCE_MISMATCH`, and a film window names it and lets the rows decide.
+      Version 5 is refused by name, since no run kept one.
+    - **B2 is built** (`118a5fb`): the theatre plays a farm window with nothing stepped.
+      - `FilmWindowReader` in `Evosim.Farm` reads a window back, so a farm test reads what a
+        window wrote with the theatre's own reader.
+      - `FilmWindowWorld` in the theatre draws each body through the live view (one body
+        tree, skin and pick for both).
+      - The runner's `EVOSIM_THEATRE_WINDOW` mode, `theatre-snap.ps1 -From window -Window
+        <dir>`, and `TheatreWindowCheck`, which plays every frame headless.
+      - A window's frame at a stream second equals the run's own frame to the bit
+        (`FilmWindowTests`).
+    - **Checked so far, and not yet checked.** 146 filtered tests pass across eight suites,
+      and the theatre type-checks outside Unity. Nothing has been compiled by Unity or run on
+      the farm.
+    - **The agent's prediction**, which is inference: a window of round 48's seed 3 reads
+      cousin. Its version-4 checkpoints lack the contact record, so a body whose brain reads
+      the contact or damage sense steps differently after the restore. That would mean round
+      48's pictures come from windows marked cousin, and round 49's are the first faithful
+      ones.
+    - **B3 is being built** (an Opus agent in `scratch/wt-r49`, code only): the safari branch
+      merged in, a planner that writes and records each scene's window, and the director's
+      `-FromWindows` mode.
   - **Round 48's entry is drafted and reviewed, and waits for the re-run's verdict before it
     is committed:** `logbook/0120-the-eaters-spent-their-endowment-on-one-child.md`, with its
     index row in `logbook/README.md` and four pictures `logbook/images/r48-*.png`, all
@@ -759,23 +786,30 @@ in this section is history.
   checkpoints every 500 s: it should read faithful with those two hashes named, which tests
   the claim that the build moves no trajectory.
 
-  **At round 48's gap, in order, from `scratch/wt-r49`, one farm run at a time**:
-  1. the filtered tests (`FilmWindowTests`, `PoseStreamTests`, `RecordFormatFarmTests`,
-     `CheckpointTests`; Core's `RecordFormatTests`);
-  2. the full suites (`core-test.ps1 -All`, `Evosim.Farm.Tests`, `Evosim.Dynamics.Tests`);
-  3. the regress: `rfmt1-s4` and `rfmt2-s4`, round 44's launcher, seed 4, 3,000 s, with
+  **Round 49's machine track, in order, from `scratch/wt-r49`, one heavy job at a time once
+  the owner lifts the machine hold** (revised 2026-09-25 afternoon after the merges and B2;
+  the filtered tests of the old step 1 have passed):
+  1. the full suites (`core-test.ps1 -All`, `Evosim.Farm.Tests`, `Evosim.Dynamics.Tests`);
+  2. the regress: `rfmt1-s4` and `rfmt2-s4`, round 44's launcher, seed 4, 3,000 s, with
      `EVOSIM_RECORD_FORMAT` 1 and 2 and `EVOSIM_DIGEST_EVERY` 100, which must be
      digest-identical (`digest-diff.py`, `compare-det.py`);
-  4. a checkpointed fixture, `rfilm-s4` with `-CheckpointEvery 500`;
+  3. a checkpointed fixture, `rfilm-s4` with `-CheckpointEvery 500`;
+  4. the checkpoint fix's acceptance on version 6: `--verify-checkpoint` on a bitten,
+     growing crowd, then a resume `rfilm-s4r` compared with the unbroken run;
   5. a window `--film-window runs/rfilm-s4/<run> 1000 1060 scratch/film/rfilm-1000 --fps 30
      --threads 4`, which must read faithful;
-  6. a v5 checkpoint through `--verify-checkpoint`, and a resume `rfilm-s4r` compared with
-     the unbroken run;
-  7. the theatre's first Unity compile of the new readers, with a `-From snapshot` picture of
-     `rfilm-s4`;
-  8. then B2 and B3, the theatre's playback and the safari on windows, on top of the merged
-     safari branch. B2 and B3 (theatre playback and the safari on
-  windows) follow once the safari branch has merged.
+  6. a window of round 48's seed 3 from a 500 s checkpoint, predicted cousin (the version-4
+     checkpoint lacks the contact record); a faithful reading would mean no body there
+     reads the sense;
+  7. the theatre's first Unity compile of the new readers and of B2, with a `-From snapshot`
+     picture of `rfilm-s4`;
+  8. `TheatreWindowCheck` on step 5's window, and `theatre-snap.ps1 -From window` pictures
+     of it, compared with `-From snapshot` at a stream second;
+  9. the wall time of a 60 s window at 5 and 10 threads, with nothing else running (16, as
+     the spec asks, only if the load ruling then allows it);
+  10. B3's first trial, two scenes from windows, once B3 is built;
+  11. re-record ckA, ckB, ckC and ckUi on this build's version 6 (CLAUDE.md's checkpoint
+      gotcha).
 - **The review's second and third items are built and not yet seen** (`d5540e6` on the safari
   branch, an Opus subagent, compiled clean on the worktree's `unity-w6` with every pass of the
   four shaders compiling). Close shots have real depth of field: one body at 1.5 to 3 body
