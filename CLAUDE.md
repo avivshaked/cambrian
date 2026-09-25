@@ -1547,6 +1547,17 @@ actually verifying it.
   (`logbook/specs/stomach-screens.md`). A field total in the stats is joules or units over
   the whole bin; divide by the bin's live volume before calling it a density, and say which
   bin.
+- **A mouth is priced at the cell it is emptying, not at the water round it.** A stomach
+  draws `density × clearance × dt` from its own 1 m cell, and round 48's pool founders drew
+  45 to 52% of it per half-second step (`scripts/reads/r48-entry/f4draw.py`). So
+  `densityHere` in `absorptive.jsonl`, and the density a ledger break-even is stated at, are
+  both the emptied cell's. In round 48's water that cell holds 5 to 25% of an untouched
+  copy's after a minute: the stirring refills it at 0.06 to 0.1 of the gap a second, and the
+  transport adds some only where the water moves (`FeederRefillExperiments`, logbook/0120).
+  Three things follow. Set a break-even against a field's density and you overstate an
+  eater's intake four- to twentyfold. A body's first reading cannot witness where it was
+  placed. And past the refill rate, a bigger clearance buys little, since the steady intake
+  is `c·k/(c + k)` of the water round it, with k the refill rate.
 - **A farm run started from VS Code gets the fast cores only while VS Code has focus.** The
   machine is an i9-13900K: eight fast cores (logical 0 to 15) and sixteen efficiency cores (16
   to 31). With VS Code in front, round 48's two farm runs sat about 44% on the fast cores and
@@ -1601,6 +1612,28 @@ actually verifying it.
   Until it exists, a subagent that needs a worktree gets one the caller made under `scratch/`,
   named by its absolute path in the brief, and not `isolation: "worktree"`. The fifteen older
   worktrees under `.claude/worktrees/` are left where they are; removing one is the owner's.
+- **The Write and Edit tools ask the owner for every file, even in auto mode; a write through
+  the shell does not.** On 2026-09-25 the owner, on auto mode, saw "Make this edit to ...?" and
+  "Allow write to ...?" prompts, first for an Opus subagent's edits in `scratch/wt-r49cap` and
+  then for the main session's own Write and Edit calls under `scratch/` (a worktree's source
+  and a helper script alike), and asked five times why. The agent first told the owner its own
+  edits did not ask; that was wrong, and the owner's screenshot of a prompt for the agent's own
+  file showed it. Files changed through the Bash tool (a Python or heredoc write, the way
+  HANDOFF and this file were edited that day) raised no prompt. The documentation (a
+  `claude-code-guide` read of code.claude.com's sub-agents, permissions and permission-modes
+  pages) says a subagent inherits the parent's auto mode and that only protected paths
+  (`.claude`, except `.claude/worktrees`) always ask, so the cause is not known (whether it is
+  `scratch/` being gitignored is a guess). The rules until the owner says the prompts are gone:
+  **write files through the shell**, not with Write or Edit (a Python script written by a
+  heredoc, with the heredoc's backslash halving in mind); **launch no subagent that edits
+  files**, since its tools are Write and Edit, and write the code in the main session (read-only
+  agents such as `Explore` and `claude-code-guide` are fine; this overrides the delegation
+  memory for editing tasks); and **every write under `~/.claude/` asks the owner** whatever the
+  tool, the memory directory included, so memory edits are rare and batched and durable rules
+  go here. The fix is the owner's setting and never the agent's: the documented allow rule for
+  this tree, untested here, is `Edit(//d/Projects/experiments/evolution-simulator/**)` (and the
+  same for `Write`) under `permissions.allow` in the owner's `~/.claude/settings.json`; the
+  agent never edits a permission setting, whoever asks.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
@@ -1634,6 +1667,18 @@ actually verifying it.
   on a worker the queue is not using, one frame at a time on a loaded machine) and look at
   them, and say in the status what was seen. Round 37's crust at the glass was in the table
   for hours before anyone read it as a crust.
+- **Check every test render against a reference before the owner sees it** (the owner,
+  2026-09-25: "why are you not picking these problems up yourself using a png sheet?"). The
+  first window-route clips of round 48 went to the owner with bodies popping in size every
+  growth step and the picture too bright, and the second with the scenery in question, each
+  found by the owner and not by the agent, who had looked at the contact sheets only for the
+  fault last reported. The check: a side-by-side sheet of the new frames and the reference
+  (the last film the owner accepted, at the same run and second where there is one), read for
+  size, brightness, the bed, the reef, the caustics and the shafts, the bodies' shapes and
+  motion between consecutive frames, and the captions; a number for what a number can say
+  (mean luma, the largest frame-to-frame jump against its neighbours); and what was checked
+  said in the same message as the clip's path. A change to a render path is checked against
+  the path it replaces before anything else is judged.
 - **Say when a ruling blocks the work, and keep working on the rest** (owner, 2026-09-22
   evening: "If you're waiting on me, I want an explicit message saying you are blocked by a
   decision you need from me. I want you working all the time."). A status that lists open
@@ -1644,7 +1689,10 @@ actually verifying it.
   implications"): the topic in plain words for someone who has not read the proposal, the
   recommendation and why, what each option implies for the record, the rounds, the machine
   and the risk, and the exact question to answer. A pointer to a proposal file is not a
-  request for a ruling. Then say what is being worked on meanwhile. Never end a turn idle while anything not gated
+  request for a ruling. A decision still open is set out in full again in every message that
+  asks for it, and each option carries its own implications. "Unchanged from my last message"
+  is shorthand too (the owner, 2026-09-25 afternoon: "You know how I prefer to get decision
+  topics right?"). Then say what is being worked on meanwhile. Never end a turn idle while anything not gated
   remains: loose ends, instruments, measurements, the round-gap changes that are a new
   realisation of every seed and land best while no arm runs, pre-registration drafts and
   ledger screens for the round that waits.

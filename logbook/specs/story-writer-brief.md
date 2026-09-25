@@ -3,7 +3,10 @@
 *Written 2026-09-25 for the writer of a round's story film, after the owner watched round 48's
 first film. It replaces the brief the first film was written from. The procedure around it (the
 guides, the check, the render, the join) is `logbook/specs/story-film.md`. The words a film may use
-are in the glossary beside this brief, [`story-glossary.md`](story-glossary.md).*
+are in the glossary beside this brief, [`story-glossary.md`](story-glossary.md).
+It was revised the same day, after the owner asked why the captions looked so bad and why the
+explanations played on a black screen. The captions are now subtitles set at the join, and a Card
+is moving footage of the world.*
 
 ## What the film is for
 
@@ -119,9 +122,14 @@ in the scene where they first matter.
 - **Round on screen** and exact in the checks. 44.5 s may stay 44.5 when the half matters; 1,440.6 is
   1,441; a percentage takes no decimals unless it is under 1%. The exact value goes in
   `checks.tsv`.
-- **The font** has capital letters, digits and `.,:;-+=_/()[]%!?'\*#·` and nothing else; the reader
-  maps an em dash, curly quotes, `&`, `²` and `³`. No `<`, `>`, `→` or accents. Chart titles and
-  labels use the same font.
+- **The font** is IBM Plex Sans. Since 2026-09-25 a story's frames carry no text: the join sets
+  the captions as subtitles, white with a soft dark outline, in the lower third
+  (`scripts/story-assemble.py`). Write captions in mixed case, as they should read. Em dashes,
+  curly quotes, `×`, `²`, `³`, arrows and accented letters all stand. The builder checks every
+  caption and chart label against the font file. Emoji and scripts the font lacks are refused.
+  The charts are drawn in Plex too. A story filmed with its text stamped into the frames
+  (`theatre-safari.ps1 -BurnText`, the first film's look) is held to the old 5×7 bitmap font:
+  capitals, digits and `.,:;-+=_/()[]%!?'\*#·`. Set `STAMPED = True` in the builder for that.
 - **Plain words**, and none of the tells in `STYLE.md` §5: no closing contrasts of the "X, and
   not Y" kind, no intensifiers, no rhetorical questions.
 - **No caption** runs past its scene's end, and the builder checks that.
@@ -144,7 +152,10 @@ in the scene where they first matter.
 
    `at` and `until` are seconds into the scene, counted as captions are (after the chapter card,
    which the reader adds). `until` defaults to the scene's end.
-3. **A `full` chart** goes on a Card; `corner` goes on any station.
+3. **A `full` chart** may go on any station but a Portrait or a Birth, whose body its card would
+   cover. The world keeps moving under it, dimmed by a third. A `corner` chart goes on any station.
+   A Card is the usual home for a full chart: it is a slow drift through the crowd, made to be
+   talked over.
 4. **An `account` chart** draws the followed body's reserve live, so it goes on a Portrait (or a Birth) that
    follows `body N` or `founder body N`. Choose a second where the reserve moves within the scene: a
    birth due in the next seconds, or a reserve running out. A flat account teaches little; a
@@ -162,9 +173,15 @@ in the scene where they first matter.
   body 3318".
 - A scene that must show one body is set at a checkpoint second of its run with `flexible: false`.
   Round 48's tanks 1 and 2 saved every 2,500 s and tank 3 every 500 s.
-- A Card's first caption is its title. The word "dimmed" in its `description` darkens its picture;
-  use it under a full chart. Never put `chapter` on a Card: the reader drops the chapter's title and still counts
-  the chapter.
+- A Card is moving footage of the world: a slow sideways drift, about 0.15 m a second, in front of
+  the densest part of the crowd at its second. It is filmed on the world already on screen, or at
+  the checkpoint nearest its second, without stepping to it. Its first caption is its title. A
+  full chart on it dims the world by a third on its own. The word "dimmed" in its `description`
+  darkens a Card with no chart a little, and "black" blacks it out; neither is needed for the
+  captions, which carry their own outline. Never put `chapter` on a Card: the reader drops the
+  chapter's title and still counts the chapter.
+- A chapter card (the 8 s before a scene carrying `chapter`) is the same slow drift, with the
+  chapter's line as its caption.
 - A scene carrying `chapter` plays an 8 s chapter card before it.
 - A Time scene plays two halves of its `seconds`, at `from` and at `to`.
 
@@ -181,9 +198,10 @@ chapters.
   and what could not be checked.
 - `story.json`: the shot list, with `title`, `arc`, `runs`, `screen_seconds` and the scenes.
 - `checks.tsv`: one row per number and per rule stated on screen.
-- The builder script that wrote the last two, which checks the font, the reading pace, that every
-  caption and chart falls inside its scene, that no Card carries a chapter, that every `account`
-  chart sits on a Portrait or a Birth and every `full` chart on a Card.
+- The builder script that wrote the last two. It checks every caption and chart label against the
+  font file, the reading pace, and that every caption and chart falls inside its scene. It checks
+  that no Card carries a chapter. It checks that every `account` chart sits on a Portrait or a
+  Birth, and that no `full` chart does.
 
 Before you hand back, read every caption aloud in order as a newcomer would. Stop at the first word
 you could not define, and fix it.
