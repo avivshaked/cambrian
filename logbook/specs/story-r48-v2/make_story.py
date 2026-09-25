@@ -15,18 +15,49 @@ RUNS = {
 S1, S2, S3 = RUNS['r48-s1'], RUNS['r48-s2'], RUNS['r48-s3']
 
 # ---------------------------------------------------------------- caption rules
-FONT = set(" ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:;-+=_/()[]%!?'\\*#\u00B7")
+# Since 2026-09-25 a story's captions are set as subtitles in IBM Plex Sans when the film is
+# joined (scripts/story-assemble.py), and its charts are drawn in Plex by the theatre, so a
+# character is allowed when the font file has it: dashes, curly quotes, superscripts and accents
+# all stand. STAMPED = True checks the older rule instead, for a story filmed with its text
+# stamped into the frames in the 5x7 bitmap font (theatre-safari.ps1 -BurnText).
+STAMPED = False
+BITMAP = set(" ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:;-+=_/()[]%!?'\\*#\u00B7")
 MAP = {'\u2014': ' - ', '\u2013': '-', '\u2019': "'", '\u2018': "'", '"': "'", '&': 'and',
        '\u00B2': '2', '\u00B3': '3', '\u00D7': 'x'}
-CHARS_PER_SECOND = 14.0   # a reading pace for upper-case captions; 4 s holds 56 characters
+CHARS_PER_SECOND = 14.0   # a reading pace; 4 s holds 56 characters
 GAP = 1.0
 FIRST = 0.5
 
 
+def plex_characters():
+    """The characters of the repository's IBM Plex Sans, or None when the font or fontTools is missing."""
+    try:
+        from fontTools.ttLib import TTFont
+    except ImportError:
+        return None
+    here = HERE
+    for _ in range(8):
+        path = os.path.join(here, 'unity', 'Assets', 'Theatre', 'UI', 'Fonts', 'IBMPlexSans-Regular.ttf')
+        if os.path.isfile(path):
+            return set(chr(c) for c in TTFont(path).getBestCmap())
+        here = os.path.dirname(here)
+    return None
+
+
+PLEX = None if STAMPED else plex_characters()
+if not STAMPED and PLEX is None:
+    print('note: IBM Plex Sans (or fontTools) not found: characters are checked only against controls and scripts past U+2E80')
+
+
 def printable(text):
-    out = ''.join(MAP.get(c, c) for c in text).upper()
-    bad = sorted(set(c for c in out if c not in FONT))
-    return out, bad
+    """A caption or chart label as it will be shown, and the characters its font lacks."""
+    if STAMPED:
+        out = ''.join(MAP.get(c, c) for c in text).upper()
+        return out, sorted(set(c for c in out if c not in BITMAP))
+    if PLEX is not None:
+        return text, sorted(set(c for c in text if c not in PLEX))
+    import unicodedata
+    return text, sorted(set(c for c in text if unicodedata.category(c).startswith('C') or ord(c) >= 0x2E80))
 
 
 def hold_for(text):
@@ -136,7 +167,7 @@ caps, end = lay([
     "Upkeep rises with age, and it drifted down into dimmer light.",
     "At zero reserve a body dies. Body 201 starved at 3,207 s.",
 ])
-scene(n=n, act="How this world works", station="Card", description="a title card, dimmed, under a full chart",
+scene(n=n, act="How this world works", station="Card", description="a title card: a slow drift through the crowd, under a full chart",
       run="r48-s1", second=2500, subject="world", seconds=round(end + 0.5, 1), captions=caps,
       chart={"kind": "line", "title": "Body 201's reserve over its life, J", "place": "full",
              "at": caps[1]['at'], "until": round(end + 0.5, 1),
@@ -168,7 +199,7 @@ caps, end = lay([
     "Four fifths build the child's body. One fifth is its first reserve.",
     "On top, a fee of twice the child's body, at least 50 J, is burnt.",
 ])
-scene(n=n, act="How this world works", station="Card", description="a title card, dimmed, under a full chart",
+scene(n=n, act="How this world works", station="Card", description="a title card: a slow drift through the crowd, under a full chart",
       run="r48-s1", second=2500, subject="world", seconds=round(end + 0.5, 1), captions=caps,
       chart={"kind": "bars", "title": "One child of body 201, J", "place": "full",
              "at": caps[0]['at'], "until": round(end + 0.5, 1),
@@ -397,7 +428,7 @@ caps, end = lay([
     "I don't know why the eater lines faded.",
     "My guess: as they aged, they thinned the snow around them.",
 ])
-scene(n=n, act="The eaters fade", station="Card", description="a title card, dimmed, under a full chart",
+scene(n=n, act="The eaters fade", station="Card", description="a title card: a slow drift through the crowd, under a full chart",
       run="r48-s3", second=6500, subject="world", seconds=round(end + 0.5, 1), captions=caps,
       chart={"kind": "line", "title": "Eater lines, bodies alive", "place": "full",
              "at": caps[0]['at'], "until": round(end + 0.5, 1),
@@ -451,7 +482,7 @@ caps, end = lay([
     "Nisimocrax ended with 8,461 of the tank's 8,618 bodies.",
     "It had already led at 2,500 s, by 773 to 134.",
 ])
-scene(n=n, act="Two leaves, two bets", station="Card", description="a title card, dimmed, under a full chart",
+scene(n=n, act="Two leaves, two bets", station="Card", description="a title card: a slow drift through the crowd, under a full chart",
       run="r48-s1", second=30000, subject="world", seconds=round(end + 0.5, 1), captions=caps,
       chart={"kind": "line", "title": "Tank 1's two leaf lines, alive", "place": "full",
              "at": caps[0]['at'], "until": round(end + 0.5, 1),
@@ -640,15 +671,17 @@ for sc in scenes:
             problems.append('scene %d: chart outside the scene' % sc['n'])
         if ch['kind'] == 'account' and sc['station'] not in ('Portrait', 'Birth'):
             problems.append('scene %d: an account chart on a %s' % (sc['n'], sc['station']))
-        if ch['place'] == 'full' and sc['station'] != 'Card':
-            problems.append('scene %d: a full chart on a %s' % (sc['n'], sc['station']))
+        # A full chart may sit on any station since 2026-09-25, the world moving under it at two
+        # thirds of its light; on a portrait or a birth its card would cover the body the scene is about.
+        if ch['place'] == 'full' and sc['station'] in ('Portrait', 'Birth'):
+            problems.append('scene %d: a full chart on a %s covers its body' % (sc['n'], sc['station']))
 
 TITLE_SECONDS = 5.0
 story = {
     "run": "r48 (r48-s1, r48-s2, r48-s3)",
     "runs": RUNS,
     "title": "Round 48: the eaters faded, and a leaf kept a stomach",
-    "version": "2 (2026-09-25): the glossary rule, an opening chapter on how the world works, a story arc (bittersweet), charts",
+    "version": "2 (2026-09-25): the glossary rule, an opening chapter on how the world works, a story arc (bittersweet), charts; the cards drift through the moving world under their charts, and the captions are subtitles set at the join",
     "arc": "Bittersweet. We changed four rules so that eaters of snow could found a lasting line; stored eaters landed well, lived minutes, bred and grew lines of up to 45, and every one of those lines died out. What lasted was a leaf that budded a speck of stomach and founded a line of 29, the largest stomach line in any tank, living almost wholly on light.",
     "final": "all three seeds read at their ends: r48-s1 and r48-s3 ended at 30,000 s (budget); r48-s2 stopped on an error at 13,700 s, last good row 13,690 s",
     "screen_seconds": round(total, 1),

@@ -54,7 +54,9 @@ The fields the director reads are in `unity/Assets/Theatre/SafariStory.cs`. Each
 - optionally `chapter`, which plays an 8 s chapter card first, and `flexible: false`, which holds
   the scene at its second.
 
-The stations are Arrival, Descent, Portrait, Floor, Birth, Colony, Time and Card.
+The stations are Arrival, Descent, Portrait, Floor, Birth, Colony, Time and Card. A Card, and
+the 8 s chapter card, is a slow drift through the crowd at its second, made to be talked over.
+A `full` chart may sit on any station but a Portrait or a Birth, whose body it would cover.
 
 Before anything is filmed, the caller reads `story.md` against `checks.tsv`. A number with no row
 there is not filmed.
@@ -83,6 +85,9 @@ film's, are the pattern):
 ```
 
 - **`-Scenes`** names the story's own numbers, to film part of a seed.
+- **No text in the frames.** A story's frames carry neither captions nor the label
+  (`EVOSIM_THEATRE_STORY_BURN_TEXT` unset); the join sets both. `-BurnText` stamps the old
+  5×7 bitmap text into the frames, the first film's look, and `-NoBurnText` forces it off.
 - **The output:** each clip is `scratch/safari/<arm>/story-final/story-NN-<arm>-<station>-<subject>.mp4`,
   with a contact sheet.
 - **Run from a worktree,** the script writes under that worktree's `scratch/` and needs `-RunsRoot`.
@@ -97,7 +102,12 @@ python scripts/story-assemble.py scratch/story/r48/story.json scratch/owner/roun
     <folder of seed 1's clips> <folder of seed 2's clips> <folder of seed 3's clips>
 ```
 
-The script opens on the story's title, joins the clips in story order, marks every missing scene
+The script sets the captions and the provenance label as subtitles in IBM Plex, from each
+folder's `captions.tsv`. It writes `<film>.ass` and the film without subtitles,
+`<film>.clean.mp4`, beside the film. A caption fixed in the `.ass` is re-burned without a
+render: `story-assemble.py --reburn <film>.clean.mp4 <film>.ass <out>.mp4`. Its options are
+`--subtitles auto|burn|file|off`, `--no-label` and `--threads` (a third of the processors by
+default). The script opens on the story's title, joins the clips in story order, marks every missing scene
 as skipped, and writes `<film>.scenes.tsv` beside the film.
 
 To deliver, copy `story.md` beside the film in `scratch/owner/` and give the owner the full path as
@@ -113,10 +123,13 @@ After the first film the owner asked for four things:
 - a real story shape: hope, setback, turn and ending; triumph, tragedy or bittersweet.
 
 The first and fourth belong to the writer's brief. The second and third are theatre code: the
-`chart` field in `story.json` and a story look with an exposure meter. Both were written on
-2026-09-25 on the safari branch (`fc236a7`, `91d3b08`, `ac33d7a`) and have not yet been seen in
-Unity. The chart's form is in the writer's brief. The look is on for stories only. `EVOSIM_THEATRE_STORY_LOOK` unset
-means on for a story, `1` means on for any safari and `0` off. Its dials are `EVOSIM_THEATRE_STORY_DEEP`, `_SHALLOW`, `_AMBIENT`, `_FOG`, `_REACH`, `_VIGNETTE`,
-`_LAMP`, `_LUMA`, `_LUMA_DEPTH`, `_EV_MIN` and `_EV_MAX`. `theatre-safari.ps1 -NoStoryLook` films
-the old look for a comparison. Round 48's second story, written to the new brief, is
+`chart` field in `story.json` and a story look with an exposure meter. The subtitles and the
+moving Cards answer the owner's second look at the first film ("why do the subtitles look so
+bad?", "must it be on a black screen?"). All of it was written on 2026-09-25 on the safari
+branch (`fc236a7`, `91d3b08`, `ac33d7a`, `868bd94`) and has not yet been seen in Unity. The
+chart's form is in the writer's brief. The look is on for stories only:
+`EVOSIM_THEATRE_STORY_LOOK` unset means on for a story, `1` means on for any safari and `0` off.
+Its dials are `EVOSIM_THEATRE_STORY_DEEP`, `_SHALLOW`, `_AMBIENT`, `_FOG`, `_REACH`,
+`_VIGNETTE`, `_LAMP`, `_LUMA`, `_LUMA_DEPTH`, `_EV_MIN` and `_EV_MAX`.
+`theatre-safari.ps1 -NoStoryLook` films the old look for a comparison. Round 48's second story, written to the new brief, is
 [`story-r48-v2/`](story-r48-v2/): 20 scenes, 7 chapters and 15 charts in 9 min 39 s.
