@@ -269,6 +269,23 @@ open floor's columns held about 0.5 J/m³ by then. No file holds the snow by lay
 whether the rule put founders where it says, or the body's own reading five seconds later
 is the wrong witness, cannot be read from the run.
 
+*Added the same afternoon.* The run can say which after all, and it is the witness. A
+founder's first row reads the snow in its own 1 m cell, one cubic metre of water. In each
+half-second step it draws at least its food income times half a second from that cell,
+since the rest of the draw is waste. Over the pool founders' first rows, that is at least
+45% of the cell's snow per step in seeds 1 and 2 and 52% in seed 3, as medians. The lowest
+quarter draws 40% or less in seeds 1 and 2 and 45% or less in seed 3, and none more than 81%. At the median share, with nothing flowing
+back in, the cell would hold under three thousandths of its landing stock after the ten
+steps before the first row.
+So the first reading is what the water brought back into a cell the founder was emptying,
+and it cannot show what the placement found. F4 rested on a wrong premise, and it was mine:
+"by construction" held at the instant of landing and at no sample after it. Round 47's
+founders read four tenths of their column's mean for the same reason. The check was blind,
+so its failure says nothing either way about whether D122 put founders in richer water. It
+also says what the richest cell buys a founder: its first meal, and after that the flow
+into its cell. My reading is inference: a placing rule aimed at a cell's stock aims at the
+wrong quantity, and the flow round the cell is the one to aim at.
+
 ### The books closed, the reef read as before, and the pace fell with the crowd
 
 B1 fails on seed 2, which broke. The books themselves closed in all three. The largest
@@ -426,7 +443,10 @@ The placing rule is the open question. The pool's bodies breed from about 1 J/m�
 212 founders landed that rich, and only the two that landed early, in the founding bloom's
 snow, made lines. F4 says the rule did not change where in its column a founder reads its
 first meal. Whether the rule misplaces founders, or the run's files cannot see where it put
-them, is agent work, and it comes before anyone rules on the next placing rule.
+them, is agent work, and it comes before anyone rules on the next placing rule. *Added the
+same afternoon:* it is the second, and F4's section gives the reason. A first reading is the
+refill of a cell the founder is emptying. So the twelve that first read 1 J/m³ stood in
+water richer than that, which is my inference and not a measurement.
 
 The wear is smaller and still there. An eater that lands well lives a thousand seconds or
 two, and its break-even climbs toward the density of its patch as it ages while the patch
@@ -453,7 +473,9 @@ loss as this world's default rather than as something round 48 did.
   a resume from 800 s that must match the founding row for row. Round 49's film windows can
   be faithful on it, and round 48's cannot.
 - **Agent work** comes before the next round. F4's cause needs the placer read against a
-  founding in a small test world, and the snow recorded by layer at a founder's birth. G2's
+  founding in a small test world, and the snow recorded by layer at a founder's birth (the
+  cause was found the same afternoon: the check read the wrong witness, as F4's section now
+  says; a record of the landing cell's snow is still owed to any check of a placing rule). G2's
   open half needs the gestating bodies' accounts at death. The stomach's share in the bud
   lines wants reading over time.
 - **The owner rules** on what round 49 changes, since that is a world rule. This read raises
@@ -478,6 +500,7 @@ written for this entry, and the run directories are under `runs/`, round 48's an
 | round 47 seed 2 at 13,690 s; pool founders by arrival window | `logbook/specs/r48-read/late.txt` | `python scripts/reads/r48-entry/late.py` |
 | pool founders over a table | `logbook/specs/r48-read/overtables.txt` | `python scripts/reads/r48-entry/overtables.py r48-s1 r48-s2 r48-s3` |
 | the twelve pool founders that first read 1 J/m³ or more, their children and lines; the bud lines 59978 and 61200 not nested | `logbook/specs/r48-read/richlanders.txt` | `python scripts/reads/r48-entry/richlanders.py` |
+| F4's witness: the share of its 1 m cell a pool founder draws per step (45%, 45%, 52% at least), the landing stock left after ten steps | `logbook/specs/r48-read/f4draw.txt` | `python scripts/reads/r48-entry/f4draw.py r48-s1 r48-s2 r48-s3` |
 | a child's birth fraction early and late | `logbook/specs/r48-read/birthfraction.txt` | `python scripts/reads/r48-entry/birthfraction.py` |
 | matter locked, the shading share, uptake-limited share, snow totals | `logbook/specs/r48-read/context.txt` | `python scripts/reads/r48-entry/context.py` |
 | the clade scorer's reading of the bud line and the dominant clades (8,610 from body 43) | `logbook/specs/r48-read/clade-score.txt` | `./scripts/clade-score.ps1 r48-s1 r48-s2 r48-s3` |

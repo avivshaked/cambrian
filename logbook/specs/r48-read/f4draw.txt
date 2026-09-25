@@ -1,0 +1,12 @@
+r48-s1  cell 1 m  pool founders 99, read 99
+  share of the cell drawn per 0.5 s step, at least: min 0.13  q25 0.40  median 0.45  q75 0.52  max 0.81
+  left of the landing stock after ten steps with no refill, at the median share: 2.6e-03
+  reading 2 over reading 1: median 0.91 (n 99); reading 4 over reading 1: median 0.83 (n 99)
+r48-s2  cell 1 m  pool founders 29, read 29
+  share of the cell drawn per 0.5 s step, at least: min 0.12  q25 0.40  median 0.45  q75 0.52  max 0.81
+  left of the landing stock after ten steps with no refill, at the median share: 2.6e-03
+  reading 2 over reading 1: median 0.89 (n 29); reading 4 over reading 1: median 0.77 (n 29)
+r48-s3  cell 1 m  pool founders 84, read 84
+  share of the cell drawn per 0.5 s step, at least: min 0.15  q25 0.45  median 0.52  q75 0.81  max 0.81
+  left of the landing stock after ten steps with no refill, at the median share: 7.1e-04
+  reading 2 over reading 1: median 0.91 (n 84); reading 4 over reading 1: median 0.86 (n 84)
