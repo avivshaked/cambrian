@@ -45,7 +45,7 @@ INDEX_HEADER_BYTES = 24
 INDEX_ENTRY_BYTES = 16
 
 # Per version: the payload's bytes before its bodies, and a body's bytes before its joints.
-PAYLOAD_PREFIX = {1: 12, 2: 16, 3: 16}
+PAYLOAD_PREFIX = {1: 12, 2: 16, 3: 16, 4: 16}
 BODY_FIXED = {1: 37, 2: 38, 3: 46, 4: 50}
 
 FLAG_BITS = 1 | 2 | 4
