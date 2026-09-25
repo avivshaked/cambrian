@@ -477,8 +477,16 @@ def scorer_clades(births, trait):
     return out
 
 
-def read_positions(path, clade_of, n_clades, radius, bed):
-    """One pass over positions.jsonl: per-clade peaks, success share and location histograms."""
+def read_positions(path, clade_of, n_clades, radius, bed, reef_of=None):
+    """One pass over positions.jsonl: per-clade peaks, success share and location histograms.
+
+    Also each clade's count at every sample (`series`, only the samples it is seen at), and,
+    when `reef_of` classifies a body's place as 'table', 'under' or 'open', each clade's count of
+    body-samples in each, with the crowd's.
+    """
+    series = {}
+    reef_counts = {}
+    reef_crowd = {'table': 0, 'under': 0, 'open': 0}
     peak = [0] * n_clades
     peak_t = [None] * n_clades
     peak_living = [0] * n_clades
@@ -512,6 +520,13 @@ def read_positions(path, clade_of, n_clades, radius, bed):
                     continue
                 counts[c] = counts.get(c, 0) + 1
                 y = body[2]
+                if reef_of is not None:
+                    where = reef_of(body[1], y, body[3])
+                    reef_crowd[where] += 1
+                    rc = reef_counts.get(c)
+                    if rc is None:
+                        rc = reef_counts[c] = {'table': 0, 'under': 0, 'open': 0}
+                    rc[where] += 1
                 dh = depth_h[c]
                 if dh is None:
                     dh = depth_h[c] = {}
@@ -531,6 +546,7 @@ def read_positions(path, clade_of, n_clades, radius, bed):
                     hh = height_h[c]
                     hh[k] = hh.get(k, 0) + 1
             for c, n in counts.items():
+                series.setdefault(c, []).append((t, n))
                 seen_samples[c] += 1
                 if n > peak[c]:
                     peak[c] = n
@@ -547,6 +563,7 @@ def read_positions(path, clade_of, n_clades, radius, bed):
         'first_seen': first_seen, 'last_seen': last_seen, 'seen_samples': seen_samples,
         'depth_h': depth_h, 'radius_h': radius_h, 'height_h': height_h, 'samples': samples,
         'last_counts': last_counts, 'unknown_ids': unknown_ids,
+        'series': series, 'reef_counts': reef_counts, 'reef_crowd': reef_crowd,
     }
 
 
@@ -848,6 +865,525 @@ def card_prose(card, names, rank_line):
     return lines
 
 
+# ------------------------------------------------------------------------------ the facts
+
+# What each genus means, in plain words (item 8 of the safari review, 2026-09-24). The genus is
+# chosen by the flag triple, so it says the guild; only the epithet is drawn from the genome.
+GENUS_MEANINGS = {
+    'Globulus': 'little ball', 'Saccula': 'little sack', 'Vesicula': 'little bladder',
+    'Inanium': 'empty thing',
+    'Phyllina': 'leaflet', 'Thallus': 'green shoot', 'Lamina': 'blade', 'Frondium': 'frond',
+    'Gastrella': 'little stomach', 'Phagus': 'eater', 'Voratrix': 'devourer',
+    'Stomachium': 'stomach',
+    'Mixophyllum': 'mixed leaf', 'Gastrophylla': 'stomach-leaf', 'Phagothallus': 'eating shoot',
+    'Vorafrons': 'devouring frond',
+    'Remigia': 'rower', 'Natator': 'swimmer', 'Pinnula': 'little fin', 'Nectium': 'swimming thing',
+    'Remiphagus': 'rowing eater', 'Nectophaga': 'swimming eater', 'Pinnivora': 'fin-eater',
+    'Natogastrum': 'swimming stomach',
+    'Remiphylla': 'oar-leaf', 'Nectothallus': 'swimming shoot', 'Pinnifrons': 'fin-frond',
+    'Natophyllum': 'swimming leaf',
+    'Nectomixus': 'swimming mixture', 'Remimixa': 'rowing mixture', 'Pinnimixum': 'finned mixture',
+    'Natovora': 'swimming devourer',
+}
+
+# The guild in plain words, one per flag triple; (0, 1, 0) is refined by the body's cells.
+GUILD_PLAIN = {
+    (0, 0, 0): 'a body with no leaf, no stomach and no joint',
+    (0, 0, 1): 'a leaf',
+    (1, 0, 0): 'a stomach',
+    (1, 0, 1): 'a leaf with a stomach',
+    (0, 1, 0): 'a jointed body with no leaf',
+    (1, 1, 0): 'a jointed stomach',
+    (0, 1, 1): 'a jointed leaf',
+    (1, 1, 1): 'a jointed leaf with a stomach',
+}
+
+CELL_NOUNS = {'link': 'muscle', 'photosynthetic': 'leaf', 'absorptive': 'stomach',
+              'structural': 'plain part', 'neural': 'nerve', 'consumer': 'mouth',
+              'buoyancy': 'float'}
+
+# Shares as words with no digits, so a caption can say them without a number to check.
+SHARE_WORDS = [(0.0, 'none'), (0.05, 'one in twenty'), (0.1, 'one in ten'), (0.2, 'one in five'),
+               (0.25, 'one in four'), (1.0 / 3.0, 'one in three'), (0.4, 'two in five'),
+               (0.5, 'half'), (0.6, 'three in five'), (2.0 / 3.0, 'two in three'),
+               (0.75, 'three in four'), (0.8, 'four in five'), (0.9, 'nine in ten'),
+               (0.95, 'nineteen in twenty'), (1.0, 'all')]
+PART_WORDS = [(0.0, 'none'), (0.1, 'a tenth'), (0.2, 'a fifth'), (0.25, 'a quarter'),
+              (1.0 / 3.0, 'a third'), (0.4, 'two fifths'), (0.5, 'half'), (0.6, 'three fifths'),
+              (2.0 / 3.0, 'two thirds'), (0.75, 'three quarters'), (0.8, 'four fifths'),
+              (0.9, 'nine tenths'), (1.0, 'all')]
+
+# A body whose largest joint swings with a standard deviation under this is holding it still.
+JOINT_MOVING_RAD = 0.05
+# A jointed body needs this many pose samples before its joints are read.
+JOINT_MIN_SAMPLES = 5
+# How many points a clade's count series is cut to.
+SERIES_POINTS = 120
+# Clades beyond the picker and the trip that are described anyway, by rank.
+DESCRIBED_TOP = 40
+
+NUMBER = re.compile(r'\d[\d,]*(?:\.\d+)?')
+
+
+def share_words(x, table=SHARE_WORDS):
+    """The nearest word for a share; 'none' only for exactly none, 'all' only for all."""
+    if x is None:
+        return 'unknown'
+    if x <= 0:
+        return table[0][1]
+    if x >= 1:
+        return table[-1][1]
+    inner = table[1:-1]
+    return min(inner, key=lambda e: abs(e[0] - x))[1]
+
+
+def clock(t):
+    """The run's clock or a duration: seconds under an hour, hours and minutes over it."""
+    if t is None:
+        return 'unknown'
+    t = float(t)
+    if t < 3600:
+        return '{:,} s'.format(int(round(t)))
+    h = int(t // 3600)
+    m = int(round((t - 3600 * h) / 60.0))
+    if m == 60:
+        h, m = h + 1, 0
+    return '%d h %02d min' % (h, m)
+
+
+def metres(v):
+    """A distance as a caption says it: one decimal under ten metres, whole metres over."""
+    return '%.1f' % v if abs(v) < 10 else '%.0f' % v
+
+
+def round_to(v, k):
+    return int(round(v / float(k)) * k)
+
+
+def percentile(v, pool):
+    if v is None or not pool:
+        return None
+    below = sum(1 for x in pool if x < v)
+    same = sum(1 for x in pool if x == v)
+    return round(100.0 * (below + 0.5 * same) / len(pool), 1)
+
+
+def median(values):
+    s = sorted(values)
+    if not s:
+        return None
+    n = len(s)
+    return s[n // 2] if n % 2 else (s[n // 2 - 1] + s[n // 2]) / 2.0
+
+
+def fact(fid, kind, role, text, slots, value=None, unit=None, normal=None, pct=None, of=None,
+         bonus=0.0):
+    """One fact: its text is the template filled from its own slots, and nothing else."""
+    body = text.format(**slots)
+    body = body[0].upper() + body[1:]
+    interest = bonus
+    if pct is not None:
+        interest += abs(pct - 50.0) / 50.0
+    return {'id': fid, 'kind': kind, 'role': role, 'value': value, 'unit': unit,
+            'normal': normal, 'percentile': pct, 'of': of, 'rank': None,
+            'interest': round(interest, 3), 'slots': {k: str(v) for k, v in slots.items()},
+            'text': body}
+
+
+def fact_numbers_outside_slots(f):
+    """The checker rule: every number in a fact's text is one of its own slots, formatted."""
+    allowed = set()
+    for s in f['slots'].values():
+        allowed.update(NUMBER.findall(s))
+    return [n for n in NUMBER.findall(f['text']) if n not in allowed]
+
+
+def reef_classifier(reefs, thickness, radius):
+    """A function (x, y, z) -> 'table', 'under' or 'open', from the manifest's reefs.
+
+    A reef is its cap's mean radius about its axis (the outline's harmonics are left out, so the
+    rim is right to within about a tenth of the radius): over the cap's underside inside that
+    radius is on or over a table, under it is under a cap, anywhere else is the open water.
+    """
+    if not reefs:
+        return None
+    cell = 4.0
+    grid = {}
+    for k, r in enumerate(reefs):
+        x0, z0, rr = r['x'], r['z'], r['r']
+        for i in range(int((x0 - rr) // cell), int((x0 + rr) // cell) + 1):
+            for j in range(int((z0 - rr) // cell), int((z0 + rr) // cell) + 1):
+                grid.setdefault((i, j), []).append(k)
+
+    def classify(x, y, z):
+        for k in grid.get((int(x // cell), int(z // cell)), ()):
+            r = reefs[k]
+            if (x - r['x']) ** 2 + (z - r['z']) ** 2 <= r['r'] ** 2:
+                return 'table' if y > -(r['depth'] + thickness) else 'under'
+        return 'open'
+    return classify
+
+
+def read_absorptive(path, clade_of):
+    """{clade: [food W summed, light W summed, rows]} and the crowd's sums, from the log."""
+    per = {}
+    crowd = [0.0, 0.0, 0]
+    if not os.path.isfile(path):
+        return None, None
+    with open(path, 'r', encoding='utf-8') as f:
+        for line in f:
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            c = clade_of.get(row.get('id'))
+            fw = row.get('foodW') or 0.0
+            lw = row.get('lightW') or 0.0
+            crowd[0] += fw
+            crowd[1] += lw
+            crowd[2] += 1
+            if c is None:
+                continue
+            e = per.setdefault(c, [0.0, 0.0, 0])
+            e[0] += fw
+            e[1] += lw
+            e[2] += 1
+    return per, crowd
+
+
+def read_joints(path):
+    """{body: (samples, largest standard deviation of any joint angle, rad)} from poses.jsonl."""
+    acc = {}
+    if not os.path.isfile(path):
+        return None
+    with open(path, 'r', encoding='utf-8') as f:
+        for line in f:
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            for b in row['bodies']:
+                q = b.get('q')
+                if not q:
+                    continue
+                a = acc.get(b['id'])
+                if a is None or len(a[1]) != len(q):
+                    # A body whose joint count changes (a module added) starts its tally again.
+                    a = acc[b['id']] = [0, [0.0] * len(q), [0.0] * len(q)]
+                a[0] += 1
+                n = a[0]
+                for k, v in enumerate(q):
+                    d = v - a[1][k]
+                    a[1][k] += d / n
+                    a[2][k] += d * (v - a[1][k])
+    out = {}
+    for i, (n, _, m2) in acc.items():
+        sd = max(math.sqrt(m / n) for m in m2) if n > 0 and m2 else 0.0
+        out[i] = (n, sd)
+    return out
+
+
+def read_stats(path):
+    rows = []
+    if not os.path.isfile(path):
+        return rows
+    with open(path, 'r', encoding='utf-8') as f:
+        for line in f:
+            if line.strip():
+                rows.append(json.loads(line))
+    return rows
+
+
+def stats_at(rows, t):
+    """The last stats row at or before a second, or the first."""
+    best = rows[0] if rows else None
+    for r in rows:
+        if r['t'] <= t + 1e-6:
+            best = r
+        else:
+            break
+    return best
+
+
+def jointed_share(row):
+    if not row or not row.get('alive'):
+        return None
+    return row.get('jointed', 0) / float(row['alive'])
+
+
+def change_words(split, parent_flags, flags):
+    """What a split changed, as a verb phrase: 'grew a stomach where its muscle had been'."""
+    g = split.get('genome') if split else None
+    if g is not None:
+        up = [(c, b - a) for c, (a, b) in g['part_cells'].items() if b > a]
+        down = [(c, a - b) for c, (a, b) in g['part_cells'].items() if a > b]
+        if len(up) == 1 and len(down) == 1 and up[0][1] == down[0][1]:
+            return 'grew a %s where its %s had been' % (CELL_NOUNS.get(up[0][0], up[0][0]),
+                                                      CELL_NOUNS.get(down[0][0], down[0][0]))
+    a0, j0, p0 = parent_flags
+    a1, j1, p1 = flags
+    words = []
+    if j0 and not j1:
+        words.append('lost the joint')
+    if j1 and not j0:
+        words.append('grew a joint')
+    if p0 and not p1:
+        words.append('lost the leaf')
+    if a1 and not a0:
+        words.append('grew a stomach')
+    if a0 and not a1:
+        words.append('lost the stomach')
+    if p1 and not p0:
+        words.append('grew a leaf')
+    if len(words) == 1 and p0 and p1 and not (j0 and j1):
+        words.append('kept the leaf')
+    return join_words(words) if words else 'changed its body'
+
+
+def build_facts(ctx, card, cl):
+    """A card's facts, most interesting first, each with its percentile against the picker."""
+    F = []
+    c = card['clade']
+    flags = tuple(card['flags_tuple'])
+    crowd = ctx['crowd']
+    pool = ctx['pool']
+    of = len(ctx['picker'])
+
+    # What it is.
+    F.append(fact('what', 'guild', 'what', '{guild}.', {'guild': card['guild_plain']}))
+
+    # Where it came from.
+    if card['kind'] == 'split':
+        parent = card['parent_clade_name'] or 'another line'
+        F.append(fact('origin', 'split', 'origin', 'It began {at} in: a child of {parent} {change}.',
+                      {'at': clock(card['founded_at']), 'parent': parent,
+                       'change': ctx['change'][c]}, value=card['founded_at'], unit='s',
+                      bonus=0.3 if card['split'] and card['split']['flags_gained'] else 0.2))
+    else:
+        how = {'trickle': 'a random body that drifted in with the trickle',
+               'pool': 'a stored body the trickle brought back',
+               'floor': 'one of the random bodies that seeded the tank'}.get(
+            card['founder_source'], 'a random body with no parent')
+        F.append(fact('origin', 'founder', 'origin', 'It began {at} in, from {how}.',
+                      {'at': clock(card['founded_at']), 'how': how}, value=card['founded_at'], unit='s'))
+
+    # Green muscle: link cells that catch light.
+    fb = card['body']['founder']
+    if fb and set(fb['part_cells']) == {'link'} and ctx['link_light'] > 0:
+        F.append(fact('light', 'green-muscle', 'does',
+                      'Its {parts} muscle segments catch light at {rate} a leaf\'s rate.',
+                      {'parts': fb['parts'], 'rate': share_words(ctx['link_light'], PART_WORDS)},
+                      value=ctx['link_light'], bonus=1.3))
+
+    # Firsts.
+    for key in card['firsts']:
+        v = ctx['firsts'][key]
+        if key == 'deepest':
+            F.append(fact('first-' + key, 'first', 'special',
+                          'The deepest of the larger lines: half its time below {d} m.',
+                          {'d': '%.0f' % v['median_depth_m']}, bonus=0.9))
+        elif key == 'shallowest':
+            F.append(fact('first-' + key, 'first', 'special',
+                          'The shallowest of the larger lines: half its time above {d} m.',
+                          {'d': '%.0f' % v['median_depth_m']}, bonus=0.7))
+        elif key == 'longest_lived':
+            F.append(fact('first-' + key, 'first', 'special', 'The longest-lived line of the run: {dur}.',
+                          {'dur': clock(v['life_seconds'])}, bonus=0.9))
+        else:
+            what = {'first_eater_breeder': 'body with a stomach',
+                    'first_jointed_breeder': 'body with a joint',
+                    'first_producer': 'leaf'}[key]
+            F.append(fact('first-' + key, 'first', 'special',
+                          'The first {what} in this world to raise a child.', {'what': what}, bonus=1.2))
+
+    # How long its members lived, against the crowd.
+    lives = ctx['member_life'].get(c)
+    if lives is not None:
+        p = percentile(lives, pool['member_life'])
+        F.append(fact('lifespan', 'lifespan', 'special',
+                      'Half of all bodies die by {normal}; half of its members lived past {v}.',
+                      {'normal': clock(round_to(crowd['median_life_s'], 100)), 'v': clock(round_to(lives, 10))},
+                      value=round(lives, 1), unit='s', normal=round(crowd['median_life_s'], 1), pct=p, of=of))
+
+    # The founder's children.
+    fk = ctx['children'].get(card['founder'], 0)
+    p = percentile(fk, pool['founder_children'])
+    nk = crowd['median_children']
+    f = fact('founder-children', 'children', 'special',
+             'Most bodies raise {normal} {nw}; its founder raised {v}.',
+             {'normal': nk, 'nw': 'child' if nk == 1 else 'children', 'v': fk},
+             value=fk, unit='children', normal=nk, pct=p, of=of)
+    if fk == nk:
+        f['interest'] = round(0.1 * f['interest'], 3)
+    F.append(f)
+
+    # The peak.
+    pk = card['peak']
+    if pk['count'] > 0:
+        p = percentile(pk['share_of_living'], pool['peak_share'])
+        F.append(fact('peak', 'peak', 'count',
+                      'At its peak, {n} of the {living} bodies alive were its members.',
+                      {'n': fmt_n(pk['count']), 'living': fmt_n(pk['living'])},
+                      value=pk['count'], unit='bodies', pct=p, of=of))
+
+    # Where it lived.
+    w = card['where']
+    if w['median_depth_m'] is not None and crowd['median_depth_m'] is not None:
+        p = percentile(w['median_depth_m'], pool['depth'])
+        slots = {'normal': metres(crowd['median_depth_m']), 'd': metres(w['median_depth_m'])}
+        text = 'Most bodies live {normal} m down; it lived {d} m down'
+        if w['median_height_above_floor_m'] is not None:
+            slots['h'] = metres(w['median_height_above_floor_m'])
+            text += ', {h} m above the bed'
+        F.append(fact('depth', 'where', 'does', text + '.', slots, value=w['median_depth_m'], unit='m',
+                      normal=round(crowd['median_depth_m'], 1), pct=p, of=of))
+
+    # The reefs.
+    rc = ctx['reef'].get(c)
+    if rc:
+        total = float(sum(rc.values()))
+        if total >= 20:
+            share = {k: v / total for k, v in rc.items()}
+            cs = crowd['reef_share']
+            top = max(share, key=lambda k: (share[k] >= 0.1, share[k] - cs[k]))
+            phrase = {'table': 'on top of the reefs', 'under': 'under the reefs\' caps',
+                      'open': 'in the open water'}[top]
+            p = percentile(share[top], pool['reef_' + top])
+            F.append(fact('reef', 'reef', 'does',
+                          'It spent {frac} of its time {where}; the crowd, {crowd}.',
+                          {'frac': share_words(share[top], PART_WORDS), 'where': phrase,
+                           'crowd': share_words(crowd['reef_share'][top], PART_WORDS)},
+                          value=round(share[top], 3), normal=round(crowd['reef_share'][top], 3), pct=p, of=of))
+            F[-1]['interest'] = round(min(1.0, 3.0 * abs(share[top] - cs[top])) + 0.2 * abs(p - 50.0) / 50.0, 3)
+
+    # Eating.
+    if flags[0] and ctx['eating'].get(c) and crowd['eating_share'] is not None:
+        food, light, n = ctx['eating'][c]
+        if food + light > 0:
+            s = food / (food + light)
+            p = percentile(s, pool['eating']) if pool['eating'] else None
+            if light > 0:
+                text = '{frac} of what it earned came from eating snow, the rest from light.'
+            else:
+                text = 'It lived by eating snow: {frac} of what it earned.'
+            F.append(fact('eating', 'eating', 'does', text, {'frac': share_words(s, PART_WORDS)},
+                          value=round(s, 3), normal=round(crowd['eating_share'], 3), pct=p, of=of,
+                          bonus=0.5))
+
+    # Joints.
+    ju = ctx['joints'].get(c)
+    if flags[1] and ju and ju['read'] > 0 and crowd['joint_moving_share'] is not None:
+        moving = ju['moving'] / float(ju['read'])
+        p = percentile(moving, pool['joints']) if pool['joints'] else None
+        if moving < 0.2:
+            text = 'It has joints but holds them still; {crowd} of jointed bodies work theirs.'
+        else:
+            text = '{frac} of its members work their joints; {crowd} of all jointed bodies do.'
+        F.append(fact('joints', 'joints', 'does', text,
+                      {'frac': share_words(moving), 'crowd': share_words(crowd['joint_moving_share'])},
+                      value=round(moving, 3), normal=round(crowd['joint_moving_share'], 3), pct=p, of=of,
+                      bonus=0.3))
+
+    # What came of it: daughters.
+    d = ctx['daughters'].get(c)
+    if d:
+        living_end = ctx['living_end']
+        big = [x for x in d if x['alive_at_end'] > 0]
+        big.sort(key=lambda x: -x['alive_at_end'])
+        if big and living_end:
+            held = sum(x['alive_at_end'] for x in big)
+            lead = [x for x in big if x['alive_at_end'] >= 0.1 * living_end] or big[:1]
+            changes = sorted(set(x['change'] for x in lead))
+            if len(lead) == 1:
+                F.append(fact('daughters', 'daughters', 'fate', 'Its daughter line {name} {change}.',
+                              {'name': lead[0]['name'], 'change': lead[0]['change']}, value=1, bonus=0.6))
+            elif len(changes) == 1:
+                F.append(fact('daughters', 'daughters', 'fate', '{n} of its daughter lines {change}.',
+                              {'n': NUMBER_WORDS.get(len(lead), str(len(lead))), 'change': changes[0]},
+                              value=len(lead), bonus=0.6))
+            else:
+                F.append(fact('daughters', 'daughters', 'fate', '{n} of its daughter lines lived to the end.',
+                              {'n': NUMBER_WORDS.get(len(big), fmt_n(len(big)))}, value=len(big), bonus=0.4))
+            F.append(fact('descendants-end', 'daughters', 'fate',
+                          'Between them its daughter lines held {held} of the {living} bodies alive at the end.'
+                          if len(big) > 1 else
+                          'Its daughter line held {held} of the {living} bodies alive at the end.',
+                          {'held': fmt_n(held), 'living': fmt_n(living_end)},
+                          value=held, unit='bodies', bonus=0.8 * held / float(living_end)))
+        else:
+            biggest = max(d, key=lambda x: x['members'])
+            F.append(fact('daughters', 'daughters', 'fate',
+                          'It left {n} daughter {lw}; the largest, {name}, had {m} {mw}.',
+                          {'n': fmt_n(len(d)), 'lw': 'line' if len(d) == 1 else 'lines',
+                           'name': biggest['name'], 'm': fmt_n(biggest['members']),
+                           'mw': 'member' if biggest['members'] == 1 else 'members'},
+                          value=len(d), bonus=0.2))
+
+    # Its fate.
+    gen = card['generations']['depth']
+    if card['extinct_at'] is None:
+        F.append(fact('fate', 'fate', 'fate', 'Still alive at the end, {n} {mw} strong.',
+                      {'n': fmt_n(card['alive_at_end']), 'mw': 'member' if card['alive_at_end'] == 1 else 'members'},
+                      value=card['alive_at_end'], unit='bodies', bonus=0.5))
+    else:
+        life = card['extinct_at'] - card['founded_at']
+        if gen > 0:
+            text = '{m} {mw} over {g} {gw}, gone {dur} after it began.'
+        else:
+            text = '{m} {mw} in one generation, gone {dur} after it began.'
+        F.append(fact('fate', 'fate', 'fate', text,
+                      {'m': fmt_n(card['members_ever']), 'mw': 'member' if card['members_ever'] == 1 else 'members',
+                       'g': gen, 'gw': 'generation' if gen == 1 else 'generations', 'dur': clock(life)},
+                      value=round(life, 1), unit='s', pct=percentile(life, pool['life']), of=of))
+
+    # The world then.
+    then = stats_at(ctx['stats'], card['best_second'])
+    end = ctx['stats'][-1] if ctx['stats'] else None
+    js, je = jointed_share(then), jointed_share(end)
+    if js is not None and je is not None:
+        F.append(fact('world-jointed', 'world', 'world',
+                      'Jointed bodies were {then} of the living then, and {end} at the end.',
+                      {'then': share_words(js), 'end': share_words(je)},
+                      value=round(js, 3), normal=round(je, 3), bonus=min(1.0, abs(js - je))))
+
+    F.sort(key=lambda f: -f['interest'])
+    for r, f in enumerate(F, 1):
+        f['rank'] = r
+    return F
+
+
+NUMBER_WORDS = {1: 'one', 2: 'two', 3: 'three', 4: 'four', 5: 'five', 6: 'six', 7: 'seven',
+                8: 'eight', 9: 'nine', 10: 'ten'}
+
+
+def light_marks(attenuation):
+    """The depths at which half, nine tenths and ninety-nine hundredths of the light are gone."""
+    out = []
+    for gone, words in ((0.5, 'half the light is gone'), (0.9, 'nine tenths of the light is gone'),
+                        (0.99, 'all but a hundredth of the light is gone')):
+        d = -attenuation * math.log(1.0 - gone)
+        out.append(fact('light-%g' % gone, 'light', 'descent', '{d} m down: {words}.',
+                        {'d': '%.0f' % d, 'words': words}, value=round(d, 2), unit='m'))
+        out[-1]['depth_m'] = round(d, 2)
+    return out
+
+
+def series_of(counts, sample_times, founded, end_t, extinct):
+    """A clade's count cut to SERIES_POINTS over its founding to its end: at each point, the
+    count at the last sample at or before it (0 at a sample the clade is absent from)."""
+    if not counts or not sample_times:
+        return []
+    stop = extinct if extinct is not None else end_t
+    span = max(1.0, stop - founded)
+    out = []
+    for i in range(SERIES_POINTS):
+        t = founded + span * i / (SERIES_POINTS - 1)
+        k = bisect.bisect_right(sample_times, t + 1e-6) - 1
+        n = counts.get(sample_times[k], 0) if k >= 0 else 0
+        out.append([round(t, 1), n])
+    if extinct is not None:
+        out.append([round(extinct, 1), 0])
+    return out
+
+
 # ------------------------------------------------------------------------------------ main
 
 def main():
@@ -860,6 +1396,7 @@ def main():
     ap.add_argument('--out', help='where to write guide.json and guide.md (default: <run>/guide)')
     ap.add_argument('--no-economics', action='store_true',
                     help='skip the ledger pass (economics stays null on every card)')
+    ap.add_argument('--facts', help='print the facts of these clades (names or epithets, comma separated)')
     ap.add_argument('--check', action='store_true',
                     help='print the relation to clade-score.ps1\'s clades and the port\'s agreement')
     args = ap.parse_args()
@@ -911,7 +1448,9 @@ def main():
     t_lineage = time.time()
 
     # 3. Where they lived, and their peaks, from the positions.
-    pos = read_positions(positions_path, clade_of, len(clades), radius, bed)
+    thickness = find_field(config, 'reefCapThicknessMetres')
+    reef_of = reef_classifier(manifest.get('reefs') or [], float(thickness or 0.0), radius)
+    pos = read_positions(positions_path, clade_of, len(clades), radius, bed, reef_of)
     t_positions = time.time()
     samples = pos['samples']
     run_end = samples[-1][0] if samples else max(b['t'] for b in births.values())
@@ -1213,6 +1752,220 @@ def main():
         }
         cards.append(card)
 
+    # The facts (the safari review of 2026-09-24, items 2 and 3): the guild in plain words, the
+    # genus glossed, and a ranked list of facts per described card, each with its percentile
+    # against the picker's clades and the crowd's normal value.
+    t_facts0 = time.time()
+    by_card = {card['clade']: card for card in cards}
+    children = {}
+    child_times = {}
+    for i in sorted(births):
+        p = births[i]['p']
+        if p != -1:
+            children[p] = children.get(p, 0) + 1
+            child_times.setdefault(p, []).append(births[i]['t'])
+    life_of = {i: max(0.0, deaths.get(i, run_end) - b['t']) for i, b in births.items()}
+    member_life = {cl['index']: median([life_of[m] for m in cl['members']]) for cl in clades}
+
+    all_depth = {}
+    for dh in pos['depth_h']:
+        if dh:
+            for k, v in dh.items():
+                all_depth[k] = all_depth.get(k, 0) + v
+    reef_total = float(sum(pos['reef_crowd'].values())) or 1.0
+
+    link_light = 0.0
+    leaf_light = None
+    for ct in config.get('cellTypes', []):
+        if ct.get('id') == 'link':
+            link_light = float(ct.get('photosyntheticEfficiency') or 0.0)
+        if ct.get('id') == 'photosynthetic':
+            leaf_light = ct.get('efficiency')
+    link_share = link_light / float(leaf_light) if leaf_light else 0.0
+
+    eating, eating_crowd = read_absorptive(os.path.join(run_dir, 'absorptive.jsonl'), clade_of)
+    eating = eating or {}
+    joint_rows = read_joints(os.path.join(run_dir, 'poses.jsonl')) or {}
+    joints = {}
+    crowd_moving = crowd_read = 0
+    for body, (n, sd) in joint_rows.items():
+        if n < JOINT_MIN_SAMPLES:
+            continue
+        c = clade_of.get(body)
+        if c is None:
+            continue
+        j = joints.setdefault(c, {'read': 0, 'moving': 0})
+        j['read'] += 1
+        crowd_read += 1
+        if sd >= JOINT_MOVING_RAD:
+            j['moving'] += 1
+            crowd_moving += 1
+    stats_rows = read_stats(os.path.join(run_dir, 'stats.jsonl'))
+
+    crowd = {
+        'median_life_s': median(list(life_of.values())),
+        'median_children': int(median([children.get(i, 0) for i in births])),
+        'median_depth_m': median_of_hist(all_depth, 10.0) if all_depth else None,
+        'reef_share': {k: v / reef_total for k, v in pos['reef_crowd'].items()},
+        'eating_share': (eating_crowd[0] / (eating_crowd[0] + eating_crowd[1])
+                         if eating_crowd and eating_crowd[0] + eating_crowd[1] > 0 else None),
+        'joint_moving_share': crowd_moving / float(crowd_read) if crowd_read else None,
+        'joint_bodies_read': crowd_read,
+        'joint_moving_rad': JOINT_MOVING_RAD,
+    }
+
+    def reef_share(c, k):
+        rc = pos['reef_counts'].get(c)
+        tot = sum(rc.values()) if rc else 0
+        return rc[k] / float(tot) if tot else None
+
+    pool = {
+        'member_life': [member_life[c] for c in picker_set],
+        'founder_children': [children.get(clades[c]['founder'], 0) for c in picker_set],
+        'peak_share': [by_card[c]['peak']['share_of_living'] for c in picker_set],
+        'depth': [medians[c][0] for c in picker_set if medians[c][0] is not None],
+        'life': [clades[c]['life_seconds'] for c in picker_set],
+        'eating': [e[0] / (e[0] + e[1]) for c, e in eating.items()
+                   if c in picker_set and e[0] + e[1] > 0 and clades[c]['flags'][0]],
+        'joints': [j['moving'] / float(j['read']) for c, j in joints.items()
+                   if c in picker_set and j['read'] > 0 and clades[c]['flags'][1]],
+    }
+    for k in ('table', 'under', 'open'):
+        pool['reef_' + k] = [v for v in (reef_share(c, k) for c in picker_set) if v is not None]
+
+    change = {}
+    for cl in clades:
+        if cl['kind'] == 'split':
+            change[cl['index']] = change_words(cl['split'], cl['split']['parent_flags'], cl['flags'])
+    daughters = {}
+    for cl in clades:
+        pc = cl['parent_clade']
+        if cl['kind'] == 'split' and pc is not None:
+            daughters.setdefault(pc, []).append({
+                'clade': cl['index'], 'name': cl['name'], 'members': len(cl['members']),
+                'alive_at_end': cl['alive_at_end'], 'change': change[cl['index']]})
+
+    described = set(picker_set) | set(trip) | set(order_ix for order_ix in
+                                                  (cl['index'] for cl in order[:DESCRIBED_TOP]))
+    for v in firsts.values():
+        described.add(v['clade'])
+    sample_times = [t for t, _ in samples]
+    ctx = {'crowd': crowd, 'pool': pool, 'picker': picker_set, 'link_light': link_share,
+           'firsts': firsts, 'member_life': member_life, 'children': children,
+           'reef': pos['reef_counts'], 'eating': eating, 'joints': joints, 'daughters': daughters,
+           'living_end': samples[-1][1] if samples else None, 'stats': stats_rows, 'change': change}
+    fact_faults = []
+    facts_written = 0
+    for card in cards:
+        c = card['clade']
+        cl = clades[c]
+        fb = card['body']['founder']
+        plain = GUILD_PLAIN[cl['flags']]
+        if cl['flags'] == (0, 1, 0) and fb and set(fb['part_cells']) == {'link'} and link_share > 0:
+            plain = 'green muscle, no leaf'
+        card['guild_plain'] = plain
+        card['genus_gloss'] = '%s means %s: every clade of %s gets a name like it.' % (
+            cl['genus'], GENUS_MEANINGS.get(cl['genus'], 'nothing in particular'),
+            GUILD_PLURALS[cl['flags']])
+        card['described'] = c in described
+        if c not in described:
+            continue
+        card['facts'] = build_facts(ctx, card, cl)
+        facts_written += len(card['facts'])
+        for f in card['facts']:
+            bad = fact_numbers_outside_slots(f)
+            if bad:
+                fact_faults.append('%s %s: %s' % (card['name'], f['id'], ', '.join(bad)))
+        counts = dict(pos['series'].get(c, []))
+        card['series'] = series_of(counts, sample_times, cl['founded_at'], run_end, cl['extinct_at'])
+        j = joints.get(c)
+        card['joint_use'] = None if not j else {
+            'bodies_read': j['read'], 'moving': j['moving'],
+            'moving_share': round(j['moving'] / float(j['read']), 3) if j['read'] else None,
+            'moving_rad': JOINT_MOVING_RAD}
+        e = eating.get(c)
+        card['eating_share'] = round(e[0] / (e[0] + e[1]), 3) if e and e[0] + e[1] > 0 else None
+        card['reef_share'] = {k: rnd(reef_share(c, k), 3) for k in ('table', 'under', 'open')} \
+            if pos['reef_counts'].get(c) else None
+        # The exemplar: the living member with the most children at the best second.
+        s = card['best_second']
+        alive = [m for m in cl['members'] if births[m]['t'] <= s and (m not in deaths or deaths[m] > s)]
+        if alive:
+            def kids_by(m):
+                return sum(1 for t in child_times.get(m, ()) if t <= s)
+            ex = max(alive, key=lambda m: (kids_by(m), s - births[m]['t'], -m))
+            card['exemplar'] = ex
+            card['exemplar_facts'] = {
+                'born': births[ex]['t'], 'died': deaths.get(ex), 'age_at_best_s': round(s - births[ex]['t'], 1),
+                'children_by_best': kids_by(ex), 'children_ever': children.get(ex, 0),
+                'is_founder': ex == cl['founder'],
+                'joints_moving': (joint_rows[ex][1] >= JOINT_MOVING_RAD) if ex in joint_rows else None}
+        else:
+            card['exemplar'] = None
+            card['exemplar_facts'] = None
+
+    # The world's own facts: the light, the bed, the snow, the arrivals, the jointed share.
+    world_facts = []
+    att = find_field(config, 'attenuationDepth')
+    if att:
+        world_facts += light_marks(float(att))
+    depth_cfg = find_field(config, 'worldDepthMetres')
+    if depth_cfg:
+        world_facts.append(fact('bed', 'bed', 'floor', 'The bed lies up to {d} m down.',
+                                {'d': '%.0f' % float(depth_cfg)}, value=float(depth_cfg), unit='m'))
+    if stats_rows:
+        shares = [r['floorStockJoules'] / r['detritusJoules'] for r in stats_rows
+                  if r.get('detritusJoules') and 'floorStockJoules' in r]
+        if shares:
+            mx = max(shares)
+            world_facts.append(fact('floor-snow', 'snow', 'floor',
+                                    'At most {pct} of the snow ever lay on the bed; the rest hung in the water.',
+                                    {'pct': '%.1f%%' % (100.0 * mx) if mx < 0.1 else '%.0f%%' % (100.0 * mx)},
+                                    value=round(mx, 4)))
+        last = stats_rows[-1]
+        tr, pl = last.get('trickleSpawns'), last.get('poolSpawns')
+        if tr:
+            slots = {'n': fmt_n(tr)}
+            text = '{n} random founders drifted in with the trickle over the run'
+            if pl:
+                slots['p'] = fmt_n(pl)
+                text += ', {p} of them stored bodies brought back'
+            world_facts.append(fact('arrivals', 'arrivals', 'world', text + '.', slots, value=tr))
+        ck = manifest.get('checkpointEverySeconds')
+        early = stats_at(stats_rows, float(ck)) if ck else None
+        js, je = jointed_share(early), jointed_share(last)
+        if js is not None and je is not None:
+            world_facts.append(fact('jointed-story', 'world', 'world',
+                                    'Jointed bodies were {a} of the living at {t} and {b} at the end.',
+                                    {'a': share_words(js), 't': clock(early['t']), 'b': share_words(je)},
+                                    value=round(js, 3), normal=round(je, 3)))
+    for f in world_facts:
+        bad = fact_numbers_outside_slots(f)
+        if bad:
+            fact_faults.append('world %s: %s' % (f['id'], ', '.join(bad)))
+
+    # The four chapters: the founding, the first eater, the middle, the takeover. A card falls in
+    # the chapter its best second falls in.
+    chapters = []
+    eater = firsts.get('first_eater_breeder')
+    takeover = max(clades, key=lambda cl: (cl['alive_at_end'], -cl['index']))
+    t_take = takeover['founded_at'] if takeover['alive_at_end'] > 0 else run_end
+    if eater is not None:
+        ec = by_card[eater['clade']]
+        e0 = ec['best_second']
+        e1 = ec['extinct_at'] if ec['extinct_at'] is not None else run_end
+        e1 = min(max(e1, e0 + 1.0), t_take)
+        chapters.append({'title': 'the founding', 'from': 0.0, 'to': e0})
+        chapters.append({'title': 'the first eater', 'from': e0, 'to': e1, 'clade': eater['clade']})
+        chapters.append({'title': 'the middle', 'from': e1, 'to': t_take})
+    else:
+        chapters.append({'title': 'the founding', 'from': 0.0, 'to': min(t_take, run_end / 4.0)})
+        chapters.append({'title': 'the middle', 'from': chapters[-1]['to'], 'to': t_take})
+    chapters.append({'title': 'the takeover', 'from': t_take, 'to': run_end + 1.0,
+                     'clade': takeover['index'] if takeover['alive_at_end'] > 0 else None})
+    chapters = [ch for ch in chapters if ch['to'] > ch['from']]
+    t_facts = time.time() - t_facts0
+
     # The economics pass: the ledger on each trip and picker founder's genome, one call at a
     # time (each is a .NET process). A founder no snapshot holds keeps economics null.
     out_dir = args.out or os.path.join(run_dir, 'guide')
@@ -1262,6 +2015,9 @@ def main():
         'lineage_rows_other_than_birth_or_death': other_rows,
         'alive_at_end_lineage': sum(cl['alive_at_end'] for cl in clades),
         'alive_at_last_sample_positions': samples[-1][1] if samples else None,
+        'facts_written': facts_written,
+        'fact_faults': fact_faults,
+        'joint_bodies_read': crowd_read,
     }
 
     out_dir = args.out or os.path.join(run_dir, 'guide')
@@ -1284,6 +2040,13 @@ def main():
         'ranking': [cl['index'] for cl in order],
         'best_second': {str(card['clade']): card['best_second'] for card in cards},
         'firsts': firsts,
+        'crowd': {k: (rnd(v, 4) if isinstance(v, float) else
+                      ({kk: rnd(vv, 4) for kk, vv in v.items()} if isinstance(v, dict) else v))
+                  for k, v in crowd.items()},
+        'world_facts': world_facts,
+        'chapters': chapters,
+        'fact_rule': 'every number in a fact\'s text is one of its own slots, formatted; '
+                     'checks.fact_faults lists any that is not',
         'checks': checks,
         'cards': cards,
     }
@@ -1306,6 +2069,31 @@ def main():
     if ledger_calls:
         print('%s: economics: %d ledger calls, %d failed, %.1f s (%.1f s a call)'
               % (args.arm, ledger_calls, ledger_failures, t_ledger, t_ledger / ledger_calls))
+
+    print('%s: facts: %d on %d described cards, %d outside the checker rule; %.1f s'
+          % (args.arm, facts_written, sum(1 for c in cards if c.get('described')), len(fact_faults), t_facts))
+    for fault in fact_faults[:10]:
+        print('%s: FACT FAULT %s' % (args.arm, fault))
+    if args.facts:
+        wanted = [w.strip().lower() for w in args.facts.split(',') if w.strip()]
+        for card in cards:
+            if card['name'].lower() not in wanted and card['epithet'].lower() not in wanted:
+                continue
+            print()
+            print('%s (clade %d, %s) exemplar %s' % (card['name'], card['clade'], card['guild_plain'],
+                                                    card.get('exemplar')))
+            print('  ' + card['genus_gloss'])
+            for f in card.get('facts') or []:
+                print('  %2d. [%s/%s] %s  (interest %.2f%s)' % (
+                    f['rank'], f['role'], f['id'], f['text'], f['interest'],
+                    '' if f['percentile'] is None else ', p%.0f of %d' % (f['percentile'], f['of'])))
+        print()
+        print('world:')
+        for f in world_facts:
+            print('  [%s/%s] %s' % (f['role'], f['id'], f['text']))
+        print('chapters: ' + '; '.join('%s %s to %s' % (ch['title'], fmt_s(ch['from']), fmt_s(ch['to']))
+                                       for ch in chapters))
+        print('crowd: ' + json.dumps(guide['crowd']))
 
     if args.check:
         check_scorer(args.arm, births, deaths, clades, clade_of, samples)
@@ -1378,8 +2166,11 @@ def write_markdown(path, guide, cards, names, trip, picker, status):
         run_line += ' The manifest says %s, so every count here is provisional.' % status
     L.append(run_line)
     L.append('')
-    L.append('Every fact below comes from the run\'s files. The names are made from the founder\'s '
-             'genome and mean nothing. The economics from the ledger are a later pass.')
+    L.append('Every fact below comes from the run\'s files. A name\'s first word, the genus, says '
+             'the guild: every clade with the same three flags draws its genus from the same four, '
+             'so Pinnifrons (fin-frond) is always a jointed leaf and Phagothallus (eating shoot) '
+             'always a leaf with a stomach. The second word is drawn from the founder\'s genome and '
+             'means nothing. The economics from the ledger are a later pass.')
     L.append('')
     L.append('## The score ranks clades on five readings')
     L.append('')

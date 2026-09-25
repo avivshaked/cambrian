@@ -112,8 +112,38 @@ namespace Evosim.Theatre
         /// <summary>The recorded birth second of an id, or NaN.</summary>
         public double RecordedBirth(long id) => _recorded.TryGetValue(id, out Born b) ? b.At : double.NaN;
 
+        /// <summary>
+        /// True when a living id is the recording's own body: born at or before the restore, so
+        /// the cousin carried it over from the checkpoint. Anything else is the cousin's, and a
+        /// fact about it comes from the live organism, never from the lineage.
+        /// </summary>
+        public bool IsRecorded(long id) => _recorded.TryGetValue(id, out Born b) && b.At <= _restoredAt + 1e-6;
+
         /// <summary>The founder's parent as the recording has it, or -1.</summary>
         public long RecordedParent(long id) => _recorded.TryGetValue(id, out Born b) ? b.Parent : -1;
+
+        /// <summary>
+        /// A body's birth row as the recording has it, whatever the restore: its parent, second,
+        /// flags (<see cref="FlagsOf(bool, bool, bool)"/>) and clade. False when the lineage never
+        /// saw the id. A story names a clade by its root's id, and a clade the guide has no card
+        /// for is built from this (<see cref="SafariStory"/>).
+        /// </summary>
+        public bool TryRecorded(long id, out long parent, out double at, out byte flags, out long clade)
+        {
+            if (_recorded.TryGetValue(id, out Born b))
+            {
+                parent = b.Parent;
+                at = b.At;
+                flags = b.Flags;
+                clade = b.Clade;
+                return true;
+            }
+
+            parent = clade = -1;
+            at = double.NaN;
+            flags = 0;
+            return false;
+        }
 
         /// <summary>
         /// A living body's clade: the recording's for a body the recording had by the restore,

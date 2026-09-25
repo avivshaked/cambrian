@@ -183,6 +183,63 @@ namespace Evosim.Theatre
         }
 
         /// <summary>
+        /// <see cref="Arm"/> with a finished picture in place of the world camera: the picture is
+        /// copied into the texture and the panel draws over it on its next repaint, so a frame
+        /// written by <see cref="SnapshotCamera"/> (its grade, its fill light, its burnt label
+        /// and caption) takes the interface's layer the way <c>-Chrome</c> takes it. The safari's
+        /// call-outs go this way (<c>EVOSIM_THEATRE_SAFARI_CALLOUTS=1</c>). <see cref="Shoot"/>
+        /// follows on a later tick, as for <see cref="Arm"/>.
+        /// </summary>
+        public static bool ArmOver(Texture picture, PanelSettings panel, out string note)
+        {
+            if (Armed)
+            {
+                note = "a capture is already armed (" + _armedNote + "); shoot or disarm it first";
+                return false;
+            }
+
+            if (picture == null) { note = "no picture to draw over"; return false; }
+            if (panel == null) { note = "no PanelSettings: the interface did not load"; return false; }
+            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
+            {
+                note = "this Editor has no graphics device: nothing draws and nothing reads back";
+                return false;
+            }
+
+            int w = Mathf.Clamp(picture.width, MinimumSide, MaximumSide);
+            int h = Mathf.Clamp(picture.height, MinimumSide, MaximumSide);
+
+            try
+            {
+                _target = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32) { name = "Theatre UI Capture (over a picture)", antiAliasing = 1 };
+                _target.Create();
+                _readback = new Texture2D(w, h, TextureFormat.RGB24, false);
+                _panel = panel;
+                _camera = null;
+
+                _panelTargetWas = panel.targetTexture;
+                _panelClearedColour = panel.clearColor;
+                _panelClearColourWas = panel.colorClearValue;
+
+                Graphics.Blit(picture, _target);
+
+                panel.clearColor = false;
+                panel.colorClearValue = Ground;
+                panel.targetTexture = _target;
+
+                _armedNote = w + "x" + h + ", a written picture under the panel";
+                note = _armedNote;
+                return true;
+            }
+            catch (Exception e)
+            {
+                Disarm();
+                note = e.GetType().Name + ": " + e.Message;
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Reads the armed texture back, writes it as a PNG and restores both targets.
         /// </summary>
         /// <returns>The file's size in bytes, or 0 when nothing was written.</returns>

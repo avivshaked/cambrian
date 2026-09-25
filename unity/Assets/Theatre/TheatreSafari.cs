@@ -178,9 +178,9 @@ namespace Evosim.Theatre
             double runSeconds = Runner.Live.Record.RequestedSeconds ?? (seconds.Count > 0 ? seconds[seconds.Count - 1] : 0d);
 
             List<SafariScene> scenes = one != null
-                ? SafariTripBuilder.One(one, seconds)
+                ? SafariTripBuilder.One(one, seconds, _guide)
                 : SafariTripBuilder.Build(_guide, SafariTripBuilder.Choose(_guide, Heuristics[_heuristic]), seconds, runSeconds,
-                    Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_ORDER") == "time");
+                    SafariTripBuilder.TimeOrder);
 
             RunConfigFacts(out float depth, out float radius);
             foreach (SafariScene s in scenes)
@@ -193,6 +193,7 @@ namespace Evosim.Theatre
                 Aspect = Screen.height > 0 ? Screen.width / (float)Screen.height : 16f / 9f,
                 Interactive = true,
                 MostSeekSeconds = Dial("EVOSIM_THEATRE_SAFARI_SEEK_MAX", 300d),
+                MostSnapAheadSeconds = Dial("EVOSIM_THEATRE_SAFARI_SNAP_AHEAD", 600d),
             });
             _director.CaptionShown += OnCaption;
             _director.TakeStarted += OnTakeStarted;
@@ -325,11 +326,12 @@ namespace Evosim.Theatre
             TheatreSkin.Current?.Aim(pose.Rotation);
 
             TheatreGrade grade = TheatreGrade.Current;
-            if (pose.Portrait && pose.Focus > 0f) grade?.Focus(pose.Focus, 5.6f);
+            if (pose.Portrait && pose.Focus > 0f) grade?.FocusPortrait(pose.Focus, pose.FieldOfView);
             else grade?.Unfocus();
 
             Fill(pose.Portrait, pose.Rotation);
             _panel?.SetCaption(pose.Caption);
+            _panel?.SetSparkline(pose.Callout, pose.Second);
         }
 
         /// <summary>The portrait's fill: from the camera's side, low, theatre only (item 9's light rule).</summary>
@@ -364,6 +366,7 @@ namespace Evosim.Theatre
             TheatreGrade.Current?.Unfocus();
             if (_fill != null) _fill.enabled = false;
             _panel?.SetCaption(null);
+            _panel?.SetSparkline(null, 0d);
             Runner.Paused = false;
         }
 

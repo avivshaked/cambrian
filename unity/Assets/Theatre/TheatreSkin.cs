@@ -170,6 +170,36 @@ namespace Evosim.Theatre
         public float BendFraction = Dial("EVOSIM_THEATRE_BEND", 0.15f, 0f, 0.4f);
 
         /// <summary>
+        /// How far a leaf may curl, as a fraction of its width (<c>EVOSIM_THEATRE_CURL</c>, 0 to
+        /// 0.1, default 0.1).
+        /// </summary>
+        /// <remarks>
+        /// The one dial here that draws a body outside its collider, and it is the owner's ruling
+        /// (2026-09-24): a flat box a centimetre or two thick has no room inside it to curve, and
+        /// a flat leaf is what made the crowd read as cut card. The curl is fixed for a body's
+        /// life (drawn from the carve's seed), it is hidden under the raw shapes, and it is
+        /// bounded here at a tenth of the leaf's width whatever the environment says.
+        /// </remarks>
+        public float CurlFraction = Dial("EVOSIM_THEATRE_CURL", 0.1f, 0f, 0.1f);
+
+        /// <summary>How strongly a leaf's veins are drawn (<c>EVOSIM_THEATRE_VEINS</c>, 0 to 1).</summary>
+        public float VeinStrength = Dial("EVOSIM_THEATRE_VEINS", 0.6f, 0f, 1f);
+
+        /// <summary>
+        /// How strongly a blade glows with the light from the surface coming through it when seen
+        /// from below (<c>EVOSIM_THEATRE_LEAF_GLOW</c>, 0 to 2).
+        /// </summary>
+        public float LeafSkyGlow = Dial("EVOSIM_THEATRE_LEAF_GLOW", 0.6f, 0f, 2f);
+
+        /// <summary>
+        /// Whether the earth under a shaped bed is drawn at the glass (<c>EVOSIM_THEATRE_EARTH</c>,
+        /// 1 on and 0 off). On by default: the ground is earth. Off shows the water under the
+        /// beach as every picture before 2026-09-24 did, for a census view that wants to see
+        /// through the shoal to the bodies behind it.
+        /// </summary>
+        public bool Earth = Dial("EVOSIM_THEATRE_EARTH", 1f, 0f, 1f) >= 0.5f;
+
+        /// <summary>
         /// Points the key and the fill from wherever the viewer now looks, keeping the offsets
         /// <see cref="Apply"/> chose. Until 2026-09-16 the two were placed once from the fly
         /// camera's starting rotation and never moved, so five of the six snapshot views and
@@ -342,12 +372,23 @@ namespace Evosim.Theatre
         private static readonly Quaternion KeyOffset = Quaternion.Euler(38f, -26f, 0f);
         private static readonly Quaternion FillOffset = Quaternion.Euler(-14f, 168f, 0f);
         private GameObject _bed;
+
+        /// <summary>The earth under a shaped bed, drawn at the glass. See <see cref="BuildEarth"/>.</summary>
+        private GameObject _earth;
+        private Material _earthMaterial;
+
+        // Where the ground is, for GroundUnder: the bed, the box and the tank's radius.
+        private bool _hasGround;
+        private BedShape _groundBed;
+        private Bounds _groundBox;
+        private float _groundRadius;
         private GameObject _surface;
         private GameObject _shafts;
         private ParticleSystem _snow;
 
         private Material _body;
         private Material _neck;
+        private Material _joint;
         private Material _bedMaterial;
         private Material _snowMaterial;
         private Material _surfaceMaterial;
@@ -388,6 +429,12 @@ namespace Evosim.Theatre
 
         /// <summary>The joint neck's material. Its colour is set per neck by the palette.</summary>
         public Material NeckMaterial => _neck != null ? _neck : (_neck = MakeNeckMaterial());
+
+        /// <summary>
+        /// The joint skin's material: the body's own tissue, mottle and caustics included, with
+        /// the taper and the bend off and half the carve. See <c>TheatrePalette.BuildNecks</c>.
+        /// </summary>
+        public Material JointMaterial => _joint != null ? _joint : (_joint = MakeJointMaterial());
 
         /// <summary>True when the shaders resolved and bodies can be repainted.</summary>
         public bool Ready => BodyMaterial != null;
@@ -720,7 +767,13 @@ namespace Evosim.Theatre
             PushWater();
 
             BuildBed(min, size, bed);
+            BuildEarth(min, size, bed, tankRadius);
             BuildSurface(min, size);
+
+            _hasGround = true;
+            _groundBed = bed;
+            _groundBox = box;
+            _groundRadius = tankRadius;
             BuildShafts(min, size);
             BuildSnow(min, size);
             if (tankRadius > 0f) BuildGlass(min, size, tankRadius);
@@ -940,6 +993,141 @@ namespace Evosim.Theatre
             // all fade on one number, and a second rule here would have made the sand the one
             // surface in the picture that disagreed about where the light stops.
             material.SetFloat("_CausticReach", Mathf.Clamp(SurfaceLightMetres, 1f, 60f));
+        }
+
+        /// <summary>
+        /// Whether a place is over the world's floor, and the floor's height there: inside the
+        /// tank's circle (or the box's footprint), the bed's height, or the box's bottom where the
+        /// bed is flat. The free-fly camera keeps above it (<see cref="TheatreCamera"/>).
+        /// </summary>
+        public bool GroundUnder(float x, float z, out float floorY)
+        {
+            floorY = 0f;
+            if (!_hasGround) return false;
+
+            Vector3 c = _groundBox.center;
+            if (_groundRadius > 0f)
+            {
+                float dx = x - c.x;
+                float dz = z - c.z;
+                if (dx * dx + dz * dz > _groundRadius * _groundRadius) return false;
+            }
+            else if (x < _groundBox.min.x || x > _groundBox.max.x || z < _groundBox.min.z || z > _groundBox.max.z)
+            {
+                return false;
+            }
+
+            floorY = _groundBed != null && _groundBed.HasRelief
+                ? (float)_groundBed.FloorY(x, z)
+                : _groundBox.min.y;
+            return true;
+        }
+
+        /// <summary>
+        /// The earth under a shaped bed (the owner, 2026-09-24: "everything under the ground [is]
+        /// full of earth, rather than more water"). A shaped bed is drawn as a surface, so a view
+        /// through the glass from outside saw water under the beach and the reef stems standing
+        /// down into it. This is a wall at the glass, just inside it, from the bed's height at
+        /// the rim down past the box's bottom, in the bed's own shader in darker, browner tones
+        /// and with its downward carve off: from outside, a cut face of sediment under the sand.
+        /// A flat bed is the box's bottom and has nothing under it, so it draws none.
+        /// </summary>
+        private void BuildEarth(Vector3 min, Vector3 size, BedShape bed, float tankRadius)
+        {
+            if (!Earth || bed == null || !bed.HasRelief || tankRadius <= 0f) return;
+
+            Material material = _earthMaterial != null ? _earthMaterial : (_earthMaterial = MakeEarthMaterial());
+            if (material == null) return;
+
+            const int segments = 256;
+            float r = tankRadius - 0.03f;
+            float bottom = min.y - 0.5f;
+            var centre = new Vector3(min.x + 0.5f * size.x, 0f, min.z + 0.5f * size.z);
+
+            var vertices = new List<Vector3>(4 * (segments + 1));
+            var normals = new List<Vector3>(4 * (segments + 1));
+            var tops = new List<Vector2>(4 * (segments + 1));
+            var triangles = new List<int>(12 * segments);
+
+            // Two faces: the outer seen from outside the glass, the inner for a camera at the
+            // glass looking along it. Each its own vertices, so each has its own normal.
+            for (int face = 0; face < 2; face++)
+            {
+                int start = vertices.Count;
+                float sign = face == 0 ? 1f : -1f;
+
+                for (int i = 0; i <= segments; i++)
+                {
+                    float angle = 2f * Mathf.PI * i / segments;
+                    float cx = Mathf.Cos(angle);
+                    float sz = Mathf.Sin(angle);
+                    float x = centre.x + r * cx;
+                    float z = centre.z + r * sz;
+                    float top = (float)bed.FloorY(x, z);
+
+                    vertices.Add(new Vector3(x, top, z));
+                    vertices.Add(new Vector3(x, bottom, z));
+                    normals.Add(new Vector3(sign * cx, 0f, sign * sz));
+                    normals.Add(new Vector3(sign * cx, 0f, sign * sz));
+
+                    // The bed's height over the column, so the face knows how far under the
+                    // sand each of its points is.
+                    tops.Add(new Vector2(top, 0f));
+                    tops.Add(new Vector2(top, 0f));
+                }
+
+                for (int i = 0; i < segments; i++)
+                {
+                    int a = start + 2 * i;
+                    int b = a + 1;
+                    int c = a + 2;
+                    int d = a + 3;
+
+                    if (face == 0)
+                    {
+                        triangles.Add(a); triangles.Add(c); triangles.Add(b);
+                        triangles.Add(b); triangles.Add(c); triangles.Add(d);
+                    }
+                    else
+                    {
+                        triangles.Add(a); triangles.Add(b); triangles.Add(c);
+                        triangles.Add(b); triangles.Add(d); triangles.Add(c);
+                    }
+                }
+            }
+
+            var mesh = new Mesh { name = "Theatre Earth", hideFlags = HideFlags.DontSave };
+            mesh.indexFormat = IndexFormat.UInt32;
+            mesh.SetVertices(vertices);
+            mesh.SetNormals(normals);
+            mesh.SetUVs(0, tops);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateBounds();
+
+            _earth = new GameObject("Theatre Earth") { hideFlags = HideFlags.DontSave };
+            _earth.transform.SetParent(_root.transform, false);
+            _earth.AddComponent<MeshFilter>().sharedMesh = mesh;
+
+            MeshRenderer renderer = _earth.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+        }
+
+        /// <summary>
+        /// The earth's material: its own shader (TheatreEarth.shader says why the bed's drew the
+        /// face black), or none, in which case no face is drawn rather than a black one.
+        /// </summary>
+        private Material MakeEarthMaterial()
+        {
+            Shader shader = Shader.Find("Evosim/Theatre Earth");
+            if (shader == null) return null;
+
+            return new Material(shader)
+            {
+                name = "Theatre Earth",
+                hideFlags = HideFlags.HideAndDontSave,
+            };
         }
 
         /// <summary>
@@ -1482,6 +1670,10 @@ namespace Evosim.Theatre
             Discard(_bed);
             _bed = null;
 
+            Discard(_earth);
+            _earth = null;
+            _hasGround = false;
+
             Discard(_surface);
             _surface = null;
 
@@ -1522,7 +1714,9 @@ namespace Evosim.Theatre
 
             Discard(_body); _body = null;
             Discard(_neck); _neck = null;
+            Discard(_joint); _joint = null;
             Discard(_bedMaterial); _bedMaterial = null;
+            Discard(_earthMaterial); _earthMaterial = null;
             Discard(_snowMaterial); _snowMaterial = null;
             Discard(_surfaceMaterial); _surfaceMaterial = null;
             Discard(_shaftMaterial); _shaftMaterial = null;
@@ -1564,6 +1758,9 @@ namespace Evosim.Theatre
             material.SetFloat("_CarveFraction", Mathf.Clamp(CarveFraction, 0f, 0.5f));
             material.SetFloat("_TaperFraction", Mathf.Clamp(TaperFraction, 0f, 0.8f));
             material.SetFloat("_BendFraction", Mathf.Clamp(BendFraction, 0f, 0.4f));
+            material.SetFloat("_CurlFraction", Mathf.Clamp(CurlFraction, 0f, 0.1f));
+            material.SetFloat("_VeinStrength", Mathf.Clamp01(VeinStrength));
+            material.SetFloat("_LeafSkyGlow", Mathf.Clamp(LeafSkyGlow, 0f, 2f));
 
             // The one depth the surface's light reaches, the same number the sand, the shafts and
             // the window fade on. The net itself now comes from the sea overhead rather than from
@@ -1612,6 +1809,24 @@ namespace Evosim.Theatre
             material.SetFloat("_RimPower", 1.6f);
             material.SetFloat("_GlowStrength", 0.5f);
             material.SetFloat("_TransScale", 0f);
+
+            return material;
+        }
+
+        private Material MakeJointMaterial()
+        {
+            Material material = MakeBodyMaterial();
+            if (material == null) return null;
+
+            material.name = "Theatre Joint";
+
+            // Tissue, not a marker: the body's mottle, rim and light through it are kept, so a
+            // knuckle reads as the same flesh as the parts it joins. The taper and the bend are
+            // off because they shape a part along its own long axis and a knuckle has none, and
+            // the carve is halved so the joint reads as smoother skin stretched over a hinge.
+            material.SetFloat("_TaperFraction", 0f);
+            material.SetFloat("_BendFraction", 0f);
+            material.SetFloat("_CarveFraction", 0.5f * Mathf.Clamp(CarveFraction, 0f, 0.5f));
 
             return material;
         }
