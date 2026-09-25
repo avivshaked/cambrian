@@ -59,6 +59,9 @@ What (b) implies:
   from children the endowment paid for, so round 49 may see no stomach line at all. That
   would be a true answer to the round's question.
 - The machine is unaffected.
+- The build gains a tunable, and a new tunable makes the build refuse every older
+  `config.json`. Round 48's story windows are then recorded on a farm built from
+  `r49-record-film` before the tunable lands, kept as a separate exe for that (`-Exe`).
 - The risk is that an eater never gets in, and round 50 has to change the eater's economy
   rather than its founding. Section 3 is the candidate for that.
 
