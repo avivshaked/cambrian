@@ -206,6 +206,12 @@ namespace Evosim.Farm
 
             Dynamics = new DynamicsWorld(Solver) { Threads = threads < 1 ? 1 : threads };
 
+            // A diagnostic and not a tunable: the contact grid's cell moves no number (logbook/0115),
+            // so it is read here and not hashed. The speed probe of 2026-09-25 sets it.
+            string cellText = Environment.GetEnvironmentVariable("EVOSIM_CONTACT_CELL");
+            if (!string.IsNullOrEmpty(cellText))
+                Dynamics.ContactCellOverrideMetres = double.Parse(cellText, System.Globalization.CultureInfo.InvariantCulture);
+
             if (config.SharedSpace)
             {
                 // The patch width from the fields themselves — sqrt(area / K) — and the shape and

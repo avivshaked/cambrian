@@ -483,7 +483,76 @@ namespace __NS__
             }
         }
 
+        // ---- the probe (EVOSIM_GPU_PROBE=1): a diagnostic, never on in a scored run. It joins the
+        // card after the grid kernels, after each class's launch and after the census, so each
+        // part's time is its own, and every twenty blocks it prints those times a step beside the
+        // contact grid's geometry read from the mirror: the cell, the largest link and the most
+        // cells one link of each class covers. The joins cost a little; the step's numbers do not
+        // move, because nothing it launches changes.
+        private static readonly bool ProbeOn = Environment.GetEnvironmentVariable("EVOSIM_GPU_PROBE") == "1";
+        private readonly long[] _probeClass = new long[4];
+        private long _probeGrid, _probeTail, _probeSteps;
+        private int _probeBlocks;
+
+        private void PrintProbe(DynamicsWorld world, IReadOnlyList<Creature> list)
+        {
+            double sum = 0, largest = 0;
+            int active = 0;
+            for (int r = 0; r < list.Count; r++)
+            {
+                Creature c = list[r];
+                if (!c.Alive || !c.ContactActive) continue;
+                for (int i = 0; i < c.Links; i++)
+                {
+                    double rad = c.LinkContactRadius[i];
+                    sum += rad;
+                    active++;
+                    if (rad > largest) largest = rad;
+                }
+            }
+
+            double mean = active > 0 ? sum / active : 0;
+            double cell = world.ContactCellOverrideMetres > 0 ? world.ContactCellOverrideMetres : (mean > 0.125 ? 2 * mean : 0.25);
+            var used = new int[4];
+            var most = new long[4];
+            var entries = new long[4];
+            for (int r = 0; r < list.Count; r++)
+            {
+                Creature c = list[r];
+                int g = r < _slots.RankToSlot.Length ? _slots.RankToSlot[r] : -1;
+                if (g < 0) continue;
+                int k = _slots.ClassOf[g];
+                used[k]++;
+                if (!c.Alive || !c.ContactActive) continue;
+                for (int i = 0; i < c.Links; i++)
+                {
+                    double rad = c.LinkContactRadius[i];
+                    long n = 1;
+                    for (int a = 0; a < 3; a++)
+                    {
+                        double x = c.LinkContactCentre[3 * i + a];
+                        n *= (long)(Math.Floor((x + rad) / cell) - Math.Floor((x - rad) / cell) + 1);
+                    }
+                    entries[k] += n;
+                    if (n > most[k]) most[k] = n;
+                }
+            }
+
+            double f = 1000.0 / Stopwatch.Frequency / Math.Max(1, _probeSteps);
+            Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "gpu-probe t={0:0} s, ms a step: grid {1:0.000}, classes {2:0.000} / {3:0.000} / {4:0.000} / {5:0.000}, tail {6:0.000}; " +
+                "bodies a class {7} / {8} / {9} / {10}; cell {11:0.000} m (mean link {12:0.000} m), largest link {13:0.000} m; " +
+                "most cells one link covers, a class {14} / {15} / {16} / {17}; entries a class {18} / {19} / {20} / {21}",
+                world.ElapsedSeconds, _probeGrid * f, _probeClass[0] * f, _probeClass[1] * f, _probeClass[2] * f, _probeClass[3] * f,
+                _probeTail * f, used[0], used[1], used[2], used[3], cell, mean, largest,
+                most[0], most[1], most[2], most[3], entries[0], entries[1], entries[2], entries[3]));
+
+            _probeGrid = _probeTail = _probeSteps = 0;
+            for (int k = 0; k < 4; k++) _probeClass[k] = 0;
+        }
+
         private void Run(DynamicsWorld world, int steps)
+
         {
             long t0 = Stopwatch.GetTimestamp();
             IReadOnlyList<Creature> list = world.Creatures;
@@ -634,6 +703,8 @@ namespace __NS__
 
             // ---- 7. the steps
             long steps0 = world.Steps;
+            bool probe = ProbeOn;
+            long pt = probe ? Stopwatch.GetTimestamp() : 0;
             bool serial = _o.SerialMean;
             bool instrument = world.Config.ContactInstrument;
 
@@ -663,6 +734,7 @@ namespace __NS__
                     _scan(new KernelConfig(1, _scanGroup), grid, cfg);
                     _scatter(rows, gl, grid, cfg);
                 }
+                if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeGrid += pn - pt; pt = pn; }
 
                 for (int c = 0; c < _classes.Length; c++)
                 {
@@ -676,11 +748,19 @@ namespace __NS__
 
                     _step[c](used, set.Topo, set.ConstSet, set.PanelSet, set.StateSet, set.DriveSet, set.NeurSet,
                              set.BrainSet, set.TraceSet, gl, committed, pending, grid, sw, cc);
+                    if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeClass[c] += pn - pt; pt = pn; }
                 }
 
                 if (instrument && gUsed > 0) _censusKernel(gUsed, gl, cfg);
+                if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeTail += pn - pt; pt = pn; }
 
                 _committed = 1 - _committed;
+            }
+
+            if (probe)
+            {
+                _probeSteps += steps;
+                if (++_probeBlocks % 20 == 0) PrintProbe(world, list);
             }
 
             _acc.Synchronize();
