@@ -25,11 +25,19 @@ Three rulings shape it (the owner, 2026-09-25):
 
 1. **A paragraph is the unit sent to the voice**, never a single line. The delivery should carry
    across a paragraph's sentences the way a reader's does; a line-by-line read sounds like a list.
-2. **What the voice says is decided before the voice.** The model has no SSML or phoneme input, so
-   numbers, units, symbols and invented names are turned into the words to be spoken by
-   deterministic rules and a pronunciation list, and those words are what the owner approves.
+2. **What the voice says is decided here, before the voice.** The model has no SSML or phoneme
+   input. So this flow turns numbers, units, symbols and invented names into the words to be
+   spoken, by its own deterministic rules and a pronunciation list kept in this repository ("on
+   our side", the owner's words). Those words are what the owner approves, and the service speaks them
+   as sent.
 3. **The padding is ours.** The lead-in after a cut, the gap between two paragraphs and a scene's
    tail are set by this flow in one place, never by the service.
+
+And one principle over all three (the owner, 2026-09-26): **the service knows nothing of this
+use.** It narrates text in a locked voice and reports what it did, as it would for any caller.
+What the film says, how its numbers and names are read, when a job may run, how long a scene is
+and who approves the result all belong to this flow. Part 2 asks the service only for things any
+caller could use; Part 3 holds the rest.
 
 ## Part 2: what the flow needs from the service
 
@@ -53,8 +61,9 @@ other take it lists:
 
 - **Times are in the delivery file**, after trim, resample and any stretch: 0 is the first sample of
   `delivery.wav`.
-- **Accuracy:** a cue's start and end within about 0.1 s of where its first and last words are
-  heard.
+- **Accuracy:** the service measures how far its cue boundaries fall from where the words are
+  heard, and publishes it with the method (p50 and p95). How much error a caller can bear is the
+  caller's; this flow's tolerance is in Part 3.
 - **A cue that cannot be placed** gets a warn flag, `CUE_UNALIGNED`, and goes on `listen_first`. It is
   never silently interpolated.
 
@@ -70,11 +79,10 @@ The flow sends cues before any time exists; the narration is what makes the time
 built by the server as the join (§9, step 2). When `text` and `cues` are both given, the server
 refuses a `text` that is not their join.
 
-### R3 (MUST): normalise each cue, then join (§9)
+### R3 (MUST): each cue is its own unit (§9)
 
-Phrase rules, unit expansion, number words and lexicon matches never cross a cue boundary. Each
-cue's spoken text is then its own, and R1 can find its span. The design joins the cues at step 2,
-before the other rules; the order has to be the other way round.
+Whatever the service does to the text (a pronunciation hint, a validation) stays inside the cue it
+came from. Each cue's spoken text is then its own, and R1 can find its span.
 
 ### R4 (MUST): no fitting when no budget is given (§7.3 options, §12)
 
@@ -94,30 +102,27 @@ Each take in `get_results` carries its delivery file's `samples` and `sample_rat
 `duration_s` follows, and its trim record (`head_s`, `tail_s`, `pad_s`), which is in the sidecar
 today but not in the results.
 
-### R6 (MUST): English number words in the first version (§9 steps 4 to 7, Q4)
+### R6 (MUST): the text spoken as sent (§9, `text_mode: "spoken"`)
 
-The owner's ruling above means number words cannot wait for Phase 6. The normaliser needs, per
-project:
+This flow sends each cue already in the words to be spoken. The service speaks them as given. It
+applies only the pronunciation hints the caller has entered for a term, and it reports any digit,
+symbol or unit-like token left in a cue as a warning. It needs no number convention, locale rule
+or keyword list of this flow's. A normaliser the service keeps for other callers is not used here.
+None of the service's defaults should carry this flow's vocabulary either: the identifier keywords
+body, tank, round, seed and line, a project named for this flow, or tests built from its captions.
 
-- **cardinals** in British form: 3,207 as "three thousand two hundred and seven", with no comma in
-  the spoken text, since a comma is a pause cue (the design's revision 3, §9);
-- **decimals** digit by digit: 0.54 as "zero point five four";
-- **per cent**: 14% as "fourteen per cent";
-- **identifiers** set apart from quantities: a number after a configured keyword (`body`, `tank`,
-  `round`, `seed`, `line`) is read as an identifier. How an identifier is read ("body two oh one" or
-  "body two hundred and one") is the owner's choice, so the rule is a project setting, not code;
-- **units** as the design's table, plus "J a second" → "joules a second", `m³` and `m3` → "cubic
-  metres", `m/s` → "metres a second", `×` → "times", and a thousands comma never read as a pause;
-- **symbols** the captions use: an em dash read as a pause, `·` refused rather than read.
+*Revised 2026-09-26.* R6 first asked the service's normaliser for this flow's conventions (British
+number words, identifiers after set keywords, the units of these captions). That put this flow's
+choices in the service, against ruling 2, and the conventions moved to Part 3.
 
-The QA number check (§11, step 4) already compares canonical values, so it keeps working when the
-spoken text carries words.
+### R7 (MUST): what was spoken, echoed per cue (§7.5)
 
-### R7 (MUST): the spoken text shown before anything is rendered (§7.6 `normalize_text`)
+The results carry, for each cue, the text as received and the text given to the engine after any
+pronunciation hint. The flow checks the first against what it sent. The written-to-spoken table
+the owner reviews is the flow's own (Part 3).
 
-`normalize_text` returns, per cue: the written text, the spoken text, each substitution with its
-rule, and every ambiguity as a warning, never a silent guess. The flow shows the owner a
-caption-to-spoken table from it at the review, and renders with `strict_normalisation: true`.
+*Revised 2026-09-26.* R7 first asked the service to show the spoken text before rendering, from its
+own normaliser; with the words made here, the table is made here too.
 
 ### R8 (SHOULD): a paragraph's safe length (§7.6 `get_server_status` or `list_voices`)
 
@@ -152,17 +157,27 @@ Absolute paths and sha256 for every delivery file, valid until the owner's `gc`,
 flow copies the takes it uses into its own story folder and checks the hash; it needs no export alias
 into this repository (Q9).
 
-### R13 (MUST): the approval visible to the flow (§11 human gate)
+### R13: withdrawn (2026-09-26)
 
-`get_results` carries `human_approved` and the cut number, as designed. The flow records the cut
-the owner approved and times the film from that cut only.
+R13 asked that the service's human approval of a cut be visible, so that the film would be timed
+from the approved cut. Approving a narration for a film is the owner's review in this flow
+(`story-flow.py approve script`), which records the cut and the takes it approved. The service
+may keep approvals of its own, such as the lock on a voice; the flow neither reads nor needs them.
+
+### R14 (SHOULD): spans that must be heard exactly (§11)
+
+The caller may mark spans of a cue's spoken text as exact, such as a number in words. Any difference
+the transcript shows inside a marked span fails the take, whatever the word error rate says. The
+design's number check read its spans from its own normaliser. With the words made on the caller's
+side, the caller marks them. A misread number in a paragraph of sixty words is under two per cent
+of it, which the rate alone would pass.
 
 ### Answers to the design's open questions, from this flow
 
 - For **Q3**, the film has music under the narration, mixed in Resolve. So 48 kHz, 24-bit mono at
   −16 LUFS per take suits it; the balance with the music is set in the mix, and −23 LUFS takes are
   not needed.
-- For **Q4**, British number words and "per cent", as R6.
+- For **Q4**, nothing: this flow sends its numbers already in words (R6 as revised).
 - For **Q7**, no automatic speed-up or stretch for the films, as R4. A scene too long for its picture is
   a script edit.
 - For **Q9**, no export alias into this repository, as R12.
@@ -173,20 +188,23 @@ The other questions are the owner's and do not change what the flow needs.
 
 ## Part 2b: review of the design's revision 3 (2026-09-26)
 
-Revision 3 of `narration-mcp-design.md` meets every MUST above on paper, and its section 21 maps
-each one. R5's `pad_s` and R6's comma-free example are taken here as it asked. Four changes are
-still needed before the flow can rely on it, and one reading of R1 is settled for Phase 0.
+Revision 3 of `narration-mcp-design.md` met every MUST of Part 2 as it then stood, and its section
+21 maps each one. R5's `pad_s` is taken here as it asked. The same day the owner asked that the
+service know nothing of this use, and Part 2 was revised under that rule. R6 and R7 now ask the
+service to speak text sent in words, R13 is withdrawn, and R14 is new. This review is revised with
+it. Two changes to the design are still needed, V1 and V2. V3 and V4 were withdrawn, and their
+content moved to Part 3.
 
 ### V1 (MUST): keep by-ear picks made on a draft cut (§8, cuts and inheritance)
 
 Inheritance runs from the latest approved cut, and `select_take` writes a new draft on the latest
-cut. So a pick can be lost. Cut 2 is approved. The owner picks take 1 of `s07-p2` by ear, which
-makes draft cut 3. One caption is edited elsewhere and the script is sent again. The base is cut 2
-once more, and `s07-p2` goes back to its automatic take.
+cut. So a pick can be lost. Cut 2 is approved. A take of `s07-p2` is picked by ear, which makes
+draft cut 3. One caption is edited elsewhere and the script is sent again. The base is cut 2 once
+more, and `s07-p2` goes back to its automatic take.
 
 The fix is to inherit each selection from the latest cut, draft or approved, wherever the engine
-text and voice hash match. `changes[]` would still be reported against the latest approved cut. Giving both
-comparisons, each named, would suit the flow as well.
+text and voice hash match. `changes[]` would compare against a cut the caller names, the previous
+cut when it names none, since which cut a caller last used is the caller's to know.
 
 ### V2 (MUST): prefer a take whose cues are all placed (§8, selection)
 
@@ -195,48 +213,32 @@ warning, so its take can be chosen over a later take whose cues are all placed b
 another warning, such as `PACE_FAST`. The flow refuses to time a segment with an unplaced cue
 (Part 3). Among warned takes, the rule should prefer those with every cue placed.
 
-### V3 (MUST): the identifier style set per keyword (§9, Q15)
+### V3: withdrawn (2026-09-26)
 
-One style cannot read these captions the way a person would. "Body 201" wants digits ("body two
-oh one"), while "round 48" and "tank 3" want cardinals ("round forty-eight"). `identifier_style`
-should be a map from keyword to style, and its values are the owner's ruling under Q15. The rule
-should also take a plural keyword and a list, so that "Tanks 1 and 3" reads both as identifiers.
+V3 asked for an identifier style set per keyword, so that "body 201" and "round 48" would be read
+differently. How this flow reads its identifiers is its own choice, and its converter makes it
+(Part 3).
 
-### V4 (MUST): golden tests on the current captions (§9)
+### V4: withdrawn (2026-09-26)
 
-The golden set is built from `scripts/r48_captions_s01-07.json`, the writer's captions, which the
-script stage has since rewritten. The current 94 are in
-`D:/Projects/experiments/evolution-simulator/scratch/wt-film/logbook/specs/story-r48-v2/script-trial/story.json`,
-on the branch `story-flow` until it is merged. These forms in them need a golden case each.
-
-- "Tank 2's simulation." The "s" after "2'" is a possessive and never the unit for seconds.
-- "Tanks 1 and 3." A plural keyword and a list, as V3.
-- "0.50 J." A written trailing zero, read "zero point five zero" or "zero point five", to be ruled
-  with Q15.
-- "Counted in joules, or J." A bare J after no number, which needs a lexicon term ("jay").
-- "167 m across", "157 s ago", "4,200 s old", "2,655 s old", "129 J on", "66 J could." A unit
-  followed by a word that is no noun. Under strict mode each false `unit.attributive_guess` blocks
-  the render.
-- "The life of body 201." A Card's title line, written with no full stop, which the join ends with
-  one.
-
-The attributive form nearly always has a determiner before the number, as in "a 46 s scene" or
-"its 14 J cushion". Firing the guess only on that shape would cut the false warnings.
+V4 asked that the service's tests be built on this flow's current captions. The forms it listed ("Tank
+2's", "Tanks 1 and 3", "0.50 J", a bare "J", a unit before a word that is no noun, a title line
+with no full stop) are now the tests of this flow's converter (Part 3). A normaliser the service
+keeps for other callers is tested on its own material.
 
 ### R1, read for Phase 0
 
-The flow changes a caption in the pause the snap finds, so it works at a p95 boundary error up to
-0.2 s. The aim stays 0.1 s. Above 0.2 s the service publishes the measured error, and the flow
-pads each caption by it.
+The service publishes its measured boundary error, as R1 now asks. This flow bears up to 0.2 s at
+p95 (Part 3); the figure is information for the designer and no requirement on the service.
 
 ### For information: the paragraphs' spoken length (R8)
 
 Numbers grow when read as words. By a rough expansion, the longest paragraph of the current
 script (the first of scene 11) is 391 written and about 620 spoken characters. That is past the
 ladder's top rung of 560. Five of the 25 paragraphs are over 350 spoken. The flow therefore splits
-at caption boundaries against the voice's `max_segment_chars`, using the spoken text
-`normalize_text` returns (Part 3). It would help if `SEGMENT_TOO_LONG` carried each offender's
-spoken length and the limit.
+at caption boundaries against the voice's `max_segment_chars`, using the spoken text it
+makes itself (Part 3). It would help if `SEGMENT_TOO_LONG` carried each offender's
+spoken length and the limit, which any caller that splits could use.
 
 ## Part 3: this repository's side
 
@@ -250,9 +252,22 @@ between them, the calls to the service, since its interface is still being writt
   between two captions (`new_paragraph: true` on the caption that opens one, in `story.json`). One
   paragraph is one segment, `sNN-pK` for scene NN's paragraph K. Whether a chapter's title is spoken
   over its 8 s card, as a segment `cNN`, is open for the owner; the recommendation is yes.
-- **The spoken form** comes from the service's normaliser. The stage calls `normalize_text` with every paragraph's cues, resolves each
-  warning by a lexicon entry or a caption edit, and writes the caption-to-spoken table beside the
-  script for the owner's review.
+- **The spoken form is made here** (ruling 2, R6). The stage turns each caption into the words
+  to be spoken by its own rules, which are this flow's choices and the owner's to rule on:
+  - numbers in British words ("three thousand two hundred and seven", "zero point five four",
+    "fourteen per cent"), with no comma inside a spoken number;
+  - identifiers after the words body, tank, round, seed and line, read in the style the owner
+    rules for each (the recommendation is digits for bodies, "body two oh one", and cardinals for
+    the rest, "round forty-eight");
+  - the units of these captions (s, m, J, "J a second", m/s, m³) and their symbols;
+  - invented names from a pronunciation list kept in this repository: each term, how it should
+    sound, and the respelling that gets the voice there, sent to the service as its
+    pronunciation hints. The owner approves each by ear from the service's auditions.
+
+  Its tests are the forms the current captions hold: "Tank 2's", "Tanks 1 and 3", "0.50 J", a bare
+  "J", a unit before a word that is no noun ("157 s ago", "4,200 s old"), and a title line with no
+  full stop. The stage marks each number span as exact (R14), and writes the caption-to-spoken
+  table beside the script for the owner's review.
 - **The padding** is one set of values in the story's `flow.json`, starting at 0.8 s from a cut to the
   first word, 1.2 s between two paragraphs of a scene, and 1.0 s from the last word to the next cut.
   These are starting values, to be set by ear on the first narrated film.
@@ -285,13 +300,16 @@ between them, the calls to the service, since its interface is still being writt
   the machine before it submits a narration job, the way it would before a render: nothing heavy
   beside it, and never a narration job and a film render at once. The service's own status call
   (`get_server_status`) is enough to see whether it is busy.
-- **What revision 3 adds to this side** (Part 2b), none of it built yet:
-  - `segments` splits a paragraph at a caption boundary when its spoken text, from
-    `normalize_text`, is longer than the voice's `max_segment_chars`;
+- **What the design's revision 3 and the separation rule add to this side**, none of it built yet:
+  - the converter above, with its tests;
+  - `segments` splits a paragraph at a caption boundary when its spoken text is longer than the
+    voice's `max_segment_chars`, which the service publishes;
   - the call step copies each selected take into `narration/`, checks its sha256, and refuses a
     segment whose cue has no time;
-  - `story-flow.py approve script` reads `human_approved` and the cut from the manifest, since the
-    owner approves a cut with `narration-admin cut approve`, outside the flow;
+  - the flow bears a cue boundary error up to 0.2 s at p95, since a caption changes in the pause
+    between two cues; above that, each caption is padded by the service's published error;
+  - `story-flow.py approve script` records the cut and the takes the owner approved at the review.
+    It reads no approval from the service;
   - `scripts/sweep-orphans.ps1` knows the service's daemon (`-m narration.daemon`) and its workers
     (`-m narration_worker`) by their command lines, which the design documents, and lists them
     apart from strays; the daemon exits on its own after 15 idle minutes;
