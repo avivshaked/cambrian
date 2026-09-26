@@ -249,21 +249,34 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    the card declines was relaunched on the CPU's transport. A seed stopped at 160 s was resumed
    from 170 s on the CPU's transport, and the two parts joined were the CPU-only control in 23
    samples, 432 lineage rows and the checkpoint payloads at 100 to 400 s
-   (`scratch/farm-queue-test/`). The hourly watch adds one `nvidia-smi` reading.
-4. The lit link is read and not built: `scripts/reads/linklight.py <arm>` splits a stomach
+   (`scratch/farm-queue-test/`). The hourly watch adds one `nvidia-smi` reading. The check is
+   `logbook/specs/card-transport-check/check.ps1`, which runs every window and then `compare.py`.
+   It was rehearsed on `r50smoke-s1` from 4,000 s for 300 s on main's build: both windows were
+   identical to the smoke's own rows, 456 lineage rows and three checkpoints, and the card's read
+   4.99x against the CPU's 3.69x with the owner at the machine.
+4. The CPU's physics at a full crowd is the next overnight lever
+   (`logbook/specs/cpu-profile-2026-09-26.txt`). In round 49's seeds the physics was 62 to 70% of
+   the wall and three quarters of each seed's last third. A sampling profile of round 49 seed 2 at
+   25,000 s puts a quarter of the farm's time in the water at the links and a sixth in contact per
+   part, 10% of it in the neighbour query alone. Two changes keep the bits: the reef fade computed
+   once for the velocity and the acceleration (about 2.5%), and the neighbour query testing an
+   entry's own cell instead of six range bounds (share not measured). The velocity cannot be read
+   off the acceleration's gradient, because the two evaluate the clock in different groupings.
+   Nothing is built; each change is checked as the card's was, by day.
+5. The lit link is read and not built: `scripts/reads/linklight.py <arm>` splits a stomach
    body's income into its links' light and its food, by window and by line (the first decision
    above). It runs on round 50 when that round is read.
-5. The storage reductions that lose nothing come next. A checkpoint that points at `genomes.jsonl.gz`
+6. The storage reductions that lose nothing come next. A checkpoint that points at `genomes.jsonl.gz`
    instead of copying every living genome (a new `Checkpoint.Version`, with 6 still read), and
    the feeding log gzipped. Then a measured test of a better codec for the moving state.
-6. The theatre's four checkpoints are re-recorded on the current build: ckA, ckB, ckC and ckUi.
-7. Seed 2's budded line is read for the stomach's cost. M4 failed in round 49's seed 2 with
+7. The theatre's four checkpoints are re-recorded on the current build: ckA, ckB, ckC and ckUi.
+8. Seed 2's budded line is read for the stomach's cost. M4 failed in round 49's seed 2 with
    the stomach bringing 2.7% of the income. What the bud costs in tissue and upkeep is not yet
    set against it (0122).
-8. Round 49's video is made when the owner asks for it, from film windows from the round's own
+9. Round 49's video is made when the owner asks for it, from film windows from the round's own
    checkpoints, which V1 showed are faithful. After the owner approves it as final, the keep
    list for its checkpoints is built from its scene table and shown before each thinning.
-9. Round 50's read and entry (0124) follow its last seed, with the theatre's pictures taken
+10. Round 50's read and entry (0124) follow its last seed, with the theatre's pictures taken
    before it is written.
 
 The rounds after 50 are not planned past the two decisions above. The proposal most likely to
@@ -281,6 +294,7 @@ CLAUDE.md holds the commands and the gotchas. This is where each tool sits.
 | reading | the round's reader `scripts/reads/rNN-read.py` (every clause, per seed, with a held line per clause); the entry's own reads under `scripts/reads/rNN-entry/`, their outputs under `logbook/specs/rNN-read/`; `scripts/analyse-arm.ps1` by column name, never positionally |
 | checking | `Evosim.Farm.exe --verify-checkpoint <ckpt> <s> <out> <threads>` for a checkpoint member by member; `scripts/compare-det.py` for a resume against its run; a film window's identity rows for V1 |
 | pictures | `scripts/theatre-snap.ps1 <arm> -From snapshot -At <s>` for a still from the record; `scripts/theatre-film.ps1` from a checkpoint for a clip; every render checked on a sheet against a reference before the owner sees it |
+| profiling | `scripts/profile-farm.ps1 -Name <n> -ResumeFrom <arm> -At <s> [-Tree <tree>] [-AllowSourceMismatch]`: a resume under .NET's EventPipe sampler, read by method with `src/Evosim.Profile`; a share, not a pace |
 | tests | `scripts/core-test.ps1` (the default set; `-All` before a change to the world), and `dotnet test` on `Evosim.Farm.Tests` and `Evosim.Dynamics.Tests`; the fixtures are `src/Evosim.Core.Tests/fixtures/r42-config.json` and the crowd named in `RunFixture.cs`, re-recorded on every build that adds a tunable |
 | the card | ILGPU under `src/Evosim.Farm.Gpu`, worked by day with nothing else on the machine; kernels regenerated before a build; `EVOSIM_GPU_TRANSPORT` puts the snow's transport on it (`GpuTransport`, `GpuTransportTests`); `src/Evosim.UnityProxy` compiles the Farm package as the Editor would |
 | the Unity farm | idle since round 42; its workers and caps are CLAUDE.md's, for the theatre only |

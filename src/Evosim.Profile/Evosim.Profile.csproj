@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The farm's sampling profile, read. EventPipe's SampleProfiler writes a .nettrace when the farm
+    runs with DOTNET_EnableEventPipe set (scripts/profile-farm.ps1 sets it); this reads the file's
+    stacks through TraceEvent and prints where the time went, by method. Not a Unity package and
+    referenced by nothing; a tool, like src/Evosim.Overlap.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.13" />
+  </ItemGroup>
+</Project>

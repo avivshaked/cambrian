@@ -1,0 +1,66 @@
+# Where the CPU farm's time goes at a full crowd, 2026-09-26 (afternoon).
+#
+# Why: from round 51 an overnight round runs on the CPU farm with the snow's transport on the card
+# (D126), so what is left of a night is the CPU's. Round 49's three seeds (the newest scored, on the
+# CPU at 16 threads) are the reference: their rows carry the wall split and, inside the physics, the
+# solver's five phases (wallStepGridMs, wallStepWaterMs, wallStepBodiesMs, wallStepCommitMs,
+# wallStepAfterMs; DynamicsWorld.PhaseNames).
+#
+# 1. The wall by phase, from the rows (runs/r49-s{1,2,3}; ms a metabolic step over each third).
+#
+#   seed  t            alive          total  physics (bodies)  world   pace
+#   1     10-10010     22->1542         92      34  (13)         55    5.45x
+#   1     10010-20010  1542->3762      134      70  (25)         59    3.72x
+#   1     20010-30000  3762->8410      362     259  (94)         84    1.38x
+#   2     10-10010     34->4506        195     116  (46)         71    2.56x
+#   2     10010-20010  4506->8091      289     196  (76)         77    1.73x
+#   2     20010-30000  8091->10810     469     358 (138)         85    1.07x
+#   3     10-10010     28->1752        118      56  (22)         58    4.25x
+#   3     10010-20010  1752->3737      205     132  (55)         65    2.44x
+#   3     20010-30000  3737->7220      384     298 (123)         72    1.30x
+#
+#   Over each whole seed the physics is 62, 70 and 69% of the wall, and inside it the grid 17 to 19%,
+#   the water 26 to 30%, the bodies 36 to 41%, the commit 8 to 12% and the after-step 3 to 7%. The
+#   last third of a seed is half its wall or more, and there the physics is three quarters of it.
+#   The world step, 55 to 85 ms, includes the snow's transport (30 to 36 ms), which D126 moves.
+#
+# 2. A sampling profile of the same crowd (scripts/profile-farm.ps1, which runs a resume under .NET's
+#    EventPipe sampler and reads it with src/Evosim.Profile). Round 49 seed 2 resumed from 25,000 s
+#    for 30 s at 16 threads on scratch/wt-speed's build (round 49 with the serial-phase patch, the
+#    solver as main has it), about 8,000 bodies; 41,740 samples pass through an Evosim frame. The 30 s
+#    include the restore (World and BedShape construction, about 4%) and the CPU's snow transport
+#    (the edge sampling and the passes, about 10%), so the physics' shares below read low by about a
+#    sixth. Shares of the Evosim samples:
+#
+#   inclusive
+#     46.6%  DynamicsWorld.StepOne, the bodies' parallel phase
+#     25.0%  Water.Sample, the water at every link, velocity and acceleration
+#       12.1%  CurrentField.ReefStreamsAccelerationAt
+#        9.1%  CurrentField.ReefStreamsAt (the velocity)
+#        5.0%  ReefGeometry.Fade, called by both, the same x, y and z
+#     17.9%  Contacts.Apply
+#       16.2%  Contacts.ApplyPerPart (contact per part, D114)
+#       10.4%  ContactGrid.NeighbourLinks (exclusive; the cells a link covers, their buckets, the
+#              six range reads per candidate, the sort and the dedup)
+#        3.4%  ContactReef.Push, 3.3% of it ReefGeometry.SignedDistance
+#      8.9%  Fluid.Apply (exclusive)
+#      3.3%  Brain.Step
+#      3.0%  Aba.Solve, with Inward, Outward, Seed and SolveSixBySix about 4% exclusive together
+#      3.7%  the contact grid's fill (ContactGrid.Fill's two slab lambdas)
+#
+# 3. What can move with the same bits, and what cannot.
+#
+#   - The water's velocity cannot be read off the acceleration's gradient. StreamsAccelerationAt
+#     evaluates the streams at (2 pi / P) * s and StreamsAt at 2 pi * s / P, which differ by an ulp on
+#     half the steps (CLAUDE.md, the water pass), and the velocity is rounded through a float Float3
+#     where the gradient keeps doubles. So the separate velocity call stays.
+#   - The reef fade is a function of the link's x, y and z alone, and both calls compute it for the
+#     same floats: computed once and handed to both, about 2.5% of the Evosim samples.
+#   - A candidate's collision test in NeighbourLinks reads six range bounds of the other row, at
+#     random. Testing the entry's own cell instead gives the same set after the dedup (a row that
+#     covers the queried cell has an entry for it in the same bucket), so the sorted unique list,
+#     and every force after it, is unchanged. Its share of the 10.4% is not measured.
+#   - The rest is arithmetic whose order the bits fix: the solve, the fluid, the brain.
+#
+#   None of this is built. Each item is a CPU change checked like the card's: a resume of round 50's
+#   seeds against their own rows, lineage and checkpoints, and the pace alternated in one sitting.
