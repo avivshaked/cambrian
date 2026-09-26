@@ -79,6 +79,17 @@ same code. The round goes on as pre-registered, since a stop is the owner's call
 candidate, which is bit-identical on a flat floor, and a tilted-bed test should fail on the old
 tree. It is unbuilt and untested. The reads that found it are in `scripts/reads/r49-entry/`.
 
+**Round 50: a leaf founder is placed by light and matter together (the owner, 2026-09-26
+morning, option (a)).** Seed 1's and 2's trickle leaves were set at a median -44 m, 97% below
+20 m, where the light is under a thousandth of the surface's (attenuation depth 6 m). They died
+at a median 81 and 99 s, and 1 of 855 bred. The floor's leaves, set at -4 to -8 m, lived about
+20 minutes and 25 of 53 bred (`scripts/reads/r49-entry/leafdepth.py` on
+`founder-depth-bed`). The depth rule placed a leaf by its dissolved matter alone, which late in a
+run is richest at the bed. The ruling: a leaf founder's depth is the cell where its own income,
+light and matter together, is highest. The rejected options were leaves at the drawn 0 to 12 m
+as before round 48, and no change. It is a new rule, so round 50 is a new realisation of every
+seed; it is built after the clamp fix and goes into DECISIONS when it is built.
+
 **After seed 3 (the owner's ruling puts the three seeds first).** These run with the card alone
 on the machine.
 0. Build `founder-depth-bed`, run its new test on the old tree (it should fail) and on the
