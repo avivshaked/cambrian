@@ -530,11 +530,13 @@ namespace Evosim.Farm
 
         // The solver world's: the creature list, compared body by body; the contact grid, its
         // neighbour scratch and the step's overlap list, all rebuilt each step before they are
-        // read; the five per-step overlap counts, zeroed at the top of the contact pass; and the
-        // digest writer, a recording.
+        // read; the five per-step overlap counts, zeroed at the top of the contact pass; the
+        // census's per-slab scratch, sized on the first step after a restore and written before
+        // it is read on every step (CloseContactStep); and the digest writer, a recording.
         private static readonly HashSet<string> DynamicsNotCompared = new HashSet<string>(StringComparer.Ordinal)
         {
             "_creatures", "_grid", "_neighbourScratch", "_overlaps",
+            "_censusBad", "_censusCounts", "_censusEvents",
             "<OverlapPairsThisStep>k__BackingField", "<OverlapPairsJointedThisStep>k__BackingField",
             "<OverlapPairsHeldThisStep>k__BackingField", "<OverlapBodiesThisStep>k__BackingField",
             "<BedOrGlassBodiesThisStep>k__BackingField",
