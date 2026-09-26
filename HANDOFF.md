@@ -53,15 +53,26 @@ The launch is in the queue below.
 
 ### The card, by day
 
-The probe of 2026-09-26 morning timed each size class's kernel on round
-48 seed 1's crowd of 8,385 bodies (`logbook/specs/gpu-probe-2026-09-26.txt`). The classes hold bodies of
-up to 2, 4, 8 and 16 links and are launched one after another. They cost 0.83, 1.46, 2.61 and
-2.08 ms a step, and the contact grid 1.57 ms. A class costs about its slowest thread's latency and not
-its body count. The 7,653 two-link bodies take 0.8 ms, and the 17 sixteen-link bodies 2.1 ms. The two
-largest classes are 134 bodies and 55% of the step. The next step is the classes on concurrent
-streams, item 4 of the Fable review of 2026-09-25. The probe reads `EVOSIM_GPU_PROBE`
-from the process environment directly, which bites. The script's `-Env` passes settings
-as arguments and does not reach it, and the binding warns that it ignores the variable. Set it in the launching shell's environment (`scratch/r49-probe/probe2.ps1`).
+The probe of 2026-09-26 morning timed each size class's kernel on round 48 seed 1's crowd of
+8,385 bodies (`logbook/specs/gpu-probe-2026-09-26.txt`). The classes hold bodies of up to 2, 4, 8
+and 16 links. Launched one after another they cost 0.83, 1.46, 2.61 and 2.08 ms a step, and the
+contact grid 1.57 ms. A class costs about its slowest thread's latency and not its body count, so
+the 17 sixteen-link bodies took longer than the 7,653 two-link ones.
+
+Two changes on the `gpu-probe` branch followed the same day. Each was checked on the card
+against the run before it, round 48 seed 1 resumed at 27,500 s for 300 s. Both were identical
+over all 300 digest steps and equal on the stats. The first runs the classes on a stream each
+(`EVOSIM_GPU_CONCURRENT`, `13af2c3`), so the step waits for the slowest class and not for the
+sum. The second is the grid's prefix sum. It ran on one group of 1,024 threads over 524,288
+buckets and cost 1.25 of the grid's 1.64 ms. Three passes over tiles now do it in 0.02 ms
+(`d37421f`). The card's physics went from 8.98 to 4.76 to 3.50 ms a step. The run went from 0.94x
+to 1.55x to 1.93x real time at 8,414 bodies. What is left of a step is the eight-link class at
+2.6 ms, which hides the other classes, then the grid at 0.37 ms. The CPU's world step is 29% of
+the wall.
+
+The probe reads `EVOSIM_GPU_PROBE` from the process environment directly, which bites. The
+script's `-Env` passes settings as arguments and does not reach it, and the binding warns that it
+ignores the variable. Set it in the launching shell's environment (`scratch/r49-probe/probe2.ps1`).
 
 ### Storage, as the owner ruled it on 2026-09-26
 
@@ -110,12 +121,15 @@ round 49's S2 read them as stomach children.
   the feeding changes (the mouth fed from a neighbourhood, D124's note). It is a
   world rule and a new realisation of every seed. It also takes income from every jointed plant,
   which round 42's reading found already pays for its joint with nothing.
-- Keep it and separate the reading. An instrument that names a body's lit link beside its
-  stomach lets every read split the two, whatever the rule. That is agent work and needs no
-  ruling; I will build it either way.
+- Keep it and separate the reading. That needs no build and no ruling. A body with a stomach
+  and no leaf gets every watt of its light from a link. The feeding log carries each body's
+  light and food, so `scripts/reads/linklight.py` splits the two for every such body. Over round
+  49 (`logbook/specs/r49-read/linklight.txt`) links gave these bodies 14 to 65% of their income,
+  by seed and window. Lines 48, 29 and 5854 took 31, 24 and 30% of theirs from light, and in seed
+  3 at least four rows in five earned some.
 
 My recommendation is to keep the half through round 50, which is built on it, and to decide
-between keeping it and 0 when round 50 is read. By then the instrument will say how much of each
+between keeping it and 0 when round 50 is read. The same read will then say how much of each
 eater line's income is the link's light. The question to answer is whether links keep catching light
 at half a leaf's rate after round 50, or a later round sets it to 0.
 
@@ -163,14 +177,15 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    never from a shell loop: `python scripts/watch-round.py r50 --seeds 1,2,3 --read
    scripts/reads/r50-read.py`, run from the main tree. The full read at the end adds
    `--windows-root` (V1) and `--v2-log scratch/logs/r50-v2.log` (V2).
-2. The card is worked by day, with nothing else on the machine: the size classes on concurrent
-   streams, from `scratch/wt-probe` (`ccebf3c`, the probe). Measure with the probe on round 48
-   seed 1's crowd at 27,500 s, as `logbook/specs/gpu-probe-2026-09-26.txt` did. Identity on the
-   card is claimed at two group sizes (CLAUDE.md).
-3. An instrument for a lit link lets the first decision above be read. It puts a flag on the
-   birth row for a body whose link catches light. The feeding log's read then splits each eater
-   line's light income by part type. Lands between rounds, since a new lineage field is
-   recorded by every run after it.
+2. The card is worked by day, with nothing else on the machine, from `scratch/wt-probe`. The
+   concurrent streams and the tiled scan are in (1.93x at 8,414 bodies, above). The eight-link
+   class at 2.6 ms is the step now. The next measure is where inside that kernel the time goes,
+   then the grid's mean at 0.28 ms. Measure with the probe on round 48 seed 1's crowd at
+   27,500 s, as `logbook/specs/gpu-probe-2026-09-26.txt` did. Identity on the card is claimed at
+   two group sizes (CLAUDE.md).
+3. The lit link is read and not built: `scripts/reads/linklight.py <arm>` splits a stomach
+   body's income into its links' light and its food, by window and by line (the first decision
+   above). It runs on round 50 when that round is read.
 4. The storage reductions that lose nothing come next. A checkpoint that points at `genomes.jsonl.gz`
    instead of copying every living genome (a new `Checkpoint.Version`, with 6 still read), and
    the feeding log gzipped. Then a measured test of a better codec for the moving state.
