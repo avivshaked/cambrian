@@ -818,6 +818,11 @@ namespace Evosim.Farm
             // The reserve a gestating body started the step with (2026-09-24), filled at the top
             // of World.Step before Gestate reads it.
             "ReserveAtStepStart",
+
+            // The contact census's per-step flag (round 49's V2, 2026-09-26): the body's own
+            // contact pass clears it and sets it, and CloseContactStep reads it after the parallel
+            // region, so a restored body's false is the stepped body's last-step true and no fault.
+            "<TouchedBedOrGlass>k__BackingField",
         };
 
         // The same, for a member whose name is too common to skip everywhere, qualified by the

@@ -580,7 +580,7 @@ namespace Evosim.Dynamics.Placement
 
                 // The round 48 founding ruling: at the richest cell of the founder's food in the
                 // column just accepted, one draw inside the cell, held under the surface by the
-                // body's radius and above a flat bed as the drawn depth is. Null (the rule off, or
+                // body's radius and above the bed under the candidate. Null (the rule off, or
                 // a body that eats nothing, or an empty column) keeps the drawn depth and takes no
                 // draw, so a world without the rule is the recorded stream.
                 float baseY = y;
@@ -596,7 +596,15 @@ namespace Evosim.Dynamics.Placement
                         float at = bottom + (top - bottom) * _rng.NextFloat();
 
                         if (at > -radius) at = -radius;
-                        baseY = UnityFloatMath.Max(at, LowestPlacement(radius));
+
+                        // The bed under the candidate, not the bed at the tank's centre, which is
+                        // what LowestPlacement(radius) reads. A flat floor is the same everywhere,
+                        // so the two agree there to the bit; over round 48's tilted bed the centre's
+                        // lifted every founder whose food was richest below it to just above the
+                        // centre's bed height (round 49's W1 misses: leaves over beds to -77 m set
+                        // at -44.4 m). The drawn depth above keeps the centre's clamp, which a
+                        // draw of at most FounderDepthSpread never reaches.
+                        baseY = UnityFloatMath.Max(at, LowestPlacement(candidate.X, candidate.Z, radius));
                         atFood = true;
 
                         candidate = new Float3(candidate.X, baseY, candidate.Z);
