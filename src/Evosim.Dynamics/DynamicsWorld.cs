@@ -105,6 +105,7 @@ namespace Evosim.Dynamics
             long t0 = Stopwatch.GetTimestamp();
 
             // D114: the links' spheres rather than the bodies' when the world asks for it.
+            _grid.Threads = Threads;
             if (Config.ContactPerPart) _grid.BuildLinks(_creatures, ContactCellOverrideMetres);
             else _grid.Build(_creatures, ContactCellOverrideMetres);
 
@@ -132,10 +133,15 @@ namespace Evosim.Dynamics
 
             long t3 = Stopwatch.GetTimestamp();
 
-            // Serial, between steps: what every body will read of every other on the next one.
-            // Committing inside the parallel phase is what made the digest depend on the thread
-            // count — see Creature's contact fields.
-            for (int i = 0; i < count; i++) _creatures[i].CommitContactSphere();
+            // Between steps, after the parallel phase has ended: what every body will read of
+            // every other on the next one. Committing inside that phase is what made the digest
+            // depend on the thread count (see Creature's contact fields); after it, each body
+            // copies only its own arrays and nothing reads them until the next grid, so the copy
+            // is split across threads.
+            Slabs.Run(count, Slabs.CountFor(count, Threads), (s, from, to) =>
+            {
+                for (int i = from; i < to; i++) _creatures[i].CommitContactSphere();
+            });
 
             long t4 = Stopwatch.GetTimestamp();
 

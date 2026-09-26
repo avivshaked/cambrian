@@ -94,6 +94,12 @@ namespace Evosim.Dynamics
     {
         private readonly List<OverlapPair> _overlaps = new List<OverlapPair>();
 
+        // The census's per-slab state (CloseContactStep): the first break in the list's order
+        // each slab found, its five counts, and its events in body order.
+        private int[] _censusBad = Array.Empty<int>();
+        private long[] _censusCounts = Array.Empty<long>();
+        private List<OverlapPair>[] _censusEvents = Array.Empty<List<OverlapPair>>();
+
         /// <summary>Overlapping creature pairs, summed over every step so far.</summary>
         public long OverlapPairs { get; private set; }
 
@@ -342,9 +348,38 @@ namespace Evosim.Dynamics
             bool events = Config.ContactEvents;
             bool perPart = Config.ContactPerPart;
 
-            for (int i = 1; i < count; i++)
+            // Across threads over fixed slabs of the list (Slabs): each slab writes only its own
+            // counts and its own events, and commits each of its bodies' lists after reading it,
+            // which is safe because a body's held list is read by that body alone. The counts are
+            // integers, summed over the slabs; the events are joined slab by slab, which is the
+            // list's order, so the census and its events are the same at any thread count.
+            int slabs = Slabs.CountFor(count, Threads);
+            if (_censusBad.Length < slabs)
             {
-                if (_creatures[i - 1].Id < _creatures[i].Id) continue;
+                _censusBad = new int[slabs];
+                _censusCounts = new long[5 * slabs];
+                var lists = new List<OverlapPair>[slabs];
+                for (int s = 0; s < slabs; s++)
+                    lists[s] = s < _censusEvents.Length ? _censusEvents[s] : new List<OverlapPair>();
+                _censusEvents = lists;
+            }
+
+            Slabs.Run(count, slabs, (s, from, to) =>
+            {
+                int bad = -1;
+                for (int i = from < 1 ? 1 : from; i < to; i++)
+                {
+                    if (_creatures[i - 1].Id < _creatures[i].Id) continue;
+                    bad = i;
+                    break;
+                }
+                _censusBad[s] = bad;
+            });
+
+            for (int s = 0; s < slabs; s++)
+            {
+                int i = _censusBad[s];
+                if (i < 0) continue;
 
                 throw new InvalidOperationException(
                     FormattableString.Invariant(
@@ -357,44 +392,69 @@ namespace Evosim.Dynamics
                     "Remove.");
             }
 
-            for (int i = 0; i < count; i++)
+            Slabs.Run(count, slabs, (s, from, to) =>
             {
-                Creature a = _creatures[i];
-                if (!a.Alive) continue;
+                long pairs = 0, jointedPairs = 0, heldPairs = 0, bodies = 0, bedOrGlass = 0;
+                List<OverlapPair> mine = _censusEvents[s];
+                mine.Clear();
 
-                if (a.TouchedBedOrGlass) BedOrGlassBodiesThisStep++;
-
-                bool touching = false;
-
-                for (int k = 0; k < a.OverlapCount; k++)
+                for (int i = from; i < to; i++)
                 {
-                    long id = a.OverlapId(k);
+                    Creature a = _creatures[i];
 
-                    Creature b = ById(id);
-                    if (b == null || !b.Alive) continue;
-
-                    touching = true;
-                    if (id <= a.Id) continue;   // counted from the lower side
-
-                    bool jointed = a.Jointed || b.Jointed;
-                    bool held = a.HeldWith(id);
-
-                    OverlapPairsThisStep++;
-                    if (jointed) OverlapPairsJointedThisStep++;
-                    if (held) OverlapPairsHeldThisStep++;
-
-                    if (events)
+                    if (a.Alive)
                     {
-                        _overlaps.Add(perPart
-                            ? new OverlapPair(a.Id, id, jointed, held, a.OverlapPart(k), a.OverlapOtherPart(k))
-                            : new OverlapPair(a.Id, id, jointed, held));
+                        if (a.TouchedBedOrGlass) bedOrGlass++;
+
+                        bool touching = false;
+
+                        for (int k = 0; k < a.OverlapCount; k++)
+                        {
+                            long id = a.OverlapId(k);
+
+                            Creature b = ById(id);
+                            if (b == null || !b.Alive) continue;
+
+                            touching = true;
+                            if (id <= a.Id) continue;   // counted from the lower side
+
+                            bool jointed = a.Jointed || b.Jointed;
+                            bool held = a.HeldWith(id);
+
+                            pairs++;
+                            if (jointed) jointedPairs++;
+                            if (held) heldPairs++;
+
+                            if (events)
+                            {
+                                mine.Add(perPart
+                                    ? new OverlapPair(a.Id, id, jointed, held, a.OverlapPart(k), a.OverlapOtherPart(k))
+                                    : new OverlapPair(a.Id, id, jointed, held));
+                            }
+                        }
+
+                        if (touching) bodies++;
                     }
+
+                    a.CommitOverlaps();
                 }
 
-                if (touching) OverlapBodiesThisStep++;
-            }
+                _censusCounts[5 * s] = pairs;
+                _censusCounts[5 * s + 1] = jointedPairs;
+                _censusCounts[5 * s + 2] = heldPairs;
+                _censusCounts[5 * s + 3] = bodies;
+                _censusCounts[5 * s + 4] = bedOrGlass;
+            });
 
-            for (int i = 0; i < count; i++) _creatures[i].CommitOverlaps();
+            for (int s = 0; s < slabs; s++)
+            {
+                OverlapPairsThisStep += _censusCounts[5 * s];
+                OverlapPairsJointedThisStep += _censusCounts[5 * s + 1];
+                OverlapPairsHeldThisStep += _censusCounts[5 * s + 2];
+                OverlapBodiesThisStep += _censusCounts[5 * s + 3];
+                BedOrGlassBodiesThisStep += _censusCounts[5 * s + 4];
+                if (events) _overlaps.AddRange(_censusEvents[s]);
+            }
 
             OverlapPairs += OverlapPairsThisStep;
             OverlapPairsJointed += OverlapPairsJointedThisStep;
