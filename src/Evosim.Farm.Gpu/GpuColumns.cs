@@ -25,8 +25,11 @@ namespace Evosim.Farm.Gpu
     /// <remarks>
     /// The host copy is the mirror's staging area and is kept equal to the card's after every
     /// download, so an upload of the whole column carries every slot the host did not touch
-    /// back as it was. Growing the capacity re-lays every row; growing the width appends rows,
-    /// which leaves every existing index where it was.
+    /// back as it was. The one exception is a column moved by its first rows only
+    /// (<see cref="UpRows"/>, <see cref="DownRows"/>): the overlap lists, whose rows past every
+    /// body's count are read nowhere, so the two copies may differ there. Growing the capacity
+    /// re-lays every row; growing the width appends rows, which leaves every existing index
+    /// where it was.
     /// </remarks>
     internal sealed class Col<T> : IColumn where T : unmanaged
     {
@@ -91,6 +94,20 @@ namespace Evosim.Farm.Gpu
         public void Up() => Dev.View.CopyFromCPU(Host);
 
         public void Down() => Dev.View.CopyToCPU(Host);
+
+        /// <summary>The first <paramref name="rows"/> rows up, <c>rows · Cap</c> elements.</summary>
+        public void UpRows(int rows)
+        {
+            long n = Math.Min(Host.Length, (long)rows * Cap);
+            if (n > 0) Dev.View.SubView(0, n).CopyFromCPU(ref Host[0], n);
+        }
+
+        /// <summary>The first <paramref name="rows"/> rows down, <c>rows · Cap</c> elements.</summary>
+        public void DownRows(int rows)
+        {
+            long n = Math.Min(Host.Length, (long)rows * Cap);
+            if (n > 0) Dev.View.SubView(0, n).CopyToCPU(ref Host[0], n);
+        }
 
         public void Dispose() => Dev?.Dispose();
     }

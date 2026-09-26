@@ -182,6 +182,17 @@ namespace __NS__
             foreach (IColumn c in _down) c.Down();
         }
 
+        /// <summary>The probe's count: what Upload would send now, and what Download brings back.</summary>
+        public long UploadBytes
+        {
+            get { long b = 0; foreach (IColumn c in Dirty ? _all : _block) b += c.Bytes; return b; }
+        }
+
+        public long DownloadBytes
+        {
+            get { long b = 0; foreach (IColumn c in _down) b += c.Bytes; return b; }
+        }
+
         public STopo Topo => new STopo
         {
             Links = Links.View, Dof = Dof.View, SigLen = SigLen.View, Mask = Mask.View, GSlot = GSlot.View,
@@ -278,6 +289,35 @@ namespace __NS__
 
         private readonly Col<int> _gLinks, _gId, _gRank, _gAlive, _gJointed;
         private readonly Col<int> _nOver, _ovSlot, _ovId, _ovPart, _ovHeld, _nHeld, _heldId, _bedGlass;
+
+        // The overlap lists move by their first rows only. Every read of them, on the card
+        // (NoteOverlapPart, the census, CommitOverlaps) and on the host (PackBlock, the mirror,
+        // the events), stops at a body's count, so the rows past the largest NOver or NHeld
+        // are never read: 64 rows of five lists were 25 MB each way a block at 8,400 bodies.
+        private readonly HashSet<IColumn> _lists;
+
+        private int ListRows()
+        {
+            int most = 0;
+            for (int g = 0; g < _slots.Used; g++)
+            {
+                int n = Math.Max(_nOver.Host[g], _nHeld.Host[g]);
+                if (n > most) most = n;
+            }
+            return Math.Min(most, _o.OverlapCap);
+        }
+
+        private void ListsUp(int rows)
+        {
+            _ovSlot.UpRows(rows); _ovId.UpRows(rows); _ovPart.UpRows(2 * rows);
+            _ovHeld.UpRows(rows); _heldId.UpRows(rows);
+        }
+
+        private void ListsDown(int rows)
+        {
+            _ovSlot.DownRows(rows); _ovId.DownRows(rows); _ovPart.DownRows(2 * rows);
+            _ovHeld.DownRows(rows); _heldId.DownRows(rows);
+        }
         private readonly Col<Real> _gTotalMass, _linkMass;
         private readonly Col<int> _rankToSlot;
         private readonly Col<long> _census, _overflow;
@@ -352,6 +392,7 @@ namespace __NS__
             _nOver = G<int>(_gBody, 1, true); _ovSlot = G<int>(_gBody, oc, true, -1); _ovId = G<int>(_gBody, oc, true);
             _ovPart = G<int>(_gBody, 2 * oc, true, -1); _ovHeld = G<int>(_gBody, oc, true);
             _nHeld = G<int>(_gBody, 1, true); _heldId = G<int>(_gBody, oc, true); _bedGlass = G<int>(_gBody, 1, true);
+            _lists = new HashSet<IColumn> { _ovSlot, _ovId, _ovPart, _ovHeld, _heldId };
 
             _rankToSlot = new Col<int>(_acc, 1, 16, -1);
             _census = new Col<long>(_acc, 1, WholeStep.CensusFields * GpuBackend.BlockCeiling);
@@ -648,6 +689,19 @@ namespace __NS__
             pt = pn;
         }
         private long _probeGrid, _probeTail, _probeSteps, _probeWater, _probeContact;
+
+        // The host's side of a block: the slots, the packs of new and resized bodies, every
+        // body's block pack, the world's snow and instants, the uploads; then the downloads and
+        // the mirror, which land one block behind the print.
+        private readonly long[] _probeHost = new long[7];
+        private readonly long[] _probeBytes = new long[7];
+
+        private void HostMark(int k, ref long th)
+        {
+            long now = Stopwatch.GetTimestamp();
+            _probeHost[k] += now - th;
+            th = now;
+        }
         private int _probeBlocks;
 
         private void PrintProbe(DynamicsWorld world, IReadOnlyList<Creature> list)
@@ -713,6 +767,21 @@ namespace __NS__
             PrintPhases();
 #endif
 
+            double fb = 1000.0 / Stopwatch.Frequency / 20;
+            Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "gpu-probe host, ms a block: slots {0:0.00}, packs {1:0.00}, block packs {2:0.00}, snow and instants {3:0.00}, " +
+                "up {4:0.00}; down {5:0.00}, mirror {6:0.00}",
+                _probeHost[0] * fb, _probeHost[1] * fb, _probeHost[2] * fb, _probeHost[3] * fb, _probeHost[4] * fb,
+                _probeHost[5] * fb, _probeHost[6] * fb));
+            for (int k = 0; k < _probeHost.Length; k++) _probeHost[k] = 0;
+            double mb = 1.0 / (1 << 20) / 20;
+            Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "gpu-probe bytes, MB a block: up body columns {0:0.0}, link columns {1:0.0}, spheres {2:0.0}, classes {3:0.0}, " +
+                "snow and instants {4:0.0}; down body and link columns {5:0.0}, classes {6:0.0}; slots {7}",
+                _probeBytes[0] * mb, _probeBytes[1] * mb, _probeBytes[2] * mb, _probeBytes[3] * mb, _probeBytes[4] * mb,
+                _probeBytes[5] * mb, _probeBytes[6] * mb, _gcap));
+            for (int k = 0; k < _probeBytes.Length; k++) _probeBytes[k] = 0;
+
             _probeGrid = _probeTail = _probeSteps = _probeWater = _probeContact = 0;
             for (int k = 0; k < 4; k++) _probeClass[k] = 0;
             for (int k = 0; k < 5; k++) _probeGridPart[k] = 0;
@@ -722,6 +791,7 @@ namespace __NS__
 
         {
             long t0 = Stopwatch.GetTimestamp();
+            long th = t0;
             IReadOnlyList<Creature> list = world.Creatures;
             _list = list;
             int threads = Math.Max(1, world.Threads);
@@ -745,6 +815,8 @@ namespace __NS__
 
             if (_census.Cap < WholeStep.CensusFields * steps) _census.Resize(WholeStep.CensusFields * steps);
             if (_inst.Cap < GpuWorld.InstStride * steps) _inst.Resize(GpuWorld.InstStride * steps);
+
+            if (ProbeOn) HostMark(0, ref th);
 
             // ---- 2. freed slots, then new and resized bodies
             foreach ((int g, int k, int local) in _slots.Freed)
@@ -773,6 +845,8 @@ namespace __NS__
 
             Parallel.For(0, _slots.Packs.Count, parallel, p => Pack(_slots.Packs[p]));
 
+            if (ProbeOn) HostMark(1, ref th);
+
             // ---- 3. what every body carries into every block, and the roster
             Parallel.For(0, _slots.Used, parallel, g =>
             {
@@ -780,6 +854,8 @@ namespace __NS__
             });
 
             for (int r = 0; r < list.Count; r++) _rankToSlot.Host[r] = _slots.RankToSlot[r];
+
+            if (ProbeOn) HostMark(2, ref th);
 
             // ---- 4. the world: the snow as it stands, the instants of this block
             if (_w.FieldVersion != _fieldVersion)
@@ -816,8 +892,27 @@ namespace __NS__
 
             Array.Clear(_census.Host, 0, _census.Host.Length);
 
+            if (ProbeOn) HostMark(3, ref th);
+
+            if (ProbeOn)
+            {
+                int probeRows = ListRows();
+                foreach (IColumn c in _gBody) _probeBytes[0] += _lists.Contains(c) ? 0 : c.Bytes;
+                _probeBytes[0] += 6L * probeRows * _gcap * sizeof(int);
+                foreach (IColumn c in _gLink) _probeBytes[1] += c.Bytes;
+                foreach (Col<Real> c in _sph[_committed]) _probeBytes[2] += c.Bytes;
+                for (int k = 0; k < _classes.Length; k++) _probeBytes[3] += _classes[k].UploadBytes;
+                _probeBytes[4] += _stock.Bytes + _inst.Bytes;
+                foreach (IColumn c in _gDown) _probeBytes[5] += _lists.Contains(c) ? 0 : c.Bytes;
+                _probeBytes[5] += 6L * probeRows * _gcap * sizeof(int);
+                for (int k = 0; k < _classes.Length; k++)
+                    if (_slots.Classes[k].Used > 0) _probeBytes[6] += _classes[k].DownloadBytes;
+            }
+
             // ---- 5. up
-            foreach (IColumn c in _gBody) c.Up();
+            int listRows = ListRows();
+            foreach (IColumn c in _gBody) if (!_lists.Contains(c)) c.Up();
+            ListsUp(listRows);
             foreach (IColumn c in _gLink) c.Up();
             _rankToSlot.Up();
             _census.Up();
@@ -827,6 +922,8 @@ namespace __NS__
             for (int k = 0; k < _classes.Length; k++) _classes[k].Upload();
             _stock.Up();
             _inst.Up();
+
+            if (ProbeOn) { _acc.Synchronize(); HostMark(4, ref th); }
 
             // ---- 6. the grid's room
             int gUsed = _slots.Used;
@@ -1034,7 +1131,8 @@ namespace __NS__
                 if (_slots.Classes[k].Used > 0) _classes[k].Download();
             }
 
-            foreach (IColumn c in _gDown) c.Down();
+            foreach (IColumn c in _gDown) if (!_lists.Contains(c)) c.Down();
+            ListsDown(ListRows());
             foreach (Col<Real> c in _sph[_committed]) c.Down();
             _active[_committed].Down();
             _census.Down();
@@ -1095,6 +1193,8 @@ namespace __NS__
 
             // The five phases, as the CPU names them: the pack and the uploads stand for the grid,
             // the kernels for the bodies, the download for the commit, the rest for the tail.
+            if (ProbeOn) { _probeHost[5] += t3 - t2; _probeHost[6] += t4 - t3; }
+
             world.BackendPhaseTicks(0, t1 - t0);
             world.BackendPhaseTicks(2, t2 - t1);
             world.BackendPhaseTicks(3, t3 - t2);
