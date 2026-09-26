@@ -318,7 +318,9 @@ namespace Evosim.Dynamics.Tests
         [Fact]
         public void AFounderAtItsFoodIsHeldAboveTheBedUnderItNotTheCentres()
         {
-            const float radius = 20f;
+            // A 30 m tilt across 60 m, a slope of 0.5 under BedShape's tan 30 degrees, with the
+            // deep rim 15 m under the centre's bed.
+            const float radius = 30f;
             var bed = new BedShape(radius, DepthMetres, 0.5f, 30f, 0f, Rng.SeedFor(3UL, 99UL));
             var floor = new PortFloor(DepthMetres, bed);
             Assert.True(floor.HasRelief);

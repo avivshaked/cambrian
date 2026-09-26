@@ -1586,7 +1586,7 @@ actually verifying it.
   instead: one heavy job at a time at about a third of the machine, with Intel's power limits
   set in the old BIOS. HANDOFF carries the current ruling, and the owner's Desktop carries the
   flash steps. The revision is `Update Revision` under
-  `HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor `, little-endian (`0E 01 00 00` is
+  `HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor\0`, little-endian (`0E 01 00 00` is
   0x10E); throttling is `\Processor Information(_Total)\Performance Limit Flags` (0 is none).
   The ASUS WMI classes in `root\wmi` (`ASUSManagement`, `AsusAtkWmi_WMNB`) write the SMBus,
   boot order, passwords and fan curves and are never called.
@@ -1641,6 +1641,15 @@ actually verifying it.
   this tree, untested here, is `Edit(//d/Projects/experiments/evolution-simulator/**)` (and the
   same for `Write`) under `permissions.allow` in the owner's `~/.claude/settings.json`; the
   agent never edits a permission setting, whoever asks.
+- **The farm hashes the source above its working directory, not the source it was built from.**
+  `Manifest` finds the repository by walking up from the process's working directory (or takes
+  `EVOSIM_REPO_ROOT`) and hashes `src/` there. A worktree and the main tree differ in carriage
+  returns, as `simHash` does, so round 49's film windows, run from the main tree on the round's
+  own exe, named all three hashes as differing from the run's, and V1 asks for none (2026-09-26;
+  the windows read FAITHFUL on every row all the same). Run a window, a resume or a check from
+  the checkout the run was launched from. And **stopping a background Bash task leaves its script
+  running**: the task's handle went and both of its `bash.exe` went on to launch the next farm
+  process. List them by command line and stop them by id.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
@@ -1713,6 +1722,17 @@ actually verifying it.
   and never two farm runs beside tests; a subagent's work takes at most half the machine's
   logical processors while the owner is at it; and a timing read (a wall split, a pace
   number, a kernel time) is taken with nothing else running, or it is re-taken.
+- **A round's checkpoints are thinned only after the owner approves its video as final**
+  (the owner, 2026-09-26). A farm round writes a checkpoint every 100 s, 3.6 to 5.1 GB a seed
+  at round 49's crowd, three quarters of it checkpoints. They stay whole while the round is read
+  and filmed. Only when the owner has said the round's video is final are they thinned to one
+  every 1,000 s, plus the checkpoint at or before each scene's start (the owner's addition, the
+  same morning; about 30 a video) and any an entry cites. The keep list is built from the
+  video's own scene table, and the agent shows it and the space it frees and asks before each
+  thinning, since a deletion cannot be undone. Two reductions lose nothing and need no ruling:
+  a checkpoint that points at `genomes.jsonl.gz` instead of copying every living genome (a
+  quarter of each file), and the feeding log (`absorptive.jsonl`) compressed. Round 49's
+  measurements are in HANDOFF.
 - **Owner-reserved decisions:** world rules (what the ecology *is*), the goal rule and its
   amendments, scope and round design forks, pushes of anything that is not code/prose, and
   anything irreversible or outward-facing. Instruments, diagnostics, replays of scored

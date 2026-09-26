@@ -68,14 +68,62 @@ Every token 0121 lists is in its header, with record format 2 and a checkpoint e
   the reader takes the main tree's `runs/` (`d7d36d7`). The full read at the round's end adds
   `--windows-root` (V1) and `--v2-log scratch/logs/r49-v2.log` (V2).
 
-**After seed 3 (the owner's ruling puts the three seeds first).** These run with the card alone
-on the machine.
-1. The card's probe, `scratch/wt-probe` (`gpu-probe`, `ccebf3c`): regenerate the kernels
-   (`EVOSIM_GPU_REGENERATE=1`, `GpuKernelSourceTests`), build, and run each class's launch time
-   and the largest link's cell count under per-part contact.
-2. The CPU's serial phases, `scratch/wt-speed` (`speed-serial`, `a61cb07`): build, the digest at
-   1 and 16 threads, the suites, and the pace on round 48 seed 1's 27,500 s checkpoint.
-3. Re-record the theatre's four checkpoints (ckA, ckB, ckC, ckUi) on this build.
+**W1 fails on a build fault (found 2026-09-25, evening).** The founder depth rule clamps a
+founder to the bed at the tank's centre, which a flat floor makes the same everywhere
+(`SharedVolume.TryReserveFounder`, `LowestPlacement(radius)`). The tilted bed's centre is at
+-45.02 m. So every founder whose food is richest deeper than that is lifted to just above it. At
+least 31 of seed 1's trickle leaves, over beds as deep as -77 m, were set at -44.4 to -44.7 m. No
+snow eater was lifted, so the pool stomachs and the cap's clauses are untouched. Round 48 ran the
+same code. The round goes on as pre-registered, since a stop is the owner's call. The fix is on
+`founder-depth-bed` (`scratch/wt-founderbed`, `b873cb5`). The clamp reads the bed under the
+candidate, which is bit-identical on a flat floor, and a tilted-bed test should fail on the old
+tree. It is unbuilt and untested. The reads that found it are in `scripts/reads/r49-entry/`.
+
+**Round 50: a leaf founder is placed by light and matter together (the owner, 2026-09-26
+morning, option (a)).** Seed 1's and 2's trickle leaves were set at a median -44 m, 97% below
+20 m, where the light is under a thousandth of the surface's (attenuation depth 6 m). They died
+at a median 81 and 99 s, and 1 of 855 bred. The floor's leaves, set at -4 to -8 m, lived about
+20 minutes and 25 of 53 bred (`scripts/reads/r49-entry/leafdepth.py` on
+`founder-depth-bed`). The depth rule placed a leaf by its dissolved matter alone, which late in a
+run is richest at the bed. The ruling: a leaf founder's depth is the cell where its own income,
+light and matter together, is highest. The rejected options were leaves at the drawn 0 to 12 m
+as before round 48, and no change. It is a new rule, so round 50 is a new realisation of every
+seed; it is built after the clamp fix and goes into DECISIONS when it is built.
+
+**Storage (the owner, 2026-09-26 morning).** Round 49 seed 2's folder is 5.1 GB: checkpoints
+3.9 GB (300 at 17 MB), poses 0.63 GB, `absorptive.jsonl` 0.26 GB uncompressed, the rest 0.4 GB.
+A checkpoint is 4.2 MB of genome text, which `genomes.jsonl.gz` already holds, and 12.4 MB of
+moving state. Compressed against the checkpoint 100 s before it, a checkpoint is still 85% of
+its size, so its state really does change (`scripts/reads/r49-entry/ckdelta.py` and `ckprofile.py` on `founder-depth-bed`). The
+ruling: thin to one checkpoint every 1,000 s plus the one at or before each scene's start, only
+after the owner approves the round's video as final. The keep list comes from the video's scene
+table, and the agent asks before each thinning (CLAUDE.md). A filmed seed then holds about 60
+checkpoints, about 1.5 to 2 GB in all. Queued, needing no ruling: genomes by
+reference in a checkpoint (a new checkpoint version, with version 6 still read), the feeding
+log gzipped, and a measured test of a better codec for the moving state.
+
+**After seed 3: one detached chain (2026-09-26 morning).** When seed 3 ends,
+`scratch/r49-final/after-s3.sh` (a background task of the session) records one film window a
+seed on the round's own exe for V1 (`scratch/r49-final/windows/`, 15,000 to 15,100 s), runs the
+full read (`scratch/r49-final/read.txt` and `read.tsv`) and the clamp and leaf reads. Then
+`scratch/r49-chain/chain.ps1` (pid 41084, detached; `chain.log` and one log a step beside it)
+runs, one at a time:
+0. The entry's reads (`jointclades`, `stomachkids`, `eaterlines`, `eaterfeed` on seed 2's line
+   48, `column`), from `scripts/reads/r49-entry/` on `founder-depth-bed`.
+1. `scratch/r49-fixes/fb.ps1`: the bed test on the old placer (it should fail) and on the fix
+   (it should pass), the Dynamics and Farm suites, then V2's member check again on the fixed
+   checker. `founder-depth-bed` (`scratch/wt-founderbed`) carries the clamp fix (`b873cb5`) and
+   `TouchedBedOrGlass` on `CheckpointFidelity`'s skip list (`ff30a97`, V2's one failing member).
+   It merges into main when this passes.
+2. `scratch/r49-speed/accept.ps1`: `speed-serial` (`scratch/wt-speed`, main merged in) built, its
+   suites, then identity with round 49's exe from seed 2's 29,000 s checkpoint (the digest at 16
+   and 1 threads, the stats), and the pace at about 10,000 bodies.
+3. `scratch/r49-probe/probe.ps1`: the card's probe, kernels regenerated, 200 s of round 48 seed
+   1's crowd on the card with `EVOSIM_GPU_PROBE=1`.
+Then, by hand: round 50's build (`leaf-income-depth`, `scratch/wt-leafincome`: D125's rule,
+four tests, `rounds/env-r50.ps1`, unbuilt; the draft decision is `scratch/r50-build/d125-draft.md`),
+its fixtures re-recorded (the r42 config as `pfix13`, the crowd as `r50fix-s4`), the suites and a
+round 50 smoke. The theatre's four checkpoints are re-recorded after that build.
 
 **Round 48's story film is delivered.** It is
 `scratch/owner/r48-story-full/r48-story-full-v2.mp4`, 578.9 s, 20 scenes and the title, every
