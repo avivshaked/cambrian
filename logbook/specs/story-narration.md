@@ -10,10 +10,16 @@ author as it stands. Part 3 is this repository's side, which is not built yet.*
 ## Part 1: where narration sits in the flow
 
 The flow is `.claude/skills/story-film/SKILL.md`; its stages are in
-[`story-film.md`](story-film.md). Narration comes after the script is edited and before anything is
-filmed:
+[`story-film.md`](story-film.md). Narration comes after the owner approves the script and before
+anything is filmed. The owner ruled on 2026-09-26 that nothing is narrated before the script is
+approved; until then the review came after the narration, script and audio together.
 
-    write → script → NARRATE → owner review (script and audio together) → check → film → assemble
+    write → script → owner review of the script → NARRATE → check → film → assemble
+
+The review approves the words and the scenes, not their timing, which the narration then sets
+(`story-flow.py` hashes `story.json` without its lengths and caption times). Where the owner hears
+the voice, to keep a take by ear, is open: a listening check between the narration and filming, or
+the timeline review.
 
 It comes before filming because the narration sets each scene's length. Each scene's paragraphs are
 spoken once, their lengths are measured, a fixed padding is added between them, and the sum is the
@@ -134,7 +140,7 @@ or seconds. The flow's splitter keeps every paragraph under it.
 
 Add an option `takes: 1 to 3` to `submit_job`. It renders attempts 0 to n−1 of every listed segment in
 one model load, QA's each, selects the first that passes and lists the others with their cues and
-lengths. The owner picks a delivery by ear at the review. `retake_segment` covers one segment at a
+lengths. The owner picks a delivery by ear when the narration is heard, after the script review. `retake_segment` covers one segment at a
 time; a batch saves the model loads.
 
 ### R10 (SHOULD): the neighbouring text as context (§3.3)
@@ -160,9 +166,10 @@ into this repository (Q9).
 ### R13: withdrawn (2026-09-26)
 
 R13 asked that the service's human approval of a cut be visible, so that the film would be timed
-from the approved cut. Approving a narration for a film is the owner's review in this flow
-(`story-flow.py approve script`), which records the cut and the takes it approved. The service
-may keep approvals of its own, such as the lock on a voice; the flow neither reads nor needs them.
+from the approved cut. Approving a narration for a film is this flow's own step. The owner
+approves the script's words before anything is narrated (`story-flow.py approve script`), then
+hears the narration, and the flow records the cut and the takes the owner kept. The service may
+keep approvals of its own, such as the lock on a voice; the flow neither reads nor needs them.
 
 ### R14 (SHOULD): spans that must be heard exactly (§11)
 
@@ -308,8 +315,8 @@ between them, the calls to the service, since its interface is still being writt
     segment whose cue has no time;
   - the flow bears a cue boundary error up to 0.2 s at p95, since a caption changes in the pause
     between two cues; above that, each caption is padded by the service's published error;
-  - `story-flow.py approve script` records the cut and the takes the owner approved at the review.
-    It reads no approval from the service;
+  - the narrate stage records the cut and the takes the owner kept by ear, after the script is
+    approved. It reads no approval from the service;
   - `scripts/sweep-orphans.ps1` knows the service's daemon (`-m narration.daemon`) and its workers
     (`-m narration_worker`) by their command lines, which the design documents, and lists them
     apart from strays; the daemon exits on its own after 15 idle minutes;

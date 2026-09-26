@@ -14,7 +14,8 @@ over days and across sessions, so its state is kept where any agent can read it:
 (`scratch/story/<round>/`). Most of a stage's state is read from the files it leaves (a guide per
 run, `arc.md`, `story.json`, `script.md`, `narration/narration.json`, `story.filmed.json`, the clips,
 the Resolve plan). What no file shows is kept in `flow.json`: the owner's three approvals, each
-with a hash of what was approved so that a later edit shows as stale, the director's check per run,
+with a hash of what was approved so that a later edit shows as stale (the script's without its
+timing, since the narration comes after that review and retimes it), the director's check per run,
 the narration stage skipped, and delivery. `status` prints every stage and the next step.
 """
 import argparse
@@ -83,6 +84,31 @@ def captions_hash(story):
     items = [(s["n"], [(c.get("text") if isinstance(c, dict) else c) for c in (s.get("captions") or [])])
              for s in scenes(story)]
     return hashlib.sha256(json.dumps(items, ensure_ascii=False).encode("utf-8")).hexdigest()[:16]
+
+
+TIMING = {"story": ("narration", "screen_seconds"), "scene": ("seconds", "least_seconds", "narration"),
+          "caption": ("at", "seconds"), "chart": ("at", "until")}
+
+
+def script_hash(story):
+    """What the owner approves at the script review: story.json without its timing. The narration
+    comes after the review (the owner, 2026-09-26) and rewrites every length and caption time, so
+    those are left out; a word, a scene, a subject or a chart changed after the review reads stale."""
+    story = json.loads(json.dumps(story))
+    if isinstance(story, dict):
+        for k in TIMING["story"]:
+            story.pop(k, None)
+    for s in scenes(story):
+        for k in TIMING["scene"]:
+            s.pop(k, None)
+        for c in s.get("captions") or []:
+            if isinstance(c, dict):
+                for k in TIMING["caption"]:
+                    c.pop(k, None)
+        if isinstance(s.get("chart"), dict):
+            for k in TIMING["chart"]:
+                s["chart"].pop(k, None)
+    return hashlib.sha256(json.dumps(story, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()[:16]
 
 
 def run_dir(runs_root, arm):
@@ -158,10 +184,17 @@ def stages(folder, flow):
     else:
         out.append(("script", "open", "no story.json", "after the writer"))
 
+    out.append(("script approved",) + gate("script", script_hash(story) if story is not None else "",
+                                            "script.md, the words before any narration"))
+
     narration = f(os.path.join("narration", "narration.json"))
+    script_ok = approvals.get("script") and story is not None and approvals["script"].get("hash") == script_hash(story)
     if marks.get("narrate", {}).get("skipped"):
         out.append(("narrate", "skipped", marks["narrate"].get("note", ""), ""))
-    elif os.path.isfile(narration) and story is not None:
+    elif not script_ok:
+        out.append(("narrate", "waiting", "the script is not approved yet; nothing is narrated before it is",
+                    "after the owner approves the script"))
+    elif os.path.isfile(narration):
         current = load_json(narration).get("story_captions") == captions_hash(story)
         timed = isinstance(story, dict) and (story.get("narration") or {}).get("manifest") == hashlib.sha256(
             open(narration, "rb").read()).hexdigest()[:16]
@@ -174,8 +207,6 @@ def stages(folder, flow):
     else:
         out.append(("narrate", "waiting", "no narration.json; the service is not built yet",
                     "narrate (logbook/specs/story-narration.md), or `story-flow.py skip narrate`"))
-
-    out.append(("script approved",) + gate("script", sha_file(f("story.json"), narration), "script.md with the narration"))
 
     runs_in_story = sorted({s.get("run") for s in scenes(story)}) if story else []
     checked = [r for r in runs_in_story if r in marks.get("check", {})]
@@ -280,7 +311,7 @@ def main():
     if a.command == "approve":
         f = lambda name: os.path.join(folder, name)
         digest = {"arc": lambda: sha_file(f("arc.md")),
-                  "script": lambda: sha_file(f("story.json"), f(os.path.join("narration", "narration.json"))),
+                  "script": lambda: script_hash(load_json(f("story.json"))),
                   "timeline": lambda: sha_file(os.path.join(flow.get("plan") or f("resolve"), "plan.json"))}[a.what]()
         flow.setdefault("approvals", {})[a.what] = {"at": now(), "hash": digest, "note": a.note}
     elif a.command == "mark":

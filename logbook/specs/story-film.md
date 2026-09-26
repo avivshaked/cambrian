@@ -26,8 +26,8 @@ with the run's own rows.
 | arc approved | the owner rules on the arc | an approval in `flow.json` | owner |
 | write | the writer's second pass (section 3) | `story.md`, `story.json`, `checks.tsv` | writer |
 | script | the captions edited for the ear (section 3a) | `script.md`, `story.draft.json`, `edits.tsv` | editor, cold reader |
-| narrate | the narration, which sets each scene's length (section 3b) | `narration/` | agent, service |
-| script approved | the owner hears the script and reads it | an approval | owner |
+| script approved | the owner reads the script and rules on it | an approval | owner |
+| narrate | the narration of the approved words, which sets each scene's length (section 3b) | `narration/` | agent, service |
 | check | the director's check per run (section 4) | a mark per run | agent |
 | film | the scenes filmed (section 5) | `story.filmed.json`, the clips | agent |
 | assemble | the Resolve timeline, or the ffmpeg film (section 6) | `resolve/plan.json` | agent |
@@ -40,7 +40,9 @@ files each stage leaves; what no file shows (an approval, a check, a skip, the d
 `flow.json`, written by the same script. An approval records a hash of what the owner saw, so an
 edit after it reads as stale. The film stage compares `story.json` with `story.filmed.json` and
 names every scene whose filmed fields (station, second, subject, length, chapter, chart) changed;
-a caption is not one of them.
+a caption is not one of them. The script is approved before anything is narrated (the owner,
+2026-09-26). Its approval covers the words and the scenes and not their timing, which the narration
+sets afterwards, so the narration leaves it standing and a changed word turns it stale.
 
 ## 1. Before starting
 
@@ -113,8 +115,8 @@ says where it stumbled and tells the story back, for at most three rounds.
 
 The narration service is being written. The stage, what it needs from the service and this
 repository's side of it (`scripts/story-narration.py`, built and tested on a synthetic narration)
-are [`story-narration.md`](story-narration.md). Each scene's paragraphs are spoken
-before filming; their lengths, with a fixed padding, set each scene's length, and the captions are
+are [`story-narration.md`](story-narration.md). Once the owner has approved the script, each
+scene's paragraphs are spoken before filming. Their lengths, with a fixed padding, set each scene's length, and the captions are
 timed to the speech. Until the service exists the stage is skipped
 (`story-flow.py skip <folder> narrate`), and the captions keep the writer's timing.
 
