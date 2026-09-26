@@ -16,6 +16,8 @@
 //                  + ScanDown, Scatter                                         (Contacts.cs)
 //   the water      WaterLinks, a link a thread, one launch per class (Water.Sample, StepOne's
 //                  first part; beside the grid under concurrent streams)
+//   the contacts   ContactLinks under per-part contact, a link a thread, one launch per
+//                  class after the grid (Contacts.Apply's per-link part)
 //   the bodies     Step0 .. Step3, one launch per class                          (StepOne)
 //   the census     Census                                               (CloseContactStep)
 //   the commit     a swap of the two sphere sets, on the host
@@ -106,6 +108,8 @@ namespace __NS__
         public ArrayView<Real> TotalMass, LinkMass;
         public ArrayView<int> NOver, OvSlot, OvId, OvPart, OvHeld, NHeld, HeldId, BedGlass;
         public ArrayView<long> Census, Overflow;
+        public ArrayView<Real> LinkPush;
+        public ArrayView<int> LinkFlags, StageN, StageId, StageSlot, StagePart;
 #if GPU_PHASE_PROBE
         public ArrayView<long> Phase;
 #endif
@@ -417,6 +421,7 @@ namespace __NS__
         public const int CensusFields = 5;         // pairs, jointed, held, bodies, bed or glass
         public const int ScanPer = 8;              // buckets a thread in a scan tile
         public const int ScanGroupCap = 256;       // the scan tile's group, at most
+        public const int StageCap = 4;             // overlaps a link hands its step; past it, found again
 
         // Overflow counters: candidates past CandCap, overlaps past OverCap, held ids past OverCap,
         // cell entries past EntryCap.
@@ -1113,7 +1118,7 @@ namespace __NS__
             // ---- 6. contacts (Contacts.Apply) ------------------------------------------------
             if (cfg.PerPart != 0)
             {
-                ContactsPerPart(g, links, mass, totalMass, fext, cand, cs, gl, gr, w, cfg);
+                ContactsPerPartStaged(g, links, fext, cand, cs, gl, gr, cfg);
             }
             else
             {
@@ -3687,7 +3692,7 @@ namespace __NS__
         /// list rank, or under per-part contact rank·16 + link, which is the CPU's row order)
         /// ascending and once each.
         /// </summary>
-        private static int Candidates(int self, int owner, int[] cand, SGlob gl, SGrid gr, SCfg cfg)
+        private static int Candidates(int self, int owner, int[] cand, SGlob gl, SGrid gr, SCfg cfg, bool countOverflow)
         {
             int R = cfg.Rows;
             bool perPart = cfg.PerPart != 0;
@@ -3730,7 +3735,7 @@ namespace __NS__
 
             if (found > CandCap)
             {
-                Atomic.Add(ref gl.Overflow[OverflowCandidates], 1L);
+                if (countOverflow) Atomic.Add(ref gl.Overflow[OverflowCandidates], 1L);
                 found = CandCap;
             }
 
@@ -3822,7 +3827,7 @@ namespace __NS__
 
             if (cfg.CreatureContact != 0)
             {
-                int unique = Candidates(g, g, cand, gl, gr, cfg);
+                int unique = Candidates(g, g, cand, gl, gr, cfg, true);
 
                 for (int k = 0; k < unique; k++)
                 {
@@ -3895,12 +3900,18 @@ namespace __NS__
             }
         }
 
-        /// <summary>Contacts.ApplyPerPart (D114): every link's own sphere against every other body's links.</summary>
-        private static void ContactsPerPart(
-            int g, int links, Real[] mass, Real totalMass, Real[] fext, int[] cand, SSph s, SGlob gl, SGrid gr,
-            SWorld w, SCfg cfg)
+        /// <summary>
+        /// Contacts.ApplyPerPart (D114), every link's own sphere against every other body's links:
+        /// the step's half, which takes what ContactLinks left for each link.
+        /// </summary>
+        private static void ContactsPerPartStaged(
+            int g, int links, Real[] fext, int[] cand, SSph s, SGlob gl, SGrid gr, SCfg cfg)
         {
+            // ContactLinks ran each link's part before this kernel. Here the links are taken in
+            // order, as the CPU takes them: each one's overlaps noted as it met them, its bed or
+            // glass flag, and its push added to its force where the CPU adds it.
             bool instrument = cfg.Instrument != 0;
+            int R = cfg.Rows;
             int nOver = 0;
             int bedGlass = 0;
 
@@ -3908,87 +3919,30 @@ namespace __NS__
             {
                 int row = g * LinkStride + i;
 
-                Real cx = s.LCx[row], cy = s.LCy[row], cz = s.LCz[row];
-                Real radius = s.LR[row];
-                Real vx = s.LVx[row], vy = s.LVy[row], vz = s.LVz[row];
-                Real m = mass[i];
-
-                Real fx = 0, fy = 0, fz = 0;
-
-                if (cfg.CreatureContact != 0)
+                if (instrument)
                 {
-                    int n = Candidates(row, g, cand, gl, gr, cfg);
-
-                    for (int k = 0; k < n; k++)
+                    int staged = gl.StageN[row];
+                    if (staged <= StageCap)
                     {
-                        int key = cand[k];
-                        int rank = key / LinkStride;
-                        int og = gl.RankToSlot[rank];
-                        if (og < 0 || s.Active[og] == 0) continue;
-
-                        int j = key - rank * LinkStride;
-                        int orow = og * LinkStride + j;
-
-                        Real bx = cx - s.LCx[orow];
-                        Real by = cy - s.LCy[orow];
-                        Real bz = cz - s.LCz[orow];
-                        Real distance = __M__.Sqrt(bx * bx + by * by + bz * bz);
-                        Real penetration = radius + s.LR[orow] - distance;
-                        if (penetration <= 0) continue;
-
-                        if (instrument) nOver = NoteOverlapPart(g, nOver, gl.Id[og], og, i, j, gl, cfg);
-
-                        Real nx, ny, nz;
-                        if (distance > (Real)1e-9)
+                        for (int c = 0; c < staged; c++)
                         {
-                            Real inv = (Real)1.0 / distance;
-                            nx = bx * inv; ny = by * inv; nz = bz * inv;
+                            nOver = NoteOverlapPart(g, nOver, gl.StageId[c * R + row], gl.StageSlot[c * R + row],
+                                                    i, gl.StagePart[c * R + row], gl, cfg);
                         }
-                        else
-                        {
-                            nx = 0; ny = 1; nz = 0;
-                        }
-
-                        Real otherMass = gl.LinkMass[orow];
-                        Real reduced = m * otherMass / (m + otherMass);
-
-                        Real stiffness = reduced * cfg.Omega * cfg.Omega;
-                        Real damping = (Real)2.0 * cfg.Zeta * reduced * cfg.Omega;
-
-                        Real dvx = vx - s.LVx[orow];
-                        Real dvy = vy - s.LVy[orow];
-                        Real dvz = vz - s.LVz[orow];
-                        Real approach = dvx * nx + dvy * ny + dvz * nz;
-
-                        Real p = PairPush(stiffness * penetration - damping * approach, reduced, approach, cfg);
-
-                        fx = fx + nx * p;
-                        fy = fy + ny * p;
-                        fz = fz + nz * p;
+                    }
+                    else
+                    {
+                        nOver = OverlapsAgain(g, i, nOver, cand, s, gl, gr, cfg);
                     }
                 }
 
-                Real bedStiffness = m * cfg.Omega * cfg.Omega;
-                Real bedDamping = (Real)2.0 * cfg.Zeta * m * cfg.Omega;
-
-                AgainstTheWorld(cx, cy, cz, radius, vx, vy, vz, m, bedStiffness, bedDamping, w, cfg,
-                                ref fx, ref fy, ref fz, ref bedGlass);
-
-                BodyPush(ref fx, ref fy, ref fz, m, cfg);
-
-                if (fx != 0 || fy != 0 || fz != 0)
+                int flags = gl.LinkFlags[row];
+                if ((flags & 1) != 0) bedGlass = 1;
+                if ((flags & 2) != 0)
                 {
-                    if (links == 1)
-                    {
-                        Real share = mass[0] * ((Real)1.0 / totalMass);
-                        fx = fx * share;
-                        fy = fy * share;
-                        fz = fz * share;
-                    }
-
-                    fext[6 * i + 3] += fx;
-                    fext[6 * i + 4] += fy;
-                    fext[6 * i + 5] += fz;
+                    fext[6 * i + 3] += gl.LinkPush[row];
+                    fext[6 * i + 4] += gl.LinkPush[R + row];
+                    fext[6 * i + 5] += gl.LinkPush[2 * R + row];
                 }
             }
 
@@ -3997,6 +3951,166 @@ namespace __NS__
                 gl.NOver[g] = nOver;
                 gl.BedGlass[g] = bedGlass;
             }
+        }
+
+        /// <summary>
+        /// A link that met more overlaps than StageCap has them found again here, in the order
+        /// ContactLinks met them, with the same test; the candidates' overflow was counted there.
+        /// </summary>
+        private static int OverlapsAgain(int g, int i, int nOver, int[] cand, SSph s, SGlob gl, SGrid gr, SCfg cfg)
+        {
+            int row = g * LinkStride + i;
+            Real cx = s.LCx[row], cy = s.LCy[row], cz = s.LCz[row];
+            Real radius = s.LR[row];
+
+            int n = Candidates(row, g, cand, gl, gr, cfg, false);
+
+            for (int k = 0; k < n; k++)
+            {
+                int key = cand[k];
+                int rank = key / LinkStride;
+                int og = gl.RankToSlot[rank];
+                if (og < 0 || s.Active[og] == 0) continue;
+
+                int j = key - rank * LinkStride;
+                int orow = og * LinkStride + j;
+
+                Real bx = cx - s.LCx[orow];
+                Real by = cy - s.LCy[orow];
+                Real bz = cz - s.LCz[orow];
+                Real distance = __M__.Sqrt(bx * bx + by * by + bz * bz);
+                Real penetration = radius + s.LR[orow] - distance;
+                if (penetration <= 0) continue;
+
+                nOver = NoteOverlapPart(g, nOver, gl.Id[og], og, i, j, gl, cfg);
+            }
+
+            return nOver;
+        }
+
+        /// <summary>
+        /// Contacts.Apply under per-part contact, a link a thread, before the class's step: the
+        /// link's push from the committed spheres, the bed, the reefs and the glass, computed as
+        /// the step computed it, with the overlaps it met in the order it met them (the first
+        /// StageCap of them) and two flags, bed or glass and a push to add. The step adds the push
+        /// and notes the overlaps in link order, so the force and the list are the step's own.
+        /// </summary>
+        public static void ContactLinks(Index1D index, STopo t, SConst b, SGlob gl, SSph s, SGrid gr, SWorld w, SCfg cfg)
+        {
+            int used = cfg.ClassUsed;
+            int i = index.X / used;
+            int bi = index.X - i * used;
+            if (i >= cfg.ClassLinks) return;
+
+            int g = t.GSlot[bi];
+            if (g < 0 || gl.Alive[g] == 0) return;
+            int links = t.Links[bi];
+            if (i >= links) return;
+
+            int N = cfg.N;
+            int R = cfg.Rows;
+            int row = g * LinkStride + i;
+            bool instrument = cfg.Instrument != 0;
+            int staged = 0;
+            int bedGlass = 0;
+            var cand = new int[CandCap];
+
+            Real totalMass = b.TotalMass[bi];
+            Real cx = s.LCx[row], cy = s.LCy[row], cz = s.LCz[row];
+            Real radius = s.LR[row];
+            Real vx = s.LVx[row], vy = s.LVy[row], vz = s.LVz[row];
+            Real m = b.Mass[i * N + bi];
+
+            Real fx = 0, fy = 0, fz = 0;
+
+            if (cfg.CreatureContact != 0)
+            {
+                int n = Candidates(row, g, cand, gl, gr, cfg, true);
+
+                for (int k = 0; k < n; k++)
+                {
+                    int key = cand[k];
+                    int rank = key / LinkStride;
+                    int og = gl.RankToSlot[rank];
+                    if (og < 0 || s.Active[og] == 0) continue;
+
+                    int j = key - rank * LinkStride;
+                    int orow = og * LinkStride + j;
+
+                    Real bx = cx - s.LCx[orow];
+                    Real by = cy - s.LCy[orow];
+                    Real bz = cz - s.LCz[orow];
+                    Real distance = __M__.Sqrt(bx * bx + by * by + bz * bz);
+                    Real penetration = radius + s.LR[orow] - distance;
+                    if (penetration <= 0) continue;
+
+                    if (instrument)
+                    {
+                        if (staged < StageCap)
+                        {
+                            gl.StageId[staged * R + row] = gl.Id[og];
+                            gl.StageSlot[staged * R + row] = og;
+                            gl.StagePart[staged * R + row] = j;
+                        }
+                        staged++;
+                    }
+
+                    Real nx, ny, nz;
+                    if (distance > (Real)1e-9)
+                    {
+                        Real inv = (Real)1.0 / distance;
+                        nx = bx * inv; ny = by * inv; nz = bz * inv;
+                    }
+                    else
+                    {
+                        nx = 0; ny = 1; nz = 0;
+                    }
+
+                    Real otherMass = gl.LinkMass[orow];
+                    Real reduced = m * otherMass / (m + otherMass);
+
+                    Real stiffness = reduced * cfg.Omega * cfg.Omega;
+                    Real damping = (Real)2.0 * cfg.Zeta * reduced * cfg.Omega;
+
+                    Real dvx = vx - s.LVx[orow];
+                    Real dvy = vy - s.LVy[orow];
+                    Real dvz = vz - s.LVz[orow];
+                    Real approach = dvx * nx + dvy * ny + dvz * nz;
+
+                    Real p = PairPush(stiffness * penetration - damping * approach, reduced, approach, cfg);
+
+                    fx = fx + nx * p;
+                    fy = fy + ny * p;
+                    fz = fz + nz * p;
+                }
+            }
+
+            Real bedStiffness = m * cfg.Omega * cfg.Omega;
+            Real bedDamping = (Real)2.0 * cfg.Zeta * m * cfg.Omega;
+
+            AgainstTheWorld(cx, cy, cz, radius, vx, vy, vz, m, bedStiffness, bedDamping, w, cfg,
+                            ref fx, ref fy, ref fz, ref bedGlass);
+
+            BodyPush(ref fx, ref fy, ref fz, m, cfg);
+
+            int flags = bedGlass != 0 ? 1 : 0;
+            if (fx != 0 || fy != 0 || fz != 0)
+            {
+                flags |= 2;
+                if (links == 1)
+                {
+                    Real share = m * ((Real)1.0 / totalMass);
+                    fx = fx * share;
+                    fy = fy * share;
+                    fz = fz * share;
+                }
+            }
+
+            gl.LinkPush[row] = fx;
+            gl.LinkPush[R + row] = fy;
+            gl.LinkPush[2 * R + row] = fz;
+            gl.LinkFlags[row] = flags;
+            if (instrument) gl.StageN[row] = staged;
         }
 
         /// <summary>

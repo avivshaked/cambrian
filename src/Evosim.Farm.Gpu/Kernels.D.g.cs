@@ -16,6 +16,8 @@
 //                  + ScanDown, Scatter                                         (Contacts.cs)
 //   the water      WaterLinks, a link a thread, one launch per class (Water.Sample, StepOne's
 //                  first part; beside the grid under concurrent streams)
+//   the contacts   ContactLinks under per-part contact, a link a thread, one launch per
+//                  class after the grid (Contacts.Apply's per-link part)
 //   the bodies     Step0 .. Step3, one launch per class                          (StepOne)
 //   the census     Census                                               (CloseContactStep)
 //   the commit     a swap of the two sphere sets, on the host
@@ -106,6 +108,8 @@ namespace Evosim.Farm.Gpu.Dbl
         public ArrayView<Real> TotalMass, LinkMass;
         public ArrayView<int> NOver, OvSlot, OvId, OvPart, OvHeld, NHeld, HeldId, BedGlass;
         public ArrayView<long> Census, Overflow;
+        public ArrayView<Real> LinkPush;
+        public ArrayView<int> LinkFlags, StageN, StageId, StageSlot, StagePart;
 #if GPU_PHASE_PROBE
         public ArrayView<long> Phase;
 #endif
@@ -417,6 +421,7 @@ namespace Evosim.Farm.Gpu.Dbl
         public const int CensusFields = 5;         // pairs, jointed, held, bodies, bed or glass
         public const int ScanPer = 8;              // buckets a thread in a scan tile
         public const int ScanGroupCap = 256;       // the scan tile's group, at most
+        public const int StageCap = 4;             // overlaps a link hands its step; past it, found again
 
         // Overflow counters: candidates past CandCap, overlaps past OverCap, held ids past OverCap,
         // cell entries past EntryCap.
@@ -1112,7 +1117,7 @@ namespace Evosim.Farm.Gpu.Dbl
             // ---- 6. contacts (Contacts.Apply) ------------------------------------------------
             if (cfg.PerPart != 0)
             {
-                ContactsPerPart(g, links, mass, totalMass, fext, cand, cs, gl, gr, w, cfg);
+                ContactsPerPartStaged(g, links, fext, cand, cs, gl, gr, cfg);
             }
             else
             {
@@ -1616,7 +1621,7 @@ namespace Evosim.Farm.Gpu.Dbl
             // ---- 6. contacts (Contacts.Apply) ------------------------------------------------
             if (cfg.PerPart != 0)
             {
-                ContactsPerPart(g, links, mass, totalMass, fext, cand, cs, gl, gr, w, cfg);
+                ContactsPerPartStaged(g, links, fext, cand, cs, gl, gr, cfg);
             }
             else
             {
@@ -2120,7 +2125,7 @@ namespace Evosim.Farm.Gpu.Dbl
             // ---- 6. contacts (Contacts.Apply) ------------------------------------------------
             if (cfg.PerPart != 0)
             {
-                ContactsPerPart(g, links, mass, totalMass, fext, cand, cs, gl, gr, w, cfg);
+                ContactsPerPartStaged(g, links, fext, cand, cs, gl, gr, cfg);
             }
             else
             {
@@ -2624,7 +2629,7 @@ namespace Evosim.Farm.Gpu.Dbl
             // ---- 6. contacts (Contacts.Apply) ------------------------------------------------
             if (cfg.PerPart != 0)
             {
-                ContactsPerPart(g, links, mass, totalMass, fext, cand, cs, gl, gr, w, cfg);
+                ContactsPerPartStaged(g, links, fext, cand, cs, gl, gr, cfg);
             }
             else
             {
@@ -5203,7 +5208,7 @@ namespace Evosim.Farm.Gpu.Dbl
         /// list rank, or under per-part contact rank·16 + link, which is the CPU's row order)
         /// ascending and once each.
         /// </summary>
-        private static int Candidates(int self, int owner, int[] cand, SGlob gl, SGrid gr, SCfg cfg)
+        private static int Candidates(int self, int owner, int[] cand, SGlob gl, SGrid gr, SCfg cfg, bool countOverflow)
         {
             int R = cfg.Rows;
             bool perPart = cfg.PerPart != 0;
@@ -5246,7 +5251,7 @@ namespace Evosim.Farm.Gpu.Dbl
 
             if (found > CandCap)
             {
-                Atomic.Add(ref gl.Overflow[OverflowCandidates], 1L);
+                if (countOverflow) Atomic.Add(ref gl.Overflow[OverflowCandidates], 1L);
                 found = CandCap;
             }
 
@@ -5338,7 +5343,7 @@ namespace Evosim.Farm.Gpu.Dbl
 
             if (cfg.CreatureContact != 0)
             {
-                int unique = Candidates(g, g, cand, gl, gr, cfg);
+                int unique = Candidates(g, g, cand, gl, gr, cfg, true);
 
                 for (int k = 0; k < unique; k++)
                 {
@@ -5411,12 +5416,18 @@ namespace Evosim.Farm.Gpu.Dbl
             }
         }
 
-        /// <summary>Contacts.ApplyPerPart (D114): every link's own sphere against every other body's links.</summary>
-        private static void ContactsPerPart(
-            int g, int links, Real[] mass, Real totalMass, Real[] fext, int[] cand, SSph s, SGlob gl, SGrid gr,
-            SWorld w, SCfg cfg)
+        /// <summary>
+        /// Contacts.ApplyPerPart (D114), every link's own sphere against every other body's links:
+        /// the step's half, which takes what ContactLinks left for each link.
+        /// </summary>
+        private static void ContactsPerPartStaged(
+            int g, int links, Real[] fext, int[] cand, SSph s, SGlob gl, SGrid gr, SCfg cfg)
         {
+            // ContactLinks ran each link's part before this kernel. Here the links are taken in
+            // order, as the CPU takes them: each one's overlaps noted as it met them, its bed or
+            // glass flag, and its push added to its force where the CPU adds it.
             bool instrument = cfg.Instrument != 0;
+            int R = cfg.Rows;
             int nOver = 0;
             int bedGlass = 0;
 
@@ -5424,87 +5435,30 @@ namespace Evosim.Farm.Gpu.Dbl
             {
                 int row = g * LinkStride + i;
 
-                Real cx = s.LCx[row], cy = s.LCy[row], cz = s.LCz[row];
-                Real radius = s.LR[row];
-                Real vx = s.LVx[row], vy = s.LVy[row], vz = s.LVz[row];
-                Real m = mass[i];
-
-                Real fx = 0, fy = 0, fz = 0;
-
-                if (cfg.CreatureContact != 0)
+                if (instrument)
                 {
-                    int n = Candidates(row, g, cand, gl, gr, cfg);
-
-                    for (int k = 0; k < n; k++)
+                    int staged = gl.StageN[row];
+                    if (staged <= StageCap)
                     {
-                        int key = cand[k];
-                        int rank = key / LinkStride;
-                        int og = gl.RankToSlot[rank];
-                        if (og < 0 || s.Active[og] == 0) continue;
-
-                        int j = key - rank * LinkStride;
-                        int orow = og * LinkStride + j;
-
-                        Real bx = cx - s.LCx[orow];
-                        Real by = cy - s.LCy[orow];
-                        Real bz = cz - s.LCz[orow];
-                        Real distance = System.Math.Sqrt(bx * bx + by * by + bz * bz);
-                        Real penetration = radius + s.LR[orow] - distance;
-                        if (penetration <= 0) continue;
-
-                        if (instrument) nOver = NoteOverlapPart(g, nOver, gl.Id[og], og, i, j, gl, cfg);
-
-                        Real nx, ny, nz;
-                        if (distance > (Real)1e-9)
+                        for (int c = 0; c < staged; c++)
                         {
-                            Real inv = (Real)1.0 / distance;
-                            nx = bx * inv; ny = by * inv; nz = bz * inv;
+                            nOver = NoteOverlapPart(g, nOver, gl.StageId[c * R + row], gl.StageSlot[c * R + row],
+                                                    i, gl.StagePart[c * R + row], gl, cfg);
                         }
-                        else
-                        {
-                            nx = 0; ny = 1; nz = 0;
-                        }
-
-                        Real otherMass = gl.LinkMass[orow];
-                        Real reduced = m * otherMass / (m + otherMass);
-
-                        Real stiffness = reduced * cfg.Omega * cfg.Omega;
-                        Real damping = (Real)2.0 * cfg.Zeta * reduced * cfg.Omega;
-
-                        Real dvx = vx - s.LVx[orow];
-                        Real dvy = vy - s.LVy[orow];
-                        Real dvz = vz - s.LVz[orow];
-                        Real approach = dvx * nx + dvy * ny + dvz * nz;
-
-                        Real p = PairPush(stiffness * penetration - damping * approach, reduced, approach, cfg);
-
-                        fx = fx + nx * p;
-                        fy = fy + ny * p;
-                        fz = fz + nz * p;
+                    }
+                    else
+                    {
+                        nOver = OverlapsAgain(g, i, nOver, cand, s, gl, gr, cfg);
                     }
                 }
 
-                Real bedStiffness = m * cfg.Omega * cfg.Omega;
-                Real bedDamping = (Real)2.0 * cfg.Zeta * m * cfg.Omega;
-
-                AgainstTheWorld(cx, cy, cz, radius, vx, vy, vz, m, bedStiffness, bedDamping, w, cfg,
-                                ref fx, ref fy, ref fz, ref bedGlass);
-
-                BodyPush(ref fx, ref fy, ref fz, m, cfg);
-
-                if (fx != 0 || fy != 0 || fz != 0)
+                int flags = gl.LinkFlags[row];
+                if ((flags & 1) != 0) bedGlass = 1;
+                if ((flags & 2) != 0)
                 {
-                    if (links == 1)
-                    {
-                        Real share = mass[0] * ((Real)1.0 / totalMass);
-                        fx = fx * share;
-                        fy = fy * share;
-                        fz = fz * share;
-                    }
-
-                    fext[6 * i + 3] += fx;
-                    fext[6 * i + 4] += fy;
-                    fext[6 * i + 5] += fz;
+                    fext[6 * i + 3] += gl.LinkPush[row];
+                    fext[6 * i + 4] += gl.LinkPush[R + row];
+                    fext[6 * i + 5] += gl.LinkPush[2 * R + row];
                 }
             }
 
@@ -5513,6 +5467,166 @@ namespace Evosim.Farm.Gpu.Dbl
                 gl.NOver[g] = nOver;
                 gl.BedGlass[g] = bedGlass;
             }
+        }
+
+        /// <summary>
+        /// A link that met more overlaps than StageCap has them found again here, in the order
+        /// ContactLinks met them, with the same test; the candidates' overflow was counted there.
+        /// </summary>
+        private static int OverlapsAgain(int g, int i, int nOver, int[] cand, SSph s, SGlob gl, SGrid gr, SCfg cfg)
+        {
+            int row = g * LinkStride + i;
+            Real cx = s.LCx[row], cy = s.LCy[row], cz = s.LCz[row];
+            Real radius = s.LR[row];
+
+            int n = Candidates(row, g, cand, gl, gr, cfg, false);
+
+            for (int k = 0; k < n; k++)
+            {
+                int key = cand[k];
+                int rank = key / LinkStride;
+                int og = gl.RankToSlot[rank];
+                if (og < 0 || s.Active[og] == 0) continue;
+
+                int j = key - rank * LinkStride;
+                int orow = og * LinkStride + j;
+
+                Real bx = cx - s.LCx[orow];
+                Real by = cy - s.LCy[orow];
+                Real bz = cz - s.LCz[orow];
+                Real distance = System.Math.Sqrt(bx * bx + by * by + bz * bz);
+                Real penetration = radius + s.LR[orow] - distance;
+                if (penetration <= 0) continue;
+
+                nOver = NoteOverlapPart(g, nOver, gl.Id[og], og, i, j, gl, cfg);
+            }
+
+            return nOver;
+        }
+
+        /// <summary>
+        /// Contacts.Apply under per-part contact, a link a thread, before the class's step: the
+        /// link's push from the committed spheres, the bed, the reefs and the glass, computed as
+        /// the step computed it, with the overlaps it met in the order it met them (the first
+        /// StageCap of them) and two flags, bed or glass and a push to add. The step adds the push
+        /// and notes the overlaps in link order, so the force and the list are the step's own.
+        /// </summary>
+        public static void ContactLinks(Index1D index, STopo t, SConst b, SGlob gl, SSph s, SGrid gr, SWorld w, SCfg cfg)
+        {
+            int used = cfg.ClassUsed;
+            int i = index.X / used;
+            int bi = index.X - i * used;
+            if (i >= cfg.ClassLinks) return;
+
+            int g = t.GSlot[bi];
+            if (g < 0 || gl.Alive[g] == 0) return;
+            int links = t.Links[bi];
+            if (i >= links) return;
+
+            int N = cfg.N;
+            int R = cfg.Rows;
+            int row = g * LinkStride + i;
+            bool instrument = cfg.Instrument != 0;
+            int staged = 0;
+            int bedGlass = 0;
+            var cand = new int[CandCap];
+
+            Real totalMass = b.TotalMass[bi];
+            Real cx = s.LCx[row], cy = s.LCy[row], cz = s.LCz[row];
+            Real radius = s.LR[row];
+            Real vx = s.LVx[row], vy = s.LVy[row], vz = s.LVz[row];
+            Real m = b.Mass[i * N + bi];
+
+            Real fx = 0, fy = 0, fz = 0;
+
+            if (cfg.CreatureContact != 0)
+            {
+                int n = Candidates(row, g, cand, gl, gr, cfg, true);
+
+                for (int k = 0; k < n; k++)
+                {
+                    int key = cand[k];
+                    int rank = key / LinkStride;
+                    int og = gl.RankToSlot[rank];
+                    if (og < 0 || s.Active[og] == 0) continue;
+
+                    int j = key - rank * LinkStride;
+                    int orow = og * LinkStride + j;
+
+                    Real bx = cx - s.LCx[orow];
+                    Real by = cy - s.LCy[orow];
+                    Real bz = cz - s.LCz[orow];
+                    Real distance = System.Math.Sqrt(bx * bx + by * by + bz * bz);
+                    Real penetration = radius + s.LR[orow] - distance;
+                    if (penetration <= 0) continue;
+
+                    if (instrument)
+                    {
+                        if (staged < StageCap)
+                        {
+                            gl.StageId[staged * R + row] = gl.Id[og];
+                            gl.StageSlot[staged * R + row] = og;
+                            gl.StagePart[staged * R + row] = j;
+                        }
+                        staged++;
+                    }
+
+                    Real nx, ny, nz;
+                    if (distance > (Real)1e-9)
+                    {
+                        Real inv = (Real)1.0 / distance;
+                        nx = bx * inv; ny = by * inv; nz = bz * inv;
+                    }
+                    else
+                    {
+                        nx = 0; ny = 1; nz = 0;
+                    }
+
+                    Real otherMass = gl.LinkMass[orow];
+                    Real reduced = m * otherMass / (m + otherMass);
+
+                    Real stiffness = reduced * cfg.Omega * cfg.Omega;
+                    Real damping = (Real)2.0 * cfg.Zeta * reduced * cfg.Omega;
+
+                    Real dvx = vx - s.LVx[orow];
+                    Real dvy = vy - s.LVy[orow];
+                    Real dvz = vz - s.LVz[orow];
+                    Real approach = dvx * nx + dvy * ny + dvz * nz;
+
+                    Real p = PairPush(stiffness * penetration - damping * approach, reduced, approach, cfg);
+
+                    fx = fx + nx * p;
+                    fy = fy + ny * p;
+                    fz = fz + nz * p;
+                }
+            }
+
+            Real bedStiffness = m * cfg.Omega * cfg.Omega;
+            Real bedDamping = (Real)2.0 * cfg.Zeta * m * cfg.Omega;
+
+            AgainstTheWorld(cx, cy, cz, radius, vx, vy, vz, m, bedStiffness, bedDamping, w, cfg,
+                            ref fx, ref fy, ref fz, ref bedGlass);
+
+            BodyPush(ref fx, ref fy, ref fz, m, cfg);
+
+            int flags = bedGlass != 0 ? 1 : 0;
+            if (fx != 0 || fy != 0 || fz != 0)
+            {
+                flags |= 2;
+                if (links == 1)
+                {
+                    Real share = m * ((Real)1.0 / totalMass);
+                    fx = fx * share;
+                    fy = fy * share;
+                    fz = fz * share;
+                }
+            }
+
+            gl.LinkPush[row] = fx;
+            gl.LinkPush[R + row] = fy;
+            gl.LinkPush[2 * R + row] = fz;
+            gl.LinkFlags[row] = flags;
+            if (instrument) gl.StageN[row] = staged;
         }
 
         /// <summary>
@@ -6623,6 +6737,8 @@ namespace Evosim.Farm.Gpu.Dbl
 
         // ---- the grid
         private readonly Scratch<int> _lo, _hi, _counts, _start, _gcursor, _items, _partialN, _tileSum, _tileStart;
+        private readonly Scratch<int> _linkFlags, _stageN, _stageId, _stageSlot, _stagePart;
+        private readonly Scratch<Real> _linkPush;
         private readonly Scratch<Real> _cell, _partial;
         private int _entryCap;
         private readonly int[] _one = new int[1];
@@ -6642,6 +6758,8 @@ namespace Evosim.Farm.Gpu.Dbl
         private readonly Action<Index1D, SGlob, SCfg> _censusKernel;
         private readonly Action<Index1D, STopo, SState, SGlob, SWorld, SCfg> _water;
         private readonly Action<AcceleratorStream, Index1D, STopo, SState, SGlob, SWorld, SCfg> _waterOn;
+        private readonly Action<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg> _contact;
+        private readonly Action<AcceleratorStream, Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg> _contactOn;
         private readonly Action<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace, SGlob,
             SSph, SSph, SGrid, SWorld, SCfg>[] _step;
 
@@ -6701,6 +6819,12 @@ namespace Evosim.Farm.Gpu.Dbl
             _gcursor = new Scratch<int>(_acc, 17);
             _tileSum = new Scratch<int>(_acc, 1);
             _tileStart = new Scratch<int>(_acc, 1);
+            _linkPush = new Scratch<Real>(_acc, 3);
+            _linkFlags = new Scratch<int>(_acc, 1);
+            _stageN = new Scratch<int>(_acc, 1);
+            _stageId = new Scratch<int>(_acc, WholeStep.StageCap);
+            _stageSlot = new Scratch<int>(_acc, WholeStep.StageCap);
+            _stagePart = new Scratch<int>(_acc, WholeStep.StageCap);
 #if GPU_PHASE_PROBE
             _phase = new Scratch<long>(_acc, 1);
 #endif
@@ -6744,6 +6868,7 @@ namespace Evosim.Farm.Gpu.Dbl
                 _scatter = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SGlob, SGrid, SCfg>(WholeStep.Scatter, g);
                 _censusKernel = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SGlob, SCfg>(WholeStep.Census, g);
                 _water = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks, g);
+                _contact = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks, g);
             }
             else
             {
@@ -6752,6 +6877,7 @@ namespace Evosim.Farm.Gpu.Dbl
                 _scatter = _acc.LoadAutoGroupedStreamKernel<Index1D, SGlob, SGrid, SCfg>(WholeStep.Scatter);
                 _censusKernel = _acc.LoadAutoGroupedStreamKernel<Index1D, SGlob, SCfg>(WholeStep.Census);
                 _water = _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks);
+                _contact = _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks);
             }
 
             _step = new Action<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace, SGlob,
@@ -6765,6 +6891,9 @@ namespace Evosim.Farm.Gpu.Dbl
                 _waterOn = grouped
                     ? _acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks, g)
                     : _acc.LoadAutoGroupedKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks);
+                _contactOn = grouped
+                    ? _acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks, g)
+                    : _acc.LoadAutoGroupedKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks);
             }
 
             _step[0] = grouped
@@ -6997,7 +7126,7 @@ namespace Evosim.Farm.Gpu.Dbl
             _probeGrid += pn - pt;
             pt = pn;
         }
-        private long _probeGrid, _probeTail, _probeSteps, _probeWater;
+        private long _probeGrid, _probeTail, _probeSteps, _probeWater, _probeContact;
         private int _probeBlocks;
 
         private void PrintProbe(DynamicsWorld world, IReadOnlyList<Creature> list)
@@ -7056,14 +7185,14 @@ namespace Evosim.Farm.Gpu.Dbl
 
             Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
                 "gpu-probe grid parts, ms a step: zero {0:0.000}, mean {1:0.000}, ranges {2:0.000}, scan {3:0.000}, scatter {4:0.000}; rows {5}, buckets {6}; " +
-                "the water pass before them {7:0.000}",
+                "the water pass before them {7:0.000}; the links' contacts before each class (in its time when concurrent) {8:0.000}",
                 _probeGridPart[0] * f, _probeGridPart[1] * f, _probeGridPart[2] * f, _probeGridPart[3] * f, _probeGridPart[4] * f,
-                _probeRows, _probeBuckets, _probeWater * f));
+                _probeRows, _probeBuckets, _probeWater * f, _probeContact * f));
 #if GPU_PHASE_PROBE
             PrintPhases();
 #endif
 
-            _probeGrid = _probeTail = _probeSteps = _probeWater = 0;
+            _probeGrid = _probeTail = _probeSteps = _probeWater = _probeContact = 0;
             for (int k = 0; k < 4; k++) _probeClass[k] = 0;
             for (int k = 0; k < 5; k++) _probeGridPart[k] = 0;
         }
@@ -7193,6 +7322,13 @@ namespace Evosim.Farm.Gpu.Dbl
             int tiles = (buckets + tileBuckets - 1) / tileBuckets;
             _tileSum.Ensure(tiles);
             _tileStart.Ensure(tiles);
+            long linkRows = Math.Max(1, rows);
+            _linkPush.Ensure(3 * linkRows);
+            _linkFlags.Ensure(linkRows);
+            _stageN.Ensure(linkRows);
+            _stageId.Ensure(WholeStep.StageCap * linkRows);
+            _stageSlot.Ensure(WholeStep.StageCap * linkRows);
+            _stagePart.Ensure(WholeStep.StageCap * linkRows);
 #if GPU_PHASE_PROBE
             _phase.Ensure((long)WholeStep.Phases * _gcap);
 #endif
@@ -7232,6 +7368,7 @@ namespace Evosim.Farm.Gpu.Dbl
             long pt = probe ? Stopwatch.GetTimestamp() : 0;
             bool serial = _o.SerialMean;
             bool instrument = world.Config.ContactInstrument;
+            bool perPart = _base.PerPart != 0;
 
             for (int k = 0; k < steps; k++)
             {
@@ -7306,7 +7443,10 @@ namespace Evosim.Farm.Gpu.Dbl
                         SCfg cc = cfg;
                         cc.N = set.Cap;
                         cc.MaxN = set.M;
+                        cc.ClassUsed = used;
+                        cc.ClassLinks = _slots.Classes[c].Links;
 
+                        if (perPart) _contactOn(_streams[c], used * cc.ClassLinks, set.Topo, set.ConstSet, gl, committed, grid, sw, cc);
                         _stepOn[c](_streams[c], used, set.Topo, set.ConstSet, set.PanelSet, set.StateSet, set.DriveSet,
                                    set.NeurSet, set.BrainSet, set.TraceSet, gl, committed, pending, grid, sw, cc);
                     }
@@ -7325,7 +7465,14 @@ namespace Evosim.Farm.Gpu.Dbl
                         SCfg cc = cfg;
                         cc.N = set.Cap;
                         cc.MaxN = set.M;
+                        cc.ClassUsed = used;
+                        cc.ClassLinks = _slots.Classes[c].Links;
 
+                        if (perPart)
+                        {
+                            _contact(used * cc.ClassLinks, set.Topo, set.ConstSet, gl, committed, grid, sw, cc);
+                            if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeContact += pn - pt; pt = pn; }
+                        }
                         _step[c](used, set.Topo, set.ConstSet, set.PanelSet, set.StateSet, set.DriveSet, set.NeurSet,
                                  set.BrainSet, set.TraceSet, gl, committed, pending, grid, sw, cc);
                         if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeClass[c] += pn - pt; pt = pn; }
@@ -7448,6 +7595,8 @@ namespace Evosim.Farm.Gpu.Dbl
             NOver = _nOver.View, OvSlot = _ovSlot.View, OvId = _ovId.View, OvPart = _ovPart.View,
             OvHeld = _ovHeld.View, NHeld = _nHeld.View, HeldId = _heldId.View, BedGlass = _bedGlass.View,
             Census = _census.View, Overflow = _overflow.View,
+            LinkPush = _linkPush.View, LinkFlags = _linkFlags.View, StageN = _stageN.View,
+            StageId = _stageId.View, StageSlot = _stageSlot.View, StagePart = _stagePart.View,
 #if GPU_PHASE_PROBE
             Phase = _phase.View,
 #endif
@@ -8137,6 +8286,8 @@ namespace Evosim.Farm.Gpu.Dbl
             _lo.Dispose(); _hi.Dispose(); _counts.Dispose(); _start.Dispose(); _gcursor.Dispose();
             _items.Dispose(); _partial.Dispose(); _partialN.Dispose(); _cell.Dispose();
             _tileSum.Dispose(); _tileStart.Dispose();
+            _linkPush.Dispose(); _linkFlags.Dispose(); _stageN.Dispose();
+            _stageId.Dispose(); _stageSlot.Dispose(); _stagePart.Dispose();
             _inst.Dispose(); _wr.Dispose(); _wi.Dispose(); _stock.Dispose();
         }
     }

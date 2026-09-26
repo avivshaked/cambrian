@@ -289,6 +289,8 @@ namespace __NS__
 
         // ---- the grid
         private readonly Scratch<int> _lo, _hi, _counts, _start, _gcursor, _items, _partialN, _tileSum, _tileStart;
+        private readonly Scratch<int> _linkFlags, _stageN, _stageId, _stageSlot, _stagePart;
+        private readonly Scratch<Real> _linkPush;
         private readonly Scratch<Real> _cell, _partial;
         private int _entryCap;
         private readonly int[] _one = new int[1];
@@ -308,6 +310,8 @@ namespace __NS__
         private readonly Action<Index1D, SGlob, SCfg> _censusKernel;
         private readonly Action<Index1D, STopo, SState, SGlob, SWorld, SCfg> _water;
         private readonly Action<AcceleratorStream, Index1D, STopo, SState, SGlob, SWorld, SCfg> _waterOn;
+        private readonly Action<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg> _contact;
+        private readonly Action<AcceleratorStream, Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg> _contactOn;
         private readonly Action<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace, SGlob,
             SSph, SSph, SGrid, SWorld, SCfg>[] _step;
 
@@ -367,6 +371,12 @@ namespace __NS__
             _gcursor = new Scratch<int>(_acc, 17);
             _tileSum = new Scratch<int>(_acc, 1);
             _tileStart = new Scratch<int>(_acc, 1);
+            _linkPush = new Scratch<Real>(_acc, 3);
+            _linkFlags = new Scratch<int>(_acc, 1);
+            _stageN = new Scratch<int>(_acc, 1);
+            _stageId = new Scratch<int>(_acc, WholeStep.StageCap);
+            _stageSlot = new Scratch<int>(_acc, WholeStep.StageCap);
+            _stagePart = new Scratch<int>(_acc, WholeStep.StageCap);
 #if GPU_PHASE_PROBE
             _phase = new Scratch<long>(_acc, 1);
 #endif
@@ -410,6 +420,7 @@ namespace __NS__
                 _scatter = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SGlob, SGrid, SCfg>(WholeStep.Scatter, g);
                 _censusKernel = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SGlob, SCfg>(WholeStep.Census, g);
                 _water = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks, g);
+                _contact = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks, g);
             }
             else
             {
@@ -418,6 +429,7 @@ namespace __NS__
                 _scatter = _acc.LoadAutoGroupedStreamKernel<Index1D, SGlob, SGrid, SCfg>(WholeStep.Scatter);
                 _censusKernel = _acc.LoadAutoGroupedStreamKernel<Index1D, SGlob, SCfg>(WholeStep.Census);
                 _water = _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks);
+                _contact = _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks);
             }
 
             _step = new Action<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace, SGlob,
@@ -431,6 +443,9 @@ namespace __NS__
                 _waterOn = grouped
                     ? _acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks, g)
                     : _acc.LoadAutoGroupedKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks);
+                _contactOn = grouped
+                    ? _acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks, g)
+                    : _acc.LoadAutoGroupedKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks);
             }
 
 //@CLASS
@@ -623,7 +638,7 @@ namespace __NS__
             _probeGrid += pn - pt;
             pt = pn;
         }
-        private long _probeGrid, _probeTail, _probeSteps, _probeWater;
+        private long _probeGrid, _probeTail, _probeSteps, _probeWater, _probeContact;
         private int _probeBlocks;
 
         private void PrintProbe(DynamicsWorld world, IReadOnlyList<Creature> list)
@@ -682,14 +697,14 @@ namespace __NS__
 
             Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
                 "gpu-probe grid parts, ms a step: zero {0:0.000}, mean {1:0.000}, ranges {2:0.000}, scan {3:0.000}, scatter {4:0.000}; rows {5}, buckets {6}; " +
-                "the water pass before them {7:0.000}",
+                "the water pass before them {7:0.000}; the links' contacts before each class (in its time when concurrent) {8:0.000}",
                 _probeGridPart[0] * f, _probeGridPart[1] * f, _probeGridPart[2] * f, _probeGridPart[3] * f, _probeGridPart[4] * f,
-                _probeRows, _probeBuckets, _probeWater * f));
+                _probeRows, _probeBuckets, _probeWater * f, _probeContact * f));
 #if GPU_PHASE_PROBE
             PrintPhases();
 #endif
 
-            _probeGrid = _probeTail = _probeSteps = _probeWater = 0;
+            _probeGrid = _probeTail = _probeSteps = _probeWater = _probeContact = 0;
             for (int k = 0; k < 4; k++) _probeClass[k] = 0;
             for (int k = 0; k < 5; k++) _probeGridPart[k] = 0;
         }
@@ -819,6 +834,13 @@ namespace __NS__
             int tiles = (buckets + tileBuckets - 1) / tileBuckets;
             _tileSum.Ensure(tiles);
             _tileStart.Ensure(tiles);
+            long linkRows = Math.Max(1, rows);
+            _linkPush.Ensure(3 * linkRows);
+            _linkFlags.Ensure(linkRows);
+            _stageN.Ensure(linkRows);
+            _stageId.Ensure(WholeStep.StageCap * linkRows);
+            _stageSlot.Ensure(WholeStep.StageCap * linkRows);
+            _stagePart.Ensure(WholeStep.StageCap * linkRows);
 #if GPU_PHASE_PROBE
             _phase.Ensure((long)WholeStep.Phases * _gcap);
 #endif
@@ -858,6 +880,7 @@ namespace __NS__
             long pt = probe ? Stopwatch.GetTimestamp() : 0;
             bool serial = _o.SerialMean;
             bool instrument = world.Config.ContactInstrument;
+            bool perPart = _base.PerPart != 0;
 
             for (int k = 0; k < steps; k++)
             {
@@ -932,7 +955,10 @@ namespace __NS__
                         SCfg cc = cfg;
                         cc.N = set.Cap;
                         cc.MaxN = set.M;
+                        cc.ClassUsed = used;
+                        cc.ClassLinks = _slots.Classes[c].Links;
 
+                        if (perPart) _contactOn(_streams[c], used * cc.ClassLinks, set.Topo, set.ConstSet, gl, committed, grid, sw, cc);
                         _stepOn[c](_streams[c], used, set.Topo, set.ConstSet, set.PanelSet, set.StateSet, set.DriveSet,
                                    set.NeurSet, set.BrainSet, set.TraceSet, gl, committed, pending, grid, sw, cc);
                     }
@@ -951,7 +977,14 @@ namespace __NS__
                         SCfg cc = cfg;
                         cc.N = set.Cap;
                         cc.MaxN = set.M;
+                        cc.ClassUsed = used;
+                        cc.ClassLinks = _slots.Classes[c].Links;
 
+                        if (perPart)
+                        {
+                            _contact(used * cc.ClassLinks, set.Topo, set.ConstSet, gl, committed, grid, sw, cc);
+                            if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeContact += pn - pt; pt = pn; }
+                        }
                         _step[c](used, set.Topo, set.ConstSet, set.PanelSet, set.StateSet, set.DriveSet, set.NeurSet,
                                  set.BrainSet, set.TraceSet, gl, committed, pending, grid, sw, cc);
                         if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeClass[c] += pn - pt; pt = pn; }
@@ -1074,6 +1107,8 @@ namespace __NS__
             NOver = _nOver.View, OvSlot = _ovSlot.View, OvId = _ovId.View, OvPart = _ovPart.View,
             OvHeld = _ovHeld.View, NHeld = _nHeld.View, HeldId = _heldId.View, BedGlass = _bedGlass.View,
             Census = _census.View, Overflow = _overflow.View,
+            LinkPush = _linkPush.View, LinkFlags = _linkFlags.View, StageN = _stageN.View,
+            StageId = _stageId.View, StageSlot = _stageSlot.View, StagePart = _stagePart.View,
 #if GPU_PHASE_PROBE
             Phase = _phase.View,
 #endif
@@ -1763,6 +1798,8 @@ namespace __NS__
             _lo.Dispose(); _hi.Dispose(); _counts.Dispose(); _start.Dispose(); _gcursor.Dispose();
             _items.Dispose(); _partial.Dispose(); _partialN.Dispose(); _cell.Dispose();
             _tileSum.Dispose(); _tileStart.Dispose();
+            _linkPush.Dispose(); _linkFlags.Dispose(); _stageN.Dispose();
+            _stageId.Dispose(); _stageSlot.Dispose(); _stagePart.Dispose();
             _inst.Dispose(); _wr.Dispose(); _wi.Dispose(); _stock.Dispose();
         }
     }
