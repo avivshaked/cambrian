@@ -36,6 +36,15 @@ namespace Evosim.Farm.Gpu
         /// </summary>
         public bool Resync;
 
+        /// <summary>
+        /// The size classes' step kernels launched on a stream each, so that they run on the card
+        /// at the same time (the Fable review of 2026-09-25, item 4). A class's kernel writes only
+        /// its own bodies' slots and reads what no class writes during the step, so the numbers do
+        /// not move; the probe of 2026-09-26 found each class costing its slowest thread's latency,
+        /// which is what running them together hides.
+        /// </summary>
+        public bool Concurrent;
+
         /// <summary>The size classes' link ceilings, ascending; the last must be 16.</summary>
         public int[] ClassLinks = { 2, 4, 8, 16 };
 

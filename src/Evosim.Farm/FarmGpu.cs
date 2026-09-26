@@ -24,6 +24,7 @@ namespace Evosim.Farm
             GroupSize = s.GpuGroup,
             Mean = s.GpuMean,
             Resync = s.GpuResync,
+            Concurrent = s.GpuConcurrent,
         };
 
         /// <summary>The engine for the world <paramref name="solver"/> describes: refusals first, then the device.</summary>

@@ -181,7 +181,7 @@ namespace Evosim.Farm.Gpu
         public string HeaderToken() =>
             "gpu " + (Options.Single ? "single" : "double") + " " + ShortDevice() +
             " g" + GroupSize.ToString(CultureInfo.InvariantCulture) +
-            " classes " + Options.ClassesToken();
+            " classes " + Options.ClassesToken() + (Options.Concurrent ? " concurrent" : "");
 
         private string ShortDevice()
         {

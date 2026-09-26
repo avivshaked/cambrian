@@ -6444,6 +6444,14 @@ namespace Evosim.Farm.Gpu.Dbl
         private readonly Action<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace, SGlob,
             SSph, SSph, SGrid, SWorld, SCfg>[] _step;
 
+        // EVOSIM_GPU_CONCURRENT: the same step kernels in their stream-taking form and a stream a
+        // class. The grid is joined before the classes are launched and every class stream after,
+        // so a class sees the grid it always saw and the census sees every class done.
+        private readonly Action<AcceleratorStream, Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace,
+            SGlob, SSph, SSph, SGrid, SWorld, SCfg>[] _stepOn;
+        private readonly AcceleratorStream[] _streams;
+        private readonly bool _concurrent;
+
         private SCfg _base;
 
         [ThreadStatic] private static long[] _idScratch;
@@ -6534,27 +6542,67 @@ namespace Evosim.Farm.Gpu.Dbl
 
             _step = new Action<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace, SGlob,
                 SSph, SSph, SGrid, SWorld, SCfg>[KernelGenerator.ClassCount];
+            _concurrent = options.Concurrent;
+            _stepOn = new Action<AcceleratorStream, Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace,
+                SGlob, SSph, SSph, SGrid, SWorld, SCfg>[KernelGenerator.ClassCount];
+            _streams = new AcceleratorStream[KernelGenerator.ClassCount];
 
             _step[0] = grouped
                 ? _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
                     STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step0, g)
                 : _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
                     STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step0);
+            if (_concurrent)
+            {
+                _stepOn[0] = grouped
+                    ? _acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+                        STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step0, g)
+                    : _acc.LoadAutoGroupedKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+                        STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step0);
+                _streams[0] = _acc.CreateStream();
+            }
             _step[1] = grouped
                 ? _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
                     STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step1, g)
                 : _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
                     STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step1);
+            if (_concurrent)
+            {
+                _stepOn[1] = grouped
+                    ? _acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+                        STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step1, g)
+                    : _acc.LoadAutoGroupedKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+                        STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step1);
+                _streams[1] = _acc.CreateStream();
+            }
             _step[2] = grouped
                 ? _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
                     STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step2, g)
                 : _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
                     STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step2);
+            if (_concurrent)
+            {
+                _stepOn[2] = grouped
+                    ? _acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+                        STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step2, g)
+                    : _acc.LoadAutoGroupedKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+                        STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step2);
+                _streams[2] = _acc.CreateStream();
+            }
             _step[3] = grouped
                 ? _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
                     STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step3, g)
                 : _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
                     STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step3);
+            if (_concurrent)
+            {
+                _stepOn[3] = grouped
+                    ? _acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+                        STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step3, g)
+                    : _acc.LoadAutoGroupedKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+                        STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step3);
+                _streams[3] = _acc.CreateStream();
+            }
 
             _acc.Synchronize();
             CompileMs = watch.Elapsed.TotalMilliseconds;
@@ -6688,7 +6736,8 @@ namespace Evosim.Farm.Gpu.Dbl
 
             double f = 1000.0 / Stopwatch.Frequency / Math.Max(1, _probeSteps);
             Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
-                "gpu-probe t={0:0} s, ms a step: grid {1:0.000}, classes {2:0.000} / {3:0.000} / {4:0.000} / {5:0.000}, tail {6:0.000}; " +
+                "gpu-probe" + (_concurrent ? " concurrent (the classes' time together in the first)" : "") +
+                " t={0:0} s, ms a step: grid {1:0.000}, classes {2:0.000} / {3:0.000} / {4:0.000} / {5:0.000}, tail {6:0.000}; " +
                 "bodies a class {7} / {8} / {9} / {10}; cell {11:0.000} m (mean link {12:0.000} m), largest link {13:0.000} m; " +
                 "most cells one link covers, a class {14} / {15} / {16} / {17}; entries a class {18} / {19} / {20} / {21}",
                 world.ElapsedSeconds, _probeGrid * f, _probeClass[0] * f, _probeClass[1] * f, _probeClass[2] * f, _probeClass[3] * f,
@@ -6884,19 +6933,45 @@ namespace Evosim.Farm.Gpu.Dbl
                 }
                 if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeGrid += pn - pt; pt = pn; }
 
-                for (int c = 0; c < _classes.Length; c++)
+                if (_concurrent)
                 {
-                    int used = _slots.Classes[c].Used;
-                    if (used == 0) continue;
+                    // Every class reads the grid the default stream just built, so the grid is
+                    // joined first; the census reads every class's pending spheres, so each class
+                    // stream is joined after. In between the classes run at once.
+                    _acc.DefaultStream.Synchronize();
+                    for (int c = 0; c < _classes.Length; c++)
+                    {
+                        int used = _slots.Classes[c].Used;
+                        if (used == 0) continue;
 
-                    ClassSet set = _classes[c];
-                    SCfg cc = cfg;
-                    cc.N = set.Cap;
-                    cc.MaxN = set.M;
+                        ClassSet set = _classes[c];
+                        SCfg cc = cfg;
+                        cc.N = set.Cap;
+                        cc.MaxN = set.M;
 
-                    _step[c](used, set.Topo, set.ConstSet, set.PanelSet, set.StateSet, set.DriveSet, set.NeurSet,
-                             set.BrainSet, set.TraceSet, gl, committed, pending, grid, sw, cc);
-                    if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeClass[c] += pn - pt; pt = pn; }
+                        _stepOn[c](_streams[c], used, set.Topo, set.ConstSet, set.PanelSet, set.StateSet, set.DriveSet,
+                                   set.NeurSet, set.BrainSet, set.TraceSet, gl, committed, pending, grid, sw, cc);
+                    }
+                    for (int c = 0; c < _classes.Length; c++)
+                        if (_slots.Classes[c].Used != 0) _streams[c].Synchronize();
+                    if (probe) { long pn = Stopwatch.GetTimestamp(); _probeClass[0] += pn - pt; pt = pn; }
+                }
+                else
+                {
+                    for (int c = 0; c < _classes.Length; c++)
+                    {
+                        int used = _slots.Classes[c].Used;
+                        if (used == 0) continue;
+
+                        ClassSet set = _classes[c];
+                        SCfg cc = cfg;
+                        cc.N = set.Cap;
+                        cc.MaxN = set.M;
+
+                        _step[c](used, set.Topo, set.ConstSet, set.PanelSet, set.StateSet, set.DriveSet, set.NeurSet,
+                                 set.BrainSet, set.TraceSet, gl, committed, pending, grid, sw, cc);
+                        if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeClass[c] += pn - pt; pt = pn; }
+                    }
                 }
 
                 if (instrument && gUsed > 0) _censusKernel(gUsed, gl, cfg);
@@ -7682,6 +7757,7 @@ namespace Evosim.Farm.Gpu.Dbl
         public void Dispose()
         {
             foreach (ClassSet s in _classes) s.Dispose();
+            foreach (AcceleratorStream s in _streams) s?.Dispose();
             foreach (IColumn c in _gBody) c.Dispose();
             foreach (IColumn c in _gLink) c.Dispose();
             _rankToSlot.Dispose();
