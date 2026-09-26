@@ -12,8 +12,8 @@ within ten seconds of landing, and the one-part pool stomachs lived about twice 
 48's. But only one of 63 of them earned its child. The eater lines that lasted came from elsewhere,
 from random founders that happened to be a stomach on a link. In this world a link catches light at
 half a leaf's rate, so those bodies were part plant. The largest, in seed 2, ran eleven generations
-and faded as its members lost the link. The depth rule set the trickle's leaves where their matter
-was richest, deep in the dark, and they died in about a minute and a half. A fault in the placer
+and faded as its members with the link died out first (corrected 2026-09-26, below). The depth rule
+set the trickle's leaves where their matter was richest, deep in the dark, and they died in about a minute and a half. A fault in the placer
 held most of them at 44 m, and it is fixed. The round's own checkpoints gave the first faithful film
 windows.
 
@@ -192,10 +192,19 @@ Look at the share earning any light against the living count.
 
 The incomes and the net are medians over the rows logged in the window.
 
-The line's members shed the link over its first 8,000 s. A one-part stomach cannot pay its way on
-this snow, as the pool's one-part stomachs showed. After that the line lived on its savings and
+The share with the link fell over its first 8,000 s (corrected 2026-09-26, below). A one-part
+stomach cannot pay its way on this snow, as the pool's one-part stomachs showed. After that the line lived on its savings and
 shrank for 10,000 s. I read the loss of the link as the cause of the decline; I have not tested it.
-Nor do I know why the line shed it.
+Nor do I know why the members with the link stopped breeding.
+
+*Correction, 2026-09-26.* This section and the summary said the line's members shed the link. The
+lineage says they did not. Round 49's story writer counted body 48's descendants by their parents,
+and I read the counts again: 173 bodies, 69 with the link and 104 without. Of the 73 children of
+parents with the link, 9 were born without it, and 4 of the 99 children of parents without it were
+born with one. The share fell because the members with the link died first. Of their 69 deaths, 57
+came between 4,000 and 8,000 s, and they had 2 children after 6,000 s, the last at 11,887 s. The last
+of them died at 15,186 s, and the last of the family at 18,251 s. The table above stands, since it
+counts the living. "Line 48" in this entry means all of body 48's descendants.
 
 S2 fails for this reason, and it fails the other way from 0121's worry. It asked that stomach
 children die young under the wear, the rule that raises a body's upkeep with its age. In seeds 2 and
