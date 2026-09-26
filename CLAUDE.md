@@ -1378,6 +1378,14 @@ actually verifying it.
   the WER queue need an elevated shell, so the owner copies them into `scratch/crash/`, and
   `scripts/read-minidump.py <dump>` prints the bugcheck, the process, the faulting driver and
   the stack's frames by driver. Read the dump before pausing anything on a crash's account.
+- **The machine froze twice on 2026-09-26 with nothing in the logs** (Kernel-Power 41 at 17:16 and
+  18:18, each a forced restart; no WHEA, no bugcheck, no dump; the last entries in every Claude
+  transcript stop at 17:13:40 and 18:14:21). At both, the narrator service's session had about eight
+  subagents running `uv` and test suites in parallel worktrees, and at the second the story flow's
+  tests had just started a few hundred short processes. The cause is not proven: the CPU's old
+  microcode (0x10E) and the file-system filter stack under a burst of process starts (2026-09-22's
+  blue screen) both fit. Keep bursts of process starts low (the story flow runs its script tool in
+  its own process for this reason), and read `Get-WinEvent` for Kernel-Power 41 before blaming a run.
 - **The card runs the solver through ILGPU and nothing else, and its group size is set by
   hand** (logbook/0112, `spikes/02-gpu-featherstone/`). ComputeSharp refuses a local array
   in a shader and the step needs about 1,600 words of scratch a thread, so it is out. ILGPU
@@ -1722,15 +1730,20 @@ actually verifying it.
 - **A subagent that a skill launches is briefed from the skill's files alone** (the owner,
   2026-09-26: "any new session should be able to get the same results"). Every session that runs
   the skill must hand the subagent the same words, so its prompt is the skill's fixed template with
-  nothing filled in but paths, and everything else it needs is in a file the template names: its
+  nothing filled in but paths and numbers, and everything else it needs is in a file the template names: its
   brief, and the working folder whose files hold the case at hand. Nothing from the session goes
   in: no account of what happened, no lines of an earlier draft, no ruling or its date, no numbers
   that are not in the folder's files. A brief states rules and examples and carries no history;
-  how it came to be goes in the logbook or in a record file beside it. A session's reading of a
-  draft reaches the subagent as a file in the folder (the story flow's `writer-notes.md`), never
-  as prose in the prompt. Round 49's writer was briefed with a rewrite that told the story of the
-  draft it replaced, and a prompt that retold it again; a new session would have briefed it
-  differently.
+  how it came to be goes in the logbook or in a record file beside it. Round 49's writer was
+  briefed with a rewrite that told the story of the draft it replaced, and a prompt that retold it
+  again; a new session would have briefed it differently. **Nor is any verdict in such a flow the
+  session's own** (the owner, the same day, of a gate the story flow named and the session decided:
+  "not good enough"). A step that judges is a tool's check, a subagent's answer saved as it came,
+  or the owner's words saved as they wrote them; a note a subagent reads is one of those three and
+  never the session's reading; the flow's state records every verdict, and every loop has a limit
+  after which the owner rules. `scripts/story-flow.py` (`next`, `save`, `owner`) is the pattern. A
+  reader that must know nothing of the project is an `Explore` agent, which is given no CLAUDE.md,
+  memory or git status; a `general-purpose` agent is given all three, and they change by the day.
 - **Sample the pictures while a round runs, not only when it is written up** (owner,
   2026-09-12 evening: "sometimes you can't really evaluate something without actually
   seeing it"). The theatre-watch rule above covers the entry; this one covers the run. Take

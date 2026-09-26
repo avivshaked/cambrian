@@ -18,31 +18,40 @@ with the run's own rows.
 
 ## 0. The flow
 
+Any session that runs this flow has to reach the same film (the owner, 2026-09-26), so no step is
+left to the session's judgment. Every verdict comes from a tool, from a subagent launched with a
+fixed prompt (`.claude/skills/story-film/prompts.md`) whose answer is saved word for word from its
+transcript, or from the owner's words saved as they wrote them. `flow.json` records each verdict
+with a hash of what it was about, and every loop has a limit after which the owner rules.
+Commit `4115d2f` records the review that found the steps a session used to decide.
+
 | stage | what happens | it leaves | whose |
 |---|---|---|---|
-| open | the story's folder and its state | `flow.json` | agent |
+| open | the story's folder; the entry and pre-registration committed; every run ended | `flow.json` | agent |
 | guides | a guide for each run (section 2) | `guide/guide.json` per run | agent |
-| arc | the writer's first pass (section 3) | `arc.md` | writer |
-| arc approved | the owner rules on the arc | an approval in `flow.json` | owner |
-| write | the writer's second pass (section 3) | `story.md`, `story.json`, `checks.tsv` | writer |
-| script | the captions edited for the ear (section 3a) | `script.md`, `story.draft.json`, `edits.tsv` | editor, cold reader |
-| script approved | the owner reads the script and rules on it | an approval | owner |
+| arc | the writer's first pass (section 3) | `arc.md`, `arc-reads.md`, `arc-choices.md` | writer |
+| arc approved | the owner rules on the arc and its choices | `owner/arc-K-<verdict>.md`, an approval | owner |
+| write | the writer's second pass (section 3) | `story.md`, `story.json`, `checks.tsv`, `make_story.py`, `writer-report.md`, `glossary-rows.md` | writer |
+| draft | the tool's check, the listener and the fact checker (section 3) | `drafts/K/` | tool, listener, fact checker |
+| script | rounds of edit, check and reading (section 3a) | `script.md`, `script/N/`, `story.draft.json`, `edits.tsv` | editor, tool, readers |
+| script approved | the owner reads the script | `owner/script-K-<verdict>.md`, an approval | owner |
 | narrate | the narration of the approved words, which sets each scene's length (section 3b) | `narration/` | agent, service |
-| check | the director's check per run (section 4) | a mark per run | agent |
+| check | the director's check per run (section 4) | a mark per run, with its log | agent |
 | film | the scenes filmed (section 5) | `story.filmed.json`, the clips | agent |
-| assemble | the Resolve timeline, or the ffmpeg film (section 6) | `resolve/plan.json` | agent |
-| timeline approved | the owner watches the timeline | an approval | owner |
-| deliver | the render in `scratch/owner/` | a mark | agent |
+| assemble | the Resolve timeline, or the ffmpeg film (section 6) | `resolve/plan.json`, `build.json` | agent |
+| timeline approved | the owner watches the timeline | `owner/timeline-K-<verdict>.md`, an approval | owner |
+| glossary | the writer's new rows appended to the glossary | a mark | agent |
+| deliver | the render in `scratch/owner/` | a mark with the film's hash | agent |
 
-`python scripts/story-flow.py status scratch/story/<round>` prints this table for a story, each
-stage done, skipped, stale, open or waiting, with the evidence and the next step. It reads the
-files each stage leaves; what no file shows (an approval, a check, a skip, the delivery) is in
-`flow.json`, written by the same script. An approval records a hash of what the owner saw, so an
-edit after it reads as stale. The film stage compares `story.json` with `story.filmed.json` and
-names every scene whose filmed fields (station, second, subject, length, chapter, chart) changed;
-a caption is not one of them. The script is approved before anything is narrated (the owner,
-2026-09-26). Its approval covers the words and the scenes and not their timing, which the narration
-sets afterwards, so the narration leaves it standing and a changed word turns it stale.
+`python scripts/story-flow.py next scratch/story/<round>` walks this table, does each mechanical
+step itself and prints what comes next: a subagent and its prompt, a command, or the owner's
+ruling. `status` prints the same without changing anything. `save <folder> <agent id>` records a
+reader's answer, and `owner <folder> <stage> <file> --verdict <v>` the owner's. An approval records
+a hash of what the owner saw, so an edit after it reads as stale. The film stage names every scene
+whose filmed fields (station, second, subject, chapter, chart) changed, or which now runs longer
+than its clip; a caption is not one of them. The script is approved before anything is narrated,
+and its approval covers the words and the scenes and not their timing, which the narration sets
+afterwards.
 
 ## 1. Before starting
 
@@ -65,26 +74,25 @@ exists and from the lineage when it does not.
 
 ## 3. The writer
 
-The writer is an Opus subagent. Its brief is `story-writer-brief.md` together with the round's
-logbook entry and pre-registration. It is told that the runs are read-only and that nothing heavy
-runs. It runs in two passes. The first returns `arc.md` alone (the brief's "What you hand back"), and
-the owner rules on it before a caption is written. The second pass works from the arc as ruled.
+The writer is a `general-purpose` subagent on Opus, launched with the prompt `next` prints and
+nothing else; its rules are [`story-writer-brief.md`](story-writer-brief.md), and it finds the
+round's entry and pre-registration through `flow.json`. It reads the runs through the shell and
+writes its own files into the story's folder the same way, never with the Write or Edit tools, and
+runs nothing heavy. It runs in two passes. The first writes `arc.md`, `arc-reads.md` and
+`arc-choices.md`, and the owner rules on them before a line of narration is written. The second
+writes the story from the arc as ruled.
 
-The writer reads the runs through the shell. It writes its own files into `scratch/story/<round>/`
-the same way, never with the Write or Edit tools (the owner, 2026-09-26). That is
-`arc.md` in the first pass, and in the second `story.md` and the builder script, which it runs.
-From 2026-09-25 until then it wrote nothing and returned its files as text. Round 49's second
-pass sent a builder of several hundred lines in 17 pieces to a server it started to hold them, and
-spent ten steps on the shell's quoting. The second pass leaves three files:
+Every draft the second pass hands back is reviewed before anyone reads it. `story-script.py check`
+counts what can be counted of the narration rules, and refuses any number whose words stand in no
+`shown` cell of `checks.tsv`. The listener ([`story-listener-brief.md`](story-listener-brief.md))
+hears the page against the writer's own rules and names each fault; the fact checker
+([`story-facts-brief.md`](story-facts-brief.md)) asks of every `checks.tsv` row whether the words
+are true of the value. A draft passes with no ERROR, the listener's PASS and no row false. A draft
+that fails goes back to the writer, which reads its `drafts/K/`; three failures in a row go to the
+owner, who passes the draft or returns it with their words.
 
-- `story.md`, the prose for the owner;
-- `story.json`, the shot list the director films;
-- `checks.tsv`, every number on screen with the file and query it came from.
-
-The scripts that produced the numbers of round 48's second film are in
-[`story-r48-v2/`](story-r48-v2/) (`runlib.py`, `facts.py`, `extras.py`, `make_story.py`), beside the
-story, shot list and checks they wrote. A new writer copies them and starts from them. The first
-film's scripts, which they replace, stayed in `scratch/story/r48/`.
+Round 48's second film's readers are in [`story-r48-v2/`](story-r48-v2/) (`runlib.py`, `facts.py`,
+`extras.py`, `make_story.py`), a model for reading the runs and building the shot list.
 
 The fields the director reads are in `unity/Assets/Theatre/SafariStory.cs`. Each scene carries:
 
@@ -98,20 +106,18 @@ The stations are Arrival, Descent, Portrait, Floor, Birth, Colony, Time and Card
 the 8 s chapter card, is a slow drift through the crowd at its second, made to be talked over.
 A `full` chart may sit on any station but a Portrait or a Birth, whose body it would cover.
 
-Before anything is filmed, the caller reads `story.md` against `checks.tsv`. A number with no row
-there is not filmed.
-
 ## 3a. The script
 
-The writer's captions are true and complete; the script stage makes them sound like a person
-reading them aloud. The rules are [`story-script-brief.md`](story-script-brief.md), the skill is
-`.claude/skills/story-script/`, and the tool is `scripts/story-script.py`. `render` turns
-`story.json` into `script.md`, one line a caption. An editor rewrites the page, `apply` reads it
-back (keeping the writer's version as `story.draft.json`, re-timing changed captions by the
-reading pace, lengthening a scene that needs it, and logging every change in `edits.tsv`), and
-`check` refuses a number without a row in `checks.tsv`, a narrator's "I" or "we", a code name, a
-caption held too briefly and a question ending a scene. A cold reader who sees only the page then
-says where it stumbled and tells the story back, for at most three rounds.
+The writer's narration is true and complete; the script stage makes it sound like a person telling
+it. The skill `.claude/skills/story-script/` says what each round does, the editor's rules are
+[`story-script-brief.md`](story-script-brief.md), and the tool is `scripts/story-script.py`.
+`render` shows `story.json` as `script.md`, one narration paragraph a line, and `apply` reads it
+back, cutting each paragraph into subtitles with `split_cues`, re-timing what changed, keeping the
+writer's version as `story.draft.json` and logging every change with its round and author in
+`edits.tsv`. In each round the editor edits the page, the tool checks it, a fact checker judges
+every edited line and a cold reader who sees only the page says where it stumbled and tells the
+story back, and an arc comparer says whether that summary holds the arc. A clean round, the third
+round or an owner's round closes the stage. The session never edits the page.
 
 ## 3b. The narration
 
@@ -158,8 +164,8 @@ film's, are the pattern):
 
 ### From the farm's film windows
 
-Built on 2026-09-25 (B3 of [`record-and-film-spec.md`](record-and-film-spec.md)) and not yet run
-in Unity or on the farm. Three steps replace the render's one: plan, record, film.
+Built on 2026-09-25 (B3 of [`record-and-film-spec.md`](record-and-film-spec.md)); round 49's film
+windows ran on it on 2026-09-26. Three steps replace the render's one: plan, record, film.
 
 ```powershell
 python scripts/story-windows.py <story.json> --out scratch/story-windows/<round> `
