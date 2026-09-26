@@ -106,6 +106,18 @@ namespace Evosim.Farm
         {
             bool current = layout >= World.StateVersion;
 
+            // The GPU engine steps a block to the metabolic step, which is where every checkpoint
+            // is written; a checkpoint inside a block would hold a solver ahead of this count.
+            if (_solverAhead != 0)
+            {
+                throw new InvalidOperationException(
+                    "A checkpoint was asked for " + _solverAhead + " physics steps inside a " +
+                    "solver block. Checkpoints are written at a metabolic step, where the block ends.");
+            }
+
+            // Anything the engine holds lazily comes home first; a no-op on the CPU.
+            Dynamics.SyncMirror();
+
             StateIo.Tag(w, "HARN");
 
             w.Write(Steps);

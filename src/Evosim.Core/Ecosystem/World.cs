@@ -110,7 +110,13 @@ namespace Evosim.Core
         private readonly MutationLog _mutationLog = new MutationLog();
 
         /// <summary>This step's ledgers, parallel to <c>_living</c>. Reused, never reallocated.</summary>
-        private readonly List<EnergyLedger> _ledgers = new List<EnergyLedger>();
+        private EnergyLedger[] _ledgers = Array.Empty<EnergyLedger>();
+
+        /// <summary>
+        /// Each living body's effective lit area for the step, filled before any is contributed
+        /// to the light field. Reused rather than reallocated, as <c>_ledgers</c> is.
+        /// </summary>
+        private float[] _litAreas = Array.Empty<float>();
 
         /// <summary>
         /// Final rows for absorptive creatures that have died since the last
@@ -2062,6 +2068,7 @@ namespace Evosim.Core
         {
             if (!(seconds > 0f)) throw new ArgumentOutOfRangeException(nameof(seconds));
 
+            WorldPhaseProbe.Begin();
             ElapsedSeconds += seconds;
             SecondsSinceFloorFired += seconds;
 
@@ -2071,17 +2078,21 @@ namespace Evosim.Core
             // replaces two lotteries (Disperse, AdvectBodies) with a read of where things already
             // are, which is the whole of D077's second rule.
             ReadPatchesFromPositions();
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Patches);
 
             // Before anything reads the light, and from the absolute clock rather than a delta —
             // a sun advanced by accumulating steps drifts out of phase with the world that is
             // paying for it, and would present as a slow trend nobody chose (§5A.4).
             Field.Advance(ElapsedSeconds);
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Light);
 
             // The ruling of 2026-09-24. The reserve each gestating body starts the step with, so
             // Gestate can read the step's net after the mouth. Touches nothing on a lump breeder.
             MarkReserveAtStepStart();
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Reserve);
 
             Metabolise(seconds);
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Metabolise);
 
             // D106 items 1, 3, 4 and 5 (WorldMouth.cs). After Metabolise, so a repair is paid out
             // of the reserve this step actually left the body and a body that could not pay its
@@ -2091,12 +2102,14 @@ namespace Evosim.Core
             // which is what lets it be called unconditionally. The third, from D123, zeroes the
             // contact and damage records so the senses read this step's alone.
             ApplyMouth(seconds);
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Mouth);
 
             // The ruling of 2026-09-24: a gestating body banks its share of this step's net, after
             // everything that earns or spends on the step (light, eating, upkeep, repair, a bite)
             // and before growth, so the account and the body draw on the same surplus in a fixed
             // order. A no-op on every lump breeder, which is every recorded world.
             Gestate();
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Gestate);
 
             // fable-propose-growth.md rule 5. After feeding and upkeep, so a body invests what
             // this step actually left it; before Reproduce, so growth has first claim on the
@@ -2104,6 +2117,7 @@ namespace Evosim.Core
             // Before the fields' own transport passes for the reason feeding is: what a body draws
             // this step comes out of the water as it stood when the step began.
             Grow();
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Grow);
 
             // D061. After Metabolise, so this step's feeding and shading were priced at each
             // creature's patch as it stood when the step began; before Reproduce, so an
@@ -2111,17 +2125,20 @@ namespace Evosim.Core
             // started it in. Skips its own RNG draw entirely when there is nowhere to disperse to
             // or nothing asks for it — see Disperse's own remarks for the K=1 bit-identity guard.
             Disperse();
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Disperse);
 
             // D066. Beside Disperse and under the same rules: after Metabolise so this step was
             // priced where the creature stood, before Reproduce so an offspring is born in the
             // patch its parent ends the step in. Draws nothing at all when the rolls are off.
             AdvectBodies(seconds);
+            WorldPhaseProbe.Mark(WorldPhaseProbe.AdvectBodies);
 
             // D074. Before the field settles, so a unit deposited at the surface starts sinking on
             // the step it arrives rather than a step later — and, with burial after the whole
             // transport pass below, so nothing that arrives at the surface can be buried in the
             // same step it entered the world.
             DepositMatterInflux(seconds);
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Influx);
 
             // Rule 6 of fable-propose-grid.md. Before the fields' own passes, so a joule a corpse
             // hands over this step sinks, mixes and drifts on the same step it arrives. That
@@ -2129,9 +2146,11 @@ namespace Evosim.Core
             // always obeyed, since Metabolise runs before all of this. Returns before touching
             // anything when there is no corpse, which is every world at CorpseDecayPerSecond 0.
             StepCorpses(seconds);
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Corpses);
 
             Nutrients.Settle(seconds);
             Matter.Settle(seconds);
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Settle);
 
             // D098's leg 8, and it replaces D051's two floor leaks. Charged matter anywhere in
             // the water decays into spent matter in the same place: the joules leave the world as
@@ -2146,12 +2165,15 @@ namespace Evosim.Core
                 RemineralisedTotal += remineralised;
             }
 
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Remineralise);
+
             // Stirred after it sinks, in the same step. The two are opposed — one carries detritus
             // down and the other spreads it back through the column — and whether the world has a
             // nutrient gradient or a line on the floor is the balance between them (D036). D061
             // adds a horizontal pass alongside the vertical one, throttled by its own knob — see
             // NutrientField.Mix's remarks for why it is a separate, far slower rate.
             Nutrients.Mix(seconds, Config.NutrientMixingDiffusivity, Config.HorizontalMixingDiffusivity);
+            WorldPhaseProbe.Mark(WorldPhaseProbe.MixSnow);
 
             // The matter grid stirs at its own rate on every axis. HorizontalMixingDiffusivity is
             // one knob for two substances, and it belongs to the detritus: it is what the run
@@ -2163,6 +2185,7 @@ namespace Evosim.Core
             Matter.Mix(
                 seconds, Config.MatterMixingDiffusivity,
                 Matter is GridField ? Config.MatterMixingDiffusivity : Config.HorizontalMixingDiffusivity);
+            WorldPhaseProbe.Mark(WorldPhaseProbe.MixMatter);
 
             // D066. Carried after it is stirred, in the same step and against the same clock the
             // bodies feel — diffusion is now the residual and advection the transport. A no-op
@@ -2170,28 +2193,37 @@ namespace Evosim.Core
             // patch width is the field's own, sqrt(area / K), which is what the horizontal Mix
             // pass above already diffuses across: one geometry, not two.
             Nutrients.Advect(Config.Current, ElapsedSeconds, seconds, Nutrients.PatchWidthMetres);
+            WorldPhaseProbe.Mark(WorldPhaseProbe.AdvectSnow);
             Matter.Advect(Config.Current, ElapsedSeconds, seconds, Matter.PatchWidthMetres);
+            WorldPhaseProbe.Mark(WorldPhaseProbe.AdvectMatter);
 
             // D074. After everything that moves matter within the world, so what the floor holds
             // when burial is charged is what settling, mixing and advection actually left there —
             // and after the influx above, so the deposit is not buried on arrival.
             BuryMatter(seconds);
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Bury);
 
             // D083. After every pass that moves or removes a vertex, so what a body reads next
             // step is a field whose drifted-together vertices are one and whose count fits its
             // budget. A cell field has nothing to do here.
             Nutrients.Cull();
             Matter.Cull();
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Cull);
 
             Reproduce();
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Reproduce);
             EnforceFloor();
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Floor);
 
             // D115. After the floor, which has returned by the time the trickle runs (the trickle
             // runs only once the floor has closed), and before the ceiling, so a founder that
             // arrives this step is counted by it as a floor founder always has been.
             EnforceTrickle(seconds);
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Trickle);
 
             EnforceCeiling();
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Ceiling);
+            WorldPhaseProbe.End(Living.Count);
         }
 
         /// <summary>
@@ -2384,58 +2416,34 @@ namespace Evosim.Core
             CurrentField current = Config.Current;
             bool drifts = Config.SharedSpace && current != null && current.AdvectFields;
 
-            float length = Nutrients.LengthMetres;
-            float width = Nutrients.WidthMetres;
-            float depth = Config.WorldDepthMetres;
-            bool tank = Config.WorldShape == WorldShape.Tank;
-
             double fraction = (double)Config.CorpseDecayPerSecond * seconds;
             if (fraction > 1.0) fraction = 1.0;
+
+            // Where every corpse is carried this step, before any of them hands anything over.
+            // The two passes are independent: the water's velocity reads no field and a deposit
+            // moves no corpse. So the drift runs corpse by corpse across Core's threads and the
+            // deposits follow in the list's order, the order they were always made in. The pin is
+            // what lets several threads sample the water at once, as in the farm's water pass: it
+            // selects the slot an unpinned call would have selected, so every velocity is the same
+            // bits, and it is a no-op for water it has nothing to fill for.
+            if (drifts) current.PinInstant(ElapsedSeconds);
+
+            try
+            {
+                Parallelism.ForRanges(_corpses.Count, (from, to) =>
+                {
+                    for (int i = from; i < to; i++) Drift(_corpses[i], seconds, sink, drifts);
+                });
+            }
+            finally
+            {
+                if (drifts) current.UnpinInstant();
+            }
 
             int kept = 0;
             for (int i = 0; i < _corpses.Count; i++)
             {
                 Corpse corpse = _corpses[i];
-                corpse.AgeSeconds += seconds;
-
-                Float3 p = corpse.Position;
-                float x = p.X;
-                float y = p.Y - sink;
-                float z = p.Z;
-
-                if (drifts)
-                {
-                    // A corpse carries a position, so under CurrentMode.Transport it rides the
-                    // water where it actually is rather than the water at its patch's centre.
-                    // The rolls take the patch, which is all that field is a function of, so
-                    // every run in the record drifts on the same arithmetic it always did.
-                    Float3 v = current.Mode == CurrentMode.Transport || tank
-                        ? current.VelocityAt(p.X, p.Y, p.Z, ElapsedSeconds)
-                        : current.VelocityAt(p.Y, ElapsedSeconds, corpse.Patch, PatchCount);
-
-                    y += v.Y * seconds;
-
-                    if (tank)
-                    {
-                        // The glass, not a seam. The streams have no radial flow at the wall, so a
-                        // corpse is not carried into it; what this catches is the step's own
-                        // arithmetic — an explicit half-second of a flow that curves — and it
-                        // catches it by sliding the parcel back onto the rim rather than by
-                        // wrapping it to the far side of the same tank.
-                        KeepInTheWater(x + v.X * seconds, z + v.Z * seconds, out x, out z);
-                    }
-                    else
-                    {
-                        x = WrapAxis(x + v.X * seconds, length);
-                        z = WrapAxis(z + v.Z * seconds, width);
-                    }
-                }
-
-                if (y > 0f) y = 0f;
-                else if (y < -depth) y = -depth;
-
-                corpse.Position = new Float3(x, y, z);
-                if (drifts) corpse.Patch = PatchOfXZ(x, z);
 
                 // The last instalment: everything that is left, in one go. One stock since D098,
                 // so one test — a corpse is charged matter and nothing else. A step long enough
@@ -2473,6 +2481,60 @@ namespace Evosim.Core
             }
 
             if (kept < _corpses.Count) _corpses.RemoveRange(kept, _corpses.Count - kept);
+        }
+
+        /// <summary>
+        /// One corpse's step of age, sinking and carriage: <see cref="StepCorpses"/>' first pass.
+        /// Writes the corpse and nothing else, and reads no field.
+        /// </summary>
+        private void Drift(Corpse corpse, float seconds, float sink, bool drifts)
+        {
+            CurrentField current = Config.Current;
+            float length = Nutrients.LengthMetres;
+            float width = Nutrients.WidthMetres;
+            float depth = Config.WorldDepthMetres;
+            bool tank = Config.WorldShape == WorldShape.Tank;
+
+            corpse.AgeSeconds += seconds;
+
+            Float3 p = corpse.Position;
+            float x = p.X;
+            float y = p.Y - sink;
+            float z = p.Z;
+
+            if (drifts)
+            {
+                // A corpse carries a position, so under CurrentMode.Transport it rides the
+                // water where it actually is rather than the water at its patch's centre.
+                // The rolls take the patch, which is all that field is a function of, so
+                // every run in the record drifts on the same arithmetic it always did.
+                Float3 v = current.Mode == CurrentMode.Transport || tank
+                    ? current.VelocityAt(p.X, p.Y, p.Z, ElapsedSeconds)
+                    : current.VelocityAt(p.Y, ElapsedSeconds, corpse.Patch, PatchCount);
+
+                y += v.Y * seconds;
+
+                if (tank)
+                {
+                    // The glass, not a seam. The streams have no radial flow at the wall, so a
+                    // corpse is not carried into it; what this catches is the step's own
+                    // arithmetic — an explicit half-second of a flow that curves — and it
+                    // catches it by sliding the parcel back onto the rim rather than by
+                    // wrapping it to the far side of the same tank.
+                    KeepInTheWater(x + v.X * seconds, z + v.Z * seconds, out x, out z);
+                }
+                else
+                {
+                    x = WrapAxis(x + v.X * seconds, length);
+                    z = WrapAxis(z + v.Z * seconds, width);
+                }
+            }
+
+            if (y > 0f) y = 0f;
+            else if (y < -depth) y = -depth;
+
+            corpse.Position = new Float3(x, y, z);
+            if (drifts) corpse.Patch = PatchOfXZ(x, z);
         }
 
         /// <summary>
@@ -2741,65 +2803,94 @@ namespace Evosim.Core
             // the whole of the cost.
             Matter.ClearDemand();
 
+            // D099's cap, and the same number Metabolism bills on below. A body's shadow is what
+            // it earns on, so the two have to be one quantity: shade it casts but does not collect
+            // would be light destroyed, and light it collects but does not cast would be light
+            // created, and the audit would see either.
+            //
+            // D110 keeps the rule in a pose: the same exposure array reaches Bill below, or
+            // neither side reads it. Off, the array is null and this is the recorded call.
+            //
+            // The areas first, body by body across Core's threads, and then the contributions in
+            // the living's order. An area is a function of its own body alone; only the sum into
+            // a layer is shared, and it is taken in the order it always was, so the split moves
+            // no number.
+            if (_litAreas.Length < _living.Count)
+            {
+                Array.Resize(ref _litAreas, Math.Max(_living.Count, 2 * _litAreas.Length));
+            }
+
+            float[] litAreas = _litAreas;
+            bool capOn = Config.LightSilhouetteCap;
+
+            Parallelism.ForRanges(_living.Count, (from, to) =>
+            {
+                for (int i = from; i < to; i++)
+                {
+                    Organism creature = _living[i];
+                    float[] exposure = byExposure ? creature.CurrentExposure : null;
+                    litAreas[i] = exposure == null
+                        ? creature.Phenotype.EffectiveLitArea(capOn)
+                        : creature.Phenotype.EffectiveLitArea(exposure, creature.UpInBody, capOn);
+                }
+            });
+
             for (int i = 0; i < _living.Count; i++)
             {
                 Organism creature = _living[i];
-                // D099's cap, and the same number Metabolism bills on below. A body's shadow is
-                // what it earns on, so the two have to be one quantity: shade it casts but does
-                // not collect would be light destroyed, and light it collects but does not cast
-                // would be light created, and the audit would see either.
-                //
-                // D110 keeps the rule in a pose: the same exposure array reaches Bill below, or
-                // neither side reads it. Off, the array is null and this is the recorded call.
-                float[] exposure = byExposure ? creature.CurrentExposure : null;
-                Field.Contribute(
-                    creature.HeightY,
-                    exposure == null
-                        ? creature.Phenotype.EffectiveLitArea(Config.LightSilhouetteCap)
-                        : creature.Phenotype.EffectiveLitArea(
-                            exposure, creature.UpInBody, Config.LightSilhouetteCap),
-                    creature.Patch);
+                Field.Contribute(creature.HeightY, litAreas[i], creature.Patch);
             }
+            WorldPhaseProbe.Mark(WorldPhaseProbe.LightContribute);
             Field.Solve();
+            WorldPhaseProbe.Mark(WorldPhaseProbe.LightSolve);
 
             // Appetite. Priced at the full local density, so this is what each creature would eat
             // if it were alone — which is the quantity a proportional share has to be taken of.
             // Kept, because it is also the answer whenever the larder turns out to be full.
-            while (_ledgers.Count < _living.Count) _ledgers.Add(default);
+            if (_ledgers.Length < _living.Count)
+            {
+                Array.Resize(ref _ledgers, Math.Max(_living.Count, 2 * _ledgers.Length));
+            }
+
+            EnergyLedger[] ledgers = _ledgers;
+
+            // The bills, then the demands. A bill reads its own body, the fields' stock and the
+            // solved light, and writes its own slot and its own body; a demand writes the fields'
+            // demand arrays, which no bill reads. So the bills can run body by body across Core's
+            // threads and the demands follow in the living's order, the order each cell's sum was
+            // always taken in, and the split moves no number. On a grid only: the grid's reads are
+            // array reads, and the older fields' have not been checked for scratch they share.
+            //
+            // LedgerTicks' bracket: at one thread a clock read either side of each bill, as it
+            // always was. On several it is the parallel pass's wall, the density reads included,
+            // since a bracket per bill on several threads would add up the threads' time.
+            if (Parallelism.On && Nutrients is GridField && Matter is GridField)
+            {
+                long passStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+
+                Parallelism.ForRanges(_living.Count, (from, to) =>
+                {
+                    for (int i = from; i < to; i++)
+                    {
+                        ledgers[i] = BillAtFullDensity(_living[i], seconds, byExposure, false);
+                    }
+                });
+
+                LedgerTicks += System.Diagnostics.Stopwatch.GetTimestamp() - passStarted;
+            }
+            else
+            {
+                for (int i = 0; i < _living.Count; i++)
+                {
+                    ledgers[i] = BillAtFullDensity(_living[i], seconds, byExposure, true);
+                }
+            }
 
             for (int i = 0; i < _living.Count; i++)
             {
                 Organism creature = _living[i];
+                EnergyLedger ledger = ledgers[i];
 
-                float density = Nutrients.EdibleDensityAt(creature.Point);
-                float spent = Matter.DensityAt(creature.Point);
-
-                float[] exposure = byExposure ? creature.CurrentExposure : null;
-
-                // LedgerTicks' bracket: a clock read either side, nothing the bill reads.
-                long billStarted = System.Diagnostics.Stopwatch.GetTimestamp();
-
-                EnergyLedger ledger = exposure == null
-                    ? Metabolism.StepAt(
-                        creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
-                        density, spent, creature.PendingWorkJoules, seconds, creature.Age)
-                    : Metabolism.StepAt(
-                        creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
-                        density, spent, creature.PendingWorkJoules, seconds, creature.Age,
-                        exposure, creature.UpInBody);
-
-                LedgerTicks += System.Diagnostics.Stopwatch.GetTimestamp() - billStarted;
-
-                // The absorptive log's capture, taken where the number is — one field write, on
-                // the pass that already read it, and only for the creatures the file records
-                // (AbsorptiveSample). It has to be here rather than at report time: the field is
-                // emptied by Take, settled, mixed and advected between this instant and the next
-                // sample, so asking again later would produce a plausible density that is not the
-                // one this creature was priced against. The rationed branch below overwrites it
-                // with what it actually re-priced.
-                if (creature.HasAbsorptiveTissue) creature.LastDensityHere = density;
-
-                _ledgers[i] = ledger;
                 Nutrients.Demand(creature.Point, ledger.PoolDrawn);
 
                 // What fixation would take out of the water, in units: the joules it fixed over
@@ -2813,6 +2904,7 @@ namespace Evosim.Core
 
             // Every share and every rationed price in the pass below is taken from what the
             // cells hold now, not from what earlier meals in the same walk leave behind.
+            WorldPhaseProbe.Mark(WorldPhaseProbe.Ledgers);
             Nutrients.FreezeAvailability();
             Matter.FreezeAvailability();
 
@@ -3040,6 +3132,49 @@ namespace Evosim.Core
         /// D098's leg 10 for one body: a reserve above <see cref="RunConfig.ReserveCapSeconds"/> of
         /// its standing cost is released to the water as charged matter.
         /// </summary>
+        /// <summary>
+        /// One body's bill at the full local density: <see cref="Metabolise"/>'s appetite, what
+        /// the body would eat if it were alone.
+        /// </summary>
+        /// <param name="creature">The body.</param>
+        /// <param name="seconds">The step.</param>
+        /// <param name="byExposure">Whether the light is priced by the pose (D110).</param>
+        /// <param name="timed">Whether to add the bill's own wall to <see cref="LedgerTicks"/>:
+        /// only on one thread, where nothing else writes it.</param>
+        private EnergyLedger BillAtFullDensity(
+            Organism creature, float seconds, bool byExposure, bool timed)
+        {
+            float density = Nutrients.EdibleDensityAt(creature.Point);
+            float spent = Matter.DensityAt(creature.Point);
+
+            float[] exposure = byExposure ? creature.CurrentExposure : null;
+
+            // LedgerTicks' bracket: a clock read either side, nothing the bill reads.
+            long billStarted = timed ? System.Diagnostics.Stopwatch.GetTimestamp() : 0L;
+
+            EnergyLedger ledger = exposure == null
+                ? Metabolism.StepAt(
+                    creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
+                    density, spent, creature.PendingWorkJoules, seconds, creature.Age)
+                : Metabolism.StepAt(
+                    creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
+                    density, spent, creature.PendingWorkJoules, seconds, creature.Age,
+                    exposure, creature.UpInBody);
+
+            if (timed) LedgerTicks += System.Diagnostics.Stopwatch.GetTimestamp() - billStarted;
+
+            // The absorptive log's capture, taken where the number is — one field write, on the
+            // pass that already read it, and only for the creatures the file records
+            // (AbsorptiveSample). It has to be here rather than at report time: the field is
+            // emptied by Take, settled, mixed and advected between this instant and the next
+            // sample, so asking again later would produce a plausible density that is not the one
+            // this creature was priced against. The rationed branch below overwrites it with what
+            // it actually re-priced.
+            if (creature.HasAbsorptiveTissue) creature.LastDensityHere = density;
+
+            return ledger;
+        }
+
         private void TrimReserve(Organism creature)
         {
             if (!(Config.ReserveCapSeconds > 0f && creature.StandingWatts > 0f)) return;

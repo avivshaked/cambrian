@@ -234,6 +234,21 @@ namespace Evosim.Dynamics
         /// The last applied torque, narrowed. It is a probe's readout and nothing steps on it, so
         /// it is carried at single precision rather than costing three doubles a link.
         /// </summary>
+        // ------------------------------------------------------------------ the mirror
+        //
+        // The fields a step backend reads and writes back (DynamicsWorldBackend.cs): the very
+        // arrays Drive uses, so a body the GPU engine stepped carries the window it left.
+
+        internal float[] MirrorHistory => _history;
+
+        internal float[] MirrorRunningSum => _runningSum;
+
+        internal float[] MirrorTorquePerUnit => _torquePerUnit;
+
+        internal int MirrorCursor { get => _cursor; set => _cursor = value; }
+
+        internal int MirrorFilled { get => _filled; set => _filled = value; }
+
         private float[] AppliedTorqueAsFloats()
         {
             var values = new float[AppliedTorque.Length];

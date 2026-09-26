@@ -17,6 +17,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Evosim.Core\Evosim.Core.csproj" />
     <ProjectReference Include="..\Evosim.Farm\Evosim.Farm.csproj" />
+    <ProjectReference Include="..\Evosim.Farm.Gpu\Evosim.Farm.Gpu.csproj" />
+    <ProjectReference Include="..\Evosim.Dynamics\Evosim.Dynamics.csproj" />
   </ItemGroup>
 
   <ItemGroup>

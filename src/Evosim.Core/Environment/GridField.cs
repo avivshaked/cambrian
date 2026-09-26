@@ -1830,7 +1830,14 @@ namespace Evosim.Core
         /// </remarks>
         public void FreezeAvailability()
         {
-            for (int i = 0; i < _stock.Length; i++) _available[i] = Edible(i);
+            // Cell by cell and nothing else, so it splits across Core's threads without moving a
+            // number: 958,130 cells a step on round 48's grid.
+            double[] available = _available;
+            Parallelism.ForRanges(_stock.Length, (from, to) =>
+            {
+                for (int i = from; i < to; i++) available[i] = Edible(i);
+            });
+
             _frozen = true;
         }
 

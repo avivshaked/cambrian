@@ -57,6 +57,15 @@ namespace Evosim.Farm
         /// <summary>Threads the body pass ran on. A pace setting, never a realisation.</summary>
         public int Threads;
 
+        /// <summary>
+        /// Which engine stepped the bodies: <see cref="EngineName"/>, or <c>gpu</c>
+        /// (logbook/specs/gpu-port-spec.md section 5), whose facts are in <see cref="Gpu"/>.
+        /// </summary>
+        public string Engine = EngineName;
+
+        /// <summary>The gpu engine's facts; null on the CPU, where run.json carries no gpu block.</summary>
+        public GpuFacts Gpu;
+
         /// <summary>This process, so an arm can be stopped without guessing which one it is.</summary>
         public int ProcessId = GetCurrentProcessId();
 
@@ -436,7 +445,7 @@ namespace Evosim.Farm
 
             // What stepped the bodies, where the Unity build named its editor. The hash below is
             // what identifies the solver; this says which solver it is at all.
-            w.Field("engine", RunManifest.EngineName);
+            w.Field("engine", m.Engine ?? RunManifest.EngineName);
             w.Field("engineVersion", m.EngineVersion);
             w.Field("physicsDtSeconds", m.PhysicsStepSeconds);
             w.Field("metabolicStepSeconds", m.MetabolicStepSeconds);
@@ -447,6 +456,33 @@ namespace Evosim.Farm
             // solver does not, so a thread count is not a realisation.
             w.Field("threads", m.Threads);
             w.Field("processId", m.ProcessId);
+
+            // The gpu engine's block (logbook/specs/gpu-port-spec.md section 5), written only by
+            // a run on it, so every CPU run's run.json keeps the bytes it always had. The overflow
+            // counts and the ceiling count are the loop's last look and are the first thing a
+            // read of a gpu run checks: a nonzero overflow is a step that dropped a contact.
+            if (m.Gpu != null)
+            {
+                GpuFacts g = m.Gpu;
+                w.BeginObject("gpu");
+                w.Field("precision", g.Precision);
+                w.Field("device", g.Device);
+                w.Field("driver", g.Driver);
+                w.Field("groupSize", g.GroupSize);
+                w.Field("mean", g.Mean);
+                w.Field("classLinks", g.ClassLinks);
+                w.Field("classNeurons", g.ClassNeurons);
+                w.Field("kernelHash", g.KernelHash);
+                w.Field("compileMs", g.CompileMs);
+                w.Field("refusedForClass", g.RefusedForClass);
+                w.Field("neuronsAtCeiling", g.NeuronsAtCeiling);
+                w.Field("neuronsAtCeilingMost", g.NeuronsAtCeilingMost);
+                w.Field("overflowCandidates", g.OverflowCandidates);
+                w.Field("overflowOverlaps", g.OverflowOverlaps);
+                w.Field("overflowHeld", g.OverflowHeld);
+                w.Field("overflowEntries", g.OverflowEntries);
+                w.EndObject();
+            }
             w.Field("requestedSeconds", m.RequestedSeconds);
             w.Field("requestedWallMinutes", m.RequestedWallMinutes);
             w.Field("configHash", m.ConfigHash);
@@ -818,5 +854,40 @@ namespace Evosim.Farm
                 return null;
             }
         }
+    }
+
+    /// <summary>
+    /// The gpu engine's facts for run.json (logbook/specs/gpu-port-spec.md section 5): what ran,
+    /// on what, and what the loop last read of its capacities. Plain values, so the Unity farm
+    /// compiles this file without the engine.
+    /// </summary>
+    public sealed class GpuFacts
+    {
+        public string Precision;
+        public string Device;
+        public string Driver;
+        public int GroupSize;
+        public string Mean;
+        public string ClassLinks;
+        public string ClassNeurons;
+        public string KernelHash;
+        public double CompileMs;
+        public long RefusedForClass;
+        public long NeuronsAtCeiling;
+        public long NeuronsAtCeilingMost;
+        public long OverflowCandidates;
+        public long OverflowOverlaps;
+        public long OverflowHeld;
+        public long OverflowEntries;
+
+        /// <summary>The footer's line: candidates and overlaps past their capacities, then the held lists and the cell entries.</summary>
+        public string OverflowLine() =>
+            "gpu overflow: " + OverflowCandidates.ToString(CultureInfo.InvariantCulture) + " / " +
+            OverflowOverlaps.ToString(CultureInfo.InvariantCulture) + " (held " +
+            OverflowHeld.ToString(CultureInfo.InvariantCulture) + ", cell entries " +
+            OverflowEntries.ToString(CultureInfo.InvariantCulture) + ") · refused for class " +
+            RefusedForClass.ToString(CultureInfo.InvariantCulture) + " · neurons at 1e36 " +
+            NeuronsAtCeiling.ToString(CultureInfo.InvariantCulture) + " (most " +
+            NeuronsAtCeilingMost.ToString(CultureInfo.InvariantCulture) + ")";
     }
 }

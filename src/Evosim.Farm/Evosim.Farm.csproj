@@ -29,9 +29,19 @@
     <TieredCompilation>false</TieredCompilation>
   </PropertyGroup>
 
+  <!--
+    The gpu engine (logbook/specs/gpu-port-spec.md), compiled in here and only here: this
+    project is also a Unity local package, and every line that names Evosim.Farm.Gpu sits under
+    EVOSIM_GPU, which Unity never defines, so the Editor compiles the farm without ILGPU.
+  -->
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);EVOSIM_GPU</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Evosim.Core\Evosim.Core.csproj" />
     <ProjectReference Include="..\Evosim.Dynamics\Evosim.Dynamics.csproj" />
+    <ProjectReference Include="..\Evosim.Farm.Gpu\Evosim.Farm.Gpu.csproj" />
   </ItemGroup>
 
 </Project>

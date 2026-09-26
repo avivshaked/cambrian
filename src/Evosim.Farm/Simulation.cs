@@ -93,6 +93,10 @@ namespace Evosim.Farm
 
         private long _reconciledAt = -1;
         private bool _movedOutsideTheSolver;
+
+        // Physics steps the solver has already taken past this simulation's own count: 0 on the
+        // CPU after every call, and up to a block's length less one on the GPU engine.
+        private int _solverAhead;
         private float _sinceGrowthStep;
 
         private bool[] _columnHeld;
@@ -204,6 +208,12 @@ namespace Evosim.Farm
 
             Dynamics = new DynamicsWorld(Solver) { Threads = threads < 1 ? 1 : threads };
 
+            // A diagnostic and not a tunable: the contact grid's cell moves no number (logbook/0115),
+            // so it is read here and not hashed. The speed probe of 2026-09-25 sets it.
+            string cellText = Environment.GetEnvironmentVariable("EVOSIM_CONTACT_CELL");
+            if (!string.IsNullOrEmpty(cellText))
+                Dynamics.ContactCellOverrideMetres = double.Parse(cellText, System.Globalization.CultureInfo.InvariantCulture);
+
             if (config.SharedSpace)
             {
                 // The patch width from the fields themselves — sqrt(area / K) — and the shape and
@@ -276,7 +286,27 @@ namespace Evosim.Farm
             _linkStepSum += Dynamics.TotalLinks();
 
             long physicsStarted = Now();
-            Dynamics.Step();
+
+            // The spec's one call site (logbook/specs/gpu-port-spec.md section 1). On the CPU a
+            // block is one step and this is the step every recorded run took. On the GPU engine
+            // the block runs to the next metabolic step on the first call and the calls after it
+            // only count: nothing between two metabolic steps reads a body, and the reconcile and
+            // the divergence check above are keyed on the world's own counts, which do not move
+            // inside a block.
+            if (_solverAhead == 0)
+            {
+                int block = Dynamics.BlockSteps;
+                if (block > 1)
+                {
+                    int left = StepsPerMetabolicStep - (int)(Steps % StepsPerMetabolicStep);
+                    if (block > left) block = left;
+                }
+
+                Dynamics.StepBlock(block);
+                _solverAhead = block;
+            }
+
+            _solverAhead--;
             _physicsTicks += Now() - physicsStarted;
 
             phaseStarted = Now();
@@ -365,48 +395,106 @@ namespace Evosim.Farm
             _condemned.Clear();
             var reasons = new List<string>();
 
-            for (int i = 0; i < _order.Count; i++)
+            // Each body's verdict first, across Core's threads (the count the farm hands Core): a
+            // verdict reads its own solver and writes its own two slots and its own body's last
+            // root, and nothing else. The condemned are then gathered in the bodies' order, the
+            // order their deaths were always handled in, so a verdict reached on another thread is
+            // the same verdict in the same place and the split moves no number.
+            int count = _order.Count;
+            if (_verdictDead.Length < count)
             {
-                Body body = _order[i];
-                Creature solver = body.Solver;
-                if (solver.Links == 0) continue;
+                int size = Math.Max(count, 2 * _verdictDead.Length);
+                _verdictDead = new bool[size];
+                _verdictReason = new string[size];
+            }
 
-                if (!Divergence.Diverged(solver, Solver, body.Radius, out string reason))
-                {
-                    // The centre of mass, by the same bound the root was just held to, because
-                    // it is the centre and not the root that Metabolise hands to World.Observe
-                    // (D083), and Observe throws on a height outside the world rather than
-                    // killing. Round 44 seed 1 ended `status error` at 22,370 s on exactly that:
-                    // a body thrown skyward whose root was still inside the bound at this check
-                    // and whose centre, a few links higher, was 3 cm past it (2026-09-22). A
-                    // body the world cannot observe is a diverged body, and dies as one here.
-                    Float3 centre = CentreOfMass(solver);
+            bool[] dead = _verdictDead;
+            string[] why = _verdictReason;
 
-                    if (World.HeightIsInTheWorld(centre.Y, World.Config.WorldDepthMetres))
-                    {
-                        // narrow: the root, in Core's frame, for the placer and positions.jsonl.
-                        body.LastRootPosition = new Float3(
-                            (float)solver.Position[0],
-                            (float)solver.Position[1],
-                            (float)solver.Position[2]);
+            Parallelism.ForRanges(count, (from, to) =>
+            {
+                for (int i = from; i < to; i++) dead[i] = Condemned(_order[i], out why[i]);
+            });
 
-                        continue;
-                    }
-
-                    reason = float.IsNaN(centre.Y) || float.IsInfinity(centre.Y)
-                        ? "a non-finite centre of mass"
-                        : FormattableString.Invariant(
-                            $"a centre of mass at {centre.Y:g4} m in a world {Solver.WorldDepthMetres:0.#} m deep");
-                }
-
-                _condemned.Add(body);
-                reasons.Add(reason);
+            for (int i = 0; i < count; i++)
+            {
+                if (!dead[i]) continue;
+                _condemned.Add(_order[i]);
+                reasons.Add(why[i]);
+                why[i] = null;
             }
 
             for (int i = 0; i < _condemned.Count; i++)
             {
                 HandleDivergence(_condemned[i], reasons[i]);
             }
+        }
+
+        // CheckFinite's two slots a body, reused rather than reallocated.
+        private bool[] _verdictDead = Array.Empty<bool>();
+        private string[] _verdictReason = Array.Empty<string>();
+
+        /// <summary>
+        /// One body's verdict: false when it is healthy, and then its last root is taken, as the
+        /// jump check and the metabolic pass read it; true with the reason otherwise.
+        /// </summary>
+        private bool Condemned(Body body, out string reason)
+        {
+            reason = null;
+
+            Creature solver = body.Solver;
+            if (solver.Links == 0) return false;
+
+            if (!Divergence.Diverged(solver, Solver, body.Radius, out reason) &&
+                !RefusedByTheEngine(solver, out reason))
+            {
+                // The centre of mass, by the same bound the root was just held to, because
+                // it is the centre and not the root that Metabolise hands to World.Observe
+                // (D083), and Observe throws on a height outside the world rather than
+                // killing. Round 44 seed 1 ended `status error` at 22,370 s on exactly that:
+                // a body thrown skyward whose root was still inside the bound at this check
+                // and whose centre, a few links higher, was 3 cm past it (2026-09-22). A
+                // body the world cannot observe is a diverged body, and dies as one here.
+                Float3 centre = CentreOfMass(solver);
+
+                if (World.HeightIsInTheWorld(centre.Y, World.Config.WorldDepthMetres))
+                {
+                    // narrow: the root, in Core's frame, for the placer and positions.jsonl.
+                    body.LastRootPosition = new Float3(
+                        (float)solver.Position[0],
+                        (float)solver.Position[1],
+                        (float)solver.Position[2]);
+
+                    return false;
+                }
+
+                reason = float.IsNaN(centre.Y) || float.IsInfinity(centre.Y)
+                    ? "a non-finite centre of mass"
+                    : FormattableString.Invariant(
+                        $"a centre of mass at {centre.Y:g4} m in a world {Solver.WorldDepthMetres:0.#} m deep");
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// A body a step backend would not take: finite, and not being stepped. The gpu engine
+        /// refuses a body over its largest size class (logbook/specs/gpu-port-spec.md section 2)
+        /// and leaves it as the CPU leaves a lost one, so it dies here as a counted divergence
+        /// with a reason that names the engine. Never on the CPU, whose only unstepped body is a
+        /// non-finite one and has already been caught above.
+        /// </summary>
+        private bool RefusedByTheEngine(Creature solver, out string reason)
+        {
+            if (Dynamics.Backend == null || solver.Alive)
+            {
+                reason = null;
+                return false;
+            }
+
+            reason = "refused by the " + Dynamics.Backend.Name + " engine: over its largest size class " +
+                     "(links, neurons or inputs a neuron), so never stepped";
+            return true;
         }
 
         /// <summary>Dumps a diverged body's post-mortem and kills it as a counted death.</summary>

@@ -514,14 +514,15 @@ namespace Evosim.Farm
 
         // The harness's members that are not compared as members: the body table and the list in
         // stepping order, compared by id below; the scratch a step fills before it reads (the
-        // departed set, the contact list handed to Core, the condemned list, the spread's column
-        // flags); the profile's two denominators, which count this process's work as the wall
-        // clock does; the clocks themselves; the world and the solver world, compared elsewhere;
-        // the solver's config and the bed, which are functions of the config; the placer, which
-        // is compared by digest; and the dump writer, which knows its own directory.
+        // departed set, the contact list handed to Core, the condemned list and the divergence
+        // check's two verdict slots, the spread's column flags); the profile's two denominators,
+        // which count this process's work as the wall clock does; the clocks themselves; the world
+        // and the solver world, compared elsewhere; the solver's config and the bed, which are
+        // functions of the config; the placer, which is compared by digest; and the dump writer,
+        // which knows its own directory.
         private static readonly HashSet<string> HarnessNotCompared = new HashSet<string>(StringComparer.Ordinal)
         {
-            "_bodies", "_order", "_departed", "_contacts", "_condemned",
+            "_bodies", "_order", "_departed", "_contacts", "_condemned", "_verdictDead", "_verdictReason",
             "_columnHeld", "_columnHeldAbsorptive", "_bodyStepSum", "_linkStepSum",
             "RunClock", "WritersClock",
             "<World>k__BackingField", "<Dynamics>k__BackingField", "<Solver>k__BackingField",

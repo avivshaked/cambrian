@@ -92,7 +92,8 @@ namespace Evosim.Dynamics
                 "{\"digestEvery\": " + everySteps.ToString(CultureInfo.InvariantCulture) +
                 ", \"dumpSteps\": [" +
                 string.Join(",", named.ConvertAll(x => x.ToString(CultureInfo.InvariantCulture))) +
-                "], \"precision\": \"double\", \"engine\": \"Evosim.Dynamics\"}\n",
+                "], \"precision\": \"" + (Backend != null ? Backend.Precision : "double") +
+                "\", \"engine\": \"" + (Backend != null ? Backend.Name : "Evosim.Dynamics") + "\"}\n",
                 new UTF8Encoding(false));
         }
 
@@ -205,22 +206,32 @@ namespace Evosim.Dynamics
         }
 
         /// <summary>One link's thirteen numbers, in the order the hash takes them.</summary>
+        /// <remarks>
+        /// <b>A NaN is hashed as one pattern</b> (logbook/specs/gpu-port-spec.md section 4). When
+        /// both operands of an operation are NaN the machine keeps one operand's, and two
+        /// compilations of the same source may keep different ones, so a lost body's state holds
+        /// NaNs whose sign and payload say which compiler ran and nothing about the trajectory
+        /// (0115). Every NaN is written as <c>double.NaN</c> before hashing, which moves no digest
+        /// of a run that lost no body and makes the CPU's and the card's agree on one that did.
+        /// </remarks>
         private static void ReadPartState(Creature body, int link, double[] into)
         {
-            into[0] = body.Position[3 * link];
-            into[1] = body.Position[3 * link + 1];
-            into[2] = body.Position[3 * link + 2];
-            into[3] = body.Rotation[4 * link];
-            into[4] = body.Rotation[4 * link + 1];
-            into[5] = body.Rotation[4 * link + 2];
-            into[6] = body.Rotation[4 * link + 3];
-            into[7] = body.Velocity[3 * link];
-            into[8] = body.Velocity[3 * link + 1];
-            into[9] = body.Velocity[3 * link + 2];
-            into[10] = body.Spin[3 * link];
-            into[11] = body.Spin[3 * link + 1];
-            into[12] = body.Spin[3 * link + 2];
+            into[0] = Canonical(body.Position[3 * link]);
+            into[1] = Canonical(body.Position[3 * link + 1]);
+            into[2] = Canonical(body.Position[3 * link + 2]);
+            into[3] = Canonical(body.Rotation[4 * link]);
+            into[4] = Canonical(body.Rotation[4 * link + 1]);
+            into[5] = Canonical(body.Rotation[4 * link + 2]);
+            into[6] = Canonical(body.Rotation[4 * link + 3]);
+            into[7] = Canonical(body.Velocity[3 * link]);
+            into[8] = Canonical(body.Velocity[3 * link + 1]);
+            into[9] = Canonical(body.Velocity[3 * link + 2]);
+            into[10] = Canonical(body.Spin[3 * link]);
+            into[11] = Canonical(body.Spin[3 * link + 1]);
+            into[12] = Canonical(body.Spin[3 * link + 2]);
         }
+
+        private static double Canonical(double v) => double.IsNaN(v) ? double.NaN : v;
 
         /// <summary>The same thirteen numbers as a JSON array, round-trip formatted.</summary>
         private string PartStateJson(Creature body, int link)

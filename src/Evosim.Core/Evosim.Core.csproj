@@ -20,6 +20,10 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
     <Deterministic>true</Deterministic>
+    <!-- The world probe (Ecosystem/WorldPhaseProbe.cs): -p:WorldPhaseProbe=1 compiles the
+         timing marks in World.Step. A timing build, built to its own output and never a
+         scored run's; without the symbol the marks compile to nothing. -->
+    <DefineConstants Condition="'$(WorldPhaseProbe)' == '1'">$(DefineConstants);WORLD_PHASE_PROBE</DefineConstants>
   </PropertyGroup>
 
 </Project>
