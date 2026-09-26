@@ -213,9 +213,12 @@ All of it is agent work. Long steps run in the background under the session, nev
 subagent and never in a shell loop. A queue that must outlive a turn is started detached
 (CLAUDE.md).
 
-1. Round 50 launches this evening. The checks and the pre-registration are in 0123's
-   "Before the launch". The queue is `scratch/r50-launch/seeds.ps1`, started detached from the
-   committed, clean `scratch/wt-leafincome` at about 19:00. It runs seeds 1, 2 and 3 one at a
+1. Round 50 is held. On the afternoon of 2026-09-26 the owner said not to launch the next round
+   until they say so, and the evening's scheduled launch and the morning's card check were
+   cancelled; no round is launched until the owner says so. When it is, the checks and the
+   pre-registration are in 0123's "Before the launch". The queue is
+   `scratch/r50-launch/seeds.ps1`, started detached from the committed, clean
+   `scratch/wt-leafincome` in the evening. It runs seeds 1, 2 and 3 one at a
    time at 16 threads with a 600-minute wall each, then V2 on seed 1 (`v2.ps1`, logged to
    `scratch/logs/r50-v2.log`). Round 49's three seeds took 196, 318 and 235 minutes, so the
    queue should end by about 08:00. The watch runs from the session's schedule every hour,
@@ -236,7 +239,7 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    overnight CPU round uses the card for the transport alone from round 51 (D126), after item
    3's check.
 3. Before round 51, the card's transport is checked against round 50's own record (D126's
-   conditions), by day with nothing else on the machine. Round 50's seeds are resumed on main's
+   conditions), by day with nothing else on the machine, on the first day after round 50 has run. Round 50's seeds are resumed on main's
    exe with `EVOSIM_GPU_TRANSPORT` from checkpoints near 5,000, 15,000 and 25,000 s, 1,000 s
    each, under `EVOSIM_ALLOW_SOURCE_MISMATCH`, since main is not round 50's build. Each window's
    rows, lineage and checkpoints are compared with round 50's own, the checkpoint payloads byte
