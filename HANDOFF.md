@@ -45,13 +45,13 @@ approves its video as final, and then they are thinned only as the storage rulin
 - `8e0741a` and `0f737f1`: round 49's entry reads under `scripts/reads/r49-entry/`, and the
   entry. `5c98a5c`: round 50's reader, `scripts/reads/r50-read.py`.
 
-### Round 50 is built and waits for tonight
+### Round 50 is running
 
 The owner ruled option (a) on the morning of 2026-09-26 (D125). A leaf founder is set in the cell of its column where its own income, light and
 matter together, is largest. The price is the call the world bills a body with. A stomach is placed
 as before. The build is `leaf-income-depth` (`scratch/wt-leafincome`); the launcher is
 `rounds/env-r50.ps1` (`EVOSIM_FOUNDERS_INCOME_DEPTH 1`). Its pre-registration is logbook/0123.
-The launch is in the queue below.
+The owner said to start it at 23:52 on 2026-09-26, and seed 1 launched at 23:53 (queue item 1).
 
 ### The card, by day
 
@@ -213,15 +213,16 @@ All of it is agent work. Long steps run in the background under the session, nev
 subagent and never in a shell loop. A queue that must outlive a turn is started detached
 (CLAUDE.md).
 
-1. Round 50 is held. On the afternoon of 2026-09-26 the owner said not to launch the next round
-   until they say so, and the evening's scheduled launch and the morning's card check were
-   cancelled; no round is launched until the owner says so. When it is, the checks and the
-   pre-registration are in 0123's "Before the launch". The queue is
-   `scratch/r50-launch/seeds.ps1`, started detached from the committed, clean
-   `scratch/wt-leafincome` in the evening. It runs seeds 1, 2 and 3 one at a
-   time at 16 threads with a 600-minute wall each, then V2 on seed 1 (`v2.ps1`, logged to
-   `scratch/logs/r50-v2.log`). Round 49's three seeds took 196, 318 and 235 minutes, so the
-   queue should end by about 08:00. The watch runs from the session's schedule every hour,
+1. The owner said at 23:52 on 2026-09-26 to start round 50, and to launch the third seed only if the
+   first two have ended before 07:00 the next morning. The queue is `scratch/r50-launch/seeds.ps1
+   -ThirdSeedBy 2026-09-27T07:00`, started detached at 23:53 from the committed, clean
+   `scratch/wt-leafincome` (`9ecff10`), logging to `scratch/logs/r50-queue.log`. It runs the seeds
+   one at a time at 16 threads with a 600-minute wall each. It skips seed 3 when seed 2 ends at or
+   after 07:00, and says so in the log. Then it runs V2 on seed 1 (`v2.ps1`, logged to
+   `scratch/logs/r50-v2.log`). Seed 1's manifest names `9ecff10`, not dirty, `configHash a2cda4b0`
+   (the smoke's), and its header carries D125's token. Projected from round 49's crowds on this
+   build, seed 1 takes about 3 hours and seed 2 about 4.7. So seed 3 will probably miss the 07:00
+   cut, and a skipped seed 3 waits for the owner. The watch runs hourly from the session's schedule,
    never from a shell loop: `python scripts/watch-round.py r50 --seeds 1,2,3 --read
    scripts/reads/r50-read.py`, run from the main tree. The full read at the end adds
    `--windows-root` (V1) and `--v2-log scratch/logs/r50-v2.log` (V2).
