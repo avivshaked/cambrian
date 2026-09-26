@@ -98,6 +98,16 @@ transport 30 and the rest of the world 23. The copies to and from the card and t
 take 22, and the harness 6. The transport's sum is a chain of dependent adds whose order the
 bits fix.
 
+The snow's transport runs on the card since the afternoon of 2026-09-26, under
+`EVOSIM_GPU_TRANSPORT`. Core keeps the transport's decisions (the Courant refusal, the substep
+rule, the instant) and hands a device the arithmetic through `GridField.TransportDevice`. The
+farm's `GpuTransport` writes every product as `mul.rn`, so it gives the CPU's bits. On round 50's
+world from 4,000 s it took the card from 4.0x to 6.0 and 6.9x real time, in runs alternated in
+one sitting. That is 40 to 50 ms a step saved at any crowd. Every run was byte for byte the run without
+it, the snow's whole stock included (`logbook/specs/gpu-probe-2026-09-26.txt`). The card's host
+arrays became page-locked in the same change, which saved about 3 ms a step at that crowd and
+should save more at round 48's (not measured).
+
 The probe reads `EVOSIM_GPU_PROBE` from the process environment directly, which bites. The
 script's `-Env` passes settings as arguments and does not reach it, and the binding warns that it
 ignores the variable. Set it in the launching shell's environment (`scratch/r49-probe/probe2.ps1`).
@@ -206,18 +216,17 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    scripts/reads/r50-read.py`, run from the main tree. The full read at the end adds
    `--windows-root` (V1) and `--v2-log scratch/logs/r50-v2.log` (V2).
 2. The card is worked by day, with nothing else on the machine, from `scratch/wt-probe`
-   (`gpu-probe`, merged into main at `bf1add4`; merge main in before a day's work). It runs round
-   48's crowd at 3.71x (above). Round 50's seeds are the next reference crowds once they have
-   checkpoints. The largest lever left is the snow's transport, 30 ms a step, on the idle card. The
-   card fuses a multiply and an add by default. A product written as inline `mul.rn.f64` matches the
-   CPU bit for bit (`logbook/specs/fma-probe/`, CLAUDE.md), so a transport kernel in double can give
-   the CPU's numbers. It needs a hook in Core that the farm fills, since Core cannot name the card.
-   Two smaller levers follow. One is a rewrite of the transport's edge path that keeps every
-   operation: an edge costs about 250 cycles against about 90 of arithmetic (an estimate). The other
-   is the class uploads. A class goes up whole when one body in it is new, and sending the changed
-   rows would save 3 to 4% of the wall (an estimate). Identity on the card is claimed at two group
-   sizes (CLAUDE.md). Whether a round runs on the card is the owner's: single precision is a new
-   realisation of every seed.
+   (`gpu-probe`; merge main in before a day's work). The snow's transport runs on it under
+   `EVOSIM_GPU_TRANSPORT` (above). Round 50's seeds are the next reference crowds once they have
+   checkpoints. What is left, largest first. The snow's settling, remineralisation and mixing run
+   just before the transport and take about 8 ms a step together. They could join it on the card,
+   with one upload and one download for all four. The engine uploads the snow again for the
+   senses, 3 to 6 ms a block. It could take the transport's result on the card instead, if nothing
+   between the transport and the next block changes the snow (unchecked). The class uploads send a class
+   whole when one body in it is new, and sending the changed rows would save 3 to 4% of the wall
+   (an estimate). Identity on the card is claimed at two group sizes (CLAUDE.md). Whether a round
+   runs on the card is the owner's: single precision is a new realisation of every seed. So is
+   whether a CPU round may use the card for the transport alone, which gives the CPU's bits.
 3. The lit link is read and not built: `scripts/reads/linklight.py <arm>` splits a stomach
    body's income into its links' light and its food, by window and by line (the first decision
    above). It runs on round 50 when that round is read.
@@ -250,5 +259,5 @@ CLAUDE.md holds the commands and the gotchas. This is where each tool sits.
 | checking | `Evosim.Farm.exe --verify-checkpoint <ckpt> <s> <out> <threads>` for a checkpoint member by member; `scripts/compare-det.py` for a resume against its run; a film window's identity rows for V1 |
 | pictures | `scripts/theatre-snap.ps1 <arm> -From snapshot -At <s>` for a still from the record; `scripts/theatre-film.ps1` from a checkpoint for a clip; every render checked on a sheet against a reference before the owner sees it |
 | tests | `scripts/core-test.ps1` (the default set; `-All` before a change to the world), and `dotnet test` on `Evosim.Farm.Tests` and `Evosim.Dynamics.Tests`; the fixtures are `src/Evosim.Core.Tests/fixtures/r42-config.json` and the crowd named in `RunFixture.cs`, re-recorded on every build that adds a tunable |
-| the card | ILGPU under `src/Evosim.Farm.Gpu`, worked by day with nothing else on the machine; kernels regenerated before a build; `src/Evosim.UnityProxy` compiles the Farm package as the Editor would |
+| the card | ILGPU under `src/Evosim.Farm.Gpu`, worked by day with nothing else on the machine; kernels regenerated before a build; `EVOSIM_GPU_TRANSPORT` puts the snow's transport on it (`GpuTransport`, `GpuTransportTests`); `src/Evosim.UnityProxy` compiles the Farm package as the Editor would |
 | the Unity farm | idle since round 42; its workers and caps are CLAUDE.md's, for the theatre only |

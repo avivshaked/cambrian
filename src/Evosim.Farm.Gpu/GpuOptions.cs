@@ -45,6 +45,8 @@ namespace Evosim.Farm.Gpu
         /// </summary>
         public bool Concurrent;
 
+        public bool Transport;
+
         /// <summary>The size classes' link ceilings, ascending; the last must be 16.</summary>
         public int[] ClassLinks = { 2, 4, 8, 16 };
 

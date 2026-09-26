@@ -1395,6 +1395,20 @@ actually verifying it.
   changes nothing; a product written as inline `mul.rn.f64` (`CudaAsm.Emit`) is never contracted,
   and with it every pattern tried matched the CPU bit for bit (`logbook/specs/fma-probe/`,
   2026-09-26). A card kernel that must reproduce a CPU number writes every product that way.
+  **The snow's transport has a second copy on the card** (`EVOSIM_GPU_TRANSPORT`, 2026-09-26).
+  `src/Evosim.Farm.Gpu/GpuTransport.cs` transcribes `GridField`'s edge sampling, face assembly,
+  outflow bound and three passes, and `CurrentField`'s hoisted potential, in their order and
+  grouping. Core keeps the decisions and hands a device the arithmetic
+  (`GridField.TransportDevice`), and a device declines any grid its plan does not cover. A change
+  to that arithmetic in Core is therefore made in the kernel in the same change.
+  `GpuTransportTests` runs the kernels on ILGPU's CPU accelerator and fails when the two part,
+  byte for byte in the world's state. A digest comparison on the card is the card's own check.
+  **The card's copies were pageable until the same day.** A managed array moves at about 6 GB/s.
+  Pinned (`GC.AllocateArray(pinned: true)`) and registered (`CreatePageLockFromPinned`), the same
+  array moves at about 21 GB/s through the same `CopyFromCPU` and `CopyToCPU` calls, because the
+  driver recognises the range. `Col<T>` does this for every host column. **Compare paces within one sitting,
+  alternated**: the same pageable run read 5.72x at noon and 3.86x at 13:40 that day, with a
+  browser busy.
   **The card's probe does not go through the binding**: `EVOSIM_GPU_PROBE=1` is read from the
   process environment, so `run-farm.ps1 -Env`, which hands settings over as `NAME=VALUE`
   arguments, never reaches it, and the farm warns that it ignores the variable while the probe

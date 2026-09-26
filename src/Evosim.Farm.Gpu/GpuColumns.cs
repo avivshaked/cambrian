@@ -23,6 +23,7 @@ namespace Evosim.Farm.Gpu
     /// one quantity for neighbouring bodies adjacent.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The host copy is the mirror's staging area and is kept equal to the card's after every
     /// download, so an upload of the whole column carries every slot the host did not touch
     /// back as it was. The one exception is a column moved by its first rows only
@@ -30,11 +31,20 @@ namespace Evosim.Farm.Gpu
     /// body's count are read nowhere, so the two copies may differ there. Growing the capacity
     /// re-lays every row; growing the width appends rows, which leaves every existing index
     /// where it was.
+    /// </para>
+    /// <para>
+    /// On a CUDA card the host copy lives on the pinned heap and is registered with the driver
+    /// as page-locked for as long as it lives, so every copy of it is a direct transfer: 1.9 ms
+    /// for 42 MB up and back against 6.1 to 6.4 ms from a pageable array on this machine's card
+    /// (logbook/specs/transport-probe). The copy calls are the plain ones; the driver sees that the
+    /// range is registered. The bytes moved are the same bytes, so nothing a run computes moves.
+    /// </para>
     /// </remarks>
     internal sealed class Col<T> : IColumn where T : unmanaged
     {
         private readonly Accelerator _acc;
         private readonly T _fill;
+        private PageLockScope<T> _lock;
 
         public int Width { get; private set; }
 
@@ -50,7 +60,7 @@ namespace Evosim.Farm.Gpu
             _fill = fill;
             Width = Math.Max(1, width);
             Cap = Math.Max(1, cap);
-            Host = new T[Width * Cap];
+            Host = HostArray(Width * Cap);
             if (!EqualityComparer<T>.Default.Equals(fill, default)) Array.Fill(Host, fill);
             Dev = _acc.Allocate1D<T>(Host.Length);
         }
@@ -64,7 +74,7 @@ namespace Evosim.Farm.Gpu
             cap = Math.Max(1, cap);
             if (cap == Cap) return;
 
-            var next = new T[Width * cap];
+            var next = HostArray(Width * cap);
             if (!EqualityComparer<T>.Default.Equals(_fill, default)) Array.Fill(next, _fill);
 
             int keep = Math.Min(Cap, cap);
@@ -81,7 +91,7 @@ namespace Evosim.Farm.Gpu
         {
             if (width <= Width) return;
 
-            var next = new T[width * Cap];
+            var next = HostArray(width * Cap);
             if (!EqualityComparer<T>.Default.Equals(_fill, default)) Array.Fill(next, _fill);
             Array.Copy(Host, next, Host.Length);
 
@@ -109,7 +119,25 @@ namespace Evosim.Farm.Gpu
             if (n > 0) Dev.View.SubView(0, n).CopyToCPU(ref Host[0], n);
         }
 
-        public void Dispose() => Dev?.Dispose();
+        public void Dispose()
+        {
+            Dev?.Dispose();
+            _lock?.Dispose();
+            _lock = null;
+        }
+
+        // A new host array, page-locked on a CUDA card (the remarks). The old one's lock goes
+        // first; the old array stays a valid managed array to copy from.
+        private T[] HostArray(int length)
+        {
+            _lock?.Dispose();
+            _lock = null;
+            if (_acc.AcceleratorType != AcceleratorType.Cuda) return new T[length];
+
+            var host = GC.AllocateArray<T>(length, pinned: true);
+            _lock = _acc.CreatePageLockFromPinned(host);
+            return host;
+        }
     }
 
     /// <summary>A flat device buffer with no host copy of its own: the grid's scratch.</summary>

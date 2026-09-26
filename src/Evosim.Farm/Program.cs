@@ -276,6 +276,13 @@ namespace Evosim.Farm
                     settings, Evosim.Dynamics.SolverConfig.FromWorld(config, physicsDt, world.Bed, world));
                 engine = gpu;
                 engineToken = gpu.HeaderToken();
+
+                // The snow's transport on the same card, with the CPU's bits; the grid keeps its
+                // decisions and falls back to the CPU if the device declines its tables.
+                if (gpu.Options.Transport && world.Nutrients is GridField snow)
+                {
+                    snow.TransportDevice = gpu.CreateTransport();
+                }
 #else
                 throw new NotSupportedException(
                     "EVOSIM_ENGINE is gpu and this build of the farm has no gpu engine: it is compiled " +

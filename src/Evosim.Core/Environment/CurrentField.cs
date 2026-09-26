@@ -4415,6 +4415,51 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// The instant a transport device reads (<see cref="IPotentialTransportDevice.Sample"/>):
+        /// pinned at <paramref name="seconds"/> as <c>GridField.SampleEdges</c> pins it, copied,
+        /// and released, so the slots fill in the order the CPU's sampling fills them.
+        /// </summary>
+        internal void CopyStreamsInstant(double seconds, double[] into)
+        {
+            PinInstant(seconds);
+
+            try
+            {
+                Array.Copy(_pinned.Cos, 0, into, 0, StreamsTerms);
+                Array.Copy(_pinned.Sin, 0, into, StreamsTerms, StreamsTerms);
+                Array.Copy(_pinnedEddyBase, 0, into, 2 * StreamsTerms, StreamsTerms);
+                Array.Copy(_pinnedCellBase, 0, into, 3 * StreamsTerms, StreamsCells);
+            }
+            finally
+            {
+                UnpinInstant();
+            }
+        }
+
+        /// <summary>
+        /// The float a hoisted potential is multiplied by: the bed path's
+        /// <c>(float)(speed · scale · bedScale)</c>, or the flat path's float product.
+        /// </summary>
+        internal float HoistedScale(bool bed) =>
+            bed ? (float)(_speed * _streamsScale * _bedScale) : _speed * _streamsScale;
+
+        /// <summary>Whether a shaped floor fades the water toward the shore.</summary>
+        internal bool ShoreFadeOn => _fadeOn;
+
+        /// <summary>Whether the streams carry an overturning term (built with the streams).</summary>
+        internal bool StreamsOverturn => _streamsOverturning != 0d;
+
+        /// <summary>The depth, widened from its float as <c>MapFrom</c> widens it.</summary>
+        internal double DepthMetresWidened => _depthMetres;
+
+        /// <summary>The shore's fade in a column of depth <paramref name="d"/>, as <c>MapFrom</c> takes it.</summary>
+        internal double ShoreFadeOf(double d)
+        {
+            ShoreFade(d, out double f, out _, out _);
+            return f;
+        }
+
+        /// <summary>
         /// The slot holding phase <paramref name="t"/>, filled on this thread if no slot does and
         /// the field is not pinned; a pinned field refuses a phase it has no slot for.
         /// </summary>

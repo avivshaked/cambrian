@@ -162,3 +162,41 @@ gpu-probe t=27699 s, ms a step: grid 1.569, classes 0.836 / 1.464 / 2.587 / 2.00
 # transport, 30 ms of the world step, can move onto the card in double and give the CPU's bits,
 # provided every multiply in the kernel is written that way; the edge terms and the instant's
 # amplitudes are already computed on the host, so the kernel's own work is multiplies and adds.
+#
+# The snow's transport on the card (the same afternoon; logbook/specs/transport-probe/, then the
+# farm's GpuTransport behind EVOSIM_GPU_TRANSPORT). First a probe on round 50's tank that reads Core's
+# tables by reflection and runs a kernel per stage: the edges matched the CPU in all 7,993,869 at five
+# instants and two group sizes, and whole steps from a synthetic stock in all 2,624,832 cells over
+# three steps, one of which the outflow bound split into two substeps. The CPU's Advect took 48 to 51
+# ms and the card's kernels about 5. The stock's copy up and back took 6.1 to 6.4 ms from a pageable
+# array and 1.9 from the same array pinned and registered as page-locked, through the same calls.
+#
+# Then the hook. Core keeps every decision the transport makes (the Courant refusal, the substep count
+# and its refusal, each substep's clock and the instant's coefficients) and hands a device the
+# arithmetic: GridField.TransportDevice, IPotentialTransportDevice, and the hoisted tank path's tables
+# flattened (PotentialTransportPlan), which a device declines where it was not shown to match. The
+# farm's GpuTransport carries the probe's kernels. Off the card a product is the plain one, so a Farm
+# test runs it on ILGPU's CPU accelerator against the grid's own path in the engine's test tank, with
+# and without reefs, byte for byte in the world's state after every step (GpuTransportTests). A swap of
+# two additions in one pass fails it at the first step. The card's host columns went onto the pinned
+# heap in the same change, registered with the driver (GpuColumns), which leaves every copy call as it
+# was and makes it a direct transfer.
+#
+# On round 50's world (r50smoke-s1 from 4,000 to 4,300 s, the card in single at group 32, concurrent),
+# the builds alternated in one sitting. A busy browser from 13:00 put the pageable build at 3.86x
+# where the same run read 5.72x at noon, so no pace here compares with one from another hour.
+#   pageable            3.86x  3.92x          129.4  127.6 ms a metabolic step
+#   page-locked         3.97x  4.06x  3.98x   126.1  123.3  125.6
+#   with the transport  6.00x  6.94x           83.4   72.0
+# Every run was identical to this morning's m50g32 over all 300 digest steps and 30 samples. The
+# checkpoints' payloads at 4,100, 4,200 and 4,300 s were byte for byte the same too: 27.5 MB of world,
+# harness and sampler state, the snow's 2.6 million cells among them. So was the final build, run
+# once more with the engine at group 64 (tranC). The page-locked copies save about
+# 3 ms a step at this crowd, whose classes move 4.8 MB a block. Round 48's 8,400 bodies moved 51 to 58
+# MB a block, where the saving should be several times larger (an inference: this build refuses round
+# 48's config, so it was not measured). The transport saves 40 to 50 ms a step at any crowd, because
+# its grid is the tank's.
+#
+# A test build that passed and then failed: the planted swap was undone with Copy-Item, which keeps
+# the backup's older timestamp, so MSBuild judged the DLL built from the swap up to date and the full
+# Farm suite ran the swap. Touch a file restored by copy before building.

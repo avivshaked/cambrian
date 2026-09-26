@@ -181,7 +181,14 @@ namespace Evosim.Farm.Gpu
         public string HeaderToken() =>
             "gpu " + (Options.Single ? "single" : "double") + " " + ShortDevice() +
             " g" + GroupSize.ToString(CultureInfo.InvariantCulture) +
-            " classes " + Options.ClassesToken() + (Options.Concurrent ? " concurrent" : "");
+            " classes " + Options.ClassesToken() + (Options.Concurrent ? " concurrent" : "") +
+            (Options.Transport ? " transport" : "");
+
+        /// <summary>
+        /// The snow's transport on this engine's card (<see cref="GpuTransport"/>), for the farm to
+        /// hand the snow's grid when <see cref="GpuOptions.Transport"/> is on.
+        /// </summary>
+        public GpuTransport CreateTransport() => new GpuTransport(_accelerator);
 
         private string ShortDevice()
         {

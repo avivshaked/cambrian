@@ -2751,11 +2751,35 @@ namespace Evosim.Core
             // not set the count. CourantSubsteps' own remarks say why.
             CourantSubsteps(current, dt, seconds);
 
+            // The same step on a device that gives the CPU's bits, when the farm has handed one
+            // over and it took this grid's tables (IPotentialTransportDevice).
+            if (AdvectOnDevice(current, seconds, dt)) return;
+
             EnsureFaceBuffers();
             SampleEdges(current, seconds);
             AssembleFaces();
 
-            double outflow = LargestOutflowFraction(dt);
+            int substeps = SubstepsFor(LargestOutflowFraction(dt), dt, current);
+
+            float step = dt / substeps;
+
+            // The first substep reuses the fluxes already assembled, scaled by the shorter step;
+            // every later one samples the field at its own clock, so a split step is a shorter
+            // step run n times and not one snapshot applied n times.
+            ApplyFaces(step);
+
+            for (int i = 1; i < substeps; i++)
+            {
+                SampleEdges(current, seconds + i * (double)step);
+                AssembleFaces();
+                ApplyFaces(step);
+            }
+        }
+
+        // The substep count for a step whose faces would move `outflow` of a cell's stock, and the
+        // refusal past the ceiling: one rule for the CPU's path and a device's.
+        private static int SubstepsFor(double outflow, float dt, CurrentField current)
+        {
             int substeps = outflow <= OutflowMargin
                 ? 1
                 : (int)Math.Ceiling(outflow / OutflowMargin);
@@ -2775,19 +2799,194 @@ namespace Evosim.Core
                     nameof(current));
             }
 
+            return substeps;
+        }
+
+        /// <summary>
+        /// A device that carries this grid's potential-driven transport with the CPU's bits: the
+        /// console farm's card. Null, the default and every world but the farm's, carries every
+        /// step on the CPU. A device that declines the grid's tables leaves the CPU carrying.
+        /// </summary>
+        public IPotentialTransportDevice TransportDevice { get; set; }
+
+        // What the device was handed, so that a change of device, current, floor, reefs or hoist
+        // switches plans again rather than carrying the old tables.
+        private IPotentialTransportDevice _deviceFor;
+        private CurrentField _deviceCurrent;
+        private object _deviceBed;
+        private object _deviceReefs;
+        private bool _deviceHoists;
+        private bool _deviceTakes;
+        private double[] _deviceInstant;
+
+        // One step on the device, in the CPU path's order: the instant pinned at the step's clock,
+        // the faces, the substep count (the CPU's rule and refusal), the first substep on those
+        // faces, then each later substep sampled at its own clock. The stock goes up before and
+        // comes back after, so nothing between steps lives on the device.
+        private bool AdvectOnDevice(CurrentField current, double seconds, float dt)
+        {
+            IPotentialTransportDevice device = TransportDevice;
+            if (device == null) return false;
+
+            bool hoists = PrecomputeStreamsTerms && PrecomputeBedColumns;
+
+            if (!ReferenceEquals(_deviceFor, device) || !ReferenceEquals(_deviceCurrent, current) ||
+                !ReferenceEquals(_deviceBed, current.Bed) || !ReferenceEquals(_deviceReefs, current.Reefs) ||
+                _deviceHoists != hoists)
+            {
+                _deviceFor = device;
+                _deviceCurrent = current;
+                _deviceBed = current.Bed;
+                _deviceReefs = current.Reefs;
+                _deviceHoists = hoists;
+                PotentialTransportPlan plan = PlanPotentialTransport(current);
+                _deviceTakes = plan != null && device.Accept(plan);
+                _deviceInstant ??= new double[PotentialTransportPlan.InstantLength];
+            }
+
+            if (!_deviceTakes) return false;
+
+            device.Upload(_stock);
+            current.CopyStreamsInstant(seconds, _deviceInstant);
+            device.Sample(_deviceInstant);
+
+            int substeps = SubstepsFor(device.LargestOutflowFraction(dt), dt, current);
+
             float step = dt / substeps;
 
-            // The first substep reuses the fluxes already assembled, scaled by the shorter step;
-            // every later one samples the field at its own clock, so a split step is a shorter
-            // step run n times and not one snapshot applied n times.
-            ApplyFaces(step);
+            device.Apply(step);
 
             for (int i = 1; i < substeps; i++)
             {
-                SampleEdges(current, seconds + i * (double)step);
-                AssembleFaces();
-                ApplyFaces(step);
+                current.CopyStreamsInstant(seconds + i * (double)step, _deviceInstant);
+                device.Sample(_deviceInstant);
+                device.Apply(step);
             }
+
+            device.Download(_stock);
+            return true;
+        }
+
+        // The tables SampleEdges' hoisted tank path reads, flattened, or null where the CPU would
+        // take another path (a box, no potential, still water, a hoist switched off, a floor
+        // without its columns): a device carries only what it was shown to match.
+        private PotentialTransportPlan PlanPotentialTransport(CurrentField current)
+        {
+            if (Shape != WorldShape.Tank || current.Shape != WorldShape.Tank) return null;
+            if (!current.HasPotential || !(current.Speed > 0f)) return null;
+            if (!PrecomputeStreamsTerms || !PrecomputeBedColumns) return null;
+            if (_live == null || _nx < 2 || _ny < 2 || _nz < 2) return null;
+
+            EnsureFaceBuffers();
+            EnsureBedColumns(current);
+            EnsureStreamsTerms(current);
+
+            CurrentField.BedColumn[] bedX = _bedColumnX, bedY = _bedColumnY, bedZ = _bedColumnZ;
+
+            if (_streamsColumnX == null || (current.Bed != null && bedX == null)) return null;
+
+            EnsureEdgeFades(current);
+
+            bool bed = bedX != null;
+            bool fade = bed && current.ShoreFadeOn;
+
+            return new PotentialTransportPlan
+            {
+                Nx = _nx,
+                Ny = _ny,
+                Nz = _nz,
+                CellMetres = CellMetres,
+                CellVolume = CellVolume,
+                SplitColumns = _splitColumns,
+                LayerStride = _layerStride,
+                Live = _live,
+                LowestLive = _lowestLive,
+                HasBed = bed,
+                ShoreFade = fade,
+                HasReefs = _edgeFadeX != null,
+                Overturns = current.StreamsOverturn,
+                DepthMetres = current.DepthMetresWidened,
+                Scale = current.HoistedScale(bed),
+                DepthStep = _streamsDepthStep,
+                X = AxisFor(current, _edgeX.Length, _streamsStrideX, _streamsColumnX, _streamsDepthX, bedX, _edgeOpenX, _edgeFadeX, fade),
+                Y = AxisFor(current, _edgeY.Length, _streamsStrideY, _streamsColumnY, _streamsDepthY, bedY, _edgeOpenY, _edgeFadeY, fade),
+                Z = AxisFor(current, _edgeZ.Length, _streamsStrideZ, _streamsColumnZ, _streamsDepthZ, bedZ, _edgeOpenZ, _edgeFadeZ, fade),
+            };
+        }
+
+        private static PotentialTransportAxis AxisFor(
+            CurrentField current, int length, int stride, CurrentField.StreamsColumn[] columns,
+            CurrentField.StreamsDepth[] depths, CurrentField.BedColumn[] bed, bool[] open, float[] reefFade,
+            bool fade)
+        {
+            const int C = PotentialTransportPlan.ColumnTerms;
+            var flatColumns = new double[columns.Length * C];
+
+            for (int i = 0; i < columns.Length; i++)
+            {
+                CurrentField.StreamsColumn x = columns[i];
+                int at = i * C;
+                flatColumns[at] = x.Dx;
+                flatColumns[at + 1] = x.Dz;
+                flatColumns[at + 2] = x.Wall;
+                flatColumns[at + 3] = x.Cos1;
+                flatColumns[at + 4] = x.Cos2;
+                flatColumns[at + 5] = x.Cos3;
+                flatColumns[at + 6] = x.Cos4;
+                flatColumns[at + 7] = x.Sin1;
+                flatColumns[at + 8] = x.Sin2;
+                flatColumns[at + 9] = x.Sin3;
+                flatColumns[at + 10] = x.Sin4;
+                flatColumns[at + 11] = x.F11;
+                flatColumns[at + 12] = x.F12;
+                flatColumns[at + 13] = x.F21;
+                flatColumns[at + 14] = x.F22;
+                flatColumns[at + 15] = x.F31;
+                flatColumns[at + 16] = x.F32;
+                flatColumns[at + 17] = x.F41;
+                flatColumns[at + 18] = x.F42;
+            }
+
+            const int D = PotentialTransportPlan.DepthTerms;
+            var flatDepths = new double[depths.Length * D];
+
+            for (int i = 0; i < depths.Length; i++)
+            {
+                flatDepths[i * D] = depths[i].AtFace ? 1d : 0d;
+                flatDepths[i * D + 1] = depths[i].SinPhi;
+                flatDepths[i * D + 2] = depths[i].CosPhi;
+            }
+
+            double[] flatBed = null;
+
+            if (bed != null)
+            {
+                const int B = PotentialTransportPlan.BedTerms;
+                flatBed = new double[bed.Length * B];
+
+                for (int i = 0; i < bed.Length; i++)
+                {
+                    CurrentField.BedColumn x = bed[i];
+                    int at = i * B;
+                    flatBed[at] = x.FloorY;
+                    flatBed[at + 1] = x.Stretch;
+                    flatBed[at + 2] = x.DepthSquared;
+                    flatBed[at + 3] = x.SlopeX;
+                    flatBed[at + 4] = x.SlopeZ;
+                    flatBed[at + 5] = fade ? current.ShoreFadeOf(x.Depth) : 1d;
+                }
+            }
+
+            return new PotentialTransportAxis
+            {
+                Length = length,
+                Stride = stride,
+                Columns = flatColumns,
+                Depths = flatDepths,
+                Bed = flatBed,
+                Open = open,
+                ReefFade = reefFade,
+            };
         }
 
         /// <summary>

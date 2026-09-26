@@ -470,6 +470,7 @@ namespace Evosim.Farm
                 w.Field("driver", g.Driver);
                 w.Field("groupSize", g.GroupSize);
                 w.Field("mean", g.Mean);
+                w.Field("transport", g.Transport);
                 w.Field("classLinks", g.ClassLinks);
                 w.Field("classNeurons", g.ClassNeurons);
                 w.Field("kernelHash", g.KernelHash);
@@ -868,6 +869,7 @@ namespace Evosim.Farm
         public string Driver;
         public int GroupSize;
         public string Mean;
+        public bool Transport;
         public string ClassLinks;
         public string ClassNeurons;
         public string KernelHash;

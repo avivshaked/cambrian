@@ -175,6 +175,7 @@ namespace Evosim.Farm
             Text("EVOSIM_GPU_MEAN", (s, v) => s.GpuMean = string.IsNullOrEmpty(v) ? "" : v.Trim().ToLowerInvariant()),
             Flag("EVOSIM_GPU_RESYNC", (s, v) => s.GpuResync = v),
             Flag("EVOSIM_GPU_CONCURRENT", (s, v) => s.GpuConcurrent = v),
+            Flag("EVOSIM_GPU_TRANSPORT", (s, v) => s.GpuTransport = v),
 
             Num("EVOSIM_IDLE", 0.02f, (s, v) => s.Idle = v),
             Num("EVOSIM_MAXPOWER", RandomGenomeOptions.Default.MaxLinkPower, (s, v) => s.MaxPower = v),
@@ -1084,6 +1085,9 @@ namespace Evosim.Farm
 
         /// <summary>The size classes' step kernels on a stream each, run at once: the same numbers, sooner.</summary>
         public bool GpuConcurrent;
+
+        /// <summary>The snow's transport on the card, with the CPU's bits (GpuTransport): the same numbers, sooner.</summary>
+        public bool GpuTransport;
 
         /// <summary>Whether this run asks for the gpu engine; anything but cpu or gpu is refused by the farm.</summary>
         public bool EngineIsGpu => string.Equals(Engine, "gpu", System.StringComparison.Ordinal);
