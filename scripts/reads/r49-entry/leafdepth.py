@@ -1,9 +1,11 @@
 # Leaf founders (matter eaters) under the depth rule: first recorded height, age at death, bred.
+# Usage: leafdepth.py <arm> [runs root, default runs]
 import glob, json, sys, statistics as st
 sys.path.insert(0, 'scratch/wt-r49/scripts/reads')
 import runrec
 arm = sys.argv[1]
-run = sorted(glob.glob(f'runs/{arm}/2026*'))[-1]
+root = sys.argv[2] if len(sys.argv) > 2 else 'runs'
+run = sorted(glob.glob(f'{root}/{arm}/2026*'))[-1]
 born, died, parents = {}, {}, set()
 for line in open(run + '/lineage.jsonl', encoding='utf-8'):
     try: r = json.loads(line)
