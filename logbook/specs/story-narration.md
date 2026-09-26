@@ -263,9 +263,10 @@ between them, the calls to the service, since its interface is still being writt
   to be spoken by its own rules, which are this flow's choices and the owner's to rule on:
   - numbers in British words ("three thousand two hundred and seven", "zero point five four",
     "fourteen per cent"), with no comma inside a spoken number;
-  - identifiers after the words body, tank, round, seed and line, read in the style the owner
-    rules for each (the recommendation is digits for bodies, "body two oh one", and cardinals for
-    the rest, "round forty-eight");
+  - identifiers after the words body, tank, seed and line, read in the style the owner rules for
+    each (the recommendation is digits for bodies, "body two oh one", and cardinals for the rest,
+    "tank two"); no experiment is numbered in a story (the writer's brief, narration rule 10), so
+    the converter has no round to speak and refuses one as the script check does;
   - the units of these captions (s, m, J, "J a second", m/s, m³) and their symbols;
   - invented names from a pronunciation list kept in this repository: each term, how it should
     sound, and the respelling that gets the voice there, sent to the service as its
