@@ -1,99 +1,84 @@
 ---
 name: story-film
-description: Make a round's story film for the owner end to end, or pick one up where it stopped - guides, the arc, the writer, the script edit, narration, the owner's reviews, filming, the Resolve timeline and delivery. Use when the owner asks for a round's story or a film of how a round went, or to resume a story film in progress.
+description: Make a round's story film for the owner end to end, or pick one up where it stopped - guides, the arc, the writer, the draft review, the script edit, narration, the owner's reviews, filming, the Resolve timeline and delivery. Use when the owner asks for a round's story or a film of how a round went, or to resume a story film in progress.
 ---
 
 # Story film
 
-This skill runs the whole flow and hands each stage to its own procedure. The flow spans days and
-sessions, so its state lives in the story's folder, `scratch/story/<round>/`, and one command
-says where it stands and what comes next:
+Any session that runs this flow has to reach the same film, so no step of it is left to the
+session's judgment (CLAUDE.md, "A subagent that a skill launches is briefed from the skill's files
+alone"). Every verdict comes from a tool, from a subagent launched with a fixed prompt whose answer
+is saved as it came, or from the owner's words saved as they wrote them, and `flow.json` in the
+story's folder records each one against a hash of what it was about. The procedure and the stage
+table are in `logbook/specs/story-film.md`; read it before a story's first session.
+
+One command runs the flow:
 
 ```
-python scripts/story-flow.py status scratch/story/<round>
+python scripts/story-flow.py next scratch/story/<round>
 ```
 
-Run it first in every session that touches a story, and after every stage. The procedure, the
-stage table and each stage's details are in `logbook/specs/story-film.md`; read it before
-starting.
+It does the next mechanical step itself (a check, an apply, a page for a reader, a package for the
+owner) and prints what comes after. `story-flow.py status <folder>` prints the same table and
+changes nothing.
 
-## The stages
+## The session's part
 
-1. **Open.** Every seed of the round has ended, and HANDOFF's load ruling allows the work.
+1. **Start a story**, once every seed of the round has ended:
    `story-flow.py init scratch/story/<round> --round N --runs <arms...>`, then
-   `story-flow.py set <folder> entry <the round's logbook entry>` and
-   `story-flow.py set <folder> prereg <its pre-registration>`.
-2. **Guides.** `python scripts/guide.py <arm> --no-economics` for each run.
-3. **Arc.** The writer's first pass, launched with its prompt below. It writes `arc.md` and
-   `arc-reads.md` into the story's folder, and its last message lists the open choices.
-4. **Arc approved.** The owner's first review. Ask for the ruling in full (CLAUDE.md, "Say when a
-   ruling blocks the work"), write the owner's rulings into `arc-ruling.md` in the folder, one
-   numbered line each, then `story-flow.py approve <folder> arc`.
-5. **Write.** The writer's second pass, launched with its prompt below. It writes `story.md`,
-   `story.json`, `checks.tsv` and `make_story.py`. Read `story.md` against `checks.tsv`; a number
-   with no row is not filmed. Then `story-script.py render <folder> --force` and read the page
-   aloud against the brief's "Before you hand back" list. A draft that reads as a list of findings
-   goes back to the writer: write the failing lines and the fault each has, in the brief's words,
-   into `writer-notes.md` in the folder, and launch the second pass again with the same prompt.
-   Such a draft never goes to the owner.
-6. **Script.** The `story-script` skill.
-7. **Script approved.** The owner's second review: `script.md`, `story.md` and the
-   writer's-against-script counts. Then `story-flow.py approve <folder> script`. Nothing is
-   narrated before this approval. It covers the words and the scenes, not their timing.
-8. **Narrate.** `python scripts/story-narration.py segments <folder>` writes what the service
-   speaks; the service's results go into `narration/narration.json` (its form is in the script's
-   help); `story-narration.py timing <folder>` times the story from them
-   (`logbook/specs/story-narration.md`). Until the service exists: `story-flow.py skip <folder> narrate`.
-9. **Check.** `scripts/theatre-safari.ps1 <arm> -Story <story.json> -Check` for each run with
-   scenes, then `story-flow.py mark <folder> check <arm>`.
-10. **Film.** Copy `story.json` to `story.filmed.json`, film per the procedure one seed at a time,
-    look at every contact sheet, then `story-flow.py set <folder> clips <clip folders...>`.
-11. **Assemble.** `python scripts/story-resolve.py <story.json> <folder>/resolve <clip folders...>`
-    builds a new timeline in Resolve (the `story-resolve` skill). Without Resolve,
-    `python scripts/story-assemble.py <story.json> <film.mp4> <clip folders...> --captions story`.
-12. **Timeline approved.** The owner's last review, in Resolve. `story-flow.py approve <folder> timeline`.
-13. **Deliver.** Render, copy the film and `story.md` to `scratch/owner/`, give the owner the path
-    as plain text, then `story-flow.py mark <folder> deliver`.
+   `story-flow.py set <folder> entry <the logbook entry that reports the round>` and
+   `story-flow.py set <folder> prereg <the entry that pre-registered it>`.
+2. **Run `next`, and do what it prints**, then run it again, until it says the film is delivered:
+   - **agents**: launch each subagent it prints, as the agent type and on the model it names, in the
+     background, with its prompt word for word and nothing added. When a reader's task ends (the
+     listener, a fact checker, the cold reader, the arc comparer), run
+     `story-flow.py save <folder> <its agent id>`, which copies its answer from its transcript and
+     records its verdict. When the writer's or the editor's task ends, run `next`.
+   - **run**: run the command it names, when the machine allows it (HANDOFF's load ruling: a heavy
+     job never starts beside another).
+   - **owner**: the owner rules. Lead with "I am blocked on ... from you", give them the full path of
+     the file `next` wrote under `scratch/owner/`, and set out the decision in full, copying any
+     choices from that file as they stand. Save their reply whole and word for word to a file in the
+     story's folder, through the shell, and run
+     `story-flow.py owner <folder> <stage> <that file> --verdict <the verdict they gave>`. A reply
+     with no verdict gets a question back, never a guess.
+   - **wait**: nothing to do until what it names has happened.
 
-## The writer's prompts
+## What the session never does
 
-The writer is a `general-purpose` subagent on Opus, run in the background. Its prompt is one of the
-two below, word for word, with the two paths filled in: the absolute path of the checkout that
-holds this skill, and the story's folder. Add nothing else. Everything the writer needs is in its
-brief and in the folder, and a note for it goes into the folder as a file (CLAUDE.md, "A subagent
-that a skill launches is briefed from the skill's files alone").
-
-First pass:
-
-```
-You are the writer of a round's story film, on its first pass.
-Your brief is <checkout>\logbook\specs\story-writer-brief.md. Read it whole and follow it.
-The story's folder is <folder>.
-```
-
-Second pass:
-
-```
-You are the writer of a round's story film, on its second pass.
-Your brief is <checkout>\logbook\specs\story-writer-brief.md. Read it whole and follow it.
-The story's folder is <folder>.
-```
+- Judge a draft, a script round, a reader's answer or a picture. The verdicts are the tools', the
+  readers' and the owner's.
+- Write or change a word of the story or the script, or a note a subagent reads. The writer writes
+  the story, the editor edits the script, and a subagent reads only its brief, the story's files,
+  tools' output, other subagents' answers and the owner's words.
+- Launch a subagent the flow does not name, or change a prompt. The prompts are in `prompts.md`
+  beside this file, and `next` prints them filled.
+- Edit `flow.json`, a verdict file or an owner file by hand.
 
 ## Changes after a stage is done
 
-- **A caption:** edit `script.md`, `story-script.py apply`, `check`, narrate the changed paragraphs,
-  and assemble again. Nothing is filmed again; the assembly takes the captions from `story.json`.
-- **A scene's station, second, subject, length or chart:** `status` names the scenes filmed on the
-  old values. Film those again.
-- **An approval** goes stale when what was approved changes. `status` says so, and the owner sees
-  the change.
+- **The owner asks for changes** at the script or the timeline review: `--verdict changes`. That
+  opens an owner's round of the script stage, in which the editor makes every change the page can
+  carry and lists the rest for the writer; the writer makes those from `changes.md`, and the draft
+  review and the script stage run again on what it hands back. The script approval is asked for
+  again, and `status` names every scene to film again.
+- **An approval goes stale** when what was approved changes. `status` says so, and the owner sees
+  the change before approving again.
+
+## Filming, assembly and delivery
+
+`next` names each step with its command: the director's check per run (`theatre-safari.ps1 -Check`,
+then `story-flow.py mark <folder> check <arm> --log <its editor log>`), the film by the window route
+of `logbook/specs/story-film.md` section 5, the Resolve timeline by the `story-resolve` skill, the
+owner's timeline review, the glossary rows (`story-flow.py glossary <folder>`), and the delivery to
+`scratch/owner/`.
 
 ## Rules
 
 - A heavy job (a render, a narration job, a farm run) never starts beside another. Read the
   machine first, under HANDOFF's current ruling.
-- A subagent waits on nothing. The writer and the editor write their own files through the shell
-  (a heredoc or a Python write, never the Write or Edit tools), and only inside the story's folder.
-  Every other subagent returns text.
+- A subagent waits on nothing. The writer and the editor write their own files through the shell (a
+  heredoc or a Python write, never the Write or Edit tools), and only inside the story's folder.
+  The readers write nothing.
 - Every owner review is a blocking ruling: lead with "I am blocked on ... from you", set the
   decision out in full, and keep working on what is not gated.

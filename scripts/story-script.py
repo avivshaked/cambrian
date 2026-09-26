@@ -53,7 +53,7 @@ LONG, TOO_LONG = 70, 84
 
 CODE_WORDS = ["bf", "pool", "trickle", "clade", "clades", "absorptive", "photosynthetic"]
 SOFT_CODE_WORDS = ["genome", "genomes", "phenotype", "checkpoint", "snapshot", "lineage", "organism"]
-ROUND_NUMBER = re.compile(r"\brounds?\s+\d+", re.I)   # a viewer has no use for the project's round numbers
+ROUND_NUMBER = re.compile(r"\b(rounds?|experiments?)\s+(number\s+)?(\d+|(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred)([ -](one|two|three|four|five|six|seven|eight|nine))?)\b", re.I)   # a viewer has no use for the project's round numbers
 NARRATOR = ["i", "i'm", "i've", "i'd", "i'll", "me", "my", "mine", "we", "we're", "we've", "we'd", "our", "ours", "us"]
 INTENSIFIERS = ["very", "really", "truly", "incredibly", "remarkably", "extremely", "exactly", "precisely",
                 "quietly", "simply", "genuinely", "honestly", "crucially", "importantly", "notably", "just"]
@@ -318,7 +318,7 @@ def edit_rows(n, old_texts, new_texts):
     return rows
 
 
-def cmd_apply(folder):
+def cmd_apply(folder, rnd=None, author="editor"):
     story_path = os.path.join(folder, "story.json")
     story = load(story_path)
     with io.open(os.path.join(folder, "script.md"), encoding="utf-8") as f:
@@ -341,11 +341,12 @@ def cmd_apply(folder):
     base = {b["n"]: b for b in scenes_of(load(base_path))}
 
     edits_path = os.path.join(folder, "edits.tsv")
-    rnd = 1
-    if os.path.isfile(edits_path):
-        with io.open(edits_path, encoding="utf-8") as f:
-            rounds = [int(l.split("\t", 1)[0]) for l in f.read().splitlines()[1:] if l.split("\t", 1)[0].isdigit()]
-        rnd = max(rounds, default=0) + 1
+    if rnd is None:
+        rnd = 1
+        if os.path.isfile(edits_path):
+            with io.open(edits_path, encoding="utf-8") as f:
+                rounds = [int(l.split("\t", 1)[0]) for l in f.read().splitlines()[1:] if l.split("\t", 1)[0].isdigit()]
+            rnd = max(rounds, default=0) + 1
 
     rows, lengthened, restored, changed_scenes = [], [], [], 0
     if page["title"] and isinstance(story, dict) and page["title"] != story.get("title"):
@@ -383,14 +384,19 @@ def cmd_apply(folder):
             s["seconds"] = b.get("seconds")
     save(story_path, story)
     new_file = not os.path.isfile(edits_path)
+    with_author = new_file
+    if not new_file:
+        with io.open(edits_path, encoding="utf-8") as f:
+            with_author = f.readline().rstrip("\n").split("\t")[-1] == "author"
     with io.open(edits_path, "a", encoding="utf-8", newline="\n") as f:
         if new_file:
-            f.write("round\tscene\tline\tbefore\tafter\n")
+            f.write("round\tscene\tline\tbefore\tafter\tauthor\n")
         for n, line, before, after in rows:
-            f.write("%d\t%s\t%s\t%s\t%s\n" % (rnd, n, line, before.replace("\t", " "), after.replace("\t", " ")))
+            f.write("%d\t%s\t%s\t%s\t%s%s\n" % (rnd, n, line, before.replace("\t", " "), after.replace("\t", " "),
+                                                ("\t" + author) if with_author else ""))
     with io.open(os.path.join(folder, "script.md"), "w", encoding="utf-8", newline="\n") as f:
         f.write(render(story))
-    out("applied round %d: %d scene(s) changed, %d edit row(s) in %s" % (rnd, changed_scenes, len(rows), edits_path))
+    out("applied round %d (%s): %d scene(s) changed, %d edit row(s) in %s" % (rnd, author, changed_scenes, len(rows), edits_path))
     for n, a, b in lengthened:
         out("  scene %d lengthened from %g s to %g s to hold its captions" % (n, a, b))
     for n, a, b in restored:
@@ -398,6 +404,26 @@ def cmd_apply(folder):
             n, a, b, "filmed" if base_path == filmed else "writer's"))
     total = sum(float(s.get("seconds") or 0) for s in scenes_of(story))
     out("  the scenes now run %d s (%d min %02d s), chapter cards and title not counted" % (total, total // 60, total % 60))
+
+
+# The narration rules the tool can count (logbook/specs/story-writer-brief.md, "The narration"). Every one
+# is an ERROR for the writer's draft and for the editor's script alike, so a rule holds whoever wrote the line.
+CARDINALS = {"zero", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
+             "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty", "thirty",
+             "forty", "fifty", "sixty", "seventy", "eighty", "ninety", "hundred", "thousand", "million", "billion",
+             "dozen", "dozens", "hundreds", "thousands", "millions"}
+ALWAYS_FRACTIONS = {"half", "halves", "twice", "double", "triple", "percent"}
+FRACTIONS = {"third", "thirds", "quarter", "quarters", "fifth", "fifths", "sixth", "sixths", "seventh", "sevenths",
+             "eighth", "eighths", "ninth", "ninths", "tenth", "tenths"}
+NUMBER_JOINS = {"and", "a", "an", "point"}
+IDENTIFIED_BY = {"tank", "tanks", "body", "bodies", "seed", "seeds", "line", "lines", "chapter", "chapters", "scene",
+                 "scenes", "round", "rounds", "experiment", "experiments", "prediction", "predictions", "number"}
+UNIT_SYMBOL = re.compile(r"\d\s*(%|m/s|m\u00b2|m\u00b3|m2|m3|kg|km|cm|mm|s|m|J|W|g)(?![\w/])")
+LONG_CLOCK = re.compile(r"\b(\d[\d,]*)\s+seconds?\b")
+DECIMAL = re.compile(r"(?<![\w.])\d[\d,]*\.\d+")
+FORBIDDEN_INTENSIFIERS = {"simply", "just", "really", "truly", "incredibly", "remarkably", "extremely", "genuinely",
+                          "honestly", "crucially", "importantly", "notably", "quietly"}
+SOFT_INTENSIFIERS = {"very", "exactly", "precisely"}
 
 
 def number_key(token):
@@ -421,23 +447,89 @@ def sentences(text):
     return [p.strip() for p in re.split(r"(?<=[.!?])\s+", text.strip()) if p.strip()]
 
 
+def number_tokens(text):
+    """The text as tokens for number phrases: digits with their commas dropped, and words in lower case,
+    a hyphen and "per cent" read as a space and "percent"."""
+    t = text.lower().replace("\u2019", "'").replace("-", " ").replace("\u2013", " ")
+    t = re.sub(r"\bper\s+cent\b", "percent", t)
+    return [x.replace(",", "") for x in re.findall(r"\d[\d,]*(?:\.\d+)?|[a-z]+", t)]
+
+
+def number_phrases(text):
+    """Every number a listener hears in the text, as (phrase tokens, identifier). A phrase is a run of
+    digits, cardinal words and fraction words, joined through "and", "a", "an" and "point" ("a hundred
+    and sixty", "two and a half", "zero point five", "fourteen percent"). "One" counts only before a
+    fraction or a power ("one third", "one hundred"), and "a third" or "two thirds" counts where "the
+    third" does not. A phrase straight after "tank", "body", "line" and the like is an identifier, not
+    a number to hold."""
+    tok = number_tokens(text)
+
+    def is_num(i):
+        w = tok[i]
+        if w[0].isdigit() or w in CARDINALS or w in ALWAYS_FRACTIONS:
+            return True
+        if w in FRACTIONS:
+            p = tok[i - 1] if i > 0 else ""
+            return p in ("a", "an", "one") or p in CARDINALS or p[:1].isdigit()
+        if w == "one":
+            return i + 1 < len(tok) and (tok[i + 1] in FRACTIONS or tok[i + 1] in ("hundred", "thousand", "million", "half"))
+        return False
+
+    found, i = [], 0
+    while i < len(tok):
+        if not is_num(i):
+            i += 1
+            continue
+        j = i + 1
+        while j < len(tok):
+            if is_num(j):
+                j += 1
+                continue
+            k = j
+            while k < len(tok) and tok[k] in NUMBER_JOINS:
+                k += 1
+            if k > j and k < len(tok) and is_num(k):
+                j = k
+                continue
+            break
+        found.append((tok[i:j], i > 0 and tok[i - 1] in IDENTIFIED_BY))
+        i = j
+    return found
+
+
+def contains_run(haystack, needle):
+    n = len(needle)
+    return any(haystack[i:i + n] == needle for i in range(len(haystack) - n + 1))
+
+
+def read_checks(folder):
+    """checks.tsv as [(row number, {column: cell}, scenes)], scenes a set of scene numbers or None for every scene."""
+    path = os.path.join(folder, "checks.tsv")
+    if not os.path.isfile(path):
+        return []
+    with io.open(path, encoding="utf-8-sig") as f:
+        lines = [l for l in f.read().splitlines() if l.strip()]
+    head = lines[0].split("\t") if lines else []
+    rows = []
+    for r, line in enumerate(lines[1:], 1):
+        cells = line.split("\t")
+        row = {h: (cells[i] if i < len(cells) else "") for i, h in enumerate(head)}
+        found = [int(x) for x in re.findall(r"\d+", row.get("scene", ""))]
+        rows.append((r, row, set(found) if found else None))
+    return rows
+
+
+def rows_for(checks, n):
+    return [row for _, row, scenes in checks if scenes is None or n in scenes]
+
+
 def checked_numbers(folder):
     """{scene number or None for every scene: set of number keys} from checks.tsv's shown and exact columns."""
     pool = {}
-    path = os.path.join(folder, "checks.tsv")
-    if not os.path.isfile(path):
-        return pool
-    with io.open(path, encoding="utf-8-sig") as f:
-        lines = f.read().splitlines()
-    head = lines[0].split("\t") if lines else []
-    col = {h: i for i, h in enumerate(head)}
-    for line in lines[1:]:
-        cells = line.split("\t")
-        scene = cells[col["scene"]] if "scene" in col and col["scene"] < len(cells) else ""
-        text = " ".join(cells[col[h]] for h in ("shown", "exact", "item") if h in col and col[h] < len(cells))
+    for _, row, scenes in read_checks(folder):
+        text = " ".join(row.get(h, "") for h in ("shown", "exact", "item"))
         keys = set(numbers(text)) | set(word_numbers(text))
-        targets = [int(x) for x in re.findall(r"\d+", scene)] or [None]
-        for t in targets:
+        for t in (scenes or [None]):
             pool.setdefault(t, set()).update(keys)
     return pool
 
@@ -456,11 +548,46 @@ def card_title(s, k):
     return k == 0 and str(s.get("station", "")).lower() == "card"
 
 
+def paragraphs_of(scene):
+    """A scene's narration paragraphs as [(the line of its first cue, text)]. A Card's first cue is its
+    title and belongs to no paragraph."""
+    paras, cur, first = [], [], None
+    for k, c in enumerate(captions_of(scene)):
+        if card_title(scene, k):
+            continue
+        if c.get("new_paragraph") and cur:
+            paras.append((first, " ".join(cur)))
+            cur = []
+        if not cur:
+            first = k + 1
+        cur.append(" ".join(str(c.get("text", "")).split()))
+    if cur:
+        paras.append((first, " ".join(cur)))
+    return paras
+
+
+def chart_values(chart):
+    """Every number a chart draws: its points, its bars' values and its marks' places."""
+    vals = []
+    if not isinstance(chart, dict):
+        return vals
+    for series in chart.get("series") or []:
+        for p in (series.get("points") or []) if isinstance(series, dict) else []:
+            vals += [v for v in (p if isinstance(p, (list, tuple)) else [p]) if isinstance(v, (int, float))]
+    for bar in chart.get("bars") or []:
+        if isinstance(bar, dict) and isinstance(bar.get("value"), (int, float)):
+            vals.append(bar["value"])
+    for mark in chart.get("marks") or []:
+        if isinstance(mark, dict) and isinstance(mark.get("x"), (int, float)):
+            vals.append(mark["x"])
+    return vals
+
+
 def findings(folder):
     story = load(os.path.join(folder, "story.json"))
     draft_path = os.path.join(folder, "story.draft.json")
     draft = {s["n"]: s for s in scenes_of(load(draft_path))} if os.path.isfile(draft_path) else {}
-    pool = checked_numbers(folder)
+    checks = read_checks(folder)
     chapters = chapter_of(story)
     found = []
 
@@ -472,20 +599,40 @@ def findings(folder):
     narrated = isinstance(story, dict) and bool(story.get("narration"))
     pace, least, gap = (17.0, 0.3, 0.05) if narrated else (PACE, LEAST, GAP)
 
-    numbered = "a round's number means nothing to a viewer; name the experiment by what it asked, or an earlier one as the experiment before this one"
+    for r, row, _ in checks:
+        if not row.get("source", "").strip():
+            add("ERROR", 0, "checks.tsv row %d" % r, "no source for \"%s\"" % row.get("shown", ""))
+
+    def unchecked(n, where, text, shown_rows):
+        """A number on screen is checked when its words stand in the `shown` cell of a checks.tsv row
+        for its scene (the writer's brief: the exact value goes in checks.tsv beside the words shown)."""
+        cells = [number_tokens(row.get("shown", "")) for row in shown_rows]
+        for phrase, ident in number_phrases(text):
+            if ident:
+                continue
+            if not any(contains_run(c, phrase) for c in cells):
+                add("ERROR", n, where, "'%s' has no row in checks.tsv whose shown words hold it" % " ".join(phrase))
+
+    numbered = "an experiment's number means nothing to a viewer; name it by what it asked, or an earlier one as the experiment before this one"
     title = str(story.get("title", "")) if isinstance(story, dict) else ""
     for m in ROUND_NUMBER.finditer(title):
         add("ERROR", 0, "title", "'%s' in the title: %s" % (m.group(0), numbered))
+    unchecked(0, "title", title, [row for _, row, _ in checks])
     questions, shorts, in_run = {}, {}, []
     for s in scenes_of(story):
         n, caps = s["n"], captions_of(s)
+        here_rows = rows_for(checks, n)
+        chart_rows = [row for row in here_rows if row.get("item", "").strip().lower().startswith("chart")]
         on_screen = [("chapter", str(s.get("chapter") or ""))]
         on_screen += [(k + 1, c.get("text", "")) for k, c in enumerate(caps)]
         on_screen += [("chart " + where, text) for where, text in chart_words(s.get("chart"))]
         for where, text in on_screen:
             for m in ROUND_NUMBER.finditer(text):
                 add("ERROR", n, where, "'%s' on screen: %s" % (m.group(0), numbered))
+        if s.get("chapter"):
+            unchecked(n, "chapter", str(s["chapter"]), here_rows)
         for where, text in chart_words(s.get("chart")):
+            unchecked(n, "chart " + where, text, chart_rows)
             for w in words(text):
                 if w in CODE_WORDS:
                     add("ERROR", n, "chart " + where, "a code name on screen: '%s' in \"%s\"" % (w, text))
@@ -493,12 +640,58 @@ def findings(folder):
                     add("ERROR", n, "chart " + where, "a narrator in the chart: '%s' in \"%s\"" % (w, text))
                 elif w in SOFT_CODE_WORDS:
                     add("WARN", n, "chart " + where, "a word the glossary may not define: '%s' in \"%s\"" % (w, text))
+        if isinstance(s.get("chart"), dict):
+            pool = set()
+            for row in chart_rows:
+                pool |= set(numbers(row.get("exact", "") + " " + row.get("shown", "")))
+            missing = [number_key(repr(float(v))) for v in chart_values(s["chart"])]
+            missing = [v for v in missing if v not in pool]
+            if missing:
+                add("ERROR", n, "chart", "the chart draws %d value(s) that no chart row of checks.tsv holds in its exact "
+                    "value (%s%s); a line chart's points go in full" % (len(missing), ", ".join(missing[:4]),
+                                                                        ", ..." if len(missing) > 4 else ""))
+
+        # The narration, paragraph by paragraph (rules 2, 3, 5, 7 and 9).
+        paras = paragraphs_of(s)
+        for p, (line, text) in enumerate(paras):
+            unchecked(n, line, text, here_rows)
+            held = [ph for ph, ident in number_phrases(text) if not ident]
+            if len(held) > 2:
+                add("ERROR", n, line, "%d numbers in one paragraph (%s); one or two a paragraph at most" % (
+                    len(held), "; ".join(" ".join(ph) for ph in held)))
+            ss = sentences(text)
+            run = []
+            for x in ss + [None]:
+                if x is not None and len(x.split()) < 10:
+                    run.append(x)
+                    continue
+                if len(run) >= 3:
+                    add("ERROR", n, line, "%d short sentences in a row, a list and not speech: %s" % (
+                        len(run), " / ".join("'%s'" % y for y in run)))
+                run = []
+            for a in range(len(ss) - 2):
+                heads = [" ".join(words(x)[:2]) for x in ss[a:a + 3]]
+                if heads[0] and heads[0] == heads[1] == heads[2]:
+                    add("ERROR", n, line, "three sentences in a row open '%s': a list read aloud" % heads[0])
+                    break
+            if ss and len(ss) > 1 and len(ss[-1].split()) <= 3:
+                add("ERROR", n, line, "the paragraph ends on a short sentence, '%s', which reads as a slogan" % ss[-1])
+            if p == 0 and ss:
+                first = ss[0]
+                if re.match(r"^(in\s+)?(tank|seed)s?\s+\S+?[,.:]", first, re.I) or \
+                        re.match(r"^(at\s+)?\d[\d,.]*\s*(s|seconds)\b", first, re.I) or \
+                        (len(first.split()) <= 5 and re.search(r"\d", first)):
+                    add("ERROR", n, line, "the scene opens on a label, '%s'; the picture says where we are" % first)
+            for m in UNIT_SYMBOL.finditer(text):
+                add("ERROR", n, line, "'%s': a unit is said in words in the narration" % m.group(0))
+            for m in DECIMAL.finditer(text):
+                add("ERROR", n, line, "'%s': a listener cannot hold a decimal; round it" % m.group(0))
+            for m in LONG_CLOCK.finditer(text):
+                if float(m.group(1).replace(",", "")) >= 120:
+                    add("ERROR", n, line, "'%s': give the tank's time as a listener's time, in minutes or hours" % m.group(0))
+
         length = float(s.get("seconds") or 0)
         prev_end = None
-        here = pool.get(n, set()) | pool.get(None, set())
-        was = draft.get(n, s)
-        was_text = " ".join(c.get("text", "") for c in captions_of(was)) + " " + str(was.get("chapter", ""))
-        here |= set(numbers(was_text)) | set(word_numbers(was_text))
         for k, c in enumerate(caps):
             text, line = c.get("text", ""), k + 1
             at = float(c.get("at", FIRST if k == 0 else (prev_end or 0) + GAP))
@@ -517,18 +710,20 @@ def findings(folder):
             if length and at + h > length + 1e-6:
                 add("ERROR", n, line, "runs to %g s, past the scene's %g s" % (at + h, length))
             prev_end = at + h
-            ws = words(text)
-            for w in ws:
+            for w in words(text):
                 if w in CODE_WORDS:
                     add("ERROR", n, line, "a code name on screen: '%s' (the glossary has the plain word)" % w)
                 elif w in SOFT_CODE_WORDS:
                     add("WARN", n, line, "a word the glossary may not define: '%s'" % w)
                 elif w in NARRATOR:
                     add("ERROR", n, line, "a narrator in the text: '%s' (the voice is detached)" % w)
-                elif w in INTENSIFIERS:
+                elif w in FORBIDDEN_INTENSIFIERS:
+                    add("ERROR", n, line, "an intensifier: '%s'" % w)
+                elif w in SOFT_INTENSIFIERS:
                     add("WARN", n, line, "an intensifier: '%s'" % w)
-            if re.search(r",\s*(and\s+)?not\s+[^,]+[.!]?$", text) or re.search(r"\brather than\b[^,]*[.!]?$", text):
-                add("WARN", n, line, "a closing contrast ('X, not Y')")
+            for x in sentences(text):
+                if re.search(r",\s*(and\s+)?not\s+[^,]+[.!]$", x) or re.search(r"\brather than\b[^,]*[.!]$", x):
+                    add("ERROR", n, line, "a closing contrast ('X, not Y'): '%s'" % x)
             rel = re.search(r"(\d[\d.,]*) ?s (from here|from now|in)\b(?! tank)", text)
             if rel and float(rel.group(1).replace(",", "")) <= max(60.0, 2 * length):
                 add("WARN", n, line, "'%s' is heard at %g s into the scene: is that time true when the line is read?" % (
@@ -536,7 +731,7 @@ def findings(folder):
             if "which is why" in text.lower():
                 add("WARN", n, line, "'which is why'")
             if ":" in re.sub(r"\d:\d", "", text) and not card_title(s, k):
-                add("WARN", n, line, "a colon: can the picture explain it instead of a definition?")
+                add("ERROR", n, line, "a colon: say it inside the sentence, never as a definition after a colon")
             if text.rstrip().endswith("?"):
                 questions.setdefault(chapters[n], []).append((n, line))
                 if k == len(caps) - 1:
@@ -544,17 +739,11 @@ def findings(folder):
             for sentence in sentences(text):
                 if len(sentence.split()) <= 3 and not card_title(s, k):
                     shorts.setdefault(chapters[n], []).append((n, line, sentence))
-                    if k == len(caps) - 1 and sentence == sentences(text)[-1]:
-                        add("WARN", n, line, "the scene ends on a short sentence, '%s', which reads as a slogan" % sentence)
             if "in the run" in text.lower():
                 in_run.append((n, line))
-            for key in numbers(text):
-                if key not in here:
-                    add("ERROR", n, line, "the number %s has no row in checks.tsv and was not in the writer's scene" % key)
-            for key in word_numbers(text):
-                if key not in here:
-                    add("WARN", n, line, "the number word for %s has no row in checks.tsv; check it" % key)
         if draft:
+            was = draft.get(n, s)
+            was_text = " ".join(c.get("text", "") for c in captions_of(was)) + " " + str(was.get("chapter", ""))
             now_text = " ".join(c.get("text", "") for c in caps)
             gone = set(numbers(was_text)) - set(numbers(now_text + " " + str(s.get("chapter", ""))))
             for key in sorted(gone):
@@ -570,7 +759,6 @@ def findings(folder):
         add("INFO", in_run[1][0], in_run[1][1], "'in the run' said %d times (scenes %s); once at the start, then only "
             "where it matters" % (len(in_run), ", ".join(str(x[0]) for x in in_run)))
     return found
-
 
 def stats(story):
     caps = [c.get("text", "") for s in scenes_of(story) for c in captions_of(s)]
@@ -610,7 +798,50 @@ def cmd_check(folder, with_stats):
     return 1 if counts["ERROR"] else 0
 
 
-def cmd_cold(folder):
+def cmd_revert(folder, scenes, rnd=None):
+    """The writer's words back in the scenes named (0 for the title), from story.draft.json, applied as
+    a round of their own so that edits.tsv says who wrote them. The flow reverts a scene the editor
+    could not bring through the check or the fact checker, since the writer's draft passed both."""
+    draft = load(os.path.join(folder, "story.draft.json"))
+    story = load(os.path.join(folder, "story.json"))
+    page = render(story).splitlines()
+    by_n = {s["n"]: s for s in scenes_of(draft)}
+    want = render(draft).splitlines()
+
+    def block(lines, n):
+        start = next((i for i, l in enumerate(lines) if re.match(r"### Scene %d\b" % n, l)), None)
+        if start is None:
+            return None, None
+        end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("#")), len(lines))
+        return start, end
+
+    for n in sorted(scenes, reverse=True):
+        if n == 0:
+            page[0] = "# " + str(draft.get("title", "") if isinstance(draft, dict) else "")
+            continue
+        if n not in by_n:
+            sys.exit("scene %d is not in the writer's draft" % n)
+        a, b = block(page, n)
+        c, d = block(want, n)
+        if a is None or c is None:
+            sys.exit("scene %d has no heading on the page" % n)
+        page[a + 1:b] = want[c + 1:d]
+    with io.open(os.path.join(folder, "script.md"), "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(page).rstrip() + "\n")
+    cmd_apply(folder, rnd, author="revert")
+
+
+def cmd_edits(folder, rnd, out_path):
+    """One round's rows of edits.tsv, for that round's fact checker."""
+    with io.open(os.path.join(folder, "edits.tsv"), encoding="utf-8") as f:
+        lines = f.read().splitlines()
+    keep = [lines[0]] + [l for l in lines[1:] if l.split("\t", 1)[0] == str(rnd)]
+    with io.open(out_path, "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(keep) + "\n")
+    out("wrote %s (%d row(s) of round %d)" % (out_path, len(keep) - 1, rnd))
+
+
+def cmd_cold(folder, out_path=None):
     lines = []
     for line in render(load(os.path.join(folder, "story.json"))).splitlines():
         if line.startswith(">") or line.startswith("<!--"):
@@ -621,7 +852,7 @@ def cmd_cold(folder):
         if not line.strip() and lines and not lines[-1].strip():
             continue
         lines.append(line)
-    path = os.path.join(folder, "script.cold.md")
+    path = out_path or os.path.join(folder, "script.cold.md")
     with io.open(path, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lines).strip() + "\n")
     out("wrote " + path)
@@ -633,24 +864,32 @@ def main():
             stream.reconfigure(encoding="utf-8", errors="replace")
         except (AttributeError, ValueError):
             pass
-    args = sys.argv[1:]
-    force = "--force" in args
-    with_stats = "--stats" in args
-    args = [a for a in args if a not in ("--force", "--stats")]
-    if len(args) != 2 or args[0] not in ("render", "apply", "check", "cold"):
-        out("\n".join(l.strip() for l in __doc__.strip().splitlines()[2:6]))
-        sys.exit(2)
-    command, folder = args
-    if not os.path.isfile(os.path.join(folder, "story.json")):
-        sys.exit("no story.json in " + folder)
-    if command == "render":
-        cmd_render(folder, force)
-    elif command == "apply":
-        cmd_apply(folder)
-    elif command == "cold":
-        cmd_cold(folder)
-    else:
-        sys.exit(cmd_check(folder, with_stats))
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
+    ap.add_argument("command", choices=("render", "apply", "check", "cold", "revert", "edits"))
+    ap.add_argument("folder")
+    ap.add_argument("--force", action="store_true")
+    ap.add_argument("--stats", action="store_true")
+    ap.add_argument("--round", type=int)
+    ap.add_argument("--author", default="editor")
+    ap.add_argument("--scenes", default="")
+    ap.add_argument("--out")
+    a = ap.parse_args()
+    folder = a.folder
+    if a.command == "render":
+        cmd_render(folder, a.force)
+    elif a.command == "apply":
+        cmd_apply(folder, a.round, a.author)
+    elif a.command == "check":
+        sys.exit(cmd_check(folder, a.stats))
+    elif a.command == "cold":
+        cmd_cold(folder, a.out)
+    elif a.command == "revert":
+        cmd_revert(folder, [int(x) for x in re.findall(r"\d+", a.scenes)], a.round)
+    elif a.command == "edits":
+        if a.round is None or not a.out:
+            sys.exit("edits needs --round N and --out <file>")
+        cmd_edits(folder, a.round, a.out)
 
 
 if __name__ == "__main__":

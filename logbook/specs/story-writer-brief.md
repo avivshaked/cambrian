@@ -25,11 +25,18 @@ Every rule below serves one of those, or the rule that nothing on screen is fals
 
 ## What you are given, and what you may touch
 
-- **The story's folder.** Its `flow.json` names the round, its runs (`runs`), where they are
-  (`runs_root`), the round's logbook entry (`entry`) and its pre-registration (`prereg`). Each run
-  is the newest directory holding a `run.json` under `<runs_root>/<arm>/`. From the second pass the
-  folder also holds `arc.md` (the arc as the owner approved it), `arc-ruling.md` (the owner's
-  rulings on it) and `arc-reads.md` (the first pass's reads).
+- **The story's folder.** Read only these fields of its `flow.json`: `runs`, `runs_root`, `entry`
+  (the round's logbook entry) and `prereg` (its pre-registration). Each run is the newest directory
+  holding a `run.json` under `<runs_root>/<arm>/`. The rest of the folder, where it exists:
+  - `arc.md`, `arc-reads.md` and `arc-choices.md`, the first pass's files;
+  - `owner/`, the owner's words, word for word, one file a ruling, named
+    `<stage>-<K>-<verdict>.md`. The owner's words rule. On the arc, where they say nothing about
+    one of `arc-choices.md`'s choices, that choice's recommendation stands;
+  - `superseded/arc-<K>/`, an arc the owner rejected, with their words on it as `owner.md`;
+  - `drafts/<K>/`, the review of each draft you handed back, K counting from 1: the page as it read
+    (`page.md`), the tool's check (`check.txt`), the listener's faults (`listen.md`), the fact
+    checker's rows (`facts.md`) and, where the owner ruled on the draft, their words (`owner.md`);
+  - `changes.md`, changes the owner asked for after the script stage that only you may make.
 - **The runs, read-only**:
   - `lineage.jsonl`, every birth and death;
   - `stats.jsonl`, one row per sample;
@@ -124,9 +131,11 @@ their sentences are not to be reused.
    than two numbers, a number a listener cannot hold, a definition after a colon, a label for an
    opening, a slogan for an ending, a list read aloud, an intensifier, and a word used before it is
    explained. Fix every one.
-3. Run `python scripts/story-script.py render <story folder> --force` and
-   `python scripts/story-script.py check <story folder>`. Fix every ERROR and read every WARN.
-4. In your last message, give for each scene the count of numbers in its narration and its longest
+3. Run `python scripts/story-script.py check <story folder>`. It counts what can be counted of
+   the rules above (numbers a paragraph, runs of short sentences, units, decimals, colons, labels,
+   intensifiers, a number with no `checks.tsv` row whose `shown` cell holds its words), and every
+   finding it prints as ERROR fails the draft. Fix every ERROR and read every WARN.
+4. Put in `writer-report.md`, for each scene, the count of numbers in its narration and its longest
    run of sentences under ten words.
 
 ## The truth rules
@@ -160,7 +169,7 @@ their sentences are not to be reused.
 3. **No code names**: never `bf`, `pool`, `trickle`, "clade" or "absorptive". Say "born at a sixth
    of its adult size", "a stored eater", "a newcomer", "a line", "a stomach".
 4. **A new word** is checked against the code, with its source named, and handed back as a
-   glossary row in your last message.
+   glossary row in `glossary-rows.md`.
 5. **Units are said in words** in the narration: joules, metres, minutes, hours. A chart's axis may
    use the symbols.
 
@@ -238,10 +247,11 @@ builder counts it. The subtitles' reading pace is slower than speech, so aim for
 
 ## What you hand back
 
-The writer runs twice.
+The writer runs twice. Write your files into the story's folder through the shell, and end with a
+short message saying which files you wrote.
 
-**The first pass** reads the runs and writes two files into the story's folder, for the owner's
-ruling before any narration is written:
+**The first pass** reads the runs and writes three files, for the owner's ruling before any
+narration is written:
 
 - `arc.md`: the arc in two sentences and its kind, the stake, who the listener follows (with the
   run and the checkpoint seconds where it can be filmed), the opening chapter's teaching body, the
@@ -250,25 +260,43 @@ ruling before any narration is written:
   not be checked.
 - `arc-reads.md`: the read behind each number in `arc.md` (the file, the query and the value), and
   every glossary entry whose value or meaning differs in this round's settings.
+- `arc-choices.md`: every choice the owner should rule on with the arc, numbered from 1. Each
+  choice gives its options, what each option means for the film, and a line starting
+  `Recommendation:` naming the option you recommend and why. The owner reads this file whole and
+  answers it by number.
 
-Its last message lists the open choices the owner should rule on with the arc, each with a
-recommendation.
+If the folder holds `superseded/arc-<K>/`, the owner rejected an arc: read the newest one's files
+and the owner's words beside them, and write an arc that answers them.
 
-**The second pass** tells the arc as `arc.md` and `arc-ruling.md` have it, and writes four files
-into the story's folder:
+**The second pass** tells the arc as `arc.md`, `arc-choices.md` and the owner's words in `owner/`
+have it, and writes six files:
 
 - `story.md`: the story in prose for the owner, following `STYLE.md`, with the arc first, the
   chapters in order, a verdict table of the round's predictions, what earlier films got wrong,
   and what could not be checked.
-- `story.json`: the shot list, with `title`, `arc`, `runs`, `screen_seconds` and the scenes, each
-  scene's narration cut into its `captions`.
-- `checks.tsv`: one row per number and per rule stated on screen.
-- `make_story.py`, the builder that wrote the last two and reads every number from the runs. It
-  checks every subtitle and chart label against the font file, that every subtitle and chart falls
-  inside its scene, that no Card carries a chapter, that every `account` chart sits on a Portrait
-  or a Birth and no `full` chart does, and the film's length.
+- `story.json`: the shot list, with `title`, `arc` (two sentences), `arc_parts`
+  (`{"followed": the body or line the film follows, "turn": the turn in one sentence, "kind":
+  "triumph", "tragedy" or "bittersweet"}`), `runs`, `screen_seconds` and the scenes, each scene's
+  narration cut into its `captions`.
+- `checks.tsv`: one row per number and per rule stated on screen, with the columns `scene`, `item`,
+  `shown`, `exact`, `source` and `how_read`. `shown` holds the words the viewer hears for the
+  number, as they are spoken ("nearly two thirds", "about forty minutes"), since the check matches
+  the narration's number words against it. A chart's row has an `item` starting `chart` and an
+  `exact` holding every value the chart draws. Every row has a `source`.
+- `make_story.py`, the builder that wrote `story.json` and `checks.tsv` and reads every number from
+  the runs. It checks every subtitle and chart label against the font file, that every subtitle and
+  chart falls inside its scene, that no Card carries a chapter, that every `account` chart sits on a
+  Portrait or a Birth and no `full` chart does, and the film's length.
+- `writer-report.md`: the film's length and scene count, the per-scene counts from "Before you
+  hand back", and anything that could not be made true on screen.
+- `glossary-rows.md`: a row for the glossary's table for every new word, in its form (`| word |
+  what the viewer is told | its source in the code or the settings |`), or the line `none`.
 
-If the folder holds `writer-notes.md`, it lists lines of the last draft that failed this brief's
-check, and the second pass fixes every one. Its last message is a short report: the film's length
-and scene count, the per-scene counts from "Before you hand back", the glossary rows, and anything
-that could not be made true on screen.
+When the folder holds `drafts/`, read the newest `drafts/<K>/` before writing: your last draft
+failed its review there. Fix every ERROR in `check.txt`, every fault `listen.md` names and every
+row `facts.md` marks FALSE, and do what `owner.md` asks where it exists. Write the whole draft
+again; the listener hears it fresh.
+
+When the folder holds `changes.md`, the script stage has already edited `story.json`. Make every
+change `changes.md` asks for, take every other scene's narration from `story.json` as it stands,
+and hand back the six files as above.

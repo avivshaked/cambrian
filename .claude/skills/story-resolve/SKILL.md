@@ -7,12 +7,12 @@ description: Compose a round's story film as a DaVinci Resolve timeline instead 
 
 The procedure lives in the repository, so that any agent can follow it. Read
 `logbook/specs/story-resolve.md` before starting: it has the layout, the setup, and what the
-Resolve API does that its documentation does not say. It replaces only the join (step 7) of the
-story-film skill; the guides, the writer, the check and the render come first, as that skill says.
+Resolve API does that its documentation does not say. It is the story-film flow's assemble stage,
+which `story-flow.py next` names once every scene is filmed.
 
 Checklist:
 
-1. Every scene's clip is filmed and its contact sheet looked at (story-film, step 6).
+1. `story-flow.py status` reads film done: every scene has a clip filmed from its current fields.
 2. Resolve is running with external scripting set to Local, and
    `python scripts/story-resolve.py --check` shows the configured project open and the assets
    present. The per-machine settings are in `.env` (keys in `scripts/story-resolve.env.example`);

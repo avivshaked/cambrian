@@ -1,79 +1,48 @@
 ---
 name: story-script
-description: Edit a story film's narration into a script a person would read aloud - an editor and a cold reader in up to three rounds, with the mechanical checks between them. Use as the script stage of the story-film flow, or when the owner says a film's prose sounds machine-written.
+description: The script stage of the story-film flow - rounds of an editor, the tool's check, a fact checker, a cold reader and an arc comparer, run by story-flow.py next, until a round is clean or the third round ends. Use to understand or resume the script stage of a story film; the story-film skill runs it.
 ---
 
 # Story script
 
-The editor's rules are in `logbook/specs/story-script-brief.md`. The tool is
-`scripts/story-script.py`, and the story's folder is `scratch/story/<round>/` with `story.json`,
-`story.md` and `checks.tsv` in it. The page, `script.md`, shows each scene's narration one paragraph
-a line, and the tool cuts the subtitles from it.
+The script stage makes the writer's narration sound like a person telling it. It runs inside the
+story-film flow, and `python scripts/story-flow.py next <folder>` drives it: this skill says what
+happens, so that a session knows what `next` is doing. The editor's rules are in
+`logbook/specs/story-script-brief.md`, the fact checker's in `logbook/specs/story-facts-brief.md`,
+and every prompt is in `.claude/skills/story-film/prompts.md`. The tool is `scripts/story-script.py`.
 
-Checklist, with N the round of the stage, from 1:
+## A round
 
-1. `python scripts/story-script.py render <folder> --force` writes `script.md`.
-2. `python scripts/story-script.py check <folder> --stats > <folder>/check-0.txt` for the writer's
-   counts.
-3. **The editor**: a `general-purpose` subagent on Opus, run in the background, with its prompt
-   below. It writes `script.md` and returns a table of what it changed and why.
-4. `story-script.py apply <folder>` (the first apply keeps `story.draft.json`), then
-   `story-script.py check <folder> > <folder>/check-N.txt`. Any ERROR goes back to the editor
-   before the cold read, as round N again.
-5. Read `edits.tsv`'s new rows for meaning, since the check sees numbers and words and not claims.
-   Every fact a line gains is checked against `story.md` and `checks.tsv`, and against the clip's
-   plan and contact sheet once the story is filmed: where the body sits in the frame, the
-   provenance word, whether the chart is drawn. Fix a false line in `script.md`, apply again, and
-   write each fix and its reason into `<folder>/edit-notes-N.md` for the next round's editor.
-6. **The cold reader**: a `general-purpose` subagent on Sonnet, run in the background, told to
-   use no tool, with its prompt below. `story-script.py cold <folder>` writes `script.cold.md`, the
-   page without its notes and each scene's heading cut to its number, and that page goes into the
-   prompt where the template says. Save its answer, as it came, as `<folder>/cold-read-N.md`.
-7. Compare the cold reader's two sentences with the arc in `story.json`. A summary that misses the
-   turn is a failed read, whatever the stumbles say. Another round from step 3 if it missed the
-   turn or stumbled, at most three rounds in all. The loop stops early when a cold read finds no
-   stumble and tells the arc back.
-8. Hand on `script.md`, `story.json`, `story.draft.json`, `edits.tsv`, the cold reads and the
-   `--stats` table, writer's against script's, to the owner's review, with the last cold read's
-   notes beside the script.
+Each round N has a folder, `script/<N>/`, in the story's folder.
 
-## The prompts
+1. **The editor** (`general-purpose`, Opus) edits `script.md` and writes `script/<N>/editor.md`,
+   its table. In the owner's round it reads `script/<N>/owner.md` and writes
+   `script/<N>/for-writer.md` for what only the writer may change.
+2. **Apply and check**, by `next`: `story-script.py apply --round N --author editor`, then the check
+   into `script/<N>/check.txt`. An ERROR sends the editor back once to fix it (its first try's
+   files become `check-1.txt` and `editor-1.md`). An ERROR after the second try restores the
+   writer's words in those scenes (`story-script.py revert`), since the writer's draft passed the
+   same check.
+3. **The fact checker** (`Explore`, Opus) judges every edited line against `story.md`, `checks.tsv`
+   and the picture; **the cold reader** (`Explore`, Sonnet) reads only `script/<N>/cold-page.md`,
+   the page with no notes, and reports its stumbles and the story as it understood it. They run
+   together, and `save` records each answer.
+4. **The arc comparer** (`Explore`, Sonnet) reads only `script/<N>/arc-pair.md`, the writer's arc
+   beside the cold reader's summary, and answers TOLD or MISSED.
 
-Each prompt is used word for word, with only its placeholders filled in: the absolute path of the
-checkout that holds this skill, the story's folder, the round N and, for the cold reader, the page.
-Add nothing else. What the session wants a subagent to know goes into the folder as a file
-(CLAUDE.md, "A subagent that a skill launches is briefed from the skill's files alone").
-
-The editor:
-
-```
-You are the script editor of a round's story film, on round <N> of the script stage.
-Your brief is <checkout>\logbook\specs\story-script-brief.md. Read it whole and follow it.
-The story's folder is <folder>.
-```
-
-The cold reader:
-
-```
-You are watching a short film about a simulated tank of water, and reading its narration as it
-plays. You have never seen this tank or anything about it. Use no tool. The narration follows,
-scene by scene.
-
-<the contents of script.cold.md>
-
-Return, in this order:
-1. Every stumble, as scene, line and kind: a word you cannot define, a line you had to read
-   twice, a line that sounds written rather than spoken, a slogan or an advert, a jump you cannot
-   follow, a number you cannot picture.
-2. The three lines that sound most like a machine wrote them.
-3. The story in two sentences, as you understood it.
-```
+A round is clean with no line false, no stumble and the arc told, and a clean round closes the
+stage. Otherwise round N+1 begins, and its editor reads round N's files. The third round closes the
+stage whatever it ends with, and the owner reads what remains. In a closing round, a line still
+false gets the writer's words back. An owner's round, opened by `--verdict changes`, also closes
+the stage.
 
 ## Rules
 
-- A scene or chapter is never added, removed or moved here: `apply` refuses it, and it goes back
-  to the writer.
+- A scene or chapter is never added, removed or moved here: `apply` refuses it, and it goes to the
+  writer through `for-writer.md`.
 - A number the check refuses is not filmed. A new fact means a row in `checks.tsv` from a query,
   the writer's work.
-- Neither subagent waits on anything. The editor writes only `script.md`, through the shell; the
-  cold reader uses no tool and writes nothing.
+- No subagent waits on anything. The editor writes only `script.md`, `script/<N>/editor.md` and
+  `script/<N>/for-writer.md`, through the shell. The readers write nothing.
+- The session never edits `script.md`; a caption the owner wants changed goes through their words
+  and an owner's round.
