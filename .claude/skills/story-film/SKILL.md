@@ -23,7 +23,7 @@ starting. The flow before this one (writer, check, render, ffmpeg join) is tagge
    `story-flow.py init scratch/story/<round> --round N --runs <arms...>`.
 2. **Guides.** `python scripts/guide.py <arm> --no-economics` for each run.
 3. **Arc.** The writer's first pass: an Opus subagent with `logbook/specs/story-writer-brief.md`
-   and the glossary returns `arc.md`'s text, which the session writes.
+   and the glossary writes `arc.md` into the story's folder through the shell.
 4. **Arc approved.** The owner's first review. Ask for the ruling in full (CLAUDE.md, "Say when a
    ruling blocks the work"), then `story-flow.py approve <folder> arc`.
 5. **Write.** The writer's second pass, from the approved arc: `story.md`, `story.json` and
@@ -62,6 +62,8 @@ starting. The flow before this one (writer, check, render, ffmpeg join) is tagge
 
 - A heavy job (a render, a narration job, a farm run) never starts beside another. Read the
   machine first, under HANDOFF's current ruling.
-- A subagent writes no file and waits on nothing. It returns text, and the session writes it.
+- A subagent waits on nothing. The writer and the editor write their own files through the shell
+  (a heredoc or a Python write, never the Write or Edit tools), and only inside the story's folder
+  their brief names (the owner, 2026-09-26). Every other subagent returns text.
 - Every owner review is a blocking ruling: lead with "I am blocked on ... from you", set the
   decision out in full, and keep working on what is not gated.

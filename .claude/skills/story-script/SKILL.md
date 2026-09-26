@@ -14,11 +14,11 @@ Checklist:
 
 1. `python scripts/story-script.py render <folder>` writes `script.md`, one line a caption.
 2. `python scripts/story-script.py check <folder> --stats` for the writer's counts.
-3. **The editor**: an Opus subagent (`general-purpose`), told to write no file. Give it the brief,
-   the glossary, `script.md`, `checks.tsv` and any findings and cold-read notes so far. It returns
-   the whole page in one fenced block and a table of what it changed and why.
-4. The session writes the page to `script.md` through the shell, then
-   `story-script.py apply <folder>` (the first apply keeps `story.draft.json`), then
+3. **The editor**: an Opus subagent (`general-purpose`), told to write `script.md` and nothing
+   else, through the shell and never with the Write or Edit tools. Give it the brief, the glossary,
+   `script.md`, `checks.tsv` and any findings and cold-read notes so far. It writes the whole page
+   and returns a table of what it changed and why.
+4. The session runs `story-script.py apply <folder>` (the first apply keeps `story.draft.json`), then
    `story-script.py check <folder>`. Every ERROR goes back to the editor before the cold read.
    Then read `edits.tsv`'s new rows for meaning, since the check sees numbers and words, not
    claims. Every fact a line gains is checked against `story.md` and `checks.tsv`, and against
@@ -43,4 +43,5 @@ Rules:
   to the writer.
 - A number the check refuses is not filmed. A new fact means a row in `checks.tsv` from a query, the
   writer's work.
-- Neither subagent waits on anything, and neither writes a file.
+- Neither subagent waits on anything. The editor writes only `script.md`, through the shell (the
+  owner, 2026-09-26); the cold reader uses no tool and writes nothing.

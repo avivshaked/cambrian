@@ -43,9 +43,9 @@ particular thing unless the scene is held at a checkpoint with `flexible: false`
 
 The editor is an Opus subagent. It gets this brief, the glossary, `script.md` (with its `>` notes: why each
 scene is there, its chart), `checks.tsv` and, from the second round on, the check's findings and
-the cold reader's notes. It writes no file (CLAUDE.md's rule of 2026-09-25 on subagents that
-edit), and returns the whole page in its final message, in a single fenced block, followed by a
-table of what it changed and why. The session writes the page, applies it and checks it.
+the cold reader's notes. It writes the whole page to `script.md` through the shell and nothing
+else, never with the Write or Edit tools (the owner, 2026-09-26), and returns a table of what it
+changed and why. The session applies the page and checks it.
 
 Its rules:
 
