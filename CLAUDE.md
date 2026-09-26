@@ -1717,7 +1717,9 @@ actually verifying it.
   (the owner, 2026-09-26). A farm round writes a checkpoint every 100 s, 3.6 to 5.1 GB a seed
   at round 49's crowd, three quarters of it checkpoints. They stay whole while the round is read
   and filmed. Only when the owner has said the round's video is final are they thinned to one
-  every 1,000 s, keeping any checkpoint a film or an entry cites. The agent asks before each
+  every 1,000 s, plus the checkpoint at or before each scene's start (the owner's addition, the
+  same morning; about 30 a video) and any an entry cites. The keep list is built from the
+  video's own scene table, and the agent shows it and the space it frees and asks before each
   thinning, since a deletion cannot be undone. Two reductions lose nothing and need no ruling:
   a checkpoint that points at `genomes.jsonl.gz` instead of copying every living genome (a
   quarter of each file), and the feeding log (`absorptive.jsonl`) compressed. Round 49's

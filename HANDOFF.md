@@ -95,8 +95,10 @@ seed; it is built after the clamp fix and goes into DECISIONS when it is built.
 A checkpoint is 4.2 MB of genome text, which `genomes.jsonl.gz` already holds, and 12.4 MB of
 moving state. Compressed against the checkpoint 100 s before it, a checkpoint is still 85% of
 its size, so its state really does change (`scripts/reads/r49-entry/ckdelta.py` and `ckprofile.py` on `founder-depth-bed`). The
-ruling: thin to one checkpoint every 1,000 s, only after the owner approves the round's video
-as final, and ask before each thinning (CLAUDE.md). Queued, needing no ruling: genomes by
+ruling: thin to one checkpoint every 1,000 s plus the one at or before each scene's start, only
+after the owner approves the round's video as final. The keep list comes from the video's scene
+table, and the agent asks before each thinning (CLAUDE.md). A filmed seed then holds about 60
+checkpoints, about 1.5 to 2 GB in all. Queued, needing no ruling: genomes by
 reference in a checkpoint (a new checkpoint version, with version 6 still read), the feeding
 log gzipped, and a measured test of a better codec for the moving state.
 
