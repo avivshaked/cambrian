@@ -1388,7 +1388,8 @@ actually verifying it.
   Double on the 4090 is slower than sixteen of this machine's cores at 10,000 bodies; single
   is about six times faster and is a new realisation of every seed. Identity on the card
   holds across launch shapes, so a GPU identity claim is made at two group sizes. Run GPU
-  code in the foreground with nothing else on the machine until the owner rules otherwise.
+  code in the foreground with nothing else on the machine, except the snow's transport under an
+  overnight round from round 51 (D126).
   **The card fuses a multiply and an add unless told not to.** Under the farm's `Cuda()` context
   the PTX compiler contracts `x*y+z` into one fused operation, so 14% of such doubles and nearly
   half of a 24-term chain differ from the CPU, in single the same. A bit cast around the product
@@ -1405,8 +1406,9 @@ actually verifying it.
   byte for byte in the world's state. A digest comparison on the card is the card's own check.
   The flag works under either engine: under the cpu engine the device opens a context of its own.
   The launch asks it for the grid's tables first (`GridField.OfferTransportDevice`) and refuses a
-  world the card will not carry, and `run.json` says `transport: cpu` or `card`. Using the card
-  under an overnight round is the owner's call, since the card works by day only.
+  world the card will not carry, and `run.json` says `transport: cpu` or `card`. From round 51
+  an overnight round runs with it on (D126, the owner's ruling of 2026-09-26), after a daytime
+  check against round 50's own record (HANDOFF).
   **The card's copies were pageable until the same day.** A managed array moves at about 6 GB/s.
   Pinned (`GC.AllocateArray(pinned: true)`) and registered (`CreatePageLockFromPinned`), the same
   array moves at about 21 GB/s through the same `CopyFromCPU` and `CopyToCPU` calls, because the

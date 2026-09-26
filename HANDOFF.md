@@ -12,7 +12,9 @@ the ones before those are `logbook/specs/handoff-archive-2026-09-22.md`.*
 
 Speed first (the owner, 2026-09-25): 10,000 creatures fast is the committed target and 100,000
 a stretch. Option A: rounds run overnight on the CPU, one seed at a time at sixteen threads, and
-the card is worked by day with nothing else on the machine. The total load stays at or under
+the card is worked by day with nothing else on the machine. From round 51 an overnight
+round also hands the snow's transport to the card, which gives the CPU's bits (D126, the owner's
+ruling of 2026-09-26). Nothing else runs on the card at night. The total load stays at or under
 half the machine, 16 of 32 logical processors. The processor's microcode is still 0x10E. The
 owner deferred the BIOS flash and watches for warning signs, and any unexplained crash or clean
 re-run is reported the same hour (CLAUDE.md, "Read the CPU's microcode"). Load is reported as
@@ -110,7 +112,8 @@ should save more at round 48's (not measured). The CPU farm can use the device t
 `EVOSIM_GPU_TRANSPORT` on the cpu engine the bodies stay on the CPU and the transport goes to the
 card. At 16 threads on the same world that went from 3.7 to 3.8x to 5.0x real time, identical to
 the CPU-only run. The launch refuses a world the card will not carry, and `run.json` records
-`transport` as `cpu` or `card`. Whether overnight rounds may use it is the owner's (queue item 2).
+`transport` as `cpu` or `card`. The owner ruled on 2026-09-26 that overnight rounds use it
+from round 51 (D126), after the check in queue item 3.
 
 The probe reads `EVOSIM_GPU_PROBE` from the process environment directly, which bites. The
 script's `-Env` passes settings as arguments and does not reach it, and the binding warns that it
@@ -229,23 +232,35 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    between the transport and the next block changes the snow (unchecked). The class uploads send a class
    whole when one body in it is new, and sending the changed rows would save 3 to 4% of the wall
    (an estimate). Identity on the card is claimed at two group sizes (CLAUDE.md). Whether a round
-   runs on the card is the owner's: single precision is a new realisation of every seed. So is
-   whether an overnight CPU round may use the card for the transport alone. That gives the CPU's
-   bits and ran 34% faster on round 50's world (put to the owner on 2026-09-26, not yet ruled).
-3. The lit link is read and not built: `scripts/reads/linklight.py <arm>` splits a stomach
+   runs on the card is the owner's: single precision is a new realisation of every seed. An
+   overnight CPU round uses the card for the transport alone from round 51 (D126), after item
+   3's check.
+3. Before round 51, the card's transport is checked against round 50's own record (D126's
+   conditions), by day with nothing else on the machine. Round 50's seeds are resumed on main's
+   exe with `EVOSIM_GPU_TRANSPORT` from checkpoints near 5,000, 15,000 and 25,000 s, 1,000 s
+   each, under `EVOSIM_ALLOW_SOURCE_MISMATCH`, since main is not round 50's build. Each window's
+   rows, lineage and checkpoints are compared with round 50's own, the checkpoint payloads byte
+   for byte. The same windows on the CPU's transport, alternated with them, are the control: a
+   difference in both is the build's, and a difference in the card's alone is the card's. Their
+   paces give the gain at round 50's crowds in place of the 13% estimate. Round 51's queue then
+   sets `EVOSIM_GPU_TRANSPORT=1` and reads `transport: card` from each seed's manifest and
+   `dynamics transport` from its header. It launches a seed the card refuses on the CPU's
+   transport, and a seed the card ends mid-run is resumed from its last checkpoint. The hourly
+   watch adds one `nvidia-smi` reading of the card's temperature, power and load.
+4. The lit link is read and not built: `scripts/reads/linklight.py <arm>` splits a stomach
    body's income into its links' light and its food, by window and by line (the first decision
    above). It runs on round 50 when that round is read.
-4. The storage reductions that lose nothing come next. A checkpoint that points at `genomes.jsonl.gz`
+5. The storage reductions that lose nothing come next. A checkpoint that points at `genomes.jsonl.gz`
    instead of copying every living genome (a new `Checkpoint.Version`, with 6 still read), and
    the feeding log gzipped. Then a measured test of a better codec for the moving state.
-5. The theatre's four checkpoints are re-recorded on the current build: ckA, ckB, ckC and ckUi.
-6. Seed 2's budded line is read for the stomach's cost. M4 failed in round 49's seed 2 with
+6. The theatre's four checkpoints are re-recorded on the current build: ckA, ckB, ckC and ckUi.
+7. Seed 2's budded line is read for the stomach's cost. M4 failed in round 49's seed 2 with
    the stomach bringing 2.7% of the income. What the bud costs in tissue and upkeep is not yet
    set against it (0122).
-7. Round 49's video is made when the owner asks for it, from film windows from the round's own
+8. Round 49's video is made when the owner asks for it, from film windows from the round's own
    checkpoints, which V1 showed are faithful. After the owner approves it as final, the keep
    list for its checkpoints is built from its scene table and shown before each thinning.
-8. Round 50's read and entry (0124) follow its last seed, with the theatre's pictures taken
+9. Round 50's read and entry (0124) follow its last seed, with the theatre's pictures taken
    before it is written.
 
 The rounds after 50 are not planned past the two decisions above. The proposal most likely to

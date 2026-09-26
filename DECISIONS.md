@@ -6512,3 +6512,37 @@ the bed under it; on round 49's tilted bed it lifted every founder whose food la
 45 m to just above 45 m. The repair reads the bed under the candidate and changes nothing on a flat
 floor. Round 49's leaves were placed by the rule and the clamp together: the rule chose the deep
 matter, and the clamp lifted those over a bed deeper than the centre's to about 44 m.
+
+### D126
+**An overnight round hands the snow's transport to the card, from round 51** · 2026-09-26
+
+**Status:** ruled by the owner on the afternoon of 2026-09-26. It was option B of three, put to
+them once the transport ran on the card under the CPU farm (`acaad19`). It changes no world rule,
+since the setting is the farm's `EVOSIM_GPU_TRANSPORT`, which moves no config hash. Each run's
+manifest records it as `transport: card`. It amends the machine ruling of 2026-09-25 (option A: rounds overnight on the
+CPU, the card by day only) for this one job.
+
+**Decision.** From round 51 the overnight rounds run on the CPU farm at sixteen threads, one seed
+at a time, as before, and hand the snow's transport to the card. The bodies, the solver and the
+rest of the world stay on the CPU. Nothing else runs on the card at night.
+
+**Why.** The card's transport gives the CPU's numbers bit for bit, since every product in it is
+written as `mul.rn` (logbook/specs/fma-probe). So a round with it is the same round, sooner. On
+round 50's world at 1,700 bodies it took the CPU farm from 3.7 and 3.8x to 5.0x real time
+(logbook/specs/gpu-probe-2026-09-26.txt). That is 30 to 36 ms saved in each metabolic step. The saving in
+milliseconds does not depend on the crowd, because the grid is the tank's. Over a seed shaped
+like round 49's that is an estimated half hour, about 13% of a night. The card does about 7 ms of
+work in each step, at low power.
+
+**Rejected.** (A) The CPU alone at night, as round 50 runs: no new risk, and none of the gain.
+(C) Whole rounds on the card engine: 1.7 to 2.6 times the CPU farm's pace on the two crowds
+measured. But single precision makes every seed a new realisation, an unbounded neuron comes
+nearer the float's ceiling, and the card would run hard all night with nobody watching.
+
+**Conditions.** Before the first night the card's transport is checked against round 50's own
+record, by day, with nothing else on the machine. Round 50's seeds are resumed on the card from
+early, middle and late checkpoints. Each window's rows and checkpoints are compared with the
+round's own, the checkpoints byte for byte. The same windows on the CPU's transport, alternated
+with them, are the control and measure the gain at round 50's crowds. If the card refuses a
+seed's launch, the queue launches the seed on the CPU's transport, which gives the same bits. A
+seed the card ends mid-run is resumed from its last checkpoint.
