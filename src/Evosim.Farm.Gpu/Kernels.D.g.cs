@@ -12,7 +12,8 @@
 // reused, and four size classes.
 //
 // Per step, in the CPU's order:
-//   the grid       MeanSerial | MeanChunks + MeanCombine, Ranges, Scan, Scatter   (Contacts.cs)
+//   the grid       MeanSerial | MeanChunks + MeanCombine, Ranges, ScanReduce + ScanTiles
+//                  + ScanDown, Scatter                                         (Contacts.cs)
 //   the bodies     Step0 .. Step3, one launch per class                          (StepOne)
 //   the census     Census                                               (CloseContactStep)
 //   the commit     a swap of the two sphere sets, on the host
@@ -113,7 +114,7 @@ namespace Evosim.Farm.Gpu.Dbl
     /// <summary>The contact grid over rows: a body, or under per-part contact a (body, link).</summary>
     public struct SGrid
     {
-        public ArrayView<int> Lo, Hi, Counts, Start, Cursor, Items, PartialN;
+        public ArrayView<int> Lo, Hi, Counts, Start, Cursor, Items, PartialN, TileSum, TileStart;
         public ArrayView<Real> Cell, Partial;
     }
 
@@ -128,7 +129,7 @@ namespace Evosim.Farm.Gpu.Dbl
     {
         // The launch: the class's capacity and neuron ceiling, the global roster, the grid.
         public int N, MaxN, GN, GUsed, Count, Rows, Buckets, Mask, OverCap, EntryCap;
-        public int InstBase, StepIndex, PerPart, Instrument, Chunk, Chunks;
+        public int InstBase, StepIndex, PerPart, Instrument, Chunk, Chunks, Tiles;
 
         public int HasCurrent, Accelerating, Sloped, HasBed, BedRelief, BedModes, ShoreOn, FadeOn;
         public int ReefCount, LimitDrive, LimitDrag, UseRestore, FloorRestores, CreatureContact;
@@ -406,6 +407,8 @@ namespace Evosim.Farm.Gpu.Dbl
         public const int TraceValues = 21;         // Creature.TraceValuesPerLink
         public const int ReefStride = 16;          // values a reef takes in SWorld.WR
         public const int CensusFields = 5;         // pairs, jointed, held, bodies, bed or glass
+        public const int ScanPer = 8;              // buckets a thread in a scan tile
+        public const int ScanGroupCap = 256;       // the scan tile's group, at most
 
         // Overflow counters: candidates past CandCap, overlaps past OverCap, held ids past OverCap,
         // cell entries past EntryCap.
@@ -567,22 +570,54 @@ namespace Evosim.Farm.Gpu.Dbl
             }
         }
 
-        /// <summary>The exclusive prefix sum of the bucket counts, on one group.</summary>
-        public static void Scan(SGrid gr, SCfg cfg)
+        // The exclusive prefix sum of the bucket counts, in three passes: each tile's total, the
+        // tiles' starts on one group, and each tile's buckets from its start. The sums are
+        // integers, so any tiling gives the same starts as the one group of the first cut did.
+
+        /// <summary>The scan's first pass: a tile's total, a tile a group, ScanPer buckets a thread.</summary>
+        public static void ScanReduce(SGrid gr, SCfg cfg)
+        {
+            var sh = SharedMemory.Allocate<int>(ScanGroupCap);
+            int t = Group.IdxX;
+            int G = Group.DimX;
+            int tile = Grid.IdxX;
+            int B = cfg.Buckets;
+            int first = tile * G * ScanPer;
+
+            int local = 0;
+            for (int k = 0; k < ScanPer; k++)
+            {
+                int b = first + k * G + t;
+                if (b < B) local += gr.Counts[b];
+            }
+            sh[t] = local;
+            Group.Barrier();
+
+            for (int half = G >> 1; half > 0; half >>= 1)
+            {
+                if (t < half) sh[t] = sh[t] + sh[t + half];
+                Group.Barrier();
+            }
+
+            if (t == 0) gr.TileSum[tile] = sh[0];
+        }
+
+        /// <summary>The scan's second pass: the tiles' starts and the grand total, on one group.</summary>
+        public static void ScanTiles(SGrid gr, SCfg cfg)
         {
             var sh = SharedMemory.Allocate<int>(1024);
             int t = Group.IdxX;
             int G = Group.DimX;
-            int B = cfg.Buckets;
+            int T = cfg.Tiles;
 
-            int chunk = (B + G - 1) / G;
+            int chunk = (T + G - 1) / G;
             int begin = t * chunk;
             int end = begin + chunk;
-            if (end > B) end = B;
-            if (begin > B) begin = B;
+            if (end > T) end = T;
+            if (begin > T) begin = T;
 
             int local = 0;
-            for (int b = begin; b < end; b++) local += gr.Counts[b];
+            for (int i = begin; i < end; i++) local += gr.TileSum[i];
             sh[t] = local;
             Group.Barrier();
 
@@ -595,15 +630,69 @@ namespace Evosim.Farm.Gpu.Dbl
             }
 
             int running = sh[t] - local;
-            for (int b = begin; b < end; b++)
+            for (int i = begin; i < end; i++)
             {
-                int n = gr.Counts[b];
-                gr.Start[b] = running;
-                gr.Cursor[b] = running;
-                running += n;
+                gr.TileStart[i] = running;
+                running += gr.TileSum[i];
             }
 
-            if (t == G - 1) gr.Start[B] = sh[G - 1];
+            if (t == G - 1) gr.Start[cfg.Buckets] = sh[G - 1];
+        }
+
+        /// <summary>
+        /// The scan's third pass: a tile's buckets from the tile's start. The counts are read and
+        /// the starts written a stride of the group apart, and the sum runs over each thread's
+        /// ScanPer neighbours in shared memory.
+        /// </summary>
+        public static void ScanDown(SGrid gr, SCfg cfg)
+        {
+            var vals = SharedMemory.Allocate<int>(ScanGroupCap * ScanPer);
+            var sums = SharedMemory.Allocate<int>(ScanGroupCap);
+            int t = Group.IdxX;
+            int G = Group.DimX;
+            int tile = Grid.IdxX;
+            int B = cfg.Buckets;
+            int first = tile * G * ScanPer;
+
+            for (int k = 0; k < ScanPer; k++)
+            {
+                int b = first + k * G + t;
+                vals[k * G + t] = b < B ? gr.Counts[b] : 0;
+            }
+            Group.Barrier();
+
+            int local = 0;
+            for (int k = 0; k < ScanPer; k++) local += vals[t * ScanPer + k];
+            sums[t] = local;
+            Group.Barrier();
+
+            for (int off = 1; off < G; off <<= 1)
+            {
+                int v = t >= off ? sums[t - off] : 0;
+                Group.Barrier();
+                sums[t] = sums[t] + v;
+                Group.Barrier();
+            }
+
+            int running = gr.TileStart[tile] + sums[t] - local;
+            for (int k = 0; k < ScanPer; k++)
+            {
+                int n = vals[t * ScanPer + k];
+                vals[t * ScanPer + k] = running;
+                running += n;
+            }
+            Group.Barrier();
+
+            for (int k = 0; k < ScanPer; k++)
+            {
+                int b = first + k * G + t;
+                if (b < B)
+                {
+                    int s = vals[k * G + t];
+                    gr.Start[b] = s;
+                    gr.Cursor[b] = s;
+                }
+            }
         }
 
         /// <summary>Every row into every bucket it covers. Order within a bucket is a race; the query sorts.</summary>
@@ -6390,7 +6479,7 @@ namespace Evosim.Farm.Gpu.Dbl
         private readonly GpuSlots _slots;
         private readonly ClassSet[] _classes;
         private readonly bool _onCpu;
-        private readonly int _scanGroup;
+        private readonly int _scanGroup, _tileGroup;
         private readonly int _chunk = 256;
 
         public int GroupSize { get; }
@@ -6423,7 +6512,7 @@ namespace Evosim.Farm.Gpu.Dbl
         private int _committed;
 
         // ---- the grid
-        private readonly Scratch<int> _lo, _hi, _counts, _start, _gcursor, _items, _partialN;
+        private readonly Scratch<int> _lo, _hi, _counts, _start, _gcursor, _items, _partialN, _tileSum, _tileStart;
         private readonly Scratch<Real> _cell, _partial;
         private int _entryCap;
         private readonly int[] _one = new int[1];
@@ -6438,7 +6527,7 @@ namespace Evosim.Farm.Gpu.Dbl
         // ---- the kernels
         private readonly Action<Index1D, SSph, SGlob, SGrid, SCfg> _meanSerial, _meanChunks, _ranges;
         private readonly Action<Index1D, SGrid, SCfg> _meanCombine;
-        private readonly Action<KernelConfig, SGrid, SCfg> _scan;
+        private readonly Action<KernelConfig, SGrid, SCfg> _scanReduce, _scanTiles, _scanDown;
         private readonly Action<Index1D, SGlob, SGrid, SCfg> _scatter;
         private readonly Action<Index1D, SGlob, SCfg> _censusKernel;
         private readonly Action<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace, SGlob,
@@ -6498,6 +6587,8 @@ namespace Evosim.Farm.Gpu.Dbl
             _counts = new Scratch<int>(_acc, 17);
             _start = new Scratch<int>(_acc, 17);
             _gcursor = new Scratch<int>(_acc, 17);
+            _tileSum = new Scratch<int>(_acc, 1);
+            _tileStart = new Scratch<int>(_acc, 1);
             _entryCap = 1024;
             _items = new Scratch<int>(_acc, _entryCap);
             _partial = new Scratch<Real>(_acc, 1);
@@ -6513,6 +6604,10 @@ namespace Evosim.Farm.Gpu.Dbl
 
             _scanGroup = Math.Max(1, Math.Min(1024, accelerator.MaxNumThreadsPerGroup));
 
+            // The tile's group is a power of two, for the first pass's tree.
+            _tileGroup = 1;
+            while (_tileGroup * 2 <= Math.Min(WholeStep.ScanGroupCap, accelerator.MaxNumThreadsPerGroup)) _tileGroup <<= 1;
+
             _base = BaseConfig(world, options);
 
             // ---- the kernels: every launch shape compiled before the first step is timed.
@@ -6523,7 +6618,9 @@ namespace Evosim.Farm.Gpu.Dbl
 
             _meanSerial = _acc.LoadAutoGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.MeanSerial);
             _meanCombine = _acc.LoadAutoGroupedStreamKernel<Index1D, SGrid, SCfg>(WholeStep.MeanCombine);
-            _scan = _acc.LoadStreamKernel<SGrid, SCfg>(WholeStep.Scan);
+            _scanReduce = _acc.LoadStreamKernel<SGrid, SCfg>(WholeStep.ScanReduce);
+            _scanTiles = _acc.LoadStreamKernel<SGrid, SCfg>(WholeStep.ScanTiles);
+            _scanDown = _acc.LoadStreamKernel<SGrid, SCfg>(WholeStep.ScanDown);
 
             if (grouped)
             {
@@ -6687,6 +6784,19 @@ namespace Evosim.Farm.Gpu.Dbl
         // move, because nothing it launches changes.
         private static readonly bool ProbeOn = Environment.GetEnvironmentVariable("EVOSIM_GPU_PROBE") == "1";
         private readonly long[] _probeClass = new long[4];
+        private readonly long[] _probeGridPart = new long[5];
+        private int _probeRows, _probeBuckets;
+
+        // The grid's own parts, joined one by one: the zeroing, the mean, the ranges, the scan and
+        // the scatter. Their sum is the grid's time, so the grid term is added here as well.
+        private void GridPart(int k, ref long pt)
+        {
+            _acc.Synchronize();
+            long pn = Stopwatch.GetTimestamp();
+            _probeGridPart[k] += pn - pt;
+            _probeGrid += pn - pt;
+            pt = pn;
+        }
         private long _probeGrid, _probeTail, _probeSteps;
         private int _probeBlocks;
 
@@ -6744,8 +6854,14 @@ namespace Evosim.Farm.Gpu.Dbl
                 _probeTail * f, used[0], used[1], used[2], used[3], cell, mean, largest,
                 most[0], most[1], most[2], most[3], entries[0], entries[1], entries[2], entries[3]));
 
+            Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "gpu-probe grid parts, ms a step: zero {0:0.000}, mean {1:0.000}, ranges {2:0.000}, scan {3:0.000}, scatter {4:0.000}; rows {5}, buckets {6}",
+                _probeGridPart[0] * f, _probeGridPart[1] * f, _probeGridPart[2] * f, _probeGridPart[3] * f, _probeGridPart[4] * f,
+                _probeRows, _probeBuckets));
+
             _probeGrid = _probeTail = _probeSteps = 0;
             for (int k = 0; k < 4; k++) _probeClass[k] = 0;
+            for (int k = 0; k < 5; k++) _probeGridPart[k] = 0;
         }
 
         private void Run(DynamicsWorld world, int steps)
@@ -6869,6 +6985,10 @@ namespace Evosim.Farm.Gpu.Dbl
             _counts.Ensure(buckets + 1);
             _start.Ensure(buckets + 1);
             _gcursor.Ensure(buckets + 1);
+            int tileBuckets = _tileGroup * WholeStep.ScanPer;
+            int tiles = (buckets + tileBuckets - 1) / tileBuckets;
+            _tileSum.Ensure(tiles);
+            _tileStart.Ensure(tiles);
             if (_entryCap < 16 * rows) _entryCap = 16 * rows;
             _items.Ensure(_entryCap);
 
@@ -6886,6 +7006,7 @@ namespace Evosim.Farm.Gpu.Dbl
             cfg.EntryCap = _entryCap;
             cfg.Chunk = _chunk;
             cfg.Chunks = chunks;
+            cfg.Tiles = tiles;
             cfg.CellOverride = (Real)world.ContactCellOverrideMetres;
 
             // The farm switches the instrument on after it builds the solver's config, so it is
@@ -6915,6 +7036,7 @@ namespace Evosim.Farm.Gpu.Dbl
                 SSph committed = Sph(_committed), pending = Sph(1 - _committed);
 
                 _counts.View.MemSetToZero();
+                if (probe) GridPart(0, ref pt);
                 if (rows > 0)
                 {
                     if (serial)
@@ -6926,12 +7048,18 @@ namespace Evosim.Farm.Gpu.Dbl
                         _meanChunks(chunks, committed, gl, grid, cfg);
                         _meanCombine(1, grid, cfg);
                     }
+                    if (probe) GridPart(1, ref pt);
 
                     _ranges(rows, committed, gl, grid, cfg);
-                    _scan(new KernelConfig(1, _scanGroup), grid, cfg);
+                    if (probe) GridPart(2, ref pt);
+                    _scanReduce(new KernelConfig(tiles, _tileGroup), grid, cfg);
+                    _scanTiles(new KernelConfig(1, _scanGroup), grid, cfg);
+                    _scanDown(new KernelConfig(tiles, _tileGroup), grid, cfg);
+                    if (probe) GridPart(3, ref pt);
                     _scatter(rows, gl, grid, cfg);
+                    if (probe) GridPart(4, ref pt);
                 }
-                if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeGrid += pn - pt; pt = pn; }
+                if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeGrid += pn - pt; pt = pn; _probeRows = rows; _probeBuckets = cfg.Buckets; }
 
                 if (_concurrent)
                 {
@@ -7093,6 +7221,7 @@ namespace Evosim.Farm.Gpu.Dbl
         {
             Lo = _lo.View, Hi = _hi.View, Counts = _counts.View, Start = _start.View, Cursor = _gcursor.View,
             Items = _items.View, PartialN = _partialN.View, Cell = _cell.View, Partial = _partial.View,
+            TileSum = _tileSum.View, TileStart = _tileStart.View,
         };
 
         private SSph Sph(int set)
@@ -7771,6 +7900,7 @@ namespace Evosim.Farm.Gpu.Dbl
 
             _lo.Dispose(); _hi.Dispose(); _counts.Dispose(); _start.Dispose(); _gcursor.Dispose();
             _items.Dispose(); _partial.Dispose(); _partialN.Dispose(); _cell.Dispose();
+            _tileSum.Dispose(); _tileStart.Dispose();
             _inst.Dispose(); _wr.Dispose(); _wi.Dispose(); _stock.Dispose();
         }
     }

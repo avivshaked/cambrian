@@ -255,7 +255,7 @@ namespace __NS__
         private readonly GpuSlots _slots;
         private readonly ClassSet[] _classes;
         private readonly bool _onCpu;
-        private readonly int _scanGroup;
+        private readonly int _scanGroup, _tileGroup;
         private readonly int _chunk = 256;
 
         public int GroupSize { get; }
@@ -288,7 +288,7 @@ namespace __NS__
         private int _committed;
 
         // ---- the grid
-        private readonly Scratch<int> _lo, _hi, _counts, _start, _gcursor, _items, _partialN;
+        private readonly Scratch<int> _lo, _hi, _counts, _start, _gcursor, _items, _partialN, _tileSum, _tileStart;
         private readonly Scratch<Real> _cell, _partial;
         private int _entryCap;
         private readonly int[] _one = new int[1];
@@ -303,7 +303,7 @@ namespace __NS__
         // ---- the kernels
         private readonly Action<Index1D, SSph, SGlob, SGrid, SCfg> _meanSerial, _meanChunks, _ranges;
         private readonly Action<Index1D, SGrid, SCfg> _meanCombine;
-        private readonly Action<KernelConfig, SGrid, SCfg> _scan;
+        private readonly Action<KernelConfig, SGrid, SCfg> _scanReduce, _scanTiles, _scanDown;
         private readonly Action<Index1D, SGlob, SGrid, SCfg> _scatter;
         private readonly Action<Index1D, SGlob, SCfg> _censusKernel;
         private readonly Action<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace, SGlob,
@@ -363,6 +363,8 @@ namespace __NS__
             _counts = new Scratch<int>(_acc, 17);
             _start = new Scratch<int>(_acc, 17);
             _gcursor = new Scratch<int>(_acc, 17);
+            _tileSum = new Scratch<int>(_acc, 1);
+            _tileStart = new Scratch<int>(_acc, 1);
             _entryCap = 1024;
             _items = new Scratch<int>(_acc, _entryCap);
             _partial = new Scratch<Real>(_acc, 1);
@@ -378,6 +380,10 @@ namespace __NS__
 
             _scanGroup = Math.Max(1, Math.Min(1024, accelerator.MaxNumThreadsPerGroup));
 
+            // The tile's group is a power of two, for the first pass's tree.
+            _tileGroup = 1;
+            while (_tileGroup * 2 <= Math.Min(WholeStep.ScanGroupCap, accelerator.MaxNumThreadsPerGroup)) _tileGroup <<= 1;
+
             _base = BaseConfig(world, options);
 
             // ---- the kernels: every launch shape compiled before the first step is timed.
@@ -388,7 +394,9 @@ namespace __NS__
 
             _meanSerial = _acc.LoadAutoGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.MeanSerial);
             _meanCombine = _acc.LoadAutoGroupedStreamKernel<Index1D, SGrid, SCfg>(WholeStep.MeanCombine);
-            _scan = _acc.LoadStreamKernel<SGrid, SCfg>(WholeStep.Scan);
+            _scanReduce = _acc.LoadStreamKernel<SGrid, SCfg>(WholeStep.ScanReduce);
+            _scanTiles = _acc.LoadStreamKernel<SGrid, SCfg>(WholeStep.ScanTiles);
+            _scanDown = _acc.LoadStreamKernel<SGrid, SCfg>(WholeStep.ScanDown);
 
             if (grouped)
             {
@@ -512,6 +520,19 @@ namespace __NS__
         // move, because nothing it launches changes.
         private static readonly bool ProbeOn = Environment.GetEnvironmentVariable("EVOSIM_GPU_PROBE") == "1";
         private readonly long[] _probeClass = new long[4];
+        private readonly long[] _probeGridPart = new long[5];
+        private int _probeRows, _probeBuckets;
+
+        // The grid's own parts, joined one by one: the zeroing, the mean, the ranges, the scan and
+        // the scatter. Their sum is the grid's time, so the grid term is added here as well.
+        private void GridPart(int k, ref long pt)
+        {
+            _acc.Synchronize();
+            long pn = Stopwatch.GetTimestamp();
+            _probeGridPart[k] += pn - pt;
+            _probeGrid += pn - pt;
+            pt = pn;
+        }
         private long _probeGrid, _probeTail, _probeSteps;
         private int _probeBlocks;
 
@@ -569,8 +590,14 @@ namespace __NS__
                 _probeTail * f, used[0], used[1], used[2], used[3], cell, mean, largest,
                 most[0], most[1], most[2], most[3], entries[0], entries[1], entries[2], entries[3]));
 
+            Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "gpu-probe grid parts, ms a step: zero {0:0.000}, mean {1:0.000}, ranges {2:0.000}, scan {3:0.000}, scatter {4:0.000}; rows {5}, buckets {6}",
+                _probeGridPart[0] * f, _probeGridPart[1] * f, _probeGridPart[2] * f, _probeGridPart[3] * f, _probeGridPart[4] * f,
+                _probeRows, _probeBuckets));
+
             _probeGrid = _probeTail = _probeSteps = 0;
             for (int k = 0; k < 4; k++) _probeClass[k] = 0;
+            for (int k = 0; k < 5; k++) _probeGridPart[k] = 0;
         }
 
         private void Run(DynamicsWorld world, int steps)
@@ -694,6 +721,10 @@ namespace __NS__
             _counts.Ensure(buckets + 1);
             _start.Ensure(buckets + 1);
             _gcursor.Ensure(buckets + 1);
+            int tileBuckets = _tileGroup * WholeStep.ScanPer;
+            int tiles = (buckets + tileBuckets - 1) / tileBuckets;
+            _tileSum.Ensure(tiles);
+            _tileStart.Ensure(tiles);
             if (_entryCap < 16 * rows) _entryCap = 16 * rows;
             _items.Ensure(_entryCap);
 
@@ -711,6 +742,7 @@ namespace __NS__
             cfg.EntryCap = _entryCap;
             cfg.Chunk = _chunk;
             cfg.Chunks = chunks;
+            cfg.Tiles = tiles;
             cfg.CellOverride = (Real)world.ContactCellOverrideMetres;
 
             // The farm switches the instrument on after it builds the solver's config, so it is
@@ -740,6 +772,7 @@ namespace __NS__
                 SSph committed = Sph(_committed), pending = Sph(1 - _committed);
 
                 _counts.View.MemSetToZero();
+                if (probe) GridPart(0, ref pt);
                 if (rows > 0)
                 {
                     if (serial)
@@ -751,12 +784,18 @@ namespace __NS__
                         _meanChunks(chunks, committed, gl, grid, cfg);
                         _meanCombine(1, grid, cfg);
                     }
+                    if (probe) GridPart(1, ref pt);
 
                     _ranges(rows, committed, gl, grid, cfg);
-                    _scan(new KernelConfig(1, _scanGroup), grid, cfg);
+                    if (probe) GridPart(2, ref pt);
+                    _scanReduce(new KernelConfig(tiles, _tileGroup), grid, cfg);
+                    _scanTiles(new KernelConfig(1, _scanGroup), grid, cfg);
+                    _scanDown(new KernelConfig(tiles, _tileGroup), grid, cfg);
+                    if (probe) GridPart(3, ref pt);
                     _scatter(rows, gl, grid, cfg);
+                    if (probe) GridPart(4, ref pt);
                 }
-                if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeGrid += pn - pt; pt = pn; }
+                if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeGrid += pn - pt; pt = pn; _probeRows = rows; _probeBuckets = cfg.Buckets; }
 
                 if (_concurrent)
                 {
@@ -918,6 +957,7 @@ namespace __NS__
         {
             Lo = _lo.View, Hi = _hi.View, Counts = _counts.View, Start = _start.View, Cursor = _gcursor.View,
             Items = _items.View, PartialN = _partialN.View, Cell = _cell.View, Partial = _partial.View,
+            TileSum = _tileSum.View, TileStart = _tileStart.View,
         };
 
         private SSph Sph(int set)
@@ -1596,6 +1636,7 @@ namespace __NS__
 
             _lo.Dispose(); _hi.Dispose(); _counts.Dispose(); _start.Dispose(); _gcursor.Dispose();
             _items.Dispose(); _partial.Dispose(); _partialN.Dispose(); _cell.Dispose();
+            _tileSum.Dispose(); _tileStart.Dispose();
             _inst.Dispose(); _wr.Dispose(); _wi.Dispose(); _stock.Dispose();
         }
     }

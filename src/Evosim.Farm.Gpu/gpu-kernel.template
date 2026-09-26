@@ -12,7 +12,8 @@
 // reused, and four size classes.
 //
 // Per step, in the CPU's order:
-//   the grid       MeanSerial | MeanChunks + MeanCombine, Ranges, Scan, Scatter   (Contacts.cs)
+//   the grid       MeanSerial | MeanChunks + MeanCombine, Ranges, ScanReduce + ScanTiles
+//                  + ScanDown, Scatter                                         (Contacts.cs)
 //   the bodies     Step0 .. Step3, one launch per class                          (StepOne)
 //   the census     Census                                               (CloseContactStep)
 //   the commit     a swap of the two sphere sets, on the host
@@ -113,7 +114,7 @@ namespace __NS__
     /// <summary>The contact grid over rows: a body, or under per-part contact a (body, link).</summary>
     public struct SGrid
     {
-        public ArrayView<int> Lo, Hi, Counts, Start, Cursor, Items, PartialN;
+        public ArrayView<int> Lo, Hi, Counts, Start, Cursor, Items, PartialN, TileSum, TileStart;
         public ArrayView<Real> Cell, Partial;
     }
 
@@ -128,7 +129,7 @@ namespace __NS__
     {
         // The launch: the class's capacity and neuron ceiling, the global roster, the grid.
         public int N, MaxN, GN, GUsed, Count, Rows, Buckets, Mask, OverCap, EntryCap;
-        public int InstBase, StepIndex, PerPart, Instrument, Chunk, Chunks;
+        public int InstBase, StepIndex, PerPart, Instrument, Chunk, Chunks, Tiles;
 
         public int HasCurrent, Accelerating, Sloped, HasBed, BedRelief, BedModes, ShoreOn, FadeOn;
         public int ReefCount, LimitDrive, LimitDrag, UseRestore, FloorRestores, CreatureContact;
@@ -406,6 +407,8 @@ namespace __NS__
         public const int TraceValues = 21;         // Creature.TraceValuesPerLink
         public const int ReefStride = 16;          // values a reef takes in SWorld.WR
         public const int CensusFields = 5;         // pairs, jointed, held, bodies, bed or glass
+        public const int ScanPer = 8;              // buckets a thread in a scan tile
+        public const int ScanGroupCap = 256;       // the scan tile's group, at most
 
         // Overflow counters: candidates past CandCap, overlaps past OverCap, held ids past OverCap,
         // cell entries past EntryCap.
@@ -567,22 +570,54 @@ namespace __NS__
             }
         }
 
-        /// <summary>The exclusive prefix sum of the bucket counts, on one group.</summary>
-        public static void Scan(SGrid gr, SCfg cfg)
+        // The exclusive prefix sum of the bucket counts, in three passes: each tile's total, the
+        // tiles' starts on one group, and each tile's buckets from its start. The sums are
+        // integers, so any tiling gives the same starts as the one group of the first cut did.
+
+        /// <summary>The scan's first pass: a tile's total, a tile a group, ScanPer buckets a thread.</summary>
+        public static void ScanReduce(SGrid gr, SCfg cfg)
+        {
+            var sh = SharedMemory.Allocate<int>(ScanGroupCap);
+            int t = Group.IdxX;
+            int G = Group.DimX;
+            int tile = Grid.IdxX;
+            int B = cfg.Buckets;
+            int first = tile * G * ScanPer;
+
+            int local = 0;
+            for (int k = 0; k < ScanPer; k++)
+            {
+                int b = first + k * G + t;
+                if (b < B) local += gr.Counts[b];
+            }
+            sh[t] = local;
+            Group.Barrier();
+
+            for (int half = G >> 1; half > 0; half >>= 1)
+            {
+                if (t < half) sh[t] = sh[t] + sh[t + half];
+                Group.Barrier();
+            }
+
+            if (t == 0) gr.TileSum[tile] = sh[0];
+        }
+
+        /// <summary>The scan's second pass: the tiles' starts and the grand total, on one group.</summary>
+        public static void ScanTiles(SGrid gr, SCfg cfg)
         {
             var sh = SharedMemory.Allocate<int>(1024);
             int t = Group.IdxX;
             int G = Group.DimX;
-            int B = cfg.Buckets;
+            int T = cfg.Tiles;
 
-            int chunk = (B + G - 1) / G;
+            int chunk = (T + G - 1) / G;
             int begin = t * chunk;
             int end = begin + chunk;
-            if (end > B) end = B;
-            if (begin > B) begin = B;
+            if (end > T) end = T;
+            if (begin > T) begin = T;
 
             int local = 0;
-            for (int b = begin; b < end; b++) local += gr.Counts[b];
+            for (int i = begin; i < end; i++) local += gr.TileSum[i];
             sh[t] = local;
             Group.Barrier();
 
@@ -595,15 +630,69 @@ namespace __NS__
             }
 
             int running = sh[t] - local;
-            for (int b = begin; b < end; b++)
+            for (int i = begin; i < end; i++)
             {
-                int n = gr.Counts[b];
-                gr.Start[b] = running;
-                gr.Cursor[b] = running;
-                running += n;
+                gr.TileStart[i] = running;
+                running += gr.TileSum[i];
             }
 
-            if (t == G - 1) gr.Start[B] = sh[G - 1];
+            if (t == G - 1) gr.Start[cfg.Buckets] = sh[G - 1];
+        }
+
+        /// <summary>
+        /// The scan's third pass: a tile's buckets from the tile's start. The counts are read and
+        /// the starts written a stride of the group apart, and the sum runs over each thread's
+        /// ScanPer neighbours in shared memory.
+        /// </summary>
+        public static void ScanDown(SGrid gr, SCfg cfg)
+        {
+            var vals = SharedMemory.Allocate<int>(ScanGroupCap * ScanPer);
+            var sums = SharedMemory.Allocate<int>(ScanGroupCap);
+            int t = Group.IdxX;
+            int G = Group.DimX;
+            int tile = Grid.IdxX;
+            int B = cfg.Buckets;
+            int first = tile * G * ScanPer;
+
+            for (int k = 0; k < ScanPer; k++)
+            {
+                int b = first + k * G + t;
+                vals[k * G + t] = b < B ? gr.Counts[b] : 0;
+            }
+            Group.Barrier();
+
+            int local = 0;
+            for (int k = 0; k < ScanPer; k++) local += vals[t * ScanPer + k];
+            sums[t] = local;
+            Group.Barrier();
+
+            for (int off = 1; off < G; off <<= 1)
+            {
+                int v = t >= off ? sums[t - off] : 0;
+                Group.Barrier();
+                sums[t] = sums[t] + v;
+                Group.Barrier();
+            }
+
+            int running = gr.TileStart[tile] + sums[t] - local;
+            for (int k = 0; k < ScanPer; k++)
+            {
+                int n = vals[t * ScanPer + k];
+                vals[t * ScanPer + k] = running;
+                running += n;
+            }
+            Group.Barrier();
+
+            for (int k = 0; k < ScanPer; k++)
+            {
+                int b = first + k * G + t;
+                if (b < B)
+                {
+                    int s = vals[k * G + t];
+                    gr.Start[b] = s;
+                    gr.Cursor[b] = s;
+                }
+            }
         }
 
         /// <summary>Every row into every bucket it covers. Order within a bucket is a race; the query sorts.</summary>
