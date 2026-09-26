@@ -53,13 +53,14 @@ Its rules:
    goes on screen without a row in `checks.tsv` for its scene, and the check refuses one. A word
    for a number is allowed when it is true of the exact value (44% is "nearly half"; "half" would be false).
    A fact that leaves the screen stays in `story.md`.
-2. **Each caption is read aloud** before it stands, and is a sentence a person would say. One number a caption where it
-   can be, and a comparison before a second number. Vary the length of sentences. A caption over
-   70 characters is split or cut.
+2. **Each paragraph is read aloud** before it stands, as speech a person would say. The page shows
+   each paragraph on one line and the tool cuts the subtitles from it (2026-09-26), so a sentence is
+   never broken up to fit a subtitle. Numbers stay few and are said as a person says them, and the
+   sentences vary in length and connect (the writer's brief, "The narration").
 3. **The `###` scene headings and the chapter headings stay** as they are:
    scenes and chapters are the writer's and the film's, and the tool refuses a change to them. A
-   chapter's title may be reworded. A blank line between two captions starts a new narration
-   paragraph, where the picture needs a breath.
+   chapter's title may be reworded. A blank line starts a new narration paragraph, where the
+   picture needs a breath.
 4. **Shorter is better**, and a scene lengthens itself when its captions need more time, and the
    film's total stays near ten minutes.
 5. **The glossary's words**, one name a thing, as in the writer's brief.

@@ -28,7 +28,10 @@ starting. The flow before this one (writer, check, render, ffmpeg join) is tagge
    ruling blocks the work"), then `story-flow.py approve <folder> arc`.
 5. **Write.** The writer's second pass, from the approved arc: `story.md`, `story.json` and
    `checks.tsv` (the procedure says how, under CLAUDE.md's rule on subagents that write files).
-   Read `story.md` against `checks.tsv`; a number with no row is not filmed.
+   Read `story.md` against `checks.tsv`; a number with no row is not filmed. Then read the
+   narration aloud (`story-script.py render <folder> --force`, the page) against the brief's
+   "Before you hand back" list. A draft that reads as a list of findings goes back to the writer
+   with the lines that fail, and never to the owner (the owner, 2026-09-26).
 6. **Script.** The `story-script` skill.
 7. **Script approved.** The owner's second review: `script.md`, `story.md` and the
    writer's-against-script counts. Then `story-flow.py approve <folder> script`. Nothing is
