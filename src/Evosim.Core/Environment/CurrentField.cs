@@ -1076,6 +1076,35 @@ namespace Evosim.Core
         /// <summary>Water velocity at a place and a time, m/s.</summary>
         public Float3 VelocityAt(Float3 at, double seconds) => VelocityAt(at.X, at.Y, at.Z, seconds);
 
+        /// <summary>
+        /// <see cref="VelocityAt(float, float, float, double)"/> and
+        /// <see cref="AccelerationAt(float, float, float, double)"/> at one point and one instant,
+        /// the same two values bit for bit, with the reefs' fade computed once.
+        /// </summary>
+        /// <remarks>
+        /// The fade is a function of x, y and z alone, and in a tank with reefs both calls begin by
+        /// computing it for the same floats: the solver's water pass asks both at every link on
+        /// every step, and the second computation was about a tenth of that pass (the profile of
+        /// round 49 seed 2 at 25,000 s, logbook/specs/cpu-profile-2026-09-26.txt). Everything after
+        /// the fade is each call's own arithmetic, unchanged. The velocity is not read off the
+        /// acceleration's gradient: the two evaluate the clock in different groupings, an ulp apart
+        /// on half the steps. Any other world takes the two calls as they are.
+        /// </remarks>
+        public void VelocityAndAccelerationAt(
+            float x, float y, float z, double seconds, out Float3 velocity, out Float3 acceleration)
+        {
+            if (_shape == WorldShape.Tank && _reefs != null && _speed > 0f && !VentActive(_patchCount))
+            {
+                bool near = _reefs.Fade(x, y, z, out ReefGeometry.Distance f);
+                velocity = ReefStreamsAt(x, y, z, seconds, near, f);
+                acceleration = ReefStreamsAccelerationAt(x, y, z, seconds, near, f);
+                return;
+            }
+
+            velocity = VelocityAt(x, y, z, seconds);
+            acceleration = AccelerationAt(x, y, z, seconds);
+        }
+
         // ------------------------------------------------------------- the vector potential
 
         /// <summary>
@@ -1268,7 +1297,17 @@ namespace Evosim.Core
         {
             if (_speed <= 0f) return Float3.Zero;
 
-            if (!_reefs.Fade(x, y, z, out ReefGeometry.Distance f)) return StreamsAt(x, y, z, seconds);
+            bool near = _reefs.Fade(x, y, z, out ReefGeometry.Distance f);
+            return ReefStreamsAt(x, y, z, seconds, near, f);
+        }
+
+        /// <summary>
+        /// <see cref="ReefStreamsAt(float, float, float, double)"/> past its fade, which the caller
+        /// has computed for these x, y and z (<see cref="VelocityAndAccelerationAt"/>).
+        /// </summary>
+        private Float3 ReefStreamsAt(float x, float y, float z, double seconds, bool near, in ReefGeometry.Distance f)
+        {
+            if (!near) return StreamsAt(x, y, z, seconds);
             if (f.S == 0d && f.Gx == 0d && f.Gy == 0d && f.Gz == 0d) return Float3.Zero;
 
             Float3 u = StreamsAt(x, y, z, seconds);
@@ -5075,7 +5114,18 @@ namespace Evosim.Core
         /// </remarks>
         private Float3 ReefStreamsAccelerationAt(float x, float y, float z, double seconds)
         {
-            if (!_reefs.Fade(x, y, z, out ReefGeometry.Distance f)) return StreamsAccelerationAt(x, y, z, seconds);
+            bool near = _reefs.Fade(x, y, z, out ReefGeometry.Distance f);
+            return ReefStreamsAccelerationAt(x, y, z, seconds, near, f);
+        }
+
+        /// <summary>
+        /// <see cref="ReefStreamsAccelerationAt(float, float, float, double)"/> past its fade, which
+        /// the caller has computed for these x, y and z (<see cref="VelocityAndAccelerationAt"/>).
+        /// </summary>
+        private Float3 ReefStreamsAccelerationAt(
+            float x, float y, float z, double seconds, bool near, in ReefGeometry.Distance f)
+        {
+            if (!near) return StreamsAccelerationAt(x, y, z, seconds);
             if (f.S == 0d && f.Gx == 0d && f.Gy == 0d && f.Gz == 0d) return Float3.Zero;
 
             EnsureStreams();

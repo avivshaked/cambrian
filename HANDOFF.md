@@ -258,11 +258,14 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    (`logbook/specs/cpu-profile-2026-09-26.txt`). In round 49's seeds the physics was 62 to 70% of
    the wall and three quarters of each seed's last third. A sampling profile of round 49 seed 2 at
    25,000 s puts a quarter of the farm's time in the water at the links and a sixth in contact per
-   part, 10% of it in the neighbour query alone. Two changes keep the bits: the reef fade computed
-   once for the velocity and the acceleration (about 2.5%), and the neighbour query testing an
-   entry's own cell instead of six range bounds (share not measured). The velocity cannot be read
-   off the acceleration's gradient, because the two evaluate the clock in different groupings.
-   Nothing is built; each change is checked as the card's was, by day.
+   part. Two changes that keep the bits are merged (`cpu-physics`): the reef fade computed once
+   for the water's velocity and acceleration, and the contact grid's sort partitioned by owner.
+   At 10,000 bodies they take the water phase from 104 to 87 ms a step and the grid from 52 to 30,
+   7 to 10% of the step together, identical to round 49's record in sixteen runs. Two variants of
+   the neighbour query bought nothing and were dropped. The velocity cannot be read off the
+   acceleration's gradient, because the two evaluate the clock in different groupings. Round 50's
+   check in the morning runs main's build, so it checks these at scale too. What is left of the
+   bodies phase is the contact pass, the fluid, the brain and the solve.
 5. The lit link is read and not built: `scripts/reads/linklight.py <arm>` splits a stomach
    body's income into its links' light and its food, by window and by line (the first decision
    above). It runs on round 50 when that round is read.

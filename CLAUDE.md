@@ -1615,7 +1615,9 @@ actually verifying it.
   Windows 11's hybrid scheduling, most likely because the runs were launched from inside VS
   Code's process tree (an inference). It bites a pace or timing read: the same run is faster
   with VS Code in front, so a wall split or a pace compared across two windows of time
-  compares the focus as well.
+  compares the focus as well. On 2026-09-26 it moved the same resume's world step from 157 to
+  168 ms to 100 to 119 ms within one afternoon, with no change in the code. The world step is
+  the control: an A/B of a physics change compares only runs whose world step reads alike.
 - **Read the CPU's microcode before a long run.** The i9-13900K is a 13th-generation chip,
   and Intel's fixes for that generation's voltage degradation (microcode 0x129 and 0x12B,
   2024) come only with a BIOS update. On 2026-09-24 the board (ASUS PRIME Z790-P WIFI) was on

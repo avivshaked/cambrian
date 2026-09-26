@@ -399,6 +399,124 @@ namespace Evosim.Dynamics.Tests
             }
         }
 
+        // --------------------------------------------------------------- the grid's candidates
+
+        /// <summary>
+        /// Every query of the grid, per body and per link, returns exactly the rows whose cell
+        /// boxes overlap the queried one's, another body's and in contact, sorted and each once,
+        /// at one, three and sixteen threads.
+        /// </summary>
+        /// <remarks>
+        /// The contact pass reads its candidates in this order, so this list is what the forces'
+        /// sums are made in. It is computed here by brute force from the committed spheres, with
+        /// the grid's own cell and its floor, so the test holds whatever order the grid's counting
+        /// sort puts a bucket in (the partition of 2026-09-26, logbook/specs/cpu-profile-2026-09-26.txt).
+        /// </remarks>
+        [Fact]
+        public void TheGridsCandidatesAreTheOverlappingCellBoxesAtAnyThreadCount()
+        {
+            Assert.True(Crowd.Present, Crowd.Why);
+
+            SolverConfig solver = Crowd.Solver(perPart: true, instrument: false);
+            DynamicsWorld world = RunFixture.Scatter(
+                solver, 1000, threads: 4, drop: 0.2,
+                config: Crowd.Config(perPart: true), bodies: Crowd.Bodies);
+            for (int step = 0; step < 200; step++) world.Step();
+
+            IReadOnlyList<Creature> bodies = world.Creatures;
+            int checkedQueries = 0, nonEmpty = 0;
+
+            foreach (int threads in new[] { 1, 3, 16 })
+            {
+                // Per link.
+                var grid = new ContactGrid { Threads = threads };
+                grid.BuildLinks(bodies);
+                double cell = grid.CellSize;
+
+                var boxes = new List<int[]>();
+                var owner = new List<int>();
+                for (int b = 0; b < bodies.Count; b++)
+                {
+                    Creature body = bodies[b];
+                    Assert.Equal(boxes.Count, grid.FirstRow(b));
+                    for (int i = 0; i < body.Links; i++)
+                    {
+                        boxes.Add(body.ContactActive
+                            ? Box(body.LinkContactCentre[3 * i], body.LinkContactCentre[3 * i + 1],
+                                  body.LinkContactCentre[3 * i + 2], body.LinkContactRadius[i], cell)
+                            : null);
+                        owner.Add(b);
+                    }
+                }
+
+                int[] scratch = new int[8];
+                for (int row = 0; row < boxes.Count; row++)
+                {
+                    if (boxes[row] == null) continue;
+                    var expected = new List<int>();
+                    for (int other = 0; other < boxes.Count; other++)
+                    {
+                        if (boxes[other] != null && owner[other] != owner[row] && Overlap(boxes[row], boxes[other]))
+                        {
+                            expected.Add(other);
+                        }
+                    }
+
+                    int found = grid.NeighbourLinks(row, ref scratch);
+                    Assert.Equal(expected.Count, found);
+                    for (int k = 0; k < found; k++) Assert.Equal(expected[k], scratch[k]);
+                    checkedQueries++;
+                    if (found > 0) nonEmpty++;
+                }
+
+                // Per body.
+                var bodyGrid = new ContactGrid { Threads = threads };
+                bodyGrid.Build(bodies);
+                double bodyCell = bodyGrid.CellSize;
+                var bodyBoxes = new int[bodies.Count][];
+                for (int b = 0; b < bodies.Count; b++)
+                {
+                    Creature body = bodies[b];
+                    bodyBoxes[b] = body.ContactActive
+                        ? Box(body.ContactCentre.X, body.ContactCentre.Y, body.ContactCentre.Z, body.ContactRadius, bodyCell)
+                        : null;
+                }
+
+                for (int b = 0; b < bodies.Count; b++)
+                {
+                    if (bodyBoxes[b] == null) continue;
+                    var expected = new List<int>();
+                    for (int other = 0; other < bodies.Count; other++)
+                    {
+                        if (other != b && bodyBoxes[other] != null && Overlap(bodyBoxes[b], bodyBoxes[other])) expected.Add(other);
+                    }
+
+                    int found = bodyGrid.Neighbours(b, ref scratch);
+                    Assert.Equal(expected.Count, found);
+                    for (int k = 0; k < found; k++) Assert.Equal(expected[k], scratch[k]);
+                }
+            }
+
+            _out.WriteLine($"{checkedQueries} link queries checked, {nonEmpty} with candidates");
+            Assert.True(nonEmpty > 0, "no link had a candidate: the test read nothing");
+        }
+
+        private static int[] Box(double cx, double cy, double cz, double r, double cell) => new[]
+        {
+            FloorOf((cx - r) / cell), FloorOf((cy - r) / cell), FloorOf((cz - r) / cell),
+            FloorOf((cx + r) / cell), FloorOf((cy + r) / cell), FloorOf((cz + r) / cell),
+        };
+
+        // ContactGrid's own floor.
+        private static int FloorOf(double v)
+        {
+            int i = (int)v;
+            return v < i ? i - 1 : i;
+        }
+
+        private static bool Overlap(int[] a, int[] b) =>
+            a[0] <= b[3] && b[0] <= a[3] && a[1] <= b[4] && b[1] <= a[4] && a[2] <= b[5] && b[2] <= a[5];
+
         // --------------------------------------------------------------- the crowd
 
         /// <summary>
