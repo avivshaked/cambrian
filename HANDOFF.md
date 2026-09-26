@@ -76,11 +76,27 @@ A phase probe reads the card's cycle counter between the parts of the body kerne
 were most of every class. After them the body kernel is its loads, its brain and its stores, and
 the classes cost 0.60 ms a step together.
 
-What is left of the wall is mostly off the card now. The CPU's world step is 43% of it, 68 ms a
-metabolic step. The copies to and from the card are about a fifth. A class with a new or resized
-body goes up whole, 51 to 58 MB a block of 50 steps, and the classes come down at 29 MB. On the
-Core bench the world's field passes cost 37 ms a step on this grid, most of it the snow's
-transport.
+The world step and the harness came next, and they speed up the CPU farm too. A probe build
+(`-p:WorldPhaseProbe=1`) timed the world step's passes: of its 68 ms, the snow's transport took 31,
+the metabolic pass 16 and the corpses 7.5. The per-body passes of the world and of the harness now
+run across Core's threads (`8c8120f`, `238ebce`). Each is a parallel read followed by the serial
+writes in their old order. They are the lit areas, the bills, the corpses' drift, the freeze of
+availability, the divergence check and the pose exposure. The world step went to 53 ms and the
+harness from 14 to 6. The run went to 3.71x, about 2.5 times the CPU farm at 16 threads on the same
+crowd. Every change was identical to the run before it on the card and on the CPU farm.
+
+`gpu-probe` took main (`b7bea5d`) and was merged into main (`bf1add4`), so the card now runs
+current worlds, and round 48's config is refused as it is on main. On round 50's world the merged
+build is identical to round 50's own build, and the card at group 32 and 64 to its sequential run.
+That crowd is smaller, 1,700 bodies, and there the card leads the CPU by about 1.4 times, so the
+card pays off with the crowd. The Editor compiles the Farm as a local package, and nothing on the
+branch had been through Unity. So before the merge the package was compiled the Editor's way, as a
+netstandard2.1 library at C# 9 without `EVOSIM_GPU` (`src/Evosim.UnityProxy`).
+
+A metabolic step at 8,400 bodies is now 135 ms. The card's step loop takes 53, the snow's
+transport 30 and the rest of the world 23. The copies to and from the card and their preparation
+take 22, and the harness 6. The transport's sum is a chain of dependent adds whose order the
+bits fix.
 
 The probe reads `EVOSIM_GPU_PROBE` from the process environment directly, which bites. The
 script's `-Env` passes settings as arguments and does not reach it, and the binding warns that it
@@ -189,14 +205,17 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    never from a shell loop: `python scripts/watch-round.py r50 --seeds 1,2,3 --read
    scripts/reads/r50-read.py`, run from the main tree. The full read at the end adds
    `--windows-root` (V1) and `--v2-log scratch/logs/r50-v2.log` (V2).
-2. The card is worked by day, with nothing else on the machine, from `scratch/wt-probe`. The
-   run is at 3.15x (above), and the card's own physics is no longer most of a step. The next
-   measure is where the CPU's world step spends its 68 ms, on the farm's own crowd and not the
-   bench's still bodies. Then the class uploads. A class goes up whole when one body in it is
-   new, and sending the changed rows alone would save 3 to 4% of the wall (an estimate). Measure
-   with the probe on round 48 seed 1's crowd at 27,500 s, as
-   `logbook/specs/gpu-probe-2026-09-26.txt` did. Identity on the card is claimed at two group
-   sizes (CLAUDE.md).
+2. The card is worked by day, with nothing else on the machine, from `scratch/wt-probe`
+   (`gpu-probe`, merged into main at `bf1add4`; merge main in before a day's work). It runs round
+   48's crowd at 3.71x (above). Round 50's seeds are the next reference crowds once they have
+   checkpoints. The next measures come largest first. The first is whether the card's doubles fuse a
+   multiply and an add. If they do not, the snow's transport, 30 ms a step, can move onto the idle
+   card. The second is a rewrite of the transport's edge path that keeps every operation: an edge
+   costs about 250 cycles against about 90 of arithmetic (an estimate). The third is the class
+   uploads. A class goes up whole when one body in it is new, and sending the changed rows would
+   save 3 to 4% of the wall (an estimate). Identity on the card is claimed at two group sizes
+   (CLAUDE.md). Whether a round runs on the card is the owner's: single precision is a new
+   realisation of every seed.
 3. The lit link is read and not built: `scripts/reads/linklight.py <arm>` splits a stomach
    body's income into its links' light and its food, by window and by line (the first decision
    above). It runs on round 50 when that round is read.
@@ -229,5 +248,5 @@ CLAUDE.md holds the commands and the gotchas. This is where each tool sits.
 | checking | `Evosim.Farm.exe --verify-checkpoint <ckpt> <s> <out> <threads>` for a checkpoint member by member; `scripts/compare-det.py` for a resume against its run; a film window's identity rows for V1 |
 | pictures | `scripts/theatre-snap.ps1 <arm> -From snapshot -At <s>` for a still from the record; `scripts/theatre-film.ps1` from a checkpoint for a clip; every render checked on a sheet against a reference before the owner sees it |
 | tests | `scripts/core-test.ps1` (the default set; `-All` before a change to the world), and `dotnet test` on `Evosim.Farm.Tests` and `Evosim.Dynamics.Tests`; the fixtures are `src/Evosim.Core.Tests/fixtures/r42-config.json` and the crowd named in `RunFixture.cs`, re-recorded on every build that adds a tunable |
-| the card | ILGPU under `src/Evosim.Farm.Gpu`, worked by day with nothing else on the machine; kernels regenerated before a build |
+| the card | ILGPU under `src/Evosim.Farm.Gpu`, worked by day with nothing else on the machine; kernels regenerated before a build; `src/Evosim.UnityProxy` compiles the Farm package as the Editor would |
 | the Unity farm | idle since round 42; its workers and caps are CLAUDE.md's, for the theatre only |

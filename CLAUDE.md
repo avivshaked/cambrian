@@ -1170,7 +1170,10 @@ actually verifying it.
   and compares the two member by member, skipping by name what a step fills before it
   reads; run it on a world that has the thing you added (a bitten crowd, a grown one)
   before trusting a resume of it, and every `StateVersion` bump refuses every checkpoint on
-  disk, round 45's included, which are cousins for that reason anyway. **It happened again,
+  disk, round 45's included, which are cousins for that reason anyway. A new member of the
+  harness or the solver world that a step fills before it reads goes on the check's skip lists
+  (`HarnessNotCompared`, `DynamicsNotCompared`), or the fidelity tests fail on its length (the
+  census's slabs, 2026-09-25; the divergence check's verdicts, 2026-09-26). **It happened again,
   and `StateVersion` 11 and `Checkpoint.Version` 6 close it** (2026-09-25). The contact flag
   (`Organism.PartContact`) stayed set until a plan change then, and the writer left it out. The
   restore also left each body's contact and damage senses unwired until its first metabolic
@@ -1270,7 +1273,10 @@ actually verifying it.
   memo the samplers read back through fields; the bed's one-entry memo is thread-static for
   that reason. The Unity farm's water pass is untouched and still on its main thread.
 - **Mono and RyuJIT do not agree on a double sum, so the Editor cannot replay a farm run**
-  (2026-09-22, `ade13dd`). `Evosim.Farm` and `Evosim.Dynamics` are Unity local packages and
+  (2026-09-22, `ade13dd`). `Evosim.Farm` and `Evosim.Dynamics` are Unity local packages, so
+  the Editor compiles their folders as netstandard2.1 at C# 9 without `EVOSIM_GPU`, whatever the
+  farm's own net8.0 build accepted; `dotnet build src/Evosim.UnityProxy -c Release` compiles the
+  Farm's folder that way, before a merge of Farm code only the farm has built (2026-09-26).
   `DynamicsReplayCheck` runs the farm's own loop in the Editor: the counts agree at every
   sample and `auditResidual` parts at the first one, before any body has moved. Not threads,
   not tiering: the runtime. A farm run is watched from its record (`positions.jsonl`,

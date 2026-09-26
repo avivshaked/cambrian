@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    A proxy for the Editor's compile of the Farm package. Unity imports src/Evosim.Farm as a local
+    package and compiles its whole folder as a netstandard2.1 library at C# 9, without EVOSIM_GPU;
+    the farm itself builds it as a net8.0 console with the card's engine switched in. This builds
+    the folder the Editor's way, against Core and Dynamics as they build, so a .NET 8-only call or
+    an unguarded reference to the card fails here and not in the owner's Editor. It is not the
+    Editor: the Theatre's assemblies, which call into the Farm, need UnityEngine and are not
+    compiled. Nothing references this project and no manifest names it.
+
+      dotnet build src/Evosim.UnityProxy -c Release
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>Evosim.Farm.AsUnity</AssemblyName>
+    <NoWarn>$(NoWarn);1591;CS0162;CS0168;CS0219;CS0414;CS0649</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../Evosim.Farm/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Evosim.Core/Evosim.Core.csproj" />
+    <ProjectReference Include="../Evosim.Dynamics/Evosim.Dynamics.csproj" />
+  </ItemGroup>
+
+</Project>

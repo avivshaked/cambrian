@@ -82,3 +82,74 @@ gpu-probe t=27699 s, ms a step: grid 1.569, classes 0.836 / 1.464 / 2.587 / 2.00
 # sampling 21 ms, the mixing 3.6 and the remineralisation 2.8. The bench's other 114 ms are its
 # own economy of still, dying bodies and do not read the farm's; the farm's whole world step reads
 # 68 ms a block, so the field passes are about half of it (inference).
+
+# ---------------------------------------------------------------------------------------------
+# The world step on the card's run, split (the same day, midday; gpu-probe, a build with
+# -p:WorldPhaseProbe=1, never a scored run's: Core's WorldPhaseProbe marks World.Step's passes and
+# prints milliseconds a step every 40 steps; the averages below leave out each run's first 20 s).
+# Round 48 seed 1 from 27,500 s on the card, 8,400 bodies, 12,343 corpses, 16 threads. The marks
+# moved nothing: that run was identical to the sequential run over all 300 digest steps.
+#
+#   pass                         ms a step, before   after the parallel passes
+#   the snow's transport         31.5                30.3
+#   metabolise                   16.3                 7.2
+#     light contributions         3.2                 1.8
+#     the bills                   5.8                 1.3
+#     the takes and deposits      7.3                 4.1   (the freeze of availability split by cells)
+#   corpses                       7.5                 2.6
+#   the snow's mixing             4.2                 4.0
+#   remineralisation              3.1                 3.0
+#   growth                        2.4                 2.4
+#   settling                      1.5                 1.3
+#   the rest                      2.1                 2.4
+#   the step                     68.5                53.1
+#
+# The run went from 3.15x to 3.45x real time; the wall a metabolic step from 159 to 145 ms: the
+# card's physics 75 (its step loop 53, the uploads and host prep 13.5, the downloads 5.9, the mirror
+# 2.3), the world 53, the harness 14 (the divergence check 7.0, the metabolic pass 5.5 with the pose
+# exposure 2.0), the writers 2.
+#
+# Each change is a parallel read followed by the serial writes in the order they were always made
+# (the areas then the contributions, the bills then the demands, the drift then the deposits), so no
+# sum changed its order. Checked on the card (identical over 300 digest steps and 30 samples) and on
+# the CPU farm: the new build at 1 and 16 threads identical over 100 digest steps from 2,500 s
+# (about 1,770 bodies and 900 to 1,000 corpses), and the old and new builds at 16 threads over 300
+# from 27,500 s. The CPU farm at 16 threads on the big crowd went from 1.33x to 1.42x real time (the
+# world step 66.6 to 51.8 ms), so the card runs this crowd at about 2.4 times the CPU farm at the
+# same thread count.
+#
+# Not done, and why. A finer split of the planes (four slabs a thread) made the edge sampling no
+# faster (the bench: 20.4 to 21.2 ms before, 22.8 to 23.0 after), so the transport's cost is not the
+# split's imbalance. That it is the edge's own work is an inference. By the edges' count (about 2.9
+# million open, three to a live cell) an edge costs about 250 cycles of a core, against about 90 for
+# the sum's own chain of 27 dependent adds and its multiplies (both estimates). A rewrite of the
+# edge path that keeps every operation might then halve it. Moving the transport onto the card, idle
+# during the world step, would save more, but only if the card's doubles do not fuse a multiply and
+# an add, which nothing has checked yet.
+#
+# The harness next (238ebce): the divergence check's verdicts and the pose exposure, both reads of
+# one body each, taken across Core's threads before the serial handling. On the card the harness
+# went from 14.4 to 5.9 ms a metabolic step (the check 7.0 to 1.3, the exposure 2.0 to 0.5) and the
+# run from 3.45x to 3.71x real time, identical to the sequential run over 300 digest steps and 30
+# samples; on the CPU farm identical at 1 and 16 threads and to the world-passes build. The CPU
+# farm's pace for it is not a reading: its later rows fell to 0.97x while another window had the
+# focus (CLAUDE.md, the fast cores follow VS Code), and over its first 14 rows it read 1.44 to 1.50x
+# against 1.40 to 1.46 before.
+#
+# Then main into gpu-probe (b7bea5d), so the card can run a current world: round 48's config is
+# refused by main's build (D125's tunable). One conflict (Simulation.State.cs), and the fidelity
+# check's skip list takes the divergence check's two verdict slots. Core 995, Dynamics 117, Farm
+# 190, the thread-identity word unmoved. On round 50's world (r50smoke-s1 from 4,000 s, about 1,700
+# bodies and 2,800 corpses) the merged build is identical to round 50's own build (9ecff10) over 300
+# digest steps and 30 samples at 16 threads, and at 1 thread to 16 over 100; on the card the
+# sequential run and the concurrent ones at group 32 and 64 are identical over 300. Paces there (a
+# reading, not a timing-grade one: the owner was at the machine): the CPU farm 4.04x (round 50's
+# build) and 4.08x (merged) at 16 threads, the card 3.60x sequential, 5.58x concurrent at group 32
+# and 5.78x at 64. At this crowd the card leads the CPU by about 1.4 times; at 8,400 bodies by about
+# 2.5 (3.71x against the CPU's 1.42 to 1.50).
+#
+# gpu-probe merged into main the same afternoon (bf1add4). It adds the card's hooks to the Farm and
+# Dynamics packages, which the Editor compiles as local packages, and nothing on it had been
+# compiled by Unity. So the Farm's folder was built the Editor's way first, as a netstandard2.1
+# library at C# 9 without EVOSIM_GPU (src/Evosim.UnityProxy, a proxy and not the Editor), and it
+# built; and the one public member the branch changed, Report.Begin, is not one the Theatre calls.
