@@ -260,6 +260,13 @@ owner's ruling of 2026-09-18). Picture-only readers take the water's shape from 
 strict reader refuses, and the bodies' plans from a genome of format 4 or 5. Both are tried after
 the strict readers, and the label's first line then ends `· OLD-RUN READ`. The rule that loading
 refuses rather than defaults is untouched for everything that simulates.
+**The picture-only config reader must take every development limit, or a picture prunes
+what the run carried.** `PictureConfig` read five of `DevelopmentLimits`' seven until
+2026-09-25 and left `floorsWeighRigidGroups` off, so every picture of round 48 on a build
+that refuses its config (every film window and reconstruction after D124) dropped every
+3 cm bud under `minPartVolume`: the story's leaf with a stomach was drawn without it, and
+the first film, on the strict reader, had it (`9f5bfe8`). A development limit added to Core
+is added to `PictureConfig` in the same change; nothing checks it.
 
 **A run is filmed from a checkpoint** (2026-09-23 evening, the owner's request for clips at
 5,000, 15,000 and 30,000 s): `./scripts/theatre-film.ps1 r46-s1 -At 5000 [-Worker 6] [-Shots
@@ -1579,7 +1586,7 @@ actually verifying it.
   instead: one heavy job at a time at about a third of the machine, with Intel's power limits
   set in the old BIOS. HANDOFF carries the current ruling, and the owner's Desktop carries the
   flash steps. The revision is `Update Revision` under
-  `HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor `, little-endian (`0E 01 00 00` is
+  `HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor\0`, little-endian (`0E 01 00 00` is
   0x10E); throttling is `\Processor Information(_Total)\Performance Limit Flags` (0 is none).
   The ASUS WMI classes in `root\wmi` (`ASUSManagement`, `AsusAtkWmi_WMNB`) write the SMBus,
   boot order, passwords and fan curves and are never called.
@@ -1706,6 +1713,17 @@ actually verifying it.
   and never two farm runs beside tests; a subagent's work takes at most half the machine's
   logical processors while the owner is at it; and a timing read (a wall split, a pace
   number, a kernel time) is taken with nothing else running, or it is re-taken.
+- **A round's checkpoints are thinned only after the owner approves its video as final**
+  (the owner, 2026-09-26). A farm round writes a checkpoint every 100 s, 3.6 to 5.1 GB a seed
+  at round 49's crowd, three quarters of it checkpoints. They stay whole while the round is read
+  and filmed. Only when the owner has said the round's video is final are they thinned to one
+  every 1,000 s, plus the checkpoint at or before each scene's start (the owner's addition, the
+  same morning; about 30 a video) and any an entry cites. The keep list is built from the
+  video's own scene table, and the agent shows it and the space it frees and asks before each
+  thinning, since a deletion cannot be undone. Two reductions lose nothing and need no ruling:
+  a checkpoint that points at `genomes.jsonl.gz` instead of copying every living genome (a
+  quarter of each file), and the feeding log (`absorptive.jsonl`) compressed. Round 49's
+  measurements are in HANDOFF.
 - **Owner-reserved decisions:** world rules (what the ecology *is*), the goal rule and its
   amendments, scope and round design forks, pushes of anything that is not code/prose, and
   anything irreversible or outward-facing. Instruments, diagnostics, replays of scored

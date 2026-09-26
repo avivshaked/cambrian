@@ -42,19 +42,86 @@ A Fable review, read-only and relayed to the owner in full, ranked the work:
 **The owner chose option A.** Round 49 runs overnight on the CPU once steps 2 and 3 are in. The
 card work runs by day, with the card alone on the machine.
 
-**Round 48's story film, from farm windows.** The windows are re-recorded as stream version 4,
-which carries the reserve in joules (`740e9da`), in `scratch/wt-r49/scratch/story-windows/r48-v4`.
-Every one so far is faithful: scenes 1 to 13, and the chart fixes of 2, 8 and 11. The fixes ran
-on a pre-cap exe (`scratch/wt-r49film`), because D124's tunable refuses round 48's config. The
-owner stopped the recorder at 16:49 to give the card the machine. Seed 1's late scenes (14, 18,
-19 and 20) each restart from the 27,500 s checkpoint, so `scratch/r49-film-debug/after-pace.ps1`
-merges them into one recording (`merge-late.py`, tested on a copy) and records 14 to 20. It
-renders scenes 2, 8 and 11 and joins part 1 v2 meanwhile, then renders 13 to 20 and joins the
-whole film into `scratch/owner/r48-story-full/`. It waits until the card's instrument runs are
-done. Scenes 1 to 12 are delivered in `scratch/owner/r48-story-part1/`, with the check sheet. The
-look is the owner's pick, target luma 0.18. Every encoder in the render scripts runs at four
-threads. For the owner's narration trial, the prose story and the captions are copied to
-`scratch/owner/r48-story-prose.md` and `r48-story-captions-by-scene.md`.
+**Round 49 is running (seed 1 launched 2026-09-25 at 20:08).** The pre-registration is
+logbook/0121, committed as `8860180` on `r49-record-film` and merged into main (`87bc4fb`).
+Seed 1's manifest names that commit with `gitDirty` false, and its configHash `f0794a8b…`,
+`dynamicsHash c818ac0b…`, `farmHash 95e6955f…` and `coreHash d0383e7f…` equal the smoke's.
+Every token 0121 lists is in its header, with record format 2 and a checkpoint every 100 s.
+- The queue is `scratch/r49-launch/seeds.ps1` (pid 57492, log
+  `scratch/wt-r49/scratch/logs/r49-queue.out`). It runs seed 1 at 16 threads with a 780-minute
+  wall. Then `v2.ps1` checks seed 1's 15,000 s checkpoint member by member, and compares a
+  resume to 16,000 s with the recording (`--skip wall harnessBodySteps fluidLinkSteps`), logged
+  to `scratch/logs/r49-v2.log`. At the speed test's 1.08x, seed 1 would end near 04:00 and V2
+  by about 04:30. The crowd sets the real pace.
+- Seeds 2 and 3 follow straight on (the owner, 20:12: "let's finish the three seeds first").
+  `scratch/r49-launch/after-s1.ps1` (pid 48092, log `scratch/wt-r49/scratch/logs/r49-queue2.out`)
+  waits for the first queue's `== queue done` line, then runs `seeds.ps1 -Seeds 2,3`. It gives
+  up without launching after 20 hours. Only seed 1 runs V2. At about eight hours a seed, seed 3
+  would end near 21:00 on 2026-09-26.
+- The checks behind the launch are 0121's "Before the launch", and all of them passed. One
+  slip: the fixture script lost a backslash and did not run, and 12 Dynamics tests failed on
+  the old crowd. Re-pointed at `r49fixb-s4`, 112 of 112 pass.
+- The watch runs from the session's schedule every hour at :17, never from a shell loop: `python
+  scratch/wt-r49/scripts/watch-round.py r49 --seeds 1,2,3 --runs-root ../../runs --read
+  scripts/reads/r49-read.py`, run from the main tree. It runs from the worktree's copy because
+  the seeds' logs are under `scratch/wt-r49/scratch/logs/`. Run from a `scratch/wt-*` worktree,
+  the reader takes the main tree's `runs/` (`d7d36d7`). The full read at the round's end adds
+  `--windows-root` (V1) and `--v2-log scratch/logs/r49-v2.log` (V2).
+
+**W1 fails on a build fault (found 2026-09-25, evening).** The founder depth rule clamps a
+founder to the bed at the tank's centre, which a flat floor makes the same everywhere
+(`SharedVolume.TryReserveFounder`, `LowestPlacement(radius)`). The tilted bed's centre is at
+-45.02 m. So every founder whose food is richest deeper than that is lifted to just above it. At
+least 31 of seed 1's trickle leaves, over beds as deep as -77 m, were set at -44.4 to -44.7 m. No
+snow eater was lifted, so the pool stomachs and the cap's clauses are untouched. Round 48 ran the
+same code. The round goes on as pre-registered, since a stop is the owner's call. The fix is on
+`founder-depth-bed` (`scratch/wt-founderbed`, `b873cb5`). The clamp reads the bed under the
+candidate, which is bit-identical on a flat floor, and a tilted-bed test should fail on the old
+tree. It is unbuilt and untested. The reads that found it are in `scripts/reads/r49-entry/`.
+
+**Round 50: a leaf founder is placed by light and matter together (the owner, 2026-09-26
+morning, option (a)).** Seed 1's and 2's trickle leaves were set at a median -44 m, 97% below
+20 m, where the light is under a thousandth of the surface's (attenuation depth 6 m). They died
+at a median 81 and 99 s, and 1 of 855 bred. The floor's leaves, set at -4 to -8 m, lived about
+20 minutes and 25 of 53 bred (`scripts/reads/r49-entry/leafdepth.py` on
+`founder-depth-bed`). The depth rule placed a leaf by its dissolved matter alone, which late in a
+run is richest at the bed. The ruling: a leaf founder's depth is the cell where its own income,
+light and matter together, is highest. The rejected options were leaves at the drawn 0 to 12 m
+as before round 48, and no change. It is a new rule, so round 50 is a new realisation of every
+seed; it is built after the clamp fix and goes into DECISIONS when it is built.
+
+**Storage (the owner, 2026-09-26 morning).** Round 49 seed 2's folder is 5.1 GB: checkpoints
+3.9 GB (300 at 17 MB), poses 0.63 GB, `absorptive.jsonl` 0.26 GB uncompressed, the rest 0.4 GB.
+A checkpoint is 4.2 MB of genome text, which `genomes.jsonl.gz` already holds, and 12.4 MB of
+moving state. Compressed against the checkpoint 100 s before it, a checkpoint is still 85% of
+its size, so its state really does change (`scripts/reads/r49-entry/ckdelta.py` and `ckprofile.py` on `founder-depth-bed`). The
+ruling: thin to one checkpoint every 1,000 s plus the one at or before each scene's start, only
+after the owner approves the round's video as final. The keep list comes from the video's scene
+table, and the agent asks before each thinning (CLAUDE.md). A filmed seed then holds about 60
+checkpoints, about 1.5 to 2 GB in all. Queued, needing no ruling: genomes by
+reference in a checkpoint (a new checkpoint version, with version 6 still read), the feeding
+log gzipped, and a measured test of a better codec for the moving state.
+
+**After seed 3 (the owner's ruling puts the three seeds first).** These run with the card alone
+on the machine.
+0. Build `founder-depth-bed`, run its new test on the old tree (it should fail) and on the
+   branch (it should pass), then the Dynamics suite; it lands before round 50.
+1. The card's probe, `scratch/wt-probe` (`gpu-probe`, `ccebf3c`): regenerate the kernels
+   (`EVOSIM_GPU_REGENERATE=1`, `GpuKernelSourceTests`), build, and run each class's launch time
+   and the largest link's cell count under per-part contact.
+2. The CPU's serial phases, `scratch/wt-speed` (`speed-serial`, `a61cb07`): build, the digest at
+   1 and 16 threads, the suites, and the pace on round 48 seed 1's 27,500 s checkpoint.
+3. Re-record the theatre's four checkpoints (ckA, ckB, ckC, ckUi) on this build.
+
+**Round 48's story film is delivered.** It is
+`scratch/owner/r48-story-full/r48-story-full-v2.mp4`, 578.9 s, 20 scenes and the title, every
+scene FAITHFUL. The check sheets beside it set v5 against v4. They differ in the buds, which
+v4's picture reader pruned (`9f5bfe8`, CLAUDE.md), and in the three reserve charts. Scene 19's
+third caption says the rerun passed seed 2's end cleanly, a one-off miscalculation (`196f12f`).
+Three flaws went to the owner unfixed: in scenes 11 and 17 the chart panel covers the subject,
+scene 16's subject is unclear, and scene 20 ends on bare sand. For the owner's narration trial,
+the prose story and the captions are in `scratch/owner/r48-story-prose.md` and
+`r48-story-captions-by-scene.md`.
 
 **The farm has left Unity.** On 2026-09-21 the owner ruled the engine before the world
 ("I'd prioritise this before making the world more complex"): pace first, staggered, with
