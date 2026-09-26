@@ -202,7 +202,11 @@ namespace Evosim.Farm
                 " · founders " + (s.FoundersFollowMatter
                     ? "in matter"
                     : s.FoundersFollowFood
-                        ? s.FoundersFollowFoodDepth ? "in their food at its depth" : "in their food"
+                        ? s.FoundersFollowFoodDepth
+                            ? s.FoundersFollowIncomeDepth
+                                ? "in their food at its depth, leaves where they earn most"
+                                : "in their food at its depth"
+                            : "in their food"
                         : "anywhere") +
                 // The round 48 founding ruling's endowment, beside the rule that places the
                 // founders it is given to; rendered off as well as on, as the trickle is.

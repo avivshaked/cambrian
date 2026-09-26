@@ -401,6 +401,13 @@ namespace Evosim.Core
 
                         if (!eatsSnow && !eatsMatter) return null;
 
+                        // The round 50 founding ruling: a leaf where its own income, light and
+                        // food together, is largest.
+                        if (eatsMatter && Config.FoundersFollowIncomeDepth)
+                        {
+                            return IncomeDepth(body, snow, matter, x, z);
+                        }
+
                         GridField field = eatsSnow && eatsMatter
                             ? ShareOfRichestColumn(snow, x, z) >= ShareOfRichestColumn(matter, x, z)
                                 ? snow
@@ -435,6 +442,52 @@ namespace Evosim.Core
                 if (type == CellTypeIds.Absorptive) eatsSnow = true;
                 else if (type == CellTypeIds.Photosynthetic) eatsMatter = true;
             }
+        }
+
+        /// <summary>
+        /// The cell of the column under (x, z) where a body's intake, light and food together, is
+        /// largest, as a height span; null when every cell prices at nothing. The round 50
+        /// founding ruling (<see cref="RunConfig.FoundersFollowIncomeDepth"/>).
+        /// </summary>
+        /// <remarks>
+        /// The column is walked on the finer of the two grids, shallowest first, and each live
+        /// cell is priced at its centre by the call the metabolic pass bills a body with: the
+        /// shaded irradiance there, the snow's edible density and the dissolved matter's density,
+        /// read through the same field doors. The coarser grid is read at the same point, so a
+        /// 1 m cell inside a 5 m matter cell reads that cell's matter and its own light. A read:
+        /// nothing is moved, and no draw is taken.
+        /// </remarks>
+        private (float Top, float Bottom)? IncomeDepth(
+            Phenotype body, GridField snow, GridField matter, float x, float z)
+        {
+            GridField fine = snow.CellMetres <= matter.CellMetres ? snow : matter;
+            float cell = fine.CellMetres;
+            int patch = PatchOfXZ(x, z);
+
+            int best = -1;
+            double most = 0d;
+
+            for (int iy = 0; iy < fine.LayerCount; iy++)
+            {
+                if (!fine.IsLiveInColumn(x, z, iy)) continue;
+
+                float y = -(iy + 0.5f) * cell;
+                var at = new FieldPoint(new Float3(x, y, z), patch);
+
+                EnergyLedger ledger = Metabolism.StepAt(
+                    body, Config, Field.IrradianceAt(y, patch, x, z),
+                    snow.EdibleDensityAt(at), matter.DensityAt(at), 0f, 1f);
+
+                double income = ledger.LightIncome + (double)ledger.FoodIncome;
+                if (income > most)
+                {
+                    most = income;
+                    best = iy;
+                }
+            }
+
+            if (best < 0) return null;
+            return (-best * cell, -(best + 1) * cell);
         }
 
         /// <summary>
@@ -1799,6 +1852,18 @@ namespace Evosim.Core
                     "sets a founder at the richest cell of its food in the column D116 accepted it " +
                     "in, so it needs D116's rule on; a header naming it would describe a world the " +
                     "run did not have.",
+                    nameof(config));
+            }
+
+            // Round 50's income depth replaces the round 48 depth for a leaf, so it has nothing
+            // to replace without it; refused rather than ignored, for the same reason.
+            if (config.FoundersFollowIncomeDepth && !config.FoundersFollowFoodDepth)
+            {
+                throw new ArgumentException(
+                    "FoundersFollowIncomeDepth is on and FoundersFollowFoodDepth is off. The income " +
+                    "rule sets a leaf founder at the cell of its accepted column where its own intake " +
+                    "is largest, in place of the round 48 depth rule, so it needs that rule on; a " +
+                    "header naming it would describe a world the run did not have.",
                     nameof(config));
             }
         }

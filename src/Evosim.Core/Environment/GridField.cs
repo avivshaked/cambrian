@@ -1562,6 +1562,19 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// Whether layer <paramref name="layer"/> of the column under a position is water: false
+        /// for a layer under the floor or inside a reef's rock, or outside the grid. Round 50's
+        /// income depth walks a column with it (<see cref="RunConfig.FoundersFollowIncomeDepth"/>).
+        /// </summary>
+        public bool IsLiveInColumn(float x, float z, int layer)
+        {
+            if (layer < 0 || layer >= _ny) return false;
+
+            int column = ColumnAt(x, z);
+            return _live == null || _live[Index(column / _nz, layer, column % _nz)];
+        }
+
+        /// <summary>
         /// The mean edible density of the column under a position over its live water, per m³ —
         /// the column's edible stock summed over its live cells, over their volume — or 0 for a
         /// column with no live cell. The column, the mask and the refuge's edible fraction are
