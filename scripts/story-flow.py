@@ -8,6 +8,7 @@
     python scripts/story-flow.py mark <story folder> check <run> | deliver [--note "..."]
     python scripts/story-flow.py skip <story folder> narrate [--note "..."]
     python scripts/story-flow.py set <story folder> clips <folder> [...] | plan <folder> | film <mp4>
+                                  | entry <the round's logbook entry> | prereg <its pre-registration>
 
 The story-film flow (`.claude/skills/story-film/SKILL.md`, `logbook/specs/story-film.md`) runs
 over days and across sessions, so its state is kept where any agent can read it: the story's folder
@@ -289,7 +290,7 @@ def main():
     p.add_argument("--note", default="")
     p = sub.add_parser("set")
     p.add_argument("folder")
-    p.add_argument("what", choices=("clips", "plan", "film"))
+    p.add_argument("what", choices=("clips", "plan", "film", "entry", "prereg"))
     p.add_argument("values", nargs="+")
     a = ap.parse_args()
     folder = os.path.abspath(a.folder)
