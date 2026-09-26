@@ -59,16 +59,28 @@ and 16 links. Launched one after another they cost 0.83, 1.46, 2.61 and 2.08 ms 
 contact grid 1.57 ms. A class costs about its slowest thread's latency and not its body count, so
 the 17 sixteen-link bodies took longer than the 7,653 two-link ones.
 
-Two changes on the `gpu-probe` branch followed the same day. Each was checked on the card
-against the run before it, round 48 seed 1 resumed at 27,500 s for 300 s. Both were identical
-over all 300 digest steps and equal on the stats. The first runs the classes on a stream each
-(`EVOSIM_GPU_CONCURRENT`, `13af2c3`), so the step waits for the slowest class and not for the
-sum. The second is the grid's prefix sum. It ran on one group of 1,024 threads over 524,288
-buckets and cost 1.25 of the grid's 1.64 ms. Three passes over tiles now do it in 0.02 ms
-(`d37421f`). The card's physics went from 8.98 to 4.76 to 3.50 ms a step. The run went from 0.94x
-to 1.55x to 1.93x real time at 8,414 bodies. What is left of a step is the eight-link class at
-2.6 ms, which hides the other classes, then the grid at 0.37 ms. The CPU's world step is 29% of
-the wall.
+Seven changes on the `gpu-probe` branch followed the same day. Each was checked on the card
+against the run before it, round 48 seed 1 resumed at 27,500 s for 300 s. Each was identical over
+all 300 digest steps and equal on the stats, at group sizes 32 and 64. The first runs the classes
+on a stream each (`EVOSIM_GPU_CONCURRENT`, `13af2c3`), so the step waits for the slowest class and
+not for the sum. The second is the grid's prefix sum. It ran on one group of 1,024 threads over
+524,288 buckets and cost 1.25 ms; three passes over tiles now do it in 0.02 ms (`d37421f`). The
+next three move work off a body's one thread and give each of its links a thread. They are the
+water (`771c15e`), the contacts (`4665326`) and the fluid (`6519eb8`). The seventh sends and
+fetches the overlap lists by their used rows alone (`b4c7a80`). The card's physics went from
+8.98 ms a step to 1.49, and the run from 0.94x real time to 3.15x at 8,414 bodies. The probe
+record has the table.
+
+A phase probe reads the card's cycle counter between the parts of the body kernel (a build with
+`-p:GpuPhaseProbe=1`, never a scored run's). Before the link kernels, the water and the contacts
+were most of every class. After them the body kernel is its loads, its brain and its stores, and
+the classes cost 0.60 ms a step together.
+
+What is left of the wall is mostly off the card now. The CPU's world step is 43% of it, 68 ms a
+metabolic step. The copies to and from the card are about a fifth. A class with a new or resized
+body goes up whole, 51 to 58 MB a block of 50 steps, and the classes come down at 29 MB. On the
+Core bench the world's field passes cost 37 ms a step on this grid, most of it the snow's
+transport.
 
 The probe reads `EVOSIM_GPU_PROBE` from the process environment directly, which bites. The
 script's `-Env` passes settings as arguments and does not reach it, and the binding warns that it
@@ -178,11 +190,13 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    scripts/reads/r50-read.py`, run from the main tree. The full read at the end adds
    `--windows-root` (V1) and `--v2-log scratch/logs/r50-v2.log` (V2).
 2. The card is worked by day, with nothing else on the machine, from `scratch/wt-probe`. The
-   concurrent streams and the tiled scan are in (1.93x at 8,414 bodies, above). The eight-link
-   class at 2.6 ms is the step now. The next measure is where inside that kernel the time goes,
-   then the grid's mean at 0.28 ms. Measure with the probe on round 48 seed 1's crowd at
-   27,500 s, as `logbook/specs/gpu-probe-2026-09-26.txt` did. Identity on the card is claimed at
-   two group sizes (CLAUDE.md).
+   run is at 3.15x (above), and the card's own physics is no longer most of a step. The next
+   measure is where the CPU's world step spends its 68 ms, on the farm's own crowd and not the
+   bench's still bodies. Then the class uploads. A class goes up whole when one body in it is
+   new, and sending the changed rows alone would save 3 to 4% of the wall (an estimate). Measure
+   with the probe on round 48 seed 1's crowd at 27,500 s, as
+   `logbook/specs/gpu-probe-2026-09-26.txt` did. Identity on the card is claimed at two group
+   sizes (CLAUDE.md).
 3. The lit link is read and not built: `scripts/reads/linklight.py <arm>` splits a stomach
    body's income into its links' light and its food, by window and by line (the first decision
    above). It runs on round 50 when that round is read.

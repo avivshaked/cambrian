@@ -39,3 +39,46 @@ gpu-probe t=27669 s, ms a step: grid 1.573, classes 0.816 / 1.496 / 2.688 / 2.08
 gpu-probe t=27679 s, ms a step: grid 1.565, classes 0.814 / 1.470 / 2.580 / 2.044, tail 0.040; bodies a class 7658 / 597 / 121 / 19; cell 0.871 m (mean link 0.436 m), largest link 1.168 m; most cells one link covers, a class 48 / 48 / 48 / 27; entries a class 111539 / 11258 / 4387 / 601
 gpu-probe t=27689 s, ms a step: grid 1.589, classes 0.832 / 1.437 / 2.566 / 1.997, tail 0.042; bodies a class 7655 / 597 / 124 / 19; cell 0.871 m (mean link 0.435 m), largest link 1.181 m; most cells one link covers, a class 48 / 48 / 36 / 27; entries a class 111181 / 11263 / 4337 / 670
 gpu-probe t=27699 s, ms a step: grid 1.569, classes 0.836 / 1.464 / 2.587 / 2.001, tail 0.034; bodies a class 7664 / 598 / 127 / 19; cell 0.869 m (mean link 0.435 m), largest link 1.194 m; most cells one link covers, a class 48 / 36 / 48 / 27; entries a class 111872 / 11352 / 4511 / 579
+
+# ---------------------------------------------------------------------------------------------
+# The same day, afternoon: seven changes on gpu-probe (scratch/wt-probe), each checked on the card
+# against the run before it. Round 48 seed 1 resumed at 27,500 s for 300 s in single, digest every
+# 100 steps; every change identical to the sequential run ("seq", ccebf3c's kernels, the classes
+# one after another) over all 300 digest steps and equal on the stats, at group 32 and group 64
+# (the tiled scan at group 32 only). The CPU accelerator's tests give the solver's numbers after
+# each. Pace is simulated seconds over wall seconds across the run's rows; physics is its share of
+# the wall, per physics step.
+#
+#   build                                      commit    x real time (g32 / g64)   physics ms a step
+#   seq, the classes one after another         a6b119f   0.94                      8.98
+#   the classes on concurrent streams          13af2c3   1.55                      4.76
+#   the grid's prefix sum over tiles           d37421f   1.93                      3.50
+#   the water pass a link a thread             771c15e   2.39 / 2.35               2.51
+#   the contacts a link a thread               4665326   2.99 / 3.05               1.65
+#   the fluid a link a thread                  6519eb8   3.05 / 3.11               1.60
+#   the overlap lists by their first rows      b4c7a80   3.15 / 3.15               1.49
+#
+# The phase probe (771c15e, a build with -p:GpuPhaseProbe=1, never a scored run's): the SM's cycle
+# counter read between the body kernel's parts. Kilocycles a step of each class's slowest body,
+# classes one after another:
+#   before the water kernel   class 2 (up to 8 links)  7,060: water 3,277, contacts 2,653, load 401, fluid 372, brain 240
+#                             class 3 (up to 16 links) 5,688: water 2,497, contacts 1,594, fluid 719, load 489, brain 201
+#   after the fluid kernel    class 2                    943: load 418, brain 218, store 152, fluid 58, solve 55
+#                             class 3                  1,363: load 560, store 335, brain 223, fluid 93, solve 91
+# Reading: the water, the contacts and the fluid were each a loop over a body's links on one
+# thread; moved to a thread a link, the body kernel is left with its loads, its brain and its
+# stores. The classes together (with their contact kernels) went from 2.63 to 0.60 ms a step.
+#
+# The host's side of a block after b4c7a80 (the probe's host and bytes lines, 50 steps a block):
+#   slots 0.7 ms, packs 0.24, block packs 0.21, snow and instants 2.8, up 8.3 to 9.2, down 5.8 to 6.0,
+#   mirror 1.3. Bytes up: the classes 51 to 58 MB (a class with a new or resized body goes whole),
+#   the snow and instants 10.7, the spheres 7.6, the body columns 1.1 (25.1 before b4c7a80). Down:
+#   the classes 28.9, the body columns 0.8 (24.8 before).
+# The wall after b4c7a80: physics 47%, the CPU's world step 43%, harness 8%, writers 1%.
+#
+# The world step on its own (Evosim.Core.Bench on round 48's config with the trickle pool set to 0,
+# since the bench hands the world no pool; 8,400 bodies placed and never moved, 16 threads): the
+# field passes cost 37 ms a metabolic step, of which the snow's transport 29 ms and its edge
+# sampling 21 ms, the mixing 3.6 and the remineralisation 2.8. The bench's other 114 ms are its
+# own economy of still, dying bodies and do not read the farm's; the farm's whole world step reads
+# 68 ms a block, so the field passes are about half of it (inference).
