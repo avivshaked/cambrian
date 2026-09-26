@@ -94,7 +94,7 @@ seed; it is built after the clamp fix and goes into DECISIONS when it is built.
 3.9 GB (300 at 17 MB), poses 0.63 GB, `absorptive.jsonl` 0.26 GB uncompressed, the rest 0.4 GB.
 A checkpoint is 4.2 MB of genome text, which `genomes.jsonl.gz` already holds, and 12.4 MB of
 moving state. Compressed against the checkpoint 100 s before it, a checkpoint is still 85% of
-its size, so its state really does change (`scratch/r49-w1/ckdelta.py`, `ckprofile.py`). The
+its size, so its state really does change (`scripts/reads/r49-entry/ckdelta.py` and `ckprofile.py` on `founder-depth-bed`). The
 ruling: thin to one checkpoint every 1,000 s, only after the owner approves the round's video
 as final, and ask before each thinning (CLAUDE.md). Queued, needing no ruling: genomes by
 reference in a checkpoint (a new checkpoint version, with version 6 still read), the feeding
