@@ -62,5 +62,41 @@
 #     and every force after it, is unchanged. Its share of the 10.4% is not measured.
 #   - The rest is arithmetic whose order the bits fix: the solve, the fluid, the brain.
 #
-#   None of this is built. Each item is a CPU change checked like the card's: a resume of round 50's
-#   seeds against their own rows, lineage and checkpoints, and the pace alternated in one sitting.
+#   Each item is a CPU change checked like the card's: a resume against a round's own rows and
+#   checkpoints, and the pace alternated in one sitting. Section 4 is what was built.
+#
+# 4. Built the same afternoon (branch cpu-physics), and what each did. The paces are round 49 seed 2
+#    resumed from 25,000 s for 100 s at 16 threads (9,982 bodies) on round 49's tree with each change
+#    applied (scratch/wt-cpu49), alternated; ms a metabolic step from each run's own rows. Every one
+#    of the sixteen runs was identical to round 49's own record in 10 samples and the checkpoint at
+#    25,100 s. The machine changed speed during the afternoon: the world step, the same code in every
+#    build, read 157 to 168 ms in the first eight runs and 100 to 119 in the rest (the fast cores
+#    follow the focused window, CLAUDE.md), so a build is compared with its neighbours only.
+#
+#   build                                  runs   grid   water   bodies   total
+#   base (wt-speed)                        1, 4   62.7   103.7   189.9    583
+#   the reef fade shared                   2, 5   62.3    87.1   188.9    565
+#   + neighbour entries carry their cell   3, 6   69.3    87.4   184.2    567   dropped
+#   + a row's bounds in one record         7      63.7    87.4   190.6    569   dropped
+#   the fade (faster machine)       12, 14, 16    52.2    71.6   143.2    414
+#   + the grid's sort partitioned   11, 13, 15    30.3    71.5   148.5    398
+#
+#   - The fade shared (CurrentField.VelocityAndAccelerationAt, Water.Sample's one call): the water
+#     phase 16% cheaper, about 17 ms a step at this crowd; 16.6 to 15.3 ms at round 50's smoke crowd
+#     of 1,700.
+#   - The grid's counting sort partitioned by owner (ContactGrid.Fill): each owner used to read every
+#     entry twice; now the entries are split among the owners once, stably, and each owner counts and
+#     fills its own. The same arrays at any thread count. The grid phase 40% cheaper, about 22 ms a
+#     step at this crowd. The bodies phase moved within the machine's noise (normalised by the world
+#     step, 1.37 against 1.33).
+#   - The two neighbour-query variants bought nothing: carrying each entry's cell made the fill dearer
+#     by more than it saved the query, and a row's bounds in one record changed nothing measurable.
+#     The query's cost is not the random reads.
+#
+#   Together about 40 ms off a metabolic step of 400 to 580 ms at 10,000 bodies, 7 to 10%, beside
+#   the card's transport (D126). The final build (main-based, both changes) is identical to
+#   r50smoke-s1 from 4,000 s for 300 s under the CPU's transport and the card's (30 samples, three
+#   checkpoints each), passes Core 995 of 995, Dynamics 118 of 118 (a new test checks every grid query
+#   against brute force at 1, 3 and 16 threads, and fails on a planted offset bug) and Farm 192 of
+#   192, and the Unity proxy builds. Round 50's own seeds check it again at scale in the morning with
+#   the card (logbook/specs/card-transport-check).

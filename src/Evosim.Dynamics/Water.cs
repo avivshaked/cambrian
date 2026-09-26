@@ -73,6 +73,21 @@ namespace Evosim.Dynamics
 
                 Float3 water;
 
+                // The common case, one call: per-link water in a moving world whose acceleration
+                // is felt. The same two values as the two calls below, the reefs' fade shared
+                // (CurrentField.VelocityAndAccelerationAt).
+                if (!holding && transport && accelerating)
+                {
+                    current.VelocityAndAccelerationAt(x, y, z, seconds, out water, out Float3 flowAcceleration);
+                    body.Water[3 * i] = water.X;
+                    body.Water[3 * i + 1] = water.Y;
+                    body.Water[3 * i + 2] = water.Z;
+                    body.WaterAcceleration[3 * i] = flowAcceleration.X;
+                    body.WaterAcceleration[3 * i + 1] = flowAcceleration.Y;
+                    body.WaterAcceleration[3 * i + 2] = flowAcceleration.Z;
+                    continue;
+                }
+
                 if (holding)
                 {
                     if (i == 0 && seconds - body.WaterSampledAt >= config.WaterHoldSeconds)

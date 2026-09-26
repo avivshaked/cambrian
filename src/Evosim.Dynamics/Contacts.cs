@@ -165,8 +165,6 @@ namespace Evosim.Dynamics
             }
             if (_items.Length < Entries) _items = new int[System.Math.Max(Entries, 2 * _items.Length)];
 
-            Array.Clear(_bucketStart, 0, buckets + 1);
-
             // Every entry's bucket and row, across threads, at the entry's place in the serial
             // order (row by row, then x, y and z), which each row slab starts at from the integer
             // sum of the entries in the slabs before it.
@@ -218,40 +216,94 @@ namespace Evosim.Dynamics
                 }
             });
 
-            // The counting sort, split by bucket: each thread owns a range of buckets and reads
-            // every entry in order, taking only its own. So each bucket counts and fills in
-            // ascending entry order, which is the order the single loop filled it in, and
-            // _items comes out the same array at any thread count.
+            // The counting sort, split by bucket. Each owner takes a power-of-two range of buckets,
+            // and every bucket is counted and filled with its entries in ascending entry order,
+            // which is the order the single loop filled it in, so _bucketStart and _items come out
+            // the same arrays at any thread count. The entries reach their owners through one
+            // stable partition first, entry slab by entry slab, so each owner reads its own
+            // entries and no others: the owners used to read every entry twice each, sixteen
+            // times over at sixteen threads (logbook/specs/cpu-profile-2026-09-26.txt).
             int entries = Entries;
-            int owners = Slabs.CountFor(buckets, Threads);
+            int owners = 1;
+            while (owners * 2 <= Threads && buckets / (owners * 2) >= Slabs.MinimumPerSlab) owners *= 2;
+            int shift = 0;
+            while ((owners << shift) < buckets) shift++;
 
-            Slabs.Run(buckets, owners, (s, low, high) =>
+            if (entries == 0)
             {
-                for (int e = 0; e < entries; e++)
-                {
-                    int key = _entryKey[e];
-                    if (key >= low && key < high) _bucketStart[key]++;
-                }
-            });
-
-            int running = 0;
-            for (int b = 0; b < buckets; b++)
-            {
-                int n = _bucketStart[b];
-                _bucketStart[b] = running;
-                _cursor[b] = running;
-                running += n;
+                Array.Clear(_bucketStart, 0, buckets + 1);
+                return;
             }
-            _bucketStart[buckets] = running;
 
-            Slabs.Run(buckets, owners, (s, low, high) =>
+            int entrySlabs = Slabs.CountFor(entries, Threads);
+            int cells = entrySlabs * owners;
+            if (_partition.Length < cells) _partition = new int[cells];
+            if (_ownerFirst.Length < owners + 1) _ownerFirst = new int[owners + 1];
+            if (_stageKey.Length < entries)
             {
-                for (int e = 0; e < entries; e++)
+                int size = System.Math.Max(entries, 2 * _stageKey.Length);
+                _stageKey = new int[size];
+                _stageRow = new int[size];
+            }
+
+            // How many of each entry slab's entries each owner takes.
+            Slabs.Run(entries, entrySlabs, (s, from, to) =>
+            {
+                int row0 = s * owners;
+                for (int o = 0; o < owners; o++) _partition[row0 + o] = 0;
+                for (int e = from; e < to; e++) _partition[row0 + (_entryKey[e] >> shift)]++;
+            });
+
+            // Where each (owner, slab) part starts, owner by owner and within an owner slab by
+            // slab, so an owner's entries lie together and in ascending entry order.
+            int placed = 0;
+            for (int o = 0; o < owners; o++)
+            {
+                _ownerFirst[o] = placed;
+                for (int s = 0; s < entrySlabs; s++)
+                {
+                    int n = _partition[s * owners + o];
+                    _partition[s * owners + o] = placed;
+                    placed += n;
+                }
+            }
+            _ownerFirst[owners] = placed;
+
+            Slabs.Run(entries, entrySlabs, (s, from, to) =>
+            {
+                int row0 = s * owners;
+                for (int e = from; e < to; e++)
                 {
                     int key = _entryKey[e];
-                    if (key >= low && key < high) _items[_cursor[key]++] = _entryRow[e];
+                    int at = _partition[row0 + (key >> shift)]++;
+                    _stageKey[at] = key;
+                    _stageRow[at] = _entryRow[e];
                 }
             });
+
+            // Each owner counts its buckets, offsets them from its first entry (every key below
+            // its range belongs to an owner before it) and fills them in its entries' order.
+            Slabs.Run(owners, owners, (o, oFrom, oTo) =>
+            {
+                int low = o << shift, high = (o + 1) << shift;
+                int first = _ownerFirst[o], last = _ownerFirst[o + 1];
+
+                for (int k = low; k < high; k++) _bucketStart[k] = 0;
+                for (int at = first; at < last; at++) _bucketStart[_stageKey[at]]++;
+
+                int running = first;
+                for (int k = low; k < high; k++)
+                {
+                    int n = _bucketStart[k];
+                    _bucketStart[k] = running;
+                    _cursor[k] = running;
+                    running += n;
+                }
+
+                for (int at = first; at < last; at++) _items[_cursor[_stageKey[at]]++] = _stageRow[at];
+            });
+
+            _bucketStart[buckets] = entries;
         }
 
         // ------------------------------------------------------------ per-part contact, D114
@@ -269,6 +321,10 @@ namespace Evosim.Dynamics
         private int[] _slabFirst = Array.Empty<int>();       // a row slab's first entry
         private int[] _entryKey = Array.Empty<int>();        // an entry's bucket
         private int[] _entryRow = Array.Empty<int>();        // and its row
+        private int[] _partition = Array.Empty<int>();       // an (entry slab, owner) part's count, then its start
+        private int[] _ownerFirst = Array.Empty<int>();      // an owner's first staged entry; owners + 1
+        private int[] _stageKey = Array.Empty<int>();        // the entries partitioned by owner: bucket
+        private int[] _stageRow = Array.Empty<int>();        // and row
 
         /// <summary>
         /// Threads the build and the fill may split across (<see cref="Slabs"/>); a pace setting
