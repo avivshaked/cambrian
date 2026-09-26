@@ -31,14 +31,17 @@ anything, so finish when the page is written.
 ## The voice
 
 1. **The voice is detached**, with no "I" and no "we". A reaction is kept and said without a
-   narrator: "That was not expected", "This round changed four rules".
+   narrator: "That was not expected", "This experiment changed four rules".
 2. **One fragment and one genuine question a chapter at most**, and neither as a scene's last
    line. A question is genuine when the next line or scene answers it.
 3. **A definition rides on the picture** rather than following a colon. Where the station shows
    the thing, say what the listener is looking at, and let the meaning ride on it.
-4. **The narration says once**, where the round and its tanks come in, that every scene is
+4. **The narration says once**, where the experiment and its tanks come in, that every scene is
    replayed from a saved moment of the run. "In the run" appears only on a scene the film reports
    as COUSIN.
+5. **No experiment is numbered, and none is called a round.** The page names an experiment by
+   what it asked, and an earlier one as the experiment before this one; the check refuses a
+   round's number anywhere on screen, the title included.
 
 ## What the picture can carry
 

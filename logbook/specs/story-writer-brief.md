@@ -85,7 +85,7 @@ who hears it once and has never seen the tank.
    happening there.
 6. **Tell the story.** Each paragraph says what is on screen and why it matters to the arc. A true
    fact that moves nothing goes in `story.md` and stays out of the narration.
-7. **End on the story.** The last chapter says what the round found and what it leaves open, in a
+7. **End on the story.** The last chapter says what the experiment found and what it leaves open, in a
    few sentences about the tank and its bodies. The table of predictions lives in `story.md` and
    may be a chart on the last card, but the narration never reads a list of verdicts aloud.
 8. **Keep the voice detached.** There is no "I" and no "we". A reaction is said without a
@@ -94,6 +94,14 @@ who hears it once and has never seen the tank.
    does not open on a title-like phrase, and there are no intensifiers ("simply", "just",
    "really", "truly") and no closing contrasts of the "X, not Y" kind. `STYLE.md` §5 lists the
    rest.
+10. **Name an experiment by what it asked, never by its number.** The project numbers its rounds,
+    and a listener has no use for the numbers: none is said in the narration, and none appears in
+    the title, a chapter, a subtitle or a chart. Where the story needs to name this experiment,
+    name it by the question it set out to answer or the change it made, if that works in the
+    story; an earlier one is "the experiment before this one", or is named the same way. The word
+    "round" means nothing to a listener either, so the narration says "experiment", or finds
+    another way to say it, and never calls an experiment a round. `story-script.py check` refuses
+    a round's number anywhere on screen.
 
 ### Faults, and the technique that fixes them
 
@@ -133,7 +141,7 @@ their sentences are not to be reused.
    through it and the numbers behind it are on screen.
 4. **The corner word says what the screen is.** A scene played from a window the farm recorded
    reads FAITHFUL and shows what happened; write every scene for one. The narration says once,
-   where the round and its tanks come in, that every scene is replayed from a saved moment of the
+   where the experiment and its tanks come in, that every scene is replayed from a saved moment of the
    run. "In the run" is added after filming, and only on a scene the film reports as COUSIN.
 5. **A time is counted from when it is heard.** "About twenty seconds from now" is heard when the
    line is spoken, not at the scene's start. Say "is about to" or "before this scene ends", or say
@@ -175,7 +183,7 @@ never a tour of terms.
    A callback, the last body echoing the first, is worth a sentence.
 3. **Every chapter** moves the arc. A subplot is allowed when it feeds the main line, and the
    narration says how.
-4. **Say the stake** at the start and the verdict at the end, in the round's own terms, in words a
+4. **Say the stake** at the start and the verdict at the end, in the experiment's own terms, in words a
    listener can hold.
 
 ## The chart rule

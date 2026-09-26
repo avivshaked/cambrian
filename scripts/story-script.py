@@ -53,6 +53,7 @@ LONG, TOO_LONG = 70, 84
 
 CODE_WORDS = ["bf", "pool", "trickle", "clade", "clades", "absorptive", "photosynthetic"]
 SOFT_CODE_WORDS = ["genome", "genomes", "phenotype", "checkpoint", "snapshot", "lineage", "organism"]
+ROUND_NUMBER = re.compile(r"\brounds?\s+\d+", re.I)   # a viewer has no use for the project's round numbers
 NARRATOR = ["i", "i'm", "i've", "i'd", "i'll", "me", "my", "mine", "we", "we're", "we've", "we'd", "our", "ours", "us"]
 INTENSIFIERS = ["very", "really", "truly", "incredibly", "remarkably", "extremely", "exactly", "precisely",
                 "quietly", "simply", "genuinely", "honestly", "crucially", "importantly", "notably", "just"]
@@ -471,9 +472,19 @@ def findings(folder):
     narrated = isinstance(story, dict) and bool(story.get("narration"))
     pace, least, gap = (17.0, 0.3, 0.05) if narrated else (PACE, LEAST, GAP)
 
+    numbered = "a round's number means nothing to a viewer; name the experiment by what it asked, or an earlier one as the experiment before this one"
+    title = str(story.get("title", "")) if isinstance(story, dict) else ""
+    for m in ROUND_NUMBER.finditer(title):
+        add("ERROR", 0, "title", "'%s' in the title: %s" % (m.group(0), numbered))
     questions, shorts, in_run = {}, {}, []
     for s in scenes_of(story):
         n, caps = s["n"], captions_of(s)
+        on_screen = [("chapter", str(s.get("chapter") or ""))]
+        on_screen += [(k + 1, c.get("text", "")) for k, c in enumerate(caps)]
+        on_screen += [("chart " + where, text) for where, text in chart_words(s.get("chart"))]
+        for where, text in on_screen:
+            for m in ROUND_NUMBER.finditer(text):
+                add("ERROR", n, where, "'%s' on screen: %s" % (m.group(0), numbered))
         for where, text in chart_words(s.get("chart")):
             for w in words(text):
                 if w in CODE_WORDS:
@@ -584,7 +595,7 @@ def cmd_check(folder, with_stats):
     found = findings(folder)
     order = {"ERROR": 0, "WARN": 1, "INFO": 2}
     for level, n, line, message in sorted(found, key=lambda f: (order[f[0]], f[1], str(f[2]))):
-        out("%-5s  scene %s, line %s: %s" % (level, n, line, message))
+        out("%-5s  %s: %s" % (level, "title" if n == 0 else "scene %s, line %s" % (n, line), message))
     counts = {lv: sum(1 for f in found if f[0] == lv) for lv in order}
     if with_stats:
         story = load(os.path.join(folder, "story.json"))
