@@ -3,8 +3,10 @@
 *Written 2026-09-25, after round 48's film (`scratch/owner/round-48-story.mp4`, 22 scenes and a
 title in 8 min 47 s). The owner asked for the process to be repeatable. This is the procedure; the
 writer's rules are in [`story-writer-brief.md`](story-writer-brief.md) and a film's words in
-[`story-glossary.md`](story-glossary.md). A skill under `.claude/skills/story-film/` will point here. It waits for the
-owner, because every write under `.claude/` asks them.*
+[`story-glossary.md`](story-glossary.md). The skill `.claude/skills/story-film/` runs it. Revised the same
+evening, when the owner asked for one flow from the runs to the timeline: the arc and the script
+stages, a narration stage, three owner reviews, a Resolve timeline and captions that stay
+editable after filming (section 0). The flow before that revision is tagged `story-film-v2`.*
 
 A story film tells one round across all its seeds. A writer reads the runs and writes a shot list;
 the safari's director films each scene; one script joins the clips. A scene is filmed one of two
@@ -13,6 +15,34 @@ screen then need not be the recorded one, and the captions say "in the run" wher
 Played from a window the farm recorded (section 5's second half), nothing is stepped in the Editor.
 The scene then carries its window's verdict, which reads FAITHFUL when the farm's replay agreed
 with the run's own rows.
+
+## 0. The flow
+
+| stage | what happens | it leaves | whose |
+|---|---|---|---|
+| open | the story's folder and its state | `flow.json` | agent |
+| guides | a guide for each run (section 2) | `guide/guide.json` per run | agent |
+| arc | the writer's first pass (section 3) | `arc.md` | writer |
+| arc approved | the owner rules on the arc | an approval in `flow.json` | owner |
+| write | the writer's second pass (section 3) | `story.md`, `story.json`, `checks.tsv` | writer |
+| script | the captions edited for the ear (section 3a) | `script.md`, `story.draft.json`, `edits.tsv` | editor, cold reader |
+| script approved | the owner reads the script and rules on it | an approval | owner |
+| narrate | the narration of the approved words, which sets each scene's length (section 3b) | `narration/` | agent, service |
+| check | the director's check per run (section 4) | a mark per run | agent |
+| film | the scenes filmed (section 5) | `story.filmed.json`, the clips | agent |
+| assemble | the Resolve timeline, or the ffmpeg film (section 6) | `resolve/plan.json` | agent |
+| timeline approved | the owner watches the timeline | an approval | owner |
+| deliver | the render in `scratch/owner/` | a mark | agent |
+
+`python scripts/story-flow.py status scratch/story/<round>` prints this table for a story, each
+stage done, skipped, stale, open or waiting, with the evidence and the next step. It reads the
+files each stage leaves; what no file shows (an approval, a check, a skip, the delivery) is in
+`flow.json`, written by the same script. An approval records a hash of what the owner saw, so an
+edit after it reads as stale. The film stage compares `story.json` with `story.filmed.json` and
+names every scene whose filmed fields (station, second, subject, length, chapter, chart) changed;
+a caption is not one of them. The script is approved before anything is narrated (the owner,
+2026-09-26). Its approval covers the words and the scenes and not their timing, which the narration
+sets afterwards, so the narration leaves it standing and a changed word turns it stale.
 
 ## 1. Before starting
 
@@ -36,9 +66,16 @@ exists and from the lineage when it does not.
 ## 3. The writer
 
 The writer is an Opus subagent. Its brief is `story-writer-brief.md` together with the round's
-logbook entry and pre-registration. It is told the folder it may write to
-(`scratch/story/<round>/`), that the runs are read-only and that nothing heavy runs. It returns
-three files:
+logbook entry and pre-registration. It is told that the runs are read-only and that nothing heavy
+runs. It runs in two passes. The first returns `arc.md` alone (the brief's "What you hand back"), and
+the owner rules on it before a caption is written. The second pass works from the arc as ruled.
+
+The writer reads the runs through the shell. It writes its own files into `scratch/story/<round>/`
+the same way, never with the Write or Edit tools (the owner, 2026-09-26). That is
+`arc.md` in the first pass, and in the second `story.md` and the builder script, which it runs.
+From 2026-09-25 until then it wrote nothing and returned its files as text. Round 49's second
+pass sent a builder of several hundred lines in 17 pieces to a server it started to hold them, and
+spent ten steps on the shell's quoting. The second pass leaves three files:
 
 - `story.md`, the prose for the owner;
 - `story.json`, the shot list the director films;
@@ -63,6 +100,27 @@ A `full` chart may sit on any station but a Portrait or a Birth, whose body it w
 
 Before anything is filmed, the caller reads `story.md` against `checks.tsv`. A number with no row
 there is not filmed.
+
+## 3a. The script
+
+The writer's captions are true and complete; the script stage makes them sound like a person
+reading them aloud. The rules are [`story-script-brief.md`](story-script-brief.md), the skill is
+`.claude/skills/story-script/`, and the tool is `scripts/story-script.py`. `render` turns
+`story.json` into `script.md`, one line a caption. An editor rewrites the page, `apply` reads it
+back (keeping the writer's version as `story.draft.json`, re-timing changed captions by the
+reading pace, lengthening a scene that needs it, and logging every change in `edits.tsv`), and
+`check` refuses a number without a row in `checks.tsv`, a narrator's "I" or "we", a code name, a
+caption held too briefly and a question ending a scene. A cold reader who sees only the page then
+says where it stumbled and tells the story back, for at most three rounds.
+
+## 3b. The narration
+
+The narration service is being written. The stage, what it needs from the service and this
+repository's side of it (`scripts/story-narration.py`, built and tested on a synthetic narration)
+are [`story-narration.md`](story-narration.md). Once the owner has approved the script, each
+scene's paragraphs are spoken before filming. Their lengths, with a fixed padding, set each scene's length, and the captions are
+timed to the speech. Until the service exists the stage is skipped
+(`story-flow.py skip <folder> narrate`), and the captions keep the writer's timing.
 
 ## 4. The check
 
@@ -140,6 +198,21 @@ owner's half-machine ruling). The script opens on the story's title, joins the c
 order, marks every missing scene as skipped, and writes `<film>.scenes.tsv` beside the film.
 Its table gives each scene's provenance word. A film whose scenes carry more than one word says
 so in a note and a last line.
+
+**A caption changed after filming** needs no new filming. `--captions story` takes each scene's captions from
+`story.json` as it stands, placed as the director places them, over the clips already filmed.
+The director's own lines (a story's birth adds one) are told apart by `story.filmed.json`, the
+story as it was filmed, which the film stage copies before rendering. The table counts the
+captions changed since filming and names any caption a clip is too short to hold. Without that
+copy, a filmed line in a slot the story leaves free is taken for the director's, which keeps a
+deleted caption; so the copy is made every time.
+
+**The Resolve timeline** is how the flow usually assembles a film (the `story-resolve` skill and
+[`story-resolve.md`](story-resolve.md)). `scripts/story-resolve.py` plans with the assembler
+(`--captions story` by default), then builds a new timeline `<name> vK` in the configured
+project, reusing every clip already in its bin; a caption edit is a plan and a build, and the
+captions' SRT carries a hash of its cues in its name so that Resolve cannot reuse an old one. The
+ffmpeg film above is the fallback where Resolve Studio is not available, and a check against it.
 
 To deliver, copy `story.md` beside the film in `scratch/owner/` and give the owner the full path as
 plain text. Neither file links nor attachment cards reach the owner.

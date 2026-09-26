@@ -181,3 +181,20 @@ design/canvas/support.js
 # Local secrets (the Leonardo key, scripts/leonardo-generate.py); the commit hook blocks *.env too.
 .env
 .env.*
+
+# =============================================================
+# Film assets: the media stays local, the manifest is tracked
+# =============================================================
+# Music, cards and graphics mostly carry someone else's licence and
+# often exceed the pre-commit hook's 5 MB. assets/README.md records
+# each file's source and licence.
+/assets/*
+!/assets/README.md
+!/assets/*/
+/assets/*/*
+!/assets/*/.gitkeep
+
+# A skill's assets: reference material kept beside the skill on this machine only, such as the
+# DaVinci Resolve reference manual beside story-resolve (Blackmagic Design's copyrighted text,
+# the same status as research/papers/). The commit hook refuses any PDF as well.
+/.claude/skills/*/assets/

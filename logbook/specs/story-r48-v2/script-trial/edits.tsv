@@ -1,0 +1,122 @@
+round	scene	line	before	after
+1	1	1	This is a tank of water 167 m across, lit from above.	This simulated tank of water is 167 m across, lit from above.
+1	1	3	Each body is built from a recipe its children inherit.	Each scene is re-run from a saved moment of the run.
+1	1	4		FAITHFUL in the corner means the re-run matched the run's records.
+1	1	5		Every body here is built from a recipe that its children inherit.
+1	1	6		Copies change a little, and recipes that leave more children spread.
+1	2	1	A child's recipe can change a little. What breeds more, spreads.	Body 201, in the middle, has two parts, a leaf and a speck of stomach.
+1	2	2	Body 201 has two parts: a leaf and a tiny stomach.	Its leaf earns energy from light, counted in joules, or J.
+1	2	3	A leaf earns energy from light, counted in joules, J.	Its stomach feeds on snow, energy-rich matter adrift in the water.
+1	2	4	A stomach eats snow: dead matter drifting in the water.	It pays upkeep to stay alive and saves the rest.
+1	2	5	It pays upkeep to live, and saves what is left: the corner line.	Those savings are its reserve, the line in the corner.
+1	3	2	Born small, it put its savings into growing.	It was born small, and spent its savings on growing.
+1	3	3	Grown, it saved for its children's price plus a cushion.	Once grown, it saved for its children's price plus a cushion.
+1	3	4	At 850 s it had two, for 129 J. The 14 J cushion was left.	The drop at 850 s is two children for 129 J, leaving its 14 J cushion.
+1	3	5	Upkeep rises with age, and it drifted down into dimmer light.	Age raised its upkeep, and it drifted down into dimmer light.
+1	3	6	At zero reserve a body dies. Body 201 starved at 3,207 s.	A body dies when its reserve runs out. Body 201 starved at 3,207 s.
+1	4	2	The parent gives each child a share of its own body's worth.	The parent gives each child a share of its own body's worth in energy.
+1	4	4	On top, a fee of twice the child's body, at least 50 J, is burnt.	On top, a fee of twice the child's body is burnt, never under 50 J.
+1	5	chapter	What we hoped for	What this round hoped for
+1	5	1	Round 48 is one experiment: three tanks under the same rules.	Round 48 is one experiment, run in three tanks under the same rules.
+1	5	2	Each runs 30,000 s, about eight hours. This is tank 3 at 3,000 s.	Only chance sets them apart, so each tells its own story.
+1	5	3	COUSIN in the corner: each scene is re-run from a saved moment.	Each runs 30,000 s, about eight hours. This is tank 3, 3,000 s in.
+1	6	1	Most snow leaks from living leaves: 15% of what they catch.	Living leaves leak 15% of what they catch into the water, as snow.
+1	6	2	The rest comes from the dead. A corpse crumbles into snow.	That is most of the snow. The rest comes from crumbling corpses.
+1	7	1	A line is a family of bodies with the same kinds of part.	The leaves lit up here are one family, with the same kinds of part.
+1	7	2	These leaves are one line, Thallus legatribens: 217 alive.	A family like that is a line. This one has 217 alive.
+1	7	3	The names are made up. The first word tells the kind of body.	Its made-up name is Thallus legatribens. The first word means a leaf.
+1	7	4	A child that gains or loses a leaf, stomach or joint starts a new line.	If a child gains or loses a leaf, stomach or joint, a new line starts.
+1	7	5	An eater is a body with a stomach and no leaf. It lives on snow.	An eater has a stomach and no leaf, so it lives on snow.
+1	7	6	Last round, no line of eaters lasted.	In the last round, no line of eaters lasted.
+1	7	7	So we changed four rules in the eaters' favour.	So this round changed four rules in the eaters' favour.
+1	7	8	We hoped for a line of eaters, ten strong at the end.	The hope was a line of eaters still ten strong at the end.
+1	7	9	Or at least a leaf that grew a stomach and kept it.	A smaller hope was a leaf line that gained a stomach and kept it.
+1	8	1	Body 3318 is a newcomer: an eater copied from past rounds.	Body 3318, in the middle, is a newcomer, a single ball of stomach.
+1	8	2	Its reserve is in the corner. In the run it bred 11.5 s in.	The corner line is its reserve. It has a child 11.5 s in.
+1	8	3	Random newcomers drop in every 30 s or so. One in ten is a stored eater.	It eats 1.25 J a second, and pays 0.50 J of upkeep.
+1	8	4	It eats 1.25 J a second and pays 0.50 J of upkeep.	Newcomers drop in at random, one every 30 s or so.
+1	8	5	New rule four: a newcomer lands at the richest depth for its food.	One in ten is a stored eater like this one, copied from past rounds.
+1	8	6		A new rule lands each newcomer at the richest depth for its food.
+1	8	8	Half a second later it was full grown and had a child.	Half a second later it was full grown and had its first child.
+1	8	9	That cost 99 J, more than its own 66 J. The gift paid.	That cost 99 J, more than its own 66 J, so the gift covered the rest.
+1	9	1	Its line, Gastrella cidutis, has 24 alive, 11 minutes on.	Eleven minutes after it landed, its line, Gastrella cidutis, has 24.
+1	9	3	Last round, under one minute. And 56 of them bred.	In the last round it was under a minute. This time 56 of them bred.
+1	10	1	Tank 1 drew the same stored eater at 4,057 s. It bred at once too.	Tank 1 got the same stored eater at 4,057 s, and it too bred at once.
+1	10	2	Its line is Gastrella cidutis III, the third of that name here.	The lit line is Gastrella cidutis III, the third of that name here.
+1	10	3	In the run it reached 45, the largest eater line of any tank.	At its peak it had 45, the largest eater line in any tank.
+1	10	4	The same tank had a jointed eater line, Natogastrum plocrele.	The same tank had a line of jointed eaters, Natogastrum plocrele.
+1	11	1	Tank 3, 6,500 s. Body 3559 is the last of Gastrella cidutis.	Back in tank 3 at 6,500 s, body 3559 is the last of Gastrella cidutis.
+1	11	2	It is 2,655 s old. Upkeep rises with age, doubling by 3,000 s.	It is 2,655 s old, and upkeep doubles by the age of 3,000 s.
+1	11	3	It pays 0.73 J a second. Young, the line's first body paid 0.50 J.	It pays 0.73 J a second. Body 3318, young, paid 0.50 J.
+1	11	4	The snow here is thinner. It eats 0.55 J a second.	The snow here is thinner, and it eats only 0.55 J a second.
+1	11	5	Its reserve is 9 J, and falling.	So its reserve, the corner line, is down to 9 J and falling.
+1	11	6	In the run it starved 44.5 s from here, and the line ended.	It starves 44.5 s from here, and the line ends with it.
+1	11	7	No living body was eaten this round. Every death was starving.	No body was eaten alive this round. Every one that died starved.
+1	12	2	The last, the jointed one, was gone by 10,912 s.	The jointed eaters lasted longest, and were gone by 10,912 s.
+1	12	3	No stored eater had a line alive at the end.	No stored eater left a living line at the end.
+1	12	4	I don't know why the eater lines faded.	Why the eater lines faded is not yet known.
+1	12	5	My guess: as they aged, they thinned the snow around them.	Perhaps each crowd thinned its snow while age raised its upkeep.
+1	13	chapter	Two leaves, two bets	Two leaf lines breed in opposite ways
+1	13	1	Tank 1, 10,000 s. Two leaf lines hold nearly half each.	Meanwhile, two leaf lines each hold nearly half of tank 1.
+1	13	2	Frondium marufubens bets on two big children at a time.	The lit one, Frondium marufubens, has two big children at once.
+1	13	3	Frondium nisimocrax bets on one small child.	Frondium nisimocrax has one small child at a time.
+1	14	3	Nisimocrax ended with 8,461 of the tank's 8,618 bodies.	Nisimocrax ended with 8,461, nearly the whole tank.
+1	15	1	Tank 3 ran the same contest, and big children won.	Tank 3 ran the same contest, and there the big children won.
+1	15	2	Thallus legatribens: children at 59% of adult, 6,165 at the end.	Thallus legatribens, born at 59% of adult size, ended with 6,165.
+1	15	3	Thallus migugis: children at 9%, 2,340 at the end.	Thallus migugis, born at 9%, ended with 2,340.
+1	15	4	I don't know why. Here too the winner led early, 280 to 30.	What decided it is not known. As before, the winner led early on.
+1	16	1	Tank 1, 23,300 s. A nisimocrax leaf has a child.	At 23,300 s in tank 1, the leaf held here is from the nisimocrax line.
+1	16	2	The child, body 48048, carries a bud: a speck of stomach.	Its child, body 48048, is born with a stomach bud.
+1	16	3	Rule one: a new kind of part arrives only as a small bud.	A new rule made a bud the only way a new kind of part can arrive.
+1	17	1	Body 48048, 4,200 s old: over twice the average age.	Body 48048 is 4,200 s old, more than twice the average age.
+1	17	2	It lives at the surface, and has had six children.	It lives at the surface and has had six children.
+1	17	4	Like body 201 at the start: a leaf with a speck of stomach.	Like body 201 at the start, it is a leaf with a speck of stomach.
+1	18	1	Its line, Vorafrons vabecrepis, ended with 29 alive.	Its line, lit up, is Vorafrons vabecrepis, 29 strong at the end.
+1	18	3	Nine more descendants had dropped the stomach.	Nine more descendants had lost the stomach, and so left the line.
+1	18	4	Three other stomach buds on nisimocrax leaves left ten or more too.	Three other stomach buds on nisimocrax leaves each left ten or more.
+1	18	5	That second hope held here: a budded stomach founded a line.	So in this tank, the smaller hope came true.
+1	19	2	Tank 2 stopped at 13,700 s on a software error.	Tank 2 stopped early, at 13,700 s, on a software error.
+1	19	3	A rerun passed that point cleanly: it was a one-off miscalculation.	A rerun passed that point cleanly, so it looks like a one-off glitch.
+1	20	1	Tank 1 at the end. All but three of its bodies carry a leaf.	This is tank 1 at the end. All but three of its bodies carry a leaf.
+1	20	2	The eaters landed well, lived longer and bred, then died out.	The eaters lived longer and bred, yet every eater line died out.
+1	20	4	The round got its stomach on a leaf. It did not get its eaters.	The round hoped for eaters that last.
+1	20	5		It got a leaf line that barely uses its stomach.
+2	1	-	Each scene is re-run from a saved moment of the run.	
+2	1	-	FAITHFUL in the corner means the re-run matched the run's records.	
+2	5	4		Each scene is re-run from a moment the tank saved.
+2	5	5		FAITHFUL in the corner means the re-run matched the original.
+3	1	3	Every body here is built from a recipe that its children inherit.	Every body here is built from a recipe its children inherit.
+4	2	1	Body 201, in the middle, has two parts, a leaf and a speck of stomach.	This is body 201, with two parts, a leaf and a speck of stomach.
+4	4	4	On top, a fee of twice the child's body is burnt, never under 50 J.	On top, a fee of at least 50 J is burnt, more for a bigger child.
+4	5	4	Each scene is re-run from a moment the tank saved.	Each scene is re-run from a saved moment, and plays out as it did.
+4	5	-	FAITHFUL in the corner means the re-run matched the original.	
+4	7	2	A family like that is a line. This one has 217 alive.	A family like that is a line. This one, Thallus legatribens, has 217.
+4	7	3	Its made-up name is Thallus legatribens. The first word means a leaf.	Names are made up. The first word gives the kind of body, here a leaf.
+4	7	7	So this round changed four rules in the eaters' favour.	So this round changed several rules to help the eaters.
+4	8	1	Body 3318, in the middle, is a newcomer, a single ball of stomach.	Body 3318, on the left, is a newcomer, a single ball of stomach.
+4	8	9	That cost 99 J, more than its own 66 J, so the gift covered the rest.	That cost 99 J, so without the gift it could not have done both.
+4	10	2	The lit line is Gastrella cidutis III, the third of that name here.	Its line, lit up, is the third in this tank named Gastrella cidutis.
+4	11	-	No body was eaten alive this round. Every one that died starved.	
+4	12	5	Perhaps each crowd thinned its snow while age raised its upkeep.	One untested guess is that each crowd thinned its own snow as it aged.
+4	16	2	Its child, body 48048, is born with a stomach bud.	Its child, body 48048, is born with a bud, a speck of stomach.
+4	16	3	A new rule made a bud the only way a new kind of part can arrive.	This round, a new kind of part can arrive only as a bud like that.
+4	17	3	Its stomach brings in 0.13% of its income. Light brings the rest.	Its stomach brings in almost nothing. Light brings the rest.
+4	18	4	Three other stomach buds on nisimocrax leaves each left ten or more.	Three other stomach buds each led to ten or more living descendants.
+4	19	2	Tank 2 stopped early, at 13,700 s, on a software error.	Tank 2's simulation crashed and stopped at 13,700 s.
+5	8	2	The corner line is its reserve. It has a child 11.5 s in.	The corner line is its reserve, and it is about to have a child.
+5	11	6	It starves 44.5 s from here, and the line ends with it.	It starves before this scene is over, and its line dies with it.
+6	2	6	Right now it earns 0.54 J a second and spends 0.49 J.	With 0.54 J a second in and 0.49 J out, its reserve creeps up.
+6	3	4	The drop at 850 s is two children for 129 J, leaving its 14 J cushion.	At 850 s it spent 129 J on two children, keeping only its cushion.
+6	4	2	The parent gives each child a share of its own body's worth in energy.	Each child is given energy worth a share of its parent's body.
+6	5	3	Each runs 30,000 s, about eight hours. This is tank 3, 3,000 s in.	Each runs 30,000 s, about eight hours. This is tank 3 at 3,000 s.
+6	5	4	Each scene is re-run from a saved moment, and plays out as it did.	Each scene here replays the tank just as it ran.
+6	7	2	A family like that is a line. This one, Thallus legatribens, has 217.	A family like that is a line. Thallus legatribens has 217 alive.
+6	8	3	It eats 1.25 J a second, and pays 0.50 J of upkeep.	It eats well, 1.25 J a second, more than twice its upkeep.
+6	8	9	That cost 99 J, so without the gift it could not have done both.	Its own 66 J could not cover both, so the gift paid the rest.
+6	9	1	Eleven minutes after it landed, its line, Gastrella cidutis, has 24.	Its line, Gastrella cidutis, has 24 alive, 11 minutes after it landed.
+6	10	-	A joint lets two parts swing, driven by the body's small brain.	
+6	11	3	It pays 0.73 J a second. Body 3318, young, paid 0.50 J.	When young, body 3318 paid 0.50 J a second. This one pays 0.73 J.
+6	11	4	The snow here is thinner, and it eats only 0.55 J a second.	Thinner snow here feeds it only 0.55 J a second, less than it pays.
+6	16	1	At 23,300 s in tank 1, the leaf held here is from the nisimocrax line.	In tank 1 at 23,300 s, the leaf held here is from the nisimocrax line.
+6	17	1	Body 48048 is 4,200 s old, more than twice the average age.	Body 48048 is 4,200 s old, past the age when upkeep doubles.
+7	5	4	Each scene here replays the tank just as it ran.	Each scene here replays the tank as it ran.
