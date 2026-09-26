@@ -55,6 +55,21 @@ def pace(run, skip):
     return (sim / wall if wall > 0 else float("nan"), 1000.0 * wall / (sim / 0.5) if sim > 0 else float("nan"), b.get("alive"))
 
 
+def window(run, t0, t1):
+    """The pace and the world step (ms a metabolic step) of a run's own rows between two seconds:
+    round 50's night against the check's day over the same window and the same code on the CPU's
+    transport. The world step is the control for the machine's speed (CLAUDE.md, the focus)."""
+    rows = [json.loads(l) for l in lines(os.path.join(run, "stats.jsonl"))]
+    rows = [r for r in rows if t0 <= r["t"] <= t1]
+    if len(rows) < 2:
+        return None
+    a, b = rows[0], rows[-1]
+    n = (b["t"] - a["t"]) / 0.5
+    wall = (b["wallTotalMs"] - a["wallTotalMs"]) / 1000.0
+    return ((b["t"] - a["t"]) / wall, (b["wallWorldMs"] - a["wallWorldMs"]) / n,
+            (b["wallPhysicsMs"] - a["wallPhysicsMs"]) / n)
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("runs")
@@ -106,6 +121,17 @@ def main():
             if g and c:
                 print("seed %d at %d: the card's transport %.2fx against the CPU's %.2fx, %+.0f%%, %.1f ms a step saved"
                       % (s, at, g[0][8], c[0][8], 100 * (g[0][8] / c[0][8] - 1), c[0][9] - g[0][9]))
+    print()
+    print("round 50's own night against the check's day, the same window, the CPU's transport:")
+    for s in sorted({t[0] for t in table}):
+        orig = one_run(runs, "%s-s%d" % (a.source, s))
+        for at in sorted({t[1] for t in table if t[0] == s}):
+            c = one_run(runs, "%sck-s%d-%d%s" % (a.source, s, at, "c"))
+            night = window(orig, at + 100, at + 1000) if orig else None
+            day = window(c, at + 100, at + 1000) if c else None
+            if night and day:
+                print("  seed %d at %d: night %.2fx (world %.0f, physics %.0f ms) against day %.2fx (world %.0f, physics %.0f ms)"
+                      % (s, at, night[0], night[1], night[2], day[0], day[1], day[2]))
     print("VERDICT: %s" % ("every window identical to round 50's own record" if bad == 0 else "%d window(s) differ or are missing" % bad))
     sys.exit(1 if bad else 0)
 
