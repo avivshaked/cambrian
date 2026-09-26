@@ -454,8 +454,9 @@ namespace Evosim.Core
         /// cell is priced at its centre by the call the metabolic pass bills a body with: the
         /// shaded irradiance there, the snow's edible density and the dissolved matter's density,
         /// read through the same field doors. The coarser grid is read at the same point, so a
-        /// 1 m cell inside a 5 m matter cell reads that cell's matter and its own light. A read:
-        /// nothing is moved, and no draw is taken.
+        /// 1 m cell inside a 5 m matter cell reads that cell's matter and its own light. Priced
+        /// without a pose (the orientation average) even under light by exposure, since the body
+        /// has none until the solver places it. A read: nothing is moved, and no draw is taken.
         /// </remarks>
         private (float Top, float Bottom)? IncomeDepth(
             Phenotype body, GridField snow, GridField matter, float x, float z)

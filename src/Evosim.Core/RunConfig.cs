@@ -1491,9 +1491,11 @@ namespace Evosim.Core
         /// With this on, each live cell of the finer grid's column under the accepted spot is
         /// priced at its centre by <c>Metabolism.StepAt</c>, as the world bills a body standing
         /// there: the shaded irradiance, the snow's edible density and the dissolved matter's
-        /// density, at age 0 and with no work. The founder is set in the cell whose light income
-        /// plus food income is largest, the shallower on a tie, and keeps the drawn depth when
-        /// every cell prices at nothing. A body with no photosynthetic part is placed by the round
+        /// density, at age 0 and with no work. Under <see cref="LightByExposure"/> the price is
+        /// the orientation average, since a founder has no pose before it is placed; a landed
+        /// body lying flat to the light then earns up to twice it. The founder is set in the cell
+        /// whose light income plus food income is largest, the shallower on a tie, and keeps the
+        /// drawn depth when every cell prices at nothing. A body with no photosynthetic part is placed by the round
         /// 48 rule as before, so a stomach's landing does not move.
         /// </para>
         /// <para>
