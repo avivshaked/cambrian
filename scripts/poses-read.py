@@ -181,7 +181,13 @@ def read_index(path, version):
 
 
 def inflate(data, raw, offset):
-    """A version 2 frame's bodies: a whole raw deflate stream that inflates to exactly raw bytes."""
+    """A version 2 frame's bodies: a whole raw deflate stream that inflates to exactly raw bytes.
+
+    A frame with no bodies is written with no stream at all: every seed of round 49 opens on one
+    at 0.5 s, before the first founder lands."""
+    if raw == 0 and not data:
+        return b''
+
     d = zlib.decompressobj(-15)
 
     try:
