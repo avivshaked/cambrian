@@ -16,6 +16,8 @@
 //                  + ScanDown, Scatter                                         (Contacts.cs)
 //   the water      WaterLinks, a link a thread, one launch per class (Water.Sample, StepOne's
 //                  first part; beside the grid under concurrent streams)
+//   the fluid      FluidLinks, a link a thread, one launch per class after its water
+//                  (Fluid.Apply's per-link part)
 //   the contacts   ContactLinks under per-part contact, a link a thread, one launch per
 //                  class after the grid (Contacts.Apply's per-link part)
 //   the bodies     Step0 .. Step3, one launch per class                          (StepOne)
@@ -108,8 +110,8 @@ namespace Evosim.Farm.Gpu.Dbl
         public ArrayView<Real> TotalMass, LinkMass;
         public ArrayView<int> NOver, OvSlot, OvId, OvPart, OvHeld, NHeld, HeldId, BedGlass;
         public ArrayView<long> Census, Overflow;
-        public ArrayView<Real> LinkPush;
-        public ArrayView<int> LinkFlags, StageN, StageId, StageSlot, StagePart;
+        public ArrayView<Real> LinkPush, LinkFluid;
+        public ArrayView<int> LinkFlags, StageN, StageId, StageSlot, StagePart, LinkLimited;
 #if GPU_PHASE_PROBE
         public ArrayView<long> Phase;
 #endif
@@ -141,7 +143,7 @@ namespace Evosim.Farm.Gpu.Dbl
     {
         // The launch: the class's capacity and neuron ceiling, the global roster, the grid.
         public int N, MaxN, GN, GUsed, Count, Rows, Buckets, Mask, OverCap, EntryCap;
-        public int InstBase, StepIndex, PerPart, Instrument, Chunk, Chunks, Tiles, ClassUsed, ClassLinks;
+        public int InstBase, StepIndex, PerPart, Instrument, Chunk, Chunks, Tiles, ClassUsed, ClassLinks, LinkRows;
 
         public int HasCurrent, Accelerating, Sloped, HasBed, BedRelief, BedModes, ShoreOn, FadeOn;
         public int ReefCount, LimitDrive, LimitDrag, UseRestore, FloorRestores, CreatureContact;
@@ -1106,9 +1108,27 @@ namespace Evosim.Farm.Gpu.Dbl
             PhaseMark(gl, cfg, g, 3, ref clk);
 #endif
             // ---- 5. fluid (Fluid.Apply) --------------------------------------------------------
-            long dragLimited = FluidApply(links, cfg, excess, mass, lift, volume, smallI, arm, thinAxis,
-                position, rotationMatrix, spin, velocity, water, wacc, relVel, panelStart, pan, fext,
-                dragF, dragT, preVel, preSpin, i, N);
+            // FluidLinks ran it before this kernel, a link a thread; its results are taken here in
+            // link order, at the place the CPU applies them.
+            long dragLimited = 0;
+            int fluidRows = cfg.LinkRows;
+            for (int fl = 0; fl < links; fl++)
+            {
+                int frow = g * LinkStride + fl;
+                for (int fk = 0; fk < 3; fk++)
+                {
+                    relVel[3 * fl + fk] = gl.LinkFluid[fk * fluidRows + frow];
+                    dragF[3 * fl + fk] = gl.LinkFluid[(3 + fk) * fluidRows + frow];
+                    dragT[3 * fl + fk] = gl.LinkFluid[(6 + fk) * fluidRows + frow];
+                    preVel[3 * fl + fk] = velocity[3 * fl + fk];
+                    preSpin[3 * fl + fk] = spin[3 * fl + fk];
+                }
+                V3.Add(fext, 6 * fl, new V3(gl.LinkFluid[9 * fluidRows + frow], gl.LinkFluid[10 * fluidRows + frow],
+                                            gl.LinkFluid[11 * fluidRows + frow]));
+                V3.Add(fext, 6 * fl + 3, new V3(gl.LinkFluid[12 * fluidRows + frow], gl.LinkFluid[13 * fluidRows + frow],
+                                                gl.LinkFluid[14 * fluidRows + frow]));
+                dragLimited += gl.LinkLimited[frow];
+            }
             if (dragLimited != 0) dr.DragLimited[i] = dr.DragLimited[i] + dragLimited;
 
 #if GPU_PHASE_PROBE
@@ -1610,9 +1630,27 @@ namespace Evosim.Farm.Gpu.Dbl
             PhaseMark(gl, cfg, g, 3, ref clk);
 #endif
             // ---- 5. fluid (Fluid.Apply) --------------------------------------------------------
-            long dragLimited = FluidApply(links, cfg, excess, mass, lift, volume, smallI, arm, thinAxis,
-                position, rotationMatrix, spin, velocity, water, wacc, relVel, panelStart, pan, fext,
-                dragF, dragT, preVel, preSpin, i, N);
+            // FluidLinks ran it before this kernel, a link a thread; its results are taken here in
+            // link order, at the place the CPU applies them.
+            long dragLimited = 0;
+            int fluidRows = cfg.LinkRows;
+            for (int fl = 0; fl < links; fl++)
+            {
+                int frow = g * LinkStride + fl;
+                for (int fk = 0; fk < 3; fk++)
+                {
+                    relVel[3 * fl + fk] = gl.LinkFluid[fk * fluidRows + frow];
+                    dragF[3 * fl + fk] = gl.LinkFluid[(3 + fk) * fluidRows + frow];
+                    dragT[3 * fl + fk] = gl.LinkFluid[(6 + fk) * fluidRows + frow];
+                    preVel[3 * fl + fk] = velocity[3 * fl + fk];
+                    preSpin[3 * fl + fk] = spin[3 * fl + fk];
+                }
+                V3.Add(fext, 6 * fl, new V3(gl.LinkFluid[9 * fluidRows + frow], gl.LinkFluid[10 * fluidRows + frow],
+                                            gl.LinkFluid[11 * fluidRows + frow]));
+                V3.Add(fext, 6 * fl + 3, new V3(gl.LinkFluid[12 * fluidRows + frow], gl.LinkFluid[13 * fluidRows + frow],
+                                                gl.LinkFluid[14 * fluidRows + frow]));
+                dragLimited += gl.LinkLimited[frow];
+            }
             if (dragLimited != 0) dr.DragLimited[i] = dr.DragLimited[i] + dragLimited;
 
 #if GPU_PHASE_PROBE
@@ -2114,9 +2152,27 @@ namespace Evosim.Farm.Gpu.Dbl
             PhaseMark(gl, cfg, g, 3, ref clk);
 #endif
             // ---- 5. fluid (Fluid.Apply) --------------------------------------------------------
-            long dragLimited = FluidApply(links, cfg, excess, mass, lift, volume, smallI, arm, thinAxis,
-                position, rotationMatrix, spin, velocity, water, wacc, relVel, panelStart, pan, fext,
-                dragF, dragT, preVel, preSpin, i, N);
+            // FluidLinks ran it before this kernel, a link a thread; its results are taken here in
+            // link order, at the place the CPU applies them.
+            long dragLimited = 0;
+            int fluidRows = cfg.LinkRows;
+            for (int fl = 0; fl < links; fl++)
+            {
+                int frow = g * LinkStride + fl;
+                for (int fk = 0; fk < 3; fk++)
+                {
+                    relVel[3 * fl + fk] = gl.LinkFluid[fk * fluidRows + frow];
+                    dragF[3 * fl + fk] = gl.LinkFluid[(3 + fk) * fluidRows + frow];
+                    dragT[3 * fl + fk] = gl.LinkFluid[(6 + fk) * fluidRows + frow];
+                    preVel[3 * fl + fk] = velocity[3 * fl + fk];
+                    preSpin[3 * fl + fk] = spin[3 * fl + fk];
+                }
+                V3.Add(fext, 6 * fl, new V3(gl.LinkFluid[9 * fluidRows + frow], gl.LinkFluid[10 * fluidRows + frow],
+                                            gl.LinkFluid[11 * fluidRows + frow]));
+                V3.Add(fext, 6 * fl + 3, new V3(gl.LinkFluid[12 * fluidRows + frow], gl.LinkFluid[13 * fluidRows + frow],
+                                                gl.LinkFluid[14 * fluidRows + frow]));
+                dragLimited += gl.LinkLimited[frow];
+            }
             if (dragLimited != 0) dr.DragLimited[i] = dr.DragLimited[i] + dragLimited;
 
 #if GPU_PHASE_PROBE
@@ -2618,9 +2674,27 @@ namespace Evosim.Farm.Gpu.Dbl
             PhaseMark(gl, cfg, g, 3, ref clk);
 #endif
             // ---- 5. fluid (Fluid.Apply) --------------------------------------------------------
-            long dragLimited = FluidApply(links, cfg, excess, mass, lift, volume, smallI, arm, thinAxis,
-                position, rotationMatrix, spin, velocity, water, wacc, relVel, panelStart, pan, fext,
-                dragF, dragT, preVel, preSpin, i, N);
+            // FluidLinks ran it before this kernel, a link a thread; its results are taken here in
+            // link order, at the place the CPU applies them.
+            long dragLimited = 0;
+            int fluidRows = cfg.LinkRows;
+            for (int fl = 0; fl < links; fl++)
+            {
+                int frow = g * LinkStride + fl;
+                for (int fk = 0; fk < 3; fk++)
+                {
+                    relVel[3 * fl + fk] = gl.LinkFluid[fk * fluidRows + frow];
+                    dragF[3 * fl + fk] = gl.LinkFluid[(3 + fk) * fluidRows + frow];
+                    dragT[3 * fl + fk] = gl.LinkFluid[(6 + fk) * fluidRows + frow];
+                    preVel[3 * fl + fk] = velocity[3 * fl + fk];
+                    preSpin[3 * fl + fk] = spin[3 * fl + fk];
+                }
+                V3.Add(fext, 6 * fl, new V3(gl.LinkFluid[9 * fluidRows + frow], gl.LinkFluid[10 * fluidRows + frow],
+                                            gl.LinkFluid[11 * fluidRows + frow]));
+                V3.Add(fext, 6 * fl + 3, new V3(gl.LinkFluid[12 * fluidRows + frow], gl.LinkFluid[13 * fluidRows + frow],
+                                                gl.LinkFluid[14 * fluidRows + frow]));
+                dragLimited += gl.LinkLimited[frow];
+            }
             if (dragLimited != 0) dr.DragLimited[i] = dr.DragLimited[i] + dragLimited;
 
 #if GPU_PHASE_PROBE
@@ -5033,154 +5107,198 @@ namespace Evosim.Farm.Gpu.Dbl
 
         // ============================================================== fluid
 
-        private static long FluidApply(
-            int links, SCfg cfg, Real excess, Real[] mass, Real[] lift, Real[] volume, Real[] smallI,
-            Real[] arm, int[] thinAxis,
-            Real[] position, Real[] rotationMatrix, Real[] spin, Real[] velocity, Real[] water, Real[] wacc,
-            Real[] relVel, int[] panelStart, SPanels pan, Real[] fext,
-            Real[] dragF, Real[] dragT, Real[] preVel, Real[] preSpin, int c, int n)
+        /// <summary>
+        /// Fluid.Apply for every link of one class's bodies, before the class's step and after its
+        /// water pass: a thread a link. It reads the state the step loads and the water WaterLinks
+        /// wrote, computes the step's own terms, and leaves the link's relative velocity, its drag
+        /// before the limiter, the torque and force it adds and its limiter count, which the step
+        /// takes at the fluid's place in its order. The senses still read the relative velocity
+        /// the last step stored, so nothing here is written where the step loads it.
+        /// </summary>
+        public static void FluidLinks(Index1D index, STopo t, SConst b, SState s, SPanels pan, SGlob gl, SCfg cfg)
         {
+            int used = cfg.ClassUsed;
+            int i = index.X / used;
+            int c = index.X - i * used;
+            if (i >= cfg.ClassLinks) return;
+
+            int g = t.GSlot[c];
+            if (g < 0 || gl.Alive[g] == 0 || i >= t.Links[c]) return;
+
+            int n = cfg.N;
+            int rowsAll = cfg.LinkRows;
+            int row = g * LinkStride + i;
+
             Real k = cfg.DragK;
             Real dt = cfg.Dt;
             long limited = 0;
             bool accelerating = cfg.FluidAccel > 0;
 
-            for (int i = 0; i < links; i++)
+            var rotationMatrix = new Real[9];
+            var velocity = new Real[3];
+            var water = new Real[3];
+            var spin = new Real[3];
+            var wacc = new Real[3];
+            for (int e = 0; e < 9; e++) rotationMatrix[e] = s.RotM[(9 * i + e) * n + c];
+            for (int e = 0; e < 3; e++)
             {
-                M3 rotation = M3.Read(rotationMatrix, 9 * i);
-
-                V3 relative = V3.Read(velocity, 3 * i) - V3.Read(water, 3 * i);
-                V3.Write(relVel, 3 * i, relative);
-
-                V3 w = V3.Read(spin, 3 * i);
-
-                V3 localVelocity = rotation.TransposedTimes(relative);
-                V3 localSpin = rotation.TransposedTimes(w);
-
-                V3 localForce = V3.Zero;
-                V3 localTorque = V3.Zero;
-
-                int from = panelStart[i];
-                int to = panelStart[i + 1];
-
-                for (int p = from; p < to; p++)
-                {
-                    var centre = new V3(
-                        pan.Centre[(3 * p) * n + c],
-                        pan.Centre[(3 * p + 1) * n + c],
-                        pan.Centre[(3 * p + 2) * n + c]);
-
-                    var normal = new V3(
-                        pan.Normal[(3 * p) * n + c],
-                        pan.Normal[(3 * p + 1) * n + c],
-                        pan.Normal[(3 * p + 2) * n + c]);
-
-                    V3 panelVelocity = localVelocity + V3.Cross(localSpin, centre);
-                    Real normalSpeed = V3.Dot(panelVelocity, normal);
-                    if (normalSpeed <= 0) continue;
-
-                    V3 panelForce = normal * (-k * pan.Area[p * n + c] * normalSpeed * normalSpeed);
-
-                    localForce = localForce + panelForce;
-                    localTorque = localTorque + V3.Cross(centre, panelForce);
-                }
-
-                V3 force = rotation * localForce;
-                V3 torque = rotation * localTorque;
-
-                // NoteDrag: before the limiter and the two terms below.
-                V3.Write(dragF, 3 * i, force);
-                V3.Write(dragT, 3 * i, torque);
-                V3.Write(preVel, 3 * i, V3.Read(velocity, 3 * i));
-                V3.Write(preSpin, 3 * i, V3.Read(spin, 3 * i));
-
-                if (cfg.LimitDrag != 0)
-                {
-                    Real speed = relative.Magnitude;
-                    if (speed > 0)
-                    {
-                        V3 direction = relative * ((Real)1.0 / speed);
-                        Real opposing = -V3.Dot(force, direction);
-                        Real allowed = mass[i] * speed / dt;
-                        if (opposing > allowed)
-                        {
-                            force = force + direction * (opposing - allowed);
-                            limited++;
-                        }
-                    }
-
-                    Real spinRate = w.Magnitude;
-                    if (spinRate > 0)
-                    {
-                        V3 axis = w * ((Real)1.0 / spinRate);
-                        Real opposing = -V3.Dot(torque, axis);
-                        Real allowed = smallI[i] * spinRate / dt;
-                        if (opposing > allowed)
-                        {
-                            torque = torque + axis * (opposing - allowed);
-                            limited++;
-                        }
-                    }
-                }
-
-                Real height = position[3 * i + 1];
-
-                if (accelerating)
-                {
-                    V3 accelerationForce = V3.Read(wacc, 3 * i) *
-                        (cfg.FluidAccel * cfg.Density * volume[i] *
-                         ((Real)1.0 + cfg.AddedMass));
-
-                    if (accelerationForce.Y > 0 && height >= 0)
-                    {
-                        accelerationForce = new V3(accelerationForce.X, 0, accelerationForce.Z);
-                    }
-
-                    force = force + accelerationForce;
-                }
-
-                Real netDensity = excess * ((Real)1.0 - lift[i]);
-                Real unclamped = netDensity;
-
-                if (cfg.UseRestore != 0)
-                {
-                    netDensity = Restore(
-                        netDensity, height, cfg.RestoringDensity, cfg.WorldDepth,
-                        cfg.FloorRestores != 0);
-                }
-                else if (netDensity < 0 && height >= 0)
-                {
-                    netDensity = 0;
-                }
-
-                if (netDensity != 0)
-                {
-                    force = force + new V3(
-                        0,
-                        -netDensity * mass[i] * cfg.Gravity / cfg.TissueDensity,
-                        0);
-                }
-
-                // D111: the part's whole displaced weight at its buoyancy centre, gated on the clamp.
-                if (cfg.OffsetTorque != 0 && arm[i] != 0 && height <= 0 &&
-                    !(netDensity == 0 && unclamped != 0))
-                {
-                    int axis = thinAxis[i];
-                    V3 lever = rotation * new V3(
-                        axis == 0 ? arm[i] : 0,
-                        axis == 1 ? arm[i] : 0,
-                        axis == 2 ? arm[i] : 0);
-
-                    V3 displaced = new V3(0, cfg.Density * volume[i] * cfg.Gravity, 0);
-
-                    torque = torque + V3.Cross(lever, displaced);
-                }
-
-                V3.Add(fext, 6 * i, torque);
-                V3.Add(fext, 6 * i + 3, force);
+                int a3 = (3 * i + e) * n + c;
+                velocity[e] = s.Vel[a3];
+                water[e] = s.Water[a3];
+                spin[e] = s.Spin[a3];
+                wacc[e] = s.WaterAcc[a3];
             }
 
-            return limited;
+            Real excess = b.Excess[c];
+            Real mass = b.Mass[i * n + c];
+            Real lift = b.Lift[i * n + c];
+            Real volume = b.Volume[i * n + c];
+            Real smallI = b.SmallI[i * n + c];
+            Real arm = b.Arm[i * n + c];
+            int thinAxis = t.ThinAxis[i * n + c];
+
+            M3 rotation = M3.Read(rotationMatrix, 0);
+
+            V3 relative = V3.Read(velocity, 0) - V3.Read(water, 0);
+
+            V3 w = V3.Read(spin, 0);
+
+            V3 localVelocity = rotation.TransposedTimes(relative);
+            V3 localSpin = rotation.TransposedTimes(w);
+
+            V3 localForce = V3.Zero;
+            V3 localTorque = V3.Zero;
+
+            int from = t.PanelStart[i * n + c];
+            int to = t.PanelStart[(i + 1) * n + c];
+
+            for (int p = from; p < to; p++)
+            {
+                var centre = new V3(
+                    pan.Centre[(3 * p) * n + c],
+                    pan.Centre[(3 * p + 1) * n + c],
+                    pan.Centre[(3 * p + 2) * n + c]);
+
+                var normal = new V3(
+                    pan.Normal[(3 * p) * n + c],
+                    pan.Normal[(3 * p + 1) * n + c],
+                    pan.Normal[(3 * p + 2) * n + c]);
+
+                V3 panelVelocity = localVelocity + V3.Cross(localSpin, centre);
+                Real normalSpeed = V3.Dot(panelVelocity, normal);
+                if (normalSpeed <= 0) continue;
+
+                V3 panelForce = normal * (-k * pan.Area[p * n + c] * normalSpeed * normalSpeed);
+
+                localForce = localForce + panelForce;
+                localTorque = localTorque + V3.Cross(centre, panelForce);
+            }
+
+            V3 force = rotation * localForce;
+            V3 torque = rotation * localTorque;
+
+            // NoteDrag: before the limiter and the two terms below.
+            V3 drag = force;
+            V3 dragTorque = torque;
+
+            if (cfg.LimitDrag != 0)
+            {
+                Real speed = relative.Magnitude;
+                if (speed > 0)
+                {
+                    V3 direction = relative * ((Real)1.0 / speed);
+                    Real opposing = -V3.Dot(force, direction);
+                    Real allowed = mass * speed / dt;
+                    if (opposing > allowed)
+                    {
+                        force = force + direction * (opposing - allowed);
+                        limited++;
+                    }
+                }
+
+                Real spinRate = w.Magnitude;
+                if (spinRate > 0)
+                {
+                    V3 axis = w * ((Real)1.0 / spinRate);
+                    Real opposing = -V3.Dot(torque, axis);
+                    Real allowed = smallI * spinRate / dt;
+                    if (opposing > allowed)
+                    {
+                        torque = torque + axis * (opposing - allowed);
+                        limited++;
+                    }
+                }
+            }
+
+            Real height = s.Pos[(3 * i + 1) * n + c];
+
+            if (accelerating)
+            {
+                V3 accelerationForce = V3.Read(wacc, 0) *
+                    (cfg.FluidAccel * cfg.Density * volume *
+                     ((Real)1.0 + cfg.AddedMass));
+
+                if (accelerationForce.Y > 0 && height >= 0)
+                {
+                    accelerationForce = new V3(accelerationForce.X, 0, accelerationForce.Z);
+                }
+
+                force = force + accelerationForce;
+            }
+
+            Real netDensity = excess * ((Real)1.0 - lift);
+            Real unclamped = netDensity;
+
+            if (cfg.UseRestore != 0)
+            {
+                netDensity = Restore(
+                    netDensity, height, cfg.RestoringDensity, cfg.WorldDepth,
+                    cfg.FloorRestores != 0);
+            }
+            else if (netDensity < 0 && height >= 0)
+            {
+                netDensity = 0;
+            }
+
+            if (netDensity != 0)
+            {
+                force = force + new V3(
+                    0,
+                    -netDensity * mass * cfg.Gravity / cfg.TissueDensity,
+                    0);
+            }
+
+            // D111: the part's whole displaced weight at its buoyancy centre, gated on the clamp.
+            if (cfg.OffsetTorque != 0 && arm != 0 && height <= 0 &&
+                !(netDensity == 0 && unclamped != 0))
+            {
+                int axis = thinAxis;
+                V3 lever = rotation * new V3(
+                    axis == 0 ? arm : 0,
+                    axis == 1 ? arm : 0,
+                    axis == 2 ? arm : 0);
+
+                V3 displaced = new V3(0, cfg.Density * volume * cfg.Gravity, 0);
+
+                torque = torque + V3.Cross(lever, displaced);
+            }
+
+            gl.LinkFluid[row] = relative.X;
+            gl.LinkFluid[rowsAll + row] = relative.Y;
+            gl.LinkFluid[2 * rowsAll + row] = relative.Z;
+            gl.LinkFluid[3 * rowsAll + row] = drag.X;
+            gl.LinkFluid[4 * rowsAll + row] = drag.Y;
+            gl.LinkFluid[5 * rowsAll + row] = drag.Z;
+            gl.LinkFluid[6 * rowsAll + row] = dragTorque.X;
+            gl.LinkFluid[7 * rowsAll + row] = dragTorque.Y;
+            gl.LinkFluid[8 * rowsAll + row] = dragTorque.Z;
+            gl.LinkFluid[9 * rowsAll + row] = torque.X;
+            gl.LinkFluid[10 * rowsAll + row] = torque.Y;
+            gl.LinkFluid[11 * rowsAll + row] = torque.Z;
+            gl.LinkFluid[12 * rowsAll + row] = force.X;
+            gl.LinkFluid[13 * rowsAll + row] = force.Y;
+            gl.LinkFluid[14 * rowsAll + row] = force.Z;
+            gl.LinkLimited[row] = (int)limited;
         }
 
         private static Real Restore(
@@ -6737,8 +6855,8 @@ namespace Evosim.Farm.Gpu.Dbl
 
         // ---- the grid
         private readonly Scratch<int> _lo, _hi, _counts, _start, _gcursor, _items, _partialN, _tileSum, _tileStart;
-        private readonly Scratch<int> _linkFlags, _stageN, _stageId, _stageSlot, _stagePart;
-        private readonly Scratch<Real> _linkPush;
+        private readonly Scratch<int> _linkFlags, _stageN, _stageId, _stageSlot, _stagePart, _linkLimited;
+        private readonly Scratch<Real> _linkPush, _linkFluid;
         private readonly Scratch<Real> _cell, _partial;
         private int _entryCap;
         private readonly int[] _one = new int[1];
@@ -6759,6 +6877,8 @@ namespace Evosim.Farm.Gpu.Dbl
         private readonly Action<Index1D, STopo, SState, SGlob, SWorld, SCfg> _water;
         private readonly Action<AcceleratorStream, Index1D, STopo, SState, SGlob, SWorld, SCfg> _waterOn;
         private readonly Action<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg> _contact;
+        private readonly Action<Index1D, STopo, SConst, SState, SPanels, SGlob, SCfg> _fluid;
+        private readonly Action<AcceleratorStream, Index1D, STopo, SConst, SState, SPanels, SGlob, SCfg> _fluidOn;
         private readonly Action<AcceleratorStream, Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg> _contactOn;
         private readonly Action<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace, SGlob,
             SSph, SSph, SGrid, SWorld, SCfg>[] _step;
@@ -6820,6 +6940,8 @@ namespace Evosim.Farm.Gpu.Dbl
             _tileSum = new Scratch<int>(_acc, 1);
             _tileStart = new Scratch<int>(_acc, 1);
             _linkPush = new Scratch<Real>(_acc, 3);
+            _linkFluid = new Scratch<Real>(_acc, 15);
+            _linkLimited = new Scratch<int>(_acc, 1);
             _linkFlags = new Scratch<int>(_acc, 1);
             _stageN = new Scratch<int>(_acc, 1);
             _stageId = new Scratch<int>(_acc, WholeStep.StageCap);
@@ -6869,6 +6991,7 @@ namespace Evosim.Farm.Gpu.Dbl
                 _censusKernel = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SGlob, SCfg>(WholeStep.Census, g);
                 _water = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks, g);
                 _contact = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks, g);
+                _fluid = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SState, SPanels, SGlob, SCfg>(WholeStep.FluidLinks, g);
             }
             else
             {
@@ -6878,6 +7001,7 @@ namespace Evosim.Farm.Gpu.Dbl
                 _censusKernel = _acc.LoadAutoGroupedStreamKernel<Index1D, SGlob, SCfg>(WholeStep.Census);
                 _water = _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks);
                 _contact = _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks);
+                _fluid = _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SConst, SState, SPanels, SGlob, SCfg>(WholeStep.FluidLinks);
             }
 
             _step = new Action<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace, SGlob,
@@ -6894,6 +7018,9 @@ namespace Evosim.Farm.Gpu.Dbl
                 _contactOn = grouped
                     ? _acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks, g)
                     : _acc.LoadAutoGroupedKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks);
+                _fluidOn = grouped
+                    ? _acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SConst, SState, SPanels, SGlob, SCfg>(WholeStep.FluidLinks, g)
+                    : _acc.LoadAutoGroupedKernel<Index1D, STopo, SConst, SState, SPanels, SGlob, SCfg>(WholeStep.FluidLinks);
             }
 
             _step[0] = grouped
@@ -7185,7 +7312,7 @@ namespace Evosim.Farm.Gpu.Dbl
 
             Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
                 "gpu-probe grid parts, ms a step: zero {0:0.000}, mean {1:0.000}, ranges {2:0.000}, scan {3:0.000}, scatter {4:0.000}; rows {5}, buckets {6}; " +
-                "the water pass before them {7:0.000}; the links' contacts before each class (in its time when concurrent) {8:0.000}",
+                "the water and fluid passes before them {7:0.000}; the links' contacts before each class (in its time when concurrent) {8:0.000}",
                 _probeGridPart[0] * f, _probeGridPart[1] * f, _probeGridPart[2] * f, _probeGridPart[3] * f, _probeGridPart[4] * f,
                 _probeRows, _probeBuckets, _probeWater * f, _probeContact * f));
 #if GPU_PHASE_PROBE
@@ -7324,6 +7451,10 @@ namespace Evosim.Farm.Gpu.Dbl
             _tileStart.Ensure(tiles);
             long linkRows = Math.Max(1, rows);
             _linkPush.Ensure(3 * linkRows);
+            // The fluid's rows are links whatever the contact's are: LinkStride a slot.
+            long fluidRows = Math.Max(1, (long)WholeStep.LinkStride * gUsed);
+            _linkFluid.Ensure(15 * fluidRows);
+            _linkLimited.Ensure(fluidRows);
             _linkFlags.Ensure(linkRows);
             _stageN.Ensure(linkRows);
             _stageId.Ensure(WholeStep.StageCap * linkRows);
@@ -7344,6 +7475,7 @@ namespace Evosim.Farm.Gpu.Dbl
             cfg.GUsed = gUsed;
             cfg.Count = list.Count;
             cfg.Rows = rows;
+            cfg.LinkRows = WholeStep.LinkStride * gUsed;
             cfg.Buckets = buckets;
             cfg.Mask = buckets - 1;
             cfg.EntryCap = _entryCap;
@@ -7379,28 +7511,33 @@ namespace Evosim.Farm.Gpu.Dbl
 
                 SSph committed = Sph(_committed), pending = Sph(1 - _committed);
 
-                // The water pass, a link a thread, ahead of each class's step on the class's own
-                // stream, so that under concurrent streams it runs beside the grid.
-                if (cfg.HasCurrent != 0)
+                // The water and the fluid, a link a thread, ahead of each class's step on the
+                // class's own stream, so that under concurrent streams they run beside the grid.
+                for (int c = 0; c < _classes.Length; c++)
                 {
-                    for (int c = 0; c < _classes.Length; c++)
+                    int used = _slots.Classes[c].Used;
+                    if (used == 0) continue;
+
+                    ClassSet set = _classes[c];
+                    SCfg cc = cfg;
+                    cc.N = set.Cap;
+                    cc.MaxN = set.M;
+                    cc.ClassUsed = used;
+                    cc.ClassLinks = _slots.Classes[c].Links;
+
+                    int linkThreads = used * cc.ClassLinks;
+                    if (_concurrent)
                     {
-                        int used = _slots.Classes[c].Used;
-                        if (used == 0) continue;
-
-                        ClassSet set = _classes[c];
-                        SCfg cc = cfg;
-                        cc.N = set.Cap;
-                        cc.MaxN = set.M;
-                        cc.ClassUsed = used;
-                        cc.ClassLinks = _slots.Classes[c].Links;
-
-                        int linkThreads = used * cc.ClassLinks;
-                        if (_concurrent) _waterOn(_streams[c], linkThreads, set.Topo, set.StateSet, gl, sw, cc);
-                        else _water(linkThreads, set.Topo, set.StateSet, gl, sw, cc);
+                        if (cfg.HasCurrent != 0) _waterOn(_streams[c], linkThreads, set.Topo, set.StateSet, gl, sw, cc);
+                        _fluidOn(_streams[c], linkThreads, set.Topo, set.ConstSet, set.StateSet, set.PanelSet, gl, cc);
                     }
-                    if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeWater += pn - pt; pt = pn; }
+                    else
+                    {
+                        if (cfg.HasCurrent != 0) _water(linkThreads, set.Topo, set.StateSet, gl, sw, cc);
+                        _fluid(linkThreads, set.Topo, set.ConstSet, set.StateSet, set.PanelSet, gl, cc);
+                    }
                 }
+                if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeWater += pn - pt; pt = pn; }
 
                 _counts.View.MemSetToZero();
                 if (probe) GridPart(0, ref pt);
@@ -7596,6 +7733,7 @@ namespace Evosim.Farm.Gpu.Dbl
             OvHeld = _ovHeld.View, NHeld = _nHeld.View, HeldId = _heldId.View, BedGlass = _bedGlass.View,
             Census = _census.View, Overflow = _overflow.View,
             LinkPush = _linkPush.View, LinkFlags = _linkFlags.View, StageN = _stageN.View,
+            LinkFluid = _linkFluid.View, LinkLimited = _linkLimited.View,
             StageId = _stageId.View, StageSlot = _stageSlot.View, StagePart = _stagePart.View,
 #if GPU_PHASE_PROBE
             Phase = _phase.View,
@@ -8287,6 +8425,7 @@ namespace Evosim.Farm.Gpu.Dbl
             _items.Dispose(); _partial.Dispose(); _partialN.Dispose(); _cell.Dispose();
             _tileSum.Dispose(); _tileStart.Dispose();
             _linkPush.Dispose(); _linkFlags.Dispose(); _stageN.Dispose();
+            _linkFluid.Dispose(); _linkLimited.Dispose();
             _stageId.Dispose(); _stageSlot.Dispose(); _stagePart.Dispose();
             _inst.Dispose(); _wr.Dispose(); _wi.Dispose(); _stock.Dispose();
         }
