@@ -242,11 +242,14 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    rows, lineage and checkpoints are compared with round 50's own, the checkpoint payloads byte
    for byte. The same windows on the CPU's transport, alternated with them, are the control: a
    difference in both is the build's, and a difference in the card's alone is the card's. Their
-   paces give the gain at round 50's crowds in place of the 13% estimate. Round 51's queue then
-   sets `EVOSIM_GPU_TRANSPORT=1` and reads `transport: card` from each seed's manifest and
-   `dynamics transport` from its header. It launches a seed the card refuses on the CPU's
-   transport, and a seed the card ends mid-run is resumed from its last checkpoint. The hourly
-   watch adds one `nvidia-smi` reading of the card's temperature, power and load.
+   paces give the gain at round 50's crowds in place of the 13% estimate. Round 51's queue is
+   `scripts/farm-queue.ps1 -GpuTransport` (the tools table). It logs each seed's `transport`
+   and header engine words and the card's temperature, power and load at each seed's start and
+   end. Both of its card faults were rehearsed on 2026-09-26 on round 50's world. A box world
+   the card declines was relaunched on the CPU's transport. A seed stopped at 160 s was resumed
+   from 170 s on the CPU's transport, and the two parts joined were the CPU-only control in 23
+   samples, 432 lineage rows and the checkpoint payloads at 100 to 400 s
+   (`scratch/farm-queue-test/`). The hourly watch adds one `nvidia-smi` reading.
 4. The lit link is read and not built: `scripts/reads/linklight.py <arm>` splits a stomach
    body's income into its links' light and its food, by window and by line (the first decision
    above). It runs on round 50 when that round is read.
@@ -274,7 +277,7 @@ CLAUDE.md holds the commands and the gotchas. This is where each tool sits.
 | | |
 |---|---|
 | the farm | `scripts/run-farm.ps1 <arm> -Launcher rounds/env-rNN.ps1 -Seed N -Seconds S -Threads 16`, run from the tree the round belongs to, since the farm hashes the source above its working directory; `-ResumeFrom <run> -At <s>` continues a run from a checkpoint; stopped by `stop-arm.ps1`, which writes a `STOP` file |
-| launching | a round's queue script under `scratch/rNN-launch/`, started detached, refusing a dirty tree; the pre-registration's record is the manifest's `gitCommit` on a clean tree |
+| launching | `scripts/farm-queue.ps1 -Round rNN -Tree <tree> -Launcher rounds/env-rNN.ps1 -Seeds 1,2,3 [-GpuTransport]`, started detached, refusing a dirty tree; the pre-registration's record is the manifest's `gitCommit` on a clean tree. Under `-GpuTransport` it relaunches a seed the card refuses on the CPU's transport and resumes one the card ends into `<arm>c` from its last checkpoint; a read of such a seed joins the two at that checkpoint |
 | reading | the round's reader `scripts/reads/rNN-read.py` (every clause, per seed, with a held line per clause); the entry's own reads under `scripts/reads/rNN-entry/`, their outputs under `logbook/specs/rNN-read/`; `scripts/analyse-arm.ps1` by column name, never positionally |
 | checking | `Evosim.Farm.exe --verify-checkpoint <ckpt> <s> <out> <threads>` for a checkpoint member by member; `scripts/compare-det.py` for a resume against its run; a film window's identity rows for V1 |
 | pictures | `scripts/theatre-snap.ps1 <arm> -From snapshot -At <s>` for a still from the record; `scripts/theatre-film.ps1` from a checkpoint for a clip; every render checked on a sheet against a reference before the owner sees it |
