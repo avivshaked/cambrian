@@ -1,7 +1,7 @@
 # W1's misses: do the failing matter-only founders carry an absorptive node in their genome
 # (an adult mixotroph whose newborn lost the stomach), where the passing ones do not?
 import glob, gzip, json, os, sys
-sys.path.insert(0, 'scratch/wt-r49/scripts/reads')
+sys.path.insert(0, 'scripts/reads')
 run = sorted(glob.glob('runs/r49-s1/2026*'))[-1]
 founders = {}
 with open(run + '/lineage.jsonl', encoding='utf-8') as f:

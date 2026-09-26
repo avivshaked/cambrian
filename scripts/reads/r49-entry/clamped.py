@@ -1,7 +1,7 @@
 # How many founders the flat-bed clamp lifted: each founder's first positions row (within one
 # sample of its birth) against the bed under it and the bed at the tank's centre.
 import glob, json, struct, sys
-sys.path.insert(0, 'scratch/wt-r49/scripts/reads')
+sys.path.insert(0, 'scripts/reads')
 import runrec
 arm = sys.argv[1] if len(sys.argv) > 1 else 'r49-s1'
 run = sorted(glob.glob(f'runs/{arm}/2026*'))[-1]

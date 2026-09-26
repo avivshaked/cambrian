@@ -1,0 +1,8 @@
+r49-s1: 12 stomach children born, 12 dead, 0 alive at 30000 s
+  all: median age at death 2228 s
+  parent stomach: 12 dead, median 2228 s, quartiles 290 to 2638 s
+  parent founder yes: 12 dead, median 2228 s, quartiles 290 to 2638 s
+  generation 1: 12 dead, median 2228 s, quartiles 290 to 2638 s
+  birth fraction >=0.3: 10 dead, median 2228 s, quartiles 321 to 2608 s
+  birth fraction 0.1-0.3: 2 dead, median 1456 s
+  gestation lump: 12 dead, median 2228 s, quartiles 290 to 2638 s

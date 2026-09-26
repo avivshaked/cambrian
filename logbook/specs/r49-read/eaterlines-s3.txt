@@ -1,0 +1,4 @@
+r49-s3: 84 pool founders, 0 of their lines with 10 or more members
+r49-s3: 2 lines of any source with ten or more pure stomachs
+  line of 29 (floor, pool None, founder abs 1 pho 0 jnt 1, landed 9.5 s): 59 born, 59 pure stomachs, 4 generations, peak 37 living at 2611 s, gone at 6700 s
+  line of 5854 (trickle, pool None, founder abs 1 pho 0 jnt 1, landed 5967.5 s): 54 born, 54 pure stomachs, 13 generations, peak 19 living at 7491 s, alive at the end

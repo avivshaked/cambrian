@@ -1,7 +1,7 @@
 # Leaf founders (matter eaters) under the depth rule: first recorded height, age at death, bred.
 # Usage: leafdepth.py <arm> [runs root, default runs]
 import glob, json, sys, statistics as st
-sys.path.insert(0, 'scratch/wt-r49/scripts/reads')
+sys.path.insert(0, 'scripts/reads')
 import runrec
 arm = sys.argv[1]
 root = sys.argv[2] if len(sys.argv) > 2 else 'runs'

@@ -1,0 +1,17 @@
+runrec: 2026-09-25-190843-f0794a8b: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+r49-s1: bed at the tank centre -45.02 m; matter-only founders placed within 10 s: 334
+  over a bed more than 1 m deeper than the centre's: 258, W1 misses 31
+  elsewhere: 76, W1 misses 0
+  first height above the centre's bed, 0.25 m bins: founders (misses)
+    -1.00 to -0.75 m:    1 (0)
+    +0.00 to +0.25 m:    1 (0)
+    +0.25 to +0.50 m:   10 (0)
+    +0.50 to +0.75 m:   47 (6)
+    +0.75 to +1.00 m:   89 (15)
+    +1.00 to +1.25 m:   52 (10)
+    +1.25 to +1.50 m:   13 (0)
+    +1.50 to +1.75 m:    1 (0)
+    +2.00 to +2.25 m:    1 (0)
+    +3.00 to +3.25 m:    1 (0)
+    +3.25 to +3.50 m:    1 (0)
+    +3.50 to +3.75 m:    1 (0)

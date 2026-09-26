@@ -1,0 +1,18 @@
+r49-s1 at 4000 s: 1497 alive, 187 jointed, 20 lines
+  line of 34 (founded 13.0 s, floor, founder jnt 0 pho 1 abs 0): 925 alive, 0 jointed (0%)
+  line of 39 (founded 15.5 s, floor, founder jnt 0 pho 1 abs 0): 304 alive, 0 jointed (0%)
+  line of 13 (founded 5.0 s, floor, founder jnt 1 pho 1 abs 0): 157 alive, 138 jointed (88%)
+  line of 42 (founded 16.5 s, floor, founder jnt 0 pho 1 abs 0): 34 alive, 0 jointed (0%)
+  line of 11 (founded 4.5 s, floor, founder jnt 1 pho 1 abs 0): 27 alive, 26 jointed (96%)
+r49-s1 at 16000 s: 2665 alive, 30 jointed, 15 lines
+  line of 39 (founded 15.5 s, floor, founder jnt 0 pho 1 abs 0): 2354 alive, 0 jointed (0%)
+  line of 42 (founded 16.5 s, floor, founder jnt 0 pho 1 abs 0): 168 alive, 0 jointed (0%)
+  line of 34 (founded 13.0 s, floor, founder jnt 0 pho 1 abs 0): 97 alive, 0 jointed (0%)
+  line of 13 (founded 5.0 s, floor, founder jnt 1 pho 1 abs 0): 35 alive, 22 jointed (63%)
+  line of 14098 (founded 15528.5 s, trickle, founder jnt 1 pho 1 abs 0): 1 alive, 1 jointed (100%)
+r49-s1 at 30000 s: 8410 alive, 3 jointed, 6 lines
+  line of 39 (founded 15.5 s, floor, founder jnt 0 pho 1 abs 0): 8405 alive, 0 jointed (0%)
+  line of 41084 (founded 26165.0 s, pool, founder jnt 1 pho 0 abs 1): 1 alive, 1 jointed (100%)
+  line of 53385 (founded 29679.0 s, pool, founder jnt 1 pho 0 abs 1): 1 alive, 1 jointed (100%)
+  line of 53539 (founded 29738.0 s, trickle, founder jnt 1 pho 0 abs 1): 1 alive, 1 jointed (100%)
+  line of 53790 (founded 29815.5 s, trickle, founder jnt 0 pho 1 abs 0): 1 alive, 0 jointed (0%)
