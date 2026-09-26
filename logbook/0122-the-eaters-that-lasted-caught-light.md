@@ -13,9 +13,9 @@ within ten seconds of landing, and the one-part pool stomachs lived about twice 
 from random founders that happened to be a stomach on a link. In this world a link catches light at
 half a leaf's rate, so those bodies were part plant. The largest, in seed 2, ran eleven generations
 and faded as its members with the link died out first (corrected 2026-09-26, below). The depth rule
-set the trickle's leaves where their matter was richest, deep in the dark, and they died in about a minute and a half. A fault in the placer
-held most of them at 44 m, and it is fixed. The round's own checkpoints gave the first faithful film
-windows.
+set the trickle's leaves where their matter was richest, deep in the dark, and they died in about a
+minute and a half. A fault in the placer held most of them at 44 m, and it is fixed. The round's own
+checkpoints gave the first faithful film windows.
 
 ## The round asked whether a founder could earn its last tenth
 
