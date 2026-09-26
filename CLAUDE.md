@@ -1586,7 +1586,7 @@ actually verifying it.
   instead: one heavy job at a time at about a third of the machine, with Intel's power limits
   set in the old BIOS. HANDOFF carries the current ruling, and the owner's Desktop carries the
   flash steps. The revision is `Update Revision` under
-  `HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor `, little-endian (`0E 01 00 00` is
+  `HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor\0`, little-endian (`0E 01 00 00` is
   0x10E); throttling is `\Processor Information(_Total)\Performance Limit Flags` (0 is none).
   The ASUS WMI classes in `root\wmi` (`ASUSManagement`, `AsusAtkWmi_WMNB`) write the SMBus,
   boot order, passwords and fan curves and are never called.
