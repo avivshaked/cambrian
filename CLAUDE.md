@@ -1675,7 +1675,10 @@ actually verifying it.
   heredoc, with the heredoc's backslash halving in mind); **launch no subagent that edits
   files**, since its tools are Write and Edit, and write the code in the main session (read-only
   agents such as `Explore` and `claude-code-guide` are fine; this overrides the delegation
-  memory for editing tasks); and **every write under `~/.claude/` asks the owner** whatever the
+  memory for editing tasks), except a story film's writer and editor, which write their own files
+  through the shell, never with Write or Edit, inside the story's folder their brief names (the
+  owner, 2026-09-26: a writer with no file to write sent its builder in 17 pieces to a server it
+  started for them, and spent ten steps on the shell's quoting); and **every write under `~/.claude/` asks the owner** whatever the
   tool, the memory directory included, so memory edits are rare and batched and durable rules
   go here. The fix is the owner's setting and never the agent's: the documented allow rule for
   this tree, untested here, is `Edit(//d/Projects/experiments/evolution-simulator/**)` (and the
