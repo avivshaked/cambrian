@@ -46,7 +46,6 @@ namespace Evosim.Farm
                 Driver = gpu.Driver,
                 GroupSize = gpu.GroupSize,
                 Mean = o.SerialMean ? "serial" : "chunked",
-                Transport = o.Transport,
                 ClassLinks = string.Join("/", System.Array.ConvertAll(o.ClassLinks, x => x.ToString(CultureInfo.InvariantCulture))),
                 ClassNeurons = string.Join("/", System.Array.ConvertAll(o.ClassNeurons, x => x.ToString(CultureInfo.InvariantCulture))),
                 KernelHash = kernelHash ?? "unknown",

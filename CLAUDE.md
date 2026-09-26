@@ -1403,6 +1403,10 @@ actually verifying it.
   to that arithmetic in Core is therefore made in the kernel in the same change.
   `GpuTransportTests` runs the kernels on ILGPU's CPU accelerator and fails when the two part,
   byte for byte in the world's state. A digest comparison on the card is the card's own check.
+  The flag works under either engine: under the cpu engine the device opens a context of its own.
+  The launch asks it for the grid's tables first (`GridField.OfferTransportDevice`) and refuses a
+  world the card will not carry, and `run.json` says `transport: cpu` or `card`. Using the card
+  under an overnight round is the owner's call, since the card works by day only.
   **The card's copies were pageable until the same day.** A managed array moves at about 6 GB/s.
   Pinned (`GC.AllocateArray(pinned: true)`) and registered (`CreatePageLockFromPinned`), the same
   array moves at about 21 GB/s through the same `CopyFromCPU` and `CopyToCPU` calls, because the

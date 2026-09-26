@@ -61,7 +61,7 @@ namespace Evosim.Farm.Tests
 
             var cpuSnow = (GridField)cpu.Nutrients;
             var devSnow = (GridField)dev.Nutrients;
-            devSnow.TransportDevice = device;
+            Assert.True(devSnow.OfferTransportDevice(device, dev.Config.Current), "the device declined the tank's tables");
 
             double seconds = 1234.5;
             int steps = 0;

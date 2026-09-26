@@ -74,6 +74,31 @@ namespace Evosim.Farm.Gpu
         private GCHandle _pin;
         private PageLockScope<double> _stockLock;
 
+        // A context and card of this device's own, for a run whose bodies step on the CPU.
+        private Context _ownContext;
+        private Accelerator _ownAccelerator;
+
+        /// <summary>
+        /// A transport on a context and card of its own, for a run whose bodies step on the CPU
+        /// (EVOSIM_ENGINE cpu with EVOSIM_GPU_TRANSPORT). Disposing it releases both.
+        /// </summary>
+        public static GpuTransport OpenOnCard()
+        {
+            Context context = Context.Create(b => b.Cuda().EnableAlgorithms());
+            if (context.GetCudaDevices().Count == 0)
+            {
+                context.Dispose();
+                throw new NotSupportedException(
+                    "EVOSIM_GPU_TRANSPORT puts the snow's transport on a CUDA card, and ILGPU finds none on this machine.");
+            }
+
+            Accelerator accelerator = context.GetCudaDevice(0).CreateAccelerator(context);
+            return new GpuTransport(accelerator) { _ownContext = context, _ownAccelerator = accelerator };
+        }
+
+        /// <summary>The card's name, for the log.</summary>
+        public string DeviceName => _acc.Name;
+
         public GpuTransport(Accelerator accelerator)
         {
             _acc = accelerator ?? throw new ArgumentNullException(nameof(accelerator));
@@ -198,6 +223,10 @@ namespace Evosim.Farm.Gpu
         {
             ReleaseTables();
             Unpin();
+            _ownAccelerator?.Dispose();
+            _ownContext?.Dispose();
+            _ownAccelerator = null;
+            _ownContext = null;
         }
 
         private void Pin(double[] stock)

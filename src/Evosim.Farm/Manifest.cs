@@ -57,6 +57,9 @@ namespace Evosim.Farm
         /// <summary>Threads the body pass ran on. A pace setting, never a realisation.</summary>
         public int Threads;
 
+        /// <summary>Where the snow's transport ran: <c>cpu</c>, or <c>card</c> under EVOSIM_GPU_TRANSPORT.</summary>
+        public string Transport = "cpu";
+
         /// <summary>
         /// Which engine stepped the bodies: <see cref="EngineName"/>, or <c>gpu</c>
         /// (logbook/specs/gpu-port-spec.md section 5), whose facts are in <see cref="Gpu"/>.
@@ -455,6 +458,10 @@ namespace Evosim.Farm
             // the same kind of fact: PhysX parted from its recording above 0 workers and this
             // solver does not, so a thread count is not a realisation.
             w.Field("threads", m.Threads);
+
+            // Where the snow's transport ran: the CPU, or the card with the CPU's bits
+            // (EVOSIM_GPU_TRANSPORT). A pace setting, never a realisation, like the thread count.
+            w.Field("transport", m.Transport ?? "cpu");
             w.Field("processId", m.ProcessId);
 
             // The gpu engine's block (logbook/specs/gpu-port-spec.md section 5), written only by
@@ -470,7 +477,6 @@ namespace Evosim.Farm
                 w.Field("driver", g.Driver);
                 w.Field("groupSize", g.GroupSize);
                 w.Field("mean", g.Mean);
-                w.Field("transport", g.Transport);
                 w.Field("classLinks", g.ClassLinks);
                 w.Field("classNeurons", g.ClassNeurons);
                 w.Field("kernelHash", g.KernelHash);
@@ -869,7 +875,6 @@ namespace Evosim.Farm
         public string Driver;
         public int GroupSize;
         public string Mean;
-        public bool Transport;
         public string ClassLinks;
         public string ClassNeurons;
         public string KernelHash;

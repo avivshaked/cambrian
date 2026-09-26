@@ -106,7 +106,11 @@ world from 4,000 s it took the card from 4.0x to 6.0 and 6.9x real time, in runs
 one sitting. That is 40 to 50 ms a step saved at any crowd. Every run was byte for byte the run without
 it, the snow's whole stock included (`logbook/specs/gpu-probe-2026-09-26.txt`). The card's host
 arrays became page-locked in the same change, which saved about 3 ms a step at that crowd and
-should save more at round 48's (not measured).
+should save more at round 48's (not measured). The CPU farm can use the device too: with
+`EVOSIM_GPU_TRANSPORT` on the cpu engine the bodies stay on the CPU and the transport goes to the
+card. At 16 threads on the same world that went from 3.7 to 3.8x to 5.0x real time, identical to
+the CPU-only run. The launch refuses a world the card will not carry, and `run.json` records
+`transport` as `cpu` or `card`. Whether overnight rounds may use it is the owner's (queue item 2).
 
 The probe reads `EVOSIM_GPU_PROBE` from the process environment directly, which bites. The
 script's `-Env` passes settings as arguments and does not reach it, and the binding warns that it
@@ -226,7 +230,8 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    whole when one body in it is new, and sending the changed rows would save 3 to 4% of the wall
    (an estimate). Identity on the card is claimed at two group sizes (CLAUDE.md). Whether a round
    runs on the card is the owner's: single precision is a new realisation of every seed. So is
-   whether a CPU round may use the card for the transport alone, which gives the CPU's bits.
+   whether an overnight CPU round may use the card for the transport alone. That gives the CPU's
+   bits and ran 34% faster on round 50's world (put to the owner on 2026-09-26, not yet ruled).
 3. The lit link is read and not built: `scripts/reads/linklight.py <arm>` splits a stomach
    body's income into its links' light and its food, by window and by line (the first decision
    above). It runs on round 50 when that round is read.

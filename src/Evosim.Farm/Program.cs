@@ -278,15 +278,25 @@ namespace Evosim.Farm
                 engineToken = gpu.HeaderToken();
 
                 // The snow's transport on the same card, with the CPU's bits; the grid keeps its
-                // decisions and falls back to the CPU if the device declines its tables.
-                if (gpu.Options.Transport && world.Nutrients is GridField snow)
-                {
-                    snow.TransportDevice = gpu.CreateTransport();
-                }
+                // decisions (GpuTransport).
+                if (gpu.Options.Transport) OfferTransport(world, config, gpu.CreateTransport());
 #else
                 throw new NotSupportedException(
                     "EVOSIM_ENGINE is gpu and this build of the farm has no gpu engine: it is compiled " +
                     "in by src/Evosim.Farm's own csproj (EVOSIM_GPU), and never into Unity.");
+#endif
+            }
+            else if (settings.GpuTransport)
+            {
+#if EVOSIM_GPU
+                // The bodies on the CPU and the snow's transport on the card, on a context of its
+                // own: the same bits as the CPU's transport, sooner.
+                OfferTransport(world, config, Evosim.Farm.Gpu.GpuTransport.OpenOnCard());
+                engineToken = RunManifest.EngineName + " transport";
+#else
+                throw new NotSupportedException(
+                    "EVOSIM_GPU_TRANSPORT puts the snow's transport on the card, and this build of the " +
+                    "farm has no gpu code: it is compiled in by src/Evosim.Farm's own csproj (EVOSIM_GPU).");
 #endif
             }
 
@@ -320,6 +330,8 @@ namespace Evosim.Farm
             }
 #endif
             Manifest.RecordReefs(manifest, world.Reefs);
+
+            if (settings.GpuTransport) manifest.Transport = "card";
 
             // D102, set here for RecordBed's reason and from the same world: the ratio the streams
             // were built to, which the world's constructor derived when it told the field what
@@ -495,6 +507,22 @@ namespace Evosim.Farm
         /// filesystem probe twice a simulated second is.
         /// </para>
         /// </remarks>
+#if EVOSIM_GPU
+        // The device on the snow's grid, or the launch refused: a run that asked for the card and
+        // would quietly carry its snow on the CPU is a pace reading of the wrong thing.
+        private static void OfferTransport(World world, RunConfig config, Evosim.Farm.Gpu.GpuTransport device)
+        {
+            if (world.Nutrients is GridField snow && snow.OfferTransportDevice(device, config.Current)) return;
+
+            device.Dispose();
+            throw new ArgumentException(
+                "EVOSIM_GPU_TRANSPORT is on and this world's snow is not one the card carries: the " +
+                "card takes a tank's grid under the streams with the hoisted terms, and this world " +
+                "has " + (world.Nutrients is GridField ? "another transport path" : "no grid for its snow") +
+                ". Turn the setting off.");
+        }
+#endif
+
         private static int Loop(
             EnvSettings settings, RunConfig config, World world, RunDirectory dir, Report report,
             RunManifest manifest, string outPath, float physicsDt, int stepsPerMetabolic,
@@ -822,6 +850,7 @@ namespace Evosim.Farm
 
                 sampler.Close();
                 sim.Dispose();
+                ((world.Nutrients as GridField)?.TransportDevice as IDisposable)?.Dispose();
                 engine?.Dispose();
                 dir.Dispose();
 
@@ -953,6 +982,7 @@ namespace Evosim.Farm
             report.Flush();
 
             sim.Dispose();
+            ((world.Nutrients as GridField)?.TransportDevice as IDisposable)?.Dispose();
             engine?.Dispose();
             dir.Dispose();
 

@@ -2809,6 +2809,21 @@ namespace Evosim.Core
         /// </summary>
         public IPotentialTransportDevice TransportDevice { get; set; }
 
+        /// <summary>
+        /// Hands the grid <paramref name="device"/> and asks it now for the tables of
+        /// <paramref name="current"/>, rather than at the first step: true when it took them, so a
+        /// launch that asked for a device can refuse a world the device would not carry. The
+        /// tables are geometry and the streams' own seed, so building them early moves nothing.
+        /// </summary>
+        public bool OfferTransportDevice(IPotentialTransportDevice device, CurrentField current)
+        {
+            TransportDevice = device;
+            if (device == null || current == null) return false;
+
+            PlanForDevice(device, current);
+            return _deviceTakes;
+        }
+
         // What the device was handed, so that a change of device, current, floor, reefs or hoist
         // switches plans again rather than carrying the old tables.
         private IPotentialTransportDevice _deviceFor;
@@ -2828,20 +2843,11 @@ namespace Evosim.Core
             IPotentialTransportDevice device = TransportDevice;
             if (device == null) return false;
 
-            bool hoists = PrecomputeStreamsTerms && PrecomputeBedColumns;
-
             if (!ReferenceEquals(_deviceFor, device) || !ReferenceEquals(_deviceCurrent, current) ||
                 !ReferenceEquals(_deviceBed, current.Bed) || !ReferenceEquals(_deviceReefs, current.Reefs) ||
-                _deviceHoists != hoists)
+                _deviceHoists != (PrecomputeStreamsTerms && PrecomputeBedColumns))
             {
-                _deviceFor = device;
-                _deviceCurrent = current;
-                _deviceBed = current.Bed;
-                _deviceReefs = current.Reefs;
-                _deviceHoists = hoists;
-                PotentialTransportPlan plan = PlanPotentialTransport(current);
-                _deviceTakes = plan != null && device.Accept(plan);
-                _deviceInstant ??= new double[PotentialTransportPlan.InstantLength];
+                PlanForDevice(device, current);
             }
 
             if (!_deviceTakes) return false;
@@ -2865,6 +2871,18 @@ namespace Evosim.Core
 
             device.Download(_stock);
             return true;
+        }
+
+        private void PlanForDevice(IPotentialTransportDevice device, CurrentField current)
+        {
+            _deviceFor = device;
+            _deviceCurrent = current;
+            _deviceBed = current.Bed;
+            _deviceReefs = current.Reefs;
+            _deviceHoists = PrecomputeStreamsTerms && PrecomputeBedColumns;
+            PotentialTransportPlan plan = PlanPotentialTransport(current);
+            _deviceTakes = plan != null && device.Accept(plan);
+            _deviceInstant ??= new double[PotentialTransportPlan.InstantLength];
         }
 
         // The tables SampleEdges' hoisted tank path reads, flattened, or null where the CPU would

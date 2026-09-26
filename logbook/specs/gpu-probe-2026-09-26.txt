@@ -197,6 +197,18 @@ gpu-probe t=27699 s, ms a step: grid 1.569, classes 0.836 / 1.464 / 2.587 / 2.00
 # 48's config, so it was not measured). The transport saves 40 to 50 ms a step at any crowd, because
 # its grid is the tank's.
 #
+# The same device under the CPU farm (EVOSIM_ENGINE cpu with EVOSIM_GPU_TRANSPORT): the bodies on
+# the CPU and the snow's transport on the card, on a context of the device's own. The launch now asks
+# the device for the grid's tables before the run starts (GridField.OfferTransportDevice) and refuses
+# a world the card would not carry, and run.json records transport "cpu" or "card" beside the thread
+# count. On round 50's world at 16 threads, alternated in one sitting:
+#   the CPU's transport   3.67x  3.81x   136.3  131.2 ms a metabolic step
+#   the card's transport  5.01x  4.97x    99.8  100.7
+# All four identical to this morning's m50cpu16 over 300 digest steps and 30 samples, and the
+# payloads of the transport runs identical at all three checkpoints. The CPU farm is 34% faster at
+# this crowd with the card carrying one pass at a few percent of its time (an estimate: about 5 ms
+# of kernels a 100 ms step). Whether an overnight round may use it is the owner's.
+#
 # A test build that passed and then failed: the planted swap was undone with Copy-Item, which keeps
 # the backup's older timestamp, so MSBuild judged the DLL built from the swap up to date and the full
 # Farm suite ran the swap. Touch a file restored by copy before building.
