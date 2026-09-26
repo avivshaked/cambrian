@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "8fd40c21ae758e9e",
+  "configHash": "356e87c75e1338e9",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -256,6 +256,7 @@
     "floorRefugeMetres": 0,
     "foundersFollowFood": false,
     "foundersFollowFoodDepth": false,
+    "foundersFollowIncomeDepth": false,
     "foundersFollowMatter": false,
     "handlingCostPerJouleEaten": 0.1,
     "initialMatterPerCubicMetre": 1,

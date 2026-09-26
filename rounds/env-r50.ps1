@@ -5,7 +5,7 @@
 #   the dissolved matter (EVOSIM_FOUNDERS_INCOME_DEPTH 1; header `founders in their food at its
 #   depth, leaves where they earn most`). A stomach keeps the round 48 rule. A tunable, off in
 #   every recorded config. Round 49's trickle leaves were set near the bed, at a median 44 m
-#   down, and died at a median 81 and 99 s in its first two seeds.
+#   down, and died at a median 81, 99 and 68 s in its three seeds.
 # - The founder clamp's repair (no knob, founder-depth-bed): a founder is held above the bed
 #   under it, not the bed at the tank's centre. Bit-identical on a flat floor; on round 49's
 #   tilted bed it moves every founder whose food lies deeper than the centre's bed.
