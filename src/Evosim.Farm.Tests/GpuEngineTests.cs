@@ -352,12 +352,14 @@ namespace Evosim.Farm.Tests
             block["EVOSIM_GPU_DEVICE"] = "cpu";
             block["EVOSIM_GPU_PRECISION"] = "double";
             block["EVOSIM_GPU_GROUP"] = "64";
+            block["EVOSIM_GPU_CONCURRENT"] = "1";
             EnvSettings s = EnvBinding.Read(EnvBinding.Of(block));
 
             Assert.True(s.EngineIsGpu);
             Assert.Equal("cpu", s.GpuDevice);
             Assert.Equal("double", s.GpuPrecision);
             Assert.Equal(64, s.GpuGroup);
+            Assert.True(s.GpuConcurrent);
             Assert.Equal(plain, EnvBinding.BuildConfig(s).Hash());
             Assert.Empty(EnvBinding.UnknownNames(block.Keys));
         }
@@ -476,6 +478,45 @@ namespace Evosim.Farm.Tests
             Assert.Equal(0, backend.RefusedForClass);
             Assert.Equal(0L, backend.OverflowTotal);
             _out.WriteLine("pairs " + gpu.OverlapPairs + ", bed or glass " + gpu.BedOrGlassBodies);
+        }
+
+        /// <summary>
+        /// EVOSIM_GPU_CONCURRENT: with the size classes on a stream each, the engine still gives
+        /// the solver's numbers to the bit after every block, the death and the birth included.
+        /// The card's own check is the digest at two group sizes (13af2c3's message).
+        /// </summary>
+        [Fact]
+        public void TheClassesOnConcurrentStreamsAreTheSolver()
+        {
+            (DynamicsWorld cpu, World coreA) = Pair(true, true);
+            (DynamicsWorld gpu, World coreB) = Pair(true, true);
+
+            Populate(cpu, coreA, 9, 11UL, 1);
+            Populate(gpu, coreB, 9, 11UL, 1);
+
+            GpuOptions options = GpuTank.CpuDouble();
+            options.Concurrent = true;
+            using var backend = new GpuBackend(gpu.Config, options);
+            gpu.UseBackend(backend);
+            Assert.EndsWith(" concurrent", backend.HeaderToken());
+
+            for (int block = 0; block < 4; block++)
+            {
+                cpu.StepBlock(25);
+                gpu.StepBlock(25);
+                AssertSame(cpu, gpu, "after block " + block);
+
+                if (block == 1)
+                {
+                    cpu.Remove(cpu.Creatures[0].Id);
+                    gpu.Remove(gpu.Creatures[0].Id);
+                    Populate(cpu, coreA, 1, 99UL, 50);
+                    Populate(gpu, coreB, 1, 99UL, 50);
+                }
+            }
+
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
         }
 
         /// <summary>Section 8's test 5: a lost body hashes the same on both engines from its loss on.</summary>
