@@ -70,8 +70,8 @@ logbook entry and pre-registration. It is told that the runs are read-only and t
 runs. It runs in two passes. The first returns `arc.md` alone (the brief's "What you hand back"), and
 the owner rules on it before a caption is written. The second pass works from the arc as ruled.
 
-The writer reads the runs through the shell and writes its own files into `scratch/story/<round>/`
-through the shell as well, never with the Write or Edit tools (the owner, 2026-09-26). That is
+The writer reads the runs through the shell. It writes its own files into `scratch/story/<round>/`
+the same way, never with the Write or Edit tools (the owner, 2026-09-26). That is
 `arc.md` in the first pass, and in the second `story.md` and the builder script, which it runs.
 From 2026-09-25 until then it wrote nothing and returned its files as text. Round 49's second
 pass sent a builder of several hundred lines in 17 pieces to a server it started to hold them, and
