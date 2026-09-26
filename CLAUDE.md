@@ -1389,6 +1389,12 @@ actually verifying it.
   is about six times faster and is a new realisation of every seed. Identity on the card
   holds across launch shapes, so a GPU identity claim is made at two group sizes. Run GPU
   code in the foreground with nothing else on the machine until the owner rules otherwise.
+  **The card fuses a multiply and an add unless told not to.** Under the farm's `Cuda()` context
+  the PTX compiler contracts `x*y+z` into one fused operation, so 14% of such doubles and nearly
+  half of a 24-term chain differ from the CPU, in single the same. A bit cast around the product
+  changes nothing; a product written as inline `mul.rn.f64` (`CudaAsm.Emit`) is never contracted,
+  and with it every pattern tried matched the CPU bit for bit (`logbook/specs/fma-probe/`,
+  2026-09-26). A card kernel that must reproduce a CPU number writes every product that way.
   **The card's probe does not go through the binding**: `EVOSIM_GPU_PROBE=1` is read from the
   process environment, so `run-farm.ps1 -Env`, which hands settings over as `NAME=VALUE`
   arguments, never reaches it, and the farm warns that it ignores the variable while the probe

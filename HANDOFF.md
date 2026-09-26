@@ -208,13 +208,15 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
 2. The card is worked by day, with nothing else on the machine, from `scratch/wt-probe`
    (`gpu-probe`, merged into main at `bf1add4`; merge main in before a day's work). It runs round
    48's crowd at 3.71x (above). Round 50's seeds are the next reference crowds once they have
-   checkpoints. The next measures come largest first. The first is whether the card's doubles fuse a
-   multiply and an add. If they do not, the snow's transport, 30 ms a step, can move onto the idle
-   card. The second is a rewrite of the transport's edge path that keeps every operation: an edge
-   costs about 250 cycles against about 90 of arithmetic (an estimate). The third is the class
-   uploads. A class goes up whole when one body in it is new, and sending the changed rows would
-   save 3 to 4% of the wall (an estimate). Identity on the card is claimed at two group sizes
-   (CLAUDE.md). Whether a round runs on the card is the owner's: single precision is a new
+   checkpoints. The largest lever left is the snow's transport, 30 ms a step, on the idle card. The
+   card fuses a multiply and an add by default. A product written as inline `mul.rn.f64` matches the
+   CPU bit for bit (`logbook/specs/fma-probe/`, CLAUDE.md), so a transport kernel in double can give
+   the CPU's numbers. It needs a hook in Core that the farm fills, since Core cannot name the card.
+   Two smaller levers follow. One is a rewrite of the transport's edge path that keeps every
+   operation: an edge costs about 250 cycles against about 90 of arithmetic (an estimate). The other
+   is the class uploads. A class goes up whole when one body in it is new, and sending the changed
+   rows would save 3 to 4% of the wall (an estimate). Identity on the card is claimed at two group
+   sizes (CLAUDE.md). Whether a round runs on the card is the owner's: single precision is a new
    realisation of every seed.
 3. The lit link is read and not built: `scripts/reads/linklight.py <arm>` splits a stomach
    body's income into its links' light and its food, by window and by line (the first decision

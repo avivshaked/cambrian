@@ -153,3 +153,12 @@ gpu-probe t=27699 s, ms a step: grid 1.569, classes 0.836 / 1.464 / 2.587 / 2.00
 # compiled by Unity. So the Farm's folder was built the Editor's way first, as a netstandard2.1
 # library at C# 9 without EVOSIM_GPU (src/Evosim.UnityProxy, a proxy and not the Editor), and it
 # built; and the one public member the branch changed, Report.Begin, is not one the Theatre calls.
+#
+# Whether the card fuses (logbook/specs/fma-probe/, the same afternoon): it does, by default. Under
+# the farm's Cuda() context x*y+z differs from the CPU in 148,749 of 1,048,576 doubles, x*y-z*w in
+# 173,153, a 24-term chain like the transport's in 472,478, and single the same. A bit cast around
+# each product changed nothing. Every product written as inline mul.rn.f64 (CudaAsm.Emit), which the
+# PTX compiler never contracts, matched the CPU in all four patterns, 0 of 1,048,576. So the snow's
+# transport, 30 ms of the world step, can move onto the card in double and give the CPU's bits,
+# provided every multiply in the kernel is written that way; the edge terms and the instant's
+# amplitudes are already computed on the host, so the kernel's own work is multiplies and adds.
