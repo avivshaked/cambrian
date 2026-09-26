@@ -196,4 +196,4 @@ free joint, round 34, launched on this base the same night.
 Logbook/0079, 0082, 0083, 0084, 0085, 0086, 0088; D063, D086, D087, D088;
 `rounds/launch-r35.ps1`; `runs/r35-s1` to `r35-s5` (manifests, reports, `positions.jsonl`);
 `scripts/clade-score.ps1`, `scripts/positions-read.py`, `scripts/theatre-snap.ps1`;
-`scratch/snaps/r35-s*/`, `scratch/positions/r35-s*/`, `scratch/r35-read/summary.md`.
+`scratch/snaps/r35-s*/`, `scratch/positions/r35-s*/`, `logbook/specs/r35-read/summary.md`.

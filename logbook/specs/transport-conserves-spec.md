@@ -31,7 +31,7 @@ stream), after 600 s:
 | tank, streams (this branch) | 1 m | off | 0.000 | 15.9 | 102% |
 | tank, streams (this branch) | 5 m | 2 m²/s | 0.898 | 1.122 | 6% |
 
-The total is conserved to 1e-15 throughout. The probe is `scratch/astra-check/Program.cs`
+The total is conserved to 1e-15 throughout. The probe is `logbook/specs/transport-conserves-probe/Program.cs`
 (read it; it is the shape the new test takes).
 
 The cause is in `Sweep`: the horizontal velocity is sampled at a cell's centre and used for

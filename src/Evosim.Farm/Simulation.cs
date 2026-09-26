@@ -135,7 +135,9 @@ namespace Evosim.Farm
         /// Bodies rebuilt because their plan changed — D106 item 2, rule 7. <see cref="Resizes"/>'
         /// neighbour, counted apart because the two are different work: a resize writes new
         /// numbers into the arrays a body already has, and this throws the body away and builds
-        /// another. 0 for every run whose genomes are all determinate.
+        /// another. A module added or dropped at the growth step and a part bitten off in the
+        /// world's step are both counted, so it is 0 for every run whose genomes are all
+        /// determinate and in which nothing bites.
         /// </summary>
         public long ModuleRebuilds { get; private set; }
         public double MaxResizeJumpMetres { get; private set; }

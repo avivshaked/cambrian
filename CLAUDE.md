@@ -260,6 +260,13 @@ owner's ruling of 2026-09-18). Picture-only readers take the water's shape from 
 strict reader refuses, and the bodies' plans from a genome of format 4 or 5. Both are tried after
 the strict readers, and the label's first line then ends `· OLD-RUN READ`. The rule that loading
 refuses rather than defaults is untouched for everything that simulates.
+**The picture-only config reader must take every development limit, or a picture prunes
+what the run carried.** `PictureConfig` read five of `DevelopmentLimits`' seven until
+2026-09-25 and left `floorsWeighRigidGroups` off, so every picture of round 48 on a build
+that refuses its config (every film window and reconstruction after D124) dropped every
+3 cm bud under `minPartVolume`: the story's leaf with a stomach was drawn without it, and
+the first film, on the strict reader, had it (`9f5bfe8`). A development limit added to Core
+is added to `PictureConfig` in the same change; nothing checks it.
 
 **A run is filmed from a checkpoint** (2026-09-23 evening, the owner's request for clips at
 5,000, 15,000 and 30,000 s): `./scripts/theatre-film.ps1 r46-s1 -At 5000 [-Worker 6] [-Shots
@@ -942,7 +949,7 @@ actually verifying it.
   in both campaign cases where the a-priori Courant check asked two, so the transport is
   cheaper per step), and a 5 m grid carries only 0.3 to 0.4 of the water's RMS because it
   samples the eddies about once per wavelength (the 1 m grid carries 0.96 to 1.07). The
-  Astra review's probe that found it is `scratch/astra-check/Program.cs`.
+  Astra review's probe that found it is `logbook/specs/transport-conserves-probe/Program.cs`.
 - **A pre-registration is committed before the queue starts.** Round 37's predictions were
   committed at 08:31:49 and its first manifest written at 08:28:48 (the Astra review of
   2026-09-12): the thresholds were in the working tree and not in history when the world
@@ -1152,8 +1159,8 @@ actually verifying it.
   manifest marks. And the last checkpoint after a `STOP` is the second the run stopped at,
   because the file is written after the report row and before the stop is acted on.
   **A checkpoint carried everything the solver reads and not everything a sense reads,
-  until `StateVersion` 6** (2026-09-23): `Organism.PartDamage`, the health each part has
-  lost over its life and what the `Damage` sensor channel reports, was not written, so
+  until `StateVersion` 6** (2026-09-23): `Organism.PartDamage`, the health each part had
+  lost and what the `Damage` sensor channel reports, was not written, so
   every restored wounded body sensed nothing, and a resume of round 45 seed 2 parted from
   the run at its first sample in the two jointed bodies among sixteen wounded whose brains
   read the channel (six of 1,925 from the 5,000 s checkpoint; one body both times). The
@@ -1163,7 +1170,45 @@ actually verifying it.
   and compares the two member by member, skipping by name what a step fills before it
   reads; run it on a world that has the thing you added (a bitten crowd, a grown one)
   before trusting a resume of it, and every `StateVersion` bump refuses every checkpoint on
-  disk, round 45's included, which are cousins for that reason anyway. **The
+  disk, round 45's included, which are cousins for that reason anyway. **It happened again,
+  and `StateVersion` 11 and `Checkpoint.Version` 6 close it** (2026-09-25). The contact flag
+  (`Organism.PartContact`) stayed set until a plan change then, and the writer left it out. The
+  restore also left each body's contact and damage senses unwired until its first metabolic
+  step. Round 48's resume parted from the run at its first sample for it, in jointed bodies
+  whose brains read contact. The check missed both: it skipped every sense, and it had the
+  flag on its list of what a step fills before it reads. It now compares the senses and the
+  harness's own members, then steps the two worlds side by side for two metabolic steps. Two
+  more faults came out of that. A checkpoint taken between growth steps restored a growing
+  body at its organism's size, one the solver had not been given yet; it now carries the size.
+  One taken after a bite and before the growth step that rebuilt the body could not be
+  restored at all. The loop deferred a cadence checkpoint to the next growth step, and wrote
+  no last one at a stop or a wall in between. A cadence that is a multiple of the growth step
+  never met it. The bite rebuild below closed that window.
+  The fix was version 5 on its branch, and so was the record's
+  gzipped checkpoint on another; the two met at round 49's merge as version 6, the new payload
+  gzipped, which both records write, and a file saying 5 is refused by name because it could
+  be either layout. Round 48's files are version 4 and still open, lossily. A
+  farm resume refuses one unless `EVOSIM_ALLOW_SOURCE_MISMATCH` is set, and then marks the
+  run a cousin. The theatre labels one as a cousin. The fixtures ckA, ckB, ckC, `ckUi` and
+  the theatre's live fixture need re-recording on this build. From round 49 (D123) both
+  records are the last metabolic step's alone, zeroed in place at the top of the mouth's
+  pass. The layout did not move, because the physics steps after a restore still read them
+  before the next metabolic step rewrites them. Round 49's instruments then took
+  `StateVersion` to 12, since queued lineage rows carry the death row's `ga` and `res` and a
+  founder's landing readings, and 11 is refused. **A bitten body is rebuilt on the step that
+  bit it, from round 49's bite rebuild** (2026-09-25). Until then the farm rebuilt its solver
+  only at the next growth step, up to ten seconds later. In that window the contact list
+  named the old plan's links, so a bite could land on the wrong part. The brain read senses
+  indexed by the new plan, and a checkpoint could not be restored. Now the farm rebuilds it
+  straight after the world's step, before any physics step, as it builds a newborn, and the
+  checkpoint deferral stays as a guard that never fires. A new path that changes a plan must
+  rebuild the body before the next physics step and take the organism's part map as it does
+  (`TakePartMapFromPreviousPlan`). Core composes a pending map with the next change's, so a
+  map left behind corrupts the next one. The step's contact and damage records now go through
+  the same map, where they were dropped. A surviving part keeps what it felt, and the rebuild
+  hands the body the carried arrays, a module rebuild at the growth step included. From this
+  build on, a world whose plans change with a sense open writes a different world state. Its
+  trajectory moves only where a body that changes plan has a brain reading either channel. **The
   JIT decides the bits**: .NET's
   tiered compilation gives quick-JITted and optimised loops different floating-point
   results on a rounding edge, so every project that reports a digest sets
@@ -1283,7 +1328,7 @@ actually verifying it.
   grid's cell, and it is fixed** (2026-09-22 night, the bench's `--mode record`): the grid
   entered each body's bounding sphere in one cell and sized the cell at two of the
   *largest* radius, and seed 1's module chains, one a fan of seven leaves each 1.75 times
-  the last with the seventh 14.6 m long (`scratch/logs/giant-7597.txt`, drawn by
+  the last with the seventh 14.6 m long (`logbook/specs/giant-7597.txt`, drawn by
   `scripts/plot-body.py`), took the largest radius to 21 m, the cell to 43 m in a 53 m
   tank and every body's candidate list to the whole crowd: 9.9 µs a body-step against 0.33
   on the same crowd at the genome minimum. The grid now enters a sphere in every cell it
@@ -1338,6 +1383,12 @@ actually verifying it.
   is about six times faster and is a new realisation of every seed. Identity on the card
   holds across launch shapes, so a GPU identity claim is made at two group sizes. Run GPU
   code in the foreground with nothing else on the machine until the owner rules otherwise.
+  **The card's probe does not go through the binding**: `EVOSIM_GPU_PROBE=1` is read from the
+  process environment, so `run-farm.ps1 -Env`, which hands settings over as `NAME=VALUE`
+  arguments, never reaches it, and the farm warns that it ignores the variable while the probe
+  stays off (the first probe of 2026-09-26). Set it in the launching shell's environment
+  (`scratch/r49-probe/probe2.ps1`). A setting the binding knows, such as
+  `EVOSIM_GPU_CONCURRENT`, goes through `-Env` as usual.
 - **From D109 (2026-09-22 night) the matter starts as islands, the matter grid stirs at a
   launcher's rate, and every earlier config is refused again.** Six tunables
   (`MatterIslandWavelengthMetres`, `MatterIslandCover`, `MatterIslandDepthMetres`,
@@ -1384,7 +1435,7 @@ actually verifying it.
 - **Genome format 8 (D111, 2026-09-23) refuses every format-7 file, and the offset is a
   torque the price switches on.** `buoyancyOffset` sits after `toughness` on every node;
   the six inocula under `inocula/` were rewritten at 0 by a text edit that changed no other
-  byte (`scratch/r46-build/convert/`), and any snapshot row of rounds 44 and 45 is refused by
+  byte (`logbook/specs/format8-conversion/`), and any snapshot row of rounds 44 and 45 is refused by
   this build's reader (the theatre's picture reader still draws them, marked `OLD-RUN READ`).
   With `BuoyancyOffsetWattsPerCubicMetre` at 0 the field is refused above 0, the mutator
   draws nothing for it (children byte-identical), and the solver never enters the torque
@@ -1472,7 +1523,7 @@ actually verifying it.
   carry any of them, so nothing older is byte-compatible anyway). The fixtures are
   `fixtures/r42-config.json` from `pfix11` (round 42's hash `53f8234cb554f0ba`) and the crowd
   `runs/r48fix-s4`; the ten inocula were taken to format 9 by a text edit that added
-  `"mode":"Lump","gestation":0.5` and no other byte (`scratch/r48-repro/convert-format8-to-9.py`).
+  `"mode":"Lump","gestation":0.5` and no other byte (`scripts/convert-format8-to-9.py`).
   **The crowd regress no longer reads IDENTICAL, and that is the bud's design**: `r48fix-s4`
   against `r47fixd-s4` is identical for 140 samples and parts at 1,410 s, where the build
   refused a bud-carrying mutant under the per-part mass floor that the old build admitted
@@ -1509,12 +1560,24 @@ actually verifying it.
   (`logbook/specs/stomach-screens.md`). A field total in the stats is joules or units over
   the whole bin; divide by the bin's live volume before calling it a density, and say which
   bin.
+- **A mouth is priced at the cell it is emptying, not at the water round it.** A stomach
+  draws `density × clearance × dt` from its own 1 m cell, and round 48's pool founders drew
+  45 to 52% of it per half-second step (`scripts/reads/r48-entry/f4draw.py`). So
+  `densityHere` in `absorptive.jsonl`, and the density a ledger break-even is stated at, are
+  both the emptied cell's. In round 48's water that cell holds 5 to 25% of an untouched
+  copy's after a minute: the stirring refills it at 0.06 to 0.1 of the gap a second, and the
+  transport adds some only where the water moves (`FeederRefillExperiments`, logbook/0120).
+  Three things follow. Set a break-even against a field's density and you overstate an
+  eater's intake four- to twentyfold. A body's first reading cannot witness where it was
+  placed. And past the refill rate, a bigger clearance buys little, since the steady intake
+  is `c·k/(c + k)` of the water round it, with k the refill rate.
 - **A farm run started from VS Code gets the fast cores only while VS Code has focus.** The
   machine is an i9-13900K: eight fast cores (logical 0 to 15) and sixteen efficiency cores (16
   to 31). With VS Code in front, round 48's two farm runs sat about 44% on the fast cores and
   26% on the efficiency ones; with any other window in front (Task Manager, the search box,
-  another app) about 30% and 37%, at the same total CPU (2026-09-24, `scratch/cpu-watch/`,
-  a two-second recorder of load per core type and the focused window). The fast cores boost
+  another app) about 30% and 37%, at the same total CPU (2026-09-24, `scripts/cpu-watch.ps1`,
+  a two-second recorder of load per core type and the focused window, writing under
+  `scratch/cpu-watch/`). The fast cores boost
   to about 5.5 GHz and draw several times the power, so the fans follow the focus: the owner
   heard it as the machine "hiding" when Task Manager opened. Nothing was hiding. The cause is
   Windows 11's hybrid scheduling, most likely because the runs were launched from inside VS
@@ -1529,7 +1592,7 @@ actually verifying it.
   instead: one heavy job at a time at about a third of the machine, with Intel's power limits
   set in the old BIOS. HANDOFF carries the current ruling, and the owner's Desktop carries the
   flash steps. The revision is `Update Revision` under
-  `HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor `, little-endian (`0E 01 00 00` is
+  `HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor\0`, little-endian (`0E 01 00 00` is
   0x10E); throttling is `\Processor Information(_Total)\Performance Limit Flags` (0 is none).
   The ASUS WMI classes in `root\wmi` (`ASUSManagement`, `AsusAtkWmi_WMNB`) write the SMBus,
   boot order, passwords and fan curves and are never called.
@@ -1562,6 +1625,37 @@ actually verifying it.
   Until it exists, a subagent that needs a worktree gets one the caller made under `scratch/`,
   named by its absolute path in the brief, and not `isolation: "worktree"`. The fifteen older
   worktrees under `.claude/worktrees/` are left where they are; removing one is the owner's.
+- **The Write and Edit tools ask the owner for every file, even in auto mode; a write through
+  the shell does not.** On 2026-09-25 the owner, on auto mode, saw "Make this edit to ...?" and
+  "Allow write to ...?" prompts, first for an Opus subagent's edits in `scratch/wt-r49cap` and
+  then for the main session's own Write and Edit calls under `scratch/` (a worktree's source
+  and a helper script alike), and asked five times why. The agent first told the owner its own
+  edits did not ask; that was wrong, and the owner's screenshot of a prompt for the agent's own
+  file showed it. Files changed through the Bash tool (a Python or heredoc write, the way
+  HANDOFF and this file were edited that day) raised no prompt. The documentation (a
+  `claude-code-guide` read of code.claude.com's sub-agents, permissions and permission-modes
+  pages) says a subagent inherits the parent's auto mode and that only protected paths
+  (`.claude`, except `.claude/worktrees`) always ask, so the cause is not known (whether it is
+  `scratch/` being gitignored is a guess). The rules until the owner says the prompts are gone:
+  **write files through the shell**, not with Write or Edit (a Python script written by a
+  heredoc, with the heredoc's backslash halving in mind); **launch no subagent that edits
+  files**, since its tools are Write and Edit, and write the code in the main session (read-only
+  agents such as `Explore` and `claude-code-guide` are fine; this overrides the delegation
+  memory for editing tasks); and **every write under `~/.claude/` asks the owner** whatever the
+  tool, the memory directory included, so memory edits are rare and batched and durable rules
+  go here. The fix is the owner's setting and never the agent's: the documented allow rule for
+  this tree, untested here, is `Edit(//d/Projects/experiments/evolution-simulator/**)` (and the
+  same for `Write`) under `permissions.allow` in the owner's `~/.claude/settings.json`; the
+  agent never edits a permission setting, whoever asks.
+- **The farm hashes the source above its working directory, not the source it was built from.**
+  `Manifest` finds the repository by walking up from the process's working directory (or takes
+  `EVOSIM_REPO_ROOT`) and hashes `src/` there. A worktree and the main tree differ in carriage
+  returns, as `simHash` does, so round 49's film windows, run from the main tree on the round's
+  own exe, named all three hashes as differing from the run's, and V1 asks for none (2026-09-26;
+  the windows read FAITHFUL on every row all the same). Run a window, a resume or a check from
+  the checkout the run was launched from. And **stopping a background Bash task leaves its script
+  running**: the task's handle went and both of its `bash.exe` went on to launch the next farm
+  process. List them by command line and stop them by id.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
@@ -1595,6 +1689,18 @@ actually verifying it.
   on a worker the queue is not using, one frame at a time on a loaded machine) and look at
   them, and say in the status what was seen. Round 37's crust at the glass was in the table
   for hours before anyone read it as a crust.
+- **Check every test render against a reference before the owner sees it** (the owner,
+  2026-09-25: "why are you not picking these problems up yourself using a png sheet?"). The
+  first window-route clips of round 48 went to the owner with bodies popping in size every
+  growth step and the picture too bright, and the second with the scenery in question, each
+  found by the owner and not by the agent, who had looked at the contact sheets only for the
+  fault last reported. The check: a side-by-side sheet of the new frames and the reference
+  (the last film the owner accepted, at the same run and second where there is one), read for
+  size, brightness, the bed, the reef, the caustics and the shafts, the bodies' shapes and
+  motion between consecutive frames, and the captions; a number for what a number can say
+  (mean luma, the largest frame-to-frame jump against its neighbours); and what was checked
+  said in the same message as the clip's path. A change to a render path is checked against
+  the path it replaces before anything else is judged.
 - **Say when a ruling blocks the work, and keep working on the rest** (owner, 2026-09-22
   evening: "If you're waiting on me, I want an explicit message saying you are blocked by a
   decision you need from me. I want you working all the time."). A status that lists open
@@ -1605,7 +1711,10 @@ actually verifying it.
   implications"): the topic in plain words for someone who has not read the proposal, the
   recommendation and why, what each option implies for the record, the rounds, the machine
   and the risk, and the exact question to answer. A pointer to a proposal file is not a
-  request for a ruling. Then say what is being worked on meanwhile. Never end a turn idle while anything not gated
+  request for a ruling. A decision still open is set out in full again in every message that
+  asks for it, and each option carries its own implications. "Unchanged from my last message"
+  is shorthand too (the owner, 2026-09-25 afternoon: "You know how I prefer to get decision
+  topics right?"). Then say what is being worked on meanwhile. Never end a turn idle while anything not gated
   remains: loose ends, instruments, measurements, the round-gap changes that are a new
   realisation of every seed and land best while no arm runs, pre-registration drafts and
   ledger screens for the round that waits.
@@ -1619,6 +1728,17 @@ actually verifying it.
   and never two farm runs beside tests; a subagent's work takes at most half the machine's
   logical processors while the owner is at it; and a timing read (a wall split, a pace
   number, a kernel time) is taken with nothing else running, or it is re-taken.
+- **A round's checkpoints are thinned only after the owner approves its video as final**
+  (the owner, 2026-09-26). A farm round writes a checkpoint every 100 s, 3.6 to 5.1 GB a seed
+  at round 49's crowd, three quarters of it checkpoints. They stay whole while the round is read
+  and filmed. Only when the owner has said the round's video is final are they thinned to one
+  every 1,000 s, plus the checkpoint at or before each scene's start (the owner's addition, the
+  same morning; about 30 a video) and any an entry cites. The keep list is built from the
+  video's own scene table, and the agent shows it and the space it frees and asks before each
+  thinning, since a deletion cannot be undone. Two reductions lose nothing and need no ruling:
+  a checkpoint that points at `genomes.jsonl.gz` instead of copying every living genome (a
+  quarter of each file), and the feeding log (`absorptive.jsonl`) compressed. Round 49's
+  measurements are in HANDOFF.
 - **Owner-reserved decisions:** world rules (what the ecology *is*), the goal rule and its
   amendments, scope and round design forks, pushes of anything that is not code/prose, and
   anything irreversible or outward-facing. Instruments, diagnostics, replays of scored

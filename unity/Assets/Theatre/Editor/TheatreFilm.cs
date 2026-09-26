@@ -50,6 +50,14 @@ namespace Evosim.Theatre.EditorTools
     /// <b>It is a cousin, and the frame says so.</b> A restore is a cousin whatever the digests
     /// say (CLAUDE.md, the live-play gotcha); the label reads <c>COUSIN</c> and the second.
     /// </para>
+    /// <para>
+    /// <b>Or it is a farm film window, and nothing is stepped</b> (<c>EVOSIM_THEATRE_WINDOW</c>,
+    /// <c>theatre-film.ps1 -FromFarm</c>; <c>record-and-film-spec.md</c> B3). The window the farm
+    /// recorded is played from its first frame (or from <c>EVOSIM_THEATRE_SEEK</c>), each film
+    /// frame is the farm's frame nearest its second, a film longer than the window is cut to it
+    /// and says so, and the label's word is the window's verdict: FAITHFUL, COUSIN or UNVERIFIED.
+    /// The trace (<c>-Trace</c>) reads the solver, so it is the live world's alone.
+    /// </para>
     /// <code>
     /// # NO -quit, and NO -nographics: the entry quits, and rendering needs a graphics device.
     /// $env:EVOSIM_THEATRE_CHECKPOINT = "$PWD/scratch/live-ui/runs/ckUi/.../checkpoints/000000400.ckpt"
@@ -105,6 +113,9 @@ namespace Evosim.Theatre.EditorTools
         private static float _turns = 0.25f;
         private static double _wallSecondsAllowed = 1800d;
 
+        /// <summary>True when the film plays a farm film window (<c>EVOSIM_THEATRE_WINDOW</c>) rather than a continued world.</summary>
+        private static bool _fromWindow;
+
         private static double _deadline;
         private static bool _driving;
         private static TheatreRunner _runner;
@@ -138,9 +149,11 @@ namespace Evosim.Theatre.EditorTools
         /// </summary>
         public static void Run()
         {
-            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHECKPOINT")))
+            _fromWindow = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_WINDOW"));
+
+            if (!_fromWindow && string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHECKPOINT")))
             {
-                Fail("EVOSIM_THEATRE_CHECKPOINT is not set: a film is shot from a checkpoint.");
+                Fail("neither EVOSIM_THEATRE_CHECKPOINT nor EVOSIM_THEATRE_WINDOW is set: a film is shot from a checkpoint or from a farm film window.");
                 return;
             }
 
@@ -463,7 +476,8 @@ namespace Evosim.Theatre.EditorTools
             (_trace ? "1" : "0") + "|" +
             (_raw ? "1" : "0") + "|" +
             _closeSeconds.ToString("R", CultureInfo.InvariantCulture) + "|" +
-            (_closeStill ? "1" : "0");
+            (_closeStill ? "1" : "0") + "|" +
+            (_fromWindow ? "1" : "0");
 
         /// <summary>
         /// Picks the request back up on the other side of the domain reload Play mode causes, and
@@ -503,6 +517,7 @@ namespace Evosim.Theatre.EditorTools
             _raw = f.Length > 9 && f[9] == "1";
             if (f.Length > 10) double.TryParse(f[10], NumberStyles.Float, CultureInfo.InvariantCulture, out _closeSeconds);
             _closeStill = f.Length <= 11 || f[11] == "1";
+            _fromWindow = f.Length > 12 && f[12] == "1";
 
             if (_seconds <= 0d || _fps < 1 || _width < 64 || _height < 64 || _shotNames.Length == 0)
             {
@@ -552,6 +567,12 @@ namespace Evosim.Theatre.EditorTools
                         Finish(1, "no TheatreRunner in the scene: nothing is playing the world");
                         return;
                     }
+                }
+
+                if (_fromWindow)
+                {
+                    DriveWindow();
+                    return;
                 }
 
                 TheatreDynamicsReplay live = _runner.Live;
@@ -686,16 +707,16 @@ namespace Evosim.Theatre.EditorTools
         /// (2026-09-23). Every undressed body is dressed off budget here, the renderers are
         /// checked for the plain material, and the film refuses rather than capture raw bodies.
         /// </remarks>
-        private static void WarmUp(TheatreDynamicsReplay live)
+        private static void WarmUp(IFilmWorld live)
         {
-            LiveWorldView view = _runner.LiveView;
+            LiveWorldView view = _fromWindow ? _runner.Window?.View : _runner.LiveView;
             if (view == null)
             {
                 Finish(1, "no live view in the scene: nothing draws the world");
                 return;
             }
 
-            view.Sync();
+            if (!view.Fed) view.Sync();
             view.DressUndressed();
 
             foreach (Shot shot in _shots)
@@ -729,9 +750,12 @@ namespace Evosim.Theatre.EditorTools
         }
 
         /// <summary>Stops the runner's own clock, plans the shots, and clears their directories.</summary>
-        private static void SetUp(TheatreDynamicsReplay live)
+        private static void SetUp(IFilmWorld live)
         {
             _setUp = true;
+            FilmWindowWorld window = live as FilmWindowWorld;
+            TheatreDynamicsReplay stepped = live as TheatreDynamicsReplay;
+            LiveWorldView liveView = window != null ? window.View : _runner.LiveView;
 
             // The runner steps nothing from here: this class advances the world by the frame
             // interval. The lock and the rate are set so the runner's state says what the film is.
@@ -755,30 +779,49 @@ namespace Evosim.Theatre.EditorTools
             Camera view = _runner.ViewCamera;
             if (view != null) view.enabled = false;
 
-            if (_raw && _runner.LiveView?.Palette != null)
+            if (_raw && liveView?.Palette != null)
             {
-                _runner.LiveView.Palette.RawShapes = true;
-                _runner.LiveView.Palette.Clear();
+                liveView.Palette.RawShapes = true;
+                liveView.Palette.Clear();
             }
 
-            _runner.LiveView?.Sync();
+            if (window == null) liveView?.Sync();
 
-            _t0 = live.ElapsedSeconds;
-            _steps0 = live.Steps;
-            _dt = live.Sim.PhysicsDt;
+            _t0 = live.Second;
+            _steps0 = stepped != null ? stepped.Steps : 0L;
+            _dt = stepped != null ? stepped.Sim.PhysicsDt
+                : window.Window.Verdict != null && window.Window.Verdict.PhysicsDt > 0d ? window.Window.Verdict.PhysicsDt : 1d / _fps;
             _frames = FrameCount();
             _next = 0;
             _worstLag = 0f;
 
-            LiveCheckpoint checkpoint = live.ContinuedFrom;
+            // A film longer than the window is cut to the window: a frame past its last would hold
+            // it, and a held frame says nothing a still does not.
+            if (window != null && _t0 + (double)(_frames - 1) / _fps > window.LastSecond + 0.5d / _fps)
+            {
+                int fits = Math.Max(1, (int)Math.Floor((window.LastSecond - _t0) * _fps + 1e-6) + 1);
+                Debug.LogWarning(string.Format(CultureInfo.InvariantCulture,
+                    "[Theatre] film: {0} frame(s) asked for from {1:0.###} s, and the window ends at {2:0.###} s: cut to {3}",
+                    _frames, _t0, window.LastSecond, fits));
+                _frames = fits;
+                _closeSeconds = Math.Min(_closeSeconds, (double)fits / _fps);
+            }
+
+            if (window != null && _trace)
+            {
+                _trace = false;
+                Debug.LogWarning("[Theatre] film: the trace reads the solver, and a film window has none: no trace.tsv");
+            }
+
+            LiveCheckpoint checkpoint = stepped?.ContinuedFrom;
             string arm = live.Record.ArmName ?? "run";
-            double ckptSeconds = checkpoint != null ? checkpoint.Seconds : _t0;
+            double ckptSeconds = checkpoint != null ? checkpoint.Seconds : window != null ? window.FirstSecond : _t0;
 
             if (_directory == null)
             {
                 _directory = Path.Combine(
                     Path.Combine(Path.Combine(Path.Combine(BuildIdentity.RepositoryRoot(), "scratch"), "films"), arm),
-                    ckptSeconds.ToString("0.###", CultureInfo.InvariantCulture));
+                    (window != null ? "farm-" : "") + ckptSeconds.ToString("0.###", CultureInfo.InvariantCulture));
             }
 
             var world = new WorldBounds(live);
@@ -787,7 +830,7 @@ namespace Evosim.Theatre.EditorTools
             foreach (string name in _shotNames)
             {
                 bool close = name == "close";
-                Shot shot = Shot.Plan(name, live, _runner.LiveView, world,
+                Shot shot = Shot.Plan(name, live, liveView, world,
                     (float)(close ? _closeSeconds : _seconds), _width / (float)_height, _turns, close && _closeStill);
                 shot.Frames = close ? Math.Max(1, (int)Math.Round(_closeSeconds * _fps)) : _frames;
                 shot.Directory = Path.Combine(_directory, name);
@@ -809,8 +852,88 @@ namespace Evosim.Theatre.EditorTools
 
             Debug.Log(string.Format(CultureInfo.InvariantCulture,
                 "[Theatre] film of {0}: {1}\n  t0={2:0.###} s, dt {3} s, {4} frames at {5} fps, alive {6}, {7}{8}",
-                arm, checkpoint != null ? checkpoint.Line() : "no checkpoint: founded at t=0",
-                _t0, live.Sim.PhysicsDt, _frames, _fps, live.BodyCount, world.Describe(), lines));
+                arm, window != null ? "FARM FILM WINDOW " + window.Describe() : checkpoint != null ? checkpoint.Line() : "no checkpoint: founded at t=0",
+                _t0, _dt, _frames, _fps, live.BodyCount, world.Describe(), lines));
+        }
+
+        /// <summary>
+        /// One tick of a film from a farm film window: the window's frame nearest the film frame's
+        /// second shown through the runner, each shot posed on it and captured. Nothing is stepped.
+        /// </summary>
+        private static void DriveWindow()
+        {
+            FilmWindowWorld window = _runner.Window;
+
+            if (window == null)
+            {
+                if (!string.IsNullOrEmpty(_runner.Error)) Finish(1, "refused: " + _runner.Error);
+                return;
+            }
+
+            if (!_setUp)
+            {
+                SetUp(window);
+                return;
+            }
+
+            if (!_warmed)
+            {
+                WarmUp(window);
+                return;
+            }
+
+            double target = _t0 + (double)_next / _fps;
+            if (!_freeze)
+            {
+                int frame = window.Window.NearestFrame(target);
+                if (frame >= 0 && frame != window.FrameIndex) _runner.ShowWindowFrame(frame);
+            }
+
+            _dressedLate += window.DressAll();
+
+            float clock = Time.time;
+            if (_next > 0 && Mathf.Abs(clock - _lastClock - 1f / _fps) > 0.25f / _fps) _clockSlips++;
+            if (_next == 0) _firstClock = clock;
+            _lastClock = clock;
+
+            double at = window.Second;
+            if (!_freeze) _worstLag = Mathf.Max(_worstLag, (float)Math.Abs(at - target));
+            if (_next == 0) _firstAt = at;
+            _lastAt = at;
+
+            string label = string.Format(CultureInfo.InvariantCulture, "{0}  t={1:0.0} s{2}", window.ProvenanceWord, at,
+                _freeze ? "  FROZEN" : "");
+            string frameName = "frame-" + _next.ToString("000000", CultureInfo.InvariantCulture) + ".png";
+
+            foreach (Shot shot in _shots)
+            {
+                if (_next >= shot.Frames) continue;
+                float u = shot.Frames > 1 ? (float)_next / (shot.Frames - 1) : 0f;
+
+                shot.Pose(window, window.View, u, 1f / _fps, out Vector3 eye, out Quaternion rotation, out float focus);
+                shot.Camera.CapturePlaced(window, eye, rotation, shot.FieldOfView, shot.Portrait, focus, label,
+                    Path.Combine(shot.Directory, frameName));
+                shot.RenderMs.Add(shot.Camera.LastRenderMs);
+
+                if (_next == 0 || _next == shot.Frames / 2 || _next == shot.Frames - 1)
+                {
+                    shot.Camera.LastPictureSpread(out float mean, out float spread);
+                    shot.Spreads.Add(string.Format(CultureInfo.InvariantCulture,
+                        "frame {0}: luminance mean {1:0.0}, sd {2:0.0}{3}", _next, mean, spread,
+                        spread < 2f ? " (UNIFORM: the device may have rendered nothing)" : ""));
+                }
+            }
+
+            _next++;
+
+            if (_next % Math.Max(1, _fps * 5) == 0)
+            {
+                Debug.Log(string.Format(CultureInfo.InvariantCulture,
+                    "[Theatre] film: {0} of {1} frames, t={2:0.0} s, drawn {3}, {4}",
+                    _next, _frames, at, window.BodyCount, window.ProvenanceWord));
+            }
+
+            if (_next >= _frames) Finish(0, _next + " frame(s) per shot written from the farm film window " + window.Window.Directory);
         }
 
         private static void Finish(int code, string verdict)

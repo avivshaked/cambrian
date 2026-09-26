@@ -1,0 +1,16 @@
+r48-s1 pool founders 99 first reading >= 1 J/m3: 7
+  3364 idx 1 landed 3264 first 1.01 J/m3, children 0 (after 10 s: 0), descendants 0, lived 452 s
+  3917 idx 3 landed 3785 first 3.11 J/m3, children 4 (after 10 s: 4), descendants 4, lived 2476 s
+  4185 idx 0 landed 4057 first 1.27 J/m3, children 3 (after 10 s: 2), descendants 55, lived 1869 s
+  11925 idx 3 landed 9339 first 2.41 J/m3, children 0 (after 10 s: 0), descendants 0, lived 1170 s
+  13230 idx 0 landed 10199.5 first 1.17 J/m3, children 1 (after 10 s: 0), descendants 1, lived 140 s
+  26822 idx 0 landed 16759.5 first 1.07 J/m3, children 1 (after 10 s: 0), descendants 1, lived 185 s
+  46397 idx 0 landed 22899.5 first 1.03 J/m3, children 1 (after 10 s: 0), descendants 1, lived 134 s
+  61200 descends from 59978? False ; 59978 from 61200? False
+r48-s2 pool founders 29 first reading >= 1 J/m3: 2
+  7160 idx 1 landed 3299 first 7.80 J/m3, children 0 (after 10 s: 0), descendants 0, lived 2276 s
+  12012 idx 2 landed 6559.5 first 1.54 J/m3, children 0 (after 10 s: 0), descendants 0, lived 442 s
+r48-s3 pool founders 84 first reading >= 1 J/m3: 3
+  3318 idx 0 landed 3343.5 first 2.20 J/m3, children 6 (after 10 s: 5), descendants 29, lived 1103 s
+  16258 idx 1 landed 16119.5 first 1.04 J/m3, children 0 (after 10 s: 0), descendants 0, lived 504 s
+  47996 idx 2 landed 27749 first 1.60 J/m3, children 0 (after 10 s: 0), descendants 0, lived 294 s

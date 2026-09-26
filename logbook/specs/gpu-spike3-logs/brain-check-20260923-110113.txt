@@ -1,0 +1,49 @@
+=== the senses and the brain on the card
+  command     D:\Projects\experiments\evolution-simulator\spikes\02-gpu-featherstone\out\bin\Release\net8.0\featherstone.dll brain --check-steps 1000 --no-time --tag brain-check
+  host        MAINPC, 32 logical processors, .NET 8.0.24
+  run         D:\Projects\experiments\evolution-simulator\runs\r45-s2\2026-09-22-232754-e51997d5 at 30000 s
+  crowd       genomes 6146, rebuilt 6145, no genome 0, undeveloped 0
+  snow field  168 x 61 x 168 cells of 1 m, 989717 live; recorded column sums total 160910.8 J over 21994 columns, the field holds 160910.8 J (spread evenly down each column: SYNTHETIC vertical profile)
+  births      36142 birth rows read from lineage.jsonl for the brain clocks
+  card        NVIDIA GeForce RTX 4090, SMs 128, SM_89, driver 13.1
+  brains      neurons a body: mean 5.64, p50 4, p99 21, max 75; total 34686; jointed bodies 280 of 6145
+              inputs a neuron: 0 -> 10218, 1 -> 24394, 2 -> 74, 3 -> 0, more -> 0
+              ops: Abs 466, Cos 295, Differentiate 1841, Divide 1477, GreaterThan 542, If 3836, Integrate 953, Interpolate 448, Max 4237, Memory 494, Min 749, OscillateSaw 720, OscillateWave 1034, Product 406, Sigmoid 2162, SignOf 548, Sin 4281, Smooth 4554, Sum 4511, SumThreshold 1132
+              bodies whose brain reads any sense: 1790; by channel: JointAngle 48, JointAngularVelocity 429, Contact 68, OrientationUp 66, Damage 152, Chemical 56, Energy 84, Flow 89, Depth 835
+
+--- 1. transcription: the kernel's double build on ILGPU's CPU device against the library, 1000 steps
+    each step: the kernel steps every body once; the library runs Senses.Sample and
+    Brain.Step on every body; then every neuron's two buffers and memory, the clock, the
+    drive targets and every sense value (through CreatureSenses.Read) are compared to the bit.
+    N 6145, max links 16, max dof 12, max neurons 75; kernel compile 288 ms
+    step     0: values        244,692  mismatches 0  (wall 0 s)
+    step   100: values     24,713,892  mismatches 0  (wall 3 s)
+    step   200: values     49,183,092  mismatches 0  (wall 6 s)
+    step   300: values     73,652,292  mismatches 0  (wall 8 s)
+    step   400: values     98,121,492  mismatches 0  (wall 11 s)
+    step   500: values    122,590,692  mismatches 0  (wall 14 s)
+    step   600: values    147,059,892  mismatches 0  (wall 17 s)
+    step   700: values    171,529,092  mismatches 0  (wall 20 s)
+    step   800: values    195,998,292  mismatches 0  (wall 22 s)
+    step   900: values    220,467,492  mismatches 0  (wall 25 s)
+    step   999: values    244,692,000  mismatches 0  (wall 28 s)
+
+    neuron outputs, both buffers       69,372,000 values, 0 mismatches
+    neuron memories                    34,686,000 values, 0 mismatches
+    brain clocks (double)               6,145,000 values, 0 mismatches
+    drive targets                         473,000 values, 0 mismatches
+    sense values (Read)               134,016,000 values, 0 mismatches
+    TOTAL                             244,692,000 values, 0 mismatches
+    wall 28 s
+
+--- 2. single precision on the card, N 6145, 1000 steps
+    identity, group 32: bit-identical (68b0cb2967e2085b / 68b0cb2967e2085b)
+    identity, auto group: bit-identical (68b0cb2967e2085b / 68b0cb2967e2085b)
+    group 32 against auto: bit-identical; one launch of 1000 steps against 1000 launches of one: bit-identical
+    deviation from the CPU after 1000 steps (drive targets are in [-1, 1]):
+      drive targets, |single - cpu|: max 4.17E-007, p99 1.19E-007, median 0.00E+000, mean 3.07E-009 over 473 values
+      drive targets off by more than 0.01: 0; with the sign flipped (|cpu| > 1e-3): 0
+      neuron outputs, |single - cpu|: max 5.26E+027, p99 2.62E-006, median 0.00E+000, mean 3.03E+023 over 34686 values
+      neuron outputs, relative (|cpu| > 1e-6): max 2.34E-002, p99 6.71E-006, median 0.00E+000, mean 1.18E-005
+      bodies with any difference: 2334 of 6145
+

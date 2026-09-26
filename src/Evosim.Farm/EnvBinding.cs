@@ -104,7 +104,17 @@ namespace Evosim.Farm
             // many seconds of its own standing cost. Off and 0 are the recorded world; the depth
             // rule is refused without D116's.
             Flag("EVOSIM_FOUNDERS_FOLLOW_FOOD_DEPTH", (s, v) => s.FoundersFollowFoodDepth = v),
+
+            // The round 50 founding ruling: a leaf founder set where its own income, light and
+            // food together, is largest, in place of the depth rule above for a leaf. Off is the
+            // recorded world; refused without the depth rule.
+            Flag("EVOSIM_FOUNDERS_INCOME_DEPTH", (s, v) => s.FoundersFollowIncomeDepth = v),
             Num("EVOSIM_FOUNDER_ENDOWMENT", 0f, (s, v) => s.FounderEndowment = v),
+
+            // D124, the owner's ruling for round 49 (2026-09-25): a founder starts with at most
+            // this fraction of its own breeding gate, purse and endowment together, after its
+            // growth. 0 is the recorded world.
+            Num("EVOSIM_FOUNDER_RESERVE_CAP", 0f, (s, v) => s.FounderReserveCap = v),
             Num("EVOSIM_LIGHT_SHADE", 0f, (s, v) => s.LightShade = v),
             Num("EVOSIM_LIGHT_SHADE_DRIFT", 0f, (s, v) => s.LightShadeDrift = v),
             Num("EVOSIM_SECONDS", 4000f, (s, v) => s.BudgetSeconds = v),
@@ -140,6 +150,15 @@ namespace Evosim.Farm
             // whether a build mismatch is a warning rather than a refusal. None of them reaches
             // RunConfig or its hash (logbook/specs/checkpoint-spec.md).
             Num("EVOSIM_CHECKPOINT_EVERY", 0f, (s, v) => s.CheckpointEvery = v),
+
+            // Which record the run writes (logbook/specs/record-and-film-spec.md, Part A): 2, the
+            // default from round 49's build, writes each genome once, slim snapshots, gzipped
+            // positions, the state stream in place of poses.jsonl and compressed checkpoints; 1
+            // writes the record every earlier run wrote. A recording setting like the cadences
+            // above it: EnvSettings and run.json's recordFormat, never RunConfig or its hash. A
+            // resume inherits its source's, as it inherits the cadences, unless this names one.
+            Custom("EVOSIM_RECORD_FORMAT", (s, env) => s.RecordFormat = RecordFormatOf(env)),
+
             Text("EVOSIM_RESUME", (s, v) => s.ResumeFrom = v),
             Num("EVOSIM_RESUME_AT", 0f, (s, v) => s.ResumeAt = v),
             Flag("EVOSIM_ALLOW_SOURCE_MISMATCH", (s, v) => s.AllowSourceMismatch = v),
@@ -589,7 +608,9 @@ namespace Evosim.Farm
             config.FoundersFollowMatter = s.FoundersFollowMatter;
             config.FoundersFollowFood = s.FoundersFollowFood;
             config.FoundersFollowFoodDepth = s.FoundersFollowFoodDepth;
+            config.FoundersFollowIncomeDepth = s.FoundersFollowIncomeDepth;
             config.FounderEndowmentSeconds = s.FounderEndowment;
+            config.FounderReserveCapFraction = s.FounderReserveCap;
             config.LightShadeDepth = s.LightShade;
             config.LightShadeDriftMetresPerHour = s.LightShadeDrift;
             config.WorldAreaSquareMetres = s.Area;
@@ -897,6 +918,23 @@ namespace Evosim.Farm
             return floor;
         }
 
+        /// <summary>
+        /// <c>EVOSIM_RECORD_FORMAT</c>: 1 or 2, and 2 when unset. Anything else refuses the launch
+        /// rather than writing a record nobody asked for.
+        /// </summary>
+        private static int RecordFormatOf(Lookup env)
+        {
+            float v = Num(env, "EVOSIM_RECORD_FORMAT", RunRecordFormat.Newest);
+
+            if (v == RunRecordFormat.Jsonl) return RunRecordFormat.Jsonl;
+            if (v == RunRecordFormat.Compact) return RunRecordFormat.Compact;
+
+            throw new ArgumentException(
+                "EVOSIM_RECORD_FORMAT is '" + env("EVOSIM_RECORD_FORMAT") + "'. The records are 1 " +
+                "(every genome in every snapshot, positions.jsonl and poses.jsonl) and 2 (each " +
+                "genome once, slim snapshots, gzip in members, the state stream); unset is 2.");
+        }
+
         private static Knob Num(string name, float fallback, Action<EnvSettings, float> set) =>
             new Knob(name, (s, env) => set(s, Num(env, name, fallback)));
 
@@ -963,8 +1001,14 @@ namespace Evosim.Farm
         /// <summary>The round 48 founding ruling's depth — <c>EVOSIM_FOUNDERS_FOLLOW_FOOD_DEPTH</c>.</summary>
         public bool FoundersFollowFoodDepth;
 
+        /// <summary>The round 50 founding ruling's leaf depth — <c>EVOSIM_FOUNDERS_INCOME_DEPTH</c>.</summary>
+        public bool FoundersFollowIncomeDepth;
+
         /// <summary>The round 48 founding ruling's endowment, s — <c>EVOSIM_FOUNDER_ENDOWMENT</c>.</summary>
         public float FounderEndowment;
+
+        /// <summary>D124's founder cap, a fraction of the gate — <c>EVOSIM_FOUNDER_RESERVE_CAP</c>.</summary>
+        public float FounderReserveCap;
         public float LightShade;
         public float LightShadeDrift;
         public float BudgetSeconds;
@@ -990,6 +1034,12 @@ namespace Evosim.Farm
         /// writes none.
         /// </summary>
         public float CheckpointEvery;
+
+        /// <summary>
+        /// Which record the run writes, <c>EVOSIM_RECORD_FORMAT</c>:
+        /// <see cref="RunRecordFormat.Compact"/> unless a launcher says 1.
+        /// </summary>
+        public int RecordFormat = RunRecordFormat.Newest;
 
         /// <summary>
         /// Where to start from: a <c>.ckpt</c> file, a run directory, or an arm directory. Null
@@ -1264,6 +1314,39 @@ namespace Evosim.Farm
         /// </remarks>
         public float ResolveCheckpointEvery() =>
             CheckpointEvery > 0f ? Math.Max(CheckpointEvery, MetabolicStep) : 0f;
+
+        /// <summary>
+        /// The report interval in simulated seconds: <see cref="ReportEvery"/> metabolic steps.
+        /// </summary>
+        public float ReportIntervalSeconds => Math.Max(1, ReportEvery) * MetabolicStep;
+
+        /// <summary>
+        /// Record format 2's one default: the state stream on at the report interval, in a shared
+        /// world, when the launcher did not name <c>EVOSIM_POSE_EVERY</c>. True when it applied.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Format 2 does not write <c>poses.jsonl</c>, and the stream at the report interval
+        /// carries what that file carried, at the same seconds, plus the body fraction
+        /// (<c>logbook/specs/record-and-film-spec.md</c> A4). A shared world only, because
+        /// <c>poses.jsonl</c> was written only beside <c>positions.jsonl</c>, and a tiled world's
+        /// places are a lattice and not a place.
+        /// </para>
+        /// <para>
+        /// Called after a resume has inherited its source's cadences, so a stream the source was
+        /// already writing keeps its own cadence. A launcher that names the variable wins,
+        /// including one that names 0 to write no stream at all; <see cref="Provided"/> is what
+        /// tells that apart from the unset default.
+        /// </para>
+        /// </remarks>
+        public bool ApplyRecordDefaults(bool sharedSpace)
+        {
+            if (RecordFormat != RunRecordFormat.Compact || !sharedSpace) return false;
+            if (Provided.Contains("EVOSIM_POSE_EVERY") || PoseEvery > 0f) return false;
+
+            PoseEvery = ReportIntervalSeconds;
+            return true;
+        }
 
         private const float MetabolicStep = EnvBinding.MetabolicStepSeconds;
     }

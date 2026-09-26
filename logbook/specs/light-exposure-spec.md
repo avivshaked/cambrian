@@ -109,7 +109,7 @@ already carries what this needs.
    face; and the shadow of a body never exceeds its exposed lit area sum by more than the
    hull's own excess over the parts (the cap is at most 1).
 5. With the tunable off, the crowd fixture's 3,000 s regress is identical in every field and
-   the lineage byte-equal (`scratch/r45-build/regress.py`), and `ParallelIdentityTests`'
+   the lineage byte-equal (`logbook/specs/r45-build-regress.py`), and `ParallelIdentityTests`'
    word holds.
 6. With it on, both books close on a 3,000 s dt 0.02 screen of round 45's launcher
    (`audit` under 0.1 J, `mat resid` under 1e-5), and `expo` prints.

@@ -439,7 +439,7 @@ remarks in the meantime.
 - **Nothing was written outside the repository.** Unity logs in `scratch/logs/`
   (`floor-smoke.log`, `floor-m1.log`, `evosim-fl-*.log`); arms in `runs/` (gitignored);
   the scripts I wrote are `scratch/floor-smoke-edits.py`, `scratch/floor-smoke-edits3.py`
-  (the byte-preserving source edits, via the existing `scratch/edit_cs.py`),
+  (the byte-preserving source edits, via the existing `scripts/edit_cs.py`),
   `scripts/reads/compare-rows-by-name.py`, `scripts/reads/worker-hash-check.py` and
   `scratch/floor-swap-build.py`.
 - **Runs kept:** `fl-replay` (tiled identity), `fl-smoke` (the screen), `fl-prev` (the

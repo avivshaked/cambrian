@@ -142,6 +142,9 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D120](#d120) | Reproduction paid as it goes, as a gene beside the lump, and the child's overhead scales with the child above a floor | 2026-09-24 | ruled by the owner in conversation on 2026-09-24 ("lets proceed with your recommendations") on the agent's proposal after the dissection |
 | [D121](#d121) | Senescence wears upkeep alone, not income | 2026-09-24 | ruled with D120 |
 | [D122](#d122) | Every founder lands at the richest cell of its food, depth included, and is born with an endowment | 2026-09-24 | ruled with D120; the generic form of a stomach-only rule the owner refused ("if we could come up with some generic rule or configuration, then I'd be much more inclined") |
+| [D123](#d123) | The contact and damage senses read the step, from round 49: contact now and the health lost this step, as the mouth's specification asked | 2026-09-25 | ruled by the owner in conversation ("fix for 49"), after the checkpoint-fidelity read found both senses cumulative |
+| [D124](#d124) | A founder starts with at most a fraction of its own breeding gate, purse and endowment together, after its growth; 0.9 from round 49. The wear stays on upkeep and the snow's stirring is held | 2026-09-25 | ruled by the owner in conversation on the agent's proposal for round 49, question 1 on the owner's own alternative ("can we have the gift come in at slightly less than the child threashold"; "ok lets go with that") |
+| [D125](#d125) | A leaf founder is set in the cell of its column where its own income, light and matter together, is largest, from round 50; a stomach is placed as before | 2026-09-26 | ruled by the owner in conversation, option (a) of three put after round 49's leaf read |
 
 ---
 
@@ -4692,7 +4695,7 @@ current was not the flow it described. `GridField.Sweep` sampled the horizontal 
 a cell's centre for its east and front faces and applied the three axis passes in sequence.
 A uniform field carried by it developed 30% patchiness on 1 m cells within 600 s at the
 campaign's mixing, and 5% on the 5 m matter cells (reproduced with the reviewer's probe,
-`scratch/astra-check`). The total was conserved throughout, which is what the tests checked.
+`logbook/specs/transport-conserves-probe/`). The total was conserved throughout, which is what the tests checked.
 Rounds 34 to 37 ran on it; their verdicts stand as measured, and every claim in them about
 where food sits relative to bodies carries the artefact. Repaired for round 37b
 (`logbook/specs/transport-conserves-spec.md`): face fluxes from the current's vector
@@ -6395,3 +6398,117 @@ their first second and will not notice either.
 
 **Rejected.** Placing pool stomachs in the top-decile snow columns and raising the pool's
 share (the stomach-only form).
+
+### D123
+**The contact and damage senses read the step, from round 49** · 2026-09-25
+
+**Status:** ruled by the owner on 2026-09-25 ("fix for 49"). To be built before round 49,
+as a change of behaviour and not a tunable: a new realisation of every world with either
+sense on. It is built on `d123-senses` (`fe22619`). The mouth's pass zeroes both records
+in place before it writes the step's, and the checkpoint's layout is unchanged. A change of
+plan on the step carries the surviving parts' records through the part map, where the build
+before dropped them, since a bitten body would otherwise feel nothing on the step it was
+bitten (the agent's reading of this entry, `6df7ea8` on `r49-bite-rebuild`, with the rebuild
+moved to the bite's step in `6c381cb`). The farm run that accepts it is still to come.
+
+**Decision.** `Contact` reads whether a part touched another body's part on the last
+metabolic step. `Damage` reads the part's health lost on that step over its pool. That is
+what D106 item 5 and the mouth's specification (`logbook/specs/mouth-spec.md`, item 5)
+asked. Until round 49 both were cumulative. `World.NoteContact` set a part's contact flag,
+the damage pass added to a part's loss, and only `AdoptPlan` on a plan change cleared
+either. So a brain read "touched since the body last changed shape" and "hurt since then".
+
+**Why.** The code did not do what the ruling said. It was found on 2026-09-25 while reading
+why a resume of round 48 parted from its recording (`logbook/0120`): the contact record was
+not in the checkpoint, and reading it showed the record never reset. Rounds 45 to 48 ran
+with both senses on, so every brain in them that read either sense read a history. The
+checkpoint fix (StateVersion 11) saves the records as they are, so the rule change and the
+fidelity fix are separate.
+
+**Rejected.** Keeping the cumulative senses and rewriting the specification to match them.
+The owner chose the specification.
+
+### D124
+**A founder starts with at most a fraction of its own breeding gate, from round 49** · 2026-09-25
+
+**Status:** ruled by the owner on 2026-09-25 on `fable-propose-round-49.md`, which it absorbs.
+It is built on `r49-founder-cap` as a tunable, `FounderReserveCapFraction`
+(`EVOSIM_FOUNDER_RESERVE_CAP`). The header reads `founder cap 0.9 of the gate` or `founder cap
+off`. It is 0 in every recorded config and 0.9 in round 49 ("that value, the 90, should be
+configurable, like every other knob").
+
+**Decision.** A founder of the floor, the trickle or D117's pool starts with the lesser of two
+sums. One is its recorded start: the purse (200 J times its birth fraction) and D122's
+endowment. The other is `f × G + growth`. `G` is the gate its own reproduction mode applies once
+it is grown, `Organism.BreedingGate` at the adult body and age 0. For a lump breeder that is the
+litter's price plus the margin; for a gestating one it is the price alone, asked of the account.
+`growth` is the adult's tissue less the newborn's, which is what `World.Grow` takes from the
+reserve in all. So after its growth a founder holds at most `f` of its gate and has to earn the
+rest. The cut comes out of the endowment first and then the purse, before `World.Admit` credits
+the start. Both books therefore see a smaller influx and nothing else. The founder's lineage row
+carries `capcut` beside the endowment actually given, and `stats.jsonl` carries
+`foundersCapped` and `founderJoulesCapped` when the cap is on. An inoculant is not capped.
+
+**Why.** In round 48 (logbook/0120) every one-part pool stomach landed with 138 J against a gate
+of 100 J. It had its child half a second later on the endowment and starved in about three
+minutes. The round tested whether a founder's child could live where the parent landed, and D122
+was written to test whether the founder could. The agent's arithmetic for that stomach is
+`scripts/reads/r49-prereg/gift_cap.py`. At 0.9 the stomach never breeds with 0.5 J/m³ or less in
+its own cell. It breeds at 44 s with 0.75 J/m³ and at 24 s with 1, and where it does not breed it
+lives 7 to 28 minutes on the gift. The leaves earn from their first second and should hardly
+notice (inference).
+
+**Rejected.** (a) Keeping round 48's rule, which repeats round 48. (b) The agent's
+recommendation, an endowment that pays upkeep only and never counts toward a child. It lets a
+founder save its whole food income for three minutes and breed at 0.42 J/m³, under its own
+break-even of 0.44, and it needs a second account. (c) Dropping the endowment, which round 47
+measured: pool founders dead at a median of 24 to 46 s. And the owner's other idea, a no-child
+period of N seconds. At 600 s the stomach at 0.5 J/m³ still has its child at 600 s, paid from
+the gift, and dies at 1,270 s; and every founder's first child waits, the leaves' included.
+
+**Ruled with it.** The wear stays on upkeep for round 49 (question 2, "agree with your
+recommendation"). The new death rows are read before (b) or (c) of that question is considered.
+The snow's stirring is held (question 3, "leave as is for now and evaluate"). The owner added a
+note on it for the round after next. A mouth fed from its one 1 m cell reads as if a cell had a
+limit: "i wonder if we could come up with something smarter". No cell has a cap. The limit is the
+refill of the cell the mouth empties (CLAUDE.md, "A mouth is priced at the cell it is
+emptying"). The candidates for round 50 are a mouth fed from a neighbourhood, intake by the water
+passing the mouth, and a finer grid near mouths.
+
+### D125
+**A leaf founder is set where its own income is largest, from round 50** · 2026-09-26
+
+**Status:** ruled by the owner on the morning of 2026-09-26, option (a) of three put to them after
+round 49's leaf read. Built on `leaf-income-depth` as a tunable, `FoundersFollowIncomeDepth`
+(`EVOSIM_FOUNDERS_INCOME_DEPTH`), refused without `FoundersFollowFoodDepth`. The header's founder
+token reads `founders in their food at its depth, leaves where they earn most`. It is off in every
+recorded config and on in round 50.
+
+**Decision.** A founder with a leaf, placed under D122's depth rule, is set in the cell of its
+accepted column where its own income, light and food together, is largest. Each live cell of the
+finer grid's column, 1 m in the campaign, is priced at its centre by `Metabolism.StepAt`, the call
+the metabolic pass bills a body with. The price reads the shaded light there, the snow's edible
+density and the dissolved matter's density, at age 0 and with no work. It is the orientation
+average, since a founder has no pose until the solver places it. The founder lands in the cell
+with the largest light income plus food income, the shallower on a tie, and the placer then holds
+it off the surface and the bed as it holds any founder. A body that prices at nothing everywhere
+keeps the drawn depth. A body with no leaf is placed as D122 placed it, so a stomach's landing does
+not move. D116's acceptance still chooses the column.
+
+**Why.** D122 set a leaf at the richest cell of the dissolved matter, and late in a run that cell
+lies deep. In round 49's three seeds the trickle's leaves were set at a median 44 m down, where
+the light is under a thousandth of the surface's. They died at a median 68 to 99 s, and 2 of 1,256
+bred. The floor's leaves, set at 4 to 8 m during the founding, lived a median 679 to 1,432 s, and
+36 of 85 bred (logbook/0122, `scripts/reads/r49-entry/leafdepth.py`). A leaf eats
+light and matter together, and the world's own bill is the one price that weighs the two as the
+world does.
+
+**Rejected.** (b) Leaves at the drawn depth, 0 to 12 m, as before round 48. It ignores the matter,
+which round 48's rule was written to read. (c) No change, which repeats round 49's dead trickle.
+
+**Built with it.** The founder clamp's repair (`founder-depth-bed`, logbook/0122's W1). The
+depth rule held a founder above the bed at the tank's centre, which a flat floor makes the same as
+the bed under it; on round 49's tilted bed it lifted every founder whose food lay deeper than
+45 m to just above 45 m. The repair reads the bed under the candidate and changes nothing on a flat
+floor. Round 49's leaves were placed by the rule and the clamp together: the rule chose the deep
+matter, and the clamp lifted those over a bed deeper than the centre's to about 44 m.

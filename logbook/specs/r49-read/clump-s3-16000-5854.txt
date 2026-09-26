@@ -1,0 +1,5 @@
+runrec: 2026-09-26-034954-f0794a8b: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+r49-s3 at 16000 s: 2736 living, 24 with a stomach, 11 of them the line of 5854
+  the line: x 128.5 to 135.1 (6.5 m), z 88.8 to 104.7 (15.9 m), median height -2.52 m
+  its centroid (131.6, 98.2): 50.1 m from the axis of a 83.68 m tank, ring 1 of 0 to 3 (equal areas), bearing 17 deg from +x toward +z
+  the 13 stomachs outside the line: nearest other stomach at a median 15.7 m, min 2.8 m; within 2 m of another: 0

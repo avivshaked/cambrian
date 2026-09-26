@@ -52,32 +52,64 @@ stream carries no guild flags, which `positions.jsonl` does.
 
 ## Part A: the record
 
+`EVOSIM_RECORD_FORMAT` chooses which record a run writes: 2, the default from round 49's build,
+or 1, which every earlier run wrote. It is a recording setting and moves no hash, and the
+manifest's `recordFormat` says which record a directory holds. A resumed run takes its
+source's record unless its launcher names one, as it takes the source's cadences. It reads the
+source's manifest, and a manifest without the field means format 1.
+
 A1. **Genomes once.** `genomes.jsonl.gz` holds one row per body, written when the body is
-admitted (founder, birth, inoculant, trickle or pool founder), drained with the lineage at each
-report. The row is exactly `GenomeJson.Write(genome, indent: false, id)` as today, without
-`moduleCounts` and `lostPaths`. The file is gzip in members: each drain writes one complete gzip
-member, and concatenated members are one valid gzip file. A killed run leaves every complete
-member readable. A reader stops at a torn last member and says so, and never parses it.
+admitted (founder, birth, inoculant, trickle or pool founder). The row is exactly
+`GenomeJson.Write(genome, indent: false, id)` as today, without `moduleCounts` and `lostPaths`.
+
+The genomes come from a queue in the world. `World.QueueAdmittedGenomes` is off by default, and
+the console farm turns it on. Each admission then queues a reference to the body's genome beside
+its lineage row, one per id. The Unity farm never drains the queue, so there it stays off rather
+than holding every genome ever admitted. The farm drains it wherever it drains the lineage: at
+each report row, before each checkpoint and at the run's end. A resumed run writes its living
+roster's genomes as its first member, because those bodies were admitted in the run it
+continues. Each directory then reads on its own.
+
+The file is gzip in members. Each drain writes one complete gzip member, and concatenated
+members are one valid gzip file. Each member also carries its own length in an extra header
+field (RFC 1952's FEXTRA, subfield `EV`, eight bytes), which standard readers skip. So a reader
+knows a torn last member before it inflates a byte. A killed run leaves every complete member
+readable. A reader stops at a torn last member and says so, and never parses it.
 
 A2. **Snapshots keep their cadence and lose the genome.** `snapshots/NNNNNNNNN.jsonl.gz` rows
 become `{"id", "moduleCounts"?, "lostPaths"?, "bf"}`: what changes in a life, plus the body
 fraction, which no snapshot carried before. The genome is joined from A1 by id. A reader that
 finds a slim row and no genome for its id refuses the row and counts it, as `WithoutAGenome`
-does today.
+does today. A converted snapshot's rows carry no `bf`, because format 1 never recorded one.
 
-A3. **`positions.jsonl` becomes `positions.jsonl.gz`**, same rows, members per report.
+A3. **`positions.jsonl` becomes `positions.jsonl.gz`**, same rows, one member a sample.
 
-A4. **`poses.jsonl` is retired for the stream.** New launchers set `EVOSIM_POSE_EVERY` to the
-report interval (10 s), so the stream carries what the JSON did, plus the body fraction.
-`PoseStream` version 2 deflates each frame's payload (the frame header and trailer stay
-uncompressed, so the index and the torn-frame rule are unchanged) and adds one flags byte per
-body (absorptive 1, jointed 2, photosynthetic 4), so a reader of the stream needs no second
-file for guilds. Version 1 streams stay readable; the version field says which.
+A4. **`poses.jsonl` is retired for the stream.** In format 2 the farm turns the stream on at the
+report interval (10 s) when the launcher names no cadence. The stream then carries what the JSON
+did, plus the body fraction. `PoseStream` version 2 deflates each frame's body records and
+nothing else. The frame's time, its body count and the records' raw length stay uncompressed in
+front of them, and the framing and the trailer stay as they were. So a scan reads a frame's
+second without inflating anything, and the index and the torn-frame rule are unchanged. Version 2
+also adds one flags byte per body (absorptive 1, jointed 2, photosynthetic 4), so a reader of the
+stream needs no second file for guilds. Version 1 streams stay readable, and the version field
+says which. A body fraction of NaN means "not recorded" (`logbook/specs/state-stream-spec.md`),
+and a picture draws that body at its adult size.
 
-A5. **Checkpoints are compressed.** `Checkpoint.Version` 5 gzips the payload after digesting it.
+A5. **Checkpoints are compressed.** `Checkpoint.Version` 6 gzips the payload after digesting it.
 The digest stays over the uncompressed payload, so the verification is unchanged. Version 4
 files stay readable, and the version field says which, so no reader guesses from the bytes.
-`WorldState.StateVersion` does not move: the world's layout is untouched.
+This part moves no `WorldState.StateVersion`.
+
+*Corrected at the merge with the checkpoint fix (2026-09-25).* This part was built as version 5,
+with format 1 still writing version 4. The checkpoint fix was built at the same time on
+`checkpoint-senses` (CLAUDE.md's checkpoint gotcha), as another version 5. It adds the contact
+record, the sense wiring, the size a growing body was stepping and the rebuild count
+(`StateVersion` 11), stored as it is. Round 49's build carries both as version 6: the new
+payload, gzipped. Both records write it, because the payload's layout is the world's and version
+4's lacks the contact record. A version-4 file (round 48's) is read lossily and names itself
+among the header's differences. A resume refuses it without the override, and a film window
+names it in the verdict and lets the rows decide. A file that says 5 is refused by name, since
+its version cannot say which of the two layouts it holds; no run kept one.
 
 A6. **One reader per language.** `scripts/reads/runrec.py` becomes the one way a Python script
 reads a run: `genomes(run)`, `snapshot(run, second)` (rows with the genome joined, so an old
@@ -92,20 +124,37 @@ reads (`r41d-read.py` to `r47-read.py`) read closed runs and are left alone. On 
 Core readers take both.
 
 A7. **A converter for the runs on disk.** `scripts/record-convert.py <run dir>` writes the new
-files beside the old ones (genomes once, slim snapshot rows, gzipped positions, the JSON poses
-as a version 2 stream without body fractions) and checks, row for row, that `runrec.py` reads
-the same thing from both. It deletes nothing. Removing the old files after a check is the
-owner's decision, run by run.
+files beside the old ones, or into `--out`: genomes once, slim snapshot rows and gzipped
+positions. It writes the JSON poses as a version 2 stream with its index. Every body fraction in
+it is NaN, "not recorded". Every body's flags are the same sample's `positions.jsonl` row's, or 0
+where that row or the body's entry is missing, counted and noted in the mark. A run that wrote a
+stream of its own keeps its JSON poses unconverted, because its own stream is the better record.
+The converter then checks, row for row, that `runrec.py` reads the same thing from both. The
+stream is read back through `poses-read.py`'s functions and compared with the JSON to the bit. It
+deletes nothing. Removing the old files after a check is the owner's decision, run by run.
 
-The expected size of a seed like `r47-s2` under Part A, from the measurements above: genomes
-about 35 MB (46,665 births at 4.9 KB, about 6.6x under gzip), slim snapshots a few MB, positions
-about 60 MB and poses about 150 MB (both estimates until a converted run is measured),
-checkpoints at 500 s about 0.7 GB (60 at about 12 MB), field dumps 93 MB. About 1 GB a seed where
-it was 6 GB, and the checkpoints are then most of it.
+A conversion cannot recover two things. A body born and dead between two snapshots is in no
+format 1 snapshot, so no converted file holds its genome: 94 of the 5,914 birth rows of
+`runs/r48fix-s4`. And a converted slim row has no body fraction.
+
+That fixture, converted on 2026-09-24, measured the ratios. Its snapshots went from 430.3 MB to
+0.26 MB of slim rows and 2.9 MB of genomes. Its positions went from 29.5 MB to 11.4 MB, which is
+2.6x and not the 4.7x the first estimate assumed. Its 125.3 MB of JSON poses became a 42.6 MB
+stream, 2.9x, of which deflate gave 1.54x on the body records. The converted stream holds the
+JSON's rounded numbers, and a stream the farm writes holds the solver's floats, whose deflate
+ratio is not measured.
+
+The expected size of a seed like `r47-s2` under Part A follows from those ratios. Its genomes
+come to about 35 MB (46,665 births at 4.9 KB, about 6.6x under gzip) and its slim snapshots to a
+few MB. Its positions come to about 110 MB and its poses to about 210 MB. Checkpoints at 500 s
+come to about 0.7 GB (60 at about 12 MB), and field dumps to 93 MB. That is about 1.2 GB a seed
+where it was 6 GB, and the checkpoints are then most of it.
 
 The trajectory does not move. Every writer change is in `src/Evosim.Farm` and in Core's
-serialisers, recording only, so the regress on the crowd fixture (`runs/r48fix-s4`) must read
-identical in every `stats.jsonl` field, and the digest at 1 and 16 threads must be unchanged.
+serialisers, recording only. `World.cs` gained one thing, the opt-in admission queue of A1, which
+holds a reference to each admitted genome and reads and draws nothing. The regress runs the crowd
+fixture's world in format 1 and in format 2, and both must read identical to `runs/r48fix-s4` in
+every `stats.jsonl` field. The digest at 1 and 16 threads must be unchanged.
 
 ## Part B: films the farm moves and Unity draws
 
@@ -116,30 +165,78 @@ thirty times a second for the stretch a scene needs, and Unity plays that back t
 draws a snapshot. The Editor's live mode stays as it is, for exploring.
 
 B1. **`Evosim.Farm.exe --film-window <run dir> <from s> <to s> <out dir> [--fps 30]
-[--threads N]`.** It restores the checkpoint at or before `from`. A hash mismatch is refused as
-a resume refuses it, unless `EVOSIM_ALLOW_SOURCE_MISMATCH` is set, and the window then says
-cousin. It steps to `from` writing nothing. From `from` to `to` it writes into `out dir`, never
-into the run directory:
-- `film.poses.bin`, a version 2 stream with a frame at the first physics step at or after each
-  `k / fps` second. The frame's recorded second is the step's own, so frames sit up to half a
-  physics step off the nominal clock, and the header records the nominal rate.
-- `genomes.jsonl.gz` for every body alive at `from` or born before `to`, with the plans
-  (`moduleCounts`, `lostPaths`) at `from` and every change to one inside the window as
-  `plans.jsonl`.
-- `events.jsonl`, every birth (with parent) and death (with cause) inside the window.
-- `identity.jsonl`: at every report second inside the window, `alive`, `births`, `deaths`,
-  `auditResidual` and `meanHeight` against the run's own `stats.jsonl` row. A window whose rows
-  all agree is **faithful**, and the film's provenance word says so; one that parts is a cousin
-  and says where it parted.
+[--threads N]`.** It restores the checkpoint at or before `from`, or founds the run from its
+config and seed when there is none. It steps to `from` writing nothing. At each metabolic step it
+does the loop's own work on the world, the assay and the extinction test. At the run's report
+steps it runs the sampler with nowhere to write, which drains the world's queues as the run's
+sampler drained them. From `from` to `to` it writes into `out dir`, never into the run directory:
+- `film.poses.bin`, a version 2 stream. Frame *k* is written at the first physics step at or
+  after the second *k* / fps, and carries that step's own second. So a frame is up to one
+  physics step late and never early. The header records the nominal interval, one over the
+  frame rate, and a rate above the physics rate is refused.
+- `genomes.jsonl.gz`, in Core's gzip members, the run's own format, which one reader reads for
+  both. Every body alive at `from` comes from the living roster, as a resumed run writes its
+  own. Every body born after `from` and up to `to` comes from the world's admission queue, which
+  the window turns on before its restore. The queue gives a body born and dead between two
+  metabolic steps its genome too. The plans (`moduleCounts`, `lostPaths`) at `from`, and every
+  change to one inside the window, go to `plans.jsonl`.
+- `events.jsonl`, the run's own lineage rows inside the window: every birth (with parent), death
+  (with cause) and bite. A bite rides the lineage queue beside births and deaths, and is written
+  and counted apart from both.
+- `identity.jsonl`: at every report second from the restore to `to`, `alive`, `births`,
+  `deaths`, `auditResidual` and `meanHeight` against the run's own `stats.jsonl` row, to the bit.
+  The pre-roll rows, between the restore and `from`, are compared and counted too. A window with
+  no report second inside it steps on to the run's first row after `to` and compares that one.
 
 The frame sampling runs below the metabolic step, which `ResolvePoseEvery`'s bound forbids for
 the run's own stream; the window takes its own path and leaves that bound where it is.
+
+A frame at a checkpoint's second can hold newborns that the run's own stream frame lacks. The run
+takes its frame before the checkpoint settles the harness, so a body admitted at that step has
+no solver body yet and is not drawn. The window restores the settled harness, and its frame at
+that second draws the newborn. A frame from the window and one from the run at a checkpoint second
+are therefore compared on the bodies both hold.
+
+**The faithful rule** is the owner's, of 2026-09-24, revised the same day. The config is the world.
+A window whose `configHash` differs from the run's is refused as a resume refuses it, unless
+`EVOSIM_ALLOW_SOURCE_MISMATCH` is set, and it then reads cousin whatever its rows say. The three
+source hashes, Core's, Dynamics' and the farm's, decide nothing on their own. A window reads
+faithful when every identity row it compared agrees bit for bit, and the film's provenance word then
+says faithful. Each source hash that differs is named in the verdict's reason and in its
+`sourcesDiffer` list.
+
+The rows are the evidence. A change to the solver or the economy parts `auditResidual` or
+`meanHeight` at the first row. A build that only adds a reader, a queue or a column moves the source
+hashes and no row. This build is one of them, since Core gained only the admission queue, the gzip
+writers and the format 2 readers, and Dynamics is untouched. A rule on the hashes would have made a
+cousin of every window of round 48. A resume keeps its own refusal of all four hashes, because it
+writes the run's continuation and not a film of it.
+
+A row that parts, in the pre-roll or inside the window, makes a cousin, and the verdict names the
+second and the field. A window needs at least one compared row, inside it or the first after
+`to`. With none it reads unverified, and so does a window whose end lies past the run's last
+row. The window exits 0 when faithful, 2 for a cousin, 3 when unverified and 1 on a refusal.
 
 B2. **Playback in the theatre.** A `StreamWorld` in `Evosim.Theatre` reads a window and gives
 the cameras the same bodies the live world does. A body appears at its birth and goes at its
 death. It takes its plan from `plans.jsonl`, its size from the frame's body fraction and its pose
 from `RecordedPoses.Apply`, and it is rebuilt only when its fraction or plan changes. Nothing in it steps
 physics. The film tool and the safari take it with `-FromFarm`.
+
+*As built (2026-09-25).* The class is `FilmWindowWorld`, since `SnapshotWorld` already reads the
+run's own stream and a second "stream world" would name the wrong one. The window's files are
+read by `FilmWindowReader` in `Evosim.Farm`, so a farm test reads what a window wrote with the
+theatre's own reader. The bodies are drawn by `LiveWorldView`, the live mode's view, fed a
+frame at a time rather than synced to a solver. So one body tree, one skin and one pick serve both.
+A frame takes the newest plan row written strictly before it, and the rows written as the window
+opened. The farm changes a plan at a metabolic step and rebuilds the body at the start of the next
+physics step. A frame due on the metabolic step is written between the two. The label's first
+line is `FARM FILM WINDOW` and the verdict's word. The theatre opens a window with
+`EVOSIM_THEATRE_WINDOW`, and `theatre-snap.ps1 -From window -Window <dir>` photographs one.
+`TheatreWindowCheck` plays every frame headless. The film tool and the safari are B3's. The
+verdict now carries `runDirectory`, the run's full path, so the player finds the config without
+being told. At a stream second the window's frame equals the run's own frame to the bit
+(`FilmWindowTests`), so the third acceptance reduces to the plan's source and the Unity compile.
 
 B3. **The safari on windows.** The director plans each scene from the guide and the checkpoint
 list as it does now, then asks for each scene's window: from the scene's second, less the take's
@@ -149,19 +246,58 @@ re-running. The windows are independent, so they are written in parallel, severa
 processes at a few threads each, before Unity opens. Unity then films every scene from its
 window without stepping anything.
 
+*As built (2026-09-25).* The windows are planned from the story and recorded one at a time, not in
+parallel, under the machine's load ruling. `scripts/story-windows.py` reads a story and each run's
+lineage and writes `windows.json`, which `StoryWindows` in `Evosim.Farm` reads. It holds one
+window a scene, and one for each of a time scene's two takes. Each names its run, its span, its
+frame rate, the second its takes start and its chapter card's length. The span covers the card and
+the takes as the director times them, and one second more.
+
+A birth's window is set on a birth that the lineage records. That is the story's child, else the
+named parent's child nearest the second, else a child of the clade's line. A flexible scene past
+the run's last row is moved back to end on it. A held one is left, and reads unverified.
+`scripts/story-windows.ps1` runs `--film-window` once a window, and skips a window whose verdict
+names the same run, span and rate.
+
+The safari films them with `theatre-safari.ps1 -FromWindows`. The director opens each scene's
+window through the runner and poses the cameras on its frames. The plans that look ahead (the still
+close shot, the portrait's drift, the birth's hold) read the body's recorded path. The live world
+extrapolates its velocity there instead. Both worlds serve the plans through one interface,
+`IFilmWorld`.
+
+A scene with no recorded window is skipped and named in `scenes.tsv`, never stepped. Each take's
+label carries its window's word, and so does a new `provenance` column in `scenes.tsv`. A story
+can therefore hold faithful and cousin scenes side by side and say which is which, and
+`story-assemble.py` notes a film that mixes them. A birth take from a faithful window shows the
+recorded birth. A window holds no body's reserve, so a chart of one draws its births alone.
+
+`theatre-film.ps1 -FromFarm <window>` films one window with the film tool's shots, cut to the
+window's length. Its `-Trace` reads the solver, and is refused there. None of this has run in
+Unity or on the farm. The theatre compiles outside Unity with no errors, and the planner and the
+window reader's new calls have their own tests.
+
 B4. **During the run, later.** Once B1 is measured, the farm can write a short window at each
 checkpoint as it runs, so a safari needs no farm time at all after the arm ends. Its disk cost
 at the campaign's crowd has to be measured before it is proposed.
 
-Acceptance for Part B has three parts. A window of `r48fix-s4` reads faithful at every report
-second inside it. The playback's frame at a stream second draws the same parts as `-From
-snapshot` does from the run's own stream at that second, to a millimetre and a tenth of a degree.
-And the wall time of a 60 s window is recorded at 5, 10 and 16 threads on a machine with nothing
-else running.
+Acceptance for Part B has three parts. A window of a run recorded on this build reads faithful
+at every report second inside it. That run is a fixture still to be recorded: `r48fix-s4` wrote
+no checkpoints, so it can be filmed only from its founding. The fixture is its world recorded on
+this build in format 2 with a checkpoint every 500 s. A window of round 48's third seed, which
+checkpoints every 500 s on the round 48 build, reads faithful too, with its source hashes named.
+That is the test of the claim that this build moves no trajectory. The playback's frame at a stream second
+draws the same parts as `-From snapshot` does from the run's own stream at that second, to a
+millimetre and a tenth of a degree. At a checkpoint's second the comparison is made on the bodies
+both frames hold. And the wall time of a 60 s window is recorded at 5, 10 and 16 threads on a
+machine with nothing else running.
 
 ## What waits for the round gap
 
 Round 48 holds two farm runs until its third seed ends, and the machine's rule is no test suite
-beside two farm runs. The build, the compile and the fixtures can be written now. The suites, the
-regress, the digests and every timing are run at the gap, or beside one farm run with nothing
-else, and a timing taken beside anything is taken again.
+beside two farm runs. The build, the compile, the converter's dry check and the fixtures' recipes
+are done now. Everything that runs the farm waits for the gap, or for a slot beside one farm run
+with nothing else. That is the suites, the regress (format 1 against format 2), the checkpointed
+fixture, the first faithful window, a resume from a version 6 checkpoint, the digests and every
+timing. A timing taken beside anything is taken again. The theatre's readers have been
+type-checked outside Unity and never compiled by it. The first Unity compile, and a `-From
+snapshot` picture of a format 2 run, wait for the gap too.

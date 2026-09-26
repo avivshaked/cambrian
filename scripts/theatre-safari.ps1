@@ -11,12 +11,23 @@
   heuristic, seeks each scene's second from the run's checkpoints (a cousin from every restore,
   and every frame says so), plans each take against the bed and the bodies at that second, and
   writes its frames through the film's render-texture read-back into
-  scratch/safari/<Arm>/<date>/<scene>/take-N/frame-NNNNNN.png, with captions.tsv (scene, second,
-  text, offset into the take's clip) and scenes.tsv (what each scene did) beside them.
+  scratch/safari/<Arm>/<date>/<scene>/take-N/frame-NNNNNN.png, with captions.tsv (each take's
+  length and first second, each caption's span in its take, appended a session at a time) and
+  scenes.tsv (what each scene did) beside them.
+
+  A trip's frames carry its captions and the provenance label in the bitmap font. A story's
+  (-Story) carry neither: scripts/story-assemble.py sets both as subtitles in IBM Plex Sans from
+  captions.tsv when it joins the film (EVOSIM_THEATRE_STORY_BURN_TEXT; -BurnText and -NoBurnText).
 
   Then ffmpeg (on PATH) encodes each take and joins a scene's takes: the time station's two takes
   with a one-second crossfade, any other scene's with a cut. The clips are
   scratch/safari/<Arm>/<date>/<Arm>-<scene>.mp4, each with a contact sheet (scripts/film-sheet.py).
+
+  With -FromWindows a story's scenes are played from the farm's film windows instead of stepped
+  (logbook/specs/record-and-film-spec.md, B3): scripts/story-windows.py plans them and
+  scripts/story-windows.ps1 records them, and each scene then opens its own window, shows the
+  farm's frames, and carries the window's verdict (FAITHFUL, COUSIN or UNVERIFIED) as its word. A
+  scene with no recorded window is skipped and scenes.tsv says why; nothing is stepped live.
 
   With -Check it runs Evosim.Theatre.EditorTools.TheatreSafariCheck.Run instead: a frame every two
   seconds (or -Every) into scratch/snaps/safari/<Arm>/, the camera asserted above the bed, outside
@@ -39,6 +50,9 @@
   colony), in place of the heuristic's trip.
 .PARAMETER Fps
   Frames per simulated second, default 30.
+.PARAMETER EncodeThreads
+  Threads each ffmpeg encode may use (default 4). ffmpeg takes every core by default, which put
+  the machine at 100% beside a farm run on 2026-09-25, against the owner's half-machine ruling.
 .PARAMETER Size
   Frame size as WxH, both even. Default 1920x1080 (960x540 with -Check).
 .PARAMETER Worker
@@ -52,7 +66,15 @@
   A flexible scene more than this many seconds past its checkpoint opens at the checkpoint
   instead when its clade is alive there (default 300; -1 never moves a scene).
 .PARAMETER NoCaptions
-  Do not burn the captions into the frames; captions.tsv is written either way.
+  Do not burn the captions into a trip's frames (the label stays); captions.tsv is written either
+  way. A story's captions are not burned by default: see -BurnText.
+.PARAMETER BurnText
+  Stamp the captions and the provenance label into the frames in the bitmap font, as every film
+  before 2026-09-25 was (EVOSIM_THEATRE_STORY_BURN_TEXT=1). A story leaves them out by default
+  for scripts/story-assemble.py to set as subtitles; a trip stamps them by default.
+.PARAMETER NoBurnText
+  Stamp neither the captions nor the label into a trip's frames either
+  (EVOSIM_THEATRE_STORY_BURN_TEXT=0): clean frames, the text only in captions.tsv.
 .PARAMETER Check
   Run the headless check instead of the record.
 .PARAMETER Every
@@ -96,6 +118,17 @@
 .PARAMETER StoryRun
   The run the story's scenes are chosen for (EVOSIM_THEATRE_SAFARI_STORY_RUN); the Arm when not
   given.
+.PARAMETER FromWindows
+  The folder scripts/story-windows.py planned (its windows.json), or the file, from here or from
+  the repository's root (EVOSIM_THEATRE_SAFARI_WINDOWS). Needs -Story.
+.PARAMETER NoStoryLook
+  Film a story in the census's dark field (EVOSIM_THEATRE_STORY_LOOK=0): no lighter water, no
+  lamp, no exposure meter. A story takes the look by default (StoryLook.cs, 2026-09-25); a trip
+  does not. The look's dials (EVOSIM_THEATRE_STORY_LUMA, _DEEP, _SHALLOW, _AMBIENT, _FOG, _REACH,
+  _VIGNETTE, _LAMP, _LUMA_DEPTH, _EV_MIN, _EV_MAX) are read from the caller's environment and
+  passed through untouched. A story's charts are drawn with or without the look.
+.PARAMETER StoryLook
+  Give a heuristic's trip the story look too (EVOSIM_THEATRE_STORY_LOOK=1).
 .PARAMETER Folder
   The folder the clips go in, in place of the date (scratch/safari/<Arm>/<Folder>), or with
   -Check a folder inside the check's (scratch/snaps/safari/<Arm>/<Folder>), so a trial never
@@ -107,6 +140,8 @@
   ./scripts/theatre-safari.ps1 r46-s1 -Check -Scenes 1,2,3 -Guide scratch/safari-director/guide-r46-s1.json
 .EXAMPLE
   ./scripts/theatre-safari.ps1 r48-s1 -Story scratch/story/story.json -Check -Worker 5 -RunsRoot D:\Projects\experiments\evolution-simulator\runs
+.EXAMPLE
+  ./scripts/theatre-safari.ps1 r48-s1 -Story scratch/story-v2/story.json -FromWindows scratch/story-windows/r48-v2 -Scenes 1,3 -Worker 5 -Folder windows-trial -RunsRoot D:/Projects/experiments/evolution-simulator/runs
 #>
 [CmdletBinding()]
 param(
@@ -115,6 +150,7 @@ param(
     [string[]]$Scenes = @(),
     [string]$Clade = '',
     [int]$Fps = 30,
+    [int]$EncodeThreads = 4,
     [string]$Size = '',
     [int]$Worker = 6,
     [int]$WallMinutes = 60,
@@ -134,7 +170,12 @@ param(
     [switch]$DownsampleCheck,
     [string]$Story = '',
     [string]$StoryRun = '',
-    [string]$Folder = ''
+    [string]$FromWindows = '',
+    [switch]$NoStoryLook,
+    [switch]$StoryLook,
+    [string]$Folder = '',
+    [switch]$BurnText,
+    [switch]$NoBurnText
 )
 
 $ErrorActionPreference = 'Stop'
@@ -185,6 +226,16 @@ if ($Story) {
     throw "-StoryRun needs -Story."
 }
 
+# The farm's film windows for the story: a folder holding windows.json, or the file.
+$windowsPath = ''
+if ($FromWindows) {
+    if (-not $storyPath) { throw "-FromWindows needs -Story: the windows are a story's, planned by scripts/story-windows.py." }
+    $candidates = if ([System.IO.Path]::IsPathRooted($FromWindows)) { @($FromWindows) } else { @((Join-Path (Get-Location) $FromWindows), (Join-Path $root $FromWindows)) }
+    $windowsPath = $candidates | Where-Object { (Test-Path -LiteralPath $_ -PathType Leaf) -or (Test-Path -LiteralPath (Join-Path $_ 'windows.json') -PathType Leaf) } | Select-Object -First 1
+    if (-not $windowsPath) { throw "-FromWindows: no windows.json at $($candidates -join ' or '). Plan it with scripts/story-windows.py and record it with scripts/story-windows.ps1." }
+    $windowsPath = (Resolve-Path -LiteralPath $windowsPath).Path
+}
+
 # ---------------------------------------------------------------- the run and its guide
 
 $runsDirectory = if ([System.IO.Path]::IsPathRooted($RunsRoot)) { $RunsRoot } else { Join-Path $root $RunsRoot }
@@ -207,7 +258,7 @@ if ($Guide) {
 }
 
 $checkpoints = @(Get-ChildItem -Path (Join-Path $run.FullName 'checkpoints') -Filter '*.ckpt' -File -ErrorAction SilentlyContinue)
-if ($checkpoints.Count -eq 0) {
+if ($checkpoints.Count -eq 0 -and -not $windowsPath) {
     Write-Warning "The run has no checkpoints: every scene replays from the founding, and the Editor's log says how long each will take."
 }
 
@@ -245,7 +296,9 @@ $names = @(
     'EVOSIM_THEATRE_SAFARI_SEEK_MAX', 'EVOSIM_THEATRE_SAFARI_EVERY', 'EVOSIM_THEATRE_WALL_MINUTES',
     'EVOSIM_THEATRE_SAFARI_CANOPY', 'EVOSIM_THEATRE_DOF', 'EVOSIM_THEATRE_DOF_APERTURE',
     'EVOSIM_THEATRE_SAFARI_SNAP_AHEAD', 'EVOSIM_THEATRE_CPU_DOWNSAMPLE', 'EVOSIM_THEATRE_SYNC_ENCODE',
-    'EVOSIM_THEATRE_DOWNSAMPLE_CHECK', 'EVOSIM_THEATRE_SAFARI_STORY', 'EVOSIM_THEATRE_SAFARI_STORY_RUN')
+    'EVOSIM_THEATRE_DOWNSAMPLE_CHECK', 'EVOSIM_THEATRE_SAFARI_STORY', 'EVOSIM_THEATRE_SAFARI_STORY_RUN',
+    'EVOSIM_THEATRE_STORY_LOOK', 'EVOSIM_THEATRE_STORY_BURN_TEXT', 'EVOSIM_THEATRE_SAFARI_WINDOWS',
+    'EVOSIM_THEATRE_WINDOW')
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -278,6 +331,14 @@ try {
         $env:EVOSIM_THEATRE_SAFARI_STORY = $storyPath
         $env:EVOSIM_THEATRE_SAFARI_STORY_RUN = $StoryRun
     }
+    if ($windowsPath) { $env:EVOSIM_THEATRE_SAFARI_WINDOWS = $windowsPath }
+    if ($NoStoryLook -and $StoryLook) { throw '-NoStoryLook and -StoryLook together: pick one.' }
+    if ($NoStoryLook) { $env:EVOSIM_THEATRE_STORY_LOOK = '0' }
+    if ($StoryLook) { $env:EVOSIM_THEATRE_STORY_LOOK = '1' }
+    if ($BurnText -and $NoBurnText) { throw '-BurnText and -NoBurnText together: pick one.' }
+    if ($BurnText) { $env:EVOSIM_THEATRE_STORY_BURN_TEXT = '1' }
+    if ($NoBurnText) { $env:EVOSIM_THEATRE_STORY_BURN_TEXT = '0' }
+    $textWord = if ($BurnText -or (-not $storyPath -and -not $NoBurnText)) { 'captions and label stamped into the frames' } else { 'none in the frames: captions.tsv, for scripts/story-assemble.py' }
 
     $entry =if ($Check) { 'Evosim.Theatre.EditorTools.TheatreSafariCheck.Run' } else { 'Evosim.Theatre.EditorTools.TheatreSafari.Run' }
 
@@ -287,7 +348,9 @@ try {
     $tripWord = if ($storyPath) { "story $storyPath for $StoryRun" } elseif ($Clade) { "one clade: $Clade" } else { $Heuristic }
     $sceneWord = if ($sceneList.Count -gt 0) { ", scenes $($sceneList -join ',')" } else { ', every scene' }
     Write-Host "  trip     $tripWord$sceneWord"
+    if ($windowsPath) { Write-Host "  windows  $windowsPath (the farm's frames; a scene without one is skipped, never stepped)" }
     Write-Host "  frames   $outDirectory"
+    Write-Host "  text     $textWord"
     Write-Host "  entry    $entry"
     Write-Host "  log      $log"
 
@@ -341,7 +404,7 @@ $failed = 0
 function Encode-Take([string]$takeDirectory, [string]$clip) {
     $pattern = Join-Path $takeDirectory 'frame-%06d.png'
     & $ffmpeg.Source -hide_banner -loglevel error -y -framerate $Fps -start_number 0 -i $pattern `
-        -c:v libx264 -pix_fmt yuv420p -crf 18 -r $Fps -movflags +faststart $clip
+        -c:v libx264 -pix_fmt yuv420p -crf 18 -r $Fps -threads $EncodeThreads -movflags +faststart $clip
     return ($LASTEXITCODE -eq 0 -and (Test-Path $clip))
 }
 
@@ -381,7 +444,7 @@ foreach ($line in (Get-Content $sceneFile | Select-Object -Skip 1)) {
         $offset = [Math]::Max(0.0, (Length-Of $first) - 1.0).ToString('0.###', $invariant)
         & $ffmpeg.Source -hide_banner -loglevel error -y -i $first -i $second `
             -filter_complex "[0:v][1:v]xfade=transition=fade:duration=1:offset=$offset,format=yuv420p[v]" -map '[v]' `
-            -c:v libx264 -crf 18 -r $Fps -movflags +faststart $faded
+            -c:v libx264 -crf 18 -r $Fps -threads $EncodeThreads -movflags +faststart $faded
         if ($LASTEXITCODE -ne 0) { Write-Warning "$slug : the crossfade failed"; $failed++; continue }
         if ($parts.Count -gt 2) {
             $list = Join-Path $sceneDirectory 'parts.txt'
@@ -404,6 +467,6 @@ foreach ($line in (Get-Content $sceneFile | Select-Object -Skip 1)) {
     if ($DeleteFrames) { foreach ($take in $takes) { Remove-Item -Path (Join-Path $take.FullName 'frame-*.png') -Force } }
 }
 
-Write-Host "  captions: $(Join-Path $outDirectory 'captions.tsv') (offsets are into each take's clip; a time scene's second take starts one second early in the crossfade)"
+Write-Host "  captions: $(Join-Path $outDirectory 'captions.tsv') (each take's length and each caption's span in it, in seconds into the take's clip; a time scene's last take starts one second early in the crossfade, which scripts/story-assemble.py allows for)"
 if ($failed -gt 0) { exit 1 }
 exit 0

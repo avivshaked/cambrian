@@ -201,6 +201,27 @@ here because a reader of the code would otherwise go looking for what the map pr
   kind. It records what no other output could: a body that lost a limb and lived writes no death
   row, and `partsKilled` is an aggregate with no id on it.
 
+- **A bitten body waited** for the growth step until round 49. Rule 4 says the body rebuilds
+  as a growth resize does, and the build rebuilt it at the next growth step, up to ten seconds
+  after the bite. For those seconds the solver stepped the old plan. The contact list named the
+  old plan's links, and Core read them as the new plan's parts. A bite could then land on
+  another part and be priced against that part's pool. The two senses were read by the wrong
+  links, and a checkpoint taken then could not be restored. From round 49's bite rebuild
+  (2026-09-25) the farm rebuilds the body straight after the world's step, before any physics
+  step. A body that loses two parts in one pass now carries one part map, from the plan it
+  stood on before the pass. The second kill's map used to overwrite the first's. The step's
+  contact and damage records now go through the same map, where the build had dropped them on
+  every plan change. A surviving part keeps what it felt, a lost part's entries go with it, and
+  a part new to the plan reads 0 and false. The farm hands the rebuilt body the carried arrays,
+  at the growth step's rebuild as well. So on the physics steps after a bite a body reads the
+  loss and the contact of the step it lost the part on. Those are the readings rule 5 gives the
+  two senses. A module change carries them the same way. The module world with no bite steps
+  the trajectory it stepped before, since its leaves have no brain to read them. Its world
+  state now holds the carried records where it held nothing. The farm's tests hold the
+  rebuild and the carried records, with two worlds with no bite held to the trajectories they
+  stepped before the change (`BiteRebuildTests`). Core's hold the map and the records
+  (`MouthTests`).
+
 The regress: round 44's world at every mouth default, 1,000 s, 4 threads, against a run of the
 same launcher recorded on the tree before any of this was written — 132 shared fields at each of
 100 samples, identical, `alive`, `births`, `deaths`, `auditResidual` and `matterResidual` among

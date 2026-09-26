@@ -79,6 +79,14 @@ namespace Evosim.Farm
                     args.Length > 4 ? int.Parse(args[4], CultureInfo.InvariantCulture) : 4);
             }
 
+            // A stretch of a recorded run, replayed from its checkpoint and written down thirty
+            // times a second for the theatre: --film-window <run dir> <from s> <to s> <out dir>
+            // [--fps N] [--threads N]. FilmWindow says what it writes and what it refuses.
+            if (args.Length >= 1 && args[0] == "--film-window")
+            {
+                return FilmWindow.Run(args);
+            }
+
             var overrides = new Dictionary<string, string>(StringComparer.Ordinal);
 
             foreach (string arg in args)
@@ -189,7 +197,7 @@ namespace Evosim.Farm
                 // derives from it and World.ReadState refuses a checkpoint from another one.
                 settings.Seed = resume.Seed;
 
-                InheritRecording(settings, resume);
+                InheritRecording(settings, resume, resumeSourceRun);
 
                 // D117. The pool is the source run's, read from its pool/ and refused if its
                 // bytes no longer hash to what the config pins; a launcher's EVOSIM_TRICKLE_POOL
@@ -217,6 +225,11 @@ namespace Evosim.Farm
                     config.FoundingTricklePoolHash = pool.Hash;
                 }
             }
+
+            // Record format 2 retires poses.jsonl for the state stream at the report interval,
+            // unless the launcher named a cadence. After InheritRecording, so a resumed run keeps
+            // the stream its source was writing (logbook/specs/record-and-film-spec.md A4).
+            bool streamByDefault = settings.ApplyRecordDefaults(config.SharedSpace);
 
             float physicsDt = resume != null
                 ? resume.PhysicsStepSeconds
@@ -281,7 +294,7 @@ namespace Evosim.Farm
                 Path.Combine(
                     Path.GetDirectoryName(outPath),
                     Path.GetFileNameWithoutExtension(outPath)),
-                config, DateTime.UtcNow);
+                config, DateTime.UtcNow, settings.RecordFormat);
 
             // D117. Beside config.json, in the bytes the hash was taken over; a resumed run
             // carries its source's pool forward so that it can itself be resumed.
@@ -312,6 +325,7 @@ namespace Evosim.Farm
             // stream beside it was written at.
             manifest.PoseEverySeconds = settings.ResolvePoseEvery();
             manifest.CheckpointEverySeconds = settings.ResolveCheckpointEvery();
+            manifest.RecordFormat = settings.RecordFormat;
 
             if (resume != null)
             {
@@ -328,6 +342,15 @@ namespace Evosim.Farm
             Console.WriteLine();
             Console.WriteLine("run directory: " + dir.Path);
             Console.WriteLine("report:        " + outPath);
+            Console.WriteLine(
+                "record:        " + RunRecordFormat.Describe(settings.RecordFormat) +
+                (resume != null && !settings.Provided.Contains("EVOSIM_RECORD_FORMAT")
+                    ? ", the resumed run's own"
+                    : "") +
+                (streamByDefault
+                    ? "; the state stream in place of poses.jsonl, every " +
+                      settings.PoseEvery.ToString(CultureInfo.InvariantCulture) + " s (the report interval)"
+                    : ""));
             Console.WriteLine(
                 "threads:       " + threads.ToString(CultureInfo.InvariantCulture) +
                 "   dt " + physicsDt.ToString(CultureInfo.InvariantCulture) +
@@ -485,6 +508,11 @@ namespace Evosim.Farm
             var readings = new Readings(sim);
             var sampler = new Sampler { PoolNamed = config.FoundingTricklePoolCount > 0 };
 
+            // Record format 2's genome file is fed from the world's admission queue, which is off
+            // unless a run asks for it (a queue nobody drains is a leak). Before the first step and
+            // before a restore, so no admission can come before it.
+            world.QueueAdmittedGenomes = dir.Genomes != null;
+
             // The state stream, off unless a launcher asked for it. Opened here rather than in the
             // sampler because its cadence is not the sample's: it takes a frame from the metabolic
             // loop, where the sampler is called once a report row.
@@ -530,28 +558,23 @@ namespace Evosim.Farm
             // one (logbook/specs/checkpoint-spec.md).
             if (resumePath != null)
             {
-                using (CheckpointReader reader = CheckpointReader.Open(resumePath))
-                {
-                    System.IO.BinaryReader r = reader.Reader;
+                LoopState restored = ReadCheckpoint(resumePath, world, sim, sampler);
 
-                    Evosim.Core.StateIo.Tag(r, "PAYL");
-                    world.ReadState(r);
-                    sim.ReadState(r);
-                    sampler.ReadState(r);
-
-                    Evosim.Core.StateIo.Tag(r, "LOOP");
-                    metabolicSteps = r.ReadInt32();
-                    bestSpeedEver = r.ReadDouble();
-                    bestSpeedAt = r.ReadDouble();
-                    assayFired = r.ReadBoolean();
-
-                    Evosim.Core.StateIo.Tag(r, "PEND");
-                }
+                metabolicSteps = restored.MetabolicSteps;
+                bestSpeedEver = restored.BestSpeedEver;
+                bestSpeedAt = restored.BestSpeedAt;
+                assayFired = restored.AssayFired;
             }
+
+            // The bodies this run did not admit itself: a resumed run's inherited roster (and, in a
+            // founded one, nobody). Their genomes go into this directory's genomes.jsonl.gz first,
+            // so every slim snapshot row this run writes has its genome in its own directory.
+            Sampler.WriteLivingGenomes(world, dir);
 
             float checkpointEvery = settings.ResolveCheckpointEvery();
             int checkpoints = 0;
             double lastCheckpointSeconds = double.NegativeInfinity;
+            double deferredCheckpointAt = double.NaN;
 
             // The next second a checkpoint is due at, taken from the clock rather than counted
             // from the start, so a resumed run's checkpoints land on the same seconds the
@@ -618,14 +641,11 @@ namespace Evosim.Farm
 
                     // D060. Fires once — the first metabolic step whose elapsed time reaches the
                     // pre-registered instant — and checked before the extinction test below, so an
-                    // assay that lands on an empty world rescues it by design.
-                    if (inoculateOn && !assayFired && world.ElapsedSeconds >= settings.InoculateAt)
-                    {
-                        world.Inoculate(
-                            inoculum, settings.InoculateCount, -settings.InoculateDepth);
-
-                        assayFired = true;
-                    }
+                    // assay that lands on an empty world rescues it by design. The inoculum is null
+                    // unless inoculateOn, which is the gate ActOnWorld reads.
+                    assayFired = ActOnWorld(
+                        world, inoculum, settings.InoculateAt, settings.InoculateCount,
+                        settings.InoculateDepth, assayFired);
 
                     // Checked every step, not only at a report row: an empty world would
                     // otherwise sit doing nothing for up to reportEvery more steps. A crash to
@@ -680,7 +700,31 @@ namespace Evosim.Farm
                     // restore exists to avoid. It is also after the stop check has been read and
                     // before the loop acts on it, so a stopped arm's last checkpoint is the
                     // instant it stopped at.
-                    if (world.ElapsedSeconds + 1e-9 >= nextCheckpointAt)
+                    // Deferred, not skipped, while a body's solver is not on its organism's plan:
+                    // such a checkpoint cannot be restored (Simulation.PlanChangesPending). From
+                    // round 49 the harness rebuilds a changed plan on the metabolic step that
+                    // changed it, so this never fires; it stays as the guard for a plan-changing
+                    // path that forgets its rebuild. The next metabolic step asks again.
+                    bool checkpointDue = world.ElapsedSeconds + 1e-9 >= nextCheckpointAt;
+
+                    if (checkpointDue && sim.PlanChangesPending() > 0)
+                    {
+                        if (deferredCheckpointAt != nextCheckpointAt)
+                        {
+                            deferredCheckpointAt = nextCheckpointAt;
+
+                            Console.Error.WriteLine(
+                                "warning: the checkpoint due at " +
+                                nextCheckpointAt.ToString("0.#", CultureInfo.InvariantCulture) +
+                                " s waits: a body's plan has changed and its solver has not been " +
+                                "rebuilt on it, which the harness does on the metabolic step of " +
+                                "the change. A plan-changing path is missing its rebuild.");
+                        }
+
+                        checkpointDue = false;
+                    }
+
+                    if (checkpointDue)
                     {
                         sim.WritersClock.Start();
 
@@ -800,19 +844,41 @@ namespace Evosim.Farm
             // birth row).
             IReadOnlyList<LineageEvent> lineageTail = world.DrainLineageEvents();
             for (int i = 0; i < lineageTail.Count; i++) dir.Lineage.Write(lineageTail[i].ToJson());
+            Sampler.DrainGenomes(world, dir);
 
             // One last checkpoint at the second the run actually stopped at, unless the cadence
             // already wrote one there. A run stopped or walled between two cadence seconds is
             // exactly the case a resume is for, and without this it would resume from the last
             // round number and re-simulate everything after it.
+            //
+            // Not while a body's solver is off its organism's plan: a checkpoint then cannot be
+            // restored (Simulation.PlanChangesPending), and it would be the newest file, the one a
+            // resume picks by default. From round 49 no body is, since the harness rebuilds on
+            // the metabolic step of the change; the test stays as the guard, and when it fires
+            // the last cadence checkpoint stands instead and the run says so.
             if (checkpointEvery > 0f && world.Living.Count > 0 &&
                 world.ElapsedSeconds > lastCheckpointSeconds + 1e-9)
             {
-                checkpoints++;
+                int pending = sim.PlanChangesPending();
 
-                WriteCheckpoint(
-                    sim, sampler, dir, manifest, config, settings, physicsDt, stepsPerMetabolic,
-                    metabolicSteps, bestSpeedEver, bestSpeedAt, assayFired);
+                if (pending > 0)
+                {
+                    Console.Error.WriteLine(
+                        "note: no checkpoint at the second the run ended (" +
+                        world.ElapsedSeconds.ToString("0.#", CultureInfo.InvariantCulture) +
+                        " s): " + pending.ToString(CultureInfo.InvariantCulture) + " bodies had " +
+                        "changed plan without their solver being rebuilt, and a checkpoint of that " +
+                        "moment cannot be restored. A resume reads the last cadence checkpoint " +
+                        "instead.");
+                }
+                else
+                {
+                    checkpoints++;
+
+                    WriteCheckpoint(
+                        sim, sampler, dir, manifest, config, settings, physicsDt, stepsPerMetabolic,
+                        metabolicSteps, bestSpeedEver, bestSpeedAt, assayFired);
+                }
             }
 
             manifest.LastCheckpoints = checkpoints;
@@ -889,10 +955,9 @@ namespace Evosim.Farm
             return 0;
         }
 
-        /// <summary>The stop file's first line, or a word that says it had none.</summary>
         /// <summary>
-        /// A resumed run keeps the cadences the run it continues was recording at, except where
-        /// this launcher named one itself.
+        /// A resumed run keeps the cadences and the record the run it continues was recording at,
+        /// except where this launcher named one itself.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -904,13 +969,25 @@ namespace Evosim.Farm
         /// did not carry fails it for a reason that has nothing to do with the world.
         /// </para>
         /// <para>
+        /// The record format carries for the same reason (<see cref="SourceRecordFormat"/>): a
+        /// continuation of a format 1 run written in format 2 would be a directory no reader
+        /// written against its source could follow, and its checkpoints would change version
+        /// between two files of one run.
+        /// </para>
+        /// <para>
         /// A launcher that names one wins, because <see cref="EnvSettings.Provided"/> records
         /// which names were actually set rather than which values differ from a default. Resuming
-        /// at a finer cadence to watch something closely is a real thing to want.
+        /// at a finer cadence to watch something closely is a real thing to want, and so is
+        /// resuming an old run into the compact record.
         /// </para>
         /// </remarks>
-        private static void InheritRecording(EnvSettings settings, CheckpointHeader resume)
+        private static void InheritRecording(EnvSettings settings, CheckpointHeader resume, string sourceRun)
         {
+            if (!settings.Provided.Contains("EVOSIM_RECORD_FORMAT"))
+            {
+                settings.RecordFormat = SourceRecordFormat(sourceRun, resume);
+            }
+
             if (!settings.Provided.Contains("EVOSIM_REPORT_EVERY") && resume.ReportEvery > 0)
             {
                 settings.ReportEvery = resume.ReportEvery;
@@ -931,6 +1008,58 @@ namespace Evosim.Farm
             {
                 settings.CheckpointEvery = (float)resume.CheckpointEverySeconds;
             }
+        }
+
+        /// <summary>
+        /// The record the source run wrote: its <c>run.json</c>'s <c>recordFormat</c>, format 1
+        /// when the manifest names none, and, when there is no manifest to ask, format 1 for a
+        /// version-4 checkpoint and the files the directory holds for a version-6 one.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The manifest first, because it is where the record is recorded and what every reader
+        /// dispatches on. A manifest without the field was written before record format 2 existed,
+        /// so its run is format 1. A manifest this build cannot read is a refusal, under the rule
+        /// that a resume never guesses at its source.
+        /// </para>
+        /// <para>
+        /// The checkpoint's version stands in only when the source directory has lost its
+        /// manifest. Every version-4 checkpoint was written before record format 2 existed, so it
+        /// is format 1 without a guess. Both records write version 6 (<c>WriteCheckpoint</c>), so
+        /// for one of those the directory's own files decide
+        /// (<see cref="RecordFiles.FormatOf(string, out string)"/>: the converter's mark, or
+        /// <c>genomes.jsonl.gz</c> or <c>positions.jsonl.gz</c> present), and a directory holding
+        /// neither is format 1.
+        /// </para>
+        /// </remarks>
+        public static int SourceRecordFormat(string sourceRun, CheckpointHeader resume)
+        {
+            string manifestPath = sourceRun != null ? Path.Combine(sourceRun, "run.json") : null;
+
+            if (manifestPath != null && File.Exists(manifestPath))
+            {
+                JsonNode manifest = Json.Parse(File.ReadAllText(manifestPath));
+
+                if (!manifest.Has("recordFormat")) return RunRecordFormat.Jsonl;
+
+                JsonNode field = manifest["recordFormat"];
+                int format = field.Kind == JsonNode.NodeKind.Number ? field.AsInt() : -1;
+
+                if (!RunRecordFormat.IsKnown(format))
+                {
+                    throw new InvalidDataException(
+                        manifestPath + " says recordFormat " + field + ", and this build writes " +
+                        "records 1 and 2. Name EVOSIM_RECORD_FORMAT to resume it anyway.");
+                }
+
+                return format;
+            }
+
+            if (resume != null && resume.Version == Checkpoint.LossyVersion) return RunRecordFormat.Jsonl;
+
+            return sourceRun != null && Directory.Exists(sourceRun)
+                ? RecordFiles.FormatOf(sourceRun)
+                : RunRecordFormat.Jsonl;
         }
 
         /// <summary>
@@ -964,8 +1093,16 @@ namespace Evosim.Farm
             IReadOnlyList<LineageEvent> queued = world.DrainLineageEvents();
             for (int i = 0; i < queued.Count; i++) dir.Lineage.Write(queued[i].ToJson());
 
+            // The genome queue with it, for the same reason: it is not in the checkpoint, so what
+            // it holds belongs on this side of the line.
+            Sampler.DrainGenomes(world, dir);
+
             var header = new CheckpointHeader
             {
+                // Version 6 in either record: the payload is the world's layout, which has one
+                // writer, gzipped after it is digested. Record format 1 keeps the old run files;
+                // it cannot keep the old checkpoint, whose layout (version 4) lacks the contact
+                // record and is only read.
                 Version = Checkpoint.Version,
                 Seconds = world.ElapsedSeconds,
                 Seed = manifest.Seed,
@@ -1005,6 +1142,77 @@ namespace Evosim.Farm
                 });
         }
 
+        /// <summary>The loop's own four numbers, which a checkpoint carries under <c>LOOP</c>.</summary>
+        public struct LoopState
+        {
+            public int MetabolicSteps;
+            public double BestSpeedEver;
+            public double BestSpeedAt;
+            public bool AssayFired;
+        }
+
+        /// <summary>
+        /// Puts the world, the harness, the sampler and the loop's four numbers back out of one
+        /// checkpoint: <see cref="WriteCheckpoint"/> read backwards.
+        /// </summary>
+        /// <remarks>
+        /// Shared by a resume and by <see cref="FilmWindow"/>, so the two read one layout and a
+        /// section added to the writer is added to one reader.
+        /// </remarks>
+        internal static LoopState ReadCheckpoint(
+            string path, World world, Simulation sim, Sampler sampler)
+        {
+            var restored = new LoopState();
+
+            using (CheckpointReader reader = CheckpointReader.Open(path))
+            {
+                System.IO.BinaryReader r = reader.Reader;
+
+                StateIo.Tag(r, "PAYL");
+                world.ReadState(r);
+                sim.ReadState(r);
+                sampler.ReadState(r);
+
+                StateIo.Tag(r, "LOOP");
+                restored.MetabolicSteps = r.ReadInt32();
+                restored.BestSpeedEver = r.ReadDouble();
+                restored.BestSpeedAt = r.ReadDouble();
+                restored.AssayFired = r.ReadBoolean();
+
+                StateIo.Tag(r, "PEND");
+            }
+
+            return restored;
+        }
+
+        /// <summary>
+        /// What the loop does to the world at a metabolic step beyond stepping it: D060's assay,
+        /// fired once at the first step whose second reaches the pre-registered instant.
+        /// </summary>
+        /// <returns>Whether the assay has fired, this step or before.</returns>
+        /// <remarks>
+        /// <b>One method, called by the loop and by <see cref="FilmWindow"/></b>, so that a window
+        /// replays every change the run made to its world and not only the ones
+        /// <see cref="Simulation.Step"/> makes. Anything new the loop does that writes to the world
+        /// belongs here; left in the loop, it would make every film window of a run that has it
+        /// part from the run at the first step it acts on. A null inoculum is the assay switched
+        /// off.
+        /// </remarks>
+        internal static bool ActOnWorld(
+            World world, Genome inoculum, float inoculateAt, int inoculateCount,
+            float inoculateDepth, bool assayFired)
+        {
+            if (inoculum != null && inoculateAt > 0f && !assayFired &&
+                world.ElapsedSeconds >= inoculateAt)
+            {
+                world.Inoculate(inoculum, inoculateCount, -inoculateDepth);
+                assayFired = true;
+            }
+
+            return assayFired;
+        }
+
+        /// <summary>The stop file's first line, or a word that says it had none.</summary>
         private static string StopReason(string path)
         {
             try

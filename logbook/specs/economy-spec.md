@@ -119,7 +119,7 @@ re-extracted from the smoke. `ConceptionsUnderMargin` counts the attempts the ga
 
 ## 4. The numbers
 
-From round 40 seed 1 at 16,400 s (2,490 bodies) and the leaf of `scratch/r40/leaf.json`
+From round 40 seed 1 at 16,400 s (2,490 bodies) and the leaf of `logbook/specs/r40-read/leaf.json`
 (volume 0.0008 m³, lit area 0.0101 m², tissue 0.379 J, standing 0.0023 W, light income
 0.101 W at the surface, net 0.083 W):
 

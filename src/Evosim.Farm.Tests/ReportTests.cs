@@ -114,7 +114,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 // the shade map, all off in the recorded world), and the matter grid's own stirring
                 // before the area — a hard default of 2 m²/s that no launcher could name until the
                 // islands needed it lower, so the recording never printed it.
-                .Replace(" · reach off · ", " · reach off · floors per part · matter uniform · founders anywhere · endowment off · shade off · ")
+                .Replace(" · reach off · ", " · reach off · floors per part · matter uniform · founders anywhere · endowment off · founder cap off · shade off · ")
 
                 // D110's token, beside the silhouette cap it shares the shadow with; averaged in
                 // every recorded world.
@@ -147,13 +147,13 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 // under 256078e816861b27, and the round 48 rulings' eight (the founders' depth
                 // off, their endowment 0, senescence wearing intake, the rigid-group floors off,
                 // the overhead's per-tissue factor at 0, the two gestation rates at 0 and the
-                // share range 0.5 to 0.5) under this. The endowment's token, off, follows the
-                // founder rule's; the floors' token follows the reach; the reproduction token
+                // share range 0.5 to 0.5) under 53f8234cb554f0ba, and D124's founder cap (0) under
+                // this. The endowment's token, off, follows the founder rule's and the cap's follows it; the floors' token follows the reach; the reproduction token
                 // sits before the hash.
                 .Replace(
                     " · configHash ",
                     " · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + ContactToken + ReproductionToken + " · configHash ")
-                .Replace("`ff557bce2685293a`", "`53f8234cb554f0ba`");
+                .Replace("`ff557bce2685293a`", "`356e87c75e1338e9`");
 
             Assert.Equal(expected, Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9"));
         }
@@ -190,10 +190,10 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
             // D109, all off: the matter uniform, founders anywhere, no shade map, and the matter
             // grid stirring at the rate every recorded world stirred at.
-            Assert.Contains(" · reach off · floors per part · matter uniform · founders anywhere · endowment off · shade off · ", line);
+            Assert.Contains(" · reach off · floors per part · matter uniform · founders anywhere · endowment off · founder cap off · shade off · ", line);
             Assert.Contains(" · matter-mix 2 m2/s · area 2200 m2 · ", line);
 
-            Assert.EndsWith(" · configHash `53f8234cb554f0ba`", line);
+            Assert.EndsWith(" · configHash `356e87c75e1338e9`", line);
 
             // D110, off: the light is the orientation average, printed beside the cap.
             Assert.Contains(" · silhouette on · light averaged · ", line);
@@ -545,7 +545,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
         /// <summary>
         /// The round 48 rulings' three tokens with the rulings on, on round 42's launch otherwise:
         /// the founders at their food's depth (D116 on beneath it), the endowment in seconds, and
-        /// senescence on upkeep alone.
+        /// senescence on upkeep alone; and D124's founder cap, which round 49 adds to them.
         /// </summary>
         [Fact]
         public void TheRound48RulingsAreNamedInTheHeader()
@@ -555,6 +555,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             env["EVOSIM_FOUNDERS_FOLLOW_FOOD_DEPTH"] = "1";
             env["EVOSIM_FOUNDER_ENDOWMENT"] = "600";
             env["EVOSIM_SENESCENCE_WEARS_INTAKE"] = "0";
+            env["EVOSIM_FOUNDER_RESERVE_CAP"] = "0.9";
 
             EnvSettings settings = EnvBinding.Read(EnvBinding.Of(env));
             RunConfig config = EnvBinding.BuildConfig(settings);
@@ -562,6 +563,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             Assert.True(config.FoundersFollowFoodDepth);
             Assert.Equal(600f, config.FounderEndowmentSeconds);
             Assert.False(config.SenescenceWearsIntake);
+            Assert.Equal(0.9f, config.FounderReserveCapFraction);
 
             var world = new World(config, settings.Seed);
             SpaceFacts space = SpaceFacts.Of(
@@ -573,7 +575,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
             string line = Report.HeaderLine(settings, config, space, "9.9.9.9");
 
-            Assert.Contains(" · founders in their food at its depth · endowment 600 s · shade off · ", line);
+            Assert.Contains(" · founders in their food at its depth · endowment 600 s · founder cap 0.9 of the gate · shade off · ", line);
             Assert.Contains(" · senescence 3000 s on upkeep · ", line);
 
             // Unset, the switch reads on: D038's two sides, the recorded world.

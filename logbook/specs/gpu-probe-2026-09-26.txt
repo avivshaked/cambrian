@@ -1,0 +1,84 @@
+# The card probe of 2026-09-26: round 48 seed 1 resumed at 27,500 s for 200 s on the card
+#
+# Run: scratch/r49-probe/probe2.ps1, exe from scratch/wt-probe at ccebf3c (dirty: the regenerated
+# kernels), engine "gpu single 4090 g32 classes 2/4/8/16", 16 threads, EVOSIM_GPU_PROBE=1 set in
+# the launching process's environment (run-farm.ps1's -Env does not reach it; see below).
+# The build warns that EVOSIM_GPU_PROBE "is not a setting this build reads" and prints the probe
+# anyway: the binding does not know the variable, and the probe reads the environment directly.
+# A cousin by construction (resumed across every hash and across engines); a timing read only.
+# Taken with nothing else on the machine.
+#
+# Medians over the 20 probe lines, ms a physics step:
+#   contact grid 1.569; classes of up to 2 / 4 / 8 / 16 links 0.827 / 1.461 / 2.607 / 2.080; tail 0.042
+#   bodies a class 7653 / 597 / 117 / 17
+#   step 8.59 ms; the two largest classes 4.69 ms, 55% of it, for 134 bodies of 8385
+#   per body: class 1 0.11 us, class 4 122 us
+#
+# Reading: the four class kernels are launched one after another and each costs about its
+# slowest thread's latency, not its body count (7,600 bodies in 0.8 ms, 17 bodies in 2 ms). The
+# next step is the classes on concurrent streams (the Fable review of 2026-09-25, item 4).
+#
+# The probe lines as written:
+gpu-probe t=27509 s, ms a step: grid 1.631, classes 0.878 / 1.546 / 2.767 / 2.204, tail 0.044; bodies a class 7637 / 607 / 110 / 15; cell 0.872 m (mean link 0.436 m), largest link 1.019 m; most cells one link covers, a class 48 / 36 / 27 / 27; entries a class 111495 / 11542 / 3886 / 563
+gpu-probe t=27519 s, ms a step: grid 1.564, classes 0.827 / 1.451 / 2.604 / 2.058, tail 0.044; bodies a class 7637 / 606 / 111 / 16; cell 0.871 m (mean link 0.436 m), largest link 1.019 m; most cells one link covers, a class 48 / 36 / 36 / 27; entries a class 111459 / 11513 / 3869 / 542
+gpu-probe t=27529 s, ms a step: grid 1.566, classes 0.829 / 1.465 / 2.587 / 2.349, tail 0.043; bodies a class 7654 / 597 / 110 / 16; cell 0.872 m (mean link 0.436 m), largest link 1.019 m; most cells one link covers, a class 48 / 36 / 36 / 18; entries a class 111027 / 11547 / 3881 / 525
+gpu-probe t=27539 s, ms a step: grid 1.567, classes 0.826 / 1.442 / 2.600 / 2.269, tail 0.039; bodies a class 7661 / 597 / 110 / 16; cell 0.872 m (mean link 0.436 m), largest link 1.019 m; most cells one link covers, a class 36 / 36 / 36 / 27; entries a class 111480 / 11477 / 3866 / 533
+gpu-probe t=27549 s, ms a step: grid 1.559, classes 0.830 / 1.443 / 2.608 / 2.222, tail 0.046; bodies a class 7652 / 605 / 110 / 16; cell 0.872 m (mean link 0.436 m), largest link 1.029 m; most cells one link covers, a class 36 / 36 / 48 / 27; entries a class 111208 / 11354 / 3806 / 556
+gpu-probe t=27559 s, ms a step: grid 1.572, classes 0.838 / 1.444 / 2.761 / 2.260, tail 0.043; bodies a class 7661 / 601 / 115 / 17; cell 0.870 m (mean link 0.435 m), largest link 1.054 m; most cells one link covers, a class 36 / 36 / 64 / 27; entries a class 112017 / 11628 / 4026 / 605
+gpu-probe t=27569 s, ms a step: grid 1.575, classes 0.844 / 1.444 / 2.679 / 2.269, tail 0.041; bodies a class 7660 / 599 / 117 / 17; cell 0.871 m (mean link 0.435 m), largest link 1.063 m; most cells one link covers, a class 36 / 36 / 48 / 27; entries a class 111887 / 11593 / 4037 / 645
+gpu-probe t=27579 s, ms a step: grid 1.565, classes 0.855 / 1.458 / 2.616 / 2.235, tail 0.044; bodies a class 7658 / 599 / 117 / 17; cell 0.871 m (mean link 0.435 m), largest link 1.063 m; most cells one link covers, a class 36 / 48 / 48 / 27; entries a class 111519 / 11458 / 3994 / 572
+gpu-probe t=27589 s, ms a step: grid 1.571, classes 0.861 / 1.449 / 2.635 / 2.123, tail 0.046; bodies a class 7656 / 601 / 116 / 17; cell 0.871 m (mean link 0.436 m), largest link 1.063 m; most cells one link covers, a class 36 / 36 / 64 / 27; entries a class 112305 / 11627 / 4163 / 604
+gpu-probe t=27599 s, ms a step: grid 1.568, classes 0.828 / 1.479 / 2.609 / 2.096, tail 0.042; bodies a class 7644 / 599 / 117 / 18; cell 0.872 m (mean link 0.436 m), largest link 1.063 m; most cells one link covers, a class 48 / 36 / 48 / 27; entries a class 111845 / 11284 / 4176 / 609
+gpu-probe t=27609 s, ms a step: grid 1.582, classes 0.818 / 1.444 / 2.605 / 2.037, tail 0.042; bodies a class 7640 / 596 / 118 / 18; cell 0.872 m (mean link 0.436 m), largest link 1.063 m; most cells one link covers, a class 36 / 36 / 48 / 27; entries a class 111985 / 11528 / 4039 / 583
+gpu-probe t=27619 s, ms a step: grid 1.568, classes 0.816 / 1.457 / 2.593 / 2.060, tail 0.038; bodies a class 7648 / 593 / 119 / 18; cell 0.872 m (mean link 0.436 m), largest link 1.063 m; most cells one link covers, a class 48 / 36 / 36 / 27; entries a class 111764 / 11443 / 4261 / 621
+gpu-probe t=27629 s, ms a step: grid 1.572, classes 0.815 / 1.507 / 2.529 / 2.073, tail 0.042; bodies a class 7646 / 594 / 119 / 17; cell 0.873 m (mean link 0.436 m), largest link 1.063 m; most cells one link covers, a class 48 / 36 / 48 / 27; entries a class 111469 / 11316 / 4352 / 605
+gpu-probe t=27639 s, ms a step: grid 1.559, classes 0.820 / 1.566 / 2.531 / 2.029, tail 0.037; bodies a class 7653 / 595 / 120 / 17; cell 0.872 m (mean link 0.436 m), largest link 1.073 m; most cells one link covers, a class 48 / 36 / 48 / 27; entries a class 111781 / 11409 / 4250 / 617
+gpu-probe t=27649 s, ms a step: grid 1.577, classes 0.826 / 1.544 / 2.694 / 2.007, tail 0.037; bodies a class 7648 / 592 / 121 / 17; cell 0.873 m (mean link 0.437 m), largest link 1.120 m; most cells one link covers, a class 48 / 36 / 48 / 27; entries a class 110713 / 11244 / 4400 / 598
+gpu-probe t=27659 s, ms a step: grid 1.569, classes 0.819 / 1.555 / 2.683 / 2.001, tail 0.037; bodies a class 7648 / 596 / 120 / 18; cell 0.872 m (mean link 0.436 m), largest link 1.137 m; most cells one link covers, a class 36 / 36 / 48 / 27; entries a class 111489 / 11315 / 4335 / 609
+gpu-probe t=27669 s, ms a step: grid 1.573, classes 0.816 / 1.496 / 2.688 / 2.087, tail 0.043; bodies a class 7657 / 599 / 120 / 19; cell 0.871 m (mean link 0.435 m), largest link 1.153 m; most cells one link covers, a class 48 / 36 / 48 / 27; entries a class 112152 / 11315 / 4227 / 646
+gpu-probe t=27679 s, ms a step: grid 1.565, classes 0.814 / 1.470 / 2.580 / 2.044, tail 0.040; bodies a class 7658 / 597 / 121 / 19; cell 0.871 m (mean link 0.436 m), largest link 1.168 m; most cells one link covers, a class 48 / 48 / 48 / 27; entries a class 111539 / 11258 / 4387 / 601
+gpu-probe t=27689 s, ms a step: grid 1.589, classes 0.832 / 1.437 / 2.566 / 1.997, tail 0.042; bodies a class 7655 / 597 / 124 / 19; cell 0.871 m (mean link 0.435 m), largest link 1.181 m; most cells one link covers, a class 48 / 48 / 36 / 27; entries a class 111181 / 11263 / 4337 / 670
+gpu-probe t=27699 s, ms a step: grid 1.569, classes 0.836 / 1.464 / 2.587 / 2.001, tail 0.034; bodies a class 7664 / 598 / 127 / 19; cell 0.869 m (mean link 0.435 m), largest link 1.194 m; most cells one link covers, a class 48 / 36 / 48 / 27; entries a class 111872 / 11352 / 4511 / 579
+
+# ---------------------------------------------------------------------------------------------
+# The same day, afternoon: seven changes on gpu-probe (scratch/wt-probe), each checked on the card
+# against the run before it. Round 48 seed 1 resumed at 27,500 s for 300 s in single, digest every
+# 100 steps; every change identical to the sequential run ("seq", ccebf3c's kernels, the classes
+# one after another) over all 300 digest steps and equal on the stats, at group 32 and group 64
+# (the tiled scan at group 32 only). The CPU accelerator's tests give the solver's numbers after
+# each. Pace is simulated seconds over wall seconds across the run's rows; physics is its share of
+# the wall, per physics step.
+#
+#   build                                      commit    x real time (g32 / g64)   physics ms a step
+#   seq, the classes one after another         a6b119f   0.94                      8.98
+#   the classes on concurrent streams          13af2c3   1.55                      4.76
+#   the grid's prefix sum over tiles           d37421f   1.93                      3.50
+#   the water pass a link a thread             771c15e   2.39 / 2.35               2.51
+#   the contacts a link a thread               4665326   2.99 / 3.05               1.65
+#   the fluid a link a thread                  6519eb8   3.05 / 3.11               1.60
+#   the overlap lists by their first rows      b4c7a80   3.15 / 3.15               1.49
+#
+# The phase probe (771c15e, a build with -p:GpuPhaseProbe=1, never a scored run's): the SM's cycle
+# counter read between the body kernel's parts. Kilocycles a step of each class's slowest body,
+# classes one after another:
+#   before the water kernel   class 2 (up to 8 links)  7,060: water 3,277, contacts 2,653, load 401, fluid 372, brain 240
+#                             class 3 (up to 16 links) 5,688: water 2,497, contacts 1,594, fluid 719, load 489, brain 201
+#   after the fluid kernel    class 2                    943: load 418, brain 218, store 152, fluid 58, solve 55
+#                             class 3                  1,363: load 560, store 335, brain 223, fluid 93, solve 91
+# Reading: the water, the contacts and the fluid were each a loop over a body's links on one
+# thread; moved to a thread a link, the body kernel is left with its loads, its brain and its
+# stores. The classes together (with their contact kernels) went from 2.63 to 0.60 ms a step.
+#
+# The host's side of a block after b4c7a80 (the probe's host and bytes lines, 50 steps a block):
+#   slots 0.7 ms, packs 0.24, block packs 0.21, snow and instants 2.8, up 8.3 to 9.2, down 5.8 to 6.0,
+#   mirror 1.3. Bytes up: the classes 51 to 58 MB (a class with a new or resized body goes whole),
+#   the snow and instants 10.7, the spheres 7.6, the body columns 1.1 (25.1 before b4c7a80). Down:
+#   the classes 28.9, the body columns 0.8 (24.8 before).
+# The wall after b4c7a80: physics 47%, the CPU's world step 43%, harness 8%, writers 1%.
+#
+# The world step on its own (Evosim.Core.Bench on round 48's config with the trickle pool set to 0,
+# since the bench hands the world no pool; 8,400 bodies placed and never moved, 16 threads): the
+# field passes cost 37 ms a metabolic step, of which the snow's transport 29 ms and its edge
+# sampling 21 ms, the mixing 3.6 and the remineralisation 2.8. The bench's other 114 ms are its
+# own economy of still, dying bodies and do not read the farm's; the farm's whole world step reads
+# 68 ms a block, so the field passes are about half of it (inference).

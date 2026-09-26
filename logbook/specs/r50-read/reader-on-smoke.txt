@@ -1,0 +1,97 @@
+runrec: 2026-09-26-082440-a2cda4b0: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+ctx  r50smoke-s1 last_t=4500  alive=1683  births=4474  gestation_births=768  upt_lim=0.803779  trickle_spawns=66  pool_spawns=8  founders_by_src=floor:47 pool:8 trickle:58  pool=on  build_markers=floorsWeighRigidGroups gestationModeChance senescenceWearsIntake founderEndowmentSeconds foundersFollowFoodDepth founderReserveCapFraction  manifest_status=ended  baseline=r49-s1  header_tokens=floors rigid groups; founders in their food at its depth; endowment 600 s; senescence 3000 s on upkeep; overhead 50 J; overhead scale x2 floor 50 J; gestation mut=0.08 share=0.5-0.5 at 0.08; minkg=0.05; invest=0.05-1; trickle 1/30 s; pool 0.1 of 4; cellType mut 0.005; ceiling 25000; founder cap 0.9 of the gate
+W1   r50smoke-s1 founders=113  checked=24  matter_at_or_over=24 of 55  mixotrophs_not_asked=0  failures=0  lacking_pair=0  at_or_over_by_group=floor/snow:1/1 pool0/snow:3/3 pool1/snow:1/1 pool3/snow:4/4 trickle/snow:15/15  failures_listed=  depth_rule=on  note=  held=True
+W2   r50smoke-s1 pool_founders=8  read=8  median_first_over_fsnow=0.204291  band=0.02 to 0.3  median_lag_s=5  ratio_by_pool_index=0:0.181689(n 3) 1:0.258759(n 1) 3:0.204291(n 4)  lag_by_pool_index=0:3.5(n 3) 1:6(n 1) 3:5(n 4)  held=True
+W3   r50smoke-s1 pool_founders=8  median_fsnow_over_fcol=2.54685  by_pool_index=0:2.72205(n 3) 1:3.45421(n 1) 3:1.82236(n 4)  median_fsnow=1.7267  median_fcol=0.720642  held=True
+G1   r50smoke-s1 at=4500  short=True  gestation_births=768  births=4474  gestated_J=92721.2  held_in_accounts_J=13678.9  gm1_child_rows=1012  held=True
+G2   r50smoke-s1 held=absent  note=the read ends at 4500 s, before the early window's end at 8000 s  early_window=3000 to 8000 s  early_share_so_far=0.262048  early_children=996
+G3   r50smoke-s1 at=4500  short=True  banked_J=92721.2  died_holding_J=28632.3  gestating_deaths=650  died_holding=645  median_held_J=36.0821  share_of_banked=0.3088  living_hold_J=13678.9  held=True
+G4   r50smoke-s1 at=4500  short=True  banked_J=92721.2  living_hold_J=13678.9  died_holding_J=28632.3  gestation_births=768  price_per_birth_J=65.6379  note=derived: banked less held by the living less held at death, over the births paid from an account  held=True
+C1   r50smoke-s1 note=touch: overlapBodies over harnessBodySteps in the 500 s before each second; a sense is read when a neuron has a Sensor input on the channel  held=reading
+C2   r50smoke-s1 err_log=D:\Projects\experiments\evolution-simulator\scratch\wt-leafincome\scratch\logs\r50smoke-s1.err  waits=0  first_wait=  cadence_s=100  checkpoints_manifest=45  expected=45  checkpoints_on_disk=45  parts_killed=0  module_rebuilds=1  held=True
+C3   r50smoke-s1 deaths=2904  starved_solvent=0  by_cause=starved: 2904 dead, 0 solvent, median res  J  held=True
+B1   r50smoke-s1 audit_absmax_J=2.27342e-06  matter_resid_at=4500  matter_resid=2.27322e-08  short=True  diverged=0  diverged_dump_files=0  manifest_status=ended  manifest_reason=budget  ends_on_budget=True  censored=False  provisional=False  held=True
+V1   r50smoke-s1 held=absent  note=no --windows-root given
+V2   r50smoke-s1 held=absent  note=no --v2-log given
+V3   r50smoke-s1 bytes=487087601  gb=0.487088  at=4500  short=True  held=reading  as_bar=True
+M1   r50smoke-s1 bud_rows=38  children=4474  per_child=0.00849352  by_cell=absorptive:6 buoyancy:4 consumer:6 link:3 neural:5 photosynthetic:3 structural:11  first_at=184  held=False
+M2   r50smoke-s1 bud_rows=38  expressed=37  share=0.973684  budx=0:1 1:37  stillbirths=70  self_overlap_stillbirths=70  held=True
+M3   r50smoke-s1 absorptive_bud_rows=6  bud_roots=6  roots_with_living=3  living=1683  living_from=positions row at 4500 s  short=True  best_root=421  best_root_born=403  best_living=3  best_stomachs=0  best_mixotrophs=3  held=False
+M4   r50smoke-s1 held=absent  note=no M3 clade (ten or more living in a line rooted in a stomach bud on a leaf)
+O1   r50smoke-s1 at=4500  short=True  alive=1683  bar=4,000 to 16,000  r49=r49-s1  r49_at=30000  r49_value=8410  held=False
+O2   r50smoke-s1 max_alive=2192  max_at=1410  ceiling=25000  manifest_reason=budget  samples=450  held=True
+O3   r50smoke-s1 at=4500  short=True  jointed=695  bar=under 100  r49=r49-s1  r49_at=30000  r49_value=3  held=reading  as_bar=False
+S1   r50smoke-s1 at=4500  short=True  mean_age_s=1749.86  bar=above 1,500 s  r49=r49-s1  r49_at=30000  r49_value=1954.29  held=True
+F3   r50smoke-s1 at=4500  short=True  living=1683  rooted_in_pool=5  pool_lines_living=5  largest_line=1  largest_root=3687  largest_root_pool_index=1  largest_root_capcut=  largest_root_fsnow=4.14729  held=True
+E1   r50smoke-s1 founders=113  endowed=111  endow_median_J=63.395  endow_min_J=10.3899  endow_max_J=623.482  endow_by_group=floor:80.5499(n 47) pool0:53.9382(n 3) pool1:182.261(n 1) pool3:117.774(n 4) trickle:52.1627(n 56)  age_at_death_by_group=floor:903(n 45) pool0:515.25(n 2) pool3:1037(n 1) trickle:143.5(n 32)  bred_by_group=floor:24/47 pool0:0/3 pool1:0/1 pool3:0/4 trickle:6/58  held=reading
+R1a  r50smoke-s1 held=absent  note=no snow dump at or after 10,000 s yet  tables=5519  open=3159  as_r47=absent  baseline=r49-s1
+R1b  r50smoke-s1 held=absent  note=no positions sample at or after 10,000 s yet  as_r47=absent  baseline=r49-s1
+P1   r50smoke-s1 pace_x_real=2.07841  source=run.json timesRealTime  manifest_status=ended  censored=False  last_window_pace_x_real=2.08147  held=True
+EK1  r50smoke-s1 founders=113  child_within_1s=0  within_1s_by_group=  child_within_10s=0  within_10s_by_group=  listed=  held=True
+EK2  r50smoke-s1 at=4500  short=True  founders_capped=13  capcut_rows=13  joules_capped=894.282  capcut_sum=894.282  one_part_stomachs=3  one_part_outside_band=0  one_part_capcut_range=17.755 to 17.755  outside_listed=  held=True
+EK3  r50smoke-s1 one_part_stomachs=3  dead=2  still_alive=1  median_age_at_death_s=515.25  held=True
+EK4  r50smoke-s1 one_part_stomachs=3  bred=0  share_bred=0  median_first_child_lag_s=  held=pooled
+EK5  r50smoke-s1 pool_founders=8  dead=3  median_age_at_death_s=655.5  by_pool_index=pool0:515.25(n 2) pool3:1037(n 1)  capcut_by_pool_index=pool0:17.7551(n 3)  held=True
+EK6  r50smoke-s1 bred=0  not_bred=8  median_fsnow_bred=  median_fsnow_not_bred=1.7267  held=pooled
+EK7  r50smoke-s1 founders=113  capped_by_group=floor:4/47 pool0:3/3 pool1:0/1 pool3:0/4 trickle:6/58  capcut_by_group=floor:18.4691(n 4) pool0:17.7551(n 3) trickle:110.343(n 6)  endow_by_group=floor:80.5499(n 47) pool0:53.9382(n 3) pool1:182.261(n 1) pool3:117.774(n 4) trickle:52.1627(n 56)  held=reading
+S2   r50smoke-s1 stomach_children=7  dead=3  still_alive=4  median_age_at_death_s=304  quartiles=138 to 364  held=absent  note=fewer than 10 dead stomach children: the clause does not ask this seed
+X1   r50smoke-s1 at=4500  short=True  det_cv=2.31953  bar=0.4 to 1.0  r49=r49-s1  r49_at=30000  r49_value=0.655432  held=False
+L1   r50smoke-s1 income_rule=True  trickle_leaves=30  placed=28  median_first_y=-3.115  below_20m=0  floor_leaves=25  floor_median_first_y=-0.87  bar=above -12 m  held=True
+L2   r50smoke-s1 trickle_leaves=30  dead=10  median_age_at_death_s=359.25  floor_dead=23  floor_median_age_at_death_s=2340.5  bar=above 300 s  held=True
+L3   r50smoke-s1 trickle_leaves=30  bred=3  share=0.1  floor_leaves=25  floor_bred=24  held=pooled
+L4   r50smoke-s1 living=1683  living_from=positions row at 4500 s  trickle_lines_living=26  with_ten=0  largest=4292: 4 living, a stomach landed at 4145.5 s; 3633: 3 living, a leaf landed at 3167 s; 4149: 3 living, a leaf with a joint landed at 3938 s  held=reading
+LC   r50smoke-s1 header_token=True  centre_bed=-45.0151  matter_founders_over_deeper_bed=42  within_1m_above_centre=0  bar=token present, under 5 held  held=True
+O4   r50smoke-s1 line=39  line_founder=leaf  line_landed_s=15.5  living_then=610  living_now=610  jointed_share_then=0  jointed_share_now=0  held=absent  note=the line was under 0.2 jointed at 16000 s: the clause does not ask this seed
+S3   r50smoke-s1 rigid_stomach_children=3  dead=0  still_alive=3  median_age_at_death_s=  held=absent  note=fewer than 10 dead rigid stomach children: the clause does not ask this seed
+E2   r50smoke-s1 lines=0  listed=  held=reading
+
+EK4  pooled     seeds=1  one_part_stomachs=3  bred=0  share_bred=0  median_first_child_lag_s=  held=True
+EK6  pooled     held=absent  note=no pool founder bred, or every one did  bred=0  not_bred=8
+L3   pooled     seeds=1  trickle_leaves=30  bred=3  share=0.1  bar=at least 0.05  held=True
+
+W1:   held in 1 of 1 -- needs 3 of 3
+W2:   held in 1 of 1 -- needs 3 of 3
+W3:   held in 1 of 1 -- needs 3 of 3
+G1:   held in 1 of 1 -- needs 3 of 3
+G2:   held in 0 of 1 (1 absent) -- needs 2 of 3
+G3:   held in 1 of 1 -- needs 2 of 3
+G4:   held in 1 of 1 -- needs 3 of 3
+C1:   held in 0 of 1 (1 reading) -- needs a reading
+C2:   held in 1 of 1 -- needs 3 of 3
+C3:   held in 1 of 1 -- needs 3 of 3
+B1:   held in 1 of 1 -- needs 3 of 3
+V1:   held in 0 of 1 (1 absent) -- needs a window in each of 3 seeds
+V2:   held in 0 of 1 (1 absent) -- needs seed 1
+V3:   held in 0 of 1 (1 reading) -- needs a reading
+M1:   held in 0 of 1 -- needs 3 of 3
+M2:   held in 1 of 1 -- needs 3 of 3
+M3:   held in 0 of 1 -- needs 1 of 3 or more
+M4:   held in 0 of 1 (1 absent) -- needs every seed M3 holds in
+O1:   held in 0 of 1 -- needs 3 of 3
+O2:   held in 1 of 1 -- needs 3 of 3
+O3:   held in 0 of 1 (1 reading) -- needs a reading
+S1:   held in 1 of 1 -- needs 3 of 3
+F3:   held in 1 of 1 -- needs 3 of 3
+E1:   held in 0 of 1 (1 reading) -- needs a reading
+R1a:  held in 0 of 1 (1 absent) -- needs a reading
+R1b:  held in 0 of 1 (1 absent) -- needs a reading
+P1:   held in 1 of 1 -- needs 3 of 3
+EK1:  held in 1 of 1 -- needs 3 of 3
+EK2:  held in 1 of 1 -- needs 3 of 3
+EK3:  held in 1 of 1 -- needs 2 of 3
+EK4:  held in 1 of 1 -- needs pooled over the seeds
+EK5:  held in 1 of 1 -- needs 3 of 3
+EK6:  held in 0 of 1 (1 absent) -- needs pooled, a reading under five breeders
+EK7:  held in 0 of 1 (1 reading) -- needs a reading
+S2:   held in 0 of 1 (1 absent) -- needs a reading
+X1:   held in 0 of 1 -- needs 3 of 3
+L1:   held in 1 of 1 -- needs 3 of 3
+L2:   held in 1 of 1 -- needs 3 of 3
+L3:   held in 1 of 1 -- needs pooled over the seeds
+L4:   held in 0 of 1 (1 reading) -- needs a reading
+LC:   held in 1 of 1 -- needs 3 of 3
+O4:   held in 0 of 1 (1 absent) -- needs every seed whose holding line was a fifth jointed at 16,000 s
+S3:   held in 0 of 1 (1 absent) -- needs every seed with ten dead
+E2:   held in 0 of 1 (1 reading) -- needs a reading
+
+wrote scratch/r50-build/readertest/smoke.tsv

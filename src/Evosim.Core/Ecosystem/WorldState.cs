@@ -91,15 +91,75 @@ namespace Evosim.Core
         /// account, every queued birth row its mode and share, and the world its two cumulative
         /// gestation counters. A version-9 stream has none of them.
         /// </remarks>
-        public const int StateVersion = 10;
+        /// <remarks>
+        /// 11 with the contact record (2026-09-25): every creature carries
+        /// <see cref="Organism.PartContact"/> after its damage. The flag was sticky until a plan
+        /// change, so it was history and not a step's reading, and a version-10 stream put every
+        /// body back touching nothing; round 48's resume parted from the run at its first sample
+        /// in the jointed bodies whose brains read the channel. Version 10 is still read, as
+        /// <see cref="LossyStateVersion"/>: round 48's checkpoints are version 10, and the
+        /// theatre's story mode opens them as the cousins they already are.
+        /// </remarks>
+        /// <remarks>
+        /// D123 (round 49) made both records the last metabolic step's alone and left the layout as
+        /// 11 had it. The physics steps after a restore read that step's record before the next
+        /// metabolic step rewrites it, so it is saved exactly as before; what moved is the rule
+        /// that fills it, and <c>coreHash</c> is what says so.
+        /// </remarks>
+        /// <remarks>
+        /// 12 with round 49's two instruments (2026-09-25): every queued lineage row carries the
+        /// gestation account and the reserve a body died with and a founder's four landing
+        /// readings, so a row queued before a checkpoint is the row the unbroken run writes. They
+        /// are records and not state, and the farm drains the queue before every checkpoint, so a
+        /// version-11 stream would restore the same world; it is refused all the same, as every
+        /// layout this build does not write is, because the harness's half of the file is keyed on
+        /// the world's version. Nothing on disk that is read again was written at 11.
+        /// </remarks>
+        public const int StateVersion = 12;
+
+        /// <summary>
+        /// The one older layout this build still reads: version 10, the layout of round 48's
+        /// checkpoints. It is read with every creature's contact record null, which is what the
+        /// build that wrote it restored, so a world read from it is a cousin of the run and not
+        /// its continuation; the farm refuses to resume from one unless told to take a cousin
+        /// (<c>EVOSIM_ALLOW_SOURCE_MISMATCH</c>).
+        /// </summary>
+        public const int LossyStateVersion = 10;
+
+        /// <summary>
+        /// The layout <see cref="ReadState"/> last read: <see cref="StateVersion"/> for a world
+        /// that has never been restored or was restored from this build's stream, and
+        /// <see cref="LossyStateVersion"/> for one restored from a round 48 checkpoint.
+        /// </summary>
+        /// <remarks>
+        /// Public because the harness's own layout moved with this one (the farm's
+        /// <c>Checkpoint.Version</c> 6) and the harness reads its half of the same file after
+        /// this has read its own, so this is how it knows which half it holds.
+        /// </remarks>
+        public int StateVersionRead { get; private set; } = StateVersion;
 
         /// <summary>
         /// Writes the whole of the world's own state.
         /// </summary>
-        public void WriteState(BinaryWriter w)
+        public void WriteState(BinaryWriter w) => WriteState(w, StateVersion);
+
+        /// <summary>
+        /// Writes the world in a layout this build reads: <see cref="StateVersion"/>, or
+        /// <see cref="LossyStateVersion"/> for the test that holds the lossy reader to what the
+        /// build before it wrote. Nothing in a run writes the older one.
+        /// </summary>
+        internal void WriteState(BinaryWriter w, int layout)
         {
+            if (layout != StateVersion && layout != LossyStateVersion)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(layout), layout,
+                    "This build writes version " + StateVersion + " and, for a test, version " +
+                    LossyStateVersion + ".");
+            }
+
             StateIo.Tag(w, "WRLD");
-            w.Write(StateVersion);
+            w.Write(layout);
             w.Write(Seed);
 
             // ---- the clock, the counters and the two books
@@ -171,6 +231,15 @@ namespace Evosim.Core
             // the same config, which a restore takes from the run it continues.
             if (Config.FoundingTricklePoolCount > 0) w.Write(PoolSpawns);
 
+            // D124's two counters, for the pool count's reason and the same way: only in a world
+            // whose config turns the founder cap on, so every other world writes the bytes it
+            // wrote before and the layout stays version 12. The reader asks the same config.
+            if (Config.FounderReserveCapFraction > 0f)
+            {
+                w.Write(FoundersCapped);
+                w.Write(FounderJoulesCapped);
+            }
+
             // Where the sun stands. See LightField.RestoreDayFactor.
             w.Write(Field.DayFactor);
 
@@ -186,7 +255,7 @@ namespace Evosim.Core
 
             StateIo.Tag(w, "LIVE");
             w.Write(_living.Count);
-            for (int i = 0; i < _living.Count; i++) WriteOrganism(w, _living[i]);
+            for (int i = 0; i < _living.Count; i++) WriteOrganism(w, _living[i], layout);
 
             // ---- the species registry
 
@@ -221,7 +290,8 @@ namespace Evosim.Core
 
             StateIo.Tag(w, "LNGE");
             w.Write(_lineageEvents.Count);
-            for (int i = 0; i < _lineageEvents.Count; i++) WriteLineage(w, _lineageEvents[i]);
+            bool capped = Config.FounderReserveCapFraction > 0f;
+            for (int i = 0; i < _lineageEvents.Count; i++) WriteLineage(w, _lineageEvents[i], layout, capped);
 
             StateIo.Tag(w, "ABSD");
             w.Write(_absorptiveDeaths.Count);
@@ -243,12 +313,13 @@ namespace Evosim.Core
             StateIo.Tag(r, "WRLD");
 
             int version = r.ReadInt32();
-            if (version != StateVersion)
+            if (version != StateVersion && version != LossyStateVersion)
             {
                 throw new InvalidDataException(
                     "The checkpoint's world state is version " + version + " and this build " +
-                    "reads version " + StateVersion + ". A checkpoint is refused rather than " +
-                    "read with a field guessed at, under the rule the config reader follows.");
+                    "reads version " + StateVersion + " (and version " + LossyStateVersion +
+                    ", without the contact record). A checkpoint is refused rather than read " +
+                    "with a field guessed at, under the rule the config reader follows.");
             }
 
             ulong seed = r.ReadUInt64();
@@ -316,6 +387,18 @@ namespace Evosim.Core
             GestatedTotal = r.ReadDouble();
             PoolSpawns = Config.FoundingTricklePoolCount > 0 ? r.ReadInt64() : 0L;
 
+            // D124's two counters, read under the config the writer asked (see Write).
+            if (Config.FounderReserveCapFraction > 0f)
+            {
+                FoundersCapped = r.ReadInt64();
+                FounderJoulesCapped = r.ReadDouble();
+            }
+            else
+            {
+                FoundersCapped = 0L;
+                FounderJoulesCapped = 0d;
+            }
+
             Field.RestoreDayFactor(r.ReadSingle());
 
             ReadRng(r, _conceptionRng);
@@ -324,7 +407,7 @@ namespace Evosim.Core
             StateIo.Tag(r, "LIVE");
             int living = r.ReadInt32();
             _living.Clear();
-            for (int i = 0; i < living; i++) _living.Add(ReadOrganism(r));
+            for (int i = 0; i < living; i++) _living.Add(ReadOrganism(r, version));
 
             StateIo.Tag(r, "SPEC");
             int species = r.ReadInt32();
@@ -358,7 +441,8 @@ namespace Evosim.Core
             StateIo.Tag(r, "LNGE");
             int events = r.ReadInt32();
             _lineageEvents.Clear();
-            for (int i = 0; i < events; i++) _lineageEvents.Add(ReadLineage(r));
+            bool capped = Config.FounderReserveCapFraction > 0f;
+            for (int i = 0; i < events; i++) _lineageEvents.Add(ReadLineage(r, version, capped));
 
             StateIo.Tag(r, "ABSD");
             int deaths = r.ReadInt32();
@@ -369,11 +453,13 @@ namespace Evosim.Core
             ReadField(r, Matter);
 
             StateIo.Tag(r, "WEND");
+
+            StateVersionRead = version;
         }
 
         // ------------------------------------------------------------------ one creature
 
-        private void WriteOrganism(BinaryWriter w, Organism creature)
+        private void WriteOrganism(BinaryWriter w, Organism creature, int layout)
         {
             w.Write(creature.Id);
             w.Write(creature.ParentId);
@@ -466,9 +552,11 @@ namespace Evosim.Core
                 for (int i = 0; i < health.Length; i++) w.Write(health[i]);
             }
 
-            // The health each part has lost over its life, in the same order and with the same
-            // meaning of 0 — and it is state the next step reads, not a diagnostic: the Damage
-            // sense reports it, so a brain wired to that channel drives on it. Left out until
+            // The health each part lost on the last metabolic step (D123; before round 49, since
+            // the body's plan last changed), in the same order and with the same meaning of 0 —
+            // and it is state the next step reads, not a diagnostic: the Damage sense reports it
+            // on every physics step until the next metabolic step rewrites it, so a brain wired
+            // to that channel drives on it. The layout did not move with D123. Left out until
             // StateVersion 6 (2026-09-23), when a resume of round 45 seed 2 restored every
             // wounded body sensing nothing and the two jointed ones among sixteen parted from
             // the run at the first sample (CheckpointFidelity found it; logbook/0114).
@@ -480,10 +568,28 @@ namespace Evosim.Core
                 for (int i = 0; i < damage.Length; i++) w.Write(damage[i]);
             }
 
+            // What each part touched on the last metabolic step, in the same order and with the
+            // same meaning of 0: the Contact sense reports it, and the physics steps after a
+            // restore read it before the next metabolic step rewrites it. Until D123 the flag
+            // stayed set until a plan change; either way it is state the next step reads, so the
+            // layout did not move with D123. Left out until StateVersion 11 (2026-09-25), when a
+            // resume of round 48 put every body back touching nothing and the jointed ones
+            // whose brains read the channel parted from the run at the first sample.
+            if (layout >= 11)
+            {
+                bool[] contact = creature.PartContact;
+                w.Write(contact == null ? 0 : contact.Length);
+
+                if (contact != null)
+                {
+                    for (int i = 0; i < contact.Length; i++) w.Write(contact[i]);
+                }
+            }
+
             w.Write(GenomeJson.Write(creature.Genome, indent: false, id: creature.Id));
         }
 
-        private Organism ReadOrganism(BinaryReader r)
+        private Organism ReadOrganism(BinaryReader r, int version)
         {
             var creature = new Organism
             {
@@ -554,6 +660,19 @@ namespace Evosim.Core
 
             creature.PartDamage = damage;
 
+            // A version-10 stream has no contact record, and the body comes back touching
+            // nothing, which is what the build that wrote it restored. See LossyStateVersion.
+            bool[] contact = null;
+
+            if (version >= 11)
+            {
+                int contactCount = r.ReadInt32();
+                contact = contactCount > 0 ? new bool[contactCount] : null;
+                for (int i = 0; i < contactCount; i++) contact[i] = r.ReadBoolean();
+            }
+
+            creature.PartContact = contact;
+
             Genome genome = GenomeJson.Read(r.ReadString());
             creature.Genome = genome;
 
@@ -577,6 +696,20 @@ namespace Evosim.Core
                     "A body's health array is indexed by its part index, so the two disagreeing " +
                     "means the development this build performs is not the one that was saved — " +
                     "a restored creature would be wounded in the wrong places.");
+            }
+
+            // The contact record is indexed the same way, and asked the same question for the
+            // same reason: a flag on the wrong index is a touch felt by the wrong part.
+            if (contact != null && contact.Length != creature.Phenotype.PartCount)
+            {
+                throw new InvalidOperationException(
+                    FormattableString.Invariant(
+                        $"Creature {creature.Id}: the checkpoint holds {contact.Length} contact ") +
+                    FormattableString.Invariant(
+                        $"flags and its body develops to {creature.Phenotype.PartCount} parts. ") +
+                    "A body's contact record is indexed by its part index, so the two disagreeing " +
+                    "means the development this build performs is not the one that was saved — " +
+                    "a restored creature would feel a touch on the wrong part.");
             }
 
             // Cached at birth and therefore cached again here — see Organism.IndeterminateNodes.
@@ -606,7 +739,7 @@ namespace Evosim.Core
                 r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(),
                 r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
 
-        private static void WriteLineage(BinaryWriter w, LineageEvent e)
+        private static void WriteLineage(BinaryWriter w, LineageEvent e, int layout, bool capped)
         {
             w.Write((int)e.Kind);
             w.Write(e.ElapsedSeconds);
@@ -651,6 +784,25 @@ namespace Evosim.Core
             // trickle build wrote, and a pool row can only be in a stream this build wrote.
             if (e.Source == FounderSource.Pool) w.Write(e.PoolIndex);
 
+            // Version 12, round 49's two instruments, on every row as version 10's fields are:
+            // the gestation account and the reserve a body died with (0 on every other row), and
+            // a founder's four landing readings (NaN on every row that has none, and a NaN goes
+            // through the stream bit for bit). The lossy layout is written without them.
+            if (layout >= 12)
+            {
+                w.Write(e.GestationJoulesAtDeath);
+                w.Write(e.ReserveJoulesAtDeath);
+                w.Write(e.LandingSnowDensity);
+                w.Write(e.LandingSnowColumnDensity);
+                w.Write(e.LandingMatterDensity);
+                w.Write(e.LandingMatterColumnDensity);
+            }
+
+            // D124's cut, on every row (0 on all but a cut founder's), and only in a world whose
+            // config turns the cap on: every other world's rows are the bytes they were, and the
+            // layout stays version 12. The reader asks the same config.
+            if (capped) w.Write(e.CapCutJoules);
+
             // The kill's own five, appended and written only on a kill row — which is what lets
             // this stay version 4. A birth and a death are byte for byte what the mouth build
             // wrote, so every checkpoint on disk still restores; a version-4 stream can only carry
@@ -668,11 +820,11 @@ namespace Evosim.Core
             // would take StateVersion to 10 and refuse every checkpoint on disk, round 46's
             // included, for a queue that the farm drains to lineage.jsonl before every
             // checkpoint (Program.WriteCheckpoint), so no farm checkpoint carries a kill row.
-            // A birth row's bud and budx (the owner's ruling of 2026-09-24) are not written for
-            // the same reason, and a restored birth row reads as one that did not bud.
+            // A birth row's bud and budx (the owner's ruling of 2026-09-24) are written, from
+            // version 10, above.
         }
 
-        private static LineageEvent ReadLineage(BinaryReader r)
+        private static LineageEvent ReadLineage(BinaryReader r, int version, bool capped)
         {
             var kind = (LineageEventKind)r.ReadInt32();
             double seconds = r.ReadDouble();
@@ -706,6 +858,23 @@ namespace Evosim.Core
             }
             int poolIndex = source == FounderSource.Pool ? r.ReadInt32() : -1;
 
+            // Version 12's six; a version-10 row has none, and reads as a row that carries none.
+            double accountAtDeath = 0d, reserveAtDeath = 0d;
+            float landingSnow = float.NaN, landingSnowColumn = float.NaN;
+            float landingMatter = float.NaN, landingMatterColumn = float.NaN;
+
+            if (version >= 12)
+            {
+                accountAtDeath = r.ReadDouble();
+                reserveAtDeath = r.ReadDouble();
+                landingSnow = r.ReadSingle();
+                landingSnowColumn = r.ReadSingle();
+                landingMatter = r.ReadSingle();
+                landingMatterColumn = r.ReadSingle();
+            }
+
+            double capCut = capped ? r.ReadDouble() : 0d;
+
             if (kind == LineageEventKind.Kill)
             {
                 long attackerId = r.ReadInt64();
@@ -725,8 +894,10 @@ namespace Evosim.Core
                     absorptive, joint, photosynthetic, patch, birthFraction, adultScale,
                     reserveMargin, indeterminateNodes, attack, intake, protection, source,
                     poolIndex, endowmentJoules, budCells, budsExpressed,
-                    reproductionMode, gestationShare)
-                : LineageEvent.Death(seconds, id, cause);
+                    reproductionMode, gestationShare,
+                    landingSnow, landingSnowColumn, landingMatter, landingMatterColumn,
+                    capCut)
+                : LineageEvent.Death(seconds, id, cause, accountAtDeath, reserveAtDeath);
         }
 
         private static void WriteAbsorptive(BinaryWriter w, AbsorptiveSample s)

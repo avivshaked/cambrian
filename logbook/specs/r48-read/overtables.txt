@@ -1,0 +1,9 @@
+r48-s1 open: 68 founders, first densityHere median 0.239
+r48-s1 over table: 27 founders, first densityHere median 0.177
+r48-s1 under cap: 4 founders, first densityHere median 0.266
+r48-s2 open: 25 founders, first densityHere median 0.225
+r48-s2 over table: 2 founders, first densityHere median 4.164
+r48-s2 under cap: 2 founders, first densityHere median 0.213
+r48-s3 open: 59 founders, first densityHere median 0.168
+r48-s3 over table: 23 founders, first densityHere median 0.195
+r48-s3 under cap: 2 founders, first densityHere median 0.392

@@ -1,0 +1,24 @@
+chunk   0 (  0-  2 MB raw): xz  0.17 MB  printable 92%
+chunk   1 (  2-  4 MB raw): xz  0.19 MB  printable 92%
+chunk   2 (  4-  6 MB raw): xz  0.19 MB  printable 92%
+chunk   3 (  6-  8 MB raw): xz  0.19 MB  printable 92%
+chunk   4 (  8- 10 MB raw): xz  0.19 MB  printable 92%
+chunk   5 ( 10- 12 MB raw): xz  0.20 MB  printable 92%
+chunk   6 ( 12- 14 MB raw): xz  0.20 MB  printable 92%
+chunk   7 ( 14- 16 MB raw): xz  0.27 MB  printable 93%
+chunk   8 ( 16- 18 MB raw): xz  1.23 MB  printable 27%
+chunk   9 ( 18- 20 MB raw): xz  1.20 MB  printable 29%
+chunk  10 ( 20- 22 MB raw): xz  1.07 MB  printable 35%
+chunk  11 ( 22- 24 MB raw): xz  0.91 MB  printable 18%
+chunk  12 ( 24- 26 MB raw): xz  0.77 MB  printable 15%
+chunk  13 ( 26- 28 MB raw): xz  0.61 MB  printable 23%
+chunk  14 ( 28- 30 MB raw): xz  0.42 MB  printable 10%
+chunk  15 ( 30- 32 MB raw): xz  0.27 MB  printable 2%
+chunk  16 ( 32- 34 MB raw): xz  0.14 MB  printable 10%
+chunk  17 ( 34- 36 MB raw): xz  0.04 MB  printable 1%
+chunk  18 ( 36- 38 MB raw): xz  0.36 MB  printable 0%
+chunk  19 ( 38- 40 MB raw): xz  0.48 MB  printable 18%
+chunk  20 ( 40- 42 MB raw): xz  0.51 MB  printable 18%
+chunk  21 ( 42- 44 MB raw): xz  0.52 MB  printable 17%
+chunk  22 ( 44- 46 MB raw): xz  0.11 MB  printable 19%
+total xz of chunks 10.2 MB over 46.9 MB raw

@@ -9,10 +9,10 @@ at 4.4 J/m³; those numbers are withdrawn.*
 | body | kind | volume m³ | standing W | break-even J/m³ | net W at 0.5 | net W at 1 | R0 at 1 | R0 at 2 | ledger lifetime at 0.5 |
 |---|---|---|---|---|---|---|---|---|---|
 | `inocula/r45s1-stomach-100.json` (the screens' inoculum) | absorptive, one part | 0.090 | 0.36 | 0.44 | +0.045 | +0.45 | 2 (first child 410 s) | 12 (122 s) | 420 s |
-| `scratch/r46-read/r46-s1-trickle-stomach-1120.json` (a trickle founder of seed 1) | consumer + link | 0.090 | 0.62 | none up to 10 | −0.43 | −0.40 | 0 | 0 | 7 s |
-| `scratch/r46-read/r46-s3-trickle-stomach-1707.json` (a trickle founder of seed 3) | consumer alone | 0.089 | 0.66 | none up to 10 | −0.63 | | 0 | 0 | 4 s |
-| `scratch/r46-read/r45-s2-eater-24633-f8.json` (round 45 seed 2's one bred eater, ported to format 8) | develops as a leaf: its consumer parts fall under the part-volume floor | 0.025 | 0.08 | not a stomach | | | 29 (light) | | |
-| `scratch/r46-read/r45-s1-eater-26578-f8.json` (round 45 seed 1's, ported) | develops as a leaf, the same way | 0.020 | 0.06 | not a stomach | | | 30 (light) | | |
+| `logbook/specs/r46-read/r46-s1-trickle-stomach-1120.json` (a trickle founder of seed 1) | consumer + link | 0.090 | 0.62 | none up to 10 | −0.43 | −0.40 | 0 | 0 | 7 s |
+| `logbook/specs/r46-read/r46-s3-trickle-stomach-1707.json` (a trickle founder of seed 3) | consumer alone | 0.089 | 0.66 | none up to 10 | −0.63 | | 0 | 0 | 4 s |
+| `logbook/specs/r46-read/r45-s2-eater-24633-f8.json` (round 45 seed 2's one bred eater, ported to format 8) | develops as a leaf: its consumer parts fall under the part-volume floor | 0.025 | 0.08 | not a stomach | | | 29 (light) | | |
+| `logbook/specs/r46-read/r45-s1-eater-26578-f8.json` (round 45 seed 1's, ported) | develops as a leaf, the same way | 0.020 | 0.06 | not a stomach | | | 30 (light) | | |
 
 What it says. A consumer mouth scavenges at one body volume of water a second (`scavengeRate`
 1, `carrionYield` 0.8) and cannot live on snow at any density this world holds. An absorptive

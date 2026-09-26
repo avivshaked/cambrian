@@ -27,6 +27,10 @@ depends on the shape lives in the two geometry classes below and nowhere else.
 writes four pictures per time: the box from the side, from the end, from above, and the side again
 coloured by clade.
 
+Either record is read (reads/runrec.py): positions.jsonl, or positions.jsonl.gz's gzip members in
+record format 2 (logbook/specs/record-and-film-spec.md), one member a sample; the format comes
+from run.json, never from guessing inside a file.
+
 matplotlib is optional and is never installed by this script: without it the numbers still print
 and the pictures say what is missing.
 
@@ -38,6 +42,10 @@ import math
 import os
 import re
 import sys
+
+# Either record, the JSON lines or the gzip members: one reader for both (reads/runrec.py).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'reads'))
+import runrec  # noqa: E402
 
 
 def fail(message):
@@ -546,21 +554,22 @@ def sample_time(line):
         return None
 
 
-def stream(path):
-    """Every complete row of positions.jsonl, one at a time, as (t, line).
+def stream(run_dir):
+    """Every complete positions row of a run, one at a time, as (t, line).
 
-    Never loads the file: 1,500 bodies is about 45 KB a sample and a full run is tens of
-    megabytes, and a live run is being appended to while this reads it.
+    Either record (reads/runrec.py): positions.jsonl, or positions.jsonl.gz's members, one a
+    sample, where a torn last member is reported and skipped. Never loads the file: 1,500 bodies
+    is about 45 KB a sample and a full run is tens of megabytes, and a live run is being appended
+    to while this reads it.
     """
-    with open(path, encoding='utf-8') as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
+    for line in runrec.positions_lines(run_dir):
+        line = line.strip()
+        if not line:
+            continue
 
-            t = sample_time(line)
-            if t is not None:
-                yield t, line
+        t = sample_time(line)
+        if t is not None:
+            yield t, line
 
 
 def unpack(line):
@@ -923,11 +932,12 @@ def main():
         args.out = os.path.join(repo, 'scratch', 'positions', args.arm)
 
     run_dir = newest_run(runs_root, args.arm)
-    positions = os.path.join(run_dir, 'positions.jsonl')
+    positions = run_dir
 
-    if not os.path.exists(positions):
-        fail(f'{args.arm}: no positions.jsonl in {run_dir}. A tiled world writes none, and '
-                 'so does any run recorded before 2026-09-10.')
+    if not runrec.has_positions(run_dir):
+        fail(f'{args.arm}: no positions in {run_dir} (positions.jsonl, or positions.jsonl.gz in '
+             'record format 2). A tiled world writes none, and so does any run recorded before '
+             '2026-09-10.')
 
     config_path = os.path.join(run_dir, 'config.json')
     if not os.path.exists(config_path):

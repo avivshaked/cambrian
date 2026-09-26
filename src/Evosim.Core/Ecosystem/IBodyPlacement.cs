@@ -117,6 +117,30 @@ namespace Evosim.Core
         Func<Phenotype, float, float, (float Top, float Bottom)?> FounderDepth { get => null; set { } }
 
         /// <summary>
+        /// Where the outstanding reservation stands, or false when nothing is reserved or the
+        /// placer keeps no coordinates, which is what this default says.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Round 49's landing readings (<c>fsnow</c>, <c>fcol</c>, <c>fmat</c>, <c>fmcol</c> on a
+        /// founder's lineage row) are taken at this point, between
+        /// <see cref="TryReserveFounder"/> and <see cref="Commit"/>, because nothing in Core
+        /// knows a founder's x and z until the harness has built its body. A default member for
+        /// <see cref="FounderAcceptance"/>'s reason: the tiled placer, the Unity farm's and every
+        /// test fake are unchanged, and a founder they place carries no landing reading.
+        /// </para>
+        /// <para>
+        /// <b>A read.</b> It moves no reservation and takes no draw, so a world that asks and one
+        /// that does not step the same trajectory.
+        /// </para>
+        /// </remarks>
+        bool TryReservedPosition(out Float3 position)
+        {
+            position = default;
+            return false;
+        }
+
+        /// <summary>
         /// The patch a living creature's body is actually in — D077's "a patch is a region".
         /// </summary>
         /// <remarks>

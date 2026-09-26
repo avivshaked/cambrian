@@ -972,5 +972,372 @@ namespace Evosim.Core.Tests
             Assert.True(leaf.PartDamage[1] > 0f, "the bitten part took no readable damage");
             Assert.Equal(0f, leaf.PartDamage[0]);
         }
+
+        /// <summary>
+        /// D123: both senses read the last metabolic step alone. A part touched and bitten on
+        /// step n reads the touch and that step's loss over its pool after step n, which is what
+        /// the physics steps of n+1 read, and reads nothing after a step n+1 with no contact.
+        /// </summary>
+        /// <remarks>
+        /// Until round 49 both records were cleared only by a plan change, so the second step's
+        /// reading was the first step's again and a second bite read the sum of both. The arrays
+        /// are asked to be the same objects from step to step as well, because the farm hands a
+        /// body's senses these arrays by reference and a replaced one would be read stale.
+        /// </remarks>
+        [Fact]
+        public void ContactAndDamageReadTheLastStepAlone()
+        {
+            RunConfig config = Stage();
+            config.SenseContact = true;
+            config.SenseDamage = true;
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Spine(2), 1, -1f);
+            world.Inoculate(Armed(attack: 1f), 1, -1f);
+            world.Inoculate(Armed(attack: 1f), 1, -1f);
+
+            Organism leaf = world.Living[0];
+            Organism claw = world.Living[1];
+            Organism second = world.Living[2];
+
+            PhenotypePart bitten = leaf.Phenotype.Parts[1];
+            PhenotypePart tooth = claw.Phenotype.Parts[0];
+
+            const float seconds = 0.1f;
+            float pool = Metabolism.HealthPool(bitten, config);
+            float oneBite =
+                (tooth.Attack * tooth.SurfaceArea - bitten.Protection * bitten.SurfaceArea) *
+                seconds / pool;
+
+            Assert.True(oneBite > 0f && 3f * oneBite < 1f, $"a bite takes {oneBite} of the pool");
+
+            // Step n: one claw bites part 1.
+            world.SetContacts(Touching(claw, 0, leaf, 1));
+            world.ApplyMouth(seconds);
+
+            bool[] touched = leaf.PartContact;
+            float[] lost = leaf.PartDamage;
+
+            Assert.Equal(new[] { false, true }, touched);
+            Assert.True(claw.PartContact[0], "the claw felt nothing of its own bite");
+            Fixtures.AssertClose(oneBite, lost[1], 1e-6f);
+            Assert.Equal(0f, lost[0]);
+            Fixtures.AssertClose(1f - leaf.PartHealth[1], lost[1], 1e-6f);
+
+            float woundAfterN = leaf.PartHealth[1];
+
+            // Step n+1: nothing touches. Both records read nothing, the wound stands (healing is
+            // off in this stage), and the arrays are the ones the farm was handed.
+            world.SetContacts(new List<CreatureContact>());
+            world.ApplyMouth(seconds);
+
+            Assert.Same(touched, leaf.PartContact);
+            Assert.Same(lost, leaf.PartDamage);
+            Assert.Equal(new[] { false, false }, leaf.PartContact);
+            Assert.False(claw.PartContact[0], "the claw still reads a touch a step later");
+            Assert.Equal(new[] { 0f, 0f }, leaf.PartDamage);
+            Assert.Equal(woundAfterN, leaf.PartHealth[1]);
+
+            // A step with no list handed over at all is the same step as far as the senses go.
+            world.ApplyMouth(seconds);
+
+            Assert.Equal(new[] { false, false }, leaf.PartContact);
+            Assert.Equal(new[] { 0f, 0f }, leaf.PartDamage);
+
+            // Step n+3: two claws on part 1 in one step. The step's loss is both blows and not a
+            // running total, so it reads two bites and not three.
+            world.SetContacts(new List<CreatureContact>
+            {
+                new CreatureContact(claw.Id, 0, leaf.Id, 1),
+                new CreatureContact(second.Id, 0, leaf.Id, 1),
+            });
+            world.ApplyMouth(seconds);
+
+            _output.WriteLine(
+                $"a bite takes {oneBite:0.######} of a pool of {pool:0.####}; two in one step read " +
+                $"{leaf.PartDamage[1]:0.######}, health {leaf.PartHealth[1]:0.######}");
+
+            Fixtures.AssertClose(2f * oneBite, leaf.PartDamage[1], 1e-6f);
+            Fixtures.AssertClose(woundAfterN - leaf.PartHealth[1], leaf.PartDamage[1], 1e-6f);
+            Assert.Equal(new[] { false, true }, leaf.PartContact);
+
+            // Step n+4: the claw moves to part 0. Part 0 reads this step's bite, and part 1's flag
+            // and loss are gone although its wound stands.
+            world.SetContacts(Touching(claw, 0, leaf, 0));
+            world.ApplyMouth(seconds);
+
+            Assert.Equal(new[] { true, false }, leaf.PartContact);
+            Assert.True(leaf.PartDamage[0] > 0f, "part 0 took no readable damage");
+            Assert.Equal(0f, leaf.PartDamage[1]);
+        }
+
+        /// <summary>
+        /// D123 through the world's own step: the records are cleared by <see cref="World.Step"/>
+        /// and not only by a test calling the mouth's pass.
+        /// </summary>
+        [Fact]
+        public void TheWorldsStepClearsTheRecordsBeforeItWritesThem()
+        {
+            RunConfig config = Stage();
+            config.SenseContact = true;
+            config.SenseDamage = true;
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Spine(2), 1, -1f);
+            world.Inoculate(Armed(attack: 1f), 1, -1f);
+
+            Organism leaf = world.Living[0];
+            Organism claw = world.Living[1];
+
+            // A tenth of a second, which the test above shows is well short of a kill, so no plan
+            // change drops the records and what is read is the clearing alone.
+            world.SetContacts(Touching(claw, 0, leaf, 1));
+            world.Step(0.1f);
+
+            Assert.Contains(world.Living, c => c.Id == leaf.Id);
+            Assert.Equal(new[] { false, true }, leaf.PartContact);
+            Assert.True(leaf.PartDamage[1] > 0f, "the step's bite read nothing");
+
+            world.Step(0.1f);
+
+            Assert.Equal(new[] { false, false }, leaf.PartContact);
+            Assert.Equal(new[] { 0f, 0f }, leaf.PartDamage);
+            Assert.True(leaf.PartHealth[1] < 1f, "the wound itself should stand");
+        }
+
+        // ----------------------------------------------------- the map the harness rebuilds on
+
+        /// <summary>
+        /// A photosynthetic root with two spines of three boxes, one off its +X face and one off
+        /// its +Y face: seven parts, the second branch indexed after the first.
+        /// </summary>
+        private static Genome Fork()
+        {
+            MorphNode root = Fixtures.Box(0.2f);
+            root.CellTypeId = CellTypeIds.Photosynthetic;
+
+            MorphNode link = Fixtures.Box(0.2f, JointType.Fixed, recursiveLimit: 3);
+            link.CellTypeId = CellTypeIds.Photosynthetic;
+            link.Edges.Add(Fixtures.FaceToFace(1));
+
+            root.Edges.Add(Fixtures.FaceToFace(1));
+            root.Edges.Add(new MorphEdge
+            {
+                Child = 1,
+                ParentAnchor = new Float3(0f, 1f, 0f),
+                ChildAnchor = new Float3(-1f, 0f, 0f),
+                Orientation = Quat.FromAxisAngle(new Float3(0f, 0f, 1f), (float)(Math.PI / 2d)),
+                Scale = Float3.One,
+            });
+
+            var genome = new Genome { RootIndex = 0 };
+            genome.Nodes.Add(root);
+            genome.Nodes.Add(link);
+            genome.AdultScale = 1f;
+            genome.Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 2f };
+            return genome;
+        }
+
+        /// <summary>
+        /// Two parts taken off one body in one pass leave one map, from the plan the body stood on
+        /// before the pass (round 49). The second change's map is composed with the first's, not
+        /// written over it.
+        /// </summary>
+        /// <remarks>
+        /// The harness rebuilds a bitten body once, after the world's step, and carries its joints
+        /// and its brain across on this map. Until round 49 the second kill's map, from the plan
+        /// the first kill left, overwrote the first's, and the harness read it against the solver
+        /// built on the plan before either.
+        /// </remarks>
+        [Fact]
+        public void TwoPartsLostInOnePassLeaveOneMapFromThePlanBefore()
+        {
+            RunConfig config = Stage(healthPerCubicMetre: 1f);
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Fork(), 1, -1f);
+            world.Inoculate(Armed(attack: 1f), 1, -1f);
+            world.Inoculate(Armed(attack: 1f), 1, -1f);
+
+            Organism fork = world.Living[0];
+            Organism first = world.Living[1];
+            Organism second = world.Living[2];
+
+            // The layout the expectation is written against: 0 the root, 1 to 3 the +X branch,
+            // 4 to 6 the +Y branch.
+            var parents = new int[fork.Phenotype.PartCount];
+            for (int p = 0; p < parents.Length; p++) parents[p] = fork.Phenotype.Parts[p].ParentIndex;
+            Assert.Equal(new[] { -1, 0, 1, 2, 0, 4, 5 }, parents);
+
+            Assert.Null(fork.PartMapFromPreviousPlan);
+
+            // One bite in each branch, in one pass: part 2 takes 3 with it, and part 5 takes 6.
+            world.SetContacts(new List<CreatureContact>
+            {
+                new CreatureContact(first.Id, 0, fork.Id, 2),
+                new CreatureContact(second.Id, 0, fork.Id, 5),
+            });
+            world.ApplyMouth(1f);
+
+            Assert.Equal(2L, world.PartsKilled);
+            Assert.Contains(world.Living, c => c.Id == fork.Id);
+            Assert.Equal(2, fork.PlanRevision);
+            Assert.Equal(3, fork.Phenotype.PartCount);
+
+            // The root, the +X branch's first box and the +Y branch's first box, which stood at
+            // 0, 1 and 4. The second kill alone would say 0, 1 and 2.
+            int[] map = fork.TakePartMapFromPreviousPlan();
+            Assert.Equal(new[] { 0, 1, 4 }, map);
+
+            // Taken is gone, and the next change starts a map of its own.
+            Assert.Null(fork.PartMapFromPreviousPlan);
+
+            world.SetContacts(Touching(first, 0, fork, 2));
+            world.ApplyMouth(1f);
+
+            Assert.Equal(3, fork.PlanRevision);
+            Assert.Equal(new[] { 0, 1 }, fork.TakePartMapFromPreviousPlan());
+            AssertBooksClose(world, "after the three kills");
+        }
+
+        // ------------------------------------------------- the records through a plan change
+
+        /// <summary>
+        /// A body that loses a part keeps what its surviving parts felt on that step, on their new
+        /// indices (round 49, the coordinator's ruling on D123): the lost part's entries go with
+        /// it, and the survivors' loss and contact stand where the new plan puts them.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>One pass, three touches.</b> A claw takes part 2 of the fork (and part 3 with it), a
+        /// weak claw wounds part 4 without killing it, and an unarmed box touches part 6. The plan
+        /// that is left is 0, 1, 4, 5 and 6 of the old one, so the wound reads at index 2 and the
+        /// touch at index 4, and nothing reads the loss of the part that came off.
+        /// </para>
+        /// <para>
+        /// Until round 49 both records were dropped on a plan change, so a bitten body's brain read
+        /// no contact and no damage on exactly the step it lost a part.
+        /// </para>
+        /// </remarks>
+        [Fact]
+        public void ABiteCarriesTheSurvivorsRecordsOntoTheirNewIndices()
+        {
+            RunConfig config = Stage();
+            config.SenseContact = true;
+            config.SenseDamage = true;
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Fork(), 1, -1f);
+            world.Inoculate(Armed(attack: 1f), 1, -1f);
+            world.Inoculate(Armed(attack: 0.1f), 1, -1f);
+            world.Inoculate(Armed(), 1, -1f);
+
+            Organism fork = world.Living[0];
+            Organism claw = world.Living[1];
+            Organism nibbler = world.Living[2];
+            Organism toucher = world.Living[3];
+
+            PhenotypePart bitten = fork.Phenotype.Parts[2];
+            PhenotypePart nibbled = fork.Phenotype.Parts[4];
+            PhenotypePart tooth = claw.Phenotype.Parts[0];
+            PhenotypePart weak = nibbler.Phenotype.Parts[0];
+
+            // Long enough for the claw to take twice part 2's pool, which leaves the weak claw a
+            // tenth of that on part 4, the same size of part.
+            float seconds = 2f * Metabolism.HealthPool(bitten, config) / (tooth.Attack * tooth.SurfaceArea);
+            float nibble = weak.Attack * weak.SurfaceArea * seconds / Metabolism.HealthPool(nibbled, config);
+
+            Assert.True(nibble > 0f && nibble < 1f, $"the weak claw takes {nibble} of part 4's pool");
+
+            world.SetContacts(new List<CreatureContact>
+            {
+                new CreatureContact(claw.Id, 0, fork.Id, 2),
+                new CreatureContact(nibbler.Id, 0, fork.Id, 4),
+                new CreatureContact(toucher.Id, 0, fork.Id, 6),
+            });
+            world.ApplyMouth(seconds);
+
+            Assert.Equal(1L, world.PartsKilled);
+            Assert.Contains(world.Living, c => c.Id == fork.Id);
+            Assert.Equal(5, fork.Phenotype.PartCount);
+            Assert.Equal(new[] { 0, 1, 4, 5, 6 }, fork.TakePartMapFromPreviousPlan());
+
+            _output.WriteLine(
+                $"{seconds:0.###} s: part 2 lost, part 4 nibbled for {nibble:0.######} of its pool; " +
+                $"damage [{string.Join(", ", fork.PartDamage)}], " +
+                $"contact [{string.Join(", ", fork.PartContact)}]");
+
+            // On the new plan's indices: the wound at 2 (old 4), the touch at 4 (old 6), and the
+            // wound's part also touched, since the weak claw's contact named it.
+            Assert.Equal(new[] { false, false, true, false, true }, fork.PartContact);
+            Assert.Equal(5, fork.PartDamage.Length);
+            Assert.Equal(0f, fork.PartDamage[0]);
+            Assert.Equal(0f, fork.PartDamage[1]);
+            Fixtures.AssertClose(nibble, fork.PartDamage[2], 1e-6f);
+            Assert.Equal(0f, fork.PartDamage[3]);
+            Assert.Equal(0f, fork.PartDamage[4]);
+            Fixtures.AssertClose(1f - fork.PartHealth[2], fork.PartDamage[2], 1e-6f);
+
+            // The attackers' own records are untouched by a plan change that was not theirs.
+            Assert.True(claw.PartContact[0] && nibbler.PartContact[0] && toucher.PartContact[0]);
+
+            // The carried arrays are the ones D123 clears in place from here on.
+            bool[] touched = fork.PartContact;
+            float[] lost = fork.PartDamage;
+
+            world.SetContacts(new List<CreatureContact>());
+            world.ApplyMouth(seconds);
+
+            Assert.Same(touched, fork.PartContact);
+            Assert.Same(lost, fork.PartDamage);
+            Assert.Equal(new bool[5], fork.PartContact);
+            Assert.Equal(new float[5], fork.PartDamage);
+            AssertBooksClose(world, "after the bite");
+        }
+
+        /// <summary>
+        /// A module added keeps what the standing parts felt on the step before, on their new
+        /// indices, and the new part reads nothing: 0 and false (round 49's ruling on D123, the
+        /// module rule's half).
+        /// </summary>
+        /// <remarks>
+        /// The module rule changes a plan through the same <c>AdoptPlan</c> as the bite, with a map
+        /// of its own from <see cref="Developer.MatchParts"/>, so the records go through the map
+        /// there too. Until round 49 they were dropped.
+        /// </remarks>
+        [Fact]
+        public void AModuleAddedCarriesTheRecordsAndTheNewPartFeltNothing()
+        {
+            RunConfig config = Stage();
+            config.SenseContact = true;
+            config.SenseDamage = true;
+            config.ModuleAddReserveSeconds = 20f;
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Fixtures.IndeterminateLeaf(maxModules: 3), 1, -1f);
+
+            Organism leaf = world.Living[0];
+            for (int s = 0; s < 600; s++) world.Step(1f);
+
+            world.Inoculate(Armed(attack: 0.1f), 1, -1f);
+            Organism nibbler = world.Living[1];
+
+            world.SetContacts(Touching(nibbler, 0, leaf, 0));
+            world.ApplyMouth(0.1f);
+
+            Assert.Equal(new[] { true }, leaf.PartContact);
+            float felt = leaf.PartDamage[0];
+            Assert.True(felt > 0f && felt < 1f, $"the nibble took {felt} of the pool");
+
+            Assert.Equal(1, world.ApplyModuleRule(10f));
+            Assert.Equal(2, leaf.Phenotype.PartCount);
+
+            int[] map = leaf.TakePartMapFromPreviousPlan();
+            Assert.Equal(new[] { 0, -1 }, map);
+
+            Assert.Equal(new[] { true, false }, leaf.PartContact);
+            Assert.Equal(new[] { felt, 0f }, leaf.PartDamage);
+            AssertBooksClose(world, "after the module");
+        }
     }
 }

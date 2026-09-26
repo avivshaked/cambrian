@@ -7,7 +7,7 @@ columns over 0.44 and over 1 J/m3, the bed layer's snow (fields/*.snow-floor.f32
 lowest live 1 m cell, J; summed, and over the live column count as J/m3 of that layer), the
 stats' floorStockJoules (Row.cs: patch 0's refuge stock, a joules total and not a density),
 the living absorptive bodies' densityHere (absorptive.jsonl rows within 5 s of the mark, dead
-rows excluded) and the column snow under absorptive bodies (positions.jsonl flag 1), alive,
+rows excluded) and the column snow under absorptive bodies (the positions' flag 1), alive,
 photo, absorptive count, upt lim.
 """
 import importlib.util, os, sys, math, bisect
@@ -17,6 +17,12 @@ REPO = r"D:\Projects\experiments\evolution-simulator"
 spec = importlib.util.spec_from_file_location("r47read", os.path.join(REPO, "scripts", "reads", "r47-read.py"))
 R = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(R)
+
+# The positions through runrec.py, which reads positions.jsonl or record format 2's
+# positions.jsonl.gz and says which.
+sys.path.insert(0, os.path.join(REPO, "scripts", "reads"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import runrec  # noqa: E402  (path set above)
 
 
 def q(xs):
@@ -60,7 +66,7 @@ def main():
             if m in want and abs(r["t"] - m) <= 5:
                 absrows.setdefault(m, {})[r["id"]] = r["densityHere"]
     pos = {}
-    for row in R.stream_jsonl(os.path.join(d, "positions.jsonl")):
+    for row in runrec.positions(d):
         t = row["t"]
         if abs(t - round(t)) < 1e-9 and int(round(t)) in want:
             pos[int(round(t))] = [(e[1], e[3]) for e in row["b"] if e[4] & 1]

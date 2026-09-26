@@ -1,13 +1,19 @@
-"""Tilt of each body's root part against the vertical, from poses.jsonl and the snapshot's genome.
+"""Tilt of each body's root part against the vertical, from the poses and the snapshot's genome.
 
 The root node's dimensions give its thinnest local axis (a leaf's normal); the pose row's `r`
 is the root's world rotation (x, y, z, w); y is up. Tilt is the angle between the rotated
 normal and the vertical, 0 = flat to the surface, 90 = on edge. Root part only.
 
 python scripts/reads/tilt.py <run dir> <second> [<second> ...]
+
+Reads either record through runrec.py: the snapshot's genomes joined from genomes.jsonl.gz in
+record format 2, and the poses from poses.jsonl or, where a run has none, the state stream.
 """
 import json, math, sys, os
 from collections import Counter
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import runrec  # noqa: E402  (path set above)
 
 def rotate(q, v):
     x, y, z, w = q
@@ -18,23 +24,20 @@ def rotate(q, v):
 
 def read(run, second):
     genomes = {}
-    with open(os.path.join(run, "snapshots", f"{second:09d}.jsonl"), encoding="utf-8") as f:
-        for line in f:
-            g = json.loads(line)
-            root = g["nodes"][g["root"]]
-            d = root["dimensions"]
-            genomes[g["id"]] = (d["x"], d["y"], d["z"], root["cell"], len(g["nodes"]))
-    pose = None
-    with open(os.path.join(run, "poses.jsonl"), encoding="utf-8") as f:
-        for line in f:
-            if line.startswith('{"t":%d,' % second):
-                pose = json.loads(line); break
+    snap = runrec.snapshot(run, second)
+    if snap is None:
+        raise SystemExit(f"no snapshot at {second}")
+    for g in snap:
+        root = g["nodes"][g["root"]]
+        d = root["dimensions"]
+        genomes[g["id"]] = (d["x"], d["y"], d["z"], root["cell"], len(g["nodes"]))
+    pose = runrec.poses(run, second)
     if pose is None:
         raise SystemExit(f"no pose row at {second}")
     return genomes, pose
 
 def main():
-    run = sys.argv[1]
+    run = runrec.run_directory(sys.argv[1])
     for second in map(int, sys.argv[2:]):
         genomes, pose = read(run, second)
         bins = Counter(); ident = 0; n = 0; thin_ratio = []
@@ -45,7 +48,7 @@ def main():
             dims = g[:3]
             axis = min(range(3), key=lambda i: dims[i])
             local = [0.0, 0.0, 0.0]; local[axis] = 1.0
-            q = b["r"]
+            q = list(b["r"])
             if q == [0, 0, 0, 1]: ident += 1
             nrm = rotate(q, local)
             tilt = math.degrees(math.acos(min(1.0, abs(nrm[1]))))

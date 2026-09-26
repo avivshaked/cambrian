@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "53f8234cb554f0ba",
+  "configHash": "356e87c75e1338e9",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -210,6 +210,7 @@
     "founderDepthSpread": 45,
     "founderEndowmentSeconds": 0,
     "founderEnergyJoules": 200,
+    "founderReserveCapFraction": 0,
     "foundingTricklePerSecond": 0,
     "foundingTricklePoolCount": 0,
     "foundingTricklePoolHash": "",
@@ -255,6 +256,7 @@
     "floorRefugeMetres": 0,
     "foundersFollowFood": false,
     "foundersFollowFoodDepth": false,
+    "foundersFollowIncomeDepth": false,
     "foundersFollowMatter": false,
     "handlingCostPerJouleEaten": 0.1,
     "initialMatterPerCubicMetre": 1,

@@ -68,7 +68,7 @@ setting; the spike's host did the same. The Unity farm is untouched.
   round 45's launcher for 3,000 s at seed 4 of the fixture world (`rounds/env-r44.ps1`, the
   islands off, as `r45fixc-s4`) and on round 45's own launcher for 3,000 s at seed 1. Both
   must be identical to the CPU backend's run in every `stats.jsonl` field
-  (`scratch/r45-build/regress.py`), with the digest at every step equal and the lineage
+  (`logbook/specs/r45-build-regress.py`), with the digest at every step equal and the lineage
   byte-equal. This is the test that separates a port fault from a rounding.
 - **Acceptance 2, the card agrees with itself:** the same launcher on the 4090 in single at
   two group sizes and twice, 3,000 s: identical rows, digest and lineage.

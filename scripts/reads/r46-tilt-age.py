@@ -2,8 +2,10 @@
 
 python scripts/reads/r46-tilt-age.py <run dir> <second> [--stride 10]
 
-Three readings from poses.jsonl, lineage.jsonl and the snapshot at <second>, root part only,
-tilt as tilt.py reads it (0 flat, 90 on edge; the flat factor is |cos tilt|):
+Three readings from the poses, lineage.jsonl and the genomes, root part only, tilt as tilt.py
+reads it (0 flat, 90 on edge; the flat factor is |cos tilt|). Either record, through runrec.py:
+the poses from poses.jsonl or the state stream, the genomes from genomes.jsonl.gz or, in record
+format 1, from the snapshots:
 
   1. tilt by age at <second>: the living binned by age, with the mean flat factor of each bin.
      A crowd laid flat by the water over a life reads flatter with age; a crowd born flat does not.
@@ -17,6 +19,9 @@ tilt as tilt.py reads it (0 flat, 90 on edge; the flat factor is |cos tilt|):
 """
 import json, math, os, sys
 from collections import defaultdict
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import runrec  # noqa: E402  (path set above)
 
 
 def rotate(q, v):
@@ -47,22 +52,16 @@ def corr(xs, ys):
 
 
 def main():
-    run = sys.argv[1]; second = int(sys.argv[2])
+    run = runrec.run_directory(sys.argv[1]); second = int(sys.argv[2])
     stride = int(sys.argv[sys.argv.index("--stride") + 1]) if "--stride" in sys.argv else 10
-    # the genomes: dims and offset of the root, for every body ever snapshotted we need dims;
-    # the snapshot at `second` gives the living; earlier snapshots give the rest of the crowd.
+    # the genomes: dims and offset of the root, for every body we can find one for. Record
+    # format 2 holds every body admitted; format 1 only those some snapshot caught alive.
     dims = {}; offset = {}
-    snaps = sorted(os.listdir(os.path.join(run, "snapshots")))
-    for name in snaps:
-        with open(os.path.join(run, "snapshots", name), encoding="utf-8") as f:
-            for line in f:
-                g = json.loads(line)
-                if g["id"] in dims:
-                    continue
-                root = g["nodes"][g["root"]]
-                d = root["dimensions"]
-                dims[g["id"]] = (d["x"], d["y"], d["z"])
-                offset[g["id"]] = root.get("buoyancyOffset", 0.0)
+    for ident, g in runrec.genomes(run).items():
+        root = g["nodes"][g["root"]]
+        d = root["dimensions"]
+        dims[ident] = (d["x"], d["y"], d["z"])
+        offset[ident] = root.get("buoyancyOffset", 0.0)
     birth = {}; parent = {}
     with open(os.path.join(run, "lineage.jsonl"), encoding="utf-8") as f:
         for line in f:
@@ -72,27 +71,27 @@ def main():
     living = None
     first = {}; last = {}; parent_at_first = {}
     n_rows = 0
-    with open(os.path.join(run, "poses.jsonl"), encoding="utf-8") as f:
-        for k, line in enumerate(f):
-            is_target = line.startswith('{"t":%d,' % second)
-            if k % stride and not is_target:
+    def at_target(t):
+        return abs(t - second) < 1e-3
+
+    for row in runrec.poses(run, keep=lambda k, t: k % stride == 0 or at_target(t)):
+        is_target = at_target(row["t"])
+        n_rows += 1
+        here = {}
+        for b in row["bodies"]:
+            d = dims.get(b["id"])
+            if d is None:
                 continue
-            row = json.loads(line); n_rows += 1
-            here = {}
-            for b in row["bodies"]:
-                d = dims.get(b["id"])
-                if d is None:
-                    continue
-                here[b["id"]] = flat_factor(b["r"], d)
-            for i, ff in here.items():
-                if i not in first:
-                    first[i] = (row["t"], ff)
-                    p = parent.get(i, -1)
-                    if p in here:
-                        parent_at_first[i] = here[p]
-                last[i] = (row["t"], ff)
-            if is_target:
-                living = here
+            here[b["id"]] = flat_factor(b["r"], d)
+        for i, ff in here.items():
+            if i not in first:
+                first[i] = (row["t"], ff)
+                p = parent.get(i, -1)
+                if p in here:
+                    parent_at_first[i] = here[p]
+            last[i] = (row["t"], ff)
+        if is_target:
+            living = here
     if living is None:
         raise SystemExit("no pose row at %d" % second)
     print("%s at %d s: %d living with a genome, %d pose rows read (every %dth), %d bodies seen"

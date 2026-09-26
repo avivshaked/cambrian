@@ -98,6 +98,13 @@ namespace Evosim.Core
         /// </summary>
         private List<LineageEvent> _lineageEvents = new List<LineageEvent>();
 
+        /// <summary>
+        /// Genomes admitted since the last <see cref="DrainAdmittedGenomes"/>, filled only while
+        /// <see cref="QueueAdmittedGenomes"/> is on. Pure instrumentation, like the lineage queue
+        /// beside it, and not state: a checkpoint is written after the farm drains both.
+        /// </summary>
+        private List<AdmittedGenome> _admittedGenomes = new List<AdmittedGenome>();
+
         // One log reused across conceptions (Conceive runs on the world's one thread); cleared by
         // every Mutate call that is handed it. The owner's ruling of 2026-09-24, for the lineage row.
         private readonly MutationLog _mutationLog = new MutationLog();
@@ -400,6 +407,13 @@ namespace Evosim.Core
 
                         if (!eatsSnow && !eatsMatter) return null;
 
+                        // The round 50 founding ruling: a leaf where its own income, light and
+                        // food together, is largest.
+                        if (eatsMatter && Config.FoundersFollowIncomeDepth)
+                        {
+                            return IncomeDepth(body, snow, matter, x, z);
+                        }
+
                         GridField field = eatsSnow && eatsMatter
                             ? ShareOfRichestColumn(snow, x, z) >= ShareOfRichestColumn(matter, x, z)
                                 ? snow
@@ -434,6 +448,53 @@ namespace Evosim.Core
                 if (type == CellTypeIds.Absorptive) eatsSnow = true;
                 else if (type == CellTypeIds.Photosynthetic) eatsMatter = true;
             }
+        }
+
+        /// <summary>
+        /// The cell of the column under (x, z) where a body's intake, light and food together, is
+        /// largest, as a height span; null when every cell prices at nothing. The round 50
+        /// founding ruling (<see cref="RunConfig.FoundersFollowIncomeDepth"/>).
+        /// </summary>
+        /// <remarks>
+        /// The column is walked on the finer of the two grids, shallowest first, and each live
+        /// cell is priced at its centre by the call the metabolic pass bills a body with: the
+        /// shaded irradiance there, the snow's edible density and the dissolved matter's density,
+        /// read through the same field doors. The coarser grid is read at the same point, so a
+        /// 1 m cell inside a 5 m matter cell reads that cell's matter and its own light. Priced
+        /// without a pose (the orientation average) even under light by exposure, since the body
+        /// has none until the solver places it. A read: nothing is moved, and no draw is taken.
+        /// </remarks>
+        private (float Top, float Bottom)? IncomeDepth(
+            Phenotype body, GridField snow, GridField matter, float x, float z)
+        {
+            GridField fine = snow.CellMetres <= matter.CellMetres ? snow : matter;
+            float cell = fine.CellMetres;
+            int patch = PatchOfXZ(x, z);
+
+            int best = -1;
+            double most = 0d;
+
+            for (int iy = 0; iy < fine.LayerCount; iy++)
+            {
+                if (!fine.IsLiveInColumn(x, z, iy)) continue;
+
+                float y = -(iy + 0.5f) * cell;
+                var at = new FieldPoint(new Float3(x, y, z), patch);
+
+                EnergyLedger ledger = Metabolism.StepAt(
+                    body, Config, Field.IrradianceAt(y, patch, x, z),
+                    snow.EdibleDensityAt(at), matter.DensityAt(at), 0f, 1f);
+
+                double income = ledger.LightIncome + (double)ledger.FoodIncome;
+                if (income > most)
+                {
+                    most = income;
+                    best = iy;
+                }
+            }
+
+            if (best < 0) return null;
+            return (-best * cell, -(best + 1) * cell);
         }
 
         /// <summary>
@@ -816,6 +877,24 @@ namespace Evosim.Core
         /// population that was breeding perfectly well.
         /// </remarks>
         public long FoundersUnderMassFloor { get; private set; }
+
+        /// <summary>
+        /// Founders admitted with their start cut by D124's cap
+        /// (<see cref="RunConfig.FounderReserveCapFraction"/>), running total. 0 with the cap off,
+        /// and a founder already under its cap is not counted.
+        /// </summary>
+        /// <remarks>
+        /// Admitted founders only: a stillborn founder has no start, so it cannot have been cut.
+        /// Carried by a checkpoint only in a world whose config turns the cap on, as D117's pool
+        /// count is, so every other world writes the bytes it wrote before.
+        /// </remarks>
+        public long FoundersCapped { get; private set; }
+
+        /// <summary>
+        /// The joules D124's cap took from founders' starts, running total: purse and endowment
+        /// that were never created. 0 with the cap off. See <see cref="FoundersCapped"/>.
+        /// </summary>
+        public double FounderJoulesCapped { get; private set; }
 
         /// <summary>Mean <see cref="Genome.AdultScale"/> over the living — rule 9. NaN when empty.</summary>
         /// <remarks>
@@ -1782,6 +1861,18 @@ namespace Evosim.Core
                     "run did not have.",
                     nameof(config));
             }
+
+            // Round 50's income depth replaces the round 48 depth for a leaf, so it has nothing
+            // to replace without it; refused rather than ignored, for the same reason.
+            if (config.FoundersFollowIncomeDepth && !config.FoundersFollowFoodDepth)
+            {
+                throw new ArgumentException(
+                    "FoundersFollowIncomeDepth is on and FoundersFollowFoodDepth is off. The income " +
+                    "rule sets a leaf founder at the cell of its accepted column where its own intake " +
+                    "is largest, in place of the round 48 depth rule, so it needs that rule on; a " +
+                    "header naming it would describe a world the run did not have.",
+                    nameof(config));
+            }
         }
 
         private static void ValidateVent(RunConfig config, int patchCount)
@@ -2007,8 +2098,9 @@ namespace Evosim.Core
             // of the reserve this step actually left the body and a body that could not pay its
             // upkeep is already dead; before Grow, so a body that has just lost a limb invests in
             // the body it now has. At the defaults — nothing armed, nothing with a mouth, no
-            // healing and no wound anywhere — it is two walks of the living and no arithmetic,
-            // which is what lets it be called unconditionally.
+            // healing and no wound anywhere — it is three walks of the living and no arithmetic,
+            // which is what lets it be called unconditionally. The third, from D123, zeroes the
+            // contact and damage records so the senses read this step's alone.
             ApplyMouth(seconds);
             WorldPhaseProbe.Mark(WorldPhaseProbe.Mouth);
 
@@ -3309,6 +3401,13 @@ namespace Evosim.Core
             // nothing among these rows — this row is what does.
             if (creature.HasAbsorptiveTissue) BufferAbsorptiveDeath(creature);
 
+            // Round 49's two readings for the death row, taken before the lines below zero both
+            // accounts: the gestation account the body died holding (ga) and the reserve of a body
+            // that died solvent (res). Each is written only when above 0, so a lump breeder's
+            // starvation row is the row it always was.
+            double accountAtDeath = creature.GestationJoules;
+            double reserveAtDeath = creature.Energy;
+
             // What the body is worth, in one account: the tissue it grew and whatever reserve it
             // still held. A starved body's reserve is 0 by leg 2, so a starvation corpse is the
             // tissue exactly as it always was; a diverged body is generally solvent, and this is
@@ -3363,7 +3462,8 @@ namespace Evosim.Core
             _dead.Add(creature);
             Deaths++;
 
-            _lineageEvents.Add(LineageEvent.Death(ElapsedSeconds, creature.Id, cause));
+            _lineageEvents.Add(LineageEvent.Death(
+                ElapsedSeconds, creature.Id, cause, accountAtDeath, reserveAtDeath));
         }
 
         /// <summary>
@@ -3775,18 +3875,10 @@ namespace Evosim.Core
         /// </remarks>
         private bool IsSolvent(Organism parent, out double surplus)
         {
-            double gate, funds;
-
-            if (parent.Gestates)
-            {
-                gate = parent.GestationThreshold(Config);
-                funds = parent.GestationJoules;
-            }
-            else
-            {
-                gate = parent.ReproductionThreshold(Config);
-                funds = parent.Energy;
-            }
+            // The gate is Organism.BreedingGate, the one expression D124's founder cap also reads
+            // (AdmitFounder), so the cap is asked of the gate this check applies.
+            double gate = parent.BreedingGate(Config);
+            double funds = parent.Gestates ? parent.GestationJoules : parent.Energy;
 
             surplus = funds - gate;
             return gate > 0d && funds >= gate;
@@ -4387,20 +4479,66 @@ namespace Evosim.Core
             // nothing is computed and the purse is the recorded expression, bit for bit.
             double endowment = FounderEndowmentFor(body);
 
+            // The adult's tissue, measured once here for the cap below and for Admit. A pure
+            // function of the adult and the config, so hoisting it moves no number.
+            double adultTissue = Metabolism.TissueJoules(adult, Config);
+
+            // D124, the owner's ruling for round 49: the start, purse and endowment together, is
+            // at most f of the founder's own breeding gate plus what its growth will cost, so that
+            // after it has grown it holds at most f of its gate and has to earn the rest. The cut
+            // comes out of the endowment first and then the purse, and is made here, before Admit,
+            // so that what is created is what Admit credits to EnergyIn and, over ρ, to the matter
+            // influx: both books close with no new term. At 0 nothing is computed and the start is
+            // the recorded expression, bit for bit.
+            double capCut = 0d;
+            double start = endowment > 0d
+                ? Config.FounderEnergyJoules * birthFraction + endowment
+                : Config.FounderEnergyJoules * birthFraction;
+
+            if (Config.FounderReserveCapFraction > 0f)
+            {
+                double cap = FounderStartCap(genome, adult, adultTissue, tissue);
+
+                if (start > cap)
+                {
+                    capCut = start - cap;
+                    endowment = capCut < endowment ? endowment - capCut : 0d;
+                    start = cap;
+                }
+            }
+
+            // Round 49's landing point: the reservation's x and z at the height the placer handed
+            // back, which is the height the founder is admitted at. Read here, with the
+            // reservation outstanding, because nothing in Core holds a founder's x and z until
+            // the harness has built its body; a placer that keeps no coordinates says so and the
+            // row carries no landing reading. A read of the slot, so nothing moves.
+            Float3? landing = null;
+            if (shared && Placement.TryReservedPosition(out Float3 reserved))
+            {
+                landing = new Float3(reserved.X, height, reserved.Z);
+            }
+
             Organism founder = Admit(
                 genome, body, BirthKind.Floor, seed, parentId: -1, generationDepth: 0,
-                energy: endowment > 0d
-                    ? Config.FounderEnergyJoules * birthFraction + endowment
-                    : Config.FounderEnergyJoules * birthFraction,
+                energy: start,
                 tissue: tissue, heightY: height, parent: null,
                 patch: patch, adultPhenotype: adult,
-                adultTissue: Metabolism.TissueJoules(adult, Config),
-                founderSource: source, poolIndex: poolIndex, endowment: endowment);
+                adultTissue: adultTissue,
+                founderSource: source, poolIndex: poolIndex, endowment: endowment,
+                landing: landing, capCut: capCut);
 
             if (shared)
             {
                 if (founder != null) Placement.Commit(founder.Id);
                 else Placement.Release();
+            }
+
+            // D124's two counters, of admitted founders only: a stillborn founder was given
+            // nothing, so nothing was cut from it.
+            if (founder != null && capCut > 0d)
+            {
+                FoundersCapped++;
+                FounderJoulesCapped += capCut;
             }
 
             // A stillborn founder is still an attempt, and counting it keeps the floor's
@@ -4423,6 +4561,46 @@ namespace Evosim.Core
             if (!(seconds > 0f)) return 0d;
 
             return Math.Max(0d, (double)seconds * Metabolism.StandingWatts(newborn, Config));
+        }
+
+        /// <summary>
+        /// The most a founder may start with under D124's cap, J:
+        /// <c>f × G + (adultTissue − newbornTissue)</c>, with <c>f</c>
+        /// <see cref="RunConfig.FounderReserveCapFraction"/>. Infinite with the cap off.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b><c>G</c> is the gate the founder will meet once grown</b>:
+        /// <see cref="Organism.BreedingGate(ReproductionTraits, double, float, RunConfig)"/> at
+        /// the adult's tissue and the adult's <see cref="Metabolism.StandingWatts"/> at age 0,
+        /// which is the expression <see cref="IsSolvent"/> reads off a living body. For a lump
+        /// breeder that is the litter's price plus the margin; for a gestating one the price
+        /// alone, asked of its account. Age 0 is the unworn cost, so the gate read here is never
+        /// above the one the grown body meets.
+        /// </para>
+        /// <para>
+        /// <b>The growth term is what <see cref="Grow"/> takes from the reserve in all</b>: each
+        /// step debits the re-measured tissue less the tissue before it, and the steps telescope
+        /// to the adult's tissue less the newborn's, whether the body grows in one step or ten.
+        /// Nothing else is charged for growing: no field is drawn since D098, and the buffer
+        /// <see cref="RunConfig.GrowthReserveFloor"/> keeps is a pace and not a price.
+        /// </para>
+        /// </remarks>
+        public double FounderStartCap(
+            Genome genome, Phenotype adult, double adultTissue, double newbornTissue)
+        {
+            if (genome == null) throw new ArgumentNullException(nameof(genome));
+            if (adult == null) throw new ArgumentNullException(nameof(adult));
+
+            float fraction = Config.FounderReserveCapFraction;
+            if (!(fraction > 0f)) return double.PositiveInfinity;
+
+            double gate = Organism.BreedingGate(
+                genome.Reproduction, adultTissue, Metabolism.StandingWatts(adult, Config), Config);
+
+            double growth = Math.Max(0d, adultTissue - newbornTissue);
+
+            return (double)fraction * gate + growth;
         }
 
         /// <summary>
@@ -4760,13 +4938,25 @@ namespace Evosim.Core
         /// row as <c>endow</c>. Already inside <paramref name="energy"/>, and booked with it; 0
         /// for everything else.
         /// </param>
+        /// <param name="landing">
+        /// For a founder, where it was placed (<see cref="IBodyPlacement.TryReservedPosition"/>,
+        /// at the admitted height), for round 49's landing readings on its lineage row; null for
+        /// everything else and for a founder whose placer keeps no coordinates.
+        /// </param>
+        /// <param name="capCut">
+        /// For a founder, the joules D124's cap took from its start
+        /// (<see cref="RunConfig.FounderReserveCapFraction"/>), carried to its lineage row as
+        /// <c>capcut</c>. Never created, so not inside <paramref name="energy"/>; 0 for
+        /// everything else and for a founder the cap did not cut.
+        /// </param>
         private Organism Admit(
             Genome genome, Phenotype phenotype, BirthKind kind, ulong seed, long parentId,
             int generationDepth, double energy, double tissue, float heightY, Organism parent,
             int patch, Phenotype adultPhenotype, double adultTissue,
             FounderSource founderSource = FounderSource.None, int poolIndex = -1,
             double endowment = 0d,
-            string budCells = null, int budsExpressed = 0)
+            string budCells = null, int budsExpressed = 0,
+            Float3? landing = null, double capCut = 0d)
         {
             // The owner's ruling of 2026-09-19: a body that would grow into itself is not born.
             // Asked here rather than at each of the three call sites so that a founder and an
@@ -4898,6 +5088,21 @@ namespace Evosim.Core
             // means. The photosynthetic flag is the same local the pass above computed for
             // Organism.HasPhotosyntheticTissue, passed rather than recomputed, so a row and the
             // creature it describes can never disagree about what the body is made of.
+            //
+            // Round 49's landing readings go on the same row: for a founder placed where the
+            // placer can say, the food its body eats at that point and its column's mean, read
+            // now, before the body has fed once. The flags are the row's own abs and pho.
+            float landingSnow = float.NaN, landingSnowColumn = float.NaN;
+            float landingMatter = float.NaN, landingMatterColumn = float.NaN;
+
+            if (landing.HasValue && founderSource != FounderSource.None)
+            {
+                ReadLanding(
+                    landing.Value, patch, creature.HasAbsorptiveTissue, photosynthetic,
+                    out landingSnow, out landingSnowColumn,
+                    out landingMatter, out landingMatterColumn);
+            }
+
             _lineageEvents.Add(LineageEvent.Birth(
                 ElapsedSeconds, creature.Id, parentId, kind, generationDepth, creature.SpeciesId,
                 HasAbsorptive(phenotype), phenotype.TotalDof > 0, photosynthetic, patch,
@@ -4907,9 +5112,51 @@ namespace Evosim.Core
                 CarriesAttribute(genome, n => n.Intake),
                 CarriesAttribute(genome, n => n.Protection),
                 founderSource, poolIndex, endowment, budCells, budsExpressed,
-                genome.Reproduction.Mode, genome.Reproduction.GestationShare));
+                genome.Reproduction.Mode, genome.Reproduction.GestationShare,
+                landingSnow, landingSnowColumn, landingMatter, landingMatterColumn,
+                capCut));
+
+            // Record format 2's genome file, beside the lineage row and under the same guarantee:
+            // exactly one per id assigned. A reference, not a copy, and nothing is read or drawn,
+            // so a world that queues and one that does not step the same trajectory.
+            if (QueueAdmittedGenomes) _admittedGenomes.Add(new AdmittedGenome(creature.Id, genome));
 
             return creature;
+        }
+
+        /// <summary>
+        /// Round 49's landing readings for a founder at <paramref name="at"/>: the edible density
+        /// of each food its body eats at the point (<c>fsnow</c>, <c>fmat</c>) and the mean over
+        /// the point's column (<c>fcol</c>, <c>fmcol</c>), each NaN when the body does not eat that
+        /// food or the field is not a grid.
+        /// </summary>
+        /// <remarks>
+        /// Reads only. It is called between the placer's reservation and the admission of the
+        /// body, and the step's field passes have all run by then (founders are spawned at the end
+        /// of <see cref="Step"/>), so the field it reads is the one the founder rule read when it
+        /// chose the spot. The body's first meal is taken in the next step, from the same field
+        /// plus whatever a body the solver killed in between left in it, at wherever the physics
+        /// has moved the body by then.
+        /// </remarks>
+        private void ReadLanding(
+            Float3 at, int patch, bool eatsSnow, bool eatsMatter,
+            out float snowHere, out float snowColumn, out float matterHere, out float matterColumn)
+        {
+            snowHere = snowColumn = matterHere = matterColumn = float.NaN;
+
+            var point = new FieldPoint(at, patch);
+
+            if (eatsSnow && Nutrients is GridField snow)
+            {
+                snowHere = snow.EdibleDensityAt(point);
+                snowColumn = snow.MeanEdibleDensityInColumn(at.X, at.Z);
+            }
+
+            if (eatsMatter && Matter is GridField matter)
+            {
+                matterHere = matter.EdibleDensityAt(point);
+                matterColumn = matter.MeanEdibleDensityInColumn(at.X, at.Z);
+            }
         }
 
         /// <summary>
@@ -4948,6 +5195,33 @@ namespace Evosim.Core
 
             List<LineageEvent> taken = _lineageEvents;
             _lineageEvents = new List<LineageEvent>();
+            return taken;
+        }
+
+        /// <summary>
+        /// Whether each admitted body's genome is queued for <see cref="DrainAdmittedGenomes"/> —
+        /// record format 2's <c>genomes.jsonl.gz</c> (<c>logbook/specs/record-and-film-spec.md</c>
+        /// A1). Off unless the console farm turns it on.
+        /// </summary>
+        /// <remarks>
+        /// <b>Off by default, because a queue nobody drains is a leak.</b> The Unity farm drains
+        /// the lineage and never this, so with the queue always on it would hold a reference to
+        /// every genome the world ever admitted. Not written into a checkpoint: the farm drains
+        /// the queue beside the lineage before it writes one, and a resumed run writes its living
+        /// roster's genomes first, so nothing a checkpoint would carry is missing.
+        /// </remarks>
+        public bool QueueAdmittedGenomes { get; set; }
+
+        /// <summary>
+        /// Hands over every genome admitted since the last call and forgets them —
+        /// <see cref="DrainLineageEvents"/>' pattern, and called beside it.
+        /// </summary>
+        public IReadOnlyList<AdmittedGenome> DrainAdmittedGenomes()
+        {
+            if (_admittedGenomes.Count == 0) return Array.Empty<AdmittedGenome>();
+
+            List<AdmittedGenome> taken = _admittedGenomes;
+            _admittedGenomes = new List<AdmittedGenome>();
             return taken;
         }
 

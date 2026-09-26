@@ -531,6 +531,47 @@ namespace Evosim.Core
 
         private float _founderEndowmentSeconds;
 
+        /// <summary>
+        /// The most a founder may start with, as a fraction of its own breeding gate — the owner's
+        /// ruling for round 49 (D124, 2026-09-25). 0, the default, is off and is every recorded
+        /// world; round 49 runs it at 0.9.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Round 48's cheap-child founders were born above their own gate: purse and endowment
+        /// together paid for their growth and their first child, so a founder bred half a second
+        /// after it landed, on the gift, and then starved. Above 0 a founder's start, purse and
+        /// endowment together, is cut to <c>f × G + growth</c>, where <c>G</c> is
+        /// <see cref="Organism.BreedingGate(ReproductionTraits, double, float, RunConfig)"/> at the
+        /// founder's adult body and age 0 (the gate <c>World.IsSolvent</c> applies, for either
+        /// mode) and <c>growth</c> is its adult tissue less its newborn tissue, which is what
+        /// <c>World.Grow</c> debits from the reserve in all. After its growth it holds at most
+        /// <c>f</c> of its gate, so it has to earn the rest.
+        /// </para>
+        /// <para>
+        /// The cut comes out of the endowment first and then the purse. Both are created at
+        /// admission, so a start cut before <c>World.Admit</c> is simply a smaller influx in both
+        /// books. The founder's lineage row carries what was cut as <c>capcut</c>, in joules,
+        /// when it is above 0, and its <c>endow</c> is the endowment actually given. Floor,
+        /// trickle and D117's pool founders alike (<c>World.AdmitFounder</c>); not an inoculant,
+        /// which keeps its named purse as it does under the endowment.
+        /// </para>
+        /// </remarks>
+        [Tunable("population")]
+        public float FounderReserveCapFraction
+        {
+            get => _founderReserveCapFraction;
+            set => _founderReserveCapFraction =
+                value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                    ? value
+                    : throw new ArgumentOutOfRangeException(
+                        nameof(FounderReserveCapFraction), value,
+                        "A founder's start cap is a finite, non-negative fraction of its own " +
+                        "breeding gate; 0 is off.");
+        }
+
+        private float _founderReserveCapFraction;
+
 
         /// <summary>Depth range founders are scattered through, metres.</summary>
         /// <remarks>
@@ -1431,6 +1472,39 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("world")]
         public bool FoundersFollowFoodDepth { get; set; }
+
+        /// <summary>
+        /// Whether a founder with a photosynthetic part is set, under
+        /// <see cref="FoundersFollowFoodDepth"/>, at the cell of its column where its own intake,
+        /// light and food together, is largest, rather than at the richest cell of the dissolved
+        /// matter: the round 50 founding ruling (owner, 2026-09-26, option (a)). Off by default,
+        /// which is every recorded world.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Round 49 showed why. Late in a run the dissolved matter is richest at the bed, so the
+        /// round 48 rule set the trickle's leaves near the bottom, at a median 44 m down in round
+        /// 49's first two seeds, where the light is under a thousandth of the surface's, and they
+        /// died at a median 81 and 99 s.
+        /// </para>
+        /// <para>
+        /// With this on, each live cell of the finer grid's column under the accepted spot is
+        /// priced at its centre by <c>Metabolism.StepAt</c>, as the world bills a body standing
+        /// there: the shaded irradiance, the snow's edible density and the dissolved matter's
+        /// density, at age 0 and with no work. Under <see cref="LightByExposure"/> the price is
+        /// the orientation average, since a founder has no pose before it is placed; a landed
+        /// body lying flat to the light then earns up to twice it. The founder is set in the cell
+        /// whose light income plus food income is largest, the shallower on a tie, and keeps the
+        /// drawn depth when every cell prices at nothing. A body with no photosynthetic part is placed by the round
+        /// 48 rule as before, so a stomach's landing does not move.
+        /// </para>
+        /// <para>
+        /// Refused without <see cref="FoundersFollowFoodDepth"/>, whose depth it replaces for a
+        /// leaf. A new realisation of every seed when on.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public bool FoundersFollowIncomeDepth { get; set; }
 
 
         /// <summary>
@@ -2905,8 +2979,9 @@ namespace Evosim.Core
 
         /// <summary>
         /// Whether a genome in this run may draw <see cref="SensorChannel.Contact"/> — whether
-        /// this part is touching another body, D106 item 5. See <see cref="SenseChemical"/> for
-        /// what the gate is.
+        /// this part touched another body's part on the last metabolic step, D106 item 5 and
+        /// D123 (<see cref="Organism.PartContact"/>). See <see cref="SenseChemical"/> for what
+        /// the gate is.
         /// </summary>
         /// <remarks>
         /// <b>Appended after <see cref="SenseFlow"/> in <see cref="SensorPool"/>, and that is the
@@ -2923,7 +2998,9 @@ namespace Evosim.Core
 
         /// <summary>
         /// Whether a genome in this run may draw <see cref="SensorChannel.Damage"/> — the share of
-        /// this part's health pool it lost this step, D106 item 5. See <see cref="SenseContact"/>.
+        /// this part's health pool it lost on the last metabolic step, D106 item 5 and D123
+        /// (<see cref="Organism.PartDamage"/>; rounds 45 to 48 summed it since the body's plan
+        /// last changed). See <see cref="SenseContact"/>.
         /// </summary>
         [Tunable("sense")]
         public bool SenseDamage
