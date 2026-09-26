@@ -1473,6 +1473,39 @@ namespace Evosim.Core
         [Tunable("world")]
         public bool FoundersFollowFoodDepth { get; set; }
 
+        /// <summary>
+        /// Whether a founder with a photosynthetic part is set, under
+        /// <see cref="FoundersFollowFoodDepth"/>, at the cell of its column where its own intake,
+        /// light and food together, is largest, rather than at the richest cell of the dissolved
+        /// matter: the round 50 founding ruling (owner, 2026-09-26, option (a)). Off by default,
+        /// which is every recorded world.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Round 49 showed why. Late in a run the dissolved matter is richest at the bed, so the
+        /// round 48 rule set the trickle's leaves near the bottom, at a median 44 m down in round
+        /// 49's first two seeds, where the light is under a thousandth of the surface's, and they
+        /// died at a median 81 and 99 s.
+        /// </para>
+        /// <para>
+        /// With this on, each live cell of the finer grid's column under the accepted spot is
+        /// priced at its centre by <c>Metabolism.StepAt</c>, as the world bills a body standing
+        /// there: the shaded irradiance, the snow's edible density and the dissolved matter's
+        /// density, at age 0 and with no work. Under <see cref="LightByExposure"/> the price is
+        /// the orientation average, since a founder has no pose before it is placed; a landed
+        /// body lying flat to the light then earns up to twice it. The founder is set in the cell
+        /// whose light income plus food income is largest, the shallower on a tie, and keeps the
+        /// drawn depth when every cell prices at nothing. A body with no photosynthetic part is placed by the round
+        /// 48 rule as before, so a stomach's landing does not move.
+        /// </para>
+        /// <para>
+        /// Refused without <see cref="FoundersFollowFoodDepth"/>, whose depth it replaces for a
+        /// leaf. A new realisation of every seed when on.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public bool FoundersFollowIncomeDepth { get; set; }
+
 
         /// <summary>
         /// How dark the darkest column is under the light's shade map, in [0, 1) — D109. 0 is no

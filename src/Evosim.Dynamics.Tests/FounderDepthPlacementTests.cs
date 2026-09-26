@@ -195,6 +195,128 @@ namespace Evosim.Dynamics.Tests
             Assert.Null(volume.FounderDepth);
         }
 
+        // ------------------------------------------------------ round 50's income depth
+
+        private static RunConfig IncomeBox()
+        {
+            RunConfig config = GridBox(atDepth: true);
+            config.FoundersFollowIncomeDepth = true;
+            return config;
+        }
+
+        /// <summary>
+        /// The box with the matter's richest cell moved deep: 30 more units in the 3 m layer at 18
+        /// to 21 m, where the light is about a fifth of the surface's, so that the round 48 rule
+        /// and the income rule part.
+        /// </summary>
+        private static (World World, SharedVolume Volume) DeepMatter(RunConfig config, ulong seed)
+        {
+            (World world, SharedVolume volume) = Build(config, seed, pool: null);
+            world.Matter.Deposit(new FieldPoint(new Float3(1.5f, -19.5f, 1.5f), 0), 30f);
+            return (world, volume);
+        }
+
+        /// <summary>
+        /// A body's income a second, light and food together, at the centre of the box's 1 m
+        /// layer <paramref name="iy"/>, priced as the metabolic pass prices it. Patch 0: the
+        /// matter region lies in the box's first patch.
+        /// </summary>
+        private static double IncomeAt(World world, Phenotype body, float x, float z, int iy)
+        {
+            float y = -(iy + 0.5f);
+            var at = new FieldPoint(new Float3(x, y, z), 0);
+
+            EnergyLedger ledger = Metabolism.StepAt(
+                body, world.Config, world.Field.IrradianceAt(y, 0, x, z),
+                world.Nutrients.EdibleDensityAt(at), world.Matter.DensityAt(at), 0f, 1f);
+
+            return ledger.LightIncome + (double)ledger.FoodIncome;
+        }
+
+        /// <summary>Plants leaves in the deep-matter box and returns where each landed, with its body.</summary>
+        private List<(Float3 At, Phenotype Body, World World)> PlantDeepLeaves(RunConfig config, ulong seed)
+        {
+            (World world, SharedVolume volume) = DeepMatter(config, seed);
+            world.Inoculate(Cube(CellTypeIds.Photosynthetic), Copies, heightY: Drawn);
+            Assert.Equal(Copies, world.Living.Count);
+
+            var landed = new List<(Float3, Phenotype, World)>();
+            foreach (Organism o in world.Living)
+            {
+                Assert.True(volume.TryTakePlacement(o.Id, out Float3 at), $"no placement for {o.Id}");
+                Assert.True(at.X < 3f && at.Z < 3f, $"outside the matter region at ({at.X}, {at.Z})");
+                landed.Add((at, o.Phenotype, world));
+            }
+
+            return landed;
+        }
+
+        [Fact]
+        public void ALeafByIncomeLandsInTheCellThatPricesItHighest()
+        {
+            foreach ((Float3 at, Phenotype body, World world) in PlantDeepLeaves(IncomeBox(), 51UL))
+            {
+                int best = -1;
+                double most = 0d;
+                var line = new System.Text.StringBuilder();
+
+                for (int iy = 0; iy < 24; iy++)
+                {
+                    double income = IncomeAt(world, body, at.X, at.Z, iy);
+                    if (income > most)
+                    {
+                        most = income;
+                        best = iy;
+                    }
+
+                    line.Append(FormattableString.Invariant($" {iy}:{income:0.####}"));
+                }
+
+                _output.WriteLine(FormattableString.Invariant($"landed at {at.Y:0.###} m; income by layer:{line}"));
+                Assert.True(best >= 0, "the leaf prices at nothing in every layer");
+                Assert.InRange(at.Y, -(best + 1f), -(float)best);
+            }
+        }
+
+        [Fact]
+        public void WhereTheRichestMatterIsDarkTheIncomeRuleSetsALeafShallower()
+        {
+            // The round 48 rule sets a leaf in the richest matter, 18 to 21 m down; round 49's
+            // trickle leaves died in the same arrangement at the bed.
+            foreach ((Float3 at, _, _) in PlantDeepLeaves(GridBox(atDepth: true), 54UL))
+            {
+                Assert.InRange(at.Y, -21f, -18f);
+            }
+
+            foreach ((Float3 at, _, _) in PlantDeepLeaves(IncomeBox(), 54UL))
+            {
+                Assert.True(at.Y > -18f, FormattableString.Invariant($"a leaf by income landed at {at.Y} m"));
+            }
+        }
+
+        [Fact]
+        public void AStomachIsPlacedByTheRound48RuleWithTheIncomeRuleOn()
+        {
+            (World world, SharedVolume volume) = Build(IncomeBox(), 52UL, pool: null);
+            world.Inoculate(Cube(CellTypeIds.Absorptive), Copies, heightY: Drawn);
+            Assert.Equal(Copies, world.Living.Count);
+
+            foreach (Organism o in world.Living)
+            {
+                Assert.True(volume.TryTakePlacement(o.Id, out Float3 at), $"no placement for {o.Id}");
+                Assert.InRange(at.Y, -11f, -10f);
+            }
+        }
+
+        [Fact]
+        public void TheIncomeRuleIsRefusedWithoutTheDepthRule()
+        {
+            RunConfig config = GridBox(atDepth: false);
+            config.FoundersFollowIncomeDepth = true;
+
+            Assert.Throws<ArgumentException>(() => new World(config, 53UL, null));
+        }
+
         // ------------------------------------------------------ round 49's landing readings
 
         /// <summary>

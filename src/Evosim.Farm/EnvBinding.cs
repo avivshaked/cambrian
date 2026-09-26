@@ -104,6 +104,11 @@ namespace Evosim.Farm
             // many seconds of its own standing cost. Off and 0 are the recorded world; the depth
             // rule is refused without D116's.
             Flag("EVOSIM_FOUNDERS_FOLLOW_FOOD_DEPTH", (s, v) => s.FoundersFollowFoodDepth = v),
+
+            // The round 50 founding ruling: a leaf founder set where its own income, light and
+            // food together, is largest, in place of the depth rule above for a leaf. Off is the
+            // recorded world; refused without the depth rule.
+            Flag("EVOSIM_FOUNDERS_INCOME_DEPTH", (s, v) => s.FoundersFollowIncomeDepth = v),
             Num("EVOSIM_FOUNDER_ENDOWMENT", 0f, (s, v) => s.FounderEndowment = v),
 
             // D124, the owner's ruling for round 49 (2026-09-25): a founder starts with at most
@@ -590,6 +595,7 @@ namespace Evosim.Farm
             config.FoundersFollowMatter = s.FoundersFollowMatter;
             config.FoundersFollowFood = s.FoundersFollowFood;
             config.FoundersFollowFoodDepth = s.FoundersFollowFoodDepth;
+            config.FoundersFollowIncomeDepth = s.FoundersFollowIncomeDepth;
             config.FounderEndowmentSeconds = s.FounderEndowment;
             config.FounderReserveCapFraction = s.FounderReserveCap;
             config.LightShadeDepth = s.LightShade;
@@ -981,6 +987,9 @@ namespace Evosim.Farm
 
         /// <summary>The round 48 founding ruling's depth — <c>EVOSIM_FOUNDERS_FOLLOW_FOOD_DEPTH</c>.</summary>
         public bool FoundersFollowFoodDepth;
+
+        /// <summary>The round 50 founding ruling's leaf depth — <c>EVOSIM_FOUNDERS_INCOME_DEPTH</c>.</summary>
+        public bool FoundersFollowIncomeDepth;
 
         /// <summary>The round 48 founding ruling's endowment, s — <c>EVOSIM_FOUNDER_ENDOWMENT</c>.</summary>
         public float FounderEndowment;
