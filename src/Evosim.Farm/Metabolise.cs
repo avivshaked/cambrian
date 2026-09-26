@@ -52,6 +52,29 @@ namespace Evosim.Farm
             IReadOnlyList<Organism> living = World.Living;
             bool byExposure = Config.LightByExposure;
 
+            // D110. The pose the world prices each body's light on, taken body by body across
+            // Core's threads before the pass below: an exposure reads its own solver's pose and its
+            // own phenotype and writes its own organism's two fields, which nothing in the pass
+            // below reads, so the split moves no number. Skipped entirely with the tunable off, so
+            // the array is never allocated and the world takes the orientation average it always
+            // has. wallExposureMs' bracket, inside `metabolise` and not a phase of its own, so the
+            // harness split's sum is unchanged; it is the pass's wall.
+            if (byExposure)
+            {
+                long exposureStarted = Now();
+
+                Parallelism.ForRanges(living.Count, (from, to) =>
+                {
+                    for (int i = from; i < to; i++)
+                    {
+                        Organism creature = living[i];
+                        if (_bodies.TryGetValue(creature.Id, out Body body)) Exposure(body.Solver, creature);
+                    }
+                });
+
+                _exposureTicks += Now() - exposureStarted;
+            }
+
             for (int i = 0; i < living.Count; i++)
             {
                 Organism creature = living[i];
@@ -67,18 +90,6 @@ namespace Evosim.Farm
                 Volume?.Note(creature.Id, root, body.Radius);
 
                 Float3 centre = CentreOfMass(solver);
-
-                // D110. The pose the world prices this body's light on, read on the pass that
-                // already holds it. Skipped entirely with the tunable off, so the array is never
-                // allocated and the world takes the orientation average it always has.
-                if (byExposure)
-                {
-                    // wallExposureMs' bracket, inside `metabolise` and not a phase of its own, so
-                    // the harness split's sum is unchanged.
-                    long exposureStarted = Now();
-                    Exposure(solver, creature);
-                    _exposureTicks += Now() - exposureStarted;
-                }
 
                 // Unsigned, and drained per interval. The solver reports the magnitude of the
                 // work at each joint precisely because a joint being driven *by* the water is

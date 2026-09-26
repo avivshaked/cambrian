@@ -393,49 +393,86 @@ namespace Evosim.Farm
             _condemned.Clear();
             var reasons = new List<string>();
 
-            for (int i = 0; i < _order.Count; i++)
+            // Each body's verdict first, across Core's threads (the count the farm hands Core): a
+            // verdict reads its own solver and writes its own two slots and its own body's last
+            // root, and nothing else. The condemned are then gathered in the bodies' order, the
+            // order their deaths were always handled in, so a verdict reached on another thread is
+            // the same verdict in the same place and the split moves no number.
+            int count = _order.Count;
+            if (_verdictDead.Length < count)
             {
-                Body body = _order[i];
-                Creature solver = body.Solver;
-                if (solver.Links == 0) continue;
+                int size = Math.Max(count, 2 * _verdictDead.Length);
+                _verdictDead = new bool[size];
+                _verdictReason = new string[size];
+            }
 
-                if (!Divergence.Diverged(solver, Solver, body.Radius, out string reason) &&
-                    !RefusedByTheEngine(solver, out reason))
-                {
-                    // The centre of mass, by the same bound the root was just held to, because
-                    // it is the centre and not the root that Metabolise hands to World.Observe
-                    // (D083), and Observe throws on a height outside the world rather than
-                    // killing. Round 44 seed 1 ended `status error` at 22,370 s on exactly that:
-                    // a body thrown skyward whose root was still inside the bound at this check
-                    // and whose centre, a few links higher, was 3 cm past it (2026-09-22). A
-                    // body the world cannot observe is a diverged body, and dies as one here.
-                    Float3 centre = CentreOfMass(solver);
+            bool[] dead = _verdictDead;
+            string[] why = _verdictReason;
 
-                    if (World.HeightIsInTheWorld(centre.Y, World.Config.WorldDepthMetres))
-                    {
-                        // narrow: the root, in Core's frame, for the placer and positions.jsonl.
-                        body.LastRootPosition = new Float3(
-                            (float)solver.Position[0],
-                            (float)solver.Position[1],
-                            (float)solver.Position[2]);
+            Parallelism.ForRanges(count, (from, to) =>
+            {
+                for (int i = from; i < to; i++) dead[i] = Condemned(_order[i], out why[i]);
+            });
 
-                        continue;
-                    }
-
-                    reason = float.IsNaN(centre.Y) || float.IsInfinity(centre.Y)
-                        ? "a non-finite centre of mass"
-                        : FormattableString.Invariant(
-                            $"a centre of mass at {centre.Y:g4} m in a world {Solver.WorldDepthMetres:0.#} m deep");
-                }
-
-                _condemned.Add(body);
-                reasons.Add(reason);
+            for (int i = 0; i < count; i++)
+            {
+                if (!dead[i]) continue;
+                _condemned.Add(_order[i]);
+                reasons.Add(why[i]);
+                why[i] = null;
             }
 
             for (int i = 0; i < _condemned.Count; i++)
             {
                 HandleDivergence(_condemned[i], reasons[i]);
             }
+        }
+
+        // CheckFinite's two slots a body, reused rather than reallocated.
+        private bool[] _verdictDead = Array.Empty<bool>();
+        private string[] _verdictReason = Array.Empty<string>();
+
+        /// <summary>
+        /// One body's verdict: false when it is healthy, and then its last root is taken, as the
+        /// jump check and the metabolic pass read it; true with the reason otherwise.
+        /// </summary>
+        private bool Condemned(Body body, out string reason)
+        {
+            reason = null;
+
+            Creature solver = body.Solver;
+            if (solver.Links == 0) return false;
+
+            if (!Divergence.Diverged(solver, Solver, body.Radius, out reason) &&
+                !RefusedByTheEngine(solver, out reason))
+            {
+                // The centre of mass, by the same bound the root was just held to, because
+                // it is the centre and not the root that Metabolise hands to World.Observe
+                // (D083), and Observe throws on a height outside the world rather than
+                // killing. Round 44 seed 1 ended `status error` at 22,370 s on exactly that:
+                // a body thrown skyward whose root was still inside the bound at this check
+                // and whose centre, a few links higher, was 3 cm past it (2026-09-22). A
+                // body the world cannot observe is a diverged body, and dies as one here.
+                Float3 centre = CentreOfMass(solver);
+
+                if (World.HeightIsInTheWorld(centre.Y, World.Config.WorldDepthMetres))
+                {
+                    // narrow: the root, in Core's frame, for the placer and positions.jsonl.
+                    body.LastRootPosition = new Float3(
+                        (float)solver.Position[0],
+                        (float)solver.Position[1],
+                        (float)solver.Position[2]);
+
+                    return false;
+                }
+
+                reason = float.IsNaN(centre.Y) || float.IsInfinity(centre.Y)
+                    ? "a non-finite centre of mass"
+                    : FormattableString.Invariant(
+                        $"a centre of mass at {centre.Y:g4} m in a world {Solver.WorldDepthMetres:0.#} m deep");
+            }
+
+            return true;
         }
 
         /// <summary>
