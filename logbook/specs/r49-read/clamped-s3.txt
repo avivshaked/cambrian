@@ -1,0 +1,7 @@
+runrec: 2026-09-26-034954-f0794a8b: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+r49-s3: bed at the tank centre -44.36 m
+founders with a landing reading and a positions row within 10 s: 596
+  over a bed more than 1 m deeper than the centre's: 403
+  of those, sitting just above the centre's bed height (the clamp): 74
+  by source and food: {('trickle', 'matter'): 74}
+  e.g. [(4085, 'trickle', 'matter', -43.78, -74.1), (4460, 'trickle', 'matter', -43.98, -68.9), (5107, 'trickle', 'matter', -44.07, -46.8), (5323, 'trickle', 'matter', -43.8, -63.1), (6028, 'trickle', 'matter', -44.11, -75.9), (6962, 'trickle', 'matter', -43.81, -73.7)]

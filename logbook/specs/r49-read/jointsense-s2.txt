@@ -1,0 +1,6 @@
+runrec: 2026-09-25-223116-f0794a8b: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-09-25-223116-f0794a8b: genomes.jsonl.gz (record format 2), 3186 genome(s) indexed
+runrec: 2026-09-25-223116-f0794a8b: snapshots from snapshots/*.jsonl.gz joined to genomes.jsonl.gz, record format 2 (run.json recordFormat 2)
+r49-s2 5000 s: jointed reading contact or damage 44 of 1781 (2.5%); rigid 57 of 1403 (4.1%); unjoined rows 2
+r49-s2 16000 s: jointed reading contact or damage 19 of 349 (5.4%); rigid 275 of 6242 (4.4%); unjoined rows 2
+r49-s2 30000 s: jointed reading contact or damage 5 of 134 (3.7%); rigid 522 of 10674 (4.9%); unjoined rows 2

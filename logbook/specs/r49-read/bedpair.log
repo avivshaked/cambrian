@@ -1,0 +1,19 @@
+== the bed test on the old placer (it should fail) from 09:01:28
+ src/Evosim.Dynamics/Placement/SharedVolume.cs | 72 ++++++++++++---------------
+ 1 file changed, 32 insertions(+), 40 deletions(-)
+  Error Message:
+   founder 0 at y -58.58 over a bed at -71.65: lifted toward the bed at the centre, -59.89
+  Stack Trace:
+     at Evosim.Dynamics.Tests.PlacementTests.AFounderAtItsFoodIsHeldAboveTheBedUnderItNotTheCentres() in D:\Projects\experiments\evolution-simulator\scratch\wt-founderbed\src\Evosim.Dynamics.Tests\PlacementTests.cs:line 354
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+Failed!  - Failed:     1, Passed:     0, Skipped:     0, Total:     1, Duration: < 1 ms - Evosim.Dynamics.Tests.dll (net8.0)
+old placer: test exit 1 (1 expected)
+== the bed test on the fix (it should pass)
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:     1, Skipped:     0, Total:     1, Duration: < 1 ms - Evosim.Dynamics.Tests.dll (net8.0)
+fix: test exit 0 (0 expected)
+== bed pair done at 09:01:35

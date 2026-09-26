@@ -1,0 +1,11 @@
+=== checkpoint fidelity
+  checkpoint D:\Projects\experiments\evolution-simulator\runs\r49-s1\2026-09-25-190843-f0794a8b\checkpoints\000015000.ckpt at 15000 s
+  stepping   30 s on 16 threads, then writing and restoring again
+  stepped to 15030 s: 2570 living, 2570 bodies
+
+  twin step: the two worlds agreed after each of 100 physics steps and 2 metabolic steps
+  member                                           owners differing   first
+
+
+PASS: the restored world is the stepped world in every compared member
+verify-checkpoint exit 0

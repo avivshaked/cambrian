@@ -1,0 +1,3 @@
+runrec: 2026-09-25-223116-f0794a8b: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+r49-s2 floor   leaf founders   26: first y median   -4.0 m, below -20 m 0/26; median age at death 1432.2 s (26 dead); bred 16
+r49-s2 trickle leaf founders  436: first y median  -44.1 m, below -20 m 327/336; median age at death   98.5 s (431 dead); bred 0

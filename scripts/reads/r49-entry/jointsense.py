@@ -3,7 +3,7 @@
 # senses from the snapshot's genomes as r49-read.py's C1 reads them. Run from the main tree.
 # usage: jointsense.py <arm> [s1,s2,...]
 import glob, json, re, sys
-sys.path.insert(0, 'scratch/wt-r49/scripts/reads')
+sys.path.insert(0, 'scripts/reads')
 import runrec
 arm = sys.argv[1]
 seconds = [int(s) for s in (sys.argv[2] if len(sys.argv) > 2 else '5000,16000,30000').split(',')]

@@ -6,7 +6,7 @@
 # misses elsewhere. The clamp shows as a pile-up just above 0. Usage: w1clamp.py <arm>
 import glob, json, struct, sys
 from collections import Counter
-sys.path.insert(0, 'scratch/wt-r49/scripts/reads')
+sys.path.insert(0, 'scripts/reads')
 import runrec
 arm = sys.argv[1]
 run = sorted(glob.glob(f'runs/{arm}/2026*'))[-1]
