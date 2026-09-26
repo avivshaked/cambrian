@@ -1641,6 +1641,15 @@ actually verifying it.
   this tree, untested here, is `Edit(//d/Projects/experiments/evolution-simulator/**)` (and the
   same for `Write`) under `permissions.allow` in the owner's `~/.claude/settings.json`; the
   agent never edits a permission setting, whoever asks.
+- **The farm hashes the source above its working directory, not the source it was built from.**
+  `Manifest` finds the repository by walking up from the process's working directory (or takes
+  `EVOSIM_REPO_ROOT`) and hashes `src/` there. A worktree and the main tree differ in carriage
+  returns, as `simHash` does, so round 49's film windows, run from the main tree on the round's
+  own exe, named all three hashes as differing from the run's, and V1 asks for none (2026-09-26;
+  the windows read FAITHFUL on every row all the same). Run a window, a resume or a check from
+  the checkout the run was launched from. And **stopping a background Bash task leaves its script
+  running**: the task's handle went and both of its `bash.exe` went on to launch the next farm
+  process. List them by command line and stop them by id.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
