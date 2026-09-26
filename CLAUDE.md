@@ -1719,6 +1719,18 @@ actually verifying it.
   scratchpad and TEMP by name; "write under scratch/" alone was not enough on 2026-09-12.
   The same rule binds the calling agent: nothing of the project's is written outside the
   repository (Conventions, below).
+- **A subagent that a skill launches is briefed from the skill's files alone** (the owner,
+  2026-09-26: "any new session should be able to get the same results"). Every session that runs
+  the skill must hand the subagent the same words, so its prompt is the skill's fixed template with
+  nothing filled in but paths, and everything else it needs is in a file the template names: its
+  brief, and the working folder whose files hold the case at hand. Nothing from the session goes
+  in: no account of what happened, no lines of an earlier draft, no ruling or its date, no numbers
+  that are not in the folder's files. A brief states rules and examples and carries no history;
+  how it came to be goes in the logbook or in a record file beside it. A session's reading of a
+  draft reaches the subagent as a file in the folder (the story flow's `writer-notes.md`), never
+  as prose in the prompt. Round 49's writer was briefed with a rewrite that told the story of the
+  draft it replaced, and a prompt that retold it again; a new session would have briefed it
+  differently.
 - **Sample the pictures while a round runs, not only when it is written up** (owner,
   2026-09-12 evening: "sometimes you can't really evaluate something without actually
   seeing it"). The theatre-watch rule above covers the entry; this one covers the run. Take
