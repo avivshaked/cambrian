@@ -30,9 +30,10 @@ person's script. Editing captions inside JSON is error-prone, so the edit happen
   run, second or subject, so the reader does not either.
 
 The page's form: `## Chapter K: <title>` opens a chapter, `### Scene N · ...` a scene (only N is
-read), each non-empty line under it is a caption, a blank line between two captions starts a new
-narration paragraph (`new_paragraph: true` on the second), and a line starting with `>` is a note
-and is not read. A `# ` line is the story's title.
+read), each non-empty line under it is spoken text, a blank line starts a new narration paragraph
+(`new_paragraph: true` on its first cue), and a line starting with `>` is a note and is not read.
+`render` writes each paragraph on one line, and `parse` cuts every line into subtitle cues with
+`split_cues` (2026-09-26, so that the owner and the editor read the script as prose). A `# ` line is the story's title.
 """
 import io
 import json
@@ -60,8 +61,8 @@ NUMBER_WORDS = {"two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7
                 "hundred": 100, "thousand": 1000}
 NUMBER = re.compile(r"(?<![\w.])\d[\d,]*(?:\.\d+)?")
 
-MARK = "<!-- story-script: one line is one caption; a blank line inside a scene starts a new narration " \
-       "paragraph; a line starting with > is a note; keep the ### headings as they are. -->"
+MARK = "<!-- story-script: each line is spoken text, cut into subtitles by the tool; a blank line inside a scene " \
+       "starts a new narration paragraph; a line starting with > is a note; keep the ### headings as they are. -->"
 
 
 def out(*a):
@@ -140,12 +141,58 @@ def render(story):
             rest = ["%s \"%s\"" % (w, t) for w, t in chart_words(chart) if w != "title"]
             if rest:
                 lines.append("> chart words (edit in story.json): " + " · ".join(rest))
+        paragraph = []
         for k, c in enumerate(captions_of(s)):
-            if k > 0 and c.get("new_paragraph"):
-                lines.append("")
-            lines.append(" ".join(str(c.get("text", "")).split()))
+            if k > 0 and c.get("new_paragraph") and paragraph:
+                lines += [" ".join(paragraph), ""]
+                paragraph = []
+            paragraph.append(" ".join(str(c.get("text", "")).split()))
+        if paragraph:
+            lines.append(" ".join(paragraph))
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
+
+
+JOINERS = {"and", "but", "so", "or", "which", "that", "while", "because", "when", "where", "with", "to",
+           "from", "at", "in", "on", "of", "as", "until", "after", "before", "than"}
+CLINGERS = {"a", "an", "the", "its", "his", "her", "their", "our", "this", "that", "these", "those", "of", "to",
+            "at", "in", "on", "by", "for", "from", "with", "and", "or", "but", "is", "are", "was", "were", "be",
+            "each", "every", "no", "one", "two", "three"}
+SENTENCE = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9\"'(\u201c\u2018])")
+
+
+def split_cues(paragraph, limit=LONG):
+    """A spoken paragraph cut into subtitle cues of at most `limit` characters: one sentence a cue,
+    and a longer sentence cut into as few pieces as fit, each cut placed near an even share of the
+    sentence, at a semicolon, comma, dash or colon where one lies near, else at a space, a space before a
+    joining word ("and", "when", "with") preferred. The writer's builder and `apply` both cut with
+    this, so a paragraph cuts the same way wherever it is cut."""
+    cues = []
+    for sentence in SENTENCE.split(" ".join(str(paragraph).split())):
+        rest = sentence
+        while len(rest) > limit:
+            pieces = -(-len(rest) // limit)
+            target = len(rest) / pieces
+            best, best_score = None, None
+            for i, ch in enumerate(rest[:limit + 1]):
+                if ch != " " or i < limit // 4:
+                    continue
+                before, after = rest[:i], rest[i + 1:]
+                score = abs(i - target)
+                if before.endswith((",", ";", ":", "\u2014")):
+                    score -= 14
+                elif after.split(" ", 1)[0].lower() in JOINERS:
+                    score -= 6
+                if before.rsplit(" ", 1)[-1].lower() in CLINGERS:
+                    score += 40
+                if best_score is None or score < best_score:
+                    best, best_score = i, score
+            cut = best if best is not None else limit
+            cues.append(rest[:cut].strip())
+            rest = rest[cut:].strip()
+        if rest:
+            cues.append(rest)
+    return cues
 
 
 def parse(text):
@@ -186,7 +233,8 @@ def parse(text):
             continue
         if current is None:
             sys.exit("script.md line %d: a caption outside any scene: %s" % (number, line))
-        scenes[current].append((" ".join(line.split()), pending_break))
+        for k, cue in enumerate(split_cues(line)):
+            scenes[current].append((cue, pending_break and k == 0))
         pending_break = False
     return {"title": title, "order": order, "scenes": scenes, "chapters": chapters}
 
