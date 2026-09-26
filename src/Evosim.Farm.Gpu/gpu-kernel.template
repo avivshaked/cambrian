@@ -14,6 +14,8 @@
 // Per step, in the CPU's order:
 //   the grid       MeanSerial | MeanChunks + MeanCombine, Ranges, ScanReduce + ScanTiles
 //                  + ScanDown, Scatter                                         (Contacts.cs)
+//   the water      WaterLinks, a link a thread, one launch per class (Water.Sample, StepOne's
+//                  first part; beside the grid under concurrent streams)
 //   the bodies     Step0 .. Step3, one launch per class                          (StepOne)
 //   the census     Census                                               (CloseContactStep)
 //   the commit     a swap of the two sphere sets, on the host
@@ -29,6 +31,9 @@ using System;
 using ILGPU;
 using ILGPU.Runtime;
 using ILGPU.Algorithms;
+#if GPU_PHASE_PROBE
+using ILGPU.Runtime.Cuda;
+#endif
 
 namespace __NS__
 {
@@ -101,6 +106,9 @@ namespace __NS__
         public ArrayView<Real> TotalMass, LinkMass;
         public ArrayView<int> NOver, OvSlot, OvId, OvPart, OvHeld, NHeld, HeldId, BedGlass;
         public ArrayView<long> Census, Overflow;
+#if GPU_PHASE_PROBE
+        public ArrayView<long> Phase;
+#endif
     }
 
     /// <summary>One set of bounding spheres, the body's and (D114) every link's: committed or pending.</summary>
@@ -129,7 +137,7 @@ namespace __NS__
     {
         // The launch: the class's capacity and neuron ceiling, the global roster, the grid.
         public int N, MaxN, GN, GUsed, Count, Rows, Buckets, Mask, OverCap, EntryCap;
-        public int InstBase, StepIndex, PerPart, Instrument, Chunk, Chunks, Tiles;
+        public int InstBase, StepIndex, PerPart, Instrument, Chunk, Chunks, Tiles, ClassUsed, ClassLinks;
 
         public int HasCurrent, Accelerating, Sloped, HasBed, BedRelief, BedModes, ShoreOn, FadeOn;
         public int ReefCount, LimitDrive, LimitDrag, UseRestore, FloorRestores, CreatureContact;
@@ -813,6 +821,10 @@ namespace __NS__
             }
 
             int dof = t.Dof[i];
+#if GPU_PHASE_PROBE
+            long clk = 0;
+            if (CudaAsm.IsSupported) CudaAsm.Emit("mov.u64 %0, %%clock64;", out clk);
+#endif
 
             // ---- the thread's own copy of the body -------------------------------------------
             var parent = new int[MaxLinks];
@@ -966,34 +978,17 @@ namespace __NS__
             Real excess = b.Excess[i];
             Real totalMass = b.TotalMass[i];
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 0, ref clk);
+#endif
             // ---- 1. the water pass (Water.Sample, per link, no hold) --------------------------
-            // Still water leaves both arrays as they stood, and a current with no acceleration
-            // term leaves the acceleration as it stood: the CPU writes neither.
-            if (cfg.HasCurrent != 0)
-            {
-                int ib = cfg.InstBase;
-                for (int l = 0; l < links; l++)
-                {
-                    float x = (float)position[3 * l];
-                    float y = (float)position[3 * l + 1];
-                    float z = (float)position[3 * l + 2];
+            // WaterLinks ran it before this kernel, a link a thread, from the positions the load
+            // read, and wrote the two arrays the load read. Still water left both as they stood,
+            // and a current with no acceleration term left the acceleration as it stood.
 
-                    float wx, wy, wz;
-                    VelocityAt(x, y, z, w, ib, cfg, out wx, out wy, out wz);
-                    water[3 * l] = wx;
-                    water[3 * l + 1] = wy;
-                    water[3 * l + 2] = wz;
-
-                    if (cfg.Accelerating == 0) continue;
-
-                    float ax, ay, az;
-                    AccelerationAt(x, y, z, w, ib, cfg, out ax, out ay, out az);
-                    wacc[3 * l] = ax;
-                    wacc[3 * l + 1] = ay;
-                    wacc[3 * l + 2] = az;
-                }
-            }
-
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 1, ref clk);
+#endif
             // ---- 2. senses, 3. brain ----------------------------------------------------------
             int mask = t.Mask[i];
             bool readsDepth = (mask & (1 << SDepth)) != 0;
@@ -1017,6 +1012,9 @@ namespace __NS__
             BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
                       sDepth, sUp, sChem, sFlow, sAngle, sRate, energy);
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 2, ref clk);
+#endif
             // ---- clear -----------------------------------------------------------------------
             for (int k = 0; k < 6 * links; k++) fext[k] = 0;
             for (int k = 0; k < dof; k++) tau[k] = 0;
@@ -1100,12 +1098,18 @@ namespace __NS__
                 if (limited != 0) dr.DriveLimited[i] = dr.DriveLimited[i] + limited;
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 3, ref clk);
+#endif
             // ---- 5. fluid (Fluid.Apply) --------------------------------------------------------
             long dragLimited = FluidApply(links, cfg, excess, mass, lift, volume, smallI, arm, thinAxis,
                 position, rotationMatrix, spin, velocity, water, wacc, relVel, panelStart, pan, fext,
                 dragF, dragT, preVel, preSpin, i, N);
             if (dragLimited != 0) dr.DragLimited[i] = dr.DragLimited[i] + dragLimited;
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 4, ref clk);
+#endif
             // ---- 6. contacts (Contacts.Apply) ------------------------------------------------
             if (cfg.PerPart != 0)
             {
@@ -1116,6 +1120,9 @@ namespace __NS__
                 ContactsBody(g, links, mass, totalMass, fext, cand, cs, gl, gr, w, cfg);
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 5, ref clk);
+#endif
             // ---- 7. joint torques -------------------------------------------------------------
             JointTorques(links, dofCount, dofStart, q, qd, limitLo, limitHi, limitStiff, limitDamp,
                          limitImplicit, tau, passiveTq, preRate, cfg.Damping, cfg.Dt);
@@ -1130,6 +1137,9 @@ namespace __NS__
             Integrate(links, dofCount, dofStart, tau, q, qd, ballRot, acc, spin, velocity,
                       ref basePosition, ref baseRotation, cfg.Dt);
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 6, ref clk);
+#endif
             // ---- 10. poses, 11. velocities ----------------------------------------------------
             Poses(links, parent, dofCount, dofStart, q, ballRot, rotation, rotationMatrix,
                   position, restFrame, jointFrame, parentAnchor, childAnchor,
@@ -1148,6 +1158,9 @@ namespace __NS__
                                  fext, water, tr, cfg);
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 7, ref clk);
+#endif
             // ---- 14. the finiteness check -----------------------------------------------------
             bool finite = true;
             for (int l = 0; l < links; l++)
@@ -1227,6 +1240,9 @@ namespace __NS__
                 }
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 8, ref clk);
+#endif
             // ---- store -----------------------------------------------------------------------
             s.BasePos[i] = basePosition.X;
             s.BasePos[N + i] = basePosition.Y;
@@ -1277,8 +1293,29 @@ namespace __NS__
                     s.Fext[a6] = fext[6 * l + k];
                 }
             }
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 9, ref clk);
+#endif
         }
 //@ENDCLASS
+
+#if GPU_PHASE_PROBE
+        // The phase probe, compiled only into a build with GPU_PHASE_PROBE: the SM's cycle counter
+        // read between the body phase's parts, each part's cycles written to the body's slot. The
+        // parts: load, water, senses and brain, drive, fluid, contacts, the solve with the joint
+        // torques and the integration, poses to the throw trace, the finiteness check and the
+        // spheres, store. A lane in a diverged warp waits for the others, so a part's cycles are
+        // its warp's.
+        public const int Phases = 10;
+
+        private static void PhaseMark(SGlob gl, SCfg cfg, int g, int k, ref long prev)
+        {
+            long now = 0;
+            if (CudaAsm.IsSupported) CudaAsm.Emit("mov.u64 %0, %%clock64;", out now);
+            gl.Phase[k * cfg.GN + g] = now - prev;
+            prev = now;
+        }
+#endif
 
         /// <summary>A lost or unstepped body's pending spheres handed its committed ones, so the swap is a copy.</summary>
         private static void KeepSpheres(int g, int links, SSph cs, SSph ps, SCfg cfg)
@@ -1300,6 +1337,46 @@ namespace __NS__
         }
 
         // ============================================================== the water pass
+
+        /// <summary>
+        /// Water.Sample for every link of one class's bodies, before the class's step: a thread a
+        /// link, the threads of one link index side by side so that neighbours read and write
+        /// neighbouring words. It reads the positions the last step stored and writes the arrays
+        /// the step's load reads, with the calls the step made itself, so the numbers do not move.
+        /// Launched only when the water moves.
+        /// </summary>
+        public static void WaterLinks(Index1D index, STopo t, SState s, SGlob gl, SWorld w, SCfg cfg)
+        {
+            int used = cfg.ClassUsed;
+            int l = index.X / used;
+            int i = index.X - l * used;
+            if (l >= cfg.ClassLinks) return;
+
+            int g = t.GSlot[i];
+            if (g < 0 || gl.Alive[g] == 0 || l >= t.Links[i]) return;
+
+            int N = cfg.N;
+            int a = 3 * l * N + i;
+            int ib = cfg.InstBase;
+
+            float x = (float)s.Pos[a];
+            float y = (float)s.Pos[a + N];
+            float z = (float)s.Pos[a + 2 * N];
+
+            float wx, wy, wz;
+            VelocityAt(x, y, z, w, ib, cfg, out wx, out wy, out wz);
+            s.Water[a] = wx;
+            s.Water[a + N] = wy;
+            s.Water[a + 2 * N] = wz;
+
+            if (cfg.Accelerating == 0) return;
+
+            float ax, ay, az;
+            AccelerationAt(x, y, z, w, ib, cfg, out ax, out ay, out az);
+            s.WaterAcc[a] = ax;
+            s.WaterAcc[a + N] = ay;
+            s.WaterAcc[a + 2 * N] = az;
+        }
 
         /// <summary>
         /// CurrentField.VelocityAt(x, y, z, t) in a tank with the vent off: StreamsAt, or with the

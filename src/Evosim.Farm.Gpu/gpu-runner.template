@@ -306,6 +306,8 @@ namespace __NS__
         private readonly Action<KernelConfig, SGrid, SCfg> _scanReduce, _scanTiles, _scanDown;
         private readonly Action<Index1D, SGlob, SGrid, SCfg> _scatter;
         private readonly Action<Index1D, SGlob, SCfg> _censusKernel;
+        private readonly Action<Index1D, STopo, SState, SGlob, SWorld, SCfg> _water;
+        private readonly Action<AcceleratorStream, Index1D, STopo, SState, SGlob, SWorld, SCfg> _waterOn;
         private readonly Action<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace, SGlob,
             SSph, SSph, SGrid, SWorld, SCfg>[] _step;
 
@@ -365,6 +367,9 @@ namespace __NS__
             _gcursor = new Scratch<int>(_acc, 17);
             _tileSum = new Scratch<int>(_acc, 1);
             _tileStart = new Scratch<int>(_acc, 1);
+#if GPU_PHASE_PROBE
+            _phase = new Scratch<long>(_acc, 1);
+#endif
             _entryCap = 1024;
             _items = new Scratch<int>(_acc, _entryCap);
             _partial = new Scratch<Real>(_acc, 1);
@@ -404,6 +409,7 @@ namespace __NS__
                 _ranges = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.Ranges, g);
                 _scatter = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SGlob, SGrid, SCfg>(WholeStep.Scatter, g);
                 _censusKernel = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SGlob, SCfg>(WholeStep.Census, g);
+                _water = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks, g);
             }
             else
             {
@@ -411,6 +417,7 @@ namespace __NS__
                 _ranges = _acc.LoadAutoGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.Ranges);
                 _scatter = _acc.LoadAutoGroupedStreamKernel<Index1D, SGlob, SGrid, SCfg>(WholeStep.Scatter);
                 _censusKernel = _acc.LoadAutoGroupedStreamKernel<Index1D, SGlob, SCfg>(WholeStep.Census);
+                _water = _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks);
             }
 
             _step = new Action<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace, SGlob,
@@ -419,6 +426,12 @@ namespace __NS__
             _stepOn = new Action<AcceleratorStream, Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace,
                 SGlob, SSph, SSph, SGrid, SWorld, SCfg>[KernelGenerator.ClassCount];
             _streams = new AcceleratorStream[KernelGenerator.ClassCount];
+            if (_concurrent)
+            {
+                _waterOn = grouped
+                    ? _acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks, g)
+                    : _acc.LoadAutoGroupedKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks);
+            }
 
 //@CLASS
             _step[__CI__] = grouped
@@ -522,6 +535,83 @@ namespace __NS__
         private readonly long[] _probeClass = new long[4];
         private readonly long[] _probeGridPart = new long[5];
         private int _probeRows, _probeBuckets;
+#if GPU_PHASE_PROBE
+        private readonly Scratch<long> _phase;
+        private long[] _phaseHost = new long[1];
+        private readonly double[] _phaseMean = new double[4 * WholeStep.Phases];
+        private readonly double[] _phaseSlow = new double[4 * WholeStep.Phases];
+        private readonly long[] _phaseBodies = new long[4];
+        private readonly int[] _phaseBlocks = new int[4];
+        private readonly int[] _phaseSlowLinks = new int[4];
+        private static readonly string[] PhaseNames =
+            { "load", "water", "brain", "drive", "fluid", "contacts", "solve", "poses", "spheres", "store" };
+
+        // After a block's last step: each class's bodies' cycles a part, summed, and its slowest
+        // body's (the most cycles in all), summed over blocks.
+        private void PhaseRead()
+        {
+            _acc.Synchronize();
+            int P = WholeStep.Phases;
+            int n = P * _gcap;
+            if (_phaseHost.Length != n) _phaseHost = new long[n];
+            _phase.View.SubView(0, n).CopyToCPU(_phaseHost);
+
+            var slowTotal = new long[4];
+            var slowG = new int[] { -1, -1, -1, -1 };
+            for (int g = 0; g < _slots.Used; g++)
+            {
+                Creature body = _slots.Body[g];
+                if (body == null || !body.Alive) continue;
+                int c = _slots.ClassOf[g];
+                long total = 0;
+                for (int p = 0; p < P; p++)
+                {
+                    long v = _phaseHost[p * _gcap + g];
+                    _phaseMean[c * P + p] += v;
+                    total += v;
+                }
+                _phaseBodies[c]++;
+                if (total > slowTotal[c]) { slowTotal[c] = total; slowG[c] = g; }
+            }
+
+            for (int c = 0; c < 4; c++)
+            {
+                if (slowG[c] < 0) continue;
+                for (int p = 0; p < P; p++) _phaseSlow[c * P + p] += _phaseHost[p * _gcap + slowG[c]];
+                _phaseBlocks[c]++;
+                _phaseSlowLinks[c] = Math.Max(_phaseSlowLinks[c], _slots.Body[slowG[c]].Links);
+            }
+        }
+
+        private void PrintPhases()
+        {
+            int P = WholeStep.Phases;
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            for (int c = 0; c < 4; c++)
+            {
+                if (_phaseBlocks[c] == 0) continue;
+                var mean = new System.Text.StringBuilder();
+                var slow = new System.Text.StringBuilder();
+                double meanSum = 0, slowSum = 0;
+                for (int p = 0; p < P; p++)
+                {
+                    double m = _phaseMean[c * P + p] / Math.Max(1, _phaseBodies[c]) / 1000.0;
+                    double s = _phaseSlow[c * P + p] / _phaseBlocks[c] / 1000.0;
+                    meanSum += m; slowSum += s;
+                    mean.Append(string.Format(inv, "{0}{1} {2:0.0}", p == 0 ? "" : ", ", PhaseNames[p], m));
+                    slow.Append(string.Format(inv, "{0}{1} {2:0.0}", p == 0 ? "" : ", ", PhaseNames[p], s));
+                }
+                Console.Error.WriteLine(string.Format(inv,
+                    "gpu-probe phases, class {0}, kilocycles a step: the mean body {1:0.0} ({2}); the slowest body, up to {3} links, {4:0.0} ({5})",
+                    c, meanSum, mean, _phaseSlowLinks[c], slowSum, slow));
+            }
+            System.Array.Clear(_phaseMean, 0, _phaseMean.Length);
+            System.Array.Clear(_phaseSlow, 0, _phaseSlow.Length);
+            System.Array.Clear(_phaseBodies, 0, 4);
+            System.Array.Clear(_phaseBlocks, 0, 4);
+            System.Array.Clear(_phaseSlowLinks, 0, 4);
+        }
+#endif
 
         // The grid's own parts, joined one by one: the zeroing, the mean, the ranges, the scan and
         // the scatter. Their sum is the grid's time, so the grid term is added here as well.
@@ -533,7 +623,7 @@ namespace __NS__
             _probeGrid += pn - pt;
             pt = pn;
         }
-        private long _probeGrid, _probeTail, _probeSteps;
+        private long _probeGrid, _probeTail, _probeSteps, _probeWater;
         private int _probeBlocks;
 
         private void PrintProbe(DynamicsWorld world, IReadOnlyList<Creature> list)
@@ -591,11 +681,15 @@ namespace __NS__
                 most[0], most[1], most[2], most[3], entries[0], entries[1], entries[2], entries[3]));
 
             Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
-                "gpu-probe grid parts, ms a step: zero {0:0.000}, mean {1:0.000}, ranges {2:0.000}, scan {3:0.000}, scatter {4:0.000}; rows {5}, buckets {6}",
+                "gpu-probe grid parts, ms a step: zero {0:0.000}, mean {1:0.000}, ranges {2:0.000}, scan {3:0.000}, scatter {4:0.000}; rows {5}, buckets {6}; " +
+                "the water pass before them {7:0.000}",
                 _probeGridPart[0] * f, _probeGridPart[1] * f, _probeGridPart[2] * f, _probeGridPart[3] * f, _probeGridPart[4] * f,
-                _probeRows, _probeBuckets));
+                _probeRows, _probeBuckets, _probeWater * f));
+#if GPU_PHASE_PROBE
+            PrintPhases();
+#endif
 
-            _probeGrid = _probeTail = _probeSteps = 0;
+            _probeGrid = _probeTail = _probeSteps = _probeWater = 0;
             for (int k = 0; k < 4; k++) _probeClass[k] = 0;
             for (int k = 0; k < 5; k++) _probeGridPart[k] = 0;
         }
@@ -725,6 +819,9 @@ namespace __NS__
             int tiles = (buckets + tileBuckets - 1) / tileBuckets;
             _tileSum.Ensure(tiles);
             _tileStart.Ensure(tiles);
+#if GPU_PHASE_PROBE
+            _phase.Ensure((long)WholeStep.Phases * _gcap);
+#endif
             if (_entryCap < 16 * rows) _entryCap = 16 * rows;
             _items.Ensure(_entryCap);
 
@@ -770,6 +867,29 @@ namespace __NS__
                 cfg.TraceTime = (steps0 + k + 1) * dt;
 
                 SSph committed = Sph(_committed), pending = Sph(1 - _committed);
+
+                // The water pass, a link a thread, ahead of each class's step on the class's own
+                // stream, so that under concurrent streams it runs beside the grid.
+                if (cfg.HasCurrent != 0)
+                {
+                    for (int c = 0; c < _classes.Length; c++)
+                    {
+                        int used = _slots.Classes[c].Used;
+                        if (used == 0) continue;
+
+                        ClassSet set = _classes[c];
+                        SCfg cc = cfg;
+                        cc.N = set.Cap;
+                        cc.MaxN = set.M;
+                        cc.ClassUsed = used;
+                        cc.ClassLinks = _slots.Classes[c].Links;
+
+                        int linkThreads = used * cc.ClassLinks;
+                        if (_concurrent) _waterOn(_streams[c], linkThreads, set.Topo, set.StateSet, gl, sw, cc);
+                        else _water(linkThreads, set.Topo, set.StateSet, gl, sw, cc);
+                    }
+                    if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeWater += pn - pt; pt = pn; }
+                }
 
                 _counts.View.MemSetToZero();
                 if (probe) GridPart(0, ref pt);
@@ -844,6 +964,9 @@ namespace __NS__
                 _committed = 1 - _committed;
             }
 
+#if GPU_PHASE_PROBE
+            if (probe) PhaseRead();
+#endif
             if (probe)
             {
                 _probeSteps += steps;
@@ -951,6 +1074,9 @@ namespace __NS__
             NOver = _nOver.View, OvSlot = _ovSlot.View, OvId = _ovId.View, OvPart = _ovPart.View,
             OvHeld = _ovHeld.View, NHeld = _nHeld.View, HeldId = _heldId.View, BedGlass = _bedGlass.View,
             Census = _census.View, Overflow = _overflow.View,
+#if GPU_PHASE_PROBE
+            Phase = _phase.View,
+#endif
         };
 
         private SGrid Grid => new SGrid

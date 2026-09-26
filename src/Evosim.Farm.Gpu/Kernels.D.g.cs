@@ -14,6 +14,8 @@
 // Per step, in the CPU's order:
 //   the grid       MeanSerial | MeanChunks + MeanCombine, Ranges, ScanReduce + ScanTiles
 //                  + ScanDown, Scatter                                         (Contacts.cs)
+//   the water      WaterLinks, a link a thread, one launch per class (Water.Sample, StepOne's
+//                  first part; beside the grid under concurrent streams)
 //   the bodies     Step0 .. Step3, one launch per class                          (StepOne)
 //   the census     Census                                               (CloseContactStep)
 //   the commit     a swap of the two sphere sets, on the host
@@ -29,6 +31,9 @@ using System;
 using ILGPU;
 using ILGPU.Runtime;
 using ILGPU.Algorithms;
+#if GPU_PHASE_PROBE
+using ILGPU.Runtime.Cuda;
+#endif
 
 namespace Evosim.Farm.Gpu.Dbl
 {
@@ -101,6 +106,9 @@ namespace Evosim.Farm.Gpu.Dbl
         public ArrayView<Real> TotalMass, LinkMass;
         public ArrayView<int> NOver, OvSlot, OvId, OvPart, OvHeld, NHeld, HeldId, BedGlass;
         public ArrayView<long> Census, Overflow;
+#if GPU_PHASE_PROBE
+        public ArrayView<long> Phase;
+#endif
     }
 
     /// <summary>One set of bounding spheres, the body's and (D114) every link's: committed or pending.</summary>
@@ -129,7 +137,7 @@ namespace Evosim.Farm.Gpu.Dbl
     {
         // The launch: the class's capacity and neuron ceiling, the global roster, the grid.
         public int N, MaxN, GN, GUsed, Count, Rows, Buckets, Mask, OverCap, EntryCap;
-        public int InstBase, StepIndex, PerPart, Instrument, Chunk, Chunks, Tiles;
+        public int InstBase, StepIndex, PerPart, Instrument, Chunk, Chunks, Tiles, ClassUsed, ClassLinks;
 
         public int HasCurrent, Accelerating, Sloped, HasBed, BedRelief, BedModes, ShoreOn, FadeOn;
         public int ReefCount, LimitDrive, LimitDrag, UseRestore, FloorRestores, CreatureContact;
@@ -812,6 +820,10 @@ namespace Evosim.Farm.Gpu.Dbl
             }
 
             int dof = t.Dof[i];
+#if GPU_PHASE_PROBE
+            long clk = 0;
+            if (CudaAsm.IsSupported) CudaAsm.Emit("mov.u64 %0, %%clock64;", out clk);
+#endif
 
             // ---- the thread's own copy of the body -------------------------------------------
             var parent = new int[MaxLinks];
@@ -965,34 +977,17 @@ namespace Evosim.Farm.Gpu.Dbl
             Real excess = b.Excess[i];
             Real totalMass = b.TotalMass[i];
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 0, ref clk);
+#endif
             // ---- 1. the water pass (Water.Sample, per link, no hold) --------------------------
-            // Still water leaves both arrays as they stood, and a current with no acceleration
-            // term leaves the acceleration as it stood: the CPU writes neither.
-            if (cfg.HasCurrent != 0)
-            {
-                int ib = cfg.InstBase;
-                for (int l = 0; l < links; l++)
-                {
-                    float x = (float)position[3 * l];
-                    float y = (float)position[3 * l + 1];
-                    float z = (float)position[3 * l + 2];
+            // WaterLinks ran it before this kernel, a link a thread, from the positions the load
+            // read, and wrote the two arrays the load read. Still water left both as they stood,
+            // and a current with no acceleration term left the acceleration as it stood.
 
-                    float wx, wy, wz;
-                    VelocityAt(x, y, z, w, ib, cfg, out wx, out wy, out wz);
-                    water[3 * l] = wx;
-                    water[3 * l + 1] = wy;
-                    water[3 * l + 2] = wz;
-
-                    if (cfg.Accelerating == 0) continue;
-
-                    float ax, ay, az;
-                    AccelerationAt(x, y, z, w, ib, cfg, out ax, out ay, out az);
-                    wacc[3 * l] = ax;
-                    wacc[3 * l + 1] = ay;
-                    wacc[3 * l + 2] = az;
-                }
-            }
-
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 1, ref clk);
+#endif
             // ---- 2. senses, 3. brain ----------------------------------------------------------
             int mask = t.Mask[i];
             bool readsDepth = (mask & (1 << SDepth)) != 0;
@@ -1016,6 +1011,9 @@ namespace Evosim.Farm.Gpu.Dbl
             BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
                       sDepth, sUp, sChem, sFlow, sAngle, sRate, energy);
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 2, ref clk);
+#endif
             // ---- clear -----------------------------------------------------------------------
             for (int k = 0; k < 6 * links; k++) fext[k] = 0;
             for (int k = 0; k < dof; k++) tau[k] = 0;
@@ -1099,12 +1097,18 @@ namespace Evosim.Farm.Gpu.Dbl
                 if (limited != 0) dr.DriveLimited[i] = dr.DriveLimited[i] + limited;
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 3, ref clk);
+#endif
             // ---- 5. fluid (Fluid.Apply) --------------------------------------------------------
             long dragLimited = FluidApply(links, cfg, excess, mass, lift, volume, smallI, arm, thinAxis,
                 position, rotationMatrix, spin, velocity, water, wacc, relVel, panelStart, pan, fext,
                 dragF, dragT, preVel, preSpin, i, N);
             if (dragLimited != 0) dr.DragLimited[i] = dr.DragLimited[i] + dragLimited;
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 4, ref clk);
+#endif
             // ---- 6. contacts (Contacts.Apply) ------------------------------------------------
             if (cfg.PerPart != 0)
             {
@@ -1115,6 +1119,9 @@ namespace Evosim.Farm.Gpu.Dbl
                 ContactsBody(g, links, mass, totalMass, fext, cand, cs, gl, gr, w, cfg);
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 5, ref clk);
+#endif
             // ---- 7. joint torques -------------------------------------------------------------
             JointTorques(links, dofCount, dofStart, q, qd, limitLo, limitHi, limitStiff, limitDamp,
                          limitImplicit, tau, passiveTq, preRate, cfg.Damping, cfg.Dt);
@@ -1129,6 +1136,9 @@ namespace Evosim.Farm.Gpu.Dbl
             Integrate(links, dofCount, dofStart, tau, q, qd, ballRot, acc, spin, velocity,
                       ref basePosition, ref baseRotation, cfg.Dt);
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 6, ref clk);
+#endif
             // ---- 10. poses, 11. velocities ----------------------------------------------------
             Poses(links, parent, dofCount, dofStart, q, ballRot, rotation, rotationMatrix,
                   position, restFrame, jointFrame, parentAnchor, childAnchor,
@@ -1147,6 +1157,9 @@ namespace Evosim.Farm.Gpu.Dbl
                                  fext, water, tr, cfg);
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 7, ref clk);
+#endif
             // ---- 14. the finiteness check -----------------------------------------------------
             bool finite = true;
             for (int l = 0; l < links; l++)
@@ -1226,6 +1239,9 @@ namespace Evosim.Farm.Gpu.Dbl
                 }
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 8, ref clk);
+#endif
             // ---- store -----------------------------------------------------------------------
             s.BasePos[i] = basePosition.X;
             s.BasePos[N + i] = basePosition.Y;
@@ -1276,6 +1292,9 @@ namespace Evosim.Farm.Gpu.Dbl
                     s.Fext[a6] = fext[6 * l + k];
                 }
             }
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 9, ref clk);
+#endif
         }
         // ============================================================== the body phase, class 1
 
@@ -1305,6 +1324,10 @@ namespace Evosim.Farm.Gpu.Dbl
             }
 
             int dof = t.Dof[i];
+#if GPU_PHASE_PROBE
+            long clk = 0;
+            if (CudaAsm.IsSupported) CudaAsm.Emit("mov.u64 %0, %%clock64;", out clk);
+#endif
 
             // ---- the thread's own copy of the body -------------------------------------------
             var parent = new int[MaxLinks];
@@ -1458,34 +1481,17 @@ namespace Evosim.Farm.Gpu.Dbl
             Real excess = b.Excess[i];
             Real totalMass = b.TotalMass[i];
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 0, ref clk);
+#endif
             // ---- 1. the water pass (Water.Sample, per link, no hold) --------------------------
-            // Still water leaves both arrays as they stood, and a current with no acceleration
-            // term leaves the acceleration as it stood: the CPU writes neither.
-            if (cfg.HasCurrent != 0)
-            {
-                int ib = cfg.InstBase;
-                for (int l = 0; l < links; l++)
-                {
-                    float x = (float)position[3 * l];
-                    float y = (float)position[3 * l + 1];
-                    float z = (float)position[3 * l + 2];
+            // WaterLinks ran it before this kernel, a link a thread, from the positions the load
+            // read, and wrote the two arrays the load read. Still water left both as they stood,
+            // and a current with no acceleration term left the acceleration as it stood.
 
-                    float wx, wy, wz;
-                    VelocityAt(x, y, z, w, ib, cfg, out wx, out wy, out wz);
-                    water[3 * l] = wx;
-                    water[3 * l + 1] = wy;
-                    water[3 * l + 2] = wz;
-
-                    if (cfg.Accelerating == 0) continue;
-
-                    float ax, ay, az;
-                    AccelerationAt(x, y, z, w, ib, cfg, out ax, out ay, out az);
-                    wacc[3 * l] = ax;
-                    wacc[3 * l + 1] = ay;
-                    wacc[3 * l + 2] = az;
-                }
-            }
-
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 1, ref clk);
+#endif
             // ---- 2. senses, 3. brain ----------------------------------------------------------
             int mask = t.Mask[i];
             bool readsDepth = (mask & (1 << SDepth)) != 0;
@@ -1509,6 +1515,9 @@ namespace Evosim.Farm.Gpu.Dbl
             BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
                       sDepth, sUp, sChem, sFlow, sAngle, sRate, energy);
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 2, ref clk);
+#endif
             // ---- clear -----------------------------------------------------------------------
             for (int k = 0; k < 6 * links; k++) fext[k] = 0;
             for (int k = 0; k < dof; k++) tau[k] = 0;
@@ -1592,12 +1601,18 @@ namespace Evosim.Farm.Gpu.Dbl
                 if (limited != 0) dr.DriveLimited[i] = dr.DriveLimited[i] + limited;
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 3, ref clk);
+#endif
             // ---- 5. fluid (Fluid.Apply) --------------------------------------------------------
             long dragLimited = FluidApply(links, cfg, excess, mass, lift, volume, smallI, arm, thinAxis,
                 position, rotationMatrix, spin, velocity, water, wacc, relVel, panelStart, pan, fext,
                 dragF, dragT, preVel, preSpin, i, N);
             if (dragLimited != 0) dr.DragLimited[i] = dr.DragLimited[i] + dragLimited;
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 4, ref clk);
+#endif
             // ---- 6. contacts (Contacts.Apply) ------------------------------------------------
             if (cfg.PerPart != 0)
             {
@@ -1608,6 +1623,9 @@ namespace Evosim.Farm.Gpu.Dbl
                 ContactsBody(g, links, mass, totalMass, fext, cand, cs, gl, gr, w, cfg);
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 5, ref clk);
+#endif
             // ---- 7. joint torques -------------------------------------------------------------
             JointTorques(links, dofCount, dofStart, q, qd, limitLo, limitHi, limitStiff, limitDamp,
                          limitImplicit, tau, passiveTq, preRate, cfg.Damping, cfg.Dt);
@@ -1622,6 +1640,9 @@ namespace Evosim.Farm.Gpu.Dbl
             Integrate(links, dofCount, dofStart, tau, q, qd, ballRot, acc, spin, velocity,
                       ref basePosition, ref baseRotation, cfg.Dt);
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 6, ref clk);
+#endif
             // ---- 10. poses, 11. velocities ----------------------------------------------------
             Poses(links, parent, dofCount, dofStart, q, ballRot, rotation, rotationMatrix,
                   position, restFrame, jointFrame, parentAnchor, childAnchor,
@@ -1640,6 +1661,9 @@ namespace Evosim.Farm.Gpu.Dbl
                                  fext, water, tr, cfg);
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 7, ref clk);
+#endif
             // ---- 14. the finiteness check -----------------------------------------------------
             bool finite = true;
             for (int l = 0; l < links; l++)
@@ -1719,6 +1743,9 @@ namespace Evosim.Farm.Gpu.Dbl
                 }
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 8, ref clk);
+#endif
             // ---- store -----------------------------------------------------------------------
             s.BasePos[i] = basePosition.X;
             s.BasePos[N + i] = basePosition.Y;
@@ -1769,6 +1796,9 @@ namespace Evosim.Farm.Gpu.Dbl
                     s.Fext[a6] = fext[6 * l + k];
                 }
             }
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 9, ref clk);
+#endif
         }
         // ============================================================== the body phase, class 2
 
@@ -1798,6 +1828,10 @@ namespace Evosim.Farm.Gpu.Dbl
             }
 
             int dof = t.Dof[i];
+#if GPU_PHASE_PROBE
+            long clk = 0;
+            if (CudaAsm.IsSupported) CudaAsm.Emit("mov.u64 %0, %%clock64;", out clk);
+#endif
 
             // ---- the thread's own copy of the body -------------------------------------------
             var parent = new int[MaxLinks];
@@ -1951,34 +1985,17 @@ namespace Evosim.Farm.Gpu.Dbl
             Real excess = b.Excess[i];
             Real totalMass = b.TotalMass[i];
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 0, ref clk);
+#endif
             // ---- 1. the water pass (Water.Sample, per link, no hold) --------------------------
-            // Still water leaves both arrays as they stood, and a current with no acceleration
-            // term leaves the acceleration as it stood: the CPU writes neither.
-            if (cfg.HasCurrent != 0)
-            {
-                int ib = cfg.InstBase;
-                for (int l = 0; l < links; l++)
-                {
-                    float x = (float)position[3 * l];
-                    float y = (float)position[3 * l + 1];
-                    float z = (float)position[3 * l + 2];
+            // WaterLinks ran it before this kernel, a link a thread, from the positions the load
+            // read, and wrote the two arrays the load read. Still water left both as they stood,
+            // and a current with no acceleration term left the acceleration as it stood.
 
-                    float wx, wy, wz;
-                    VelocityAt(x, y, z, w, ib, cfg, out wx, out wy, out wz);
-                    water[3 * l] = wx;
-                    water[3 * l + 1] = wy;
-                    water[3 * l + 2] = wz;
-
-                    if (cfg.Accelerating == 0) continue;
-
-                    float ax, ay, az;
-                    AccelerationAt(x, y, z, w, ib, cfg, out ax, out ay, out az);
-                    wacc[3 * l] = ax;
-                    wacc[3 * l + 1] = ay;
-                    wacc[3 * l + 2] = az;
-                }
-            }
-
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 1, ref clk);
+#endif
             // ---- 2. senses, 3. brain ----------------------------------------------------------
             int mask = t.Mask[i];
             bool readsDepth = (mask & (1 << SDepth)) != 0;
@@ -2002,6 +2019,9 @@ namespace Evosim.Farm.Gpu.Dbl
             BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
                       sDepth, sUp, sChem, sFlow, sAngle, sRate, energy);
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 2, ref clk);
+#endif
             // ---- clear -----------------------------------------------------------------------
             for (int k = 0; k < 6 * links; k++) fext[k] = 0;
             for (int k = 0; k < dof; k++) tau[k] = 0;
@@ -2085,12 +2105,18 @@ namespace Evosim.Farm.Gpu.Dbl
                 if (limited != 0) dr.DriveLimited[i] = dr.DriveLimited[i] + limited;
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 3, ref clk);
+#endif
             // ---- 5. fluid (Fluid.Apply) --------------------------------------------------------
             long dragLimited = FluidApply(links, cfg, excess, mass, lift, volume, smallI, arm, thinAxis,
                 position, rotationMatrix, spin, velocity, water, wacc, relVel, panelStart, pan, fext,
                 dragF, dragT, preVel, preSpin, i, N);
             if (dragLimited != 0) dr.DragLimited[i] = dr.DragLimited[i] + dragLimited;
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 4, ref clk);
+#endif
             // ---- 6. contacts (Contacts.Apply) ------------------------------------------------
             if (cfg.PerPart != 0)
             {
@@ -2101,6 +2127,9 @@ namespace Evosim.Farm.Gpu.Dbl
                 ContactsBody(g, links, mass, totalMass, fext, cand, cs, gl, gr, w, cfg);
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 5, ref clk);
+#endif
             // ---- 7. joint torques -------------------------------------------------------------
             JointTorques(links, dofCount, dofStart, q, qd, limitLo, limitHi, limitStiff, limitDamp,
                          limitImplicit, tau, passiveTq, preRate, cfg.Damping, cfg.Dt);
@@ -2115,6 +2144,9 @@ namespace Evosim.Farm.Gpu.Dbl
             Integrate(links, dofCount, dofStart, tau, q, qd, ballRot, acc, spin, velocity,
                       ref basePosition, ref baseRotation, cfg.Dt);
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 6, ref clk);
+#endif
             // ---- 10. poses, 11. velocities ----------------------------------------------------
             Poses(links, parent, dofCount, dofStart, q, ballRot, rotation, rotationMatrix,
                   position, restFrame, jointFrame, parentAnchor, childAnchor,
@@ -2133,6 +2165,9 @@ namespace Evosim.Farm.Gpu.Dbl
                                  fext, water, tr, cfg);
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 7, ref clk);
+#endif
             // ---- 14. the finiteness check -----------------------------------------------------
             bool finite = true;
             for (int l = 0; l < links; l++)
@@ -2212,6 +2247,9 @@ namespace Evosim.Farm.Gpu.Dbl
                 }
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 8, ref clk);
+#endif
             // ---- store -----------------------------------------------------------------------
             s.BasePos[i] = basePosition.X;
             s.BasePos[N + i] = basePosition.Y;
@@ -2262,6 +2300,9 @@ namespace Evosim.Farm.Gpu.Dbl
                     s.Fext[a6] = fext[6 * l + k];
                 }
             }
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 9, ref clk);
+#endif
         }
         // ============================================================== the body phase, class 3
 
@@ -2291,6 +2332,10 @@ namespace Evosim.Farm.Gpu.Dbl
             }
 
             int dof = t.Dof[i];
+#if GPU_PHASE_PROBE
+            long clk = 0;
+            if (CudaAsm.IsSupported) CudaAsm.Emit("mov.u64 %0, %%clock64;", out clk);
+#endif
 
             // ---- the thread's own copy of the body -------------------------------------------
             var parent = new int[MaxLinks];
@@ -2444,34 +2489,17 @@ namespace Evosim.Farm.Gpu.Dbl
             Real excess = b.Excess[i];
             Real totalMass = b.TotalMass[i];
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 0, ref clk);
+#endif
             // ---- 1. the water pass (Water.Sample, per link, no hold) --------------------------
-            // Still water leaves both arrays as they stood, and a current with no acceleration
-            // term leaves the acceleration as it stood: the CPU writes neither.
-            if (cfg.HasCurrent != 0)
-            {
-                int ib = cfg.InstBase;
-                for (int l = 0; l < links; l++)
-                {
-                    float x = (float)position[3 * l];
-                    float y = (float)position[3 * l + 1];
-                    float z = (float)position[3 * l + 2];
+            // WaterLinks ran it before this kernel, a link a thread, from the positions the load
+            // read, and wrote the two arrays the load read. Still water left both as they stood,
+            // and a current with no acceleration term left the acceleration as it stood.
 
-                    float wx, wy, wz;
-                    VelocityAt(x, y, z, w, ib, cfg, out wx, out wy, out wz);
-                    water[3 * l] = wx;
-                    water[3 * l + 1] = wy;
-                    water[3 * l + 2] = wz;
-
-                    if (cfg.Accelerating == 0) continue;
-
-                    float ax, ay, az;
-                    AccelerationAt(x, y, z, w, ib, cfg, out ax, out ay, out az);
-                    wacc[3 * l] = ax;
-                    wacc[3 * l + 1] = ay;
-                    wacc[3 * l + 2] = az;
-                }
-            }
-
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 1, ref clk);
+#endif
             // ---- 2. senses, 3. brain ----------------------------------------------------------
             int mask = t.Mask[i];
             bool readsDepth = (mask & (1 << SDepth)) != 0;
@@ -2495,6 +2523,9 @@ namespace Evosim.Farm.Gpu.Dbl
             BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
                       sDepth, sUp, sChem, sFlow, sAngle, sRate, energy);
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 2, ref clk);
+#endif
             // ---- clear -----------------------------------------------------------------------
             for (int k = 0; k < 6 * links; k++) fext[k] = 0;
             for (int k = 0; k < dof; k++) tau[k] = 0;
@@ -2578,12 +2609,18 @@ namespace Evosim.Farm.Gpu.Dbl
                 if (limited != 0) dr.DriveLimited[i] = dr.DriveLimited[i] + limited;
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 3, ref clk);
+#endif
             // ---- 5. fluid (Fluid.Apply) --------------------------------------------------------
             long dragLimited = FluidApply(links, cfg, excess, mass, lift, volume, smallI, arm, thinAxis,
                 position, rotationMatrix, spin, velocity, water, wacc, relVel, panelStart, pan, fext,
                 dragF, dragT, preVel, preSpin, i, N);
             if (dragLimited != 0) dr.DragLimited[i] = dr.DragLimited[i] + dragLimited;
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 4, ref clk);
+#endif
             // ---- 6. contacts (Contacts.Apply) ------------------------------------------------
             if (cfg.PerPart != 0)
             {
@@ -2594,6 +2631,9 @@ namespace Evosim.Farm.Gpu.Dbl
                 ContactsBody(g, links, mass, totalMass, fext, cand, cs, gl, gr, w, cfg);
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 5, ref clk);
+#endif
             // ---- 7. joint torques -------------------------------------------------------------
             JointTorques(links, dofCount, dofStart, q, qd, limitLo, limitHi, limitStiff, limitDamp,
                          limitImplicit, tau, passiveTq, preRate, cfg.Damping, cfg.Dt);
@@ -2608,6 +2648,9 @@ namespace Evosim.Farm.Gpu.Dbl
             Integrate(links, dofCount, dofStart, tau, q, qd, ballRot, acc, spin, velocity,
                       ref basePosition, ref baseRotation, cfg.Dt);
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 6, ref clk);
+#endif
             // ---- 10. poses, 11. velocities ----------------------------------------------------
             Poses(links, parent, dofCount, dofStart, q, ballRot, rotation, rotationMatrix,
                   position, restFrame, jointFrame, parentAnchor, childAnchor,
@@ -2626,6 +2669,9 @@ namespace Evosim.Farm.Gpu.Dbl
                                  fext, water, tr, cfg);
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 7, ref clk);
+#endif
             // ---- 14. the finiteness check -----------------------------------------------------
             bool finite = true;
             for (int l = 0; l < links; l++)
@@ -2705,6 +2751,9 @@ namespace Evosim.Farm.Gpu.Dbl
                 }
             }
 
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 8, ref clk);
+#endif
             // ---- store -----------------------------------------------------------------------
             s.BasePos[i] = basePosition.X;
             s.BasePos[N + i] = basePosition.Y;
@@ -2755,7 +2804,28 @@ namespace Evosim.Farm.Gpu.Dbl
                     s.Fext[a6] = fext[6 * l + k];
                 }
             }
+#if GPU_PHASE_PROBE
+            PhaseMark(gl, cfg, g, 9, ref clk);
+#endif
         }
+
+#if GPU_PHASE_PROBE
+        // The phase probe, compiled only into a build with GPU_PHASE_PROBE: the SM's cycle counter
+        // read between the body phase's parts, each part's cycles written to the body's slot. The
+        // parts: load, water, senses and brain, drive, fluid, contacts, the solve with the joint
+        // torques and the integration, poses to the throw trace, the finiteness check and the
+        // spheres, store. A lane in a diverged warp waits for the others, so a part's cycles are
+        // its warp's.
+        public const int Phases = 10;
+
+        private static void PhaseMark(SGlob gl, SCfg cfg, int g, int k, ref long prev)
+        {
+            long now = 0;
+            if (CudaAsm.IsSupported) CudaAsm.Emit("mov.u64 %0, %%clock64;", out now);
+            gl.Phase[k * cfg.GN + g] = now - prev;
+            prev = now;
+        }
+#endif
 
         /// <summary>A lost or unstepped body's pending spheres handed its committed ones, so the swap is a copy.</summary>
         private static void KeepSpheres(int g, int links, SSph cs, SSph ps, SCfg cfg)
@@ -2777,6 +2847,46 @@ namespace Evosim.Farm.Gpu.Dbl
         }
 
         // ============================================================== the water pass
+
+        /// <summary>
+        /// Water.Sample for every link of one class's bodies, before the class's step: a thread a
+        /// link, the threads of one link index side by side so that neighbours read and write
+        /// neighbouring words. It reads the positions the last step stored and writes the arrays
+        /// the step's load reads, with the calls the step made itself, so the numbers do not move.
+        /// Launched only when the water moves.
+        /// </summary>
+        public static void WaterLinks(Index1D index, STopo t, SState s, SGlob gl, SWorld w, SCfg cfg)
+        {
+            int used = cfg.ClassUsed;
+            int l = index.X / used;
+            int i = index.X - l * used;
+            if (l >= cfg.ClassLinks) return;
+
+            int g = t.GSlot[i];
+            if (g < 0 || gl.Alive[g] == 0 || l >= t.Links[i]) return;
+
+            int N = cfg.N;
+            int a = 3 * l * N + i;
+            int ib = cfg.InstBase;
+
+            float x = (float)s.Pos[a];
+            float y = (float)s.Pos[a + N];
+            float z = (float)s.Pos[a + 2 * N];
+
+            float wx, wy, wz;
+            VelocityAt(x, y, z, w, ib, cfg, out wx, out wy, out wz);
+            s.Water[a] = wx;
+            s.Water[a + N] = wy;
+            s.Water[a + 2 * N] = wz;
+
+            if (cfg.Accelerating == 0) return;
+
+            float ax, ay, az;
+            AccelerationAt(x, y, z, w, ib, cfg, out ax, out ay, out az);
+            s.WaterAcc[a] = ax;
+            s.WaterAcc[a + N] = ay;
+            s.WaterAcc[a + 2 * N] = az;
+        }
 
         /// <summary>
         /// CurrentField.VelocityAt(x, y, z, t) in a tank with the vent off: StreamsAt, or with the
@@ -6530,6 +6640,8 @@ namespace Evosim.Farm.Gpu.Dbl
         private readonly Action<KernelConfig, SGrid, SCfg> _scanReduce, _scanTiles, _scanDown;
         private readonly Action<Index1D, SGlob, SGrid, SCfg> _scatter;
         private readonly Action<Index1D, SGlob, SCfg> _censusKernel;
+        private readonly Action<Index1D, STopo, SState, SGlob, SWorld, SCfg> _water;
+        private readonly Action<AcceleratorStream, Index1D, STopo, SState, SGlob, SWorld, SCfg> _waterOn;
         private readonly Action<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace, SGlob,
             SSph, SSph, SGrid, SWorld, SCfg>[] _step;
 
@@ -6589,6 +6701,9 @@ namespace Evosim.Farm.Gpu.Dbl
             _gcursor = new Scratch<int>(_acc, 17);
             _tileSum = new Scratch<int>(_acc, 1);
             _tileStart = new Scratch<int>(_acc, 1);
+#if GPU_PHASE_PROBE
+            _phase = new Scratch<long>(_acc, 1);
+#endif
             _entryCap = 1024;
             _items = new Scratch<int>(_acc, _entryCap);
             _partial = new Scratch<Real>(_acc, 1);
@@ -6628,6 +6743,7 @@ namespace Evosim.Farm.Gpu.Dbl
                 _ranges = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.Ranges, g);
                 _scatter = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SGlob, SGrid, SCfg>(WholeStep.Scatter, g);
                 _censusKernel = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SGlob, SCfg>(WholeStep.Census, g);
+                _water = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks, g);
             }
             else
             {
@@ -6635,6 +6751,7 @@ namespace Evosim.Farm.Gpu.Dbl
                 _ranges = _acc.LoadAutoGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.Ranges);
                 _scatter = _acc.LoadAutoGroupedStreamKernel<Index1D, SGlob, SGrid, SCfg>(WholeStep.Scatter);
                 _censusKernel = _acc.LoadAutoGroupedStreamKernel<Index1D, SGlob, SCfg>(WholeStep.Census);
+                _water = _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks);
             }
 
             _step = new Action<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace, SGlob,
@@ -6643,6 +6760,12 @@ namespace Evosim.Farm.Gpu.Dbl
             _stepOn = new Action<AcceleratorStream, Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace,
                 SGlob, SSph, SSph, SGrid, SWorld, SCfg>[KernelGenerator.ClassCount];
             _streams = new AcceleratorStream[KernelGenerator.ClassCount];
+            if (_concurrent)
+            {
+                _waterOn = grouped
+                    ? _acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks, g)
+                    : _acc.LoadAutoGroupedKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks);
+            }
 
             _step[0] = grouped
                 ? _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
@@ -6786,6 +6909,83 @@ namespace Evosim.Farm.Gpu.Dbl
         private readonly long[] _probeClass = new long[4];
         private readonly long[] _probeGridPart = new long[5];
         private int _probeRows, _probeBuckets;
+#if GPU_PHASE_PROBE
+        private readonly Scratch<long> _phase;
+        private long[] _phaseHost = new long[1];
+        private readonly double[] _phaseMean = new double[4 * WholeStep.Phases];
+        private readonly double[] _phaseSlow = new double[4 * WholeStep.Phases];
+        private readonly long[] _phaseBodies = new long[4];
+        private readonly int[] _phaseBlocks = new int[4];
+        private readonly int[] _phaseSlowLinks = new int[4];
+        private static readonly string[] PhaseNames =
+            { "load", "water", "brain", "drive", "fluid", "contacts", "solve", "poses", "spheres", "store" };
+
+        // After a block's last step: each class's bodies' cycles a part, summed, and its slowest
+        // body's (the most cycles in all), summed over blocks.
+        private void PhaseRead()
+        {
+            _acc.Synchronize();
+            int P = WholeStep.Phases;
+            int n = P * _gcap;
+            if (_phaseHost.Length != n) _phaseHost = new long[n];
+            _phase.View.SubView(0, n).CopyToCPU(_phaseHost);
+
+            var slowTotal = new long[4];
+            var slowG = new int[] { -1, -1, -1, -1 };
+            for (int g = 0; g < _slots.Used; g++)
+            {
+                Creature body = _slots.Body[g];
+                if (body == null || !body.Alive) continue;
+                int c = _slots.ClassOf[g];
+                long total = 0;
+                for (int p = 0; p < P; p++)
+                {
+                    long v = _phaseHost[p * _gcap + g];
+                    _phaseMean[c * P + p] += v;
+                    total += v;
+                }
+                _phaseBodies[c]++;
+                if (total > slowTotal[c]) { slowTotal[c] = total; slowG[c] = g; }
+            }
+
+            for (int c = 0; c < 4; c++)
+            {
+                if (slowG[c] < 0) continue;
+                for (int p = 0; p < P; p++) _phaseSlow[c * P + p] += _phaseHost[p * _gcap + slowG[c]];
+                _phaseBlocks[c]++;
+                _phaseSlowLinks[c] = Math.Max(_phaseSlowLinks[c], _slots.Body[slowG[c]].Links);
+            }
+        }
+
+        private void PrintPhases()
+        {
+            int P = WholeStep.Phases;
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            for (int c = 0; c < 4; c++)
+            {
+                if (_phaseBlocks[c] == 0) continue;
+                var mean = new System.Text.StringBuilder();
+                var slow = new System.Text.StringBuilder();
+                double meanSum = 0, slowSum = 0;
+                for (int p = 0; p < P; p++)
+                {
+                    double m = _phaseMean[c * P + p] / Math.Max(1, _phaseBodies[c]) / 1000.0;
+                    double s = _phaseSlow[c * P + p] / _phaseBlocks[c] / 1000.0;
+                    meanSum += m; slowSum += s;
+                    mean.Append(string.Format(inv, "{0}{1} {2:0.0}", p == 0 ? "" : ", ", PhaseNames[p], m));
+                    slow.Append(string.Format(inv, "{0}{1} {2:0.0}", p == 0 ? "" : ", ", PhaseNames[p], s));
+                }
+                Console.Error.WriteLine(string.Format(inv,
+                    "gpu-probe phases, class {0}, kilocycles a step: the mean body {1:0.0} ({2}); the slowest body, up to {3} links, {4:0.0} ({5})",
+                    c, meanSum, mean, _phaseSlowLinks[c], slowSum, slow));
+            }
+            System.Array.Clear(_phaseMean, 0, _phaseMean.Length);
+            System.Array.Clear(_phaseSlow, 0, _phaseSlow.Length);
+            System.Array.Clear(_phaseBodies, 0, 4);
+            System.Array.Clear(_phaseBlocks, 0, 4);
+            System.Array.Clear(_phaseSlowLinks, 0, 4);
+        }
+#endif
 
         // The grid's own parts, joined one by one: the zeroing, the mean, the ranges, the scan and
         // the scatter. Their sum is the grid's time, so the grid term is added here as well.
@@ -6797,7 +6997,7 @@ namespace Evosim.Farm.Gpu.Dbl
             _probeGrid += pn - pt;
             pt = pn;
         }
-        private long _probeGrid, _probeTail, _probeSteps;
+        private long _probeGrid, _probeTail, _probeSteps, _probeWater;
         private int _probeBlocks;
 
         private void PrintProbe(DynamicsWorld world, IReadOnlyList<Creature> list)
@@ -6855,11 +7055,15 @@ namespace Evosim.Farm.Gpu.Dbl
                 most[0], most[1], most[2], most[3], entries[0], entries[1], entries[2], entries[3]));
 
             Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
-                "gpu-probe grid parts, ms a step: zero {0:0.000}, mean {1:0.000}, ranges {2:0.000}, scan {3:0.000}, scatter {4:0.000}; rows {5}, buckets {6}",
+                "gpu-probe grid parts, ms a step: zero {0:0.000}, mean {1:0.000}, ranges {2:0.000}, scan {3:0.000}, scatter {4:0.000}; rows {5}, buckets {6}; " +
+                "the water pass before them {7:0.000}",
                 _probeGridPart[0] * f, _probeGridPart[1] * f, _probeGridPart[2] * f, _probeGridPart[3] * f, _probeGridPart[4] * f,
-                _probeRows, _probeBuckets));
+                _probeRows, _probeBuckets, _probeWater * f));
+#if GPU_PHASE_PROBE
+            PrintPhases();
+#endif
 
-            _probeGrid = _probeTail = _probeSteps = 0;
+            _probeGrid = _probeTail = _probeSteps = _probeWater = 0;
             for (int k = 0; k < 4; k++) _probeClass[k] = 0;
             for (int k = 0; k < 5; k++) _probeGridPart[k] = 0;
         }
@@ -6989,6 +7193,9 @@ namespace Evosim.Farm.Gpu.Dbl
             int tiles = (buckets + tileBuckets - 1) / tileBuckets;
             _tileSum.Ensure(tiles);
             _tileStart.Ensure(tiles);
+#if GPU_PHASE_PROBE
+            _phase.Ensure((long)WholeStep.Phases * _gcap);
+#endif
             if (_entryCap < 16 * rows) _entryCap = 16 * rows;
             _items.Ensure(_entryCap);
 
@@ -7034,6 +7241,29 @@ namespace Evosim.Farm.Gpu.Dbl
                 cfg.TraceTime = (steps0 + k + 1) * dt;
 
                 SSph committed = Sph(_committed), pending = Sph(1 - _committed);
+
+                // The water pass, a link a thread, ahead of each class's step on the class's own
+                // stream, so that under concurrent streams it runs beside the grid.
+                if (cfg.HasCurrent != 0)
+                {
+                    for (int c = 0; c < _classes.Length; c++)
+                    {
+                        int used = _slots.Classes[c].Used;
+                        if (used == 0) continue;
+
+                        ClassSet set = _classes[c];
+                        SCfg cc = cfg;
+                        cc.N = set.Cap;
+                        cc.MaxN = set.M;
+                        cc.ClassUsed = used;
+                        cc.ClassLinks = _slots.Classes[c].Links;
+
+                        int linkThreads = used * cc.ClassLinks;
+                        if (_concurrent) _waterOn(_streams[c], linkThreads, set.Topo, set.StateSet, gl, sw, cc);
+                        else _water(linkThreads, set.Topo, set.StateSet, gl, sw, cc);
+                    }
+                    if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeWater += pn - pt; pt = pn; }
+                }
 
                 _counts.View.MemSetToZero();
                 if (probe) GridPart(0, ref pt);
@@ -7108,6 +7338,9 @@ namespace Evosim.Farm.Gpu.Dbl
                 _committed = 1 - _committed;
             }
 
+#if GPU_PHASE_PROBE
+            if (probe) PhaseRead();
+#endif
             if (probe)
             {
                 _probeSteps += steps;
@@ -7215,6 +7448,9 @@ namespace Evosim.Farm.Gpu.Dbl
             NOver = _nOver.View, OvSlot = _ovSlot.View, OvId = _ovId.View, OvPart = _ovPart.View,
             OvHeld = _ovHeld.View, NHeld = _nHeld.View, HeldId = _heldId.View, BedGlass = _bedGlass.View,
             Census = _census.View, Overflow = _overflow.View,
+#if GPU_PHASE_PROBE
+            Phase = _phase.View,
+#endif
         };
 
         private SGrid Grid => new SGrid

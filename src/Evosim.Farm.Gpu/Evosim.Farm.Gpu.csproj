@@ -30,6 +30,10 @@
     <TieredCompilation>false</TieredCompilation>
     <!-- CS1718: `x != x` is the kernel's NaN test, written as the spike wrote it. -->
     <NoWarn>$(NoWarn);CS1718</NoWarn>
+    <!-- The phase probe (gpu-kernel.template, PhaseMark): -p:GpuPhaseProbe=1 builds the kernels
+         with the SM's cycle counter read between the body phase's parts. A timing build, built to
+         its own output and never a scored run's. -->
+    <DefineConstants Condition="'$(GpuPhaseProbe)' == '1'">$(DefineConstants);GPU_PHASE_PROBE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
