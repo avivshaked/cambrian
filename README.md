@@ -18,6 +18,10 @@ the code.
 The name is the ambition: the Cambrian explosion was a rapid diversification of **body
 plans**, which is what an open-ended ecosystem is being built to produce.
 
+The ultimate goal is complex creatures that react to the world through senses and a brain:
+they graze, hunt each other, evolve ways to protect themselves, and live out their lives. We
+are still very far from that.
+
 > **Status: the ecosystem runs, and it holds a food chain.**
 > Genomes develop into bodies, bodies build into articulations driven by their own evolved
 > brains, and energy is a conserved budget audited to 0.0000% across the whole food web. A
