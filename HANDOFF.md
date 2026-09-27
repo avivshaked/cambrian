@@ -174,6 +174,13 @@ round 49's S2 read them as stomach children.
   by seed and window. Lines 48, 29 and 5854 took 31, 24 and 30% of theirs from light, and in seed
   3 at least four rows in five earned some.
 
+Round 50's read (`logbook/specs/r50-read/linklight.txt`) changes the picture. In seed 1 a rigid
+three-part stomach from the trickle, with no link, founded line 4292: 132 members, 68 living at
+the peak at 9,600 s, the last death at 18,714 s, and not one watt of light. That is the first
+line of pure eaters in rounds 48 to 50 to live on the snow alone for hours; round 48's best
+pure-stomach lines, 45 and 24 living, lived on their founders' endowments. The eater lines with a
+link still took 28% (seed 3's line 29) and 76% (seed 1's line 3726) of their income from it.
+
 My recommendation is to keep the half through round 50, which is built on it, and to decide
 between keeping it and 0 when round 50 is read. The same read will then say how much of each
 eater line's income is the link's light. The question to answer is whether links keep catching light

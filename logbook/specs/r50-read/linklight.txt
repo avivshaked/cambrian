@@ -1,0 +1,41 @@
+# The lit link over round 50: scripts/reads/linklight.py r50-s1, r50-s2, r50-s3 (window 5,000 s),
+# run from the main tree on 2026-09-27 after the round's full read (read-end.txt), for HANDOFF's
+# first decision. The rows and shares are as in logbook/specs/r49-read/linklight.txt. Line 4292 in
+# seed 1 is a rigid three-part stomach from the trickle, landed at 4,145.5 s on snow at 6.13 J/m3
+# against its column's mean of 1.43; from lineage.jsonl, 132 members, 68 living at the peak at
+# 9,595.5 s, the last birth at 13,170.5 s and the last death, starved, at 18,714 s. It earned no
+# light at all.
+#
+r50-s1: rows from a body with a stomach and no leaf, the light all a link's
+  0 to 5000 s                  rows    2302  earning light  47.4%  light over income  30.1%
+  5000 to 10000 s              rows   30546  earning light  15.2%  light over income  19.7%
+  10000 to 15000 s             rows   16570  earning light  10.8%  light over income  20.3%
+  15000 to 20000 s             rows    2626  earning light  44.9%  light over income  49.1%
+  20000 to 25000 s             rows    1998  earning light  64.8%  light over income  53.4%
+  25000 to 30000 s             rows    1488  earning light  62.8%  light over income  58.3%
+  30000 to 35000 s             rows       5  earning light  60.0%  light over income  64.0%
+r50-s1: lines with ten or more such bodies (2)
+  line of 4292 (132 bodies)    rows   39998  earning light   0.0%  light over income   0.0%
+  line of 3726 (12 bodies)     rows    1190  earning light  84.7%  light over income  75.7%
+
+r50-s2: rows from a body with a stomach and no leaf, the light all a link's
+  0 to 5000 s                  rows    1189  earning light  73.3%  light over income  37.0%
+  5000 to 10000 s              rows    3608  earning light  87.4%  light over income  51.7%
+  10000 to 15000 s             rows    1568  earning light  60.4%  light over income  48.2%
+  15000 to 20000 s             rows    1697  earning light  60.6%  light over income  47.5%
+  20000 to 25000 s             rows    2195  earning light  68.0%  light over income  52.3%
+  25000 to 30000 s             rows    1625  earning light  50.5%  light over income  25.6%
+  30000 to 35000 s             rows       4  earning light  25.0%  light over income  36.7%
+r50-s2: lines with ten or more such bodies (0)
+
+r50-s3: rows from a body with a stomach and no leaf, the light all a link's
+  0 to 5000 s                  rows   10716  earning light  93.9%  light over income  27.1%
+  5000 to 10000 s              rows    9348  earning light  86.1%  light over income  35.3%
+  10000 to 15000 s             rows    8530  earning light  90.2%  light over income  40.1%
+  15000 to 20000 s             rows    5228  earning light  92.0%  light over income  28.5%
+  20000 to 25000 s             rows    1494  earning light  60.3%  light over income  35.5%
+  25000 to 30000 s             rows    1278  earning light  66.9%  light over income  30.4%
+  30000 to 35000 s             rows       2  earning light 100.0%  light over income  32.8%
+r50-s3: lines with ten or more such bodies (1)
+  line of 29 (121 bodies)      rows   25880  earning light  98.2%  light over income  27.9%
+
