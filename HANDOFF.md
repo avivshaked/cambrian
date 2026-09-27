@@ -270,8 +270,8 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
     check is `logbook/specs/r51-husk-ledger.md`. The hazard's knobs and the husk rates are screened
     on a fast-step seed for the plant crowd's plateau before the pre-registration, and a
     literature-review round checks D128's sources. Before the first night, the card check (item 3).
-    The water's reactive thrust is built during round 51's week; which round it lands in, 52 or 53,
-    is open (D128 puts heritable lifespan right after 51).
+    The water's reactive thrust is built during round 51's week; whether it or heritable lifespan
+    follows round 51 is decided on round 51's outcome (the owner, 2026-09-27).
 2. The card is worked by day, with nothing else on the machine, from `scratch/wt-probe`
    (`gpu-probe`; merge main in before a day's work). The snow's transport runs on it under
    `EVOSIM_GPU_TRANSPORT` (above). Round 50's seeds are the next reference crowds once they have
