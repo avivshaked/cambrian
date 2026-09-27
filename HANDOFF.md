@@ -146,6 +146,26 @@ left alone.
 
 ## The decisions in front of the owner
 
+### Ruled on 2026-09-27, after round 50's read
+
+- Links stop catching light from round 51 (`EVOSIM_LINK_PHOTO 0`). The owner added that the first
+  link, its neurons and its muscle may be free, to encourage joints; what "free" means is for the
+  round 51 proposal to set out (neurons and joint work already cost nothing in every launcher).
+- The pool keeps its one-part stomach for now.
+- The owner's vision for round 51: a dead body becomes a grey husk that sinks, settles and
+  shrinks as its matter dissolves into its cell, and eaters meet it and eat it directly. Round 50
+  shows why there is no larder today (seed 2's last 5,000 s): every death is a starvation with
+  the reserve at 0, so a corpse holds its tissue alone, about 12 J against about 42 J held by a
+  living body; a corpse sinks at the snow's 2 mm/s and leaks 0.5% a second, so half of it is gone
+  in about 140 s within 30 cm of the death; corpses give the snow about 40 W and the living plants'
+  exudate about 170 W; 218 of 71,544 births had a mouth, and 4 corpses were eaten in the run.
+- Movement: the owner sees the joints wag without moving the body, like an engine and not like
+  biology. `fable-propose-reactive-thrust.md` diagnoses exactly that and waits for its ruling.
+- The theatre: a connective-tissue skin over each link, in the pink-purple the owner liked (most
+  likely `TheatrePalette.Jointed`, the colour of the neck at every joint). Theatre only, no hash.
+
+The two decisions below are ruled as above and kept until the rewrite for the record.
+
 Neither of the first two blocks round 50, which is built and pre-registered without them. Both
 come from round 49's read, and each is set out in full here and in any message that asks for it.
 
