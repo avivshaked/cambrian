@@ -45,13 +45,14 @@ approves its video as final, and then they are thinned only as the storage rulin
 - `8e0741a` and `0f737f1`: round 49's entry reads under `scripts/reads/r49-entry/`, and the
   entry. `5c98a5c`: round 50's reader, `scripts/reads/r50-read.py`.
 
-### Round 50 is running
+### Round 50 has run
 
 The owner ruled option (a) on the morning of 2026-09-26 (D125). A leaf founder is set in the cell of its column where its own income, light and
 matter together, is largest. The price is the call the world bills a body with. A stomach is placed
 as before. The build is `leaf-income-depth` (`scratch/wt-leafincome`); the launcher is
 `rounds/env-r50.ps1` (`EVOSIM_FOUNDERS_INCOME_DEPTH 1`). Its pre-registration is logbook/0123.
-The owner said to start it at 23:52 on 2026-09-26, and seed 1 launched at 23:53 (queue item 1).
+The owner said to start it at 23:52 on 2026-09-26. The three seeds ran to 30,000 s in 178, 236 and 
+211 minutes and the queue ended at 10:27 on 2026-09-27 (queue item 1).
 
 ### The card, by day
 
@@ -213,21 +214,19 @@ All of it is agent work. Long steps run in the background under the session, nev
 subagent and never in a shell loop. A queue that must outlive a turn is started detached
 (CLAUDE.md).
 
-1. The owner said at 23:52 on 2026-09-26 to start round 50, first with the third seed only if the
-   first two ended before 07:00. At 05:05 on 2026-09-27 they changed it: seed 3 runs whenever seed 2
-   ends, unless seed 2 changes drastically. The first queue (`scratch/r50-launch/seeds.ps1
-   -ThirdSeedBy 2026-09-27T07:00`, started detached at 23:53 from the committed, clean
-   `scratch/wt-leafincome` at `9ecff10`) ran seed 1, which ended on its budget at 02:52 after 178
-   minutes, and launched seed 2 at 02:52. Its script was stopped at 05:08 with seed 2 running on.
-   The queue since then is `scratch/r50-launch/seed3.ps1`, logging to `scratch/logs/r50-queue2.log`.
-   It launches seed 3 (`seeds.ps1 -Seeds 3`) when seed 2's manifest reads ended on its budget, and
-   leaves seed 3 to the owner on any other ending. Then it runs V2 on seed 1 (`v2.ps1`, logged to
-   `scratch/logs/r50-v2.log`) and writes `round 50 queue done`. Each seed runs at 16 threads with a
-   600-minute wall, and seed 1's manifest names `9ecff10`, not dirty, `configHash a2cda4b0` (the
-   smoke's), with D125's token in its header. The watch runs hourly from the session's schedule,
-   never from a shell loop: `python scripts/watch-round.py r50 --seeds 1,2,3 --read
-   scripts/reads/r50-read.py`, run from the main tree. The full read at the end adds
-   `--windows-root` (V1) and `--v2-log scratch/logs/r50-v2.log` (V2).
+1. Round 50 has run and is read. The owner said at 23:52 on 2026-09-26 to start it, and at 05:05 on
+   2026-09-27 that the third seed could run whenever seed 2 ended. Seed 1 ended on its budget at
+   02:52 after 178 minutes, seed 2 at 06:49 after 236 and seed 3 at 10:20 after 211, each at 16
+   threads from `scratch/wt-leafincome` at `9ecff10`, not dirty, `configHash a2cda4b0`, with both
+   books closed and no divergence. V2 passed at 10:27: the member check exited 0 and the resume from
+   15,000 s was identical to seed 1 on all 100 samples. The full read is
+   `logbook/specs/r50-read/read-end.txt` (`python scripts/reads/r50-read.py --logs-dir
+   scratch/wt-leafincome/scratch/logs --v2-log scratch/logs/r50-v2.log`). Three clauses fail: W1
+   (two snow founders in seed 2 a hair under their column's mean), M4 (in seed 3 the best
+   stomach-bud line's stomach brings a median 5.4% of the income, against a bar of 2%) and S3 (seed
+   1's 137 rigid stomach children died at a median 3,005 s, against a bar of 1,500). V1 waits for
+   the film windows. Next come V1's windows from the round's own checkpoints, the theatre's pictures
+   and the entry, 0124 (item 10).
 2. The card is worked by day, with nothing else on the machine, from `scratch/wt-probe`
    (`gpu-probe`; merge main in before a day's work). The snow's transport runs on it under
    `EVOSIM_GPU_TRANSPORT` (above). Round 50's seeds are the next reference crowds once they have
