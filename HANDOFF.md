@@ -54,7 +54,7 @@ as before. The build is `leaf-income-depth` (`scratch/wt-leafincome`); the launc
 The owner said to start it at 23:52 on 2026-09-26. The three seeds ran to 30,000 s in 178, 236 and 
 211 minutes and the queue ended at 10:27 on 2026-09-27 (queue item 1).
 
-### Round 51 is built and waits for the owner's word
+### Round 51 is running
 
 The owner ruled D127 and D128 on 2026-09-27 and asked for round 51 to be built and prepared but not
 started while they make the films of rounds 49 and 50 from main. The build is the branch `round-51`
@@ -84,12 +84,16 @@ check and its resume passed. On the fixed build Core passed 1,036 of 1,036 with 
 checkpoints. `99ab283` added the husk's drawing facts to the checkpoint inside `StateVersion` 13, so
 they are misread (an `OverflowException`) and not refused by name. Only that scratch run is affected.
 
-The launch, on the owner's word: `pwsh -NoProfile -File scratch/wt-r51/rounds/queue-r51.ps1`, with
-`-GpuTransport` only after the card's check (queue item 3). It now builds the farm from the committed
-tree first and starts nothing on a dirty tree or a failed build, because `run-farm.ps1` and V2 run
-`artifacts/Evosim.Farm/bin/Release/net8.0` as they find it and the exe there predated the fix. It
-runs the three seeds one at a time at 16 threads overnight and then V2, and logs to
-`scratch/logs/r51-queue.log`. Round 50 took 178 to 236 minutes a seed.
+The owner gave the word, and the queue started at 22:23 on 2026-09-27
+(`pwsh -NoProfile -File scratch/wt-r51/rounds/queue-r51.ps1`) without `-GpuTransport`, since the
+card's check (queue item 3) has not run. Its build was already up to date with `ed4a61d`. Seed 1 is
+`runs/r51-s1/2026-09-27-212333-f9f845bd`: `gitCommit ed4a61d`, not dirty, 16 threads, transport
+cpu, 30,000 s under a 600-minute wall. Its config hash `f9f845bd8082a69f` and its core, dynamics and
+farm hashes (`759c87a1…`, `d675fb37…`, `a2bbcccf…`) are the fixed smoke's, as is every config
+field. Seeds 2 and 3 follow it one at a time, then V2, logged to `scratch/logs/r51-queue.log`.
+Round 50 took 178 to 236 minutes a seed. The watch runs from the worktree, where the seeds' `.out`
+logs are: `python scripts/watch-round.py r51 --read scripts/reads/r51-read.py --seeds 1,2,3
+--runs-root <main tree>/runs`, one look at a time, scheduled by the session.
 
 The husks in the pictures are on the branch `round-51-tests` (`scratch/wt-r51tests`, merged with
 `round-51` at `ec56374`, merged into main after the launch). A film window writes a sixth file,
@@ -300,8 +304,8 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    1's 137 rigid stomach children died at a median 3,005 s, against a bar of 1,500). V1 waits for
    the film windows. Next come V1's windows from the round's own checkpoints, the theatre's pictures
    and the entry, 0124 (item 10).
-1b. Round 51 is built and pre-registered (0125, amended as `ed4a61d`, branch `round-51` in
-    `scratch/wt-r51`) and waits for the owner's word to start (the section above). Left from its
+1b. Round 51 runs from 22:23 on 2026-09-27 on the CPU's transport (0125, amended as `ed4a61d`,
+    branch `round-51` in `scratch/wt-r51`; the section above). Left from its
     build list, none of which blocks the launch: the theatre's grey shrinking husk and the link's pink
     skin are written on `round-51-tests` (`c8d0064`) and wait for the owner's word on a Unity render
     to compile them, with candidate stills checked against round 48's accepted film before the owner
@@ -324,15 +328,16 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    runs on the card is the owner's: single precision is a new realisation of every seed. An
    overnight CPU round uses the card for the transport alone from round 51 (D126), after item
    3's check.
-3. Before round 51, the card's transport is checked against round 50's own record (D126's
+3. The card's transport is checked against round 50's own record (D126's
    conditions), by day with nothing else on the machine, on the first day after round 50 has run. Round 50's seeds are resumed on main's
    exe with `EVOSIM_GPU_TRANSPORT` from checkpoints near 5,000, 15,000 and 25,000 s, 1,000 s
    each, under `EVOSIM_ALLOW_SOURCE_MISMATCH`, since main is not round 50's build. Each window's
    rows, lineage and checkpoints are compared with round 50's own, the checkpoint payloads byte
    for byte. The same windows on the CPU's transport, alternated with them, are the control: a
    difference in both is the build's, and a difference in the card's alone is the card's. Their
-   paces give the gain at round 50's crowds in place of the 13% estimate. Round 51's queue is
-   `scripts/farm-queue.ps1 -GpuTransport` (the tools table). It logs each seed's `transport`
+   paces give the gain at round 50's crowds in place of the 13% estimate. Round 51 runs on the CPU's
+   transport because the check had not run at its launch; the first round after the check is queued
+   with `scripts/farm-queue.ps1 -GpuTransport` (the tools table). It logs each seed's `transport`
    and header engine words and the card's temperature, power and load at each seed's start and
    end. Both of its card faults were rehearsed on 2026-09-26 on round 50's world. A box world
    the card declines was relaunched on the CPU's transport. A seed stopped at 160 s was resumed
