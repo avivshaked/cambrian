@@ -147,6 +147,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D125](#d125) | A leaf founder is set in the cell of its column where its own income, light and matter together, is largest, from round 50; a stomach is placed as before | 2026-09-26 | ruled by the owner in conversation, option (a) of three put after round 49's leaf read |
 | [D126](#d126) | An overnight round hands the snow's transport to the card, from round 51, after a daytime check against round 50's record | 2026-09-26 | ruled by the owner, option B of three |
 | [D127](#d127) | Round 51: links catch no light and the first link is free up to a link's size; a dead body is a husk that sinks, settles and dissolves slowly, every rule a knob; death by age keeping the reserve in the husk, if the ledger check asks for it; the pool keeps its one-part stomach; the water's reactive thrust in round 52 | 2026-09-27 | ruled by the owner in conversation after round 50's read |
+| [D128](#d128) | Death by age is a Gompertz hazard scaled by a heritable base that costs repair upkeep; the energy wear is off while it is on; a birth and a destroyed part each advance the body's ageing clock; round 51 runs the base unheritable, the round after makes it heritable | 2026-09-27 | ruled by the owner in conversation, option C of three, with two additions of their own |
 
 ---
 
@@ -6583,3 +6584,33 @@ lets an eater live, and the eater lines with a link took 28 to 76% of their inco
 **Rejected.** Keeping the link's light at half a leaf's rate, and separating it by a read: the
 owner preferred an eater that lives on food. The movement change in the same round: if the eaters
 thrive, a round with both could not say which one fed them.
+
+### D128
+**Death by age is a rising hazard with a heritable base that costs repair, and births and wounds age a body** · 2026-09-27
+
+**Status:** ruled by the owner in conversation on 2026-09-27, option C of three put after D127's
+ledger check, with two additions of the owner's own. It amends D127's conditional rule, which
+asked for a fixed age, and D038, whose wear it replaces while it is on.
+
+**Decision.** A body's chance of dying in a step rises with its age as Gompertz's law has it,
+doubling over a fixed fraction of the body's own base, so every body's curve has one shape
+stretched by its base. The base is a gene, and a longer one costs more upkeep, Kirkwood's
+disposable soma: repair competes with offspring for the same joules, which D038 named as the
+condition for heritable ageing. While the hazard is on, D038's wear is off, so an old body stays
+productive and dies holding its reserve, which goes to its husk. Two additions are the owner's
+("make child birth increase the death rate probability" and "increase the death rate for
+creatures that have had a cell destroyed"): each birth and each destroyed part advance the body's
+ageing clock. Under Gompertz's law an advance of the clock is a multiplier on the hazard. Every
+part of this is a knob, off at its default. Round 51 runs it with the base the same for every body
+and not mutating; the round right after round 51 makes it heritable (the owner: "without on the
+next round, but it should come in right after").
+
+**Why.** The owner asked for death by age that works as it does in nature, where some creatures
+live long and some short. A free heritable lifespan evolves to immortality, which is D038's
+reason for rejecting it, so the base is paid for. None of the sources this rests on is in the
+literature review yet (Gompertz 1825; Kirkwood 1977; Jones et al. 2014; the cost of reproduction
+in birds and flies); a review round checks them before the numbers are fixed.
+
+**Rejected.** (A) One curve for every body, as a knob: the fixed lifespan D038 rejected as the
+designer deciding how long a creature lives. (B) A base set by body size: no gene, and a second
+reason to grow large tangled with the first.
