@@ -254,6 +254,20 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    1's 137 rigid stomach children died at a median 3,005 s, against a bar of 1,500). V1 waits for
    the film windows. Next come V1's windows from the round's own checkpoints, the theatre's pictures
    and the entry, 0124 (item 10).
+1b. Round 51 is built next (D127, ruled 2026-09-27), every rule a knob off at its default: links
+    catch no light (`EVOSIM_LINK_PHOTO 0`, an existing knob); the first link from the root holds no
+    energy up to a typical link's volume (to be measured from round 50's bodies); a dead body is a
+    husk that sinks faster than the snow, settles on the first reef top or the bed and stays, and
+    dissolves slowly into its cell, eaten whole by a mouth that reaches it as a corpse is today; a
+    body dies at an age, a knob, keeping its reserve in its husk (the ledger check,
+    `logbook/specs/r51-husk-ledger.md`, found tissue-only husks cannot feed an eater); the pool keeps
+    its one-part stomach. The build also needs the husk's settled flag, first joules and body plan in
+    the checkpoint (a `StateVersion` bump), husk rows in the record for pictures, the theatre's grey
+    shrinking husk and the link's pink skin, stats for husks settled, eaten and aged deaths, a reader
+    and the pre-registration (logbook/0125; 0124 is round 50's entry). The age knob and the husk
+    rates are screened on a fast-step seed for the plant crowd's plateau before the pre-registration.
+    Before the first night, the card check (item 3). The water's reactive thrust is built during
+    round 51's week for round 52.
 2. The card is worked by day, with nothing else on the machine, from `scratch/wt-probe`
    (`gpu-probe`; merge main in before a day's work). The snow's transport runs on it under
    `EVOSIM_GPU_TRANSPORT` (above). Round 50's seeds are the next reference crowds once they have

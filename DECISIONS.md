@@ -145,6 +145,8 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D123](#d123) | The contact and damage senses read the step, from round 49: contact now and the health lost this step, as the mouth's specification asked | 2026-09-25 | ruled by the owner in conversation ("fix for 49"), after the checkpoint-fidelity read found both senses cumulative |
 | [D124](#d124) | A founder starts with at most a fraction of its own breeding gate, purse and endowment together, after its growth; 0.9 from round 49. The wear stays on upkeep and the snow's stirring is held | 2026-09-25 | ruled by the owner in conversation on the agent's proposal for round 49, question 1 on the owner's own alternative ("can we have the gift come in at slightly less than the child threashold"; "ok lets go with that") |
 | [D125](#d125) | A leaf founder is set in the cell of its column where its own income, light and matter together, is largest, from round 50; a stomach is placed as before | 2026-09-26 | ruled by the owner in conversation, option (a) of three put after round 49's leaf read |
+| [D126](#d126) | An overnight round hands the snow's transport to the card, from round 51, after a daytime check against round 50's record | 2026-09-26 | ruled by the owner, option B of three |
+| [D127](#d127) | Round 51: links catch no light and the first link is free up to a link's size; a dead body is a husk that sinks, settles and dissolves slowly, every rule a knob; death by age keeping the reserve in the husk, if the ledger check asks for it; the pool keeps its one-part stomach; the water's reactive thrust in round 52 | 2026-09-27 | ruled by the owner in conversation after round 50's read |
 
 ---
 
@@ -6546,3 +6548,38 @@ round's own, the checkpoints byte for byte. The same windows on the CPU's transp
 with them, are the control and measure the gain at round 50's crowds. If the card refuses a
 seed's launch, the queue launches the seed on the CPU's transport, which gives the same bits. A
 seed the card ends mid-run is resumed from its last checkpoint.
+
+### D127
+**Round 51's world: no light on a link, a free first link, and the dead body as a husk** · 2026-09-27
+
+**Status:** ruled by the owner in conversation on 2026-09-27, after round 50's read
+(`logbook/specs/r50-read/read-end.txt`, `linklight.txt`). It settles the two decisions HANDOFF had
+carried since round 49's read and takes the owner's own vision for the dead into round 51.
+
+**Decision.** From round 51 a link catches no light (`EVOSIM_LINK_PHOTO 0`). The first link from
+a body's root is free: its tissue holds no energy, so it costs nothing to build or to keep and
+leaves nothing in the husk, up to about the volume of a typical link; above that it is priced as
+any part. Neurons and joint work already cost nothing in every launcher. A dead body becomes a
+husk: it sinks faster than the snow, settles on the first reef top or the bed under it and stays,
+and dissolves slowly into its cell. A mouth that reaches it eats it, as a corpse can be eaten
+today. The theatre draws it as the body's own shape in grey, shrinking as it dissolves. Every one
+of these rules is a knob, off at its default so that every recorded config replays (the owner:
+"all of these should be configurable knobs"). The pool keeps its one-part stomach. The water's
+reactive thrust (`fable-propose-reactive-thrust.md`) is approved for round 52 and built during
+round 51's week, so that food and movement are read one round at a time.
+
+**The conditional rule.** A body that dies of old age keeps its reserve in its husk, with the age
+a knob, if a ledger check finds that tissue-only husks cannot feed an eater. The check was run the
+same day (`logbook/specs/r51-husk-ledger.md`) and found they cannot, so the rule is in round 51.
+
+**Why.** Round 50 had no larder. Every death was a starvation with the reserve at 0, so a corpse
+held its tissue alone, about 12 J against the 42 J a living body holds. A corpse sank at the snow's
+2 mm/s and leaked 0.5% a second, so half of it was gone within 30 cm and about 140 s of the death,
+and the current spread the rest. Corpses gave the snow about 40 W and the living plants' exudate
+about 170 W, and 4 corpses were eaten in a run. In round 50's seed 1 a line of pure stomachs with no
+link lived on the snow alone for hours, 68 living at its peak, so the link's light is not what
+lets an eater live, and the eater lines with a link took 28 to 76% of their income from it.
+
+**Rejected.** Keeping the link's light at half a leaf's rate, and separating it by a read: the
+owner preferred an eater that lives on food. The movement change in the same round: if the eaters
+thrive, a round with both could not say which one fed them.
