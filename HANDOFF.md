@@ -213,16 +213,18 @@ All of it is agent work. Long steps run in the background under the session, nev
 subagent and never in a shell loop. A queue that must outlive a turn is started detached
 (CLAUDE.md).
 
-1. The owner said at 23:52 on 2026-09-26 to start round 50, and to launch the third seed only if the
-   first two have ended before 07:00 the next morning. The queue is `scratch/r50-launch/seeds.ps1
+1. The owner said at 23:52 on 2026-09-26 to start round 50, first with the third seed only if the
+   first two ended before 07:00. At 05:05 on 2026-09-27 they changed it: seed 3 runs whenever seed 2
+   ends, unless seed 2 changes drastically. The first queue (`scratch/r50-launch/seeds.ps1
    -ThirdSeedBy 2026-09-27T07:00`, started detached at 23:53 from the committed, clean
-   `scratch/wt-leafincome` (`9ecff10`), logging to `scratch/logs/r50-queue.log`. It runs the seeds
-   one at a time at 16 threads with a 600-minute wall each. It skips seed 3 when seed 2 ends at or
-   after 07:00, and says so in the log. Then it runs V2 on seed 1 (`v2.ps1`, logged to
-   `scratch/logs/r50-v2.log`). Seed 1's manifest names `9ecff10`, not dirty, `configHash a2cda4b0`
-   (the smoke's), and its header carries D125's token. Projected from round 49's crowds on this
-   build, seed 1 takes about 3 hours and seed 2 about 4.7. So seed 3 will probably miss the 07:00
-   cut, and a skipped seed 3 waits for the owner. The watch runs hourly from the session's schedule,
+   `scratch/wt-leafincome` at `9ecff10`) ran seed 1, which ended on its budget at 02:52 after 178
+   minutes, and launched seed 2 at 02:52. Its script was stopped at 05:08 with seed 2 running on.
+   The queue since then is `scratch/r50-launch/seed3.ps1`, logging to `scratch/logs/r50-queue2.log`.
+   It launches seed 3 (`seeds.ps1 -Seeds 3`) when seed 2's manifest reads ended on its budget, and
+   leaves seed 3 to the owner on any other ending. Then it runs V2 on seed 1 (`v2.ps1`, logged to
+   `scratch/logs/r50-v2.log`) and writes `round 50 queue done`. Each seed runs at 16 threads with a
+   600-minute wall, and seed 1's manifest names `9ecff10`, not dirty, `configHash a2cda4b0` (the
+   smoke's), with D125's token in its header. The watch runs hourly from the session's schedule,
    never from a shell loop: `python scripts/watch-round.py r50 --seeds 1,2,3 --read
    scripts/reads/r50-read.py`, run from the main tree. The full read at the end adds
    `--windows-root` (V1) and `--v2-log scratch/logs/r50-v2.log` (V2).
