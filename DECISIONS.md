@@ -6614,3 +6614,12 @@ in birds and flies); a review round checks them before the numbers are fixed.
 **Rejected.** (A) One curve for every body, as a knob: the fixed lifespan D038 rejected as the
 designer deciding how long a creature lives. (B) A base set by body size: no gene, and a second
 reason to grow large tangled with the first.
+
+**Round 51's values** (ruled the same day, on the agent's calculation from round 50's bodies,
+`scratch/r51-ledger/age_clock.py`): a base of 3,000 s, which is where bodies that live past
+1,000 s have died at a median of 2,670 to 3,240 s in every round from 44 to 50; the hazard doubling
+every 600 s, a fifth of the base, which spreads deaths by age from about 1,500 to 4,600 s (10% to
+99%) and keeps some long lives; a birth advancing the clock by one doubling for a child the size of
+the parent, scaled by the child's size, and a destroyed part by one doubling for the whole body,
+scaled by its share. Which of heritable lifespan and the water's thrust follows round 51 is decided
+on round 51's outcome (the owner, the same day).
