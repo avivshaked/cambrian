@@ -54,6 +54,28 @@ as before. The build is `leaf-income-depth` (`scratch/wt-leafincome`); the launc
 The owner said to start it at 23:52 on 2026-09-26. The three seeds ran to 30,000 s in 178, 236 and 
 211 minutes and the queue ended at 10:27 on 2026-09-27 (queue item 1).
 
+### Round 51 is built and waits for the owner's word
+
+The owner ruled D127 and D128 on 2026-09-27 and asked for round 51 to be built and prepared but not
+started while they make the films of rounds 49 and 50 from main. The build is the branch `round-51`
+in `scratch/wt-r51`, cut from main at `336bfe1` and not merged. Its pre-registration is
+logbook/0125, committed as `b04025a` on a clean tree, and its reader is `scripts/reads/r51-read.py`,
+which gives round 50's verdict on every carried clause when run on round 50. The screen
+(`runs/r51screen-s1`, seed 1, 6,000 s) found the plant crowd levelling near 1,050 from 4,400 s,
+where round 50's seed 1 stood near 1,850 and rising. Deaths by age were 43% of the dead, at a median
+2,452 s, every one holding a reserve. The husks held 13% of the standing matter, with 42% of their
+joules settled, and nothing ate one. The jointed count averaged 61% of round 50's over the same
+seconds. The matter residual peaked at 1.1e-5 units at 2,270 s, ten times round 50's, with the
+energy audit closed to 2.2e-6 J; 0125 reads it as the fields' float door and keeps B1's bar. The
+final smoke (`runs/r51smoke-s1`) replayed the screen on all 300 shared samples, and its checkpoint
+check and resume passed. Core passed 1,035 of 1,035 with the slow set, Farm 194 and Dynamics 118 on
+the new crowd fixture `r51fix-s4`.
+
+The launch, on the owner's word: `pwsh -NoProfile -File scratch/wt-r51/rounds/queue-r51.ps1`, with
+`-GpuTransport` only after the card's check (queue item 3). It runs the three seeds one at a time at
+16 threads overnight and then V2, and logs to `scratch/logs/r51-queue.log`. Round 50 took 178 to 236
+minutes a seed.
+
 ### The card, by day
 
 The probe of 2026-09-26 morning timed each size class's kernel on round 48 seed 1's crowd of
@@ -254,24 +276,15 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    1's 137 rigid stomach children died at a median 3,005 s, against a bar of 1,500). V1 waits for
    the film windows. Next come V1's windows from the round's own checkpoints, the theatre's pictures
    and the entry, 0124 (item 10).
-1b. Round 51 is built next (D127 and D128, ruled 2026-09-27), every rule a knob off at its default:
-    links catch no light (`EVOSIM_LINK_PHOTO 0`, an existing knob); the first link from the root
-    holds no energy up to a typical link's volume (to be measured from round 50's bodies); a dead
-    body is a husk that sinks faster than the snow, settles on the first reef top or the bed and
-    stays, and dissolves slowly into its cell, eaten whole by a mouth that reaches it as a corpse is
-    today; death by age is a Gompertz hazard stretched by a base gene that costs repair upkeep
-    (genome format 10, the inocula converted by a text edit), with D038's wear off while it is on,
-    and each birth and each destroyed part advance the body's ageing clock; the pool keeps its
-    one-part stomach. Round 51 runs the base the same for every body and not mutating, and the round
-    right after makes it heritable. The build also needs the husk's settled flag, first joules and
-    body plan in the checkpoint (a `StateVersion` bump), husk rows in the record for pictures, the
-    theatre's grey shrinking husk and the link's pink skin, stats for husks settled, eaten and deaths
-    by age, a reader and the pre-registration (logbook/0125; 0124 is round 50's entry). The ledger
-    check is `logbook/specs/r51-husk-ledger.md`. The hazard's knobs and the husk rates are screened
-    on a fast-step seed for the plant crowd's plateau before the pre-registration, and a
-    literature-review round checks D128's sources. Before the first night, the card check (item 3).
-    The water's reactive thrust is built during round 51's week; whether it or heritable lifespan
-    follows round 51 is decided on round 51's outcome (the owner, 2026-09-27).
+1b. Round 51 is built and pre-registered (0125, `b04025a`, branch `round-51` in `scratch/wt-r51`)
+    and waits for the owner's word to start (the section above). Left from its build list, none of
+    which blocks the launch: the theatre's grey shrinking husk and the link's pink skin, with
+    candidate pictures to the owner first; a literature-review round for D128's sources (Gompertz,
+    Kirkwood, Jones and others, the cost of reproduction); a test of its own for the wound's push
+    and for a husk settling on a reef cap; and the merge of `round-51` into main once the films of
+    rounds 49 and 50 are done. The water's reactive thrust is built during round 51's week; whether
+    it or heritable lifespan follows round 51 is decided on round 51's outcome (the owner,
+    2026-09-27).
 2. The card is worked by day, with nothing else on the machine, from `scratch/wt-probe`
    (`gpu-probe`; merge main in before a day's work). The snow's transport runs on it under
    `EVOSIM_GPU_TRANSPORT` (above). Round 50's seeds are the next reference crowds once they have
