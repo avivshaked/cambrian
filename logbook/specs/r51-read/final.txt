@@ -18,7 +18,7 @@ C1   r51-s1     touch_share_to_5000=0.000666372  senses_at_5000=snapshot 5000 s,
 C2   r51-s1     err_log=D:\Projects\experiments\evolution-simulator\scratch\wt-r51\scratch\logs\r51-s1.err  waits=0  first_wait=  cadence_s=100  checkpoints_manifest=300  expected=300  checkpoints_on_disk=300  parts_killed=0  module_rebuilds=154  held=True
 C3   r51-s1     deaths=38974  starved_solvent=0  by_cause=aged: 19155 dead, 19155 solvent, median res 43.9281 J; starved: 19819 dead, 0 solvent, median res  J  held=True
 B1   r51-s1     audit_absmax_J=8.84284e-05  matter_resid_at=30000  matter_resid=4.48432e-05  short=False  diverged=0  diverged_dump_files=0  manifest_status=ended  manifest_reason=budget  ends_on_budget=True  censored=False  provisional=False  held=False
-V1   r51-s1     held=absent  note=no --windows-root given
+V1   r51-s1     windows=1  faithful=1  listed=r51-s1-15000 15000-15020 s faithful, 3/3 rows, sources differ 0  note=the window's exit code is not in its record; the verdict row stands for it  held=True
 V2   r51-s1     log=D:/Projects/experiments/evolution-simulator/scratch/logs/r51-v2.log  verify_checkpoint_exit=0  compare_det_exit=0  held=True
 V3   r51-s1     bytes=3454701459  gb=3.4547  at=30000  short=False  held=reading  as_bar=False
 M1   r51-s1     bud_rows=284  children=42725  per_child=0.00664716  by_cell=absorptive:62 buoyancy:42 consumer:44 link:39 neural:48 photosynthetic:4 structural:46  first_at=334.5  held=True
@@ -75,12 +75,12 @@ G4   r51-s2     at=30000  short=False  banked_J=379803  living_hold_J=9131.83  d
 C1   r51-s2     touch_share_to_5000=0.00122384  senses_at_5000=snapshot 5000 s, 1407 living: contact 0.026, damage 0.060, either 0.087  touch_share_to_15000=0.000992017  senses_at_15000=snapshot 15000 s, 2298 living: contact 0.049, damage 0.019, either 0.068  touch_share_to_30000=0.0024582  senses_at_30000=snapshot 30000 s, 3918 living: contact 0.051, damage 0.034, either 0.085  note=touch: overlapBodies over harnessBodySteps in the 500 s before each second; a sense is read when a neuron has a Sensor input on the channel  held=reading
 C2   r51-s2     err_log=D:\Projects\experiments\evolution-simulator\scratch\wt-r51\scratch\logs\r51-s2.err  waits=0  first_wait=  cadence_s=100  checkpoints_manifest=300  expected=300  checkpoints_on_disk=300  parts_killed=0  module_rebuilds=68  held=True
 C3   r51-s2     deaths=52695  starved_solvent=0  by_cause=aged: 19726 dead, 19726 solvent, median res 43.8418 J; starved: 32969 dead, 0 solvent, median res  J  held=True
-B1   r51-s2     audit_absmax_J=6.70024e-05  matter_resid_at=30000  matter_resid=-6.34977e-05  short=False  diverged=0  diverged_dump_files=0  manifest_status=ended  manifest_reason=budget  ends_on_budget=True  censored=False  provisional=False  held=False
 runrec: 2026-09-28-012745-f9f845bd: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
 runrec: 2026-09-27-054908-a2cda4b0: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
 runrec: 2026-09-28-012745-f9f845bd: genomes.jsonl.gz (record format 2), 1131 genome(s) indexed
 runrec: 2026-09-28-012745-f9f845bd: snapshots from snapshots/*.jsonl.gz joined to genomes.jsonl.gz, record format 2 (run.json recordFormat 2)
-V1   r51-s2     held=absent  note=no --windows-root given
+B1   r51-s2     audit_absmax_J=6.70024e-05  matter_resid_at=30000  matter_resid=-6.34977e-05  short=False  diverged=0  diverged_dump_files=0  manifest_status=ended  manifest_reason=budget  ends_on_budget=True  censored=False  provisional=False  held=False
+V1   r51-s2     windows=1  faithful=1  listed=r51-s2-15000 15000-15020 s faithful, 3/3 rows, sources differ 0  note=the window's exit code is not in its record; the verdict row stands for it  held=True
 V2   r51-s2     held=absent  note=asked of seed 1 alone
 V3   r51-s2     bytes=3740452332  gb=3.74045  at=30000  short=False  held=reading  as_bar=False
 M1   r51-s2     bud_rows=572  children=55654  per_child=0.0102778  by_cell=absorptive:94 buoyancy:85 consumer:97 link:52 neural:100 photosynthetic:46 structural:101  first_at=302  held=True
@@ -138,7 +138,7 @@ C1   r51-s3     touch_share_to_5000=0.000328056  senses_at_5000=snapshot 5000 s,
 C2   r51-s3     err_log=D:\Projects\experiments\evolution-simulator\scratch\wt-r51\scratch\logs\r51-s3.err  waits=0  first_wait=  cadence_s=100  checkpoints_manifest=300  expected=300  checkpoints_on_disk=300  parts_killed=0  module_rebuilds=434  held=True
 C3   r51-s3     deaths=63154  starved_solvent=0  by_cause=aged: 25801 dead, 25801 solvent, median res 40.8634 J; starved: 37353 dead, 0 solvent, median res  J  held=True
 B1   r51-s3     audit_absmax_J=0.000105638  matter_resid_at=30000  matter_resid=-1.09134e-05  short=False  diverged=0  diverged_dump_files=0  manifest_status=ended  manifest_reason=budget  ends_on_budget=True  censored=False  provisional=False  held=False
-V1   r51-s3     held=absent  note=no --windows-root given
+V1   r51-s3     windows=1  faithful=1  listed=r51-s3-15000 15000-15020 s faithful, 3/3 rows, sources differ 0  note=the window's exit code is not in its record; the verdict row stands for it  held=True
 V2   r51-s3     held=absent  note=asked of seed 1 alone
 V3   r51-s3     bytes=4524314613  gb=4.52431  at=30000  short=False  held=reading  as_bar=False
 M1   r51-s3     bud_rows=1237  children=67855  per_child=0.01823  by_cell=absorptive:220 buoyancy:156 consumer:215 link:120 neural:198 photosynthetic:128 structural:208  first_at=187.5  held=True
@@ -199,7 +199,7 @@ C1:   held in 0 of 3 (3 reading) -- needs a reading
 C2:   held in 3 of 3 -- needs 3 of 3
 C3:   held in 3 of 3 -- needs 3 of 3
 B1:   held in 0 of 3 -- needs 3 of 3
-V1:   held in 0 of 3 (3 absent) -- needs a window in each of 3 seeds
+V1:   held in 3 of 3 -- needs a window in each of 3 seeds
 V2:   held in 1 of 3 (2 absent) -- needs seed 1
 V3:   held in 0 of 3 (3 reading) -- needs a reading
 M1:   held in 3 of 3 -- needs 3 of 3

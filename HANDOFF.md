@@ -81,11 +81,12 @@ burn's rounding keeps one sign for thousands of seconds in round 51 and not in r
 Widening the field's door to double would close it, and would be a new realisation of every seed. W1 failed on one trickle founder in seed 3, 1.7% under its column. EK5 failed because pool
 founders died at a median 276 to 285 s against 300. E3 failed as 0125 expected: seed 3's line 29
 held 17 pure stomachs at 3,000 s and none at the end. S3 failed in seed 3, whose 28 rigid stomach
-children died at a median 1,806 s. V1 is still open.
+children died at a median 1,806 s. V1 held on 2026-09-28: a film window at 15,000 to 15,020 s in each seed, recorded on the round's own
+build from its checkpoints (`scratch/r51-windows`), read FAITHFUL with no source differing.
 
 One husk was eaten in each seed in 30,000 s, so the larder lies still and unused. Joints went out
-in seeds 1 and 3 (7 and 38 jointed at the end) and held in seed 2 (607, round 50's level). V1 waits
-for the film windows, and then come the pictures and the entry, 0126.
+in seeds 1 and 3 (7 and 38 jointed at the end) and held in seed 2 (607, round 50's level). The pictures
+and the entry, 0126, come next.
 
 ### How round 51 was built
 
@@ -338,7 +339,7 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    the film windows. Next come V1's windows from the round's own checkpoints, the theatre's pictures
    and the entry, 0124 (item 10).
 1b. Round 51 has run (the section above; 0125, amended as `ed4a61d`, branch `round-51` in
-    `scratch/wt-r51`). Next: V1's film windows from its checkpoints, the pictures and the entry, 0126. Left from its
+    `scratch/wt-r51`). Next: the pictures and the entry, 0126 (V1 held). Left from its
     build list, none of which blocks the launch: the theatre's grey shrinking husk and the link's pink
     skin are written on `round-51-tests` (`c8d0064`) and wait for the owner's word on a Unity render
     to compile them, with candidate stills checked against round 48's accepted film before the owner
