@@ -1721,8 +1721,9 @@ actually verifying it.
   compositor on the card: 12 s a frame, and no pixel more than 7 levels in 255 from the processor's.
   `EVOSIM_PROFILE=1` on `scripts/channel/intro.py` prints every stage's time; the folder's README
   has the rest of how the title films are made.
-  The rendered intro is not in git. It lives in `assets/cards/` on the machine that made it, so
-  check that it is there before a film uses it, and render it again from that README when it is not.
+  The rendered intro and outro are not in git. They live in `assets/cards/` on the machine that
+  made them, so check that they are there before a film uses them, and render them again from that
+  README when they are not.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

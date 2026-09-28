@@ -3,6 +3,13 @@ the zones YouTube's end screen will cover (endscreen_layout.json). Words are dra
 outro_overlay.py, so the handles and the call to action can change without a re-render.
 
     blender -b --factory-startup --python outro.py -- <out dir> <percent> <samples> [frames]
+
+The frames are "all", a list ("1,300,600") or a start and a step ("1:2" is every odd frame), so
+two processes can share the card on alternating frames; a frame already on disk is skipped, so a
+stopped render picks up where it left off.
+
+EVOSIM_PREVIEW=eevee renders a quick preview in Eevee instead of Cycles, for the layout and the
+motion only: the look is not the theatre's, and the samples argument is Eevee's.
 """
 import bpy, math, os, random, sys
 from mathutils import Vector, Quaternion
@@ -21,6 +28,7 @@ rng = random.Random(11)
 S.clear_scene()
 sc = S.setup_render(PERCENT, SAMPLES, exposure=0.55, motion_blur=True)
 sc.frame_start, sc.frame_end = 1, N
+sc.cycles.use_auto_tile = False   # one tile: no round trip of the frame through the disk at 4K
 
 CAM_A, CAM_B = Vector((-0.18, -6.2, 0.30)), Vector((0.18, -6.0, 0.26))
 AIM_A, AIM_B = Vector((-0.10, 0.0, 0.12)), Vector((0.10, 0.0, 0.10))
@@ -46,7 +54,7 @@ CAST = [
     ("c08", "08", (0.17, 0.80, 6.3), (28, -8, 22), 0.65, (16, 0.42, 0.0), (0.010, 0.0, 0.002), 0.020),
     ("c20", "20", (0.12, 0.17, 6.3), (8, 12, -18), 0.45, (14, 0.50, 1.3), (0.004, 0.0, -0.002), 0.015),
     ("c11", "11", (0.87, 0.16, 6.3), (10, 60, 35), 0.72, (18, 0.55, 2.1), (-0.006, 0.0, -0.002), 0.015),
-    ("c19", "19", (0.85, 0.87, 6.8), (75, 0, 20), 0.52, (7, 0.22, 0.7), (-0.006, 0.0, 0.003), 0.025),
+    ("c19", "19", (0.85, 0.895, 6.8), (75, 0, 20), 0.50, (7, 0.22, 0.7), (-0.006, 0.0, 0.003), 0.025),
     ("bg0", "20", (0.03, 0.55, 20.0), (20, 40, 70), 0.9, (12, 0.45, 0.4), (0.010, 0.0, 0.0), 0.03),
     ("bg1", "11", (0.97, 0.60, 20.0), (60, 10, 20), 1.0, (15, 0.5, 2.6), (-0.010, 0.0, 0.01), 0.03),
     ("bg2", "08", (0.33, 0.05, 22.0), (50, 20, 140), 1.2, (14, 0.4, 1.9), (0.008, 0.0, -0.005), 0.03),
@@ -98,11 +106,34 @@ for f in range(1, N + 1):
     snow.keyframe_insert("location", frame=f)
 
 sc.render.image_settings.file_format = "PNG"
-bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT_DIR, "outro.blend"))
-frames = list(range(1, N + 1)) if WHICH == "all" else [int(x) for x in WHICH.split(",")]
+if WHICH == "all":
+    frames = list(range(1, N + 1))
+elif ":" in WHICH:
+    first, step = (int(x) for x in WHICH.split(":"))
+    frames = list(range(first, N + 1, step))
+else:
+    frames = [int(x) for x in WHICH.split(",")]
+if 1 in frames:   # one of two processes keeps the scene, so they never write it at once
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT_DIR, "outro.blend"))
+if os.environ.get("EVOSIM_PREVIEW") == "eevee":
+    for engine in ("BLENDER_EEVEE", "BLENDER_EEVEE_NEXT"):
+        try:
+            sc.render.engine = engine
+            break
+        except TypeError:
+            pass
+    sc.eevee.taa_render_samples = SAMPLES
+    sc.render.use_motion_blur = False
+    if WHICH == "all":
+        sc.render.filepath = os.path.join(OUT_DIR, "frame_####")
+        bpy.ops.render.render(animation=True)
+        print("DONE", flush=True)
+        sys.exit(0)
 for f in frames:
-    sc.frame_set(f)
     sc.render.filepath = os.path.join(OUT_DIR, "frame_%04d.png" % f)
+    if os.path.exists(sc.render.filepath):
+        continue
+    sc.frame_set(f)
     bpy.ops.render.render(write_still=True)
     print("RENDERED", f, flush=True)
 print("DONE")

@@ -5,21 +5,21 @@ CΛMBRIΛN that play after each video's hook; the outro is the end screen. The c
 real bodies grown from our runs' genomes. They are drawn in the theatre's skin, the look of the
 Unity viewer carried over into Blender. Their motion is choreographed, and the intro says so on
 screen. Intro v1 was rendered on 2026-09-28 and filed with the other film assets, whose list in
-`assets/README.md` gives its sources. The outro is designed and not yet rendered.
+`assets/README.md` gives its sources. Outro v1 followed the same evening.
 
-## The rendered intro may not be here
+## The rendered films may not be here
 
-The rendered files are not in git. The master and its two copies sit in `assets/cards/` on the
-machine that rendered them, and the media in that folder are left out of git by design. So a fresh
-checkout, another machine or a cleaned-out folder has none of them, and the history has no copy to
-restore. Check that the file is there before a film uses it, and if it is missing, render it again
-with the steps below. The repository keeps all the render needs: the scripts, the four bodies'
-parts in the bodies file and the readout's figures. The run directories are not needed, and the
-type comes from the theatre's fonts, which are tracked. A new render has the same shots and words.
-It may not match the old one bit for bit, since the denoiser can differ with the card and its
-driver.
+The rendered files are not in git. Each film's master and its two copies sit in `assets/cards/` on
+the machine that rendered them, and the media in that folder are left out of git by design. So a
+fresh checkout, another machine or a cleaned-out folder has none of them, and the history has no
+copy to restore. Check that the file is there before a film uses it, and if it is missing, render
+it again with the steps below (the outro's are at the end). The repository keeps all the render
+needs: the scripts, the four bodies' parts in the bodies file and the readout's figures. The run
+directories are not needed, and the type comes from the theatre's fonts, which are tracked. A new
+render has the same shots and words. It may not match the old one bit for bit, since the denoiser
+can differ with the card and its driver.
 
-In DaVinci Resolve the project Cambrian holds the master in its Channel Branding bin, linked to the
+In DaVinci Resolve the project Cambrian holds both masters in its Channel Branding bin, linked to the
 file where it lies. A missing file shows there as offline. Write the new render to the same path,
 and relink the clip if it does not come back by itself. A new version gets a new name and goes in
 the bin beside the old one.
@@ -96,7 +96,7 @@ the bin beside the old one.
 
 ## The outro
 
-The outro is on hold at the owner's word (2026-09-28), with its design settled. It runs 20
+Outro v1 was rendered on 2026-09-28. It runs 20
 seconds, the longest end screen YouTube allows. The layout file holds the zones YouTube's elements
 will cover: a video tile each side, 613 by 343 pixels at 1080, and the subscribe circle between
 them, 298 across. The bottom tenth is left for the player's controls. The creatures stay out of
@@ -111,9 +111,17 @@ anyone who hides them. YouTube has no like element, so a LIKE chip is drawn unde
 An end screen must carry at least one video or playlist. The first video's left zone therefore
 takes a playlist tile. Later videos add a video tile on the right, and Studio's "Import from video"
 copies the layout. The outro's overlay script outlines the zones with `--guides` and shows a
-labelled mock-up of the avatar and a tile with `--mock=<png>`. One change is owed before the
-render: the leaf stack at the bottom right touches the right tile's lower edge by a few pixels, so
-it goes a little lower.
+labelled mock-up of the avatar and a tile with `--mock=<png>`. The line under the ring stays
+empty until the channel's handles are chosen, and filling it needs only the words redrawn.
+
+The outro was made in three steps, and a new version is made the same way. First a preview in
+Blender's fast renderer, all 600 frames at 540p in under two minutes, for the layout and the
+motion; an environment setting in the script's header gives it. Then frames 1, 300 and 600 at
+full quality in 1080, set beside the approved frames. Then the 4K, in two Blender processes on
+alternating frames, given as `1:2` and `2:2`. One uses the card while the other does its share
+on the processor. It ran at about 14 seconds a frame, two hours and
+twenty minutes in all. The 4K finishing script takes the outro's words script as its fourth
+argument.
 
 The outro's overlay also needs the Material Icons font from the assets folder, which is left out
 of git too. The font's row in the manifest says where to fetch it.
