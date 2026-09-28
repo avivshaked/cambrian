@@ -115,8 +115,8 @@ labelled mock-up of the avatar and a tile with `--mock=<png>`. The line under th
 empty until the channel's handles are chosen, and filling it needs only the words redrawn.
 
 The outro was made in three steps, and a new version is made the same way. First a preview in
-Blender's fast renderer, all 600 frames at 540p in under two minutes, for the layout and the
-motion; an environment setting in the script's header gives it. Then frames 1, 300 and 600 at
+Blender's fast renderer, all 600 frames at 540p in under two minutes. It is for the layout and the
+motion, and an environment setting in the script's header gives it. Then frames 1, 300 and 600 at
 full quality in 1080, set beside the approved frames. Then the 4K, in two Blender processes on
 alternating frames, given as `1:2` and `2:2`. One uses the card while the other does its share
 on the processor. It ran at about 14 seconds a frame, two hours and
