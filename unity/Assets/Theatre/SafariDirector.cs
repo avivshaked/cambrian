@@ -1221,7 +1221,7 @@ namespace Evosim.Theatre
             bool swimmer = Swimmer(scene, stage.Ids[subject]);
 
             int hash = scene.Clade?.Hash ?? (int)(stage.Ids[subject] & 0x7FFFFFFF);
-            SafariPlans.Take t = SafariPlans.Portrait(stage, subject, (float)scene.Seconds, swimmer, hash);
+            SafariPlans.Take t = SafariPlans.Portrait(stage, subject, (float)scene.Seconds, swimmer, hash, scene.Side);
             if (scene.Clade != null && stage.Ids[subject] != scene.Body)
             {
                 Say(string.Format(CultureInfo.InvariantCulture, "the portrait's subject is body {0} of {1}{2}",

@@ -317,31 +317,52 @@ namespace Evosim.Theatre
             FilmPlans.WorldBounds w = stage.World;
             float room = stage.Room;
 
-            // The shallow arc: the bearing whose floor at seven tenths of the room is highest.
-            float bestFloor = float.NegativeInfinity, bearing = 0f;
+            // Each of 36 bearings gives a path: from just under the surface a fifth of the room out to a metre over
+            // the floor half the room out, cut short as below. The path taken is the one whose eye and look pass
+            // the fewest rock (the reef's caps and columns, the bed), the shallow side breaking a tie. Round 49's
+            // story took the shallow side alone, and two of its descents passed under a cap (2026-09-28).
+            // A path longer than the ceiling allows in the time given is cut short. A story's shot keeps the
+            // top, since its descents start at the surface, and ends where the time runs out; a take of its
+            // own keeps the bottom and starts lower. Round 49's story kept the bottom too, and its 5 to 12 s
+            // descents were a few metres just over the bed, looking down into the sand (2026-09-28).
+            float mean = 0.8f * FilmPlans.OrbitSpeedCeiling;
+            float bearing = 0f, length = 0f, bestFloor = float.NegativeInfinity;
+            int fewest = int.MaxValue;
+            string shortened = "", clashNote = "";
+            Vector3 top = Vector3.zero, bottom = Vector3.zero, outward = Vector3.right;
             for (int k = 0; k < 36; k++)
             {
                 float b = k * 10f * Mathf.Deg2Rad;
-                Vector3 p = stage.Axis(0f) + new Vector3(Mathf.Cos(b), 0f, Mathf.Sin(b)) * (0.7f * room);
-                float f = w.FloorAt(p.x, p.z);
-                if (f > bestFloor + 0.01f) { bestFloor = f; bearing = b; }
-            }
-
-            var outward = new Vector3(Mathf.Cos(bearing), 0f, Mathf.Sin(bearing));
-            Vector3 top = stage.Axis(-FilmPlans.Clearance - 0.5f) + outward * (0.2f * room);
-            Vector3 bottom = stage.Axis(0f) + outward * (0.5f * room);
-            bottom.y = w.FloorAt(bottom.x, bottom.z) + FilmPlans.Clearance + 1f;
-
-            // A path longer than the ceiling allows in the time given starts lower on the same line.
-            float mean = 0.8f * FilmPlans.OrbitSpeedCeiling;
-            float length = (bottom - top).magnitude;
-            string shortened = "";
-            if (length / mean > mostSeconds)
-            {
-                float keep = mean * mostSeconds;
-                top = bottom + (top - bottom).normalized * keep;
-                shortened = string.Format(CultureInfo.InvariantCulture, ", started {0:0.#} m down so the dolly fits {1:0} s", -top.y, mostSeconds);
-                length = keep;
+                var o = new Vector3(Mathf.Cos(b), 0f, Mathf.Sin(b));
+                Vector3 floorAt = stage.Axis(0f) + o * (0.7f * room);
+                float f = w.FloorAt(floorAt.x, floorAt.z);
+                Vector3 t0 = stage.Axis(-FilmPlans.Clearance - 0.5f) + o * (0.2f * room);
+                Vector3 b0 = stage.Axis(0f) + o * (0.5f * room);
+                b0.y = w.FloorAt(b0.x, b0.z) + FilmPlans.Clearance + 1f;
+                float len = (b0 - t0).magnitude;
+                string cut = "";
+                if (len / mean > mostSeconds)
+                {
+                    float keep = mean * mostSeconds;
+                    if (exactSeconds > 0f)
+                    {
+                        b0 = t0 + (b0 - t0).normalized * keep;
+                        cut = string.Format(CultureInfo.InvariantCulture, ", ended {0:0.#} m down so the dolly fits {1:0} s", -b0.y, mostSeconds);
+                    }
+                    else
+                    {
+                        t0 = b0 + (t0 - b0).normalized * keep;
+                        cut = string.Format(CultureInfo.InvariantCulture, ", started {0:0.#} m down so the dolly fits {1:0} s", -t0.y, mostSeconds);
+                    }
+                    len = keep;
+                }
+                Vector3 g = o * 8f + Vector3.down * 3f, ta = t0, ba = b0;
+                int n = PathClashes(stage, u => Vector3.Lerp(ta, ba, u), -1, u => Vector3.Lerp(ta, ba, u) + g, 0f, out string first);
+                if (n < fewest || (n == fewest && f > bestFloor + 0.01f))
+                {
+                    fewest = n; bestFloor = f; bearing = b; outward = o; top = t0; bottom = b0; length = len; shortened = cut;
+                    clashNote = n > 0 ? ", the clearest path still clashes: " + first : "";
+                }
             }
 
             float seconds = exactSeconds > 0f ? exactSeconds : Mathf.Max(20f, length / mean);
@@ -377,7 +398,7 @@ namespace Evosim.Theatre
                     "descent on the shallow side (bearing {0:0} deg) from {1:0.#} m to {2:0.#} m, {3:0.#} m of dolly in {4:0} s, " +
                     "{5:0.###} m/s at the peak{6}{7}",
                     bearing * Mathf.Rad2Deg, -from.y, -to.y, (to - from).magnitude, seconds,
-                    (to - from).magnitude / seconds / (1f - FilmPlans.EaseShare), shortened, lifted));
+                    (to - from).magnitude / seconds / (1f - FilmPlans.EaseShare), shortened, lifted + clashNote));
 
             return new Take { Shot = shot, Seconds = seconds, Plan = shot.Plan_, EyeAt = u => Vector3.Lerp(from, to, FilmPlans.Ease(Mathf.Clamp01(u))) };
         }
@@ -398,7 +419,7 @@ namespace Evosim.Theatre
         /// end of it, and among the bearings that clear everything it prefers one with no body
         /// across the lens.
         /// </remarks>
-        public static Take Portrait(Stage stage, int subjectIndex, float seconds, bool swimmer, int cladeHash)
+        public static Take Portrait(Stage stage, int subjectIndex, float seconds, bool swimmer, int cladeHash, int side = 0)
         {
             long id = stage.Ids[subjectIndex];
             float reach = Mathf.Max(0.05f, stage.Reaches[subjectIndex]);
@@ -535,10 +556,12 @@ namespace Evosim.Theatre
 
             float tanH = Mathf.Tan(0.5f * fov * Mathf.Deg2Rad) * stage.Aspect;
 
-            // A third off centre, on the side the subject came from, so it swims into the frame.
+            // A third off centre, on the side the subject came from, so it swims into the frame; or on
+            // the story's side, the left for footage under a graphic, whose card takes the right third.
             Vector3 firstEye = EyeAt(0f, radius, azimuth0, elevation0, elevationSweep);
             Vector3 right = Vector3.Cross(Vector3.up, (centre0 - firstEye).normalized).normalized;
-            float lead = Vector3.Dot(drift, right) >= 0f ? 1f : -1f;
+            float lead = side < 0 ? 1f : side > 0 ? -1f : Vector3.Dot(drift, right) >= 0f ? 1f : -1f;
+            if (side != 0) notes += ", on the story's side";
             float offset = lead * radius * tanH / 3f;
 
             Vector3 followed = centre0;
@@ -638,7 +661,12 @@ namespace Evosim.Theatre
             start += Vector3.up * lift;
             end += Vector3.up * lift;
 
-            Vector3 gaze = along * 6f + Vector3.down * 1.6f;
+            // Along the bed's own slope and a little down, so the sand holds the lower part of the frame and the
+            // water shows above it. A fixed look of 15 degrees down met the rising slope and filled round 49's
+            // floor shot with sand (2026-09-28).
+            Vector3 mid = Vector3.Lerp(start, end, 0.5f), ahead = mid + along * 6f;
+            float slope = (w.FloorAt(ahead.x, ahead.z) - w.FloorAt(mid.x, mid.z)) / 6f;
+            Vector3 gaze = along * 6f + Vector3.up * (6f * slope) + Vector3.down * 0.6f;
             FilmPlans.Shot shot = FilmPlans.Shot.Custom("floor", w, seconds, 50f, false,
                 (float u, float dt, out Vector3 eye, out Vector3 at) =>
                 {

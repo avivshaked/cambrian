@@ -1,0 +1,18 @@
+{
+  "handles_s": 3,
+  "fps": 30,
+  "size": "3840x2160",
+  "draft_size": "960x540",
+  "codec": "qtrle",
+  "blender": "C:/Program Files/Blender Foundation/Blender 5.1/blender.exe",
+  "blender_version": "5.1.1",
+  "render_threads": 8,
+  "render_minutes": 10,
+  "fade_s": 0.3,
+  "unity": "C:/Program Files/Unity/Hub/Editor/6000.5.6f1/Editor/Unity.exe",
+  "worker": 6,
+  "runs_root": "runs",
+  "still_size": 1600,
+  "still_wall_minutes": 30,
+  "style": "graphics-style.json"
+}

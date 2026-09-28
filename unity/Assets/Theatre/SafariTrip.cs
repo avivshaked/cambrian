@@ -25,6 +25,40 @@ namespace Evosim.Theatre
     }
 
     /// <summary>
+    /// A story scene's own focus for its close-ups (a look test's options, 2026-09-28): each field NaN, null
+    /// or 0 keeps the grade's own (<see cref="TheatreGrade"/>). URP's Bokeh blur is capped at 14 pixels of
+    /// the render target's height, so the supersampled 4K target holds it to a quarter of plain 1080's;
+    /// its Gaussian blur scales with the frame's height, and a supersample of 1 halves the Bokeh's loss.
+    /// </summary>
+    public sealed class SafariFocus
+    {
+        /// <summary>"bokeh", "gaussian" or "off"; null keeps the grade's Bokeh.</summary>
+        public string Mode;
+        public float Aperture = float.NaN;
+        public float FormatMillimetres = float.NaN;
+        /// <summary>Gaussian: URP's largest blur radius, 0.5 to 1.5, which it scales with the frame's height.</summary>
+        public float Radius = float.NaN;
+        /// <summary>Gaussian: where the blur starts and where it is full, as multiples of the subject's distance.</summary>
+        public float Start = float.NaN;
+        public float End = float.NaN;
+        /// <summary>The frame's supersample, 1 to 3; 0 keeps the camera's own.</summary>
+        public int Supersample;
+
+        /// <summary>The focus in one phrase, for the log.</summary>
+        public string Describe()
+        {
+            var parts = new System.Collections.Generic.List<string> { Mode ?? "bokeh" };
+            if (!float.IsNaN(Aperture)) parts.Add("f/" + Aperture.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture));
+            if (!float.IsNaN(FormatMillimetres)) parts.Add(FormatMillimetres.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + " mm frame");
+            if (!float.IsNaN(Radius)) parts.Add("radius " + Radius.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture));
+            if (!float.IsNaN(Start)) parts.Add("from " + Start.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "x");
+            if (!float.IsNaN(End)) parts.Add("full at " + End.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "x");
+            if (Supersample > 0) parts.Add("supersample " + Supersample);
+            return string.Join(", ", parts);
+        }
+    }
+
+    /// <summary>
     /// A station applied to a subject at a second (item 6): what the director plays.
     /// </summary>
     /// <remarks>
@@ -103,6 +137,19 @@ namespace Evosim.Theatre
         public long BirthChildBody = -1;
         /// <summary>A story's own canopy switch for its arrival or descent; null leaves it to <see cref="SafariOptions.Canopy"/>.</summary>
         public bool? Canopy;
+        /// <summary>
+        /// A story's own fog density for the scene, as URP's exponential squared fog reads it, or NaN for
+        /// the look's (<see cref="StoryLook.FogDensity"/>): a story's far shots take a thinner one, which
+        /// the safari sets at the scene's every take and says in the log.
+        /// </summary>
+        public float Fog = float.NaN;
+        /// <summary>A story's own focus for the scene's close-ups, or null for the grade's.</summary>
+        public SafariFocus Focus;
+        /// <summary>
+        /// A story's side for a portrait's subject: -1 the left third, 1 the right, 0 the side it came
+        /// from. A story asks the left for footage under a graphic, whose card takes the right third.
+        /// </summary>
+        public int Side;
         /// <summary>How much a story's held card darkens its picture under the captions, 0 to 1 (0.6 dimmed, 1 black).</summary>
         public float Dim;
         /// <summary>

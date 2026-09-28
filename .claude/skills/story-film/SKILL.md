@@ -1,9 +1,12 @@
 ---
 name: story-film
-description: Make a round's story film for the owner end to end, or pick one up where it stopped - guides, the arc, the writer, the draft review, the script edit, narration, the owner's reviews, filming, the Resolve timeline and delivery. Use when the owner asks for a round's story or a film of how a round went, or to resume a story film in progress.
+description: DEPRECATED, do not use; replaced by create-story-video, which is being built. Kept only until that skill is done, then deleted. Was: make a round's story film for the owner end to end, or pick one up where it stopped - guides, the arc, the writer, the draft review, the script edit, narration, the owner's reviews, filming, the Resolve timeline and delivery.
 ---
 
 # Story film
+
+**Deprecated.** Do not start or resume a film with this skill. It is replaced by
+`create-story-video`, which is being built, and will be deleted when that skill is done.
 
 Any session that runs this flow has to reach the same film, so no step of it is left to the
 session's judgment (CLAUDE.md, "A subagent that a skill launches is briefed from the skill's files

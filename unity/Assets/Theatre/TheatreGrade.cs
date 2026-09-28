@@ -98,6 +98,17 @@ namespace Evosim.Theatre
         /// </remarks>
         public float FormatMillimetres = TheatreSkin.Dial("EVOSIM_THEATRE_DOF_FORMAT", 24f, 8f, 120f);
 
+        /// <summary>
+        /// The portrait's blur: URP's Bokeh, a lens, by default; or its Gaussian, a blur that starts behind the
+        /// subject (<see cref="GaussianStartFactor"/> and <see cref="GaussianEndFactor"/> times its
+        /// distance) and scales with the frame's height, where the Bokeh is capped in pixels. A story scene's
+        /// own focus sets these (<see cref="SafariFocus"/>).
+        /// </summary>
+        public DepthOfFieldMode PortraitMode = DepthOfFieldMode.Bokeh;
+        public float GaussianRadius = 1f;
+        public float GaussianStartFactor = 1.25f;
+        public float GaussianEndFactor = 3f;
+
         private GameObject _holder;
         private Volume _volume;
         private VolumeProfile _profile;
@@ -180,6 +191,7 @@ namespace Evosim.Theatre
         {
             if (_depthOfField == null) return;
 
+            _depthOfField.mode.Override(DepthOfFieldMode.Bokeh);
             _depthOfField.focusDistance.Override(Mathf.Max(0.1f, distanceMetres));
             _depthOfField.aperture.Override(Mathf.Clamp(aperture, 1f, 32f));
             _depthOfField.focalLength.Override(50f);
@@ -202,6 +214,19 @@ namespace Evosim.Theatre
         {
             if (_depthOfField == null) return;
             if (!PortraitDepthOfField) { Unfocus(); return; }
+
+            if (PortraitMode == DepthOfFieldMode.Gaussian)
+            {
+                float at = Mathf.Max(0.1f, distanceMetres);
+                _depthOfField.mode.Override(DepthOfFieldMode.Gaussian);
+                _depthOfField.gaussianStart.Override(at * Mathf.Max(1f, GaussianStartFactor));
+                _depthOfField.gaussianEnd.Override(at * Mathf.Max(GaussianEndFactor, GaussianStartFactor + 0.1f));
+                _depthOfField.gaussianMaxRadius.Override(Mathf.Clamp(GaussianRadius, 0.5f, 1.5f));
+                _depthOfField.highQualitySampling.Override(true);
+                _depthOfField.active = true;
+                return;
+            }
+            _depthOfField.mode.Override(DepthOfFieldMode.Bokeh);
 
             float focal = Mathf.Clamp(FocalLengthFor(fieldOfView), 1f, 300f);
 

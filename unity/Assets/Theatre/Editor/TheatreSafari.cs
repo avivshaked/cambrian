@@ -723,6 +723,9 @@ namespace Evosim.Theatre.EditorTools
             _exposure = null;
             _charts = null;
             _chartsRefused = false;
+            _lookFog = float.NaN;
+            _gradeFocus = null;
+            SnapshotCamera.SupersampleOverride = 0;
             if (StoryLook.Wanted(!string.IsNullOrEmpty(_story)))
             {
                 _look = new StoryLook();
@@ -751,6 +754,74 @@ namespace Evosim.Theatre.EditorTools
 
         private static double _takeStartSecond;
 
+        // The fog the look set, taken at the first take and put back at every take whose scene has
+        // none of its own, so a near scene after a far one is in the look's water again.
+        private static float _lookFog = float.NaN;
+
+        /// <summary>
+        /// The take's fog: the scene's own when its story gives one, else the look's. A story's far
+        /// shots take a thinner fog (round 49's first 4K clips, 2026-09-28: a crowd 30 to 55 m off
+        /// through the look's 0.022 kept a quarter to two thirds of its light, and the owner found the
+        /// frame soft and dark). Set before the take's first render, and said in the log whenever it
+        /// is the scene's own, which is how the film tool knows it reached the take.
+        /// </summary>
+        private static void ApplyTheFog(SafariScene scene, int take)
+        {
+            TheatreSkin skin = TheatreSkin.Current;
+            if (skin == null) return;
+            if (float.IsNaN(_lookFog)) _lookFog = skin.FogDensity;
+            float fog = float.IsNaN(scene.Fog) ? _lookFog : scene.Fog;
+            skin.FogDensity = fog;
+            RenderSettings.fogDensity = fog;
+            if (!float.IsNaN(scene.Fog))
+                Debug.Log(string.Format(CultureInfo.InvariantCulture, "[Theatre] safari: take {0} of {1}: fog {2:0.####}, the scene's own (the look's {3:0.####})",
+                    take + 1, scene.Slug, fog, _lookFog));
+        }
+
+        // The grade's own portrait focus, taken at the first take and put back at every take, so a
+        // scene without a focus of its own is in the look's lens again.
+        private static object[] _gradeFocus;
+
+        private static void RestoreTheFocus()
+        {
+            SnapshotCamera.SupersampleOverride = 0;
+            TheatreGrade grade = TheatreGrade.Current;
+            if (grade == null || _gradeFocus == null) return;
+            grade.PortraitDepthOfField = (bool)_gradeFocus[0];
+            grade.PortraitMode = (UnityEngine.Rendering.Universal.DepthOfFieldMode)_gradeFocus[1];
+            grade.PortraitAperture = (float)_gradeFocus[2];
+            grade.FormatMillimetres = (float)_gradeFocus[3];
+            grade.GaussianRadius = (float)_gradeFocus[4];
+            grade.GaussianStartFactor = (float)_gradeFocus[5];
+            grade.GaussianEndFactor = (float)_gradeFocus[6];
+        }
+
+        /// <summary>
+        /// The take's focus: the scene's own when its story gives one (a look test's options for the
+        /// close-ups, 2026-09-28), else the grade's. Set before the take's camera is made, since the
+        /// supersample is the camera's, and said in the log whenever it is the scene's own.
+        /// </summary>
+        private static void ApplyTheFocus(SafariScene scene, int take)
+        {
+            TheatreGrade grade = TheatreGrade.Current;
+            if (grade != null && _gradeFocus == null)
+                _gradeFocus = new object[] { grade.PortraitDepthOfField, grade.PortraitMode, grade.PortraitAperture, grade.FormatMillimetres,
+                    grade.GaussianRadius, grade.GaussianStartFactor, grade.GaussianEndFactor };
+            RestoreTheFocus();
+            SafariFocus f = scene.Focus;
+            if (grade == null || f == null) return;
+            if (f.Mode == "off") grade.PortraitDepthOfField = false;
+            else if (f.Mode == "gaussian") { grade.PortraitDepthOfField = true; grade.PortraitMode = UnityEngine.Rendering.Universal.DepthOfFieldMode.Gaussian; }
+            else if (f.Mode == "bokeh") { grade.PortraitDepthOfField = true; grade.PortraitMode = UnityEngine.Rendering.Universal.DepthOfFieldMode.Bokeh; }
+            if (!float.IsNaN(f.Aperture)) grade.PortraitAperture = f.Aperture;
+            if (!float.IsNaN(f.FormatMillimetres)) grade.FormatMillimetres = f.FormatMillimetres;
+            if (!float.IsNaN(f.Radius)) grade.GaussianRadius = f.Radius;
+            if (!float.IsNaN(f.Start)) grade.GaussianStartFactor = f.Start;
+            if (!float.IsNaN(f.End)) grade.GaussianEndFactor = f.End;
+            SnapshotCamera.SupersampleOverride = f.Supersample;
+            Debug.Log("[Theatre] safari: take " + (take + 1) + " of " + scene.Slug + ": focus " + f.Describe() + ", the scene's own");
+        }
+
         private static void OnTakeStarted(SafariScene scene, int take, string plan)
         {
             CloseTheTake();
@@ -774,6 +845,7 @@ namespace Evosim.Theatre.EditorTools
             bool lamp = _look != null && _look.Lamp > 0f && (scene.Station == SafariStation.Portrait || scene.Station == SafariStation.Birth);
 
             _camera?.Dispose();
+            ApplyTheFocus(scene, take);
             _camera = new SnapshotCamera(_width, _height)
             {
                 FillIntensity = lamp ? 0f : 0.6f,
@@ -784,6 +856,7 @@ namespace Evosim.Theatre.EditorTools
 
             _settleFrames = 0;
             _exposure?.BeginTake(scene.Slug + " take " + (take + 1));
+            ApplyTheFog(scene, take);
 
             // The chart's panel is made once, at the camera's supersampled size, the first time a
             // scene carries a chart; each take builds its scene's chart (or clears the last) now,
@@ -1153,6 +1226,14 @@ namespace Evosim.Theatre.EditorTools
                 _charts.Dispose();
                 _charts = null;
             }
+            if (!float.IsNaN(_lookFog) && TheatreSkin.Current != null)
+            {
+                TheatreSkin.Current.FogDensity = _lookFog;
+                RenderSettings.fogDensity = _lookFog;
+            }
+            _lookFog = float.NaN;
+            RestoreTheFocus();
+            _gradeFocus = null;
             if (_look != null)
             {
                 _look.Restore();

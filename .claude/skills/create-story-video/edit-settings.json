@@ -1,0 +1,15 @@
+{
+ "name": "",
+ "label": true,
+ "subtitle_chars": 42,
+ "subtitle_lines": 2,
+ "plate": "#061018",
+ "proof_size": "960x540",
+ "threads": 8,
+ "grade": {
+  "most": 1.6,
+  "power": 0.9
+ },
+ "intro": null,
+ "rough": false
+}

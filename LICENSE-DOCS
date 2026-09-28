@@ -104,13 +104,16 @@ would misrepresent them.
 NOT COVERED BY THIS LICENCE
 ───────────────────────────
 Third-party material quoted under fair dealing / fair use. Short quotations
-from academic papers appear throughout the documentation; they remain the
+from academic papers, books, platform help pages, vendor documentation and
+other published sources appear throughout the documentation; they remain the
 copyright of their respective authors and publishers and are attributed at the
-point of use with page-level locators.
+point of use, with a page-level locator or a link to the source.
 
 The papers themselves are NOT distributed with this repository. research/papers/
 is deliberately excluded — see research/FETCH-RESULTS.md for the retrieval URL
-of every source, so anyone with equivalent access can rebuild the set.
+of every source, so anyone with equivalent access can rebuild the set. The
+research notes under research/story-video/ give each source's URL where it is
+cited.
 
 
 EARLIER TERMS

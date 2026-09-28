@@ -77,6 +77,12 @@ namespace Evosim.Theatre
             public bool? Flexible;
             /// <summary>The writer's canopy switch, or null.</summary>
             public bool? Canopy;
+            /// <summary>The scene's own fog density (<c>fog</c>), or NaN for the look's.</summary>
+            public double Fog = double.NaN;
+            /// <summary>The scene's own focus for its close-ups (<c>focus</c>), or null for the grade's.</summary>
+            public SafariFocus Focus;
+            /// <summary>The portrait's side (<c>side</c>): -1 left, 1 right, 0 the director's.</summary>
+            public int Side;
             /// <summary>The writer's reason for the scene, read only for a request the director can honour (the canopy).</summary>
             public string Why;
             /// <summary>The name the subject carries (<c>Phyllina vetrasis</c>), or null.</summary>
@@ -113,6 +119,12 @@ namespace Evosim.Theatre
         private static readonly string[] ChapterKeys = { "chapter", "chapter_title", "chapterTitle", "chapter_card" };
         private static readonly string[] FlexibleKeys = { "flexible", "flex", "movable", "may_move" };
         private static readonly string[] CanopyKeys = { "canopy", "canopy_shot" };
+        private static readonly string[] FogKeys = { "fog", "fog_density" };
+        private static readonly string[] FocusKeys = { "focus", "depth_of_field" };
+        private static readonly string[] SideKeys = { "side", "subject_side" };
+
+        /// <summary>The fog densities a scene may ask for, the story look's own dial's range.</summary>
+        private const double LeastFog = 0.002d, MostFog = 0.08d;
         private static readonly string[] WhyKeys = { "why", "reason" };
         private static readonly string[] StationKeys = { "station", "kind", "type", "shot", "shot_type", "shotType" };
         private static readonly string[] SecondKeys = { "second", "at", "t", "time", "run_second", "sim_second", "at_s", "second_s", "when" };
@@ -134,7 +146,7 @@ namespace Evosim.Theatre
         private static readonly HashSet<string> KnownSceneKeys = new HashSet<string>(
             NumberKeys.Concat(RunKeys).Concat(ActKeys).Concat(StationKeys).Concat(SecondKeys).Concat(FromKeys).Concat(ToKeys)
                 .Concat(SpanKeys).Concat(SubjectKeys).Concat(RootKeys).Concat(BodyKeys).Concat(LengthKeys).Concat(CaptionKeys)
-                .Concat(TitleKeys).Concat(DescriptionKeys).Concat(ChapterKeys).Concat(FlexibleKeys).Concat(CanopyKeys).Concat(WhyKeys)
+                .Concat(TitleKeys).Concat(DescriptionKeys).Concat(ChapterKeys).Concat(FlexibleKeys).Concat(CanopyKeys).Concat(FogKeys).Concat(FocusKeys).Concat(SideKeys).Concat(WhyKeys)
                 .Concat(ChartKeys).Concat(Unused), StringComparer.Ordinal);
 
         /// <summary>Reads a shot list, or refuses a file that is not JSON or holds no scenes.</summary>
@@ -269,6 +281,25 @@ namespace Evosim.Theatre
             shot.Chapter = Text(FirstOf(node, ChapterKeys));
             shot.Flexible = Switch(FirstOf(node, FlexibleKeys));
             shot.Canopy = Switch(FirstOf(node, CanopyKeys));
+            if (TryNumber(FirstOf(node, FogKeys), out double fog))
+            {
+                if (fog >= LeastFog && fog <= MostFog) shot.Fog = fog;
+                else Notes.Add(string.Format(CultureInfo.InvariantCulture, "scene {0}: a fog of {1} is outside {2} to {3}, and is not read",
+                    shot.Number, fog, LeastFog, MostFog));
+            }
+            else if (FirstOf(node, FogKeys) != null)
+            {
+                Notes.Add("scene " + shot.Number + ": 'fog' is not a number, and is not read");
+            }
+            if (FirstOf(node, FocusKeys) != null) shot.Focus = ReadFocus(FirstOf(node, FocusKeys), shot.Number);
+            string side = Text(FirstOf(node, SideKeys));
+            if (side != null)
+            {
+                side = side.Trim().ToLowerInvariant();
+                if (side == "left") shot.Side = -1;
+                else if (side == "right") shot.Side = 1;
+                else Notes.Add("scene " + shot.Number + ": a side of '" + side + "' is neither left nor right, and is not read");
+            }
             shot.Why = Text(FirstOf(node, WhyKeys));
             if (FirstOf(node, FlexibleKeys) != null && shot.Flexible == null)
                 Notes.Add("scene " + shot.Number + ": 'flexible' is neither true nor false, and is not read");
@@ -786,6 +817,30 @@ namespace Evosim.Theatre
                 notes.Add(who + ": the canopy is asked for on a " + station + ", which has none: not read");
             }
 
+            // The scene's own fog: a story's far shots ask for a thinner one than the look's.
+            if (!double.IsNaN(shot.Fog))
+            {
+                scene.Fog = (float)shot.Fog;
+                notes.Add(string.Format(CultureInfo.InvariantCulture, "{0}: fog {1:0.####}, the scene's own", who, shot.Fog));
+            }
+
+            // The scene's own focus: a look test's options for the close-ups (2026-09-28).
+            if (shot.Side != 0 && station == SafariStation.Portrait)
+            {
+                scene.Side = shot.Side;
+                notes.Add(who + ": the subject in the " + (shot.Side < 0 ? "left" : "right") + " third, the scene's own");
+            }
+            else if (shot.Side != 0)
+            {
+                notes.Add(who + ": a side is asked on a " + station + ", which places no subject off centre: not read");
+            }
+
+            if (shot.Focus != null)
+            {
+                scene.Focus = shot.Focus;
+                notes.Add(who + ": focus " + shot.Focus.Describe() + ", the scene's own");
+            }
+
             if (station == SafariStation.Birth && shot.ParentBody >= 0)
             {
                 scene.BirthParentBody = shot.ParentBody;
@@ -1139,6 +1194,51 @@ namespace Evosim.Theatre
             if (v < 0d || v >= 100000d) return false;
             value = (int)Math.Round(v);
             return true;
+        }
+
+        /// <summary>
+        /// A scene's own focus: {"mode": "bokeh" | "gaussian" | "off", "aperture", "format", "radius",
+        /// "start", "end", "supersample"}, each field optional and held to what the grade takes; a value
+        /// out of range is held and said in the notes, and anything else is not read.
+        /// </summary>
+        private SafariFocus ReadFocus(JsonNode n, int number)
+        {
+            if (n.Kind != JsonNode.NodeKind.Object)
+            {
+                Notes.Add("scene " + number + ": 'focus' is not an object, and is not read");
+                return null;
+            }
+            var focus = new SafariFocus();
+            string mode = Text(FirstOf(n, "mode"));
+            if (mode != null)
+            {
+                mode = mode.Trim().ToLowerInvariant();
+                if (mode == "bokeh" || mode == "gaussian" || mode == "off") focus.Mode = mode;
+                else Notes.Add("scene " + number + ": a focus mode of '" + mode + "' is none of bokeh, gaussian and off, and is not read");
+            }
+            focus.Aperture = FocusNumber(n, number, "aperture", 1d, 32d);
+            focus.FormatMillimetres = FocusNumber(n, number, "format", 8d, 120d);
+            focus.Radius = FocusNumber(n, number, "radius", 0.5d, 1.5d);
+            focus.Start = FocusNumber(n, number, "start", 1d, 20d);
+            focus.End = FocusNumber(n, number, "end", 1.1d, 40d);
+            float super = FocusNumber(n, number, "supersample", 1d, 3d);
+            focus.Supersample = float.IsNaN(super) ? 0 : (int)Math.Round(super);
+            return focus;
+        }
+
+        private float FocusNumber(JsonNode host, int number, string key, double least, double most)
+        {
+            JsonNode n = FirstOf(host, key);
+            if (n == null) return float.NaN;
+            if (!TryNumber(n, out double v))
+            {
+                Notes.Add("scene " + number + ": the focus's '" + key + "' is not a number, and is not read");
+                return float.NaN;
+            }
+            double c = Math.Max(least, Math.Min(most, v));
+            if (c != v)
+                Notes.Add(string.Format(CultureInfo.InvariantCulture, "scene {0}: the focus's '{1}' of {2} is held to {3}", number, key, v, c));
+            return (float)c;
         }
 
         /// <summary>A number, or the first number in a string ("5,000 s"); false for anything else.</summary>

@@ -1,0 +1,22 @@
+{
+ "voice": {
+  "path": "D:\\Projects\\code\\narrator-mcp\\.dev\\voices\\a-warm-s101.wav",
+  "sha256": "83266208d697c21acab89085c1d042e4f5850140528a9020469169180220d6fc",
+  "transcript": "Good bread asks for patience: the dough is mixed, folded and left to rise through the morning. When the loaves come out golden and crisp, a gentle warmth fills the whole kitchen.",
+  "engine_profile_hash": "sha256:ec4e45f08357dfdf345ee89b34e495b245c92c340e6341cf7d1f694147b973a8",
+  "max_segment_chars": 301
+ },
+ "padding": {
+  "lead_s": 0.5,
+  "between_s": 1.0,
+  "within_s": 0.6,
+  "end_s": 2.0
+ },
+ "cut": {
+  "min_pause_s": 0.12,
+  "edge_s": 0.08
+ },
+ "takes": 1,
+ "max_retakes": 2,
+ "accept": []
+}

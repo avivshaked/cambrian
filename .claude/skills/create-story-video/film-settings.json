@@ -1,0 +1,15 @@
+{
+ "handles_s": 3,
+ "fps": 30,
+ "size": "3840x2160",
+ "worker": 6,
+ "runs_root": "runs",
+ "farm_threads": 10,
+ "wall_minutes": 180,
+ "reference": "scratch/owner/r48-story-full/r48-story-full-v2.clean.mp4",
+ "far_fog": null,
+ "close_focus": null,
+ "handles_by_shot": {},
+ "size_by_shot": {},
+ "takes_by_shot": {}
+}

@@ -338,6 +338,13 @@ namespace Evosim.Theatre
         public static int Supersample => Mathf.Clamp(Mathf.RoundToInt(TheatreSkin.Dial("EVOSIM_THEATRE_SUPERSAMPLE", 2f, 1f, 3f)), 1, 3);
 
         private readonly int _super;
+
+        /// <summary>
+        /// A supersample for the cameras made from now on, 1 to 3, or 0 for <see cref="Supersample"/>: a story
+        /// scene's own focus sets it (<see cref="SafariFocus"/>), since URP caps the Bokeh blur in the
+        /// render target's pixels.
+        /// </summary>
+        public static int SupersampleOverride;
         private Texture2D _readbackFull;
         private readonly GameObject _holder;
         private readonly Camera _camera;
@@ -409,7 +416,7 @@ namespace Evosim.Theatre
             _width = Mathf.Clamp(width, 64, MaximumSide);
             _height = Mathf.Clamp(height, 64, MaximumSide);
 
-            _super = Supersample;
+            _super = SupersampleOverride > 0 ? Mathf.Clamp(SupersampleOverride, 1, 3) : Supersample;
             while (_super > 1 && Mathf.Max(_width, _height) * _super > 2 * MaximumSide) _super--;
 
             _target = new RenderTexture(_width * _super, _height * _super, 24, RenderTextureFormat.ARGB32)
