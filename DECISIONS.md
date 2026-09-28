@@ -148,6 +148,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D126](#d126) | An overnight round hands the snow's transport to the card, from round 51, after a daytime check against round 50's record | 2026-09-26 | ruled by the owner, option B of three |
 | [D127](#d127) | Round 51: links catch no light and the first link is free up to a link's size; a dead body is a husk that sinks, settles and dissolves slowly, every rule a knob; death by age keeping the reserve in the husk, if the ledger check asks for it; the pool keeps its one-part stomach; the water's reactive thrust in round 52 | 2026-09-27 | ruled by the owner in conversation after round 50's read |
 | [D128](#d128) | Death by age is a Gompertz hazard scaled by a heritable base that costs repair upkeep; the energy wear is off while it is on; a birth and a destroyed part each advance the body's ageing clock; round 51 runs the base unheritable, the round after makes it heritable | 2026-09-27 | ruled by the owner in conversation, option C of three, with two additions of their own |
+| [D129](#d129) | A founder with a mouth lands where the corpses lie, from round 52: the founders' lottery and depth read the corpses as a mouth's food | 2026-09-28 | ruled by the owner in conversation, option A of two, after the read of where round 51's founders landed |
 
 ---
 
@@ -6623,3 +6624,37 @@ every 600 s, a fifth of the base, which spreads deaths by age from about 1,500 t
 the parent, scaled by the child's size, and a destroyed part by one doubling for the whole body,
 scaled by its share. Which of heritable lifespan and the water's thrust follows round 51 is decided
 on round 51's outcome (the owner, the same day).
+
+### D129
+**A founder with a mouth lands where the corpses lie, from round 52** · 2026-09-28
+
+**Status:** ruled by the owner in conversation on 2026-09-28 ("yes for the next round"). It is
+option A of two, put after the agent's read of where round 51's founders landed. Whether round 52 also
+carries the water's reactive thrust or heritable lifespan (D127, D128) is not ruled by it. The same
+day the owner ruled that the code and the records call a dead body a corpse ("we should internally
+call them corpse not husk"). D127, round 51's records and logbook/0125 say husk for the same object.
+
+**Decision.** D116's lottery and D122's depth read a third food: the corpses (D127). A founder with
+a mouth takes a column with a chance equal to the corpse joules lying in it over the richest
+column's. A mouth is any part whose intake is above 0, the test the mouth's own pass reads a body
+by. The columns are the snow grid's 1 m columns, and every corpse that holds joules counts where
+it is now. A stomach takes the snow's share the same way, and a leaf the dissolved matter's. Under
+the depth rule the mouth is then set between the richest corpse in that column and the mouth's
+reach above it. The placer's bed and reef rules lift it clear of the rock, as they lift every
+founder. A body with a mouth and another food takes the larger of its shares, as a mixotroph does,
+and the other food wins a tie. A world with no corpse accepts a mouth anywhere, as an empty field
+does. It is a knob, `FoundersFollowCorpses` (`EVOSIM_FOUNDERS_FOLLOW_CORPSES`), off by default, so
+every recorded config replays; round 52 runs it on. It is refused without D116, without corpses as
+objects and without a mouth's reach.
+
+**Why.** Round 51 left the dead holding as much energy as the living. At 30,000 s its three seeds
+held 17,900 to 25,600 corpses with 209 to 240 kJ, against 199 to 238 kJ in the living. About nine in
+ten of the corpses had settled, and in seed 1 at 12,000 s the settled ones lay at a median 50 m (17
+to 76 m).
+One corpse was eaten in each seed. D116 and D122 were written before there were corpses. They steer a
+stomach by the snow and a leaf by the dissolved matter, and they read a body with a mouth alone as
+eating nothing. So seed 1 set its 202 mouth founders after the founding at a random depth in the
+top 12 m. They landed a median 6 m down, about 40 m over the corpses. No mouth was ever tried beside what it eats.
+
+**Rejected.** Leaving the lottery blind to the corpses, option B: the next round would again say
+nothing about whether a body can live on them.

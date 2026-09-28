@@ -88,6 +88,45 @@ One husk was eaten in each seed in 30,000 s, so the larder lies still and unused
 in seeds 1 and 3 (7 and 38 jointed at the end) and held in seed 2 (607, round 50's level). The pictures
 and the entry, 0126, come next.
 
+### Round 52 is being built
+
+The owner ruled D129 on 2026-09-28: a founder with a mouth lands where the corpses lie, in a round
+of its own, the next one. The same day they ruled that the code and the records call a dead body
+a corpse and not a husk. Round 51's records, D127 and 0125 keep the word they were written with.
+The build is the branch `round-52` in `scratch/wt-r52`, cut from `round-51-tests` at `babb1ae`
+(which carries `round-51`), not merged. Three commits so far:
+
+- `2358afd`: the knob `FoundersFollowCorpses` (`EVOSIM_FOUNDERS_FOLLOW_CORPSES`, off by default).
+  A mouth is any part whose intake is above 0, the test the mouth's own pass reads. Its share of a
+  column is the corpse joules in the snow grid's 1 m column over the fullest column's. Under the
+  depth rule it is set between the richest corpse there and the reach above it, and the placer
+  lifts it clear of the bed. It is refused without D116, without corpses as objects and without
+  a reach, and the header's founders token gains ", mouths at the corpses". Core has 7 tests for it
+  and Dynamics 2, through the farm's own placer.
+- `a627895`: the rename. The stats fields are `corpsesSettled`, `corpseJoulesSettled`,
+  `corpsesOnReef` and `corpseJoulesOnReef`, and the header says `corpse sink`. The film window
+  writes `corpses.jsonl.gz`, and its reader refuses a window that holds `husks.jsonl.gz`, so round
+  51's windows are recorded again before this build draws them. The theatre's dials are
+  `EVOSIM_THEATRE_CORPSE_BRIGHTNESS` (0.55, the owner's pick) and
+  `EVOSIM_THEATRE_CORPSE_FADE_SECONDS`, and `theatre-film.ps1` takes `-Corpse`. The theatre side
+  has not been through Unity since the rename.
+- `4c1780b`: the config fixture `pfix15` (`8656c52dd0575c49`); the Farm suite passes 197 of 197.
+
+The crowd fixture `r52fix-s4` (round 44's world, seed 4, 20,000 s at 4 threads) started at 11:01
+on 2026-09-28 from `scratch/r52-build/build.ps1`, logged to `scratch/r52-build/build.log`.
+
+What D129 can do, read from round 51 seed 1's film window at 12,000 s
+(`scratch/r52-build/pay/landing.py` and `landing.txt`, to go to logbook/specs with the
+pre-registration). There were 5,282 corpses holding 124 kJ, 23 J each on average, 91% of them
+settled. The column the rule picks holds 69 J on average, against 5.6 J for a column drawn at random.
+A mouth founder of radius 0.5 m or less lands with a corpse in reach 70 to 80% of the time,
+with a median of 33 to 43 J in reach. At a radius of 0.8 m that falls to 30%, because the bed holds the
+body's centre above the reach. New corpses come to rest in the 3 by 3 m round a landing at a mean of
+0.03 W, and a small mouth body costs about 0.155 W to keep (round 51's ledger). So a mouth gets one
+meal, three to five minutes of its keep, and then has to move to the next. Round 51's ledger puts
+that at 4 to 8 cm/s, and evolved strokers reach 2 to 6 mm/s. The expected result is mouths that eat
+when they land and leave no lasting line, and the corpses eaten rising from one a seed.
+
 ### How round 51 was built
 
 The owner ruled D127 and D128 on 2026-09-27 and asked for round 51 to be built and prepared but not
@@ -230,6 +269,31 @@ left alone.
 
 ## The decisions in front of the owner
 
+### Whether round 52 also makes lifespan heritable
+
+D129 is ruled for round 52, in a round of its own (the owner answered "yes for the next round" to
+"should it get its own round?"). So the water's reactive thrust, a movement change, waits for a
+later round by D127's rule that food and movement are read one round at a time. One thing is left
+open. D128 said the lifespan gene becomes heritable in the round right after round 51 (the owner:
+"it should come in right after"). It also said, the same day, that round 51's outcome decides
+whether lifespan or the thrust follows it.
+
+Heritable lifespan is built. Every body carries the gene at 1. `EVOSIM_LIFESPAN_CHANCE` (how often a
+birth moves it), `EVOSIM_LIFESPAN_MIN` and `EVOSIM_LIFESPAN_MAX` (the founders' range) and the
+repair price (`AgeRepairExponent`, the upkeep a longer life costs) turn it on. Their values would be
+screened by the ledger before a pre-registration.
+
+- D129 alone (my recommendation). Round 52 is round 51's world with one change, so its corpse
+  numbers compare directly with round 51's. Heritable lifespan follows in a later round. It costs
+  one more round before the gene moves.
+- D129 with heritable lifespan. It saves a round, a night of the machine and a day of reading. But
+  a changing lifespan changes when bodies die and what they leave. That is the corpse supply D129's
+  clauses are read against, so the two effects mix in the numbers that matter most. It is a new
+  realisation of every seed either way.
+
+The question to answer is whether round 52 runs D129 alone, or D129 with the lifespan gene
+heritable.
+
 ### Ruled on 2026-09-27, after round 50's read
 
 - Links stop catching light from round 51 (`EVOSIM_LINK_PHOTO 0`). The owner added that the first
@@ -340,15 +404,25 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    and the entry, 0124 (item 10).
 1b. Round 51 has run (the section above; 0125, amended as `ed4a61d`, branch `round-51` in
     `scratch/wt-r51`). Next: the pictures and the entry, 0126 (V1 held). Left from its
-    build list, none of which blocks the launch: the theatre's grey shrinking husk and the link's pink
-    skin are written on `round-51-tests` (`c8d0064`) and wait for the owner's word on a Unity render
-    to compile them, with candidate stills checked against round 48's accepted film before the owner
-    sees them; a literature-review round for D128's sources (Gompertz, Kirkwood, Jones and others, the
-    cost of reproduction); and the merge of `round-51` and `round-51-tests` into main once the films
-    of rounds 49 and 50 are done. The tests for the wound's push and a husk on a reef cap are on
-    `round-51-tests` (`2ff8f50`), and the film window's husks there too. The water's reactive thrust
-    is built during round 51's week; whether it or heritable lifespan follows round 51 is decided on
-    round 51's outcome (the owner, 2026-09-27).
+    build list, none of which blocks the launch. The theatre's grey shrinking corpse, its fade, the
+    birth's growth and fade-in and the link's pink skin are on `round-51-tests`. They were compiled
+    and rendered on 2026-09-28 with the owner's leave: the corpse at 0.55, and the time-lapse sink
+    and vanish clips in `scratch/owner/`, which the owner called perfect. Also left: a
+    literature-review round for D128's sources (Gompertz, Kirkwood, Jones and others, the cost of
+    reproduction), and the merge of `round-51` and `round-51-tests` into main once the films of
+    rounds 49 and 50 are done. The tests for the wound's push and a corpse on a reef cap are on
+    `round-51-tests` (`2ff8f50`), and the film window's corpses there too. The water's reactive
+    thrust was not built during round 51's week, and its proposal still waits for a ruling. Round
+    52 is D129's (1c), and whether heritable lifespan joins it is the first decision above.
+1c. Round 52's build (the section above, branch `round-52`). When `r52fix-s4` ends,
+    `src/Evosim.Dynamics.Tests/RunFixture.cs` is pointed at it. Dynamics, Farm and Core with its slow
+    set then run one at a time at 4 test threads. The thread-identity test runs with its output
+    shown: its log line reads under 1 ms, as round 51's did, too fast for 400 steps at three thread
+    counts. Then comes the launcher `rounds/env-r52.ps1`: round 51's, plus
+    `EVOSIM_FOUNDERS_FOLLOW_CORPSES 1`, and the lifespan dials if the owner adds them. Then a smoke,
+    its pictures checked against round 51's accepted clips, a checkpoint check and resume, and the
+    pre-registration 0127 with the landing arithmetic above as its prediction. The theatre's rename
+    is compiled in Unity at the next render the owner allows.
 2. The card is worked by day, with nothing else on the machine, from `scratch/wt-probe`
    (`gpu-probe`; merge main in before a day's work). The snow's transport runs on it under
    `EVOSIM_GPU_TRANSPORT` (above). Round 50's seeds are the next reference crowds once they have
