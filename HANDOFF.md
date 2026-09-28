@@ -58,23 +58,28 @@ The owner said to start it at 23:52 on 2026-09-26. The three seeds ran to 30,000
 
 The queue ended at 05:25 on 2026-09-28 after 422 minutes. All three seeds ended on their budget,
 at 30,000 s, with 4,717, 3,918 and 5,648 alive and nothing diverged, in 123, 121 and 174 minutes.
-V2 held: the member check of seed 1's 15,000 s checkpoint exited 0, and the resume to 16,000 s
-(`runs/r51-s1R`) was identical to the run on all 100 shared samples. The reader's verdict on all
-three seeds is `logbook/specs/r51-read/final.txt` (`scripts/reads/r51-read.py --arms r51-s1 r51-s2
-r51-s3 --v2-log scratch/logs/r51-v2.log` on the branch). Held in the round: A1 to A3 (deaths by age
-37 to 49% of the dead, at a median 2,317 to 2,572 s, every one holding a reserve), H1, H2 and H4
-(the husks hold 0.125 to 0.144 of the standing matter and 0.73 to 0.78 of their joules settle), O1,
-S1, X1, M1 to M4 (M3 in seeds 2 and 3, lines grown from stomach buds whose stomach earns under 1% of
-their income), G1 to G4, W2, W3, C2, C3, P1, EK1 to EK4, LC, F3 and LK1. Failed: B1 on the matter
-residual alone (+4.5e-5, -6.3e-5 and -1.1e-5 units at the end, the energy audit closed at 1e-4 J;
-it wanders in both directions and follows no one flow in the stats, so it is a fault not yet located
-and not the float door 0125 expected), W1 (one trickle founder in seed 3, 1.7% under its column),
-EK5 (pool founders die at a median 276 to 285 s against 300), E3 (seed 3's line 29 held 17 pure
-stomachs at 3,000 s and none at the end; 0125 expected the failure) and S3 (seed 3's 28 rigid
-stomach children died at a median 1,806 s). Readings: one husk was eaten in each seed in 30,000 s,
-so the larder lies still and unused; joints went out in seeds 1 and 3 (7 and 38 jointed at the end)
-and held in seed 2 (607, round 50's level). V1 waits for the film windows, then the pictures and
-the entry, 0126.
+The resume check V2 held. Seed 1's 15,000 s checkpoint passed its member check, and its resume to
+16,000 s (`runs/r51-s1R`) was identical to the run on all 100 shared samples. The reader's
+verdicts on the three seeds are in `logbook/specs/r51-read/final.txt`, from the branch's
+`scripts/reads/r51-read.py` with the V2 log.
+
+Thirty-one clauses held in the round. Deaths by age were 37 to 49% of the dead, at a median 2,317
+to 2,572 s, and every one held a reserve (A1 to A3). The husks held 0.125 to 0.144 of the standing
+matter, and 0.73 to 0.78 of their joules settled (H1, H2, H4). M3 held in seeds 2 and 3, in lines
+grown from stomach buds whose stomach earns under 1% of their income. The rest were O1, O2, S1, X1,
+M1, M2, M4, G1 to G4, W2, W3, C2, C3, P1, EK1 to EK4, LC, F3, LK1 and V2.
+
+Five clauses failed, B1 first. It failed on the matter residual alone, +4.5e-5, -6.3e-5 and
+-1.1e-5 units at the end, while the energy audit stayed under 1e-4 J. The residual wanders both ways
+and follows no one flow in the stats, so it is a fault not yet located, and not the float door 0125
+expected. W1 failed on one trickle founder in seed 3, 1.7% under its column. EK5 failed because pool
+founders died at a median 276 to 285 s against 300. E3 failed as 0125 expected: seed 3's line 29
+held 17 pure stomachs at 3,000 s and none at the end. S3 failed in seed 3, whose 28 rigid stomach
+children died at a median 1,806 s. V1 is still open.
+
+One husk was eaten in each seed in 30,000 s, so the larder lies still and unused. Joints went out
+in seeds 1 and 3 (7 and 38 jointed at the end) and held in seed 2 (607, round 50's level). V1 waits
+for the film windows, and then come the pictures and the entry, 0126.
 
 ### How round 51 was built
 
