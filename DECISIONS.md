@@ -149,6 +149,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D127](#d127) | Round 51: links catch no light and the first link is free up to a link's size; a dead body is a husk that sinks, settles and dissolves slowly, every rule a knob; death by age keeping the reserve in the husk, if the ledger check asks for it; the pool keeps its one-part stomach; the water's reactive thrust in round 52 | 2026-09-27 | ruled by the owner in conversation after round 50's read |
 | [D128](#d128) | Death by age is a Gompertz hazard scaled by a heritable base that costs repair upkeep; the energy wear is off while it is on; a birth and a destroyed part each advance the body's ageing clock; round 51 runs the base unheritable, the round after makes it heritable | 2026-09-27 | ruled by the owner in conversation, option C of three, with two additions of their own |
 | [D129](#d129) | A founder with a mouth lands where the corpses lie, from round 52: the founders' lottery and depth read the corpses as a mouth's food | 2026-09-28 | ruled by the owner in conversation, option A of two, after the read of where round 51's founders landed |
+| [D130](#d130) | Round 52 runs D129 with the lifespan gene heritable (D128's second half); if the pair causes a problem, one of them is removed | 2026-09-28 | ruled by the owner in conversation, against the agent's recommendation of D129 alone |
 
 ---
 
@@ -6658,3 +6659,23 @@ top 12 m. They landed a median 6 m down, about 40 m over the corpses. No mouth w
 
 **Rejected.** Leaving the lottery blind to the corpses, option B: the next round would again say
 nothing about whether a body can live on them.
+
+### D130
+**Round 52 carries D129 and a heritable lifespan together** · 2026-09-28
+
+**Status:** ruled by the owner in conversation on 2026-09-28 ("lets do both. it it causes a
+problem, we'll remove one of them"), against the agent's recommendation of D129 alone.
+
+**Decision.** Round 52 runs D129's mouths at the corpses and D128's lifespan gene heritable in the
+same round. The gene is built. A birth moves it at a rate, the founders draw it from a range, and a
+longer life costs more upkeep by the repair exponent. Their values are not ruled here. D128 asks for
+a literature-review round on its sources before its numbers are fixed. The agent puts the values
+to the owner from that round and a ledger screen. If the pair causes a problem, one of the two is
+removed.
+
+**Why.** It saves a round, and D128 asked for the gene right after round 51.
+
+**Rejected.** D129 alone, the agent's recommendation. Round 52 would then have been round 51's
+world with one change, and its corpse numbers would compare directly with round 51's. A changing
+lifespan moves when bodies die and what they leave, which is the corpse supply D129 is read
+against. The pre-registration reads D129's clauses with that in mind.

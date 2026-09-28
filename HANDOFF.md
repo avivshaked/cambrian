@@ -90,8 +90,8 @@ and the entry, 0126, come next.
 
 ### Round 52 is being built
 
-The owner ruled D129 on 2026-09-28: a founder with a mouth lands where the corpses lie, in a round
-of its own, the next one. The same day they ruled that the code and the records call a dead body
+The owner ruled D129 on 2026-09-28: a founder with a mouth lands where the corpses lie, from the
+next round. Later the same day D130 put the lifespan gene, heritable, into the same round. The same day they ruled that the code and the records call a dead body
 a corpse and not a husk. Round 51's records, D127 and 0125 keep the word they were written with.
 The build is the branch `round-52` in `scratch/wt-r52`, cut from `round-51-tests` at `babb1ae`
 (which carries `round-51`), not merged. Three commits so far:
@@ -269,30 +269,18 @@ left alone.
 
 ## The decisions in front of the owner
 
-### Whether round 52 also makes lifespan heritable
+### The lifespan gene's values for round 52 (to be put)
 
-D129 is ruled for round 52, in a round of its own (the owner answered "yes for the next round" to
-"should it get its own round?"). So the water's reactive thrust, a movement change, waits for a
-later round by D127's rule that food and movement are read one round at a time. One thing is left
-open. D128 said the lifespan gene becomes heritable in the round right after round 51 (the owner:
-"it should come in right after"). It also said, the same day, that round 51's outcome decides
-whether lifespan or the thrust follows it.
-
-Heritable lifespan is built. Every body carries the gene at 1. `EVOSIM_LIFESPAN_CHANCE` (how often a
-birth moves it), `EVOSIM_LIFESPAN_MIN` and `EVOSIM_LIFESPAN_MAX` (the founders' range) and the
-repair price (`AgeRepairExponent`, the upkeep a longer life costs) turn it on. Their values would be
-screened by the ledger before a pre-registration.
-
-- D129 alone (my recommendation). Round 52 is round 51's world with one change, so its corpse
-  numbers compare directly with round 51's. Heritable lifespan follows in a later round. It costs
-  one more round before the gene moves.
-- D129 with heritable lifespan. It saves a round, a night of the machine and a day of reading. But
-  a changing lifespan changes when bodies die and what they leave. That is the corpse supply D129's
-  clauses are read against, so the two effects mix in the numbers that matter most. It is a new
-  realisation of every seed either way.
-
-The question to answer is whether round 52 runs D129 alone, or D129 with the lifespan gene
-heritable.
+The owner ruled on 2026-09-28 that round 52 runs D129 and the lifespan gene heritable together
+(D130: "lets do both. it it causes a problem, we'll remove one of them"). The gene is built and
+every body carries it at 1. Three values turn it on, and none is ruled: how often a birth moves it
+(`EVOSIM_LIFESPAN_CHANCE`), the range the founders draw it from (`EVOSIM_LIFESPAN_MIN` and
+`EVOSIM_LIFESPAN_MAX`), and the upkeep a longer life costs (`AgeRepairExponent`). D128 asks for a
+literature-review round on its sources (Gompertz, Kirkwood, Jones and others, the cost of
+reproduction) before its numbers are fixed. So the next step is that review, then a ledger screen of
+the price, and then the values go to the owner as a decision in full, with the screen's numbers.
+The price matters most: at 0 a longer life is free, and D038 rejected a free lifespan because it
+evolves to immortality.
 
 ### Ruled on 2026-09-27, after round 50's read
 
@@ -413,13 +401,21 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
     rounds 49 and 50 are done. The tests for the wound's push and a corpse on a reef cap are on
     `round-51-tests` (`2ff8f50`), and the film window's corpses there too. The water's reactive
     thrust was not built during round 51's week, and its proposal still waits for a ruling. Round
-    52 is D129's (1c), and whether heritable lifespan joins it is the first decision above.
-1c. Round 52's build (the section above, branch `round-52`). When `r52fix-s4` ends,
-    `src/Evosim.Dynamics.Tests/RunFixture.cs` is pointed at it. Dynamics, Farm and Core with its slow
-    set then run one at a time at 4 test threads. The thread-identity test runs with its output
-    shown: its log line reads under 1 ms, as round 51's did, too fast for 400 steps at three thread
-    counts. Then comes the launcher `rounds/env-r52.ps1`: round 51's, plus
-    `EVOSIM_FOUNDERS_FOLLOW_CORPSES 1`, and the lifespan dials if the owner adds them. Then a smoke,
+    52 is D129's with the lifespan gene heritable (D130, 1c).
+1c. Round 52's build (the section above, branch `round-52`), paused at the owner's request at
+    about 11:45 on 2026-09-28 while they use the machine; nothing starts until they say it is
+    free. `r52fix-s4` ended on its budget, and `RunFixture.cs` points at it (uncommitted). Round
+    51's B1 fix is written and uncommitted in the worktree: `IMatterField.DepositExact` takes a
+    double, and the burn, the grid's remineralisation and a corpse's last instalment use it.
+    `BoxPathTests` is re-pinned (the matter identity 3.2e-08 to 1.6e-08 units, the counts and the
+    snow unmoved), the thread-identity word too (`c9b0cabce249c1dd` to `6d59a448ddcefed5`, the same
+    at 1, 4 and 16 threads), and `ExactDepositTests` is new. Core's default set passed apart from
+    the two pins, and the pause stopped Dynamics partway, so Dynamics, Farm and Core with its slow
+    set run again before the commit. The thread-identity test does run: its "under 1 ms" is the
+    reporter's line, and it takes 40 s. Then comes the launcher `rounds/env-r52.ps1` (written,
+    uncommitted): round 51's, plus `EVOSIM_FOUNDERS_FOLLOW_CORPSES 1`, and the lifespan dials once
+    their values are ruled (D130). A smoke stopped at 1,180 s showed D129 cannot act before the
+    trickle starts at 3,000 s, so the smoke runs to 6,000 s. Then a smoke,
     its pictures checked against round 51's accepted clips, a checkpoint check and resume, and the
     pre-registration 0127 with the landing arithmetic above as its prediction. The theatre's rename
     is compiled in Unity at the next render the owner allows.
