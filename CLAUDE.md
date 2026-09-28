@@ -1705,6 +1705,15 @@ actually verifying it.
   the checkout the run was launched from. And **stopping a background Bash task leaves its script
   running**: the task's handle went and both of its `bash.exe` went on to launch the next farm
   process. List them by command line and stop them by id.
+- **Any work in DaVinci Resolve starts from `logbook/specs/story-resolve.md`, whatever the job.**
+  The owner finishes the films in Resolve Studio 21.1, in the project Cambrian. The spec says how
+  to connect: plain Python with external scripting set to Local, or the Resolve MCP tools in a
+  Claude session. It also says which bins the project holds, and what the API does that its
+  documentation does not say. Nothing outside the story skills pointed to it until 2026-09-28, so
+  the channel intro's bin was made that day without it. Three rules hold for every job. A bin or
+  a timeline is added beside the owner's, and theirs are never changed. An import links a file
+  where it lies and copies nothing, so a moved or missing file shows offline. And whatever a
+  session learns in Resolve goes into the spec with its date.
 - **A Blender render launched with factory settings denoises on the processor.** `--factory-startup`
   leaves OpenImageDenoise's GPU switch off, so the channel intro's 4K frames took 42 s each, 28 of
   them denoising, with the card idle between one-second bursts (2026-09-28; the owner saw the bursts

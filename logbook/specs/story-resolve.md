@@ -6,6 +6,9 @@ That means the clips, the captions, the label and the music, and later the chart
 what the Resolve API turned out to do. The film's steps up to the clips are
 [`story-film.md`](story-film.md), and this replaces only its join.*
 
+*From 2026-09-28 it also holds the project's notes on Resolve for any job. They are in the
+section before the API's list, and CLAUDE.md points here.*
+
 The assembler already decides where everything goes. `story-assemble.py --ass-only` writes the
 scenes in order with their clips and starts, and every caption and every tick of the provenance
 label with its time, and joins nothing. The Resolve builder, `scripts/story-resolve.py`, has the
@@ -109,6 +112,75 @@ A caption edited after filming reaches the film with a plan and a build: the new
 clip already in the bin, and only the SRT is new. Edits made by hand in an earlier `vK` stay in it.
 To carry a caption change into a timeline edited by hand, import the new SRT there by hand (the
 manual's chapter 59 on subtitles).
+
+## Working in the project outside the builder
+
+*Added 2026-09-28, when the channel intro was filed. Whatever a session learns in Resolve goes
+here or in the API's list below, with its date, so that the next session does not learn it
+again.*
+
+The project is Cambrian, in Resolve Studio 21.1. On 2026-09-28 its Media Pool held these bins,
+with two of the owner's own items at the top level beside them.
+
+| Bin | Holds |
+|---|---|
+| Music | the three music beds from `assets/music/` |
+| First Safari | round 47's safari film and its cut |
+| Stories | one bin per story build, named `<name> vK`, each with its footage, labels, graphics, words, narration and subtitles |
+| Channel Branding | the channel intro's master and the two channel images, from `assets/` |
+
+New work goes into a bin or a timeline of its own, added beside the owner's. Nothing of theirs
+is changed, moved or deleted. A test is named `zz probe ...` and deleted afterwards, as the
+skill says for builds.
+
+There are two ways in. The first is plain Python through Resolve's own module, as the builder
+does it, with external scripting set to Local (the setup section above). Any agent can use it.
+The second is the Resolve MCP server, in a Claude session where it is configured. Its script
+tool runs a short Python script in a sandbox, with the Resolve object and the current project
+already set. The script has no file access, and it hands back whatever it assigns to `result`.
+A script gets 10 seconds unless it asks for more, and at most 60. Call the server's what's-new
+tool first: Resolve 21 came out after the model's training, and its changelog lists the calls it
+added.
+The server's search tool reads the API's type stubs, which is quicker than the whole stub.
+
+A refusal that says the auto mode classifier gave no verdict is Claude Code's permission check
+failing. The call never reached Resolve. On 2026-09-28 it looked like Resolve was down, and the
+check had recovered by the owner's next message. Ten such refusals in a row end the agent's turn, so stop
+after two or three and come back to it.
+
+An import links the file where it lies and copies nothing. A clip's `File Path` property says
+where. A file that is moved or deleted shows as offline in the bin until it is back at the same
+path, or until the clip is relinked. The Media Pool's context menu does that by hand, and the
+API's `RelinkClips` takes the clips and a folder. A still comes into a bin one frame long, and a
+timeline places it at most five seconds long (item 5 below).
+
+This made the Channel Branding bin, and it can be run twice without making two:
+
+```python
+mp = project.GetMediaPool()
+root = mp.GetRootFolder()
+before = mp.GetCurrentFolder()        # ImportMedia imports into the current folder
+found = [f for f in root.GetSubFolderList() if f.GetName() == "Channel Branding"]
+bin_ = found[0] if found else mp.AddSubFolder(root, "Channel Branding")
+have = {c.GetName() for c in bin_.GetClipList() or []}
+todo = [p for p in paths if p.split("/")[-1] not in have]   # absolute paths, forward slashes
+mp.SetCurrentFolder(bin_)
+items = mp.ImportMedia(todo) if todo else []
+mp.SetCurrentFolder(before)           # leave the pool as the owner had it
+resolve.GetProjectManager().SaveProject()
+for c in bin_.GetClipList():          # the check that the right files went in
+    print([c.GetClipProperty(k) for k in ("File Path", "Resolution", "Duration", "FPS", "Video Codec")])
+```
+
+Two references are on this machine. Resolve installs its API's own reference with it, under
+`C:\ProgramData\Blackmagic Design\DaVinci Resolve\Support\Developer\Scripting\`. The folder
+holds a README, the type stubs, examples and a changelog.
+
+The reference manual is Blackmagic's PDF, cited above by chapter and page. It is copyrighted and
+never committed, and it can be downloaded again from Blackmagic's support site. On 2026-09-28 the
+only copy was in a worktree, at `scratch/wt-film/.claude/skills/story-resolve/assets/`. A text
+extraction sits in `scratch/resolve-manual/`, with a table of pages to chapters and a script that
+prints a range of pages. Both may be gone, since the scratch folder is cleared from time to time.
 
 ## What the Resolve API does that its documentation does not say
 
