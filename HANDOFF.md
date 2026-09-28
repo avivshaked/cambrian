@@ -70,9 +70,16 @@ grown from stomach buds whose stomach earns under 1% of their income. The rest w
 M1, M2, M4, G1 to G4, W2, W3, C2, C3, P1, EK1 to EK4, LC, F3, LK1 and V2.
 
 Five clauses failed, B1 first. It failed on the matter residual alone, +4.5e-5, -6.3e-5 and
--1.1e-5 units at the end, while the energy audit stayed under 1e-4 J. The residual wanders both ways
-and follows no one flow in the stats, so it is a fault not yet located, and not the float door 0125
-expected. W1 failed on one trickle founder in seed 3, 1.7% under its column. EK5 failed because pool
+-1.1e-5 units at the end, while the energy audit stayed under 1e-4 J. The likely cause is the float door 0125
+expected (the agent's reading of the code on 2026-09-28, not yet measured). The grid's
+remineralisation (`GridField.Remineralise`) books the joules it releases as a double and deposits
+each 5 m bucket's share in the spent field as a float, so each bucket leaves up to half an ulp a step.
+The rounding keeps its sign while a bucket's snow changes slowly, and husks lying still on the bed
+make it change slowly, so the sum drifts one way for thousands of seconds and then turns. A
+per-step instrument of the dropped remainder would confirm it; widening the field's door to double
+would close it, and would be a new realisation of every seed. The husk's last instalment drops a
+double remainder too, which D127's floor makes larger than its comment says, but it is random in
+sign and about 3e-7 units over a run. W1 failed on one trickle founder in seed 3, 1.7% under its column. EK5 failed because pool
 founders died at a median 276 to 285 s against 300. E3 failed as 0125 expected: seed 3's line 29
 held 17 pure stomachs at 3,000 s and none at the end. S3 failed in seed 3, whose 28 rigid stomach
 children died at a median 1,806 s. V1 is still open.
