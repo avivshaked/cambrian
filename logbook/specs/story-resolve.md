@@ -177,10 +177,10 @@ Two references are on this machine. Resolve installs its API's own reference wit
 holds a README, the type stubs, examples and a changelog.
 
 The reference manual is Blackmagic's PDF, cited above by chapter and page. It is copyrighted and
-never committed, and it can be downloaded again from Blackmagic's support site. On 2026-09-28 the
-only copy was in a worktree, at `scratch/wt-film/.claude/skills/story-resolve/assets/`. A text
+never committed, and it can be downloaded again from Blackmagic's support site. Its copy on this
+machine is `scratch/owner/DaVinci Resolve.pdf`, put there on 2026-09-28 from a worktree. A text
 extraction sits in `scratch/resolve-manual/`, with a table of pages to chapters and a script that
-prints a range of pages. Both may be gone, since the scratch folder is cleared from time to time.
+prints a range of pages. Git ignores both, and the commit hook refuses any PDF.
 
 ## What the Resolve API does that its documentation does not say
 
