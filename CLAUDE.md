@@ -1645,6 +1645,10 @@ actually verifying it.
   has shown since Windows 11 22H2) scales it by the clock against the 3.0 GHz base, and the
   cores were boosting to 1.6 times base (`% Processor Performance` 161). Heat and fan noise
   follow `Utility`, so a load quoted to the owner is that counter.
+  **Sixteen busy threads are not half the machine on that counter.** On 2026-09-28 two farm runs
+  (4 and 8 threads) and a test suite at 4 read 88% `Utility`, with another session's pytest
+  beside them, and the owner asked whether the agent was the load; stopping the 8-thread run took
+  it to 38%. Read the counter before adding a job, not the thread count.
 - **A worktree goes under `scratch/wt-<name>`, never under `.claude/`.** Claude Code treats
   `.claude` as a protected path: every write inside it asks the owner, and neither an allow
   rule nor bypass mode lifts that. The Agent tool's `isolation: "worktree"` and
