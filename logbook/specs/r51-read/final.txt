@@ -1,0 +1,246 @@
+runrec: 2026-09-27-212333-f9f845bd: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-09-26-225346-a2cda4b0: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-09-27-212333-f9f845bd: genomes.jsonl.gz (record format 2), 1005 genome(s) indexed
+runrec: 2026-09-27-212333-f9f845bd: snapshots from snapshots/*.jsonl.gz joined to genomes.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-09-27-232609-f9f845bd: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-09-27-015221-a2cda4b0: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-09-27-232609-f9f845bd: genomes.jsonl.gz (record format 2), 1407 genome(s) indexed
+runrec: 2026-09-27-232609-f9f845bd: snapshots from snapshots/*.jsonl.gz joined to genomes.jsonl.gz, record format 2 (run.json recordFormat 2)
+ctx  r51-s1     last_t=30000  alive=4717  births=42725  gestation_births=2583  upt_lim=0.589332  trickle_spawns=919  pool_spawns=99  founders_by_src=floor:47 pool:99 trickle:820  pool=on  build_markers=floorsWeighRigidGroups gestationModeChance senescenceWearsIntake founderEndowmentSeconds foundersFollowFoodDepth founderReserveCapFraction  manifest_status=ended  baseline=r50-s1  header_tokens=floors rigid groups; founders in their food at its depth; endowment 600 s; overhead 50 J; overhead scale x2 floor 50 J; gestation mut=0.08 share=0.5-0.5 at 0.08; minkg=0.05; invest=0.05-1; trickle 1/30 s; pool 0.1 of 4; cellType mut 0.005; ceiling 25000; founder cap 0.9 of the gate; free link 0.01 m3; husk sink 0.05 m/s settles floor 0.05; age base 3000 s doubling x0.2 birth 1 wound 1 repair ^0 lifespan 1-1 at 0
+W1   r51-s1     founders=966  checked=303  matter_at_or_over=33 of 440  mixotrophs_not_asked=0  failures=0  lacking_pair=0  at_or_over_by_group=floor/snow:1/1 pool0/snow:28/28 pool1/snow:23/23 pool2/snow:19/19 pool3/snow:29/29 trickle/snow:203/203  failures_listed=  depth_rule=on  note=  held=True
+W2   r51-s1     pool_founders=99  read=99  median_first_over_fsnow=0.174009  band=0.02 to 0.3  median_lag_s=5.5  ratio_by_pool_index=0:0.21129(n 28) 1:0.0965718(n 23) 2:0.193776(n 19) 3:0.241965(n 29)  lag_by_pool_index=0:4(n 28) 1:7(n 23) 2:6(n 19) 3:5(n 29)  held=True
+W3   r51-s1     pool_founders=99  median_fsnow_over_fcol=2.16119  by_pool_index=0:2.43846(n 28) 1:2.35023(n 23) 2:1.83507(n 19) 3:2.07572(n 29)  median_fsnow=0.741496  median_fcol=0.351635  held=True
+G1   r51-s1     at=30000  short=False  gestation_births=2583  births=42725  gestated_J=344993  held_in_accounts_J=15696  gm1_child_rows=5625  held=True
+G2   r51-s1     early_window=3000 to 8000 s  late_window=25000 to 30000 s  early_share=0.153606  early_children=2884  late_share=0.120888  late_children=13740  early_share_all_rows=0.144961  late_share_all_rows=0.119479  gestation_births_per_death=0.418292  lump_births_per_death=1.15536  gestation_births=622  gestation_deaths=1487  lump_births=13118  lump_deaths=11354  held=True
+G3   r51-s1     at=30000  short=False  banked_J=344993  died_holding_J=165391  gestating_deaths=5000  died_holding=4738  median_held_J=26.5762  share_of_banked=0.479404  living_hold_J=15696  held=True
+G4   r51-s1     at=30000  short=False  banked_J=344993  living_hold_J=15696  died_holding_J=165391  gestation_births=2583  price_per_birth_J=63.4557  note=derived: banked less held by the living less held at death, over the births paid from an account  held=True
+C1   r51-s1     touch_share_to_5000=0.000666372  senses_at_5000=snapshot 5000 s, 1005 living: contact 0.026, damage 0.039, either 0.065  touch_share_to_15000=0.00023298  senses_at_15000=snapshot 15000 s, 1835 living: contact 0.053, damage 0.030, either 0.083  touch_share_to_30000=0.00164365  senses_at_30000=snapshot 30000 s, 4717 living: contact 0.007, damage 0.011, either 0.018  note=touch: overlapBodies over harnessBodySteps in the 500 s before each second; a sense is read when a neuron has a Sensor input on the channel  held=reading
+C2   r51-s1     err_log=D:\Projects\experiments\evolution-simulator\scratch\wt-r51\scratch\logs\r51-s1.err  waits=0  first_wait=  cadence_s=100  checkpoints_manifest=300  expected=300  checkpoints_on_disk=300  parts_killed=0  module_rebuilds=154  held=True
+C3   r51-s1     deaths=38974  starved_solvent=0  by_cause=aged: 19155 dead, 19155 solvent, median res 43.9281 J; starved: 19819 dead, 0 solvent, median res  J  held=True
+B1   r51-s1     audit_absmax_J=8.84284e-05  matter_resid_at=30000  matter_resid=4.48432e-05  short=False  diverged=0  diverged_dump_files=0  manifest_status=ended  manifest_reason=budget  ends_on_budget=True  censored=False  provisional=False  held=False
+V1   r51-s1     held=absent  note=no --windows-root given
+V2   r51-s1     log=D:/Projects/experiments/evolution-simulator/scratch/logs/r51-v2.log  verify_checkpoint_exit=0  compare_det_exit=0  held=True
+V3   r51-s1     bytes=3454701459  gb=3.4547  at=30000  short=False  held=reading  as_bar=False
+M1   r51-s1     bud_rows=284  children=42725  per_child=0.00664716  by_cell=absorptive:62 buoyancy:42 consumer:44 link:39 neural:48 photosynthetic:4 structural:46  first_at=334.5  held=True
+M2   r51-s1     bud_rows=284  expressed=284  share=1  budx=1:283 2:1  stillbirths=2456  self_overlap_stillbirths=2456  held=True
+M3   r51-s1     absorptive_bud_rows=62  bud_roots=62  roots_with_living=13  living=4715  living_from=positions row at 30000 s  short=False  best_root=37715  best_root_born=27834.5  best_living=8  best_stomachs=0  best_mixotrophs=8  held=False
+M4   r51-s1     held=absent  note=no M3 clade (ten or more living in a line rooted in a stomach bud on a leaf)
+O1   r51-s1     at=30000  short=False  alive=4717  bar=2,000 to 16,000  base=r50-s1  base_at=30000  base_value=6132  held=True
+O2   r51-s1     max_alive=4924  max_at=27600  ceiling=25000  manifest_reason=budget  samples=3000  held=True
+O3   r51-s1     at=30000  short=False  jointed=7  bar=under 100  base=r50-s1  base_at=30000  base_value=9  held=reading  as_bar=True
+S1   r51-s1     at=30000  short=False  mean_age_s=1189.98  base=r50-s1  base_at=30000  base_mean_age_s=2222.57  bar=below the baseline's at the same second  held=True
+F3   r51-s1     at=30000  short=False  living=4715  rooted_in_pool=0  pool_lines_living=0  largest_line=0  largest_root=  largest_root_pool_index=  largest_root_capcut=  largest_root_fsnow=  held=True
+E1   r51-s1     founders=966  endowed=957  endow_median_J=67.1412  endow_min_J=0.230955  endow_max_J=1014.56  endow_by_group=floor:76.386(n 47) pool0:53.9382(n 28) pool1:173.208(n 23) pool2:61.4685(n 19) pool3:107.809(n 29) trickle:66.7145(n 811)  age_at_death_by_group=floor:872(n 47) pool0:337.25(n 28) pool1:290.5(n 23) pool2:210.5(n 19) pool3:252.5(n 29) trickle:185.25(n 812)  bred_by_group=floor:25/47 pool0:1/28 pool1:0/23 pool2:0/19 pool3:0/29 trickle:25/820  held=reading
+R1a  r51-s1     table_columns=5519  open_columns=3159  dumps=201  dumps_held_J_m3=51  dumps_held_J_m2=68  min_ratio_J_m3=0.542288  last_at=30000  table_J_m3=0.415928  open_J_m3=0.386606  table_J_m2=17.5642  open_J_m2=13.3238  note=a table column's sum is the snow on the table plus the room under the cap down to the floor; no record isolates the table's top. J/m3 is over the column's water (rock out), J/m2 over its area; held on J/m3  held=reading  as_r47=False  base_table_J_m3=0.4536  base_open_J_m3=0.387933  base_min_ratio_J_m3=0.501613  base_dumps_held_J_m3=58  base_last_at=30000  base_dumps=201  base_as_r47=False  baseline=r50-s1
+R1b  r51-s1     band=each cap's underside down 10 m (undersides -4.01 to -5.95 m)  volume_under_m3=51104.2  volume_beside_m3=82413.3  samples=41  samples_fewer_under=41  ties=0  last_at=30000  under=395  beside=1102  under_per_m3=0.00772931  beside_per_m3=0.0133716  mean_under_per_m3=0.00316427  mean_beside_per_m3=0.00770093  held=reading  as_r47=True  base_last_at=30000  base_under_per_m3=0.00945129  base_beside_per_m3=0.0185771  base_mean_under_per_m3=0.00442377  base_mean_beside_per_m3=0.0119244  base_samples_fewer_under=41  base_samples=41  base_as_r47=True  baseline=r50-s1
+P1   r51-s1     pace_x_real=4.09371  source=run.json timesRealTime  manifest_status=ended  censored=False  last_window_pace_x_real=1.90185  held=True
+EK1  r51-s1     founders=966  child_within_1s=0  within_1s_by_group=  child_within_10s=0  within_10s_by_group=  listed=  held=True
+EK2  r51-s1     at=30000  short=False  founders_capped=126  capcut_rows=126  joules_capped=8702.84  capcut_sum=8702.84  one_part_stomachs=28  one_part_outside_band=0  one_part_capcut_range=17.755 to 17.755  outside_listed=  held=True
+EK3  r51-s1     one_part_stomachs=28  dead=28  still_alive=0  median_age_at_death_s=337.25  held=True
+EK4  r51-s1     one_part_stomachs=28  bred=1  share_bred=0.0357143  median_first_child_lag_s=81  held=pooled
+EK5  r51-s1     pool_founders=99  dead=99  median_age_at_death_s=282.5  by_pool_index=pool0:337.25(n 28) pool1:290.5(n 23) pool2:210.5(n 19) pool3:252.5(n 29)  capcut_by_pool_index=pool0:17.7551(n 28)  held=False
+EK6  r51-s1     bred=1  not_bred=98  median_fsnow_bred=3.91048  median_fsnow_not_bred=0.740984  held=pooled
+EK7  r51-s1     founders=966  capped_by_group=floor:4/47 pool0:28/28 pool1:0/23 pool2:0/19 pool3:0/29 trickle:94/820  capcut_by_group=floor:24.2724(n 4) pool0:17.7551(n 28) trickle:63.3001(n 94)  endow_by_group=floor:76.386(n 47) pool0:53.9382(n 28) pool1:173.208(n 23) pool2:61.4685(n 19) pool3:107.809(n 29) trickle:66.7145(n 811)  held=reading
+S2   r51-s1     stomach_children=1  dead=1  still_alive=0  median_age_at_death_s=337  quartiles=337 to 337  held=absent  note=fewer than 10 dead stomach children: the clause does not ask this seed
+X1   r51-s1     at=30000  short=False  det_cv=0.499273  bar=0.4 to 1.0  base=r50-s1  base_at=30000  base_value=0.723895  held=True
+L1   r51-s1     income_rule=True  trickle_leaves=415  placed=373  median_first_y=-5.5  below_20m=1  floor_leaves=25  floor_median_first_y=-0.89  bar=above -12 m  held=reading  as_bar=True
+L2   r51-s1     trickle_leaves=415  dead=408  median_age_at_death_s=442  floor_dead=25  floor_median_age_at_death_s=1957.5  bar=above 300 s  held=reading  as_bar=True
+L3   r51-s1     trickle_leaves=415  bred=25  share=0.060241  floor_leaves=25  floor_bred=25  held=reading  as_bar=pooled
+L4   r51-s1     living=4715  living_from=positions row at 30000 s  trickle_lines_living=8  with_ten=0  largest=39590: 1 living, a leaf with a joint landed at 28489.5 s; 41428: 1 living, a leaf with a joint landed at 29196 s; 42609: 1 living, a stomach with a joint landed at 29599 s  held=reading  as_bar=reading
+LC   r51-s1     header_token=True  centre_bed=-45.0151  matter_founders_over_deeper_bed=320  within_1m_above_centre=0  bar=token present, under 5 held  held=True
+O4   r51-s1     line=39  line_founder=leaf  line_landed_s=15.5  living_then=1724  living_now=4709  jointed_share_then=0  jointed_share_now=0  held=absent  note=the line was under 0.2 jointed at 16000 s: the clause does not ask this seed
+S3   r51-s1     rigid_stomach_children=1  dead=1  still_alive=0  median_age_at_death_s=337  held=absent  note=fewer than 10 dead rigid stomach children: the clause does not ask this seed
+E2   r51-s1     lines=0  listed=  held=reading
+A1   r51-s1     at=30000  short=False  deaths=38974  aged=19155  share=0.491482  base_config=3000  bar=at least 0.2  held=True
+A2   r51-s1     aged=19155  median_age_s=2317  quartiles=1648.5 to 2947.5  bar=1500 to 3500 s  held=True
+A3   r51-s1     at=30000  short=False  stats_deaths_by_age=19155  aged_rows=19155  aged_without_reserve=0  listed=  median_res_J=43.9281  res_quartiles=24.3427 to 73.5529  held=True
+A4   r51-s1     aged_age_by_children=0:2131(n 6484) 1-2:2352(n 7759) 3+:2418.75(n 4912)  age_by_cause=aged:2317(n 19155) starved:672(n 19819)  aged_share_bred=0.661498  aged_mean_children=1.69757  held=reading
+H1   r51-s1     at=30000  short=False  husks=17866  husk_units=2256.68  standing_units=16638.7  living_units=2032.96  snow_units=3455.49  share=0.135628  bar=at least 0.1 of the standing matter  held=True
+H2   r51-s1     at=30000  short=False  husks=17866  settled=15971  husk_J=225668  settled_J=172471  share=0.764271  bar=at least 0.25 of the husks' joules  held=True
+H3   r51-s1     at=30000  short=False  settled=15971  on_reef=713  settled_J=172471  on_reef_J=12550.8  reef_share_J=0.0727705  reef_cover=0.25  held=reading
+H4   r51-s1     at=30000  short=False  husks=17866  deaths_last_7000=16389  deaths_last_9000=19743  corpses_eaten=1  held=True
+H5   r51-s1     at=30000  short=False  corpses_eaten=1  units_eaten=1.13767  bodies_eaten=0  corpses_from_kills=0  parts_killed=0  held=reading
+E3   r51-s1     living=4715  living_from=positions row at 30000 s  pure_stomachs_living=1  lines_with_one=1  best=1  listed=42609: 1 pure stomachs of 1 living, a stomach with a joint from trickle at 29599 s  bar=a line with 10 living pure stomachs  held=False
+LK1  r51-s1     samples=3000  last_shared=30000  mean_jointed=136.65  base=r50-s1  base_mean_jointed=408.009  bar=below the baseline's mean  held=True
+LK2  r51-s1     jointed_share_of_children=0-5:0.290(n 5186) 5-10:0.140(n 3311) 10-15:0.047(n 4840) 15-20:0.008(n 6183) 20-25:0.001(n 9465) 25-30:0.000(n 13738) 30-35:0.000(n 2)  jointed_inherited=0  base=r50-s1  base_at=30000  base_jointed_inherited=0  held=reading
+
+ctx  r51-s2     last_t=30000  alive=3918  births=55654  gestation_births=3458  upt_lim=0.652513  trickle_spawns=917  pool_spawns=78  founders_by_src=floor:42 pool:78 trickle:839  pool=on  build_markers=floorsWeighRigidGroups gestationModeChance senescenceWearsIntake founderEndowmentSeconds foundersFollowFoodDepth founderReserveCapFraction  manifest_status=ended  baseline=r50-s2  header_tokens=floors rigid groups; founders in their food at its depth; endowment 600 s; overhead 50 J; overhead scale x2 floor 50 J; gestation mut=0.08 share=0.5-0.5 at 0.08; minkg=0.05; invest=0.05-1; trickle 1/30 s; pool 0.1 of 4; cellType mut 0.005; ceiling 25000; founder cap 0.9 of the gate; free link 0.01 m3; husk sink 0.05 m/s settles floor 0.05; age base 3000 s doubling x0.2 birth 1 wound 1 repair ^0 lifespan 1-1 at 0
+W1   r51-s2     founders=959  checked=301  matter_at_or_over=31 of 442  mixotrophs_not_asked=0  failures=0  lacking_pair=0  at_or_over_by_group=pool0/snow:17/17 pool1/snow:24/24 pool2/snow:20/20 pool3/snow:17/17 trickle/snow:223/223  failures_listed=  depth_rule=on  note=  held=True
+W2   r51-s2     pool_founders=78  read=78  median_first_over_fsnow=0.151946  band=0.02 to 0.3  median_lag_s=5.5  ratio_by_pool_index=0:0.175902(n 17) 1:0.11439(n 24) 2:0.15513(n 20) 3:0.150893(n 17)  lag_by_pool_index=0:5.5(n 17) 1:5(n 24) 2:5.25(n 20) 3:5.5(n 17)  held=True
+W3   r51-s2     pool_founders=78  median_fsnow_over_fcol=2.27362  by_pool_index=0:1.9718(n 17) 1:2.38413(n 24) 2:1.99126(n 20) 3:2.51293(n 17)  median_fsnow=0.754346  median_fcol=0.330524  held=True
+G1   r51-s2     at=30000  short=False  gestation_births=3458  births=55654  gestated_J=379803  held_in_accounts_J=9131.83  gm1_child_rows=7228  held=True
+G2   r51-s2     early_window=3000 to 8000 s  late_window=25000 to 30000 s  early_share=0.170646  early_children=5110  late_share=0.104339  late_children=12354  early_share_all_rows=0.165371  late_share_all_rows=0.102955  gestation_births_per_death=0.346154  lump_births_per_death=1.08725  gestation_births=441  gestation_deaths=1274  lump_births=11913  lump_deaths=10957  held=True
+G3   r51-s2     at=30000  short=False  banked_J=379803  died_holding_J=163667  gestating_deaths=6836  died_holding=6506  median_held_J=19.8291  share_of_banked=0.430925  living_hold_J=9131.83  held=True
+G4   r51-s2     at=30000  short=False  banked_J=379803  living_hold_J=9131.83  died_holding_J=163667  gestation_births=3458  price_per_birth_J=59.8624  note=derived: banked less held by the living less held at death, over the births paid from an account  held=True
+C1   r51-s2     touch_share_to_5000=0.00122384  senses_at_5000=snapshot 5000 s, 1407 living: contact 0.026, damage 0.060, either 0.087  touch_share_to_15000=0.000992017  senses_at_15000=snapshot 15000 s, 2298 living: contact 0.049, damage 0.019, either 0.068  touch_share_to_30000=0.0024582  senses_at_30000=snapshot 30000 s, 3918 living: contact 0.051, damage 0.034, either 0.085  note=touch: overlapBodies over harnessBodySteps in the 500 s before each second; a sense is read when a neuron has a Sensor input on the channel  held=reading
+C2   r51-s2     err_log=D:\Projects\experiments\evolution-simulator\scratch\wt-r51\scratch\logs\r51-s2.err  waits=0  first_wait=  cadence_s=100  checkpoints_manifest=300  expected=300  checkpoints_on_disk=300  parts_killed=0  module_rebuilds=68  held=True
+C3   r51-s2     deaths=52695  starved_solvent=0  by_cause=aged: 19726 dead, 19726 solvent, median res 43.8418 J; starved: 32969 dead, 0 solvent, median res  J  held=True
+B1   r51-s2     audit_absmax_J=6.70024e-05  matter_resid_at=30000  matter_resid=-6.34977e-05  short=False  diverged=0  diverged_dump_files=0  manifest_status=ended  manifest_reason=budget  ends_on_budget=True  censored=False  provisional=False  held=False
+runrec: 2026-09-28-012745-f9f845bd: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-09-27-054908-a2cda4b0: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-09-28-012745-f9f845bd: genomes.jsonl.gz (record format 2), 1131 genome(s) indexed
+runrec: 2026-09-28-012745-f9f845bd: snapshots from snapshots/*.jsonl.gz joined to genomes.jsonl.gz, record format 2 (run.json recordFormat 2)
+V1   r51-s2     held=absent  note=no --windows-root given
+V2   r51-s2     held=absent  note=asked of seed 1 alone
+V3   r51-s2     bytes=3740452332  gb=3.74045  at=30000  short=False  held=reading  as_bar=False
+M1   r51-s2     bud_rows=572  children=55654  per_child=0.0102778  by_cell=absorptive:94 buoyancy:85 consumer:97 link:52 neural:100 photosynthetic:46 structural:101  first_at=302  held=True
+M2   r51-s2     bud_rows=572  expressed=555  share=0.97028  budx=0:17 1:552 2:3  stillbirths=1175  self_overlap_stillbirths=1175  held=True
+M3   r51-s2     absorptive_bud_rows=94  bud_roots=91  roots_with_living=10  living=3917  living_from=positions row at 30000 s  short=False  best_root=29827  best_root_born=19099.5  best_living=144  best_stomachs=0  best_mixotrophs=76  held=True
+M4   r51-s2     absorptive_sample_at=30000  clades=1  by_clade=29827: 144 living, 76 with a stomach logged, median share 0.006865  held=True
+O1   r51-s2     at=30000  short=False  alive=3918  bar=2,000 to 16,000  base=r50-s2  base_at=30000  base_value=9824  held=True
+O2   r51-s2     max_alive=3958  max_at=27140  ceiling=25000  manifest_reason=budget  samples=3000  held=True
+O3   r51-s2     at=30000  short=False  jointed=607  bar=under 100  base=r50-s2  base_at=30000  base_value=697  held=reading  as_bar=False
+S1   r51-s2     at=30000  short=False  mean_age_s=1270.33  base=r50-s2  base_at=30000  base_mean_age_s=2179.12  bar=below the baseline's at the same second  held=True
+F3   r51-s2     at=30000  short=False  living=3917  rooted_in_pool=1  pool_lines_living=1  largest_line=1  largest_root=56130  largest_root_pool_index=3  largest_root_capcut=  largest_root_fsnow=0.978213  held=True
+E1   r51-s2     founders=959  endowed=950  endow_median_J=65.5308  endow_min_J=1.71298  endow_max_J=1181.12  endow_by_group=floor:57.993(n 42) pool0:53.9382(n 17) pool1:173.208(n 24) pool2:61.4685(n 20) pool3:107.809(n 17) trickle:65.5308(n 830)  age_at_death_by_group=floor:943.25(n 42) pool0:320.5(n 17) pool1:286.5(n 24) pool2:199.75(n 20) pool3:258.25(n 16) trickle:192(n 829)  bred_by_group=floor:24/42 pool0:0/17 pool1:0/24 pool2:0/20 pool3:0/17 trickle:14/839  held=reading
+R1a  r51-s2     table_columns=5479  open_columns=1089  dumps=201  dumps_held_J_m3=188  dumps_held_J_m2=95  min_ratio_J_m3=0.932865  last_at=30000  table_J_m3=0.493935  open_J_m3=0.513281  table_J_m2=15.587  open_J_m2=20.1101  note=a table column's sum is the snow on the table plus the room under the cap down to the floor; no record isolates the table's top. J/m3 is over the column's water (rock out), J/m2 over its area; held on J/m3  held=reading  as_r47=False  base_table_J_m3=0.58434  base_open_J_m3=0.495778  base_min_ratio_J_m3=0.846946  base_dumps_held_J_m3=194  base_last_at=30000  base_dumps=201  base_as_r47=False  baseline=r50-s2
+R1b  r51-s2     band=each cap's underside down 10 m (undersides -4.08 to -5.93 m)  volume_under_m3=50316.4  volume_beside_m3=95578.8  samples=41  samples_fewer_under=41  ties=0  last_at=30000  under=229  beside=1052  under_per_m3=0.0045512  beside_per_m3=0.0110066  mean_under_per_m3=0.00338105  mean_beside_per_m3=0.00813146  held=reading  as_r47=True  base_last_at=30000  base_under_per_m3=0.0111097  base_beside_per_m3=0.0284059  base_mean_under_per_m3=0.00707669  base_mean_beside_per_m3=0.0167281  base_samples_fewer_under=41  base_samples=41  base_as_r47=True  baseline=r50-s2
+P1   r51-s2     pace_x_real=4.11992  source=run.json timesRealTime  manifest_status=ended  censored=False  last_window_pace_x_real=3.69991  held=True
+EK1  r51-s2     founders=959  child_within_1s=0  within_1s_by_group=  child_within_10s=0  within_10s_by_group=  listed=  held=True
+EK2  r51-s2     at=30000  short=False  founders_capped=119  capcut_rows=119  joules_capped=8318.67  capcut_sum=8318.67  one_part_stomachs=17  one_part_outside_band=0  one_part_capcut_range=17.755 to 17.755  outside_listed=  held=True
+EK3  r51-s2     one_part_stomachs=17  dead=17  still_alive=0  median_age_at_death_s=320.5  held=True
+EK4  r51-s2     one_part_stomachs=17  bred=0  share_bred=0  median_first_child_lag_s=  held=pooled
+EK5  r51-s2     pool_founders=78  dead=77  median_age_at_death_s=276  by_pool_index=pool0:320.5(n 17) pool1:286.5(n 24) pool2:199.75(n 20) pool3:258.25(n 16)  capcut_by_pool_index=pool0:17.7551(n 17)  held=False
+EK6  r51-s2     bred=0  not_bred=78  median_fsnow_bred=  median_fsnow_not_bred=0.754346  held=pooled
+EK7  r51-s2     founders=959  capped_by_group=floor:3/42 pool0:17/17 pool1:0/24 pool2:0/20 pool3:0/17 trickle:99/839  capcut_by_group=floor:60.1964(n 3) pool0:17.7551(n 17) trickle:71.6052(n 99)  endow_by_group=floor:57.993(n 42) pool0:53.9382(n 17) pool1:173.208(n 24) pool2:61.4685(n 20) pool3:107.809(n 17) trickle:65.5308(n 830)  held=reading
+S2   r51-s2     stomach_children=7  dead=7  still_alive=0  median_age_at_death_s=1201.5  quartiles=360 to 3457  held=absent  note=fewer than 10 dead stomach children: the clause does not ask this seed
+X1   r51-s2     at=30000  short=False  det_cv=0.587564  bar=0.4 to 1.0  base=r50-s2  base_at=30000  base_value=0.693414  held=True
+L1   r51-s2     income_rule=True  trickle_leaves=416  placed=376  median_first_y=-5.6  below_20m=0  floor_leaves=26  floor_median_first_y=-0.82  bar=above -12 m  held=reading  as_bar=True
+L2   r51-s2     trickle_leaves=416  dead=412  median_age_at_death_s=418.5  floor_dead=26  floor_median_age_at_death_s=1334  bar=above 300 s  held=reading  as_bar=True
+L3   r51-s2     trickle_leaves=416  bred=11  share=0.0264423  floor_leaves=26  floor_bred=24  held=reading  as_bar=pooled
+L4   r51-s2     living=3917  living_from=positions row at 30000 s  trickle_lines_living=10  with_ten=0  largest=52463: 1 living, a leaf with a joint landed at 28335.5 s; 53430: 1 living, a leaf landed at 28741.5 s; 55717: 1 living, a stomach landed at 29653.5 s  held=reading  as_bar=reading
+LC   r51-s2     header_token=True  centre_bed=-45.0444  matter_founders_over_deeper_bed=311  within_1m_above_centre=0  bar=token present, under 5 held  held=True
+O4   r51-s2     line=37  line_founder=leaf with a joint  line_landed_s=11  living_then=2429  living_now=3907  jointed_share_then=0.164677  jointed_share_now=0.153826  held=absent  note=the line was under 0.2 jointed at 16000 s: the clause does not ask this seed
+S3   r51-s2     rigid_stomach_children=4  dead=4  still_alive=0  median_age_at_death_s=655.25  held=absent  note=fewer than 10 dead rigid stomach children: the clause does not ask this seed
+E2   r51-s2     lines=0  listed=  held=reading
+A1   r51-s2     at=30000  short=False  deaths=52695  aged=19726  share=0.374343  base_config=3000  bar=at least 0.2  held=True
+A2   r51-s2     aged=19726  median_age_s=2508.5  quartiles=1739.5 to 3143.5  bar=1500 to 3500 s  held=True
+A3   r51-s2     at=30000  short=False  stats_deaths_by_age=19726  aged_rows=19726  aged_without_reserve=0  listed=  median_res_J=43.8418  res_quartiles=26.5277 to 62.7142  held=True
+A4   r51-s2     aged_age_by_children=0:1943(n 6063) 1-2:2564(n 7555) 3+:2757.25(n 6108)  age_by_cause=aged:2508.5(n 19726) starved:444(n 32969)  aged_share_bred=0.692639  aged_mean_children=1.92533  held=reading
+H1   r51-s2     at=30000  short=False  husks=19200  husk_units=2090.82  standing_units=16669  living_units=1993.02  snow_units=3578.41  share=0.125432  bar=at least 0.1 of the standing matter  held=True
+H2   r51-s2     at=30000  short=False  husks=19200  settled=17763  husk_J=209082  settled_J=163687  share=0.782886  bar=at least 0.25 of the husks' joules  held=True
+H3   r51-s2     at=30000  short=False  settled=17763  on_reef=1081  settled_J=163687  on_reef_J=17372.1  reef_share_J=0.10613  reef_cover=0.25  held=reading
+H4   r51-s2     at=30000  short=False  husks=19200  deaths_last_7000=17362  deaths_last_9000=21913  corpses_eaten=1  held=True
+H5   r51-s2     at=30000  short=False  corpses_eaten=1  units_eaten=0.519123  bodies_eaten=0  corpses_from_kills=0  parts_killed=0  held=reading
+E3   r51-s2     living=3917  living_from=positions row at 30000 s  pure_stomachs_living=3  lines_with_one=3  best=1  listed=55717: 1 pure stomachs of 1 living, a stomach from trickle at 29653.5 s; 56130: 1 pure stomachs of 1 living, a stomach with a joint from pool at 29815 s; 56447: 1 pure stomachs of 1 living, a stomach with a joint from trickle at 29934 s  bar=a line with 10 living pure stomachs  held=False
+LK1  r51-s2     samples=3000  last_shared=30000  mean_jointed=546.46  base=r50-s2  base_mean_jointed=1624.79  bar=below the baseline's mean  held=True
+LK2  r51-s2     jointed_share_of_children=0-5:0.413(n 8676) 5-10:0.211(n 5390) 10-15:0.143(n 8056) 15-20:0.145(n 8830) 20-25:0.203(n 12348) 25-30:0.171(n 12353) 30-35:0.000(n 1)  jointed_inherited=514  base=r50-s2  base_at=30000  base_jointed_inherited=513  held=reading
+
+ctx  r51-s3     last_t=30000  alive=5648  births=67855  gestation_births=3716  upt_lim=0.586685  trickle_spawns=901  pool_spawns=84  founders_by_src=floor:46 pool:84 trickle:817  pool=on  build_markers=floorsWeighRigidGroups gestationModeChance senescenceWearsIntake founderEndowmentSeconds foundersFollowFoodDepth founderReserveCapFraction  manifest_status=ended  baseline=r50-s3  header_tokens=floors rigid groups; founders in their food at its depth; endowment 600 s; overhead 50 J; overhead scale x2 floor 50 J; gestation mut=0.08 share=0.5-0.5 at 0.08; minkg=0.05; invest=0.05-1; trickle 1/30 s; pool 0.1 of 4; cellType mut 0.005; ceiling 25000; founder cap 0.9 of the gate; free link 0.01 m3; husk sink 0.05 m/s settles floor 0.05; age base 3000 s doubling x0.2 birth 1 wound 1 repair ^0 lifespan 1-1 at 0
+W1   r51-s3     founders=947  checked=276  matter_at_or_over=41 of 448  mixotrophs_not_asked=0  failures=1  lacking_pair=0  at_or_over_by_group=floor/snow:2/2 pool0/snow:18/18 pool1/snow:28/28 pool2/snow:22/22 pool3/snow:16/16 trickle/snow:189/190  failures_listed=12206 snow 0.322861 against 0.328587, no positions row  depth_rule=on  note=  held=False
+W2   r51-s3     pool_founders=84  read=84  median_first_over_fsnow=0.161762  band=0.02 to 0.3  median_lag_s=6  ratio_by_pool_index=0:0.180865(n 18) 1:0.0988344(n 28) 2:0.17286(n 22) 3:0.214493(n 16)  lag_by_pool_index=0:5.75(n 18) 1:6.5(n 28) 2:5.75(n 22) 3:7(n 16)  held=True
+W3   r51-s3     pool_founders=84  median_fsnow_over_fcol=2.10158  by_pool_index=0:2.22592(n 18) 1:2.00799(n 28) 2:2.09482(n 22) 3:2.30294(n 16)  median_fsnow=0.831337  median_fcol=0.39308  held=True
+G1   r51-s3     at=30000  short=False  gestation_births=3716  births=67855  gestated_J=428845  held_in_accounts_J=13575.6  gm1_child_rows=8494  held=True
+G2   r51-s3     early_window=3000 to 8000 s  late_window=25000 to 30000 s  early_share=0.132244  early_children=5384  late_share=0.120115  late_children=16759  early_share_all_rows=0.128242  late_share_all_rows=0.118979  gestation_births_per_death=0.416495  lump_births_per_death=1.11048  gestation_births=808  gestation_deaths=1940  lump_births=15951  lump_deaths=14364  held=True
+G3   r51-s3     at=30000  short=False  banked_J=428845  died_holding_J=195803  gestating_deaths=7930  died_holding=7224  median_held_J=19.2892  share_of_banked=0.456582  living_hold_J=13575.6  held=True
+G4   r51-s3     at=30000  short=False  banked_J=428845  living_hold_J=13575.6  died_holding_J=195803  gestation_births=3716  price_per_birth_J=59.0599  note=derived: banked less held by the living less held at death, over the births paid from an account  held=True
+C1   r51-s3     touch_share_to_5000=0.000328056  senses_at_5000=snapshot 5000 s, 1131 living: contact 0.014, damage 0.088, either 0.097  touch_share_to_15000=0.00143669  senses_at_15000=snapshot 15000 s, 2697 living: contact 0.036, damage 0.045, either 0.079  touch_share_to_30000=0.00564318  senses_at_30000=snapshot 30000 s, 5648 living: contact 0.037, damage 0.052, either 0.088  note=touch: overlapBodies over harnessBodySteps in the 500 s before each second; a sense is read when a neuron has a Sensor input on the channel  held=reading
+C2   r51-s3     err_log=D:\Projects\experiments\evolution-simulator\scratch\wt-r51\scratch\logs\r51-s3.err  waits=0  first_wait=  cadence_s=100  checkpoints_manifest=300  expected=300  checkpoints_on_disk=300  parts_killed=0  module_rebuilds=434  held=True
+C3   r51-s3     deaths=63154  starved_solvent=0  by_cause=aged: 25801 dead, 25801 solvent, median res 40.8634 J; starved: 37353 dead, 0 solvent, median res  J  held=True
+B1   r51-s3     audit_absmax_J=0.000105638  matter_resid_at=30000  matter_resid=-1.09134e-05  short=False  diverged=0  diverged_dump_files=0  manifest_status=ended  manifest_reason=budget  ends_on_budget=True  censored=False  provisional=False  held=False
+V1   r51-s3     held=absent  note=no --windows-root given
+V2   r51-s3     held=absent  note=asked of seed 1 alone
+V3   r51-s3     bytes=4524314613  gb=4.52431  at=30000  short=False  held=reading  as_bar=False
+M1   r51-s3     bud_rows=1237  children=67855  per_child=0.01823  by_cell=absorptive:220 buoyancy:156 consumer:215 link:120 neural:198 photosynthetic:128 structural:208  first_at=187.5  held=True
+M2   r51-s3     bud_rows=1237  expressed=1132  share=0.915117  budx=0:105 1:1126 2:6  stillbirths=5675  self_overlap_stillbirths=5675  held=True
+M3   r51-s3     absorptive_bud_rows=219  bud_roots=196  roots_with_living=30  living=5642  living_from=positions row at 30000 s  short=False  best_root=33555  best_root_born=19411.5  best_living=143  best_stomachs=0  best_mixotrophs=49  held=True
+M4   r51-s3     absorptive_sample_at=30000  clades=3  by_clade=33555: 143 living, 51 with a stomach logged, median share 0.00753814; 51238: 15 living, 12 with a stomach logged, median share 0.00451854; 47412: 12 living, 9 with a stomach logged, median share 0.0031206  held=True
+O1   r51-s3     at=30000  short=False  alive=5648  bar=2,000 to 16,000  base=r50-s3  base_at=30000  base_value=9917  held=True
+O2   r51-s3     max_alive=5701  max_at=29710  ceiling=25000  manifest_reason=budget  samples=3000  held=True
+O3   r51-s3     at=30000  short=False  jointed=38  bar=under 100  base=r50-s3  base_at=30000  base_value=150  held=reading  as_bar=True
+S1   r51-s3     at=30000  short=False  mean_age_s=1330.51  base=r50-s3  base_at=30000  base_mean_age_s=2117.1  bar=below the baseline's at the same second  held=True
+F3   r51-s3     at=30000  short=False  living=5642  rooted_in_pool=0  pool_lines_living=0  largest_line=0  largest_root=  largest_root_pool_index=  largest_root_capcut=  largest_root_fsnow=  held=True
+E1   r51-s3     founders=947  endowed=941  endow_median_J=69.8847  endow_min_J=2.01997  endow_max_J=859.444  endow_by_group=floor:64.7667(n 46) pool0:53.9382(n 18) pool1:173.208(n 28) pool2:61.4685(n 22) pool3:107.809(n 16) trickle:70.084(n 811)  age_at_death_by_group=floor:951.5(n 46) pool0:370(n 18) pool1:286(n 28) pool2:216.75(n 22) pool3:264.25(n 16) trickle:172(n 808)  bred_by_group=floor:28/46 pool0:0/18 pool1:0/28 pool2:0/22 pool3:0/16 trickle:8/817  held=reading
+R1a  r51-s3     table_columns=5602  open_columns=2951  dumps=201  dumps_held_J_m3=201  dumps_held_J_m2=68  min_ratio_J_m3=1.18085  last_at=30000  table_J_m3=0.516417  open_J_m3=0.433283  table_J_m2=15.9024  open_J_m2=25.7295  note=a table column's sum is the snow on the table plus the room under the cap down to the floor; no record isolates the table's top. J/m3 is over the column's water (rock out), J/m2 over its area; held on J/m3  held=reading  as_r47=True  base_table_J_m3=0.641377  base_open_J_m3=0.501591  base_min_ratio_J_m3=1.15805  base_dumps_held_J_m3=201  base_last_at=30000  base_dumps=201  base_as_r47=True  baseline=r50-s3
+R1b  r51-s3     band=each cap's underside down 10 m (undersides -4 to -5.82 m)  volume_under_m3=51686.2  volume_beside_m3=84581.3  samples=41  samples_fewer_under=41  ties=0  last_at=30000  under=379  beside=1135  under_per_m3=0.00733271  beside_per_m3=0.013419  mean_under_per_m3=0.0053838  mean_beside_per_m3=0.0113794  held=reading  as_r47=True  base_last_at=30000  base_under_per_m3=0.0102929  base_beside_per_m3=0.0240124  base_mean_under_per_m3=0.00771352  base_mean_beside_per_m3=0.0181742  base_samples_fewer_under=41  base_samples=41  base_as_r47=True  baseline=r50-s3
+P1   r51-s3     pace_x_real=2.87422  source=run.json timesRealTime  manifest_status=ended  censored=False  last_window_pace_x_real=1.6067  held=True
+EK1  r51-s3     founders=947  child_within_1s=0  within_1s_by_group=  child_within_10s=0  within_10s_by_group=  listed=  held=True
+EK2  r51-s3     at=30000  short=False  founders_capped=102  capcut_rows=102  joules_capped=7875.72  capcut_sum=7875.72  one_part_stomachs=18  one_part_outside_band=0  one_part_capcut_range=17.755 to 17.755  outside_listed=  held=True
+EK3  r51-s3     one_part_stomachs=18  dead=18  still_alive=0  median_age_at_death_s=370  held=True
+EK4  r51-s3     one_part_stomachs=18  bred=0  share_bred=0  median_first_child_lag_s=  held=pooled
+EK5  r51-s3     pool_founders=84  dead=84  median_age_at_death_s=285.25  by_pool_index=pool0:370(n 18) pool1:286(n 28) pool2:216.75(n 22) pool3:264.25(n 16)  capcut_by_pool_index=pool0:17.7551(n 18)  held=False
+EK6  r51-s3     bred=0  not_bred=84  median_fsnow_bred=  median_fsnow_not_bred=0.831337  held=pooled
+EK7  r51-s3     founders=947  capped_by_group=floor:3/46 pool0:18/18 pool1:0/28 pool2:0/22 pool3:0/16 trickle:81/817  capcut_by_group=floor:114.502(n 3) pool0:17.7551(n 18) trickle:69.8658(n 81)  endow_by_group=floor:64.7667(n 46) pool0:53.9382(n 18) pool1:173.208(n 28) pool2:61.4685(n 22) pool3:107.809(n 16) trickle:70.084(n 811)  held=reading
+S2   r51-s3     stomach_children=50  dead=50  still_alive=0  median_age_at_death_s=1424.25  quartiles=442 to 2496  held=reading  as_bar=True
+X1   r51-s3     at=30000  short=False  det_cv=0.545325  bar=0.4 to 1.0  base=r50-s3  base_at=30000  base_value=0.665131  held=True
+L1   r51-s3     income_rule=True  trickle_leaves=418  placed=370  median_first_y=-5.735  below_20m=14  floor_leaves=30  floor_median_first_y=-0.875  bar=above -12 m  held=reading  as_bar=True
+L2   r51-s3     trickle_leaves=418  dead=412  median_age_at_death_s=233.75  floor_dead=30  floor_median_age_at_death_s=1284  bar=above 300 s  held=reading  as_bar=False
+L3   r51-s3     trickle_leaves=418  bred=8  share=0.0191388  floor_leaves=30  floor_bred=27  held=reading  as_bar=pooled
+L4   r51-s3     living=5642  living_from=positions row at 30000 s  trickle_lines_living=9  with_ten=0  largest=63109: 1 living, a leaf with a joint landed at 28395.5 s; 67721: 1 living, a leaf with a joint landed at 29694.5 s; 67923: 1 living, a leaf landed at 29756.5 s  held=reading  as_bar=reading
+LC   r51-s3     header_token=True  centre_bed=-44.3627  matter_founders_over_deeper_bed=314  within_1m_above_centre=0  bar=token present, under 5 held  held=True
+O4   r51-s3     line=15  line_founder=leaf with a joint  line_landed_s=4.5  living_then=2904  living_now=5639  jointed_share_then=0.0110193  jointed_share_now=0.00478808  held=absent  note=the line was under 0.2 jointed at 16000 s: the clause does not ask this seed
+S3   r51-s3     rigid_stomach_children=28  dead=28  still_alive=0  median_age_at_death_s=1806  held=False
+E2   r51-s3     lines=1  listed=29: a stomach with a joint from floor at 9.5 s, 51 members, 51 pure stomachs, 0 alive  held=reading
+A1   r51-s3     at=30000  short=False  deaths=63154  aged=25801  share=0.408541  base_config=3000  bar=at least 0.2  held=True
+A2   r51-s3     aged=25801  median_age_s=2571.5  quartiles=1808.5 to 3202  bar=1500 to 3500 s  held=True
+A3   r51-s3     at=30000  short=False  stats_deaths_by_age=25801  aged_rows=25801  aged_without_reserve=0  listed=  median_res_J=40.8634  res_quartiles=23.6955 to 60.6885  held=True
+A4   r51-s3     aged_age_by_children=0:2057.25(n 8622) 1-2:2651(n 9897) 3+:2837.5(n 7282)  age_by_cause=aged:2571.5(n 25801) starved:369(n 37353)  aged_share_bred=0.665827  aged_mean_children=1.86973  held=reading
+H1   r51-s3     at=30000  short=False  husks=25626  husk_units=2401.9  standing_units=16670.4  living_units=2377.38  snow_units=4011.68  share=0.144082  bar=at least 0.1 of the standing matter  held=True
+H2   r51-s3     at=30000  short=False  husks=25626  settled=23286  husk_J=240190  settled_J=176092  share=0.733139  bar=at least 0.25 of the husks' joules  held=True
+H3   r51-s3     at=30000  short=False  settled=23286  on_reef=1013  settled_J=176092  on_reef_J=14977.8  reef_share_J=0.0850564  reef_cover=0.25  held=reading
+H4   r51-s3     at=30000  short=False  husks=25626  deaths_last_7000=23153  deaths_last_9000=29438  corpses_eaten=1  held=True
+H5   r51-s3     at=30000  short=False  corpses_eaten=1  units_eaten=1.65929  bodies_eaten=0  corpses_from_kills=0  parts_killed=0  held=reading
+E3   r51-s3     living=5642  living_from=positions row at 30000 s  pure_stomachs_living=1  lines_with_one=1  best=1  listed=68397: 1 pure stomachs of 1 living, a stomach with a joint from trickle at 29885.5 s  bar=a line with 10 living pure stomachs  held=False
+LK1  r51-s3     samples=3000  last_shared=30000  mean_jointed=117.745  base=r50-s3  base_mean_jointed=435.631  bar=below the baseline's mean  held=True
+LK2  r51-s3     jointed_share_of_children=0-5:0.346(n 5769) 5-10:0.025(n 7116) 10-15:0.013(n 8134) 15-20:0.009(n 13656) 20-25:0.007(n 16421) 25-30:0.007(n 16753) 30-35:0.000(n 6)  jointed_inherited=24  base=r50-s3  base_at=30000  base_jointed_inherited=60  held=reading
+
+EK4  pooled     seeds=3  one_part_stomachs=63  bred=1  share_bred=0.015873  median_first_child_lag_s=81  held=True
+EK6  pooled     bred=1  not_bred=260  median_fsnow_bred=3.91048  median_fsnow_not_bred=0.775582  held=reading
+L3   pooled     seeds=3  trickle_leaves=1249  bred=44  share=0.0352282  bar=at least 0.05  held=reading  as_bar=False
+
+W1:   held in 2 of 3 -- needs 3 of 3
+W2:   held in 3 of 3 -- needs 3 of 3
+W3:   held in 3 of 3 -- needs 3 of 3
+G1:   held in 3 of 3 -- needs 3 of 3
+G2:   held in 3 of 3 -- needs 2 of 3
+G3:   held in 3 of 3 -- needs 2 of 3
+G4:   held in 3 of 3 -- needs 3 of 3
+C1:   held in 0 of 3 (3 reading) -- needs a reading
+C2:   held in 3 of 3 -- needs 3 of 3
+C3:   held in 3 of 3 -- needs 3 of 3
+B1:   held in 0 of 3 -- needs 3 of 3
+V1:   held in 0 of 3 (3 absent) -- needs a window in each of 3 seeds
+V2:   held in 1 of 3 (2 absent) -- needs seed 1
+V3:   held in 0 of 3 (3 reading) -- needs a reading
+M1:   held in 3 of 3 -- needs 3 of 3
+M2:   held in 3 of 3 -- needs 3 of 3
+M3:   held in 2 of 3 -- needs 1 of 3 or more
+M4:   held in 2 of 3 (1 absent) -- needs every seed M3 holds in
+O1:   held in 3 of 3 -- needs 3 of 3
+O2:   held in 3 of 3 -- needs 3 of 3
+O3:   held in 0 of 3 (3 reading) -- needs a reading
+S1:   held in 3 of 3 -- needs 3 of 3
+F3:   held in 3 of 3 -- needs 3 of 3
+E1:   held in 0 of 3 (3 reading) -- needs a reading
+R1a:  held in 0 of 3 (3 reading) -- needs a reading
+R1b:  held in 0 of 3 (3 reading) -- needs a reading
+P1:   held in 3 of 3 -- needs 3 of 3
+EK1:  held in 3 of 3 -- needs 3 of 3
+EK2:  held in 3 of 3 -- needs 3 of 3
+EK3:  held in 3 of 3 -- needs 2 of 3
+EK4:  held in 1 of 1 -- needs pooled over the seeds
+EK5:  held in 0 of 3 -- needs 3 of 3
+EK6:  held in 0 of 1 (1 reading) -- needs pooled, a reading under five breeders
+EK7:  held in 0 of 3 (3 reading) -- needs a reading
+S2:   held in 0 of 3 (2 absent) (1 reading) -- needs a reading
+X1:   held in 3 of 3 -- needs 3 of 3
+L1:   held in 0 of 3 (3 reading) -- needs a reading
+L2:   held in 0 of 3 (3 reading) -- needs a reading
+L3:   held in 0 of 1 (1 reading) -- needs a reading, pooled
+L4:   held in 0 of 3 (3 reading) -- needs a reading
+LC:   held in 3 of 3 -- needs 3 of 3
+O4:   held in 0 of 3 (3 absent) -- needs every seed whose holding line was a fifth jointed at 16,000 s
+S3:   held in 0 of 3 (2 absent) -- needs every seed with ten dead
+E2:   held in 0 of 3 (3 reading) -- needs a reading
+A1:   held in 3 of 3 -- needs 3 of 3
+A2:   held in 3 of 3 -- needs 3 of 3
+A3:   held in 3 of 3 -- needs 3 of 3
+A4:   held in 0 of 3 (3 reading) -- needs a reading
+H1:   held in 3 of 3 -- needs 3 of 3
+H2:   held in 3 of 3 -- needs 3 of 3
+H3:   held in 0 of 3 (3 reading) -- needs a reading
+H4:   held in 3 of 3 -- needs 3 of 3
+H5:   held in 0 of 3 (3 reading) -- needs a reading
+E3:   held in 0 of 3 -- needs 1 of 3 or more
+LK1:  held in 3 of 3 -- needs 3 of 3
+LK2:  held in 0 of 3 (3 reading) -- needs a reading
