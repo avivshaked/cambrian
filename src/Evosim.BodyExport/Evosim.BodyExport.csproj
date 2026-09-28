@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The body exporter for the channel's title films (scripts/channel/README.md): grows every body a
+    run's snapshots name, from the run's genome pool and each body's last plan (the theatre's
+    DevelopWithPlan rule), and writes one metrics row per body and the parts of the larger ones.
+    Built against this tree's Core, so it reads the genome format and configs this build reads.
+    Under src/ so Directory.Build.props sends the build to artifacts/.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <AssemblyName>Evosim.BodyExport</AssemblyName>
+    <RootNamespace>Evosim.BodyExport</RootNamespace>
+    <Nullable>disable</Nullable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Evosim.Core\Evosim.Core.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1705,6 +1705,15 @@ actually verifying it.
   the checkout the run was launched from. And **stopping a background Bash task leaves its script
   running**: the task's handle went and both of its `bash.exe` went on to launch the next farm
   process. List them by command line and stop them by id.
+- **A Blender render launched with factory settings denoises on the processor.** `--factory-startup`
+  leaves OpenImageDenoise's GPU switch off, so the channel intro's 4K frames took 42 s each, 28 of
+  them denoising, with the card idle between one-second bursts (2026-09-28; the owner saw the bursts
+  before the agent timed the stages). `scripts/channel/theatre_scene.py` turns it on and puts the
+  compositor on the card: 12 s a frame, and no pixel more than 7 levels in 255 from the processor's.
+  `EVOSIM_PROFILE=1` on `scripts/channel/intro.py` prints every stage's time; the folder's README
+  has the rest of how the title films are made.
+  The rendered intro is not in git. It lives in `assets/cards/` on the machine that made it, so
+  check that it is there before a film uses it, and render it again from that README when it is not.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 

@@ -1,0 +1,8 @@
+{
+  "note": "YouTube end-screen zones as fractions of the frame (W, H). Element sizes at 1920x1080: video 613x343, subscribe circle 298 across (anfx.co and thumbnailcreator.com guides, 2026). Row: tile, circle, tile, 6% margins. Bottom 10% kept clear for the player's controls.",
+  "tiles": [[0.060, 0.371, 0.3193, 0.3176], [0.621, 0.371, 0.3193, 0.3176]],
+  "circle": [0.5, 0.530, 0.138],
+  "title_y": 0.175,
+  "tagline_y": 0.255,
+  "bottom_text_y": 0.80
+}
