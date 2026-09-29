@@ -1,6 +1,7 @@
 # Handoff: where to pick up
 
-*Rewritten 2026-09-26 from the current state. What happened is in the logbook, and why it was
+*Rewritten 2026-09-26 from the current state; its first sections and the queue's head were rewritten
+on the night of 2026-09-29. What happened is in the logbook, and why it was
 chosen is in [`DECISIONS.md`](DECISIONS.md). This file says only where things stand and what is
 queued; it is rewritten, never appended to. The notes it carried before this rewrite, rounds 42
 to 49 and the speed work of 2026-09-25, are `logbook/specs/handoff-archive-2026-09-26.md`, and
@@ -21,17 +22,16 @@ resets that were mostly the graphics driver failing on a live machine (CLAUDE.md
 about a week of clean running, and the card carries no heavy work until then, so round 53 runs its
 transport on the CPU. Any unexplained crash or clean re-run is reported the same hour.
 
-### The owner's overnight delegation (2026-09-29, evening)
+### The night of 2026-09-29, and what runs while the owner is away
 
-The owner went to sleep and delegated round 52 and round 53 decisions, answering three questions:
-the agent launches round 53 tonight once the screens have chosen and the pre-registration is
-committed; if round 52's read argues against D132's plan, the agent uses its judgement and records
-the change as its own decision on the owner's delegation; and the four swimming recommendations are
-approved for round 54 (the owner's simple push along the limb, strokes that cost energy, a corpse
-scent to about 10 m, both together as foraging), to be written up with numbers and built and benched
-on a branch, reaching no round until the owner has seen the bench. Round 52's seeds are extended from
-their 30,000 s checkpoints to 50,000 s overnight, after the screens, with the round read at 30,000 s. Load is reported as
-`% Processor Utility`, the counter Task Manager shows.
+The owner delegated rounds 52 and 53 that evening and later left the agent working alone, with
+one ruling for the night: when nursery run 2 ends, its four threads go to the fast nursery (D134),
+first four measurements and then design A. Round 53 holds twelve threads. Nothing else runs
+beside them, and the total stays at 16 threads (read `% Processor Utility`, not the thread
+count). The session's hourly watch (a cron at :17) reads the CPU, round 53, the nursery and the
+orphans. Round 52's extension to 50,000 s is paused: `r52-s1x` stopped at 30,310 s with its
+checkpoint there, and seeds 2 and 3 were never started, because the nursery took the lane. It
+resumes when a lane is free, with the stitched reports joined by `stitch-resume.py --header-from`.
 
 ### Round 49 is read
 
@@ -103,30 +103,60 @@ One husk was eaten in each seed in 30,000 s, so the larder lies still and unused
 in seeds 1 and 3 (7 and 38 jointed at the end) and held in seed 2 (607, round 50's level). The pictures
 and the entry, 0126, come next.
 
-### Round 52 is running
+### Round 52 has run
 
-Launched at 12:39 on 2026-09-29 on the owner's word, from `scratch/wt-r52` at `b7d1cdb` on a clean
-tree (the pre-registration's commit), by `rounds/queue-r52.ps1`: seeds 1, 2 and 3 one at a time at
-16 threads, transport on the CPU as round 51, then V2. The log is `scratch/logs/r52-queue.log`. Seed
-1's config carries the ruled lifespan values and the corpse landing; its config hash `a88ee58a` is
-the smoke's. The session watches it with an hourly one-look cron.
+All three seeds reached 30,000 s. Seed 3 was cut by the machine's crash at 23,200 s, continued
+from its checkpoint and joined at that second as `r52-s3j` (`stitch-resume.py`; the continuation
+agrees with the run on every shared sample). The join's gzip files were plain gzip until
+`9503d4e`, and Core refused them; `--fix-gz` rewrote them in place. The read at 30,000 s is
+`logbook/specs/r52-read/read-30000.txt` on the branch `round-52`. Mouths landed on corpses
+(K1, K2) and ate 170, 114 and 129 of them, but a meal bought little and no line rooted in a mouth
+lasted. Its entry, 0128, is owed, with the theatre's pictures first.
 
-### Round 53 is being built
+### Round 53 is running
 
-D131's first rule is on the branch `round-53` in `scratch/wt-r53`, cut from `round-52`: `3e073ea`
-adds `CorpseSettledDecayPerSecond` (`EVOSIM_CORPSE_DECAY_SETTLED`, header `settled decay`), 0 the
-sinking rate, refused where no corpse settles, with three Core tests passing. It is a new tunable,
-so every earlier config is refused; the fixtures are re-recorded and the full suites run once round
-52 ends. Then the four screens of the proposal (45, 30 and 25 m at a 139 s settled half-life, then
-the settled rate at the better depth), with the bed, shore and reefs rescaled for depth.
+D132's screens chose the tank 25 m deep over the 27,000-unit budget: it led on the bed's snow and
+the leaves' `upt lim` at every sample from 5,000 s (`logbook/specs/r53-screens.txt`, on the branch
+`round-53`). The settled-decay screen cut the jointed bodies to 16 and the corpses eaten to 25, which
+supports D132's setting it aside. The pre-registration is logbook/0129 (`6701dc9`): N1 the bed's
+snow at 1.5 times round 52's same seed, N2 `upt lim` 0.015 under it, N3 corpses eaten at round
+52's level, over 5,000 to 30,000 s. N2 is the closest bet: the screen's margin was 0.031. The
+reader, `scripts/reads/r53-read.py`, now averages the baseline over the seconds a seed covers.
+`rounds/queue-r53.ps1` (fixed as `59a1770`: a Python write had broken its paths) launched the queue
+at 23:17 on 2026-09-29, seeds 1 to 3 one at a time at twelve threads, CPU transport, from
+`scratch/wt-r53` on a clean tree. Seed 1's `configHash` is `7c5e42d9`, the 25 m screen's, so its
+first 10,000 s should replay the screen row for row; the watch checks that. The log is
+`scratch/logs/r53-queue.log`. A seed takes about three hours at this pace (a guess from the screen).
 
-D132 (2026-09-29, after seeds 1 and 2 and Fable's advice, `logbook/specs/r53-fable-advice.md`) supersedes D131's
-first rule: the settled decay stays at 0. After round 52's read, four founding screens of 10,000 s run one at a time:
-30 m and 25 m with the geometry rescaled, 45 m with a matter budget of 27,000 (the control and the fallback), and 45 m
-with the settled decay at 0.005 (the refutation screen). Depth wins only if it beats the budget on the bed's water and
-`upt lim`. The lifespan values hold through rounds 53 and 54; seed 2's gene fell (0.79 to 0.70) where seed 1's rose,
-and why is read before the pre-registration. The pre-registration guards corpses eaten at round 52's level. The
-reactive thrust (`fable-propose-reactive-thrust.md`) is built and benched during round 53's week, for round 54.
+### The nursery (D133, D134)
+
+`src/Evosim.Nursery` on the branch `nursery` (`scratch/wt-nursery`, cut from `forage`; last commit
+`a397bdc`) evolves brains by direct selection on bodies pooled from round 52's snapshots, scored in
+joules taken in. DESIGN §8.6 describes it. Core gained `World.PlaceCorpse`, `World.GiveReserve` and
+`World.BirthsHeld` (`WorldAssay.cs`), none of them a tunable. Run 1 was stopped: its bodies started
+on a quarter of the purse and bred it away. Run 2 (`scratch/nursery/run2`, pid 39476, 100
+generations at four threads, about 2.6 minutes a generation) runs as launched and ends near 03:30
+on 2026-09-30. It is recording luck: its lead over the ancestors fell from 10.3 J to 1.5 J over six
+generations as the incumbents were re-scored. Read its forager checks (`checks.jsonl`) when it ends.
+
+D134 (the owner's rulings on Fable's proposal, `logbook/specs/fast-nursery-proposal.md`) sets the
+fast nursery, design A. The score stays joules eaten. The search runs in an easier world: 50
+corpses of 4 J, with the density drawn per episode after Jakobi, still water until a brain passes
+its knockout, a 100 m² × 5 m tank and 300 s episodes. A child replaces an incumbent only by twice the
+paired standard error. The winners are examined in D133's episode. The literature is
+`logbook/specs/nursery-curriculum-literature.md`: it supports the method in part and not the claim,
+so a nursery brain counts as naturally selected only once it out-breeds its ancestor in a round.
+
+### Round 54's swimming rules are on the bench
+
+The branch `forage` (`scratch/wt-forage`) carries the four rules the owner approved for round 54:
+the push along a limb, a stroke's cost on a knob, a corpse scent to about 10 m, and both together.
+The bench notes are `logbook/specs/forage-bench/notes.md` on the branch (`3897a4d`). A hand-wired
+brain finds a corpse. A torque drive has no centring, so a lone tail strokes off-centre, and a
+mirrored pair of fins drives a body straight where one fin spins it in place. Nothing reaches a
+round until the owner has seen the bench. Items 5 and 6 (swim probes on real bodies at push 0,
+0.1, 0.3 and 1) and 8 (identity at 1 and N threads; the member check with corpses and scent) are
+left, each behind the CPU check.
 
 ### How round 52 was built
 
@@ -428,6 +458,18 @@ All of it is agent work. Long steps run in the background under the session, nev
 subagent and never in a shell loop. A queue that must outlive a turn is started detached
 (CLAUDE.md).
 
+0. Tonight, 2026-09-29 to 30, in this order.
+   - Watch round 53 hourly. Check that seed 1's first 10,000 s replay `r53sc-b25`. Read N1 to N3
+     provisionally at each 5,000 s.
+   - When nursery run 2 ends (near 03:30), read its checks and its generations.
+   - Build design A on `nursery` (the knobs: corpse count and joules, the density drawn per
+     episode, still water until the knockout passes, the replacement margin).
+   - On the freed four threads, run the four measurements (`logbook/specs/fast-nursery-proposal.md`
+     §5). If the hand-wired brain grafted onto a pooled body cannot score in A's episode, stop and
+     report; otherwise run A at four threads.
+   - A logbook entry for the nursery once A has a result, and a primer after it works.
+   - Then 0128 (round 52, pictures first), the bench's items 5, 6 and 8, and round 52's
+     extension when a lane is free.
 1. Round 50 has run and is read. The owner said at 23:52 on 2026-09-26 to start it, and at 05:05 on
    2026-09-27 that the third seed could run whenever seed 2 ended. Seed 1 ended on its budget at
    02:52 after 178 minutes, seed 2 at 06:49 after 236 and seed 3 at 10:20 after 211, each at 16
