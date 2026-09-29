@@ -88,7 +88,24 @@ One husk was eaten in each seed in 30,000 s, so the larder lies still and unused
 in seeds 1 and 3 (7 and 38 jointed at the end) and held in seed 2 (607, round 50's level). The pictures
 and the entry, 0126, come next.
 
-### Round 52 is being built
+### Round 52 is running
+
+Launched at 12:39 on 2026-09-29 on the owner's word, from `scratch/wt-r52` at `b7d1cdb` on a clean
+tree (the pre-registration's commit), by `rounds/queue-r52.ps1`: seeds 1, 2 and 3 one at a time at
+16 threads, transport on the CPU as round 51, then V2. The log is `scratch/logs/r52-queue.log`. Seed
+1's config carries the ruled lifespan values and the corpse landing; its config hash `a88ee58a` is
+the smoke's. The session watches it with an hourly one-look cron.
+
+### Round 53 is being built
+
+D131's first rule is on the branch `round-53` in `scratch/wt-r53`, cut from `round-52`: `3e073ea`
+adds `CorpseSettledDecayPerSecond` (`EVOSIM_CORPSE_DECAY_SETTLED`, header `settled decay`), 0 the
+sinking rate, refused where no corpse settles, with three Core tests passing. It is a new tunable,
+so every earlier config is refused; the fixtures are re-recorded and the full suites run once round
+52 ends. Then the four screens of the proposal (45, 30 and 25 m at a 139 s settled half-life, then
+the settled rate at the better depth), with the bed, shore and reefs rescaled for depth.
+
+### How round 52 was built
 
 The owner ruled D129 on 2026-09-28: a founder with a mouth lands where the corpses lie, from the
 next round. Later the same day D130 put the lifespan gene, heritable, into the same round. The same day they ruled that the code and the records call a dead body
@@ -269,17 +286,18 @@ left alone.
 
 ## The decisions in front of the owner
 
-### The lifespan gene's values for round 52 (put on 2026-09-29)
+### Ruled on 2026-09-29
 
-The owner ruled on 2026-09-28 that round 52 runs D129 and the lifespan gene heritable together
-(D130). Three values turn the gene on: the repair price `EVOSIM_AGE_REPAIR` (upkeep times L^a),
-the chance a birth moves it `EVOSIM_LIFESPAN_CHANCE`, and the founders' range
-`EVOSIM_LIFESPAN_MIN` and `_MAX`. The agent put them on 2026-09-29 with the literature report
-(logbook/specs/r52-lifespan-literature.md) and the screen (logbook/specs/r52-lifespan-screen.txt):
-the price 0.5 (the literature's point; measured trade-offs map to 0 to about 0.7 at this world's
-upkeep share; the screen's best lifespan is 1.45 to 2.05 at 0.5, 1.05 to 1.4 at 0.75 and 0.9 to 1.1
-at 1), the chance 0.08, and the founders 0.5 to 1.5. The smoke then showed the gene holding near 1
-while upkeep took 0.6 of the light, as the screen says for that share. Waiting for the ruling.
+- Round 52's lifespan values, as the agent recommended: the repair price 0.5, the chance 0.08 and
+  the founders 0.5 to 1.5. They are in `rounds/env-r52.ps1` and the pre-registration, logbook/0127.
+- D131, round 53: a corpse decays fast from the step it settles, on the bed or a reef top, and the
+  tank is made shallower (30 m or 25 m) with the matter held, each value by screen after round 52.
+  The places on the bed come back one a round after it: hollows, then a seep that charges matter
+  (a second source of energy, put again in full before it is built), then the anchoring cell. The
+  arithmetic is `logbook/specs/r53-larder-proposal.md` and the reading behind it
+  `logbook/specs/r52-larder.txt`.
+- Unanswered: the eight papers of the lifespan literature round sit behind Europe PMC's Cloudflare
+  page. The owner fetches them in a browser, or the review records them as not fetched.
 
 ### Ruled on 2026-09-27, after round 50's read
 
