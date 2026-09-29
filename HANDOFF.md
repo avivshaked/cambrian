@@ -136,8 +136,9 @@ joules taken in. DESIGN §8.6 describes it. Core gained `World.PlaceCorpse`, `Wo
 `World.BirthsHeld` (`WorldAssay.cs`), none of them a tunable. Run 1 was stopped: its bodies started
 on a quarter of the purse and bred it away. Run 2 (`scratch/nursery/run2`, pid 39476, 100
 generations at four threads, about 2.6 minutes a generation) runs as launched and ends near 03:30
-on 2026-09-30. It is recording luck: its lead over the ancestors fell from 10.3 J to 1.5 J over six
-generations as the incumbents were re-scored. Read its forager checks (`checks.jsonl`) when it ends.
+on 2026-09-30. It measures nothing about foraging: runs 1 and 2 laid their corpses about the origin
+where a tank's axis is at (R, R), so most corpses lay far from the body (found and fixed as `67e3961`;
+`logbook/specs/fast-nursery-measurements.md`). It was left to finish, as the owner ruled.
 
 D134 (the owner's rulings on Fable's proposal, `logbook/specs/fast-nursery-proposal.md`) sets the
 fast nursery, design A. The score stays joules eaten. The search runs in an easier world: 50
@@ -146,6 +147,12 @@ its knockout, a 100 m² × 5 m tank and 300 s episodes. A child replaces an incu
 paired standard error. The winners are examined in D133's episode. The literature is
 `logbook/specs/nursery-curriculum-literature.md`: it supports the method in part and not the claim,
 so a nursery brain counts as naturally selected only once it out-breeds its ancestor in a round.
+
+Design A is built on `nursery` (`67e3961`, `81a07c4`): the arenas (`--config`, `--still-config`,
+`--exam-config`), carrion drawn per episode (`--corpse-total`, `--corpse-count`), the margin
+(`--replace-se`). The configs are under `scratch/nursery/runs/` (`nursery-small`, `-still`, `-nomix`).
+Measurement 4 is done (intake 1, mouths 0.05 to 0.27 m³); 1 to 3 run when run 2 ends. The first
+small-tank episode showed the body swimming 1 to 4 m above the bed where the corpses settle.
 
 ### Round 54's swimming rules are on the bench
 
