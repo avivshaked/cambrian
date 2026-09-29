@@ -269,18 +269,17 @@ left alone.
 
 ## The decisions in front of the owner
 
-### The lifespan gene's values for round 52 (to be put)
+### The lifespan gene's values for round 52 (put on 2026-09-29)
 
 The owner ruled on 2026-09-28 that round 52 runs D129 and the lifespan gene heritable together
-(D130: "lets do both. it it causes a problem, we'll remove one of them"). The gene is built and
-every body carries it at 1. Three values turn it on, and none is ruled: how often a birth moves it
-(`EVOSIM_LIFESPAN_CHANCE`), the range the founders draw it from (`EVOSIM_LIFESPAN_MIN` and
-`EVOSIM_LIFESPAN_MAX`), and the upkeep a longer life costs (`AgeRepairExponent`). D128 asks for a
-literature-review round on its sources (Gompertz, Kirkwood, Jones and others, the cost of
-reproduction) before its numbers are fixed. So the next step is that review, then a ledger screen of
-the price, and then the values go to the owner as a decision in full, with the screen's numbers.
-The price matters most: at 0 a longer life is free, and D038 rejected a free lifespan because it
-evolves to immortality.
+(D130). Three values turn the gene on: the repair price `EVOSIM_AGE_REPAIR` (upkeep times L^a),
+the chance a birth moves it `EVOSIM_LIFESPAN_CHANCE`, and the founders' range
+`EVOSIM_LIFESPAN_MIN` and `_MAX`. The agent put them on 2026-09-29 with the literature report
+(logbook/specs/r52-lifespan-literature.md) and the screen (logbook/specs/r52-lifespan-screen.txt):
+the price 0.5 (the literature's point; measured trade-offs map to 0 to about 0.7 at this world's
+upkeep share; the screen's best lifespan is 1.45 to 2.05 at 0.5, 1.05 to 1.4 at 0.75 and 0.9 to 1.1
+at 1), the chance 0.08, and the founders 0.5 to 1.5. The smoke then showed the gene holding near 1
+while upkeep took 0.6 of the light, as the screen says for that share. Waiting for the ruling.
 
 ### Ruled on 2026-09-27, after round 50's read
 
@@ -402,23 +401,28 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
     `round-51-tests` (`2ff8f50`), and the film window's corpses there too. The water's reactive
     thrust was not built during round 51's week, and its proposal still waits for a ruling. Round
     52 is D129's with the lifespan gene heritable (D130, 1c).
-1c. Round 52's build (the section above, branch `round-52`), paused at the owner's request at
-    about 11:45 on 2026-09-28 while they use the machine; nothing starts until they say it is
-    free. `r52fix-s4` ended on its budget, and `RunFixture.cs` points at it (uncommitted). Round
-    51's B1 fix is written and uncommitted in the worktree: `IMatterField.DepositExact` takes a
-    double, and the burn, the grid's remineralisation and a corpse's last instalment use it.
-    `BoxPathTests` is re-pinned (the matter identity 3.2e-08 to 1.6e-08 units, the counts and the
-    snow unmoved), the thread-identity word too (`c9b0cabce249c1dd` to `6d59a448ddcefed5`, the same
-    at 1, 4 and 16 threads), and `ExactDepositTests` is new. Core's default set passed apart from
-    the two pins, and the pause stopped Dynamics partway, so Dynamics, Farm and Core with its slow
-    set run again before the commit. The thread-identity test does run: its "under 1 ms" is the
-    reporter's line, and it takes 40 s. Then comes the launcher `rounds/env-r52.ps1` (written,
-    uncommitted): round 51's, plus `EVOSIM_FOUNDERS_FOLLOW_CORPSES 1`, and the lifespan dials once
-    their values are ruled (D130). A smoke stopped at 1,180 s showed D129 cannot act before the
-    trickle starts at 3,000 s, so the smoke runs to 6,000 s. Then a smoke,
-    its pictures checked against round 51's accepted clips, a checkpoint check and resume, and the
-    pre-registration 0127 with the landing arithmetic above as its prediction. The theatre's rename
-    is compiled in Unity at the next render the owner allows.
+1c. Round 52 (the section above, branch `round-52` in `scratch/wt-r52`) is built, smoked and
+    written, and waits for two words from the owner: the lifespan values and leave to render.
+    Committed on the branch: the B1 fix and two instruments (`690a0ca`: a mouth founder's `fcorp`
+    and `fcorpm`, the corpses of its landing column and of a random one; `ls`, the gene, on every
+    birth row; each written only where its rule is on), the records (`a922083`: the literature
+    report logbook/specs/r52-lifespan-literature.md, the screen
+    logbook/specs/r52-lifespan-screen.txt, the landing arithmetic), and the reader, queue and V2
+    (`a696ea9`). Core 1,048 with the slow set on the fix, then 1,023 default, Dynamics 122 and Farm
+    197 with the instruments; the thread word is `6d59a448ddcefed5`. The smoke `r52smoke2-s1`
+    (6,000 s at 4 threads, with the agent's recommended lifespan values on the command line)
+    ended on its budget: the matter residual at most 6.2e-7 units, mouth founders landing over
+    11.5 times the mean column's corpses, 23 corpses eaten, the aged dying older with the gene
+    (1,874, 2,187 and 2,744 s by bin), the gene holding near 1 while upkeep took 0.60 to 0.64 of
+    the light. Its 5,000 s checkpoint passed the member check and a resume to 6,000 s was
+    identical on every sample and every lineage row. Uncommitted in the worktree: the lifespan
+    dials in `rounds/env-r52.ps1` and the pre-registration
+    `logbook/0127-mouths-land-where-the-corpses-lie.md`, both written for the recommended values
+    (price 0.5, chance 0.08, founders 0.5 to 1.5) and edited to the owner's values if they differ,
+    with a short re-smoke. Then the commit on a clean tree and `rounds/queue-r52.ps1` on the
+    owner's word. The smoke's pictures against round 51's accepted clips, and the theatre's
+    rename compiled in Unity, wait for the owner's leave to render. The review round filing the
+    literature report in research/LITERATURE-REVIEW.md is owed.
 2. The card is worked by day, with nothing else on the machine, from `scratch/wt-probe`
    (`gpu-probe`; merge main in before a day's work). The snow's transport runs on it under
    `EVOSIM_GPU_TRANSPORT` (above). Round 50's seeds are the next reference crowds once they have
