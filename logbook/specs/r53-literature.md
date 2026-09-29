@@ -1,6 +1,6 @@
 # Round 53's literature: carrion, detritus and the bed (C1 to C8)
 
-*2026-09-29. The search-and-appraisal report of a research subagent (Opus 5.5), saved as it came with its tables condensed and nothing added, for the review's round 7 and D131. Its working files are `scratch/lit-r7b/` (search-log.tsv with every query, date, filter and count; fetch-log.tsv with every retrieval attempt; raw API responses; page-marked text of the kept PDFs). Its PDFs are `research/papers/151` to `174`. It is not yet integrated into LITERATURE-REVIEW.md. The search log's table of 31 queries is in `scratch/lit-r7b/search-log.tsv` and is summarised here.*
+*2026-09-29. The search-and-appraisal report of a research subagent (Opus 5.5), saved as it came with its tables condensed and nothing added, for the review's round 7 and D131. Its working files are `scratch/lit-r7b/` (search-log.tsv with every query, date, filter and count, and fetch-log.tsv with every retrieval attempt, both kept in `logbook/specs/r53-literature/`, with the search tools in `scripts/lit/r7b/`; raw API responses; page-marked text of the kept PDFs). Its PDFs are `research/papers/151` to `174`. It is not yet integrated into LITERATURE-REVIEW.md. The search log's table of 31 queries is in `scratch/lit-r7b/search-log.tsv` and is summarised here.*
 
 All work was done on 2026-09-29 by one model end to end, with no search subagents. No repository file was edited.
 

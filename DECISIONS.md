@@ -6620,7 +6620,7 @@ designer deciding how long a creature lives. (B) A base set by body size: no gen
 reason to grow large tangled with the first.
 
 **Round 51's values** (ruled the same day, on the agent's calculation from round 50's bodies,
-`scratch/r51-ledger/age_clock.py`): a base of 3,000 s, which is where bodies that live past
+`logbook/specs/r51-read/ledger/age_clock.py`): a base of 3,000 s, which is where bodies that live past
 1,000 s have died at a median of 2,670 to 3,240 s in every round from 44 to 50; the hazard doubling
 every 600 s, a fifth of the base, which spreads deaths by age from about 1,500 to 4,600 s (10% to
 99%) and keeps some long lives; a birth advancing the clock by one doubling for a child the size of

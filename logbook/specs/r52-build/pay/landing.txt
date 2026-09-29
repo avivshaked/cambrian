@@ -1,0 +1,9 @@
+t 12000: 5282 corpses, 123.8 kJ, mean 23.4 J, settled 91%
+columns holding corpses: 4405 of about 22,000; richest 489 J; expected joules in a D129 landing column 69 J (uniform landing: 5.63 J)
+new corpses 874 in 1000 s: 53.9 W in all
+R (m) | landings with any corpse in reach | joules in reach: median, mean | new-corpse power into the 3x3 m round it: median, mean (W)
+ 0.15 |  80.3% |    42.8    58.4 | 0.000 0.030
+  0.3 |  78.8% |    41.2    57.6 | 0.000 0.030
+  0.5 |  69.7% |    33.0    52.6 | 0.000 0.030
+  0.8 |  30.3% |     0.0    30.3 | 0.000 0.030
+  1.2 |  19.5% |     0.0    20.2 | 0.000 0.030

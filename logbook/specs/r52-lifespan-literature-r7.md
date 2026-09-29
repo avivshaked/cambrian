@@ -1,6 +1,6 @@
 # Round 7 of the review: lifespan, senescence and the lifespan gene (L1 to L6)
 
-*2026-09-29. The search-and-appraisal report of a research subagent (Opus 5.5), saved with its tables condensed and nothing added, for the review's round 7 and D128/D130. It re-appraises the earlier informal file (`logbook/specs/r52-lifespan-literature.md`, on the round-52 branch). Working files: `scratch/lit-r7/` (search-log.tsv, retrieval-log.tsv, raw API responses, PMC HTML pages read). PDFs: `research/papers/85` to `98`, each starting `%PDF` and checked on page 1 with PyMuPDF. Not yet integrated into LITERATURE-REVIEW.md.*
+*2026-09-29. The search-and-appraisal report of a research subagent (Opus 5.5), saved with its tables condensed and nothing added, for the review's round 7 and D128/D130. It re-appraises the earlier informal file (`logbook/specs/r52-lifespan-literature.md`, on the round-52 branch). Working files: `scratch/lit-r7/` (search-log.tsv and retrieval-log.tsv, both kept in `logbook/specs/r52-literature/`, and the search tools in `scripts/lit/r7/`; raw API responses, PMC HTML pages read). PDFs: `research/papers/85` to `98`, each starting `%PDF` and checked on page 1 with PyMuPDF. Not yet integrated into LITERATURE-REVIEW.md.*
 
 ## 1. Search and counts
 

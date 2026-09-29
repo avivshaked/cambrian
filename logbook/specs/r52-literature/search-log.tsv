@@ -1,0 +1,67 @@
+2026-09-29	OpenAlex	Gompertz mortality rate doubling time species comparative	type:article,is_retracted:false sort=relevance_score:desc	776	raw/oa-a16a0cd2d6.json
+2026-09-29	OpenAlex	mortality rate doubling time aging across species	type:article,is_retracted:false,cited_by_count:>50 sort=cited_by_count:desc	15401	raw/oa-0bf6802815.json
+2026-09-29	OpenAlex		title_and_abstract.search:gompertz mortality doubling,type:article,is_retracted:false sort=cited_by_count:desc	33	raw/oa-a926a7c624.json
+2026-09-29	OpenAlex		title_and_abstract.search:actuarial senescence rate comparative mammals birds,type:article,is_retracted:false sort=cited_by_count:desc	3	raw/oa-69c8a7a03e.json
+2026-09-29	OpenAlex	diversity of ageing across the tree of life mortality trajectories	type:article,is_retracted:false sort=relevance_score:desc	1403	raw/oa-4358a0157a.json
+2026-09-29	SemanticScholar	Gompertz rate of aging across species mortality rate doubling time	limit	FAILED:HTTP 429 after 5 tries	
+2026-09-29	SemanticScholar	senescence rates fast-slow life history continuum mammals birds	limit	FAILED:HTTP 429 after 5 tries	
+2026-09-29	SemanticScholar	invariant rate of ageing hypothesis primates	limit	FAILED:HTTP 429 after 5 tries	
+2026-09-29	SemanticScholar	invariant rate of ageing hypothesis primates	limit=10 	19	raw/s2-3ad4a46dd4.json
+2026-09-29	SemanticScholar	Gompertz rate of aging across species mortality rate doubling time	limit=20 	32	raw/s2-2bf2cfa892.json
+2026-09-29	SemanticScholar	senescence rates fast-slow life history continuum mammals birds	limit=15 	91	raw/s2-fc7bdc4690.json
+2026-09-29	SemanticScholar	disposable soma theory ageing test evidence	limit=15 	FAILED:rate limited	
+2026-09-29	SemanticScholar	energetic cost of somatic maintenance longevity trade-off	limit=15 	FAILED:rate limited	
+2026-09-29	OpenAlex		title_and_abstract.search:disposable soma,type:article,is_retracted:false sort=cited_by_count:desc	209	raw/oa-e8f4f6f65e.json
+2026-09-29	OpenAlex		title_and_abstract.search:cost of reproduction survival meta-analysis,type:article,is_retracted:false sort=cited_by_count:desc	28	raw/oa-8e57c1c47d.json
+2026-09-29	OpenAlex		title_and_abstract.search:brood size manipulation senescence,type:article,is_retracted:false sort=cited_by_count:desc	6	raw/oa-55659045c8.json
+2026-09-29	OpenAlex	reproductive effort accelerates actuarial senescence experimental	type:article,is_retracted:false sort=relevance_score:desc	237	raw/oa-354926ce85.json
+2026-09-29	OpenAlex	experimental brood size manipulation parental survival meta-analysis birds	is_retracted:false sort=relevance_score:desc	1444	raw/oa-3c9a089010.json
+2026-09-29	OpenAlex	Winder Simons Burke clutch size survival trade-off optimise fitness	 sort=relevance_score:desc	7	raw/oa-fdf049fe81.json
+2026-09-29	OpenAlex		title.search:cost of reproduction,title.search:meta-analysis sort=cited_by_count:desc	0	raw/oa-0498724e3e.json
+2026-09-29	OpenAlex	The optimal clutch size revisited: separating individual quality from the parental survival costs of reproduction	 sort=relevance_score:desc	450	raw/oa-a238c8746b.json
+2026-09-29	OpenAlex	reproduction lifespan trade-off Drosophila mating cost female survival	type:article,is_retracted:false sort=relevance_score:desc	1215	raw/oa-1e810edd95.json
+2026-09-29	OpenAlex	injury reduces lifespan later survival wild animals senescence	type:article,is_retracted:false sort=relevance_score:desc	4152	raw/oa-ccf6b01b63.json
+2026-09-29	OpenAlex		title_and_abstract.search:frailty index deficit accumulation mortality,type:article,is_retracted:false sort=cited_by_count:desc	248	raw/oa-d250dd58bd.json
+2026-09-29	OpenAlex	wounding injury shortens lifespan Drosophila	type:article,is_retracted:false sort=relevance_score:desc	488	raw/oa-2463e9e13d.json
+2026-09-29	OpenAlex	sublethal injury limb loss autotomy survival cost longevity	type:article,is_retracted:false sort=relevance_score:desc	7	raw/oa-0bfb5cc2a6.json
+2026-09-29	OpenAlex	wing wear longevity bumble bees experiment morphological senescence	type:article,is_retracted:false sort=relevance_score:desc	49	raw/oa-c50861e5ac.json
+2026-09-29	SemanticScholar	injury accelerates aging later-life mortality	limit=15 	FAILED:rate limited	
+2026-09-29	OpenAlex	traumatic injury Drosophila model reduces lifespan	type:article,is_retracted:false sort=relevance_score:desc	2023	raw/oa-cf3783b8a4.json
+2026-09-29	OpenAlex	long-term mortality after trauma survivors excess mortality years after injury	type:article,is_retracted:false sort=relevance_score:desc	3927	raw/oa-a47dad113f.json
+2026-09-29	OpenAlex	costs of autotomy and regeneration in animals review	type:article,is_retracted:false sort=relevance_score:desc	369	raw/oa-c1688ae099.json
+2026-09-29	OpenAlex		title_and_abstract.search:regeneration trade-off lifespan,type:article,is_retracted:false sort=cited_by_count:desc	19	raw/oa-a168db086f.json
+2026-09-29	OpenAlex		title_and_abstract.search:selection postponed senescence Drosophila,type:article,is_retracted:false sort=cited_by_count:desc	17	raw/oa-51dc1ea4da.json
+2026-09-29	OpenAlex		title_and_abstract.search:heritability longevity lifespan,type:article,is_retracted:false,publication_year:>1995 sort=cited_by_count:desc	119	raw/oa-f077440b86.json
+2026-09-29	OpenAlex	natural selection and the heritability of fitness components life history traits lower heritability	type:article,is_retracted:false sort=relevance_score:desc	8886	raw/oa-fbbff8e8d4.json
+2026-09-29	OpenAlex	realized heritability lifespan selection experiment longevity response generations	type:article,is_retracted:false sort=relevance_score:desc	236	raw/oa-cb052cbde0.json
+2026-09-29	OpenAlex		title_and_abstract.search:Penna model aging,type:article,is_retracted:false sort=cited_by_count:desc	120	raw/oa-3f4b18673b.json
+2026-09-29	OpenAlex	evolution of programmed death ageing spatially structured population individual-based model	type:article,is_retracted:false sort=relevance_score:desc	6406	raw/oa-b1a81aba35.json
+2026-09-29	SemanticScholar	evolution of aging agent-based model evolvable lifespan simulation	limit=20 	FAILED:rate limited	
+2026-09-29	OpenAlex		title.search:bit-string model biological aging,is_retracted:false sort=cited_by_count:desc	6	raw/oa-d3ac0674b7.json
+2026-09-29	OpenAlex		title_and_abstract.search:programmed death spatial,title_and_abstract.search:natural selection,is_retracted:false sort=cited_by_count:desc	70	raw/oa-521fbfefea.json
+2026-09-29	OpenAlex		title_and_abstract.search:evolution of senescence,title_and_abstract.search:individual-based,is_retracted:false sort=cited_by_count:desc	259	raw/oa-f228c58aca.json
+2026-09-29	OpenAlex	The evolution of programmed death in a spatially structured population	is_retracted:false sort=relevance_score:desc	150676	raw/oa-1d75247172.json
+2026-09-29	OpenAlex	Programed death is favored by natural selection in spatial systems	is_retracted:false sort=relevance_score:desc	15074	raw/oa-0f74b0fe56.json
+2026-09-29	OpenAlex	evolution of senescence digital organisms artificial life simulation lifespan	is_retracted:false sort=relevance_score:desc	224	raw/oa-5fe38c2fa0.json
+2026-09-29	OpenAlex		title_and_abstract.search:artificial life,title_and_abstract.search:senescence,is_retracted:false sort=cited_by_count:desc	263	raw/oa-4106e784b2.json
+2026-09-29	OpenAlex		title_and_abstract.search:individual-based model,title_and_abstract.search:evolution of ageing,is_retracted:false sort=cited_by_count:desc	251	raw/oa-fe6dce3d54.json
+2026-09-29	OpenAlex		title_and_abstract.search:optimal allocation repair reproduction senescence model,is_retracted:false sort=cited_by_count:desc	4	raw/oa-932561a615.json
+2026-09-29	SemanticScholar-bulk	"evolution of ageing" | "evolution of aging" | "evolution of senescence"	&fieldsOfStudy=Biology (sorted locally by citations)	790	raw/s2b-89b83b2676.json
+2026-09-29	SemanticScholar-bulk	(senescence | ageing | aging | lifespan) + ("individual-based" | "agent-based" | "artificial life" | "digital organisms")	&fieldsOfStudy=Biology,Computer%20Science (sorted locally by citations)	2487	raw/s2b-151c3f234e.json
+2026-09-29	SemanticScholar-bulk	"evolution of ageing" + (model | simulation)	&fieldsOfStudy=Biology&year=1995-2026 (sorted locally by citations)	44	raw/s2b-d6c8104bc8.json
+2026-09-29	SemanticScholar-bulk	"scenario for an evolutionary selection of ageing"	 (sorted locally by citations)	1	raw/s2b-c719dd59a2.json
+2026-09-29	SemanticScholar-bulk	"protein turnover" + (lifespan | "life span" | longevity) + species	&fieldsOfStudy=Biology&year=2000-2026 (sorted locally by citations)	28	raw/s2b-c4c3af041b.json
+2026-09-29	OpenAlex	body size energy metabolism and lifespan rate of living	type:article,is_retracted:false sort=relevance_score:desc	13830	raw/oa-9fbadeaf79.json
+2026-09-29	SemanticScholar-bulk	"cost of reproduction" + (senescence | ageing | aging | survival) + (meta-analysis | review)	&fieldsOfStudy=Biology (sorted locally by citations)	32	raw/s2b-05a3e97b0f.json
+2026-09-29	OpenAlex		cites:W1598326569,is_retracted:false sort=cited_by_count:desc	614	raw/oa-b323447ae7.json
+2026-09-29	OpenAlex	Does reproduction decrease longevity in human beings	type:article sort=relevance_score:desc	28172	raw/oa-d16849b07b.json
+2026-09-29	OpenAlex		cites:W2097135434,is_retracted:false sort=cited_by_count:desc	138	raw/oa-d8965ed5ba.json
+2026-09-29	OpenAlex	(metadata lookup by DOI for 50 candidates)	filter=doi:...	50	raw/cands-openalex.json
+2026-09-29	SemanticScholar	(paper/batch lookup of 50 candidate DOIs)	fields=citationCount,influentialCitationCount,openAccessPdf	48	raw/cands-s2batch.json
+2026-09-29	OpenAlex		title_and_abstract.search:realized heritability,title_and_abstract.search:longevity,is_retracted:false sort=cited_by_count:desc	35	raw/oa-1bba23b82d.json
+2026-09-29	OpenAlex		title_and_abstract.search:selection for life span Drosophila,is_retracted:false sort=cited_by_count:desc	198	raw/oa-61ea6c915a.json
+2026-09-29	CrossRef	(works/{doi} and works?filter=updates:{doi} for 39 included DOIs)	retraction/correction check	39	raw/crossref-check.json
+2026-09-29	OpenAlex		cites:W3168138641 sort=cited_by_count:desc	96	raw/oa-4918ea945e.json
+2026-09-29	OpenAlex		cites:W2973119924 sort=cited_by_count:desc	37	raw/oa-d0c19a7040.json
+2026-09-29	OpenAlex		cites:W2315751720 sort=cited_by_count:desc	303	raw/oa-c003f28bf1.json
+2026-09-29	CrossRef	(works + updates filter for 3 further DOIs)	retraction/correction check	3	

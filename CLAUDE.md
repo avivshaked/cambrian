@@ -1435,7 +1435,7 @@ actually verifying it.
   process environment, so `run-farm.ps1 -Env`, which hands settings over as `NAME=VALUE`
   arguments, never reaches it, and the farm warns that it ignores the variable while the probe
   stays off (the first probe of 2026-09-26). Set it in the launching shell's environment
-  (`scratch/r49-probe/probe2.ps1`). A setting the binding knows, such as
+  (`scripts/probe-gpu-env.ps1`). A setting the binding knows, such as
   `EVOSIM_GPU_CONCURRENT`, goes through `-Env` as usual.
 - **From D109 (2026-09-22 night) the matter starts as islands, the matter grid stirs at a
   launcher's rate, and every earlier config is refused again.** Six tunables

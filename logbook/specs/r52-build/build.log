@@ -1,0 +1,52 @@
+== build from 11:01:08
+    0 Error(s)
+
+Time Elapsed 00:00:01.10
+exe 09/28/2026 11:01:09
+== pfix15: round 42's launcher for 10 s
+pfix15 -> farm (dynamics)
+  exe   D:\Projects\experiments\evolution-simulator\scratch\wt-r52\artifacts\Evosim.Farm\bin\Release\net8.0\Evosim.Farm.exe
+  seed 1, 10 s, 10 min wall, 4 threads
+  runs  D:\Projects\experiments\evolution-simulator\runs
+  out   D:\Projects\experiments\evolution-simulator\runs\pfix15.md
+  log   D:\Projects\experiments\evolution-simulator\scratch\wt-r52\scratch\logs\pfix15.out / D:\Projects\experiments\evolution-simulator\scratch\wt-r52\scratch\logs\pfix15.err
+  90 settings
+  launched, pid 57340
+  waiting up to 60 s for run.json...
+WARNING: The farm exited (code 0) before writing run.json. Read D:\Projects\experiments\evolution-simulator\scratch\wt-r52\scratch\logs\pfix15.err.
+pfix15 ended: ended budget at 11:01:12
+pfix15 configHash 8656c52dd0575c49 (the Farm tests' failing assertions read 8656c52dd0575c49)
+== the crowd fixture (4 threads), from 11:01:12
+r52fix-s4 -> farm (dynamics)
+  exe   D:\Projects\experiments\evolution-simulator\scratch\wt-r52\artifacts\Evosim.Farm\bin\Release\net8.0\Evosim.Farm.exe
+  seed 4, 20000 s, 240 min wall, 4 threads
+  runs  D:\Projects\experiments\evolution-simulator\runs
+  out   D:\Projects\experiments\evolution-simulator\runs\r52fix-s4.md
+  log   D:\Projects\experiments\evolution-simulator\scratch\wt-r52\scratch\logs\r52fix-s4.out / D:\Projects\experiments\evolution-simulator\scratch\wt-r52\scratch\logs\r52fix-s4.err
+  95 settings
+  launched, pid 47860
+  waiting up to 60 s for run.json...
+  run.json D:\Projects\experiments\evolution-simulator\runs\r52fix-s4\2026-09-28-100112-197b736c\run.json
+    status       running
+    engine       dynamics 1.0.0.0
+    gitCommit    a6278955ab5b8265900800e9705c3c30dd0a8091 (DIRTY)
+    dynamicsHash d675fb37a7bdde4e0e9aa3a80e0d301523e5d3110b780b58f6d7020d3706f6c6
+    farmHash     22ae9eab43f0aeb16a142a171133c3df2fe46e3aa23bb67e7322daaba3c512dc
+    coreHash     56686b627fffc5e9fe7e3a0164513ac066ff32d339f22a5f021b415020348369
+    configHash   197b736cf9fad588
+    threads      4
+    processId    47860
+Watch it with: Get-Content 'D:\Projects\experiments\evolution-simulator\runs\r52fix-s4.md' -Tail 3
+Stop it with:  ./scripts/stop-arm.ps1 r52fix-s4 -RunsRoot D:\Projects\experiments\evolution-simulator\runs -Reason manual-other
+== the thread-identity test on the new r42 config, from 11:01:15
+D:\Projects\experiments\evolution-simulator\scratch\wt-r52\src\Evosim.Core.Tests\SizeBoundsTests.cs(138,13): warning xUnit2013: Do not use Assert.Equal() to check for collection size. Use Assert.Empty instead. (https://xunit.net/xunit.analyzers/rules/xUnit2013) [D:\Projects\experiments\evolution-simulator\scratch\wt-r52\src\Evosim.Core.Tests\Evosim.Core.Tests.csproj]
+D:\Projects\experiments\evolution-simulator\scratch\wt-r52\src\Evosim.Core.Tests\WorldStateTests.cs(323,13): warning xUnit2013: Do not use Assert.Equal() to check for collection size. Use Assert.Single instead. (https://xunit.net/xunit.analyzers/rules/xUnit2013) [D:\Projects\experiments\evolution-simulator\scratch\wt-r52\src\Evosim.Core.Tests\Evosim.Core.Tests.csproj]
+  Evosim.Core.Tests -> D:\Projects\experiments\evolution-simulator\scratch\wt-r52\artifacts\Evosim.Core.Tests\bin\Debug\net8.0\Evosim.Core.Tests.dll
+Test run for D:\Projects\experiments\evolution-simulator\scratch\wt-r52\artifacts\Evosim.Core.Tests\bin\Debug\net8.0\Evosim.Core.Tests.dll (.NETCoreApp,Version=v8.0)
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:     1, Skipped:     0, Total:     1, Duration: < 1 ms - Evosim.Core.Tests.dll (net8.0)
+parallel identity exit 0
+r52fix-s4 ended: ended budget at 11:38:42
+== done at 11:38:42; the crowd fixture is D:\Projects\experiments\evolution-simulator\runs\r52fix-s4\2026-09-28-100112-197b736c

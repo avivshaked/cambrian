@@ -1,0 +1,65 @@
+dotnet:  C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe
+project: D:\Projects\experiments\evolution-simulator\src\Evosim.Ledger\Evosim.Ledger.csproj
+
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Evosim.Core -> D:\Projects\experiments\evolution-simulator\artifacts\Evosim.Core\bin\Debug\netstandard2.1\Evosim.Core.dll
+  Evosim.Ledger -> D:\Projects\experiments\evolution-simulator\artifacts\Evosim.Ledger\bin\Debug\net8.0\Evosim.Ledger.dll
+Spent density: 1 units/m3, from initialMatterPerCubicMetre (the config holds a budget of 15000 units, whose density needs a built world's live volume)
+
+## Body — inocula/pool-r47/stomach-r45s1-100.json
+
+- Parts: 1
+- Volume: 0.0899 m3
+- Lit area: 0.2426 m2
+- Silhouette: 0.4597 m2
+- Lit area (capped): 0.2426 m2 (cap on)
+- Tissue: 44.952 J
+- Standing cost: 0.3596 W (0.0036 units/s)
+- support W: 0 at 0.1 W/m2/m2, 0% of the standing cost; reach 0 m area-weighted, farthest part 0 m
+- Fixation at surface: 0 W (0 units/s)
+- Truncated: False
+- Cell types: absorptive x1 (0.0899 m3)
+
+## Modules — the add rule's price (D106 item 2)
+
+Every node is determinate, so the module rule has nothing to add here and `module repay s` is not a number this genome has.
+
+## Mouth — the four attributes' prices (D106 item 3)
+
+Reference part: the body's largest — 0.9705 m2, 0.0899 m3, health pool 1.1688 at toughness 1.
+
+| reading | value |
+|---|---|
+| claw at the structural cap (1) |0.0971 W, 291.1549 J over a 3000 s lifetime |
+| this body as a corpse |44.952 J, 35.9616 J kept at waste 0.2 |
+| claw repaid by one such corpse |370.5405 s of claw |
+| cuticle at the leaf cap (0.5) |0.4853 W, 0% of this body's fixation at the surface |
+| mouth at the consumer cap (1) |0.0971 W |
+| shell at the structural toughness cap |0.027 W |
+| steps to kill this part, unprotected |3 metabolic steps (0.5 s each) |
+| steps to kill it behind a capped cuticle |5 |
+| a capped mouth emptying a corpse of this body |0.4632 s, against 200 s of decay |
+
+
+### Clearance = 10 (as stored)
+
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | units/child |
+|---|---|---|---|---|---|---|---|
+|3|0.25|-0.1573|0.4444|24|0|never|0.6867|
+|3|0.5|0.045|0.4444|826|0|never|0.6867|
+|3|1|0.4495|0.4444|4985|11|227.5|0.6867|
+|3|2|1.2587|0.4444|12119|94|78|0.6867|
+|3|4|2.8769|0.4444|26346.5|498|34|0.6867|
+|3|8|6.1135|0.4444|54256.5|2261|16|0.6867|
+|3|16|12.5866|0.4444|60000*|7845|8|0.6867|
+|44|0.25|-0.1573|0.4444|24|0|never|0.6867|
+|44|0.5|0.045|0.4444|826|0|never|0.6867|
+|44|1|0.4495|0.4444|4985|11|227.5|0.6867|
+|44|2|1.2587|0.4444|12119|94|78|0.6867|
+|44|4|2.8769|0.4444|26346.5|498|34|0.6867|
+|44|8|6.1135|0.4444|54256.5|2261|16|0.6867|
+|44|16|12.5866|0.4444|60000*|7845|8|0.6867|
+
+*lifetime marked with an asterisk was censored at the 60000 s cap rather than ending in starvation.
+

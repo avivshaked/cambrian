@@ -1,0 +1,41 @@
+== V2 at 10:20: D:\Projects\experiments\evolution-simulator\runs\r50-s1\2026-09-26-225346-a2cda4b0\checkpoints\000015000.ckpt
+=== checkpoint fidelity
+  checkpoint D:\Projects\experiments\evolution-simulator\runs\r50-s1\2026-09-26-225346-a2cda4b0\checkpoints\000015000.ckpt at 15000 s
+  stepping   30 s on 8 threads, then writing and restoring again
+  stepped to 15030 s: 3648 living, 3648 bodies
+
+  twin step: the two worlds agreed after each of 100 physics steps and 2 metabolic steps
+  member                                           owners differing   first
+
+
+PASS: the restored world is the stepped world in every compared member
+verify-checkpoint exit 0
+r50-s1R -> farm (dynamics)
+  exe   D:\Projects\experiments\evolution-simulator\scratch\wt-leafincome\artifacts\Evosim.Farm\bin\Release\net8.0\Evosim.Farm.exe
+  seed 1, 16000 s, 90 min wall, 16 threads
+  runs  D:\Projects\experiments\evolution-simulator\runs
+  from  D:\Projects\experiments\evolution-simulator\runs\r50-s1\2026-09-26-225346-a2cda4b0 at 15000 s
+  out   D:\Projects\experiments\evolution-simulator\runs\r50-s1R.md
+  log   D:\Projects\experiments\evolution-simulator\scratch\wt-leafincome\scratch\logs\r50-s1R.out / D:\Projects\experiments\evolution-simulator\scratch\wt-leafincome\scratch\logs\r50-s1R.err
+  9 settings
+  launched, pid 33156
+  waiting up to 60 s for run.json...
+  run.json D:\Projects\experiments\evolution-simulator\runs\r50-s1R\2026-09-27-092122-a2cda4b0\run.json
+    status       running
+    engine       dynamics 1.0.0.0
+    gitCommit    9ecff1034045bdfb7e6081f080253b79ba8c3610
+    dynamicsHash c6bff027af4b87f18e05d7ad9d72c607b9ead532234eef8f480859ab499790e8
+    farmHash     66a04a0e4247c00f079d9fb6db0ed6e867318a808137be5b1b1031596b52b2d8
+    coreHash     a4843a2a64ecefdb5d454a4263c192af2e38fdc164c4004909da995f5198dc16
+    configHash   a2cda4b050d05f46
+    threads      16
+    processId    33156
+    resumedFrom  r50-s1/2026-09-26-225346-a2cda4b0 at 15000 s
+                 checkpoint 9fbfa46b75cc180c1e6d059557782d8022dbc8fb806b178768547c81efd7f754
+Watch it with: Get-Content 'D:\Projects\experiments\evolution-simulator\runs\r50-s1R.md' -Tail 3
+Stop it with:  ./scripts/stop-arm.ps1 r50-s1R -RunsRoot D:\Projects\experiments\evolution-simulator\runs -Reason manual-other
+r50-s1 vs r50-s1R: unequal coverage -- 2900 sample(s) only in r50-s1 (last t=30000), 0 only in r50-s1R (last t=16000)
+r50-s1 vs r50-s1R: identical on all 100 shared samples (to t=16000); contacts/step at end 0.396; 24 field(s) left out by --skip
+  (this run names them differently: contactPairsPerStep read as overlapPairsPerStep -- a different census, not the same number)
+compare-det exit 0
+== V2 done at 10:27

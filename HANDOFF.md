@@ -41,7 +41,7 @@ approves its video as final, and then they are thinned only as the storage rulin
   across the world's threads. It was accepted from round 49 seed 2's checkpoint at 29,000 s
   against round 49's own exe. The digest was identical over 3,000 steps at 16 threads and 200
   at one, and the stats identical on 30 samples. It ran 300 s of about 10,600 bodies in 4.2
-  minutes against 4.8, 1.19x real time against 1.04x (`scratch/r49-speed/accept2.log`).
+  minutes against 4.8, 1.19x real time against 1.04x (`logbook/specs/r49-read/accept2.log`).
 - `8e0741a` and `0f737f1`: round 49's entry reads under `scripts/reads/r49-entry/`, and the
   entry. `5c98a5c`: round 50's reader, `scripts/reads/r50-read.py`.
 
@@ -138,11 +138,10 @@ The build is the branch `round-52` in `scratch/wt-r52`, cut from `round-51-tests
 - `4c1780b`: the config fixture `pfix15` (`8656c52dd0575c49`); the Farm suite passes 197 of 197.
 
 The crowd fixture `r52fix-s4` (round 44's world, seed 4, 20,000 s at 4 threads) started at 11:01
-on 2026-09-28 from `scratch/r52-build/build.ps1`, logged to `scratch/r52-build/build.log`.
+on 2026-09-28 from `logbook/specs/r52-build/build.ps1`, logged to `logbook/specs/r52-build/build.log`.
 
 What D129 can do, read from round 51 seed 1's film window at 12,000 s
-(`scratch/r52-build/pay/landing.py` and `landing.txt`, to go to logbook/specs with the
-pre-registration). There were 5,282 corpses holding 124 kJ, 23 J each on average, 91% of them
+(`logbook/specs/r52-build/pay/landing.py` and `landing.txt`). There were 5,282 corpses holding 124 kJ, 23 J each on average, 91% of them
 settled. The column the rule picks holds 69 J on average, against 5.6 J for a column drawn at random.
 A mouth founder of radius 0.5 m or less lands with a corpse in reach 70 to 80% of the time,
 with a median of 33 to 43 J in reach. At a radius of 0.8 m that falls to 30%, because the bed holds the
@@ -168,7 +167,7 @@ times round 50's, with the energy audit closed to 2.2e-6 J; 0125 reads it as the
 and keeps B1's bar.
 
 The husks' fall was wrong until `bebca14` (the evening of 2026-09-27). The first film window with
-husks, drawn as a plot (`scratch/owner/r51-husks-smoke-3000.png`), showed 621 of the final smoke's
+husks, drawn as a plot (`logbook/images/r51-husks-smoke-3000.png`), showed 621 of the final smoke's
 2,390 husks held at -45 m, unsettled. The world's depth is the bed's mean, and round 51's bed tilts
 96 m, so half the disc lies below -45 m, down to -93 m. The husk's drift clamped at the depth before
 it tested for the bed. A settling husk is now stopped by the bed or a cap alone, and a world whose
@@ -176,7 +175,7 @@ corpses do not settle keeps the clamp, so every recorded run replays. The screen
 the first smoke's (`runs/r51smoke-s1`) were read with the fault. The fixed smoke
 (`runs/r51smoke2-s1`, `coreHash 759c87a1…`) parted from the first at 620 s. At 3,000 s it had 1,201 of
 2,387 husks settled where 498 had, 0.43 of their joules against 0.19
-(`scratch/owner/r51-husks-fixed-3000.png`), and the rest within a realisation's spread. Its checkpoint
+(`logbook/images/r51-husks-fixed-3000.png`), and the rest within a realisation's spread. Its checkpoint
 check and its resume passed. On the fixed build Core passed 1,036 of 1,036 with the slow set, Farm
 194 and Dynamics 118 on the crowd fixture `r51fix-s4`. The fixed build cannot read the screen's
 checkpoints. `99ab283` added the husk's drawing facts to the checkpoint inside `StateVersion` 13, so
@@ -266,7 +265,7 @@ from round 51 (D126), after the check in queue item 3.
 
 The probe reads `EVOSIM_GPU_PROBE` from the process environment directly, which bites. The
 script's `-Env` passes settings as arguments and does not reach it, and the binding warns that it
-ignores the variable. Set it in the launching shell's environment (`scratch/r49-probe/probe2.ps1`).
+ignores the variable. Set it in the launching shell's environment (`scripts/probe-gpu-env.ps1`).
 
 ### Storage, as the owner ruled it on 2026-09-26
 
@@ -409,7 +408,7 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    books closed and no divergence. V2 passed at 10:27: the member check exited 0 and the resume from
    15,000 s was identical to seed 1 on all 100 samples. The full read is
    `logbook/specs/r50-read/read-end.txt` (`python scripts/reads/r50-read.py --logs-dir
-   scratch/wt-leafincome/scratch/logs --v2-log scratch/logs/r50-v2.log`). Three clauses fail: W1
+   scratch/wt-leafincome/scratch/logs --v2-log logbook/specs/r50-read/v2.log`). Three clauses fail: W1
    (two snow founders in seed 2 a hair under their column's mean), M4 (in seed 3 the best
    stomach-bud line's stomach brings a median 5.4% of the income, against a bar of 2%) and S3 (seed
    1's 137 rigid stomach children died at a median 3,005 s, against a bar of 1,500). V1 waits for

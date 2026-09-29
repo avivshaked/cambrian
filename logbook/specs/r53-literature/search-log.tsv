@@ -1,0 +1,44 @@
+date	db	tag	query	filters	count
+2026-09-29	OpenAlex	C1a	whale fall decomposition	is_retracted:false sort=cited_by_count:desc	9151
+2026-09-29	OpenAlex	C1b		title_and_abstract.search:whale fall,is_retracted:false sort=cited_by_count:desc	1997
+2026-09-29	OpenAlex	C1b	"whale fall" OR "whale falls"	is_retracted:false sort=cited_by_count:desc	1826
+2026-09-29	OpenAlex	C1c		title_and_abstract.search:"whale fall"|"whale falls",is_retracted:false sort=cited_by_count:desc	420
+2026-09-29	OpenAlex	C1d		title_and_abstract.search:"food fall"|"food falls"|"jelly fall"|"jelly falls"|"fish fall"|"nekton fall",is_retracted:false sort=cited_by_count:desc	360
+2026-09-29	OpenAlex	C1e	(carcass OR carrion) AND decomposition AND (sinking OR "water column" OR seafloor OR marine)	is_retracted:false sort=relevance_score:desc	10233
+2026-09-29	OpenAlex	C1f	(jellyfish OR copepod OR zooplankton) carcass decomposition rate (sinking OR temperature)	is_retracted:false sort=relevance_score:desc	1256
+2026-09-29	OpenAlex	C3a	(microbe OR microbial) AND scavenger AND competition AND (carrion OR carcass)	is_retracted:false sort=relevance_score:desc	1089
+2026-09-29	OpenAlex	C3b		title.search:"fruits rot" OR "Scavenging: how carnivores and carrion structure communities" OR "role of carrion in maintaining biodiversity",is_retracted:false sort=cited_by_count:desc	11
+2026-09-29	OpenAlex	C4a	("boundary layer" OR "concentration boundary layer" OR refiltration OR "seston depletion") AND ("suspension feeder" OR "suspension feeders" OR mussel OR "filter feeder")	is_retracted:false sort=relevance_score:desc	4145
+2026-09-29	OpenAlex	C4b	"deposit feeding" OR "deposit feeders" AND (food limitation OR "resource renewal" OR depletion OR "optimal foraging")	is_retracted:false sort=cited_by_count:desc	6942
+2026-09-29	OpenAlex	C4c		title.search:"deposit feeding"|"deposit feeders"|"deposit-feeding",is_retracted:false sort=cited_by_count:desc	569
+2026-09-29	OpenAlex	C5a	("hydrothermal vent" OR "cold seep" OR "methane seep") AND ("sphere of influence" OR "spatial extent" OR connectivity OR metacommunity OR colonization)	is_retracted:false sort=relevance_score:desc	10256
+2026-09-29	OpenAlex	C6a	(depression OR pit OR trough OR canyon OR "bedform" OR topography) AND ("organic matter" OR detritus) AND (accumulation OR trapping) AND (benthic OR macrofauna)	is_retracted:false sort=relevance_score:desc	21648
+2026-09-29	SemanticScholar	C1s1	carcass decomposition rate seafloor scavengers microbial	limit=20	FAILED: HTTP 429 after 8 backoffs
+2026-09-29	OpenAlex	C6b		title_and_abstract.search:"habitat heterogeneity" AND ("species richness" OR diversity) AND (meta-analysis OR "keystone structures"),is_retracted:false sort=cited_by_count:desc	42
+2026-09-29	OpenAlex	C6c		title.search:"environmental heterogeneity as a universal driver" OR "sources of habitat heterogeneity and biodiversity on the deep ocean margins" OR "detritus-based patches" OR "hotspots of benthic",is_retracted:false sort=cited_by_count:desc	9
+2026-09-29	OpenAlex	C7a	("organic carbon flux" OR "POC flux" OR "export flux") AND depth AND (seafloor OR "benthic-pelagic coupling" OR shelf) AND (primary production)	is_retracted:false sort=cited_by_count:desc	5596
+2026-09-29	OpenAlex	C7b		title.search:"Particulate organic carbon flux in the oceans" OR "VERTEX: carbon cycling in the northeast Pacific" OR "Abyssal food limitation" OR "Global bathymetric patterns of standing stock" OR "benthic-pelagic coupling for marine ecosystem functioning" OR "synthesis of global particle export",is_retracted:false sort=cited_by_count:desc	10
+2026-09-29	OpenAlex	C7c		title.search:"Putting the lake back together" OR "global ocean flux of particulate organic carbon" OR "benthic-pelagic coupling" OR "benthic–pelagic coupling",is_retracted:false sort=cited_by_count:desc	268
+2026-09-29	OpenAlex	C8a		title.search:"Detritus, trophic dynamics and biodiversity" OR "What can we learn from resource pulses" OR "green and brown food webs" OR "brown food web" OR "donor control" OR "detritus-based food",is_retracted:false sort=cited_by_count:desc	134
+2026-09-29	OpenAlex	C8b	("artificial life" OR "individual-based model" OR "agent-based model" OR "artificial ecosystem") AND (scavenger OR scavenging OR carrion OR carcass OR detritus OR decomposer)	is_retracted:false sort=relevance_score:desc	23305
+2026-09-29	OpenAlex	C8c		title.search:"Obligate vertebrate scavengers must be large soaring fliers" OR "Tyrannosaurus rex have been a scavenger" OR "Intra-guild competition and its implications for one of the biggest terrestrial predators" OR "nitrogen-based model of plankton dynamics in the oceanic mixed layer" OR "Body size as a driver of scavenging",is_retracted:false sort=cited_by_count:desc	6
+2026-09-29	OpenAlex	C8d	(scavenging OR scavenger) AND (fish OR amphipod OR "deep sea") AND (energetic OR "search" OR foraging) AND (model OR feasibility)	is_retracted:false sort=relevance_score:desc	39313
+2026-09-29	SemanticScholar	C8s1	artificial life simulation evolution scavenging corpses decomposition	limit=20	FAILED: HTTP 429 repeatedly, aborted at 110 s
+2026-09-29	SemanticScholar	probe	whale fall	limit=1	429
+2026-09-29	OpenAlex	C8e		title_and_abstract.search:"artificial life" AND (corpse OR corpses OR carcass OR detritus OR decomposition OR scavenger OR "dead bodies"),is_retracted:false sort=cited_by_count:desc	69
+2026-09-29	OpenAlex	C8f		title_and_abstract.search:"self-decomposition" OR "programmed self-decomposition",is_retracted:false sort=cited_by_count:desc	1370
+2026-09-29	OpenAlex	C1g	(aggregate OR "marine snow" OR detritus OR carcass) AND ("sinking velocity" OR "sinking speed" OR "settled" OR "sediment surface") AND (remineralization OR respiration OR degradation) AND (rate)	is_retracted:false sort=relevance_score:desc	37591
+2026-09-29	OpenAlex	C1h		title_and_abstract.search:("pulse-chase" OR "13C-labelled" OR "13C-labeled" OR "tracer") AND (phytodetritus OR "algal detritus") AND (sediment OR seafloor),is_retracted:false sort=cited_by_count:desc	64
+2026-09-29	OpenAlex	C1i		title.search:(jellyfish OR jelly OR medusae OR gelatinous) AND (decomposition OR "dead" OR carrion OR carcasses OR turnover),is_retracted:false sort=cited_by_count:desc	38
+2026-09-29	OpenAlex	SN-burkepile		cites:W1978186124,is_retracted:false sort=cited_by_count:desc	185
+2026-09-29	OpenAlex	SN-frechette		cites:W2115616265,is_retracted:false sort=cited_by_count:desc	388
+2026-09-29	OpenAlex	shortlist		openalex_id:<shortlist chunk 0>	45
+2026-09-29	OpenAlex	shortlist		openalex_id:<shortlist chunk 45>	8
+2026-09-29	NCBI idconv	pmc	<53 shortlist DOIs>	-	see resp/pmc-idconv.json
+2026-09-29	OpenAlex	C4d	("depletion" OR "refiltration" OR "boundary layer") AND ("suspension feeders" OR "filter feeders" OR "benthic grazers" OR "deposit feeders") AND (flow OR mixing)	is_retracted:false,is_oa:true,type:article sort=relevance_score:desc	4673
+2026-09-29	OpenAlex	C4e		openalex_id:<4 C4 OA candidates>	4
+2026-09-29	OpenAlex	abstracts		openalex_id:<abstract batch>	41
+2026-09-29	OpenAlex	C7abs		openalex_id:<C7 abstracts: Martin, Jahnke, Smith 2008, Graf>	4
+2026-09-29	SemanticScholar	batch	<38 included DOIs>	fields=citationCount,influentialCitationCount	HTTP Error 429: 
+2026-09-29	CrossRef	verify	<40 DOIs>	/works/{doi} updated-by, relation	40 resolved
+2026-09-29	OpenAlex	contest		openalex_id:<Sherratt 2006, Stockton 1982, Asmus 1991>	3

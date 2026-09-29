@@ -1,0 +1,108 @@
+== Farm suite from 09:07:42
+
+> [7mPassed![0m  - Failed:     0, Passed:   175, Skipped:     0, Total:   175, Duration: 5 s - Evosim.Farm.Tests.dll (net8.0)
+farm tests exit 0
+== spd-base16 from 09:07:52: 16 threads to 29300 s
+spd-base16 -> farm (dynamics)
+  exe   D:\Projects\experiments\evolution-simulator\scratch\wt-r49\artifacts\Evosim.Farm\bin\Release\net8.0\Evosim.Farm.exe
+  seed 1, 29300 s, 120 min wall, 16 threads
+  runs  D:\Projects\experiments\evolution-simulator\scratch\r49-speed\runs
+  from  D:\Projects\experiments\evolution-simulator\runs\r49-s2 at 29000 s
+  out   D:\Projects\experiments\evolution-simulator\scratch\r49-speed\runs\spd-base16.md
+  log   D:\Projects\experiments\evolution-simulator\scratch\wt-r49\scratch\logs\spd-base16.out / D:\Projects\experiments\evolution-simulator\scratch\wt-r49\scratch\logs\spd-base16.err
+  10 settings
+  launched, pid 59240
+  waiting up to 60 s for run.json...
+  run.json D:\Projects\experiments\evolution-simulator\scratch\r49-speed\runs\spd-base16\2026-09-26-080754-f0794a8b\run.json
+    status       running
+    engine       dynamics 1.0.0.0
+    gitCommit    8860180c301016556c746914830cdeb1deeeaaf5
+    dynamicsHash c818ac0b0b6f26afa266eb86fb64e354bf8c3e15fcb98c0f933ab62f1560a06d
+    farmHash     95e6955f458075f5e68a9381952fb68f327bd3a3cf2e7db6ba89197150c9e6ad
+    coreHash     d0383e7fb5ed59f11d6147598078294bc4624bc5f522385a239d3cfb8c4965ca
+    configHash   f0794a8b2f1367b8
+    threads      16
+    processId    59240
+    resumedFrom  r49-s2/2026-09-25-223116-f0794a8b at 29000 s
+                 checkpoint 16d4a27ef73a63d2d6eeec0c0b52e00d99d63d85643f6d895b43d2d1c525864b
+Watch it with: Get-Content 'D:\Projects\experiments\evolution-simulator\scratch\r49-speed\runs\spd-base16.md' -Tail 3
+Stop it with:  ./scripts/stop-arm.ps1 spd-base16 -RunsRoot D:\Projects\experiments\evolution-simulator\scratch\r49-speed\runs -Reason manual-other
+  ended ended budget at 09:12:56
+  2930000 physics steps ú 29300 simulated seconds ú 104979 births ú 4.8 min wall clock (101.3x real time).
+  wall split: physics 77%, world 18%, harness 4%, writers 1%, other 0%
+== spd-new16 from 09:12:56: 16 threads to 29300 s
+spd-new16 -> farm (dynamics)
+  exe   D:\Projects\experiments\evolution-simulator\scratch\wt-speed\artifacts\Evosim.Farm\bin\Release\net8.0\Evosim.Farm.exe
+  seed 1, 29300 s, 120 min wall, 16 threads
+  runs  D:\Projects\experiments\evolution-simulator\scratch\r49-speed\runs
+  from  D:\Projects\experiments\evolution-simulator\runs\r49-s2 at 29000 s
+  out   D:\Projects\experiments\evolution-simulator\scratch\r49-speed\runs\spd-new16.md
+  log   D:\Projects\experiments\evolution-simulator\scratch\wt-speed\scratch\logs\spd-new16.out / D:\Projects\experiments\evolution-simulator\scratch\wt-speed\scratch\logs\spd-new16.err
+  11 settings
+  launched, pid 59280
+  waiting up to 60 s for run.json...
+  run.json D:\Projects\experiments\evolution-simulator\scratch\r49-speed\runs\spd-new16\2026-09-26-081259-f0794a8b\run.json
+    status       running
+    engine       dynamics 1.0.0.0
+    gitCommit    698e2b688655c4aeac185eebff03246c3c1c2892
+    dynamicsHash b5f1c8b313a12ab2b8eae01d02cd83014401108ad0356b6341f9895e14846d6f
+    farmHash     cc0cc323986bb47ce6df038e48a6a882f0cca74fbbaf39b47b9ed99b43583243
+    coreHash     d0383e7fb5ed59f11d6147598078294bc4624bc5f522385a239d3cfb8c4965ca
+    configHash   f0794a8b2f1367b8
+    threads      16
+    processId    59280
+    resumedFrom  r49-s2/2026-09-25-223116-f0794a8b at 29000 s
+                 checkpoint 16d4a27ef73a63d2d6eeec0c0b52e00d99d63d85643f6d895b43d2d1c525864b
+[33;1mWARNING: Resumed across a source change: dynamicsHash: checkpoint c818ac0b0b6f., this build b5f1c8b313a1.; farmHash: checkpoint 95e6955f4580., this build cc0cc323986b.[0m
+Watch it with: Get-Content 'D:\Projects\experiments\evolution-simulator\scratch\r49-speed\runs\spd-new16.md' -Tail 3
+Stop it with:  ./scripts/stop-arm.ps1 spd-new16 -RunsRoot D:\Projects\experiments\evolution-simulator\scratch\r49-speed\runs -Reason manual-other
+  ended ended budget at 09:17:21
+  2930000 physics steps ú 29300 simulated seconds ú 104979 births ú 4.2 min wall clock (117.3x real time).
+  wall split: physics 74%, world 20%, harness 4%, writers 2%, other 0%
+== spd-new1 from 09:17:21: 1 threads to 29020 s
+spd-new1 -> farm (dynamics)
+  exe   D:\Projects\experiments\evolution-simulator\scratch\wt-speed\artifacts\Evosim.Farm\bin\Release\net8.0\Evosim.Farm.exe
+  seed 1, 29020 s, 120 min wall, 1 threads
+  runs  D:\Projects\experiments\evolution-simulator\scratch\r49-speed\runs
+  from  D:\Projects\experiments\evolution-simulator\runs\r49-s2 at 29000 s
+  out   D:\Projects\experiments\evolution-simulator\scratch\r49-speed\runs\spd-new1.md
+  log   D:\Projects\experiments\evolution-simulator\scratch\wt-speed\scratch\logs\spd-new1.out / D:\Projects\experiments\evolution-simulator\scratch\wt-speed\scratch\logs\spd-new1.err
+  11 settings
+  launched, pid 53864
+  waiting up to 60 s for run.json...
+  run.json D:\Projects\experiments\evolution-simulator\scratch\r49-speed\runs\spd-new1\2026-09-26-081723-f0794a8b\run.json
+    status       running
+    engine       dynamics 1.0.0.0
+    gitCommit    698e2b688655c4aeac185eebff03246c3c1c2892
+    dynamicsHash b5f1c8b313a12ab2b8eae01d02cd83014401108ad0356b6341f9895e14846d6f
+    farmHash     cc0cc323986bb47ce6df038e48a6a882f0cca74fbbaf39b47b9ed99b43583243
+    coreHash     d0383e7fb5ed59f11d6147598078294bc4624bc5f522385a239d3cfb8c4965ca
+    configHash   f0794a8b2f1367b8
+    threads      1
+    processId    53864
+    resumedFrom  r49-s2/2026-09-25-223116-f0794a8b at 29000 s
+                 checkpoint 16d4a27ef73a63d2d6eeec0c0b52e00d99d63d85643f6d895b43d2d1c525864b
+[33;1mWARNING: Resumed across a source change: dynamicsHash: checkpoint c818ac0b0b6f., this build b5f1c8b313a1.; farmHash: checkpoint 95e6955f4580., this build cc0cc323986b.[0m
+Watch it with: Get-Content 'D:\Projects\experiments\evolution-simulator\scratch\r49-speed\runs\spd-new1.md' -Tail 3
+Stop it with:  ./scripts/stop-arm.ps1 spd-new1 -RunsRoot D:\Projects\experiments\evolution-simulator\scratch\r49-speed\runs -Reason manual-other
+  ended ended budget at 09:19:25
+  2902000 physics steps ú 29020 simulated seconds ú 103571 births ú 2 min wall clock (245.4x real time).
+  wall split: physics 84%, world 15%, harness 1%, writers 0%, other 0%
+== digest base16 against new16
+spd-base16: runs/spd-base16\2026-09-26-080754-f0794a8b\digest.jsonl (3000 rows)
+spd-new16: runs/spd-new16\2026-09-26-081259-f0794a8b\digest.jsonl (3000 rows)
+spd-base16 vs spd-new16: identical over all 3000 shared digest steps (to step 2930000, t=29299.999345093966 s)
+no step has a digest-bodies.jsonl row in both runs (relaunch both with -DigestDump at a step they share)
+digest-diff exit 0
+== digest base16 against new1
+spd-base16: runs/spd-base16\2026-09-26-080754-f0794a8b\digest.jsonl (3000 rows)
+spd-new1: runs/spd-new1\2026-09-26-081723-f0794a8b\digest.jsonl (200 rows)
+spd-base16 vs spd-new1: identical over all 200 shared digest steps (to step 2902000, t=29019.999351352453 s)
+no step has a digest-bodies.jsonl row in both runs (relaunch both with -DigestDump at a step they share)
+digest-diff exit 0
+== stats base16 against new16
+spd-base16 vs spd-new16: identical on all 30 shared samples (to t=29300); contacts/step at end 50.174; 22 field(s) left out by --skip
+  (this run names them differently: contactPairsPerStep read as overlapPairsPerStep -- a different census, not the same number)
+compare-det exit 0
+== accept done at 09:19:25
+
