@@ -80,6 +80,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('stopped'); ap.add_argument('cont'); ap.add_argument('cut', type=float); ap.add_argument('out')
     ap.add_argument('--runs-root', default=os.path.join(os.path.dirname(__file__), '..', 'runs'))
+    ap.add_argument('--header-from', default=None, help='a report whose header to take when the stopped run report is unreadable (a crash can zero it); regenerate it with a one-second launch of the same build, launcher and seed')
     a_ = ap.parse_args()
     root = os.path.abspath(a_.runs_root)
     a, c = run_dir(root, a_.stopped), run_dir(root, a_.cont)
@@ -112,6 +113,11 @@ def main():
         m = re.match(r'\|\s*([0-9.]+)\s*\|', line)
         return float(m.group(1)) if m else None
     head = [l for l in ra if t_of(l) is None and '\x00' not in l][:6]
+    if len(head) < 3 or not any(l.startswith('engine=') for l in head):
+        if not a_.header_from:
+            sys.exit('the stopped run report has no readable header; pass --header-from')
+        head = [l for l in open(a_.header_from, encoding='utf-8').read().split(chr(10)) if t_of(l) is None][:6]
+        print(f'  header taken from {a_.header_from}: the stopped run report is unreadable, and its table rows to the cut are lost (stats.jsonl holds them)')
     body = [l for l in ra if t_of(l) is not None and t_of(l) <= a_.cut] + [l for l in rc if t_of(l) is not None and t_of(l) > a_.cut]
     tail = [l for l in rc if t_of(l) is None][6:]
     with open(os.path.join(root, a_.out + '.md'), 'w', encoding='utf-8', newline='\n') as w:
