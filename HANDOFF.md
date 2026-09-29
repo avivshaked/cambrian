@@ -105,10 +105,13 @@ so every earlier config is refused; the fixtures are re-recorded and the full su
 52 ends. Then the four screens of the proposal (45, 30 and 25 m at a 139 s settled half-life, then
 the settled rate at the better depth), with the bed, shore and reefs rescaled for depth.
 
-The screens wait for round 52's read, not only its end (the owner, 2026-09-29: based on 52's outcome
-round 53 may change). Round 52 can move D131's values or its rules: many corpses eaten makes the
-settled rate a trade with the mouths, and the lifespan gene moves how large the corpses are. Every
-D131 build stays a knob at 0 until then, and round 53's world is set after the read.
+D132 (2026-09-29, after seeds 1 and 2 and Fable's advice, `logbook/specs/r53-fable-advice.md`) supersedes D131's
+first rule: the settled decay stays at 0. After round 52's read, four founding screens of 10,000 s run one at a time:
+30 m and 25 m with the geometry rescaled, 45 m with a matter budget of 27,000 (the control and the fallback), and 45 m
+with the settled decay at 0.005 (the refutation screen). Depth wins only if it beats the budget on the bed's water and
+`upt lim`. The lifespan values hold through rounds 53 and 54; seed 2's gene fell (0.79 to 0.70) where seed 1's rose,
+and why is read before the pre-registration. The pre-registration guards corpses eaten at round 52's level. The
+reactive thrust (`fable-propose-reactive-thrust.md`) is built and benched during round 53's week, for round 54.
 
 ### How round 52 was built
 
