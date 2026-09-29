@@ -1633,7 +1633,13 @@ actually verifying it.
   every new run until the flash. On 2026-09-25 they deferred the flash and ruled a lighter load
   instead: one heavy job at a time at about a third of the machine, with Intel's power limits
   set in the old BIOS. HANDOFF carries the current ruling, and the owner's Desktop carries the
-  flash steps. The revision is `Update Revision` under
+  flash steps.
+  **The flash was made on 2026-09-29**, after a crash in the NVIDIA driver (bugcheck 0xD1 in
+  `nvlddmkm.sys`): BIOS 1836, microcode 0x133, driver 617.14, Intel Default Settings at Performance
+  (253 W long and short, 307 A, read on the Ai Tweaker page), MultiCore Enhancement at Disabled -
+  Enforce All limits. Loading the defaults (F5) set MultiCore Enhancement back to Auto and TPM Device
+  Selection to Discrete; the first was set back and the second left, since the board has no discrete
+  chip, Windows still reports Intel's firmware TPM ready, and switching it can offer to clear the TPM. The revision is `Update Revision` under
   `HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor\0`, little-endian (`0E 01 00 00` is
   0x10E); throttling is `\Processor Information(_Total)\Performance Limit Flags` (0 is none).
   The ASUS WMI classes in `root\wmi` (`ASUSManagement`, `AsusAtkWmi_WMNB`) write the SMBus,
