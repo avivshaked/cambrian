@@ -1386,6 +1386,14 @@ actually verifying it.
   microcode (0x10E) and the file-system filter stack under a burst of process starts (2026-09-22's
   blue screen) both fit. Keep bursts of process starts low (the story flow runs its script tool in
   its own process for this reason), and read `Get-WinEvent` for Kernel-Power 41 before blaming a run.
+  **Most of these were a dead display on a live machine** (read 2026-09-29, after the owner said the
+  monitor would not wake and they pressed reset). A third reset on 2026-09-26 at 21:26 and one on
+  2026-09-29 at 07:19 each follow an `nvlddmkm` event (id 14) under a minute before, with the
+  machine still writing events and error reports in between; the card also logged twelve `Graphics
+  FECS Exception` events (id 13) during the channel outro's Blender render on 2026-09-28 at 21:07,
+  and blue-screened in `nvlddmkm` (0xD1) on 2026-09-29 at 17:37. So a reset after a black screen is
+  first read against the `nvlddmkm` events, and Kernel-Power 41's `PowerButtonTimestamp` says whether
+  the owner held the button. The two resets of 17:16 and 18:18 carry no driver event and stay open.
 - **The card runs the solver through ILGPU and nothing else, and its group size is set by
   hand** (logbook/0112, `spikes/02-gpu-featherstone/`). ComputeSharp refuses a local array
   in a shader and the step needs about 1,600 words of scratch a thread, so it is out. ILGPU
