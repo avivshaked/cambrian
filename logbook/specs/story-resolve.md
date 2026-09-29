@@ -43,7 +43,18 @@ bin there is one bin per run for that run's clips, and bins for the labels, the 
 assets.
 
 Nothing is burned in. At render, the subtitles are burned from the Deliver page (Video, Subtitle
-Settings, Export Subtitle, Burn into video), or written beside the film as a file for YouTube.
+Settings, Export Subtitle, Burn into video), or written beside the film as a file for YouTube. The
+YouTube preset has no Subtitle Settings at all. The owner rendered round 49's film with it on
+2026-09-29 and got no subtitle track. Their screenshot of the YouTube 2160p preset in Resolve
+Studio 21 ends at Upload directly to YouTube with no subtitle section. A user on Blackmagic's
+forum reports the section showing under Custom Export (not yet seen here). So render with Custom
+Export set to the same format, codec and size, with Export Subtitle ticked and As a separate file,
+SRT. Or export the track alone from the Edit page (right-click the subtitle track, Export
+Subtitle). A timeline that starts at 01:00:00:00 gives an SRT from the Edit page whose first cue
+is an hour in. Round 49's export (2026-09-29) did that: every cue an hour late, and every caption
+wrapped in `<b>` from the track's style, which YouTube would draw bold. Its text and times were
+otherwise the build's own SRT to the millisecond. Shift it back an hour and strip the tags, or
+upload the build's SRT, before it goes to YouTube.
 
 ## Setting up a machine
 
