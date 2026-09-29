@@ -18,6 +18,7 @@ poses.bin (binary, per sample, left out, and a reader that needs it says so) and
 
 Usage: python scripts/stitch-resume.py <stopped arm> <continuation arm> <T seconds> <out arm>
        [--runs-root runs]
+       python scripts/stitch-resume.py --fix-gz <joined run dir>   (a join made before the member writer)
 """
 import argparse, gzip, json, os, re, shutil, sys
 
@@ -41,9 +42,48 @@ def rows_t(path, opener=open):
     if bad:
         print(f'  {os.path.basename(path)}: {bad} unreadable line(s) dropped')
 
+class MemberWriter:
+    """Writes record format 2's gzip (Core's GzipMembers): plain gzip members, each with an extra
+    field (subfield EV, 8 bytes) holding the member's whole length, so Core's reader can walk the
+    file member by member. Python's gzip writes no such field and Core refuses its files, which is
+    what the first stitch (r52-s3j, 2026-09-29) left behind."""
+
+    def __init__(self, path, member_bytes=1 << 20):
+        self.f = open(path, 'wb')
+        self.buf = []
+        self.size = 0
+        self.member_bytes = member_bytes
+
+    def write(self, text):
+        b = text.encode('utf-8')
+        self.buf.append(b)
+        self.size += len(b)
+        if self.size >= self.member_bytes:
+            self.flush()
+
+    def flush(self):
+        if not self.buf:
+            return
+        plain = gzip.compress(b''.join(self.buf), mtime=0)
+        assert plain[3] == 0, 'a plain member with header flags'
+        extra = (12).to_bytes(2, 'little') + b'EV' + (8).to_bytes(2, 'little')
+        length = len(plain) + 2 + 4 + 8
+        member = plain[:3] + bytes([plain[3] | 0x04]) + plain[4:10] + extra + length.to_bytes(8, 'little') + plain[10:]
+        assert len(member) == length
+        self.f.write(member)
+        self.buf, self.size = [], 0
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.flush()
+        self.f.close()
+
 def join_jsonl(a, c, out, cut, opener=open, keyed_by_t=True):
     seen, n_a, n_c = set(), 0, 0
-    with opener(out, 'wt', encoding='utf-8', newline='\n') as w:
+    writer = MemberWriter(out) if opener is gzip.open else open(out, 'wt', encoding='utf-8', newline='\n')
+    with writer as w:
         for s, t in rows_t(a, opener):
             if keyed_by_t and t is not None and t > cut:
                 continue
@@ -76,8 +116,34 @@ def link_dir(a, c, out, cut):
             n += 1
     print(f'  {os.path.basename(out)}/: {n} files linked')
 
+def fix_gz(run):
+    """Rewrites a joined run's two gzip files in record format 2's member layout, line for line;
+    the old file is kept beside it as <name>.plain until the new one reads back equal."""
+    for name in ('positions.jsonl.gz', 'genomes.jsonl.gz'):
+        path = os.path.join(run, name)
+        if not os.path.exists(path):
+            continue
+        with open(path, 'rb') as f:
+            head = f.read(4)
+        if head[3] & 0x04:
+            print(f'  {name}: already in members')
+            continue
+        plain = path + '.plain'
+        os.replace(path, plain)
+        n = 0
+        with gzip.open(plain, 'rt', encoding='utf-8', newline='\n') as r, MemberWriter(path) as w:
+            for line in r:
+                w.write(line); n += 1
+        with gzip.open(plain, 'rb') as x, gzip.open(path, 'rb') as y:
+            assert x.read() == y.read(), f'{name}: the rewrite does not read back equal'
+        os.remove(plain)
+        print(f'  {name}: {n} lines rewritten in members')
+
 def main():
     ap = argparse.ArgumentParser()
+    if len(sys.argv) == 3 and sys.argv[1] == '--fix-gz':
+        fix_gz(sys.argv[2])
+        return
     ap.add_argument('stopped'); ap.add_argument('cont'); ap.add_argument('cut', type=float); ap.add_argument('out')
     ap.add_argument('--runs-root', default=os.path.join(os.path.dirname(__file__), '..', 'runs'))
     ap.add_argument('--header-from', default=None, help='a report whose header to take when the stopped run report is unreadable (a crash can zero it); regenerate it with a one-second launch of the same build, launcher and seed')
