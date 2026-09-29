@@ -471,6 +471,9 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    - When nursery run 2 ends (near 03:30), read its checks and its generations.
    - Build design A on `nursery` (the knobs: corpse count and joules, the density drawn per
      episode, still water until the knockout passes, the replacement margin).
+   - When run 2 ends, start `scratch/wt-nursery/scripts/nursery-measure-d134.ps1` detached (the session
+     has a one-shot for 03:37 on 2026-09-30); read it with `scripts/nursery-read-d134.py` on the same
+     branch. It covers measurements 1 to 3 (4 is done):
    - On the freed four threads, run the four measurements (`logbook/specs/fast-nursery-proposal.md`
      §5). If the hand-wired brain grafted onto a pooled body cannot score in A's episode, stop and
      report; otherwise run A at four threads.
