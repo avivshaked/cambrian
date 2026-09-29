@@ -15,9 +15,22 @@ a stretch. Option A: rounds run overnight on the CPU, one seed at a time at sixt
 the card is worked by day with nothing else on the machine. From round 51 an overnight
 round also hands the snow's transport to the card, which gives the CPU's bits (D126, the owner's
 ruling of 2026-09-26). Nothing else runs on the card at night. The total load stays at or under
-half the machine, 16 of 32 logical processors. The processor's microcode is still 0x10E. The
-owner deferred the BIOS flash and watches for warning signs, and any unexplained crash or clean
-re-run is reported the same hour (CLAUDE.md, "Read the CPU's microcode"). Load is reported as
+half the machine, 16 of 32 logical processors. The BIOS was flashed on 2026-09-29 (1836,
+microcode 0x133, Intel's Performance limits) and the NVIDIA driver updated (617.14), after a week of
+resets that were mostly the graphics driver failing on a live machine (CLAUDE.md). The cap stays for
+about a week of clean running, and the card carries no heavy work until then, so round 53 runs its
+transport on the CPU. Any unexplained crash or clean re-run is reported the same hour.
+
+### The owner's overnight delegation (2026-09-29, evening)
+
+The owner went to sleep and delegated round 52 and round 53 decisions, answering three questions:
+the agent launches round 53 tonight once the screens have chosen and the pre-registration is
+committed; if round 52's read argues against D132's plan, the agent uses its judgement and records
+the change as its own decision on the owner's delegation; and the four swimming recommendations are
+approved for round 54 (the owner's simple push along the limb, strokes that cost energy, a corpse
+scent to about 10 m, both together as foraging), to be written up with numbers and built and benched
+on a branch, reaching no round until the owner has seen the bench. Round 52's seeds are extended from
+their 30,000 s checkpoints to 50,000 s overnight, after the screens, with the round read at 30,000 s. Load is reported as
 `% Processor Utility`, the counter Task Manager shows.
 
 ### Round 49 is read
