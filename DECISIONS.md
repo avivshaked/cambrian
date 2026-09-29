@@ -151,6 +151,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D129](#d129) | A founder with a mouth lands where the corpses lie, from round 52: the founders' lottery and depth read the corpses as a mouth's food | 2026-09-28 | ruled by the owner in conversation, option A of two, after the read of where round 51's founders landed |
 | [D130](#d130) | Round 52 runs D129 with the lifespan gene heritable (D128's second half); if the pair causes a problem, one of them is removed | 2026-09-28 | ruled by the owner in conversation, against the agent's recommendation of D129 alone |
 | [D131](#d131) | Round 53: a corpse decomposes fast once it settles, and the tank is shallower with the matter held, each value by screen after round 52; the places on the bed come back one a round, hollows first, then a seep that charges matter, then the anchoring cell | 2026-09-29 | ruled by the owner in conversation on the agent's proposal (logbook/specs/r53-larder-proposal.md) |
+| [D132](#d132) | Round 53 without fast decay once settled (supersedes that part of D131): one change, more matter within the crowd's reach, by a shallower tank or a larger budget chosen by screen; the lifespan values held; a guard on corpses eaten; the reactive thrust built during round 53 for round 54 | 2026-09-29 | ruled by the owner in conversation on the agent's recommendation after round 52 seeds 1 and 2 and Fable's advice (logbook/specs/r53-fable-advice.md) |
 
 ---
 
@@ -6710,3 +6711,37 @@ where nothing lives. So a shallower tank concentrates the matter without taking 
 the bed. Calmer water: the stirring that spreads a corpse's leak also refills an emptied cell and
 feeds every plant (round 45). A narrower tank takes the light with it. More energy at the start
 burns off within an hour. A place on the bed in round 53 could not be read apart from the two rules.
+
+### D132
+**Round 53 drops fast decay once settled, and changes one thing: the matter within the crowd's reach** · 2026-09-29
+
+**Status:** ruled by the owner in conversation on 2026-09-29 ("Ok that sounds reasonable to me"), on the
+agent's recommendation after round 52's first two seeds and Fable's advice
+(`logbook/specs/r53-fable-advice.md`). It supersedes D131's first rule; D131's second rule stands as
+one arm of the choice below.
+
+**Decision.** `CorpseSettledDecayPerSecond` stays built and at 0 in round 53. Round 53 makes one
+change, more matter within the crowd's reach. Three founding screens of 10,000 s after round 52
+choose it: the tank at 30 m and at 25 m with the bed, shore, reefs and depths rescaled, against the
+45 m tank with a matter budget of 27,000 units. Depth is taken only if it beats the larger budget on
+the bed's water and on the leaves' uptake. Otherwise round 53 takes the budget, one knob that keeps the tank's
+geometry comparable with rounds 44 to 52. A fourth screen at 45 m runs the settled decay at 0.005 so
+that the reversal rests on a measurement as well as on the argument. The lifespan values of round 52
+hold through rounds 53 and 54. Round 53's pre-registration keeps the corpses eaten at or above round
+52's. The reactive thrust (`fable-propose-reactive-thrust.md`, approved by D127) is built and benched
+during round 53's week, so that round 54 is the thrust alone on round 53's world.
+
+**Why.** Fast decay once settled adds no food. Over time the corpses give the water what arrives as
+corpses, whatever the rate: about 2 mW a square metre of bed in round 52 seed 1 against a still
+stomach's keep of 110 to 440 mW. It would shrink the settled piles about tenfold, and round 52 had
+just shown mouths using them (170 and 114 corpses eaten against 1 in round 51). The carrion
+literature has no analogue: microbial decay does not speed up on settling, and what is fast on the
+seabed is scavengers (`logbook/specs/r53-literature.md`, C1 and C3). Mouths still made no living in
+either seed, and joints went extinct in both. So movement is the wall, which is the thrust's
+question and a round of its own under D079. Seed 2's lifespan gene fell (0.79 to 0.70) where seed 1's
+rose, against the screen's prediction, so the lifespan rules are held while that is read.
+
+**Rejected.** Fast decay once settled as ruled in D131. Changing the lifespan rules in round 53 would
+put two changes on one readout. The birth push is 3 to 25 times the measured cost, and the gene acts
+on the rate where the evidence says onset (`logbook/specs/r52-lifespan-literature-r7.md`). The thrust in
+round 53: unbuilt, unbenched, and a second change.
