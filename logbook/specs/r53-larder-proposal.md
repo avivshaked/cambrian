@@ -2,8 +2,8 @@
 
 *2026-09-29, from the conversation after round 52's launch. For the owner's ruling. The
 readings behind it are `logbook/specs/r52-larder.txt` (scripts `scripts/reads/r52-larder.py`
-and `r52-larder-cell.py`, round 51's three seeds). Absorbed into DECISIONS.md on ruling, then
-deleted.*
+and `r52-larder-cell.py`, round 51's three seeds). Ruled by the owner on 2026-09-29 as D131
+and kept as the arithmetic D131 cites.*
 
 ## What it is for
 

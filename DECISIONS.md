@@ -150,6 +150,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D128](#d128) | Death by age is a Gompertz hazard scaled by a heritable base that costs repair upkeep; the energy wear is off while it is on; a birth and a destroyed part each advance the body's ageing clock; round 51 runs the base unheritable, the round after makes it heritable | 2026-09-27 | ruled by the owner in conversation, option C of three, with two additions of their own |
 | [D129](#d129) | A founder with a mouth lands where the corpses lie, from round 52: the founders' lottery and depth read the corpses as a mouth's food | 2026-09-28 | ruled by the owner in conversation, option A of two, after the read of where round 51's founders landed |
 | [D130](#d130) | Round 52 runs D129 with the lifespan gene heritable (D128's second half); if the pair causes a problem, one of them is removed | 2026-09-28 | ruled by the owner in conversation, against the agent's recommendation of D129 alone |
+| [D131](#d131) | Round 53: a corpse decomposes fast once it settles, and the tank is shallower with the matter held, each value by screen after round 52; the places on the bed come back one a round, hollows first, then a seep that charges matter, then the anchoring cell | 2026-09-29 | ruled by the owner in conversation on the agent's proposal (logbook/specs/r53-larder-proposal.md) |
 
 ---
 
@@ -6679,3 +6680,33 @@ removed.
 world with one change, and its corpse numbers would compare directly with round 51's. A changing
 lifespan moves when bodies die and what they leave, which is the corpse supply D129 is read
 against. The pre-registration reads D129's clauses with that in mind.
+
+### D131
+**A larder on the bed: fast decay once settled, a shallower tank, and the places one a round** · 2026-09-29
+
+**Status:** ruled by the owner in conversation on 2026-09-29 ("Agreed. Proceed."), on the agent's
+proposal, now `logbook/specs/r53-larder-proposal.md`. Its values wait for the screens after round 52.
+
+**Decision.** From round 53 a corpse keeps its slow rate while it sinks. It decays at a faster rate
+from the step it settles, on the bed or on a reef top (`CorpseSettledDecayPerSecond`, 0 meaning the
+sinking rate). The tank is made shallower with the matter budget and the area held, 30 m or 25 m.
+The bed's tilt, the shore, the reefs and the founders' and islands' depths are rescaled so the
+shelf's shares stay near round 52's. Four founding screens of 10,000 s choose the settled rate and
+the depth. A larger matter budget in the 45 m tank is the fallback. After round 53 the places on the
+bed come back one a round. First come hollows that gather corpses and snow, then a seep that charges spent
+matter at a point, a second source of energy beside light. The anchoring cell comes last. Each is put to
+the owner in full before it is built.
+
+**Why.** Round 51's stomachs lay on the bed and starved there (`logbook/specs/r52-larder.txt`). A
+still stomach empties its own cell, so it lives on what the water carries in, about 0.15 W for each
+J/m3 round it. A corpse releases 1/2,600 of itself a second, and the water carries 0.15 of the
+excess away each second. So the bed's water held 0.6 to 0.9 J/m3. Fast decay once settled hands the corpse's
+joules to whoever lies on it, where the owner wants the larder. A slow rate on the way down
+keeps them from dissolving in the mid-water first. The world is short of matter and not of light:
+59% of leaf-steps were bound by uptake. The deep water holds five times the surface's matter
+where nothing lives. So a shallower tank concentrates the matter without taking any light away.
+
+**Rejected.** A faster rate everywhere: a corpse sinking at 5 cm/s would dissolve before it reached
+the bed. Calmer water: the stirring that spreads a corpse's leak also refills an emptied cell and
+feeds every plant (round 45). A narrower tank takes the light with it. More energy at the start
+burns off within an hour. A place on the bed in round 53 could not be read apart from the two rules.
