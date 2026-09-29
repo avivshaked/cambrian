@@ -42,8 +42,10 @@ random founders that were a stomach on a link, and a link catches light in this 
 bodies were part plant. The depth rule set the trickle's leaves where the dissolved matter was
 richest, deep in the dark. They died in about a minute and a half. A clamp to the bed at the
 tank's centre held most of them at 44 m; it is fixed. The round's own checkpoints gave the first
-faithful film windows. Round 49 is not filmed yet. Its checkpoints stay whole until the owner
-approves its video as final, and then they are thinned only as the storage ruling below says.
+faithful film windows. Its video, "Lucky - the Lone Stomach", is exported (`assets/full-episodes/`).
+On 2026-09-29 the owner had round 49's runs and film frames deleted to free the disk (the storage
+note below), so it can no longer be filmed again; its numbers live on in the entry and
+`logbook/specs/r49-read/`.
 
 ### Merged into main on 2026-09-26
 
@@ -291,6 +293,18 @@ ruling: a round's checkpoints are thinned only after the owner approves its vide
 then keep one every 1,000 s plus the one at or before each scene's start. The keep list comes
 from the video's scene table, and the agent shows it and asks before each thinning.
 
+The owner's cleanup of 2026-09-29 keeps only what the videos of round 50 on need, and took the
+project from about 360 GB to 65 GB. Every run of rounds 8 to 49 and of the old experiments is
+deleted, reports included. The runs that code and tests read stay: r42-s1, r42-s4, r45fixb-s4,
+r37-s1, r25-s2, r25q-s2, th-ref, uicheck, r35tsmoke3, boxdig-old, r20v-age1, pfix14 and pfix15.
+r48-s1 keeps its config and its snapshot at 20,000 s, which `FeederRefillExperiments` reads.
+Also deleted were round 49's and round 48's film frames, the channel's render frames, the
+finished experiments in scratch, the merged worktrees, and the Unity workers w2, w3, w4 and w7.
+A round's farm build stays as long as its runs do, because `film.py` refuses a run whose
+`programPath` is gone: `wt-leafincome` holds round 50's, `wt-r51` round 51's and `wt-r52` round
+52's. The files that prose cited moved into `logbook/specs/`, `logbook/images/` and `scripts/`
+first (`b352b11`, `72e4dc1`).
+
 ### Round 48's story film is delivered
 
 It is
@@ -516,9 +530,7 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
 8. Seed 2's budded line is read for the stomach's cost. M4 failed in round 49's seed 2 with
    the stomach bringing 2.7% of the income. What the bud costs in tissue and upkeep is not yet
    set against it (0122).
-9. Round 49's video is made when the owner asks for it, from film windows from the round's own
-   checkpoints, which V1 showed are faithful. After the owner approves it as final, the keep
-   list for its checkpoints is built from its scene table and shown before each thinning.
+9. Round 49's video is done and its runs are deleted (2026-09-29). Nothing is left to do for it.
 10. Round 50's read and entry (0124) follow its last seed, with the theatre's pictures taken
    before it is written.
 

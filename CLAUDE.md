@@ -69,7 +69,8 @@ survives founding (round 34, logbook/0080), and movement, which has never paid i
 cost (the cost side is closed, the prize side is open; `mean m/s` reads the water now).
 Throughput still binds: dt 0.02
 screens, 0.01 confirms (logbook/0052). Experiments are *arms*, launched with
-`scripts/run-arm.ps1` against worker copies `unity-w2`..`unity-w7` — never two processes on
+`scripts/run-arm.ps1` against worker copies `unity-wN` (only `unity-w5` and `unity-w6` exist since
+the cleanup of 2026-09-29; `scripts/new-worker.ps1` makes another) — never two processes on
 one worker, **two concurrent arms from round 47** (owner's ruling, 2026-09-23 evening, on
 the machine's heat: round 46's three farm arms at five threads each held the CPU near 80%
 for four hours; before it, three arms, the ruling of 2026-09-17: five arms on this
