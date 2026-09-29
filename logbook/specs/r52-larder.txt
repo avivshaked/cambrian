@@ -1,0 +1,45 @@
+== r51-s1: 7788 live pure-stomach rows in the feeding log, 7784 placed
+  where        | rows | bodies | density here J/m3 (median, p90) | food W median | net W median | share net>0 | bodies with a child
+  on the bed (<1.5 m)    |  3241 |   201 | 0.116, 0.387 | 0.1037 | -0.3283 | 3% | 0
+  1.5 to 5 m up          |  1879 |   112 | 0.121, 0.347 | 0.0989 | -0.3161 | 3% | 0
+  over 5 m up            |  2664 |   110 | 0.097, 0.372 | 0.0793 | -0.2985 | 5% | 1
+  t (s)  | bed cells live | mean J/m3 | p99 | max | cells >= 0.44 | cells >= 1 | cells >= 2
+    3000 |  21994 | 0.268 | 1.14 | 4.08 |  4592 |   368 |   14
+    6000 |  21994 | 0.749 | 3.79 | 6.64 | 10924 |  5076 | 2220
+   12000 |  21994 | 0.550 | 1.53 | 5.73 | 11928 |  3026 |   22
+   18000 |  21994 | 0.534 | 1.22 | 3.81 | 13318 |   763 |    8
+   24000 |  21994 | 0.698 | 1.23 | 4.88 | 19868 |  1187 |    4
+   30000 |  21994 | 0.788 | 1.41 | 7.12 | 20679 |  3371 |   25
+== r51-s2: 8261 live pure-stomach rows in the feeding log, 8256 placed
+  where        | rows | bodies | density here J/m3 (median, p90) | food W median | net W median | share net>0 | bodies with a child
+  on the bed (<1.5 m)    |  2657 |   187 | 0.088, 0.311 | 0.0804 | -0.3424 | 3% | 0
+  1.5 to 5 m up          |  1268 |    97 | 0.100, 0.361 | 0.0960 | -0.3317 | 3% | 0
+  over 5 m up            |  4331 |   117 | 0.366, 0.648 | 0.2470 | -0.0862 | 31% | 4
+  t (s)  | bed cells live | mean J/m3 | p99 | max | cells >= 0.44 | cells >= 1 | cells >= 2
+    3000 |  21994 | 0.865 | 11.50 | 26.33 |  8507 |  5555 | 1965
+    6000 |  21994 | 0.986 | 7.13 | 12.50 | 16468 |  6985 | 1261
+   12000 |  21994 | 0.767 | 3.24 | 8.22 | 18574 |  2887 |  590
+   18000 |  21994 | 0.677 | 1.53 | 3.52 | 19339 |  1563 |   71
+   24000 |  21994 | 0.785 | 1.47 | 3.91 | 21489 |  3304 |   50
+   30000 |  21994 | 0.837 | 1.55 | 3.13 | 21560 |  3614 |   65
+== r51-s3: 15905 live pure-stomach rows in the feeding log, 15898 placed
+  where        | rows | bodies | density here J/m3 (median, p90) | food W median | net W median | share net>0 | bodies with a child
+  on the bed (<1.5 m)    |  3018 |   167 | 0.104, 0.362 | 0.0991 | -0.3619 | 4% | 0
+  1.5 to 5 m up          |  1530 |   100 | 0.110, 0.328 | 0.1098 | -0.3787 | 2% | 0
+  over 5 m up            | 11350 |   166 | 0.444, 0.640 | 0.5499 | -0.0064 | 48% | 17
+  t (s)  | bed cells live | mean J/m3 | p99 | max | cells >= 0.44 | cells >= 1 | cells >= 2
+    3000 |  21994 | 0.522 | 2.55 | 17.31 | 10564 |  2573 |  531
+    6000 |  21994 | 0.593 | 2.01 | 11.85 | 10779 |  3197 |  229
+   12000 |  21994 | 0.670 | 1.41 | 10.44 | 18086 |   873 |  147
+   18000 |  21994 | 0.785 | 1.51 | 5.08 | 21538 |  2702 |  148
+   24000 |  21994 | 0.862 | 1.57 | 6.04 | 21402 |  5825 |  105
+   30000 |  21994 | 0.937 | 1.61 | 6.30 | 21625 |  7883 |  112
+== r51-s1: 334 bed-stomach samples at a dump second
+  own cell J/m3 median 0.269; eight neighbours 0.682; tank bed mean 0.617; own / neighbours median 0.41
+  clearance m3/s median 0.90 (p10 0.39, p90 1.62); absorptive volume m3 median 0.090; upkeep W median 0.453 (p10 0.200)
+== r51-s2: 270 bed-stomach samples at a dump second
+  own cell J/m3 median 0.280; eight neighbours 0.622; tank bed mean 0.783; own / neighbours median 0.34
+  clearance m3/s median 0.90 (p10 0.45, p90 1.62); absorptive volume m3 median 0.090; upkeep W median 0.440 (p10 0.235)
+== r51-s3: 295 bed-stomach samples at a dump second
+  own cell J/m3 median 0.344; eight neighbours 0.695; tank bed mean 0.803; own / neighbours median 0.54
+  clearance m3/s median 0.99 (p10 0.39, p90 1.84); absorptive volume m3 median 0.099; upkeep W median 0.447 (p10 0.169)
