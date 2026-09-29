@@ -153,6 +153,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D131](#d131) | Round 53: a corpse decomposes fast once it settles, and the tank is shallower with the matter held, each value by screen after round 52; the places on the bed come back one a round, hollows first, then a seep that charges matter, then the anchoring cell | 2026-09-29 | ruled by the owner in conversation on the agent's proposal (logbook/specs/r53-larder-proposal.md) |
 | [D132](#d132) | Round 53 without fast decay once settled (supersedes that part of D131): one change, more matter within the crowd's reach, by a shallower tank or a larger budget chosen by screen; the lifespan values held; a guard on corpses eaten; the reactive thrust built during round 53 for round 54 | 2026-09-29 | ruled by the owner in conversation on the agent's recommendation after round 52 seeds 1 and 2 and Fable's advice (logbook/specs/r53-fable-advice.md) |
 | [D133](#d133) | A nursery for brains (the owner's idea): direct selection outside the ecology, on its bodies and in its currency, first as a measurement of how far a forager lies from round 52's bodies; inoculation left open | 2026-09-29 | ruled by the owner in conversation, absorbing `propose-nursery.md` |
+| [D134](#d134) | The fast nursery: an easier world and the same score. Carrion in small pieces, still water first, a small tank and 300 s episodes, scored in joules eaten; the round's own layout as the examination; no tie-break by distance; four threads beside a round, twelve after | 2026-09-29 | ruled by the owner in conversation on Fable's proposal (logbook/specs/fast-nursery-proposal.md) |
 
 ---
 
@@ -6785,3 +6786,51 @@ the foraging bench a lone tail strokes to one side and one fin spins its body in
 without the body would be trained for a body that does not exist. Distance to a corpse as the score: it
 would pay a body that reaches the corpse and never eats. The card for a first run: only the solver and the
 snow's transport are ported, and the card crashed in its driver that afternoon.
+
+### D134
+**The fast nursery: an easier world and the same score** · 2026-09-29
+
+**Status:** ruled by the owner in conversation on the night of 2026-09-29, on Fable's proposal
+(logbook/specs/fast-nursery-proposal.md, which the agent asked for at the owner's word: "spin up a fable to
+think about this problem and come up with a nursery that is both fast, and keeping the principle of natural
+selection"). The owner answered its six rulings "1. ok. i wonder if we can send a sonnet to find academic
+justification for this move 2. yes 3. yes 4. yes 5. yes 6. agreed.", and then chose "measure then run A" for the
+night. Run 2 of D133's nursery finishes as launched, and no other nursery starts before it ends.
+
+**Decision.** The score stays D133's, the joules the line takes in. What changes is the world it is earned in,
+and the examination is the round's own. (1) A curriculum on the environment: the food is laid as many small
+corpses (50 of 4 J in place of 5 of 40 J, over the same 0.5 to 4 m), and the water is still until a brain passes
+its knockout on held-out seeds, then the round's current. (2) The search runs in a tank of 100 m² by 5 m, and a
+winner is examined in D133's episode: the round-sized tank, 5 corpses of 40 J, 900 s. (3) An episode is 300 s.
+(4) No tie-break by distance when brains earn nothing: distance is the archive's behaviour label and never a
+score. (5) The nursery takes four threads while a round runs and twelve after it. (6) Whether a round carries the
+nursery's brains as inocula stays open, as D133 left it. A child replaces an incumbent only by beating it on
+common seeds by twice the paired standard error. Before design A runs, four measurements: where an episode's
+wall goes, the ancestors' hit rate at both layouts, a hand-wired forager grafted onto one of the pooled bodies
+(the positive control), and the bodies' intake. If the hand-wired brain cannot score in A's episode, the agent
+stops and reports rather than running the search.
+
+**Why.** D133's first run recorded luck. An ancestor eats only when the current carries it through a corpse, in
+roughly one episode in twenty on Fable's estimate, and a corpse is 40 J, so at four episodes a score is a draw. Run
+2's best children led their ancestors by 10.3, 12.5, 4.7, 2.0, 2.2 and 1.5 J over its first six generations as
+the incumbents were re-scored. Small pieces turn the lump into a count a drifting body adds to by chance, so a
+better brain shows as more joules. Fable estimates that as about 35 times fewer episodes for the same verdict. The
+small tank and the short episode cut the water's cost, which is most of an episode (believed, not yet
+profiled). The physics step and the metabolic step are the world's, so a brain meets the body and the economy
+it will live in.
+
+**The literature.** A Sonnet research agent's report is logbook/specs/nursery-curriculum-literature.md, mostly at
+abstract level. It supports the choice in part. Mouret and Doncieux (2008) name environmental complexification as
+a scheme apart from fitness shaping. POET and Kashtan, Noor and Alon (2007) show a changing environment under a
+fixed reward reaching what direct optimisation does not. It also names the limits. The line between shaping the
+world and shaping the score is a framing, and Avida's scaffold was reward on simpler functions. Jakobi's
+transfers held only when the simplified world was varied, which argues for drawing the carrion's density across
+episodes rather than ramping it. And the bootstrap literature's remedy for a population that all scores zero is
+behavioural diversity, not a proxy. None of it is cited in DESIGN.md until read in full and taken through the
+review's protocol. So the literature makes the method respectable and the claim modest. Anything the nursery grows is bred in an easier world on the ecology's currency. It counts as naturally selected only once, inoculated into a round, it out-breeds its ancestor and loses its edge with its senses knocked out. Design A draws the carrion's density per episode, after Jakobi.
+
+**Rejected.** Distance to food as the score (the owner's own doubt: "that's really breading"). It pays a body
+that circles a corpse or sinks onto the bed where every corpse settles, and never eats. A coarser physics step or
+another metabolic step: a brain tuned there is tuned to another body and another economy. Several bodies in one
+episode world: the current carries a body 8 to 13 m in an episode, past its neighbour's scent, so a child's score
+would depend on its tank-mate.
