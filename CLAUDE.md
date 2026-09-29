@@ -1739,6 +1739,25 @@ actually verifying it.
   The rendered intro and outro are not in git. They live in `assets/cards/` on the machine that
   made them, so check that they are there before a film uses them, and render them again from that
   README when they are not.
+- **Two worlds built from one `RunConfig` share one current, and a current is pinned by its world.**
+  `RunConfig.Current` is an object, not a value, and `DynamicsWorld.SampleWater` pins it at each step's
+  instant. So two worlds stepping on two threads from one config throw `This current is pinned at phase
+  …` the first time their clocks differ, which is what the nursery's first parallel smoke did
+  (2026-09-29). A process that builds more than one world gives each its own config, read from the same
+  text (`RunConfigJson.Read`), as `Evosim.Nursery`'s `EpisodeConfig` does. The farm never met it,
+  since it runs one world a process.
+- **`stitch-resume.py` wrote plain gzip until `9503d4e`, and Core refuses it.** Record format 2's
+  `genomes.jsonl.gz` and `positions.jsonl.gz` are members that carry their own length (an `EV` extra
+  field, `GzipMembers`). Python's `gzip` reads them and writes none, so the first join (`r52-s3j`) was
+  readable by every Python reader and refused by Core's (`the member at byte 0 is not a record
+  member`). That meant the theatre, the nursery and any C# tool. The script now writes members, and
+  `--fix-gz <run dir>` rewrote `r52-s3j` in place. A Python tool that writes a record file uses
+  `MemberWriter` from that script, never `gzip.open(..., 'wt')`.
+- **An inoculant lands with `FounderEnergyJoules` times its birth fraction, which is not a floor
+  founder's purse.** A floor founder takes the endowment (`EVOSIM_FOUNDER_ENDOWMENT`, 600 s of standing
+  watts in round 52); `World.Inoculate` does not. So round 52's 200 J starved a two-part body
+  inside 450 s in every nursery smoke (2026-09-29). An assay that needs its body to live sets the
+  field, as the nursery's `--purse` does, and a round that inoculates reads the purse it gives.
 - **`windows-il2cpp` is not installed** — only Mono. Fine for now; add it before the island
   model (Milestone 4), since per-creature brain evaluation is managed C# in the hot loop.
 
