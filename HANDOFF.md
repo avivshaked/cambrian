@@ -105,6 +105,11 @@ so every earlier config is refused; the fixtures are re-recorded and the full su
 52 ends. Then the four screens of the proposal (45, 30 and 25 m at a 139 s settled half-life, then
 the settled rate at the better depth), with the bed, shore and reefs rescaled for depth.
 
+The screens wait for round 52's read, not only its end (the owner, 2026-09-29: based on 52's outcome
+round 53 may change). Round 52 can move D131's values or its rules: many corpses eaten makes the
+settled rate a trade with the mouths, and the lifespan gene moves how large the corpses are. Every
+D131 build stays a knob at 0 until then, and round 53's world is set after the read.
+
 ### How round 52 was built
 
 The owner ruled D129 on 2026-09-28: a founder with a mouth lands where the corpses lie, from the
