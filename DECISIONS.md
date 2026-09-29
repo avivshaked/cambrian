@@ -152,6 +152,7 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D130](#d130) | Round 52 runs D129 with the lifespan gene heritable (D128's second half); if the pair causes a problem, one of them is removed | 2026-09-28 | ruled by the owner in conversation, against the agent's recommendation of D129 alone |
 | [D131](#d131) | Round 53: a corpse decomposes fast once it settles, and the tank is shallower with the matter held, each value by screen after round 52; the places on the bed come back one a round, hollows first, then a seep that charges matter, then the anchoring cell | 2026-09-29 | ruled by the owner in conversation on the agent's proposal (logbook/specs/r53-larder-proposal.md) |
 | [D132](#d132) | Round 53 without fast decay once settled (supersedes that part of D131): one change, more matter within the crowd's reach, by a shallower tank or a larger budget chosen by screen; the lifespan values held; a guard on corpses eaten; the reactive thrust built during round 53 for round 54 | 2026-09-29 | ruled by the owner in conversation on the agent's recommendation after round 52 seeds 1 and 2 and Fable's advice (logbook/specs/r53-fable-advice.md) |
+| [D133](#d133) | A nursery for brains (the owner's idea): direct selection outside the ecology, on its bodies and in its currency, first as a measurement of how far a forager lies from round 52's bodies; inoculation left open | 2026-09-29 | ruled by the owner in conversation, absorbing `propose-nursery.md` |
 
 ---
 
@@ -6745,3 +6746,42 @@ rose, against the screen's prediction, so the lifespan rules are held while that
 put two changes on one readout. The birth push is 3 to 25 times the measured cost, and the gene acts
 on the rate where the evidence says onset (`logbook/specs/r52-lifespan-literature-r7.md`). The thrust in
 round 53: unbuilt, unbenched, and a second change.
+
+### D133
+**A nursery for brains: direct selection outside the ecology, on the ecology's bodies and in its currency** · 2026-09-29
+
+**Status:** ruled by the owner in conversation on the night of 2026-09-29, on their own idea and the
+agent's proposal (`propose-nursery.md`, absorbed here and deleted). Their words, in order: "LOVE THAT
+IDEA!!!" to the nursery; "yeah that works!" to scoring in the ecology's currency on the ecology's own
+genome, mutation and bodies; "ok, lets start on the cpu" to building it on the processor first; and "no,
+lets do the nursury. at the very least it will allow us to measure how many generations this will
+require." after the agent set out that it is a breeding program. Whether a round carries the nursery's
+brains as inocula stays open.
+
+**Decision.** `src/Evosim.Nursery` evolves brains by direct selection. It holds each body fixed, drawn
+from real snapshots: a joint and a corpse mouth, with leaves left out. An episode is a small world under
+the round's own rules with corpses laid round the body, and a brain's score is the income its line takes
+there: light caught, snow eaten and corpse units eaten. The selection is DESIGN §8's archive, with incumbents
+re-scored head to head on each generation's episodes. A forager is a brain that beats both its knockout
+(the same brain with its senses reading nothing) and its ancestor on held-out episodes. Its first use is a
+measurement: how many generations of direct selection separate round 52's bodies from a forager.
+
+**Why.** No brain had evolved in any sense that matters. In round 52 seed 1 at 30,000 s the median genome
+carried one neuron and 1,348 of 3,431 carried none. A forager needs a sense, a neuron and a stroke
+together, none of which pays alone, and the fastest line reached 48 generations. A breeding program cannot
+say the ecology would have found a brain, and D133 does not claim it. What it can say is whether this
+genome can encode a forager at all, and how far one lies from the ecology's bodies. That measurement is
+the owner's reason for the ruling. DESIGN §8 kept its directed search for this use: "for a
+benchmark, or to seed a population the ecosystem then has to keep alive."
+
+**Changed from the proposal while building.** The score is the line's income. The proposal had the net joules it holds.
+Net joules are flat for every body that dies, since a dead body has spent everything, and every smoke
+body starved within 450 s on an inoculant's 200 J purse. Upkeep is the same for every brain on one body,
+so income is what a brain changes. The purse is a nursery setting (`--purse`, the config's founder energy),
+so a body lives long enough to show what its brain does.
+
+**Rejected.** A surrogate of inputs and outputs without the physics. A brain's output is a torque, and on
+the foraging bench a lone tail strokes to one side and one fin spins its body in place. A brain trained
+without the body would be trained for a body that does not exist. Distance to a corpse as the score: it
+would pay a body that reaches the corpse and never eats. The card for a first run: only the solver and the
+snow's transport are ported, and the card crashed in its driver that afternoon.
