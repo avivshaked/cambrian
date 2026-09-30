@@ -33,9 +33,12 @@ again at the end and do any that arrived late. A paper recorded as not obtained 
   `source.md`, which is the PDF page and not the page number printed on the paper. This is the
   review's citation convention (CLAUDE.md, Research provenance), and it lets a later session cite
   the claim without rereading the paper.
-- **Quotes are at most 15 words**, in straight double quotes, followed by their `(p.N)`, and are
-  found word for word in `source.md` before they are written (the skill's hard rule). Where the
-  wording cannot be found, paraphrase and say so. Everything else is paraphrased.
+- **Quotes are at most 15 words**, in straight double quotes, followed by their `(p.N)`. A quote
+  gives the paper's words as the paper prints them. `source.md` is text pulled out of a PDF, and the
+  pull is noisy: ligatures, words split at a line end ("navi- gates"), accents stored apart from
+  their letters, lost symbols, and in scanned papers plain misreadings ("thc" for "the"). Mend that
+  noise in a quote, and change nothing else. Where the passage is too garbled to be sure of the
+  words, paraphrase and say so. Everything else is paraphrased.
 - **A reference to follow up is copied as the paper prints it** and marked "from the paper's
   reference list, not verified". It is never completed or corrected from memory. DESIGN.md §13.4
   quarantines such references until someone checks them.
@@ -75,11 +78,19 @@ JART is read and drafted by a subagent, and this session saves and checks it.
    file. It returns the JART as its final message, and a subagent's attempt to write a report-shaped
    Markdown file is refused anyway.
 2. Save the returned text through the shell as that package's `JART.md`, unchanged.
-3. Run `python scripts/jart-check.py research/papers/<No.>-<slug>`. It checks that every quote is
-   found word for word in `source.md`, and on the page it cites, and that every cited page exists.
-4. If it reports a problem, fix that one problem: open `source.md` at the page, then correct the page
-   number, or turn the quote into a labelled paraphrase. Run the check again. After two failed
-   rounds on one paper, stop on that paper and tell the owner.
+3. Run `python scripts/jart-check.py research/papers/<No.>-<slug>`. It ignores case, spacing,
+   punctuation, hyphens, accents and ligatures, and gives each quote one of three verdicts:
+   - **found**: on the page it cites, or running across that page's break. Nothing to do.
+   - **near**: not found, but close to a passage on the cited page. This is usually extraction
+     noise and sometimes a misquote. Open the PDF at that page with the Read tool (its `pages`
+     parameter) and look. If the PDF has the quoted words, keep the quote and write "PDF" in its
+     page reference, as `(p.5, checked against the PDF)`; the check then accepts it. If the PDF
+     differs, correct the quote to the PDF's words or paraphrase it.
+   - **missing**: nothing close. Paraphrase it. A "PDF" mark does not rescue a missing quote.
+
+   It also reports a quote on another page than the one cited, and a cited page that does not
+   exist. Fix what it reports and run it again. After two failed rounds on one paper, stop on that
+   paper and tell the owner.
 
 The subagent's prompt:
 
@@ -90,7 +101,7 @@ Write a JART (Journal Article Record) for one paper. Read these two files in ful
 Use the template at C:\Users\shake\.claude\skills\jart-review\references\jart-template.md.
 In "Local source copy" write: source.md (in <package folder name>).
 Write no file anywhere. Return the complete JART.md as your final message and nothing else: no preface and no code fence.
-Before you return, search source.md for each quote you used and confirm it is there word for word, on the page you cite.
+Before you return, find each quote you used in source.md, on the page you cite. Mend extraction noise in a quote (ligatures, words split at a line end, garbled accents) and change nothing else; paraphrase any passage too garbled to be sure of.
 ```
 
 ## When all are done
