@@ -44,3 +44,58 @@ Body 0 (creature 5210), 300 s, 200 J laid as 39 corpses of 5.1 J: 1.04 s of wall
 swam between 1.3 and 4.5 m below the surface while the corpses settled on the bed near 5.3 m, so it
 passed within 0.3 m across of one and never nearer than 0.9 m in all. Whether these bodies can reach
 the bed is the question the hit-rate measurement answers.
+
+
+## Measurements 1 to 3 (2026-09-30, 03:46 to 04:18)
+
+The script is `scripts/nursery-measure-d134.ps1`, run on the worktree's `Release-b` build. That build
+was rebuilt at 03:38 so that it writes `final-per.jsonl`; the one of 23:37 predated `f45bc89`. All ten
+pooled bodies took part. The carrion was fine (200 J in 25 to 100 pieces a draw) or coarse (5 pieces of
+40 J), and the body started 0.5 m or 1.5 m above the bed. The reader is `scripts/nursery-read-d134.py`,
+and the outputs are under `scratch/nursery/measure/`.
+
+**Measurement 1** is the wall of one episode on one thread, for body 0.
+
+| config | seconds | wall | income |
+|---|---|---|---|
+| small, current | 300 | 1.00 s | 18.2 J (14.6 of it corpses) |
+| small, still | 300 | 0.42 s | 0.6 J |
+| small, no mixing | 300 | 0.83 s | 18.7 J |
+| D133's tank | 300 | 1.19 s | 0 |
+| D133's tank | 900 | 2.68 s | 2.7 J (snow only) |
+
+Still water is 2.4 times cheaper than the current. The mixing costs about a sixth.
+
+**Measurement 2** is the hit rate: every ancestor on 32 episodes, 320 episodes a condition.
+
+| condition | mean | sd | episodes over 5 J |
+|---|---|---|---|
+| small, fine, 0.5 m | 7.06 J | 10.2 | 38% |
+| small, fine, 1.5 m | 7.75 J | 10.2 | 41% |
+| small, coarse, 0.5 m | 13.39 J | 29.5 | 20% |
+| still, fine, 0.5 m | 5.70 J | 8.7 | 38% |
+| D133's tank, coarse, 1.5 m | 3.03 J | 10.6 | 6% |
+
+D133's episode feeds one episode in seventeen, which is the lottery Fable named. Coarse carrion in the
+small tank doubles the mean and halves the hit rate, with an sd 2.2 times the mean. Fine carrion feeds
+two episodes in five at either height tried.
+
+**Measurement 3** is the positive control, and it fails. The kinesis graft (`--graft-kinesis a,m`)
+drives the joint with an oscillator times `a − m × scent`. It was set against its own knockout on 32
+held-out episodes a body, paired episode by episode, with fine carrion and the body 0.5 m above the bed.
+The last column is the mean distance to the nearest corpse over each episode's second half.
+
+| condition | wired | knockout | pooled difference | bodies 2 SE above | bodies 2 SE below | nearest, wired / knockout |
+|---|---|---|---|---|---|---|
+| small, 0.8, 0.8 | 8.34 J | 8.96 J | −0.62 J (−1.3 SE) | 0 of 10 | 1 | 3.24 / 3.15 m |
+| small, 0.8, 3 | 9.61 J | 8.96 J | +0.64 J (+1.1 SE) | 1 of 10 | 1 | 3.26 / 3.15 m |
+| still, 0.8, 0.8 | 5.28 J | 6.04 J | −0.76 J (−2.0 SE) | 1 of 10 | 1 | 2.34 / 3.22 m |
+| still, 0.8, 3 | 5.83 J | 6.04 J | −0.22 J (−0.6 SE) | 1 of 10 | 2 | 3.64 / 3.22 m |
+
+Three of forty bodies clear 2 SE above their knockout and five clear it below. That is about what
+chance gives on forty tests. No pooled difference is 2 SE above zero, and the one at 2 SE is below it.
+
+The graft does act. In still water at gain 0.8 it holds the body 0.9 m nearer the carrion, and it eats
+less. My reading, which is inference: slowing where the scent is strong parks a one-tailed body near
+the carrion rather than on it. The score counts only what the mouth reaches, 0.5 m past a corpse's
+radius, so nearness earns nothing. D134 runs design A only if the control scores, so it was not started.

@@ -26,7 +26,7 @@ transport on the CPU. Any unexplained crash or clean re-run is reported the same
 
 The owner delegated rounds 52 and 53 that evening and later left the agent working alone, with
 one ruling for the night: when nursery run 2 ends, its four threads go to the fast nursery (D134),
-first four measurements and then design A. Round 53 holds twelve threads. Nothing else runs
+first four measurements and then design A. The measurements ran from 03:46 to 04:18 on 2026-09-30, and the hand-wired positive control did not beat its knockout in any condition (`logbook/specs/fast-nursery-measurements.md`), so design A was not started; what the nursery does next is the owner's. The four threads went to round 52's extension, `r52-s1y` from `r52-s1x`'s 30,310 s checkpoint (`scratch/wt-r52/rounds/extend-r52-s1y.ps1`), which a `STOP` file ends and a resume carries on exactly. Round 53 holds twelve threads. Nothing else runs
 beside them, and the total stays at 16 threads (read `% Processor Utility`, not the thread
 count). The session's hourly watch (a cron at :17) reads the CPU, round 53, the nursery and the
 orphans. Round 52's extension to 50,000 s is paused: `r52-s1x` stopped at 30,310 s with its
@@ -477,6 +477,9 @@ subagent and never in a shell loop. A queue that must outlive a turn is started 
    - On the freed four threads, run the four measurements (`logbook/specs/fast-nursery-proposal.md`
      §5). If the hand-wired brain grafted onto a pooled body cannot score in A's episode, stop and
      report; otherwise run A at four threads.
+   - Done 2026-09-30 04:18: run 2 ended at generation 100 with no forager and its best brains equal to
+     their knockouts; measurements 1 to 3 are written up; the control failed (three bodies of forty
+     above the knockout by 2 SE, five below); A was not run. The owner's ruling on the next step is owed.
    - A logbook entry for the nursery once A has a result, and a primer after it works.
    - Then 0128 (round 52, pictures first), the bench's items 5, 6 and 8, and round 52's
      extension when a lane is free.
