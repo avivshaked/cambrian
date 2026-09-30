@@ -24,7 +24,7 @@ over 10 s legs, per body, then the median over bodies.
   to a checkpoint only in a world that runs the drive.
 - **Farm.** The four settings bound; the header prints `powerPush` and the drive genes' state; the graphics card
   refuses a world with the drive, as it refuses the limb push.
-- **Tests.** Core 1,038 pass (every pinned number of a recorded world unmoved). `BendAndPowerTests` (10) and
+- **Tests.** Core 1,038 pass (every pinned number of a recorded world unmoved), and with the slow experiments (`-All`, 14 min 42 s) 1,065 of 1,066: the one failure is the thread-identity fixture `r42-config.json`, which lacks `corpseSettledDecayPerSecond` and fails the same way on the `nursery` branch. `BendAndPowerTests` (10) and
   `LimbPushTests` (8) pass. The Dynamics suite's other 10 failures read the `r52fix-s4` crowd, whose config this
   build refuses; they fail the same way on the `nursery` branch, and the crowd needs re-recording on this build.
 
