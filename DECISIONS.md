@@ -6967,8 +6967,9 @@ that we actually need right now to continue the work. Let's leave um, decisions 
 right now for later."
 
 **The rulings, each the agent's recommendation.**
-- **The power's reading under D135 stays as built**: both outputs read from the brain's [-1, 1] onto [0, 1],
-  so a silent neuron is half power (60 of 100 random founders swim under their own brains, against 16).
+- ~~**The power's reading under D135 stays as built**: both outputs read from the brain's [-1, 1] onto [0, 1],
+  so a silent neuron is half power (60 of 100 random founders swim under their own brains, against 16).~~
+  Superseded by D139 the same day: the power reads its neuron's positive half.
 - **The nursery** (`logbook/specs/nursery-plan-joint-drive.md`, Fable's R1 to R10 as re-read, with its
   controls and its stop rule). The purse is the growth paid plus 600 s of the adult's standing watts
   (`--purse-rule grown`), since under the floor's founder rule a small stomach is left with about a joule
@@ -6982,3 +6983,31 @@ right now for later."
 the older proposals at the root, the producer threshold, the tempo dial, the old worktrees, the absorbed
 proposal files, and the papers behind barriers. Round 54 runs with the bed's friction off, since its value
 is not yet benched.
+
+### D139
+**A silent joint has no power: the drive's power reads its neuron's positive half** · 2026-09-30
+
+**Status:** ruled by the owner in conversation on 2026-09-30, on round 54's screen. The owner's words, when
+told that jointed bodies were dying under the half-power reading: "It is why I said 0 or threshold."
+Supersedes D138's first ruling. Built on `joint-drive` as `6173889`.
+
+**Decision.** A joint's power is the positive half of its neuron's output, off at or below the joint's
+threshold gene (0 to 0.5) and rescaled above it, as D135's design says: "The power, above a threshold in the
+genome". A silent or negative neuron gives no power and no push, and pays no work. The bend keeps D135's
+reading, [-1, 1] onto [0, 1], so a silent neuron holds the joint centred, its rest pose.
+
+**Why.** The first build read the power from [-1, 1] onto [0, 1], which put a silent neuron at 0.5, above
+almost every threshold (the screen's mean threshold gene was 0.10). Every jointed body pushed from birth,
+paid for it and could not stop. Round 54's screen (`r54sc-s1`) ran seed 1 to 5,000 s, read against round 53
+seed 1 over the same seconds. It held 266 jointed bodies at 5,000 s against 917. Its jointed children
+numbered 1,337 against 2,966 and lived a median 1,108 s against 1,466, and its jointed founders 337 s
+against 571. Rigid bodies were unchanged
+(1,412 s against 1,386, founders 787 against 762). Over 3,000 to 5,000 s the jointed bodies' ground speed
+over the rigid bodies' was 1.05 against round 53's 1.31, so the push bought no ground. The agent chose the
+reading inside D135 and recommended keeping it in D138; the owner's design had already said zero or the
+threshold.
+
+**What it changes.** Movement has to be selected: a random brain strokes only where a neuron happens to sit
+above a joint's threshold (16 of 100 random founders swam over 1 cm/s under this reading in the swim test).
+The nursery's bench and first pilot of 2026-09-30 ran under the old reading and are re-run. Round 54's build
+is a new realisation, its crowd fixture re-recorded, and it is screened again before launch.
