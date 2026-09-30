@@ -236,3 +236,51 @@ My reading is that the larder cannot reward a sense while it is even. A body tha
 an even larder always meets fresh snow, so knowing where the snow lies buys nothing. The round's snow
 is patchy, its patchiness 0.44 to 0.56 in round 53, and the tank's is flat. The next step is snow laid
 in patches, as the farm lays matter in islands (D109), and the pilots again on that.
+
+## Snow in islands: a brain at last, but not a sense
+
+*2026-09-30, 16:45 to 17:20.* `LaySnowIslands` lays the snow on a noise map, as D109 lays matter,
+with `--snow-islands wavelength,cover`. Three pilots ran on it, each 200 generations of 300 s episodes
+with the exam on 16 held-out draws. The first two were the brain-only arm as before, 48 founders with
+one brain each.
+
+| pilot | larder | the exam's winner | own | knockout | brainless | frozen | full | best kinesis |
+|---|---|---|---|---|---|---|---|---|
+| rich islands | 12 J/m3, 3 m, cover 0.25 | body 39 | +251 J | +251 J | +251 J | +131 J | +251 J | +191 J |
+| sparse islands | 3 J/m3, 5 m, cover 0.1 | body 39 | +53 J | +53 J | +23 J | +17 J | −26 J | +36 J |
+
+On rich islands body 39 took the population again with a full-power cruise. On sparse, poor islands it
+took it with something new. Its brain beats its brainless copy by 30 J (standard error 6.5). It spends
+0.024 W and ends among snow at 0.78 J/m3, where frozen ends at 0.56. Its knockout of the scent scores what
+it does to the hundredth of a joule, so the brain reads something other than the scent. My guess is
+the body's own joint and orientation senses, setting a stroke's rhythm; it is not yet tested. It beats
+every hand-wired kinesis by 17 J or more.
+
+Body 39 winning every pilot hid whether any other body could find a
+sense. `--per-body` (`3de4108`) keeps each body's share of the population and holds each tournament
+among one body's brains; the exam then takes each body's best. The third pilot ran it on the sparse
+islands, with 12 fresh founders and 8 brains each.
+
+Every one of the 12 bodies evolved a constant: own, knockout and brainless scored the same, to the joule,
+on every body. All 12 lost energy in this larder (own −3 to −161 J). That is why body 39 swept the
+pilots before. On five bodies the hand-wired rate kinesis beat what the search found, paired over the 16
+draws:
+
+| body | own | rate kinesis −0.5, 10 | rate kinesis 0, 20 |
+|---|---|---|---|
+| 10 | −3 J | +65 J (se 11) | +56 J (se 8) |
+| 3 | −5 J | +28 J (se 5) | +23 J (se 6) |
+| 7 | −48 J | +16 J (se 5) | +11 J (se 3) |
+| 0 | −77 J | +15 J (se 7) | +10 J (se 6) |
+| 5 | −91 J | +11 J (se 7) | +12 J (se 8) |
+
+So a sense pays on those bodies and the search did not reach it. My reading, an inference: a constant is
+one mutation from any brain. A kinesis needs the scent wired to the drive with the right sign and a
+large gain. So selection takes the constant and stops. Eight brains to a body is a thin search. Two
+follow-ups test the reading. Bodies 3, 7 and 10 with 32 brains each ask whether a wider search reaches
+the sense. The same three bodies with the search started from the rate kinesis (`--start-kinesis`,
+`b22fda7`) ask whether a brain that begins on the sense keeps it and improves it. The second is a
+diagnostic; whether a brain whose search began hand-wired may be inoculated is the owner's question.
+
+Round 54 waits on this (D140). The owner asked for episodes of 600 s and then 1,200 s on the per-body
+pilot, since a longer life may make finding the next island worth more than cruising through one.
