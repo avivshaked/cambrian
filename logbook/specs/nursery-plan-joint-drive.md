@@ -167,3 +167,27 @@ the bench's numbers; I have not measured the cost per metre.
 The stop rule held at both densities: the kinesis out-earned full power, so the pilot runs. It runs
 twice, 200 generations each, on the column. At 1.4 J/m3 it is the round's larder, the one an
 inoculant would meet. At 12 J/m3 there is a gradient for foraging to climb.
+
+## The first pilot: a small body cruising blind
+
+*2026-09-30, 15:36 to 15:52.* The pilot evolved 48 stomach founders for 200 generations. Their
+bodies were free and their cell types locked, and the snow was the round's density through the column. The score
+was net energy. In the first ten generations the mean net rose from −160 J to about −2 J, and the
+work fell from 0.09 W to near zero. The best genome's adult scale fell from 1 to 0.61, about a fifth
+of the volume. A body's keep is paid by its volume and its food taken through its surface, so where
+food is scarce a smaller body loses less.
+
+The owner asked whether the score should be energy per body size, and then ruled to keep net energy
+and watch the size (2026-09-30). Per body size, a stomach's score is its income over its volume less
+its keep, which grows without limit as the body shrinks, so the smallest body would always win. Net
+energy has a best size, and that size grows with the food.
+
+The exam ran the eight elites on 16 held-out draws under every control brain. Their own brains made
++2.1 J. Frozen, the same bodies made −3.9 J (5.9 J less, standard error 0.3), and at full power
+−1.5 J. The knockout of the chemical sense and the brainless copy scored to the hundredth of a joule what their own
+brains did, so nothing the brains do depends on a sensor. What evolved is a small body that cruises
+slowly and blindly, 16.8 m for 0.008 W. The hand-wired rate kinesis at bias 0 and gain 20 did as
+well as it did (+0.1 J, standard error 0.2). That answers the plan's question for this density: a
+forager's sense buys nothing here that a slow cruise does not. The brain-only arm and the pilot at
+12 J/m3 were started and stopped for round 54's diagnostic screens, and run again when the machine
+is free.
