@@ -39,7 +39,7 @@ bench and pilots at four, within the half-machine cap.
 | 52 | Run to 30,000 s (pre-registration 0127; seed 3 joined as `r52-s3j`). The read is `logbook/specs/r52-read/read-30000.txt` on `round-52` | The pictures, then entry 0128 |
 | 52, extended | Seed 1 reached 50,000 s as `r52-s1z`, which ended on its budget on 2026-09-30. Seeds 2 and 3 never started | Seeds 2 and 3 when a lane is free, joined with `stitch-resume.py --header-from` |
 | 53 | Run to 30,000 s on all three seeds, the last ending at 10:38 on 2026-09-30 (pre-registration 0129, `6701dc9`; branch `round-53` in `scratch/wt-r53`). The read is `logbook/specs/r53-read/read-30000.txt` on the branch (`340e21f`). N1 holds on every seed (bed snow 2.82, 2.49 and 3.08 times round 52's). N2 fails: the drop in the uptake-limited share was 0.016, -0.0006 and 0.034 against a bar of 0.015 on every seed. N3 holds on every seed (corpses eaten 256, 241 and 224 against 170, 114 and 129) | The pictures, the entry. The entry asks who the extra bodies are: the round carries more than round 52's crowd at 30,000 s (7,403, 7,291 and 7,607 alive against 3,431, 2,813 and 5,691), and a larger crowd of leaves on the same nutrients would explain N2 (a guess until counted). Round 53's reader dropped N3's per-seed rows from its summary; round 54's reader counts them |
-| 54 | Launched 16:48 on 2026-09-30 from `scratch/wt-r54` (branch `round-54`), seeds 1 to 3 one at a time at twelve threads (`rounds/queue-r54.ps1`, log `scratch/logs/r54-queue.log`); pre-registration 0130, `1d65ebe`, clean. D138's world with D139's fix: a silent joint has no power. The first screen (`r54sc-s1`, half power) lost two thirds of its jointed bodies; the second (`r54sc2-s1`) is seed 1's first 5,000 s. The reader is `scripts/reads/r54-read.py` | Watch the seeds and sample the pictures; the read at 30,000 s; the entry |
+| 54 | **Paused by the owner (D140) at 17:10 on 2026-09-30, and not started again that day**: it waits until the nursery names the creatures it will inoculate. Seed 1 stopped at 5,510 s with `stop-arm.ps1` (`runs/r54-s1/2026-09-30-154834-4070da9c`, checkpoints kept); the queue stopped before seeds 2 and 3; the hourly watch cancelled. 0130 says no inoculant and is revised before a relaunch. Before the pause: launched 16:48 on 2026-09-30 from `scratch/wt-r54` (branch `round-54`), seeds 1 to 3 one at a time at twelve threads (`rounds/queue-r54.ps1`, log `scratch/logs/r54-queue.log`); pre-registration 0130, `1d65ebe`, clean. D138's world with D139's fix: a silent joint has no power. The first screen (`r54sc-s1`, half power) lost two thirds of its jointed bodies; the second (`r54sc2-s1`) is seed 1's first 5,000 s. The reader is `scripts/reads/r54-read.py` | The nursery's inoculant; 0130 revised and committed; a relaunch from a clean tree; then the watch, the read at 30,000 s and the entry |
 
 What the rounds found, in a line each.What the rounds found, in a line each. Round 51: one corpse was eaten a seed in 30,000 s, so the
 larder lies unused. B1 failed on the matter residual alone, the float door at the burn
@@ -56,7 +56,7 @@ A round's farm build stays as long as its runs do, because `film.py` refuses a r
 
 The nursery's code is `src/Evosim.Nursery` on `joint-drive` (`scratch/wt-joint`). D138 set its
 settings: the grown purse, the work cost at 0.5, fresh founders, and Fable's R1 to R10 with the
-controls. It runs beside round 54 and does not gate it. The plan and its record are
+controls. Since D140 it gates round 54, which waits for its inoculant. The plan and its record are
 `logbook/specs/nursery-plan-joint-drive.md`, whose last section is the larder bench of 2026-09-30.
 Snow laid on the bed's layer was out of the floating bodies' reach, and moving never paid. Laid
 through the water column, the rate kinesis beat full power at the round's density (1.4 J/m3) and
@@ -98,7 +98,7 @@ after the owner approves its video as final (`src/Evosim.Farm/CLAUDE.md`).
 Each is put to the owner in full, with the options and what each implies, in any message that
 asks for it.
 
-- **Whether round 54 inoculates a nursery winner.** D138 ruled round 54 without one (option a). The
+- **Whether round 54 inoculates a nursery winner.** Ruled by D140: round 54 waits for one. The owner, leaving the agent to work alone that evening: "please don't launch the round after the nurseries. continue working on the nurseries until we get a good meaningful result that we're happy with." Raised by the agent at the ruling and not yet answered: one seed kept uninoculated as the drive's control (or seed 1's checkpoint resumed as it), and whether a brain whose search started from the hand-wired kinesis may be inoculated. D138 had ruled round 54 without one (option a). The
   agent recommended a fourth run beside the three seeds, seed 1 again with the nursery's best brain
   and its knockout inoculated, run only if the winner beats its controls (option b); or the
   inoculant in seed 3 (option c). A fourth run would queue after the three seeds and needs its own
@@ -123,10 +123,12 @@ the founders 0.5 to 1.5).
 All of it is agent work. Long steps run in the background under the session, never in a subagent
 and never in a shell loop; a queue that must outlive a turn is started detached.
 
-1. **Round 54's watch**: the seeds run from 16:48 on 2026-09-30, about three and a half hours each;
-   pictures from a live seed every few thousand seconds, and the read at 30,000 s with 54-read.py.
-1a. **The nursery's pilots and their exams**, read against the controls; the owner hears the result
-   with the inoculation question set out again.
+1. **The nursery's pilots and their exams** (D140: round 54 waits on them), read against the controls.
+   The per-body selection (`--per-body`, uncommitted on `joint-drive`, built to `artifacts/nursery-perbody`)
+   runs on sparse islands at 300 s, then 600 s and 1,200 s episodes (`scratch/nursery/chain-long.ps1`,
+   the owner's order). The owner hears each result, and the inoculant is chosen with them.
+1a. **Round 54's relaunch** once the inoculant is chosen: 0130 revised, committed, launched from a clean
+   tree; then the watch and the read at 30,000 s with r54-read.py.
 2. **Round 53's pictures and entry.** The read is done (`logbook/specs/r53-read/read-30000.txt` on `round-53`).
 3. **The entries owed**, each with the theatre's pictures taken first: 0124 (round 50, after V1's
    film windows from the round's own checkpoints), 0126 (round 51), 0128 (round 52) and round

@@ -6976,8 +6976,9 @@ right now for later."
   once grown. Every nursery result says the purse is kinder than the world's. The work cost is on at 0.5.
   The founders are drawn fresh.
 - **Round 54 is (a)**: D135's drive, the scent and the work cost at 0.5 on round 53's world as read,
-  `propose-foraging.md`'s rules 1 to 3 with rule 1's mechanism replaced by D135. The nursery pilot runs
-  beside it and does not gate it.
+  `propose-foraging.md`'s rules 1 to 3 with rule 1's mechanism replaced by D135. ~~The nursery pilot runs
+  beside it and does not gate it.~~ Superseded by D140 the same day: round 54 waits for the nursery's
+  inoculant.
 
 **Left for later, by the same words.** The bed's friction coefficient and friction between creatures (D137),
 the older proposals at the root, the producer threshold, the tempo dial, the old worktrees, the absorbed
@@ -7011,3 +7012,26 @@ threshold.
 above a joint's threshold (16 of 100 random founders swam over 1 cm/s under this reading in the swim test).
 The nursery's bench and first pilot of 2026-09-30 ran under the old reading and are re-run. Round 54's build
 is a new realisation, its crowd fixture re-recorded, and it is screened again before launch.
+
+### D140
+**Round 54 waits for the nursery's inoculant** · 2026-09-30
+
+**Status:** ruled by the owner in conversation on 2026-09-30 at about 17:10, with round 54 seed 1 at 5,510 s.
+The owner's words: "id honestly wait with round 54 until we have a good idea of which creatures we will be
+inoculating into it", and later "i'm in no rush to start 54, and in fact i'd rather not start it today".
+Supersedes the part of D138 that ran the nursery beside round 54 without gating it.
+
+**Decision.** Round 54 is paused until the nursery names the creatures it will inoculate. Seed 1 was stopped
+with `stop-arm.ps1` at 5,510 s and its checkpoints kept (`runs/r54-s1/2026-09-30-154834-4070da9c`); the queue
+was stopped before seeds 2 and 3. The nursery takes the machine's budget meanwhile. Round 54 does not start
+again on 2026-09-30.
+
+**Why.** An inoculated round is a different round from the one pre-registered, and a nursery winner found
+after the three seeds ran could only be tried in a fourth run beside them. Waiting costs a few hours of
+machine time and buys the round its intended test.
+
+**What it changes.** Pre-registration 0130 says the round carries no inoculant, so it is revised before the
+round launches again, from a clean tree. Seed 1's 5,510 s stay as a record of the uninoculated world under
+D139; whether they are resumed, used as a control or left is decided with the inoculant. The owner set no deadline:
+the nursery runs "until we get a good meaningful result that we're happy with", and the round is not
+launched without the owner.
