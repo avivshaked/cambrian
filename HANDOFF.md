@@ -99,6 +99,11 @@ knockout, brainless, and the D135 kinesis. The smokes found that the floor's fou
 small stomach about a joule once it has grown, so R2 as Fable argued it does not hold. `--purse-rule
 grown` is the alternative.
 
+Drag stays physical (D136). The owner plans, later, to analyse each creature and set a drag fitted to
+its shape. The coast measured on 2026-09-30 runs 40 to 80% longer in its tail than the face-on drag law.
+After the cut the body keeps drifting up or down at about 2 cm/s and turning, and its tilted panels turn
+some of that drift sideways. Where the vertical drift comes from is not yet known; it is agent work.
+
 ### Other work and the disk
 
 Another session works on the story tools: `.claude/skills/story-resolve/`, `assets/`,
