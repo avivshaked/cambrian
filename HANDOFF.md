@@ -100,9 +100,10 @@ small stomach about a joule once it has grown, so R2 as Fable argued it does not
 grown` is the alternative.
 
 Drag stays physical (D136). The owner plans, later, to analyse each creature and set a drag fitted to
-its shape. The coast measured on 2026-09-30 runs 40 to 80% longer in its tail than the face-on drag law.
-After the cut the body keeps drifting up or down at about 2 cm/s and turning, and its tilted panels turn
-some of that drift sideways. Where the vertical drift comes from is not yet known; it is agent work.
+its shape. The coast measured on 2026-09-30 is exactly the drag. With the mass, velocity and drag the solver logged,
+the momentum falls as the drag says. The body was 150 kg with its added water; the agent's first
+comparison used its size at landing and was wrong. Where a coasting body meets the bed it slides on,
+because the own solver's bed contact has no friction (PhysX's had). That is a question for the owner.
 
 ### Other work and the disk
 

@@ -106,7 +106,8 @@ the nursery plan asks the owner whether it is on in the nursery.
 
 The owner watched the test films and expected a body to slow down faster once its push stopped. A
 "pulse" brain (`--swim-test` on `joint-drive`, full power for 20 s and off for 20 s, the bend centred)
-measured founder 72, a trunk and a tail each about 25 cm across, 29 kg of tissue. Its speed was read
+measured founder 72, a trunk and a tail. ~~each about 25 cm across, 29 kg of tissue~~ (corrected below:
+that was its size at landing, and it grows). Its speed was read
 from the root's place at 30 frames a second, over half-second windows
 (`scratch/swimtest/pulse/film-72-pulse.jsonl`; the film is `scratch/owner/jd-coast.mp4`).
 
@@ -114,12 +115,28 @@ from the root's place at 30 frames a second, over half-second windows
 |---|---|---|---|---|---|---|---|
 | speed, cm/s (cut at 20 s) | 18.8 | 17.1 | 14.4 | 12.4 | 9.8 | 4.7 | 4.3 |
 
-The speed halved in 5 s at the cuts at 20 s and 60 s, and in 6 s at 100 s. Part of it is a dive:
+The speed halved in 5 s at the cuts at 20 s and 60 s, and in 6 s at 100 s. ~~Part of it is a dive:
 at the cut the body was going down at 15 cm/s and across at 11, and the dive ended on the bed about
 8 s later. Across alone, the speed fell from 11.2 to 5.7 cm/s in 4.5 s. Quadratic drag on the panels
 at the config's coefficient of 1.5, with the added mass of 0.5, predicts 3.9 s for that body at that
 speed (frontal area about 0.13 m2, effective mass about 44 kg). So the solver coasts about as the drag
-law says, perhaps 15% longer. That is my inference from one body, and not yet checked per face.
+law says, perhaps 15% longer.~~ That comparison was wrong twice over: it used the body's size at landing
+and drew its parts as boxes. The parts are capsules, and by 20 s the body had grown to half-extents about
+60% larger. A later reading of its tail against the same wrong law, "40 to 80% longer", was wrong for the
+same reason.
+
+**The check, done properly** (2026-09-30, later). The film trace now carries, per link, the mass the
+solver moves (the added water included), the velocity and the drag the fluid applied on the step. From
+the cut until the body meets the bed, the body's momentum changes exactly as the summed drag says, to
+three decimals at every sample. There is no force in the coast but the drag. The body is 150 kg with its
+added water, and the drag it met was 0.8 to 1.0 times M v^2 per metre, so from 19.5 cm/s its speed
+halves in about 5.7 s. That is what was seen. It coasts because it is heavy.
+
+**The bed has no friction.** Where the coasting body meets the bed (at 28 s and 68 s in the trace) the
+momentum jumps by the bed's push, and the body slides on. `Contacts.cs` says so: the own solver's pushes
+are "a spring-damper on the penetration", and "it has no friction at all". PhysX, which the Unity farm
+used until round 42, had friction. Nothing about this is in the owner's D136 ruling; it is a question
+for the owner.
 
 What makes it look slow is the law itself. Quadratic drag weakens with the square of the speed, so a
 heavy body keeps drifting at a few centimetres a second long after the push stops. At this size and

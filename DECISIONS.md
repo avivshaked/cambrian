@@ -6907,3 +6907,11 @@ and it would take away the value of a glide.
 as ruled, and add surface friction when we fit drag per creature." Bodies are not held still at low speed,
 and no drag term the water does not have is added. Surface friction, the tangential drag the panel model
 lacks, is to be added when drag is fitted to each creature's shape, which is the owner's plan for later.
+
+**Corrected the same day.** The "Why" above gives founder 72 as 29 kg and quotes 4.5 s against 3.9 s from
+the drag law. Both numbers were the agent's error: they used the body's size at landing, and it had grown
+by the cut, and they drew capsules as boxes. Checked properly, with the mass, velocity and drag the solver
+logged per link, the body's momentum in the coast changes exactly as its drag says. The body was 150 kg
+with its added water, and the drag halves its speed in about 5.7 s from 19.5 cm/s, as seen. The ruling
+stands on the corrected numbers: the coast is what the drag law does to a heavy body.
+(`logbook/specs/joint-drive-build.md`, "The check, done properly".)
