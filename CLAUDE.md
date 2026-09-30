@@ -1601,6 +1601,12 @@ actually verifying it.
   farm round is launched only after the entry is committed and `git status` is clean, and
   the manifest's `gitCommit` is then the pre-registration's commit (round 46: `7bf9064`); a
   `(DIRTY)` beside the commit in the launch printout means the record is not the tree.
+- **`farm-queue.ps1` launches each seed only when no `Evosim.Farm` process is running**, any farm
+  run at all and not only its own round's. So a farm run started beside a queued round holds the
+  round's next seed back until it ends, and the queue says nothing while it waits. On 2026-09-30
+  round 52's extension (`r52-s1y`, four threads on the nursery's freed lane) held round 53's seed 3
+  from 05:49 to 06:42, until the watch saw no seed running and stopped the extension. Start a run
+  beside a queue only once the queue's last seed is running, or stop it at the seed's end.
 - **`detritusOnFloor` is a joules total, not a density.** It is `FloorStock`, the refuge
   stock of patch 0 in joules, and the stomach screens of 2026-09-23 were first read as
   3.4 J/m³ on the bed with an R0 of 34 from it, which went to the owner before the units
