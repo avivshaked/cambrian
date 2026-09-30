@@ -1,4 +1,4 @@
-# Handoff: where to pick up
+﻿# Handoff: where to pick up
 
 *Rewritten 2026-09-30 from the current state. What happened is in the logbook, why it was chosen
 is in [`DECISIONS.md`](DECISIONS.md), and how to do things is in `CLAUDE.md` and the nested files
@@ -14,7 +14,9 @@ sit beside it.*
 
 **Hold from about 10:15 on 2026-09-30: the owner needs the machine for a rendering job.** Round
 53's third seed ended at 10:38 and no farm run is left. Nothing starts (no nursery, no extension,
-no theatre render, no test suite) until the owner says the render is done.
+no theatre render, no test suite) until the owner says the render is done. The owner asked for the
+swim test and D135's build during it, and both ran at four threads with the machine near 15%; the
+hold on anything heavier stands.
 
 - Speed first (the owner, 2026-09-25): 10,000 creatures fast is the committed target and 100,000
   a stretch. Option A: rounds run overnight on the CPU, one seed at a time, and the card is worked
@@ -59,7 +61,7 @@ and 2 measured nothing about foraging, because they laid their corpses about the
 (fixed as `67e3961`). D134's fast nursery, design A, is built (`67e3961`, `81a07c4`). Its
 measurements 1 to 3 ran from 03:46 to 04:18 on 2026-09-30 (`logbook/specs/fast-nursery-measurements.md`),
 and the hand-wired positive control did not beat its knockout in any condition, so design A was
-not run. What the nursery does next is the owner's, and they have deferred it until review round 7 is written; the options and the agent's recommendation (a run-and-tumble control first) close the measurements file. The papers are fetched and each has a JART; the agent's reading of them against the options, written before Pass 2, is `logbook/specs/nursery-round7-reading.md`, and it keeps the recommendation. Fable's world-derived nursery proposal (`logbook/specs/fable-propose-world-nursery.md`, ten rulings) waits on the owner. Before any of it: in round 53 the jointed bodies moved no faster than rigid ones drifting with the water (medians 1 to 7 cm/s against 4 to 9 cm/s, all three seeds, `scripts/reads/swim-speed.py`), and they fell to 0.2 to 1.8% of the living. Whether the pooled bodies swim at all, joint driven against joint frozen in still water, is the first measurement after the render.
+not run. What the nursery does next is the owner's, and they have deferred it until review round 7 is written; the options and the agent's recommendation (a run-and-tumble control first) close the measurements file. The papers are fetched and each has a JART; the agent's reading of them against the options, written before Pass 2, is `logbook/specs/nursery-round7-reading.md`, and it keeps the recommendation. Fable's world-derived nursery proposal (`logbook/specs/fable-propose-world-nursery.md`, ten rulings) waits on the owner. The swim test answered whether bodies swim (`logbook/specs/swim-test-2026-09-30.txt`): rounds 52 and 53 had no push at all, so nothing could, and with the push a plain sine moved every body while their own brains did not. The owner's answer is D135's joint drive, below, and the owner's next step after it is to plan the nursery for it.
 
 The literature is `logbook/specs/nursery-curriculum-literature.md`: it supports the method in part
 and not the claim, so a nursery brain counts as naturally selected only once it out-breeds its
@@ -77,6 +79,18 @@ The bench notes are `logbook/specs/forage-bench/notes.md` on the branch (`3897a4
 brain finds a corpse. A torque drive has no centring, so a lone tail strokes off-centre, and a
 mirrored pair of fins drives a body straight where one fin spins it in place. Nothing reaches a
 round until the owner has seen the bench, and round 54 is theirs (below).
+
+### The joint drive (D135) is built and tested on a branch
+
+The branch `joint-drive` (`scratch/wt-joint`, from `nursery`) carries D135: a power and a bend per
+degree of freedom, the stroke not simulated and drawn, the four drive genes, genome format 11, all
+off by default (Core 1,038 pass with every recorded number unmoved). The build record is
+`logbook/specs/joint-drive-build.md`. Ω is 2 rad/s on the bench; the push from a real swing is off
+under the drive; power and bend are read from [-1, 1] onto [0, 1], so 60 of 100 random founders
+swim under their own brains (16 before). Two 20 s test films are `scratch/owner/jd-swim-own.mp4` and
+`jd-swim-full.mp4`, drawn by `scripts/render-swim-film.py` on the branch. Open on it: the crowd
+fixture `r52fix-s4` to re-record, the work cost to set on the bench, the theatre's drawing of the
+stroke and the pose stream's power, and a chain of joints, which no founder has.
 
 ### Other work and the disk
 
@@ -96,8 +110,15 @@ after the owner approves its video as final (`src/Evosim.Farm/CLAUDE.md`).
 Each is put to the owner in full, with the options and what each implies, in any message that
 asks for it.
 
-- **The nursery's next step**, now that the positive control failed. The reading and the options
-  are in `logbook/specs/fast-nursery-measurements.md`.
+- **The nursery for the joint drive.** The owner's next step after D135 ("then we can start
+  planning the nursery for it"). Fable's world-derived proposal and its ten rulings
+  (`logbook/specs/fable-propose-world-nursery.md`) were written for the torque drive and are
+  re-read against D135 before they are put again.
+- **The power's reading under D135**: the agent chose [-1, 1] onto [0, 1] inside the ruling, so a
+  silent neuron is half power (the build record has the measurements). It is reported to the owner
+  as the agent's choice, with the alternative of the positive half.
+- **Round 54 under D135.** Round 54 was to be `propose-foraging.md`'s four rules on round 53's world
+  (D132); D135 replaces rule 1's mechanism, so what round 54 carries is put to the owner again.
 - **The lifespan literature's eight papers** sit behind Europe PMC's Cloudflare page. The owner
   fetches them in a browser, or the review records them as not fetched.
 - **Older items**, each unchanged since it was last put: the proposals at the repository's root
@@ -125,6 +146,9 @@ and never in a shell loop; a queue that must outlive a turn is started detached.
 
 1. **During the owner's render**, only work that barely loads the machine: writing, and reading
    finished runs with the Python readers.
+1a. **D135's loose ends on `joint-drive`**: re-record the `r52fix-s4` crowd on the branch's build,
+   set the work cost on the bench (rule 2's one to two times the keep), and draft the nursery plan
+   for the joint drive for the owner.
 2. **Round 53's pictures and entry.** The read is done (`logbook/specs/r53-read/read-30000.txt` on `round-53`).
 3. **The entries owed**, each with the theatre's pictures taken first: 0124 (round 50, after V1's
    film windows from the round's own checkpoints), 0126 (round 51), 0128 (round 52) and round
