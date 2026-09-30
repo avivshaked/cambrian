@@ -6957,3 +6957,28 @@ bounding sphere, so a part touches the rock a little before its surface would.
 straight at the bed struck 3.9 mm into it, arriving at its swimming speed, and pressed 0.45 mm once it lay
 there. A heavy box (a fifth of its mass as weight) sliding at 0.3 m/s stopped in 4 cm at μ 0.5, and slid
 39 cm and was still moving without friction.
+
+### D138
+**The nursery's settings, the drive's power reading, and round 54** · 2026-09-30
+
+**Status:** ruled by the owner in conversation on 2026-09-30, on the agent's list of open decisions. The
+owner's words: "The render is finished. For the rest, follow your recommendations, but just for the things
+that we actually need right now to continue the work. Let's leave um, decisions that we don't have to make
+right now for later."
+
+**The rulings, each the agent's recommendation.**
+- **The power's reading under D135 stays as built**: both outputs read from the brain's [-1, 1] onto [0, 1],
+  so a silent neuron is half power (60 of 100 random founders swim under their own brains, against 16).
+- **The nursery** (`logbook/specs/nursery-plan-joint-drive.md`, Fable's R1 to R10 as re-read, with its
+  controls and its stop rule). The purse is the growth paid plus 600 s of the adult's standing watts
+  (`--purse-rule grown`), since under the floor's founder rule a small stomach is left with about a joule
+  once grown. Every nursery result says the purse is kinder than the world's. The work cost is on at 0.5.
+  The founders are drawn fresh.
+- **Round 54 is (a)**: D135's drive, the scent and the work cost at 0.5 on round 53's world as read,
+  `propose-foraging.md`'s rules 1 to 3 with rule 1's mechanism replaced by D135. The nursery pilot runs
+  beside it and does not gate it.
+
+**Left for later, by the same words.** The bed's friction coefficient and friction between creatures (D137),
+the older proposals at the root, the producer threshold, the tempo dial, the old worktrees, the absorbed
+proposal files, and the papers behind barriers. Round 54 runs with the bed's friction off, since its value
+is not yet benched.
