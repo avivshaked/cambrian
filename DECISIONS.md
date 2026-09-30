@@ -6834,3 +6834,50 @@ that circles a corpse or sinks onto the bed where every corpse settles, and neve
 another metabolic step: a brain tuned there is tuned to another body and another economy. Several bodies in one
 episode world: the current carries a body 8 to 13 m in an episode, past its neighbour's scent, so a child's score
 would depend on its tank-mate.
+
+### D135
+**The joint as a bend and a power** · 2026-09-30
+
+**Status:** ruled by the owner in conversation on 2026-09-30, on the agent's proposal (`propose-joint-drive.md`,
+absorbed here and deleted). The owner's words: "ok proceed with your recommendations. make the world changes,
+run a local test." Built on the branch `joint-drive` (worktree `scratch/wt-joint`), every rule a setting off by
+default. Nothing reaches a round until the owner has seen the bench.
+
+**Decision.** The design is the owner's (the conversation of 2026-09-30). The brain has two outputs for each
+degree of freedom of a joint, a power and a bend, each from 0 to 1. The bend is the angle across the joint's
+range that a muscle holds it at, capped by the part's Power. The power, above a threshold in the genome, is a
+stroke the solver does not simulate. The link is pushed as rule 1 of `propose-foraging.md` pushes a link
+swinging at `s·Ω`: `C_T · m_a · r · (s·Ω)²` along the limb toward its joint, weighted by how far each degree
+of freedom's axis stands from the limb (a twist gives none), and this push replaces the push from a real swing.
+Each joint carries three times in its genome, mutating in children: reaction (from rest to a first command),
+hold (how long a command stands before the joint takes another) and release (the ramp to the next). The record
+logs each joint's angle and power, and the theatre draws the stroke from the power. The nine rulings as
+recommended: (1) adopt the model, replacing rule 1's mechanism and the torque effector of DESIGN §4.4; (2) the
+push from the power with `Ω` set on the bench; (3) Power caps the bend's muscle and does not scale the push;
+(4) rule 2's price of a stroke carries over, the stroke's work taken as `F · r · s · Ω`; (5) reaction, hold and
+release each 0.02 to 1 s; (6) the threshold 0 to 0.5; (7) the drawn stroke's curve is the theatre's, with no
+gene; (8) genome format 11, so every earlier genome is refused; (9) a chain's drawn wave follows its shape, a
+short deep chain in step and a long thin one with a wave along it, with no gene.
+
+**Choices the build made inside the ruling** (`logbook/specs/joint-drive-build.md` has the measurements).
+Both outputs are read from the brain's [-1, 1] onto [0, 1], so a silent neuron is half power and a centred
+joint, and only a neuron driven to -1 turns a joint off. Read as the positive half alone, random founders' own
+brains moved 16 bodies in 100 over 1 cm/s in still water; read this way, 60. The push from a real swing is off
+under the drive, because left on beside it a brain that wagged its bend with no power swam a median 1.2 cm/s,
+which is the stroke the owner's design says is only for show. The bench values are `Ω` 2 rad/s (founders at
+full power swim a median 6.2 to 7.8 cm/s, inside the owner's 4 to 8) and a muscle of 2 Hz. The four genes are
+drawn for founders only under `EVOSIM_DRIVE_GENES` and mutated only at `EVOSIM_DRIVE_GENE_CHANCE` above 0, as the
+gestation genes are, so every recorded world replays: Core's 1,038 tests pass with every pinned number unmoved.
+
+**Why.** The swim test (`logbook/specs/swim-test-2026-09-30.txt`). Rounds 52 and 53 ran without any push, and in
+drag-only water a symmetric stroke cancels, so nothing could swim and no brain was selected to. With the push, a
+plain sine moved every jointed body 4 to 8 cm/s while the bodies' own brains moved them 0.1 to 0.7. A torque
+drive makes the stroke a tuning problem: the push reverses before a fast stroke has moved the limb, so the swing
+falls from 110° at 0.5 Hz to 16° at 4 Hz, and position control imitated through the brain does no better, since
+the limb's strength caps both. A random brain almost never finds a stroke that works. Under this drive it has
+nothing to find: any power above its threshold pushes.
+
+**Rejected.** The torque drive of §4.4, for the reasons above. Position control of a simulated stroke: it is
+capped by the same strength and adds a controller that shakes when stiff. A gene for the stroke's curve or a
+chain's phase: it would change nothing the world scores and drift at random. Scaling the push by Power: it
+would make Power the one gene that buys speed.
