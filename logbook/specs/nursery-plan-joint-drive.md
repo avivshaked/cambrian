@@ -327,3 +327,36 @@ and a fast one meets another within a few metres. The round lays its matter on a
 0.1 in 22,000 m2, where a body in a desert is tens of metres from food. The next bench is a 40 m tank
 with 20 m islands at cover 0.1. One arm plants the bodies in the food and the other drops them anywhere.
 Blind constants (`393f522`) stand beside the kinesis.
+
+## A tank the size of an island: the first larder where a sense pays
+
+*2026-09-30, 18:22 to 19:05.* The 1,200 s pilot ran again at 12 J/m3 on the same small tank, and then
+the bench in a tank 40 m across.
+
+At 12 J/m3 and 1,200 s most bodies lived (79 % under their own brains). No brain read the scent on any
+of the 12 bodies. The brains were blind cruises at 0.13 W over 79 m, and they beat frozen by 165 J
+(standard error 21). The rate kinesis led the evolved brain on three bodies by 90 to 108 J, with
+standard errors of 25 to 49. Eight brains to a body is the thin search that made the same kind of lead
+vanish on body 10 at 32 brains, so I read these leads as unproven.
+
+The bench tank is 1,600 m2 and 5 m deep, with snow at 3 J/m3 in islands of 20 m at cover 0.1. It ran
+600 s episodes, 12 fresh founders under 12 brains on 16 held-out draws. Four blind constants stand beside the kinesis, at 0.15,
+0.3, 0.5 and 0.7 of the neuron's range. The arms differ only in the start: planted in the food
+(`foundersFollowFood`, as every tank so far) or dropped anywhere. Each brain is paired against the
+best of the four constants, which is 0.3 in both arms and was picked after the fact, so the pairing
+favours the blind side.
+
+| start | rate kinesis −0.5, 10 | rate kinesis 0, 20 | level kinesis 1.36, 18 |
+|---|---|---|---|
+| planted in the food | +61 J (se 11) | +55 J (se 11) | −83 J (se 14) |
+| dropped anywhere | −4 J (se 8) | −1 J (se 8) | −37 J (se 11) |
+
+Planted in an island, a body that eases its stroke while the scent rises earns 61 J more over 600 s
+than the best blind body. Dropped anywhere, every brain starves in the deserts (−258 to −311 J), and a
+searcher that pushes in drained water pays for the swim without reaching an island in time. So the scent
+buys a body the means to stay on its food. It does not help it find food. The round plants its founders in the food
+too, and its children are born beside their parents.
+
+Two arms of the per-body search run on the planted tank from 19:05, 12 bodies with 16 brains each and
+600 s episodes. One starts from the brains as drawn and the other from the rate kinesis. Their exams
+hold the constants.
