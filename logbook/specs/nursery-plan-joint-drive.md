@@ -284,3 +284,46 @@ diagnostic; whether a brain whose search began hand-wired may be inoculated is t
 
 Round 54 waits on this (D140). The owner asked for episodes of 600 s and then 1,200 s on the per-body
 pilot, since a longer life may make finding the next island worth more than cruising through one.
+
+## Longer lives, a wider search, and a sense worth nothing here
+
+*2026-09-30, 17:20 to 18:22.* The per-body pilot ran again at 600 s and at 1,200 s, as the owner
+asked, and then three pilots on bodies 3, 7 and 10 with 32 brains each.
+
+At 600 s no body read the scent: the knockout scored what its own brain did on all 12. The rate kinesis
+beat the evolved brain on seven bodies, by up to 75 J on body 10 (standard error 11). Bodies 3 and 9
+found body 39's trick, a brain that beats its brainless copy by 30 J. Every body ended deep in deficit
+(own −91 to −494 J), because this larder does not keep these bodies for 600 s.
+
+At 1,200 s nearly every body starved at 3 J/m3 before the end: 4 % survived under their own brains
+and 2 % frozen. Every brain lost the purse, so the exam could not tell them apart. The run measured only
+the larder. It runs again at 12 J/m3.
+
+The wider search gave the same three bodies 32 brains each, in three arms. The first kept the brains as
+drawn. The second took larger mutation steps: `scalarChance` 0.2 and `scalarStdDev` 0.5, against 0.08 and
+0.15. The third started the search from the rate kinesis. The exam's draws are the same in every
+arm, since frozen scored identically in each, so the arms' own brains pair draw by draw.
+
+| body | as drawn, own | larger steps, against as drawn | from kinesis, against as drawn | from kinesis, its knockout |
+|---|---|---|---|---|
+| 3 | +10 J | −1 J (se 3) | +2 J (se 3) | −42 J (se 7) |
+| 7 | −14 J | −4 J (se 2) | −2 J (se 2) | +16 J (se 4) |
+| 10 | +44 J | −14 J (se 7) | +5 J (se 6) | −54 J (se 6) |
+
+With 32 brains, body 10's blind brain found +44 J, where 8 brains had found −3 J, and the kinesis's 65 J
+lead was gone. Both arms as drawn and with larger steps evolved blind constants. Started from the
+kinesis, bodies 3 and 10 kept the sense: cutting the scent costs them 42 and 54 J. They earn no more
+than the best blind brain. The larger steps found nothing the ordinary ones did not.
+
+This corrects my reading of 17:30. I had guessed that the scent reads too faintly (x / (x + 10 J/m3), so
+0.03 to 0.07 over these islands) for small mutation steps to reach the gains a kinesis needs. The larger
+steps did not find a sense, and a brain handed the sense did not profit from it. In this tank a sense
+is worth nothing over a tuned blind stroke. The 65 J came from a search too thin to find the blind
+stroke.
+
+My reading of why, which is inference: the tank is 10 m across and its islands 5 m, and the bodies
+are planted in the food (`foundersFollowFood`). A slow blind stroke stays in its island long enough,
+and a fast one meets another within a few metres. The round lays its matter on a 60 m map at cover
+0.1 in 22,000 m2, where a body in a desert is tens of metres from food. The next bench is a 40 m tank
+with 20 m islands at cover 0.1. One arm plants the bodies in the food and the other drops them anywhere.
+Blind constants (`393f522`) stand beside the kinesis.
