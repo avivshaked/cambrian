@@ -212,3 +212,27 @@ The best hand-wired forager beats frozen by 65 J (standard error about 22) and f
 It travels hardly further than a frozen body, but it sits in snow two fifths richer, because it moves
 only while its reading falls. The random brains now lose to frozen, since those that push waste the
 work. The pilots run again on this drive, the brain-only arm first.
+
+## The brain-only pilot on D139's drive: a faster blind cruise
+
+*2026-09-30, 16:24 to 16:39.* 48 stomach founders, bodies fixed, 200 generations at 12 J/m3 through the
+column. Selection still chose among the founders' bodies, since each brain rides the body it was drawn
+with, and by generation 4 the population was copies of body 39, which had earned +176 J under its own
+random brain in generation 0. The exam ran its eight best brains on 16 held-out draws.
+
+| body 39's elites | net | work | path | snow at the body |
+|---|---|---|---|---|
+| their own brains | +203 J | 0.31 W | 40.8 m | 2.10 J/m3 |
+| full power | +193 J | 0.39 W | 43.8 m | 2.17 J/m3 |
+| frozen | +88 J | 0 | 4.2 m | 1.06 J/m3 |
+| knockout and brainless | +203 J | 0.31 W | 40.8 m | 2.10 J/m3 |
+
+The brains beat frozen by 116 J (standard error 6) and full power by 10 J (standard error 6). Their
+knockout and brainless copies scored what they did, so no sense is read: the brains hold about four
+fifths of full power all the time. For this body at this density swimming pays, and a blind cruise
+collects it.
+
+My reading is that the larder cannot reward a sense while it is even. A body that keeps moving through
+an even larder always meets fresh snow, so knowing where the snow lies buys nothing. The round's snow
+is patchy, its patchiness 0.44 to 0.56 in round 53, and the tank's is flat. The next step is snow laid
+in patches, as the farm lays matter in islands (D109), and the pilots again on that.
