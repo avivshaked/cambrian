@@ -82,6 +82,22 @@ under `scratch/swimtest/jd4-film/`.
 ## What is open
 
 - Every founder is two parts with one joint, so a chain's drawn wave (ruling 9) has not been seen.
-- The work cost is 0 in these configs, so ruling 4's price is untested; the bench sets it before a round.
+- The work cost's value is measured (below) and not yet run: 0.5 is the bench's proposal.
 - The theatre does not draw the stroke yet, and the farm's pose stream does not log the power.
 - The `r52fix-s4` crowd fixture needs re-recording on this build before a merge.
+
+## The work cost (rule 2)
+
+100 founders, 120 s, the configs' work cost at 0 so the work is measured and not charged: the drive's mean
+mechanical work (the muscle's and the push's) against the body's standing keep at the end.
+
+| brain | work | keep | work over keep, median (quartiles) |
+|---|---|---|---|
+| frozen | 0.000 W | 0.56 W | 0.0 |
+| half power | 0.046 W | 0.56 W | 0.1 (0.0 to 0.2) |
+| full power | 1.50 W | 0.56 W | 2.7 (1.2 to 5.2) |
+| own brain | 0.12 W | 0.56 W | 0.2 (0.1 to 1.2) |
+
+Rule 2 asks a cruising stroke to cost one to two times the keep, so the work cost belongs at 0.37 to 0.74
+of the work; 0.5 puts full power at about 1.35 times the keep. It is set on the bench before a round, and
+the nursery plan asks the owner whether it is on in the nursery.
