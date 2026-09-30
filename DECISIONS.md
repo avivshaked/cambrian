@@ -6901,3 +6901,9 @@ negligible. It also rewards timing: a brain that pushes and then glides saves wo
 speed by about 30% and would mean recalibrating Ω and leaving every speed measured under D135 incomparable. A
 viscous or other damping term the water does not have: it would give the snappier look, but it is not physical,
 and it would take away the value of a glide.
+
+**Confirmed and extended**, the same day, after the coast's tail was compared with the drag law (HANDOFF,
+2026-09-30). The owner's words, choosing between keeping this ruling and adding a stopping rule: "Keep D136
+as ruled, and add surface friction when we fit drag per creature." Bodies are not held still at low speed,
+and no drag term the water does not have is added. Surface friction, the tangential drag the panel model
+lacks, is to be added when drag is fitted to each creature's shape, which is the owner's plan for later.
