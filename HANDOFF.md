@@ -39,7 +39,7 @@ bench and pilots at four, within the half-machine cap.
 | 52 | Run to 30,000 s (pre-registration 0127; seed 3 joined as `r52-s3j`). The read is `logbook/specs/r52-read/read-30000.txt` on `round-52` | The pictures, then entry 0128 |
 | 52, extended | Seed 1 reached 50,000 s as `r52-s1z`, which ended on its budget on 2026-09-30. Seeds 2 and 3 never started | Seeds 2 and 3 when a lane is free, joined with `stitch-resume.py --header-from` |
 | 53 | Run to 30,000 s on all three seeds, the last ending at 10:38 on 2026-09-30 (pre-registration 0129, `6701dc9`; branch `round-53` in `scratch/wt-r53`). The read is `logbook/specs/r53-read/read-30000.txt` on the branch (`340e21f`). N1 holds on every seed (bed snow 2.82, 2.49 and 3.08 times round 52's). N2 fails: the drop in the uptake-limited share was 0.016, -0.0006 and 0.034 against a bar of 0.015 on every seed. N3 holds on every seed (corpses eaten 256, 241 and 224 against 170, 114 and 129) | The pictures, the entry. The entry asks who the extra bodies are: the round carries more than round 52's crowd at 30,000 s (7,403, 7,291 and 7,607 alive against 3,431, 2,813 and 5,691), and a larger crowd of leaves on the same nutrients would explain N2 (a guess until counted). Round 53's reader dropped N3's per-seed rows from its summary; round 54's reader counts them |
-| 54 | Being prepared on the branch `round-54` (`scratch/wt-r54`: `joint-drive` with `round-53` and main merged). D138 ruled it: D135's drive, the scent and the work cost at 0.5 on round 53's world, D137's friction off. `rounds/env-r54.ps1` and `queue-r54.ps1` are written; the build's fixtures are re-recorded by `logbook/specs/r54-build/build.ps1` (`r54fix-s4`, `pfix17`). A screen of seed 1 to 5,000 s is `r54sc-s1`. The reader is `scripts/reads/r54-read.py` and the pre-registration draft `logbook/0130-a-body-that-can-swim-reaches-its-next-meal.md`, both uncommitted | The build's suites, the screen's numbers into 0130, commit on a clean tree, then the queue |
+| 54 | Launched 16:48 on 2026-09-30 from `scratch/wt-r54` (branch `round-54`), seeds 1 to 3 one at a time at twelve threads (`rounds/queue-r54.ps1`, log `scratch/logs/r54-queue.log`); pre-registration 0130, `1d65ebe`, clean. D138's world with D139's fix: a silent joint has no power. The first screen (`r54sc-s1`, half power) lost two thirds of its jointed bodies; the second (`r54sc2-s1`) is seed 1's first 5,000 s. The reader is `scripts/reads/r54-read.py` | Watch the seeds and sample the pictures; the read at 30,000 s; the entry |
 
 What the rounds found, in a line each.What the rounds found, in a line each. Round 51: one corpse was eaten a seed in 30,000 s, so the
 larder lies unused. B1 failed on the matter residual alone, the float door at the burn
@@ -123,10 +123,8 @@ the founders 0.5 to 1.5).
 All of it is agent work. Long steps run in the background under the session, never in a subagent
 and never in a shell loop; a queue that must outlive a turn is started detached.
 
-1. **Round 54's launch**: the build's suites pass, the fixture edits and the reader are committed,
-   the screen's numbers go into 0130, the style check passes, and 0130 is committed on a clean tree.
-   Then `rounds/queue-r54.ps1` starts the seeds detached, at twelve threads beside the nursery's
-   four.
+1. **Round 54's watch**: the seeds run from 16:48 on 2026-09-30, about three and a half hours each;
+   pictures from a live seed every few thousand seconds, and the read at 30,000 s with 54-read.py.
 1a. **The nursery's pilots and their exams**, read against the controls; the owner hears the result
    with the inoculation question set out again.
 2. **Round 53's pictures and entry.** The read is done (`logbook/specs/r53-read/read-30000.txt` on `round-53`).
