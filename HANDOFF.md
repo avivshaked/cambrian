@@ -22,6 +22,8 @@ resets that were mostly the graphics driver failing on a live machine (CLAUDE.md
 about a week of clean running, and the card carries no heavy work until then, so round 53 runs its
 transport on the CPU. Any unexplained crash or clean re-run is reported the same hour.
 
+**Hold from about 10:15 on 2026-09-30: the owner needs the machine for a rendering job.** Round 53's third seed (ends near 10:10) and `r52-s1z` (near 09:25) finish on their own; nothing starts after them (no nursery, no extension of round 52's seeds 2 and 3, no theatre render, no test suite) until the owner says the render is done.
+
 ### The night of 2026-09-29, and what runs while the owner is away
 
 The owner delegated rounds 52 and 53 that evening and later left the agent working alone, with
