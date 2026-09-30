@@ -92,6 +92,13 @@ swim under their own brains (16 before). Two 20 s test films are `scratch/owner/
 fixture `r52fix-s4` to re-record, the work cost to set on the bench, the theatre's drawing of the
 stroke and the pose stream's power, and a chain of joints, which no founder has.
 
+The nursery's tank is built on the same branch, ready for the pilot and not run beyond smokes
+(`logbook/specs/nursery-plan-joint-drive.md`, "The tank, built"). It has `World.LaySnow`,
+`Evosim.Nursery --tank` (R1 to R5) and `--tank-bench`. The bench runs the controls: frozen, full,
+knockout, brainless, and the D135 kinesis. The smokes found that the floor's founder purse leaves a
+small stomach about a joule once it has grown, so R2 as Fable argued it does not hold. `--purse-rule
+grown` is the alternative.
+
 ### Other work and the disk
 
 Another session works on the story tools: `.claude/skills/story-resolve/`, `assets/`,
@@ -113,7 +120,9 @@ asks for it.
 - **The nursery for the joint drive.** The owner's next step after D135 ("then we can start
   planning the nursery for it"). Fable's world-derived proposal and its ten rulings
   (`logbook/specs/fable-propose-world-nursery.md`) were written for the torque drive and are
-  re-read against D135 before they are put again.
+  re-read against D135 (`logbook/specs/nursery-plan-joint-drive.md`). R2's purse has a new
+  question: the floor's rule, under which small stomachs starve while growing, or the growth paid
+  plus 600 s of the adult's keep.
 - **The power's reading under D135**: the agent chose [-1, 1] onto [0, 1] inside the ruling, so a
   silent neuron is half power (the build record has the measurements). It is reported to the owner
   as the agent's choice, with the alternative of the positive half.

@@ -69,3 +69,55 @@ nursery's measurement 1, not yet timed under D135).
 2. The pool: founders drawn fresh (a trunk and one tail each), or a short farm run under D135 first
    to give the nursery more varied bodies?
 3. Fable's R1 to R10 as re-read above, with the controls and the order: agreed?
+
+## The tank, built on `joint-drive` (2026-09-30, evening)
+
+Built while the questions above wait, so that the pilot is ready when they are answered. Nothing in
+it has been run beyond smokes of a minute or less, at two threads.
+
+- **`World.LaySnow(density, layers)`** (`WorldAssay.cs`, beside `PlaceCorpse`, with
+  `GridField.SeedBed`): lays snow at a density in the lowest live cells of every column, booked into
+  `EnergyIn` and the matter influx as a placed corpse is. The tank's own seed is matter, not snow, so
+  without it a stomach has nothing to eat until something dies. Three tests in `LaySnowTests`.
+- **`Evosim.Nursery --tank`** (`src/Evosim.Nursery/Tank.cs`): R1 to R5 as re-read above. Several
+  bodies a world (`--tank-size 8`), net energy, shuffled into tanks `--draws 3` times a generation,
+  a running mean over every episode swum, `--elites 8` carried over, a tournament of `--tournament 3`,
+  no crossover, and `--evolve kind` (the whole genome, the set of cell types locked) or `brain`.
+  Founders are drawn fresh and filtered by `--trunk absorptive`.
+- **`--tank-bench`**, and the exam at a search's end: every genome under its own brain, frozen, full
+  power, the knockout, brainless, and each `--drive-kinesis mode,bias,gain` brain. Every tank holds
+  one brain. The kinesis under D135 is power `bias - gain x` on every degree of freedom with the bend
+  centred. `x` is the `Chemical` reading (`level`) or a `Differentiate` neuron on it (`rate`).
+- **Snow knobs:** `--snow` (J/m3, drawn half to double per episode unless `--snow-fixed`) and
+  `--snow-layers`.
+- **The trace:** `EVOSIM_TANK_TRACE=1` prints each body's start, keep, death and income.
+
+**A finding that changes R2.** Under the floor's founder rule, which gives the config's purse times
+the birth fraction plus the endowment capped by D124, a small stomach is left with about a joule once
+it has grown. A founder pays for its growth out of the reserve on its first step. The cap is
+`f × gate + growth`, so it was written with that in mind. The smoke's body 7 is an example: reserve
+49.5 J and tissue 9.4 J at landing, then reserve 0.9 J and tissue 57.9 J half a second later. It
+starved at 4 s under every brain, frozen included. At 300 s, 62% of the eight founders were dead
+under their own brains and under frozen ones alike. Fable's arithmetic ("a non-eater of 0.12 W ends
+at about 34 J of 70 and lives") left out the growth and the cap. So `--purse-rule` offers two
+purses:
+
+- `world`: the floor's rule as it stands.
+- `grown`: the growth paid, plus `--purse-seconds` (the config's 600 by default) of the adult's
+  standing watts, uncapped.
+
+Under `grown`, every frozen body lived the 300 s. Which purse is the nursery's is the owner's
+question; it was R2's.
+
+**What the smokes showed, as smokes.** Eight stomachs, one draw, 300 s, work cost 0.5, and snow at
+1.6 J/m3 on the bottom layer. The bodies started 0.75 to 2.25 m above the bed and so mostly sat above
+the snow. At the body they read 0.04 J/m3 of the 1.6 laid. The pilot needs them started low
+(`--above-bed 0.5`) or the snow laid on two layers.
+
+With the grown purse, the full-power control paid 0.78 W of work and ended 149 J below its own brain
+(se 66). The level kinesis at bias 1 and gain 8 pushed as hard as full power and did as badly,
+because the snow it read was so thin that it read as drained everywhere. A three-generation search
+of 16 stomachs cut the mean work from 0.36 W to 0.05 W and raised the mean net from −52 J to −20 J.
+Selection learned to stop pushing where the snow did not pay for a push. That is the sitter Fable
+warned of, and it is the right answer to that tank. It says the larder decides what the pilot can
+find, so the snow's density and layers are the first thing to set on the bench.
