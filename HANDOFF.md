@@ -125,8 +125,13 @@ and never in a shell loop; a queue that must outlive a turn is started detached.
 
 1. **The nursery's pilots and their exams** (D140: round 54 waits on them), read against the controls.
    The per-body selection (`--per-body`, uncommitted on `joint-drive`, built to `artifacts/nursery-perbody`)
-   runs on sparse islands at 300 s, then 600 s and 1,200 s episodes (`scratch/nursery/chain-long.ps1`,
-   the owner's order). The owner hears each result, and the inoculant is chosen with them.
+   ran on sparse islands at 300, 600 and 1,200 s (the owner's order). In the 10 m tank no search found a
+   sense, and a sense handed to it earned no more than a tuned blind stroke. In a 40 m tank with 20 m
+   islands, bodies planted in the food, the rate kinesis beats the best blind constant by 61 J (se 11):
+   the first larder where the scent pays (nursery plan, last section). Two per-body arms evolve there from
+   19:05 (`scratch/nursery/pilot-big-own`, `pilot-big-kin`, exams near 20:15). The launcher is
+   `scratch/nursery/run-pilot.ps1`; the configs are `scratch/nursery/runs-jd/still-w2-f0-big*`. The owner
+   hears each result, and the inoculant is chosen with them.
 1a. **Round 54's relaunch** once the inoculant is chosen: 0130 revised, committed, launched from a clean
    tree; then the watch and the read at 30,000 s with r54-read.py.
 2. **Round 53's pictures and entry.** The read is done (`logbook/specs/r53-read/read-30000.txt` on `round-53`).
