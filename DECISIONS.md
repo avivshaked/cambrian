@@ -6881,3 +6881,23 @@ nothing to find: any power above its threshold pushes.
 capped by the same strength and adds a controller that shakes when stiff. A gene for the stroke's curve or a
 chain's phase: it would change nothing the world scores and drift at random. Scaling the push by Power: it
 would make Power the one gene that buys speed.
+### D136
+**A body coasts as the water's drag says** · 2026-09-30
+
+**Status:** ruled by the owner in conversation on 2026-09-30, after the coasting measurement in
+`logbook/specs/joint-drive-build.md` ("How fast a body stops"). The owner's words: "yeah keep the physics."
+
+**The ruling.** Once a body's push stops under D135, it slows by the panel drag it already had: quadratic in
+speed, at `dragCoefficient` 1.5, with the added mass of 0.5. No term is added to stop it sooner, and the
+coefficient is not raised.
+
+**Why.** The owner saw bodies coast farther than expected in the test films. The pulse brain measured founder
+72 (29 kg of tissue): with its push cut at 19 cm/s its speed halved in about 5 s, and across the water it
+halved in 4.5 s against 3.9 s from the drag law. The coasting is what quadratic drag does to a heavy bluff
+body. It weakens with the square of the speed, and at a Reynolds number of about 10,000 viscous drag is
+negligible. It also rewards timing: a brain that pushes and then glides saves work once the work cost is on.
+
+**Rejected.** A larger drag coefficient: doubling it roughly halves the coast, but it also cuts the cruising
+speed by about 30% and would mean recalibrating Ω and leaving every speed measured under D135 incomparable. A
+viscous or other damping term the water does not have: it would give the snappier look, but it is not physical,
+and it would take away the value of a glide.
