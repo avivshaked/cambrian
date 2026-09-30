@@ -59,7 +59,7 @@ and 2 measured nothing about foraging, because they laid their corpses about the
 (fixed as `67e3961`). D134's fast nursery, design A, is built (`67e3961`, `81a07c4`). Its
 measurements 1 to 3 ran from 03:46 to 04:18 on 2026-09-30 (`logbook/specs/fast-nursery-measurements.md`),
 and the hand-wired positive control did not beat its knockout in any condition, so design A was
-not run. What the nursery does next is the owner's, and they have deferred it until review round 7 is written; the options and the agent's recommendation (a run-and-tumble control first) close the measurements file.
+not run. What the nursery does next is the owner's, and they have deferred it until review round 7 is written; the options and the agent's recommendation (a run-and-tumble control first) close the measurements file. The papers are fetched and each has a JART; the agent's reading of them against the options, written before Pass 2, is `logbook/specs/nursery-round7-reading.md`, and it keeps the recommendation.
 
 The literature is `logbook/specs/nursery-curriculum-literature.md`: it supports the method in part
 and not the claim, so a nursery brain counts as naturally selected only once it out-breeds its
