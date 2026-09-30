@@ -101,3 +101,30 @@ mechanical work (the muscle's and the push's) against the body's standing keep a
 Rule 2 asks a cruising stroke to cost one to two times the keep, so the work cost belongs at 0.37 to 0.74
 of the work; 0.5 puts full power at about 1.35 times the keep. It is set on the bench before a round, and
 the nursery plan asks the owner whether it is on in the nursery.
+
+## How fast a body stops (2026-09-30, evening)
+
+The owner watched the test films and expected a body to slow down faster once its push stopped. A
+"pulse" brain (`--swim-test` on `joint-drive`, full power for 20 s and off for 20 s, the bend centred)
+measured founder 72, a trunk and a tail each about 25 cm across, 29 kg of tissue. Its speed was read
+from the root's place at 30 frames a second, over half-second windows
+(`scratch/swimtest/pulse/film-72-pulse.jsonl`; the film is `scratch/owner/jd-coast.mp4`).
+
+| after the cut | 0.5 s | 1 s | 2 s | 3 s | 5 s | 8 s | 12 s |
+|---|---|---|---|---|---|---|---|
+| speed, cm/s (cut at 20 s) | 18.8 | 17.1 | 14.4 | 12.4 | 9.8 | 4.7 | 4.3 |
+
+The speed halved in 5 s at the cuts at 20 s and 60 s, and in 6 s at 100 s. Part of it is a dive:
+at the cut the body was going down at 15 cm/s and across at 11, and the dive ended on the bed about
+8 s later. Across alone, the speed fell from 11.2 to 5.7 cm/s in 4.5 s. Quadratic drag on the panels
+at the config's coefficient of 1.5, with the added mass of 0.5, predicts 3.9 s for that body at that
+speed (frontal area about 0.13 m2, effective mass about 44 kg). So the solver coasts about as the drag
+law says, perhaps 15% longer. That is my inference from one body, and not yet checked per face.
+
+What makes it look slow is the law itself. Quadratic drag weakens with the square of the speed, so a
+heavy body keeps drifting at a few centimetres a second long after the push stops. At this size and
+speed the Reynolds number is about 10,000, and viscous drag, which would stop it outright, is
+negligible. A fish of the same size glides farther still, since its drag coefficient is far below a
+box's. A body that stops sooner needs a world rule: a larger `dragCoefficient`, which also lowers the
+cruising speed as one over its square root, or a drag term the water does not have. Either is the
+owner's.
