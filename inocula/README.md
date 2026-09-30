@@ -9,7 +9,7 @@ the code licence (D060).
 Every genome here was copied byte for byte out of a run's own `snapshots/`. None was written
 by hand, and none is edited: a genome file wearing a body's identity has to be that body.
 A stored genome is refused by any build whose `GenomeJson.FormatVersion` has moved past it
-(CLAUDE.md's gotcha on formats 3, 4 and 5). Several of these load only under the build they
+(the gotcha on formats 3, 4 and 5, now in `src/Evosim.Core/CLAUDE.md`). Several of these load only under the build they
 were taken from.
 
 ## The files
@@ -29,7 +29,7 @@ identify the creature, not the bytes on disk now; a checksum of the current file
 | `s4-stomach-1.json` | `r14c10-s4` snapshot 17,000, row 1747: a one-node absorptive box | no entry names the file; logbook/0050 and 0053 are the readings it was pulled for (the dissection that found stomachs which should have bred and did not) |
 | `s4-stomach-2.json` | `r14c10-s4` snapshot 29,000, row 1788 | as above |
 | `s4-stomach-3.json` | `r14c10-s4` snapshot 19,000, row 1808 | as above |
-| `s4-mixo-2node.json` | `r14c10-s4` snapshot 20,000, row 1775: a two-node mixotroph, absorptive root with one edge | the concrete case behind CLAUDE.md's gotcha that a genome can carry an absorptive node it never expresses, because development prunes the subtree for volume |
+| `s4-mixo-2node.json` | `r14c10-s4` snapshot 20,000, row 1775: a two-node mixotroph, absorptive root with one edge | the concrete case behind the gotcha (now in `scripts/CLAUDE.md`) that a genome can carry an absorptive node it never expresses, because development prunes the subtree for volume |
 | `s4-config-patched.json` | `r14c10-s4`'s own `config.json` with `feeding.exudationFraction` added at 0, so a build that had the tunable would read it; refused by every build since the growth group and kept as history | CLAUDE.md's gotcha that adding a tunable makes every older config unreadable; kept as the worked example of bringing one forward |
 | `r28s4-stomach.json` | `r28-s4` snapshot 26,000, row 1778 | no entry names the file; it is the earlier of the two bodies the D082 ledger pass looked at |
 | `r28s4-stomach2.json` | `r28-s4` snapshot 30,000, row 1736: absorptive root, one neuron, one input, developing to one absorptive part of 0.0048 m³ | `logbook/specs/price-ledger.md`, the ledger pass that priced a neuron for D082 |
