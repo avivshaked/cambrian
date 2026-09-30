@@ -121,3 +121,49 @@ of 16 stomachs cut the mean work from 0.36 W to 0.05 W and raised the mean net f
 Selection learned to stop pushing where the snow did not pay for a push. That is the sitter Fable
 warned of, and it is the right answer to that tank. It says the larder decides what the pilot can
 find, so the snow's density and layers are the first thing to set on the bench.
+
+## The larder, benched
+
+*2026-09-30 afternoon, on the branch `joint-drive` at `8c73cbb`.* The control bench ran 48 stomach
+founders in tanks of eight, under eight brains. Each brain had 16 held-out draws of 300 s. The work
+cost was 0.5, the purse the grown one, and the bodies started 0.25 to 0.75 m over the bed. The
+config is the still-water nursery config with D137's friction added at 0, which the new build
+requires (`scratch/nursery/runs-jd/still-w2-f0`).
+
+The first bench laid the snow at 1.4 J/m3, the bed's density in round 53, on the bottom layer
+alone. Every brain lost money over the episode, and a body read 0.03 J/m3 at its own cell, a
+fiftieth of what was laid. The trace showed why: the bodies float about a metre over the bed. That
+is just above the one-metre layer the snow was laid in, and a neutrally buoyant body never sinks. The tank's whole larder
+was 140 J among eight bodies whose adult keep is 0.4 to 1 W each. A grown body pays the adult's keep
+from its first step, because the purse pays the growth at once, and the trace's upkeep column now
+shows it.
+
+Raising the snow on the bottom layer to 4, 12 and 36 J/m3 fed every brain more and never paid a
+body to move. Laying it through the whole water column changed that. The table gives each brain's
+mean net over the episode in joules.
+
+| brain | 1.4 J/m3, bottom layer | 1.4 J/m3, the column | 12 J/m3, the column |
+|---|---|---|---|
+| its own, as drawn | −283 | −261 | −26 |
+| frozen | −197 | −186 | −42 |
+| full power | −417 | −398 | −129 |
+| level kinesis, bias 1.36, gain 18 | −417 | −385 | +8 |
+| rate kinesis, bias −0.5, gain 10 | −198 | −180 | +25 |
+| rate kinesis, bias 0, gain 20 | −213 | −192 | +54 |
+
+The standard error of a brain's difference from its own is about 20 J at 1.4 and 25 J at 12. At the
+round's own density through the column, the rate kinesis at bias −0.5 beats full power by 218 J. It
+beats frozen by 6 J, which is within the noise. At 12 J/m3 both rate kinesis brains end the episode
+with more than they started, the first brains in any tank to do so. The one at bias 0 and gain 20
+does best. It swims 17.5 m where a frozen body drifts 4.4, for 0.1 W of work, and ends 95 J above
+frozen.
+
+I think the reason is the cost of speed. Speed grows with power and work with its cube, so a metre
+costs about the square of the power. At full power a metre costs about 7 J, and a one-metre cell at
+1.4 J/m3 holds 1.4 J. A stomach drains its own cell within seconds, so what it eats is what it
+passes through, and moving pays only when a metre holds more than it costs. That is inference from
+the bench's numbers; I have not measured the cost per metre.
+
+The stop rule held at both densities: the kinesis out-earned full power, so the pilot runs. It runs
+twice, 200 generations each, on the column. At 1.4 J/m3 it is the round's larder, the one an
+inoculant would meet. At 12 J/m3 there is a gradient for foraging to climb.
