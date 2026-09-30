@@ -145,3 +145,18 @@ sine 0.5 Hz         7.8        103         110
 sine 1 Hz           6.2         69         122
 sine 2 Hz           4.1         22          91
 sine 4 Hz           1.8         12          31
+
+== CORRECTION (same day). The frequency sweep above read the joint only when the economy ran, every 0.5 s. A 2 or 4 Hz stroke repeats exactly in 0.5 s, so every reading caught the joint at the same point: its swing and joint-speed columns are wrong (aliased), and so is the claim drawn from them. Rerun with the joint read every physics step (0.01 s) and the path summed over 10 s legs of the root link, round 53's 30 bodies, 3 seeds, 300 s. 'servo' is position control imitated through today's brain: drive = 2 x (target - angle) - 0.3 x joint speed, target a sine of 0.6 of the joint's upper limit; the push is clamped and capped by Power exactly as the sine's is.
+scratch\swimtest\r53-v2/swim.jsonl
+  own            speed   0.2 cm/s  swing     0 deg  joint speed     0 deg/s
+  frozen         speed   0.0 cm/s  swing     0 deg  joint speed     0 deg/s
+  sine 0.25 Hz   speed   4.2 cm/s  swing   110 deg  joint speed    68 deg/s
+  servo 0.25 Hz  speed   3.2 cm/s  swing    82 deg  joint speed    50 deg/s
+  sine 0.5 Hz    speed   7.2 cm/s  swing   110 deg  joint speed   113 deg/s
+  servo 0.5 Hz   speed   4.1 cm/s  swing    72 deg  joint speed    69 deg/s
+  sine 1 Hz      speed   4.8 cm/s  swing    88 deg  joint speed   119 deg/s
+  servo 1 Hz     speed   5.9 cm/s  swing    77 deg  joint speed   137 deg/s
+  sine 2 Hz      speed   3.8 cm/s  swing    36 deg  joint speed    68 deg/s
+  servo 2 Hz     speed   4.4 cm/s  swing    27 deg  joint speed    94 deg/s
+  sine 4 Hz      speed   1.7 cm/s  swing    16 deg  joint speed    28 deg/s
+  servo 4 Hz     speed   2.3 cm/s  swing     8 deg  joint speed    40 deg/s
