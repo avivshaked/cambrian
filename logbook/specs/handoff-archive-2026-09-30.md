@@ -1,0 +1,612 @@
+# Handoff: where to pick up
+
+*Rewritten 2026-09-26 from the current state; its first sections and the queue's head were rewritten
+on the night of 2026-09-29. What happened is in the logbook, and why it was
+chosen is in [`DECISIONS.md`](DECISIONS.md). This file says only where things stand and what is
+queued; it is rewritten, never appended to. The notes it carried before this rewrite, rounds 42
+to 49 and the speed work of 2026-09-25, are `logbook/specs/handoff-archive-2026-09-26.md`, and
+the ones before those are `logbook/specs/handoff-archive-2026-09-22.md`.*
+
+## Where things stand
+
+### The machine's rulings
+
+Speed first (the owner, 2026-09-25): 10,000 creatures fast is the committed target and 100,000
+a stretch. Option A: rounds run overnight on the CPU, one seed at a time at sixteen threads, and
+the card is worked by day with nothing else on the machine. From round 51 an overnight
+round also hands the snow's transport to the card, which gives the CPU's bits (D126, the owner's
+ruling of 2026-09-26). Nothing else runs on the card at night. The total load stays at or under
+half the machine, 16 of 32 logical processors. The BIOS was flashed on 2026-09-29 (1836,
+microcode 0x133, Intel's Performance limits) and the NVIDIA driver updated (617.14), after a week of
+resets that were mostly the graphics driver failing on a live machine (CLAUDE.md). The cap stays for
+about a week of clean running, and the card carries no heavy work until then, so round 53 runs its
+transport on the CPU. Any unexplained crash or clean re-run is reported the same hour.
+
+**Hold from about 10:15 on 2026-09-30: the owner needs the machine for a rendering job.** Round 53's third seed (ends near 10:10) and `r52-s1z` (near 09:25) finish on their own; nothing starts after them (no nursery, no extension of round 52's seeds 2 and 3, no theatre render, no test suite) until the owner says the render is done.
+
+### The night of 2026-09-29, and what runs while the owner is away
+
+The owner delegated rounds 52 and 53 that evening and later left the agent working alone, with
+one ruling for the night: when nursery run 2 ends, its four threads go to the fast nursery (D134),
+first four measurements and then design A. The measurements ran from 03:46 to 04:18 on 2026-09-30, and the hand-wired positive control did not beat its knockout in any condition (`logbook/specs/fast-nursery-measurements.md`), so design A was not started; what the nursery does next is the owner's. The four threads went to round 52's extension, `r52-s1y` from `r52-s1x`'s 30,310 s checkpoint (`scratch/wt-r52/rounds/extend-r52-s1y.ps1`), which a `STOP` file ends and a resume carries on exactly. That run held round 53's seed 3 back from 05:49 to 06:42, because the round's queue waits for no farm process at all (CLAUDE.md); it was stopped at 40,970 s, seed 3 launched at 06:42, and the extension carried on beside it as `r52-s1z` from that checkpoint. Round 53's N2 fails: seed 2 read a drop of −0.0006 against the bar of 0.015, and N2 asks all three seeds; seed 1 read 0.016. N1 and N3 held on both seeds. Round 53 holds twelve threads. Nothing else runs
+beside them, and the total stays at 16 threads (read `% Processor Utility`, not the thread
+count). The session's hourly watch (a cron at :17) reads the CPU, round 53, the nursery and the
+orphans. Round 52's extension to 50,000 s is paused: `r52-s1x` stopped at 30,310 s with its
+checkpoint there, and seeds 2 and 3 were never started, because the nursery took the lane. It
+resumes when a lane is free, with the stitched reports joined by `stitch-resume.py --header-from`.
+
+### Round 49 is read
+
+The entry is logbook/0122, committed as `0f737f1`. Twenty-five clauses hold, six fail
+and four are readings. The founder cap held: no founder had a child within ten seconds of
+landing, and one pool stomach in 63 earned its child. The eater lines that lasted came from
+random founders that were a stomach on a link, and a link catches light in this world, so those
+bodies were part plant. The depth rule set the trickle's leaves where the dissolved matter was
+richest, deep in the dark. They died in about a minute and a half. A clamp to the bed at the
+tank's centre held most of them at 44 m; it is fixed. The round's own checkpoints gave the first
+faithful film windows. Its video, "Lucky - the Lone Stomach", is exported (`assets/full-episodes/`).
+On 2026-09-29 the owner had round 49's runs and film frames deleted to free the disk (the storage
+note below), so it can no longer be filmed again; its numbers live on in the entry and
+`logbook/specs/r49-read/`.
+
+### Merged into main on 2026-09-26
+
+- `bd4427b`: the founder clamp reads the bed under the candidate (`founder-depth-bed`). A new
+  test fails on the old placer and passes on the fix. The fidelity check skips the contact
+  flag `TouchedBedOrGlass`, which round 49's V2 named, and V2 passes on the fixed check.
+- `044164d`: the speed patch (`speed-serial`). The serial phases after the physics step run
+  across the world's threads. It was accepted from round 49 seed 2's checkpoint at 29,000 s
+  against round 49's own exe. The digest was identical over 3,000 steps at 16 threads and 200
+  at one, and the stats identical on 30 samples. It ran 300 s of about 10,600 bodies in 4.2
+  minutes against 4.8, 1.19x real time against 1.04x (`logbook/specs/r49-read/accept2.log`).
+- `8e0741a` and `0f737f1`: round 49's entry reads under `scripts/reads/r49-entry/`, and the
+  entry. `5c98a5c`: round 50's reader, `scripts/reads/r50-read.py`.
+
+### Round 50 has run
+
+The owner ruled option (a) on the morning of 2026-09-26 (D125). A leaf founder is set in the cell of its column where its own income, light and
+matter together, is largest. The price is the call the world bills a body with. A stomach is placed
+as before. The build is `leaf-income-depth` (`scratch/wt-leafincome`); the launcher is
+`rounds/env-r50.ps1` (`EVOSIM_FOUNDERS_INCOME_DEPTH 1`). Its pre-registration is logbook/0123.
+The owner said to start it at 23:52 on 2026-09-26. The three seeds ran to 30,000 s in 178, 236 and 
+211 minutes and the queue ended at 10:27 on 2026-09-27 (queue item 1).
+
+### Round 51 has run
+
+The queue ended at 05:25 on 2026-09-28 after 422 minutes. All three seeds ended on their budget,
+at 30,000 s, with 4,717, 3,918 and 5,648 alive and nothing diverged, in 123, 121 and 174 minutes.
+The resume check V2 held. Seed 1's 15,000 s checkpoint passed its member check, and its resume to
+16,000 s (`runs/r51-s1R`) was identical to the run on all 100 shared samples. The reader's
+verdicts on the three seeds are in `logbook/specs/r51-read/final.txt`, from the branch's
+`scripts/reads/r51-read.py` with the V2 log.
+
+Thirty-one clauses held in the round. Deaths by age were 37 to 49% of the dead, at a median 2,317
+to 2,572 s, and every one held a reserve (A1 to A3). The husks held 0.125 to 0.144 of the standing
+matter, and 0.73 to 0.78 of their joules settled (H1, H2, H4). M3 held in seeds 2 and 3, in lines
+grown from stomach buds whose stomach earns under 1% of their income. The rest were O1, O2, S1, X1,
+M1, M2, M4, G1 to G4, W2, W3, C2, C3, P1, EK1 to EK4, LC, F3, LK1 and V2.
+
+Five clauses failed, B1 first. It failed on the matter residual alone, +4.5e-5, -6.3e-5 and
+-1.1e-5 units at the end, while the energy audit stayed under 1e-4 J. It is the float door 0125 expected, at the burn,
+measured on 2026-09-28 (`logbook/specs/r51-read/b1-probe.txt`). The burn books the joules a body
+spends as a double and hands the spent field their units as a float. A probe branch (`r51-b1-probe`,
+`5bef335`) counted what each float dropped and resumed seed 1 from 11,000 s to 17,000 s. There the
+residual climbed 2.78e-5 units, and the burn's dropped remainders were 2.73e-5 of it. Remineralisation
+added 4e-8 and the husks' last instalments 3e-8, so the agent's first guess at remineralisation was
+wrong. The probe moved nothing, since the residual matched the run at all 600 shared samples. Why the
+burn's rounding keeps one sign for thousands of seconds in round 51 and not in round 50 is not known.
+Widening the field's door to double would close it, and would be a new realisation of every seed. W1 failed on one trickle founder in seed 3, 1.7% under its column. EK5 failed because pool
+founders died at a median 276 to 285 s against 300. E3 failed as 0125 expected: seed 3's line 29
+held 17 pure stomachs at 3,000 s and none at the end. S3 failed in seed 3, whose 28 rigid stomach
+children died at a median 1,806 s. V1 held on 2026-09-28: a film window at 15,000 to 15,020 s in each seed, recorded on the round's own
+build from its checkpoints (`scratch/r51-windows`), read FAITHFUL with no source differing.
+
+One husk was eaten in each seed in 30,000 s, so the larder lies still and unused. Joints went out
+in seeds 1 and 3 (7 and 38 jointed at the end) and held in seed 2 (607, round 50's level). The pictures
+and the entry, 0126, come next.
+
+### Round 52 has run
+
+All three seeds reached 30,000 s. Seed 3 was cut by the machine's crash at 23,200 s, continued
+from its checkpoint and joined at that second as `r52-s3j` (`stitch-resume.py`; the continuation
+agrees with the run on every shared sample). The join's gzip files were plain gzip until
+`9503d4e`, and Core refused them; `--fix-gz` rewrote them in place. The read at 30,000 s is
+`logbook/specs/r52-read/read-30000.txt` on the branch `round-52`. Mouths landed on corpses
+(K1, K2) and ate 170, 114 and 129 of them, but a meal bought little and no line rooted in a mouth
+lasted. Its entry, 0128, is owed, with the theatre's pictures first.
+
+### Round 53 is running
+
+D132's screens chose the tank 25 m deep over the 27,000-unit budget: it led on the bed's snow and
+the leaves' `upt lim` at every sample from 5,000 s (`logbook/specs/r53-screens.txt`, on the branch
+`round-53`). The settled-decay screen cut the jointed bodies to 16 and the corpses eaten to 25, which
+supports D132's setting it aside. The pre-registration is logbook/0129 (`6701dc9`): N1 the bed's
+snow at 1.5 times round 52's same seed, N2 `upt lim` 0.015 under it, N3 corpses eaten at round
+52's level, over 5,000 to 30,000 s. N2 is the closest bet: the screen's margin was 0.031. The
+reader, `scripts/reads/r53-read.py`, now averages the baseline over the seconds a seed covers.
+`rounds/queue-r53.ps1` (fixed as `59a1770`: a Python write had broken its paths) launched the queue
+at 23:17 on 2026-09-29, seeds 1 to 3 one at a time at twelve threads, CPU transport, from
+`scratch/wt-r53` on a clean tree. Seed 1's `configHash` is `7c5e42d9`, the 25 m screen's, so its
+first 10,000 s should replay the screen row for row; the watch checks that. The log is
+`scratch/logs/r53-queue.log`. A seed takes about three hours at this pace (a guess from the screen).
+
+### The nursery (D133, D134)
+
+`src/Evosim.Nursery` on the branch `nursery` (`scratch/wt-nursery`, cut from `forage`; last commit
+`a397bdc`) evolves brains by direct selection on bodies pooled from round 52's snapshots, scored in
+joules taken in. DESIGN §8.6 describes it. Core gained `World.PlaceCorpse`, `World.GiveReserve` and
+`World.BirthsHeld` (`WorldAssay.cs`), none of them a tunable. Run 1 was stopped: its bodies started
+on a quarter of the purse and bred it away. Run 2 (`scratch/nursery/run2`, pid 39476, 100
+generations at four threads, about 2.6 minutes a generation) runs as launched and ends near 03:30
+on 2026-09-30. It measures nothing about foraging: runs 1 and 2 laid their corpses about the origin
+where a tank's axis is at (R, R), so most corpses lay far from the body (found and fixed as `67e3961`;
+`logbook/specs/fast-nursery-measurements.md`). It was left to finish, as the owner ruled.
+
+D134 (the owner's rulings on Fable's proposal, `logbook/specs/fast-nursery-proposal.md`) sets the
+fast nursery, design A. The score stays joules eaten. The search runs in an easier world: 50
+corpses of 4 J, with the density drawn per episode after Jakobi, still water until a brain passes
+its knockout, a 100 m² × 5 m tank and 300 s episodes. A child replaces an incumbent only by twice the
+paired standard error. The winners are examined in D133's episode. The literature is
+`logbook/specs/nursery-curriculum-literature.md`: it supports the method in part and not the claim,
+so a nursery brain counts as naturally selected only once it out-breeds its ancestor in a round.
+
+Design A is built on `nursery` (`67e3961`, `81a07c4`): the arenas (`--config`, `--still-config`,
+`--exam-config`), carrion drawn per episode (`--corpse-total`, `--corpse-count`), the margin
+(`--replace-se`). The configs are under `scratch/nursery/runs/` (`nursery-small`, `-still`, `-nomix`).
+Measurement 4 is done (intake 1, mouths 0.05 to 0.27 m³); 1 to 3 run when run 2 ends. The first
+small-tank episode showed the body swimming 1 to 4 m above the bed where the corpses settle.
+
+### Round 54's swimming rules are on the bench
+
+The branch `forage` (`scratch/wt-forage`) carries the four rules the owner approved for round 54:
+the push along a limb, a stroke's cost on a knob, a corpse scent to about 10 m, and both together.
+The bench notes are `logbook/specs/forage-bench/notes.md` on the branch (`3897a4d`). A hand-wired
+brain finds a corpse. A torque drive has no centring, so a lone tail strokes off-centre, and a
+mirrored pair of fins drives a body straight where one fin spins it in place. Nothing reaches a
+round until the owner has seen the bench. Items 5 and 6 (swim probes on real bodies at push 0,
+0.1, 0.3 and 1) and 8 (identity at 1 and N threads; the member check with corpses and scent) are
+left, each behind the CPU check.
+
+### How round 52 was built
+
+The owner ruled D129 on 2026-09-28: a founder with a mouth lands where the corpses lie, from the
+next round. Later the same day D130 put the lifespan gene, heritable, into the same round. The same day they ruled that the code and the records call a dead body
+a corpse and not a husk. Round 51's records, D127 and 0125 keep the word they were written with.
+The build is the branch `round-52` in `scratch/wt-r52`, cut from `round-51-tests` at `babb1ae`
+(which carries `round-51`), not merged. Three commits so far:
+
+- `2358afd`: the knob `FoundersFollowCorpses` (`EVOSIM_FOUNDERS_FOLLOW_CORPSES`, off by default).
+  A mouth is any part whose intake is above 0, the test the mouth's own pass reads. Its share of a
+  column is the corpse joules in the snow grid's 1 m column over the fullest column's. Under the
+  depth rule it is set between the richest corpse there and the reach above it, and the placer
+  lifts it clear of the bed. It is refused without D116, without corpses as objects and without
+  a reach, and the header's founders token gains ", mouths at the corpses". Core has 7 tests for it
+  and Dynamics 2, through the farm's own placer.
+- `a627895`: the rename. The stats fields are `corpsesSettled`, `corpseJoulesSettled`,
+  `corpsesOnReef` and `corpseJoulesOnReef`, and the header says `corpse sink`. The film window
+  writes `corpses.jsonl.gz`, and its reader refuses a window that holds `husks.jsonl.gz`, so round
+  51's windows are recorded again before this build draws them. The theatre's dials are
+  `EVOSIM_THEATRE_CORPSE_BRIGHTNESS` (0.55, the owner's pick) and
+  `EVOSIM_THEATRE_CORPSE_FADE_SECONDS`, and `theatre-film.ps1` takes `-Corpse`. The theatre side
+  has not been through Unity since the rename.
+- `4c1780b`: the config fixture `pfix15` (`8656c52dd0575c49`); the Farm suite passes 197 of 197.
+
+The crowd fixture `r52fix-s4` (round 44's world, seed 4, 20,000 s at 4 threads) started at 11:01
+on 2026-09-28 from `logbook/specs/r52-build/build.ps1`, logged to `logbook/specs/r52-build/build.log`.
+
+What D129 can do, read from round 51 seed 1's film window at 12,000 s
+(`logbook/specs/r52-build/pay/landing.py` and `landing.txt`). There were 5,282 corpses holding 124 kJ, 23 J each on average, 91% of them
+settled. The column the rule picks holds 69 J on average, against 5.6 J for a column drawn at random.
+A mouth founder of radius 0.5 m or less lands with a corpse in reach 70 to 80% of the time,
+with a median of 33 to 43 J in reach. At a radius of 0.8 m that falls to 30%, because the bed holds the
+body's centre above the reach. New corpses come to rest in the 3 by 3 m round a landing at a mean of
+0.03 W, and a small mouth body costs about 0.155 W to keep (round 51's ledger). So a mouth gets one
+meal, three to five minutes of its keep, and then has to move to the next. Round 51's ledger puts
+that at 4 to 8 cm/s, and evolved strokers reach 2 to 6 mm/s. The expected result is mouths that eat
+when they land and leave no lasting line, and the corpses eaten rising from one a seed.
+
+### How round 51 was built
+
+The owner ruled D127 and D128 on 2026-09-27 and asked for round 51 to be built and prepared but not
+started while they make the films of rounds 49 and 50 from main. The build is the branch `round-51`
+in `scratch/wt-r51`, cut from main at `336bfe1` and not merged. Its pre-registration is
+logbook/0125, committed as `b04025a` and amended before the launch as `ed4a61d` on a clean tree; the
+amendment's commit is the record. Its reader is `scripts/reads/r51-read.py`, which gives round 50's
+verdict on every carried clause when run on round 50. The screen (`runs/r51screen-s1`, seed 1,
+6,000 s) found the plant crowd levelling near 1,050 from 4,400 s, where round 50's seed 1 stood near
+1,850 and rising. Deaths by age were 43% of the dead, at a median 2,452 s, every one holding a
+reserve. The husks held 13% of the standing matter, and nothing ate one. The jointed count averaged
+61% of round 50's over the same seconds. The matter residual peaked at 1.1e-5 units at 2,270 s, ten
+times round 50's, with the energy audit closed to 2.2e-6 J; 0125 reads it as the fields' float door
+and keeps B1's bar.
+
+The husks' fall was wrong until `bebca14` (the evening of 2026-09-27). The first film window with
+husks, drawn as a plot (`logbook/images/r51-husks-smoke-3000.png`), showed 621 of the final smoke's
+2,390 husks held at -45 m, unsettled. The world's depth is the bed's mean, and round 51's bed tilts
+96 m, so half the disc lies below -45 m, down to -93 m. The husk's drift clamped at the depth before
+it tested for the bed. A settling husk is now stopped by the bed or a cap alone, and a world whose
+corpses do not settle keeps the clamp, so every recorded run replays. The screen's husk numbers and
+the first smoke's (`runs/r51smoke-s1`) were read with the fault. The fixed smoke
+(`runs/r51smoke2-s1`, `coreHash 759c87a1…`) parted from the first at 620 s. At 3,000 s it had 1,201 of
+2,387 husks settled where 498 had, 0.43 of their joules against 0.19
+(`logbook/images/r51-husks-fixed-3000.png`), and the rest within a realisation's spread. Its checkpoint
+check and its resume passed. On the fixed build Core passed 1,036 of 1,036 with the slow set, Farm
+194 and Dynamics 118 on the crowd fixture `r51fix-s4`. The fixed build cannot read the screen's
+checkpoints. `99ab283` added the husk's drawing facts to the checkpoint inside `StateVersion` 13, so
+they are misread (an `OverflowException`) and not refused by name. Only that scratch run is affected.
+
+The owner gave the word, and the queue started at 22:23 on 2026-09-27
+(`pwsh -NoProfile -File scratch/wt-r51/rounds/queue-r51.ps1`) without `-GpuTransport`, since the
+card's check (queue item 3) has not run. Its build was already up to date with `ed4a61d`. Seed 1 is
+`runs/r51-s1/2026-09-27-212333-f9f845bd`: `gitCommit ed4a61d`, not dirty, 16 threads, transport
+cpu, 30,000 s under a 600-minute wall. Its config hash `f9f845bd8082a69f` and its core, dynamics and
+farm hashes (`759c87a1…`, `d675fb37…`, `a2bbcccf…`) are the fixed smoke's, as is every config
+field. Seeds 2 and 3 follow it one at a time, then V2, logged to `scratch/logs/r51-queue.log`.
+Round 50 took 178 to 236 minutes a seed. The watch runs from the worktree, where the seeds' `.out`
+logs are: `python scripts/watch-round.py r51 --read scripts/reads/r51-read.py --seeds 1,2,3
+--runs-root <main tree>/runs`, one look at a time, scheduled by the session.
+
+The husks in the pictures are on the branch `round-51-tests` (`scratch/wt-r51tests`, merged with
+`round-51` at `ec56374`, merged into main after the launch). A film window writes a sixth file,
+`husks.jsonl.gz`, with every husk's facts once and its place at every metabolic step, and the reader
+hands each back from the frame its body leaves (FilmWindowHuskTests, 26 film window tests pass; the
+fixed smoke's 2,980 to 3,000 s window is faithful and holds 2,387 husks in 1.5 MB). The theatre draws
+them from a second view, grey (`EVOSIM_THEATRE_HUSK_BRIGHTNESS`, 0.35) and shrunk by the cube root of
+what each holds, and paints a link cell in `TheatrePalette.Jointed` (`c8d0064`). That code is not yet
+compiled in Unity: the owner asked to be asked before any Unity render or other use of the card.
+
+### The card, by day
+
+The probe of 2026-09-26 morning timed each size class's kernel on round 48 seed 1's crowd of
+8,385 bodies (`logbook/specs/gpu-probe-2026-09-26.txt`). The classes hold bodies of up to 2, 4, 8
+and 16 links. Launched one after another they cost 0.83, 1.46, 2.61 and 2.08 ms a step, and the
+contact grid 1.57 ms. A class costs about its slowest thread's latency and not its body count, so
+the 17 sixteen-link bodies took longer than the 7,653 two-link ones.
+
+Seven changes on the `gpu-probe` branch followed the same day. Each was checked on the card
+against the run before it, round 48 seed 1 resumed at 27,500 s for 300 s. Each was identical over
+all 300 digest steps and equal on the stats, at group sizes 32 and 64. The first runs the classes
+on a stream each (`EVOSIM_GPU_CONCURRENT`, `13af2c3`), so the step waits for the slowest class and
+not for the sum. The second is the grid's prefix sum. It ran on one group of 1,024 threads over
+524,288 buckets and cost 1.25 ms; three passes over tiles now do it in 0.02 ms (`d37421f`). The
+next three move work off a body's one thread and give each of its links a thread. They are the
+water (`771c15e`), the contacts (`4665326`) and the fluid (`6519eb8`). The seventh sends and
+fetches the overlap lists by their used rows alone (`b4c7a80`). The card's physics went from
+8.98 ms a step to 1.49, and the run from 0.94x real time to 3.15x at 8,414 bodies. The probe
+record has the table.
+
+A phase probe reads the card's cycle counter between the parts of the body kernel (a build with
+`-p:GpuPhaseProbe=1`, never a scored run's). Before the link kernels, the water and the contacts
+were most of every class. After them the body kernel is its loads, its brain and its stores, and
+the classes cost 0.60 ms a step together.
+
+The world step and the harness came next, and they speed up the CPU farm too. A probe build
+(`-p:WorldPhaseProbe=1`) timed the world step's passes: of its 68 ms, the snow's transport took 31,
+the metabolic pass 16 and the corpses 7.5. The per-body passes of the world and of the harness now
+run across Core's threads (`8c8120f`, `238ebce`). Each is a parallel read followed by the serial
+writes in their old order. They are the lit areas, the bills, the corpses' drift, the freeze of
+availability, the divergence check and the pose exposure. The world step went to 53 ms and the
+harness from 14 to 6. The run went to 3.71x, about 2.5 times the CPU farm at 16 threads on the same
+crowd. Every change was identical to the run before it on the card and on the CPU farm.
+
+`gpu-probe` took main (`b7bea5d`) and was merged into main (`bf1add4`), so the card now runs
+current worlds, and round 48's config is refused as it is on main. On round 50's world the merged
+build is identical to round 50's own build, and the card at group 32 and 64 to its sequential run.
+That crowd is smaller, 1,700 bodies, and there the card leads the CPU by about 1.4 times, so the
+card pays off with the crowd. The Editor compiles the Farm as a local package, and nothing on the
+branch had been through Unity. So before the merge the package was compiled the Editor's way, as a
+netstandard2.1 library at C# 9 without `EVOSIM_GPU` (`src/Evosim.UnityProxy`).
+
+A metabolic step at 8,400 bodies is now 135 ms. The card's step loop takes 53, the snow's
+transport 30 and the rest of the world 23. The copies to and from the card and their preparation
+take 22, and the harness 6. The transport's sum is a chain of dependent adds whose order the
+bits fix.
+
+The snow's transport runs on the card since the afternoon of 2026-09-26, under
+`EVOSIM_GPU_TRANSPORT`. Core keeps the transport's decisions (the Courant refusal, the substep
+rule, the instant) and hands a device the arithmetic through `GridField.TransportDevice`. The
+farm's `GpuTransport` writes every product as `mul.rn`, so it gives the CPU's bits. On round 50's
+world from 4,000 s it took the card from 4.0x to 6.0 and 6.9x real time, in runs alternated in
+one sitting. That is 40 to 50 ms a step saved at any crowd. Every run was byte for byte the run without
+it, the snow's whole stock included (`logbook/specs/gpu-probe-2026-09-26.txt`). The card's host
+arrays became page-locked in the same change, which saved about 3 ms a step at that crowd and
+should save more at round 48's (not measured). The CPU farm can use the device too: with
+`EVOSIM_GPU_TRANSPORT` on the cpu engine the bodies stay on the CPU and the transport goes to the
+card. At 16 threads on the same world that went from 3.7 to 3.8x to 5.0x real time, identical to
+the CPU-only run. The launch refuses a world the card will not carry, and `run.json` records
+`transport` as `cpu` or `card`. The owner ruled on 2026-09-26 that overnight rounds use it
+from round 51 (D126), after the check in queue item 3.
+
+The probe reads `EVOSIM_GPU_PROBE` from the process environment directly, which bites. The
+script's `-Env` passes settings as arguments and does not reach it, and the binding warns that it
+ignores the variable. Set it in the launching shell's environment (`scripts/probe-gpu-env.ps1`).
+
+### Storage, as the owner ruled it on 2026-09-26
+
+A round 49 seed's folder is 3.7 to 5.4 GB, most of it
+checkpoints: seed 2's 300 checkpoints are 4.1 GB. A checkpoint at 15,000 s is a 12.5 MB file.
+Unpacked, it holds 16 MB of genome text, which the run's genome file already holds, and 31 MB of
+state. Packed against the checkpoint 100 s before it, it keeps 91% of its size, so the state
+does change from one to the next (`logbook/specs/r49-read/ckprofile.txt`, `ckdelta.txt`). The
+ruling: a round's checkpoints are thinned only after the owner approves its video as final. They
+then keep one every 1,000 s plus the one at or before each scene's start. The keep list comes
+from the video's scene table, and the agent shows it and asks before each thinning.
+
+The owner's cleanup of 2026-09-29 keeps only what the videos of round 50 on need, and took the
+project from about 360 GB to 65 GB. Every run of rounds 8 to 49 and of the old experiments is
+deleted, reports included. The runs that code and tests read stay: r42-s1, r42-s4, r45fixb-s4,
+r37-s1, r25-s2, r25q-s2, th-ref, uicheck, r35tsmoke3, boxdig-old, r20v-age1, pfix14 and pfix15.
+r48-s1 keeps its config and its snapshot at 20,000 s, which `FeederRefillExperiments` reads.
+Also deleted were round 49's and round 48's film frames, the channel's render frames, the
+finished experiments in scratch, the merged worktrees, and the Unity workers w2, w3, w4 and w7.
+A round's farm build stays as long as its runs do, because `film.py` refuses a run whose
+`programPath` is gone: `wt-leafincome` holds round 50's, `wt-r51` round 51's and `wt-r52` round
+52's. The files that prose cited moved into `logbook/specs/`, `logbook/images/` and `scripts/`
+first (`b352b11`, `72e4dc1`).
+
+### Round 48's story film is delivered
+
+It is
+`scratch/owner/r48-story-full/r48-story-full-v2.mp4`, 578.9 s, 20 scenes and the title, every
+scene FAITHFUL. Three flaws went to the owner unfixed: in scenes 11 and 17 the chart panel covers
+the subject, scene 16's subject is unclear, and scene 20 ends on bare sand. For the owner's
+narration trial, the prose story and the captions by scene are beside it under
+scratch/owner/.
+
+Another session works on the story tools. Its files are under .claude/skills/story-resolve/ and
+assets/, with logbook/specs/story-resolve.md and the scripts named story-resolve, and they are
+left alone.
+
+## The decisions in front of the owner
+
+### Ruled on 2026-09-29
+
+- Round 52's lifespan values, as the agent recommended: the repair price 0.5, the chance 0.08 and
+  the founders 0.5 to 1.5. They are in `rounds/env-r52.ps1` and the pre-registration, logbook/0127.
+- D131, round 53: a corpse decays fast from the step it settles, on the bed or a reef top, and the
+  tank is made shallower (30 m or 25 m) with the matter held, each value by screen after round 52.
+  The places on the bed come back one a round after it: hollows, then a seep that charges matter
+  (a second source of energy, put again in full before it is built), then the anchoring cell. The
+  arithmetic is `logbook/specs/r53-larder-proposal.md` and the reading behind it
+  `logbook/specs/r52-larder.txt`.
+- Unanswered: the eight papers of the lifespan literature round sit behind Europe PMC's Cloudflare
+  page. The owner fetches them in a browser, or the review records them as not fetched.
+
+### Ruled on 2026-09-27, after round 50's read
+
+- Links stop catching light from round 51 (`EVOSIM_LINK_PHOTO 0`). The owner added that the first
+  link, its neurons and its muscle may be free, to encourage joints; what "free" means is for the
+  round 51 proposal to set out (neurons and joint work already cost nothing in every launcher).
+- The pool keeps its one-part stomach for now.
+- The owner's vision for round 51: a dead body becomes a grey husk that sinks, settles and
+  shrinks as its matter dissolves into its cell, and eaters meet it and eat it directly. Round 50
+  shows why there is no larder today (seed 2's last 5,000 s): every death is a starvation with
+  the reserve at 0, so a corpse holds its tissue alone, about 12 J against about 42 J held by a
+  living body; a corpse sinks at the snow's 2 mm/s and leaks 0.5% a second, so half of it is gone
+  in about 140 s within 30 cm of the death; corpses give the snow about 40 W and the living plants'
+  exudate about 170 W; 218 of 71,544 births had a mouth, and 4 corpses were eaten in the run.
+- Movement: the owner sees the joints wag without moving the body, like an engine and not like
+  biology. `fable-propose-reactive-thrust.md` diagnoses exactly that and waits for its ruling.
+- The theatre: a connective-tissue skin over each link, in the pink-purple the owner liked (most
+  likely `TheatrePalette.Jointed`, the colour of the neck at every joint). Theatre only, no hash.
+
+The two decisions below are ruled as above and kept until the rewrite for the record.
+
+Neither of the first two blocks round 50, which is built and pre-registered without them. Both
+come from round 49's read, and each is set out in full here and in any message that asks for it.
+
+### Whether a link should catch light
+
+A link is the part that carries a joint. Since D043 and D046 (2026-08-28) it also catches light,
+at a share of a leaf's rate that the launcher sets; every launcher from round 42 sets half
+(`EVOSIM_LINK_PHOTO 0.5`). So a body made of a stomach and a link is part plant. In round 49 the
+only eater lines that lasted, lines 48, 29 and 5854, were such bodies. Line 29 earned 0.19 W of
+light beside 0.66 W from the snow, and line 48 faded as its members lost the link. The report's
+flags count a leaf and a stomach and not a link, so these bodies are filed as pure eaters, and
+round 49's S2 read them as stomach children.
+
+- Keep the half (the world as it is). The eaters that last stay part plants, and the question
+  "can an eater live on the snow" stays mixed with "can a stomach on a lit link live". The
+  earlier rounds are untouched.
+- Set it to 0 from a later round. A stomach then has to live on the snow alone. In rounds 48
+  and 49 every line of pure stomachs died out. So the likely result is no lasting eater until
+  the feeding changes (the mouth fed from a neighbourhood, D124's note). It is a
+  world rule and a new realisation of every seed. It also takes income from every jointed plant,
+  which round 42's reading found already pays for its joint with nothing.
+- Keep it and separate the reading. That needs no build and no ruling. A body with a stomach
+  and no leaf gets every watt of its light from a link. The feeding log carries each body's
+  light and food, so `scripts/reads/linklight.py` splits the two for every such body. Over round
+  49 (`logbook/specs/r49-read/linklight.txt`) links gave these bodies 14 to 65% of their income,
+  by seed and window. Lines 48, 29 and 5854 took 31, 24 and 30% of theirs from light, and in seed
+  3 at least four rows in five earned some.
+
+Round 50's read (`logbook/specs/r50-read/linklight.txt`) changes the picture. In seed 1 a rigid
+three-part stomach from the trickle, with no link, founded line 4292: 132 members, 68 living at
+the peak at 9,600 s, the last death at 18,714 s, and not one watt of light. That is the first
+line of pure eaters in rounds 48 to 50 to live on the snow alone for hours; round 48's best
+pure-stomach lines, 45 and 24 living, lived on their founders' endowments. The eater lines with a
+link still took 28% (seed 3's line 29) and 76% (seed 1's line 3726) of their income from it.
+
+My recommendation is to keep the half through round 50, which is built on it, and to decide
+between keeping it and 0 when round 50 is read. The same read will then say how much of each
+eater line's income is the link's light. The question to answer is whether links keep catching light
+at half a leaf's rate after round 50, or a later round sets it to 0.
+
+### Whether the pool keeps its one-part stomach
+
+The pool (D117) drops one of four stored stomach bodies as one trickle founder in ten. Index 0
+is a one-part stomach. In round 48 it had its child on its endowment at landing, and two of its
+lines reached 45 and 24 living before dying out. Under round 49's cap it has to earn the last
+tenth of that child, and it did once in 63 landings. It lived a median 338 to 371 s, twice round
+48's, and the flow into the cell where it lands does not feed it.
+
+- Keep it, as the round's sentinel for a pure eater: the first round in which it founds a
+  line is the round in which the snow can feed one. It costs the world a founder slot in about
+  forty.
+- Drop it, and let the pool carry the three bodies with a link. That changes the pool's make-up,
+  so it is a new realisation of every seed. It also removes the one probe of whether the snow
+  alone can feed a body.
+- Keep it, and pair it with a change to how a mouth is fed in a later round (a neighbourhood
+  rather than its own cell). That is the proposal D124's note already queues.
+
+My recommendation is to keep it, as the sentinel, and to take the feeding change up as its own
+proposal after round 50. The question to answer is whether the pool keeps the one-part stomach.
+
+### Older items still open
+
+These are carried from the archive, each unchanged since it was last put. Four are proposals at
+the repository's root: the own-solver's rulings, the shelf reef and turbidity, predation on
+contact, and reactive thrust. The others are the producer threshold under D063, a tempo dial for
+later and the paywalled reading list. The old worktrees also wait on the owner, who has the
+one-line command that removes them. The animal kit's proposal is absorbed in D106 and round 46's from D112
+onward, and both files wait only to be deleted.
+
+## Queued, in order
+
+All of it is agent work. Long steps run in the background under the session, never in a
+subagent and never in a shell loop. A queue that must outlive a turn is started detached
+(CLAUDE.md).
+
+0. Tonight, 2026-09-29 to 30, in this order.
+   - Watch round 53 hourly. Check that seed 1's first 10,000 s replay `r53sc-b25`. Read N1 to N3
+     provisionally at each 5,000 s.
+   - When nursery run 2 ends (near 03:30), read its checks and its generations.
+   - Build design A on `nursery` (the knobs: corpse count and joules, the density drawn per
+     episode, still water until the knockout passes, the replacement margin).
+   - When run 2 ends, start `scratch/wt-nursery/scripts/nursery-measure-d134.ps1` detached (the session
+     has a one-shot for 03:37 on 2026-09-30); read it with `scripts/nursery-read-d134.py` on the same
+     branch. It covers measurements 1 to 3 (4 is done):
+   - On the freed four threads, run the four measurements (`logbook/specs/fast-nursery-proposal.md`
+     §5). If the hand-wired brain grafted onto a pooled body cannot score in A's episode, stop and
+     report; otherwise run A at four threads.
+   - Done 2026-09-30 04:18: run 2 ended at generation 100 with no forager and its best brains equal to
+     their knockouts; measurements 1 to 3 are written up; the control failed (three bodies of forty
+     above the knockout by 2 SE, five below); A was not run. The owner's ruling on the next step is owed.
+   - A logbook entry for the nursery once A has a result, and a primer after it works.
+   - Then 0128 (round 52, pictures first), the bench's items 5, 6 and 8, and round 52's
+     extension when a lane is free.
+1. Round 50 has run and is read. The owner said at 23:52 on 2026-09-26 to start it, and at 05:05 on
+   2026-09-27 that the third seed could run whenever seed 2 ended. Seed 1 ended on its budget at
+   02:52 after 178 minutes, seed 2 at 06:49 after 236 and seed 3 at 10:20 after 211, each at 16
+   threads from `scratch/wt-leafincome` at `9ecff10`, not dirty, `configHash a2cda4b0`, with both
+   books closed and no divergence. V2 passed at 10:27: the member check exited 0 and the resume from
+   15,000 s was identical to seed 1 on all 100 samples. The full read is
+   `logbook/specs/r50-read/read-end.txt` (`python scripts/reads/r50-read.py --logs-dir
+   scratch/wt-leafincome/scratch/logs --v2-log logbook/specs/r50-read/v2.log`). Three clauses fail: W1
+   (two snow founders in seed 2 a hair under their column's mean), M4 (in seed 3 the best
+   stomach-bud line's stomach brings a median 5.4% of the income, against a bar of 2%) and S3 (seed
+   1's 137 rigid stomach children died at a median 3,005 s, against a bar of 1,500). V1 waits for
+   the film windows. Next come V1's windows from the round's own checkpoints, the theatre's pictures
+   and the entry, 0124 (item 10).
+1b. Round 51 has run (the section above; 0125, amended as `ed4a61d`, branch `round-51` in
+    `scratch/wt-r51`). Next: the pictures and the entry, 0126 (V1 held). Left from its
+    build list, none of which blocks the launch. The theatre's grey shrinking corpse, its fade, the
+    birth's growth and fade-in and the link's pink skin are on `round-51-tests`. They were compiled
+    and rendered on 2026-09-28 with the owner's leave: the corpse at 0.55, and the time-lapse sink
+    and vanish clips in `scratch/owner/`, which the owner called perfect. Also left: a
+    literature-review round for D128's sources (Gompertz, Kirkwood, Jones and others, the cost of
+    reproduction), and the merge of `round-51` and `round-51-tests` into main once the films of
+    rounds 49 and 50 are done. The tests for the wound's push and a corpse on a reef cap are on
+    `round-51-tests` (`2ff8f50`), and the film window's corpses there too. The water's reactive
+    thrust was not built during round 51's week, and its proposal still waits for a ruling. Round
+    52 is D129's with the lifespan gene heritable (D130, 1c).
+1c. Round 52 (the section above, branch `round-52` in `scratch/wt-r52`) is built, smoked and
+    written, and waits for two words from the owner: the lifespan values and leave to render.
+    Committed on the branch: the B1 fix and two instruments (`690a0ca`: a mouth founder's `fcorp`
+    and `fcorpm`, the corpses of its landing column and of a random one; `ls`, the gene, on every
+    birth row; each written only where its rule is on), the records (`a922083`: the literature
+    report logbook/specs/r52-lifespan-literature.md, the screen
+    logbook/specs/r52-lifespan-screen.txt, the landing arithmetic), and the reader, queue and V2
+    (`a696ea9`). Core 1,048 with the slow set on the fix, then 1,023 default, Dynamics 122 and Farm
+    197 with the instruments; the thread word is `6d59a448ddcefed5`. The smoke `r52smoke2-s1`
+    (6,000 s at 4 threads, with the agent's recommended lifespan values on the command line)
+    ended on its budget: the matter residual at most 6.2e-7 units, mouth founders landing over
+    11.5 times the mean column's corpses, 23 corpses eaten, the aged dying older with the gene
+    (1,874, 2,187 and 2,744 s by bin), the gene holding near 1 while upkeep took 0.60 to 0.64 of
+    the light. Its 5,000 s checkpoint passed the member check and a resume to 6,000 s was
+    identical on every sample and every lineage row. Uncommitted in the worktree: the lifespan
+    dials in `rounds/env-r52.ps1` and the pre-registration
+    `logbook/0127-mouths-land-where-the-corpses-lie.md`, both written for the recommended values
+    (price 0.5, chance 0.08, founders 0.5 to 1.5) and edited to the owner's values if they differ,
+    with a short re-smoke. Then the commit on a clean tree and `rounds/queue-r52.ps1` on the
+    owner's word. The smoke's pictures against round 51's accepted clips, and the theatre's
+    rename compiled in Unity, wait for the owner's leave to render. The review round filing the
+    literature report in research/LITERATURE-REVIEW.md is owed.
+2. The card is worked by day, with nothing else on the machine, from `scratch/wt-probe`
+   (`gpu-probe`; merge main in before a day's work). The snow's transport runs on it under
+   `EVOSIM_GPU_TRANSPORT` (above). Round 50's seeds are the next reference crowds once they have
+   checkpoints. What is left, largest first. The snow's settling, remineralisation and mixing run
+   just before the transport and take about 8 ms a step together. They could join it on the card,
+   with one upload and one download for all four. The engine uploads the snow again for the
+   senses, 3 to 6 ms a block. It could take the transport's result on the card instead, if nothing
+   between the transport and the next block changes the snow (unchecked). The class uploads send a class
+   whole when one body in it is new, and sending the changed rows would save 3 to 4% of the wall
+   (an estimate). Identity on the card is claimed at two group sizes (CLAUDE.md). Whether a round
+   runs on the card is the owner's: single precision is a new realisation of every seed. An
+   overnight CPU round uses the card for the transport alone from round 51 (D126), after item
+   3's check.
+3. The card's transport is checked against round 50's own record (D126's
+   conditions), by day with nothing else on the machine, on the first day after round 50 has run. Round 50's seeds are resumed on main's
+   exe with `EVOSIM_GPU_TRANSPORT` from checkpoints near 5,000, 15,000 and 25,000 s, 1,000 s
+   each, under `EVOSIM_ALLOW_SOURCE_MISMATCH`, since main is not round 50's build. Each window's
+   rows, lineage and checkpoints are compared with round 50's own, the checkpoint payloads byte
+   for byte. The same windows on the CPU's transport, alternated with them, are the control: a
+   difference in both is the build's, and a difference in the card's alone is the card's. Their
+   paces give the gain at round 50's crowds in place of the 13% estimate. Round 51 runs on the CPU's
+   transport because the check had not run at its launch; the first round after the check is queued
+   with `scripts/farm-queue.ps1 -GpuTransport` (the tools table). It logs each seed's `transport`
+   and header engine words and the card's temperature, power and load at each seed's start and
+   end. Both of its card faults were rehearsed on 2026-09-26 on round 50's world. A box world
+   the card declines was relaunched on the CPU's transport. A seed stopped at 160 s was resumed
+   from 170 s on the CPU's transport, and the two parts joined were the CPU-only control in 23
+   samples, 432 lineage rows and the checkpoint payloads at 100 to 400 s
+   (`scratch/farm-queue-test/`). The hourly watch adds one `nvidia-smi` reading. The check is
+   `logbook/specs/card-transport-check/check.ps1`, which runs every window and then `compare.py`.
+   It was rehearsed on `r50smoke-s1` from 4,000 s for 300 s on main's build: both windows were
+   identical to the smoke's own rows, 456 lineage rows and three checkpoints, and the card's read
+   4.99x against the CPU's 3.69x with the owner at the machine.
+4. The CPU's physics at a full crowd is the next overnight lever
+   (`logbook/specs/cpu-profile-2026-09-26.txt`). In round 49's seeds the physics was 62 to 70% of
+   the wall and three quarters of each seed's last third. A sampling profile of round 49 seed 2 at
+   25,000 s puts a quarter of the farm's time in the water at the links and a sixth in contact per
+   part. Two changes that keep the bits are merged (`cpu-physics`): the reef fade computed once
+   for the water's velocity and acceleration, and the contact grid's sort partitioned by owner.
+   At 10,000 bodies they take the water phase from 104 to 87 ms a step and the grid from 52 to 30,
+   7 to 10% of the step together, identical to round 49's record in sixteen runs. Two variants of
+   the neighbour query bought nothing and were dropped. The velocity cannot be read off the
+   acceleration's gradient, because the two evaluate the clock in different groupings. Round 50's
+   check in the morning runs main's build, so it checks these at scale too. What is left of the
+   bodies phase is the contact pass, the fluid, the brain and the solve.
+5. The lit link is read and not built: `scripts/reads/linklight.py <arm>` splits a stomach
+   body's income into its links' light and its food, by window and by line (the first decision
+   above). It runs on round 50 when that round is read.
+6. The storage reductions that lose nothing come next. A checkpoint that points at `genomes.jsonl.gz`
+   instead of copying every living genome (a new `Checkpoint.Version`, with 6 still read), and
+   the feeding log gzipped. Then a measured test of a better codec for the moving state.
+7. The theatre's four checkpoints are re-recorded on the current build: ckA, ckB, ckC and ckUi.
+8. Seed 2's budded line is read for the stomach's cost. M4 failed in round 49's seed 2 with
+   the stomach bringing 2.7% of the income. What the bud costs in tissue and upkeep is not yet
+   set against it (0122).
+9. Round 49's video is done and its runs are deleted (2026-09-29). Nothing is left to do for it.
+10. Round 50's read and entry (0124) follow its last seed, with the theatre's pictures taken
+   before it is written.
+
+The rounds after 50 are not planned past the two decisions above. The proposal most likely to
+come next is the feeding change: a mouth fed from a neighbourhood, or intake by the water
+passing the mouth. It goes to the owner as a proposal file before anything is built.
+
+## How the experiments are run
+
+CLAUDE.md holds the commands and the gotchas. This is where each tool sits.
+
+| | |
+|---|---|
+| the farm | `scripts/run-farm.ps1 <arm> -Launcher rounds/env-rNN.ps1 -Seed N -Seconds S -Threads 16`, run from the tree the round belongs to, since the farm hashes the source above its working directory; `-ResumeFrom <run> -At <s>` continues a run from a checkpoint; stopped by `stop-arm.ps1`, which writes a `STOP` file |
+| launching | `scripts/farm-queue.ps1 -Round rNN -Tree <tree> -Launcher rounds/env-rNN.ps1 -Seeds 1,2,3 [-GpuTransport]`, started detached, refusing a dirty tree; the pre-registration's record is the manifest's `gitCommit` on a clean tree. Under `-GpuTransport` it relaunches a seed the card refuses on the CPU's transport and resumes one the card ends into `<arm>c` from its last checkpoint; a read of such a seed joins the two at that checkpoint |
+| reading | the round's reader `scripts/reads/rNN-read.py` (every clause, per seed, with a held line per clause); the entry's own reads under `scripts/reads/rNN-entry/`, their outputs under `logbook/specs/rNN-read/`; `scripts/analyse-arm.ps1` by column name, never positionally |
+| checking | `Evosim.Farm.exe --verify-checkpoint <ckpt> <s> <out> <threads>` for a checkpoint member by member; `scripts/compare-det.py` for a resume against its run; a film window's identity rows for V1 |
+| pictures | `scripts/theatre-snap.ps1 <arm> -From snapshot -At <s>` for a still from the record; `scripts/theatre-film.ps1` from a checkpoint for a clip; every render checked on a sheet against a reference before the owner sees it |
+| profiling | `scripts/profile-farm.ps1 -Name <n> -ResumeFrom <arm> -At <s> [-Tree <tree>] [-AllowSourceMismatch]`: a resume under .NET's EventPipe sampler, read by method with `src/Evosim.Profile`; a share, not a pace |
+| tests | `scripts/core-test.ps1` (the default set; `-All` before a change to the world), and `dotnet test` on `Evosim.Farm.Tests` and `Evosim.Dynamics.Tests`; the fixtures are `src/Evosim.Core.Tests/fixtures/r42-config.json` and the crowd named in `RunFixture.cs`, re-recorded on every build that adds a tunable |
+| the card | ILGPU under `src/Evosim.Farm.Gpu`, worked by day with nothing else on the machine; kernels regenerated before a build; `EVOSIM_GPU_TRANSPORT` puts the snow's transport on it (`GpuTransport`, `GpuTransportTests`); `src/Evosim.UnityProxy` compiles the Farm package as the Editor would |
+| the Unity farm | idle since round 42; its workers and caps are in `unity/CLAUDE.md`, for the theatre only |
