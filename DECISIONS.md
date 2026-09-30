@@ -6952,3 +6952,8 @@ tests a weightless box striking the bed at 45° at 0.3 m/s left with 7.1 cm/s of
 
 **Open.** Friction between creatures, which the owner has not ruled on. The contact spheres are each part's
 bounding sphere, so a part touches the rock a little before its surface would.
+
+**Measured the same day** (`BedFrictionTests`, branch `joint-drive`). The chain at full power swimming
+straight at the bed struck 3.9 mm into it, arriving at its swimming speed, and pressed 0.45 mm once it lay
+there. A heavy box (a fifth of its mass as weight) sliding at 0.3 m/s stopped in 4 cm at μ 0.5, and slid
+39 cm and was still moving without friction.
