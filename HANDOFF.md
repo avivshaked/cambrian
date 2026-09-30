@@ -38,7 +38,7 @@ nursery, no extension, no theatre render, no test suite) until the owner says th
 | 51 | Run and read (pre-registration 0125 on `round-51`, amended as `ed4a61d`; `logbook/specs/r51-read/final.txt`). 31 clauses hold; B1, W1, EK5, E3 and S3 fail; V1 held | The pictures and entry 0126; `round-51` and `round-51-tests` merged into main once the films of rounds 49 and 50 are done; a literature round for D128's sources |
 | 52 | Run to 30,000 s (pre-registration 0127; seed 3 joined as `r52-s3j`). The read is `logbook/specs/r52-read/read-30000.txt` on `round-52` | The pictures, then entry 0128 |
 | 52, extended | Seed 1 reached 50,000 s as `r52-s1z`, which ended on its budget on 2026-09-30. Seeds 2 and 3 never started | Seeds 2 and 3 when a lane is free, joined with `stitch-resume.py --header-from` |
-| 53 | Seeds 1 and 2 done and seed 3 near its end (pre-registration 0129, `6701dc9`; branch `round-53` in `scratch/wt-r53`; log `scratch/logs/r53-queue.log`). N2 already fails: seed 2 read a drop of -0.0006 against the bar of 0.015, and N2 asks all three seeds. N1 and N3 held on seeds 1 and 2 | The read at seed 3's end (`scripts/reads/r53-read.py` on the branch), the pictures, the entry |
+| 53 | Seeds 1 and 2 done and seed 3 near its end (pre-registration 0129, `6701dc9`; branch `round-53` in `scratch/wt-r53`; log `scratch/logs/r53-queue.log`). N2 already fails: seed 2 read a drop of -0.0006 against the bar of 0.015, and N2 asks all three seeds. N1 and N3 held on seeds 1 and 2 | The read at seed 3's end (`scripts/reads/r53-read.py --arms r53-s1 r53-s2 r53-s3` on the branch, the arms space-separated), the pictures, the entry. The entry asks who the extra bodies are: the round carries about twice round 52's crowd (seed 1: about 7,200 alive against 3,100 at 24,000 s), and a larger crowd of leaves on the same nutrients would explain N2 (a guess until counted) |
 
 What the rounds found, in a line each. Round 51: one corpse was eaten a seed in 30,000 s, so the
 larder lies unused. B1 failed on the matter residual alone, the float door at the burn
@@ -59,7 +59,7 @@ and 2 measured nothing about foraging, because they laid their corpses about the
 (fixed as `67e3961`). D134's fast nursery, design A, is built (`67e3961`, `81a07c4`). Its
 measurements 1 to 3 ran from 03:46 to 04:18 on 2026-09-30 (`logbook/specs/fast-nursery-measurements.md`),
 and the hand-wired positive control did not beat its knockout in any condition, so design A was
-not run. What the nursery does next is the owner's (below).
+not run. What the nursery does next is the owner's, and they have deferred it until review round 7 is written; the options and the agent's recommendation (a run-and-tumble control first) close the measurements file.
 
 The literature is `logbook/specs/nursery-curriculum-literature.md`: it supports the method in part
 and not the claim, so a nursery brain counts as naturally selected only once it out-breeds its

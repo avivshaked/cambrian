@@ -99,3 +99,25 @@ The graft does act. In still water at gain 0.8 it holds the body 0.9 m nearer th
 less. My reading, which is inference: slowing where the scent is strong parks a one-tailed body near
 the carrion rather than on it. The score counts only what the mouth reaches, 0.5 m past a corpse's
 radius, so nearness earns nothing. D134 runs design A only if the control scores, so it was not started.
+
+## What next: the options put to the owner (2026-09-30)
+
+The owner has deferred this choice until review round 7 is written
+(`research/nursery-curriculum/round7-fetch-brief.md`). The options, as they were put:
+
+1. **A run-and-tumble control first (the agent's recommendation).** A bacterium with one sensor finds
+   food by comparing the scent now with the scent a moment ago, keeping on while it rises and turning
+   when it falls. The brain has the parts: `NeuronOp.Differentiate` exists
+   (`src/Evosim.Core/Genome/NeuronOp.cs`). The graft is the oscillator as before plus an offset on the
+   joint while the scent falls, since an offset makes a one-tailed swimmer curve. It is a small grid of
+   offsets in the small tank and the still one, paired against its knockout as in measurement 3, about
+   an hour on four threads, with no world rule changed. If it beats its knockout, design A runs with it
+   as the positive control. If it fails, the agent reads these two-part, one-joint bodies as unsteerable
+   in this world and goes to option 3, after counting how many bodies in round 52's snapshots carry two
+   scent-sensing parts.
+2. **Design A without a working control.** Evolution might find what the graft did not, but nothing
+   would show that the score can see steering, so a null could not be read.
+3. **Bodies that can steer**: pool bodies with two or more scent-sensing parts, or let the nursery
+   change the body as well as the brain. It changes D134's design.
+4. **Credit for coming near the food.** It would pay what the kinesis graft does, which the ecology
+   does not, and the owner has called it breeding.
