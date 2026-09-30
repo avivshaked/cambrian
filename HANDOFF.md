@@ -13,8 +13,8 @@ sit beside it.*
 ### The machine
 
 **Hold from about 10:15 on 2026-09-30: the owner needs the machine for a rendering job.** Round
-53's third seed finishes on its own (28,290 s of 30,000 at 10:25). Nothing starts after it (no
-nursery, no extension, no theatre render, no test suite) until the owner says the render is done.
+53's third seed ended at 10:38 and no farm run is left. Nothing starts (no nursery, no extension,
+no theatre render, no test suite) until the owner says the render is done.
 
 - Speed first (the owner, 2026-09-25): 10,000 creatures fast is the committed target and 100,000
   a stretch. Option A: rounds run overnight on the CPU, one seed at a time, and the card is worked
@@ -38,7 +38,7 @@ nursery, no extension, no theatre render, no test suite) until the owner says th
 | 51 | Run and read (pre-registration 0125 on `round-51`, amended as `ed4a61d`; `logbook/specs/r51-read/final.txt`). 31 clauses hold; B1, W1, EK5, E3 and S3 fail; V1 held | The pictures and entry 0126; `round-51` and `round-51-tests` merged into main once the films of rounds 49 and 50 are done; a literature round for D128's sources |
 | 52 | Run to 30,000 s (pre-registration 0127; seed 3 joined as `r52-s3j`). The read is `logbook/specs/r52-read/read-30000.txt` on `round-52` | The pictures, then entry 0128 |
 | 52, extended | Seed 1 reached 50,000 s as `r52-s1z`, which ended on its budget on 2026-09-30. Seeds 2 and 3 never started | Seeds 2 and 3 when a lane is free, joined with `stitch-resume.py --header-from` |
-| 53 | Seeds 1 and 2 done and seed 3 near its end (pre-registration 0129, `6701dc9`; branch `round-53` in `scratch/wt-r53`; log `scratch/logs/r53-queue.log`). N2 already fails: seed 2 read a drop of -0.0006 against the bar of 0.015, and N2 asks all three seeds. N1 and N3 held on seeds 1 and 2 | The read at seed 3's end (`scripts/reads/r53-read.py --arms r53-s1 r53-s2 r53-s3` on the branch, the arms space-separated), the pictures, the entry. The entry asks who the extra bodies are: the round carries about twice round 52's crowd (seed 1: about 7,200 alive against 3,100 at 24,000 s), and a larger crowd of leaves on the same nutrients would explain N2 (a guess until counted) |
+| 53 | Run to 30,000 s on all three seeds, the last ending at 10:38 on 2026-09-30 (pre-registration 0129, `6701dc9`; branch `round-53` in `scratch/wt-r53`). The read is `logbook/specs/r53-read/read-30000.txt` on the branch (`340e21f`). N1 holds on every seed (bed snow 2.82, 2.49 and 3.08 times round 52's). N2 fails: the drop in the uptake-limited share was 0.016, -0.0006 and 0.034 against a bar of 0.015 on every seed. N3 holds on every seed (corpses eaten 256, 241 and 224 against 170, 114 and 129) | The pictures, the entry. The entry asks who the extra bodies are: the round carries more than round 52's crowd at 30,000 s (7,403, 7,291 and 7,607 alive against 3,431, 2,813 and 5,691), and a larger crowd of leaves on the same nutrients would explain N2 (a guess until counted). The reader's summary prints N3 as held in 0 of 0 though each seed's line reads held; check its tally before quoting the summary |
 
 What the rounds found, in a line each. Round 51: one corpse was eaten a seed in 30,000 s, so the
 larder lies unused. B1 failed on the matter residual alone, the float door at the burn
@@ -64,8 +64,10 @@ not run. What the nursery does next is the owner's, and they have deferred it un
 The literature is `logbook/specs/nursery-curriculum-literature.md`: it supports the method in part
 and not the claim, so a nursery brain counts as naturally selected only once it out-breeds its
 ancestor in a round. Review round 7's candidate pool (Pass 1) is committed for the owner's trim
-(`f876209`), and `research/nursery-curriculum/round7-fetch-brief.md` briefs a Sonnet session with a
-browser, which the owner logs in, to fetch its papers.
+(`f876209`), and `research/nursery-curriculum/round7-fetch-brief.md` briefed a Sonnet session with a
+browser, which the owner logged in, to fetch its papers. That fetch is done (2026-09-30): twenty of
+twenty-one papers are filed as 175 to 192, 194 and 195 with packages, and `research/FETCH-RESULTS.md`
+records each. Pass 2 of the review, Step 3 of the brief, has not started and waits for a fresh session.
 
 ### Round 54's swimming rules are on the bench
 
@@ -123,7 +125,7 @@ and never in a shell loop; a queue that must outlive a turn is started detached.
 
 1. **During the owner's render**, only work that barely loads the machine: writing, and reading
    finished runs with the Python readers.
-2. **Round 53's read** when seed 3 ends, then its pictures and its entry.
+2. **Round 53's pictures and entry.** The read is done (`logbook/specs/r53-read/read-30000.txt` on `round-53`).
 3. **The entries owed**, each with the theatre's pictures taken first: 0124 (round 50, after V1's
    film windows from the round's own checkpoints), 0126 (round 51), 0128 (round 52) and round
    53's.
