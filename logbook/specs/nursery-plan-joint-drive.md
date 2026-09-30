@@ -191,3 +191,24 @@ well as it did (+0.1 J, standard error 0.2). That answers the plan's question fo
 forager's sense buys nothing here that a slow cruise does not. The brain-only arm and the pilot at
 12 J/m3 were started and stopped for round 54's diagnostic screens, and run again when the machine
 is free.
+
+## The bench again, on D139's drive
+
+*2026-09-30, 16:20, `joint-drive` at `a03a2ca`.* Everything above in this file after "The larder,
+benched" ran with a silent neuron at half power, which D139 corrected the same afternoon: a joint now
+pushes only when its neuron is above its threshold gene. The first pilot's blind cruise grew from
+that default, since doing nothing was a swim. The bench was run again at 12 J/m3 through the column.
+
+| brain | net over 300 s | path | work | snow at the body |
+|---|---|---|---|---|
+| rate kinesis, bias 0, gain 20 | +23 J | 7.5 m | 0.009 W | 0.72 J/m3 |
+| rate kinesis, bias −0.5, gain 10 | +5 J | 6.1 m | 0.004 W | 0.67 J/m3 |
+| level kinesis, bias 1.36, gain 18 | +2 J | 11.0 m | 0.11 W | 0.63 J/m3 |
+| frozen | −42 J | 4.4 m | 0 | 0.52 J/m3 |
+| its own, as drawn | −65 J | 7.0 m | 0.21 W | 0.61 J/m3 |
+| full power | −129 J | 39.9 m | 1.05 W | 0.92 J/m3 |
+
+The best hand-wired forager beats frozen by 65 J (standard error about 22) and full power by 152 J.
+It travels hardly further than a frozen body, but it sits in snow two fifths richer, because it moves
+only while its reading falls. The random brains now lose to frozen, since those that push waste the
+work. The pilots run again on this drive, the brain-only arm first.
