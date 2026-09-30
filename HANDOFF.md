@@ -1,7 +1,7 @@
-﻿# Handoff: where to pick up
+# Handoff: where to pick up
 
-*Rewritten 2026-09-30 from the current state. What happened is in the logbook, why it was chosen
-is in [`DECISIONS.md`](DECISIONS.md), and how to do things is in `CLAUDE.md` and the nested files
+*Rewritten 2026-09-30, and brought up to date the same afternoon after D137 and D138. What happened
+is in the logbook, why it was chosen is in [`DECISIONS.md`](DECISIONS.md), and how to do things is in `CLAUDE.md` and the nested files
 its table names. This file says only where things stand and what is queued; it is rewritten,
 never appended to. The version before this rewrite, with how rounds 51 and 52 were built, the
 card's speed work day by day and the run details of rounds 49 to 53, is
@@ -12,11 +12,9 @@ sit beside it.*
 
 ### The machine
 
-**Hold from about 10:15 on 2026-09-30: the owner needs the machine for a rendering job.** Round
-53's third seed ended at 10:38 and no farm run is left. Nothing starts (no nursery, no extension,
-no theatre render, no test suite) until the owner says the render is done. The owner asked for the
-swim test and D135's build during it, and both ran at four threads with the machine near 15%; the
-hold on anything heavier stands.
+**The owner's render is finished (2026-09-30 afternoon), and the hold is lifted.** In the afternoon
+the machine ran round 54's build and fixture at four threads, its screen at eight and the nursery's
+bench and pilots at four, within the half-machine cap.
 
 - Speed first (the owner, 2026-09-25): 10,000 creatures fast is the committed target and 100,000
   a stretch. Option A: rounds run overnight on the CPU, one seed at a time, and the card is worked
@@ -40,9 +38,10 @@ hold on anything heavier stands.
 | 51 | Run and read (pre-registration 0125 on `round-51`, amended as `ed4a61d`; `logbook/specs/r51-read/final.txt`). 31 clauses hold; B1, W1, EK5, E3 and S3 fail; V1 held | The pictures and entry 0126; `round-51` and `round-51-tests` merged into main once the films of rounds 49 and 50 are done; a literature round for D128's sources |
 | 52 | Run to 30,000 s (pre-registration 0127; seed 3 joined as `r52-s3j`). The read is `logbook/specs/r52-read/read-30000.txt` on `round-52` | The pictures, then entry 0128 |
 | 52, extended | Seed 1 reached 50,000 s as `r52-s1z`, which ended on its budget on 2026-09-30. Seeds 2 and 3 never started | Seeds 2 and 3 when a lane is free, joined with `stitch-resume.py --header-from` |
-| 53 | Run to 30,000 s on all three seeds, the last ending at 10:38 on 2026-09-30 (pre-registration 0129, `6701dc9`; branch `round-53` in `scratch/wt-r53`). The read is `logbook/specs/r53-read/read-30000.txt` on the branch (`340e21f`). N1 holds on every seed (bed snow 2.82, 2.49 and 3.08 times round 52's). N2 fails: the drop in the uptake-limited share was 0.016, -0.0006 and 0.034 against a bar of 0.015 on every seed. N3 holds on every seed (corpses eaten 256, 241 and 224 against 170, 114 and 129) | The pictures, the entry. The entry asks who the extra bodies are: the round carries more than round 52's crowd at 30,000 s (7,403, 7,291 and 7,607 alive against 3,431, 2,813 and 5,691), and a larger crowd of leaves on the same nutrients would explain N2 (a guess until counted). The reader's summary prints N3 as held in 0 of 0 though each seed's line reads held; check its tally before quoting the summary |
+| 53 | Run to 30,000 s on all three seeds, the last ending at 10:38 on 2026-09-30 (pre-registration 0129, `6701dc9`; branch `round-53` in `scratch/wt-r53`). The read is `logbook/specs/r53-read/read-30000.txt` on the branch (`340e21f`). N1 holds on every seed (bed snow 2.82, 2.49 and 3.08 times round 52's). N2 fails: the drop in the uptake-limited share was 0.016, -0.0006 and 0.034 against a bar of 0.015 on every seed. N3 holds on every seed (corpses eaten 256, 241 and 224 against 170, 114 and 129) | The pictures, the entry. The entry asks who the extra bodies are: the round carries more than round 52's crowd at 30,000 s (7,403, 7,291 and 7,607 alive against 3,431, 2,813 and 5,691), and a larger crowd of leaves on the same nutrients would explain N2 (a guess until counted). Round 53's reader dropped N3's per-seed rows from its summary; round 54's reader counts them |
+| 54 | Being prepared on the branch `round-54` (`scratch/wt-r54`: `joint-drive` with `round-53` and main merged). D138 ruled it: D135's drive, the scent and the work cost at 0.5 on round 53's world, D137's friction off. `rounds/env-r54.ps1` and `queue-r54.ps1` are written; the build's fixtures are re-recorded by `logbook/specs/r54-build/build.ps1` (`r54fix-s4`, `pfix17`). A screen of seed 1 to 5,000 s is `r54sc-s1`. The reader is `scripts/reads/r54-read.py` and the pre-registration draft `logbook/0130-a-body-that-can-swim-reaches-its-next-meal.md`, both uncommitted | The build's suites, the screen's numbers into 0130, commit on a clean tree, then the queue |
 
-What the rounds found, in a line each. Round 51: one corpse was eaten a seed in 30,000 s, so the
+What the rounds found, in a line each.What the rounds found, in a line each. Round 51: one corpse was eaten a seed in 30,000 s, so the
 larder lies unused. B1 failed on the matter residual alone, the float door at the burn
 (`logbook/specs/r51-read/b1-probe.txt`). Widening that door to double would close it, at the
 price of a new realisation of every seed. Round 52: mouths landed on corpses and ate 170, 114 and
@@ -53,57 +52,33 @@ A round's farm build stays as long as its runs do, because `film.py` refuses a r
 `programPath` is gone: `scratch/wt-leafincome` holds round 50's, and `wt-r51`, `wt-r52` and
 `wt-r53` the rest.
 
-### The nursery (D133, D134)
+### The nursery under D138
 
-`src/Evosim.Nursery` on the branch `nursery` (`scratch/wt-nursery`) evolves brains by direct
-selection on bodies pooled from round 52's snapshots, scored in joules eaten (DESIGN §8.6). Runs 1
-and 2 measured nothing about foraging, because they laid their corpses about the wrong origin
-(fixed as `67e3961`). D134's fast nursery, design A, is built (`67e3961`, `81a07c4`). Its
-measurements 1 to 3 ran from 03:46 to 04:18 on 2026-09-30 (`logbook/specs/fast-nursery-measurements.md`),
-and the hand-wired positive control did not beat its knockout in any condition, so design A was
-not run. What the nursery does next is the owner's, and they have deferred it until review round 7 is written; the options and the agent's recommendation (a run-and-tumble control first) close the measurements file. The papers are fetched and each has a JART; the agent's reading of them against the options, written before Pass 2, is `logbook/specs/nursery-round7-reading.md`, and it keeps the recommendation. Fable's world-derived nursery proposal (`logbook/specs/fable-propose-world-nursery.md`, ten rulings) waits on the owner. The swim test answered whether bodies swim (`logbook/specs/swim-test-2026-09-30.txt`): rounds 52 and 53 had no push at all, so nothing could, and with the push a plain sine moved every body while their own brains did not. The owner's answer is D135's joint drive, below, and the owner's next step after it is to plan the nursery for it.
+The nursery's code is `src/Evosim.Nursery` on `joint-drive` (`scratch/wt-joint`). D138 set its
+settings: the grown purse, the work cost at 0.5, fresh founders, and Fable's R1 to R10 with the
+controls. It runs beside round 54 and does not gate it. The plan and its record are
+`logbook/specs/nursery-plan-joint-drive.md`, whose last section is the larder bench of 2026-09-30.
+Snow laid on the bed's layer was out of the floating bodies' reach, and moving never paid. Laid
+through the water column, the rate kinesis beat full power at the round's density (1.4 J/m3) and
+beat frozen by 95 J at 12 J/m3. The config the new build reads is
+`scratch/nursery/runs-jd/still-w2-f0` (D137's friction added at 0).
 
-The literature is `logbook/specs/nursery-curriculum-literature.md`: it supports the method in part
-and not the claim, so a nursery brain counts as naturally selected only once it out-breeds its
-ancestor in a round. Review round 7's candidate pool (Pass 1) is committed for the owner's trim
-(`f876209`), and `research/nursery-curriculum/round7-fetch-brief.md` briefed a Sonnet session with a
-browser, which the owner logged in, to fetch its papers. That fetch is done (2026-09-30): twenty of
-twenty-one papers are filed as 175 to 192, 194 and 195 with packages, and `research/FETCH-RESULTS.md`
-records each. Pass 2 of the review, Step 3 of the brief, has not started and waits for a fresh session.
+Two pilots, 200 generations each, run from `scratch/nursery/run-pilot.ps1`: `pilot-col1.4` (the
+round's density) and `pilot-col12`, then a brain-only arm (R3). In the first, selection shrank the
+adult (its scale gene from 1 to 0.61) and cut the work to near zero by generation 20; the search's
+exam of its elites against the controls says how much of the gain is the brain's. The earlier
+nursery (D133, D134, the branch `nursery`) measured nothing about foraging, and its papers wait on
+review round 7's Pass 2 in a fresh session (`research/nursery-curriculum/round7-fetch-brief.md`).
 
-### Round 54's swimming rules are on the bench
+### The water and the drive (D135 to D137)
 
-The branch `forage` (`scratch/wt-forage`) carries the four rules the owner approved for round 54:
-the push along a limb, a stroke's cost on a knob, a corpse scent to about 10 m, and both together.
-The bench notes are `logbook/specs/forage-bench/notes.md` on the branch (`3897a4d`). A hand-wired
-brain finds a corpse. A torque drive has no centring, so a lone tail strokes off-centre, and a
-mirrored pair of fins drives a body straight where one fin spins it in place. Nothing reaches a
-round until the owner has seen the bench, and round 54 is theirs (below).
-
-### The joint drive (D135) is built and tested on a branch
-
-The branch `joint-drive` (`scratch/wt-joint`, from `nursery`) carries D135: a power and a bend per
-degree of freedom, the stroke not simulated and drawn, the four drive genes, genome format 11, all
-off by default (Core 1,038 pass with every recorded number unmoved). The build record is
-`logbook/specs/joint-drive-build.md`. Ω is 2 rad/s on the bench; the push from a real swing is off
-under the drive; power and bend are read from [-1, 1] onto [0, 1], so 60 of 100 random founders
-swim under their own brains (16 before). Two 20 s test films are `scratch/owner/jd-swim-own.mp4` and
-`jd-swim-full.mp4`, drawn by `scripts/render-swim-film.py` on the branch. Open on it: the crowd
-fixture `r52fix-s4` to re-record, the work cost to set on the bench, the theatre's drawing of the
-stroke and the pose stream's power, and a chain of joints, which no founder has.
-
-The nursery's tank is built on the same branch, ready for the pilot and not run beyond smokes
-(`logbook/specs/nursery-plan-joint-drive.md`, "The tank, built"). It has `World.LaySnow`,
-`Evosim.Nursery --tank` (R1 to R5) and `--tank-bench`. The bench runs the controls: frozen, full,
-knockout, brainless, and the D135 kinesis. The smokes found that the floor's founder purse leaves a
-small stomach about a joule once it has grown, so R2 as Fable argued it does not hold. `--purse-rule
-grown` is the alternative.
-
-Drag stays physical (D136). The owner plans, later, to analyse each creature and set a drag fitted to
-its shape. The coast measured on 2026-09-30 is exactly the drag. With the mass, velocity and drag the solver logged,
-the momentum falls as the drag says. The body was 150 kg with its added water; the agent's first
-comparison used its size at landing and was wrong. Where a coasting body meets the bed it slides on,
-because the own solver's bed contact has no friction (PhysX's had). That is a question for the owner.
+D135's joint drive, genome format 11 and the nursery tank are on `joint-drive`, and so is the round
+54 branch built from it. Drag stays physical (D136): the coast measured on 2026-09-30 is the drag
+itself, and the owner will later fit a drag to each creature's shape and add surface friction then.
+D137 built friction at the bed, the rocks, the reefs and the glass (`EVOSIM_BED_FRICTION`, off by
+default), with the push along the normal that already held; a body swimming at the bed at full power
+strikes 3.9 mm into it and presses 0.45 mm. Two test films of the drive are in `scratch/owner/`
+(`jd-swim-own-v2.mp4`, `jd-swim-full-v2.mp4`, `jd-coast-v2.mp4`).
 
 ### Other work and the disk
 
@@ -123,31 +98,20 @@ after the owner approves its video as final (`src/Evosim.Farm/CLAUDE.md`).
 Each is put to the owner in full, with the options and what each implies, in any message that
 asks for it.
 
-- **The nursery for the joint drive.** The owner's next step after D135 ("then we can start
-  planning the nursery for it"). Fable's world-derived proposal and its ten rulings
-  (`logbook/specs/fable-propose-world-nursery.md`) were written for the torque drive and are
-  re-read against D135 (`logbook/specs/nursery-plan-joint-drive.md`). R2's purse has a new
-  question: the floor's rule, under which small stomachs starve while growing, or the growth paid
-  plus 600 s of the adult's keep.
-- **The power's reading under D135**: the agent chose [-1, 1] onto [0, 1] inside the ruling, so a
-  silent neuron is half power (the build record has the measurements). It is reported to the owner
-  as the agent's choice, with the alternative of the positive half.
-- **Round 54 under D135.** Round 54 was to be `propose-foraging.md`'s four rules on round 53's world
-  (D132); D135 replaces rule 1's mechanism, so what round 54 carries is put to the owner again.
-- **The lifespan literature's eight papers** sit behind Europe PMC's Cloudflare page. The owner
-  fetches them in a browser, or the review records them as not fetched.
-- **Older items**, each unchanged since it was last put: the proposals at the repository's root
-  (the own solver's rulings, the shelf reef and turbidity, predation on contact), the producer
-  threshold under D063, a tempo dial, and the paywalled reading list. `fable-propose-soup.md`
-  (2026-09-18, the soup first and the leaf invented) is also at the root and on no list; its
-  status is to be asked. The old worktrees wait on
-  the owner, who has the one-line command that removes them. The animal kit's and round 46's
-  proposal files are absorbed (D106, D112 onward) and wait only to be deleted.
+- **Whether round 54 inoculates a nursery winner.** D138 ruled round 54 without one (option a). The
+  agent recommended a fourth run beside the three seeds, seed 1 again with the nursery's best brain
+  and its knockout inoculated, run only if the winner beats its controls (option b); or the
+  inoculant in seed 3 (option c). A fourth run would queue after the three seeds and needs its own
+  short pre-registration, so the question does not hold up the launch.
+- **Left for later by the owner (2026-09-30):** the friction's value μ, friction between creatures,
+  the producer threshold under D063, a tempo dial, the proposals at the repository's root (the own
+  solver's rulings, the shelf reef and turbidity, predation on contact, `fable-propose-soup.md`),
+  the old worktrees, the absorbed proposal files, and the lifespan literature's eight papers behind
+  Europe PMC's Cloudflare page.
 
-Ruled and in force for what comes next. Round 54 is the swimming rules alone on round 53's world
-(D132). The reactive thrust was approved by D127, and `propose-foraging.md` narrows it to the four
-rules above, which the owner approved on 2026-09-29; both files are absorbed when the bench is
-read. The lifespan values of round 52 hold through rounds 53 and 54 (D132). D131's places on the
+Ruled and in force for what comes next. Round 54 is D138's: D135, the scent and the work cost on
+round 53's world. The power is read from [-1, 1] onto [0, 1], so a silent neuron is half power (D138).
+The reactive thrust was approved by D127 and narrowed by `propose-foraging.md`, which D135 and D138 carry into round 54; both files are absorbed once round 54 is read. The lifespan values of round 52 hold through rounds 53 and 54 (D132). D131's places on the
 bed come back one a round after that: hollows, then a seep that charges matter (put again in full
 before it is built), then the anchoring cell (`logbook/specs/r53-larder-proposal.md`). Earlier:
 links stop catching light from round 51 (`EVOSIM_LINK_PHOTO 0`); the
@@ -159,43 +123,40 @@ the founders 0.5 to 1.5).
 All of it is agent work. Long steps run in the background under the session, never in a subagent
 and never in a shell loop; a queue that must outlive a turn is started detached.
 
-1. **During the owner's render**, only work that barely loads the machine: writing, and reading
-   finished runs with the Python readers.
-1a. **D135's loose ends on `joint-drive`**: re-record the `r52fix-s4` crowd on the branch's build,
-   set the work cost on the bench (rule 2's one to two times the keep), and draft the nursery plan
-   for the joint drive for the owner.
+1. **Round 54's launch**: the build's suites pass, the fixture edits and the reader are committed,
+   the screen's numbers go into 0130, the style check passes, and 0130 is committed on a clean tree.
+   Then `rounds/queue-r54.ps1` starts the seeds detached, at twelve threads beside the nursery's
+   four.
+1a. **The nursery's pilots and their exams**, read against the controls; the owner hears the result
+   with the inoculation question set out again.
 2. **Round 53's pictures and entry.** The read is done (`logbook/specs/r53-read/read-30000.txt` on `round-53`).
 3. **The entries owed**, each with the theatre's pictures taken first: 0124 (round 50, after V1's
    film windows from the round's own checkpoints), 0126 (round 51), 0128 (round 52) and round
    53's.
-4. **Round 54's bench**, items 5, 6 and 8 on `forage` (`logbook/specs/forage-bench/notes.md`).
-   Items 5 and 6 are swim probes on real bodies at push 0, 0.1, 0.3 and 1. Item 8 is identity at
-   1 and N threads, and the member check on a world with corpses and scent. Then the bench goes
-   to the owner.
-5. **The card's transport check** against round 50's own record (D126's conditions), by day with
+4. **The card's transport check** against round 50's own record (D126's conditions), by day with
    nothing else on the machine and after the week's cap. Round 50's seeds are resumed on main's
    exe with `EVOSIM_GPU_TRANSPORT` from checkpoints near 5,000, 15,000 and 25,000 s, 1,000 s each,
    against the same windows on the CPU's transport; `logbook/specs/card-transport-check/check.ps1`
    runs them and `compare.py`, and was rehearsed on `r50smoke-s1`. Until it has run, rounds use
    the CPU's transport; the first round after it is queued with `scripts/farm-queue.ps1 -GpuTransport`.
-6. **Round 52's extension**, seeds 2 and 3 to 50,000 s, when a lane is free.
-7. **The card's speed work**, after the cap, largest first. The snow's settling,
+5. **Round 52's extension**, seeds 2 and 3 to 50,000 s, when a lane is free.
+6. **The card's speed work**, after the cap, largest first. The snow's settling,
    remineralisation and mixing (about 8 ms a step) could join the transport on the card. The
    engine uploads the snow again for the senses (3 to 6 ms a block) and could take the
    transport's result instead, if nothing between them changes the snow (unchecked). The class
    uploads could send the changed rows alone (3 to 4% of the wall, an estimate). Whether a round
    runs on the card in single precision is the owner's.
-8. **The CPU's physics at a full crowd** (`logbook/specs/cpu-profile-2026-09-26.txt`): the
+7. **The CPU's physics at a full crowd** (`logbook/specs/cpu-profile-2026-09-26.txt`): the
    water at the links and contact per part are merged; what is left is the contact pass, the
    fluid, the brain and the solve.
-9. **The storage reductions that lose nothing**: a checkpoint that points at `genomes.jsonl.gz`
+8. **The storage reductions that lose nothing**: a checkpoint that points at `genomes.jsonl.gz`
    (a new `Checkpoint.Version`, with 6 still read) and the feeding log gzipped, then a measured
    test of a better codec for the moving state.
-10. **The theatre's four checkpoints** re-recorded on the current build: ckA, ckB, ckC and ckUi.
-11. **The records owed**: the review round filing `logbook/specs/r52-lifespan-literature.md` (on `round-52`) in
+9. **The theatre's four checkpoints** re-recorded on the current build: ckA, ckB, ckC and ckUi.
+10. **The records owed**: the review round filing `logbook/specs/r52-lifespan-literature.md` (on `round-52`) in
     `research/LITERATURE-REVIEW.md`; the literature round for D128's sources; a nursery entry
     once the owner's ruling gives it a result, and a primer after it works.
-12. **Round 49 seed 2's budded line**, read for what the bud costs against M4's 2.7%, from what
+11. **Round 49 seed 2's budded line**, read for what the bud costs against M4's 2.7%, from what
     `logbook/specs/r49-read/` holds, since the runs are gone; if that is not enough, it is
     dropped.
 
