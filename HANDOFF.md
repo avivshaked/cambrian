@@ -129,7 +129,10 @@ and never in a shell loop; a queue that must outlive a turn is started detached.
    sense, and a sense handed to it earned no more than a tuned blind stroke. In a 40 m tank with 20 m
    islands, bodies planted in the food, the rate kinesis beats the best blind constant by 61 J (se 11):
    the first larder where the scent pays (nursery plan, last section). Two per-body arms evolve there from
-   19:05 (`scratch/nursery/pilot-big-own`, `pilot-big-kin`, exams near 20:15). The launcher is
+   19:05 (`scratch/nursery/pilot-big-own`, `pilot-big-kin`). Read at 20:24: the blind arm evolved gaits
+   that read the body's own senses (+394 J, 149 J over the kinesis), and the arm started from the kinesis
+   kept the scent on four bodies but earned 48 J less (se 18). The owner asked for the machine free from
+   20:24; nothing runs until they say. The launcher is
    `scratch/nursery/run-pilot.ps1`; the configs are `scratch/nursery/runs-jd/still-w2-f0-big*`. The owner
    hears each result, and the inoculant is chosen with them.
 1a. **Round 54's relaunch** once the inoculant is chosen: 0130 revised, committed, launched from a clean

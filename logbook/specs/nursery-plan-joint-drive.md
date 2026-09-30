@@ -360,3 +360,32 @@ too, and its children are born beside their parents.
 Two arms of the per-body search run on the planted tank from 19:05, 12 bodies with 16 brains each and
 600 s episodes. One starts from the brains as drawn and the other from the rate kinesis. Their exams
 hold the constants.
+
+## Evolution in the big tank: a gait beats the scent
+
+*2026-09-30, 19:05 to 20:24.* Both arms ran 200 generations on the planted 40 m tank, 12 bodies with 16
+brains each, and their exams shared the bench's draws, so the arms pair draw by draw.
+
+The blind arm's brains averaged +394 J. They beat the best blind constant by 210 J and the rate kinesis
+by 149 J (standard error 32). No body read the scent: the knockout moved no body by more than its
+standard error. Four bodies grew brains that read other senses. On bodies 0, 3, 8 and 9 the brainless copy
+lost 352, 183, 230 and 317 J (standard errors 59, 46, 37 and 144).
+
+The arm started from the rate kinesis averaged +346 J, 48 J below the blind arm (standard error 18).
+Four of its bodies kept the scent, and cutting it cost bodies 0, 3, 7 and 10 between 168 and 357 J. On
+each of those four bodies the blind arm's brain earned as much or more, by 12 to 219 J.
+
+| body | blind arm | its brainless copy | from kinesis | its knockout | from kinesis, against blind |
+|---|---|---|---|---|---|
+| 0 | +247 J | −352 J (se 59) | +145 J | −189 J (se 25) | −102 J (se 51) |
+| 3 | +313 J | −183 J (se 46) | +301 J | −168 J (se 21) | −12 J (se 33) |
+| 7 | +556 J | +6 J | +337 J | −221 J (se 20) | −219 J (se 47) |
+| 8 | +472 J | −230 J (se 37) | +238 J | +4 J | −234 J (se 52) |
+| 9 | +762 J | −317 J (se 144) | +668 J | +60 J | −94 J (se 91) |
+| 10 | +651 J | +23 J | +585 J | −357 J (se 72) | −65 J (se 33) |
+
+In the one larder where the scent pays over a constant, evolution found something that pays more: a
+stroke that reads the body's own state. Both arms swam more as they evolved, from 0.04 to 0.06 W at the
+start to 0.14 to 0.19 W at the exam. Which senses the gaits read is not yet measured. A bench that
+knocks out one channel at a time on the blind arm's elites would say. The blind arm's brains are the first
+nursery brains that are neither a constant nor hand-wired, and they beat frozen by 334 J.
