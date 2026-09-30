@@ -6915,3 +6915,40 @@ logged per link, the body's momentum in the coast changes exactly as its drag sa
 with its added water, and the drag halves its speed in about 5.7 s from 19.5 cm/s, as seen. The ruling
 stands on the corrected numbers: the coast is what the drag law does to a heavy body.
 (`logbook/specs/joint-drive-build.md`, "The check, done properly".)
+
+### D137
+**Friction at the rock and the glass** · 2026-09-30
+
+**Status:** ruled by the owner in conversation on 2026-09-30, on the agent's finding that the own solver's
+bed contact has no friction (`logbook/specs/joint-drive-build.md`, "The bed has no friction"). The owner's
+words: "Add sliding friction to the bed contac <- yes! of course! and also neuton forces, meaning, creatures
+can't swim into the ground or into a reef, and that also means some phiscs when the velocity vector is not
+perpendicular to the ground". Built on the branch `joint-drive` as a setting off by default,
+`RunConfig.BedFriction` (`EVOSIM_BED_FRICTION`).
+
+**The ruling.** Where a part touches the bed or a reef, the rock pushes back along the surface's normal, so a
+body cannot swim into it. The part of the part's motion along the surface is slowed by sliding friction:
+against the sliding velocity, at most μ times the push, and never more than stops the slide in one step, so a
+slide ends in rest and never reverses.
+
+**What already held, and what is new.** The push along the normal was already there: a critically damped
+spring of 400 times the part's mass per metre. A chain at full power swimming straight at the bed presses its
+sphere in by a fraction of a millimetre (`BedFrictionTests`). What was missing is the second half of the
+owner's sentence. A body meeting the rock at an angle kept all of its motion along it and slid as on ice.
+PhysX, which the Unity farm used until round 42, had friction; the own solver, from round 43, did not.
+
+**Choices the build made inside the ruling.**
+- The glass takes the same friction as the rock.
+- The friction acts at the part's contact sphere, with no torque, as the push does. A part scrapes to a stop
+  rather than rolling.
+- μ is one number for rock and glass alike, unmeasured, and 0 by default so every recorded world replays; its
+  value is set on the bench and put to the owner.
+
+**What it does and does not do.** Friction is proportional to how hard a part presses. The rounds' tissue is
+0.02 kg/m3 denser than the water, so a resting body presses with about 2e-5 of its weight. Friction therefore
+acts when a body strikes the rock or pushes on it, and a body merely resting on the bed is hardly held. In the
+tests a weightless box striking the bed at 45° at 0.3 m/s left with 7.1 cm/s of slide at μ 0.5, against
+14.1 cm/s without friction.
+
+**Open.** Friction between creatures, which the owner has not ruled on. The contact spheres are each part's
+bounding sphere, so a part touches the rock a little before its surface would.
