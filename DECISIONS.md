@@ -7035,3 +7035,26 @@ round launches again, from a clean tree. Seed 1's 5,510 s stay as a record of th
 D139; whether they are resumed, used as a control or left is decided with the inoculant. The owner set no deadline:
 the nursery runs "until we get a good meaningful result that we're happy with", and the round is not
 launched without the owner.
+
+### D141
+**Round 54 inoculates the nursery's gaits, with one seed as the control; the scent waits for round 55** · 2026-09-30
+
+**Status:** ruled by the owner in conversation on the evening of 2026-09-30, choosing option C of three:
+"Option C, but tomorrow". Answers the questions D140 left open.
+
+**Decision.** The nursery's gait brains, evolved in the 40 m tank with the body each rode, are confirmed
+and then inoculated into round 54. One seed stays uninoculated, as pre-registered, and is the control for
+D135's drive. The search for a brain that reads the scent continues after round 54 and is aimed at round
+55, starting from the gaits. Nothing of this runs before 2026-10-01.
+
+**Why.** In the big tank the blind arm evolved brains that read the body's own senses. They earn +394 J
+over 600 s, 334 J over frozen and 149 J over the hand-wired kinesis. The arm started from the kinesis
+kept the scent on four bodies and earned 48 J less (nursery plan, "Evolution in the big tank"). They are
+the first nursery brains that are neither a constant nor hand-wired. Whether a nursery product
+establishes in the ecology is the premise of the nursery, and round 54 can test it now.
+
+**What it changes.** Round 54 asks whether nursery gaits establish and spread, not whether the scent
+pays. Pre-registration 0130 is revised to say so before the launch. The inoculants bring new bodies
+into the round as well as brains. Before inoculation the gaits are confirmed: a re-exam on fresh draws,
+a bench that knocks out one sense at a time, and an exam in the round's own water with its current and
+depth.

@@ -98,7 +98,7 @@ after the owner approves its video as final (`src/Evosim.Farm/CLAUDE.md`).
 Each is put to the owner in full, with the options and what each implies, in any message that
 asks for it.
 
-- **Whether round 54 inoculates a nursery winner.** Ruled by D140: round 54 waits for one. The owner, leaving the agent to work alone that evening: "please don't launch the round after the nurseries. continue working on the nurseries until we get a good meaningful result that we're happy with." Raised by the agent at the ruling and not yet answered: one seed kept uninoculated as the drive's control (or seed 1's checkpoint resumed as it), and whether a brain whose search started from the hand-wired kinesis may be inoculated. D138 had ruled round 54 without one (option a). The
+- **Whether round 54 inoculates a nursery winner.** Ruled by D140: round 54 waits for one. The owner, leaving the agent to work alone that evening: "please don't launch the round after the nurseries. continue working on the nurseries until we get a good meaningful result that we're happy with." D141 answered the control: one seed stays uninoculated. The inoculants are the blind arm's gaits, whose search did not start hand-wired. D138 had ruled round 54 without one (option a). The
   agent recommended a fourth run beside the three seeds, seed 1 again with the nursery's best brain
   and its knockout inoculated, run only if the winner beats its controls (option b); or the
   inoculant in seed 3 (option c). A fourth run would queue after the three seeds and needs its own
@@ -132,7 +132,10 @@ and never in a shell loop; a queue that must outlive a turn is started detached.
    19:05 (`scratch/nursery/pilot-big-own`, `pilot-big-kin`). Read at 20:24: the blind arm evolved gaits
    that read the body's own senses (+394 J, 149 J over the kinesis), and the arm started from the kinesis
    kept the scent on four bodies but earned 48 J less (se 18). The owner asked for the machine free from
-   20:24; nothing runs until they say. The launcher is
+   20:24. **D141 (option C, "but tomorrow"): on 2026-10-01**, confirm the gaits (a re-exam of the blind
+   arm's elites on fresh draws; a bench knocking out one channel at a time; an exam in the round's own
+   water), then revise 0130 for an inoculated round 54 with one seed uninoculated as the control, and
+   launch it only with the owner. The scent's search resumes after, starting from the gaits, for round 55. The launcher is
    `scratch/nursery/run-pilot.ps1`; the configs are `scratch/nursery/runs-jd/still-w2-f0-big*`. The owner
    hears each result, and the inoculant is chosen with them.
 1a. **Round 54's relaunch** once the inoculant is chosen: 0130 revised, committed, launched from a clean
