@@ -7058,3 +7058,26 @@ pays. Pre-registration 0130 is revised to say so before the launch. The inoculan
 into the round as well as brains. Before inoculation the gaits are confirmed: a re-exam on fresh draws,
 a bench that knocks out one sense at a time, and an exam in the round's own water with its current and
 depth.
+
+### D142
+**Round 54 runs uninoculated on every seed; inoculation moves to round 55, after the nursery's selection is fixed** · 2026-10-01
+
+**Status:** ruled by the owner in conversation on the morning of 2026-10-01, option A of four put after
+the night's confirmations ("Agreed", to the agent's recommendation). Supersedes D141's inoculation of
+seeds 2 and 3.
+
+**Decision.** Seeds 2 and 3 of round 54 run as first registered, without an inoculant, at eight threads
+each once seed 1 ends. Round 54 is the three-seed test of D135's drive. No nursery brain is inoculated
+before round 55, and none until the nursery's selection is trusted: a measured noise per episode, enough
+episodes per brain to see the differences that matter, the snow fixed within a generation, training in
+the round's water, and an exam against frozen, the blind constants and the hand-wired kinesis on fresh
+draws in that water.
+
+**Why.** No nursery brain passed the bar set before the confirmation (nursery plan, 2026-10-01). The
+still tank's gaits swam no better than a constant power in the round's current and depth; evolved again
+there they went blind and beat no body's best constant by two standard errors; the arm started from the
+kinesis kept the scent on one body and still trailed that body's constant. Two 600 s draws a generation
+let selection follow luck: the arm from the kinesis ended 43 J under the brain it started from.
+
+**What it changes.** Logbook 0130 carries a third note restoring J1 and J2 to their three-seed bars. The
+nursery's runs wait until the round has finished, unless the owner moves the round to fewer threads.
