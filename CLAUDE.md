@@ -379,3 +379,29 @@ actually verifying it.
   threads only, and a build change is a different realisation). PhysX is not bitwise
   deterministic across machines or Unity versions, so the hashes exist to *detect* mismatches
   rather than to promise portability.
+
+# Compact instructions
+
+Claude Code reads this heading when it compacts a session (code.claude.com/docs/en/costs.md).
+That automatic compactions read it as well as `/compact` is an inference; the documentation
+does not say. Judge everything in the conversation by one test: whether the session's next
+steps would go wrong, or be done twice, without it.
+
+1. **Already in a file**, committed or in the working tree: keep the path and one line on why
+   it matters, and drop the content.
+2. **Matters, and is in no file yet**: keep it under a heading **Persist first**. Name the file
+   each item belongs in: HANDOFF.md, DECISIONS.md, a logbook entry, a spec under
+   `logbook/specs/`, or an area's `CLAUDE.md`. The owner's rulings go in as the owner wrote
+   them, with the date. After compaction, write these items to their files before any other
+   work.
+3. **Matters to this session only, and belongs in no file**: keep it. That means:
+   - farm runs and queues still going, with their arm names and run directories
+   - background tasks, agents and scheduled watches, with their ids and deadlines
+   - edits in progress and not yet committed, with their paths
+   - the step underway and the one after it
+   - every decision the owner has been asked for and not yet given, set out in full
+4. **Everything else** is discarded: tool output already acted on, dead ends already recorded,
+   file contents that can be read again, plans that were replaced.
+
+After compaction, before acting: run `scripts/sweep-orphans.ps1`, read HANDOFF.md, and re-arm
+any watch the summary lists that the sweep shows is gone.
