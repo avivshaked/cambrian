@@ -418,3 +418,31 @@ blind. In the same exam the rate kinesis, bias 0 and gain 20, scored 427 J again
 difference of 8 J, standard error 18). In the round's water a sense pays as much as the best blind
 swim the search could find. Two arms test whether evolution keeps or finds it there: the same six
 bodies from the kinesis, and from their random brains.
+
+## The scent in the round's water: kept on one body, worth no more than a steady swim
+
+*2026-10-01, 03:10 to 05:48.* The same six bodies, 16 brains each, 100 generations in the tank with the
+round's current and depth. One arm started from the rate kinesis (bias 0, gain 20), the other from the
+bodies' own random brains. Each brain is paired below against its body's best constant of five (0.3 to
+0.7), picked after the fact.
+
+| body | from random: own | against the best constant | from kinesis: own | against the best constant | its knockout of the scent |
+|---|---|---|---|---|---|
+| 0 | 439 J | +6 J (se 6) | 325 J | −107 J (se 31) | −4 J (se 2) |
+| 1 | 444 J | +16 J (se 7) | 452 J | +24 J (se 8) | −5 J (se 2) |
+| 3 | 283 J | −191 J (se 62) | 391 J | −84 J (se 60) | +195 J (se 39) |
+| 4 | 169 J | −315 J (se 103) | 388 J | −96 J (se 33) | −14 J (se 11) |
+| 8 | 391 J | −8 J (se 27) | 461 J | +63 J (se 48) | −4 J (se 2) |
+| 10 | 598 J | +7 J (se 45) | 286 J | −304 J (se 59) | −29 J (se 4) |
+
+The last column is the brain less its knockout. From random brains every body evolved a blind swim,
+as in every tank before. From the kinesis only body 3 kept the scent, and cutting it costs that brain
+195 J. Body 3's brain still trails the body's best constant by 84 J (standard error 60). Averaged, the
+arm from the kinesis ended at 384 J, under the kinesis it started from (427 J, standard error of the
+difference 61), so 100 generations made the hand-wired brain worse.
+
+My reading, which is inference: two 600 s draws a generation and one elite a body leave selection
+following luck. The generation means swung between 515 and 788 J late in both arms, and the leaders'
+running means rest on two episodes. Before the nursery is asked again for an inoculant, its
+selection needs more draws for each brain, or a longer life, so that a brain's score says more about
+the brain than about its draws. No brain from the nursery is fit to inoculate on 2026-10-01.
