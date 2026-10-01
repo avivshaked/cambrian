@@ -389,3 +389,32 @@ stroke that reads the body's own state. Both arms swam more as they evolved, fro
 start to 0.14 to 0.19 W at the exam. Which senses the gaits read is not yet measured. A bench that
 knocks out one channel at a time on the blind arm's elites would say. The blind arm's brains are the first
 nursery brains that are neither a constant nor hand-wired, and they beat frozen by 334 J.
+
+## The gaits in the round's water: they do not carry over
+
+*2026-10-01, 00:36 to 03:10.* The exam of the big tank does not save its genomes, so the blind arm ran
+again at 16 threads to recover them. Every generation's row and every exam row came back byte for byte,
+at twice the threads: the tank is deterministic. Its exam now writes `tank-exam-genomes.tsv`.
+
+The confirmation benched the 12 gaits on 32 fresh draws in the still tank and on 16 in two tanks with
+the round's water. Each brain is paired against a constant at 0.5, the best of four in every tank.
+
+| water | the gaits | against half power | against frozen |
+|---|---|---|---|
+| still, 5 m, fresh draws | 404 J | +201 J (se 33) | +329 J (se 19) |
+| the round's current, 0.1 m/s | 206 J | +4 J (se 17) | +55 J (se 11) |
+| the current and the round's 25 m depth | 337 J | −21 J (se 25) | +170 J (se 15) |
+
+Knocked out one sense at a time in still water, only the energy sense cost them anything (−42 J,
+standard error 31). The brainless copy lost 88 J, and my list left out the depth sense, so I guess the
+gaits read depth too. In the round's kinds of water they swim no better than a steady half power. By
+the bar set before the bench, no gait qualified for round 54.
+
+The six bodies best in the deep water were evolved again there, 16 brains each for 100 generations,
+from their gaits. The exam put them 93 J over half power (standard error 48) and 275 J over frozen. Per
+body, none beat its own best constant by two standard errors, and a constant beat three of them by 26 to
+105 J. Their brainless copies scored what they did (−3 J, standard error 3): the current made them
+blind. In the same exam the rate kinesis, bias 0 and gain 20, scored 427 J against their 435 J (a
+difference of 8 J, standard error 18). In the round's water a sense pays as much as the best blind
+swim the search could find. Two arms test whether evolution keeps or finds it there: the same six
+bodies from the kinesis, and from their random brains.
