@@ -225,7 +225,7 @@ namespace Evosim.NurseryRoom.Tests
         private int _builds;
 
         private RoomContext RoomCountingBuildReads() =>
-            new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, _fx.Room.Activity.Path, _fx.Launcher, _fx.Load, systemMask: _fx.Room.SystemMask, readBuild: _ => { _builds++; return _fx.Build; });
+            new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, _fx.Room.Activity.Path, _fx.Launcher, _fx.Queue, _fx.Heat, systemMask: _fx.Room.SystemMask, readBuild: _ => { _builds++; return _fx.Build; });
 
         private void Enter()
         {
@@ -260,7 +260,7 @@ namespace Evosim.NurseryRoom.Tests
         {
             Enter();
             // a machine of 16 processors, with room.json's mask on processors 16 to 31
-            var lacking = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, _fx.Room.Activity.Path, _fx.Launcher, _fx.Load, systemMask: 0xFFFFUL, readBuild: _ => { _builds++; return _fx.Build; });
+            var lacking = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, _fx.Room.Activity.Path, _fx.Launcher, _fx.Queue, _fx.Heat, systemMask: 0xFFFFUL, readBuild: _ => { _builds++; return _fx.Build; });
             OperationResult r = new OperationList(lacking).Invoke("run.rerun", Js.Parse(Js.Serialize(new { entry = "1", name = "no-core", threads = 2, reason = "a test" })), OperationList.Screen);
             Assert.False(r.Ok);
             Assert.Contains("lacks", r.Error);
@@ -366,7 +366,7 @@ namespace Evosim.NurseryRoom.Tests
             Assert.True(Js.Parse(Js.Serialize(resolver.Run("trial-one"))).GetProperty("trial").GetBoolean());
 
             // a room started afterwards reads it from the log
-            var later = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, _fx.Room.Activity.Path, new FakeLauncher(), _fx.Load, 32, _ => _fx.Build);
+            var later = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, _fx.Room.Activity.Path, new FakeLauncher(), _fx.Queue, _fx.Heat, 32, _ => _fx.Build);
             Assert.True(new ResourceResolver(later).Catalog(out _).Single(r => r.Id == "trial-one").Trial);
         }
     }
@@ -376,7 +376,8 @@ namespace Evosim.NurseryRoom.Tests
         [Theory]
         [InlineData("\"port\":5179", "\"port\":0", "port")]
         [InlineData("\"pollSeconds\":30", "\"pollSeconds\":0", "pollSeconds")]
-        [InlineData("\"capLogical\":16", "\"capLogical\":0", "capLogical")]
+        [InlineData("\"queueFile\":\"scratch/machine/queue.md\"", "\"queueFile\":\"../queue.md\"", "queueFile")]
+        [InlineData("\"heatScript\":\"scripts/no-heat-check-in-the-room-tests.ps1\"", "\"heatScript\":\"C:/x.ps1\"", "heatScript")]
         [InlineData("\"bind\":\"127.0.0.1\"", "\"bind\":\"10.0.0.1\"", "bind")]
         [InlineData("\"dotnet\":\"dotnet\"", "\"dotnet\":\" \"", "dotnet")]
         [InlineData("\"runs\":[]", "\"runs\":{}", "runs")]

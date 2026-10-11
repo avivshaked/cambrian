@@ -400,25 +400,28 @@ namespace Evosim.NurseryRoom.Tests
         }
 
         [Fact]
-        public void TheLoadAPersonReadsIsCappedAtOneHundredWithTheRawValueInTheTitle()
+        public void TheStripShowsTheSlotAndTheHeatAndNoLongerAnyLoad()
         {
             string common = Js_("common.js");
-            Assert.Contains("${esc(fmt(Math.min(l.percent, 100), 3))} %", common);
-            Assert.DoesNotContain("${esc(fmt(l.percent, 3))} %", common);
-            Assert.Contains("title=\"${esc(loadTitle(l.percent))}\"", common);
-            // the refusal says 100 where the counter read more, and the raw value beside it; the cap itself still reads the raw value (16 threads cannot fit beside 32 in use)
-            string said = Cap.Refusal(1, 16, 32, LoadReading.Of(104.2), 0);
-            Assert.Contains("(100 % Processor Utility, the counter read 104.2, rounded up)", said);
-            Assert.Contains("32 of 32 logical processors in use", said);
-            Assert.Contains("(60 % Processor Utility, rounded up)", Cap.Refusal(12, 16, 32, LoadReading.Of(60), 0));
+            Assert.DoesNotContain("capLogical", common);
+            Assert.DoesNotContain("percent", common);
+            Assert.Contains("r.machine", common);
+            Assert.Contains("r.heat", common);
+            Assert.Contains("m.freeCount", common);
+            Assert.Contains("so at most ${n} ${n === 1 ? 'thread fits' : 'threads fit'}", common);
         }
 
         [Fact]
         public void OneThreadIsAskedInTheSingular()
         {
-            Assert.StartsWith("1 thread asked, plus ", Cap.Refusal(1, 16, 32, LoadReading.Of(100), 0));
-            Assert.StartsWith("2 threads asked, plus ", Cap.Refusal(2, 16, 32, LoadReading.Of(100), 0));
-            Assert.Contains("refusing 1 thread", Cap.Refusal(1, 16, 32, LoadReading.Of(double.NaN), 0));
+            HeatReading ok = HeatReading.Of(HeatReading.Ok, "OK");
+            Slot none = Cap.SlotOf(QueueReading.Parse(FixedQueue.With("x · cores: 16-31"), FixedQueue.File), 0xFFFF0000UL);
+            Assert.StartsWith("1 thread asked is more than the 0 free cores: ", Cap.Refusal(1, none, ok, 0));
+            Assert.StartsWith("2 threads asked is more than the 0 free cores: ", Cap.Refusal(2, none, ok, 0));
+            Slot one = Cap.SlotOf(QueueReading.Parse(FixedQueue.With("x · cores: 16-30"), FixedQueue.File), 0xFFFF0000UL);
+            Assert.StartsWith("2 threads asked is more than the 1 free core (logical 31): ", Cap.Refusal(2, one, ok, 0));
+            Assert.StartsWith("1 thread asked, plus 1 thread granted", Cap.Refusal(1, one, ok, 1));
+            Assert.EndsWith("refusing 1 thread", Cap.Refusal(1, one, HeatReading.Of(HeatReading.Hot, "HOT"), 0));
             Assert.StartsWith("1 thread asked, but the affinity mask", CoreMask.ThreadsProblem(1, 0UL));
             Assert.StartsWith("3 threads asked, but the affinity mask", CoreMask.ThreadsProblem(3, 0b11UL));
         }

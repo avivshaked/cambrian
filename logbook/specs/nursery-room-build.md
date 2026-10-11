@@ -66,9 +66,11 @@ registry. A setting's meaning is never written twice.
 holds its files for writing. Reads take only the bytes added since the last poll, every 30 s by
 default.
 
-**The machine's cap is a setting the server enforces:** 16 of the 32 logical processors, as the owner
-ruled. A launch that would pass it is refused, with the load read as `% Processor Utility`. Re-stepping
-an episode for the tank screen counts against the cap, and never starts while a timing read is
+**The machine's cap is the queue and the heat, which the server reads.** The room starts work only on
+the free cores of its own slot in the machine's queue, and never when the heat check reads HOT, as the
+owner ruled on 2026-10-11. Its brief is `logbook/specs/nursery-room-queue-cap.md`. A launch that does
+not fit is refused, and the refusal names the line or the reading that refused it. Re-stepping an
+episode for the tank screen counts against the free cores, and never starts while a timing read is
 declared.
 
 **What the cap's reading counts.** The server turns the counter into processors in use as

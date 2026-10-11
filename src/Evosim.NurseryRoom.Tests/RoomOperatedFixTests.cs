@@ -160,7 +160,7 @@ namespace Evosim.NurseryRoom.Tests
         {
             port = FreePort();
             RoomSettings settings = RoomSettings.Parse(Where.SettingsJson(runsDir: "runs").Replace("\"port\":5179", "\"port\":" + port).Replace("artifacts/Evosim.Nursery/bin/Debug/net8.0/Evosim.Nursery.dll", "bin/nursery.dll"));
-            var room = new RoomContext(_fx.Root, settings, _fx.Main, _fx.Registry, Path.Combine(_fx.Dir, "activity-http.jsonl"), _fx.Launcher, _fx.Load, 32, _ => _fx.Build);
+            var room = new RoomContext(_fx.Root, settings, _fx.Main, _fx.Registry, Path.Combine(_fx.Dir, "activity-http.jsonl"), _fx.Launcher, _fx.Queue, _fx.Heat, 32, _ => _fx.Build);
             WebApplication app = Program.Create(room, Where.WwwRoot);
             app.Start();
             return app;

@@ -35,7 +35,7 @@ namespace Evosim.NurseryRoom.Tests
         public void ARoomWithNoCountGivenReadsItsLogicalCountFromTheSystemMask()
         {
             if (!OperatingSystem.IsWindows()) return;
-            var room = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, Path.Combine(_fx.Dir, "other-activity.jsonl"), _fx.Launcher, _fx.Load);
+            var room = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, Path.Combine(_fx.Dir, "other-activity.jsonl"), _fx.Launcher, _fx.Queue, _fx.Heat);
             Assert.Equal(SystemProcessors.Read(), room.SystemMask);
             Assert.Equal(CoreMask.Count(SystemProcessors.Read()), room.Logical);
         }
@@ -55,7 +55,7 @@ namespace Evosim.NurseryRoom.Tests
         [Fact]
         public void ACountThatDisagreesWithTheMaskIsRefused()
         {
-            Assert.Throws<ArgumentException>(() => new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, null, _fx.Launcher, _fx.Load, 8, null, 0xFFFFUL));
+            Assert.Throws<ArgumentException>(() => new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, null, _fx.Launcher, _fx.Queue, _fx.Heat, 8, null, 0xFFFFUL));
         }
 
         [Fact]
@@ -106,7 +106,7 @@ namespace Evosim.NurseryRoom.Tests
                 Assert.Contains("processor(s) 2", e.Message);
                 Assert.False(File.Exists(spec.LogFile));
                 // and the launcher a room makes for itself is given the room's mask, not a second reading
-                var room = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, Path.Combine(dir, "a.jsonl"), null, _fx.Load, null, null, 0x3UL);
+                var room = new RoomContext(_fx.Root, _fx.Room.Settings, _fx.Main, _fx.Registry, Path.Combine(dir, "a.jsonl"), null, _fx.Queue, _fx.Heat, null, null, 0x3UL);
                 var own = Assert.IsType<ProcessRunLauncher>(room.Launcher);
                 e = Assert.Throws<ArgumentException>(() => own.Start(spec));
                 Assert.Contains("processor(s) 2", e.Message);
@@ -122,6 +122,9 @@ namespace Evosim.NurseryRoom.Tests
     {
         private readonly Fx _fx = Fx.WithAffinity("0x3");   // two processors
         public void Dispose() => _fx.Dispose();
+
+        // the room's slot is the whole machine, so that the bound of two processors is what holds the threads
+        public ThreadsBeyondTheMaskTests() { _fx.Queue.Text = "## Running\n\n- the room (a test) · cores: 0-31 · room\n"; }
 
         private static string Launch(string name, int threads) =>
             Js.Serialize(new { recipe = "rounds/nursery/brain2-w5.json", name, threads, reason = "a test" });

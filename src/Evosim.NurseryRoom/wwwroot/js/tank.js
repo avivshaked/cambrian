@@ -153,7 +153,7 @@ function stepRefusal() {
   const d = plan.draws[sel.draw];
   if (!d || !d.tanks || sel.tank == null) return "the plan does not know this draw's tanks, so there is no tank to step";
   if (view && view.state === 'running') return 'this episode is being stepped now';
-  if (!lastRoom) return 'the room has not answered yet, so the cap cannot be checked';
+  if (!lastRoom) return 'the room has not answered yet, so its slot and the heat cannot be checked';
   if (lastRoom.stepRefusal) return lastRoom.stepRefusal.reason;
   return null;
 }
@@ -177,7 +177,7 @@ bindOps({
     const done = !!(view && view.state === 'done');
     ask({
       key: 'step', title: `${done ? 'Step again' : 'Step'}: run ${sel.run}, brain ${sel.brain}, draw ${sel.draw}, tank ${sel.tank}`, send: done ? 'STEP AGAIN' : 'STEP',
-      note: "Re-steps this exam episode with the nursery's own code, as a process of its own on one thread, pinned to the cores room.json names. It counts 1 thread against the cap while it lives, and its frames and result are written into the episode's cache folder. " +
+      note: "Re-steps this exam episode with the nursery's own code, as a process of its own on one thread, pinned to the free cores of the room's slot in the machine's queue. It counts 1 thread against them while it lives, and its frames and result are written into the episode's cache folder. " +
         (done ? 'A finished episode of this request is there already: the new one is made beside it, and the old files are kept.' : 'The verdict compares each net with the run\'s own number for the same brain and draw, bit for bit.'),
       run: reason => callOp('episode.step', { run: sel.run, brain: sel.brain, draw: sel.draw, tank: sel.tank, fresh: done, reason }),
       done: r => (r.cached ? 'served from the cache: a finished episode of this request is there already.' : `started (pid ${esc(r.pid)}). This page asks again every ${pollSeconds} s.`),
@@ -863,7 +863,7 @@ async function init() {
 
 onResize(() => { if (gone) return; islandKey = ''; renderChart(); renderTimeline(); if (model && !model.problem) setTime(t); dirty = true; });
 
-// The machine's load takes seconds to read: the screen's own reading does not wait for it.
+// The room's reading of the machine takes seconds (the heat check runs a script): the screen's own reading does not wait for it.
 mountMachine(r => { lastRoom = r; updateStep(); }).then(room => { if (room) pollSeconds = room.pollSeconds; });
 requestAnimationFrame(loop);
 await init();

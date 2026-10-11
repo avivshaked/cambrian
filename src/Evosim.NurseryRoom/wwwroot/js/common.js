@@ -242,25 +242,32 @@ export function bindOps(handlers) {
   }
 }
 
-/** What the load's title says: % Processor Utility can pass 100 under boost, and a person is shown it capped at 100 as Task Manager does, with the counter's reading here. The cap rule reads the raw value. */
-function loadTitle(percent) {
-  return `% Processor Utility as the counter read it: ${fmt(percent, 4)}${percent > 100 ? ' (shown as 100, as Task Manager does; the cap reads the counter\'s value)' : ''}`;
-}
+/** The heat verdict as the strip and a dialog say it: OK and WARN start work (WARN is worth watching); HOT and UNREADABLE refuse every start. */
+function heatRefuses(h) { return !h || (h.verdict !== 'OK' && h.verdict !== 'WARN'); }
 
 /**
- * The strip's machine part: the cap, the logical processors, and the load the room read (% Processor Utility as Task Manager
- * reports it, and the logical processors in use that makes of it). It reads again every poll. `onRoom(room)`, when given, is called with
- * each reading of /api/room as it is drawn, so that a screen need not ask for it a second time.
+ * The strip's machine part: the room's slot as the machine's queue gives it (its free cores, the threads the room has granted, and the lines that claim
+ * cores inside it), and the heat check's verdict. It reads again every poll. `onRoom(room)`, when given, is called with each reading of /api/room as it
+ * is drawn, so that a screen need not ask for it a second time.
  */
 export async function mountMachine(onRoom) {
   const host = document.getElementById('machine');
   if (!host) return null;
   const draw = r => {
     if (onRoom) onRoom(r);
-    const l = r.load || {};
-    const load = l.percent != null
-      ? `<span>load <span class="hi" title="${esc(loadTitle(l.percent))}">${esc(fmt(Math.min(l.percent, 100), 3))} %</span> · <span class="hi" title="the larger of the counter's reading (${l.read}) and the threads this room granted lately (${l.granted})">${l.inUse}</span> of <span class="hi">${r.logical}</span> in use</span>`
-      : `<span class="dim" title="${esc(l.problem || '')}">load not read</span>`;
+    const m = r.machine || {};
+    // The meter is the slot's usable cores; its fill is what other lines claim there and what the room has granted.
+    const busy = m.slotCount ? Math.min(1, (m.slotCount - m.freeCount + m.granted) / m.slotCount) : 1;
+    const slot = m.problem
+      ? `<span class="dim" title="${esc(m.problem)}">no slot in the queue</span>`
+      : `<span class="meter"><i style="width:${(100 * busy).toFixed(1)}%"></i></span>` +
+        `<span title="${esc(m.explain || '')}">slot <span class="hi">${esc(m.slot)}</span> · <span class="hi">${m.freeCount}</span> free${m.granted ? ` · <span class="hi">${m.granted}</span> granted` : ''}</span>`;
+    const claims = (m.claims || []).length
+      ? `<span class="dim" title="${esc(m.claims.map(c => `${c.line}: ${c.cores}${c.card ? ' · card' : ''}${c.note ? ' (' + c.note + ')' : ''}`).join('\n'))}">${m.claims.length} ${m.claims.length === 1 ? 'line claims' : 'lines claim'} cores in it</span>`
+      : '';
+    const card = (m.card || []).length ? `<span class="dim" title="${esc(m.card.join('\n'))}">card: ${esc(m.card.length === 1 ? m.card[0] : m.card.length + ' jobs')}</span>` : '';
+    const h = r.heat || {};
+    const heat = `<span title="${esc(h.line || '')}">heat <span class="hi">${esc(h.verdict || 'not read')}</span>${heatRefuses(h) ? ' — nothing is started' : ''}</span>`;
     // The coordinating session's timing-read declaration (the room only reads it): in force, or a file that counts as absent, said as it is.
     const tr = r.timingRead || {};
     const timing = tr.state === 'declared'
@@ -268,8 +275,7 @@ export async function mountMachine(onRoom) {
       : tr.state === 'stale' || tr.state === 'unparsable' || tr.state === 'unreadable'
         ? `<span class="dim" title="${esc((tr.note || '') + (tr.problem ? ' (' + tr.problem + ')' : ''))}">timing-read file: ${esc(tr.state)}${tr.state === 'unreadable' ? ' — no episode is stepped' : ', counts as absent'}</span>`
         : '';
-    host.innerHTML = `<span>machine</span><span class="meter"><u style="left:${(100 * r.capLogical / r.logical).toFixed(1)}%"></u></span>` +
-      `<span>cap <span class="hi">${r.capLogical}</span> of <span class="hi">${r.logical}</span> logical</span>${load}${timing}`;
+    host.innerHTML = `<span>machine</span>${slot}${claims}${card}${heat}${timing}`;
   };
   try {
     const r = await getRoom();
@@ -282,15 +288,21 @@ export async function mountMachine(onRoom) {
   }
 }
 
-/** The machine's cap and load as a launch dialog says it, in HTML (the dialog's `machine`): `room` is /api/room's answer, or null when it did not answer. */
+/**
+ * The room's slot and the heat as a launch dialog says them, in HTML (the dialog's `machine`): `room` is /api/room's answer, or null when it did not answer.
+ * With `fit`, the threads that fit: the free cores less those the room has granted.
+ */
 export function machineText(room, fit = false) {
-  if (!room) return 'The room did not answer, so the cap and the load could not be read, which refuses a launch.';
-  const l = room.load;
-  const free = l && l.percent != null ? Math.max(0, room.capLogical - l.inUse) : 0;
-  return `Cap ${room.capLogical} of ${room.logical} logical processors; ` +
-    (l && l.percent != null
-      ? `<span title="${esc(loadTitle(l.percent))}">${esc(fmt(Math.min(l.percent, 100), 3))} %</span> in use now (${l.inUse} processors)${fit ? `, so at most ${free} ${free === 1 ? 'thread fits' : 'threads fit'}` : ''}.`
-      : 'the load could not be read, which refuses a launch.');
+  if (!room) return 'The room did not answer, so its slot in the queue and the heat could not be read, which refuses a launch.';
+  const m = room.machine || {}, h = room.heat || {};
+  if (m.problem) return `${esc(m.problem.charAt(0).toUpperCase() + m.problem.slice(1))}, which refuses a launch.`;
+  const n = Math.max(0, m.freeCount - m.granted);
+  const heat = h.verdict === 'OK' ? 'The heat check reads OK.'
+    : h.verdict === 'WARN' ? 'The heat check reads WARN, which does not refuse; the heat is worth watching.'
+      : h.verdict === 'HOT' ? 'The heat check reads HOT, which refuses a launch.'
+        : 'The heat check cannot read, which refuses a launch.';
+  return `Slot ${esc(m.slot)} in ${esc(m.queue)}: <span title="${esc(m.explain || '')}">${m.freeCount} free ${m.freeCount === 1 ? 'core' : 'cores'}${m.freeCount ? ` (${esc(m.free)})` : ''}</span>` +
+    `${m.granted ? `, ${m.granted} already granted to the room's runs` : ''}${fit && !heatRefuses(h) ? `, so at most ${n} ${n === 1 ? 'thread fits' : 'threads fit'}` : ''}. ${heat}`;
 }
 
 /** Said under the reason box of every dialog that asks for one: where what is typed goes. */
@@ -321,8 +333,8 @@ export function ask(opts) {
     form.querySelector('[data-cancel]').addEventListener('click', () => form.remove());
     return;
   }
-  // `machine(room)` says what the machine's load is, in HTML the caller has escaped; the form opens at once with "reading the machine…" and is filled when
-  // /api/room answers (the load is a rate, and reading it takes seconds). A room that does not answer is said as that.
+  // `machine(room)` says the room's slot and the heat, in HTML the caller has escaped; the form opens at once with "reading the machine…" and is filled when
+  // /api/room answers (the heat check runs a script, which takes seconds when its reading is not kept). A room that does not answer is said as that.
   const noteHtml = (note || machine) ? `<p class="note">${note}${machine ? ' <span class="ask__machine dim">reading the machine…</span>' : ''}</p>` : '';
   form.innerHTML = `<div class="ask__title">${esc(title)}</div>${noteHtml}` +
     fields.map(f => `<label class="ask__f"><span>${esc(f.label || f.name)}</span>${input(f)}</label>`).join('') +

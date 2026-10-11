@@ -29,10 +29,17 @@ namespace Evosim.NurseryRoom.Tests
             return d;
         }
 
-        /// <summary>The room's settings as JSON: every key the room requires, the ones a test varies given.</summary>
-        public static string SettingsJson(string runs = "", string extra = "", string bind = "127.0.0.1", string runsDir = "scratch/nursery", string activityFile = "rounds/nursery/activity.jsonl", string affinity = "0xFFFF0000", string trialsDir = "scratch/nursery-trials") =>
-            "{\"port\":5179,\"bind\":\"" + bind + "\",\"pollSeconds\":30,\"capLogical\":16,\"runs\":[" + runs + "]," +
-            "\"dotnet\":\"dotnet\",\"nurseryDll\":\"artifacts/Evosim.Nursery/bin/Debug/net8.0/Evosim.Nursery.dll\",\"runsDir\":\"" + runsDir + "\",\"activityFile\":\"" + activityFile + "\",\"affinity\":\"" + affinity + "\",\"trialsDir\":\"" + trialsDir + "\"" + extra + "}";
+        /// <summary>
+        /// The room's settings as JSON: every key the room requires, the ones a test varies given. Its heat script is a file that is not there, so that a room
+        /// a test makes without a heat reader of its own reads the heat as unreadable and never runs the real script.
+        /// </summary>
+        public static string SettingsJson(string runs = "", string extra = "", string bind = "127.0.0.1", string runsDir = "scratch/nursery", string activityFile = "rounds/nursery/activity.jsonl", string affinity = "0xFFFF0000", string trialsDir = "scratch/nursery-trials", string queueFile = "scratch/machine/queue.md") =>
+            "{\"port\":5179,\"bind\":\"" + bind + "\",\"pollSeconds\":30,\"runs\":[" + runs + "]," +
+            "\"dotnet\":\"dotnet\",\"nurseryDll\":\"artifacts/Evosim.Nursery/bin/Debug/net8.0/Evosim.Nursery.dll\",\"runsDir\":\"" + runsDir + "\",\"activityFile\":\"" + activityFile + "\",\"affinity\":\"" + affinity + "\",\"trialsDir\":\"" + trialsDir + "\"," +
+            "\"queueFile\":\"" + queueFile + "\",\"heatScript\":\"" + NoHeatScript + "\"" + extra + "}";
+
+        /// <summary>The heat script the tests' settings name: not there, so the real one is never run.</summary>
+        public const string NoHeatScript = "scripts/no-heat-check-in-the-room-tests.ps1";
 
         public static RoomSettings Settings(params string[] runs) => RoomSettings.Parse(SettingsJson(string.Join(",", runs.Select(r => "\"" + r + "\""))));
     }
@@ -49,8 +56,8 @@ namespace Evosim.NurseryRoom.Tests
         [Fact]
         public void AMissingKeyIsRefusedByName()
         {
-            var e = Assert.Throws<InvalidDataException>(() => RoomSettings.Parse(Where.SettingsJson().Replace("\"capLogical\":16,", "")));
-            Assert.Contains("missing capLogical", e.Message);
+            var e = Assert.Throws<InvalidDataException>(() => RoomSettings.Parse(Where.SettingsJson().Replace("\"pollSeconds\":30,", "")));
+            Assert.Contains("missing pollSeconds", e.Message);
         }
 
         [Fact]
@@ -72,11 +79,12 @@ namespace Evosim.NurseryRoom.Tests
             Assert.Equal(5179, s.Port);
             Assert.Equal("127.0.0.1", s.Bind);
             Assert.Equal(30, s.PollSeconds);
-            Assert.Equal(16, s.CapLogical);
             Assert.Contains("scratch/nursery/pilot-deep-brain2", s.Runs);
             Assert.Equal("rounds/nursery/activity.jsonl", s.ActivityFile);
             Assert.Equal("scratch/nursery", s.RunsDir);
-            Assert.Equal(0xFFFF0000UL, s.Affinity);
+            Assert.Equal(0xFFFFFFCFUL, s.Affinity);   // every processor but 4 and 5: the bound the room never leaves
+            Assert.Equal("scratch/machine/queue.md", s.QueueFile);
+            Assert.Equal("scripts/temp-check.ps1", s.HeatScript);
             Assert.False(string.IsNullOrEmpty(s.Dotnet));
             Assert.False(string.IsNullOrEmpty(s.NurseryDll));
         }
@@ -88,6 +96,8 @@ namespace Evosim.NurseryRoom.Tests
         [InlineData("activityFile")]
         [InlineData("affinity")]
         [InlineData("trialsDir")]
+        [InlineData("queueFile")]
+        [InlineData("heatScript")]
         public void EachNewKeyIsRequiredAndNamedWhenMissing(string key)
         {
             using var doc = JsonDocument.Parse(Where.SettingsJson());

@@ -73,7 +73,7 @@ namespace Evosim.NurseryRoom.Tests.E2e
             string registry = Path.Combine(Fx.Main, "rounds", "nursery", "registry.jsonl");
             Directory.CreateDirectory(Path.GetDirectoryName(registry));
             File.Copy(Fx.Registry, registry);
-            Room = new RoomContext(Root, Fx.Room.Settings, Fx.Main, registry, Path.Combine(Fx.Dir, "activity.jsonl"), Ep.Launcher, Fx.Load, 32, _ => Fx.Build, null, Ep.Procs, Ep.Copier);
+            Room = new RoomContext(Root, Fx.Room.Settings, Fx.Main, registry, Path.Combine(Fx.Dir, "activity.jsonl"), Ep.Launcher, Fx.Queue, Fx.Heat, 32, _ => Fx.Build, null, Ep.Procs, Ep.Copier);
         }
 
         public string Full(string rel) => Fx.Full(rel);
