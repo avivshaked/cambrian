@@ -164,7 +164,7 @@ namespace Evosim.NurseryRoom.Tests.E2e
             b.Click("#list tr[data-key='2|entry']");
             b.WaitFor("document.querySelector('#list tr.sel').dataset.key === '2|entry'", "entry 2 selected");
             string rerun = OpenDialog(b, "#sel [data-op='run.rerun']", "rerun");
-            Assert.True(Regex.IsMatch(rerun, @"so at most 12 threads fit"), "the registry's RERUN dialog does not say how many threads fit: " + rerun);
+            Assert.True(Regex.IsMatch(rerun, @"so at most 16 threads fit\b"), "the registry's RERUN dialog does not say how many threads fit: " + rerun);   // the default queue: the slot's 16 cores, none claimed
             AssertReasonNote(b, "rerun", rerun);
             CancelDialog(b);
 
@@ -319,7 +319,7 @@ namespace Evosim.NurseryRoom.Tests.E2e
             Assert.DoesNotContain("This launch goes ahead", launch);
             Assert.Equal("LAUNCH", b.EvalString("document.querySelector('form.ask button[type=submit]').textContent"));
             Assert.Contains("launch brain2-w5", launch, StringComparison.OrdinalIgnoreCase);
-            Assert.Matches(@"so at most 12 threads fit\b", launch);
+            Assert.Matches(@"so at most 16 threads fit\b", launch);   // the default queue: the slot's 16 cores, none claimed
             AssertReasonNote(b, "launch", launch);
             CancelDialog(b);
 
