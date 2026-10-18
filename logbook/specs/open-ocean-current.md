@@ -27,11 +27,12 @@ integers m and n, so it joins exactly at both edges. Take a chosen set of about 
 L/10 = 30 m. Exclude (m, n) = (0, 0) and keep one of each ± pair. Each vector carries a cosine and a sine term.
 At the lowest wavenumbers, where most of the energy sits, use off-axis vectors only, (2, 1), (1, 2), (2, −1),
 (1, −2), (2, 2) and so on: a vector with m or n zero is a straight jet that wraps the square in one length, a closed
-conveyor until its phase drifts. On the card each mode's phasor is built from the two base phasors e^(2πix/L)
-and e^(2πiz/L) raised to integer powers, one complex multiply a mode and no trig.
+conveyor until its phase drifts. On the card each vector takes one sincos of its phase, on positions already folded into the square: the speed
+agent's probe found that cheaper on this card than building phasors by integer powers (logbook/specs/open-ocean-mode-probe/).
 
-**Three vertical shapes,** sin(qπη) for q = 1, 2, 3, as the streams carry three. A mode is a (vector, q) pair, so 20
-to 25 vectors give 60 to 75 modes; the probe says whether 80 holds the card's pace.
+**Three vertical shapes,** sin(qπη) for q = 1, 2, 3, as the streams carry three. A mode is a (vector, q) pair: 25 vectors
+give 75 modes. The probe measured 75 modes at about 1.4 times today's streams per point, about 0.15 ns, noise beside a
+step.
 
 **Time.** Each mode's phase and amplitude envelope advance at their own irrational rates, as the streams' terms do
 (`CurrentField.cs:2178-2186`), computed once per step on the host and read from a table on the card, as the
@@ -71,5 +72,4 @@ shore plus the fade leaves the fade the identity, and the first build ships with
 
 ## Open
 
-- The card probe's number, which sets 20 or 25 vectors.
 - The fade's width, swept when the shoals land.
