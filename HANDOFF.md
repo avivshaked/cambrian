@@ -226,19 +226,21 @@ first (D166, amending D164's order):
     into `r61-merged` with the launcher's lone step (00619cac), and `r61-p6103x2` resumed `r61-p6103x` alone from
     49,500 s and was stopped slow at 55,140 s by one blade whose 51 m part met more rows than a giant's list of 2,048
     and walked its cells. `GiantListCap` 32,768 (5747365b) left every bit in gates y1-y3
-    (`scratch/r61-giants/ygate.log`) and is merged, and `r61-p6103x3` resumes from 55,140 s to 72,000 s, launched at
-    08:14 on 2026-10-18 (`scratch/wt-merged/scratch/logs/r61-lone-p6103x3.log`). Its checks
-    report overflow and divergence without stopping, since the line carries both. The same kelp blades diverge, 20-27
+    (`scratch/r61-giants/ygate.log`) and is merged, and `r61-p6103x3` ran on to 70,160 s and `r61-p6103x4` from there
+    to 72,000 s, ended by budget on 2026-10-18 with 2,867 living; their checks report overflow and divergence without
+    stopping. The same kelp blades diverge, 20-27
     per 1,000 s, because the drag is stepped explicitly and its limiter is off at 0.01 s
     (`logbook/specs/r61-kelp-divergence.txt`). Round 62 lands a self-scale that does not compound and the drag limiter
-    at every step (D196). A world alone on the card runs at 1.6-1.7 times
+    at every step, the force capped per link and the torque by the welded body (D196, D199, D200); the speed agent
+    built it on `r62-blades` (b98823a7), and the card's copy waits for the coordinator's go. A world alone on the card runs at 1.6-1.7 times
     real time. In a group of four on one 8-core
     mask each got 0.7-1.1, the largest crowd least (the probe p62 in `logbook/specs/r61-engine-fixes.md`). Round 62's
-    screens try a separate block of cores for each world (D198). Worth reading at 72,000 s: scavengers evolved in
-    the control `r61-c6101x` (mouths 65 at 48,000 s, 398 at 55,500 s), and `r61-p6102x2`'s living fell from about
-    15,000 to 9,059. All three planted worlds
-    held grazers at 48,000 s (18, 10 and 10), which is why the 6103 pair runs too. Then the worlds stop for a talk
-    with the owner before the round is called finished. The pace guard runs in the merged build, and overflow and
+    screens try a separate block of cores for each world (D198). All six worlds ended at 72,000 s and are read in
+    `logbook/specs/r61-read/read-72000.txt`: P2 and C1 held, P1, P3 to P7 and L1 failed, S1 is unread, and B1 failed
+    on `r61-p6103x4`'s 488 diverged bodies alone. The grazers stayed at 8 to 59 a world yet killed 127 to 335 leaves a
+    year in years 6 to 8. In `r61-p6103x4` their kills rose to 1,226 a year as the leaves fell to 2,784, the one world
+    where P3 and P4 held. The 1,199 mouthed bodies in `r61-c6101x2` photosynthesise and kill nothing. Before the round
+    is called finished: a look in the theatre, a talk with the owner, then the write-up. The pace guard runs in the merged build, and overflow and
     divergence never stop a run (D197).
     On a heat stop the work waits an hour for the room to cool, then resumes from the checkpoint (the owner, 2026-10-17). Still to look at: theatre frames (whether the planted swimmers swim; at 23,000-28,000 s their jointed
     bodies moved no faster than rigid drifters) and the planted lines' own speeds from the positions, once the card is
@@ -276,9 +278,9 @@ first (D166, amending D164's order):
     compute and physics: a self-scale above 1 that module adds repeat in life, a thickness floor that keeps the volume
     small, and contact by a sphere of the part's half-diagonal (D114), so a 37 m ribbon shoves everything within 18 m.
     The owner ruled on the first two for round 62 (D196); contact by the half-diagonal is unchanged.
-  - **The card's driver update waits for the gap after round 61** (the owner asked on 2026-10-17 to be told when).
-    It goes in once round 61's extension has stopped at 72,000 s and before round 62 launches, with nothing on the
-    card, since the install resets the driver. Then the card tests and a short replay of a round 61 span against its
+  - **The card's driver update can go in now** (the owner was told on 2026-10-18 that round 61 has ended and the card
+    is free). It goes in before round 62 launches, with nothing on the card and Resolve closed, since the install
+    resets the driver. Then the card tests and a short replay of a round 61 span against its
     recorded digest; round 62 launches on the new driver only if the bits match, and its manifest records it.
   - **Round 62: branching coral on the oases (D194, the owner's ruling of 2026-10-16).** Before the build, two pieces
     of engine work on the card: measure the reefs' share of a step on a checkpoint, and compute the current's fade
@@ -836,6 +838,10 @@ rest.
     with its tests run by `scratch/room-cap/pass.ps1`.
 
 ### Other work and the disk
+
+**Git.** GitHub's main is one squash commit (8bb29ad8, merged 2026-10-18) on the history pushed before 2026-10-01, and local main matches it. The full local history is the local branch `archive/local-2026-10-18`, never pushed. A branch started before the squash (`r62-blades`, `r62-coral` and the rest) lands on main only by `git merge --squash`, or the old commits come back; the pre-push hook refuses them anyway. This repository's `user.email` is the GitHub noreply address. The pushed branch `squash/2026-10-18` is still on GitHub, and deleting it is the owner's call.
+
+**The scratch review** (`scratch/scratch-review/review.txt`) is approved and its deletes are done (`scratch/scratch-review/delete-log.txt`). Still to do: about 13 GB of named runs moved into `runs/` with the record's paths fixed, and about 60 files promoted to their homes with a privacy check. The coral's step 1 is on `r62-coral` (2559dc3f, in `scratch/wt-coral`); its full test suite waits for a free machine.
 
 Another session works on the story tools: `.claude/skills/story-resolve/`, `assets/`,
 `logbook/specs/story-resolve.md` and the scripts named story-resolve are left alone. Round 48's story
