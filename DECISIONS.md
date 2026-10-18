@@ -8621,3 +8621,30 @@ either law.
 **Rejected.** The force by the whole body's mass and centre velocity, as first built, for the flinging above. The
 force by the whole body against each part's own velocity, which needs a rule for sharing the cap among the parts and
 was not tested.
+
+### D201
+**The grazer dial search: four dials in order, the trickle off, on round 61's rules** · 2026-10-18
+
+**Status:** ruled by the owner on 2026-10-18, who took the coordinator's recommendations in
+`proposals/propose-r62-grazer-dials.md`. The build and the start follow D199, which the proposal had crossed; the owner
+confirmed D199 the same evening. It runs before round 62's coral (D194, D198).
+
+**Decision.** The search changes one dial at a time. In order, they are the consumer cell's upkeep (6 W per cubic metre), the
+mouth's reach to food (0.5 m), what eating keeps (carrion yield 0.8, waste 0.2), and the mouth's and claw's upkeep (0.1
+each). The cost of work is left out. Each dial is halved (a cost) or doubled (a yield or the reach) a step at a time
+until it overshoots, then set between the last two steps. A screen resumes a cousin of each of round 61's three planted
+worlds with the dial changed and the trickle off. It runs one year (6,000 s) beside a cousin with nothing changed. It overshoots when its living leaves fall below half the unchanged cousin's. It reads the bred grazers alive
+from lines a year old or more, the kills and joules kept per grazer, and the mouthed bodies that photosynthesise. The
+screens run on round 61's build, from a checkpoint where the leaves are plentiful and before any giant blade, so a
+change in the grazers comes from the dial alone. The values found are checked again on round 62's build before it
+launches.
+
+**Why.** Round 61's planted grazers starved on their endowment (`logbook/specs/r61-grazer-economy/`). They swim, and
+the stroke is billed at about 0.1 W, but the swimmer's body stands at 0.908 W: 0.65 W the consumer cell and 0.29 W
+the mouth and claw. A leaf kill eaten whole pays about 46 s of it, and the mouths kept 12 to 46% of the joules in the
+corpses grazers made. The order follows the size of each share. With the trickle off, a screen asks whether grazers
+breed by themselves.
+
+**Rejected.** Searching the cost of work first, which cannot pay a 0.9 W body. Round 62's build from 48,000 s, which
+D199 rules out: its new rules and seed 6103's giants would change the worlds beside the dial. Seed 6102 alone, where
+the one line bred, which would rest the values on one world.
