@@ -8745,3 +8745,31 @@ once can still be read.
 
 **Rejected.** Round 62 in the tank and the open ocean from round 63, which launches sooner but places the coral twice
 and spends one more round in a geometry the project is leaving.
+
+### D206
+**A plant keeps its matter: upkeep spends the energy and the unit stays in the body** · 2026-10-18
+
+**Status:** ruled by the owner on the evening of 2026-10-18, as part of round 62's open ocean (D204, D205). It
+amends D098's rule that used matter returns to the water, for photosynthetic tissue only.
+
+**Decision.**
+- When photosynthetic tissue pays its upkeep, the energy leaves as heat and the unit stays in the body, spent.
+- Fixation charges the body's own spent units first and draws spent matter from the water only for the rest.
+- A plant needs new matter from the water only to grow or to make a child. Its matter returns to the water at death,
+  through the corpse.
+- Exudation (D070) stays, at a smaller fraction that a screen sets. It leaves charged, so a plant cannot take it back
+  until the water's bacteria have spent it (remineralisation), as in the ocean, where the bacteria and not the algae
+  take up what algae exude.
+- Other tissue burns as now and releases its spent units into the water. A body with both releases only what its
+  other tissue spends.
+
+**Why.** Every living cell burnt charged matter and released the spent unit where it stood, so a crowd of leaves
+fixed its own releases again and lived wherever it drifted. Rounds 60 and 61 filled their open water that way
+(logbook/0143, logbook/0145). D098's rule was needed while no other source fed matter into the ecology. The fed
+islands (D175) now are that source, so the rule can go for plants. A plant retains its nutrients and respires its
+energy away. A plant that drifts into the desert can live on light but cannot grow or breed, so breeding happens
+where the fountains are, and the leaves' number is capped by the matter the world holds. Matter moves between the
+water's cells as it does now.
+
+**Rejected.** Making spent matter sink toward the floor, where the desert's burial would take it, which changes the
+water's transport and acts on the symptom.
