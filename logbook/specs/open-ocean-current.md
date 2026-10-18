@@ -25,6 +25,10 @@ the floor does.
 integers m and n, so it joins exactly at both edges. Take a chosen set of about 20 to 25 vectors with
 2 ≤ |(m, n)| ≤ 10, spread over directions so that no direction dominates: wavelengths from L/2 = 150 m down to
 L/10 = 30 m. Exclude (m, n) = (0, 0) and keep one of each ± pair. Each vector carries a cosine and a sine term.
+At the lowest wavenumbers, where most of the energy sits, use off-axis vectors only, (2, 1), (1, 2), (2, −1),
+(1, −2), (2, 2) and so on: a vector with m or n zero is a straight jet that wraps the square in one length, a closed
+conveyor until its phase drifts. On the card each mode's phasor is built from the two base phasors e^(2πix/L)
+and e^(2πiz/L) raised to integer powers, one complex multiply a mode and no trig.
 
 **Three vertical shapes,** sin(qπη) for q = 1, 2, 3, as the streams carry three. A mode is a (vector, q) pair, so 20
 to 25 vectors give 60 to 75 modes; the probe says whether 80 holds the card's pace.
@@ -39,28 +43,33 @@ tuned by eye in the theatre). The whole field is scaled to an RMS of 0.1 m/s ove
 
 ## Round the shoals
 
-A shoal must be an island in the stream function, so that water goes round it. Taper the horizontal pattern
-toward a constant where the water is shallow: multiply the potential's horizontal part by a smooth factor
-s(h) = smoothstep(h_low, h_high, h), with h_low = the shoal's top depth and h_high = about 6 m. Over a shoal's top the
-pattern is flat, so the water there barely moves sideways, and the flow is forced round the shoal's edge, along its
-depth contours.
+A shoal must be an island in the stream function, so that water goes round it. The taper already exists as the
+shore fade of the beach spec, section 3 (`CurrentField.ShoreFade`, `FadedPotential`: A' = f(d)·m(d/D)·A, the depth
+factor m cancelling the stretch of the mapped coordinate), and it is reused as it stands. Over a shoal's top the
+potential is flat, so the water there barely moves sideways and goes round the shoal's edge, along its depth
+contours.
 
-**A speed cap over the shoals.** Where the taper turns, the flow squeezes and speeds up. The cap, about 0.15 m/s
-where h < h_high, is built into the potential, by limiting how steeply the taper may turn. It is never applied by
-scaling the velocity afterwards, because scaling a curl field breaks its zero divergence and with it the matter
-books. Whether a clamp of the taper's slope or a second, local term is simpler on the card is the speed agent's call.
+**The speed cap is the fade's width.** Where the fade turns, the flow squeezes and speeds up, at about |A| divided
+by the fade's width. The cap is stated against the open water's own figure: the fastest flow over a shoal's shelf
+no faster than the open water's fastest (or the same at the 99th percentile). The fade's width meets it, a property
+of the potential, so the field stays a curl and the matter books stay closed; no clamp is applied to the velocity.
+In round 45's tank a 15 m fade reached 4.5 times the RMS on the shelf and a 40 m fade 0.95, against about 4 in open
+water, so the width is set by a sweep when the shoals land. Until then, a bed that never comes shallower than the
+shore plus the fade leaves the fade the identity, and the first build ships with it off, bit for bit.
 
 ## Checks before it runs a round
 
 1. Divergence at a grid of points, to machine precision.
 2. No flow through the bed or the surface at any point.
-3. Exact match across each join: velocity at x = 0 and x = L, and likewise z.
-4. Speed: RMS 0.1 m/s over the water, and no point over a shoal above the cap.
+3. A match across each join, at a tolerance: positions are folded into [0, L) before evaluation, and in float the
+   phase at x = L is not bit-equal to the phase at 0.
+4. Speed: RMS 0.1 m/s over the water, and over each shoal's shelf no faster than the open water's fastest.
 5. A tracer screen: passive particles released over one oasis, counted over the others after 6,000 s, against the
    tank's streams on round 61's map, so the mixing is compared as well as the shape.
 6. The card's double kernel equals the CPU solver, as for every field.
+7. The mean velocity over the square is zero, so nothing flows round the torus as a whole.
 
-## Open, for the speed agent's reply
+## Open
 
-- The probe's number, which sets 20 or 25 vectors.
-- Whether the cap is cheaper as a clamp of the taper or as a second, local potential term.
+- The card probe's number, which sets 20 or 25 vectors.
+- The fade's width, swept when the shoals land.
