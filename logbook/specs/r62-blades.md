@@ -178,6 +178,66 @@ Two further changes would make it safe for any chain, and each would need measur
 One question is not mine to settle: whether D198's grazer cousins, resumed from round 61's planted worlds, run
 under D196.
 
+## What was built after D199
+
+The owner ruled D199 on 2026-10-18: reading three, and a limiter rebuilt around the whole welded body. The speed
+agent built both on the branch r62-blades, off r61-merged 5747365b, as commit eee39b05. Three switches carry
+them, and each is off by default.
+
+- `DevelopmentLimits.ScaleLengthensOnce` is reading three. Development keeps the
+  edges on the path from the root. When it follows an edge that path has taken already, an axis the edge
+  lengthens is held where it was, and an axis it shortens keeps shortening to the floor.
+- `RunConfig.DragLimitByWeldedBody` is the rebuilt limiter.
+- `RunConfig.DragLimitAtEveryStep` opens the limiter's gate at the 0.01 s step.
+
+The farm's settings for the three are EVOSIM_SCALE_LENGTHENS_ONCE, EVOSIM_DRAG_LIMIT_WELDED and
+EVOSIM_DRAG_LIMIT_ALWAYS.
+
+With all three off, the build steps round 61's bodies to the bit. The ladder's columns without the new limiter
+match the table above line for line, 56 lines of 56. The fast suites pass, apart from failures the base build
+shares. Every switch is hashed, though, so a round 61 config must have the three fields written in before this
+build will read it. The two config fixtures were re-recorded that way.
+
+### The limiter caps the force by each part and the torque by the welded body
+
+As first built, the limiter capped both by the welded body. The force was held to the body's mass times the
+speed of its centre of mass. That held the long chains, but it failed on the short blades that reading three
+grows. Started rolling about its long axis at 100 radians a second at the 0.02 s step, every one of them ran
+away within seven steps.
+
+A step-by-step trace of body 108599 shows how. The torque cap stopped the roll in one step, as designed. But a
+rolling blade's centre barely moves while each of its parts crosses the water at speed. Their drag forces summed
+to a large net force. The cap, measured against the centre's speed, let it through, and it threw the blade to
+182 m a second in that one step.
+
+The owner chose the alternative the same day (D200). The force is capped part by part, by each part's own mass and
+speed, as the old limiter capped it. The torque is summed over the welded body about its centre of mass. It is
+capped on each of the body's principal axes, by that axis's moment of inertia and the spin about it. That is now
+what `DragLimitByWeldedBody` does, as commit b98823a7.
+
+Its ladder matches the probe's line for line. Under it, at 0.02 s, five of the eight reading-three blades hold to
+100 radians a second on every axis. Two run away only from 100, and 134411 runs away from 50. At 0.01 s, seven
+hold to 100, and 134411 runs away from 50. The rolling blade is no longer flung. Its root still reaches 112 m a
+second for one step, and the roll swings back to 47 radians a second the opposite way. The spin then settles to
+under 2 within twelve steps.
+
+### What round 62 still needs built
+
+- The card needs its own copy of the welded limiter. The card's kernel has its own copy of the per-link law. Until it
+  carries the welded one too, the card refuses a world with the switch on. The work is to note each part's force
+  cap in the kernel's link loop. After the loop, each creature's thread finds its welded bodies, sums their
+  torques and inertias, and finds the principal axes with the same Jacobi rotations. Every product in it is
+  written so the card cannot fuse it. The test that runs the double-precision kernel on ILGPU's CPU accelerator
+  against the solver must then pass with the switch on, at both steps. My estimate is two to three hours of agent work
+  and a quarter of an hour of CPU tests. After that comes about an hour alone on the card, for the identity
+  gates at two group sizes on the coordinator's go. One risk is pace. Each thread holds about 2 kB more scratch
+  in double for a 16-link body, and the card's pace falls as a thread's local memory grows (inference).
+- The Dynamics run fixture (`r60fix-s4`) is already unreadable on the base build. It needs recording on the
+  round 62 build.
+- A cousin resumed from a round 61 checkpoint needs a config with the three fields written in. Under reading
+  three, every kelp blade shortens at the first step after the load, because a resumed world develops every body
+  again from its genome. What the solver makes of parts that change size under a stored pose is untested.
+
 ## Files
 
 The numbers above come from the files in the folder beside this note, [r62-blades/](r62-blades/).
@@ -188,6 +248,12 @@ The numbers above come from the files in the folder beside this note, [r62-blade
   radians a second with and without the limiter, and from rest with it.
 - The census's output is in recursion-census.txt. The script that counted it is
   [scripts/reads/r62-recursion-census.py](../../scripts/reads/r62-recursion-census.py).
+- The ladders after D199, on the r62-blades build, are limiter-r62-compounding.txt and limiter-r62-three.txt for
+  the limiter as first built. The probe's ladders, with the force capped per part, are limiter-r62p-compounding.txt
+  and limiter-r62p-three.txt.
+- The rolling blade is body 108599 at 0.02 s, from 100 radians a second about its long axis. Its trace is in
+  limtrace-r62-welded.txt as first built, and in limtrace-r62-link.txt under the per-link limiter. Under the limiter
+  as now built, it is in limtrace-r62b-welded.txt.
 
 Two working files are not committed. The probe's change to development was a test, and nothing was built from it.
 The harness that stepped the bodies was a one-off diagnostic. Both sit in the speed agent's working folder,

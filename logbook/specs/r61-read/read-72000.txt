@@ -1,0 +1,224 @@
+== round 61's reader: year 6000 s, end 72000 s, islands as seeded at 100 s, grazer = mouth
+
+== r61-p6101x2: seed 6101, configHash 119d0f3001f59ecc, commit 41086157, ended/budget, reach 72000 s; r61-p6101x2/2026-10-17-195204-119d0f30 <- r61-p6101x/2026-10-17-134625-119d0f30 <- r61-p6101/2026-10-16-185806-119d0f30
+   dose: influx 3.6 units/s, budget 45000 units
+   islands as seeded (dump at 100 s): 385 of 3521 water columns (0.11) in 6 islands; the largest, in columns: #0 136, #5 122, #4 58, #3 28, #1 26, #2 15; nearest island column centre to the glass 30.1 m (margin 30 m)
+        t  alive  leaf  stom   jnt mouth  graz  empty on-isl isl>=5% top islands              desert  <b-e  standing bur/inf top line leafkills  migr m-mth m-grz m-leaf m-nph lines2+
+     6000    774   630    50    99    12    12   0.79   0.62       3 0.37 0.14 0.06 0.02     0.00021  0.54      5859    2.77     0.60         2    81     0     0     52     0    3/11
+    12000   2414  1733   168   522     8     8   0.59   0.55       4 0.30 0.13 0.06 0.05     0.00026  0.48      8298    0.89     0.93        36   611     1     1    464     1     1/7
+    18000   4424  3927    77   421    19    19   0.45   0.56       3 0.25 0.14 0.10 0.04     0.00030  0.45     12088    0.83     0.98        48   981     0     0    743     0     1/7
+    24000   6670  5949   319   424    14    14   0.36   0.50       3 0.19 0.15 0.10 0.03     0.00025  0.51     15941    0.83     1.00       154  1074     1     1    968     1     1/4
+    30000   7809  6991   352   476    19    16   0.26   0.46       3 0.16 0.16 0.07 0.04     0.00026  0.49     19356    0.85     1.00        98  1853     1     1   1565     1     1/2
+    36000   9297  8038   836   442    14    11   0.23   0.41       3 0.16 0.14 0.06 0.03     0.00024  0.55     22300    0.87     1.00       206  1759     2     0   1579     0     1/5
+    42000   8821  6789  1615   575    12    12   0.17   0.33       2 0.13 0.12 0.05 0.02     0.00021  0.60     24775    0.89     1.00       172  1583     0     0   1344     0     1/1
+    48000   8511  6444  1665   543    18    14   0.17   0.32       2 0.13 0.11 0.04 0.03     0.00020  0.62     26667    0.92     1.00       160  1301     0     0    955     1     1/5
+    54000   8837  7073  1354   532    54     4   0.14   0.29       2 0.11 0.10 0.04 0.02     0.00019  0.64     28326    0.93     1.00       157  1110     3     1    842     1     1/2
+    60000   7960  6505   991   537    59    11   0.13   0.30       3 0.11 0.09 0.05 0.02     0.00019  0.65     27571    1.03     1.00       126  1443     6     0   1161     0     1/4
+    66000   8414  7100  1054   306    37    15   0.15   0.28       2 0.10 0.10 0.04 0.02     0.00019  0.65     28137    0.97     1.00       191  1270     5     2   1044     2     1/6
+    72000   8141  7088   818   254    53    11   0.18   0.29       2 0.11 0.09 0.05 0.02     0.00020  0.65     27065    1.05     1.00       188  1246     5     0   1092     1     1/3
+
+== r61-c6101x2: seed 6101, configHash 701d6224c27ce74c, commit 41086157, ended/budget, reach 72000 s; r61-c6101x2/2026-10-17-195204-701d6224 <- r61-c6101x/2026-10-17-134625-701d6224 <- r61-c6101/2026-10-16-185806-701d6224
+   dose: influx 3.6 units/s, budget 45000 units
+   islands as seeded (dump at 100 s): 385 of 3521 water columns (0.11) in 6 islands; the largest, in columns: #0 136, #5 122, #4 58, #3 28, #1 26, #2 15; nearest island column centre to the glass 30.1 m (margin 30 m)
+        t  alive  leaf  stom   jnt mouth  graz  empty on-isl isl>=5% top islands              desert  <b-e  standing bur/inf top line leafkills  migr m-mth m-grz m-leaf m-nph lines2+
+     6000    768   667    18    91     0     0   0.81   0.60       3 0.33 0.15 0.07 0.04     0.00020  0.55      5790    2.79     0.64         0    98     0     0     67     0    2/11
+    12000   3111  2919    72   120     0     0   0.53   0.58       3 0.26 0.12 0.12 0.05     0.00027  0.47      8426    0.88     0.82         0   637     0     0    605     0     1/7
+    18000   5607  5355   193    67     0     0   0.42   0.57       3 0.24 0.19 0.08 0.03     0.00029  0.45     12355    0.82     0.80         0  1070     0     0   1016     1     1/7
+    24000   7331  6906   244   181     0     0   0.37   0.53       3 0.20 0.17 0.09 0.04     0.00029  0.44     15425    0.86     0.92         0  1159     0     0   1120     1     1/7
+    30000   8784  8162   361   264     0     0   0.25   0.48       3 0.19 0.14 0.08 0.05     0.00025  0.51     18180    0.87     0.94         0  1586     0     0   1537     4     1/8
+    36000  10590  9910   608    73     5     0   0.24   0.44       3 0.20 0.12 0.07 0.03     0.00022  0.62     21855    0.83     0.95         0  1933     0     0   1868     6     2/5
+    42000  10445  9460   929    57    56     0   0.17   0.34       3 0.17 0.07 0.06 0.02     0.00020  0.65     24743    0.87     0.94         0  2131    10     0   2060     5     3/4
+    48000  11544 10044  1309   195    42     0   0.15   0.32       2 0.16 0.08 0.04 0.02     0.00019  0.67     26266    0.93     0.92         0  1878    11     0   1779    23     2/4
+    54000  11888 10158  1544   186   166     0   0.16   0.30       2 0.15 0.07 0.05 0.02     0.00019  0.68     27792    0.93     0.90         0  1797    15     0   1623    66     2/3
+    60000  11037  9109  1719   213   129     0   0.14   0.30       3 0.13 0.07 0.06 0.02     0.00019  0.68     26608    1.05     0.89         0  2044    10     0   1826   104     2/2
+    66000  11993 10031  1908    55   428     0   0.14   0.29       2 0.14 0.06 0.05 0.02     0.00018  0.68     26945    0.98     0.87         0  1777    44     0   1524   130     2/2
+    72000  10377  8648  1600   128  1199     0   0.20   0.29       3 0.13 0.07 0.06 0.02     0.00019  0.67     25730    1.06     0.88         0  1782    81     0   1525   167     2/2
+
+== r61-p6102x2: seed 6102, configHash 119d0f3001f59ecc, commit 41086157, ended/budget, reach 72000 s; r61-p6102x2/2026-10-17-195204-119d0f30 <- r61-p6102x/2026-10-17-134625-119d0f30 <- r61-p6102/2026-10-16-185806-119d0f30
+   dose: influx 3.6 units/s, budget 45000 units
+   islands as seeded (dump at 100 s): 385 of 3521 water columns (0.11) in 6 islands; the largest, in columns: #0 136, #5 122, #4 58, #3 28, #1 26, #2 15; nearest island column centre to the glass 30.1 m (margin 30 m)
+        t  alive  leaf  stom   jnt mouth  graz  empty on-isl isl>=5% top islands              desert  <b-e  standing bur/inf top line leafkills  migr m-mth m-grz m-leaf m-nph lines2+
+     6000    526   322     3   201     8     8   0.88   0.78       3 0.47 0.24 0.08 0.00     0.00021  0.55      5147    2.80     0.34         0    83     0     0     42     0     1/9
+    12000    625   421     9   201    11    11   0.85   0.78       3 0.40 0.23 0.15 0.01     0.00027  0.48      5050    1.00     0.33         2    69     1     1     30     1    2/10
+    18000   1402  1067    16   326     9     9   0.81   0.79       3 0.43 0.18 0.13 0.05     0.00024  0.51      6040    0.96     0.32        48   145     0     0     90     0    2/12
+    24000   2304  1730    14   562     5     5   0.71   0.71       4 0.31 0.18 0.13 0.07     0.00023  0.51      7306    0.94     0.41        38   140     0     0     57     0    3/10
+    30000   4205  3947    17   243     7     7   0.51   0.59       4 0.32 0.12 0.07 0.06     0.00028  0.46      9246    0.91     0.79        99   872     0     0    800     0     3/6
+    36000   7954  7842    66    46    13    13   0.32   0.49       3 0.22 0.11 0.10 0.04     0.00029  0.44     12889    0.84     0.90       138  1620     3     3   1599     3     1/5
+    42000  12286 12022   238    28    19    19   0.15   0.38       3 0.15 0.09 0.09 0.02     0.00026  0.46     17487    0.80     0.96       285  2860     1     1   2809     1    1/10
+    48000  13735 13567   156    13    10    10   0.14   0.40       3 0.15 0.12 0.07 0.04     0.00023  0.59     21250    0.83     1.00       335  3021     0     0   2965     0     1/6
+    54000  12870 12671   189    12    10    10   0.12   0.32       2 0.12 0.12 0.04 0.03     0.00019  0.68     25268    0.82     1.00      1077  2760     0     0   2724     0     1/2
+    60000   9987  9808   163    12    11    11   0.09   0.30       3 0.11 0.09 0.05 0.03     0.00019  0.67     26290    0.95     1.00       473  2282     0     0   2241     0     1/2
+    66000   9960  9654   294    14    11    11   0.12   0.30       2 0.11 0.10 0.05 0.02     0.00020  0.64     27875    0.93     1.00       189  1673     0     0   1629     0     1/1
+    72000   9059  8535   509    15    11    11   0.16   0.29       2 0.10 0.10 0.05 0.02     0.00019  0.66     27060    1.04     1.00       265  1601     0     0   1561     0     1/5
+
+== r61-c6102x2: seed 6102, configHash 701d6224c27ce74c, commit 41086157, ended/budget, reach 72000 s; r61-c6102x2/2026-10-17-195204-701d6224 <- r61-c6102x/2026-10-17-134625-701d6224 <- r61-c6102/2026-10-16-185806-701d6224
+   dose: influx 3.6 units/s, budget 45000 units
+   islands as seeded (dump at 100 s): 385 of 3521 water columns (0.11) in 6 islands; the largest, in columns: #0 136, #5 122, #4 58, #3 28, #1 26, #2 15; nearest island column centre to the glass 30.1 m (margin 30 m)
+        t  alive  leaf  stom   jnt mouth  graz  empty on-isl isl>=5% top islands              desert  <b-e  standing bur/inf top line leafkills  migr m-mth m-grz m-leaf m-nph lines2+
+     6000    590   324     0   266     0     0   0.87   0.78       3 0.43 0.30 0.06 0.00     0.00019  0.57      5064    2.83     0.34         0    86     0     0     43     0    1/11
+    12000    861   529     8   324     0     0   0.83   0.77       3 0.45 0.20 0.11 0.01     0.00024  0.51      5128    1.00     0.29         0    90     0     0     33     0     3/9
+    18000   1459   870    11   579     0     0   0.80   0.81       3 0.47 0.17 0.17 0.00     0.00022  0.53      6370    0.94     0.35         0   204     0     0     53     0     2/8
+    24000   1734  1094     6   636     0     0   0.75   0.72       3 0.39 0.17 0.15 0.01     0.00023  0.51      7301    0.96     0.34         0   178     0     0     57     0    3/11
+    30000   2238  1628     9   604     0     0   0.68   0.71       3 0.38 0.18 0.13 0.01     0.00025  0.50      8148    0.96     0.29         0   458     0     0    281     1     3/8
+    36000   3541  3005    16   523     0     0   0.57   0.63       3 0.30 0.15 0.14 0.02     0.00026  0.49      9806    0.92     0.40         0   447     0     0    328     0    3/10
+    42000   4862  4233    51   580     0     0   0.46   0.52       3 0.27 0.11 0.10 0.02     0.00031  0.44     11658    0.92     0.50         0   885     0     0    763     0     2/9
+    48000   6424  5412   244   780     0     0   0.42   0.59       3 0.25 0.16 0.10 0.05     0.00027  0.46     14043    0.89     0.59         0  1571     0     0   1379     7     3/9
+    54000   7632  6474   544   644     1     0   0.35   0.51       3 0.18 0.18 0.09 0.03     0.00024  0.51     17480    0.84     0.68         0  1474     0     0   1282    39     4/9
+    60000   7912  6657   741   538     0     0   0.29   0.53       3 0.19 0.14 0.14 0.03     0.00022  0.59     19202    0.92     0.84         0  1668     0     0   1487    44     3/9
+    66000  10132  8133  1384   672     0     0   0.26   0.46       3 0.16 0.13 0.12 0.04     0.00019  0.69     22575    0.85     0.87         0  1700     0     0   1453   117     2/8
+    72000   9203  7460  1241   545     3     0   0.28   0.40       3 0.13 0.12 0.11 0.03     0.00020  0.67     23747    0.95     0.89         0  1679     0     0   1442   117     2/6
+
+== r61-p6103x4: seed 6103, configHash 119d0f3001f59ecc, commit 5747365b, ended/budget, reach 72000 s; r61-p6103x4/2026-10-18-124040-119d0f30 <- r61-p6103x3/2026-10-18-071702-119d0f30 <- r61-p6103x2/2026-10-18-043434-119d0f30 <- r61-p6103x/2026-10-18-004226-119d0f30 <- r61-p6103r/2026-10-17-130104-119d0f30 <- r61-p6103/2026-10-17-045701-119d0f30
+   dose: influx 3.6 units/s, budget 45000 units
+   islands as seeded (dump at 100 s): 385 of 3521 water columns (0.11) in 6 islands; the largest, in columns: #0 136, #5 122, #4 58, #3 28, #1 26, #2 15; nearest island column centre to the glass 30.1 m (margin 30 m)
+   note: lineage's living differs from stats' alive by up to 1 (at 60000 s)
+        t  alive  leaf  stom   jnt mouth  graz  empty on-isl isl>=5% top islands              desert  <b-e  standing bur/inf top line leafkills  migr m-mth m-grz m-leaf m-nph lines2+
+     6000    419   270     3   148    17    17   0.89   0.73       2 0.50 0.23 0.00 0.00     0.00021  0.55      5735    2.77     0.47         6    34     0     0     24     0    1/14
+    12000    596   412    11   176    12    12   0.86   0.74       3 0.39 0.20 0.14 0.01     0.00025  0.50      5518    1.01     0.42        24    45     0     0     41     0    1/12
+    18000    999   820    27   153    10    10   0.86   0.82       3 0.39 0.22 0.21 0.01     0.00019  0.55      5843    0.99     0.32        10    58     0     0     57     0    1/10
+    24000   1392  1156    88   149    11    11   0.78   0.74       3 0.33 0.21 0.20 0.00     0.00021  0.53      6949    0.95     0.29        20    90     2     2     76     2     2/6
+    30000   2685  2315   179   190     8     8   0.66   0.66       3 0.22 0.21 0.20 0.02     0.00022  0.53      8864    0.92     0.34        47   437     0     0    422     0    2/10
+    36000   4376  3684   323   373    13    13   0.49   0.62       3 0.22 0.22 0.14 0.02     0.00025  0.50     12167    0.85     0.52       127   741     0     0    692     2    2/14
+    42000   6103  5281   520   304    15    14   0.39   0.51       3 0.23 0.14 0.10 0.02     0.00027  0.47     16330    0.81     0.64       133  1137     2     2   1067     5     2/8
+    48000   7706  6662   728   322    10    10   0.29   0.53       3 0.24 0.17 0.07 0.02     0.00027  0.45     19066    0.88     0.74       238  1362     0     0   1324     1     2/6
+    54000   7493  6495   739   262     8     8   0.23   0.38       3 0.15 0.14 0.06 0.02     0.00029  0.41     20067    0.96     0.74       386   923     0     0    902     2     1/6
+    60000   5368  4527   483   367    13    13   0.20   0.34       2 0.19 0.08 0.05 0.01     0.00026  0.48     17186    1.13     0.59       725   641     0     0    636     2     1/8
+    66000   4442  4036   286   122    17    14   0.21   0.27       2 0.13 0.10 0.03 0.01     0.00028  0.44     16539    1.03     0.68       940   482     0     0    475     0     1/5
+    72000   2867  2784    25    57    13    13   0.39   0.20       1 0.13 0.02 0.02 0.01     0.00029  0.45     12913    1.16     0.64      1226   251     0     0    246     0     1/7
+
+== r61-c6103x: seed 6103, configHash 701d6224c27ce74c, commit 1d142557, ended/budget, reach 72000 s; r61-c6103x/2026-10-18-004226-701d6224 <- r61-c6103/2026-10-17-045701-701d6224
+   dose: influx 3.6 units/s, budget 45000 units
+   islands as seeded (dump at 100 s): 385 of 3521 water columns (0.11) in 6 islands; the largest, in columns: #0 136, #5 122, #4 58, #3 28, #1 26, #2 15; nearest island column centre to the glass 30.1 m (margin 30 m)
+        t  alive  leaf  stom   jnt mouth  graz  empty on-isl isl>=5% top islands              desert  <b-e  standing bur/inf top line leafkills  migr m-mth m-grz m-leaf m-nph lines2+
+     6000    400   271     5   124     0     0   0.90   0.75       2 0.52 0.21 0.01 0.01     0.00019  0.57      5584    2.80     0.49         0    34     0     0     21     0    1/12
+    12000    559   399    10   152     0     0   0.87   0.76       3 0.37 0.25 0.14          0.00023  0.52      5798    0.99     0.41         0    37     0     0     22     0     0/8
+    18000   1024   908     4   112     0     0   0.84   0.79       3 0.30 0.28 0.21 0.00     0.00021  0.54      6476    0.97     0.36         0   100     0     0     82     0     1/8
+    24000   1578  1502     2    75     0     0   0.75   0.67       3 0.28 0.22 0.16 0.01     0.00022  0.52      7598    0.95     0.48         0   235     0     0    220     0     2/6
+    30000   2382  2318    13    52     0     0   0.65   0.62       3 0.27 0.17 0.14 0.03     0.00025  0.50      8874    0.94     0.48         0   533     0     0    528     0     2/5
+    36000   3679  3495    44   145     0     0   0.52   0.60       3 0.23 0.17 0.15 0.03     0.00028  0.47     10505    0.93     0.47         0   823     0     0    811     0     3/7
+    42000   4493  4212    41   242     0     0   0.39   0.47       3 0.17 0.14 0.13 0.02     0.00032  0.41     12450    0.91     0.42         0  1120     0     0   1083     0     3/6
+    48000   5772  5427   179   170     0     0   0.36   0.54       3 0.19 0.19 0.11 0.02     0.00029  0.43     14195    0.92     0.50         0  1395     0     0   1368     2     3/6
+    54000   8356  7739   504   115     0     0   0.28   0.46       3 0.20 0.14 0.09 0.02     0.00024  0.53     17679    0.84     0.82         0  1291     0     0   1255     2     3/5
+    60000   9093  8351   632   112     2     0   0.20   0.39       3 0.15 0.14 0.06 0.03     0.00019  0.64     19977    0.90     0.95         0  1810     0     0   1750     1     2/7
+    66000  11233  9437  1503   317     3     0   0.16   0.34       2 0.14 0.11 0.05 0.02     0.00018  0.70     23711    0.83     0.95         0  1643     0     0   1358     3     2/4
+    72000  10560  9274  1117   185     2     0   0.17   0.28       2 0.10 0.09 0.05 0.02     0.00018  0.68     24578    0.96     0.96         0  1807     1     0   1457    18     1/5
+
+== seed 6101: r61-p6101x2 (planted) beside r61-c6101x2 (control); each cell planted/control
+        t       alive        leaf     mouth       empty      on-isl isl>=5%    top line
+     6000     774/768     630/667      12/-   0.79/0.81   0.62/0.60     3/3   0.60/0.64
+    12000   2414/3111   1733/2919       8/-   0.59/0.53   0.55/0.58     4/3   0.93/0.82
+    18000   4424/5607   3927/5355      19/-   0.45/0.42   0.56/0.57     3/3   0.98/0.80
+    24000   6670/7331   5949/6906      14/-   0.36/0.37   0.50/0.53     3/3   1.00/0.92
+    30000   7809/8784   6991/8162      19/-   0.26/0.25   0.46/0.48     3/3   1.00/0.94
+    36000  9297/10590   8038/9910      14/5   0.23/0.24   0.41/0.44     3/3   1.00/0.95
+    42000  8821/10445   6789/9460     12/56   0.17/0.17   0.33/0.34     2/3   1.00/0.94
+    48000  8511/11544  6444/10044     18/42   0.17/0.15   0.32/0.32     2/2   1.00/0.92
+    54000  8837/11888  7073/10158    54/166   0.14/0.16   0.29/0.30     2/2   1.00/0.90
+    60000  7960/11037   6505/9109    59/129   0.13/0.14   0.30/0.30     3/3   1.00/0.89
+    66000  8414/11993  7100/10031    37/428   0.15/0.14   0.28/0.29     2/2   1.00/0.87
+    72000  8141/10377   7088/8648   53/1199   0.18/0.20   0.29/0.29     2/3   1.00/0.88
+
+== seed 6102: r61-p6102x2 (planted) beside r61-c6102x2 (control); each cell planted/control
+        t       alive        leaf     mouth       empty      on-isl isl>=5%    top line
+     6000     526/590     322/324       8/-   0.88/0.87   0.78/0.78     3/3   0.34/0.34
+    12000     625/861     421/529      11/-   0.85/0.83   0.78/0.77     3/3   0.33/0.29
+    18000   1402/1459    1067/870       9/-   0.81/0.80   0.79/0.81     3/3   0.32/0.35
+    24000   2304/1734   1730/1094       5/-   0.71/0.75   0.71/0.72     4/3   0.41/0.34
+    30000   4205/2238   3947/1628       7/-   0.51/0.68   0.59/0.71     4/3   0.79/0.29
+    36000   7954/3541   7842/3005      13/-   0.32/0.57   0.49/0.63     3/3   0.90/0.40
+    42000  12286/4862  12022/4233      19/-   0.15/0.46   0.38/0.52     3/3   0.96/0.50
+    48000  13735/6424  13567/5412      10/-   0.14/0.42   0.40/0.59     3/3   1.00/0.59
+    54000  12870/7632  12671/6474      10/1   0.12/0.35   0.32/0.51     2/3   1.00/0.68
+    60000   9987/7912   9808/6657      11/0   0.09/0.29   0.30/0.53     3/3   1.00/0.84
+    66000  9960/10132   9654/8133      11/0   0.12/0.26   0.30/0.46     2/3   1.00/0.87
+    72000   9059/9203   8535/7460      11/3   0.16/0.28   0.29/0.40     2/3   1.00/0.89
+
+== seed 6103: r61-p6103x4 (planted) beside r61-c6103x (control); each cell planted/control
+        t       alive        leaf     mouth       empty      on-isl isl>=5%    top line
+     6000     419/400     270/271      17/-   0.89/0.90   0.73/0.75     2/2   0.47/0.49
+    12000     596/559     412/399      12/-   0.86/0.87   0.74/0.76     3/3   0.42/0.41
+    18000    999/1024     820/908      10/-   0.86/0.84   0.82/0.79     3/3   0.32/0.36
+    24000   1392/1578   1156/1502      11/-   0.78/0.75   0.74/0.67     3/3   0.29/0.48
+    30000   2685/2382   2315/2318       8/-   0.66/0.65   0.66/0.62     3/3   0.34/0.48
+    36000   4376/3679   3684/3495      13/-   0.49/0.52   0.62/0.60     3/3   0.52/0.47
+    42000   6103/4493   5281/4212      15/-   0.39/0.39   0.51/0.47     3/3   0.64/0.42
+    48000   7706/5772   6662/5427      10/-   0.29/0.36   0.53/0.54     3/3   0.74/0.50
+    54000   7493/8356   6495/7739       8/0   0.23/0.28   0.38/0.46     3/3   0.74/0.82
+    60000   5368/9093   4527/8351      13/2   0.20/0.20   0.34/0.39     2/3   0.59/0.95
+    66000  4442/11233   4036/9437      17/3   0.21/0.16   0.27/0.34     2/2   0.68/0.95
+    72000  2867/10560   2784/9274      13/2   0.39/0.17   0.20/0.28     1/2   0.64/0.96
+
+== P1: >= 100 grazers (mouthed) alive at every year's end from year 2 to 12, in both planted worlds
+   r61-p6101x2: 12000 8 (8 nopho grazers) MISS, 18000 19 (19 nopho grazers) MISS, 24000 14 (14 nopho grazers) MISS, 30000 19 (16 nopho grazers) MISS, 36000 14 (11 nopho grazers) MISS, 42000 12 (12 nopho grazers) MISS, 48000 18 (14 nopho grazers) MISS, 54000 54 (4 nopho grazers) MISS, 60000 59 (11 nopho grazers) MISS, 66000 37 (15 nopho grazers) MISS, 72000 53 (11 nopho grazers) MISS -> failed
+   r61-p6102x2: 12000 11 (11 nopho grazers) MISS, 18000 9 (9 nopho grazers) MISS, 24000 5 (5 nopho grazers) MISS, 30000 7 (7 nopho grazers) MISS, 36000 13 (13 nopho grazers) MISS, 42000 19 (19 nopho grazers) MISS, 48000 10 (10 nopho grazers) MISS, 54000 10 (10 nopho grazers) MISS, 60000 11 (11 nopho grazers) MISS, 66000 11 (11 nopho grazers) MISS, 72000 11 (11 nopho grazers) MISS -> failed
+   r61-p6103x4: 12000 12 (12 nopho grazers) MISS, 18000 10 (10 nopho grazers) MISS, 24000 11 (11 nopho grazers) MISS, 30000 8 (8 nopho grazers) MISS, 36000 13 (13 nopho grazers) MISS, 42000 15 (14 nopho grazers) MISS, 48000 10 (10 nopho grazers) MISS, 54000 8 (8 nopho grazers) MISS, 60000 13 (13 nopho grazers) MISS, 66000 17 (14 nopho grazers) MISS, 72000 13 (13 nopho grazers) MISS -> failed
+
+== P2: >= 100 leaf kills a year by grazers (mouthed) in >= 2 of years 6 to 8, in both planted worlds and in at most 1 control
+   r61-p6101x2: year 6 206 (206 by nopho grazers), year 7 172 (172 by nopho grazers), year 8 160 (160 by nopho grazers) -> held
+   r61-p6102x2: year 6 138 (138 by nopho grazers), year 7 285 (285 by nopho grazers), year 8 335 (335 by nopho grazers) -> held
+   r61-p6103x4: year 6 127 (127 by nopho grazers), year 7 133 (133 by nopho grazers), year 8 238 (238 by nopho grazers) -> held
+   r61-c6101x2: year 6 0 (0 by nopho grazers), year 7 0 (0 by nopho grazers), year 8 0 (0 by nopho grazers) -> failed
+   r61-c6102x2: year 6 0 (0 by nopho grazers), year 7 0 (0 by nopho grazers), year 8 0 (0 by nopho grazers) -> failed
+   r61-c6103x: year 6 0 (0 by nopho grazers), year 7 0 (0 by nopho grazers), year 8 0 (0 by nopho grazers) -> failed
+   planted worlds: held; controls holding the same bar: 0 of 3 (at most 1) -> held
+
+== P3: at 72000 s each planted world's living leaves <= 0.7 of its control's
+   r61-p6101x2/r61-c6101x2: planted 7088 living leaves, control 8648, ratio 0.82 -> failed
+   r61-p6102x2/r61-c6102x2: planted 8535 living leaves, control 7460, ratio 1.14 -> failed
+   r61-p6103x4/r61-c6103x: planted 2784 living leaves, control 9274, ratio 0.30 -> held
+
+== P4: at 72000 s each planted world has >= 0.1 more of its 10 m squares empty than its control
+   r61-p6101x2/r61-c6101x2: empty squares planted 0.18, control 0.20, difference -0.021 -> failed
+   r61-p6102x2/r61-c6102x2: empty squares planted 0.16, control 0.28, difference -0.120 -> failed
+   r61-p6103x4/r61-c6103x: empty squares planted 0.39, control 0.17, difference +0.222 -> held
+
+== P5: at 72000 s each planted world has >= 0.1 more of its living on the islands than its control
+   r61-p6101x2/r61-c6101x2: on the islands planted 0.29, control 0.29, difference +0.000 -> failed
+   r61-p6102x2/r61-c6102x2: on the islands planted 0.29, control 0.40, difference -0.115 -> failed
+   r61-p6103x4/r61-c6103x: on the islands planted 0.20, control 0.28, difference -0.088 -> failed
+
+== P6: at 72000 s >= 3 islands each hold >= 5% of the living, in both planted worlds
+   r61-p6101x2: 2 islands at >= 5% (#0 0.11, #5 0.09, #4 0.05, #3 0.02, #1 0.02, #2 0.00) -> failed
+   r61-p6102x2: 2 islands at >= 5% (#0 0.10, #5 0.10, #4 0.05, #3 0.02, #1 0.01, #2 0.01) -> failed
+   r61-p6103x4: 1 islands at >= 5% (#4 0.13, #0 0.02, #5 0.02, #2 0.01, #1 0.00, #3 0.00) -> failed
+
+== P7: >= 20 grazers (mouthed) a year in each of years 6 to 8 seen over one island and later over another, in >= 1 planted world
+   r61-p6101x2: year 6 2 (0 nopho grazers) MISS, year 7 0 (0 nopho grazers) MISS, year 8 0 (0 nopho grazers) MISS -> failed
+   r61-p6102x2: year 6 3 (3 nopho grazers) MISS, year 7 1 (1 nopho grazers) MISS, year 8 0 (0 nopho grazers) MISS -> failed
+   r61-p6103x4: year 6 0 (0 nopho grazers) MISS, year 7 2 (2 nopho grazers) MISS, year 8 0 (0 nopho grazers) MISS -> failed
+
+== L1: at 72000 s no root line over 0.5 of the living, in >= 1 planted world
+   r61-p6101x2: largest root line 0.998 of the living -> failed
+   r61-p6102x2: largest root line 0.998 of the living -> failed
+   r61-p6103x4: largest root line 0.644 of the living -> failed
+
+== S1: grazers, 3000 to 48000 s: readers' mean cosine exceeds the others' by >= 0.1, each side >= 1000 body-samples, in >= 1 planted world
+   r61-p6101x2: readers 3482 at 0.079, others 7 at -0.131, difference +0.210 -> unread
+   r61-p6102x2: readers 3124 at 0.069, others 7 at -0.113, difference +0.183 -> unread
+   r61-p6103x4: readers 2633 at 0.068, others 50 at -0.087, difference +0.155 -> unread
+
+== C1: in both controls, < 0.6 of the living on the islands and one root line over 0.5 of the living at 72000 s
+   r61-c6101x2: 0.29 of the living on the islands, largest root line 0.876 -> held
+   r61-c6102x2: 0.40 of the living on the islands, largest root line 0.886 -> held
+   r61-c6103x: 0.28 of the living on the islands, largest root line 0.958 -> held
+
+== B1: the books balance, in 4 of 4 worlds
+   r61-p6101x2: audit max 0.0043 J, matter max 1.62e-06, diverged 0, divergedTotal 0, ended/budget 72000 of 72000 s -> holds
+   r61-c6101x2: audit max 0.00371 J, matter max 1.76e-06, diverged 0, divergedTotal 0, ended/budget 72000 of 72000 s -> holds
+   r61-p6102x2: audit max 0.0145 J, matter max 1.64e-06, diverged 0, divergedTotal 0, ended/budget 72000 of 72000 s -> holds
+   r61-c6102x2: audit max 0.00323 J, matter max 1.01e-06, diverged 0, divergedTotal 0, ended/budget 72000 of 72000 s -> holds
+   r61-p6103x4: audit max 0.000999 J, matter max 1.14e-06, diverged 488, divergedTotal 488, ended/budget 72000 of 72000 s
+   r61-c6103x: audit max 0.00327 J, matter max 1.48e-06, diverged 0, divergedTotal 0, ended/budget 72000 of 72000 s -> holds
+
+== clauses (B2 by card-run-check.ps1, B3 by group-resume-compare.py)
+P1: failed (0 of 3 planted worlds hold, both needed)
+P2: held (planted 3 of 3 hold, both needed; controls 0 of 3 hold, at most 1)
+P3: failed (1 of 3 worlds hold, 2 needed of 3; living leaves at most 0.7 of the control's)
+P4: failed (1 of 3 worlds hold, 2 needed of 3; empty squares >= 0.1 above the control's)
+P5: failed (0 of 3 worlds hold, 2 needed of 3; share on the islands >= 0.1 above the control's)
+P6: failed (0 of 3 worlds hold, 2 needed of 3; >= 3 islands each with >= 5% of the living)
+P7: failed (0 of 3 worlds hold, 1 needed of 3; >= 20 grazer crossers in each of years 6 to 8)
+L1: failed (0 of 3 worlds hold, 1 needed of 3; no root line over 0.5 of the living)
+S1: unread (0 held, 0 failed, 3 unread of 3 planted worlds)
+C1: held (3 of 3 worlds hold, 2 needed of 3; controls under 0.6 on the islands with a root line over 0.5)
+B1: failed (5 of 6 worlds hold, 6 needed of 6; audit, matter, divergence, ended on budget)
