@@ -104,7 +104,12 @@ namespace Evosim.Farm
         /// </param>
         internal void WriteState(BinaryWriter w, int layout)
         {
-            bool current = layout >= World.StateVersion;
+            // Every world layout above the lossy one goes with this harness layout: version 15
+            // and version 14 (D159's counters are the world's alone) alike.
+            bool current = layout > World.LossyStateVersion;
+
+            // Each body's card pairs from version 18 (round 60); 17 and older have no place for them.
+            bool cardBlock = layout >= World.StateVersion;
 
             // The GPU engine steps a block to the metabolic step, which is where every checkpoint
             // is written; a checkpoint inside a block would hold a solver ahead of this count.
@@ -117,6 +122,11 @@ namespace Evosim.Farm
 
             // Anything the engine holds lazily comes home first; a no-op on the CPU.
             Dynamics.SyncMirror();
+
+            // The last step's contact spheres, committed now rather than at the next grid build,
+            // so the committed ones each body writes are the ones the next step reads (each
+            // body's own writer does the same; this is the world's pass, across threads).
+            Dynamics.CommitContactSpheres();
 
             StateIo.Tag(w, "HARN");
 
@@ -177,7 +187,7 @@ namespace Evosim.Farm
                     WriteSenses(w, body);
                 }
 
-                body.Solver.WriteState(w);
+                body.Solver.WriteState(w, cardBlock);
             }
 
             StateIo.Tag(w, "HEND");
@@ -327,7 +337,12 @@ namespace Evosim.Farm
         /// </remarks>
         public void ReadState(BinaryReader r)
         {
-            bool current = World.StateVersionRead >= World.StateVersion;
+            // A version-14 world (round 57's) holds this harness layout too, as WriteState says.
+            bool current = World.StateVersionRead > World.LossyStateVersion;
+
+            // Each body's card pairs from version 18 (round 60); a version-17 stream has none, and
+            // its bodies' link spheres are rebuilt from the poses as that build rebuilt them.
+            bool cardBlock = World.StateVersionRead >= World.StateVersion;
 
             StateIo.Tag(r, "HARN");
 
@@ -388,6 +403,11 @@ namespace Evosim.Farm
             _reconciledAt = reconciledAt;
             _movedOutsideTheSolver = moved;
             _sinceGrowthStep = sinceGrowth;
+
+            // A restored harness has read no body yet, so its first second bracket reads them all.
+            // The checkpoint's format does not change, and the restored run checks as the run
+            // that wrote it did (card-next-r57.md Part 8).
+            _physicsSinceWholeCheck = true;
 
             MeanSpeed = meanSpeed;
             MaxSpeed = maxSpeed;
@@ -467,7 +487,7 @@ namespace Evosim.Farm
                     ReadSenses(r, body);
                 }
 
-                body.Solver.ReadState(r);
+                body.Solver.ReadState(r, cardBlock);
             }
 
             if (seen.Count != _bodies.Count)

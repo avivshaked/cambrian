@@ -6,8 +6,8 @@ namespace Evosim.Core
     /// <summary>
     /// The mushroom reefs of round 47: rock columns standing on the tank's floor, each topped by a
     /// cap that overhangs and shades — <c>logbook/specs/reef-spec.md</c>, redesigned under the
-    /// owner's ruling of 2026-09-23 night ("the idea is to have areas in the tank that do not get
-    /// light"): many reefs to a cover, each its own size, depth and outline, allowed to overlap.
+    /// owner's ruling of 2026-09-23 night (the idea is to have areas in the tank that do not get
+    /// light): many reefs to a cover, each its own size, depth and outline, allowed to overlap.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -1213,8 +1213,8 @@ namespace Evosim.Core
         /// <summary>
         /// What a cap lets through to the column under it: nothing. The cap is rock, and the
         /// owner's requirement for the reef was that it block the sun under it (2026-09-23:
-        /// "make sure they block the sun under them"; that night: "the idea is to have areas in
-        /// the tank that do not get light"). One constant to change.
+        /// make sure they block the sun under them; that night, the idea is to have areas in
+        /// the tank that do not get light). One constant to change.
         /// </summary>
         public static readonly float CapTransmission = 0f;
 

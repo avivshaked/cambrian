@@ -46,5 +46,28 @@ namespace Evosim.Farm.Gpu
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_ElapsedSeconds")]
         public static extern void SetElapsedSeconds(Brain brain, double value);
+
+        // The one brain's network (Brain.ForCentral): each unit's bias and where its links start,
+        // each link's source and weight, each port's part, channel and index.
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_bias")]
+        public static extern ref float[] CentralBias(Brain brain);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_inStart")]
+        public static extern ref int[] CentralInStart(Brain brain);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_inSource")]
+        public static extern ref int[] CentralInSource(Brain brain);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_inWeight")]
+        public static extern ref float[] CentralInWeight(Brain brain);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_portPart")]
+        public static extern ref int[] CentralPortPart(Brain brain);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_portChannel")]
+        public static extern ref SensorChannel[] CentralPortChannel(Brain brain);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_portIndex")]
+        public static extern ref int[] CentralPortIndex(Brain brain);
     }
 }

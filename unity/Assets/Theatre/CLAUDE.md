@@ -120,6 +120,35 @@ the fix carries the raw look; and a body identified in a picture is identified b
 trace's screen column, not by which id the shot log names, since the crop that showed the
 bulge held neither of the close shot's two named bodies.
 
+**The underwater look is a switch, off by default** (`TheatreLook.cs`; the build brief
+`logbook/specs/underwater-look/brief.md`). `EVOSIM_THEATRE_LOOK=3` turns on one sun bearing,
+absorption and in-scatter over the water's part of each ray, light by depth and by the run's own day
+(read from `stats.jsonl`'s `dayFactor`, which carries round 57's weather), raymarched shafts, snow
+shells around the camera and the window's overcast; each item also has its own dial, and the tuning
+dials (`EVOSIM_THEATRE_SCATTER` 0.02, `_ABSORB`, `_PHASE_G`, `_MARCH_STRENGTH`, `_LOOK_METER`,
+`_DAY_GAMMA`, `_METER_DAY`) are read once at dress. `EVOSIM_THEATRE_LOOK=4` adds the second batch
+(`logbook/specs/underwater-look/brief-2.md`). Far things fade into the backdrop, which has a gain
+under one for an eye in the water (`_FADE_BACKDROP`, `_FADE_START`, `_FADE_SCATTER`, `_WATER_GAIN`).
+A hue-keeping tone curve runs after the post-processing for a camera in the water (`_TONE_STEP`,
+`TheatreToneStep`, queued per camera with no change to the renderer asset). The shafts are soft sheets
+from a low-frequency field at the surface, shaded by the reefs' caps (`_SHAFT_PLACE` and its dials).
+`EVOSIM_THEATRE_SHAFT_DEBUG=1` draws the shaft term alone over a black frame and `=2` the same without
+the caps, so a difference of the two stills shows the caps' shade. The shells' snow and the bed's dusting come
+from the run's `fields/` dumps (`_RUN_SNOW`). The snow drifts with Core's current at the camera by the
+world's seconds (`_SNOW_DRIFT`), from a `CurrentField` built afresh from the config and never the live
+world's. A film drives the drift by its own continuous second, the one its label prints, passed to
+`CapturePlaced`. The world's second moves in half-second metabolic steps, and a drift read off it
+jumps every twelfth frame at 24 fps. The label then names the snow's source. The census and solo stills keep the old look
+whatever the dial says, so `logbook/images/` stays comparable, and the label names the look that drew
+a frame. **A clip is checked frame to frame, never on a contact sheet alone**:
+`python scripts/film-motion.py <frames-dir> [--strip <frame> <out.png>]` measures the change between
+consecutive frames in the snow, the shafts and the bodies, and no frame may change more than twice the
+median. Its bands are placed for the creature close-up at 1920x1080 and scaled for other sizes; move them
+for another shot. A sheet of frames 1.6 s apart passed the snow's half-second jump, and the owner saw it in
+the clip. A batch import parses a shader without compiling it: `Evosim.Theatre.EditorTools.LookShaderCheck.Run`
+compiles every theatre pass for d3d11, and its log carries three errors from a shader broken on
+purpose (`Look Check Broken`), which are the check working.
+
 Keys: `Space` pause, `[` `]` pace, `L` pace lock (at or under real time, for filming), `K` seek,
 `C` colour, `X` raw shapes (the colliders as the physics has them, no rounding, carve, taper or
 bend), `F` follow, `R` reload, `H` hide, `P` provenance, click to select; fly with `WASD`+`QE`, right-drag to look, wheel for speed.
@@ -176,6 +205,21 @@ run many steps to a frame, prints the identity verdict at every sample, and quit
 
 ## Gotchas
 
+- **The skin can hide a joint, so every joint is bridged** (`TheatrePalette`'s necks, the
+  theatre-joins brief in `logbook/specs/theatre-joins/`). Rounded leaves, sphere parts drawn as
+  the genome's ellipsoid, and wavy plate rims all once left gaps where Core's anchors coincide. A
+  neck now runs from each anchor to both drawn surfaces, inside the collider. A block anchored on
+  a plate's very edge can still read loose (r56-s2 #90944). Before calling any body detached,
+  grow it with Core's `Developer` from the round's own sources and measure the anchor gaps.
+- **A continuation from a farm checkpoint reads "configHash differ" on a build whose RunConfig is
+  the farm's own.** Round 47's continuation showed it, and so did round 56 seed 2's on the merged
+  build of 2026-10-05, whose RunConfig is byte for byte round 56's (`a174d013…` in the checkpoint,
+  `c7ba90b5…` from the Editor's `world.Config.Hash()`). The cause is not found. A guess is that
+  Mono and .NET 8 write a double differently inside `Hash()`. Until it is found, the word says
+  nothing about the build, and a configuration change is checked against the farm's own hash.
+- **A fresh worker's first batch run logs an `ArgumentOutOfRangeException` from
+  `UnityEditor.Search.SearchInit.IndexationOnStartup`.** It is Unity's search index on a new
+  Library, not the theatre's code, and the run goes on.
 - **Watch a round in the theatre before writing it up, and say what was seen.** On 2026-09-10 the
   owner opened round 33 seed 3 in the theatre and saw the whole world as two vertical ribbons a
   metre wide in a box twenty metres long (logbook/0083). A newborn was placed touching its

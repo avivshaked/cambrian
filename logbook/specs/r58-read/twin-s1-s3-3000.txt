@@ -1,0 +1,3 @@
+r58-s1j against r58-s1i before 3000 s: lineage.jsonl 9681 same; stats.jsonl: DIFFERS at row 0 (t 10); 299 rows against 299; digest.jsonl 3001 same; absorptive.jsonl 9237 same; positions.jsonl.gz 299 same
+r58-s3j against r58-s3i before 3000 s: lineage.jsonl 14385 same; stats.jsonl: DIFFERS at row 0 (t 10); 299 rows against 299; digest.jsonl 3001 same; absorptive.jsonl 1679 same; positions.jsonl.gz 299 same
+NOT the same

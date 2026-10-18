@@ -1,0 +1,5 @@
+# Copy to paths.local.toml (gitignored) and set each folder. The files are listed in mlstore.toml.
+chatterbox-en = '<folder holding the chatterbox-en files>'
+voxcpm2 = '<folder holding the voxcpm2 files>'
+cosyvoice3 = '<folder holding the cosyvoice3 files>'
+omnivoice = '<folder holding the omnivoice files>'

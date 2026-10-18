@@ -1,6 +1,6 @@
 # Build spec: the footprint world (D077) — shared space, a top, a bottom and a wrap
 
-Fable-written, 2026-09-05, for an implementing agent. The owner ruled D077 ("proceed" on
+Fable-written, 2026-09-05, for an implementing agent. The owner ruled D077 (told the agent to proceed on
 `fable-propose-footprint.md`, now absorbed into DECISIONS.md D077; read that entry first,
 then CLAUDE.md in full, then `logbook/specs/footprint-survey.md` and `logbook/specs/surface-spec.md`
 for the file:line facts, and logbook/0064 for the spike's placement code, which you reuse).

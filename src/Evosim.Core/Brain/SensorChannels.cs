@@ -107,6 +107,10 @@ namespace Evosim.Core
                 case SensorChannel.JointAngularVelocity:
                 case SensorChannel.Flow:
                 case SensorChannel.Photo:
+                case SensorChannel.Stroke:
+                case SensorChannel.Hold:
+                case SensorChannel.Ramp:
+                case SensorChannel.LeafScentDirection:
                     return 3;
                 default:
                     return 1;

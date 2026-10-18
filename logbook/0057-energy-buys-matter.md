@@ -159,9 +159,8 @@ trophic level's share is set by the matter economy's arithmetic: what fraction o
 the stock can build are stomachs. How well the stomachs eat does not enter it. Energy income
 buys survival and nothing else.
 
-The owner's reading on the same evening reaches past this.
-
-> matter, like energy, is not finite; there is a constant influx of both.
+The owner's reading on the same evening reaches past this. Matter, like energy, is not finite; both come in
+constantly.
 
 The ocean's nutrient budget is a flow, with rivers, weathering and dust coming in and burial
 going out. Productivity anywhere is set by the supply rate rather than by the standing

@@ -13,11 +13,13 @@ namespace Evosim.Dynamics
     /// <b>Called under a pin, from any thread.</b> <see cref="CurrentField"/> memoises the
     /// instants a call touches, and a miss fills a slot, so two threads sampling one field at
     /// new clocks would race on the slot table and a trajectory would depend on who got there
-    /// first — the one thing the whole solver is built not to do. <c>DynamicsWorld.SampleWater</c>
+    /// first — the one thing the whole solver is built not to do. <c>DynamicsWorld.StepOnCpu</c>
     /// therefore pins the field at the step's clock first (<see cref="CurrentField.PinInstant"/>),
     /// which fills every slot the step will ask for and makes each later lookup a read, and then
-    /// calls this across the world's threads. It runs between the contact grid's build and the
-    /// parallel phase, over the poses the step begins with, which is where the gather phase sat.
+    /// each body calls this as the first thing in its own step (<c>StepOne</c>), over the poses the
+    /// step begins with. From 2026-09-23 to 2026-10-03 it was a parallel pass of its own between
+    /// the contact grid's build and the bodies' phase, where the farm's gather phase sat; the
+    /// drag pass is its only reader, so the move changed no number.
     /// Until 2026-09-23 it ran on one thread for the field's sake (the Unity farm's is on the
     /// main thread for Unity's), and at 1,200 bodies that thread was a third of the step.
     /// </para>

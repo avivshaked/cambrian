@@ -1,0 +1,42 @@
+Round 53's founding screens (D132), read 2026-09-29 at 23:20 with scripts/reads/r53-screens.py.
+r53sc-f27 was stopped at 6,840 s and resumed from that checkpoint at 12 threads as r53sc-f27c; r53sc-f27j is the join (stitch-resume.py), so its pace column after 6,840 s is the resume's.
+
+arm         |     t | alive | photo | absorb | jointed | upt lim | corpses eaten | settled J | bed snow J/m3 (at) | bed >= 0.44 | x real
+r52-s1      |  2000 |  2623 |  2623 |      3 |    1283 | 0.920 |             0 |     17463 | 0.094 (2000)       | 3%          | 4.9
+r52-s1      |  5000 |  1078 |  1070 |     10 |     360 | 0.851 |            21 |    161473 | 0.508 (5000)       | 36%         | 5.3
+r52-s1      |  7500 |  1085 |  1079 |      7 |     246 | 0.618 |            28 |    139909 | 0.558 (7500)       | 41%         | 5.7
+r52-s1      | 10000 |  1053 |  1048 |      5 |     203 | 0.733 |            46 |    115192 | 0.494 (10000)      | 37%         | 5.7
+r52-s1      | status ended, last t 30000
+r53sc-f27j  |  2000 |  5360 |  5360 |      8 |    2314 | 0.895 |             0 |     27041 | 0.165 (2000)       | 6%          | 0.6
+r53sc-f27j  |  5000 |  2455 |  2447 |      9 |     929 | 0.801 |            19 |    313149 | 0.986 (5000)       | 51%         | 0.7
+r53sc-f27j  |  7500 |  2343 |  2330 |     17 |     611 | 0.695 |            35 |    300906 | 1.131 (7500)       | 59%         | 36.0
+r53sc-f27j  | 10000 |  2199 |  2191 |      8 |     323 | 0.714 |            48 |    262774 | 1.048 (10000)      | 73%         | 9.4
+r53sc-f27j  | status ended, last t 10000
+r53sc-b30   |  2000 |  2476 |  2476 |      3 |    1301 | 0.891 |             0 |     40432 | 0.150 (2000)       | 10%         | 1.2
+r53sc-b30   |  5000 |  1588 |  1581 |     13 |     795 | 0.783 |            13 |    207731 | 0.809 (5000)       | 56%         | 1.2
+r53sc-b30   |  7500 |  1769 |  1763 |     16 |     913 | 0.654 |            23 |    202827 | 0.902 (7500)       | 59%         | 1.3
+r53sc-b30   | 10000 |  1901 |  1897 |     14 |     918 | 0.728 |            58 |    198747 | 0.919 (10000)      | 72%         | 1.3
+r53sc-b30   | status ended, last t 10000
+r53sc-b25   |  2000 |  2661 |  2661 |      3 |    1332 | 0.871 |             0 |     53272 | 0.283 (2000)       | 16%         | 1.3
+r53sc-b25   |  5000 |  2065 |  2063 |      5 |     917 | 0.763 |             5 |    241490 | 1.073 (5000)       | 64%         | 1.2
+r53sc-b25   |  7500 |  2297 |  2287 |     16 |    1075 | 0.660 |            16 |    248506 | 1.242 (7500)       | 70%         | 1.2
+r53sc-b25   | 10000 |  2467 |  2460 |     25 |     937 | 0.705 |            52 |    249931 | 1.296 (10000)      | 78%         | 1.2
+r53sc-b25   | status ended, last t 10000
+r53sc-a005  |  2000 |  2637 |  2637 |      5 |    1270 | 0.923 |             0 |      5866 | 0.165 (2000)       | 7%          | 0.9
+r53sc-a005  |  5000 |  1329 |  1320 |     13 |     316 | 0.808 |             9 |     13756 | 0.729 (5000)       | 41%         | 1.0
+r53sc-a005  |  7500 |  2297 |  2282 |     16 |      94 | 0.683 |            16 |      9636 | 0.609 (7500)       | 48%         | 1.1
+r53sc-a005  | 10000 |  2408 |  2403 |     10 |      16 | 0.629 |            25 |     13171 | 0.631 (10000)      | 60%         | 1.1
+r53sc-a005  | status ended, last t 10000
+
+Window means as round 53's reader takes them (bed snow J/m3 over the snow-floor dumps, upt lim over the stats rows), 5,000 to 10,000 s:
+r52-s1      bed 0.533  upt lim 0.7343
+r53sc-b25   bed 1.204  upt lim 0.7035
+r53sc-f27j  bed 1.084  upt lim 0.7279
+r53sc-b30   bed 0.875  upt lim 0.7132
+
+D132's rule: the 25 m tank beats the budget on both, at 5,000, 7,500 and 10,000 s and over the window. Round 53 takes the 25 m tank.
+
+The round's reader (r53-read.py, N1 1.5, N2 0.015) on the 25 m screen against r52-s1:
+N1   r53sc-b25  window=5000 to 10000 s  short=True  dumps=51  bed_snow_J_m3=1.2039  base=r52-s1  base_bed_snow_J_m3=0.533104  ratio=2.25828  bar=at least 1.5 times the baseline's  held=True
+N2   r53sc-b25  window=5000 to 10000 s  short=True  rows=501  upt_lim=0.703508  base=r52-s1  base_upt_lim=0.734279  drop=0.0307713  bar=at least 0.015 under the baseline's  held=True
+N3   r53sc-b25  at=10000  short=True  corpses_eaten=52  base=r52-s1  base_corpses_eaten=170  bar=at or above the baseline's  held=False

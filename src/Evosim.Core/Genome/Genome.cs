@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Evosim.Core
@@ -64,6 +64,80 @@ namespace Evosim.Core
         /// </remarks>
         public float AdultScale { get; set; } = 1f;
 
+        /// <summary>
+        /// D128: how long this body is built to last, as a multiple of the world's
+        /// <see cref="RunConfig.AgeHazardBaseSeconds"/>. 1 is the world's base.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A stretch of one curve, not a curve of its own.</b> The ageing hazard doubles over a
+        /// fixed fraction of the body's base (<see cref="RunConfig.AgeHazardDoublingFraction"/>),
+        /// so a lifespan of 2 is the same curve drawn twice as long: median age at death twice the
+        /// world's base, and the same spread about it in proportion.
+        /// </para>
+        /// <para>
+        /// <b>Paid for, or it would evolve to immortality.</b> A longer life costs repair: a body's
+        /// upkeep is multiplied by <c>LifespanScale ^ RunConfig.AgeRepairExponent</c>, Kirkwood's
+        /// disposable soma, so what one line spends on keeping its body another spends on its
+        /// children (D128). At 1, or with the exponent at 0, the factor is exactly 1.
+        /// </para>
+        /// <para>
+        /// <b>Inert in round 51.</b> Every founder draws it between
+        /// <see cref="RandomGenomeOptions.MinLifespan"/> and <see cref="RandomGenomeOptions.MaxLifespan"/>
+        /// (both 1 by default, so nothing is drawn) and it mutates at
+        /// <see cref="MutationRates.LifespanChance"/> (0 by default, so nothing is drawn): the gene
+        /// is carried by every body and read by nothing until a round makes it heritable.
+        /// </para>
+        /// </remarks>
+        public float LifespanScale { get; set; } = 1f;
+
+        /// <summary>
+        /// D146: the creature's one brain, or null for the per-part neurons of the old model.
+        /// A genome that carries one carries no neurons on its nodes and none in
+        /// <see cref="GlobalBrain"/> (<see cref="Validate"/>).
+        /// </summary>
+        public CentralBrain Brain { get; set; }
+
+        /// <summary>
+        /// D146: the id the next new edge takes (<see cref="MorphEdge.Id"/>). Starts at 1, since 0
+        /// is no id. Only a genome with a <see cref="Brain"/> numbers its edges.
+        /// </summary>
+        public ulong NextEdgeId { get; set; } = 1;
+
+        /// <summary>
+        /// D146: gives every edge without an id, and every edge whose id an earlier edge already
+        /// holds, a fresh one. Run after any mutation of a central genome's body: a duplicated
+        /// node copies its edges with their ids, and two edges of one id would make two parts of
+        /// one path id. The first edge in node order keeps a shared id.
+        /// </summary>
+        public void NumberEdges()
+        {
+            var seen = new HashSet<ulong>();
+            foreach (MorphNode node in Nodes)
+            {
+                foreach (MorphEdge edge in node.Edges)
+                {
+                    if (edge.Id != 0 && seen.Add(edge.Id))
+                    {
+                        if (edge.Id >= NextEdgeId) NextEdgeId = edge.Id + 1;
+                        continue;
+                    }
+
+                    edge.Id = 0;
+                }
+            }
+
+            foreach (MorphNode node in Nodes)
+            {
+                foreach (MorphEdge edge in node.Edges)
+                {
+                    if (edge.Id != 0) continue;
+                    edge.Id = NextEdgeId++;
+                    seen.Add(edge.Id);
+                }
+            }
+        }
+
         public Genome Clone()
         {
             var clone = new Genome
@@ -72,6 +146,9 @@ namespace Evosim.Core
                 GlobalBrain = new NeuronDef[GlobalBrain.Length],
                 Reproduction = Reproduction.Clone(),
                 AdultScale = AdultScale,
+                LifespanScale = LifespanScale,
+                Brain = Brain?.Clone(),
+                NextEdgeId = NextEdgeId,
             };
 
             for (int i = 0; i < GlobalBrain.Length; i++) clone.GlobalBrain[i] = GlobalBrain[i].Clone();
@@ -183,6 +260,15 @@ namespace Evosim.Core
                     "node's dimensions, so nothing below zero describes a body.");
             }
 
+            // D128. A lifespan of zero or less is a body that is dead at birth, and one that is
+            // not a number is a hazard that is not one either.
+            if (float.IsNaN(LifespanScale) || float.IsInfinity(LifespanScale) || LifespanScale <= 0f)
+            {
+                issues.Add(
+                    $"Lifespan scale {LifespanScale} must be finite and positive. It stretches the " +
+                    "world's ageing base, so nothing at or below zero describes a life.");
+            }
+
             for (int n = 0; n < Nodes.Count; n++)
             {
                 MorphNode node = Nodes[n];
@@ -255,7 +341,13 @@ namespace Evosim.Core
                         $"Node {n}: a {node.JointType} joint with Power {node.Power} cannot " +
                         "actuate. Give it capacity or make it Fixed.");
                 }
-                else if (dof == 0 && node.Power != 0f)
+                // The drive genes: in range on every node, though only a joint reads them.
+                if (node.Drive.Problem() is string driveProblem)
+                {
+                    issues.Add($"Node {n}: drive genes: {driveProblem}.");
+                }
+
+                if (dof == 0 && node.Power != 0f)
                 {
                     issues.Add(
                         $"Node {n}: Power {node.Power} on a part with no joint. Nothing reads it, " +
@@ -350,6 +442,22 @@ namespace Evosim.Core
             }
 
             ValidateNeurons(GlobalBrain, null, -1, issues);
+
+            // D146: a genome carries one brain or the other, never both, so that no reader has to
+            // ask which of the two drives the joints.
+            if (Brain != null)
+            {
+                Brain.Validate(issues);
+
+                if (GlobalBrain.Length > 0) issues.Add("A genome with a central brain carries global neurons.");
+                for (int n = 0; n < Nodes.Count; n++)
+                {
+                    if (Nodes[n].Neurons.Length > 0)
+                    {
+                        issues.Add($"Node {n} carries neurons in a genome with a central brain.");
+                    }
+                }
+            }
 
             return issues;
         }

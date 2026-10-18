@@ -115,6 +115,41 @@ float4 _EvoWaterColumn;
 float4 _EvoWaterDeep;
 float4 _EvoWaterShallow;
 
+// The underwater look's first batch (logbook/specs/underwater-look/brief.md), pushed by
+// TheatreSkin.PushLook from TheatreLook's switches. Every one of them is off by default, and a
+// flag of zero sends each function below down the branch the theatre drew before the batch, so
+// a picture with every switch off is today's picture.
+//
+// _EvoLook: x is item 2 (the water's absorption and in-scatter), y is item 3 (light by depth and
+// by the run's day), z is item 6 (the sky from below), w is 1 once the skin has pushed any of it.
+// The census views hold all three at zero for their render (TheatreSkin.HoldTodaysLook).
+float4 _EvoLook;
+
+// xyz: absorption per metre for red, green and blue (pure water's 0.36, 0.07, 0.01 scaled
+// down); w: the in-scatter's coefficient per metre, one for all three channels.
+float4 _EvoAbsorb;
+
+// x: Henyey-Greenstein's g; y: how much of the in-scatter follows it (TheatreLook.PhaseGain).
+float4 _EvoPhase;
+
+// x: one over the run's attenuation depth, per metre; y: the run's day factor at the second on
+// screen as the picture takes it (the factor to the power TheatreLook.DayGamma, 1 is the mean
+// day); z: the floor the depth light never falls under; w: the overcast, 0 clear to 1 dull.
+float4 _EvoDaylight;
+
+// xyz: how fast red, green and blue fall against the attenuation depth (red first).
+float4 _EvoDepthRates;
+
+// The underwater look's second batch (logbook/specs/underwater-look/brief-2.md), pushed by
+// TheatreSkin.PushLook. _EvoLook2: x is item 1 (fade into the backdrop), y is 1 when the run's snow
+// fields are on the snow texture (items 4 and 5), z is the drift (the owner's addition), w is item 3
+// (the shafts in their place). Held at zero by a census view, as _EvoLook is.
+float4 _EvoLook2;
+
+// Item 1: x the metres from the eye the fade starts at; y the extinction's scattering part per
+// metre; z the open water's brightness as a multiple of the column under the second batch.
+float4 _EvoFade;
+
 // Each dial falls back rather than refusing, because a scene that never built a skin still draws
 // bodies and a bed, and a zero wavelength there would divide the sea by nothing. The fallbacks
 // are TheatreSkin's own defaults.
@@ -173,12 +208,242 @@ float3 EvoWaterColourAlong(float3 positionWS)
     return EvoWaterColour(0.5 * (eyeY + positionWS.y));
 }
 
+bool EvoLookWater() { return _EvoLook.x > 0.5; }
+bool EvoLookDepth() { return _EvoLook.y > 0.5; }
+bool EvoLookSky()   { return _EvoLook.z > 0.5; }
+
+// The second batch's item 1 acts only with the first batch's water on: it replaces how the water
+// mixes, not whether there is any.
+bool EvoLookFade()  { return _EvoLook2.x > 0.5 && _EvoLook.x > 0.5; }
+bool EvoLookPlace() { return _EvoLook2.w > 0.5; }
+
+// The run's day as a brightness, 1 with item 3 off: everything the sun lights (the in-scatter,
+// the shafts, the snow, the window) is as bright as the run's surface light at the second.
+float EvoDayGain() { return EvoLookDepth() ? max(0.0, _EvoDaylight.y) : 1.0; }
+
+// Henyey-Greenstein, normalised so that light scattered evenly in every direction is 1 rather
+// than 1 / 4 pi: forward peaked for g above zero, 45 straight ahead and 0.06 straight back at
+// g 0.8. cosTheta is between the light's travel and the direction it leaves in.
+float EvoPhaseHG(float cosTheta, float g)
+{
+    float g2 = g * g;
+    float denominator = max(1e-4, 1.0 + g2 - 2.0 * g * cosTheta);
+
+    return (1.0 - g2) / (denominator * sqrt(denominator));
+}
+
+// How much brighter the water scatters toward an eye looking along viewDir (unit, eye to
+// point) than its mean: 1 with the gain at zero, and above 1 where the look runs back up the
+// refracted sun's ray, so the water glows where the light comes from.
+float EvoPhaseTerm(float3 viewDir)
+{
+    float cosTheta = dot(EvoSunRayWS(), -viewDir);
+    float p = EvoPhaseHG(cosTheta, clamp(_EvoPhase.x, 0.0, 0.95));
+
+    return max(0.0, 1.0 + _EvoPhase.y * (p - 1.0));
+}
+
+// Metres of water that count toward the fade when a look crosses d metres of it (item 1): none
+// over the first start metres, a ramp from there to the full distance (_EvoFade.w), then every
+// metre. The integral of a weight that rises from 0 at start to 1 at full, so the fade has no kink.
+// The ramp runs to 12 m rather than to twice the start since iteration 11: a rock at 5 to 10 m
+// kept its colour and shape only once it had most of its own light.
+float EvoFadeMetres(float d)
+{
+    float start = max(1e-3, _EvoFade.x);
+    float full = max(start + 1.0, _EvoFade.w);
+    float ramp = full - start;
+
+    if (d <= start) return 0.0;
+    if (d <= full) return (d - start) * (d - start) / (2.0 * ramp);
+
+    return d - 0.5 * (start + full);
+}
+
+// The water the world has, pushed by TheatreSkin.Dress: the box from its floor to the waterline
+// (xyz of each; _EvoWaterLow.w is 1 once pushed) and the tank's circle (x and z of its centre, its
+// radius, and w at 1 for a tank). Read by EvoWaterPathMetres alone.
+float4 _EvoWaterLow;
+float4 _EvoWaterHigh;
+float4 _EvoWaterTank;
+
+// Metres of water between the eye and a point: only the part of the straight line that is inside
+// the world's water. The first stills of the look (2026-10-07) took the whole eye distance, and
+// the bed view, whose camera stands outside the tank, filled the air outside the glass with
+// in-scatter and turned the earth wall to cyan glass. So the segment is clipped to the box (its
+// top is the waterline) and to the tank's circle; a point just inside the glass seen from outside
+// it is behind a few centimetres of water and nothing more. Before a skin has dressed a world the
+// fallback is the line less the part above the waterline, which is what the look first did.
+float EvoWaterPathMetres(float3 positionWS)
+{
+    float3 eye = GetCameraPositionWS();
+    float3 delta = positionWS - eye;
+    float d = length(delta);
+
+    if (_EvoWaterLow.w < 0.5)
+    {
+        float waterline = EvoWaterlineY();
+
+        if (eye.y > waterline)
+        {
+            if (positionWS.y >= waterline) return 0.0;
+            d *= (waterline - positionWS.y) / max(1e-4, eye.y - positionWS.y);
+        }
+
+        return d;
+    }
+
+    float3 dir = delta / max(1e-6, d);
+    float3 safe = dir + step(abs(dir), 1e-6) * 1e-6;
+
+    float3 a = (_EvoWaterLow.xyz - eye) / safe;
+    float3 b = (_EvoWaterHigh.xyz - eye) / safe;
+    float3 nearer = min(a, b);
+    float3 farther = max(a, b);
+
+    float t0 = max(0.0, max(max(nearer.x, nearer.y), nearer.z));
+    float t1 = min(d, min(min(farther.x, farther.y), farther.z));
+
+    if (_EvoWaterTank.w > 0.5)
+    {
+        float2 o = eye.xz - _EvoWaterTank.xy;
+        float2 h = dir.xz;
+
+        float qa = dot(h, h);
+        float qb = dot(o, h);
+        float qc = dot(o, o) - _EvoWaterTank.z * _EvoWaterTank.z;
+
+        if (qa > 1e-8)
+        {
+            float disc = qb * qb - qa * qc;
+            float s = sqrt(max(0.0, disc));
+
+            t0 = max(t0, (-qb - s) / qa);
+            t1 = min(t1, disc < 0.0 ? t0 : (-qb + s) / qa);
+        }
+        else if (qc > 0.0)
+        {
+            t1 = t0;
+        }
+    }
+
+    return max(0.0, t1 - t0);
+}
+
+// Whether the eye is in the world's water: under the waterline, inside the box and, in a tank,
+// inside the glass. True before a skin has dressed a world and said where the water is.
+bool EvoEyeInWater()
+{
+    float3 eye = GetCameraPositionWS();
+    if (_EvoWaterLow.w < 0.5) return eye.y < EvoWaterlineY();
+
+    if (any(eye < _EvoWaterLow.xyz) || any(eye > _EvoWaterHigh.xyz)) return false;
+
+    if (_EvoWaterTank.w > 0.5)
+    {
+        float2 o = eye.xz - _EvoWaterTank.xy;
+        if (dot(o, o) > _EvoWaterTank.z * _EvoWaterTank.z) return false;
+    }
+
+    return true;
+}
+
+// The open water seen along a direction (unit, from the eye): what the camera sees where nothing
+// stands, painted by TheatreBackdrop.shader, and since the second batch also the colour every far
+// thing fades into (EvoMixFog). The column at the height three reaches along the look from the
+// eye, clamped at the waterline; with the first batch's water on, brightened toward the sun by the
+// phase term; as bright as the run's day; and under the second batch's item 1, scaled by its own
+// gain for an eye in the water, which keeps the open water below the lit things in it. An eye
+// outside the water (the bed view's, beyond the glass) keeps the column as it was: what it sees
+// around the tank is a backdrop, not water it is in.
+float3 EvoBackdrop(float3 direction)
+{
+    float eyeY = min(GetCameraPositionWS().y, EvoWaterlineY());
+    float3 colour = EvoWaterColour(eyeY + direction.y * EvoWaterViewMetres());
+
+    if (EvoLookWater()) colour *= EvoPhaseTerm(direction);
+    colour *= EvoDayGain();
+    if (EvoLookFade() && EvoEyeInWater()) colour *= max(0.0, _EvoFade.z);
+
+    return colour;
+}
+
+// What a far thing fades into under item 1: the open water along the look at the second batch's
+// gain, whether the eye is in the water or not. The same as the drawn backdrop for an eye in the
+// water, which is the promise; an eye beyond the glass sees the tank's water fade to this and the
+// world around the tank keep its column (EvoBackdrop), so the close view through the glass does not
+// fade into a brighter water than it is looking through.
+float3 EvoFadeTarget(float3 direction)
+{
+    float eyeY = min(GetCameraPositionWS().y, EvoWaterlineY());
+    float3 colour = EvoWaterColour(eyeY + direction.y * EvoWaterViewMetres());
+
+    if (EvoLookWater()) colour *= EvoPhaseTerm(direction);
+
+    return colour * (EvoDayGain() * max(0.0, _EvoFade.z));
+}
+
 // URP's MixFog, with the column's colour in place of the one flat fog colour. Every surface
 // that mixes towards the fog (a body, the bed, the ceiling) goes through this; the additive
 // things (the snow, the shafts) fade towards nothing and never did mix.
+//
+// With item 2 on, the one grey factor becomes two terms (the brief's formula): the surface's
+// colour kept by the water's absorption, per channel and red first, and the light the water
+// itself scatters toward the eye over the same metres, at its own lower rate. The in-scatter is
+// the column's colour at the height the look passes through, brightened toward the sun by the
+// phase function, and as bright as the run's day when item 3 is on.
 float3 EvoMixFog(float3 colour, float fogFactor, float3 positionWS)
 {
-    return MixFogColor(colour, EvoWaterColourAlong(positionWS), fogFactor);
+    // One return, so the compiler does not read the branch as a path that leaves the result unset.
+    float3 mixed = colour;
+
+    if (EvoLookFade())
+    {
+        // The second batch's item 1: the thing fades into the open water seen behind it, over the
+        // extinction of absorption and scattering together, so nothing in the water is brighter
+        // than the water it stands against at the far end, and the near end keeps its black point.
+        // Absorption is per channel, red first; the scattering part is grey. From the start
+        // distance on (EvoFadeMetres), so nothing near the lens loses anything.
+        float d = EvoFadeMetres(EvoWaterPathMetres(positionWS));
+        float3 kept = exp(-(_EvoAbsorb.xyz + _EvoFade.yyy) * d);
+
+        float3 view = -normalize(GetWorldSpaceViewDir(positionWS));
+
+        mixed = colour * kept + EvoFadeTarget(view) * (1.0 - kept);
+    }
+    else if (EvoLookWater())
+    {
+        float d = EvoWaterPathMetres(positionWS);
+        float3 kept = exp(-_EvoAbsorb.xyz * d);
+        float scattered = 1.0 - exp(-_EvoAbsorb.w * d);
+
+        float3 view = -normalize(GetWorldSpaceViewDir(positionWS));
+        float3 inscatter = EvoWaterColourAlong(positionWS) * (EvoPhaseTerm(view) * EvoDayGain());
+
+        mixed = colour * kept + inscatter * scattered;
+    }
+    else
+    {
+        mixed = MixFogColor(colour, EvoWaterColourAlong(positionWS), fogFactor);
+    }
+
+    return mixed;
+}
+
+// How much of the surface's light reaches a point at its depth, per channel, for the key, the
+// ambient and a leaf's glow (item 3): one at the waterline on the mean day, falling by e-folds
+// of the run's own attenuation depth with red first, times the run's day factor, and never
+// under the floor, so the deep is dim and not black. One with item 3 off.
+float3 EvoDepthLight(float3 positionWS)
+{
+    if (!EvoLookDepth()) return float3(1.0, 1.0, 1.0);
+
+    float depth = max(0.0, EvoWaterlineY() - positionWS.y);
+    float3 fall = exp(-depth * _EvoDaylight.x * _EvoDepthRates.xyz);
+
+    // The floor before the day, so the deep is dimmer in winter than in summer too, and a
+    // brighter season is brighter everywhere in a frame (the meter relies on that).
+    return max(fall, _EvoDaylight.zzz) * EvoDayGain();
 }
 
 // The wave field: how high the water stands over a point, how it tilts there, and how it curves.
@@ -270,7 +535,11 @@ float3 EvoRippleNormal(float2 xz, float time)
 // swings through zero several times a metre, which is finer than any of these pictures can
 // resolve and would come back as noise; and below that the fade has taken the caustics away in
 // any case.
-float EvoCausticNet(float3 positionWS, float time)
+//
+// Split in two for the underwater look's shafts (item 4): EvoCausticGain is the focusing itself,
+// the light the surface sends to a point as a multiple of the flat water's, and the net is that
+// gain with the flat water dropped. The arithmetic is the one this function always did.
+float EvoCausticGain(float3 positionWS, float time)
 {
     float depth = max(0.0, -positionWS.y);
     float focusing = min(depth, EvoLightReachMetres());
@@ -286,11 +555,67 @@ float EvoCausticNet(float3 positionWS, float time)
     const float bend = 0.248;
 
     float area = 1.0 + focusing * bend * curvature;
-    float gain = 1.0 / max(0.14, abs(area));
+
+    return 1.0 / max(0.14, abs(area));
+}
+
+float EvoCausticNet(float3 positionWS, float time)
+{
+    float gain = EvoCausticGain(positionWS, time);
 
     // Subtracting a little under one leaves the filaments and drops the flat water between them,
     // which is what a caustic net is: bright lines on dark, and not a bright wash.
     return saturate((gain - 0.9) * 0.8);
+}
+
+// The sun's light arriving at a point under the surface along the refracted ray, per channel,
+// before the caustics' focusing and before it turns toward an eye (items 4 and 5): absorbed over
+// the slant path down, faded with depth, and as bright as the run's day. The fade is the run's
+// own attenuation depth when item 3 is on, so the shafts give out where the bodies' light does,
+// and the theatre's light reach otherwise, which is where the caustics and the old shafts stop.
+float3 EvoSunAt(float3 positionWS)
+{
+    float depth = max(0.0, EvoWaterlineY() - positionWS.y);
+    float3 ray = EvoSunRayWS();
+    float slant = depth / max(0.15, -ray.y);
+
+    float3 fall = EvoLookDepth()
+        ? exp(-depth * _EvoDaylight.x * _EvoDepthRates.xyz)
+        : exp(-depth / EvoLightReachMetres()).xxx;
+
+    return exp(-_EvoAbsorb.xyz * slant) * fall * EvoDayGain();
+}
+
+// How strongly the beam through a point burns, 0 to 1, for the marched shafts (item 4): read where
+// the refracted sun's ray through the point left the surface, as how concave the water is there
+// toward the sun (EvoShaftGain's question, asked of every point rather than of nine quads). A beam
+// is then the line of points one patch of the surface lit, as distinct a metre down as twenty. The
+// focusing at the point's own depth (EvoCausticGain) is too weak in the top few metres to draw a
+// beam by itself: at three metres under it moves the light by a quarter either way, which is why
+// the first marched stills (2026-10-07) showed only faint streaks.
+float EvoBeamAt(float3 positionWS, float time)
+{
+    float depth = max(0.0, EvoWaterlineY() - positionWS.y);
+    float3 ray = EvoSunRayWS();
+    float2 top = positionWS.xz - depth * ray.xz / max(0.15, -ray.y);
+
+    float2 slope;
+    float curvature;
+    EvoRipple(top, time, slope, curvature);
+
+    // Twice the longest train's own curvature scale, since three trains add.
+    float k = 6.2831853 / EvoWaveLengthMetres();
+    float scale = max(1e-4, 2.0 * EvoWaveMetres() * k * k);
+
+    return saturate(-curvature / scale);
+}
+
+// A fixed offset in [0, 1) per pixel, for starting a march: Jimenez's interleaved gradient
+// noise. A function of the pixel and nothing else, so a still camera draws the same picture
+// every frame and a film does not shimmer from it.
+float EvoPixelDither(float2 pixel)
+{
+    return frac(52.9829189 * frac(dot(pixel, float2(0.06711056, 0.00583715))));
 }
 
 // How brightly one shaft of light burns, read where it leaves the surface.
@@ -348,7 +673,7 @@ float EvoCausticFade(float3 positionWS, float reach)
 // The carve: the field the bodies and the sea bed are cut away by.
 //
 // Why there is one. The first day's skin rounded the boxes and mottled them, and the owner's
-// reading of it was that it was "still very very geometric": rounding leaves every face flat and
+// reading of it was that it was still very geometric: rounding leaves every face flat and
 // every pair of faces parallel, and a mottle is paint on a flat face. What separates a grown
 // thing from a built one is the silhouette, so the second day cuts into the shape itself
 // (research/theatre-look, "Skin as shape"), and everything below exists to make that cut and to

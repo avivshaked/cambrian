@@ -643,6 +643,52 @@ namespace Evosim.Dynamics.Placement
         }
 
         /// <summary>
+        /// Reserves room at exactly <paramref name="point"/> (<see cref="IBodyPlacement.TryReserveAt"/>), for a body whose place the
+        /// caller drew. Draws nothing, so the founders' and the children's stream is as it was; and moves nothing: where
+        /// <see cref="TryReserveFounder"/> would raise a body off the bed or set it on a reef's table, this refuses, saying why.
+        /// </summary>
+        public bool TryReserveAt(Phenotype adult, Float3 point, out int patch, out string refusal)
+        {
+            patch = 0;
+            refusal = null;
+            if (adult == null) { refusal = "there is no body"; return false; }
+
+            float radius = BoundingRadius(adult);
+            if (!InTheWater(point.X, point.Z, radius))
+            {
+                refusal = FormattableString.Invariant($"a body of radius {radius} m there would reach past the glass");
+                return false;
+            }
+
+            float lowest = LowestPlacement(point.X, point.Z, radius);
+            if (point.Y < lowest)
+            {
+                refusal = FormattableString.Invariant($"a body of radius {radius} m at y {point.Y} m would be in the bed, which it clears from y {lowest} m");
+                return false;
+            }
+
+            if (Floor != null && Floor.HasReefs)
+            {
+                float y = point.Y;
+                if (!Floor.ClearOfReefs(point.X, ref y, point.Z, radius) || y != point.Y)
+                {
+                    refusal = "the point is on a reef";
+                        return false;
+                }
+            }
+
+            if (!Free(point, radius))
+            {
+                refusal = FormattableString.Invariant($"a body of radius {radius} m there would overlap another");
+                return false;
+            }
+
+            Reserve(point, radius);
+            patch = PatchOf(point.X, point.Z);
+            return true;
+        }
+
+        /// <summary>
         /// <see cref="PlacementFloor.ClearOfReefs"/> on a candidate: false to refuse it, true with
         /// the candidate and its height raised where a cap's table took it.
         /// </summary>

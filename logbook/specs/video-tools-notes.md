@@ -4,9 +4,9 @@ On the evening of 2026-09-15 the owner said what the videos are for. They are fi
 the world we are building, made with the agent or a parallel agent, and each one tells a
 story.
 
-> "Whenever we do [have a story], I'd like to be able to click safari and record (as well
-> as other things we might want to record and edit into the video). The safari should be
-> both informative and cinematic in nature."
+Whenever there is a story, the owner wants to be able to click safari and record, as well as
+record other things we might want to edit into the video. They want the safari to be both informative
+and cinematic in nature.
 
 These notes hold what was agreed in that conversation, checked against the transcript. Three
 specs were written from them the same night: `timeline-spec.md`, `checkpoint-spec.md` and
@@ -83,9 +83,9 @@ a caption log with timecodes beside the clips.
 
 The owner asked for graphs that can be played:
 
-> "we are also missing some tools that show graphs over time of various aspects of the
-> world, or even something like Civilization does where you can play the timeline and you
-> are the graph of a thing over time and can jump around in the timeline."
+The owner said we were also missing tools that show graphs over time of various aspects of the
+world, or even something like the timeline in Civilization, where you play the timeline, you are
+the graph of a thing over time, and you can jump around in it.
 
 The agreed design is a scrub mode that draws the world from `positions.jsonl` at any sample.
 Bodies stand where they stood, coloured by guild and sized from the snapshot genomes, with
@@ -99,8 +99,8 @@ it makes every later question faster to answer.
 
 The owner asked to be able to jump:
 
-> "One thing we don't have is the ability to take world snapshots and replay them, which
-> means it takes a long time to get to any interesting point in the recording."
+The owner said we cannot take world snapshots and replay them, which means it takes a long time
+to reach any interesting point in the recording.
 
 We agreed that the farm writes a full-state checkpoint every 1,000 s or so. It holds the
 whole of the Core world: the fields, the organisms with their reserves, ages, growth and
@@ -110,7 +110,7 @@ The theatre seeks to the nearest checkpoint and plays forward with the physics r
 **labelled cousin**.
 PhysX keeps solver state that no API returns, so the step after a restore is solved in a
 different contact order and the world parts from its recording within minutes. The owner
-accepts the cousin for filming ("Yes a labeled cousin is acceptable"), and the overlay says
+accepts a labelled cousin for filming, and the overlay says
 "faithful to N s, cousin after". The RNG itself comes back bit for bit.
 
 The size was estimated at round 38's scale, 1,600 bodies and 24,000 live cells. Genomes take

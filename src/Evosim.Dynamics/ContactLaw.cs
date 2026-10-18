@@ -81,6 +81,36 @@ namespace Evosim.Dynamics
         }
 
         /// <summary>
+        /// D137's sliding friction on a push from the rock or the glass: against the sliding
+        /// velocity (the part of <paramref name="velocity"/> along the surface, whose normal is the
+        /// push's own direction, since every such push lies along it), at most
+        /// <c>μ · |push|</c>, and never more than stops the slide in one step, so a slide ends in
+        /// rest rather than a reversal. Zero with no push or no slide.
+        /// </summary>
+        /// <remarks>
+        /// Applied at the sphere's centre with no torque, like the push it goes with, so a part
+        /// scrapes to a stop rather than rolling. The step's cap is read against the mass the push
+        /// is read against, as <see cref="PairPush"/>'s is.
+        /// </remarks>
+        public static Vec3 Friction(Vec3 push, Vec3 velocity, double mass, SolverConfig config)
+        {
+            double pressing = push.Magnitude;
+            if (!(pressing > 0)) return Vec3.Zero;
+
+            Vec3 normal = push * (1.0 / pressing);
+
+            Vec3 sliding = velocity - normal * Vec3.Dot(velocity, normal);
+            double speed = sliding.Magnitude;
+            if (!(speed > 0)) return Vec3.Zero;
+
+            double force = config.BedFriction * pressing;
+            double most = mass * speed / config.StepSeconds;
+            if (force > most) force = most;
+
+            return sliding * (-force / speed);
+        }
+
+        /// <summary>
         /// A body's whole contact force, N, bounded so that one step of it cannot change the
         /// body's speed by more than the world allows.
         /// </summary>

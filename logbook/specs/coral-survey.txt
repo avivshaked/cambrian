@@ -1,0 +1,566 @@
+CORAL REEFS: A SURVEY OF THE PRESENT REEF GEOMETRY, ITS COSTS, AND OPTIONS
+Read-only survey, 2026-10-16. Nothing was built, run or tested.
+
+Path prefixes used below:
+  WB  = D:\Projects\experiments\evolution-simulator\scratch\wt-burial\   (newest world build)
+  R61 = D:\Projects\experiments\evolution-simulator\scratch\wt-r61\      (round 61 branch, D192 landscape seed)
+  M   = D:\Projects\experiments\evolution-simulator\                    (main checkout)
+Line numbers refer to those trees as read today. "Estimate" and "inference" mark everything not read
+directly off the code or a record.
+
+======================================================================================================
+SUMMARY
+======================================================================================================
+- A reef today is one analytic mushroom: a lobed slab cap joined to a vertical cylinder stem by a smooth
+  minimum. Every system reads the same signed-distance function. Placement draws reefs uniformly over the
+  disc until the caps cover ReefCover of the surface, and it knows nothing about the islands.
+- Round 60 ran 53 reefs at cover 0.25 (about 22,000 m2 of caps), against islands of about 8,400-9,800 m2.
+  If the corals are put on the islands at today's cover, they would roof every oasis twice over, and the
+  ground under a cap gets no light at all (CapTransmission 0). So coral cover on the islands has to be set
+  as a share of each island, not of the tank.
+- Every query on the CPU and the card loops over ALL reefs: two passes of lower bounds in the contact, and
+  reach checks twice per link per step in the water, because the card does not share the fade between
+  velocity and acceleration. At 53 reefs this is cheap. At hundreds or thousands of pieces it is not
+  (estimate). A static grid over the reef pieces is the mitigation every richer option needs.
+- The costliest single piece is the lobed cap's Atan2. The card has no instruction for it, and ILGPU runs a
+  24-rotation software CORDIC (card-audit-r57.md). Any new build is a new realisation anyway, so it is the
+  time to drop Atan2 (inference).
+- Holdfasts already exist: the AnchoringCell (D162/D165) grips the bed or a reef on contact. D171 parked it
+  after a null: weightless grazers hovered 0.27 m above the cap tops, in water that the reef's fade makes
+  about 40 times slower, and starved. A coral meant for holdfasts has to fix both: bodies must touch rock,
+  and water must reach the rock.
+- The theatre draws the reefs as lathe meshes, displaced only inward. The shaft shader keeps at most 32
+  cap discs, so round 60's 53 reefs already exceed it. Any richer shape needs a new mesh path and a baked
+  shade map.
+
+======================================================================================================
+1. HOW A REEF IS DEFINED AND PLACED
+======================================================================================================
+Shape (ReefGeometry, Evosim.Core)
+- One reef is a vertical axis at (x, z). The cap's outline is r(t) = r0(1 + sum over k=2..4 of
+  a_k cos(k t + phi_k)). The cap is a slab of thickness t, rounded at the rim by t/2. The stem is a
+  cylinder of radius StemRadius, and a smooth minimum with fillet t/2 joins the two. Stem 0 is a floating
+  island. WB src/Evosim.Core/Environment/ReefGeometry.cs:14-22.
+- The distance is first-order (exact for a circle), and its gradient and Hessian are exact derivatives of
+  that function. The streams need the Hessian. The function is C1 outside the rock and C2 except on q = 0
+  and the stem-top plane. ReefGeometry.cs:25-46.
+- The rock is the union of the reefs: the distance is the minimum, the light is 0 under any cap, and the
+  fade is the product of every reef's fade. ReefGeometry.cs:49-53.
+- Per reef: X, Z, CapRadius, CapDepth, StemRadius, A2-A4, P2-P4, NoiseSeed (the theatre's only).
+  ReefGeometry.cs:82-107.
+- Derived per reef: capMidY, outerMax, cosMin and reach, by sampling the outline at 2,048 angles.
+  ReefGeometry.cs:159-201.
+- Constants: 2 m glass clearance (:63), 2 m water under the cap (:70), shallowest stemmed cap 0.5 m (:73),
+  outline swing 0.4 (:76).
+- Refusals: ReefGeometry.Refuse, :383-522. A reef is refused in a box (:416) and outside a grid field (:425).
+
+Tunables (RunConfig, group "reef")
+- ReefCover, 0 = off. WB src/Evosim.Core/RunConfig.cs:2016-2027.
+- ReefMaxCount, default 64. :2033-2042.
+- ReefCapRadiusMin/Max, defaults 6 and 16 m. :2049-2063.
+- ReefOutlineRoughness, default 0.15. :2074-2084.
+- ReefCapDepthMetres, default 3. :2090-2096.
+- ReefCapDepthJitterMetres, default 1. :2104-2110.
+- ReefCapThicknessMetres, default 2. :2117-2123.
+- ReefStemRadiusFraction, default 0.25. :2131-2140.
+- ReefFadeMetres, default 8. :2156-2162.
+- The group remark says a config written before the group is refused (§9): RunConfig.cs:2000-2005.
+- Round 60's values: cover 0.25, max count 256, the rest at their defaults
+  (M runs/r60-s6001/2026-10-16-002025-a44977ba/config.json:262-273).
+- Round 60's header reads "reefs 53 cover 0.25 (0.251 got)", in a tank of r = 167.37 m, depth 25 m, bed tilt
+  41 m, shelves at 6/12/24 m covering 1.2/12.4/46.9% (M runs/r60-s6001.md).
+
+The placer (ReefGeometry.Place, ReefGeometry.cs:559-685)
+- It counts cover on the nutrient grid's columns (FieldCellMetres, 1 m in round 60) inside the glass.
+  :571-591.
+- It draws reefs until the covered columns reach the target. More reefs than ReefMaxCount is a refusal.
+  :598-609.
+- The shape is drawn first, in Draw: radius, depth, three amplitudes, three phases, the noise seed. :688-723.
+- The centre is uniform over the disc whose outline stays 2 m inside the glass, with up to 4,000 tries, until
+  DeepEnough finds depth + t + 2 m of water at the centre and at 8 outline points. :613-653, :735-749.
+- The last reef is kept only if it lands nearer the target. :674-679.
+
+The reef stream
+- World.ReefPlacementIndex = ulong.MaxValue - 9, a stream of its own, drawn only by a world with reefs.
+  WB src/Evosim.Core/Ecosystem/World.cs:230-234.
+- Built at World.cs:1670-1677, after the bed and before the fields.
+- On R61 (D192) the stream is seeded from the landscape seed, which also draws the bed, the islands and the
+  current: R61 src/Evosim.Core/Ecosystem/World.cs:1666-1670 and :1687-1690, with the island map at :1879-1880.
+- The manifest records every reef's parameters: WB src/Evosim.Farm/Manifest.cs:152-161.
+
+Does placement know the islands? NO.
+- Reefs are placed at World.cs:1674-1677, before the matter grid exists (:1793) and before the island map is
+  made (:1866-1871).
+- Place's only inputs are the config, the tank radius, the bed and the stream seed (ReefGeometry.cs:559-560).
+- Round 60's reef placement and islands are therefore independent. Inference: the expected share of reef
+  footprint over islands is about the islands' share of the tank, roughly 0.10.
+
+How the islands are made (needed in order to tie the reefs to them)
+- The map is GradientNoise(SeedFor(seed or landscape, IslandMapIndex), wavelength).Fbm, a pure function of
+  x and z. WB World.cs:1866-1871; R61 World.cs:1879-1880.
+- The threshold is the (1 - cover) quantile of the map over the live columns of the MATTER grid
+  (FieldMatterCellMetres, 5 m in round 60). Columns nearer the glass than MatterIslandGlassMarginMetres are
+  left out first (D185). WB src/Evosim.Core/Environment/GridField.cs:1495-1570.
+- Tunables: wavelength (RunConfig.cs:1486), cover 0.1 by default (:1504), depth (:1530), glass margin
+  (:1563). Round 60: 90 m, 0.05, 12 m, 30 m (round 60 header; M rounds/r60.ps1 is in WB rounds/r60.ps1:169-170).
+- As measured from round 60's 100 s dump: 391 of 3,521 water columns (0.11) in 8 islands (seed 6001), and
+  337 columns (0.10) in 3 islands of about 110 columns each (seed 6002). In 5 m columns that is about
+  9,800 m2 and 8,400 m2. A 2,750 m2 island has an equivalent radius of about 30 m, which matches D185's
+  "about one island's radius, 30 m". Source: M scratch/r60-read/s6001-s6002.txt:5,18.
+  Caveat: the same read puts the nearest island column 11.5 m and 20.2 m from the glass despite the 30 m
+  margin. Inference: the reader counts the 100 s dump's stock, which has already spread, and not the plan.
+  Check that before using these areas.
+
+======================================================================================================
+2. EVERY PLACE THE REEFS ENTER THE SIMULATION, AND HOW EACH COST GROWS
+======================================================================================================
+N = number of reefs. C = the cost of one ReefOf, which is an Atan2, 6 sin/cos, and the gradient and Hessian
+(ReefGeometry.cs:868-1001). LB = one lower bound, one sqrt and about 12 flops (ReefGeometry.cs:844-858).
+
+| # | Where | Code | When | Cost growth |
+|---|---|---|---|---|
+| a | Contact and friction, body sphere | WB src/Evosim.Dynamics/ContactReef.cs:37-59; Contacts.cs:912-925 | every physics step, every body | SignedDistance(limit = radius): N LB, early exit if all are past the radius, otherwise a second pass of N LB plus a few C. ReefGeometry.cs:794-836 |
+| b | Contact, per part (D114), and D162's touch of the rock | Contacts.cs:1134-1146, NoteRock :1005-1022 | every physics step, every link | the same per link. Touch adds no arithmetic (:1042-1043) |
+| c | Grip (holdfast) | WB src/Evosim.Dynamics/Anchor.cs:7-16, 46-113 | every step, anchored links | independent of shape: a spring to a fixed point, formed on RockTouched |
+| d | Divergence guard | WB src/Evosim.Dynamics/Divergence.cs:150-162 | every step, every body | 1 SignedDistance |
+| e | Current: the fade on the streams, per link water | CurrentField.cs:583-621, 1083-1101 (CPU shares the fade); ReefGeometry.Fade :1134-1190 | every step, every link | N reach checks; for each reef in reach, an LB and one C plus the product rule. Reach is about outerMax + (fade + fillet/6)/cosMin (ReefGeometry.cs:195-200), up to about 31 m horizontally (estimate, r = 16 m) |
+| f | Matter and nutrient transport: fades on edges | GridField.cs:4115-4160, PotentialTransportDevice.cs:96-141, GpuTransport.cs:147,445 | ONCE per world (baked per face) | edges x FadeAt, once |
+| g | Courant ceiling: the faded water's maximum | GridField.cs:2949-2972 | once (sampled over clocks) | open faces in fade x clocks x Fade, once |
+| h | Matter grid mask: cells in rock are dead, columns split into intervals | GridField.cs:84-96, 593-602, 646-708 | once | cells x SignedDistance(limit 0). 1 m cells in round 60: about 2.8M cells (estimate) |
+| i | Settling stops on a cap's top | GridField.cs:2367-2372 | every transport step | per cell, a live-below test when split |
+| j | Burial at the lowest live cell (D175/D190) | GridField.cs:1690-1730, 2262 | every metabolic step | per column. In a column fully under a stem, the lowest live cell is the cell on top of the cap: "burial on a reef stem's column takes from its one live top cell, about 1-2% of columns" (M HANDOFF.md:142-143) |
+| k | Chemical sense, and any point read in the rock: InColumn, nearest live interval | GridField.cs:1067-1090; card gpu-kernel.template:4115-4140 | per sense read | loops over the column's intervals: 2 under a cap, k+1 under k tiers |
+| l | Light: under any cap 0, else 1 | LightField.cs:448-457 to ReefGeometry.LightTransmission :1202-1211; World.cs:560 | per body per metabolic step | N tests, InsideOutline (Atan2 + trig inside outerMax) :341-355 |
+| m | Corpse settling on a cap (D127) | World.cs:3550-3596 (RestingHeight) | per drifting corpse per metabolic step | N tests (InsideOutline) |
+| n | Placement of founders and floor spawns | PlacementFloor.cs:99-118; SharedVolume.cs:473-513, 545-626, 670-698 | per candidate spot | 2 SignedDistance |
+| o | Header, manifest | ReefGeometry.HeaderToken :1227-1244; Manifest.cs:152-161 | once | none |
+
+Not reef-dependent: the light sense (D164 says it reads zero on the farm) and the leaf and scent fields.
+Grep of WB src/Evosim.Core for the cell types, metabolism, assay and corpse files shows only comments.
+
+======================================================================================================
+3. THE CARD KERNEL'S REEF PATH, AND THE CPU PATH
+======================================================================================================
+Card (WB src/Evosim.Farm.Gpu/gpu-kernel.template)
+- Memory: each reef is 16 Reals in SWorld.WR, starting at cfg.ReefAt (ReefStride = 16, :488). The order is
+  X, Z, CapRadius, CapDepth, StemRadius, A2-A4, P2-P4, Round, capMidY, outerMax, cosMin, reach (:3525-3528).
+- The scalars are cfg.ReefCount, HalfThickness, Fillet and ReefFade (:210, :224, :236).
+- The host packs WR from ReefGeometry's private arrays by reflection: WB src/Evosim.Farm.Gpu/GpuWorld.cs:311-340.
+- No ceiling on the count: ReefCount is a plain int, and WR is sized by the host (GpuWorld.cs:312-316).
+  The farm's limit is ReefMaxCount. Each reef is 16 Reals: 53 reefs are about 850 Reals; 2,000 would be
+  32,000 (estimate, trivial memory).
+- ReefLowerBound: :3531-3547. ReefOf: :3551-3570. RoundCap and Cap: :3572 on. Outline, with 6 SinR/CosR:
+  :3678-3690. Stem: :3692.
+- ReefSignedDistance: :3774-3815. Two full loops over all reefs: the first finds the least bound, with an
+  early exit when it is at or past the limit; the second evaluates each reef whose bound is under the best.
+  Ties keep the lower index.
+- ReefReaches (horizontal reach, then LB): :3819-3827. ReefFade (product over reaching reefs, with gradient
+  and Hessian): :3833 on.
+- Callers:
+  - VelocityAt (:2169-2180) at :2139, and AccelerationAt (:2636-2650) at :2156, both in the water pass.
+    Each calls ReefFade separately, so the card computes the fade TWICE per link per step. The CPU computes
+    it once (CurrentField.cs:1083-1101).
+  - AgainstTheWorld (:5312, reef block :5372-5400), called from the per-body (:5033) and per-link
+    ContactLinks (:5159, :5266) paths.
+- The whole loop is a straight scan over all N. There is no spatial structure.
+- Measured context: the water pass dominates the card's passes (0.95 of 1.12 ms joined). A water thread
+  spends 278-337 kcycles on the current's velocity and 154-217 on its acceleration. The slow path is MathF.Atan2,
+  compiled to a software CORDIC of 24 rotations "for every reef in reach of the link". Its share is NOT
+  measured. Source: M scratch/wt-speed/logbook/specs/card-audit-r57.md:862-882; M HANDOFF.md:414-418
+  ("removing it would change Core's reef arithmetic and so every seed's realisation").
+- Card rules any new reef code must follow (M src/Evosim.Farm.Gpu/CLAUDE.md):
+  - every product written as mul.rn for bit identity (:21-26);
+  - double trig through the guarded SinR/CosR (:78-88);
+  - no Atan2 instruction on the card (card-audit above);
+  - the default ILGPU optimisation level only (:89-93);
+  - the card runs in single (:16-17).
+- The transport's reef fade is a baked float per edge on the card too (GpuTransport.cs:64, 147, 153, 445),
+  so it costs nothing per step.
+
+CPU (WB src/Evosim.Dynamics)
+- ContactReef.Push calls ReefGeometry.SignedDistance(limit = radius). ContactReef.cs:37-59.
+- It is called from Contacts.cs:912-925 (body) and :1134-1146 (per part), with the bed's spring-damper and
+  friction.
+- SolverConfigWorld.cs:43-48 and :167-169 hand World.Reefs to the solver.
+- Water.cs:76-90 uses CurrentField.VelocityAndAccelerationAt, with the fade shared.
+- The placement path is PlacementFloor.ClearOfReefs (:99-118) and the divergence guard (Divergence.cs:150-162).
+- Determinism: a pure function of the committed sphere and the rock, allocation-free (ContactReef.cs:26-29).
+  The minimum is exact in any order, and ties keep the lower index (ReefGeometry.cs:789-793). The fade is a
+  product IN INDEX ORDER (ReefGeometry.cs:1141-1186), so any culling structure must keep ascending order to
+  keep the bits (inference).
+- Wasted work today: ReefOf always computes the Hessian, even for the contact, which needs only S and the
+  gradient (ReefGeometry.cs:868-886; kernel :3551). A gradient-only path for the contact would save it.
+  Inference: it is bit-neutral if S and G are computed by the same expressions.
+
+======================================================================================================
+4. THE BROAD PHASE FOR BODY CONTACTS, AND WHETHER REEFS COULD SHARE IT
+======================================================================================================
+- CPU: ContactGrid is a uniform hash grid over bodies' bounding spheres, rebuilt every step and stored as
+  compressed rows. Every sphere is entered in every cell it covers. The cell is 2 x the MEAN radius, at least
+  0.25 m. WB src/Evosim.Dynamics/Contacts.cs:6-52, rule at :120 (and :499 per part). Candidates are sorted
+  ascending.
+- Card:
+  - CandCap = 256 candidates per body per step (gpu-kernel.template:484). The gather and sort are at
+    :4850-4900.
+  - OverCap caps overlaps and held ids (:998, :1007, :4924, :4945).
+  - EntryCap caps cell entries, starting at 1024 and growing to at least 16 x rows
+    (gpu-runner.template:685, 1671, 1910).
+  - Overflow counters are at :494-495.
+  - Hash: :6528.
+- D193 (M DECISIONS.md:8418-8440): round 60 seeds 6002 and 6003 overflowed CandCap, with 6,257,897 and 19,008
+  body-steps at crowds of 16,000-18,000. The cap is being raised to 512 or 1,024 before round 61.
+- Could reef geometry share it? Not well (inference):
+  1. The body grid's cell size is re-derived every step from the mean body radius. Static reef pieces would
+     be re-entered every step, or the cell would be set by the pieces.
+  2. Reef pieces in the candidate lists would compete for CandCap exactly where D193 found it binding: the
+     crowds live on the islands, and the corals would be there too.
+  3. The body grid is 3D and hashed over live bodies. Reefs are static and mostly vertical.
+- Recommended instead: a SEPARATE static structure, built once at world creation alongside WR. It can reuse
+  the same CSR layout and the same Hash, or be a plain 2D (x, z) column grid. Each cell lists the piece ids
+  whose reach disc overlaps the cell, in ascending order. A query reads one cell's list.
+  Cost per query is about the number of pieces near the point, not N. Inference: it is bit-identical to the
+  brute scan as long as every piece whose bound can be under the best is listed, and lists are in ascending
+  index order. A brute-versus-grid test proves it on CPU and card.
+
+======================================================================================================
+5. THE THEATRE (must never stand outside the collider)
+======================================================================================================
+- Meshes: TheatreReefRock builds a lathe cap and a lathe stem per reef, with noise cut INWARD only along
+  the analytic surface's inward direction. The bounds are top plus underside at most 0.6 t, the rim 0.45 of
+  its half-thickness, the stem 0.4 of its radius. The fillet is drawn by bisection on the same smooth-min
+  formula, pulled in by 3%.
+  M unity/Assets/Theatre/TheatreReefRock.cs:9-47; resolution of 96-256 segments, about 0.2 m, at :53-64.
+- ReefLook.From reads OutlineRadius, CapTopY, CapUndersideY, StemRadius and NoiseSeed: M
+  unity/Assets/Theatre/ReefLook.cs:88-118. It assumes a lathe: a cap plus a stem.
+- The theatre re-places the reefs from the run's config and seed, as World does (Place with worldRules
+  false): M unity/Assets/Theatre/SnapshotWorld.cs:289-320. A placement tied to islands would have to rebuild
+  the island map there too.
+- The shafts are shaded by at most 32 cap discs (centre, widest radius, underside):
+  M unity/Assets/Theatre/TheatreShaftMarch.shader:134-160; M unity/Assets/Theatre/TheatreSkin.cs:803,
+  1233-1247. Round 60 has 53 reefs, so reefs 33-53 cast no shaft shade today (inference from the loop at
+  TheatreSkin.cs:1240). The disc is an approximation already.
+- One holder and mesh set per reef, with a shared rock material and a property block per reef
+  (TheatreSkin.cs:421-425, BuildReefs from :1597).
+- What a new shape asks of it:
+  - a mesh generator for the new primitive, with displacement inward only;
+  - a shade representation for the shafts: better a 2D transmission texture than a disc array;
+  - SnapshotWorld rebuilding the shape, and the island map if placement uses it;
+  - level of detail for films with many pieces.
+- One useful fact for branching shapes. The physics' smooth union lies OUTSIDE the plain union: SmoothUnion
+  subtracts k h^3/6 from the min (ReefGeometry.cs:1061-1075). So a mesh of the plain union of the pieces is
+  always inside the collider, and joints need no fillet drawn to stay legal (inference from the formula).
+- The analysis scripts read reefs from run.json as mushrooms: M scripts/reads/r47-read.py through
+  r54-read.py, tables.py, snow-read.py, theatre-snap.ps1 and others. A new shape needs new readers.
+
+======================================================================================================
+6. THE RECORD ON HOLDFASTS, ATTACHMENT, CREATURES' USE OF REEFS, AND THE REEF'S PURPOSE
+======================================================================================================
+- Purpose (D118, M DECISIONS.md:6248-6292). The reefs exist for shade: areas in the tank that do not get
+  light. Cover 0.25 was the owner's figure. Overlap is allowed, and the rock look is natural. Floating
+  islands and snow drawn on the tables were rejected or deferred.
+- Use by creatures, round 47 (M logbook/0118-the-reef-read-and-the-stomachs-dissected.md:95-121):
+  - the rock is a wall, with no root inside it;
+  - fewer bodies per m3 under the caps than beside them, 123 of 123 samples;
+  - the crowd is a sheet at the caps' depth that passes under the rims;
+  - the tables gather more snow than the open floor in 2 of 3 seeds, and the richest columns are the tables,
+    at about a leaf's break-even;
+  - "nothing lives in the dark".
+  The same density reading held in later rounds (logbook/0120:141, 330; 0121:180; 0122:409). In round 59,
+  leaves were densest around the reefs (logbook/0141:127-133).
+- Holdfasts EXIST:
+  - AnchoringCell, the tissue that holds on to the bed or a reef: WB
+    src/Evosim.Core/Cells/StandardCellTypes.cs:899-990, with tenacity 5.8e4 N/m2, a build price per newton,
+    decay and a reserve lag.
+  - The grip: WB src/Evosim.Dynamics/Anchor.cs.
+  - The touch sense: NeuronInput.BedTouch, WB src/Evosim.Core/Genome/NeuronInput.cs:234-248.
+  - D162 (M DECISIONS.md:7679-7705): it grips the bed and the reefs, never the glass ("would make a habitat
+    out of the tank's walls").
+  - D165 (:7742-7760): it enters by budding at a configurable weight.
+  - D164 and D166 (:7720-7783): sit-and-wait grazers grip a reef at the leaves' depth.
+  - D171 (:7886-7903): the gripping-grazer control was a clean null, and the gripping track is paused.
+    Planted grazers hovered 0.27 m above the cap tops, weightless. "The water over a cap moves about 40 times
+    slower than open water at the same height". None of the world's own anchoring bodies touched rock.
+    Weight, and a current over the cap tops, were rejected as world rules wider than grazing. Also
+    M HANDOFF.md:103-109.
+  - Logbook 0140:69: the anchoring cell stays off.
+- Open question (M HANDOFF.md:195-198): holdfasts at the oases' edges, raised with the owner on 2026-10-16.
+  Fed islands give a body on a rock at an island's edge drifting matter to catch, as anemones and barnacles
+  do. It reopens only as its own proposal, after round 61, on the owner's ruling.
+- Islands, the desert and the glass:
+  - D175, fed islands and burial at each column's floor (M DECISIONS.md:7980-7998);
+  - D185, islands 30 m off the glass, as the owner did not want patches against the glass (:8226-8250);
+  - D190, the desert's faster burial (:8333-8356);
+  - D192, one fixed landscape map for round 61, with islands, bed, reefs and current from one seed
+    (:8381-8416);
+  - standing guidance: oases with near-empty water between them, and swimmers that migrate (M CLAUDE.md,
+    "Design every round toward a real ocean").
+
+======================================================================================================
+7. PLACEMENT ON THE ISLANDS (common to every option; the coordinator's requirement)
+======================================================================================================
+How to tie the placement to the islands' footprint as seeded:
+- Build the island map before the reefs. On R61 it is a pure function of the landscape seed and the
+  wavelength (R61 World.cs:1879-1880), and the reefs come from the same landscape seed (:1689). Moving the
+  GradientNoise construction above ReefGeometry.Place is enough.
+- Take the threshold the way PlanIslands does (GridField.cs:1495-1570): the (1 - cover) quantile over the
+  matter grid's columns (5 m), inside the glass less the 30 m margin, and not filled by the bed. Compute it
+  WITHOUT the reef mask. A small circularity exists (inference): in the 5 m matter grid, a stem column under
+  a cap whose top is above 2.5 m has every cell centre in rock, so that column is not "live" to the real
+  PlanIslands. A reef-free threshold can differ from the seeding's by those few columns.
+- Two ways out:
+  (a) state the reef's island test as its own rule on the reef-free columns, and accept that a few columns
+      differ;
+  (b) change PlanIslands to count the reef-free columns as well. That is a new realisation of every reef
+      world with islands (rounds 60 and 61), so it is the owner's ruling.
+- Draw rule: a tunable ReefIslandShare s in [0, 1] (illustrative name). Each colony draws, from the reef
+  stream, whether it is an island colony (with probability s) or a desert one. Its centre is then
+  rejection-sampled until map(x, z) is above the threshold (island) or below it (desert), with today's
+  4,000-try refusal. Optionally weight island centres by the plan's weight, so plateau columns are favoured
+  over the shore ramp (GridField.cs:1576-1582).
+
+What share can sit on islands against the open water:
+- Areas: the islands are about 8,400-9,800 m2 (round 60 read, section 1). Today's caps cover about 22,000 m2
+  (0.25 of 88,000). The desert is the remaining roughly 78,000 m2.
+- A cap gives zero light under it (ReefGeometry.cs:1213-1219). Leaves seed and feed on the islands in the top
+  12 m. A coral canopy over an island therefore takes light from the oasis's own producers. The coral budget
+  on islands is best stated as a share of each island's footprint, for example 10-30% roofed (estimate,
+  owner's call). It should not be stated as a share of the tank.
+- At 20% of 9,000 m2, that is about 1,800 m2 of island canopy: about 4-5 of today's mean caps (pi x 11^2
+  is about 380 m2), or many more small colonies (estimate).
+- If s = 1 at today's cover, the caps would need 2.2-2.6 times the islands' whole area. That cannot be met
+  without heavy overlap, and the oases would go dark. Hence the cover dial needs restating for islands.
+- Desert colonies at s < 1 serve as stepping stones and shade in the open water. The owner has held
+  strands or stepping stones between islands for a later round (D192, M DECISIONS.md:8403-8405), so a
+  desert share is itself a world-rule question.
+
+The 30 m glass margin:
+- Islands are at least 30 m off the glass (RunConfig.cs:1563-1573; GridField.cs:1508-1538). The reef rule is
+  only the outline 2 m inside the glass (ReefGeometry.cs:63, 623).
+- On island colonies the 30 m margin binds. A colony centred on an island column still reaches out by its
+  own radius, so its rock lies at least about 30 - r_reach m from the glass: 14-24 m for reaches of 6-16 m
+  (estimate). Nothing to change.
+- Desert colonies today may stand 2 m from the glass. Recommend the same 30 m margin for them, so the wall
+  does not become a habitat. D162 kept the grip off the glass for this reason, and D185 kept the islands off
+  it.
+- Depth interacts too. DeepEnough needs depth + t + 2 m, about 8 m at the defaults, under the cap's centre
+  and outline (ReefGeometry.cs:735-749). Round 60's bed has shelves at 6/12/24 m over 1.2/12.4/46.9% of the
+  floor, so an island over a shallow shelf may refuse mushroom caps. Bed-rooted branching colonies (options
+  3-5) instead stand on the bed's height and suit shallow islands better (inference).
+
+======================================================================================================
+8. DESIGN OPTIONS, CHEAPEST TO RICHEST
+======================================================================================================
+All costs are ESTIMATES, unmeasured. "R0" means today's reef work per link per physics step on the card:
+contact plus water at 53 lobed reefs. Its share of the card step is itself unmeasured
+(card-audit-r57.md:880-882). Measuring it is mitigation zero for every option: run the probe with the reefs
+on and off on one checkpoint, after the round is done.
+
+Every option adds tunables. A new build therefore refuses every older config, genome-world and checkpoint
+under the loading rule (M CLAUDE.md gotcha; RunConfig.cs:2000-2005). The recorded fixtures are re-recorded
+(src/Evosim.Core/CLAUDE.md). Old mushroom runs replay only on their own builds. The theatre must keep the
+mushroom path to draw them, since it re-places reefs from the config (SnapshotWorld.cs:296-320). Each option
+is deterministic as a pure function of the config and the landscape seed, on its own stream. Bit-identity
+between CPU and card needs the mul.rn transcription in the kernel.
+
+------------------------------------------------------------------------------------------------------
+OPTION 1. Rougher, trig-free lobed caps on the islands (cheapest)
+------------------------------------------------------------------------------------------------------
+What: keep the mushroom. Raise the harmonics from k = 2..4 to 2..8, so more lobes and an embayed rim. Replace
+Atan2 + sin/cos by multiple-angle recurrences on (nx, nz) = (cos t, sin t), which are already computed
+(ReefGeometry.cs:875-876): cos kt and sin kt follow from Chebyshev recurrences, so no trig at all. Add island
+placement (section 7).
+- Card: per ReefOf about 0.3-0.8 C without the CORDIC, against 1.1-1.3 C if Atan2 is kept with more
+  harmonics. Loops are unchanged at N about 50. Net about 0.5-1.0 R0 (estimate). It may come out CHEAPER
+  than today.
+- CPU: the same ratio. One-time costs (mask, edge fades) are unchanged.
+- Steeper lobes lower cosMin, which widens reach (ReefGeometry.cs:187, 198) and puts more links in reach.
+  The first-order distance error grows with curvature (:25-33), and RefuseFlat refuses lobes thinner than
+  t/2 (:265). Keep OutlineSwing at 0.4.
+- Determinism and old runs: a new realisation (Atan2 removed); the new k range adds tunables.
+- Theatre: smallest work. The lathe already takes any outline function (ReefLook.cs:112). Raise the segment
+  count for k = 8 (TheatreReefRock.cs:56). Replace the 32-disc shaft array with a texture, which is needed
+  already at 53 reefs.
+- Creatures: a longer rim, nooks under the lobes, and the same tables, shade and snow traps. No new perches,
+  and no change to D171's still water over the caps. Not coral-like beyond the outline.
+- Islands: s of colonies on islands. The island budget is 4-5 mean caps at 20% roofed (estimate). Unless the
+  caps are made smaller there, few large caps darken big pieces of each oasis.
+- Mitigations: trig-free outline; card sharing of the fade between velocity and acceleration (bit-neutral by
+  the CPU's own claim, CurrentField.cs:1083); a gradient-only contact path.
+
+------------------------------------------------------------------------------------------------------
+OPTION 2. Tiered tabular clusters: many small caps per colony, at stepped depths, on the islands
+------------------------------------------------------------------------------------------------------
+What: a colony is 3-8 of today's units (cap plus stem), smaller (r about 1.5-5 m), at depths stepped from
+1 to 8 m, packed around one island point. This is the look of tabular Acropora stands. It reuses
+ReefGeometry wholesale, with the Option 1 maths. N rises to about 100-400 units (estimate).
+- Card without a grid: the contact's two LB passes and the water's two reach scans grow linearly. At N = 300,
+  about 6 times today's scans, roughly 2-4 R0 (estimate).
+- Card with a static 2D grid over the units' reach discs (cell about 8 m, ascending lists): about 1-2 R0,
+  the cost being the units near the point (estimate).
+- CPU: the same per-step ratios. The one-time mask scan (about 2.8M cells x N LB) goes from about 0.15G to
+  about 0.8G LB at N = 300: seconds, once (estimate). With the grid it is near today's.
+- Light, corpses and placement: each is O(N) per call (sections l, m, n). Use the same grid, or a baked 2D
+  canopy map (one float per 1 m column) that replaces the per-call loop. The canopy map is cheaper than
+  today's LightTransmission even at 53 reefs.
+- Matter fields: more split columns, and more intervals for InColumn (section k). Small caps under 5 m kill
+  few 5 m matter cells, so snow passes many of them (inference).
+- Determinism and old runs: new tunables (units per colony, depth steps, size range, island share).
+  Otherwise ReefGeometry's own maths.
+- Theatre: the same lathe per unit, so many more small meshes. Instancing or LOD per colony, and the shade
+  texture.
+- Creatures: perches and tables at several lit depths; dappled shade with transmission 0 under each table
+  and light between them; snow traps on each table; gaps between stems as size refuges. The fade still stills
+  the water around each unit, and around a dense cluster the whole thicket is still (D171's problem, inside
+  the oasis). This may be good for refuge and bad for filter-feeding holdfasts (inference).
+- Islands: the natural fit. A small footprint per unit lets 10-30% of each island be roofed in many pieces
+  rather than one dark hole.
+
+------------------------------------------------------------------------------------------------------
+OPTION 3. Branching colonies of capsules (staghorn-like), a hull fade, and a baked canopy
+------------------------------------------------------------------------------------------------------
+What: a colony is a short tree grown from the bed at an island point: a trunk, and branches by a fixed
+recursive rule from the reef stream (angle, length decay, radius taper), 15-60 capsules per colony, 10-40
+colonies. Optionally, flat plates at some tips for tables.
+- Each piece is a capsule (sphere-swept segment). Its SDF needs one projection, a clamp and one sqrt, with
+  NO trig. The gradient is a unit vector, and the Hessian is (I - n n^T)/d, or that minus the axis term on the
+  side. The Hessian jumps at the cylinder-to-sphere seam, as today's cap does on q = 0
+  (ReefGeometry.cs:43-46).
+- Pieces within a colony join by the same cubic smooth minimum. Colonies join by min.
+- Split the readers by need:
+  - CONTACT (and touch, grip, guard, placement) uses the true capsule union, so bodies meet branches.
+  - The STREAMS' fade uses one smooth hull per colony (an ellipsoid, or today's cap-plus-stem envelope).
+    The water cost is then per colony, not per branch.
+  - The LIGHT uses a baked 2D canopy map: transmission per 1 m column, from the projected branches and
+    plates, baked once.
+- Card:
+  - Contact via a static grid of pieces: about 5-30 capsule tests per query, each about the cost of one of
+    today's LBs, so about 0.5-1 R0.
+  - Water via hull fades: about 0.3-0.8 R0 (no Atan2).
+  - Total about 1-2 R0 with the grid and the hull, against 5-30 R0 with no grid and a fade per branch, which
+    is unacceptable (estimates).
+  - Memory: about 8 Reals a capsule; 1,500 pieces is about 12,000 Reals, trivial (estimate).
+- CPU: the same ratios. One-time costs: the mask is cheap because thin branches kill few cells; the edge
+  fades read the hull.
+- Matter fields: branches of radius 0.2-1 m kill almost no 1 m or 5 m cell. Snow passes through the coral
+  and does not collect on it, unlike the tables (0118:110-121). D190's burial is untouched (inference).
+  Plates thicker than a cell would bring the tables back.
+- Determinism and old runs: new primitives and new tunables, so a new realisation and older configs refused.
+  The kernel needs new transcribed functions with mul.rn. Bits are kept only if the grid lists stay in
+  ascending piece order.
+- Theatre: a new tube and plate mesh generator, with noise inward only, bounded at 0.4 of the radius as the
+  stem is today (TheatreReefRock.cs:25). Joints need no fillet, since the plain union is inside the smooth
+  union (section 5). LOD for films. The shade texture comes from the same canopy map as the simulation, so
+  the shafts and the physics agree. SnapshotWorld must rebuild the colonies and the map.
+- Creatures:
+  - Surface at every depth and facing. A drifting weightless body meets a vertical branch from the side,
+    which it cannot do with a horizontal table. That bears directly on D171's null, where nothing touched
+    the cap tops (inference).
+  - Perches at the lit depth for gripping grazers.
+  - Dappled shade, with no full dark under a sparse canopy.
+  - Size refuges: gaps narrower than a large body keep predators out.
+  - The hull fade makes the thicket's interior slow water: a refuge, and slower drift past.
+  Area: about 7.5 m2 a capsule (r 0.4 m, 3 m long), so 40 capsules is about 300 m2 per colony, against
+  about 1,150 m2 for a mean mushroom (estimate). Less area, but far more contact geometry per m2 of footprint.
+- Dial worth adding: a FLOOR on the hull fade (g >= g_min > 0 inside the hull). Water then passes through
+  the thicket slowly, and a holdfast inside it still receives drifting matter. g_min = 0 is today's behaviour.
+  The streams' g u + grad g x A stays divergence-free for any smooth g (ReefGeometry.cs:49-53). Rock is still
+  impenetrable to bodies by contact (inference). The Courant check (GridField.cs:2955-2972) must be re-read,
+  because short or steep fades raise the contour current, which scales as |A|/fade (RunConfig.cs:2146-2156).
+- Islands: grow colonies only from island columns at share s. Budget them by canopy share per island, not by
+  count.
+
+------------------------------------------------------------------------------------------------------
+OPTION 4. A baked distance field in sparse bricks, sampled by the kernels (any shape)
+------------------------------------------------------------------------------------------------------
+What: grow any shape on the CPU at world creation (L-system branches, noise-carved massive corals, boulders,
+overhangs and caves). Bake its signed distance on a fine grid only in bricks near the rock: islands times
+coral height. The kernels sample the table.
+- Smoothness is the catch. The streams need C2 with an exact Hessian (ReefGeometry.cs:39-46). Trilinear
+  interpolation gives a C0 gradient and a zero Hessian, which breaks the closed-form acceleration and makes
+  the contour current step. A C2 reader needs a tricubic B-spline: 64 taps, with the rock DEFINED as the
+  spline's zero set so every reader agrees.
+  - Cheaper hybrid: the baked field only for the CONTACT (trilinear, 8 taps, gradient only), with a hull fade
+    for the water as in Option 3.
+- Card:
+  - Tricubic: about 64 loads plus about 300 flops for S, G and H, roughly 1-3 R0 per sample (estimate).
+  - The hybrid: about 0.5-1 R0.
+  - Memory: about 9,000 m2 of islands x 12 m tall at 0.25 m is about 6.9M voxels, about 28 MB as float; at
+    0.5 m about 3.5 MB (estimate). Small against the 13,000-18,000 MiB a round-60 group needs
+    (M HANDOFF.md:199-200). It does change the card's upload and checkpoint path.
+- CPU: the same per-sample cost. The bake is once, seconds to minutes (estimate). The bake must be
+  deterministic in doubles and stored as float, and both engines read the same table.
+- Determinism and old runs: new tunables, and a new data surface that is not in config.json. Record its hash
+  in the manifest as the reefs are recorded today (Manifest.cs:152-161). An identity claim then also covers
+  the table.
+- Theatre: marching cubes on the same table at an inward iso offset larger than the interpolation error, so
+  the mesh never stands outside the collider. A displacement shader with inward-only noise.
+- Creatures: the richest geometry, with caves, overhangs and porous massive corals. Grip, perches and
+  refuges as in Option 3, plus enclosed dark spaces. Its light needs a baked canopy map too.
+- Islands: bricks exist only over the islands' footprint, so the memory is bounded by the islands' area, and
+  desert corals cost bricks of their own.
+
+------------------------------------------------------------------------------------------------------
+OPTION 5. Option 3 or 4 with holdfasts on: edge corals that feed the anchoring cell (richest)
+------------------------------------------------------------------------------------------------------
+What: the branching colonies of Option 3 (or 4), placed by preference on the islands' EDGES (map values just
+above the threshold, the shore ramp of GridField.cs:1576-1582) where matter drifts off. The hull fade has a
+floor, so water crosses the coral. AnchoringCell is re-enabled by its existing settings (D165 weight).
+- This is HANDOFF's open question (M HANDOFF.md:195-198). It reopens D171, so it is the owner's ruling and
+  comes after round 61.
+- Card and CPU: Option 3's costs, plus the grip's per-anchored-link spring (Anchor.cs). It is cheap, and
+  independent of the shape because it reads only RockTouched. If the fade floor is set low or per piece,
+  contour-current substeps may rise (estimate, read on the Courant ceiling).
+- Determinism and old runs: as Option 3, plus the anchoring tunables, which already exist.
+- Theatre: as Option 3. Bodies gripping branches need the joint and contact pictures checked against a
+  reference (the root CLAUDE.md's render check).
+- Creatures: a reason to hold on (food delivered by moving water to a fixed place on the oasis rim);
+  sit-and-wait niches; shade; refuges; a ring of rock that marks each oasis for migrants.
+- Islands: edge-weighted placement at share s, with interiors kept open for the leaves' light.
+
+======================================================================================================
+9. SUMMARY TABLE (all costs estimates; R0 = today's per-link reef work on the card, itself unmeasured)
+======================================================================================================
+| Option | Card per link-step | CPU | Bits / old runs | Theatre work | Gives creatures | Island tie |
+|---|---|---|---|---|---|---|
+| 1 Trig-free lobed caps | 0.5-1.0 R0 | same ratio | new realisation; old configs refused | small (lathe takes the outline) + shade texture | longer rim, nooks, tables, shade | colony share s; few big caps darken an oasis |
+| 2 Tiered tabular clusters | 1-2 R0 with grid; 2-4 without | same; mask once, seconds | as 1 | lathe x many units, LOD + texture | perches and tables at several depths, dappled shade, gaps as refuges | natural: small units, 10-30% roofed per island |
+| 3 Capsule branching, hull fade, canopy map | 1-2 R0 with grid; 5-30 without | same; mask cheap (thin pieces) | new primitives; kernel transcription | new tube/plate mesher, LOD, texture | contact from the side, perches, size refuges, slow interiors; no snow traps unless plates | grow only from island columns at share s |
+| 4 Baked SDF bricks | hybrid 0.5-1; tricubic 1-3 | bake once; same per sample | new table surface, hashed in the manifest | marching cubes at inward iso | anything: caves, overhangs, porous heads | bricks only over islands bound the memory |
+| 5 Option 3/4 + holdfasts at edges | as 3 + grip (small) | as 3 | as 3 + anchoring settings | as 3 + grip pictures | food delivered to holders, sit-and-wait niche | edge-weighted share on the islands' shore ramp |
+
+======================================================================================================
+10. MITIGATIONS THAT BOUND THE COST (which options need which)
+======================================================================================================
+1. Measure first: probe a round 60 or 61 checkpoint with the reefs on and off. The reef share of the water
+   thread is unknown (card-audit-r57.md:880-882). All options.
+2. Drop Atan2 (Chebyshev recurrences on nx and nz) or use primitives without trig. Options 1 and 2; 3-5
+   avoid it by construction.
+3. Share the fade between the card's VelocityAt and AccelerationAt, as the CPU does (gpu-kernel.template:
+   2139/2156 against CurrentField.cs:1083-1101). This halves the water's reef work. Bit-neutral by the CPU's
+   own claim (inference). Today, for every option.
+4. A gradient-only contact path, skipping the Hessian (inference: bit-neutral). All options.
+5. A static grid over the reef pieces (2D columns, about 8 m cells, ascending lists, built once and uploaded
+   with WR). Kept separate from the body broad phase, so the pieces never compete for CandCap (D193).
+   Options 2-5.
+6. Bounding volumes per colony: a reach disc and a vertical slab test before any piece is read, as
+   LowerBound does for a reef now (ReefGeometry.cs:844-858). Options 2-5.
+7. A hull fade per colony instead of per piece, so the water cost scales with colonies, not branches.
+   Options 3-5.
+8. A baked 2D canopy map for the light, the corpses' resting height and the theatre's shafts. One float per
+   column replaces the O(N) loops at World.cs:560, :3583-3596 and LightTransmission. Options 2-5.
+9. A cap on pieces per colony and on canopy share per island (refused when it is passed, like ReefMaxCount),
+   so the cost is bounded by configuration, not by chance. Options 2-5.
+10. Level of detail is for the theatre only. The simulation must read one shape (no LOD in physics), or
+    identity is lost.
+11. A baked distance field only where it pays: contact-only, in bricks over the islands. Option 4.
+
+======================================================================================================
+11. DECISIONS THAT ARE THE OWNER'S (world rules)
+======================================================================================================
+- Whether corals replace the mushrooms or stand beside them, and whether any stay in the desert (stepping
+  stones were held for later by D192).
+- The light under coral: CapTransmission is 0 today (ReefGeometry.cs:1213-1219). A canopy share per island,
+  or a partial transmission.
+- The fade: its length, a floor inside thickets, and its effect on D171's still water.
+- Re-opening the anchoring cell (D171, HANDOFF.md:195-198).
+- Whether the island test counts reef-free columns (a new realisation of rounds 60-61-style worlds).

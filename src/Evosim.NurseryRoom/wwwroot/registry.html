@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nursery room · registry</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2302080c'/%3E%3Cpath d='M5 19c5-9 11-9 16-3l6-5v12l-6-5c-5 6-11 6-16-1z' fill='%235ef0ff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="nursery.css">
+<style>
+  /* The registry is append-only (rounds/nursery/registry.jsonl): every entry is numbered, a rerun is
+     an entry of its own naming the one it reran. Runs that room.json adds have no number. */
+  .page { grid-template-columns: minmax(0, 1fr) 30rem; grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: "list sel" "feed sel"; }
+  @media (min-aspect-ratio: 2/1) {
+    .page { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) 30rem; grid-template-rows: minmax(0, 1fr);
+      grid-template-areas: "list feed sel"; } }
+  @media (max-width: 1600px) {
+    .page { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(36rem, 1fr);
+      grid-template-areas: "list list" "feed sel"; } }
+  .p-list { grid-area: list; overflow: auto; } .p-feed { grid-area: feed; overflow: auto; } .p-sel { grid-area: sel; overflow: auto; }
+
+  .filters { display: flex; align-items: center; margin-bottom: .8rem; flex-wrap: wrap; }
+  .filterbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: .8rem; }
+  .filterbar .filters { margin-bottom: 0; }
+  /* the filter box: over name, base and reward; it narrows the list as you type, and Escape clears it */
+  .search { display: flex; align-items: center; flex: 0 1 20rem; min-width: 11rem; margin-left: auto; position: relative; }
+  .search input { width: 100%; height: 1.9rem; background: rgba(5, 18, 26, .6); border: 1px solid var(--rule-strong); border-radius: var(--r-sm); color: var(--ink-hi);
+    font-family: var(--sans); font-size: .85rem; padding: 0 1.9rem 0 .65rem; }
+  .search input::placeholder { color: var(--ink-dim); }
+  .search input:focus { outline: none; border-color: var(--run); box-shadow: 0 0 .6rem rgba(94, 240, 255, .2); }
+  .search button { position: absolute; right: .25rem; top: .3rem; width: 1.3rem; height: 1.3rem; border: 0; background: none; color: var(--ink-lo); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0; }
+  .search button[hidden] { display: none; }
+  .search button:hover { color: var(--ink-hi); }
+  .chip { font-size: .85rem; color: var(--ink-lo); padding: .1rem .6rem; border: 1px solid var(--rule); border-radius: 1rem; margin-right: .45rem; white-space: nowrap; cursor: pointer; background: none; font-family: var(--sans); }
+  .chip.on { color: var(--ink-hi); border-color: var(--run-low); background: rgba(94, 240, 255, .06); }
+  /* A column never runs wider than its share: the table is laid out to fixed widths, the experiment column takes what is left, and what does not fit in a
+     cell is cut with an ellipsis (its whole text is in the cell's title). The recipe and its hash are the last column, on screen at 1366 and at 1920. */
+  .reg { table-layout: fixed; width: 100%; }
+  .reg col.c-n { width: 2.6rem; } .reg col.c-base { width: 6.4rem; } .reg col.c-state { width: 11rem; } .reg col.c-reward { width: 5rem; } .reg col.c-start { width: 7.4rem; } .reg col.c-gens { width: 9rem; }
+  .reg col.c-spark { width: 9.2rem; } .reg col.c-best { width: 5rem; } .reg col.c-rerun { width: 11rem; } .reg col.c-recipe { width: 6.6rem; }
+  .reg td, .reg th { overflow: hidden; text-overflow: ellipsis; }
+  .reg td { height: 3.1rem; vertical-align: middle; cursor: pointer; }
+  .reg td.n { color: var(--ink-lo); }
+  .reg tbody tr:focus-visible { outline: 2px solid var(--run); outline-offset: -2px; }
+  .reg tbody tr { outline: none; }
+  .reg tbody tr:focus-visible { outline: 2px solid var(--run); outline-offset: -2px; }
+  .reg td a.base { color: var(--ink-hi); text-decoration: underline; text-decoration-color: var(--run-low); text-underline-offset: .2rem; font-family: var(--mono); font-size: .85rem; }
+  .reg td a.base:hover { text-decoration-color: var(--run); }
+  .reg .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .reg .cut { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .8rem; }
+  .reg a.hash { text-decoration: underline; text-decoration-color: var(--run-low); text-underline-offset: .2rem; }
+  .reg a.hash:hover { text-decoration-color: var(--run); }
+  .reg .nm { font-family: var(--mono); font-size: 1rem; color: var(--ink-hi); display: block; }
+  .reg .ds { font-family: var(--sans); font-size: .8rem; color: var(--ink-lo); display: block; margin-top: .1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .reg tr.rerun td { height: 2.2rem; }
+  .reg svg.spark { display: block; width: 8rem; height: 1.8rem; }
+  .gens { display: inline-flex; align-items: center; }
+  .gens { max-width: 100%; white-space: nowrap; }
+  .gens i { position: relative; width: 3.2rem; flex: 0 1 3.2rem; min-width: 1rem; height: .3rem; margin-left: .5rem; background: var(--track); border-radius: .2rem; }
+  .gens i b { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink-lo); border-radius: .2rem; }
+  .gens.live i b { background: var(--run); box-shadow: 0 0 .5rem rgba(94, 240, 255, .6); }
+  .hash { font-family: var(--mono); font-size: .85rem; color: var(--ink); }
+
+  .p-sel h2 { margin: 0; font-family: var(--mono); font-weight: 400; font-size: 1.6rem; color: var(--ink-hi); word-break: break-all; }
+  .p-sel h2 small { font-size: 1rem; color: var(--ink-lo); margin-right: .5rem; }
+  .p-sel .desc { color: var(--ink); font-size: .95rem; margin: .3rem 0 0; line-height: 1.45; }
+  /* what the panel says it says whole: a hash or a path wraps under its label rather than being cut, and the panel scrolls inside itself when it must */
+  .p-sel .field { align-items: flex-start; padding: .22rem 0; }
+  .p-sel .field__label { flex: 0 0 auto; }
+  .p-sel .field__value { font-size: .85rem; white-space: normal; overflow-wrap: anywhere; max-width: 21rem; }
+  .p-sel .field.field--long { flex-direction: column; align-items: stretch; }
+  .p-sel .field.field--long .field__value { text-align: left; max-width: none; }
+  .actions { display: flex; flex-wrap: wrap; margin-top: auto; padding-top: .8rem; }
+  .actions .btn { margin: 0 .5rem .5rem 0; }
+  a.btn { text-decoration: none; }
+</style>
+</head>
+<body>
+<svg class="caustics" aria-hidden="true"><filter id="caus"><feTurbulence type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="4"/>
+  <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.95  0 0 0 0 1  0 0 0 -2.6 1.55"/></filter><rect width="100%" height="100%" filter="url(#caus)" opacity="0.045"/></svg>
+
+<header class="strip" id="strip"></header>
+
+<main class="page">
+  <!-- source: nursery://registry: one row per registry entry (rounds/nursery/registry.jsonl, the main checkout's) and per run in room.json, newest first; state, generations and the series from each run's own files. A column never names a reward or a measure: the series is the reward's mean per generation (tank-scores.jsonl) where the run has one, else the top genome's score, and each row says which. -->
+  <section class="panel hero p-list" aria-label="experiments">
+    <div class="head"><span class="kicker">Registry</span><span class="q">What has run, and how did it end?</span>
+      <span class="aside" id="reg-file"></span></div>
+    <div class="filterbar"><div class="filters" id="filters"></div>
+      <label class="search" title="narrows the list over name, base and reward as you type; Escape clears it"><span class="sr-only" style="position:absolute;left:-9999px">filter by name, base or reward</span>
+        <input id="q" type="text" autocomplete="off" spellcheck="false" placeholder="filter by name, base or reward" aria-label="filter by name, base or reward"><button type="button" id="q-clear" hidden aria-label="clear the filter" title="clear (Escape)">×</button></label></div>
+    <div id="list"></div>
+  </section>
+
+  <!-- source: nursery://activity: the room's operation log (rounds/nursery/activity.jsonl), newest first: when, which operation, its arguments, who asked (screen or mcp), why, and how it ended. -->
+  <section class="panel p-feed" aria-label="activity">
+    <div class="head"><span class="kicker">Activity</span><span class="q">Who did what, and why?</span><span class="aside">every experiment · newest first</span></div>
+    <div id="feed"></div>
+  </section>
+
+  <!-- source: the selected row of the list: its entry and its run folder's record. -->
+  <aside class="panel p-sel" aria-label="selected entry" id="sel"></aside>
+</main>
+
+<footer class="bar">
+  <span class="hint"><span class="key">↑↓</span>select</span>
+  <span class="hint"><span class="key">↵</span>open run</span>
+  <span class="hint"><span class="key">R</span>open recipe</span>
+  <span class="hint"><span class="key">/</span>filter</span>
+  <span class="hint"><span class="key">Esc</span>clear filter</span>
+  <span class="spacer"></span>
+  <span id="foot"></span>
+</footer>
+
+<script type="module" src="js/registry.js"></script>
+</body>
+</html>

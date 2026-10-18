@@ -1,8 +1,8 @@
 # The mushroom reef: a rock with a cap that shades (round 47)
 
-*Fable, 2026-09-23 afternoon, from the owner's description in conversation ("the reefs I have
-in mind are like mushrooms made of rock (or ground), so the top creates a shadow. if you
-prefer we can have floating islands if that's better") and the agreement that the beach is
+*Fable, 2026-09-23 afternoon, from the owner's description in conversation (the reefs the owner has
+in mind are like mushrooms made of rock or ground, so that the top creates a shadow, and
+floating islands are acceptable if the agent judges them better) and the agreement that the beach is
 round 46 and the reef the round after. What to build so that a tank holds a few rock columns
 with overhanging caps: a lit table on top where snow lands, a shaded room underneath, a stem
 to go round. A floating island is the same object with its cap at the surface and no stem,

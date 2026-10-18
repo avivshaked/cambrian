@@ -15,10 +15,14 @@
 >
 > ~~After round 3, sixteen retrieved papers are held, three read in full,~~ ~~↻ after round
 > 5, thirty-seven are held (round 4 added thirteen, round 5 seven). Twenty-eight of those
-> inform the synthesis and five were read in full.~~ ↻ **after round 6, fifty-four are
+> inform the synthesis and five were read in full.~~ ~~↻ **after round 6, fifty-four are
 > held** (round 4 added thirteen, round 5 seven, round 6 seventeen; reconciled 2026-09-12
 > after the Astra review found this box stopped at round 5). Forty-five of those inform the
-> synthesis and five were read in full. The rest were read in part, where "in part" mostly
+> synthesis and five were read in full.~~ ↻ **After round 7, fifty-four are still held**,
+> because round 7 saved no copy of anything it read. It added ten papers to the synthesis,
+> so fifty-five inform it. Ten of the fifty-five were read in full: five from rounds 1 to 5,
+> and five in round 7 from open full text that was read and not saved. Round 7's other five
+> were read at the abstract. The rest of the synthesis was read in part, where "in part" mostly
 > means *specific claims verified against the primary text* rather than cover-to-cover
 > reading. Forty-seven of the fifty-four have their PDF on disk; seven round-4 entries are
 > held as extracted text only, and only the eight round-1 and round-2 packages carry an
@@ -38,7 +42,7 @@ table is the history.
 
 A round here is a round of this review. The simulator's experiment rounds are counted
 separately and run ahead of it, so round 8 below is an experiment round rather than a review
-round.
+round. In the same way, review round 7 was triggered by experiment round 57.
 
 | Round | Date | Trigger | Queries | Papers read | Design changes produced |
 |---|---|---|---|---|---|
@@ -47,7 +51,8 @@ round.
 | **3** | 2026-08-29 | §9's backlog, overdue by the review's own protocol: §5A implemented and measured for a month with its literature never searched; the 2025 co-optimisation preprint never followed up; forward snowballing never done; §13.4 quarantine unverified | 4 parallel search sweeps (delegated to subagents — §3.2, §8), plus Semantic Scholar citation API for forward snowballing and CrossRef for verification | **8 new papers retrieved** ([Y94] [MC25] [CO02] [VG05] [GOY23] [ST00] [CB18] [PU16]), ~45 candidates surfaced and screened, ~13 citing works triaged; key claims verified against primary text for [Y94] [MC25] [CO02] [CB18] | **§5A.2's "no precedent for a per-neuron charge" corrected** — [Y94 p.7] is the precedent (DESIGN.md §0e). [CB18] and [PU16] verified and promoted out of §13.4. Q1 sharpened by [MC25]; **Q7 answered in part; Q8 opened and answered in principle** (§2). No DESIGN mechanism changed; the round's findings feed the next decisions rather than rewriting existing ones |
 | **4** | 2026-09-01 | A design decision built on uncited inference was falsified by experiment: D055's seabed refuge — flagged ⚠ uncited in its own entry — blocked consumer establishment (logbook/0042) and starved hand-placed consumers to extinction (logbook/0043), and the pending round-8 stabiliser decision plus the owner's whole-layer-access hypothesis lean on the same untouched literature | 2 parallel sweeps (delegated — §3.7, §8), 9 declared new themes under a new question (Q9); the §3.2 re-run was skipped as vacuous (3 days since round 3) and is so logged | **13 PDFs fetched** (12 new to the corpus), **10 into the synthesis** ([HUF58] [JN97] [RMF07] [FM15] [HZ13] [KR13] [MO04] [JKT04] [DBWM05] [RC07]); ~25 relevant works recorded closed-access; 4 load-bearing claims re-verified by the reviewer against extracted text | **D055's failure is theory-predicted, not anomalous** — [KR13 p.2]: the consumer's equilibrium needs refuge *plus* accessible break-even density, so a refuge covering the feeding ground deletes the consumer (D055 addendum updated). Q9 opened and answered in theory. Three constraints delivered to the pending round-8 decision: patches must be *unequal* [HZ13 p.5], the criterion is a length-scale ratio not a dispersal rate [RMF07 p.5], and the strong refuge form is fixed-number (≡ type III response) not proportional [KR13 p.1–2]. The period-vs-generation discriminator for the bust mechanism is uncomputable from current logs — **lineage events promoted from post-goal to pre-round-8**. No existing DESIGN mechanism changed |
 | **5** | 2026-09-03 | `DECISIONS.md` **D070**, ruled in principle the same day and explicitly gated on this round: the world's producers give nothing to the water while they live, so dead tissue is the detritus pool's only income, the second trophic level is fed at ~1% of primary production (0.2 W against ~17 W) and a consumer line caps out at about six individuals. The proposed world rule — a producer deposits a fraction of photosynthetic intake into the nutrient field each step — needed a *number with a citation* before it could be a rule | 11 web queries in 3 themes, plus the Semantic Scholar graph + batch APIs (10 DOIs screened for open access) and the Figshare API; **the §3.2 strings were not re-run** — 2 days since round 4, a date-filtered re-run is vacuous, logged per §3.5 rule 1 | **7 PDFs fetched, all 7 into the synthesis** ([PC95] [MCP05] [LS11] [LS13] [CH20] [PWAH07] [ED21]); every numeric claim in the tables below was located and re-read by the reviewer in the extracted `source.md`. **6 works recorded bot-gated or closed and not bypassed** — including the field's two canonical sources, Baines & Pace 1991 and Thornton 2014 | **Q10 opened and answered.** The number D070 asked for: percentage extracellular release is **10–20% of primary production as a world-ocean general range** (Nagata 2000, via [CH20 p.5]), a cross-system mean of **13%** ([BP91], reached only through three independent verified secondaries), **~20% and flat** across a 150-fold productivity range [MCP05 p.1, p.9], rising to **37–41%** in oligotrophic water [LS11 p.1; CH20 p.1]. Three corrections to what the design would otherwise have assumed: exudation does **not** scale allometrically with cell size (isometric, slope 0.95 across >7 orders of magnitude of cell volume) and does **not** differ between growth phases [LS13 p.1]; and it is **not** proportional to light — DOCp is irradiance-independent while POCp is not, so real PER is *highest where photosynthesis is lowest* [MCP05 p.1, p.8–9]. Two reference points for the 1% diagnosis: the producer→herbivore step measures **13% (11–17%)** [ED21 p.14], and Pauly & Christensen's famous 10% is measured for **TL2→4 only** [PC95 p.3], so it is the wrong number to compare a producer→consumer step against. No DESIGN mechanism changed; the fraction goes to the owner for D070 |
-| **6** | 2026-09-07 | The owner's question, put while round 29 ran: "movement in the primordial soup would not have been worth it without senses, and senses would not have been worth it before movement, so how did our nature solve this chicken and egg problem?" Behind it, D082 and 0072: no round has ever selected for moving, and the owner's reading is that the world is not one in which random movement beats sitting still | Four parallel search sweeps (Claude Sonnet subagents, read-only web, scoped briefs), about thirty queries between them; **the §3.2 strings were not re-run** and no forward snowball was done, both logged in §3.9 per §3.5 | **17 PDFs fetched, all 17 into the synthesis** ([P77] [BP77] [D97] [KB96] [SL23] [W11] [TS12] [MK72] [SBB86] [SJ10] [J09] [J11] [JKG15] [KDL13] [JG21] [MZ09] [HG25]); every claim used was located by the reviewer in the extracted `source.md` at the page. 17 works recorded closed or bot-gated and not bypassed, among them the two founding texts, Fraenkel & Gunn 1940 and Berg & Brown 1972 | **Q11 opened and answered.** Nature did not solve the problem; it never had it. Blind motility pays on its own where the habitat is physically structured [W11 p.1] and the body is large enough for its own motion to refresh the water it feeds from (a radius near 20 µm for a 50% gain [KB96 p.1]; nothing below 0.6 µm [D97 p.1, p.4]; a bacterium relocates rather than stirs [P77 p.7–8; BP77 p.1]); the first sense is a scalar compared with itself a few seconds earlier, biasing a walk that was already random [MK72 p.1; SBB86 p.1; SJ10 p.1]; in animals the first sensorimotor unit was one cell, and nervous systems came to coordinate a new effector, not to link sensing to moving for the first time [JKG15 p.2–3; KDL13 p.4, p.8; J09 p.7; J11 p.1]. **Design impact: a diagnosis and a proposal, no mechanism changed.** §5A.2c's field has no per-body depletion, so undirected movement earns nothing here by construction; DESIGN §0r records it and `fable-propose-motility.md` (absorbed into D083 and deleted on ruling) puts three world rules in front of the owner |
+| **6** | 2026-09-07 | The owner's question, put while round 29 ran, was how nature solved the chicken and egg problem that movement in the primordial soup would not have been worth it without senses, and senses would not have been worth it before movement. Behind it, D082 and 0072: no round has ever selected for moving, and the owner's reading is that the world is not one in which random movement beats sitting still | Four parallel search sweeps (Claude Sonnet subagents, read-only web, scoped briefs), about thirty queries between them; **the §3.2 strings were not re-run** and no forward snowball was done, both logged in §3.9 per §3.5 | **17 PDFs fetched, all 17 into the synthesis** ([P77] [BP77] [D97] [KB96] [SL23] [W11] [TS12] [MK72] [SBB86] [SJ10] [J09] [J11] [JKG15] [KDL13] [JG21] [MZ09] [HG25]); every claim used was located by the reviewer in the extracted `source.md` at the page. 17 works recorded closed or bot-gated and not bypassed, among them the two founding texts, Fraenkel & Gunn 1940 and Berg & Brown 1972 | **Q11 opened and answered.** Nature did not solve the problem; it never had it. Blind motility pays on its own where the habitat is physically structured [W11 p.1] and the body is large enough for its own motion to refresh the water it feeds from (a radius near 20 µm for a 50% gain [KB96 p.1]; nothing below 0.6 µm [D97 p.1, p.4]; a bacterium relocates rather than stirs [P77 p.7–8; BP77 p.1]); the first sense is a scalar compared with itself a few seconds earlier, biasing a walk that was already random [MK72 p.1; SBB86 p.1; SJ10 p.1]; in animals the first sensorimotor unit was one cell, and nervous systems came to coordinate a new effector, not to link sensing to moving for the first time [JKG15 p.2–3; KDL13 p.4, p.8; J09 p.7; J11 p.1]. **Design impact: a diagnosis and a proposal, no mechanism changed.** §5A.2c's field has no per-body depletion, so undirected movement earns nothing here by construction; DESIGN §0r records it and `fable-propose-motility.md` (absorbed into D083 and deleted on ruling) puts three world rules in front of the owner |
+| **7** | 2026-10-05 to 2026-10-06 | The simulator's experiment round 57 (`DECISIONS.md` D151): leaf bodies under a 6,000 s year of two seasons, three days at 1.6 and three at 0.4 of the mean light, with each day's light multiplied by a shared log-normal weather factor (log s.d. 0.3, lag-1 correlation 0.5), a stored reserve, a breeding gate and no light sense. Its pre-registration needed literature behind its predictions on reserves, breeding timing and trait variance under seasonal and stochastic light | 43 web queries on 2026-10-05 (§3.10), 31 abstract fetches through Europe PMC, OpenAlex, arXiv and PMC; verification on 2026-10-06 against CrossRef, OpenAlex, Europe PMC, Semantic Scholar and the bioRxiv API. **The §3.2 strings were not re-run** and no forward snowball was done, both logged in §3.10 | **10 papers verified and added to the synthesis**, no PDF saved. **Read in full from open text (5):** [FDT11] [PW21] [GSS14] [MK07] [BWWR15] (main text; [GSS14] and [BWWR15] supplements not read). **Abstract only (5):** [WTV18] [SK12] [VJTF09] [TGC17] (its design read in full in the same group's open 2019 paper) and [WYRW25] (journal abstract only; both preprint versions read in full). **Locators are section and figure locators, not PDF pages**, because no PDF was saved and the full texts were read as PMC, Europe PMC or bioRxiv XML and HTML, which carry no PDF pagination | **Q12 opened and answered in theory; no mechanism changed.** `DESIGN.md` §0y records the round as rounds 3, 4 and 6 were recorded (§0e, §0e2, §0r). The round backs the predictions of experiment round 57's pre-registration, `logbook/0136-winters-and-weather.md` (on the `round-57` branch at filing). Clause R (the reserve rises) rests on [FDT11] (no storage at low variability and low predictability, Results, Figs 3–4) and [VJTF09] (abstract: stores pay by allowing breeding before the feeding season). Clause T (births move to summer's first day) rests on [VJTF09], abstract only. Clause V (the reserve spread narrows) rests on [PW21] (within-population trait variance fell over time in every regime, Results, Fig. 5). Every mapping from a paper to this world is the round's inference, and none of the ten modelled this world's setting. Two papers disagree on the direction of the weather's autocorrelation effect ([MK07] against [WTV18]), recorded in §7.3 |
 
 Round 2 searched nothing and retrieved nothing. It re-read papers already in
 `research/papers/` against a question that had not been asked in round 1. The answer changed
@@ -155,6 +160,7 @@ result did not reach statistical significance and is reported here as suggestive
 | Q9 | *(opened round 4)* What stabilises a consumer–resource interaction against boom-and-bust — and which stabiliser fits a world whose only evolved consumer is a benthic filter feeder on a well-mixed detritus pool? | ✅ **Answered in theory; the world's own answer is the round-8 experiment.** The theory predicted this project's own result before it ran: a refuge covering the consumer's feeding ground does not stabilise, it deletes the consumer — the equilibrium needs the refuge *plus* the consumer's break-even accessible density [KR13 p.2], and increasing hidden prey ends in predator extinction (González-Olivares & Ramos-Jiliberto 2003, abstract — closed). Four stabiliser families with primary sources: **(a) refuge, strong form** — fixed-*number* not proportional, which is mathematically a type III functional response [KR13 p.1–2; Maynard Smith 1974 via KR13]; **(b) spatial structure** — works by asynchrony + limited dispersal (empirically: continuous platform dead in 120 days vs eight throttled islands persisting 393–447+ [JN97 p.7]; Huffaker's 120-position universe [HUF58 p.39–41]), but *subdivision alone is the null result* — dispersal can destabilise (Briggs & Hoopes 2004, abstract — closed), identical patches buy nothing [HZ13 p.5], and the operative criterion is a length-scale ratio: coexistence dies when the boom-bust pattern wavelength outgrows the domain [RMF07 p.5]; a growth *gradient* plus mobile grazer stabilises even type I feeding at unbounded carrying capacity [FM15 p.1, p.19] — this project's light gradient is that geometry, rotated; **(c) feeding relaxation at low density** — a type III toe (q=0.1 suffices in food webs [DBWM05 p.12]), noting an unbounded linear clearance is not even a real type I, which has a satiation plateau by definition [JKT04 p.1]; **(d) donor control** — a flux-fed detritus pool with a mass-action consumer is *globally stable* [MO04 p.7], so the observed busts imply this world's pool is not behaving as donor-controlled (closed-loop recycling feeds back — Quévreux 2021, abstract, bot-gated) and/or the cycles are cohort-structural, not dynamical (de Roos & Persson family — lead). **The discriminator (cycle period vs consumer generation time) needs lineage events, which do not exist yet** |
 | Q10 | *(opened round 5)* What fraction of its photosynthetic intake does a producer release to the water while alive; what producer→consumer transfer efficiency should a world be judged against; and is the detritus/microbial route a real path for energy to consumers rather than a leak? | ✅ **Answered, with three corrections to the naive form of the rule.** **(a) The fraction.** Percentage extracellular release (PER = dissolved / [dissolved + particulate] primary production) is a normal, continuous process in all growth phases. World-ocean general range **10–20%** (Nagata 2000 via [CH20 p.5]); cross-system mean **13%**, from 16 lacustrine/marine/estuarine studies ([BP91] — **not obtained**, reached through [MCP05 p.9], [LS11 p.7] and [CH20 p.5], all three of which also flag that its glass-fibre-filter methods *underestimate* release); **22 ± 2%** measured in the Celtic Sea and **~20% flat** across a productivity range from <100 to >15,000 mg C m⁻² d⁻¹ (n = 35, r² = 0.90) [MCP05 p.1, p.9]; **~37%** in the ultraoligotrophic Mediterranean [LS11 p.1]; **40.8 ± 12.2%** (integrated range 28.6–60.1%) in the southern East China Sea [CH20 p.1, p.5]; **10 to >35%** in natural assemblages but only **<1–20%, mean ~2%,** in cultures [LS13 p.1]. **(b) Variation.** With *nutrient status*: contested inside one lab — [LS11 p.7–8] finds the oligotrophic contribution higher yet reports that on their pooled dataset "no overall inverse relationship between PER and total primary production exists", while [MCP05 p.9] finds PER flat from eutrophic to oligotrophic. With *growth phase*: no significant difference across three growth stages in 22 species [LS13 p.1]. With *cell size*: **none** — PER uncorrelated with cell size, cell-specific exudation isometric with cell volume (slope 0.95), so "general allometric models cannot be used to predict exudation" [LS13 p.1]. With *light*: DOCp is roughly constant across irradiance while POCp is strongly light-dependent, so PER rises under low light and peaks (>40–50%) at the *base* of the euphotic layer [MCP05 p.1, p.7, p.8–9]. **(c) The reference point.** Producer→herbivore transfer efficiency averages **13% (11–17%)**, and herbivore→fish **10% (7–12%)** [ED21 p.14]; the conventional ~10% [ED21 p.7] traces to [PC95], whose mean of 140 estimates across 48 trophic models is **for TL2→4 and shows no trend with TL** [PC95 p.1, p.3] — it is not a measurement of the producer→consumer step. Ecosystem-scale estimates span <1%–52% [ED21 p.17]. **(d) The detritus/microbial path is real and large.** Of 138 energy channels deconstructed from 40 community food webs, 20% originate with detritus against 63% with a primary producer, "many of which could be traced back to detritus if the description were complete" [MO04 p.3]; most organic matter available to consumers in the ocean is used and respired by bacteria [PWAH07 p.3], and the larger part of all energy captured by marine photosynthesis is ultimately consumed by microorganisms [PWAH07 p.6]. **The caveat that matters for D070:** exudation alone does not feed that loop even in the real ocean — bacterial carbon demand exceeded dissolved primary production **5- to 14-fold** in the Mediterranean [LS11 p.8] and exceeded total primary production at all non-upwelling East China Sea stations [CH20 p.1]; sloppy feeding, excretion and viral lysis supply the rest [LS11 p.8; ED21 p.10]. *Framing, 2026-09-07: D070's rule, a fixed fraction of current photosynthetic income, is an engineering rule that takes its magnitude from this evidence and not its shape; the evidence says release is not proportional to light and is highest where photosynthesis is lowest, and the rule does not model that* |
 | Q11 | *(opened round 6)* Under what conditions is undirected movement worth its cost before any directional sense exists; how did the first sense couple to movement; and did early animals ever pass through a stage with senses and no effectors, or effectors and no senses? | ✅ **Answered.** **(a) When blind movement pays.** Only in a physically structured habitat: "for natural selection to favor motility for the acquisition of nutrients by bacteria, their environment must be physically structured", and "chemotaxis evolved in bacteria that were already capable of self-propulsion in random directions" [W11 p.1]. At bacterial size movement does not raise uptake, since "the adsorption rate for molecules of moderate size cannot be significantly enhanced by motion of the cell or by stirring" [BP77 p.1] and "this bug can't do anything by stirring its local surroundings"; what it can do is "find places where the food is better", moving "to find greener pastures" a distance of order D/v to outrun diffusion [P77 p.7–8]. The size threshold: an organism "smaller than 0.6 µm diameter is unlikely to obtain any advantage by expending energy on locomotion", and the smallest of 97 motile genera averages 0.8 µm while 18 of 94 non-motile genera are smaller [D97 p.1, p.4]. Above that, swimming or sinking raises the flux to an absorber, by about 50% at a radius near 20 µm, and "mass transfer increases with cell size and with" relative motion in every flow regime [KB96 p.1]. Encounters with particles are diffusive below a micrometre and ballistic, scaling with swimming speed, above it [SL23 p.4]. Even with a sense, directed search beats undirected only at intermediate turbulence [TS12 p.2]. **(b) The first sense.** Bacteria detect no gradient across the body: "the apparent detection of a spatial gradient by the bacteria therefore involves an actual detection of a temporal gradient experienced as a result of movement through space" [MK72 p.1]; the comparison reaches "4 sec into the past: the past second is given a positive weighting, the previous 3 sec are given a negative weighting" [SBB86 p.1]. The signal can be the cell's own energy state: "motility, combined with the sensory perception of the internal energetic conditions, is prerequisite for tactic responses" [SJ10 p.1]. **(c) Animals.** Parker's scenario had "independent effectors" arise first and early nervous systems connect them to sensors; Pantin's answer, which the field now holds beside it, is that nervous systems arose to coordinate the new effector, muscle [JKG15 p.2]; "there can be significant IO and IC function without a nervous system" [JKG15 p.3]. The problem early nervous systems solved "was not so much to act intelligently, a problem that had already been solved in various ways without a nervous system, but to act as a single multicellular unit" [KDL13 p.4], and "at microscopic scales, information processing tasks required for adaptive behavior can be accomplished without any nervous system" [KDL13 p.8]. The simplest eyespot is two cells, a photoreceptor and a pigment cell, and larvae "directly regulate ciliary beating during phototaxis by the eyespots" [J09 p.7]; "the first nervous systems consisted of combined sensory-motor neurons, directly translating sensory input into motor output" [J11 p.1]; much early sensing "was reafferent; it was responsive to the consequences of the animal's own actions" [JG21 p.1]. Neurons and brains arose more than once [MZ09 p.1]. **(d) Artificial life.** No fetched paper names the dilemma as such; the nearest are [VG05]'s finding that locomotion pays only when it is the sole route to reproduction (round 3) and [HG25 p.1]'s that energy costs drive evolved networks smaller. *The design reading, marked as this review's inference: this world's feeding draws from a cell 5 m across that every body shares, so a body neither depletes its own water nor refreshes it by moving; the physics that made blind movement pay is absent by construction, and the fix is a world rule, in front of the owner.* |
+| Q12 | *(opened round 7)* When a population's light varies by season and by unpredictable weather, and its bodies cannot sense the light, what do theory and experiment predict for stored reserves, for the timing of breeding and for the variance of breeding traits? | 🟡 **Answered in theory; the transfer to this world is inference, and the world's own answer is experiment round 57.** **(a) Storage.** In a stochastic dynamic programming model where environmental energy follows a log-normal AR(1) process (a series in which each step is correlated with the one before), storing is not optimal at low variability and low predictability. The stored fraction rises as either grows, and storage pays only at intermediate environmental energy with stores not yet full [FDT11 Results, Figs 1, 3–4]. That optimum is a reaction norm on the *sensed* current environment, the model has no minimum breeding investment, and its fitness is expected lifetime reproduction, so it carries no bet-hedging term [FDT11 model conditions; Discussion]. In a seasonal model, stores pay mainly by allowing breeding before the feeding season, when an egg is worth most [VJTF09 abstract]. **(b) Bet-hedging.** Bet-hedging is the trade that [SK12]'s title names, among the mean, the variance and the correlation of fitness. Dormancy evolved upward with the frequency of unpredictable bad years in *Neurospora*, as the geometric-mean model predicts: mean final dormancy was 0.16 with no bad years and 0.30 to 0.33 at 40–50% [GSS14 Results, Table 2, Fig. 1]. Rotifers under an unpredictable regime started sex earlier and hatched fewer diapausing eggs [TGC17 abstract]. A genotype's fitness variance splits into each individual's variance and the correlation among its individuals [SK12 abstract], and in finite populations the sign of selection on a bet hedger can reverse with population size [WYRW25 abstract; preprint Results]. Which response evolves (plasticity, bet-hedging or tracking) depends on the timescale and predictability of the variation [BWWR15 Results, Fig. 2]. **(c) Autocorrelation, direction disputed.** More positive autocorrelation at fixed variance always raised the evolutionarily stable allocation to survival [MK07 Results, Fig. 2c; Discussion]. Stress tolerance was disfavoured in redder environments, through a trade-off with reproduction [WTV18 abstract]. **(d) Trait variance.** Slower cycles kept more within-population life-history variance, periodicity mattered more than random timing, and variance fell over time in every regime [PW21 Results, Figs 4–5]. **(e) Artificial life.** No study was found of evolved storage or bet-hedging under seasonal plus stochastic resource input; it may be a gap in the field or in the search (§9). *The design reading, marked as this review's inference: the weather (coefficient of variation about 0.31, e-folding time about 1.4 days) lies at or beyond the low end of [FDT11]'s range, so the season and not the weather should raise the reserve; births should bunch at the turn to summer; and the reserve's spread should narrow over the run. These are clauses R, T and V of round 57's pre-registration.* |
 
 **PICOC framing** sets the review's terms. *Population:* evolved virtual creatures with genetically encoded 3D morphology and control. *Intervention:* co-evolution of body and controller under
 evolutionary / quality-diversity search. *Comparison:* fixed-morphology controller
@@ -456,6 +462,64 @@ copies exist and were not used), Mitchell 2002, Mitchell & Kogure 2006, Gerritse
 1977, Visser & Kiørboe 2006, Kiørboe 2011, Fenchel 2002, Arendt 2008, Arendt et al. 2016,
 Mackie 1970, Bosch et al. 2017, Egbert et al. 2012 and Elsberry et al. 2009.
 
+### 3.10 Round 7 searches (2026-10-05 and 2026-10-06)
+
+Round 7 ran in two passes, and this section summarises the working files that hold its
+queries, its pool, its checks and its extraction. Pass 1, on 2026-10-05, built a candidate pool.
+Pass 2, on 2026-10-06, verified ten of the candidates and read them. A separate session then
+filed the round here from those files alone, with no new search and no new reading.
+
+The working files are kept in `logbook/specs/r57-lit/`: `search-log.md`, `pass1-candidates.md`,
+`pass2-verification.md` and `pass2-extraction.md`. They were committed with round 57's
+pre-registration on the `round-57` branch, at `1917815`, and reach main when that branch is merged. The
+full-text renderings that pass 2 read from were not kept, as no PDF is kept for this round. The two
+renderings of [WYRW25]'s preprint that the verification record names were already missing when the
+round was filed. So [WYRW25]'s preprint claims rest on the extraction alone, and cannot be re-checked
+from the round's files.
+
+The §3.2 strings were not re-run. Q12 is a new question with its own vocabulary, so the skip
+is logged here per §3.5 rule 1. Forward snowballing was not performed, and §7.1 records it.
+
+Pass 1 ran 43 queries through the web search tool, which returns about ten links a query and
+no database counts. The queries fell into five themes, which the pool kept as its own
+sub-questions.
+
+1. Bet-hedging theory was sought by name. The names were Seger & Brockmann 1987, Philippi
+   & Seger 1989, Cohen 1966, Lewontin & Cohen 1969, Starrfelt & Kokko 2012, Haaland et al.
+   2019, Kussell & Leibler 2005 and Botero et al. 2015.
+2. The experimental evolution of bet-hedging was sought by name as well. The names were
+   Beaumont et al. 2009, Graham et al. 2014, Tarazona et al. 2017, Simons 2011, Childs et
+   al. 2010 and Venable 2007.
+3. Storage under seasonality and unpredictability had open queries on the evolution of
+   energy reserves. It also had title searches for Fischer et al. 2011, Varpe et al. 2009,
+   Iwasa & Kubo 1997, Chapin et al. 1990 and Blumstein et al. 2022.
+4. Environmental autocorrelation covered coloured noise and extinction risk (Ruokolainen
+   et al. 2009, Schwager et al. 2006, Halley 1996, Vasseur & Yodzis 2004). It also covered
+   evolution under that noise (Metcalf & Koons 2007, Tufto 2015, Wieczynski et al. 2018,
+   Rescan et al. 2021).
+5. Artificial-life and individual-based simulation covered Avida in changing environments
+   and evolved storage in agents. It also covered virtual plants under light competition
+   and noise colour in artificial evolution (Grove et al. 2020 and 2021).
+
+Thirty-one of the queries named a particular work and three more named an author, which is
+the confirmation risk §7.1 states. Query 13 caught a misattribution. The title it searched
+under Fischer, Taborsky and Dieckmann is Varpe et al.'s, and it led to Fischer et al. 2011
+under its own title.
+
+Abstracts were read through the Europe PMC REST search, PMC, arXiv and the OpenAlex
+abstract index. Nature, Springer, Wiley, ResearchGate, PubMed and ADS refused or redirected
+the fetcher, and none of those pages was read. Several pass-1 abstracts, Cohen 1966's, Varpe et
+al.'s and Tarazona et al.'s among them, were known only from the search engine's summary.
+Pass 2 then read Varpe's and Tarazona's through OpenAlex and Semantic Scholar.
+
+Pass 2 checked the ten against CrossRef, OpenAlex, Europe PMC, the Semantic Scholar graph
+API and, for one preprint, the bioRxiv API. Full texts came from legal open copies: PMC and
+Europe PMC XML, PMC article pages, and bioRxiv HTML. No PDF was downloaded, so no package
+was made under `research/papers/`. Three open copies were gated and were not bypassed.
+Wiley's free PDF link for [SK12] returned 403. The Universitat de València repository copy
+of [TGC17] sat behind a bot challenge. The eScholarship copy of [WYRW25] refused the fetcher
+with a firewall challenge. The fetch registry, `FETCH-RESULTS.md`, records each route.
+
 ## 4. PRISMA flow
 
 *These counts are cumulative through round 1. Later rounds add to them rather than replacing them, as §0 says.*
@@ -623,6 +687,59 @@ against CrossRef; §7.2 records the gap. Two extraction notes: PyMuPDF renders D
 lengths of 0.1 to 0.6 µm makes plain [D97 p.4]; and [KB96] is a scanned review whose text
 layer is clean at the abstract and rough in the figures.
 
+Round 7 additions (2026-10-05 and 2026-10-06):
+
+```
+IDENTIFICATION
+  Records surfaced by 43 web queries (5 themes)                    ~409 result links
+  Abstract fetch attempts (6 refused or redirected)                   31
+SCREENING
+  Candidate pool, ranked against five sub-questions                    30
+  Seen and kept unranked (title only, or weaker for the round)          8
+  Seen and not carried (no abstract read)                               3
+     (Simons 2009; McNamara & Houston 1996; Tuljapurkar et al. 2006)
+  Carried forward to verification and reading                          10
+RETRIEVAL
+  PDFs downloaded                                                       0
+  Read in full from a legal open copy (XML or HTML), not saved          5   [FDT11] [PW21] [GSS14] [MK07] [BWWR15]
+  Preprint read in full, journal version abstract only                  1   [WYRW25]
+  Abstract only                                                         4   [WTV18] [SK12] [VJTF09] [TGC17]
+  Open copy gated, NOT bypassed                                         3   [SK12] [TGC17] [WYRW25]
+APPRAISAL
+  Matched in at least two of CrossRef, OpenAlex, Europe PMC,
+  Semantic Scholar, bioRxiv                                            10   all of them
+  Retractions                                                           0
+  ADDED TO SYNTHESIS                                                   10
+```
+
+The abstract-fetch count is the rows of the round's fetch table. Nature and Springer
+redirected to a login, PubMed showed a cookie wall and ResearchGate returned 403. ADS
+refused twice, so Tarazona et al. 2017 and Cohen 1966 fell back on the search summary in
+pass 1. Wiley also returned 403 once, and Europe PMC served that abstract instead.
+
+Round 7 is the first round to meet §7.2's two-database rule for every record. A record
+counted as free of retraction when its CrossRef entry had no update or retraction relation
+and OpenAlex reported it not retracted.
+
+Round 7 left five metadata notes.
+
+CrossRef gives [FDT11]'s issue date as May 2011 and OpenAlex gives 2010, the online-first
+year, so this review cites it as 2011.
+
+[GSS14]'s third author is Simons. One pass-1 query gave the third author as Hsu, and the
+search result corrected it.
+
+[WYRW25]'s preprint lists three authors and has no Yin, and the journal version adds a
+*Clarkia xantiana* case that version 2 of the preprint lacks. Every claim this review takes
+from the preprint may differ in the journal.
+
+[TGC17] is *Oikos* 126(8). Its design is read from the same group's open 2019 paper in
+*Scientific Reports*, whose article number was not checked, so that paper is cited by DOI
+only.
+
+CrossRef added end pages and issues to pass 1's records ([FDT11] ends at 1232; [PW21] is
+24(11):2452–2463; [WTV18] is 191(6):E195–E207). It contradicted none of them.
+
 ## 5. Synthesis matrix
 
 | Key | Claim used | Method / scope | Stance vs design | Quality | Limitations |
@@ -656,7 +773,6 @@ layer is clean at the abstract and rough in the figures.
 | **[ED21]** *(round 5)* | Producer→herbivore transfer efficiency averages **13% (range 11–17%)** and herbivore→fish **10% (7–12%)** in temperate northern-hemisphere systems; ecosystem-scale estimates span **<1%–52%**; exudation and viral lysis are explicitly non-predatory losses that divert production to detritivorous bacteria; lab feeding experiments beat wild ones partly because they *prevent* loss to the microbial loop | Review of production-based, model-based and catch-based transfer-efficiency estimates across ocean biomes | **Supplies the missing reference point** — the producer→level-2 step this world is failing at, measured, which [PC95] does not give | 📄 Peer-reviewed, *Trends Ecol. Evol.*; UC eScholarship accepted manuscript | **Locators are AM PDF pages, not journal pages.** Review, so most figures are inherited from cited work. Reviewer-verified [p.7, p.10, p.11, p.14, p.17] |
 | **[PWAH07]** *(round 5)* | "Most of the organic matter available to consumers in the ocean is used and respired by bacteria"; "the larger part of all energy captured by marine photosynthesis ... is consumed ultimately by microorganisms"; in blue water, where small cells dominate, **only 1–2% of primary production may finally be assimilated by fishes**; microphages (salps, krill) short-circuit the loop and are its most efficient path upward | Narrative review by four of the field's founders, incl. Azam of the 1983 paper that named the microbial loop | **Confirms the path is real and cautions about its length** — a long microbial chain delivers ~1% to top consumers, which is what this world currently gets at level *two* | 📄 Peer-reviewed, *Oceanography* (TOS), gold OA | Deliberately non-quantitative; its numbers are all inherited citations (Ducklow et al. 1986; del Giorgio & Williams 2005). Read in full |
 | **[BP91]** ⚠ **NOT OBTAINED** *(round 5)* | Cross-system mean PER of **13%**, measured PER ranging <1–75% with individual-system means 3–40%, from 16 lacustrine, marine and estuarine studies; PER approximately constant across productivity | Literature synthesis, 16 studies | **The field's default number** — and the one this round could not read | 🔒 Wiley/ASLO, 403 to non-browser clients; the Semantic Scholar GREEN record resolves to link-only Figshare metadata | **Cited only through [MCP05 p.9], [LS11 p.7] and [CH20 p.5]**, all three of which independently report the 13% *and* independently flag that its glass-fibre-filter methods underestimate release. Treat 13% as a probable floor, not a central estimate |
-
 | **[P77]** *(round 6)* | At low Reynolds number "this bug can't do anything by stirring its local surroundings"; swimming does not raise intake, it relocates the cell "to find greener pastures", and to outrun diffusion it must go a distance of order D/v | Lecture essay, order-of-magnitude physics | **Diagnostic** — the reason blind movement pays at all is relocation out of a depleted neighbourhood, which this world's feeding model cannot express | 📄 *Am. J. Phys.* 1977, self-archived | Bacterial scale; qualitative |
 | **[BP77]** *(round 6)* | "The adsorption rate for molecules of moderate size cannot be significantly enhanced by motion of the cell or by stirring of the medium by the cell"; local stirring at best doubles the diffusive current | Analytic physics of diffusion to receptors | **Diagnostic** — sets the scale below which motion cannot refresh a halo | 📄 *Biophys. J.* 1977, PMC | Micron scale; this world's bodies are a thousand times larger |
 | **[D97]** *(round 6)* | No locomotion pays below about 0.6 µm diameter; smallest of 97 motile genera averages 0.8 µm, 18 of 94 non-motile genera are smaller; motility also raises the dispersal coefficient | Physical model against a survey of bacterial genera | **Confirmatory** — a size threshold exists and this world is far above it | 📄 *PNAS* 1997, PMC | Free-floating microbes only |
@@ -674,6 +790,17 @@ layer is clean at the abstract and rough in the figures.
 | **[JG21]** *(round 6)* | "Much early sensing was reafferent; it was responsive to the consequences of the animal's own actions" | Conceptual review | **Enriching** — the first sense may have read the body's own motion | 📄 *Phil. Trans. B* 2021, PMC | Conceptual |
 | **[MZ09]** *(round 6)* | Neurons and complex brains arose independently more than once | Review | **Context** — there is no single route from a sensorimotor cell to a brain | 📄 *Brain Behav. Evol.* 2009, PMC | Review |
 | **[HG25]** *(round 6)* | Under energy constraints, more seasonal environments evolved smaller networks; the Expensive Brain Hypothesis over the Cognitive Buffer Hypothesis | Evolved RL agents with priced neurons | **Confirmatory for D082** — pricing neurons selects them away where they do not pay | 📄 ALIFE 2025, arXiv | Not an ecology; task-driven |
+| **[FDT11]** *(round 7)* | Storage is optimal only at intermediate environmental energy with stores not yet full [Results, Fig. 1]; at low variability and low predictability (λ = 1, τ = 5) the optimum stores nothing [Results, Fig. 3]; the stored fraction rises with either, as "allocation to storage becomes optimal for an increasing range of environmental states" [Results, Figs 3–4]; storage, reproduction and maintenance can be optimal at once [Discussion]; costlier survival needs more variability and predictability before storage pays [Results, Fig. 6D]; near starvation everything goes to reproduction [Results, Fig. 2] | Stochastic dynamic programming maximising expected lifetime reproductive success; environmental energy a stationary multiplicative AR(1) process with log-normal marginal, coefficient of variation λ from 1 to 50 and autocorrelation time τ from 0 to 125 steps; state is age, environmental energy and stores | **Backs clause R of round 57, by inference.** The weather's coefficient of variation (about 0.31) is below the smallest λ plotted and its e-folding time (about 1.4 days) is near the low end of τ, so the season and not the weather should raise the reserve | 📄 Peer-reviewed, *Evolution*; author manuscript at PMC, read in full | The optimum is a reaction norm on the *sensed* current environment, and round 57's bodies sense no light; storage is free; there is no minimum breeding investment, where round 57 has a gate; fitness is expected lifetime reproduction, so no bet-hedging term; growth is determinate [Discussion] |
+| **[VJTF09]** *(round 7)* | Abstract only. In a seasonal high-latitude model of herbivorous zooplankton, capital breeding (from stores) mattered most when the feeding season was early, making 7–9% of eggs but 9–30% of reproductive value; "the main benefit of capital breeding was reproduction prior to the feeding season"; stores also topped up egg production during income breeding; late-born individuals were predicted to take a two-year cycle | State-dependent life-history model optimising energy allocation and diapause by reproductive value, under early, intermediate and late feeding seasons | **Backs clauses T and R of round 57, by inference.** If a seedling's value depends on its day of birth, reserve should be carried through winter and births should bunch at the turn to summer | 📄 Peer-reviewed, *Oikos*; closed, abstract read from the OpenAlex index | Conditions and limitations not read. Clause T rests on this abstract alone; zooplankton with a diapause stage that round 57's bodies lack |
+| **[PW21]** *(round 7)* | Within-population variance of maturation rate and fecundity ended much higher under slow (14-day) than fast (3-day) disturbance cycles, in simulation and experiment [Results, Fig. 4]; deterministic and random-timing versions of one period differed little, so "periodicity drove differences in intrapopulation variance much more strongly than the deterministic‐stochastic environment distinction" [Results]; trait means showed no consistent difference [Results]; variance fell over time in every regime, much faster under fast cycles [Results, Fig. 5]; proposed mechanism: under slow cycles even suboptimal genotypes keep positive growth [Discussion] | Agent-based model of the copepod *Tigriopus californicus*, 100 runs in each of four regimes for 150 steps; five-month laboratory selection experiment, eight replicate populations in each of three treatments | **Backs clause V of round 57, by inference.** Variance in breeding traits should fall over the run, and the season's period rather than the weather should set it | 📄 Peer-reviewed, *Ecology Letters*, CC BY 4.0 at PMC, read in full (supplements S1–S7 not read) | Both periods are shorter than the 20–30 day generation and runs last 5–6 generations, so results are transients; "stochastic" means random timing, not random amplitude or autocorrelation; round 57's year of about six generations is outside the tested ratio, which the authors name as untested; no stochastic fast treatment in the experiment |
+| **[GSS14]** *(round 7)* | Final dormancy rose with the frequency of unpredictable lethal bad years (ANCOVA p = 0.0051; Kendall's τ = 0.23), means 0.16, 0.22, 0.29, 0.33 and 0.30 for 0–50% bad years [Results, Table 2]; observed change regressed on the change Cohen's 1966 model predicts, upward and downward, with 11 of 12 lineages positive [Fig. 1 inset]; AIC preferred the geometric-mean model over the arithmetic-mean model, relative likelihood 2.4; loss of dormancy evolved more readily than gain | *Neurospora crassa* ascospore dormancy under serial transfer, five bad-year frequencies, 12 genetic lineages, 88 independently evolved samples, 10–14 rounds of selection | **Supports a bet-hedging response to the weather, by inference.** An unspent reserve at a breeding chance plays the dormant spore; only the weather, not the periodic season, supplies unpredictability | 📄 Peer-reviewed, *Proc. R. Soc. B*, PMC, main text read in full (supplement not read) | Two consecutive bad years were forbidden and the 50% line alternated, so the sequences were not independent draws; no density dependence; fractions may not be at equilibrium; stochastic extinction of lines was high |
+| **[TGC17]** *(round 7)* | Abstract only. Rotifer populations under an unpredictable regime diverged from predictable ones in under 77 days, with "an earlier initiation of sexual reproduction and a lower hatching fraction of diapausing eggs", read by the authors as bet-hedging | *Brachionus plicatilis*, predictable against unpredictable hydroperiod; the design, read in the same group's open 2019 paper, had six populations from 270 field clones, three per regime, seven growing cycles and one random sequence shared by all three unpredictable replicates | **Supports earlier insurance investment under the weather, by inference** | 📄 Peer-reviewed, *Oikos*; abstract only, open repository copy bot-gated | One particular unpredictable sequence was tested (the 2019 paper's caveat), and round 57 has one weather sequence per seed; the unpredictability is in season length, and the rotifers have a dormant stage |
+| **[MK07]** *(round 7)* | "Increased temporal autocorrelation in the environment always favoured increased allocation towards survival", more steeply under slower maturation [Results, Fig. 2c; Discussion]; more variance lowered or raised survival allocation depending on how efficiently resources become fecundity [Results, Fig. 3a]; with strong negative autocorrelation (α < −0.5) there is no single evolutionarily stable strategy and some simulations branched into a dimorphism [Results, Figs 4–5] | Two-stage matrix model with a heritable allocation between survival and fecundity; environment constant, independent normal, or AR(1) with coefficient from −0.99 to 0.99; density dependence on establishment; invasion analysis on the stochastic growth rate | **Counter-weight on the weather's autocorrelation.** Read with a larger reserve as allocation to survival, it predicts more reserve under round 57's positively correlated weather, opposite to [WTV18] (inference) | 📄 Peer-reviewed, *Proc. R. Soc. B*, PMC, read in full (figures by caption only) | Semelparous; survival brings no growth benefit; outcomes depend strongly on the conversion efficiency; the AR(1) environment has no seasonal period, so a half-year lag is outside it (inference); the authors note that several generations a year see negative autocorrelation from the seasons [Discussion] |
+| **[WTV18]** *(round 7)* | Abstract only. At equal total stress, stress tolerance was favoured in whiter (less autocorrelated) environments and disfavoured in redder ones, in RNA virus experiments and in models alike, through a trade-off between tolerance and reproduction; the effect's strength depends on that trade-off's shape and on mutant tolerance | Experimental evolution of RNA virus lineages under stress series differing in autocorrelation, plus theory | **Counter-prediction to [MK07].** Read with a larger reserve as tolerance, it predicts less reserve under positively correlated weather (inference) | 📄 Peer-reviewed, *Am. Nat.*; closed, abstract only | The virus, the stressor, the autocorrelation levels and the trade-off shapes were not read |
+| **[SK12]** *(round 7)* | Abstract only. A genotype's fitness variance splits into the variance of its individuals' fitness and the correlation of fitness among them; conservative and diversified bet-hedging are two ends of one continuum, and within- and between-generation bet-hedging two ends of another, so "this division can be considered a false dichotomy" | Review with a general model and a simple worked example | **Frames the shared sky.** One weather series for every body puts the correlation term near its maximum (inference) | 📄 Peer-reviewed, *Biol. Rev.*; abstract only, Wiley open link returned 403 | Nothing beyond the abstract was read |
+| **[WYRW25]** *(round 7)* | Journal abstract: stochasticity can reverse the sign of selection that geometric-mean fitness predicts, so a bet hedger can be deleterious at small population size and beneficial at large; stochastic models are needed to explain published bet-hedging data. Preprint: phenotypic stochasticity makes diversified bet-hedging less favourable, mostly at small N, and environmental stochasticity makes bet-hedging more favourable, mostly at large N [v1 Results]; sign-inversion crossings fell at N of 2–30 with a geometric-mean advantage and 30 to 10⁶ with a disadvantage [v2 Results]; "GMF alone does not capture the full extent to which bet hedging is adaptive" [v2 Discussion] | Wright–Fisher simulations and Markov-chain numerics of one bet-hedging mutant among N − 1 specialists, in an independent good-or-bad environment each generation, non-overlapping generations | **Qualifies the bet-hedging readings.** Round 57's populations are finite and each seed has one weather sequence, so results should be read per seed, not only as a mean over seeds (inference) | 📄 Peer-reviewed, *Am. Nat.* (journal abstract only); bioRxiv preprint versions 1 and 2 read in full | No autocorrelation, constant N, asexual, non-overlapping generations; claims are the preprint's and may differ in the journal |
+| **[BWWR15]** *(round 7)* | Plasticity evolved only when individuals could anticipate the environment [Results, Fig. 1]; response modes occupy largely separate regions of predictability and timescale: when unpredictable, conservative bet-hedging at very short cycles, diversified bet-hedging at intermediate ones (for example log R = 0.5, with R in generations per cycle) and adaptive tracking at long ones [Results, Fig. 2]; crossing a boundary between modes caused rapid collapse and often extinction [Results, Fig. 3] | Individual-based simulations, 5,000 individuals, generations of five time steps, 50,000 generations, 100 replicates per cell; sinusoidal plus noise environment; seven evolving loci | **Places round 57 between diversified bet-hedging and tracking, by inference.** With R about 6 (log R about 0.78) and no light cue, it sits in the unpredictable row; a body's own reserve could still serve as a cue to the season | 📄 Peer-reviewed, *PNAS*, PMC, main text read in full (SI not read) | 50,000 generations against round 57's roughly 50; boundary positions depend on plasticity costs, fecundity and genetic architecture; the Fig. 2B boundary near round 57's R was not read numerically |
+
 ## 6. Annotated bibliography
 
 **[EA23]** L. Eguiarte-Morett and W. Aguilar, "Premature convergence in morphology and
@@ -1034,6 +1161,87 @@ no copy); Kiørboe 2011 (Wiley); Mitchell & Kogure 2006 (no PMC record); Fenchel
 Bosch et al. 2017 (repository copy restricted); Egbert et al. 2012 (MIT Press); Elsberry et
 al. 2009 (mirrors only).
 
+### Round 7 additions (2026-10-06)
+
+*Round 7 saved no copy of anything it read. Its five full texts were read as XML or HTML from
+PubMed Central, Europe PMC and bioRxiv, and those carry no PDF pages. So the locators in this
+round name a section and a figure ([FDT11 Results, Fig. 3]) where the citation convention
+asks for a PDF page. A claim can be re-checked by fetching the open copy that
+`FETCH-RESULTS.md` names. Every record was matched in at least two databases and none is
+retracted. "Abstract only" means nothing beyond the abstract was read, and the entry claims
+nothing beyond it.*
+
+**[FDT11]** B. Fischer, U. Dieckmann & B. Taborsky, "When to store energy in a stochastic
+environment," *Evolution* 65(5):1221–1232, 2011 (online 2010). DOI
+`10.1111/j.1558-5646.2010.01198.x`, ✅ CrossRef, OpenAlex and Europe PMC 📄 peer-reviewed,
+author manuscript at PMC. It was read in full. *This is the model nearest to round 57's reserve.* It
+finds no storage at low variability and low predictability, and more storage as either rises
+[Results, Figs 3–4]. Its optimum responds to a sensed environment and assumes no minimum
+breeding investment [model conditions; Discussion]. Round 57's bodies sense no light and
+must reach a breeding gate.
+
+**[VJTF09]** Ø. Varpe, C. Jørgensen, G. A. Tarling & Ø. Fiksen, "The adaptive value of
+energy storage and capital breeding in seasonal environments," *Oikos* 118(3):363–370, 2009.
+DOI `10.1111/j.1600-0706.2008.17036.x`, ✅ CrossRef, OpenAlex and Semantic Scholar 📄
+peer-reviewed, closed. Abstract only, read from the OpenAlex index. Its main finding is that
+stores pay by allowing breeding before the feeding season, when an egg is worth most. Round
+57's clause on the timing of births rests on this abstract alone, so it heads the fetch queue
+(§9).
+
+**[PW21]** J. S. Park & J. T. Wootton, "Slower environmental cycles maintain greater
+life-history variation within populations," *Ecology Letters* 24(11):2452–2463, 2021. DOI
+`10.1111/ele.13867`, ✅ CrossRef, OpenAlex and Europe PMC 📄 peer-reviewed 🔓 CC BY 4.0. Read in
+full; supplements S1–S7 not read. A model and an experiment agree that slower cycles keep
+more trait variance, and that the variance falls over time in every regime [Results, Figs
+4–5]. The authors themselves ask for work on the ratio of cycle period to generation time,
+and round 57's ratio lies outside the range they tested.
+
+**[GSS14]** J. K. Graham, M. L. Smith & A. M. Simons, "Experimental evolution of bet hedging
+under manipulated environmental uncertainty in *Neurospora crassa*," *Proc. R. Soc. B*
+281(1787):20140706, 2014. DOI `10.1098/rspb.2014.0706`, ✅ CrossRef, OpenAlex and PMC 📄
+peer-reviewed, PMC. Main text read in full; supplement not read. A direct test of Cohen's
+1966 dormancy model, with dormancy evolving up and down with the frequency of bad years
+[Results, Table 2, Fig. 1].
+
+**[TGC17]** E. Tarazona, E. M. García-Roger & M. J. Carmona, "Experimental evolution of bet
+hedging in rotifer diapause traits as a response to environmental unpredictability," *Oikos*
+126(8):1162–1172, 2017. DOI `10.1111/oik.04186`, ✅ CrossRef, OpenAlex and Semantic Scholar
+📄 peer-reviewed. Abstract only; the open repository copy is behind a bot challenge that was
+not bypassed. Its design is read in the same group's open paper, Tarazona et al. 2019,
+*Scientific Reports*, DOI `10.1038/s41598-019-56100-y` (PMC6927961), Methods and
+Introduction, read in full. That paper is a supporting source and is not in the synthesis
+matrix.
+
+**[MK07]** C. J. E. Metcalf & D. N. Koons, "Environmental uncertainty, autocorrelation and
+the evolution of survival," *Proc. R. Soc. B* 274(1622):2153–2160, 2007. DOI
+`10.1098/rspb.2007.0561`, ✅ CrossRef, OpenAlex and PMC 📄 peer-reviewed, PMC. Read in full,
+with the figures seen by caption only. Not to be confused with [MK72]. It holds one side of
+the autocorrelation dispute in §7.3.
+
+**[WTV18]** D. J. Wieczynski, P. E. Turner & D. A. Vasseur, "Temporally autocorrelated
+environmental fluctuations inhibit the evolution of stress tolerance," *Am. Nat.*
+191(6):E195–E207, 2018. DOI `10.1086/697200`, ✅ CrossRef, OpenAlex, Europe PMC and Semantic
+Scholar 📄 peer-reviewed, closed. Abstract only; no preprint was found, and the authors'
+Zenodo record holds data only. It holds the other side of the dispute.
+
+**[SK12]** J. Starrfelt & H. Kokko, "Bet-hedging—a triple trade-off between means, variances
+and correlations," *Biological Reviews* 87(3):742–755, 2012. DOI
+`10.1111/j.1469-185X.2012.00225.x`, ✅ CrossRef, OpenAlex, Europe PMC and Semantic Scholar 📄
+peer-reviewed. Abstract only; the free link Europe PMC lists at Wiley returned 403.
+
+**[WYRW25]** M. Weissman, Z. Yin, Y. Raynes & D. Weinreich, "Beyond the (geometric) mean:
+stochastic models undermine deterministic predictions of bet hedger evolution," *Am. Nat.*
+205(6):572–589, 2025. DOI `10.1086/735690`, ✅ CrossRef, OpenAlex, Europe PMC and bioRxiv 📄
+peer-reviewed. Journal version abstract only; its open eScholarship copy refused the fetcher.
+The bioRxiv preprint, DOI `10.1101/2023.07.11.548608`, was read in full in version 1
+(2023-07-12) and version 2 (2024-01-11). The preprint has three authors and no *Clarkia*
+case, so a claim taken from it may differ in the journal.
+
+**[BWWR15]** C. A. Botero, F. J. Weissing, J. Wright & D. R. Rubenstein, "Evolutionary
+tipping points in the capacity to adapt to environmental change," *PNAS* 112(1):184–189,
+2015. DOI `10.1073/pnas.1408589111`, ✅ CrossRef, OpenAlex and PMC 📄 peer-reviewed 🔓 PNAS open
+access option. Main text read in full; SI not read.
+
 ## 7. Threats to validity
 
 ### 7.1 Search validity
@@ -1144,6 +1352,22 @@ al. 2009 (mirrors only).
   old (1972 to 1997) and the animal half is one school (Jékely, Keijzer, Godfrey-Smith,
   four of the seventeen); a dissenting account of early nervous systems was not sought.
 
+- ⚠ **Round 7 searched for what it already knew of.** Thirty-one of its 43 queries named a
+  particular work. The pool therefore leaned on anchors known before the search, which is
+  round 5's confirmation risk again. The §3.2 strings were not re-run and no forward
+  snowball was done (§3.10). The search tool reports links rather than database counts,
+  as in every round since round 1.
+
+  The artificial-life sub-question came back empty. No study was found of evolved storage
+  or bet-hedging under seasonal plus stochastic resource input. Pass 1 could not tell a gap
+  in the field from a gap in the search.
+
+- ⚠ **Round 7 was filed at one remove.** The session that filed it here saw only the
+  round's working files, and none of the raw results, sources or full texts. It added no
+  claim that the files do not hold. It also had no way to re-read a passage and check a
+  claim against it. That is round 3's relay threat in a new place, between the reader and
+  the filer.
+
 ### 7.2 Verification validity
 
 - ⚠ **The two-database cross-match rule** was not met. Verification used **CrossRef
@@ -1179,6 +1403,17 @@ al. 2009 (mirrors only).
   page and read at the passage cited, which catches a wrong paper and not a wrong volume
   or a retraction. The next round that touches these keys should run the batch.
 
+- ↻ **Round 7 met the two-database rule** for all ten records, which no earlier round did.
+  Each was matched in at least two of CrossRef, OpenAlex, Europe PMC, Semantic Scholar and
+  the bioRxiv API, and none carries a retraction, correction or expression of concern.
+
+- ⚠ **Round 7 kept no copy.** No PDF was saved, so the round has no hash, no `source.md`
+  and no page mapping. Its locators are sections and figures (§6). A claim can be
+  re-checked only by fetching an open copy again, and that copy may move or close. The
+  claims taken from [WYRW25] are the preprint's and may differ in the journal. The design
+  attributed to [TGC17] is read in the same group's 2019 paper, since the 2017 paper itself
+  was read only at the abstract.
+
 - ⚠ **Most packages have no extraction manifest** (recorded 2026-09-12, from the Astra
   review). Eight of the fifty-four packages, the round-1 and round-2 corpus, carry a
   `manifest.json` naming the tool, its version and the command that turned the PDF into
@@ -1195,15 +1430,19 @@ al. 2009 (mirrors only).
   round 3);~~ ~~↻ **Twenty-one after round 4** (ten added 2026-09-01).~~
 
   ~~↻ **Twenty-eight after round 5**, with seven added on 2026-09-03. Two of those seven were
-  read in full, so five are read in full across the whole corpus, up from three.~~ ↻
+  read in full, so five are read in full across the whole corpus, up from three.~~ ~~↻
   **Forty-five after round 6**, with seventeen added on 2026-09-07 and none of them read in
   full, so five are still read in full across the whole corpus (the bullet below carries
-  the round's own note; this one was left unstruck until 2026-09-12).
+  the round's own note; this one was left unstruck until 2026-09-12).~~ ↻ **Fifty-five
+  after round 7**, with ten added on 2026-10-06. Five of the ten were read in full, so ten
+  are read in full across the whole corpus. Round 7's other five were read at the
+  abstract.
 
   The round-3, round-4 and most round-5 additions were read at targeted passages against
   specific claims. That is honest for provenance-checking and weaker than a full read for
   anything else. A paper admitted this way could contradict this design somewhere nobody
-  looked.
+  looked. Round 7's five abstract-only papers are weaker still. Nothing beyond the abstract
+  was read, so their conditions and limitations are unknown here.
 
 - ⚠ **Round 4's key theme primaries** are cited through secondaries. Rosenzweig 1971,
   Maynard Smith 1974, Briggs & Hoopes 2004, McNair 1986 and Sih 1987 are all closed-access
@@ -1283,6 +1522,31 @@ al. 2009 (mirrors only).
   movement-before-sensing dilemma as its thesis; the framing is this project's own and is
   marked as inference wherever it is used.
 
+- ⚠ **None of round 7's ten papers modelled round 57's world.** Every link from a paper to a
+  prediction is the round's inference, and two differences recur. Round 57's bodies cannot
+  sense the light, while [FDT11]'s optimum responds to a sensed environment and
+  [BWWR15]'s plasticity needs a cue. Round 57 also imposes a breeding gate, which is a
+  minimum investment that [FDT11] assumed away.
+
+- ⚠ **One of round 57's clauses rests on an abstract.** Clause T, that births move to the
+  first day of summer, rests on [VJTF09], and only its abstract was read. Clause R leans on
+  it too, beside [FDT11].
+
+- ⚠ **The weather's autocorrelation has a contested direction.** More positive
+  autocorrelation always raised allocation to survival in [MK07] [Results, Fig. 2c;
+  Discussion]. [WTV18]'s abstract finds stress tolerance disfavoured in redder
+  environments. If a larger reserve is read as survival or tolerance, the two predict
+  opposite effects of round 57's lag-1 correlation of 0.5. Both rest on a trade-off with
+  reproduction, so the answer may turn on round 57's own trade-off between the gate's
+  height and the breeding rate. That last step is the round's inference.
+
+- ⚠ **The timescales do not match.** The runs of [PW21] last five to six generations and
+  describe transients. The fractions in [GSS14] may not have reached equilibrium. The runs
+  of [BWWR15] last 50,000 generations. Round 57 runs about fifty generations and may
+  reach none of the equilibria the theory describes. The "stochastic" regime of [PW21]
+  also randomises only the timing of disturbances. Its finding that periodicity outweighs
+  stochasticity therefore speaks to a different kind of noise from round 57's weather.
+
 ## 8. AI assistance disclosure (PRISMA-trAIce)
 
 | Stage | Performed by | Human oversight |
@@ -1303,12 +1567,20 @@ al. 2009 (mirrors only).
 | **Round 5** (2026-09-03): search, retrieval, extraction, verification, synthesis, this update | Claude Fable 5.1 via subagent — **no search subagents**, one model end to end; open-access only, bot-gates recorded and not bypassed; no institutional access | Round commissioned by the owner with the question fixed by `DECISIONS.md` D070 and the fraction reserved as an owner decision; the review reports a range, it does not set the world rule |
 | **Round 6** (2026-09-07): search | 4 parallel Claude Sonnet subagents (scoped briefs; read-only web; no login, no gate bypassed; no file written) | Round asked for by the owner in their own words; the question and the sweeps' themes were the reviewer's framing of it |
 | Round 6: screening, retrieval, extraction, page verification, synthesis, this update | Claude Fable 5.1 (the reviewing model); Europe PMC's public endpoints and author self-archives only, no institutional access | The design consequence is a proposal to the owner (`fable-propose-motility.md` (absorbed into D083 and deleted on ruling)), not a change |
+| **Round 7** (2026-10-05 and 06): search, screening, verification, reading, extraction | An AI agent session; the round's working files do not name the model. Web search tool; Europe PMC, CrossRef, OpenAlex, Semantic Scholar and bioRxiv public APIs; legal open copies only, gates recorded and not bypassed, no institutional access, no PDF saved | Commissioned to back the predictions of experiment round 57's pre-registration; the extraction marks every mapping to round 57 as the agent's inference |
+| Round 7: filing into this review (§0, §2, §3.10, §4, §5, §6, §7, §8, §9) and `FETCH-RESULTS.md` | Claude Opus 5.5, from the round's working files alone; no search, fetch or reading of sources | — |
 
 No citation in this document was generated from model memory. Every reference originates
-from a tool-call result within the session. Every cited work was retrieved and read except
+from a tool-call result within the session. ~~Every cited work was retrieved and read except
 [BP91], marked NOT OBTAINED where it is cited and used only through three fetched papers
 that report its figure, and the works of §13.4, seen only inside other papers'
-bibliographies (corrected 2026-09-07).
+bibliographies (corrected 2026-09-07).~~ ↻ Every cited work was retrieved and read except
+[BP91], marked NOT OBTAINED where it is cited and used only through three fetched papers
+that report its figure, and the works of §13.4, seen only inside other papers'
+bibliographies (corrected 2026-09-07). Round 7 adds two exceptions. Five of its papers were
+read at the abstract only, and each is marked so where it is cited. Its full texts were read
+and not saved. Its references came from tool-call results recorded in the round's working
+files, and the session that filed them here made no tool call to any source.
 
 Page-level locators in `DESIGN.md` refer to PDF page numbers.
 
@@ -1327,6 +1599,8 @@ sharpening, and Q3, Q4 and Q6. Q7 is answered in its precedent half. Q9 is answe
 theory half, from round 4, and the world's own answer to it is experimental. Q10 is answered
 by round 5, with the independence caveat in §7.3. Q11 is answered by round 6, across four
 literatures that agree, and its consequence for the design is a proposal rather than a rule.
+Q12 is answered in theory by round 7. Its transfer to this world is inference, and
+experiment round 57 is the world's own answer.
 
 Four items were resolved by round 3, and are kept here rather than deleted.
 
@@ -1511,3 +1785,48 @@ dominated by that same substrate.
    and was not fetched. And the "sessile trap" of evolutionary robotics, populations that
    converge on standing still because it is cheaper, surfaced in sweep 4 as a pattern
    without a citation; one verified source for it would turn an inference into a finding.
+
+13. NEW in round 7: the fetch queue for Q12, and its leads. All five in the first table
+    were read only at the abstract, and the first of them bears on clause T of round 57's
+    pre-registration.
+
+    | work | why it is wanted |
+    |---|---|
+    | **[VJTF09] Varpe et al. 2009**, *Oikos* 118:363 | clause T rests on its abstract alone; closed |
+    | **[WTV18] Wieczynski et al. 2018**, *Am. Nat.* 191:E195 | one side of the autocorrelation dispute; closed, no preprint found |
+    | **[TGC17] Tarazona et al. 2017**, *Oikos* 126:1162 | the nearest experimental design to round 57; open copy at the Universitat de València repository (hdl 10550/92697, CC BY-NC) behind a bot challenge |
+    | **[SK12] Starrfelt & Kokko 2012**, *Biol. Rev.* 87:742 | Wiley's listed free link returned 403 |
+    | **[WYRW25]** journal version, *Am. Nat.* 205:572 | to check the preprint's claims; eScholarship copy (CC BY-NC-ND) behind a firewall challenge |
+
+    Twenty ranked candidates were screened and not carried to verification. Each is a lead,
+    read at most at the abstract, and none is in the synthesis. Eighteen are in the table
+    below. The other two are Seger & Brockmann 1987 and Philippi & Seger 1989, seen by title
+    only. Secondary sources name them as the origin of the conservative and diversified
+    kinds of bet-hedging. Eight more were seen and judged weaker for the round. They are
+    Venable 2007, Vasseur & Yodzis 2004, Halley 1996, Chapin et al. 1990, Hartmann &
+    Trumbore 2016, Paniw et al. 2018, Canino-Koning et al. 2016 and Bornhofen & Lattaud.
+
+    | theme | lead | identifier |
+    |---|---|---|
+    | bet-hedging theory | Cohen 1966 | *J. Theor. Biol.* 12:119 |
+    | bet-hedging theory | Lewontin & Cohen 1969 | DOI `10.1073/pnas.62.4.1056` |
+    | bet-hedging theory | Haaland et al. 2019 | DOI `10.1111/evo.13659` |
+    | bet-hedging theory | Libby & Ratcliff 2019 | DOI `10.1086/701786` |
+    | bet-hedging theory | Kussell & Leibler 2005 | DOI `10.1126/science.1114383` |
+    | experiments | Beaumont et al. 2009 | DOI `10.1038/nature08504` |
+    | experiments | Simons 2011 | DOI `10.1098/rspb.2011.0176` |
+    | experiments | Childs et al. 2010 | DOI `10.1098/rspb.2010.0707` |
+    | storage | Iwasa & Kubo 1997 | DOI `10.1023/A:1018483429029` |
+    | storage | Blumstein et al. 2022 | DOI `10.1111/nph.18213` |
+    | storage | Kivelä et al. 2016 | DOI `10.1002/ece3.2310` |
+    | autocorrelation | Ruokolainen et al. 2009 | DOI `10.1016/j.tree.2009.04.009` |
+    | autocorrelation | Schwager et al. 2006 | DOI `10.1086/503609` |
+    | autocorrelation | Tufto 2015 | DOI `10.1111/evo.12716` |
+    | autocorrelation | Rescan et al. 2021 | DOI `10.1371/journal.pgen.1009611` |
+    | artificial life | Grove et al. 2020 | DOI `10.1162/isal_a_00284` |
+    | artificial life | Grove et al. 2021 | DOI `10.1162/artl_a_00354` |
+    | artificial life | Batta & Stephens 2023 | DOI `10.1038/s41598-023-33139-6` |
+
+    The artificial-life gap of §7.1 stands. A study of evolved storage or bet-hedging under
+    seasonal plus stochastic resource input would be the nearest precedent for round 57, and
+    none was found.

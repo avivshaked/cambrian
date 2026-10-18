@@ -9,17 +9,15 @@ checkout that holds this brief.*
 
 A story film tells one round of the simulator to someone who has never seen it: a friend of the
 owner, or the owner a month later. They hear it once, at the speed of the film, while they watch
-the tank. The owner's requirements, in their words:
+the tank. The owner's requirements:
 
-1. "we need to explain the world, and when we use a term we need to explain it. what is a
-   stomach? what is a line? what does it take to have a child? what does it take to die.
-   consider that anything that is obvious to you, is not obvious to anyone unfamiliar with our
-   world."
-2. "can we introduce graphs in unity? it would be great to be able to show some stats when
-   introducing a creature, or introducing a concept."
-3. "when telling a story, we want a story, you know? i don't mean to start with 'once upon a
-   time', but we do want to explain in a way a story of triumph or tragedy or something in
-   between - bitter sweet."
+1. The film has to explain the world, and every term it uses has to be explained: what a
+   stomach is, what a line is, what it takes to have a child and what it takes to die.
+   Anything obvious to you is not obvious to anyone unfamiliar with this world.
+2. The owner asked whether graphs can be shown in Unity, and would like some stats on screen when
+   a creature or a concept is introduced.
+3. A film that tells a story should be a story. It need not open with "once upon a time", but it
+   should be told as a story of triumph, tragedy or something in between, bittersweet.
 
 Every rule below serves one of those, or the rule that nothing on screen is false.
 
@@ -57,8 +55,7 @@ Every rule below serves one of those, or the rule that nothing on screen is fals
   lays a scene's subtitles in time, and whose `render` and `check` show and check the page. Import
   it with `importlib`, since its name has a hyphen, and do not write your own cutter or timer.
 
-Write your files into the story's folder through the shell, as a heredoc or a Python write, and
-never with the Write or Edit tools. Write nowhere else, neither your session scratchpad nor the
+Write your files into the story's folder. Write nowhere else, neither your session scratchpad nor the
 temporary directory. Read the runs one process at a time and stream the large files. Launch
 nothing heavy: no Unity, no farm run, no test suite. You cannot wait for anything, so finish when
 your files are written.
@@ -247,7 +244,7 @@ builder counts it. The subtitles' reading pace is slower than speech, so aim for
 
 ## What you hand back
 
-The writer runs twice. Write your files into the story's folder through the shell, and end with a
+The writer runs twice. Write your files into the story's folder, and end with a
 short message saying which files you wrote.
 
 **The first pass** reads the runs and writes three files, for the owner's ruling before any

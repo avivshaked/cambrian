@@ -24,6 +24,8 @@
   <ItemGroup>
     <!-- D117's pool fixtures, one copy in the tree: Core's, linked here. -->
     <None Include="..\Evosim.Core.Tests\fixtures\pool\*.json" Link="fixtures\pool\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- r57-s2's config in round 59's format, for the card's round 57 tests: Core's copy, linked here. -->
+    <None Include="..\Evosim.Core.Tests\fixtures\r57-s2-config.json" Link="fixtures\r57-s2-config.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

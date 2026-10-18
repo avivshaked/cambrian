@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Evosim.Core
@@ -91,8 +91,25 @@ namespace Evosim.Core
         /// a format-8 file is brought forward by adding <c>"mode":"Lump","gestation":0.5</c>
         /// after its <c>margin</c> and changing nothing else, which is what every founder of the
         /// defaults carries.
+        /// <para>
+        /// 10 — D128, 2026-09-27: <c>lifespan</c> after <c>adultScale</c>
+        /// (<see cref="Genome.LifespanScale"/>). A format-9 genome says nothing about how long its
+        /// body is built to last, so it is refused; a format-9 file is brought forward by adding
+        /// <c>"lifespan":1</c> after its <c>adultScale</c> and changing nothing else, which is what
+        /// every founder of the defaults carries (<c>scripts/convert-format9-to-10.py</c>).
+        /// </para>
         /// </remarks>
-        public const int FormatVersion = 9;
+        public const int FormatVersion = 11;
+
+        /// <summary>
+        /// 12 — D146 (2026-10-01), the one brain. Written only for a genome that carries a
+        /// <see cref="Genome.Brain"/>: its edges carry their <c>id</c>, the genome its
+        /// <c>nextEdgeId</c>, and a <c>brain</c> object its outputs, hidden units and links, ids as
+        /// sixteen hex digits (a JSON number is read as a double and would lose them). A genome of
+        /// the old model is still written as format 11, byte for byte as before, so every recorded
+        /// run and every inoculum stays readable and writes back the same text. Both are read.
+        /// </summary>
+        public const int CentralFormatVersion = 12;
 
         /// <summary>Written for a row that carries no organism id.</summary>
         public const long NoId = -1;
@@ -147,10 +164,13 @@ namespace Evosim.Core
                 w.EndArray();
             }
 
-            w.Field("format", FormatVersion);
+            bool central = genome.Brain != null;
+            w.Field("format", central ? CentralFormatVersion : FormatVersion);
             w.Field("root", genome.RootIndex);
+            if (central) w.Field("nextEdgeId", genome.NextEdgeId);
 
             w.Field("adultScale", genome.AdultScale);
+            w.Field("lifespan", genome.LifespanScale);
 
             w.BeginObject("reproduction")
                 .Field("brood", genome.Reproduction.BroodSize)
@@ -161,12 +181,14 @@ namespace Evosim.Core
                 .EndObject();
 
             w.BeginArray("nodes");
-            foreach (MorphNode node in genome.Nodes) WriteNode(w, node);
+            foreach (MorphNode node in genome.Nodes) WriteNode(w, node, central);
             w.EndArray();
 
             w.BeginArray("globalBrain");
             foreach (NeuronDef neuron in genome.GlobalBrain) WriteNeuron(w, neuron);
             w.EndArray();
+
+            if (central) WriteBrain(w, genome.Brain);
 
             w.EndObject();
             return w.ToString();
@@ -177,12 +199,17 @@ namespace Evosim.Core
             JsonNode root = Json.Parse(text);
 
             int format = root["format"].AsInt();
-            if (format != FormatVersion)
+            if (format != FormatVersion && format != CentralFormatVersion)
             {
                 throw new FormatException(
-                    $"Genome is format {format}, this build reads {FormatVersion}. There is no " +
+                    $"Genome is format {format}, this build reads {FormatVersion} and, for the one brain of D146, {CentralFormatVersion}. There is no " +
                     "migration path: re-run, or check out the revision that wrote it. " +
-                    "(Format 9 added the reproduction mode and the gestation share (`Mode`, " +
+                    "(Format 11 added a joint's drive genes (`Drive`: threshold, reaction, hold, " +
+                    "release; propose-joint-drive.md), which scripts/convert-format10-to-11.py " +
+                    "adds at their defaults. " +
+                    "Format 10 added the lifespan (`LifespanScale`, D128): how long a body is " +
+                    "built to last, as a multiple of the world's ageing base. " +
+                    "Format 9 added the reproduction mode and the gestation share (`Mode`, " +
                     "`GestationShare`, 2026-09-24): whether a parent pays for a child in one " +
                     "lump or as it goes. " +
                     "Format 8 added the buoyancy offset (`BuoyancyOffset`, D111): where along " +
@@ -202,6 +229,7 @@ namespace Evosim.Core
             {
                 RootIndex = root["root"].AsInt(),
                 AdultScale = root["adultScale"].AsFloat(),
+                LifespanScale = root["lifespan"].AsFloat(),
                 Reproduction = new ReproductionTraits
                 {
                     BroodSize = root["reproduction"]["brood"].AsInt(),
@@ -212,11 +240,18 @@ namespace Evosim.Core
                 },
             };
 
-            foreach (JsonNode n in root["nodes"].Items()) genome.Nodes.Add(ReadNode(n));
+            bool central = format == CentralFormatVersion;
+            foreach (JsonNode n in root["nodes"].Items()) genome.Nodes.Add(ReadNode(n, central));
 
             var brain = new List<NeuronDef>();
             foreach (JsonNode n in root["globalBrain"].Items()) brain.Add(ReadNeuron(n));
             genome.GlobalBrain = brain.ToArray();
+
+            if (central)
+            {
+                genome.NextEdgeId = root["nextEdgeId"].AsULong();
+                genome.Brain = ReadBrain(root["brain"]);
+            }
 
             return genome;
         }
@@ -272,13 +307,21 @@ namespace Evosim.Core
 
         // ---------------------------------------------------------------- nodes
 
-        private static void WriteNode(Json.Writer w, MorphNode node)
+        private static void WriteNode(Json.Writer w, MorphNode node, bool central)
         {
             w.BeginObject();
             w.Field("cell", node.CellTypeId);
             w.Field("shape", node.ShapeId);
             w.Field("joint", node.JointType.ToString());
             w.Field("power", node.Power);
+
+            // Format 11: the joint's threshold and command envelope (propose-joint-drive.md).
+            w.BeginObject("drive");
+            w.Field("threshold", node.Drive.Threshold);
+            w.Field("reaction", node.Drive.Reaction);
+            w.Field("hold", node.Drive.Hold);
+            w.Field("release", node.Drive.Release);
+            w.EndObject();
             w.Field("lift", node.Lift);
             w.Field("recursiveLimit", node.RecursiveLimit);
 
@@ -305,7 +348,7 @@ namespace Evosim.Core
             w.EndArray();
 
             w.BeginArray("edges");
-            foreach (MorphEdge edge in node.Edges) WriteEdge(w, edge);
+            foreach (MorphEdge edge in node.Edges) WriteEdge(w, edge, central);
             w.EndArray();
 
             w.BeginArray("neurons");
@@ -315,7 +358,7 @@ namespace Evosim.Core
             w.EndObject();
         }
 
-        private static MorphNode ReadNode(JsonNode n)
+        private static MorphNode ReadNode(JsonNode n, bool central)
         {
             var node = new MorphNode
             {
@@ -323,6 +366,11 @@ namespace Evosim.Core
                 ShapeId = n["shape"].AsString(),
                 JointType = ParseEnum<JointType>(n["joint"].AsString()),
                 Power = n["power"].AsFloat(),
+                Drive = new DriveGenes(
+                    n["drive"]["threshold"].AsFloat(),
+                    n["drive"]["reaction"].AsFloat(),
+                    n["drive"]["hold"].AsFloat(),
+                    n["drive"]["release"].AsFloat()),
                 Lift = n["lift"].AsFloat(),
                 RecursiveLimit = n["recursiveLimit"].AsInt(),
                 Growth = ParseEnum<ModuleGrowth>(n["growth"].AsString()),
@@ -342,7 +390,7 @@ namespace Evosim.Core
             }
             node.JointLimits = limits.ToArray();
 
-            foreach (JsonNode e in n["edges"].Items()) node.Edges.Add(ReadEdge(e));
+            foreach (JsonNode e in n["edges"].Items()) node.Edges.Add(ReadEdge(e, central));
 
             var neurons = new List<NeuronDef>();
             foreach (JsonNode ne in n["neurons"].Items()) neurons.Add(ReadNeuron(ne));
@@ -353,9 +401,10 @@ namespace Evosim.Core
 
         // ---------------------------------------------------------------- edges
 
-        private static void WriteEdge(Json.Writer w, MorphEdge edge)
+        private static void WriteEdge(Json.Writer w, MorphEdge edge, bool central)
         {
             w.BeginObject();
+            if (central) w.Field("id", BrainIds.Hex(edge.Id));
             w.Field("child", edge.Child);
             w.Field("terminalOnly", edge.TerminalOnly);
 
@@ -375,13 +424,14 @@ namespace Evosim.Core
             w.EndObject();
         }
 
-        private static MorphEdge ReadEdge(JsonNode e)
+        private static MorphEdge ReadEdge(JsonNode e, bool central)
         {
             JsonNode o = e["orientation"];
             JsonNode r = e["reflect"];
 
             return new MorphEdge
             {
+                Id = central ? BrainIds.ParseHex(e["id"].AsString()) : 0UL,
                 Child = e["child"].AsInt(),
                 TerminalOnly = e["terminalOnly"].AsBool(),
                 ParentAnchor = ReadFloat3(e["parentAnchor"]),
@@ -392,6 +442,61 @@ namespace Evosim.Core
                 Reflect = new Bool3(r["x"].AsBool(), r["y"].AsBool(), r["z"].AsBool()),
             };
         }
+
+        // ---------------------------------------------------------------- the one brain (D146)
+
+        private static void WriteBrain(Json.Writer w, CentralBrain brain)
+        {
+            w.BeginObject("brain");
+
+            w.BeginArray("outputs");
+            foreach (BrainUnit u in brain.Outputs) WriteUnit(w, u);
+            w.EndArray();
+
+            w.BeginArray("hidden");
+            foreach (BrainUnit u in brain.Hidden) WriteUnit(w, u);
+            w.EndArray();
+
+            w.BeginArray("links");
+            foreach (BrainLink l in brain.Links)
+            {
+                w.BeginObject()
+                    .Field("from", BrainIds.Hex(l.From))
+                    .Field("to", BrainIds.Hex(l.To))
+                    .Field("w", l.Weight)
+                    .EndObject();
+            }
+
+            w.EndArray();
+            w.EndObject();
+        }
+
+        private static void WriteUnit(Json.Writer w, BrainUnit u) =>
+            w.BeginObject().Field("id", BrainIds.Hex(u.Id)).Field("bias", u.Bias).EndObject();
+
+        private static CentralBrain ReadBrain(JsonNode b)
+        {
+            var brain = new CentralBrain();
+            foreach (JsonNode u in b["outputs"].Items()) brain.Outputs.Add(ReadUnit(u));
+            foreach (JsonNode u in b["hidden"].Items()) brain.Hidden.Add(ReadUnit(u));
+            foreach (JsonNode l in b["links"].Items())
+            {
+                brain.Links.Add(new BrainLink
+                {
+                    From = BrainIds.ParseHex(l["from"].AsString()),
+                    To = BrainIds.ParseHex(l["to"].AsString()),
+                    Weight = l["w"].AsFloat(),
+                });
+            }
+
+            return brain;
+        }
+
+        private static BrainUnit ReadUnit(JsonNode u) => new BrainUnit
+        {
+            Id = BrainIds.ParseHex(u["id"].AsString()),
+            Bias = u["bias"].AsFloat(),
+        };
 
         // ---------------------------------------------------------------- neurons
 

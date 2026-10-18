@@ -114,6 +114,24 @@ namespace Evosim.Core
         public double Energy { get; internal set; }
 
         /// <summary>
+        /// Joules this body's mouths have kept over its life: what it took from corpses, net of the
+        /// waste returned to the water. 0 at birth. A count, not an account: <see cref="Energy"/>
+        /// already holds the joules, and this only says how many of them a mouth brought in
+        /// (the swimming nursery's "eaten", D167).
+        /// </summary>
+        public double MouthJoules { get; internal set; }
+
+        /// <summary>
+        /// Joules this body's grips owe since its last metabolic step (D162): the anchoring cell's
+        /// build price for each grip formed, handed over by the solver
+        /// (<see cref="World.OweGrip"/>) and charged at the next metabolic step.
+        /// </summary>
+        public double PendingGripJoules { get; internal set; }
+
+        /// <summary>Joules this body has paid for grips over its life (D162).</summary>
+        public double GripJoules { get; internal set; }
+
+        /// <summary>
         /// Joules banked toward the next child by a gestating parent — the owner's ruling of
         /// 2026-09-24. Zero for every lump breeder and every body in the record.
         /// </summary>
@@ -143,6 +161,23 @@ namespace Evosim.Core
 
         /// <summary>Simulated seconds since birth.</summary>
         public float Age { get; internal set; }
+
+        /// <summary>
+        /// D128: how old the body is as far as its hazard of dying of age is concerned, s. It
+        /// runs with <see cref="Age"/> and is pushed ahead by each birth and each destroyed part
+        /// (<see cref="RunConfig.AgeingPerBirth"/>, <see cref="RunConfig.AgeingPerWound"/>). Stays
+        /// 0 in a world whose hazard is off, which is every recorded world.
+        /// </summary>
+        public double AgeClock { get; internal set; }
+
+        /// <summary>
+        /// D128: the hazard of dying of age accumulated along <see cref="AgeClock"/>, a pure
+        /// number. The body dies of age on the step this passes its own threshold, an exponential
+        /// draw from its id (<c>World.AgeDeathIndex</c>), which is what gives the age at death its
+        /// Gompertz distribution. A jump of the clock adds nothing here; it steepens every step
+        /// after it.
+        /// </summary>
+        public double AgeHazard { get; internal set; }
 
         /// <summary>
         /// How many times each <see cref="ModuleGrowth.Indeterminate"/> node of this creature's
@@ -768,6 +803,12 @@ namespace Evosim.Core
         /// separable in a dissection.
         /// </remarks>
         Eaten = 2,
+
+        /// <summary>
+        /// D128: its hazard of dying of age passed its threshold. The body dies holding whatever
+        /// reserve it had, and the reserve goes to its corpse with its tissue.
+        /// </summary>
+        Aged = 3,
     }
 
     /// <summary>How a creature entered the population. Never conflated — DESIGN.md §5A.6, D021.</summary>
@@ -792,6 +833,34 @@ namespace Evosim.Core
         /// keeps a world populated.
         /// </summary>
         Inoculation = 2,
+
+        /// <summary>
+        /// Planted by <see cref="World.Immigrate"/> — D159's exchange between the connected
+        /// worlds of one group: a copy of a living creature's genome from another world, placed
+        /// and endowed as a founder is. Created from nothing in this world's books, as a founder
+        /// is, and never the floor: a world that lives on its neighbours' bodies has to be told
+        /// apart from one that lives on its own.
+        /// </summary>
+        Immigration = 3,
+    }
+
+    /// <summary>
+    /// Why <see cref="World.Immigrate"/> refused a genome (D159), for the record of offers. The
+    /// three are a founder's three refusals.
+    /// </summary>
+    public enum ImmigrantRefusal
+    {
+        /// <summary>Not refused: the genome was planted.</summary>
+        None = 0,
+
+        /// <summary>Its newborn body is under the newborn mass floor.</summary>
+        UnderMassFloor = 1,
+
+        /// <summary>The placer found no room for it: the world is full where it would land.</summary>
+        NoRoom = 2,
+
+        /// <summary>Admitted and stillborn.</summary>
+        Stillborn = 3,
     }
 
     /// <summary>

@@ -25,7 +25,7 @@ r37b-s8	09-13 23:11	09-14 09:06	9.92	3.70	3	4
 r37b-s9	09-14 02:06	09-14 12:25	10.31	3.43	2	4
 r37b-s10	09-14 07:23	09-14 21:24	14.01	1.66	1	4
 
-## F8  the machine, in LOCAL time (+01:00; the manifests are UTC). Arm windows are the
+## F8  the machine, in LOCAL time (the manifests are UTC). Arm windows are the
 ## manifests; the control arm is scratch/logs/evosim-r37bc-s5.log, and each render is its
 ## scratch/logs/theatre-snap-*.out birth to its .log mtime. A render is a Unity Play-mode
 ## process, not an arm; the counts below keep them apart.

@@ -1,0 +1,7 @@
+{
+  "base": "rounds/nursery/brain2-w5.json",
+  "name": "accept-stop-w5",
+  "description": "accept-stop on round 60's world config format: its base is brain2-w5 in place of brain2-w4, and every other setting is accept-stop-w4's, whose description was: accept-stop on round 59's world config format: its base is brain2-w4 in place of brain2-w3, and every other setting is accept-stop-w3's, whose description was: accept-stop on round 57's world config format: its base is brain2-w3 in place of brain2-w2, and every other setting is accept-stop-w2's, whose description was: accept-stop on the new world config format: its base is brain2-w2 in place of brain2, and every other setting is accept-stop's, whose description was: The nursery room's phase 2 acceptance of run.stop (nursery-room-build.md): brain2 made small per generation but long in generations, so a STOP arrives mid-run. A stopped run is not registered.",
+  "search": {"population": 16, "draws": 2, "generations": 100},
+  "exam": {"episodes": 1, "controls": [{"kind": "own"}]}
+}

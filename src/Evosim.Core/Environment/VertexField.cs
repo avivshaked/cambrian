@@ -597,6 +597,16 @@ namespace Evosim.Core
         public void Deposit(FieldPoint at, float joules)
         {
             if (!(joules > 0f)) return;
+            DepositExact(at, joules);
+        }
+
+        /// <summary>
+        /// The deposit for a double: the vertices hold doubles, so a float handed in lands as it
+        /// always did.
+        /// </summary>
+        public void DepositExact(FieldPoint at, double joules)
+        {
+            if (!(joules > 0d)) return;
             Float3 p = Validated(at);
 
             Gather(p, KernelMetres);

@@ -37,6 +37,8 @@ namespace Evosim.SwimProbe
             bool clean = false;
             string idsFile = null;
             double constSense = double.NaN;
+            double push = double.NaN;
+            string configPath = null;   // a config the build reads, when the run's own predates a tunable
 
             for (int i = 0; i < args.Length; i++)
             {
@@ -55,18 +57,22 @@ namespace Evosim.SwimProbe
                     case "--ids": idsFile = args[++i]; break;
                     case "--const": constSense = double.Parse(args[++i], Inv); break;
                     case "--water": _uniformWater = double.Parse(args[++i], Inv); break;
+                    case "--push": push = double.Parse(args[++i], Inv); break;
+                    case "--config": configPath = args[++i]; break;
                     default: Console.Error.WriteLine("unknown " + args[i]); return 2;
                 }
             }
 
             Directory.CreateDirectory(outDir);
-            _config = RunConfigJson.Read(File.ReadAllText(Path.Combine(run, "config.json")), out string mismatch);
+            _config = RunConfigJson.Read(File.ReadAllText(configPath ?? Path.Combine(run, "config.json")), out string mismatch);
             Console.WriteLine($"=== swim probe {label}: {run}, config {_config.Hash()} {(mismatch == null ? "(matches)" : "(recorded " + mismatch + ")")}");
 
             _solver = SolverConfig.From(_config, _dt);
             _solver.TankRadiusMetres = 0;       // alone: no glass
             _solver.CreatureContact = false;    // alone: nobody to touch
             if (!double.IsNaN(constSense)) _solver.ConstantChemicalAndEnergy = (float)constSense;
+            if (!double.IsNaN(push)) _solver.LimbPushCoefficient = push;   // propose-foraging.md: the limb push, set on the bench
+            Console.WriteLine(FormattableString.Invariant($"  limb push {_solver.LimbPushCoefficient}"));
             Console.WriteLine($"  sensor constant {_solver.ConstantChemicalAndEnergy}, uniform water {_uniformWater} m/s along x");
             if (clean)
             {
@@ -78,10 +84,14 @@ namespace Evosim.SwimProbe
                 $"  solver: density {_solver.Density}, Cd {_solver.DragCoefficient}, panels/axis {_solver.PanelsPerAxis}, added mass {_solver.AddedMassCoefficient}, fluidAccel {_solver.FluidAccelerationCoefficient}, excess {_solver.TissueExcessDensity}, neutralVol {_solver.NeutralBodyVolume}, offsetTorque {_solver.BuoyancyOffsetTorque}, perPart {_solver.ContactPerPart}, current {(_solver.Current == null ? "none" : "SET")}, bed {(_solver.Bed == null ? "none" : "SET")}, floorSolid {_solver.FloorIsSolid}, depth {_solver.WorldDepthMetres}, limiters {_solver.LimitersEngage}"));
 
             // ---- the snapshot
-            string snapPath = Path.Combine(run, "snapshots", at.ToString("000000000", Inv) + ".jsonl");
+            // Either record format: 1 holds the genomes in the snapshot, 2 names them by id in
+            // genomes.jsonl.gz, and RecordFiles joins the two.
+            SnapshotRead snap = RecordFiles.ReadSnapshot(run, at, RecordFiles.FormatOf(run))
+                ?? throw new FileNotFoundException($"no snapshot at {at} s in {run}");
+            Console.WriteLine($"  snapshot {snap.Source}: {snap.Rows.Length} rows");
             var adults = new Dictionary<long, Phenotype>();
             int refused = 0;
-            foreach (string line in File.ReadLines(snapPath))
+            foreach (string line in snap.Rows)
             {
                 if (line.Length == 0) continue;
                 try
@@ -91,7 +101,7 @@ namespace Evosim.SwimProbe
                     int[] counts = GenomeJson.ReadModuleCounts(line);
                     List<int[]> lost = GenomeJson.ReadLostPartPaths(line);
                     var paths = new List<int[]>();
-                    Phenotype adult = Developer.Develop(genome, _config.Development, null, _config.Shapes, counts, paths);
+                    Phenotype adult = Developer.Develop(genome, _config.Development, null, _config.Shapes, counts, paths, _config.CellTypes);
                     if (lost != null && lost.Count > 0)
                     {
                         var drop = new bool[adult.PartCount];
@@ -119,6 +129,7 @@ namespace Evosim.SwimProbe
                 if (probe.Dof == 0) continue;
                 var rec = new BodyRecord { Id = kv.Key, Adult = adult, Dof = probe.Dof, Links = probe.Links, Parts = adult.PartCount };
                 rec.Mass = probe.TotalMass;
+                rec.KeepWatts = Metabolism.StandingWatts(adult, _config);
                 rec.JointLinks = new List<int>();
                 for (int b = 1; b < probe.Links; b++) if (probe.DofCount[b] > 0) rec.JointLinks.Add(b);
                 rec.DofStart = (int[])probe.DofStart.Clone();
@@ -219,6 +230,13 @@ namespace Evosim.SwimProbe
             var result = new Dictionary<long, List<double[]>>();
             heightAtEnd = new Dictionary<long, double>();
             frames = 0;
+            if (!File.Exists(path))
+            {
+                // Record format 2 keeps a binary state stream in place of poses.jsonl; part A
+                // reads the text stream only, so it is skipped and parts B and C run.
+                Console.WriteLine("  poses: no poses.jsonl (record format 2), part A skipped");
+                return result;
+            }
             foreach (string line in File.ReadLines(path))
             {
                 int comma = line.IndexOf(',');
@@ -393,6 +411,7 @@ namespace Evosim.SwimProbe
 
             double t = 0;
             bool lost = false;
+            double work = 0, workTime = 0;   // propose-foraging.md: the joint work the stroke costs, over the kept half
             for (int step = 0; step <= steps; step++)
             {
                 if (step % every == 0)
@@ -441,6 +460,7 @@ namespace Evosim.SwimProbe
                     Fluid.Apply(body, _solver);
                     Contacts.Apply(body, 0, grid, _solver, ref scratch);
                     _jointTorques.Invoke(world, jtArgs);
+                    if (step >= keepFrom) { for (int d = 0; d < dof; d++) work += Math.Abs(body.Tau[d] * body.Qd[d]) * _dt; workTime += _dt; }
                     Aba.Solve(body);
                     Aba.Integrate(body, _dt);
                     Kinematics.Poses(body);
@@ -460,7 +480,7 @@ namespace Evosim.SwimProbe
                 }
             }
 
-            var res = new SwimResult { Lost = lost };
+            var res = new SwimResult { Lost = lost, WorkWatts = workTime > 0 ? work / workTime : double.NaN };
             if (lost) return res;
             res.FinalBits = BitConverter.DoubleToInt64Bits(body.Position[0]) ^ BitConverter.DoubleToInt64Bits(body.Position[1]) * 31 ^ BitConverter.DoubleToInt64Bits(body.Spin[0]) * 7;
 
@@ -577,7 +597,7 @@ namespace Evosim.SwimProbe
             File.WriteAllText(Path.Combine(outDir, label + "-bodies.csv"), a.ToString());
 
             var c = new StringBuilder();
-            c.AppendLine("group,id,parts,joints,jointTypes,planHz,planAmps,variant,horiz60,vert60,netSpeed,pathSpeed,perStroke,leadAmp,leadHz,leadAsym,sigRms,lost,lengthM");
+            c.AppendLine("group,id,parts,joints,jointTypes,planHz,planAmps,variant,horiz60,vert60,netSpeed,pathSpeed,perStroke,leadAmp,leadHz,leadAsym,sigRms,lost,lengthM,workW,mass,keepW");
             foreach (var r in selected)
             {
                 foreach (var (name, res) in new[] { ("brain", r.Brain), ("passive", r.Passive), ("servoSineIn", r.SineIn), ("servoSineLag90", r.SineLag), ("servoAsym", r.Asym), ("openSineIn", r.OpenIn), ("openSineLag90", r.OpenLag) })
@@ -586,7 +606,7 @@ namespace Evosim.SwimProbe
                     c.Append(F(r.Plan.Hz, "0.##")).Append(',').Append(string.Join(" ", r.JointLinks.Select(b => F(r.Plan.Amp[b], "0.##")))).Append(',').Append(name).Append(',');
                     if (res.Lost) { c.AppendLine(",,,,,,,,,LOST"); continue; }
                     c.Append(F(res.Horizontal)).Append(',').Append(F(res.Vertical)).Append(',').Append(F(res.NetSpeed, "0.#####")).Append(',').Append(F(res.PathSpeed, "0.#####")).Append(',').Append(F(res.PerStroke, "0.#####")).Append(',');
-                    c.Append(F(res.DominantAmp, "0.###")).Append(',').Append(F(res.DominantHz, "0.##")).Append(',').Append(F(res.LeadAsym, "0.###")).Append(',').Append(F(res.JointSigRms.Values.Max(), "0.###")).Append(",,").Append(F(r.Length, "0.###")).AppendLine();
+                    c.Append(F(res.DominantAmp, "0.###")).Append(',').Append(F(res.DominantHz, "0.##")).Append(',').Append(F(res.LeadAsym, "0.###")).Append(',').Append(F(res.JointSigRms.Values.Max(), "0.###")).Append(",,").Append(F(r.Length, "0.###")).Append(',').Append(F(res.WorkWatts, "0.#####")).Append(',').Append(F(r.Mass, "0.###")).Append(',').Append(F(r.KeepWatts, "0.#####")).AppendLine();
                 }
             }
             File.WriteAllText(Path.Combine(outDir, label + "-strokes.csv"), c.ToString());
@@ -598,6 +618,7 @@ namespace Evosim.SwimProbe
             public long Id;
             public Phenotype Adult;
             public int Dof, Links, Parts;
+            public double KeepWatts;   // the body's standing watts at age 0, Metabolism.StandingWatts
             public List<int> JointLinks;
             public int[] DofStart, DofCount, Parent;
             public double[] LimitLo, LimitHi;
@@ -623,6 +644,7 @@ namespace Evosim.SwimProbe
             public long FinalBits;
             public double Horizontal, Vertical, NetSpeed, PathSpeed, RootPathSpeed, Net3, PerStroke;
             public double DominantHz, DominantAmp, LeadAsym;
+            public double WorkWatts;
             public int ActiveJoints;
             public Dictionary<int, double> JointAmp, JointHz, JointAsym, JointSigRms;
             public Dictionary<int, int> JointPrimary;

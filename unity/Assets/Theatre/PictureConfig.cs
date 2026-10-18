@@ -199,6 +199,13 @@ namespace Evosim.Theatre
                 missing.Add("development (the default limits)");
             }
 
+            // The light (the underwater look's item 3, logbook/specs/underwater-look/brief.md): how
+            // fast it falls with depth and how the day and the season swing it, so a picture can
+            // light a body at the depth the run put it. Read for the picture and for nothing else;
+            // a field this build does not know (a two-season year, the weather) is left to the
+            // recorded dayFactor, which TheatreDaylight reads from stats.jsonl in preference.
+            ReadTheLight(root, config, missing);
+
             // The guilds a body can carry. Taken from the file where it can be, because a run
             // whose cell types are not this build's is a run whose colours would be a guess; the
             // names are checked against the standard registry either way, since that is the one
@@ -207,6 +214,55 @@ namespace Evosim.Theatre
 
             absent = missing.Count == 0 ? null : string.Join(", ", missing.ToArray());
             return config;
+        }
+
+        private static void ReadTheLight(JsonNode root, RunConfig config, List<string> missing)
+        {
+            if (!root.Has("light"))
+            {
+                missing.Add("light (the build's default light used)");
+                return;
+            }
+
+            JsonNode light = root["light"];
+            LightModel d = config.Light ?? new LightModel();
+
+            // Each through its own setter, which refuses a value the model cannot hold; a refusal
+            // here leaves that one field at the build's default and names it, because a picture is
+            // not refused over its lighting.
+            var model = new LightModel(d.SurfaceIrradiance, d.AttenuationDepth);
+
+            Set(light, "surfaceIrradiance", d.SurfaceIrradiance, v => model.SurfaceIrradiance = v, missing);
+            Set(light, "attenuationDepth", d.AttenuationDepth, v => model.AttenuationDepth = v, missing);
+            Set(light, "dayNightAmplitude", d.DayNightAmplitude, v => model.DayNightAmplitude = v, missing);
+            Set(light, "dayLengthSeconds", d.DayLengthSeconds, v => model.DayLengthSeconds = v, missing);
+            Set(light, "seasonAmplitude", d.SeasonAmplitude, v => model.SeasonAmplitude = v, missing);
+            Set(light, "seasonLengthSeconds", d.SeasonLengthSeconds, v => model.SeasonLengthSeconds = v, missing);
+
+            config.Light = model;
+        }
+
+        private static void Set(JsonNode group, string key, float fallback, Action<float> set, List<string> missing)
+        {
+            string name = "light." + key;
+
+            if (!group.Has(key))
+            {
+                missing.Add(name + " (" + fallback.ToString("0.####", CultureInfo.InvariantCulture) + " used)");
+                set(fallback);
+                return;
+            }
+
+            try
+            {
+                set(group[key].AsFloat());
+            }
+            catch (Exception e)
+            {
+                missing.Add(name + " refused (" + e.GetType().Name + "; " +
+                            fallback.ToString("0.####", CultureInfo.InvariantCulture) + " used)");
+                set(fallback);
+            }
         }
 
         private static void ReadTheCellTypes(JsonNode root, RunConfig config, List<string> missing)

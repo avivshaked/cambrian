@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Evosim.Core;
 
@@ -194,6 +194,7 @@ namespace Evosim.Dynamics
                 Volume[i] = volume;
                 Lift[i] = part.Lift;
                 Power[i] = part.Power;
+                JointGenes[i] = part.Drive;
 
                 // D111's lever, from the half-extent the link has now, so a grown body's arm is
                 // the built body's to the bit.
@@ -345,6 +346,25 @@ namespace Evosim.Dynamics
                 }
             }
             PanelStart[Links] = cursor;
+
+            for (int i = 0; i < Links; i++)
+            {
+                double mx = 0, my = 0, mz = 0;
+                for (int p = PanelStart[i]; p < PanelStart[i + 1]; p++)
+                {
+                    double cx = PanelCentre[3 * p], cy = PanelCentre[3 * p + 1], cz = PanelCentre[3 * p + 2];
+                    double dx = System.Math.Sqrt(cy * cy + cz * cz);
+                    double dy = System.Math.Sqrt(cz * cz + cx * cx);
+                    double dz = System.Math.Sqrt(cx * cx + cy * cy);
+                    mx += PanelArea[p] * dx * dx * dx;
+                    my += PanelArea[p] * dy * dy * dy;
+                    mz += PanelArea[p] * dz * dz * dz;
+                }
+
+                SpinMoment[3 * i] = mx;
+                SpinMoment[3 * i + 1] = my;
+                SpinMoment[3 * i + 2] = mz;
+            }
         }
 
         /// <summary>

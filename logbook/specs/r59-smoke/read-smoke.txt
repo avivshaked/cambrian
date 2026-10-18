@@ -1,0 +1,202 @@
+== round 59's reader: year 6000 s, samples every 1500 s, end 48000 s; swimmers 10 from inocula\r59-direction-tops
+r59m-third: runs\r59m-third\2026-10-14-172929-98c0f323
+   seed 2, PLANTED; engine gpu transport card; configHash 98c0f3239f4e6766; gitCommit cc901ca9dd gitDirty False (source.gitDirty); status ended reason budget, 4500 of 4500 s
+   world: turningDrag Spin spinDrag 0.5, senseBedTouch True, leafScent Direction range 6 m cell 2 m half 1 m2; attack 0.033 intake 0.033 W/unit, consumer upkeep 2 W/m3
+   founding: trickle 0.033333335/s, trickle pool share 0.6, floor pool share 0, pool count 14, pool hash 268f395b89a5bf42
+   pool: 14 genomes, index.tsv 14 rows; swimmers 10 (matched by sha256 10); others: pool 0 (stomach/stomach), pool 1 (stomach/stomach), pool 2 (stomach/stomach), pool 3 (stomach/stomach)
+   swimmers in the pool: 4:direction-sparse-g33-47, 5:direction-sparse-g22-27, 6:direction-sparse-g33-30, 7:direction-sparse-g33-37, 8:direction-sparse-g31-19, 9:direction-sparse-g30-40, 10:direction-sparse-g16-2, 11:direction-sparse-g14-31, 12:direction-sparse-g12-35, 13:direction-sparse-g15-36; weights ['0.05']
+   NOTE: the run reaches 4500 s, short of --end 48000 s; read to 4500 s
+r59m-sixth: runs\r59m-sixth\2026-10-14-172929-37f12db4
+   seed 2, PLANTED; engine gpu transport card; configHash 37f12db4a4445f5b; gitCommit cc901ca9dd gitDirty False (source.gitDirty); status ended reason budget, 4500 of 4500 s
+   world: turningDrag Spin spinDrag 0.5, senseBedTouch True, leafScent Direction range 6 m cell 2 m half 1 m2; attack 0.0167 intake 0.0167 W/unit, consumer upkeep 1 W/m3
+   founding: trickle 0.033333335/s, trickle pool share 0.6, floor pool share 0, pool count 14, pool hash 268f395b89a5bf42
+   pool: 14 genomes, index.tsv 14 rows; swimmers 10 (matched by sha256 10); others: pool 0 (stomach/stomach), pool 1 (stomach/stomach), pool 2 (stomach/stomach), pool 3 (stomach/stomach)
+   swimmers in the pool: 4:direction-sparse-g33-47, 5:direction-sparse-g22-27, 6:direction-sparse-g33-30, 7:direction-sparse-g33-37, 8:direction-sparse-g31-19, 9:direction-sparse-g30-40, 10:direction-sparse-g16-2, 11:direction-sparse-g14-31, 12:direction-sparse-g12-35, 13:direction-sparse-g15-36; weights ['0.05']
+   NOTE: the run reaches 4500 s, short of --end 48000 s; read to 4500 s
+
+== readings: per world and year (living at the year's end by guild; kills in the year; mouth totals)
+   world      yr summer winter    top  alive   leaf stomac jointe mouthe grazer  kills  leafK  rootK  parts  eaten     units  corps
+   r59m-third no full year by 4500 s
+   r59m-third  1 (part year to 4500 s) kills 9, leaf kills 7
+   r59m-sixth no full year by 4500 s
+   r59m-sixth  1 (part year to 4500 s) kills 80, leaf kills 33
+
+== readings: kills per world and year by attacker class (all / on leaves)
+   r59m-third year 1: planted founder 5/3; planted descendant 4/4; leaf kills by own-line grazers 0
+   r59m-sixth year 1: planted founder 8/5; planted descendant 72/28; leaf kills by own-line grazers 0
+
+== readings: r59m-third, planted, at every 1500 s
+         t  alive  adm  kids pl.liv  share   leaf stomac jointe mouthe grazer lines largest  swimmers died in the span
+      1500   3805    0     0      0   0.0%      0      0      0      0      0     0       0  0
+      3000   1436    0     0      0   0.0%      0      0      0      0      0     0       0  0
+      4500   1207   21    25     31   2.6%      0      0     27     31     31    14 9 -g33-30  8 (aged 3, starved 5; median age 892 s)
+   by swimmer: founders admitted / with a child / descendants born / living at 4500 s / largest line
+   direction-sparse-g33-30      1 / 1 / 11 / 9 / 9
+   direction-sparse-g22-27      3 / 2 / 9 / 6 / 5
+   direction-sparse-g30-40      2 / 2 / 6 / 5 / 4
+   direction-sparse-g12-35      3 / 2 / 2 / 5 / 2
+   direction-sparse-g16-2       4 / 3 / 4 / 3 / 1
+   direction-sparse-g31-19      3 / 1 / 4 / 2 / 1
+   direction-sparse-g14-31      1 / 0 / 0 / 1 / 1
+   direction-sparse-g33-47      1 / 1 / 1 / 0 / 0
+   direction-sparse-g15-36      1 / 1 / 6 / 0 / 0
+   direction-sparse-g33-37      2 / 1 / 1 / 0 / 0
+
+== readings: r59m-sixth, planted, at every 1500 s
+         t  alive  adm  kids pl.liv  share   leaf stomac jointe mouthe grazer lines largest  swimmers died in the span
+      1500   3758    0     0      0   0.0%      0      0      0      0      0     0       0  0
+      3000   1490    0     0      0   0.0%      0      0      0      0      0     0       0  0
+      4500   1425   21    44    108   7.6%      0      0     70    108    108    18 46 -g15-36  9 (aged 3, starved 5, eaten 1; median age 562 s)
+   by swimmer: founders admitted / with a child / descendants born / living at 4500 s / largest line
+   direction-sparse-g15-36      1 / 1 / 85 / 46 / 46
+   direction-sparse-g30-40      2 / 2 / 26 / 18 / 17
+   direction-sparse-g31-19      3 / 3 / 11 / 11 / 6
+   direction-sparse-g33-47      1 / 1 / 28 / 10 / 10
+   direction-sparse-g22-27      3 / 3 / 12 / 9 / 6
+   direction-sparse-g33-37      2 / 2 / 10 / 4 / 4
+   direction-sparse-g12-35      3 / 2 / 2 / 4 / 2
+   direction-sparse-g16-2       4 / 3 / 5 / 3 / 1
+   direction-sparse-g33-30      1 / 1 / 3 / 2 / 2
+   direction-sparse-g14-31      1 / 1 / 1 / 1 / 1
+
+== readings: r59m-third, leaf smell recorder, 46 rows (n, mean cos: readers | others; grazers: readers | others)
+      1500  565 -0.083 | 3129 -0.042   grazers 0 - | 0 -   skipped [109, 0, 0]
+      3000  156 -0.013 | 1138 -0.014   grazers 0 - | 0 -   skipped [142, 0, 0]
+      4500  92 -0.059 | 961 -0.019   grazers 21 -0.084 | 4 -0.073   skipped [143, 11, 0]
+   per year, weighted by n: readers | others; grazers readers | others; planted grazers readers | others
+   year 1: 15996 -0.088 | 89647 -0.060 | 158 -0.019 | 12 -0.064 | 158 -0.019 | 12 -0.064
+
+== readings: r59m-sixth, leaf smell recorder, 46 rows (n, mean cos: readers | others; grazers: readers | others)
+      1500  626 -0.112 | 2991 -0.083   grazers 0 - | 0 -   skipped [141, 0, 0]
+      3000  152 -0.019 | 1195 -0.060   grazers 0 - | 0 -   skipped [143, 0, 0]
+      4500  168 -0.036 | 1118 -0.033   grazers 59 -0.061 | 26 -0.057   skipped [116, 23, 0]
+   per year, weighted by n: readers | others; grazers readers | others; planted grazers readers | others
+   year 1: 18034 -0.086 | 87798 -0.065 | 538 0.042 | 140 -0.032 | 538 0.042 | 140 -0.032
+
+== smoke: r59m-third, read to 4500 s
+   id      born  swimmer                  endow  fate                    res    kids kills(leaf) pos.samples path m  disp m  absorptive  cos (n, reads)
+   8533     3063  direction-sparse-g33-47   127.2  starved at 1205 s           -     1     0(0)         120  142.8    39.2  no rows     7, +0.04, 1
+   8539     3073  direction-sparse-g15-36   127.2  aged at 550 s           113.0     4     0(0)          55   64.8    26.3  no rows     2, +0.32, 1
+   8601     3152  direction-sparse-g30-40   127.2  alive, 1348 s               -     2     2(1)         135  143.0    52.1  no rows     14, -0.08, 1
+   8602     3152  direction-sparse-g16-2    127.2  aged at 1316 s          158.2     2     0(0)         131  140.1    20.0  no rows     12, +0.01, 1
+   8701     3278  direction-sparse-g33-37   127.2  starved at 754 s            -     0     0(0)          76   68.3    12.9  no rows     -
+   8708     3284  direction-sparse-g31-19   127.2  aged at 732 s           306.9     4     1(1)          73   60.1    36.1  no rows     8, +0.26, 1
+   8720     3296  direction-sparse-g33-37   127.2  starved at 906 s            -     1     0(0)          91   83.4    39.8  no rows     7, +0.02, 1
+   8814     3372  direction-sparse-g31-19   127.2  starved at 878 s            -     0     0(0)          87  105.0    22.4  no rows     3, +0.09, 1
+   8892     3447  direction-sparse-g22-27   127.2  starved at 961 s            -     0     0(0)          96  106.5    27.1  no rows     5, +0.14, 1
+   8992     3602  direction-sparse-g33-30   127.2  alive, 898 s                -     1     1(0)          90    5.4     3.6  no rows     9, -0.40, 1
+   9064     3784  direction-sparse-g22-27   127.2  alive, 716 s                -     4     1(1)          72   55.5    21.1  no rows     8, -0.04, 1
+   9192     4016  direction-sparse-g14-31   127.2  alive, 484 s                -     0     0(0)          49   53.6    28.8  no rows     1, +0.27, 1
+   9193     4018  direction-sparse-g31-19   127.2  alive, 482 s                -     0     0(0)          49   50.2    19.9  no rows     1, +0.23, 1
+   9249     4086  direction-sparse-g16-2    127.2  alive, 414 s                -     1     0(0)          42   44.6     8.3  no rows     5, +0.40, 1
+   9382     4201  direction-sparse-g12-35   127.2  alive, 299 s                -     1     0(0)          30    0.8     0.7  no rows     3, +0.58, 1
+   9386     4206  direction-sparse-g30-40   127.2  alive, 294 s                -     1     0(0)          30   53.5    24.8  no rows     1, -0.16, 1
+   9433     4237  direction-sparse-g12-35   127.2  alive, 263 s                -     1     0(0)          27   32.8    31.2  no rows     1, +0.31, 1
+   9444     4248  direction-sparse-g16-2    127.2  alive, 252 s                -     0     0(0)          26   27.4    13.1  no rows     -
+   9652     4404  direction-sparse-g16-2    127.2  alive, 96 s                 -     1     0(0)          10    8.1     5.0  no rows     -
+   9675     4418  direction-sparse-g22-27   127.2  alive, 82 s                 -     1     0(0)           9    5.3     3.9  no rows     1, -0.86, 1
+   9715     4450  direction-sparse-g12-35   127.2  alive, 50 s                 -     0     0(0)           5    1.2     1.2  no rows     1, +0.13, 1
+   swimmers admitted 21; died 8 (starved 5, aged 3), median age at death 892 s, under 600 s 1; alive 13; with a child 14
+   their children: 25 born, 19 died (starved 17, aged 2), median age at death 61 s
+   kill rows in the run: 9, by class: planted founder 5, planted descendant 4; on leaves 7
+   other pool founders (stomachs): 2 admitted, 2 died, 0 with a child
+   leaves living at 4500 s: 1082 of 1207 living
+   [ok] pool/index.tsv lists fourteen genomes: index rows 14, pool files 14
+   [ok] the ten swimmers' hashes match origins.tsv: 10 of 10 matched (by sha256 10)
+   [ok] every pool founder's row reads src pool with a pool index: 23 pool rows, 0 without an index; stats poolSpawns 23
+   [ok] pool founders in lineage equal stats' poolSpawns: 23 against 23
+   [ok] D176's shares: swimmers half the trickle, stomachs a tenth, floor pool share 0: trickle pool share 0.6, swimmers 0.500, stomachs 0.100, floor 0
+   [ok] config: spin drag 0.5, bed touch on, direction form at 6 m: Spin 0.5, True, Direction 6 m
+   [ok] swimmers' rows read atk 1, ink 1, jnt 1, abs 0, pho 0: 21 swimmers, 0 otherwise
+   [ok] each swimmer appears in positions and moves: 0 never in positions, 0 moved under 5 cm over their samples
+
+== smoke: r59m-sixth, read to 4500 s
+   id      born  swimmer                  endow  fate                    res    kids kills(leaf) pos.samples path m  disp m  absorptive  cos (n, reads)
+   8244     3063  direction-sparse-g33-47    46.1  starved at 1080 s           -     3     0(0)         108  130.1    50.0  no rows     11, +0.14, 1
+   8249     3073  direction-sparse-g15-36    46.1  aged at 266 s           224.7     7     1(1)          26   26.5    23.1  no rows     3, +0.18, 1
+   8347     3152  direction-sparse-g30-40    46.1  starved at 972 s            -     1     0(0)          97  142.0    52.4  no rows     10, -0.03, 1
+   8348     3152  direction-sparse-g16-2     46.1  starved at 350 s            -     1     0(0)          35   67.1    10.6  no rows     -
+   8475     3278  direction-sparse-g33-37    46.1  alive, 1222 s               -     6     0(0)         123   72.7    34.5  no rows     13, +0.05, 1
+   8483     3284  direction-sparse-g31-19    46.1  aged at 1164 s          177.2     5     1(0)         116  106.0    16.4  no rows     12, +0.05, 1
+   8493     3296  direction-sparse-g33-37    46.1  aged at 562 s            64.9     4     0(0)          56   71.3    20.2  no rows     -
+   8583     3372  direction-sparse-g31-19    46.1  starved at 420 s            -     1     0(0)          42   39.9    17.4  no rows     -
+   8624     3447  direction-sparse-g22-27    46.1  starved at 790 s            -     2     0(0)          79   74.5    20.9  no rows     8, +0.10, 1
+   8754     3602  direction-sparse-g33-30    46.1  alive, 898 s                -     2     0(0)          90   98.7    10.0  no rows     6, -0.13, 1
+   8859     3784  direction-sparse-g22-27    46.1  alive, 716 s                -     1     2(1)          72   37.1    13.7  no rows     8, +0.18, 1
+   9038     4016  direction-sparse-g14-31    46.1  alive, 484 s                -     1     0(0)          49   36.8    11.0  no rows     5, -0.13, 1
+   9041     4018  direction-sparse-g31-19    46.1  alive, 482 s                -     2     0(0)          49   45.6    14.0  no rows     3, +0.52, 1
+   9109     4086  direction-sparse-g16-2     46.1  alive, 414 s                -     0     0(0)          42   46.9     2.6  no rows     -
+   9272     4201  direction-sparse-g12-35    46.1  alive, 299 s                -     1     0(0)          30   13.2     9.4  no rows     2, -0.42, 1
+   9280     4206  direction-sparse-g30-40    46.1  alive, 294 s                -     1     3(3)          30   23.2     5.3  no rows     3, -0.24, 1
+   9356     4237  direction-sparse-g12-35    46.1  alive, 263 s                -     1     0(0)          27   17.3    16.9  no rows     -
+   9371     4248  direction-sparse-g16-2     46.1  eaten at 75 s           114.3     2     1(0)           8    5.0     4.8  no rows     1, +0.14, 1
+   9633     4404  direction-sparse-g16-2     46.1  alive, 96 s                 -     2     0(0)          10    8.3     5.6  no rows     -
+   9659     4418  direction-sparse-g22-27    46.1  alive, 82 s                 -     1     0(0)           9   11.3    11.2  no rows     1, +0.71, 1
+   9712     4450  direction-sparse-g12-35    46.1  alive, 50 s                 -     0     0(0)           5    0.9     0.6  no rows     -
+   swimmers admitted 21; died 9 (starved 5, aged 3, eaten 1), median age at death 562 s, under 600 s 5; alive 12; with a child 19
+   their children: 44 born, 27 died (starved 18, aged 5, eaten 4), median age at death 149 s
+   kill rows in the run: 80, by class: planted founder 8, planted descendant 72; on leaves 33
+   other pool founders (stomachs): 2 admitted, 1 died, 0 with a child
+   leaves living at 4500 s: 1187 of 1425 living
+   [ok] pool/index.tsv lists fourteen genomes: index rows 14, pool files 14
+   [ok] the ten swimmers' hashes match origins.tsv: 10 of 10 matched (by sha256 10)
+   [ok] every pool founder's row reads src pool with a pool index: 23 pool rows, 0 without an index; stats poolSpawns 23
+   [ok] pool founders in lineage equal stats' poolSpawns: 23 against 23
+   [ok] D176's shares: swimmers half the trickle, stomachs a tenth, floor pool share 0: trickle pool share 0.6, swimmers 0.500, stomachs 0.100, floor 0
+   [ok] config: spin drag 0.5, bed touch on, direction form at 6 m: Spin 0.5, True, Direction 6 m
+   [ok] swimmers' rows read atk 1, ink 1, jnt 1, abs 0, pho 0: 21 swimmers, 0 otherwise
+   [ok] each swimmer appears in positions and moves: 0 never in positions, 0 moved under 5 cm over their samples
+
+== P1: a planted founder has a child, in each planted world
+   r59m-third: 21 planted founders, 14 with a child (25 children)
+   r59m-sixth: 21 planted founders, 19 with a child (44 children)
+
+== P2: >= 20 planted-descended living at every sample for a year after 6000 s
+   r59m-third: most 0 after 6000 s; longest run of samples >= 20 none; row by row none
+   r59m-sixth: most 0 after 6000 s; longest run of samples >= 20 none; row by row none
+
+== P3: planted-descended living >= 1% of the living at the end
+   r59m-third at 4500 s: 31 of 1207, 2.57%
+   r59m-sixth at 4500 s: 108 of 1425, 7.58%
+
+== P4: over 50% of the planted-descended living are grazers, where P2 holds
+   unread: P2 holds in no planted world
+
+== G1: >= 100 leaf kills a year by own-line grazers in >= 2 of years 6 to 8, in the control
+   unread: no control world given
+
+== D1: leaf kills in years 2 to 8, each planted world >= 50 and >= 2x the control's
+   r59m-third (planted): 0 leaf kills (none)
+   r59m-sixth (planted): 0 leaf kills (none)
+
+== D3: grazers in each planted world, the recorder's gread against gctl, 3000 to 48000 s: readers' mean cosine (n-weighted) exceeds the others' by >= 0.1, each side >= 1000 body-samples
+   r59m-third: readers 158 body-samples at -0.019, others 12 at -0.064, difference +0.044 -> unread (short run)
+   r59m-sixth: readers 538 body-samples at 0.042, others 140 at -0.032, difference +0.074 -> unread (short run)
+
+== D4: the world's own grazers in the control, from the per-body rows, 3000 to 48000 s: readers' mean cosine (n-weighted) exceeds the others' by >= 0.1, each side >= 1000 body-samples
+   unread: no control world given
+
+== C1: living at each year's end, years 2 to 8, within 0.5 to 2 of round 58's means
+   r59m-third: 12000 -, 18000 -, 24000 -, 30000 -, 36000 -, 42000 -, 48000 - -> unread
+   r59m-sixth: 12000 -, 18000 -, 24000 -, 30000 -, 36000 -, 42000 -, 48000 - -> unread
+
+== C2: one root lineage over 50% of the living at 18000 s
+   r59m-third: not reached -> unread
+   r59m-sixth: not reached -> unread
+
+== B1: the books balance
+   r59m-third: audit max 8.64e-06 J, matter max 1.98e-06, diverged 0, divergedTotal 0, ended/budget 4500 of 4500 s -> holds
+   r59m-sixth: audit max 1.51e-05 J, matter max 3.73e-06, diverged 0, divergedTotal 0, ended/budget 4500 of 4500 s -> holds
+
+== clauses (D2 by the nursery's bench; B2 and B3 by the card's scripts)
+P1: held (2 of 2 planted worlds [SHORT: r59m-third to 4500 s, r59m-sixth to 4500 s])
+P2: unread (no planted world [SHORT: r59m-third to 4500 s, r59m-sixth to 4500 s])
+P3: unread (largest share 7.58% [SHORT: r59m-third to 4500 s, r59m-sixth to 4500 s])
+P4: unread (P2 holds in no planted world)
+G1: unread (no control world given)
+D1: unread (needs a planted world and a control)
+D3: unread (0 of 2 worlds [SHORT: r59m-third to 4500 s, r59m-sixth to 4500 s])
+D4: unread (no control world given)
+C1: unread (0 of 2 worlds [SHORT: r59m-third to 4500 s, r59m-sixth to 4500 s])
+C2: unread (0 of 2 worlds [SHORT: r59m-third to 4500 s, r59m-sixth to 4500 s])
+B1: held (2 of 2 worlds)

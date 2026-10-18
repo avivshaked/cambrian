@@ -686,14 +686,14 @@ namespace Evosim.Core.Tests
 
             Assert.Contains("\"mode\":\"Gestation\"", text);
             Assert.Contains("\"gestation\":0.375", text);
-            Assert.Contains("\"format\":9", text);
+            Assert.Contains("\"format\":" + GenomeJson.FormatVersion, text);
 
             Genome back = GenomeJson.Read(text);
             Assert.Equal(ReproductionMode.Gestation, back.Reproduction.Mode);
             Assert.Equal(0.375f, back.Reproduction.GestationShare);
             Assert.Equal(text, GenomeJson.Write(back));
 
-            string old = text.Replace("\"format\":9", "\"format\":8");
+            string old = text.Replace("\"format\":" + GenomeJson.FormatVersion, "\"format\":8");
             FormatException e = Assert.Throws<FormatException>(() => GenomeJson.Read(old));
             _output.WriteLine(e.Message);
             Assert.Contains("Format 9", e.Message);

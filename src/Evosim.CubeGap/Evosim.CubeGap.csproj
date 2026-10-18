@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The cube-gap probe of the gripping grazer control (logbook/specs/grazer-grip-control-plan.md):
+    restores a farm checkpoint, steps nothing, and prints each anchoring link's gap to the reefs
+    and each gripping body's counters. Built against this tree's Farm, so it reads the checkpoints
+    this build writes. Under src/ so Directory.Build.props sends the build to artifacts/.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <AssemblyName>Evosim.CubeGap</AssemblyName>
+    <RootNamespace>Evosim.CubeGap</RootNamespace>
+    <Nullable>disable</Nullable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Evosim.Farm\Evosim.Farm.csproj" />
+  </ItemGroup>
+
+</Project>

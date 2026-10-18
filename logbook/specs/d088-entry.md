@@ -3,10 +3,10 @@
 **The third dimension — a newborn dispersed, a current that carries, a destroy that does not wait** · 2026-09-10
 
 **Status:** ruled by the owner in conversation on 2026-09-10 after the theatre showed round
-33 as two ribbons (logbook/0083): "lets start the fix please, because what you have now is
-not a world"; "the world i want: creatures have full degrees of freedom and can be anywhere
-within the confines of the world. currents move them up and down, left and right, in all
-directions really. diffusion happens in all directions." Built in three parts the same
+33 as two ribbons (logbook/0083): the owner asked for the fix to start, because what stood then was not a world. The world the
+owner wants has creatures with full degrees of freedom, anywhere within the confines of the
+world, currents that move them up and down, left and right, in all directions, and diffusion
+in all directions. Built in three parts the same
 afternoon and smoked (logbook/0085). The values that are first cuts and not rulings are
 listed at the end. Supersedes D077's clause 5 (a newborn beside its parent) and D037's and
 D066's current as the default; both currents stay in the code as `CurrentMode Rolls` so that

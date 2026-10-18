@@ -36,6 +36,14 @@ namespace Evosim.Dynamics
     /// every thread count.
     /// </para>
     /// <para>
+    /// <b>The build commits the spheres it reads</b> (2026-10-03,
+    /// <c>logbook/specs/farm-physics-speed-read.md</c> P1). A step leaves each body's new sphere
+    /// pending and no longer commits it in a pass of its own; the build commits each body's as it
+    /// first touches it (<see cref="Creature.EnsureContactCommitted"/>), after the parallel phase
+    /// has ended and before anything reads it, which is where the commit pass sat. A body built or
+    /// moved between steps was committed by whoever did it, and is left as it is.
+    /// </para>
+    /// <para>
     /// <b>Buckets are a compressed row, not a dictionary of lists.</b> Two counting passes and a
     /// prefix sum fill flat arrays that are reused from step to step, so the grid allocates only
     /// when the population, or the number of cells its spheres cover, grows.
@@ -50,6 +58,25 @@ namespace Evosim.Dynamics
         private int[] _hi = Array.Empty<int>();      // 3 per creature: the highest; hi < lo is not entered
         private int _mask;
         private double _cellSize = 1.0;
+
+        /// <summary>The contact query's extremes over the stats row's window, noted by every build and query.</summary>
+        public ContactWatch Watch { get; } = new ContactWatch();
+
+        // The row whose sphere covers the most cells, in row order so that equal counts go to the earliest
+        // body in the list (ContactWatch.NoteCells). Serial, one pass over the ranges already built.
+        private void NoteCells(int rows, bool perPart)
+        {
+            for (int i = 0; i < rows; i++)
+            {
+                if (_lo[3 * i] > _hi[3 * i]) continue;
+                long cells = (long)(_hi[3 * i] - _lo[3 * i] + 1) * (_hi[3 * i + 1] - _lo[3 * i + 1] + 1) *
+                             (_hi[3 * i + 2] - _lo[3 * i + 2] + 1);
+                if (cells < Watch.CellsMost) continue;
+                int b = perPart ? _rowBody[i] : i;
+                Creature c = _creatures[b];
+                Watch.NoteCells(cells, b, c.Id, c.Links);
+            }
+        }
         private int _count;
 
         private IReadOnlyList<Creature> _creatures = Array.Empty<Creature>();
@@ -74,8 +101,17 @@ namespace Evosim.Dynamics
             _creatures = creatures;
             _count = creatures.Count;
             _perPart = false;
+            _strays.Clear();
 
             if (_count == 0) return;
+
+            // The last step's spheres, committed across threads before the serial reads below:
+            // a body's commit touches its own slots alone, so this is the pass the step used to
+            // end with, moved here.
+            Slabs.Run(_count, Slabs.CountFor(_count, Threads), (s, from, to) =>
+            {
+                for (int i = from; i < to; i++) creatures[i].EnsureContactCommitted();
+            });
 
             double largest = 0, sum = 0;
             int active = 0;
@@ -83,6 +119,12 @@ namespace Evosim.Dynamics
             {
                 Creature body = creatures[i];
                 if (!body.ContactActive) continue;
+
+                // A sphere that is not a number is a stray, below, and is left out of the cell's
+                // mean so that it cannot make every other sphere one too. Never true of a body
+                // the solver is still stepping, so no recorded world's cell moves.
+                if (!FiniteSphere(body.ContactCentre.X, body.ContactCentre.Y, body.ContactCentre.Z, body.ContactRadius)) continue;
+
                 if (body.ContactRadius > largest) largest = body.ContactRadius;
                 sum += body.ContactRadius;
                 active++;
@@ -120,6 +162,17 @@ namespace Evosim.Dynamics
                 double r = body.ContactRadius;
                 Vec3 c = body.ContactCentre;
 
+                // Out of the grid's reach: entered nowhere and named, for the world to take out
+                // before anything reads the grid (DynamicsWorld.LoseStrays).
+                if (OutOfReach(c.X, c.Y, c.Z, r, _cellSize))
+                {
+                    _lo[3 * i] = 1; _hi[3 * i] = 0;
+                    _lo[3 * i + 1] = 1; _hi[3 * i + 1] = 0;
+                    _lo[3 * i + 2] = 1; _hi[3 * i + 2] = 0;
+                    _strays.Add(new ContactStray(i, -1, c.X, c.Y, c.Z, r));
+                    continue;
+                }
+
                 int lx = Floor((c.X - r) / _cellSize), hx = Floor((c.X + r) / _cellSize);
                 int ly = Floor((c.Y - r) / _cellSize), hy = Floor((c.Y + r) / _cellSize);
                 int lz = Floor((c.Z - r) / _cellSize), hz = Floor((c.Z + r) / _cellSize);
@@ -145,6 +198,7 @@ namespace Evosim.Dynamics
             Entries = (int)entries;
 
             Fill(_count);
+            NoteCells(_count, perPart: false);
         }
 
         /// <summary>
@@ -152,7 +206,12 @@ namespace Evosim.Dynamics
         /// <paramref name="rows"/>: a row is a body under the body sphere and a link under
         /// per-part contact, and the bucketing does not care which.
         /// </summary>
-        private void Fill(int rows)
+        /// <param name="slabCounts">
+        /// Whether <c>_slabEntries</c> already holds each row slab's entry count at this
+        /// <see cref="Threads"/>: <see cref="BuildLinks"/> sums it over the same slabs, so the
+        /// count pass is not repeated (P10, logbook/specs/speed-plan.md).
+        /// </param>
+        private void Fill(int rows, bool slabCounts = false)
         {
             int buckets = 1;
             while (buckets < rows * 2) buckets <<= 1;
@@ -165,9 +224,9 @@ namespace Evosim.Dynamics
             }
             if (_items.Length < Entries) _items = new int[System.Math.Max(Entries, 2 * _items.Length)];
 
-            // Every entry's bucket and row, across threads, at the entry's place in the serial
-            // order (row by row, then x, y and z), which each row slab starts at from the integer
-            // sum of the entries in the slabs before it.
+            // Each row slab's first entry, the integer sum of the entries in the slabs before it,
+            // so that every entry is written below at its place in the serial order (row by row,
+            // then x, y and z) whichever thread writes it.
             int rowSlabs = Slabs.CountFor(rows, Threads);
             if (_slabFirst.Length < rowSlabs + 1) _slabFirst = new int[rowSlabs + 1];
             if (_entryKey.Length < Entries)
@@ -177,17 +236,25 @@ namespace Evosim.Dynamics
                 _entryRow = new int[size];
             }
 
-            Slabs.Run(rows, rowSlabs, (s, from, to) =>
+            if (slabCounts)
             {
-                int mine = 0;
-                for (int i = from; i < to; i++)
+                // Each count is at most Entries, which the caller has bounded by int.MaxValue / 2.
+                for (int s = 0; s < rowSlabs; s++) _slabFirst[s + 1] = (int)_slabEntries[s];
+            }
+            else
+            {
+                Slabs.Run(rows, rowSlabs, (s, from, to) =>
                 {
-                    mine += (_hi[3 * i] - _lo[3 * i] + 1) *
-                            (_hi[3 * i + 1] - _lo[3 * i + 1] + 1) *
-                            (_hi[3 * i + 2] - _lo[3 * i + 2] + 1);
-                }
-                _slabFirst[s + 1] = mine;
-            });
+                    int mine = 0;
+                    for (int i = from; i < to; i++)
+                    {
+                        mine += (_hi[3 * i] - _lo[3 * i] + 1) *
+                                (_hi[3 * i + 1] - _lo[3 * i + 1] + 1) *
+                                (_hi[3 * i + 2] - _lo[3 * i + 2] + 1);
+                    }
+                    _slabFirst[s + 1] = mine;
+                });
+            }
 
             _slabFirst[0] = 0;
             for (int s = 0; s < rowSlabs; s++) _slabFirst[s + 1] += _slabFirst[s];
@@ -199,30 +266,14 @@ namespace Evosim.Dynamics
                     FormattableString.Invariant($"and its rows cover {_slabFirst[rowSlabs]}."));
             }
 
-            int mask = _mask;
-            Slabs.Run(rows, rowSlabs, (s, from, to) =>
-            {
-                int e = _slabFirst[s];
-                for (int i = from; i < to; i++)
-                {
-                    for (int x = _lo[3 * i]; x <= _hi[3 * i]; x++)
-                    for (int y = _lo[3 * i + 1]; y <= _hi[3 * i + 1]; y++)
-                    for (int z = _lo[3 * i + 2]; z <= _hi[3 * i + 2]; z++)
-                    {
-                        _entryKey[e] = Hash(x, y, z) & mask;
-                        _entryRow[e] = i;
-                        e++;
-                    }
-                }
-            });
-
             // The counting sort, split by bucket. Each owner takes a power-of-two range of buckets,
             // and every bucket is counted and filled with its entries in ascending entry order,
             // which is the order the single loop filled it in, so _bucketStart and _items come out
             // the same arrays at any thread count. The entries reach their owners through one
-            // stable partition first, entry slab by entry slab, so each owner reads its own
-            // entries and no others: the owners used to read every entry twice each, sixteen
-            // times over at sixteen threads (logbook/specs/cpu-profile-2026-09-26.txt).
+            // stable partition first, so each owner reads its own entries and no others: the
+            // owners used to read every entry twice each, sixteen times over at sixteen threads
+            // (logbook/specs/cpu-profile-2026-09-26.txt).
+            int mask = _mask;
             int entries = Entries;
             int owners = 1;
             while (owners * 2 <= Threads && buckets / (owners * 2) >= Slabs.MinimumPerSlab) owners *= 2;
@@ -235,8 +286,12 @@ namespace Evosim.Dynamics
                 return;
             }
 
-            int entrySlabs = Slabs.CountFor(entries, Threads);
-            int cells = entrySlabs * owners;
+            // The partition is cut at the row slabs, whose entries are the contiguous ranges
+            // _slabFirst gives, in ascending order: an owner's entries still lie together and in
+            // ascending entry order, which is all the stage below needs, so the staged arrays are
+            // the ones entry slabs gave. Cut there, each entry's key is counted for its owner in
+            // the pass that writes it, and the separate count pass over the entries goes (P10).
+            int cells = rowSlabs * owners;
             if (_partition.Length < cells) _partition = new int[cells];
             if (_ownerFirst.Length < owners + 1) _ownerFirst = new int[owners + 1];
             if (_stageKey.Length < entries)
@@ -246,12 +301,27 @@ namespace Evosim.Dynamics
                 _stageRow = new int[size];
             }
 
-            // How many of each entry slab's entries each owner takes.
-            Slabs.Run(entries, entrySlabs, (s, from, to) =>
+            // Every entry's bucket and row at its place in the serial order, and how many of each
+            // row slab's entries each owner takes.
+            Slabs.Run(rows, rowSlabs, (s, from, to) =>
             {
                 int row0 = s * owners;
                 for (int o = 0; o < owners; o++) _partition[row0 + o] = 0;
-                for (int e = from; e < to; e++) _partition[row0 + (_entryKey[e] >> shift)]++;
+
+                int e = _slabFirst[s];
+                for (int i = from; i < to; i++)
+                {
+                    for (int x = _lo[3 * i]; x <= _hi[3 * i]; x++)
+                    for (int y = _lo[3 * i + 1]; y <= _hi[3 * i + 1]; y++)
+                    for (int z = _lo[3 * i + 2]; z <= _hi[3 * i + 2]; z++)
+                    {
+                        int key = Hash(x, y, z) & mask;
+                        _entryKey[e] = key;
+                        _entryRow[e] = i;
+                        _partition[row0 + (key >> shift)]++;
+                        e++;
+                    }
+                }
             });
 
             // Where each (owner, slab) part starts, owner by owner and within an owner slab by
@@ -260,7 +330,7 @@ namespace Evosim.Dynamics
             for (int o = 0; o < owners; o++)
             {
                 _ownerFirst[o] = placed;
-                for (int s = 0; s < entrySlabs; s++)
+                for (int s = 0; s < rowSlabs; s++)
                 {
                     int n = _partition[s * owners + o];
                     _partition[s * owners + o] = placed;
@@ -269,10 +339,11 @@ namespace Evosim.Dynamics
             }
             _ownerFirst[owners] = placed;
 
-            Slabs.Run(entries, entrySlabs, (s, from, to) =>
+            Slabs.Run(rows, rowSlabs, (s, from, to) =>
             {
                 int row0 = s * owners;
-                for (int e = from; e < to; e++)
+                int last = _slabFirst[s + 1];
+                for (int e = _slabFirst[s]; e < last; e++)
                 {
                     int key = _entryKey[e];
                     int at = _partition[row0 + (key >> shift)]++;
@@ -318,6 +389,7 @@ namespace Evosim.Dynamics
         private double[] _rowRadius = Array.Empty<double>(); // a row's sphere, gathered flat
         private double[] _rowCentre = Array.Empty<double>(); // 3 per row
         private long[] _slabEntries = Array.Empty<long>();   // a row slab's cell entries
+        private int[] _slabStray = Array.Empty<int>();       // a row slab's first row out of reach, or -1
         private int[] _slabFirst = Array.Empty<int>();       // a row slab's first entry
         private int[] _entryKey = Array.Empty<int>();        // an entry's bucket
         private int[] _entryRow = Array.Empty<int>();        // and its row
@@ -358,6 +430,7 @@ namespace Evosim.Dynamics
             _creatures = creatures;
             _count = creatures.Count;
             _perPart = true;
+            _strays.Clear();
 
             if (_rowStart.Length < _count + 1) _rowStart = new int[_count + 1];
             if (_bodyLinks.Length < _count) _bodyLinks = new int[_count];
@@ -399,6 +472,11 @@ namespace Evosim.Dynamics
                 for (int b = from; b < to; b++)
                 {
                     Creature body = creatures[b];
+
+                    // The last step's sphere, committed by the pass that reads it: the commit
+                    // pass the step used to end with, folded in (P1). Its own slots only.
+                    body.EnsureContactCommitted();
+
                     int first = _rowStart[b];
                     bool live = body.ContactActive;
 
@@ -426,6 +504,9 @@ namespace Evosim.Dynamics
             {
                 if (!_rowActive[row]) continue;
 
+                // Build's rule: a sphere that is not a number is a stray and stays out of the mean.
+                if (!FiniteSphere(_rowCentre[3 * row], _rowCentre[3 * row + 1], _rowCentre[3 * row + 2], _rowRadius[row])) continue;
+
                 double r = _rowRadius[row];
                 if (r > largest) largest = r;
                 sum += r;
@@ -448,11 +529,13 @@ namespace Evosim.Dynamics
             // an integer, summed per slab and then over the slabs in order.
             int rowSlabs = Slabs.CountFor(rows, Threads);
             if (_slabEntries.Length < rowSlabs) _slabEntries = new long[rowSlabs];
+            if (_slabStray.Length < rowSlabs) _slabStray = new int[rowSlabs];
             double cell = _cellSize;
 
             Slabs.Run(rows, rowSlabs, (s, from, to) =>
             {
                 long mine = 0;
+                int stray = -1;
 
                 for (int row = from; row < to; row++)
                 {
@@ -469,6 +552,17 @@ namespace Evosim.Dynamics
                     double cy = _rowCentre[3 * row + 1];
                     double cz = _rowCentre[3 * row + 2];
 
+                    // Out of the grid's reach: entered nowhere, and the slab's first such row
+                    // noted for the serial scan below.
+                    if (OutOfReach(cx, cy, cz, r, cell))
+                    {
+                        if (stray < 0) stray = row;
+                        _lo[3 * row] = 1; _hi[3 * row] = 0;
+                        _lo[3 * row + 1] = 1; _hi[3 * row + 1] = 0;
+                        _lo[3 * row + 2] = 1; _hi[3 * row + 2] = 0;
+                        continue;
+                    }
+
                     int lx = Floor((cx - r) / cell), hx = Floor((cx + r) / cell);
                     int ly = Floor((cy - r) / cell), hy = Floor((cy + r) / cell);
                     int lz = Floor((cz - r) / cell), hz = Floor((cz + r) / cell);
@@ -481,7 +575,29 @@ namespace Evosim.Dynamics
                 }
 
                 _slabEntries[s] = mine;
+                _slabStray[s] = stray;
             });
+
+            // The strays in row order, whichever thread found them: from the first slab's first
+            // stray, a serial scan of every row after it, so the list is the same list at any
+            // thread count. Rows are body by body and link by link, so the list is in body order.
+            // Runs only when a sphere has strayed.
+            int firstStray = -1;
+            for (int s = 0; s < rowSlabs && firstStray < 0; s++) firstStray = _slabStray[s];
+
+            if (firstStray >= 0)
+            {
+                for (int row = firstStray; row < rows; row++)
+                {
+                    if (!_rowActive[row]) continue;
+
+                    double r = _rowRadius[row];
+                    double cx = _rowCentre[3 * row], cy = _rowCentre[3 * row + 1], cz = _rowCentre[3 * row + 2];
+                    if (!OutOfReach(cx, cy, cz, r, cell)) continue;
+
+                    _strays.Add(new ContactStray(_rowBody[row], _rowLink[row], cx, cy, cz, r));
+                }
+            }
 
             long entries = 0;
             for (int s = 0; s < rowSlabs; s++) entries += _slabEntries[s];
@@ -499,7 +615,8 @@ namespace Evosim.Dynamics
 
             Entries = (int)entries;
 
-            Fill(rows);
+            Fill(rows, slabCounts: true);
+            NoteCells(rows, perPart: true);
         }
 
         /// <summary>A body's first row under per-part contact; its links follow in order.</summary>
@@ -625,6 +742,45 @@ namespace Evosim.Dynamics
 
         public Creature At(int index) => _creatures[index];
 
+        // ------------------------------------------------------------ the grid's reach
+
+        private readonly List<ContactStray> _strays = new List<ContactStray>();
+
+        /// <summary>
+        /// The spheres the last build found out of the grid's reach, in row order (body order,
+        /// and link order within a body), each entered in no cell. Empty in every step of a run
+        /// in which no body has diverged.
+        /// </summary>
+        /// <remarks>
+        /// A body can blow up between two divergence checks, half a second apart, far enough that
+        /// a cell index cast to an int wraps, and the cell loop then runs past the entry arrays:
+        /// round 56 seed 2 under one drag panel a side, body 86464 at 28,179.5 s (2026-10-05). The
+        /// build names such a sphere instead, and <see cref="DynamicsWorld"/> takes its body out
+        /// before anything reads the grid (<c>logbook/specs/r57-build/build-brief.md</c>).
+        /// </remarks>
+        public IReadOnlyList<ContactStray> Strays => _strays;
+
+        /// <summary>
+        /// The most cells a sphere may lie from the origin on any axis: well inside an int, whose
+        /// cast in <see cref="Floor"/> overflows past 2.1e9 and, below it, wraps to int.MaxValue,
+        /// which a cell loop never passes. Further out, or not finite, is a body diverged between
+        /// two divergence checks.
+        /// </summary>
+        public const double ReachCells = 1e9;
+
+        /// <summary>
+        /// Whether a sphere lies out of the grid's reach on any axis: <c>!(|c| + r &lt; 1e9·cell)</c>,
+        /// which a NaN or an infinity in the centre or the radius fails as well.
+        /// </summary>
+        public static bool OutOfReach(double cx, double cy, double cz, double r, double cell)
+        {
+            double reach = ReachCells * cell;
+            return !(Math.Abs(cx) + r < reach && Math.Abs(cy) + r < reach && Math.Abs(cz) + r < reach);
+        }
+
+        private static bool FiniteSphere(double cx, double cy, double cz, double r) =>
+            double.IsFinite(cx) && double.IsFinite(cy) && double.IsFinite(cz) && double.IsFinite(r);
+
         private static int Floor(double v)
         {
             int i = (int)v;
@@ -633,6 +789,34 @@ namespace Evosim.Dynamics
 
         private static int Hash(int x, int y, int z) =>
             (x * 73856093) ^ (y * 19349663) ^ (z * 83492791);
+    }
+
+    /// <summary>
+    /// A contact sphere out of the grid's reach (<see cref="ContactGrid.Strays"/>): the body by its
+    /// index in the list the grid was built from, the link (−1 for the body's own sphere), and
+    /// the sphere's centre and radius as the build read them.
+    /// </summary>
+    public readonly struct ContactStray
+    {
+        public readonly int Body;
+        public readonly int Link;
+        public readonly double X, Y, Z, Radius;
+
+        public ContactStray(int body, int link, double x, double y, double z, double radius)
+        {
+            Body = body;
+            Link = link;
+            X = x;
+            Y = y;
+            Z = z;
+            Radius = radius;
+        }
+
+        /// <summary>The sphere in words, for a divergence reason: which sphere, where and how big.</summary>
+        public string Describe() =>
+            (Link < 0 ? "its contact sphere" : FormattableString.Invariant($"link {Link}'s contact sphere")) +
+            FormattableString.Invariant($" at ({X:R}, {Y:R}, {Z:R}), radius {Radius:R}, ") +
+            "out of the contact grid's reach";
     }
 
     /// <summary>
@@ -676,6 +860,7 @@ namespace Evosim.Dynamics
             if (config.CreatureContact)
             {
                 int n = grid.Neighbours(index, ref scratch);
+                grid.Watch.NoteCandidates(n);
                 for (int k = 0; k < n; k++)
                 {
                     Creature other = grid.At(scratch[k]);
@@ -726,6 +911,10 @@ namespace Evosim.Dynamics
 
                     force += new Vec3(0, up, 0);
 
+                    // D137. Not entered at 0, the recorded contact's bits.
+                    if (config.BedFriction > 0)
+                        force += ContactLaw.Friction(new Vec3(0, up, 0), body.ContactVelocity, mass, config);
+
                     if (instrument) body.TouchedBedOrGlass = true;
                 }
             }
@@ -736,6 +925,8 @@ namespace Evosim.Dynamics
                 if (rock.X != 0 || rock.Y != 0 || rock.Z != 0)
                 {
                     force += rock;
+                    if (config.BedFriction > 0)
+                        force += ContactLaw.Friction(rock, body.ContactVelocity, mass, config);
                     if (instrument) body.TouchedBedOrGlass = true;
                 }
             }
@@ -752,6 +943,8 @@ namespace Evosim.Dynamics
                 if (reef.X != 0 || reef.Y != 0 || reef.Z != 0)
                 {
                     force += reef;
+                    if (config.BedFriction > 0)
+                        force += ContactLaw.Friction(reef, body.ContactVelocity, mass, config);
                     if (instrument) body.TouchedBedOrGlass = true;
                 }
             }
@@ -772,8 +965,11 @@ namespace Evosim.Dynamics
 
                     double approach = Vec3.Dot(body.ContactVelocity, inward);
 
-                    force += inward * ContactLaw.PairPush(
+                    Vec3 glass = inward * ContactLaw.PairPush(
                         bedStiffness * outside - bedDamping * approach, mass, approach, config);
+                    force += glass;
+                    if (config.BedFriction > 0)
+                        force += ContactLaw.Friction(glass, body.ContactVelocity, mass, config);
 
                     if (instrument) body.TouchedBedOrGlass = true;
                 }
@@ -833,6 +1029,24 @@ namespace Evosim.Dynamics
         /// body's own.
         /// </para>
         /// </remarks>
+        /// <summary>
+        /// Records one rock contact on link <paramref name="i"/>: the touch, the push's direction
+        /// as the rock's normal (a push from the rock never pulls, so it points out of the rock),
+        /// and the sphere's deepest point along it. Where the bed and a reef both push in one step,
+        /// the larger push is kept.
+        /// </summary>
+        private static void NoteRock(Creature body, int i, Vec3 centre, double radius, Vec3 push, ref double kept)
+        {
+            double size = push.Magnitude;
+            if (!(size > kept)) return;
+
+            kept = size;
+            Vec3 normal = push * (1.0 / size);
+            body.RockTouched[i] = true;
+            Vec3.Write(body.RockNormal, 3 * i, normal);
+            Vec3.Write(body.RockPoint, 3 * i, centre - normal * radius);
+        }
+
         private static void ApplyPerPart(
             Creature body, int index, ContactGrid grid, SolverConfig config, ref int[] scratch)
         {
@@ -847,6 +1061,10 @@ namespace Evosim.Dynamics
             bool instrument = config.ContactInstrument;
             if (instrument) body.BeginContactStep();
 
+            // The touch of the rock (SolverConfig.RockTouch): what the bed and reef blocks below
+            // already compute, kept per link. It adds no arithmetic to any push.
+            bool touch = body.RockTouched != null;
+
             int first = grid.FirstRow(index);
 
             for (int i = 0; i < body.Links; i++)
@@ -857,10 +1075,13 @@ namespace Evosim.Dynamics
                 double mass = body.Mass[i];
 
                 Vec3 force = Vec3.Zero;
+                double rockPush = 0;
+                if (touch) body.RockTouched[i] = false;
 
                 if (config.CreatureContact)
                 {
                     int n = grid.NeighbourLinks(first + i, ref scratch);
+                    grid.Watch.NoteCandidates(n);
                     for (int k = 0; k < n; k++)
                     {
                         int row = scratch[k];
@@ -910,7 +1131,12 @@ namespace Evosim.Dynamics
 
                         force += new Vec3(0, up, 0);
 
+                        // D137. Not entered at 0, the recorded contact's bits.
+                        if (config.BedFriction > 0)
+                            force += ContactLaw.Friction(new Vec3(0, up, 0), velocity, mass, config);
+
                         if (instrument) body.TouchedBedOrGlass = true;
+                        if (touch && up > 0) NoteRock(body, i, centre, radius, new Vec3(0, up, 0), ref rockPush);
                     }
                 }
                 else
@@ -921,7 +1147,10 @@ namespace Evosim.Dynamics
                     if (rock.X != 0 || rock.Y != 0 || rock.Z != 0)
                     {
                         force += rock;
+                        if (config.BedFriction > 0)
+                            force += ContactLaw.Friction(rock, velocity, mass, config);
                         if (instrument) body.TouchedBedOrGlass = true;
+                        if (touch) NoteRock(body, i, centre, radius, rock, ref rockPush);
                     }
                 }
 
@@ -934,12 +1163,15 @@ namespace Evosim.Dynamics
                     if (reef.X != 0 || reef.Y != 0 || reef.Z != 0)
                     {
                         force += reef;
+                        if (config.BedFriction > 0)
+                            force += ContactLaw.Friction(reef, velocity, mass, config);
                         if (instrument) body.TouchedBedOrGlass = true;
+                        if (touch) NoteRock(body, i, centre, radius, reef, ref rockPush);
                     }
                 }
 
 
-                // The glass, on this link's sphere.
+                // The glass, on this link's sphere. Not rock: it sets no touch.
                 if (config.TankRadiusMetres > 0)
                 {
                     double x = centre.X - config.TankAxisX;
@@ -955,8 +1187,11 @@ namespace Evosim.Dynamics
 
                         double approach = Vec3.Dot(velocity, inward);
 
-                        force += inward * ContactLaw.PairPush(
+                        Vec3 glass = inward * ContactLaw.PairPush(
                             bedStiffness * outside - bedDamping * approach, mass, approach, config);
+                        force += glass;
+                        if (config.BedFriction > 0)
+                            force += ContactLaw.Friction(glass, velocity, mass, config);
 
                         if (instrument) body.TouchedBedOrGlass = true;
                     }

@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nursery room · tank</title>
+<link rel="stylesheet" href="nursery.css">
+<style>
+  /* The hero is the water: two views of one draw, own brain beside a knockout, each following body 1
+     at true scale with a whole-tank map in its corner. The mock draws the scene on a 2D canvas with
+     its own perspective; the build would use WebGL (three.js). */
+  .page { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 27rem; grid-template-rows: auto minmax(0, 1fr) 10.5rem;
+    grid-template-areas: "pick pick pick" "left right side" "time time info"; }
+  @media (min-aspect-ratio: 2/1) {
+    .page { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 27rem 22rem;
+      grid-template-areas: "pick pick pick pick" "left right side info" "time time side info"; } }
+  @media (max-width: 1600px) {
+    .page { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 30rem 9.5rem auto auto;
+      grid-template-areas: "pick pick" "left right" "time time" "side info" "side info"; }
+    .p-pick { flex-wrap: wrap; row-gap: .5rem; } }
+  .p-pick { grid-area: pick; } .p-left { grid-area: left; } .p-right { grid-area: right; } .p-side { grid-area: side; } .p-time { grid-area: time; } .p-info { grid-area: info; }
+
+  .p-pick { flex-direction: row; align-items: center; padding: .6rem 1.2rem; }
+  .p-pick > * + * { margin-left: .8rem; }
+  .sel { font-family: var(--mono); font-size: .92rem; color: var(--ink-hi); border: 1px solid var(--rule-strong); border-radius: var(--r-sm); padding: .2rem .65rem; white-space: nowrap; }
+  .view { padding: 0; position: relative; }
+  .view canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; border-radius: var(--r); }
+  .view .over { position: absolute; left: 1.1rem; right: 1.1rem; display: flex; align-items: center; pointer-events: none; }
+  .view .top { top: .9rem; } .view .bot { bottom: .9rem; align-items: flex-end; }
+  .view .name { font-family: var(--mono); font-size: 1.35rem; color: var(--ink-hi); margin-right: 1rem; text-shadow: 0 0 1rem rgba(0, 0, 0, .6); }
+  .view .name { white-space: nowrap; }
+  .view .prov { font-size: .8rem; color: var(--ink-lo); margin-left: .7rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .view .kv { display: flex; flex-direction: column; margin-right: 1.8rem; text-shadow: 0 0 .6rem rgba(0, 0, 0, .8); }
+  .view .kv .k { font-size: .7rem; letter-spacing: .1rem; color: var(--ink-lo); }
+  .view .kv .v { font-family: var(--mono); font-size: 1.25rem; color: var(--ink-hi); }
+  .view .kv .v.lit { color: var(--run); text-shadow: 0 0 .8rem rgba(94, 240, 255, .5); }
+  .view.p-right .kv .v.lit { color: var(--ink-hi); text-shadow: none; }
+  .view .over .tag { pointer-events: auto; }
+  /* the overlays keep a dark backing, so their text reads against the scene behind it */
+  .view::before, .view::after { content: ""; position: absolute; left: 0; right: 0; height: 5rem; pointer-events: none; z-index: 0; }
+  .view::before { top: 0; border-radius: var(--r) var(--r) 0 0; background: linear-gradient(180deg, rgba(2, 8, 12, .9), rgba(2, 8, 12, 0)); }
+  .view::after { bottom: 0; border-radius: 0 0 var(--r) var(--r); background: linear-gradient(0deg, rgba(2, 8, 12, .9), rgba(2, 8, 12, 0)); }
+  .view .over { z-index: 1; }
+
+  .brain { display: grid; grid-template-columns: 1fr 1fr; column-gap: 1rem; flex: 1; min-height: 0; }
+  .brain h4 { margin: 0 0 .25rem; font-weight: 400; font-size: .73rem; color: var(--ink-lo); letter-spacing: .1rem; }
+  .ch { display: grid; grid-template-columns: 4.6rem 1fr; align-items: center; height: 1.12rem; font-size: .73rem; color: var(--ink-lo); }
+  .ch .bar { position: relative; height: .42rem; background: var(--track); border-radius: .2rem; }
+  .ch .bar i { position: absolute; top: 0; bottom: 0; background: var(--run-mid); border-radius: .2rem; transition: left .25s, width .25s; }
+  .ch .bar::before { content: ""; position: absolute; left: 50%; top: -.15rem; bottom: -.15rem; width: 1px; background: var(--rule-strong); }
+  .ch.out .bar i { background: var(--run); box-shadow: 0 0 .5rem rgba(94, 240, 255, .6); }
+  .ch.out .bar::before { display: none; }
+  .ch.ko { color: var(--ink-dim); text-decoration: line-through; }
+  .ch.ko .bar { background: repeating-linear-gradient(135deg, var(--rule-strong) 0 3px, transparent 3px 6px); }
+  .grp { font-size: .66rem; color: var(--ink-lo); letter-spacing: .1rem; margin: .4rem 0 .05rem; }
+  .hid { display: flex; margin: .15rem 0 .2rem; }
+  .hid i { width: 1.25rem; height: 1.25rem; border-radius: 50%; border: 1px solid var(--rule-strong); margin-right: .35rem; transition: background .25s, box-shadow .25s; }
+  .side-charts svg { display: block; width: 100%; }
+</style>
+</head>
+<body>
+<svg class="caustics" aria-hidden="true"><filter id="caus"><feTurbulence type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="4"/>
+  <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.95  0 0 0 0 1  0 0 0 -2.6 1.55"/></filter><rect width="100%" height="100%" filter="url(#caus)" opacity="0.045"/></svg>
+
+<header class="strip">
+  <span class="brand">nursery room</span>
+  <nav class="tabs"><a class="tab"><b>1</b>REGISTRY</a><a class="tab"><b>2</b>RECIPE</a><a class="tab"><b>3</b>RUN</a><a class="tab on"><b>4</b>TANK</a><a class="tab"><b>5</b>GENOME</a></nav>
+  <span class="crumb">#8 <b>brain2-pay-path</b> · exam · body <b>1</b> · draw <b>7</b></span>
+  <span class="spacer"></span>
+  <div class="machine"><span>machine</span><span class="meter"><i style="width:25%"></i><em style="left:25%;width:6.25%"></em><u style="left:50%"></u></span><span><span class="hi">10</span> of <span class="hi">16</span> cap · 2 stepping here</span></div>
+</header>
+
+<main class="page">
+  <!-- source: the pickers: any genome of the run, any episode, and each side any control from exam.controls (the right defaults to the first control that is not own). -->
+  <section class="panel p-pick" aria-label="what is shown">
+    <span class="kicker">genome</span><span class="sel">exam genome 1 · body 1 · born gen 99 ▾</span>
+    <span class="kicker">episode</span><span class="sel">exam draw 7 of 32 ▾</span>
+    <span class="kicker">left</span><span class="sel">own brain ▾</span>
+    <span class="kicker">right</span><span class="sel">knockout Scent ▾</span>
+    <span class="kicker">tank-mates</span><span class="sel">shown, dim ▾</span>
+    <span class="spacer"></span>
+    <span class="tag">PNG · ANY SIZE</span><span class="tag">VIDEO · 4K, FRAME BY FRAME</span>
+    <a class="btn">EXPORT FOR BLENDER</a>
+  </section>
+
+  <!-- source: the episode re-stepped on the server. Bodies are drawn part by part from the genome, any number of parts and joints; the box and capsule are today's example. -->
+  <section class="panel hero view p-left" aria-label="own brain">
+    <canvas id="v-left"></canvas>
+    <div class="over top"><span class="name">own brain</span><span class="status"><i class="mk mk--exact"></i>EXACT</span>
+      <span class="prov">re-stepped on 4a3ae524 · matches tank-exam</span><span class="spacer"></span><span class="tag on">FOLLOW</span><span class="tag">WIDE · W</span><span class="tag" style="margin-left:.6rem">PNG</span></div>
+    <div class="over bot">
+      <div class="kv"><span class="k">BODY 1 HOLDS</span><span class="v lit" id="l-hold">412.6 J</span></div>
+      <div class="kv"><span class="k">NET SO FAR</span><span class="v">+212.6 J</span></div>
+      <div class="kv"><span class="k">PATH</span><span class="v">27.9 m</span></div>
+      <div class="kv"><span class="k">FRESH</span><span class="v">1.34 J/m³</span></div>
+      <span class="spacer"></span><span class="dim" style="font-size:.73rem;text-align:right">true scale · camera 2.5 m back and above · orbit right-drag · zoom wheel</span>
+    </div>
+  </section>
+
+  <!-- source: as the left view, under the control picked for the right side. -->
+  <section class="panel view p-right" aria-label="knockout scent">
+    <canvas id="v-right"></canvas>
+    <div class="over top"><span class="name">knockout Scent</span><span class="status"><i class="mk mk--exact"></i>EXACT</span>
+      <span class="prov">same draw, same water · scent held at zero · same camera pose</span><span class="spacer"></span><span class="tag on">FOLLOW</span><span class="tag">WIDE · W</span><span class="tag" style="margin-left:.6rem">PNG</span></div>
+    <div class="over bot">
+      <div class="kv"><span class="k">BODY 1 HOLDS</span><span class="v lit">281.0 J</span></div>
+      <div class="kv"><span class="k">NET SO FAR</span><span class="v">+81.0 J</span></div>
+      <div class="kv"><span class="k">PATH</span><span class="v">31.2 m</span></div>
+      <div class="kv"><span class="k">FRESH</span><span class="v">1.08 J/m³</span></div>
+    </div>
+  </section>
+
+  <!-- source: the re-stepped episode. Senses are listed from the genome's brain, grouped by part, in its order; one output group per joint. A knocked-out channel is whatever the control holds. -->
+  <aside class="panel p-side" aria-label="body 1, both sides">
+    <div class="head"><span class="kicker">Body 1</span><span class="q">What is its brain doing?</span></div>
+    <div class="side-charts">
+      <div class="legend" style="font-size:.77rem">energy held, J · <span style="color:var(--run);margin:0 .3rem">own</span> · <span style="color:var(--ink);margin:0 .3rem">knockout, dashed</span></div>
+      <svg id="c-energy" style="height:4.6rem"></svg>
+      <div class="legend" style="font-size:.77rem;margin-top:.4rem">stroke, the joint's angle in rad · last 60 s</div>
+      <svg id="c-stroke" style="height:3rem"></svg>
+    </div>
+    <div class="section" style="flex:1;min-height:0;display:flex;flex-direction:column">
+      <div class="head" style="margin-bottom:.3rem"><span class="kicker">Brain, live</span><span class="aside">senses in · hidden · out</span></div>
+      <div class="brain" id="brain"></div>
+    </div>
+  </aside>
+
+  <!-- source: the re-stepped episode's events: islands entered, carrion eaten, whatever the world records. -->
+  <section class="panel p-time" aria-label="timeline">
+    <div class="head" style="margin-bottom:.2rem"><span class="kicker">Timeline</span><span class="q" style="font-size:1rem">600 s · both sides scrub together</span>
+      <span class="aside"><span class="tag on">▶ ×1</span><span class="tag">×4</span><span class="tag">×16</span><span style="margin-left:1rem;color:var(--run)" id="t-now">t = 212.4 s</span></span></div>
+    <svg class="chart" id="c-time"></svg>
+  </section>
+
+  <!-- source: the draw's seed and the world's setup from the resolved recipe. -->
+  <aside class="panel p-info" aria-label="the episode">
+    <div class="head"><span class="kicker">The episode</span></div>
+    <div class="field"><span class="field__label">seed · tank</span><span class="field__value">0x64b1c3e9 · 3</span></div>
+    <div class="field"><span class="field__label">snow, drawn</span><span class="field__value">4.1 <span class="unit">J/m³ in islands, 20 m</span></span></div>
+    <div class="field"><span class="field__label">carrion</span><span class="field__value">5 × 40 J · 2 eaten</span></div>
+    <div class="field"><span class="field__label">tank-mates · tank</span><span class="field__value">7 · 1600 <span class="unit">m² × 25 m</span></span></div>
+  </aside>
+</main>
+
+<footer class="bar">
+  <span class="hint"><span class="key">Space</span>play / pause</span>
+  <span class="hint"><span class="key">[ ]</span>slower / faster</span>
+  <span class="hint"><span class="key">← →</span>step 1 s</span>
+  <span class="hint"><span class="key">F</span>follow body</span>
+  <span class="hint"><span class="key">W</span>wide, whole tank</span>
+  <span class="hint"><span class="key">S</span>swap sides</span>
+  <span class="spacer"></span>
+  <span>the room's own view, for reading; a fine creature picture is Blender's, from the export · all numbers invented</span>
+</footer>
+
+<script>
+// ---- the scene. The default view follows the focus body with a camera a few body-lengths back and
+// above, at true scale, so the parts and the joint's stroke are readable; a whole-tank map in the
+// corner carries where it is going. Both views keep the same camera pose relative to their own body,
+// so own brain and knockout compare frame by frame. W switches to the wide whole-tank shot (not
+// drawn in the mock). Brightness is ranked: the focus body first, tank-mates next, the snow last.
+// Invented motion; the build re-steps the real episode.
+const TAU = Math.PI * 2, RAD = 22.6;
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v)), smooth = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+const wrapA = a => Math.atan2(Math.sin(a), Math.cos(a));
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+// snow islands on the bed: x, z, radius in metres
+const ISL = [[-6, 3, 4.6], [8, -5, 5.2], [3, 12, 4.2], [-12, -10, 4.6], [14, 7, 3.6], [-15, 9.5, 3.2]];
+const island = (x, z) => { let k = 0; for (const [ix, iz, r] of ISL) k = Math.max(k, 1 - smooth(r * .45, r, Math.hypot(x - ix, z - iz))); return k; };
+const CARRION = [[-3.4, 5.9, 0], [-9.2, 6.4, 1], [8.5, -9.5, 0], [12, 2.5, 1], [2, 14.5, 0]];   // x, z, eaten
+// the two episodes' paths, stepped every half second over 600 s: own brain steers into island A and
+// works it; with scent held at zero the same body wanders past it
+function stepPath(own) {
+  const r = mulberry(own ? 11 : 12), out = []; let x = -16, z = 11, h = -.55;
+  for (let i = 0; i <= 1200; i++) { const t = i * .5;
+    let want, sp;
+    if (own) { const dx = -6 - x, dz = 3 - z, d = Math.hypot(dx, dz); want = d > 2.4 ? Math.atan2(dz, dx) : Math.atan2(dz, dx) + Math.PI / 2 * 1.08; sp = d > 2.4 ? .14 : .1; }
+    else { want = h + (Math.sin(t / 23) * .5 + (r() - .5) * .9); if (Math.hypot(x, z) > 18) want = Math.atan2(-z, -x); sp = .147; }
+    h += clamp(wrapA(want - h), -.06, .06); x += Math.cos(h) * sp * .5; z += Math.sin(h) * sp * .5;
+    out.push([x, own ? .32 + .06 * Math.sin(t * .5) : 1.3 + .5 * Math.sin(t * .21), z, h]); }
+  return out; }
+const PATHS = {own: stepPath(true), ko: stepPath(false)};
+const at = (p, t) => { const i = clamp(t * 2, 0, p.length - 1.001), k = Math.floor(i), u = i - k, a = p[k], b = p[k + 1];
+  return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u, a[3] + wrapA(b[3] - a[3]) * u]; };
+const koAt212 = at(PATHS.ko, 212);
+// tank-mates: orbits; two are placed to pass near the focus bodies at this time
+const MATES = [[-6, 3, 3.1, .045, .7], [koAt212[0] + 1.4, koAt212[2] + 1.6, 1.7, -.06, 1.5], [8, -5, 4, .03, .9], [3, 12, 3, .05, 2.2], [-12, -10, 3.5, -.04, 1.1], [14, 7, 2.6, .06, 3], [0, -14, 5, .03, 4.5]];
+const mateAt = (m, t, i) => { const a = i * 1.7 + t * m[3]; return [m[0] + Math.cos(a) * m[2], m[4] + .2 * Math.sin(t * .4 + i), m[1] + Math.sin(a) * m[2], a + Math.sign(m[3]) * Math.PI / 2]; };
+const MOTES = (() => { const r = mulberry(5), m = []; for (let i = 0; i < 1600; i++) m.push([(r() - .5) * 24, r() * 8, (r() - .5) * 24, r(), .5 + r()]); return m; })();
+const L = (() => { const v = [.35, 1, .45], n = Math.hypot(...v); return v.map(c => c / n); })();
+
+function scene(canvas, opts) {
+  const ctx = canvas.getContext('2d'), path = PATHS[opts.which], low = document.createElement('canvas');
+  let W, H, D, R; const size = () => { D = devicePixelRatio || 1; const b = canvas.getBoundingClientRect(); W = canvas.width = Math.round(b.width * D); H = canvas.height = Math.round(b.height * D);
+    R = parseFloat(getComputedStyle(document.documentElement).fontSize) * D; low.width = Math.ceil(W / 4); low.height = Math.ceil(H / 4); };
+  size(); addEventListener('resize', size);
+  let cam;
+  function camera(t) {
+    const [x, y, z] = at(path, t), T = [x, y + .08, z], psi = .95 + .25 * Math.sin(t * .02), el = .43, dist = 2.5;
+    const C = [T[0] - dist * Math.cos(el) * Math.cos(psi), T[1] + dist * Math.sin(el), T[2] - dist * Math.cos(el) * Math.sin(psi)];
+    const fw = [T[0] - C[0], T[1] - C[1], T[2] - C[2]], n = Math.hypot(...fw); fw.forEach((v, i) => fw[i] = v / n);
+    const rt = [-fw[2], 0, fw[0]], rn = Math.hypot(...rt); rt.forEach((v, i) => rt[i] = v / rn);
+    const up = [rt[1] * fw[2] - rt[2] * fw[1], rt[2] * fw[0] - rt[0] * fw[2], rt[0] * fw[1] - rt[1] * fw[0]];
+    const f = Math.min(W * .95, H * 1.35);
+    cam = {C, fw, rt, up, f, T, psi, P: (X, Y, Z) => { const v = [X - C[0], Y - C[1], Z - C[2]], z = v[0] * fw[0] + v[1] * fw[1] + v[2] * fw[2];
+      return [W / 2 + (v[0] * rt[0] + v[1] * rt[1] + v[2] * rt[2]) * f / z, H * .5 - (v[0] * up[0] + v[1] * up[1] + v[2] * up[2]) * f / z, z]; }};
+  }
+  // the bed and the water, ray-cast per pixel at quarter resolution: dark bed, a faint metre grid,
+  // the snow islands as tinted pools, a slow caustic, fog to near-black with distance
+  function water(t) {
+    const w = low.width, h = low.height, lc = low.getContext('2d'), img = lc.createImageData(w, h), d = img.data, {C, fw, rt, up, f} = cam, s = W / w;
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+      const sx = (i * s - W / 2) / f, sy = -(j * s - H * .5) / f;
+      const dx = fw[0] + sx * rt[0] + sy * up[0], dy = fw[1] + sx * rt[1] + sy * up[1], dz = fw[2] + sx * rt[2] + sy * up[2], dn = Math.hypot(dx, dy, dz);
+      let r, g, b;
+      if (dy < -1e-4) { const k = -C[1] / dy, x = C[0] + dx * k, z = C[2] + dz * k, dist = k * dn;
+        const isl = island(x, z), gx = Math.abs(x - Math.round(x)), gz = Math.abs(z - Math.round(z)), grid = smooth(.035, 0, Math.min(gx, gz)) * (1 - smooth(3, 9, dist));
+        const ca = Math.max(0, Math.sin(x * 2.1 + t * .6) + Math.sin(z * 1.7 - t * .5) + Math.sin((x + z) * 1.3 + t * .4) - 1.6);
+        r = 9 + 10 * isl + 9 * grid + 5 * ca; g = 19 + 40 * isl + 20 * grid + 12 * ca; b = 24 + 34 * isl + 22 * grid + 13 * ca;
+        if (Math.hypot(x, z) > RAD) { r = 6; g = 13; b = 17; }
+        const fog = 1 - Math.exp(-dist / 7); r += (3 - r) * fog; g += (9 - g) * fog; b += (13 - b) * fog; }
+      else { const u = Math.pow(clamp(dy / dn * 2.2), .7); r = 3 + 4 * u; g = 9 + 16 * u; b = 13 + 20 * u; }
+      const o = (j * w + i) * 4; d[o] = r; d[o + 1] = g; d[o + 2] = b; d[o + 3] = 255; }
+    lc.putImageData(img, 0, 0); ctx.imageSmoothingEnabled = true; ctx.drawImage(low, 0, 0, W, H);
+    ctx.globalCompositeOperation = 'lighter';   // shafts: a few percent, no more
+    for (let i = 0; i < 5; i++) { const x0 = W * (.08 + i * .21) + Math.sin(t * .25 + i) * W * .02, sg = ctx.createLinearGradient(0, 0, 0, H * .7);
+      sg.addColorStop(0, 'rgba(120,230,255,.035)'); sg.addColorStop(1, 'rgba(120,230,255,0)'); ctx.fillStyle = sg;
+      ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x0 + W * .03, 0); ctx.lineTo(x0 + W * .1, H * .7); ctx.lineTo(x0 + W * .045, H * .7); ctx.fill(); }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  // a body: the box as a lit cuboid, the capsule bending at the joint with the stroke
+  function body(c, p, focus, alpha, mask) {
+    const [x, y, z, h] = p, {P, C} = cam, fx = Math.cos(h), fz = Math.sin(h), sxv = -fz, szv = fx, hx = .115, hy = .075, hz = .115;
+    const theta = .59 * Math.sin(c.t * 1.9 + (focus ? 0 : x)), bx = Math.cos(h + Math.PI + theta), bz = Math.sin(h + Math.PI + theta);
+    const J = [x - fx * (hx + .02), y, z - fz * (hx + .02)], A = [J[0] + bx * .09, y, J[2] + bz * .09], B = [J[0] + bx * .44, y, J[2] + bz * .44];
+    const base = focus ? [94, 240, 255] : [185, 202, 214], col = k => mask ? '#fff' : `rgba(${base.map(v => Math.min(255, Math.round(v * k))).join(',')},${alpha})`;
+    const rim = focus ? 'rgba(190,252,255,.75)' : `rgba(200,220,230,${.45 * alpha})`;
+    const corner = (a, b, s) => [x + a * hx * fx + s * hz * sxv, y + b * hy, z + a * hx * fz + s * hz * szv];
+    const faces = [[[1, 0, 0], [[1, -1, -1], [1, 1, -1], [1, 1, 1], [1, -1, 1]]], [[-1, 0, 0], [[-1, -1, -1], [-1, -1, 1], [-1, 1, 1], [-1, 1, -1]]],
+      [[0, 1, 0], [[-1, 1, -1], [-1, 1, 1], [1, 1, 1], [1, 1, -1]]], [[0, -1, 0], [[-1, -1, -1], [1, -1, -1], [1, -1, 1], [-1, -1, 1]]],
+      [[0, 0, 1], [[-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]]], [[0, 0, -1], [[-1, -1, -1], [-1, 1, -1], [1, 1, -1], [1, -1, -1]]]];
+    const drawBox = () => { for (const [nl, cs] of faces) {
+      const n = [nl[0] * fx + nl[2] * sxv, nl[1], nl[0] * fz + nl[2] * szv], fc = corner(nl[0], nl[1], nl[2]);
+      if (n[0] * (C[0] - fc[0]) + n[1] * (C[1] - fc[1]) + n[2] * (C[2] - fc[2]) <= 0) continue;
+      const k = .42 + .7 * Math.max(0, n[0] * L[0] + n[1] * L[1] + n[2] * L[2]);
+      ctx.beginPath(); cs.forEach(([a, b, s], i) => { const [u, v] = P(...corner(a, b, s)); i ? ctx.lineTo(u, v) : ctx.moveTo(u, v); }); ctx.closePath();
+      ctx.fillStyle = col(Math.min(1.12, k)); ctx.fill(); if (!mask) { ctx.strokeStyle = rim; ctx.lineWidth = D * (focus ? 1.2 : .8); ctx.stroke(); } } };
+    const drawCaps = () => { const [ax, ay, az] = P(...A), [ex, ey, ez] = P(...B), ra = .066 * cam.f / az, re = .066 * cam.f / ez;
+      const nx = -(ey - ay), ny = ex - ax, nn = Math.hypot(nx, ny) || 1, ux = nx / nn, uy = ny / nn, an = Math.atan2(uy, ux);
+      ctx.beginPath(); ctx.moveTo(ax + ux * ra, ay + uy * ra); ctx.lineTo(ex + ux * re, ey + uy * re); ctx.arc(ex, ey, re, an, an + Math.PI, true);
+      ctx.lineTo(ax - ux * ra, ay - uy * ra); ctx.arc(ax, ay, ra, an + Math.PI, an, true); ctx.closePath();
+      if (mask) { ctx.fillStyle = '#fff'; ctx.fill(); return; }
+      const top = uy < 0 ? 1 : -1, g = ctx.createLinearGradient(ax + ux * ra * top, ay + uy * ra * top, ax - ux * ra * top, ay - uy * ra * top);
+      g.addColorStop(0, col(1.12)); g.addColorStop(.45, col(.85)); g.addColorStop(1, col(.4)); ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = rim; ctx.lineWidth = D * (focus ? 1.2 : .8); ctx.stroke(); };
+    const [jx, jy, jz] = P(...J), [cx0, cy0, cz0] = P(x, y, z), [mx, my, mz] = P((A[0] + B[0]) / 2, y, (A[2] + B[2]) / 2);
+    if (focus && !mask) { const rr = Math.hypot(mx - cx0, my - cy0) * 2.2, g = ctx.createRadialGradient(jx, jy, 0, jx, jy, rr);   // halo
+      g.addColorStop(0, 'rgba(94,240,255,.16)'); g.addColorStop(1, 'rgba(94,240,255,0)'); ctx.fillStyle = g; ctx.fillRect(jx - rr, jy - rr, rr * 2, rr * 2); }
+    if (mz > cz0) { drawCaps(); drawBox(); } else { drawBox(); drawCaps(); }
+    if (!mask) { ctx.beginPath(); ctx.arc(jx, jy, .016 * cam.f / jz, 0, TAU); ctx.fillStyle = '#03111a'; ctx.fill(); ctx.strokeStyle = focus ? '#5ef0ff' : rim; ctx.lineWidth = D; ctx.stroke(); }
+    return [cx0, cy0, cz0];
+  }
+  function label(x, y, text) { ctx.font = `${12 * D}px "Plex Mono", Consolas, monospace`; const w = ctx.measureText(text).width + 12 * D, h = 19 * D;
+    ctx.fillStyle = 'rgba(2,8,12,.88)'; ctx.beginPath(); ctx.roundRect(x - w / 2, y - h, w, h, 4 * D); ctx.fill(); ctx.strokeStyle = 'rgba(94,240,255,.5)'; ctx.lineWidth = D; ctx.stroke();
+    ctx.fillStyle = '#e8f8fc'; ctx.textAlign = 'center'; ctx.fillText(text, x, y - 5.5 * D); ctx.textAlign = 'left'; }
+  // the whole tank from above: islands, carrion, every body, the focus body's path so far
+  function map(t) {
+    const S = Math.max(11 * R, Math.min(W, H) * .3), x0 = W - S - 1.1 * R, y0 = 3.4 * R, cx = x0 + S / 2, cy = y0 + S / 2, _ = (canvas.mapRect = [x0, y0, x0 + S, y0 + S + 1.9 * R]), k = (S / 2 - .5 * R) / RAD, M = (x, z) => [cx + x * k, cy + z * k];
+    ctx.fillStyle = 'rgba(2,8,12,.86)'; ctx.beginPath(); ctx.roundRect(x0, y0, S, S + 1.9 * R, .5 * R); ctx.fill(); ctx.strokeStyle = 'rgba(150,230,255,.16)'; ctx.lineWidth = D; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, RAD * k, 0, TAU); ctx.fillStyle = '#06141b'; ctx.fill(); ctx.strokeStyle = 'rgba(150,230,255,.3)'; ctx.stroke();
+    for (const [ix, iz, r] of ISL) { const [u, v] = M(ix, iz), g = ctx.createRadialGradient(u, v, 0, u, v, r * k); g.addColorStop(0, 'rgba(80,220,180,.42)'); g.addColorStop(.6, 'rgba(80,220,180,.22)'); g.addColorStop(1, 'rgba(80,220,180,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(u, v, r * k, 0, TAU); ctx.fill(); }
+    for (const [x, z, e] of CARRION) { const [u, v] = M(x, z); ctx.beginPath(); ctx.arc(u, v, Math.max(2.6 * D, S * .016), 0, TAU);
+      if (e) { ctx.strokeStyle = '#f0a050'; ctx.lineWidth = 1.2 * D; ctx.stroke(); } else { ctx.fillStyle = '#f0a050'; ctx.fill(); } }
+    MATES.forEach((m, i) => { const [x, , z] = mateAt(m, t, i), [u, v] = M(x, z); ctx.beginPath(); ctx.arc(u, v, Math.max(2 * D, S * .012), 0, TAU); ctx.fillStyle = 'rgba(200,218,228,.9)'; ctx.fill(); });
+    ctx.beginPath(); for (let s = 0; s <= t; s += 1) { const [x, , z] = at(path, s), [u, v] = M(x, z); s ? ctx.lineTo(u, v) : ctx.moveTo(u, v); }
+    ctx.strokeStyle = 'rgba(94,240,255,.85)'; ctx.lineWidth = Math.max(1.4 * D, S * .008); ctx.stroke();
+    const [bx, , bz] = at(path, t), [u, v] = M(bx, bz), a = cam.psi;   // the camera's view, a faint wedge
+    ctx.beginPath(); ctx.moveTo(u - Math.cos(a) * 1.2 * R, v - Math.sin(a) * 1.2 * R); ctx.lineTo(u + Math.cos(a + .5) * 1.4 * R, v + Math.sin(a + .5) * 1.4 * R); ctx.lineTo(u + Math.cos(a - .5) * 1.4 * R, v + Math.sin(a - .5) * 1.4 * R); ctx.closePath();
+    ctx.fillStyle = 'rgba(232,248,252,.1)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(u, v, Math.max(3.6 * D, S * .022), 0, TAU); ctx.fillStyle = '#5ef0ff'; ctx.shadowColor = 'rgba(94,240,255,.9)'; ctx.shadowBlur = 8 * D; ctx.fill(); ctx.shadowBlur = 0;
+    ctx.font = `${Math.max(.82 * R, S * .055)}px "Plex Sans", "Segoe UI", sans-serif`; ctx.fillStyle = '#b4d0d8'; ctx.fillText('TANK FROM ABOVE · 45 m', x0 + .6 * R, y0 + S + 1.25 * R);
+  }
+  // one frame. mode: 'full', or a mask ('focus', 'mates', 'mate:i', 'motes') drawn white for the measure
+  function draw(t, mode = 'full') {
+    const mask = mode !== 'full'; camera(t); const c = {t};
+    if (mode === 'moteslight') { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H); } else if (mask) { ctx.clearRect(0, 0, W, H); } else water(t);
+    const {P, T} = cam, items = [];
+    if (!mask) {
+      for (const [x, z, e] of CARRION) { const [u, v, d] = P(x, .04, z); if (d < .6) continue; const s = .2 * cam.f / d, fa = Math.exp(-d / 9);   // carrion: warm amber on the bed
+        if (e) { ctx.strokeStyle = `rgba(240,160,80,${(.3 + .5 * fa).toFixed(3)})`; ctx.lineWidth = 1.4 * D; ctx.beginPath(); ctx.ellipse(u, v, s * 1.3, s * .45, 0, 0, TAU); ctx.stroke(); }
+        else { const g = ctx.createRadialGradient(u, v, 0, u, v, s * 2.4); g.addColorStop(0, `rgba(240,160,80,${(.22 * fa).toFixed(3)})`); g.addColorStop(1, 'rgba(240,160,80,0)'); ctx.fillStyle = g; ctx.fillRect(u - s * 2.4, v - s * 2.4, s * 4.8, s * 4.8);
+          ctx.fillStyle = `rgba(240,160,80,${(.35 + .65 * fa).toFixed(3)})`; ctx.beginPath(); ctx.ellipse(u, v, s, s * .42, .2, 0, TAU); ctx.fill(); } }
+      const [bx, , bz] = at(path, t), [su, sv, sd] = P(bx, 0, bz);   // the focus body's shadow on the bed
+      if (sd > .3) { const s = .5 * cam.f / sd, g = ctx.createRadialGradient(su, sv, 0, su, sv, s); g.addColorStop(0, 'rgba(0,0,0,.55)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.save(); ctx.translate(su, sv); ctx.scale(1, .4); ctx.translate(-su, -sv); ctx.fillRect(su - s, sv - s, 2 * s, 2 * s); ctx.restore(); }
+      for (let s = Math.max(0, t - 45); s < t - .5; s += .5) { const a = at(path, s), b = at(path, s + .5), [u1, v1, d1] = P(a[0], a[1], a[2]), [u2, v2, d2] = P(b[0], b[1], b[2]);   // trail, last 45 s
+        if (d1 < .9 || d2 < .9) continue; ctx.strokeStyle = `rgba(94,240,255,${(.75 * (s - t + 45) / 45).toFixed(3)})`; ctx.lineWidth = 2 * D; ctx.beginPath(); ctx.moveTo(u1, v1); ctx.lineTo(u2, v2); ctx.stroke(); }
+    }
+    if (mode === 'full' || mode === 'motes' || mode === 'moteslight') for (const [mx, my, mz, u, sz] of MOTES) {
+      const x = T[0] + ((mx - T[0] % 24 + 36) % 24 - 12), z = T[2] + ((mz - T[2] % 24 + 36) % 24 - 12), y = ((my - t * .05) % 8 + 8) % 8;
+      if (u > .22 + .78 * island(x, z)) continue; const [px, py, d] = P(x, y, z); if (d < .4) continue;
+      items.push({d, k: 'mote', px, py, a: .13 * (1 - smooth(4, 11, d)) * smooth(.8, 2.2, d), r: Math.max(.7 * D, .007 * sz * cam.f / d)}); }
+    MATES.forEach((m, i) => { if (mode === 'full' || mode === 'mates' || mode === 'mate:' + i) { const p = mateAt(m, t, i), d = P(p[0], p[1], p[2])[2]; if (d > .4) items.push({d, k: 'mate', p}); } });
+    if (mode === 'full' || mode === 'focus') { const p = at(path, t); items.push({d: P(p[0], p[1], p[2])[2], k: 'focus', p}); }
+    items.sort((a, b) => b.d - a.d); let fp;
+    for (const it of items) {
+      if (it.k === 'mote') { ctx.fillStyle = mask && mode !== 'moteslight' ? '#fff' : `rgba(200,230,240,${it.a.toFixed(3)})`; ctx.beginPath(); ctx.arc(it.px, it.py, it.r, 0, TAU); ctx.fill(); }
+      else if (it.k === 'mate') body(c, it.p, false, .6 * Math.exp(-Math.max(0, it.d - 4) / 12), mask);
+      else fp = body(c, it.p, true, 1, mask); }
+    if (!mask) { if (fp) label(fp[0], fp[1] - .3 * cam.f / fp[2], 'body 1'); map(t); }
+  }
+  const t0 = 212.4, start = performance.now();
+  function loop(now) { if (!canvas.frozen) draw(t0 + (now - start) / 1000); requestAnimationFrame(loop); }
+  requestAnimationFrame(loop);
+  return {canvas, ctx, draw, get W() { return W; }, get H() { return H; }, t0};
+}
+const views = [scene(document.getElementById('v-left'), {which: 'own'}), scene(document.getElementById('v-right'), {which: 'ko'})];
+
+// ?measure: freeze each view, draw masks of the focus body, each tank-mate and the snow, and report
+// the focus body's median luminance against the water around it, and the brightest mote against the
+// dimmest visible tank-mate (contrast.py --tank reads this from the console)
+if (/[?&]measure/.test(location.search)) setTimeout(() => {
+  const lin = v => { v /= 255; return v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }, Y = (d, o) => .2126 * lin(d[o]) + .7152 * lin(d[o + 1]) + .0722 * lin(d[o + 2]);
+  const med = a => { if (!a.length) return null; a.sort((x, y) => x - y); return a[Math.floor(a.length / 2)]; };
+  const out = views.map((v, n) => {
+    v.canvas.frozen = true; const t = v.t0 + 1, {W, H, ctx} = v, grab = mode => { v.draw(t, mode); return ctx.getImageData(0, 0, W, H).data; };
+    const fm = grab('focus'), mm = grab('mates'), sm = grab('motes'), sl = grab('moteslight'), mates = MATES.map((_, i) => grab('mate:' + i)); const img = grab('full');
+    const body = [], ring = [], motes = []; let x0 = W, y0 = H, x1 = 0, y1 = 0;
+    for (let i = 0; i < W * H; i++) if (fm[i * 4 + 3] > 200) { const x = i % W, y = (i / W) | 0; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); body.push(Y(img, i * 4)); }
+    const pw = x1 - x0, ph = y1 - y0;
+    for (let y = Math.max(0, y0 - ph); y < Math.min(H, y1 + ph); y++) for (let x = Math.max(0, x0 - pw); x < Math.min(W, x1 + pw); x++) { const o = (y * W + x) * 4; if (fm[o + 3] < 10 && mm[o + 3] < 10) ring.push(Y(img, o)); }
+    const [mx0, my0, mx1, my1] = v.canvas.mapRect || [W, H, W, H], open = i => { const x = i % W, y = (i / W) | 0; return x < mx0 || x > mx1 || y < my0 || y > my1; };   // what the map hides is not measured
+    // a mote's own light, drawn over black, then over the water around the body
+    for (let i = 0; i < W * H; i++) if (sm[i * 4 + 3] > 200 && open(i)) motes.push(Y(sl, i * 4));
+    const mateMeds = mates.map(m => { const a = []; for (let i = 0; i < W * H; i++) if (m[i * 4 + 3] > 200 && fm[i * 4 + 3] < 10 && open(i)) a.push(Y(img, i * 4)); return a.length > 40 ? med(a) : null; }).filter(x => x != null);
+    v.canvas.frozen = false;
+    const b = med(body), w = med(ring), mx = (motes.length ? Math.max(...motes) : 0) + w;
+    return {view: n ? 'right' : 'left', bodyShare: +(body.length / (W * H)).toFixed(4), bodyWidthShare: +(pw / W).toFixed(3), focusMedian: b, waterMedian: w, ratio: +(b / w).toFixed(2),
+      moteMax: mx, matesVisible: mateMeds.length, mateMedianMin: mateMeds.length ? Math.min(...mateMeds) : null };
+  });
+  console.log('TANK' + JSON.stringify(out) + 'TANK');
+}, 1500);
+
+// ---- the side panel and the timeline
+const NS = 'http://www.w3.org/2000/svg';
+const el = (p, tag, a = {}, t) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (t != null) e.textContent = t; p.appendChild(e); return e; };
+const R = () => parseFloat(getComputedStyle(document.documentElement).fontSize);
+function charts() {
+  { const svg = document.getElementById('c-energy'); svg.innerHTML = ''; const w = svg.clientWidth, h = svg.clientHeight; svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    const X = t => 2.4 * R() + t / 600 * (w - 2.4 * R()), Y = j => h - 4 - (j - 100) / 400 * (h - 8); const a = [], b = []; let ja = 200, jb = 200;
+    for (let t = 0; t <= 212; t += 4) { ja += (Math.sin(t / 19) + .9) * 3.8 - .4; jb += (Math.sin(t / 13) + .3) * 2.2 - .5; a.push(X(t) + ',' + Y(ja)); b.push(X(t) + ',' + Y(jb)); }
+    [100, 300, 500].forEach(v => { el(svg, 'line', {class: 'gridl', x1: X(0), x2: w, y1: Y(v), y2: Y(v)}); el(svg, 'text', {x: X(0) - 4, y: Y(v) + 3, 'text-anchor': 'end'}, v); });
+    el(svg, 'line', {class: 'zero', x1: X(0), x2: w, y1: Y(200), y2: Y(200)}); el(svg, 'text', {x: w - 2, y: Y(200) - 3, 'text-anchor': 'end'}, 'purse 200 J');
+    el(svg, 'polyline', {points: b.join(' '), style: 'fill:none;stroke:var(--ink);stroke-width:1.3;stroke-dasharray:4 3'});
+    el(svg, 'polyline', {points: a.join(' '), style: 'fill:none;stroke:var(--run);stroke-width:1.8'});
+    el(svg, 'line', {x1: X(212), x2: X(212), y1: 0, y2: h, style: 'stroke:var(--ink-hi);opacity:.6'}); }
+  { const svg = document.getElementById('c-stroke'); svg.innerHTML = ''; const w = svg.clientWidth, h = svg.clientHeight; svg.setAttribute('viewBox', `0 0 ${w} ${h}`); const a = [];
+    for (let t = 152; t <= 212; t += .4) a.push(((t - 152) / 60 * w) + ',' + (h / 2 - Math.sin(t * 1.9) * h * .38 * (.6 + .4 * Math.sin(t / 7))));
+    el(svg, 'line', {class: 'gridl', x1: 0, x2: w, y1: h / 2, y2: h / 2}); el(svg, 'polyline', {points: a.join(' '), style: 'fill:none;stroke:var(--run-mid);stroke-width:1.4'}); }
+  { const svg = document.getElementById('c-time'); svg.innerHTML = ''; const w = svg.clientWidth, h = svg.clientHeight, r = R(); svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    const X = t => r + t / 600 * (w - 2 * r), yb = h * .55;
+    [[96, 140], [188, 236], [330, 395]].forEach(([a, b]) => el(svg, 'rect', {x: X(a), y: yb - 1.5 * r, width: X(b) - X(a), height: .35 * r, rx: .17 * r, style: 'fill:var(--run-low)'}));
+    el(svg, 'text', {x: X(330), y: yb - 1.75 * r}, 'in a snow island');
+    [[61], [174]].forEach(([t]) => { el(svg, 'path', {d: `M${X(t) - 5} ${yb - .75 * r}h10M${X(t)} ${yb - .75 * r - 5}v10`, style: 'stroke:#d9cbb6;stroke-width:2'}); el(svg, 'text', {x: X(t) + 8, y: yb - .55 * r}, 'carrion'); });
+    el(svg, 'rect', {x: X(0), y: yb, width: X(600) - X(0), height: .35 * r, rx: .17 * r, style: 'fill:var(--track)'});
+    el(svg, 'rect', {x: X(0), y: yb, width: X(212.4) - X(0), height: .35 * r, rx: .17 * r, style: 'fill:var(--run);filter:var(--glow)'});
+    for (let t = 0; t <= 600; t += 60) el(svg, 'text', {x: X(t), y: h - .2 * r, 'text-anchor': 'middle'}, t + ' s');
+    el(svg, 'circle', {cx: X(212.4), cy: yb + .17 * r, r: .55 * r, style: 'fill:var(--ink-hi);filter:var(--glow)'}); }
+}
+// the brain, live: 13 senses grouped by part, five hidden units, two outputs, moving
+const groups = [['PART 0 · BOX', ['depth', 'up', 'energy', 'flow x', 'flow y', 'scent', 'chemical']], ['PART 1 · CAPSULE', ['angle', 'rate', 'up', 'scent']], ['JOINT', ['drive', 'hold']]];
+function brainHtml(title, ko) { let h = `<div><h4>${title}</h4>`;
+  for (const [g, chs] of groups) { h += `<div class="grp">${g}</div>`;
+    for (const c of chs) { const k = ko && c === 'scent'; h += `<div class="ch${k ? ' ko' : ''}"><span>${c}</span><span class="bar">${k ? '' : '<i data-v></i>'}</span></div>`; } }
+  h += '<div class="grp">HIDDEN · 5</div><div class="hid">' + '<i data-h></i>'.repeat(5) + '</div><div class="grp">OUT · JOINT 1</div>';
+  for (const o of ['power', 'bend']) h += `<div class="ch out"><span>${o}</span><span class="bar"><i data-o></i></span></div>`;
+  return h + '</div>'; }
+document.getElementById('brain').innerHTML = brainHtml('OWN BRAIN', false) + brainHtml('KNOCKOUT SCENT', true);
+function tick(time) { const t = time / 1000; let k = 0;
+  document.querySelectorAll('#brain [data-v]').forEach(i => { const v = Math.sin(t * (.7 + (k % 7) * .23) + k * 1.7) * (.35 + (k % 4) * .15); k++; const w = Math.abs(v) * 50; i.style.left = (v < 0 ? 50 - w : 50) + '%'; i.style.width = w + '%'; });
+  document.querySelectorAll('#brain [data-h]').forEach((i, n) => { const v = (Math.sin(t * 1.3 + n * 2.1) + 1) / 2; i.style.background = `rgba(94,240,255,${(v * .85).toFixed(2)})`; i.style.boxShadow = v > .7 ? '0 0 .6rem rgba(94,240,255,.7)' : 'none'; });
+  document.querySelectorAll('#brain [data-o]').forEach((i, n) => { i.style.left = 0; i.style.width = (40 + 45 * (Math.sin(t * 3.4 + n * 1.3) + 1) / 2) + '%'; });
+  setTimeout(() => requestAnimationFrame(tick), 120); }
+requestAnimationFrame(tick);
+charts(); let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(charts, 120); });
+</script>
+</body>
+</html>

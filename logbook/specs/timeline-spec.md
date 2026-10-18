@@ -3,8 +3,8 @@
 **2026-09-15**  ·  the first of three tools the owner asked for on the evening of
 2026-09-15 (`video-tools-notes.md`).
 
-> "something like Civilization does where you can play the timeline and you are the graph
-> of a thing over time and can jump around in the timeline"
+The owner asked for something like the timeline in Civilization, where you play the timeline,
+you are the graph of a thing over time, and you can jump around in it.
 
 It is theatre only. It moves no hash and needs no worker. It is built first because it makes
 every later question faster to answer, ours and the videos'. This goes in front of the owner

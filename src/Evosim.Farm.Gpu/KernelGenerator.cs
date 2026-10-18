@@ -46,13 +46,35 @@ namespace Evosim.Farm.Gpu
 
         private const string DoubleHelpers = @"
         // The CPU's own arithmetic: float operands promoted to double, System.Math, narrowed.
-        private static float OscSin(double arg) => (float)Math.Sin(arg);
-        private static float SinF(float a) => (float)Math.Sin(a);
-        private static float CosF(float a) => (float)Math.Cos(a);
-        private static float TanhF(float a) => (float)Math.Tanh(a);
+        private static float OscSin(double arg) => (float)SinR(arg);
+        private static float SinF(float a) => (float)SinR(a);
+        private static float CosF(float a) => (float)CosR(a);
         private static float FloorF(float a) => (float)Math.Floor(a);
         private static Real SqrtR(Real a) => Math.Sqrt(a);
         private static Real AbsR(Real a) => Math.Abs(a);
+
+        // Guards against ILGPU 1.5.3's double maths on the card, not world rules. Its Sin and Cos
+        // bring the angle into range by subtracting 2 pi in a loop (XMath/Cordic.tt, RangeLimit), which
+        // past about 7.2e16 never ends; its Exp, under Tanh, loops up to int.MaxValue times
+        // (Cordic.Pow.tt). On the accelerator these are .NET's own, and the guards are bit-neutral
+        // inside 1e9 rad: an angle past AngleGuard is reduced, so a body that samples one parts from
+        // the CPU's arithmetic there too (the bed counts such angles, BedAnglesPastGuard), while tanh
+        // past TanhGuard is 1 in double already, so 1f once narrowed, on either side (card-audit-r57.md,
+        // the card in double hangs on a far body). A pass of
+        // the reduction leaves at most half the angle's spacing, so a huge angle takes a few passes,
+        // about 20 from 1e308; NaN and an infinity leave as NaN.
+        private const double AngleGuard = 1e9;
+        private const float TanhGuard = 20f;
+        internal static double Reduced(double a)
+        {
+            const double Turn = 6.283185307179586;
+            if (!(a > AngleGuard || a < -AngleGuard)) return a;
+            do { a -= Turn * Math.Floor(a / Turn); } while (a > 64.0 || a < -64.0);
+            return a;
+        }
+        internal static double SinR(double a) => Math.Sin(Reduced(a));
+        internal static double CosR(double a) => Math.Cos(Reduced(a));
+        internal static float TanhF(float a) => a > TanhGuard ? 1f : a < -TanhGuard ? -1f : (float)Math.Tanh(a);
 ";
 
         private const string SingleHelpers = @"
@@ -70,6 +92,11 @@ namespace Evosim.Farm.Gpu
         private static float FloorF(float a) => XMath.Floor(a);
         private static Real SqrtR(Real a) => XMath.Sqrt(a);
         private static Real AbsR(Real a) => XMath.Abs(a);
+        internal static float SinR(float a) => MathF.Sin(a);
+        internal static float CosR(float a) => MathF.Cos(a);
+
+        // Single reduces no angle; the bed counts its angles past the double's guard all the same.
+        private const double AngleGuard = 1e9;
 ";
 
         /// <summary>One precision's source from the two templates' text.</summary>

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Generate images with Leonardo.ai's API, within a token budget, from prompts in a file.
 
-Why this exists. The owner has a monthly token allowance on Leonardo (a Canva employee plan),
-wants it used through the API rather than by hand ("that's why api tokens exist"), and set three
+Why this exists. The owner has a monthly token allowance on Leonardo,
+wants it used through the API rather than by hand, and set three
 rules (2026-09-16): the key lives on the machine and never in the repo, as EVOSIM_LEONARDO_KEY in
 the environment or in a .env file at the repo root (gitignored, and the commit hook blocks *.env;
-the owner's choice, "isn't this standard?"), the environment winning if both are set; only prompts written for the purpose go up, nothing of the project's
+the owner's choice, as the standard way to hold a key), the environment winning if both are set; only prompts written for the purpose go up, nothing of the project's
 (no picture, no genome, no number derived from one) unless the owner approves that instance;
 and a session stops at a budget the owner sets. The survey the uses come from is
 logbook/specs/leonardo-survey.md: backdrops, title cards and thumbnails for the videos, never

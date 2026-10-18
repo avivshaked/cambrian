@@ -34,13 +34,33 @@ nothing to hear.
 
 ## Segments and pieces
 
-A **segment** is what the voice reads at once: one prose paragraph of `prose.md`, since the script's
-sentences are prose.md's in order. The delivery depends on context, so the voice reads as much as it
-reliably can, and the service takes no unspoken context. A paragraph longer than the voice's measured
-`max_segment_chars` is cut at the last passage end that fits. A passage longer than that is cut at the
-last sentence end that fits. The service reads longer text, but its pace starts to drift, so the limit is
-this skill's rule. A single sentence longer than the limit cannot be cut, so the tool refuses the request;
-only the prose step can shorten it.
+A **segment** is what the voice reads at once. The voice delivers a sentence better when it reads the
+sentences around it, and the service takes no context but the segment's own words. So the tool packs each
+beat's prose paragraphs into segments as long as the voice's `max_segment_chars` allows. It knows where
+each paragraph ends, since the script's sentences are `prose.md`'s in order.
+
+That limit is the longest paragraph the voice read reliably when the service measured it. The service
+measures it on a ladder of paragraphs from about 80 to 560 characters (its design document,
+`docs/design.md` in its repository, §3.2). For the service it is advice and never a refusal: a longer
+segment is read and flagged `SEGMENT_TOO_LONG` (§3.2, "What the limit means"). Here it is the skill's
+rule. The service's own cap is 1,200 characters of text in a segment (§7.2).
+
+The packing stays inside one beat, and follows these rules:
+
+- A segment ends after a paragraph whose last passage needs silence, as defined at the end of this
+  section, and wherever an earlier draft split a segment. Inside a paragraph, the cut makes a needed
+  silence, and only a failed cut splits.
+- Paragraphs joined by the script's `Join: next` are one unit, read in one segment.
+- Between those breaks, the tool packs whole units into the fewest segments that fit. Among packings with
+  that count it takes the one whose shortest segment is longest, so that no short segment is left alone
+  at the end of a beat.
+- A unit longer than the limit is cut at the last passage end that fits. A passage longer than that is
+  cut at the last sentence end that fits. Each piece before the last is a segment of its own. The last
+  piece is packed with what follows it in the beat, under the same rules, so that a short remainder is
+  not read alone. When the cut falls inside a `Join: next` unit, the request goes on and prints a `NOTE`
+  naming the passages and the characters over. The owner rules on it, or the prose step trims the words.
+- A single sentence longer than the limit cannot be cut, so the tool refuses the request; only the prose
+  step can shorten it.
 
 A **job** is what the service is sent at once: one beat's segments. A beat of more than ten segments is
 cut into even jobs of ten or fewer, since the service's answer for a larger job is too long to read at
@@ -124,7 +144,8 @@ speech recognition mishears a name, fails the take, and has it read again for no
 
 The tool copies both files into the film's folder the first time it runs for the film, on any route,
 unless they are there. From then on the step reads and changes only those copies. The skill's own files
-change only when the owner asks. The canon voice is chosen, locked in and measured outside this skill.
+change only when the owner asks. The canon voice is chosen, locked in and measured outside this skill, in
+[`logbook/specs/narrator-voice.md`](../../../logbook/specs/narrator-voice.md).
 Until the settings name it, `request` refuses, and the step cannot run on the service.
 
 ## Without the service
@@ -205,7 +226,7 @@ You are the narrator of a story film.
 Your brief is <checkout>\.claude\skills\create-story-video\narrator-brief.md. Read it whole and follow it.
 The film's folder is <folder>.
 You narrate draft <n>, run <k>.
-Write only inside the film's folder, and only through the shell. Never write in your session scratchpad or in TEMP.
+Write only inside the film's folder. Never write in your session scratchpad or in TEMP.
 Your time budget is 60 minutes.
 ```
 

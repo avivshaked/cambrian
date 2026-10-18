@@ -193,10 +193,10 @@ namespace Evosim.Theatre
             // config, so the world drawn from here is the world the run drew from; a run without
             // a pool named loads null and the World takes an empty pool, which is the recorded
             // world. The refusals (a missing file, a changed byte) are TricklePoolFiles' own.
-            IReadOnlyList<Genome> pool;
+            TricklePoolFiles.Pool pool;
             try
             {
-                pool = TricklePoolFiles.Load(replay.Record.Path, replay.Record.Config)?.Genomes;
+                pool = TricklePoolFiles.Load(replay.Record.Path, replay.Record.Config);
             }
             catch (Exception e)
             {
@@ -204,7 +204,7 @@ namespace Evosim.Theatre
                 return null;
             }
 
-            var world = new World(replay.Record.Config, replay.Record.Seed, pool);
+            var world = new World(replay.Record.Config, replay.Record.Seed, pool?.Genomes, pool?.Weights);
 
             // No run directory, so no divergence dumps: the theatre writes nothing into a record.
             // A body that diverges in the replay still dies as a counted Diverged death, which is

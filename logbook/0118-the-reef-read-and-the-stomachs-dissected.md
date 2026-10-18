@@ -47,8 +47,8 @@ at 5,000 s, was gone by 9,027 s. The pre-registered reading for "L2 holds and L3
 "a line starts and dies; read whether the larder was eaten out or the children were placed
 off it", and the dissection below answers it: neither, quite.
 
-**The dissection** (an Opus subagent, 2026-09-24 morning, on the owner's question "why are
-stomachs not evolving?"; `logbook/specs/r47-read/tables.txt` and `ages.txt`, made by
+**The dissection** (an Opus subagent, 2026-09-24 morning, on the owner's question why
+stomachs are not evolving; `logbook/specs/r47-read/tables.txt` and `ages.txt`, made by
 `scripts/reads/stomachs.py`, `tables.py` and `ages.py` from `lineage.jsonl`, `positions.jsonl`,
 the snow dumps and `absorptive.jsonl`, whose `densityHere` is the snow each eater was actually
 fed at). Every stomach born in the round, 1,110 of them, by source and fate:

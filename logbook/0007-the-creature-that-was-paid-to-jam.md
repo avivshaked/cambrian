@@ -2,11 +2,9 @@
 
 **2026-08-02**  ·  Milestone 2
 
-This one starts with a question rather than a bug report:
-
-> i think that if you have two 3d rectangles connected to each other directly, and self collision
-> is not allowed, unless you're adding some kind of connector, it's not likely to allow a lot of
-> actuation. no?
+This one starts with a question rather than a bug report. The owner doubted that two 3D boxes joined
+directly could actuate much once self-collision was off. Without some kind of connector between them, they
+thought, it was not likely. Was that right?
 
 The geometry in the question is right, and the particular case it worries about turns out to
 be safe. But checking why it was safe uncovered two faults. Creatures were being paid to jam

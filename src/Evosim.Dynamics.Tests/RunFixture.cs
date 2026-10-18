@@ -41,10 +41,10 @@ namespace Evosim.Dynamics.Tests
     internal static class RunFixture
     {
         public const string RunDirectory =
-            @"D:\Projects\experiments\evolution-simulator\runs\r50fix-s4\2026-09-26-082436-6579c7d1";
+            @"D:\Projects\experiments\evolution-simulator\runs\r60fix-s4\2026-10-15-073606-82abede6";
 
         /// <summary>The recording's name, for the messages that say why it cannot serve.</summary>
-        private const string Recording = "r50fix-s4 (round 44's world on the round-50 build after D125 and the founder clamp's repair (D125 and D122's depth rule both off), the reef cover and the pool at 0, every rule at its default, seed 4)";
+        private const string Recording = "r60fix-s4 (round 44's world on the round-60 build, world state version 18, D185's glass margin for the islands at its default, which is 0, D161's drag on turning, D162's touch of the rock and anchoring cell and D167's leaf smell and no-corpse rule at their defaults, which are off, every cell type's bud weight 1, D151's two-season shape and weather at their defaults, which are off, the season at its default, which is off, D149's floor pool share at its default, which is 0, D144's drive sense and D146's one brain at their defaults, which are off, D135's drive, D137's friction and the nursery's LaySnow at their defaults, which are off, D132's settled decay at its default, which is off, D129's mouths at the corpses at its default, which is off, D127's and D128's rules off, the reef cover and the pool at 0, every rule at its default, seed 4)";
 
         public const string Snapshot = "000020000.jsonl";
 

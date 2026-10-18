@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nursery room · genome</title>
+<link rel="stylesheet" href="nursery.css">
+<style>
+  /* The hero is the brain, drawn as a graph that moves with its activity. The body it drives sits
+     beside it, and where the genome came from on the right. */
+  .page { grid-template-columns: 28rem minmax(0, 1fr) 28rem; grid-template-rows: minmax(0, 1.2fr) minmax(0, 1fr);
+    grid-template-areas: "body brain line" "graph brain line"; }
+  @media (min-aspect-ratio: 2/1) { .page { grid-template-columns: 32rem minmax(0, 1fr) 30rem 26rem;
+    grid-template-areas: "body brain line chg" "graph brain line chg"; } .p-chg { display: flex !important; } .chg-in-line { display: none; } }
+  @media (max-width: 1600px) { .page { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 40rem 24rem 24rem;
+    grid-template-areas: "brain brain" "body line" "graph line"; } }
+  .p-body { grid-area: body; } .p-graph { grid-area: graph; } .p-brain { grid-area: brain; } .p-line { grid-area: line; } .p-chg { grid-area: chg; display: none; }
+
+  .keyrow { display: flex; flex-wrap: wrap; font-size: .8rem; color: var(--ink-lo); margin-bottom: .3rem; }
+  .keyrow > span { display: inline-flex; align-items: center; margin-right: 1.3rem; white-space: nowrap; }
+  .keyrow svg { margin-right: .45rem; }
+  #c-brain .lk { fill: none; }
+  #c-brain .lk.flow { stroke-dasharray: 2 7; animation: flow 1.6s linear infinite; }
+  @keyframes flow { to { stroke-dashoffset: -18; } }
+  #c-brain .node { animation: act 2.8s ease-in-out infinite; }
+  @keyframes act { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+  #c-brain text { font-size: .85rem; }
+  .chg { display: grid; grid-template-columns: 1.2rem 1fr auto; font-family: var(--mono); font-size: .9rem; padding: .35rem 0; border-bottom: 1px solid var(--rule); align-items: center; }
+  .chg .op { color: var(--ink-hi); } .chg .what { color: var(--ink); } .chg .v { color: var(--ink-lo); } .chg .v b { color: var(--ink-hi); font-weight: 400; }
+  .chg.new .op, .chg.new .v b { color: var(--sig); }
+  .btns { display: flex; flex-wrap: wrap; margin-top: auto; padding-top: .8rem; }
+  .btns .btn { margin: 0 .5rem .5rem 0; }
+  .p-body svg, .p-graph svg { display: block; width: 100%; flex: 1; min-height: 0; }
+</style>
+</head>
+<body>
+<svg class="caustics" aria-hidden="true"><filter id="caus"><feTurbulence type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="4"/>
+  <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.95  0 0 0 0 1  0 0 0 -2.6 1.55"/></filter><rect width="100%" height="100%" filter="url(#caus)" opacity="0.045"/></svg>
+
+<header class="strip">
+  <span class="brand">nursery room</span>
+  <nav class="tabs"><a class="tab"><b>1</b>REGISTRY</a><a class="tab"><b>2</b>RECIPE</a><a class="tab"><b>3</b>RUN</a><a class="tab"><b>4</b>TANK</a><a class="tab on"><b>5</b>GENOME</a></nav>
+  <span class="crumb">#8 <b>brain2-pay-path</b> · gen <b>99</b> top · body <b>1</b> · born gen <b>99</b></span>
+  <span class="spacer"></span>
+  <div class="machine"><span>machine</span><span class="meter"><i style="width:25%"></i><u style="left:50%"></u></span><span><span class="hi">8</span> of <span class="hi">16</span> cap · 32 logical</span></div>
+</header>
+
+<main class="page">
+  <!-- source: the genome's developed phenotype: any number of parts and joints, drawn from development. -->
+  <section class="panel p-body" aria-label="body plan">
+    <div class="head"><span class="kicker">Body</span><span class="q">What does the brain drive?</span><span class="aside"><span class="tag">PNG</span></span></div>
+    <svg id="c-body" viewBox="0 0 420 230" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <radialGradient id="bx" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#eaf6f8"/><stop offset="1" stop-color="#4d6a73"/></radialGradient>
+        <linearGradient id="cp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0fafc"/><stop offset="1" stop-color="#5a7882"/></linearGradient>
+        <filter id="soft"><feGaussianBlur stdDeviation="6"/></filter>
+      </defs>
+      <ellipse cx="200" cy="175" rx="150" ry="14" fill="#5ef0ff" opacity=".08" filter="url(#soft)"/>
+      <rect x="70" y="72" width="104" height="92" rx="12" fill="url(#bx)"/>
+      <text x="112" y="124" style="fill:#03111a;font-size:16px">0</text>
+      <rect x="196" y="80" width="150" height="76" rx="38" fill="url(#cp)"/>
+      <text x="264" y="124" style="fill:#03111a;font-size:16px">1</text>
+      <circle cx="185" cy="118" r="9" fill="#03111a" stroke="#5ef0ff" stroke-width="2"/>
+      <path d="M232 192 A 50 50 0 0 0 310 192" fill="none" stroke="#5ef0ff" stroke-dasharray="3 4" opacity=".7"/>
+      <path d="M306 186 l6 6 -8 2z" fill="#5ef0ff" opacity=".7"/>
+      <text x="196" y="218" style="font-size:12px">twist ±0.59 rad · power 6.0</text>
+      <text x="40" y="38" style="font-size:12px;fill:#93b4bd">part 0 · absorptive box, 0.23 × 0.23 × 0.15 m</text>
+      <text x="214" y="66" style="font-size:12px;fill:#93b4bd">part 1 · link capsule</text>
+    </svg>
+    <div class="field"><span class="field__label">founder draw · kept as body</span><span class="field__value">13 · 1</span></div>
+    <div class="field"><span class="field__label">drive: threshold · reaction · hold · release</span><span class="field__value">0.14 · 0.70 · 0.16 · 0.44</span></div>
+  </section>
+
+  <!-- source: the genome's node graph, whatever its size. -->
+  <section class="panel p-graph" aria-label="genome graph">
+    <div class="head"><span class="kicker">Genome graph</span><span class="q">How the body grows</span></div>
+    <svg viewBox="0 0 420 170" preserveAspectRatio="xMidYMid meet">
+      <rect x="20" y="30" width="140" height="58" rx="8" fill="rgba(94,240,255,.06)" stroke="rgba(150,230,255,.3)"/>
+      <text x="34" y="54" style="fill:#e8f8fc;font-size:14px">node 0 · root</text><text x="34" y="74" style="font-size:11px">absorptive box · ×1</text>
+      <rect x="260" y="30" width="140" height="58" rx="8" fill="rgba(94,240,255,.06)" stroke="rgba(150,230,255,.3)"/>
+      <text x="274" y="54" style="fill:#e8f8fc;font-size:14px">node 1</text><text x="274" y="74" style="font-size:11px">link capsule · ×1</text>
+      <path d="M160 59 L256 59" stroke="#5ef0ff" stroke-width="1.5" opacity=".7"/><path d="M256 59 l-8 -4 v8z" fill="#5ef0ff" opacity=".7"/>
+      <text x="186" y="50" style="font-size:11px">edge 1</text><text x="180" y="80" style="font-size:11px">+y → −y</text>
+      <text x="20" y="122" style="font-size:12px">recursion limit 1 on both nodes, so the graph grows</text>
+      <text x="20" y="140" style="font-size:12px">exactly the two parts above. Kept fixed: only the</text>
+      <text x="20" y="158" style="font-size:12px">brain evolves in this experiment.</text>
+    </svg>
+  </section>
+
+  <!-- source: the genome's brain: inputs grouped by part in its order, hidden units, one output group per joint. Changes are against the base parent in tank-crossovers.jsonl. -->
+  <section class="panel hero p-brain" aria-label="brain">
+    <div class="head"><span class="kicker">Brain</span><span class="q">What has it grown into?</span>
+      <span class="aside">14 senses · 5 hidden · 2 out · 56 links<span class="tag on" style="margin-left:1rem">all</span><span class="tag">changed</span><span class="tag">|w| > 0.2</span><span class="tag" style="margin-left:1rem">PNG · SVG</span></span></div>
+    <div class="keyrow">
+      <span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="#5ef0ff" stroke-width="3" opacity=".7"/></svg>positive · width is |weight|</span>
+      <span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="#c4dde3" stroke-width="3" stroke-dasharray="4 3" opacity=".6"/></svg>negative</span>
+      <span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="#e6cf86" stroke-width="2"/><circle cx="13" cy="4" r="3" fill="#e6cf86"/></svg>changed from base parent</span>
+      <span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="#6d8e97" stroke-dasharray="1 3"/></svg>in parent, gone here</span>
+      <span><svg width="12" height="12"><circle cx="6" cy="6" r="5" fill="#5ef0ff"/></svg>unit lit by its activity, replaying exam draw 7</span>
+    </div>
+    <svg class="chart" id="c-brain"></svg>
+  </section>
+
+  <!-- source: tank-best.jsonl and tank-crossovers.jsonl: the base-parent line and the donor. -->
+  <aside class="panel p-line" aria-label="where it came from">
+    <div class="head"><span class="kicker">Lineage</span><span class="q">Where did it come from?</span></div>
+    <div class="field"><span class="field__label">score, running mean</span><span class="field__value">546.7 <span class="unit">over 16 episodes</span></span></div>
+    <div class="field"><span class="field__label">born · made by</span><span class="field__value">gen 99 · crossover, mutated</span></div>
+    <div class="field"><span class="field__label">base parent</span><span class="field__value">gen 98 · #12 · 521.3</span></div>
+    <div class="field"><span class="field__label">donor</span><span class="field__value">gen 98 · #40 · 498.0</span></div>
+    <div class="field"><span class="field__label">route · end · d</span><span class="field__value">[0,1] · sense · 0.027</span></div>
+    <div class="kicker" style="margin:.8rem 0 .2rem">base-parent line · score</div>
+    <svg id="c-anc" style="display:block;width:100%;height:7rem"></svg>
+    <div class="chg-in-line">
+      <div class="section"><div class="head" style="margin-bottom:.2rem"><span class="kicker">Changed from base parent</span><span class="aside">6</span></div>
+        <div class="chg new"><span class="op">+</span><span class="what">chemical·0 → h3</span><span class="v"><b>+0.41</b></span></div>
+        <div class="chg new"><span class="op">+</span><span class="what">scent·1 → h3</span><span class="v"><b>−0.22</b></span></div>
+        <div class="chg new"><span class="op">~</span><span class="what">h2 → power</span><span class="v">0.31 → <b>0.38</b></span></div>
+        <div class="chg new"><span class="op">~</span><span class="what">depth·0 → bend</span><span class="v">−0.52 → <b>−0.47</b></span></div>
+        <div class="chg"><span class="op">~</span><span class="what">bias h4</span><span class="v">0.00 → <b>0.06</b></span></div>
+        <div class="chg"><span class="op">−</span><span class="what">flow y·0 → bend</span><span class="v">was −0.12</span></div>
+        <div class="chg"><span class="op">→</span><span class="what">power's inputs, from the donor</span><span class="v">9 links</span></div>
+      </div>
+    </div>
+    <div class="btns"><a class="btn btn--primary">SWIM IT IN THE TANK</a><a class="btn">COMPARE WITH PARENT</a><a class="btn">EXPORT GENOME JSON</a><a class="btn">EXPORT FOR BLENDER</a></div>
+  </aside>
+
+  <!-- source: the diff of this genome against its base parent. -->
+  <aside class="panel p-chg" aria-label="what changed">
+    <div class="head"><span class="kicker">Changed from base parent</span><span class="aside">6</span></div>
+    <div class="chg new"><span class="op">+</span><span class="what">chemical·0 → h3</span><span class="v"><b>+0.41</b></span></div>
+    <div class="chg new"><span class="op">+</span><span class="what">scent·1 → h3</span><span class="v"><b>−0.22</b></span></div>
+    <div class="chg new"><span class="op">~</span><span class="what">h2 → power</span><span class="v">0.31 → <b>0.38</b></span></div>
+    <div class="chg new"><span class="op">~</span><span class="what">depth·0 → bend</span><span class="v">−0.52 → <b>−0.47</b></span></div>
+    <div class="chg"><span class="op">~</span><span class="what">bias h4</span><span class="v">0.00 → <b>0.06</b></span></div>
+    <div class="chg"><span class="op">−</span><span class="what">flow y·0 → bend</span><span class="v">was −0.12</span></div>
+    <div class="chg"><span class="op">→</span><span class="what">power's inputs, from the donor</span><span class="v">9 links</span></div>
+    <p class="note" style="margin-top:.6rem">Links the crossover brought from the donor are listed by route, not one by one.</p>
+  </aside>
+</main>
+
+<footer class="bar">
+  <span class="hint"><span class="key">P</span>parent</span>
+  <span class="hint"><span class="key">D</span>donor</span>
+  <span class="hint"><span class="key">C</span>changed only</span>
+  <span class="hint"><span class="key">T</span>swim it</span>
+  <span class="spacer"></span>
+  <span>genome from tank-best.jsonl, gen 99 · all weights invented</span>
+</footer>
+
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+const el = (p, tag, a = {}, t) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (t != null) e.textContent = t; p.appendChild(e); return e; };
+function draw() {
+  const svg = document.getElementById('c-brain'); svg.innerHTML = '';
+  const w = svg.clientWidth, h = svg.clientHeight, R = parseFloat(getComputedStyle(document.documentElement).fontSize); svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  const defs = el(svg, 'defs'), fl = el(defs, 'filter', {id: 'gl', x: '-100%', y: '-100%', width: '300%', height: '300%'}); el(fl, 'feGaussianBlur', {stdDeviation: .45 * R});
+  const groups = [['PART 0 · BOX', ['depth', 'up', 'energy', 'flow x', 'flow y', 'scent', 'chemical']], ['PART 1 · CAPSULE', ['angle', 'rate', 'up', 'flow x', 'scent']], ['JOINT', ['drive', 'hold']]];
+  const n = groups.reduce((a, g) => a + g[1].length, 0), top = 1.6 * R, step = (h - top - 1.2 * R - groups.length * 1.6 * R) / (n - 1);
+  const xin = 7.5 * R, xh = w * .52, xo = w - 8 * R, ins = []; let y = top;
+  for (const [g, chs] of groups) { el(svg, 'text', {x: 0, y: y - .2 * R, style: 'fill:var(--ink-dim);letter-spacing:.1rem;font-size:.7rem'}, g); y += .9 * R;
+    for (const c of chs) { ins.push({x: xin, y, name: c}); el(svg, 'text', {x: 0, y: y + .3 * R, style: 'fill:var(--ink)'}, c); y += step; } y += .7 * R; }
+  const hid = [0, 1, 2, 3, 4].map(i => ({x: xh, y: h * (.14 + i * .18), name: 'h' + (i + 1)}));
+  const outs = [{x: xo, y: h * .38, name: 'power'}, {x: xo, y: h * .66, name: 'bend'}];
+  let s = 3; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const link = (a, b, wgt, mode) => {
+    const d = `M${a.x + .5 * R} ${a.y} C ${(a.x + b.x) / 2} ${a.y}, ${(a.x + b.x) / 2} ${b.y}, ${b.x - .9 * R} ${b.y}`;
+    if (mode === 'gone') { el(svg, 'path', {class: 'lk', d, style: 'stroke:var(--ink-dim);stroke-width:1;stroke-dasharray:1 4'}); return; }
+    if (mode === 'chg') { el(svg, 'path', {class: 'lk', d, style: 'stroke:var(--sig);stroke-width:2'}); el(svg, 'circle', {cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, r: .28 * R, style: 'fill:var(--sig)'}); return; }
+    const pos = wgt > 0, strong = Math.abs(wgt) > .35;
+    el(svg, 'path', {class: 'lk' + (pos && strong ? ' flow' : ''), d, style: `stroke:${pos ? 'var(--run)' : 'var(--ink)'};stroke-width:${(.6 + Math.abs(wgt) * 3).toFixed(1)};opacity:${pos ? (strong ? .75 : .32) : .3};${pos ? '' : 'stroke-dasharray:5 4'}`}); };
+  ins.forEach(i => { hid.forEach(hh => { if (r() < .36) link(i, hh, (r() - .45) * 1.4); }); outs.forEach(o => { if (r() < .4) link(i, o, (r() - .5) * 1.2); }); });
+  hid.forEach(hh => outs.forEach(o => link(hh, o, (r() - .3) * 1.4)));
+  link(ins[6], hid[2], .41, 'chg'); link(ins[11], hid[2], -.22, 'chg'); link(hid[1], outs[0], .38, 'chg'); link(ins[0], outs[1], -.47, 'chg'); link(ins[4], outs[1], -.12, 'gone');
+  const node = (p, rad, lab, delay, sq) => {
+    el(svg, 'circle', {class: 'node', cx: p.x, cy: p.y, r: rad * 1.9, style: `fill:var(--run);filter:url(#gl);animation-delay:${delay}s`});
+    if (sq) el(svg, 'rect', {x: p.x - rad, y: p.y - rad * 1.4, width: rad * 2, height: rad * 2.8, rx: rad * .4, style: 'fill:#03111a;stroke:var(--run);stroke-width:1.6'});
+    else el(svg, 'circle', {cx: p.x, cy: p.y, r: rad, style: 'fill:#03111a;stroke:var(--run);stroke-width:1.3'});
+    el(svg, 'circle', {class: 'node', cx: p.x, cy: p.y, r: rad * .55, style: `fill:var(--run);animation-delay:${delay}s`});
+    if (lab) el(svg, 'text', {x: p.x + rad + .5 * R, y: p.y + .3 * R, class: 'halo', style: 'fill:var(--ink-hi);font-size:1rem'}, lab); };
+  ins.forEach((i, k) => node(i, .38 * R, null, -(k * .37) % 2.8));
+  hid.forEach((hh, k) => { node(hh, .95 * R, null, -k * .61); el(svg, 'text', {x: hh.x, y: hh.y + 2.6 * R, 'text-anchor': 'middle', class: 'halo', style: 'fill:var(--ink)'}, hh.name); });
+  outs.forEach((o, k) => node(o, .75 * R, o.name, -k * 1.1, true));
+  el(svg, 'text', {x: xh - 2.5 * R, y: hid[0].y - 2.1 * R, style: 'fill:var(--ink-dim);letter-spacing:.1rem;font-size:.7rem'}, 'HIDDEN · 5');
+  el(svg, 'text', {x: xo - 2 * R, y: outs[0].y - 2.6 * R, style: 'fill:var(--ink-dim);letter-spacing:.1rem;font-size:.7rem'}, 'OUT · JOINT 1');
+
+  const a = document.getElementById('c-anc'); a.innerHTML = ''; const aw = a.clientWidth, ah = a.clientHeight; a.setAttribute('viewBox', `0 0 ${aw} ${ah}`);
+  const pts = [[94, 502], [95, 498], [96, 517], [97, 509], [98, 521], [99, 547]], X = g => 1.2 * R + (g - 94) * (aw - 2.4 * R) / 5, Y = v => ah - 1.4 * R - (v - 480) / 80 * (ah - 2.4 * R);
+  el(a, 'polyline', {points: pts.map(([g, v]) => X(g) + ',' + Y(v)).join(' '), style: 'fill:none;stroke:var(--run-mid);stroke-width:1.4'});
+  pts.forEach(([g, v], i) => { el(a, 'circle', {cx: X(g), cy: Y(v), r: i === 5 ? .35 * R : .25 * R, style: i === 5 ? 'fill:var(--run);filter:var(--glow)' : 'fill:#03111a;stroke:var(--run-mid)'}); el(a, 'text', {x: X(g), y: ah - .2 * R, 'text-anchor': 'middle'}, 'g' + g); });
+}
+draw(); let t; addEventListener('resize', () => { clearTimeout(t); t = setTimeout(draw, 120); });
+</script>
+</body>
+</html>

@@ -521,6 +521,13 @@ namespace Evosim.Core
         // never looked at.
 
         public void Deposit(FieldPoint at, float joules) => Deposit(at.HeightY, joules, at.Patch);
+
+        public void DepositExact(FieldPoint at, double amount)
+        {
+            if (!(amount > 0d)) return;
+            ValidatePatch(at.Patch);
+            _stock[Cell(LayerOf(at.HeightY), at.Patch)] += amount;
+        }
         public float DensityAt(FieldPoint at) => DensityAt(at.HeightY, at.Patch);
         public float EdibleDensityAt(FieldPoint at) => EdibleDensityAt(at.HeightY, at.Patch);
         public void Demand(FieldPoint at, float joules) => Demand(at.HeightY, joules, at.Patch);

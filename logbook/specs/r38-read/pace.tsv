@@ -23,7 +23,7 @@ r38-s3	09-15 02:09	09-15 12:15	10.10	3.68	3	4
 r38-s4	09-15 02:51	09-15 15:33	12.71	3.28	2	4
 r38-s5	09-15 09:18	09-15 21:08	11.84	1.82	1	4
 
-## D8, the machine in LOCAL time (+01:00; the manifests are UTC). Arm windows are the
+## D8, the machine in LOCAL time (the manifests are UTC). Arm windows are the
 ## manifests; a render is its scratch/logs/theatre-snap-*.out creation to its .log mtime;
 ## "other Unity" is every other batchmode process in scratch/logs over the same hours
 ## (the r38 build chain, the bed chain, the tank pace probes, the r39 smokes and digests).

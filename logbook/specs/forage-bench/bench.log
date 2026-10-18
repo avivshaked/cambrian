@@ -1,0 +1,62 @@
+bench from 21:41:30: run D:\Projects\experiments\evolution-simulator\runs\r52-s1\2026-09-29-113958-a88ee58a, config D:\Projects\experiments\evolution-simulator\scratch\wt-forage\scratch\forage\runs\cfg52\2026-09-29-194326-904e93c8\config.json
+cpu 68 % before push0 at 21:42:31
+=== swim probe push0: D:\Projects\experiments\evolution-simulator\runs\r52-s1\2026-09-29-113958-a88ee58a, config 904e93c824c20d75 (matches)
+  limb push 0
+  sensor constant 0.5, uniform water 0 m/s along x
+  solver: density 1000, Cd 1.5, panels/axis 2, added mass 0.5, fluidAccel 1, excess 0.019999999552965164, neutralVol 0.25, offsetTorque True, perPart True, current none, bed none, floorSolid True, depth 45, limiters False
+Unhandled exception. System.IO.FileNotFoundException: Could not find file 'D:\Projects\experiments\evolution-simulator\runs\r52-s1\2026-09-29-113958-a88ee58a\snapshots\000030000.jsonl'.
+File name: 'D:\Projects\experiments\evolution-simulator\runs\r52-s1\2026-09-29-113958-a88ee58a\snapshots\000030000.jsonl'
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.CreateFile(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.Strategies.OSFileStreamStrategy..ctor(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.Strategies.FileStreamHelpers.ChooseStrategyCore(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.StreamReader.ValidateArgsAndOpenPath(String path, Encoding encoding, Int32 bufferSize)
+   at System.IO.ReadLinesIterator.CreateIterator(String path, Encoding encoding, StreamReader reader)
+   at Evosim.SwimProbe.Program.Main(String[] args) in D:\Projects\experiments\evolution-simulator\scratch\wt-forage\src\Evosim.SwimProbe\Program.cs:line 88
+push0 exit -532462766 at 21:42:35
+cpu 71 % before push0.1 at 21:43:35
+=== swim probe push0.1: D:\Projects\experiments\evolution-simulator\runs\r52-s1\2026-09-29-113958-a88ee58a, config 904e93c824c20d75 (matches)
+  limb push 0.1
+  sensor constant 0.5, uniform water 0 m/s along x
+  solver: density 1000, Cd 1.5, panels/axis 2, added mass 0.5, fluidAccel 1, excess 0.019999999552965164, neutralVol 0.25, offsetTorque True, perPart True, current none, bed none, floorSolid True, depth 45, limiters False
+Unhandled exception. System.IO.FileNotFoundException: Could not find file 'D:\Projects\experiments\evolution-simulator\runs\r52-s1\2026-09-29-113958-a88ee58a\snapshots\000030000.jsonl'.
+File name: 'D:\Projects\experiments\evolution-simulator\runs\r52-s1\2026-09-29-113958-a88ee58a\snapshots\000030000.jsonl'
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.CreateFile(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.Strategies.OSFileStreamStrategy..ctor(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.Strategies.FileStreamHelpers.ChooseStrategyCore(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.StreamReader.ValidateArgsAndOpenPath(String path, Encoding encoding, Int32 bufferSize)
+   at System.IO.ReadLinesIterator.CreateIterator(String path, Encoding encoding, StreamReader reader)
+   at Evosim.SwimProbe.Program.Main(String[] args) in D:\Projects\experiments\evolution-simulator\scratch\wt-forage\src\Evosim.SwimProbe\Program.cs:line 88
+push0.1 exit -532462766 at 21:43:38
+cpu 73 % before push0.3 at 21:44:39
+=== swim probe push0.3: D:\Projects\experiments\evolution-simulator\runs\r52-s1\2026-09-29-113958-a88ee58a, config 904e93c824c20d75 (matches)
+  limb push 0.3
+  sensor constant 0.5, uniform water 0 m/s along x
+  solver: density 1000, Cd 1.5, panels/axis 2, added mass 0.5, fluidAccel 1, excess 0.019999999552965164, neutralVol 0.25, offsetTorque True, perPart True, current none, bed none, floorSolid True, depth 45, limiters False
+Unhandled exception. System.IO.FileNotFoundException: Could not find file 'D:\Projects\experiments\evolution-simulator\runs\r52-s1\2026-09-29-113958-a88ee58a\snapshots\000030000.jsonl'.
+File name: 'D:\Projects\experiments\evolution-simulator\runs\r52-s1\2026-09-29-113958-a88ee58a\snapshots\000030000.jsonl'
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.CreateFile(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.Strategies.OSFileStreamStrategy..ctor(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.Strategies.FileStreamHelpers.ChooseStrategyCore(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.StreamReader.ValidateArgsAndOpenPath(String path, Encoding encoding, Int32 bufferSize)
+   at System.IO.ReadLinesIterator.CreateIterator(String path, Encoding encoding, StreamReader reader)
+   at Evosim.SwimProbe.Program.Main(String[] args) in D:\Projects\experiments\evolution-simulator\scratch\wt-forage\src\Evosim.SwimProbe\Program.cs:line 88
+push0.3 exit -532462766 at 21:44:42
+cpu 70 % before push1 at 21:45:42
+=== swim probe push1: D:\Projects\experiments\evolution-simulator\runs\r52-s1\2026-09-29-113958-a88ee58a, config 904e93c824c20d75 (matches)
+  limb push 1
+  sensor constant 0.5, uniform water 0 m/s along x
+  solver: density 1000, Cd 1.5, panels/axis 2, added mass 0.5, fluidAccel 1, excess 0.019999999552965164, neutralVol 0.25, offsetTorque True, perPart True, current none, bed none, floorSolid True, depth 45, limiters False
+Unhandled exception. System.IO.FileNotFoundException: Could not find file 'D:\Projects\experiments\evolution-simulator\runs\r52-s1\2026-09-29-113958-a88ee58a\snapshots\000030000.jsonl'.
+File name: 'D:\Projects\experiments\evolution-simulator\runs\r52-s1\2026-09-29-113958-a88ee58a\snapshots\000030000.jsonl'
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.CreateFile(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.Strategies.OSFileStreamStrategy..ctor(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.Strategies.FileStreamHelpers.ChooseStrategyCore(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.StreamReader.ValidateArgsAndOpenPath(String path, Encoding encoding, Int32 bufferSize)
+   at System.IO.ReadLinesIterator.CreateIterator(String path, Encoding encoding, StreamReader reader)
+   at Evosim.SwimProbe.Program.Main(String[] args) in D:\Projects\experiments\evolution-simulator\scratch\wt-forage\src\Evosim.SwimProbe\Program.cs:line 88
+push1 exit -532462766 at 21:45:46
+== bench done at 21:45:46

@@ -1,0 +1,34 @@
+=== checkpoint fidelity
+  checkpoint D:\Projects\experiments\evolution-simulator\runs\r56-s2\2026-10-04-183358-a174d013\checkpoints\000030000.ckpt at 30000 s
+  stepping   200 s on 4 threads, then writing and restoring again
+  stepped to 30200 s: 7830 living, 7830 bodies
+
+  twin step: the two worlds agreed after each of 100 physics steps and 2 metabolic steps
+  member                                           owners differing   first
+  body .Senses.<Scent>k__BackingField._v[]                    7830   body 80716.Senses.<Scent>k__BackingField._v[20973]: 15.692838 against 15.715476
+  body .Senses.<Scent>k__BackingField._v                      7830   body 80716.Senses.<Scent>k__BackingField._v: ... 420 more elements differ
+
+  body 80716.Senses.<Scent>k__BackingField._v[20973]: 15.692838 against 15.715476
+  body 80716.Senses.<Scent>k__BackingField._v[21895]: 8.837564 against 8.9180565
+  body 80716.Senses.<Scent>k__BackingField._v[21896]: 12.990286 against 13.233553
+  body 80716.Senses.<Scent>k__BackingField._v[21897]: 14.11726 against 14.412062
+  body 80716.Senses.<Scent>k__BackingField._v[21898]: 11.9769535 against 12.20498
+  body 80716.Senses.<Scent>k__BackingField._v[21899]: 7.024611 against 7.0766096
+  body 80716.Senses.<Scent>k__BackingField._v: ... 420 more elements differ
+  body 80918.Senses.<Scent>k__BackingField._v[20973]: 15.692838 against 15.715476
+  body 80918.Senses.<Scent>k__BackingField._v[21895]: 8.837564 against 8.9180565
+  body 80918.Senses.<Scent>k__BackingField._v[21896]: 12.990286 against 13.233553
+  body 80918.Senses.<Scent>k__BackingField._v[21897]: 14.11726 against 14.412062
+  body 80918.Senses.<Scent>k__BackingField._v[21898]: 11.9769535 against 12.20498
+  body 80918.Senses.<Scent>k__BackingField._v[21899]: 7.024611 against 7.0766096
+  body 80918.Senses.<Scent>k__BackingField._v: ... 420 more elements differ
+  body 81318.Senses.<Scent>k__BackingField._v[20973]: 15.692838 against 15.715476
+  body 81318.Senses.<Scent>k__BackingField._v[21895]: 8.837564 against 8.9180565
+  body 81318.Senses.<Scent>k__BackingField._v[21896]: 12.990286 against 13.233553
+  body 81318.Senses.<Scent>k__BackingField._v[21897]: 14.11726 against 14.412062
+  body 81318.Senses.<Scent>k__BackingField._v[21898]: 11.9769535 against 12.20498
+  body 81318.Senses.<Scent>k__BackingField._v[21899]: 7.024611 against 7.0766096
+  ... 54790 more
+
+FAIL: 54810 difference(s) in 7830 body(ies) and 0 organism(s)
+exit 1

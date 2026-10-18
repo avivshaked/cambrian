@@ -184,7 +184,7 @@ _creature.Bodies[part.ParentIndex].AddTorque(-worldTorque);
 What makes this worth a section rather than a footnote is that **it is invisible to almost
 every check you would naturally write.** Nothing was NaN. Nothing came apart at the joints.
 The geometry was correct. The creatures moved, and vigorously. Every assertion in the
-headless test passed, and it took a human pressing Play and saying "that's just spinning" to
+headless test passed, and it took a human pressing Play and saying that it was just spinning to
 find it.
 
 The assertion that does catch it is not a tolerance or a heuristic. With no gravity, no drag

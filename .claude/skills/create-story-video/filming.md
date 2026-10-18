@@ -46,8 +46,8 @@ By the project's window route, which nothing in this skill changes:
 **The far shots' fog.** The world's cameras (`Arrival`, `Descent`, `Card` and `Floor`) look through tens of
 metres of water. The story look's fog, 0.022, leaves a body 30 m off about two thirds of its light and one
 55 m off about a quarter. So round 49's first Arrival at 4K read flat and soft: its frames ran from 31 to 70
-of 255, and its edges were weaker than in nine seconds out of ten of round 48's film (the owner, 2026-09-28:
-"it looks really soft and somewhat dark"). The setting `far_fog` gives those four cameras a fog of their
+of 255, and its edges were weaker than in nine seconds out of ten of round 48's film (the owner, 2026-09-28,
+found it really soft and somewhat dark). The setting `far_fog` gives those four cameras a fog of their
 own, and the close cameras keep the look's. `plan` writes it into each far scene of the story. The theatre
 sets it before the take's first render and says so in its log, and `collect` refuses a far clip whose log
 does not. `far_fog` is part of a far shot's key, so changing it films the far shots again and no others.
@@ -160,7 +160,7 @@ In the film's folder, for pass k, numbered from 1 and going on from the highest 
 | Who | Brief | Reads | Writes |
 |---|---|---|---|
 | the tool | [film.py](film.py) | `shots.json`, the settings, the run's lineage and stats, the director's output | the pass's files, the clips, their sheets and `clips.json` |
-| the filmer | [filmer-brief.md](filmer-brief.md) | what the tool prints | the tool's printouts, through the shell, and its answer |
+| the filmer | [filmer-brief.md](filmer-brief.md) | what the tool prints | the tool's printouts, and its answer |
 | the reviewer | [film-reviewer-brief.md](film-reviewer-brief.md) | `shots.json`, `clips.json`, the sheets and the reference sheet | nothing but its answer |
 | the main session | this file | what the tool prints, the answers, the owner's words | those, saved |
 | the owner | | the plan's counts, the faults and the sheets | the go on the render, and what to do about a fault |
@@ -197,7 +197,7 @@ You are the filmer of a story film.
 Your brief is <checkout>\.claude\skills\create-story-video\filmer-brief.md. Read it whole and follow it.
 The film's folder is <folder>.
 You work on pass <k>, run <r>.
-Write only inside the film's folder, and only through the shell. Never write in your session scratchpad or in TEMP.
+Write only inside the film's folder. Never write in your session scratchpad or in TEMP.
 Your time budget is 20 minutes.
 ```
 
@@ -225,25 +225,25 @@ The main session runs only the lines below that name it. `plan`, `start` and `co
    owner you are blocked on the machine, give what it listed, and ask whether to go ahead. Save their words
    in `film-<k>-owner.md`. Go on only on `MACHINE: FREE` or their yes.
 3. The look test, before the first pass of a film and whenever `size`, `far_fog` or the story look changes.
-   Nothing is filmed in full before the owner agrees its look (the owner, 2026-09-28: "stop wasting time by
-   rendering a whole bunch of things before we agree on the right settings").
+   Nothing is filmed in full before the owner agrees its look (the owner ruled on 2026-09-28 to
+   stop spending time rendering many things before the settings are agreed).
    - Film a few shots only: the flattest far shots and one of each close camera, at 1920x1080, and only the
      values being weighed. A value already filmed is read from its clip.
    - Film each option for about 3 s, never a window's full length. The test's `story.json` asks 3 s of each
      scene. Its `windows.json` keeps each recorded window's own `from` and `to`, which the theatre checks
      against the recording. A scene may be shorter than its window. Ten options then take about five minutes
-     where ten full windows took thirty (the owner, 2026-09-28: "no that's too long").
+     where ten full windows took thirty (the owner, 2026-09-28, found ten full windows too long).
    - Put every option of one shot at the same place in the story, modulo 6. A portrait's move is drawn
      from the scene's place: its family from the place modulo 3, its sense from the place over 3. So
      options at places 1, 2 and 3 film three different arcs. Round 49's focus test sat its options at
      places 1, 7, 13 and so on. It filled the places between with copies that have no window, and played
      only its own with `theatre-safari.ps1 -Scenes`. Under a story, `-Scenes` takes story numbers.
    - When the owner asks to choose, bring a sheet of a few options: one frame each, labelled, with a crop
-     at full size where the difference is fine. Otherwise bring one proposal. (Round 49's focus: "i'd like
-     a sheet with options, like we did for fog, and i'll tell you which ones works best for me".)
+     at full size where the difference is fine. Otherwise bring one proposal. (For round 49's focus the owner asked
+     for a sheet with options, as was done for fog, and said they would name the ones that work best for them.)
    - Judge them yourself, on a sheet beside the reference at the same camera. Read the tone, the edges and
-     the brightness as `collect` measures them, and read the frames by eye (the owner: "i want you to find
-     the best settings. you can see the film in the sheet").
+     the brightness as `collect` measures them, and read the frames by eye (the owner ruled that the agent finds
+     the best settings itself, since the film can be read in the sheet).
    - Bring the owner one proposal, with the sheet and the numbers it rests on, and not a menu. Save their
      words in `film-<k>-owner.md`. A no goes back to the test.
 4. Ask the owner for their go on the render, since they are asked before any Unity render (their standing
@@ -264,8 +264,8 @@ The main session runs only the lines below that name it. `plan`, `start` and `co
    - `CLIPS: PASS`: go on.
    - `CLIPS: FAIL`: show the owner the answer, and film the shots it names in pass k+1 from step 2 without
      waiting for them: the owner's go on the render covers every shot of the plan, so a shot that failed on a
-     detail is filmed again without asking (the owner, 2026-09-28: "why are you waiting on me to render a
-     missing shot?"). Fix the detail first, in the settings, never by hand. Ask only when the fix changes a
+     detail is filmed again without asking (the owner, 2026-09-28, asked why the agent was waiting on them to render a
+     missing shot). Fix the detail first, in the settings, never by hand. Ask only when the fix changes a
      shot, since a changed shot goes back to the shot list. After two passes in a row that failed, the owner
      rules what to do.
 8. Launch the reviewer for pass k. Save its answer in `film-<k>-review.md`, word for word.
@@ -288,21 +288,20 @@ Tell the owner when an answer says it stopped at its time budget, and how long t
 
 - **An offline pass of every shot, reviewed, before the 4K pass.** Round 49's 4K pass took about 2 h 45 min, and
   its review then faulted 25 of 41 shots for what they show, not how they look: descents that end in the sand,
-  leaves over the subject, arrivals from inside the water. None of that needs 4K to see (the owner, 2026-09-28:
-  "why didn't you render them in 'offline' quality first to review?"). The look test checks the look on a few
+  leaves over the subject, arrivals from inside the water. None of that needs 4K to see (the owner, 2026-09-28,
+  asked why they were not rendered in offline quality first, for review). The look test checks the look on a few
   shots; it never checked each shot's content. So the order becomes: every shot at a small size (about 960x540,
   no focus supersample), the film reviewer and the owner on those clips, fixes filmed again at that size, and only
   then the 4K pass of the shots that passed. Until the tool has the pass, film it by setting `size` for a pass and
   back, which films every shot again at each change, since the size is in every shot's key.
 
-- **No PNG frames on disk** (the owner, 2026-09-28: "skip the png write to disc"). The theatre's frame writer
+- **No PNG frames on disk** (the owner ruled on 2026-09-28 to skip the PNG write to disc). The theatre's frame writer
   hands each frame, as read back, straight to an ffmpeg process that encodes it on the card's video encoder
   (NVENC), in place of writing a PNG a frame and encoding them at the end. It is expected to take most of
   the CPU off the pass and to run it two to three times faster, but that is a guess until it is measured.
   Build it in the writer behind a switch, with the PNG path kept for stills and checks. Then film the same
   shots both ways, and compare a frame of each and the pace, before a film is made with it.
-- **The whole of steps 7 and 8 takes too long** (the owner, 2026-09-28: "well that's a lot. we need to work
-  on shortening this. but ok for this video."). Round 49's estimate was about two hours of filming and four
+- **The whole of steps 7 and 8 takes too long** (the owner, 2026-09-28, found it long, said it needs shortening, and accepted it for this video). Round 49's estimate was about two hours of filming and four
   to five of graphics, most of it in animator agents drawing one graphic at a time. The levers, measured
   where they can be: 3 s handles (already the default); frames straight to the card's encoder (above);
   several animators at once, since their time is mostly the agent's and not the machine's; and fewer
@@ -340,11 +339,11 @@ The tests stand in for the farm and the theatre, so its first real passes found 
   render target's height, so a supersampled 4K frame blurs a quarter as much as a plain 1080 one, and its
   Gaussian blur is gentler still. Round 49's options (`film/focus-2/`) softened a far crowd's edges by at
   most a fifth. The owner wants cinema-like shallow focus, and deferred it to a later video on its cost
-  (2026-09-28: "we can add this improvement in later videos"). It needs a lens pass of the theatre's own:
+  (2026-09-28, saying the improvement can be added in later videos). It needs a lens pass of the theatre's own:
   a depth-aware blur before URP's post-processing, sized as a share of the frame's height.
 - **The graphics card waits on the CPU.** Round 49's pass 3 drew and read back a 4K frame in 60 ms (a far
   shot) to 108 ms (a close-up with its focus blur). Writing it as a PNG took 320 to 344 ms of CPU, and two
   writer threads set the pace at about 165 ms a frame. The card read 30 to 40% busy while the CPU was
-  loaded, and the owner saw it ("i see the cpu churning, but the gpu barely moving").
+  loaded, and the owner saw the CPU churning while the GPU barely moved.
 - **The overlap has run only against stand-ins.** Its first real pass is the check that the theatre films
   one run while another run's windows are still being recorded into the same folder.

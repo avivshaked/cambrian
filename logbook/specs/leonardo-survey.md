@@ -2,8 +2,9 @@
 
 **2026-09-16**  ·  asked by the owner.
 
-> "have a look at the latest leonardo.ai documentation and find out if you could use it for
-> asset or skin creation for the theatre; capture the research and ideas"
+The owner asked for the latest leonardo.ai documentation to be read. The question was whether
+it could be used for asset or skin creation for the theatre. The research and ideas were to be
+captured.
 
 A Sonnet subagent did the reading on the web, read-only: no account, no upload, no API call,
 nothing installed. Several of Leonardo's own pages refused automated fetching, with 403 and

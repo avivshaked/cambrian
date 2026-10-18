@@ -4,8 +4,8 @@ Read `research/theatre-look/README.md`, the three earlier specs (`skin-spec.md`,
 `skin-spec-3.md`), then `unity/Assets/Theatre/TheatreSkin.cs`, `TheatreBody.shader`,
 `TheatreBed.shader`, `TheatreSnow.shader`, `WaterBounds.cs` and `SnapshotCamera.cs`.
 
-The owner ran the theatre on round 36 seed 1 and said: "I couldn't see the sun, or the water
-shimmer, the underwater ripple effect, or many of the things we discussed." They are not
+The owner ran the theatre on round 36 seed 1 and said they could not see the sun, the water shimmer, the underwater ripple effect or many of
+the other things we had discussed. They are not
 there. The three skin days were about bodies; the water has a colour, a fog and snow, and a
 caustic term painted on bodies from nowhere in particular. This day is the water's.
 

@@ -26,11 +26,49 @@ namespace Evosim.Farm
     /// </remarks>
     public sealed partial class Simulation
     {
+        // The trickle question (2026-10-09): a creature the world holds and the harness has built no
+        // body for, seen at a metabolic step before the world steps. The reconcile count leaves the
+        // trickle out (Reconcile.cs), so a trickle founder admitted in a step with no birth, death or
+        // floor spawn waits for a body until one of those happens. Read here and nowhere else; it is
+        // not in a checkpoint and nothing steps on it.
+        private readonly Dictionary<long, double> _bodilessSince = new Dictionary<long, double>();
+
+        /// <summary>Creature-steps at which a living creature had no body. 0 when the harness keeps up.</summary>
+        public long BodilessCreatureSteps { get; private set; }
+
+        /// <summary>Distinct creatures seen without a body at a metabolic step.</summary>
+        public long BodilessCreatures { get; private set; }
+
+        /// <summary>
+        /// The longest any creature went without a body, simulated seconds, counted from the
+        /// metabolic step that admitted it.
+        /// </summary>
+        public double LongestBodilessSeconds { get; private set; }
+
+        private void NoteBodiless(Organism creature, float seconds)
+        {
+            BodilessCreatureSteps++;
+
+            // Admitted in the last World.Step, at the second the clock still reads, so by now it has
+            // gone one metabolic step of physics without a body.
+            double now = World.ElapsedSeconds;
+            if (!_bodilessSince.TryGetValue(creature.Id, out double since))
+            {
+                since = now;
+                _bodilessSince[creature.Id] = since;
+                BodilessCreatures++;
+            }
+
+            double waited = now - since + seconds;
+            if (waited > LongestBodilessSeconds) LongestBodilessSeconds = waited;
+        }
+
         private void Metabolise()
         {
             long checkStarted = Now();
 
             CheckFinite();
+            FarmProbe.Mark(FarmProbe.FiniteFirst, checkStarted);
 
             // `finite`'s second bracket of the step, and the reason the phase is the one with two.
             long metaboliseStarted = NotePhase(PhaseFinite, checkStarted);
@@ -78,7 +116,11 @@ namespace Evosim.Farm
             for (int i = 0; i < living.Count; i++)
             {
                 Organism creature = living[i];
-                if (!_bodies.TryGetValue(creature.Id, out Body body)) continue;
+                if (!_bodies.TryGetValue(creature.Id, out Body body))
+                {
+                    NoteBodiless(creature, seconds);
+                    continue;
+                }
 
                 Creature solver = body.Solver;
 
@@ -109,6 +151,9 @@ namespace Evosim.Farm
                 // D083: the whole centre, so a grid or a vertex field feeds the body where it is.
                 // narrow: interval is the solver's double and Observe takes a float.
                 World.Observe(creature, centre, (float)interval);
+
+                // D162: what the body's grips formed since the last hand-over owe.
+                if (solver.CanGrip) World.OweGrip(creature, solver.DrainGripOwed());
 
                 if (body.Settled)
                 {
@@ -426,6 +471,7 @@ namespace Evosim.Farm
 
                 Resizes++;
                 _movedOutsideTheSolver = true;
+                body.Touched = true;
             }
         }
 

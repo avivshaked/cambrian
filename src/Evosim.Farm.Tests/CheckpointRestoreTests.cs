@@ -31,6 +31,7 @@ namespace Evosim.Farm.Tests
     /// count, so every count the test searches for is the same on every run.
     /// </para>
     /// </remarks>
+    [Collection(FarmProcessCollection.Name)]
     public class CheckpointRestoreTests
     {
         private readonly ITestOutputHelper _out;

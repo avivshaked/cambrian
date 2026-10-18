@@ -17,8 +17,9 @@ judgement: `script-check.py json` prints that data. It holds:
   picture;
 - for each passage: its sentences, exactly as `prose.md` has them; the lines of `facts.md` that hold
   them; the picture, with where to find it (the run, the bodies, the seconds, and the lines of
-  `facts.md` they come from); the few words shown on screen, if any; and how long the picture holds
-  without words after them;
+  `facts.md` they come from); the few words shown on screen, if any; how long the picture holds
+  without words after them; and, where its last sentence ends a paragraph, whether the voice reads the
+  next paragraph in the same read, since the narration packs paragraphs into reads by length alone;
 - notes for the owner, which are neither spoken nor shown.
 
 The script's directing is a first pass. The narration adds each sentence's timing, and the shot list then
@@ -66,7 +67,7 @@ You are the script composer of a story film.
 Your brief is <checkout>\.claude\skills\create-story-video\composer-brief.md. Read it whole and follow it.
 The film's folder is <folder>.
 You write draft <n>.
-Write only inside the film's folder, and only through the shell. Never write in your session scratchpad or in TEMP.
+Write only inside the film's folder. Never write in your session scratchpad or in TEMP.
 Your time budget is 15 minutes.
 ```
 

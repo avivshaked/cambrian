@@ -1,0 +1,32 @@
+# Computed (budget57.py). Day 1,000 s at 0.5, year 4000 s, season square. Weather rho 0.5. Reserve and spell in s of W.
+season amp	weather sigma	body	r	reserve median	reserve p90	deficit spell median	spell p90	mean income vs no cycle	who survives a p90 year on reserve
+0.30	0.0	light-bound	2.10	49	49	278	278	1.000	adults only
+0.30	0.0	light-bound	1.25	329	329	594	594	1.000	adults only
+0.30	0.0	matter-bound	2.10	0	0	0	0	0.970	all
+0.30	0.3	light-bound	2.10	76	209	338	526	1.011	adults only
+0.30	0.3	light-bound	1.25	445	900	670	1998	0.949	only the fullest adults
+0.30	0.3	matter-bound	2.10	0	9	0	148	0.959	all
+0.40	0.0	light-bound	2.10	88	88	366	366	1.000	adults only
+0.40	0.0	light-bound	1.25	508	508	734	734	1.000	adults near their gate
+0.40	0.0	matter-bound	2.10	0	0	0	0	0.949	all
+0.40	0.3	light-bound	2.10	124	368	428	612	0.997	adults near their gate
+0.40	0.3	light-bound	1.25	559	1014	1060	1998	1.009	only the fullest adults
+0.40	0.3	matter-bound	2.10	0	35	0	244	0.933	newborns and up
+0.50	0.0	light-bound	2.10	143	143	470	470	1.001	adults only
+0.50	0.0	light-bound	1.25	749	749	1998	1998	1.001	adults near their gate
+0.50	0.0	matter-bound	2.10	0	0	0	0	0.920	all
+0.50	0.3	light-bound	2.10	205	595	522	1010	1.007	adults near their gate
+0.50	0.3	light-bound	1.25	792	1139	1712	1998	1.022	only the fullest adults
+0.50	0.3	matter-bound	2.10	5	70	114	324	0.907	adults only
+0.60	0.0	light-bound	2.10	378	378	626	626	1.001	adults near their gate
+0.60	0.0	light-bound	1.25	999	999	1998	1998	1.001	only the fullest adults
+0.60	0.0	matter-bound	2.10	21	21	198	198	0.878	newborns and up
+0.60	0.3	light-bound	2.10	431	805	670	1998	1.015	only the fullest adults
+0.60	0.3	light-bound	1.25	1068	1343	1998	1998	0.983	none on reserve alone
+0.60	0.3	matter-bound	2.10	53	142	288	456	0.859	adults only
+0.70	0.0	light-bound	2.10	739	739	1998	1998	1.001	adults near their gate
+0.70	0.0	light-bound	1.25	1249	1249	1998	1998	1.001	only the fullest adults
+0.70	0.0	matter-bound	2.10	88	88	366	366	0.800	adults only
+0.70	0.3	light-bound	2.10	790	1121	1998	1998	0.992	only the fullest adults
+0.70	0.3	light-bound	1.25	1297	1491	1998	1998	0.989	none on reserve alone
+0.70	0.3	matter-bound	2.10	129	394	438	656	0.786	adults near their gate

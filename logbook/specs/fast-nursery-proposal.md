@@ -1,7 +1,7 @@
 # A faster nursery that still selects on the currency
 
-Fable's proposal of 2026-09-29 night, written at the owner's request ("a nursery that is both fast
-and keeps the principle of natural selection"), on the nursery as built (D133, DESIGN §8.6) and
+Fable's proposal of 2026-09-29 night, written at the owner's request (a nursery that is both fast
+and keeps the principle of natural selection), on the nursery as built (D133, DESIGN §8.6) and
 run 2's first generations. Saved as it came; the owner rules on section 5's list.
 
 Marks: [K] known from the code or tonight's logs; [B] believed, an inference from them; [G] a guess.

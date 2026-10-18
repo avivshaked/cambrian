@@ -53,6 +53,14 @@ namespace Evosim.Core
                     n["grazingYield"].AsFloat(),
                     n["predationYield"].AsFloat(),
                     n["scavengeRate"].AsFloat()),
+
+                [CellTypeIds.Anchoring] = (n, upkeep) => new AnchoringCell(
+                    n["tenacityNewtonsPerSquareMetre"].AsFloat(),
+                    n["buildJoulesPerNewton"].AsFloat(),
+                    n["decaySeconds"].AsFloat(),
+                    n["reserveThresholdSeconds"].AsFloat(),
+                    n["reserveLagSeconds"].AsFloat(),
+                    upkeep),
             };
 
         /// <summary>
@@ -79,6 +87,7 @@ namespace Evosim.Core
             writer.Field("intakeMax", type.IntakeMax);
             writer.Field("protectionMax", type.ProtectionMax);
             writer.Field("toughnessMax", type.ToughnessMax);
+            writer.Field("budWeight", type.BudWeight);
 
             type.WriteParameters(writer);
             writer.EndObject();
@@ -111,6 +120,9 @@ namespace Evosim.Core
             type.IntakeMax = node["intakeMax"].AsFloat();
             type.ProtectionMax = node["protectionMax"].AsFloat();
             type.ToughnessMax = node["toughnessMax"].AsFloat();
+
+            // D165, refused rather than defaulted like the caps above.
+            type.BudWeight = node["budWeight"].AsFloat();
 
             return type;
         }

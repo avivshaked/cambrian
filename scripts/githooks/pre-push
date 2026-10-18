@@ -1,0 +1,91 @@
+#!/bin/sh
+# Pre-push guard for Cambrian.
+#
+# A push publishes every commit in it, and a line removed in a later commit is still
+# readable in the one that added it. So this hook reads each pushed commit on its own,
+# not only the final tree. Active with the pre-commit hook, through
+#
+#     git config core.hooksPath scripts/githooks
+#
+# It blocks a push when a commit
+#   1. carries an author or committer address that is not a GitHub noreply address,
+#   2. adds a line matching a private pattern (the list lives in an ignored file, so
+#      the words it guards against are never committed themselves),
+#   3. adds a user-profile path or an e-mail address not on allowed-emails.txt,
+#   4. adds run data, scratch files, film media or a file over 5 MB.
+#
+# The private list is scratch/machine/private-patterns.txt, one extended regex a line,
+# lines starting with # ignored. A missing list blocks the push: the guard fails closed.
+#
+# Exit 0 = allow, 1 = block.
+
+RED=$(printf '\033[31m'); NC=$(printf '\033[0m')
+fail=0
+block() { printf "%sBLOCKED%s  %s\n" "$RED" "$NC" "$1"; fail=1; }
+
+top=$(git rev-parse --show-toplevel)
+gitdir=$(git rev-parse --git-dir)
+patterns="$top/scratch/machine/private-patterns.txt"
+allow="$(dirname "$0")/allowed-emails.txt"
+zero=0000000000000000000000000000000000000000
+
+if [ ! -f "$patterns" ]; then
+  block "no private pattern list at scratch/machine/private-patterns.txt; the push is not checked"
+fi
+pats=$(grep -vE '^[[:space:]]*(#|$)' "$patterns" 2>/dev/null)
+
+check_commit() {
+  c="$1"; short=$(git rev-parse --short "$c")
+  for who in "$(git log -1 --format=%ae "$c")" "$(git log -1 --format=%ce "$c")"; do
+    case "$who" in
+      *@users.noreply.github.com) : ;;
+      *) block "$short: address $who is not a GitHub noreply address" ;;
+    esac
+  done
+  added=$(git show --format= -U0 --no-color --diff-filter=ACMR "$c" | grep -E '^\+' | grep -vE '^\+\+\+ ')
+  if [ -n "$pats" ]; then
+    hits=$(printf '%s\n' "$added" | grep -nE -f "$patterns" -- 2>/dev/null | head -3)
+    [ -n "$hits" ] && block "$short adds a line matching a private pattern:
+$(printf '%s\n' "$hits" | cut -c1-160 | sed 's/^/           /')"
+  fi
+  hits=$(printf '%s\n' "$added" | grep -nE -- '[A-Za-z]:[\]+Users[\]+[A-Za-z0-9._-]+|[A-Za-z]:/Users/[A-Za-z0-9._-]+|/home/[a-z][a-z0-9._-]*/' \
+    | grep -vE -- '([Uu]sers|home)[\\/]+(\.\.\.|someone|x|user|username|USER|USERNAME|you|me|name|<[^>]*>|%[A-Za-z]+%|\$[A-Za-z{(]+)([\\/"`), ]|$)' | head -3)
+  [ -n "$hits" ] && block "$short adds a user-profile path:
+$(printf '%s\n' "$hits" | cut -c1-160 | sed 's/^/           /')"
+  for e in $(printf '%s\n' "$added" | grep -oEi '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' | sort -u); do
+    case "$e" in *noreply.github.com|*@example.com|*@anthropic.com) continue ;; esac
+    if [ -f "$allow" ] && grep -qiFx -- "$e" "$allow"; then continue; fi
+    block "$short adds the address $e"
+  done
+  git show --format= --name-only --diff-filter=ACMR "$c" | while IFS= read -r f; do
+    case "$f" in
+      runs/*|scratch/*|*/runs/*|*.jsonl.gz|*.ckpt|*/checkpoints/*) echo "$short adds data: $f" ;;
+      assets/*/.gitkeep) : ;;
+      assets/*/*) echo "$short adds film media: $f" ;;
+    esac
+    size=$(git cat-file -s "$c:$f" 2>/dev/null)
+    [ -n "$size" ] && [ "$size" -gt 5242880 ] && echo "$short adds $f, $((size / 1048576)) MB"
+  done > "$gitdir/pre-push-files.$$"
+  if [ -s "$gitdir/pre-push-files.$$" ]; then
+    while IFS= read -r l; do block "$l"; done < "$gitdir/pre-push-files.$$"
+  fi
+  rm -f "$gitdir/pre-push-files.$$"
+}
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue
+  if [ "$remote_sha" = "$zero" ]; then
+    commits=$(git rev-list "$local_sha" --not --remotes)
+  else
+    commits=$(git rev-list "$remote_sha..$local_sha")
+  fi
+  n=$(printf '%s\n' "$commits" | grep -c .)
+  printf "pre-push: checking %s commit(s) for %s\n" "$n" "$remote_ref"
+  for c in $commits; do check_commit "$c"; done
+done
+
+if [ "$fail" -ne 0 ]; then
+  printf "\n%sPush blocked.%s Fix the commits above; a pushed commit cannot be taken back.\n\n" "$RED" "$NC"
+  exit 1
+fi
+exit 0

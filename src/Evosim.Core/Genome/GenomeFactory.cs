@@ -299,6 +299,18 @@ namespace Evosim.Core
         /// ⚠ Unmeasured (§5A.10).
         /// </para>
         /// </remarks>
+        /// <summary>
+        /// Whether a founder's joints draw their drive genes (propose-joint-drive.md) from the
+        /// founding stream, over <see cref="DriveGenes"/>' ranges.
+        /// </summary>
+        /// <remarks>
+        /// Off by default, and off takes <see cref="DriveGenes.Default"/> without touching the
+        /// stream, so every recorded founding lottery draws the genomes it drew; on makes every seed
+        /// a new realisation. <c>EVOSIM_DRIVE_GENES</c>.
+        /// </remarks>
+        [Tunable("genome")]
+        public bool DrawDriveGenes { get; set; }
+
         [Tunable("genome")]
         public float MinGestationShare { get; set; } = 0.5f;
         [Tunable("genome")]
@@ -316,6 +328,18 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("genome")]
         public float FounderAdultScale { get; set; } = 1f;
+
+        /// <summary>
+        /// D128: the range a founder's lifespan gene (<see cref="Genome.LifespanScale"/>) is drawn
+        /// from, as a multiple of the world's ageing base. Drawn only when the range is a range:
+        /// at the defaults, 1 to 1, a founder takes 1 without touching the stream, so every
+        /// recorded founding lottery draws the genomes it drew. <c>EVOSIM_LIFESPAN_MIN</c> and
+        /// <c>EVOSIM_LIFESPAN_MAX</c>.
+        /// </summary>
+        [Tunable("genome")]
+        public float MinLifespan { get; set; } = 1f;
+        [Tunable("genome")]
+        public float MaxLifespan { get; set; } = 1f;
 
         /// <summary>
         /// Cell types a founder's single body cell may be — DESIGN.md §5A.0b.
@@ -430,6 +454,7 @@ namespace Evosim.Core
                     Mode = ReproductionMode.Lump,
                     GestationShare = DrawGestationShare(rng, options),
                 },
+                LifespanScale = DrawLifespan(rng, options),
             };
 
             // Body cells occupy [0, bodyCount) and links [bodyCount, bodyCount + linkCount).
@@ -584,6 +609,7 @@ namespace Evosim.Core
                     Mode = ReproductionMode.Lump,
                     GestationShare = DrawGestationShare(rng, options),
                 },
+                LifespanScale = DrawLifespan(rng, options),
             };
 
             MorphNode body = RandomBodyCell(rng, options, sensorPool);
@@ -638,6 +664,7 @@ namespace Evosim.Core
                 bladder.JointType = JointType.Fixed;
                 bladder.JointLimits = Array.Empty<Float2>();
                 bladder.Power = 0f;
+                bladder.Drive = DriveGenes.Default;
                 bladder.Lift = rng.Range(options.MinBuoyancyLift, options.MaxBuoyancyLift);
                 bladder.RecursiveLimit = 1;
                 genome.Nodes.Add(bladder);
@@ -712,6 +739,25 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// A founder's lifespan gene — drawn only when the range is a range, so the defaults leave
+        /// the founding stream untouched. See <see cref="RandomGenomeOptions.MinLifespan"/>.
+        /// </summary>
+        private static float DrawLifespan(Rng rng, RandomGenomeOptions options)
+        {
+            float min = options.MinLifespan, max = options.MaxLifespan;
+
+            if (!(min > 0f) || float.IsInfinity(max) || min > max)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(options),
+                    $"Lifespan range [{min}, {max}] must be positive, finite and not inverted: it " +
+                    "is a multiple of the world's ageing base.");
+            }
+
+            return max > min ? rng.Range(min, max) : min;
+        }
+
+        /// <summary>
         /// A body cell: it feeds or it is structure, and it cannot move against its parent.
         /// </summary>
         private static MorphNode RandomBodyCell(
@@ -757,6 +803,7 @@ namespace Evosim.Core
                 ShapeId = rng.Pick(options.ShapeIdChoices),
                 JointType = rng.Pick(options.JointTypes),
                 Power = rng.Range(options.MinLinkPower, options.MaxLinkPower),
+                Drive = options.DrawDriveGenes ? DriveGenes.Draw(rng) : DriveGenes.Default,
                 RecursiveLimit = 1,
             };
 

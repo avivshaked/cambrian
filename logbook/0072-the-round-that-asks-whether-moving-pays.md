@@ -10,10 +10,8 @@ where food is has nothing to swim toward, and since logbook/0062 the three sense
 tell it have sat behind switches nobody turned on.
 
 This round turns them on, in the world round 28 confirmed. The owner's ruling (D081) put
-the question first, in their words:
-
-> what helps us get to a point where creatures evolve brains? that's the question we should
-> be asking, because at the end of the day, that's what this evolution sets out to achieve.
+the question first. The owner asked what would help the world reach a point where creatures evolve brains.
+That was the question to be asking, they said, because it is what the whole evolution sets out to achieve.
 
 A brain is selected only where control changes income or survival. Movement that pays is
 the first place that can happen, so it is the next change.

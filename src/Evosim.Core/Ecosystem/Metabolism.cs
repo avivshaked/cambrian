@@ -436,6 +436,17 @@ namespace Evosim.Core
             // D113's price, the same way: at 0 no term is computed and no float is added.
             float supportPrice = config.SupportWattsPerSquareMetrePerSquareMetre;
 
+            // D127's free first link: its free share is left out of every cost the part carries.
+            // Every other part multiplies its terms by exactly 1, which moves no bit, and with the
+            // allowance at 0 (every recorded world) no part is free.
+            int freeLink = config.FreeFirstLinkCubicMetres > 0f ? FreeLinkIndex(phenotype) : -1;
+
+            // D128's repair: a longer life costs upkeep. Exactly 1 at a lifespan of 1 or an
+            // exponent of 0, so every recorded bill is the number it was.
+            float repair = config.AgeRepairExponent != 0f && phenotype.LifespanScale != 1f
+                ? (float)Math.Pow(phenotype.LifespanScale, config.AgeRepairExponent)
+                : 1f;
+
             foreach (PhenotypePart part in phenotype.Parts)
             {
                 CellType cell = config.CellTypes.Resolve(part.CellTypeId);
@@ -465,8 +476,13 @@ namespace Evosim.Core
                     uptakeHalfSaturation: config.UptakeHalfSaturation,
                     joulesPerUnit: config.JoulesPerUnit);
 
+                // What the part pays for: all of it, or what the free link's allowance leaves.
+                float kept = part.Index == freeLink
+                    ? 1f - FreeShare(part, phenotype, config.FreeFirstLinkCubicMetres)
+                    : 1f;
+
                 intake += cell.Acquire(context);
-                upkeep += cell.Upkeep(context);
+                upkeep += cell.Upkeep(context) * kept;
 
                 // D106 item 3's four prices, charged where the cell's own upkeep is and worn with
                 // it by the senescence factor below — a claw is tissue a body maintains, and an
@@ -474,16 +490,16 @@ namespace Evosim.Core
                 // part's area, so they are billed per square metre of it; toughness is health per
                 // cubic metre and is billed per cubic metre, and only above the neutral 1, so a
                 // part that has not been made tough pays nothing.
-                if (priced) upkeep += AttributeWatts(part, config) * seconds;
+                if (priced) upkeep += AttributeWatts(part, config) * seconds * kept;
 
                 // D111: gas held on one face is tissue kept, billed per cubic metre of the part
                 // and worn with the rest. Charged on a sphere too, where it buys nothing.
-                if (offsetPrice > 0f) upkeep += BuoyancyOffsetWatts(part, config) * seconds;
+                if (offsetPrice > 0f) upkeep += BuoyancyOffsetWatts(part, config) * seconds * kept;
 
                 // D113: the load this part puts on the chain to the root, its lit area times the
                 // square of its distance, worn with the rest — an old stalk holds its frond up
                 // worse. The root's distance is 0, so it adds a zero and not a branch.
-                if (supportPrice > 0f) upkeep += SupportWatts(part, config) * seconds;
+                if (supportPrice > 0f) upkeep += SupportWatts(part, config) * seconds * kept;
 
                 // Neurons are billed where they live, and neural tissue discounts them (§5A.1).
                 // Counting them creature-wide instead would price a brain identically to the same
@@ -498,7 +514,7 @@ namespace Evosim.Core
                     neurons * config.NeuralCostPerNeuronWatts +
                     connections * config.NeuralCostPerConnectionWatts;
 
-                neural += rate * cell.NeuronCostMultiplier(neurons, part.Volume) * seconds;
+                neural += rate * cell.NeuronCostMultiplier(neurons, part.Volume) * seconds * kept;
             }
 
             // Conversion falls by the same factor the costs rise by. Note what is *not* scaled:
@@ -544,7 +560,7 @@ namespace Evosim.Core
                 : 0f;
 
             return new EnergyLedger(
-                intake, upkeep * wear, neural * wear,
+                intake, upkeep * repair * wear, neural * wear,
                 Math.Max(0f, workJoules) * config.WorkCostMultiplier,
                 exuded, handling);
         }
@@ -704,14 +720,57 @@ namespace Evosim.Core
             if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
             if (config == null) throw new ArgumentNullException(nameof(config));
 
+            // D127: the free first link's share holds no joules. With the allowance at 0 (every
+            // recorded world) no part is free and the sum is the expression it always was.
+            int freeLink = config.FreeFirstLinkCubicMetres > 0f ? FreeLinkIndex(phenotype) : -1;
+
             double total = 0d;
             foreach (PhenotypePart part in phenotype.Parts)
             {
+                if (part.Index == freeLink)
+                {
+                    double share = FreeShare(part, phenotype, config.FreeFirstLinkCubicMetres);
+                    total += (double)Math.Max(0f, part.Volume) *
+                             config.CellTypes.Resolve(part.CellTypeId).TissueEnergyPerCubicMetre *
+                             (1d - share);
+                    continue;
+                }
+
                 total += (double)Math.Max(0f, part.Volume) *
                          config.CellTypes.Resolve(part.CellTypeId).TissueEnergyPerCubicMetre;
             }
 
             return total;
+        }
+
+        /// <summary>
+        /// D127: the index of a body's first link, the lowest-index part that carries a joint, or
+        /// -1 for a body with none. Parts are in pre-order, so this is the first link met walking
+        /// the body from its root.
+        /// </summary>
+        public static int FreeLinkIndex(Phenotype phenotype)
+        {
+            IReadOnlyList<PhenotypePart> parts = phenotype.Parts;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                PhenotypePart part = parts[i];
+                if (part.ParentIndex >= 0 && part.JointType.DofCount() > 0) return part.Index;
+            }
+
+            return -1;
+        }
+
+        /// <summary>
+        /// D127: the share of the first link's volume that holds no energy, in [0, 1]. The
+        /// allowance is a volume of the adult part, so a body scaled by <c>s</c> is allowed
+        /// <c>cap * s^3</c> (<see cref="Phenotype.ScaledBy"/> is always relative to the adult),
+        /// and the share is the same at every size.
+        /// </summary>
+        public static float FreeShare(PhenotypePart part, Phenotype phenotype, float capCubicMetres)
+        {
+            float s = phenotype.ScaledBy;
+            float allowance = capCubicMetres * s * s * s;
+            return part.Volume > allowance ? allowance / part.Volume : 1f;
         }
 
         /// <remarks>

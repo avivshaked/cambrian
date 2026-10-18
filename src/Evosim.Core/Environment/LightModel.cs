@@ -51,6 +51,29 @@ namespace Evosim.Core
     /// <i>(Author's inference. Real DVM is usually attributed to predation risk, which this world
     /// does not have yet.)</i>
     /// </para>
+    /// <para>
+    /// <b>Mean-preserving in light, not in income.</b> The cycles keep the mean of the
+    /// <i>light</i> a surface receives, and nothing more. Under D098 a leaf's income is
+    /// <c>min(light, uptake ceiling)</c>, so a leaf bound by its uptake ceiling loses the peak
+    /// and keeps the trough: the same mean light pays it less. A cycle therefore moves the
+    /// world's income whenever leaves are uptake-bound, and a run that switches one on has to
+    /// read income, not light, to see what it did.
+    /// </para>
+    /// <para>
+    /// <b>A season multiplies the day.</b> <see cref="SeasonAmplitude"/> and
+    /// <see cref="SeasonLengthSeconds"/> add a slower sinusoid, and
+    /// <see cref="DayFactorAt"/> is the product of the two factors. The product keeps the mean of
+    /// 1 only when the cross term averages to zero, which holds when the season is a whole number
+    /// of days (at least two) long; the world refuses a config with both on and any other ratio.
+    /// Season amplitude 0 is the day-only world exactly.
+    /// </para>
+    /// <para>
+    /// <b>Two seasons, and weather</b> (D151). <see cref="SeasonShape"/> swaps the sinusoid for a
+    /// summer and a winter switched at midnights over a smooth ramp, and <see cref="WeatherSpread"/>
+    /// multiplies a log-normal factor a day with mean 1, drawn from its own seed. The light is
+    /// <c>season × day × weather</c>, still a pure function of the clock and the config. At the
+    /// smooth shape and a spread of 0 every factor is the bit pattern the build before returned.
+    /// </para>
     /// </remarks>
     public sealed class LightModel
     {
@@ -139,6 +162,170 @@ namespace Evosim.Core
 
         private float _dayLengthSeconds = 200f;
 
+        /// <summary>
+        /// How far the season swings surface irradiance either side of its mean, as a fraction.
+        /// 0 is a world with no seasons.
+        /// </summary>
+        /// <remarks>
+        /// The slow cycle that multiplies the day's. Mean-preserving in light on the same terms as
+        /// <see cref="DayNightAmplitude"/>, and with both on only when
+        /// <see cref="SeasonLengthSeconds"/> is a whole number (at least 2) of
+        /// <see cref="DayLengthSeconds"/>; see the class remarks. Default 0.
+        /// </remarks>
+        [Tunable("light")]
+        public float SeasonAmplitude
+        {
+            get => _seasonAmplitude;
+            set => _seasonAmplitude = value >= 0f && value <= 1f
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(SeasonAmplitude), value,
+                    "Must be in [0, 1]. Above 1 the surface goes dark for part of the season and " +
+                    "the cycle stops preserving its own mean.");
+        }
+
+        private float _seasonAmplitude;
+
+        /// <summary>Length of one season cycle, in simulated seconds.</summary>
+        /// <remarks>
+        /// With a day cycle also on, a whole number (at least 2) of days, so the product's mean
+        /// stays 1. Only read when <see cref="SeasonAmplitude"/> is above 0.
+        /// </remarks>
+        [Tunable("light", Unit = "s")]
+        public float SeasonLengthSeconds
+        {
+            get => _seasonLengthSeconds;
+            set => _seasonLengthSeconds = Require(value, nameof(SeasonLengthSeconds), NoSeason);
+        }
+
+        private float _seasonLengthSeconds = 30000f;
+
+        /// <summary>
+        /// The shape of the season: <see cref="Core.SeasonShape.Smooth"/>'s sinusoid or
+        /// <see cref="Core.SeasonShape.TwoSeason"/>'s summer and winter (D151). Default smooth.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Under the two-season shape the season factor is <c>1 + A·s(t)</c>, with <c>s</c> +1 in
+        /// summer and −1 in winter. With <c>Y</c> the year and <c>D</c> the day, summer runs from
+        /// <c>−D/4</c> to <c>Y/2 − D/4</c> (mod <c>Y</c>), so each switch is centred on a midnight,
+        /// the darkest point of the day sine, and a run opens in summer. Each switch runs over
+        /// <see cref="SeasonRampSeconds"/> through a smoothstep that is odd about its centre; the
+        /// day sine is even about a midnight, so their cross term cancels and the year's mean light
+        /// is exactly the mean. With a day cycle on, the world refuses a two-season year that is not
+        /// an even number of days (at least 2), so each half holds whole days.
+        /// </para>
+        /// </remarks>
+        [Tunable("light")]
+        public SeasonShape SeasonShape
+        {
+            get => _seasonShape;
+            set => _seasonShape = Enum.IsDefined(typeof(SeasonShape), value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(SeasonShape), value, "Must be Smooth or TwoSeason.");
+        }
+
+        private SeasonShape _seasonShape = SeasonShape.Smooth;
+
+        /// <summary>
+        /// Seconds over which the two-season light moves from one season's level to the other.
+        /// 0 is an instant switch. Read only under <see cref="Core.SeasonShape.TwoSeason"/>.
+        /// </summary>
+        /// <remarks>
+        /// At least 0 and finite here; the world refuses a ramp of half a season (a quarter of
+        /// <see cref="SeasonLengthSeconds"/>) or more, because the bound needs the year's length
+        /// and a setter cannot rely on the order the two are set in. Default 0.
+        /// </remarks>
+        [Tunable("light", Unit = "s")]
+        public float SeasonRampSeconds
+        {
+            get => _seasonRampSeconds;
+            set => _seasonRampSeconds = value >= 0f && !float.IsInfinity(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(SeasonRampSeconds), value,
+                    "Must be finite and at least 0. 0 switches the season at an instant.");
+        }
+
+        private float _seasonRampSeconds;
+
+        /// <summary>
+        /// The weather: the standard deviation of a day's log factor. 0 is no weather.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Day <c>n</c> runs from midnight to midnight, <c>n = floor((t + D/4) / D)</c>. Its log
+        /// factor <c>x_n</c> is a stationary AR(1) process with mean <c>μ = −σ²/2</c>, so that the
+        /// factor <c>exp(x_n)</c> has mean 1 and the expected light is unchanged:
+        /// <c>x_0 = μ + σ·ε_0</c> and <c>x_n = μ + ρ·(x_{n−1} − μ) + σ·√(1 − ρ²)·ε_n</c>, the
+        /// <c>ε</c> drawn in day order from <c>new Rng(WeatherSeed)</c>. A day's factor blends to
+        /// the next by the season's smoothstep over the quarter-day centred on the midnight
+        /// between them, so the change happens in the dark.
+        /// </para>
+        /// <para>
+        /// The world refuses weather without a day cycle. Default 0, which draws nothing and is
+        /// exactly 1.
+        /// </para>
+        /// </remarks>
+        [Tunable("light")]
+        public float WeatherSpread
+        {
+            get => _weatherSpread;
+            set => _weatherSpread = value >= 0f && !float.IsInfinity(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(WeatherSpread), value,
+                    "Must be finite and at least 0: it is the standard deviation of a day's log " +
+                    "light factor, and 0 is a world without weather.");
+        }
+
+        private float _weatherSpread;
+
+        /// <summary>The day-to-day correlation of the weather's log factor, in [0, 1). Default 0.</summary>
+        /// <remarks>
+        /// Dull days come in spells as this rises. 1 would be a sky fixed by its first day and
+        /// leaves the process with no stationary spread, so it is refused.
+        /// </remarks>
+        [Tunable("light")]
+        public float WeatherCorrelation
+        {
+            get => _weatherCorrelation;
+            set => _weatherCorrelation = value >= 0f && value < 1f
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(WeatherCorrelation), value,
+                    "Must be in [0, 1). At 1 every day is the first day's weather and the series " +
+                    "has no stationary spread; below 0 it would alternate dull and bright days.");
+        }
+
+        private float _weatherCorrelation;
+
+        /// <summary>
+        /// The seed of the weather series alone, so that every seed of a round has the same sky.
+        /// Default 1.
+        /// </summary>
+        /// <remarks>
+        /// At most 2^53, because <c>config.json</c> carries its numbers as doubles and a larger seed
+        /// would not come back from the file as the seed that was written.
+        /// </remarks>
+        [Tunable("light")]
+        public ulong WeatherSeed
+        {
+            get => _weatherSeed;
+            set => _weatherSeed = value <= MaxWeatherSeed
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(WeatherSeed), value,
+                    "Must be at most 2^53 (9007199254740992): config.json carries its numbers as " +
+                    "doubles, and a larger seed would not read back as the seed that was written.");
+        }
+
+        private ulong _weatherSeed = 1UL;
+
+        /// <summary>The largest seed a double carries exactly, and so the largest the file can.</summary>
+        public const ulong MaxWeatherSeed = 1UL << 53;
+
         public LightModel(float surfaceIrradiance = 400f, float attenuationDepth = 12f)
         {
             SurfaceIrradiance = surfaceIrradiance;
@@ -163,11 +350,182 @@ namespace Evosim.Core
         /// paying for.
         /// </para>
         /// </remarks>
-        public float DayFactorAt(double elapsedSeconds) =>
-            DayNightAmplitude <= 0f
-                ? 1f
-                : (float)(1.0 + DayNightAmplitude *
-                    Math.Sin(2.0 * Math.PI * elapsedSeconds / DayLengthSeconds));
+        public float DayFactorAt(double elapsedSeconds)
+        {
+            // Without weather, the arithmetic below is round 56's exactly, smooth shape and all:
+            // the two-season branch is new and reached only by a config that asks for it. A
+            // weather factor multiplies the same double product before the one cast.
+            bool weather = WeatherSpread > 0f;
+
+            if (SeasonAmplitude <= 0f)
+            {
+                if (!weather)
+                {
+                    return DayNightAmplitude <= 0f
+                        ? 1f
+                        : (float)(1.0 + DayNightAmplitude *
+                            Math.Sin(2.0 * Math.PI * elapsedSeconds / DayLengthSeconds));
+                }
+
+                double dayOnly = DayNightAmplitude <= 0f
+                    ? 1.0
+                    : 1.0 + DayNightAmplitude *
+                        Math.Sin(2.0 * Math.PI * elapsedSeconds / DayLengthSeconds);
+                return (float)(dayOnly * WeatherFactorAt(elapsedSeconds));
+            }
+
+            double season = SeasonShape == SeasonShape.TwoSeason
+                ? 1.0 + SeasonAmplitude * TwoSeasonSign(elapsedSeconds)
+                : 1.0 + SeasonAmplitude *
+                    Math.Sin(2.0 * Math.PI * elapsedSeconds / SeasonLengthSeconds);
+            double day = DayNightAmplitude <= 0f
+                ? 1.0
+                : 1.0 + DayNightAmplitude *
+                    Math.Sin(2.0 * Math.PI * elapsedSeconds / DayLengthSeconds);
+
+            return weather
+                ? (float)(season * day * WeatherFactorAt(elapsedSeconds))
+                : (float)(season * day);
+        }
+
+        /// <summary>
+        /// The two-season square wave at a point in time: +1 in summer, −1 in winter, and the
+        /// smoothstep between them over <see cref="SeasonRampSeconds"/> at each switch.
+        /// </summary>
+        /// <remarks>
+        /// <c>u = (t + D/4) mod Y</c> puts the winter-to-summer switch at <c>u = 0</c> and the
+        /// summer-to-winter one at <c>u = Y/2</c>, each on a midnight when the year is whole days.
+        /// Each ramp is odd about its switch, so the year's mean of the sign is exactly 0.
+        /// </remarks>
+        public double TwoSeasonSign(double elapsedSeconds)
+        {
+            double year = SeasonLengthSeconds;
+            double half = 0.5 * year;
+            double ramp = SeasonRampSeconds;
+
+            double u = (elapsedSeconds + 0.25 * (double)DayLengthSeconds) % year;
+            if (u < 0.0) u += year;
+
+            if (ramp > 0.0)
+            {
+                double halfRamp = 0.5 * ramp;
+                if (u < halfRamp) return OddStep(u / ramp);
+                if (u > year - halfRamp) return OddStep((u - year) / ramp);
+                if (Math.Abs(u - half) < halfRamp) return -OddStep((u - half) / ramp);
+            }
+
+            return u < half ? 1.0 : -1.0;
+        }
+
+        /// <summary>
+        /// The smoothstep from −1 to +1 over <c>x</c> in [−1/2, 1/2], odd about 0; ±1 outside.
+        /// </summary>
+        private static double OddStep(double x)
+        {
+            if (x <= -0.5) return -1.0;
+            if (x >= 0.5) return 1.0;
+            double p = x + 0.5;
+            return 2.0 * (p * p * (3.0 - 2.0 * p)) - 1.0;
+        }
+
+        /// <summary>The smoothstep from 0 to 1 over <c>p</c> in [0, 1].</summary>
+        private static double SmoothStep(double p)
+        {
+            if (p <= 0.0) return 0.0;
+            if (p >= 1.0) return 1.0;
+            return p * p * (3.0 - 2.0 * p);
+        }
+
+        /// <summary>
+        /// The weather's multiplier at a point in time: day <c>n</c>'s factor, blended to the next
+        /// over the quarter-day centred on the midnight between them. Exactly 1 at a spread of 0.
+        /// </summary>
+        public double WeatherFactorAt(double elapsedSeconds)
+        {
+            if (!(WeatherSpread > 0f)) return 1.0;
+
+            double dayLength = DayLengthSeconds;
+            double sinceMidnight = elapsedSeconds + 0.25 * dayLength;
+            double dayIndex = Math.Floor(sinceMidnight / dayLength);
+            double intoDay = sinceMidnight - dayIndex * dayLength;
+            long n = dayIndex < 0.0 ? 0L : (long)dayIndex;
+
+            double eighth = 0.125 * dayLength;
+            double quarter = 0.25 * dayLength;
+
+            if (intoDay > dayLength - eighth)
+            {
+                double w = SmoothStep((intoDay - (dayLength - eighth)) / quarter);
+                double here = WeatherFactorOfDay(n);
+                return here + w * (WeatherFactorOfDay(n + 1) - here);
+            }
+
+            if (intoDay < eighth && n > 0)
+            {
+                double w = SmoothStep((intoDay + eighth) / quarter);
+                double before = WeatherFactorOfDay(n - 1);
+                return before + w * (WeatherFactorOfDay(n) - before);
+            }
+
+            return WeatherFactorOfDay(n);
+        }
+
+        /// <summary>Day <paramref name="day"/>'s weather factor, <c>exp(x_n)</c>. 1 with no weather.</summary>
+        public double WeatherFactorOfDay(long day) => Math.Exp(WeatherLogFactorOfDay(day));
+
+        /// <summary>Day <paramref name="day"/>'s log factor <c>x_n</c>. 0 with no weather.</summary>
+        /// <remarks>
+        /// <para>
+        /// The series is drawn once, lazily, in day order, and extended as later days are asked
+        /// for, so the order of calls cannot change a value: day <c>n</c> is always the
+        /// <c>n</c>-th step of the same recurrence from the same seed. The cache is a function of
+        /// the config alone (<see cref="WeatherSpread"/>, <see cref="WeatherCorrelation"/> and
+        /// <see cref="WeatherSeed"/>), keyed on all three and rebuilt if any of them changes, so it
+        /// adds nothing to a checkpoint. Locked, because one model may be read by more than one
+        /// world.
+        /// </para>
+        /// </remarks>
+        public double WeatherLogFactorOfDay(long day)
+        {
+            if (day < 0) throw new ArgumentOutOfRangeException(nameof(day), day, "A day is at least 0.");
+            if (!(WeatherSpread > 0f)) return 0.0;
+
+            lock (_weatherLock)
+            {
+                if (_weatherLog == null || _weatherCachedSpread != WeatherSpread ||
+                    _weatherCachedCorrelation != WeatherCorrelation || _weatherCachedSeed != WeatherSeed)
+                {
+                    _weatherCachedSpread = WeatherSpread;
+                    _weatherCachedCorrelation = WeatherCorrelation;
+                    _weatherCachedSeed = WeatherSeed;
+                    _weatherRng = new Rng(WeatherSeed);
+                    _weatherLog = new System.Collections.Generic.List<double>();
+                }
+
+                double sigma = _weatherCachedSpread;
+                double rho = _weatherCachedCorrelation;
+                double mu = -0.5 * sigma * sigma;
+                double innovation = sigma * Math.Sqrt(1.0 - rho * rho);
+
+                while (_weatherLog.Count <= day)
+                {
+                    double epsilon = _weatherRng.Gaussian();
+                    double x = _weatherLog.Count == 0
+                        ? mu + sigma * epsilon
+                        : mu + rho * (_weatherLog[_weatherLog.Count - 1] - mu) + innovation * epsilon;
+                    _weatherLog.Add(x);
+                }
+
+                return _weatherLog[(int)day];
+            }
+        }
+
+        private readonly object _weatherLock = new object();
+        private System.Collections.Generic.List<double> _weatherLog;
+        private Rng _weatherRng;
+        private float _weatherCachedSpread;
+        private float _weatherCachedCorrelation;
+        private ulong _weatherCachedSeed;
 
         /// <remarks>
         /// Settable as well as constructable, because §5A.10's rule is that an unmeasured number
@@ -189,6 +547,9 @@ namespace Evosim.Core
         private const string NoDay =
             "A day of zero or infinite length is not a cycle, and the sun would sit at one " +
             "instant of it forever.";
+
+        private const string NoSeason =
+            "A season of zero or infinite length is not a cycle.";
 
         private const string NoDepth =
             "Light must fall off over some distance, or depth means nothing and the world has " +
@@ -237,5 +598,15 @@ namespace Evosim.Core
         public override string ToString() =>
             FormattableString.Invariant(
                 $"{SurfaceIrradiance:0} W/m² at surface, 1/e at {AttenuationDepth:0.#} m");
+    }
+
+    /// <summary>The shape of <see cref="LightModel"/>'s season. Serialized by name.</summary>
+    public enum SeasonShape
+    {
+        /// <summary>A sinusoid over the year: round 56's season, and every season before it.</summary>
+        Smooth,
+
+        /// <summary>Summer and winter at their own levels, with a smooth ramp between (D151).</summary>
+        TwoSeason,
     }
 }

@@ -1,0 +1,22 @@
+Round 51's free first link (D127): the adult volume of each body's first link (the lowest-index
+part carrying a joint) and of every link, and the first link's share of its body's volume. Every
+living body's genome in round 50's snapshots at 10,000, 20,000 and 30,000 s was developed with
+the plan its snapshot row carries (module counts), under its run's config, on the main tree's
+Core at 336bfe1 (round 50's code, which reads those format-9 genomes). The probe is
+logbook/specs/r51-build/linkvol-probe/Program.cs, run from the main tree on 2026-09-27 as
+`linkvol r50-s1,r50-s2,r50-s3`, from a console project that referenced src/Evosim.Core (the
+logbook keeps no project files). The free volume, 0.01 m3, is the middle of the three seeds'
+medians (0.0094 m3), rounded up: a typical link's volume, as D127 asks.
+
+r50-s1: bodies 13012, jointed 911
+  first link m3: n 911  p10 0.00416  p25 0.00665  median 0.00941  p75 0.0143  p90 0.0256  mean 0.0133
+  every link m3: n 1457  p10 0.00403  p25 0.00645  median 0.00941  p75 0.0145  p90 0.025  mean 0.0127
+  first link share of body volume: n 911  p10 0.124  p25 0.147  median 0.186  p75 0.249  p90 0.335  mean 0.209
+r50-s2: bodies 18833, jointed 4414
+  first link m3: n 4414  p10 0.000943  p25 0.00156  median 0.00303  p75 0.00526  p90 0.00869  mean 0.00437
+  every link m3: n 5143  p10 0.000943  p25 0.00151  median 0.00294  p75 0.00505  p90 0.00831  mean 0.00419
+  first link share of body volume: n 4414  p10 0.0287  p25 0.0603  median 0.12  p75 0.203  p90 0.338  mean 0.152
+r50-s3: bodies 19538, jointed 1029
+  first link m3: n 1029  p10 0.000136  p25 0.00472  median 0.0141  p75 0.023  p90 0.0337  mean 0.016
+  every link m3: n 1210  p10 0.000138  p25 0.00502  median 0.0127  p75 0.0211  p90 0.0326  mean 0.0151
+  first link share of body volume: n 1029  p10 0.00667  p25 0.0916  median 0.316  p75 0.449  p90 0.55  mean 0.293

@@ -204,6 +204,12 @@ namespace Evosim.Dynamics
             Vec3.Write(body.Acc, 0, rootAngular);
             Vec3.Write(body.Acc, 3, rootLinear);
 
+            // One buffer for every joint (F2, logbook/specs/speed-plan.md): a stackalloc inside the
+            // loop is a fresh, zeroed block each pass, never freed before the method returns. A
+            // joint writes residual[k] for every k it reads, so what an earlier joint left there
+            // is never read.
+            Span<double> residual = stackalloc double[3];
+
             for (int i = 1; i < body.Links; i++)
             {
                 int p = body.Parent[i];
@@ -221,7 +227,6 @@ namespace Evosim.Dynamics
                 {
                     int at = body.DofStart[i];
 
-                    Span<double> residual = stackalloc double[3];
                     for (int k = 0; k < n; k++)
                     {
                         residual[k] = body.Ubar[3 * i + k] -

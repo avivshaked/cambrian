@@ -1,0 +1,129 @@
+The leaf tank's smoke (logbook/specs/nursery-leaf-tank-plan.md, step 7), 2026-10-13, nursery-leaf, logical 8-11 at 4 threads, beside a 4-thread farm run of 08's (so the wall times size the arms and are not paces). Read by scripts/reads/leaf-smoke-read.py; deaths from the nursery's EVOSIM_TANK_TRACE lines (trace world: deaths, by age, parts killed by mouths), one line a tank: the search's tanks hold 8 swimmers, the exam's the one genome examined.
+
+== rounds/nursery/leaf-strength-smoke.json: 40 m tank, 250 leaves, strength form at 10 m, age hazard on, spent 0.00103 units/m3; sense file sense-strength.jsonl
+  deaths 91, by age 58, parts killed by mouths 0, diverged 0
+  deaths 84, by age 57, parts killed by mouths 2, diverged 0
+  deaths 82, by age 46, parts killed by mouths 0, diverged 0
+  deaths 81, by age 46, parts killed by mouths 0, diverged 0
+  deaths 87, by age 51, parts killed by mouths 0, diverged 0
+  deaths 87, by age 53, parts killed by mouths 0, diverged 0
+  deaths 75, by age 45, parts killed by mouths 0, diverged 0
+  deaths 69, by age 45, parts killed by mouths 0, diverged 0
+  deaths 107, by age 52, parts killed by mouths 0, diverged 0
+  deaths 89, by age 41, parts killed by mouths 0, diverged 0
+  deaths 109, by age 51, parts killed by mouths 0, diverged 0
+  deaths 90, by age 39, parts killed by mouths 0, diverged 0
+  deaths 108, by age 52, parts killed by mouths 0, diverged 0
+  deaths 92, by age 40, parts killed by mouths 0, diverged 0
+tank-exam.jsonl:
+  own                                      genomes  1  eaten    14.61 J  net  -1649.85 J  path  189.0 m  turn 0.028 rad/s
+  brainless                                genomes  1  eaten     0.00 J  net  -1617.72 J  path  193.0 m  turn 0.007 rad/s
+  knockout LeafScent                       genomes  1  eaten    45.17 J  net  -1636.02 J  path  195.9 m  turn 0.009 rad/s
+sense: 22980 samples
+  strength p10 0.860  p50 0.930  p90 0.962  (share at 0: 0.000, share above 0.95: 0.234)
+  gradient within 45 deg of the nearest leaf: 0.269 of 22980 samples with a gradient
+  nearest leaf p10 2.01  p50 3.11  p90 4.73 m
+  leaves alive per episode, first to last sample: 6 episodes, lost some (min 74, max 107)
+  swimmer deaths: 14 of 70
+  gen 0: net mean -1978.0 J, best running mean 121.9 J over 2 (body 0, born 0), alive 81 %, work 0.010 W, path 161.5 m, turn 0.015 rad/s, eaten 26.3 J, 6.3 min
+  gen 1: net mean -2108.3 J, best running mean 71.9 J over 4 (body 0, born 0), alive 75 %, work 0.014 W, path 156.8 m, turn 0.016 rad/s, eaten 13.4 J, 12.8 min
+
+== leaf-direction-smoke-r3.json with WorldAreaSquareMetres 400 and 62 leaves (20 m tank, same density): direction form at 3 m
+  deaths 32, by age 10, parts killed by mouths 0, diverged 0
+  deaths 28, by age 9, parts killed by mouths 0, diverged 0
+  deaths 25, by age 9, parts killed by mouths 0, diverged 0
+  deaths 25, by age 10, parts killed by mouths 0, diverged 0
+  deaths 36, by age 16, parts killed by mouths 0, diverged 0
+  deaths 30, by age 18, parts killed by mouths 1, diverged 0
+  deaths 27, by age 5, parts killed by mouths 0, diverged 0
+  deaths 26, by age 8, parts killed by mouths 0, diverged 0
+  deaths 30, by age 18, parts killed by mouths 0, diverged 0
+  deaths 20, by age 7, parts killed by mouths 0, diverged 0
+  deaths 30, by age 19, parts killed by mouths 0, diverged 0
+  deaths 16, by age 7, parts killed by mouths 0, diverged 0
+  deaths 30, by age 20, parts killed by mouths 0, diverged 0
+  deaths 18, by age 7, parts killed by mouths 0, diverged 0
+tank-exam.jsonl:
+  own                                      genomes  1  eaten    56.82 J  net  -1578.59 J  path  169.6 m  turn 0.011 rad/s
+  brainless                                genomes  1  eaten    27.80 J  net  -1593.50 J  path  171.6 m  turn 0.011 rad/s
+  knockout LeafScent,LeafScentDirection    genomes  1  eaten     0.00 J  net  -1642.94 J  path  171.0 m  turn 0.010 rad/s
+sense: 22906 samples
+  strength p10 0.000  p50 0.088  p90 0.437  (share at 0: 0.267, share above 0.95: 0.000)
+  gradient within 45 deg of the nearest leaf: 0.766 of 16784 samples with a gradient
+  nearest leaf p10 2.12  p50 3.44  p90 5.49 m
+  leaves alive per episode, first to last sample: 6 episodes, lost some (min 20, max 33)
+  swimmer deaths: 14 of 70
+  gen 0: net mean -1942.3 J, best running mean 144.0 J over 2 (body 0, born 0), alive 81 %, work 0.004 W, path 159.2 m, turn 0.012 rad/s, eaten 36.0 J, 1.7 min
+  gen 1: net mean -2040.7 J, best running mean 182.7 J over 2 (body 0, born 1), alive 75 %, work 0.003 W, path 129.5 m, turn 0.011 rad/s, eaten 64.6 J, 3.4 min
+
+== as above with AgeHazardBaseSeconds, AgeingPerBirth, AgeingPerWound and AgeRepairExponent 0
+  deaths 20, by age 0, parts killed by mouths 0, diverged 0
+  deaths 16, by age 0, parts killed by mouths 0, diverged 0
+  deaths 14, by age 0, parts killed by mouths 0, diverged 0
+  deaths 9, by age 0, parts killed by mouths 0, diverged 0
+  deaths 21, by age 0, parts killed by mouths 0, diverged 0
+  deaths 21, by age 0, parts killed by mouths 0, diverged 0
+  deaths 22, by age 0, parts killed by mouths 0, diverged 0
+  deaths 14, by age 0, parts killed by mouths 1, diverged 0
+  deaths 16, by age 0, parts killed by mouths 0, diverged 0
+  deaths 14, by age 0, parts killed by mouths 0, diverged 0
+  deaths 16, by age 0, parts killed by mouths 0, diverged 0
+  deaths 12, by age 0, parts killed by mouths 0, diverged 0
+  deaths 15, by age 0, parts killed by mouths 0, diverged 0
+  deaths 12, by age 0, parts killed by mouths 0, diverged 0
+tank-exam.jsonl:
+  own                                      genomes  1  eaten     0.00 J  net  -1672.01 J  path  177.7 m  turn 0.010 rad/s
+  brainless                                genomes  1  eaten    28.21 J  net  -1642.44 J  path  180.4 m  turn 0.010 rad/s
+  knockout LeafScent,LeafScentDirection    genomes  1  eaten    28.14 J  net  -1642.71 J  path  183.4 m  turn 0.011 rad/s
+sense: 25200 samples
+  strength p10 0.000  p50 0.110  p90 0.451  (share at 0: 0.241, share above 0.95: 0.000)
+  gradient within 45 deg of the nearest leaf: 0.753 of 19139 samples with a gradient
+  nearest leaf p10 2.10  p50 3.33  p90 5.28 m
+  leaves alive per episode, first to last sample: 6 episodes, lost some (min 14, max 21)
+  swimmer deaths: 0 of 70
+  gen 0: net mean -1621.0 J, best running mean 222.7 J over 2 (body 0, born 0), alive 100 %, work 0.003 W, path 156.7 m, turn 0.011 rad/s, eaten 48.0 J, 1.8 min
+  gen 1: net mean -1640.2 J, best running mean 162.8 J over 4 (body 0, born 0), alive 100 %, work 0.002 W, path 149.6 m, turn 0.011 rad/s, eaten 34.2 J, 3.7 min
+
+== as above with spent matter 0.004237 units/m3, r58-s3j's whole-water mean at 44,000 s
+  deaths 21, by age 0, parts killed by mouths 0, diverged 0
+  deaths 23, by age 0, parts killed by mouths 0, diverged 0
+  deaths 15, by age 0, parts killed by mouths 0, diverged 0
+  deaths 10, by age 0, parts killed by mouths 0, diverged 0
+  deaths 21, by age 0, parts killed by mouths 0, diverged 0
+  deaths 15, by age 0, parts killed by mouths 0, diverged 0
+  deaths 17, by age 0, parts killed by mouths 0, diverged 0
+  deaths 12, by age 0, parts killed by mouths 0, diverged 0
+  deaths 9, by age 0, parts killed by mouths 0, diverged 0
+  deaths 1, by age 0, parts killed by mouths 0, diverged 0
+  deaths 7, by age 0, parts killed by mouths 0, diverged 0
+  deaths 2, by age 0, parts killed by mouths 0, diverged 0
+  deaths 5, by age 0, parts killed by mouths 0, diverged 0
+  deaths 1, by age 0, parts killed by mouths 0, diverged 0
+tank-exam.jsonl:
+  own                                      genomes  1  eaten    47.08 J  net  -1623.66 J  path  180.5 m  turn 0.010 rad/s
+  brainless                                genomes  1  eaten    47.07 J  net  -1617.80 J  path  185.5 m  turn 0.012 rad/s
+  knockout LeafScent,LeafScentDirection    genomes  1  eaten    47.00 J  net  -1619.80 J  path  195.0 m  turn 0.011 rad/s
+sense: 25200 samples
+  strength p10 0.000  p50 0.104  p90 0.449  (share at 0: 0.261, share above 0.95: 0.000)
+  gradient within 45 deg of the nearest leaf: 0.762 of 18611 samples with a gradient
+  nearest leaf p10 2.09  p50 3.39  p90 5.49 m
+  leaves alive per episode, first to last sample: 6 episodes, lost some (min 1, max 21)
+  swimmer deaths: 0 of 70
+  gen 0: net mean -1623.7 J, best running mean 278.2 J over 2 (body 0, born 0), alive 100 %, work 0.004 W, path 163.4 m, turn 0.012 rad/s, eaten 42.2 J, 1.8 min
+  gen 1: net mean -1632.5 J, best running mean 178.1 J over 4 (body 0, born 0), alive 100 %, work 0.006 W, path 155.6 m, turn 0.012 rad/s, eaten 38.5 J, 3.7 min
+
+== Corrected reading, the same day: the trace's 'parts killed by mouths' counts only parts torn off a body that lives on; a bite that kills a one-part leaf whole counts in the world's BodiesEaten, which the lines above do not print. The corpse census (EVOSIM_TANK_TRACE, 10c349da) on probe-small-r3-noage-mean, run byte-identical to the one above:
+  seed 89612: from leaves 21 (3878.8 J), from members 0 (0.0 J), other 0 (0.0 J); bodies eaten 21, corpses from kills 21, corpses eaten 1, module drops 0, carrion placed 0, members' mouths kept 325.9 J
+  seed 89612: from leaves 23 (4210.5 J), from members 0 (0.0 J), other 0 (0.0 J); bodies eaten 23, corpses from kills 23, corpses eaten 2, module drops 0, carrion placed 0, members' mouths kept 475.6 J
+  seed 67065: from leaves 15 (3192.3 J), from members 0 (0.0 J), other 0 (0.0 J); bodies eaten 15, corpses from kills 15, corpses eaten 1, module drops 0, carrion placed 0, members' mouths kept 547.9 J
+  seed 67065: from leaves 10 (1587.8 J), from members 0 (0.0 J), other 0 (0.0 J); bodies eaten 10, corpses from kills 10, corpses eaten 0, module drops 0, carrion placed 0, members' mouths kept 0.0 J
+  seed 9266: from leaves 21 (3534.7 J), from members 0 (0.0 J), other 0 (0.0 J); bodies eaten 21, corpses from kills 21, corpses eaten 2, module drops 0, carrion placed 0, members' mouths kept 442.0 J
+  seed 9266: from leaves 15 (2993.2 J), from members 0 (0.0 J), other 0 (0.0 J); bodies eaten 15, corpses from kills 15, corpses eaten 1, module drops 0, carrion placed 0, members' mouths kept 155.9 J
+  seed 79843: from leaves 16 (2894.8 J), from members 0 (0.0 J), other 0 (0.0 J); bodies eaten 16, corpses from kills 16, corpses eaten 2, module drops 0, carrion placed 0, members' mouths kept 390.4 J
+  seed 79843: from leaves 11 (2072.3 J), from members 0 (0.0 J), other 0 (0.0 J); bodies eaten 11, corpses from kills 11, corpses eaten 1, module drops 0, carrion placed 0, members' mouths kept 244.2 J
+  seed 51394: from leaves 7 (1002.2 J), from members 0 (0.0 J), other 0 (0.0 J); bodies eaten 7, corpses from kills 7, corpses eaten 1, module drops 0, carrion placed 0, members' mouths kept 94.2 J
+  seed 5462: from leaves 0 (0.0 J), from members 0 (0.0 J), other 0 (0.0 J); bodies eaten 0, corpses from kills 0, corpses eaten 0, module drops 0, carrion placed 0, members' mouths kept 0.0 J
+  seed 51394: from leaves 5 (686.5 J), from members 0 (0.0 J), other 0 (0.0 J); bodies eaten 5, corpses from kills 5, corpses eaten 1, module drops 0, carrion placed 0, members' mouths kept 94.1 J
+  seed 5462: from leaves 1 (165.8 J), from members 0 (0.0 J), other 0 (0.0 J); bodies eaten 1, corpses from kills 1, corpses eaten 0, module drops 0, carrion placed 0, members' mouths kept 0.0 J
+  seed 51394: from leaves 3 (370.0 J), from members 0 (0.0 J), other 0 (0.0 J); bodies eaten 3, corpses from kills 3, corpses eaten 1, module drops 0, carrion placed 0, members' mouths kept 94.0 J
+  seed 5462: from leaves 0 (0.0 J), from members 0 (0.0 J), other 0 (0.0 J); bodies eaten 0, corpses from kills 0, corpses eaten 0, module drops 0, carrion placed 0, members' mouths kept 0.0 J

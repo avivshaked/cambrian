@@ -77,7 +77,7 @@ The film's folder is <folder>.                                          (folder)
 The questions are in <folder>\<file>.                                   (questions)
 The source check is in <folder>\sources-check-<k>.md.                   (fix)
 Check only the last section of facts.md.                                (last section)
-Write only under <checkout>\scratch\story-video\, and only through the shell. Never write in your session scratchpad or in TEMP.   (write)
+Write only under <checkout>\scratch\story-video\. Never write in your session scratchpad or in TEMP.   (write)
 Your time budget is <minutes> minutes.
 ```
 

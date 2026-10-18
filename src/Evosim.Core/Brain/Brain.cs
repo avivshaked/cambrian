@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Evosim.Core
@@ -85,6 +85,31 @@ namespace Evosim.Core
         private readonly int[] _dofStart;             // per part, or -1 where the joint is fixed
         private readonly int[] _dofCount;
 
+        // D146's one brain, compiled from the genome at birth. Units are the outputs first, two per
+        // degree of freedom in drive order (unit 2k the power of drive k, 2k + 1 its bend), then the
+        // hidden units. Each unit's incoming links are a run of _inSource and _inWeight from
+        // _inStart[unit]: a source at or above zero is a unit, read from the previous step; a
+        // source below zero is port ~source, read from this step's senses. Unused in the old model.
+        private readonly bool _central;
+        private readonly float[] _bias;
+        private readonly int[] _inStart;
+        private readonly int[] _inSource;
+        private readonly float[] _inWeight;
+        private readonly int[] _portPart;
+        private readonly SensorChannel[] _portChannel;
+        private readonly int[] _portIndex;
+        private readonly float[] _portValue;
+        private readonly ulong[] _unitIds;
+
+        /// <summary>True when this is D146's one brain rather than the per-part neurons.</summary>
+        public bool IsCentral => _central;
+
+        /// <summary>The central brain's links that reach this body's network. 0 in the old model.</summary>
+        public int LinkCount => _central ? _inSource.Length : 0;
+
+        /// <summary>The central brain's ports that any link reads. 0 in the old model.</summary>
+        public int PortCount => _central ? _portPart.Length : 0;
+
         /// <summary>Total actuated degrees of freedom — the length <c>drive</c> must be.</summary>
         public int TotalDof { get; }
 
@@ -144,6 +169,36 @@ namespace Evosim.Core
             TotalDof = totalDof;
         }
 
+        private Brain(
+            float[] bias, int[] inStart, int[] inSource, float[] inWeight, int[] portPart,
+            SensorChannel[] portChannel, int[] portIndex, ulong[] unitIds, int totalDof, int sensorMask)
+        {
+            _central = true;
+            _bias = bias;
+            _inStart = inStart;
+            _inSource = inSource;
+            _inWeight = inWeight;
+            _portPart = portPart;
+            _portChannel = portChannel;
+            _portIndex = portIndex;
+            _portValue = new float[portPart.Length];
+            _unitIds = unitIds;
+            SensorMask = sensorMask;
+
+            _neurons = Array.Empty<NeuronDef[]>();
+            _offset = Array.Empty<int>();
+            _parent = Array.Empty<int>();
+            _firstChild = Array.Empty<int>();
+            _dofStart = Array.Empty<int>();
+            _dofCount = Array.Empty<int>();
+
+            _previous = new float[bias.Length];
+            _current = new float[bias.Length];
+            _memory = Array.Empty<float>();
+
+            TotalDof = totalDof;
+        }
+
         /// <summary>
         /// Builds the nervous system of a developed body. Call once, at birth.
         /// </summary>
@@ -157,6 +212,8 @@ namespace Evosim.Core
         public static Brain For(Phenotype phenotype)
         {
             if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
+
+            if (phenotype.Brain != null) return ForCentral(phenotype);
 
             int parts = phenotype.PartCount;
             var neurons = new NeuronDef[parts][];
@@ -227,6 +284,146 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// D146: the one brain's network for this body. The genome's brain is taken through
+        /// <see cref="CentralWiring.Effective"/> first, so a joint the genome has no output for
+        /// (a module's extra segment) copies its nearest joint, and a link to a limb the body
+        /// lacks is left out. A link of weight 0 is left out too: it reads nothing, and leaving
+        /// it out keeps its sense off the mask.
+        /// </summary>
+        private static Brain ForCentral(Phenotype phenotype)
+        {
+            CentralBrain brain = CentralWiring.Effective(phenotype.Brain, phenotype);
+            List<BrainOutput> outputs = CentralWiring.Outputs(phenotype);
+            Dictionary<ulong, BrainPort> ports = CentralWiring.AllPorts(phenotype);
+
+            int totalDof = outputs.Count / 2;
+            int units = outputs.Count + brain.Hidden.Count;
+
+            var unitIds = new ulong[units];
+            var bias = new float[units];
+            var unitOf = new Dictionary<ulong, int>(units);
+
+            var stored = new Dictionary<ulong, BrainUnit>();
+            foreach (BrainUnit u in brain.Outputs) stored[u.Id] = u;
+
+            for (int i = 0; i < outputs.Count; i++)
+            {
+                unitIds[i] = outputs[i].Id;
+                bias[i] = stored.TryGetValue(outputs[i].Id, out BrainUnit u) ? u.Bias : 0f;
+                unitOf[outputs[i].Id] = i;
+            }
+
+            for (int h = 0; h < brain.Hidden.Count; h++)
+            {
+                int at = outputs.Count + h;
+                unitIds[at] = brain.Hidden[h].Id;
+                bias[at] = brain.Hidden[h].Bias;
+                unitOf[brain.Hidden[h].Id] = at;
+            }
+
+            var portSlot = new Dictionary<ulong, int>();
+            var portPart = new List<int>();
+            var portChannel = new List<SensorChannel>();
+            var portIndex = new List<int>();
+            int sensorMask = 0;
+
+            var incoming = new List<(int source, float weight)>[units];
+            for (int i = 0; i < units; i++) incoming[i] = new List<(int, float)>();
+
+            foreach (BrainLink l in brain.Links)
+            {
+                if (l.Weight == 0f) continue;
+                if (!unitOf.TryGetValue(l.To, out int to)) continue;
+
+                int source;
+                if (unitOf.TryGetValue(l.From, out int fromUnit))
+                {
+                    source = fromUnit;
+                }
+                else if (ports.TryGetValue(l.From, out BrainPort port))
+                {
+                    if (!portSlot.TryGetValue(l.From, out int slot))
+                    {
+                        slot = portPart.Count;
+                        portSlot[l.From] = slot;
+                        portPart.Add(port.Part);
+                        portChannel.Add(port.Channel);
+                        portIndex.Add(port.Index);
+                        sensorMask |= 1 << (int)port.Channel;
+                    }
+
+                    source = ~slot;
+                }
+                else
+                {
+                    continue;
+                }
+
+                incoming[to].Add((source, l.Weight));
+            }
+
+            var inStart = new int[units + 1];
+            int total = 0;
+            for (int i = 0; i < units; i++)
+            {
+                inStart[i] = total;
+                total += incoming[i].Count;
+            }
+
+            inStart[units] = total;
+            var inSource = new int[total];
+            var inWeight = new float[total];
+            for (int i = 0, k = 0; i < units; i++)
+            {
+                foreach ((int source, float weight) in incoming[i])
+                {
+                    inSource[k] = source;
+                    inWeight[k] = weight;
+                    k++;
+                }
+            }
+
+            return new Brain(
+                bias, inStart, inSource, inWeight, portPart.ToArray(), portChannel.ToArray(),
+                portIndex.ToArray(), unitIds, totalDof, sensorMask);
+        }
+
+        // One step of the one brain. Every port is read once, then every unit sums its bias and
+        // its links (ports from now, units from the step before, so a loop is a memory of one
+        // step) through tanh, then the buffers swap and the outputs go to the drive.
+        private void StepCentral(float[] drive, ISensorField sensors, float[] bend)
+        {
+            for (int p = 0; p < _portValue.Length; p++)
+            {
+                float v = sensors == null ? 0f : sensors.Read(_portPart[p], _portChannel[p], _portIndex[p]);
+                _portValue[p] = float.IsNaN(v) || float.IsInfinity(v) ? 0f : v;
+            }
+
+            for (int u = 0; u < _bias.Length; u++)
+            {
+                float sum = _bias[u];
+                for (int k = _inStart[u]; k < _inStart[u + 1]; k++)
+                {
+                    int source = _inSource[k];
+                    sum += _inWeight[k] * (source >= 0 ? _previous[source] : _portValue[~source]);
+                }
+
+                float value = (float)Math.Tanh(sum);
+                _current[u] = float.IsNaN(value) ? 0f : value;
+            }
+
+            float[] swap = _previous;
+            _previous = _current;
+            _current = swap;
+
+            for (int k = 0; k < TotalDof; k++)
+            {
+                drive[k] = _previous[2 * k];
+                if (bend != null) bend[k] = _previous[2 * k + 1];
+            }
+        }
+
+        /// <summary>
         /// Evaluates every neuron once and writes one drive value per degree of freedom.
         /// </summary>
         /// <param name="seconds">Step length, for the temporal operators.</param>
@@ -235,7 +432,13 @@ namespace Evosim.Core
         /// least <see cref="TotalDof"/> long.
         /// </param>
         /// <param name="sensors">Null for a pure pattern generator — every channel reads zero.</param>
-        public void Step(float seconds, float[] drive, ISensorField sensors = null)
+        /// <param name="bend">
+        /// When given, filled with each degree of freedom's second output, neuron <i>n + d</i> of
+        /// its part (<i>n</i> the joint's degrees of freedom), clamped to [-1, 1]: the bend of the
+        /// bend-and-power drive (propose-joint-drive.md). A part with too few neurons leaves it 0,
+        /// the middle of the joint's range.
+        /// </param>
+        public void Step(float seconds, float[] drive, ISensorField sensors = null, float[] bend = null)
         {
             if (drive == null) throw new ArgumentNullException(nameof(drive));
 
@@ -248,6 +451,13 @@ namespace Evosim.Core
             }
 
             ElapsedSeconds += seconds;
+
+            if (_central)
+            {
+                StepCentral(drive, sensors, bend);
+                return;
+            }
+
             float time = (float)ElapsedSeconds;
 
             for (int group = 0; group < _neurons.Length; group++)
@@ -281,6 +491,12 @@ namespace Evosim.Core
                     // A part with fewer neurons than degrees of freedom leaves the rest still.
                     // That is a real morphology — a joint nothing innervates — and not an error.
                     drive[start + d] = d < own.Length ? Clamp(_previous[at + d]) : 0f;
+
+                    if (bend != null)
+                    {
+                        int k = _dofCount[i] + d;
+                        bend[start + d] = k < own.Length ? Clamp(_previous[at + k]) : 0f;
+                    }
                 }
             }
         }
@@ -539,6 +755,25 @@ namespace Evosim.Core
             if (sourcePartOfPart == null) throw new ArgumentNullException(nameof(sourcePartOfPart));
 
             ElapsedSeconds = source.ElapsedSeconds;
+
+            // D146: the one brain's units carry by id, which is what an id is for. A unit the
+            // source lacks (a new segment's outputs) starts at rest.
+            if (_central || source._central)
+            {
+                if (!_central || !source._central) return;
+
+                var at = new Dictionary<ulong, int>(source._unitIds.Length);
+                for (int i = 0; i < source._unitIds.Length; i++) at[source._unitIds[i]] = i;
+
+                for (int i = 0; i < _unitIds.Length; i++)
+                {
+                    if (!at.TryGetValue(_unitIds[i], out int from)) continue;
+                    _previous[i] = source._previous[from];
+                    _current[i] = source._current[from];
+                }
+
+                return;
+            }
 
             int parts = _neurons.Length;
             if (sourcePartOfPart.Length < parts) return;

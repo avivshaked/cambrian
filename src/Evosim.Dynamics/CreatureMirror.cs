@@ -101,5 +101,63 @@ namespace Evosim.Dynamics
 
         /// <summary>The link a test poisoned in the trace, or -1.</summary>
         internal int MirrorPoisonedLink => _poisonedLink;
+
+        // ---- what the card holds in two parts, as it holds them (round 60, World.StateVersion 18)
+
+        /// <summary>
+        /// The committed link-sphere centres as the card holds them: each coordinate's float
+        /// (<c>Hi</c>) and the rest the float leaves out (<c>Lo</c>), whose sum is
+        /// <see cref="LinkContactCentre"/>. Null until a card backend hands the body back, and never
+        /// set on the CPU engine.
+        /// </summary>
+        /// <remarks>
+        /// <b>The pair and not its sum.</b> The card's two-sum chain lets the rest pass half a float
+        /// step, so the float of the sum is not always the card's float, and a body packed from the
+        /// sum alone carries a different pair into the next step. A resume did exactly that until
+        /// round 60's build: every body was packed from a sum the restore had rebuilt from the poses,
+        /// with the rest at zero, and a settled crowd parted from the run at its first second (round
+        /// 59's B3, <c>logbook/specs/r59-resume-survey.md</c>).
+        /// </remarks>
+        internal double[] CardLinkCentreHi;
+
+        /// <summary>The rest of each committed link-sphere centre; see <see cref="CardLinkCentreHi"/>.</summary>
+        internal double[] CardLinkCentreLo;
+
+        /// <summary>
+        /// The root's position as the card holds it, its float and the carry its compensated sum
+        /// keeps: <see cref="BasePosition"/> is <c>Hi</c> less <c>Lo</c>. Null until a card backend
+        /// hands the body back.
+        /// </summary>
+        internal double[] CardBaseHi;
+
+        /// <summary>The carry of the root's position; see <see cref="CardBaseHi"/>.</summary>
+        internal double[] CardBaseLo;
+
+        /// <summary>
+        /// Whether the card's pair still sums to the committed link centres: false once anything on
+        /// the host has moved them (a resize, a birth, a restore without the pair), and then the
+        /// card splits the host's centres afresh.
+        /// </summary>
+        internal bool CardLinkPairHolds()
+        {
+            if (CardLinkCentreHi == null || LinkContactCentre == null || CardLinkCentreHi.Length != LinkContactCentre.Length)
+            {
+                return false;
+            }
+
+            for (int k = 0; k < LinkContactCentre.Length; k++)
+            {
+                if (CardLinkCentreHi[k] + CardLinkCentreLo[k] != LinkContactCentre[k]) return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>Whether the card's pair still gives the root's position; see <see cref="CardLinkPairHolds"/>.</summary>
+        internal bool CardBasePairHolds() =>
+            CardBaseHi != null &&
+            CardBaseHi[0] - CardBaseLo[0] == BasePosition.X &&
+            CardBaseHi[1] - CardBaseLo[1] == BasePosition.Y &&
+            CardBaseHi[2] - CardBaseLo[2] == BasePosition.Z;
     }
 }

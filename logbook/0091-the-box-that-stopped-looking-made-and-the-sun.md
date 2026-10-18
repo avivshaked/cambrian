@@ -6,13 +6,13 @@
 
 The second day's carve (logbook/0088) had made the spheres look alive and left the boxes
 looking manufactured. The owner said so from the close views of round 35 seed 1 at 5,000 s:
-"the spheres look amazing, and the rectangles have improved, but they still look somewhat
-non-biological." The same second at a deeper carve, 0.35 against 0.2, already looked better
+the spheres looked amazing, and the rectangles had improved, but they still looked somewhat
+non-biological. The same second at a deeper carve, 0.35 against 0.2, already looked better
 to them. So the third day was the box's, and its spec is `logbook/specs/skin-spec-3.md`.
 
 Then the owner ran the theatre on round 36 seed 1, the first world in which a hinge has
-been kept for five lifetimes. They said: "I couldn't see the sun, or the water shimmer, the
-underwater ripple effect, or many of the things we discussed." They were not there. Three
+been kept for five lifetimes. They said they could not see the sun, the water shimmer, the
+underwater ripple effect, or many of the things discussed. They were not there. Three
 days of skin had been about bodies; the water had a colour, a fog, snow and a caustic term
 painted on bodies from nowhere in particular. The fourth day was the water's, and its spec
 is `logbook/specs/skin-spec-4.md`.
@@ -56,8 +56,8 @@ bodies. Two more frames were taken for the owner's ruling. Carve 0.5 turned the 
 burrs and the boxes ragged, and the agent's reading was to refuse it. Pillow 0.5 turned every
 box into a bean, pleasant and uniform, and the ruling on it is the owner's.
 
-*Ruled 2026-09-12 night, by the agent at the owner's word ("you can do those things for
-me"): the pillow stays at 0.34.* Side by side, the two frames of round 35 seed 1 differ by
+*Ruled 2026-09-12 night, by the agent at the owner's word (the owner said the agent can do those things for
+them): the pillow stays at 0.34.* Side by side, the two frames of round 35 seed 1 differ by
 a softer edge and nothing a viewer would name. At 0.5 every silhouette is the same bean,
 and the straight long edge the default keeps is the genome's, a flat plate drawn as a flat
 plate. Round 37's close frames (0094) are slabs with mouths, and that reading depends on

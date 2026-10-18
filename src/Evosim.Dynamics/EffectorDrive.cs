@@ -40,6 +40,37 @@ namespace Evosim.Dynamics
         private int _cursor;
         private int _filled;
 
+        // The bend-and-power drive (propose-joint-drive.md). Per degree of freedom: the power and
+        // bend the joint is at (0 to 1 each), the command it is moving to, the rates it moves at,
+        // and the seconds left before it takes another command.
+        private readonly double[] _power, _bend, _powerTarget, _bendTarget, _powerRate, _bendRate, _holdLeft;
+        private readonly double _poseOmega;
+        private readonly double _step;
+
+        /// <summary>True when the world runs the bend-and-power drive.</summary>
+        public readonly bool BendAndPower;
+
+        /// <summary>
+        /// Each degree of freedom's power as the envelope has it now, 0 to 1: what the fluid's push
+        /// reads and what the record logs. All zero under the torque drive.
+        /// </summary>
+        public readonly double[] Stroke;
+
+        /// <summary>Each degree of freedom's bend as the envelope has it now, 0 to 1 across its range.</summary>
+        public double Bend(int dof) => BendAndPower && dof >= 0 && dof < _bend.Length ? _bend[dof] : 0.5;
+
+        /// <summary>
+        /// Seconds of the hold still to run on one degree of freedom, 0 or less while the joint will
+        /// take the next command; 0 under the torque drive. What <c>SensorChannel.Hold</c> reads.
+        /// </summary>
+        public double HoldLeft(int dof) => BendAndPower && dof >= 0 && dof < _holdLeft.Length ? _holdLeft[dof] : 0.0;
+
+        /// <summary>
+        /// The power command one degree of freedom last took, 0 to 1, which <see cref="Stroke"/> ramps
+        /// toward; 0 under the torque drive. What <c>SensorChannel.Ramp</c> reads, less the stroke.
+        /// </summary>
+        public double PowerTarget(int dof) => BendAndPower && dof >= 0 && dof < _powerTarget.Length ? _powerTarget[dof] : 0.0;
+
         /// <summary>
         /// The world-space torque the last <see cref="Drive"/> put on each link, 3 per link —
         /// <c>EffectorDriver.AppliedTorque</c>. Kept rather than cleared, so a probe taken after
@@ -78,6 +109,20 @@ namespace Evosim.Dynamics
             AppliedTorque = new double[3 * body.Links];
 
             int dof = body.Dof > 0 ? body.Dof : 1;
+
+            BendAndPower = config.PowerPushRadiansPerSecond > 0;
+            _poseOmega = 2.0 * System.Math.PI * config.PoseHertz;
+            _step = config.StepSeconds;
+            Stroke = new double[dof];
+            _power = new double[dof];
+            _bend = new double[dof];
+            _powerTarget = new double[dof];
+            _bendTarget = new double[dof];
+            _powerRate = new double[dof];
+            _bendRate = new double[dof];
+            _holdLeft = new double[dof];
+            for (int i = 0; i < dof; i++) { _bend[i] = 0.5; _bendTarget[i] = 0.5; }
+
             _history = new float[dof * SmoothWindow];
             _runningSum = new float[dof];
             _torquePerUnit = new float[dof];
@@ -124,10 +169,16 @@ namespace Evosim.Dynamics
         /// Feeds one raw signal per degree of freedom and sums the resulting torques into the
         /// body's external forces. Values outside [-1, 1] are clamped, not rejected.
         /// </summary>
-        public void Drive(float[] raw)
+        public void Drive(float[] raw, float[] bend = null)
         {
             int dof = _body.Dof;
             if (dof == 0) return;
+
+            if (BendAndPower)
+            {
+                DriveBendAndPower(raw, bend);
+                return;
+            }
 
             for (int i = 0; i < dof; i++)
             {
@@ -192,6 +243,100 @@ namespace Evosim.Dynamics
             }
         }
 
+        // ------------------------------------------------------------------ the bend-and-power drive
+
+        /// <summary>
+        /// propose-joint-drive.md. Each degree of freedom's two outputs pass the joint's threshold
+        /// and envelope; the bend is held by a critically damped muscle capped by the part's Power;
+        /// the power is left in <see cref="Stroke"/> for the fluid's push.
+        /// </summary>
+        private void DriveBendAndPower(float[] raw, float[] bendRaw)
+        {
+            for (int b = 1; b < _body.Links; b++)
+            {
+                int n = _body.DofCount[b];
+                if (n == 0) continue;
+
+                int offset = _body.DofStart[b];
+                DriveGenes genes = _body.JointGenes[b];
+                QuatD frame = QuatD.Read(_body.JointFrame, 4 * b);
+
+                double allowed = _limitDrive ? _body.SmallestInertia[b] * _spinBudgetPerStep : double.MaxValue;
+                double cap = System.Math.Min(allowed, _body.Power[b] * PowerScale);
+                double inertia = _body.SmallestInertia[b];
+
+                Vec3 torque = Vec3.Zero;
+
+                for (int d = 0; d < n; d++)
+                {
+                    int i = offset + d;
+
+                    // The power is the positive half of its neuron (the owner's design, D135: "0 or
+                    // threshold"): a silent or negative neuron gives no power, and the power is off
+                    // at or below the joint's threshold and rescaled above it, so its range of
+                    // effort lies between the threshold and 1. Read from [-1, 1] onto [0, 1] as the
+                    // first build did, a silent neuron was half power, above almost every threshold,
+                    // and round 54's screen lost two thirds of its jointed bodies to the stroke they
+                    // could not stop (2026-09-30). The bend keeps that reading: a silent neuron
+                    // holds the joint centred, its rest pose.
+                    float v = i < raw.Length ? raw[i] : 0f;
+                    double threshold = genes.Threshold;
+                    double level = System.Math.Max(0f, System.Math.Min(1f, v));
+                    double power = level <= threshold ? 0.0 : System.Math.Min(1.0, (level - threshold) / (1.0 - threshold));
+                    float w = bendRaw != null && i < bendRaw.Length ? bendRaw[i] : 0f;
+                    double bend = (System.Math.Max(-1f, System.Math.Min(1f, w)) + 1.0) * 0.5;
+
+                    // The envelope: a command is taken only when the last has been held its time,
+                    // and only when it differs from the last by more than a hair, so a brain's noise
+                    // does not restart the hold. From rest the ramp is the reaction; after that it
+                    // is the release.
+                    if (_holdLeft[i] > 0)
+                    {
+                        _holdLeft[i] -= _step;
+                    }
+                    else if (System.Math.Abs(power - _powerTarget[i]) > 0.01 || System.Math.Abs(bend - _bendTarget[i]) > 0.01)
+                    {
+                        bool fromRest = _power[i] == 0 && _powerTarget[i] == 0;
+                        double ramp = fromRest ? genes.Reaction : genes.Release;
+                        if (ramp < _step) ramp = _step;
+                        _powerTarget[i] = power;
+                        _bendTarget[i] = bend;
+                        _powerRate[i] = System.Math.Abs(power - _power[i]) / ramp;
+                        _bendRate[i] = System.Math.Abs(bend - _bend[i]) / ramp;
+                        _holdLeft[i] = genes.Hold;
+                    }
+
+                    _power[i] = Toward(_power[i], _powerTarget[i], _powerRate[i] * _step);
+                    _bend[i] = Toward(_bend[i], _bendTarget[i], _bendRate[i] * _step);
+                    Stroke[i] = _power[i];
+
+                    // The muscle: toward the bend's angle across the joint's own limits.
+                    if (_poseOmega <= 0 || inertia <= 0) continue;
+                    double lo = _body.LimitLo[i], hi = _body.LimitHi[i];
+                    double target = lo + _bend[i] * (hi - lo);
+                    double magnitude = inertia * _poseOmega * (_poseOmega * (target - _body.Q[i]) - 2.0 * _body.Qd[i]);
+                    if (magnitude > cap) { magnitude = cap; _body.DriveImpulsesLimited++; }
+                    else if (magnitude < -cap) { magnitude = -cap; _body.DriveImpulsesLimited++; }
+
+                    torque += frame.Rotate(Creature.AxisOf(d)) * magnitude;
+                }
+
+                Mat3 rotation = Mat3.Read(_body.RotationMatrix, 9 * b);
+                Vec3 world = rotation * torque;
+                Vec3.Write(AppliedTorque, 3 * b, world);
+                _body.NoteDriveTorque(b, world);
+                Vec3.Add(_body.Fext, 6 * b, world);
+                Vec3.Add(_body.Fext, 6 * _body.Parent[b], -world);
+            }
+        }
+
+        private static double Toward(double from, double to, double step)
+        {
+            if (from < to) return from + step >= to ? to : from + step;
+            if (from > to) return from - step <= to ? to : from - step;
+            return from;
+        }
+
         // ------------------------------------------------------------------ the whole state
         //
         // The ten-sample average is a stroke in progress. A creature restored with an empty
@@ -210,6 +355,15 @@ namespace Evosim.Dynamics
             w.Write(_cursor);
             w.Write(_filled);
             w.Write(PowerScale);
+
+            // The bend-and-power drive's envelope, only in a world that runs it, so a checkpoint
+            // of a torque-drive world keeps the layout every earlier build wrote.
+            if (!BendAndPower) return;
+            foreach (double[] a in new[] { _power, _bend, _powerTarget, _bendTarget, _powerRate, _bendRate, _holdLeft })
+            {
+                w.Write(a.Length);
+                foreach (double x in a) w.Write(x);
+            }
         }
 
         /// <summary>Puts the smoothing window back.</summary>
@@ -228,6 +382,15 @@ namespace Evosim.Dynamics
             _cursor = r.ReadInt32();
             _filled = r.ReadInt32();
             PowerScale = r.ReadSingle();
+
+            if (!BendAndPower) return;
+            foreach (double[] a in new[] { _power, _bend, _powerTarget, _bendTarget, _powerRate, _bendRate, _holdLeft })
+            {
+                int length = r.ReadInt32();
+                if (length != a.Length) throw new System.IO.InvalidDataException($"drive envelope of {length} where the body has {a.Length}");
+                for (int i = 0; i < length; i++) a[i] = r.ReadDouble();
+            }
+            System.Array.Copy(_power, Stroke, _power.Length);
         }
 
         /// <summary>
@@ -248,6 +411,17 @@ namespace Evosim.Dynamics
         internal int MirrorCursor { get => _cursor; set => _cursor = value; }
 
         internal int MirrorFilled { get => _filled; set => _filled = value; }
+
+        // The bend-and-power drive's envelope, a degree of freedom each, the very arrays
+        // DriveBendAndPower steps; Stroke is the power, set again from it after a block.
+        internal double[] MirrorPower => _power;
+        internal double[] MirrorBend => _bend;
+        internal double[] MirrorPowerTarget => _powerTarget;
+        internal double[] MirrorBendTarget => _bendTarget;
+        internal double[] MirrorPowerRate => _powerRate;
+        internal double[] MirrorBendRate => _bendRate;
+        internal double[] MirrorHoldLeft => _holdLeft;
+        internal void MirrorStrokeFromPower() => System.Array.Copy(_power, Stroke, _power.Length);
 
         private float[] AppliedTorqueAsFloats()
         {

@@ -1,9 +1,9 @@
 # The safari reviewed: what the films say, and what the record could say
 
 *2026-09-24. A read-only review by an Opus subagent of round 47 seed 1's clean safari
-(24 clips, `scratch/safari/r47-s1/2026-09-24/`), on the owner's request: "we name them, but
-never provide any meaningful information about the creatures, like what are they, what's
-special about them, what do they do, how long have they survived". Its two reads are kept as
+(24 clips, `scratch/safari/r47-s1/2026-09-24/`), on the owner's request. The owner's complaint was that the films name the creatures but
+never give any meaningful information about them: what they are, what is special about them,
+what they do and how long they have survived. Its two reads are kept as
 `scripts/reads/safari-facts.py` and `safari-joints.py`. The implementing pass follows its
 ranked list; the summary here is the agent's, kept so the record can cite it.*
 

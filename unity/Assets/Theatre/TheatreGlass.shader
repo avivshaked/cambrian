@@ -42,6 +42,7 @@ Shader "Evosim/Theatre Glass"
             #pragma multi_compile_fog
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "TheatreWater.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _GlassColor;
@@ -85,9 +86,19 @@ Shader "Evosim/Theatre Glass"
 
                 float alpha = _GlassBase + _GlassRim * pow(facing, _GlassPower);
 
-                #if defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2)
-                alpha *= saturate(input.fogFactor);
-                #endif
+                // With the underwater look's item 2 the far glass dissolves into the lit water
+                // at the in-scatter's own rate, the water between the eye and the pane standing
+                // in front of it; without it, the fog's fade as before.
+                if (EvoLookWater())
+                {
+                    alpha *= exp(-_EvoAbsorb.w * EvoWaterPathMetres(input.positionWS));
+                }
+                else
+                {
+                    #if defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2)
+                    alpha *= saturate(input.fogFactor);
+                    #endif
+                }
 
                 return half4(_GlassColor.rgb, saturate(alpha));
             }

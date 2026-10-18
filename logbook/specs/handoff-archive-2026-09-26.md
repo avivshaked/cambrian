@@ -53,7 +53,7 @@ Every token 0121 lists is in its header, with record format 2 and a checkpoint e
   resume to 16,000 s with the recording (`--skip wall harnessBodySteps fluidLinkSteps`), logged
   to `scratch/logs/r49-v2.log`. At the speed test's 1.08x, seed 1 would end near 04:00 and V2
   by about 04:30. The crowd sets the real pace.
-- Seeds 2 and 3 follow straight on (the owner, 20:12: "let's finish the three seeds first").
+- Seeds 2 and 3 follow straight on (the owner, 20:12, asked to finish the three seeds first).
   `scratch/r49-launch/after-s1.ps1` (pid 48092, log `scratch/wt-r49/scratch/logs/r49-queue2.out`)
   waits for the first queue's `== queue done` line, then runs `seeds.ps1 -Seeds 2,3`. It gives
   up without launching after 20 hours. Only seed 1 runs V2. At about eight hours a seed, seed 3
@@ -136,7 +136,7 @@ the prose story and the captions are in `scratch/owner/r48-story-prose.md` and
 `r48-story-captions-by-scene.md`.
 
 **The farm has left Unity.** On 2026-09-21 the owner ruled the engine before the world
-("I'd prioritise this before making the world more complex"): pace first, staggered, with
+(the owner would prioritise this before making the world more complex): pace first, staggered, with
 10,000 creatures the committed target and 100,000 a stretch. The same day the agent built
 `src/Evosim.Dynamics`, Featherstone's articulated-body algorithm in plain C# doubles with
 the fluid ported term for term and a soft sphere contact, and `src/Evosim.Farm`, a .NET 8
@@ -191,7 +191,7 @@ read a quarter of a part's surface, Cauchy's orientation average, and never the 
 1 at 5,000 s: 92% on edge) and the end is near random (mean flat factor 0.44 to 0.73 against
 0.50 random; `logbook/specs/r45-read/tilt.txt`). The rule proposed: earn and shade on the
 projected area in the actual pose, the hull's shadow as the cap, a tunable off by default.
-Ruled the same morning ("I'll support your recommendations"), with two conditions the
+Ruled the same morning (the owner said they would support the recommendations), with two conditions the
 proposal now answers: the computational cost (arithmetic: microseconds a metabolic step) and
 a way for a body to affect its angle (three exist: a float part above tissue, rising or
 sinking under the panels, a joint with the up sense; the one-part leaf's is missing and the
@@ -214,7 +214,7 @@ weight acting off the mass centre, a genome field at format 8, priced) and the c
 second founding's is `logbook/specs/consumer-founding-spec.md` (a second window of random
 consumer-carrying founders when the snow is there, three tunables, `fnd` on the lineage row).
 All five of round 46's specs are written. **The buoyancy offset is ruled (D111, 2026-09-23
-afternoon, "agreed") and built the same afternoon by an Opus subagent** (uncommitted until
+afternoon, the owner agreed) and built the same afternoon by an Opus subagent** (uncommitted until
 the crowd fixture is re-recorded: `runs/r46fixb-s4` running at 6 threads on the new build,
 then `RunFixture.cs` re-pinned, ckA/B/C re-recorded, the Dynamics suite green; Core 842 and
 Farm 64 pass; the format-8 inocula and the config fixture `c27e2b01`, the Farm hash
@@ -237,7 +237,7 @@ break-even, and the four stomach mutants born inside it during B broke even and 
 nothing. The plant world is the snow's thinness, not its depth; placement in the crowd is
 necessary and not sufficient; the beach feeds an eater only if the snow lives long enough to
 land on its shelf, which is the remineralisation rate. **Ruled the same afternoon: D112,
-remineralisation at 0.0005 per second from round 46** ("Agreed"), pending the quarter-rate
+remineralisation at 0.0005 per second from round 46** (the owner agreed), pending the quarter-rate
 screen `r46remin-5e4-s1` (dt 0.02, 12,000 s, launched 14:32; a one-shot look at 15:41 reads
 the snow's thickness, the floor's stock and the plants' cost against screen B and appends it
 to `stomach-screens.md`). The beach build came back at 15:00 from the Opus subagent
@@ -252,8 +252,8 @@ screen; the smoke, its pictures and the commit follow the fade ruling. The mushr
 spec for round 47 is written (`logbook/specs/reef-spec.md`): a rock column with an
 overhanging cap, dead cells in the grid with live intervals a column, the cap an opaque body
 in the light field, the beach's fade around the rock, a signed-distance contact; the beach's
-fade sweep sets its fade. **The owner's answer is the beach** (2026-09-23, 14:00: "the gradient floor back,
-and finally put in the beach"): the gradient floor has in fact been on since round 39, its
+fade sweep sets its fade. **The owner's answer is the beach** (2026-09-23, 14:00, to bring the gradient floor back
+and finally put in the beach): the gradient floor has in fact been on since round 39, its
 shallow arc 30 m down; the beach raises the tilt to about 96 m so the floor breaks the
 surface at the shore, clamped at a shoal a metre deep, with the current's potential faded
 over the shoal so the floor-following map's stretch is not a jet. The spec is
@@ -306,15 +306,15 @@ noise in seed 3; no stomach founder of either kind bred (a consumer mouth cannot
 snow, an absorptive one lives at the underside's 0.44 J/m³ and saves nothing); nothing bit;
 no fan; books closed; the shelf's column mean either side of the break-even. **Three rulings
 came from it the same night.** D117 (the trickle brings back extinct species: a share of its
-founders are copies from a pool the config pins by hash; the owner: "I like the idea of
-reintroducing extinct species"); no change to the mutation or cell-type rates for round 47
+founders are copies from a pool the config pins by hash; the owner liked the idea of
+reintroducing extinct species); no change to the mutation or cell-type rates for round 47
 (the owner followed the recommendation; the mouth's attribute rates, at 0.005 a node, are
 the dial to screen once an eater can live); and **the owner delegated the reef's picture
-review** ("you can review the reef pictures and decide if they are good enough"): before any
+review** (the agent may review the reef pictures and decide whether they are good enough): before any
 round-47 run the agent takes the smoke's pictures from the side and from under a cap, reads
 the light under a cap against the water beside it, and launches on its own judgement. **The
-safari is being built** (the owner, the same night: "fire up an opus 5.5 to build up the full
-safari... I'd like safari videos of round 47 at the end"): two Opus subagents in worktrees,
+safari is being built** (the owner, the same night, asked for an Opus 5.5 to build the full
+safari, with safari videos of round 47 at the end): two Opus subagents in worktrees,
 the guide (`scripts/guide.py`, safari-spec items 1 to 5) and the director with the record
 (items 6 to 13, on TheatreFilm's machinery), against round 46's recordings; the caller runs
 the Editor checks and the first clips on round 46. The guide landed first (21:36):
@@ -349,8 +349,8 @@ subagent is writing `scripts/reads/r47-read.py` against the two worktrees' recor
 reef (`bd87f46`, the round-42 hash pins re-pinned to the merged `679f831c59c6f1af`) and the
 safari director (`803d3ee`). The reef landed with two rulings of the agent's: the cap is
 opaque to the light under it (the build's first cut let e⁻¹ through, the canopy's own
-arithmetic at a cover of 1; the owner's words were "make sure they block the sun under
-them", and one constant carries it, `ReefGeometry.CapTransmission`), and the fade stays at
+arithmetic at a cover of 1; the owner had asked that the caps block the sun under
+them, and one constant carries it, `ReefGeometry.CapTransmission`), and the fade stays at
 15 m, because at 10 m the fade's own term makes the water beside a reef faster than the
 grid's Courant bound (0.89 against 0.83 m/s; 0.24 within a cap radius at 15 m, 0.13 at
 20 m). Core 916 of 916 and Farm 85 of 85 on the merged tree; the Core fixture is `pfix9`'s
@@ -372,8 +372,8 @@ the screen reads against it; kept, with the reading written). Dynamics 101 of 10
 `r47fixc-s4`; `--verify-checkpoint` at 2,500 s of the screen PASS. **Round 47 is
 pre-registered as `logbook/0117-the-reef-and-the-second-chance.md`** (the draft under
 `logbook/specs/r47-prereg-draft.md` is superseded by it and kept as the draft), committed
-on a clean tree at `b0048dd`, **and not launched**: the owner woke as it was committed and
-ruled the reef's shape (D118: many caps of random size and irregular outline, overlapping,
+on a clean tree at `b0048dd`, **and not launched**: the owner ruled the reef's shape as it was committed
+(D118: many caps of random size and irregular outline, overlapping,
 placed to a cover of the surface, the purpose being dark places; and a rock skin on cap and
 stem). **Both rebuilds landed and are merged (23:20)**: the geometry (`9a467ce`, merged
 `8d03ee0`; `ReefCover` with the union on the grid's columns, radii 6 to 16 m, three-harmonic
@@ -442,14 +442,14 @@ only seed 1's three that landed above 1 J/m³ bred; the tables gather snow under
 the shade reads as thinner water under every cap at every sample; nothing lives in the dark.
 **The dissection of the stomachs** (an Opus subagent, 2026-09-24 morning;
 `logbook/specs/r47-read/tables.txt` and `ages.txt`, `scripts/reads/stomachs.py`, `tables.py`,
-`ages.py`) answers the owner's "why are stomachs not evolving": they do, one per thousand plant
+`ages.py`) answers the owner's question of why stomachs are not evolving: they do, one per thousand plant
 births, and mixotrophs are the form nearest replacement (R0 0.98 in seed 2); the larder is
 transient (rich only under the founding bloom, 2,000 to 8,000 s); senescence divides intake
 as well as multiplying upkeep, so the break-even rises as wear squared; eight in ten stomach
 births are founders born with 10 to 45 J at a random depth into 0.12 J/m³, dead in 20 to
 35 s; and dispersal is exonerated (seed 1's pool children were born 2 to 5 m from their
-parents in matching columns). **Round 48 is ruled** (the owner, 2026-09-24, "lets proceed
-with your recommendations"; D119 to D122): a cell type arrives only as a bud (no in-place
+parents in matching columns). **Round 48 is ruled** (the owner, 2026-09-24, told the agent to proceed
+with its recommendations; D119 to D122): a cell type arrives only as a bud (no in-place
 type change), reproduction paid as it goes as a gene beside the lump with the overhead
 proportional to the child above a floor and the investment and newborn-mass floors lowered,
 senescence on upkeep alone, and every founder at the richest cell of its food with an
@@ -478,7 +478,7 @@ carrying a developed 3 cm part, so no born-small addition was ever born in round
 2026-09-25 about 10:40).** This block is what the next session works from. Everything below it
 in this section is history.
 
-- **The work of 2026-09-25, started on the owner's go at 10:13 ("go ahead and start the work"),
+- **The work of 2026-09-25, started on the owner's go at 10:13 (the owner told the agent to start the work),
   with the owner away and reachable by phone notification.** The owner set Intel's power limits
   in BIOS 0806 at 10:11. The restart is confirmed; the setting itself cannot be read from
   Windows without admin tools. The machine track runs one heavy job at a time, owned by the
@@ -592,27 +592,27 @@ in this section is history.
     `fable-propose-round-49.md`:
     - question 1, the owner's alternative to (b): every founder starts with at most a fraction
       of its own breeding threshold, purse and endowment together, after its first growth, so
-      it earns the rest itself ("ok lets go with that"); the fraction is a tunable like every
-      other knob ("that value, the 90, should be configurable"), 0.9 in round 49. The agent's
+      it earns the rest itself (the owner agreed); the fraction is a tunable like every
+      other knob (the owner asked that the 90 be configurable), 0.9 in round 49. The agent's
       arithmetic for the one-part stomach (`scripts/reads/r49-prereg/gift_cap.py`): at 0.9 it never
       breeds at 0.5 J/m³ or below in its own cell, breeds at 44 s at 0.75 and 24 s at 1; a no-child
       period of 600 s, the owner's other idea, lets the gift pay a child at 0.5 after 600 s.
       Being built on `r49-founder-cap` (`scratch/wt-r49cap`), D124 to be written with it;
-    - question 2: the wear stays on upkeep ("agree with your recommendation");
-    - question 3: no change to the snow's stirring ("leave as is for now and evaluate"). The
+    - question 2: the wear stays on upkeep (the owner agreed with the recommendation);
+    - question 3: no change to the snow's stirring (the owner said to leave it as it is for now and evaluate). The
       owner's note for the round after next: a mouth fed from its one 1 m cell reads as if a
-      cell had a limit, "i wonder if we could come up with something smarter". The agent's
+      cell had a limit, and they wondered whether something smarter could be found. The agent's
       answer: no cell has a cap; the limit is the refill of the cell a mouth empties. Round 50
       candidates: a mouth fed from a neighbourhood, intake by the water passing the mouth, a
       finer grid near mouths.
-  - **The machine: option 2, up to half of it (the owner, 2026-09-25 afternoon: "lets go with
-    option 2 for now. aand you can go up to half the machine").** No flash for now, the risk
+  - **The machine: option 2, up to half of it (the owner, 2026-09-25 afternoon, chose
+    option 2 for now and let the agent use up to half the machine).** No flash for now, the risk
     accepted; the total heavy load at most 16 of 32 logical processors. Seed 2's re-run from
     founding ran clean past the fault (every stats field equal to the bit through 13,690 s, on
     the same build), so the recording's broken 13,700 s window is read as a one-off wrong
     computation, the processor or a rare thread race; seed 2 stays censored at 13,690 s.
-  - **Pushed (the owner: "push everything"):** main to `2a0ce25`.
-  - **The story film renders from farm windows (the owner: "render now", and the two-hour
+  - **Pushed (the owner told the agent to push everything):** main to `2a0ce25`.
+  - **The story film renders from farm windows (the owner said to render now, and the two-hour
     route is not to be quoted again).** Round 48's 21 windows are recorded on
     `scratch/wt-r49/artifacts/Evosim.Farm/bin/Release`, the exe built before the founder cap's
     tunable, every one FAITHFUL so far; the trial scenes 1 and 3 took about five minutes in
@@ -649,8 +649,8 @@ in this section is history.
     untracked stale `scripts/guide.py` (1,429 lines, against main's 2,220). The owner has the
     commands for both.
   - **The story-film skill is in the project**, at `.claude/skills/story-film/SKILL.md` (the
-    owner: "inside this project, as a project level skill").
-  - **Films recorded by the farm, drawn by Unity** (the owner: "lets do that!"). This is
+    owner asked for it inside this project, as a project-level skill).
+  - **Films recorded by the farm, drawn by Unity** (the owner approved). This is
     round 49's Part B. B1 is built on `r49-record-film`. Round 48's second film is made the
     current way.
     - **Round 49's branch now carries main and the checkpoint fix** (`e5c4926`, merging main
@@ -817,9 +817,7 @@ in this section is history.
   - **Merged:** the safari branch is in main (`d995433`, pushed), so story mode is on main.
 
 - **Superseded that afternoon by option 2 at up to half the machine (above).** The machine
-  ran under the owner's option B, not a full hold (2026-09-25, late morning: "Lets go for B
-  then"). The owner declined the flash for now ("if this is not critical i'd
-  rather not do it"; no USB stick to hand), after the agent's answer that it is important
+  ran under the owner's option B, not a full hold (2026-09-25, late morning: the owner chose B). The owner declined the flash for now (they would rather not do it unless it is critical; no USB stick to hand), after the agent's answer that it is important
   and not urgent. Of the three options put, B is:
   - no flash for now;
   - the owner sets ASUS MultiCore Enhancement to "Disabled - Enforce All limits" in BIOS 0806,
@@ -848,8 +846,7 @@ in this section is history.
   **The first launch under B, the seed 2 probe at 10 threads, was refused by Claude Code's
   auto-mode permission classifier ("Interfere With Workloads") and waits for the owner.**
   The hold's history follows.
-- **The machine was on hold for its firmware (the owner, 2026-09-24, about 20:05: "finish what
-  you're currently doing, but i'll come back later to do the updates. don't start new runs").**
+- **The machine was on hold for its firmware (the owner, 2026-09-24, about 20:05, said to finish what was running and start no new runs, and that they would come back later to do the updates).**
   The i9-13900K runs ASUS PRIME Z790-P WIFI BIOS 0806 of 2022-11-22 with microcode 0x10E
   (`HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor\0`, `Update Revision`), which predates
   Intel's fixes for the 13th and 14th generation's voltage degradation (0x129 of August 2024,
@@ -862,8 +859,8 @@ in this section is history.
   0x12B or later: seeds 1 and 3 of round 48 finish; nothing new starts, which the agent reads
   as no farm run (the seed 2 probe included), no render, no test suite and none of round 49's
   gap work.** The owner will choose Intel Default Settings after the flash, over the weekend
-  of 2026-09-26. **One release from the hold** (the owner, the same evening: "proceed without
-  bios changes"): the story safari of round 48, its compile and its render, tonight, for the
+  of 2026-09-26. **One release from the hold** (the owner, the same evening, said to proceed without
+  BIOS changes): the story safari of round 48, its compile and its render, tonight, for the
   owner to watch in the morning; the power plan is left as it is. The probe, farm runs, test
   suites and round 49's gap work stay held. Seed 2's probe is
   also a hardware test: a replay that reproduces the minus infinity at the same step is a code
@@ -872,7 +869,7 @@ in this section is history.
 - **Round 48's story film is made (01:58 on 2026-09-25) and waits for the owner's comments**:
   `scratch/owner/round-48-story.mp4` (22 of 22 scenes and a title, 8 min 47 s, every scene's
   camera clear of the bed, the bodies and the speed ceiling) and `round-48-story.md`. It was made
-  for the owner to watch in the morning of 2026-09-25 (the owner: a story "from all arms", filmed without reading the text first,
+  for the owner to watch in the morning of 2026-09-25 (the owner asked for a story from all arms, filmed without reading the text first,
   comments after). The writer's story and shot list are `scratch/story/r48/story.md` and
   `story.json` (22 scenes, eight chapters, about 8.5 minutes; `checks.tsv` has every caption's
   source; seed 3's numbers are provisional at 26,800 s). Story mode is on the safari branch
@@ -927,20 +924,20 @@ in this section is history.
   and `91de2a8` on top of `41ed512`, not merged). First, joints: the pink marker cylinder is
   gone and each free joint carries a knuckle of each part's own tissue, an ellipsoid on the
   anchor that hides when the limb is straight and rounds over the crease when it bends (the
-  owner: "we don't have a proper skin for joints... something that would make it look
-  organic"); no shot has yet been close enough to judge it. Second, leaves: every
+  owner said there was no proper skin for joints and wanted something that would make it look
+  organic); no shot has yet been close enough to judge it. Second, leaves: every
   photosynthetic box, whatever its thickness, is drawn as a seaweed blade the shader shapes per
   body (a round tip, a wedge base into the stalk, shallow lobes, a still frill at the margin
   inside the ruled curl of a tenth of the width, a midrib that fades up the blade, a lens at
   most a third as thick as it is wide), lit through by its size and glowing from the surface
   seen from below. The plan's seed sets the family's blade and the creature's id moves it a
   little, and every cell, not only a blade, takes its own shade, warmth and wrinkle placement
-  from the id (the owner: "something that doesn't look exactly the same for every leaf just
-  similar", and "the minor variations" for all cells). The blades cost nothing measurable: 33.4
+  from the id (the owner wanted leaves that are similar and not exactly the same, and wanted the
+  same minor variations for all cells). The blades cost nothing measurable: 33.4
   ms a frame on against 36.2 off on seed 1's 2,619 bodies. The owner has the sheet
   (`scratch/leaf-look/seaweed-blades-sheet.png`) and has not yet weighed in. Third, the ground
-  under a shaped bed is earth (the owner, on a round 48 picture: "everything under the ground
-  [should] be full of earth ... the camera should not actually be allowed in there"): a ring
+  under a shaped bed is earth (the owner, on a round 48 picture: everything under the ground
+  should be full of earth, and the camera should not be allowed in there): a ring
   wall inside the glass in a shader of its own, layered sediment under a grey sand band
   (`scratch/leaf-look/earth/side-4.png`), `EVOSIM_THEATRE_EARTH=0` to see through the shoal
   for a census, and the free-fly camera held 0.3 m above the bed (the films and the safari
@@ -1097,7 +1094,7 @@ in this section is history.
   and slightly behind the camera"), a canopy shot looking up at the crowd under Snell's
   window, and close portraits with real depth of field. Six rulings are listed there; the
   agent work in it is queued behind the leaves.
-- **A question to the owner, not gating**: "videos for the background" is not in the record.
+- **A question to the owner, not gating**: the owner's mention of videos for the background is not in the record.
   The nearest is the Leonardo backdrop stills of 2026-09-16 (`design/leonardo-prompts.md`, none
   generated). Asked whether it means footage for the YouTube edit, outside the world
   (recommended), or moving water behind the creatures (recommended against).
@@ -1124,8 +1121,8 @@ in this section is history.
 - **A proposal waits on the owner** for the round after 48: `fable-propose-reactive-thrust.md`
   (added mass as a per-link tensor in the solver's inertia). Not for round 48.
 - **Machine and load, the owner's rulings today:** at most two farm runs, none beside a
-  test suite, at most half the machine while the owner is at it, and "let's not leave it
-  churning for hours". Two farm arms run (round 48's seeds 1 and 2); renders go one at a
+  test suite, at most half the machine while the owner is at it, and no leaving it
+  churning for hours. Two farm arms run (round 48's seeds 1 and 2); renders go one at a
   time beside them.
   `scripts/sweep-orphans.ps1` first, every session.
 - **Loose ends worth an hour each, none gating:** the entry's G2 is a weak clause by
@@ -1439,8 +1436,8 @@ split the changes in two: a *replacement* changes what the world is and becomes 
 the owner's ruling, its round read for the mechanism and the goal rule not required; a
 *treatment* changes one price, sense or rule on a fixed world and joins the base only at its
 pre-registered bar. D094 (owner, 2026-09-16) deprecated D063 as the campaign's bar and set
-the ladder above; a treatment's bar is written in its own terms. The owner's ten-round plan of 2026-09-11 ("plan the next 10 rounds and
-change only if a result compels us"; "proceed autonomously") is the sequence below. The agent
+the ladder above; a treatment's bar is written in its own terms. The owner's ten-round plan of 2026-09-11 (plan the next ten rounds and
+change only if a result compels it, and proceed autonomously) is the sequence below. The agent
 may reorder it when a result compels (owner's grant, 2026-09-11), records each reorder here
 with its date and reason, and never adds a world rule: those come to the owner as
 `fable-propose-*.md`, absorbed into DECISIONS.md on ruling and then deleted. Rounds 28 to 37
@@ -1458,7 +1455,7 @@ ahead of the idle charge.
    is the one difference from the streams alone; a replay of a scored condition, agent
    work), launched 2026-09-13 afternoon on worker 6 as the renders hold the other slots;
    read on `diverged` against 37 and the traces' anatomy. Then the fresh seeds (D091; owner
-   2026-09-12, "proceed with your recommendations"): round 37b's world on seeds 6 to 10, no
+   2026-09-12, told the agent to proceed with its recommendations): round 37b's world on seeds 6 to 10, no
    build, **pre-registered as logbook/0098 (F1 to F8) and queued 2026-09-13 evening**
    (`launch-queue.ps1 -Prereg` on workers 2, 3, 4, 5 and 7 as the renders free them, log
    `scratch/logs/r37b-fresh-queue.out`); read against 37b's five as a second draw of the
@@ -1554,8 +1551,8 @@ ahead of the idle charge.
    shares of the floor's detritus by decile of floor height) joined `stats.jsonl` for
    round 39's E3 (`ef7c85a`), rechecked by smoke on worker 5 (`scratch/bed-recheck.ps1`).
    Merged into main on the evening of 2026-09-15 (`999ee8f`), workers 5 and 6 refreshed.
-   **Then the owner saw the pictures and resized the tank (D093, `db15dba`)**: "Can barely
-   see anything. And I think we need a much bigger tank. Much." Round 39 runs at 2,200 m²
+   **Then the owner saw the pictures and resized the tank (D093, `db15dba`)**: the owner could barely
+   see anything and thought the tank needed to be much bigger. Round 39 runs at 2,200 m²
    (radius 26.46 m), 45 m deep, a 30 m tilt (a 29.6° ramp, the shallow arc at 30 m, the
    lit band's floor, the deep arc at 60 m), relief 1.5 m at scale 17.6 m; the tilt's cap
    is 30°, `EVOSIM_DEPTH` is new, and the shelf is folded into the round. The matter
@@ -1577,8 +1574,8 @@ ahead of the idle charge.
    idle charge still at 0.0001; no build. *First reordered 2026-09-11 morning after round 34's
    first three seeds: the stroke's price shapes what a joint does, the idle charge only what
    it costs to own. Now behind the dilution and the bed, so that there is a chase to pay for.*
-   Before it is read on stroke quality, two things (owner 2026-09-12 night, "let's follow
-   your recommendation"):
+   Before it is read on stroke quality, two things (owner 2026-09-12 night, to follow
+   the recommendation):
    - **The water that a fin can push on**: lift on a panel (a Kutta-style term in speed
      squared, angle of attack and area, in the drag's own loop) and the reactive force of a
      body bending through water (Lighthill's elongated-body theory, an unsteady added-mass
@@ -1615,7 +1612,7 @@ short; the one targeted test allowed is the input-rewiring chance alone, with a 
 inoculation shows the world keeps a wired sense but never finds one. *The limiter at every
 step* was built as a tunable and failed its check (D089; 27 divergences against 17 with the
 same signature), so no round runs it. *Every code change orphans every earlier run for the
-theatre* (owner 2026-09-09, "a problem we should consider on its own", not to be answered
+theatre* (owner 2026-09-09: a problem to consider on its own, not to be answered
 now): candidates when it is taken up are a tagged build per round kept beside the tree, the
 theatre built against a run's recorded commit in a worktree, or a replay-only mode that loads
 old formats read-only.
@@ -1769,7 +1766,7 @@ subagent and never in a shell loop.
    the animal-kit rounds. The reduced step is about a quarter of the real one, so the brain
    and the senses are measured as a kernel before the port is sized (next, once the
    Editor checks are off the machine). Then the port proper, with the state stream as the
-   theatre's feed. **Sequenced by the owner on 2026-09-23 (00:30, "Agreed"):** the port is
+   theatre's feed. **Sequenced by the owner on 2026-09-23 (00:30, the owner agreed):** the port is
    the block right after round 45's read, with the machine to itself, not interleaved with
    the round. The rate is a chain of three links and the card shortens one: the solver
    (1.2 to 2.1 µs a body-step on the CPU; about 6x on the card in single at 10,000 bodies,
@@ -1853,11 +1850,11 @@ subagent and never in a shell loop.
 - **The worktrees**: the owner approved removal; the agent's `git worktree remove` was
   refused by the permission layer as irreversible, so the one-line command is with the
   owner to run.
-- **Cloud CPU: off (owner, 2026-09-18 morning: "cloud CPU right now is off. We'll continue
-  working on my machine").** The survey stands in `logbook/specs/cloud-cpu-survey.md` for
+- **Cloud CPU: off (owner, 2026-09-18 morning: cloud CPU is off for now, and the work continues
+  on the owner's machine).** The survey stands in `logbook/specs/cloud-cpu-survey.md` for
   the day it is reopened; its finding was that the licence, not the price, is the
   decision. Nothing is to be built for it: no CPU field in the manifest, no script port.
-  Round 40's ruling (6 m, "proceed with your recommendations") is D096 and is running.
+  Round 40's ruling (6 m, the owner told the agent to proceed with its recommendations) is D096 and is running.
 
 - **A tempo dial, later (owner, 2026-09-17 afternoon).** The owner asked whether the world's
   metabolic rate could rise so a run holds more generations. Worked through in conversation:
@@ -1874,8 +1871,8 @@ subagent and never in a shell loop.
   world has something worth speeding up. A proposal file then, not before round 39's read.
 
 - **The theatre in person: done.** The owner tried the interface on 2026-09-13 morning
-  ("not perfect yet, amazing progress"; good enough for now, the world comes first). On
-  2026-09-13 at 23:47 the owner ruled "proceed with your recommendations" on the agent's
+  (the owner found it not perfect yet, but amazing progress; good enough for now, the world comes first). On
+  2026-09-13 at 23:47 the owner ruled to proceed with the recommendations on the agent's
   plain-language brief. So the three rulings made under delegation stand: the 1.5 type step
   at 3400 px (build spec item 5), a cousin's lineage fields withheld, the pillow at 0.34
   (0091's addendum). The carve is 0.35 by the owner's eye; carve 0.5 was refused by the
@@ -1884,8 +1881,8 @@ subagent and never in a shell loop.
   rounding and a key for raw collider shapes are queued. And the Recorder's capture hides
   the interface from the Game View while it records, which is not intentional; it is to be
   reproduced on a worker with a graphics device and fixed in theatre code.
-- **Things wrong in motion** (owner, 2026-09-11 evening: "there are some issues with the
-  world that you can only see when rendering"), set aside and not yet named. The agent reads
+- **Things wrong in motion** (owner, 2026-09-11 evening: some issues with the
+  world can only be seen when rendering), set aside and not yet named. The agent reads
   stills only; when they are named the route is a film of the session with frames pulled at
   the seconds in question.
 - **Round 38's two rulings** are no longer open. D089's dilution to 400 m² with the matter

@@ -32,6 +32,22 @@ cost (the cost side is closed, the prize side is open; `mean m/s` reads the wate
 
 ## Gotchas
 
+- **A farm run launched from a worktree's program before 2026-10-06 names main's build.**
+  Until then `scripts/run-farm.ps1` set `EVOSIM_REPO_ROOT` to the main checkout whatever `-Exe`
+  named, so such a run's `run.json` records main's commit and source hashes. That covers the speed
+  program's exploration runs, the farm nudge ensembles and W1's farm trials, all on branch
+  `nursery-speed`, and round 53's card experiment in `scratch/wt-card53`. The program each one
+  actually ran is in its launcher's log, which names the exe on every launch. From 2026-10-06 the
+  script takes the root from the git checkout that holds the program. No round is affected, because
+  rounds launch from main's own program.
+- **A resumed farm run's `timesRealTime` is not its pace.** `run.json` divides the world's
+  `ElapsedSeconds`, counted from its founding, by this process's wall (`Program.cs`), so a run
+  resumed at 40,000 s for 300 s read 229.8 where its pace was 1.71 (S0 on the card, 2026-10-08).
+  Take a resumed run's pace as the seconds it stepped over its wall. A run from founding reads true.
+  `scripts/reads/gpu-accept.py`'s pace line carries the same fault (S1 and S2 read 40.6 for 1.66).
+- **The drive's and the drag's limited counts are cumulative from the world's founding.** A
+  checkpoint carries them, so a resumed run's `run.json` holds the founding's total, not its own;
+  neither `stats.jsonl` nor the report carries them by sample.
 - **Every evolution run through round 28 swam with added mass off, and the knob defaults to
   off.** `FluidConfig.AddedMassCoefficient` had no initialiser and `EvolutionRun` never set it,
   so every `config.json` through round 28 reads `addedMassCoefficient: 0` and those worlds swam
@@ -360,3 +376,69 @@ cost (the cost side is closed, the prize side is open; `mean m/s` reads the wate
   the new overhead and knows the mode, but a gestating body's account is not modelled, so
   an R0 from `ledger.ps1` is the lump lineage's. The Unity farm binds none of the eight, so
   a world built there has them at their defaults and its header carries none of the tokens.
+- **From round 58's runner build (D159, 2026-10-09) the world's checkpoint layout is version
+  15.** Version 14 is still read, with nothing guessed. Version 15 adds two counters to the
+  world, `Immigrated` and `ImmigrantsRefused`, and two fields to an immigrant's queued lineage
+  row. A version-14 world, round 57's, is read with both counters at 0. That is what such a
+  world holds, not a default for a missing field: no build that wrote version 14 could plant an
+  immigrant. A restored round 57 world therefore writes the same bytes at version 15 as the
+  unbroken one, and `Checkpoint.Version` stays 6, because the harness's half did not change. An
+  immigrant's lineage row reads `k: "m"` and `p: -1`, with no `src`. Its `g` is the generation
+  depth it carried from its home world. Its `from` is that world's place in the group, which the
+  run's `run.json` names, and its `fid` is its id there. A reader that counts founders by `k:
+  "f"` does not count it. A reader that takes every row that is not `f` for a child of a parent
+  counts it as one, and several of the per-round reads under `scripts/reads/` do; they have to
+  learn `m` before they read a migrating group. Immigrants are income in both books, as founders
+  are: the creature whose genome was copied stays alive in its own world.
+- **Every trickle world from round 46's build (D115) through round 57 made the trickle's
+  founders wait for their bodies.** Round 58's runner build fixes it (2026-10-10). The farm's
+  harness builds bodies only when a count of the ways a creature enters or leaves the world
+  moves, and the count left out `TrickleSpawns`. A trickle founder admitted in a step with no
+  birth, death or floor spawn therefore had no body until one of those happened. Meanwhile the
+  world charged and fed it at the height it was admitted at and at its patch's centre, not at
+  the spot reserved for it, and it touched nothing. The harness's bodiless instrument
+  (`Metabolise.cs`, the `bodiless:` line at a run's end) measured it on the build before the
+  fix, off the card. Over 290 s of r57-s2 from 3,000 s, just after its floor closed, with
+  about 1,800 alive and 13 trickle founders, 5 creatures waited, the longest 2 s. Over 50 s
+  from 47,000 s, with about 6,800 alive, none did. In a small dim world with the trickle every
+  2 s and no births, 108 of 131 founders waited, the longest 12.5 s. Both r57-s2 readings were
+  resumes across a build and an engine, so they read the harness and not the run's own steps.
+  A thin world shows the wait most, and a busy one barely at all. The fix moves a trajectory
+  at the first step in which a trickle founder arrives with nothing else happening. A busy
+  stretch of a recorded trickle world may therefore replay unchanged on the fixed build. Read a
+  comparison across the fix from that step, and assume neither that it holds nor that it parts.
+- **A migrating world's report names its exchange, from round 58's runner build (D159).** Its
+  settings line ends on `exchange every T s x N`, after the `configHash`, because the exchange
+  is a farm setting and no part of the config. Its table carries two columns between the last
+  base column (or `**pool**`) and `p0`: `**imm**` and `imm refused`. They are running totals of
+  immigrants planted and refused, the stats row's `immigrated` and `immigrantsRefused`, and not
+  counts for the window as `**trickle**` is. A world that does not migrate has neither, so every
+  other report is what it was. `scripts/reads/immigrants.py` reads a group's worlds: what each
+  was sent and planted, and how much of its living descends from an immigrant as the run goes on.
+- **A card run in single before D168 counts about half the contacts the CPU counts.** Single loses a
+  step's move under half a float's spacing, and at a tank's coordinates that spacing is coarser than a
+  contact's rest depth of microns. So a body easing into rest stalls just short of it, and on a frictionless
+  bed it meets a floor whose height jumps by microns. From round 57's 1,000 s, on the build before D168, single
+  counts 6.08 creature pairs and 3.14 bodies on the bed or the glass a step, where the CPU counts 13.20 and 5.92.
+  Paths and mean pushes stay close to the CPU's. From D168 (`r59-anchor`, merge 7af3193b) the card carries the
+  base position as a compensated sum and takes every contact difference, and the bed and the glass under a
+  contact, in a local frame. The same read is then 12.33 and 5.45. Round 58 ran wholly on the card before D168.
+  Its `contacts`, `pairs/body`, `pairs jnt %`, `stuck %` and `floor con` columns, and the chance of a bite,
+  which reads the same overlaps, are therefore not comparable with a CPU round's or a later card round's, as
+  D157's second term already requires. `logbook/specs/r59-pos64-plan.md` has the measurements.
+- **From round 60's build (`r60-fed`, 2026-10-15) a config written before D185 is refused, and the checkpoint is
+  version 18.** D185 adds `MatterIslandGlassMarginMetres` (`EVOSIM_MATTER_ISLAND_MARGIN`, 0 by default): no island
+  column within that many metres of the glass, the seeding and D175's influx alike. Loading refuses a config
+  without the key, so `ledger.ps1 -Config` and every tool that reads a `config.json` refuse any run written before
+  it; take the config from a run of this build. The header names the margin after the islands' depth, `matter
+  islands 90 m cover 0.05 to 12 m off the glass 30 m`, and only when it is set. The fixtures are
+  `fixtures/r42-config.json` (round 42's hash `29544802b3dbb3d3`), `fixtures/r57-s2-config.json` (`2b125f6cbda84a01`),
+  each with the key at 0 and nothing else changed, and the crowd `runs/r60fix-s4`. The nursery's recipe config
+  is refused too, and its move to the new format lands with r60-fed's merge into main. The world's checkpoint is
+  version 18 (`480ea8a1`): each body gains a `CARD` block, the card's float link centres and their rests and the
+  root's float and carry, so a resume on the card is the unbroken run (round 59's B3;
+  `logbook/specs/r60-build-report.md`). Version 17 is still read, and a world restored from it rebuilds the card's
+  pairs from the poses, as before, so a card resume of a version-17 checkpoint parts from its run as round 59's
+  did. B1's birth overhead now returns to the water in double. That is a different rounding of the matter at
+  every birth, so a world recorded on an earlier build may part from its replay at its first birth; I have not
+  measured where.

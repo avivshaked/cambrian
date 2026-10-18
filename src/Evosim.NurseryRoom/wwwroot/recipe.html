@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nursery room · recipe</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2302080c'/%3E%3Cpath d='M5 19c5-9 11-9 16-3l6-5v12l-6-5c-5 6-11 6-16-1z' fill='%235ef0ff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="nursery.css">
+<style>
+  :root { --t-micro: .77rem; --t-sm: .85rem; --t-md: 1rem; --t-lg: 1.3rem; --s3: .6rem; --s4: .9rem; --s5: 1.2rem; }
+  /* The sections and fields are the recipe's own structure (Recipe.cs, format 1), resolved. */
+  .page { grid-template-columns: 14rem minmax(0, 1fr) minmax(0, 1fr) 28rem; grid-template-rows: auto minmax(0, 1fr); }
+  .toc { grid-column: 1; grid-row: 1 / 3; } .side { grid-column: 4; grid-row: 1 / 3; overflow: auto; }
+  .author { grid-column: 2 / 4; grid-row: 1; flex-direction: column; padding: .8rem var(--s4); }
+  .col-a { grid-column: 2; grid-row: 2; overflow: auto; } .col-b { grid-column: 3; grid-row: 2; overflow: auto; }
+  /* Under 1600 px the check, the launch and the diff stay beside the form, in a column of their own, and not on a third row below it: at 1366 x 768 the launch is
+     in view without scrolling. The form's two columns and the side column each scroll inside themselves. */
+  @media (max-width: 1600px) { .page { grid-template-columns: 11rem minmax(0, 1fr) minmax(0, 1fr) 25rem; } }
+  @media (max-width: 1600px) { body { height: 100vh; overflow: hidden; } }
+  .author h1 { margin: 0; font-family: var(--mono); font-weight: 600; font-size: var(--t-lg); color: var(--ink-hi); }
+  .author .line { display: flex; align-items: baseline; }
+  .author .line > * + * { margin-left: var(--s4); }
+  .author .desc { color: var(--ink-hi); font-size: var(--t-md); margin-top: .3rem; }
+  .toc a { display: flex; align-items: center; height: 2.1rem; padding: 0 var(--s3); font-size: var(--t-sm); color: var(--ink-lo); letter-spacing: 1px; border-left: 2px solid transparent; cursor: pointer; text-transform: uppercase; }
+  .toc a:hover { background: var(--row-hover); }
+  .toc .count { margin-left: auto; }
+  fieldset { border: 0; margin: 0 0 .9rem; padding: 0; min-width: 0; }
+  legend { font-size: var(--t-micro); color: var(--ink-lo); letter-spacing: 1.4px; text-transform: uppercase; padding: 0; margin-bottom: .3rem; display: flex; width: 100%; }
+  legend span { margin-left: auto; font-family: var(--mono); letter-spacing: 0; text-transform: none; }
+  .row { display: grid; grid-template-columns: minmax(0, 1fr) 13rem 9rem; align-items: center; min-height: 1.9rem; border-bottom: 1px solid var(--rule); column-gap: var(--s3); }
+  .row.nobase { grid-template-columns: minmax(0, 1fr) 16rem; }
+  .row label { font-size: var(--t-sm); color: var(--ink-lo); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row label code { font-family: var(--mono); color: var(--ink-dim); font-size: var(--t-micro); margin-left: .45rem; }
+  .row .val { font-family: var(--mono); color: var(--ink-hi); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: .9rem; }
+  .row .val.null { color: var(--ink-dim); }
+  .row .base { font-family: var(--mono); font-size: var(--t-sm); color: var(--ink-lo); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row--diff { box-shadow: inset 2px 0 0 var(--ink-hi); padding-left: .45rem; }
+  .row--diff label { color: var(--ink-hi); }
+  .row--diff .base { text-decoration: line-through; }
+  .row--err { padding-bottom: .4rem; }
+  .row--err .val { outline: 2px solid var(--ink-hi); outline-offset: 2px; }
+  .msg { grid-column: 1 / -1; font-size: var(--t-sm); color: var(--ink-hi); display: flex; align-items: flex-start; margin-top: .4rem; line-height: 1.4; }
+  .msg .plate { margin-right: var(--s3); font-size: var(--t-micro); padding: 0 .45rem; flex-shrink: 0; }
+  .colhead { display: grid; grid-template-columns: minmax(0, 1fr) 13rem 9rem; column-gap: var(--s3); font-size: var(--t-micro); color: var(--ink-dim); letter-spacing: 1px; margin-bottom: .45rem; }
+  .colhead.nobase { grid-template-columns: minmax(0, 1fr) 16rem; }
+  .colhead span:nth-child(n+2) { text-align: right; }
+  /* a field's name never gives up its own width to its value: the value goes on a line under it when the two do not fit, and wraps there */
+  .diffline { font-family: var(--mono); font-size: var(--t-sm); display: flex; flex-wrap: wrap; align-items: baseline; column-gap: .7rem; padding: .3rem 0; border-bottom: 1px solid var(--rule); }
+  .diffline .k { color: var(--ink-hi); flex: 0 0 auto; max-width: 100%; overflow-wrap: anywhere; }
+  .diffline .pl { font-family: var(--sans); color: var(--ink-lo); }
+  .ask__git .plate { margin-right: .4rem; }
+  .diffline .v { color: var(--ink-lo); flex: 1 1 8rem; min-width: 0; overflow-wrap: anywhere; }
+  .diffline .v b { color: var(--ink-hi); font-weight: 400; }
+  .diffline .sub { flex: 0 0 100%; color: var(--ink-lo); font-size: .8rem; line-height: 1.5; margin-top: .15rem; overflow-wrap: anywhere; }
+  .diffline .sub b { color: var(--ink-hi); font-weight: 400; }
+  .chipv { display: inline-block; margin: .1rem .3rem .1rem 0; padding: 0 .35rem; border: 1px solid var(--rule-strong); border-radius: var(--r-sm); color: var(--ink); font-size: .75rem; line-height: 1.2rem; overflow-wrap: anywhere; }
+  /* a long value (a description, a path) takes the row's whole width under its label, and the base's value under that */
+  .row.row--wide { grid-template-columns: minmax(0, 1fr); row-gap: .1rem; padding: .3rem 0 .3rem .45rem; }
+  .row.row--wide .val, .row.row--wide .base { text-align: left; white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+  .row.row--wide .base { color: var(--ink-lo); }
+  .row.row--wide .base::before { content: "base: "; color: var(--ink-dim); }
+  .row--dropped .base::before { content: "the base's: "; }
+  .row--dropped .base { text-decoration: none; }
+  .side .field { height: 1.9rem; }
+  a.btn { text-decoration: none; }
+  pre.canon { font-family: var(--mono); font-size: .72rem; line-height: 1.4; color: var(--ink); background: rgba(150,230,255,.03); padding: .6rem; border-radius: var(--r-sm); max-height: 22rem; overflow: auto; margin: .4rem 0 0; white-space: pre; }
+  .pick a { display: block; padding: .5rem 0; border-bottom: 1px solid var(--rule); font-family: var(--mono); color: var(--ink-hi); text-decoration: none; }
+</style>
+</head>
+<body>
+<svg class="caustics" aria-hidden="true"><filter id="caus"><feTurbulence type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="4"/>
+  <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.95  0 0 0 0 1  0 0 0 -2.6 1.55"/></filter><rect width="100%" height="100%" filter="url(#caus)" opacity="0.045"/></svg>
+
+<header class="strip" id="strip" data-verdict></header>
+
+<main class="page" id="page">
+  <nav class="panel toc" aria-label="recipe sections"><div class="panel__head"><span class="title">Sections</span></div><div id="toc"></div>
+    <div class="section" style="margin-top:auto" id="toc-foot"></div></nav>
+
+  <!-- source: nursery://recipe/{path}: the recipe's name and description, its seed, its base. -->
+  <section class="panel hero author" aria-label="the recipe"><div id="author"></div></section>
+
+  <!-- source: one fieldset per top-level section of the resolved recipe, one row per field, in the recipe's own order; the base column is the base recipe resolved. A new section or override appears with no change to this page. -->
+  <section class="panel col-a" aria-label="first sections" id="col-a"></section>
+  <section class="panel col-b" aria-label="later sections" id="col-b"></section>
+
+  <!-- source: the check's result (recipe.check), the diff of the two resolved recipes, the room's settings for the machine. -->
+  <aside class="panel side" aria-label="what differs, and launch" id="side"></aside>
+</main>
+
+<footer class="bar">
+  <span class="spacer"></span>
+  <span id="foot"></span>
+</footer>
+
+<script type="module" src="js/recipe.js"></script>
+</body>
+</html>

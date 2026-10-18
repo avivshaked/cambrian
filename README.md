@@ -42,7 +42,7 @@ are still very far from that.
 > glass wall (D089, `logbook/0093`) whose water streams rather than swirls (D090), and an
 > outside review then found the grid's transporter making patches from uniform water,
 > repaired for round 37b, so every claim in rounds 32 to 37 about where food sits relative to
-> bodies carries that artefact (`gpt-astra-2026-09-12-1308-review-response.md`). Movement has never paid its energy cost — the cost side is
+> bodies carries that artefact (logbook/0094). Movement has never paid its energy cost — the cost side is
 > closed, the prize side is open — and throughput binds every remaining question.
 
 ---

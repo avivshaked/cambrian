@@ -591,8 +591,8 @@ namespace Evosim.Theatre
         /// <summary>
         /// Whether a trip's captions and its provenance label are stamped into its frames by
         /// <see cref="SnapshotCamera"/>'s bitmap font, or left out of the pixels for
-        /// <c>scripts/story-assemble.py</c> to set as subtitles (the owner, 2026-09-25: "why do the
-        /// subtitles look so bad? like a really weird font").
+        /// <c>scripts/story-assemble.py</c> to set as subtitles (the owner objected on 2026-09-25 that the
+        /// subtitles looked bad, in a strange font).
         /// </summary>
         /// <remarks>
         /// <see cref="BurnTextVariable"/> unset: a story's frames carry no text and every other

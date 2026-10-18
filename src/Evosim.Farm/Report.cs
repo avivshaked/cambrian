@@ -45,6 +45,12 @@ namespace Evosim.Farm
         public const string PoolColumn = "**pool**";
 
         /// <summary>
+        /// D159's two columns, immigrants planted and immigrants refused, running totals as the stats
+        /// row's <c>immigrated</c> and <c>immigrantsRefused</c> are; present only in a migrating world.
+        /// </summary>
+        public static readonly string[] ImmigrantColumns = { "**imm**", "imm refused" };
+
+        /// <summary>
         /// Fixes the table's shape for this run — <c>ConfigureColumns</c>.
         /// </summary>
         /// <remarks>
@@ -52,7 +58,13 @@ namespace Evosim.Farm
         /// on exactly one setting and a reader never has to work out whether a missing <c>p0</c>
         /// means one patch or a report written before D077.
         /// </remarks>
-        public Report(string path, RunConfig config)
+        /// <param name="path">Where the report is written.</param>
+        /// <param name="config">The run's config, which fixes the base set, the pool and the patches.</param>
+        /// <param name="migrating">
+        /// Whether the world trades genomes in a group (D159), which adds <see cref="ImmigrantColumns"/>.
+        /// It is a farm setting and not in the config, so the caller says it.
+        /// </param>
+        public Report(string path, RunConfig config, bool migrating = false)
         {
             _path = path ?? throw new ArgumentNullException(nameof(path));
             if (config == null) throw new ArgumentNullException(nameof(config));
@@ -62,14 +74,19 @@ namespace Evosim.Farm
             // D117's `pool`, after the last base column and before the patches, and only in a run whose
             // config names a pool: every other run's table is the trickle build's to the byte.
             int pool = config.FoundingTricklePoolCount > 0 ? 1 : 0;
-            var columns = new string[BaseColumns.Length + pool + patches];
+
+            // D159's two, after the pool and before the patches, and only in a migrating world, so
+            // every other run's table is what it was to the byte.
+            int immigrants = migrating ? ImmigrantColumns.Length : 0;
+            var columns = new string[BaseColumns.Length + pool + immigrants + patches];
 
             Array.Copy(BaseColumns, columns, BaseColumns.Length);
             if (pool > 0) columns[BaseColumns.Length] = PoolColumn;
+            if (immigrants > 0) Array.Copy(ImmigrantColumns, 0, columns, BaseColumns.Length + pool, immigrants);
 
             for (int p = 0; p < patches; p++)
             {
-                columns[BaseColumns.Length + pool + p] = "p" + p.ToString(CultureInfo.InvariantCulture);
+                columns[BaseColumns.Length + pool + immigrants + p] = "p" + p.ToString(CultureInfo.InvariantCulture);
             }
 
             Columns = columns;
@@ -201,17 +218,26 @@ namespace Evosim.Farm
                 // D109's three tokens, all reading the recorded world at their defaults.
                 " · matter " + (s.MatterIslands > 0f
                     ? "islands " + s.MatterIslands.ToString("0.#", Inv) + " m cover " + s.MatterIslandCover.ToString("0.###", Inv) +
-                      (s.MatterIslandDepth > 0f ? " to " + s.MatterIslandDepth.ToString("0.#", Inv) + " m" : " to bed")
+                      (s.MatterIslandDepth > 0f ? " to " + s.MatterIslandDepth.ToString("0.#", Inv) + " m" : " to bed") +
+                      // D185: written only when set, so every recorded header reads as it did.
+                      (s.MatterIslandMargin > 0f ? " off the glass " + s.MatterIslandMargin.ToString("0.#", Inv) + " m" : "")
                     : "uniform") +
+                // D192: written only when set, so every recorded header reads as it did.
+                (config.SeedOverrides.Length > 0 ? " · seeds " + string.Join(" ", config.SeedOverrides) : "") +
                 // D116 takes the token's own slot: one founder rule or the other, never both.
                 " · founders " + (s.FoundersFollowMatter
                     ? "in matter"
                     : s.FoundersFollowFood
-                        ? s.FoundersFollowFoodDepth
-                            ? s.FoundersFollowIncomeDepth
-                                ? "in their food at its depth, leaves where they earn most"
-                                : "in their food at its depth"
-                            : "in their food"
+                        ? (s.FoundersFollowFoodDepth
+                              ? s.FoundersFollowIncomeDepth
+                                  ? "in their food at its depth, leaves where they earn most"
+                                  : "in their food at its depth"
+                              : "in their food") +
+                          // D129's mouths, after the rest of the token so every earlier header reads
+                          // as it did; "at" under the depth rule, "among" without it.
+                          (s.FoundersFollowCorpses
+                              ? s.FoundersFollowFoodDepth ? ", mouths at the corpses" : ", mouths among the corpses"
+                              : "")
                         : "anywhere") +
                 // The round 48 founding ruling's endowment, beside the rule that places the
                 // founders it is given to; rendered off as well as on, as the trickle is.
@@ -224,6 +250,17 @@ namespace Evosim.Farm
                     ? s.LightShade.ToString("0.##", Inv) + " drift " + s.LightShadeDrift.ToString("0.#", Inv) + " m/h"
                     : "off") +
                 " · day ±" + F(s.DayAmplitude) + " over " + F(s.DayLength) + " s" +
+                " · season ±" + F(s.SeasonAmplitude) + " over " + F(s.SeasonLength) + " s" +
+                // D151's shape, inside the season's token and only when it is not the smooth
+                // year, so every earlier header reads as it did; then the weather's own token,
+                // printed off as well as on, as the season's is.
+                (s.SeasonShape == SeasonShape.TwoSeason
+                    ? " two-season ramp " + F(s.SeasonRamp) + " s"
+                    : "") +
+                " · weather " + (s.WeatherSpread > 0f
+                    ? "σ " + F(s.WeatherSpread) + " ρ " + F(s.WeatherCorrelation) +
+                      " seed " + s.WeatherSeed.ToString(Inv)
+                    : "off") +
                 " · current " + F(s.CurrentSpeed) + " m/s " +
                 s.CurrentMode.ToString().ToLowerInvariant() +
                 " over " + F(s.CurrentPeriod) + " s" +
@@ -265,6 +302,7 @@ namespace Evosim.Farm
                 " · matter in " + F(s.MatterInflux) + "/s at " +
                 s.MatterInfluxAt.ToString().ToLowerInvariant() +
                 ", burial " + F(s.MatterBurial) + "/s" +
+                (s.MatterBurialDesert >= 0f ? ", desert burial " + F(s.MatterBurialDesert) + "/s" : "") +
                 " · speciesTheta " + F(s.SpeciesTheta) +
                 (s.Patches > 1f
                     ? " · patches " + F((int)s.Patches) + ", h-mix " + F(s.HorizontalMixing) + " m2/s, " +
@@ -284,8 +322,9 @@ namespace Evosim.Farm
 
                 // D117, after the trickle it is a share of, and only when a pool is named (the
                 // count is the config's, set from the files), so every earlier header is unchanged:
-                // `pool 0.1 of 3`, or `pool 0 of 3` for a pool named and unused.
-                PoolToken(config) +
+                // `pool 0.1 of 3`, or `pool 0 of 3` for a pool named and unused; `weighted` after
+                // it when a list file gave the pool weights.
+                PoolToken(config, space.PoolWeighted) +
                 " · ceiling " + F(s.MaxPopulation) +
                 " maxTissue=" + s.MaxTissue.ToString("0.#", Inv) +
                 // The round 48 ruling says which sides the wear takes: D038's two, or upkeep alone.
@@ -319,8 +358,17 @@ namespace Evosim.Farm
                 " · matterBudget " + F(s.MatterBudget) +
                 " · addedMass " + F(s.AddedMass) +
                 " · fluidAccel " + F(s.FluidAccel) +
+                (s.LimbPush > 0 ? " · limbPush " + F(s.LimbPush) : "") +
+                (s.PowerPush > 0 ? " · powerPush " + F(s.PowerPush) + " rad/s pose " + F(s.PoseHz) + " Hz" : "") +
+                (s.DriveGenes || s.DriveGeneChance > 0 ? " · drive genes " + (s.DriveGenes ? "drawn" : "default") + " mut " + F(s.DriveGeneChance) : "") +
                 " · " + (s.WaterHold > 0f ? "water held " + F(s.WaterHold) + " s" : "water per link") +
+                (s.TurningDrag == TurningDragForm.Skin ? " · turning skin " + F(s.SkinFriction) : "") +
+                (s.TurningDrag == TurningDragForm.Spin ? " · turning spin " + F(s.SpinDrag) : "") +
                 " · neuron " + F(s.NeuronCost) + " W + " + F(s.ConnectionCost) + " W/input, work x" + F(s.WorkCost) +
+                // D146's one brain, beside the neurons it replaces, and only when it runs, so every
+                // per-node header is the one already written. From the config, so a resumed run's
+                // header says which brain it ran.
+                (config.Brain != null && config.Brain.BrainModel == BrainModel.Central ? " · brain central" : "") +
                 " · field " + s.FieldModel.ToString().ToLowerInvariant() +
                 " h=" + F(s.FieldKernel) + " mh=" + F(s.FieldMatterKernel) + " merge=" + F(s.FieldMerge) +
                 " cap=" + F(s.FieldCap) + " q=" + F(s.FieldQuantum) +
@@ -358,6 +406,7 @@ namespace Evosim.Farm
                 // count a different thing under each model, and analyse-arm.ps1 and
                 // contact_aliases.py read which from this token.
                 " · contact " + (config.ContactPerPart ? "per part" : "per body") +
+                (config.BedFriction > 0 ? " friction " + F(config.BedFriction) : "") +
 
                 // The ruling of 2026-09-24, at the end before the hash and rendered either way.
                 // The floor is the `overhead` token above, which is unchanged; this says whether
@@ -371,7 +420,78 @@ namespace Evosim.Farm
                       F(config.Genome.MaxGestationShare) +
                       " at " + F(config.Mutation.GestationShareChance)
                     : "off") +
-                " · configHash `" + config.Hash() + "`";
+
+                // Round 51's three rulings (D127, D128), at the end before the hash, rendered
+                // either way and built from the config so a resumed run's header says what it ran.
+                " · free link " + (config.FreeFirstLinkCubicMetres > 0f
+                    ? F(config.FreeFirstLinkCubicMetres) + " m3"
+                    : "off") +
+                " · corpse sink " + (config.CorpseSinkMetresPerSecond > 0f
+                    ? F(config.CorpseSinkMetresPerSecond) + " m/s"
+                    : "snow") +
+                (config.CorpseSettles ? " settles" : " drifts") +
+                " floor " + (config.CorpseLeavesBelowFraction > 0f
+                    ? F(config.CorpseLeavesBelowFraction)
+                    : "1e-6 J") +
+                " settled decay " + (config.CorpseSettledDecayPerSecond > 0f
+                    ? F(config.CorpseSettledDecayPerSecond) + "/s"
+                    : "as sinking") +
+                " · age " + (config.AgeHazardBaseSeconds > 0f
+                    ? "base " + F(config.AgeHazardBaseSeconds) + " s doubling x" +
+                      F(config.AgeHazardDoublingFraction) +
+                      " birth " + F(config.AgeingPerBirth) + " wound " + F(config.AgeingPerWound) +
+                      " repair ^" + F(config.AgeRepairExponent) +
+                      " lifespan " + F(config.Genome.MinLifespan) + "-" + F(config.Genome.MaxLifespan) +
+                      " at " + F(config.Mutation.LifespanChance)
+                    : "off") +
+                RoundFiftyNineToken(config) +
+                " · configHash `" + config.Hash() + "`" +
+                // D159's exchange, after the hash because it is a farm setting and no part of the
+                // config, and only in a migrating world, so every other line is what it was. A lone
+                // run with the setting is refused before a report is begun.
+                (s.MigrateEvery > 0f
+                    ? " · exchange every " + F(s.MigrateEvery) + " s x " + s.MigrateCount.ToString(Inv)
+                    : "");
+        }
+
+        /// <summary>
+        /// Round 59's additions (D162, D165, D167, and D177's consumer upkeep when it is not
+        /// <see cref="ConsumerCell"/>'s own), before the hash and only when on, so every line written
+        /// without them is the line it was. Built from the config, so a resumed run's header says
+        /// what it ran.
+        /// </summary>
+        public static string RoundFiftyNineToken(RunConfig config)
+        {
+            string token = "";
+
+            if (config.LeafScent != LeafScentForm.None)
+            {
+                token += " · leaf smell " + config.LeafScent.ToString().ToLowerInvariant() +
+                         " range " + F(config.LeafScentRangeMetres) + " m cell " + F(config.LeafScentCellMetres) +
+                         " m half " + F(config.LeafScentHalfScaleSquareMetres) + " m2";
+            }
+
+            if (config.UnbittenDeathsLeaveNoCorpse) token += " · unbitten burnt";
+
+            if (config.CellTypes.Contains(CellTypeIds.Consumer))
+            {
+                float upkeep = config.CellTypes.Resolve(CellTypeIds.Consumer).UpkeepWattsPerCubicMetre;
+                if (upkeep != new ConsumerCell().UpkeepWattsPerCubicMetre)
+                {
+                    token += " · consumer upkeep " + F(upkeep) + " W/m3";
+                }
+            }
+
+            if (config.CellTypes.Contains(CellTypeIds.Anchoring))
+            {
+                var cell = (AnchoringCell)config.CellTypes.Resolve(CellTypeIds.Anchoring);
+                token += " · anchoring tenacity " + F(cell.TenacityNewtonsPerSquareMetre) +
+                         " N/m2 price " + F(cell.BuildJoulesPerNewton) + " J/N decay " + F(cell.DecaySeconds) +
+                         " s reserve " + F(cell.ReserveThresholdSeconds) + "/" + F(cell.ReserveLagSeconds) +
+                         " s upkeep " + F(cell.UpkeepWattsPerCubicMetre) + " W/m3 bud x" + F(cell.BudWeight);
+            }
+
+            return token;
         }
 
         /// <summary>
@@ -419,15 +539,19 @@ namespace Evosim.Farm
         }
 
         /// <summary>
-        /// D117's header token with its separator — <c> · pool 0.1 of 3</c> — or nothing when the
-        /// config names no pool.
+        /// D117's header token with its separator — <c> · pool 0.1 of 3</c>, and
+        /// <c> · pool 0.1 of 240 weighted</c> for a pool a list file weighted — or nothing when the
+        /// config names no pool. A floor share above 0 (the owner's ruling of 2026-10-04) adds
+        /// <c>, floor 0.6</c> at the end; at 0 nothing is added, so every earlier header is
+        /// unchanged.
         /// </summary>
-        public static string PoolToken(RunConfig config)
+        public static string PoolToken(RunConfig config, bool weighted = false)
         {
             if (config.FoundingTricklePoolCount <= 0) return string.Empty;
 
             return " · pool " + F(config.FoundingTricklePoolShare) + " of " +
-                config.FoundingTricklePoolCount.ToString(Inv);
+                config.FoundingTricklePoolCount.ToString(Inv) + (weighted ? " weighted" : "") +
+                (config.FoundingFloorPoolShare > 0f ? ", floor " + F(config.FoundingFloorPoolShare) : "");
         }
 
         /// <summary>
@@ -517,11 +641,20 @@ namespace Evosim.Farm
                     case SensorChannel.Chemical: names[i] = "chemical"; break;
                     case SensorChannel.Energy: names[i] = "energy"; break;
                     case SensorChannel.Flow: names[i] = "flow"; break;
+                    case SensorChannel.Scent: names[i] = "scent"; break;
 
                     // D106 item 5's two, named here rather than left to the default case so the
                     // token reads in the same lower-case shorthand as the rest of it.
                     case SensorChannel.Contact: names[i] = "contact"; break;
                     case SensorChannel.Damage: names[i] = "damage"; break;
+
+                    // The drive sense's three (RunConfig.SenseDrive).
+                    case SensorChannel.Stroke: names[i] = "stroke"; break;
+                    case SensorChannel.Hold: names[i] = "hold"; break;
+                    case SensorChannel.Ramp: names[i] = "ramp"; break;
+                    case SensorChannel.BedTouch: names[i] = "bedtouch"; break;
+                    case SensorChannel.LeafScent: names[i] = "leafscent"; break;
+                    case SensorChannel.LeafScentDirection: names[i] = "leafdir"; break;
                     default: names[i] = pool[i].ToString().ToLowerInvariant(); break;
                 }
             }
@@ -821,6 +954,12 @@ namespace Evosim.Farm
         public int Threads;
         public string InoculumHashShort;
 
+        /// <summary>
+        /// Whether the world was handed weights for its pool (a list file's, <c>pool/index.tsv</c>):
+        /// the config pins them only inside the pool's hash, so the header reads them off the world.
+        /// </summary>
+        public bool PoolWeighted;
+
         /// <summary>The tile spacing of the tiled world — <c>Ecosystem.TileSpacing</c>.</summary>
         public float TileSpacingMetres;
 
@@ -838,6 +977,7 @@ namespace Evosim.Farm
                 Reefs = world.Reefs,
                 Threads = threads,
                 InoculumHashShort = inoculumHashShort,
+                PoolWeighted = world.TricklePoolWeights != null,
                 TileSpacingMetres = 100f,
             };
     }

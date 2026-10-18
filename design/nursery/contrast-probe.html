@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>contrast probe</title>
+<style>html, body { margin: 0; } iframe { border: 0; display: block; }</style>
+</head>
+<body>
+<!-- contrast.py loads a screen in this frame at the window's size and reads back, for every piece
+     of text on it, its colour, its opacity and its box; the background behind it is read from the
+     screenshot of the same screen at the same size. -->
+<iframe id="f"></iframe>
+<pre id="out"></pre>
+<script>
+// The frame takes the screenshot's size from the query, not from this window: headless Edge's
+// window is shorter than --window-size by its own frame, while the screenshot is not.
+const q = new URLSearchParams(location.search), f = document.getElementById('f'), page = q.get('p'), W = +q.get('w'), H = +q.get('h');
+f.style.width = W + 'px'; f.style.height = H + 'px';
+f.onload = () => setTimeout(() => {
+  const d = f.contentDocument, w = f.contentWindow, rows = [];
+  const opacity = e => { let o = 1; for (let n = e; n && n.nodeType === 1; n = n.parentNode) o *= parseFloat(w.getComputedStyle(n).opacity); return o; };
+  const walker = d.createTreeWalker(d.body, NodeFilter.SHOW_TEXT);
+  for (let t; (t = walker.nextNode());) {
+    const s = t.textContent.trim(); if (!s) continue;
+    const e = t.parentElement, cs = w.getComputedStyle(e);
+    if (cs.visibility === 'hidden' || cs.display === 'none') continue;
+    const r = d.createRange(); r.selectNodeContents(t); const b = r.getBoundingClientRect();
+    if (b.width < 2 || b.height < 2 || b.right < 0 || b.bottom < 0 || b.left > W || b.top > H) continue;
+    const svg = e instanceof w.SVGElement, color = svg ? cs.fill : cs.color;
+    rows.push({t: s.slice(0, 40), c: color, o: +opacity(e).toFixed(3), px: parseFloat(cs.fontSize),
+      x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height)});
+  }
+  const panels = [...d.querySelectorAll('.panel')].map(p => { const b = p.getBoundingClientRect(); return {x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height)}; });
+  const root = w.getComputedStyle(d.documentElement), ink = {};
+  for (const k of ['--ink-hi', '--ink', '--ink-lo', '--ink-dim', '--run', '--ctl', '--sig', '--p2']) ink[k] = root.getPropertyValue(k).trim();
+  console.log('PROBE' + JSON.stringify({rows, panels, ink}) + 'PROBE');
+}, 1500);
+// A built screen is served by the room; contrast.py --base serves this probe on the same origin
+// and passes the screen's address as src.
+f.src = q.get('src') || page + '.html';
+</script>
+</body>
+</html>

@@ -43,6 +43,14 @@ namespace Evosim.Core
         /// </summary>
         public bool TerminalOnly { get; set; }
 
+        /// <summary>
+        /// D146: this edge's permanent id, given when it is made (<see cref="Genome.NextEdgeId"/>)
+        /// and carried by every copy, so the parts it grows keep their brain wiring when an
+        /// earlier edge of the node is removed and the indices shift. 0 is no id: every genome of
+        /// the old model, whose part paths use the edge's index instead.
+        /// </summary>
+        public ulong Id { get; set; }
+
         public MorphEdge Clone() => new MorphEdge
         {
             Child = Child,
@@ -52,6 +60,7 @@ namespace Evosim.Core
             Scale = Scale,
             Reflect = Reflect,
             TerminalOnly = TerminalOnly,
+            Id = Id,
         };
 
         public override string ToString() =>

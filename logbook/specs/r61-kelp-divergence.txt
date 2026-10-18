@@ -1,0 +1,86 @@
+r61-p6103x2's divergences, diagnosed off the card on 2026-10-18 (evolution-simulator-08)
+Run: runs/r61-p6103x2/2026-10-18-043434-119d0f30, read live to t 55,120 s (121 diverged by then; 53 dump files,
+50 single frames and 3 traces). Nothing on the card and nothing in the run was touched.
+
+In short: every blow-up is a kelp-family blade. Its spin squares itself in a few steps because the water's drag is
+stepped explicitly and the drag limiter is off at this step. The rate does not track the giant count.
+
+1. Who diverges
+- All 50 single-frame dumps are the kelp family, and so are the 3 traces. Each root is a photosynthetic box
+  with Indeterminate growth and a recursive edge whose scale grows the length 1.6 to 2.3 times a module (1.96 in most)
+  and narrows the width (x0.6-1.0) and the thickness (x0.3-0.6).
+- The thickness stops at a 0.02 m floor, so each module is a longer, narrower plate 0.02 m thick, and mass grows
+  about 1.45x a module.
+- Rigid chains, all of them: 47 have 0 dof (Fixed joints alone). The 3 traced bodies carry one spherical link (3 dof)
+  whose joint velocity is 0 in every frame.
+- At death 46 of the 50 hold 7 or 8 parts.
+- Grown from the last snapshot before death, which is often a module short, they are straight blades whose longest
+  part is 10-50 m. 108599 has 8 parts and its last is 41.6 x 0.057 x 0.02 m. Moments about the transverse axes run
+  1e2 to 1.8e4 kg m2, about the long axis 1 to 30.
+  (scratch/r61-giants/dumps-p6103x2.txt, GiantFind --dumps)
+- One dump is not a blow-up: 120254, a one-part body of the family found inside reef 46 by 0.19 m.
+- 52 are blow-ups: 51 by "link 0's contact sphere out of the grid's reach" and one, 119669, by its root height
+  (1.1e15 m).
+
+2. What blows up first: the spin, squaring each step
+- Trace 108737 holds the last three steps before its dump. Link 0's angular velocity is 3.7e3, then 4.4e7, then
+  3.8e15 rad/s, each about 3 times the square of the one before. Velocity and force follow.
+- That is the signature of an explicit step on a drag that grows as the square of the spin. Once kappa*dt*|w|
+  passes 2, each step overshoots and the error squares.
+- A contact push grows with the depth it pushes out of, not with the spin squared. A joint cannot do it (0 dof, or
+  joint velocity 0). Nothing in the giants' contacts enters it.
+- The single frames agree: velocity is position/dt in every dump, so the body left a sane place in one step.
+
+3. The harness: the same bodies alone on the CPU solver (GiantFind --spin)
+Setup: each body grown from the last snapshot before its dump, alone in open water at the run's fluid settings,
+contacts off, with a starting spin about one world axis on its root, run for up to 3 s. Recorded: the smallest
+starting spin (ladder 0.02-20 rad/s) at which it runs past 1e6 rad/s.
+
+  longest part   as run       no spin drag   no pressure drag   half step (0.005 s)   no drag at all
+  1.4 m          20           20             none to 20         none to 20            none to 20
+  1.8 m          20           none to 20     none to 20         none to 20            20, after 249 steps
+  4.2 m          10           20             20                 20                    20, after 212 steps
+  10 m           5            5              5                  5                     20, after 188 steps
+  21 m           2            5              5                  5                     20, after 189 steps
+  42 m           1            2              2                  2                     20, after 189 steps
+  50 m           0.5          1              2                  1                     20, after 182 steps
+  (rad/s, the most sensitive axis; with drag every runaway takes 5-8 steps, 13-21 about the long axis.)
+  (scratch/r61-giants/spin-p6103x2.txt)
+
+- The threshold falls with the blade's length, from 20 rad/s at 1.4 m to 0.5 rad/s at 50 m. A 50 m blade turning
+  half a radian a second, its tip moving 12 m/s, blows up in eight steps.
+- Each drag term alone (the panels' pressure drag, D161's spin drag) is enough at about twice the spin.
+- Halving the step about doubles the threshold, as an explicit step's would.
+- With no drag the solver holds every body to 20 rad/s for well over a hundred steps. The rigid integration is not
+  the cause.
+- Caveat: the snapshot bodies are often a module short of the bodies at death, and a module about doubles the
+  length, so the thresholds at death are lower still (inference).
+
+4. Why nothing catches it
+- The water does have a limiter for this (src/Evosim.Dynamics/Fluid.cs). It caps a link's opposing drag at m*v/dt,
+  and its opposing turning torque at its smallest inertia times its spin over dt.
+- But SolverConfig.DragLimiterEngages is StepSeconds > 0.0100001, and the world steps at 0.01 s, so the limiter never
+  engages. Every report reads "drag limited 0" for that reason.
+- The card's water and fluid pass computes this drag in this world. The harness ran the CPU solver's Fluid.cs. That
+  the card does the same arithmetic is inference from the gates that hold the two bit-identical.
+
+5. Does the rate track the giants? No
+- Pearson r is 0.11 between the divergence rate and the count of bodies with a row of 1,024 cells or more, over 22
+  windows from 49,600 to 55,000 s (scratch/r61-giants/rate-vs-giants.txt).
+- The rate rose from about 10 per 1,000 s (49,600-51,000) to 20-27 (51,000-55,000). The giant bodies rose to about
+  140 at 50,800 s, fell to 80 by 53,000 and climbed to 180 by 55,000.
+- A giant is a size, and the blow-up is a spin that falls with length. A count of 7- and 8-module blades would be the
+  covariate to try (not measured).
+- What gives a blade its first half radian a second is not identified: a contact, a reef or the bed, the current, or
+  a module added. The three traces show no resize in their frames.
+
+6. What a fix would be (each one changes the realisation, so each is the owner's)
+- (a) Engage the drag limiter at 0.01 s as well. It is per link, and a 0-dof blade turns as one rigid body, so whether
+  a per-link cap holds a 40 m chain needs the harness (not tested).
+- (b) Step the drag implicitly, or split the step for a body whose drag-to-inertia ratio passes a bound.
+- (c) A world rule on the blade itself: a limit on a module's growth in length, or on the thin floor's aspect.
+- (d) Leave it. The blow-up then works as a death that falls on the longest kelp blades, an unphysical size cap on
+  the line.
+
+Files: scratch/r61-giants/dumps-p6103x2.txt, spin-p6103x2.txt, rows-p6103x2.txt, rate-vs-giants.txt,
+diverged-census.py, giant-find/Program.cs (modes --dumps and --spin), diverged-p6103x2.cmd, spin-p6103x2.cmd.

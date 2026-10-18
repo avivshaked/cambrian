@@ -1,0 +1,91 @@
+{
+  "format": 1,
+  "name": "leaf-strength-tops",
+  "description": "The bench of leaf-strength's saved tops (D172): the top genome of each of its 31 generations, every brain as the search left it, swum eight to a tank in the arm's own world, on 32 held-out episodes, under its own brain, no brain and the leaf smell knocked out. Analysis of a finished arm; nothing is searched.",
+  "seed": "0x1",
+  "world": {
+    "config": "rounds/nursery/configs/3fd98985cdf68008.json",
+    "configHash": "3fd98985cdf68008",
+    "overrides": {
+      "AgeHazardBaseSeconds": 0,
+      "AgeRepairExponent": 0,
+      "AgeingPerBirth": 0,
+      "AgeingPerWound": 0,
+      "BedShoreDepthMetres": 0,
+      "BedShoreFadeMetres": 0,
+      "BedTiltMetres": 0,
+      "Fluid.SpinDragCoefficient": 0.5,
+      "Fluid.TurningDrag": "Spin",
+      "FoundingTricklePerSecond": 0,
+      "FoundingTricklePoolCount": 0,
+      "FoundingTricklePoolHash": "",
+      "FoundingTricklePoolShare": 0,
+      "InitialMatterPerCubicMetre": 0,
+      "LeafScent": "Strength",
+      "LeafScentRangeMetres": 3,
+      "MatterBudgetUnits": 0,
+      "MatterIslandWavelengthMetres": 0,
+      "ReefCover": 0,
+      "UnbittenDeathsLeaveNoCorpse": true,
+      "WorldAreaSquareMetres": 400
+    }
+  },
+  "bodies": {
+    "source": "pool",
+    "founders": 0,
+    "trunk": null,
+    "pool": "rounds/nursery/pools/9cee8ad6fca64ecd.tsv",
+    "keep": null
+  },
+  "setup": {
+    "seconds": 1800,
+    "dt": 0.01,
+    "tankSize": 8,
+    "floorClosed": true,
+    "birthsHeld": true,
+    "snow": null,
+    "carrion": {
+      "count": 0,
+      "joules": 40
+    },
+    "start": {
+      "aboveBed": 11.5
+    },
+    "purse": {
+      "rule": "grown",
+      "seconds": 3830
+    }
+  },
+  "leaves": {
+    "pool": "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz",
+    "count": 62,
+    "spentUnitsPerCubicMetre": 0.004237
+  },
+  "search": null,
+  "reward": {
+    "class": "WeightedSum",
+    "parameters": {
+      "weights": {
+        "eaten": 1
+      }
+    }
+  },
+  "exam": {
+    "episodes": 32,
+    "salt": "0x686f6c64",
+    "controls": [
+      {
+        "kind": "own"
+      },
+      {
+        "kind": "brainless"
+      },
+      {
+        "kind": "knockout",
+        "channels": [
+          "LeafScent"
+        ]
+      }
+    ]
+  }
+}

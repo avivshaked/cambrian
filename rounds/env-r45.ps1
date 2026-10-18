@@ -25,8 +25,8 @@
 # 12 m of a tenth of the columns, level across each island (0.57 units/m3 at t = 0); the
 # founders and every floor spawn planted in the islands and no deeper than 12 m; the matter
 # grid stirred at 0.02 m2/s, the snow's rate, where rounds 32 to 44 stirred it at a hard
-# default of 2. The light is even (the shade map at 0: "light can't have concentration", the
-# owner). The runaway ceiling is 25,000 so a crowd ten times round 44's is not censored.
+# default of 2. The light is even (the shade map at 0; the owner ruled that light cannot be
+# concentrated). The runaway ceiling is 25,000 so a crowd ten times round 44's is not censored.
 @{
     EVOSIM_MATTER_ISLANDS = 60; EVOSIM_MATTER_ISLAND_COVER = 0.1; EVOSIM_MATTER_ISLAND_DEPTH = 12
     EVOSIM_FOUNDERS_FOLLOW_MATTER = 1

@@ -1,0 +1,179 @@
+config hash mismatch (the D199 switches written in): Stored hash 119d0f3001f59ecc does not match the settings in this file (ebca5af92ff72506). The file was edited after it was written, which is fine - but results filed under the stored hash were produced by different settings.
+growth: D199 reading three (ScaleLengthensOnce)
+== body 105464: 3 parts from snapshot -1, longest part 0.73 m
+    part 0 parent -1: 0.508 x 0.371 x 0.069 m
+    part 1 parent 0: 0.376 x 0.727 x 0.024 m
+    part 2 parent 1: 0.279 x 0.727 x 0.020 m
+  0.01 s, as run   axis x: runs away from 100 rad/s at step 5
+  0.01 s, as run   axis y: runs away from 50 rad/s at step 5
+  0.01 s, as run   axis z: none up to 100 rad/s; from 100 rad/s: peak 70.3, after 3 s 0.341 rad/s, 0 impulses limited
+  0.01 s, link     axis x: none up to 100 rad/s; from 100 rad/s: peak 75.3, after 3 s 0.062 rad/s, 28 impulses limited
+  0.01 s, link     axis y: none up to 100 rad/s; from 100 rad/s: peak 88.8, after 3 s 0.204 rad/s, 6 impulses limited
+  0.01 s, link     axis z: none up to 100 rad/s; from 100 rad/s: peak 92.2, after 3 s 0.379 rad/s, 33 impulses limited
+  0.01 s, welded   axis x: none up to 100 rad/s; from 100 rad/s: peak 65.0, after 3 s 0.173 rad/s, 16 impulses limited
+  0.01 s, welded   axis y: none up to 100 rad/s; from 100 rad/s: peak 63.6, after 3 s 0.165 rad/s, 14 impulses limited
+  0.01 s, welded   axis z: none up to 100 rad/s; from 100 rad/s: peak 70.3, after 3 s 0.340 rad/s, 1 impulses limited
+  0.02 s, link     axis x: none up to 100 rad/s; from 100 rad/s: peak 75.3, after 3 s 0.699 rad/s, 31 impulses limited
+  0.02 s, link     axis y: none up to 100 rad/s; from 100 rad/s: peak 88.8, after 3 s 0.204 rad/s, 15 impulses limited
+  0.02 s, link     axis z: none up to 100 rad/s; from 100 rad/s: peak 92.2, after 3 s 0.207 rad/s, 20 impulses limited
+  0.02 s, welded   axis x: none up to 100 rad/s; from 100 rad/s: peak 29.9, after 3 s 0.170 rad/s, 14 impulses limited
+  0.02 s, welded   axis y: runs away from 100 rad/s at step 7
+  0.02 s, welded   axis z: none up to 100 rad/s; from 100 rad/s: peak 40.6, after 3 s 0.342 rad/s, 3 impulses limited
+== body 118901: 4 parts from snapshot 51900, longest part 0.46 m
+    part 0 parent -1: 0.280 x 0.236 x 0.045 m
+    part 1 parent 0: 0.179 x 0.463 x 0.020 m
+    part 2 parent 1: 0.114 x 0.463 x 0.020 m
+    part 3 parent 2: 0.072 x 0.463 x 0.020 m
+  0.01 s, as run   axis x: runs away from 100 rad/s at step 5
+  0.01 s, as run   axis y: runs away from 50 rad/s at step 5
+  0.01 s, as run   axis z: none up to 100 rad/s; from 100 rad/s: peak 78.7, after 3 s 0.093 rad/s, 0 impulses limited
+  0.01 s, link     axis x: none up to 100 rad/s; from 100 rad/s: peak 81.1, after 3 s 1.315 rad/s, 271 impulses limited
+  0.01 s, link     axis y: none up to 100 rad/s; from 100 rad/s: peak 89.1, after 3 s 0.210 rad/s, 168 impulses limited
+  0.01 s, link     axis z: none up to 100 rad/s; from 100 rad/s: peak 93.0, after 3 s 0.103 rad/s, 308 impulses limited
+  0.01 s, welded   axis x: none up to 100 rad/s; from 100 rad/s: peak 73.3, after 3 s 0.033 rad/s, 5 impulses limited
+  0.01 s, welded   axis y: none up to 100 rad/s; from 100 rad/s: peak 75.8, after 3 s 0.220 rad/s, 20 impulses limited
+  0.01 s, welded   axis z: none up to 100 rad/s; from 100 rad/s: peak 78.7, after 3 s 0.093 rad/s, 2 impulses limited
+  0.02 s, link     axis x: none up to 100 rad/s; from 100 rad/s: peak 81.1, after 3 s 0.025 rad/s, 178 impulses limited
+  0.02 s, link     axis y: none up to 100 rad/s; from 100 rad/s: peak 89.1, after 3 s 0.249 rad/s, 169 impulses limited
+  0.02 s, link     axis z: none up to 100 rad/s; from 100 rad/s: peak 93.0, after 3 s 0.125 rad/s, 231 impulses limited
+  0.02 s, welded   axis x: none up to 100 rad/s; from 100 rad/s: peak 46.6, after 3 s 0.024 rad/s, 5 impulses limited
+  0.02 s, welded   axis y: runs away from 100 rad/s at step 7
+  0.02 s, welded   axis z: none up to 100 rad/s; from 100 rad/s: peak 57.4, after 3 s 0.087 rad/s, 3 impulses limited
+== body 108541: 4 parts from snapshot 50100, longest part 0.77 m
+    part 0 parent -1: 0.417 x 0.328 x 0.068 m
+    part 1 parent 0: 0.309 x 0.767 x 0.027 m
+    part 2 parent 1: 0.229 x 0.767 x 0.020 m
+    part 3 parent 2: 0.170 x 0.767 x 0.020 m
+  0.01 s, as run   axis x: runs away from 50 rad/s at step 6
+  0.01 s, as run   axis y: runs away from 20 rad/s at step 7
+  0.01 s, as run   axis z: none up to 100 rad/s; from 100 rad/s: peak 85.2, after 3 s 0.363 rad/s, 0 impulses limited
+  0.01 s, link     axis x: none up to 100 rad/s; from 100 rad/s: peak 87.8, after 3 s 0.716 rad/s, 227 impulses limited
+  0.01 s, link     axis y: none up to 100 rad/s; from 100 rad/s: peak 92.8, after 3 s 0.338 rad/s, 8 impulses limited
+  0.01 s, link     axis z: none up to 100 rad/s; from 100 rad/s: peak 95.5, after 3 s 0.394 rad/s, 118 impulses limited
+  0.01 s, welded   axis x: none up to 100 rad/s; from 100 rad/s: peak 83.6, after 3 s 0.080 rad/s, 5 impulses limited
+  0.01 s, welded   axis y: none up to 100 rad/s; from 100 rad/s: peak 82.0, after 3 s 0.280 rad/s, 37 impulses limited
+  0.01 s, welded   axis z: none up to 100 rad/s; from 100 rad/s: peak 85.2, after 3 s 0.353 rad/s, 3 impulses limited
+  0.02 s, link     axis x: none up to 100 rad/s; from 100 rad/s: peak 87.8, after 3 s 0.153 rad/s, 138 impulses limited
+  0.02 s, link     axis y: none up to 100 rad/s; from 100 rad/s: peak 92.8, after 3 s 0.237 rad/s, 174 impulses limited
+  0.02 s, link     axis z: none up to 100 rad/s; from 100 rad/s: peak 95.5, after 3 s 0.417 rad/s, 141 impulses limited
+  0.02 s, welded   axis x: none up to 100 rad/s; from 100 rad/s: peak 67.2, after 3 s 0.124 rad/s, 6 impulses limited
+  0.02 s, welded   axis y: runs away from 100 rad/s at step 6
+  0.02 s, welded   axis z: none up to 100 rad/s; from 100 rad/s: peak 70.4, after 3 s 0.340 rad/s, 3 impulses limited
+== body 112066: 6 parts from snapshot 50900, longest part 0.67 m
+    part 0 parent -1: 0.449 x 0.341 x 0.068 m
+    part 1 parent 0: 0.264 x 0.670 x 0.027 m
+    part 2 parent 1: 0.156 x 0.670 x 0.020 m
+    part 3 parent 2: 0.092 x 0.670 x 0.020 m
+    part 4 parent 3: 0.054 x 0.670 x 0.020 m
+    part 5 parent 4: 0.032 x 0.670 x 0.020 m
+  0.01 s, as run   axis x: runs away from 100 rad/s at step 5
+  0.01 s, as run   axis y: runs away from 50 rad/s at step 5
+  0.01 s, as run   axis z: none up to 100 rad/s; from 100 rad/s: peak 73.9, after 3 s 0.289 rad/s, 0 impulses limited
+  0.01 s, link     axis x: none up to 100 rad/s; from 100 rad/s: peak 76.9, after 3 s 0.924 rad/s, 1090 impulses limited
+  0.01 s, link     axis y: none up to 100 rad/s; from 100 rad/s: peak 89.1, after 3 s 0.110 rad/s, 800 impulses limited
+  0.01 s, link     axis z: none up to 100 rad/s; from 100 rad/s: peak 92.5, after 3 s 0.238 rad/s, 997 impulses limited
+  0.01 s, welded   axis x: none up to 100 rad/s; from 100 rad/s: peak 68.4, after 3 s 0.171 rad/s, 10 impulses limited
+  0.01 s, welded   axis y: none up to 100 rad/s; from 100 rad/s: peak 69.3, after 3 s 0.021 rad/s, 111 impulses limited
+  0.01 s, welded   axis z: none up to 100 rad/s; from 100 rad/s: peak 73.9, after 3 s 0.288 rad/s, 2 impulses limited
+  0.02 s, link     axis x: none up to 100 rad/s; from 100 rad/s: peak 77.0, after 3 s 0.251 rad/s, 569 impulses limited
+  0.02 s, link     axis y: none up to 100 rad/s; from 100 rad/s: peak 89.1, after 3 s 0.245 rad/s, 549 impulses limited
+  0.02 s, link     axis z: none up to 100 rad/s; from 100 rad/s: peak 92.5, after 3 s 0.267 rad/s, 601 impulses limited
+  0.02 s, welded   axis x: none up to 100 rad/s; from 100 rad/s: peak 36.7, after 3 s 0.163 rad/s, 11 impulses limited
+  0.02 s, welded   axis y: runs away from 100 rad/s at step 7
+  0.02 s, welded   axis z: none up to 100 rad/s; from 100 rad/s: peak 47.9, after 3 s 0.286 rad/s, 3 impulses limited
+== body 102219: 7 parts from snapshot 51100, longest part 0.72 m
+    part 0 parent -1: 0.441 x 0.368 x 0.069 m
+    part 1 parent 0: 0.327 x 0.723 x 0.028 m
+    part 2 parent 1: 0.242 x 0.723 x 0.020 m
+    part 3 parent 2: 0.180 x 0.723 x 0.020 m
+    part 4 parent 3: 0.133 x 0.723 x 0.020 m
+    part 5 parent 4: 0.099 x 0.723 x 0.020 m
+    part 6 parent 5: 0.073 x 0.723 x 0.020 m
+  0.01 s, as run   axis x: runs away from 50 rad/s at step 6
+  0.01 s, as run   axis y: runs away from 20 rad/s at step 5
+  0.01 s, as run   axis z: none up to 100 rad/s; from 100 rad/s: peak 88.1, after 3 s 0.374 rad/s, 0 impulses limited
+  0.01 s, link     axis x: none up to 100 rad/s; from 100 rad/s: peak 85.0, after 3 s 0.852 rad/s, 903 impulses limited
+  0.01 s, link     axis y: none up to 100 rad/s; from 100 rad/s: peak 94.8, after 3 s 0.267 rad/s, 743 impulses limited
+  0.01 s, link     axis z: none up to 100 rad/s; from 100 rad/s: peak 96.2, after 3 s 0.388 rad/s, 802 impulses limited
+  0.01 s, welded   axis x: none up to 100 rad/s; from 100 rad/s: peak 78.8, after 3 s 0.085 rad/s, 21 impulses limited
+  0.01 s, welded   axis y: none up to 100 rad/s; from 100 rad/s: peak 88.3, after 3 s 0.258 rad/s, 88 impulses limited
+  0.01 s, welded   axis z: none up to 100 rad/s; from 100 rad/s: peak 88.1, after 3 s 0.374 rad/s, 3 impulses limited
+  0.02 s, link     axis x: none up to 100 rad/s; from 100 rad/s: peak 85.1, after 3 s 0.314 rad/s, 556 impulses limited
+  0.02 s, link     axis y: none up to 100 rad/s; from 100 rad/s: peak 94.8, after 3 s 0.100 rad/s, 535 impulses limited
+  0.02 s, link     axis z: none up to 100 rad/s; from 100 rad/s: peak 96.2, after 3 s 0.344 rad/s, 535 impulses limited
+  0.02 s, welded   axis x: none up to 100 rad/s; from 100 rad/s: peak 57.6, after 3 s 0.132 rad/s, 13 impulses limited
+  0.02 s, welded   axis y: runs away from 100 rad/s at step 6
+  0.02 s, welded   axis z: none up to 100 rad/s; from 100 rad/s: peak 76.2, after 3 s 0.361 rad/s, 4 impulses limited
+== body 108599: 8 parts from snapshot 50200, longest part 0.73 m
+    part 0 parent -1: 0.464 x 0.370 x 0.078 m
+    part 1 parent 0: 0.344 x 0.727 x 0.031 m
+    part 2 parent 1: 0.255 x 0.727 x 0.020 m
+    part 3 parent 2: 0.189 x 0.727 x 0.020 m
+    part 4 parent 3: 0.140 x 0.727 x 0.020 m
+    part 5 parent 4: 0.104 x 0.727 x 0.020 m
+    part 6 parent 5: 0.077 x 0.727 x 0.020 m
+    part 7 parent 6: 0.057 x 0.727 x 0.020 m
+  0.01 s, as run   axis x: runs away from 50 rad/s at step 6
+  0.01 s, as run   axis y: runs away from 20 rad/s at step 5
+  0.01 s, as run   axis z: none up to 100 rad/s; from 100 rad/s: peak 88.8, after 3 s 0.371 rad/s, 0 impulses limited
+  0.01 s, link     axis x: none up to 100 rad/s; from 100 rad/s: peak 84.6, after 3 s 0.587 rad/s, 831 impulses limited
+  0.01 s, link     axis y: none up to 100 rad/s; from 100 rad/s: peak 95.4, after 3 s 0.205 rad/s, 989 impulses limited
+  0.01 s, link     axis z: none up to 100 rad/s; from 100 rad/s: peak 96.5, after 3 s 0.410 rad/s, 1106 impulses limited
+  0.01 s, welded   axis x: none up to 100 rad/s; from 100 rad/s: peak 79.5, after 3 s 0.132 rad/s, 27 impulses limited
+  0.01 s, welded   axis y: none up to 100 rad/s; from 100 rad/s: peak 89.1, after 3 s 0.213 rad/s, 71 impulses limited
+  0.01 s, welded   axis z: none up to 100 rad/s; from 100 rad/s: peak 88.8, after 3 s 0.370 rad/s, 3 impulses limited
+  0.02 s, link     axis x: none up to 100 rad/s; from 100 rad/s: peak 84.6, after 3 s 0.317 rad/s, 673 impulses limited
+  0.02 s, link     axis y: none up to 100 rad/s; from 100 rad/s: peak 95.4, after 3 s 0.023 rad/s, 695 impulses limited
+  0.02 s, link     axis z: none up to 100 rad/s; from 100 rad/s: peak 96.5, after 3 s 0.372 rad/s, 677 impulses limited
+  0.02 s, welded   axis x: none up to 100 rad/s; from 100 rad/s: peak 59.0, after 3 s 0.141 rad/s, 15 impulses limited
+  0.02 s, welded   axis y: runs away from 100 rad/s at step 6
+  0.02 s, welded   axis z: none up to 100 rad/s; from 100 rad/s: peak 77.7, after 3 s 0.354 rad/s, 4 impulses limited
+== body 120214: 8 parts from snapshot 52100, longest part 0.59 m
+    part 0 parent -1: 0.402 x 0.281 x 0.053 m
+    part 1 parent 0: 0.298 x 0.588 x 0.020 m
+    part 2 parent 1: 0.221 x 0.588 x 0.020 m
+    part 3 parent 2: 0.164 x 0.588 x 0.020 m
+    part 4 parent 3: 0.121 x 0.588 x 0.020 m
+    part 5 parent 4: 0.090 x 0.588 x 0.020 m
+    part 6 parent 5: 0.067 x 0.588 x 0.020 m
+    part 7 parent 6: 0.049 x 0.588 x 0.020 m
+  0.01 s, as run   axis x: runs away from 50 rad/s at step 6
+  0.01 s, as run   axis y: runs away from 20 rad/s at step 5
+  0.01 s, as run   axis z: none up to 100 rad/s; from 100 rad/s: peak 90.5, after 3 s 0.386 rad/s, 0 impulses limited
+  0.01 s, link     axis x: none up to 100 rad/s; from 100 rad/s: peak 89.4, after 3 s 0.758 rad/s, 1189 impulses limited
+  0.01 s, link     axis y: none up to 100 rad/s; from 100 rad/s: peak 97.0, after 3 s 0.206 rad/s, 809 impulses limited
+  0.01 s, link     axis z: none up to 100 rad/s; from 100 rad/s: peak 97.7, after 3 s 0.333 rad/s, 773 impulses limited
+  0.01 s, welded   axis x: none up to 100 rad/s; from 100 rad/s: peak 85.1, after 3 s 0.133 rad/s, 15 impulses limited
+  0.01 s, welded   axis y: none up to 100 rad/s; from 100 rad/s: peak 89.2, after 3 s 0.220 rad/s, 78 impulses limited
+  0.01 s, welded   axis z: none up to 100 rad/s; from 100 rad/s: peak 90.5, after 3 s 0.383 rad/s, 3 impulses limited
+  0.02 s, link     axis x: none up to 100 rad/s; from 100 rad/s: peak 89.5, after 3 s 0.224 rad/s, 666 impulses limited
+  0.02 s, link     axis y: none up to 100 rad/s; from 100 rad/s: peak 97.0, after 3 s 0.701 rad/s, 733 impulses limited
+  0.02 s, link     axis z: none up to 100 rad/s; from 100 rad/s: peak 97.7, after 3 s 0.247 rad/s, 670 impulses limited
+  0.02 s, welded   axis x: none up to 100 rad/s; from 100 rad/s: peak 70.3, after 3 s 0.122 rad/s, 5 impulses limited
+  0.02 s, welded   axis y: runs away from 100 rad/s at step 6
+  0.02 s, welded   axis z: none up to 100 rad/s; from 100 rad/s: peak 80.9, after 3 s 0.360 rad/s, 4 impulses limited
+== body 134411: 8 parts from snapshot 55100 with module counts 8,0,0,3,1,1,1,1,1, longest part 1.01 m
+    part 0 parent -1: 0.432 x 0.467 x 0.076 m
+    part 1 parent 0: 0.320 x 1.009 x 0.024 m
+    part 2 parent 1: 0.238 x 1.009 x 0.020 m
+    part 3 parent 2: 0.176 x 1.009 x 0.020 m
+    part 4 parent 3: 0.130 x 1.009 x 0.020 m
+    part 5 parent 4: 0.097 x 1.009 x 0.020 m
+    part 6 parent 5: 0.072 x 1.009 x 0.020 m
+    part 7 parent 6: 0.053 x 1.009 x 0.020 m
+  0.01 s, as run   axis x: runs away from 50 rad/s at step 5
+  0.01 s, as run   axis y: runs away from 50 rad/s at step 5
+  0.01 s, as run   axis z: runs away from 20 rad/s at step 8
+  0.01 s, link     axis x: runs away from 100 rad/s at step 6
+  0.01 s, link     axis y: runs away from 50 rad/s at step 6
+  0.01 s, link     axis z: runs away from 50 rad/s at step 6
+  0.01 s, welded   axis x: none up to 100 rad/s; from 100 rad/s: peak 80.0, after 3 s 0.206 rad/s, 54 impulses limited
+  0.01 s, welded   axis y: runs away from 50 rad/s at step 9
+  0.01 s, welded   axis z: runs away from 50 rad/s at step 11
+  0.02 s, link     axis x: runs away from 50 rad/s at step 6
+  0.02 s, link     axis y: runs away from 20 rad/s at step 6
+  0.02 s, link     axis z: runs away from 20 rad/s at step 7
+  0.02 s, welded   axis x: runs away from 100 rad/s at step 10
+  0.02 s, welded   axis y: runs away from 50 rad/s at step 5
+  0.02 s, welded   axis z: runs away from 50 rad/s at step 5
+EXIT 0 

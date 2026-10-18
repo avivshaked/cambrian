@@ -49,8 +49,14 @@ namespace Evosim.Dynamics
         /// <param name="config">The world's depth, its glass and its bed.</param>
         /// <param name="reason">The guard that fired, or null.</param>
         /// <returns>True when the body must be killed.</returns>
-        public static bool Diverged(Creature body, SolverConfig config, out string reason) =>
-            Diverged(body, config, body.ContactRadius, out reason);
+        public static bool Diverged(Creature body, SolverConfig config, out string reason)
+        {
+            if (body == null) throw new ArgumentNullException(nameof(body));
+
+            // The committed sphere, so the last step's own (Creature.EnsureContactCommitted).
+            body.EnsureContactCommitted();
+            return Diverged(body, config, body.ContactRadius, out reason);
+        }
 
         /// <summary>
         /// <see cref="Diverged(Creature, SolverConfig, out string)"/> with the bounding radius

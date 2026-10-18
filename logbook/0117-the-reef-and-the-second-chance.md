@@ -151,7 +151,7 @@ the water beside the cap unshaded and the water under it at zero: 79.97 W/m² in
 at 5.5 m against 0.00 under the cap's centre, under its rim and beside the stem, and the
 same at 8 and 15 m; the cap's top at 2.99 m is lit as any water is, 121.5 W/m². The first
 cut let e⁻¹ through, the canopy's own arithmetic at a cover of 1, and I made the cap
-opaque on the owner's words ("make sure they block the sun under them"): one constant,
+opaque at the owner's word that they must block the sun under them: one constant,
 `ReefGeometry.CapTransmission`, and its test. **The water at the rock.** The same test
 family prints the fastest water within a cap radius of the rock at three fades on round
 46's tank (`ReefStreamsTests`): 0.72 m/s at 10 m, where the fade's own term puts the

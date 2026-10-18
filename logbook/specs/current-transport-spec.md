@@ -16,9 +16,9 @@ and left; filtered Core tests only; doc-comment register: why, with the incident
 
 ## The owner's world
 
-"creatures have full degrees of freedom and can be anywhere within the confines of the world.
-currents move them up and down, left and right, in all directions really. diffusion happens in
-all directions." Diffusion already does (D086). Dispersal at birth is built separately
+The owner wants creatures to have full degrees of freedom and to be anywhere within the
+confines of the world, currents to move them up and down, left and right, in all directions, and
+diffusion to happen in all directions. Diffusion already does (D086). Dispersal at birth is built separately
 (`OffspringDispersalMetres`, `EVOSIM_OFFSPRING_DISPERSAL`, already in `launch-r35.ps1` as `$Dispersal`; landed 2026-09-10 08:07 and smoked on worker 7 as `r35smoke`). This spec is the current.
 
 A second agent is editing `PhenotypeBuilder.cs` (`Destroy`), `SeaFloor.cs`, `Ecosystem.DestroyAll` and `SharedVolume.TryReserveOffspring`'s reservation radius, and `Assets/Theatre/`, at the same time as you. Do not touch those regions; if a compile in your smoke fails in one of them, report it and leave it.

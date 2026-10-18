@@ -28,7 +28,7 @@ born, and a body under V0 cannot sink to the 10 J/m³ fifty metres below it.
 The owner's reading became D066. The current was supposed to move creatures on every axis
 and to move matter. It did neither, being a depth-only field of ±2.4 m acting on bodies
 alone. A single uniform flow could not stir in any case, because stirring is *differential*
-motion. The owner put it as *"What we need is something that can stir the soup."*
+motion. The owner put it as a need for something that can stir the soup.
 
 On excretion, creatures do excrete (D052), but at a rate that returns ~5–10% of a body's
 matter in a lifetime. So the matter loop closes almost entirely by death, and the surface

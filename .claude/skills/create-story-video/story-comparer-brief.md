@@ -26,6 +26,20 @@ Your answer is saved word for word.
 - After a mismatch, one line for each that differs: the question or the answer, what the angle
   says, and what the reader took.
 
+## A countdown
+
+When `pick.md` chooses a countdown, there is no angle. Read `pick.md`, any ranking file it names, and
+the cold read. Check three things instead, each by meaning:
+
+- Are the reader's entries the countdown `pick.md` gives: its creatures, in its order, with the
+  runner-up just before number 1?
+- Does every entry have a story of its own: did the reader name no two entries as the same story told
+  twice, and do the reader's lines for the entries say different kinds of thing?
+- Did the reader take a running question, and an answer to it that number 1 pays off?
+
+Answer as above: `COLD READ: MATCH` when all three hold and `COLD READ: MISMATCH` otherwise, then one
+line for each that fails.
+
 If you reach your time budget, answer with what you have and say so.
 
 Stop when you have answered.

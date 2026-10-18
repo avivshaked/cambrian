@@ -1,0 +1,113 @@
+# External files for the TTS voice-cloning audition, written 2026-10-09 from the Hub API and the
+# repos' own files. The licences and sizes are in licences.md, the code, Python and Windows notes
+# in setup-notes.md. Every revision below is the full sha of `main` as the Hub reported it on
+# 2026-10-09 (https://huggingface.co/api/models/<repo>/revision/main). The owner ruled on 2026-10-09
+# that four models are synced now and Higgs TTS 3 waits until they have been heard, so its item is
+# commented out. Where each item lives on this machine is in paths.local.toml (see paths.example.toml).
+#
+# Sizes are the sum of the files each allow-list matches (decimal GB, from ?blobs=true):
+#   chatterbox-en   3.19 GB    voxcpm2    4.96 GB    cosyvoice3  5.43 GB
+#   higgs-tts-3     9.32 GB    omnivoice  3.27 GB    -- all five: 26.17 GB (24.37 GiB)
+#   (chatterbox-turbo, left commented out below, would add 2.99 GB)
+#
+# No repo is gated (api: gated=false, private=false for all of them). Two need an owner ruling
+# before they are synced, whatever the size:
+#   - higgs-tts-3: "Boson Higgs TTS 3 Research and Non-Commercial License" (not open source).
+#   - omnivoice: weights CC-BY-NC (model card), plus a bundled tokenizer under the Boson Higgs
+#     Audio 2 Community License (Llama-3-derived).
+#
+# None of the five loads a second Hub repo at run time when it is run as setup-notes.md says
+# (local folder, reference transcript given, denoiser/ASR off), so there is no extra item for a
+# tokenizer, codec or vocoder: they sit inside the repos below. No non-Hub file is needed either.
+# The inference CODE comes from pip or git (setup-notes.md), not from ml-store.
+
+[project]
+name = "evolution-simulator-tts-audition"
+
+# ---------------------------------------------------------------------------------------------
+# 1. Chatterbox (Resemble AI), the original English model, 0.5B. ChatterboxTTS.from_pretrained
+#    fetches exactly these five files (src/chatterbox/tts.py at 5de7a54); the repo also holds the
+#    multilingual v2/v3 checkpoints (~9 GB more), which are not needed for English cloning.
+[[item]]
+id = "chatterbox-en"
+kind = "hf-model"
+repo = "ResembleAI/chatterbox"
+revision = "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18"
+files = ["ve.safetensors", "t3_cfg.safetensors", "s3gen.safetensors", "tokenizer.json", "conds.pt"]
+licence = "MIT"
+source_note = "TTS audition: Chatterbox English zero-shot cloning (audio prompt only, the transcript is not used). 3.19 GB."
+docs = ["https://raw.githubusercontent.com/resemble-ai/chatterbox/5de7a54aa4e5e2baadb0182dde554908b48b85c2/LICENSE"]
+attribution = "Chatterbox by Resemble AI (MIT). Outputs carry Resemble's Perth watermark."
+
+# Optional alternative, 350M English, faster, ignores exaggeration and cfg, paralinguistic tags.
+# It does not supersede the original for cloning quality claims, so it is left out. Uncomment to add.
+# [[item]]
+# id = "chatterbox-turbo"
+# kind = "hf-model"
+# repo = "ResembleAI/chatterbox-turbo"
+# revision = "749d1c1a46eb10492095d68fbcf55691ccf137cd"
+# files = ["ve.safetensors", "s3gen_meanflow.safetensors", "t3_turbo_v1.safetensors", "vocab.json", "merges.txt", "added_tokens.json", "special_tokens_map.json", "tokenizer_config.json", "conds.pt"]
+# licence = "MIT"
+# source_note = "TTS audition (optional): Chatterbox-Turbo. 2.99 GB."
+
+# ---------------------------------------------------------------------------------------------
+# 2. VoxCPM2 (OpenBMB), 2B. The repo is self-contained (AudioVAE V2 in audiovae.pth). The
+#    tokenization_voxcpm2.py in the repo is not needed (LlamaTokenizerFast reads tokenizer.json)
+#    and is left out so that no repo code sits beside the weights.
+[[item]]
+id = "voxcpm2"
+kind = "hf-model"
+repo = "openbmb/VoxCPM2"
+revision = "32279effe8c19989596f05d353d1447f51d9e915"
+files = ["model.safetensors", "audiovae.pth", "config.json", "tokenizer.json", "tokenizer_config.json", "special_tokens_map.json"]
+licence = "Apache-2.0"
+source_note = "TTS audition: VoxCPM2 ultimate cloning (reference wav plus exact transcript). 4.96 GB."
+docs = ["https://raw.githubusercontent.com/OpenBMB/VoxCPM/19b6bf7590025418821a86dcb817504e0ad7e5df/LICENSE"]
+
+# ---------------------------------------------------------------------------------------------
+# 3. Fun-CosyVoice3-0.5B-2512 (FunAudioLLM). Current CosyVoice 3 checkpoint (the org's newest
+#    model repos, listed 2026-10-09, hold nothing newer for TTS). Needs: the Qwen LLM folder
+#    CosyVoice-BlankEN (tokenizer plus 0.99 GB of weights, named by cosyvoice3.yaml), llm.pt,
+#    flow.pt, hift.pt, the two onnx files. Left out: llm.rl.pt (+2.02 GB, the RL variant),
+#    flow.decoder.estimator.fp32.onnx (+1.33 GB, TensorRT only), speech_tokenizer_v3.batch.onnx
+#    (+0.97 GB, batch training), asset/dingding.png.
+[[item]]
+id = "cosyvoice3"
+kind = "hf-model"
+repo = "FunAudioLLM/Fun-CosyVoice3-0.5B-2512"
+revision = "29e01c4e8d000f4bcd70751be16fa94bf3d85a18"
+files = ["cosyvoice3.yaml", "CosyVoice-BlankEN/*", "llm.pt", "flow.pt", "hift.pt", "campplus.onnx", "speech_tokenizer_v3.onnx"]
+licence = "Apache-2.0"
+source_note = "TTS audition: CosyVoice 3 zero-shot cloning (prompt wav plus transcript). 5.43 GB. The code is GitHub FunAudioLLM/CosyVoice (now QwenAudio/CosyVoice) at 074ca6dc9e80, not in the store."
+docs = ["https://raw.githubusercontent.com/QwenAudio/CosyVoice/074ca6dc9e80a2f424f1f74b48bdd7d3fea531cc/LICENSE"]
+
+# ---------------------------------------------------------------------------------------------
+# 4. Higgs Audio v3 TTS 4B (Boson AI). The repo the task names, bosonai/higgs-audio-v3-tts-4b,
+#    redirects (HTTP 307) to bosonai/higgs-tts-3-4b; the canonical name is used here. The codec
+#    weights are inside model.safetensors (sglang-omni audio_codec.py: "Codec weights are bundled
+#    inside the TTS model.safetensors"), so no second repo. The repo holds weights and config
+#    only; its inference engines (SGLang-Omni, vLLM-Omni) are Linux-only (setup-notes.md).
+#    LICENSE is non-commercial: owner's ruling needed before sync.
+# [[item]]
+# id = "higgs-tts-3"
+# kind = "hf-model"
+# repo = "bosonai/higgs-tts-3-4b"
+# revision = "239f63fb7b02b1aa085f98d9efae5e35cc5523e8"
+# files = ["model.safetensors", "model.safetensors.index.json", "config.json", "tokenizer.json", "tokenizer_config.json", "chat_template.jinja"]
+# licence = "Boson Higgs TTS 3 Research and Non-Commercial License (2026-07-08), with a Creator Use Grant"
+# source_note = "TTS audition: Higgs TTS 3 4B zero-shot cloning. 9.32 GB. Runs only under Linux (Docker/WSL2) engines; may be dropped if the audition stays on native Windows."
+
+# ---------------------------------------------------------------------------------------------
+# 5. OmniVoice (k2-fsa). One repo: the Qwen3-0.6B-based model in the root, plus audio_tokenizer/
+#    (the Higgs Audio v2 tokenizer, loaded from that subfolder; the code only falls back to
+#    eustlb/higgs-audio-v2-tokenizer if the subfolder is absent). Weights are CC-BY-NC.
+[[item]]
+id = "omnivoice"
+kind = "hf-model"
+repo = "k2-fsa/OmniVoice"
+revision = "c5fdb5ccb189668d56333f77ba2629f4cd7535f4"
+files = ["model.safetensors", "config.json", "tokenizer.json", "tokenizer_config.json", "chat_template.jinja", "audio_tokenizer/*"]
+licence = "Weights CC-BY-NC (model card, version not stated); code Apache-2.0; audio_tokenizer/ under the Boson Higgs Audio 2 Community License"
+source_note = "TTS audition: OmniVoice cloning (ref_audio plus ref_text). 3.27 GB. Weights are non-commercial: owner's ruling needed before sync."
+docs = ["https://raw.githubusercontent.com/k2-fsa/OmniVoice/08be0b4ccbac3e13e374e86fbfead4b4cac343e2/LICENSE"]
+attribution = "OmniVoice by k2-fsa (CC-BY-NC weights); audio tokenizer: Built with Higgs Materials licensed from Boson AI USA, Inc. (see audio_tokenizer/LICENSE)."

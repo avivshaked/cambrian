@@ -18,6 +18,7 @@ namespace Evosim.Farm.Tests
     /// these is an invariant of the harness rather than a reading of a world, so the fixture is
     /// the cheapest world Core will build and every test is seconds.
     /// </remarks>
+    [Collection(FarmProcessCollection.Name)]
     public class SimulationTests
     {
         /// <summary>

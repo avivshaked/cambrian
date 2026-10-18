@@ -66,7 +66,7 @@ first two wait for growth (`fable-propose-growth.md`, round 33), the third for t
 
 ## Launch
 
-*2026-09-09, midday.* The owner ruled ("proceed"): matter cells of 5 m, matter mixed at
+*2026-09-09, midday.* The owner ruled to proceed: matter cells of 5 m, matter mixed at
 2 m²/s on every axis, corpses at 0.005 per second (D086). The first launch did not carry
 the ruling. The launcher's defaults were edited by a script whose assertion failed on a
 line ending, and the five arms went out at 2.5 m with corpses off; the headers said so

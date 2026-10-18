@@ -81,6 +81,11 @@ point: the explanation stays with the population, where the science is. If the o
 typical of its population, say so (narration-writing.md §2.3). If no single creature serves the
 story, follow the population.
 
+If you follow one creature, say who it was and what became of it. Give its Latin name, how many
+generations its line lasted, and whether the line gave rise to something else or died out. The owner
+asked for these for the creature a film followed. Where `facts.md` does not hold one of them, leave it
+out: the prose writer can ask for it.
+
 ## Rules for every beat
 
 - The orientation and the problem set the stage and may join with "and". From the expectation on, join

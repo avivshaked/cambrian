@@ -1,0 +1,16 @@
+{
+  "base": "rounds/nursery/brain2-w2.json",
+  "name": "brain2-rep2-w2",
+  "description": "brain2-rep2 on the new world config format: its base is brain2-w2 in place of brain2, and every other setting is brain2-rep2's, whose description was: Replicate of brain2 on the same six bodies (pilot-deep-brain2's exam pool) with a new search seed: does any body's brain beat its best constant by two standard errors again?; exam salt 0x62656e636b so that seed 0x2 XOR salt equals pilot-deep-brain2's 0x62656e6369, pairing the exam draws with the pilot's and the control's.",
+  "seed": "0x2",
+  "bodies": {
+    "source": "pool",
+    "founders": 0,
+    "trunk": null,
+    "pool": "rounds/nursery/pools/97d4a4fc12a91017.tsv",
+    "keep": [0, 1, 3, 4, 8, 10]
+  },
+  "exam": {
+    "salt": "0x62656e636b"
+  }
+}

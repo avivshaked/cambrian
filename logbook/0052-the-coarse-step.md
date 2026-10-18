@@ -10,10 +10,8 @@ different world. At twice as coarse it tracked the original closely. The larger 
 arrived sideways: PhysX replays bit for bit on this machine, so what we had been calling
 replay noise was our own build change, amplified by chaos.
 
-The owner asked for it that day:
-
-> I do think the world will survive coarser steps; I'd love to test it against a seed we
-> already ran to see what the difference is.
+The owner asked for it that day. They thought the world would survive coarser steps, and wanted to test that
+against a seed already run, to see what the difference was.
 
 ## What is being tested
 

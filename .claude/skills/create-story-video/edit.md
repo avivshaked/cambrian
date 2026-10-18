@@ -35,7 +35,7 @@ render are the owner's, in Resolve.
   footage is the star (the owner's ruling of 2026-09-28). Only under a graphic that stands alone does a
   plate of the settings' colour fill the picture.
 - **Each clip is graded** towards the reference film's tone (the owner's choice on round 49's proposal
-  sheet, 2026-09-28: "the right column looks better"). The grade stretches the clip's contrast about its own
+  sheet, 2026-09-28, where the owner found the right column looked better). The grade stretches the clip's contrast about its own
   mean colour, so its colour stays where it was. The stretch is the reference's tone spread over the clip's,
   at least 1 and at most 1.6, then a power of 0.9 lifts the shadows. Both numbers come from `collect`'s
   `tone` and `rgb`. The plan writes each clip's grade as an ASC CDL. The proof applies it with ffmpeg, and
@@ -73,8 +73,8 @@ render are the owner's, in Resolve.
 Round 49's script was approved before the card existed, so its edit settings carry it: `intro` names the file
 and the act it follows. The plan lays it on V1 after that act's last shot and moves everything after it later by
 the card's length. From the next film the script places the intro and the outro instead, as passages of their
-own (the owner, 2026-09-28: "the intro (and later the outro) should be part of the script file, rather than
-hardcoded into the software"), and the shot list carries them like any other shot. `intro` stays null then.
+own (the owner ruled on 2026-09-28 that the intro, and later the outro, belong to the script file and are
+not hardcoded into the software), and the shot list carries them like any other shot. `intro` stays null then.
 
 ## The settings
 
@@ -126,7 +126,7 @@ In the film's folder. Draft n is numbered from 1, going on from the highest ther
 | Who | Brief | Reads | Writes |
 |---|---|---|---|
 | the tool | [edit.py](edit.py) | `narration.json`, `shots.json`, `clips.json`, `graphics.json`, `graphics/plan.json`, the settings, the decisions | the plan, the subtitles, the labels, the plates, the proof and the build |
-| the editor | [editor-brief.md](editor-brief.md) | the plan, the proof's sheet, the shot list, the clips' and graphics' sheets | its decisions and the plan's printout, through the shell, and its answer |
+| the editor | [editor-brief.md](editor-brief.md) | the plan, the proof's sheet, the shot list, the clips' and graphics' sheets | its decisions and the plan's printout, and its answer |
 | the main session | this file | what the tool prints, the answers, the owner's words | those, saved |
 | the owner | | the proof, and the timeline in Resolve | what to change, the go on the build, and the approval |
 
@@ -160,7 +160,7 @@ You are the editor of a story film.
 Your brief is <checkout>\.claude\skills\create-story-video\editor-brief.md. Read it whole and follow it.
 The film's folder is <folder>.
 You read draft <n>.
-Write only inside the film's folder, and only through the shell. Never write in your session scratchpad or in TEMP.
+Write only inside the film's folder. Never write in your session scratchpad or in TEMP.
 Your time budget is 15 minutes.
 ```
 
@@ -171,9 +171,9 @@ The editor is a general-purpose agent on opus.
 1. If the film's folder lacks `narration.json`, `shots.json`, `clips.json` or `graphics.json`, stop: the
    steps before the edit write them. Their reviews must have answered OK, or the owner accepted what they
    faulted. A rough draft (the `rough` setting) is the exception: it is laid out while the filming and
-   graphics steps still run, for the owner to watch and listen before they end (the owner, 2026-09-28: "if
-   something needs reshooting we know it before all the graphics are done"). The owner watches it in
-   Resolve and not in a proof ("why not use resolve? we have to use it anyway"), so it skips steps 3 to 5
+   graphics steps still run, for the owner to watch and listen before they end (the owner's reason, 2026-09-28: if
+   something needs reshooting, that is known before all the graphics are done). The owner watches it in
+   Resolve and not in a proof, having asked why Resolve should not be used when it has to be used anyway, so it skips steps 3 to 5
    and goes from its plan to steps 6 and 7; its `rough:` lines say what is not in yet. A new rough draft
    after a re-film plans the same draft again, since a build already made keeps the files it linked
    (keep the old `plan-<n>.json` beside it as `plan-<n>-v<K>.json`, K the build it made).
@@ -199,7 +199,7 @@ The editor is a general-purpose agent on opus.
 7. Ask the owner for their go on the build, and save their words. A rough draft built again after a
    re-film is covered by the go on the first rough build, and by any build the session told the owner it
    would make unless they objected; build it without asking again (the owner, 2026-09-28, when v4 waited on
-   a second question: "didn't we say we're doing the 4th cut on resolve? what happened?"). Run `build <folder> <n>` and save what it
+   a second question, asked whether it had not been agreed that the 4th cut would be made in Resolve, and what had happened). Run `build <folder> <n>` and save what it
    prints in `edit-<n>-build.txt`.
    - `BUILD: PASS`: tell the owner the timeline's name. The step is done when they approve it.
    - `BUILD: FAIL`: show the owner every error. The timeline stays for them to look at or delete; never

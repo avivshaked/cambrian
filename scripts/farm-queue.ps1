@@ -31,6 +31,10 @@
 .PARAMETER After
   A script run once the last seed has ended (round 50's V2, say).
 
+.PARAMETER SpinLimit
+  Passed to run-farm.ps1 for every seed and continuation: 'default' (5000 on the card engine,
+  unset otherwise, so unset for this queue's CPU-engine seeds), 'unset' or a whole number.
+
 .PARAMETER RehearseFault
   Rehearses the second fault: the first seed is stopped at this simulated second and treated as
   a card fault, so the continuation path runs. 0, the default, rehearses nothing.
@@ -46,9 +50,15 @@ param(
     [string]$RunsRoot = 'D:\Projects\experiments\evolution-simulator\runs',
     [switch]$GpuTransport,
     [string]$After = '',
-    [double]$RehearseFault = 0
+    [double]$RehearseFault = 0,
+    [string]$SpinLimit = 'default'
 )
 $ErrorActionPreference = 'Continue'
+# The kill test's checkpoint stall hook is never a round's setting (card-next-r57.md Part 8).
+if ($env:EVOSIM_TEST_CHECKPOINT_STALL_MS) {
+    Write-Host "farm-queue refused: EVOSIM_TEST_CHECKPOINT_STALL_MS is set in this shell ($env:EVOSIM_TEST_CHECKPOINT_STALL_MS). It is a test hook that pauses every checkpoint's write; unset it."
+    exit 2
+}
 $cardPattern = 'EVOSIM_GPU_TRANSPORT|ILGPU|Cuda|CUDA|GpuTransport|[Aa]ccelerator'
 $seedList = @($Seeds -split '[,\s]+' | Where-Object { $_ -ne '' } | ForEach-Object { [int]$_ })
 $launcherPath = if ([IO.Path]::IsPathRooted($Launcher)) { $Launcher } else { Join-Path $Tree $Launcher }
@@ -95,8 +105,8 @@ function Launch([string]$arm, [int]$seed, [bool]$onCard, [double]$wall) {
     Push-Location $Tree
     try {
         & $runFarm $arm -Launcher $launcherPath -Seed $seed -Seconds $Seconds -Threads $Threads `
-            -RunsRoot $RunsRoot -WallMinutes $wall -Env $envs |
-            Select-String 'launched|status|gitCommit|configHash|refus|error|warn' | ForEach-Object { Say "  $_" }
+            -RunsRoot $RunsRoot -WallMinutes $wall -Env $envs -SpinLimit $SpinLimit |
+            Select-String 'launched|spin|status|gitCommit|configHash|refus|error|warn' | ForEach-Object { Say "  $_" }
     } finally { Pop-Location }
 }
 
@@ -118,10 +128,14 @@ function WaitEnd($run, [double]$wall, [double]$stopAt) {
 }
 
 $queueStart = Get-Date
-Say "== $Round queue: seeds $($seedList -join ', '), $Seconds s at $Threads threads, wall $WallMinutes min, transport $(if ($GpuTransport) { 'card' } else { 'cpu' }), tree $Tree"
+Say "== $Round queue: seeds $($seedList -join ', '), $Seconds s at $Threads threads, wall $WallMinutes min, transport $(if ($GpuTransport) { 'card' } else { 'cpu' }), spin $SpinLimit, tree $Tree"
 foreach ($seed in $seedList) {
     $arm = "$Round-s$seed"
-    $dirty = git -C $Tree status --porcelain --untracked-files=no
+    # The files a nursery run or the room appends to are listed once, in rounds/nursery/appended.txt;
+    # appending to one is not editing the tree, so the check leaves each out.
+    $appendedList = Join-Path $Tree 'rounds/nursery/appended.txt'
+    $excludes = @(if (Test-Path $appendedList) { Get-Content $appendedList | Where-Object { $_.Trim() -and $_ -notmatch '^\s*#' } | ForEach-Object { ":(exclude)$($_.Trim())" } })
+    $dirty = git -C $Tree status --porcelain --untracked-files=no -- . @excludes
     if ($dirty) { Say "seed ${seed}: the tree is dirty, not launched:"; $dirty; exit 1 }
     while (Get-Process -Name Evosim.Farm -ErrorAction SilentlyContinue) { Start-Sleep -Seconds 60 }
 
@@ -171,7 +185,7 @@ foreach ($seed in $seedList) {
         Push-Location $Tree
         try {
             & $runFarm "$arm`c" -ResumeFrom $run.FullName -At $at -Seconds $Seconds -Threads $Threads `
-                -RunsRoot $RunsRoot -WallMinutes $left |
+                -RunsRoot $RunsRoot -WallMinutes $left -SpinLimit $SpinLimit |
                 Select-String 'launched|status|from|refus|error|warn' | ForEach-Object { Say "  $_" }
         } finally { Pop-Location }
         $cont = NewestRun "$arm`c" $resumedAt

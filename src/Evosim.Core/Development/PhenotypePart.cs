@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace Evosim.Core
 {
@@ -79,6 +79,9 @@ namespace Evosim.Core
 
         /// <summary>Peak joint torque in newton-metres — links only. See <see cref="MorphNode.Power"/>.</summary>
         public float Power { get; internal set; }
+
+        /// <summary>The joint's threshold and command envelope, links only. See <see cref="MorphNode.Drive"/>.</summary>
+        public DriveGenes Drive { get; internal set; }
 
         /// <summary>
         /// Weight this part cancels, kg/m³ of displaced water — buoyancy cells only. See
@@ -169,6 +172,13 @@ namespace Evosim.Core
         /// (DESIGN.md §4.3).
         /// </summary>
         public NeuronDef[] Neurons { get; internal set; } = Array.Empty<NeuronDef>();
+
+        /// <summary>
+        /// This part's identity for the one brain of D146: its developer path from the root,
+        /// hashed (<see cref="BrainIds.Child"/>). The same part of the same genome has the same
+        /// id in every development, at any size and any module count; the old model never reads it.
+        /// </summary>
+        public ulong PathId { get; internal set; }
 
         /// <summary>Volume in m³, computed by this part's shape when the part was built.</summary>
         /// <remarks>

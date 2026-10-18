@@ -97,53 +97,53 @@ a future reader will have. Keep entries short; link out rather than restating.
 | [D072](#d072) | Conception order — the breeding walk shuffled each step behind a knob, because the world bred oldest-first and a young stomach stood behind every older leaf in its layer; a fault by CLAUDE.md's rule, measured at 48–62% of plateau births to bodies past a lifetime | 2026-09-04 | built behind `EVOSIM_CONCEPTION_ORDER` · **screened 2026-09-04 (logbook/0056): `shuffled` not adopted** — the queue was the stomachs' lifeline, because in a matter-bound plateau energy buys no fecundity; ruled as D073 |
 | [D073](#d073) | Energy buys matter — scarce matter to the parent with the largest energy reserve (`reserve`), screened against a stock large enough that light binds first (3/m³) | 2026-09-04 | ruled · **screened 2026-09-04 (logbook/0057): neither adopted** — the stomachs bid highest and still breed no more than the leaves; the larger stock triples everything at the same share; the open matter budget follows as D074 |
 | [D074](#d074) | The open matter budget — an influx (surface or vent) and burial at the floor, the world's size a flow, because a conserved stock locks and stops selecting | 2026-09-04 | ruled · built · **screened 2026-09-05 (logbook/0058): the size is a flow (4,000–7,700 bodies) but burial never sees the influx at sink 0.002** · **dose corrected 2026-09-05 (logbook/0060): the vent shape with sink 0.02 buries 43–50% of the influx, the surface shape 16%; no equilibrium at 0.6/s in 20,000 s; the stomachs' share unmoved** · **adopted 2026-09-05 in the vent shape at 0.6/s (owner); confirmation at 0.01 (logbook/0061): 3 of 5 at the threshold, not round 18's 4; the stock still grows at the dose and the plume lifts every population to the waterline — surface fix and dose correction put to the owner before re-confirming** |
-| [D075](#d075) | The path after the open budget — movement that pays first, on the vent's stage, the theatre in parallel; then predation, the cell types, the archive | 2026-09-04 | ruled (owner: "lock it in") · begins when an open world confirms at 0.01 · **order amended 2026-09-07 (D081): movement next, on the contact world; predation; then the open budget** |
+| [D075](#d075) | The path after the open budget — movement that pays first, on the vent's stage, the theatre in parallel; then predation, the cell types, the archive | 2026-09-04 | ruled (owner approved it) · begins when an open world confirms at 0.01 · **order amended 2026-09-07 (D081): movement next, on the contact world; predation; then the open budget** |
 | [D076](#d076) | Shared space — creatures share one volume and can touch; matter in time as particles, or particles and ambient fields together; the encounter-rule alternative withdrawn | 2026-09-05 | direction ruled (owner) · **cost measured 2026-09-05 (logbook/0064): none — shared/tiled 0.88–1.12×, real time to ~2,900 bodies; the constraints are packing and a boundary rule** · the footprint and predation rules follow as proposals |
-| [D077](#d077) | The footprint world — one volume of four 10 × 10 m regions on a ring, 60 m deep (area 400); patches read from position; periodic horizontal wrap; a restoring top and bottom; newborns placed beside the parent; the dose set by one re-screen | 2026-09-05 | ruled (owner: "proceed") · built 2026-09-06 (logbook/0066) · **screened 2026-09-06 (logbook/0065): works — the top holds, populations at 15–31 m, the stock levels at influx 0.3, stomach clades 5 of 5, the two seed-2 arms wall-censored (noted 2026-09-07); costs: the plume's crowd, the placeholder floor** · **the floor real 2026-09-06 (`a268311`)** · confirmation at 0.01 at influx 0.3 / stock 0.25 **failed 2 of 5 (logbook/0067: the lean dose starves the stomachs)** · re-run at influx 0.6 **read 2026-09-07 (logbook/0068): 3 of 5 under D063 as amended, below the round's bar of 4; the stock grew 44–53% over the last third in every seed; one realisation per seed (0069)** · superseded as the path by D079: the fed world is a screen, and the box returns to round 18's closed world (logbook/0070) |
+| [D077](#d077) | The footprint world — one volume of four 10 × 10 m regions on a ring, 60 m deep (area 400); patches read from position; periodic horizontal wrap; a restoring top and bottom; newborns placed beside the parent; the dose set by one re-screen | 2026-09-05 | ruled (owner told the agent to proceed) · built 2026-09-06 (logbook/0066) · **screened 2026-09-06 (logbook/0065): works — the top holds, populations at 15–31 m, the stock levels at influx 0.3, stomach clades 5 of 5, the two seed-2 arms wall-censored (noted 2026-09-07); costs: the plume's crowd, the placeholder floor** · **the floor real 2026-09-06 (`a268311`)** · confirmation at 0.01 at influx 0.3 / stock 0.25 **failed 2 of 5 (logbook/0067: the lean dose starves the stomachs)** · re-run at influx 0.6 **read 2026-09-07 (logbook/0068): 3 of 5 under D063 as amended, below the round's bar of 4; the stock grew 44–53% over the last third in every seed; one realisation per seed (0069)** · superseded as the path by D079: the fed world is a screen, and the box returns to round 18's closed world (logbook/0070) |
 | [D078](#d078) | Single-threaded physics by default — the shared world replays only with no job-system worker threads; `EVOSIM_PHYSICS_JOBS` 0, recorded in manifest and header; shared-world changes validated by the state digest | 2026-09-06 | adopted by the agent as an instrument decision (a reproducibility invariant restored; owner may reverse for throughput) · cost measured at 120–180 bodies +19% wall (logbook/0069) · **built 2026-09-06**: `EVOSIM_PHYSICS_JOBS` default 0, manifest `physicsJobWorkers`/`jobWorkerMaximum`, header `physics jobs N`, theatre sets it from the manifest; `jobs-a` ≡ `jobs-b` over 3,001 digests at the default, `jobs-15` parts at step 152,500, tiled replay unmoved, theatre identity 30 of 30 on a shared recording; this machine's ceiling is 31 workers, not 15 |
-| [D079](#d079) | One change at a time from the last good world — round 18's closed world is the base; the first change is shared space (D077's box, real floor, restoring top) under D078's single-threaded physics; the open budget and the vent return afterwards, each earning its place | 2026-09-06 | ruled (owner: "agreed. proceed with that idea") · first round pre-registered as logbook/0070 · **round 28 read 2026-09-07 (logbook/0070): 3 of 5 under D063 as amended, below round 18's bar of 4; seeds 2, 3, 4 pass and seed 1 fails as in round 18; seed 5's stomach line stable at 17 and sterile from 21,408 s; M5 (no crowd) fails in every seed; the collisions-off control and the box's width are the owner's rulings** · **amended 2026-09-07 (D081): the base becomes round 28's contact world** |
-| [D080](#d080) | Non-commercial terms: PolyForm Noncommercial 1.0.0 for code and the genomes, CC BY-NC 4.0 for prose, commercial licences on request, contributions carry a relicensing grant | 2026-09-07 | ruled (owner: "lets apply the changes to the license") · supersedes D015 |
+| [D079](#d079) | One change at a time from the last good world — round 18's closed world is the base; the first change is shared space (D077's box, real floor, restoring top) under D078's single-threaded physics; the open budget and the vent return afterwards, each earning its place | 2026-09-06 | ruled (owner agreed and told the agent to proceed with that idea) · first round pre-registered as logbook/0070 · **round 28 read 2026-09-07 (logbook/0070): 3 of 5 under D063 as amended, below round 18's bar of 4; seeds 2, 3, 4 pass and seed 1 fails as in round 18; seed 5's stomach line stable at 17 and sterile from 21,408 s; M5 (no crowd) fails in every seed; the collisions-off control and the box's width are the owner's rulings** · **amended 2026-09-07 (D081): the base becomes round 28's contact world** |
+| [D080](#d080) | Non-commercial terms: PolyForm Noncommercial 1.0.0 for code and the genomes, CC BY-NC 4.0 for prose, commercial licences on request, contributions carry a relicensing grant | 2026-09-07 | ruled (owner asked for the licence changes to be applied) · supersedes D015 |
 | [D081](#d081) | Six rulings on round 28's reading — two named bars (the goal, the reference); the contact world is the base; the path is movement, predation, then the open budget; added mass on and the global brain removed in the movement build; the futility clause narrowed to screens | 2026-09-07 | ruled (owner, by question) · amends D063's reading, D069, D075, D079 · **round 29 read 2026-09-08 (logbook/0072): the world stands under added mass in every seed, the senses are carried in 3 of 5 at today's price, no jointed guild, the goal 2 of 5** |
 | [D082](#d082) | The price of a bud: the neuron and its inputs about tenfold cheaper, and the stroke's work billed at a fraction, in a price round after round 29 reads; round 29 is the control at today's price | 2026-09-07 | ruled (owner, by question) · the numbers are set by the ledger and the record in the round's pre-registration · **folded into round 30 with D083 the same night; round 29 stays the price control** · **round 30 read 2026-09-08: at the new price the senses were carried in 1 of 5 against round 29's 3 of 5 and no jointed guild held; the price was not what kept a sense (logbook/0075)** |
-| [D083](#d083) | The water as vertices: detritus and free matter become vertices holding joules at positions, read through a kernel, so a still body eats a hole and a moving body leaves it; the vent founds vertices and the floor buries them; the cell field stays behind a switch for the record | 2026-09-07 | ruled (owner: "it's settled") · built and tested the same night; the halo proposal withdrawn · round 30 is the vertex world with D082's prices, round 29 the price control, round 28 the world control · **round 30 read 2026-09-08 (logbook/0075): the goal rule met 5 of 5, both identities closed, the loop closed; the new base** |
-| [D084](#d084) | Sideways mixing stays 0.2 m²/s in the vertex water, and round 29's separation arm runs only if round 30 reads below round 28 as well | 2026-09-08 | ruled (owner: "proceed with your recommendations") |
-| [D085](#d085) | The waste stays where nature puts it: exudate keeps joining the water beside its producer; the prize for moving is made by stirring the water less, the detritus mixing to 0.02 m²/s on both axes in round 31; the exudate fraction is lowered only after, and founding vertices per excretion waits | 2026-09-08 | ruled (owner: "proceed with your recommendations"); read 2026-09-09 (logbook/0077): 4 of 5, the world stands at 0.02, the hole is not at the sitter but in the water at large, no swimmer, the larder went deep |
-| [D086](#d086) | The water as a grid: cells that hold amounts, a body feeding from the cell it stands in, Fick's law between neighbours, upwind advection, corpses as particles; 1 m detritus cells, 5 m matter cells, matter mixed at 2 m²/s on every axis; the base from round 32 | 2026-09-09 | ruled (owner: "sgtm... proceed", "proceed"); built and screened the same night (logbook/0078); round 32 read 2026-09-09 evening (0079): every mechanism prediction holds in five arms, the population 6 to 13% above the vertex world's, and the goal rule holds in two seeds of five against four, the inherited stomach lines thinner from founding and falling to the end; the base stands, the eaters' recruitment is the open question |
-| [D087](#d087) | Bodies that grow: a child is born at a fraction of its adult body and grows; `BirthInvestment` (a fraction of the parent's tissue) replaces the endowment, `AdultScale` scales the plan, brood stays; `NewbornReserveFraction` 0.2, `GrowthReserveFloor` 0.1, `MinNewbornPartKilograms` 0.5, `GrowthStepSeconds` 10; investment 0.5, one gate of 0.08, founders 0.25 to 1.0, the reserve capped beside the body, a runaway ceiling on biomass | 2026-09-09 | ruled (owner: "love it! go ahead" on the design, "proceed with your recommendations" on the five constants); built in both halves and smoked (logbook/0081); round 33 read 2026-09-10 (logbook/0082): the goal rule in five seeds of five, every line recruiting, four founded by a late child; adult scale, investment and litter walked the same way in every seed and stopped at the mass floor; the placer's birth-size reservation is the suspect for one contact divergence |
-| [D088](#d088) | The third dimension: a newborn dispersed over a disc about its parent (`OffspringDispersalMetres`, 0 = D077's rule, first cut 5 m); a current that carries (`CurrentMode Transport`, divergence-free, equal on every axis, RMS at the knob, substepped advection; the rolls kept for replay); destroy immediately in either mode and a Play-mode identity check; the placer reserves the adult | 2026-09-10 | ruled (owner: "lets start the fix please", "in all directions really"); built in three parts and smoked the same afternoon (logbook/0085), identity in Play mode 6 of 6; the agent's first look 2026-09-10 evening (logbook/0086: the fixed world fills the box, the old rules recreated give two ribbons); the owner ruled the five open values the same evening (dispersal 5 m, box unchanged, 0.1 m/s, founders reserve the adult); round 35 is the base round (logbook/0087) |
-| [D089](#d089) | The aquarium: a cylinder of water of the configured area with a glass wall of 48 slabs, ring patches, a masked grid and a gyre (`WorldShape Tank`, `EVOSIM_SHAPE`, default `Box`); the area decoupled from the matter (`MatterBudgetUnits`, 0 = the density rule; round 38 at 400 m² with 6,000 units held); corpses as objects from round 38; the drive limiter at every step built as a tunable and not adopted | 2026-09-11 | the container ruled by the owner ("yes proceed" to the cylinder, the wall and the round shape their own questions); dilution and concentrators on the agent's recommendation under "follow your suggestions", open to overrule before round 38; built on branch `tank` (`logbook/specs/tank-spec.md`), six checks run 2026-09-11 and 12 (the limiter's failed: 27 divergences against 17 with the same signature); round 37 is the first world in the tank (logbook/0093) |
-| [D090](#d090) | The water carries as water does: in a tank the current is a 27-term spectrum of streams with no swirl about the axis (amends D089's gyre), and every part feels the water's acceleration force `(ρV + m_added)·Du/Dt` (`FluidAccelerationCoefficient`, `EVOSIM_FLUID_ACCEL`, default 0, 1 from round 37b); round 37b repeats the tank on both before the dilution | 2026-09-12 | ruled by the owner in two steps ("the currents should not act as unified fields but more like streams"; "Agreed. Proceed") after round 37's early read showed the rim ring holding 58 to 96% of the bodies and the streams build's tracer check showed the lag, not the field, does the gathering; built on branch `streams` with the throw trace, checked on worker 7, merged after round 37's last render |
-| [D091](#d091) | Two kinds of change: a replacement (what the world is) becomes the base on the owner's ruling and reads the goal rule without requiring it; a treatment (a price, a sense, a rule of the ecology on a fixed world) joins the base only when its round meets its pre-registered bar; D081's adoption clause applies to treatments; every entry names which kind its round is | 2026-09-12 | ruled by the owner ("proceed with your recommendations") on the agent's proposal after the Astra review found D081's rule and the practice since the grid disagreeing; with it, a fresh-seed batch on round 37b's world before round 38 |
-| [D092](#d092) | The bed with shape: a seeded height map at three scales under the tank, the streams' potential in floor-following coordinates so the water follows the floor, the grid masked below it, one static collider; relief 0 replays the flat world; rocks and overhangs out (`logbook/specs/bed-spec.md`) | 2026-09-15 | ruled by the owner in conversation ("I really want a shaped bed"; "life like without making it computationally problematic", then "not too expensive"); the requirements written by the agent and accepted; round 39, built after round 38's read |
-| [D093](#d093) | Round 39's tank sized for the slope: 2,200 m² (a 52.9 m diameter, the smallest round area that takes a 30 m tilt under a 30° ramp), 45 m deep, the floor from 30 m on the shallow arc to 60 m on the deep one; the tilt's cap 30°; the shelf folded into the bed's round | 2026-09-15 | ruled by the owner in conversation on the evening of 2026-09-15 ("we need a much bigger tank. Much") and chosen from the agent's three sizings; the matter budget set from the founding smokes |
-| [D094](#d094) | The goal becomes a ladder of milestones: D063 deprecated as the campaign's bar (rung 1, met), the scorer to print a state and not a verdict, rung 2 adaptation by degree (a standing reading until its threshold is measured), rungs 3 and 4 named; every round still read on its own pre-registered predictions | 2026-09-16 | ruled by the owner in conversation on the morning of 2026-09-16 ("once we've proven that the goal is achievable we don't need to hold ourselves to that goal again"), on the agent's reasoning in the open |
+| [D083](#d083) | The water as vertices: detritus and free matter become vertices holding joules at positions, read through a kernel, so a still body eats a hole and a moving body leaves it; the vent founds vertices and the floor buries them; the cell field stays behind a switch for the record | 2026-09-07 | ruled (owner settled it) · built and tested the same night; the halo proposal withdrawn · round 30 is the vertex world with D082's prices, round 29 the price control, round 28 the world control · **round 30 read 2026-09-08 (logbook/0075): the goal rule met 5 of 5, both identities closed, the loop closed; the new base** |
+| [D084](#d084) | Sideways mixing stays 0.2 m²/s in the vertex water, and round 29's separation arm runs only if round 30 reads below round 28 as well | 2026-09-08 | ruled (owner told the agent to proceed with its recommendations) |
+| [D085](#d085) | The waste stays where nature puts it: exudate keeps joining the water beside its producer; the prize for moving is made by stirring the water less, the detritus mixing to 0.02 m²/s on both axes in round 31; the exudate fraction is lowered only after, and founding vertices per excretion waits | 2026-09-08 | ruled (owner told the agent to proceed with its recommendations); read 2026-09-09 (logbook/0077): 4 of 5, the world stands at 0.02, the hole is not at the sitter but in the water at large, no swimmer, the larder went deep |
+| [D086](#d086) | The water as a grid: cells that hold amounts, a body feeding from the cell it stands in, Fick's law between neighbours, upwind advection, corpses as particles; 1 m detritus cells, 5 m matter cells, matter mixed at 2 m²/s on every axis; the base from round 32 | 2026-09-09 | ruled (owner agreed and told the agent to proceed, twice); built and screened the same night (logbook/0078); round 32 read 2026-09-09 evening (0079): every mechanism prediction holds in five arms, the population 6 to 13% above the vertex world's, and the goal rule holds in two seeds of five against four, the inherited stomach lines thinner from founding and falling to the end; the base stands, the eaters' recruitment is the open question |
+| [D087](#d087) | Bodies that grow: a child is born at a fraction of its adult body and grows; `BirthInvestment` (a fraction of the parent's tissue) replaces the endowment, `AdultScale` scales the plan, brood stays; `NewbornReserveFraction` 0.2, `GrowthReserveFloor` 0.1, `MinNewbornPartKilograms` 0.5, `GrowthStepSeconds` 10; investment 0.5, one gate of 0.08, founders 0.25 to 1.0, the reserve capped beside the body, a runaway ceiling on biomass | 2026-09-09 | ruled (owner approved the design and told the agent to go ahead, and took the agent's recommendations on the five constants); built in both halves and smoked (logbook/0081); round 33 read 2026-09-10 (logbook/0082): the goal rule in five seeds of five, every line recruiting, four founded by a late child; adult scale, investment and litter walked the same way in every seed and stopped at the mass floor; the placer's birth-size reservation is the suspect for one contact divergence |
+| [D088](#d088) | The third dimension: a newborn dispersed over a disc about its parent (`OffspringDispersalMetres`, 0 = D077's rule, first cut 5 m); a current that carries (`CurrentMode Transport`, divergence-free, equal on every axis, RMS at the knob, substepped advection; the rolls kept for replay); destroy immediately in either mode and a Play-mode identity check; the placer reserves the adult | 2026-09-10 | ruled (owner asked for the fix to start, and for the current to act in all directions); built in three parts and smoked the same afternoon (logbook/0085), identity in Play mode 6 of 6; the agent's first look 2026-09-10 evening (logbook/0086: the fixed world fills the box, the old rules recreated give two ribbons); the owner ruled the five open values the same evening (dispersal 5 m, box unchanged, 0.1 m/s, founders reserve the adult); round 35 is the base round (logbook/0087) |
+| [D089](#d089) | The aquarium: a cylinder of water of the configured area with a glass wall of 48 slabs, ring patches, a masked grid and a gyre (`WorldShape Tank`, `EVOSIM_SHAPE`, default `Box`); the area decoupled from the matter (`MatterBudgetUnits`, 0 = the density rule; round 38 at 400 m² with 6,000 units held); corpses as objects from round 38; the drive limiter at every step built as a tunable and not adopted | 2026-09-11 | the container ruled by the owner (who said yes and to proceed with the cylinder, the wall and the round shape their own questions); dilution and concentrators on the agent's recommendation, the owner having said to follow the agent's suggestions, open to overrule before round 38; built on branch `tank` (`logbook/specs/tank-spec.md`), six checks run 2026-09-11 and 12 (the limiter's failed: 27 divergences against 17 with the same signature); round 37 is the first world in the tank (logbook/0093) |
+| [D090](#d090) | The water carries as water does: in a tank the current is a 27-term spectrum of streams with no swirl about the axis (amends D089's gyre), and every part feels the water's acceleration force `(ρV + m_added)·Du/Dt` (`FluidAccelerationCoefficient`, `EVOSIM_FLUID_ACCEL`, default 0, 1 from round 37b); round 37b repeats the tank on both before the dilution | 2026-09-12 | ruled by the owner in two steps (first that the currents should act more like streams than as unified fields, then agreement to proceed) after round 37's early read showed the rim ring holding 58 to 96% of the bodies and the streams build's tracer check showed the lag, not the field, does the gathering; built on branch `streams` with the throw trace, checked on worker 7, merged after round 37's last render |
+| [D091](#d091) | Two kinds of change: a replacement (what the world is) becomes the base on the owner's ruling and reads the goal rule without requiring it; a treatment (a price, a sense, a rule of the ecology on a fixed world) joins the base only when its round meets its pre-registered bar; D081's adoption clause applies to treatments; every entry names which kind its round is | 2026-09-12 | ruled by the owner, who told the agent to proceed with its recommendations, on the agent's proposal after the Astra review found D081's rule and the practice since the grid disagreeing; with it, a fresh-seed batch on round 37b's world before round 38 |
+| [D092](#d092) | The bed with shape: a seeded height map at three scales under the tank, the streams' potential in floor-following coordinates so the water follows the floor, the grid masked below it, one static collider; relief 0 replays the flat world; rocks and overhangs out (`logbook/specs/bed-spec.md`) | 2026-09-15 | ruled by the owner in conversation (the owner wanted a shaped bed, life-like without making it computationally problematic, then not too expensive); the requirements written by the agent and accepted; round 39, built after round 38's read |
+| [D093](#d093) | Round 39's tank sized for the slope: 2,200 m² (a 52.9 m diameter, the smallest round area that takes a 30 m tilt under a 30° ramp), 45 m deep, the floor from 30 m on the shallow arc to 60 m on the deep one; the tilt's cap 30°; the shelf folded into the bed's round | 2026-09-15 | ruled by the owner in conversation on the evening of 2026-09-15 (the owner said the tank needed to be much bigger) and chosen from the agent's three sizings; the matter budget set from the founding smokes |
+| [D094](#d094) | The goal becomes a ladder of milestones: D063 deprecated as the campaign's bar (rung 1, met), the scorer to print a state and not a verdict, rung 2 adaptation by degree (a standing reading until its threshold is measured), rungs 3 and 4 named; every round still read on its own pre-registered predictions | 2026-09-16 | ruled by the owner in conversation on the morning of 2026-09-16 (the owner said that once the goal is proven achievable the campaign need not hold itself to that goal again), on the agent's reasoning in the open |
 | [D095](#d095) | Seeds per round and arms at a time: five seeds for population-level predictions, ten for a rare event or a 2-or-3-of-5 reading, a rare event pre-registered as a count; three concurrent arms, renders between rounds | 2026-09-17 |
-| [D096](#d096) | The light's reach halved for round 40: `EVOSIM_LIGHT_REACH` 6 m (the attenuation depth, 12 m in every round before), so a lone leaf breeds only in the top ten metres and the water below is a dark column; the shelf follows in the lit band the new light defines | 2026-09-18 | ruled by the owner in conversation on the morning of 2026-09-18 ("Let's do it" on the direction, "proceed with your recommendations" on the value), from the agent's ledger sweep in `fable-propose-light.md`, absorbed here |
-| [D097](#d097) | The foundation queue stops after round 40's read; the campaign turns to what makes the world interesting: matter off the throne (a child's matter price so a cell is not a one-child cliff), then a mouth that eats living bodies (herbivory, then predation), then the senses and the stroke's price; each as a proposal | 2026-09-18 | ruled by the owner in conversation at midday on 2026-09-18 ("Let's follow your recommendations!") on the agent's diagnosis after round 40's early look |
-| [D098](#d098) | One substance: matter in two states, inorganic in the water and organic in bodies, corpses and detritus, with energy as the organic state's content at ρ joules a unit; photosynthesis makes organic from inorganic at a saturating uptake, living burns organic back to inorganic, eating moves organic, a child is organic matter given by its parent, detritus remineralises, the fixed charge goes, one breeding-margin gene; both audits kept; every current run stopped for the rebuild | 2026-09-18 | ruled by the owner in conversation on the evening of 2026-09-18 ("Let's do it. And I'd stop all the current runs") on `fable-propose-economy.md`, absorbed here with the owner's four alignment questions |
+| [D096](#d096) | The light's reach halved for round 40: `EVOSIM_LIGHT_REACH` 6 m (the attenuation depth, 12 m in every round before), so a lone leaf breeds only in the top ten metres and the water below is a dark column; the shelf follows in the lit band the new light defines | 2026-09-18 | ruled by the owner in conversation on the morning of 2026-09-18 (agreement on the direction, and the agent's recommendations taken on the value), from the agent's ledger sweep in `fable-propose-light.md`, absorbed here |
+| [D097](#d097) | The foundation queue stops after round 40's read; the campaign turns to what makes the world interesting: matter off the throne (a child's matter price so a cell is not a one-child cliff), then a mouth that eats living bodies (herbivory, then predation), then the senses and the stroke's price; each as a proposal | 2026-09-18 | ruled by the owner in conversation at midday on 2026-09-18 (to follow the agent's recommendations) on the agent's diagnosis after round 40's early look |
+| [D098](#d098) | One substance: matter in two states, inorganic in the water and organic in bodies, corpses and detritus, with energy as the organic state's content at ρ joules a unit; photosynthesis makes organic from inorganic at a saturating uptake, living burns organic back to inorganic, eating moves organic, a child is organic matter given by its parent, detritus remineralises, the fixed charge goes, one breeding-margin gene; both audits kept; every current run stopped for the rebuild | 2026-09-18 | ruled by the owner in conversation on the evening of 2026-09-18 (to do it, and to stop all the current runs) on `fable-propose-economy.md`, absorbed here with the owner's four alignment questions |
 | [D102](#d102) | The streams in a tank flatter than the overturning cell can balance: where D088's equal-axes rule has no solution the vertical RMS over the horizontal is `0.76 · k_max` (0.75 at 20 m in the 2,200 m² tank, the cell at round 42's amplitude), in that branch only, so every tank that built before builds the same; the header carries `axes v:h` | 2026-09-21 | ruled by the owner in conversation on the morning of 2026-09-21 at the agent's recommendation, from `logbook/specs/streams-shallow-spec.md` |
 | [D103](#d103) | Four pinned arms at a time (D095's three amended): each arm pinned to two fast cores of its own (masks 0x003C, 0x03C0, 0x3C00, 0xC003), a fourth costing 1.01 of a third's wall on a young crowd; the cap stays a rule of the Unity farm, and a farm out of Unity is not an arm | 2026-09-21 | ruled by the owner in conversation on the morning of 2026-09-21 on the agent's measurement (`logbook/specs/harness-profile-spec.md` §9) |
-| [D104](#d104) | The water sampled per link on every step on the new engine: D100's hold retired at 0 from round 43, because a held sample undoes D090 (a neutral body 22 m from its parcel in 1,000 s against 5 cm per link) and the cheapening buys nothing on a solver of our own | 2026-09-22 | ruled by the owner in conversation at 03:15 on 2026-09-22 ("Yes" to the agent's recommendation of hold 0) |
-| [D105](#d105) | The physics on the card in single precision through ILGPU, designed for 100,000 bodies and first validated at 10,000 to 30,000 with the grid on the CPU, built in parallel with the animal-kit rounds; double on the 4090 is slower than the cores, and a single-precision world is a new realisation read by D104's gate | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 evening ("for the rest I think we can go with your recommendations") |
+| [D104](#d104) | The water sampled per link on every step on the new engine: D100's hold retired at 0 from round 43, because a held sample undoes D090 (a neutral body 22 m from its parcel in 1,000 s against 5 cm per link) and the cheapening buys nothing on a solver of our own | 2026-09-22 | ruled by the owner in conversation at 03:15 on 2026-09-22 (agreeing to the agent's recommendation of hold 0) |
+| [D105](#d105) | The physics on the card in single precision through ILGPU, designed for 100,000 bodies and first validated at 10,000 to 30,000 with the grid on the CPU, built in parallel with the animal-kit rounds; double on the 4090 is slower than the cores, and a single-precision world is a new realisation read by D104's gate | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 evening (the rest on the agent's recommendations) |
 | [D106](#d106) | The animal kit's first two rungs: the cell is the unit of death; a module gene per node (determinate or indeterminate) makes plants grow and regrow by a rule; four priced attributes on any cell (attack, intake, protection, toughness), heritable and mutable, capped per cell type, health as state healed from the reserve; a killed part becomes a corpse the killer gains nothing from, and the yield is intake from corpses; round 44 the module gene, round 45 the mouth, one genome format bump for both; then B, C, D in that order | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 evening, three decisions put in full |
 | [D107](#d107) | A body's size is bounded by the economy and not by a rule: the reach bound is rejected as a world rule and stays in the tree as an unset development guard; a support cost, each part paying for the load it puts on the chain to the root, is the next base round's proposal, with per-part contact beside it | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 night |
 | [D108](#d108) | The tank is ten times larger from round 45 and the matter is not: 22,000 m² at 45 m with round 44's 1,500 units, the same crowd in ten times the water, the bed's wavelength held at 17.64 m; the farm out of Unity made the old size a habit rather than a constraint. The matter superseded by D109 the same night | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 night, the size and the matter the owner's, the bed the agent's |
 | [D109](#d109) | Islands and deserts: the matter seeded by a noise map into the top of a tenth of the columns, founders planted in the islands, the matter grid stirred at the snow's 0.02 m²/s (it was a hard default of 2), and 15,000 units so the water is round 44's density once the islands have spread; a light shade map built and off, its physical form (a shelf reef) proposed | 2026-09-22 | ruled by the owner in conversation on 2026-09-22 night, step by step after five screens |
 | [D110](#d110) | Light by exposure: a part earns on, and shades with, its projected area onto the horizontal in its actual pose (a flat leaf twice the orientation average, an edge-on one about nothing, a random crowd unchanged), the hull's one-sided shadow as the cap, a tunable off by default; the one-part leaf's way to lie flat (a buoyancy offset) put for its own ruling | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 morning from the owner's observation of the pictures, with two conditions (the cost weighed, a way to affect the angle) |
-| [D111](#d111) | The buoyancy offset: a part's centre of buoyancy may sit off its mass centre along its thinnest axis, a heritable priced genome trait (format 8) so a one-part leaf turns face up by the water it displaces; D110's second condition answered | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon ("agreed") after the biology was laid out |
-| [D112](#d112) | The snow's life: remineralisation at 0.0005 per second from round 46, a quarter of rounds 41 to 45's rate, so that marine snow lives long enough to fall from the crowd on to the beach's shelf; the plant world read as the snow's thinness, not its depth | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon ("Agreed"), pending the quarter-rate screen's reading of the plants' cost |
-| [D113](#d113) | The support cost: a part's standing cost grows with its area times the square of its distance from the root, 0.1 W per m² per m², the price of reach in place of a bound (D107's price) | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon ("I'd follow nature here. so if that's your recommendation, lets go with that") |
-| [D114](#d114) | Contact on the part: every part its own sphere in the farm's contact, so a body touches with the part that touches and a bite lands on it; a tunable, off in every recorded world | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon ("agreed") |
-| [D115](#d115) | The founding trickle: founders keep arriving at a low rate for the whole run (one per 30 s in round 46), booked as matter influx, the floor unchanged, an empty world still the run's end unless founders are being added; replaces the timed second founding window | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 late afternoon (the owner's own proposal; "ok fine. but a world that dies out should be 'game over'") |
-| [D116](#d116) | Founders follow their food: D109's landing rule reads the field the founder's body eats, snow for a stomach and dissolved matter for a leaf, the larger for a mixotroph; replaces placing a cohort by rule | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 late afternoon ("use probability to make it more likely to land in high matter concentrates"; "yes") |
-| [D117](#d117) | The trickle brings back extinct species: with a launcher's share, a trickle founder is an exact copy of an evolved body from a pool the config pins by hash, marked `src: pool` in the lineage | 2026-09-23 | ruled by the owner in conversation on the night of 2026-09-23, on round 46's read ("I like the idea of reintroducing extinct species... yes lets do it") |
-| [D118](#d118) | The reef is many dark places, not three ornaments: caps of random size and irregular outline, overlapping where they fall, placed until a launcher's share of the surface is covered, opaque underneath, dressed as rock | 2026-09-23 | ruled by the owner in conversation on the night of 2026-09-23, on the smoke's pictures of the first build ("the idea is to have areas in the tank that do not get light. That's the reason they are there") |
-| [D119](#d119) | A cell type arrives only as a bud: no mutation changes an existing part's type; a new type is a small new part, and a part leaves by shrinking | 2026-09-24 | ruled by the owner in conversation on 2026-09-24, on the dissection of round 47's stomachs ("we should never change a full cell type from one to another, it should only be additions, or removals") |
-| [D120](#d120) | Reproduction paid as it goes, as a gene beside the lump, and the child's overhead scales with the child above a floor | 2026-09-24 | ruled by the owner in conversation on 2026-09-24 ("lets proceed with your recommendations") on the agent's proposal after the dissection |
+| [D111](#d111) | The buoyancy offset: a part's centre of buoyancy may sit off its mass centre along its thinnest axis, a heritable priced genome trait (format 8) so a one-part leaf turns face up by the water it displaces; D110's second condition answered | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon (the owner agreed) after the biology was laid out |
+| [D112](#d112) | The snow's life: remineralisation at 0.0005 per second from round 46, a quarter of rounds 41 to 45's rate, so that marine snow lives long enough to fall from the crowd on to the beach's shelf; the plant world read as the snow's thinness, not its depth | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon (the owner agreed), pending the quarter-rate screen's reading of the plants' cost |
+| [D113](#d113) | The support cost: a part's standing cost grows with its area times the square of its distance from the root, 0.1 W per m² per m², the price of reach in place of a bound (D107's price) | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon (the owner would follow nature here, and went with the agent's recommendation) |
+| [D114](#d114) | Contact on the part: every part its own sphere in the farm's contact, so a body touches with the part that touches and a bite lands on it; a tunable, off in every recorded world | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 afternoon (the owner agreed) |
+| [D115](#d115) | The founding trickle: founders keep arriving at a low rate for the whole run (one per 30 s in round 46), booked as matter influx, the floor unchanged, an empty world still the run's end unless founders are being added; replaces the timed second founding window | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 late afternoon (the owner's own proposal, accepted on the condition that a world that dies out is game over) |
+| [D116](#d116) | Founders follow their food: D109's landing rule reads the field the founder's body eats, snow for a stomach and dissolved matter for a leaf, the larger for a mixotroph; replaces placing a cohort by rule | 2026-09-23 | ruled by the owner in conversation on 2026-09-23 late afternoon (the owner asked for probability to make a founder more likely to land in high matter concentrations, then agreed) |
+| [D117](#d117) | The trickle brings back extinct species: with a launcher's share, a trickle founder is an exact copy of an evolved body from a pool the config pins by hash, marked `src: pool` in the lineage | 2026-09-23 | ruled by the owner in conversation on the night of 2026-09-23, on round 46's read (the owner liked the idea of reintroducing extinct species and said to do it) |
+| [D118](#d118) | The reef is many dark places, not three ornaments: caps of random size and irregular outline, overlapping where they fall, placed until a launcher's share of the surface is covered, opaque underneath, dressed as rock | 2026-09-23 | ruled by the owner in conversation on the night of 2026-09-23, on the smoke's pictures of the first build (the owner said the reefs are there to make areas of the tank that get no light) |
+| [D119](#d119) | A cell type arrives only as a bud: no mutation changes an existing part's type; a new type is a small new part, and a part leaves by shrinking | 2026-09-24 | ruled by the owner in conversation on 2026-09-24, on the dissection of round 47's stomachs (the owner said a full cell type should never change into another, only be added or removed) |
+| [D120](#d120) | Reproduction paid as it goes, as a gene beside the lump, and the child's overhead scales with the child above a floor | 2026-09-24 | ruled by the owner in conversation on 2026-09-24 (told the agent to proceed with its recommendations) on the agent's proposal after the dissection |
 | [D121](#d121) | Senescence wears upkeep alone, not income | 2026-09-24 | ruled with D120 |
-| [D122](#d122) | Every founder lands at the richest cell of its food, depth included, and is born with an endowment | 2026-09-24 | ruled with D120; the generic form of a stomach-only rule the owner refused ("if we could come up with some generic rule or configuration, then I'd be much more inclined") |
-| [D123](#d123) | The contact and damage senses read the step, from round 49: contact now and the health lost this step, as the mouth's specification asked | 2026-09-25 | ruled by the owner in conversation ("fix for 49"), after the checkpoint-fidelity read found both senses cumulative |
-| [D124](#d124) | A founder starts with at most a fraction of its own breeding gate, purse and endowment together, after its growth; 0.9 from round 49. The wear stays on upkeep and the snow's stirring is held | 2026-09-25 | ruled by the owner in conversation on the agent's proposal for round 49, question 1 on the owner's own alternative ("can we have the gift come in at slightly less than the child threashold"; "ok lets go with that") |
+| [D122](#d122) | Every founder lands at the richest cell of its food, depth included, and is born with an endowment | 2026-09-24 | ruled with D120; the generic form of a stomach-only rule the owner refused, saying they would be much more inclined to a generic rule or configuration |
+| [D123](#d123) | The contact and damage senses read the step, from round 49: contact now and the health lost this step, as the mouth's specification asked | 2026-09-25 | ruled by the owner in conversation (to fix it for round 49), after the checkpoint-fidelity read found both senses cumulative |
+| [D124](#d124) | A founder starts with at most a fraction of its own breeding gate, purse and endowment together, after its growth; 0.9 from round 49. The wear stays on upkeep and the snow's stirring is held | 2026-09-25 | ruled by the owner in conversation on the agent's proposal for round 49, question 1 on the owner's own alternative, that the gift come in at slightly less than the child threshold, which the owner then agreed to |
 | [D125](#d125) | A leaf founder is set in the cell of its column where its own income, light and matter together, is largest, from round 50; a stomach is placed as before | 2026-09-26 | ruled by the owner in conversation, option (a) of three put after round 49's leaf read |
 | [D126](#d126) | An overnight round hands the snow's transport to the card, from round 51, after a daytime check against round 50's record | 2026-09-26 | ruled by the owner, option B of three |
 | [D127](#d127) | Round 51: links catch no light and the first link is free up to a link's size; a dead body is a husk that sinks, settles and dissolves slowly, every rule a knob; death by age keeping the reserve in the husk, if the ledger check asks for it; the pool keeps its one-part stomach; the water's reactive thrust in round 52 | 2026-09-27 | ruled by the owner in conversation after round 50's read |
@@ -2406,7 +2406,7 @@ comes back to the surface.
 That is harsher than any real ocean. The sunlit sea *is* a nutrient desert — the design was
 right to make it one — but most of what its producers take is regenerated in place within
 days by excretion, grazing and leakage, and only a minority sinks out. This world has no
-regeneration while alive at all. The owner's question — "where does matter come from?" —
+regeneration while alive at all. The owner asked where matter comes from, and the question
 had the answer "from the seed at t=0, and then only from corpses", and that is the gap.
 
 **Chosen: living creatures return matter continuously, at their own depth, in proportion to
@@ -2420,8 +2420,8 @@ debited by exactly what the field is credited, so `World.StandingMatter` does no
 D048's test passes unchanged. One knob, default 0, bit-identical world; `EVOSIM_EXCRETION` in
 the header.
 
-**Rejected for now: a matter source paid in energy** (the owner's first formulation —
-"a creature that consumes energy excretes a percent of it as matter"). It has a real
+**Rejected for now: a matter source paid in energy** (the owner's first formulation,
+that a creature which consumes energy excretes a percentage of it as matter). It has a real
 analogue, nitrogen fixation, where microbes spend energy to make inert N₂ usable, and it is
 the honest meaning of "life changed the composition of the sea". But it makes matter out of
 energy, which breaks the one property D048 built the field on and removes the limit
@@ -2948,8 +2948,8 @@ lets the pool escape upward at low density, may be the half that matters.
 ### D063
 **The recruitment clause — a chain must be breeding, not merely surviving** · 2026-09-01
 
-**Deprecated as the campaign's bar 2026-09-16 by [D094](#d094)** (owner: "don't overwrite old
-rules. deprecate them, but keep the record"). The clauses stay in the scorer as a state per
+**Deprecated as the campaign's bar 2026-09-16 by [D094](#d094)** (the owner ruled that old
+rules are deprecated, not overwritten, and the record kept). The clauses stay in the scorer as a state per
 seed; every verdict recorded under this rule through round 38 stands. The entry below is
 unchanged.
 
@@ -2981,7 +2981,7 @@ members through the last two lifetimes (the last 6,000 s), not only at the final
 **(b) the producers are scored as a lineage** — an inherited photosynthetic line alive at
 the end with a photosynthetic birth in the last 20 samples, read from the `photo` /
 `photo inh` columns, not from `alive`. Not added, deliberately: a mutant-origin clause. The
-owner's reading of the bar is "the minimum state from which we can move on", and a
+owner's reading of the bar is that it is the minimum state from which the work can move on, and a
 founder-rooted clade the world has sustained for 30,000 s is that state; whether a late
 stomach can establish was answered on its own (0051 amendment 2; 0054's seed 4). Round 18
 (0054) is the first pass under this wording: 4 of 5 by clade, minima over the last two
@@ -3037,8 +3037,8 @@ by being *large*, paying the upkeep of the size that sinks it. Size becomes trop
 strategy: small floaters where the light is, large sinkers where the detritus is, plankton
 against benthos as an emergent and falsifiable prediction. Growth does not exist within a
 lifetime (§5A.6), so V is fixed at birth and "growth" here means evolutionary growth across
-generations, which is what the owner asked for ("only sink when they start to evolve and add
-more matter or more cells").
+generations, which is what the owner asked for (bodies should sink only when they start to evolve
+and add more matter or more cells).
 
 **Founders anywhere.** `FounderDepthSpread` becomes an env knob (`EVOSIM_FOUNDER_DEPTH`)
 and round 10 sets it to the full water column, so the world stops privileging the surface at
@@ -3140,7 +3140,7 @@ deep holds ~10 J/m³ and the surface 0.2; every absorptive mutant is born small 
 surface, floats there under D064, and starves above a full pantry. The owner's reading:
 the current was supposed to move creatures on every axis *and* move matter, and does
 neither — and a single uniform flow could not stir in any case, because stirring is
-*differential* motion. "What we need is something that can stir the soup."
+*differential* motion. The owner's conclusion was that the world needs something that can stir the soup.
 
 **What the current was.** Two depth-only standing waves with provably zero mean (the
 2026-08-26 entry), advecting bodies alone; at speed 0.05 m/s and period 300 s a
@@ -3321,8 +3321,7 @@ fast. Smaller worlds for more seeds: population is the mutant supply.
 physics run** · 2026-09-03
 
 Fourteen rounds took a day each and each asked one question of one lucky mutant. The
-owner's ruling, after a written assessment of where the time goes ("all I want is the
-ability to simulate faster"): build the cheap instruments, adopt the sequential rules, and
+owner's ruling, after a written assessment of where the time goes (the owner wants above all to be able to simulate faster): build the cheap instruments, adopt the sequential rules, and
 test the coarse step — but not the kinematic fast world (the "Tier 2" of that assessment:
 a Core-only mover replacing PhysX for jointless bodies), which is deferred as likely to be
 overtaken by the physics the world will gain (terrain, particles, structures). Four things,
@@ -3424,8 +3423,8 @@ arm shows deaths and exudation separately, and visible to the ledger through
 phytoplankton exudation comes first, so the number carries a citation before it is a rule.
 
 **Gated on two readings, both landing within hours of the ruling** (the owner's
-acceptance of the agent's recommendation, verbatim in spirit: "rule yes in principle, and
-gate the build on two readings"):
+acceptance of the agent's recommendation: rule yes in principle, and
+gate the build on two readings):
 
 1. `r14c10-s1-flux` — `r14c10-s1`'s world at the 0.02 screening step on the build that
    carries `det in` / `det out`. It must read the income at about the inferred 0.2 W with no
@@ -3573,8 +3572,8 @@ same day by D072: the contest for each unit was never a lottery.*
 
 **Conception order — the breeding walk is shuffled each step, because the world bred
 oldest-first and a young stomach stood behind every older leaf in its layer** ·
-2026-09-04 (agent's fault fix behind a knob, on the owner's "proceed with your
-recommendations"; adoption into the reference world is the owner's ruling on the screen)
+2026-09-04 (agent's fault fix behind a knob, on the owner's word to proceed with
+the agent's recommendations; adoption into the reference world is the owner's ruling on the screen)
 
 0055 left the stomachs contesting a free matter pool of a tenth of the stock with the
 leaves in their own band. Reading the contest in the code (logbook/0056): `World.Reproduce`
@@ -3622,7 +3621,7 @@ not buy matter at the plateau, so §5A stops selecting — is put to the owner i
 
 **Energy buys matter — scarce matter goes to the parent with the largest energy
 reserve, screened against a stock large enough that light binds first** · 2026-09-04
-(owner: "proceed with your recommendations", on `fable-propose-matter-economy.md`)
+(owner: proceed with the agent's recommendations, on `fable-propose-matter-economy.md`)
 
 Two screens the same day (logbook/0055, 0056) established that at the plateau matter
 binds, nine-tenths of it locked in bodies, and that every solvent body then has the same
@@ -3670,9 +3669,9 @@ should be a flow. *Ruled as D074.*
 ### D074
 
 **The open matter budget — an influx and a burial, the world's size a flow, because a
-conserved stock locks and stops selecting** · 2026-09-04 (owner: "matter like energy is
-not finite. there's a constant influx of both on our planet" · "let us see what happens
-when matter does not lock")
+conserved stock locks and stops selecting** · 2026-09-04 (owner: matter, like energy,
+is not finite, because both arrive in a constant influx on our planet · the owner wanted to see what happens
+when matter does not lock)
 
 Three screens in one day (logbook/0055–0057) said one thing from three sides: the world's
 matter is a conserved 6,000 units, 97% of it in bodies at maturity, the count of bodies
@@ -3734,8 +3733,8 @@ and choose the dose — 0.6/s as screened, 0.6/s with burial 0.02, or 0.3/s. Rec
 the screened dose for the 0.01 confirmation, five seeds, 30,000 s, the ceiling as the
 censor; the dose corrected on that reading. The surface shape is not recommended.
 
-**Adopted 2026-09-05 in the vent shape, at the screened dose** (owner: "agreed, proceed
-with your recommendations", on 0060's verdict and the recommendation above). The
+**Adopted 2026-09-05 in the vent shape, at the screened dose** (owner: agreed, proceed
+with the agent's recommendations, on 0060's verdict and the recommendation above). The
 reference world's matter rule is now: influx 0.6 units/s at the vent's base, burial
 0.01/s of the floor layer's free matter, matter sink 0.02 m/s, D067's vent on (0.05 m/s
 in patch 0 from 60 m, legs 1 m). Confirmation at dt 0.01, five seeds, 30,000 s, under
@@ -3758,9 +3757,9 @@ the corrected world, rather than adopt a world with a known hole as the referenc
 
 **The path after the open budget — movement that pays first, on the vent's stage, with
 the theatre built in parallel; then predation, the cell types, the archive** ·
-2026-09-04 (owner: "agreed. lock it in.")
+2026-09-04 (owner: agreed, and said to lock it in)
 
-The goal rule's bar was "the minimum state from which we can move on" (D063's
+The goal rule's bar was the minimum state from which the work can move on (D063's
 amendment). Once an open-budget world confirms at the fine step under the amended goal,
 that bar is met as meant: producers, a breeding second trophic level, and a matter
 budget that flows rather than locks. The order after that, ruled now so the record
@@ -3792,9 +3791,9 @@ of the questions.
 ### D076
 
 **Shared space: creatures share one volume and can touch.** Ruled as a direction by the
-owner, 2026-09-05: "a world without contact can't work, esp. if we plan on converting the
+owner, 2026-09-05: a world without contact cannot work, especially if the plan is to convert the
 current matter into literal particles down the line, or some combination of particles and
-ambient matter."
+ambient matter.
 
 **The fact behind it.** Creatures have been tiled 100 m apart since Milestone 1 (§6.3) — on one shared
 collision layer, kept apart by distance alone, as the shared-space spike's smoke found
@@ -3831,7 +3830,7 @@ proposal decides both; the throughput objection is closed.
 
 ### D077
 
-**The footprint world.** Ruled by the owner 2026-09-05 ("proceed" on
+**The footprint world.** Ruled by the owner 2026-09-05 (to proceed on
 `fable-propose-footprint.md`, absorbed here and deleted), together with the two rulings
 logbook/0061 put up: the surface fix and the dose.
 
@@ -3890,7 +3889,7 @@ ran at half real time into the wall); the placeholder floor produced three newbo
 divergences at 60 m; at 1/m³ the box's 24,000 starting units set the world's size at
 4,000–6,000 and the influx only its slope. **Put to the owner for the 0.01 confirmation:**
 influx 0.3, starting stock 0.25/m³ (unscreened together; each read alone), and a real
-floor collider at −60 m before it (`logbook/specs/floor-spec.md`). **Ruled 2026-09-06 (owner: "love it. go ahead"):** the real floor is built first, then the
+floor collider at −60 m before it (`logbook/specs/floor-spec.md`). **Ruled 2026-09-06 (owner approved and told the agent to go ahead):** the real floor is built first, then the
 confirmation at 0.01 on five seeds at influx 0.3 and stock 0.25/m³, pre-registered as
 logbook/0067; the crowd is read there before any rule is spent on it.
 
@@ -3961,7 +3960,7 @@ cost of keeping it is a fifth of the wall time at small populations).
 ### D079
 
 **One change at a time from the last good world.** Ruled by the owner 2026-09-06
-("agreed. proceed with that idea"), on the reading of round 27's seed 4 (logbook/0068,
+(who agreed and told the agent to proceed with that idea), on the reading of round 27's seed 4 (logbook/0068,
 0069).
 
 **Why.** The last world that met the goal rule is round 18's closed world (logbook/0054,
@@ -4013,11 +4012,11 @@ the founders need. That arm is not run until the stock question is settled.
 ### D080
 **Non-commercial terms for code and prose** · 2026-09-07
 
-Ruled by the owner on 2026-09-07: "I'm happy with people taking it and running it, or even
-contributing to it. I'm even ok with this being cited in academic researches. Where I would
-want the license to be explicit is in any kind of commercial applications of the content in
-this repository." Then, on the recommended pair: "lets apply the changes to the license so
-it's clear what can and can't be done with this project."
+Ruled by the owner on 2026-09-07: the owner is happy for people to take the work and run it,
+or to contribute to it, and is content for it to be cited in academic research. The owner
+wants the licence to be explicit about any commercial application of the content of this
+repository. Then, on the recommended pair, the owner asked for the changes to be applied to
+the licence so that it is clear what can and cannot be done with the project.
 
 **The terms.** The code and the evolved genome files under `inocula/` move from MIT to the
 PolyForm Noncommercial License 1.0.0, reproduced verbatim in `LICENSE` from the SPDX text,
@@ -4069,7 +4068,7 @@ is unchanged.**
 
 Put to the owner as questions with the options, their costs and a recommendation, after
 round 28 read 3 of 5 (logbook/0070) and the Astra review's response listed what needed a
-ruling. The owner's own words, where they reframed a question, are quoted.
+ruling. Where the owner reframed a question, their reframing is set out.
 
 **1. Two named bars.** *The goal* is D063's three seeds of five and says whether a world
 meets the rule at all. *The reference bar* is the base world's own count, and a change is
@@ -4079,19 +4078,19 @@ misses the reference is read as "meets the goal, cost recorded". Rejected: one b
 after results, which pre-registration forbids). Round 28 therefore meets the goal and
 misses the reference by one seed.
 
-**2. The contact world is the base, and no collisions-off control runs.** The owner:
-"even if the collision cost the seed, we still need the collision, because we can't
-proceed without real contact in the world. everything is predicated on creatures need to
-move about, interact, and sometimes die." Contact is a world rule (D076), the contact
+**2. The contact world is the base, and no collisions-off control runs.** The owner
+ruled that even if contact cost the seed, the world still needs it, because the work cannot
+proceed without real contact, and everything is predicated on creatures needing to
+move about, interact, and sometimes die. Contact is a world rule (D076), the contact
 world meets the goal, and its lost seed did not starve of contact: seed 5's stomach line
 boomed to 329, ate its larder from 11.7 to 2.3 J/m³, ran at a loss of 0.02 to 0.05 W for
 twenty thousand seconds and stopped breeding at 21,408 s (the absorptive log, 0070's
 Results). A control that assigns the seed to contact or to the box changes no decision,
 so it is not run; the reference cost is recorded and the base moves.
 
-**3. The order is movement, predation, then the open budget.** The owner: "what helps us
-get to a point where creatures evolve brains? that's the question we should be asking,
-because at the end of the day, that's what this evolution sets out to achieve." The
+**3. The order is movement, predation, then the open budget.** The owner asked what
+helps get to a point where creatures evolve brains, and said that is the question to keep
+asking, because in the end that is what this evolution sets out to achieve. The
 answer, which decides the order: nothing selects for behaviour because nothing moves. The
 inherited jointed count reads 0 at the end of every arm of round 28 and never exceeded 1
 during any of them, and the same has been true of every round. A brain is selected only
@@ -4140,8 +4139,8 @@ the same evening (DESIGN §0q) and round 29 is pre-registered as 0072.
 ### D082
 **The price of a bud** · 2026-09-07
 
-Put by the owner while round 29 ran, in their words: "i think the cost must be low for
-selection not to remove these early buds of movement and brains." The record agrees. A
+Put by the owner while round 29 ran: they thought the cost must be low, or selection would remove these
+early buds of movement and brains. The record agrees. A
 neuron costs 0.05 W standing and 0.01 W per input (`RunConfig.NeuralCost*`, both marked
 unmeasured in DESIGN §5A.10), a founder's jointed part carries one to three of them, and
 the median stomach in round 28 netted about 0.03 W on an upkeep of about 0.27 W. One neuron
@@ -4198,21 +4197,21 @@ in one round. D079's one-change rule bends a second time, and D083 says so.
 The two fields that hold what is dissolved and suspended in the water, detritus and free
 matter, become sets of vertices that each hold joules at a position and are read through a
 kernel. The cell field stays in the code behind a switch that defaults to it, so every
-recorded run still describes its world. The owner ruled it in one evening, in their words.
-"What if instead of having cells with values, we'd have verteces with values, and any point
-between the verteces will be an average of them? ... bodies could become verteces rather
-than contribute to a cell's value." "Creatures that stay in one place will depleat their
-field." "Vents that currently add nutrients should instead add verteces (on some kind of
-probabilty), and same should go for locking out verteces on the bottom." "It's settled. We
-are moving to a vertcies field nutrients world."
+recorded run still describes its world. The owner ruled it in one evening.
+The owner proposed that the water hold vertices with values in place of cells, with any point
+between the vertices an average of them, and that bodies could become vertices rather
+than contribute to a cell's value. In the owner's proposal, creatures that stay in one place would
+deplete their field, vents that currently add nutrients should instead add vertices on some kind of
+probability, and locking out vertices at the bottom should work the same way. The owner then
+settled it: the project moves to a vertex-field nutrient world.
 
 **Why.** DESIGN §0r's diagnosis, from review round 6: a body here fed from a cell 1 m by
 5 m at the cell's one price, so staying did not deplete a body's own water and moving did
 not refresh it, and undirected movement earned nothing by construction. The literature says
 that is the one thing an early world must not do (research Q11). The motility proposal put
 a per-body depletion halo in front of the owner as the cheap sketch of the physics; the
-owner asked for the physics itself, and it is the road D076 already named ("literal
-particles down the line"). The vertex field also gives the water a gradient at the kernel's
+owner asked for the physics itself, and it is the road D076 already named (matter as
+literal particles later). The vertex field also gives the water a gradient at the kernel's
 scale everywhere, which the chemical sense has never had to read.
 
 **Ruled and built.**
@@ -4269,8 +4268,8 @@ scale everywhere, which the chemical sense has never had to read.
    The smoke's pace is in logbook/0074; the count is read from `vtx` against the cap.
 9. **Round 30 is the vertex world with D082's prices** in one build, on the base round 29's
    reading leaves, with round 29 as the price control and round 28 as the world control.
-   The owner's instruction: "follow your recommendations ... try fast step worlds first to
-   see if we can fail fast before running a long simulation." D079's one-change rule bends
+   The owner's instruction was to follow the agent's recommendations, and to try fast-step
+   worlds first, to see whether a failure can come early before a long simulation runs. D079's one-change rule bends
    again, for the reason D082's note gives.
 
 **Amended the same night: the matter field has its own reach.** The second screen, seed 2
@@ -4317,7 +4316,7 @@ unmeasured list.
 
 **2026-09-08 — Sideways mixing stays, and the separation arm waits on round 30**
 
-**Status:** ruled by the owner ("proceed with your recommendations"), on two decisions put
+**Status:** ruled by the owner (to proceed with the agent's recommendations), on two decisions put
 to them in plain terms with a preferred way for each.
 
 **Context.** Two decisions were the owner's after round 29's reading (logbook/0072) and
@@ -4400,8 +4399,8 @@ the prize under test. D084's ruling that the two axes are equal stands at the ne
 
 **2026-09-09 — The water as a grid, and corpses as particles**
 
-**Status:** ruled by the owner, in conversation, 2026-09-08 night ("sgtm... proceed") and
-2026-09-09 morning ("proceed") on the matter cell; built, reviewed and smoked the same
+**Status:** ruled by the owner, in conversation, 2026-09-08 night (agreeing and saying to proceed) and
+2026-09-09 morning (saying to proceed) on the matter cell; built, reviewed and smoked the same
 night (logbook/0078); round 32 is its base round (logbook/0079). Absorbs
 `fable-propose-grid.md`, deleted on ruling.
 
@@ -4495,9 +4494,9 @@ bodies carries the artefact, as the D088 note says of rounds 34 to 37.
 
 **2026-09-09 — Bodies that grow**
 
-**Status:** ruled by the owner, in conversation: the design on 2026-09-08 night ("love it!
-go ahead"), the five constants the build put in front of the owner on 2026-09-09 ("proceed
-with your recommendations"). Built in both halves and smoked the same day (logbook/0081);
+**Status:** ruled by the owner, in conversation: the design on 2026-09-08 night (approving it and saying to
+go ahead), the five constants the build put in front of the owner on 2026-09-09 (telling the
+agent to proceed with its recommendations). Built in both halves and smoked the same day (logbook/0081);
 round 34 is its first round, after round 33 reads. Absorbs `fable-propose-growth.md`,
 deleted on ruling. Corrected the same evening: growth is round 33 and the free joint round
 34, the order amended before launch (logbook/0080); the launcher is
@@ -4602,10 +4601,10 @@ scale/invest chance=` and the biomass ceiling.
 **The third dimension — a newborn dispersed, a current that carries, a destroy that does not wait** · 2026-09-10
 
 **Status:** ruled by the owner in conversation on 2026-09-10 after the theatre showed round
-33 as two ribbons (logbook/0083): "lets start the fix please, because what you have now is
-not a world"; "the world i want: creatures have full degrees of freedom and can be anywhere
-within the confines of the world. currents move them up and down, left and right, in all
-directions really. diffusion happens in all directions." Built in three parts the same
+33 as two ribbons (logbook/0083): the owner asked for the fix to start, because what stood was not a world.
+They described the world they wanted: creatures with full degrees of freedom that can be anywhere
+within the confines of the world, currents that move them up and down, left and right, in all
+directions, and diffusion in all directions. Built in three parts the same
 afternoon and smoked (logbook/0085). The values that are first cuts and not rulings are
 listed at the end. Supersedes D077's clause 5 (a newborn beside its parent) and D037's and
 D066's current as the default; both currents stay in the code as `CurrentMode Rolls` so that
@@ -4683,7 +4682,7 @@ founders still reserving their birth radius; and `mean m/s`, which reads the wat
 no longer reads locomotion, with no relative-speed column yet in its place.
 
 **Ruled on 2026-09-10 evening**, after the agent's first look (logbook/0086), on the five
-questions put in plain terms, "proceed with your recommendations": the dispersal radius
+questions put in plain terms, the owner telling the agent to proceed with its recommendations: the dispersal radius
 stays at 5 m for the base round; the box keeps its shape, to be tested on its own later;
 the current's speed is 0.1 m/s, so that a swimmer can beat the water; founders and
 inoculants reserve the adult as children do (`TryReserveFounder` takes the adult plan); the
@@ -4716,12 +4715,12 @@ and fails the same test, worse (the note under D086).
 **The aquarium — a cylinder of water with a glass wall and a gyre; the area decoupled from the matter; corpses as objects; the drive limiter at every step** · 2026-09-11
 
 **Status:** the container ruled by the owner in conversation on 2026-09-11 evening. The wall
-and the round shape were the owner's own questions: "what if instead we had a literal wall of
-glass around the world?", and "instead of a box shape, we could use a circle shape?". The
-agent recommended the cylinder over the walled square and the octagon, and the owner ruled it
-("yes proceed"). The dilution and the concentrators, rulings 2 and 3 of
-`fable-propose-aquarium.md`, go ahead on the agent's recommendation under the owner's "follow
-your suggestions, and keep up the autonomic work". Either can be overruled before round 38
+and the round shape were the owner's own questions: whether a literal wall of
+glass around the world would do instead, and whether a circle shape could replace the box shape.
+The agent recommended the cylinder over the walled square and the octagon, and the owner ruled it
+(saying yes and to proceed). The dilution and the concentrators, rulings 2 and 3 of
+`fable-propose-aquarium.md`, go ahead on the agent's recommendation under the owner's word to follow
+the agent's suggestions and keep up the autonomous work. Either can be overruled before round 38
 launches. The limiter of `fable-propose-limiter.md` is built as a tunable, and its adoption
 from round 37 waits on its own check below. `fable-propose-box.md`, the 2 by 2 layout, is
 superseded by this entry. Its layout code stays as the shared volume's shape code with
@@ -4856,11 +4855,11 @@ about corpses.
 **The water carries as water does — streams instead of a gyre, and the fluid acceleration force; round 37b repeats the tank on both before the dilution** · 2026-09-12
 
 **Status:** ruled by the owner in two steps on 2026-09-12. The streams came in the
-afternoon, on the owner's own diagnosis of round 37's early read. The owner: "What we don't
-want is a current that creates centrifugal forces that send all the creatures to the rim.
-The currents should not act as unified fields but more like streams"; and "Yes. It reads
-right" to the agent's amended proposal. The fluid force came in the evening ("Agreed.
-Proceed" to the agent's recommendations), after the streams build's own tracer check showed
+afternoon, on the owner's own diagnosis of round 37's early read. The owner said the world
+must not have a current that creates centrifugal forces that send all the creatures to the rim,
+and that the currents should act more like streams than as unified fields; and the owner agreed
+that the agent's amended proposal read right. The fluid force came in the evening (the owner agreed
+and told the agent to proceed on its recommendations), after the streams build's own tracer check showed
 that no prescribed current can keep a lagging body spread.
 
 Both were built on branch `streams` with the throw trace (`logbook/specs/streams-spec.md`,
@@ -4971,8 +4970,8 @@ green.
 ### D091
 **Two kinds of change: a replacement is ruled, a treatment earns its place** · 2026-09-12
 
-**Status:** ruled by the owner on the evening of 2026-09-12 ("proceed with your
-recommendations"), on `fable-propose-adoption-rule.md`. That proposal was written after the
+**Status:** ruled by the owner on the evening of 2026-09-12 (to proceed with the
+agent's recommendations), on `fable-propose-adoption-rule.md`. That proposal was written after the
 Astra review of the same day found D081's adoption clause and our own practice disagreeing,
 and it amends D081.
 
@@ -5026,15 +5025,15 @@ being built, which is the drift D081 was written against.
 
 **Status:** ruled by the owner in conversation on the morning of 2026-09-15. The agent had
 put the decision in plain terms, which were hollows and ridges from a height map, rocks as
-objects, or a shelf, and had recommended the first. The owner: "I really want a shaped bed,
-have wanted for a while!"
+objects, or a shelf, and had recommended the first. The owner said they
+really wanted a shaped bed and had wanted one for a while.
 
 The owner then asked whether it is procedural and whether it needs skins: yes, and yes in
-the theatre only. The owner also asked for "life like without making it computationally
-problematic", which the agent converted to requirements. The cost was then relaxed to "doesn't have to be
-outright cheap, just not too expensive", which moved the water following the floor from a
-second version into the first. The ruling was "good, writeup the requirements and then
-pencil it in for the next round."
+the theatre only. The owner also asked for it to be life-like without making it computationally
+problematic, which the agent converted to requirements. The cost was then relaxed: it did not have to be
+outright cheap, only not too expensive, which moved the water following the floor from a
+second version into the first. The ruling was to write up the requirements and then
+pencil it in for the next round.
 
 The requirements are `logbook/specs/bed-spec.md`. This is round 39, a replacement under
 D091, and it builds on a branch after round 38's read.
@@ -5071,9 +5070,9 @@ is a coast".
 6. **Out**: rocks, boulders and overhangs, which are a solver rather than a term. Also the
    shelf into the lit band, which is its own round later, and the vent as a point source.
 
-7. **A gradient across the disc**, added the same morning at the owner's word. What the
-   owner asked: "what about the sea bed as a gradient so it's not all one depth? this is
-   something we wanted to do from the start. we even thought of a beach". It is a tilt along
+7. **A gradient across the disc**, added the same morning at the owner's word. The
+   owner asked whether the sea bed could be a gradient so it is not all one depth, and said this was something
+   wanted from the start, with a beach even thought of. It is a tilt along
    one diameter as the map's largest scale, on one dial (`BedTiltMetres`), mean-zero. In a cylinder the
    shallow arc is a shore, a lake in cross-section, and that answers the owner's doubt that
    a beach still makes sense in a round tank.
@@ -5093,9 +5092,9 @@ slower water in it is half a hollow).
 **Round 39's tank sized for the slope: 2,200 m², 45 m deep, a 30 m tilt from the lit band's floor to 60 m** · 2026-09-15
 
 **Status:** ruled by the owner on the evening of 2026-09-15, on the first pictures of the
-shaped bed at 400 m². The owner: "Can barely see anything. And I think we need a much bigger
-tank. Much. So that with 30 Deg decline we give a lot more depth variation. As it is it
-looks like it barely has any effect because it is such a small side of the cylinder".
+shaped bed at 400 m². The owner said they could barely see anything and that the
+tank needed to be much bigger, so that a 30 degree decline gives a lot more depth variation. As it
+stood, they said, the tilt looked as if it had barely any effect, because it was such a small side of the cylinder.
 
 The agent put three sizings with their costs in front of the owner, who chose the second.
 The area is 2,200 m² rather than the 2,100 m² offered. A 30 m tilt across 51.7 m is a
@@ -5161,14 +5160,14 @@ bands.
 **The goal becomes a ladder: the food chain is proven, adaptation by degree is next, and every round is read on its own predictions** · 2026-09-16
 
 **Status:** ruled by the owner on the morning of 2026-09-16, in conversation
-(logbook/0103). The owner opened it: "I think once we've proven that the goal is achievable
-we don't need to hold ourselves to that goal again for a while. as long as we see that
-things can happen. The future is a lot more complex with many more cell types and sensors
-etc. so lets revise the goal. we can clearly see selection working, right?"
+(logbook/0103). The owner opened it by saying that once the goal is proven achievable, the campaign need not
+hold itself to that goal again for a while, as long as it can be seen that things can happen.
+The owner added that the future is a lot more complex, with many more cell types and sensors, so the goal should be
+revised, and asked the agent to confirm that selection can clearly be seen working.
 
 The agent's reasoning was laid out in the open and rewritten in plain words at the owner's
-request. The owner ruled "ok. i'm good with that", and on the record, "don't overwrite old
-rules. deprecate them, but keep the record".
+request. The owner agreed with it, and ruled on the record that old rules are deprecated and
+not overwritten, and the record kept.
 
 This deprecates D063 as the campaign's bar and D081's two bars. Both entries stand as
 written, marked. D091's two kinds of change stand.
@@ -5176,8 +5175,8 @@ written, marked. D091's two kinds of change stand.
 **Context, in plain words.** D063 asked one question: whether this world can feed a line of
 eaters from its own leaves, for a long time. The eaters had to breed from their own
 members. It was answered yes, five seeds of five, in rounds 30, 33, 35 and 37b, on four
-versions of the world. The owner's own wording of the bar was "the minimum state from which
-we can move on".
+versions of the world. The owner's own wording of the bar was that it is the minimum state
+from which the work can move on.
 
 Asking it of every round since has been re-taking a passed test, and round 38 (logbook/0101)
 showed the cost. Five seeds of five "failed" a world doing the most interesting thing any
@@ -5252,8 +5251,8 @@ equilibrium; this one oscillates).
 ### D095
 **Five seeds, ten for a rare event, and three arms at a time** · 2026-09-17
 
-**Status:** ruled by the owner on 2026-09-17, in conversation ("proceed with your
-recommendations", twice, to the agent's answers on the cost of round 39 and on how many
+**Status:** ruled by the owner on 2026-09-17, in conversation (to proceed with the
+agent's recommendations, twice, on the agent's answers on the cost of round 39 and on how many
 seeds a round needs). The rule on seeds is a reading rule and changes no world; the rule
 on arms is a rule of the machine and lives in CLAUDE.md as well.
 
@@ -5289,8 +5288,8 @@ readings whose spread five already resolves.
 **Status:** ruled by the owner on the morning of 2026-09-18, in conversation. The owner looked
 at round 39's pictures and saw almost nothing but leaves, and asked what would happen if the
 light decayed faster in the water, so that photosynthesis paid only near the surface. The
-agent said it would do it; the owner said "Let's do it", and on the value, "proceed with your
-recommendations". A world rule, and the owner's. The proposal file (`fable-propose-light.md`)
+agent said it would do it; the owner agreed, and on the value told the agent to proceed with its
+recommendations. A world rule, and the owner's. The proposal file (`fable-propose-light.md`)
 is absorbed here and deleted.
 
 **Context, in plain words.** Every round since the light model was built has run the light's
@@ -5336,9 +5335,9 @@ Combining the reach with the shelf: two world rules in one round cannot be read 
 ### D097
 **The foundation queue stops; matter off the throne, then a mouth** · 2026-09-18
 
-**Status:** ruled by the owner at midday on 2026-09-18, in conversation ("I really want us to
-get to the point where we add some interest to the world and we keep being stuck on the pre
-interesting things", then "Let's follow your recommendations!"). A direction and a
+**Status:** ruled by the owner at midday on 2026-09-18, in conversation (the owner really wanted
+to get to the point of adding some interest to the world, and said the campaign kept being stuck on
+the things before the interesting ones, then said to follow the agent's recommendations). A direction and a
 sequence; each world rule inside it comes as its own proposal and its own ruling.
 
 **Context, in plain words.** Forty rounds in, the world is a leaf crowd with eaters that boom
@@ -5377,11 +5376,11 @@ prey sense before contact feeding: a prize before the game. Opening the matter b
 ### D098
 **One substance: the matter and energy economy rebuilt** · 2026-09-18
 
-**Status:** ruled by the owner on the evening of 2026-09-18, in conversation ("Let's do it.
-And I'd stop all the current runs. I'd do the change and then start new runs"), on
+**Status:** ruled by the owner on the evening of 2026-09-18, in conversation (to do it, to stop all the current
+runs, to make the change and then to start new runs), on
 `fable-propose-economy.md`, which is absorbed here and deleted. The owner had asked that
-afternoon for the economy to be rethought, "closer to what reality looks like or at least to
-something that works better", after the agent showed that a body's matter was a licence fee
+afternoon for the economy to be rethought, closer to what reality looks like or at least to
+something that works better, after the agent showed that a body's matter was a licence fee
 and that energy and matter ran in loops that never touched. Round 40's three arms were
 stopped at 16,400, 12,200 and 14,300 s (`stop-arm.ps1`, `manual-other`, the note in each
 manifest) and are read at their last samples under 0106's V5. Round 39's render chain runs
@@ -5441,12 +5440,12 @@ on inorganic matter; they take organic matter by contact, paying the mouth part'
 whatever movement reaches the food, with no per-bite charge in this build.
 
 **Amended the same evening, in discussion.** The owner answered the four questions and
-pressed on one more: "is there one matter type or two? ... I think there should be one.
-Just matter." The agent's answer, which the owner accepted ("Ok sounds good. You can go
-implement"): it is one matter. What the proposal called organic and inorganic is one
+pressed on one more: they asked whether there is one matter type or two, and said there should
+be one, just matter. The agent's answer, which the owner accepted (and told the agent to
+implement it): it is one matter. What the proposal called organic and inorganic is one
 kind of unit in two states, charged (carrying ρ joules) and spent (carrying none). The
-owner's own rule already holds the state ("energy is produced from contained matter, and
-when used that matter returns to the water"). The state has to be explicit rather than
+owner's own rule already holds the state (energy is produced from contained matter, and
+when used that matter returns to the water). The state has to be explicit rather than
 "in a body" against "in the water". Without it anyone taking matter from the water at a
 price under ρ would make energy from nothing, so only light could pay, and no animal
 could ever feed from the water. With it a charged unit may sit in the water as
@@ -5469,7 +5468,7 @@ its 15,000 s readings were already in (0106's read).
 ### D099
 **A body earns no more light than its silhouette, and a terminal edge keeps its limit** · 2026-09-19
 
-**Status:** ruled by the owner on the morning of 2026-09-19 ("Yeah sounds good", 07:05) on
+**Status:** ruled by the owner on the morning of 2026-09-19 (the owner agreed, at 07:05) on
 `fable-propose-silhouette.md`, absorbed here and deleted; built to
 `logbook/specs/silhouette-spec.md`; runs from round 41d.
 
@@ -5512,8 +5511,8 @@ premium; the hull is exact and the probe already computes it.
 ### D100
 **The water is sampled once a body and held for a metabolic step** · 2026-09-19
 
-**Status:** ruled by the owner on the afternoon of 2026-09-19 ("ok. we can definitely try
-that") on the profile's reading (`logbook/specs/harness-profile-spec.md` §7); built the same
+**Status:** ruled by the owner on the afternoon of 2026-09-19 (the owner agreed to
+try it) on the profile's reading (`logbook/specs/harness-profile-spec.md` §7); built the same
 afternoon on branch `profile` (`logbook/specs/cheapening-spec.md`); runs from round 41e.
 
 **Decision.** The drag pass samples the current's velocity, and its acceleration where D090's
@@ -5549,8 +5548,8 @@ a round 41e run. `simHash` moves with the build.
 **A body born inside itself is not born** · 2026-09-19
 
 **Status:** the owner's own rule, given on the afternoon of 2026-09-19 in answer to the
-profile's proposal of self-collision off within a body ("can't we restrict the mutations to
-not evolve parts onto themselves, rather than turn off the physics of it?"); built the same
+profile's proposal of self-collision off within a body (the owner asked whether the mutations could be restricted so
+that parts do not evolve onto themselves, rather than turning off the physics of it); built the same
 afternoon on branch `profile` (`logbook/specs/cheapening-spec.md`); runs from round 41e.
 Amends D099's second rejection: refusal at birth is not the pruning D099 rejected, and the
 cap alone did not close the physics cost.
@@ -5666,7 +5665,7 @@ well.
 ### D104
 **The water sampled per link, D100's hold retired** · 2026-09-22
 
-**Status:** ruled by the owner in conversation at 03:15 on 2026-09-22 ("Yes" to the
+**Status:** ruled by the owner in conversation at 03:15 on 2026-09-22 (agreeing to the
 agent's recommendation), from the own-solver proposal's list; the first of its rulings.
 Runs from round 43 (logbook/0111). D100 stands as the record of what rounds 41 to 42 ran.
 
@@ -5693,8 +5692,8 @@ identity is already gone with the engine.
 ### D105
 **The physics on the card, in single precision** · 2026-09-22
 
-**Status:** ruled by the owner in conversation on the evening of 2026-09-22 ("for the rest
-I think we can go with your recommendations", on the decision put in full), from
+**Status:** ruled by the owner in conversation on the evening of 2026-09-22 (the rest on
+the agent's recommendations, on the decision put in full), from
 `fable-propose-gpu.md` after the GPU spike (logbook/0112). The port is not built; the brain
 and the senses are measured as a kernel first.
 
@@ -5803,8 +5802,8 @@ appears and pays, so that reading is a result and not a failure.
 ### D107
 **A body's size is the economy's to bound, not a rule's** · 2026-09-22
 
-**Status:** ruled by the owner in conversation on the night of 2026-09-22 ("I'm not a huge
-fan of those kinds of rules … we should make the economy control it"), on
+**Status:** ruled by the owner in conversation on the night of 2026-09-22 (the owner is not a big
+fan of those kinds of rules, and said the economy should control it), on
 `fable-propose-body-reach.md`, written after round 44's seed 1 grew a self-copying leaf
 whose seventh copy was 14.6 m long (logbook/0113; the giant's anatomy is
 `scratch/logs/giant-7597.txt`). The bound is built and unset; the support cost is not built.
@@ -5849,9 +5848,9 @@ carries the support cost, and it is a new realisation of every seed, as the pric
 **The tank is ten times larger from round 45, and the matter is not** · 2026-09-22
 
 **Status:** ruled by the owner in conversation on the night of 2026-09-22, for the second
-time asked ("we are aiming for so many more creatures, why are we not making the tank a lot
-bigger"), and then made exact: "I said bigger tank but intentionally didn't say more matter.
-Reduce the creature mist and reduce bodies colliding." The bed and the pace numbers are the
+time asked (the owner asked why, with so many more creatures aimed for, the tank was not made a lot
+bigger), and then made exact: the owner had asked for a bigger tank but intentionally not for more matter.
+The owner's aim was to reduce the creature mist and to reduce bodies colliding. The bed and the pace numbers are the
 agent's, said before the launch.
 
 **Decision.** From round 45 the campaign's tank is 22,000 m² (r 83.7 m) at 45 m, with round
@@ -5893,13 +5892,13 @@ islands and the slow stirring as the spacing the owner wanted. The size and the 
 **Islands and deserts: the matter seeded by a noise map, founders planted in the islands, the matter grid stirred at the snow's rate, and ten times the matter** · 2026-09-22
 
 **Status:** ruled by the owner in conversation on the night of 2026-09-22, in five steps, each
-after a screen: the islands ("I'd like to create a diluted tank but I'd like to do it with the
-idea of islands and deserts of matter using noise pattern. And then plant the founders in the
-matter islands."), the stirring ("Yeah we can definitely reduce diffusion rate", then "Your
-recommendation" on the rate), the density and the depth ("We can increase the density of matter
-in the islands right? Also we need a few distinct islands close to the top for initial founding
-plants."), the matter ("More matter is fine"), and the light ("Light is a uniform decaying field
-isn't it? How could we explain light concentrate?", on which the agent withdrew the shade map).
+after a screen: the islands (the owner wanted a diluted tank built with islands and deserts of matter
+from a noise pattern, with the founders planted in the matter islands), the stirring (the owner agreed
+the diffusion rate can be reduced, and left the rate to the agent's recommendation), the density
+and the depth (the owner asked whether the density of matter in the islands could be increased, and
+said a few distinct islands near the top were needed for the initial founding plants), the matter
+(the owner agreed to more matter), and the light (the owner asked whether light is a uniform decaying
+field and how light concentration could be explained, on which the agent withdrew the shade map).
 The wavelength, the cover, the island depth and the founder depth are the agent's dials, said
 before the launch.
 
@@ -5932,7 +5931,7 @@ plateau; on the plateau at 1,500 units the founders founded and the crowd starve
 spread (`bigH`: the fullest cell at round 44's density by 2,000 s and a third of it by
 4,000 s, `upt lim` 1.0 and 24 alive by then). The islands spread not by the explicit rate but by
 the gyre's own smearing on the 5 m cells, about 0.1 m²/s by a Gaussian fit, so the soup comes
-near 5,000 s whatever the dial says; the owner's aim ("soup only after 5k seconds") is what
+near 5,000 s whatever the dial says; the owner's aim, that the soup come only after 5,000 s, is what
 the water gives. Lighting the islands in full changed nothing (`bigI`: more light a body than
 round 44 and a seventh of its founding), which located the throttle: at 0.02 m²/s a leaf strips
 its 5 m cell faster than the neighbours refill it, so its income is the diffusive flux into the
@@ -5981,12 +5980,12 @@ crowd pressing on its cells' refill rather than on the tank's stock.
 **Light by exposure: a part earns on, and shades with, its projected area in its actual pose** · 2026-09-23
 
 **Status:** ruled by the owner in conversation on the morning of 2026-09-23, from the owner's
-own observation of round 45's pictures ("some of the leaves are not parallel to the surface,
-but rather the opposite, almost perpendicular to it ... the amount of energy has to be derived
-from the exposure to the field, where angles would matter"), then "as I often do, I'll support
-your recommendations", with two conditions: the computational effort weighed, and a way for a
-body to affect its angle ("if there is none, then basically some plants just die because they
-are born in the wrong angle"). The one-part leaf's way, an offset of the centre of buoyancy, is
+own observation of round 45's pictures (some of the leaves are not parallel to the surface but
+almost perpendicular to it, so the energy has to be derived from the exposure to the field,
+where angles would matter), then the owner said they would support the agent's recommendations, as
+they often do, with two conditions: the computational effort weighed, and a way for a
+body to affect its angle (without one, some plants simply die because they
+are born at the wrong angle). The one-part leaf's way, an offset of the centre of buoyancy, is
 a genome field and was ruled the same afternoon as D111.
 
 **Decision.** From the next base round, with `RunConfig.LightByExposure` on, a part's lit area
@@ -6037,10 +6036,10 @@ crowd that has not been seen to tumble; re-asked if one is.
 ### D111
 **The buoyancy offset: a part's centre of buoyancy may sit off its centre of mass along its thinnest axis, a heritable and priced trait** · 2026-09-23
 
-**Status:** ruled by the owner in conversation on the afternoon of 2026-09-23 ("agreed"),
+**Status:** ruled by the owner in conversation on the afternoon of 2026-09-23 (the owner agreed),
 after asking how plants align their angles and being told the biology and the three ways the
-physics already offers. It is D110's second condition ("we need to give them some way of
-affecting the angle") answered for the one-part leaf, which had none.
+physics already offers. It is D110's second condition (that bodies need some way of
+affecting the angle) answered for the one-part leaf, which had none.
 
 **Decision.** A genome node carries `BuoyancyOffset` in [−1, 1], the position of the part's
 centre of buoyancy along its own thinnest axis as a fraction of that half-extent, drawn at 0
@@ -6076,7 +6075,7 @@ selection cannot see (the lift rule's reason).
 ### D112
 **The snow's life: remineralisation at 0.0005 per second, so that marine snow reaches the beach's shelf** · 2026-09-23
 
-**Status:** ruled by the owner in conversation on the afternoon of 2026-09-23 ("Agreed"), on
+**Status:** ruled by the owner in conversation on the afternoon of 2026-09-23 (the owner agreed), on
 the recommendation that followed the stomach screens, and pending the quarter-rate screen's
 reading of what the plants pay (`r46remin-5e4-s1`, running at the ruling; its reading goes
 into `logbook/specs/stomach-screens.md` and round 46's pre-registration).
@@ -6107,8 +6106,8 @@ parked). The beach alone at 0.002 (the snow dissolves before it lands on any she
 **The support cost: a part's standing cost grows as its area times the square of its distance from the root** · 2026-09-23
 
 **Status:** ruled by the owner in conversation on the afternoon of 2026-09-23, on the
-recommendation of `fable-propose-round-46.md`'s rule 3 ("I'd follow nature here. so if that's
-your recommendation, lets go with that"). The build spec is `logbook/specs/support-cost-spec.md`.
+recommendation of `fable-propose-round-46.md`'s rule 3 (the owner would follow nature here, and went with the
+agent's recommendation). The build spec is `logbook/specs/support-cost-spec.md`.
 
 **Decision.** Every part pays, on top of its tissue's upkeep, a standing cost of
 `A · area · distance²` with `A = 0.1 W per m² per m²`, the distance taken from the root's
@@ -6131,7 +6130,7 @@ bulldozer that eats).
 ### D114
 **Contact on the part: every part its own sphere, so a body touches with the part that touches** · 2026-09-23
 
-**Status:** ruled by the owner in conversation on the afternoon of 2026-09-23 ("agreed"), on
+**Status:** ruled by the owner in conversation on the afternoon of 2026-09-23 (the owner agreed), on
 `fable-propose-round-46.md`'s rule 4. The build spec is `logbook/specs/per-part-contact-spec.md`.
 
 **Decision.** The farm's contact enters every part's bounding sphere into the contact grid
@@ -6153,13 +6152,13 @@ cannot be read). Full mesh contact (the solver's own step is spheres by design, 
 **The founding trickle: founders keep arriving at a low rate for the whole run** · 2026-09-23
 
 **Status:** the owner's own rule, proposed in conversation on the afternoon of 2026-09-23
-against the timed second founding window of `fable-propose-round-46.md`'s rule 2 ("I don't
-like these kinds of rules. adding specific timing for specific times of founders ... the
-evolution keeps creating founders at probability P per tick (should be very low ...) so that
-when conditions change, new lines can evolve. Of course evolution should stay as it currently
-is"), and ruled with the rate and the empty-world clause the same afternoon ("ok fine. but a
-world that dies out should be 'game over'. no point in running an empty simulation if we are
-not adding creatures to it"). The build spec is `logbook/specs/founding-trickle-spec.md`;
+against the timed second founding window of `fable-propose-round-46.md`'s rule 2 (the owner does not
+like these kinds of rules, with specific timing for specific times of founders; instead
+the world should keep creating founders at a probability P per tick, which should be very low, so that
+when conditions change, new lines can evolve, while evolution itself should stay as it currently
+is), and ruled with the rate and the empty-world clause the same afternoon (the owner accepted it, but said
+a world that dies out should be game over, as there is no point in running an empty simulation if
+no creatures are being added to it). The build spec is `logbook/specs/founding-trickle-spec.md`;
 `consumer-founding-spec.md` is superseded.
 
 **Decision.** After the floor closes, the world adds founders as a Poisson draw at
@@ -6179,17 +6178,17 @@ small share of births and their matter a few percent of the budget over a run. T
 left as it is so a crash is still a crash in the record.
 
 **Rejected.** The timed second window (a rule with a time in it). Changing the founder draw's
-cell-type shares toward plants or eaters (the owner: "if we decide to change the starting
-condition of the world, i'd like for selection to just make, well, selection"). Topping a
+cell-type shares toward plants or eaters (the owner: if the starting
+condition of the world is to change, selection should be left to do the selecting). Topping a
 crash up from the trickle (the floor's job, and it is closed by design). Running an empty
 world with the trickle off (the owner's game-over).
 
 ### D116
 **Founders follow their food: the landing rule reads the field the founder's body eats** · 2026-09-23
 
-**Status:** ruled by the owner in conversation on the afternoon of 2026-09-23 ("use
-probability to make it more likely to land in high matter concentrates. that rule should make
-founding more likely to be effective throughout"; "yes"), against placing the consumer cohort
+**Status:** ruled by the owner in conversation on the afternoon of 2026-09-23 (the owner asked for
+probability to make a founder more likely to land in high matter concentrations, so that founding is
+more likely to be effective throughout, and then agreed), against placing the consumer cohort
 over the beach's shelf by rule (`fable-propose-round-46.md`'s question 6). The build spec is
 `logbook/specs/founding-trickle-spec.md` section 2.
 
@@ -6214,9 +6213,9 @@ outright (a lottery, not a certainty, as D109 chose).
 
 **Status:** ruled by the owner in conversation on the night of 2026-09-23, on round 46's
 read (logbook/0116: every stomach the trickle drew died within seconds, none bred, and the
-ledger shows a random stomach cannot live on any snow the world holds; "oh I like the idea
-of reintroducing extinct species... it's interesting. yes lets do it"; "lets follow your
-recommendations"). For round 47 with the reef. The build spec is the brief under
+ledger shows a random stomach cannot live on any snow the world holds; the owner liked the idea
+of reintroducing extinct species, found it interesting and said to do it, and said to follow the
+agent's recommendations). For round 47 with the reef. The build spec is the brief under
 `scratch/r47-build/` until the round's entry cites its spec file.
 
 **Decision.** D115's trickle draws each founder from the founding lottery as before, except
@@ -6251,15 +6250,15 @@ Waiting for round 48 (the owner chose the same round as the reef).
 
 **Status:** ruled by the owner in conversation on the night of 2026-09-23, on the pictures
 of the first reef build's smoke (three identical discs 8 m across, 0.7% of the surface):
-"the reef radius should be larger, and probabilistic. Additionally a perfect circle doesn't
-look natural. Lastly there should be different from one another... why only 3? I'd like to
-have about 25 percent of surface covered"; "reefs overlapping is not such a bad thing but if
-25 is too much, then we could do less. It should all be part of the configuration so we
-could easily change. The idea is to have areas in the tank that do not get light. That's
-the reason they are there"; and the skin: "an appropriate skin to the reefs, so they look
-more like a natural rocky structure. And that can be on the surface as well as the stem."
-The values below the ruling are the agent's, each a dial, taken under "lets follow your
-recommendations" while the owner slept; the spec is `logbook/specs/reef-spec.md` and the
+the owner said the reef radius should be larger, and probabilistic; that a perfect circle does
+not look natural; that the reefs should differ from one another; and asked why only 3, saying they
+would like about 25 percent of the surface covered. The owner added that overlapping reefs are not
+such a bad thing, and that if 25 percent is too much, then less could do. It should all be part of
+the configuration, they said, so it can easily be changed, and the idea is to have areas in the tank that do not get
+light, which is the reason the reefs are there. On the skin, the owner asked for an appropriate
+skin for the reefs, so they look more like a natural rocky structure, on the surface as well as the
+stem. The values below the ruling are the agent's, each a dial, taken under the owner's word to
+follow the agent's recommendations while the owner was away; the spec is `logbook/specs/reef-spec.md` and the
 round's entry (0117) is amended before launch.
 
 **Decision.** The reef group is redesigned whole (no recorded run carries a reef). A
@@ -6273,7 +6272,7 @@ manifest. Each cap's radius is drawn between `ReefCapRadiusMinMetres` and
 `ReefCapDepthMetres` jittered by `ReefCapDepthJitterMetres`; its stem is
 `ReefStemRadiusFraction` of its radius. Caps may overlap and the rock is their union: inside
 is inside any, the distance is the least, the fade is the product of every reef's, and the
-water under any cap is dark (`CapTransmission` 0, the owner's "block the sun"). The grid's
+water under any cap is dark (`CapTransmission` 0, which blocks the sun, as the owner wanted). The grid's
 substep refusal reads the faded field's own fastest water rather than the open water's
 bound. The theatre dresses each reef from its own outline and noise seed as rock, displaced
 inward only so the picture never stands outside the collider, with a lit encrusted top and a
@@ -6296,11 +6295,11 @@ table's columns).
 **A cell type arrives only as a bud: no mutation changes an existing part's type; a new type is a small new part, and a part leaves by shrinking** · 2026-09-24
 
 **Status:** ruled by the owner in conversation on 2026-09-24, on the dissection of round 47's
-stomachs (`logbook/specs/r47-read/tables.txt`, `scripts/reads/stomachs.py`): "we should never
-change a full cell type from one to another, it should only be additions, or removals (a cell
-can be removed by evolution if it grows too small. i think we already have that rule)"; and
-before it, "new cells evolving should start really small, which means their upkeep should not
-be dramatic for the creature". Built for round 48.
+stomachs (`logbook/specs/r47-read/tables.txt`, `scripts/reads/stomachs.py`): a full cell type should never
+change from one to another, there should only be additions or removals (the owner added that a cell
+can be removed by evolution if it grows too small, and thought the rule already exists); and
+before it, that new cells evolving should start really small, so that their upkeep is not
+dramatic for the creature. Built for round 48.
 
 **Decision.** `Mutator.ChangeCellType`, which turned an existing node into another type at its
 full size at `CellTypeChance` per node, is retired. At the same per-node rate a **bud** is
@@ -6326,12 +6325,12 @@ type (that is duplication, kept as it is).
 ### D120
 **Reproduction paid as it goes, as a gene beside the lump, and the child's overhead scales with the child above a floor** · 2026-09-24
 
-**Status:** ruled by the owner in conversation on 2026-09-24 ("lets proceed with your
-recommendations. i'm curious to see how it all works out") on the agent's proposal, which
-followed the owner's question: "we should rethink how these creatures grow and reproduce...
-when plants have material, matter, they usually continue to grow, right? and how do they
-reproduce? in water? do they create mini versions of themselves? and since our world has
-composite creatures, how might that be translated to our world?" Built for round 48.
+**Status:** ruled by the owner in conversation on 2026-09-24 (the owner said to proceed with the agent's
+recommendations, and was curious to see how it all works out) on the agent's proposal, which
+followed the owner's question. The owner said the project should rethink how these creatures
+grow and reproduce, and noted that plants with material, matter, usually continue to grow. They asked how plants
+reproduce in water, whether they create mini versions of themselves, and how, since the world has
+composite creatures, that might be translated to it. Built for round 48.
 
 **Decision.** Two generic rules. First, a reproduction mode gene on `ReproductionTraits`:
 `Lump`, the recorded rule (the child's whole price, tissue at the birth investment plus the
@@ -6356,10 +6355,10 @@ and a proportional fee prices a small child as a small child. The count bound th
 gave (0107) is loosened for small bodies and is screened at dt 0.02 before pre-registration,
 with the runaway and tissue ceilings standing.
 
-**Rejected.** A stomach-specific placement of the pool's founders (the owner: "that is again
-a rule made for stomachs. i don't like that"), superseded by D122's generic rule. A guild-aware
-dispersal (the owner: "evolution, selection and randomisation should take care of it,
-otherwise we are giving an unfair advantage to a cell type"; and the dissection exonerated
+**Rejected.** A stomach-specific placement of the pool's founders (the owner said that is again
+a rule made for stomachs, and did not like it), superseded by D122's generic rule. A guild-aware
+dispersal (the owner: evolution, selection and randomisation should take care of it,
+otherwise a cell type gets an unfair advantage; and the dissection exonerated
 dispersal: seed 1's pool children were born 2 to 5 m from their parents in matching columns).
 The reserve cap as the larder lever (kept off; the gestation account is the generic route for
 the surplus).
@@ -6388,8 +6387,8 @@ generations, is served by the upkeep side alone.
 **Every founder lands at the richest cell of its food, depth included, and is born with an endowment** · 2026-09-24
 
 **Status:** ruled with D120, as the generic form of a rule the owner refused in its
-stomach-only form ("if we could come up with some generic rule or configuration, then I'd be
-much more inclined"). Built for round 48 as two tunables, `FoundersFollowFoodDepth` and
+stomach-only form (the owner said they would be much more inclined to a generic rule or
+configuration). Built for round 48 as two tunables, `FoundersFollowFoodDepth` and
 `FounderEndowmentSeconds`, off for every recorded config.
 
 **Decision.** D116's rule accepted a column by its stock and drew the depth separately, so a
@@ -6411,7 +6410,7 @@ share (the stomach-only form).
 ### D123
 **The contact and damage senses read the step, from round 49** · 2026-09-25
 
-**Status:** ruled by the owner on 2026-09-25 ("fix for 49"). To be built before round 49,
+**Status:** ruled by the owner on 2026-09-25 (to fix it for round 49). To be built before round 49,
 as a change of behaviour and not a tunable: a new realisation of every world with either
 sense on. It is built on `d123-senses` (`fe22619`). The mouth's pass zeroes both records
 in place before it writes the step's, and the checkpoint's layout is unchanged. A change of
@@ -6443,8 +6442,8 @@ The owner chose the specification.
 **Status:** ruled by the owner on 2026-09-25 on `fable-propose-round-49.md`, which it absorbs.
 It is built on `r49-founder-cap` as a tunable, `FounderReserveCapFraction`
 (`EVOSIM_FOUNDER_RESERVE_CAP`). The header reads `founder cap 0.9 of the gate` or `founder cap
-off`. It is 0 in every recorded config and 0.9 in round 49 ("that value, the 90, should be
-configurable, like every other knob").
+off`. It is 0 in every recorded config and 0.9 in round 49 (the owner said that value, the 90, should be
+configurable, like every other knob).
 
 **Decision.** A founder of the floor, the trickle or D117's pool starts with the lesser of two
 sums. One is its recorded start: the purse (200 J times its birth fraction) and D122's
@@ -6475,11 +6474,11 @@ measured: pool founders dead at a median of 24 to 46 s. And the owner's other id
 period of N seconds. At 600 s the stomach at 0.5 J/m³ still has its child at 600 s, paid from
 the gift, and dies at 1,270 s; and every founder's first child waits, the leaves' included.
 
-**Ruled with it.** The wear stays on upkeep for round 49 (question 2, "agree with your
-recommendation"). The new death rows are read before (b) or (c) of that question is considered.
-The snow's stirring is held (question 3, "leave as is for now and evaluate"). The owner added a
+**Ruled with it.** The wear stays on upkeep for round 49 (question 2, the owner agreed with the
+agent's recommendation). The new death rows are read before (b) or (c) of that question is considered.
+The snow's stirring is held (question 3, the owner said to leave it as is for now and evaluate). The owner added a
 note on it for the round after next. A mouth fed from its one 1 m cell reads as if a cell had a
-limit: "i wonder if we could come up with something smarter". No cell has a cap. The limit is the
+limit, and the owner wondered whether something smarter could be found. No cell has a cap. The limit is the
 refill of the cell the mouth empties (CLAUDE.md, "A mouth is priced at the cell it is
 emptying"). The candidates for round 50 are a mouth fed from a neighbourhood, intake by the water
 passing the mouth, and a finer grid near mouths.
@@ -6570,8 +6569,8 @@ any part. Neurons and joint work already cost nothing in every launcher. A dead 
 husk: it sinks faster than the snow, settles on the first reef top or the bed under it and stays,
 and dissolves slowly into its cell. A mouth that reaches it eats it, as a corpse can be eaten
 today. The theatre draws it as the body's own shape in grey, shrinking as it dissolves. Every one
-of these rules is a knob, off at its default so that every recorded config replays (the owner:
-"all of these should be configurable knobs"). The pool keeps its one-part stomach. The water's
+of these rules is a knob, off at its default so that every recorded config replays (the owner said
+all of these should be configurable knobs). The pool keeps its one-part stomach. The water's
 reactive thrust (`fable-propose-reactive-thrust.md`) is approved for round 52 and built during
 round 51's week, so that food and movement are read one round at a time.
 
@@ -6604,12 +6603,12 @@ stretched by its base. The base is a gene, and a longer one costs more upkeep, K
 disposable soma: repair competes with offspring for the same joules, which D038 named as the
 condition for heritable ageing. While the hazard is on, D038's wear is off, so an old body stays
 productive and dies holding its reserve, which goes to its husk. Two additions are the owner's
-("make child birth increase the death rate probability" and "increase the death rate for
-creatures that have had a cell destroyed"): each birth and each destroyed part advance the body's
+(child birth should increase the death rate probability, and the death rate should rise for
+creatures that have had a cell destroyed): each birth and each destroyed part advance the body's
 ageing clock. Under Gompertz's law an advance of the clock is a multiplier on the hazard. Every
 part of this is a knob, off at its default. Round 51 runs it with the base the same for every body
-and not mutating; the round right after round 51 makes it heritable (the owner: "without on the
-next round, but it should come in right after").
+and not mutating; the round right after round 51 makes it heritable (the owner wanted it left out
+of the next round, but to come in right after).
 
 **Why.** The owner asked for death by age that works as it does in nature, where some creatures
 live long and some short. A free heritable lifespan evolves to immortality, which is D038's
@@ -6633,11 +6632,11 @@ on round 51's outcome (the owner, the same day).
 ### D129
 **A founder with a mouth lands where the corpses lie, from round 52** · 2026-09-28
 
-**Status:** ruled by the owner in conversation on 2026-09-28 ("yes for the next round"). It is
+**Status:** ruled by the owner in conversation on 2026-09-28 (agreeing, for the next round). It is
 option A of two, put after the agent's read of where round 51's founders landed. Whether round 52 also
 carries the water's reactive thrust or heritable lifespan (D127, D128) is not ruled by it. The same
-day the owner ruled that the code and the records call a dead body a corpse ("we should internally
-call them corpse not husk"). D127, round 51's records and logbook/0125 say husk for the same object.
+day the owner ruled that the code and the records call a dead body a corpse (the owner said they
+should be called corpse internally, not husk). D127, round 51's records and logbook/0125 say husk for the same object.
 
 **Decision.** D116's lottery and D122's depth read a third food: the corpses (D127). A founder with
 a mouth takes a column with a chance equal to the corpse joules lying in it over the richest
@@ -6667,8 +6666,8 @@ nothing about whether a body can live on them.
 ### D130
 **Round 52 carries D129 and a heritable lifespan together** · 2026-09-28
 
-**Status:** ruled by the owner in conversation on 2026-09-28 ("lets do both. it it causes a
-problem, we'll remove one of them"), against the agent's recommendation of D129 alone.
+**Status:** ruled by the owner in conversation on 2026-09-28 (to do both, and if it causes a
+problem, to remove one of them), against the agent's recommendation of D129 alone.
 
 **Decision.** Round 52 runs D129's mouths at the corpses and D128's lifespan gene heritable in the
 same round. The gene is built. A birth moves it at a rate, the founders draw it from a range, and a
@@ -6687,7 +6686,7 @@ against. The pre-registration reads D129's clauses with that in mind.
 ### D131
 **A larder on the bed: fast decay once settled, a shallower tank, and the places one a round** · 2026-09-29
 
-**Status:** ruled by the owner in conversation on 2026-09-29 ("Agreed. Proceed."), on the agent's
+**Status:** ruled by the owner in conversation on 2026-09-29 (the owner agreed and told the agent to proceed), on the agent's
 proposal, now `logbook/specs/r53-larder-proposal.md`. Its values wait for the screens after round 52.
 
 **Decision.** From round 53 a corpse keeps its slow rate while it sinks. It decays at a faster rate
@@ -6717,7 +6716,7 @@ burns off within an hour. A place on the bed in round 53 could not be read apart
 ### D132
 **Round 53 drops fast decay once settled, and changes one thing: the matter within the crowd's reach** · 2026-09-29
 
-**Status:** ruled by the owner in conversation on 2026-09-29 ("Ok that sounds reasonable to me"), on the
+**Status:** ruled by the owner in conversation on 2026-09-29 (the owner found it reasonable), on the
 agent's recommendation after round 52's first two seeds and Fable's advice
 (`logbook/specs/r53-fable-advice.md`). It supersedes D131's first rule; D131's second rule stands as
 one arm of the choice below.
@@ -6752,11 +6751,11 @@ round 53: unbuilt, unbenched, and a second change.
 **A nursery for brains: direct selection outside the ecology, on the ecology's bodies and in its currency** · 2026-09-29
 
 **Status:** ruled by the owner in conversation on the night of 2026-09-29, on their own idea and the
-agent's proposal (`propose-nursery.md`, absorbed here and deleted). Their words, in order: "LOVE THAT
-IDEA!!!" to the nursery; "yeah that works!" to scoring in the ecology's currency on the ecology's own
-genome, mutation and bodies; "ok, lets start on the cpu" to building it on the processor first; and "no,
-lets do the nursury. at the very least it will allow us to measure how many generations this will
-require." after the agent set out that it is a breeding program. Whether a round carries the nursery's
+agent's proposal (`propose-nursery.md`, absorbed here and deleted). In order, the owner loved the idea of
+the nursery; agreed to scoring in the ecology's currency on the ecology's own
+genome, mutation and bodies; agreed to building it on the processor first; and, after the agent set out
+that it is a breeding program, ruled to do the nursery anyway, because at the very least it will allow
+the project to measure how many generations this will require. Whether a round carries the nursery's
 brains as inocula stays open.
 
 **Decision.** `src/Evosim.Nursery` evolves brains by direct selection. It holds each body fixed, drawn
@@ -6791,10 +6790,11 @@ snow's transport are ported, and the card crashed in its driver that afternoon.
 **The fast nursery: an easier world and the same score** · 2026-09-29
 
 **Status:** ruled by the owner in conversation on the night of 2026-09-29, on Fable's proposal
-(logbook/specs/fast-nursery-proposal.md, which the agent asked for at the owner's word: "spin up a fable to
-think about this problem and come up with a nursery that is both fast, and keeping the principle of natural
-selection"). The owner answered its six rulings "1. ok. i wonder if we can send a sonnet to find academic
-justification for this move 2. yes 3. yes 4. yes 5. yes 6. agreed.", and then chose "measure then run A" for the
+(logbook/specs/fast-nursery-proposal.md, which the agent asked for at the owner's word to spin up a Fable to
+think about the problem and come up with a nursery that is both fast and keeps the principle of natural
+selection). The owner answered its six rulings: the first agreed, with the question of whether a Sonnet
+could be sent to find academic justification for the move; the second to the fifth yes; the sixth agreed.
+The owner then chose to measure first and then run A for the
 night. Run 2 of D133's nursery finishes as launched, and no other nursery starts before it ends.
 
 **Decision.** The score stays D133's, the joules the line takes in. What changes is the world it is earned in,
@@ -6829,7 +6829,7 @@ episodes rather than ramping it. And the bootstrap literature's remedy for a pop
 behavioural diversity, not a proxy. None of it is cited in DESIGN.md until read in full and taken through the
 review's protocol. So the literature makes the method respectable and the claim modest. Anything the nursery grows is bred in an easier world on the ecology's currency. It counts as naturally selected only once, inoculated into a round, it out-breeds its ancestor and loses its edge with its senses knocked out. Design A draws the carrion's density per episode, after Jakobi.
 
-**Rejected.** Distance to food as the score (the owner's own doubt: "that's really breading"). It pays a body
+**Rejected.** Distance to food as the score (the owner doubted it, remarking that such a score is really breeding). It pays a body
 that circles a corpse or sinks onto the bed where every corpse settles, and never eats. A coarser physics step or
 another metabolic step: a brain tuned there is tuned to another body and another economy. Several bodies in one
 episode world: the current carries a body 8 to 13 m in an episode, past its neighbour's scent, so a child's score
@@ -6839,8 +6839,8 @@ would depend on its tank-mate.
 **The joint as a bend and a power** · 2026-09-30
 
 **Status:** ruled by the owner in conversation on 2026-09-30, on the agent's proposal (`propose-joint-drive.md`,
-absorbed here and deleted). The owner's words: "ok proceed with your recommendations. make the world changes,
-run a local test." Built on the branch `joint-drive` (worktree `scratch/wt-joint`), every rule a setting off by
+absorbed here and deleted). The owner told the agent to proceed with its recommendations, make the world changes
+and run a local test. Built on the branch `joint-drive` (worktree `scratch/wt-joint`), every rule a setting off by
 default. Nothing reaches a round until the owner has seen the bench.
 
 **Decision.** The design is the owner's (the conversation of 2026-09-30). The brain has two outputs for each
@@ -6885,7 +6885,7 @@ would make Power the one gene that buys speed.
 **A body coasts as the water's drag says** · 2026-09-30
 
 **Status:** ruled by the owner in conversation on 2026-09-30, after the coasting measurement in
-`logbook/specs/joint-drive-build.md` ("How fast a body stops"). The owner's words: "yeah keep the physics."
+`logbook/specs/joint-drive-build.md` ("How fast a body stops"). The owner said to keep the physics.
 
 **The ruling.** Once a body's push stops under D135, it slows by the panel drag it already had: quadratic in
 speed, at `dragCoefficient` 1.5, with the added mass of 0.5. No term is added to stop it sooner, and the
@@ -6903,8 +6903,8 @@ viscous or other damping term the water does not have: it would give the snappie
 and it would take away the value of a glide.
 
 **Confirmed and extended**, the same day, after the coast's tail was compared with the drag law (HANDOFF,
-2026-09-30). The owner's words, choosing between keeping this ruling and adding a stopping rule: "Keep D136
-as ruled, and add surface friction when we fit drag per creature." Bodies are not held still at low speed,
+2026-09-30). The owner, choosing between keeping this ruling and adding a stopping rule, ruled to keep D136
+as ruled and to add surface friction when drag is fitted per creature. Bodies are not held still at low speed,
 and no drag term the water does not have is added. Surface friction, the tangential drag the panel model
 lacks, is to be added when drag is fitted to each creature's shape, which is the owner's plan for later.
 
@@ -6920,10 +6920,10 @@ stands on the corrected numbers: the coast is what the drag law does to a heavy 
 **Friction at the rock and the glass** · 2026-09-30
 
 **Status:** ruled by the owner in conversation on 2026-09-30, on the agent's finding that the own solver's
-bed contact has no friction (`logbook/specs/joint-drive-build.md`, "The bed has no friction"). The owner's
-words: "Add sliding friction to the bed contac <- yes! of course! and also neuton forces, meaning, creatures
-can't swim into the ground or into a reef, and that also means some phiscs when the velocity vector is not
-perpendicular to the ground". Built on the branch `joint-drive` as a setting off by default,
+bed contact has no friction (`logbook/specs/joint-drive-build.md`, "The bed has no friction"). The owner
+agreed that sliding friction should be added to the bed contact, and asked for Newton forces as well,
+meaning that creatures cannot swim into the ground or into a reef, which also means some physics when the
+velocity vector is not perpendicular to the ground. Built on the branch `joint-drive` as a setting off by default,
 `RunConfig.BedFriction` (`EVOSIM_BED_FRICTION`).
 
 **The ruling.** Where a part touches the bed or a reef, the rock pushes back along the surface's normal, so a
@@ -6962,9 +6962,9 @@ there. A heavy box (a fifth of its mass as weight) sliding at 0.3 m/s stopped in
 **The nursery's settings, the drive's power reading, and round 54** · 2026-09-30
 
 **Status:** ruled by the owner in conversation on 2026-09-30, on the agent's list of open decisions. The
-owner's words: "The render is finished. For the rest, follow your recommendations, but just for the things
-that we actually need right now to continue the work. Let's leave um, decisions that we don't have to make
-right now for later."
+owner said the render is finished. For the rest, the owner told the agent to follow its recommendations, but
+only for the things actually needed right now to continue the work, and to leave decisions that need not be
+made right now for later.
 
 **The rulings, each the agent's recommendation.**
 - ~~**The power's reading under D135 stays as built**: both outputs read from the brain's [-1, 1] onto [0, 1],
@@ -6988,8 +6988,8 @@ is not yet benched.
 ### D139
 **A silent joint has no power: the drive's power reads its neuron's positive half** · 2026-09-30
 
-**Status:** ruled by the owner in conversation on 2026-09-30, on round 54's screen. The owner's words, when
-told that jointed bodies were dying under the half-power reading: "It is why I said 0 or threshold."
+**Status:** ruled by the owner in conversation on 2026-09-30, on round 54's screen. The owner, when
+told that jointed bodies were dying under the half-power reading, said that this is why they had said 0 or threshold.
 Supersedes D138's first ruling. Built on `joint-drive` as `6173889`.
 
 **Decision.** A joint's power is the positive half of its neuron's output, off at or below the joint's
@@ -7017,8 +7017,8 @@ is a new realisation, its crowd fixture re-recorded, and it is screened again be
 **Round 54 waits for the nursery's inoculant** · 2026-09-30
 
 **Status:** ruled by the owner in conversation on 2026-09-30 at about 17:10, with round 54 seed 1 at 5,510 s.
-The owner's words: "id honestly wait with round 54 until we have a good idea of which creatures we will be
-inoculating into it", and later "i'm in no rush to start 54, and in fact i'd rather not start it today".
+The owner said they would wait with round 54 until there is a good idea of which creatures will be
+inoculated into it, and later that they were in no rush to start round 54 and would rather not start it today.
 Supersedes the part of D138 that ran the nursery beside round 54 without gating it.
 
 **Decision.** Round 54 is paused until the nursery names the creatures it will inoculate. Seed 1 was stopped
@@ -7033,14 +7033,14 @@ machine time and buys the round its intended test.
 **What it changes.** Pre-registration 0130 says the round carries no inoculant, so it is revised before the
 round launches again, from a clean tree. Seed 1's 5,510 s stay as a record of the uninoculated world under
 D139; whether they are resumed, used as a control or left is decided with the inoculant. The owner set no deadline:
-the nursery runs "until we get a good meaningful result that we're happy with", and the round is not
+the nursery runs until it gives a good, meaningful result that the owner is happy with, and the round is not
 launched without the owner.
 
 ### D141
 **Round 54 inoculates the nursery's gaits, with one seed as the control; the scent waits for round 55** · 2026-09-30
 
-**Status:** ruled by the owner in conversation on the evening of 2026-09-30, choosing option C of three:
-"Option C, but tomorrow". Answers the questions D140 left open.
+**Status:** ruled by the owner in conversation on the evening of 2026-09-30, choosing option C of three,
+to be done tomorrow. Answers the questions D140 left open.
 
 **Decision.** The nursery's gait brains, evolved in the 40 m tank with the body each rode, are confirmed
 and then inoculated into round 54. One seed stays uninoculated, as pre-registered, and is the control for
@@ -7063,7 +7063,7 @@ depth.
 **Round 54 runs uninoculated on every seed; inoculation moves to round 55, after the nursery's selection is fixed** · 2026-10-01
 
 **Status:** ruled by the owner in conversation on the morning of 2026-10-01, option A of four put after
-the night's confirmations ("Agreed", to the agent's recommendation). Supersedes D141's inoculation of
+the night's confirmations (the owner agreed with the agent's recommendation). Supersedes D141's inoculation of
 seeds 2 and 3.
 
 **Decision.** Seeds 2 and 3 of round 54 run as first registered, without an inoculant, at eight threads
@@ -7081,3 +7081,1543 @@ let selection follow luck: the arm from the kinesis ended 43 J under the brain i
 
 **What it changes.** Logbook 0130 carries a third note restoring J1 and J2 to their three-seed bars. The
 nursery's runs wait until the round has finished, unless the owner moves the round to fewer threads.
+
+### D143
+**A body's first joint is free, its stroke included; the nursery tries it first** · 2026-10-01
+
+**Status:** ruled by the owner in conversation on the afternoon of 2026-10-01. The owner wanted to
+subsidise the first joint, asked what the agent thought, and said this also means testing first in the nursery
+to see what happens if the joint and the movement are free. To the agent's three questions the owner answered:
+first, only the first joint; second, try with everything free to start with, and add costs later to see the
+impact; third, run the nursery first and see whether it gives something.
+
+**Decision.** A body's first joint costs nothing: the link's tissue, its upkeep and its idle charge, and the
+work of its stroke. A second joint and every joint after it are priced as now. The costs come back later one
+at a time, each read for its effect. The nursery tests it before any round: the deep-water arm of D142's
+fixed selection, with the first link wholly free and no work cost, against the same arm at round 54's work
+cost of 0.5.
+
+**What it extends.** D127 already freed the first link's tissue and upkeep up to 0.01 m3, and the idle charge
+has stood at 0.0001 W per newton-metre since round 34. Rounds 51 to 53 charged no work but had no push, so
+nothing swam (D135); round 54 had the push and charged half the work, and its bodies turned the stroke off
+(logbook 0131). What is new is the stroke's work, free on the first joint alone, and the free link without
+its volume cap.
+
+**Why.** Round 54 and the nursery's priced arm both cut the work first: the work per jointed body fell to 3%
+of round 53's on seed 1 and under 0.1% on seeds 2 and 3, and the nursery's arm went from 0.23 to 0.04 W in
+four generations. A free joint asks whether movement pays at all once its price is gone. Round 34 freed every
+joint's prices on the old torque drive, and its free stroke, driven flat out, killed newborns (logbook 0090);
+D135's push and D139's silent joint change that mechanism, which the nursery checks before a round does.
+
+**Open.** The round's build: the work is billed per body, so pricing the first joint's stroke apart from the
+rest is new code, needed only for bodies with more than one joint. Every nursery body has one.
+
+### D144
+**The brain senses its joints' envelope: the stroke, the hold and the ramp; the nursery tries it first** · 2026-10-01
+
+**Status:** ruled by the owner in conversation on the evening of 2026-10-01, on the agent's account that a
+brain cannot see its stroke or its envelope. The owner's question came first. The owner noted that, as it works, the brain has no haptic sense and does not know the state of the muscle
+as an input, nor the state of it as an envelope state machine. They asked whether that is hard for
+the brain. Then the ruling: the owner wanted to do it, connecting the brain before the next
+nursery run, if the agent agreed. And on its shape, the owner asked whether there should be an input per
+envelope state. Built on `joint-drive`, off by default.
+
+**Decision.** Three sensor channels, each read per degree of freedom as the joint angle is. A genome
+draws them only when `RunConfig.SenseDrive` is on (`EVOSIM_SENSE_DRIVE`).
+- `Stroke` is the power the joint delivers now, after its threshold and envelope, from 0 to 1.
+- `Hold` is the share of the hold still to run: 1 on the step a command is taken, 0 while the joint will
+  take the next.
+- `Ramp` is the command the joint took less the power it delivers, from -1 to 1, and 0 once arrived.
+
+There is one input per state, as a level and not a flag. A neuron makes a flag from a level with a weight
+and a bias, and cannot recover a level from a flag; `SensorChannel.Energy` makes the same argument. The three
+are one step stale, as `Flow` is, since the envelope moves after the brain. A world without the
+bend-and-power drive refuses the dial.
+
+**Why.** The joint angle and its rate were all a brain sensed of its joints. The stroke is not simulated as a
+swing, so no angle shows it. A brain could not tell a power command taken from one held back by the hold or
+lost under the threshold. It had to act slowly, or carry a model of the delay in its own wiring. Position
+sense is used where it exists: in the control arm's 65 best brains, the joint angle was the sense read most,
+130 of 205 sensor inputs. Animals have a force sense as well, from receptors in muscle and tendon. That comes
+from the agent's general knowledge; the reviewed literature does not cover it.
+
+**The nursery's test.** The control's command (`pilot-deep-own16`) runs with the dial on, and a knockout of
+the three channels joins the exam. Its founders are drawn without the three, so its generation 0 is the
+control's and the sense enters by mutation only. It runs before the free-joint arm (D143) and the crossover,
+one change an arm against one control.
+
+**Open.** Bend's envelope has no channel: the angle shows where the muscle took the joint, and the bend's own
+ramp is not sensed. The gpu engine refuses the bend-and-power drive and so the dial with it.
+### D145
+**The order: the drive sense, the free joint, round 55, then the nursery's two method arms** · 2026-10-01
+
+**Status:** ruled by the owner in conversation on the evening of 2026-10-01, on the agent's recommendation
+(option B of three). The owner had thought a round came between the nursery's arms; none was written down.
+The owner agreed and told the agent to lock it, unless something very interesting turns up in between.
+
+**Decision.** The machine runs one heavy job at a time, in this order. First the drive-sense arm (D144),
+then the free-first-joint arm (D143), each against the control `pilot-deep-own16`. Then round 55, which
+tests in the world whichever of the free joint and the drive sense earned more in the nursery, or both.
+Then the nursery's method arms: the envelope evolving with the brain, and the crossover. ~~Round 55 carries
+no inoculant, unless an arm's exam gives a brain that beats its body's best constant power by two standard
+errors. That brain then goes to the owner as an inoculant for one seed, the other seeds kept as controls.~~
+Superseded by D149 on 2026-10-04: round 55 is inoculated with a mix of the nursery runs in two seeds.
+A finding of real interest in between reopens the order.
+
+**Why.** Round 55's world depends on the two world-rule arms and on neither method arm. Option A, every arm
+before the round, delays it by about a day for nothing it needs. Option C, a round straight after the drive
+sense, would put the free joint into the world untested, against D143. No nursery brain had yet beaten a
+steady power on fresh draws (D142), so one exam is not enough to inoculate on.
+### D146
+**One brain per creature: plain units, every sense wired, growth by mutation, thinking free (brain v2)** · 2026-10-01
+
+**Status:** ruled by the owner in conversation on the night of 2026-10-01, over several messages, and set
+as the session's goal: build the proposal and review it, then build it into the world and into
+the nursery, then run a nursery run with the new brains and breeding. The design and every ruling
+the owner gave are in `proposals/propose-brain-v2.md`, absorbed here once the build is checked. It
+pauses D145's order: no arm or round runs on the old brain, on the owner's doubt that the work is trying to get
+creatures to evolve in a way they simply cannot.
+
+**Decision.** A setting chooses the brain (`RunConfig.BrainModel`); the old per-node brain stays the
+default, so every recorded run replays. The new brain is one network per creature, placed nowhere in the
+body. Its inputs are every sense of every part and its outputs a power and a bend per degree of freedom,
+wired by the body: a limb gained brings its ports, a limb lost takes them. Units are a weighted sum and a
+bias through `tanh`, and any unit may read any unit's value from the step before, its own included. There
+are no oscillators; the rhythm is the joint's stroke (D135). Mutation steps weights, adds connections and
+splits connections into new units, and removes less often than it adds. A new joint's outputs copy the
+parent joint's wiring. Thinking costs nothing until brains are shown to be used. The nursery tests it
+first, with the two-parent breeding of `proposals/propose-nursery-crossover.md` re-based on it.
+
+**Why.** The control arm's best brain at generation 90 was one neuron with no inputs. Mutation held brains
+near 1.25 neurons a part, no mutation added an input, and a deleted first neuron swapped a joint's power
+and bend. A brain that cannot grow cannot learn to steer to food.
+
+**Open.** A literature round on growing networks (NEAT) and on central controllers, read while the build is
+tested. A measurement of the brain on the card against the cpu, after the card's rest.
+### D147
+**The one brain's founders: every sense wired to every output, LeCun-scaled random weights, biases at 0** · 2026-10-02
+
+**Status:** ruled by the owner in conversation shortly after midnight on 2026-10-02, on the agent's options
+for the starting weights of D146's founders. The owner leaned toward random weights with everything connected to
+everything, or else all weights and biases at 0 so that nothing activates. If random, the owner wanted it seeded and strategic
+rather than plain normal random, since there are strategies for random initialisation
+of weights and biases. On the agent's recommendation of LeCun-scaled weights with biases at 0, the owner agreed.
+
+**Decision.** A founder's brain links every port of the run's sensor pool to every output
+(`founderLinkShare` 1). Each weight is drawn from a normal distribution of spread 1 over the square root of
+the output's starting links (`founderWeightScale` 1), LeCun's initialisation for a tanh unit. Every bias
+starts at 0 (`founderBiasStdDev` 0). Each founder's brain comes from its own fixed seed, and in the nursery
+every member of the first generation draws its own.
+
+**Why.** All-zero was weighed and set aside: an output of 0 is below every joint's threshold, so a zero
+founder is still, and a first mutation's small step leaves it still. Every early mutant would score the
+same, and selection would have nothing to choose between. Scaled weights put each output's summed input
+at about one input's size, in tanh's responsive middle. With biases at 0, a founder moves only when its
+senses push an output past the threshold, so its behaviour comes from its senses from the start. The
+build's first default, a random bias of spread 0.5, left about half of generation 0 still at rest and the
+rest stroking regardless of what they sensed.
+
+**Open.** Our senses are not alike in spread (depth is nearly constant within a swim, scent and flow vary
+widely), which LeCun's rule assumes they are. Weights calibrated to each sense's measured spread (LSUV) are
+the next step if generation 0 shows senses that are dead or saturated. The sources named here are the
+agent's knowledge and go into the literature round to be confirmed.
+
+### D148
+**The general nursery: experiments as settings, rewards as registered classes, the old experiments discarded** · 2026-10-02
+
+**Status:** ruled by the owner in conversation on the morning of 2026-10-02, on the questions of
+`proposals/propose-nursery-general.md`. Their answers:
+- On where the registry lives, `rounds/nursery/`: the owner agreed.
+- On whether a recipe is a pre-registration: yes.
+- On retiring the archive mode and the swim test: yes.
+- On reproducing the old experiments: the owner asked whether they could be rerun as an experiment
+  config, and not as hard-coded components living unused in the code forever, and said they were happy
+  to discard the old experiments.
+- On the reward: the owner approved, and suggested using a class, a module or whichever C# construct
+  fits.
+- On whether the brain v2 run counts as the crossover test the proposal waited for: yes. The owner said
+  to be forward looking, because this is a curiosity project and not academic research, so shortcuts can
+  be taken, and to discuss it if the agent disagrees.
+
+**Decision.**
+- An experiment is a settings file, a recipe, kept in `rounds/nursery/`. A recipe for a run that will be
+  written up is committed before it runs, as a round's pre-registration is.
+- Every run writes a run record: its arguments, every resolved option, the world config with its hash,
+  and the build hashes.
+- The nursery's departures from the world, such as the ring of carrion and the grown purse, become
+  settings of the episode's setup. They do not become components kept in code.
+- The old experiments are discarded rather than reproduced. They stay readable, and re-runnable on the
+  commit that made them.
+- The archive mode and the swim test are retired.
+- A reward is a C# class behind one interface, registered by name. A recipe names it and gives its
+  parameters. It reads one fixed record per episode and per body, scores a genome over all its episodes,
+  and returns one number for selection with its named parts. A weighted sum is one such class.
+- The brain v2 run (`pilot-deep-brain2`) stands as the crossover test, so the build may start once it
+  has ended.
+
+**Why.** The owner's aim is a nursery that changes by settings rather than by code. The project is a
+curiosity project, so reproducing old runs to the last digit is not worth days of machine time. Keeping
+departures as settings, not code, means nothing lives on unused.
+
+**Open.**
+- The agent keeps one cheap guard before the old flag code is deleted. One small recipe runs through
+  the old build and through the framework, a few generations each, and the rows are compared. A
+  mismatch is explained, or recorded as a new realisation.
+- Discarding the old experiments means the next comparisons need a baseline run in the framework.
+  Which baseline is the owner's choice.
+- The proposal file stays until the build spec under `logbook/specs/` carries its design and faults,
+  then it is deleted.
+**The baseline, ruled later the same morning.** On the agent's recommendation that brain v2's setup be
+the baseline, with `pilot-deep-brain2` standing as its run if the framework reproduces its first
+generations, the owner agreed. The final design is `proposals/propose-nursery-general.md`.
+### D149
+**Round 55 is inoculated with a mix of the four brain-v2 nursery runs, through the trickle pool, and the world's selection decides** · 2026-10-04
+
+**Status:** ruled by the owner in conversation on 2026-10-04, over the morning, on the agent's
+recommendations. The design is `proposals/propose-r55-mixed-inoculation.md`. It supersedes D145's clause
+on round 55's inoculant.
+
+**Decision.**
+- Round 55 does not choose one nursery recipe. It is inoculated with what the four brain-v2 runs saved
+  (`pilot-deep-brain2`, `brain2-rep2`, `brain2-nodrive`, `brain2-nocross`): each body's exam genome and
+  the best genome of each generation. The set is `inocula/r55-nursery/`, up to ten genomes per run and
+  body, each of the 24 run-and-body cells weighted equally.
+- The inoculants arrive through D117's trickle pool throughout the round, not in one batch at the start.
+  One trickle founder in two comes from the nursery set. Round 54's four stomachs stay in the pool at one
+  in ten, given brain v2 on arrival like every other founder.
+- Seed 1 is the uninoculated control (the stomachs only); seeds 2 and 3 are inoculated.
+- **Added the same day, after the smoke:** the floor's founders, those that fill the world before the
+  floor closes, are drawn from the pool too, at the same share (a new tunable, `FoundingFloorPoolShare`).
+  The smoke showed why: founders arriving after the floor closes, into a full world, almost never bred (3
+  of 44 ordinary, 3 of 56 from the pool, in 3,000 s), while 32 of the 45 floor founders did. The control
+  seed sets the floor's share to 0.
+- D145's bar, a brain beating its body's best constant power by two standard errors before it may be
+  inoculated, and then in one seed only, is dropped for round 55.
+- Every nursery run from now on keeps its last generation's whole population (`tank-population.jsonl`),
+  so a later mix can take ten per body.
+
+**Why.** Neither separation arm moved the nursery's exam, so one seed cannot rank the four recipes. On the
+exam the evolved brains beat freezing by 236 to 308 J and the hand-wired kinesis by 9 to 81 J, and tied the
+best constant power (from -19 to +54 J pooled; only body 10 clears the bar in every run). That bar asks
+whether a brain beats the best fixed rhythm chosen with hindsight. The world asks something else: whether
+these creatures prosper against random-brained founders and round 54's rigid leaves. The world is the test
+that matters, and it can take all four runs at once. Many genomes per body, arriving many times, also blunt
+the winner's curse of the exam's single pick and the founder luck that gave round 54's seeds 2 and 3 to
+rigid lines in their first seconds.
+
+**What it does not show.** The brains do not read the scent (its knockout costs nothing), so a nursery line
+that takes hold in round 55 is evidence for a good swimmer's body and brain together, not for foraging by
+smell. The pre-registration says so. Every creature in round 55 carries brain v2 (D146), so seed 1 controls
+for the inoculation only, not for the brain against round 54.
+
+### D150
+**Nursery runs take sixteen bodies a tank (B1); the coarser snow (B4) is held, and the two are not combined** · 2026-10-05
+
+**Status:** ruled by the owner in conversation on 2026-10-05, in the evening, on the coordinator's
+recommendation. The measuring is `proposals/propose-speed-exploration.md`, and the numbers are
+`logbook/specs/nursery-speed.md` on `nursery-speed` (`c34ca95`, `696f02a`).
+
+**Decision.**
+- Every nursery run from now on puts sixteen bodies in a tank instead of eight. Its recipe and the
+  registry say so, and a run before this decision is not compared with one after it on a typical body's
+  score.
+- B4, the snow computed on coarser cells, is not adopted at either cell size the tank allows.
+- B1 and B4 together are not adopted.
+
+**Why.** B1 runs a generation 1.7 times as fast (109 s against 189 s on fourteen efficiency cores, two
+timing reads within 2%). Over five generations its climb matched today's, and every per-generation gap
+stayed inside the spread between two seeds. The best bodies scored as before; the typical body scored
+39% less, which is crowding on the food. B4 on 2.5 m cells was 3.2 times as fast and scrambled the
+order of 96 genomes (rank correlation 0.035, one of eight elites kept), with every body earning six
+times as much. On 1.25 m cells it was 1.7 times as fast and kept the order mostly (0.835, five of
+eight), but every body earned nearly twice as much, and over five generations each generation's level
+sat past the seeds' spread. B1 changes who a body competes with; B4 changes the larder. Together they
+read close to today's only because the two pull in opposite directions.
+
+**What it does not show.** Five generations on one seed cannot show what a hundred select for under the
+extra crowding. A body that wins in a tank of sixteen may differ from one that wins in a tank of eight.
+
+### D151
+**Round 57 is two seasons a year and day-to-day weather, uninoculated, three seeds to 48,000 s** · 2026-10-05
+
+**Status:** ruled by the owner in conversation on 2026-10-05, in the evening. The idea was the owner's;
+the settings are the coordinator's recommendation. The design is `proposals/propose-r57-weather.md`.
+The light sense the owner moved to round 57 on 2026-10-04 moves to round 58.
+
+**Decision.**
+- A year of 6,000 s: three days of summer at 1.6 of the mean light, then three days of winter at 0.4,
+  with a ramp of 250 s between them. Days stay 1,000 s at amplitude 0.5.
+- Each day's light is multiplied by a factor drawn log-normal around 1 (log spread 0.3), each day's
+  correlated with the last (0.5), smoothly blended, from a seed of its own so that every seed of the round
+  has the same sky.
+- No inoculation; the trickle keeps the control's pool.
+- Three seeds, each to 48,000 s, after a one-year screen on seed 2.
+
+**Why.** Round 56's sun was exact, day after day and year after year, so selection could fit a fixed trait
+to it; varying days reward a margin instead. Round 56's winter was mild (S1 failed in every seed). A
+smooth 10,000 s year gives three winters a run; two seasons in 6,000 s give eight, about fifty generations,
+for the same machine. A 5,000 s year, the owner's first figure, would switch season mid-day and leave the
+two seasons unequal light. In round 55 and round 56 the inoculation barely took (round 55's nursery-rooted
+bodies 4.0% and 0.1% of the living), and its founders, who never met a winter, would work against
+adapting to one over a long run.
+
+**What it does not show.** The year's shape, its depth and the weather change together, so a result
+belongs to them together. Round 56 is no direct baseline. Fifty generations sort and shift what the
+population has; they evolve little that is new.
+
+### D152
+**The nursery holds the water for 0.5 s; the farm's rounds do not** · 2026-10-06
+
+**Status:** ruled by the owner on the morning of 2026-10-06, on the coordinator's recommendation, from
+the speed exploration's W1 trials (`logbook/specs/nursery-speed.md` on branch `nursery-speed`, "W1 on the
+farm" and "W1 in the nursery").
+
+**Decision.**
+- Nursery runs from now on set `Fluid.WaterHoldSeconds` to 0.5 (W1 in `logbook/specs/speed-plan.md`).
+- Farm rounds keep it at 0.
+- The other two W1 options are not adopted: one drag panel a side (`Fluid.PanelsPerAxis` 1) and no
+  fluid acceleration (`Fluid.FluidAccelerationCoefficient` 0).
+
+**Why.** In the nursery the hold is within chance at 16 bodies a tank (rank correlation 0.992, 7 of 8
+elites kept, against a floor of 0.821 and 6 of 8) and 1.11 times faster, read alone. On the farm, under
+the four-nudge ensemble from round 56 seed 2 at 28,000 s, it is within chance on births and food, but
+the mean height at 30,000 s is −12.42 m, 0.21 m below the lowest of round 56's seeds. One panel a side
+gains about 1% in the nursery, and on the farm it let a body blow up, which overran the contact grid.
+No fluid acceleration cut the nursery's mean score from 125.7 to 36.9 and, on the farm, put the living
+and the light below every round 56 seed.
+
+**What it does not show.** The farm's 1.24 times was read beside a second run, so it is not a timing.
+The nursery's reading is one generation at one tank size.
+
+### D153
+**A speed-up that changes the world is judged by its trade-off, not by authenticity** · 2026-10-06
+
+**Status:** the owner's principle, stated on the morning of 2026-10-06. It extends the ruling of
+2026-10-05 that the speed-ups which change results are explored alongside the bit-identical ones.
+
+**Decision.**
+- The world is a simulation built for experiments, and the owner compared it to a game that simplifies
+  for speed. A simplification that makes the farm or the nursery faster is worth considering even when
+  it makes the physics less faithful.
+- Each one is measured for two things before it is adopted: the speed it buys, read alone, and what it
+  moves in the world, read against a nudge ensemble and the seeds' spread.
+- It is then judged by whether the gain is worth what it moves, given the questions the coming rounds
+  ask. Staying within chance is no longer required. What it moves is written into the decision.
+- A change is adopted only at a round's start, so every round is one world. The adoption is the owner's
+  ruling, and the round's pre-registration names it.
+- **The exploit check** (the coordinator's amendment, which the owner accepted the same morning). After
+  a round on a shortcut, its best-evolved bodies are run again under the full physics, and their score or
+  income is compared with what they earned under the shortcut. If they do markedly worse, they evolved to
+  use the shortcut, and the round's result is read as partly about it. A game's shortcut has only to look
+  right to a player. Here selection searches for whatever pays, loopholes included, and Sims reported
+  creatures that exploited his physics' errors.
+- **The reference build.** One build with the full physics is kept, so the shortcuts adopted over many
+  rounds can be measured together against it as well as one at a time.
+- Round 57 runs as built (the owner, the same morning). The candidates are measured for round 58.
+
+**Why.** The owner set the goal the same morning: very long runs of evolved bodies and brains, with
+many creatures, on this machine. Every unit of compute is to be weighed against that goal, and something
+will have to give, perhaps in time some of the vision itself. The owner also wants the world itself
+to grow more complex (more body shapes, more cell types, more features), so the compute that shortcuts
+save is partly spent again on what selection can act on. The farm runs a round in about 30 hours,
+and its pace falls as the crowd grows. A run twice as
+fast gives twice the years, and generations are what selection needs. Faithfulness is worth what it buys
+in the questions asked.
+
+**What it does not show.** A change that is harmless to one question can bias another, so a speed-up
+adopted for one round is read again whenever a round asks something new of the same physics.
+
+### D154
+**The light sense reads the light at each part, the crowd's shade included, as one reading** · 2026-10-06
+
+**Status:** ruled by the owner on 2026-10-06, on the two questions of the build brief
+(`logbook/specs/r58-build/light-sense-brief.md`). It shapes the sense ruled for round 58 on 2026-10-04: one
+no founder is wired to and mutation can add.
+
+**Decision.**
+- **The crowd's shade is in the reading.** The sense reads the light photosynthesis would pay on at the
+  part. That is depth, the sky (day, season and weather), the reef caps, the shade map and the canopy
+  of bodies above. A body can then sense a crowd overhead as well as the weather. When the sense is on, a
+  checkpoint carries the canopy factors, so a resumed run stays the unbroken one.
+- **One reading per part, not a triple.** `SensorChannel.Photo` becomes one light reading per part,
+  `I / (I + k)`, with k a tunable at 25 W/m². DESIGN's "photosensor triple" is re-scoped: colour vision
+  (§5A.5), if it is ever built, takes a new channel. Nothing recorded changes, since no genome reads
+  Photo today.
+- The settings: `SenseLight` puts the sense in the pool, off by default; `CentralBrainOptions.FounderReadsLight`
+  wires founders to it, for the nursery's wired arm only.
+
+**Why.** Without the shade, a body under a dense canopy would read more light than it earns, so the sense
+would mislead where competition bites. A triple would be three copies of one signal, or a
+facing-weighted one that repeats `OrientationUp`. Either way, about two thirds of the mutation draws
+that reach the sense would go to inputs that add nothing.
+
+**Rejected.** The water's light without the crowd: cheaper and with nothing in a checkpoint, but it
+disagrees with the income where it matters. Three indices: the reason above.
+
+**What it does not show.** Whether selection keeps the sense at all. The nursery's light bench (no sense,
+unwired, wired) asks that before round 58, and round 58's stats count the bodies whose brain reads light.
+
+### D155
+**Round 58 is round 57's world with steep-walled pits on the bed and corpses that slide into them** · 2026-10-07
+
+**Status:** the owner ruled on 2026-10-07 that round 58 is round 57's world with D131's hollows and that
+the light sense (D154) is not its experiment; it stays in the code, off. The owner left the hollows'
+design choices to the coordinator the same day, on one condition: the hollows must change the world
+materially. The choices below are the coordinator's under that delegation. The design is
+`logbook/specs/r58-build/hollows-design.md`.
+
+**Decision.**
+- **Pits, not dips.** About a dozen pits on the bed, a flat floor and a wall rising as a quintic step,
+  steep enough (about 45° or more) to hold what reaches them on the 13.8° ramp. They are terms inside
+  `BedShape`'s own height function, so every reader sees one floor, and `SteepestSlopeBound` is raised
+  by the steepest wall.
+- **Corpses slide.** A settled corpse slides downhill while the slope under it is steeper than a repose
+  angle (30° to start), then lodges. On round 57's floor nothing outside the pits is that steep, so the
+  rule acts only on their walls. The pits and the slide count as one change under D079.
+- **No lee in round 58.** The cheap lee, the current faded inside each pit, would ring each pit with a
+  jet. Holding a body in place waits for the anchoring cell.
+- **Where.** A band of water depth near the crowd, about 16 to 30 m, clear of the reefs, the glass and the
+  shore band. Placement leaves the reefs the same bits.
+- **Mouth founders** keep D129's placement at corpses, so some start in the pits; they are read apart.
+- Every setting is off by default, the nursery's tank included.
+
+**The bar for "materially".** Fixed before the screens, so no reading is judged after the fact. At
+10,000 s on seed 2, against the same seed without pits:
+- the settled corpses' joules per square metre inside the pits are at least five times those outside;
+- bodies born in the run (founders apart) live within 2 m of a pit's floor at least twice as densely as
+  their share of the bed predicts; and
+- the living count or the guilds' shares move past round 57's seed spread at the same second.
+
+If the catch alone fails, the pits are scaled up (more, wider or deeper) in a further screen. If that
+fails too, the rule moves to option (c), where anything settling inside a rim lodges at its floor, and
+the owner is told before round 58's pre-registration.
+
+**Rejected.** Shape alone: today's dips are open on the ramp and corpses never move, so it would change
+little. Lodging everything inside a rim from the start: the strongest catch and the least physical,
+kept as the fallback. Snow creeping downhill: a day more, and not needed for the catch.
+
+**What it does not show.** Whether a community forms around a pit. That is what round 58 reads.
+
+### D156
+**The hollows are set aside for now: round 58 does not run them** · 2026-10-08
+
+**Status:** the owner ruled on the morning of 2026-10-08, on reading the two screens, that pits which
+do not materially change their own surroundings are not to go ahead for now. D155's bar for "materially"
+was fixed before the screens, and neither screen met any of its three tests. This supersedes D155's
+choice of round 58's world; the hollows' code stays on `round-58`, off by default.
+
+**Why.** At 10,000 s on seed 2 the settled corpses held 1.35 (pits alone) and 1.28 (pits and the slide)
+times the open bed's joules per square metre inside the pits, against 1.31 on the same cells without
+pits and a bar of 5. No guild lived near a pit floor at twice its share, and the living and the guild
+shares stayed inside round 57's seed range (`logbook/specs/r58-build/screens-h12-read.txt`). The slide
+works only within a pit, moving a wall's corpses to its floor, so a pit gathers only what lands on its
+own footprint. By that geometry no scale of this shape reaches the bar, and neither did D155's
+fallbacks promise to (an inference, not a run).
+
+**Rejected, for now.** Running H3's larger pits, which the geometry says would fail the same way. Letting
+corpses slide on the open ramp so that each pit gathers from a catchment: it could make the pits
+material, but it changes where food lies across the whole bed, and it is a new design rather than the
+pits D155 chose.
+
+**What follows.** Round 58 needs another change; that choice is the owner's.
+
+### D157
+**The graphics card is a valid engine in single precision if its world is sound, and the world moves onto it as far as makes sense** · 2026-10-08
+
+**Status:** the owner ruled on the morning of 2026-10-08, after the coordinator set out what the card's
+fidelity check asks. Whether the card's world matches the CPU's is not a gate. A slightly different world
+is still a valid world to study, and the CPU's double precision is a closer approximation, not the truth.
+What matters is that the card's world is sound and that comparisons stay clean. The owner also asked for
+the work to go on, moving as much of the world onto the card as makes sense. This supersedes the
+earlier ruling that the card's solver runs in double (`logbook/specs/speed-plan.md`, item N3): single
+precision is admitted on these terms.
+
+**The terms.**
+1. Sound means the card's runs close their books as every round must (the energy audit under 0.1 J, the
+   matter residual under 1e-5 units, nothing diverged) and replay themselves bit for bit on the same card.
+2. A round's seeds and its controls all run on one engine; no comparison mixes card and CPU runs.
+3. An engine change lands at a round boundary, and the first round on the card carries its own baseline,
+   as D153 admits any speed-up that changes results.
+4. The fidelity check that was running (card53's re-run) finishes and is reported as information.
+
+**Why.** The card runs round 53's world at about 2 times real time in single, against 1.13 on 16 CPU
+threads and 0.21 on the card in double. The world's own step still runs on the CPU, which caps the gain
+near 2.5 times until more of it moves. That is the reason to move more.
+
+**Rejected.** Holding the card to the CPU's realisation: no record depends on matching the CPU number for
+number, only on not mixing the two. Requiring double: it is slower on this card than the CPU.
+
+### D158
+**No farm round runs until the speed-up work is finished** · 2026-10-08
+
+**Status:** the owner ruled on the morning of 2026-10-08, after D156 left round 58 without its change,
+that future rounds are suspended until the speed-up work (D157: moving as much of the world onto the card
+as makes sense) is finished. Round 58's change is chosen then, not now.
+
+**Why.** The machine's time goes to the speed work instead of to rounds, and a round launched before the
+card carries today's world would only need repeating on the card for its baseline (D157's terms 2 and 3).
+
+**What it does not stop.** The speed work's own runs, the record owed for rounds already run, and the
+instruments, each under the machine's usual limits.
+
+### D159
+**Round 58 is three connected worlds that trade genomes and three isolated ones; the anchoring cell is built and tried in the nursery for round 59** · 2026-10-09
+
+**Status:** the owner ruled in conversation on the evening of 2026-10-09, accepting the coordinator's
+recommendation. The owner had asked whether three seeds run at once on the card could inoculate each
+other. This entry absorbs the proposal that followed, `propose-r58-migration.md`. The values below are the proposal's recommendations. The owner can
+still change any of them before the pre-registration, which comes to the owner before launch. D158 still
+holds: round 58 launches only once the speed work is finished.
+
+**Decision.**
+1. Round 58 runs six worlds of round 57's world on the graphics card. Three are connected and three are
+   isolated, each with its own seed. The isolated three are the control and the first card round's own
+   baseline, as D157 asks.
+2. A connected world sends copies of genomes, never bodies. It picks living creatures at random from its
+   own random stream and keeps them. The receiving world plants each copy as a founder by the existing
+   inoculation path (D056, D060) and the founders' placement (D122, D129), so every world's books close.
+3. The exchange is rare. Three genomes go from each connected world each simulated year of 6,000 s, a
+   first value that a screen sets before the round.
+4. The connected worlds form a ring: one sends to the second, the second to the third, the third to the
+   first.
+5. The worlds are equal in their rules for the first cut, differing only by seed and so by weather.
+6. The worlds exchange only at fixed simulated times between blocks, so the six-world run replays bit for
+   bit. Each immigrant's lineage row names the world and the creature it came from.
+7. Each world runs round 57's length, 48,000 s.
+8. The anchoring cell (the animal kit's C4) is built while round 58 is built and run. It comes with a
+   sense of touching the bed or a reef, and is tried in the nursery first. Round 59 is the anchoring cell, with the reefs as
+   the place to hold on to.
+
+**Why.** D011 kept the island model for its evolutionary value. The card now makes several worlds
+cheap: two worlds stepped together each kept 95% of a lone world's speed (2026-10-08). In the literature the
+review holds, split populations joined by narrow bridges outlasted one continuous population [JN97 p.7]
+[HUF58 p.39–41]. Identical patches bought nothing [HZ13 p.5]. Too much movement makes the patches one pool
+again (Briggs and Hoopes 2004, abstract only). Hence the rare exchange, and a control of isolated
+worlds. The round reads five things: variety, the spread of a new way of life by descent, the rescue of a
+guild that died out, swamping by one world's winners, and whether the worlds' winters fall into step. The
+bars belong to the pre-registration.
+
+**Rejected.** Moving whole bodies between worlds: the books would have to close on both sides, and matter
+would drift between worlds. Picking the fittest migrants: that is selection from outside the ecology, the
+nursery's job. Pits, other formations or the anchoring cell in the same round. D079 asks for one change a
+round, and with two a difference between the connected and isolated worlds could come from either. The pits
+stay set aside (D156); a formation earns a round when it changes where food, light or shelter is.
+
+**Correction, 2026-10-09 evening.** The 95% in the reasons above is the figure of 2026-10-08. It was taken
+without the scent on the card, without concurrent mode and before the spin. A sitting with all three ran
+the same evening, on one build (`card-r57` `5011f575`). There a world in a pair kept 76% of a lone world's
+pace, and a world in a group of three kept 68%. The card carried two worlds at 1.53 times one world's output
+and three at 2.05, and three worlds took 4.5 GB of its memory. Two and three worlds still pay, so the
+decision stands. By those figures one group of three runs 48,000 s in about 4 to 4.5 hours. The round's two
+groups, run one after the other, would take about 8 to 9 hours. That is an inference from 300 s runs, since
+a founded world starts small.
+
+**Rulings, 2026-10-09 night.** The owner ruled two of the proposal's open questions, each as recommended.
+The runner that steps the connected worlds and carries the exchange is built now, ahead of the remaining
+speed items; D158's condition on the launch is unchanged. An immigrant keeps its home species, tagged with
+the world it came from, rather than founding a new one. This amends D057 for immigrants only: within a
+world, and for every other planted founder, D057 holds as written.
+The species ruling does nothing in round 58 itself. Round 57's world runs with species tracking off
+(`SpeciesDriftThreshold` 0), so every creature is in species 0 and an immigrant keeps it already. The
+runner therefore refuses a migrating group whose config turns species on, until the tagged path is built.
+That path is to tag each immigrant with its species' original home world, so a genome that goes round the
+ring and returns maps back to its home species.
+
+**Rulings, 2026-10-10 afternoon.** The owner ruled four of the pre-registration's questions, each as the
+coordinator recommended. The isolated three reuse the joined three's seeds, so each joined world has a twin
+that differs from it only by the arrivals; this amends rule 1's "each with its own seed". The owner sees the
+three joined worlds as islands of one world, so a clade founded by an arrival counts in the readings of
+variety and of a way of life spreading. The screen's bars, 25% and 50%, stand as a starting value. The owner
+also required that the migration replay in a later run, so that the group stays deterministic. Rule 6
+already provides for it, and the round checks it: a group resumed from a checkpoint must match the
+uninterrupted group row for row, arrivals included.
+
+### D160
+**The speed work that gates round 58 ends with the arena; the rest goes on beside the rounds** · 2026-10-10
+
+**Status:** the owner ruled in the early hours of 2026-10-10, accepting the coordinator's recommendation.
+This amends D158, which held every round until the speed work was finished, without saying where it ends.
+
+**Decision.** The speed work that gates a round ends once the copies' arena (`r58-copies`, `1096d734`) and
+the world's parallel body loops (`r58-grow`, to `5e618441`) have passed the day sitting's alternated timing
+read on the card. That sitting also holds the stray test, the solo baseline and the check that the
+regenerated kernels cost nothing. Every speed item after them goes on beside the rounds and lands between
+rounds, never inside one, under the same identity checks: 1b's scatter of packed bodies, fewer and larger
+downloads, reuse of the phenotype's storage in growth, and the snow's grid passes on the card.
+
+**Why.** The night of 2026-10-09 took the world step from 32.6 to 25.0 ms and the copies by 1.8 ms a block,
+all bit for bit. The items left are each worth 2 to 4% of pace for one to five days of work. Round 58
+takes about 8 to 9 hours of the card, so each would save minutes a round while holding the round for days.
+
+**Rejected.** Finishing the whole list first, which would hold round 58 until about 2026-10-18 to 20 for a
+few percent. Ending without the day sitting, which would put the night's changes into round 58 unmeasured.
+
+### D161
+**The water gets a drag on turning, built with round 59's anchoring cell** · 2026-10-10
+
+**Status:** the owner ruled on the afternoon of 2026-10-10, accepting the coordinator's recommendation. It
+amends D111, which gave a part with a buoyancy offset its lever.
+
+**Decision.** A part in the water feels a drag against its turning, as well as the pressure drag on its faces.
+It is built with the anchoring cell (D159, rule 8) and goes into round 59. Every world of round 59 carries it,
+the arms without the anchoring cell included, so the anchoring cell stays the one difference inside the
+round. Its form and size are set by a short nursery check before round 59's pre-registration. The check
+confirms that the drag stills the rocking without stopping the swimmers' strokes.
+
+**Why.** Single stomachs rock without end and a few spin like planets (`logbook/specs/rocking-bodies-2026-10-10.md`,
+from round 57's recorded poses). D111 made a capsule with an offset a pendulum, and the water's drag acts only
+on the part of a panel's velocity along its normal, so nothing brakes a turning body. Real water resists
+turning through the skin of the body. The anchoring cell holds a part with a spring, which needs damping not
+to ring, so the two are built together.
+
+**Rejected.** Putting newborns down upright and keeping angular momentum across a growth resize, without a
+drag: it removes the starts and the energy gained in growth, but leaves any later swing undamped. Leaving it:
+the ecology may not care, but every film shows it. A round of its own: D079 is kept within round 59 by giving
+every world the drag, and a round for a drag alone would delay the anchoring cell for a change the anchoring
+cell needs.
+
+### D162
+**The anchoring cell is priced as attachment is in real organisms, and grips on its own at first** · 2026-10-11
+
+**Status:** the owner ruled on 2026-10-11, accepting the coordinator's recommendations on the design's four
+questions and the four pricing changes from the literature round. It settles D159's item 8 for round 59.
+
+**Decision.** The anchoring cell (`logbook/specs/anchoring-cell-design.md`) grips by itself when its part
+touches the bed or a reef, and the brain's control over it is a second step. A pull stronger than its breaking
+force breaks the grip. It grips the bed and the reefs only, never the tank's glass. Its price follows the
+literature (`logbook/specs/r59-anchor-lit/`). The grip costs energy to build, paid when it forms and scaled
+with its breaking force, in place of a cost for each second held. Its upkeep is a slow decay of its strength.
+Its breaking force grows with the cell's area, so with its volume to the power 2/3. It weakens as the body's
+reserve runs low, after a lag, and lets go at zero. The nursery's bench sets the numbers before round
+59 is pre-registered.
+
+**Why.** The measured costs of holding on, nearly all from mussels, are costs of making the attachment, with
+no running cost of holding found. A fee per second on top of the cell's standing cost would charge twice. Grip
+scales with contact area in every study that measured it, and starved mussels lose their grip after a lag.
+An automatic grip first gives a clean answer to whether holding on pays at all before a brain has to learn it.
+Grip on the glass would make a habitat out of the tank's walls.
+
+**Rejected.** A cost per second held, which nothing measured, and a breaking force by volume, which no paper
+relates to grip. The brain's control from the start, which would leave a failure ambiguous between the grip
+and the brain. A grip that holds until the body lets go, which would pin large bodies against the current.
+A grip on the glass, for the reason above.
+
+### D163
+**Narration is read by Google's TTS from now on** · 2026-10-11
+
+**Status:** the owner ruled on 2026-10-11, extending the choice of 2026-10-09 for the round 57 film to every
+film after it.
+
+**Decision.** The channel's films are narrated through Google's hosted TTS, the route `scripts/tts/google/`
+built for the round 57 film. No other voice model is set up for narration. Higgs Audio v3 is not installed.
+
+**Why.** The owner judged it much better than every model auditioned, and said its terms allow commercial use.
+Higgs needs Docker Desktop with WSL2's GPU support, a system install, and its licence is non-commercial
+except for a creator grant.
+
+**Rejected.** Higgs Audio v3, and further auditions of local models for narration.
+
+### D164
+**Grazers wait for the anchoring cell, and the nursery follows in round 59's water** · 2026-10-12
+
+**Status:** the owner ruled on the evening of 2026-10-12, choosing the third of the coordinator's three options.
+The coordinator had recommended the first.
+
+**Decision.** The path to grazers has two steps. First, round 59's anchoring cell (D162) and its drag on turning
+(D161) are built. Then the grazer control (`logbook/specs/grazer-control-spec.md`) runs again with hand-built
+grazers that grip a reef at the leaves' depth. After that, the nursery breeds a brain that seeks leaves, in the
+water round 59 will have. Two questions go to the owner before the nursery runs: its score, and whether living
+leaves should give off something a brain can sense.
+
+**Why.** The control found that a mouth kills a leaf and probably eats it, and that the only bodies to meet a
+leaf were holding still. The anchoring cell is what lets a body hold still, and it needs no rule beyond those
+ruled. A brain bred before round 59 would be bred for water that the turning drag changes. No sense finds a
+living leaf today. The scent carries carrion only. The light sense is declared in the genome, but it reads zero
+on the farm and no run's pool holds it (`CreatureSenses.cs`). Round 58 pools the light's shading over the whole
+water at each metre of depth. So the only shadows with a place are the reefs' caps, and no leaf casts one.
+
+**Rejected.** The nursery first, which would breed for a signal no sense carries, in water round 59 changes.
+The anchoring cell without the nursery after it, which would leave grazing to chance meetings.
+
+### D165
+**The anchoring cell enters by budding at a configurable weight, and a broken grip may re-form at once** · 2026-10-12
+
+**Status:** the owner ruled on the night of 2026-10-12 on the two world rules the build plan left open
+(`logbook/specs/r59-anchor-build-plan.md` on `r59-anchor`, items 1 and 2). It settles them for D162's build.
+
+**Decision.** The anchoring cell enters a world's genomes by budding only. No founder list draws it, but the
+nursery may plant hand-built anchored bodies. When its setting is on, the cell joins the world's cell-type table
+with a bud weight of its own. That weight is a setting like any other in the world, and it starts equal to every
+other type's, so the cell takes one bud in eight. A grip that breaks may form again on the next physics step,
+and it pays the full build price again.
+
+**Why.** Budding is how the buoyancy cell entered, and it leaves the founders of a world with the cell the same
+as those without it. Planting anchored bodies in the nursery tests the grip without waiting for evolution to find
+it. Equal weight follows how the table has always drawn, and a setting lets a later round change it without a
+new build. The build price is what limits re-gripping in the literature (D162), so no delay or other rule is added.
+
+**Rejected.** Anchored founders in the farm's worlds. A weight fixed in code. A delay before re-gripping, or a
+re-grip only after leaving the rock, each of which needs a number or a rule nothing measured supports.
+
+### D166
+**Grazers of both kinds are goals, and swimming grazers come first** · 2026-10-12
+
+**Status:** the owner said on the night of 2026-10-12 that both kinds should be trained, and that swimmers in the
+world are what they most want. This amends the order D164 set, and D164's anchoring build and D165 stand.
+
+**Decision.** The path to grazers has two tracks, run side by side, and the swimming track has the priority.
+On the first, sit-and-wait grazers grip a reef at the leaves' depth. The grazer control runs again with
+hand-built gripping grazers once the anchoring cell grips on the CPU, and those that live are planted into a
+world. On the second, a leaf sense is settled first. Then the nursery breeds a brain for a mouthed swimmer, in a
+tank whose only food is living leaves and in water with the drag on turning. A literature round on how aquatic grazers find algae by smell comes before the owner rules
+the leaf sense (`scratch/leaf-scent-lit/`).
+
+**Why.** The control showed two ways for a mouth to meet a drifting leaf, holding still or moving through the
+water. They are different animals, and a gripping grazer says little about how to evolve a swimming one. The
+turning drag is the anchoring build's first step, so the nursery can breed swimmers in round 59's water early.
+
+**Rejected.** Gripping grazers only as a test on the way to the nursery, which was D164's order.
+
+### D167
+**Living leaves get a smell of their own, and the swimming nursery scores energy eaten from leaves alone** · 2026-10-12
+
+**Status:** the owner ruled on the night of 2026-10-12. They accepted the coordinator's recommendation on the
+leaf sense, the third of three options, and the energy score, on condition that the tank hold nothing else to
+eat. It settles D166's two questions. The evidence is `logbook/specs/leaf-scent-lit/`.
+
+**Decision.** Living photosynthetic bodies give off a smell of their own, read by a sense of its own and kept
+apart from the carrion smell. Each leaf emits in proportion to its living lit area while it lives, and stops at
+death, when its corpse smells as carrion does. The smell spreads as a cone around its source, as carrion's does.
+Two forms of the sense are built behind settings: strength only, read by each part, and strength with a
+direction, three numbers per part in the body's own frame. The nursery runs them as two arms on the same
+swimmer body, and the owner rules which one the worlds carry. The swimming nursery scores D133's income. Its tank
+holds living leaves and nothing else to eat. There is no marine snow, no carrion at the start, and no animal but
+the swimmers, and the swimmer's body has no absorptive or photosynthetic cell. A bite kills a leaf and the mouth
+eats its corpse, so the only corpses that may feed a swimmer are leaves bitten to death in the tank. A leaf that
+dies any other way leaves no corpse there.
+
+**Why.** Grazers find algae by smell, and living algae leak a cue in proportion to their area that rotting
+removes. Animals tell living food from dead by smell, so the two are separate senses. No animal is shown
+receiving a cue's direction; it is worked out by comparing two sensors, comparing over time, or swimming against
+the current. Strength alone is the faithful sense, and the nursery can show whether it is enough before the world
+gains an easier one. A tank with one kind of food makes the income a measure of grazing.
+
+**Rejected.** The carrion smell shared by leaves, which fits the evidence worst. A sense with direction alone
+and no comparison. A plume carried by the current, a pulse when a leaf is bitten, and a nose cell, each left
+for later.
+
+### D168
+**The card's single precision keeps small movements and light contacts: a carried position, contacts in a local frame, and a bed referenced to a lattice** · 2026-10-13
+
+**Status:** the owner approved the fix on the morning of 2026-10-13. The coordinator had reported the speed
+agent's diagnosis and its first two measured fixes, with the third scoped. It amends how D157's single-precision
+card realises every seed, at round 59's boundary, as D157's third term allows. The measurements are in
+`logbook/specs/r59-pos64-plan.md` and `logbook/specs/r59-anchor-build-plan.md` on branches `r59-pos64` and
+`r59-anchor`.
+
+**Decision.** Three changes to the card's kernels in single, each switched off in double, so that the double
+kernels keep the CPU solver's arithmetic to the bit:
+1. Each body's base position carries its rounding error in a compensated sum.
+2. Contacts between parts, and with the bed, the glass and the reefs, are measured from each part's float
+   position plus its exact rounding remainder, so nearby positions are differenced before any rounding.
+3. The bed's height is taken at the nearest point of a fixed 0.25 m lattice and corrected by a small-argument
+   difference, and the glass the same way along its radius.
+
+They land on `r59-anchor` once the card shows their pace and registers in a window of its own, and round 59 is
+the first round to carry them.
+
+**Why.** On the card a step's move smaller than half a float's spacing was lost. A body slower than about
+1 mm/s at 150 m from the centre never moved. A body resting lightly on the bed or on another stalled short of
+contact, so the card counted about half the CPU's contacts. The anchoring cell grips on touching rock, and
+its touch sense reads that contact. Over 10 s of round 57's world, the first two changes bring pairs in contact
+from 6.08 a step to 12.33, against the CPU's 13.20. They bring every body to within 1 cm of the CPU's path. Bed-or-glass contacts rise from 3.14 to 4.21, against 5.92. The third change is for the rest of that gap,
+which the bed's own rounding leaves. Together they cost under 2% of the step's instructions.
+
+**Rejected.** Running the card in double, slower than the CPU (D157). Evaluating the bed in float-float
+arithmetic, four to eight times the work, and no gain over the lattice for a resting body.
+
+### D169
+**The leaf tank runs without the age rule, keeps only bitten leaves as food, and breeds two arms of 30 generations** · 2026-10-13
+
+**Status:** the owner ruled on 2026-10-13, about midday, on three of the four points the coordinator put to
+them on the swimming nursery's leaf tank, accepting each recommendation. The fourth, the score, is still open.
+These rules amend the tank D167 described.
+
+**Decision.**
+1. Inside the leaf tank the age rule is off, while the worlds keep it.
+2. In the tank, a kill by a bite leaves a corpse only when the victim carries photosynthetic tissue. Every
+   other death, and every limb bitten off a body without it, burns and leaves nothing to eat. The setting that
+   burned unbitten deaths, `UnbittenDeathsLeaveNoCorpse`, carries this wider meaning rather than a new one beside
+   it.
+3. The run is two arms of 30 generations, a population of 48 and 8 draws, side by side on two groups of 4
+   cores. One arm senses the leaves' smell as a strength, and the other as a strength with a direction. The curve is
+   read before anything more runs.
+
+**Why.** With the age rule on, a third to a half of the leaves and a fifth of the swimmers died of age in one
+1,800 s episode with births held. The tank emptied before any swimmer could show what it learned. Every
+swimmer carries a bite, so without the second rule a swimmer could feed on another and the score would not
+measure grazing. Widening the setting needs no new tunable, so nothing written before it is refused.
+
+**Rejected.** A new tunable for the bitten kill, which would refuse every earlier config and re-record the
+fixtures for no gain.
+
+### D170
+**The leaf tank scores the energy each swimmer eats from leaves bitten to death** · 2026-10-13
+
+**Status:** the owner ruled on 2026-10-13, early afternoon, choosing the coordinator's recommendation. It
+settles the score D169 left open and corrects D167, which named D133's income: income counts light and
+absorbed food and cannot see a mouth.
+
+**Decision.** A swimmer's score in the leaf tank is the energy its mouth takes from corpses, which in the tank
+are only leaf tissue bitten off or bitten to death (D169).
+
+**Why.** It rewards the whole act of grazing: finding a living leaf by its smell, biting it and eating what the
+bite frees. In the probes it ranged from 0 to 57 J across swimmers. Net energy read about -1,600 J for every
+swimmer, swamped by standing costs, and rewarded keeping still. Energy killed, eaten or not, is easier to
+climb, but a swimmer could score without ever feeding.
+
+**A reminder the owner gave with it.** A bite kills cells. The bitten part and what hangs from it are lost,
+and the body dies only when it cannot bear the loss: its root gone, or its mass under the newborn floor (the
+mouth's rules 3 and 4, `logbook/specs/mouth-spec.md`). Round 58's leaves in the tank are one-part
+bodies, so there a bite that kills a cell kills the whole leaf.
+
+**Rejected.** Net energy, and energy killed.
+
+### D171
+**The gripping-grazer control closes on its read, with neither a touching plant nor weight built** · 2026-10-13
+
+**Status:** the owner ruled on the afternoon of 2026-10-13, in the speed agent's session, after the control's
+null (`logbook/specs/grazer-grip-control-plan.md`). It pauses D166's gripping track; the swimmers go on.
+
+**Decision.** The control is not run again. Neither an assay-only plant that sets a grazer touching rock nor
+weight for a body's tissue is built. The anchoring cell stays in the code behind its settings.
+
+**Why.** No grip formed anywhere in round 57's world with round 59's pieces. Planted grazers hovered with
+their anchoring cube 0.27 m above the cap tops, weightless, and none of the world's own anchoring bodies touched
+rock. The water over a cap moves about 40 times slower than open water at the same height, so a grazer held
+there meets almost no leaves. The grazers that held still on cap tops for their whole lives starved, which
+answers the control's question without a grip.
+
+**Rejected.** Planting touching rock, which would test holding in water that brings no food. Weight in the
+tissue, or a current over the cap tops, each a world rule wider than grazing.
+
+### D172
+**A tank search stops when its smoothed eating stalls, and the exam takes every generation's top** · 2026-10-13
+
+**Status:** the owner ruled on the evening of 2026-10-13, proposing the idea and agreeing to the coordinator's
+recommended rule. It applies from the next tank runs. The two leaf arms launched under D169 finish at their
+30 generations unchanged.
+
+**Decision.** A tank search no longer runs a fixed count of generations. It reads the mean energy eaten, averaged
+over the last 5 generations, and stops when that has gained no more than 5% in 10 generations. It never stops
+before generation 20 and always stops at generation 60. The exam swims the top genome of every generation, which
+`tank-best.jsonl` already keeps, beside the last generation's elites, and the report also sets arms side by
+side at equal generations. The rule is fixed before a launch.
+
+**Why.** A fixed count spends hours on an arm that has stalled and stops one still climbing. The leaf arms' eating
+moves by 20% between neighbouring generations on noise alone, so the rule reads a smoothed curve. Evolution can
+stall and then jump when one mutation arrives, so the rule has a floor. A generation's top is often a newcomer
+with 8 episodes and a lucky draw. The best of all generations is therefore chosen by the exam on held-out seeds,
+never by its search score.
+
+**Added the same evening.** The owner ruled that every genome in the exam swims under all three of the recipe's
+brains: its own, brainless, and its own with the leaf sense knocked out. That costs about 2.3 hours an arm at today's pace for a run
+that reaches generation 60. A two-stage exam, which ranks every genome on its own brain and gives only the best
+eight the controls, was rejected.
+
+**Rejected.** Stopping on the raw best score, which noise trips. Picking the highest search score across
+generations, which picks the luckiest. Changing the running arms' plan; their saved tops are re-tested in a
+separate bench after they end, which is analysis.
+
+### D173
+**A second pair of leaf arms in a sparser tank with a longer reach, before the worlds' form is chosen** · 2026-10-13
+
+**Status:** the owner ruled on the evening of 2026-10-13, choosing the coordinator's recommendation after the
+tops' benches (`logbook/specs/nursery-leaf-read.txt` on `nursery-leaf`). It leaves D167's choice of form open
+until these arms are read.
+
+**Decision.** Both forms of the leaf smell run again as a pair of arms, as in D169. A tank holds 31 leaves in
+place of 62, and the smell's reach is doubled from 3 m to 6 m. They run under D172's stop rule and exam, overnight
+on the efficiency cores.
+
+**Why.** In the first pair the brain made nearly all the eating, and the smell added about 6% in strength and
+nothing measurable in direction. Food was not the limit: the mouths took 28 to 38% of what the killed leaves
+held, and about half the leaves lived. With 62 leaves in a 20 m tank and a 3 m reach, a swimmer that cruises
+and bites meets leaves often enough that steering by smell adds little (inference). Fewer leaves and a longer
+reach are the setting in which a nose should pay, if it ever does.
+
+**Rejected.** The strength form into round 59's worlds now, on a 6% effect. Neither form, which would never
+learn whether a nose pays in the worlds.
+
+### D174
+**Round 59 carries the direction form of the leaf smell, plants tank grazers in two of three isolated seeds, and founds fresh worlds** · 2026-10-14
+
+**Status:** the owner approved the coordinator's plan on 2026-10-14 at midday, after D173's arms were read
+(`logbook/specs/nursery-leaf-sparse-read.txt` on `nursery-d172`). It settles D167's choice of form. The reach
+is 6 m unless the check below shows that 3 m pays as well and 6 m costs the card pace.
+
+**Decision.**
+- The worlds carry the leaf smell in its direction form, at a reach of 6 m.
+- A third tank arm runs first: the direction form with 31 leaves at 3 m, under D172's rule and exam. It
+  separates the reach from the leaf count, which D173's pair changed together. The leaf field is timed on
+  the card at both reaches in a quiet window.
+- Round 59 founds fresh worlds on round 57's and 58's world settings with round 59's pieces. The drag on
+  turning is on, the anchoring cell and its grip are off (D171), and the mouth keeps its rules.
+- Three isolated seeds, with no exchange. Seed 1 is the control. Seeds 2 and 3 are planted with the
+  direction arm's best tops on held-out seeds, through the trickle pool, as round 55 was.
+- The pre-registration is drafted after the check and the timing, and the owner sees it before any launch.
+
+**Why.** The direction form is the only setting shown to pay. Knocking it out cost its tops 35% of their
+eating, about six standard errors, against 15% for strength. Round 58 showed that joined worlds spread one
+winner, so the seeds stay isolated. Round 59's new settings and checkpoint format refuse earlier
+checkpoints, so its worlds are founded fresh. The control seed asks whether grazing by smell evolves from
+the world's own founders, and the planted seeds ask whether trained grazers hold on. Round 55's planted
+lines mostly died young, so the planted seeds' predictions are modest.
+
+**Rejected.** The strength form, worth less than half as much. The direction form at 3 m without the check,
+untested where food is scarce. Planting every seed, which would leave no control.
+
+### D175
+**Fed islands are built and screened for round 60: matter arrives on D109's islands and is buried at each column's floor** · 2026-10-14
+
+**Status:** the owner approved testing it on 2026-10-14 in the afternoon, on the coordinator's proposal
+(`proposals/propose-r60-patchy-matter.md`, from a design study in `scratch/r60-patchiness/report.txt`). The
+owner had asked that round 60 concentrate the matter in a larger tank, so that life grows in micro-biomes
+and the tank is not a soup of creatures. This entry rules the build and the screens. Whether round 60
+carries the rule, its tank size, its dose and where its founders start are ruled when the screens are read.
+
+**Decision.**
+- Two builds in Core. D074's influx gains an `Islands` placement: each step's influx is deposited in the
+  top of D109's island columns, each column weighted by its stock at t = 0. D074's burial takes from each
+  column's lowest live cell rather than the grid's bottom layer. The placement is an enum value stored by
+  name, so no field is added and earlier configs and checkpoints still load; a flat grid buries as before.
+- The screens follow the proposal, 10,000 s on round 59's world with seeds 1 and 2. They are a control, the
+  fed islands at influx 1.2 units/s and burial 0.001/s, the same with D071's settling of 0.02 m/s, and the
+  same with burial 0.003/s. The best then runs at four times the area on seed 1. They are read for empty 10 m squares, the
+  crowd's share inside the islands, the desert's matter against a leaf's break-even, burial against influx,
+  the wall, the card's memory and pictures.
+
+**Why.** D109's islands were a stock with neither supply nor loss, and became soup in about 9,000 s. Round
+57's matter is a closed stock whose bed returns what sinks under every column, and its budget is about a
+hundred times the commonest leaf's break-even of 0.00025 units per cubic metre (`scripts/ledger.ps1`), so
+every part of the tank pays. The ocean's patches are a steady state of supply in a few places against loss
+everywhere. Burial on the grid's bottom layer acts almost nowhere on a sloped bed, which exists in that
+layer only under the deepest hollow.
+
+**Rejected for now.** Upwelling plumes: closest to the ocean, but new current terms on the CPU and the
+card, every config refused and several agent-days, worth it only if fed islands prove too static.
+Wandering sources: one more change, proposed for round 61.
+
+### D176
+**Round 59's open choices: plant as round 55 did, record the leaf smell's use, and the turning drag at 0.5** · 2026-10-14
+
+**Status:** the owner took the coordinator's four recommendations on 2026-10-14 in the afternoon, on the draft
+of round 59's pre-registration (`scratch/r59-prereg/draft.txt`). The owner also asked that the swimmers'
+energy problem be worked out, since by the tank's numbers a planted swimmer starves in about 500 s.
+
+**Decision.**
+- Seeds 2 and 3 are planted as D174 ruled, although the planting is predicted to fail. The ten swimmers take
+  half the trickle, as round 55's nursery set did, beside round 54's four stomachs at one founder in ten, and
+  the floor draws nothing from the pool. The smoke before launch reads the swimmers' first fates, and if all of
+  them die within minutes it comes back to the owner before launch.
+- A recorder of the leaf smell's use is built before the launch, beside the carrion smell's
+  `SteeringRecorder.cs`. It records how each body's motion lines up with the leaf smell's gradient, split by
+  whether its brain reads the smell. It is an instrument and moves no world hash. The launch moves to the
+  next morning for it.
+- The drag on turning is the spin form at 0.5, the value the planted swimmers were bred under. It brings
+  spinning bodies from 1.35 and 2.52 rad/s to 0.04 rad/s and leaves the swimmers' speeds as they were.
+
+**Why.** Planting costs no card time, since the three seeds run anyway, and the smoke shows the swimmers' fate
+before anything is spent. Without a recorder the world has no knockout, so the round could read the smell's
+use only through survivors benched in the tank, which are unlikely to exist. The drag at the bred value keeps
+the planted brains in the physics they learned in.
+
+**Rejected.** Three control seeds and no planting. A launch the same evening without the recorder. One trickle
+founder in ten for the swimmers, about 150 a seed against about 750.
+
+### D177
+**A mouth's equipment costs a third from round 59: mouth tissue at 2 W per cubic metre, and the attack and intake prices at 0.033** · 2026-10-14
+
+**Status:** the owner ruled on 2026-10-14 in the late afternoon that swimming must be made economical, by
+making the equipment a swimmer carries much cheaper, and said it can be made dearer again later. The values
+are the coordinator's, shown to the owner with the ledger's readings before the round's pre-registration.
+
+**Decision.**
+- Consumer tissue, the mouth's cell type, costs 2 W per cubic metre to keep, against 6 before. It is now
+  below a leaf's 3 and an absorptive cell's 4, and above structural tissue's 1.
+- The mouth's attack and intake strengths cost 0.033 W a unit, against 0.1 before
+  (`EVOSIM_PRICE_ATTACK`, `EVOSIM_PRICE_INTAKE`).
+- The farm gains a launch knob for the consumer cell's upkeep. The value already lives in every config's
+  cell table, so no field or format is added. The round's header prints it.
+- Round 59 carries both from its launch. The swimmers' stroke, the work cost, stays as it is.
+
+**Why.** The ledger priced a planted swimmer in round 59's world at a standing cost of 0.91 W: 0.62 W for its
+box of consumer tissue, 0.29 W for its mouth and claw at their caps, and 0.02 W for its fin. Its stroke costs
+another 0.16 to 0.28 W in the leaf tank, where it ate 0.17 to 0.24 W. The stroke is a fifth of the bill and
+the equipment the rest, so a cheaper stroke could not close the gap. At a third of both prices the same
+swimmer stands at 0.30 W, and one with its box halved on each side at 0.05 W
+(`scratch/swim-cost/`). Every mouth in the world pays the new prices, not the planted swimmers alone, so the
+world's own eaters, and any grazing that evolves among them, are cheaper too.
+
+**Rejected.** A cheaper stroke alone, worth about 0.1 W against a gap of 0.7 W. A smaller swimmer's body bred in
+the nursery first: still worth doing, but it leaves the world's own mouths as dear as before.
+
+### D178
+**The nursery evolves bodies as well as brains, scored on net energy; round 59's mouth price is chosen by two smokes** · 2026-10-14
+
+**Status:** the owner took the coordinator's recommendations on 2026-10-14 in the early evening, and asked that
+whatever can start now does start, preferring action to inaction. It amends D133, which held the nursery's
+bodies fixed. D002, which co-evolves morphology and control in the world, is unchanged.
+
+**Decision.**
+- The nursery gains a setting that lets a recipe's search mutate bodies with the world's own mutation
+  operators, alongside brains. Bodies held fixed stays the default, so every recipe on file means what it
+  meant.
+- A recipe that evolves bodies scores a genome by the energy it nets: what it eats, less its standing cost
+  and its stroke's work. An income score would reward ever larger mouths once bodies can change.
+- Before round 59 launches, two smokes on its world, each founded to 4,500 s, compare D177's third of the old
+  mouth prices with a sixth. Each is read for the planted swimmers' survival past 500 s, their eating and
+  breeding, and the leaves' standing. The round launches at the cheaper price only if the swimmers live
+  where the third does not and the leaves hold. If neither helps, the swimmer's body is the lever, and the
+  nursery above is the way to it.
+
+**Why.** The planted swimmer's cost is its fixed body, a box of mouth tissue that the nursery could not
+change because D133 held it fixed. Selection on bodies and brains together can find a small, cheap swimmer by
+itself. D002 records the known risk: a body mutation can invalidate a brain tuned to the old body, so the
+search can converge early. D172's stop rule and exam show whether it does.
+
+**Rejected.** A sixth of the price now, without a smoke. The body search scored on income.
+
+### D179
+**The nursery's body search scores the energy return, not net energy (amends D178)** · 2026-10-14
+
+**Status:** the owner took the coordinator's recommendation on 2026-10-14 in the evening, after the first arm
+of D178 (`leaf-direction-bodies`, `nursery-d178` `900e5267`) bred bodies that neither swim nor eat.
+
+**Decision.** A recipe that evolves bodies scores a genome by its energy return: what it eats over what it
+spends on upkeep, its stroke's work and handling, with a dead body's upkeep charged to the episode's end
+(`EnergyReturn`, `nursery-d178` `c70c324c`). An idle body scores 0 and a body that breaks even scores 1. The
+stop reads eaten, so a body that wins the ratio on a crumb of food shows at once, and eaten prints beside the
+score every generation.
+
+**Why.** At D177's prices in D173's sparse tank, a stroke cost more than the eating it bought: the ten planted
+tops ate about 200 J an episode against about 450 J of work and 560 J of upkeep. Net energy then cannot rise
+above zero, and its best is to lose least. Over 19 generations the arm shrank its bodies, its stroke fell to
+nothing and its eating from 197 J to about 8 J. A return ranks bodies as the world's growth does: a founder's
+purse and its breeding gate scale with its standing cost, so a line breeds sooner the higher its return,
+whatever its size.
+
+**Rejected.** Net energy with a floor on eating, whose floor nobody has measured. A richer tank under net
+energy, which brings the collapse back wherever eating does not quite pay; the tank's leaf count is read
+again once round 59's smokes measure the world's.
+
+### D180
+**Fresh seeds every round, and every arm of a round on the same seeds** · 2026-10-14
+
+**Status:** the owner agreed on 2026-10-14 in the evening, after noticing that seed 2 tends to lead its
+round. It holds from round 60's pre-registration onward. Screens and smokes that are not a round are free to
+keep their own seeds.
+
+**Decision.**
+- A round's seeds are new, fixed by a rule in its pre-registration before launch: round 60 runs 6001, 6002
+  and 6003, and so on. No seed is chosen after its start has been seen, and none is carried over from an
+  earlier round.
+- Every arm of a round, the control included, runs on the same seeds, so that an arm differs from the
+  control only in what the round changes.
+
+**Why.** A seed fixes the founders: rounds 57 and 59 founded seed for seed the same first bodies, to the last
+digit. Seeds 1 to 3 have therefore been the same three founding casts in every round, and a lucky cast leads
+whatever the world. In round 59 the control (seed 1) and the planted arm (seeds 2 and 3) differ in both the
+treatment and the cast. Seeds 2 and 3, under the same treatment, already differ by half again in population.
+A seed carried forward would let a round be compared with the last on one cast. A round's own control on its
+own seeds makes that comparison unnecessary, and the carried seed would keep one cast in every round.
+
+**Rejected.** Seeds 1 to 3 in every round. One anchor seed carried forward beside two new ones.
+
+### D181
+**Round 60's large tank is screened once more with its dose scaled to its area; founders start in the islands** · 2026-10-15
+
+**Status:** the owner took the coordinator's recommendations on the morning of 2026-10-15, after D175's
+screens were read (`scratch/r60s-read/summary.md`). It answers the proposal's question 4 and opens question 3
+for one screen beyond the screened range. Questions 2 and 3 for round 60 itself are ruled on this screen.
+
+**Decision.**
+- One more screen, `r60s-big2`, runs on seed 1 at four times the area. It uses D175's winner: fed islands,
+  burial 0.001/s and settling 0.02 m/s. The influx and the starting matter are scaled with the area, to
+  4.8 units/s and 60,000 units. It is read on D175's measures.
+- Round 60's founders start in the islands, as round 45's did.
+
+**Why.** In the screens at round 57's area, only the faster settling made the tank patchy, on both seeds. At
+four times the area with the same influx and budget, the world was the patchiest yet. The desert reached a
+leaf's break-even for the first time. But the crowd fell from 1,332 to 381, almost all leaves, and the matter
+from 15,000 to 5,000 units, still falling. The budget and influx were set for a quarter of the water. Every
+oasis in the large tank lay against the glass, which the theatre is to look at before round 60 is designed.
+
+**Rejected.** Round 60 at round 57's area, which is proven patchy but not the larger tank the owner asked for.
+Round 60 at four times the area on the screened dose, whose crowd collapses.
+
+### D182
+**The nursery stops shrinking bodies and asks whether smell pays in a patchy tank** · 2026-10-15
+
+**Status:** the owner took the coordinator's recommendation on the morning of 2026-10-15. It follows D178
+and D179, whose body search has run on two recipe seeds (registry 16 and 17).
+
+**Decision.** The nursery's next recipe uses a tank laid out like round 60's fed islands: food in patches
+with bare water between. It keeps the energy return and may still evolve bodies. Its layout is a world rule
+of the nursery's tank, so it is shown to the owner before it runs. Each arm has one repeat on a second
+recipe seed.
+
+**Why.** On both seeds and on held-out episodes, the energy return bred cheap foragers. Their stroke is about
+a tenth of the seeds'. They still follow the leaves' smell (the knockout cuts their eating by a third to a
+half), and they sit about at break-even. They eat 84-94 J an episode against the seeds' 409 J, so they are not
+the seeds' strong eaters at lower cost. Round 59 meanwhile showed the planted seeds thriving in the world at
+D177's prices, so the world no longer needs a cheaper swimmer. Round 59 also showed that grazers which read
+the smell head to leaves no more than others, in a world where leaves are everywhere (D3).
+
+**Rejected.** Planting the cheap foragers in a round, and pausing the body search.
+
+### D183
+**`-HeatStop` stops on two samples in a row at or over 90 °C, not on one** · 2026-10-15
+
+**Status:** the owner took the coordinator's recommendation on the morning of 2026-10-15. It amends the card
+launchers' guard after three stops on the night of 2026-10-14
+(`logbook/specs/machine-and-tools.md`, "Twelve busy efficiency cores").
+
+**Decision.** `card-run.ps1` and `card-group.ps1` stop a card run when two CPU samples in a row read 90 °C or
+more on the hottest core. A single sample no longer does. Nothing else in the guard changes. The heat watch,
+the chip's own protection at 100 °C and the rule that nothing starts on the fast cores beside a card group
+stay as they are.
+
+**Why.** Each of the night's three stops came seconds after a short job began on two fast cores. A card group
+alone on eight efficiency cores peaked at 87 °C. A 2-thread job on the fast cores alone reached 93 °C, with 30
+seconds at 90 °C or more. The CPU read 78 °C three seconds after one stop. They are a boosting core's hot
+spots, and the package stays far from its limit. A stop costs a resume, and until round 60's build a card resume was not the
+unbroken run. Two samples still stop a real climb within seconds.
+
+**Rejected.** The single-sample guard with every neighbour held. The package's temperature in place of the
+hottest core.
+
+### D184
+**The nursery's patchy tank: three equal patches on a turning ring, 3,400 m²** · 2026-10-15
+
+**Status:** the owner took the coordinator's recommendations on the morning of 2026-10-15, on the layout the
+room builder drew under D182.
+
+**Decision.** The patchy tank is 3,400 m² (radius 32.9 m), against D173's 400 m². D173's 31 leaves are drawn as
+there and dealt largest first, round-robin, into three discs of radius 6 m. The patches hold 11, 10 and 10
+leaves, each a like mix of sizes. The discs' centres sit on a ring of radius 21 m, 120° apart, and each
+episode turns the ring by an angle from its own leaf stream. The tank's eight bodies start anywhere in it, as
+now. Depth, the smell's form and 6 m reach, prices, the energy return, the body search, the stop on eaten,
+the 1,800 s episode and the exam are unchanged. The setting is optional and absent by default, so every older
+recipe keeps its hash. A two-episode bench times the tank before an arm runs.
+
+**Why.** The patches are 36.4 m apart, with 24.4 m of bare water between neighbours. About 60% of the tank is
+beyond the smell, so the smell carries the difference between patch and desert. Inside a patch the leaves sit
+at about D173's density (1.2 times), so what changes is mainly the bare water. The total food is unchanged, so
+eaten and the return compare directly with the 400 m² tank. Each patch's edge is 5.9 m from the glass, one
+smell reach, so the glass does not fence a patch as it did round 60's oases. Equal patches keep a patch's size
+from adding a second variable. A fixed ring keeps the distances the same in every episode, so the layout adds
+no noise. Starting anywhere keeps today's rule, and asks both whether a forager stays in a patch and whether it
+finds one it cannot smell.
+
+**Rejected.** Unequal patches like round 60's islands. Centres drawn at random with a minimum spacing. Bodies
+started only in bare water. Patches several smell reaches wide, as round 60's islands are.
+
+### D185
+**Round 60's islands keep 30 m off the glass, and two more large-tank screens set the dose** · 2026-10-15
+
+**Status:** the owner took the coordinator's recommendations on the morning of 2026-10-15, after `r60s-big2`
+was read (`scratch/r60s-read/summary.md`). The owner had said that they did not want the patches against the
+glass. It amends D109's island placement for round 60 and follows D181.
+
+**Decision.**
+- No island column lies within 30 m of the glass, about one island's radius. The noise map, the wavelength
+  and the cover are unchanged otherwise, so each seed keeps its own irregular layout. Founders start in the
+  islands (D181), so they start off the glass too.
+- Two screens follow on seed 1 at four times the area, one after the other on the card, both with the margin.
+  One has the scaled dose (4.8 units/s, 60,000 units) and the other half of it (2.4 units/s, 30,000 units). They are read on
+  D175's measures. Round 60's dose is ruled on them.
+
+**Why.** D109's islands are drawn from a noise map that knows nothing of the glass, so an island may lie
+against it by the seed's chance. `r60s-big` and `r60s-big2` shared one map, and in both the oases lay at the
+glass. At the scaled dose the crowd lived, 6,617 at 10,000 s against 381, and the stock levelled at about
+29,000 units. But the water between the islands held about four times a leaf's break-even, and the crowd's
+share on the islands fell from 0.70 to 0.42. The half dose asks whether a crowd lives when the desert is
+hungry.
+
+**Rejected.** Islands placed by hand in a fixed pattern, which gives every seed the same geography. Leaving
+the placement until the current is measured. A screen at the scaled dose alone, which leaves the fed desert
+unanswered.
+
+### D186
+**One more large-tank screen at a middle dose, and the scaled dose run on to 20,000 s, before round 60's dose is ruled** · 2026-10-15
+
+**Status:** the owner took the coordinator's recommendation on 2026-10-15 at midday, after `r60s-big3` and
+`r60s-big3h` were read (`scratch/r60s-read/summary.md`), and follows D185.
+
+**Decision.**
+- `r60s-big3m` runs on seed 1 at four times the area, with D185's margin and D181's founders. Its dose is the
+  middle one: 3.6 units/s, and 45,000 units to start. It runs 10,000 s and is read on D175's measures.
+- `r60s-big3` is resumed from its 10,000 s checkpoint and run to 20,000 s, and read the same way at 15,000 and
+  20,000 s.
+- Round 60's dose is then ruled among the three screened doses.
+
+**Why.** At the scaled dose of 4.8 units/s, 3,228 bodies lived at 10,000 s. The crowd's share on the islands held
+near 0.54, and the water between the islands held about six times a leaf's break-even. At half of it, 611 lived,
+0.69 sat on the islands, and the water held about three times the break-even. Neither met both the crowd's bar
+of 1,000 and the footprint's of 0.6. A middle dose may meet both. A round runs 48,000 s, and no screen has yet
+run past 10,000 s, so the continuation asks whether the scaled dose stays clustered. Round 59's entry and merge
+come first, so the screens cost round 60 no time.
+
+**Rejected for now.** Ruling the scaled dose or the half dose on the two screens alone.
+
+### D187
+**The middle dose is run on to 20,000 s before round 60's dose is confirmed** · 2026-10-15
+
+**Status:** the owner took the coordinator's recommendation on 2026-10-15 in the afternoon, after D186's
+screens were read (`scratch/r60s-read/summary.md`).
+
+**Decision.** `r60s-big3m` is resumed from its 10,000 s checkpoint and run to 20,000 s, and read on D175's
+measures at 15,000 and 20,000 s. If its patches hold, round 60 takes the middle dose: 3.6 units/s, and 45,000
+units to start. If they dissolve, the dose goes back to the owner.
+
+**Why.** At 10,000 s the middle dose was the first screen to meet both the crowd's bar and the footprint's.
+It kept 1,827 alive, 0.59 of the 10 m squares empty, 0.62 of the crowd on the islands and a level stock near
+15,100 units. Its open water held about five times a leaf's break-even. The scaled dose looked much the same at
+10,000 s, and by 20,000 s its crowd had grown to 11,690. By then 0.24 of the squares were empty and 0.40 of the
+crowd sat on the islands, and a band of bodies lined the north-east glass, where no island lies. A round runs
+48,000 s. A card resume on this build reproduces the unbroken run (`logbook/specs/machine-and-tools.md`), so the
+continuation is the same world.
+
+**Rejected.** Ruling the middle dose before its longer run. The half dose, whose crowd of about 600 may die
+out over a round. The scaled dose, whose patches dissolve by 20,000 s.
+
+### D188
+**The half dose is run on to 20,000 s before round 60's dose is ruled** · 2026-10-15
+
+**Status:** the owner took the coordinator's recommendation on the evening of 2026-10-15, after `r60s-big3mc`
+was read (`scratch/r60s-read/summary.md`). It follows D187, whose condition the middle dose missed.
+
+**Decision.** `r60s-big3h` is resumed from its 10,000 s checkpoint and run to 20,000 s, and read on D175's
+measures at 15,000 and 20,000 s. Round 60's dose is then ruled on the three doses run that far.
+
+**Why.** The middle dose's patches thinned by 20,000 s: 4,716 alive, 0.41 of the 10 m squares empty, 0.49 of
+the crowd on the islands against the bar of 0.6, the stock rising again, and a band of bodies at the north-east
+glass. The scaled dose did the same, faster. The half dose was the patchiest at 10,000 s, with 0.79 of the
+squares empty and 0.69 on the islands, but its crowd of 611 was under the bar of 1,000 and growing. Its run on
+says whether it reaches the crowd's bar with its patches whole, spreads out like the others, or stays thin. An
+hour of the card answers it in the same world.
+
+**Rejected for now.** Taking the middle dose with patches for about a third of the round. A new screen at a
+dose between the half and the middle, which costs a new founding and about 2.5 hours of the card. A world rule
+that limits the crowd between the islands, to be raised only if the half dose spreads out too.
+
+### D189
+**Round 60's dose and pre-registration are delegated to the coordinator for a launch on the night of 2026-10-15** · 2026-10-15
+
+**Status:** the owner ruled on the night of 2026-10-15 that the coordinator approves round 60's
+pre-registration in their place and launches the round that night. The owner asked that a way be found to run.
+
+**Decision.**
+- The dose is chosen by a rule fixed before `r60s-big3hc` was read. The half dose (2.4 units/s, 30,000 units) is
+  taken if its crowd at 20,000 s numbers at least 1,000 or is still growing since 10,000 s. Otherwise the middle
+  dose (3.6 units/s, 45,000 units) is taken. The middle dose is also taken if the run cannot be read.
+- The design is the draft's: one arm, the fed islands, on seeds 6001 to 6003, with nothing planted.
+- The round launches from main if a short card run there reproduces the screens' world row for row. Otherwise it
+  launches from `r60-fed`, the screens' own build. A missing reader does not hold the launch, and is built during the round.
+- A world that runs hot is run with fewer threads or one seed at a time. A seed that fails its founding check is
+  recorded as failed and not replaced (D180), and the others run. Only a sign of trouble in the hardware leaves the
+  card idle until the owner is back.
+- Nothing is pushed.
+
+### D190
+**The open water is screened as a desert before round 60 launches: faster burial outside the islands** · 2026-10-15
+
+**Status:** the owner took the coordinator's recommendation on the night of 2026-10-15. It replaces D189's launch
+that night. D189's dose rule still reads `r60s-big3hc`.
+
+**Decision.**
+- A new tunable buries the matter of columns outside the islands' footprint at its own rate, apart from D175's
+  burial on the islands. It is built and tested that night, with Core's full suite before its commit.
+- Two screens run on the card that night, seed 1, four times the area, the middle dose, and everything else as
+  `r60s-big3m`. Their desert burial is 0.005/s and 0.02/s, five and twenty times the islands' 0.001/s. They are
+  read at 10,000 and 20,000 s on D175's measures, against `r60s-big3m` and `r60s-big3mc`.
+- The owner rules the rate in the morning, and round 60 launches with it. The pre-registration is shown to the
+  owner before launch.
+
+**Why.** In every screen at four times the area the crowd outgrew its islands by 20,000 s. The water between the
+islands held three to six times a leaf's break-even, so leaves lived there and the crowd spread. In the ocean the
+surface away from a source is held far below what a plant needs, because what drifts off sinks out of the light.
+A round on the present rules would most likely show the patches dissolving, which the screens already suggest.
+The card's night spent on the fix brings it into a round about twelve hours sooner.
+
+**Rejected for now.** Round 60 on the present rules that night, with the desert left for round 61. Matter shed in
+the open water sent straight to the deep, a second form of the same idea. Moving islands, proposed for round 61.
+
+### D191
+**The coordinator rules the desert's rate on the night's screens and launches round 60 that night** · 2026-10-15
+
+**Status:** the owner delegated the ruling on the night of 2026-10-15 and asked why the round
+should wait for the morning. It amends D190's last clause. The aim, as D175 records it, is a larger tank
+where life grows in separate micro-biomes and not a soup of creatures. The owner added that night that
+swimmers should migrate between them, and graze or hunt, so that the tank evolves the way a real ocean does.
+
+**Decision.** A desert screen holds where, at 20,000 s, at least 1,000 live, at least 0.6 of them are on the
+islands and at least 0.3 of the 10 m squares are empty.
+- If both screens hold, round 60 takes the gentler rate, 0.005/s.
+- If one holds, it takes that one.
+- If neither holds but at least one keeps 1,000 alive, it takes the one with more of its crowd on the islands.
+- If neither keeps 1,000 alive, round 60 runs on the present rules at D189's dose.
+
+The round runs at the middle dose wherever it takes a desert rate, as the screens did. The pre-registration is
+filled and committed, the founding check runs, and the round launches as soon as they pass, under D189's terms.
+
+*Amended by the coordinator at about 22:50 on 2026-10-15, after `r60s-big3hc` and before either desert screen ran.* The
+half dose on the present rules held its crowd and nearly held its patches at 20,000 s: 1,719 alive, 0.64 of the
+squares empty and 0.59 on the islands. D189's rule therefore picks the half dose. Where D191 falls back on a desert
+screen that does not hold, the half dose on the present rules now stands as a third candidate, and the round takes
+whichever of them has the most of its crowd on the islands at 20,000 s, with at least 1,000 alive.
+
+### D192
+**Round 61 plants the nursery's grazers on one fixed map, beside a control on the same seeds** · 2026-10-16
+
+**Status:** the owner approved the coordinator's design on the morning of 2026-10-16, after round 60's seeds 6001
+and 6002 were read (`scratch/r60-read/s6001-s6002.txt`).
+
+**Decision.**
+- Round 61 keeps round 60's world (the dose, the desert's burial, the founders in the islands) and adds no world
+  rule.
+- The nursery's ten best leaf swimmers (`inocula/r59-direction-tops/`) are planted through the trickle, as in
+  round 59. With founders placed by the matter, they land on the islands.
+- A new setting draws the island map from its own seed, apart from the seed that draws the life. Every world of
+  the round shares one map, chosen by its geometry alone before any life runs, with about five or six islands
+  clear of the glass.
+- Two arms, planted and unplanted, on the same two life seeds (D180): four worlds, run as one card group if they
+  fit.
+
+**Why.** In round 60 the open water was starved as built, but leaves live at break-even and drift, and the crowds
+spread off the islands in both seeds read so far. Nothing ate them down: grazers evolved in one seed only, late,
+and nearly died out, and one line took each tank. The seeds also differed most in their maps (eight islands,
+three, one large), so geography and contingency could not be told apart. Planted grazers supply the missing
+animal and make the smell's question readable. The fixed map removes the geography's spread, and the control on
+the same seeds measures what the grazers do. The effects sought are large, so two pairs answer them in one night.
+
+**Rejected for now.** Three pairs, which take about twice the card time. A planted arm with no control. New world
+rules (a death risk that rises with a line's crowding, harsher winters, staying power for the crossing, strands
+between islands), held until round 61 shows what the grazers do alone.
+
+*Clarified by the coordinator on 2026-10-16, while the setting was built.* The world seed also draws the bed's shape,
+the reefs' placement and the current field. The new setting therefore draws the whole landscape, the islands, the
+bed, the reefs and the current, so that one fixed map means one geography. The life seed keeps the founders, the
+trickle, conception and deaths.
+
+*Amended on the owner's word, 2026-10-16.* The setting is one field of named seed overrides rather than one per
+category, so later splits add a name and not another format change. Round 61 sets only the landscape. A later
+round may hold the founders fixed and vary the dice of evolution alone, a replay of the tape, as its own question.
+
+### D193
+**The card's contact candidate cap is raised before round 61** · 2026-10-16
+
+**Status:** the owner consented on 2026-10-16, after round 60's card check failed on seeds 6002 and 6003.
+
+**Decision.** The card's broad phase keeps at most 256 contact candidates for each body in a step (`CandCap` in
+`src/Evosim.Farm.Gpu/gpu-kernel.template`). A body in a clump with more neighbours keeps the first 256, may pass
+into the rest, and counts one overflow. Round 60's seeds 6002 and 6003 counted 6,257,897 and 19,008 such
+body-steps, at crowds of 16,000 to 18,000. The cap is raised, to 512 or 1,024 as the card's memory allows, and
+sized by measurement before round 61 launches.
+
+**Why.** Round 61 compares planted grazers with an unplanted control. If the grazers thin the leaf mats, the
+controls stay denser and drop more contacts, so the flaw would fall unevenly on the comparison the round makes.
+Below the cap nothing changes, so a run that never reached 256 candidates gives the same result on the new build.
+
+**Rejected.** Keeping the cap and qualifying the results, which leaves B2 failing and a bias of unknown size in
+round 61. A lower dose to keep the crowds small, which is a change of world and moves away from the ocean D191 aims at.
+
+**The test.** The first span of `r60-s6002` that dropped candidates, rerun at the new cap: no overflow, the same rows
+as the 256 run up to its first drop, and its pace and the card's memory read against the 256 run.
+
+*Amended by the coordinator on 2026-10-16, under the same consent.* Past the cap, which candidates were kept was a
+race: the grid's buckets are filled by atomic insertion and only sorted afterwards, so seed 6002 resumed at 46,500 s
+differed from the round from its first second, while its spans with no overflow matched. A higher cap alone does not
+restore replay. The fix therefore also keeps the lowest distinct candidates by binary insertion, so an overflow gives
+the same result on every run; it is still counted, now only when a distinct candidate falls out.
+
+### D194
+**Branching coral on the oases replaces the mushroom reefs, for round 62** · 2026-10-16
+
+**Status:** the owner asked for reefs more complex and more like coral than the mushrooms, with more surface for
+life, living in the oases, and with a design that weighs the world's needs against the machine's cost. On
+2026-10-16 the owner accepted the coordinator's proposal and its six recommendations. The survey behind it is
+`logbook/specs/coral-survey.txt`.
+
+**Decision.**
+- Every reef becomes branching coral: trees of capsules and plates rooted on the bed. At least 80% of the coral
+  grows from island columns, and the rest stands in the desert as stepping stones between oases.
+- The coral roofs 20% of each island, as a dial.
+- The water under coral is partly lit, from a precomputed map of the canopy seen from above. Today's caps let no
+  light through.
+- The coral's fade on the current has a floor, so water keeps moving through a thicket (D171).
+- The island test stays as it is, so rounds 60 and 61 keep their worlds.
+- The anchoring cell is a later question, after the coral round.
+
+**How it is built.** The cost is held to about one to two times today's reef work by the following, with the
+costs estimated and not yet measured.
+- A static grid over the coral's pieces, kept apart from the bodies' contact grid and listed in index order.
+- A bounding volume per colony.
+- One smooth hull per colony for the current's fade.
+- The canopy map for the light and for where corpses come to rest.
+- No arctangent and no second derivative where contact does not need one.
+- Caps on pieces per colony and on canopy share per island, refused at launch.
+
+The theatre keeps the mushroom drawing to replay older runs. Before the build, the reefs' share of a step is
+measured on a checkpoint, and the card computes the current's fade once per link rather than twice. Both are engine
+work between rounds. A screen on one seed reads the cost, the water's speed inside a colony, where bodies gather,
+and pictures against the last agreed look, before round 62's pre-registration.
+
+**Why.** In a real ocean the reef is the oasis (D191). The mushrooms were built for shade (D118), stand where chance
+puts them, about a tenth of them over an island (inference), and gave life little to use. In round 47 fewer bodies
+lived under them, and in the grazer test the only killers sat still on a cap. Branches give surface, perches at
+several lit depths, refuges by size and contact from the side.
+
+**Rejected.** More lobes on today's caps, which is cheap but still a mushroom. A precomputed distance field for the
+whole reef, which needs either tricubic sampling or a second shape for the water. Coral with the anchoring cell in
+the same round, which would make two changes in one round. Tiered clusters of small tables are the fallback if the
+measurement shows the card cannot carry branches.
+
+### D195
+**Round 61's third pair and its run past 48,000 s, set before the round is read** · 2026-10-16
+
+**Status:** ruled by the owner on the evening of 2026-10-16, while round 61 ran and before any of its rows were
+read.
+
+**Decision.**
+- *A third pair.* For each of P3, P4 and P5 (logbook/0144), each pair is binned at 48,000 s, planted against its
+  control on the same seed. P3, living leaves planted over control: planted ahead below 0.9, no effect from 0.9 to
+  1.1, planted behind above 1.1. P4, empty 10 m squares, and P5, the share on the islands, planted minus control:
+  ahead at +0.05 or more, no effect between -0.05 and +0.05, behind at -0.05 or less. The pairs agree on an effect
+  when both land in the same bin. If they disagree on any of the three, a third pair (life seed 6103, planted and
+  control, landscape 1, the same settings) runs to 48,000 s before anything else.
+- *More time.* Every pair whose planted world still has living grazers at 48,000 s runs on from its checkpoint to
+  72,000 s, its control with it. At 72,000 s the worlds stop, and whether they run further is discussed with the
+  owner before the round is called finished.
+
+**Why.** On one map the life seed alone made a three- to fourfold difference in the living at about 15,000 s, while
+planted and control on one seed differed by about a fifth, so only a paired comparison can show the planting,
+and two pairs show its direction but not its size. The bins' middle keeps two small differences of opposite sign
+from counting as disagreement. Their width is half the predictions' bars; a nudged copy of a round 56 world ended
+within about 1% of the original in the living (measured), but patchiness between copies is unmeasured. Evolution in
+these worlds has come in long lulls and sudden jumps (rounds 58 to 60), so a world that looks settled may be in a
+lull, and the extension is a fixed budget rather than a test of change.
+
+**Rejected.** Extending only worlds still changing over their last year, which would stop a world in a lull. A
+fixed two-year extension, which was a round number.
+
+### D196
+**The kelp blades: a self-scale that does not compound, and the drag limiter on at every step** · 2026-10-18
+
+**Status:** ruled by the owner on the morning of 2026-10-18, after round 61's third pair was stopped twice by its
+blades. It lands with round 62 and changes its realisation. Round 61 runs to its end as it is.
+
+**Decision.**
+- *The self-scale does not compound.* A module added in growth or in life takes its scale from the genome's
+  edge once, not again from every copy before it. How that is applied is set in round 62's build spec, shown to the
+  owner before the pre-registration.
+- *The drag limiter engages at every step.* Today it engages only above a 0.0100001 s step, so the 0.01 s rounds
+  have never used it.
+
+**Why.** One photosynthetic family grows by a recursive edge whose scale about doubles a part's length per copy
+while its thickness sits at the 0.02 m floor. In round 61's `r61-p6103` its blades reached 10-50 m. Contact treats a
+part as the sphere of its half-diagonal (D114), so each blade loaded the card's contact grid as a ball of its
+length: the world was stopped by the pace guard at 49,610 s and at 55,140 s, and two engine limits were raised to
+carry it (`logbook/specs/r61-engine-fixes.md`). The same blades diverged 20-27 times per 1,000 s: the drag is
+stepped explicitly, a spin past a length-dependent threshold squares itself each step, and nothing caught it
+(`logbook/specs/r61-kelp-divergence.txt`). Engine limits only follow the blades; round 62's coral would stand where
+they grew.
+
+**Rejected.** A cap on a part's length or aspect, which cuts every long body rather than the compounding. An
+implicit drag for long, fast bodies, held as a question: the owner asked whether a different drag calculation could
+be faster without losing anything important, to be measured. Leaving it, which keeps the blades as an unphysical
+death that falls on the longest bodies.
+
+### D197
+**The pace guard keeps its threshold; overflow and divergence never stop a run** · 2026-10-18
+
+**Status:** ruled by the owner on the morning of 2026-10-18. It absorbs `proposals/propose-farm-pace-guard.md`,
+built into the merged build on 2026-10-17 and described in `logbook/specs/r61-engine-fixes.md`.
+
+**Decision.** The farm stops a world at a checkpoint when its pace over the last 10 minutes of wall falls under
+half its pace over the 60 minutes before, each window holding at least two rows, after 10 minutes' warm-up, with
+the card probe on for a row first, and writes the reason in full. Contact overflow and divergence are counted and
+reported, and never stop a run.
+
+**Why.** On 2026-10-18 the guard stopped `r61-p6103x` and `r61-p6103x2` with reasons that named their causes, and
+each was fixed and resumed within hours. One of the two was a 20-second burst, which the window rule reads as a
+slowdown; a stop at a checkpoint costs a resume and loses nothing. Overflow and divergence in these worlds are
+properties of the world's bodies, already counted, and a run replays exactly, so stopping on them buys nothing.
+
+### D198
+**Round 62's order: the grazers' dials first, the card shared by cores, the driver in the gap** · 2026-10-18
+
+**Status:** ruled by the owner on the morning of 2026-10-18.
+
+**Decision.**
+- The grazers' dial search runs before round 62's coral, on cousins resumed from round 61's planted worlds.
+- Round 62's screens try one card group with a separate block of cores for each world, under the heat watch.
+- The card driver update goes in after round 61's last world ends and before round 62, with a recorded span
+  replayed against its digest on the new driver.
+- The canopy's transmission and the fade's floor (D194) start at 0.3 and 0.25 and are set after the screen.
+
+**Why.** Coral on an economy where grazers cannot make a living would carry round 61's problem into round 62. A
+world alone on the card ran at 1.6-1.7 times real time, and four on one 8-core mask at 0.7-1.1 each, the largest
+crowd least.
+
+### D199
+**D196 made precise: growth stops compounding, the limiter is fixed before it is switched on** · 2026-10-18
+
+**Status:** ruled by the owner on 2026-10-18, after the build note `logbook/specs/r62-blades.md`. It refines D196
+and lands with round 62.
+
+**Decision.**
+- *Growth does not compound; shrinking does.* Along any path from the root, an axis a copy's scale lengthens is
+  lengthened once and kept there by later copies, and an axis it shortens keeps shortening to the floors. Bodies keep
+  their tapering tails, and no chain grows a part longer copy by copy.
+- *The drag limiter is fixed first.* The limiter as built caps each welded part's torque by that part's own inertia,
+  and along the spin axis only, and in a test it made long rigid blades run away at lower spins than with no limiter.
+  It is rebuilt to cap by the whole welded body's mass and inertia on every axis, measured on the same blades, and only
+  then engaged at every step.
+- *Implicit or split drag is a later study,* measured with the 0.02 s step (D069), where its speed would come from.
+- *The grazers' dial cousins run under round 61's rules*, from checkpoints where the plants are plentiful and before a
+  world's giant blades drift in, so a change in the grazers comes from the dials alone.
+
+**Why.** A census of 7,345 bodies in `r61-p6103x2` found 4,077 with a repeating edge, most of them lengthening one
+axis and shortening another. Stopping only growth ends the runaway that loaded the card and kept the tapering seen
+in real swimmers. The limiter tests are in `logbook/specs/r62-blades/`. An implicit drag changes every swimmer's
+thrust, so it waits for a measurement of its own.
+
+**Rejected.** A scale applied once on every path, which would end tapering in about 4,000 bodies. The same for
+self-edges only, which leaves cycles through several nodes compounding. Switching the limiter on as built.
+
+### D200
+**The rebuilt drag limiter caps the force per link and the torque by the welded body** · 2026-10-18
+
+**Status:** ruled by the owner on 2026-10-18, who took the coordinator's recommendation. It refines D199's second
+point and lands with round 62.
+
+**Decision.** The limiter D199 asks for caps each part's drag force by that part's own mass and speed, as the
+limiter has always done. It caps the torque by the whole welded body's inertia on its principal axes. It is a value
+of the `DragLimitByWeldedBody` switch on branch `r62-blades`, with tests, and the card's kernel mirrors it before a
+card round uses it.
+
+**Why.** As D199 worded it, the limiter capped the force by the whole body's mass and the centre's velocity. Built
+that way, it held long rigid blades far better than before. But at the 0.02 s step every short blade ran away from
+100 rad/s about its long axis within a few steps. A step-by-step trace showed why. The cap stopped the roll in one
+step and flung the nearly still centre of mass to 182 m/s. The parts' drag forces summed to a net force that was not
+set against the centre's velocity, so the cap let it through. When a body turns fast, its centre is the wrong velocity
+to cap a force against, while its inertia is the right one for the torque. With the force per link and the torque
+welded, 5 of 8 reading-three blades held to 100 rad/s at 0.02 s, against none as built. Every body did as well as
+built or better, at both steps. The tables and traces are `limiter-r62-*.txt`, `limiter-r62p-*.txt` and
+`limtrace-r62-*.txt` in `logbook/specs/r62-blades/`. With every switch off, round 61 replays bit for bit under
+either law.
+**Rejected.** The force by the whole body's mass and centre velocity, as first built, for the flinging above. The
+force by the whole body against each part's own velocity, which needs a rule for sharing the cap among the parts and
+was not tested.

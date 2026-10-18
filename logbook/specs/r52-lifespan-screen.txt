@@ -1,0 +1,94 @@
+# python scripts/reads/r52-lifespan-screen.py history   (round 51, 2026-09-29)
+r51-s1: cohort 14335 (inherited births 5000-20000 s), dead by the end 14335
+  bred: 5908 (41%), children per breeder median 2, mean 2.62
+  age at first birth: median 1082 s (10% 434, 90% 2318); interval between births median 0 s
+  child size at birth (bf) median 0.34
+  causes: aged 7157 (50%), starved 7178, other 0
+  age at death: aged median 2476 s; starved median 704 s; starved 10% 41, 90% 2316
+  breeders: aged 4561 of 5908 dead; age at death median 2431 s
+  non-breeders: aged 2596 of 8427 dead; age at death median 842 s
+  books 10000-30000 s: light 278 kJ, spent 24 kJ, spent/light 0.09
+r51-s2: cohort 22277 (inherited births 5000-20000 s), dead by the end 22277
+  bred: 9310 (42%), children per breeder median 2, mean 2.55
+  age at first birth: median 888 s (10% 392, 90% 2040); interval between births median 368 s
+  child size at birth (bf) median 0.20
+  causes: aged 8958 (40%), starved 13319, other 0
+  age at death: aged median 2590 s; starved median 502 s; starved 10% 42, 90% 2156
+  breeders: aged 6309 of 9310 dead; age at death median 2458 s
+  non-breeders: aged 2649 of 12967 dead; age at death median 422 s
+  books 10000-30000 s: light 195 kJ, spent 7 kJ, spent/light 0.04
+r51-s3: cohort 28906 (inherited births 5000-20000 s), dead by the end 28906
+  bred: 11400 (39%), children per breeder median 2, mean 2.79
+  age at first birth: median 890 s (10% 344, 90% 2104); interval between births median 281 s
+  child size at birth (bf) median 0.16
+  causes: aged 12450 (43%), starved 16456, other 0
+  age at death: aged median 2646 s; starved median 416 s; starved 10% 16, 90% 2262
+  breeders: aged 8358 of 11400 dead; age at death median 2565 s
+  non-breeders: aged 4092 of 17506 dead; age at death median 445 s
+  books 10000-30000 s: light 254 kJ, spent -7 kJ, spent/light -0.03
+
+# python scripts/reads/r52-lifespan-screen.py screen
+u 0.25, bf 0.20: calibrated beta1 1.912/ks, adult starvation 0.101/ks (mean adult life to it 9943 s); at L 1: R0 2.60, starved share 0.23, r 0.514/ks
+   a 0.00: best L by R0 10.00 (the edge of the grid), by r 10.00; dlnR0/dlnL at 1 +1.242; R0 at L 0.5/2/3 over L 1: 0.30 1.99 2.65
+   a 0.25: best L by R0 10.00 (the edge of the grid), by r  2.50; dlnR0/dlnL at 1 +1.142; R0 at L 0.5/2/3 over L 1: 0.35 1.85 2.37
+   a 0.50: best L by R0  4.25, by r  1.50; dlnR0/dlnL at 1 +1.012; R0 at L 0.5/2/3 over L 1: 0.38 1.68 1.98
+   a 0.75: best L by R0  2.50, by r  1.25; dlnR0/dlnL at 1 +0.883; R0 at L 0.5/2/3 over L 1: 0.41 1.48 1.44
+   a 1.00: best L by R0  1.75, by r  1.00; dlnR0/dlnL at 1 +0.754; R0 at L 0.5/2/3 over L 1: 0.44 1.23 0.68
+   a 1.50: best L by R0  1.25, by r  1.00; dlnR0/dlnL at 1 +0.524; R0 at L 0.5/2/3 over L 1: 0.48 0.54 0.00
+   a 2.00: best L by R0  1.00, by r  1.00; dlnR0/dlnL at 1 +0.264; R0 at L 0.5/2/3 over L 1: 0.51 0.00 0.00
+u 0.25, bf 0.30: calibrated beta1 2.055/ks, adult starvation 0.105/ks (mean adult life to it 9521 s); at L 1: R0 2.60, starved share 0.23, r 0.530/ks
+   a 0.00: best L by R0 10.00 (the edge of the grid), by r 10.00; dlnR0/dlnL at 1 +1.185; R0 at L 0.5/2/3 over L 1: 0.32 1.91 2.48
+   a 0.25: best L by R0 10.00 (the edge of the grid), by r  2.50; dlnR0/dlnL at 1 +1.089; R0 at L 0.5/2/3 over L 1: 0.36 1.78 2.24
+   a 0.50: best L by R0  4.25, by r  1.50; dlnR0/dlnL at 1 +0.965; R0 at L 0.5/2/3 over L 1: 0.39 1.63 1.90
+   a 0.75: best L by R0  2.25, by r  1.25; dlnR0/dlnL at 1 +0.840; R0 at L 0.5/2/3 over L 1: 0.42 1.44 1.40
+   a 1.00: best L by R0  1.75, by r  1.00; dlnR0/dlnL at 1 +0.715; R0 at L 0.5/2/3 over L 1: 0.45 1.21 0.68
+   a 1.50: best L by R0  1.25, by r  1.00; dlnR0/dlnL at 1 +0.494; R0 at L 0.5/2/3 over L 1: 0.49 0.55 0.00
+   a 2.00: best L by R0  1.00, by r  0.75; dlnR0/dlnL at 1 +0.244; R0 at L 0.5/2/3 over L 1: 0.52 0.00 0.00
+u 0.35, bf 0.20: calibrated beta1 1.912/ks, adult starvation 0.101/ks (mean adult life to it 9943 s); at L 1: R0 2.60, starved share 0.23, r 0.514/ks
+   a 0.00: best L by R0 10.00 (the edge of the grid), by r 10.00; dlnR0/dlnL at 1 +1.242; R0 at L 0.5/2/3 over L 1: 0.30 1.99 2.65
+   a 0.25: best L by R0  8.00, by r  1.75; dlnR0/dlnL at 1 +1.041; R0 at L 0.5/2/3 over L 1: 0.37 1.77 2.19
+   a 0.50: best L by R0  2.75, by r  1.25; dlnR0/dlnL at 1 +0.866; R0 at L 0.5/2/3 over L 1: 0.43 1.49 1.54
+   a 0.75: best L by R0  1.75, by r  1.00; dlnR0/dlnL at 1 +0.665; R0 at L 0.5/2/3 over L 1: 0.48 1.15 0.60
+   a 1.00: best L by R0  1.25, by r  1.00; dlnR0/dlnL at 1 +0.460; R0 at L 0.5/2/3 over L 1: 0.52 0.72 0.00
+   a 1.50: best L by R0  1.00, by r  0.75; dlnR0/dlnL at 1 +0.084; R0 at L 0.5/2/3 over L 1: 0.58 0.00 0.00
+   a 2.00: best L by R0  1.00, by r  0.75; dlnR0/dlnL at 1 -0.295; R0 at L 0.5/2/3 over L 1: 0.63 0.00 0.00
+u 0.35, bf 0.30: calibrated beta1 2.055/ks, adult starvation 0.105/ks (mean adult life to it 9521 s); at L 1: R0 2.60, starved share 0.23, r 0.530/ks
+   a 0.00: best L by R0 10.00 (the edge of the grid), by r 10.00; dlnR0/dlnL at 1 +1.185; R0 at L 0.5/2/3 over L 1: 0.32 1.91 2.48
+   a 0.25: best L by R0  8.00, by r  1.75; dlnR0/dlnL at 1 +0.991; R0 at L 0.5/2/3 over L 1: 0.38 1.71 2.08
+   a 0.50: best L by R0  2.75, by r  1.25; dlnR0/dlnL at 1 +0.824; R0 at L 0.5/2/3 over L 1: 0.44 1.45 1.49
+   a 0.75: best L by R0  1.75, by r  1.00; dlnR0/dlnL at 1 +0.630; R0 at L 0.5/2/3 over L 1: 0.49 1.13 0.60
+   a 1.00: best L by R0  1.25, by r  1.00; dlnR0/dlnL at 1 +0.433; R0 at L 0.5/2/3 over L 1: 0.53 0.73 0.00
+   a 1.50: best L by R0  1.00, by r  0.75; dlnR0/dlnL at 1 +0.071; R0 at L 0.5/2/3 over L 1: 0.60 0.00 0.00
+   a 2.00: best L by R0  1.00, by r  0.75; dlnR0/dlnL at 1 -0.292; R0 at L 0.5/2/3 over L 1: 0.64 0.00 0.00
+u 0.45, bf 0.20: calibrated beta1 1.912/ks, adult starvation 0.101/ks (mean adult life to it 9943 s); at L 1: R0 2.60, starved share 0.23, r 0.514/ks
+   a 0.00: best L by R0 10.00 (the edge of the grid), by r 10.00; dlnR0/dlnL at 1 +1.242; R0 at L 0.5/2/3 over L 1: 0.30 1.99 2.65
+   a 0.25: best L by R0  4.75, by r  1.50; dlnR0/dlnL at 1 +0.923; R0 at L 0.5/2/3 over L 1: 0.41 1.65 1.94
+   a 0.50: best L by R0  1.75, by r  1.00; dlnR0/dlnL at 1 +0.631; R0 at L 0.5/2/3 over L 1: 0.50 1.22 0.90
+   a 0.75: best L by R0  1.25, by r  0.75; dlnR0/dlnL at 1 +0.367; R0 at L 0.5/2/3 over L 1: 0.57 0.68 0.00
+   a 1.00: best L by R0  1.00, by r  0.75; dlnR0/dlnL at 1 +0.075; R0 at L 0.5/2/3 over L 1: 0.64 0.06 0.00
+   a 1.50: best L by R0  1.00, by r  0.75; dlnR0/dlnL at 1 -0.539; R0 at L 0.5/2/3 over L 1: 0.73 0.00 0.00
+   a 2.00: best L by R0  0.75, by r  0.75; dlnR0/dlnL at 1 -1.126; R0 at L 0.5/2/3 over L 1: 0.80 0.00 0.00
+u 0.45, bf 0.30: calibrated beta1 2.055/ks, adult starvation 0.105/ks (mean adult life to it 9521 s); at L 1: R0 2.60, starved share 0.23, r 0.530/ks
+   a 0.00: best L by R0 10.00 (the edge of the grid), by r 10.00; dlnR0/dlnL at 1 +1.185; R0 at L 0.5/2/3 over L 1: 0.32 1.91 2.48
+   a 0.25: best L by R0  4.75, by r  1.50; dlnR0/dlnL at 1 +0.878; R0 at L 0.5/2/3 over L 1: 0.42 1.60 1.86
+   a 0.50: best L by R0  1.75, by r  1.00; dlnR0/dlnL at 1 +0.597; R0 at L 0.5/2/3 over L 1: 0.51 1.20 0.89
+   a 0.75: best L by R0  1.25, by r  0.75; dlnR0/dlnL at 1 +0.344; R0 at L 0.5/2/3 over L 1: 0.58 0.68 0.00
+   a 1.00: best L by R0  1.00, by r  0.75; dlnR0/dlnL at 1 +0.063; R0 at L 0.5/2/3 over L 1: 0.65 0.06 0.00
+   a 1.50: best L by R0  1.00, by r  0.75; dlnR0/dlnL at 1 -0.528; R0 at L 0.5/2/3 over L 1: 0.75 0.00 0.00
+   a 2.00: best L by R0  0.75, by r  0.75; dlnR0/dlnL at 1 -1.093; R0 at L 0.5/2/3 over L 1: 0.81 0.00 0.00
+the exponent at which L = 1 is the R0 optimum (bf 0.25), by the upkeep share u and the share
+of breeding deaths that are starvation (round 51: 0.23):
+   u     starved 0.10  starved 0.23  starved 0.40  
+   0.25  a = 2.81      a = 2.60      a = 2.24      
+   0.35  a = 1.74      a = 1.58      a = 1.36      
+   0.40  a = 1.41      a = 1.28      a = 1.09      
+   0.45  a = 1.16      a = 1.05      a = 0.89      
+   0.50  a = 0.94      a = 0.86      a = 0.73      
+   0.55  a = 0.77      a = 0.71      a = 0.60      
+the best L by R0 at a = 1 and at a = 0.5, by u (bf 0.25, starved 0.23):
+   u 0.25: a 1 -> L 1.70; a 0.5 -> L 4.15
+   u 0.35: a 1 -> L 1.30; a 0.5 -> L 2.70
+   u 0.40: a 1 -> L 1.15; a 0.5 -> L 2.15
+   u 0.45: a 1 -> L 1.00; a 0.5 -> L 1.75
+   u 0.50: a 1 -> L 0.90; a 0.5 -> L 1.50
+   u 0.55: a 1 -> L 0.85; a 0.5 -> L 1.25

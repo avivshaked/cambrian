@@ -26,7 +26,9 @@ Read every sheet whole. Read nothing else.
 ## The faults
 
 - **F1, subject.** In frames 2 to 6, the bodies the shot names are not in view, or the eye does not go to
-  them. For a camera on the whole world, what `see` describes is not in view.
+  them. For a camera on the whole world, what `see` describes is not in view. Other bodies passing
+  between the camera and the subject are extras that make the scene feel alive (the owner, 2026-09-28).
+  Fault them only when they hide the subject or the action through most of frames 2 to 6.
 - **F2, action.** What `see` says happens does not happen between frames 2 and 6. A birth, for one, is a new
   small body appearing near its parent.
 - **F3, camera.** The camera is inside a body, below the bed or behind the glass, or a frame shows only

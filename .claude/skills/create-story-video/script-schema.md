@@ -77,8 +77,14 @@ The fields of a passage come in this order:
 | `From:` | one | The places where the run, the bodies, the seconds, and what `See:` says of them are found. For a graphic, the places that hold what it shows. |
 | `Text:` | any number | At most four words shown on screen, digits allowed, then the places that hold them. A name we give keeps its double braces, and a `Text:` that is only such a name needs no place. |
 | `Hold:` | at most one | The seconds of silence the narration adds after the passage's last sentence, on top of the padding between passages, while the picture is watched. A passage with no `Say:` has one, and is that silence alone. |
+| `Join:` | at most one | `next`, on a passage whose last sentence ends a paragraph of `prose.md`: the next paragraph belongs in the same read of the voice as this one. It goes where a break would spoil what follows, such as a question and its answer, a setup and its payoff, or a bridge and what it leads to. |
 
 A graphic has no `Run:`, `Bodies:` or `Seconds:`.
+
+The narration packs a beat's paragraphs into reads as long as the voice can take (narration.md,
+"Segments and pieces"). A `Join: next` asks it to keep two paragraphs in one read. Where the voice's limit
+cannot hold them both, the narration breaks the read anyway and says so to the owner. A script without
+any `Join:` is still in form.
 
 ## The data
 
@@ -108,7 +114,8 @@ follow the form. The values below are examples.
             "from": [{"first": 40, "last": 40}]
           },
           "text": [{"words": "1 in 20", "facts": [{"first": 41, "last": 41}]}],
-          "hold": 2.0
+          "hold": 2.0,
+          "join": null
         }
       ]
     }
@@ -118,7 +125,8 @@ follow the form. The values below are examples.
 ```
 
 A graphic's `run` and `seconds` are `null` and its `bodies` is empty. A single second is given as the
-same number twice. A passage with no `Hold:` has `hold` 0.
+same number twice. A passage with no `Hold:` has `hold` 0. A passage with `Join: next` has `join`
+`"next"`, and any other has `join` null.
 
 ## What comes later
 
@@ -144,6 +152,9 @@ The check counts; it cannot see. The composer's review covers the rest.
   from `facts.md`.
 - More than four words in one `Text:`. Key words on screen help, and whole sentences do not
   (research/story-video/narration-writing.md §4.3).
+- A `Join: next` where the narration needs a break. That is a passage whose last sentence does not end a
+  paragraph of `prose.md`, the last passage of a beat, a passage with a `Hold:`, or a passage before one
+  with no `Say:`. A read never crosses a beat, and a hold or a silent passage needs the voice to stop.
 
 The check also prints the spoken words, the spoken time at 145 words a minute, and the seconds held,
 for the owner.

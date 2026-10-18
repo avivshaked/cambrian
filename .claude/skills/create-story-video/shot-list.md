@@ -86,11 +86,11 @@ You are the shot-lister of a story film.
 Your brief is <checkout>\.claude\skills\create-story-video\shot-lister-brief.md. Read it whole and follow it.
 The film's folder is <folder>.
 You write draft <n>.
-Write only inside the film's folder, and only through the shell. Never write in your session scratchpad or in TEMP.
+Write only inside the film's folder. Never write in your session scratchpad or in TEMP.
 Your time budget is 15 minutes.
 ```
 
-It is a general-purpose agent on opus. It writes its own file through the shell, as the story's writers do.
+It is a general-purpose agent on opus. It writes its own file, as the story's writers do.
 
 ## The procedure
 

@@ -1,0 +1,19 @@
+{
+  "base": "rounds/nursery/brain2-w5.json",
+  "name": "brain2-nodrive-w5",
+  "description": "brain2-nodrive on round 60's world config format: its base is brain2-w5 in place of brain2-w4, and every other setting is brain2-nodrive-w4's, whose description was: brain2-nodrive on round 59's world config format: its base is brain2-w4 in place of brain2-w3, and every other setting is brain2-nodrive-w3's, whose description was: brain2-nodrive on round 57's world config format: its base is brain2-w3 in place of brain2-w2, and every other setting is brain2-nodrive-w2's, whose description was: brain2-nodrive on the new world config format: its base is brain2-w2 in place of brain2, and every other setting is brain2-nodrive's, whose description was: Ablation arm 1 of 2 (the owner's order of 2026-10-02 15:10): brain2 without the drive sense (SenseDrive false), every other setting as brain2. The same six bodies as pilot-deep-brain2 and brain2-rep2 (pilot-deep-brain2's exam pool), search seed 0x1 as the pilot, exam salt brain2's own, so the exam draws pair with both runs (0x1 XOR salt = 0x62656e6369). Read against the spread between pilot-deep-brain2 and brain2-rep2.",
+  "seed": "0x1",
+  "world": {
+    "overrides": {
+      "SenseDrive": false,
+      "WorkCostMultiplier": 0.5
+    }
+  },
+  "bodies": {
+    "source": "pool",
+    "founders": 0,
+    "trunk": null,
+    "pool": "rounds/nursery/pools/97d4a4fc12a91017.tsv",
+    "keep": [0, 1, 3, 4, 8, 10]
+  }
+}

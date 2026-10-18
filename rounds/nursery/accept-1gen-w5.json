@@ -1,0 +1,8 @@
+{
+  "base": "rounds/nursery/brain2-w5.json",
+  "name": "accept-1gen-w5",
+  "description": "accept-1gen on round 60's world config format: its base is brain2-w5 in place of brain2-w4, and every other setting is accept-1gen-w4's, whose description was: accept-1gen on round 59's world config format: its base is brain2-w4 in place of brain2-w3, and every other setting is accept-1gen-w3's, whose description was: accept-1gen on round 57's world config format: its base is brain2-w3 in place of brain2-w2, and every other setting is accept-1gen-w2's, whose description was: accept-1gen on the new world config format: its base is brain2-w2 in place of brain2, and every other setting is accept-1gen's, whose description was: The nursery room's phase 2 acceptance (nursery-room-build.md): brain2, made small, launched and stopped through the MCP. Stopped runs are not registered.",
+  "setup": {"seconds": 60},
+  "search": {"population": 16, "draws": 2, "generations": 1},
+  "exam": {"episodes": 1, "controls": [{"kind": "own"}]}
+}

@@ -35,10 +35,8 @@ Nutrient density where creatures actually live, before and after
 Against an absorptive break-even of `upkeep / clearance = 4 / 0.5 = 8 J/m³`. A gap that was
 forty-fourfold in [0022](0022-the-conveyor-belt-and-the-thin-soup.md) closed to two- or
 fourfold, without anybody touching a cell parameter. This is the mechanism the human
-predicted before any of it was built:
-
-> *the world should have more and more material as entities die… then animals that consume the
-> dead matter should start to be more common*
+predicted before any of it was built: material builds up as entities die, and animals that eat the dead matter
+then grow more common.
 
 The first half of it now works.
 

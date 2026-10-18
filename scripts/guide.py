@@ -414,6 +414,8 @@ def read_lineage(path):
     other = 0
     with open(path, 'r', encoding='utf-8') as f:
         for line in f:
+            if not line.endswith('\n'):
+                break  # a live run's last row, still being written
             if not line.strip():
                 continue
             row = json.loads(line)
@@ -1028,6 +1030,8 @@ def read_absorptive(path, clade_of):
         return None, None
     with open(path, 'r', encoding='utf-8') as f:
         for line in f:
+            if not line.endswith('\n'):
+                break  # a live run's last row, still being written
             if not line.strip():
                 continue
             row = json.loads(line)
@@ -1081,6 +1085,8 @@ def read_stats(path):
         return rows
     with open(path, 'r', encoding='utf-8') as f:
         for line in f:
+            if not line.endswith('\n'):
+                break  # a live run's last row, still being written
             if line.strip():
                 rows.append(json.loads(line))
     return rows

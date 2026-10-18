@@ -84,7 +84,7 @@ namespace Evosim.Ledger
                     "the body below is not the stored genome's.");
             }
 
-            Phenotype body = Developer.Develop(genome, config.Development, null, config.Shapes);
+            Phenotype body = Developer.Develop(genome, config.Development, null, config.Shapes, cellTypes: config.CellTypes);
 
             // D098's leg 1 needs a spent density, and the honest default is the water this config
             // seeds. The live volume is a property of a built world — the tank's mask cuts the
@@ -136,7 +136,8 @@ namespace Evosim.Ledger
                 }
                 else
                 {
-                    Phenotype swappedBody = Developer.Develop(swapped, config.Development, null, config.Shapes);
+                    Phenotype swappedBody = Developer.Develop(
+                        swapped, config.Development, null, config.Shapes, cellTypes: config.CellTypes);
                     AppendBodySummary(
                         sb, "Body (leaf <-> stomach swapped)", options.GenomePath, swappedBody,
                         config, spentDensity);
@@ -370,7 +371,7 @@ namespace Evosim.Ledger
                 next[n]++;
 
                 Phenotype grown = Developer.Develop(
-                    genome, config.Development, null, config.Shapes, next);
+                    genome, config.Development, null, config.Shapes, next, cellTypes: config.CellTypes);
 
                 double tissueAdded = Metabolism.TissueJoules(grown, config) - tissue;
                 double netAdded =

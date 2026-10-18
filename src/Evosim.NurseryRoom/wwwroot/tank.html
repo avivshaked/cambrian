@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nursery room · tank</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2302080c'/%3E%3Cpath d='M5 19c5-9 11-9 16-3l6-5v12l-6-5c-5 6-11 6-16-1z' fill='%235ef0ff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="nursery.css">
+<style>
+  /* The tank screen's first cut. The mock's hero is two 3D views of one draw; this cut has the top-down map of the whole tank where they will go
+     (the follow view is step S8), the verdict of the re-step on its right, and the energy chart, the timeline and the events along the bottom.
+     Ultrawide (2:1 and wider) gives the events a column of their own. Under 1600 px the page scrolls and the panels stack. */
+  .page { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 37rem; grid-template-rows: auto minmax(0, 1fr) 18rem;
+    grid-template-areas: "pick pick pick" "map map side" "chart time events"; }
+  @media (min-aspect-ratio: 2/1) {
+    .page { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) 38rem 30rem;
+      grid-template-areas: "pick pick pick pick" "map map side events" "chart time side events"; } }
+  @media (max-width: 1600px) {
+    .page { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 38rem 12rem 20rem auto; align-content: start;
+      grid-template-areas: "pick pick" "map map" "time time" "chart events" "side side"; } }
+  .p-pick { grid-area: pick; } .p-map { grid-area: map; } .p-side { grid-area: side; } .p-chart { grid-area: chart; } .p-time { grid-area: time; } .p-events { grid-area: events; }
+  @media (max-width: 1600px) { .p-side { min-height: 26rem; } }
+
+  .p-pick { flex-direction: row; align-items: center; flex-wrap: wrap; row-gap: .5rem; padding: .7rem 1.2rem; }
+  .p-pick > * + * { margin-left: .7rem; }
+  .p-pick label { font-size: .77rem; letter-spacing: .1rem; text-transform: uppercase; color: var(--ink-lo); }
+  .p-pick select { font-family: var(--mono); font-size: .88rem; color: var(--ink-hi); background: #071820; border: 1px solid var(--rule-strong); border-radius: var(--r-sm);
+    height: 2rem; padding: 0 .5rem; max-width: 22rem; min-width: 7rem; }
+  select:focus-visible, button:focus-visible, a:focus-visible, svg [tabindex]:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--run); outline-offset: 2px; }
+  .p-pick > .addrnote { flex: 0 0 100%; margin-left: 0; display: flex; align-items: center; font-size: .85rem; color: var(--ink); line-height: 1.35; }
+  .p-pick > .addrnote[hidden] { display: none; }
+  .addrnote .plate { margin-right: .7rem; flex-shrink: 0; font-family: var(--mono); font-weight: 600; font-size: .72rem; }
+  .stepwhy { font-size: .8rem; color: var(--ink-lo); max-width: 30rem; white-space: normal; line-height: 1.3; }
+  .p-pick .later { display: flex; align-items: center; margin-left: auto; flex-wrap: wrap; row-gap: .3rem; }
+  .p-pick .later .tag { height: 1.5rem; line-height: 1.5rem; padding-top: 0; padding-bottom: 0; }
+  button.btn[disabled] { color: var(--ink-dim); border-color: var(--rule); background: none; box-shadow: none; }
+
+  /* the map */
+  .p-map { padding-bottom: .8rem; }
+  .mapbox { position: relative; flex: 1; min-height: 0; border-radius: var(--r-sm); background: #05121a; border: 1px solid var(--rule); overflow: hidden; }
+  .mapbox canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .mapbox .empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 2rem; text-align: center; }
+  .mapbox .empty p { max-width: 40rem; }
+  .mapkey { display: flex; flex-wrap: wrap; align-items: center; margin-top: .55rem; font-size: .8rem; color: var(--ink-lo); }
+  .mapkey > span { display: inline-flex; align-items: center; margin-right: 1.1rem; white-space: nowrap; }
+  .mapkey .m { display: flex; flex-direction: column; margin-right: 1.3rem; }
+  .mapkey .m b { font-family: var(--mono); font-weight: 400; color: var(--ink-hi); font-size: .85rem; }
+  .mapkey .m span { font-family: var(--mono); font-size: .72rem; color: var(--ink-lo); }
+  .sw { display: inline-block; width: .8rem; height: .8rem; border-radius: 50%; margin-right: .4rem; flex: none; border: 1px solid var(--ink-hi); }
+  .glyph { font-family: var(--mono); color: var(--ink-hi); margin-right: .3rem; }
+
+  /* the verdict */
+  .p-side { padding-top: .9rem; }
+  .state { display: flex; align-items: center; flex-wrap: wrap; row-gap: .4rem; margin-bottom: .5rem; }
+  .state .status { margin-right: 1rem; color: var(--ink-hi); }
+  .verdict { display: inline-flex; align-items: center; font-family: var(--mono); font-size: 1.4rem; letter-spacing: .08rem; padding: .15rem .8rem; border-radius: var(--r-sm); white-space: nowrap; }
+  .verdict.exact { background: var(--ink-hi); color: var(--plate-ink); }
+  .verdict.differs { background: var(--alarm); color: var(--plate-ink); font-weight: 600; }
+  .verdict.uncompared { border: 1.5px dashed var(--ink-lo); color: var(--ink-hi); }
+  .verdict small { font-family: var(--sans); font-size: .8rem; letter-spacing: 0; margin-left: .7rem; font-weight: 400; }
+  .why { font-size: .85rem; line-height: 1.45; color: var(--ink); margin: .35rem 0 .5rem; overflow-wrap: anywhere; }
+  .scroll { flex: 1; min-height: 0; overflow: auto; }
+  table.slots td, table.slots th { padding-left: .3rem; padding-right: .3rem; }
+  table.slots th { vertical-align: bottom; line-height: 1.25; }
+  table.slots td { height: 2.6rem; line-height: 1.15; vertical-align: middle; font-size: .78rem; }
+  table.slots td .v { display: block; color: var(--ink-hi); }
+  table.slots td .fr { display: block; font-size: .68rem; color: var(--ink-lo); }
+  table.slots tr.ne td { background: rgba(232, 248, 252, .07); border-bottom-color: var(--ink-hi); }
+  table.slots tr.ne td:first-child { box-shadow: inset .3rem 0 0 var(--ink-hi); }
+  table.slots tr.ne td .v { text-decoration: underline; text-decoration-style: wavy; text-underline-offset: .2rem; }
+  table.slots td.mark { text-align: left; font-family: var(--sans); font-size: .78rem; letter-spacing: .04rem; white-space: nowrap; color: var(--ink-hi); }
+  table.slots td.mark b { font-family: var(--mono); font-weight: 600; font-size: 1.05rem; margin-right: .35rem; }
+  table.slots td.mark.dim { color: var(--ink-lo); }
+  table.slots td.l { text-align: left; }
+  .sw.sq { border-radius: 2px; }
+  details.prov { margin-top: .6rem; border-top: 1px solid var(--rule); padding-top: .5rem; font-size: .82rem; line-height: 1.45; color: var(--ink-lo); }
+  details.prov summary { cursor: pointer; color: var(--ink); list-style: none; }
+  details.prov summary::-webkit-details-marker { display: none; }
+  details.prov summary::before { content: "▸ "; color: var(--ink-lo); }
+  details.prov[open] summary::before { content: "▾ "; }
+  details.prov b { color: var(--ink-hi); font-weight: 400; }
+  table.hashes { width: 100%; border-collapse: collapse; margin-top: .4rem; }
+  table.hashes th { font-weight: 400; font-size: .68rem; letter-spacing: .06rem; text-transform: uppercase; color: var(--ink-lo); text-align: left; padding: 0 .4rem .25rem 0; }
+  table.hashes td { font-family: var(--mono); font-size: .78rem; color: var(--ink); padding: .1rem .4rem .1rem 0; border-top: 1px solid var(--rule); white-space: nowrap; }
+  table.hashes td.k { font-family: var(--sans); color: var(--ink-lo); }
+  table.hashes tr.ne td { color: var(--ink-hi); }
+  pre.log { margin: .3rem 0 0; max-height: 14rem; overflow: auto; font-family: var(--mono); font-size: .75rem; line-height: 1.45; color: var(--ink); white-space: pre-wrap; word-break: break-word;
+    border-left: 2px solid var(--ink-lo); padding-left: .6rem; }
+
+  /* the chart, the timeline, the events */
+  .p-chart svg.chart { min-height: 0; }
+  .p-time .ctl { display: flex; align-items: center; }
+  .p-time .ctl .tag { height: 1.5rem; line-height: 1.5rem; padding-top: 0; padding-bottom: 0; }
+  .p-time .ctl .tag[aria-pressed="true"] { background: var(--ink-hi); color: var(--plate-ink); border-color: var(--ink-hi); }
+  #t-now { font-family: var(--mono); font-size: .95rem; color: var(--ink-hi); margin-left: 1rem; }
+  svg.slider { display: block; width: 100%; flex: 1; min-height: 0; cursor: pointer; touch-action: none; overflow: visible; }
+  .keys { font-size: .75rem; color: var(--ink-lo); margin: .2rem 0 0; }
+  .evlist { flex: 1; min-height: 0; overflow: auto; }
+  /* an event that has not happened yet, at the moment shown, is the quieter ink; the latest one that has is marked by a bar and a tint */
+  .ev { display: grid; grid-template-columns: 4rem 1.2rem minmax(0, 1fr); align-items: baseline; padding: .3rem .2rem; border-bottom: 1px solid var(--rule); font-size: .82rem; line-height: 1.35; cursor: pointer; color: var(--ink-lo); }
+  .ev:hover { background: var(--row-hover); }
+  .ev .tt, .ev .gl { font-family: var(--mono); }
+  .ev.past { color: var(--ink); }
+  .ev.past .tt, .ev.past .gl { color: var(--ink-hi); }
+  .ev .dd { overflow-wrap: anywhere; }
+  .ev.now { box-shadow: inset 2px 0 0 var(--run); background: rgba(94, 240, 255, .06); }
+  .ev:focus-visible { outline: 2px solid var(--run); outline-offset: -2px; }
+  .nodata { margin: .3rem 0; }
+</style>
+</head>
+<body>
+<svg class="caustics" aria-hidden="true"><filter id="caus"><feTurbulence type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="4"/>
+  <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.95  0 0 0 0 1  0 0 0 -2.6 1.55"/></filter><rect width="100%" height="100%" filter="url(#caus)" opacity="0.045"/></svg>
+
+<header class="strip" id="strip"></header>
+
+<main class="page">
+  <!-- source: nursery://exam-plan/{run} (the run's exam brains, draws and tanks, from the run's own record or rebuilt from its recipe), nursery://episode/{run}/{b}/{d}/{t} (the re-step's state and verdict), and /api/room (what would refuse a step). -->
+  <section class="panel p-pick" aria-label="what is shown">
+    <label for="s-run">run</label><select id="s-run" aria-label="the run"></select>
+    <label for="s-brain">exam brain</label><select id="s-brain" aria-label="the exam brain, matched by index"></select>
+    <label for="s-draw">draw</label><select id="s-draw" aria-label="the exam draw"></select>
+    <label for="s-tank">tank</label><select id="s-tank" aria-label="the tank of that draw"></select>
+    <button class="btn btn--primary" id="step" type="button" data-op="episode.step" title="re-step this brain, draw and tank with the nursery's own code">STEP</button>
+    <span class="stepwhy" id="stepwhy" aria-live="polite"></span>
+    <span class="later" aria-label="controls for later steps of the build">
+      <button class="tag" type="button" disabled title="S8: the 3D follow view (three.js) is built in step S8; this first cut has the top-down map only">FOLLOW · 3D</button>
+      <button class="tag" type="button" disabled title="S9: the live brain beside the follow view is built in step S9">LIVE BRAIN</button>
+      <button class="tag" type="button" disabled title="S10: two controls side by side, one draw, is built in step S10">SIDE BY SIDE</button>
+      <button class="tag" type="button" disabled title="S11: a PNG of any frame, at any size, is built in step S11">PNG</button>
+      <button class="tag" type="button" disabled title="S11: video, frame by frame, is built in step S11">VIDEO</button>
+      <button class="tag" type="button" disabled title="S12: the Blender export is built in step S12">EXPORT FOR BLENDER</button>
+    </span>
+    <div class="addrnote" id="addr-note" role="status" hidden></div>
+  </section>
+
+  <!-- source: frames.bin, read by the channel list in the episode's header: each member's first link, x across and z down the page; the placed corpses; the snow at each body against the island rule the header records. -->
+  <section class="panel hero p-map" aria-label="the tank from above">
+    <div class="head"><span class="kicker">Tank, from above</span><span class="q" id="map-q">Where did they go?</span><span class="aside" id="map-aside"></span></div>
+    <div class="mapbox" id="mapbox">
+      <canvas id="map" role="img" aria-label="the tank from above: each body's path so far and where it is, the carrion, and the snow the bodies found"></canvas>
+      <div class="empty" id="map-empty"><p class="note nodata">Pick a run, a brain, a draw and a tank.</p></div>
+    </div>
+    <div class="mapkey" id="mapkey"></div>
+  </section>
+
+  <!-- source: the episode resource's comparison (each member's re-stepped net against the run's own per[draw] for the same brain, bit for bit), its state, and its provenance. -->
+  <aside class="panel p-side" aria-label="does the re-step match the run">
+    <div class="head"><span class="kicker">Verdict</span><span class="q">Does the re-step match the run?</span></div>
+    <div class="state" id="state"></div>
+    <div class="scroll" id="b-side"></div>
+  </aside>
+
+  <!-- source: frames.bin's reserve channel of each member. -->
+  <section class="panel p-chart" aria-label="energy held">
+    <div class="head"><span class="kicker">Energy</span><span class="q">Who is gaining?</span><span class="aside" id="chart-aside"></span></div>
+    <div class="legend" id="chart-legend"></div>
+    <svg class="chart" id="c-energy" role="img" aria-label="each member's energy over the episode, with the moment shown marked"></svg>
+  </section>
+
+  <!-- source: the episode's frame times and its events file. -->
+  <section class="panel p-time" aria-label="timeline">
+    <div class="head"><span class="kicker">Timeline</span><span class="q" id="time-q">—</span>
+      <span class="aside ctl"><button class="tag" id="play" type="button" aria-label="play or pause" title="Space">▶ PLAY</button>
+        <button class="tag" type="button" data-speed="1" aria-pressed="true" title="real time">×1</button><button class="tag" type="button" data-speed="4" aria-pressed="false">×4</button><button class="tag" type="button" data-speed="16" aria-pressed="false">×16</button>
+        <span id="t-now">t = —</span></span></div>
+    <div class="legend" id="time-legend"></div>
+    <svg class="slider" id="c-time" role="slider" tabindex="0" aria-label="time in the episode" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0"></svg>
+  </section>
+
+  <!-- source: events.jsonl, in time order. A body that took carrion is the one that earned food that step, so it is an inference and is said to be. -->
+  <aside class="panel p-events" aria-label="events">
+    <div class="head"><span class="kicker">Events</span><span class="q" id="ev-q">—</span></div>
+    <div class="evlist" id="b-events"></div>
+  </aside>
+</main>
+
+<footer class="bar">
+  <span class="hint"><span class="key">Space</span>play / pause</span>
+  <span class="hint"><span class="key">← →</span>step 1 s</span>
+  <span class="hint"><span class="key">[ ]</span>slower / faster</span>
+  <span class="hint"><span class="key">Home</span><span class="key">End</span>start / end</span>
+  <span class="spacer"></span>
+  <span id="foot">the room's own top-down view, for reading; a fine creature picture is Blender's, from the export</span>
+</footer>
+
+<script type="module" src="js/tank.js"></script>
+</body>
+</html>

@@ -152,6 +152,10 @@ namespace Evosim.Scratch.Overlap
             return row;
         }
 
+        // The cell-type table of the config LoadConfig last read (D165: a world's table may hold a
+        // type the standard one does not), for the two develop calls below. Standard when none was.
+        private static CellTypeRegistry _cellTypes = CellTypeRegistry.Standard;
+
         private static bool LoadConfig(
             string snapshotFullPath, string configOverride,
             out DevelopmentLimits limits, out PartShapeRegistry shapes, out string note)
@@ -166,6 +170,7 @@ namespace Evosim.Scratch.Overlap
                 RunConfig config = RunConfigJson.Read(File.ReadAllText(configPath), out string mismatch);
                 limits = config.Development;
                 shapes = config.Shapes;
+                _cellTypes = config.CellTypes;
                 note = "config " + configPath + (mismatch != null ? " (hash: " + mismatch + ")" : "");
                 return true;
             }
@@ -195,7 +200,7 @@ namespace Evosim.Scratch.Overlap
                     long id = GenomeJson.ReadId(line);
                     // Adult size: Developer.Develop builds the adult plan, which is what a
                     // newborn is a Scaled() copy of. No growth fraction is applied here.
-                    Phenotype body = Developer.Develop(genome, limits, null, shapes);
+                    Phenotype body = Developer.Develop(genome, limits, null, shapes, cellTypes: _cellTypes);
 
                     if (shapeCounts != null)
                     {
@@ -324,7 +329,7 @@ namespace Evosim.Scratch.Overlap
             }
 
             Genome genome = GenomeJson.Read(found);
-            Phenotype body = Developer.Develop(genome, limits, null, shapes);
+            Phenotype body = Developer.Develop(genome, limits, null, shapes, cellTypes: _cellTypes);
 
             Console.WriteLine("  genome: root=" + genome.RootIndex + " adultScale=" + F(genome.AdultScale) +
                               " nodes=" + genome.Nodes.Count);

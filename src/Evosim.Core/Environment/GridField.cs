@@ -1366,6 +1366,40 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// Adds a density, in J/m³, to the lowest <paramref name="layers"/> live cells of every
+        /// live column: stock laid on the bed. Returns the joules laid.
+        /// </summary>
+        /// <remarks>
+        /// An assay's hand, as <see cref="SeedUniform"/> is the world's: the nursery lays a round's
+        /// bed snow in a tank that has none (World.LaySnow). A column shorter than the band is
+        /// laid over the water it has, and a dead column is passed over.
+        /// </remarks>
+        public double SeedBed(float densityJoulesPerCubicMetre, int layers)
+        {
+            if (!(densityJoulesPerCubicMetre > 0f) || layers < 1) return 0d;
+
+            double each = (double)densityJoulesPerCubicMetre * CellVolume, laid = 0d;
+            for (int ix = 0; ix < _nx; ix++)
+            {
+                for (int iz = 0; iz < _nz; iz++)
+                {
+                    int lowest = _lowestLive[ix * _nz + iz];
+                    if (lowest < 0) continue;
+                    for (int iy = lowest; iy > lowest - layers && iy >= 0; iy--)
+                    {
+                        int i = Index(ix, iy, iz);
+                        if (_live != null && !_live[i]) continue;
+                        _stock[i] += each;
+                        laid += each;
+                    }
+                }
+            }
+
+            _total += laid;
+            return laid;
+        }
+
+        /// <summary>
         /// Seeds a total as islands and deserts — D109. The columns whose map value is in the top
         /// <paramref name="cover"/> of the live columns hold matter, uniform down the column to
         /// <paramref name="depthMetres"/> (0: to the bed) and level across the island but for a
@@ -1398,7 +1432,8 @@ namespace Evosim.Core
         /// threshold, for the header and the tests.
         /// </para>
         /// </remarks>
-        public float SeedIslands(double totalJoules, Func<float, float, float> map, float cover, float depthMetres = 0f)
+        public float SeedIslands(double totalJoules, Func<float, float, float> map, float cover, float depthMetres = 0f,
+            float glassMarginMetres = 0f)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
             if (!(cover > 0f) || cover > 1f)
@@ -1406,6 +1441,74 @@ namespace Evosim.Core
             if (!(depthMetres >= 0f))
                 throw new ArgumentOutOfRangeException(nameof(depthMetres), depthMetres, "An island depth is not negative; 0 is the whole column.");
             if (!(totalJoules > 0d)) return 0f;
+
+            IslandPlan plan = PlanIslands(map, cover, depthMetres, glassMarginMetres);
+            if (plan == null) return 0f;
+
+            if (!(plan.WeightSum > 0d))
+            {
+                // A flat map (every column equal): nothing is above the threshold, so the seed
+                // falls back to uniform rather than placing nothing.
+                SeedUniform((float)(totalJoules / LiveVolumeCubicMetres));
+                return plan.Threshold;
+            }
+
+            DepositIslands(plan, totalJoules);
+            return plan.Threshold;
+        }
+
+        /// <summary>
+        /// Where D109's seeding puts matter, and in what shares: every live cell of the top
+        /// <paramref name="depthMetres"/> of every island column, each with its column's plateau
+        /// weight. <see cref="SeedIslands"/> lays its budget by it, and D175's influx lays each
+        /// step's income by it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A function of the map, the cover, the depth and the mask, and of nothing that
+        /// moves.</b> No cell's stock is read, so a plan made on a fresh world and one made on a
+        /// world about to be overwritten by a checkpoint are the same plan, and a resumed run
+        /// lays its influx where the unbroken run laid it. That is why the influx's weights are
+        /// the t = 0 stock's shares and not the live field's: the live field is the crowd's, and
+        /// an influx that followed it would hand the matter to whoever already holds it (D074's
+        /// rejected source that follows the population).
+        /// </para>
+        /// <para>
+        /// <b>The cells in the seeding's own order, each with its column's weight as a float,
+        /// and the weights summed in double in that order.</b> So
+        /// <see cref="DepositIslands"/> computes <c>total × weight / sum</c> for every cell
+        /// exactly as the seeding always did, and the seeding through it is the recorded one bit
+        /// for bit.
+        /// </para>
+        /// <para>
+        /// Null when the field has no live column; a plan whose <see cref="IslandPlan.WeightSum"/>
+        /// is 0 when the map is flat and no column stands above the threshold.
+        /// </para>
+        /// <para>
+        /// <b>D185's glass margin.</b> Above 0, a live column whose centre lies nearer the tank's
+        /// wall than <paramref name="glassMarginMetres"/> is left out before the threshold is
+        /// taken, so the cover is a share of the columns that remain. At 0 nothing is left out and
+        /// the plan is the recorded one bit for bit. Refused in a box, which has no glass, and when
+        /// it leaves no live column.
+        /// </para>
+        /// </remarks>
+        public IslandPlan PlanIslands(Func<float, float, float> map, float cover, float depthMetres = 0f,
+            float glassMarginMetres = 0f)
+        {
+            if (map == null) throw new ArgumentNullException(nameof(map));
+            if (!(cover > 0f) || cover > 1f)
+                throw new ArgumentOutOfRangeException(nameof(cover), cover, "A cover is a share in (0, 1].");
+            if (!(depthMetres >= 0f))
+                throw new ArgumentOutOfRangeException(nameof(depthMetres), depthMetres, "An island depth is not negative; 0 is the whole column.");
+            if (!(glassMarginMetres >= 0f) || float.IsInfinity(glassMarginMetres))
+                throw new ArgumentOutOfRangeException(nameof(glassMarginMetres), glassMarginMetres, "A glass margin is finite and not negative.");
+            if (glassMarginMetres > 0f && Shape != WorldShape.Tank)
+                throw new ArgumentException("A glass margin for the islands needs a tank: a box has no glass.", nameof(glassMarginMetres));
+
+            // D185: a column is eligible while its centre lies at least the margin inside the glass.
+            double inner = TankRadiusMetres - (double)glassMarginMetres;
+            bool margined = glassMarginMetres > 0f;
+            int nearGlass = 0;
 
             // The layers an island fills: every one to the bed, or those whose top lies above the
             // depth asked (at least the first, so a depth under one cell still seeds something).
@@ -1426,12 +1529,30 @@ namespace Evosim.Core
                     if (_live != null && _lowestLive[column] < 0) continue;
 
                     float cz = (iz + 0.5f) * CellMetres;
+                    if (margined)
+                    {
+                        double dx = cx - (double)TankRadiusMetres, dz = cz - (double)TankRadiusMetres;
+                        if (Math.Sqrt(dx * dx + dz * dz) > inner)
+                        {
+                            nearGlass++;
+                            continue;
+                        }
+                    }
+
                     value[column] = map(cx, cz);
                     liveColumns.Add(column);
                 }
             }
 
-            if (liveColumns.Count == 0) return 0f;
+            if (liveColumns.Count == 0)
+            {
+                if (nearGlass > 0)
+                    throw new ArgumentException(
+                        "The glass margin of " + glassMarginMetres.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                        " m leaves no live column for the islands in a tank of radius " +
+                        TankRadiusMetres.ToString(System.Globalization.CultureInfo.InvariantCulture) + " m.", nameof(glassMarginMetres));
+                return null;
+            }
 
             // The threshold: the value below which (1 − cover) of the live columns fall. Sorted
             // ascending, so the index is the first island column.
@@ -1454,8 +1575,13 @@ namespace Evosim.Core
                 return ramp > 0f && excess < ramp ? excess / ramp : 1f;
             }
 
-            // Weights over the live cells, summed in double.
+            // Weights over the live cells, summed in double, in the order the cells are laid.
+            var cells = new List<int>();
+            var weights = new List<float>();
             double sum = 0d;
+            int islandColumns = 0;
+            var isIsland = new bool[_layerStride];
+
             for (int c = 0; c < liveColumns.Count; c++)
             {
                 int column = liveColumns[c];
@@ -1464,44 +1590,147 @@ namespace Evosim.Core
 
                 int ix = column / _nz;
                 int iz = column % _nz;
+                bool any = false;
+
                 for (int iy = 0; iy < layers; iy++)
                 {
                     int cell = Index(ix, iy, iz);
                     if (_live != null && !_live[cell]) continue;
+                    cells.Add(cell);
+                    weights.Add(excess);
                     sum += excess;
+                    any = true;
                 }
-            }
 
-            if (!(sum > 0d))
-            {
-                // A flat map (every column equal): nothing is above the threshold, so the seed
-                // falls back to uniform rather than placing nothing.
-                SeedUniform((float)(totalJoules / LiveVolumeCubicMetres));
-                return threshold;
-            }
-
-            double placed = 0d;
-            for (int c = 0; c < liveColumns.Count; c++)
-            {
-                int column = liveColumns[c];
-                float excess = Weight(column);
-                if (!(excess > 0f)) continue;
-
-                int ix = column / _nz;
-                int iz = column % _nz;
-                double each = totalJoules * excess / sum;
-
-                for (int iy = 0; iy < layers; iy++)
+                if (any)
                 {
-                    int cell = Index(ix, iy, iz);
-                    if (_live != null && !_live[cell]) continue;
-                    _stock[cell] += each;
-                    placed += each;
+                    islandColumns++;
+                    isIsland[column] = true;
                 }
+            }
+
+            return new IslandPlan(this, threshold, cells.ToArray(), weights.ToArray(), sum, islandColumns, isIsland);
+        }
+
+        /// <summary>
+        /// Lays <paramref name="joules"/> by an island plan: each of its cells takes
+        /// <c>joules × weight / sum</c>. Returns what was laid, which is what the running total
+        /// moved by, so a caller counting an influx counts exactly what arrived.
+        /// </summary>
+        /// <remarks>
+        /// D109's seeding and D175's influx share this line, so the influx lands in the shape the
+        /// islands were seeded in: in the top of the island columns only, each column in
+        /// proportion to its stock at t = 0. Nothing is laid by a plan with no weight.
+        /// </remarks>
+        public double DepositIslands(IslandPlan plan, double joules)
+        {
+            if (plan == null) throw new ArgumentNullException(nameof(plan));
+            if (!ReferenceEquals(plan.Field, this))
+                throw new ArgumentException("An island plan is laid on the field that made it.", nameof(plan));
+            if (!(joules > 0d) || !(plan.WeightSum > 0d)) return 0d;
+
+            int[] cells = plan.Cells;
+            float[] weights = plan.Weights;
+            double sum = plan.WeightSum;
+            double placed = 0d;
+
+            for (int i = 0; i < cells.Length; i++)
+            {
+                double each = joules * weights[i] / sum;
+                _stock[cells[i]] += each;
+                placed += each;
             }
 
             _total += placed;
-            return threshold;
+            return placed;
+        }
+
+        /// <summary>
+        /// D109's islands as places: the cells an island seeding fills and each one's weight.
+        /// Made by <see cref="PlanIslands"/> and laid by <see cref="DepositIslands"/>.
+        /// </summary>
+        public sealed class IslandPlan
+        {
+            internal IslandPlan(GridField field, float threshold, int[] cells, float[] weights, double weightSum, int columnCount,
+                bool[] isIsland)
+            {
+                IsIsland = isIsland;
+                Field = field;
+                Threshold = threshold;
+                Cells = cells;
+                Weights = weights;
+                WeightSum = weightSum;
+                ColumnCount = columnCount;
+            }
+
+            internal GridField Field { get; }
+            internal int[] Cells { get; }
+            internal float[] Weights { get; }
+
+            /// <summary>The map's value at the islands' shore: the quantile the cover names.</summary>
+            public float Threshold { get; }
+
+            /// <summary>The weights summed over every cell, in double. 0 when the map is flat.</summary>
+            public double WeightSum { get; }
+
+            /// <summary>How many live cells the plan fills.</summary>
+            public int CellCount => Cells.Length;
+
+            /// <summary>How many columns hold at least one of its cells: the island columns.</summary>
+            public int ColumnCount { get; }
+
+            /// <summary>Per column of the <c>_nx × _nz</c> plane, whether it holds one of the plan's cells.</summary>
+            internal bool[] IsIsland { get; }
+
+            /// <summary>Whether a column holds one of the plan's cells: an island column, where the influx lands.</summary>
+            public bool IsIslandColumn(int ix, int iz) => IsIsland[ix * Field._nz + iz];
+        }
+
+        /// <summary>
+        /// D190's burial: every live column's floor cell, its lowest live cell, gives
+        /// <paramref name="islandFraction"/> of what it may give if the column is one of
+        /// <paramref name="plan"/>'s and <paramref name="desertFraction"/> if not. Returns what was
+        /// taken, which is what the running total moved by.
+        /// </summary>
+        /// <remarks>
+        /// The per-column rule <see cref="TakeFromFloor"/> reaches through a patch's pool: with
+        /// no refuge it takes the same fraction of every floor cell, so at equal fractions the two
+        /// take the same matter to the rounding, though not the same doubles.
+        /// </remarks>
+        public double BuryFloorByIslands(IslandPlan plan, double islandFraction, double desertFraction)
+        {
+            if (plan == null) throw new ArgumentNullException(nameof(plan));
+            if (!ReferenceEquals(plan.Field, this))
+                throw new ArgumentException("An island plan is read on the field that made it.", nameof(plan));
+            if (!(islandFraction >= 0d) || islandFraction > 1d)
+                throw new ArgumentOutOfRangeException(nameof(islandFraction), islandFraction, "A fraction is in [0, 1].");
+            if (!(desertFraction >= 0d) || desertFraction > 1d)
+                throw new ArgumentOutOfRangeException(nameof(desertFraction), desertFraction, "A fraction is in [0, 1].");
+
+            bool[] isIsland = plan.IsIsland;
+            double taken = 0.0;
+
+            for (int ix = 0; ix < _nx; ix++)
+            {
+                for (int iz = 0; iz < _nz; iz++)
+                {
+                    int column = ix * _nz + iz;
+                    int lowest = _lowestLive[column];
+                    if (lowest < 0) continue;
+
+                    double fraction = isIsland[column] ? islandFraction : desertFraction;
+                    if (!(fraction > 0d)) continue;
+
+                    int cell = Index(ix, lowest, iz);
+                    double t = Edible(cell) * fraction;
+                    if (t <= 0.0) continue;
+                    _stock[cell] -= t;
+                    taken += t;
+                }
+            }
+
+            _total -= taken;
+            return taken;
         }
 
         /// <summary>Whether a column holds any water: true everywhere in a box, inside the circle in a tank.</summary>
@@ -1510,6 +1739,39 @@ namespace Evosim.Core
         /// <summary>The column a position stands in, as an index into the <c>_nx × _nz</c> plane.</summary>
         private int ColumnAt(float x, float z) =>
             CellAt(new Float3(x, -0.5f * CellMetres, z)) % _layerStride;
+
+        /// <summary>
+        /// How many columns the grid has, live or not: the range of <see cref="ColumnIndexAt"/>.
+        /// D129's corpse columns are an array of this length.
+        /// </summary>
+        public int ColumnCount => _layerStride;
+
+        /// <summary>
+        /// How many columns hold any live water: <see cref="ColumnCount"/> in a grid with no mask,
+        /// and the columns inside the disc in a tank. D129's landing reading divides the corpses'
+        /// joules by it for the column a founder landing at random would find on average.
+        /// </summary>
+        public int LiveColumnCount
+        {
+            get
+            {
+                if (_live == null) return _layerStride;
+                int live = 0;
+                for (int i = 0; i < _lowestLive.Length; i++)
+                {
+                    if (_lowestLive[i] >= 0) live++;
+                }
+
+                return live;
+            }
+        }
+
+        /// <summary>
+        /// The index of the column under a position, the column <see cref="ColumnStockAt"/> sums,
+        /// with the same clamp to the grid. A read. D129's corpse columns key on it, so a corpse
+        /// and a founder's candidate spot meet in the column the snow's share reads.
+        /// </summary>
+        public int ColumnIndexAt(float x, float z) => ColumnAt(x, z);
 
         /// <summary>The stock in the column under a position, J, summed over its live cells.</summary>
         public double ColumnStockAt(float x, float z)
@@ -1779,6 +2041,39 @@ namespace Evosim.Core
             _total += joules;
         }
 
+        public void DepositExact(FieldPoint at, double amount)
+        {
+            if (!(amount > 0d)) return;
+            int cell = CellAt(Validated(at));
+            _stock[cell] += amount;
+            _total += amount;
+        }
+
+        /// <summary>
+        /// The cell <see cref="Deposit(FieldPoint, float)"/> would put a deposit at this point in, or false
+        /// where it would refuse the point. Reads the grid's shape and nothing else, so many threads may ask
+        /// at once: the corpses' deposits find their cells this way before they are made in order
+        /// (World.DepositCorpses).
+        /// </summary>
+        internal bool TryCellOf(FieldPoint at, out int cell)
+        {
+            cell = -1;
+            if (at.DepthAndPatchOnly || !at.Position.IsFinite) return false;
+            cell = CellAt(at.Position);
+            return true;
+        }
+
+        /// <summary>
+        /// What <see cref="DepositExact"/> does at a cell <see cref="TryCellOf"/> gave, and what
+        /// <see cref="Deposit(FieldPoint, float)"/> does with the float as its double: the stock and the total
+        /// each take the amount, in the caller's order.
+        /// </summary>
+        internal void AddToCell(int cell, double amount)
+        {
+            _stock[cell] += amount;
+            _total += amount;
+        }
+
         /// <summary>A deposit by depth and patch, into the patch's centre column.</summary>
         public void Deposit(float heightY, float joules, int patch)
         {
@@ -1913,6 +2208,101 @@ namespace Evosim.Core
                     if (PatchOfColumn(ix, iz) != patch) continue;
 
                     int cell = Index(ix, layer, iz);
+                    double t = Edible(cell) * fraction;
+                    if (t <= 0.0) continue;
+                    _stock[cell] -= t;
+                    taken += t;
+                }
+            }
+
+            _total -= taken;
+            return taken;
+        }
+
+        /// <summary>
+        /// What the floor holds across a patch, J: the lowest live cell of every column in it, one
+        /// cell a column. What D175's burial reads before and after its draw.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b><see cref="StockInLayer"/> of the last layer on a flat grid, to the bit.</b> Every
+        /// live column's lowest live cell is the last layer there, a dead column belongs to no
+        /// patch, and the cells are summed in the same order, so the same doubles are added in
+        /// the same sequence. On a shaped grid the last layer is water only under the deepest
+        /// hollow, and this reads the floor where the floor is.
+        /// </para>
+        /// <para>
+        /// <b>One cell, whatever the refuge.</b> <see cref="RefugeStock"/> reads the floor's band
+        /// as deep as <see cref="RefugeLayerCount"/>, which is one cell in every run on file; the
+        /// burial has always taken one layer, so this stays one cell when a refuge is set.
+        /// </para>
+        /// </remarks>
+        public double FloorStock(int patch)
+        {
+            ValidatePatch(patch);
+
+            double sum = 0.0;
+            for (int ix = 0; ix < _nx; ix++)
+            {
+                for (int iz = 0; iz < _nz; iz++)
+                {
+                    if (PatchOfColumn(ix, iz) != patch) continue;
+
+                    int lowest = _lowestLive[ix * _nz + iz];
+                    if (lowest < 0) continue;
+                    sum += _stock[Index(ix, lowest, iz)];
+                }
+            }
+
+            return sum;
+        }
+
+        /// <summary>
+        /// Removes up to <paramref name="wanted"/> from the floor cells of one patch — each
+        /// column's lowest live cell — and returns what was taken. D175's burial.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="TakeFromLayer"/>'s draw with the layer read per column: spread over the
+        /// cells in proportion to what each may give (<c>Edible</c>), so at a fraction of the
+        /// patch's floor stock every cell gives that fraction of its own, which is the per-column
+        /// rule. On a flat grid it touches the same cells as <see cref="TakeFromLayer"/> of the
+        /// last layer, in the same order and with the same arithmetic, so it takes the same
+        /// doubles.
+        /// </remarks>
+        public double TakeFromFloor(int patch, double wanted)
+        {
+            ValidatePatch(patch);
+            if (!(wanted > 0d)) return 0d;
+
+            double pool = 0.0;
+            for (int ix = 0; ix < _nx; ix++)
+            {
+                for (int iz = 0; iz < _nz; iz++)
+                {
+                    if (PatchOfColumn(ix, iz) != patch) continue;
+
+                    int lowest = _lowestLive[ix * _nz + iz];
+                    if (lowest < 0) continue;
+                    pool += Edible(Index(ix, lowest, iz));
+                }
+            }
+
+            if (!(pool > 0d)) return 0d;
+
+            double take = wanted < pool ? wanted : pool;
+            double fraction = take / pool;
+            double taken = 0.0;
+
+            for (int ix = 0; ix < _nx; ix++)
+            {
+                for (int iz = 0; iz < _nz; iz++)
+                {
+                    if (PatchOfColumn(ix, iz) != patch) continue;
+
+                    int lowest = _lowestLive[ix * _nz + iz];
+                    if (lowest < 0) continue;
+
+                    int cell = Index(ix, lowest, iz);
                     double t = Edible(cell) * fraction;
                     if (t <= 0.0) continue;
                     _stock[cell] -= t;
@@ -2105,7 +2495,9 @@ namespace Evosim.Core
                 double moved = _remineralisedPerBucket[i];
                 if (!(moved > 0d)) continue;
                 _remineralisedPerBucket[i] = 0d;
-                spent.Deposit(BucketCentre(i, spentCell), (float)(moved / joulesPerUnit));
+                // Through the exact door, since the snow gave these joules up as a double
+                // (round 51's B1).
+                spent.DepositExact(BucketCentre(i, spentCell), moved / joulesPerUnit);
             }
 
             return total;
@@ -3200,6 +3592,23 @@ namespace Evosim.Core
             return ((double[])_faceX.Clone(), (double[])_faceY.Clone(), (double[])_faceZ.Clone());
         }
 
+        /// <summary>
+        /// A copy of the x, y and z edge values the last <see cref="MeasureFaceFluxes"/> or
+        /// conservative step left standing, m³/s: the potential at each edge's midpoint times the
+        /// edge's length, in the edge arrays' own indexing. Empty until one has run.
+        /// </summary>
+        /// <remarks>
+        /// A reading, for <see cref="FaceFluxesForReading"/>'s reason one level down: a face is the
+        /// sum of four edges, so two paths can agree face for face and still differ in an edge
+        /// whose difference cancels, and the claim <see cref="SampleByColumn"/> makes is per edge.
+        /// </remarks>
+        public (double[] X, double[] Y, double[] Z) EdgesForReading()
+        {
+            if (_edgeX == null) return (new double[0], new double[0], new double[0]);
+
+            return ((double[])_edgeX.Clone(), (double[])_edgeY.Clone(), (double[])_edgeZ.Clone());
+        }
+
         private static double Square(double v) => v * v;
 
         // ---------------------------------------------------------- the lattice's edges and faces
@@ -3381,6 +3790,37 @@ namespace Evosim.Core
         /// is a plain term loop with no polar geometry in it.
         /// </remarks>
         public bool PrecomputeStreamsTerms { get; set; } = true;
+
+        /// <summary>
+        /// Whether the hoisted tank path samples its edges a column at a time, through
+        /// <see cref="CurrentField"/>'s column kernel, rather than an edge at a time through the
+        /// hoisted <c>PotentialAt</c>. True, and the two are the same arithmetic in the same order
+        /// and grouping, so this decides speed and nothing else.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What the column buys.</b> The 24 eddy phases <c>cos mθ·C_k − sin mθ·S_k</c> depend
+        /// on the column and the instant alone, so they are computed once for a column's two dozen
+        /// edges instead of once for each; the guards and the scale are asked once a pass instead
+        /// of once an edge; and on a flat floor the x and z edges, which read only the
+        /// overturning, skip the eddy sum whose value they never used.
+        /// </para>
+        /// <para>
+        /// It exists for <see cref="PrecomputeStreamsTerms"/>' reason: so that one grid can be
+        /// run both ways and every edge held against the other bit for bit
+        /// (<c>ColumnKernelTests</c>). It reaches nothing where the streams' hoist does not stand:
+        /// in a box, or with <see cref="PrecomputeStreamsTerms"/> off, or on a shaped floor with
+        /// <see cref="PrecomputeBedColumns"/> off.
+        /// </para>
+        /// </remarks>
+        public bool SampleByColumn { get; set; } = true;
+
+        /// <summary>
+        /// How many edge passes the column kernel has sampled on this grid: a reading, so that a
+        /// test comparing the two paths can show the kernel ran rather than infer it from
+        /// agreement. Identical numbers prove nothing if both sides took the same path.
+        /// </summary>
+        public long ColumnPasses { get; private set; }
 
         /// <summary>
         /// Builds the three edge families' streams terms for this current, or clears them for
@@ -3780,6 +4220,15 @@ namespace Evosim.Core
 
             try
             {
+                // The column kernel, wherever the streams' hoist stands and the water carries
+                // anything; still water and every unhoisted path take the planes below.
+                if (SampleByColumn && termsX.Columns != null &&
+                    current.OpenHoistedPass(termsX.Bed != null, seconds))
+                {
+                    SampleByColumns(current, termsX, termsY, termsZ);
+                    return;
+                }
+
                 Parallelism.ForRanges(_ny - 1, (from, to) =>
                 {
                     for (int j = from + 1; j <= to; j++)
@@ -3797,6 +4246,124 @@ namespace Evosim.Core
             {
                 current.UnpinInstant();
             }
+        }
+
+        // The heights the edge loops pass, as the floats they pass them: -(float)(j·h) on the node
+        // planes j = 1 … ny−1 that carry x and z edges, and -(float)((j + ½)·h) at the layer
+        // midpoints j = 0 … ny−1 that carry y edges. Geometry, so built once.
+        private float[] _planeHeights;
+        private float[] _layerHeights;
+
+        /// <summary>
+        /// <see cref="SampleEdges(CurrentField, double)"/>' body on the column kernel: every edge
+        /// of the three lattices, a column at a time. See <see cref="SampleByColumn"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A column is one unit of work.</b> On all three lattices an edge's index is
+        /// <c>j · columns + c</c>, with <c>c</c> the index the column tables already use. So a
+        /// slab of columns writes its own entries of each plane and reads nothing another slab
+        /// writes. Each edge is still given the value one expression gives it, and the split
+        /// cannot move a number, as the planes' split could not.
+        /// </para>
+        /// <para>
+        /// <b>It writes what the planes' loops write</b>: every edge of the planes they walk, and
+        /// zero on every closed one. The surface and floor planes were cleared before the pin.
+        /// </para>
+        /// </remarks>
+        private void SampleByColumns(
+            CurrentField current, EdgeTerms termsX, EdgeTerms termsY, EdgeTerms termsZ)
+        {
+            if (_planeHeights == null)
+            {
+                double h = CellMetres;
+
+                var planes = new float[Math.Max(0, _ny - 1)];
+                for (int j = 1; j < _ny; j++) planes[j - 1] = -(float)(j * h);
+
+                var layers = new float[_ny];
+                for (int j = 0; j < _ny; j++) layers[j] = -(float)((j + 0.5) * h);
+
+                _layerHeights = layers;
+                _planeHeights = planes;
+            }
+
+            ColumnLattice(current, 0, termsX, _edgeX, _edgeOpenX, _edgeFadeX, 1, _planeHeights);
+            ColumnLattice(current, 2, termsZ, _edgeZ, _edgeOpenZ, _edgeFadeZ, 1, _planeHeights);
+            ColumnLattice(current, 1, termsY, _edgeY, _edgeOpenY, _edgeFadeY, 0, _layerHeights);
+
+            ColumnPasses++;
+        }
+
+        /// <summary>
+        /// One lattice, a column at a time: the current gives each open edge's potential
+        /// component, and this applies the reefs' fade and the edge's length, as the planes' loops
+        /// apply them.
+        /// </summary>
+        /// <param name="current">The water, pinned and opened for the pass.</param>
+        /// <param name="axis">0, 1 or 2: the x, y or z edges.</param>
+        /// <param name="terms">The lattice's precomputed terms.</param>
+        /// <param name="edges">The lattice's edge array.</param>
+        /// <param name="open">The lattice's openness mask, in the same indexing.</param>
+        /// <param name="fade">The lattice's reef fades, or null without reefs.</param>
+        /// <param name="firstPlane">The plane the first depth is on: 1 for x and z, 0 for y.</param>
+        /// <param name="heights">Each depth's height, one per depth.</param>
+        private void ColumnLattice(
+            CurrentField current, int axis, EdgeTerms terms, double[] edges, bool[] open,
+            float[] fade, int firstPlane, float[] heights)
+        {
+            double h = CellMetres;
+
+            CurrentField.StreamsColumn[] columns = terms.Columns;
+            CurrentField.StreamsDepth[] depths = terms.Depths;
+            CurrentField.BedColumn[] bed = terms.Bed;
+            int stride = terms.Stride, step = terms.Step;
+            int across = columns.Length;
+            int count = heights.Length;
+
+            Parallelism.ForRanges(across, (from, to) =>
+            {
+                var strip = new float[count];
+
+                for (int c = from; c < to; c++)
+                {
+                    int first = firstPlane * across + c;
+                    int depthAt = c * step;
+
+                    switch (axis)
+                    {
+                        case 0:
+                            current.HoistedStripX(
+                                columns[c], bed, c, depths, depthAt, stride, heights, count,
+                                open, first, across, strip);
+                            break;
+                        case 1:
+                            current.HoistedStripY(
+                                columns[c], bed, c, depths, depthAt, stride, count,
+                                open, first, across, strip);
+                            break;
+                        default:
+                            current.HoistedStripZ(
+                                columns[c], bed, c, depths, depthAt, stride, heights, count,
+                                open, first, across, strip);
+                            break;
+                    }
+
+                    for (int n = 0, e = first; n < count; n++, e += across)
+                    {
+                        if (!open[e])
+                        {
+                            edges[e] = 0d;
+                            continue;
+                        }
+
+                        // (p * fade).X in the planes' loops: a float product, then widened.
+                        double value = fade == null ? strip[n] : (float)(strip[n] * fade[e]);
+
+                        edges[e] = value * h;
+                    }
+                }
+            });
         }
 
         /// <summary>The x and z edges of one interior node plane. <see cref="SampleEdges(CurrentField, double)"/>' body.</summary>

@@ -7,7 +7,7 @@
 ROOT=/d/Projects/experiments/evolution-simulator
 RUNS=$ROOT/runs
 LOGS=$ROOT/scratch/logs
-OLDTMP=/c/Users/shake/AppData/Local/Temp
+OLDTMP=$(cygpath -u "$LOCALAPPDATA")/Temp
 LIST=$ROOT/scratch/evosim-watch-arms.txt
 STALL=$((32*60))
 declare -A ended errored size stamp stalled headered

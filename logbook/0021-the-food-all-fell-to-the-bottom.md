@@ -5,9 +5,8 @@
 Two questions came in together, both from the human, and the run that answered one answered
 the other.
 
-> *did we have enough deaths and reproductions to create an evolution?*
-
-> *is there a cyclical(-ish) current that moves creatures around?*
+The first asked whether the run had seen enough deaths and reproductions to count as evolution at all. The second
+asked whether some roughly cyclical current moved the creatures around.
 
 The answer to the first is no, and it would not have helped. The answer to the second is no,
 and it is the missing mechanism.
@@ -74,8 +73,8 @@ the food falls out from under them.
 
 The human predicted the first half of this.
 
-> *the world should have more and more material as entities die… as the world gets more populated
-> with food, then animals that consume the dead matter should start to be more common.*
+The prediction was that the world should hold more and more material as entities die. As it fills with
+food, animals that eat the dead matter should grow more common.
 
 The material does accumulate, from 5,585 J to 8,330 J, monotonically. It accumulates where
 nothing lives, sixty metres below a population that cannot move six millimetres.

@@ -114,7 +114,9 @@ namespace Evosim.Theatre.EditorTools
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             var holder = new GameObject("Solo Still Camera");
             Camera cam = holder.AddComponent<Camera>();
-            var skin = new TheatreSkin();
+            // A solo still is a record, a cut-out compared with others like it, and keeps today's
+            // look whatever the underwater look's dials say (logbook/specs/underwater-look/brief.md).
+            var skin = new TheatreSkin { Look = TheatreLook.Off };
             skin.Apply(cam);
             RenderSettings.fog = false;
             RenderSettings.skybox = null;

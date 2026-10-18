@@ -1,0 +1,274 @@
+run D:\Projects\experiments\evolution-simulator\runs\r58g-b\2026-10-12-154747-dfc0e881
+lineage rows 14856, from t 12000.5
+== admitted: 20 inoculant rows against 20 asked
+  id 18728 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18729 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18730 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18731 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18732 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18733 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18734 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18735 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18736 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18737 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18738 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18739 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18740 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18741 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18742 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18743 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18744 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18745 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18746 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18747 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+== the line: 24 bodies, 4 born of it
+  child id 18854 of 18730 at t 12032.5, kind r, atk 1 ink 1
+  child id 19190 of 18730 at t 12119, kind r, atk 1 ink 1
+  child id 19386 of 18744 at t 12177, kind r, atk 1 ink 1
+  child id 20015 of 18730 at t 12355, kind r, atk 1 ink 1
+== deaths of the line
+  id 18854 died t 12042.5 of starved, age 10.0, reserve None
+  id 19190 died t 12129.5 of starved, age 10.5, reserve None
+  id 19386 died t 12187 of starved, age 10, reserve None
+  id 20015 died t 12361.5 of starved, age 6.5, reserve None
+  id 18747 died t 12492 of starved, age 491.5, reserve None
+  id 18731 died t 12503.5 of starved, age 503.0, reserve None
+  id 18733 died t 12540 of starved, age 539.5, reserve None
+  id 18734 died t 12561 of starved, age 560.5, reserve None
+  id 18736 died t 12582.5 of starved, age 582.0, reserve None
+  id 18740 died t 12617 of starved, age 616.5, reserve None
+  id 18735 died t 12617.5 of starved, age 617.0, reserve None
+  id 18732 died t 12620 of starved, age 619.5, reserve None
+  id 18739 died t 12625.5 of starved, age 625.0, reserve None
+  id 18738 died t 12636 of starved, age 635.5, reserve None
+  id 18746 died t 12643 of starved, age 642.5, reserve None
+  id 18743 died t 12671.5 of starved, age 671.0, reserve None
+  id 18741 died t 12715 of starved, age 714.5, reserve None
+  id 18737 died t 12722.5 of starved, age 722.0, reserve None
+  id 18745 died t 12731 of starved, age 730.5, reserve None
+  id 18728 died t 12739.5 of starved, age 739.0, reserve None
+  id 18729 died t 12755.5 of starved, age 755.0, reserve None
+  id 18744 died t 12928.5 of starved, age 928.0, reserve None
+  id 18730 died t 13225 of starved, age 1224.5, reserve None
+  id 18742 died t 13381.5 of starved, age 1381.0, reserve None
+  24 deaths: {'starved': 24}; 0 of the line alive at the end
+== kill rows
+  1 in the run, 1 by the line
+  t 12089 id 16094 by 18743 (line) root 1 parts 1 tj 10.250570252537727 rj 68.49689290077698 part 0 byPart 0
+== stats: run | r58-s1ir at the same t
+  t 12010: alive 2960|2942; stillbirths 433|431; selfOverlapStillbirths 433|431; partsKilled 0|0; bodiesEaten 0|0; corpsesFromKills 0|0; corpsesEaten 112|104; unitsEaten 68.83393973207096|61.718801370965096; corpses 10340|10352; moduleAdds 31|31; moduleAddsRefused 44761|44761; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 44761|44761; modulesStanding 20|20; moduleRebuilds 31|31
+  t 12110: alive 3181|3155; stillbirths 440|439; selfOverlapStillbirths 440|439; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 129|105; unitsEaten 74.39311484450413|62.6014471310932; corpses 10387|10415; moduleAdds 33|32; moduleAddsRefused 46832|46821; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 46832|46821; modulesStanding 22|21; moduleRebuilds 33|32
+  t 12210: alive 3388|3362; stillbirths 442|447; selfOverlapStillbirths 442|447; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 143|105; unitsEaten 80.68508892925574|62.6014471310932; corpses 10463|10504; moduleAdds 38|36; moduleAddsRefused 49097|49089; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 49097|49089; modulesStanding 24|22; moduleRebuilds 39|37
+  t 12310: alive 3564|3551; stillbirths 453|454; selfOverlapStillbirths 453|454; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 147|105; unitsEaten 81.69168897110538|62.6014471310932; corpses 10574|10619; moduleAdds 39|36; moduleAddsRefused 51714|51615; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 51714|51615; modulesStanding 23|20; moduleRebuilds 40|37
+  t 12410: alive 3729|3705; stillbirths 458|458; selfOverlapStillbirths 458|458; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 158|105; unitsEaten 85.47566100597024|62.6014471310932; corpses 10638|10680; moduleAdds 39|36; moduleAddsRefused 54432|54295; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 54432|54295; modulesStanding 23|20; moduleRebuilds 40|37
+  t 12510: alive 3884|3876; stillbirths 462|460; selfOverlapStillbirths 462|460; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 163|105; unitsEaten 86.86812161632527|62.6014471310932; corpses 10673|10719; moduleAdds 41|37; moduleAddsRefused 57277|57070; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 57277|57070; modulesStanding 25|21; moduleRebuilds 42|38
+  t 12610: alive 3971|3953; stillbirths 466|467; selfOverlapStillbirths 466|467; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 165|105; unitsEaten 87.13113697909472|62.6014471310932; corpses 10754|10808; moduleAdds 41|38; moduleAddsRefused 60177|60038; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 60177|60038; modulesStanding 25|21; moduleRebuilds 42|39
+  t 12710: alive 3995|3955; stillbirths 473|472; selfOverlapStillbirths 473|472; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 166|107; unitsEaten 87.24322943840649|63.36884808504621; corpses 10910|10930; moduleAdds 42|38; moduleAddsRefused 63079|63030; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 63079|63030; modulesStanding 22|18; moduleRebuilds 44|39
+  t 12810: alive 3994|3995; stillbirths 479|473; selfOverlapStillbirths 479|473; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 168|107; unitsEaten 87.73445183885399|63.36884808504621; corpses 11033|11036; moduleAdds 44|39; moduleAddsRefused 66067|66038; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 66067|66038; modulesStanding 23|16; moduleRebuilds 46|41
+  t 12910: alive 4041|4033; stillbirths 484|480; selfOverlapStillbirths 484|480; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 169|107; unitsEaten 90.04814962999043|63.36884808504621; corpses 11158|11157; moduleAdds 45|40; moduleAddsRefused 69298|69188; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 69298|69188; modulesStanding 23|17; moduleRebuilds 47|42
+  t 13010: alive 4149|4148; stillbirths 491|484; selfOverlapStillbirths 491|484; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 170|107; unitsEaten 93.26556812197128|63.42098246851603; corpses 11265|11269; moduleAdds 48|40; moduleAddsRefused 72575|72310; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 72575|72310; modulesStanding 24|15; moduleRebuilds 50|42
+  t 13110: alive 4343|4246; stillbirths 498|491; selfOverlapStillbirths 498|491; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 171|108; unitsEaten 94.6722384863768|63.578567978482965; corpses 11361|11378; moduleAdds 51|40; moduleAddsRefused 75880|75484; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 75880|75484; modulesStanding 27|15; moduleRebuilds 53|42
+  t 13210: alive 4480|4360; stillbirths 505|499; selfOverlapStillbirths 505|499; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 172|113; unitsEaten 95.61667246468545|64.8096803323511; corpses 11473|11479; moduleAdds 55|41; moduleAddsRefused 79246|78862; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 79246|78862; modulesStanding 30|16; moduleRebuilds 57|43
+  t 13310: alive 4583|4480; stillbirths 511|506; selfOverlapStillbirths 511|506; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 172|114; unitsEaten 95.61667246468545|64.85607034155166; corpses 11619|11631; moduleAdds 57|44; moduleAddsRefused 82785|82296; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 82785|82296; modulesStanding 31|18; moduleRebuilds 59|46
+  t 13410: alive 4640|4617; stillbirths 517|512; selfOverlapStillbirths 517|512; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 174|115; unitsEaten 96.0720601309546|65.05391797228936; corpses 11801|11799; moduleAdds 61|47; moduleAddsRefused 86511|85778; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 86511|85778; modulesStanding 32|18; moduleRebuilds 65|50
+  t 13510: alive 4641|4648; stillbirths 523|515; selfOverlapStillbirths 523|515; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 174|115; unitsEaten 96.12020372641167|65.05391797228936; corpses 11952|11930; moduleAdds 62|50; moduleAddsRefused 90299|89291; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 90299|89291; modulesStanding 32|20; moduleRebuilds 66|53
+  t 13610: alive 4647|4629; stillbirths 530|519; selfOverlapStillbirths 530|519; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 174|115; unitsEaten 96.12020372641167|65.05391797228936; corpses 12097|12066; moduleAdds 66|50; moduleAddsRefused 93914|92871; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 93914|92871; modulesStanding 35|19; moduleRebuilds 70|54
+  t 13710: alive 4577|4608; stillbirths 531|522; selfOverlapStillbirths 531|522; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 174|115; unitsEaten 96.12020372641167|65.05391797228936; corpses 12276|12200; moduleAdds 66|50; moduleAddsRefused 97696|96386; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 97696|96386; modulesStanding 34|18; moduleRebuilds 70|54
+  t 13810: alive 4494|4473; stillbirths 533|524; selfOverlapStillbirths 533|524; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 174|116; unitsEaten 96.12020372641167|65.35884403099809; corpses 12495|12413; moduleAdds 67|50; moduleAddsRefused 101543|100027; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 101543|100027; modulesStanding 33|15; moduleRebuilds 71|54
+  t 13910: alive 4447|4410; stillbirths 535|530; selfOverlapStillbirths 535|530; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 174|116; unitsEaten 96.12020372641167|65.35884403099809; corpses 12662|12581; moduleAdds 68|51; moduleAddsRefused 105469|103646; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 105469|103646; modulesStanding 34|16; moduleRebuilds 72|55
+  t 14010: alive 4467|4437; stillbirths 535|532; selfOverlapStillbirths 535|532; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 174|116; unitsEaten 96.12020372641167|65.35884403099809; corpses 12857|12759; moduleAdds 71|54; moduleAddsRefused 109455|107294; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 109455|107294; modulesStanding 37|19; moduleRebuilds 75|58
+  t 14110: alive 4548|4471; stillbirths 544|538; selfOverlapStillbirths 544|538; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 174|117; unitsEaten 96.12020372641167|65.46942088547524; corpses 13014|12927; moduleAdds 72|55; moduleAddsRefused 113483|111030; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 113483|111030; modulesStanding 35|19; moduleRebuilds 77|60
+  t 14210: alive 4554|4510; stillbirths 549|547; selfOverlapStillbirths 549|547; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 175|120; unitsEaten 96.33853781046544|67.77348259505675; corpses 13165|13064; moduleAdds 76|58; moduleAddsRefused 117744|115065; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 117744|115065; modulesStanding 38|21; moduleRebuilds 81|63
+  t 14310: alive 4526|4515; stillbirths 555|549; selfOverlapStillbirths 555|549; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 175|123; unitsEaten 96.33853781046544|68.81836245675548; corpses 13313|13213; moduleAdds 81|60; moduleAddsRefused 122198|119263; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 122198|119263; modulesStanding 41|22; moduleRebuilds 86|65
+  t 14410: alive 4534|4535; stillbirths 559|556; selfOverlapStillbirths 559|556; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 175|124; unitsEaten 96.33853781046544|69.4603199600076; corpses 13469|13354; moduleAdds 82|62; moduleAddsRefused 126838|123502; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 126838|123502; modulesStanding 41|22; moduleRebuilds 87|67
+  t 14510: alive 4554|4500; stillbirths 563|560; selfOverlapStillbirths 563|560; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 175|124; unitsEaten 96.8264105078784|69.4603199600076; corpses 13624|13535; moduleAdds 84|69; moduleAddsRefused 131628|127758; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 131628|127758; modulesStanding 42|29; moduleRebuilds 90|74
+  t 14610: alive 4549|4454; stillbirths 566|564; selfOverlapStillbirths 566|564; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 175|124; unitsEaten 98.24822590323363|69.4603199600076; corpses 13765|13685; moduleAdds 85|73; moduleAddsRefused 136509|132079; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 136509|132079; modulesStanding 37|31; moduleRebuilds 94|78
+  t 14710: alive 4396|4335; stillbirths 569|568; selfOverlapStillbirths 569|568; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 175|124; unitsEaten 98.24822590323363|69.4603199600076; corpses 13949|13843; moduleAdds 86|76; moduleAddsRefused 141551|136350; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 141551|136350; modulesStanding 32|33; moduleRebuilds 95|81
+  t 14810: alive 4223|4211; stillbirths 573|572; selfOverlapStillbirths 573|572; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 175|124; unitsEaten 98.24822590323363|69.4603199600076; corpses 14156|14043; moduleAdds 88|77; moduleAddsRefused 146474|140429; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 146474|140429; modulesStanding 31|32; moduleRebuilds 97|82
+  t 14910: alive 4059|4058; stillbirths 580|577; selfOverlapStillbirths 580|577; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 175|124; unitsEaten 98.24822590323363|69.4603199600076; corpses 14320|14210; moduleAdds 88|80; moduleAddsRefused 151283|144281; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 151283|144281; modulesStanding 30|32; moduleRebuilds 97|86
+  t 15000: alive 3954|3940; stillbirths 582|580; selfOverlapStillbirths 582|580; partsKilled 0|0; bodiesEaten 1|0; corpsesFromKills 1|0; corpsesEaten 175|124; unitsEaten 98.24822590323363|69.4603199600076; corpses 14456|14316; moduleAdds 91|81; moduleAddsRefused 155497|147738; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 155497|147738; modulesStanding 30|30; moduleRebuilds 101|88
+== positions: the line, and the leaves' mean y
+  t 12010: 20 of the line among 2960; leaves 2909 at mean y -4.09
+    id 18728 x 154.02 y -22.06 z 125.65 flags 0
+    id 18729 x 16.91 y -17.51 z 85.46 flags 0
+    id 18730 x 63.51 y -17.06 z 107.88 flags 0
+    id 18731 x 71.52 y -37.31 z 17.58 flags 0
+    id 18732 x 114.51 y -29.60 z 76.05 flags 0
+    id 18733 x 166.63 y -32.09 z 87.51 flags 0
+    id 18734 x 84.57 y -39.86 z 16.11 flags 0
+    id 18735 x 60.18 y -35.11 z 27.07 flags 0
+    id 18736 x 41.67 y -20.67 z 81.13 flags 0
+    id 18737 x 92.34 y -14.05 z 123.58 flags 0
+    id 18738 x 109.62 y -12.04 z 150.99 flags 0
+    id 18739 x 20.39 y -6.79 z 133.51 flags 0
+    id 18740 x 150.44 y -22.27 z 123.71 flags 0
+    id 18741 x 70.44 y -24.81 z 76.64 flags 0
+    id 18742 x 131.51 y -26.70 z 96.40 flags 0
+    id 18743 x 67.01 y -2.19 z 55.14 flags 0
+    id 18744 x 91.54 y -24.62 z 86.75 flags 0
+    id 18745 x 89.99 y -9.31 z 154.25 flags 0
+    id 18746 x 31.08 y -20.36 z 76.34 flags 0
+    id 18747 x 57.21 y -5.34 z 156.88 flags 0
+  t 12110: 20 of the line among 3178; leaves 3129 at mean y -4.51
+    id 18728 x 154.19 y -22.19 z 125.28 flags 0
+    id 18729 x 14.79 y -17.19 z 85.10 flags 0
+    id 18730 x 60.18 y -16.01 z 110.87 flags 0
+    id 18731 x 71.17 y -37.61 z 15.87 flags 0
+    id 18732 x 114.43 y -29.08 z 75.11 flags 0
+    id 18733 x 166.63 y -32.03 z 87.95 flags 0
+    id 18734 x 84.63 y -40.00 z 14.64 flags 0
+    id 18735 x 59.16 y -35.44 z 24.93 flags 0
+    id 18736 x 38.58 y -19.85 z 80.89 flags 0
+    id 18737 x 95.88 y -12.45 z 133.03 flags 0
+    id 18738 x 111.30 y -11.95 z 152.24 flags 0
+    id 18739 x 20.24 y -6.69 z 133.83 flags 0
+    id 18740 x 151.01 y -22.35 z 123.28 flags 0
+    id 18741 x 65.79 y -24.21 z 74.64 flags 0
+    id 18742 x 133.29 y -26.44 z 97.60 flags 0
+    id 18743 x 67.01 y -2.19 z 55.21 flags 0
+    id 18744 x 93.08 y -23.62 z 90.91 flags 0
+    id 18745 x 91.88 y -9.20 z 155.43 flags 0
+    id 18746 x 29.05 y -20.30 z 75.45 flags 0
+    id 18747 x 58.23 y -5.37 z 157.33 flags 0
+  t 12210: 20 of the line among 3386; leaves 3339 at mean y -4.93
+    id 18728 x 155.12 y -22.62 z 123.99 flags 0
+    id 18729 x 10.13 y -16.66 z 83.10 flags 0
+    id 18730 x 45.56 y -11.10 z 124.71 flags 0
+    id 18731 x 70.89 y -38.02 z 12.84 flags 0
+    id 18732 x 113.03 y -22.82 z 69.42 flags 0
+    id 18733 x 166.63 y -32.06 z 87.87 flags 0
+    id 18734 x 85.05 y -40.43 z 11.81 flags 0
+    id 18735 x 57.42 y -35.85 z 20.23 flags 0
+    id 18736 x 23.75 y -18.57 z 78.21 flags 0
+    id 18737 x 107.47 y -10.43 z 141.21 flags 0
+    id 18738 x 114.75 y -11.98 z 153.18 flags 0
+    id 18739 x 20.18 y -6.52 z 134.54 flags 0
+    id 18740 x 152.86 y -22.52 z 122.29 flags 0
+    id 18741 x 45.07 y -24.53 z 64.37 flags 0
+    id 18742 x 143.73 y -26.73 z 99.99 flags 0
+    id 18743 x 66.51 y -2.17 z 54.53 flags 0
+    id 18744 x 112.22 y -21.88 z 106.23 flags 0
+    id 18745 x 95.88 y -9.20 z 156.42 flags 0
+    id 18746 x 19.16 y -19.82 z 71.85 flags 0
+    id 18747 x 61.29 y -5.36 z 158.39 flags 0
+  t 12310: 20 of the line among 3562; leaves 3510 at mean y -5.12
+    id 18728 x 156.23 y -23.19 z 122.25 flags 0
+    id 18729 x 9.39 y -17.03 z 81.02 flags 0
+    id 18730 x 41.19 y -11.32 z 121.85 flags 0
+    id 18731 x 71.26 y -37.92 z 13.22 flags 0
+    id 18732 x 108.74 y -27.65 z 64.37 flags 0
+    id 18733 x 166.52 y -32.10 z 87.63 flags 0
+    id 18734 x 85.29 y -40.42 z 11.90 flags 0
+    id 18735 x 57.96 y -36.01 z 20.52 flags 0
+    id 18736 x 23.26 y -19.77 z 73.11 flags 0
+    id 18737 x 120.21 y -13.57 z 134.44 flags 0
+    id 18738 x 117.91 y -12.86 z 151.53 flags 0
+    id 18739 x 20.13 y -6.44 z 134.93 flags 0
+    id 18740 x 154.58 y -23.15 z 120.63 flags 0
+    id 18741 x 47.27 y -24.71 z 65.00 flags 0
+    id 18742 x 142.61 y -26.72 z 98.37 flags 0
+    id 18743 x 65.80 y -2.16 z 53.48 flags 0
+    id 18744 x 107.23 y -18.31 z 116.74 flags 0
+    id 18745 x 102.03 y -10.43 z 154.12 flags 0
+    id 18746 x 18.36 y -20.78 z 66.78 flags 0
+    id 18747 x 65.45 y -5.43 z 159.47 flags 0
+  t 12410: 20 of the line among 3729; leaves 3679 at mean y -5.23
+    id 18728 x 156.10 y -23.18 z 122.21 flags 0
+    id 18729 x 10.32 y -17.58 z 79.24 flags 0
+    id 18730 x 47.50 y -13.98 z 114.00 flags 0
+    id 18731 x 71.98 y -37.77 z 15.23 flags 0
+    id 18732 x 97.53 y -21.99 z 72.38 flags 0
+    id 18733 x 166.37 y -31.71 z 88.88 flags 0
+    id 18734 x 85.37 y -40.18 z 13.51 flags 0
+    id 18735 x 59.81 y -35.83 z 23.53 flags 0
+    id 18736 x 29.75 y -21.09 z 69.82 flags 0
+    id 18737 x 130.31 y -17.34 z 124.10 flags 0
+    id 18738 x 121.39 y -14.06 z 149.07 flags 0
+    id 18739 x 20.07 y -6.45 z 134.90 flags 0
+    id 18740 x 154.76 y -23.46 z 119.96 flags 0
+    id 18741 x 63.74 y -23.69 z 74.57 flags 0
+    id 18742 x 133.01 y -27.22 z 94.20 flags 0
+    id 18743 x 65.95 y -2.14 z 53.84 flags 0
+    id 18744 x 98.73 y -22.09 z 96.94 flags 0
+    id 18745 x 107.87 y -11.69 z 151.44 flags 0
+    id 18746 x 22.04 y -22.34 z 63.45 flags 0
+    id 18747 x 67.69 y -5.44 z 159.99 flags 0
+  t 12510: 18 of the line among 3884; leaves 3841 at mean y -5.55
+    id 18728 x 155.33 y -22.81 z 123.02 flags 0
+    id 18729 x 9.53 y -17.88 z 76.71 flags 0
+    id 18730 x 43.36 y -12.42 z 117.37 flags 0
+    id 18732 x 98.07 y -24.09 z 77.89 flags 0
+    id 18733 x 166.22 y -31.12 z 91.24 flags 0
+    id 18734 x 85.56 y -40.35 z 12.63 flags 0
+    id 18735 x 60.04 y -36.02 z 21.89 flags 0
+    id 18736 x 26.87 y -22.12 z 64.26 flags 0
+    id 18737 x 137.12 y -19.56 z 114.63 flags 0
+    id 18738 x 125.96 y -14.57 z 147.05 flags 0
+    id 18739 x 19.88 y -6.47 z 134.63 flags 0
+    id 18740 x 154.48 y -23.32 z 119.89 flags 0
+    id 18741 x 53.69 y -22.68 z 75.15 flags 0
+    id 18742 x 136.17 y -27.59 z 93.03 flags 0
+    id 18743 x 66.06 y -2.13 z 54.13 flags 0
+    id 18744 x 105.25 y -21.37 z 104.38 flags 0
+    id 18745 x 114.12 y -12.12 z 151.88 flags 0
+    id 18746 x 21.63 y -23.26 z 58.47 flags 0
+  t 12610: 15 of the line among 3971; leaves 3929 at mean y -5.88
+    id 18728 x 155.64 y -22.98 z 122.25 flags 0
+    id 18729 x 9.28 y -18.12 z 73.53 flags 0
+    id 18730 x 38.10 y -10.16 z 120.47 flags 0
+    id 18732 x 110.69 y -28.28 z 71.18 flags 0
+    id 18735 x 59.74 y -36.54 z 17.83 flags 0
+    id 18737 x 141.25 y -20.27 z 103.86 flags 0
+    id 18738 x 130.46 y -14.98 z 145.70 flags 0
+    id 18739 x 19.29 y -6.50 z 134.10 flags 0
+    id 18740 x 155.27 y -23.62 z 118.75 flags 0
+    id 18741 x 34.58 y -22.24 z 68.11 flags 0
+    id 18742 x 144.94 y -28.52 z 92.02 flags 0
+    id 18743 x 65.45 y -2.12 z 53.18 flags 0
+    id 18744 x 122.95 y -20.07 z 119.52 flags 0
+    id 18745 x 120.39 y -12.73 z 151.78 flags 0
+    id 18746 x 21.05 y -24.18 z 52.12 flags 0
+  t 12710: 8 of the line among 3991; leaves 3956 at mean y -5.85
+    id 18728 x 156.84 y -23.79 z 120.13 flags 0
+    id 18729 x 12.11 y -18.94 z 72.16 flags 0
+    id 18730 x 36.55 y -11.22 z 118.96 flags 0
+    id 18737 x 140.26 y -22.89 z 95.35 flags 0
+    id 18741 x 45.63 y -23.59 z 69.14 flags 0
+    id 18742 x 139.36 y -28.21 z 89.72 flags 0
+    id 18744 x 118.17 y -20.99 z 110.87 flags 0
+    id 18745 x 120.38 y -13.08 z 150.99 flags 0
+  t 12810: 3 of the line among 3993; leaves 3961 at mean y -6.33
+    id 18730 x 41.11 y -13.37 z 113.24 flags 0
+    id 18742 x 128.77 y -28.41 z 88.83 flags 0
+    id 18744 x 110.39 y -17.48 z 117.55 flags 0
+  t 12910: 3 of the line among 4040; leaves 4008 at mean y -6.29
+    id 18730 x 36.86 y -10.72 z 117.33 flags 0
+    id 18742 x 140.84 y -28.15 z 90.40 flags 0
+    id 18744 x 121.28 y -16.59 z 123.72 flags 0
+  t 13010: 2 of the line among 4149; leaves 4113 at mean y -6.17
+    id 18730 x 44.13 y -9.75 z 123.51 flags 0
+    id 18742 x 144.62 y -28.78 z 90.70 flags 0
+  t 13110: 2 of the line among 4343; leaves 4307 at mean y -6.49
+    id 18730 x 57.87 y -14.07 z 115.20 flags 0
+    id 18742 x 135.17 y -28.11 z 89.98 flags 0
+  t 13210: 2 of the line among 4478; leaves 4442 at mean y -7.09
+    id 18730 x 61.96 y -15.41 z 112.12 flags 0
+    id 18742 x 130.32 y -28.36 z 90.05 flags 0
+  t 13310: 1 of the line among 4582; leaves 4546 at mean y -6.95
+    id 18742 x 143.22 y -28.07 z 92.83 flags 0
+  t 13410: 0 of the line among 4636; leaves 4599 at mean y -7.07
+  t 13510: 0 of the line among 4640; leaves 4609 at mean y -7.23
+  t 13610: 0 of the line among 4644; leaves 4615 at mean y -7.38
+  t 13710: 0 of the line among 4576; leaves 4547 at mean y -7.31
+  t 13810: 0 of the line among 4494; leaves 4466 at mean y -7.25
+  t 13910: 0 of the line among 4445; leaves 4418 at mean y -7.55
+  t 14010: 0 of the line among 4466; leaves 4438 at mean y -7.67
+  t 14110: 0 of the line among 4544; leaves 4517 at mean y -7.53
+  t 14210: 0 of the line among 4553; leaves 4524 at mean y -7.58
+  t 14310: 0 of the line among 4524; leaves 4496 at mean y -7.82
+  t 14410: 0 of the line among 4533; leaves 4505 at mean y -7.93
+  t 14510: 0 of the line among 4553; leaves 4526 at mean y -7.99
+  t 14610: 0 of the line among 4549; leaves 4524 at mean y -7.90
+  t 14710: 0 of the line among 4396; leaves 4372 at mean y -8.10
+  t 14810: 0 of the line among 4223; leaves 4202 at mean y -7.86
+  t 14910: 0 of the line among 4058; leaves 4038 at mean y -7.63

@@ -28,6 +28,12 @@
            60 to 75 degrees through a 65 degree lens so the leaves stand against Snell's window,
            at the sun's bearing where it is clear; one slow move, -CanopyMove (the films
            review's second item).
+    sink   a fresh corpse (D127) falling through the water, the eye level at the middle of its fall
+           and moving sideways with its drift alone, so the bed and the living bodies that hold
+           their depth say what moved. From a window only, and made for -Speed.
+    vanish a settled corpse until the run removes it at its floor, fading over its last
+           EVOSIM_THEATRE_CORPSE_FADE_SECONDS (600 s); the eye still and a little above it. From a
+           window only, and made for -Speed.
   No box, no rings, no markers; the interface is hidden except COUSIN and the second, burnt into
   the corner. The camera is kept inside the glass, over the bed, under the surface and off every
   body, and the Editor's log carries a tally per shot of how often each rule bound and how fast
@@ -63,10 +69,20 @@
   Worker number, default 6.
 
 .PARAMETER Shots
-  Any of orbit, close, drift, canopy. Default orbit,close.
+  Any of orbit, close, drift, canopy, sink, vanish. Default orbit,close.
 
 .PARAMETER Seconds
-  Simulated seconds to film, default 60.
+  Seconds of film, default 60: of the run too at -Speed 1, and -Speed times as many of it above.
+
+.PARAMETER Speed
+  Seconds of the run a second of film (EVOSIM_THEATRE_FILM_SPEED), default 1. Above 1 the clip is a
+  time-lapse, labelled so on every frame, and is filmed from a window only; record the window at
+  -Fps over -Speed frames a second or more (--fps of Evosim.Farm --film-window), or each of its
+  frames is held for several of the film's.
+
+.PARAMETER Corpse
+  The corpse the sink or vanish shot follows, by the id of the body it was (EVOSIM_THEATRE_FILM_CORPSE).
+  Chosen by the shot when not given.
 
 .PARAMETER Fps
   Frames per simulated second, default 30.
@@ -154,6 +170,8 @@ param(
     [int]$Worker = 6,
     [string[]]$Shots = @('orbit', 'close'),
     [double]$Seconds = 60,
+    [double]$Speed = 1,
+    [string]$Corpse,
     [int]$Fps = 30,
     [string]$Size = '1920x1080',
     [double]$Turns = 0.25,
@@ -192,9 +210,10 @@ foreach ($value in $Shots) {
         if ($trimmed) { $shotList += $trimmed }
     }
 }
-if ($shotList.Count -eq 0) { throw "-Shots needs at least one of orbit, close, drift, canopy." }
+if ($shotList.Count -eq 0) { throw "-Shots needs at least one of orbit, close, drift, canopy, sink, vanish." }
 foreach ($s in $shotList) {
-    if (@('orbit', 'close', 'drift', 'canopy') -notcontains $s) { throw "-Shots: '$s' is not a shot. The shots are orbit, close, drift, canopy." }
+    if (@('orbit', 'close', 'drift', 'canopy', 'sink', 'vanish') -notcontains $s) { throw "-Shots: '$s' is not a shot. The shots are orbit, close, drift, canopy, sink, vanish." }
+    if (@('sink', 'vanish') -contains $s -and -not $FromFarm) { throw "-Shots: '$s' follows a corpse, and the corpses are read from a farm film window. Give -FromFarm." }
 }
 $shotList = @($shotList | Select-Object -Unique)
 
@@ -202,6 +221,9 @@ if ($Size -notmatch '^(\d+)[xX](\d+)$') { throw "-Size: '$Size' is not a size. W
 if (([int]$Matches[1]) % 2 -ne 0 -or ([int]$Matches[2]) % 2 -ne 0) { throw "-Size: both sides must be even for yuv420p." }
 if ($Seconds -le 0 -or $Seconds -gt 3600) { throw "-Seconds: $Seconds is outside 0 to 3600." }
 if ($Fps -lt 1 -or $Fps -gt 120) { throw "-Fps: $Fps is outside 1 to 120." }
+if ($Speed -lt 1 -or $Speed -gt 3600) { throw "-Speed: $Speed is outside 1 to 3600." }
+if ($Speed -ne 1 -and -not $FromFarm) { throw "-Speed: a time-lapse is filmed from a farm film window. Give -FromFarm." }
+if ($PSBoundParameters.ContainsKey('Corpse') -and $Corpse -notmatch '^[0-9]+$') { throw "-Corpse: '$Corpse' is not a body id." }
 if ($Carve -lt 0 -or $Carve -gt 0.5) { throw "-Carve: $Carve is outside 0 to 0.5." }
 if ($Turns -lt 0 -or $Turns -gt 4) { throw "-Turns: $Turns is outside 0 to 4." }
 if ($PSBoundParameters.ContainsKey('MotionBlur') -and ($MotionBlur -lt 0 -or $MotionBlur -gt 1)) { throw "-MotionBlur: $MotionBlur is outside 0 to 1." }
@@ -304,7 +326,7 @@ $names = @(
     'EVOSIM_THEATRE_FILM_CLOSE_SECONDS', 'EVOSIM_THEATRE_FILM_CLOSE_FOLLOW',
     'EVOSIM_THEATRE_CANOPY_MOVE', 'EVOSIM_THEATRE_DOF', 'EVOSIM_THEATRE_DOF_APERTURE',
     'EVOSIM_THEATRE_CPU_DOWNSAMPLE', 'EVOSIM_THEATRE_SYNC_ENCODE', 'EVOSIM_THEATRE_DOWNSAMPLE_CHECK',
-    'EVOSIM_THEATRE_WINDOW')
+    'EVOSIM_THEATRE_WINDOW', 'EVOSIM_THEATRE_FILM_SPEED', 'EVOSIM_THEATRE_FILM_CORPSE')
 
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -334,6 +356,9 @@ try {
     $env:EVOSIM_THEATRE_FILM_SHOTS = ($shotList -join ',')
     $env:EVOSIM_THEATRE_FILM_OUT = $frameDirectory
     $env:EVOSIM_THEATRE_FILM_TURNS = $Turns.ToString($invariant)
+    $env:EVOSIM_THEATRE_FILM_SPEED = $Speed.ToString($invariant)
+    if ($Corpse) { $env:EVOSIM_THEATRE_FILM_CORPSE = $Corpse }
+    else { Remove-Item env:EVOSIM_THEATRE_FILM_CORPSE -ErrorAction SilentlyContinue }
     $env:EVOSIM_THEATRE_WALL_MINUTES = "$WallMinutes"
     $env:EVOSIM_THEATRE_CARVE = $Carve.ToString($invariant)
 
@@ -373,6 +398,7 @@ try {
     }
     Write-Host "  shots  $($shotList -join ', ')"
     Write-Host "  film   $Seconds s at $Fps fps, $Size"
+    if ($Speed -ne 1) { Write-Host ("  lapse  {0} times the run: {1} s of it" -f $Speed.ToString($invariant), ($Seconds * $Speed).ToString($invariant)) }
     Write-Host "  frames $frameDirectory"
     Write-Host "  log    $log"
 

@@ -1,9 +1,8 @@
 # The beach: the bed raised to the surface along one side (round 46)
 
-*Fable, 2026-09-23 afternoon, from the owner's proposal in conversation ("what we need is the
-gradient floor back, and finally put in the beach. that would mean that there would have to be
-a point where the floor sits closer to the surface, so the initial evolving stomachs still have
-access to the snow"), after the first stomach screen read the reason the eaters cannot found.
+*Fable, 2026-09-23 afternoon, from the owner's proposal in conversation (the gradient floor should come back and the beach finally go in,
+which would need a point where the floor sits closer to the surface, so that the first evolving
+stomachs still reach the snow), after the first stomach screen read the reason the eaters cannot found.
 What to build so that one side of the tank's floor rises into the lit water and on to a shoal
 a metre under the surface; off by default so every recorded world replays bit for bit. It
 extends D092's bed (`logbook/specs/bed-spec.md`), which named the beach as a later round and

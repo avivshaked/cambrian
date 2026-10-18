@@ -15,6 +15,7 @@ namespace Evosim.Core
         public const string Absorptive = "absorptive";
         public const string Consumer = "consumer";
         public const string Buoyancy = "buoyancy";
+        public const string Anchoring = "anchoring";
     }
 
     /// <summary>
@@ -187,6 +188,9 @@ namespace Evosim.Core
         /// </para>
         /// </remarks>
         public float PhotosyntheticEfficiency { get; }
+
+        /// <summary>A link that bought photosynthesis fixes light (D167's leaf smell counts it).</summary>
+        public override bool FixesLight => PhotosyntheticEfficiency > 0f;
 
         public LinkCell(
             float idleWattsPerNewtonMetre = 0.02f,
@@ -394,6 +398,8 @@ namespace Evosim.Core
     {
         /// <summary>Fraction of incident light captured.</summary>
         public float Efficiency { get; }
+
+        public override bool FixesLight => true;
 
         /// <summary>
         /// The default capture fraction, named so that tissue defined as a fraction of green
@@ -888,5 +894,147 @@ namespace Evosim.Core
                 "{0}:upkeep={1:R},joint={2},lift={3:R},maxLift={4:R}",
                 Id, UpkeepWattsPerCubicMetre, AllowsJoint, WattsPerLiftUnit,
                 MaxLiftSinkMultiples);
+    }
+
+    /// <summary>
+    /// Tissue that holds on to the bed or a reef — D162, D165,
+    /// <c>logbook/specs/anchoring-cell-design.md</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Priced as attachment is in real organisms</b> (D162). The cell pays its standing cost
+    /// like every other, and a price to build each grip when it forms, scaled with the grip's
+    /// breaking force. Holding costs nothing by the second: the grip's strength decays while it
+    /// holds, which stands for its upkeep, and it weakens as the body's reserve runs low, after a
+    /// lag. The grip itself is the solver's (round 59, step 4); this type carries its numbers.
+    /// </para>
+    /// <para>
+    /// <b>Breaking force by area, not volume.</b> Grip grew with contact area in every study the
+    /// literature round found, and with no organ's volume, so the breaking force is the tenacity
+    /// times the cell's volume to the power 2/3 (<see cref="BreakingForce"/>).
+    /// </para>
+    /// <para>
+    /// <b>It enters a world by budding only</b> (D165). It is not in
+    /// <see cref="CellTypeRegistry.Standard"/>: a world that wants it appends it to its own table
+    /// (<see cref="CellTypeRegistry.Appending"/>), so a table without it draws as it always did.
+    /// </para>
+    /// <para>
+    /// ⚠ Every default is unmeasured in this world (§5A.10), and the nursery's bench sets them
+    /// before round 59 is pre-registered (D162).
+    /// </para>
+    /// </remarks>
+    public sealed class AnchoringCell : CellType
+    {
+        /// <summary>
+        /// Breaking force per square metre of the cell's area at full strength, N/m².
+        /// </summary>
+        /// <remarks>
+        /// The default is mussels' tenacity per shell planform area in a sheltered bed,
+        /// 5.8 × 10⁴ N/m², constant from 2 to 8 cm (Babarro &amp; Carrington 2013;
+        /// <c>logbook/specs/r59-anchor-lit/pass2.md</c>). Forces in this world are physical, so
+        /// the number carries over; a 6 cm bud breaks free at about 210 N.
+        /// </remarks>
+        public float TenacityNewtonsPerSquareMetre { get; }
+
+        /// <summary>The price of building a grip, joules per newton of its breaking force.</summary>
+        /// <remarks>
+        /// ⚠ The literature's 5 to 100 J/N does not carry over: this world's tissue is worth
+        /// 500 J/m³, so a grip priced so would cost a bud ten thousand times its own body. The
+        /// default keeps the literature's proportion instead. A full byssus costs 2 to 4 days of
+        /// a 140 mg mussel's upkeep, 20 to 90 J (pass2.md), which is 1 to 3% of its tissue at an
+        /// assumed 20 J per mg dry (<i>inference</i>). 1% of a body ten times a 6 cm bud is about
+        /// 0.01 J, which at a bud's 210 N is 5 × 10⁻⁵ J/N.
+        /// </remarks>
+        public float BuildJoulesPerNewton { get; }
+
+        /// <summary>
+        /// Seconds for a holding grip's strength to fall to 1/e — its upkeep, as threads decay.
+        /// </summary>
+        /// <remarks>
+        /// ⚠ Unmeasured on this world's clock. Real threads lose 29 to 48% of their strength in
+        /// four weeks, against about three days to build a byssus (pass2.md); the world builds a
+        /// grip in one step, so only the nursery can say what a week is here.
+        /// </remarks>
+        public float DecaySeconds { get; }
+
+        /// <summary>
+        /// Seconds of reserve below which the grip starts to weaken, after
+        /// <see cref="ReserveLagSeconds"/>. The reserve is the body's, read as the energy sense
+        /// reads it (<see cref="IReserveSource.SecondsOfReserve"/>).
+        /// </summary>
+        /// <remarks>⚠ Unmeasured, as <see cref="DecaySeconds"/>.</remarks>
+        public float ReserveThresholdSeconds { get; }
+
+        /// <summary>
+        /// Seconds the reserve must stay below <see cref="ReserveThresholdSeconds"/> before the
+        /// grip weakens. Starved juvenile mussels lost 41% of their grip in a week, and large
+        /// ones held for a week before weakening (pass2.md).
+        /// </summary>
+        /// <remarks>⚠ Unmeasured, as <see cref="DecaySeconds"/>.</remarks>
+        public float ReserveLagSeconds { get; }
+
+        public AnchoringCell(
+            float tenacityNewtonsPerSquareMetre = 5.8e4f,
+            float buildJoulesPerNewton = 5e-5f,
+            float decaySeconds = 3600f,
+            float reserveThresholdSeconds = 120f,
+            float reserveLagSeconds = 60f,
+            float upkeepWattsPerCubicMetre = 2.5f)
+            : base(upkeepWattsPerCubicMetre)
+        {
+            Positive(tenacityNewtonsPerSquareMetre, nameof(tenacityNewtonsPerSquareMetre),
+                "A grip that breaks at no force is no grip.");
+            Positive(buildJoulesPerNewton, nameof(buildJoulesPerNewton),
+                "A free grip is a free lever (§5A.1), and D162 prices each one.");
+            Positive(decaySeconds, nameof(decaySeconds),
+                "The decay is the grip's upkeep (D162); without it holding is free.");
+            NotNegative(reserveThresholdSeconds, nameof(reserveThresholdSeconds));
+            NotNegative(reserveLagSeconds, nameof(reserveLagSeconds));
+
+            TenacityNewtonsPerSquareMetre = tenacityNewtonsPerSquareMetre;
+            BuildJoulesPerNewton = buildJoulesPerNewton;
+            DecaySeconds = decaySeconds;
+            ReserveThresholdSeconds = reserveThresholdSeconds;
+            ReserveLagSeconds = reserveLagSeconds;
+        }
+
+        public override string Id => CellTypeIds.Anchoring;
+
+        public override Float3 InspectionColour => new Float3(0.62f, 0.45f, 0.30f);
+
+        public override CellIntake Acquire(in CellContext context) => CellIntake.None;
+
+        /// <summary>The breaking force of a full-strength grip on a cell of this volume, N.</summary>
+        public float BreakingForce(float volume) =>
+            TenacityNewtonsPerSquareMetre * (float)Math.Pow(Math.Max(0f, volume), 2.0 / 3.0);
+
+        /// <summary>What building a grip of this breaking force costs, J.</summary>
+        public float BuildPrice(float breakingForce) => BuildJoulesPerNewton * Math.Max(0f, breakingForce);
+
+        public override void WriteParameters(Json.Writer writer) =>
+            writer.Field("tenacityNewtonsPerSquareMetre", TenacityNewtonsPerSquareMetre)
+                  .Field("buildJoulesPerNewton", BuildJoulesPerNewton)
+                  .Field("decaySeconds", DecaySeconds)
+                  .Field("reserveThresholdSeconds", ReserveThresholdSeconds)
+                  .Field("reserveLagSeconds", ReserveLagSeconds);
+
+        public override string HashContribution() =>
+            string.Format(
+                CultureInfo.InvariantCulture,
+                "{0}:upkeep={1:R},joint={2},tenacity={3:R},build={4:R},decay={5:R},reserve={6:R}/{7:R}",
+                Id, UpkeepWattsPerCubicMetre, AllowsJoint, TenacityNewtonsPerSquareMetre,
+                BuildJoulesPerNewton, DecaySeconds, ReserveThresholdSeconds, ReserveLagSeconds);
+
+        private static void Positive(float value, string name, string why)
+        {
+            if (!(value > 0f) || float.IsInfinity(value))
+                throw new ArgumentOutOfRangeException(name, value, why);
+        }
+
+        private static void NotNegative(float value, string name)
+        {
+            if (!(value >= 0f) || float.IsInfinity(value))
+                throw new ArgumentOutOfRangeException(name, value, "Must be finite and not negative.");
+        }
     }
 }

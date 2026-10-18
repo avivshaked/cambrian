@@ -77,8 +77,8 @@ wr(p, s); print('0070 ok')
 
 # ---------------- DECISIONS.md: D079's index row and a dated note
 p = 'DECISIONS.md'; s = rd(p)
-s = rep1(s, """| 2026-09-06 | ruled (owner: "agreed. proceed with that idea") · first round pre-registered as logbook/0070 |""",
-"""| 2026-09-06 | ruled (owner: "agreed. proceed with that idea") · first round pre-registered as logbook/0070 · **round 28 read 2026-09-07 (logbook/0070): 3 of 5 under D063 as amended, below round 18's bar of 4; seeds 2, 3, 4 pass and seed 1 fails as in round 18; seed 5's stomach line stable at 17 and sterile from 21,408 s; M5 (no crowd) fails in every seed; the collisions-off control and the box's width are the owner's rulings** |""", p)
+s = rep1(s, """| 2026-09-06 | ruled (the owner agreed to proceed with that idea) · first round pre-registered as logbook/0070 |""",
+"""| 2026-09-06 | ruled (the owner agreed to proceed with that idea) · first round pre-registered as logbook/0070 · **round 28 read 2026-09-07 (logbook/0070): 3 of 5 under D063 as amended, below round 18's bar of 4; seeds 2, 3, 4 pass and seed 1 fails as in round 18; seed 5's stomach line stable at 17 and sterile from 21,408 s; M5 (no crowd) fails in every seed; the collisions-off control and the box's width are the owner's rulings** |""", p)
 s = rep1(s, """**Note, 2026-09-07 (from the outside review of 2026-09-06, logbook/0071).** When the open
 budget returns to this world,""",
 """**Round 28 read, 2026-09-07 (logbook/0070).** The first change, shared space under

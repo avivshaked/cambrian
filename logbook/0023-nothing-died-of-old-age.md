@@ -5,9 +5,8 @@
 [Entry 0022](0022-the-conveyor-belt-and-the-thin-soup.md) ended on a number it did not
 chase. There were 98 deaths against 1,164 births, and the entry observed that *a world where
 almost nothing dies is a world where almost nothing is selected*. The human read that and
-said the obvious thing back.
-
-> *that sounds like a real problem, and at the very least age should kill creatures, no?*
+said the obvious thing back: that sounded like a real problem, and that at the very least age should kill
+creatures.
 
 It was already written down. DESIGN §5A.6b has carried this for weeks:
 
@@ -32,8 +31,8 @@ how well it earned.
 The first implementation put wear on upkeep alone. The human corrected it before it was
 measured:
 
-> *"what age should do is have an impact on energy expenditure and consumption — the older the
-> creature is, the less it converts, and the more it needs to expend."*
+The correction was that age should act on both sides of the energy account: the older a creature is, the less it
+converts and the more it must spend.
 
 Right, and cheaper to fix then than after a sweep. Costs alone is the easier code and the
 wrong biology. Senescence is loss of function first and expense second, and a creature

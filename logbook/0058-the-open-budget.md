@@ -14,9 +14,7 @@ of itself in bodies and sets the population by arithmetic. That in turn sets eve
 body's fecundity to the same value whatever it earns, so the energy economy selects only for
 not starving.
 
-The owner's reading was this.
-
-> matter, like energy, is not finite; there is a constant influx of both.
+The owner's reading was that matter, like energy, is not finite, and that both come in constantly.
 
 D074 gives matter the shape energy already has: in at the top, out at the bottom, with the
 standing stock an equilibrium of the two.

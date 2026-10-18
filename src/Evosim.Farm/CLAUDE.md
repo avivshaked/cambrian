@@ -23,7 +23,7 @@ The root file's rules still apply. The entries below were moved word for word, s
 - **From 2026-09-22 there are two farms, and the one out of Unity is the one that runs.**
   `src/Evosim.Farm` is a .NET 8 console that steps Core's `World` with `src/Evosim.Dynamics`
   (Featherstone in doubles, one creature at a time, bit-identical at any thread count;
-  `fable-propose-own-solver.md` until it is absorbed). It binds the same `EVOSIM_*`
+  `proposals/fable-propose-own-solver.md` until it is absorbed). It binds the same `EVOSIM_*`
   variables as `EvolutionRun`, plus `EVOSIM_THREADS` and `EVOSIM_RUNS_ROOT`, and reproduces
   a launcher's `configHash` (round 42's `ff557bce…`) and its `config.json` byte for byte.
   Round 42 seed 1's world ran 30,000 s in 24 minutes on it at 16 threads, both books
@@ -37,7 +37,11 @@ The root file's rules still apply. The entries below were moved word for word, s
   moves no hash, and `run-farm.ps1 -ResumeFrom <arm> -At <s>` writes the same rows from that
   second as the unbroken run would have. Three things about it bite. The config comes from the
   resumed run and the recording cadences from the checkpoint's header, so a launcher's
-  environment is ignored except for a cadence it sets by name. A resume across any of the
+  environment is ignored except for a cadence it sets by name. The report's header line is the
+  exception: `Report.HeaderLine` prints the launcher's environment (`EnvSettings`), not the resumed
+  config, so a resume launched without the round's variables prints the defaults (`r52-s1z`'s
+  header reads founders anywhere and the trickle off, while its `configHash` and rows are round
+  52's). Read a resumed run's world from its `config.json` and hash, never from its header. A resume across any of the
   four hashes is refused unless `EVOSIM_ALLOW_SOURCE_MISMATCH`, and is then a cousin the
   manifest marks. And the last checkpoint after a `STOP` is the second the run stopped at,
   because the file is written after the report row and before the stop is acted on.
@@ -98,9 +102,12 @@ The root file's rules still apply. The entries below were moved word for word, s
   JIT decides the bits**: .NET's
   tiered compilation gives quick-JITted and optimised loops different floating-point
   results on a rounding edge, so every project that reports a digest sets
-  `<TieredCompilation>false</TieredCompilation>` and `DynamicsWorld.Step` takes one
-  `Parallel.For` path at every thread count, including one; a serial `for` beside it
-  parted from it at one thread. **.NET 8 and Mono format a float differently under
+  `<TieredCompilation>false</TieredCompilation>`. With it off, a world on one thread
+  steps its bodies in a plain loop and calls a lone slab directly (`StepOnCpu`,
+  `Slabs.Run`), and that path is byte-identical to `Parallel.For`'s, since both call the
+  same compiled method. Anything that turns tiering back on, a new project or a runtime
+  setting, loses that guarantee: run `StepFoldIdentityTests` and the nursery's digest
+  check at one and at N threads before trusting a one-thread result. **.NET 8 and Mono format a float differently under
   `"R"`** (17.641891 against 17.6418915), and that formatter feeds the config hash; no
   recorded run is affected, and a hash read from a Unity build is compared to a farm's only
   through a launcher both have written. **The contact instrument is renamed**: the farm's
@@ -252,6 +259,17 @@ The root file's rules still apply. The entries below were moved word for word, s
   `r45fix-s4` sample for sample in 141 fields (the tree's regress, `scratch/r45-build/
   regress.py`). The Unity farm does not bind the variable; a world built there carries the
   bound at 0 and its header has no `reach` token.
+- **A body's committed contact sphere is one step stale between steps** (2026-10-03,
+  `logbook/specs/farm-physics-speed-read.md` P1). The commit pass at the foot of every physics step
+  was folded into the next step's grid build, so after `Step` returns, `ContactCentre`,
+  `ContactRadius`, `ContactVelocity`, `ContactActive` and the `LinkContact*` arrays still hold the
+  sphere the step started from. A reader between steps calls `Creature.EnsureContactCommitted` or
+  `DynamicsWorld.CommitContactSpheres` first; the checkpoint writer, the fidelity check, the
+  divergence guard's default radius and the backend's entry already do. A write to the pending
+  sphere between steps commits the step's own first, so the committed sphere stays what the old
+  commit left. The water's pass went into each body's own step at the same time (P2), so the rows'
+  `wallStepWaterMs` and `wallStepCommitMs` read 0 from that build; their time is in
+  `wallStepBodiesMs` and `wallStepGridMs`.
 - **A farm round's pre-registration record is the manifest's `gitCommit` on a clean tree.**
   `run-farm.ps1` has no `-Prereg`; `launch-queue.ps1 -Prereg` is the Unity queue's. So a
   farm round is launched only after the entry is committed and `git status` is clean, and

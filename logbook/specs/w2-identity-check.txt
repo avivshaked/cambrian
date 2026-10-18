@@ -1,0 +1,19 @@
+The -w2 identity check, 2026-10-05: rounds/nursery/brain2-w2.json for 3 generations (scratch recipe brain2-w2-check3, the exam cut to its own brain on one draw) on main at d2ca26c, 8 threads, against nursery-general step 5's brain2-check3 run on the old config.
+Command: python scripts/reads/nursery-baseline-check.py scratch/wt-nursery-general/scratch/step5/run scratch/w2check/run
+comparing generations 0 to 3: every row the new run wrote
+| File | Generation | Verdict |
+|---|---|---|
+| `tank-generations.jsonl` | 0 | identical |
+| `tank-generations.jsonl` | 1 | identical |
+| `tank-generations.jsonl` | 2 | identical |
+| `tank-generations.jsonl` | 3 | identical |
+| `tank-best.jsonl` | 0 | identical |
+| `tank-best.jsonl` | 1 | identical |
+| `tank-best.jsonl` | 2 | identical |
+| `tank-best.jsonl` | 3 | identical |
+| `tank-crossovers.jsonl` | 0 | identical (no children born) |
+| `tank-crossovers.jsonl` | 1 | identical (47 rows) |
+| `tank-crossovers.jsonl` | 2 | identical (49 rows) |
+| `tank-crossovers.jsonl` | 3 | identical (41 rows) |
+
+ALL IDENTICAL

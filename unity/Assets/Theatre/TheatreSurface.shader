@@ -154,6 +154,124 @@ Shader "Evosim/Theatre Surface"
                 return output;
             }
 
+            // ---------------------------------------------------------------------------------
+            // The sky from below, the underwater look's item 6 (logbook/specs/underwater-look/
+            // brief.md), drawn in place of the window above when EVOSIM_THEATRE_SKY_DAY is on.
+            // Three things the plain window lacks, and nothing the run does not imply:
+            //   - an overcast from the run's day (TheatreDaylight: more cloud and a softer, dimmer
+            //     disc on a dull day, a clear sky on a bright one), drifting with the shaders'
+            //     clock, never a random draw;
+            //   - a slight colour split at the window's rim, because water bends blue a little
+            //     more than red and the edge of the window is where that shows;
+            //   - a mirror outside the window that brightens toward it, where the surface reflects
+            //     the lit water just under it at a grazing angle.
+            // The sun stays where item 1 or the key put it: the run's day factor never reaches
+            // zero, so no sun sets and none is drawn low.
+
+            // How much of the light arriving at the surface from below is reflected rather than let
+            // through, for one channel's index: one outside the window, Schlick on the angle in
+            // the air inside it, as the plain window does for all three at once.
+            float WindowReflects(float3 incident, float3 n, float index)
+            {
+                float3 through = refract(incident, -n, index);
+                if (dot(through, through) <= 1e-5) return 1.0;
+
+                float cosAir = saturate(dot(normalize(through), n));
+                return saturate(0.02 + 0.98 * pow(1.0 - cosAir, 5.0));
+            }
+
+            // A soft cloud field over the sky, 0 to 1, from three octaves of the carve's value
+            // noise laid on the sky's own plane and drifting with the clock.
+            float Clouds(float3 through, float time)
+            {
+                float2 plane = through.xz / max(0.08, through.y) * 0.35 + time * float2(0.004, 0.0015);
+                float3 gradient;
+
+                float field = 0.55 * EvoValueNoise(float3(plane, 0.37), gradient);
+                field += 0.30 * EvoValueNoise(float3(plane * 2.3, 1.91), gradient);
+                field += 0.15 * EvoValueNoise(float3(plane * 5.1, 4.13), gradient);
+
+                return field;
+            }
+
+            float3 SkyDay(float3 incident, float3 n)
+            {
+                float overcast = saturate(_EvoDaylight.w);
+                float day = EvoDayGain();
+
+                // Water's index runs from about 1.331 in the red to 1.338 in the blue.
+                float3 mirrored = float3(
+                    WindowReflects(incident, n, 1.331),
+                    WindowReflects(incident, n, 1.333),
+                    WindowReflects(incident, n, 1.338));
+
+                float3 sky = _SkyHorizon.rgb;
+                float3 through = refract(incident, -n, 1.333);
+
+                if (dot(through, through) > 1e-5)
+                {
+                    through = normalize(through);
+                    sky = lerp(_SkyHorizon.rgb, _SkyZenith.rgb, saturate(through.y));
+
+                    // Cloud: patches on a bright day, a grey lid on a dull one. The cloud is the
+                    // sky's own brightness made grey and dimmed, never a fixed white: the first
+                    // stills (2026-10-07) used a literal near-white, which in this linear project
+                    // is brighter than any of the sky, and a winter window came out blown.
+                    float field = Clouds(through, _Time.y);
+                    float cover = smoothstep(0.72 - 0.45 * overcast, 0.90 - 0.40 * overcast, field);
+                    cover = max(cover, 0.85 * overcast * overcast);
+
+                    float luma = dot(sky, float3(0.2126, 0.7152, 0.0722));
+                    float3 cloud = luma * float3(0.94, 0.97, 1.0) * lerp(1.05, 0.55, overcast);
+                    sky = lerp(sky, cloud, cover);
+
+                    // A dull day is a darker sky as well as a greyer one.
+                    sky *= lerp(1.0, 0.7, overcast);
+
+                    // The sun: a smaller share of it through the cloud, its disc wider and its edge
+                    // softer on a dull day; its glow wider and weaker, so the overcast spreads a
+                    // little light about the sun's place and never whitens the window.
+                    float3 sun = EvoSunDirectionWS();
+                    float angle = acos(clamp(dot(through, sun), -1.0, 1.0));
+
+                    float discRadians = radians(_SunDegrees * (1.0 + 2.5 * overcast));
+                    float disc = 1.0 - smoothstep(discRadians * lerp(0.75, 0.2, overcast), discRadians * 1.25, angle);
+                    float glow = pow(saturate(1.0 - angle / max(0.01, radians(_GlowDegrees * (1.0 + overcast)))), 3.0);
+
+                    float seen = lerp(1.0, 0.06, overcast) * (1.0 - 0.6 * cover);
+                    sky += _SunColor.rgb * (_SunStrength * (disc * seen + 0.10 * lerp(1.0, 0.3, overcast) * glow));
+                }
+
+                // The mirror: the dark water below, as before, brightening toward the window's rim,
+                // where the reflected ray runs along under the surface through the lit water.
+                float3 bounced = reflect(incident, n);
+                float3 mirror = _DeepColor.rgb * (0.55 + 0.45 * saturate(-bounced.y));
+
+                float cosIn = saturate(dot(incident, n));
+                float sinIn = sqrt(saturate(1.0 - cosIn * cosIn));
+                float beyond = max(0.0, (sinIn - 0.7502) / 0.2498);
+                float nearRim = exp(-5.0 * beyond);
+
+                mirror = lerp(mirror, EvoWaterColour(EvoWaterlineY()) * 1.6, 0.55 * nearRim);
+
+                // The second batch's item 1: outside the window the surface mirrors the open water
+                // below, as an eye would see it looking along the bounced ray (EvoBackdrop, which
+                // carries the day, divided out here because the return multiplies by it), with the
+                // lit water at the rim in a narrower band. The first batch's mirror was the lit
+                // shallow water over most of its width, which greyed the whole sky view.
+                if (EvoLookFade())
+                {
+                    // No phase term: the glow toward the sun is the water's look at the light,
+                    // and the mirror looks down into the deep, away from it (with the phase on,
+                    // the reflected glow drew a bright oval in the mirror, iteration 3).
+                    float eyeY = min(GetCameraPositionWS().y, EvoWaterlineY());
+                    float3 below = EvoWaterColour(eyeY + bounced.y * EvoWaterViewMetres()) * max(0.0, _EvoFade.z);
+                    mirror = lerp(below, EvoWaterColour(EvoWaterlineY()) * 1.3, 0.45 * nearRim * nearRim * nearRim);
+                }
+
+                return lerp(sky * day, mirror * day, mirrored);
+            }
+
             half4 Fragment(Varyings input) : SV_Target
             {
                 float inside = EvoSeenFromBelow(_Waterline);
@@ -218,6 +336,8 @@ Shader "Evosim/Theatre Surface"
                 float3 mirror = _DeepColor.rgb * (0.55 + 0.45 * saturate(-bounced.y));
 
                 float3 colour = lerp(sky, mirror, mirrored);
+
+                if (EvoLookSky()) colour = SkyDay(incident, n);
 
                 // Deeper down the ceiling is a dim patch rather than a bright one. Over twice the
                 // light's reach, which is the same dial the shafts and the caustics fade on, so

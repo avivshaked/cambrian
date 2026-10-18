@@ -61,13 +61,16 @@ namespace Evosim.Theatre
         public Color Structural = new Color(0.72f, 0.74f, 0.78f);
 
         /// <summary>
-        /// The colour a joint's neck is drawn in.
+        /// The colour of a link: a part whose cell is <c>link</c>, the tissue a joint moves.
         /// </summary>
         /// <remarks>
         /// Deliberately off the guild wheel. Green, orange and grey are what a body is made of;
         /// this is what a body can do, and reading the two off one scale would mean a jointed
         /// producer and a jointless stomach could not be told apart at a glance. Framsticks
-        /// colours function the same way and keeps muscle on its own colour [FR].
+        /// colours function the same way and keeps muscle on its own colour [FR]. It was the neck's
+        /// colour first. From round 51, whose links catch no light (D127), it is the link's own
+        /// skin, the pink-purple the owner chose, where a link had been drawn in the grey of
+        /// structure; that grey is now also what a corpse is drawn in.
         /// </remarks>
         public Color Jointed = new Color(0.95f, 0.35f, 0.70f);
 
@@ -78,6 +81,19 @@ namespace Evosim.Theatre
         /// (<see cref="StarvingSaturation"/>) and a starving body reads as pale, not as absent.
         /// </summary>
         public float Starving = 0.45f;
+
+        /// <summary>
+        /// Brightness of a corpse (D127) as a fraction of a sated body: dead tissue, drawn in one grey.
+        /// A corpse is told from a starving body by having no colour, not by being darker: at 0.35 the
+        /// corpses read as charcoal among the dim living; the owner tried 0.5 and chose 0.55
+        /// (2026-09-28). <c>EVOSIM_THEATRE_CORPSE_BRIGHTNESS</c>.
+        /// </summary>
+        public float CorpseBrightness = TheatreSkin.Dial("EVOSIM_THEATRE_CORPSE_BRIGHTNESS", 0.55f, 0.05f, 1f);
+
+        /// <summary>The light a corpse lets through its tissue and the sheen on it: dull and nearly opaque.</summary>
+        private const float CorpseTransmission = 0.1f;
+
+        private const float CorpseSheen = 0.02f;
 
         /// <summary>Saturation of a body with nothing left, as a fraction of a sated one's.</summary>
         public float StarvingSaturation = 0.35f;
@@ -136,8 +152,8 @@ namespace Evosim.Theatre
             /// This creature's own seed, from its id and not its plan. <see cref="Seed"/> comes from
             /// the body plan (the skin genes), so every blade of a clade that shares a plan would be
             /// drawn with one outline; this one perturbs a blade's outline, curl and tone a little,
-            /// so siblings are similar and never identical (the owner, 2026-09-24: "something that
-            /// doesn't look exactly the same for every leaf, just similar").
+            /// so siblings are similar and never identical (the owner asked on 2026-09-24 for leaves that
+            /// are similar but not exactly the same).
             /// </summary>
             public float Own;
 
@@ -171,8 +187,17 @@ namespace Evosim.Theatre
             /// </summary>
             public Vector4[] Leaf;
 
-            /// <summary>One neck per jointed part, or null when this body has no joint.</summary>
+            /// <summary>
+            /// The neck's pieces: two knuckles at every joint, and a bridge on each side whose
+            /// drawn surface stands back from the anchor. Null when this body has no joint.
+            /// </summary>
             public Transform[] Necks;
+
+            /// <summary>
+            /// True where the piece is a bridge (<see cref="Bridge"/>), false for a knuckle.
+            /// Parallel to <see cref="Necks"/>.
+            /// </summary>
+            public bool[] NeckBridge;
 
             /// <summary>The part each neck's joint attaches. Parallel to <see cref="Necks"/>.</summary>
             public int[] NeckPart;
@@ -204,11 +229,23 @@ namespace Evosim.Theatre
         private readonly List<Transform> _necks = new List<Transform>();
         private readonly List<int> _neckPart = new List<int>();
         private readonly List<bool> _neckSide = new List<bool>();
+        private readonly List<bool> _neckBridge = new List<bool>();
 
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int ColorId = Shader.PropertyToID("_Color");
         private static readonly int RimColorId = Shader.PropertyToID("_RimColor");
         private static readonly int ReserveId = Shader.PropertyToID("_Reserve");
+        private static readonly int FadeId = Shader.PropertyToID("_Fade");
+        private static readonly int SrcBlendId = Shader.PropertyToID("_SrcBlend");
+        private static readonly int DstBlendId = Shader.PropertyToID("_DstBlend");
+        private static readonly int ZWriteId = Shader.PropertyToID("_ZWrite");
+
+        /// <summary>
+        /// Each body material and the pair a fading body draws with in its place, and each
+        /// see-through copy's opaque original.
+        /// </summary>
+        private readonly Dictionary<Material, Material[]> _fadingSetOf = new Dictionary<Material, Material[]>();
+        private readonly Dictionary<Material, Material> _opaqueOf = new Dictionary<Material, Material>();
         private static readonly int TransTintId = Shader.PropertyToID("_TransTint");
         private static readonly int TransGainId = Shader.PropertyToID("_TransGain");
         private static readonly int SheenId = Shader.PropertyToID("_Sheen");
@@ -315,7 +352,11 @@ namespace Evosim.Theatre
         /// <param name="phenotype">Its developed body, for the cell type of each part.</param>
         /// <param name="tint">0–1 from <see cref="Tint"/>.</param>
         /// <param name="on">False restores the plain look.</param>
-        public void Paint(long id, Transform root, Phenotype phenotype, float tint, bool on)
+        /// <param name="corpse">
+        /// A corpse (D127): every part in one grey at <see cref="CorpseBrightness"/>, whatever its tissue
+        /// and whatever <paramref name="tint"/> says.
+        /// </param>
+        public void Paint(long id, Transform root, Phenotype phenotype, float tint, bool on, bool corpse = false)
         {
             if (root == null || phenotype == null) return;
 
@@ -325,8 +366,10 @@ namespace Evosim.Theatre
                 _bodies[id] = body;
             }
 
-            float reserve = Mathf.Clamp01(tint);
-            float brightness = on ? Mathf.Lerp(Starving, 1f, reserve) : 1f;
+            // A corpse has no reserve and no guild: dead tissue is drawn in one grey.
+            bool dead = on && corpse;
+            float reserve = dead ? 0f : Mathf.Clamp01(tint);
+            float brightness = on ? (dead ? CorpseBrightness : Mathf.Lerp(Starving, 1f, reserve)) : 1f;
             bool dim = on && InFocus != null && !InFocus(id);
             if (dim) brightness *= OutOfFocusBrightness;
 
@@ -345,7 +388,7 @@ namespace Evosim.Theatre
                 Color guild = Color.white;
                 if (on) guild = known ? ColourOf(phenotype.Parts[part].CellTypeId) : Structural;
                 if (on) guild = Turned(guild, turn);
-                if (dim) guild = Grey(guild);
+                if (dim || dead) guild = Grey(guild);
 
                 Reshape(body, i, renderer.transform);
 
@@ -359,11 +402,12 @@ namespace Evosim.Theatre
                 float own = OwnOf(body, part);
 
                 Set(renderer, guild, brightness, on ? reserve : 1f, on,
-                    carve, body.PinchA[i], body.PinchB[i], on ? TransmissionOf(cellType) : 0.4f,
-                    on ? SheenOf(cellType) : 0.1f, body.Leaf[i], own);
+                    carve, body.PinchA[i], body.PinchB[i],
+                    on ? (dead ? CorpseTransmission : TransmissionOf(cellType)) : 0.4f,
+                    on ? (dead ? CorpseSheen : SheenOf(cellType)) : 0.1f, body.Leaf[i], own);
             }
 
-            RefreshNecks(body, phenotype, brightness, on ? reserve : 1f, on, dim, turn);
+            RefreshNecks(body, phenotype, brightness, on ? reserve : 1f, on, dim || dead, turn);
         }
 
         /// <summary>Writes one renderer's per-body properties into the shared block.</summary>
@@ -377,7 +421,7 @@ namespace Evosim.Theatre
         private void Set(
             Renderer renderer, Color guild, float brightness, float reserve, bool on,
             Vector4 carve, Vector4 pinchA, Vector4 pinchB, float transmission, float sheen = 0.1f,
-            Vector4 leaf = default, float individual = 0f)
+            Vector4 leaf = default, float individual = 0f, float rimGain = 1f, float throughGain = 1f)
         {
             Color rim = on
                 ? Muted(guild, RimSaturation, RimLightness)
@@ -393,10 +437,15 @@ namespace Evosim.Theatre
                 ? Muted(guild, BodySaturation * Mathf.Lerp(StarvingSaturation, 1f, reserve), BodyLightness)
                 : Color.white;
 
-            rim *= brightness;
+            // The rim colour also drives the shader's inner glow, so a rim gain dims both, as the
+            // shader's own rimScale does on a blade. The light through the tissue is not scaled by
+            // brightness on any part; a neck of leaf tissue scales it by the blade's tone.
+            rim *= brightness * rimGain;
             body *= brightness;
+            through *= throughGain;
             rim.a = 1f;
             body.a = 1f;
+            through.a = 1f;
 
             renderer.GetPropertyBlock(_block);
 
@@ -953,7 +1002,8 @@ namespace Evosim.Theatre
         // ---------------------------------------------------------------- joints
 
         /// <summary>
-        /// The joint skin: two knuckles of tissue at every free joint, one in each part.
+        /// The joint skin: two knuckles of tissue at every joint, one in each part, and a bridge
+        /// from the anchor to a part's drawn surface wherever that surface stands back from it.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -985,6 +1035,26 @@ namespace Evosim.Theatre
         /// made because a joint drawn without it shows the crease the owner saw.
         /// </para>
         /// <para>
+        /// <b>At a fixed joint too, from 2026-10-06.</b> Until then a fixed joint had no knuckle, on
+        /// the reading that two parts welded together need no hinge drawn. But the pinch carves
+        /// both parts in at every anchor, fixed or free (<see cref="Pinches"/>), so a fixed joint
+        /// was drawn as a gap: a stomach bud floated clear of the capsule it is fixed to, and two
+        /// leaves fixed face to face met at one point. A fixed joint never bends, so its knuckles'
+        /// outer halves stay where a straight free joint's do.
+        /// </para>
+        /// <para>
+        /// <b>The bridges</b> (<see cref="Bridge"/>). A part's drawn surface is not always at its
+        /// anchor. A sphere part is drawn as the genome's ellipsoid inside the ball, so an anchor
+        /// on the ball off the long axis lies outside it; a leaf thins to nothing at its rim and
+        /// stands a lens's half thickness off a face; and the pinch carves every part in at the
+        /// anchor by up to half its smallest half extent. A knuckle reaches in from the anchor by
+        /// its own length and no further. So on a side whose drawn tissue lies deeper than that,
+        /// a second ellipsoid of the same tissue runs from the anchor in to the drawn tissue, and
+        /// the two knuckles carry the join across the anchor between the two sides' bridges. A
+        /// bridge lies wholly inside its own part's collider, which is checked for each collider
+        /// shape where it is sized, so it spends none of the knuckle's exception.
+        /// </para>
+        /// <para>
         /// <b>Hidden under the raw shapes</b> (<see cref="RawShapes"/>), which draw the colliders
         /// and nothing else, and under the plain look. Built afresh at every dressing, and the
         /// previous set destroyed first: the raw shapes' toggle dresses a body again, and each
@@ -1005,11 +1075,13 @@ namespace Evosim.Theatre
                 body.Necks = null;
                 body.NeckPart = null;
                 body.NeckChildSide = null;
+                body.NeckBridge = null;
             }
 
             _necks.Clear();
             _neckPart.Clear();
             _neckSide.Clear();
+            _neckBridge.Clear();
 
             Mesh mesh = TheatreMeshes.Sphere();
             Material material = Skin != null ? (Skin.JointMaterial ?? Skin.BodyMaterial) : null;
@@ -1027,11 +1099,15 @@ namespace Evosim.Theatre
                 }
             }
 
-            void Add(Transform host, int p, bool childSide)
+            void Add(Transform host, int p, bool childSide, bool bridge)
             {
                 if (host == null) return;
 
-                var go = new GameObject(childSide ? "Knuckle (child)" : "Knuckle (parent)")
+                string name = bridge
+                    ? (childSide ? "Bridge (child)" : "Bridge (parent)")
+                    : (childSide ? "Knuckle (child)" : "Knuckle (parent)");
+
+                var go = new GameObject(name)
                 {
                     layer = host.gameObject.layer,
                 };
@@ -1047,16 +1123,30 @@ namespace Evosim.Theatre
                 _necks.Add(go.transform);
                 _neckPart.Add(p);
                 _neckSide.Add(childSide);
+                _neckBridge.Add(bridge);
             }
 
             for (int p = 0; p < phenotype.PartCount; p++)
             {
                 PhenotypePart part = phenotype.Parts[p];
 
-                if (part.ParentIndex < 0 || part.JointType == JointType.Fixed) continue;
+                if (part.ParentIndex < 0) continue;
 
-                Add(partTransform[part.ParentIndex], p, false);
-                Add(partTransform[p], p, true);
+                Add(partTransform[part.ParentIndex], p, false, false);
+                Add(partTransform[p], p, true, false);
+
+                // A bridge only on a side that needs one. Growth rebuilds a phenotype at a new
+                // scale with its proportions kept (Phenotype.Scaled), so a side that needs no
+                // bridge at birth needs none as an adult, and a body does not carry an idle
+                // renderer for every joint it has.
+                for (int side = 0; side < 2; side++)
+                {
+                    bool childSide = side == 1;
+                    if (Bridge(body, phenotype, p, childSide, out _, out _, out _))
+                    {
+                        Add(partTransform[childSide ? p : part.ParentIndex], p, childSide, true);
+                    }
+                }
             }
 
             if (_necks.Count == 0) return;
@@ -1064,6 +1154,7 @@ namespace Evosim.Theatre
             body.Necks = _necks.ToArray();
             body.NeckPart = _neckPart.ToArray();
             body.NeckChildSide = _neckSide.ToArray();
+            body.NeckBridge = _neckBridge.ToArray();
         }
 
         /// <summary>
@@ -1099,14 +1190,20 @@ namespace Evosim.Theatre
                 PhenotypePart part = phenotype.Parts[p];
                 PhenotypePart parent = phenotype.Parts[part.ParentIndex];
 
-                bool fitted = Knuckle(part, parent, childSide, out Vector3 centre, out Vector3 scale);
+                bool bridge = body.NeckBridge != null && body.NeckBridge[i];
+
+                Vector3 centre, scale;
+                Quaternion rotation = Quaternion.identity;
+                bool fitted = bridge
+                    ? Bridge(body, phenotype, p, childSide, out centre, out rotation, out scale)
+                    : Knuckle(part, parent, childSide, out centre, out scale);
                 bool show = fitted && on && !RawShapes;
 
                 neck.gameObject.SetActive(show);
                 if (!show) continue;
 
                 neck.localPosition = centre;
-                neck.localRotation = Quaternion.identity;
+                neck.localRotation = rotation;
                 neck.localScale = scale;
 
                 var renderer = neck.GetComponent<MeshRenderer>();
@@ -1121,9 +1218,19 @@ namespace Evosim.Theatre
                 float seed = body.Seed + 0.61803399f * own + 0.5f;
                 seed -= Mathf.Floor(seed);
 
-                Set(renderer, guild, KnuckleShade * brightness, reserve, true,
+                // Leaf tissue in a neck is lit as the blade is: the shader dims a blade's rim
+                // and glow and darkens it toward the midrib (TheatreBody.shader, rimScale and
+                // leafTone), and does neither on any other mesh, so a knuckle or a bridge of leaf
+                // tissue lit as a solid, rim and light through at full, read as a pale glass
+                // spindle against the blade it joins (p03-r57s1-18207, 2026-10-06).
+                PhenotypePart ownPart = phenotype.Parts[own];
+                bool leafTissue = DrawnAsLeaf(ownPart, Abs(ownPart.HalfExtents.ToVector3()));
+                float tone = leafTissue ? LeafNeckTone : 1f;
+
+                Set(renderer, guild, KnuckleShade * brightness * tone, reserve, true,
                     Character(cellType, seed), Vector4.zero, Vector4.zero,
-                    TransmissionOf(cellType), SheenOf(cellType), default, OwnOf(body, own));
+                    TransmissionOf(cellType), SheenOf(cellType), default, OwnOf(body, own),
+                    leafTissue ? LeafNeckRim : 1f, tone);
             }
         }
 
@@ -1131,18 +1238,18 @@ namespace Evosim.Theatre
         private const float KnuckleShade = 0.85f;
 
         /// <summary>
-        /// One knuckle's centre and scale in its own part's frame, or false when nothing fits.
+        /// The rim and glow a neck of leaf tissue keeps: the share the shader leaves a blade's
+        /// (<c>TheatreBody.shader</c>, <c>rimScale</c>, 0.45).
         /// </summary>
-        /// <remarks>
-        /// The mesh is <see cref="TheatreMeshes.Sphere"/>, a unit sphere of diameter one, so the
-        /// scale is the ellipsoid's three diameters on the part's own box axes and no rotation is
-        /// needed. The joint's face is the box axis the anchor reaches furthest along (the axis whose reach, over that
-        /// axis's own half extent, is largest); the two cross radii are the anchor's clearance to the side
-        /// faces on the other two axes, each capped at the other part's smaller clearance so the
-        /// knuckle is never wider than the limb across the joint, and taken at nine tenths so its
-        /// widest ring stays under the inset rounded edge; the half-length along the face's axis is
-        /// the smaller cross radius, clipped to the room behind the face in both parts.
-        /// </remarks>
+        private const float LeafNeckRim = 0.45f;
+
+        /// <summary>
+        /// The tone a neck of leaf tissue is drawn at, body and light through it alike: a blade's
+        /// near its midrib and stalk, where its tone runs from a half to about four fifths
+        /// (<c>TheatreBody.shader</c>, <c>leafTone</c>).
+        /// </summary>
+        private const float LeafNeckTone = 0.75f;
+
         /// <summary>
         /// Whether a part is drawn as a leaf. A box that is flat is one whatever its tissue, and
         /// a photosynthetic box is one whatever its thickness: round 47's leaves are not sheets
@@ -1155,6 +1262,84 @@ namespace Evosim.Theatre
             return TheatreMeshes.LeafShaped(sides) || part.CellTypeId == CellTypeIds.Photosynthetic;
         }
 
+        /// <summary>
+        /// One side of a joint as the knuckle sizes it: the anchor in the side's own part frame,
+        /// the face axis and which way along it the other part lies, the two cross radii and the
+        /// half-length along the face axis.
+        /// </summary>
+        private struct KnuckleFit
+        {
+            public Vector3 Anchor;
+            public int Axis;
+            public float Sign;
+            public float Ra;
+            public float Rb;
+            public float Length;
+
+            /// <summary>This side's clearance from the anchor to its side faces, on the two cross axes.</summary>
+            public float ClearA;
+            public float ClearB;
+
+            /// <summary>The other part's clearance along the same two axes (<see cref="ClearanceAlong"/>).</summary>
+            public float OtherA;
+            public float OtherB;
+        }
+
+        /// <summary>The unit vector along one of a part's own box axes.</summary>
+        private static Vector3 Unit(int axis)
+        {
+            var v = Vector3.zero;
+            v[axis] = 1f;
+            return v;
+        }
+
+        /// <summary>
+        /// How far the other part reaches from its own anchor along a direction given in this
+        /// part's frame: the nearer of its two side faces across its joint, along that direction
+        /// carried into its frame by the two parts' rest rotations; <paramref name="fallback"/>
+        /// when the direction runs along its joint's axis or no face fits.
+        /// </summary>
+        private static float ClearanceAlong(
+            PhenotypePart own, PhenotypePart other, Vector3 otherAnchor, Vector3 dirOwn, float fallback)
+        {
+            if (!Face(other, own, otherAnchor, out int axis, out float ca, out float cb, out _, out _))
+            {
+                return fallback;
+            }
+
+            Quaternion ownRotation = own.Rotation.ToQuaternion();
+            Quaternion otherRotation = other.Rotation.ToQuaternion();
+            Vector3 d = Quaternion.Inverse(otherRotation) * (ownRotation * dirOwn);
+
+            int a = (axis + 1) % 3;
+            int b = (axis + 2) % 3;
+            float reach = float.PositiveInfinity;
+
+            if (Mathf.Abs(d[a]) > 1e-3f) reach = Mathf.Min(reach, ca / Mathf.Abs(d[a]));
+            if (Mathf.Abs(d[b]) > 1e-3f) reach = Mathf.Min(reach, cb / Mathf.Abs(d[b]));
+
+            return float.IsInfinity(reach) ? fallback : reach;
+        }
+
+        /// <summary>
+        /// The half thickness a leaf is drawn at, near its midrib, a little under: the blade's
+        /// lens at most a third of its half width thick (TheatreBody.shader, ShapeLamina's flesh),
+        /// at seven tenths.
+        /// </summary>
+        private static float LeafThickness(Vector3 h)
+        {
+            LeafAxes(h, out _, out int thick, out int width);
+            return 0.7f * Mathf.Min(h[thick], 0.35f * h[width]);
+        }
+
+        /// <summary>
+        /// One knuckle's centre and scale in its own part's frame, or false when nothing fits.
+        /// </summary>
+        /// <remarks>
+        /// The mesh is <see cref="TheatreMeshes.Sphere"/>, a unit sphere of diameter one, so the
+        /// scale is the ellipsoid's three diameters on the part's own box axes and no rotation is
+        /// needed. See <see cref="FitKnuckle"/> for the sizes.
+        /// </remarks>
         private static bool Knuckle(
             PhenotypePart part, PhenotypePart parent, bool childSide,
             out Vector3 centre, out Vector3 scale)
@@ -1162,62 +1347,127 @@ namespace Evosim.Theatre
             centre = Vector3.zero;
             scale = Vector3.one;
 
+            if (!FitKnuckle(part, parent, childSide, out KnuckleFit fit)) return false;
+
+            int a = (fit.Axis + 1) % 3;
+            int b = (fit.Axis + 2) % 3;
+
+            centre = fit.Anchor;
+            scale = Vector3.zero;
+            scale[fit.Axis] = 2f * fit.Length;
+            scale[a] = 2f * fit.Ra;
+            scale[b] = 2f * fit.Rb;
+
+            return true;
+        }
+
+        /// <summary>
+        /// One knuckle's sizes, or false when nothing fits.
+        /// </summary>
+        /// <remarks>
+        /// The joint's face is the box axis the anchor reaches furthest along (the axis whose reach, over that
+        /// axis's own half extent, is largest); the two cross radii are the anchor's clearance to the side
+        /// faces on the other two axes, each capped at the other part's smaller clearance so the
+        /// knuckle is never wider than the limb across the joint, and taken at nine tenths so its
+        /// widest ring stays under the inset rounded edge; the half-length along the face's axis is
+        /// the smaller cross radius, clipped to the room behind the face in both parts.
+        /// </remarks>
+        private static bool FitKnuckle(
+            PhenotypePart part, PhenotypePart parent, bool childSide, out KnuckleFit fit)
+        {
+            fit = default;
+
             PhenotypePart own = childSide ? part : parent;
             PhenotypePart other = childSide ? parent : part;
             Vector3 ownAnchor = (childSide ? part.ChildAnchorLocal : part.ParentAnchorLocal).ToVector3();
             Vector3 otherAnchor = (childSide ? part.ParentAnchorLocal : part.ChildAnchorLocal).ToVector3();
 
-            if (!Face(own, other, ownAnchor, out int axis, out float ca, out float cb, out float room))
+            if (!Face(own, other, ownAnchor, out int axis, out float ca, out float cb, out float room, out float sign))
             {
                 return false;
             }
 
-            if (!Face(other, own, otherAnchor, out _, out float oa, out float ob, out float otherRoom))
+            if (!Face(other, own, otherAnchor, out _, out float oa, out float ob, out float otherRoom, out _))
             {
                 return false;
             }
 
+            // The other part's room across the joint, on each of this side's two cross axes:
+            // measured along that axis carried into the other part's frame, so a slab joined to
+            // a block is as wide as the slab along its width and as thin as it along its
+            // thickness. Until 2026-10-06 both radii took the other part's smaller clearance,
+            // which drew a plate's edge joined to a block, or two plates joined rim to rim, as
+            // touching through a bead as thin as the plate. On a box only: a sphere's or a
+            // capsule's knuckle keeps the smaller clearance, since its collider is not the box
+            // these clearances are measured on and its knuckle already leaves the ball near
+            // the anchor (BuildNecks' remarks).
+            int a = (axis + 1) % 3;
+            int b = (axis + 2) % 3;
             float across = Mathf.Min(oa, ob);
-            float ra = 0.9f * Mathf.Min(ca, across);
-            float rb = 0.9f * Mathf.Min(cb, across);
+            bool box = own.ShapeId == ShapeIds.Box;
+            float otherA = box ? ClearanceAlong(own, other, otherAnchor, Unit(a), across) : across;
+            float otherB = box ? ClearanceAlong(own, other, otherAnchor, Unit(b), across) : across;
 
-            // A leaf narrows to a point at its base (TheatreBody.shader, ShapeLamina), so a
-            // knuckle as wide as its box would stand out of the drawn leaf as a flat lozenge.
-            // On a leaf-shaped part it is a swelling at the stalk: a fifth of the half width.
+            float ra = 0.9f * Mathf.Min(ca, otherA);
+            float rb = 0.9f * Mathf.Min(cb, otherB);
+
             Vector3 ownHalf = Abs(own.HalfExtents.ToVector3());
             if (DrawnAsLeaf(own, ownHalf))
             {
-                float halfWidth = ownHalf.x + ownHalf.y + ownHalf.z
-                    - Mathf.Min(ownHalf.x, Mathf.Min(ownHalf.y, ownHalf.z))
-                    - Mathf.Max(ownHalf.x, Mathf.Max(ownHalf.y, ownHalf.z));
-                ra = Mathf.Min(ra, 0.2f * halfWidth);
-                rb = Mathf.Min(rb, 0.2f * halfWidth);
+                LeafAxes(ownHalf, out _, out int thick, out int width);
+
+                if (axis == width)
+                {
+                    // Joined at its rim: a seam along the rim, as long as the blade is wide
+                    // there and no thicker than the blade is drawn at its midrib, so two blades
+                    // joined edge to edge read as one blade fused along a seam.
+                    float blade = LeafThickness(ownHalf);
+                    ra = a == thick ? Mathf.Min(ra, blade) : Mathf.Min(ra, 0.5f * ownHalf[a]);
+                    rb = b == thick ? Mathf.Min(rb, blade) : Mathf.Min(rb, 0.5f * ownHalf[b]);
+                }
+                else
+                {
+                    // A leaf narrows to a point at its base (TheatreBody.shader, ShapeLamina), so a
+                    // knuckle as wide as its box would stand out of the drawn leaf as a flat lozenge.
+                    // On a leaf-shaped part it is a swelling at the stalk: a fifth of the half width.
+                    float halfWidth = ownHalf.x + ownHalf.y + ownHalf.z
+                        - Mathf.Min(ownHalf.x, Mathf.Min(ownHalf.y, ownHalf.z))
+                        - Mathf.Max(ownHalf.x, Mathf.Max(ownHalf.y, ownHalf.z));
+                    ra = Mathf.Min(ra, 0.2f * halfWidth);
+                    rb = Mathf.Min(rb, 0.2f * halfWidth);
+                }
             }
             float length = Mathf.Min(Mathf.Min(ra, rb), Mathf.Min(room, otherRoom));
 
             if (ra <= 1e-4f || rb <= 1e-4f || length <= 1e-4f) return false;
 
-            int a = (axis + 1) % 3;
-            int b = (axis + 2) % 3;
-
-            centre = ownAnchor;
-            scale = Vector3.zero;
-            scale[axis] = 2f * length;
-            scale[a] = 2f * ra;
-            scale[b] = 2f * rb;
+            fit = new KnuckleFit
+            {
+                Anchor = ownAnchor,
+                Axis = axis,
+                Sign = sign,
+                Ra = ra,
+                Rb = rb,
+                Length = length,
+                ClearA = ca,
+                ClearB = cb,
+                OtherA = otherA,
+                OtherB = otherB,
+            };
 
             return true;
         }
 
         /// <summary>
         /// The face of <paramref name="host"/>'s box a joint anchor sits on, the anchor's clearance
-        /// to the side faces across it, and the room behind it.
+        /// to the side faces across it, the room behind it, and which way along the face's axis
+        /// the other part lies.
         /// </summary>
         private static bool Face(
             PhenotypePart host, PhenotypePart across, Vector3 anchor,
-            out int axis, out float clearA, out float clearB, out float room)
+            out int axis, out float clearA, out float clearB, out float room, out float sign)
         {
-            axis = 0; clearA = 0f; clearB = 0f; room = 0f;
+            axis = 0; clearA = 0f; clearB = 0f; room = 0f; sign = 1f;
 
             Vector3 h = Abs(host.HalfExtents.ToVector3());
             if (h.x <= 0f || h.y <= 0f || h.z <= 0f) return false;
@@ -1233,7 +1483,7 @@ namespace Evosim.Theatre
                 if (reach > best) { best = reach; axis = j; }
             }
 
-            float sign = towards[axis] >= 0f ? 1f : -1f;
+            sign = towards[axis] >= 0f ? 1f : -1f;
             int a = (axis + 1) % 3;
             int b = (axis + 2) % 3;
 
@@ -1242,6 +1492,474 @@ namespace Evosim.Theatre
             room = sign > 0f ? anchor[axis] + h[axis] : h[axis] - anchor[axis];
 
             return clearA > 0f && clearB > 0f && room > 0f;
+        }
+
+        // ---------------------------------------------------------------- bridges
+
+        /// <summary>
+        /// How far past the deepest carve a bridge runs into the drawn tissue, as a fraction of
+        /// the part's smallest drawn half extent.
+        /// </summary>
+        private const float BridgeOverlap = 0.25f;
+
+        /// <summary>
+        /// A bridge squeezed by its collider to under this fraction of its knuckle's width is not
+        /// drawn: it would be a thread, not a neck.
+        /// </summary>
+        private const float BridgeThinnest = 0.2f;
+
+        /// <summary>
+        /// The core of a leaf, as a fraction of its half length and half width about its centre:
+        /// where the blade is drawn wide and thick whatever its seed gives its outline
+        /// (<c>TheatreBody.shader</c>, <c>LeafWidth</c>: a third of the half width or more from a
+        /// quarter to three quarters of the way along it).
+        /// </summary>
+        private const float LeafCore = 0.3f;
+
+        /// <summary>
+        /// The deepest the carve cuts a part at a joint, as a fraction of its smallest half
+        /// extent: the dial at the heaviest guild's weight (<see cref="Character"/>), deepened by
+        /// two anchors' pinches at the shader's gain, and capped where the shader caps it
+        /// (<c>_CarveMaximum</c>).
+        /// </summary>
+        private float CarveReach()
+        {
+            float fraction = Skin != null ? Mathf.Clamp(Skin.CarveFraction, 0f, 0.5f) : 0.35f;
+            return Mathf.Min(0.5f, fraction * 1.05f * (1f + 1.6f * 2f));
+        }
+
+        /// <summary>
+        /// One bridge's centre, rotation and scale in its own part's frame, or false when its side
+        /// needs none or none fits.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What it is.</b> An ellipsoid of the part's own tissue (the knuckle's mesh and
+        /// material) that starts at the joint's anchor and runs into the part until it is inside
+        /// the drawn tissue: the gap between a joint and a drawn surface that stands back from it,
+        /// filled by a neck. As wide as the side's knuckle, or narrower where the collider asks.
+        /// A side whose drawn tissue the knuckle already reaches gets none, so a joint the old
+        /// skin drew whole is drawn as it was.
+        /// </para>
+        /// <para>
+        /// <b>Where it runs to, by the part's drawn shape.</b> A sphere part and a capsule run
+        /// along the line from the anchor to the collider's core (the ball's centre, or the
+        /// nearest point of the capsule's axis) as far as the drawn ellipsoid, the cap or the
+        /// shaft, measured exactly from the shapes <see cref="Aspect"/> and <see cref="Dress"/>
+        /// draw. A leaf runs to its core (<see cref="LeafCore"/>), lifted by the arch of its curl
+        /// as the shader draws it there (<see cref="LeafArch"/>), because its rim thins to nothing
+        /// and no point of it near the rim is sure to be drawn. A rounded box runs in along the
+        /// face's axis by the most its inset, taper and bend can take, with the anchor moved off
+        /// the rounded edges onto the flat of the face. Each then runs on by the carve's
+        /// deepest cut and a quarter of the part's smallest half extent more, so it ends in tissue
+        /// and not in a hollow.
+        /// </para>
+        /// <para>
+        /// <b>Inside the collider, by construction and then by a check.</b> On a ball, or a
+        /// capsule, whose core is at distance a from the anchor, an ellipsoid with its tip at the
+        /// anchor, its axis through the core, half length L and cross radius r lies inside the
+        /// ball of radius a about the core when L ≤ a and r² ≤ a L. (With v one less the cosine of
+        /// the angle round the ellipsoid from its tip, the squared distance from the core is
+        /// a² + 2v(r² − aL) + v²(L² − r²) for v from 0 to 2: a² at the tip, not rising from it
+        /// while r² ≤ aL, and (a − 2L)² at the far tip; convex or concave, it stays under a².)
+        /// And that ball is inside the collider: the core is the ball's centre or a point of the
+        /// capsule's axis, and a is at most the collider's radius. On a box the ellipsoid's own bounding
+        /// box, from its three axes, is held inside the collider's box, and its cross radii are
+        /// shrunk until it is. A bridge does not leave its own part, so it spends none of the
+        /// knuckle's exception; the knuckles alone carry the join across the anchor.
+        /// </para>
+        /// <para>
+        /// <b>Refitted at every paint</b>, with the knuckles (<see cref="RefreshNecks"/>), so it
+        /// follows a body that grows, and it is a child of its part, so it moves with it.
+        /// </para>
+        /// </remarks>
+        private bool Bridge(
+            Body body, Phenotype phenotype, int p, bool childSide,
+            out Vector3 centre, out Quaternion rotation, out Vector3 scale)
+        {
+            centre = Vector3.zero;
+            rotation = Quaternion.identity;
+            scale = Vector3.zero;
+
+            if (p < 0 || p >= phenotype.PartCount) return false;
+
+            PhenotypePart part = phenotype.Parts[p];
+            if (part.ParentIndex < 0 || part.ParentIndex >= phenotype.PartCount) return false;
+
+            PhenotypePart parent = phenotype.Parts[part.ParentIndex];
+            if (!FitKnuckle(part, parent, childSide, out KnuckleFit fit)) return false;
+
+            int ownIndex = childSide ? p : part.ParentIndex;
+            PhenotypePart own = phenotype.Parts[ownIndex];
+
+            Vector3 h = Abs(own.HalfExtents.ToVector3());
+            if (h.x <= 0f || h.y <= 0f || h.z <= 0f) return false;
+
+            Vector3 anchor = fit.Anchor;
+            float ra = fit.Ra;
+            float rb = fit.Rb;
+
+            if (own.ShapeId == ShapeIds.Sphere || own.ShapeId == ShapeIds.Capsule)
+            {
+                bool ball = own.ShapeId == ShapeIds.Sphere;
+                float radius = ball
+                    ? SphereShape.Radius(own.HalfExtents)
+                    : CapsuleShape.Radius(own.HalfExtents);
+                float span = ball ? 0f : CapsuleShape.HalfSpan(own.HalfExtents);
+
+                Vector3 core = new Vector3(0f, Mathf.Clamp(anchor.y, -span, span), 0f);
+                if (ball) core = Vector3.zero;
+
+                Vector3 toCore = core - anchor;
+                float away = toCore.magnitude;
+                if (away < 1e-4f || radius <= 1e-4f) return false;
+
+                Vector3 dir = toCore / away;
+
+                // From the collider's surface: an anchor a float's width outside it starts there.
+                float a = Mathf.Min(away, radius);
+                Vector3 start = core - dir * a;
+
+                float hit = DrawnHit(own, h, radius, span, start, dir, out float smallest);
+                float depth = Mathf.Min(Mathf.Min(hit, a) + (CarveReach() + BridgeOverlap) * smallest, a);
+                if (depth <= fit.Length) return false;
+
+                float half = 0.5f * depth;
+                float cap = 0.95f * Mathf.Sqrt(a * half);
+                float widest = Mathf.Max(ra, rb);
+                float f = widest > cap ? cap / widest : 1f;
+                if (f < BridgeThinnest) return false;
+
+                centre = start + dir * half;
+                rotation = Orient(dir, fit.Axis);
+                scale = new Vector3(2f * ra * f, 2f * half, 2f * rb * f);
+                return true;
+            }
+
+            if (own.ShapeId != ShapeIds.Box) return false;
+
+            int axis = fit.Axis;
+            float smallestHalf = Mathf.Min(h.x, Mathf.Min(h.y, h.z));
+            Vector3 target = anchor;
+
+            if (DrawnAsLeaf(own, h))
+            {
+                LeafAxes(h, out int iL, out int iT, out int iW);
+
+                target[iL] = Mathf.Clamp(anchor[iL], -LeafCore * h[iL], LeafCore * h[iL]);
+                target[iW] = Mathf.Clamp(anchor[iW], -LeafCore * h[iW], LeafCore * h[iW]);
+
+                // The midrib's height there: the arch of the curl, the one term of the lift that
+                // is not zero on the midrib, in metres (TheatreBody.shader, LeafPoint).
+                float along = target[iL] / h[iL];
+                float curl = Skin != null ? Mathf.Clamp(Skin.CurlFraction, 0f, 0.1f) : 0.1f;
+                float lift = LeafArch(PartSeed(body, ownIndex), OwnOf(body, ownIndex)) * (1f - along * along);
+                target[iT] = Mathf.Clamp(2f * curl * h[iW] * lift, -0.4f * h[iT], 0.4f * h[iT]);
+
+                // Its own widths, not the knuckle's: across the blade no thicker than the blade is
+                // drawn at its midrib, so it reads as the blade's own tissue and not as a ridge
+                // standing out of it; along the blade as wide as the joint, on both parts, and at
+                // most half the blade, so a blade whose end or rim is joined to a part across its
+                // width is drawn running into that part, not narrowing to a point beside it.
+                float blade = LeafThickness(h);
+                int ca = (axis + 1) % 3;
+                int cb = (axis + 2) % 3;
+                ra = ca == iT
+                    ? Mathf.Min(blade, 0.9f * fit.ClearA)
+                    : Mathf.Min(0.9f * Mathf.Min(fit.ClearA, fit.OtherA), 0.5f * h[ca]);
+                rb = cb == iT
+                    ? Mathf.Min(blade, 0.9f * fit.ClearB)
+                    : Mathf.Min(0.9f * Mathf.Min(fit.ClearB, fit.OtherB), 0.5f * h[cb]);
+            }
+            else
+            {
+                float largest = Mathf.Max(h.x, Mathf.Max(h.y, h.z));
+                float pillow = TheatreMeshes.PillowFor(largest > 0f ? smallestHalf / largest : 1f);
+
+                for (int c = 0; c < 3; c++)
+                {
+                    if (c == axis) continue;
+                    float flat = (1f - pillow) * h[c];
+                    target[c] = Mathf.Clamp(anchor[c], -flat, flat);
+                }
+
+                // The longest axis as the shader picks it (ShapeBox), ties in the same order: a
+                // face across it is an end, which the taper does not narrow.
+                int longest = h.x >= h.y && h.x >= h.z ? 0 : (h.y >= h.z ? 1 : 2);
+                float taper = longest == axis || Skin == null ? 0f : Mathf.Clamp(Skin.TaperFraction, 0f, 0.8f) * h[axis];
+                float bend = Skin != null ? Mathf.Clamp(Skin.BendFraction, 0f, 0.4f) * smallestHalf : 0f;
+
+                float recess = (1f - TheatreMeshes.Inset) * h[axis] + taper + bend +
+                               (CarveReach() + BridgeOverlap) * smallestHalf;
+                float below = h[axis] - Mathf.Abs(anchor[axis]);
+                float need = Mathf.Clamp(recess - below, 0f, Mathf.Abs(anchor[axis]));
+
+                target[axis] = anchor[axis] - fit.Sign * need;
+            }
+
+            Vector3 path = target - anchor;
+            float reach = path.magnitude;
+            if (reach <= fit.Length || reach < 1e-4f) return false;
+
+            Vector3 from = anchor;
+            Vector3 heading = path / reach;
+
+            var inward = Vector3.zero;
+            inward[axis] = -fit.Sign;
+            if (Vector3.Dot(heading, inward) < 0.995f)
+            {
+                // A bridge that leaves the face's axis would put its side through the face it
+                // starts on, so it starts half its knuckle's length in, where the knuckle still
+                // covers it.
+                from = anchor + inward * (0.5f * fit.Length);
+            }
+            else
+            {
+                // An anchor inside the box (a part joined across a plate's end, a little in from
+                // it) has its own box still around it out to the face. The bridge starts there,
+                // so it is at its full width where the other part meets it rather than narrowing
+                // to its tip at the anchor.
+                float outside = h[axis] - Mathf.Abs(anchor[axis]);
+                if (outside > 0f) from = anchor - inward * outside;
+            }
+
+            path = target - from;
+            reach = path.magnitude;
+            if (reach < 1e-4f) return false;
+            heading = path / reach;
+
+            float halfLength = 0.5f * reach;
+            Vector3 middle = from + heading * halfLength;
+            Quaternion turn = Orient(heading, axis);
+
+            float fits = BoxFit(h, middle, turn, ra, halfLength, rb);
+            if (fits < BridgeThinnest || Mathf.Min(ra, rb) * fits <= 1e-4f) return false;
+
+            centre = middle;
+            rotation = turn;
+            scale = new Vector3(2f * ra * fits, 2f * halfLength, 2f * rb * fits);
+            return true;
+        }
+
+        /// <summary>
+        /// The rotation that lays the unit sphere's Y along <paramref name="dir"/> and its X and Z
+        /// as near the knuckle's two cross axes as that allows, so the bridge's two cross radii
+        /// lie where the knuckle's do.
+        /// </summary>
+        private static Quaternion Orient(Vector3 dir, int axis)
+        {
+            var eb = Vector3.zero;
+            eb[(axis + 2) % 3] = 1f;
+            Vector3 forward = eb - dir * Vector3.Dot(eb, dir);
+
+            if (forward.sqrMagnitude < 1e-6f)
+            {
+                var ea = Vector3.zero;
+                ea[(axis + 1) % 3] = 1f;
+                forward = ea - dir * Vector3.Dot(ea, dir);
+            }
+
+            return Quaternion.LookRotation(forward.normalized, dir);
+        }
+
+        /// <summary>
+        /// The most the cross radii of an ellipsoid can be kept, as a fraction in [0, 1], with its
+        /// bounding box inside the box of half extents <paramref name="h"/> about the origin.
+        /// </summary>
+        /// <remarks>
+        /// The ellipsoid's reach along a frame axis j is the root of the sum of its three
+        /// semi-axes' squared j components, so holding the cross radii to a fraction f of their
+        /// size leaves the long axis's share alone and solves for f on each axis. A hundredth of a
+        /// millimetre of float slack, so a bridge whose tip lies on the face it starts from is not
+        /// refused for a rounding.
+        /// </remarks>
+        private static float BoxFit(
+            Vector3 h, Vector3 centre, Quaternion rotation, float ra, float half, float rb)
+        {
+            Vector3 x = rotation * Vector3.right * ra;
+            Vector3 y = rotation * Vector3.up * half;
+            Vector3 z = rotation * Vector3.forward * rb;
+
+            float f = 1f;
+
+            for (int j = 0; j < 3; j++)
+            {
+                float room = h[j] + 1e-5f - Mathf.Abs(centre[j]);
+                if (room <= 0f) return 0f;
+
+                float spare = room * room - y[j] * y[j];
+                float cross = x[j] * x[j] + z[j] * z[j];
+
+                if (cross < 1e-10f)
+                {
+                    if (spare < -1e-8f) return 0f;
+                    continue;
+                }
+
+                if (spare <= 0f) return 0f;
+                f = Mathf.Min(f, Mathf.Sqrt(spare / cross));
+            }
+
+            return f;
+        }
+
+        /// <summary>
+        /// How far along a ray from a point on a sphere or capsule part's collider the part's
+        /// drawn surface is, before the carve; infinity when the ray misses it. Also the part's
+        /// smallest drawn half extent, which is what the carve's depth is a fraction of.
+        /// </summary>
+        /// <remarks>
+        /// The drawn shapes are the ones <see cref="Dress"/> and <see cref="Aspect"/> make: a
+        /// sphere part as the genome's ellipsoid with its longest semi-axis the ball's radius; a
+        /// near-spherical capsule as one ellipsoid at the centre (<see cref="NearlyASphere"/>); any
+        /// other capsule as two caps squashed across the shaft and an elliptic shaft between them.
+        /// </remarks>
+        private static float DrawnHit(
+            PhenotypePart own, Vector3 h, float radius, float span, Vector3 start, Vector3 dir,
+            out float smallest)
+        {
+            if (own.ShapeId == ShapeIds.Sphere)
+            {
+                float longest = Mathf.Max(h.x, Mathf.Max(h.y, h.z));
+                Vector3 s = longest > 0f ? h * (radius / longest) : Vector3.one * radius;
+                smallest = Mathf.Min(s.x, Mathf.Min(s.y, s.z));
+                return RayEllipsoid(start, dir, Vector3.zero, s);
+            }
+
+            float across = Mathf.Max(h.x, h.z);
+            float sx = across > 0f ? h.x / across : 1f;
+            float sz = across > 0f ? h.z / across : 1f;
+            smallest = radius * Mathf.Min(sx, sz);
+
+            if (NearlyASphere(own))
+            {
+                return RayEllipsoid(
+                    start, dir, Vector3.zero, new Vector3(radius * sx, Mathf.Max(h.y, radius), radius * sz));
+            }
+
+            var cap = new Vector3(radius * sx, radius, radius * sz);
+            float hit = Mathf.Min(
+                RayEllipsoid(start, dir, new Vector3(0f, span, 0f), cap),
+                RayEllipsoid(start, dir, new Vector3(0f, -span, 0f), cap));
+
+            return Mathf.Min(hit, RayShaft(start, dir, radius * sx, radius * sz, span));
+        }
+
+        /// <summary>Where a ray first meets an axis-aligned ellipsoid: zero from inside it, infinity when it misses.</summary>
+        private static float RayEllipsoid(Vector3 origin, Vector3 dir, Vector3 centre, Vector3 semi)
+        {
+            if (semi.x <= 0f || semi.y <= 0f || semi.z <= 0f) return float.PositiveInfinity;
+
+            Vector3 o = origin - centre;
+            o = new Vector3(o.x / semi.x, o.y / semi.y, o.z / semi.z);
+            var d = new Vector3(dir.x / semi.x, dir.y / semi.y, dir.z / semi.z);
+
+            float qa = Vector3.Dot(d, d);
+            float qb = 2f * Vector3.Dot(o, d);
+            float qc = Vector3.Dot(o, o) - 1f;
+
+            if (qc <= 0f) return 0f;
+            if (qa <= 0f) return float.PositiveInfinity;
+
+            float disc = qb * qb - 4f * qa * qc;
+            if (disc < 0f) return float.PositiveInfinity;
+
+            float t = (-qb - Mathf.Sqrt(disc)) / (2f * qa);
+            return t >= 0f ? t : float.PositiveInfinity;
+        }
+
+        /// <summary>Where a ray first meets an elliptic shaft along Y of half-span <paramref name="span"/>.</summary>
+        private static float RayShaft(Vector3 origin, Vector3 dir, float rx, float rz, float span)
+        {
+            if (span <= 0f || rx <= 0f || rz <= 0f) return float.PositiveInfinity;
+
+            float ox = origin.x / rx, oz = origin.z / rz;
+            float dx = dir.x / rx, dz = dir.z / rz;
+
+            float qa = dx * dx + dz * dz;
+            float qb = 2f * (ox * dx + oz * dz);
+            float qc = ox * ox + oz * oz - 1f;
+
+            float t;
+            if (qc <= 0f)
+            {
+                t = 0f;
+            }
+            else
+            {
+                if (qa <= 0f) return float.PositiveInfinity;
+                float disc = qb * qb - 4f * qa * qc;
+                if (disc < 0f) return float.PositiveInfinity;
+                t = (-qb - Mathf.Sqrt(disc)) / (2f * qa);
+                if (t < 0f) return float.PositiveInfinity;
+            }
+
+            float y = origin.y + t * dir.y;
+            return Mathf.Abs(y) <= span ? t : float.PositiveInfinity;
+        }
+
+        /// <summary>
+        /// A leaf's frame as the shader picks it (<c>TheatreBody.shader</c>, <c>LeafAxes</c>): the
+        /// thinnest axis, the longer of the other two, and the one left, ties in the same order.
+        /// </summary>
+        private static void LeafAxes(Vector3 h, out int along, out int thick, out int width)
+        {
+            if (h.x <= h.y && h.x <= h.z)
+            {
+                thick = 0;
+                along = h.y >= h.z ? 1 : 2;
+            }
+            else if (h.y <= h.z)
+            {
+                thick = 1;
+                along = h.x >= h.z ? 0 : 2;
+            }
+            else
+            {
+                thick = 2;
+                along = h.x >= h.y ? 0 : 1;
+            }
+
+            width = 3 - thick - along;
+        }
+
+        /// <summary>
+        /// The arch of a leaf's curl, signed: the term of its lift that holds on the midrib, as
+        /// the shader's <c>LeafOf</c> draws it from the part's seed and the creature's own number.
+        /// </summary>
+        /// <remarks>
+        /// A copy of five lines of the shader, and the one place this class repeats its
+        /// arithmetic. It is needed because the curl lifts a thin blade's midrib by more than the
+        /// blade is thick, so a bridge aimed at the box's middle plane can pass under the blade it
+        /// is meant to reach. If <c>LeafOf</c> changes, this changes with it.
+        /// </remarks>
+        private static float LeafArch(float seed, float own)
+        {
+            float r6 = Frac(seed * 73.019f + 0.619f);
+            float r7 = Frac(seed * 83.231f + 0.157f);
+            float r8 = Frac(seed * 97.103f + 0.883f);
+
+            float o6 = Frac(own * 79.137f + 0.83f);
+            float o7 = Frac(own * 91.373f + 0.19f);
+
+            r6 = Mathf.Clamp01(r6 + Mathf.Lerp(-0.2f, 0.2f, o6));
+            r7 = Mathf.Clamp01(r7 + Mathf.Lerp(-0.2f, 0.2f, o7));
+
+            float cup = Mathf.Lerp(-0.6f, 0.6f, r6);
+            float arch = Mathf.Lerp(-0.4f, 0.4f, r7);
+            float wave = Mathf.Lerp(0.35f, 0.8f, r8);
+            float sum = Mathf.Abs(cup) + Mathf.Abs(arch) + wave;
+
+            return arch * (sum > 1f ? 1f / sum : 1f);
+        }
+
+        private static float Frac(float v) => v - Mathf.Floor(v);
+
+        /// <summary>A part's carve seed, as <see cref="Paint"/> hands it to the shader in <c>_Carve.x</c>.</summary>
+        private static float PartSeed(Body body, int part)
+        {
+            float seed = body.Seed + 0.61803399f * Mathf.Max(0, part);
+            return seed - Mathf.Floor(seed);
         }
 
         /// <summary>
@@ -1292,6 +2010,7 @@ namespace Evosim.Theatre
         {
             if (cellTypeId == CellTypeIds.Photosynthetic) return Photosynthetic;
             if (cellTypeId == CellTypeIds.Absorptive) return Absorptive;
+            if (cellTypeId == CellTypeIds.Link) return Jointed;
             return Structural;
         }
 
@@ -1313,5 +2032,89 @@ namespace Evosim.Theatre
         }
 
         public void Clear() => _bodies.Clear();
+
+        /// <summary>
+        /// Sets how much of a body is drawn, 1 whole to 0 gone: a newborn fading in, a corpse fading
+        /// out. While it fades a renderer draws with two materials in place of its own: the
+        /// see-through copy, which blends by <c>_Fade</c> after the backdrop and writes no depth,
+        /// and a stand-in in the opaque range that draws no colour. The stand-in keeps the body in
+        /// the depth prepass, which takes the opaque range only, so the depth of field reads the
+        /// body's own distance through the fade; without it a newborn was blurred at the distance
+        /// of the water behind it and snapped into focus in one frame when its fade ended. At 1 the
+        /// renderer goes back to its own material. The block is read before it is written, as
+        /// <see cref="Set"/> reads it, so a repaint keeps the fade and a fade keeps the paint. A
+        /// material without the blend properties is left opaque.
+        /// </summary>
+        public void SetFade(Renderer[] renderers, float fade)
+        {
+            if (renderers == null) return;
+            if (_block == null) _block = new MaterialPropertyBlock();
+
+            bool fading = fade < 1f;
+
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                if (renderer == null) continue;
+
+                Material first = renderer.sharedMaterial;
+                if (first != null)
+                {
+                    Material own = _opaqueOf.TryGetValue(first, out Material opaque) ? opaque : first;
+                    if (fading)
+                    {
+                        Material[] pair = FadingSetOf(own);
+                        if (pair != null && !ReferenceEquals(first, pair[0])) renderer.sharedMaterials = pair;
+                    }
+                    else if (!ReferenceEquals(first, own) || renderer.sharedMaterials.Length != 1)
+                    {
+                        renderer.sharedMaterials = new[] { own };
+                    }
+                }
+
+                renderer.GetPropertyBlock(_block);
+                _block.SetFloat(FadeId, fade);
+                renderer.SetPropertyBlock(_block);
+            }
+        }
+
+        /// <summary>The pair a fading body draws with in place of a body material, made once; null when it cannot blend.</summary>
+        private Material[] FadingSetOf(Material opaque)
+        {
+            if (_fadingSetOf.TryGetValue(opaque, out Material[] found)) return found;
+
+            Material[] made = null;
+            if (opaque.HasProperty(SrcBlendId) && opaque.HasProperty(DstBlendId) && opaque.HasProperty(ZWriteId))
+            {
+                var seeThrough = new Material(opaque)
+                {
+                    name = opaque.name + " (fading)",
+                    hideFlags = HideFlags.DontSave,
+                    renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent,
+                };
+                seeThrough.SetFloat(SrcBlendId, (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                seeThrough.SetFloat(DstBlendId, (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                seeThrough.SetFloat(ZWriteId, 0f);
+                seeThrough.SetOverrideTag("RenderType", "Transparent");
+
+                // Zero and One leave the colour as it was, and no depth is written in the forward
+                // pass, so the backdrop still fills behind the body; the depth passes are the
+                // opaque body's own, in the opaque body's queue.
+                var depth = new Material(opaque)
+                {
+                    name = opaque.name + " (fading, depth)",
+                    hideFlags = HideFlags.DontSave,
+                };
+                depth.SetFloat(SrcBlendId, (float)UnityEngine.Rendering.BlendMode.Zero);
+                depth.SetFloat(DstBlendId, (float)UnityEngine.Rendering.BlendMode.One);
+                depth.SetFloat(ZWriteId, 0f);
+
+                made = new[] { seeThrough, depth };
+                _opaqueOf[seeThrough] = opaque;
+            }
+
+            _fadingSetOf[opaque] = made;
+            return made;
+        }
     }
 }

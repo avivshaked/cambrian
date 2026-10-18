@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Evosim.Core
@@ -51,18 +51,23 @@ namespace Evosim.Core
         /// it shifts. <c>World.ApplyModuleRule</c> uses it to carry a body's joint state and its
         /// brain across a rebuild. Null on every other call, and nothing is allocated for it.
         /// </param>
+        /// <param name="cellTypes">
+        /// The table the genome is checked against: the world's own, which since D165 may hold a
+        /// type the standard table does not. Null is <see cref="CellTypeRegistry.Standard"/>.
+        /// </param>
         public static Phenotype Develop(
             Genome genome,
             DevelopmentLimits limits = null,
             Mat4? rootTransform = null,
             PartShapeRegistry shapes = null,
             int[] moduleCounts = null,
-            List<int[]> partPaths = null)
+            List<int[]> partPaths = null,
+            CellTypeRegistry cellTypes = null)
         {
             if (genome == null) throw new ArgumentNullException(nameof(genome));
             shapes = shapes ?? PartShapeRegistry.Standard;
 
-            IReadOnlyList<string> issues = genome.Validate();
+            IReadOnlyList<string> issues = genome.Validate(cellTypes);
             if (issues.Count > 0)
             {
                 throw new ArgumentException(
@@ -73,7 +78,10 @@ namespace Evosim.Core
 
             limits = limits ?? DevelopmentLimits.Default;
 
-            var phenotype = new Phenotype { Limits = limits.Clone() };
+            var phenotype = new Phenotype
+            {
+                Limits = limits.Clone(), LifespanScale = genome.LifespanScale, Brain = genome.Brain,
+            };
             var occurrences = new int[genome.Nodes.Count];
 
             occurrences[genome.RootIndex] = 1;
@@ -95,6 +103,7 @@ namespace Evosim.Core
                 partPaths,
                 partPaths == null ? null : new List<int>(limits.MaxDepth + 1),
                 genome.RootIndex,
+                BrainIds.Root,
                 rootTransform ?? Mat4.Identity,
                 adultScale,
                 parentPartIndex: -1,
@@ -152,6 +161,7 @@ namespace Evosim.Core
             List<int[]> partPaths,
             List<int> path,
             int nodeIndex,
+            ulong pathId,
             Mat4 transform,
             Float3 accumulatedScale,
             int parentPartIndex,
@@ -235,6 +245,7 @@ namespace Evosim.Core
                 JointType = jointType,
                 JointLimits = jointLimits,
                 Power = jointType == JointType.Fixed ? 0f : node.Power,
+                Drive = jointType == JointType.Fixed ? DriveGenes.Default : node.Drive,
 
                 // Only a buoyancy cell holds gas. Belt-and-braces rather than load-bearing:
                 // Develop validates first and Genome.Validate already rejects lift on any other
@@ -255,6 +266,7 @@ namespace Evosim.Core
                 ParentAnchorLocal = parentAnchorLocal,
                 ChildAnchorLocal = childAnchorLocal,
                 Neurons = node.Neurons,
+                PathId = pathId,
             });
 
             // Beside the part and in the same order, so partPaths[i] is the path of Parts[i].
@@ -337,6 +349,7 @@ namespace Evosim.Core
                         partPaths,
                         path,
                         edge.Child,
+                        BrainIds.Child(pathId, edge.Id, e, mirrorOrdinal),
                         transform * local,
                         childScale,
                         part.Index,

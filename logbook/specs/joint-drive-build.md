@@ -63,7 +63,7 @@ and the reading in force estimated 0.7 cm/s where 0.0 was measured, so they run 
 
 Measured under the adopted reading: own brains a median 1.4 cm/s, 60 of 100 over 1 cm/s and 14 over 4, the
 fastest 14.2; frozen 0.0; half power (a silent neuron) 0.8; the bend wagged alone 0.1. The adopted reading is
-the bend's, and the owner's words ("an output from 0 to 1"); it was chosen by the agent inside the ruling and is
+the bend's, and the owner's description of the output as running from 0 to 1; it was chosen by the agent inside the ruling and is
 reported to the owner as such.
 
 ## The films

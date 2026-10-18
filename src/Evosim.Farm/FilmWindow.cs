@@ -60,6 +60,23 @@ namespace Evosim.Farm
     /// window, and a verdict line last.
     /// </para>
     /// <para>
+    /// <b>A corpse is written beside the bodies, in a sixth file</b> (D127, round 51).
+    /// <c>corpses.jsonl.gz</c> holds two kinds of row. A <c>corpse</c> row, once per corpse, carries
+    /// what does not change while it stands: the pose its body died in, its plan, the linear
+    /// scale it died at, its first joules, where it was first seen, and the second it was founded
+    /// when that was inside the window. A <c>step</c> row at every metabolic step carries every
+    /// corpse's place, the share of its first joules it still holds and whether it has settled,
+    /// which is all the world moves: a corpse is carried, settled and dissolved at the metabolic
+    /// step and nowhere between. The harness stamps a new corpse's pose at the next physics step,
+    /// when it takes the dead body out of the solver, so a corpse first seen without one is held
+    /// back to the next step's row, and one that never gets one (a body the solver lost) is
+    /// written at its second sight without it. The corpses standing at the start died before the
+    /// window, so their genomes come from the run's own <c>genomes.jsonl.gz</c>, read once. A
+    /// world whose dead leave no corpse (<c>CorpseDecayPerSecond</c> 0) writes no such file.
+    /// The rows are the world's own numbers, read after the metabolic step as the plans are, and
+    /// nothing the world steps on reads them.
+    /// </para>
+    /// <para>
     /// <b>The genomes come from the world's admission queue</b>
     /// (<see cref="World.QueueAdmittedGenomes"/>), turned on before the restore as the run's loop
     /// turns it on, so a body born and dead between two metabolic steps still has its genome. The
@@ -96,6 +113,7 @@ namespace Evosim.Farm
         public const string PlansFileName = "plans.jsonl";
         public const string EventsFileName = "events.jsonl";
         public const string IdentityFileName = "identity.jsonl";
+        public const string CorpsesFileName = "corpses.jsonl.gz";
 
         public const double DefaultFramesPerSecond = 30d;
 
@@ -176,6 +194,18 @@ namespace Evosim.Farm
             public int Bites;
             public int BirthsWithoutAGenome;
             public int PlanRows;
+
+            /// <summary>Corpses written (D127): one facts row each in <c>corpses.jsonl.gz</c>.</summary>
+            public int Corpses;
+
+            /// <summary>Step rows written, one at every metabolic step inside the window.</summary>
+            public int CorpseSteps;
+
+            /// <summary>Genome rows taken from the run's own file, for the corpses standing at the start.</summary>
+            public int CorpseGenomes;
+
+            /// <summary>Corpses whose body has no genome row in the window, which a player cannot draw.</summary>
+            public int CorpsesWithoutAGenome;
 
             /// <summary>Report seconds compared inside the window, and the one after it when used.</summary>
             public int Rows;
@@ -384,11 +414,20 @@ namespace Evosim.Farm
             // The admission queue on before the restore and before the first step, as the run's
             // loop turns it on, so no admission comes before it. Recording only: a world that
             // queues and one that does not step the same trajectory.
-            var world = new World(config, header.Seed, pool?.Genomes) { QueueAdmittedGenomes = true };
+            var world = new World(config, header.Seed, pool?.Genomes, pool?.Weights) { QueueAdmittedGenomes = true };
             var sim = new Simulation(
                 world, header.Seed, physicsDt, stepsPerMetabolic, threads, runDirectory: null);
-            var sampler = new Sampler { PoolNamed = config.FoundingTricklePoolCount > 0 };
-            IReadOnlyList<string> columns = Sampler.Columns(config);
+            // D159: a world of a migrating group was sent genomes by the others, which the window
+            // does not step. It makes the run's own recorded offers instead, at their seconds and in
+            // their order, and refuses to go on if one lands under another id than the run's.
+            bool migrating = manifest.Has("migrateEverySeconds");
+
+            var sampler = new Sampler
+            {
+                PoolNamed = config.FoundingTricklePoolCount > 0,
+                Migrating = migrating,
+            };
+            IReadOnlyList<string> columns = Sampler.Columns(config, migrating);
 
             Program.LoopState loop = checkpoint != null
                 ? Program.ReadCheckpoint(checkpoint, world, sim, sampler)
@@ -403,6 +442,10 @@ namespace Evosim.Farm
 
             Genome inoculum = Inoculum(config, manifest, settings, loop.AssayFired, options.ToSeconds, reportEvery * (double)metabolicSeconds, log);
 
+            ImmigrantRecord.Replay immigrants = migrating
+                ? new ImmigrantRecord.Replay(runDirectory, world.ElapsedSeconds)
+                : null;
+
             log.WriteLine(
                 "film-window: " + (checkpoint != null
                     ? "restored " + checkpoint + " at " + Seconds(header.Seconds) + " s"
@@ -411,7 +454,8 @@ namespace Evosim.Farm
                 Seconds(options.ToSeconds) + " s at " + options.FramesPerSecond.ToString("0.##", CultureInfo.InvariantCulture) +
                 " frames a second on " + threads + " threads");
 
-            var film = new Recording(outDirectory, config.Hash(), options, result);
+            var film = new Recording(
+                outDirectory, config.Hash(), options, result, runDirectory, config.CorpseDecayPerSecond > 0f);
 
             try
             {
@@ -455,6 +499,9 @@ namespace Evosim.Farm
                         loop.AssayFired = Program.ActOnWorld(
                             world, inoculum, config.InoculateAtSeconds, (int)config.InoculateCount,
                             config.InoculateDepthMetres, loop.AssayFired);
+
+                        // Where the run's loop takes its exchange: after the assay, before the test.
+                        immigrants?.PlantDue(world);
 
                         extinct = Program.EndsExtinct(world);
 
@@ -614,7 +661,7 @@ namespace Evosim.Farm
             string[] names =
             {
                 PosesFileName, Path.ChangeExtension(PosesFileName, ".idx"), GenomesFileName,
-                PlansFileName, EventsFileName, IdentityFileName,
+                PlansFileName, EventsFileName, IdentityFileName, CorpsesFileName,
             };
 
             foreach (string name in names)
@@ -1118,7 +1165,8 @@ namespace Evosim.Farm
                    Seconds(options.FromSeconds) + "-" + Seconds(options.ToSeconds) + " s: " +
                    result.Frames.ToString(c) + " frames at " + options.FramesPerSecond.ToString("0.##", c) +
                    " fps, " + result.Bodies.ToString(c) + " bodies (" + result.Births.ToString(c) +
-                   " born, " + result.Deaths.ToString(c) + " died), wall " +
+                   " born, " + result.Deaths.ToString(c) + " died)" +
+                   (result.Corpses > 0 ? ", " + result.Corpses.ToString(c) + " corpses" : "") + ", wall " +
                    (result.WallSeconds / 60d).ToString("0.0", c) + " min on " + result.Threads.ToString(c) +
                    " threads, " + result.Verdict.ToUpperInvariant() + ": " + result.Reason;
         }
@@ -1146,6 +1194,21 @@ namespace Evosim.Farm
             private JsonlWriter _events;
             private JsonlWriter _identity;
 
+            private readonly string _runDirectory;
+            private readonly bool _corpsesOn;
+            private JsonlGzWriter _corpses;
+
+            /// <summary>Corpses whose facts row is written: each is in every step row while it stands.</summary>
+            private readonly HashSet<long> _corpseWritten = new HashSet<long>();
+
+            /// <summary>Corpses seen without their pose and held back a step (the class remarks).</summary>
+            private readonly Dictionary<long, CorpseSight> _corpseHeld = new Dictionary<long, CorpseSight>();
+
+            private readonly HashSet<long> _corpseSeen = new HashSet<long>();
+            private readonly List<long> _corpseGone = new List<long>();
+            private readonly StringBuilder _corpseRow = new StringBuilder(1 << 16);
+            private double _corpseLast = double.NegativeInfinity;
+
             private readonly HashSet<long> _withGenome = new HashSet<long>();
             private readonly Dictionary<long, Plan> _plansWritten = new Dictionary<long, Plan>();
             private readonly List<long> _born = new List<long>();
@@ -1162,12 +1225,16 @@ namespace Evosim.Farm
 
             public bool Started { get; private set; }
 
-            public Recording(string outDirectory, string configHash, Options options, Result result)
+            public Recording(
+                string outDirectory, string configHash, Options options, Result result,
+                string runDirectory, bool corpses)
             {
                 _outDirectory = outDirectory;
                 _configHash = configHash;
                 _options = options;
                 _result = result;
+                _runDirectory = runDirectory;
+                _corpsesOn = corpses;
 
                 double fps = options.FramesPerSecond;
                 _nextFrame = (long)Math.Ceiling(options.FromSeconds * fps - 1e-6);
@@ -1184,6 +1251,9 @@ namespace Evosim.Farm
                 // Core's members, the run's own genomes.jsonl.gz format: a member at each report
                 // second, each carrying its length, so one reader reads both files.
                 _genomes = new JsonlGzWriter(Path.Combine(_outDirectory, GenomesFileName), memberEachRow: false);
+
+                // D127's corpses, only in a world whose dead leave one (the class remarks).
+                if (_corpsesOn) _corpses = new JsonlGzWriter(Path.Combine(_outDirectory, CorpsesFileName), memberEachRow: false);
                 _plans = new JsonlWriter(Path.Combine(_outDirectory, PlansFileName), flushEachRow: false);
                 _events = new JsonlWriter(Path.Combine(_outDirectory, EventsFileName), flushEachRow: false);
                 OpenIdentity();
@@ -1225,6 +1295,9 @@ namespace Evosim.Farm
                     WritePlanIfChanged(creature, t);
                 }
 
+                CaptureCorpses(world, t, atStart: true);
+                TakeCorpseGenomesFromTheRun();
+
                 _genomes.EndMember();
             }
 
@@ -1235,6 +1308,10 @@ namespace Evosim.Farm
             public void CaptureBodies(World world, double t)
             {
                 TakeAdmissions(world);
+
+                // Before the end test below: a step row past the end still tells the player where
+                // each corpse was going, for the frames after the last step inside the window.
+                CaptureCorpses(world, t, atStart: false);
 
                 // A step past the window's end (an end between two metabolic steps) moves no plan
                 // a frame will draw.
@@ -1331,6 +1408,7 @@ namespace Evosim.Farm
             public void EndWindow(World world)
             {
                 TakeEvents(world);
+                WriteHeldCorpses();
                 FlushMembers();
                 _admitted.Clear();
             }
@@ -1342,6 +1420,7 @@ namespace Evosim.Farm
                 _genomes.EndMember();
                 _plans.Flush();
                 _events.Flush();
+                _corpses?.EndMember();
             }
 
             public void Identity(string row)
@@ -1371,6 +1450,18 @@ namespace Evosim.Farm
                 _plans = null;
                 _events?.Dispose();
                 _events = null;
+
+                // A corpse whose body has no genome in the window cannot be drawn. It is counted in
+                // the verdict, and reads zero unless the run's own genomes file lacks the body.
+                foreach (long id in _corpseWritten)
+                {
+                    if (!_withGenome.Contains(id)) _result.CorpsesWithoutAGenome++;
+                }
+
+                _corpseWritten.Clear();
+                _corpseHeld.Clear();
+                _corpses?.Dispose();
+                _corpses = null;
             }
 
             /// <summary>The verdict, last in <c>identity.jsonl</c>, and the file closed.</summary>
@@ -1399,6 +1490,10 @@ namespace Evosim.Farm
                 w.Field("bites", result.Bites);
                 w.Field("birthsWithoutAGenome", result.BirthsWithoutAGenome);
                 w.Field("planRows", result.PlanRows);
+                w.Field("corpses", result.Corpses);
+                w.Field("corpseSteps", result.CorpseSteps);
+                w.Field("corpseGenomes", result.CorpseGenomes);
+                w.Field("corpsesWithoutAGenome", result.CorpsesWithoutAGenome);
                 w.Field("rows", result.Rows);
                 w.Field("rowsAgreed", result.RowsAgreed);
                 w.Field("rowsBefore", result.RowsBefore);
@@ -1421,6 +1516,260 @@ namespace Evosim.Farm
                 _identity.Write(w.ToString());
                 _identity.Dispose();
                 _identity = null;
+            }
+
+            // ------------------------------------------------------------ the corpses (D127)
+
+            /// <summary>
+            /// One step row of every corpse the world holds, and the facts row of each corpse seen for
+            /// the first time with its pose, or for the second time with or without one.
+            /// </summary>
+            /// <param name="atStart">
+            /// The window's opening. A corpse standing there with its pose died before the window, is
+            /// drawn from the first frame, and carries no founding second.
+            /// </param>
+            private void CaptureCorpses(World world, double t, bool atStart)
+            {
+                if (_corpses == null) return;
+
+                // One row a step. The window can open on a metabolic step, and then the opening and
+                // the step's own capture fall at one second; a second capture there would take a
+                // corpse held for its pose as seen twice.
+                if (t <= _corpseLast + 1e-9) return;
+                _corpseLast = t;
+
+                IReadOnlyList<Corpse> corpses = world.Corpses;
+
+                _corpseRow.Clear();
+                _corpseRow.Append('[');
+                _corpseSeen.Clear();
+                int placed = 0;
+
+                for (int i = 0; i < corpses.Count; i++)
+                {
+                    Corpse corpse = corpses[i];
+                    long id = corpse.CreatureId;
+
+                    if (!_corpseWritten.Contains(id))
+                    {
+                        if (_corpseHeld.TryGetValue(id, out CorpseSight sight))
+                        {
+                            _corpseHeld.Remove(id);
+                        }
+                        else
+                        {
+                            sight = CorpseSight.Of(corpse, t, atStart && corpse.HasPose ? double.NaN : t);
+
+                            if (!corpse.HasPose)
+                            {
+                                _corpseHeld[id] = sight;
+                                _corpseSeen.Add(id);
+                                continue;
+                            }
+                        }
+
+                        WriteCorpseFacts(sight);
+                    }
+
+                    if (placed++ > 0) _corpseRow.Append(',');
+                    AppendPlace(_corpseRow, corpse);
+                }
+
+                _corpseRow.Append(']');
+
+                // A held corpse the world no longer has went inside one step (eaten, or dissolved at
+                // once). It is written from its first sight, so a player shows it for that step.
+                if (_corpseHeld.Count > _corpseSeen.Count)
+                {
+                    _corpseGone.Clear();
+
+                    foreach (KeyValuePair<long, CorpseSight> held in _corpseHeld)
+                    {
+                        if (!_corpseSeen.Contains(held.Key)) _corpseGone.Add(held.Key);
+                    }
+
+                    for (int i = 0; i < _corpseGone.Count; i++)
+                    {
+                        WriteCorpseFacts(_corpseHeld[_corpseGone[i]]);
+                        _corpseHeld.Remove(_corpseGone[i]);
+                    }
+                }
+
+                var w = new Json.Writer(indent: false);
+                w.BeginObject();
+                w.Field("k", "step");
+                w.Field("t", t);
+                w.Raw("h", _corpseRow.ToString());
+                w.EndObject();
+
+                _corpses.Write(w.ToString());
+                _result.CorpseSteps++;
+            }
+
+            /// <summary>A corpse's facts row, once per corpse: what does not change while it stands.</summary>
+            private void WriteCorpseFacts(CorpseSight sight)
+            {
+                Corpse corpse = sight.Corpse;
+                long id = corpse.CreatureId;
+                if (!_corpseWritten.Add(id)) return;
+
+                var w = new Json.Writer(indent: false);
+                w.BeginObject();
+                w.Field("k", "corpse");
+                w.Field("id", id);
+                w.Field("t", sight.Seconds);
+
+                if (double.IsNaN(sight.Born)) w.Field("born", (string)null);
+                else w.Field("born", sight.Born);
+
+                w.BeginArray("at");
+                w.Value(sight.X);
+                w.Value(sight.Y);
+                w.Value(sight.Z);
+                w.Value(sight.Fraction);
+                w.Value(sight.Settled ? 1 : 0);
+                w.EndArray();
+
+                w.Field("first", corpse.FirstJoules);
+                w.Field("scaledBy", corpse.ScaledBy);
+
+                // Read now and not at first sight: the harness stamps it a step after the death.
+                w.Field("pose", corpse.HasPose);
+
+                Quat q = corpse.Rotation;
+                w.BeginArray("rot");
+                w.Value(q.X);
+                w.Value(q.Y);
+                w.Value(q.Z);
+                w.Value(q.W);
+                w.EndArray();
+
+                w.BeginArray("moduleCounts");
+                if (corpse.ModuleCounts != null) foreach (int count in corpse.ModuleCounts) w.Value(count);
+                w.EndArray();
+
+                w.BeginArray("lostPaths");
+                if (corpse.LostPartPaths != null)
+                {
+                    foreach (int[] path in corpse.LostPartPaths)
+                    {
+                        w.BeginArray();
+                        foreach (int step in path) w.Value(step);
+                        w.EndArray();
+                    }
+                }
+                w.EndArray();
+
+                w.EndObject();
+
+                _corpses.Write(w.ToString());
+                _result.Corpses++;
+            }
+
+            /// <summary>
+            /// One corpse's place in a step row: its id, x, y and z to the millimetre, the share of its
+            /// first joules it holds, and 1 when it has settled.
+            /// </summary>
+            private static void AppendPlace(StringBuilder row, Corpse corpse)
+            {
+                CultureInfo inv = CultureInfo.InvariantCulture;
+                Float3 p = corpse.Position;
+
+                row.Append(corpse.CreatureId.ToString(inv)).Append(',')
+                   .Append(p.X.ToString("0.###", inv)).Append(',')
+                   .Append(p.Y.ToString("0.###", inv)).Append(',')
+                   .Append(p.Z.ToString("0.###", inv)).Append(',')
+                   .Append(CorpseSight.FractionOf(corpse).ToString("0.####", inv)).Append(',')
+                   .Append(corpse.Settled ? '1' : '0');
+            }
+
+            /// <summary>The window's end: every corpse still held back is written from its first sight.</summary>
+            private void WriteHeldCorpses()
+            {
+                if (_corpses == null || _corpseHeld.Count == 0) return;
+
+                _corpseGone.Clear();
+                foreach (long id in _corpseHeld.Keys) _corpseGone.Add(id);
+
+                for (int i = 0; i < _corpseGone.Count; i++) WriteCorpseFacts(_corpseHeld[_corpseGone[i]]);
+
+                _corpseHeld.Clear();
+            }
+
+            /// <summary>
+            /// The genomes of the corpses standing at the start, from the run's own
+            /// <c>genomes.jsonl.gz</c>. They died before the window, so neither the roster nor the
+            /// admission queue has them. One pass over the file, stopping when every one is found.
+            /// </summary>
+            private void TakeCorpseGenomesFromTheRun()
+            {
+                if (_corpses == null || _runDirectory == null) return;
+
+                var wanted = new HashSet<long>();
+
+                foreach (long id in _corpseWritten)
+                {
+                    if (!_withGenome.Contains(id)) wanted.Add(id);
+                }
+
+                foreach (long id in _corpseHeld.Keys)
+                {
+                    if (!_withGenome.Contains(id)) wanted.Add(id);
+                }
+
+                if (wanted.Count == 0) return;
+
+                string path = Path.Combine(_runDirectory, GenomesFileName);
+                if (!File.Exists(path)) return;
+
+                using (GzipMemberReader reader = GzipMemberReader.Open(path))
+                {
+                    foreach (string line in reader.Lines())
+                    {
+                        long id = IdOf(line);
+                        if (id < 0 || !wanted.Remove(id)) continue;
+
+                        _genomes.Write(line);
+                        _withGenome.Add(id);
+                        _result.CorpseGenomes++;
+
+                        if (wanted.Count == 0) break;
+                    }
+                }
+            }
+
+            /// <summary>
+            /// A genome row's id, read off its head where <see cref="GenomeJson.Write"/> puts it, and
+            /// parsed whole only when it is not there: the run's file holds a row for every birth.
+            /// </summary>
+            private static long IdOf(string row)
+            {
+                const string head = "{\"id\":";
+
+                if (row.StartsWith(head, StringComparison.Ordinal))
+                {
+                    long id = 0;
+                    int i = head.Length;
+                    int digits = 0;
+
+                    while (i < row.Length && row[i] >= '0' && row[i] <= '9')
+                    {
+                        id = id * 10 + (row[i] - '0');
+                        i++;
+                        digits++;
+                    }
+
+                    if (digits > 0 && i < row.Length && (row[i] == ',' || row[i] == '}')) return id;
+                }
+
+                try
+                {
+                    return GenomeJson.ReadId(row);
+                }
+                catch (Exception)
+                {
+                    return -1L;
+                }
             }
 
             /// <summary>One genome row, the run's own form (<c>Sampler.DrainGenomes</c>), once per id.</summary>
@@ -1478,6 +1827,41 @@ namespace Evosim.Farm
                 _plans.Write(w.ToString());
                 _result.PlanRows++;
             }
+        }
+
+        /// <summary>
+        /// A corpse as first seen: the object, whose pose the harness stamps a step later, and
+        /// where it was then.
+        /// </summary>
+        private sealed class CorpseSight
+        {
+            public Corpse Corpse;
+            public double Seconds;
+
+            /// <summary>The second it was founded inside the window, or NaN for one standing at the start.</summary>
+            public double Born;
+
+            public float X;
+            public float Y;
+            public float Z;
+            public float Fraction;
+            public bool Settled;
+
+            public static CorpseSight Of(Corpse corpse, double t, double born) => new CorpseSight
+            {
+                Corpse = corpse,
+                Seconds = t,
+                Born = born,
+                X = corpse.Position.X,
+                Y = corpse.Position.Y,
+                Z = corpse.Position.Z,
+                Fraction = FractionOf(corpse),
+                Settled = corpse.Settled,
+            };
+
+            /// <summary>The share of its first joules a corpse still holds: what a player shrinks it by.</summary>
+            public static float FractionOf(Corpse corpse) =>
+                corpse.FirstJoules > 0d ? (float)(corpse.Joules / corpse.FirstJoules) : 1f;
         }
 
         /// <summary>A body's plan as it was last written: copies, so a change in place is seen.</summary>

@@ -35,6 +35,9 @@ The reasons below cite the research in `research/story-video/`.
 - Take each angle from a different part of the facts. A model's first idea is its most typical one,
   so without this rule the owner gets four versions of the same idea (human-not-llm-prose.md §1.4,
   §2.E).
+- When the film covers several rounds, give one angle to the changes we made to the world across them
+  and what came of them. Changes that never brought what we hoped for are a story too. The owner turned
+  down every angle of a film over five rounds for leaving out the many rule changes they held.
 - Tell any change across generations as what happened to the population, never as what creatures
   wanted, tried or learned. That language teaches the commonest misconception about evolution
   (compelling-video-stories.md §6.8; narration-writing.md §2.6).

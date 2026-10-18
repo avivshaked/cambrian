@@ -7,9 +7,9 @@ namespace Evosim.Theatre
 {
     /// <summary>
     /// The rock a mushroom reef is drawn with: its cap and its stem as lathe meshes cut into by
-    /// noise in the reef's own frame, seeded per reef (the owner, 2026-09-23 night: "an
-    /// appropriate skin to the reefs, so they look more like a natural rocky structure ... on the
-    /// surface as well as the stem").
+    /// noise in the reef's own frame, seeded per reef (the owner asked on the night of 2026-09-23
+    /// for a skin that makes the reefs look like natural rocky structure, on the surface as well as
+    /// the stem).
     /// </summary>
     /// <remarks>
     /// <para>

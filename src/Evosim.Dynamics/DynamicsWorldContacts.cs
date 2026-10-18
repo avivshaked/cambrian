@@ -321,8 +321,9 @@ namespace Evosim.Dynamics
         }
 
         /// <summary>
-        /// The step's five counters and its event list, taken serially once every body has
-        /// been stepped and every sphere committed.
+        /// The step's five counters and its event list, taken once every body has been
+        /// stepped. It reads the overlap lists, never the contact spheres, which the next grid
+        /// build commits.
         /// </summary>
         /// <remarks>
         /// <b>A body the solver has lost is not in the instrument.</b> It stopped being stepped,

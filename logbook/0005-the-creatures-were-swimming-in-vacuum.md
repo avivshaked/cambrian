@@ -2,8 +2,8 @@
 
 **2026-08-02**  ·  Milestone 1
 
-A human opened the sandbox scene for the first time and reported *"a bunch of boxes
-connected, and rotating really fast, then speeding out of the viewport"*. That took about
+A human opened the sandbox scene for the first time and reported seeing a bunch of boxes
+connected and rotating really fast, then speeding out of the viewport. That took about
 four seconds of looking. Four days of headless checks had all said PASS.
 
 Two bugs were behind it. The joint drive pushed on one side of a joint and on nothing at all
@@ -112,7 +112,7 @@ A person looked at it.
 
 Four days of headless verification, unit tests, geometry assertions and mutation testing did
 not surface this. A person pressing Play surfaced it immediately. To a human eye,
-*"rotating really fast and flying away"* is not a subtle failure, and in a log file it is
+a body rotating really fast and flying away is not a subtle failure, and in a log file it is
 nearly invisible.
 
 The instruments were all measuring real things. None of them was measuring the right thing,

@@ -12,6 +12,7 @@ namespace Evosim.Farm.Tests
     /// every living body in a slim snapshot finds its genome, <c>poses.jsonl</c> is not written,
     /// and the switch and its one default are bound where the other recording settings are.
     /// </summary>
+    [Collection(FarmProcessCollection.Name)]
     public class RecordFormatFarmTests
     {
         private static Simulation Build(int format, string scratch, out RunDirectory dir)

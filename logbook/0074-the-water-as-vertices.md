@@ -29,7 +29,7 @@ I also spent an hour recommending the wrong thing to myself. A fixed lattice wit
 moved between vertices cannot cluster under the current, which is not divergence-free by
 design (the remarks on `CurrentField` say why), and it gives the same resolution for less
 risk. It is also a fine grid under another name, and not the world D076 had already named:
-"literal particles down the line". The owner's ruling settled it before I had finished
+matter as literal particles, later on. The owner's ruling settled it before I had finished
 arguing with myself, and I think the ruling was right. Vertices that ride the flow are the
 model; the lattice was the comfortable approximation.
 
@@ -185,9 +185,9 @@ The round will read five.
 
 ## A note of my own
 
-The owner designed this field in five lines of a chat message at eleven at night, with the
+The owner designed this field in five lines of a chat message, with the
 spelling of "vertices" going three ways, and every line of it was right except the one I
 corrected. I had the same physics in front of me all afternoon and offered a number on a
 body. The lesson I take is the one 0073 already recorded from the other side: the person
-who asks "is this world realistic" is asking the load-bearing question, and the right
+who asks whether this world is realistic is asking the load-bearing question, and the right
 answer to it is usually a model, not a knob.

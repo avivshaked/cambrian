@@ -48,8 +48,7 @@ say so first in your answer.
 
 When draft n stands as it is, write nothing and answer `EDIT: READY`.
 
-Otherwise write `edit-<n+1>.json` in the film's folder, through the shell, never with the Write or Edit
-tools: a short `cat > file <<'EOF'` of the JSON will do.
+Otherwise write `edit-<n+1>.json` in the film's folder.
 
 ```json
 {"schema": "create-story-video/edit-decisions/1",
@@ -76,5 +75,5 @@ Answer `EDIT: NOT READY`, with why, when the proof shows a fault that no decisio
 ## Rules
 
 - Decide only where cuts between footage fall.
-- Write only inside the film's folder, and only through the shell.
+- Write only inside the film's folder.
 - Your time budget is 15 minutes.

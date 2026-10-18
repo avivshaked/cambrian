@@ -1,0 +1,19 @@
+r58-s1ir's dropped contact candidates (overflowCandidates), read span by span on the card.
+Every span ran round 58's code (core, dynamics and farm hashes and configHash dfc0e881 equal to r58-s1ir's),
+alone on the card, by the speed agent's rounds/r58-ov-span.ps1, on 2026-10-12. Each span's end stats row
+matched r58-s1ir's (alive, births, deaths). overflowOverlaps, overflowHeld and overflowEntries were 0 in every span.
+
+span (s)            overflowCandidates  alive at span end  run
+0 - 3,130           0                   -                  r58-s1i (the stopped first run)
+3,000 - 12,000      0                   -                  a card resume
+12,000 - 12,300     0                   -                  r58g-zero (the grazer control's zero step)
+12,000 - 30,000     0                   6,026              r58ov-12000-30000
+30,000 - 39,000     0                   9,624              r58ov-30000-39000
+39,000 - 40,500     0                   8,938              r58ov-39000-40500
+40,500 - 42,000     0                   9,486              r58ov-40500-42000
+39,000 - 43,500     4,232               10,966             r58ov-39000-43500
+whole run           42,609              8,792 at 48,000    r58-s1ir
+
+So 42,000 - 43,500 holds 4,232 (39,000 - 43,500 less two zero spans), and 43,500 - 48,000 holds 38,377
+(the whole run less 4,232). The subtraction assumes counts add over spans, which holds because a resume
+steps the same states (inference, supported by every span's matching stats row).

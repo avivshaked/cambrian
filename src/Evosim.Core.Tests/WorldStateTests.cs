@@ -565,6 +565,84 @@ namespace Evosim.Core.Tests
             Assert.Equal(StateOf(world), StateOf(restored));
         }
 
+        // ------------------------------------------------------------------ the scent's prefix
+
+        /// <summary>
+        /// <c>logbook/specs/r57-build/scent-restore.md</c>'s acceptance: a module's remains appended
+        /// after the step's fill (through the module rule, as the farm's growth step appends them)
+        /// are smelt by neither the live world nor the restored one, and the two fields agree cell
+        /// for cell.
+        /// </summary>
+        [Fact]
+        public void TheRestoredScentLeavesOutRemainsTheLiveFillHadNotSmelt()
+        {
+            RunConfig Scented(bool drought) => new RunConfig
+            {
+                MinimumPopulation = 0,
+                MaximumPopulation = 2_000,
+                WorldAreaSquareMetres = 100f,
+                WorldDepthMetres = 20f,
+                Light = new LightModel(400f, 12f),
+                InitialMatterPerCubicMetre = 50f,
+                PerOffspringOverheadJoules = 1e9f,
+                CorpseDecayPerSecond = 0.005f,
+                SenseScent = true,
+                ModuleAddReserveSeconds = drought ? 0f : 20f,
+                ModuleDropReserveSeconds = drought ? 1e9f : 0f,
+                ModuleDropAfterSeconds = 0f,
+            };
+
+            RunConfig config = Scented(drought: false);
+            var world = new World(config, seed: 11);
+            world.Inoculate(Fixtures.IndeterminateLeaf(maxModules: 4), count: 1, heightY: -5f);
+            Organism leaf = world.Living[0];
+
+            for (int round = 0; round < 60 && leaf.Phenotype.PartCount < 4; round++)
+            {
+                for (int t = 0; t < 30; t++) world.Step(1f);
+                world.ApplyModuleRule(30f);
+            }
+
+            Assert.True(leaf.Phenotype.PartCount > 1, "the leaf never added a module to drop");
+
+            // One more step, so the fill is the step's own; then the drop, which appends.
+            world.Step(1f);
+            int filled = world.ScentFilledCorpses;
+            Assert.Equal(world.Corpses.Count, filled);
+
+            config.ModuleAddReserveSeconds = 0f;
+            config.ModuleDropReserveSeconds = 1e9f;
+            long dropsBefore = world.ModuleDrops;
+            world.ApplyModuleRule(10f);
+
+            Assert.Equal(dropsBefore + 1, world.ModuleDrops);
+            Assert.Equal(filled + 1, world.Corpses.Count);
+            Assert.Equal(filled, world.ScentFilledCorpses);
+
+            // The test bites: a field filled from every corpse is not the live one.
+            float[] live = world.Scent.CopyCells();
+            var everyCorpse = new ScentField(
+                world.Nutrients.LengthMetres, world.Nutrients.WidthMetres,
+                config.WorldDepthMetres, world.Scent.RangeMetres);
+            everyCorpse.Fill(world.Corpses);
+            Assert.NotEqual(live, everyCorpse.CopyCells());
+
+            byte[] first = StateOf(world);
+            World restored = Restored(Scented(drought: true), 11, first);
+
+            Assert.Equal(filled, restored.ScentFilledCorpses);
+            Assert.Equal(world.Corpses.Count, restored.Corpses.Count);
+            Assert.Equal(live, restored.Scent.CopyCells());
+            Assert.Equal(first, StateOf(restored));
+
+            // And on: the next fill takes every corpse on both sides.
+            world.Step(1f);
+            restored.Step(1f);
+            Assert.Equal(world.Corpses.Count, world.ScentFilledCorpses);
+            Assert.Equal(world.Scent.CopyCells(), restored.Scent.CopyCells());
+            Assert.Equal(StateOf(world), StateOf(restored));
+        }
+
         // ------------------------------------------------------------------ the refusals
 
         [Fact]
@@ -587,11 +665,13 @@ namespace Evosim.Core.Tests
             byte[] state = StateOf(Stepped(Stage(), seed: 11, seconds: 10f));
 
             // The version sits immediately after the four-byte section tag. The one after this
-            // build's, and the one before it (11, before round 49's lineage instruments), which
-            // is not the lossy layout and is refused as every other one is.
-            foreach (int version in new[] { World.StateVersion + 1, World.StateVersion - 1 })
+            // build's, the one before the layout it still reads exactly (13, before round 57's
+            // scent count), which is not the lossy layout and is refused as every other one is, and
+            // 16, round 59's before its grip was checkpointed, refused by name.
+            foreach (int version in new[] { World.StateVersion + 1, World.PreImmigrationStateVersion - 1, World.GriplessStateVersion })
             {
                 Assert.NotEqual(World.LossyStateVersion, version);
+                Assert.False(World.ReadsStateVersion(version));
                 state[4] = (byte)version;
 
                 var world = new World(Stage(), seed: 11);

@@ -37,8 +37,7 @@ Start by listing `script/<N>/` for your round, then read, in this order, whichev
    the three lines that sounded most machine-made, and the story as they understood it), `arc.md`
    (whether that summary told the arc back) and `editor.md` (the last editor's table).
 
-Write two files, through the shell, as a heredoc or a Python write, and never with the Write or
-Edit tools: `script.md`, whole, and `script/<N>/editor.md`. Write `script/<N>/for-writer.md` too
+Write two files: `script.md`, whole, and `script/<N>/editor.md`. Write `script/<N>/for-writer.md` too
 when the owner asked for a change you may not make. Write nothing else and nowhere else. Launch
 nothing heavy. You cannot wait for anything, so finish when the files are written.
 

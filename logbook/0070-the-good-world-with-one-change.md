@@ -12,9 +12,7 @@ we will know which change costs the rule, which no compound round could tell us.
 The round also runs with the physics on one thread, so for the first time a shared world can
 be re-run and watched.
 
-It is pre-registered before D078's build has landed. The owner's ruling was short.
-
-> agreed. proceed with that idea.
+It is pre-registered before D078's build has landed. The owner's ruling was short: agreed, proceed with that idea.
 
 ## What is held and what changes
 

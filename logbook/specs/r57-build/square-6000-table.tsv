@@ -1,0 +1,32 @@
+# Computed (budget57.py). Day 1,000 s at 0.5, year 6000 s, season square. Weather rho 0.5. Reserve and spell in s of W.
+season amp	weather sigma	body	r	reserve median	reserve p90	deficit spell median	spell p90	mean income vs no cycle	who survives a p90 year on reserve
+0.30	0.0	light-bound	2.10	49	49	278	278	1.000	adults only
+0.30	0.0	light-bound	1.25	454	454	594	594	1.000	adults near their gate
+0.30	0.0	matter-bound	2.10	0	0	0	0	0.970	all
+0.30	0.3	light-bound	2.10	94	214	374	560	0.992	adults only
+0.30	0.3	light-bound	1.25	596	1204	722	2564	0.993	only the fullest adults
+0.30	0.3	matter-bound	2.10	0	13	0	168	0.956	all
+0.40	0.0	light-bound	2.10	88	88	366	366	1.000	adults only
+0.40	0.0	light-bound	1.25	758	758	734	734	1.000	adults near their gate
+0.40	0.0	matter-bound	2.10	0	0	0	0	0.949	all
+0.40	0.3	light-bound	2.10	147	406	468	678	1.003	adults near their gate
+0.40	0.3	light-bound	1.25	868	1392	1598	2998	1.011	none on reserve alone
+0.40	0.3	matter-bound	2.10	0	42	0	260	0.935	newborns and up
+0.50	0.0	light-bound	2.10	143	143	470	470	1.000	adults only
+0.50	0.0	light-bound	1.25	1124	1124	2998	2998	1.000	only the fullest adults
+0.50	0.0	matter-bound	2.10	0	0	0	0	0.920	all
+0.50	0.3	light-bound	2.10	303	789	578	1592	1.010	adults near their gate
+0.50	0.3	light-bound	1.25	1158	1706	2512	2998	1.000	none on reserve alone
+0.50	0.3	matter-bound	2.10	17	89	186	366	0.906	adults only
+0.60	0.0	light-bound	2.10	538	538	626	626	1.000	adults near their gate
+0.60	0.0	light-bound	1.25	1499	1499	2998	2998	1.000	none on reserve alone
+0.60	0.0	matter-bound	2.10	21	21	198	198	0.878	newborns and up
+0.60	0.3	light-bound	2.10	627	1246	790	2658	0.967	only the fullest adults
+0.60	0.3	light-bound	1.25	1537	1894	2998	2998	0.974	none on reserve alone
+0.60	0.3	matter-bound	2.10	70	175	326	510	0.857	adults only
+0.70	0.0	light-bound	2.10	1109	1109	2998	2998	1.000	only the fullest adults
+0.70	0.0	light-bound	1.25	1874	1874	2998	2998	1.000	none on reserve alone
+0.70	0.0	matter-bound	2.10	88	88	366	366	0.800	adults only
+0.70	0.3	light-bound	2.10	1202	1590	2220	2998	0.998	none on reserve alone
+0.70	0.3	light-bound	1.25	1958	2197	2998	2998	0.989	none on reserve alone
+0.70	0.3	matter-bound	2.10	145	405	462	710	0.796	adults near their gate

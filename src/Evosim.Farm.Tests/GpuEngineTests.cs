@@ -56,9 +56,16 @@ namespace Evosim.Farm.Tests
             { "EVOSIM_SENSE_CONTACT", "1" }, { "EVOSIM_SENSE_DAMAGE", "1" },
         };
 
-        public static (World world, SolverConfig solver) Build(bool perPart = true, bool reefs = true, ulong seed = 7UL)
+        public static (World world, SolverConfig solver) Build(bool perPart = true, bool reefs = true, ulong seed = 7UL,
+                                                                IReadOnlyDictionary<string, string> extra = null)
         {
-            RunConfig config = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(Launcher(perPart, reefs))));
+            Dictionary<string, string> block = Launcher(perPart, reefs);
+            if (extra != null)
+            {
+                foreach (KeyValuePair<string, string> setting in extra) block[setting.Key] = setting.Value;
+            }
+
+            RunConfig config = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(block)));
             var world = new World(config, seed);
 
             SolverConfig solver = SolverConfig.FromWorld(config, config.PhysicsStepSeconds, world.Bed, world);
@@ -77,12 +84,31 @@ namespace Evosim.Farm.Tests
         /// A random viable body the gpu engine holds (sixteen links at most, three inputs a
         /// neuron), placed as the farm places one and wired as the farm wires one.
         /// </summary>
-        public static Creature Body(int id, SolverConfig solver, World world, Rng rng, Vec3 at, int maxNeurons = 256)
+        public static Creature Body(int id, SolverConfig solver, World world, Rng rng, Vec3 at, int maxNeurons = 256,
+                                   SensorChannel[] sensorPool = null, bool central = false, int bigLinks = 0,
+                                   string bodyCell = null)
         {
             for (int attempt = 0; ; attempt++)
             {
-                Genome genome = GenomeFactory.RandomViable(rng, minParts: 2);
-                Phenotype plan = Developer.Develop(genome, DevelopmentLimits.Default);
+                if (attempt > 2000) throw new InvalidOperationException("no viable body in 2,000 draws");
+                Genome genome = GenomeFactory.RandomViable(rng, minParts: 2, sensorPool: sensorPool);
+                if (central && !WireCentral(genome, rng, sensorPool ?? world.Config.SensorPool(), world.Config.Brain, bigLinks)) continue;
+
+                // Every part but the links recast as one cell type, developed against the world's table.
+                if (bodyCell != null)
+                {
+                    foreach (MorphNode node in genome.Nodes)
+                    {
+                        if (node.CellTypeId == CellTypeIds.Link) continue;
+                        node.CellTypeId = bodyCell;
+                        node.Intake = 0f;
+                        node.Lift = 0f;
+                    }
+                }
+
+                Phenotype plan = bodyCell == null
+                    ? Developer.Develop(genome, DevelopmentLimits.Default)
+                    : Developer.Develop(genome, DevelopmentLimits.Default, cellTypes: world.Config.CellTypes);
                 if (plan.PartCount > 16) continue;
 
                 var body = new Creature(id, plan, solver);
@@ -93,6 +119,8 @@ namespace Evosim.Farm.Tests
 
                 body.PlaceAsDeveloped(at, plan);
                 body.Senses.Nutrients = world.Nutrients;
+                body.Senses.Scent = world.Scent;
+                body.Senses.LeafScent = world.LeafScent;
                 body.Senses.Reserve = new Reserve { SecondsOfReserve = 40f + id };
 
                 var contact = new bool[body.Links];
@@ -109,6 +137,36 @@ namespace Evosim.Farm.Tests
                 if (body.Jointed) body.EnableTrace();
                 return body;
             }
+        }
+
+        /// <summary>
+        /// D146's one brain for a drawn genome, as World.GrowBrain makes a founder's and then mutates
+        /// it a few times so it grows links, ports and hidden units. With <paramref name="bigLinks"/>
+        /// above 0 it then splits a dozen links into hidden units and adds links until it holds that
+        /// many, as seed 1's largest brains do (1,022 links at 47,000 s). False when the result
+        /// breaks a rule of the brain's or falls a quarter short, and the caller draws again.
+        /// </summary>
+        private static bool WireCentral(Genome genome, Rng rng, SensorChannel[] pool, CentralBrainOptions options,
+                                        int bigLinks = 0)
+        {
+            CentralWiring.Convert(genome);
+            Phenotype grown = Developer.Develop(genome, DevelopmentLimits.Default);
+            genome.Brain = CentralWiring.Effective(genome.Brain, grown, rng, pool, options, founder: true);
+            for (int m = 0; m < 6; m++) CentralMutation.Mutate(genome.Brain, grown, pool, rng, options);
+
+            if (bigLinks > 0)
+            {
+                List<BrainLink> links = genome.Brain.Links;
+                for (int h = 0; h < 12 && links.Count > 0; h++) CentralMutation.Split(genome.Brain, links[rng.Range(links.Count)]);
+                for (int a = 0; a < 40 * bigLinks && links.Count < bigLinks; a++)
+                {
+                    CentralMutation.AddLink(genome.Brain, grown, pool, rng, options);
+                }
+
+                if (links.Count < bigLinks * 3 / 4) return false;
+            }
+
+            return genome.Brain.Validate().Count == 0;
         }
 
         /// <summary>The tank's axis, where Core's tank puts it.</summary>
@@ -139,7 +197,9 @@ namespace Evosim.Farm.Tests
 
                 foreach (Creature c in world.Creatures)
                 {
-                    c.WriteState(w);
+                    // Without the card's pairs (round 60), which only the card engine holds: the rest of
+                    // each body's state is the comparison, and the pairs are the card's own record of it.
+                    c.WriteState(w, cardBlock: false);
                     Doubles(w, c.Fext);
                     Doubles(w, c.Tau);
                     foreach (float v in c.DriveSignal) w.Write(v);
@@ -207,6 +267,8 @@ namespace Evosim.Farm.Tests
                            (a.OverlapCount != b.OverlapCount ? "OverlapCount " + a.OverlapCount + " against " + b.OverlapCount : null) ??
                            (!Same(a.MechanicalWorkJoules, b.MechanicalWorkJoules) ? "work" : null) ??
                            (!Same(a.DissipatedJoules, b.DissipatedJoules) ? "dissipated" : null) ??
+                           (a.DriveImpulsesLimited != b.DriveImpulsesLimited ? "DriveImpulsesLimited " + a.DriveImpulsesLimited + " against " + b.DriveImpulsesLimited : null) ??
+                           (a.DragImpulsesLimited != b.DragImpulsesLimited ? "DragImpulsesLimited " + a.DragImpulsesLimited + " against " + b.DragImpulsesLimited : null) ??
                            (!Same(a.ContactRadius, b.ContactRadius) ? "ContactRadius" : null);
 
                 if (d != null) return where + ": " + d;
@@ -407,13 +469,15 @@ namespace Evosim.Farm.Tests
 
         public GpuCpuAcceleratorTests(ITestOutputHelper output) => _out = output;
 
-        private static (DynamicsWorld world, World core) Pair(bool perPart, bool reefs)
+        private static (DynamicsWorld world, World core) Pair(bool perPart, bool reefs,
+                                                              IReadOnlyDictionary<string, string> extra = null)
         {
-            (World core, SolverConfig solver) = GpuTank.Build(perPart, reefs);
+            (World core, SolverConfig solver) = GpuTank.Build(perPart, reefs, extra: extra);
             return (new DynamicsWorld(solver) { Threads = 2 }, core);
         }
 
-        private static void Populate(DynamicsWorld world, World core, int count, ulong seed, int firstId)
+        private static void Populate(DynamicsWorld world, World core, int count, ulong seed, int firstId,
+                                     SensorChannel[] sensorPool = null, bool central = false)
         {
             var rng = new Rng(seed);
             Vec3 axis = GpuTank.Axis(core);
@@ -425,7 +489,7 @@ namespace Evosim.Farm.Tests
                 var at = new Vec3(axis.X + 0.7 * (k % 3) - 0.7, -9.0 - 0.6 * (k / 3), axis.Z + 0.5 * (k % 2));
                 if (k == 4) at = new Vec3(axis.X + core.TankRadiusMetres - 0.4, -6.0, axis.Z);
                 if (k == 5) at = new Vec3(axis.X - 2.0, -core.Config.WorldDepthMetres + 0.6, axis.Z - 2.0);
-                world.AddInIdOrder(GpuTank.Body(firstId + k, world.Config, core, rng, at));
+                world.AddInIdOrder(GpuTank.Body(firstId + k, world.Config, core, rng, at, sensorPool: sensorPool, central: central));
             }
         }
 
@@ -478,6 +542,669 @@ namespace Evosim.Farm.Tests
             Assert.Equal(0, backend.RefusedForClass);
             Assert.Equal(0L, backend.OverflowTotal);
             _out.WriteLine("pairs " + gpu.OverlapPairs + ", bed or glass " + gpu.BedOrGlassBodies);
+        }
+
+        /// <summary>
+        /// The bend-and-power drive and the limb push (card-audit-r57.md): the drive's envelope and
+        /// muscle alone, then with the power's push as round 57 runs them, and the swing's push under
+        /// the torque drive, each the solver's to the bit after every block, a death and a birth
+        /// included. Each world is first shown to part on the CPU from the world without its last
+        /// setting, so a setting that never reached the solver or a push that never fired cannot pass
+        /// as a match.
+        /// </summary>
+        [Theory]
+        [InlineData("drive")]
+        [InlineData("power")]
+        [InlineData("swing")]
+        public void TheDriveAndThePushesOnTheCpuAcceleratorAreTheSolver(string world)
+        {
+            var drive = new Dictionary<string, string> { { "EVOSIM_POWER_PUSH", "2" }, { "EVOSIM_POSE_HZ", "2" } };
+            var power = new Dictionary<string, string>(drive) { { "EVOSIM_LIMB_PUSH", "0.3" } };
+            var swing = new Dictionary<string, string> { { "EVOSIM_LIMB_PUSH", "0.3" } };
+
+            Dictionary<string, string> settings = world == "drive" ? drive : world == "power" ? power : swing;
+            Dictionary<string, string> without = world == "power" ? drive : null;
+
+            (DynamicsWorld plain, World core0) = Pair(true, false, without);
+            (DynamicsWorld cpu, World coreA) = Pair(true, false, settings);
+            (DynamicsWorld gpu, World coreB) = Pair(true, false, settings);
+
+            Populate(plain, core0, 6, 11UL, 1);
+            Populate(cpu, coreA, 6, 11UL, 1);
+            Populate(gpu, coreB, 6, 11UL, 1);
+            Assert.Equal(world != "swing", cpu.Creatures[0].Drive.BendAndPower);
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            for (int block = 0; block < 4; block++)
+            {
+                plain.StepBlock(25);
+                cpu.StepBlock(25);
+                gpu.StepBlock(25);
+                AssertSame(cpu, gpu, world + ", after block " + block);
+
+                if (block == 1)
+                {
+                    foreach ((DynamicsWorld w, World core) in new[] { (plain, core0), (cpu, coreA), (gpu, coreB) })
+                    {
+                        w.Remove(w.Creatures[0].Id);
+                        Populate(w, core, 1, 99UL, 50);
+                    }
+                }
+            }
+
+            bool parted = false;
+            for (int i = 0; i < cpu.Creatures.Count && !parted; i++)
+            {
+                double[] a = plain.Creatures[i].Position, b = cpu.Creatures[i].Position;
+                for (int k = 0; k < a.Length && !parted; k++)
+                {
+                    parted = BitConverter.DoubleToInt64Bits(a[k]) != BitConverter.DoubleToInt64Bits(b[k]);
+                }
+            }
+
+            Assert.True(parted, world + ": the world stepped as the one without its setting");
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
+        }
+
+        /// <summary>
+        /// D161's drag on turning (r59 step 7): the skin form, a shear on every panel, and the spin
+        /// form, a torque against each axis's spin, each the solver's to the bit after every block, a
+        /// death and a birth included. Each world is first shown to part on the CPU from the world
+        /// without the drag, so a setting that never reached the kernel cannot pass as a match. The
+        /// CPU accelerator ignores the group size, so the two group sizes are the card's check.
+        /// </summary>
+        [Theory]
+        [InlineData("skin")]
+        [InlineData("spin")]
+        public void TheDragOnTurningOnTheCpuAcceleratorIsTheSolver(string form)
+        {
+            var settings = form == "skin"
+                ? new Dictionary<string, string> { { "EVOSIM_TURNING_DRAG", "skin" }, { "EVOSIM_SKIN_FRICTION", "0.05" } }
+                : new Dictionary<string, string> { { "EVOSIM_TURNING_DRAG", "spin" }, { "EVOSIM_SPIN_DRAG", "0.5" } };
+
+            (DynamicsWorld plain, World core0) = Pair(true, true);
+            (DynamicsWorld cpu, World coreA) = Pair(true, true, settings);
+            (DynamicsWorld gpu, World coreB) = Pair(true, true, settings);
+
+            Populate(plain, core0, 6, 11UL, 1);
+            Populate(cpu, coreA, 6, 11UL, 1);
+            Populate(gpu, coreB, 6, 11UL, 1);
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            for (int block = 0; block < 4; block++)
+            {
+                plain.StepBlock(25);
+                cpu.StepBlock(25);
+                gpu.StepBlock(25);
+                AssertSame(cpu, gpu, form + ", after block " + block);
+
+                if (block == 1)
+                {
+                    foreach ((DynamicsWorld w, World core) in new[] { (plain, core0), (cpu, coreA), (gpu, coreB) })
+                    {
+                        w.Remove(w.Creatures[0].Id);
+                        Populate(w, core, 1, 99UL, 50);
+                    }
+                }
+            }
+
+            bool parted = false;
+            for (int i = 0; i < cpu.Creatures.Count && !parted; i++)
+            {
+                double[] a = plain.Creatures[i].Position, b = cpu.Creatures[i].Position;
+                for (int k = 0; k < a.Length && !parted; k++)
+                {
+                    parted = BitConverter.DoubleToInt64Bits(a[k]) != BitConverter.DoubleToInt64Bits(b[k]);
+                }
+            }
+
+            Assert.True(parted, form + ": the world stepped as the one without the drag");
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
+        }
+
+        /// <summary>
+        /// D162's touch of the rock and its sense (r59 step 7): bodies whose brains draw the touch
+        /// among their senses, on the shaped bed and among the reefs, the solver's to the bit after
+        /// every block, the touch record, its point and its normal included (the body's checkpointed
+        /// state), a death and a birth included. The CPU is first shown to have brains that read the
+        /// touch and links that touch the rock, so a record that never reached the card cannot pass.
+        /// </summary>
+        [Fact]
+        public void TheTouchOfTheRockAndItsSenseOnTheCpuAcceleratorAreTheSolver()
+        {
+            // Tissue that sinks against the tank's current: with the tank's own excess and neutral
+            // volume, and even at 50 kg/m3, the rolls lifted bodies put down on the bed about half a
+            // metre a block, and no link touched the rock at any block's end.
+            var settings = new Dictionary<string, string>
+            {
+                { "EVOSIM_SENSE_BED_TOUCH", "1" }, { "EVOSIM_EXCESS_DENSITY", "500" }, { "EVOSIM_NEUTRAL_VOLUME", "0" },
+            };
+            // Drawn from the touch alone, so most brains read it, as the scent test draws its senses.
+            SensorChannel[] pool = { SensorChannel.BedTouch };
+
+            (DynamicsWorld cpu, World coreA) = Pair(true, true, settings);
+            (DynamicsWorld gpu, World coreB) = Pair(true, true, settings);
+
+            OnTheBed(cpu, coreA, 6, 11UL, 1, pool);
+            OnTheBed(gpu, coreB, 6, 11UL, 1, pool);
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            int touching = 0;
+            bool sensed = false;
+            for (int block = 0; block < 4; block++)
+            {
+                cpu.StepBlock(25);
+                gpu.StepBlock(25);
+                AssertSame(cpu, gpu, "the touch, after block " + block);
+                sensed |= Reads(cpu, SensorChannel.BedTouch);
+
+                foreach (Creature body in cpu.Creatures)
+                {
+                    for (int l = 0; l < body.Links; l++) if (body.RockTouched[l]) touching++;
+                }
+
+                if (block == 1)
+                {
+                    foreach ((DynamicsWorld w, World core) in new[] { (cpu, coreA), (gpu, coreB) })
+                    {
+                        w.Remove(w.Creatures[0].Id);
+                        OnTheBed(w, core, 1, 99UL, 50, pool);
+                    }
+                }
+            }
+
+            _out.WriteLine("links touching the rock at the blocks' ends: " + touching);
+            Assert.True(touching > 0, "no link touched the rock");
+            Assert.True(sensed, "no brain read a touch");
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
+        }
+
+        /// <summary>
+        /// D167's leaf senses (r59 step 7), in each form: bodies whose brains draw the form's channel
+        /// alone, the solver's to the bit after every block over four blocks of 25 steps, a death and
+        /// a birth included. The leaf field takes its own cell, 1.5 m against the carrion's 2, and is
+        /// refilled between blocks from sources that move, as the world refills it at a metabolic
+        /// step. The CPU is first shown to have a brain read the sense, so a field or a sense that
+        /// never reached the card cannot pass.
+        /// </summary>
+        [Theory]
+        [InlineData("strength")]
+        [InlineData("direction")]
+        public void TheLeafSensesOnTheCpuAcceleratorAreTheSolver(string form)
+        {
+            var settings = new Dictionary<string, string>
+            {
+                { "EVOSIM_LEAF_SCENT", form }, { "EVOSIM_LEAF_SCENT_RANGE", "6" }, { "EVOSIM_LEAF_SCENT_CELL", "1.5" },
+                { "EVOSIM_LEAF_SCENT_HALF", "0.5" },
+            };
+            SensorChannel channel = form == "strength" ? SensorChannel.LeafScent : SensorChannel.LeafScentDirection;
+            SensorChannel[] pool = { channel };
+
+            (DynamicsWorld cpu, World coreA) = Pair(true, true, settings);
+            (DynamicsWorld gpu, World coreB) = Pair(true, true, settings);
+            Assert.NotNull(coreA.LeafScent);
+            Assert.Equal(1.5f, coreA.LeafScent.CellSizeMetres);
+
+            Populate(cpu, coreA, 6, 11UL, 1, pool);
+            Populate(gpu, coreB, 6, 11UL, 1, pool);
+
+            Vec3 axis = GpuTank.Axis(coreA);
+            Leaves(coreA.LeafScent, axis, 0);
+            Leaves(coreB.LeafScent, axis, 0);
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            bool sensed = false;
+            for (int block = 0; block < 4; block++)
+            {
+                cpu.StepBlock(25);
+                gpu.StepBlock(25);
+                AssertSame(cpu, gpu, form + ", after block " + block);
+                sensed |= Reads(cpu, channel);
+
+                if (block == 1)
+                {
+                    foreach ((DynamicsWorld w, World core) in new[] { (cpu, coreA), (gpu, coreB) })
+                    {
+                        w.Remove(w.Creatures[0].Id);
+                        Populate(w, core, 1, 99UL, 50, pool);
+                    }
+                }
+
+                Leaves(coreA.LeafScent, axis, block + 1);
+                Leaves(coreB.LeafScent, axis, block + 1);
+            }
+
+            Assert.True(sensed, form + ": no brain read a leaf smell that was not 0");
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
+        }
+
+        /// <summary>
+        /// Three leaves round the bodies' cluster (or round <paramref name="axis"/> itself), x, y, z and
+        /// lit area as World.GatherLeafSources writes them, moved a little each round so the grid
+        /// changes between blocks.
+        /// </summary>
+        private static void Leaves(ScentField field, Vec3 axis, int round, bool atCentre = false)
+        {
+            float x = (float)axis.X, z = (float)axis.Z, d = 0.4f * round;
+            float y = atCentre ? (float)axis.Y : -9f;
+            float[] sources =
+            {
+                x + 2.0f + d, y + 0.5f, z - 1.5f, 0.3f,
+                x - 3.0f, y - 1.0f + d, z + 2.0f, 0.8f,
+                x + 0.5f, y + 2.0f, z + 3.5f - d, 0.15f,
+            };
+            field.FillSources(sources, round == 3 ? 2 : 3);
+        }
+
+        /// <summary>
+        /// D162's grip (r59 step 7): bodies whose body cells are anchoring, put down on the shaped bed
+        /// among the reefs, the solver's to the bit after every block over six blocks of 25 steps,
+        /// the grips, their strength, the reserve clock and the price owed included. Between blocks
+        /// the price is drained from both, as the farm drains it, and the reserves are moved through
+        /// the rule's cases: below the threshold past the lag, empty, and above the threshold. A death
+        /// and a birth come between two blocks. The CPU is first shown to form, hold, break and pay
+        /// for grips, so a grip that never reached the card cannot pass.
+        /// </summary>
+        [Fact]
+        public void TheGripOnTheCpuAcceleratorIsTheSolver()
+        {
+            // The touch test's sinking tissue; a grip weak and quick to fade, so grips break and form
+            // again within a test; the reserve rule's threshold above the stand-in reserves (40 s
+            // and the body's id) and its lag a few steps.
+            var settings = new Dictionary<string, string>
+            {
+                { "EVOSIM_ANCHORING", "1" }, { "EVOSIM_EXCESS_DENSITY", "500" }, { "EVOSIM_NEUTRAL_VOLUME", "0" },
+                { "EVOSIM_ANCHOR_DECAY", "1" },
+                { "EVOSIM_ANCHOR_RESERVE_THRESHOLD", "50" }, { "EVOSIM_ANCHOR_RESERVE_LAG", "0.2" },
+            };
+
+            (DynamicsWorld cpu, World coreA) = Pair(true, true, settings);
+            (DynamicsWorld gpu, World coreB) = Pair(true, true, settings);
+            Assert.NotNull(cpu.Config.Anchoring);
+
+            OnTheBed(cpu, coreA, 6, 11UL, 1, null, CellTypeIds.Anchoring);
+            OnTheBed(gpu, coreB, 6, 11UL, 1, null, CellTypeIds.Anchoring);
+            Assert.Contains(cpu.Creatures, c => c.CanGrip);
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            int heldAtEnds = 0;
+            double paid = 0;
+            for (int block = 0; block < 6; block++)
+            {
+                cpu.StepBlock(25);
+                gpu.StepBlock(25);
+                AssertSame(cpu, gpu, "the grip, after block " + block);
+
+                foreach (Creature body in cpu.Creatures) heldAtEnds += body.GripsHeld;
+
+                double a = 0, b = 0;
+                foreach (Creature body in cpu.Creatures) a += body.DrainGripOwed();
+                foreach (Creature body in gpu.Creatures) b += body.DrainGripOwed();
+                Assert.Equal(a, b);
+                paid += a;
+
+                foreach (DynamicsWorld w in new[] { cpu, gpu })
+                {
+                    for (int k = 0; k < w.Creatures.Count; k++)
+                    {
+                        // Block 2: one body's reserve empty and one's above the threshold; block 4: back.
+                        float seconds = 40f + w.Creatures[k].Id;
+                        if (block == 2 && k == 1) seconds = 0f;
+                        if (block == 2 && k == 2) seconds = 80f;
+                        w.Creatures[k].Senses.Reserve = new GripReserve { SecondsOfReserve = seconds };
+                    }
+                }
+
+                if (block == 1)
+                {
+                    foreach ((DynamicsWorld w, World core) in new[] { (cpu, coreA), (gpu, coreB) })
+                    {
+                        w.Remove(w.Creatures[0].Id);
+                        OnTheBed(w, core, 1, 99UL, 50, null, CellTypeIds.Anchoring);
+                    }
+                }
+            }
+
+            long formed = 0, broken = 0;
+            double heldSeconds = 0;
+            foreach (Creature body in cpu.Creatures)
+            {
+                formed += body.GripsFormed;
+                broken += body.GripsBroken;
+                heldSeconds += body.GripHeldSeconds;
+            }
+
+            _out.WriteLine($"grips formed {formed}, broken {broken}, held at the blocks' ends {heldAtEnds}, " +
+                           $"link-seconds held {heldSeconds:0.###}, paid {paid:0.######} J");
+            Assert.True(formed > 0, "no grip formed");
+            Assert.True(broken > 0, "no grip broke");
+            Assert.True(heldAtEnds > 0, "no grip held at a block's end");
+            Assert.True(paid > 0, "no grip was paid for");
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
+        }
+
+        private sealed class GripReserve : IReserveSource
+        {
+            public float SecondsOfReserve { get; set; }
+        }
+
+        /// <summary>
+        /// Round 59's world on the card with every piece on at once (r59-anchor-build-plan.md, step 7's
+        /// tests): the drag on turning in its spin form, the touch and its sense, the grip, and the
+        /// leaf smell in its direction form. Bodies whose body cells are anchoring and whose brains
+        /// draw the touch and the leaf's direction are put down on the bed among the reefs, under
+        /// leaves that move between blocks, with the grip's price drained and a death and a birth
+        /// between blocks. The solver's to the bit after every block, and on the CPU grips form and
+        /// brains read both senses.
+        /// </summary>
+        [Fact]
+        public void EveryPieceOfRound59OnTheCpuAcceleratorIsTheSolver()
+        {
+            var settings = new Dictionary<string, string>
+            {
+                { "EVOSIM_TURNING_DRAG", "spin" }, { "EVOSIM_SPIN_DRAG", "0.5" },
+                { "EVOSIM_SENSE_BED_TOUCH", "1" }, { "EVOSIM_ANCHORING", "1" }, { "EVOSIM_ANCHOR_DECAY", "1" },
+                { "EVOSIM_LEAF_SCENT", "direction" }, { "EVOSIM_LEAF_SCENT_RANGE", "6" },
+                { "EVOSIM_LEAF_SCENT_CELL", "1.5" }, { "EVOSIM_LEAF_SCENT_HALF", "0.5" },
+                { "EVOSIM_EXCESS_DENSITY", "500" }, { "EVOSIM_NEUTRAL_VOLUME", "0" },
+            };
+            SensorChannel[] pool = { SensorChannel.BedTouch, SensorChannel.LeafScentDirection };
+
+            (DynamicsWorld cpu, World coreA) = Pair(true, true, settings);
+            (DynamicsWorld gpu, World coreB) = Pair(true, true, settings);
+
+            OnTheBed(cpu, coreA, 6, 11UL, 1, pool, CellTypeIds.Anchoring);
+            OnTheBed(gpu, coreB, 6, 11UL, 1, pool, CellTypeIds.Anchoring);
+
+            // The leaves near the bed, where the bodies lie.
+            Vec3 axis = GpuTank.Axis(coreA);
+            var low = new Vec3(axis.X, coreA.Bed.FloorY(axis.X, axis.Z) + 1.5, axis.Z);
+            Leaves(coreA.LeafScent, low, 0, true);
+            Leaves(coreB.LeafScent, low, 0, true);
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            bool touched = false, smelt = false;
+            double paid = 0;
+            for (int block = 0; block < 4; block++)
+            {
+                cpu.StepBlock(25);
+                gpu.StepBlock(25);
+                AssertSame(cpu, gpu, "every piece, after block " + block);
+                touched |= Reads(cpu, SensorChannel.BedTouch);
+                smelt |= Reads(cpu, SensorChannel.LeafScentDirection);
+
+                double a = 0, b = 0;
+                foreach (Creature body in cpu.Creatures) a += body.DrainGripOwed();
+                foreach (Creature body in gpu.Creatures) b += body.DrainGripOwed();
+                Assert.Equal(a, b);
+                paid += a;
+
+                if (block == 1)
+                {
+                    foreach ((DynamicsWorld w, World core) in new[] { (cpu, coreA), (gpu, coreB) })
+                    {
+                        w.Remove(w.Creatures[0].Id);
+                        OnTheBed(w, core, 1, 99UL, 50, pool, CellTypeIds.Anchoring);
+                    }
+                }
+
+                Leaves(coreA.LeafScent, low, block + 1, true);
+                Leaves(coreB.LeafScent, low, block + 1, true);
+            }
+
+            long formed = 0;
+            foreach (Creature body in cpu.Creatures) formed += body.GripsFormed;
+            _out.WriteLine($"grips formed {formed}, paid {paid:0.######} J");
+            Assert.True(formed > 0, "no grip formed");
+            Assert.True(touched, "no brain read a touch");
+            Assert.True(smelt, "no brain read a leaf's direction");
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
+        }
+
+        /// <summary>
+        /// The scent and the drive senses (card-audit-r57.md): bodies whose genomes draw their senses
+        /// from those under test, the solver's to the bit after every block. The scent's grid is
+        /// refilled between blocks, as the farm refills it at a metabolic step, and once with a
+        /// corpse left out of the fill, as a death after the step's fill is left out of the live
+        /// field: the card must read the grid the host holds, stale or not, when the CPU reads it.
+        /// Under the bend-and-power drive the drive senses read its envelope; the torque drive's
+        /// world has the scent alone, since World refuses the drive senses without the drive. The
+        /// CPU is first shown to read a scent and, under the drive, a drive sense that is not 0, so
+        /// a sense that never reached a brain cannot pass.
+        /// </summary>
+        [Theory]
+        [InlineData("power")]
+        [InlineData("torque")]
+        public void TheScentAndTheDriveSensesOnTheCpuAcceleratorAreTheSolver(string drive)
+        {
+            // Corpses as objects, round 55's half-hour half-life: World refuses a scent without them.
+            var settings = new Dictionary<string, string> { { "EVOSIM_SENSE_SCENT", "1" }, { "EVOSIM_CORPSE_DECAY", "0.000385" } };
+            if (drive == "power")
+            {
+                settings["EVOSIM_SENSE_DRIVE"] = "1";
+                settings["EVOSIM_POWER_PUSH"] = "2";
+                settings["EVOSIM_POSE_HZ"] = "2";
+                settings["EVOSIM_LIMB_PUSH"] = "0.3";
+            }
+
+            (DynamicsWorld cpu, World coreA) = Pair(true, false, settings);
+            (DynamicsWorld gpu, World coreB) = Pair(true, false, settings);
+            Assert.NotNull(coreA.Scent);
+
+            // Drawn from the senses under test alone, so most brains read them: from the world's whole
+            // pool six brains drew no scent at all (2026-10-08).
+            SensorChannel[] pool = drive == "power"
+                ? new[] { SensorChannel.Scent, SensorChannel.Stroke, SensorChannel.Hold, SensorChannel.Ramp }
+                : new[] { SensorChannel.Scent };
+            Populate(cpu, coreA, 6, 11UL, 1, pool);
+            Populate(gpu, coreB, 6, 11UL, 1, pool);
+
+            Vec3 axis = GpuTank.Axis(coreA);
+            Smell(coreA.Scent, axis, 0);
+            Smell(coreB.Scent, axis, 0);
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            bool scented = false, sensedDrive = false;
+            for (int block = 0; block < 4; block++)
+            {
+                cpu.StepBlock(25);
+                gpu.StepBlock(25);
+                AssertSame(cpu, gpu, drive + ", after block " + block);
+                scented |= Reads(cpu, SensorChannel.Scent);
+                sensedDrive |= Reads(cpu, SensorChannel.Stroke) || Reads(cpu, SensorChannel.Hold) ||
+                               Reads(cpu, SensorChannel.Ramp);
+
+                if (block == 1)
+                {
+                    foreach ((DynamicsWorld w, World core) in new[] { (cpu, coreA), (gpu, coreB) })
+                    {
+                        w.Remove(w.Creatures[0].Id);
+                        Populate(w, core, 1, 99UL, 50, pool);
+                    }
+                }
+
+                // The farm's refill at a metabolic step, between blocks; at block 2 a corpse is
+                // left out of the fill.
+                Smell(coreA.Scent, axis, block + 1);
+                Smell(coreB.Scent, axis, block + 1);
+            }
+
+            Assert.True(scented, drive + ": no body read a scent that was not 0");
+            Assert.Equal(drive == "power", sensedDrive);
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
+        }
+
+        /// <summary>
+        /// D146's one brain (card-audit-r57.md, the central brain), in round 57's own setting: the
+        /// bend-and-power drive with its push, the scent and the drive senses, bodies grown with one
+        /// brains wired from the world's own pool, the solver's to the bit after every block. Body 1
+        /// has a brain of about 600 links and dies after block 1, a small body is born, and after
+        /// block 2 one of about 1,000 links is born, near seed 1's largest, so the link pool must
+        /// grow mid-run. At the default slack the runs are placed and kept; at a slack far below 0
+        /// the pools are laid again from nothing every block. The world is first shown to hold a
+        /// body whose brain has links and ports, and the test asserts the pool grew and, at the low
+        /// slack, that it was laid again, so a pool the card never used cannot pass.
+        /// </summary>
+        [Theory]
+        [InlineData(4096)]
+        [InlineData(-1000000)]
+        public void TheOneBrainOnTheCpuAcceleratorIsTheSolver(int slack)
+        {
+            var settings = new Dictionary<string, string>
+            {
+                { "EVOSIM_BRAIN_MODEL", "central" }, { "EVOSIM_NEURON_COST", "0" }, { "EVOSIM_CONNECTION_COST", "0" },
+                { "EVOSIM_POWER_PUSH", "2" }, { "EVOSIM_POSE_HZ", "2" }, { "EVOSIM_LIMB_PUSH", "0.3" },
+                { "EVOSIM_SENSE_SCENT", "1" }, { "EVOSIM_SENSE_DRIVE", "1" }, { "EVOSIM_CORPSE_DECAY", "0.000385" },
+            };
+
+            (DynamicsWorld cpu, World coreA) = Pair(true, false, settings);
+            (DynamicsWorld gpu, World coreB) = Pair(true, false, settings);
+
+            SensorChannel[] pool = coreA.Config.SensorPool();
+            Big(cpu, coreA, 1, 600, 21UL, pool);
+            Big(gpu, coreB, 1, 600, 21UL, pool);
+            Populate(cpu, coreA, 5, 11UL, 2, pool, central: true);
+            Populate(gpu, coreB, 5, 11UL, 2, pool, central: true);
+
+            Assert.All(cpu.Creatures, c => Assert.True(c.Brain.IsCentral));
+            Assert.Contains(cpu.Creatures, c => c.Brain.LinkCount > 0 && c.Brain.PortCount > 0);
+            Assert.True(cpu.Creatures[0].Brain.LinkCount >= 400, "body 1's brain has " + cpu.Creatures[0].Brain.LinkCount + " links");
+            Describe(cpu);
+
+            Vec3 axis = GpuTank.Axis(coreA);
+            Smell(coreA.Scent, axis, 0);
+            Smell(coreB.Scent, axis, 0);
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            backend.PoolSlack = slack;
+            gpu.UseBackend(backend);
+
+            int roomAfterFirst = 0;
+            for (int block = 0; block < 4; block++)
+            {
+                cpu.StepBlock(25);
+                gpu.StepBlock(25);
+                AssertSame(cpu, gpu, "the one brain at slack " + slack + ", after block " + block);
+                if (block == 0) roomAfterFirst = backend.LinkPoolCapacity;
+
+                if (block == 1)
+                {
+                    foreach ((DynamicsWorld w, World core) in new[] { (cpu, coreA), (gpu, coreB) })
+                    {
+                        w.Remove(w.Creatures[0].Id);
+                        Populate(w, core, 1, 99UL, 50, pool, central: true);
+                    }
+                }
+
+                if (block == 2)
+                {
+                    Creature born = Big(cpu, coreA, 51, 1000, 23UL, pool);
+                    Big(gpu, coreB, 51, 1000, 23UL, pool);
+                    Assert.True(born.Brain.LinkCount >= 700, "body 51's brain has " + born.Brain.LinkCount + " links");
+                }
+
+                Smell(coreA.Scent, axis, block + 1);
+                Smell(coreB.Scent, axis, block + 1);
+            }
+
+            Describe(cpu);
+            _out.WriteLine("link pool room " + roomAfterFirst + " after block 0, " + backend.LinkPoolCapacity +
+                           " at the end; laid again " + backend.PoolRelays + " times");
+            Assert.True(backend.LinkPoolCapacity > roomAfterFirst, "the link pool never grew after block 0");
+            if (slack < 0) Assert.True(backend.PoolRelays >= 4, "the pools were laid again " + backend.PoolRelays + " times");
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
+        }
+
+        private static Creature Big(DynamicsWorld world, World core, int id, int links, ulong seed, SensorChannel[] pool)
+        {
+            Vec3 axis = GpuTank.Axis(core);
+            Creature c = GpuTank.Body(id, world.Config, core, new Rng(seed), new Vec3(axis.X + 1.5, -10.5, axis.Z - 1.0),
+                                      sensorPool: pool, central: true, bigLinks: links);
+            world.AddInIdOrder(c);
+            return c;
+        }
+
+        private void Describe(DynamicsWorld world)
+        {
+            foreach (Creature c in world.Creatures)
+            {
+                _out.WriteLine("body " + c.Id + ": " + c.Brain.NeuronCount + " units, " + c.Brain.LinkCount + " links, " +
+                               c.Brain.PortCount + " ports, " + c.Brain.TotalDof + " dof");
+            }
+        }
+
+        /// <summary>
+        /// A refill of the scent from three corpses at the cluster, moving and growing with
+        /// <paramref name="fill"/>; at fill 3 the last is left out, a prefix fill.
+        /// </summary>
+        private static void Smell(ScentField scent, Vec3 axis, int fill)
+        {
+            scent.Clear();
+            int corpses = fill == 3 ? 2 : 3;
+            for (int c = 0; c < corpses; c++)
+            {
+                var at = new Float3((float)(axis.X + 0.8 * c - 0.8 + 0.3 * fill), -9.5f + 0.4f * c, (float)(axis.Z - 0.5 * fill));
+                scent.Add(at, 40.0 * (c + 1) + 15.0 * fill);
+            }
+        }
+
+        /// <summary>Whether a body of the CPU's world whose brain draws the channel reads it as not 0 now.</summary>
+        /// <summary>
+        /// Bodies a hand's breadth above the shaped bed's own surface, in a row across the tank's
+        /// axis, so their links meet the rock from the first steps.
+        /// </summary>
+        private static void OnTheBed(DynamicsWorld world, World core, int count, ulong seed, int firstId, SensorChannel[] pool,
+                                     string bodyCell = null)
+        {
+            var rng = new Rng(seed);
+            Vec3 axis = GpuTank.Axis(core);
+
+            for (int k = 0; k < count; k++)
+            {
+                double x = axis.X + 1.5 * (k % 3) - 1.5;
+                double z = axis.Z + 1.5 * (k / 3) - 0.75;
+                var at = new Vec3(x, core.Bed.FloorY(x, z) + 0.1, z);
+                world.AddInIdOrder(GpuTank.Body(firstId + k, world.Config, core, rng, at, sensorPool: pool, bodyCell: bodyCell));
+            }
+        }
+
+        private static bool Reads(DynamicsWorld world, SensorChannel channel)
+        {
+            foreach (Creature c in world.Creatures)
+            {
+                if (!c.Alive || !Brain.MaskReads(c.Brain.SensorMask, channel)) continue;
+                for (int part = 0; part < c.Links; part++)
+                {
+                    for (int index = 0; index < channel.IndexCount(); index++)
+                    {
+                        if (c.Senses.Read(part, channel, index) != 0f) return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -570,11 +1297,12 @@ namespace Evosim.Farm.Tests
         }
 
         /// <summary>
-        /// Section 8's test 4: a body over the top class is refused at its first block, counted,
-        /// left unstepped as the CPU leaves a lost body, and the others step on.
+        /// Section 8's test 4, as it now stands: a body over the top class stops the block before
+        /// anything steps, with an error that names it and its step, and no body is lost or changed.
+        /// The card does not shrink what a body grew to fit it (card-audit-r57.md, the central brain).
         /// </summary>
         [Fact]
-        public void ABodyOverTheTopClassIsRefusedAndCountedAndTheRestStep()
+        public void ABodyOverTheTopClassStopsTheRunAndNothingSteps()
         {
             (DynamicsWorld gpu, World core) = Pair(perPart: false, reefs: false);
             Populate(gpu, core, 5, 3UL, 1);
@@ -582,9 +1310,13 @@ namespace Evosim.Farm.Tests
             int least = int.MaxValue;
             foreach (Creature c in gpu.Creatures) least = Math.Min(least, Math.Max(GpuSlots.NeuronsOf(c), c.Brain.NeuronCount));
 
-            int over = 0;
-            foreach (Creature c in gpu.Creatures) if (Math.Max(GpuSlots.NeuronsOf(c), c.Brain.NeuronCount) > least) over++;
-            Assert.True(over > 0, "the draw gave every body the same neuron count");
+            Creature over = null;
+            foreach (Creature c in gpu.Creatures)
+            {
+                if (over == null && Math.Max(GpuSlots.NeuronsOf(c), c.Brain.NeuronCount) > least) over = c;
+            }
+
+            Assert.True(over != null, "the draw gave every body the same neuron count");
 
             GpuOptions options = GpuTank.CpuDouble();
             int ceiling = Math.Max(1, least);
@@ -593,23 +1325,55 @@ namespace Evosim.Farm.Tests
             using var backend = new GpuBackend(gpu.Config, options);
             gpu.UseBackend(backend);
 
+            AssertStopsAndNothingSteps(gpu, over.Id);
+        }
+
+        /// <summary>
+        /// The same with the default classes and a brain of 257 neurons, one over the top class's 256:
+        /// the body is planted whole, and the run refuses it rather than losing it.
+        /// </summary>
+        [Fact]
+        public void ABrainOverTheTopClassStopsTheRun()
+        {
+            (DynamicsWorld gpu, World core) = Pair(perPart: false, reefs: false);
+            Populate(gpu, core, 3, 3UL, 1);
+
+            var rng = new Rng(17UL);
+            Genome genome = GenomeFactory.RandomViable(rng, minParts: 2);
+            var neurons = new NeuronDef[257];
+            for (int n = 0; n < neurons.Length; n++) neurons[n] = new NeuronDef { Bias = 0.1f };
+            genome.Nodes[0].Neurons = neurons;
+
+            Phenotype plan = Developer.Develop(genome, DevelopmentLimits.Default);
+            var big = new Creature(90, plan, gpu.Config);
+            Vec3 axis = GpuTank.Axis(core);
+            big.PlaceAsDeveloped(new Vec3(axis.X + 2.0, -8.0, axis.Z + 2.0), plan);
+            big.Senses.Nutrients = core.Nutrients;
+            gpu.AddInIdOrder(big);
+            Assert.True(Math.Max(GpuSlots.NeuronsOf(big), big.Brain.NeuronCount) >= 257);
+            Assert.True(big.Links <= 16, "the planted body is over the top class by its links, not its brain");
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            AssertStopsAndNothingSteps(gpu, big.Id);
+        }
+
+        private static void AssertStopsAndNothingSteps(DynamicsWorld gpu, int id)
+        {
             var before = new Dictionary<int, double>();
             foreach (Creature c in gpu.Creatures) before[c.Id] = c.Position[1];
 
-            gpu.StepBlock(25);
-            gpu.StepBlock(25);
+            var e = Assert.Throws<NotSupportedException>(() => gpu.StepBlock(25));
+            Assert.Contains("body " + id + " at step 0", e.Message);
+            Assert.Contains("cpu engine", e.Message);
 
-            Assert.Equal(over, (int)backend.RefusedForClass);
-
+            Assert.Equal(0L, gpu.Steps);
             foreach (Creature c in gpu.Creatures)
             {
-                bool refused = Math.Max(GpuSlots.NeuronsOf(c), c.Brain.NeuronCount) > ceiling;
-                Assert.Equal(!refused, c.Alive);
-                if (refused) Assert.Equal(before[c.Id], c.Position[1]);
-                else Assert.NotEqual(before[c.Id], c.Position[1]);
+                Assert.True(c.Alive);
+                Assert.Equal(before[c.Id], c.Position[1]);
             }
-
-            Assert.Equal(50L, gpu.Steps);
         }
     }
 }

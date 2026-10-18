@@ -1,0 +1,22 @@
+python scripts/reads/r58-y-cut.py --end 48000 --joined runs/r58-s1j runs/r58-s2j runs/r58-s3j --isolated scratch/r58-read/iso/r58-s1i scratch/r58-read/iso/r58-s2i scratch/r58-read/iso/r58-s3i
+   joined r58-s1j x r58-s2j: years 2 to 8 (7), r = 0.493
+   joined r58-s1j x r58-s3j: years 2 to 8 (7), r = 0.238
+   joined r58-s2j x r58-s3j: years 2 to 8 (7), r = -0.026
+   joined mean r = 0.235 over 3 pairs
+   isolated r58-s1i x r58-s2i: years 2 to 8 (7), r = -0.105
+   isolated r58-s1i x r58-s3i: years 2 to 8 (7), r = 0.244
+   isolated r58-s2i x r58-s3i: years 2 to 8 (7), r = -0.219
+   isolated mean r = -0.027 over 3 pairs
+Y at --end 48000: held
+
+python scripts/reads/r58-y-cut.py --end 42000 --joined runs/r58-s1j runs/r58-s2j runs/r58-s3j --isolated scratch/r58-read/iso/r58-s1i scratch/r58-read/iso/r58-s2i scratch/r58-read/iso/r58-s3i
+   joined r58-s1j x r58-s2j: years 2 to 7 (6), r = 0.547
+   joined r58-s1j x r58-s3j: years 2 to 7 (6), r = 0.279
+   joined r58-s2j x r58-s3j: years 2 to 7 (6), r = 0.153
+   joined mean r = 0.327 over 3 pairs
+   isolated r58-s1i x r58-s2i: years 2 to 7 (6), r = -0.121
+   isolated r58-s1i x r58-s3i: years 2 to 7 (6), r = 0.062
+   isolated r58-s2i x r58-s3i: years 2 to 7 (6), r = -0.273
+   isolated mean r = -0.111 over 3 pairs
+Y at --end 42000: held
+

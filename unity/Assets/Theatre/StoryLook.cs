@@ -5,8 +5,8 @@ using UnityEngine;
 namespace Evosim.Theatre
 {
     /// <summary>
-    /// The story film's lighter look (the owner on round 48's first story film, 2026-09-25:
-    /// "everything looks a bit darkish... i wonder if that's something we could take care of"):
+    /// The story film's lighter look (the owner on round 48's first story film, 2026-09-25,
+    /// found it a bit dark and asked whether that could be taken care of):
     /// lighter water, ambient and fog, a softer vignette, a lamp on the portraits and births, and a
     /// per-shot exposure meter (<see cref="StoryExposure"/>). On only in story mode unless asked
     /// for, so every snapshot, film and census picture in the record keeps the look it was taken
@@ -66,8 +66,8 @@ namespace Evosim.Theatre
         /// 0.38 at first, whose frames of round 48 measured 0.43 and which the owner called too
         /// bright (2026-09-25); the first film's 0.06 to 0.19 was too dark. 0.26 gave frames of
         /// 0.23 to 0.29 and was still too bright; of 0.20 and 0.155 rendered side by side the owner
-        /// chose 0.155 ("luma15 is better").
-        /// With the starving shade on, which dims most bodies, 0.18 over 0.155 ("this is pretty good").
+        /// chose 0.155, which they judged better.
+        /// With the starving shade on, which dims most bodies, the owner found 0.18 pretty good against 0.155.
         /// </summary>
         public float TargetLuma = TheatreSkin.Dial("EVOSIM_THEATRE_STORY_LUMA", 0.18f, 0f, 0.8f);
 
@@ -82,7 +82,7 @@ namespace Evosim.Theatre
         /// (<see cref="TheatrePalette.Starving"/>, the census's 0.45 by default). A story film shades
         /// its bodies by reserve since the window stream carries it (2026-09-25), and at 0.45 a
         /// crowd of starving leaves took the frame's highlights with it: the owner found the
-        /// picture "slightly dark again" at the brightness chosen before the shading came back.
+        /// picture slightly dark again at the brightness chosen before the shading came back.
         /// </summary>
         public float StarvingBrightness = TheatreSkin.Dial("EVOSIM_THEATRE_STORY_STARVING", 0.45f, 0f, 1f);
 

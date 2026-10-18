@@ -2,7 +2,7 @@
 
 **2026-09-10**  ·  round 35 pre-registered: round 33's world with D088's dispersal and current, five seeds at 0.01; the rules written before the first arm has a row
 
-The owner's ruling on the five questions of 0086 was "proceed with your recommendations":
+The owner's ruling on the five questions of 0086 was to proceed with the agent's recommendations:
 dispersal stays at 5 m, the box keeps its shape, the water slows to 0.1 m/s, founders
 reserve the adult as children do, and the plotting library may be installed. Round 35 is
 the first round in the three-dimensional world and becomes the base for everything after

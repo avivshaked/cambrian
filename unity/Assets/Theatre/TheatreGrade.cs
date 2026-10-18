@@ -18,7 +18,7 @@ namespace Evosim.Theatre
     /// no volume profile, no anti-aliasing, an 8-bit target, and the dark-field look's values
     /// (a water of 0.012, 0.032, 0.048; a sand of 0.012 to 0.066; a starving body's face near
     /// 0.04) sitting in the bottom tenth of the range with nothing to redistribute them. The
-    /// owner's "can barely see anything" (2026-09-15) was the display chain, not the art
+    /// owner's report on 2026-09-15 that the picture was too dark to see was the display chain, not the art
     /// (<c>logbook/specs/striking-theatre-menu.md</c>). The renderer now carries URP's
     /// post-process data, the project is linear, and this class supplies the grade.
     /// </para>

@@ -26,13 +26,30 @@ names under `## Name` in the key lines: leave the name itself unchecked. Check t
 as any other, and fail the sentence when the braces hold anything but a name, or when the sentence rests
 a claim on the name.
 
+## How much a fault weighs
+
+Truth is a tax the story pays, and the story has to stay alive to be worth paying it. Every rewrite
+for correctness costs the prose something, so a claim that doesn't hold is one of two kinds:
+
+- **Misleading**: a viewer who hears it comes away believing something false that matters. A number
+  or an event that is wrong, a cause the record doesn't support, or a creature that wants, tries or
+  learns.
+- **Pedantic**: true as a viewer will hear it, though a careful reader could object. "Older than any
+  creature here" in a film about eleven creatures, "twenty minutes" for 1,212 seconds, or a detail of
+  how something was paid for that no viewer will carry away.
+
+When you can't tell which a fault is, ask what the viewer will believe afterwards, not what the
+sentence could be made to mean.
+
 ## What you answer
 
 Your answer is saved word for word.
 
-- The first line is `FACTS: PASS` when every claim holds, and `FACTS: FAIL` otherwise.
-- Then every claim that does not hold, one a line: the beat or the key line, the claim, and what
-  `facts.md` says about it, with the line, or that it says nothing.
+- The first line is `FACTS: FAIL` when any claim is misleading, and `FACTS: PASS` otherwise.
+- Then every claim that does not hold, one a line, misleading ones first: `MISLEADING` or `PEDANTIC`,
+  the beat or the key line, the claim, and what `facts.md` says about it, with the line, or that it
+  says nothing. For a misleading one, say what a viewer would come away believing.
+- A pedantic fault is shown to the owner and changes nothing unless they ask.
 
 If you reach your time budget, answer with what you have and say so.
 

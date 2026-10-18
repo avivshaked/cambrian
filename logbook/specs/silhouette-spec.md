@@ -1,6 +1,6 @@
 # The silhouette cap, and the terminal edge that keeps its limit: the build round 41d runs on
 
-*2026-09-19, 07:40. Written by the agent on the owner's ruling ("Yeah sounds good", 07:05, on
+*2026-09-19, 07:40. Written by the agent on the owner's ruling (the owner agreed at 07:05, on
 `fable-propose-silhouette.md`, absorbed as D099). Round 41c was stopped on bodies of nine and
 sixteen parts folded into a ball, every part overlapping every other, earning sixteen parts'
 light from one point and costing the physics every pair (logbook/0107's last section). The

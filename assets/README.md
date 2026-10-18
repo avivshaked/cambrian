@@ -20,6 +20,9 @@ it lies, so a missing one shows there as offline until it is back at the same pa
 | `cards/` | the opening and closing screens, as video or stills |
 | `graphics/` | logos, lower thirds, overlay templates |
 | `channel/` | the YouTube channel's images: title art, avatar, thumbnails |
+| `films/` | each story film's own media, one folder per film named as its working folder in `scratch/story-video/`: `clips/`, `edit/`, `narration/`, `graphics/` |
+| `full-episodes/` | the finished cuts exported from Resolve, with their subtitles |
+| `recordings/` | screen recordings cut into a film |
 
 ## Manifest
 
@@ -28,9 +31,14 @@ not used in a film that leaves the machine.
 
 | File | What | Source | Licence | Added |
 |---|---|---|---|---|
-| `music/Submerged Wonder - Part 1.mp3` | music, 4:08 | owner's download | not recorded | 2026-09-25 |
-| `music/Submerged Wonder - Part 2.mp3` | music, 4:18 | owner's download | not recorded | 2026-09-25 |
-| `music/The Silent Current's Secret.wav` | music, 3:25 | owner's download | not recorded | 2026-09-25 |
+| `music/Submerged Wonder - Part 1.mp3` | music, 4:08 | Suno | Suno's terms, which allow commercial use (the owner, 2026-10-18) | 2026-09-25 |
+| `music/Submerged Wonder - Part 2.mp3` | music, 4:18 | Suno | Suno's terms, which allow commercial use (the owner, 2026-10-18) | 2026-09-25 |
+| `music/The Silent Current's Secret.wav` | music, 3:25 | Suno | Suno's terms, which allow commercial use (the owner, 2026-10-18) | 2026-09-25 |
+| `music/Cambrian Intro 1.mp3` | music, 2:45 | Suno | Suno's terms, which allow commercial use (the owner, 2026-10-18) | 2026-10-18 |
+| `music/Abandoned Under metropolis.mp3` | music, 4:59 | Suno | Suno's terms, which allow commercial use (the owner, 2026-10-18) | 2026-10-18 |
+| `recordings/Movie_001.mp4` | a screen recording, 1:41, 171 MB, linked in the Cambrian project | not recorded | not recorded | 2026-10-18 |
+| `films/round-49-202609261858/` | the round-49 film's clips, edit, narration and graphics (3.7 GB), moved from the story skill's working folder | made by the story skill (`.claude/skills/create-story-video/`) from round 49's runs | own work, except the narration, whose voice model's licence is not recorded here | 2026-10-18 |
+| `films/rounds-50-57-202610081356/` | the rounds 50 to 57 film's clips, edit, narration and graphics (7.6 GB), moved the same way | made by the story skill from rounds 50 to 57's runs | own work, except the narration, whose voice model's licence is not recorded here | 2026-10-18 |
 | `channel/cambrian-title-16x9.png` | the channel's title art, 1672 × 941: "CAMBRIAN, An evolving artificial ecosystem" over drawn creatures; an artist's impression, not a theatre render, and its HUD figures (`r37-s1`, 1 842 alive, 100 µm) are invented | owner, made with ChatGPT image generation 2026-09-13 | not recorded | 2026-09-28 |
 | `channel/cambrian-creature-square.png` | the title art's segmented creature alone on black, 1254 × 1254; an artist's impression, not a theatre render | owner, made with ChatGPT image generation 2026-09-13 | not recorded | 2026-09-28 |
 | `cards/cambrian-intro-v1-4k-prores422hq.mov` | the channel intro, v1: 8 s, 240 frames at 30 fps, CAMBRIAN (drawn with a capital lambda for each A) over the four bodies in the theatre's skin; the motion is choreographed, not the bodies' brains, and the picture says so; the last 4 s hold for a fade; ProRes 422 HQ, 3840 x 2160, the master for the edit (856 MB) | rendered in Blender 5.1 by `scripts/channel/` (`intro.py`, `overlay.py`, `finish_4k.sh`) from four evolved bodies: r50-s2 #23377 at 14,900 s (the hero), r50-s1 #16184 at 15,800 s, r50-s3 #7484 at 7,800 s and r51-s3 #48219 at 24,100 s; the corner figures are r50-s2's `stats.jsonl` at 14,900 s | own work; the type is IBM Plex (SIL OFL 1.1) | 2026-09-28 |

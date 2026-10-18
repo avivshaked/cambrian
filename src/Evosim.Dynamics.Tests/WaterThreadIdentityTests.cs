@@ -12,9 +12,10 @@ namespace Evosim.Dynamics.Tests
     /// <b>The hazard is real and is the reason the sampling is pinned.</b>
     /// <see cref="CurrentField"/> memoises the instants a call touches, and a miss fills a slot,
     /// so two threads asking it for water at new clocks would race on one slot table.
-    /// <c>DynamicsWorld.SampleWater</c> therefore pins the field at the step's clock, which
-    /// fills the slots and makes every lookup a read, and then samples across the world's
-    /// threads (it ran on one until 2026-09-23); this test is what says the arrangement holds.
+    /// <c>DynamicsWorld.StepOnCpu</c> therefore pins the field at the step's clock, which
+    /// fills the slots and makes every lookup a read, and every body then samples it first thing
+    /// in its own step, across the world's threads (one thread until 2026-09-23, a pass of its own
+    /// until 2026-10-03); this test is what says the arrangement holds.
     /// The two cases are D100's half-second hold, under which the root samples the water once
     /// a hold, and the per-link sampling every round from 43 runs, under which every link asks
     /// the field for its velocity and its analytic acceleration on every step — the case in

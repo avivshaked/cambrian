@@ -11,9 +11,9 @@ screen could not be inspected.
 The plan was to open the sandbox, look at the creatures, and answer four questions about
 jamming and overlap. What came back instead was three answers about the viewer.
 
-> *"how would i know? it doesn't say which seed is being used"*
-> *"the camera is not very close to the creatures, and I can't move the camera"*
-> *"i don't know how to use the engine"*
+- The viewer did not say which seed was being used, so there was no way to know.
+- The camera was not very close to the creatures and could not be moved.
+- The person at the screen did not know how to use the engine.
 
 All three were correct, and the second was worse than reported. The seed field in Unity's
 Inspector did nothing at all. `Spawn()` was only ever called from the cycle timer. Setting

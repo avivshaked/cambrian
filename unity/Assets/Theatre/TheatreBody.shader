@@ -19,7 +19,7 @@
 //                            with the normal rebuilt per pixel from the same field         [CY]
 //   taper and bend of a box part in its own object space, inward by construction and clamped
 //                            into the mesh's box afterwards (logbook/specs/skin-spec-3.md)
-//   a flat box drawn as a leaf (2026-09-24, the owner's "these flat leaves" and his ruling on
+//   a flat box drawn as a leaf (2026-09-24, the owner's remark about flat leaves and the owner's ruling on
 //                            the curl): an outline, a lens cross-section, veins, and a curl of
 //                            up to a tenth of the width, the one thing drawn outside a collider
 //
@@ -55,6 +55,10 @@ Shader "Evosim/Theatre Body"
         _BaseColor("Body colour", Color) = (0.10, 0.16, 0.17, 1)
         _RimColor("Guild rim colour", Color) = (0.34, 0.72, 0.36, 1)
         _Reserve("Reserve fraction, 0 starving to 1 sated", Range(0, 1)) = 1
+        _Fade("Share of the body drawn, 1 whole to 0 gone (a birth, the end of a corpse)", Range(0, 1)) = 1
+        [HideInInspector] _SrcBlend("Source blend, One opaque", Float) = 1
+        [HideInInspector] _DstBlend("Destination blend, Zero opaque", Float) = 0
+        [HideInInspector] _ZWrite("Depth write, 1 opaque", Float) = 1
 
         // The transmission is the guild's hue at a gain by guild (TheatrePalette): a producer
         // glows through when backlit, an eater stays opaque, a strut between. The design pass's
@@ -64,7 +68,7 @@ Shader "Evosim/Theatre Body"
         _TransGain("Transmission gain by guild", Range(0, 2)) = 1
 
         // A wet sheen, by guild (TheatrePalette): the one surface the owner allowed the
-        // absorptive tissue as its own (2026-09-16, "no organ the genome doesn't encode"), a
+        // absorptive tissue as its own (2026-09-16, no organ the genome does not encode), a
         // gut wall's gloss against a leaf's matte, a strut between. A highlight, not a colour.
         _Sheen("Sheen by guild", Range(0, 1)) = 0.1
 
@@ -193,6 +197,7 @@ Shader "Evosim/Theatre Body"
                 float4 _BaseColor;
                 float4 _RimColor;
                 float _Reserve;
+                float _Fade;
                 float4 _TransTint;
                 float _TransGain;
                 float _Sheen;
@@ -763,7 +768,11 @@ Shader "Evosim/Theatre Body"
             Tags { "LightMode" = "UniversalForward" }
 
             Cull Back
-            ZWrite On
+            // Opaque unless the palette hands a fading body (a birth, the end of a corpse) its see-through
+            // copy of this material, which blends by _Fade and writes no depth. The depth passes
+            // below are opaque only, and URP does not draw a transparent body into them.
+            Blend [_SrcBlend] [_DstBlend]
+            ZWrite [_ZWrite]
 
             HLSLPROGRAM
             #pragma vertex Vertex
@@ -968,23 +977,26 @@ Shader "Evosim/Theatre Body"
                     rimScale = 0.45;
                 }
 
-                // Key light.
+                // Key light. Scaled by the light left at this body's depth on the run's day when
+                // the underwater look's item 3 is on (EvoDepthLight, red first); one otherwise.
                 Light main = GetMainLight();
-                float3 lit = body * main.color * (Wrapped(n, main.direction) * _KeyGain);
-                lit += _TransTint.rgb * (_TransGain * Transmission(n, v, main.direction, main.color, thickness));
+                float3 depthLight = EvoDepthLight(input.positionWS);
+                float3 keyColour = main.color * depthLight;
+                float3 lit = body * keyColour * (Wrapped(n, main.direction) * _KeyGain);
+                lit += _TransTint.rgb * (_TransGain * Transmission(n, v, main.direction, keyColour, thickness));
 
                 // The light from the surface through a blade, seen from below or beside it: the
                 // world's light comes from above, whatever the key does for the camera.
                 if (input.leaf.w > 0.5)
                 {
                     lit += _TransTint.rgb * (_TransGain * _LeafSkyGlow *
-                        Transmission(n, v, float3(0.0, 1.0, 0.0), main.color, thickness));
+                        Transmission(n, v, float3(0.0, 1.0, 0.0), keyColour, thickness));
                 }
 
                 // The sheen: a tight highlight off the key, white rather than the body's colour,
                 // so it reads as wet skin catching the light and not as paint.
                 float3 halfway = normalize(main.direction + v);
-                lit += main.color * (_Sheen * pow(saturate(dot(n, halfway)), 28.0));
+                lit += keyColour * (_Sheen * pow(saturate(dot(n, halfway)), 28.0));
 
                 // The fill, and any other light in the scene. TheatreSkin puts one weak
                 // directional light opposite the key so the far side of a body is dark rather
@@ -1001,8 +1013,9 @@ Shader "Evosim/Theatre Body"
                 }
                 #endif
 
-                // Ambient. Near black by design: the dark field is the whole look.
-                lit += body * SampleSH(n);
+                // Ambient. Near black by design: the dark field is the whole look. Falls with
+                // depth as the key does under item 3.
+                lit += body * SampleSH(n) * depthLight;
 
                 // The rim, carrying the guild. Muted before it arrives: TheatrePalette caps the
                 // saturation and lightness in HSL, because raw RGB gene colours read garish and
@@ -1044,7 +1057,7 @@ Shader "Evosim/Theatre Body"
 
                 lit = EvoMixFog(lit, input.fogAndThickness.x, input.positionWS);
 
-                return half4(lit, 1.0);
+                return half4(lit, _Fade);
             }
             ENDHLSL
         }

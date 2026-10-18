@@ -1,0 +1,8 @@
+{
+  "base": "rounds/nursery/brain2-w5.json",
+  "name": "brain2-nocross-w5",
+  "description": "brain2-nocross on round 60's world config format: its base is brain2-w5 in place of brain2-w4, and every other setting is brain2-nocross-w4's, whose description was: brain2-nocross on round 59's world config format: its base is brain2-w4 in place of brain2-w3, and every other setting is brain2-nocross-w3's, whose description was: brain2-nocross on round 57's world config format: its base is brain2-w3 in place of brain2-w2, and every other setting is brain2-nocross-w2's, whose description was: brain2-nocross on the new world config format: its base is brain2-w2 in place of brain2, and every other setting is brain2-nocross's, whose description was: Ablation arm 2 of 2 (the owner's order of 2026-10-02 15:10): brain2 without crossover (search.crossover null, so every child is a mutant of one parent), every other setting as brain2, its founders and seed 0x1 included. brain2 reproduces pilot-deep-brain2 exactly (nursery-general step 5), so this arm's generation 0 is the pilot's, its search water is the pilot's in every generation, and the two part only where a child is bred. Exam salt brain2's own, pairing the exam draws with the pilot's and brain2-rep2's. Read against the spread between pilot-deep-brain2 and brain2-rep2.",
+  "search": {
+    "crossover": null
+  }
+}

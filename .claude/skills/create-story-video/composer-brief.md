@@ -53,6 +53,17 @@ at any moment worth seeing. Attenborough leaves long silences, and the reveal is
 (narration-writing.md §3.3, §5; compelling-video-stories.md §11.10). The narration step turns each hold
 into silence, on top of the padding between passages.
 
+## Reads
+
+The voice reads several paragraphs at once, and reads them better for the context. The narration step
+packs them by length alone, so it may break between any two paragraphs of a beat. Some paragraphs go on
+from the one before, and a break there would spoil them: a question and its answer, a setup and its
+payoff, a bridge and what it leads to, or a list the voice must carry as one. Give `Join: next` to the
+passage whose last sentence ends the first of the two. For example, a paragraph that ends "So where did
+the food go?" joins the paragraph that answers it. Most paragraphs need none. A passage with a `Hold:`,
+the last passage of a beat, and a passage before one with no `Say:` take none, since the narration stops
+there.
+
 ## Facts
 
 On each passage's `Facts:` line, name the lines of `facts.md` that hold every claim its sentences make.
@@ -90,7 +101,7 @@ python <the folder this brief is in>\script-check.py script <your file>
 
 ## What you write and answer
 
-Write `script-<n>.md` in the film's folder, through the shell. In the script's notes, tell the owner
+Write `script-<n>.md` in the film's folder. In the script's notes, tell the owner
 what they should know, such as a sentence you could find no footage for.
 
 Your answer is saved word for word. Its first line is `REVIEW: PASS` when every item on the list holds,

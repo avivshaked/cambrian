@@ -1,4 +1,4 @@
-#if EVOSIM_GPU
+﻿#if EVOSIM_GPU
 using System.Globalization;
 using System.IO;
 using Evosim.Dynamics;
@@ -26,10 +26,43 @@ namespace Evosim.Farm
             Resync = s.GpuResync,
             Concurrent = s.GpuConcurrent,
             Transport = s.GpuTransport,
+            Scent = s.GpuScent,
         };
 
-        /// <summary>The engine for the world <paramref name="solver"/> describes: refusals first, then the device.</summary>
-        public static GpuBackend Open(EnvSettings s, SolverConfig solver) => new GpuBackend(solver, Options(s));
+        /// <summary>
+        /// The engine for the world <paramref name="solver"/> describes: refusals first, then the device,
+        /// its own or <paramref name="shared"/> with another world in the process (Program.Pair).
+        /// </summary>
+        public static GpuBackend Open(EnvSettings s, SolverConfig solver, GpuDevice shared = null)
+        {
+            // The card carries the limb push, the bend-and-power drive and its senses, and the scent
+            // (card-audit-r57.md). The bed's friction is in the CPU solver only, so a world with it
+            // would part from the CPU's at its first slide.
+            if (solver.BedFriction > 0)
+            {
+                throw new System.InvalidOperationException(
+                    "the gpu engine has no bed's friction (EVOSIM_BED_FRICTION); run this world on the cpu engine");
+            }
+
+            // D157 makes single the card's engine. In double, ILGPU 1.5.3 computes sin, cos and exp on
+            // the card in loops whose length grows with the argument, so a far body can hold one
+            // thread for minutes (card-audit-r57.md, the card in double hangs on a far body). The CPU
+            // accelerator keeps double for the transcription proofs, where these are .NET's own.
+            GpuOptions options = Options(s);
+            if (!options.OnCpu && !options.Single)
+            {
+                throw new System.InvalidOperationException(
+                    "the gpu engine runs on the card in single only (EVOSIM_GPU_PRECISION=single): ILGPU's " +
+                    "double sine on the card loops with its argument, so a far body hangs it");
+            }
+
+            // D146's one brain is on the card (card-audit-r57.md, the central brain). D146's open
+            // measurement of it on the card against the cpu is the speed work's finish-line pace read:
+            // the card in single against the cpu at 16 threads on round 57's world at its largest
+            // crowd, round trip included (card-single-plan.md, what finished looks like).
+
+            return new GpuBackend(solver, options, shared);
+        }
 
         public static GpuFacts Facts(GpuBackend gpu, string repoRoot)
         {
@@ -55,6 +88,22 @@ namespace Evosim.Farm
             Note(facts, gpu);
             return facts;
         }
+
+        /// <summary>The card's overflow counts this run (four), or null on the CPU solver, which has no caps.</summary>
+        public static long[] Overflow(IStepBackend backend) => backend is GpuBackend gpu ? gpu.Overflow : null;
+
+        /// <summary>Whether the engine has a card probe for the pace guard to switch on.</summary>
+        public static bool CanProbe(IStepBackend backend) => backend is GpuBackend;
+
+        /// <summary>The card probe on, from the next block (PaceGuard).</summary>
+        public static void Probe(IStepBackend backend)
+        {
+            if (backend is GpuBackend gpu) gpu.Probe = true;
+        }
+
+        /// <summary>The card probe's last print, a line each, or none.</summary>
+        public static System.Collections.Generic.IReadOnlyList<string> ProbeLines(IStepBackend backend) =>
+            backend is GpuBackend gpu ? gpu.ProbeLines : System.Array.Empty<string>();
 
         /// <summary>The engine's counts as they stand, into the manifest's gpu block.</summary>
         public static void Note(RunManifest manifest, IStepBackend backend)

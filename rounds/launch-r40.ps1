@@ -130,8 +130,8 @@ param(
     # it refuses and names the arithmetic.
     # D092: the bed's three dials (RunConfig.BedReliefMetres, BedTiltMetres, BedScaleMetres;
     # logbook/specs/bed-spec.md items 3, 5a and 1). 0, 0 and anything is the flat bed to the bit.
-    # D093 (the owner, 2026-09-15 evening: "we need a much bigger tank. Much. So that with 30 deg
-    # decline we give a lot more depth variation"): 2,200 m2 (radius 26.46 m, diameter 52.9 m,
+    # D093 (the owner asked on the evening of 2026-09-15 for a much bigger tank, so that a 30 deg
+    # decline gives a lot more depth variation): 2,200 m2 (radius 26.46 m, diameter 52.9 m,
     # the smallest round area that takes a 30 m tilt under the 30-degree cap), 45 m deep, the
     # tilt 30 m so the floor runs from 30 m on the shallow arc, the lit band's floor, to 60 m on
     # the deep one; the founders drawn over the whole depth as before. EVOSIM_DEPTH is new with

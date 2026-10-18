@@ -1,6 +1,6 @@
 # Planning the nursery for the joint drive: the agent's draft (2026-09-30)
 
-*A draft for the owner, who asked to "start planning the nursery" once D135's drive swam. It re-reads
+*A draft for the owner, who asked for the nursery's planning to start once D135's drive swam. It re-reads
 Fable's world-derived nursery (`logbook/specs/fable-propose-world-nursery.md`, rulings R1 to R10,
 written for the torque drive) against what D135's build measured (`logbook/specs/joint-drive-build.md`).
 Nothing in it is ruled. The questions it ends with are the owner's.*
@@ -46,7 +46,7 @@ with the bend centred (the body that pushes all the time, which the work cost sh
 ancestor, the knockout of the senses the winner reads, and one hand-wired forager that the world can
 express. For a stomach the simplest is a kinesis on its own cell: power high while the chemical
 reading falls and low while it holds or rises (`Differentiate` on `Chemical`, one neuron), which is
-the owner's first rung, "sense the depletion and move anywhere". If that hand-wired brain does not
+the owner's first rung, sensing the depletion and moving anywhere. If that hand-wired brain does not
 out-earn full power once the work cost is on, no evolved brain will, and the nursery stops and says so.
 
 ## The order I would propose
@@ -446,3 +446,344 @@ following luck. The generation means swung between 515 and 788 J late in both ar
 running means rest on two episodes. Before the nursery is asked again for an inoculant, its
 selection needs more draws for each brain, or a longer life, so that a brain's score says more about
 the brain than about its draws. No brain from the nursery is fit to inoculate on 2026-10-01.
+
+## The noise a brain's score carries: pairing cancels the snow, not the luck
+
+*2026-10-01, 13:43 to 14:11, D142's first step.* I benched the six deep-water bodies' own
+brains from `pilot-deep-own` on 64 paired draws in the round's water, beside their constants at 0.3, 0.5
+and 0.7 and the rate kinesis. The bench ran twice at 14 threads, 14 minutes each. The first drew the
+snow's density from half to double, as training does, and the second held it fixed. The chain that ran them is
+`scratch/nursery/chain-noise.ps1`.
+
+A brain's score over one 600 s episode spreads widely, and most of that spread is the draw, shared by
+every brain that swims it. Selection compares brains on the same draws, so what matters is the spread of
+the difference between two brains on one draw. The table gives both, as medians over the six bodies.
+
+| | one episode's spread | a brain less its body's best constant, per episode | the same at 2 draws | at 16 | at 32 |
+|---|---|---|---|---|---|
+| the density drawn | 494 J | 148 J | 105 J | 37 J | 26 J |
+| the density fixed | 337 J | 147 J | 104 J | 37 J | 26 J |
+
+Fixing the density narrows a single episode by a third and leaves the paired difference where it was:
+pairing already cancels it. So `--snow-fixed` buys nothing for selection on paired draws, and the noise
+left is the draw's own luck (where the snow lies, where the corpses fall, who shares the tank). The
+evolved brains sit 1 to 41 J from their bodies' best constants on five bodies (body 4 is 189 J under).
+At two draws a generation a brain's paired score carries a standard error near 105 J, two to five
+times the differences selection must find. Telling 40 J apart at two standard errors needs about 55
+paired draws; 16 draws reach 37 J and 32 reach 26 J. The pool's earlier benches, on other genomes and
+16 draws, gave 161 to 255 J for the same spread.
+
+## Two corrections to this file, found in a review of the code
+
+*2026-10-01 evening. A review of the nursery's code for the next proposal found both; I checked each
+against the code on `joint-drive`.*
+
+Every tank episode in this file also laid 5 corpses of 40 J on the bed. They are the program's defaults
+(`Program.cs:55-56`), and no script set the number of corpses. The runs' own logs
+say so in their first line ("5 corpses of 40 J"). So the larder sums above leave out 200 J an episode,
+and the bench of 2026-09-30 that called the tank's whole larder 140 J undercounts it. I have not checked
+whether a stomach gains from the corpses, for example as one dissolves into its cell's water. If it does,
+every pilot's larder was richer than this file says.
+
+Fixing the snow's density changes more than the density. The density's draw takes one number from the
+episode's stream before the bodies' heights and the corpses' places are drawn (`Tank.cs:95`, then lines
+110 and 167). With the density fixed that number is not taken, so every height and every corpse moves. The
+noise bench's two arms therefore swam different layouts as well as different densities. Within each
+arm the paired numbers stand. Across the arms, the single-episode spreads compare layouts too. The paired
+spreads still agree (148 J and 147 J), so the conclusion that pairing cancels the density's share holds,
+on different layouts rather than the same ones.
+
+## The drive-sense arm, stated before it starts (2026-10-01 evening)
+
+D144 gives a brain three new inputs per joint: the stroke it delivers, the hold left, and the ramp still to
+go. D145 runs it as the next arm. Its command is the control's (`pilot-deep-own16`) on nursery-v8, with the
+drive sense on (`runs-jd/big-cur-deep-drive`) and a knockout of the three channels in the exam. Its founders
+are the control's, draw for draw, and its generation 0 matched the control's in every field but the clock
+(`identity-v8-drive.verdict`, 19:58). The sense enters by mutation only: 3 of the 13 channels a mutation
+can add.
+
+What the read asks, per body, on the exam's 32 held-out draws:
+- **Read.** At least one of the six bodies' best brains reads Stroke, Hold or Ramp.
+- **Used.** On a body whose brain reads them, the knockout of the three costs at least two standard errors
+  of the paired difference.
+- **Worth it.** The arm's best brain beats the control's on the same body by two standard errors. That
+  holds on at least two of the six bodies, and the reverse on none.
+- **Against a steady swim.** The arm's best brain is read against its body's best constant power, at two
+  standard errors, D145's bar for an inoculant, beside the control's reading.
+
+If the three are read and used but not worth it, the sense is noise to a brain this size. If none is
+read, the arm says nothing about the sense, only that mutation did not reach it in 100 generations. The
+control reached a plateau near generation 50. Generations 70 to 79 against 80 to 89 held 468 and 423 J
+(se 27 and 20), with work at 0.098 W in both.
+## The control's exam (2026-10-02, 00:25)
+
+`pilot-deep-own16` ended its 100 generations at 00:02 and its exam at about 00:25. The exam swam each body's
+best brain on 32 held-out draws, against the same draws under every other brain. Pooled over the six bodies, its
+own brains scored 447 J, and every shared constant scored 81 to 159 J less (constant 0.5, -85 J, se 25).
+**That pooled win is not the bar.** Each body has its own best constant, and per body the brain matches it
+and beats none:
+
+| Body | Own | Its best constant | Own minus it | Own minus brainless |
+|---|---|---|---|---|
+| 0 | 437 J | 0.6, 416 J | +21 (se 18) | -6 (se 2) |
+| 1 | 462 J | 0.7, 487 J | -25 (se 18) | -2 (se 1) |
+| 3 | 495 J | 0.5, 502 J | -7 (se 40) | +236 (se 46) |
+| 4 | 361 J | 0.7, 357 J | +4 (se 33) | -4 (se 2) |
+| 8 | 317 J | 0.7, 327 J | -9 (se 41) | -7 (se 5) |
+| 10 | 607 J | 0.3, 622 J | -16 (se 19) | -4 (se 3) |
+
+The knockouts of the chemical sense, depth, the reserve and the flow changed nothing to the joule on any
+body, so no best brain read any of them. Five of the six are blind: taking every sense away costs at most
+7 J. Body 3's brain loses 236 J without its senses. So it reads a sense the four knockouts did not name: the
+joint's angle, its speed or which way is up. Which one is not yet known. D145's bar for an
+inoculant, a body's best constant beaten by two standard errors, is met by none. The agent's reading: after
+100 generations the old brain found, per body, a stroke as good as the best fixed one. On one body it
+found a reflex that matters. D146 expected no more of it.
+
+Its successor is `pilot-deep-brain2` (D146, D147): the same six bodies, draws and water, the one brain wired
+to all 13 senses, and the two-parent breeding. It started at 00:26 on nursery-v9 (`74f2cc8`). Its read is
+the proposal's "nursery test": read, worth it, grown.
+
+## Brain v2's exam (2026-10-02, 14:17)
+
+`pilot-deep-brain2` ran 100 generations on nursery-v10 and was ahead of the control's mean in every one. Its
+search is read in `HANDOFF.md` item 10a. The exam swam each body's best brain on the control's 32 held-out
+draws. Every constant scored the same on both runs to the joule, so the draws match and the two runs' brains
+can be paired body by body. `python scripts/reads/nursery-exam-per-body.py scratch/nursery/pilot-deep-brain2
+scratch/nursery/pilot-deep-own16` makes both tables below. Each cell is the own brain's net less the other
+brain's, paired over the 32 draws, with its standard error. A positive knockout cell is what losing that
+sense costs.
+
+| Body | Own | Best constant | Own minus it | SEs | Frozen | Chemical | Depth | Energy | Flow | Scent | Drive | Joint | Own minus control's own |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | 499 J | 0.6, 416 J | +83 ± 34 | 2.4 | +356 ± 60 | +42 ± 20 | +44 ± 28 | +72 ± 30 | +175 ± 48 | -1 ± 1 | +140 ± 34 | +3 ± 11 | +62 ± 34 |
+| 1 | 517 J | 0.7, 487 J | +30 ± 32 | 0.9 | +311 ± 51 | -12 ± 16 | +13 ± 35 | -2 ± 17 | +19 ± 28 | -1 ± 2 | +53 ± 32 | -12 ± 14 | +54 ± 36 |
+| 3 | 494 J | 0.5, 502 J | -9 ± 35 | -0.2 | +258 ± 37 | -11 ± 11 | +11 ± 16 | -2 ± 13 | -31 ± 27 | -2 ± 1 | -66 ± 24 | -6 ± 7 | -2 ± 41 |
+| 4 | 379 J | 0.7, 357 J | +22 ± 45 | 0.5 | +230 ± 49 | +32 ± 17 | +10 ± 13 | -40 ± 36 | -23 ± 18 | -1 ± 4 | +51 ± 27 | -22 ± 23 | +18 ± 37 |
+| 8 | 152 J | 0.7, 327 J | -175 ± 52 | -3.4 | +37 ± 10 | -1 ± 2 | +2 ± 2 | +1 ± 3 | +0 ± 2 | +3 ± 2 | +8 ± 4 | -8 ± 5 | -166 ± 53 |
+| 10 | 704 J | 0.3, 622 J | +81 ± 38 | 2.2 | +369 ± 46 | -24 ± 30 | +92 ± 19 | +34 ± 40 | +28 ± 48 | -1 ± 1 | -88 ± 34 | -79 ± 29 | +97 ± 37 |
+
+Drive is Stroke, Hold and Ramp together, and Joint is the joint's angle and speed. Brainless is left out of
+the table. Every unit is a tanh sum of senses, so a brain with no senses holds its outputs fixed, another
+steady stroke. It costs about what Frozen costs on five bodies; on body 4 it costs 121 J against 230.
+
+Against the bars set before the run:
+
+- **Against a steady swim, D145's bar.** Two of six bodies clear it: body 0 by 2.4 standard errors and body
+  10 by 2.2. The control cleared it on none. With six bodies tested at two standard errors, one clearing by
+  luck is not rare (about one chance in eight). Two is less likely, and body 0's knockouts say its brain
+  reads its senses.
+- **Read and used.** Body 0's brain loses 175 J without the flow (3.6 standard errors). It loses 140 J
+  without its own drive (4.1), and 72 J without the reserve (2.4). Body 10's loses 92 J without depth (4.8), and it gains 88
+  and 79 J without the drive and joint senses, which it reads to its cost. The control's best brains read
+  none of the four senses its exam knocked out.
+- **Worth it against the control.** Only body 10 beats the control's brain on the same body by two standard
+  errors (+97 ± 37). Body 8 loses to it by 3.2 (-166 ± 53). Its best brain is worse than any constant and
+  barely moves (Frozen costs it only 37 J). So the bar of two bodies better and none worse is not met.
+- **The scent is unused.** Its knockout cost between -2 and +3 J on every body, never above one standard
+  error. The log's pooled food density at the body is 1.30 J/m³ under the own brains and 1.30 under the
+  scent knockout. Nursery-v10 writes it only pooled over the six bodies.
+
+The agent's reading, as inference:
+- Brain v2's richer water is not steering by scent. Nor is it a slow body staying put. Frozen and brainless
+  bodies sit in the poorest water (0.88 and 0.91 J/m³ pooled), and the constants in 1.11 to 1.26. The own
+  brains reach 1.30, on a shorter path than the faster constants. On body 0 the flow is the likeliest
+  guide, since it is the sense whose loss costs most. That is a guess about how the flow and the snow
+  relate in this water, and it has not been checked.
+- The one brain does what the old one could not. It reads its senses, and on two bodies it beats the best
+  steady stroke. It does not do so on every body, and on body 8 the search ended on a brain worse than
+  standing still at a fixed stroke.
+- The run's lead over the control is three changes in one, as item 10a says. The exam does not separate
+  them.
+
+## The replicate's exam (2026-10-03, 05:34)
+
+`brain2-rep2` is the pilot's setup on a new search seed, with the same six bodies (recipe
+`rounds/nursery/brain2-rep2.json`). It launched on 2026-10-02 at 15:57 from the `nursery-general` worktree at
+`56c0f6f`, on 14 threads pinned to the efficiency cores. Its search ended at 05:11 on 2026-10-03, its exam at
+05:34, and it is the registry's entry 3. Its exam salt makes its held-out draws the pilot's. Every constant and
+kinesis scored the same in both exams to the hundredth of a joule, so the two runs' best brains pair body by
+body.
+
+The search swam other water than the pilot's in every generation, so its rows do not pair with the pilot's.
+Over all 100 generations its mean net was 429 J against the pilot's 439, and its decade means ran from 335 to
+490 J against 364 to 503. Its path stayed near 70 m and its work near 0.05 W, as the pilot's did. At generation
+100 its brains held 5.9 hidden units on average (13 at most) and 96 links.
+
+`python scripts/reads/nursery-exam-per-body.py scratch/wt-nursery-general/runs/nursery/brain2-rep2
+scratch/nursery/pilot-deep-brain2` makes both tables. The cells read as in the pilot's table above.
+
+| Body | Own | Best constant | Own minus it | SEs | Frozen | Brainless | Chemical | Depth | Energy | Flow | Scent | Drive | Joint | Own minus the pilot's own |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | 164 J | 0.6, 416 J | -252 ± 57 | -4.4 | +21 ± 12 | +17 ± 12 | -89 ± 21 | +0 ± 2 | +5 ± 9 | -4 ± 6 | -1 ± 1 | +7 ± 3 | +7 ± 10 | -335 ± 60 |
+| 1 | 546 J | 0.7, 487 J | +59 ± 36 | 1.6 | +341 ± 56 | +338 ± 55 | +16 ± 23 | +59 ± 45 | +15 ± 37 | +8 ± 21 | +0 ± 1 | +7 ± 14 | -9 ± 9 | +29 ± 35 |
+| 3 | 481 J | 0.5, 502 J | -22 ± 43 | -0.5 | +245 ± 40 | +242 ± 39 | +33 ± 18 | -19 ± 10 | -3 ± 10 | -4 ± 18 | +1 ± 2 | +12 ± 13 | -3 ± 7 | -13 ± 20 |
+| 4 | 327 J | 0.7, 357 J | -30 ± 58 | -0.5 | +177 ± 44 | +173 ± 44 | +24 ± 29 | +38 ± 22 | +34 ± 20 | -36 ± 17 | +1 ± 1 | -8 ± 10 | +17 ± 15 | -53 ± 39 |
+| 8 | 369 J | 0.7, 327 J | +42 ± 49 | 0.9 | +254 ± 39 | +244 ± 38 | -48 ± 49 | -20 ± 25 | -25 ± 44 | -54 ± 39 | -6 ± 6 | -8 ± 18 | +14 ± 21 | +217 ± 37 |
+| 10 | 713 J | 0.3, 622 J | +90 ± 24 | 3.7 | +378 ± 43 | +144 ± 33 | -69 ± 35 | -31 ± 39 | -23 ± 13 | -13 ± 14 | -0 ± 0 | +27 ± 10 | -17 ± 15 | +9 ± 33 |
+
+Against the pilot:
+
+- **Against a steady swim.** Body 10 clears the bar again, by 3.7 standard errors (2.2 in the pilot). Body 0
+  cleared it in the pilot by 2.4, and here it is the worst of the six. Body 1 reaches 1.6. So one body clears
+  it this time against two in the pilot, and body 10 is the only one to clear it in both.
+- **One body stuck in each run.** In the pilot it was body 8: 175 J below its best constant, with Frozen
+  costing it only 37 J. Here it is body 0: 252 J below, with Frozen costing 21 J. Each of the two bodies did
+  well in the other run. On body 0 the two runs' own brains differ by -335 ± 60 J, and on body 8 by
+  +217 ± 37. On the other four bodies they differ by at most 1.3 standard errors.
+- **The senses read are not the same.** Body 10's brain lost 92 J without depth in the pilot. Here depth's
+  knockout costs nothing measurable (-31 ± 39). This brain loses 27 ± 10 J without its drive (2.7 standard
+  errors), and gains 69 ± 35 J without the chemical sense (2.0). Body 4's gains 36 ± 17 J without the flow
+  (2.1). The stuck body 0 gains 89 ± 21 J without the chemical sense (4.2).
+- **The scent is unused again.** Its knockout moved every body by between -6 and +1 J, never above one standard
+  error.
+- **Brainless.** On bodies 1, 3, 4 and 8 it costs what Frozen costs, within 10 J. On body 10 it costs 144 J
+  against Frozen's 378, as it did on the pilot's body 4.
+
+Pooled over the six bodies, the replicate's own brains scored 24 J less than the pilot's. Its standard error
+is about 16 J, which I took from the six per-body errors as if they were independent.
+
+The agent's reading, as inference:
+- What repeats is the one brain beating Frozen on every body but the stuck one, body 10 beating its best
+  steady stroke, and the scent going unread.
+- What does not repeat is which other body clears the bar and which senses a brain reads. Which sense a
+  brain uses depends on the path its search took as well as on the body and the water. With one seed per
+  arm, a per-body knockout describes one brain. The setup needs several seeds.
+- Each run ended one body in six on a brain that barely moves and scores below every constant. I do not
+  know why the search kept it. A check would compare that brain's running mean in the search with its exam.
+- For the two separation arms, the seed alone moves a body's own brain by up to 5.8 standard errors. So an
+  arm's per-body cells cannot be read against the pilot. What can be read is the pooled own brain, against
+  this 24 J spread between the two runs, and the count of bodies that clear the bar.
+
+## The stuck body: a first look (2026-10-03, afternoon)
+
+The exam swims each body's best member of the last generation, ranked by its score in the search
+(`tank-scores.jsonl`, which the replicate writes and the pilot did not). In the replicate, five of the six
+bodies' best were children born in generation 100 and scored on that generation's draws alone, 16 episodes.
+Body 0's best scored 585 J there. Its next three scored 544, 541 and 512 J. In the exam it scored 164 J and
+barely moved. The noise bench above puts a brain's score at two draws near 105 J of standard error, so the
+top of 16 members that close together is mostly the luckiest.
+
+The agent's reading, as inference: the stuck body is a winner's curse at the last step. The search ranks
+on one generation's water and the exam takes the top. Most of the time the top is a fair brain. Now and then
+it is a dud that drew well. Two checks would test it, both after the arms, because changing how the exam
+picks its brain now would part the arms from the two runs they are read against:
+- Swim body 0's top four members on the exam's draws. If the second to fourth score near the other bodies'
+  brains, the pick was luck.
+- Pick the exam's brain on more than one generation's water, for example the elite with the most episodes,
+  or the top few re-scored on fresh search draws before the exam. That is a change to the nursery's protocol,
+  so it goes to the owner first.
+
+## The separation arms, stated before they start (2026-10-03)
+
+The owner chose both arms in turn, `brain2-nodrive` first, after the check of the farm's P1 to P3, by telling the agent to proceed
+with its recommendation (2026-10-03, about 13:15). Each arm is brain2 with one thing removed, the drive
+sense or the crossover. Both swim the pilot's water with search seed 0x1, and their exams use the pilot's
+32 draws. They run on the column kernel (`d58d7af`), which changes no number.
+
+Each arm is read on three things, fixed here before it runs.
+
+- **The pooled own brain**: the mean net of the six bodies' own brains over the exam. The pilot scored 457.3 J
+  and the replicate 433.2. An arm differs from brain2 only if it lands more than 50 J outside that range,
+  below 383 J or above 507. The 50 J is twice the spread between the two runs. With two runs the spread is
+  poorly known, so the line is a rule of thumb, not a test.
+- **The bodies over the bar**: how many bodies' own brains beat their best constant by two standard errors.
+  The pilot had 2 and the replicate 1. Zero or one says nothing on its own. Three or more lies outside both
+  runs.
+- **The stuck bodies**: how many bodies' own brains score below every constant. Each run had one.
+
+What each outcome would mean:
+- `brain2-nodrive` below 383 J says the drive sense pays. Inside the margin, it has no effect the nursery
+  can see at one seed. Then whether to keep it is a matter of its cost, since its knockouts in the two
+  exams cost tens of joules on one body each.
+- `brain2-nocross` below 383 J says the crossover pays. Inside the margin, it has no effect the nursery can
+  see, and a round could breed by mutation alone without a loss shown here.
+- Above 507 J would say the thing removed was costing the brain, and would want a second seed before it is
+  believed.
+
+Body 10 cleared the bar in both runs. Whether it clears it in each arm is reported and not scored. The
+per-body knockout cells are reported too, and are not read against the pilot.
+
+## brain2-nodrive: the read (2026-10-03, night)
+
+`brain2-nodrive` ran from 13:27 to 22:16 on 2026-10-03, from `scratch/wt-nursery-general` at `a8204f0`, on 14
+threads pinned to the efficiency cores. It is the registry's entry 4. Its constants and kineses scored as in
+the pilot's exam to the hundredth of a joule, so its brains pair with the pilot's body by body. The drive
+sense's knockout reads +0 ± 0 on every body, as it must with the sense removed.
+
+| Body | Own | Best constant | Own minus it | SEs | Frozen | Brainless | Chemical | Depth | Energy | Flow | Scent | Joint | Own minus the pilot's own |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | 466 J | 0.6, 416 J | +50 ± 45 | 1.1 | +322 ± 63 | +329 ± 63 | +100 ± 47 | +107 ± 38 | +29 ± 23 | +48 ± 28 | +0 ± 0 | +30 ± 14 | -33 ± 34 |
+| 1 | 500 J | 0.7, 487 J | +13 ± 37 | 0.4 | +295 ± 47 | +292 ± 47 | -5 ± 15 | +1 ± 26 | +9 ± 12 | +1 ± 13 | -0 ± 0 | -3 ± 10 | -17 ± 36 |
+| 3 | 518 J | 0.5, 502 J | +16 ± 41 | 0.4 | +282 ± 42 | +283 ± 42 | -13 ± 29 | -21 ± 8 | -9 ± 9 | +50 ± 49 | +0 ± 1 | -2 ± 24 | +24 ± 18 |
+| 4 | 442 J | 0.7, 357 J | +85 ± 50 | 1.7 | +292 ± 76 | +293 ± 77 | +59 ± 35 | +75 ± 33 | +3 ± 13 | -13 ± 16 | +0 ± 1 | +68 ± 29 | +62 ± 39 |
+| 8 | 406 J | 0.7, 327 J | +80 ± 54 | 1.5 | +292 ± 46 | +295 ± 46 | +70 ± 38 | -24 ± 14 | -6 ± 11 | -3 ± 20 | +0 ± 1 | +36 ± 34 | +255 ± 44 |
+| 10 | 702 J | 0.3, 622 J | +80 ± 37 | 2.2 | +367 ± 50 | +369 ± 50 | -16 ± 28 | +53 ± 17 | -2 ± 23 | +21 ± 19 | +7 ± 4 | -13 ± 31 | -2 ± 30 |
+
+On the three things fixed before it ran:
+- **The pooled own brain is 505.7 J**, 48 ± 14 J above the pilot's 457.3 and 1.3 J under the upper line of
+  507. By the rule, the drive sense has no effect the nursery can see at one seed.
+- **One body over the bar**: body 10, by 2.2 standard errors, as in both runs.
+- **No body stuck.** Every own brain beats its best constant, and Frozen costs every one between 282 and
+  367 J. Each of the two runs had one stuck body.
+
+The agent's reading, as inference:
+- The pooled gain is the absent stuck body. Body 8 was the pilot's stuck body, and here it scores 255 J above
+  it. On the other five bodies the arm's own brains differ from the pilot's by +7 ± 14 J on average. If the
+  stuck body is the winner's curse at the exam's pick, as read above, this arm drew no dud, and that is luck
+  rather than the drive sense.
+- The search said the same thing more sharply. With the pilot's water in every generation, the arm's mean
+  net ran above the pilot's in all 100 generations, by about 42 J with a scatter of about 12 J. The gap was
+  there at generation 0. The pilot's founders carry about 15 drive-sense links each (82 links against 67).
+  With them they did 0.083 W of work against 0.007 W, for the same path. By generation 1 the pilot's
+  search had cut its work to 0.041 W. The gap outlasted the difference in work, and its cause is not known.
+- So removing the drive sense cost the brains nothing on any body, and may have helped a little. The sense's
+  knockouts in the two runs cost tens of joules on one body each. Whether to keep it is a matter of its cost.
+  A second seed of this arm, read in pairs against the replicate, would show whether the search's 42 J is real.
+
+## brain2-nocross: the read (2026-10-04, morning)
+
+The arm ran from 22:55 on 2026-10-03 to 07:43 on 2026-10-04, from `scratch/wt-nursery-general` at
+`a8204f0`. It had 14 threads pinned to the efficiency cores and the heat watchdog beside it. It is the
+registry's entry 5. The CPU stayed between 52 and 86 °C, and the watchdog never warned. Its constants and kineses scored
+as in the pilot's exam to the hundredth of a joule, so its brains pair with the pilot's body by body. "Drive"
+below is the knockout of the drive sense, which this arm keeps.
+
+| Body | Own | Best constant | Own minus it | SEs | Frozen | Brainless | Chemical | Depth | Energy | Flow | Scent | Drive | Joint | Own minus the pilot's own |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | 445 J | 0.6, 416 J | +29 ± 44 | 0.7 | +302 ± 62 | +85 ± 43 | +34 ± 18 | +300 ± 50 | +80 ± 27 | +42 ± 28 | +2 ± 2 | +160 ± 41 | +114 ± 35 | -54 ± 22 |
+| 1 | 503 J | 0.7, 487 J | +16 ± 38 | 0.4 | +298 ± 62 | +295 ± 62 | +66 ± 42 | +3 ± 21 | +17 ± 8 | +71 ± 37 | +3 ± 3 | +25 ± 43 | +4 ± 18 | -13 ± 37 |
+| 3 | 458 J | 0.5, 502 J | -44 ± 54 | -0.8 | +222 ± 63 | +225 ± 65 | +39 ± 46 | -42 ± 23 | +13 ± 43 | +364 ± 58 | -4 ± 9 | -53 ± 29 | +18 ± 30 | -36 ± 43 |
+| 4 | 287 J | 0.7, 357 J | -70 ± 51 | -1.4 | +137 ± 43 | +144 ± 43 | -9 ± 10 | -7 ± 7 | -23 ± 16 | -12 ± 21 | -1 ± 1 | -87 ± 44 | -15 ± 26 | -92 ± 19 |
+| 8 | 371 J | 0.7, 327 J | +44 ± 51 | 0.9 | +256 ± 56 | +250 ± 57 | +94 ± 48 | -56 ± 36 | +28 ± 40 | +86 ± 46 | -11 ± 6 | -19 ± 26 | -49 ± 40 | +219 ± 52 |
+| 10 | 718 J | 0.3, 622 J | +96 ± 35 | 2.7 | +383 ± 46 | +379 ± 47 | -40 ± 26 | +5 ± 6 | +97 ± 57 | -30 ± 12 | -2 ± 1 | +41 ± 31 | -28 ± 15 | +14 ± 43 |
+
+On the three things fixed before it ran:
+- **The pooled own brain is 463.6 J**, 6 ± 15 J above the pilot's 457.3 and well inside the margin of 383 to
+  507. By the rule, the crossover has no effect the nursery can see at one seed.
+- **One body over the bar**: body 10, by 2.7 standard errors, as in both runs and in `brain2-nodrive`.
+- **No body stuck.** Body 4 is the weakest. Its own brain scores 287 J, below the steady strokes at 0.6 and
+  0.7 (322 and 357 J) and above the three slower ones (192 to 266 J). Frozen costs it 137 J, so it moves.
+
+The agent's reading, as inference:
+- As in `brain2-nodrive`, the pilot's stuck body 8 is the largest cell, 219 J above the pilot. This arm too
+  drew no dud at the exam's pick.
+- Leave body 8 out and the other five bodies' own brains score 36 ± 15 J below the pilot's. In
+  `brain2-nodrive` the same five came out at +7 ± 14. Body 4 alone is 92 ± 19 J below, 4.9 standard errors.
+  That would say breeding by mutation alone cost something on bodies that were not stuck. Yet the seed alone
+  moved one body by 5.8 standard errors between the pilot and the replicate, and moved the pooled brain by
+  24 J. A 36 J deficit on five bodies is inside what a second seed did on its own, and one arm cannot
+  separate the crossover from the seed.
+- The search agrees that the effect is small. On the pilot's water in every generation, the arm's mean net
+  ran 11 J above the pilot's, with a scatter of 13 J, and above it in 80 of 101 generations. Over the first
+  ten generations it ran 6 J below. The later decades ran 0 to 13 J above through generation 69, and 19 to
+  24 J above from generation 70 on. Without the drive sense the gap was 42 J from generation 0.
+- Body 4's own brain scores 87 ± 44 J below its drive-sense knockout, and body 3's 53 ± 29 J below. On those
+  two bodies reading the drive sense cost the brain, which fits `brain2-nodrive`'s finding that removing it
+  cost nothing. It is a cell of one brain, and cells are not read against the pilot.
+- The rule above says that without a visible effect "a round could breed by mutation alone". That line
+  is loose. The world has no crossover and breeds by mutation alone in any case, and crossover exists only
+  in the nursery's search. What this arm measures is whether crossover in the nursery finds better
+  founders for a round, and at one seed it did not.
+- Neither arm moves the pooled brain past the line. Whether to keep either part turns on what it costs and
+  what it is for, which this exam does not measure.

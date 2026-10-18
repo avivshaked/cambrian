@@ -15,6 +15,19 @@ It holds:
   places in `facts.md` it rests on;
 - the facts in `facts.md` the story leaves out, and why.
 
+## Two forms
+
+A film is one of two forms, and the owner's words in `pick.md` say which.
+
+- **A story** of one to three experiments: one question and its answer, told in the nine beats of
+  [story-brief.md](story-brief.md). The owner picks one of the angles.
+- **A countdown**: a top-10 of creatures, from number 10 to number 1, with a runner-up before number 1,
+  told in the running order of [countdown-brief.md](countdown-brief.md). Its question is a running
+  question that the whole set answers and number 1 pays off. There are no angles: the owner's words in
+  `pick.md` say what the countdown ranks, which creatures it counts down, in what order or by which
+  saved ranking, and which is the runner-up. Its `story.md` holds the running question and its answer,
+  the entries in their order, and its beats under the headings the countdown brief gives.
+
 ## Working files
 
 In the film's folder, beside `facts.md`:
@@ -32,6 +45,7 @@ In the film's folder, beside `facts.md`:
 |---|---|---|---|
 | the angles writer | [angles-brief.md](angles-brief.md) | `facts.md` | `angles.md` |
 | the story writer | [story-brief.md](story-brief.md) | `facts.md`, `angles.md`, `pick.md`, and what was said about the draft before | `story-<n>.md` |
+| the countdown writer | [countdown-brief.md](countdown-brief.md) | `facts.md`, `pick.md`, and what was said about the draft before | `story-<n>.md` |
 | the fact checker | [story-fact-check-brief.md](story-fact-check-brief.md) | `facts.md` and one draft | its answer |
 | the cold reader | [story-cold-reader-brief.md](story-cold-reader-brief.md) | one draft, nothing else | its answer |
 | the comparer | [story-comparer-brief.md](story-comparer-brief.md) | `angles.md`, `pick.md` and one cold read | its answer |
@@ -52,7 +66,7 @@ The film's folder is <folder>.                                         (folder)
 You write draft <n>.                                                   (draft)
 The draft is <folder>\story-<n>.md.                                    (the draft)
 The cold read is <folder>\cold-read-<n>.md.                            (the cold read)
-Write only inside the film's folder, and only through the shell. Never write in your session scratchpad or in TEMP.   (write)
+Write only inside the film's folder. Never write in your session scratchpad or in TEMP.   (write)
 Your time budget is <minutes> minutes.
 ```
 
@@ -60,6 +74,7 @@ Your time budget is <minutes> minutes.
 |---|---|---|---|---|---|
 | angles writer | general-purpose | opus | angles-brief.md | 10 | folder, write |
 | story writer | general-purpose | opus | story-brief.md | 15 | folder, draft, write |
+| countdown writer | general-purpose | opus | countdown-brief.md | 15 | folder, draft, write |
 | fact checker | Explore | opus | story-fact-check-brief.md | 10 | folder, the draft |
 | cold reader | Explore | sonnet | story-cold-reader-brief.md | 3 | the draft |
 | comparer | Explore | sonnet | story-comparer-brief.md | 2 | folder, the cold read |
@@ -70,6 +85,9 @@ project. A reader writes nothing: its final answer is saved word for word.
 
 ## The procedure
 
+For a countdown, skip steps 1 and 2: `pick.md` holds the owner's words on the countdown, saved word for
+word as they are given. In steps 3 and 5, launch the countdown writer in place of the story writer.
+
 1. Launch the angles writer. It writes `angles.md`.
 2. Ask the owner one question, with one choice for each angle: the angle's name as the label, and its
    lines copied word for word from `angles.md`. The owner can also answer "Other" with an angle of
@@ -77,7 +95,9 @@ project. A reader writes nothing: its final answer is saved word for word.
 3. Launch the story writer for draft 1.
 4. Check the draft: launch the fact checker and the cold reader, then the comparer on the cold read.
    Save each answer word for word. The draft fails when the fact checker's first line is
-   `FACTS: FAIL` or the comparer's is `COLD READ: MISMATCH`.
+   `FACTS: FAIL`, the comparer's is `COLD READ: MISMATCH`, the cold read names any word or idea
+   that is never explained or is explained more than one beat after its first use, or a countdown's cold read writes `no moment` for an entry the story does
+   not mark `No moment in the record`.
 5. If the draft fails, launch the story writer for the next draft and go back to step 4. After two
    failed drafts in a row, go on to step 6 with the latest draft.
 6. Show the owner the draft and its checks, and save the owner's words in `owner-<n>.md`.

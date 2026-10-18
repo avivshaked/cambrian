@@ -1,0 +1,16 @@
+
+== r56-s2 (D:\Projects\experiments\evolution-simulator\runs\r56-s2\2026-10-04-183358-a174d013); last stats row t=12580
+t=2500: alive 2956, jointed 833, light factor 1.5
+t=5000: alive 1547, jointed 517, light factor 1
+t=7500: alive 1793, jointed 406, light factor 0.5
+t=10000: alive 2407, jointed 264, light factor 1
+t=10000: living 2407, leaves 2124, the leaves' median margin 284.65186, median lifespan gene 0.7083239; largest lineage (root 1) 0.358 of the living
+
+== r55-s2 (D:\Projects\experiments\evolution-simulator\runs\r55-s2\2026-10-04-115417-d573544f); last stats row t=30000
+t=2500: alive 2875, jointed 778, light factor 1
+t=5000: alive 1637, jointed 236, light factor 1
+t=7500: alive 1629, jointed 71, light factor 1
+t=10000: alive 2031, jointed 41, light factor 1
+t=10000: living 2031, leaves 1974, the leaves' median margin 366.59796, median lifespan gene 0.5187184; largest lineage (root 1) 0.559 of the living
+
+G: seed 2's living at 10,000 s 2407 against r55's 2031, 1.185 -> held

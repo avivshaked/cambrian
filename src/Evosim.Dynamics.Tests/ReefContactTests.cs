@@ -63,6 +63,10 @@ namespace Evosim.Dynamics.Tests
                 }
             }
 
+            // The last step's spheres, which the next grid build would commit (P1), for the
+            // tests that read them.
+            world.CommitContactSpheres();
+
             return (body.Position[1], lowest, highest);
         }
 

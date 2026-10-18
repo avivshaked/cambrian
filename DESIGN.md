@@ -330,6 +330,19 @@ and the map `logbook/specs/economy-inventory.md`; built on branches `economy` an
 100 J overhead, the two dials that bound it (§5A.2d, logbook/0107); `EVOSIM_TISSUE_ENERGY`,
 `EVOSIM_FOUNDER_EXTENT_MIN/MAX` and `EVOSIM_OVERHEAD` are launch knobs from that night.
 
+## 0y. Changelog: review round 7, storage and bet-hedging under seasonal and stochastic light (2026-10-06)
+
+This round changes no mechanism. Round 7 of the literature review (research §0, Q12) asked what theory
+and experiment predict when light varies by season and by unpredictable weather. It covered stored
+reserves, the timing of breeding and the spread of breeding traits. It was commissioned for experiment round 57's
+pre-registration (D151, `logbook/0136-winters-and-weather.md`). In a stochastic model, storing pays only
+once the environment varies enough and predictably enough [FDT11 Results, Figs 3–4]. In a seasonal
+one, stores pay mainly by allowing breeding before the good season [VJTF09 abstract]. And the variance
+of life-history traits fell over time under every cycle tried [PW21 Results, Fig. 5]. Round 57's
+weather sits at or below the low end of [FDT11]'s range, so the review's inference is that the season,
+not the weather, should raise the reserve. None of the ten papers modelled this world, and two disagree
+on which way the weather's run of dull days should move the reserve ([MK07] against [WTV18]).
+
 ## 0w. Changelog — the aquarium, the streams, and water that stays uniform (2026-09-11 and 12, D089, D090, the Astra review)
 
 The container is a setting (`RunConfig.WorldShape`, `EVOSIM_SHAPE`, default `Box`). A `Tank`
@@ -721,8 +734,9 @@ express, and it costs nothing to include from the start.
 ### 4.4 Sensors and effectors
 
 **Sensors** (per part, normalised to ≈[-1, 1]): joint angle per DOF; joint angular
-velocity per DOF; contact; orientation vs world up; **damage**; photosensor triple
-(Milestone 6); **chemical**, **energy** and **flow** (Milestone 4). [K12 §2.2, p.4] used only
+velocity per DOF; contact; orientation vs world up; **damage**; ~~photosensor triple
+(Milestone 6)~~ *re-scoped 2026-10-06 (D154): a light sense, one reading per part of the light
+at the part, other bodies' shade included; colour vision would take a new channel*; **chemical**, **energy** and **flow** (Milestone 4). [K12 §2.2, p.4] used only
 joint-angle sensors — *"A sensor in each body part is measuring current angle of each degree
 of freedom of a joint."*
 
@@ -1199,7 +1213,7 @@ round 45), and at the slow rate a leaf's income is the diffusive flux into its o
 than the tank's stock, which is what made ten times the matter necessary in ten times the
 water. The same map can shade the light column by column (`LightShadeDepth`, the islands lit in
 full and the deserts dimmed); it is built and off, because light has no concentration and a
-shade nothing casts is a designed landscape (`fable-propose-reef.md` holds the forms shade could
+shade nothing casts is a designed landscape (`proposals/fable-propose-reef.md` holds the forms shade could
 honestly take).
 
 ### 5A.1 Cell types
@@ -1769,7 +1783,8 @@ original objection to adding a cycle at all, and it is real.
 
 Part colour is an evolvable genome field with no physical cost. It is inert until creatures
 can see, and §4.4 already specifies a **photosensor triple** on parts, scheduled at
-Milestone 6. Once perception is closed-loop, colour becomes a signal in a world where things
+Milestone 6. *Re-scoped 2026-10-06 (D154): §4.4's photosensor is now a one-reading light sense,
+so seeing colour would need a channel of its own.* Once perception is closed-loop, colour becomes a signal in a world where things
 look at each other:
 
 - **Camouflage** — matching the water or the nutrient field
@@ -2505,6 +2520,52 @@ Track morphological and genotypic diversity **separately**; [EA23 Table 2, p.24]
 algorithms that preserve one while losing the other (e.g. ME scores 0 on genetic diversity
 `D_g` and `D_gc` while scoring 4 on coverage).
 
+### 8.6 The nursery (D133)
+
+The directed search this section kept came back on 2026-09-29 in the second role its banner names, "to
+seed a population the ecosystem then has to keep alive", and first as a measurement. `src/Evosim.Nursery`
+selects brains directly, outside the ecology. It asks whether this genome can encode a brain that forages
+for corpses, and how many generations of direct selection separate round 52's bodies from one. It cannot
+say that the ecology would have found the same brain. Selection there is weaker, noisier and shared with
+every other trait, so a nursery result is a best case for the ecology and is reported as one.
+
+- **The bodies** are real ones, pooled across the snapshots of every run and second given, each genome
+  taken once. Each has a joint to move by and a corpse mouth, a part whose intake is above 0 (the
+  founders' rule). Under `--diet corpse` a body with a leaf is left out, since its score would be the
+  light it catches. Round
+  52's three seeds hold 40 such genomes across 2,000 to 30,000 s, every one of them two parts and one
+  joint. The body is held fixed and the brain alone evolves. A child is `Mutator.Mutate` of its parent at the config's own rates and
+  sensor pool, with the child's neurons grafted onto a copy of the parent's body. A draw that changed the
+  node count is drawn again.
+- **An episode** is one body inoculated into a small tank made by the farm's own binding (round 52's
+  launcher at 400 m² and 10 m, flat, no reefs, no trickle, matter at round 52's density), with the founder
+  floor closed. Corpses are laid round the body by `World.PlaceCorpse` at distances drawn from 0.5 to 4 m,
+  booked as influx as an inoculant is, and the farm's `Simulation` steps it for 900 s. Each episode reads
+  its own copy of the config, because the current is an object on the config and its world pins it every
+  step.
+- **The score** is the line's income: light caught, snow eaten and corpse units eaten, in joules. Upkeep
+  is the same for every brain on one body, so income is what a brain changes. The net joules held at the
+  end are logged beside it and are not the score, since they are flat for every body that dies. An
+  inoculant lands with the config's founder energy times its birth fraction. Round 52's 200 J starved
+  every smoke body inside 450 s, so `--purse` sets that field (2,000 J by default), and a body lives to
+  show what its brain does.
+- **The selection** is this section's archive, with one cell per body and per behaviour bin (the mean
+  distance to the nearest corpse over an episode's second half), and parents drawn in proportion to
+  their score above the archive's lowest (§8.2). A generation's children all swim the same episodes.
+  Every incumbent swims them too, and a child takes a cell only by beating its incumbent on those
+  episodes, since with a few episodes a lucky layout outscores a better brain. An incumbent's score is
+  the running mean of every generation it has swum.
+- **A forager** is judged every `--check-every` generations on held-out episodes the search never
+  saw. The best brain of each body swims against its ancestor and against its knockout. The
+  knockout replaces every sensor input on a `--knockout` channel (scent and chemical by default) with
+  the constant 0, so the sense reads nothing and the rest of the brain is untouched. It is a forager when it beats
+  both by at least `--margin` joules and by twice the standard error of the paired difference. The first
+  generation with a forager is the measurement D133 asks for.
+
+An episode of 900 s costs about 2 s on one thread at this tank's size, nearly all of it the world's water.
+A two-part body's physics is a small share. The outputs are `generations.jsonl`, `evaluations.jsonl`,
+`checks.jsonl`, `final.tsv` and the winners and their knockouts as one-line genomes, which the farm's
+`EVOSIM_INOCULATE` reads. Whether a round carries them is open (D133).
 ---
 
 ## 9. Persistence and data

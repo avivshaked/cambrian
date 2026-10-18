@@ -30,7 +30,7 @@ namespace Evosim.Core
         public string Unit { get; }
 
         /// <summary>
-        /// <see cref="float"/>, <see cref="double"/>, <see cref="int"/>, <see cref="bool"/>,
+        /// <see cref="float"/>, <see cref="double"/>, <see cref="int"/>, <see cref="ulong"/>, <see cref="bool"/>,
         /// <c>string[]</c>, an enum, or an array of some enum — see
         /// <see cref="ConfigSchema.EnumElementOf"/>.
         /// </summary>
@@ -73,6 +73,9 @@ namespace Evosim.Core
                 case float f: return f.ToString("R", c);
                 case double d: return d.ToString("R", c);
                 case int i: return i.ToString(c);
+
+                // D151's weather seed, the first ulong tunable. Decimal, as the file writes it.
+                case ulong u: return u.ToString(c);
                 case bool b: return b ? "true" : "false";
 
                 // D117's pool hash. Hex only, so it can carry neither the hash's '|' nor '='.

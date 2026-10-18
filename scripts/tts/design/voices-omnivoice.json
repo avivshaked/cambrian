@@ -1,0 +1,170 @@
+{
+ "model": "OmniVoice",
+ "design_text": "Down on the floor of this tank lives a family of twelve hundred and fifty-two creatures, and nearly every one of them is nothing but a stomach. Each is a single box of tissue that eats the marine snow, the dead stuff drifting down. All of them come from one creature that dropped in from outside.",
+ "descriptions": {
+  "M1": "british accent, very low pitch, elderly, male",
+  "M2": "british accent, very low pitch, middle-aged, male",
+  "M3": "british accent, low pitch, elderly, male",
+  "M4": "british accent, low pitch, middle-aged, male",
+  "M5": "british accent, low pitch, male",
+  "M6": "british accent, moderate pitch, elderly, male",
+  "M7": "british accent, moderate pitch, middle-aged, male",
+  "M8": "british accent, moderate pitch, male",
+  "M9": "british accent, high pitch, middle-aged, male",
+  "M10": "british accent, high pitch, elderly, male",
+  "F1": "british accent, very low pitch, elderly, female",
+  "F2": "british accent, very low pitch, middle-aged, female",
+  "F3": "british accent, low pitch, elderly, female",
+  "F4": "british accent, low pitch, middle-aged, female",
+  "F5": "british accent, low pitch, female",
+  "F6": "british accent, moderate pitch, elderly, female",
+  "F7": "british accent, moderate pitch, middle-aged, female",
+  "F8": "british accent, moderate pitch, female",
+  "F9": "british accent, high pitch, middle-aged, female",
+  "F10": "british accent, high pitch, elderly, female"
+ },
+ "attributes": {
+  "M1": {
+   "accent": "british accent",
+   "pitch": "very low pitch",
+   "age": "elderly",
+   "gender": "male"
+  },
+  "M2": {
+   "accent": "british accent",
+   "pitch": "very low pitch",
+   "age": "middle-aged",
+   "gender": "male"
+  },
+  "M3": {
+   "accent": "british accent",
+   "pitch": "low pitch",
+   "age": "elderly",
+   "gender": "male"
+  },
+  "M4": {
+   "accent": "british accent",
+   "pitch": "low pitch",
+   "age": "middle-aged",
+   "gender": "male"
+  },
+  "M5": {
+   "accent": "british accent",
+   "pitch": "low pitch",
+   "age": null,
+   "gender": "male"
+  },
+  "M6": {
+   "accent": "british accent",
+   "pitch": "moderate pitch",
+   "age": "elderly",
+   "gender": "male"
+  },
+  "M7": {
+   "accent": "british accent",
+   "pitch": "moderate pitch",
+   "age": "middle-aged",
+   "gender": "male"
+  },
+  "M8": {
+   "accent": "british accent",
+   "pitch": "moderate pitch",
+   "age": null,
+   "gender": "male"
+  },
+  "M9": {
+   "accent": "british accent",
+   "pitch": "high pitch",
+   "age": "middle-aged",
+   "gender": "male"
+  },
+  "M10": {
+   "accent": "british accent",
+   "pitch": "high pitch",
+   "age": "elderly",
+   "gender": "male"
+  },
+  "F1": {
+   "accent": "british accent",
+   "pitch": "very low pitch",
+   "age": "elderly",
+   "gender": "female"
+  },
+  "F2": {
+   "accent": "british accent",
+   "pitch": "very low pitch",
+   "age": "middle-aged",
+   "gender": "female"
+  },
+  "F3": {
+   "accent": "british accent",
+   "pitch": "low pitch",
+   "age": "elderly",
+   "gender": "female"
+  },
+  "F4": {
+   "accent": "british accent",
+   "pitch": "low pitch",
+   "age": "middle-aged",
+   "gender": "female"
+  },
+  "F5": {
+   "accent": "british accent",
+   "pitch": "low pitch",
+   "age": null,
+   "gender": "female"
+  },
+  "F6": {
+   "accent": "british accent",
+   "pitch": "moderate pitch",
+   "age": "elderly",
+   "gender": "female"
+  },
+  "F7": {
+   "accent": "british accent",
+   "pitch": "moderate pitch",
+   "age": "middle-aged",
+   "gender": "female"
+  },
+  "F8": {
+   "accent": "british accent",
+   "pitch": "moderate pitch",
+   "age": null,
+   "gender": "female"
+  },
+  "F9": {
+   "accent": "british accent",
+   "pitch": "high pitch",
+   "age": "middle-aged",
+   "gender": "female"
+  },
+  "F10": {
+   "accent": "british accent",
+   "pitch": "high pitch",
+   "age": "elderly",
+   "gender": "female"
+  }
+ },
+ "intended_register_and_age_not_sent_to_model": {
+  "M1": "bass-baritone/deep baritone, sixties-seventies",
+  "M2": "deep baritone, fifties",
+  "M3": "baritone, sixties-seventies",
+  "M4": "baritone, forties-fifties",
+  "M5": "baritone, age left to the model",
+  "M6": "light baritone, sixties",
+  "M7": "light baritone, forties-fifties",
+  "M8": "light baritone, age left to the model",
+  "M9": "tenor, fifties",
+  "M10": "tenor, sixties-seventies",
+  "F1": "contralto, sixties-seventies",
+  "F2": "contralto, fifties",
+  "F3": "alto, sixties-seventies",
+  "F4": "alto, forties-fifties",
+  "F5": "alto, age left to the model",
+  "F6": "mezzo-soprano, sixties",
+  "F7": "mezzo-soprano, forties-fifties",
+  "F8": "mezzo-soprano, age left to the model",
+  "F9": "soprano, forties-fifties",
+  "F10": "soprano, sixties-seventies"
+ }
+}

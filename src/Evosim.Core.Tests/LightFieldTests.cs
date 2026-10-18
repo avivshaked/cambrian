@@ -289,5 +289,86 @@ namespace Evosim.Core.Tests
 
             Assert.True(seen.Count > 100, $"the sun took only {seen.Count} distinct values over a day");
         }
+
+        [Fact]
+        public void TheSeasonTimesTheDayIsMeanPreservingOverOneSeason()
+        {
+            // The product's cross term averages to zero only over a whole number of days, so the
+            // season is ten days here and the mean of the product over it is 1.
+            var model = new LightModel(100f, 12f)
+            {
+                DayNightAmplitude = 0.6f, DayLengthSeconds = 200f,
+                SeasonAmplitude = 0.5f, SeasonLengthSeconds = 2000f,
+            };
+
+            double sum = 0d;
+            const int Samples = 200000;
+
+            for (int i = 0; i < Samples; i++)
+            {
+                sum += model.DayFactorAt(i * (2000.0 / Samples));
+            }
+
+            Assert.Equal(1d, sum / Samples, 3);
+        }
+
+        [Fact]
+        public void ZeroSeasonAmplitudeIsTheDayOnlyWorldBitForBit()
+        {
+            var model = new LightModel(100f, 12f)
+            {
+                DayNightAmplitude = 0.7f, DayLengthSeconds = 200f,
+                SeasonAmplitude = 0f, SeasonLengthSeconds = 1234f,
+            };
+            var off = new LightModel(100f, 12f) { DayNightAmplitude = 0f };
+
+            for (int i = 0; i < 5000; i++)
+            {
+                double t = i * 3.137;
+                float old = (float)(1.0 + 0.7f * Math.Sin(2.0 * Math.PI * t / 200f));
+                Assert.Equal(BitConverter.SingleToInt32Bits(old),
+                    BitConverter.SingleToInt32Bits(model.DayFactorAt(t)));
+                Assert.Equal(1f, off.DayFactorAt(t));
+            }
+        }
+
+        [Fact]
+        public void ASeasonOutOfRangeOrOfNoLengthIsRefused()
+        {
+            var model = new LightModel(100f, 12f);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => model.SeasonAmplitude = -0.1f);
+            Assert.Throws<ArgumentOutOfRangeException>(() => model.SeasonAmplitude = 1.1f);
+            Assert.Throws<ArgumentOutOfRangeException>(() => model.SeasonAmplitude = float.NaN);
+            Assert.Throws<ArgumentOutOfRangeException>(() => model.SeasonLengthSeconds = 0f);
+            Assert.Throws<ArgumentOutOfRangeException>(() => model.SeasonLengthSeconds = -5f);
+            Assert.Throws<ArgumentOutOfRangeException>(() => model.SeasonLengthSeconds = float.PositiveInfinity);
+        }
+
+        [Fact]
+        public void AWorldRefusesASeasonThatIsNotWholeDaysAndAcceptsOneThatIs()
+        {
+            static RunConfig Stage(float seasonLength, float seasonAmplitude = 0.5f) => new RunConfig
+            {
+                MinimumPopulation = 12,
+                MaximumPopulation = 2_000,
+                WorldAreaSquareMetres = 100f,
+                WorldDepthMetres = 20f,
+                Light = new LightModel(64f, 12f)
+                {
+                    DayNightAmplitude = 0.5f, DayLengthSeconds = 200f,
+                    SeasonAmplitude = seasonAmplitude, SeasonLengthSeconds = seasonLength,
+                },
+            };
+
+            Assert.Throws<ArgumentException>(() => new World(Stage(2500f), seed: 1));
+            Assert.Throws<ArgumentException>(() => new World(Stage(200f), seed: 1));
+            Assert.Throws<ArgumentException>(() => new World(Stage(100f), seed: 1));
+
+            Assert.NotNull(new World(Stage(2000f), seed: 1));
+            Assert.NotNull(new World(Stage(400f), seed: 1));
+            // Season off: the ratio is not read.
+            Assert.NotNull(new World(Stage(2500f, seasonAmplitude: 0f), seed: 1));
+        }
     }
 }

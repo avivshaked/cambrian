@@ -2,9 +2,9 @@
 
 **2026-09-09 — Bodies that grow**
 
-**Status:** ruled by the owner, in conversation: the design on 2026-09-08 night ("love it!
-go ahead"), the five constants the build put in front of the owner on 2026-09-09 ("proceed
-with your recommendations"). Built in both halves and smoked the same day (logbook/0081);
+**Status:** ruled by the owner, in conversation: the design on 2026-09-08 night (the owner approved it and told the agent to go ahead), the five
+constants the build put in front of the owner on 2026-09-09 (the owner told the agent to proceed
+with its recommendations). Built in both halves and smoked the same day (logbook/0081);
 round 34 is its first round, after round 33 reads. Absorbs `fable-propose-growth.md`,
 deleted on ruling.
 

@@ -1,0 +1,14 @@
+{
+  "base": "rounds/nursery/brain2-w3.json",
+  "name": "brain2-w3-t16-hold",
+  "description": "The base for every nursery run from D152 on: brain2-w3 with sixteen bodies a tank (D150, the owner, 2026-10-05) and the water held 0.5 s (D152, Fluid.WaterHoldSeconds 0.5, the owner, 2026-10-06). The hold is a world override, as in the trial D152 was ruled on, so the world config stays brain2-w3's and only the episode config differs. brain2-w3 and the recipes built on it keep eight a tank and no hold, so they rerun as they ran.",
+  "world": {
+    "overrides": {
+      "Fluid.WaterHoldSeconds": 0.5,
+      "WorkCostMultiplier": 0.5
+    }
+  },
+  "setup": {
+    "tankSize": 16
+  }
+}

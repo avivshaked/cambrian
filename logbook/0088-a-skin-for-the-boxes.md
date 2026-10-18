@@ -2,8 +2,8 @@
 
 **2026-09-10**  ·  the theatre's first skin, built in an afternoon from a reading of how others made boxes look alive; what it changed and what it cannot show
 
-The owner's ask, after the first pictures: "how about we give them some skins that would
-make them look more biological? break that harsh geometric look", and skin in both senses,
+The owner's ask, after the first pictures, was for skins that would
+make the bodies look more biological and break the harsh geometric look, and skin in both senses,
 the tissue and the graphical layer. A short reading was done first
 (`research/theatre-look/README.md`): what Sims, Framsticks, Keiwan's Evolution, Species,
 the Bibites and Slug Disco's Ecosystem did about boxy bodies; what shading is cheap enough

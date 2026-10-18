@@ -166,6 +166,15 @@ namespace Evosim.Core
         private readonly bool _shoreOn;
         private readonly double _shoalHeight;
 
+        // The sum of every mode's |amplitude|, m: the most the cosine bands can add to the plane
+        // anywhere. HeightUpperBound's, set once the amplitudes are final.
+        private readonly double _amplitudeSum;
+
+        // The two bounds' own allowance for rounding, relative: a hundred thousand times what the
+        // sum of fourteen terms can round by, so that a bound in real numbers stays one on the
+        // doubles HeightAndGradient actually returns.
+        private const double BoundSlack = 1e-9;
+
         /// <summary>The depths the shelf's area is read within, m — the beach spec's three bands.</summary>
         /// <remarks>
         /// 6 m is the top of the lit band, 12 m the founders' depth and the islands', 24 m the
@@ -273,6 +282,21 @@ namespace Evosim.Core
 
         /// <summary>Whether the slope bound cut the relief below <see cref="ReliefMetres"/>.</summary>
         public bool SlopeBoundBinds { get; }
+
+        /// <summary>
+        /// A bound on the floor's slope <c>|grad h|</c> that holds at every place, inside the disc
+        /// and out, the shoal included: the tilt and every mode's <c>|a k|</c> added up, axis by
+        /// axis. 0 for the flat bed.
+        /// </summary>
+        /// <remarks>
+        /// <b>Sound and loose, where <see cref="SteepestTotalSlopeRadians"/> is a reading.</b> That
+        /// one is measured on the lattice and can miss a steeper point between columns; this one
+        /// cannot be exceeded, because no cosine's derivative is larger than its amplitude times
+        /// its wavenumber, and it allows for rounding besides. It is for a reader that skips the
+        /// floor where the floor cannot reach (<c>ContactBed.Push</c>, 2026-10-03), and it is
+        /// larger than any slope the map has.
+        /// </remarks>
+        public double SteepestSlopeBound { get; }
 
         /// <summary>
         /// Hollows on the disc — spec item 4's count, the smoke prints it. Counted on the bands
@@ -700,6 +724,20 @@ namespace Evosim.Core
 
             _offset = sum / columns;
 
+            // The two sound bounds (SteepestSlopeBound, HeightUpperBound), from the final
+            // amplitudes: a mode adds at most |a| to the height and |a k| to the slope.
+            double amplitudeSum = 0d, slopeX = Math.Abs(_tiltX), slopeZ = Math.Abs(_tiltZ);
+            for (int m = 0; m < modes; m++)
+            {
+                double a = Math.Abs(_amplitude[m]);
+                amplitudeSum += a;
+                slopeX += a * Math.Abs(_kx[m]);
+                slopeZ += a * Math.Abs(_kz[m]);
+            }
+
+            _amplitudeSum = amplitudeSum;
+            SteepestSlopeBound = Math.Sqrt(slopeX * slopeX + slopeZ * slopeZ) * (1d + BoundSlack);
+
             // ------------------------------------------------------------------ what it came to
 
             double low2 = double.MaxValue, high2 = double.MinValue;
@@ -918,6 +956,48 @@ namespace Evosim.Core
 
         /// <summary>The floor's height in the world at a place, m: <c>−depth + <see cref="Height"/></c>.</summary>
         public double FloorY(double x, double z) => -(double)DepthMetres + Height(x, z);
+
+        /// <summary>
+        /// A height the floor cannot be above at a place, m, found without a cosine: the plane
+        /// plus every mode at its crest, capped at the shoal. NaN where it bounds nothing, which is
+        /// a place that is not finite.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Sound against the doubles <see cref="Height"/>, <see cref="HeightAndGradient"/> and
+        /// <see cref="HeightGradientAndHessian"/> return</b>, not only against the real map: the
+        /// plane is the same two products of the same differences, and the allowance for rounding
+        /// is a millionth of a millionth of a metre per metre of the terms' size, against the
+        /// sixteen-odd roundings of the sum. The shoal caps every height the three return, so it
+        /// caps this.
+        /// </para>
+        /// <para>
+        /// <b>What it is for.</b> <c>ContactBed.Push</c> asks it first and skips the twelve modes
+        /// where a sphere is clear of the highest floor the place could have, which is most of the
+        /// water column (2026-10-03, <c>logbook/specs/farm-physics-speed-read.md</c> P3). Loose by
+        /// the bands' whole amplitude, and only ever used to say no.
+        /// </para>
+        /// </remarks>
+        public double HeightUpperBound(double x, double z)
+        {
+            if (!HasRelief) return 0d;
+
+            double dx = x - _radius;
+            double dz = z - _radius;
+            double px = _tiltX * dx;
+            double pz = _tiltZ * dz;
+
+            double top = px + pz - _offset + _amplitudeSum +
+                         BoundSlack * (Math.Abs(px) + Math.Abs(pz) + Math.Abs(_offset) + _amplitudeSum);
+
+            // A coordinate that is not finite makes the plane infinite or NaN, and the map there
+            // NaN: nothing bounds it, and a caller's comparison with NaN fails, as it should.
+            if (double.IsNaN(top) || double.IsInfinity(top)) return double.NaN;
+
+            if (_shoreOn && top > _shoalHeight) return _shoalHeight;
+
+            return top;
+        }
 
         /// <summary>The map's slope at a place: <c>∂h/∂x</c> and <c>∂h/∂z</c>, dimensionless.</summary>
         public (double X, double Z) Gradient(double x, double z)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Evosim.Core;
 
@@ -153,6 +153,9 @@ namespace Evosim.Dynamics
         /// <summary>Evolved peak torque per link, N·m — <see cref="PhenotypePart.Power"/>.</summary>
         public readonly double[] Power;
 
+        /// <summary>Each link's drive genes (threshold and envelope), from its part.</summary>
+        public readonly DriveGenes[] JointGenes;
+
         // ---------------------------------------------------------------- drag panels
 
         /// <summary>Where link <i>i</i>'s panels start. Length <c>Links + 1</c>.</summary>
@@ -163,6 +166,17 @@ namespace Evosim.Dynamics
         public double[] PanelCentre;
         public double[] PanelNormal;
         public double[] PanelArea;
+
+        /// <summary>
+        /// D161's spin form: for each link and each of its own three axes <i>k</i>, the sum over its
+        /// panels of the area times the cube of the panel centre's distance from axis <i>k</i>
+        /// through the link's origin, m^5. 3 per link, in the link's frame.
+        /// </summary>
+        /// <remarks>
+        /// Written beside the panels by <c>WritePanels</c>, so a resize keeps it current. Read
+        /// only under <see cref="TurningDragForm.Spin"/>.
+        /// </remarks>
+        public readonly double[] SpinMoment;
 
         // ---------------------------------------------------------------- state
 
@@ -243,6 +257,9 @@ namespace Evosim.Dynamics
         public readonly EffectorDrive Drive;
         // Public so the parity probe can read what the brain was handed and what it emitted.
         public readonly float[] DriveSignal;
+
+        /// <summary>The brain's second output per degree of freedom, the bend (propose-joint-drive.md).</summary>
+        public readonly float[] BendSignal;
         public readonly CreatureSenses Senses;
 
         // ---------------------------------------------------------------- contact state
@@ -270,6 +287,14 @@ namespace Evosim.Dynamics
         private Vec3 _pendingVelocity;
         private bool _pendingActive = true;
 
+        // Whether the pending sphere is a step's own and still waits to be committed. The step
+        // sets it on its way out (DynamicsWorld.StepOne) and the next grid build commits it
+        // (ContactGrid.Build, BuildLinks), so the commit costs no pass of its own; anything that
+        // reads the committed sphere between the two calls EnsureContactCommitted first. A write
+        // to the pending sphere between steps commits the step's own first, which keeps the
+        // committed sphere what the commit at the foot of the step used to leave.
+        private bool _commitDue;
+
         // Per-part contact, D114 (logbook/specs/per-part-contact-spec.md): a sphere on every link,
         // committed and pending exactly as the body's is and for the same reason. Null unless the
         // world asked for it, so a recorded world's body carries nothing new and its path adds no
@@ -288,6 +313,24 @@ namespace Evosim.Dynamics
         private double[] _pendingLinkCentre;
         private double[] _pendingLinkRadius;
         private double[] _pendingLinkVelocity;
+
+        // The touch of the rock, per link: written by the link's own contact pass and read by the
+        // next step's senses (and, from step 4, by the grip). Null unless SolverConfig.RockTouch.
+
+        /// <summary>
+        /// Whether each link's sphere was against the bed or a reef in the last contact pass; null
+        /// unless <see cref="SolverConfig.RockTouch"/>.
+        /// </summary>
+        public bool[] RockTouched;
+
+        /// <summary>
+        /// Where each touching link met the rock, 3 per link: the point of its sphere deepest along
+        /// the rock's normal. Meaningful only where <see cref="RockTouched"/> is true.
+        /// </summary>
+        public double[] RockPoint;
+
+        /// <summary>The rock's outward normal at that point, 3 per link, unit length.</summary>
+        public double[] RockNormal;
 
         /// <summary>Whether this body carries a contact sphere per link — the world's D114 switch.</summary>
         public bool LinkContactActive => LinkContactRadius != null;
@@ -334,12 +377,14 @@ namespace Evosim.Dynamics
             PlainMass = new double[Links];
             InertiaLocal = new double[3 * Links];
             SmallestInertia = new double[Links];
+            SpinMoment = new double[3 * Links];
             Volume = new double[Links];
             Lift = new double[Links];
             BuoyancyOffset = new double[Links];
             ThinAxis = new int[Links];
             BuoyancyArm = new double[Links];
             Power = new double[Links];
+            JointGenes = new DriveGenes[Links];
 
             ChildAnchor = new double[3 * Links];
             ParentAnchor = new double[3 * Links];
@@ -412,6 +457,7 @@ namespace Evosim.Dynamics
 
             Brain = Brain.For(phenotype);
             DriveSignal = new float[System.Math.Max(1, Brain.TotalDof)];
+            BendSignal = new float[System.Math.Max(1, Brain.TotalDof)];
             Drive = new EffectorDrive(this, config);
             Senses = new CreatureSenses(this, config);
 
@@ -427,6 +473,21 @@ namespace Evosim.Dynamics
                 _pendingLinkRadius = new double[Links];
                 _pendingLinkVelocity = new double[3 * Links];
             }
+
+            if (config.RockTouch)
+            {
+                if (!config.ContactPerPart)
+                {
+                    throw new System.ArgumentException(
+                        "SolverConfig.RockTouch needs ContactPerPart: the touch is read on each link's own sphere.");
+                }
+
+                RockTouched = new bool[Links];
+                RockPoint = new double[3 * Links];
+                RockNormal = new double[3 * Links];
+            }
+
+            InitGrip(phenotype, config);   // D162 — Creature.Grip.cs
 
             Kinematics.Refresh(this);
             RefreshContactSphere();
@@ -484,6 +545,8 @@ namespace Evosim.Dynamics
         /// </remarks>
         public void RefreshContactSphere()
         {
+            EnsureContactCommitted();
+
             Vec3 centre = Vec3.Read(Position, 0);
             double radius = 0;
             Vec3 momentum = Vec3.Zero;
@@ -544,13 +607,15 @@ namespace Evosim.Dynamics
         /// <summary>Takes a body the solver has lost out of everyone else's contact set.</summary>
         public void MarkLost()
         {
+            EnsureContactCommitted();
+
             _pendingActive = false;
             _pendingRadius = 0;
 
             if (_pendingLinkRadius != null) Array.Clear(_pendingLinkRadius, 0, Links);
         }
 
-        /// <summary>Makes this step's sphere the one other bodies will read. Serial, between steps.</summary>
+        /// <summary>Makes this step's sphere the one other bodies will read. Between steps.</summary>
         public void CommitContactSphere()
         {
             ContactCentre = _pendingCentre;
@@ -564,7 +629,42 @@ namespace Evosim.Dynamics
                 Array.Copy(_pendingLinkRadius, LinkContactRadius, Links);
                 Array.Copy(_pendingLinkVelocity, LinkContactVelocity, 3 * Links);
             }
+
+            _commitDue = false;
         }
+
+        /// <summary>
+        /// Commits the last step's sphere if it has not been committed yet: what a reader of
+        /// <see cref="ContactCentre"/>, <see cref="ContactRadius"/>, <see cref="ContactVelocity"/>,
+        /// <see cref="ContactActive"/> or the link spheres calls between steps.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The commit is folded into the next step's grid build</b> (2026-10-03,
+        /// <c>logbook/specs/farm-physics-speed-read.md</c> P1). Until then it was a pass of its
+        /// own at the foot of every step, one fork-join over every body for a few hundred bytes
+        /// each, 8 to 12% of round 49's physics. So between the end of a step and the next grid
+        /// build the committed sphere is the one the step <i>started</i> from, and a reader there
+        /// (the checkpoint writer, the divergence guard's default radius, a step backend, a test)
+        /// commits first. The numbers it then reads are the ones the old commit left.
+        /// </para>
+        /// <para>
+        /// <b>Never inside the parallel phase.</b> Other bodies read this body's committed sphere
+        /// while it is being stepped; a commit there is the thread-count dependence the pending
+        /// twin exists to prevent. Nothing in a step calls this with the flag set: the grid build
+        /// before it has cleared every flag, and the step sets it only on the way out.
+        /// </para>
+        /// </remarks>
+        public void EnsureContactCommitted()
+        {
+            if (_commitDue) CommitContactSphere();
+        }
+
+        /// <summary>
+        /// Marks the sphere this step left as waiting for the next grid build's commit. The
+        /// step's own, on its way out.
+        /// </summary>
+        internal void MarkContactCommitDue() => _commitDue = true;
 
         /// <summary>
         /// Rebuilds the per-link spheres after a checkpoint restore, pending and committed.

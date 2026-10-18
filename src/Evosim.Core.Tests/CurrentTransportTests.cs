@@ -218,8 +218,8 @@ namespace Evosim.Core.Tests
 
                 Assert.Equal((double)speed, rms, 0.05 * speed);
 
-                // The owner's ruling of 2026-09-10: "up and down, left and right, in all
-                // directions really". The first build read x 0.027, y 0.297, z 0.027 at this knob,
+                // The owner's ruling of 2026-09-10: the water moves a body up and down, left and right, in all
+                // directions alike. The first build read x 0.027, y 0.297, z 0.027 at this knob,
                 // which is a lift and a fall and almost nothing sideways, because a mode with
                 // wavelengths of the order of the box on every axis is a tall thin eddy. The
                 // vertical mode number is chosen per mode to make each eddy round instead, and

@@ -1,0 +1,104 @@
+The leaf tank's second pair (D173), read on 2026-10-14 (logbook/specs/nursery-leaf-tank-plan.md, step 11).
+Arms: leaf-strength-sparse and leaf-direction-sparse at 9f3cd064, 31 leaves, reach 6 m, D172's stop (cap 60) and exam of the tops.
+From 21:39 on 8 cores each (16-23, 24-31); narrowed at 22:39 to 4 each (24-27, 28-31) after the CPU reached 92 C. The results do not depend on the cores.
+
+== The curves: scripts/reads/tank-side-by-side.py ==
+generations 0 to 32, which every arm swam; per arm: eaten, eaten over 5, top score, kills, meals
+gen  leaf-strength-sparse                      leaf-direction-sparse                   
+  0     48.3       -   192.7  1.18  0.88          47.9       -   149.3  1.14  0.87     
+  1     67.1       -   208.7  1.24  1.22          49.1       -   140.1  1.13  0.88     
+  2     93.7       -   237.6  1.48  1.70          36.4       -   150.2  1.15  0.67     
+  3    107.1       -   264.3  1.62  1.92          65.2       -   164.6  1.29  1.19     
+  4    125.3    88.3   362.8  1.51  2.26          54.1    50.5   212.2  1.14  0.98     
+  5    120.8   102.8   290.2  1.57  2.20          57.3    52.4   194.7  1.26  1.04     
+  6    135.1   116.4   329.4  1.72  2.43          86.2    59.8   266.2  1.51  1.56     
+  7    126.1   122.9   370.9  1.72  2.29          75.3    67.6   248.6  1.43  1.37     
+  8    126.3   126.7   430.2  1.64  2.27         111.1    76.8   333.9  1.55  2.00     
+  9    150.2   131.7   466.8  1.72  2.71         116.8    89.4   454.7  1.68  2.11     
+ 10    133.6   134.3   343.0  1.82  2.45         132.6   104.4   369.9  1.86  2.40     
+ 11    140.5   135.3   347.5  1.78  2.54         191.1   125.4   462.4  2.14  3.47     
+ 12    154.2   141.0   380.1  1.87  2.84         219.2   154.2   436.3  2.32  3.96     
+ 13    159.1   147.5   493.6  1.79  2.90         227.3   177.4   588.7  2.51  4.09     
+ 14    149.8   147.5   332.8  1.92  2.72         268.6   207.8   632.6  2.57  4.82     
+ 15    144.0   149.5   345.4  1.76  2.61         273.5   235.9   789.2  2.47  4.89     
+ 16    176.0   156.6   361.0  1.93  3.17         299.4   257.6   604.9  2.73  5.40     
+ 17    183.7   162.5   537.1  2.01  3.34         251.3   264.0   541.0  2.64  4.50     
+ 18    174.4   165.6   524.9  1.98  3.17         267.7   272.1   621.5  2.69  4.80     
+ 19    182.8   172.2   425.4  1.83  3.28         300.3   278.4   700.5  2.62  5.39     
+ 20    181.0   179.6   421.3  1.97  3.25         322.3   288.2   625.9  2.75  5.78     
+ 21    204.3   185.2   601.1  1.98  3.67         312.6   290.8   543.7  2.66  5.60     
+ 22    175.3   183.6   424.2  1.98  3.15         333.0   307.2   613.4  2.76  5.98     
+ 23    195.3   187.8   386.8  2.09  3.49         326.3   318.9   714.5  2.68  5.85     
+ 24    182.3   187.7   480.8  2.04  3.27         308.7   320.6   558.8  2.83  5.55     
+ 25    191.6   189.8   745.3  2.04  3.44         320.9   320.3   694.8  2.76  5.76     
+ 26    181.4   185.2   493.4  2.11  3.27         319.2   321.6   562.5  2.80  5.73     
+ 27    218.9   193.9   622.9  2.16  3.94         313.6   317.7   720.1  2.81  5.66     
+ 28    175.2   189.9   482.4  1.94  3.16         339.3   320.3   699.2  2.81  6.09     
+ 29    193.4   192.1   462.8  2.10  3.49         317.6   322.1   753.7  2.72  5.70     
+ 30    210.9   196.0   474.6  1.97  3.78         325.0   322.9   599.7  2.68  5.84     
+ 31    194.1   198.5   429.7  2.09  3.49         302.4   319.6   631.1  2.77  5.46     
+ 32    185.3   191.8   455.6  2.09  3.36         332.4   323.3   611.3  2.77  5.97     
+leaf-strength-sparse: last generation written 32, stopped on the rule
+leaf-direction-sparse: last generation written 33, stopped on the rule
+
+== leaf-strength-sparse: the stop and the exam (nursery.log) ==
+  the search stops after generation 32: eaten, averaged over 5 generations, gained no more than 5 % in 10 (D172)
+  the exam's pool (D172): 33 tops and the last generation's elites, 35 genomes once each
+exam: 35 genomes under 3 brains, tanks of 8, 32 draws on held-out seeds (salt 422608528232), 1800 s, snow 0 J/m3, work cost 0.5, purse grown
+  own                      net -2065.68 J, against own (score) +0.00 (se 0.00), alive 89 %, work 0.207 W, path 183.8 m, turn 0.023 rad/s, eaten 175.9 J, snow at the body 0.18 J/m3, 15.9 min
+  brainless                net -1688.75 J, against own (score) -135.09 (se 10.63), alive 97 %, work 0.000 W, path 152.9 m, turn 0.010 rad/s, eaten 40.8 J, snow at the body 0.14 J/m3, 32.7 min
+  knockout LeafScent       net -2031.35 J, against own (score) -26.35 (se 9.67), alive 88 %, work 0.158 W, path 173.6 m, turn 0.018 rad/s, eaten 149.5 J, snow at the body 0.17 J/m3, 49.0 min
+
+== leaf-strength-sparse's exam by where its genomes came from: scripts/reads/tops-exam-read.py ==
+scratch/wt-nursery-d172/runs/nursery/leaf-strength-sparse: 35 genomes under own, brainless, knockout LeafScent
+  best: g18.25 (tops [18]) own 293.9 J, knockout 131.7 J
+  best: g32.5 (tops [], elite) own 289.3 J, knockout 179.0 J
+  best: g13.12 (tops [13]) own 267.1 J, knockout 192.7 J
+  best: g27.33 (tops [27]) own 263.1 J, knockout 140.8 J
+  best: g29.44 (tops [29]) own 233.8 J, knockout 237.0 J
+  tops first from generations 0-9 (10): own 122.5, brainless 41.0, knockout LeafScent 102.9; knockout cost -19.6 J (se 17.1)
+  tops first from generations 10-19 (9): own 194.3, brainless 36.6, knockout LeafScent 158.4; knockout cost -35.9 J (se 19.7)
+  tops first from generations 20-on (11): own 197.1, brainless 46.5, knockout LeafScent 174.6; knockout cost -22.5 J (se 19.0)
+  last elites (8): own 192.2, brainless 41.0, knockout LeafScent 188.7; knockout cost -3.4 J (se 22.8)
+
+== leaf-direction-sparse: the stop and the exam (nursery.log) ==
+  the search stops after generation 33: eaten, averaged over 5 generations, gained no more than 5 % in 10 (D172)
+  the exam's pool (D172): 34 tops and the last generation's elites, 38 genomes once each
+exam: 38 genomes under 3 brains, tanks of 8, 32 draws on held-out seeds (salt 422608528232), 1800 s, snow 0 J/m3, work cost 0.5, purse grown
+  own                      net -1952.62 J, against own (score) +0.00 (se 0.00), alive 91 %, work 0.205 W, path 203.6 m, turn 0.032 rad/s, eaten 261.4 J, snow at the body 0.22 J/m3, 15.5 min
+  brainless                net -1683.66 J, against own (score) -195.68 (se 19.54), alive 97 %, work 0.012 W, path 159.0 m, turn 0.012 rad/s, eaten 65.7 J, snow at the body 0.15 J/m3, 32.2 min
+  knockout LeafScent,LeafScentDirection net -2024.79 J, against own (score) -91.70 (se 14.97), alive 92 %, work 0.206 W, path 201.4 m, turn 0.032 rad/s, eaten 169.7 J, snow at the body 0.19 J/m3, 48.5 min
+
+== leaf-direction-sparse's exam by where its genomes came from: scripts/reads/tops-exam-read.py ==
+scratch/wt-nursery-d172/runs/nursery/leaf-direction-sparse: 38 genomes under own, brainless, knockout LeafScent,LeafScentDirection
+  best: g33.47 (tops [33], elite) own 443.1 J, knockout 239.1 J
+  best: g22.27 (tops [22]) own 437.3 J, knockout 223.5 J
+  best: g33.30 (tops [], elite) own 434.1 J, knockout 127.6 J
+  best: g33.37 (tops [], elite) own 423.1 J, knockout 276.5 J
+  best: g31.19 (tops [31, 32], elite) own 420.0 J, knockout 170.9 J
+  tops first from generations 0-9 (10): own 83.0, brainless 39.4, knockout LeafScent,LeafScentDirection 80.6; knockout cost -2.4 J (se 9.5)
+  tops first from generations 10-19 (9): own 321.4, brainless 67.3, knockout LeafScent,LeafScentDirection 168.3; knockout cost -153.0 J (se 19.8)
+  tops first from generations 20-on (13): own 323.7, brainless 81.8, knockout LeafScent,LeafScentDirection 218.4; knockout cost -105.3 J (se 23.9)
+  last elites (8): own 358.2, brainless 72.8, knockout LeafScent,LeafScentDirection 212.2; knockout cost -146.1 J (se 39.5)
+
+== Re-step of leaf-direction-sparse's exam, episode 0, tank 0, own brains, EVOSIM_TANK_TRACE=1; every net equals tank-exam.jsonl's ==
+trace corpses seed 51394: from leaves 18 (7487.2 J), from members 0 (0.0 J), other 0 (0.0 J); bodies eaten 18, corpses from kills 18, corpses eaten 5, module drops 0, carrion placed 0, members' mouths kept 3066.5 J
+trace world: deaths 18, by age 0, parts killed by mouths 0, diverged 0
+trace seed 51394: body 0 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 1406.5 J, died NaN, food 33.1, eaten 0.0, work 576.5, upkeep 1684.8, handling 4.1, exuded 0.0, path 244.1 m, turn 0.041 rad/s, y0 -9.95
+trace seed 51394: body 1 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 1934.9 J, died NaN, food 45.0, eaten 528.9, work 587.4, upkeep 1684.8, handling 5.6, exuded 0.0, path 229.0 m, turn 0.043 rad/s, y0 -16.72
+trace seed 51394: body 2 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 2110.1 J, died NaN, food 33.2, eaten 403.2, work 275.6, upkeep 1684.8, handling 4.2, exuded 0.0, path 197.5 m, turn 0.020 rad/s, y0 -11.67
+trace seed 51394: body 3 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 2256.7 J, died NaN, food 73.7, eaten 809.6, work 571.5, upkeep 1684.8, handling 9.2, exuded 0.0, path 266.4 m, turn 0.035 rad/s, y0 -8.47
+trace seed 51394: body 4 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 1616.0 J, died NaN, food 24.8, eaten 0.0, work 359.1, upkeep 1684.8, handling 3.1, exuded 0.0, path 221.1 m, turn 0.035 rad/s, y0 -12.01
+trace seed 51394: body 5 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 1932.1 J, died NaN, food 41.2, eaten 576.0, work 634.0, upkeep 1684.8, handling 5.1, exuded 0.0, path 265.4 m, turn 0.055 rad/s, y0 -11.58
+trace seed 51394: body 6 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 1782.8 J, died NaN, food 43.0, eaten 345.6, work 553.8, upkeep 1684.8, handling 5.4, exuded 0.0, path 236.8 m, turn 0.048 rad/s, y0 -13.46
+trace seed 51394: body 7 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 1800.3 J, died NaN, food 33.6, eaten 403.2, work 585.7, upkeep 1684.8, handling 4.2, exuded 0.0, path 264.7 m, turn 0.045 rad/s, y0 -9.06
+
+== What this pair does not separate ==
+It changed two things against the first pair at once, the leaf count (62 to 31) and the smell's reach (3 to 6 m), so it
+does not say which of the two made the nose pay. A pair at 31 leaves and 3 m would separate them (or 62 leaves at 6 m).
+Its wall time, estimated from this pair's pace (a 3 m reach fills less of the smell field, so these are upper bounds):
+- on 8 cores each: 2.4-2.9 min a generation. Stopping where this pair did (generation 32-33), about 1.5 h, and an exam
+  of about 35 genomes, about 420 tanks, about 25 min: about 2 h. At the cap (61 generations and up to 69 genomes),
+  about 2.8 h and 50 min: about 3.6 h. On 8 cores each, this pair took the CPU to 92 C within half an hour.
+- on 4 cores each: about 5 min a generation and 15-16 min an exam brain. Stopping at 32-33, about 2.8 h and 50 min:
+  about 3.6 h. At the cap, about 5.1 h and 1.5 h: about 6.6 h.

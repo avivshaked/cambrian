@@ -1,10 +1,10 @@
 # The safari: a guide to a run's species, and a director that films them
 
 **2026-09-15**  ·  the third of the three tools of `video-tools-notes.md`. The owner's brief
-(2026-09-11) asked for a theatre feature, "without requiring ad-hoc intelligence": it finds
+(2026-09-11) asked for a theatre feature that works without requiring ad-hoc intelligence: it finds
 the species, visits the interesting ones, takes their pictures and explains each. On
-2026-09-15 the trip became material for YouTube videos, "both informative and cinematic in
-nature", with a click to start it and a click to record.
+2026-09-15 the trip became material for YouTube videos, to be both informative and cinematic in
+nature, with a click to start it and a click to record.
 
 It is theatre and scripts only, and it moves no hash. It is built after the timeline and the
 checkpoints, which it stands on. This goes in front of the owner before building.

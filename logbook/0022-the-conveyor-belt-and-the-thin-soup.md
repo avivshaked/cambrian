@@ -110,8 +110,8 @@ would end the run long before it.
 
 The human predicted this mechanism before any of it was measured.
 
-> *the world should have more and more material as entities die… as the world gets more populated
-> with food, then animals that consume the dead matter should start to be more common.*
+It was that the world should hold more and more material as entities die, and that animals that eat the dead
+matter should then grow more common.
 
 That is right, and it is what the pool does. The objection is to the constant in front of
 the mechanism rather than to the mechanism.

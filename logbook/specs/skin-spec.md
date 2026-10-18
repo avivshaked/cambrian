@@ -1,4 +1,4 @@
-# Build spec: the theatre's skin, first day (owner: "go ahead", 2026-09-10)
+# Build spec: the theatre's skin, first day (the owner told the agent to go ahead, 2026-09-10)
 
 Read `research/theatre-look/README.md` first, in full: it is the reading this build follows, and
 its "first day's cut" is this spec. Then `CLAUDE.md` (the theatre paragraph; the rule that

@@ -66,6 +66,50 @@ namespace Evosim.Farm
         /// </summary>
         public string Engine = EngineName;
 
+        /// <summary>
+        /// EVOSIM_TEST_CHECKPOINT_STALL_MS, the kill test's hook: 0 on every other run, whose
+        /// run.json then carries no field for it, so a run made with it is told apart from its
+        /// directory alone.
+        /// </summary>
+        public int TestCheckpointStallMs;
+
+        /// <summary>
+        /// DOTNET_ThreadPool_UnfairSemaphoreSpinLimit as this process's environment gave it to the runtime,
+        /// or null when unset, whose run.json then carries no field for it (card-next-r57.md Part 7, "The
+        /// thread pool's spin"). It moves the pace and never a number, so a pace reading names it.
+        /// </summary>
+        public string ThreadPoolSpinLimit;
+
+        /// <summary>
+        /// Every world's report in the group this world ran in (<c>--group</c> or <c>--pair</c>), in the
+        /// group's order and this world's own among them, or null for a world that ran alone, whose run.json
+        /// then carries no field for it. A world in a group shares Core's thread pool and, on the card, the
+        /// device with the others, so its pace is the group's and not a lone world's.
+        /// </summary>
+        public string Group;
+
+        /// <summary>
+        /// D159's exchange, in a migrating group only (0 elsewhere, and nothing written): every how
+        /// many simulated seconds this world sent <see cref="MigrateCount"/> genomes to
+        /// <see cref="MigrateTo"/> and planted as many from <see cref="MigrateFrom"/>.
+        /// </summary>
+        public double MigrateEverySeconds;
+
+        /// <summary>D159: how many genomes each world sends at an exchange.</summary>
+        public int MigrateCount;
+
+        /// <summary>
+        /// D159: this world's place in the group's order, from 0; the number an immigrant's
+        /// lineage row gives as <c>from</c> in the next world. -1 outside a migrating group.
+        /// </summary>
+        public int GroupPlace = -1;
+
+        /// <summary>D159: the report of the world this one sends to; null outside a migrating group.</summary>
+        public string MigrateTo;
+
+        /// <summary>D159: the report of the world this one receives from; null outside a migrating group.</summary>
+        public string MigrateFrom;
+
         /// <summary>The gpu engine's facts; null on the CPU, where run.json carries no gpu block.</summary>
         public GpuFacts Gpu;
 
@@ -449,6 +493,27 @@ namespace Evosim.Farm
             // What stepped the bodies, where the Unity build named its editor. The hash below is
             // what identifies the solver; this says which solver it is at all.
             w.Field("engine", m.Engine ?? RunManifest.EngineName);
+
+            // Beside the engine, and only when set, so every other run.json keeps its bytes: a run
+            // whose checkpoints were paused by the kill test's hook says so after its console is gone.
+            if (m.TestCheckpointStallMs > 0) w.Field("testCheckpointStallMs", m.TestCheckpointStallMs);
+
+            // The thread pool's spin, also only when set: a run.json written without it keeps its bytes.
+            if (m.ThreadPoolSpinLimit != null) w.Field("threadPoolSpinLimit", m.ThreadPoolSpinLimit);
+
+            // The group, the same way: a lone world's run.json keeps its bytes.
+            if (m.Group != null) w.Field("group", m.Group);
+
+            // D159's exchange, only in a migrating group, so every other run.json keeps its bytes.
+            if (m.MigrateEverySeconds > 0d)
+            {
+                w.Field("migrateEverySeconds", m.MigrateEverySeconds)
+                    .Field("migrateCount", m.MigrateCount)
+                    .Field("groupPlace", m.GroupPlace)
+                    .Field("migrateTo", m.MigrateTo)
+                    .Field("migrateFrom", m.MigrateFrom);
+            }
+
             w.Field("engineVersion", m.EngineVersion);
             w.Field("physicsDtSeconds", m.PhysicsStepSeconds);
             w.Field("metabolicStepSeconds", m.MetabolicStepSeconds);
@@ -488,6 +553,11 @@ namespace Evosim.Farm
                 w.Field("overflowOverlaps", g.OverflowOverlaps);
                 w.Field("overflowHeld", g.OverflowHeld);
                 w.Field("overflowEntries", g.OverflowEntries);
+
+                // Two worlds in one farm process on one device (card-next-r57.md, part 4): the other
+                // world's report. Written only by a world that shared, so every other run.json keeps
+                // the bytes it always had.
+                if (g.SharedProcessWith != null) w.Field("sharedProcessWith", g.SharedProcessWith);
                 w.EndObject();
             }
             w.Field("requestedSeconds", m.RequestedSeconds);
@@ -879,6 +949,9 @@ namespace Evosim.Farm
         public string ClassNeurons;
         public string KernelHash;
         public double CompileMs;
+
+        /// <summary>The other world's report path when two worlds stepped in one process on one device; null alone.</summary>
+        public string SharedProcessWith;
         public long RefusedForClass;
         public long NeuronsAtCeiling;
         public long NeuronsAtCeilingMost;
