@@ -8669,3 +8669,24 @@ whether today's picture is worth a pipeline that will not grow before anything i
 
 **Rejected.** A port in place on a branch of `unity/`, which would put the working theatre at risk for a question a
 spike answers.
+
+### D203
+**The dial search screens two dials in one group, and a dial that never overshoots goes back to its value** · 2026-10-18
+
+**Status:** ruled by the owner on 2026-10-18, who took the coordinator's recommendation. It amends D201's procedure and
+leaves its dials and their order as they were.
+
+**Decision.** The search's second group screens the consumer cell's upkeep at 0.75 W per cubic metre and the mouth's
+reach at 1.0 m, each in cousins of all three planted worlds, beside the unchanged cousins already run. The reach screens
+keep the consumer cell's upkeep at 6, so each dial is judged alone. The step at 1.5 is skipped: lower upkeep only helps
+the grazers, so if 0.75 does not overshoot, 1.5 cannot. A dial that never overshoots goes back to its starting value
+when the search moves on to the next.
+
+**Why.** Group 1 halved the consumer cell's upkeep to 3 and the grazers died out by 33,000 s in both arms, with the
+leaves at 0.92 to 1.04 of the unchanged cousins' (`logbook/specs/r62-dial-screens/`). The ledger puts the consumer cell at
+0.63 W of a grazer's 0.908 W, so even at nothing the rest of the body stands at 0.28 W, while founders kept at most
+0.06 to 0.08 W from their kills and only one in five killed at all. Lower costs lengthen a grazer's life and do not pay
+for it. What binds is how often a grazer kills, which the reach is the first dial to touch.
+
+**Rejected.** Halving the upkeep twice more as D201 reads, which would spend a group on an answer the arithmetic gives.
+Leaving dial A for the reach at once, which would leave its last step unscreened.

@@ -1,0 +1,46 @@
+== round 62's grazer dial screens: window 30000 < t <= 36000 s, every 1500 s
+
+==== pair: screen runs/r62d-a1-6101 | cousin runs/r62d-u-6101
+
+---- S (screen) r62d-a1-6101: seed 6101, planted pool, read to 36000 s; r62d-a1-6101/2026-10-18-184117-821c0ab1 <- r61-p6101/2026-10-16-185806-119d0f30
+     configHash 821c0ab1eecf5c3b (config.json 821c0ab1eecf5c3b)
+     run.json resumedFrom.sourceConfigHash: 119d0f3001f59ecc
+     resumedFrom r61-p6101/2026-10-16-185806-119d0f30 at 30000 s, checkpointHash d5a8f85cb09dbe56, sourceMismatch True
+     source run's configHash 119d0f3001f59ecc
+     joulesPerUnit 100, intakeWasteFraction 0.2, trickle 0/s, pool share 0
+     dials differing from the source's config.json (4): key: source -> this run
+       cellTypes[5].upkeepWattsPerCubicMetre: 6 -> 3
+       configHash: 119d0f3001f59ecc -> 821c0ab1eecf5c3b
+       population.foundingTricklePerSecond: 0.033333335 -> 0
+       population.foundingTricklePoolShare: 0.6 -> 0
+
+---- C (cousin) r62d-u-6101: seed 6101, planted pool, read to 36000 s; r62d-u-6101/2026-10-18-184117-5aca44eb <- r61-p6101/2026-10-16-185806-119d0f30
+     configHash 5aca44eb4a208648 (config.json 5aca44eb4a208648)
+     run.json resumedFrom.sourceConfigHash: 119d0f3001f59ecc
+     resumedFrom r61-p6101/2026-10-16-185806-119d0f30 at 30000 s, checkpointHash d5a8f85cb09dbe56, sourceMismatch True
+     source run's configHash 119d0f3001f59ecc
+     joulesPerUnit 100, intakeWasteFraction 0.2, trickle 0/s, pool share 0
+     dials differing from the source's config.json (3): key: source -> this run
+       configHash: 119d0f3001f59ecc -> 5aca44eb4a208648
+       population.foundingTricklePerSecond: 0.033333335 -> 0
+       population.foundingTricklePoolShare: 0.6 -> 0
+
+     screen's config against its cousin's (2 keys differ): key: cousin -> screen
+       cellTypes[5].upkeepWattsPerCubicMetre: 6 -> 3
+       configHash: 5aca44eb4a208648 -> 821c0ab1eecf5c3b
+
+     t   leaves   L/C |    gz gz>st gz>st.br  old    np np>st m+pho |  born  died   st/ea/ag/dv |  kills  leafK  corpseJ    keptJ   k/c
+ 30000 S   6991 1.000 |    19     0        0    0    16     0     3 |
+ 30000 C   6991     - |    19     0        0    0    16     0     3 |
+ 31500 S   8013 1.004 |     1     1        1    1     0     0     1 |     7    25      22/0/3/0 |     17     14      628      159  0.25
+ 31500 C   7979     - |     1     1        1    1     0     0     1 |     2    20      17/0/3/0 |     19     16      705      481  0.68
+ 33000 S   7776 0.964 |     0     0        0    0     0     0     0 |     0     1       1/0/0/0 |      0      0        0        0     -
+ 33000 C   8068     - |     1     1        1    1     0     0     1 |     0     0       0/0/0/0 |      0      0        0        0     -
+ 34500 S   7222 0.940 |     0     0        0    0     0     0     0 |     0     0       0/0/0/0 |      0      0        0        0     -
+ 34500 C   7683     - |     0     0        0    0     0     0     0 |     0     1       0/0/1/0 |      0      0        0        0     -
+ 36000 S   7221 0.915 |     0     0        0    0     0     0     0 |     0     0       0/0/0/0 |      0      0        0        0     -
+ 36000 C   7889     - |     0     0        0    0     0     0     0 |     1     1       1/0/0/0 |      0      0        0        0     -
+
+   leaves at 36000 s: screen 7221, cousin 7889, ratio 0.915: no overshoot (below 0.5)
+   END screen: grazers alive at 36000 s 0, bred after 30000 s 0 (born after 0; from lines 6000 s old or more 0); nopho 0, mouthed with pho 0
+   END cousin: grazers alive at 36000 s 0, bred after 30000 s 0 (born after 0; from lines 6000 s old or more 0); nopho 0, mouthed with pho 0
