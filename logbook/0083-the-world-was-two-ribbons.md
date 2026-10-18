@@ -6,8 +6,8 @@ The owner opened round 33 seed 3 in the theatre at midday, the first run the cur
 could replay, and the picture at 1,834 s was two vertical ribbons about a metre wide,
 running from the surface to twenty-five metres down, with nothing anywhere else in a box
 twenty metres long. Two hundred and eighty-six bodies, fifty of them eaters, in two
-columns. The owner's words: "what you have now is not a world. it's a weird 2d rules in a
-3d world."
+columns. The owner said that what the build had was not a world but weird 2D rules in a
+3D world.
 
 ## Why the world looks like that
 
@@ -66,7 +66,7 @@ reading them believed, and the reading must carry that from here.
 
 ## The fix, started the same hour
 
-The owner's ruling was "lets start the fix please", and the fix is dispersal. A newborn is
+The owner ruled that the fix should start, and the fix is dispersal. A newborn is
 placed at a point drawn uniformly over a horizontal disc of `OffspringDispersalMetres`
 around its parent, never closer than the two radii, wrapped at the seams, at the parent's
 depth, under the same free-spot test; at 0 the old rule runs unchanged so that every

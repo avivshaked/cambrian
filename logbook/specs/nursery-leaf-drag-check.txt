@@ -1,0 +1,106 @@
+The leaf tank's drag check (logbook/specs/nursery-leaf-tank-plan.md, step 6), read by scripts/reads/drag-read.py from a restep at 10 Hz of each bench's constant-power draw (power 0.5, bend centred, 300 s). Bodies 0 and 1 are the swimmer; 2 to 7 single stomachs (pool a326093a77658bdc). Columns: speed and level speed (m/s) and straight distance (m) from the second frame on; spin, the root's mean angular speed (rad/s); work, the ledger's (J); lost, reserve and tissue (J); the root's height range (m).
+
+Pass 1, 2026-10-13 01:13-01:17, start aboveBed 0.5 (near the bed), before 294c08a5 (the ledger's work reads 0):
+restep-off: {'index': 1, 'label': 'constant 0.5', 'kind': 'constant'}, 3000 frames at 10 Hz
+  slot body kind      speed  level  dist   spin    work   lost    y range
+     1    0 swimmer   0.066  0.060  15.7  0.005    0.00  282.5  -23.92 to -16.73
+     4    1 swimmer   0.043  0.043  10.6  0.004    0.00  282.5  -24.25 to -23.41
+     3    2 stomach   0.055  0.054   2.2  0.000    0.00   42.4  -24.90 to -23.90
+     6    3 stomach   0.043  0.043   3.4  0.000    0.00  107.8  -24.43 to -23.62
+     0    4 stomach   0.056  0.055  11.1  1.352    0.00   42.5  -24.35 to -22.80
+     2    5 stomach   0.018  0.018   3.1  0.000    0.00   43.8  -24.36 to -23.88
+     7    6 stomach   0.059  0.059   7.7  0.000    0.00  107.8  -24.48 to -23.18
+     5    7 stomach   0.050  0.049   2.4  2.519    0.00   42.5  -24.31 to -23.83
+restep-skin-0p05: {'index': 1, 'label': 'constant 0.5', 'kind': 'constant'}, 3000 frames at 10 Hz
+  slot body kind      speed  level  dist   spin    work   lost    y range
+     1    0 swimmer   0.068  0.063  16.0  0.004    0.00  282.5  -23.92 to -17.64
+     4    1 swimmer   0.040  0.039   9.9  0.003    0.00  282.5  -24.32 to -23.43
+     3    2 stomach   0.057  0.056   2.5  0.002    0.00   42.4  -24.80 to -23.89
+     6    3 stomach   0.044  0.044   3.6  0.002    0.00  107.8  -24.42 to -23.63
+     0    4 stomach   0.054  0.054  11.3  0.204    0.00   42.5  -24.35 to -22.89
+     2    5 stomach   0.018  0.018   2.6  0.002    0.00   43.8  -24.37 to -23.87
+     7    6 stomach   0.061  0.060   8.4  0.002    0.00  107.8  -24.49 to -23.01
+     5    7 stomach   0.057  0.057   3.0  0.249    0.00   42.5  -24.38 to -24.00
+restep-skin-0p5: {'index': 1, 'label': 'constant 0.5', 'kind': 'constant'}, 3000 frames at 10 Hz
+  slot body kind      speed  level  dist   spin    work   lost    y range
+     1    0 swimmer   0.069  0.062  15.9  0.003    0.00  282.5  -23.92 to -18.11
+     4    1 swimmer   0.042  0.041   4.7  0.002    0.00  282.5  -24.71 to -23.51
+     3    2 stomach   0.062  0.062   4.6  0.002    0.00   42.4  -24.54 to -23.98
+     6    3 stomach   0.050  0.050   5.1  0.002    0.00  107.8  -24.40 to -23.70
+     0    4 stomach   0.054  0.053  11.2  0.037    0.00   42.5  -24.36 to -22.98
+     2    5 stomach   0.021  0.021   1.0  0.002    0.00   43.8  -24.41 to -23.85
+     7    6 stomach   0.066  0.064  10.3  0.002    0.00  107.8  -24.54 to -21.95
+     5    7 stomach   0.061  0.060   4.4  0.039    0.00   42.5  -24.35 to -24.04
+restep-spin-0p05: {'index': 1, 'label': 'constant 0.5', 'kind': 'constant'}, 3000 frames at 10 Hz
+  slot body kind      speed  level  dist   spin    work   lost    y range
+     1    0 swimmer   0.066  0.060  15.7  0.005    0.00  282.5  -23.92 to -16.73
+     4    1 swimmer   0.043  0.043  10.6  0.004    0.00  282.5  -24.25 to -23.41
+     3    2 stomach   0.055  0.054   2.2  0.000    0.00   42.4  -24.90 to -23.90
+     6    3 stomach   0.043  0.043   3.4  0.000    0.00  107.8  -24.43 to -23.62
+     0    4 stomach   0.055  0.054  11.0  0.201    0.00   42.5  -24.35 to -22.84
+     2    5 stomach   0.018  0.018   3.1  0.000    0.00   43.8  -24.36 to -23.88
+     7    6 stomach   0.059  0.059   7.7  0.000    0.00  107.8  -24.48 to -23.18
+     5    7 stomach   0.048  0.048   2.5  0.251    0.00   42.5  -24.38 to -23.99
+restep-spin-0p5: {'index': 1, 'label': 'constant 0.5', 'kind': 'constant'}, 3000 frames at 10 Hz
+  slot body kind      speed  level  dist   spin    work   lost    y range
+     1    0 swimmer   0.066  0.060  15.7  0.005    0.00  282.5  -23.92 to -16.81
+     4    1 swimmer   0.043  0.043  10.7  0.004    0.00  282.5  -24.25 to -23.42
+     3    2 stomach   0.055  0.054   2.2  0.000    0.00   42.4  -24.90 to -23.90
+     6    3 stomach   0.043  0.043   3.4  0.000    0.00  107.8  -24.43 to -23.62
+     0    4 stomach   0.055  0.054  11.0  0.036    0.00   42.5  -24.35 to -22.84
+     2    5 stomach   0.018  0.018   3.1  0.000    0.00   43.8  -24.36 to -23.88
+     7    6 stomach   0.059  0.059   7.7  0.000    0.00  107.8  -24.48 to -23.18
+     5    7 stomach   0.048  0.048   2.5  0.039    0.00   42.5  -24.39 to -24.00
+
+
+Pass 2, 2026-10-13 01:23-01:25, start aboveBed 11.5 (in the leaves' band), with 294c08a5:
+band-off-restep: {'index': 1, 'label': 'constant 0.5', 'kind': 'constant'}, 3000 frames at 10 Hz
+  slot body kind      speed  level  dist   spin    work   lost    y range
+     1    0 swimmer   0.169  0.098   7.6  0.013   50.04  282.5  -19.42 to -1.55
+     4    1 swimmer   0.082  0.071  16.4  0.007   50.04  282.5  -12.29 to -2.52
+     3    2 stomach   0.095  0.074   8.9  0.000    0.00   42.4  -14.78 to -8.30
+     6    3 stomach   0.103  0.084  10.8  0.000    0.00  107.8  -13.74 to -3.26
+     0    4 stomach   0.104  0.082   7.7  1.352    0.00   42.5  -15.40 to -5.54
+     2    5 stomach   0.122  0.099   6.8  0.000    0.00   43.8  -13.73 to -7.10
+     7    6 stomach   0.078  0.053   4.8  0.000    0.00  107.8  -13.57 to -5.08
+     5    7 stomach   0.087  0.070  13.3  2.519    0.00   42.5  -11.58 to -4.79
+band-skin-0p05-restep: {'index': 1, 'label': 'constant 0.5', 'kind': 'constant'}, 3000 frames at 10 Hz
+  slot body kind      speed  level  dist   spin    work   lost    y range
+     1    0 swimmer   0.179  0.116  12.2  0.013   50.04  282.5  -16.79 to -1.78
+     4    1 swimmer   0.080  0.070  16.9  0.006   50.04  282.5  -12.34 to -3.36
+     3    2 stomach   0.096  0.076   8.9  0.002    0.00   42.4  -14.83 to -8.42
+     6    3 stomach   0.103  0.084  10.9  0.002    0.00  107.8  -13.76 to -3.15
+     0    4 stomach   0.106  0.082   7.7  0.199    0.00   42.5  -15.82 to -5.79
+     2    5 stomach   0.123  0.100   6.7  0.002    0.00   43.8  -13.84 to -7.04
+     7    6 stomach   0.078  0.054   4.7  0.002    0.00  107.8  -13.59 to -5.06
+     5    7 stomach   0.095  0.080  14.0  0.250    0.00   42.5  -11.58 to -5.28
+band-skin-0p5-restep: {'index': 1, 'label': 'constant 0.5', 'kind': 'constant'}, 3000 frames at 10 Hz
+  slot body kind      speed  level  dist   spin    work   lost    y range
+     1    0 swimmer   0.178  0.124  20.8  0.008   50.04  282.5  -16.83 to -2.16
+     4    1 swimmer   0.074  0.068  17.2  0.004   50.04  282.5  -12.81 to -5.68
+     3    2 stomach   0.099  0.079   9.0  0.002    0.00   42.4  -14.96 to -8.40
+     6    3 stomach   0.104  0.084  11.4  0.002    0.00  107.8  -13.83 to -2.76
+     0    4 stomach   0.108  0.085   8.0  0.035    0.00   42.5  -16.11 to -6.29
+     2    5 stomach   0.129  0.104   6.6  0.002    0.00   43.8  -14.22 to -6.73
+     7    6 stomach   0.080  0.055   4.4  0.002    0.00  107.8  -13.67 to -4.96
+     5    7 stomach   0.097  0.082  14.1  0.038    0.00   42.5  -11.58 to -4.99
+band-spin-0p05-restep: {'index': 1, 'label': 'constant 0.5', 'kind': 'constant'}, 3000 frames at 10 Hz
+  slot body kind      speed  level  dist   spin    work   lost    y range
+     1    0 swimmer   0.168  0.098   7.2  0.012   50.04  282.5  -19.33 to -1.59
+     4    1 swimmer   0.082  0.071  16.5  0.007   50.04  282.5  -12.29 to -2.56
+     3    2 stomach   0.095  0.074   8.9  0.000    0.00   42.4  -14.78 to -8.30
+     6    3 stomach   0.103  0.084  10.8  0.000    0.00  107.8  -13.74 to -3.26
+     0    4 stomach   0.105  0.084   8.7  0.201    0.00   42.5  -15.35 to -5.54
+     2    5 stomach   0.122  0.099   6.8  0.000    0.00   43.8  -13.73 to -7.10
+     7    6 stomach   0.078  0.053   4.8  0.000    0.00  107.8  -13.57 to -5.08
+     5    7 stomach   0.086  0.069  13.1  0.251    0.00   42.5  -11.58 to -4.87
+band-spin-0p5-restep: {'index': 1, 'label': 'constant 0.5', 'kind': 'constant'}, 3000 frames at 10 Hz
+  slot body kind      speed  level  dist   spin    work   lost    y range
+     1    0 swimmer   0.170  0.104   6.9  0.013   50.04  282.5  -16.78 to -1.87
+     4    1 swimmer   0.083  0.072  17.2  0.006   50.04  282.5  -12.31 to -2.90
+     3    2 stomach   0.095  0.074   8.9  0.000    0.00   42.4  -14.78 to -8.30
+     6    3 stomach   0.103  0.084  10.8  0.000    0.00  107.8  -13.74 to -3.26
+     0    4 stomach   0.104  0.083   8.3  0.036    0.00   42.5  -15.37 to -5.62
+     2    5 stomach   0.122  0.099   6.8  0.000    0.00   43.8  -13.73 to -7.10
+     7    6 stomach   0.078  0.053   4.8  0.000    0.00  107.8  -13.57 to -5.08
+     5    7 stomach   0.086  0.069  13.1  0.039    0.00   42.5  -11.58 to -4.87

@@ -1,0 +1,218 @@
+== round 58's reader: year 6000 s, samples every 1500 s, end 48000 s
+joined r58-s1j: D:\Projects\experiments\evolution-simulator\runs\r58-s1j\2026-10-12-080742-dfc0e881
+   seed 1, place 0, hears from place 2 (r58-s3j), every 3000 s, 3 a time; arrivals planted 48, refused 0; read to 48000 s
+   at 48000 s, birth flags: jointed 9, absorptive 102, leaf 5283; stats: jointed 9, absorptive 102, photosynthetic 5369
+joined r58-s2j: D:\Projects\experiments\evolution-simulator\runs\r58-s2j\2026-10-12-080742-dfc0e881
+   seed 2, place 1, hears from place 0 (r58-s1j), every 3000 s, 3 a time; arrivals planted 48, refused 0; read to 48000 s
+   at 48000 s, birth flags: jointed 4, absorptive 856, leaf 6081; stats: jointed 4, absorptive 856, photosynthetic 6186
+joined r58-s3j: D:\Projects\experiments\evolution-simulator\runs\r58-s3j\2026-10-12-080742-dfc0e881
+   seed 3, place 2, hears from place 1 (r58-s2j), every 3000 s, 3 a time; arrivals planted 48, refused 0; read to 48000 s
+   at 48000 s, birth flags: jointed 5, absorptive 245, leaf 5079; stats: jointed 5, absorptive 245, photosynthetic 5248
+isolated r58-s1ir: D:\Projects\experiments\evolution-simulator\scratch\r58-read\iso\r58-s1i
+   seed 1, place None, not migrating; arrivals planted 0, refused 0; read to 48000 s
+   at 48000 s, birth flags: jointed 273, absorptive 127, leaf 8407; stats: jointed 307, absorptive 127, photosynthetic 8771
+isolated r58-s2ir: D:\Projects\experiments\evolution-simulator\scratch\r58-read\iso\r58-s2i
+   seed 2, place None, not migrating; arrivals planted 0, refused 0; read to 48000 s
+   at 48000 s, birth flags: jointed 46, absorptive 554, leaf 5089; stats: jointed 46, absorptive 561, photosynthetic 5550
+isolated r58-s3ir: D:\Projects\experiments\evolution-simulator\scratch\r58-read\iso\r58-s3i
+   seed 3, place None, not migrating; arrivals planted 0, refused 0; read to 48000 s
+   at 48000 s, birth flags: jointed 7, absorptive 861, leaf 4196; stats: jointed 7, absorptive 861, photosynthetic 4304
+
+== readings: per world and year
+   world        year summer most winter fewest  depth top root
+   r58-s1j         1        3262          1115  0.658    0.374
+   r58-s1j         2        3120          1945  0.377    0.479
+   r58-s1j         3        4717          3387  0.282    0.444
+   r58-s1j         4        7301          4499  0.384    0.715
+   r58-s1j         5        7634          5920  0.225    0.378
+   r58-s1j         6        8956          5241  0.415    0.559
+   r58-s1j         7        7505          4887  0.349    0.782
+   r58-s1j         8        6372          4454  0.301    0.912
+   r58-s2j         1        5226          1715  0.672    0.879
+   r58-s2j         2        4990          3344  0.330    0.995
+   r58-s2j         3        6243          4163  0.333    0.996
+   r58-s2j         4        7865          4805  0.389    0.996
+   r58-s2j         5        6899          4861  0.295    0.995
+   r58-s2j         6        7485          4973  0.336    0.974
+   r58-s2j         7        9039          5462  0.396    0.663
+   r58-s2j         8        6835          5297  0.225    0.766
+   r58-s3j         1        4058          1486  0.634    0.881
+   r58-s3j         2        3342          2421  0.276    0.996
+   r58-s3j         3        6218          4764  0.234    0.998
+   r58-s3j         4        8089          6231  0.230    0.998
+   r58-s3j         5        8935          6237  0.302    0.998
+   r58-s3j         6        8031          4869  0.394    0.999
+   r58-s3j         7        7112          4245  0.403    0.992
+   r58-s3j         8        6380          4249  0.334    0.984
+   r58-s1ir        1        3262          1125  0.655    0.378
+   r58-s1ir        2        3178          1912  0.398    0.593
+   r58-s1ir        3        4663          3384  0.274    0.917
+   r58-s1ir        4        6695          4409  0.341    0.994
+   r58-s1ir        5        6624          4715  0.288    0.998
+   r58-s1ir        6        8077          5925  0.266    0.998
+   r58-s1ir        7       10702          8329  0.222    0.999
+   r58-s1ir        8       10996          8364  0.239    0.997
+   r58-s2ir        1        5226          1724  0.670    0.854
+   r58-s2ir        2        4761          3275  0.312    0.997
+   r58-s2ir        3        6654          4728  0.289    0.998
+   r58-s2ir        4        7398          4401  0.405    0.996
+   r58-s2ir        5        6783          4800  0.292    0.998
+   r58-s2ir        6        7351          4848  0.340    0.996
+   r58-s2ir        7        8588          5271  0.386    0.993
+   r58-s2ir        8        6729          4474  0.335    0.982
+   r58-s3ir        1        4058          1491  0.633    0.869
+   r58-s3ir        2        3774          2600  0.311    0.994
+   r58-s3ir        3        6148          4142  0.326    0.994
+   r58-s3ir        4        5932          3987  0.328    0.987
+   r58-s3ir        5        5283          3285  0.378    0.949
+   r58-s3ir        6        4837          3564  0.263    0.895
+   r58-s3ir        7        5442          3714  0.318    0.847
+   r58-s3ir        8        5535          4073  0.264    0.843
+
+== readings: per joined world at every sample (living / arrival-descended living per guild)
+   r58-s1j
+          t  alive   arr.  share   join  arr   abso  arr   leaf  arr
+       1500   3133      0   0.0%   1194    0     37    0   1909    0
+       3000   1869      3   0.2%    743    0     28    0   1111    3
+       4500   1283      9   0.7%    589    0     18    0    687    9
+       6000   1574      9   0.6%    817    0     15    0    750    9
+       7500   2946     11   0.4%   1455    0     45    0   1461   11
+       9000   2554     21   0.8%   1024    1     54    0   1486   20
+      10500   2171     50   2.3%    650    0     53    0   1472   50
+      12000   2884    121   4.2%    722    0     56    0   2108  121
+      13500   4688    312   6.7%    822    0    109    0   3768  312
+      15000   3898    673  17.3%    477    0     87    2   3341  671
+      16500   3720   1539  41.4%    283    0     63    8   3379 1531
+      18000   4553   3197  70.2%    162    0     49   15   4349 3182
+      19500   7188   6370  88.6%     89    0     54   34   7050 6336
+      21000   5751   5494  95.5%     21    0     44   33   5688 5461
+      22500   5206   5118  98.3%     11    0     70   62   5124 5056
+      24000   5804   5761  99.3%      5    0     89   81   5713 5680
+      25500   7163   7146  99.8%      4    0     88   84   7072 7062
+      27000   6579   6563  99.8%      5    0     59   48   6520 6515
+      28500   6373   6355  99.7%      4    0     44   29   6327 6326
+      30000   7678   7665  99.8%      2    0     66   56   7610 7609
+      31500   8922   8910  99.9%      5    0     78   69   8842 8841
+      33000   6528   6516  99.8%      4    0     69   59   6457 6457
+      34500   5408   5396  99.8%      6    0     59   53   5344 5343
+      36000   6646   6632  99.8%      7    0     99   89   6543 6543
+      37500   7445   7431  99.8%     10    0     96   87   7345 7344
+      39000   5490   5476  99.7%      6    0     55   47   5431 5429
+      40500   5522   5509  99.8%      8    0     62   56   5454 5453
+      42000   5855   5843  99.8%      7    0     84   78   5765 5765
+      43500   6262   6252  99.8%      2    0    127  120   6133 6132
+      45000   4952   4937  99.7%      8    0    114  107   4833 4830
+      46500   4779   4761  99.6%     15    0    104   93   4668 4668
+      48000   5391   5365  99.5%      9    0    102   85   5283 5280
+   r58-s2j
+          t  alive   arr.  share   join  arr   abso  arr   leaf  arr
+       1500   4343      0   0.0%    869    0      6    0   3468    0
+       3000   2079      3   0.1%    262    2      4    1   1814    1
+       4500   2277      4   0.2%    131    3      8    1   2142    1
+       6000   3108      8   0.3%     61    4      8    0   3041    4
+       7500   4803     20   0.4%     34    9     15    0   4756   11
+       9000   4492     10   0.2%     30    5     17    1   4449    4
+      10500   3782      3   0.1%     16    2     14    1   3756    0
+      12000   4438      3   0.1%     11    1     19    0   4409    2
+      13500   6238      4   0.1%      6    2     26    0   6208    2
+      15000   5163      3   0.1%      5    1     26    0   5134    2
+      16500   4449      3   0.1%      9    1     27    0   4414    2
+      18000   4826      6   0.1%      8    1     25    0   4798    5
+      19500   7522     15   0.2%      9    3     27    0   7488   12
+      21000   6657     14   0.2%      7    4     23    0   6629   10
+      22500   5158      7   0.1%      9    1     28    0   5122    6
+      24000   5598      6   0.1%      9    0     47    0   5548    6
+      25500   6663      7   0.1%      7    0     40    0   6618    7
+      27000   6026     11   0.2%      7    0     45    0   5980   11
+      28500   5059      8   0.2%      4    0     32    0   5025    8
+      30000   6347     12   0.2%      6    0     37    0   6304   12
+      31500   7442     13   0.2%      4    0     41    0   7399   13
+      33000   6171     19   0.3%     10    0     83    0   6083   19
+      34500   5245     13   0.2%      1    0    115    0   5129   13
+      36000   7022     24   0.3%      6    0    165    0   6852   24
+      37500   9010    306   3.4%      5    0    303    0   8703  306
+      39000   6581    580   8.8%      5    0    489    1   6090  579
+      40500   5859    876  15.0%      5    0    456    5   5398  871
+      42000   6080   1615  26.6%      6    0    481   23   5594 1592
+      43500   6792   2950  43.4%      6    0    642   65   6146 2885
+      45000   6070   3486  57.4%     10    0    872   90   5192 3396
+      46500   5669   3755  66.2%      5    0    953   85   4716 3670
+      48000   6941   5415  78.0%      4    0    856   93   6081 5322
+   r58-s3j
+          t  alive   arr.  share   join  arr   abso  arr   leaf  arr
+       1500   3570      0   0.0%    374    0      9    0   3189    0
+       3000   1846      3   0.2%     60    1      5    0   1781    2
+       4500   1738      8   0.5%     40    4     14    0   1689    4
+       6000   2251     11   0.5%     26    4     14    0   2215    7
+       7500   3334      9   0.3%     19    1     18    0   3301    8
+       9000   2608      4   0.2%     12    0     18    0   2582    4
+      10500   3126      3   0.1%      7    0     23    0   3097    3
+      12000   4313      5   0.1%      3    0     21    0   4288    5
+      13500   6168      1   0.0%      8    0     30    0   6134    1
+      15000   5167      3   0.1%      1    0     14    0   5152    3
+      16500   5393      2   0.0%      8    0     20    0   5368    2
+      18000   5730      3   0.1%      5    0     41    0   5686    3
+      19500   7895      2   0.0%      6    0     47    0   7846    2
+      21000   7111      4   0.1%      4    0     39    0   7070    4
+      22500   7073      2   0.0%      3    0     46    0   7024    2
+      24000   7637      3   0.0%      3    0     44    0   7590    3
+      25500   8470      1   0.0%      3    0     42    0   8425    1
+      27000   7369      3   0.0%      6    0     46    0   7322    3
+      28500   6617      0   0.0%      6    0     50    0   6564    0
+      30000   7349      3   0.0%      9    0     53    0   7292    3
+      31500   7869      1   0.0%     12    0     95    0   7764    1
+      33000   6108      3   0.0%      4    0     81    0   6024    3
+      34500   5310      3   0.1%      4    0     73    0   5234    3
+      36000   6222      3   0.0%      6    0     86    0   6131    3
+      37500   7062      9   0.1%      8    0    118    0   6937    9
+      39000   4986      5   0.1%     10    0    101    0   4881    5
+      40500   4955      2   0.0%      7    0    101    0   4848    2
+      42000   5669      4   0.1%      8    0    116    0   5547    4
+      43500   6355      1   0.0%     11    0    164    0   6187    1
+      45000   5185      4   0.1%      9    0    183    0   4999    4
+      46500   4518      2   0.0%     10    0    203    0   4310    2
+      48000   5327      3   0.1%      5    0    245    0   5079    3
+
+== V: root lineages holding at least 1% of the living at the end
+   r58-s1j        2 lines of 26 alive, 5391 living (arrival 2)
+   r58-s2j        3 lines of 29 alive, 6941 living (arrival 1, floor 1, trickle 1)
+   r58-s3j        2 lines of 20 alive, 5327 living (floor 1, trickle 1)
+   r58-s1ir       1 lines of 20 alive, 8792 living (floor 1)
+   r58-s2ir       1 lines of 15 alive, 5648 living (floor 1)
+   r58-s3ir       2 lines of 13 alive, 5061 living (floor 1, trickle 1)
+   r58-s1j 2 against r58-s1ir 1 -> exceeds
+   r58-s2j 3 against r58-s2ir 1 -> exceeds
+   r58-s3j 2 against r58-s3ir 2 -> does not exceed
+
+== S: a guild a joined world lacks after 6000 s, later held by >= 20 arrival-descended bodies for 1 year(s)
+   unread: no joined world lacks a guild at a sample after the first year
+
+== R: a guild falls to no living after 6000 s; arrival-descended bodies of it (>= 1) alive at every sample for 1 year(s)
+   r58-s2j jointed: 2 falls to zero, first 34295.5 s (none seen at a sample)
+      fell 34295.5 s: arrival-descended jointed after it most 0, none at any sample
+      fell 40738.5 s: arrival-descended jointed after it most 0, none at any sample
+   r58-s3j jointed: 1 falls to zero, first 14868 s (none seen at a sample)
+      fell 14868 s: arrival-descended jointed after it most 0, none at any sample
+
+== W: one line over 50% of the living in every joined world at the end
+   r58-s1j: largest root lineage here 59224 (m/-) 0.912; largest line traced across worlds place 2 root 8 (floor) 0.995
+   r58-s2j: largest root lineage here 124678 (m/-) 0.766; largest line traced across worlds place 2 root 8 (floor) 0.780
+   r58-s3j: largest root lineage here 8 (f/floor) 0.984; largest line traced across worlds place 2 root 8 (floor) 0.984
+   the line with the greatest least share: place 2 root 8 (floor), shares r58-s1j 0.995, r58-s2j 0.780, r58-s3j 0.984
+
+== Y: winter depths, years 2 to the last full year, correlated within each group
+   joined r58-s1j x r58-s2j: years 2 to 8 (7), r = 0.493
+   joined r58-s1j x r58-s3j: years 2 to 8 (7), r = 0.238
+   joined r58-s2j x r58-s3j: years 2 to 8 (7), r = -0.026
+   joined mean r = 0.235 over 3 pairs
+   isolated r58-s1ir x r58-s2ir: years 2 to 8 (7), r = -0.105
+   isolated r58-s1ir x r58-s3ir: years 2 to 8 (7), r = 0.244
+   isolated r58-s2ir x r58-s3ir: years 2 to 8 (7), r = -0.219
+   isolated mean r = -0.027 over 3 pairs
+
+== clauses
+V: failed (2 of 3 joined worlds exceed)
+S: unread (no joined world lacks a guild at a sample after the first year)
+R: failed (no return held; largest arrival-descended count after a fall 0)
+W: held (least share 0.780)
+Y: held (joined mean 0.235 against isolated -0.027)

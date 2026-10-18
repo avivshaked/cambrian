@@ -1,4 +1,4 @@
-using Evosim.Core;
+﻿using Evosim.Core;
 
 namespace Evosim.Dynamics
 {
@@ -23,6 +23,9 @@ namespace Evosim.Dynamics
         public int PanelsPerAxis = 2;
         public double AddedMassCoefficient;
         public double FluidAccelerationCoefficient;
+        public double LimbPushCoefficient;
+        public double PowerPushRadiansPerSecond;
+        public double PoseHertz;
         public double TissueExcessDensity;
         public double NeutralBodyVolume;
         public double SurfaceRestoringFraction;
@@ -36,6 +39,18 @@ namespace Evosim.Dynamics
         /// not even a zero is added to a torque.
         /// </remarks>
         public bool BuoyancyOffsetTorque;
+
+        /// <summary>
+        /// D161's drag on turning — <c>FluidConfig.TurningDrag</c>. <see cref="TurningDragForm.None"/>
+        /// is the recorded solver: <see cref="Fluid.Apply"/> does not enter the branch.
+        /// </summary>
+        public TurningDragForm TurningDrag;
+
+        /// <summary>The skin form's C_f — <c>FluidConfig.SkinFrictionCoefficient</c>.</summary>
+        public double SkinFrictionCoefficient;
+
+        /// <summary>The spin form's C_s — <c>FluidConfig.SpinDragCoefficient</c>.</summary>
+        public double SpinDragCoefficient;
 
         /// <summary>
         /// Tissue density, kg/m3 — <c>PhenotypeBuilder.DensityKgPerM3</c>. Not a tunable in the
@@ -74,7 +89,8 @@ namespace Evosim.Dynamics
         /// that has not been refuses to answer, which is the failure the farm wants.
         /// </para>
         /// <para>
-        /// <b>It is sampled under a pin</b>, in <c>DynamicsWorld.SampleWater</c>, and nowhere
+        /// <b>It is sampled under a pin</b>, in <c>DynamicsWorld.StepOne</c> with the pin held
+        /// round the bodies' phase by <c>StepOnCpu</c>, and nowhere
         /// else in a step. The field memoises the instants a call touches, so an unpinned sample
         /// from the parallel phase would race on its slot table; <see cref="Water.Sample"/> says
         /// so at length.
@@ -176,6 +192,29 @@ namespace Evosim.Dynamics
         /// </remarks>
         public bool ContactPerPart;
 
+        /// <summary>
+        /// Sliding friction at the rock and the glass, μ — D137, <c>RunConfig.BedFriction</c>.
+        /// 0 computes nothing, the recorded contact to the bit.
+        /// </summary>
+        public double BedFriction;
+
+        /// <summary>
+        /// Whether each link records its touch of the rock: the bed or a reef, and not the glass
+        /// (<see cref="Creature.RockTouched"/>). True where <c>RunConfig.SenseBedTouch</c> is on.
+        /// Needs <see cref="ContactPerPart"/>. Read at a body's construction, as that is.
+        /// </summary>
+        /// <remarks>
+        /// Off, the contact pass writes nothing new and its arithmetic is the recorded one. On, it
+        /// records what it already computed and changes no force.
+        /// </remarks>
+        public bool RockTouch;
+
+        /// <summary>
+        /// The anchoring cell of the world's table, whose numbers the grip reads (D162,
+        /// <see cref="Anchor"/>); null in a world whose table has none, where nothing grips.
+        /// </summary>
+        public AnchoringCell Anchoring;
+
         // ---- sensors
 
         public double FlowFullScaleMetresPerSecond = 0.3;
@@ -201,6 +240,15 @@ namespace Evosim.Dynamics
         /// given a field.
         /// </summary>
         public double ChemicalHalfScaleJoulesPerCubicMetre = 1.0;
+
+        /// <summary>RunConfig.ScentHalfScaleJoules: the scent that reads half scale, J.</summary>
+        public double ScentHalfScaleJoules = 20.0;
+
+        /// <summary>D167's leaf smell: which form the world carries. <c>RunConfig.LeafScent</c>.</summary>
+        public LeafScentForm LeafScent;
+
+        /// <summary>The leaf smell that reads half scale, m². <c>RunConfig.LeafScentHalfScaleSquareMetres</c>.</summary>
+        public double LeafScentHalfScaleSquareMetres = 1.0;
 
         /// <summary>
         /// The full scale of the energy sense, seconds of reserve —
@@ -237,12 +285,23 @@ namespace Evosim.Dynamics
                 PanelsPerAxis = fluid.PanelsPerAxis,
                 AddedMassCoefficient = fluid.AddedMassCoefficient,
                 FluidAccelerationCoefficient = fluid.FluidAccelerationCoefficient,
+                LimbPushCoefficient = fluid.LimbPushCoefficient,
+                PowerPushRadiansPerSecond = fluid.PowerPushRadiansPerSecond,
+                PoseHertz = fluid.PoseHertz,
                 TissueExcessDensity = fluid.TissueExcessDensity,
                 NeutralBodyVolume = fluid.NeutralBodyVolume,
                 SurfaceRestoringFraction = fluid.SurfaceRestoringFraction,
                 WaterHoldSeconds = fluid.WaterHoldSeconds,
                 BuoyancyOffsetTorque = config.BuoyancyOffsetWattsPerCubicMetre > 0f,
+                TurningDrag = fluid.TurningDrag,
+                SkinFrictionCoefficient = fluid.SkinFrictionCoefficient,
+                SpinDragCoefficient = fluid.SpinDragCoefficient,
                 ContactPerPart = config.ContactPerPart,
+            BedFriction = config.BedFriction,
+                RockTouch = config.SenseBedTouch,
+                Anchoring = config.CellTypes.Contains(CellTypeIds.Anchoring)
+                    ? (AnchoringCell)config.CellTypes.Resolve(CellTypeIds.Anchoring)
+                    : null,
 
                 WorldDepthMetres = config.WorldDepthMetres,
                 FloorIsSolid = config.SharedSpace,
@@ -264,6 +323,9 @@ namespace Evosim.Dynamics
                 FlowFullScaleMetresPerSecond = config.FlowFullScaleMetresPerSecond,
                 ChemicalHalfScaleJoulesPerCubicMetre =
                     config.ChemicalHalfScaleJoulesPerCubicMetre,
+                ScentHalfScaleJoules = config.ScentHalfScaleJoules,
+                LeafScent = config.LeafScent,
+                LeafScentHalfScaleSquareMetres = config.LeafScentHalfScaleSquareMetres,
                 EnergyFullScaleSeconds = config.EnergyFullScaleSeconds,
             };
         }

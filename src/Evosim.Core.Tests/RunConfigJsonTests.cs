@@ -59,6 +59,9 @@ namespace Evosim.Core.Tests
                 // D117's pool hash, the one scalar string, at the only non-empty shape it takes.
                 else if (p.PropertyType == typeof(string)) p.SetValue(config, new string('b', 64));
 
+                // D192's seed overrides, the one list directly on RunConfig, in the only shape it takes.
+                else if (p.PropertyType == typeof(string[])) p.SetValue(config, new[] { "landscape=3" });
+
                 // A scalar enum, moved to any member but the one it holds. Skipping enums is how
                 // a knob written by name gets to be in the hash and absent from the file — the
                 // half of the problem this test exists for, and the shape RunConfig.ConceptionOrder
@@ -210,6 +213,46 @@ namespace Evosim.Core.Tests
                 RunConfig back = RunConfigJson.Read(RunConfigJson.Write(config));
                 Assert.True(config.Hash() == back.Hash(), $"{p.Name} did not survive the round trip");
             }
+        }
+
+        [Fact]
+        public void TheSeasonShapeAndTheWeatherSurviveTheRoundTrip()
+        {
+            // D151's five light tunables: an enum by name, two floats, a float fraction and the
+            // first ulong, at the largest seed the file can carry.
+            var config = new RunConfig();
+            config.Light.SeasonShape = SeasonShape.TwoSeason;
+            config.Light.SeasonRampSeconds = 250f;
+            config.Light.WeatherSpread = 0.3f;
+            config.Light.WeatherCorrelation = 0.5f;
+            config.Light.WeatherSeed = LightModel.MaxWeatherSeed;
+
+            string text = RunConfigJson.Write(config);
+            RunConfig back = RunConfigJson.Read(text, out string mismatch);
+
+            Assert.Null(mismatch);
+            Assert.Equal(config.Hash(), back.Hash());
+            Assert.Contains("\"seasonShape\": \"TwoSeason\"", text);
+            Assert.Equal(SeasonShape.TwoSeason, back.Light.SeasonShape);
+            Assert.Equal(250f, back.Light.SeasonRampSeconds);
+            Assert.Equal(0.3f, back.Light.WeatherSpread);
+            Assert.Equal(0.5f, back.Light.WeatherCorrelation);
+            Assert.Equal(LightModel.MaxWeatherSeed, back.Light.WeatherSeed);
+        }
+
+        [Fact]
+        public void AWeatherSeedTheFileCannotCarryIsRefused()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => new LightModel().WeatherSeed = LightModel.MaxWeatherSeed + 1UL);
+
+            string text = RunConfigJson.Write(new RunConfig());
+            Assert.Contains("\"weatherSeed\": 1", text);
+
+            Assert.Throws<FormatException>(
+                () => RunConfigJson.Read(text.Replace("\"weatherSeed\": 1", "\"weatherSeed\": 1.5")));
+            Assert.Throws<FormatException>(
+                () => RunConfigJson.Read(text.Replace("\"weatherSeed\": 1", "\"weatherSeed\": 18446744073709551615")));
         }
 
         [Fact]

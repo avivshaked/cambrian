@@ -47,6 +47,12 @@ namespace Evosim.Farm.Gpu
 
         public bool Transport;
 
+        /// <summary>
+        /// The scent's fill on the card from the world's corpses (C3, card-next-r57.md Part 7):
+        /// the same sums in the same order, so the numbers do not move, and the host's fill skipped.
+        /// </summary>
+        public bool Scent;
+
         /// <summary>The size classes' link ceilings, ascending; the last must be 16.</summary>
         public int[] ClassLinks = { 2, 4, 8, 16 };
 

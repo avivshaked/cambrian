@@ -26,10 +26,7 @@ In the film's folder, and beside this brief. No runs, no code of the project's, 
 
 ## What you write
 
-`graphics/scenes/<id>.py` in the film's folder, through the shell, never with the Write or Edit tools. This
-shell breaks a heredoc of more than about 150 lines, so write the file in pieces of at most 100 lines
-(`cat > file <<'EOF'` for the first, `cat >> file <<'EOF'` for the rest). The shell also halves a
-backslash in a heredoc, so write none; a scene needs none.
+`graphics/scenes/<id>.py` in the film's folder.
 
 Then render it:
 `python <the folder of this brief>/graphics.py render <film folder> <id>`, and save what it prints in
@@ -143,5 +140,5 @@ number the graphic needs; do not invent it.
 - Never change the plan, the shot list or another graphic's scene.
 - Read every file as UTF-8 (in Python, `encoding="utf-8"`). The Windows console prints `×`, `³` and other signs
   wrongly, which is not a fault in the file; judge a sign by its code point or by the drawn card.
-- Write only inside the film's folder, and only through the shell.
+- Write only inside the film's folder.
 - Your time budget is 25 minutes.

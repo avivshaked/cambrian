@@ -80,7 +80,7 @@ assert row.count("|") >= 4
 cells = row.split("|")
 # last non-empty cell is the status
 k = len(cells) - 2
-cells[k] = " ruled (owner: \"proceed with your recommendations\"); read 2026-09-09 (logbook/0077): 4 of 5, the world stands at 0.02, the hole is not at the sitter but in the water at large, no swimmer, the larder went deep "
+cells[k] = " ruled (the owner accepted the recommendations); read 2026-09-09 (logbook/0077): 4 of 5, the world stands at 0.02, the hole is not at the sitter but in the water at large, no swimmer, the larder went deep "
 s = s[:i] + "|".join(cells) + s[j:]
 open(p, 'w', encoding='utf-8', newline='').write(s); print('DECISIONS ok', row[:80])
 

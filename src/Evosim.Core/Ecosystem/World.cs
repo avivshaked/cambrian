@@ -90,6 +90,24 @@ namespace Evosim.Core
         /// </summary>
         private readonly List<Corpse> _corpses = new List<Corpse>();
 
+        // DepositCorpses' scratch on a grid: each corpse's cell, instalment and whether it leaves.
+        private int[] _depositCell;
+        private double[] _depositAmount;
+        private bool[] _depositLast;
+
+        // D129's corpse columns (RunConfig.FoundersFollowCorpses): the joules the corpses hold,
+        // summed by the snow grid's column, with the richest single corpse of each column and its
+        // height, and the fullest column's sum. Summed at the first mouth founder's question after
+        // any change to the corpses (CorpsesChanged) and kept until the next one, so a read is
+        // always the corpses as they stand. Derived state, never written to a checkpoint: a sum
+        // taken again is the same sum, in the list's order.
+        private double[] _corpseColumnJoules;
+        private double[] _corpseColumnRichest;
+        private float[] _corpseColumnHeight;
+        private double _corpseColumnsMax;
+        private double _corpseColumnsTotal;
+        private bool _corpseColumnsFresh;
+
         /// <summary>
         /// Births and deaths since the last <see cref="DrainLineageEvents"/> — pure
         /// instrumentation for <c>lineage.jsonl</c> (see <see cref="LineageEvent"/>). Swapped out
@@ -216,6 +234,22 @@ namespace Evosim.Core
         public const ulong ReefPlacementIndex = ulong.MaxValue - 9UL;
 
         /// <summary>
+        /// D128's seed slot: each body's threshold for dying of age, an exponential draw from this
+        /// slot and the body's id. Stateless, so a body's threshold is the same whenever it is
+        /// asked and a checkpoint carries nothing for it, and no other stream moves.
+        /// </summary>
+        public const ulong AgeDeathIndex = ulong.MaxValue - 10UL;
+
+        /// <summary>
+        /// The seed slot of the floor's pool share (<see cref="RunConfig.FoundingFloorPoolShare"/>,
+        /// the owner's ruling of 2026-10-04): whether a floor founder is a pool copy, and which.
+        /// Stateless, as <see cref="AgeDeathIndex"/> is: each attempt's draws come from this slot
+        /// and <see cref="FloorSpawns"/> before the attempt, which the checkpoint already carries,
+        /// so the state's layout does not move. Drawn from by no world whose share is 0.
+        /// </summary>
+        public const ulong FloorPoolIndex = ulong.MaxValue - 11UL;
+
+        /// <summary>
         /// The stream behind <see cref="ConceptionOrder.Shuffled"/> — D072. Constructed for every
         /// world and drawn from by none but a shuffled one.
         /// </summary>
@@ -272,6 +306,13 @@ namespace Evosim.Core
         /// <summary>The seed this world was constructed with. Every creature's seed derives from it.</summary>
         public ulong Seed { get; }
 
+        /// <summary>
+        /// The seed the landscape was drawn from: the bed, the reefs, the islands and the current
+        /// (D192). The <c>landscape</c> entry of <see cref="RunConfig.SeedOverrides"/> when it names one,
+        /// otherwise <see cref="Seed"/>.
+        /// </summary>
+        public ulong LandscapeSeed { get; }
+
         public RunConfig Config { get; }
 
         /// <summary>How much light reaches each depth — <see cref="RunConfig.Light"/>.</summary>
@@ -305,6 +346,21 @@ namespace Evosim.Core
 
         /// <summary>The map value above which a column was seeded as an island; 0 with no islands.</summary>
         public float IslandThreshold { get; }
+
+        /// <summary>
+        /// D175: where an <see cref="MatterInflux.Islands"/> influx lands — the island seeding's
+        /// cells and shares, made from the config and the seed at construction. Null unless that
+        /// influx is on.
+        /// </summary>
+        /// <remarks>
+        /// Made by <see cref="GridField.PlanIslands"/> on the same map, cover and depth the
+        /// seeding used, and never read from the live field. A restore builds the world from the
+        /// same config and seed before it reads the checkpoint, so a resumed run holds the same
+        /// plan with nothing written for it (WorldState.cs's "reconstruct, then overwrite").
+        /// </remarks>
+        public GridField.IslandPlan IslandInflux => _islandInflux;
+
+        private readonly GridField.IslandPlan _islandInflux;
 
         /// <summary>The shade map's mean over the live columns, 1 with no map. For the header.</summary>
         public float MeanShade { get; } = 1f;
@@ -362,6 +418,12 @@ namespace Evosim.Core
         /// included: a field holding nothing accepts every spot, which is what the snow does
         /// until the first deaths have fed it.
         /// </para>
+        /// <para>
+        /// <b>D129</b> (<see cref="RunConfig.FoundersFollowCorpses"/>): with it on, a body with a
+        /// mouth also takes the corpses' share of its column, and the depth rule sets a body
+        /// whose corpse share is its largest just above the richest corpse there. Off, neither
+        /// delegate asks anything it did not ask before, so the recorded stream is untouched.
+        /// </para>
         /// </remarks>
         private void EnsureFounderAcceptance()
         {
@@ -381,16 +443,19 @@ namespace Evosim.Core
                 // Refused at construction without a grid, so both casts hold here.
                 var snow = (GridField)Nutrients;
                 var matter = (GridField)Matter;
+                bool followCorpses = Config.FoundersFollowCorpses;
 
                 Placement.FounderAcceptance = (body, x, z) =>
                 {
                     FoodOf(body, out bool eatsSnow, out bool eatsMatter);
+                    bool eatsCorpses = followCorpses && HasMouth(body);
 
-                    if (!eatsSnow && !eatsMatter) return 1f;
+                    if (!eatsSnow && !eatsMatter && !eatsCorpses) return 1f;
 
                     float share = 0f;
                     if (eatsSnow) share = Math.Max(share, ShareOfRichestColumn(snow, x, z));
                     if (eatsMatter) share = Math.Max(share, ShareOfRichestColumn(matter, x, z));
+                    if (eatsCorpses) share = Math.Max(share, CorpseShareOfRichestColumn(snow, x, z));
                     return share;
                 };
 
@@ -404,8 +469,25 @@ namespace Evosim.Core
                     Placement.FounderDepth = (body, x, z) =>
                     {
                         FoodOf(body, out bool eatsSnow, out bool eatsMatter);
+                        bool eatsCorpses = followCorpses && HasMouth(body);
 
-                        if (!eatsSnow && !eatsMatter) return null;
+                        if (!eatsSnow && !eatsMatter && !eatsCorpses) return null;
+
+                        // D129: a mouth whose corpse share is the largest of its shares is set
+                        // just above the richest corpse in the column; the other foods win a tie,
+                        // so a mixotroph in a world with no corpse and no snow keeps the rules
+                        // below. A body that eats only corpses always takes this branch.
+                        if (eatsCorpses)
+                        {
+                            float other = 0f;
+                            if (eatsSnow) other = Math.Max(other, ShareOfRichestColumn(snow, x, z));
+                            if (eatsMatter) other = Math.Max(other, ShareOfRichestColumn(matter, x, z));
+
+                            if (!(eatsSnow || eatsMatter) || CorpseShareOfRichestColumn(snow, x, z) > other)
+                            {
+                                return CorpseDepth(snow, x, z);
+                            }
+                        }
 
                         // The round 50 founding ruling: a leaf where its own income, light and
                         // food together, is largest.
@@ -506,6 +588,118 @@ namespace Evosim.Core
             double max = grid.MaxColumnStock();
             return max > 0d ? (float)(grid.ColumnStockAt(x, z) / max) : 1f;
         }
+
+        /// <summary>
+        /// Whether a developed body has a mouth, a part whose <c>Intake</c> is above 0: the test
+        /// the mouth's own pass reads a body by (<see cref="Organism.HasIntake"/>), and so D129's
+        /// reading of who eats a corpse.
+        /// </summary>
+        private static bool HasMouth(Phenotype body)
+        {
+            if (body == null) return false;
+
+            IReadOnlyList<PhenotypePart> parts = body.Parts;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                if (parts[i].Intake > 0f) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// D129: the corpse joules in the column under (x, z) over the fullest column's, or 1 when
+        /// no corpse holds anything, which is <see cref="ShareOfRichestColumn"/>'s rule for a
+        /// third food.
+        /// </summary>
+        private float CorpseShareOfRichestColumn(GridField grid, float x, float z)
+        {
+            SumCorpseColumns(grid);
+
+            double max = _corpseColumnsMax;
+            return max > 0d ? (float)(_corpseColumnJoules[grid.ColumnIndexAt(x, z)] / max) : 1f;
+        }
+
+        /// <summary>
+        /// D129: a span from the height of the richest corpse in the column under (x, z) to the
+        /// mouth's reach above it, or null when no corpse there holds anything, and the drawn
+        /// depth is kept. The placer then lifts the founder clear of the bed and any reef.
+        /// </summary>
+        private (float Top, float Bottom)? CorpseDepth(GridField grid, float x, float z)
+        {
+            SumCorpseColumns(grid);
+
+            int column = grid.ColumnIndexAt(x, z);
+            if (!(_corpseColumnRichest[column] > 0d)) return null;
+
+            float y = _corpseColumnHeight[column];
+            return (y + Config.IntakeReachMetres, y);
+        }
+
+        /// <summary>
+        /// Sums the corpses by column, unless nothing has changed since the last sum. The list's
+        /// order, so the sum and the richest corpse (the first on a tie) are the same numbers
+        /// however many times they are taken.
+        /// </summary>
+        private void SumCorpseColumns(GridField grid)
+        {
+            if (_corpseColumnsFresh) return;
+
+            int columns = grid.ColumnCount;
+            if (_corpseColumnJoules == null || _corpseColumnJoules.Length != columns)
+            {
+                _corpseColumnJoules = new double[columns];
+                _corpseColumnRichest = new double[columns];
+                _corpseColumnHeight = new float[columns];
+            }
+            else
+            {
+                Array.Clear(_corpseColumnJoules, 0, columns);
+                Array.Clear(_corpseColumnRichest, 0, columns);
+                Array.Clear(_corpseColumnHeight, 0, columns);
+            }
+
+            double max = 0d, total = 0d;
+            for (int i = 0; i < _corpses.Count; i++)
+            {
+                Corpse corpse = _corpses[i];
+                if (!(corpse.Joules > 0d)) continue;
+                total += corpse.Joules;
+
+                Float3 at = corpse.Position;
+                int column = grid.ColumnIndexAt(at.X, at.Z);
+
+                double sum = _corpseColumnJoules[column] + corpse.Joules;
+                _corpseColumnJoules[column] = sum;
+                if (sum > max) max = sum;
+
+                if (corpse.Joules > _corpseColumnRichest[column])
+                {
+                    _corpseColumnRichest[column] = corpse.Joules;
+                    _corpseColumnHeight[column] = at.Y;
+                }
+            }
+
+            _corpseColumnsMax = max;
+            _corpseColumnsTotal = total;
+            _corpseColumnsFresh = true;
+        }
+
+        /// <summary>
+        /// Marks D129's corpse columns stale. Called wherever the corpse list or a corpse's joules
+        /// or place changes: the pass that carries and leaks them, a death, a lost part, a mouth's
+        /// meal and a restore.
+        /// </summary>
+        private void CorpsesChanged() => _corpseColumnsFresh = false;
+
+        /// <summary>
+        /// Whether the lifespan gene can differ between bodies in this world: it mutates, or the
+        /// founders draw it from a range other than 1 (D128). Only then does a birth row carry
+        /// <c>ls</c> and a queued row carry the gene through a checkpoint.
+        /// </summary>
+        internal bool LifespanRecorded =>
+            Config.Mutation.LifespanChance > 0f ||
+            Config.Genome.MinLifespan != 1f || Config.Genome.MaxLifespan != 1f;
 
         /// <summary>
         /// Horizontal cells per layer, K ≥ 1 — <see cref="RunConfig.HorizontalPatches"/>, clamped
@@ -659,6 +853,175 @@ namespace Evosim.Core
         /// 0, which is every run on file: at 0 a death deposits at once and founds nothing.
         /// </remarks>
         public IReadOnlyList<Corpse> Corpses => _corpses;
+
+        /// <summary>
+        /// The smell of the corpses, <see cref="SensorChannel.Scent"/>; null unless
+        /// <see cref="RunConfig.SenseScent"/>. Refilled after the corpses move at every step and on
+        /// every restore, so it is derived and not state.
+        /// </summary>
+        public ScentField Scent { get; }
+
+        /// <summary>
+        /// How many corpses, from the front of <see cref="Corpses"/>, the last fill of
+        /// <see cref="Scent"/> covered (<c>logbook/specs/r57-build/scent-restore.md</c>).
+        /// </summary>
+        /// <remarks>
+        /// The farm's growth step runs after the fill and can append a module's remains, so a
+        /// checkpoint written at the end of the metabolic step holds corpses the live field has not
+        /// smelt yet. Between a fill and a checkpoint the list only grows at its end, so the
+        /// checkpoint carries this count and a restore fills from that prefix, and the restored
+        /// field is the live one cell for cell. Set where the fill is, in a world with the scent or
+        /// without it.
+        /// </remarks>
+        public int ScentFilledCorpses => _scentFilledCorpses;
+
+        private int _scentFilledCorpses;
+
+        /// <summary>
+        /// D167's smell of living leaves; null unless <see cref="RunConfig.LeafScent"/>. Filled
+        /// once a metabolic step, beside <see cref="Scent"/>, from the sources
+        /// <see cref="GatherLeafSources"/> takes then.
+        /// </summary>
+        /// <remarks>
+        /// <b>Its sources are state, and the field is derived from them.</b> The farm's growth
+        /// step runs after the fill and can change a leaf's area or add a body, so a field
+        /// refilled from the living at a restore would not be the field the live run reads until
+        /// its next fill. The checkpoint carries the sources the last fill took, and the restore
+        /// fills from them (the carrion field's rule, <c>logbook/specs/r57-build/scent-restore.md</c>).
+        /// </remarks>
+        public ScentField LeafScent { get; }
+
+        /// <summary>How many sources the last leaf fill took. Four floats each in the sources.</summary>
+        public int LeafSourceCount => _leafSourceCount;
+
+        /// <summary>A copy of the last leaf fill's sources: x, y, z and area, for each.</summary>
+        public float[] CopyLeafSources()
+        {
+            var copy = new float[4 * _leafSourceCount];
+            Array.Copy(_leafSources, copy, copy.Length);
+            return copy;
+        }
+
+        private float[] _leafSources = Array.Empty<float>();
+        private int _leafSourceCount;
+
+        /// <summary>
+        /// Takes every living body with photosynthetic tissue as a source: its point, and the lit
+        /// area of that tissue as the light pass charges it (the silhouette cap and, where light
+        /// goes by exposure, each part's exposure included). A body with none adds nothing.
+        /// </summary>
+        private void GatherLeafSources()
+        {
+            bool byExposure = Config.LightByExposure;
+            bool capOn = Config.LightSilhouetteCap;
+            CellTypeRegistry types = Config.CellTypes;
+
+            if (_leafSources.Length < 4 * _living.Count)
+            {
+                Array.Resize(ref _leafSources, Math.Max(4 * _living.Count, 2 * _leafSources.Length));
+            }
+
+            int n = 0;
+            for (int i = 0; i < _living.Count; i++)
+            {
+                Organism creature = _living[i];
+                float area = PhotosyntheticLitArea(creature, types, byExposure, capOn);
+                if (!(area > 0f)) continue;
+
+                Float3 p = creature.Point.Position;
+                _leafSources[4 * n] = p.X;
+                _leafSources[4 * n + 1] = p.Y;
+                _leafSources[4 * n + 2] = p.Z;
+                _leafSources[4 * n + 3] = area;
+                n++;
+            }
+
+            _leafSourceCount = n;
+        }
+
+        /// <summary>
+        /// A body's photosynthetic lit area, m²: what <c>Metabolism</c> hands each light-fixing
+        /// part as its lit area, summed over those parts.
+        /// </summary>
+        public static float PhotosyntheticLitArea(
+            Organism creature, CellTypeRegistry types, bool byExposure, bool capOn)
+        {
+            Phenotype body = creature.Phenotype;
+            float[] exposure = byExposure ? creature.CurrentExposure : null;
+            float litFactor = exposure == null
+                ? body.LitAreaFactor(capOn)
+                : body.LitAreaFactor(exposure, creature.UpInBody, capOn);
+
+            float area = 0f;
+            foreach (PhenotypePart part in body.Parts)
+            {
+                if (!types.Resolve(part.CellTypeId).FixesLight) continue;
+                area += exposure == null
+                    ? part.LitArea * litFactor
+                    : part.LitArea * exposure[part.Index] * litFactor;
+            }
+
+            return area;
+        }
+
+        private void FillLeafScent()
+        {
+            if (LeafScent == null) return;
+            GatherLeafSources();
+            LeafScent.FillSources(_leafSources, _leafSourceCount);
+        }
+
+        /// <summary>
+        /// D167's leaf tank: tissue that leaves a body by anything but a bite is burnt as a reserve
+        /// is, its joules out and its units into the water's spent stock at the body's point.
+        /// </summary>
+        private void BurnUnbitten(Organism creature, double joules)
+        {
+            if (!(joules > 0d)) return;
+            EnergyOut += joules;
+            double units = joules / Config.JoulesPerUnit;
+            Matter.DepositExact(creature.Point, units);
+            BurntTotal += units;
+        }
+
+        // An engine that fills the scent itself (the card engine, card-next-r57.md Part 7): handed
+        // the corpses and the prefix at each point the host would fill, and asked to bring its grid
+        // back into Scent before a host reader reads it. Null for every other engine, which leaves
+        // the host's fill as it was.
+        private Action<IReadOnlyList<Corpse>, int> _scentFillElsewhere;
+        private Action<ScentField> _scentCopyBack;
+
+        /// <summary>
+        /// Hands the scent's fill to an engine that fills its own grid: from here on the world calls
+        /// <paramref name="fill"/> with the corpses and the prefix at every point it would have
+        /// filled <see cref="Scent"/>, and once now for the prefix it last filled. <see cref="Scent"/>
+        /// keeps its last host fill until <see cref="BringScentHome"/> asks the engine for its grid
+        /// through <paramref name="copyBack"/>. The sums and their order are the engine's to keep
+        /// equal to the host's.
+        /// </summary>
+        public void FillScentElsewhere(Action<IReadOnlyList<Corpse>, int> fill, Action<ScentField> copyBack)
+        {
+            if (Scent == null) return;
+            _scentFillElsewhere = fill ?? throw new ArgumentNullException(nameof(fill));
+            _scentCopyBack = copyBack ?? throw new ArgumentNullException(nameof(copyBack));
+            fill(_corpses, _scentFilledCorpses);
+        }
+
+        /// <summary>Whether an engine fills the scent (<see cref="FillScentElsewhere"/>).</summary>
+        public bool ScentFilledElsewhere => _scentFillElsewhere != null;
+
+        /// <summary>
+        /// Brings the engine's grid into <see cref="Scent"/> before a host reader reads it: the
+        /// steering recorder. Nothing to do when the host fills it.
+        /// </summary>
+        public void BringScentHome() => _scentCopyBack?.Invoke(Scent);
+
+        // The step's fill and the restore's: the host's, or the engine's.
+        private void FillScent()
+        {
+            if (_scentFillElsewhere != null) _scentFillElsewhere(_corpses, _scentFilledCorpses);
+            else Scent?.Fill(_corpses, _scentFilledCorpses);
+        }
 
         /// <summary>Tissue still held by the dead, J. A third standing account beside the water and the living.</summary>
         public double CorpseJoules
@@ -978,6 +1341,12 @@ namespace Evosim.Core
         public long Deaths { get; private set; }
 
         /// <summary>
+        /// D128: deaths of age, ever. Cumulative, and a subset of <see cref="Deaths"/>; 0 in a
+        /// world whose hazard is off.
+        /// </summary>
+        public long DeathsByAge { get; internal set; }
+
+        /// <summary>
         /// Children conceived from a gestation account rather than from the reserve — the owner's
         /// ruling of 2026-09-24. Cumulative, and a subset of <see cref="Births"/>; a window is two
         /// rows differenced, and 0 in every world without a gestating lineage.
@@ -1020,6 +1389,30 @@ namespace Evosim.Core
         /// life of a run that never calls it.
         /// </summary>
         public long Inoculated { get; private set; }
+
+        /// <summary>
+        /// Immigrants admitted by <see cref="Immigrate"/> — D159's exchange. Zero for the life of
+        /// a world outside a migrating group.
+        /// </summary>
+        public long Immigrated { get; private set; }
+
+        /// <summary>
+        /// Immigrants <see cref="Immigrate"/> refused: under the newborn mass floor, with no room
+        /// to place them, or stillborn. Zero for the life of a world outside a migrating group.
+        /// </summary>
+        /// <remarks>
+        /// Counted here and in none of the founders' refusal counters, so the founding lottery's
+        /// columns still read the lottery alone. A stillborn immigrant is in
+        /// <see cref="Stillbirths"/> as well, which counts every body development refused.
+        /// </remarks>
+        public long ImmigrantsRefused { get; private set; }
+
+        /// <summary>
+        /// Why the last call to <see cref="Immigrate"/> refused its genome, or
+        /// <see cref="ImmigrantRefusal.None"/> when it planted it. Read by the caller straight after
+        /// the call, for the record of offers; it is no part of the world's state and moves nothing.
+        /// </summary>
+        public ImmigrantRefusal LastImmigrantRefusal { get; private set; }
 
         /// <summary>Simulated seconds since the floor last had to intervene.</summary>
         /// <remarks>
@@ -1099,10 +1492,18 @@ namespace Evosim.Core
         /// D117's pool: the genomes a trickle founder may be an exact copy of, in the order the
         /// run directory's <c>pool/NN.json</c> names them. Required, with exactly
         /// <see cref="RunConfig.FoundingTricklePoolCount"/> genomes, when
-        /// <see cref="RunConfig.FoundingTricklePoolShare"/> is above 0; may be null or empty
+        /// <see cref="RunConfig.FoundingTricklePoolShare"/> or
+        /// <see cref="RunConfig.FoundingFloorPoolShare"/> is above 0; may be null or empty
         /// otherwise. Validated once, here (<see cref="ValidateTricklePool"/>).
         /// </param>
-        public World(RunConfig config, ulong seed = 1, IReadOnlyList<Genome> tricklePool = null)
+        /// <param name="tricklePoolWeights">
+        /// The pool's weights, one for each genome in the same order, from the farm's list file
+        /// (<c>pool/index.tsv</c>); null, every recorded world, picks a pool genome uniformly.
+        /// Each finite and above 0. Validated once, here.
+        /// </param>
+        public World(
+            RunConfig config, ulong seed = 1, IReadOnlyList<Genome> tricklePool = null,
+            IReadOnlyList<double> tricklePoolWeights = null)
         {
             Config = config ?? throw new ArgumentNullException(nameof(config));
 
@@ -1113,8 +1514,11 @@ namespace Evosim.Core
                     "nothing in it can live.", nameof(config));
             }
 
+            ValidateSeasons(config.Light);
             ValidateFounding(config);
+            ValidateAgeing(config);
             _tricklePool = ValidateTricklePool(config, tricklePool);
+            _tricklePoolWeights = ValidateTricklePoolWeights(_tricklePool, tricklePoolWeights, out _tricklePoolCumulative);
 
             // D061: PatchCount reads Config.HorizontalPatches, so it is valid from this point on
             // (Config was just assigned above) and every field below is built with the same K.
@@ -1259,6 +1663,12 @@ namespace Evosim.Core
 
             ValidateShore(config);
 
+            // D192. The landscape's own seed: the bed, the reefs, the islands and the current draw
+            // from it, and everything alive from the world's. Unnamed in RunConfig.SeedOverrides,
+            // it is the world's seed, which is every recorded world.
+            ulong landscape = config.TrySeedOverride("landscape", out ulong named) ? named : seed;
+            LandscapeSeed = landscape;
+
             // Its own refusals — a negative or non-finite dial, a floor that would reach the
             // surface with the shore off, and a shore without its fade — are BedShape's, stated at
             // the numbers rather than at the config. The beach is logbook/specs/beach-spec.md.
@@ -1266,7 +1676,7 @@ namespace Evosim.Core
                   (config.BedReliefMetres > 0f || config.BedTiltMetres > 0f)
                 ? new BedShape(
                     TankRadiusMetres, config.WorldDepthMetres, config.BedReliefMetres,
-                    config.BedTiltMetres, config.BedScaleMetres, Rng.SeedFor(seed, BedShapeIndex),
+                    config.BedTiltMetres, config.BedScaleMetres, Rng.SeedFor(landscape, BedShapeIndex),
                     config.BedShoreDepthMetres, config.BedShoreFadeMetres)
                 : null;
 
@@ -1276,7 +1686,7 @@ namespace Evosim.Core
             // at ReefCover 0 this is one pass over the dials' defaults and a null.
             ReefGeometry.Refuse(config, TankRadiusMetres);
             Reefs = config.ReefCover > 0f
-                ? ReefGeometry.Place(config, TankRadiusMetres, Bed, Rng.SeedFor(seed, ReefPlacementIndex))
+                ? ReefGeometry.Place(config, TankRadiusMetres, Bed, Rng.SeedFor(landscape, ReefPlacementIndex))
                 : null;
 
             // D111. A negative price is a part paid to float off its centre, which is a free
@@ -1409,6 +1819,18 @@ namespace Evosim.Core
                     refugeMetres: 0f, refugeEdibleFraction: 0f, patchCount: patchCount);
             }
 
+            if (config.SenseScent)
+            {
+                Scent = new ScentField(Nutrients.LengthMetres, Nutrients.WidthMetres,
+                    config.WorldDepthMetres, config.ScentRangeMetres);
+            }
+
+            if (config.LeafScent != LeafScentForm.None)
+            {
+                LeafScent = new ScentField(Nutrients.LengthMetres, Nutrients.WidthMetres,
+                    config.WorldDepthMetres, config.LeafScentRangeMetres, config.LeafScentCellMetres);
+            }
+
             // Seeded uniformly — across every patch as well as every layer, D061 — and never
             // created again. Everything after this is redistribution: reproduction takes it out
             // of a cell, death puts it back into one. Deposit's 3-arg (patch-explicit) overload
@@ -1424,6 +1846,15 @@ namespace Evosim.Core
             float seedDensity = config.MatterBudgetUnits > 0f
                 ? (float)(config.MatterBudgetUnits / LiveVolumeOf(Matter, config))
                 : config.InitialMatterPerCubicMetre;
+
+            // D185. The margin keeps islands off the glass, so without islands it has nothing to do.
+            if (config.MatterIslandGlassMarginMetres > 0f && !(config.MatterIslandWavelengthMetres > 0f))
+            {
+                throw new ArgumentException(
+                    "A glass margin for the islands (MatterIslandGlassMarginMetres > 0) needs islands " +
+                    "(MatterIslandWavelengthMetres > 0).",
+                    nameof(config));
+            }
 
             if (Matter is VertexField matterVertices)
             {
@@ -1446,11 +1877,11 @@ namespace Evosim.Core
                     }
 
                     _islandMap = new GradientNoise(
-                        Rng.SeedFor(seed, IslandMapIndex), config.MatterIslandWavelengthMetres);
+                        Rng.SeedFor(landscape, IslandMapIndex), config.MatterIslandWavelengthMetres);
 
                     IslandThreshold = matterGrid.SeedIslands(
                         config.MatterBudgetUnits, _islandMap.Fbm, config.MatterIslandCover,
-                        config.MatterIslandDepthMetres);
+                        config.MatterIslandDepthMetres, config.MatterIslandGlassMarginMetres);
                 }
                 else
                 {
@@ -1480,6 +1911,38 @@ namespace Evosim.Core
                         ((NutrientField)Matter).Deposit(depth, perCell, patch);
                     }
                 }
+            }
+
+            // D175. The islands' influx lands where the islands were seeded, in the seeding's
+            // shares: the plan is made again from the same map, cover and depth, and nothing of the
+            // stock just laid is read. ValidateMatterInflux has refused a world with no grid or no
+            // islands; a map that put no column above its threshold is refused here, since the
+            // seeding fell back to uniform water and there is no island to feed.
+            if (config.MatterInfluxPerSecond > 0f && config.MatterInfluxAt == MatterInflux.Islands)
+            {
+                _islandInflux = ((GridField)Matter).PlanIslands(
+                    _islandMap.Fbm, config.MatterIslandCover, config.MatterIslandDepthMetres,
+                    config.MatterIslandGlassMarginMetres);
+
+                if (_islandInflux == null || !(_islandInflux.WeightSum > 0d))
+                {
+                    throw new ArgumentException(
+                        "MatterInfluxAt is Islands, but this seed's island map put no live column above " +
+                        "its threshold, so the matter was seeded as uniform water and there is no island " +
+                        "for the influx to land on.",
+                        nameof(config));
+                }
+            }
+
+            // D190. The desert is the columns outside the influx's plan, so a desert rate needs one.
+            if (config.MatterBurialDesertPerSecond >= 0f && _islandInflux == null)
+            {
+                throw new ArgumentException(
+                    "MatterBurialDesertPerSecond is " + config.MatterBurialDesertPerSecond.ToString(System.Globalization.CultureInfo.InvariantCulture) +
+                    ", but the desert is the water outside the islands' influx, and this world has none " +
+                    "(it needs MatterInfluxAt Islands and MatterInfluxPerSecond > 0). Set it below 0 to bury " +
+                    "every column at MatterBurialPerSecond.",
+                    nameof(config));
             }
 
             if (config.LightShadeDepth > 0f)
@@ -1554,7 +2017,7 @@ namespace Evosim.Core
             // one from a mode (fable-propose-aquarium.md ruling 1).
             config.Current?.SetBox(
                 Nutrients.PatchWidthMetres, patchCount, config.WorldDepthMetres,
-                Rng.SeedFor(seed, CurrentFieldIndex), patchesAcross,
+                Rng.SeedFor(landscape, CurrentFieldIndex), patchesAcross,
                 config.WorldShape, TankRadiusMetres, Bed);
 
             // The reefs' fade on the streams (logbook/specs/reef-spec.md §2), after SetBox, which
@@ -1732,6 +2195,48 @@ namespace Evosim.Core
                 }
             }
 
+            // The floor's share (the owner's ruling of 2026-10-04) draws from the same pool, so it
+            // is refused on the same facts, with a floor that can found in place of a trickle that
+            // runs.
+            float floorShare = config.FoundingFloorPoolShare;
+            if (floorShare > 0f)
+            {
+                if (count == 0 || !hashed)
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"FoundingFloorPoolShare is {floorShare} and the pool is not named ") +
+                        FormattableString.Invariant(
+                            $"(FoundingTricklePoolCount {count}, FoundingTricklePoolHash ") +
+                        (hashed ? "set" : "empty") + "). A share of the floor's founders drawn " +
+                        "from the pool needs the pool's size and the hash that pins its bytes; " +
+                        "name the pool with EVOSIM_TRICKLE_POOL, or set the share to 0.",
+                        nameof(config));
+                }
+
+                if (config.MinimumPopulation <= 0)
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"FoundingFloorPoolShare is {floorShare} and MinimumPopulation is ") +
+                        FormattableString.Invariant($"{config.MinimumPopulation}, so the floor never ") +
+                        "founds anyone and a header naming its pool share would describe a world " +
+                        "the run did not have.",
+                        nameof(config));
+                }
+
+                if (handed != count)
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"FoundingFloorPoolShare is {floorShare} and the config names a pool of ") +
+                        FormattableString.Invariant(
+                            $"{count} genomes, but the world was handed {handed}. The pool the ") +
+                        "world draws from has to be the pool the config pins (D117).",
+                        nameof(config));
+                }
+            }
+
             if (count > 0 && !hashed)
             {
                 throw new ArgumentException(
@@ -1763,6 +2268,7 @@ namespace Evosim.Core
             if (handed == 0) return Array.Empty<Genome>();
 
             bool priced = config.BuoyancyOffsetWattsPerCubicMetre > 0f;
+            bool central = config.Brain != null && config.Brain.BrainModel == BrainModel.Central;
             var kept = new Genome[handed];
 
             for (int i = 0; i < handed; i++)
@@ -1786,10 +2292,137 @@ namespace Evosim.Core
                         nameof(pool));
                 }
 
+                // The owner's ruling of 2026-10-04: a pool founder runs the world's brain. A Central
+                // world converts an old per-node genome at arrival (SpawnPoolFounder); the reverse
+                // has no conversion, and a central founder in a per-node world would breed a
+                // central lineage the config does not describe. Unlike Inoculate, which runs either
+                // brain in either world because an assay names its body by hand.
+                if (genome.Brain != null && !central)
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"Trickle pool genome {i:00} (pool/{i:00}.json) carries a central brain ") +
+                        "and the world's BrainModel is PerNode. A pool founder " +
+                        "runs the world's brain, and a central body has no per-node neurons to fall " +
+                        "back to; run the world Central (EVOSIM_BRAIN_MODEL central), or name a " +
+                        "per-node genome.",
+                        nameof(pool));
+                }
+
                 kept[i] = genome;
             }
 
             return kept;
+        }
+
+        /// <summary>
+        /// Refuses weights the pool cannot carry and returns the ones the world keeps, with their
+        /// running sums for the pick (<see cref="WeightedPoolIndex"/>): null and null when none
+        /// were handed, which is every recorded world.
+        /// </summary>
+        private static IReadOnlyList<double> ValidateTricklePoolWeights(
+            IReadOnlyList<Genome> pool, IReadOnlyList<double> weights, out double[] cumulative)
+        {
+            cumulative = null;
+            if (weights == null) return null;
+
+            if (weights.Count != pool.Count)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"The world was handed {weights.Count} trickle pool weights and a pool of ") +
+                    FormattableString.Invariant($"{pool.Count} genomes. A weight belongs to one ") +
+                    "pool genome, in the pool's order, and a pool with no genomes has none.",
+                    nameof(weights));
+            }
+
+            var kept = new double[weights.Count];
+            var sums = new double[weights.Count];
+            double total = 0d;
+
+            for (int i = 0; i < weights.Count; i++)
+            {
+                double w = weights[i];
+                if (!(w > 0d) || double.IsInfinity(w))
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"Trickle pool weight {i:00} is {w}; a weight is finite and above 0. ") +
+                        "A genome the trickle should never draw is left out of the pool, not " +
+                        "weighted 0.",
+                        nameof(weights));
+                }
+
+                kept[i] = w;
+                total += w;
+                sums[i] = total;
+            }
+
+            if (double.IsInfinity(total))
+            {
+                throw new ArgumentException(
+                    "The trickle pool's weights sum past the largest double. Scale them down; only " +
+                    "their ratios matter.",
+                    nameof(weights));
+            }
+
+            cumulative = sums;
+            return kept;
+        }
+
+        /// <summary>
+        /// Refuses a day cycle and a season cycle whose product does not average to 1: the cross
+        /// term vanishes only when the season is a whole number (at least 2) of days long, and
+        /// under the two-season shape (D151) an even number, so that each half holds whole days.
+        /// Refuses too a two-season ramp of half a season or more, and weather without a day cycle.
+        /// </summary>
+        private static void ValidateSeasons(LightModel light)
+        {
+            bool twoSeason = light.SeasonShape == SeasonShape.TwoSeason;
+
+            // Half a season is a quarter of the year. A longer ramp would leave less than half of
+            // each season at its own level, and at half the year the two ramps would overlap.
+            if (twoSeason && !(light.SeasonRampSeconds < 0.25 * light.SeasonLengthSeconds))
+            {
+                throw new ArgumentException(
+                    "A two-season ramp must be shorter than half a season (a quarter of " +
+                    "SeasonLengthSeconds); got SeasonRampSeconds " + light.SeasonRampSeconds +
+                    " s in a year of " + light.SeasonLengthSeconds + " s.",
+                    "config");
+            }
+
+            if (light.WeatherSpread > 0f && !(light.DayNightAmplitude > 0f))
+            {
+                throw new ArgumentException(
+                    "Weather is one factor a day, blended across each midnight, so it needs a day " +
+                    "cycle; got WeatherSpread " + light.WeatherSpread + " with DayNightAmplitude " +
+                    light.DayNightAmplitude + ".",
+                    "config");
+            }
+
+            if (!(light.SeasonAmplitude > 0f) || !(light.DayNightAmplitude > 0f)) return;
+
+            double ratio = (double)light.SeasonLengthSeconds / light.DayLengthSeconds;
+            double nearest = Math.Round(ratio);
+            if (nearest < 2d || Math.Abs(ratio - nearest) > 1e-9 * nearest)
+            {
+                throw new ArgumentException(
+                    "A day cycle and a season cycle together preserve the light's mean only when " +
+                    "SeasonLengthSeconds is a whole number (at least 2) of DayLengthSeconds; got " +
+                    light.SeasonLengthSeconds + " s over " + light.DayLengthSeconds + " s, a ratio of " +
+                    ratio.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + ".",
+                    "config");
+            }
+
+            if (twoSeason && Math.IEEERemainder(nearest, 2d) != 0d)
+            {
+                throw new ArgumentException(
+                    "A two-season year with a day cycle must be an even number of days, so that " +
+                    "summer and winter each hold whole days and switch at a midnight; got " +
+                    light.SeasonLengthSeconds + " s over " + light.DayLengthSeconds + " s, " +
+                    nearest.ToString("R", System.Globalization.CultureInfo.InvariantCulture) + " days.",
+                    "config");
+            }
         }
 
         /// <summary>
@@ -1801,6 +2434,68 @@ namespace Evosim.Core
         /// trickle's own bound (at most one founder a metabolic step on average) is the setter's,
         /// because it is a fact about the one number; these are facts about two.
         /// </remarks>
+        private static void ValidateAgeing(RunConfig config)
+        {
+            bool hazard = config.AgeHazardBaseSeconds > 0f;
+
+            if (config.AgeHazardBaseSeconds < 0f || float.IsNaN(config.AgeHazardBaseSeconds) ||
+                float.IsInfinity(config.AgeHazardBaseSeconds))
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"AgeHazardBaseSeconds is {config.AgeHazardBaseSeconds}; it is a median age ") +
+                    "at death in seconds, finite and at least 0 (0 is no death by age).",
+                    nameof(config));
+            }
+
+            if (hazard && config.SenescenceDoublingSeconds > 0f)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"AgeHazardBaseSeconds is {config.AgeHazardBaseSeconds} and ") +
+                    FormattableString.Invariant(
+                        $"SenescenceDoublingSeconds is {config.SenescenceDoublingSeconds}. ") +
+                    "D128 turns D038's wear off while the hazard is on: they are two accounts of " +
+                    "ageing, and the wear burns the reserve an old body's corpse is meant to keep.",
+                    nameof(config));
+            }
+
+            if (hazard && !(config.AgeHazardDoublingFraction > 0f &&
+                            !float.IsInfinity(config.AgeHazardDoublingFraction)))
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"AgeHazardDoublingFraction is {config.AgeHazardDoublingFraction}; the ") +
+                    "hazard doubles over this share of a body's base, so it is finite and above 0.",
+                    nameof(config));
+            }
+
+            if (config.AgeingPerBirth < 0f || config.AgeingPerWound < 0f ||
+                float.IsNaN(config.AgeingPerBirth) || float.IsNaN(config.AgeingPerWound))
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"AgeingPerBirth is {config.AgeingPerBirth} and AgeingPerWound ") +
+                    FormattableString.Invariant($"{config.AgeingPerWound}; ") +
+                    "each is how far an event pushes the ageing clock ahead, at least 0.",
+                    nameof(config));
+            }
+
+            if (!hazard && (config.AgeingPerBirth > 0f || config.AgeingPerWound > 0f ||
+                            config.AgeRepairExponent != 0f))
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"AgeingPerBirth is {config.AgeingPerBirth}, AgeingPerWound ") +
+                    FormattableString.Invariant(
+                        $"{config.AgeingPerWound} and AgeRepairExponent {config.AgeRepairExponent} ") +
+                    "with AgeHazardBaseSeconds at 0. Each of them works on the ageing hazard " +
+                    "(D128), and a header naming a rule the world does not run would describe " +
+                    "a world the run did not have.",
+                    nameof(config));
+            }
+        }
+
         private static void ValidateFounding(RunConfig config)
         {
             if (config.FoundingTricklePerSecond > 0f)
@@ -1873,6 +2568,93 @@ namespace Evosim.Core
                     "header naming it would describe a world the run did not have.",
                     nameof(config));
             }
+
+            // D131's settled rate needs corpses that exist and settle; with either off no corpse
+            // would ever read it, and a header naming it would describe a world the run did not have.
+            if (config.SenseScent && !(config.CorpseDecayPerSecond > 0f))
+            {
+                throw new ArgumentException(
+                    "SenseScent is on and corpses are not objects (CorpseDecayPerSecond 0), so there " +
+                    "is nothing to smell.", nameof(config));
+            }
+
+            // D146: the one brain is free by the owner's ruling that thinking be free for now, and the
+            // neural price is charged on node neurons, which a central genome has none of. A price set
+            // here would be charged to nobody, so it is refused rather than ignored.
+            if (config.Brain != null && config.Brain.BrainModel == BrainModel.Central &&
+                (config.NeuralCostPerNeuronWatts > 0f || config.NeuralCostPerConnectionWatts > 0f))
+            {
+                throw new ArgumentException(
+                    "BrainModel is Central and the neural price is above 0 (NeuralCostPerNeuronWatts " +
+                    "or NeuralCostPerConnectionWatts). The price reads node neurons, which the one brain " +
+                    "does not have, so it would charge nothing; set both to 0.", nameof(config));
+            }
+
+            // The drive sense reads the bend-and-power drive's envelope; a world without it has none.
+            if (config.SenseDrive && !(config.Fluid != null && config.Fluid.PowerPushRadiansPerSecond > 0f))
+            {
+                throw new ArgumentException(
+                    "SenseDrive is on and the world does not run the bend-and-power drive " +
+                    "(Fluid.PowerPushRadiansPerSecond 0), so there is no envelope to sense.", nameof(config));
+            }
+
+            // D162: the grip forms on each part's own contact sphere, as the touch is read.
+            if (config.CellTypes.Contains(CellTypeIds.Anchoring) && !config.ContactPerPart)
+            {
+                throw new ArgumentException(
+                    "The cell-type table holds the anchoring cell and ContactPerPart is off. The grip " +
+                    "forms on the touch of each part's own contact sphere, which only per-part contact " +
+                    "builds (D162).", nameof(config));
+            }
+
+            // The touch of the rock is read on each part's own contact sphere (D114).
+            if (config.SenseBedTouch && !config.ContactPerPart)
+            {
+                throw new ArgumentException(
+                    "SenseBedTouch is on and ContactPerPart is off. The touch of the rock is read on " +
+                    "each part's own contact sphere, which only per-part contact builds.", nameof(config));
+            }
+
+            if (config.CorpseSettledDecayPerSecond > 0f &&
+                !(config.CorpseDecayPerSecond > 0f && config.CorpseSettles))
+            {
+                throw new ArgumentException(
+                    "CorpseSettledDecayPerSecond is above 0 and corpses do not settle " +
+                    "(CorpseDecayPerSecond 0 or CorpseSettles off), so no corpse would ever decay at it.",
+                    nameof(config));
+            }
+
+            // D129 adds the corpses to D116's lottery as a mouth's food, so it has no lottery to
+            // join without D116, no corpse to read unless corpses are objects, and no mouth that
+            // could eat one without a reach. Each refused rather than ignored, for the same reason.
+            if (config.FoundersFollowCorpses)
+            {
+                if (!config.FoundersFollowFood)
+                {
+                    throw new ArgumentException(
+                        "FoundersFollowCorpses is on and FoundersFollowFood is off. D129 reads the " +
+                        "corpses as a mouth's food in D116's founder lottery, so it needs that rule " +
+                        "on; a header naming it would describe a world the run did not have.",
+                        nameof(config));
+                }
+
+                if (!(config.CorpseDecayPerSecond > 0f))
+                {
+                    throw new ArgumentException(
+                        "FoundersFollowCorpses is on and CorpseDecayPerSecond is 0. At 0 a death " +
+                        "deposits at once and no corpse ever lies anywhere, so there is nothing for a " +
+                        "mouth founder to follow.",
+                        nameof(config));
+                }
+
+                if (!(config.IntakeReachMetres > 0f))
+                {
+                    throw new ArgumentException(
+                        "FoundersFollowCorpses is on and IntakeReachMetres is 0. At 0 no mouth eats " +
+                        "from a corpse, so setting mouth founders beside the corpses would feed nobody.",
+                        nameof(config));
+                }
+            }
         }
 
         private static void ValidateVent(RunConfig config, int patchCount)
@@ -1937,6 +2719,36 @@ namespace Evosim.Core
         private static void ValidateMatterInflux(RunConfig config, int patchCount)
         {
             if (!(config.MatterInfluxPerSecond > 0f)) return;
+
+            // D175. The islands' tops are D109's columns, so a world without them has nowhere to
+            // name: refused rather than fed at the surface, which would be another world wearing
+            // this one's header. The budget is not asked for here: the islands themselves refuse
+            // a world without one, before the influx is planned.
+            if (config.MatterInfluxAt == MatterInflux.Islands)
+            {
+                if (config.FieldModel != MatterField.Grid)
+                {
+                    throw new ArgumentException(
+                        "MatterInfluxAt is Islands and MatterInfluxPerSecond is " +
+                        $"{config.MatterInfluxPerSecond}, but the matter field is {config.FieldModel}: " +
+                        "the islands' influx lands in D109's island columns, which only the grid field " +
+                        "(FieldModel Grid) has.",
+                        nameof(config));
+                }
+
+                if (!(config.MatterIslandWavelengthMetres > 0f))
+                {
+                    throw new ArgumentException(
+                        "MatterInfluxAt is Islands and MatterInfluxPerSecond is " +
+                        $"{config.MatterInfluxPerSecond}, but no islands are seeded " +
+                        "(MatterIslandWavelengthMetres is 0), so there is no island for the influx to " +
+                        "land on. Seed D109's islands, or choose surface or vent.",
+                        nameof(config));
+                }
+
+                return;
+            }
+
             if (config.MatterInfluxAt != MatterInflux.Vent) return;
 
             CurrentField current = config.Current;
@@ -2015,6 +2827,50 @@ namespace Evosim.Core
 
             creature.HeightY = heightY;
             creature.PendingWorkJoules += workJoules;
+        }
+
+        /// <summary>
+        /// Hands the world what a body's grips owe (D162): the anchoring cell's build price for each
+        /// grip the solver formed since the last hand-over. Charged to the reserve at the next
+        /// metabolic step, as a burn is, in both books.
+        /// </summary>
+        public void OweGrip(Organism creature, double joules)
+        {
+            if (creature == null) throw new ArgumentNullException(nameof(creature));
+            if (!(joules >= 0d) || double.IsInfinity(joules))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(joules), joules, "A grip's price is a cost, finite and not negative.");
+            }
+
+            creature.PendingGripJoules += joules;
+        }
+
+        /// <summary>Joules paid for grips across the world (D162), within <see cref="EnergyOut"/>.</summary>
+        public double GripJoulesTotal { get; private set; }
+
+        /// <summary>
+        /// Charges what the body's grips owe, from its reserve, as a burn: the joules leave as heat
+        /// and the same over ρ arrives in the spent field where the body is. A body that cannot pay
+        /// in full is left at exactly zero and dies at the check that follows, as a body short of
+        /// its bill does.
+        /// </summary>
+        private void ChargeGrips(Organism creature)
+        {
+            double owed = creature.PendingGripJoules;
+            creature.PendingGripJoules = 0d;
+
+            double paid = Math.Min(owed, Math.Max(0d, creature.Energy));
+            creature.Energy = paid < owed ? 0d : creature.Energy - paid;
+            if (!(paid > 0d)) return;
+
+            EnergyOut += paid;
+            double returned = paid / Config.JoulesPerUnit;
+            Matter.DepositExact(creature.Point, returned);
+            BurntTotal += returned;
+
+            GripJoulesTotal += paid;
+            creature.GripJoules += paid;
         }
 
         /// <summary>
@@ -2146,6 +3002,10 @@ namespace Evosim.Core
             // always obeyed, since Metabolise runs before all of this. Returns before touching
             // anything when there is no corpse, which is every world at CorpseDecayPerSecond 0.
             StepCorpses(seconds);
+            _scentFilledCorpses = _corpses.Count;
+            FillScent();
+            FillLeafScent();
+            WorldPhaseProbe.Mark(WorldPhaseProbe.ScentFill);
             WorldPhaseProbe.Mark(WorldPhaseProbe.Corpses);
 
             Nutrients.Settle(seconds);
@@ -2250,6 +3110,12 @@ namespace Evosim.Core
         /// <see cref="ValidateMatterInflux"/> has already refused the world in which those
         /// coordinates name nothing.
         /// </para>
+        /// <para>
+        /// <b><see cref="MatterInflux.Islands"/> lands by the seeding's plan</b> (D175,
+        /// <see cref="IslandInflux"/>): the top of D109's island columns, each column in proportion
+        /// to its stock at t = 0. The grid alone carries it; the construction refused any other
+        /// field.
+        /// </para>
         /// </remarks>
         private void DepositMatterInflux(float seconds)
         {
@@ -2302,6 +3168,13 @@ namespace Evosim.Core
             // influx into K centre cells would be a different world wearing the same knob.
             if (Matter is GridField grid)
             {
+                // D175. In the island seeding's cells and shares; what is counted is what was laid.
+                if (Config.MatterInfluxAt == MatterInflux.Islands)
+                {
+                    MatterInfluxedTotal += grid.DepositIslands(_islandInflux, amount);
+                    return;
+                }
+
                 float gridWidth = Matter.PatchWidthMetres;
                 float gridHalf = 0.5f * Matter.LayerMetres;
 
@@ -2410,14 +3283,28 @@ namespace Evosim.Core
         /// </remarks>
         private void StepCorpses(float seconds)
         {
+            CorpsesChanged();
+
             if (_corpses.Count == 0) return;
 
-            float sink = Nutrients.SinkMetresPerSecond * seconds;
+            // D127: a corpse sinks at its own rate when one is set, and at the snow's, as every
+            // corpse always has, when it is 0.
+            float sink = Config.CorpseSinkMetresPerSecond > 0f
+                ? Config.CorpseSinkMetresPerSecond * seconds
+                : Nutrients.SinkMetresPerSecond * seconds;
             CurrentField current = Config.Current;
             bool drifts = Config.SharedSpace && current != null && current.AdvectFields;
+            double floor = Config.CorpseLeavesBelowFraction;
 
-            double fraction = (double)Config.CorpseDecayPerSecond * seconds;
-            if (fraction > 1.0) fraction = 1.0;
+            double sinkingFraction = (double)Config.CorpseDecayPerSecond * seconds;
+            if (sinkingFraction > 1.0) sinkingFraction = 1.0;
+
+            // D131: a settled corpse decays at its own rate when one is set. At 0 it is the same
+            // double as the sinking one, so every recorded world takes the same instalments.
+            double settledFraction = Config.CorpseSettledDecayPerSecond > 0f
+                ? (double)Config.CorpseSettledDecayPerSecond * seconds
+                : sinkingFraction;
+            if (settledFraction > 1.0) settledFraction = 1.0;
 
             // Where every corpse is carried this step, before any of them hands anything over.
             // The two passes are independent: the water's velocity reads no field and a deposit
@@ -2439,48 +3326,186 @@ namespace Evosim.Core
             {
                 if (drifts) current.UnpinInstant();
             }
+            WorldPhaseProbe.Mark(WorldPhaseProbe.CorpseDrift);
+
+            double deposited = DetritusDepositedTotal;
+            DepositCorpses(_corpses, Nutrients, sinkingFraction, settledFraction, floor, ref deposited,
+                ref _depositCell, ref _depositAmount, ref _depositLast);
+            DetritusDepositedTotal = deposited;
+            WorldPhaseProbe.Mark(WorldPhaseProbe.CorpseDeposits);
+        }
+
+        /// <summary>
+        /// <see cref="StepCorpses"/>' second pass: every corpse's instalment to <paramref name="field"/>, in
+        /// the list's order, each added to <paramref name="total"/> in that order, and the corpses that leave
+        /// compacted out.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>On a grid the cells are found first, across Core's threads</b> (C2, card-next-r57.md). Each
+        /// corpse's instalment and cell depend on that corpse alone, and the grid's cell lookup reads its
+        /// shape and no stock, so a parallel pass computes them; a serial pass then makes the same additions
+        /// to the same stocks and totals in the list's order, so every double is the one the serial loop
+        /// made. A point the grid refuses is handed to the field's own door in that pass, which throws at
+        /// the same corpse as before. Any other field takes the serial loop.
+        /// </para>
+        /// <para>
+        /// <paramref name="cell"/>, <paramref name="amount"/> and <paramref name="last"/> are the batched
+        /// path's scratch, grown here and kept by the caller.
+        /// </para>
+        /// </remarks>
+        internal static void DepositCorpses(
+            List<Corpse> corpses, IMatterField field, double sinkingFraction, double settledFraction, double floor,
+            ref double total, ref int[] cell, ref double[] amount, ref bool[] last)
+        {
+            if (!(field is GridField grid))
+            {
+                DepositCorpsesSerially(corpses, field, sinkingFraction, settledFraction, floor, ref total);
+                return;
+            }
+
+            int n = corpses.Count;
+            if (cell == null || cell.Length < n)
+            {
+                int size = n + n / 4 + 16;
+                cell = new int[size];
+                amount = new double[size];
+                last = new bool[size];
+            }
+
+            int[] cells = cell;
+            double[] amounts = amount;
+            bool[] lasts = last;
+            Parallelism.ForRanges(n, (from, to) =>
+            {
+                for (int i = from; i < to; i++)
+                {
+                    Corpse corpse = corpses[i];
+                    double given = Instalment(corpse, sinkingFraction, settledFraction, floor, out bool leaves);
+                    amounts[i] = given;
+                    lasts[i] = leaves;
+                    cells[i] = given > 0d && grid.TryCellOf(corpse.Point, out int c) ? c : -1;
+                }
+            });
 
             int kept = 0;
-            for (int i = 0; i < _corpses.Count; i++)
+            for (int i = 0; i < n; i++)
             {
-                Corpse corpse = _corpses[i];
+                Corpse corpse = corpses[i];
+                double given = amounts[i];
+                bool leaves = lasts[i];
+                if (given > 0d)
+                {
+                    if (cells[i] >= 0) grid.AddToCell(cells[i], given);
+                    else if (leaves) grid.DepositExact(corpse.Point, given);
+                    else grid.Deposit(corpse.Point, (float)given);
+
+                    if (leaves) corpse.Joules = 0d;
+                    else corpse.Joules -= given;
+                    total += given;
+                }
+
+                if (leaves)
+                {
+                    corpse.Joules = 0d;
+                    continue;
+                }
+
+                corpses[kept++] = corpse;
+            }
+
+            if (kept < n) corpses.RemoveRange(kept, n - kept);
+        }
+
+        /// <summary>
+        /// One corpse's instalment this step, as the serial loop takes it: everything it holds when it leaves
+        /// (<paramref name="last"/>), otherwise its share as the float the field takes, held here as that
+        /// float's double; 0 when it hands over nothing. Reads the corpse and writes nothing.
+        /// </summary>
+        private static double Instalment(Corpse corpse, double sinkingFraction, double settledFraction, double floor, out bool last)
+        {
+            double fraction = corpse.Settled ? settledFraction : sinkingFraction;
+            last = fraction >= 1.0 || corpse.Joules < 1e-6;
+            if (!last && floor > 0d &&
+                corpse.Joules - corpse.Joules * fraction < floor * corpse.FirstJoules)
+            {
+                last = true;
+            }
+
+            if (!(corpse.Joules > 0d)) return 0d;
+            if (last) return corpse.Joules;
+            float given = (float)(corpse.Joules * fraction);
+            return given > 0f ? given : 0d;
+        }
+
+        /// <summary><see cref="DepositCorpses"/> on a field that is not a grid: the loop as it always ran.</summary>
+        internal static void DepositCorpsesSerially(
+            List<Corpse> corpses, IMatterField field, double sinkingFraction, double settledFraction, double floor,
+            ref double total)
+        {
+            int kept = 0;
+            for (int i = 0; i < corpses.Count; i++)
+            {
+                Corpse corpse = corpses[i];
+
+                // Settled is set by the drift above, so a corpse takes the settled rate from the
+                // step it lands.
+                double fraction = corpse.Settled ? settledFraction : sinkingFraction;
 
                 // The last instalment: everything that is left, in one go. One stock since D098,
                 // so one test — a corpse is charged matter and nothing else. A step long enough
                 // to ask for the whole remainder is the same case.
                 bool last = fraction >= 1.0 || corpse.Joules < 1e-6;
 
+                // D127's floor: an instalment that would leave the corpse under its share of what it
+                // was is the last one, so a standing corpse always holds at least that share. Off
+                // at 0, where this reads nothing and the test above is the one it always was.
+                if (!last && floor > 0d &&
+                    corpse.Joules - corpse.Joules * fraction < floor * corpse.FirstJoules)
+                {
+                    last = true;
+                }
+
                 FieldPoint at = corpse.Point;
 
                 if (corpse.Joules > 0d)
                 {
-                    float given = (float)(last ? corpse.Joules : corpse.Joules * fraction);
-                    if (given > 0f)
+                    if (last)
                     {
-                        Nutrients.Deposit(at, given);
-                        corpse.Joules -= given;
-                        DetritusDepositedTotal += given;
+                        // The last instalment goes through the field's exact door, so the corpse
+                        // leaves nothing behind. Until round 52's build it went as a float, and
+                        // the half ulp it dropped was zeroed with the corpse
+                        // (logbook/specs/r51-read/b1-probe.txt).
+                        double rest = corpse.Joules;
+                        field.DepositExact(at, rest);
+                        corpse.Joules = 0d;
+                        total += rest;
+                    }
+                    else
+                    {
+                        // An instalment on the way is the float the field takes, booked as the
+                        // same float, so the two halves of it cannot disagree.
+                        float given = (float)(corpse.Joules * fraction);
+                        if (given > 0f)
+                        {
+                            field.Deposit(at, given);
+                            corpse.Joules -= given;
+                            total += given;
+                        }
                     }
                 }
 
                 if (last)
                 {
-                    // The corpse leaves. A field takes a float and the corpse's own account is a
-                    // double, so the last instalment can leave half an ulp of what it carried
-                    // behind, either way. At the floor value that is under 1e-13, and at a step
-                    // long enough to empty a full corpse it is half an ulp of the body's own
-                    // tissue. It is released rather than carried by an object that would otherwise
-                    // halve for ever. This is the float quantisation every deposit in the world
-                    // already has; naming it is the point, since an audit read to 1e-6 of the sun's
-                    // whole input cannot see it and an unnamed rounding is how a leak hides.
+                    // The corpse leaves, released rather than carried by an object that would
+                    // otherwise halve for ever.
                     corpse.Joules = 0d;
                     continue;
                 }
 
-                _corpses[kept++] = corpse;
+                corpses[kept++] = corpse;
             }
-
-            if (kept < _corpses.Count) _corpses.RemoveRange(kept, _corpses.Count - kept);
+            if (kept < corpses.Count) corpses.RemoveRange(kept, corpses.Count - kept);
         }
 
         /// <summary>
@@ -2496,6 +3521,9 @@ namespace Evosim.Core
             bool tank = Config.WorldShape == WorldShape.Tank;
 
             corpse.AgeSeconds += seconds;
+
+            // D127: a corpse at rest on a reef's cap or the bed stays where it lies.
+            if (corpse.Settled) return;
 
             Float3 p = corpse.Position;
             float x = p.X;
@@ -2531,10 +3559,53 @@ namespace Evosim.Core
             }
 
             if (y > 0f) y = 0f;
-            else if (y < -depth) y = -depth;
+
+            // D127: the first solid surface under the corpse, a reef's cap it was above at the
+            // step's start or the bed, stops it for good. The bed bounds it and the world's depth
+            // does not: the depth is the bed's mean, and a tilted bed's deep side lies well below
+            // it. Round 51's smoke held 621 corpses at exactly -45 m over a bed down to -93 m, never
+            // settled and still drifting, because the depth's clamp ran first and the bed was never
+            // reached. The grid reaches the deepest column's floor (D092), so the deposit there is
+            // in the water. A world whose corpses do not settle keeps the clamp it always had, so
+            // every recorded run replays.
+            if (Config.CorpseSettles)
+            {
+                float rest = RestingHeight(x, z, p.Y);
+                if (y <= rest)
+                {
+                    y = rest;
+                    corpse.Settled = true;
+                }
+            }
+            else if (y < -depth)
+            {
+                y = -depth;
+            }
 
             corpse.Position = new Float3(x, y, z);
             if (drifts) corpse.Patch = PatchOfXZ(x, z);
+        }
+
+        /// <summary>
+        /// D127: the height of the first solid surface under a point at <paramref name="fromY"/>:
+        /// the highest reef cap whose outline covers the point and whose top is at or below it,
+        /// else the bed (the flat floor at the world's depth when there is no shaped bed).
+        /// Reads the world and writes nothing, so the drift's threads may share it.
+        /// </summary>
+        internal float RestingHeight(float x, float z, float fromY)
+        {
+            double rest = Bed != null ? Bed.FloorY(x, z) : -Config.WorldDepthMetres;
+
+            if (Reefs != null)
+            {
+                for (int r = 0; r < Reefs.Count; r++)
+                {
+                    double top = Reefs.CapTopY(r);
+                    if (top > rest && top <= fromY && Reefs.InsideOutline(r, x, z)) rest = top;
+                }
+            }
+
+            return (float)rest;
         }
 
         /// <summary>
@@ -2638,8 +3709,9 @@ namespace Evosim.Core
         }
 
         /// <summary>
-        /// D074's burial: a fraction of every patch's floor-layer free matter, out of the world
-        /// for good.
+        /// D074's burial: a fraction of the floor's free matter, out of the world for good. The
+        /// floor is the last layer on the cell field and each column's lowest live cell on the
+        /// grid (D175).
         /// </summary>
         /// <remarks>
         /// <para>
@@ -2668,6 +3740,19 @@ namespace Evosim.Core
         private void BuryMatter(float seconds)
         {
             float rate = Config.MatterBurialPerSecond;
+
+            // D190. The desert at its own rate, column by column: a floor cell gives its
+            // column's fraction of its own stock. The constructor has refused a desert rate
+            // without the islands' influx plan.
+            if (Config.MatterBurialDesertPerSecond >= 0f)
+            {
+                double island = Math.Min(1d, Math.Max(0d, (double)rate * seconds));
+                double desert = Math.Min(1d, (double)Config.MatterBurialDesertPerSecond * seconds);
+                if (island > 0d || desert > 0d)
+                    MatterBuriedTotal += ((GridField)Matter).BuryFloorByIslands(_islandInflux, island, desert);
+                return;
+            }
+
             if (!(rate > 0f)) return;
 
             double fraction = (double)rate * seconds;
@@ -2679,6 +3764,30 @@ namespace Evosim.Core
             if (Matter is VertexField vertices)
             {
                 MatterBuriedTotal += vertices.BuryFloor(fraction);
+                return;
+            }
+
+            // D175. On the grid the floor is each column's lowest live cell, where the snow
+            // actually rests on a sloped bed; the old reading, the array's last layer, is water
+            // only under the deepest hollow there. On a flat grid the two are the same cells read
+            // in the same order, so this branch gives the old numbers to the bit. Still a draw
+            // per patch spread over its cells by what each may give: at Edible = stock (no refuge)
+            // every cell gives the same fraction of its own, which is the per-column rule, and
+            // keeping the patch loop keeps the flat grid's rounding and its counter's sums.
+            if (Matter is GridField grid)
+            {
+                for (int patch = 0; patch < PatchCount; patch++)
+                {
+                    double before = grid.FloorStock(patch);
+                    if (!(before > 0d)) continue;
+
+                    float wanted = (float)(before * fraction);
+                    if (!(wanted > 0f)) continue;
+
+                    grid.TakeFromFloor(patch, wanted);
+                    MatterBuriedTotal += before - grid.FloorStock(patch);
+                }
+
                 return;
             }
 
@@ -2907,6 +4016,52 @@ namespace Evosim.Core
             WorldPhaseProbe.Mark(WorldPhaseProbe.Ledgers);
             Nutrients.FreezeAvailability();
             Matter.FreezeAvailability();
+            WorldPhaseProbe.Mark(WorldPhaseProbe.MetaboliseFreeze);
+
+            bool hazard = Config.AgeHazardBaseSeconds > 0f;
+
+            // The pure parts of every body's turn, taken before the walk and across Core's threads
+            // (card-next-r57.md Part 8): the two shares and the age hazard's arithmetic. Each reads
+            // only what the walk does not change before that body's turn, and writes only its own
+            // slot, so the walk below meets the same numbers it would have computed itself.
+            //  - The shares read the frozen availability and the demand, which nothing writes
+            //    during the walk; only a field whose ShareAt reads frozen arrays alone is asked
+            //    ahead (FrozenShares). A vertex field gathers into a scratch of its own and reads
+            //    the live stock, so the walk asks it itself, as before.
+            //  - The hazard is the age step's arithmetic with nothing written on the body (AgeStep).
+            //    The clock advances and the hazard is added only for a body still solvent after its
+            //    reserve update, and the walk keeps exactly that: it applies these numbers at that
+            //    point (AgedAt), after the update, and only for a solvent body. Nothing
+            //    in the walk moves a body's clock or hazard before its own turn, so the pre-pass
+            //    reads the same AgeClock the walk would.
+            int count = _living.Count;
+            EnsureTurnScratch(count);
+            bool sharesAhead = FrozenShares(Nutrients) && FrozenShares(Matter);
+            if (sharesAhead || hazard)
+            {
+                double k = hazard ? AgeHazardScale() : 0d;
+                Parallelism.ForRanges(count, (from, to) =>
+                {
+                    for (int j = from; j < to; j++)
+                    {
+                        Organism body = _living[j];
+                        if (sharesAhead)
+                        {
+                            _turnShare[j] = Nutrients.ShareAt(body.Point);
+                            _turnSpentShare[j] = Matter.ShareAt(body.Point);
+                        }
+
+                        if (hazard)
+                        {
+                            _turnClock[j] = AgeStep(body, seconds, k, out double added);
+                            _turnHazard[j] = added;
+                            _turnThreshold[j] = AgeThreshold(body);
+                        }
+                    }
+                });
+            }
+
+            WorldPhaseProbe.Mark(WorldPhaseProbe.MetabolisePrePass);
 
             for (int i = _living.Count - 1; i >= 0; i--)
             {
@@ -2918,8 +4073,8 @@ namespace Evosim.Core
                 float age = creature.Age;
                 creature.Age += seconds;
 
-                float share = Nutrients.ShareAt(creature.Point);
-                float spentShare = Matter.ShareAt(creature.Point);
+                float share = sharesAhead ? _turnShare[i] : Nutrients.ShareAt(creature.Point);
+                float spentShare = sharesAhead ? _turnSpentShare[i] : Matter.ShareAt(creature.Point);
                 EnergyLedger ledger = _ledgers[i];
 
                 // Recomputed only when one of the larders is short. Scaling the stored ledger
@@ -2928,6 +4083,7 @@ namespace Evosim.Core
                 // leaf, whose uptake saturates at UptakeHalfSaturation.
                 if (share < 1f || spentShare < 1f)
                 {
+                    WorldPhaseProbe.Count(WorldPhaseProbe.Rebilled, 1);
                     float rationed = share < 1f
                         ? Nutrients.FrozenEdibleDensityAt(creature.Point) * share
                         : Nutrients.FrozenEdibleDensityAt(creature.Point);
@@ -2978,6 +4134,8 @@ namespace Evosim.Core
                     // because a reader that multiplied again would halve a scarce world twice.
                     if (creature.HasAbsorptiveTissue) creature.LastDensityHere = rationed;
                 }
+
+                WorldPhaseProbe.Mark(WorldPhaseProbe.MetaboliseShares);
 
                 if (ledger.PoolDrawn > 0f)
                 {
@@ -3083,16 +4241,17 @@ namespace Evosim.Core
                 {
                     EnergyOut += burnt;
 
-                    // The one float left in this transfer, and it is the field's API rather than
-                    // an account: a deposit is a float and a cell is a double, so the water gains
-                    // half an ulp less or more than the reserve gave up. That is about 1e-12 units
-                    // a body-step against the 1e-7 the float reserve was losing, and it is the
-                    // same quantisation every deposit in the world already has (StepCorpses says
-                    // so at the corpse's last instalment).
-                    float returned = (float)(burnt / Config.JoulesPerUnit);
-                    Matter.Deposit(creature.Point, returned);
+                    // Through the field's exact door (round 52's build). Until then this was a
+                    // float, and the water gained half an ulp less or more than the reserve gave
+                    // up. In round 51 those halves kept one sign for thousands of seconds and were
+                    // 98% of B1's matter residual (logbook/specs/r51-read/b1-probe.txt).
+                    double returned = burnt / Config.JoulesPerUnit;
+                    Matter.DepositExact(creature.Point, returned);
                     BurntTotal += returned;
                 }
+
+                // D162: the grips formed since the last metabolic step, charged as a burn is.
+                if (creature.PendingGripJoules > 0d) ChargeGrips(creature);
 
                 // D098's leg 3. What the mouth tore up and did not keep is charged matter still,
                 // and it goes back into the water where the feeder is rather than leaving the
@@ -3116,15 +4275,32 @@ namespace Evosim.Core
                 // A gestating body (2026-09-24) is trimmed in Gestate instead, after it has banked
                 // its share: trimmed here, a body at its cap would clear nothing on the step, bank
                 // nothing, and never breed. Every lump breeder is trimmed here as it always was.
+                WorldPhaseProbe.Mark(WorldPhaseProbe.MetaboliseBooks);
                 if (!creature.Gestates) TrimReserve(creature);
 
-                if (creature.Energy > 0d) continue;
+                if (creature.Energy > 0d)
+                {
+                    // D128: a solvent body can still die of age. Its reserve goes to its corpse.
+                    bool aged = hazard && AgedAt(creature, i);
+                    WorldPhaseProbe.Mark(WorldPhaseProbe.MetaboliseAge);
+                    if (aged)
+                    {
+                        DeathsByAge++;
+                        Bury(creature, i, DeathCause.Aged);
+                        WorldPhaseProbe.Mark(WorldPhaseProbe.MetaboliseBurials);
+                    }
+
+                    continue;
+                }
+
+                WorldPhaseProbe.Mark(WorldPhaseProbe.MetaboliseAge);
 
                 // §5A.6 kills at exactly zero energy and nothing else — the ecology has one cause
                 // of death, and senescence (D038) raises upkeep until this fires sooner rather
                 // than opening a second way to die. DeathCause.Diverged is not a second way
                 // either: it is the solver failing, and it enters through KillDiverged below.
                 Bury(creature, i, DeathCause.Starved);
+                WorldPhaseProbe.Mark(WorldPhaseProbe.MetaboliseBurials);
             }
         }
 
@@ -3304,53 +4480,72 @@ namespace Evosim.Core
         {
             float reserveFloor = Config.GrowthReserveFloor;
 
+            // The juveniles first, in living order. They are the newest bodies and sit at the
+            // list's tail, so slabs over the whole list would leave one thread most of the work.
+            _juveniles.Clear();
             for (int i = 0; i < _living.Count; i++)
             {
-                Organism creature = _living[i];
-                if (creature.BodyFraction >= 1f) continue;
-
-                double adultTissue = creature.AdultTissueJoules;
-                double remaining = adultTissue - creature.TissueJoules;
-                if (!(remaining > 0d)) continue;
-
-                // What the reserve can spare. The floor is a fraction of the body this creature
-                // already has, so a large body keeps a large buffer and a newborn keeps a small
-                // one — the same proportion of the same thing at every size.
-                double target = creature.Energy - (double)reserveFloor * creature.TissueJoules;
-                if (target > remaining) target = remaining;
-                if (!(target > 0d)) continue;
-
-                double fraction = (creature.TissueJoules + target) / adultTissue;
-                if (fraction > 1d) fraction = 1d;
-
-                // The cube root, because the fraction is a volume and the parts are scaled by a
-                // length. Phenotype.Scaled says why the adult is the thing scaled from.
-                Phenotype grown = fraction >= 1d
-                    ? creature.AdultPhenotype
-                    : creature.AdultPhenotype.Scaled(
-                        (float)Math.Pow(fraction, 1d / 3d), Config.Shapes);
-
-                double actual = fraction >= 1d ? adultTissue : Metabolism.TissueJoules(grown, Config);
-                double spend = actual - creature.TissueJoules;
-
-                // The one case this refuses: a body whose re-measured tissue costs a hair more
-                // than the reserve holds. It is reachable only when the increment is already down
-                // in the rounding, and growing anyway would take a creature to a negative reserve
-                // — a death by bookkeeping rather than by starvation, which §5A.6 does not have.
-                if (spend > creature.Energy) continue;
-
-                creature.Energy -= spend;
-                creature.TissueJoules = actual;
-                creature.Phenotype = grown;
-                creature.BodyFraction = actual >= adultTissue ? 1f : (float)(actual / adultTissue);
-
-                // The two cached readings of a body that has just changed size. The standing cost
-                // is asked at this creature's own age so that growing does not quietly reset its
-                // senescence (D038); the absorptive volume is instrumentation, and a mouth that
-                // grew must be measured as the mouth it now is.
-                creature.StandingWatts = Metabolism.StandingWatts(grown, Config, creature.Age);
-                creature.AbsorptiveVolume = AbsorptiveVolumeOf(grown);
+                if (_living[i].BodyFraction < 1f) _juveniles.Add(i);
             }
+
+            WorldPhaseProbe.Count(WorldPhaseProbe.Juveniles, _juveniles.Count);
+
+            // Each body's growth reads its own state, the config and registries nothing writes,
+            // and writes its own fields alone: no sum, no field, no list, no draw. So the bodies
+            // grow in any order, on any thread, to the same bits.
+            Parallelism.ForRanges(_juveniles.Count, (from, to) =>
+            {
+                for (int j = from; j < to; j++) GrowOne(_living[_juveniles[j]], reserveFloor);
+            });
+        }
+
+        // The juveniles' indices into _living, Grow's own scratch.
+        private readonly List<int> _juveniles = new List<int>();
+
+        private void GrowOne(Organism creature, float reserveFloor)
+        {
+            double adultTissue = creature.AdultTissueJoules;
+            double remaining = adultTissue - creature.TissueJoules;
+            if (!(remaining > 0d)) return;
+
+            // What the reserve can spare. The floor is a fraction of the body this creature
+            // already has, so a large body keeps a large buffer and a newborn keeps a small
+            // one — the same proportion of the same thing at every size.
+            double target = creature.Energy - (double)reserveFloor * creature.TissueJoules;
+            if (target > remaining) target = remaining;
+            if (!(target > 0d)) return;
+
+            double fraction = (creature.TissueJoules + target) / adultTissue;
+            if (fraction > 1d) fraction = 1d;
+
+            // The cube root, because the fraction is a volume and the parts are scaled by a
+            // length. Phenotype.Scaled says why the adult is the thing scaled from.
+            Phenotype grown = fraction >= 1d
+                ? creature.AdultPhenotype
+                : creature.AdultPhenotype.Scaled(
+                    (float)Math.Pow(fraction, 1d / 3d), Config.Shapes);
+
+            double actual = fraction >= 1d ? adultTissue : Metabolism.TissueJoules(grown, Config);
+            double spend = actual - creature.TissueJoules;
+
+            // The one case this refuses: a body whose re-measured tissue costs a hair more
+            // than the reserve holds. It is reachable only when the increment is already down
+            // in the rounding, and growing anyway would take a creature to a negative reserve
+            // — a death by bookkeeping rather than by starvation, which §5A.6 does not have.
+            if (spend > creature.Energy) return;
+
+            WorldPhaseProbe.Count(WorldPhaseProbe.Grown, 1);
+            creature.Energy -= spend;
+            creature.TissueJoules = actual;
+            creature.Phenotype = grown;
+            creature.BodyFraction = actual >= adultTissue ? 1f : (float)(actual / adultTissue);
+
+            // The two cached readings of a body that has just changed size. The standing cost
+            // is asked at this creature's own age so that growing does not quietly reset its
+            // senescence (D038); the absorptive volume is instrumentation, and a mouth that
+            // grew must be measured as the mouth it now is.
+            creature.StandingWatts = Metabolism.StandingWatts(grown, Config, creature.Age);
+            creature.AbsorptiveVolume = AbsorptiveVolumeOf(grown);
         }
 
         /// <summary>Volume of <see cref="CellTypeIds.Absorptive"/> tissue in a body, m³.</summary>
@@ -3368,6 +4563,100 @@ namespace Evosim.Core
                 if (parts[i].CellTypeId == CellTypeIds.Absorptive) volume += parts[i].Volume;
             }
             return volume;
+        }
+
+        // Metabolise's pre-pass, parallel to _living at the walk's start. A burial removes the
+        // body at the walk's own index, which moves only the bodies the walk has already passed,
+        // so an index still names the body the pre-pass read. Reused, never reallocated smaller.
+        private float[] _turnShare = Array.Empty<float>(), _turnSpentShare = Array.Empty<float>();
+        private double[] _turnClock = Array.Empty<double>(), _turnHazard = Array.Empty<double>(),
+            _turnThreshold = Array.Empty<double>();
+
+        private void EnsureTurnScratch(int count)
+        {
+            if (_turnShare.Length >= count) return;
+            int size = Math.Max(count, 2 * _turnShare.Length);
+            _turnShare = new float[size];
+            _turnSpentShare = new float[size];
+            _turnClock = new double[size];
+            _turnHazard = new double[size];
+            _turnThreshold = new double[size];
+        }
+
+        // Whether a field's ShareAt reads only the arrays FreezeAvailability froze, and so may be
+        // asked for every body ahead of the walk and on any thread.
+        private static bool FrozenShares(IMatterField field) => field is GridField || field is NutrientField;
+
+        /// <summary>
+        /// D128: a solvent body's ageing over one metabolic step, written on the body at the walk's
+        /// point with the numbers Metabolise's pre-pass took (<see cref="AgeStep"/>): the clock
+        /// advanced, the hazard the step accumulated added, and whether it has passed the body's
+        /// threshold.
+        /// </summary>
+        private bool AgedAt(Organism creature, int i)
+        {
+            creature.AgeClock = _turnClock[i];
+            creature.AgeHazard += _turnHazard[i];
+            return creature.AgeHazard >= _turnThreshold[i];
+        }
+
+        /// <summary>
+        /// D128: one metabolic step of a body's ageing, computed and not applied: the clock it
+        /// advances to, returned, and the hazard the step adds. <paramref name="k"/> is
+        /// <see cref="AgeHazardScale"/>. Reads the body and writes nothing.
+        /// </summary>
+        private double AgeStep(Organism creature, float seconds, double k, out double added)
+        {
+            double doubling = AgeDoublingSeconds(creature);
+            double c0 = creature.AgeClock;
+            double c1 = c0 + seconds;
+
+            // K (2^(c1/D) - 2^(c0/D)): the hazard accumulated over the step, exactly, whatever the
+            // step's length. A clock pushed past a thousand doublings overflows both powers, and a
+            // body that old is dead: an overflow or its NaN reads as an infinite hazard.
+            added = k * (Math.Pow(2d, c1 / doubling) - Math.Pow(2d, c0 / doubling));
+            if (!(added < double.PositiveInfinity)) added = double.PositiveInfinity;
+
+            return c1;
+        }
+
+        /// <summary>
+        /// D128: a body's hazard doubling time, s: the world's doubling fraction of the body's own
+        /// base, which is the world's base stretched by the body's lifespan gene.
+        /// </summary>
+        internal double AgeDoublingSeconds(Organism creature) =>
+            (double)Config.AgeHazardDoublingFraction * Config.AgeHazardBaseSeconds *
+            creature.Genome.LifespanScale;
+
+        /// <summary>
+        /// D128: <c>K = ln 2 / (2^(1/f) - 1)</c>, the scale that puts the median age at death at a
+        /// body's base: the accumulated hazard <c>K (2^(c/D) - 1)</c> reaches <c>ln 2</c> at
+        /// <c>c = D / f</c>, the base, for any doubling fraction <c>f</c>.
+        /// </summary>
+        internal double AgeHazardScale() =>
+            Math.Log(2d) / (Math.Pow(2d, 1d / Config.AgeHazardDoublingFraction) - 1d);
+
+        /// <summary>
+        /// D128: the hazard at which this body dies of age, an exponential draw with mean 1 from
+        /// <see cref="AgeDeathIndex"/> and the body's id. Stateless: asked every step and the
+        /// same every time, so nothing is stored and a restore needs nothing.
+        /// </summary>
+        public double AgeThreshold(Organism creature)
+        {
+            var rng = new Rng(Rng.SeedFor(Rng.SeedFor(Seed, AgeDeathIndex), (ulong)creature.Id));
+            double u = (rng.NextUInt() + 0.5d) / 4294967296d;
+            return -Math.Log(u);
+        }
+
+        /// <summary>
+        /// D128, the owner's additions: push a body's ageing clock ahead by
+        /// <paramref name="doublings"/> of its hazard's doubling time. Under Gompertz's law this
+        /// multiplies the hazard from here on by <c>2^doublings</c> and adds none at the push.
+        /// </summary>
+        internal void PushAgeClock(Organism creature, double doublings)
+        {
+            if (!(doublings > 0d)) return;
+            creature.AgeClock += doublings * AgeDoublingSeconds(creature);
         }
 
         /// <summary>
@@ -3426,14 +4715,29 @@ namespace Evosim.Core
             // Nothing else about the death changes, and the lineage row is the same row. Guarded
             // on the knob rather than written as a general path, so at 0 the deposit below runs
             // exactly as it always has and every world on file replays.
-            if (Config.CorpseDecayPerSecond > 0f && remains > 0d)
+            if (Config.UnbittenDeathsLeaveNoCorpse && (cause != DeathCause.Eaten || !creature.HasPhotosyntheticTissue))
+            {
+                // D167's leaf tank: only a leaf a bite killed leaves food. Every other death burns, a body without
+                // photosynthetic tissue killed by a bite among them (the owner's ruling of 2026-10-13: the tank feeds on
+                // leaves alone).
+                BurnUnbitten(creature, remains);
+                creature.TissueJoules = 0d;
+            }
+            else if (Config.CorpseDecayPerSecond > 0f && remains > 0d)
             {
                 // A body with nothing to give founds nothing: a floor founder that never paid for
                 // itself and developed into no tissue would otherwise leave an empty object for
                 // the pass to carry and drop. A corpse's account is a double like the body's, so
                 // this branch is exact — what the body was worth is what the corpse holds.
+                CorpsesChanged();
                 _corpses.Add(new Corpse(
-                    creature.Id, creature.Point.Position, creature.Patch, remains));
+                    creature.Id, creature.Point.Position, creature.Patch, remains)
+                {
+                    Body = creature.Phenotype,
+                    ModuleCounts = creature.ModuleCounts,
+                    LostPartPaths = creature.LostPartPaths,
+                    ScaledBy = creature.Phenotype.ScaledBy,
+                });
 
                 // No counterpart line for either account: StandingJoules reads a living body's
                 // tissue and reserve and a corpse's joules into the same total, and the body's
@@ -3877,6 +5181,8 @@ namespace Evosim.Core
         {
             // The gate is Organism.BreedingGate, the one expression D124's founder cap also reads
             // (AdmitFounder), so the cap is asked of the gate this check applies.
+            if (BirthsHeld) { surplus = 0d; return false; }
+
             double gate = parent.BreedingGate(Config);
             double funds = parent.Gestates ? parent.GestationJoules : parent.Energy;
 
@@ -3985,8 +5291,17 @@ namespace Evosim.Core
                 buoyancyOffsetPriced: Config.BuoyancyOffsetWattsPerCubicMetre > 0f,
                 log: _mutationLog);
 
+            // D146: a central genome numbers any edge the mutation copied or made, so no two parts
+            // share a path id, before the body that the brain is wired against is developed.
+            if (childGenome.Brain != null) childGenome.NumberEdges();
+
             Phenotype body = Developer.Develop(
-                childGenome, Config.Development, null, Config.Shapes);
+                childGenome, Config.Development, null, Config.Shapes, cellTypes: Config.CellTypes);
+
+            if (childGenome.Brain != null)
+            {
+                GrowBrain(childGenome, body, seed, wireFresh: childGenome.Brain.Outputs.Count == 0, mutate: true);
+            }
 
             // The owner's ruling of 2026-09-24: what this birth gained by budding, for the lineage
             // row — each bud's cell type, and how many of the buds the body built. Read off the
@@ -4158,6 +5473,13 @@ namespace Evosim.Core
             if (gestating) parent.GestationJoules -= price;
             else parent.Energy -= price;
 
+            // D128, the owner's addition: a birth ages the parent, one doubling of its hazard for
+            // a child whose tissue is the parent's adult tissue, in proportion below that.
+            if (Config.AgeingPerBirth > 0f && parent.AdultTissueJoules > 0d)
+            {
+                PushAgeClock(parent, Config.AgeingPerBirth * (tissue / parent.AdultTissueJoules));
+            }
+
             // The child's body and its first reserve are transferred and stay in the world; the
             // overhead is burnt. It is paid per offspring, so it does not by itself tell one
             // brood of four from four broods of one (corrected 2026-09-07); the gate above does,
@@ -4170,8 +5492,13 @@ namespace Evosim.Core
             if (overheadPaid > 0f)
             {
                 EnergyOut += overhead;
-                float returnedUnits = overheadPaid / Config.JoulesPerUnit;
-                Matter.Deposit(parent.Point, returnedUnits);
+
+                // Through the field's exact door, in double, as the burn has gone since round 52's
+                // build (round 60's). Until then the units were a float, and a planted line breeding
+                // near-identical children rounded the same way at every birth: round 59's B1 drift,
+                // about 2e-5 units by 48,000 s in its two planted seeds (scratch/r59-read/b1-drift.txt).
+                double returnedUnits = overhead / Config.JoulesPerUnit;
+                Matter.DepositExact(parent.Point, returnedUnits);
                 BurntTotal += returnedUnits;
             }
 
@@ -4235,7 +5562,33 @@ namespace Evosim.Core
 
             EnsureFounderAcceptance();
 
-            for (int i = 0; i < wanted; i++) SpawnFounder(FounderSource.Floor);
+            float share = Config.FoundingFloorPoolShare;
+
+            for (int i = 0; i < wanted; i++)
+            {
+                // The owner's ruling of 2026-10-04: a share of the floor's founders are pool copies,
+                // so that the pool's bodies arrive while the world still has room to breed in. The
+                // two uniforms come from a stream keyed by this attempt's number and nothing else,
+                // and only with a share above 0, so a world at 0 takes the floor's draws to the bit
+                // and the trickle's stream is untouched whatever the share. The pick is the
+                // trickle's: weighted on the running sums when the world has weights, the recorded
+                // uniform expression otherwise.
+                if (share > 0f)
+                {
+                    var rng = new Rng(Rng.SeedFor(Rng.SeedFor(Seed, FloorPoolIndex), (ulong)FloorSpawns));
+                    if (rng.NextFloat() < share)
+                    {
+                        int pool = _tricklePool.Count;
+                        int index = _tricklePoolCumulative == null
+                            ? Math.Min(pool - 1, (int)(rng.NextFloat() * pool))
+                            : WeightedPoolIndex(_tricklePoolCumulative, rng.NextFloat());
+                        SpawnPoolFounder(index, atFloor: true);
+                        continue;
+                    }
+                }
+
+                SpawnFounder(FounderSource.Floor);
+            }
         }
 
         /// <summary>
@@ -4256,9 +5609,11 @@ namespace Evosim.Core
         public long TrickleSpawns { get; private set; }
 
         /// <summary>
-        /// Of <see cref="TrickleSpawns"/>, the founders that were copies from D117's pool,
-        /// running total — every attempt, refused ones included, as the trickle counts. 0 in every
-        /// world whose pool share is 0.
+        /// The founders that were copies from D117's pool, running total — every attempt, refused
+        /// ones included, as the trickle counts: of <see cref="TrickleSpawns"/>, and of
+        /// <see cref="FloorSpawns"/> too in a world with a floor share
+        /// (<see cref="RunConfig.FoundingFloorPoolShare"/>). 0 in every world whose two pool shares
+        /// are 0.
         /// </summary>
         public long PoolSpawns { get; private set; }
 
@@ -4269,6 +5624,45 @@ namespace Evosim.Core
         public IReadOnlyList<Genome> TricklePool => _tricklePool;
 
         private readonly IReadOnlyList<Genome> _tricklePool;
+
+        /// <summary>
+        /// The pool's weights in the pool's order, as the world was handed them; null when the
+        /// pool is picked from uniformly, which is every world whose pool was not named by a
+        /// weighted list.
+        /// </summary>
+        public IReadOnlyList<double> TricklePoolWeights => _tricklePoolWeights;
+
+        private readonly IReadOnlyList<double> _tricklePoolWeights;
+
+        // The weights' running sums, the pick's search table; null with no weights.
+        private readonly double[] _tricklePoolCumulative;
+
+        /// <summary>
+        /// The pool genome a weighted pick lands on for the uniform <paramref name="u"/> in [0, 1):
+        /// the first index whose running sum of weights exceeds <c>u</c> times their total, so
+        /// genome <c>i</c> takes a share of [0, 1) proportional to its weight. Public so the search
+        /// can be tested alone.
+        /// </summary>
+        /// <param name="cumulative">The weights' running sums, in the pool's order.</param>
+        /// <param name="u">The trickle's second uniform, the one the unweighted pick reads.</param>
+        public static int WeightedPoolIndex(IReadOnlyList<double> cumulative, float u)
+        {
+            if (cumulative == null) throw new ArgumentNullException(nameof(cumulative));
+
+            int n = cumulative.Count;
+            double target = u * cumulative[n - 1];
+
+            int lo = 0;
+            int hi = n - 1;
+            while (lo < hi)
+            {
+                int mid = (lo + hi) >> 1;
+                if (target < cumulative[mid]) hi = mid;
+                else lo = mid + 1;
+            }
+
+            return lo;
+        }
 
         /// <summary>
         /// D115's founding trickle (<c>logbook/specs/founding-trickle-spec.md</c> §1): after the
@@ -4319,12 +5713,17 @@ namespace Evosim.Core
                 // D117. Two more uniforms from the trickle's own stream, and only with a share
                 // above 0: the first decides pool or lottery, the second (taken only for the
                 // pool) which genome. At a share of 0 neither is drawn, so the stream, the
-                // genome seeds and the placer's draws are the trickle build's to the bit.
+                // genome seeds and the placer's draws are the trickle build's to the bit. A
+                // weighted pool reads the same second uniform through its running sums, so weights
+                // change which genome arrives and never how many draws are taken; without them the
+                // expression is the one every recorded pool world drew with.
                 if (share > 0f && _trickleRng.NextFloat() < share)
                 {
                     int pool = _tricklePool.Count;
-                    int index = Math.Min(pool - 1, (int)(_trickleRng.NextFloat() * pool));
-                    SpawnPoolFounder(index);
+                    int index = _tricklePoolCumulative == null
+                        ? Math.Min(pool - 1, (int)(_trickleRng.NextFloat() * pool))
+                        : WeightedPoolIndex(_tricklePoolCumulative, _trickleRng.NextFloat());
+                    SpawnPoolFounder(index, atFloor: false);
                     continue;
                 }
 
@@ -4361,6 +5760,43 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// D146: wires a central genome's brain to the body it developed and, for a birth, mutates
+        /// it. An empty brain is wired fresh (<paramref name="wireFresh"/>); otherwise a new joint
+        /// copies its nearest joint (<see cref="CentralWiring.Effective"/>). The draws come from a
+        /// stream of their own, derived from <paramref name="seed"/>, so no other draw of the world
+        /// moves.
+        /// </summary>
+        /// <remarks>
+        /// The result is validated here, where it is made: a brain that broke a rule would
+        /// otherwise be refused only at the creature's next mutation or rebuild, far from its cause.
+        /// </remarks>
+        private void GrowBrain(Genome genome, Phenotype body, ulong seed, bool wireFresh, bool mutate)
+        {
+            var rng = new Rng(Rng.SeedFor(seed, BrainStream));
+            SensorChannel[] pool = Config.SensorPool();
+
+            genome.Brain = CentralWiring.Effective(
+                genome.Brain, body, rng, pool, Config.Brain, founder: wireFresh);
+
+            if (mutate) CentralMutation.Mutate(genome.Brain, body, pool, rng, Config.Brain);
+
+            List<string> issues = genome.Brain.Validate();
+            if (issues.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    "D146: a grown brain broke a rule: " + string.Join("; ", issues));
+            }
+
+            body.Brain = genome.Brain;
+        }
+
+        // "BRAN": the stream index of D146's brain draws at a birth.
+        private const ulong BrainStream = 0x4252414EUL;
+
+        // "INOC": the seed an empty-brained inoculant's brain is wired from.
+        private const ulong InoculantBrainStream = 0x494E4F43UL;
+
+        /// <summary>
         /// One founder, drawn, placed, endowed and admitted — the floor's own spawn path, shared
         /// with D115's trickle so that the two sources cannot drift apart. The counter the
         /// attempt lands in is the source's.
@@ -4374,6 +5810,10 @@ namespace Evosim.Core
             // is drawn at this run's own intake cap, not at the built-in table's.
             Genome genome = GenomeFactory.Founder(
                 rng, Config.Genome, Config.SensorPool(), Config.CellTypes);
+
+            // D146: the founder's body is the one the old model's stream drew, and its neurons are
+            // dropped for the one brain, which AdmitFounder wires once the body is developed.
+            if (Config.Brain.BrainModel == BrainModel.Central) CentralWiring.Convert(genome);
 
             // Placed through the lit zone rather than at the surface. Starting everything at
             // depth zero would hand generation zero the best light in the world and make the
@@ -4400,24 +5840,154 @@ namespace Evosim.Core
         /// The seed labels the birth and draws the founder's depth the way a lottery founder's own
         /// stream does after its genome; nothing mutates the genome, for
         /// <see cref="Inoculate"/>'s reason: the point is the body the launcher named.
+        /// <para>
+        /// In a Central world a pool genome with no central brain (an old per-node genome) is
+        /// converted on arrival exactly as a lottery founder is (D146: the neurons dropped, the
+        /// empty brain wired all to all once the body is developed), by the owner's ruling of
+        /// 2026-10-04 that a pool founder runs the world's brain. The wiring draws from the brain
+        /// stream of this founder's own seed, which nothing else draws, so no other draw of the
+        /// world moves; a pool genome that already carries a central brain keeps it unmutated, and
+        /// a per-node world takes the pool genome as it is (a central one is refused at
+        /// construction).
+        /// </para>
+        /// <para>
+        /// <paramref name="atFloor"/> marks a floor founder drawn from the pool
+        /// (<see cref="RunConfig.FoundingFloorPoolShare"/>): it is counted in
+        /// <see cref="FloorSpawns"/> rather than <see cref="TrickleSpawns"/>, and its lineage row
+        /// is the trickle's pool row (<c>"src":"pool"</c>, its pool index), told apart only by its
+        /// time, which is before <see cref="RunConfig.FloorClosesAfterSeconds"/>; the trickle runs
+        /// only after it.
+        /// </para>
         /// </remarks>
-        private void SpawnPoolFounder(int index)
+        private void SpawnPoolFounder(int index, bool atFloor)
         {
             ulong seed = Rng.SeedFor(Seed, _nextIndex++);
             float height = -new Rng(seed).Range(0f, Config.FounderDepthSpread);
 
-            AdmitFounder(_tricklePool[index], seed, height, FounderSource.Pool, index);
+            Genome genome = _tricklePool[index];
+            if (genome.Brain == null && Config.Brain.BrainModel == BrainModel.Central)
+            {
+                // A copy: the pool's genome is drawn from again and stays the file's body.
+                genome = genome.Clone();
+                CentralWiring.Convert(genome);
+            }
+
+            AdmitFounder(genome, seed, height, FounderSource.Pool, index, atFloor);
+        }
+
+        /// <summary>
+        /// Plants one immigrant: a copy of <paramref name="genome"/>, the genome of creature
+        /// <paramref name="fromId"/> of the world at place <paramref name="fromWorld"/> in this
+        /// world's group — D159's exchange. Placed, endowed and admitted through the founders'
+        /// own path (<see cref="AdmitFounder"/>), so it lands where a founder would and starts
+        /// with what a founder would.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A founder's placement and a founder's start, by D159.</b> Its depth is drawn over
+        /// <see cref="RunConfig.FounderDepthSpread"/> from a seed of the world's own stream, as a
+        /// pool founder's is, and the placer and the founders' acceptance rules then treat it as
+        /// a founder. It is born at its genome's birth fraction with the founder's purse, the
+        /// endowment (<see cref="FounderEndowmentFor"/>) and D124's cap, and not with
+        /// <see cref="Inoculate"/>'s fixed depth and bare purse. Both books take it as income, as
+        /// they take a founder, because the creature it was copied from stays in its own world.
+        /// </para>
+        /// <para>
+        /// <b>Refused quietly and counted.</b> A body under the newborn mass floor, one with no
+        /// room to be placed and a stillbirth all return -1 and count in
+        /// <see cref="ImmigrantsRefused"/>; nothing is thrown, because the exchange picks among
+        /// the living of a world with this one's rules and a refusal is a fact about the body.
+        /// </para>
+        /// <para>
+        /// <b>Not mutated.</b> The genome is copied, so the source world's creature and this one
+        /// share nothing, and the copy is planted as it is: the point is the body that lived
+        /// there. In a Central world a genome without a central brain is converted as a pool
+        /// founder's is; a central genome is refused in a per-node world, which a group of one
+        /// config cannot produce.
+        /// </para>
+        /// <para>
+        /// <b>Its generation depth is the one it carried</b>, so a world's deepest lineage says how
+        /// many births made the body, wherever they happened. Its row's parent is -1, and the
+        /// row's <c>from</c> and <c>fid</c> say where the chain goes on.
+        /// </para>
+        /// </remarks>
+        /// <returns>The immigrant's id in this world, or -1 when it was refused.</returns>
+        /// <exception cref="InvalidOperationException">
+        /// Species accounting is on (<see cref="RunConfig.SpeciesDriftThreshold"/> above 0). See
+        /// the remark in the body: D159's species rule is not built yet.
+        /// </exception>
+        public long Immigrate(Genome genome, int fromWorld, long fromId, int generationDepth)
+        {
+            if (genome == null) throw new ArgumentNullException(nameof(genome));
+            if (fromWorld < 0) throw new ArgumentOutOfRangeException(nameof(fromWorld), fromWorld, "A world's place in its group is 0 or above.");
+            if (fromId < 0) throw new ArgumentOutOfRangeException(nameof(fromId), fromId, "A creature's id is 0 or above.");
+            if (generationDepth < 0) throw new ArgumentOutOfRangeException(nameof(generationDepth), generationDepth, "A generation depth is 0 or above.");
+
+            // The owner's ruling of 2026-10-09 (D159): an immigrant keeps its home species, tagged
+            // with the world it came from. The tag carries the original home: an immigrant's child
+            // that migrates again is still of the species it was founded in, tagged with that
+            // first world, not with the world it left last. Building it means a species registry
+            // that holds another world's founders, and round 58 runs with species off, where every
+            // body is species 0 and the ruling is inert. So a world with species on refuses an
+            // immigrant rather than found a new species for it, which is what AssignSpecies would
+            // do with a parentless body and what the ruling forbids.
+            if (Config.SpeciesDriftThreshold > 0f)
+            {
+                throw new InvalidOperationException(
+                    "An immigrant cannot be planted in a world with species accounting on " +
+                    FormattableString.Invariant($"(SpeciesDriftThreshold {Config.SpeciesDriftThreshold}). ") +
+                    "D159's ruling is that an immigrant keeps its home species, tagged with the world " +
+                    "it came from, and this build has no tagged species path; planting it would found " +
+                    "a new species instead. Run the exchange with species off, or build the tagged path.");
+            }
+
+            bool central = Config.Brain.BrainModel == BrainModel.Central;
+            if (genome.Brain != null && !central)
+            {
+                throw new ArgumentException(
+                    "An immigrant with a central brain cannot be planted in a per-node world; the " +
+                    "worlds of one group run one brain model.", nameof(genome));
+            }
+
+            EnsureFounderAcceptance();
+            LastImmigrantRefusal = ImmigrantRefusal.None;
+
+            genome = genome.Clone();
+            if (genome.Brain == null && central) CentralWiring.Convert(genome);
+
+            ulong seed = Rng.SeedFor(Seed, _nextIndex++);
+            float height = -new Rng(seed).Range(0f, Config.FounderDepthSpread);
+
+            Organism planted = AdmitFounder(
+                genome, seed, height, FounderSource.None, poolIndex: -1,
+                fromWorld: fromWorld, fromId: fromId, generationDepth: generationDepth);
+
+            return planted != null ? planted.Id : -1;
         }
 
         /// <summary>
         /// The half of a founder's spawn that follows its genome and depth: patch, development,
         /// birth fraction, the placer, <see cref="Admit"/> and the count — shared by the lottery's
         /// founders (<see cref="SpawnFounder"/>) and D117's pool (<see cref="SpawnPoolFounder"/>),
-        /// so the two cannot drift apart.
+        /// so the two cannot drift apart — and by D159's immigrants (<see cref="Immigrate"/>), so
+        /// that an immigrant is placed and endowed exactly as a founder is.
         /// </summary>
-        private void AdmitFounder(
-            Genome genome, ulong seed, float height, FounderSource source, int poolIndex)
+        /// <remarks>
+        /// An immigrant (<paramref name="fromWorld"/> 0 or above) differs from a founder in what
+        /// is recorded and counted, and nowhere else: its row is <see cref="BirthKind.Immigration"/>
+        /// with the world and the creature it came from and the generation depth it carried, and
+        /// its admission and every refusal are counted in <see cref="Immigrated"/> and
+        /// <see cref="ImmigrantsRefused"/> and in none of the founders' counters. A founder's call
+        /// passes none of the three and is the call it always was.
+        /// </remarks>
+        /// <returns>The admitted creature, or null when it was refused or stillborn.</returns>
+        private Organism AdmitFounder(
+            Genome genome, ulong seed, float height, FounderSource source, int poolIndex,
+            bool atFloor = false,
+            int fromWorld = -1, long fromId = -1, int generationDepth = 0)
         {
+            bool immigrant = fromWorld >= 0;
+
             // D061. A second, independent seed slot, drawn only when there is more than one
             // patch to land in — the CLAUDE.md guard: any new Rng draw on a path that runs at
             // K=1 breaks bit-identity, so this is skipped entirely rather than drawn and
@@ -4435,8 +6005,20 @@ namespace Evosim.Core
                 patch = new Rng(patchSeed).Range(PatchCount);
             }
 
+            // D146: a central founder's brain is wired to its own body. A copy, since a pool founder
+            // is the pool's genome itself and the pool is drawn from again.
+            if (genome.Brain != null) genome = genome.Clone();
+
             Phenotype adult = Developer.Develop(
-                genome, Config.Development, null, Config.Shapes);
+                genome, Config.Development, null, Config.Shapes, cellTypes: Config.CellTypes);
+
+            // A pool founder's brain is the pool's, already wired: it is checked against the body
+            // and never mutated, by SpawnPoolFounder's rule that the point is the body the
+            // launcher named. Only an empty brain (a lottery founder's) is wired fresh.
+            if (genome.Brain != null)
+            {
+                GrowBrain(genome, adult, seed, wireFresh: genome.Brain.Outputs.Count == 0, mutate: false);
+            }
 
             // fable-propose-growth.md rule 7: a founder is born as a child is, at its own
             // genome's birth fraction, so the founding lottery runs under the same rule as
@@ -4454,9 +6036,19 @@ namespace Evosim.Core
             // exists because every divergence on record was a newborn.
             if (!admissible)
             {
+                // D159: an immigrant is refused quietly and counted, never thrown. The exchange
+                // picks among the living of a world with this world's rules, so a refusal here is
+                // a fact about the body and not a mistake in the run.
+                if (immigrant)
+                {
+                    ImmigrantsRefused++;
+                    LastImmigrantRefusal = ImmigrantRefusal.UnderMassFloor;
+                    return null;
+                }
+
                 FoundersUnderMassFloor++;
-                CountFounderAttempt(source);
-                return;
+                CountFounderAttempt(source, atFloor);
+                return null;
             }
 
             bool shared = Config.SharedSpace && Placement != null && body.PartCount > 0;
@@ -4467,9 +6059,16 @@ namespace Evosim.Core
             // packing the world rather than sampling it.
             if (shared && !Placement.TryReserveFounder(adult, ref height, out patch))
             {
+                if (immigrant)
+                {
+                    ImmigrantsRefused++;
+                    LastImmigrantRefusal = ImmigrantRefusal.NoRoom;
+                    return null;
+                }
+
                 CrowdedStillbirths++;
-                CountFounderAttempt(source);
-                return;
+                CountFounderAttempt(source, atFloor);
+                return null;
             }
 
             // The round 48 founding ruling (RunConfig.FounderEndowmentSeconds): seconds of the
@@ -4519,18 +6118,37 @@ namespace Evosim.Core
             }
 
             Organism founder = Admit(
-                genome, body, BirthKind.Floor, seed, parentId: -1, generationDepth: 0,
+                genome, body, immigrant ? BirthKind.Immigration : BirthKind.Floor, seed,
+                parentId: -1, generationDepth: generationDepth,
                 energy: start,
                 tissue: tissue, heightY: height, parent: null,
                 patch: patch, adultPhenotype: adult,
                 adultTissue: adultTissue,
                 founderSource: source, poolIndex: poolIndex, endowment: endowment,
-                landing: landing, capCut: capCut);
+                landing: landing, capCut: capCut,
+                immigrantFromWorld: fromWorld, immigrantFromId: fromId);
 
             if (shared)
             {
                 if (founder != null) Placement.Commit(founder.Id);
                 else Placement.Release();
+            }
+
+            if (immigrant)
+            {
+                // D124's cut is on the immigrant's row; the two counters stay the founders'.
+                if (founder != null)
+                {
+                    Immigrated++;
+                    _living.Add(founder);
+                }
+                else
+                {
+                    ImmigrantsRefused++;
+                    LastImmigrantRefusal = ImmigrantRefusal.Stillborn;
+                }
+
+                return founder;
             }
 
             // D124's two counters, of admitted founders only: a stillborn founder was given
@@ -4544,8 +6162,9 @@ namespace Evosim.Core
             // A stillborn founder is still an attempt, and counting it keeps the floor's
             // trickle a trickle. Not counting it would let a step retry until something
             // developed, which is the floor quietly selecting for viability.
-            CountFounderAttempt(source);
+            CountFounderAttempt(source, atFloor);
             if (founder != null) _living.Add(founder);
+            return founder;
         }
 
         /// <summary>
@@ -4609,16 +6228,19 @@ namespace Evosim.Core
         /// reads the floor alone once the trickle is on.
         /// </summary>
         /// <remarks>
-        /// A D117 pool founder is a trickle founder in this count and also in
-        /// <see cref="PoolSpawns"/>, so <c>trickle</c> still reads every founder the trickle drew
-        /// and <c>pool</c> the share of them that came from the pool.
+        /// A D117 pool founder is counted where it arrived, the floor or the trickle, and also in
+        /// <see cref="PoolSpawns"/>, so <c>floor</c> and <c>trickle</c> still read every founder
+        /// each drew and <c>pool</c> the ones of either that came from the pool. A world whose
+        /// floor share is 0 counts no pool founder at the floor, so there <c>pool</c> is still a
+        /// share of <c>trickle</c>.
         /// </remarks>
-        private void CountFounderAttempt(FounderSource source)
+        private void CountFounderAttempt(FounderSource source, bool atFloor)
         {
             if (source == FounderSource.Trickle) TrickleSpawns++;
             else if (source == FounderSource.Pool)
             {
-                TrickleSpawns++;
+                if (atFloor) FloorSpawns++;
+                else TrickleSpawns++;
                 PoolSpawns++;
             }
             else FloorSpawns++;
@@ -4671,50 +6293,7 @@ namespace Evosim.Core
 
             EnsureFounderAcceptance();
 
-            // D111, before anything is spent: an inoculant floating off its centre in a world
-            // that does not price it would carry a trait nothing charges for. Loud, for rule 3's
-            // reason below — an assay names its genome deliberately.
-            // Only this rule is asked here; everything else Validate says is Develop's to say, as
-            // it always was, against the registry it always used.
-            if (!(Config.BuoyancyOffsetWattsPerCubicMetre > 0f))
-            {
-                for (int n = 0; n < genome.Nodes.Count; n++)
-                {
-                    if (genome.Nodes[n].BuoyancyOffset == 0f) continue;
-
-                    throw new ArgumentException(
-                        FormattableString.Invariant(
-                            $"inoculant's node {n} floats off its centre (BuoyancyOffset ") +
-                        FormattableString.Invariant($"{genome.Nodes[n].BuoyancyOffset}) in a world ") +
-                        "that does not price it (BuoyancyOffsetWattsPerCubicMetre 0), D111. " +
-                        "Set the price, or bring the genome's offsets to 0.",
-                        nameof(genome));
-                }
-            }
-
-            // Rule 3, asked once and before anything is spent. Every copy is the same genome
-            // developed the same way, so the answer is the same for all of them; asking inside
-            // the loop would burn a seed and leave the world half inoculated on the way to the
-            // same exception. Loud rather than quiet, unlike the floor's own draw: an assay names
-            // one genome deliberately, so a body the physics cannot carry is a mistake in the
-            // pre-registration, and silently placing nothing would leave an experiment reporting
-            // an inoculation that never happened.
-            if (count > 0 && !NewbornFrom(
-                    genome,
-                    Developer.Develop(genome, Config.Development, null, Config.Shapes),
-                    out Phenotype preflight, out _, out float preflightFraction))
-            {
-                throw new ArgumentException(
-                    "inoculant is under the newborn mass floor: its lightest part weighs " +
-                    FormattableString.Invariant(
-                        $"{LightestPartKilograms(preflight):0.####} kg at its birth fraction of ") +
-                    FormattableString.Invariant($"{preflightFraction:0.###}, and the floor is ") +
-                    FormattableString.Invariant(
-                        $"{Config.MinNewbornPartKilograms:0.####} kg ") +
-                    "(fable-propose-growth.md rule 3). Raise the genome's birth investment, " +
-                    "lower its brood size, or lower MinNewbornPartKilograms.",
-                    nameof(genome));
-            }
+            genome = InoculantReady(genome, count > 0);
 
             for (int i = 0; i < count; i++)
             {
@@ -4733,7 +6312,8 @@ namespace Evosim.Core
                     patch = new Rng(patchSeed).Range(PatchCount);
                 }
 
-                Phenotype adult = Developer.Develop(genome, Config.Development, null, Config.Shapes);
+                Phenotype adult = Developer.Develop(
+                    genome, Config.Development, null, Config.Shapes, cellTypes: Config.CellTypes);
 
                 // fable-propose-growth.md rule 7, exactly as EnforceFloor applies it: an
                 // inoculant has no parent either, so it is born at its own genome's birth
@@ -4777,6 +6357,75 @@ namespace Evosim.Core
                 Inoculated++;
                 if (creature != null) _living.Add(creature);
             }
+        }
+
+        /// <summary>
+        /// The genome an inoculant is admitted with, and the refusals asked of it before anything is
+        /// spent: <see cref="Inoculate"/>'s and <see cref="InoculateAt"/>'s, written once so that the
+        /// two doors cannot drift apart. <paramref name="admitting"/> false (no copy asked for) skips
+        /// rule 3, as <see cref="Inoculate"/> always has.
+        /// </summary>
+        private Genome InoculantReady(Genome genome, bool admitting)
+        {
+            // D146: an inoculant runs the brain it carries, either model in either world; an assay
+            // names its genome deliberately (the nursery's hand-wired controls are old-model brains
+            // in a central world). A central genome whose brain is empty is wired fresh to its body,
+            // on a stream of its own so that no draw of the world moves.
+            if (genome.Brain != null && genome.Brain.Outputs.Count == 0)
+            {
+                genome = genome.Clone();
+                genome.NumberEdges();
+                Phenotype wired = Developer.Develop(
+                    genome, Config.Development, null, Config.Shapes, cellTypes: Config.CellTypes);
+                GrowBrain(genome, wired, Rng.SeedFor(Seed, InoculantBrainStream), wireFresh: true, mutate: false);
+            }
+
+            // D111, before anything is spent: an inoculant floating off its centre in a world
+            // that does not price it would carry a trait nothing charges for. Loud, for rule 3's
+            // reason below — an assay names its genome deliberately.
+            // Only this rule is asked here; everything else Validate says is Develop's to say, as
+            // it always was, against the registry it always used.
+            if (!(Config.BuoyancyOffsetWattsPerCubicMetre > 0f))
+            {
+                for (int n = 0; n < genome.Nodes.Count; n++)
+                {
+                    if (genome.Nodes[n].BuoyancyOffset == 0f) continue;
+
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"inoculant's node {n} floats off its centre (BuoyancyOffset ") +
+                        FormattableString.Invariant($"{genome.Nodes[n].BuoyancyOffset}) in a world ") +
+                        "that does not price it (BuoyancyOffsetWattsPerCubicMetre 0), D111. " +
+                        "Set the price, or bring the genome's offsets to 0.",
+                        nameof(genome));
+                }
+            }
+
+            // Rule 3, asked once and before anything is spent. Every copy is the same genome
+            // developed the same way, so the answer is the same for all of them; asking inside
+            // the loop would burn a seed and leave the world half inoculated on the way to the
+            // same exception. Loud rather than quiet, unlike the floor's own draw: an assay names
+            // one genome deliberately, so a body the physics cannot carry is a mistake in the
+            // pre-registration, and silently placing nothing would leave an experiment reporting
+            // an inoculation that never happened.
+            if (admitting && !NewbornFrom(
+                    genome,
+                    Developer.Develop(genome, Config.Development, null, Config.Shapes, cellTypes: Config.CellTypes),
+                    out Phenotype preflight, out _, out float preflightFraction))
+            {
+                throw new ArgumentException(
+                    "inoculant is under the newborn mass floor: its lightest part weighs " +
+                    FormattableString.Invariant(
+                        $"{LightestPartKilograms(preflight):0.####} kg at its birth fraction of ") +
+                    FormattableString.Invariant($"{preflightFraction:0.###}, and the floor is ") +
+                    FormattableString.Invariant(
+                        $"{Config.MinNewbornPartKilograms:0.####} kg ") +
+                    "(fable-propose-growth.md rule 3). Raise the genome's birth investment, " +
+                    "lower its brood size, or lower MinNewbornPartKilograms.",
+                    nameof(genome));
+            }
+
+            return genome;
         }
 
         /// <summary>Stillbirths — genomes development refused, for any of its reasons.</summary>
@@ -4956,7 +6605,8 @@ namespace Evosim.Core
             FounderSource founderSource = FounderSource.None, int poolIndex = -1,
             double endowment = 0d,
             string budCells = null, int budsExpressed = 0,
-            Float3? landing = null, double capCut = 0d)
+            Float3? landing = null, double capCut = 0d,
+            int immigrantFromWorld = -1, long immigrantFromId = -1)
         {
             // The owner's ruling of 2026-09-19: a body that would grow into itself is not born.
             // Asked here rather than at each of the three call sites so that a founder and an
@@ -5062,11 +6712,13 @@ namespace Evosim.Core
             // can lose its only claw to a bite.
             ReadAttributeFlags(creature, phenotype);
 
-            // Endowment and body are transferred from the parent, and a founder's or an
-            // inoculant's are created out of nothing, so only those two are income the world has
-            // to account for. Conflating any of this with reproduction would let a population
-            // manufacture energy by breeding.
-            if (kind == BirthKind.Floor || kind == BirthKind.Inoculation)
+            // Endowment and body are transferred from the parent, and a founder's, an inoculant's
+            // or an immigrant's are created out of nothing, so only those three are income the
+            // world has to account for. Conflating any of this with reproduction would let a
+            // population manufacture energy by breeding. An immigrant is created here because
+            // the creature it was copied from stays where it is: D159 trades genomes, not bodies.
+            if (kind == BirthKind.Floor || kind == BirthKind.Inoculation ||
+                kind == BirthKind.Immigration)
             {
                 // D098's leg 9. The experimenter's hand is a source in both books, and the books
                 // say so: the joules are created and the same over ρ is credited as an influx of
@@ -5095,12 +6747,24 @@ namespace Evosim.Core
             float landingSnow = float.NaN, landingSnowColumn = float.NaN;
             float landingMatter = float.NaN, landingMatterColumn = float.NaN;
 
+            float landingCorpse = float.NaN, landingCorpseMean = float.NaN;
+
             if (landing.HasValue && founderSource != FounderSource.None)
             {
                 ReadLanding(
                     landing.Value, patch, creature.HasAbsorptiveTissue, photosynthetic,
                     out landingSnow, out landingSnowColumn,
                     out landingMatter, out landingMatterColumn);
+
+                // D129's own reading, for a mouth in a world whose mouths follow the corpses. A
+                // read of the column sums the placer's acceptance already takes, so nothing moves.
+                if (Config.FoundersFollowCorpses && HasMouth(phenotype) && Nutrients is GridField corpseGrid)
+                {
+                    SumCorpseColumns(corpseGrid);
+                    int landed = corpseGrid.ColumnIndexAt(landing.Value.X, landing.Value.Z);
+                    landingCorpse = (float)_corpseColumnJoules[landed];
+                    landingCorpseMean = (float)(_corpseColumnsTotal / Math.Max(1, corpseGrid.LiveColumnCount));
+                }
             }
 
             _lineageEvents.Add(LineageEvent.Birth(
@@ -5114,7 +6778,9 @@ namespace Evosim.Core
                 founderSource, poolIndex, endowment, budCells, budsExpressed,
                 genome.Reproduction.Mode, genome.Reproduction.GestationShare,
                 landingSnow, landingSnowColumn, landingMatter, landingMatterColumn,
-                capCut));
+                capCut, landingCorpse, landingCorpseMean,
+                LifespanRecorded ? genome.LifespanScale : float.NaN,
+                immigrantFromWorld, immigrantFromId));
 
             // Record format 2's genome file, beside the lineage row and under the same guarantee:
             // exactly one per id assigned. A reference, not a copy, and nothing is read or drawn,

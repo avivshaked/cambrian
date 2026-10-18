@@ -1,0 +1,71 @@
+{
+  "format": 1,
+  "name": "leaf-drag-skin-0p05",
+  "description": "The leaf tank's drag check (D161; nursery-leaf-tank-plan.md, step 6), skin form, coefficient 0.05: the leaf world with no leaves, two hand-built swimmers and six of r58-s3j's single stomachs in one tank, every body under its own drawn brain and under a constant power of 0.5, for 300 s. Read under the constant power for each body's turn and path, and the swimmers' speed after the first step.",
+  "seed": "0x1",
+  "world": {
+    "config": "rounds/nursery/configs/3fd98985cdf68008.json",
+    "configHash": "3fd98985cdf68008",
+    "overrides": {
+      "BedShoreDepthMetres": 0,
+      "BedShoreFadeMetres": 0,
+      "BedTiltMetres": 0,
+      "Fluid.SkinFrictionCoefficient": 0.05,
+      "Fluid.TurningDrag": "Skin",
+      "FoundingTricklePerSecond": 0,
+      "FoundingTricklePoolCount": 0,
+      "FoundingTricklePoolHash": "",
+      "FoundingTricklePoolShare": 0,
+      "InitialMatterPerCubicMetre": 0,
+      "MatterBudgetUnits": 0,
+      "MatterIslandWavelengthMetres": 0,
+      "ReefCover": 0,
+      "UnbittenDeathsLeaveNoCorpse": true,
+      "WorldAreaSquareMetres": 1600
+    }
+  },
+  "bodies": {
+    "source": "pool",
+    "founders": 0,
+    "trunk": null,
+    "pool": "rounds/nursery/pools/a326093a77658bdc.tsv",
+    "keep": null
+  },
+  "setup": {
+    "seconds": 300,
+    "dt": 0.01,
+    "tankSize": 8,
+    "floorClosed": true,
+    "birthsHeld": true,
+    "snow": null,
+    "carrion": {
+      "count": 0,
+      "joules": 40
+    },
+    "start": {
+      "aboveBed": 11.5
+    },
+    "purse": {
+      "rule": "grown",
+      "seconds": null
+    }
+  },
+  "search": null,
+  "reward": {
+    "class": "Net",
+    "parameters": {}
+  },
+  "exam": {
+    "episodes": 2,
+    "salt": "0x62656e6368",
+    "controls": [
+      {
+        "kind": "own"
+      },
+      {
+        "kind": "constant",
+        "power": 0.5
+      }
+    ]
+  }
+}

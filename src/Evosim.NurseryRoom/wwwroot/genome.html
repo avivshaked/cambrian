@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nursery room · genome</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2302080c'/%3E%3Cpath d='M5 19c5-9 11-9 16-3l6-5v12l-6-5c-5 6-11 6-16-1z' fill='%235ef0ff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="nursery.css">
+<style>
+  /* The genome screen as the mock lays it out: the band on top (which genome, from which run), then three columns. On the left the body the genome
+     grew and, below it, the genome's own graph; in the middle the brain; on the right where the genome came from, with the actions at its foot.
+     On an ultrawide window what changed from the parent takes a column of its own. Under 1600 px the page scrolls and the panels stack. */
+  .page { grid-template-columns: 32rem minmax(0, 1fr) 27rem; grid-template-rows: auto minmax(0, 1.5fr) minmax(0, 1fr);
+    grid-template-areas: "band band band" "body brain line" "graph brain line"; }
+  @media (min-aspect-ratio: 2/1) {
+    .page { grid-template-columns: 32rem minmax(0, 1fr) 27rem 26rem; grid-template-areas: "band band band band" "body brain line chg" "graph brain line chg"; }
+    .p-chg { display: flex !important; } .chg-in-line { display: none !important; }
+    .page.nolineage { grid-template-columns: 32rem minmax(0, 1fr) 27rem; grid-template-areas: "band band band" "body brain line" "graph brain line"; }
+    .page.nolineage .p-chg { display: none !important; }
+  }
+  /* Under 1600 px the page scrolls, and the body is on the first screen beside the brain (the body and the genome's graph in a column on the left, the brain
+     on the right, taller than both), with the lineage below them. */
+  @media (max-width: 1600px) {
+    .page { grid-template-columns: minmax(20rem, 28rem) minmax(0, 1fr); grid-template-rows: auto 37rem 24rem auto; align-content: start;
+      grid-template-areas: "band band" "body brain" "graph brain" "line line"; }
+    .page.nolineage { grid-template-columns: minmax(20rem, 28rem) minmax(0, 1fr); grid-template-areas: "band band" "body brain" "graph brain" "line line"; }
+    .p-line { min-height: 18rem; }
+    .page .p-chg { display: none !important; }
+    .page:not(.nolineage) .chg-in-line { display: block !important; }
+  }
+  .band { grid-area: band; } .p-body { grid-area: body; } .p-graph { grid-area: graph; } .p-brain { grid-area: brain; } .p-line { grid-area: line; } .p-chg { grid-area: chg; display: none; }
+  .page.nolineage .chg-in-line { display: none; }
+
+  .band { flex-direction: row; align-items: center; padding: .9rem 1.6rem; flex-wrap: wrap; row-gap: .6rem; }
+  .band > * + * { margin-left: 2rem; }
+  .ident { min-width: 0; flex: 0 1 30rem; }
+  .ident .name { font-family: var(--mono); font-size: 1.85rem; color: var(--ink-hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ident .name small { font-size: 1rem; color: var(--ink-lo); margin-right: .6rem; }
+  .ident .desc { font-size: .92rem; color: var(--ink); margin-top: .2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #stats { display: flex; align-items: flex-start; }
+  #stats .stat + .stat { margin-left: 2rem; }
+  .pick { display: flex; align-items: center; min-width: 0; }
+  .pick select { font-family: var(--mono); font-size: .88rem; color: var(--ink-hi); background: #071820; border: 1px solid var(--rule-strong); border-radius: var(--r-sm);
+    height: 2rem; padding: 0 .5rem; max-width: 26rem; min-width: 12rem; }
+  .pick select:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, svg [tabindex]:focus-visible { outline: 2px solid var(--run); outline-offset: 2px; }
+  .pick label { font-size: .77rem; letter-spacing: .1rem; text-transform: uppercase; color: var(--ink-lo); margin-right: .6rem; }
+  .pick button.tag { height: 2rem; line-height: 2rem; padding: 0 .6rem; }
+  .pick button.tag[disabled] { color: var(--ink-dim); }
+  a.glink { color: var(--ink-hi); text-decoration: underline; text-decoration-color: var(--run-low); text-underline-offset: .2rem; }
+  a.glink:hover { text-decoration-color: var(--run); }
+  .badge.kind { margin-left: .4rem; color: var(--ink); }
+
+  /* the body: the two views one above the other, then the part list */
+  .views { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .views > .view { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+  .views > .view + .view { margin-top: .4rem; }
+  .view .cap { font-size: .8rem; color: var(--ink-lo); margin-bottom: .1rem; }
+  .view svg.fig { display: block; flex: 1; min-height: 0; width: 100%; overflow: hidden; }
+  .partlist { flex: 0 1 auto; max-height: 24%; overflow: auto; margin-top: .5rem; border-top: 1px solid var(--rule); padding-top: .4rem; }
+  .partlist .t td { height: auto; padding-top: .18rem; padding-bottom: .18rem; font-size: .8rem; vertical-align: top; white-space: normal; }
+  .partlist .t th { padding-bottom: .2rem; font-size: .68rem; letter-spacing: .05rem; }
+  .partlist .t td .lbl { display: block; color: var(--ink-lo); font-size: .72rem; }
+  .swatch { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; margin-right: .4rem; vertical-align: -.05rem; border: 1px solid var(--ink-lo); }
+  /* a part is a translucent fill, then (above every fill) its outline: where two overlap, both show */
+  .pgf { fill: var(--g, #5ef0ff); fill-opacity: .34; stroke: none; }
+  .pgo { fill: none; stroke: var(--g, #5ef0ff); stroke-width: 1.8; stroke-linejoin: round; }
+  .pgo.mir { stroke-dasharray: 5 3; }
+  .pj { fill: var(--panel-bot); stroke: var(--ink-hi); stroke-width: 1.4; }
+  .pe { stroke: var(--ink-lo); stroke-width: 1; stroke-dasharray: 2 3; fill: none; }
+
+  /* the genome's graph */
+  .ggwrap { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ggwrap svg { display: block; flex: 0 0 auto; }
+  .gg-node rect { fill: rgba(94, 240, 255, .06); stroke: rgba(150, 230, 255, .3); stroke-width: 1; }
+  .gg-node.root rect { stroke: var(--run); stroke-width: 1.8; fill: rgba(94, 240, 255, .1); }
+  .gg-node text.t1 { fill: var(--ink-hi); font-size: .82rem; }
+  .gg-node text.t2, .gg-node text.t3 { fill: var(--ink); font-size: .72rem; }
+  .gg-edge { fill: none; stroke: var(--run); stroke-width: 1.5; stroke-opacity: .7; }
+  .gg-edge.term { stroke-dasharray: 5 3; }
+  .gg-lbl { fill: var(--ink-hi); font-size: .72rem; }
+  .gg-lbl.f { fill: var(--ink); }
+
+  /* the brain */
+  .brainhead { display: flex; flex-wrap: wrap; align-items: center; margin-bottom: .3rem; }
+  .brainhead .legend { margin: 0; }
+  .brainhead .tag { margin-left: auto; }
+  .chips { display: inline-flex; align-items: center; margin-left: 1rem; }
+  .chips .tag { margin-left: .4rem; height: 1.25rem; padding-top: 0; padding-bottom: 0; }
+  .chips .tag[disabled] { color: var(--ink-dim); cursor: not-allowed; }
+  .chips .wchip { display: inline-flex; align-items: center; margin-left: .4rem; border: 1px solid var(--rule-strong); border-radius: var(--r-sm); height: 1.25rem; }
+  .chips .wchip.on { border-color: var(--ink-hi); background: var(--ink-hi); }
+  .chips .wchip button { border: 0; height: 100%; padding: 0 .2rem 0 .45rem; font-family: var(--mono); font-size: .77rem; background: none; color: var(--ink-lo); }
+  .chips .wchip.on button { color: var(--plate-ink); }
+  .chips .wchip input { width: 3.4rem; height: 100%; border: 0; border-left: 1px solid var(--rule-strong); background: rgba(150, 230, 255, .05); color: var(--ink-hi);
+    font-family: var(--mono); font-size: .77rem; padding: 0 .25rem; }
+  /* the gutter is kept whether or not a scrollbar shows, so that the width the graph is drawn to is the width it has */
+  .graphwrap { flex: 1; min-height: 0; overflow: auto; scrollbar-gutter: stable; }
+  /* drawn to the width the panel had; if the panel has since got narrower the figure shrinks with it (its viewBox keeps the proportions) and nothing is clipped */
+  svg.graph { display: block; max-width: 100%; height: auto; }
+  .gn .hit { fill: transparent; }
+  .gn .nd { fill: #03111a; stroke: var(--run); stroke-width: 1.4; }
+  .gn .core { fill: var(--run); }
+  .gn.nothing .nd { stroke-dasharray: 3 2; stroke: var(--ink-lo); fill: none; }
+  .gn.nothing .core { fill: var(--ink-lo); }
+  .gn.chgd .nd { stroke: var(--sig); stroke-width: 2; } .gn.chgd .core { fill: var(--sig); }
+  .gn.sel .nd { stroke-width: 2.6; filter: var(--glow); }
+  .gn { cursor: pointer; }
+  .gn text { font-size: .82rem; fill: var(--ink-hi); paint-order: stroke; stroke: var(--panel-bot); stroke-width: .42rem; stroke-linejoin: round; }
+  .gn text .dim { fill: var(--ink-lo); }
+  .gn.faded { opacity: .4; }
+  text.grp { fill: var(--ink-lo); font-size: .7rem; letter-spacing: .05rem; text-transform: uppercase; paint-order: stroke; stroke: var(--panel-bot); stroke-width: .42rem; stroke-linejoin: round; }
+  text.col { fill: var(--ink-lo); font-size: .72rem; letter-spacing: .1rem; text-transform: uppercase; paint-order: stroke; stroke: var(--panel-bot); stroke-width: .42rem; }
+  path.lk { fill: none; stroke-linecap: round; }
+  path.lk.pos { stroke: var(--run); }
+  path.lk.neg { stroke: var(--ink); stroke-dasharray: 5 4; }
+  path.lk.chg { stroke: var(--sig); stroke-opacity: 1; }
+  path.lk.gone { stroke: var(--ink-dim); stroke-width: 1; stroke-dasharray: 1 4; }
+  path.lk.off { stroke-opacity: .07 !important; }
+  circle.chgdot { fill: var(--sig); }
+  .linkinfo { flex: 0 0 auto; max-height: 8rem; overflow: auto; font-size: .82rem; color: var(--ink); margin-top: .4rem; border-top: 1px solid var(--rule); padding-top: .35rem; font-family: var(--mono); }
+  .linkinfo div { white-space: nowrap; }
+  .linkinfo .w { color: var(--ink-hi); }
+
+  /* where it came from, and what changed */
+  .scroll { flex: 1; min-height: 0; overflow: auto; }
+  .p-line .field__value, .p-chg .field__value { white-space: normal; overflow-wrap: anywhere; }
+  .chgrow { display: grid; grid-template-columns: 1.1rem minmax(0, 1fr); font-family: var(--mono); font-size: .82rem; padding: .3rem 0; border-bottom: 1px solid var(--rule); }
+  .chgrow .op { color: var(--ink-hi); }
+  .chgrow .what { color: var(--ink); overflow-wrap: anywhere; }
+  .chgrow .v { color: var(--ink-lo); overflow-wrap: anywhere; } .chgrow .v b { color: var(--ink-hi); font-weight: 400; }
+  .chgrow .lbl { display: block; font-family: var(--sans); font-size: .76rem; color: var(--ink-lo); }
+  .chgrow.new .op { color: var(--sig); }
+  .btns { display: flex; flex-wrap: wrap; flex: 0 0 auto; margin-top: auto; padding-top: .8rem; }
+  .btns .btn { margin: 0 .5rem .5rem 0; }
+  a.btn { text-decoration: none; }
+  .btn.dl { border-color: var(--run-mid); }
+  .nodata a { color: var(--ink-hi); }
+  /* where the config came from, beside the body and the brain: muted when the run recorded it, in the signal colour when it did not */
+  .cfgnote { margin: .15rem 0 .35rem; font-size: .78rem; line-height: 1.35; }
+  .cfgnote[hidden] { display: none; }
+  .cfgnote.warn { color: var(--sig); }
+</style>
+</head>
+<body>
+<svg class="caustics" aria-hidden="true"><filter id="caus"><feTurbulence type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="4"/>
+  <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.95  0 0 0 0 1  0 0 0 -2.6 1.55"/></filter><rect width="100%" height="100%" filter="url(#caus)" opacity="0.045"/></svg>
+
+<header class="strip" id="strip"></header>
+
+<main class="page" id="page">
+  <!-- source: nursery://genomes/{run} (what the run holds: tank-best.jsonl, the exam plan in run.json, tank-exam-genomes.tsv) and nursery://genome/{run}/{id}. Every number below is computed by the room from the genome with Core's own code; nothing about the experiment is written into this page. -->
+  <section class="panel band" aria-label="which genome">
+    <div class="ident"><div class="name" id="name"></div><div class="desc" id="desc"></div></div>
+    <div class="pick"><label for="pick">genome</label><select id="pick" aria-label="the run's genomes"></select>
+      <button class="tag" id="prev" type="button" title="the genome before this one in the list" aria-label="previous genome">&lt;</button>
+      <button class="tag" id="next" type="button" title="the genome after this one in the list" aria-label="next genome">&gt;</button></div>
+    <div id="stats"></div>
+    <span class="spacer"></span>
+    <div id="state"></div>
+  </section>
+
+  <!-- source: the grown body (Developer.Develop): each part's shape, half-extents, position, orientation, parent and joint. What is drawn is development's output, not the genome's graph. -->
+  <section class="panel p-body" aria-label="body plan">
+    <div class="head"><span class="kicker">Body</span><span class="q">What did development grow?</span>
+      <span class="aside"><button class="tag" data-op="media.picture" disabled title="phase 2: pictures are not built yet">PNG</button></span></div>
+    <div class="legend" id="body-legend"></div>
+    <p class="note cfgnote" id="body-cfg" hidden></p>
+    <div class="views" id="views">
+      <div class="view"><div class="cap">from above · x across, z down the page · same scale as the side view</div><svg class="fig" id="v-top" role="img" aria-label="the body from above"></svg></div>
+      <div class="view"><div class="cap">from the side · x across, y up · same scale as the view above</div><svg class="fig" id="v-side" role="img" aria-label="the body from the side"></svg></div>
+    </div>
+    <div class="partlist" id="partlist"></div>
+  </section>
+
+  <!-- source: the genome's own morphology graph (nodes and edges as the genome stores them), not what development grew from it. -->
+  <section class="panel p-graph" aria-label="genome graph">
+    <div class="head"><span class="kicker">Genome graph</span><span class="q">How the body grows</span></div>
+    <div class="ggwrap" id="ggwrap"><svg id="c-graph" role="img" aria-label="the genome's graph: its nodes and the edges between them"></svg></div>
+    <p class="note" id="gg-note" style="margin:.4rem 0 0"></p>
+  </section>
+
+  <!-- source: the genome's brain (format 12) against the grown body: ports named from Core's own naming, in Core's order; the hidden units; the links. -->
+  <section class="panel hero p-brain" aria-label="brain">
+    <div class="head"><span class="kicker">Brain</span><span class="q">What does it sense, and what does it drive?</span>
+      <span class="aside"><span id="b-counts"></span>
+        <span class="chips" role="group" aria-label="which links to draw">
+          <button class="tag on" id="f-all" type="button" aria-pressed="true" title="every link of the brain">all</button>
+          <button class="tag" id="f-chg" type="button" aria-pressed="false" disabled title="the links that differ from the base parent: this genome has no change list">changed</button>
+          <span class="wchip" id="f-w-wrap"><button id="f-w" type="button" aria-pressed="false" title="only the links whose weight is larger than this, in size">|w| &gt;</button><input id="f-wv" type="number" min="0" step="0.05" value="0.2" aria-label="smallest weight size to draw" title="the weight size a link must exceed to be drawn"></span>
+        </span>
+        <button class="tag" style="margin-left:1rem" data-op="media.picture" disabled title="phase 2: pictures are not built yet">PNG</button></span></div>
+    <div class="brainhead"><div class="legend" id="brain-legend"></div><button class="tag" id="unlinked" type="button" aria-pressed="false"></button></div>
+    <p class="note cfgnote" id="brain-cfg" hidden></p>
+    <div class="graphwrap" id="graphwrap"><svg class="graph" id="graph" role="img" aria-label="the brain as a graph: ports, hidden units, outputs and the links between them"></svg></div>
+    <div class="linkinfo" id="linkinfo" aria-live="polite"></div>
+  </section>
+
+  <!-- source: tank-lineage.jsonl, when the run wrote one; and the genome's text as the run stores it (a read, so a plain link). -->
+  <aside class="panel p-line" aria-label="where it came from">
+    <div class="head"><span class="kicker">Lineage</span><span class="q">Where did it come from?</span></div>
+    <div class="scroll">
+      <div id="b-lineage"></div>
+      <div class="section chg-in-line"><div class="head" style="margin-bottom:.2rem"><span class="kicker">Changed from base parent</span><span class="aside" id="chg-n-in"></span></div>
+        <div id="b-changes-in"></div></div>
+    </div>
+    <div class="btns" id="btns">
+      <a class="btn btn--off" id="swim" aria-disabled="true" title="only one of the exam's genomes can be swum in the tank: the exam's draws deal tanks of them">SWIM IT IN THE TANK</a>
+      <button class="btn btn--off" type="button" disabled title="phase 3: comparing a genome with its parent side by side is not built yet; the changes list names each difference">COMPARE WITH PARENT</button>
+      <a class="btn dl" id="export" aria-disabled="true" title="the genome's text exactly as the run stores it">EXPORT GENOME JSON</a>
+      <button class="btn btn--off" type="button" disabled title="phase 3: the Blender export is not built yet">EXPORT FOR BLENDER</button>
+    </div>
+  </aside>
+
+  <!-- source: the genome and its base parent's, compared by path. On an ultrawide window this is its own column; elsewhere it sits in the lineage column. -->
+  <aside class="panel p-chg" aria-label="what changed from the parent">
+    <div class="head"><span class="kicker" id="chg-q">Changed from base parent</span><span class="aside" id="chg-n"></span></div>
+    <div class="scroll" id="b-changes"></div>
+  </aside>
+</main>
+
+<footer class="bar">
+  <span class="spacer"></span>
+  <span id="foot"></span>
+</footer>
+
+<script type="module" src="js/genome.js"></script>
+</body>
+</html>

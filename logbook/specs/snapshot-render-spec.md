@@ -1,6 +1,6 @@
 # A still frame from the run's own data: the snapshot render
 
-*2026-09-18, night. Written by the agent on the owner's ruling ("proceed") after the day's
+*2026-09-18, night. Written by the agent on the owner's ruling to proceed after the day's
 renders: round 39 seed 1's 30,000 s frame cost a full re-simulation from 15:11, and round
 41's first early look timed out on the snapshot tool's 30-minute wall with nothing written.
 The owner's question was whether a picture needs the world to step again. It does not.*

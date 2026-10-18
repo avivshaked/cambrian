@@ -401,7 +401,7 @@ def act_of(shot):
 
 def intro_of(setting, shots, fps, errors):
     """The channel intro: its file and length, and the frame it starts at, straight after the last shot of the
-    act it follows (the owner, 2026-09-28: "right after the hook")."""
+    act it follows (the owner ruled on 2026-09-28 that it comes right after the hook)."""
     path = repo_path(setting["file"])
     if not path.is_file():
         errors.append(f"the intro card {path} is not there")

@@ -32,7 +32,7 @@ TEXT_MAX = 4                      # words in one Text: line
 SAME_LENGTH = 1                   # three sentences in a row this close in length fail
 SHORT_PAIR = 8                    # two sentences this short, one negative, are a split corrective
 
-FIELDS = ["Say", "Facts", "Picture", "See", "Run", "Bodies", "Seconds", "From", "Text", "Hold"]
+FIELDS = ["Say", "Facts", "Picture", "See", "Run", "Bodies", "Seconds", "From", "Text", "Hold", "Join"]
 REPEATABLE = {"Say", "Text"}
 FIELD_LINE = re.compile(r"^(" + "|".join(FIELDS) + r"):(.*)$")
 PLACE = re.compile(r"\[facts\.md:L(\d+)(?:-(\d+))?\]")
@@ -93,8 +93,9 @@ def split_sentences(paragraph):
     return [s for s in re.split(r"(?<=[.?!])\s+", paragraph.strip()) if s]
 
 
-def parse_prose(text):
-    """The prose as beats of paragraphs of sentences, and every way it departs from its form."""
+def parse_prose(text, sample=False):
+    """The prose as beats of paragraphs of sentences, and every way it departs from its form. A sample's
+    beats keep the story's numbers, so they may skip."""
     errors = []
     prose = {"title": None, "beats": [], "notes": ""}
     beat = notes = None
@@ -146,9 +147,13 @@ def parse_prose(text):
     if prose["title"] is None:
         errors.append(("prose", "the file is empty"))
     for expected, beat in enumerate(prose["beats"], 1):
-        if beat["number"] != expected:
+        if beat["number"] != expected and not sample:
             errors.append((f"beat {beat['number']}", f"beats are numbered 1, 2, 3 in order; expected {expected}"))
-        if not beat["paragraphs"]:
+        # The owner's intro card plays under a beat named "Channel intro", so nothing is said there (prose-brief.md).
+        if squash(beat["name"]).lower() == "channel intro":
+            if beat["paragraphs"]:
+                errors.append((f"beat {beat['number']}", "the channel intro has no words under it"))
+        elif not beat["paragraphs"]:
             errors.append((f"beat {beat['number']}", "no prose under it"))
     return prose, errors
 
@@ -173,7 +178,7 @@ def new_passage(beat, k):
     return {"id": f"{beat}.{k}", "_beat": beat, "_k": k, "say": [], "facts": [],
             "picture": {"kind": None, "see": None, "run": None, "bodies": [], "seconds": None,
                         "from": []},
-            "text": [], "hold": 0.0}
+            "text": [], "hold": 0.0, "join": None}
 
 
 def read_field(passage, name, value, where, errors):
@@ -231,6 +236,11 @@ def read_field(passage, name, value, where, errors):
             errors.append((where, "Hold: is a number of seconds above 0"))
         else:
             passage["hold"] = float(value)
+    elif name == "Join":
+        if value != "next":
+            errors.append((where, "Join: is 'next'"))
+        else:
+            passage["join"] = "next"
 
 
 def parse_script(text):
@@ -334,6 +344,14 @@ def validate_script(script, errors):
                     errors.append((where, "a run's picture names its Seconds:"))
             if picture["kind"] == "graphic" and (picture["run"] or picture["bodies"] or picture["seconds"]):
                 errors.append((where, "a graphic has no Run:, Bodies: or Seconds:"))
+            if passage["join"]:
+                # The narration needs a break in the read at each of these (script-schema.md, "Join:").
+                if passage["hold"]:
+                    errors.append((where, "Join: next on a passage with a Hold:, whose silence ends the read"))
+                if k == len(beat["passages"]):
+                    errors.append((where, "Join: next on the last passage of a beat; a read never crosses a beat"))
+                elif not beat["passages"][k]["say"]:
+                    errors.append((where, "Join: next before a passage with no Say:, whose silence ends the read"))
 
 
 # story.md
@@ -363,10 +381,16 @@ def story_parts(text):
     return field("Question"), field("Answer"), beats
 
 
-def same_beats(beats, story_beats, errors):
+def same_beats(beats, story_beats, errors, sample=False):
+    """A sample holds some of the story's beats, in its order; a draft holds them all."""
+    mine = [(b["number"], squash(b["name"])) for b in beats]
     if not story_beats:
         errors.append(("story.md", "no beats, as '### <n>. <name>', to compare with"))
-    elif [(b["number"], squash(b["name"])) for b in beats] != story_beats:
+    elif sample:
+        if not mine or [b for b in story_beats if b in mine] != mine:
+            errors.append(("beats", "a sample's beats are some of story.md's, in its order, which are "
+                           + "; ".join(f"{n}. {name}" for n, name in story_beats)))
+    elif mine != story_beats:
         errors.append(("beats", "not the beats of story.md in its order, which are "
                        + "; ".join(f"{n}. {name}" for n, name in story_beats)))
 
@@ -407,7 +431,10 @@ def unmark(text):
 
 
 def sentence_problems(sentence):
-    problems = []
+    """Returns (problems, notes). A problem is what the voice cannot speak or the science forbids, and
+    fails the check. A note is a habit of model prose, shown to the owner and never failing: a rule
+    obeyed by rewrite kills good prose faster than the habit does (prose.md, "The check")."""
+    problems, notes = [], []
     for inner in GIVEN.findall(sentence):
         if not NAME.fullmatch(inner):
             problems.append(f"'{{{{{inner}}}}}': between the braces goes only a name we give, of one to three words")
@@ -424,25 +451,25 @@ def sentence_problems(sentence):
         problems.append("characters a listener cannot hear or a voice misreads: " + " ".join(odd))
     if re.search(r"(?:^|\s)-|-(?:\s|$)|--", body):
         problems.append("a dash: give the aside a sentence of its own")
-    words = word_count(sentence)
-    if words > SENTENCE_MAX:
-        problems.append(f"{words} words: keep a sentence to about 20, and never over {SENTENCE_MAX}")
-    if sentence.endswith("?") and words <= 3:
-        problems.append("a short question answered at once, a hype device")
-    for pattern, what in TELLS:
-        m = re.search(pattern, body, re.I)
-        if m:
-            problems.append(f"'{m.group(0)}': {what}")
     m = PURPOSE.search(body)
     if m:
         problems.append(f"'{m.group(0)}': purpose or wanting; tell what happened to the population")
+    words = word_count(sentence)
+    if words > SENTENCE_MAX:
+        notes.append(f"{words} words: a long one for the ear")
+    if sentence.endswith("?") and words <= 3:
+        notes.append("a short question answered at once, a hype device")
+    for pattern, what in TELLS:
+        m = re.search(pattern, body, re.I)
+        if m:
+            notes.append(f"'{m.group(0)}': {what}")
     m = TAIL.search(body)
     if m:
-        problems.append(f"'{m.group(0).strip(', ')}': a closing clause that comments; end on the fact")
+        notes.append(f"'{m.group(0).strip(', ')}': a closing clause that comments")
     numbers = count_numbers(body)
-    if numbers > 1:
-        problems.append(f"{numbers} numbers: one to a sentence")
-    return problems
+    if numbers > 2:
+        notes.append(f"{numbers} numbers in one sentence")
+    return problems, notes
 
 
 STOP = set(("that this with from have they them their there what when were been into only some most more "
@@ -468,35 +495,35 @@ def split_corrective(where_before, before, length_before, where_after, after, le
     return False
 
 
-def sentence_rules(entries, errors):
-    """Checks every spoken sentence and the runs between them. Returns the problems by sentence and
-    the number of spoken words."""
-    flagged = {}
+def sentence_rules(entries, errors, sample=False):
+    """Checks every spoken sentence and the runs between them. Returns the problems by sentence, the
+    notes by sentence, and the number of spoken words."""
+    flagged, noted = {}, {}
     for j, (_, sentence) in enumerate(entries):
-        for problem in sentence_problems(sentence):
-            flagged.setdefault(j, []).append(problem)
+        problems, notes = sentence_problems(sentence)
+        if problems:
+            flagged[j] = problems
+        if notes:
+            noted[j] = notes
     corrective = [j for j, (_, s) in enumerate(entries) if CORRECTIVE.search(s)]
-    if len(corrective) > 1:
+    if len(corrective) > 2:
         for j in corrective:
-            flagged.setdefault(j, []).append(
-                f"'not this but that' in {len(corrective)} sentences; once in a film at most, "
-                "and only where 'this' was really expected")
+            noted.setdefault(j, []).append(f"'not this but that' in {len(corrective)} sentences")
     lengths = [word_count(s) for _, s in entries]
     for j in range(1, len(entries)):
         (where_before, before), (where_after, after) = entries[j - 1], entries[j]
         if split_corrective(where_before, before, lengths[j - 1], where_after, after, lengths[j]):
-            flagged.setdefault(j, []).append(
-                f"two short sentences set against each other, one of them negative (\"{before}\" then this): "
-                "the corrective split in two; say what happens, in one plain sentence")
-    for j in range(2, len(entries)):
-        run = lengths[j - 2:j + 1]
+            noted.setdefault(j, []).append(
+                f"two short sentences set against each other, one of them negative (\"{before}\" then this)")
+    for j in range(4, len(entries)):
+        run = lengths[j - 4:j + 1]
         if max(run) - min(run) <= SAME_LENGTH:
-            flagged.setdefault(j, []).append(
-                f"the third sentence in a row of about the same length ({', '.join(map(str, run))} words); vary them")
+            noted.setdefault(j, []).append(
+                f"the fifth sentence in a row of about the same length ({', '.join(map(str, run))} words)")
     words = sum(lengths)
-    if not WORDS_MIN <= words <= WORDS_MAX:
+    if not sample and not WORDS_MIN <= words <= WORDS_MAX:
         errors.append(("length", f"{words} spoken words; the budget is {WORDS_MIN} to {WORDS_MAX}"))
-    return flagged, words
+    return flagged, noted, words
 
 
 def check_key_lines(text, beats, errors, name):
@@ -521,9 +548,14 @@ def check_key_lines(text, beats, errors, name):
         errors.append((name, "the sections are those of '## Opening', '## Turn', '## Last line' and '## Name' "
                              "still to be picked, each once, in that order"))
     every = [s for _, sentences in beats for s in sentences]
-    turn = next((sentences for beat, sentences in beats if beat.strip().lower() == "the turn"), None)
+    # A countdown has no turn: its second key line opens the beat named "Number 1" (prose-brief.md).
+    # A countdown's beat may carry the creature's name after it, as "Number 1: Lamina", but never "Number 10".
+    named = {beat.strip().lower(): sentences for beat, sentences in beats}
+    number_one = next((sentences for beat, sentences in beats
+                       if re.fullmatch(r"number 1(?!\d)(?:\s*[:,.].*)?", beat.strip().lower())), None)
+    turn = named.get("the turn", number_one)
     if turn is None:
-        errors.append((name, "there is no beat named 'The turn'"))
+        errors.append((name, "there is no beat named 'The turn', nor 'Number 1' in a countdown"))
     in_draft = {"Opening": every[0] if every else None,
                 "Turn": turn[0] if turn else None,
                 "Last line": every[-1] if every else None}
@@ -545,7 +577,7 @@ def check_key_lines(text, beats, errors, name):
         if versions and line is not None and squash(versions[0][1]) != squash(line):
             errors.append((where, f"version 1 is not the draft's line, which is \"{line}\""))
         for n, version in versions:
-            for problem in sentence_problems(version):
+            for problem in sentence_problems(version)[0]:
                 errors.append((f"{where}, version {n}", f"{problem}: \"{version}\""))
 
 
@@ -586,7 +618,7 @@ def sample(items, k=SAMPLE):
 
 # The commands
 
-def report(verdict, lines, errors, entries, flagged):
+def report(verdict, lines, errors, entries, flagged, noted=None):
     failed = bool(errors or flagged)
     print(f"{verdict}: {'FAIL' if failed else 'PASS'}")
     for line in lines:
@@ -598,6 +630,11 @@ def report(verdict, lines, errors, entries, flagged):
         print(f"ERROR {where}: \"{sentence}\"")
         for problem in flagged[j]:
             print(f"  - {problem}")
+    for j in sorted(noted or {}):
+        where, sentence = entries[j]
+        print(f"NOTE {where}: \"{sentence}\"")
+        for note in noted[j]:
+            print(f"  - {note}")
     return 1 if failed else 0
 
 
@@ -614,14 +651,15 @@ def check_prose(path):
     folder = path.parent
     if missing(folder, ["story.md"], "PROSE CHECK"):
         return 2
-    prose, errors = parse_prose(read(path))
-    same_beats(prose["beats"], story_parts(read(folder / "story.md"))[2], errors)
+    sample = path.name.startswith("prose-sample-")
+    prose, errors = parse_prose(read(path), sample)
+    same_beats(prose["beats"], story_parts(read(folder / "story.md"))[2], errors, sample)
     entries = prose_entries(prose)
     names = sorted({squash(g) for _, s in entries for g in GIVEN.findall(s)})
     if len(names) > 1:
         errors.append(("names", f"the prose gives {len(names)} names between braces ({', '.join(names)}); "
                                 "a film gives at most one"))
-    flagged, words = sentence_rules(entries, errors)
+    flagged, noted, words = sentence_rules(entries, errors, sample)
     m = re.fullmatch(r"prose-(\d+)(?:-v\d+)?\.md", path.name)
     key_note = "not checked on this file"
     if m:
@@ -636,7 +674,28 @@ def check_prose(path):
         f"{path.name}: {words} spoken words in {len(entries)} sentences; the budget is {WORDS_MIN} to {WORDS_MAX}, "
         f"aiming at about {WORDS_TARGET}",
         f"spoken time about {spoken:.1f} min at {PACE} words a minute, before any pauses",
-        f"key lines: {key_note}"], errors, entries, flagged)
+        f"key lines: {key_note}"], errors, entries, flagged, noted)
+
+
+def join_errors(script, prose):
+    """Every Join: next on a passage whose last sentence does not end a paragraph of prose.md. Only beats
+    whose words are prose.md's are read, since the check reports the others' words already."""
+    errors = []
+    for beat, prose_beat in zip(script["beats"], prose["beats"]):
+        said = [squash(s) for p in beat["passages"] for s in p["say"]]
+        if said != [squash(s) for para in prose_beat["paragraphs"] for s in para]:
+            continue
+        ends, count = set(), 0
+        for para in prose_beat["paragraphs"]:
+            count += len(para)
+            ends.add(count)
+        count = 0
+        for passage in beat["passages"]:
+            count += len(passage["say"])
+            if passage["join"] and (not passage["say"] or count not in ends):
+                errors.append((f"passage {passage['id']}", "Join: next on a passage whose last sentence does not "
+                                                          "end a paragraph of prose.md"))
+    return errors
 
 
 def check_script(path):
@@ -678,6 +737,7 @@ def check_script(path):
                                             f"has {mine} where prose.md has {theirs}"))
         if len(script["beats"]) != len(prose["beats"]):
             errors.append(("beats", f"the script has {len(script['beats'])} beats and prose.md {len(prose['beats'])}"))
+        errors.extend(join_errors(script, prose))
 
     for beat in script["beats"]:
         for passage in beat["passages"]:

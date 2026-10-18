@@ -1,0 +1,63 @@
+run D:\Projects\experiments\evolution-simulator\runs\r58g-b\2026-10-12-154747-dfc0e881; intakeReachMetres 0.5; tissue 500.0 J/m3 (stated); 300 samples
+== kills by the line: 1 (of 1 kill rows in the run)
+  t 12089: 18743 killed 16094 (abs None pho None jnt None), root 1, parts 1, part 0 byPart 0, tissue 10.25 J, reserve 68.50 J; corpse reach 0.34 + 0.5 = 0.84 m; victim died t 12089 of eaten
+    at sample t 12080: killer (67.04, -2.19, 55.22), victim (67.07, -2.35, 54.42), centres 0.82 m apart
+    killer from the victim's last centre: t 12090: 0.81; t 12100: 0.82; t 12110: 0.81; t 12120: 0.79; t 12130: 0.77; t 12140: 0.73
+== the line's deaths
+  id 18854 (child of 18730) died t 12042.5 of starved, age 10.0 s
+  id 19190 (child of 18730) died t 12129.5 of starved, age 10.5 s
+  id 19386 (child of 18744) died t 12187 of starved, age 10.0 s
+  id 20015 (child of 18730) died t 12361.5 of starved, age 6.5 s
+  id 18747 (inoculant) died t 12492 of starved, age 491.5 s
+  id 18731 (inoculant) died t 12503.5 of starved, age 503.0 s
+  id 18733 (inoculant) died t 12540 of starved, age 539.5 s
+  id 18734 (inoculant) died t 12561 of starved, age 560.5 s
+  id 18736 (inoculant) died t 12582.5 of starved, age 582.0 s
+  id 18740 (inoculant) died t 12617 of starved, age 616.5 s
+  id 18735 (inoculant) died t 12617.5 of starved, age 617.0 s
+  id 18732 (inoculant) died t 12620 of starved, age 619.5 s
+  id 18739 (inoculant) died t 12625.5 of starved, age 625.0 s
+  id 18738 (inoculant) died t 12636 of starved, age 635.5 s
+  id 18746 (inoculant) died t 12643 of starved, age 642.5 s
+  id 18743 (inoculant) died t 12671.5 of starved, age 671.0 s
+  id 18741 (inoculant) died t 12715 of starved, age 714.5 s
+  id 18737 (inoculant) died t 12722.5 of starved, age 722.0 s
+  id 18745 (inoculant) died t 12731 of starved, age 730.5 s
+  id 18728 (inoculant) died t 12739.5 of starved, age 739.0 s
+  id 18729 (inoculant) died t 12755.5 of starved, age 755.0 s
+  id 18744 (inoculant) died t 12928.5 of starved, age 928.0 s
+  id 18730 (inoculant) died t 13225 of starved, age 1224.5 s
+  id 18742 (inoculant) died t 13381.5 of starved, age 1381.0 s
+  24 deaths; 0 of 24 alive at the end; 4 born of the line
+== per sample: line alive | world alive run/ref | leaves run/ref | unitsEaten run/ref | corpsesEaten run/ref
+  t 12010: line 20 | 2960/2942 | 2909/2912 | 68.834/61.719 | 112/104
+  t 12110: line 20 | 3178/3154 | 3129/3124 | 74.393/62.601 | 129/105
+  t 12210: line 20 | 3386/3361 | 3339/3335 | 80.685/62.601 | 143/105
+  t 12310: line 20 | 3562/3551 | 3510/3525 | 81.692/62.601 | 147/105
+  t 12410: line 20 | 3729/3705 | 3679/3679 | 85.476/62.601 | 158/105
+  t 12510: line 18 | 3884/3873 | 3841/3850 | 86.868/62.601 | 163/105
+  t 12610: line 15 | 3971/3952 | 3929/3926 | 87.131/62.601 | 165/105
+  t 12710: line 8 | 3991/3955 | 3956/3929 | 87.243/63.369 | 166/107
+  t 12810: line 3 | 3993/3995 | 3961/3970 | 87.734/63.369 | 168/107
+  t 12910: line 3 | 4040/4030 | 4008/4005 | 90.048/63.369 | 169/107
+  t 13010: line 2 | 4149/4148 | 4113/4123 | 93.266/63.421 | 170/107
+  t 13110: line 2 | 4343/4244 | 4307/4219 | 94.672/63.579 | 171/108
+  t 13210: line 2 | 4478/4359 | 4442/4338 | 95.617/64.810 | 172/113
+  t 13310: line 1 | 4582/4477 | 4546/4455 | 95.617/64.856 | 172/114
+  t 13410: line 0 | 4636/4616 | 4599/4592 | 96.072/65.054 | 174/115
+  t 13510: line 0 | 4640/4647 | 4609/4627 | 96.120/65.054 | 174/115
+  t 13610: line 0 | 4644/4629 | 4615/4611 | 96.120/65.054 | 174/115
+  t 13710: line 0 | 4576/4608 | 4547/4587 | 96.120/65.054 | 174/115
+  t 13810: line 0 | 4494/4473 | 4466/4454 | 96.120/65.359 | 174/116
+  t 13910: line 0 | 4445/4409 | 4418/4390 | 96.120/65.359 | 174/116
+  t 14010: line 0 | 4466/4435 | 4438/4417 | 96.120/65.359 | 174/116
+  t 14110: line 0 | 4544/4471 | 4517/4450 | 96.120/65.469 | 174/117
+  t 14210: line 0 | 4553/4509 | 4524/4487 | 96.339/67.773 | 175/120
+  t 14310: line 0 | 4524/4514 | 4496/4492 | 96.339/68.818 | 175/123
+  t 14410: line 0 | 4533/4534 | 4505/4511 | 96.339/69.460 | 175/124
+  t 14510: line 0 | 4553/4500 | 4526/4479 | 96.826/69.460 | 175/124
+  t 14610: line 0 | 4549/4453 | 4524/4430 | 98.248/69.460 | 175/124
+  t 14710: line 0 | 4396/4335 | 4372/4310 | 98.248/69.460 | 175/124
+  t 14810: line 0 | 4223/4211 | 4202/4188 | 98.248/69.460 | 175/124
+  t 14910: line 0 | 4058/4058 | 4038/4035 | 98.248/69.460 | 175/124
+  t 15000: line 0 | 3952/3940 | 3932/3922 | 98.248/69.460 | 175/124

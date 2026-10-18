@@ -161,7 +161,8 @@ def load_script(folder):
                       *("  " + line for line in printed.getvalue().splitlines()))
     script, _ = sc.parse_script(sc.read(path))
     prose, _ = sc.parse_prose(sc.read(folder / "prose.md"))
-    passages = [{"id": p["id"], "say": [sc.squash(sc.unmark(s)) for s in p["say"]], "hold": float(p["hold"] or 0)}
+    passages = [{"id": p["id"], "say": [sc.squash(sc.unmark(s)) for s in p["say"]], "hold": float(p["hold"] or 0),
+                 "join": p.get("join") == "next"}
                 for beat in script["beats"] for p in beat["passages"]]
     paragraph = [(b["number"], i) for b in prose["beats"] for i, para in enumerate(b["paragraphs"], 1) for _ in para]
     sentences = [{"passage": p["id"], "place": k, "text": t} for p in passages for k, t in enumerate(p["say"], 1)]
@@ -523,39 +524,120 @@ def check_narration(data, folder, script):
 
 # ---------------------------------------------------------------- request and machine
 
-def segments_of(sentences, splits, limit):
-    """Paragraphs, split after each passage in splits, then cut to the voice's limit: at the last passage
-    end that fits, or inside a passage at the last sentence end that fits."""
-    chars = lambda group: len(" ".join(s["text"] for s in group))
-    groups, current = [], []
-    for s in sentences:
-        if current and (s["paragraph"] != current[-1]["paragraph"]
-                        or (current[-1]["passage"] in splits and s["passage"] != current[-1]["passage"])):
-            groups.append(current)
-            current = []
-        current.append(s)
-    if current:
-        groups.append(current)
-    segments, problems = [], []
-    for group in groups:
-        while group:
-            if chars(group) <= limit:
-                segments.append(group)
-                break
-            ends = [i for i in range(1, len(group))
-                    if group[i]["passage"] != group[i - 1]["passage"] and chars(group[:i]) <= limit]
-            if not ends:
-                ends = [i for i in range(1, len(group)) if chars(group[:i]) <= limit]
-            if not ends:
-                problems.append(f"passage {group[0]['passage']}, sentence {group[0]['place']}: "
-                                f"{chars(group[:1])} characters, over the voice's {limit}; only the prose "
-                                "step can shorten it")
-                segments.append(group[:1])
-                group = group[1:]
+def chars(group):
+    """A read's spoken length: its sentences joined by one space, in characters, as the service counts it."""
+    return len(" ".join(s["text"] for s in group))
+
+
+def pack(units, limit):
+    """Consecutive units, each within the limit, packed into the fewest reads that fit; among packings with
+    that count, the one whose shortest read is longest. Returns the reads, each a list of sentences."""
+    best = [(0, math.inf, None)]                 # per prefix: reads, shortest read, where its last read starts
+    for j in range(1, len(units) + 1):
+        choice = None
+        for i in range(j):
+            read = chars([s for u in units[i:j] for s in u])
+            if read > limit:
                 continue
-            segments.append(group[:max(ends)])
-            group = group[max(ends):]
-    return segments, problems
+            key = (best[i][0] + 1, -min(best[i][1], read))
+            if choice is None or key < choice[0]:
+                choice = (key, i)
+        (count, shortest), i = choice
+        best.append((count, -shortest, i))
+    reads, j = [], len(units)
+    while j:
+        i = best[j][2]
+        reads.append([s for u in units[i:j] for s in u])
+        j = i
+    return reads[::-1]
+
+
+def segments_of(sentences, splits, limit, passages):
+    """The reads: within each beat, prose paragraphs packed into reads up to the voice's limit.
+
+    A paragraph is first split after each passage in splits. Paragraphs joined by a passage's Join: next
+    are one unit. A read never crosses a beat, or the end of a passage that needs silence (needs_silence),
+    or a split. Between those breaks the units are packed by pack. A unit over the limit is cut by cut; its
+    pieces before the last are reads of their own, and its last piece is packed with what follows. Returns the segments, the problems that refuse the request, and a NOTE for each Join: next the limit
+    broke."""
+    joins = {p["id"] for p in passages if p.get("join")}
+    blocks = []
+    for s in sentences:
+        last = blocks[-1][-1] if blocks else None
+        if last and s["paragraph"] == last["paragraph"] and not (
+                last["passage"] in splits and s["passage"] != last["passage"]):
+            blocks[-1].append(s)
+        else:
+            blocks.append([s])
+
+    def boundary(a, b):
+        # What lies between the sentences a and b at the edge of two blocks: "hard", "join" or "soft".
+        if a["paragraph"][0] != b["paragraph"][0]:
+            return "hard"                        # a new beat
+        if a["passage"] == b["passage"]:
+            return "soft"                        # a passage that runs on into the next paragraph
+        if a["paragraph"] == b["paragraph"] or a["passage"] in splits or needs_silence(passages, a["passage"]):
+            return "hard"                        # a split, or a passage that needs silence after it
+        return "join" if a["passage"] in joins else "soft"
+
+    runs = [[blocks[0]]] if blocks else []       # the stretches between hard breaks, each a list of units
+    for a, b in zip(blocks, blocks[1:]):
+        kind = boundary(a[-1], b[0])
+        if kind == "join":
+            runs[-1][-1] = runs[-1][-1] + b
+        elif kind == "soft":
+            runs[-1].append(b)
+        else:
+            runs.append([b])
+    segments, problems, notes = [], [], []
+    for run in runs:
+        stretch = []
+        for unit in run:
+            if chars(unit) <= limit:
+                stretch.append(unit)
+                continue
+            segments.extend(pack(stretch, limit) if stretch else [])
+            pieces = cut(unit, limit, problems, notes)
+            segments.extend(pieces[:-1])
+            # The cut's last piece is packed with what follows it, as a unit of its own.
+            stretch = [pieces[-1]] if chars(pieces[-1]) <= limit else []
+            if not stretch:
+                segments.append(pieces[-1])
+        segments.extend(pack(stretch, limit) if stretch else [])
+    return segments, problems, notes
+
+
+def cut(unit, limit, problems, notes):
+    """A unit over the voice's limit, cut at the last passage end that fits, or inside a passage at the last
+    sentence end that fits. Adds a problem for a sentence over the limit, and a NOTE when the cut breaks a
+    Join: next. Returns the pieces in order."""
+    pieces, breaks, group = [], [], unit
+    while group:
+        if chars(group) <= limit:
+            pieces.append(group)
+            break
+        ends = [i for i in range(1, len(group))
+                if group[i]["passage"] != group[i - 1]["passage"] and chars(group[:i]) <= limit]
+        if not ends:
+            ends = [i for i in range(1, len(group)) if chars(group[:i]) <= limit]
+        if not ends:
+            problems.append(f"passage {group[0]['passage']}, sentence {group[0]['place']}: "
+                            f"{chars(group[:1])} characters, over the voice's {limit}; only the prose "
+                            "step can shorten it")
+            ends = [1]
+        at = max(ends)
+        if at < len(group):
+            last = group[at - 1]
+            breaks.append(f"passage {last['passage']}" if group[at]["passage"] != last["passage"]
+                          else f"passage {last['passage']}, sentence {last['place']}")
+        pieces.append(group[:at])
+        group = group[at:]
+    if breaks and len({s["paragraph"] for s in unit}) > 1:
+        size = chars(unit)
+        notes.append(f"NOTE passages {unit[0]['passage']} to {unit[-1]['passage']}, joined by Join: next, "
+                     f"read {size} characters, {size - limit} over the voice's {limit}, so the read breaks "
+                     f"after {' and after '.join(breaks)}")
+    return pieces
 
 
 def jobs_of(planned):
@@ -627,7 +709,8 @@ def cmd_request(folder, n):
     if unknown:
         raise Refused(f"{redo_path.name} names passages that have no words: {', '.join(unknown)}")
 
-    segments, problems = segments_of(script["sentences"], splits, voice["max_segment_chars"])
+    segments, problems, broken = segments_of(script["sentences"], splits, voice["max_segment_chars"],
+                                             script["passages"])
     previous = {seg["id"]: seg for seg in (last_plan or {}).get("segments", [])}
     planned = []
     for group in segments:
@@ -694,7 +777,7 @@ def cmd_request(folder, n):
     longest = max(planned, key=size)
     lines = [f"draft {n}: {len(jobs)} jobs, {len(planned)} segments, {len(script['sentences'])} sentences, {total} characters",
              f"longest segment {longest['id']}: {size(longest)} characters of the voice's "
-             f"{voice['max_segment_chars']}"] + notes
+             f"{voice['max_segment_chars']}"] + notes + broken
     new = [seg["id"] for seg in planned
            if seg["attempt"] > 0 and (previous.get(seg["id"]) or {}).get("attempt") != seg["attempt"]]
     if new:

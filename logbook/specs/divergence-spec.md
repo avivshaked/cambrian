@@ -1,6 +1,6 @@
 # Divergence handling and the error manifest — implementation spec
 
-Fable, 2026-09-04, after logbook/0056's censored arm `r20q-s1` (owner: "fix the bug(s)").
+Fable, 2026-09-04, after logbook/0056's censored arm `r20q-s1` (the owner asked for the bug or bugs to be fixed).
 Default-preserving: a run in which no body diverges must be step-for-step identical to
 today — the only new code that runs on a healthy step is a finiteness check.
 

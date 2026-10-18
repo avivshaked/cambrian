@@ -106,7 +106,7 @@ namespace Evosim.Theatre
         /// <remarks>
         /// <para>
         /// The second day's one dial. The first day rounded the boxes and mottled them and the
-        /// owner's reading of it was that it was "still very very geometric": what makes a thing
+        /// owner read it as still far too geometric: what makes a thing
         /// look grown is its silhouette, and rounding leaves every face flat and parallel. So the
         /// body shader cuts inward by two octaves of noise in each part's own object space, and
         /// this is how far.
@@ -412,6 +412,36 @@ namespace Evosim.Theatre
         /// <summary>Unit, pointing down the sun's ray after the surface has bent it.</summary>
         private Vector3 _sunRay = new Vector3(0.20f, -0.96f, 0.19f);
 
+        // ---------------------------------------------------------------- the underwater look
+
+        /// <summary>
+        /// The underwater look's six switches and their numbers
+        /// (<c>logbook/specs/underwater-look/brief.md</c>), read from the environment when the skin
+        /// is made, every one off by default. Set before <see cref="Apply"/> to change them; the
+        /// solo still sets <see cref="TheatreLook.Off"/>.
+        /// </summary>
+        public TheatreLook Look = TheatreLook.FromEnvironment();
+
+        /// <summary>
+        /// The sun as it was before the batch, taken from the key at the last push, which a census
+        /// view goes back to while the look is held (item 1).
+        /// </summary>
+        private Vector3 _sunLegacy = new Vector3(0.28f, 0.92f, 0.27f);
+
+        /// <summary>The run's light at the second last pushed (items 3 and 6).</summary>
+        private TheatreDaylight.Reading _daylight = TheatreDaylight.Neutral(0f);
+
+        /// <summary>True while a census render holds the look off (<see cref="HoldTodaysLook"/>).</summary>
+        private bool _holding;
+
+        /// <summary>The last daylight the log was told of, so a film says it once and not every frame.</summary>
+        private string _daylightLogged;
+
+        private GameObject _march;
+        private Material _marchMaterial;
+        private GameObject _shells;
+        private Material _shellMaterial;
+
         private bool _fogSaved;
         private bool _fogWas;
         private FogMode _fogModeWas;
@@ -522,6 +552,8 @@ namespace Evosim.Theatre
             // The sea, told to every shader that draws any of it, now that there is a light for
             // the sun to be.
             PushWater();
+
+            if (Look.Any) Debug.Log("[Theatre] " + Look.Describe());
         }
 
         /// <summary>
@@ -584,7 +616,12 @@ namespace Evosim.Theatre
         /// </remarks>
         public void PushWater()
         {
-            _sun = ResolveSun();
+            // Item 1 of the underwater look: with one sun on, everything the water shows is drawn
+            // from the world's fixed bearing and the key keeps following the camera for the
+            // modelling; without it, the key's bearing at this push, as always. The key's is kept
+            // either way, for a census render to go back to.
+            _sunLegacy = ResolveSun();
+            _sun = Look.OneSun && !_holding ? Look.FixedSun() : _sunLegacy;
             _sunRay = Refracted(_sun);
 
             Shader.SetGlobalVector("_EvoRipple", new Vector4(
@@ -607,6 +644,705 @@ namespace Evosim.Theatre
             // because these two went up unconverted.
             Shader.SetGlobalColor("_EvoWaterDeep", Water.linear);
             Shader.SetGlobalColor("_EvoWaterShallow", ShallowAsLit.linear);
+
+            PushLook();
+        }
+
+        // ---------------------------------------------------------------- the underwater look
+
+        /// <summary>
+        /// Hands the underwater look's switches and numbers to the shaders
+        /// (<c>TheatreWater.hlsl</c>'s <c>_EvoLook</c>, <c>_EvoAbsorb</c>, <c>_EvoPhase</c>,
+        /// <c>_EvoDaylight</c>, <c>_EvoDepthRates</c>) and turns the furniture each switch replaces
+        /// off and its replacement on. With every switch off the flags are zero and every shader
+        /// takes the branch it drew before the batch.
+        /// </summary>
+        /// <remarks>
+        /// None of these is a colour, so none is converted (the linear-space gotcha is about
+        /// <c>SetGlobalColor</c>; the in-scatter's colour is the column's, which
+        /// <see cref="PushWater"/> converts).
+        /// </remarks>
+        public void PushLook()
+        {
+            bool on = !_holding;
+
+            Shader.SetGlobalVector("_EvoLook", new Vector4(
+                on && Look.WaterScatter ? 1f : 0f,
+                on && Look.DepthLight ? 1f : 0f,
+                on && Look.SkyDay ? 1f : 0f,
+                1f));
+
+            Vector3 absorb = Look.AbsorptionPerMetre;
+            Shader.SetGlobalVector("_EvoAbsorb", new Vector4(
+                absorb.x, absorb.y, absorb.z, Mathf.Clamp(Look.ScatterPerMetre, 0f, 1f)));
+
+            Shader.SetGlobalVector("_EvoPhase", new Vector4(
+                Mathf.Clamp(Look.PhaseG, 0f, 0.95f), Mathf.Clamp01(Look.PhaseGain), 0f, 0f));
+
+            Shader.SetGlobalVector("_EvoDepthRates", new Vector4(
+                Look.DepthRates.x, Look.DepthRates.y, Look.DepthRates.z, 0f));
+
+            Shader.SetGlobalVector("_EvoDaylight", new Vector4(
+                1f / Mathf.Max(0.1f, _daylight.AttenuationDepth),
+                Look.PictureDay(_daylight.DayFactor),
+                Mathf.Clamp01(Look.DepthFloor),
+                _daylight.Overcast));
+
+            PushSecond(on);
+            ApplyFurnitureSwitches();
+        }
+
+        /// <summary>
+        /// The second batch's switches and numbers (<c>logbook/specs/underwater-look/brief-2.md</c>):
+        /// <c>_EvoLook2</c>, <c>_EvoFade</c>, the snow's references and drift, the shafts' placement
+        /// on the march's material, and the tone step. All zero, and the tone step off, while a
+        /// census view holds today's look or with the switches off.
+        /// </summary>
+        private void PushSecond(bool on)
+        {
+            Shader.SetGlobalVector("_EvoLook2", new Vector4(
+                on && Look.FadeToBackdrop ? 1f : 0f,
+                on && Look.RunSnow && _snowOnTexture ? 1f : 0f,
+                on && Look.SnowDrift ? 1f : 0f,
+                on && Look.ShaftPlace ? 1f : 0f));
+
+            Shader.SetGlobalVector("_EvoFade", new Vector4(
+                Mathf.Clamp(Look.FadeStartMetres, 0f, 10f),
+                Mathf.Max(0f, Look.FadeScatterScale * Look.ScatterPerMetre),
+                Mathf.Clamp(Look.WaterGain, 0.2f, 2f),
+                Mathf.Max(Mathf.Clamp(Look.FadeFullMetres, 1f, 40f), Mathf.Clamp(Look.FadeStartMetres, 0f, 10f) + 1f)));
+
+            Shader.SetGlobalVector("_EvoSnowRef", new Vector4(
+                Mathf.Max(0.01f, Look.SnowReference),
+                Mathf.Max(0.01f, Look.FloorReference),
+                Mathf.Clamp01(Look.FloorDust),
+                0f));
+
+            Shader.SetGlobalVector("_EvoSnowDrift", new Vector4(
+                _snowDrift.x, _snowDrift.y, _snowDrift.z, on && Look.SnowDrift ? 1f : 0f));
+
+            if (_marchMaterial != null)
+            {
+                bool place = on && Look.ShaftPlace;
+
+                _marchMaterial.SetFloat("_PlaceShare", Mathf.Clamp(Look.ShaftShare, 0.05f, 1f));
+                _marchMaterial.SetFloat("_PlacePower", Mathf.Clamp(Look.ShaftNarrow, 1f, 12f));
+                _marchMaterial.SetFloat("_PlaceOverObject", Mathf.Clamp01(Look.ShaftOverObject));
+                _marchMaterial.SetFloat("_PlaceMaskMetres", Mathf.Clamp(Look.ShaftPatchMetres, 1f, 40f));
+                _marchMaterial.SetFloat("_PlaceReach", Mathf.Clamp(Look.ShaftReachMetres, 4f, 200f));
+                _marchMaterial.SetFloat("_SheetMetres", Mathf.Clamp(Look.ShaftSheetMetres, 0.5f, 20f));
+                _marchMaterial.SetFloat("_SheetDepthMetres", Mathf.Clamp(Look.ShaftDepthMetres, 1f, 100f));
+                _marchMaterial.SetFloat("_SheetShimmer", Mathf.Clamp01(Look.ShaftShimmer));
+                _marchMaterial.SetFloat("_SheetOnsetMetres", Mathf.Clamp(Look.ShaftOnsetMetres, 0.1f, 20f));
+                bool debug = place && Look.ShaftDebug > 0.5f;
+                _marchMaterial.SetFloat("_PlaceDebug", debug ? Look.ShaftDebug : 0f);
+                _marchMaterial.SetFloat("_DstBlend", (float)(debug ? BlendMode.Zero : place ? BlendMode.OneMinusSrcColor : BlendMode.One));
+                _marchMaterial.SetFloat("_MarchStrength", place
+                    ? Mathf.Clamp(Look.ShaftPlaceStrength, 0f, 0.4f)
+                    : Mathf.Clamp(Look.MarchStrength, 0f, 0.2f));
+            }
+
+            if (Look.ToneStep) TheatreToneStep.Ensure();
+            TheatreToneStep.Active = on && Look.ToneStep;
+            TheatreToneStep.Curve = new Vector4(
+                Mathf.Clamp(Look.BlackPoint, 0f, 0.3f),
+                Mathf.Clamp(Look.ToneS, 1f, 2f),
+                Mathf.Clamp(Look.TonePivot, 0.1f, 0.7f),
+                Mathf.Clamp(Look.ToneShoulder, 1f, 2f));
+        }
+
+        // ---------------------------------------------------------------- the run's snow (second batch)
+
+        private Vector3 _waterLow, _waterHigh;
+        private Vector4 _waterTank;
+        private bool _waterKnown;
+
+        /// <summary>
+        /// Whether a point is in the dressed world's water: under the waterline, in the box and, in
+        /// a tank, inside the glass (<c>TheatreWater.hlsl</c>'s <c>EvoEyeInWater</c>, on the CPU).
+        /// Under the waterline alone before a world is dressed.
+        /// </summary>
+        public bool EyeInWater(Vector3 p)
+        {
+            if (!_waterKnown) return p.y < _waterlineY;
+
+            if (p.x < _waterLow.x || p.y < _waterLow.y || p.z < _waterLow.z) return false;
+            if (p.x > _waterHigh.x || p.y > _waterHigh.y || p.z > _waterHigh.z) return false;
+
+            if (_waterTank.w > 0.5f)
+            {
+                float dx = p.x - _waterTank.x, dz = p.z - _waterTank.y;
+                if (dx * dx + dz * dz > _waterTank.z * _waterTank.z) return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>The most reef caps the marched shafts are shadowed by (<c>TheatreShaftMarch.shader</c>).</summary>
+        private const int MaxMarchCaps = 32;
+
+        /// <summary>The run's snow fields and water, opened at the first frame of a run (null before).</summary>
+        private TheatreRunSnow _runSnow;
+
+        /// <summary>The run the snow was opened for, so a second run opens its own.</summary>
+        private string _runSnowPath;
+
+        /// <summary>True when the snow texture holds the run's fields at the last pushed second.</summary>
+        private bool _snowOnTexture;
+
+        private Texture2D _snowTexture;
+        private float[] _snowDensity;
+        private float[] _snowFloor;
+        private double _snowTextureSecond = double.NaN;
+
+        /// <summary>How far the water has carried the snow, metres, since the sequence began.</summary>
+        private Vector3 _snowDrift;
+        private double _snowDriftSecond = double.NaN;
+        private float _snowDriftClock = float.NaN;
+        private int _snowDriftPushes;
+        private int _filmClockFrame = -1;
+        private string _snowLogged;
+
+        /// <summary>
+        /// The run's light and snow at the frame's second, for a render from
+        /// <paramref name="eye"/>: <see cref="PushDaylight"/>, then the snow fields and the drift
+        /// (<see cref="PushSnow"/>). What every non-census render calls.
+        /// </summary>
+        public void PushFrame(ITheatreFrame frame, Vector3 eye, double filmSecond = double.NaN)
+        {
+            PushDaylight(TheatreDaylight.At(frame));
+            PushSnow(frame, eye, filmSecond);
+        }
+
+        /// <summary>
+        /// The second batch's snow at the frame's second (items 4 to 6 and the drift): the run's
+        /// column density and floor stock on the snow texture, and the water's displacement around
+        /// the camera, accumulated over the simulation's seconds.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The drift's clock is the simulation's.</b> Between two pushes the snow moves by the
+        /// current at the camera times the seconds the world advanced, and sinks at the run's own
+        /// rate; a film whose clock runs faster than the world's still moves the snow by the
+        /// world's seconds. While the world stands still (a frozen film, or the same second pushed
+        /// again) and the shaders' clock moves on, it drifts at <see cref="TheatreLook.SnowAlive"/>
+        /// of the current, at least a centimetre a second along it, so a frozen frame's snow is
+        /// alive. A jump of more than a minute either way, or a first push, starts a new sequence
+        /// at zero: a still is the water at rest at its own second.
+        /// </para>
+        /// <para>
+        /// <b>A film drives the drift by its own second</b> (<paramref name="filmSecond"/>), the
+        /// continuous one its label prints. The frame's world second moves in half-second metabolic
+        /// steps, so a drift read off it crept between steps on the slow alive drift and then took
+        /// the whole half second of current in one frame: at 24 fps the snow jumped every twelfth
+        /// frame (clip21, 2026-10-07). While a film is giving its second, a push without one (the
+        /// runner's every frame, at the fly camera) leaves the drift alone.
+        /// </para>
+        /// </remarks>
+        public void PushSnow(ITheatreFrame frame, Vector3 eye, double filmSecond = double.NaN)
+        {
+            if (!(Look.RunSnow || Look.SnowDrift) || frame == null) return;
+
+            string path = frame.Record?.Path;
+            if (_runSnow == null || _runSnowPath != path)
+            {
+                _runSnow = TheatreRunSnow.Open(frame);
+                _runSnowPath = path;
+                _snowTextureSecond = double.NaN;
+                _snowDriftSecond = double.NaN;
+                Debug.Log("[Theatre] look: snow fields: " + _runSnow.FieldSource + "; water: " + _runSnow.CurrentSource);
+            }
+
+            if (!TheatreDaylight.TrySecond(frame, out double second)) second = double.NaN;
+
+            // Items 4 and 5: the fields at the second, uploaded when the second changes.
+            if (Look.RunSnow && _runSnow.HasFields && !double.IsNaN(second) &&
+                (double.IsNaN(_snowTextureSecond) || System.Math.Abs(second - _snowTextureSecond) >= 1.0))
+            {
+                int columns = _runSnow.CellsX * _runSnow.CellsZ;
+                if (_snowDensity == null || _snowDensity.Length != columns)
+                {
+                    _snowDensity = new float[columns];
+                    _snowFloor = new float[columns];
+                }
+
+                if (_runSnow.TryAt(second, _snowDensity, _snowFloor, out string at))
+                {
+                    UploadSnow();
+                    _snowTextureSecond = second;
+                    _snowOnTexture = true;
+
+                    // Said when the pair of dumps changes, not at every second between them.
+                    string key = System.Text.RegularExpressions.Regex.Replace(at, " at [0-9.]+$", "");
+                    if (key != _snowLogged)
+                    {
+                        _snowLogged = key;
+                        Debug.Log(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                            "[Theatre] look: snow from the run at {0:0.#} s ({1}); reference {2:0.##} J/m3, floor {3:0.##} J",
+                            second, at, Look.SnowReference, Look.FloorReference));
+                    }
+                }
+                else
+                {
+                    _snowOnTexture = false;
+                    Debug.Log("[Theatre] look: the snow fields refused the second (" + at + "); the snow is decorative");
+                }
+            }
+
+            // The drift, on the film's second where there is one.
+            bool filmGives = !double.IsNaN(filmSecond) && !double.IsInfinity(filmSecond);
+            if (filmGives) _filmClockFrame = Time.frameCount;
+            bool filmOwns = !filmGives && _filmClockFrame >= 0 && Time.frameCount - _filmClockFrame <= 2;
+
+            if (Look.SnowDrift && !filmOwns) AdvanceDrift(filmGives ? filmSecond : second, eye);
+
+            PushLook();
+        }
+
+        private void UploadSnow()
+        {
+            int width = _runSnow.CellsZ, height = _runSnow.CellsX;
+
+            if (_snowTexture == null || _snowTexture.width != width || _snowTexture.height != height)
+            {
+                if (_snowTexture != null) UnityEngine.Object.DestroyImmediate(_snowTexture);
+                _snowTexture = new Texture2D(width, height, TextureFormat.RGFloat, false, true)
+                {
+                    name = "Theatre Run Snow",
+                    hideFlags = HideFlags.DontSave,
+                    filterMode = FilterMode.Bilinear,
+                    wrapMode = TextureWrapMode.Clamp,
+                };
+            }
+
+            var pixels = new Vector2[width * height];
+            for (int i = 0; i < pixels.Length; i++) pixels[i] = new Vector2(_snowDensity[i], _snowFloor[i]);
+
+            _snowTexture.SetPixelData(pixels, 0);
+            _snowTexture.Apply(false, false);
+
+            Shader.SetGlobalTexture("_EvoSnowField", _snowTexture);
+            Shader.SetGlobalVector("_EvoSnowGrid", new Vector4(0f, 1f / _runSnow.CellMetres, 0f, _runSnow.CellsX));
+            Shader.SetGlobalVector("_EvoSnowCells", new Vector4(_runSnow.CellsZ, 0f, 0f, 0f));
+        }
+
+        private void AdvanceDrift(double second, Vector3 eye)
+        {
+            float clock = Time.timeSinceLevelLoad;
+            bool fresh = double.IsNaN(_snowDriftSecond) || double.IsNaN(second) || System.Math.Abs(second - _snowDriftSecond) > 60.0;
+
+            if (fresh)
+            {
+                _snowDrift = Vector3.zero;
+            }
+            else
+            {
+                Vector3 v = _runSnow.VelocityAt(eye, second);
+                double worldStep = second - _snowDriftSecond;
+
+                if (worldStep != 0.0)
+                {
+                    // The water's displacement over the world's step, and the snow's own sinking.
+                    _snowDrift += v * (float)worldStep;
+                    _snowDrift.y -= _runSnow.SinkMetresPerSecond * (float)worldStep;
+                }
+                else if (!float.IsNaN(_snowDriftClock) && clock > _snowDriftClock)
+                {
+                    // The world stands still and the shaders' clock does not: a slow drift along
+                    // the water's own direction, so the snow is alive.
+                    float step = clock - _snowDriftClock;
+                    float speed = Mathf.Max(0.01f, Look.SnowAlive * v.magnitude);
+                    Vector3 along = v.sqrMagnitude > 1e-10f ? v.normalized : new Vector3(0.7071f, 0f, 0.7071f);
+
+                    _snowDrift += along * (speed * step);
+                    _snowDrift.y -= Mathf.Max(_runSnow.SinkMetresPerSecond, 0.002f) * step;
+                }
+            }
+
+            _snowDriftSecond = second;
+            _snowDriftClock = clock;
+
+            // For the log, so a film's drift can be read without a picture: the first pushes of a
+            // sequence and every thirtieth after.
+            _snowDriftPushes = fresh ? 0 : _snowDriftPushes + 1;
+            if (_snowDriftPushes < 3 || _snowDriftPushes % 30 == 0)
+            {
+                Vector3 v = _runSnow.VelocityAt(eye, second);
+                Debug.Log(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    "[Theatre] look: snow drift at {0:0.###} s (push {1}): water {2:0.0000}/{3:0.0000}/{4:0.0000} m/s at the camera, carried {5:0.000}/{6:0.000}/{7:0.000} m",
+                    second, _snowDriftPushes, v.x, v.y, v.z, _snowDrift.x, _snowDrift.y, _snowDrift.z));
+            }
+        }
+
+        /// <summary>
+        /// Where the snow came from, for the label: "snow from the run" when the shells and the bed
+        /// draw the run's fields, "snow decorative" otherwise; and "no drift" when the drift is on
+        /// and the run's current could not be read. Null with neither switch on or the look held.
+        /// </summary>
+        public string SnowToken()
+        {
+            if (_holding || !(Look.RunSnow || Look.SnowDrift)) return null;
+
+            string source = Look.RunSnow && _snowOnTexture ? "snow from the run" : "snow decorative";
+            if (Look.SnowDrift && (_runSnow == null || !_runSnow.HasCurrent)) source += ", no drift";
+
+            return source;
+        }
+
+        /// <summary>
+        /// The run's light at the second about to be drawn (items 3 and 6). The snapshot camera
+        /// pushes it before every render and the runner once a second in Play mode; a scene that
+        /// never does draws the mean day.
+        /// </summary>
+        public void PushDaylight(TheatreDaylight.Reading reading)
+        {
+            _daylight = reading;
+            PushLook();
+
+            if (!Look.DepthLight && !Look.SkyDay) return;
+
+            string line = string.Format(
+                System.Globalization.CultureInfo.InvariantCulture,
+                "[Theatre] look: day factor {0:0.###} ({1}), attenuation depth {2:0.##} m, overcast {3:0.##}",
+                reading.DayFactor, reading.Source, reading.AttenuationDepth, reading.Overcast);
+
+            // Said when it changes by more than the log can read, not every frame of a film.
+            string key = string.Format(
+                System.Globalization.CultureInfo.InvariantCulture,
+                "{0:0.00}|{1:0.0}|{2}", reading.DayFactor, reading.AttenuationDepth,
+                reading.Source != null && reading.Source.StartsWith("stats", System.StringComparison.Ordinal) ? "stats" : reading.Source);
+
+            if (key == _daylightLogged) return;
+            _daylightLogged = key;
+            Debug.Log(line);
+        }
+
+        /// <summary>What a metered view is of, which decides what the meter gives back and how far.</summary>
+        public enum MeterView
+        {
+            /// <summary>A subject at a depth (the close view, the reef, a film's shots): depth and day, at most ±2 EV.</summary>
+            Subject,
+
+            /// <summary>A view of the whole tank (the bed view): the day's share alone, at most ±1 EV.</summary>
+            Wide,
+
+            /// <summary>The sky view: no meter, so the window and the sky keep the day's own order.</summary>
+            Sky,
+        }
+
+        /// <summary>
+        /// The exposure, in EV, item 3's meter opens or closes a frame by, so a deep or a winter
+        /// shot is still readable without being lifted past the look before the batch. Zero with
+        /// item 3 off, the meter off, the look held, or a sky view.
+        /// </summary>
+        /// <remarks>
+        /// Two parts. The day: <see cref="TheatreLook.MeterDayShare"/> of the picture day's
+        /// departure from the mean, under one, so a summer frame stays brighter than a winter one of
+        /// the same view (everything the day lights is scaled by the whole picture day, the floor
+        /// included). The depth, for a view of a subject only: <see cref="TheatreLook.MeterStrength"/>
+        /// of what the subject's depth took, which is the same in both seasons and so cannot
+        /// reverse them. Then capped: ±2 EV for a subject, ±1 EV for a view of the whole tank, where
+        /// the first stills' +3 EV took the bed view from a mean luma of 37 to 153.
+        /// </remarks>
+        public float MeterEv(float subjectY, MeterView view)
+        {
+            // The second batch's item 2: with the tone step on, the sky view takes the day's share
+            // as the bed view does (at most 1 EV, the seasons' order kept), so a summer window is
+            // not white and a winter one not grey (iteration 4: 126 and 59 against a bar of 77 to
+            // 120 and 60 to 77).
+            if (view == MeterView.Sky && Look.ToneStep && !_holding) view = MeterView.Wide;
+
+            if (!Look.DepthLight || _holding || view == MeterView.Sky) return 0f;
+
+            float strength = Mathf.Clamp01(Look.MeterStrength);
+            if (strength <= 0f) return 0f;
+
+            float day = Mathf.Max(1e-3f, Look.PictureDay(_daylight.DayFactor));
+            float ev = -Mathf.Log(day, 2f) * Mathf.Clamp(Look.MeterDayShare, 0f, 0.9f);
+            float scene = day;
+
+            if (view == MeterView.Subject)
+            {
+                float depth = Mathf.Max(0f, _waterlineY - subjectY);
+                float fall = Mathf.Exp(-depth / Mathf.Max(0.1f, _daylight.AttenuationDepth) * Look.DepthRates.y);
+                fall = Mathf.Max(fall, Mathf.Max(1e-3f, Look.DepthFloor));
+
+                ev += -Mathf.Log(fall, 2f) * strength;
+                scene *= fall;
+            }
+
+            // Toward the look before the batch and never past it: at most nine tenths of the way
+            // back to the subject's light at the mean day at the surface, so a frame darker than
+            // that stays darker and a brighter one stays brighter, and the seasons keep their order
+            // even where both reach this bound.
+            float back = -Mathf.Log(Mathf.Max(1e-4f, scene), 2f) * 0.9f;
+            ev = Mathf.Clamp(ev, Mathf.Min(0f, back), Mathf.Max(0f, back));
+
+            float most = view == MeterView.Wide ? TheatreLook.MeterWideMostEv : TheatreLook.MeterMostEv;
+            return Mathf.Clamp(ev, -most, most);
+        }
+
+        /// <summary>The look's token for a picture's label (<see cref="TheatreLook.LabelToken"/>).</summary>
+        public string LabelToken(string gradeToken, bool census)
+        {
+            string token = Look.LabelToken(gradeToken, census || _holding);
+
+            // The second batch's item 6: where the snow came from, on every picture the look draws.
+            string snow = census || _holding ? null : SnowToken();
+
+            return snow == null ? token : token + " · " + snow;
+        }
+
+        /// <summary>
+        /// Puts today's look back for the length of one render, whatever the switches say, and
+        /// hands back what puts the look back on. The census views (side, end, top, iso) are
+        /// records and must stay comparable (the brief's rules), so <see cref="SnapshotCamera"/>
+        /// holds the look around each of them. Null when there is nothing to hold.
+        /// </summary>
+        /// <remarks>
+        /// What it holds: the sun goes back to the key's (item 1), the shaders' flags go to zero
+        /// (items 2, 3 and 6), and the quads and the particle snow come back in place of the march
+        /// and the shells (items 4 and 5). Taken before the census hides what only the water sees,
+        /// and released after it has put that back, so the hiding sees the furniture of today.
+        /// </remarks>
+        public System.IDisposable HoldTodaysLook()
+        {
+            if (!Look.Any || _holding) return null;
+
+            _holding = true;
+            PushSun();
+            PushLook();
+
+            return new LookHold(this);
+        }
+
+        private sealed class LookHold : System.IDisposable
+        {
+            private TheatreSkin _skin;
+
+            public LookHold(TheatreSkin skin) { _skin = skin; }
+
+            public void Dispose()
+            {
+                if (_skin == null) return;
+
+                _skin._holding = false;
+                _skin.PushSun();
+                _skin.PushLook();
+                _skin = null;
+            }
+        }
+
+        /// <summary>The sun alone, as <see cref="PushWater"/> would set it, from the key's last bearing.</summary>
+        private void PushSun()
+        {
+            _sun = Look.OneSun && !_holding ? Look.FixedSun() : _sunLegacy;
+            _sunRay = Refracted(_sun);
+
+            Shader.SetGlobalVector("_EvoSun", _sun);
+            Shader.SetGlobalVector("_EvoSunRay", _sunRay);
+        }
+
+        /// <summary>
+        /// Each replaced piece of furniture off while its replacement is on, and back while the
+        /// look is held: the nine quads against the march (item 4), the particle snow against the
+        /// shells (item 5).
+        /// </summary>
+        private void ApplyFurnitureSwitches()
+        {
+            bool on = !_holding;
+
+            SetRendered(_shafts, !(on && Look.ShaftMarch));
+            SetRendered(_snow != null ? _snow.gameObject : null, !(on && Look.SnowShells));
+            SetRendered(_march, on && Look.ShaftMarch);
+            SetRendered(_shells, on && Look.SnowShells);
+        }
+
+        /// <summary>
+        /// Which of the look's furniture exists and is drawn, for the build's check
+        /// (<c>LookShaderCheck</c>): quads, particle snow, march, shells, each "-" when not built.
+        /// </summary>
+        public string FurnitureState()
+        {
+            string Of(GameObject holder)
+            {
+                if (holder == null) return "-";
+                Renderer renderer = holder.GetComponent<Renderer>();
+                return renderer != null && renderer.enabled ? "drawn" : "off";
+            }
+
+            return "quads " + Of(_shafts) + ", particle snow " + Of(_snow != null ? _snow.gameObject : null) +
+                   ", march " + Of(_march) + ", shells " + Of(_shells) +
+                   ", sun " + _sun.ToString("F3") + (_holding ? ", held" : "");
+        }
+
+        private static void SetRendered(GameObject holder, bool shown)
+        {
+            if (holder == null) return;
+
+            Renderer renderer = holder.GetComponent<Renderer>();
+            if (renderer != null) renderer.enabled = shown;
+        }
+
+        /// <summary>
+        /// The marched shafts (item 4): a box over the lit water, drawn from its inside, on which
+        /// <c>TheatreShaftMarch.shader</c> marches every view ray (<c>TheatreVolume.hlsl</c>).
+        /// </summary>
+        private void BuildMarch(Vector3 min, Vector3 size, float tankRadius, ReefGeometry reefs)
+        {
+            if (!Look.ShaftMarch) return;
+
+            Material material = _marchMaterial != null ? _marchMaterial : (_marchMaterial = MakeVolumeMaterial("Evosim/Theatre Shaft March", "Theatre Shaft March"));
+            if (material == null) return;
+
+            float waterline = min.y + size.y;
+
+            // Down to where the light is a few hundredths of the surface's, and no further than
+            // the floor: below it a march would spend its steps on water nothing lights.
+            float reach = Mathf.Clamp(SurfaceLightMetres, 1f, 60f);
+            float depth = Mathf.Min(size.y, Mathf.Max(12f, 1.5f * reach));
+
+            var low = new Vector3(min.x, waterline - depth, min.z);
+            var high = new Vector3(min.x + size.x, waterline, min.z + size.z);
+
+            SetVolume(material, low, high, min, size, tankRadius, waterline);
+            material.SetFloat("_MarchStrength", Mathf.Clamp(Look.MarchStrength, 0f, 0.2f));
+            material.SetFloat("_MarchSteps", Mathf.Clamp(Look.MarchSteps, 32, 64));
+
+            // The second batch's item 3: the reefs' caps, for the march to leave the water under
+            // them unlit (centre x and z, the cap's widest radius, its underside's height). Only
+            // the shafts read them: the theatre draws no other shadow.
+            var caps = new Vector4[MaxMarchCaps];
+            int capCount = 0;
+            if (reefs != null)
+            {
+                for (int i = 0; i < reefs.Count && capCount < MaxMarchCaps; i++)
+                {
+                    ReefLook cap = ReefLook.From(reefs, i);
+                    caps[capCount++] = new Vector4(cap.CentreX, cap.CentreZ, cap.MaxRadius(), cap.CapUndersideY);
+                }
+            }
+            material.SetVectorArray("_ReefCaps", caps);
+            material.SetFloat("_ReefCapCount", capCount);
+
+            _march = VolumeObject("Theatre Shaft March", low, high, material);
+
+            // The second batch's placement on the new material (item 3), when it is on.
+            PushSecond(!_holding);
+        }
+
+        /// <summary>
+        /// The snow around the camera (item 5): a box over the whole water, drawn from its inside,
+        /// on which <c>TheatreSnowShells.shader</c> walks the three shells of each view ray.
+        /// </summary>
+        private void BuildShells(Vector3 min, Vector3 size, float tankRadius)
+        {
+            if (!Look.SnowShells) return;
+
+            Material material = _shellMaterial != null ? _shellMaterial : (_shellMaterial = MakeVolumeMaterial("Evosim/Theatre Snow Shells", "Theatre Snow Shells"));
+            if (material == null) return;
+
+            float waterline = min.y + size.y;
+            var low = min;
+            var high = new Vector3(min.x + size.x, waterline, min.z + size.z);
+
+            SetVolume(material, low, high, min, size, tankRadius, waterline);
+            material.SetFloat("_ShellGain", 0.35f * Mathf.Clamp(Look.ShellGain, 0f, 4f));
+
+            _shells = VolumeObject("Theatre Snow Shells", low, high, material);
+        }
+
+        private static void SetVolume(Material material, Vector3 low, Vector3 high, Vector3 min, Vector3 size, float tankRadius, float waterline)
+        {
+            material.SetVector("_BoxMin", low);
+            material.SetVector("_BoxMax", high);
+            material.SetVector("_Tank", new Vector4(
+                min.x + 0.5f * size.x, min.z + 0.5f * size.z, tankRadius, tankRadius > 0f ? 1f : 0f));
+            material.SetFloat("_Waterline", waterline);
+        }
+
+        private GameObject VolumeObject(string name, Vector3 low, Vector3 high, Material material)
+        {
+            var go = new GameObject(name) { hideFlags = HideFlags.DontSave };
+            go.transform.SetParent(_root.transform, false);
+
+            go.AddComponent<MeshFilter>().sharedMesh = VolumeBox(name, low, high);
+
+            MeshRenderer renderer = go.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+
+            // Seen from inside the water only, and turned off outright for the census views, as
+            // the quads and the ceiling are.
+            go.AddComponent<TheatreInsideOnly>();
+
+            return go;
+        }
+
+        /// <summary>
+        /// A closed box in world coordinates with its faces wound outward, so <c>Cull Front</c>
+        /// draws its inside: one fragment a pixel wherever it is on screen, from inside or out.
+        /// </summary>
+        /// <remarks>
+        /// Each face's two triangles are (c0, c2, c1) and (c0, c3, c2) over corners c0 = -U-V,
+        /// c1 = -U+V, c2 = +U+V, c3 = +U-V with U x V the outward normal; Unity's front face is
+        /// the side cross(b - a, c - a) points to, as the bed's grid is wound.
+        /// </remarks>
+        private static Mesh VolumeBox(string name, Vector3 low, Vector3 high)
+        {
+            Vector3 centre = 0.5f * (low + high);
+            Vector3 half = 0.5f * (high - low);
+
+            var vertices = new List<Vector3>(24);
+            var triangles = new List<int>(36);
+
+            void Face(Vector3 normal, Vector3 u, Vector3 v)
+            {
+                Vector3 c = centre + Vector3.Scale(normal, half);
+                Vector3 du = Vector3.Scale(u, half);
+                Vector3 dv = Vector3.Scale(v, half);
+
+                int first = vertices.Count;
+                vertices.Add(c - du - dv);
+                vertices.Add(c - du + dv);
+                vertices.Add(c + du + dv);
+                vertices.Add(c + du - dv);
+
+                triangles.Add(first); triangles.Add(first + 2); triangles.Add(first + 1);
+                triangles.Add(first); triangles.Add(first + 3); triangles.Add(first + 2);
+            }
+
+            Face(Vector3.right, Vector3.up, Vector3.forward);
+            Face(Vector3.left, Vector3.forward, Vector3.up);
+            Face(Vector3.up, Vector3.forward, Vector3.right);
+            Face(Vector3.down, Vector3.right, Vector3.forward);
+            Face(Vector3.forward, Vector3.right, Vector3.up);
+            Face(Vector3.back, Vector3.up, Vector3.right);
+
+            var mesh = new Mesh { name = name, hideFlags = HideFlags.DontSave };
+            mesh.SetVertices(vertices);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+
+            return mesh;
+        }
+
+        private static Material MakeVolumeMaterial(string shaderName, string name)
+        {
+            Shader shader = Shader.Find(shaderName);
+            if (shader == null)
+            {
+                Debug.LogWarning("[Theatre] look: shader '" + shaderName + "' not found; " + name + " is not drawn.");
+                return null;
+            }
+
+            return new Material(shader)
+            {
+                name = name,
+                hideFlags = HideFlags.HideAndDontSave,
+            };
         }
 
         /// <summary>
@@ -799,6 +1535,20 @@ namespace Evosim.Theatre
             // along the refracted ray this works out.
             PushWater();
 
+            // The water's extent, for the underwater look's item 2 (TheatreWater.hlsl,
+            // EvoWaterPathMetres): absorption and in-scatter run over the part of a look inside
+            // the water only, so a camera outside the glass sees through air. Two metres of
+            // margin under the floor, where a shaped bed's hollows reach below the box.
+            _waterLow = new Vector3(min.x, min.y - 2f, min.z);
+            _waterHigh = new Vector3(min.x + size.x, _waterlineY, min.z + size.z);
+            _waterTank = new Vector4(min.x + 0.5f * size.x, min.z + 0.5f * size.z, tankRadius, tankRadius > 0f ? 1f : 0f);
+            _waterKnown = true;
+
+            Shader.SetGlobalVector("_EvoWaterLow", new Vector4(min.x, min.y - 2f, min.z, 1f));
+            Shader.SetGlobalVector("_EvoWaterHigh", new Vector4(min.x + size.x, _waterlineY, min.z + size.z, 0f));
+            Shader.SetGlobalVector("_EvoWaterTank", new Vector4(
+                min.x + 0.5f * size.x, min.z + 0.5f * size.z, tankRadius, tankRadius > 0f ? 1f : 0f));
+
             BuildBed(min, size, bed);
             BuildEarth(min, size, bed, tankRadius);
             BuildSurface(min, size);
@@ -809,6 +1559,14 @@ namespace Evosim.Theatre
             _groundRadius = tankRadius;
             BuildShafts(min, size);
             BuildSnow(min, size);
+
+            // The underwater look's replacements for the two above (items 4 and 5), built only
+            // when their switches are on; the quads and the particle snow are built either way,
+            // because a census view holds today's look and draws them.
+            BuildMarch(min, size, tankRadius, reefs);
+            BuildShells(min, size, tankRadius);
+            ApplyFurnitureSwitches();
+
             if (tankRadius > 0f) BuildGlass(min, size, tankRadius);
             if (reefs != null && reefs.Count > 0) BuildReefs(min, bed, reefs);
         }
@@ -1057,8 +1815,8 @@ namespace Evosim.Theatre
         }
 
         /// <summary>
-        /// The earth under a shaped bed (the owner, 2026-09-24: "everything under the ground [is]
-        /// full of earth, rather than more water"). A shaped bed is drawn as a surface, so a view
+        /// The earth under a shaped bed (the owner asked on 2026-09-24 that the ground
+        /// be solid earth below, not more water). A shaped bed is drawn as a surface, so a view
         /// through the glass from outside saw water under the beach and the reef stems standing
         /// down into it. This is a wall at the glass, just inside it, from the bed's height at
         /// the rim down past the box's bottom, in the bed's own shader in darker, browner tones
@@ -1716,6 +2474,17 @@ namespace Evosim.Theatre
             if (_snow != null) Discard(_snow.gameObject);
             _snow = null;
 
+            foreach (GameObject volume in new[] { _march, _shells })
+            {
+                if (volume == null) continue;
+
+                var filter = volume.GetComponent<MeshFilter>();
+                if (filter != null && filter.sharedMesh != null) Discard(filter.sharedMesh);
+                Discard(volume);
+            }
+            _march = null;
+            _shells = null;
+
             if (_glass != null)
             {
                 var filter = _glass.GetComponent<MeshFilter>();
@@ -1756,6 +2525,20 @@ namespace Evosim.Theatre
             Discard(_backdropMaterial); _backdropMaterial = null;
             Discard(_glassMaterial); _glassMaterial = null;
             Discard(_reefRockMaterial); _reefRockMaterial = null;
+            Discard(_marchMaterial); _marchMaterial = null;
+            Discard(_shellMaterial); _shellMaterial = null;
+
+            // The look's flags are globals and outlive the skin in an Editor session; a scene
+            // opened after this one starts from today's look until its own skin says otherwise.
+            if (Look.Any) Shader.SetGlobalVector("_EvoLook", Vector4.zero);
+            if (Look.AnySecond)
+            {
+                Shader.SetGlobalVector("_EvoLook2", Vector4.zero);
+                Shader.SetGlobalVector("_EvoSnowDrift", Vector4.zero);
+                TheatreToneStep.Active = false;
+            }
+            if (_snowTexture != null) { UnityEngine.Object.DestroyImmediate(_snowTexture); _snowTexture = null; }
+            Shader.SetGlobalVector("_EvoWaterLow", Vector4.zero);
 
             TheatreMeshes.Release();
 

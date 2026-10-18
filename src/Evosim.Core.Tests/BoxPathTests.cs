@@ -310,6 +310,11 @@ namespace Evosim.Core.Tests
             // two residuals by orders of magnitude, which is the change itself and not a side
             // effect of it: the audit from 2.0e-04 J to 1.8e-12, the matter identity from
             // −1.9e-06 units to 3.2e-08.
+            //
+            // And a fourth time on 2026-09-28, for round 52's exact door (the burn's spent units,
+            // remineralisation's and a corpse's last instalment go to the field as doubles). The
+            // counts, the depth and the snow are the same to the digit; the spent field, the
+            // standing matter and the matter identity moved, the identity from 3.2e-08 to 1.6e-08.
             Assert.Equal(41, world.Living.Count);
             Assert.Equal(11L, world.Births);
             Assert.Equal(127L, world.Deaths);
@@ -317,17 +322,17 @@ namespace Evosim.Core.Tests
 
             Assert.Equal(-15.408401535778511d, sumY / world.Living.Count);
             Assert.Equal(3780.9459386203066d, world.Nutrients.TotalJoules);
-            Assert.Equal(6000.624902886111d, world.Matter.TotalJoules);
+            Assert.Equal(6000.62490287067d, world.Matter.TotalJoules);
             Assert.Equal(1.8189894035458565E-12d, world.AuditResidual);
 
             // The standing total is not the seeded 6,000 any more and cannot be: since D098's
             // leg 9 every founder the floor admits is an influx of charged matter, so the world
             // grows by what the net hands it. The identity is what holds, and what is left of it
             // is the field's own float door — a deposit is a float and a cell is a double.
-            Assert.Equal(6122.100018822618d, world.StandingMatterUnits);
+            Assert.Equal(6122.100018807177d, world.StandingMatterUnits);
             Assert.Equal(122.10001879076472d, world.MatterInfluxedTotal);
             Assert.Equal(0d, world.MatterBuriedTotal);
-            Assert.Equal(3.185331820532156E-08d, world.MatterResidual);
+            Assert.Equal(1.641191715862078E-08d, world.MatterResidual);
         }
     }
 }

@@ -288,6 +288,28 @@ namespace Evosim.Core
         /// </summary>
         public float LandingMatterColumnDensity { get; }
 
+        /// <summary>
+        /// Birth only — D129's landing reading: for a founder with a mouth in a world whose
+        /// mouths follow the corpses, the joules of the corpses in the snow grid's 1 m column it
+        /// landed in, read at admission; NaN on every other row. The row's <c>fcorp</c>.
+        /// </summary>
+        public float LandingCorpseJoules { get; }
+
+        /// <summary>
+        /// Birth only — beside <see cref="LandingCorpseJoules"/>, the corpses' joules over the
+        /// grid's live columns at the same instant: what a column drawn at random holds on
+        /// average. NaN when <see cref="LandingCorpseJoules"/> is. The row's <c>fcorpm</c>.
+        /// </summary>
+        public float LandingCorpseMeanJoules { get; }
+
+        /// <summary>
+        /// Birth only — the body's lifespan gene (D128, <see cref="Genome.LifespanScale"/>), in a
+        /// world where it is heritable or drawn (<c>World.LifespanRecorded</c>); NaN on every other
+        /// row. The row's <c>ls</c>, so a reader can follow the gene through the lineage and join
+        /// an age at death to the curve it died on.
+        /// </summary>
+        public float LifespanScale { get; }
+
         /// <summary>Death only — why the creature left the population.</summary>
         public DeathCause Cause { get; }
 
@@ -386,6 +408,21 @@ namespace Evosim.Core
         /// </summary>
         public int BudsExpressed { get; }
 
+        /// <summary>
+        /// Birth only — for a <see cref="BirthKind.Immigration"/> row, the place in its group of
+        /// the world the immigrant's genome came from (D159); -1 on every other row. The row's
+        /// <c>from</c>, which the run's own <c>run.json</c> names.
+        /// </summary>
+        public int ImmigrantFromWorld { get; }
+
+        /// <summary>
+        /// Birth only — for a <see cref="BirthKind.Immigration"/> row, the id the creature whose
+        /// genome was copied carries in the world it came from; -1 on every other row. The row's
+        /// <c>fid</c>, so a parent chain that reaches <c>p: -1</c> on an immigrant goes on in the
+        /// other world's lineage.
+        /// </summary>
+        public long ImmigrantFromId { get; }
+
         private LineageEvent(
             LineageEventKind kind, double elapsedSeconds, long id, long parentId,
             BirthKind birthKind, int generationDepth, uint speciesId,
@@ -403,9 +440,17 @@ namespace Evosim.Core
             float landingSnow = float.NaN, float landingSnowColumn = float.NaN,
             float landingMatter = float.NaN, float landingMatterColumn = float.NaN,
             double gestationJoulesAtDeath = 0d, double reserveJoulesAtDeath = 0d,
-            double capCutJoules = 0d)
+            double capCutJoules = 0d,
+            float landingCorpse = float.NaN, float landingCorpseMean = float.NaN,
+            float lifespan = float.NaN,
+            int immigrantFromWorld = -1, long immigrantFromId = -1)
         {
+            ImmigrantFromWorld = immigrantFromWorld;
+            ImmigrantFromId = immigrantFromId;
             CapCutJoules = capCutJoules;
+            LifespanScale = lifespan;
+            LandingCorpseJoules = landingCorpse;
+            LandingCorpseMeanJoules = landingCorpseMean;
             LandingSnowDensity = landingSnow;
             LandingSnowColumnDensity = landingSnowColumn;
             LandingMatterDensity = landingMatter;
@@ -459,7 +504,10 @@ namespace Evosim.Core
             ReproductionMode reproductionMode = ReproductionMode.Lump, float gestationShare = 0.5f,
             float landingSnow = float.NaN, float landingSnowColumn = float.NaN,
             float landingMatter = float.NaN, float landingMatterColumn = float.NaN,
-            double capCutJoules = 0d) =>
+            double capCutJoules = 0d,
+            float landingCorpse = float.NaN, float landingCorpseMean = float.NaN,
+            float lifespan = float.NaN,
+            int immigrantFromWorld = -1, long immigrantFromId = -1) =>
             new LineageEvent(
                 LineageEventKind.Birth, elapsedSeconds, id, parentId, birthKind, generationDepth,
                 speciesId, hasAbsorptive, hasJoint, hasPhotosynthetic, patch,
@@ -473,7 +521,11 @@ namespace Evosim.Core
                 reproductionMode: reproductionMode, gestationShare: gestationShare,
                 landingSnow: landingSnow, landingSnowColumn: landingSnowColumn,
                 landingMatter: landingMatter, landingMatterColumn: landingMatterColumn,
-                capCutJoules: capCutJoules);
+                capCutJoules: capCutJoules,
+                landingCorpse: landingCorpse, landingCorpseMean: landingCorpseMean,
+                lifespan: lifespan,
+                immigrantFromWorld: birthKind == BirthKind.Immigration ? immigrantFromWorld : -1,
+                immigrantFromId: birthKind == BirthKind.Immigration ? immigrantFromId : -1);
 
         /// <summary>
         /// One death. <paramref name="gestationJoules"/> and <paramref name="reserveJoules"/> are
@@ -515,7 +567,10 @@ namespace Evosim.Core
                 tissueJoulesLost: tissueJoulesLost, reserveJoulesLost: reserveJoulesLost,
                 partIndex: partIndex, attackerPartIndex: attackerPartIndex);
 
-        /// <summary>One-letter code for <see cref="BirthKind"/> — "f" floor, "r" reproduction, "i" inoculation.</summary>
+        /// <summary>
+        /// One-letter code for <see cref="BirthKind"/> — "f" floor, "r" reproduction, "i"
+        /// inoculation, "m" immigration.
+        /// </summary>
         private static string Code(BirthKind kind)
         {
             switch (kind)
@@ -523,6 +578,7 @@ namespace Evosim.Core
                 case Evosim.Core.BirthKind.Floor: return "f";
                 case Evosim.Core.BirthKind.Reproduction: return "r";
                 case Evosim.Core.BirthKind.Inoculation: return "i";
+                case Evosim.Core.BirthKind.Immigration: return "m";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(kind), kind, "New BirthKind, new lineage.jsonl code — add one " +
@@ -555,6 +611,7 @@ namespace Evosim.Core
                 case DeathCause.Starved: return "starved";
                 case DeathCause.Diverged: return "diverged";
                 case DeathCause.Eaten: return "eaten";
+                case DeathCause.Aged: return "aged";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(cause), cause, "New DeathCause, new lineage.jsonl code — add one " +
@@ -654,6 +711,29 @@ namespace Evosim.Core
                 if (CapCutJoules > 0d)
                 {
                     w.Field("capcut", CapCutJoules);
+                }
+
+                // D129's landing reading, on a mouth founder's row in a world whose mouths follow
+                // the corpses, written whole or not at all, so every other row is byte for byte
+                // what it was. Appended at the end for the reason every field above is.
+                if (Recorded(LandingCorpseJoules, LandingCorpseMeanJoules))
+                {
+                    w.Field("fcorp", LandingCorpseJoules).Field("fcorpm", LandingCorpseMeanJoules);
+                }
+
+                // D128's gene, on every birth row of a world where it is heritable or drawn and on
+                // none of any other, so every recorded row is byte for byte what it was.
+                if (!float.IsNaN(LifespanScale))
+                {
+                    w.Field("ls", LifespanScale);
+                }
+
+                // D159's two, on an immigrant's row only, so every other row is byte for byte
+                // what it was: the world the genome came from, by its place in the group, and the
+                // id of the creature it was copied from there.
+                if (BirthKind == Evosim.Core.BirthKind.Immigration)
+                {
+                    w.Field("from", ImmigrantFromWorld).Field("fid", ImmigrantFromId);
                 }
             }
             else if (Kind == LineageEventKind.Kill)

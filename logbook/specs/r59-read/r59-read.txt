@@ -1,0 +1,379 @@
+== round 59's reader: year 6000 s, samples every 1500 s, end 48000 s; swimmers 10 from inocula\r59-direction-tops
+r59-s1h: D:\Projects\experiments\evolution-simulator\runs\r59-s1h\2026-10-14-223237-a6a86746
+   read as one world: r59-s1/2026-10-14-175103-a6a86746 to 36620 s then r59-s1h/2026-10-14-223237-a6a86746 from 36620 s
+   seed 1, control; engine gpu transport card; configHash a6a86746235a47a6; gitCommit c851d57cb4 gitDirty False (source.gitDirty); status ended reason budget, 48000 of 48000 s
+   world: turningDrag Spin spinDrag 0.5, senseBedTouch True, leafScent Direction range 6 m cell 2 m half 1 m2; attack 0.033 intake 0.033 W/unit, consumer upkeep 2 W/m3
+   founding: trickle 0.033333335/s, trickle pool share 0.1, floor pool share 0, pool count 4, pool hash c912b4cbb861dd3c
+   pool: 4 genomes, index.tsv 4 rows; swimmers 0; others: pool 0 (stomach/stomach), pool 1 (stomach/stomach), pool 2 (stomach/stomach), pool 3 (stomach/stomach)
+r59-s2: D:\Projects\experiments\evolution-simulator\runs\r59-s2\2026-10-14-175103-98c0f323
+   seed 2, PLANTED; engine gpu transport card; configHash 98c0f3239f4e6766; gitCommit c851d57cb4 gitDirty False (source.gitDirty); status ended reason budget, 48000 of 48000 s
+   world: turningDrag Spin spinDrag 0.5, senseBedTouch True, leafScent Direction range 6 m cell 2 m half 1 m2; attack 0.033 intake 0.033 W/unit, consumer upkeep 2 W/m3
+   founding: trickle 0.033333335/s, trickle pool share 0.6, floor pool share 0, pool count 14, pool hash 268f395b89a5bf42
+   pool: 14 genomes, index.tsv 14 rows; swimmers 10 (matched by sha256 10); others: pool 0 (stomach/stomach), pool 1 (stomach/stomach), pool 2 (stomach/stomach), pool 3 (stomach/stomach)
+   swimmers in the pool: 4:direction-sparse-g33-47, 5:direction-sparse-g22-27, 6:direction-sparse-g33-30, 7:direction-sparse-g33-37, 8:direction-sparse-g31-19, 9:direction-sparse-g30-40, 10:direction-sparse-g16-2, 11:direction-sparse-g14-31, 12:direction-sparse-g12-35, 13:direction-sparse-g15-36; weights ['0.05']
+r59-s3h: D:\Projects\experiments\evolution-simulator\runs\r59-s3h\2026-10-14-224227-98c0f323
+   read as one world: r59-s3/2026-10-14-175103-98c0f323 to 41840 s then r59-s3h/2026-10-14-224227-98c0f323 from 41840 s
+   seed 3, PLANTED; engine gpu transport card; configHash 98c0f3239f4e6766; gitCommit c851d57cb4 gitDirty False (source.gitDirty); status ended reason budget, 48000 of 48000 s
+   world: turningDrag Spin spinDrag 0.5, senseBedTouch True, leafScent Direction range 6 m cell 2 m half 1 m2; attack 0.033 intake 0.033 W/unit, consumer upkeep 2 W/m3
+   founding: trickle 0.033333335/s, trickle pool share 0.6, floor pool share 0, pool count 14, pool hash 268f395b89a5bf42
+   pool: 14 genomes, index.tsv 14 rows; swimmers 10 (matched by sha256 10); others: pool 0 (stomach/stomach), pool 1 (stomach/stomach), pool 2 (stomach/stomach), pool 3 (stomach/stomach)
+   swimmers in the pool: 4:direction-sparse-g33-47, 5:direction-sparse-g22-27, 6:direction-sparse-g33-30, 7:direction-sparse-g33-37, 8:direction-sparse-g31-19, 9:direction-sparse-g30-40, 10:direction-sparse-g16-2, 11:direction-sparse-g14-31, 12:direction-sparse-g12-35, 13:direction-sparse-g15-36; weights ['0.05']
+
+== readings: per world and year (living at the year's end by guild; kills in the year; mouth totals)
+   world      yr summer winter    top  alive   leaf stomac jointe mouthe grazer  kills  leafK  rootK  parts  eaten     units  corps
+   r59-s1h     1   3354   1240  0.413   1909    981     27    916      0      0      0      0      0      0      0     56.69     54
+   r59-s1h     2   3006   1756  0.859   2746   2126     13    612      0      0      0      0      0      0      0     43.20     85
+   r59-s1h     3   4078   2152  0.983   3076   2555     23    494      0      0      0      0      0      0      0    102.38    298
+   r59-s1h     4   4456   2321  0.981   3553   2807     43    663      0      0      0      0      0      0      0    215.54    784
+   r59-s1h     5   4567   3273  0.952   4491   3689     88    517     28     28     15     13     15      0     15   2296.45   7260
+   r59-s1h     6   4957   3675  0.910   4973   3979    188    384     70     61     29     17     29      0     29   5749.80  17599
+   r59-s1h     7   5959   3671  0.905   4650   3574    350    324     75     65     53     32     52      1     52   6886.07  17783
+   r59-s1h     8   5455   4242  0.893   5144   4103    240    314    136    134     71     33     71      0     71   6660.48  16243
+   r59-s2      1   4804    951  0.366   1725   1566     20    128     44     44     56     36     47      9     47    412.51    675
+   r59-s2      2   2732   1572  0.600   2261   2110     18    132     20     20     67     50     60      7     60    581.78   1475
+   r59-s2      3   3862   2409  0.723   3079   3007     17     56     19     19     63     53     56      7     56    320.90    721
+   r59-s2      4   4716   2965  0.973   3692   3620     38     33     24     24     69     65     62      7     62    279.35    802
+   r59-s2      5   4998   3578  0.991   5145   5058     55     33     24     24    160    154    147     13    147    367.22   1018
+   r59-s2      6   5858   4092  0.992   5722   5616     70     39     30     30    310    297    294     16    294    518.62   1464
+   r59-s2      7   7336   4818  0.988   5472   5375     46     43     49     49    626    575    595     31    595   1571.81   4643
+   r59-s2      8   6681   5206  0.964   6737   6400     95    182    235    235   1459   1015   1322    137   1322   4823.18  12918
+   r59-s3h     1   4211   1256  0.833   2263   2228     12     23     15     15     15      6     11      4     11    251.61    566
+   r59-s3h     2   3295   2152  0.980   3208   3165     17     26     21     21    101     90     95      6     95    215.16    479
+   r59-s3h     3   4570   3298  0.993   4217   4118     74     26     22     22    136    125    124     12    124    285.09    801
+   r59-s3h     4   5598   3016  0.991   3865   3781     61     26     21     21    276    266    272      4    272    326.26   1165
+   r59-s3h     5   4632   2728  0.990   4019   3934     55     21     21     21    391    381    390      1    390    436.05   1710
+   r59-s3h     6   4573   3337  0.960   4438   4160    119     27    142    142   1337   1262   1328      9   1328   2739.01   9786
+   r59-s3h     7   5676   3951  0.906   5164   4610    105    195    389    389   3400   2693   3295    105   3295   8773.49  26568
+   r59-s3h     8   5888   4175  0.890   5328   4655    155    292    370    370   2427   1758   2305    122   2305   8764.17  25727
+
+== readings: kills per world and year by attacker class (all / on leaves)
+   r59-s1h year 5: world's own 15/13; leaf kills by own-line grazers 13
+   r59-s1h year 6: world's own 29/17; leaf kills by own-line grazers 17
+   r59-s1h year 7: world's own 53/32; leaf kills by own-line grazers 32
+   r59-s1h year 8: world's own 71/33; leaf kills by own-line grazers 33
+   r59-s2 year 1: planted founder 26/17; planted descendant 30/19; leaf kills by own-line grazers 0
+   r59-s2 year 2: planted founder 43/37; planted descendant 24/13; leaf kills by own-line grazers 0
+   r59-s2 year 3: planted founder 59/52; planted descendant 4/1; leaf kills by own-line grazers 0
+   r59-s2 year 4: planted founder 67/64; planted descendant 2/1; leaf kills by own-line grazers 0
+   r59-s2 year 5: planted founder 153/148; planted descendant 7/6; leaf kills by own-line grazers 0
+   r59-s2 year 6: planted founder 276/270; planted descendant 34/27; leaf kills by own-line grazers 0
+   r59-s2 year 7: planted founder 395/387; planted descendant 231/188; leaf kills by own-line grazers 0
+   r59-s2 year 8: planted founder 359/346; planted descendant 1100/669; leaf kills by own-line grazers 0
+   r59-s3h year 1: planted founder 10/6; planted descendant 5/0; leaf kills by own-line grazers 0
+   r59-s3h year 2: planted founder 84/77; planted descendant 17/13; leaf kills by own-line grazers 0
+   r59-s3h year 3: planted founder 106/99; planted descendant 30/26; leaf kills by own-line grazers 0
+   r59-s3h year 4: planted founder 258/250; planted descendant 18/16; leaf kills by own-line grazers 0
+   r59-s3h year 5: planted founder 341/331; planted descendant 50/50; leaf kills by own-line grazers 0
+   r59-s3h year 6: planted founder 542/531; planted descendant 795/731; leaf kills by own-line grazers 0
+   r59-s3h year 7: planted founder 318/297; planted descendant 3082/2396; leaf kills by own-line grazers 0
+   r59-s3h year 8: planted founder 312/299; planted descendant 2115/1459; leaf kills by own-line grazers 0
+
+== readings: r59-s2, planted, at every 1500 s
+         t  alive  adm  kids pl.liv  share   leaf stomac jointe mouthe grazer lines largest  swimmers died in the span
+      1500   3805    0     0      0   0.0%      0      0      0      0      0     0       0  0
+      3000   1436    0     0      0   0.0%      0      0      0      0      0     0       0  0
+      4500   1207   21    25     31   2.6%      0      0     27     31     31    14 9 -g33-30  8 (aged 3, starved 5; median age 892 s)
+      6000   1725   50    54     44   2.6%      0      0     44     44     44    26 10 -g15-36  17 (starved 15, aged 2; median age 744 s)
+      7500   2655   75    74     25   0.9%      0      0     21     25     25    19 4 -g30-40  35 (aged 10, starved 25; median age 1000 s)
+      9000   2325   95    86     21   0.9%      0      0     20     21     21    19 2 -g33-30  19 (starved 16, aged 3; median age 947 s)
+     10500   1899  120    95     18   0.9%      0      0     18     18     18    16 2 -g15-36  25 (aged 5, starved 20; median age 824 s)
+     12000   2261  148   114     20   0.9%      0      0     20     20     20    20 1 -g14-31  24 (starved 21, aged 3; median age 1082 s)
+     13500   3862  175   131     21   0.5%      0      0     20     21     21    19 2 -g12-35  28 (starved 25, eaten 1, aged 2; median age 982 s)
+     15000   2820  203   152     17   0.6%      0      0     16     17     17    16 2 -g33-30  31 (starved 24, aged 7; median age 799 s)
+     16500   2841  232   178     20   0.7%      0      0     18     20     20    17 2 -g12-35  28 (starved 25, aged 3; median age 806 s)
+     18000   3079  259   191     19   0.6%      0      0     19     19     19    19 1 -g22-27  25 (starved 20, aged 4, eaten 1; median age 1000 s)
+     19500   4651  286   210     17   0.4%      0      0     17     17     17    16 2 -g30-40  30 (aged 4, starved 26; median age 904 s)
+     21000   3914  314   231     19   0.5%      0      0     19     19     19    18 2 -g33-37  26 (starved 25, aged 1; median age 887 s)
+     22500   3266  338   254     16   0.5%      0      0     16     16     16    16 1 -g22-27  26 (starved 20, aged 6; median age 970 s)
+     24000   3692  369   270     24   0.7%      0      0     24     24     24    23 2 -g15-36  24 (starved 20, aged 4; median age 811 s)
+     25500   4713  391   291     18   0.4%      0      0     18     18     18    15 3 e-g16-2  30 (starved 28, aged 2; median age 956 s)
+     27000   4460  425   319     22   0.5%      0      0     22     22     22    20 2 -g33-37  29 (starved 24, aged 5; median age 854 s)
+     28500   3795  452   344     18   0.5%      0      0     18     18     18    17 2 -g31-19  31 (starved 27, aged 3, eaten 1; median age 877 s)
+     30000   5145  485   370     24   0.5%      0      0     24     24     24    22 2 -g12-35  27 (starved 18, aged 9; median age 926 s)
+     31500   5783  513   392     20   0.3%      0      0     20     20     20    19 2 -g33-47  31 (starved 21, aged 8, eaten 2; median age 824 s)
+     33000   4961  542   421     25   0.5%      0      0     24     25     25    23 2 -g33-37  25 (starved 20, aged 4, eaten 1; median age 970 s)
+     34500   4174  567   458     14   0.3%      0      0     14     14     14    14 1 -g12-35  34 (starved 24, aged 10; median age 1038 s)
+     36000   5722  602   487     30   0.5%      0      0     29     30     30    25 6 -g15-36  25 (starved 22, aged 3; median age 972 s)
+     37500   7304  623   510     35   0.5%      0      0     30     35     35    17 16 -g15-36  29 (starved 20, aged 9; median age 1120 s)
+     39000   5779  646   555     40   0.7%      0      0     32     40     40    21 18 -g15-36  20 (aged 6, starved 14; median age 1020 s)
+     40500   5052  675   586     45   0.9%      0      0     41     45     45    25 19 -g15-36  24 (aged 4, starved 19, eaten 1; median age 1162 s)
+     42000   5472  698   616     49   0.9%      0      0     40     49     49    15 34 -g15-36  34 (starved 27, aged 7; median age 1054 s)
+     43500   6646  716   637     96   1.4%      0      0     77     96     96    16 80 -g15-36  17 (starved 14, aged 3; median age 832 s)
+     45000   6073  745   661    119   2.0%      0      0     94    119    119    25 94 -g15-36  19 (starved 9, aged 10; median age 1179 s)
+     46500   5517  766   685    262   4.7%      0      1    172    262    261    19 242 -g15-36  28 (starved 24, aged 4; median age 1042 s)
+     48000   6737  789   708    235   3.5%      0      0    173    235    235    14 221 -g15-36  27 (starved 17, aged 10; median age 1058 s)
+   by swimmer: founders admitted / with a child / descendants born / living at 48000 s / largest line
+   direction-sparse-g15-36      63 / 36 / 3142 / 221 / 221
+   direction-sparse-g33-30      87 / 53 / 91 / 4 / 1
+   direction-sparse-g14-31      86 / 57 / 70 / 4 / 2
+   direction-sparse-g33-47      78 / 50 / 72 / 2 / 1
+   direction-sparse-g22-27      96 / 60 / 97 / 2 / 1
+   direction-sparse-g30-40      84 / 59 / 85 / 1 / 1
+   direction-sparse-g33-37      74 / 40 / 66 / 1 / 1
+   direction-sparse-g16-2       80 / 48 / 68 / 0 / 0
+   direction-sparse-g31-19      81 / 55 / 101 / 0 / 0
+   direction-sparse-g12-35      60 / 33 / 47 / 0 / 0
+
+== readings: r59-s3h, planted, at every 1500 s
+         t  alive  adm  kids pl.liv  share   leaf stomac jointe mouthe grazer lines largest  swimmers died in the span
+      1500   3571    0     0      0   0.0%      0      0      0      0      0     0       0  0
+      3000   1641    0     0      0   0.0%      0      0      0      0      0     0       0  0
+      4500   1557   25    27     28   1.8%      0      0     20     28     28    18 8 -g31-19  9 (eaten 2, aged 4, starved 3; median age 470 s)
+      6000   2263   46    40     15   0.7%      0      0     14     15     15    13 2 -g33-37  25 (aged 3, starved 22; median age 913 s)
+      7500   3280   70    59     18   0.5%      0      0     18     18     18    15 2 -g33-30  22 (starved 18, aged 3, eaten 1; median age 687 s)
+      9000   2547   95    72     21   0.8%      0      0     20     21     21    19 2 -g33-47  22 (starved 19, aged 3; median age 811 s)
+     10500   2549  118    81     16   0.6%      0      0     16     16     16    16 1 -g15-36  25 (starved 21, aged 1, eaten 3; median age 880 s)
+     12000   3208  146    95     21   0.7%      0      0     21     21     21    18 3 -g22-27  25 (starved 24, aged 1; median age 862 s)
+     13500   4561  172   107     17   0.4%      0      0     17     17     17    17 1 -g33-30  29 (starved 22, aged 4, eaten 3; median age 870 s)
+     15000   3743  188   126     16   0.4%      0      0     16     16     16    15 2 -g33-37  17 (starved 14, aged 3; median age 1028 s)
+     16500   3827  227   141     24   0.6%      0      0     24     24     24    23 2 -g14-31  30 (starved 25, aged 4, eaten 1; median age 937 s)
+     18000   4217  255   157     22   0.5%      0      0     22     22     22    22 1 -g15-36  29 (aged 1, starved 28; median age 875 s)
+     19500   5580  277   166     11   0.2%      0      0     11     11     11    11 1 -g30-40  33 (starved 28, aged 4, eaten 1; median age 908 s)
+     21000   3698  306   196     23   0.6%      0      0     23     23     23    21 2 e-g16-2  19 (starved 17, aged 2; median age 845 s)
+     22500   3758  330   215     18   0.5%      0      0     17     18     18    17 2 -g33-47  28 (starved 23, aged 3, eaten 2; median age 948 s)
+     24000   3865  353   234     21   0.5%      0      0     20     21     21    19 2 -g15-36  21 (starved 16, aged 4, eaten 1; median age 1092 s)
+     25500   3782  382   256     21   0.6%      0      0     20     21     21    21 1 e-g16-2  28 (starved 23, aged 5; median age 1018 s)
+     27000   3349  414   289     25   0.7%      0      0     25     25     25    24 2 -g33-37  28 (starved 26, aged 2; median age 945 s)
+     28500   3287  435   309     17   0.5%      0      0     17     17     17    15 2 e-g16-2  30 (starved 28, aged 2; median age 972 s)
+     30000   4019  454   325     21   0.5%      0      0     20     21     21    13 9 -g33-30  21 (starved 19, aged 2; median age 931 s)
+     31500   4270  480   368     35   0.8%      0      0     20     35     35    20 14 -g33-30  22 (starved 14, aged 8; median age 1196 s)
+     33000   3793  504   398    170   4.5%      1      0     28    170    169    25 146 -g33-30  18 (starved 12, aged 6; median age 956 s)
+     34500   3909  537   436    162   4.1%      0      0     32    162    162    26 129 -g33-30  32 (aged 8, starved 24; median age 1222 s)
+     36000   4438  555   472    142   3.2%      0      0     24    142    142    13 122 -g33-30  31 (starved 26, aged 5; median age 976 s)
+     37500   5609  573   502    482   8.6%     14      0    186    482    468    15 449 -g33-30  16 (aged 8, starved 8; median age 862 s)
+     39000   4524  594   529    552  12.2%      6      2    251    552    544    14 523 -g33-30  22 (starved 12, aged 7, eaten 3; median age 808 s)
+     40500   4759  617   552    371   7.8%      2      1    160    371    369    18 353 -g33-30  19 (aged 9, starved 10; median age 1023 s)
+     42000   5164  639   574    389   7.5%      0     10    193    389    389    19 370 -g33-30  20 (aged 6, starved 14; median age 1029 s)
+     43500   5705  667   611    448   7.9%      3      2    261    448    444    17 431 -g33-30  30 (starved 22, aged 8; median age 1065 s)
+     45000   5044  694   652    466   9.2%      2      1    310    466    464    22 443 -g33-30  23 (starved 17, aged 6; median age 972 s)
+     46500   4421  719   681    342   7.7%      0      2    255    342    342    20 323 -g33-30  26 (starved 17, aged 9; median age 1261 s)
+     48000   5328  742   708    370   6.9%      0      2    281    370    370    15 356 -g33-30  28 (starved 22, aged 6; median age 930 s)
+   by swimmer: founders admitted / with a child / descendants born / living at 48000 s / largest line
+   direction-sparse-g33-30      82 / 47 / 12399 / 358 / 356
+   direction-sparse-g12-35      60 / 43 / 73 / 4 / 1
+   direction-sparse-g22-27      70 / 31 / 64 / 2 / 1
+   direction-sparse-g14-31      77 / 49 / 87 / 2 / 1
+   direction-sparse-g33-37      79 / 52 / 87 / 1 / 1
+   direction-sparse-g31-19      74 / 33 / 89 / 1 / 1
+   direction-sparse-g33-47      75 / 45 / 259 / 1 / 1
+   direction-sparse-g30-40      67 / 37 / 63 / 1 / 1
+   direction-sparse-g16-2       73 / 39 / 59 / 0 / 0
+   direction-sparse-g15-36      85 / 60 / 111 / 0 / 0
+
+== readings: r59-s1h, where the grazers are (median nearest-leaf distance, m)
+      6000 (sample 6000): grazers 0, leaves 981; not read
+     12000 (sample 12000): grazers 0, leaves 2125; not read
+     18000 (sample 18000): grazers 0, leaves 2553; not read
+     24000 (sample 24000): grazers 0, leaves 2806; not read
+     30000 (sample 30000): grazers 28 at 2.22; 200 random points at 2.85; leaves 3687; ratio 0.78
+     36000 (sample 36000): grazers 61 at 2.74; 200 random points at 3.32; leaves 3974; ratio 0.82
+     42000 (sample 42000): grazers 65 at 3.93; 200 random points at 3.54; leaves 3573; ratio 1.11
+     48000 (sample 48000): grazers 134 at 2.92; 200 random points at 3.47; leaves 4096; ratio 0.84
+
+== readings: r59-s1h, leaf smell recorder, 482 rows (n, mean cos: readers | others; grazers: readers | others)
+      1500  1396 -0.062 | 1682 -0.044   grazers 0 - | 0 -   skipped [95, 1, 0]
+      3000  834 -0.038 | 987 -0.020   grazers 0 - | 0 -   skipped [66, 0, 0]
+      4500  748 -0.038 | 636 0.015   grazers 0 - | 0 -   skipped [109, 8, 0]
+      6000  976 -0.019 | 794 -0.030   grazers 0 - | 0 -   skipped [137, 2, 0]
+      7500  1346 -0.023 | 1432 -0.013   grazers 0 - | 0 -   skipped [206, 6, 0]
+      9000  1026 -0.048 | 1117 -0.009   grazers 0 - | 0 -   skipped [243, 3, 0]
+     10500  748 -0.022 | 1026 -0.017   grazers 0 - | 0 -   skipped [182, 3, 0]
+     12000  740 -0.051 | 1869 -0.019   grazers 0 - | 0 -   skipped [130, 5, 0]
+     13500  705 -0.049 | 2893 -0.022   grazers 0 - | 0 -   skipped [192, 5, 0]
+     15000  321 -0.032 | 1918 -0.022   grazers 0 - | 0 -   skipped [182, 5, 0]
+     16500  423 -0.024 | 2043 -0.032   grazers 0 - | 0 -   skipped [138, 8, 0]
+     18000  556 -0.058 | 2333 -0.037   grazers 0 - | 0 -   skipped [183, 2, 0]
+     19500  1056 -0.050 | 3221 -0.044   grazers 0 - | 0 -   skipped [141, 1, 0]
+     21000  653 0.004 | 2164 -0.061   grazers 0 - | 0 -   skipped [101, 0, 0]
+     22500  720 -0.050 | 2144 -0.041   grazers 0 - | 0 -   skipped [115, 5, 0]
+     24000  855 -0.039 | 2610 -0.032   grazers 0 - | 0 -   skipped [80, 4, 0]
+     25500  1138 -0.033 | 2783 -0.051   grazers 0 - | 3 -0.041   skipped [105, 0, 0]
+     27000  1082 -0.055 | 2831 -0.026   grazers 0 - | 15 0.109   skipped [68, 0, 0]
+     28500  1080 -0.041 | 2500 -0.030   grazers 0 - | 6 -0.227   skipped [78, 10, 0]
+     30000  1595 -0.039 | 2822 -0.032   grazers 0 - | 3 0.603   skipped [69, 3, 0]
+     31500  2025 -0.058 | 2673 -0.043   grazers 0 - | 26 0.145   skipped [67, 0, 0]
+     33000  1868 -0.048 | 2326 -0.018   grazers 0 - | 65 -0.013   skipped [45, 0, 0]
+     34500  1892 -0.049 | 1973 -0.043   grazers 0 - | 49 0.106   skipped [79, 24, 0]
+     36000  2326 -0.036 | 2557 -0.022   grazers 0 - | 26 0.136   skipped [78, 5, 0]
+     37500  2832 -0.030 | 2882 -0.024   grazers 0 - | 44 -0.047   skipped [66, 0, 0]
+     39000  2068 -0.067 | 2245 -0.024   grazers 0 - | 46 0.019   skipped [81, 0, 0]
+     40500  2043 -0.046 | 2173 -0.016   grazers 0 - | 23 0.019   skipped [125, 16, 0]
+     42000  2337 -0.064 | 2253 -0.036   grazers 0 - | 24 0.048   skipped [55, 4, 0]
+     43500  2673 -0.046 | 2641 -0.032   grazers 0 - | 42 0.097   skipped [71, 0, 0]
+     45000  2180 -0.059 | 2147 -0.041   grazers 0 - | 58 0.087   skipped [77, 1, 0]
+     46500  2386 -0.057 | 2048 -0.022   grazers 0 - | 45 -0.105   skipped [99, 12, 0]
+     48000  2835 -0.019 | 2194 -0.031   grazers 0 - | 32 -0.017   skipped [99, 7, 0]
+   per year, weighted by n: readers | others; grazers readers | others
+   year 1: 58457 -0.045 | 63013 -0.051 | 0 - | 0 -
+   year 2: 59441 -0.024 | 70602 -0.027 | 0 - | 0 -
+   year 3: 31002 -0.044 | 135571 -0.025 | 0 - | 0 -
+   year 4: 45795 -0.044 | 149045 -0.035 | 0 - | 0 -
+   year 5: 68205 -0.044 | 163974 -0.036 | 0 - | 388 0.066
+   year 6: 115814 -0.044 | 142132 -0.030 | 0 - | 2309 0.049
+   year 7: 144514 -0.047 | 151374 -0.030 | 0 - | 2142 0.041
+   year 8: 147919 -0.049 | 134979 -0.033 | 1 0.651 | 2725 0.036
+
+== readings: r59-s2, where the grazers are (median nearest-leaf distance, m)
+      6000 (sample 6000): grazers 44 at 3.06, of them planted 44 at 3.06; 200 random points at 4.96; leaves 1566; ratio 0.62
+     12000 (sample 12000): grazers 20 at 4.44, of them planted 20 at 4.44; 200 random points at 5.71; leaves 2108; ratio 0.78
+     18000 (sample 18000): grazers 19 at 3.78, of them planted 19 at 3.78; 200 random points at 5.04; leaves 3007; ratio 0.75
+     24000 (sample 24000): grazers 24 at 4.01, of them planted 24 at 4.01; 200 random points at 4.72; leaves 3619; ratio 0.85
+     30000 (sample 30000): grazers 24 at 4.30, of them planted 24 at 4.30; 200 random points at 7.54; leaves 5057; ratio 0.57
+     36000 (sample 36000): grazers 30 at 3.05, of them planted 30 at 3.05; 200 random points at 3.89; leaves 5609; ratio 0.78
+     42000 (sample 42000): grazers 48 at 3.29, of them planted 48 at 3.29; 200 random points at 3.05; leaves 5373; ratio 1.08
+     48000 (sample 48000): grazers 233 at 2.70, of them planted 233 at 2.70; 233 random points at 3.62; leaves 6394; ratio 0.75
+
+== readings: r59-s2, leaf smell recorder, 481 rows (n, mean cos: readers | others; grazers: readers | others)
+      1500  565 -0.083 | 3129 -0.042   grazers 0 - | 0 -   skipped [109, 0, 0]
+      3000  156 -0.013 | 1138 -0.014   grazers 0 - | 0 -   skipped [142, 0, 0]
+      4500  92 -0.059 | 961 -0.019   grazers 21 -0.084 | 4 -0.073   skipped [143, 11, 0]
+      6000  95 0.009 | 1325 -0.037   grazers 31 0.188 | 4 -0.122   skipped [291, 14, 0]
+      7500  78 0.006 | 2187 -0.008   grazers 13 0.232 | 6 0.127   skipped [380, 10, 0]
+      9000  80 -0.068 | 1915 -0.031   grazers 13 0.107 | 3 0.466   skipped [323, 7, 0]
+     10500  63 -0.038 | 1461 0.001   grazers 13 0.009 | 0 -   skipped [365, 10, 0]
+     12000  72 -0.069 | 1788 -0.050   grazers 15 0.011 | 0 -   skipped [388, 11, 0]
+     13500  69 -0.013 | 3424 -0.015   grazers 15 -0.134 | 2 0.303   skipped [363, 5, 0]
+     15000  60 0.026 | 2422 -0.028   grazers 15 0.055 | 1 -0.725   skipped [335, 1, 0]
+     16500  43 -0.098 | 2437 -0.031   grazers 13 -0.167 | 1 0.647   skipped [350, 9, 0]
+     18000  32 0.220 | 2682 -0.018   grazers 12 0.278 | 0 -   skipped [358, 7, 0]
+     19500  30 0.080 | 4269 -0.005   grazers 16 0.067 | 0 -   skipped [350, 1, 0]
+     21000  29 0.138 | 3599 -0.009   grazers 19 0.124 | 0 -   skipped [280, 4, 0]
+     22500  17 -0.089 | 2982 -0.006   grazers 8 0.034 | 0 -   skipped [256, 9, 0]
+     24000  28 0.147 | 3373 -0.019   grazers 19 0.378 | 0 -   skipped [285, 5, 0]
+     25500  26 0.045 | 4358 -0.012   grazers 17 -0.042 | 0 -   skipped [324, 3, 0]
+     27000  37 -0.132 | 4106 -0.014   grazers 21 0.026 | 1 -0.673   skipped [317, 0, 0]
+     28500  26 0.141 | 3477 -0.017   grazers 15 0.197 | 1 0.638   skipped [273, 14, 0]
+     30000  24 -0.131 | 4752 -0.017   grazers 18 -0.095 | 0 -   skipped [360, 8, 0]
+     31500  33 0.110 | 5434 -0.034   grazers 20 0.220 | 0 -   skipped [314, 0, 0]
+     33000  37 -0.049 | 4626 -0.008   grazers 24 0.018 | 1 -0.127   skipped [293, 1, 0]
+     34500  24 0.131 | 3915 -0.026   grazers 14 0.066 | 0 -   skipped [234, 0, 0]
+     36000  39 0.065 | 5427 -0.016   grazers 29 0.197 | 1 -0.214   skipped [247, 2, 0]
+     37500  42 0.114 | 6955 -0.021   grazers 33 0.014 | 2 -0.343   skipped [307, 0, 0]
+     39000  47 0.103 | 5500 -0.030   grazers 39 0.164 | 1 -0.761   skipped [229, 0, 0]
+     40500  47 0.064 | 4802 -0.026   grazers 44 0.087 | 1 0.322   skipped [202, 0, 0]
+     42000  47 0.016 | 5280 -0.026   grazers 44 0.007 | 4 0.382   skipped [142, 0, 0]
+     43500  100 0.014 | 6428 -0.023   grazers 94 0.031 | 2 0.234   skipped [117, 0, 0]
+     45000  122 0.041 | 5787 -0.025   grazers 119 0.039 | 0 -   skipped [161, 0, 0]
+     46500  260 0.019 | 5116 -0.024   grazers 256 0.018 | 1 0.834   skipped [136, 2, 0]
+     48000  239 0.059 | 6393 -0.041   grazers 230 0.049 | 0 -   skipped [94, 3, 0]
+   per year, weighted by n: readers | others; grazers readers | others; planted grazers readers | others
+   year 1: 17096 -0.083 | 104906 -0.056 | 471 0.004 | 83 -0.074 | 471 0.004 | 83 -0.074
+   year 2: 4452 -0.026 | 102901 -0.019 | 887 0.034 | 144 0.021 | 887 0.034 | 144 0.020
+   year 3: 3397 -0.003 | 158784 -0.023 | 901 0.055 | 29 0.059 | 901 0.055 | 29 0.059
+   year 4: 1491 0.033 | 204187 -0.018 | 809 0.065 | 7 0.122 | 809 0.065 | 7 0.122
+   year 5: 1713 0.031 | 242138 -0.014 | 1061 0.099 | 37 0.197 | 1061 0.099 | 37 0.197
+   year 6: 1828 0.049 | 285650 -0.016 | 1282 0.082 | 16 0.071 | 1282 0.082 | 16 0.071
+   year 7: 2549 0.100 | 341846 -0.020 | 2228 0.104 | 78 0.099 | 2228 0.104 | 78 0.099
+   year 8: 9920 0.020 | 344196 -0.029 | 9634 0.022 | 86 0.100 | 9634 0.022 | 86 0.100
+
+== readings: r59-s3h, where the grazers are (median nearest-leaf distance, m)
+      6000 (sample 6000): grazers 15 at 11.18, of them planted 15 at 11.18; 200 random points at 11.89; leaves 2226; ratio 0.94
+     12000 (sample 12000): grazers 21 at 2.27, of them planted 21 at 2.27; 200 random points at 3.27; leaves 3164; ratio 0.69
+     18000 (sample 18000): grazers 22 at 7.01, of them planted 22 at 7.01; 200 random points at 11.64; leaves 4117; ratio 0.60
+     24000 (sample 24000): grazers 21 at 4.21, of them planted 21 at 4.21; 200 random points at 5.68; leaves 3779; ratio 0.74
+     30000 (sample 30000): grazers 21 at 3.59, of them planted 21 at 3.59; 200 random points at 4.84; leaves 3928; ratio 0.74
+     36000 (sample 36000): grazers 142 at 2.95, of them planted 142 at 2.95; 200 random points at 3.03; leaves 4156; ratio 0.98
+     42000 (sample 42000): grazers 389 at 3.41, of them planted 389 at 3.41; 389 random points at 2.97; leaves 4604; ratio 1.15
+     48000 (sample 48000): grazers 370 at 3.29, of them planted 370 at 3.29; 370 random points at 2.99; leaves 4650; ratio 1.10
+
+== readings: r59-s3h, leaf smell recorder, 482 rows (n, mean cos: readers | others; grazers: readers | others)
+      1500  381 -0.072 | 3011 -0.063   grazers 0 - | 0 -   skipped [177, 0, 0]
+      3000  47 -0.039 | 1314 -0.053   grazers 0 - | 0 -   skipped [279, 1, 0]
+      4500  26 -0.099 | 1185 -0.050   grazers 14 -0.103 | 6 -0.175   skipped [337, 9, 0]
+      6000  13 -0.093 | 1742 0.011   grazers 5 -0.134 | 1 0.476   skipped [498, 8, 0]
+      7500  22 0.018 | 2767 -0.049   grazers 10 -0.075 | 1 -0.384   skipped [482, 8, 0]
+      9000  17 0.137 | 1998 -0.024   grazers 12 0.118 | 0 -   skipped [519, 13, 0]
+     10500  12 0.226 | 2134 -0.038   grazers 9 0.097 | 0 -   skipped [394, 9, 0]
+     12000  19 0.115 | 2790 -0.028   grazers 16 0.099 | 0 -   skipped [392, 6, 0]
+     13500  18 0.079 | 4087 -0.044   grazers 13 -0.032 | 0 -   skipped [450, 5, 0]
+     15000  15 -0.051 | 3348 -0.029   grazers 13 -0.073 | 0 -   skipped [374, 5, 0]
+     16500  19 -0.050 | 3427 -0.034   grazers 18 -0.043 | 0 -   skipped [371, 8, 0]
+     18000  15 -0.021 | 3899 -0.020   grazers 13 0.035 | 0 -   skipped [290, 12, 0]
+     19500  14 -0.055 | 5347 -0.037   grazers 11 -0.083 | 0 -   skipped [217, 0, 0]
+     21000  28 0.091 | 3552 -0.051   grazers 23 0.065 | 0 -   skipped [116, 1, 0]
+     22500  23 0.185 | 3663 -0.052   grazers 16 0.271 | 1 0.069   skipped [69, 2, 0]
+     24000  24 0.237 | 3791 -0.028   grazers 19 0.194 | 1 -0.227   skipped [45, 3, 0]
+     25500  19 0.125 | 3719 -0.038   grazers 19 0.125 | 1 0.152   skipped [40, 3, 0]
+     27000  26 0.169 | 3300 -0.050   grazers 25 0.179 | 0 -   skipped [23, 0, 0]
+     28500  21 0.284 | 3244 -0.062   grazers 16 0.309 | 0 -   skipped [17, 2, 0]
+     30000  21 0.193 | 3969 -0.049   grazers 20 0.185 | 0 -   skipped [22, 1, 0]
+     31500  35 0.029 | 4216 -0.038   grazers 31 0.017 | 4 -0.249   skipped [17, 0, 0]
+     33000  170 0.050 | 3599 -0.071   grazers 165 0.054 | 4 0.179   skipped [23, 0, 0]
+     34500  152 0.014 | 3734 -0.042   grazers 147 0.027 | 15 0.212   skipped [20, 0, 0]
+     36000  126 0.098 | 4286 -0.050   grazers 123 0.090 | 16 0.083   skipped [22, 0, 0]
+     37500  372 0.021 | 5220 -0.045   grazers 354 0.012 | 112 0.009   skipped [11, 1, 0]
+     39000  409 0.035 | 4067 -0.049   grazers 399 0.032 | 127 0.035   skipped [38, 8, 0]
+     40500  277 0.021 | 4430 -0.038   grazers 274 0.017 | 79 0.036   skipped [35, 13, 0]
+     42000  293 0.039 | 4842 -0.050   grazers 291 0.039 | 88 0.087   skipped [17, 6, 0]
+     43500  327 0.010 | 5348 -0.055   grazers 320 0.008 | 118 0.055   skipped [27, 1, 0]
+     45000  357 0.021 | 4615 -0.052   grazers 349 0.027 | 100 0.014   skipped [63, 3, 1]
+     46500  272 0.005 | 4055 -0.069   grazers 264 0.007 | 57 -0.049   skipped [72, 19, 0]
+     48000  304 -0.024 | 4940 -0.047   grazers 294 -0.019 | 65 0.019   skipped [69, 10, 0]
+   per year, weighted by n: readers | others; grazers readers | others; planted grazers readers | others
+   year 1: 10230 -0.074 | 107507 -0.069 | 223 -0.009 | 66 0.087 | 223 -0.009 | 66 0.087
+   year 2: 1060 0.026 | 135669 -0.032 | 619 0.041 | 19 -0.258 | 619 0.041 | 19 -0.258
+   year 3: 936 0.058 | 213162 -0.034 | 776 0.057 | 12 -0.362 | 776 0.057 | 12 -0.362
+   year 4: 1242 0.084 | 241597 -0.043 | 957 0.126 | 23 0.060 | 957 0.126 | 23 0.060
+   year 5: 1305 0.141 | 214007 -0.054 | 1144 0.155 | 36 -0.090 | 1144 0.155 | 36 -0.090
+   year 6: 6543 0.059 | 235421 -0.052 | 6192 0.063 | 398 0.024 | 6192 0.063 | 398 0.024
+   year 7: 19742 0.031 | 279468 -0.048 | 19248 0.031 | 5861 0.046 | 19248 0.031 | 5845 0.046
+   year 8: 18384 0.005 | 281655 -0.048 | 17937 0.004 | 5117 0.038 | 17937 0.004 | 5114 0.038
+
+== P1: a planted founder has a child, in each planted world
+   r59-s2: 789 planted founders, 491 with a child (708 children)
+   r59-s3h: 742 planted founders, 436 with a child (708 children)
+
+== P2: >= 20 planted-descended living at every sample for a year after 6000 s
+   r59-s2: most 262 after 6000 s; longest run of samples >= 20 spans 12000 s (36000 to 48000 s); row by row 13350 s (34650 to 48000 s) -> holds
+   r59-s3h: most 552 after 6000 s; longest run of samples >= 20 spans 18000 s (30000 to 48000 s); row by row 18619.5 s (29380.5 to 48000 s) -> holds
+
+== P3: planted-descended living >= 1% of the living at the end
+   r59-s2 at 48000 s: 235 of 6737, 3.49%
+   r59-s3h at 48000 s: 370 of 5328, 6.94%
+
+== P4: over 50% of the planted-descended living are grazers, where P2 holds
+   r59-s2 at 42000 s: 49 grazers of 49 planted-descended living, 100.0%
+   r59-s3h at 36000 s: 142 grazers of 142 planted-descended living, 100.0%
+
+== G1: >= 100 leaf kills a year by own-line grazers in >= 2 of years 6 to 8, in the control
+   r59-s1h: year 6 17, year 7 32, year 8 33; years at the bar 0 -> failed
+
+== D1: leaf kills in years 2 to 8, each planted world >= 50 and >= 2x the control's
+   r59-s1h (control): 95 leaf kills (world's own 95)
+   r59-s2 (planted): 2209 leaf kills (planted founder 1304, planted descendant 905)
+   r59-s3h (planted): 6575 leaf kills (planted founder 1884, planted descendant 4691)
+
+== D3: grazers in each planted world, the recorder's gread against gctl, 3000 to 48000 s: readers' mean cosine (n-weighted) exceeds the others' by >= 0.1, each side >= 1000 body-samples
+   r59-s2: readers 17273 body-samples at 0.045, others 480 at 0.050, difference -0.005 -> unread
+   r59-s3h: readers 47096 body-samples at 0.030, others 11532 at 0.041, difference -0.010 -> failed
+
+== D4: the world's own grazers in the control, from the per-body rows, 3000 to 48000 s: readers' mean cosine (n-weighted) exceeds the others' by >= 0.1, each side >= 1000 body-samples
+   r59-s1h: readers 1 body-samples at 0.651, others 7564 at 0.043, difference +0.608 -> unread; every grazer, from the rows' aggregates: readers 1 at 0.651, others 7564 at 0.043
+
+== C1: living at each year's end, years 2 to 8, within 0.5 to 2 of round 58's means
+   r59-s1h: 12000 2746 (0.72), 18000 3076 (0.66), 24000 3553 (0.71), 30000 4491 (0.81), 36000 4973 (0.80), 42000 4650 (0.68), 48000 5144 (0.79) -> held
+   r59-s2: 12000 2261 (0.60), 18000 3079 (0.66), 24000 3692 (0.74), 30000 5145 (0.92), 36000 5722 (0.92), 42000 5472 (0.80), 48000 6737 (1.04) -> held
+   r59-s3h: 12000 3208 (0.85), 18000 4217 (0.90), 24000 3865 (0.78), 30000 4019 (0.72), 36000 4438 (0.71), 42000 5164 (0.76), 48000 5328 (0.82) -> held
+
+== C2: one root lineage over 50% of the living at 18000 s
+   r59-s1h: root 15 (floor, born 5 s) holds 3024 of 3076, 0.983
+   r59-s2: root 32 (floor, born 11.5 s) holds 2225 of 3079, 0.723
+   r59-s3h: root 8 (floor, born 3.5 s) holds 4187 of 4217, 0.993
+
+== B1: the books balance
+   r59-s1h: audit max 0.000479 J, matter max 2.79e-06, diverged 0, divergedTotal 0, ended/budget 48000 of 48000 s -> holds
+   r59-s2: audit max 0.000495 J, matter max 2.03e-05, diverged 0, divergedTotal 0, ended/budget 48000 of 48000 s
+   r59-s3h: audit max 0.00112 J, matter max 1.68e-05, diverged 0, divergedTotal 0, ended/budget 48000 of 48000 s
+
+== clauses (D2 by the nursery's bench; B2 and B3 by the card's scripts)
+P1: held (2 of 2 planted worlds)
+P2: held (r59-s2, r59-s3h)
+P3: held (largest share 6.94%)
+P4: held (2 of 2)
+G1: failed (0 of 1 controls)
+D1: held (2 of 2 planted worlds; control 95)
+D3: failed (0 of 2 worlds)
+D4: unread (0 of 1 worlds)
+C1: held (3 of 3 worlds)
+C2: held (3 of 3 worlds)
+B1: failed (1 of 3 worlds)

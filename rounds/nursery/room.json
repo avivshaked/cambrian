@@ -1,0 +1,15 @@
+{
+  "port": 5179,
+  "bind": "127.0.0.1",
+  "pollSeconds": 30,
+  "capLogical": 16,
+  "runs": [
+    { "folder": "scratch/nursery/pilot-deep-brain2", "config": "scratch/nursery/runs-jd/big-cur-deep-brain2/config.json" }
+  ],
+  "dotnet": "C:/Program Files/Unity/Hub/Editor/6000.5.6f1/Editor/Data/DotNetSdk/dotnet.exe",
+  "nurseryDll": "artifacts/Evosim.Nursery/bin/Release/net8.0/Evosim.Nursery.dll",
+  "runsDir": "scratch/nursery",
+  "activityFile": "rounds/nursery/activity.jsonl",
+  "affinity": "0xFFFF0000",
+  "trialsDir": "scratch/nursery-trials"
+}

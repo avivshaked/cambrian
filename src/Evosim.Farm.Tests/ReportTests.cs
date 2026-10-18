@@ -106,6 +106,11 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 // of the line is still compared character for character against the recording.
                 .Replace(" · rolls ", " · axes v:h 1.00 · rolls ")
 
+                // The season's token, which the recording was written before: printed always,
+                // off included, straight after the day's; and D151's weather token after it, the
+                // same way.
+                .Replace(" · current ", " · season ±0 over 30000 s · weather off · current ")
+
                 // The reach bound's token (fable-propose-body-reach.md), which only this engine
                 // prints, in its slot after the self-overlap fraction.
                 .Replace(" · selfOverlap 0.1 · ", " · selfOverlap 0.1 · reach off · ")
@@ -152,8 +157,8 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 // sits before the hash.
                 .Replace(
                     " · configHash ",
-                    " · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + ContactToken + ReproductionToken + " · configHash ")
-                .Replace("`ff557bce2685293a`", "`356e87c75e1338e9`");
+                    " · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + ContactToken + ReproductionToken + Round51Token + " · configHash ")
+                .Replace("`ff557bce2685293a`", "`845becc39e2f22c3`");
 
             Assert.Equal(expected, Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9"));
         }
@@ -183,7 +188,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             // D106's, last before the hash and all at their defaults: a reader verifying an arm
             // has to be able to see from the header alone that the module gene is off and that
             // nothing bites, eats, heals or is charged for an attribute.
-            Assert.Contains(" · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + ContactToken + ReproductionToken + " · configHash", line);
+            Assert.Contains(" · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + ContactToken + ReproductionToken + Round51Token + " · configHash", line);
 
             // The reach bound, off: a reader has to see from the header that no body was cut.
             Assert.Contains(" · selfOverlap 0.1 · reach off · ", line);
@@ -193,7 +198,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             Assert.Contains(" · reach off · floors per part · matter uniform · founders anywhere · endowment off · founder cap off · shade off · ", line);
             Assert.Contains(" · matter-mix 2 m2/s · area 2200 m2 · ", line);
 
-            Assert.EndsWith(" · configHash `356e87c75e1338e9`", line);
+            Assert.EndsWith(" · configHash `845becc39e2f22c3`", line);
 
             // D110, off: the light is the orientation average, printed beside the cap.
             Assert.Contains(" · silhouette on · light averaged · ", line);
@@ -203,6 +208,9 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
             // D115, off: the floor closes and nothing follows it.
             Assert.Contains(" · floor closes 3000 s · trickle off · ceiling ", line);
+
+            // D151, off: the smooth year prints as it did, and the weather says it is off.
+            Assert.Contains(" · season ±0 over 30000 s · weather off · current ", line);
 
             // parse-arm.ps1 splits on ' · ' and asks for a token by prefix; nothing may arrive
             // with an empty name or a separator inside a value.
@@ -241,6 +249,47 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             // analyse-arm.ps1 finds the header row by this pattern and splits it on '|'.
             Assert.Matches(@"^\| *t \(s\)", header);
             Assert.Equal(report.Columns.Count, header.Split('\n')[0].Split('|').Length - 2);
+        }
+
+        /// <summary>
+        /// D159: a migrating world's table carries the two immigrant columns between the base set
+        /// and the patches, its settings line ends on the exchange, and a world that does not
+        /// migrate has neither, so its report is what it was.
+        /// </summary>
+        [Fact]
+        public void AMigratingWorldsReportCarriesTheExchangeAndNoOtherDoes()
+        {
+            var config = new RunConfig { HorizontalPatches = 2 };
+            string path = Path.Combine(AppContext.BaseDirectory, "unused.md");
+            var plain = new Report(path, config);
+            var migrating = new Report(path, config, migrating: true);
+
+            Assert.Equal(plain.Columns.Count + 2, migrating.Columns.Count);
+            Assert.Equal("**imm**", migrating.Columns[Report.BaseColumns.Length]);
+            Assert.Equal("imm refused", migrating.Columns[Report.BaseColumns.Length + 1]);
+            Assert.Equal("p0", migrating.Columns[Report.BaseColumns.Length + 2]);
+            Assert.DoesNotContain("**imm**", plain.Columns);
+            Assert.Equal(plain.Columns, Sampler.Columns(config));
+            Assert.Equal(migrating.Columns, Sampler.Columns(config, migrating: true));
+
+            var env = EnvBindingTests.Round42Seed1();
+            EnvSettings lone = EnvBinding.Read(EnvBinding.Of(env));
+            env["EVOSIM_MIGRATE_EVERY"] = "600";
+            env["EVOSIM_MIGRATE_COUNT"] = "3";
+            EnvSettings group = EnvBinding.Read(EnvBinding.Of(env));
+            RunConfig built = EnvBinding.BuildConfig(lone);
+            Assert.Equal(built.Hash(), EnvBinding.BuildConfig(group).Hash());
+
+            var world = new World(built, lone.Seed);
+            SpaceFacts space = SpaceFacts.Of(world, hasWall: false, hasFloor: built.SharedSpace, threads: 1,
+                inoculumHashShort: null);
+
+            string loneLine = Report.HeaderLine(lone, built, space, "9.9.9.9");
+            string groupLine = Report.HeaderLine(group, built, space, "9.9.9.9");
+
+            Assert.EndsWith("`", loneLine);
+            Assert.DoesNotContain("exchange", loneLine);
+            Assert.Equal(loneLine + " · exchange every 600 s x 3", groupLine);
         }
 
         /// <summary>A row whose width is not the table's is refused rather than written.</summary>
@@ -322,6 +371,13 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
         /// overhead flat at its floor (<c>x0</c>) and no lineage able to gestate.
         /// </summary>
         private const string ReproductionToken = " · overhead scale x0 floor 100 J · gestation off";
+
+        /// <summary>
+        /// Round 51's three tokens (D127, D128), after the reproduction token and before the hash,
+        /// at the values that change nothing: every part priced, a corpse sinking at the snow's
+        /// rate and drifting with the old floor, and no death by age.
+        /// </summary>
+        private const string Round51Token = " · free link off · corpse sink snow drifts floor 1e-6 J settled decay as sinking · age off";
 
         /// <summary>
         /// The recorded table's header row, column for column but for the four that were renamed
@@ -581,6 +637,61 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             // Unset, the switch reads on: D038's two sides, the recorded world.
             EnvSettings unset = EnvBinding.Read(EnvBinding.Of(EnvBindingTests.Round42Seed1()));
             Assert.True(EnvBinding.BuildConfig(unset).SenescenceWearsIntake);
+        }
+
+        /// <summary>
+        /// Round 51's rulings (D127, D128) switched on through the environment reach the config
+        /// and are named in the header, and the hazard refuses D038's wear beside it.
+        /// </summary>
+        [Fact]
+        public void TheRound51RulingsAreNamedInTheHeader()
+        {
+            Dictionary<string, string> env = EnvBindingTests.Round42Seed1();
+            env["EVOSIM_SENESCENCE"] = "0";
+            env["EVOSIM_FREE_LINK"] = "0.01";
+            env["EVOSIM_CORPSE_DECAY"] = "0.000385";
+            env["EVOSIM_CORPSE_SINK"] = "0.05";
+            env["EVOSIM_CORPSE_SETTLE"] = "1";
+            env["EVOSIM_CORPSE_FLOOR"] = "0.05";
+            env["EVOSIM_AGE_BASE"] = "3000";
+            env["EVOSIM_AGE_DOUBLING"] = "0.2";
+            env["EVOSIM_AGE_BIRTH"] = "1";
+            env["EVOSIM_AGE_WOUND"] = "1";
+
+            EnvSettings settings = EnvBinding.Read(EnvBinding.Of(env));
+            RunConfig config = EnvBinding.BuildConfig(settings);
+
+            Assert.Equal(0.01f, config.FreeFirstLinkCubicMetres);
+            Assert.Equal(0.05f, config.CorpseSinkMetresPerSecond);
+            Assert.True(config.CorpseSettles);
+            Assert.Equal(0.05f, config.CorpseLeavesBelowFraction);
+            Assert.Equal(3000f, config.AgeHazardBaseSeconds);
+            Assert.Equal(0.2f, config.AgeHazardDoublingFraction);
+            Assert.Equal(1f, config.AgeingPerBirth);
+            Assert.Equal(1f, config.AgeingPerWound);
+            Assert.Equal(0f, config.AgeRepairExponent);
+            Assert.Equal(1f, config.Genome.MinLifespan);
+            Assert.Equal(1f, config.Genome.MaxLifespan);
+            Assert.Equal(0f, config.Mutation.LifespanChance);
+
+            var world = new World(config, settings.Seed);
+            SpaceFacts space = SpaceFacts.Of(
+                world,
+                hasWall: config.SharedSpace && config.WorldShape == WorldShape.Tank,
+                hasFloor: config.SharedSpace,
+                threads: 1,
+                inoculumHashShort: null);
+
+            string line = Report.HeaderLine(settings, config, space, "9.9.9.9");
+
+            Assert.Contains(
+                " · free link 0.01 m3 · corpse sink 0.05 m/s settles floor 0.05 settled decay as sinking · age base 3000 s " +
+                "doubling x0.2 birth 1 wound 1 repair ^0 lifespan 1-1 at 0 · configHash ", line);
+
+            // D128 turns D038's wear off while the hazard is on, so a launcher naming both is refused.
+            env["EVOSIM_SENESCENCE"] = "3000";
+            RunConfig both = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(env)));
+            Assert.Throws<ArgumentException>(() => new World(both, settings.Seed));
         }
 
         private static string Round42HeaderLine(int threads, string engineVersion)

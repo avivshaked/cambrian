@@ -195,6 +195,178 @@ namespace Evosim.Dynamics.Tests
             Assert.Null(volume.FounderDepth);
         }
 
+        // ------------------------------------------------------ D129's mouths at the corpses
+
+        private const float Reach = 0.5f;
+
+        private static RunConfig CorpseBox(bool followCorpses)
+        {
+            RunConfig config = GridBox(atDepth: true);
+            config.CorpseDecayPerSecond = 0.001f;
+            config.IntakeReachMetres = Reach;
+            config.FoundersFollowCorpses = followCorpses;
+            return config;
+        }
+
+        private static Genome Mouth()
+        {
+            Genome g = Cube(CellTypeIds.Consumer);
+            g.Nodes[0].Intake = 1f;
+            return g;
+        }
+
+        /// <summary>
+        /// The box with a corpse lying on its flat bed at the centre of each 1 m column of the
+        /// block x 18 to 21, z 2 to 5, made as a run makes them: bare boxes inoculated, set on
+        /// the bed and killed. Nine columns, because one 1 m column on the bed holds about two
+        /// bodies of this size before the placer's free-space test refuses the next.
+        /// </summary>
+        private static (World World, SharedVolume Volume, List<Float3> Corpses) CorpsesOnTheBed(bool followCorpses, ulong seed) =>
+            CorpsesOnTheBed(CorpseBox(followCorpses), seed, pool: null);
+
+        private static (World World, SharedVolume Volume, List<Float3> Corpses) CorpsesOnTheBed(
+            RunConfig config, ulong seed, IReadOnlyList<Genome> pool)
+        {
+            (World world, SharedVolume volume) = Build(config, seed, pool);
+
+            var places = new List<Float3>();
+            for (int ix = 0; ix < 3; ix++)
+            {
+                for (int iz = 0; iz < 3; iz++) places.Add(new Float3(18.5f + ix, -24f, 2.5f + iz));
+            }
+
+            world.Inoculate(Cube(CellTypeIds.Structural), places.Count, heightY: Drawn);
+            var bare = new List<Organism>(world.Living);
+            for (int i = 0; i < bare.Count; i++)
+            {
+                Assert.True(volume.TryTakePlacement(bare[i].Id, out _));
+                world.Observe(bare[i], places[i], 0f);
+                world.KillDiverged(bare[i]);
+            }
+
+            Assert.Equal(places.Count, world.Corpses.Count);
+            return (world, volume, places);
+        }
+
+        [Fact]
+        public void AMouthLandsOverTheCorpsesOnTheBedAsLowAsTheBedLetsIt()
+        {
+            (World world, SharedVolume volume, List<Float3> corpses) = CorpsesOnTheBed(followCorpses: true, seed: 61UL);
+
+            world.Inoculate(Mouth(), Copies, heightY: Drawn);
+            Assert.Equal(Copies, world.Living.Count);
+
+            float lo = float.MaxValue, hi = float.MinValue, far = 0f;
+            foreach (Organism o in world.Living)
+            {
+                Assert.True(volume.TryTakePlacement(o.Id, out Float3 at), $"no placement for {o.Id}");
+                Assert.Equal(at.Y, o.HeightY);
+
+                // In the corpses' columns, whatever the snow and the matter hold elsewhere.
+                Assert.True(at.X >= 18f && at.X < 21f && at.Z >= 2f && at.Z < 5f,
+                    $"outside the corpses' columns at ({at.X}, {at.Z})");
+
+                // Set between the corpse and the reach above it, then lifted clear of the bed by
+                // the body's radius: above the bed, and no higher than the reach.
+                Assert.InRange(at.Y, -24f, -24f + Reach);
+
+                lo = Math.Min(lo, at.Y);
+                hi = Math.Max(hi, at.Y);
+                float near = float.MaxValue;
+                foreach (Float3 c in corpses)
+                {
+                    float dx = at.X - c.X, dy = at.Y - c.Y, dz = at.Z - c.Z;
+                    near = Math.Min(near, (float)Math.Sqrt(dx * dx + dy * dy + dz * dz));
+                }
+
+                far = Math.Max(far, near);
+            }
+
+            _output.WriteLine($"mouths over the corpses: heights {lo:0.###} to {hi:0.###} m, " +
+                              $"farthest centre {far:0.###} m from its nearest corpse");
+        }
+
+        [Fact]
+        public void WithTheCorpseRuleOffAMouthKeepsTheDrawnDepth()
+        {
+            (World world, SharedVolume volume, _) = CorpsesOnTheBed(followCorpses: false, seed: 62UL);
+
+            world.Inoculate(Mouth(), Copies, heightY: Drawn);
+            foreach (Organism o in world.Living)
+            {
+                Assert.True(volume.TryTakePlacement(o.Id, out Float3 at), $"no placement for {o.Id}");
+                Assert.Equal(Drawn, at.Y);
+            }
+        }
+
+        /// <summary>
+        /// D129's landing reading: with the pool trickle sending mouths in over the corpses, every
+        /// mouth founder's row carries the corpse joules of the column it landed in and the mean
+        /// over the grid's columns, each the sum of the corpses as the step leaves them, and the
+        /// landing column holds more than the mean. With the rule off no row carries either.
+        /// </summary>
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void AMouthFounderRecordsTheCorpsesOfTheColumnItLandedIn(bool followCorpses)
+        {
+            RunConfig config = CorpseBox(followCorpses);
+            config.FloorClosesAfterSeconds = 0.5f;
+            config.FoundingTricklePerSecond = 2f;
+            config.FoundingTricklePoolShare = 1f;
+            config.FoundingTricklePoolCount = 1;
+            config.FoundingTricklePoolHash = new string('a', 64);
+
+            (World world, SharedVolume volume, _) = CorpsesOnTheBed(config, 63UL, new[] { Mouth() });
+            var snow = (GridField)world.Nutrients;
+            world.DrainLineageEvents();
+
+            int founders = 0;
+            for (int step = 0; step < 40; step++)
+            {
+                world.Step(0.5f);
+
+                // The column sums as the step leaves them, which is when the trickle admits.
+                var columns = new Dictionary<int, double>();
+                double total = 0d;
+                foreach (Corpse corpse in world.Corpses)
+                {
+                    if (!(corpse.Joules > 0d)) continue;
+                    int column = snow.ColumnIndexAt(corpse.Position.X, corpse.Position.Z);
+                    columns[column] = (columns.TryGetValue(column, out double j) ? j : 0d) + corpse.Joules;
+                    total += corpse.Joules;
+                }
+
+                foreach (LineageEvent e in world.DrainLineageEvents())
+                {
+                    if (e.Kind != LineageEventKind.Birth || e.Source == FounderSource.None) continue;
+
+                    string row = e.ToJson();
+                    if (!followCorpses)
+                    {
+                        Assert.True(float.IsNaN(e.LandingCorpseJoules));
+                        Assert.DoesNotContain("\"fcorp\":", row);
+                        continue;
+                    }
+
+                    founders++;
+                    Assert.True(volume.TryTakePlacement(e.Id, out Float3 at), $"no placement for {e.Id}");
+                    int landed = snow.ColumnIndexAt(at.X, at.Z);
+                    double here = columns.TryGetValue(landed, out double h) ? h : 0d;
+
+                    Assert.Equal((float)here, e.LandingCorpseJoules);
+                    Assert.Equal((float)(total / snow.LiveColumnCount), e.LandingCorpseMeanJoules);
+                    Assert.True(e.LandingCorpseJoules > e.LandingCorpseMeanJoules,
+                        $"{e.Id}: fcorp {e.LandingCorpseJoules} not above fcorpm {e.LandingCorpseMeanJoules}");
+                    Assert.Contains("\"fcorp\":", row);
+                    Assert.Contains("\"fcorpm\":", row);
+                }
+            }
+
+            if (followCorpses) Assert.True(founders > 5, $"only {founders} mouth founders landed");
+            _output.WriteLine($"{founders} mouth founders read");
+        }
+
         // ------------------------------------------------------ round 50's income depth
 
         private static RunConfig IncomeBox()

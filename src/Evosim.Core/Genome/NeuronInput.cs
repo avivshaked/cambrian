@@ -187,6 +187,80 @@ namespace Evosim.Core
         /// </para>
         /// </remarks>
         Depth = 9,
+
+        /// <summary>
+        /// The smell of carrion at this part: the corpses' joules within <c>ScentRangeMetres</c>,
+        /// each weighted by a cone from 1 at the corpse to 0 at the range, squashed as
+        /// <c>x / (x + k)</c> — propose-foraging.md's third rule.
+        /// </summary>
+        /// <remarks>
+        /// Per part, so two parts a body apart read two values and a brain comparing them has a
+        /// direction. <see cref="Chemical"/> smells the dissolved snow, which a still stomach
+        /// empties round itself; this smells the corpses, which lie where they fell.
+        /// </remarks>
+        Scent = 10,
+
+        /// <summary>
+        /// The power this joint is delivering now, per degree of freedom, 0 to 1: the brain's power
+        /// command after the joint's threshold and envelope, what the fluid's push reads (D135's
+        /// <c>EffectorDrive.Stroke</c>). <see cref="NeuronInput.Index"/> is the degree of freedom.
+        /// </summary>
+        /// <remarks>
+        /// The drive sense (the owner, 2026-10-01): the stroke is not simulated as a swing, so no
+        /// joint angle shows it, and before this channel a brain could not tell a power command
+        /// taken from one held back by the hold or lost under the threshold. Its own output neuron
+        /// says what it asked for; this says what the muscle is doing. One step stale, as
+        /// <see cref="Flow"/> is: the envelope moves after the brain. Reads 0 where the world does
+        /// not run the bend-and-power drive and on a part with no joint.
+        /// </remarks>
+        Stroke = 11,
+
+        /// <summary>
+        /// The share of the joint's hold still to run, per degree of freedom: 1 the step a command
+        /// was taken, falling to 0, and 0 while the joint will take the next command. The envelope's
+        /// other state the brain cannot otherwise see, since a command sent during the hold is
+        /// ignored. <see cref="NeuronInput.Index"/> is the degree of freedom.
+        /// </summary>
+        Hold = 12,
+
+        /// <summary>
+        /// How far the power still has to ramp, per degree of freedom: the command the joint took
+        /// less the power it delivers now, -1 to 1, and 0 once it has arrived. Positive while the
+        /// stroke builds, negative while it eases. <see cref="NeuronInput.Index"/> is the degree of
+        /// freedom.
+        /// </summary>
+        Ramp = 13,
+
+        /// <summary>
+        /// Whether this part's contact sphere was against the bed or a reef on the last physics
+        /// step: 1 or 0. The glass is not rock and does not count, and neither does another body
+        /// (that is <see cref="Contact"/>). <see cref="NeuronInput.Index"/> is ignored.
+        /// </summary>
+        /// <remarks>
+        /// What the anchoring cell grips is the rock under a part, so a brain that is to decide
+        /// when to hold needs to know when a part is on it (D162). One physics step stale: the
+        /// brain reads it before that step's contact pass. Read on the part's contact sphere, so a
+        /// part reads 1 from the moment its sphere meets the rock, which for a long part can be
+        /// before its surface does. Needs per-part contact (<c>RunConfig.ContactPerPart</c>);
+        /// <c>RunConfig.SenseBedTouch</c> lets a genome draw it.
+        /// </remarks>
+        BedTouch = 14,
+
+        /// <summary>
+        /// The smell of living leaves at this part (D167): the leaf field's square metres of
+        /// photosynthetic area, cone-weighted, squashed as <c>x / (x + k)</c> with
+        /// <c>RunConfig.LeafScentHalfScaleSquareMetres</c> as <c>k</c>. Kept apart from
+        /// <see cref="Scent"/>, which is carrion. <see cref="NeuronInput.Index"/> is ignored.
+        /// </summary>
+        LeafScent = 15,
+
+        /// <summary>
+        /// The smell of living leaves with its direction (D167): the leaf field's gradient at this
+        /// part, in the part's own frame as <see cref="Flow"/> is read, made unit length and scaled
+        /// by what <see cref="LeafScent"/> would read. Zero where the gradient is.
+        /// <see cref="NeuronInput.Index"/> is the axis, 0 to 2.
+        /// </summary>
+        LeafScentDirection = 16,
     }
 
     /// <summary>

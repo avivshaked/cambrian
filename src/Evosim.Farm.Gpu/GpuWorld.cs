@@ -36,6 +36,23 @@ namespace Evosim.Farm.Gpu
         public bool HasCurrent, Accelerating, Sloped, HasBed, BedRelief, ShoreOn, FadeOn;
         public bool LimitDrive, LimitDrag, UseRestore, FloorRestores, CreatureContact, OffsetTorque, PerPart;
 
+        // ---- the bend-and-power drive and the limb push (EffectorDrive, Fluid.Apply)
+        public bool BendAndPower;
+        public double PoseOmega, PushOmega, LimbPush;
+
+        // ---- D161's drag on turning (Fluid.Apply): 0 none, 1 skin, 2 spin, and each form's
+        // negated factor as the CPU hoists it
+        public int TurningDrag;
+        public double NegSkin, NegSpin;
+
+        // ---- D162's touch of the rock (Contacts.ApplyPerPart's record), for the sense and the grip
+        public bool RockTouch;
+
+        // ---- D162's grip (Anchor.Apply): the cell, whose breaking force and price the runner takes
+        // per link as the CPU does, the strength's fall a step, and the reserve rule's threshold and lag
+        public AnchoringCell AnchorCell;
+        public double GripDecay, GripThreshold, GripLag;
+
         // ---- the solver's scalars
         public double Dt, Density, DragK, AddedMass, FluidAccel, Gravity, WorldDepth, Damping, SpinBudget;
         public double RestoringDensity, TissueDensity, TissueExcess, NeutralVolume;
@@ -55,6 +72,16 @@ namespace Evosim.Farm.Gpu
 
         // ---- the senses
         public float SWorldDepth, ChemHalf, EnergyScale, FlowScale, RateScale, ConstCE, DtF;
+        public float ScentHalf;
+
+        // ---- D167's leaf smell: the strength's half scale, m², as CreatureSenses takes it
+        public float LeafHalf;
+
+        /// <summary>The scent the bodies smell (World.Scent), once a body is given one.</summary>
+        public ScentField Scent { get; private set; }
+
+        /// <summary>The leaves' smell the bodies read (World.LeafScent, D167), once a body is given one.</summary>
+        public ScentField LeafScent { get; private set; }
 
         // ---- the snow field the chemical sense reads, once a body is given one
         public GridField Field { get; private set; }
@@ -111,6 +138,25 @@ namespace Evosim.Farm.Gpu
             OffsetTorque = s.BuoyancyOffsetTorque;
             PerPart = s.ContactPerPart;
 
+            BendAndPower = s.PowerPushRadiansPerSecond > 0;
+            PoseOmega = 2.0 * Math.PI * s.PoseHertz;
+            PushOmega = s.PowerPushRadiansPerSecond;
+            LimbPush = s.LimbPushCoefficient;
+
+            TurningDrag = s.TurningDrag == TurningDragForm.Skin ? 1 : s.TurningDrag == TurningDragForm.Spin ? 2 : 0;
+            NegSkin = -(0.5 * s.Density * s.SkinFrictionCoefficient);
+            NegSpin = -(0.5 * s.Density * s.SpinDragCoefficient);
+
+            RockTouch = s.RockTouch || s.Anchoring != null;
+
+            AnchorCell = s.Anchoring;
+            if (s.Anchoring != null)
+            {
+                GripDecay = Math.Exp(-s.StepSeconds / s.Anchoring.DecaySeconds);
+                GripThreshold = s.Anchoring.ReserveThresholdSeconds;
+                GripLag = s.Anchoring.ReserveLagSeconds;
+            }
+
             CreatureContact = s.CreatureContact;
             Omega = s.ContactOmega;
             Zeta = s.ContactDampingRatio;
@@ -122,6 +168,8 @@ namespace Evosim.Farm.Gpu
 
             SWorldDepth = (float)Math.Max(0.001, s.WorldDepthMetres);
             ChemHalf = (float)Math.Max(1e-6, s.ChemicalHalfScaleJoulesPerCubicMetre);
+            ScentHalf = (float)Math.Max(1e-6, s.ScentHalfScaleJoules);
+            LeafHalf = (float)Math.Max(1e-6, s.LeafScentHalfScaleSquareMetres);
             EnergyScale = (float)Math.Max(1e-6, s.EnergyFullScaleSeconds);
             FlowScale = (float)Math.Max(1e-6, s.FlowFullScaleMetresPerSecond);
             RateScale = (float)Math.Max(1e-6, s.JointRateFullScale);
@@ -143,6 +191,17 @@ namespace Evosim.Farm.Gpu
                 current.UnpinInstant();
 
                 Speed = (float)Reflect.Field(current, "_speed");
+
+                // A still current builds no streams (CurrentField.PinInstant returns before its lazy
+                // build at speed 0), and every table below would be null. Named here rather than met
+                // as a NullReferenceException (2026-10-10).
+                if (!(Speed > 0f) || Reflect.Field(current, "_streamAmplitude") == null)
+                {
+                    throw new NotSupportedException(
+                        "The gpu engine carries a moving current, and this world's is still (EVOSIM_CURRENT " +
+                        "0 m/s), so its streams were never built. Give the current a speed, or run the cpu engine.");
+                }
+
                 float scale = (float)Reflect.Field(current, "_streamsScale");
                 double bedScale = (double)Reflect.Field(current, "_bedScale");
                 _period = Convert.ToSingle(Reflect.Field(current, "_periodSeconds"), CultureInfo.InvariantCulture);
@@ -346,6 +405,40 @@ namespace Evosim.Farm.Gpu
                     "The gpu engine carries no vent; EVOSIM_VENT is on in a world of " +
                     s.PatchCount.ToString(CultureInfo.InvariantCulture) + " patches.");
             }
+        }
+
+        /// <summary>
+        /// The scent field the scent sense reads: kept the first time a body is handed one, and
+        /// refused when a second one appears. Its grid goes up every block.
+        /// </summary>
+        public void AttachScent(ScentField scent)
+        {
+            if (scent == null || ReferenceEquals(scent, Scent)) return;
+
+            if (Scent != null)
+            {
+                throw new NotSupportedException(
+                    "Two bodies smell two different scents; the gpu engine carries one scent field.");
+            }
+
+            Scent = scent;
+        }
+
+        /// <summary>
+        /// The leaves' smell the two leaf senses read: kept the first time a body is handed one, and
+        /// refused when a second one appears. Its grid goes up every block, as the scent's does.
+        /// </summary>
+        public void AttachLeafScent(ScentField leaf)
+        {
+            if (leaf == null || ReferenceEquals(leaf, LeafScent)) return;
+
+            if (LeafScent != null)
+            {
+                throw new NotSupportedException(
+                    "Two bodies smell two different leaf fields; the gpu engine carries one leaf smell.");
+            }
+
+            LeafScent = leaf;
         }
 
         /// <summary>

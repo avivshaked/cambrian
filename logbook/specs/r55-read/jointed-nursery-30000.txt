@@ -1,0 +1,30 @@
+== r55-s2 at 30000 s: living 4957, nursery-rooted 196
+   jointed 16 (absorptive 16), rigid 180 (absorptive 180)
+   jointed from brain2-nocross body 3: 2
+   jointed from pilot-deep-brain2 body 8: 2
+   jointed from brain2-rep2 body 4: 2
+   jointed from brain2-nocross body 0: 1
+   jointed from pilot-deep-brain2 body 10: 1
+   jointed from pilot-deep-brain2 body 4: 1
+   jointed from brain2-nodrive body 8: 1
+   jointed from brain2-rep2 body 10: 1
+   jointed from brain2-nodrive body 10: 1
+   jointed from pilot-deep-brain2 body 3: 1
+   jointed from pilot-deep-brain2 body 0: 1
+   jointed from brain2-rep2 body 3: 1
+   jointed from pilot-deep-brain2 body 1: 1
+   jointed lines (roots) 16; the founder itself jointed in 16 of them
+   generations below the founder, jointed: median 0.0, range 0 to 19
+   generations below the founder, rigid: median 19.0, range 1 to 24
+== r55-s3 at 30000 s: living 7493, nursery-rooted 8
+   jointed 8 (absorptive 8), rigid 0 (absorptive 0)
+   jointed from pilot-deep-brain2 body 10: 1
+   jointed from brain2-rep2 body 10: 1
+   jointed from brain2-rep2 body 4: 1
+   jointed from brain2-nodrive body 3: 1
+   jointed from brain2-rep2 body 3: 1
+   jointed from brain2-rep2 body 0: 1
+   jointed from pilot-deep-brain2 body 0: 1
+   jointed from brain2-nodrive body 8: 1
+   jointed lines (roots) 8; the founder itself jointed in 8 of them
+   generations below the founder, jointed: median 0.0, range 0 to 0

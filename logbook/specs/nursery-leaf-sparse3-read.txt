@@ -1,0 +1,89 @@
+D174's check, read on 2026-10-14 (logbook/specs/nursery-leaf-tank-plan.md, step 12): leaf-direction-sparse3 at 20c928e1,
+the direction arm at a 3 m reach with 31 leaves and nothing else changed, beside leaf-direction-sparse (6 m, 9f3cd064).
+It ran alone on logical 24-31 at 8 threads, from 12:59 to 14:47. Its episode config is the first direction arm's (9f0a5d9215913595).
+
+== The curves: scripts/reads/tank-side-by-side.py ==
+generations 0 to 28, which every arm swam; per arm: eaten, eaten over 5, top score, kills, meals
+gen  leaf-direction-sparse3                    leaf-direction-sparse                   
+  0     44.6       -   169.8  1.10  0.82          47.9       -   149.3  1.14  0.87     
+  1     56.0       -   195.9  1.11  1.01          49.1       -   140.1  1.13  0.88     
+  2     48.6       -   178.6  1.20  0.88          36.4       -   150.2  1.15  0.67     
+  3     72.2       -   256.0  1.30  1.32          65.2       -   164.6  1.29  1.19     
+  4     64.9    57.3   218.5  1.24  1.18          54.1    50.5   212.2  1.14  0.98     
+  5     81.5    64.7   204.8  1.28  1.48          57.3    52.4   194.7  1.26  1.04     
+  6     86.0    70.6   283.4  1.50  1.57          86.2    59.8   266.2  1.51  1.56     
+  7    103.5    81.6   314.6  1.52  1.87          75.3    67.6   248.6  1.43  1.37     
+  8    118.8    90.9   324.8  1.52  2.15         111.1    76.8   333.9  1.55  2.00     
+  9    133.3   104.6   433.9  1.61  2.38         116.8    89.4   454.7  1.68  2.11     
+ 10    114.5   111.2   286.3  1.61  2.06         132.6   104.4   369.9  1.86  2.40     
+ 11    156.2   125.2   352.3  1.74  2.80         191.1   125.4   462.4  2.14  3.47     
+ 12    145.6   133.7   360.8  1.79  2.67         219.2   154.2   436.3  2.32  3.96     
+ 13    149.5   139.8   449.8  1.65  2.71         227.3   177.4   588.7  2.51  4.09     
+ 14    176.3   148.4   448.8  1.86  3.18         268.6   207.8   632.6  2.57  4.82     
+ 15    145.8   154.7   319.4  1.78  2.64         273.5   235.9   789.2  2.47  4.89     
+ 16    165.1   156.4   315.4  1.83  2.98         299.4   257.6   604.9  2.73  5.40     
+ 17    169.4   161.2   330.9  1.86  3.08         251.3   264.0   541.0  2.64  4.50     
+ 18    163.0   163.9   359.5  1.82  2.95         267.7   272.1   621.5  2.69  4.80     
+ 19    165.7   161.8   389.8  1.79  2.99         300.3   278.4   700.5  2.62  5.39     
+ 20    171.1   166.9   386.1  1.82  3.11         322.3   288.2   625.9  2.75  5.78     
+ 21    178.9   169.6   419.6  1.92  3.23         312.6   290.8   543.7  2.66  5.60     
+ 22    170.1   169.8   373.9  1.91  3.06         333.0   307.2   613.4  2.76  5.98     
+ 23    180.2   173.2   329.6  1.82  3.26         326.3   318.9   714.5  2.68  5.85     
+ 24    188.5   177.8   505.0  1.85  3.40         308.7   320.6   558.8  2.83  5.55     
+ 25    156.4   174.8   457.0  1.92  2.81         320.9   320.3   694.8  2.76  5.76     
+ 26    163.4   171.7   362.5  1.72  2.95         319.2   321.6   562.5  2.80  5.73     
+ 27    161.3   170.0   316.9  1.82  2.92         313.6   317.7   720.1  2.81  5.66     
+ 28    157.5   165.4   329.9  1.72  2.84         339.3   320.3   699.2  2.81  6.09     
+leaf-direction-sparse3: last generation written 28, stopped on the rule
+leaf-direction-sparse: last generation written 33, stopped on the rule
+
+== leaf-direction-sparse3: the stop and the exam (nursery.log) ==
+  the search stops after generation 28: eaten, averaged over 5 generations, gained no more than 5 % in 10 (D172)
+  the exam's pool (D172): 29 tops and the last generation's elites, 34 genomes once each
+exam: 34 genomes under 3 brains, tanks of 8, 32 draws on held-out seeds (salt 422608528232), 1800 s, snow 0 J/m3, work cost 0.5, purse grown
+  own                      net -1942.62 J, against own (score) +0.00 (se 0.00), alive 92 %, work 0.161 W, path 182.4 m, turn 0.027 rad/s, eaten 159.2 J, snow at the body 0.18 J/m3, 9.2 min
+  brainless                net -1669.36 J, against own (score) -111.67 (se 12.40), alive 98 %, work 0.001 W, path 153.4 m, turn 0.010 rad/s, eaten 47.5 J, snow at the body 0.14 J/m3, 18.2 min
+  knockout LeafScent,LeafScentDirection net -1963.15 J, against own (score) -6.91 (se 10.82), alive 92 %, work 0.159 W, path 183.1 m, turn 0.027 rad/s, eaten 152.2 J, snow at the body 0.18 J/m3, 27.1 min
+
+== leaf-direction-sparse3's exam by where its genomes came from: scripts/reads/tops-exam-read.py ==
+scratch/wt-nursery-d172/runs/nursery/leaf-direction-sparse3: 34 genomes under own, brainless, knockout LeafScent,LeafScentDirection
+  best: g25.8 (tops [25]) own 287.8 J, knockout 254.1 J
+  best: g28.32 (tops [], elite) own 284.2 J, knockout 192.0 J
+  best: g24.21 (tops [24]) own 255.8 J, knockout 188.5 J
+  best: g28.7 (tops [], elite) own 222.8 J, knockout 103.8 J
+  best: g27.30 (tops [27, 28], elite) own 220.5 J, knockout 169.7 J
+  tops first from generations 0-9 (9): own 100.8, brainless 41.7, knockout LeafScent,LeafScentDirection 93.0; knockout cost -7.8 J (se 15.2)
+  tops first from generations 10-19 (10): own 163.2, brainless 50.0, knockout LeafScent,LeafScentDirection 169.5; knockout cost 6.4 J (se 18.1)
+  tops first from generations 20-on (8): own 201.4, brainless 33.0, knockout LeafScent,LeafScentDirection 176.4; knockout cost -25.0 J (se 26.5)
+  last elites (8): own 185.2, brainless 63.3, knockout LeafScent,LeafScentDirection 175.3; knockout cost -9.9 J (se 27.9)
+
+== leaf-direction-sparse: the stop and the exam (nursery.log) ==
+  the search stops after generation 33: eaten, averaged over 5 generations, gained no more than 5 % in 10 (D172)
+  the exam's pool (D172): 34 tops and the last generation's elites, 38 genomes once each
+exam: 38 genomes under 3 brains, tanks of 8, 32 draws on held-out seeds (salt 422608528232), 1800 s, snow 0 J/m3, work cost 0.5, purse grown
+  own                      net -1952.62 J, against own (score) +0.00 (se 0.00), alive 91 %, work 0.205 W, path 203.6 m, turn 0.032 rad/s, eaten 261.4 J, snow at the body 0.22 J/m3, 15.5 min
+  brainless                net -1683.66 J, against own (score) -195.68 (se 19.54), alive 97 %, work 0.012 W, path 159.0 m, turn 0.012 rad/s, eaten 65.7 J, snow at the body 0.15 J/m3, 32.2 min
+  knockout LeafScent,LeafScentDirection net -2024.79 J, against own (score) -91.70 (se 14.97), alive 92 %, work 0.206 W, path 201.4 m, turn 0.032 rad/s, eaten 169.7 J, snow at the body 0.19 J/m3, 48.5 min
+
+== leaf-direction-sparse's exam by where its genomes came from: scripts/reads/tops-exam-read.py ==
+scratch/wt-nursery-d172/runs/nursery/leaf-direction-sparse: 38 genomes under own, brainless, knockout LeafScent,LeafScentDirection
+  best: g33.47 (tops [33], elite) own 443.1 J, knockout 239.1 J
+  best: g22.27 (tops [22]) own 437.3 J, knockout 223.5 J
+  best: g33.30 (tops [], elite) own 434.1 J, knockout 127.6 J
+  best: g33.37 (tops [], elite) own 423.1 J, knockout 276.5 J
+  best: g31.19 (tops [31, 32], elite) own 420.0 J, knockout 170.9 J
+  tops first from generations 0-9 (10): own 83.0, brainless 39.4, knockout LeafScent,LeafScentDirection 80.6; knockout cost -2.4 J (se 9.5)
+  tops first from generations 10-19 (9): own 321.4, brainless 67.3, knockout LeafScent,LeafScentDirection 168.3; knockout cost -153.0 J (se 19.8)
+  tops first from generations 20-on (13): own 323.7, brainless 81.8, knockout LeafScent,LeafScentDirection 218.4; knockout cost -105.3 J (se 23.9)
+  last elites (8): own 358.2, brainless 72.8, knockout LeafScent,LeafScentDirection 212.2; knockout cost -146.1 J (se 39.5)
+
+== Wall per generation (timing.jsonl), on 8 cores ==
+leaf-direction-sparse3: generations 0-28, mean 2.81 min, range 2.61-3.10
+leaf-direction-sparse: generations 0-20, mean 2.71 min, range 2.41-3.07
+
+== What it shows ==
+At 3 m the direction arm stopped after generation 28, at 165 J smoothed, against 323 J at 6 m. Its exam: own 159.2 J,
+no brain 47.5 J, the smell knocked out 152.2 J (-6.9 J, se 10.8), against 6 m's own 261.4 J and knockout 169.7 J
+(-91.7 J, se 15.0). With the leaf count held at 31, the reach is what made the nose pay: at 3 m the smell is worth
+nothing measurable. On the CPU, a generation took 2.8 min at 3 m and 2.7 min at 6 m on 8 cores, so the 6 m reach costs
+no pace there; the card's leaf field is timed separately (D174).

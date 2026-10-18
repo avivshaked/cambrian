@@ -445,8 +445,8 @@ build is unchanged, `simHash 46335d9f…`), rename the stopped run directories a
 restart the queue detached with the same launcher and hash; then watch with `python scripts/watch-round.py r41e --read scripts/reads/r41d-read.py`,
 one look that exits, fired from the session's cron and never from a shell loop
 (CLAUDE.md's gotcha on background shell loops; `scripts/sweep-orphans.ps1` first, every
-session). **The owner's rulings of 2026-09-20 afternoon** ("agree with all your recommendations", then
-"proceed with your recommendations", both after the tank correction below): round 41e is
+session). **The owner's rulings of 2026-09-20 afternoon** (the owner agreed with all the recommendations, then
+told the agent to proceed with them, both after the tank correction below): round 41e is
 read as stopped (0109's last section, written); lever 1 is built and validated and merged
 if identity holds; the next world is **1,500 units** in the same 2,200 m² tank with **the
 bed raised into the lit band** (depth 20 m with the 30 m tilt, the floor from 5 m to 35 m),
@@ -711,8 +711,8 @@ Also tonight: round 40's read is in 0106 (V5, three seeds: L3 held where readabl
 failed on the deep quartile, the deep tail is newborns dropped where nothing pays;
 `logbook/specs/r40-read/`).
 
-**The campaign's direction changed at midday on 2026-09-18 (D097).** The owner ruled "Let's
-follow your recommendations" on the agent's diagnosis that the matter cell is a one-child
+**The campaign's direction changed at midday on 2026-09-18 (D097).** The owner ruled that the
+recommendations be followed, on the agent's diagnosis that the matter cell is a one-child
 cliff that decides every reading, and that nothing in the world eats anything alive. After
 round 40's read the foundation rounds leave the head of the queue; next are the matter
 proposal (the per-child price, screened by a smoke on blocked conceptions per birth), then
@@ -976,14 +976,14 @@ the background and never handed to a subagent, which cannot wait.
    it replays the killed run's 26,600 s bit for bit (D078): check it with
    `scripts/compare-det.py --allow-partial` against the killed directory once the rerun is
    past a few thousand seconds, and again at the end. **09:58: seeds 3 and 4 relaunched on
-   workers 3 and 4** the same way, on the owner's word ("proceed with your recommendations"),
+   workers 3 and 4** the same way, on the owner's word to proceed with the recommendations,
    so every seed of the round reads at the pre-registered 30,000 s; the three reruns at
    three arms should land in about 17 h, the night of the 17th. The same replay check
    applies to each against its censored directory. `unity/Temp/UnityLockfile` is stale
    from the restart and the owner's Editor clears it on open. Three Opus agents are
    restyling the recent prose (entries 0097 to 0104, the recent specs, D090 to D094) on
    the owner's note of style drift; the caller reviews the diffs and commits. **Two rulings
-   of the 17th** ("proceed with your recommendations"): three concurrent arms, not five,
+   of the 17th** (the owner told the agent to proceed with its recommendations): three concurrent arms, not five,
    with renders between rounds (CLAUDE.md's cap; `scripts/pace-survey.py` is the evidence:
    round 39 read 25 to 35% costlier per body beside five arms and renders and cheaper than
    round 38 alone); and seeds per round, five for population-level predictions, ten when a
@@ -1139,8 +1139,8 @@ the background and never handed to a subagent, which cannot wait.
     `scratch/wt-*` stay until the owner says otherwise.
 
 **The safari** (owner, 2026-09-11: a theatre feature that finds the species, visits the
-interesting ones, takes their pictures and explains each, "without requiring ad-hoc
-intelligence"). The agent's view: procedural to the last sentence, because every fact a
+interesting ones, takes their pictures and explains each, without requiring ad-hoc
+intelligence). The agent's view: procedural to the last sentence, because every fact a
 field-guide entry wants is in the run. Clades from the scorer's parent walk; a clade's
 founding time, the clade it split from and the mutation at the split; its share of the
 living, its peak, its generation depth; where it lives from `positions.jsonl`; its body from
@@ -1156,9 +1156,9 @@ a polish pass over the template's prose, off by default, and the facts never com
 
 ## Pockets, then a bigger tank (owner, 2026-09-12 night)
 
-"If we find a way to properly make pockets of matter and energy in the world, then we could
-really expand the tank properly. Think about it and if you get a good idea at some point,
-write it down." The agent's first thoughts; a proposal follows round 37b's read.
+The owner said that if the project finds a way to make pockets of matter and energy in the world properly,
+it could expand the tank properly. They asked the agent to think about it and to write down any
+good idea that came. The agent's first thoughts; a proposal follows round 37b's read.
 
 1. **A pocket has to be made by physics, not painted.** An incompressible current cannot
    concentrate a dissolved field (the constant-field rule the transporter now keeps), so a
@@ -1180,8 +1180,8 @@ write it down." The agent's first thoughts; a proposal follows round 37b's read.
    prize has not appeared, and a matter grid stirred slower strands stock in cells too small
    to afford a child). Paint patches into the field: a source that nothing feeds is a rule the
    world cannot explain.
-5. **A story for video: the knot** (owner, 2026-09-19 07:30: "selection just showed us
-what's wrong with our physics. This might be worth a story in video"). The arc is in 0107's
+5. **A story for video: the knot** (owner, 2026-09-19 07:30: selection had just shown what was wrong with our physics,
+and this might be worth a story in video). The arc is in 0107's
 last section and its pictures: the pace falling, the joint blamed and acquitted by its own
 instrument in three hours, the touching count that could not be two bodies, the probe's
 count matching the physics', the leaf with a fist folded through it. Material: a faithful

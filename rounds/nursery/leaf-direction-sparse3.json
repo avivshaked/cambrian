@@ -1,0 +1,114 @@
+{
+  "format": 1,
+  "name": "leaf-direction-sparse3",
+  "description": "D174's check: leaf-direction-sparse (D173) with the smell's reach at 3 m in place of 6 m and nothing else changed, 31 of r58-s3j's living leaves to the 20 m tank, D172's stop and exam of the tops. It separates the reach from the leaf count, which D173's pair changed together.",
+  "seed": "0x1",
+  "world": {
+    "config": "rounds/nursery/configs/3fd98985cdf68008.json",
+    "configHash": "3fd98985cdf68008",
+    "overrides": {
+      "AgeHazardBaseSeconds": 0,
+      "AgeRepairExponent": 0,
+      "AgeingPerBirth": 0,
+      "AgeingPerWound": 0,
+      "BedShoreDepthMetres": 0,
+      "BedShoreFadeMetres": 0,
+      "BedTiltMetres": 0,
+      "Fluid.SpinDragCoefficient": 0.5,
+      "Fluid.TurningDrag": "Spin",
+      "FoundingTricklePerSecond": 0,
+      "FoundingTricklePoolCount": 0,
+      "FoundingTricklePoolHash": "",
+      "FoundingTricklePoolShare": 0,
+      "InitialMatterPerCubicMetre": 0,
+      "LeafScent": "Direction",
+      "LeafScentRangeMetres": 3,
+      "MatterBudgetUnits": 0,
+      "MatterIslandWavelengthMetres": 0,
+      "ReefCover": 0,
+      "UnbittenDeathsLeaveNoCorpse": true,
+      "WorldAreaSquareMetres": 400
+    }
+  },
+  "bodies": {
+    "source": "pool",
+    "founders": 0,
+    "trunk": null,
+    "pool": "rounds/nursery/pools/6a27d8acada28e03.tsv",
+    "keep": null
+  },
+  "setup": {
+    "seconds": 1800,
+    "dt": 0.01,
+    "tankSize": 8,
+    "floorClosed": true,
+    "birthsHeld": true,
+    "snow": null,
+    "carrion": {
+      "count": 0,
+      "joules": 40
+    },
+    "start": {
+      "aboveBed": 11.5
+    },
+    "purse": {
+      "rule": "grown",
+      "seconds": 3830
+    }
+  },
+  "leaves": {
+    "pool": "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz",
+    "count": 31,
+    "spentUnitsPerCubicMetre": 0.004237
+  },
+  "search": {
+    "population": 48,
+    "draws": 8,
+    "generations": 60,
+    "elites": 8,
+    "tournament": 3,
+    "perBody": true,
+    "evolve": "brain",
+    "evolveEnvelope": false,
+    "crossover": {
+      "rate": 0.5,
+      "baseShare": 0.7,
+      "mutationByDistance": 0.785
+    },
+    "stop": {
+      "measure": "eaten",
+      "window": 5,
+      "gain": 0.05,
+      "over": 10,
+      "floor": 20
+    }
+  },
+  "reward": {
+    "class": "WeightedSum",
+    "parameters": {
+      "weights": {
+        "eaten": 1
+      }
+    }
+  },
+  "exam": {
+    "episodes": 32,
+    "salt": "0x62656e6368",
+    "controls": [
+      {
+        "kind": "own"
+      },
+      {
+        "kind": "brainless"
+      },
+      {
+        "kind": "knockout",
+        "channels": [
+          "LeafScent",
+          "LeafScentDirection"
+        ]
+      }
+    ],
+    "pool": "tops"
+  }
+}

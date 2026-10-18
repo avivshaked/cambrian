@@ -125,8 +125,8 @@ world at 100 m² should hold a quarter of the bodies for the same per-square-met
 The ceiling then becomes 32,000-equivalent, and the arms run about four times faster. Round
 5b rejected small dishes (logbook/0040) for shading-driven darkness and irreversible
 sinking, under the old physics where every body sank. D064 removes that, so the objection is
-retested rather than deferred to. The owner put it plainly: *"if we can achieve our goal in
-a smaller aquarium, we can always make it bigger later."*
+retested rather than deferred to. The owner put it plainly: if the goal can be achieved in
+a smaller aquarium, it can always be made bigger later.
 
 Round 10 is censored early by this ruling. The five arms were stopped at t≈4,200–4,900.
 Their reports carry no footer, every completed row stands, and they are read as the runaway

@@ -41,7 +41,8 @@
 
 .PARAMETER Exe
   The program. Default artifacts/Evosim.Farm/bin/Release/net8.0/Evosim.Farm.exe under the
-  repository — pass another to run a worktree's build.
+  repository — pass another to run a worktree's build. The run names the git checkout that holds
+  the program (EVOSIM_REPO_ROOT), so a worktree's run records that worktree's commit and hashes.
 
 .PARAMETER Env
   Hashtable of EVOSIM_* settings, e.g. @{ EVOSIM_AREA = 2200; EVOSIM_DEPTH = 45 }. The named
@@ -85,6 +86,15 @@
   How long to wait for run.json. Default 60: this program starts in a second or two, so a minute
   is a wedged world-construction rather than a cold import. 0 returns as soon as it is launched.
 
+.PARAMETER SpinLimit
+  The thread pool's spin, DOTNET_ThreadPool_UnfairSemaphoreSpinLimit, which the runtime reads from
+  the farm's own environment at start (card-next-r57.md Part 7). It moves the pace and the load,
+  never a number. 'default', the default, sets 5000 for a run on the card engine (EVOSIM_ENGINE gpu,
+  the owner's ruling of 2026-10-09) and leaves it unset for any other run; 'unset' leaves it unset;
+  a whole number sets that number. The variable is set or cleared around the launch whatever this
+  shell holds, so a value left over here cannot reach the run, and the run names it in run.json
+  (threadPoolSpinLimit) and on its engine line.
+
 .PARAMETER WhatIf
   Print the command and change nothing.
 
@@ -110,7 +120,8 @@ param(
     [double]$At = 0,
     [switch]$AllowSourceMismatch,
     [string]$ExpectDynamicsHash = '',
-    [int]$WaitForManifestSeconds = 60
+    [int]$WaitForManifestSeconds = 60,
+    [string]$SpinLimit = 'default'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -127,6 +138,15 @@ $exePath = if ($Exe -ne '') { Resolve-UnderRepo $Exe }
 if (-not (Test-Path -LiteralPath $exePath)) {
     throw "No farm program at $exePath. Build it: dotnet build src/Evosim.Farm -c Release."
 }
+
+# The checkout that built the program, which the manifest's commit and source hashes are read from.
+# A worktree's program sits under that worktree's artifacts/, and its run must name that build: with
+# the main checkout here instead, every worktree run until 2026-10-06 recorded main's commit and hashes.
+$buildRoot = & git -C (Split-Path -Parent $exePath) rev-parse --show-toplevel 2>$null
+if ($LASTEXITCODE -ne 0 -or -not $buildRoot) {
+    throw "No git checkout holds $exePath, so its run could not name the build it came from."
+}
+$buildRoot = [IO.Path]::GetFullPath($buildRoot)
 
 $runsRootPath = Resolve-UnderRepo $RunsRoot
 
@@ -168,6 +188,12 @@ foreach ($k in @($settings.Keys)) {
     if ($k -notmatch '^EVOSIM_') { throw "'$k' is not an EVOSIM_ setting; refused rather than ignored." }
 }
 
+# The kill test's checkpoint stall hook is never a round's setting (card-next-r57.md Part 8): refused
+# from this shell's environment, which the farm would inherit, and from -Env or -Launcher.
+if ($env:EVOSIM_TEST_CHECKPOINT_STALL_MS -or $settings.ContainsKey('EVOSIM_TEST_CHECKPOINT_STALL_MS')) {
+    throw 'EVOSIM_TEST_CHECKPOINT_STALL_MS is set. It is a test hook that pauses every checkpoint''s write, and a run launched with it is not a round''s run; unset it.'
+}
+
 # The named parameters, last, so the command line is the final word on them.
 $settings['EVOSIM_SEED'] = $Seed
 $settings['EVOSIM_SECONDS'] = $Seconds
@@ -175,7 +201,7 @@ $settings['EVOSIM_WALL_MINUTES'] = $WallMinutes
 $settings['EVOSIM_THREADS'] = $Threads
 $settings['EVOSIM_RUNS_ROOT'] = $runsRootPath
 $settings['EVOSIM_OUT'] = "$Arm.md"
-$settings['EVOSIM_REPO_ROOT'] = $root
+$settings['EVOSIM_REPO_ROOT'] = $buildRoot
 
 if ($CheckpointEvery -gt 0) { $settings['EVOSIM_CHECKPOINT_EVERY'] = $CheckpointEvery }
 
@@ -198,6 +224,16 @@ elseif ($At -gt 0 -or $AllowSourceMismatch) {
     throw '-At and -AllowSourceMismatch say where to resume from, and -ResumeFrom was not given.'
 }
 
+# The thread pool's spin: not a setting of the world, so not on the command line, but the runtime's own
+# variable, which the farm takes from the environment it is started in. $null leaves it unset.
+$spinName = 'DOTNET_ThreadPool_UnfairSemaphoreSpinLimit'
+$spin = switch -Regex ($SpinLimit) {
+    '^default$' { if ([string]$settings['EVOSIM_ENGINE'] -eq 'gpu') { '5000' } else { $null }; break }
+    '^unset$'   { $null; break }
+    '^\d+$'     { $SpinLimit; break }
+    default     { throw "-SpinLimit '$SpinLimit' is neither 'default', 'unset' nor a whole number." }
+}
+
 # Logs live inside the project (scratch/ is gitignored): nothing of a run is written outside the
 # repository, TEMP included. Separate streams, because the program prints its header on stdout
 # and every warning about an unread setting on stderr, and the second is the one worth reading.
@@ -215,9 +251,11 @@ foreach ($k in ($settings.Keys | Sort-Object)) {
 
 Write-Host "$Arm -> farm (dynamics)"
 Write-Host "  exe   $exePath"
+Write-Host "  build $buildRoot"
 Write-Host "  seed $Seed, $Seconds s, $WallMinutes min wall, $(if ($Threads -eq 0) { 'one thread per processor' } else { "$Threads threads" })"
 Write-Host "  runs  $runsRootPath"
 if ($CheckpointEvery -gt 0) { Write-Host "  ckpt  every $CheckpointEvery s" }
+Write-Host "  spin  $(if ($null -ne $spin) { "$spin ($spinName)" } else { 'unset' })"
 if ($ResumeFrom -ne '') {
     Write-Host "  from  $($settings['EVOSIM_RESUME'])$(if ($At -gt 0) { " at $At s" } else { ' (last checkpoint)' })"
 }
@@ -227,7 +265,7 @@ Write-Host "  $($argList.Count) settings"
 
 if (-not $PSCmdlet.ShouldProcess("$Arm on $exePath", 'launch')) {
     Write-Host '  -WhatIf: nothing launched. The command line would be:'
-    Write-Host "  $exePath $($argList -join ' ')"
+    Write-Host "  $(if ($null -ne $spin) { "$spinName=$spin " })$exePath $($argList -join ' ')"
     return
 }
 
@@ -236,11 +274,18 @@ New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 
 $launchedAt = (Get-Date).ToUniversalTime()
 
-# Detached: its own process, its own window (hidden), its streams on disk. Nothing of this shell
-# is inherited except the working directory, and every setting is on the command line, so a
-# variable left over from an earlier launch cannot reach this run (the Astra review, 2026-09-07).
-$process = Start-Process -FilePath $exePath -ArgumentList $argList -WorkingDirectory $root `
-    -WindowStyle Hidden -PassThru -RedirectStandardOutput $outLog -RedirectStandardError $errLog
+# Detached: its own process, its own window (hidden), its streams on disk. Every setting is on the
+# command line, so a variable left over from an earlier launch cannot reach this run (the Astra review,
+# 2026-09-07). The process does inherit this shell's environment, so the spin is set or cleared just
+# for the launch and the caller's value put back after it.
+$spinBefore = [Environment]::GetEnvironmentVariable($spinName)
+[Environment]::SetEnvironmentVariable($spinName, $spin)
+try {
+    $process = Start-Process -FilePath $exePath -ArgumentList $argList -WorkingDirectory $root `
+        -WindowStyle Hidden -PassThru -RedirectStandardOutput $outLog -RedirectStandardError $errLog
+} finally {
+    [Environment]::SetEnvironmentVariable($spinName, $spinBefore)
+}
 
 Write-Host "  launched, pid $($process.Id)"
 

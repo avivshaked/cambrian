@@ -1,4 +1,4 @@
-# Build spec: the tank (fable-propose-aquarium.md, ruling 1; owner "yes proceed", 2026-09-11)
+# Build spec: the tank (fable-propose-aquarium.md, ruling 1; the owner told the agent to proceed, 2026-09-11)
 
 Read `fable-propose-aquarium.md` first, then CLAUDE.md in full (the gotchas on the grid, the
 current, the placer, the config's refuse-rather-than-default rule and the reflection tests

@@ -1,0 +1,27 @@
+{
+ "model": "VoxCPM2",
+ "design_text": "Down on the floor of this tank lives a family of twelve hundred and fifty-two creatures, and nearly every one of them is nothing but a stomach. Each is a single box of tissue that eats the marine snow, the dead stuff drifting down. All of them come from one creature that dropped in from outside.",
+ "descriptions": {
+  "M1": "British accent, deep baritone voice, a man in his sixties, chesty and resonant, with a hushed intimacy, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "M2": "British accent, deep baritone voice, a man in his fifties, smooth and rounded, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "M3": "British accent, deep baritone voice, a man in his seventies, a gentle grain and a slow warmth, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "M4": "British accent, baritone voice, a man in his sixties, velvety and measured, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "M5": "British accent, baritone voice, a man in his fifties, soft, with a little breath, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "M6": "British accent, baritone voice, a man in his forties, warm and bright, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "M7": "British accent, baritone voice, a man in his sixties, rich, with a hushed intimacy, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "M8": "British accent, light baritone voice, a man in his fifties, clear and gentle, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "M9": "British accent, bass-baritone voice, a man in his sixties, dark and resonant, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "M10": "British accent, tenor voice, a man in his fifties, soft and airy, with a sparkle of wonder, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "F1": "British accent, alto voice, a woman in her fifties, smooth and rounded, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "F2": "British accent, low alto voice, a woman in her sixties, a gentle grain and a slow warmth, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "F3": "British accent, alto voice, a woman in her sixties, rich, with a hushed intimacy, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "F4": "British accent, alto voice, a woman in her forties, warm and bright, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "F5": "British accent, alto voice, a woman in her seventies, soft and slightly husky, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "F6": "British accent, mezzo-soprano voice, a woman in her fifties, velvety and measured, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "F7": "British accent, mezzo-soprano voice, a woman in her forties, clear and bright, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "F8": "British accent, mezzo-soprano voice, a woman in her sixties, rich and warm, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "F9": "British accent, contralto voice, a woman in her sixties, dark and resonant, calm and unhurried, quietly authoritative, with a subtle sense of wonder",
+  "F10": "British accent, low alto voice, a woman in her fifties, soft, with a little breath, calm and unhurried, quietly authoritative, with a subtle sense of wonder"
+ },
+ "format": "the runner sends '(' + description + ')' + design_text, as the makers' card shows"
+}

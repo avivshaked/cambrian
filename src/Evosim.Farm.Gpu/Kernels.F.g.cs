@@ -14,6 +14,8 @@
 // Per step, in the CPU's order:
 //   the grid       MeanSerial | MeanChunks + MeanCombine, Ranges, ScanReduce + ScanTiles
 //                  + ScanDown, Scatter                                         (Contacts.cs)
+//   the reach guard  after Ranges: LoseStrays, Rearm, ClearCounts, the mean and Ranges again,
+//                  LoseStrays again, each a no-op in a step with no stray  (DynamicsWorld.LoseStrays)
 //   the water      WaterLinks, a link a thread, one launch per class (Water.Sample, StepOne's
 //                  first part; beside the grid under concurrent streams)
 //   the fluid      FluidLinks, a link a thread, one launch per class after its water
@@ -49,15 +51,24 @@ namespace Evosim.Farm.Gpu.Sgl
         public ArrayView<int> Links, Dof, SigLen, Mask, GSlot;
         public ArrayView<int> Parent, DofCount, DofStart, PanelStart, ThinAxis;
         public ArrayView<int> NOff, NCnt, BParent, FirstChild, BDofStart, BDofCount;
+
+        // The one brain (D146): its unit count (-1 for the per-part neurons), its degrees of
+        // freedom, and where its links and its ports start in the shared pools (SNeur).
+        public ArrayView<int> CUnits, CDof, CLinkAt, CPortAt;
     }
 
     /// <summary>Everything about a class's body that does not change inside a physics step.</summary>
     public struct SConst
     {
-        public ArrayView<Real> Mass, Lift, Volume, SmallI, Reach, Arm, Inertia, ChildAnchor, ParentAnchor;
+        public ArrayView<Real> Mass, Lift, Volume, SmallI, Reach, Arm, Inertia, ChildAnchor, ParentAnchor, SpinMoment;
         public ArrayView<Real> JointFrame, RestFrame, LimitLo, LimitHi, LimitStiff, LimitDamp;
         public ArrayView<Real> Excess, TotalMass;
         public ArrayView<float> TorquePerUnit, PowerScale;
+
+        // The bend-and-power drive, a link each: the joint's four genes (DriveGenes) and the
+        // part's Power, which caps its muscle.
+        public ArrayView<float> Threshold, Reaction, HoldGene, Release;
+        public ArrayView<Real> LinkPower;
     }
 
     public struct SPanels { public ArrayView<Real> Centre, Normal, Area; }
@@ -65,7 +76,7 @@ namespace Evosim.Farm.Gpu.Sgl
     /// <summary>A class's body state: what the next step reads, and the step's outputs beside it.</summary>
     public struct SState
     {
-        public ArrayView<Real> BasePos, BaseRot, Q, Qd, Tau, LimitImplicit, BallRot;
+        public ArrayView<Real> BasePos, BaseCarry, BaseRot, Q, Qd, Tau, LimitImplicit, BallRot;
         public ArrayView<Real> Pos, Rot, RotM, Spin, Vel, Sang, Slin, Cbias, RelVel, Water, WaterAcc, Fext, Applied;
     }
 
@@ -74,6 +85,11 @@ namespace Evosim.Farm.Gpu.Sgl
     {
         public ArrayView<float> Signal, History, RunSum;
         public ArrayView<int> Cursor, Filled;
+
+        // The bend-and-power drive: the brain's bend a degree of freedom, and the envelope's seven
+        // numbers a degree of freedom (EffectorDrive's _power to _holdLeft), in double as on the CPU.
+        public ArrayView<float> Bend;
+        public ArrayView<double> EPower, EBend, EPowerTarget, EBendTarget, EPowerRate, EBendRate, EHoldLeft;
         public ArrayView<long> DriveLimited, DragLimited;
         public ArrayView<double> Work, Signed, Dissipated, Passive;
     }
@@ -82,6 +98,12 @@ namespace Evosim.Farm.Gpu.Sgl
     {
         public ArrayView<int> Op, NIn, Kind, Index, Channel;
         public ArrayView<float> Freq, Phase, Amp, Bias, Const, Weight;
+
+        // The one brain's pools, shared by every class: each link's source (a unit at 0 or more,
+        // ~slot for a port) and weight, in the CPU's order; each port's part, channel and index.
+        // A unit's bias is Bias and its number of incoming links NIn, in the unit's own row.
+        public ArrayView<int> CSource, CPortPart, CPortChannel, CPortIndex;
+        public ArrayView<float> CWeight;
     }
 
     /// <summary>The brain's buffers and the senses' hand-back; Gates bit 0 nutrients, bit 1 reserve.</summary>
@@ -112,8 +134,32 @@ namespace Evosim.Farm.Gpu.Sgl
         public ArrayView<long> Census, Overflow;
         public ArrayView<Real> LinkPush, LinkFluid;
         public ArrayView<int> LinkFlags, StageN, StageId, StageSlot, StagePart, LinkLimited;
+
+        // D162's touch of the rock, by link row: the record the last step left (RockTouched and its
+        // point and normal), which the senses read and the farm keeps, and this step's (TouchNew,
+        // and TouchAt's point then normal, a component per Rows), which ContactLinks writes and
+        // the class kernel keeps after its contacts (KeepTouch).
+        public ArrayView<int> RockTouched, TouchNew;
+        public ArrayView<Real> RockPx, RockPy, RockPz, RockNx, RockNy, RockNz, TouchAt;
+
+        // D162's grip (Anchor.Apply). By link row: whether the link carries the anchoring cell, its
+        // full-strength breaking force and the price of a grip formed at it (the CPU's floats,
+        // widened on the host), and the grip itself, the farm's to keep (GripAnchor and GripPoint 3
+        // a row, GripAttitude 9). By global slot: the reserve rule's clock, the price owed since the
+        // farm last drained it, and the body's tallies.
+        public ArrayView<int> Anchors, GripHeld;
+        public ArrayView<double> GripBreak, GripPrice, GripStrength, ReserveLow, GripOwed, GripHeldSeconds;
+        public ArrayView<Real> GripAnchor, GripAttitude, GripPoint;
+        public ArrayView<long> GripsFormed, GripsBroken;
+
+        // The reach guard's records, by global slot, cleared at each block's start: which sphere
+        // strayed (StrayCode, 0 for none), at which step, and where (x, y, z, radius).
+        public ArrayView<int> StrayCode;
+        public ArrayView<long> StrayStep;
+        public ArrayView<Real> StrayAt;
 #if GPU_PHASE_PROBE
         public ArrayView<long> Phase;
+        public ArrayView<long> LinkPhase;
 #endif
     }
 
@@ -121,7 +167,7 @@ namespace Evosim.Farm.Gpu.Sgl
     public struct SSph
     {
         public ArrayView<Real> Cx, Cy, Cz, R, Vx, Vy, Vz;
-        public ArrayView<Real> LCx, LCy, LCz, LR, LVx, LVy, LVz;
+        public ArrayView<Real> LCx, LCy, LCz, LR, LVx, LVy, LVz, LEx, LEy, LEz;
         public ArrayView<int> Active;
     }
 
@@ -130,6 +176,14 @@ namespace Evosim.Farm.Gpu.Sgl
     {
         public ArrayView<int> Lo, Hi, Counts, Start, Cursor, Items, PartialN, TileSum, TileStart;
         public ArrayView<Real> Cell, Partial;
+
+        // The giants: [0] how many claimed a place this build (may pass GiantCap), then their rows;
+        // a row's place plus one, or 0; each giant's list length and its rows.
+        public ArrayView<int> Giant, IsGiant, GiantN, GiantList;
+
+        // The reach guard's counters: [StrayFound] strays the last Ranges found, [StrayRedo] the
+        // flag the grid's second build reads, [StrayLeft] strays found by that second build.
+        public ArrayView<int> Stray;
     }
 
     /// <summary>The world a body reads: the instants, the world's constants, the snow.</summary>
@@ -137,25 +191,38 @@ namespace Evosim.Farm.Gpu.Sgl
     {
         public ArrayView<Real> Inst, WR, Stock;
         public ArrayView<int> WI;
+
+        // The scent's grid (ScentField), uploaded every block: the host refills it only at a
+        // metabolic step, which a block never spans.
+        public ArrayView<float> Scent;
+
+        // D167's leaf smell (World.LeafScent), uploaded every block as the scent's grid is.
+        public ArrayView<float> Leaf;
+
+        // One cumulative count: the bed's angles past AngleGuard (BedSample and
+        // BedHeightAndGradient), for the tests.
+        public ArrayView<long> Guard;
     }
 
     public struct SCfg
     {
         // The launch: the class's capacity and neuron ceiling, the global roster, the grid.
         public int N, MaxN, GN, GUsed, Count, Rows, Buckets, Mask, OverCap, EntryCap;
+        public int GiantCells;   // cells a row's sphere covers from which it is a giant (WholeStep.Ranges)
         public int InstBase, StepIndex, PerPart, Instrument, Chunk, Chunks, Tiles, ClassUsed, ClassLinks, LinkRows;
 
         public int HasCurrent, Accelerating, Sloped, HasBed, BedRelief, BedModes, ShoreOn, FadeOn;
         public int ReefCount, LimitDrive, LimitDrag, UseRestore, FloorRestores, CreatureContact;
-        public int OffsetTorque, SplitColumns;
+        public int OffsetTorque, SplitColumns, Redo, BendAndPower, TurningDrag, RockTouch, Anchoring;
 
         public long TraceStep;
-        public double TraceTime, DtD;
+        public double TraceTime, DtD, PoseOmega, GripDecay, GripThreshold, GripLag;
 
         public Real Dt, Density, DragK, AddedMass, FluidAccel, Gravity, WorldDepth, Damping, SpinBudget;
         public Real RestoringDensity, TissueDensity;
 
         public Real Omega, Zeta, MaxSep, MaxDv, TankRadius, AxisX, AxisZ, CellOverride;
+        public Real PushOmega, LimbPush, NegSkin, NegSpin;
         public Real BedRadius, BedDepth, TiltX, TiltZ, Offset, ShoalHeight;
 
         public Real CurDepth, CurTankR, EddyWeight, Overturning, PerSecond, Squared, ShoreDepth, ShoreFadeW;
@@ -163,6 +230,10 @@ namespace Evosim.Farm.Gpu.Sgl
         public float SigmaSloped, SigmaFlat, Speed;
 
         public float SWorldDepth, ChemHalf, EnergyScale, FlowScale, RateScale, ConstCE, DtF;
+        public float ScentHalf;
+        public int ScentNx, ScentNy, ScentNz;
+        public float LeafHalf, LeafCell;
+        public int LeafNx, LeafNy, LeafNz;
         public int Nx, Ny, Nz, LayerCount, RefugeLayers, LayerStride;
         public float CellMetres, FieldTankR, RefugeFraction, CellVolume;
 
@@ -315,8 +386,8 @@ namespace Evosim.Farm.Gpu.Sgl
             V3 n = axis.Normalized;
             if (n.SqrMagnitude < (Real)1e-24) return Identity;
             Real half = radians * (Real)0.5;
-            Real s = System.MathF.Sin(half);
-            return new Q4(n.X * s, n.Y * s, n.Z * s, System.MathF.Cos(half));
+            Real s = WholeStep.SinR(half);
+            return new Q4(n.X * s, n.Y * s, n.Z * s, WholeStep.CosR(half));
         }
 
         public static Q4 operator *(Q4 a, Q4 b) => new Q4(
@@ -415,7 +486,7 @@ namespace Evosim.Farm.Gpu.Sgl
     public static partial class WholeStep
     {
         public const int LinkStride = 16;          // DevelopmentLimits.MaxParts: the global per-link stride
-        public const int CandCap = 256;
+        public const int CandCap = 512;            // contact candidates a query keeps; past it, counted and dropped
         public const int Window = 10;              // EffectorDrive.SmoothWindow
         public const int TraceFrames = 3;          // Creature.TraceFrames
         public const int TraceValues = 21;         // Creature.TraceValuesPerLink
@@ -429,6 +500,27 @@ namespace Evosim.Farm.Gpu.Sgl
         // cell entries past EntryCap.
         public const int OverflowCandidates = 0, OverflowOverlaps = 1, OverflowHeld = 2, OverflowEntries = 3;
 
+        // The contact watch's slots in the same column (DynamicsWorld.Watch), each a block's maximum that the
+        // runner folds and clears: the most candidates a query kept, the most overlaps a body listed and the
+        // row covering the most cells, the last two as count << 24 | (0xFFFFFF - the body's rank), so equal
+        // counts go to the earliest body in the list.
+        public const int WatchCandidates = 4, WatchOverlaps = 5, WatchCells = 6;
+
+        // The giants (2026-10-17, round 61's r61-p6103): rows whose spheres cover GiantCells cells or more,
+        // at most GiantCap a build; past it a row stays in the grid. A giant's list holds GiantListCap
+        // rows; past it the giant walks its cells as any row does. GiantCap was 32 until r61-p6103x
+        // (2026-10-18) held 48 to 75 such rows by 49,100 s, and the 15,000-cell ones that lost the race
+        // for a place slowed the card fivefold from the grid; the work scales with the giants there are.
+        // GiantListCap was 2,048 until r61-p6103x2 (2026-10-18): one kelp blade's 51 m link, 362,952 cells
+        // with 2,702 rows in its box, walked its cells for 20 simulated seconds at about 50 times the step's
+        // cost. At 32,768 a list holds more rows than the round's worlds hold at once (about 21,000 at
+        // 55,100 s), and the lists take 128 MB of the card.
+        public const int GiantCap = 1024, GiantListCap = 32768;
+
+        // The reach guard's counters in SGrid.Stray, and Contacts.ReachCells.
+        public const int StrayFound = 0, StrayRedo = 1, StrayLeft = 2;
+        public const double ReachCells = 1e9;
+
         // The instant's layout: the samplers' phase (A) then the analytic acceleration's (B).
         public const int Terms = 24, Cells = 3;
         public const int ACos = 0, ASin = 24, AEnv = 48, ACellEnv = 72, ACell = 75;
@@ -437,7 +529,8 @@ namespace Evosim.Farm.Gpu.Sgl
         public const int InstStride = 186;
 
         private const int SDepth = 9, SUp = 3, SJointAngle = 0, SJointRate = 1, SChemical = 6, SEnergy = 7,
-            SFlow = 8, SContact = 2, SDamage = 5;
+            SFlow = 8, SContact = 2, SDamage = 5, SScent = 10,
+            SStroke = 11, SHold = 12, SRamp = 13, SRock = 14, SLeaf = 15, SLeafDir = 16;
 
         // ============================================================== the grid
 
@@ -445,6 +538,8 @@ namespace Evosim.Farm.Gpu.Sgl
         public static void MeanSerial(Index1D index, SSph s, SGlob gl, SGrid gr, SCfg cfg)
         {
             if (index.X != 0) return;
+            if (cfg.Redo != 0 && gr.Stray[StrayRedo] == 0) return;
+            ResetGiants(gr);
 
             Real sum = 0;
             int active = 0;
@@ -459,12 +554,15 @@ namespace Evosim.Farm.Gpu.Sgl
                     int n = gl.Links[g];
                     for (int l = 0; l < n; l++)
                     {
-                        sum += s.LR[g * LinkStride + l];
+                        int row = g * LinkStride + l;
+                        if (!FiniteSphere(s.LCx[row], s.LCy[row], s.LCz[row], s.LR[row])) continue;
+                        sum += s.LR[row];
                         active++;
                     }
                 }
                 else
                 {
+                    if (!FiniteSphere(s.Cx[g], s.Cy[g], s.Cz[g], s.R[g])) continue;
                     sum += s.R[g];
                     active++;
                 }
@@ -482,6 +580,7 @@ namespace Evosim.Farm.Gpu.Sgl
         {
             int c = index.X;
             if (c >= cfg.Chunks) return;
+            if (cfg.Redo != 0 && gr.Stray[StrayRedo] == 0) return;
 
             int from = c * cfg.Chunk;
             int to = from + cfg.Chunk;
@@ -500,12 +599,15 @@ namespace Evosim.Farm.Gpu.Sgl
                     int n = gl.Links[g];
                     for (int l = 0; l < n; l++)
                     {
-                        sum += s.LR[g * LinkStride + l];
+                        int row = g * LinkStride + l;
+                        if (!FiniteSphere(s.LCx[row], s.LCy[row], s.LCz[row], s.LR[row])) continue;
+                        sum += s.LR[row];
                         active++;
                     }
                 }
                 else
                 {
+                    if (!FiniteSphere(s.Cx[g], s.Cy[g], s.Cz[g], s.R[g])) continue;
                     sum += s.R[g];
                     active++;
                 }
@@ -515,9 +617,91 @@ namespace Evosim.Farm.Gpu.Sgl
             gr.PartialN[c] = active;
         }
 
+        /// <summary>The bodies one chunk of the mean holds: the runner's chunk, and MeanGroups' shared rows.</summary>
+        public const int MeanGroupBodies = 256;
+
+        /// <summary>
+        /// <see cref="MeanChunks"/>' sums with the reads spread over a group, one group a chunk
+        /// (card-next-r57.md, part 5). The chunk thread waited on every read in turn; here the group's
+        /// threads read the chunk's bodies, a stride of the group apart, and put each link's radius in
+        /// shared memory in the body's own order, NaN for a sphere the chunk thread skips (a finite
+        /// sphere's radius never is). After the barrier the group's first thread adds them in rank
+        /// order and link order, so each partial sum is the chunk thread's additions of the same
+        /// values in the same order: the same bits at any group size.
+        /// </summary>
+        public static void MeanGroups(SSph s, SGlob gl, SGrid gr, SCfg cfg)
+        {
+            var radius = SharedMemory.Allocate<Real>(MeanGroupBodies * LinkStride);
+            var count = SharedMemory.Allocate<int>(MeanGroupBodies);
+
+            // Both tests hold for the whole group, so no thread leaves before a barrier another waits at.
+            int c = Grid.IdxX;
+            if (c >= cfg.Chunks) return;
+            if (cfg.Redo != 0 && gr.Stray[StrayRedo] == 0) return;
+
+            int from = c * cfg.Chunk;
+            int bodies = cfg.Count - from;
+            if (bodies > cfg.Chunk) bodies = cfg.Chunk;
+
+            for (int b = Group.IdxX; b < bodies; b += Group.DimX)
+            {
+                int n = 0;
+                int g = gl.RankToSlot[from + b];
+                if (g >= 0 && s.Active[g] != 0)   // -1: refused for its class, never on the card
+                {
+                    if (cfg.PerPart != 0)
+                    {
+                        n = gl.Links[g];
+                        for (int l = 0; l < n; l++)
+                        {
+                            int row = g * LinkStride + l;
+                            radius[b * LinkStride + l] =
+                                FiniteSphere(s.LCx[row], s.LCy[row], s.LCz[row], s.LR[row]) ? s.LR[row] : Real.NaN;
+                        }
+                    }
+                    else
+                    {
+                        n = 1;
+                        radius[b * LinkStride] = FiniteSphere(s.Cx[g], s.Cy[g], s.Cz[g], s.R[g]) ? s.R[g] : Real.NaN;
+                    }
+                }
+
+                count[b] = n;
+            }
+
+            Group.Barrier();
+            if (Group.IdxX != 0) return;
+
+            Real sum = 0;
+            int active = 0;
+            for (int b = 0; b < bodies; b++)
+            {
+                int n = count[b];
+                for (int l = 0; l < n; l++)
+                {
+                    Real r = radius[b * LinkStride + l];
+                    if (r != r) continue;
+                    sum += r;
+                    active++;
+                }
+            }
+
+            gr.Partial[c] = sum;
+            gr.PartialN[c] = active;
+        }
+
+        /// <summary>A build's giants start empty: run by whichever mean kernel the build takes, before Ranges.</summary>
+        private static void ResetGiants(SGrid gr)
+        {
+            gr.Giant[0] = 0;
+            for (int k = 0; k < GiantCap; k++) gr.GiantN[k] = 0;
+        }
+
         public static void MeanCombine(Index1D index, SGrid gr, SCfg cfg)
         {
             if (index.X != 0) return;
+            if (cfg.Redo != 0 && gr.Stray[StrayRedo] == 0) return;
+            ResetGiants(gr);
 
             Real sum = 0;
             int active = 0;
@@ -543,6 +727,8 @@ namespace Evosim.Farm.Gpu.Sgl
             int row = index.X;
             int R = cfg.Rows;
             if (row >= R) return;
+            if (cfg.Redo != 0 && gr.Stray[StrayRedo] == 0) return;
+            gr.IsGiant[row] = 0;
 
             int g = cfg.PerPart != 0 ? row / LinkStride : row;
             int l = cfg.PerPart != 0 ? row - g * LinkStride : 0;
@@ -569,6 +755,18 @@ namespace Evosim.Farm.Gpu.Sgl
                 cx = s.Cx[g]; cy = s.Cy[g]; cz = s.Cz[g];
             }
 
+            // Contacts.OutOfReach: a sphere past the grid's reach, or not a number, is entered
+            // nowhere and marked for LoseStrays, the body's lowest straying link winning.
+            if (OutOfReach(cx, cy, cz, r, cell))
+            {
+                gr.Lo[row] = 1; gr.Hi[row] = 0;
+                gr.Lo[R + row] = 1; gr.Hi[R + row] = 0;
+                gr.Lo[2 * R + row] = 1; gr.Hi[2 * R + row] = 0;
+                Atomic.Max(ref gl.StrayCode[g], cfg.PerPart != 0 ? LinkStride - l : LinkStride + 1);
+                Atomic.Add(ref gr.Stray[cfg.Redo != 0 ? StrayLeft : StrayFound], 1);
+                return;
+            }
+
             int lx = Floor((cx - r) / cell), hx = Floor((cx + r) / cell);
             int ly = Floor((cy - r) / cell), hy = Floor((cy + r) / cell);
             int lz = Floor((cz - r) / cell), hz = Floor((cz + r) / cell);
@@ -577,12 +775,108 @@ namespace Evosim.Farm.Gpu.Sgl
             gr.Lo[R + row] = ly; gr.Hi[R + row] = hy;
             gr.Lo[2 * R + row] = lz; gr.Hi[2 * R + row] = hz;
 
+            // A giant enters no bucket: GiantLists hands it its rows, and every query tests it.
+            long cells = (long)(hx - lx + 1) * (hy - ly + 1) * (hz - lz + 1);
+            Atomic.Max(ref gl.Overflow[WatchCells], (cells << 24) | (long)(0xFFFFFF - gl.Rank[g]));
+            if (cells >= cfg.GiantCells)
+            {
+                int place = Atomic.Add(ref gr.Giant[0], 1);
+                if (place < GiantCap)
+                {
+                    gr.Giant[1 + place] = row;
+                    gr.IsGiant[row] = place + 1;
+                    return;
+                }
+            }
+
             for (int x = lx; x <= hx; x++)
             for (int y = ly; y <= hy; y++)
             for (int z = lz; z <= hz; z++)
             {
                 Atomic.Add(ref gr.Counts[Hash(x, y, z) & cfg.Mask], 1);
             }
+        }
+
+        /// <summary>
+        /// DynamicsWorld.LoseStrays, a global slot a thread: a body Ranges marked is recorded, by
+        /// its sphere as Ranges read it and the step, for the host to hand the farm, and its
+        /// committed spheres are emptied as Creature.MarkLost and CommitContactSphere empty them:
+        /// the centres kept, the radii and the place in the grid lost. Nothing when the counter it
+        /// reads is 0, which is every step in which no sphere strayed. Under <c>cfg.Redo</c> it
+        /// takes what the grid's second build found.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// It does not write <c>Alive</c>. Under concurrent streams the water and the fluid read
+        /// <c>Alive</c> on the class streams while this runs on the default one, so a write here
+        /// would decide by timing whether they sample the body. The class kernel marks the body
+        /// dead at its top instead (StrayCode set), after the streams join.
+        /// </para>
+        /// <para>
+        /// So the water and the fluid sample a stray once, in the step it strays, where the CPU
+        /// samples nothing. That is safe. Neither reads memory at an index made from a position:
+        /// the current, the bed and the reefs are sums over modes, terms and reefs with fixed
+        /// counts (StreamsUnit, StreamsSlopedUnit, BedSample, ReefFade). Each writes only the
+        /// body's own rows (s.Water, s.WaterAcc, gl.LinkFluid, gl.LinkLimited at the body's slot),
+        /// which only the class kernel's own step reads, and a dead body's returns before it. They
+        /// book nothing: the drive's work and the ledgers' sums are added in the class kernel's
+        /// step, and the digest hashes poses, spins and velocities, which nothing here writes.
+        /// ContactLinks skips a body with a stray record.
+        /// </para>
+        /// </remarks>
+        public static void LoseStrays(Index1D index, SSph s, SGlob gl, SGrid gr, SCfg cfg)
+        {
+            int g = index.X;
+            if (g >= cfg.GUsed) return;
+            if (gr.Stray[cfg.Redo != 0 ? StrayLeft : StrayFound] == 0) return;
+
+            // Recorded already (this step's first build, or an earlier step), or not a stray.
+            int code = gl.StrayCode[g];
+            if (code == 0 || gl.Alive[g] == 0 || gl.StrayStep[g] != 0) return;
+
+            int l = code > LinkStride ? -1 : LinkStride - code;
+            Real cx, cy, cz, r;
+            if (l < 0)
+            {
+                cx = s.Cx[g]; cy = s.Cy[g]; cz = s.Cz[g]; r = s.R[g];
+            }
+            else
+            {
+                int row = g * LinkStride + l;
+                cx = s.LCx[row]; cy = s.LCy[row]; cz = s.LCz[row]; r = s.LR[row];
+            }
+
+            gl.StrayAt[4 * g] = cx;
+            gl.StrayAt[4 * g + 1] = cy;
+            gl.StrayAt[4 * g + 2] = cz;
+            gl.StrayAt[4 * g + 3] = r;
+            gl.StrayStep[g] = cfg.TraceStep;
+
+            s.R[g] = 0;
+            s.Active[g] = 0;
+
+            if (cfg.PerPart != 0)
+            {
+                int n = gl.Links[g];
+                for (int k = 0; k < n; k++) s.LR[g * LinkStride + k] = 0;
+            }
+        }
+
+        /// <summary>The grid is built again when the first build found a stray, and not otherwise.</summary>
+        public static void Rearm(Index1D index, SGrid gr, SCfg cfg)
+        {
+            if (index.X != 0) return;
+            gr.Stray[StrayRedo] = gr.Stray[StrayFound];
+            gr.Stray[StrayFound] = 0;
+        }
+
+        /// <summary>The histogram emptied for the grid's second build, when there is one.</summary>
+        public static void ClearCounts(Index1D index, SGrid gr, SCfg cfg)
+        {
+            int i = index.X;
+            if (i > cfg.Buckets) return;
+            if (gr.Stray[StrayRedo] == 0) return;
+            gr.Counts[i] = 0;
         }
 
         // The exclusive prefix sum of the bucket counts, in three passes: each tile's total, the
@@ -716,6 +1010,7 @@ namespace Evosim.Farm.Gpu.Sgl
             int row = index.X;
             int R = cfg.Rows;
             if (row >= R) return;
+            if (gr.IsGiant[row] != 0) return;
 
             int lx = gr.Lo[row], hx = gr.Hi[row];
             int ly = gr.Lo[R + row], hy = gr.Hi[R + row];
@@ -728,6 +1023,34 @@ namespace Evosim.Farm.Gpu.Sgl
                 int slot = Atomic.Add(ref gr.Cursor[Hash(x, y, z) & cfg.Mask], 1);
                 if (slot < cfg.EntryCap) gr.Items[slot] = row;
                 else Atomic.Add(ref gl.Overflow[OverflowEntries], 1L);
+            }
+        }
+
+        /// <summary>
+        /// After Scatter, a row a thread: each giant whose cell box meets this row's, the row into its
+        /// list (the order is the atomics' race; the query sorts). Nothing when no row is a giant.
+        /// </summary>
+        public static void GiantLists(Index1D index, SGrid gr, SCfg cfg)
+        {
+            int row = index.X;
+            int R = cfg.Rows;
+            if (row >= R) return;
+
+            int n = gr.Giant[0];
+            if (n == 0) return;
+            if (n > GiantCap) n = GiantCap;
+
+            int lx = gr.Lo[row], hx = gr.Hi[row];
+            if (lx > hx) return;
+            int ly = gr.Lo[R + row], hy = gr.Hi[R + row];
+            int lz = gr.Lo[2 * R + row], hz = gr.Hi[2 * R + row];
+
+            for (int k = 0; k < n; k++)
+            {
+                int giant = gr.Giant[1 + k];
+                if (!BoxesMeet(lx, hx, ly, hy, lz, hz, giant, gr, R)) continue;
+                int slot = Atomic.Add(ref gr.GiantN[k], 1);
+                if (slot < GiantListCap) gr.GiantList[k * GiantListCap + slot] = row;
             }
         }
 
@@ -820,6 +1143,10 @@ namespace Evosim.Farm.Gpu.Sgl
             // DynamicsWorld.StepOne, `if (!body.Alive) return;`. The commit copies the pending
             // spheres, which a lost body stopped refreshing; with the commit a swap of two sets,
             // the pending set is handed the committed values so that the swap is the copy.
+            // A body the reach guard recorded this step (LoseStrays) dies here, after the streams
+            // join, rather than in LoseStrays, beside which the water and the fluid read Alive.
+            if (gl.Alive[g] != 0 && gl.StrayCode[g] != 0) gl.Alive[g] = 0;
+
             if (gl.Alive[g] == 0)
             {
                 KeepSpheres(g, links, cs, ps, cfg);
@@ -864,6 +1191,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
             var ballRot = new Real[4 * MaxLinks];
             var position = new Real[3 * MaxLinks];
+            var posErr = new Real[3 * MaxLinks];
             var rotation = new Real[4 * MaxLinks];
             var rotationMatrix = new Real[9 * MaxLinks];
             var spin = new Real[3 * MaxLinks];
@@ -896,9 +1224,12 @@ namespace Evosim.Farm.Gpu.Sgl
             var sDepth = new float[MaxLinks];
             var sUp = new float[MaxLinks];
             var sChem = new float[MaxLinks];
+            var sScent = new float[MaxLinks];
+            var sLeaf = new float[4 * MaxLinks];   // a part's leaf strength, then its direction's three
             var sFlow = new float[3 * MaxLinks];
             var sAngle = new float[MaxDof];
             var sRate = new float[MaxDof];
+            var sDrive = new float[3 * MaxDof];
 
             var six = new Real[42];
             var sol = new Real[6];
@@ -909,76 +1240,214 @@ namespace Evosim.Farm.Gpu.Sgl
             // this step writing them (a channel whose mask bit is clear) read 0, never garbage.
             for (int k = 0; k < MaxLinks; k++)
             {
-                sDepth[k] = 0f; sUp[k] = 0f; sChem[k] = 0f;
+                sDepth[k] = 0f; sUp[k] = 0f; sChem[k] = 0f; sScent[k] = 0f;
+                sLeaf[4 * k] = 0f; sLeaf[4 * k + 1] = 0f; sLeaf[4 * k + 2] = 0f; sLeaf[4 * k + 3] = 0f;
                 sFlow[3 * k] = 0f; sFlow[3 * k + 1] = 0f; sFlow[3 * k + 2] = 0f;
                 driveTq[3 * k] = 0; driveTq[3 * k + 1] = 0; driveTq[3 * k + 2] = 0;
             }
-            for (int k = 0; k < MaxDof; k++) { sAngle[k] = 0f; sRate[k] = 0f; }
+            for (int k = 0; k < MaxDof; k++)
+            {
+                sAngle[k] = 0f; sRate[k] = 0f;
+                sDrive[3 * k] = 0f; sDrive[3 * k + 1] = 0f; sDrive[3 * k + 2] = 0f;
+            }
 
             // ---- load ------------------------------------------------------------------------
+            // Every read of a link before any of its writes (card-next-r57.md, part 6): the reads are
+            // then independent of the stores to the thread's arrays in the PTX itself, so the card can
+            // have them all in flight at once rather than one memory latency a value. The same values
+            // land in the same places as the loop over k did.
             for (int l = 0; l < links; l++)
             {
                 int at = l * N + i;
-                parent[l] = t.Parent[at];
-                dofCount[l] = t.DofCount[at];
-                dofStart[l] = t.DofStart[at];
-                panelStart[l] = t.PanelStart[at];
-                thinAxis[l] = t.ThinAxis[at];
+                int a3 = 3 * l * N + i, a4 = 4 * l * N + i, a9 = 9 * l * N + i, a6 = 6 * l * N + i;
+                int parent_ = t.Parent[at];
+                int dofCount_ = t.DofCount[at];
+                int dofStart_ = t.DofStart[at];
+                int panelStart_ = t.PanelStart[at];
+                int thinAxis_ = t.ThinAxis[at];
+                Real mass_ = b.Mass[at];
+                Real lift_ = b.Lift[at];
+                Real volume_ = b.Volume[at];
+                Real smallI_ = b.SmallI[at];
+                Real reach_ = b.Reach[at];
+                Real arm_ = b.Arm[at];
+                Real inertiaLocal0 = b.Inertia[a3];
+                Real childAnchor0 = b.ChildAnchor[a3];
+                Real parentAnchor0 = b.ParentAnchor[a3];
+                Real position0 = s.Pos[a3];
+                Real spin0 = s.Spin[a3];
+                Real velocity0 = s.Vel[a3];
+                Real relVel0 = s.RelVel[a3];
+                Real water0 = s.Water[a3];
+                Real wacc0 = s.WaterAcc[a3];
+                Real inertiaLocal1 = b.Inertia[a3 + N];
+                Real childAnchor1 = b.ChildAnchor[a3 + N];
+                Real parentAnchor1 = b.ParentAnchor[a3 + N];
+                Real position1 = s.Pos[a3 + N];
+                Real spin1 = s.Spin[a3 + N];
+                Real velocity1 = s.Vel[a3 + N];
+                Real relVel1 = s.RelVel[a3 + N];
+                Real water1 = s.Water[a3 + N];
+                Real wacc1 = s.WaterAcc[a3 + N];
+                Real inertiaLocal2 = b.Inertia[a3 + 2 * N];
+                Real childAnchor2 = b.ChildAnchor[a3 + 2 * N];
+                Real parentAnchor2 = b.ParentAnchor[a3 + 2 * N];
+                Real position2 = s.Pos[a3 + 2 * N];
+                Real spin2 = s.Spin[a3 + 2 * N];
+                Real velocity2 = s.Vel[a3 + 2 * N];
+                Real relVel2 = s.RelVel[a3 + 2 * N];
+                Real water2 = s.Water[a3 + 2 * N];
+                Real wacc2 = s.WaterAcc[a3 + 2 * N];
+                Real jointFrame0 = b.JointFrame[a4];
+                Real restFrame0 = b.RestFrame[a4];
+                Real ballRot0 = s.BallRot[a4];
+                Real rotation0 = s.Rot[a4];
+                Real jointFrame1 = b.JointFrame[a4 + N];
+                Real restFrame1 = b.RestFrame[a4 + N];
+                Real ballRot1 = s.BallRot[a4 + N];
+                Real rotation1 = s.Rot[a4 + N];
+                Real jointFrame2 = b.JointFrame[a4 + 2 * N];
+                Real restFrame2 = b.RestFrame[a4 + 2 * N];
+                Real ballRot2 = s.BallRot[a4 + 2 * N];
+                Real rotation2 = s.Rot[a4 + 2 * N];
+                Real jointFrame3 = b.JointFrame[a4 + 3 * N];
+                Real restFrame3 = b.RestFrame[a4 + 3 * N];
+                Real ballRot3 = s.BallRot[a4 + 3 * N];
+                Real rotation3 = s.Rot[a4 + 3 * N];
+                Real rotationMatrix0 = s.RotM[a9];
+                Real sang0 = s.Sang[a9];
+                Real slin0 = s.Slin[a9];
+                Real rotationMatrix1 = s.RotM[a9 + N];
+                Real sang1 = s.Sang[a9 + N];
+                Real slin1 = s.Slin[a9 + N];
+                Real rotationMatrix2 = s.RotM[a9 + 2 * N];
+                Real sang2 = s.Sang[a9 + 2 * N];
+                Real slin2 = s.Slin[a9 + 2 * N];
+                Real rotationMatrix3 = s.RotM[a9 + 3 * N];
+                Real sang3 = s.Sang[a9 + 3 * N];
+                Real slin3 = s.Slin[a9 + 3 * N];
+                Real rotationMatrix4 = s.RotM[a9 + 4 * N];
+                Real sang4 = s.Sang[a9 + 4 * N];
+                Real slin4 = s.Slin[a9 + 4 * N];
+                Real rotationMatrix5 = s.RotM[a9 + 5 * N];
+                Real sang5 = s.Sang[a9 + 5 * N];
+                Real slin5 = s.Slin[a9 + 5 * N];
+                Real rotationMatrix6 = s.RotM[a9 + 6 * N];
+                Real sang6 = s.Sang[a9 + 6 * N];
+                Real slin6 = s.Slin[a9 + 6 * N];
+                Real rotationMatrix7 = s.RotM[a9 + 7 * N];
+                Real sang7 = s.Sang[a9 + 7 * N];
+                Real slin7 = s.Slin[a9 + 7 * N];
+                Real rotationMatrix8 = s.RotM[a9 + 8 * N];
+                Real sang8 = s.Sang[a9 + 8 * N];
+                Real slin8 = s.Slin[a9 + 8 * N];
+                Real cbias0 = s.Cbias[a6];
+                Real cbias1 = s.Cbias[a6 + N];
+                Real cbias2 = s.Cbias[a6 + 2 * N];
+                Real cbias3 = s.Cbias[a6 + 3 * N];
+                Real cbias4 = s.Cbias[a6 + 4 * N];
+                Real cbias5 = s.Cbias[a6 + 5 * N];
 
-                mass[l] = b.Mass[at];
-                lift[l] = b.Lift[at];
-                volume[l] = b.Volume[at];
-                smallI[l] = b.SmallI[at];
-                reach[l] = b.Reach[at];
-                arm[l] = b.Arm[at];
-
-                for (int k = 0; k < 3; k++)
-                {
-                    int a3 = (3 * l + k) * N + i;
-                    inertiaLocal[3 * l + k] = b.Inertia[a3];
-                    childAnchor[3 * l + k] = b.ChildAnchor[a3];
-                    parentAnchor[3 * l + k] = b.ParentAnchor[a3];
-                    position[3 * l + k] = s.Pos[a3];
-                    spin[3 * l + k] = s.Spin[a3];
-                    velocity[3 * l + k] = s.Vel[a3];
-                    relVel[3 * l + k] = s.RelVel[a3];
-                    water[3 * l + k] = s.Water[a3];
-                    wacc[3 * l + k] = s.WaterAcc[a3];
-                }
-
-                for (int k = 0; k < 4; k++)
-                {
-                    int a4 = (4 * l + k) * N + i;
-                    jointFrame[4 * l + k] = b.JointFrame[a4];
-                    restFrame[4 * l + k] = b.RestFrame[a4];
-                    ballRot[4 * l + k] = s.BallRot[a4];
-                    rotation[4 * l + k] = s.Rot[a4];
-                }
-
-                for (int k = 0; k < 9; k++)
-                {
-                    int a9 = (9 * l + k) * N + i;
-                    rotationMatrix[9 * l + k] = s.RotM[a9];
-                    sang[9 * l + k] = s.Sang[a9];
-                    slin[9 * l + k] = s.Slin[a9];
-                }
-
-                for (int k = 0; k < 6; k++) cbias[6 * l + k] = s.Cbias[(6 * l + k) * N + i];
+                parent[l] = parent_;
+                dofCount[l] = dofCount_;
+                dofStart[l] = dofStart_;
+                panelStart[l] = panelStart_;
+                thinAxis[l] = thinAxis_;
+                mass[l] = mass_;
+                lift[l] = lift_;
+                volume[l] = volume_;
+                smallI[l] = smallI_;
+                reach[l] = reach_;
+                arm[l] = arm_;
+                inertiaLocal[3 * l] = inertiaLocal0;
+                childAnchor[3 * l] = childAnchor0;
+                parentAnchor[3 * l] = parentAnchor0;
+                position[3 * l] = position0;
+                spin[3 * l] = spin0;
+                velocity[3 * l] = velocity0;
+                relVel[3 * l] = relVel0;
+                water[3 * l] = water0;
+                wacc[3 * l] = wacc0;
+                inertiaLocal[3 * l + 1] = inertiaLocal1;
+                childAnchor[3 * l + 1] = childAnchor1;
+                parentAnchor[3 * l + 1] = parentAnchor1;
+                position[3 * l + 1] = position1;
+                spin[3 * l + 1] = spin1;
+                velocity[3 * l + 1] = velocity1;
+                relVel[3 * l + 1] = relVel1;
+                water[3 * l + 1] = water1;
+                wacc[3 * l + 1] = wacc1;
+                inertiaLocal[3 * l + 2] = inertiaLocal2;
+                childAnchor[3 * l + 2] = childAnchor2;
+                parentAnchor[3 * l + 2] = parentAnchor2;
+                position[3 * l + 2] = position2;
+                spin[3 * l + 2] = spin2;
+                velocity[3 * l + 2] = velocity2;
+                relVel[3 * l + 2] = relVel2;
+                water[3 * l + 2] = water2;
+                wacc[3 * l + 2] = wacc2;
+                jointFrame[4 * l] = jointFrame0;
+                restFrame[4 * l] = restFrame0;
+                ballRot[4 * l] = ballRot0;
+                rotation[4 * l] = rotation0;
+                jointFrame[4 * l + 1] = jointFrame1;
+                restFrame[4 * l + 1] = restFrame1;
+                ballRot[4 * l + 1] = ballRot1;
+                rotation[4 * l + 1] = rotation1;
+                jointFrame[4 * l + 2] = jointFrame2;
+                restFrame[4 * l + 2] = restFrame2;
+                ballRot[4 * l + 2] = ballRot2;
+                rotation[4 * l + 2] = rotation2;
+                jointFrame[4 * l + 3] = jointFrame3;
+                restFrame[4 * l + 3] = restFrame3;
+                ballRot[4 * l + 3] = ballRot3;
+                rotation[4 * l + 3] = rotation3;
+                rotationMatrix[9 * l] = rotationMatrix0;
+                sang[9 * l] = sang0;
+                slin[9 * l] = slin0;
+                rotationMatrix[9 * l + 1] = rotationMatrix1;
+                sang[9 * l + 1] = sang1;
+                slin[9 * l + 1] = slin1;
+                rotationMatrix[9 * l + 2] = rotationMatrix2;
+                sang[9 * l + 2] = sang2;
+                slin[9 * l + 2] = slin2;
+                rotationMatrix[9 * l + 3] = rotationMatrix3;
+                sang[9 * l + 3] = sang3;
+                slin[9 * l + 3] = slin3;
+                rotationMatrix[9 * l + 4] = rotationMatrix4;
+                sang[9 * l + 4] = sang4;
+                slin[9 * l + 4] = slin4;
+                rotationMatrix[9 * l + 5] = rotationMatrix5;
+                sang[9 * l + 5] = sang5;
+                slin[9 * l + 5] = slin5;
+                rotationMatrix[9 * l + 6] = rotationMatrix6;
+                sang[9 * l + 6] = sang6;
+                slin[9 * l + 6] = slin6;
+                rotationMatrix[9 * l + 7] = rotationMatrix7;
+                sang[9 * l + 7] = sang7;
+                slin[9 * l + 7] = slin7;
+                rotationMatrix[9 * l + 8] = rotationMatrix8;
+                sang[9 * l + 8] = sang8;
+                slin[9 * l + 8] = slin8;
+                cbias[6 * l] = cbias0;
+                cbias[6 * l + 1] = cbias1;
+                cbias[6 * l + 2] = cbias2;
+                cbias[6 * l + 3] = cbias3;
+                cbias[6 * l + 4] = cbias4;
+                cbias[6 * l + 5] = cbias5;
             }
             panelStart[links] = t.PanelStart[links * N + i];
 
             for (int d = 0; d < dof; d++)
             {
                 int at = d * N + i;
-                limitLo[d] = b.LimitLo[at];
-                limitHi[d] = b.LimitHi[at];
-                limitStiff[d] = b.LimitStiff[at];
-                limitDamp[d] = b.LimitDamp[at];
-                q[d] = s.Q[at];
-                qd[d] = s.Qd[at];
+                Real lo = b.LimitLo[at], hi = b.LimitHi[at], stiff = b.LimitStiff[at], damp = b.LimitDamp[at];
+                Real qv = s.Q[at], qdv = s.Qd[at];
+                limitLo[d] = lo; limitHi[d] = hi; limitStiff[d] = stiff; limitDamp[d] = damp;
+                q[d] = qv; qd[d] = qdv;
             }
-
             var basePosition = new V3(s.BasePos[i], s.BasePos[N + i], s.BasePos[2 * N + i]);
+            var baseCarry = new V3(s.BaseCarry[i], s.BaseCarry[N + i], s.BaseCarry[2 * N + i]);
             var baseRotation = new Q4(s.BaseRot[i], s.BaseRot[N + i], s.BaseRot[2 * N + i], s.BaseRot[3 * N + i]);
 
             Real excess = b.Excess[i];
@@ -1003,20 +1472,87 @@ namespace Evosim.Farm.Gpu.Sgl
             bool readsFlow = (mask & (1 << SFlow)) != 0;
             bool readsChemical = (mask & (1 << SChemical)) != 0;
             bool readsEnergy = (mask & (1 << SEnergy)) != 0;
+            bool readsScent = (mask & (1 << SScent)) != 0;
+            bool readsLeafDir = (mask & (1 << SLeafDir)) != 0;
+            bool readsLeaf = (mask & (1 << SLeaf)) != 0 || readsLeafDir;
+            bool readsDrive = (mask & (1 << SStroke)) != 0 || (mask & (1 << SHold)) != 0 || (mask & (1 << SRamp)) != 0;
 
             int gates = br.Gates[i];
             bool hasNutrients = (gates & 1) != 0;
             bool hasReserve = (gates & 2) != 0;
+            bool hasScent = (gates & 4) != 0;
+            bool hasLeaf = (gates & 8) != 0;
+
+            // CreatureSenses.SampleDrive: the envelope as the last step's drive left it, read before this
+            // step's drive moves it. Under the torque drive it reads 0, as sDrive was cleared.
+            if (readsDrive && cfg.BendAndPower != 0)
+            {
+                int dofLength = dof > 0 ? dof : 1;
+                for (int bl = 0; bl < links; bl++)
+                {
+                    Real partSum = position[3 * bl] + position[3 * bl + 1] + position[3 * bl + 2];
+                    if (partSum != partSum || partSum == Real.PositiveInfinity || partSum == Real.NegativeInfinity) continue;
+
+                    int n = dofCount[bl];
+                    int offset = dofStart[bl];
+                    if (n == 0 || offset < 0) continue;
+
+                    double hold = b.HoldGene[bl * N + i];
+                    for (int d = 0; d < n; d++)
+                    {
+                        int at = offset + d;
+                        if (at >= dofLength) break;
+
+                        int e = at * N + i;
+                        double stroke = dr.EPower[e];
+                        sDrive[3 * at] = Clamp((float)stroke);
+                        sDrive[3 * at + 1] = hold > 0 ? (float)MaxD(0.0, MinD(1.0, dr.EHoldLeft[e] / hold)) : 0f;
+                        sDrive[3 * at + 2] = Clamp((float)(dr.EPowerTarget[e] - stroke));
+                    }
+                }
+            }
 
             float energy = 0f;
+            bool lost = false;
             Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi,
                    br, w, cfg, readsDepth, readsUp, readsJoint, readsFlow, readsChemical && hasNutrients,
-                   readsEnergy && hasReserve, sDepth, sUp, sChem, sFlow, sAngle, sRate, ref energy);
+                   readsScent && hasScent, readsEnergy && hasReserve, readsLeaf && hasLeaf, readsLeafDir,
+                   sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, sLeaf, ref energy, ref lost);
+
+            if (lost)
+            {
+                // The chemical sense's walk gave up on this body (TankCellAt): far beyond the glass,
+                // or at a distance that is not finite. It is left unstepped from here, its state as
+                // the step found it, and lost as the finiteness check below loses a body; the
+                // farm's glass guard kills it at its next check.
+                gl.Alive[g] = 0;
+                KeepSpheres(g, links, cs, ps, cfg);
+                ps.R[g] = 0;
+                ps.Active[g] = 0;
+
+                if (cfg.PerPart != 0)
+                {
+                    for (int l = 0; l < links; l++) ps.LR[g * LinkStride + l] = 0;
+                }
+
+                return;
+            }
+
+            // The touch of the rock as the last step's contact pass left it, a bit a link, read before
+            // this step's touch is kept (KeepTouch), as CreatureSenses.Sample reads it.
+            int rock = 0;
+            if (cfg.RockTouch != 0)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    if (gl.RockTouched[g * LinkStride + l] != 0) rock |= 1 << l;
+                }
+            }
 
             // The brain reads the two gates itself (SensorRead): a body with no field or no
             // reserve source reads the standing-in constant on those channels.
             BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
-                      sDepth, sUp, sChem, sFlow, sAngle, sRate, energy);
+                      sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
 
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 2, ref clk);
@@ -1027,7 +1563,106 @@ namespace Evosim.Farm.Gpu.Sgl
 
             // ---- 4. drive (EffectorDrive.Drive) ----------------------------------------------
             bool drivePending = false;
-            if (dof != 0)
+            if (dof != 0 && cfg.BendAndPower != 0)
+            {
+                // EffectorDrive.DriveBendAndPower: each degree of freedom's power and bend through
+                // the joint's threshold and envelope, in double as the CPU keeps them; the power
+                // stays in EPower for the fluid's push below, and a critically damped muscle holds
+                // the bend, capped by the part's power.
+                int sigLen = t.SigLen[i];
+                float powerScale = b.PowerScale[i];
+                double stepD = cfg.DtD;
+                double poseOmega = cfg.PoseOmega;
+
+                long limited = 0;
+
+                for (int bl = 1; bl < links; bl++)
+                {
+                    int n = dofCount[bl];
+                    if (n == 0) continue;
+
+                    int offset = dofStart[bl];
+                    int gene = bl * N + i;
+                    double threshold = b.Threshold[gene];
+                    double reaction = b.Reaction[gene];
+                    double holdGene = b.HoldGene[gene];
+                    double release = b.Release[gene];
+                    Q4 frame = Q4.Read(jointFrame, 4 * bl);
+
+                    double allowed = cfg.LimitDrive != 0 ? (double)(smallI[bl] * cfg.SpinBudget) : double.MaxValue;
+                    double cap = MinD(allowed, (double)b.LinkPower[gene] * powerScale);
+                    double inertia = smallI[bl];
+
+                    V3 torque = V3.Zero;
+
+                    for (int d = 0; d < n; d++)
+                    {
+                        int idx = offset + d;
+                        int e = idx * N + i;
+
+                        float v = idx < sigLen ? dr.Signal[e] : 0f;
+                        double level = MaxF(0f, MinF(1f, v));
+                        double power = level <= threshold ? 0.0 : MinD(1.0, (level - threshold) / (1.0 - threshold));
+                        float wv = idx < sigLen ? dr.Bend[e] : 0f;
+                        double bend = (MaxF(-1f, MinF(1f, wv)) + 1.0) * 0.5;
+
+                        double pw = dr.EPower[e], bd = dr.EBend[e];
+                        double pt = dr.EPowerTarget[e], bt = dr.EBendTarget[e];
+                        double pr = dr.EPowerRate[e], br8 = dr.EBendRate[e];
+                        double holdLeft = dr.EHoldLeft[e];
+
+                        if (holdLeft > 0)
+                        {
+                            holdLeft -= stepD;
+                        }
+                        else if (AbsD(power - pt) > 0.01 || AbsD(bend - bt) > 0.01)
+                        {
+                            bool fromRest = pw == 0 && pt == 0;
+                            double ramp = fromRest ? reaction : release;
+                            if (ramp < stepD) ramp = stepD;
+                            pt = power;
+                            bt = bend;
+                            pr = AbsD(power - pw) / ramp;
+                            br8 = AbsD(bend - bd) / ramp;
+                            holdLeft = holdGene;
+                        }
+
+                        pw = Toward(pw, pt, pr * stepD);
+                        bd = Toward(bd, bt, br8 * stepD);
+
+                        dr.EPower[e] = pw; dr.EBend[e] = bd;
+                        dr.EPowerTarget[e] = pt; dr.EBendTarget[e] = bt;
+                        dr.EPowerRate[e] = pr; dr.EBendRate[e] = br8;
+                        dr.EHoldLeft[e] = holdLeft;
+
+                        if (poseOmega <= 0 || inertia <= 0) continue;
+                        double lo = limitLo[idx], hi = limitHi[idx];
+                        double target = lo + bd * (hi - lo);
+                        double magnitude = inertia * poseOmega * (poseOmega * (target - q[idx]) - 2.0 * qd[idx]);
+                        if (magnitude > cap) { magnitude = cap; limited++; }
+                        else if (magnitude < -cap) { magnitude = -cap; limited++; }
+
+                        torque = torque + frame.Rotate(V3.Axis(d)) * (Real)magnitude;
+                    }
+
+                    M3 rot = M3.Read(rotationMatrix, 9 * bl);
+                    V3 world = rot * torque;
+
+                    s.Applied[(3 * bl) * N + i] = world.X;
+                    s.Applied[(3 * bl + 1) * N + i] = world.Y;
+                    s.Applied[(3 * bl + 2) * N + i] = world.Z;
+
+                    V3.Write(driveTq, 3 * bl, world);
+                    V3.Write(preRelSpin, 3 * bl, V3.Read(spin, 3 * bl) - V3.Read(spin, 3 * parent[bl]));
+                    drivePending = true;
+
+                    V3.Add(fext, 6 * bl, world);
+                    V3.Add(fext, 6 * parent[bl], -world);
+                }
+
+                if (limited != 0) dr.DriveLimited[i] = dr.DriveLimited[i] + limited;
+            }
+            else if (dof != 0)
             {
                 int sigLen = t.SigLen[i];
                 int cursor = dr.Cursor[i];
@@ -1112,6 +1747,7 @@ namespace Evosim.Farm.Gpu.Sgl
             // link order, at the place the CPU applies them.
             long dragLimited = 0;
             int fluidRows = cfg.LinkRows;
+            bool powered = cfg.BendAndPower != 0 && cfg.LimbPush > 0 && cfg.PushOmega > 0;
             for (int fl = 0; fl < links; fl++)
             {
                 int frow = g * LinkStride + fl;
@@ -1125,8 +1761,52 @@ namespace Evosim.Farm.Gpu.Sgl
                 }
                 V3.Add(fext, 6 * fl, new V3(gl.LinkFluid[9 * fluidRows + frow], gl.LinkFluid[10 * fluidRows + frow],
                                             gl.LinkFluid[11 * fluidRows + frow]));
-                V3.Add(fext, 6 * fl + 3, new V3(gl.LinkFluid[12 * fluidRows + frow], gl.LinkFluid[13 * fluidRows + frow],
-                                                gl.LinkFluid[14 * fluidRows + frow]));
+                V3 linkForce = new V3(gl.LinkFluid[12 * fluidRows + frow], gl.LinkFluid[13 * fluidRows + frow],
+                                      gl.LinkFluid[14 * fluidRows + frow]);
+
+                // Under the bend-and-power drive FluidLinks left the force before the power's push
+                // and the buoyancy term: the push from this step's stroke, its work booked as
+                // Fluid.Apply books it, then the buoyancy where the CPU added it.
+                if (powered)
+                {
+                    if (parent[fl] >= 0 && position[3 * fl + 1] <= 0 && dofCount[fl] > 0)
+                    {
+                        M3 frot = M3.Read(rotationMatrix, 9 * fl);
+                        V3 toOrigin = frot * (-V3.Read(childAnchor, 3 * fl));
+                        Real linkReach = toOrigin.Magnitude;
+                        if (linkReach > 0)
+                        {
+                            V3 axis = toOrigin * ((Real)1.0 / linkReach);
+                            Q4 fframe = Q4.Read(jointFrame, 4 * fl);
+                            int fstart = dofStart[fl];
+                            Real omega = cfg.PushOmega;
+                            Real swing2 = 0;
+                            for (int d = 0; d < dofCount[fl]; d++)
+                            {
+                                Real sv = (Real)dr.EPower[(fstart + d) * N + i];
+                                if (sv <= 0) continue;
+                                V3 dofAxis = frot * fframe.Rotate(V3.Axis(d));
+                                Real along = V3.Dot(dofAxis, axis);
+                                swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
+                            }
+
+                            if (swing2 > 0)
+                            {
+                                Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
+                                Real push = cfg.LimbPush * addedMass * linkReach * swing2;
+                                linkForce = linkForce + axis * (-push);
+                                dr.Work[i] = dr.Work[i] + (double)(push * linkReach * System.MathF.Sqrt(swing2)) * cfg.DtD;
+                            }
+                        }
+                    }
+
+                    if (gl.LinkFluid[16 * fluidRows + frow] != 0)
+                    {
+                        linkForce = linkForce + new V3(0, gl.LinkFluid[15 * fluidRows + frow], 0);
+                    }
+                }
+
+                V3.Add(fext, 6 * fl + 3, linkForce);
                 dragLimited += gl.LinkLimited[frow];
             }
             if (dragLimited != 0) dr.DragLimited[i] = dr.DragLimited[i] + dragLimited;
@@ -1138,6 +1818,12 @@ namespace Evosim.Farm.Gpu.Sgl
             if (cfg.PerPart != 0)
             {
                 ContactsPerPartStaged(g, links, fext, cand, cs, gl, gr, cfg);
+                if (cfg.RockTouch != 0) KeepTouch(g, links, gl, cfg);
+                if (cfg.Anchoring != 0)
+                {
+                    Grip(g, links, position, velocity, spin, rotationMatrix, mass, smallI, fext,
+                         hasReserve, br.Reserve[i], cs, gl, cfg);
+                }
             }
             else
             {
@@ -1159,7 +1845,7 @@ namespace Evosim.Farm.Gpu.Sgl
                     dinv, ubar, tau, sang, slin, cbias, position, six, sol, residual);
 
             Integrate(links, dofCount, dofStart, tau, q, qd, ballRot, acc, spin, velocity,
-                      ref basePosition, ref baseRotation, cfg.Dt);
+                      ref basePosition, ref baseCarry, ref baseRotation, cfg.Dt);
 
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 6, ref clk);
@@ -1167,7 +1853,7 @@ namespace Evosim.Farm.Gpu.Sgl
             // ---- 10. poses, 11. velocities ----------------------------------------------------
             Poses(links, parent, dofCount, dofStart, q, ballRot, rotation, rotationMatrix,
                   position, restFrame, jointFrame, parentAnchor, childAnchor,
-                  basePosition, baseRotation);
+                  basePosition, baseRotation, baseCarry, posErr);
             Velocities(links, parent, dofCount, dofStart, q, qd, rotation, jointFrame,
                        childAnchor, position, spin, velocity, sang, slin, cbias);
 
@@ -1245,6 +1931,9 @@ namespace Evosim.Farm.Gpu.Sgl
                     if (links == 1)
                     {
                         ps.LCx[row] = centre.X; ps.LCy[row] = centre.Y; ps.LCz[row] = centre.Z;
+                        ps.LEx[row] = CarryBase ? posErr[0] : 0;
+                        ps.LEy[row] = CarryBase ? posErr[1] : 0;
+                        ps.LEz[row] = CarryBase ? posErr[2] : 0;
                         ps.LR[row] = radius;
                         ps.LVx[row] = mean.X; ps.LVy[row] = mean.Y; ps.LVz[row] = mean.Z;
                     }
@@ -1255,6 +1944,9 @@ namespace Evosim.Farm.Gpu.Sgl
                             ps.LCx[row + l] = position[3 * l];
                             ps.LCy[row + l] = position[3 * l + 1];
                             ps.LCz[row + l] = position[3 * l + 2];
+                            ps.LEx[row + l] = CarryBase ? posErr[3 * l] : 0;
+                            ps.LEy[row + l] = CarryBase ? posErr[3 * l + 1] : 0;
+                            ps.LEz[row + l] = CarryBase ? posErr[3 * l + 2] : 0;
                             ps.LR[row + l] = reach[l];
                             ps.LVx[row + l] = velocity[3 * l];
                             ps.LVy[row + l] = velocity[3 * l + 1];
@@ -1271,51 +1963,156 @@ namespace Evosim.Farm.Gpu.Sgl
             s.BasePos[i] = basePosition.X;
             s.BasePos[N + i] = basePosition.Y;
             s.BasePos[2 * N + i] = basePosition.Z;
+            s.BaseCarry[i] = baseCarry.X;
+            s.BaseCarry[N + i] = baseCarry.Y;
+            s.BaseCarry[2 * N + i] = baseCarry.Z;
             s.BaseRot[i] = baseRotation.X;
             s.BaseRot[N + i] = baseRotation.Y;
             s.BaseRot[2 * N + i] = baseRotation.Z;
             s.BaseRot[3 * N + i] = baseRotation.W;
 
+            // Every read of a link from the thread's arrays before any of its writes, as in the load.
             for (int d = 0; d < dof; d++)
             {
                 int at = d * N + i;
-                s.Q[at] = q[d];
-                s.Qd[at] = qd[d];
-                s.Tau[at] = tau[d];
-                s.LimitImplicit[at] = limitImplicit[d];
+                Real qv = q[d], qdv = qd[d], tv = tau[d], li = limitImplicit[d];
+                s.Q[at] = qv; s.Qd[at] = qdv; s.Tau[at] = tv; s.LimitImplicit[at] = li;
             }
 
             for (int l = 0; l < links; l++)
             {
-                for (int k = 0; k < 3; k++)
-                {
-                    int a3 = (3 * l + k) * N + i;
-                    s.Pos[a3] = position[3 * l + k];
-                    s.Spin[a3] = spin[3 * l + k];
-                    s.Vel[a3] = velocity[3 * l + k];
-                    s.RelVel[a3] = relVel[3 * l + k];
-                    s.Water[a3] = water[3 * l + k];
-                    s.WaterAcc[a3] = wacc[3 * l + k];
-                }
-                for (int k = 0; k < 4; k++)
-                {
-                    int a4 = (4 * l + k) * N + i;
-                    s.BallRot[a4] = ballRot[4 * l + k];
-                    s.Rot[a4] = rotation[4 * l + k];
-                }
-                for (int k = 0; k < 9; k++)
-                {
-                    int a9 = (9 * l + k) * N + i;
-                    s.RotM[a9] = rotationMatrix[9 * l + k];
-                    s.Sang[a9] = sang[9 * l + k];
-                    s.Slin[a9] = slin[9 * l + k];
-                }
-                for (int k = 0; k < 6; k++)
-                {
-                    int a6 = (6 * l + k) * N + i;
-                    s.Cbias[a6] = cbias[6 * l + k];
-                    s.Fext[a6] = fext[6 * l + k];
-                }
+                int a3 = 3 * l * N + i, a4 = 4 * l * N + i, a9 = 9 * l * N + i, a6 = 6 * l * N + i;
+                Real position0 = position[3 * l];
+                Real spin0 = spin[3 * l];
+                Real velocity0 = velocity[3 * l];
+                Real relVel0 = relVel[3 * l];
+                Real water0 = water[3 * l];
+                Real wacc0 = wacc[3 * l];
+                Real position1 = position[3 * l + 1];
+                Real spin1 = spin[3 * l + 1];
+                Real velocity1 = velocity[3 * l + 1];
+                Real relVel1 = relVel[3 * l + 1];
+                Real water1 = water[3 * l + 1];
+                Real wacc1 = wacc[3 * l + 1];
+                Real position2 = position[3 * l + 2];
+                Real spin2 = spin[3 * l + 2];
+                Real velocity2 = velocity[3 * l + 2];
+                Real relVel2 = relVel[3 * l + 2];
+                Real water2 = water[3 * l + 2];
+                Real wacc2 = wacc[3 * l + 2];
+                Real ballRot0 = ballRot[4 * l];
+                Real rotation0 = rotation[4 * l];
+                Real ballRot1 = ballRot[4 * l + 1];
+                Real rotation1 = rotation[4 * l + 1];
+                Real ballRot2 = ballRot[4 * l + 2];
+                Real rotation2 = rotation[4 * l + 2];
+                Real ballRot3 = ballRot[4 * l + 3];
+                Real rotation3 = rotation[4 * l + 3];
+                Real rotationMatrix0 = rotationMatrix[9 * l];
+                Real sang0 = sang[9 * l];
+                Real slin0 = slin[9 * l];
+                Real rotationMatrix1 = rotationMatrix[9 * l + 1];
+                Real sang1 = sang[9 * l + 1];
+                Real slin1 = slin[9 * l + 1];
+                Real rotationMatrix2 = rotationMatrix[9 * l + 2];
+                Real sang2 = sang[9 * l + 2];
+                Real slin2 = slin[9 * l + 2];
+                Real rotationMatrix3 = rotationMatrix[9 * l + 3];
+                Real sang3 = sang[9 * l + 3];
+                Real slin3 = slin[9 * l + 3];
+                Real rotationMatrix4 = rotationMatrix[9 * l + 4];
+                Real sang4 = sang[9 * l + 4];
+                Real slin4 = slin[9 * l + 4];
+                Real rotationMatrix5 = rotationMatrix[9 * l + 5];
+                Real sang5 = sang[9 * l + 5];
+                Real slin5 = slin[9 * l + 5];
+                Real rotationMatrix6 = rotationMatrix[9 * l + 6];
+                Real sang6 = sang[9 * l + 6];
+                Real slin6 = slin[9 * l + 6];
+                Real rotationMatrix7 = rotationMatrix[9 * l + 7];
+                Real sang7 = sang[9 * l + 7];
+                Real slin7 = slin[9 * l + 7];
+                Real rotationMatrix8 = rotationMatrix[9 * l + 8];
+                Real sang8 = sang[9 * l + 8];
+                Real slin8 = slin[9 * l + 8];
+                Real cbias0 = cbias[6 * l];
+                Real fext0 = fext[6 * l];
+                Real cbias1 = cbias[6 * l + 1];
+                Real fext1 = fext[6 * l + 1];
+                Real cbias2 = cbias[6 * l + 2];
+                Real fext2 = fext[6 * l + 2];
+                Real cbias3 = cbias[6 * l + 3];
+                Real fext3 = fext[6 * l + 3];
+                Real cbias4 = cbias[6 * l + 4];
+                Real fext4 = fext[6 * l + 4];
+                Real cbias5 = cbias[6 * l + 5];
+                Real fext5 = fext[6 * l + 5];
+
+                s.Pos[a3] = position0;
+                s.Spin[a3] = spin0;
+                s.Vel[a3] = velocity0;
+                s.RelVel[a3] = relVel0;
+                s.Water[a3] = water0;
+                s.WaterAcc[a3] = wacc0;
+                s.Pos[a3 + N] = position1;
+                s.Spin[a3 + N] = spin1;
+                s.Vel[a3 + N] = velocity1;
+                s.RelVel[a3 + N] = relVel1;
+                s.Water[a3 + N] = water1;
+                s.WaterAcc[a3 + N] = wacc1;
+                s.Pos[a3 + 2 * N] = position2;
+                s.Spin[a3 + 2 * N] = spin2;
+                s.Vel[a3 + 2 * N] = velocity2;
+                s.RelVel[a3 + 2 * N] = relVel2;
+                s.Water[a3 + 2 * N] = water2;
+                s.WaterAcc[a3 + 2 * N] = wacc2;
+                s.BallRot[a4] = ballRot0;
+                s.Rot[a4] = rotation0;
+                s.BallRot[a4 + N] = ballRot1;
+                s.Rot[a4 + N] = rotation1;
+                s.BallRot[a4 + 2 * N] = ballRot2;
+                s.Rot[a4 + 2 * N] = rotation2;
+                s.BallRot[a4 + 3 * N] = ballRot3;
+                s.Rot[a4 + 3 * N] = rotation3;
+                s.RotM[a9] = rotationMatrix0;
+                s.Sang[a9] = sang0;
+                s.Slin[a9] = slin0;
+                s.RotM[a9 + N] = rotationMatrix1;
+                s.Sang[a9 + N] = sang1;
+                s.Slin[a9 + N] = slin1;
+                s.RotM[a9 + 2 * N] = rotationMatrix2;
+                s.Sang[a9 + 2 * N] = sang2;
+                s.Slin[a9 + 2 * N] = slin2;
+                s.RotM[a9 + 3 * N] = rotationMatrix3;
+                s.Sang[a9 + 3 * N] = sang3;
+                s.Slin[a9 + 3 * N] = slin3;
+                s.RotM[a9 + 4 * N] = rotationMatrix4;
+                s.Sang[a9 + 4 * N] = sang4;
+                s.Slin[a9 + 4 * N] = slin4;
+                s.RotM[a9 + 5 * N] = rotationMatrix5;
+                s.Sang[a9 + 5 * N] = sang5;
+                s.Slin[a9 + 5 * N] = slin5;
+                s.RotM[a9 + 6 * N] = rotationMatrix6;
+                s.Sang[a9 + 6 * N] = sang6;
+                s.Slin[a9 + 6 * N] = slin6;
+                s.RotM[a9 + 7 * N] = rotationMatrix7;
+                s.Sang[a9 + 7 * N] = sang7;
+                s.Slin[a9 + 7 * N] = slin7;
+                s.RotM[a9 + 8 * N] = rotationMatrix8;
+                s.Sang[a9 + 8 * N] = sang8;
+                s.Slin[a9 + 8 * N] = slin8;
+                s.Cbias[a6] = cbias0;
+                s.Fext[a6] = fext0;
+                s.Cbias[a6 + N] = cbias1;
+                s.Fext[a6 + N] = fext1;
+                s.Cbias[a6 + 2 * N] = cbias2;
+                s.Fext[a6 + 2 * N] = fext2;
+                s.Cbias[a6 + 3 * N] = cbias3;
+                s.Fext[a6 + 3 * N] = fext3;
+                s.Cbias[a6 + 4 * N] = cbias4;
+                s.Fext[a6 + 4 * N] = fext4;
+                s.Cbias[a6 + 5 * N] = cbias5;
+                s.Fext[a6 + 5 * N] = fext5;
             }
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 9, ref clk);
@@ -1342,6 +2139,10 @@ namespace Evosim.Farm.Gpu.Sgl
             // DynamicsWorld.StepOne, `if (!body.Alive) return;`. The commit copies the pending
             // spheres, which a lost body stopped refreshing; with the commit a swap of two sets,
             // the pending set is handed the committed values so that the swap is the copy.
+            // A body the reach guard recorded this step (LoseStrays) dies here, after the streams
+            // join, rather than in LoseStrays, beside which the water and the fluid read Alive.
+            if (gl.Alive[g] != 0 && gl.StrayCode[g] != 0) gl.Alive[g] = 0;
+
             if (gl.Alive[g] == 0)
             {
                 KeepSpheres(g, links, cs, ps, cfg);
@@ -1386,6 +2187,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
             var ballRot = new Real[4 * MaxLinks];
             var position = new Real[3 * MaxLinks];
+            var posErr = new Real[3 * MaxLinks];
             var rotation = new Real[4 * MaxLinks];
             var rotationMatrix = new Real[9 * MaxLinks];
             var spin = new Real[3 * MaxLinks];
@@ -1418,9 +2220,12 @@ namespace Evosim.Farm.Gpu.Sgl
             var sDepth = new float[MaxLinks];
             var sUp = new float[MaxLinks];
             var sChem = new float[MaxLinks];
+            var sScent = new float[MaxLinks];
+            var sLeaf = new float[4 * MaxLinks];   // a part's leaf strength, then its direction's three
             var sFlow = new float[3 * MaxLinks];
             var sAngle = new float[MaxDof];
             var sRate = new float[MaxDof];
+            var sDrive = new float[3 * MaxDof];
 
             var six = new Real[42];
             var sol = new Real[6];
@@ -1431,76 +2236,214 @@ namespace Evosim.Farm.Gpu.Sgl
             // this step writing them (a channel whose mask bit is clear) read 0, never garbage.
             for (int k = 0; k < MaxLinks; k++)
             {
-                sDepth[k] = 0f; sUp[k] = 0f; sChem[k] = 0f;
+                sDepth[k] = 0f; sUp[k] = 0f; sChem[k] = 0f; sScent[k] = 0f;
+                sLeaf[4 * k] = 0f; sLeaf[4 * k + 1] = 0f; sLeaf[4 * k + 2] = 0f; sLeaf[4 * k + 3] = 0f;
                 sFlow[3 * k] = 0f; sFlow[3 * k + 1] = 0f; sFlow[3 * k + 2] = 0f;
                 driveTq[3 * k] = 0; driveTq[3 * k + 1] = 0; driveTq[3 * k + 2] = 0;
             }
-            for (int k = 0; k < MaxDof; k++) { sAngle[k] = 0f; sRate[k] = 0f; }
+            for (int k = 0; k < MaxDof; k++)
+            {
+                sAngle[k] = 0f; sRate[k] = 0f;
+                sDrive[3 * k] = 0f; sDrive[3 * k + 1] = 0f; sDrive[3 * k + 2] = 0f;
+            }
 
             // ---- load ------------------------------------------------------------------------
+            // Every read of a link before any of its writes (card-next-r57.md, part 6): the reads are
+            // then independent of the stores to the thread's arrays in the PTX itself, so the card can
+            // have them all in flight at once rather than one memory latency a value. The same values
+            // land in the same places as the loop over k did.
             for (int l = 0; l < links; l++)
             {
                 int at = l * N + i;
-                parent[l] = t.Parent[at];
-                dofCount[l] = t.DofCount[at];
-                dofStart[l] = t.DofStart[at];
-                panelStart[l] = t.PanelStart[at];
-                thinAxis[l] = t.ThinAxis[at];
+                int a3 = 3 * l * N + i, a4 = 4 * l * N + i, a9 = 9 * l * N + i, a6 = 6 * l * N + i;
+                int parent_ = t.Parent[at];
+                int dofCount_ = t.DofCount[at];
+                int dofStart_ = t.DofStart[at];
+                int panelStart_ = t.PanelStart[at];
+                int thinAxis_ = t.ThinAxis[at];
+                Real mass_ = b.Mass[at];
+                Real lift_ = b.Lift[at];
+                Real volume_ = b.Volume[at];
+                Real smallI_ = b.SmallI[at];
+                Real reach_ = b.Reach[at];
+                Real arm_ = b.Arm[at];
+                Real inertiaLocal0 = b.Inertia[a3];
+                Real childAnchor0 = b.ChildAnchor[a3];
+                Real parentAnchor0 = b.ParentAnchor[a3];
+                Real position0 = s.Pos[a3];
+                Real spin0 = s.Spin[a3];
+                Real velocity0 = s.Vel[a3];
+                Real relVel0 = s.RelVel[a3];
+                Real water0 = s.Water[a3];
+                Real wacc0 = s.WaterAcc[a3];
+                Real inertiaLocal1 = b.Inertia[a3 + N];
+                Real childAnchor1 = b.ChildAnchor[a3 + N];
+                Real parentAnchor1 = b.ParentAnchor[a3 + N];
+                Real position1 = s.Pos[a3 + N];
+                Real spin1 = s.Spin[a3 + N];
+                Real velocity1 = s.Vel[a3 + N];
+                Real relVel1 = s.RelVel[a3 + N];
+                Real water1 = s.Water[a3 + N];
+                Real wacc1 = s.WaterAcc[a3 + N];
+                Real inertiaLocal2 = b.Inertia[a3 + 2 * N];
+                Real childAnchor2 = b.ChildAnchor[a3 + 2 * N];
+                Real parentAnchor2 = b.ParentAnchor[a3 + 2 * N];
+                Real position2 = s.Pos[a3 + 2 * N];
+                Real spin2 = s.Spin[a3 + 2 * N];
+                Real velocity2 = s.Vel[a3 + 2 * N];
+                Real relVel2 = s.RelVel[a3 + 2 * N];
+                Real water2 = s.Water[a3 + 2 * N];
+                Real wacc2 = s.WaterAcc[a3 + 2 * N];
+                Real jointFrame0 = b.JointFrame[a4];
+                Real restFrame0 = b.RestFrame[a4];
+                Real ballRot0 = s.BallRot[a4];
+                Real rotation0 = s.Rot[a4];
+                Real jointFrame1 = b.JointFrame[a4 + N];
+                Real restFrame1 = b.RestFrame[a4 + N];
+                Real ballRot1 = s.BallRot[a4 + N];
+                Real rotation1 = s.Rot[a4 + N];
+                Real jointFrame2 = b.JointFrame[a4 + 2 * N];
+                Real restFrame2 = b.RestFrame[a4 + 2 * N];
+                Real ballRot2 = s.BallRot[a4 + 2 * N];
+                Real rotation2 = s.Rot[a4 + 2 * N];
+                Real jointFrame3 = b.JointFrame[a4 + 3 * N];
+                Real restFrame3 = b.RestFrame[a4 + 3 * N];
+                Real ballRot3 = s.BallRot[a4 + 3 * N];
+                Real rotation3 = s.Rot[a4 + 3 * N];
+                Real rotationMatrix0 = s.RotM[a9];
+                Real sang0 = s.Sang[a9];
+                Real slin0 = s.Slin[a9];
+                Real rotationMatrix1 = s.RotM[a9 + N];
+                Real sang1 = s.Sang[a9 + N];
+                Real slin1 = s.Slin[a9 + N];
+                Real rotationMatrix2 = s.RotM[a9 + 2 * N];
+                Real sang2 = s.Sang[a9 + 2 * N];
+                Real slin2 = s.Slin[a9 + 2 * N];
+                Real rotationMatrix3 = s.RotM[a9 + 3 * N];
+                Real sang3 = s.Sang[a9 + 3 * N];
+                Real slin3 = s.Slin[a9 + 3 * N];
+                Real rotationMatrix4 = s.RotM[a9 + 4 * N];
+                Real sang4 = s.Sang[a9 + 4 * N];
+                Real slin4 = s.Slin[a9 + 4 * N];
+                Real rotationMatrix5 = s.RotM[a9 + 5 * N];
+                Real sang5 = s.Sang[a9 + 5 * N];
+                Real slin5 = s.Slin[a9 + 5 * N];
+                Real rotationMatrix6 = s.RotM[a9 + 6 * N];
+                Real sang6 = s.Sang[a9 + 6 * N];
+                Real slin6 = s.Slin[a9 + 6 * N];
+                Real rotationMatrix7 = s.RotM[a9 + 7 * N];
+                Real sang7 = s.Sang[a9 + 7 * N];
+                Real slin7 = s.Slin[a9 + 7 * N];
+                Real rotationMatrix8 = s.RotM[a9 + 8 * N];
+                Real sang8 = s.Sang[a9 + 8 * N];
+                Real slin8 = s.Slin[a9 + 8 * N];
+                Real cbias0 = s.Cbias[a6];
+                Real cbias1 = s.Cbias[a6 + N];
+                Real cbias2 = s.Cbias[a6 + 2 * N];
+                Real cbias3 = s.Cbias[a6 + 3 * N];
+                Real cbias4 = s.Cbias[a6 + 4 * N];
+                Real cbias5 = s.Cbias[a6 + 5 * N];
 
-                mass[l] = b.Mass[at];
-                lift[l] = b.Lift[at];
-                volume[l] = b.Volume[at];
-                smallI[l] = b.SmallI[at];
-                reach[l] = b.Reach[at];
-                arm[l] = b.Arm[at];
-
-                for (int k = 0; k < 3; k++)
-                {
-                    int a3 = (3 * l + k) * N + i;
-                    inertiaLocal[3 * l + k] = b.Inertia[a3];
-                    childAnchor[3 * l + k] = b.ChildAnchor[a3];
-                    parentAnchor[3 * l + k] = b.ParentAnchor[a3];
-                    position[3 * l + k] = s.Pos[a3];
-                    spin[3 * l + k] = s.Spin[a3];
-                    velocity[3 * l + k] = s.Vel[a3];
-                    relVel[3 * l + k] = s.RelVel[a3];
-                    water[3 * l + k] = s.Water[a3];
-                    wacc[3 * l + k] = s.WaterAcc[a3];
-                }
-
-                for (int k = 0; k < 4; k++)
-                {
-                    int a4 = (4 * l + k) * N + i;
-                    jointFrame[4 * l + k] = b.JointFrame[a4];
-                    restFrame[4 * l + k] = b.RestFrame[a4];
-                    ballRot[4 * l + k] = s.BallRot[a4];
-                    rotation[4 * l + k] = s.Rot[a4];
-                }
-
-                for (int k = 0; k < 9; k++)
-                {
-                    int a9 = (9 * l + k) * N + i;
-                    rotationMatrix[9 * l + k] = s.RotM[a9];
-                    sang[9 * l + k] = s.Sang[a9];
-                    slin[9 * l + k] = s.Slin[a9];
-                }
-
-                for (int k = 0; k < 6; k++) cbias[6 * l + k] = s.Cbias[(6 * l + k) * N + i];
+                parent[l] = parent_;
+                dofCount[l] = dofCount_;
+                dofStart[l] = dofStart_;
+                panelStart[l] = panelStart_;
+                thinAxis[l] = thinAxis_;
+                mass[l] = mass_;
+                lift[l] = lift_;
+                volume[l] = volume_;
+                smallI[l] = smallI_;
+                reach[l] = reach_;
+                arm[l] = arm_;
+                inertiaLocal[3 * l] = inertiaLocal0;
+                childAnchor[3 * l] = childAnchor0;
+                parentAnchor[3 * l] = parentAnchor0;
+                position[3 * l] = position0;
+                spin[3 * l] = spin0;
+                velocity[3 * l] = velocity0;
+                relVel[3 * l] = relVel0;
+                water[3 * l] = water0;
+                wacc[3 * l] = wacc0;
+                inertiaLocal[3 * l + 1] = inertiaLocal1;
+                childAnchor[3 * l + 1] = childAnchor1;
+                parentAnchor[3 * l + 1] = parentAnchor1;
+                position[3 * l + 1] = position1;
+                spin[3 * l + 1] = spin1;
+                velocity[3 * l + 1] = velocity1;
+                relVel[3 * l + 1] = relVel1;
+                water[3 * l + 1] = water1;
+                wacc[3 * l + 1] = wacc1;
+                inertiaLocal[3 * l + 2] = inertiaLocal2;
+                childAnchor[3 * l + 2] = childAnchor2;
+                parentAnchor[3 * l + 2] = parentAnchor2;
+                position[3 * l + 2] = position2;
+                spin[3 * l + 2] = spin2;
+                velocity[3 * l + 2] = velocity2;
+                relVel[3 * l + 2] = relVel2;
+                water[3 * l + 2] = water2;
+                wacc[3 * l + 2] = wacc2;
+                jointFrame[4 * l] = jointFrame0;
+                restFrame[4 * l] = restFrame0;
+                ballRot[4 * l] = ballRot0;
+                rotation[4 * l] = rotation0;
+                jointFrame[4 * l + 1] = jointFrame1;
+                restFrame[4 * l + 1] = restFrame1;
+                ballRot[4 * l + 1] = ballRot1;
+                rotation[4 * l + 1] = rotation1;
+                jointFrame[4 * l + 2] = jointFrame2;
+                restFrame[4 * l + 2] = restFrame2;
+                ballRot[4 * l + 2] = ballRot2;
+                rotation[4 * l + 2] = rotation2;
+                jointFrame[4 * l + 3] = jointFrame3;
+                restFrame[4 * l + 3] = restFrame3;
+                ballRot[4 * l + 3] = ballRot3;
+                rotation[4 * l + 3] = rotation3;
+                rotationMatrix[9 * l] = rotationMatrix0;
+                sang[9 * l] = sang0;
+                slin[9 * l] = slin0;
+                rotationMatrix[9 * l + 1] = rotationMatrix1;
+                sang[9 * l + 1] = sang1;
+                slin[9 * l + 1] = slin1;
+                rotationMatrix[9 * l + 2] = rotationMatrix2;
+                sang[9 * l + 2] = sang2;
+                slin[9 * l + 2] = slin2;
+                rotationMatrix[9 * l + 3] = rotationMatrix3;
+                sang[9 * l + 3] = sang3;
+                slin[9 * l + 3] = slin3;
+                rotationMatrix[9 * l + 4] = rotationMatrix4;
+                sang[9 * l + 4] = sang4;
+                slin[9 * l + 4] = slin4;
+                rotationMatrix[9 * l + 5] = rotationMatrix5;
+                sang[9 * l + 5] = sang5;
+                slin[9 * l + 5] = slin5;
+                rotationMatrix[9 * l + 6] = rotationMatrix6;
+                sang[9 * l + 6] = sang6;
+                slin[9 * l + 6] = slin6;
+                rotationMatrix[9 * l + 7] = rotationMatrix7;
+                sang[9 * l + 7] = sang7;
+                slin[9 * l + 7] = slin7;
+                rotationMatrix[9 * l + 8] = rotationMatrix8;
+                sang[9 * l + 8] = sang8;
+                slin[9 * l + 8] = slin8;
+                cbias[6 * l] = cbias0;
+                cbias[6 * l + 1] = cbias1;
+                cbias[6 * l + 2] = cbias2;
+                cbias[6 * l + 3] = cbias3;
+                cbias[6 * l + 4] = cbias4;
+                cbias[6 * l + 5] = cbias5;
             }
             panelStart[links] = t.PanelStart[links * N + i];
 
             for (int d = 0; d < dof; d++)
             {
                 int at = d * N + i;
-                limitLo[d] = b.LimitLo[at];
-                limitHi[d] = b.LimitHi[at];
-                limitStiff[d] = b.LimitStiff[at];
-                limitDamp[d] = b.LimitDamp[at];
-                q[d] = s.Q[at];
-                qd[d] = s.Qd[at];
+                Real lo = b.LimitLo[at], hi = b.LimitHi[at], stiff = b.LimitStiff[at], damp = b.LimitDamp[at];
+                Real qv = s.Q[at], qdv = s.Qd[at];
+                limitLo[d] = lo; limitHi[d] = hi; limitStiff[d] = stiff; limitDamp[d] = damp;
+                q[d] = qv; qd[d] = qdv;
             }
-
             var basePosition = new V3(s.BasePos[i], s.BasePos[N + i], s.BasePos[2 * N + i]);
+            var baseCarry = new V3(s.BaseCarry[i], s.BaseCarry[N + i], s.BaseCarry[2 * N + i]);
             var baseRotation = new Q4(s.BaseRot[i], s.BaseRot[N + i], s.BaseRot[2 * N + i], s.BaseRot[3 * N + i]);
 
             Real excess = b.Excess[i];
@@ -1525,20 +2468,87 @@ namespace Evosim.Farm.Gpu.Sgl
             bool readsFlow = (mask & (1 << SFlow)) != 0;
             bool readsChemical = (mask & (1 << SChemical)) != 0;
             bool readsEnergy = (mask & (1 << SEnergy)) != 0;
+            bool readsScent = (mask & (1 << SScent)) != 0;
+            bool readsLeafDir = (mask & (1 << SLeafDir)) != 0;
+            bool readsLeaf = (mask & (1 << SLeaf)) != 0 || readsLeafDir;
+            bool readsDrive = (mask & (1 << SStroke)) != 0 || (mask & (1 << SHold)) != 0 || (mask & (1 << SRamp)) != 0;
 
             int gates = br.Gates[i];
             bool hasNutrients = (gates & 1) != 0;
             bool hasReserve = (gates & 2) != 0;
+            bool hasScent = (gates & 4) != 0;
+            bool hasLeaf = (gates & 8) != 0;
+
+            // CreatureSenses.SampleDrive: the envelope as the last step's drive left it, read before this
+            // step's drive moves it. Under the torque drive it reads 0, as sDrive was cleared.
+            if (readsDrive && cfg.BendAndPower != 0)
+            {
+                int dofLength = dof > 0 ? dof : 1;
+                for (int bl = 0; bl < links; bl++)
+                {
+                    Real partSum = position[3 * bl] + position[3 * bl + 1] + position[3 * bl + 2];
+                    if (partSum != partSum || partSum == Real.PositiveInfinity || partSum == Real.NegativeInfinity) continue;
+
+                    int n = dofCount[bl];
+                    int offset = dofStart[bl];
+                    if (n == 0 || offset < 0) continue;
+
+                    double hold = b.HoldGene[bl * N + i];
+                    for (int d = 0; d < n; d++)
+                    {
+                        int at = offset + d;
+                        if (at >= dofLength) break;
+
+                        int e = at * N + i;
+                        double stroke = dr.EPower[e];
+                        sDrive[3 * at] = Clamp((float)stroke);
+                        sDrive[3 * at + 1] = hold > 0 ? (float)MaxD(0.0, MinD(1.0, dr.EHoldLeft[e] / hold)) : 0f;
+                        sDrive[3 * at + 2] = Clamp((float)(dr.EPowerTarget[e] - stroke));
+                    }
+                }
+            }
 
             float energy = 0f;
+            bool lost = false;
             Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi,
                    br, w, cfg, readsDepth, readsUp, readsJoint, readsFlow, readsChemical && hasNutrients,
-                   readsEnergy && hasReserve, sDepth, sUp, sChem, sFlow, sAngle, sRate, ref energy);
+                   readsScent && hasScent, readsEnergy && hasReserve, readsLeaf && hasLeaf, readsLeafDir,
+                   sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, sLeaf, ref energy, ref lost);
+
+            if (lost)
+            {
+                // The chemical sense's walk gave up on this body (TankCellAt): far beyond the glass,
+                // or at a distance that is not finite. It is left unstepped from here, its state as
+                // the step found it, and lost as the finiteness check below loses a body; the
+                // farm's glass guard kills it at its next check.
+                gl.Alive[g] = 0;
+                KeepSpheres(g, links, cs, ps, cfg);
+                ps.R[g] = 0;
+                ps.Active[g] = 0;
+
+                if (cfg.PerPart != 0)
+                {
+                    for (int l = 0; l < links; l++) ps.LR[g * LinkStride + l] = 0;
+                }
+
+                return;
+            }
+
+            // The touch of the rock as the last step's contact pass left it, a bit a link, read before
+            // this step's touch is kept (KeepTouch), as CreatureSenses.Sample reads it.
+            int rock = 0;
+            if (cfg.RockTouch != 0)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    if (gl.RockTouched[g * LinkStride + l] != 0) rock |= 1 << l;
+                }
+            }
 
             // The brain reads the two gates itself (SensorRead): a body with no field or no
             // reserve source reads the standing-in constant on those channels.
             BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
-                      sDepth, sUp, sChem, sFlow, sAngle, sRate, energy);
+                      sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
 
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 2, ref clk);
@@ -1549,7 +2559,106 @@ namespace Evosim.Farm.Gpu.Sgl
 
             // ---- 4. drive (EffectorDrive.Drive) ----------------------------------------------
             bool drivePending = false;
-            if (dof != 0)
+            if (dof != 0 && cfg.BendAndPower != 0)
+            {
+                // EffectorDrive.DriveBendAndPower: each degree of freedom's power and bend through
+                // the joint's threshold and envelope, in double as the CPU keeps them; the power
+                // stays in EPower for the fluid's push below, and a critically damped muscle holds
+                // the bend, capped by the part's power.
+                int sigLen = t.SigLen[i];
+                float powerScale = b.PowerScale[i];
+                double stepD = cfg.DtD;
+                double poseOmega = cfg.PoseOmega;
+
+                long limited = 0;
+
+                for (int bl = 1; bl < links; bl++)
+                {
+                    int n = dofCount[bl];
+                    if (n == 0) continue;
+
+                    int offset = dofStart[bl];
+                    int gene = bl * N + i;
+                    double threshold = b.Threshold[gene];
+                    double reaction = b.Reaction[gene];
+                    double holdGene = b.HoldGene[gene];
+                    double release = b.Release[gene];
+                    Q4 frame = Q4.Read(jointFrame, 4 * bl);
+
+                    double allowed = cfg.LimitDrive != 0 ? (double)(smallI[bl] * cfg.SpinBudget) : double.MaxValue;
+                    double cap = MinD(allowed, (double)b.LinkPower[gene] * powerScale);
+                    double inertia = smallI[bl];
+
+                    V3 torque = V3.Zero;
+
+                    for (int d = 0; d < n; d++)
+                    {
+                        int idx = offset + d;
+                        int e = idx * N + i;
+
+                        float v = idx < sigLen ? dr.Signal[e] : 0f;
+                        double level = MaxF(0f, MinF(1f, v));
+                        double power = level <= threshold ? 0.0 : MinD(1.0, (level - threshold) / (1.0 - threshold));
+                        float wv = idx < sigLen ? dr.Bend[e] : 0f;
+                        double bend = (MaxF(-1f, MinF(1f, wv)) + 1.0) * 0.5;
+
+                        double pw = dr.EPower[e], bd = dr.EBend[e];
+                        double pt = dr.EPowerTarget[e], bt = dr.EBendTarget[e];
+                        double pr = dr.EPowerRate[e], br8 = dr.EBendRate[e];
+                        double holdLeft = dr.EHoldLeft[e];
+
+                        if (holdLeft > 0)
+                        {
+                            holdLeft -= stepD;
+                        }
+                        else if (AbsD(power - pt) > 0.01 || AbsD(bend - bt) > 0.01)
+                        {
+                            bool fromRest = pw == 0 && pt == 0;
+                            double ramp = fromRest ? reaction : release;
+                            if (ramp < stepD) ramp = stepD;
+                            pt = power;
+                            bt = bend;
+                            pr = AbsD(power - pw) / ramp;
+                            br8 = AbsD(bend - bd) / ramp;
+                            holdLeft = holdGene;
+                        }
+
+                        pw = Toward(pw, pt, pr * stepD);
+                        bd = Toward(bd, bt, br8 * stepD);
+
+                        dr.EPower[e] = pw; dr.EBend[e] = bd;
+                        dr.EPowerTarget[e] = pt; dr.EBendTarget[e] = bt;
+                        dr.EPowerRate[e] = pr; dr.EBendRate[e] = br8;
+                        dr.EHoldLeft[e] = holdLeft;
+
+                        if (poseOmega <= 0 || inertia <= 0) continue;
+                        double lo = limitLo[idx], hi = limitHi[idx];
+                        double target = lo + bd * (hi - lo);
+                        double magnitude = inertia * poseOmega * (poseOmega * (target - q[idx]) - 2.0 * qd[idx]);
+                        if (magnitude > cap) { magnitude = cap; limited++; }
+                        else if (magnitude < -cap) { magnitude = -cap; limited++; }
+
+                        torque = torque + frame.Rotate(V3.Axis(d)) * (Real)magnitude;
+                    }
+
+                    M3 rot = M3.Read(rotationMatrix, 9 * bl);
+                    V3 world = rot * torque;
+
+                    s.Applied[(3 * bl) * N + i] = world.X;
+                    s.Applied[(3 * bl + 1) * N + i] = world.Y;
+                    s.Applied[(3 * bl + 2) * N + i] = world.Z;
+
+                    V3.Write(driveTq, 3 * bl, world);
+                    V3.Write(preRelSpin, 3 * bl, V3.Read(spin, 3 * bl) - V3.Read(spin, 3 * parent[bl]));
+                    drivePending = true;
+
+                    V3.Add(fext, 6 * bl, world);
+                    V3.Add(fext, 6 * parent[bl], -world);
+                }
+
+                if (limited != 0) dr.DriveLimited[i] = dr.DriveLimited[i] + limited;
+            }
+            else if (dof != 0)
             {
                 int sigLen = t.SigLen[i];
                 int cursor = dr.Cursor[i];
@@ -1634,6 +2743,7 @@ namespace Evosim.Farm.Gpu.Sgl
             // link order, at the place the CPU applies them.
             long dragLimited = 0;
             int fluidRows = cfg.LinkRows;
+            bool powered = cfg.BendAndPower != 0 && cfg.LimbPush > 0 && cfg.PushOmega > 0;
             for (int fl = 0; fl < links; fl++)
             {
                 int frow = g * LinkStride + fl;
@@ -1647,8 +2757,52 @@ namespace Evosim.Farm.Gpu.Sgl
                 }
                 V3.Add(fext, 6 * fl, new V3(gl.LinkFluid[9 * fluidRows + frow], gl.LinkFluid[10 * fluidRows + frow],
                                             gl.LinkFluid[11 * fluidRows + frow]));
-                V3.Add(fext, 6 * fl + 3, new V3(gl.LinkFluid[12 * fluidRows + frow], gl.LinkFluid[13 * fluidRows + frow],
-                                                gl.LinkFluid[14 * fluidRows + frow]));
+                V3 linkForce = new V3(gl.LinkFluid[12 * fluidRows + frow], gl.LinkFluid[13 * fluidRows + frow],
+                                      gl.LinkFluid[14 * fluidRows + frow]);
+
+                // Under the bend-and-power drive FluidLinks left the force before the power's push
+                // and the buoyancy term: the push from this step's stroke, its work booked as
+                // Fluid.Apply books it, then the buoyancy where the CPU added it.
+                if (powered)
+                {
+                    if (parent[fl] >= 0 && position[3 * fl + 1] <= 0 && dofCount[fl] > 0)
+                    {
+                        M3 frot = M3.Read(rotationMatrix, 9 * fl);
+                        V3 toOrigin = frot * (-V3.Read(childAnchor, 3 * fl));
+                        Real linkReach = toOrigin.Magnitude;
+                        if (linkReach > 0)
+                        {
+                            V3 axis = toOrigin * ((Real)1.0 / linkReach);
+                            Q4 fframe = Q4.Read(jointFrame, 4 * fl);
+                            int fstart = dofStart[fl];
+                            Real omega = cfg.PushOmega;
+                            Real swing2 = 0;
+                            for (int d = 0; d < dofCount[fl]; d++)
+                            {
+                                Real sv = (Real)dr.EPower[(fstart + d) * N + i];
+                                if (sv <= 0) continue;
+                                V3 dofAxis = frot * fframe.Rotate(V3.Axis(d));
+                                Real along = V3.Dot(dofAxis, axis);
+                                swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
+                            }
+
+                            if (swing2 > 0)
+                            {
+                                Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
+                                Real push = cfg.LimbPush * addedMass * linkReach * swing2;
+                                linkForce = linkForce + axis * (-push);
+                                dr.Work[i] = dr.Work[i] + (double)(push * linkReach * System.MathF.Sqrt(swing2)) * cfg.DtD;
+                            }
+                        }
+                    }
+
+                    if (gl.LinkFluid[16 * fluidRows + frow] != 0)
+                    {
+                        linkForce = linkForce + new V3(0, gl.LinkFluid[15 * fluidRows + frow], 0);
+                    }
+                }
+
+                V3.Add(fext, 6 * fl + 3, linkForce);
                 dragLimited += gl.LinkLimited[frow];
             }
             if (dragLimited != 0) dr.DragLimited[i] = dr.DragLimited[i] + dragLimited;
@@ -1660,6 +2814,12 @@ namespace Evosim.Farm.Gpu.Sgl
             if (cfg.PerPart != 0)
             {
                 ContactsPerPartStaged(g, links, fext, cand, cs, gl, gr, cfg);
+                if (cfg.RockTouch != 0) KeepTouch(g, links, gl, cfg);
+                if (cfg.Anchoring != 0)
+                {
+                    Grip(g, links, position, velocity, spin, rotationMatrix, mass, smallI, fext,
+                         hasReserve, br.Reserve[i], cs, gl, cfg);
+                }
             }
             else
             {
@@ -1681,7 +2841,7 @@ namespace Evosim.Farm.Gpu.Sgl
                     dinv, ubar, tau, sang, slin, cbias, position, six, sol, residual);
 
             Integrate(links, dofCount, dofStart, tau, q, qd, ballRot, acc, spin, velocity,
-                      ref basePosition, ref baseRotation, cfg.Dt);
+                      ref basePosition, ref baseCarry, ref baseRotation, cfg.Dt);
 
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 6, ref clk);
@@ -1689,7 +2849,7 @@ namespace Evosim.Farm.Gpu.Sgl
             // ---- 10. poses, 11. velocities ----------------------------------------------------
             Poses(links, parent, dofCount, dofStart, q, ballRot, rotation, rotationMatrix,
                   position, restFrame, jointFrame, parentAnchor, childAnchor,
-                  basePosition, baseRotation);
+                  basePosition, baseRotation, baseCarry, posErr);
             Velocities(links, parent, dofCount, dofStart, q, qd, rotation, jointFrame,
                        childAnchor, position, spin, velocity, sang, slin, cbias);
 
@@ -1767,6 +2927,9 @@ namespace Evosim.Farm.Gpu.Sgl
                     if (links == 1)
                     {
                         ps.LCx[row] = centre.X; ps.LCy[row] = centre.Y; ps.LCz[row] = centre.Z;
+                        ps.LEx[row] = CarryBase ? posErr[0] : 0;
+                        ps.LEy[row] = CarryBase ? posErr[1] : 0;
+                        ps.LEz[row] = CarryBase ? posErr[2] : 0;
                         ps.LR[row] = radius;
                         ps.LVx[row] = mean.X; ps.LVy[row] = mean.Y; ps.LVz[row] = mean.Z;
                     }
@@ -1777,6 +2940,9 @@ namespace Evosim.Farm.Gpu.Sgl
                             ps.LCx[row + l] = position[3 * l];
                             ps.LCy[row + l] = position[3 * l + 1];
                             ps.LCz[row + l] = position[3 * l + 2];
+                            ps.LEx[row + l] = CarryBase ? posErr[3 * l] : 0;
+                            ps.LEy[row + l] = CarryBase ? posErr[3 * l + 1] : 0;
+                            ps.LEz[row + l] = CarryBase ? posErr[3 * l + 2] : 0;
                             ps.LR[row + l] = reach[l];
                             ps.LVx[row + l] = velocity[3 * l];
                             ps.LVy[row + l] = velocity[3 * l + 1];
@@ -1793,51 +2959,156 @@ namespace Evosim.Farm.Gpu.Sgl
             s.BasePos[i] = basePosition.X;
             s.BasePos[N + i] = basePosition.Y;
             s.BasePos[2 * N + i] = basePosition.Z;
+            s.BaseCarry[i] = baseCarry.X;
+            s.BaseCarry[N + i] = baseCarry.Y;
+            s.BaseCarry[2 * N + i] = baseCarry.Z;
             s.BaseRot[i] = baseRotation.X;
             s.BaseRot[N + i] = baseRotation.Y;
             s.BaseRot[2 * N + i] = baseRotation.Z;
             s.BaseRot[3 * N + i] = baseRotation.W;
 
+            // Every read of a link from the thread's arrays before any of its writes, as in the load.
             for (int d = 0; d < dof; d++)
             {
                 int at = d * N + i;
-                s.Q[at] = q[d];
-                s.Qd[at] = qd[d];
-                s.Tau[at] = tau[d];
-                s.LimitImplicit[at] = limitImplicit[d];
+                Real qv = q[d], qdv = qd[d], tv = tau[d], li = limitImplicit[d];
+                s.Q[at] = qv; s.Qd[at] = qdv; s.Tau[at] = tv; s.LimitImplicit[at] = li;
             }
 
             for (int l = 0; l < links; l++)
             {
-                for (int k = 0; k < 3; k++)
-                {
-                    int a3 = (3 * l + k) * N + i;
-                    s.Pos[a3] = position[3 * l + k];
-                    s.Spin[a3] = spin[3 * l + k];
-                    s.Vel[a3] = velocity[3 * l + k];
-                    s.RelVel[a3] = relVel[3 * l + k];
-                    s.Water[a3] = water[3 * l + k];
-                    s.WaterAcc[a3] = wacc[3 * l + k];
-                }
-                for (int k = 0; k < 4; k++)
-                {
-                    int a4 = (4 * l + k) * N + i;
-                    s.BallRot[a4] = ballRot[4 * l + k];
-                    s.Rot[a4] = rotation[4 * l + k];
-                }
-                for (int k = 0; k < 9; k++)
-                {
-                    int a9 = (9 * l + k) * N + i;
-                    s.RotM[a9] = rotationMatrix[9 * l + k];
-                    s.Sang[a9] = sang[9 * l + k];
-                    s.Slin[a9] = slin[9 * l + k];
-                }
-                for (int k = 0; k < 6; k++)
-                {
-                    int a6 = (6 * l + k) * N + i;
-                    s.Cbias[a6] = cbias[6 * l + k];
-                    s.Fext[a6] = fext[6 * l + k];
-                }
+                int a3 = 3 * l * N + i, a4 = 4 * l * N + i, a9 = 9 * l * N + i, a6 = 6 * l * N + i;
+                Real position0 = position[3 * l];
+                Real spin0 = spin[3 * l];
+                Real velocity0 = velocity[3 * l];
+                Real relVel0 = relVel[3 * l];
+                Real water0 = water[3 * l];
+                Real wacc0 = wacc[3 * l];
+                Real position1 = position[3 * l + 1];
+                Real spin1 = spin[3 * l + 1];
+                Real velocity1 = velocity[3 * l + 1];
+                Real relVel1 = relVel[3 * l + 1];
+                Real water1 = water[3 * l + 1];
+                Real wacc1 = wacc[3 * l + 1];
+                Real position2 = position[3 * l + 2];
+                Real spin2 = spin[3 * l + 2];
+                Real velocity2 = velocity[3 * l + 2];
+                Real relVel2 = relVel[3 * l + 2];
+                Real water2 = water[3 * l + 2];
+                Real wacc2 = wacc[3 * l + 2];
+                Real ballRot0 = ballRot[4 * l];
+                Real rotation0 = rotation[4 * l];
+                Real ballRot1 = ballRot[4 * l + 1];
+                Real rotation1 = rotation[4 * l + 1];
+                Real ballRot2 = ballRot[4 * l + 2];
+                Real rotation2 = rotation[4 * l + 2];
+                Real ballRot3 = ballRot[4 * l + 3];
+                Real rotation3 = rotation[4 * l + 3];
+                Real rotationMatrix0 = rotationMatrix[9 * l];
+                Real sang0 = sang[9 * l];
+                Real slin0 = slin[9 * l];
+                Real rotationMatrix1 = rotationMatrix[9 * l + 1];
+                Real sang1 = sang[9 * l + 1];
+                Real slin1 = slin[9 * l + 1];
+                Real rotationMatrix2 = rotationMatrix[9 * l + 2];
+                Real sang2 = sang[9 * l + 2];
+                Real slin2 = slin[9 * l + 2];
+                Real rotationMatrix3 = rotationMatrix[9 * l + 3];
+                Real sang3 = sang[9 * l + 3];
+                Real slin3 = slin[9 * l + 3];
+                Real rotationMatrix4 = rotationMatrix[9 * l + 4];
+                Real sang4 = sang[9 * l + 4];
+                Real slin4 = slin[9 * l + 4];
+                Real rotationMatrix5 = rotationMatrix[9 * l + 5];
+                Real sang5 = sang[9 * l + 5];
+                Real slin5 = slin[9 * l + 5];
+                Real rotationMatrix6 = rotationMatrix[9 * l + 6];
+                Real sang6 = sang[9 * l + 6];
+                Real slin6 = slin[9 * l + 6];
+                Real rotationMatrix7 = rotationMatrix[9 * l + 7];
+                Real sang7 = sang[9 * l + 7];
+                Real slin7 = slin[9 * l + 7];
+                Real rotationMatrix8 = rotationMatrix[9 * l + 8];
+                Real sang8 = sang[9 * l + 8];
+                Real slin8 = slin[9 * l + 8];
+                Real cbias0 = cbias[6 * l];
+                Real fext0 = fext[6 * l];
+                Real cbias1 = cbias[6 * l + 1];
+                Real fext1 = fext[6 * l + 1];
+                Real cbias2 = cbias[6 * l + 2];
+                Real fext2 = fext[6 * l + 2];
+                Real cbias3 = cbias[6 * l + 3];
+                Real fext3 = fext[6 * l + 3];
+                Real cbias4 = cbias[6 * l + 4];
+                Real fext4 = fext[6 * l + 4];
+                Real cbias5 = cbias[6 * l + 5];
+                Real fext5 = fext[6 * l + 5];
+
+                s.Pos[a3] = position0;
+                s.Spin[a3] = spin0;
+                s.Vel[a3] = velocity0;
+                s.RelVel[a3] = relVel0;
+                s.Water[a3] = water0;
+                s.WaterAcc[a3] = wacc0;
+                s.Pos[a3 + N] = position1;
+                s.Spin[a3 + N] = spin1;
+                s.Vel[a3 + N] = velocity1;
+                s.RelVel[a3 + N] = relVel1;
+                s.Water[a3 + N] = water1;
+                s.WaterAcc[a3 + N] = wacc1;
+                s.Pos[a3 + 2 * N] = position2;
+                s.Spin[a3 + 2 * N] = spin2;
+                s.Vel[a3 + 2 * N] = velocity2;
+                s.RelVel[a3 + 2 * N] = relVel2;
+                s.Water[a3 + 2 * N] = water2;
+                s.WaterAcc[a3 + 2 * N] = wacc2;
+                s.BallRot[a4] = ballRot0;
+                s.Rot[a4] = rotation0;
+                s.BallRot[a4 + N] = ballRot1;
+                s.Rot[a4 + N] = rotation1;
+                s.BallRot[a4 + 2 * N] = ballRot2;
+                s.Rot[a4 + 2 * N] = rotation2;
+                s.BallRot[a4 + 3 * N] = ballRot3;
+                s.Rot[a4 + 3 * N] = rotation3;
+                s.RotM[a9] = rotationMatrix0;
+                s.Sang[a9] = sang0;
+                s.Slin[a9] = slin0;
+                s.RotM[a9 + N] = rotationMatrix1;
+                s.Sang[a9 + N] = sang1;
+                s.Slin[a9 + N] = slin1;
+                s.RotM[a9 + 2 * N] = rotationMatrix2;
+                s.Sang[a9 + 2 * N] = sang2;
+                s.Slin[a9 + 2 * N] = slin2;
+                s.RotM[a9 + 3 * N] = rotationMatrix3;
+                s.Sang[a9 + 3 * N] = sang3;
+                s.Slin[a9 + 3 * N] = slin3;
+                s.RotM[a9 + 4 * N] = rotationMatrix4;
+                s.Sang[a9 + 4 * N] = sang4;
+                s.Slin[a9 + 4 * N] = slin4;
+                s.RotM[a9 + 5 * N] = rotationMatrix5;
+                s.Sang[a9 + 5 * N] = sang5;
+                s.Slin[a9 + 5 * N] = slin5;
+                s.RotM[a9 + 6 * N] = rotationMatrix6;
+                s.Sang[a9 + 6 * N] = sang6;
+                s.Slin[a9 + 6 * N] = slin6;
+                s.RotM[a9 + 7 * N] = rotationMatrix7;
+                s.Sang[a9 + 7 * N] = sang7;
+                s.Slin[a9 + 7 * N] = slin7;
+                s.RotM[a9 + 8 * N] = rotationMatrix8;
+                s.Sang[a9 + 8 * N] = sang8;
+                s.Slin[a9 + 8 * N] = slin8;
+                s.Cbias[a6] = cbias0;
+                s.Fext[a6] = fext0;
+                s.Cbias[a6 + N] = cbias1;
+                s.Fext[a6 + N] = fext1;
+                s.Cbias[a6 + 2 * N] = cbias2;
+                s.Fext[a6 + 2 * N] = fext2;
+                s.Cbias[a6 + 3 * N] = cbias3;
+                s.Fext[a6 + 3 * N] = fext3;
+                s.Cbias[a6 + 4 * N] = cbias4;
+                s.Fext[a6 + 4 * N] = fext4;
+                s.Cbias[a6 + 5 * N] = cbias5;
+                s.Fext[a6 + 5 * N] = fext5;
             }
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 9, ref clk);
@@ -1864,6 +3135,10 @@ namespace Evosim.Farm.Gpu.Sgl
             // DynamicsWorld.StepOne, `if (!body.Alive) return;`. The commit copies the pending
             // spheres, which a lost body stopped refreshing; with the commit a swap of two sets,
             // the pending set is handed the committed values so that the swap is the copy.
+            // A body the reach guard recorded this step (LoseStrays) dies here, after the streams
+            // join, rather than in LoseStrays, beside which the water and the fluid read Alive.
+            if (gl.Alive[g] != 0 && gl.StrayCode[g] != 0) gl.Alive[g] = 0;
+
             if (gl.Alive[g] == 0)
             {
                 KeepSpheres(g, links, cs, ps, cfg);
@@ -1908,6 +3183,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
             var ballRot = new Real[4 * MaxLinks];
             var position = new Real[3 * MaxLinks];
+            var posErr = new Real[3 * MaxLinks];
             var rotation = new Real[4 * MaxLinks];
             var rotationMatrix = new Real[9 * MaxLinks];
             var spin = new Real[3 * MaxLinks];
@@ -1940,9 +3216,12 @@ namespace Evosim.Farm.Gpu.Sgl
             var sDepth = new float[MaxLinks];
             var sUp = new float[MaxLinks];
             var sChem = new float[MaxLinks];
+            var sScent = new float[MaxLinks];
+            var sLeaf = new float[4 * MaxLinks];   // a part's leaf strength, then its direction's three
             var sFlow = new float[3 * MaxLinks];
             var sAngle = new float[MaxDof];
             var sRate = new float[MaxDof];
+            var sDrive = new float[3 * MaxDof];
 
             var six = new Real[42];
             var sol = new Real[6];
@@ -1953,76 +3232,214 @@ namespace Evosim.Farm.Gpu.Sgl
             // this step writing them (a channel whose mask bit is clear) read 0, never garbage.
             for (int k = 0; k < MaxLinks; k++)
             {
-                sDepth[k] = 0f; sUp[k] = 0f; sChem[k] = 0f;
+                sDepth[k] = 0f; sUp[k] = 0f; sChem[k] = 0f; sScent[k] = 0f;
+                sLeaf[4 * k] = 0f; sLeaf[4 * k + 1] = 0f; sLeaf[4 * k + 2] = 0f; sLeaf[4 * k + 3] = 0f;
                 sFlow[3 * k] = 0f; sFlow[3 * k + 1] = 0f; sFlow[3 * k + 2] = 0f;
                 driveTq[3 * k] = 0; driveTq[3 * k + 1] = 0; driveTq[3 * k + 2] = 0;
             }
-            for (int k = 0; k < MaxDof; k++) { sAngle[k] = 0f; sRate[k] = 0f; }
+            for (int k = 0; k < MaxDof; k++)
+            {
+                sAngle[k] = 0f; sRate[k] = 0f;
+                sDrive[3 * k] = 0f; sDrive[3 * k + 1] = 0f; sDrive[3 * k + 2] = 0f;
+            }
 
             // ---- load ------------------------------------------------------------------------
+            // Every read of a link before any of its writes (card-next-r57.md, part 6): the reads are
+            // then independent of the stores to the thread's arrays in the PTX itself, so the card can
+            // have them all in flight at once rather than one memory latency a value. The same values
+            // land in the same places as the loop over k did.
             for (int l = 0; l < links; l++)
             {
                 int at = l * N + i;
-                parent[l] = t.Parent[at];
-                dofCount[l] = t.DofCount[at];
-                dofStart[l] = t.DofStart[at];
-                panelStart[l] = t.PanelStart[at];
-                thinAxis[l] = t.ThinAxis[at];
+                int a3 = 3 * l * N + i, a4 = 4 * l * N + i, a9 = 9 * l * N + i, a6 = 6 * l * N + i;
+                int parent_ = t.Parent[at];
+                int dofCount_ = t.DofCount[at];
+                int dofStart_ = t.DofStart[at];
+                int panelStart_ = t.PanelStart[at];
+                int thinAxis_ = t.ThinAxis[at];
+                Real mass_ = b.Mass[at];
+                Real lift_ = b.Lift[at];
+                Real volume_ = b.Volume[at];
+                Real smallI_ = b.SmallI[at];
+                Real reach_ = b.Reach[at];
+                Real arm_ = b.Arm[at];
+                Real inertiaLocal0 = b.Inertia[a3];
+                Real childAnchor0 = b.ChildAnchor[a3];
+                Real parentAnchor0 = b.ParentAnchor[a3];
+                Real position0 = s.Pos[a3];
+                Real spin0 = s.Spin[a3];
+                Real velocity0 = s.Vel[a3];
+                Real relVel0 = s.RelVel[a3];
+                Real water0 = s.Water[a3];
+                Real wacc0 = s.WaterAcc[a3];
+                Real inertiaLocal1 = b.Inertia[a3 + N];
+                Real childAnchor1 = b.ChildAnchor[a3 + N];
+                Real parentAnchor1 = b.ParentAnchor[a3 + N];
+                Real position1 = s.Pos[a3 + N];
+                Real spin1 = s.Spin[a3 + N];
+                Real velocity1 = s.Vel[a3 + N];
+                Real relVel1 = s.RelVel[a3 + N];
+                Real water1 = s.Water[a3 + N];
+                Real wacc1 = s.WaterAcc[a3 + N];
+                Real inertiaLocal2 = b.Inertia[a3 + 2 * N];
+                Real childAnchor2 = b.ChildAnchor[a3 + 2 * N];
+                Real parentAnchor2 = b.ParentAnchor[a3 + 2 * N];
+                Real position2 = s.Pos[a3 + 2 * N];
+                Real spin2 = s.Spin[a3 + 2 * N];
+                Real velocity2 = s.Vel[a3 + 2 * N];
+                Real relVel2 = s.RelVel[a3 + 2 * N];
+                Real water2 = s.Water[a3 + 2 * N];
+                Real wacc2 = s.WaterAcc[a3 + 2 * N];
+                Real jointFrame0 = b.JointFrame[a4];
+                Real restFrame0 = b.RestFrame[a4];
+                Real ballRot0 = s.BallRot[a4];
+                Real rotation0 = s.Rot[a4];
+                Real jointFrame1 = b.JointFrame[a4 + N];
+                Real restFrame1 = b.RestFrame[a4 + N];
+                Real ballRot1 = s.BallRot[a4 + N];
+                Real rotation1 = s.Rot[a4 + N];
+                Real jointFrame2 = b.JointFrame[a4 + 2 * N];
+                Real restFrame2 = b.RestFrame[a4 + 2 * N];
+                Real ballRot2 = s.BallRot[a4 + 2 * N];
+                Real rotation2 = s.Rot[a4 + 2 * N];
+                Real jointFrame3 = b.JointFrame[a4 + 3 * N];
+                Real restFrame3 = b.RestFrame[a4 + 3 * N];
+                Real ballRot3 = s.BallRot[a4 + 3 * N];
+                Real rotation3 = s.Rot[a4 + 3 * N];
+                Real rotationMatrix0 = s.RotM[a9];
+                Real sang0 = s.Sang[a9];
+                Real slin0 = s.Slin[a9];
+                Real rotationMatrix1 = s.RotM[a9 + N];
+                Real sang1 = s.Sang[a9 + N];
+                Real slin1 = s.Slin[a9 + N];
+                Real rotationMatrix2 = s.RotM[a9 + 2 * N];
+                Real sang2 = s.Sang[a9 + 2 * N];
+                Real slin2 = s.Slin[a9 + 2 * N];
+                Real rotationMatrix3 = s.RotM[a9 + 3 * N];
+                Real sang3 = s.Sang[a9 + 3 * N];
+                Real slin3 = s.Slin[a9 + 3 * N];
+                Real rotationMatrix4 = s.RotM[a9 + 4 * N];
+                Real sang4 = s.Sang[a9 + 4 * N];
+                Real slin4 = s.Slin[a9 + 4 * N];
+                Real rotationMatrix5 = s.RotM[a9 + 5 * N];
+                Real sang5 = s.Sang[a9 + 5 * N];
+                Real slin5 = s.Slin[a9 + 5 * N];
+                Real rotationMatrix6 = s.RotM[a9 + 6 * N];
+                Real sang6 = s.Sang[a9 + 6 * N];
+                Real slin6 = s.Slin[a9 + 6 * N];
+                Real rotationMatrix7 = s.RotM[a9 + 7 * N];
+                Real sang7 = s.Sang[a9 + 7 * N];
+                Real slin7 = s.Slin[a9 + 7 * N];
+                Real rotationMatrix8 = s.RotM[a9 + 8 * N];
+                Real sang8 = s.Sang[a9 + 8 * N];
+                Real slin8 = s.Slin[a9 + 8 * N];
+                Real cbias0 = s.Cbias[a6];
+                Real cbias1 = s.Cbias[a6 + N];
+                Real cbias2 = s.Cbias[a6 + 2 * N];
+                Real cbias3 = s.Cbias[a6 + 3 * N];
+                Real cbias4 = s.Cbias[a6 + 4 * N];
+                Real cbias5 = s.Cbias[a6 + 5 * N];
 
-                mass[l] = b.Mass[at];
-                lift[l] = b.Lift[at];
-                volume[l] = b.Volume[at];
-                smallI[l] = b.SmallI[at];
-                reach[l] = b.Reach[at];
-                arm[l] = b.Arm[at];
-
-                for (int k = 0; k < 3; k++)
-                {
-                    int a3 = (3 * l + k) * N + i;
-                    inertiaLocal[3 * l + k] = b.Inertia[a3];
-                    childAnchor[3 * l + k] = b.ChildAnchor[a3];
-                    parentAnchor[3 * l + k] = b.ParentAnchor[a3];
-                    position[3 * l + k] = s.Pos[a3];
-                    spin[3 * l + k] = s.Spin[a3];
-                    velocity[3 * l + k] = s.Vel[a3];
-                    relVel[3 * l + k] = s.RelVel[a3];
-                    water[3 * l + k] = s.Water[a3];
-                    wacc[3 * l + k] = s.WaterAcc[a3];
-                }
-
-                for (int k = 0; k < 4; k++)
-                {
-                    int a4 = (4 * l + k) * N + i;
-                    jointFrame[4 * l + k] = b.JointFrame[a4];
-                    restFrame[4 * l + k] = b.RestFrame[a4];
-                    ballRot[4 * l + k] = s.BallRot[a4];
-                    rotation[4 * l + k] = s.Rot[a4];
-                }
-
-                for (int k = 0; k < 9; k++)
-                {
-                    int a9 = (9 * l + k) * N + i;
-                    rotationMatrix[9 * l + k] = s.RotM[a9];
-                    sang[9 * l + k] = s.Sang[a9];
-                    slin[9 * l + k] = s.Slin[a9];
-                }
-
-                for (int k = 0; k < 6; k++) cbias[6 * l + k] = s.Cbias[(6 * l + k) * N + i];
+                parent[l] = parent_;
+                dofCount[l] = dofCount_;
+                dofStart[l] = dofStart_;
+                panelStart[l] = panelStart_;
+                thinAxis[l] = thinAxis_;
+                mass[l] = mass_;
+                lift[l] = lift_;
+                volume[l] = volume_;
+                smallI[l] = smallI_;
+                reach[l] = reach_;
+                arm[l] = arm_;
+                inertiaLocal[3 * l] = inertiaLocal0;
+                childAnchor[3 * l] = childAnchor0;
+                parentAnchor[3 * l] = parentAnchor0;
+                position[3 * l] = position0;
+                spin[3 * l] = spin0;
+                velocity[3 * l] = velocity0;
+                relVel[3 * l] = relVel0;
+                water[3 * l] = water0;
+                wacc[3 * l] = wacc0;
+                inertiaLocal[3 * l + 1] = inertiaLocal1;
+                childAnchor[3 * l + 1] = childAnchor1;
+                parentAnchor[3 * l + 1] = parentAnchor1;
+                position[3 * l + 1] = position1;
+                spin[3 * l + 1] = spin1;
+                velocity[3 * l + 1] = velocity1;
+                relVel[3 * l + 1] = relVel1;
+                water[3 * l + 1] = water1;
+                wacc[3 * l + 1] = wacc1;
+                inertiaLocal[3 * l + 2] = inertiaLocal2;
+                childAnchor[3 * l + 2] = childAnchor2;
+                parentAnchor[3 * l + 2] = parentAnchor2;
+                position[3 * l + 2] = position2;
+                spin[3 * l + 2] = spin2;
+                velocity[3 * l + 2] = velocity2;
+                relVel[3 * l + 2] = relVel2;
+                water[3 * l + 2] = water2;
+                wacc[3 * l + 2] = wacc2;
+                jointFrame[4 * l] = jointFrame0;
+                restFrame[4 * l] = restFrame0;
+                ballRot[4 * l] = ballRot0;
+                rotation[4 * l] = rotation0;
+                jointFrame[4 * l + 1] = jointFrame1;
+                restFrame[4 * l + 1] = restFrame1;
+                ballRot[4 * l + 1] = ballRot1;
+                rotation[4 * l + 1] = rotation1;
+                jointFrame[4 * l + 2] = jointFrame2;
+                restFrame[4 * l + 2] = restFrame2;
+                ballRot[4 * l + 2] = ballRot2;
+                rotation[4 * l + 2] = rotation2;
+                jointFrame[4 * l + 3] = jointFrame3;
+                restFrame[4 * l + 3] = restFrame3;
+                ballRot[4 * l + 3] = ballRot3;
+                rotation[4 * l + 3] = rotation3;
+                rotationMatrix[9 * l] = rotationMatrix0;
+                sang[9 * l] = sang0;
+                slin[9 * l] = slin0;
+                rotationMatrix[9 * l + 1] = rotationMatrix1;
+                sang[9 * l + 1] = sang1;
+                slin[9 * l + 1] = slin1;
+                rotationMatrix[9 * l + 2] = rotationMatrix2;
+                sang[9 * l + 2] = sang2;
+                slin[9 * l + 2] = slin2;
+                rotationMatrix[9 * l + 3] = rotationMatrix3;
+                sang[9 * l + 3] = sang3;
+                slin[9 * l + 3] = slin3;
+                rotationMatrix[9 * l + 4] = rotationMatrix4;
+                sang[9 * l + 4] = sang4;
+                slin[9 * l + 4] = slin4;
+                rotationMatrix[9 * l + 5] = rotationMatrix5;
+                sang[9 * l + 5] = sang5;
+                slin[9 * l + 5] = slin5;
+                rotationMatrix[9 * l + 6] = rotationMatrix6;
+                sang[9 * l + 6] = sang6;
+                slin[9 * l + 6] = slin6;
+                rotationMatrix[9 * l + 7] = rotationMatrix7;
+                sang[9 * l + 7] = sang7;
+                slin[9 * l + 7] = slin7;
+                rotationMatrix[9 * l + 8] = rotationMatrix8;
+                sang[9 * l + 8] = sang8;
+                slin[9 * l + 8] = slin8;
+                cbias[6 * l] = cbias0;
+                cbias[6 * l + 1] = cbias1;
+                cbias[6 * l + 2] = cbias2;
+                cbias[6 * l + 3] = cbias3;
+                cbias[6 * l + 4] = cbias4;
+                cbias[6 * l + 5] = cbias5;
             }
             panelStart[links] = t.PanelStart[links * N + i];
 
             for (int d = 0; d < dof; d++)
             {
                 int at = d * N + i;
-                limitLo[d] = b.LimitLo[at];
-                limitHi[d] = b.LimitHi[at];
-                limitStiff[d] = b.LimitStiff[at];
-                limitDamp[d] = b.LimitDamp[at];
-                q[d] = s.Q[at];
-                qd[d] = s.Qd[at];
+                Real lo = b.LimitLo[at], hi = b.LimitHi[at], stiff = b.LimitStiff[at], damp = b.LimitDamp[at];
+                Real qv = s.Q[at], qdv = s.Qd[at];
+                limitLo[d] = lo; limitHi[d] = hi; limitStiff[d] = stiff; limitDamp[d] = damp;
+                q[d] = qv; qd[d] = qdv;
             }
-
             var basePosition = new V3(s.BasePos[i], s.BasePos[N + i], s.BasePos[2 * N + i]);
+            var baseCarry = new V3(s.BaseCarry[i], s.BaseCarry[N + i], s.BaseCarry[2 * N + i]);
             var baseRotation = new Q4(s.BaseRot[i], s.BaseRot[N + i], s.BaseRot[2 * N + i], s.BaseRot[3 * N + i]);
 
             Real excess = b.Excess[i];
@@ -2047,20 +3464,87 @@ namespace Evosim.Farm.Gpu.Sgl
             bool readsFlow = (mask & (1 << SFlow)) != 0;
             bool readsChemical = (mask & (1 << SChemical)) != 0;
             bool readsEnergy = (mask & (1 << SEnergy)) != 0;
+            bool readsScent = (mask & (1 << SScent)) != 0;
+            bool readsLeafDir = (mask & (1 << SLeafDir)) != 0;
+            bool readsLeaf = (mask & (1 << SLeaf)) != 0 || readsLeafDir;
+            bool readsDrive = (mask & (1 << SStroke)) != 0 || (mask & (1 << SHold)) != 0 || (mask & (1 << SRamp)) != 0;
 
             int gates = br.Gates[i];
             bool hasNutrients = (gates & 1) != 0;
             bool hasReserve = (gates & 2) != 0;
+            bool hasScent = (gates & 4) != 0;
+            bool hasLeaf = (gates & 8) != 0;
+
+            // CreatureSenses.SampleDrive: the envelope as the last step's drive left it, read before this
+            // step's drive moves it. Under the torque drive it reads 0, as sDrive was cleared.
+            if (readsDrive && cfg.BendAndPower != 0)
+            {
+                int dofLength = dof > 0 ? dof : 1;
+                for (int bl = 0; bl < links; bl++)
+                {
+                    Real partSum = position[3 * bl] + position[3 * bl + 1] + position[3 * bl + 2];
+                    if (partSum != partSum || partSum == Real.PositiveInfinity || partSum == Real.NegativeInfinity) continue;
+
+                    int n = dofCount[bl];
+                    int offset = dofStart[bl];
+                    if (n == 0 || offset < 0) continue;
+
+                    double hold = b.HoldGene[bl * N + i];
+                    for (int d = 0; d < n; d++)
+                    {
+                        int at = offset + d;
+                        if (at >= dofLength) break;
+
+                        int e = at * N + i;
+                        double stroke = dr.EPower[e];
+                        sDrive[3 * at] = Clamp((float)stroke);
+                        sDrive[3 * at + 1] = hold > 0 ? (float)MaxD(0.0, MinD(1.0, dr.EHoldLeft[e] / hold)) : 0f;
+                        sDrive[3 * at + 2] = Clamp((float)(dr.EPowerTarget[e] - stroke));
+                    }
+                }
+            }
 
             float energy = 0f;
+            bool lost = false;
             Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi,
                    br, w, cfg, readsDepth, readsUp, readsJoint, readsFlow, readsChemical && hasNutrients,
-                   readsEnergy && hasReserve, sDepth, sUp, sChem, sFlow, sAngle, sRate, ref energy);
+                   readsScent && hasScent, readsEnergy && hasReserve, readsLeaf && hasLeaf, readsLeafDir,
+                   sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, sLeaf, ref energy, ref lost);
+
+            if (lost)
+            {
+                // The chemical sense's walk gave up on this body (TankCellAt): far beyond the glass,
+                // or at a distance that is not finite. It is left unstepped from here, its state as
+                // the step found it, and lost as the finiteness check below loses a body; the
+                // farm's glass guard kills it at its next check.
+                gl.Alive[g] = 0;
+                KeepSpheres(g, links, cs, ps, cfg);
+                ps.R[g] = 0;
+                ps.Active[g] = 0;
+
+                if (cfg.PerPart != 0)
+                {
+                    for (int l = 0; l < links; l++) ps.LR[g * LinkStride + l] = 0;
+                }
+
+                return;
+            }
+
+            // The touch of the rock as the last step's contact pass left it, a bit a link, read before
+            // this step's touch is kept (KeepTouch), as CreatureSenses.Sample reads it.
+            int rock = 0;
+            if (cfg.RockTouch != 0)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    if (gl.RockTouched[g * LinkStride + l] != 0) rock |= 1 << l;
+                }
+            }
 
             // The brain reads the two gates itself (SensorRead): a body with no field or no
             // reserve source reads the standing-in constant on those channels.
             BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
-                      sDepth, sUp, sChem, sFlow, sAngle, sRate, energy);
+                      sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
 
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 2, ref clk);
@@ -2071,7 +3555,106 @@ namespace Evosim.Farm.Gpu.Sgl
 
             // ---- 4. drive (EffectorDrive.Drive) ----------------------------------------------
             bool drivePending = false;
-            if (dof != 0)
+            if (dof != 0 && cfg.BendAndPower != 0)
+            {
+                // EffectorDrive.DriveBendAndPower: each degree of freedom's power and bend through
+                // the joint's threshold and envelope, in double as the CPU keeps them; the power
+                // stays in EPower for the fluid's push below, and a critically damped muscle holds
+                // the bend, capped by the part's power.
+                int sigLen = t.SigLen[i];
+                float powerScale = b.PowerScale[i];
+                double stepD = cfg.DtD;
+                double poseOmega = cfg.PoseOmega;
+
+                long limited = 0;
+
+                for (int bl = 1; bl < links; bl++)
+                {
+                    int n = dofCount[bl];
+                    if (n == 0) continue;
+
+                    int offset = dofStart[bl];
+                    int gene = bl * N + i;
+                    double threshold = b.Threshold[gene];
+                    double reaction = b.Reaction[gene];
+                    double holdGene = b.HoldGene[gene];
+                    double release = b.Release[gene];
+                    Q4 frame = Q4.Read(jointFrame, 4 * bl);
+
+                    double allowed = cfg.LimitDrive != 0 ? (double)(smallI[bl] * cfg.SpinBudget) : double.MaxValue;
+                    double cap = MinD(allowed, (double)b.LinkPower[gene] * powerScale);
+                    double inertia = smallI[bl];
+
+                    V3 torque = V3.Zero;
+
+                    for (int d = 0; d < n; d++)
+                    {
+                        int idx = offset + d;
+                        int e = idx * N + i;
+
+                        float v = idx < sigLen ? dr.Signal[e] : 0f;
+                        double level = MaxF(0f, MinF(1f, v));
+                        double power = level <= threshold ? 0.0 : MinD(1.0, (level - threshold) / (1.0 - threshold));
+                        float wv = idx < sigLen ? dr.Bend[e] : 0f;
+                        double bend = (MaxF(-1f, MinF(1f, wv)) + 1.0) * 0.5;
+
+                        double pw = dr.EPower[e], bd = dr.EBend[e];
+                        double pt = dr.EPowerTarget[e], bt = dr.EBendTarget[e];
+                        double pr = dr.EPowerRate[e], br8 = dr.EBendRate[e];
+                        double holdLeft = dr.EHoldLeft[e];
+
+                        if (holdLeft > 0)
+                        {
+                            holdLeft -= stepD;
+                        }
+                        else if (AbsD(power - pt) > 0.01 || AbsD(bend - bt) > 0.01)
+                        {
+                            bool fromRest = pw == 0 && pt == 0;
+                            double ramp = fromRest ? reaction : release;
+                            if (ramp < stepD) ramp = stepD;
+                            pt = power;
+                            bt = bend;
+                            pr = AbsD(power - pw) / ramp;
+                            br8 = AbsD(bend - bd) / ramp;
+                            holdLeft = holdGene;
+                        }
+
+                        pw = Toward(pw, pt, pr * stepD);
+                        bd = Toward(bd, bt, br8 * stepD);
+
+                        dr.EPower[e] = pw; dr.EBend[e] = bd;
+                        dr.EPowerTarget[e] = pt; dr.EBendTarget[e] = bt;
+                        dr.EPowerRate[e] = pr; dr.EBendRate[e] = br8;
+                        dr.EHoldLeft[e] = holdLeft;
+
+                        if (poseOmega <= 0 || inertia <= 0) continue;
+                        double lo = limitLo[idx], hi = limitHi[idx];
+                        double target = lo + bd * (hi - lo);
+                        double magnitude = inertia * poseOmega * (poseOmega * (target - q[idx]) - 2.0 * qd[idx]);
+                        if (magnitude > cap) { magnitude = cap; limited++; }
+                        else if (magnitude < -cap) { magnitude = -cap; limited++; }
+
+                        torque = torque + frame.Rotate(V3.Axis(d)) * (Real)magnitude;
+                    }
+
+                    M3 rot = M3.Read(rotationMatrix, 9 * bl);
+                    V3 world = rot * torque;
+
+                    s.Applied[(3 * bl) * N + i] = world.X;
+                    s.Applied[(3 * bl + 1) * N + i] = world.Y;
+                    s.Applied[(3 * bl + 2) * N + i] = world.Z;
+
+                    V3.Write(driveTq, 3 * bl, world);
+                    V3.Write(preRelSpin, 3 * bl, V3.Read(spin, 3 * bl) - V3.Read(spin, 3 * parent[bl]));
+                    drivePending = true;
+
+                    V3.Add(fext, 6 * bl, world);
+                    V3.Add(fext, 6 * parent[bl], -world);
+                }
+
+                if (limited != 0) dr.DriveLimited[i] = dr.DriveLimited[i] + limited;
+            }
+            else if (dof != 0)
             {
                 int sigLen = t.SigLen[i];
                 int cursor = dr.Cursor[i];
@@ -2156,6 +3739,7 @@ namespace Evosim.Farm.Gpu.Sgl
             // link order, at the place the CPU applies them.
             long dragLimited = 0;
             int fluidRows = cfg.LinkRows;
+            bool powered = cfg.BendAndPower != 0 && cfg.LimbPush > 0 && cfg.PushOmega > 0;
             for (int fl = 0; fl < links; fl++)
             {
                 int frow = g * LinkStride + fl;
@@ -2169,8 +3753,52 @@ namespace Evosim.Farm.Gpu.Sgl
                 }
                 V3.Add(fext, 6 * fl, new V3(gl.LinkFluid[9 * fluidRows + frow], gl.LinkFluid[10 * fluidRows + frow],
                                             gl.LinkFluid[11 * fluidRows + frow]));
-                V3.Add(fext, 6 * fl + 3, new V3(gl.LinkFluid[12 * fluidRows + frow], gl.LinkFluid[13 * fluidRows + frow],
-                                                gl.LinkFluid[14 * fluidRows + frow]));
+                V3 linkForce = new V3(gl.LinkFluid[12 * fluidRows + frow], gl.LinkFluid[13 * fluidRows + frow],
+                                      gl.LinkFluid[14 * fluidRows + frow]);
+
+                // Under the bend-and-power drive FluidLinks left the force before the power's push
+                // and the buoyancy term: the push from this step's stroke, its work booked as
+                // Fluid.Apply books it, then the buoyancy where the CPU added it.
+                if (powered)
+                {
+                    if (parent[fl] >= 0 && position[3 * fl + 1] <= 0 && dofCount[fl] > 0)
+                    {
+                        M3 frot = M3.Read(rotationMatrix, 9 * fl);
+                        V3 toOrigin = frot * (-V3.Read(childAnchor, 3 * fl));
+                        Real linkReach = toOrigin.Magnitude;
+                        if (linkReach > 0)
+                        {
+                            V3 axis = toOrigin * ((Real)1.0 / linkReach);
+                            Q4 fframe = Q4.Read(jointFrame, 4 * fl);
+                            int fstart = dofStart[fl];
+                            Real omega = cfg.PushOmega;
+                            Real swing2 = 0;
+                            for (int d = 0; d < dofCount[fl]; d++)
+                            {
+                                Real sv = (Real)dr.EPower[(fstart + d) * N + i];
+                                if (sv <= 0) continue;
+                                V3 dofAxis = frot * fframe.Rotate(V3.Axis(d));
+                                Real along = V3.Dot(dofAxis, axis);
+                                swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
+                            }
+
+                            if (swing2 > 0)
+                            {
+                                Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
+                                Real push = cfg.LimbPush * addedMass * linkReach * swing2;
+                                linkForce = linkForce + axis * (-push);
+                                dr.Work[i] = dr.Work[i] + (double)(push * linkReach * System.MathF.Sqrt(swing2)) * cfg.DtD;
+                            }
+                        }
+                    }
+
+                    if (gl.LinkFluid[16 * fluidRows + frow] != 0)
+                    {
+                        linkForce = linkForce + new V3(0, gl.LinkFluid[15 * fluidRows + frow], 0);
+                    }
+                }
+
+                V3.Add(fext, 6 * fl + 3, linkForce);
                 dragLimited += gl.LinkLimited[frow];
             }
             if (dragLimited != 0) dr.DragLimited[i] = dr.DragLimited[i] + dragLimited;
@@ -2182,6 +3810,12 @@ namespace Evosim.Farm.Gpu.Sgl
             if (cfg.PerPart != 0)
             {
                 ContactsPerPartStaged(g, links, fext, cand, cs, gl, gr, cfg);
+                if (cfg.RockTouch != 0) KeepTouch(g, links, gl, cfg);
+                if (cfg.Anchoring != 0)
+                {
+                    Grip(g, links, position, velocity, spin, rotationMatrix, mass, smallI, fext,
+                         hasReserve, br.Reserve[i], cs, gl, cfg);
+                }
             }
             else
             {
@@ -2203,7 +3837,7 @@ namespace Evosim.Farm.Gpu.Sgl
                     dinv, ubar, tau, sang, slin, cbias, position, six, sol, residual);
 
             Integrate(links, dofCount, dofStart, tau, q, qd, ballRot, acc, spin, velocity,
-                      ref basePosition, ref baseRotation, cfg.Dt);
+                      ref basePosition, ref baseCarry, ref baseRotation, cfg.Dt);
 
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 6, ref clk);
@@ -2211,7 +3845,7 @@ namespace Evosim.Farm.Gpu.Sgl
             // ---- 10. poses, 11. velocities ----------------------------------------------------
             Poses(links, parent, dofCount, dofStart, q, ballRot, rotation, rotationMatrix,
                   position, restFrame, jointFrame, parentAnchor, childAnchor,
-                  basePosition, baseRotation);
+                  basePosition, baseRotation, baseCarry, posErr);
             Velocities(links, parent, dofCount, dofStart, q, qd, rotation, jointFrame,
                        childAnchor, position, spin, velocity, sang, slin, cbias);
 
@@ -2289,6 +3923,9 @@ namespace Evosim.Farm.Gpu.Sgl
                     if (links == 1)
                     {
                         ps.LCx[row] = centre.X; ps.LCy[row] = centre.Y; ps.LCz[row] = centre.Z;
+                        ps.LEx[row] = CarryBase ? posErr[0] : 0;
+                        ps.LEy[row] = CarryBase ? posErr[1] : 0;
+                        ps.LEz[row] = CarryBase ? posErr[2] : 0;
                         ps.LR[row] = radius;
                         ps.LVx[row] = mean.X; ps.LVy[row] = mean.Y; ps.LVz[row] = mean.Z;
                     }
@@ -2299,6 +3936,9 @@ namespace Evosim.Farm.Gpu.Sgl
                             ps.LCx[row + l] = position[3 * l];
                             ps.LCy[row + l] = position[3 * l + 1];
                             ps.LCz[row + l] = position[3 * l + 2];
+                            ps.LEx[row + l] = CarryBase ? posErr[3 * l] : 0;
+                            ps.LEy[row + l] = CarryBase ? posErr[3 * l + 1] : 0;
+                            ps.LEz[row + l] = CarryBase ? posErr[3 * l + 2] : 0;
                             ps.LR[row + l] = reach[l];
                             ps.LVx[row + l] = velocity[3 * l];
                             ps.LVy[row + l] = velocity[3 * l + 1];
@@ -2315,51 +3955,156 @@ namespace Evosim.Farm.Gpu.Sgl
             s.BasePos[i] = basePosition.X;
             s.BasePos[N + i] = basePosition.Y;
             s.BasePos[2 * N + i] = basePosition.Z;
+            s.BaseCarry[i] = baseCarry.X;
+            s.BaseCarry[N + i] = baseCarry.Y;
+            s.BaseCarry[2 * N + i] = baseCarry.Z;
             s.BaseRot[i] = baseRotation.X;
             s.BaseRot[N + i] = baseRotation.Y;
             s.BaseRot[2 * N + i] = baseRotation.Z;
             s.BaseRot[3 * N + i] = baseRotation.W;
 
+            // Every read of a link from the thread's arrays before any of its writes, as in the load.
             for (int d = 0; d < dof; d++)
             {
                 int at = d * N + i;
-                s.Q[at] = q[d];
-                s.Qd[at] = qd[d];
-                s.Tau[at] = tau[d];
-                s.LimitImplicit[at] = limitImplicit[d];
+                Real qv = q[d], qdv = qd[d], tv = tau[d], li = limitImplicit[d];
+                s.Q[at] = qv; s.Qd[at] = qdv; s.Tau[at] = tv; s.LimitImplicit[at] = li;
             }
 
             for (int l = 0; l < links; l++)
             {
-                for (int k = 0; k < 3; k++)
-                {
-                    int a3 = (3 * l + k) * N + i;
-                    s.Pos[a3] = position[3 * l + k];
-                    s.Spin[a3] = spin[3 * l + k];
-                    s.Vel[a3] = velocity[3 * l + k];
-                    s.RelVel[a3] = relVel[3 * l + k];
-                    s.Water[a3] = water[3 * l + k];
-                    s.WaterAcc[a3] = wacc[3 * l + k];
-                }
-                for (int k = 0; k < 4; k++)
-                {
-                    int a4 = (4 * l + k) * N + i;
-                    s.BallRot[a4] = ballRot[4 * l + k];
-                    s.Rot[a4] = rotation[4 * l + k];
-                }
-                for (int k = 0; k < 9; k++)
-                {
-                    int a9 = (9 * l + k) * N + i;
-                    s.RotM[a9] = rotationMatrix[9 * l + k];
-                    s.Sang[a9] = sang[9 * l + k];
-                    s.Slin[a9] = slin[9 * l + k];
-                }
-                for (int k = 0; k < 6; k++)
-                {
-                    int a6 = (6 * l + k) * N + i;
-                    s.Cbias[a6] = cbias[6 * l + k];
-                    s.Fext[a6] = fext[6 * l + k];
-                }
+                int a3 = 3 * l * N + i, a4 = 4 * l * N + i, a9 = 9 * l * N + i, a6 = 6 * l * N + i;
+                Real position0 = position[3 * l];
+                Real spin0 = spin[3 * l];
+                Real velocity0 = velocity[3 * l];
+                Real relVel0 = relVel[3 * l];
+                Real water0 = water[3 * l];
+                Real wacc0 = wacc[3 * l];
+                Real position1 = position[3 * l + 1];
+                Real spin1 = spin[3 * l + 1];
+                Real velocity1 = velocity[3 * l + 1];
+                Real relVel1 = relVel[3 * l + 1];
+                Real water1 = water[3 * l + 1];
+                Real wacc1 = wacc[3 * l + 1];
+                Real position2 = position[3 * l + 2];
+                Real spin2 = spin[3 * l + 2];
+                Real velocity2 = velocity[3 * l + 2];
+                Real relVel2 = relVel[3 * l + 2];
+                Real water2 = water[3 * l + 2];
+                Real wacc2 = wacc[3 * l + 2];
+                Real ballRot0 = ballRot[4 * l];
+                Real rotation0 = rotation[4 * l];
+                Real ballRot1 = ballRot[4 * l + 1];
+                Real rotation1 = rotation[4 * l + 1];
+                Real ballRot2 = ballRot[4 * l + 2];
+                Real rotation2 = rotation[4 * l + 2];
+                Real ballRot3 = ballRot[4 * l + 3];
+                Real rotation3 = rotation[4 * l + 3];
+                Real rotationMatrix0 = rotationMatrix[9 * l];
+                Real sang0 = sang[9 * l];
+                Real slin0 = slin[9 * l];
+                Real rotationMatrix1 = rotationMatrix[9 * l + 1];
+                Real sang1 = sang[9 * l + 1];
+                Real slin1 = slin[9 * l + 1];
+                Real rotationMatrix2 = rotationMatrix[9 * l + 2];
+                Real sang2 = sang[9 * l + 2];
+                Real slin2 = slin[9 * l + 2];
+                Real rotationMatrix3 = rotationMatrix[9 * l + 3];
+                Real sang3 = sang[9 * l + 3];
+                Real slin3 = slin[9 * l + 3];
+                Real rotationMatrix4 = rotationMatrix[9 * l + 4];
+                Real sang4 = sang[9 * l + 4];
+                Real slin4 = slin[9 * l + 4];
+                Real rotationMatrix5 = rotationMatrix[9 * l + 5];
+                Real sang5 = sang[9 * l + 5];
+                Real slin5 = slin[9 * l + 5];
+                Real rotationMatrix6 = rotationMatrix[9 * l + 6];
+                Real sang6 = sang[9 * l + 6];
+                Real slin6 = slin[9 * l + 6];
+                Real rotationMatrix7 = rotationMatrix[9 * l + 7];
+                Real sang7 = sang[9 * l + 7];
+                Real slin7 = slin[9 * l + 7];
+                Real rotationMatrix8 = rotationMatrix[9 * l + 8];
+                Real sang8 = sang[9 * l + 8];
+                Real slin8 = slin[9 * l + 8];
+                Real cbias0 = cbias[6 * l];
+                Real fext0 = fext[6 * l];
+                Real cbias1 = cbias[6 * l + 1];
+                Real fext1 = fext[6 * l + 1];
+                Real cbias2 = cbias[6 * l + 2];
+                Real fext2 = fext[6 * l + 2];
+                Real cbias3 = cbias[6 * l + 3];
+                Real fext3 = fext[6 * l + 3];
+                Real cbias4 = cbias[6 * l + 4];
+                Real fext4 = fext[6 * l + 4];
+                Real cbias5 = cbias[6 * l + 5];
+                Real fext5 = fext[6 * l + 5];
+
+                s.Pos[a3] = position0;
+                s.Spin[a3] = spin0;
+                s.Vel[a3] = velocity0;
+                s.RelVel[a3] = relVel0;
+                s.Water[a3] = water0;
+                s.WaterAcc[a3] = wacc0;
+                s.Pos[a3 + N] = position1;
+                s.Spin[a3 + N] = spin1;
+                s.Vel[a3 + N] = velocity1;
+                s.RelVel[a3 + N] = relVel1;
+                s.Water[a3 + N] = water1;
+                s.WaterAcc[a3 + N] = wacc1;
+                s.Pos[a3 + 2 * N] = position2;
+                s.Spin[a3 + 2 * N] = spin2;
+                s.Vel[a3 + 2 * N] = velocity2;
+                s.RelVel[a3 + 2 * N] = relVel2;
+                s.Water[a3 + 2 * N] = water2;
+                s.WaterAcc[a3 + 2 * N] = wacc2;
+                s.BallRot[a4] = ballRot0;
+                s.Rot[a4] = rotation0;
+                s.BallRot[a4 + N] = ballRot1;
+                s.Rot[a4 + N] = rotation1;
+                s.BallRot[a4 + 2 * N] = ballRot2;
+                s.Rot[a4 + 2 * N] = rotation2;
+                s.BallRot[a4 + 3 * N] = ballRot3;
+                s.Rot[a4 + 3 * N] = rotation3;
+                s.RotM[a9] = rotationMatrix0;
+                s.Sang[a9] = sang0;
+                s.Slin[a9] = slin0;
+                s.RotM[a9 + N] = rotationMatrix1;
+                s.Sang[a9 + N] = sang1;
+                s.Slin[a9 + N] = slin1;
+                s.RotM[a9 + 2 * N] = rotationMatrix2;
+                s.Sang[a9 + 2 * N] = sang2;
+                s.Slin[a9 + 2 * N] = slin2;
+                s.RotM[a9 + 3 * N] = rotationMatrix3;
+                s.Sang[a9 + 3 * N] = sang3;
+                s.Slin[a9 + 3 * N] = slin3;
+                s.RotM[a9 + 4 * N] = rotationMatrix4;
+                s.Sang[a9 + 4 * N] = sang4;
+                s.Slin[a9 + 4 * N] = slin4;
+                s.RotM[a9 + 5 * N] = rotationMatrix5;
+                s.Sang[a9 + 5 * N] = sang5;
+                s.Slin[a9 + 5 * N] = slin5;
+                s.RotM[a9 + 6 * N] = rotationMatrix6;
+                s.Sang[a9 + 6 * N] = sang6;
+                s.Slin[a9 + 6 * N] = slin6;
+                s.RotM[a9 + 7 * N] = rotationMatrix7;
+                s.Sang[a9 + 7 * N] = sang7;
+                s.Slin[a9 + 7 * N] = slin7;
+                s.RotM[a9 + 8 * N] = rotationMatrix8;
+                s.Sang[a9 + 8 * N] = sang8;
+                s.Slin[a9 + 8 * N] = slin8;
+                s.Cbias[a6] = cbias0;
+                s.Fext[a6] = fext0;
+                s.Cbias[a6 + N] = cbias1;
+                s.Fext[a6 + N] = fext1;
+                s.Cbias[a6 + 2 * N] = cbias2;
+                s.Fext[a6 + 2 * N] = fext2;
+                s.Cbias[a6 + 3 * N] = cbias3;
+                s.Fext[a6 + 3 * N] = fext3;
+                s.Cbias[a6 + 4 * N] = cbias4;
+                s.Fext[a6 + 4 * N] = fext4;
+                s.Cbias[a6 + 5 * N] = cbias5;
+                s.Fext[a6 + 5 * N] = fext5;
             }
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 9, ref clk);
@@ -2386,6 +4131,10 @@ namespace Evosim.Farm.Gpu.Sgl
             // DynamicsWorld.StepOne, `if (!body.Alive) return;`. The commit copies the pending
             // spheres, which a lost body stopped refreshing; with the commit a swap of two sets,
             // the pending set is handed the committed values so that the swap is the copy.
+            // A body the reach guard recorded this step (LoseStrays) dies here, after the streams
+            // join, rather than in LoseStrays, beside which the water and the fluid read Alive.
+            if (gl.Alive[g] != 0 && gl.StrayCode[g] != 0) gl.Alive[g] = 0;
+
             if (gl.Alive[g] == 0)
             {
                 KeepSpheres(g, links, cs, ps, cfg);
@@ -2430,6 +4179,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
             var ballRot = new Real[4 * MaxLinks];
             var position = new Real[3 * MaxLinks];
+            var posErr = new Real[3 * MaxLinks];
             var rotation = new Real[4 * MaxLinks];
             var rotationMatrix = new Real[9 * MaxLinks];
             var spin = new Real[3 * MaxLinks];
@@ -2462,9 +4212,12 @@ namespace Evosim.Farm.Gpu.Sgl
             var sDepth = new float[MaxLinks];
             var sUp = new float[MaxLinks];
             var sChem = new float[MaxLinks];
+            var sScent = new float[MaxLinks];
+            var sLeaf = new float[4 * MaxLinks];   // a part's leaf strength, then its direction's three
             var sFlow = new float[3 * MaxLinks];
             var sAngle = new float[MaxDof];
             var sRate = new float[MaxDof];
+            var sDrive = new float[3 * MaxDof];
 
             var six = new Real[42];
             var sol = new Real[6];
@@ -2475,76 +4228,214 @@ namespace Evosim.Farm.Gpu.Sgl
             // this step writing them (a channel whose mask bit is clear) read 0, never garbage.
             for (int k = 0; k < MaxLinks; k++)
             {
-                sDepth[k] = 0f; sUp[k] = 0f; sChem[k] = 0f;
+                sDepth[k] = 0f; sUp[k] = 0f; sChem[k] = 0f; sScent[k] = 0f;
+                sLeaf[4 * k] = 0f; sLeaf[4 * k + 1] = 0f; sLeaf[4 * k + 2] = 0f; sLeaf[4 * k + 3] = 0f;
                 sFlow[3 * k] = 0f; sFlow[3 * k + 1] = 0f; sFlow[3 * k + 2] = 0f;
                 driveTq[3 * k] = 0; driveTq[3 * k + 1] = 0; driveTq[3 * k + 2] = 0;
             }
-            for (int k = 0; k < MaxDof; k++) { sAngle[k] = 0f; sRate[k] = 0f; }
+            for (int k = 0; k < MaxDof; k++)
+            {
+                sAngle[k] = 0f; sRate[k] = 0f;
+                sDrive[3 * k] = 0f; sDrive[3 * k + 1] = 0f; sDrive[3 * k + 2] = 0f;
+            }
 
             // ---- load ------------------------------------------------------------------------
+            // Every read of a link before any of its writes (card-next-r57.md, part 6): the reads are
+            // then independent of the stores to the thread's arrays in the PTX itself, so the card can
+            // have them all in flight at once rather than one memory latency a value. The same values
+            // land in the same places as the loop over k did.
             for (int l = 0; l < links; l++)
             {
                 int at = l * N + i;
-                parent[l] = t.Parent[at];
-                dofCount[l] = t.DofCount[at];
-                dofStart[l] = t.DofStart[at];
-                panelStart[l] = t.PanelStart[at];
-                thinAxis[l] = t.ThinAxis[at];
+                int a3 = 3 * l * N + i, a4 = 4 * l * N + i, a9 = 9 * l * N + i, a6 = 6 * l * N + i;
+                int parent_ = t.Parent[at];
+                int dofCount_ = t.DofCount[at];
+                int dofStart_ = t.DofStart[at];
+                int panelStart_ = t.PanelStart[at];
+                int thinAxis_ = t.ThinAxis[at];
+                Real mass_ = b.Mass[at];
+                Real lift_ = b.Lift[at];
+                Real volume_ = b.Volume[at];
+                Real smallI_ = b.SmallI[at];
+                Real reach_ = b.Reach[at];
+                Real arm_ = b.Arm[at];
+                Real inertiaLocal0 = b.Inertia[a3];
+                Real childAnchor0 = b.ChildAnchor[a3];
+                Real parentAnchor0 = b.ParentAnchor[a3];
+                Real position0 = s.Pos[a3];
+                Real spin0 = s.Spin[a3];
+                Real velocity0 = s.Vel[a3];
+                Real relVel0 = s.RelVel[a3];
+                Real water0 = s.Water[a3];
+                Real wacc0 = s.WaterAcc[a3];
+                Real inertiaLocal1 = b.Inertia[a3 + N];
+                Real childAnchor1 = b.ChildAnchor[a3 + N];
+                Real parentAnchor1 = b.ParentAnchor[a3 + N];
+                Real position1 = s.Pos[a3 + N];
+                Real spin1 = s.Spin[a3 + N];
+                Real velocity1 = s.Vel[a3 + N];
+                Real relVel1 = s.RelVel[a3 + N];
+                Real water1 = s.Water[a3 + N];
+                Real wacc1 = s.WaterAcc[a3 + N];
+                Real inertiaLocal2 = b.Inertia[a3 + 2 * N];
+                Real childAnchor2 = b.ChildAnchor[a3 + 2 * N];
+                Real parentAnchor2 = b.ParentAnchor[a3 + 2 * N];
+                Real position2 = s.Pos[a3 + 2 * N];
+                Real spin2 = s.Spin[a3 + 2 * N];
+                Real velocity2 = s.Vel[a3 + 2 * N];
+                Real relVel2 = s.RelVel[a3 + 2 * N];
+                Real water2 = s.Water[a3 + 2 * N];
+                Real wacc2 = s.WaterAcc[a3 + 2 * N];
+                Real jointFrame0 = b.JointFrame[a4];
+                Real restFrame0 = b.RestFrame[a4];
+                Real ballRot0 = s.BallRot[a4];
+                Real rotation0 = s.Rot[a4];
+                Real jointFrame1 = b.JointFrame[a4 + N];
+                Real restFrame1 = b.RestFrame[a4 + N];
+                Real ballRot1 = s.BallRot[a4 + N];
+                Real rotation1 = s.Rot[a4 + N];
+                Real jointFrame2 = b.JointFrame[a4 + 2 * N];
+                Real restFrame2 = b.RestFrame[a4 + 2 * N];
+                Real ballRot2 = s.BallRot[a4 + 2 * N];
+                Real rotation2 = s.Rot[a4 + 2 * N];
+                Real jointFrame3 = b.JointFrame[a4 + 3 * N];
+                Real restFrame3 = b.RestFrame[a4 + 3 * N];
+                Real ballRot3 = s.BallRot[a4 + 3 * N];
+                Real rotation3 = s.Rot[a4 + 3 * N];
+                Real rotationMatrix0 = s.RotM[a9];
+                Real sang0 = s.Sang[a9];
+                Real slin0 = s.Slin[a9];
+                Real rotationMatrix1 = s.RotM[a9 + N];
+                Real sang1 = s.Sang[a9 + N];
+                Real slin1 = s.Slin[a9 + N];
+                Real rotationMatrix2 = s.RotM[a9 + 2 * N];
+                Real sang2 = s.Sang[a9 + 2 * N];
+                Real slin2 = s.Slin[a9 + 2 * N];
+                Real rotationMatrix3 = s.RotM[a9 + 3 * N];
+                Real sang3 = s.Sang[a9 + 3 * N];
+                Real slin3 = s.Slin[a9 + 3 * N];
+                Real rotationMatrix4 = s.RotM[a9 + 4 * N];
+                Real sang4 = s.Sang[a9 + 4 * N];
+                Real slin4 = s.Slin[a9 + 4 * N];
+                Real rotationMatrix5 = s.RotM[a9 + 5 * N];
+                Real sang5 = s.Sang[a9 + 5 * N];
+                Real slin5 = s.Slin[a9 + 5 * N];
+                Real rotationMatrix6 = s.RotM[a9 + 6 * N];
+                Real sang6 = s.Sang[a9 + 6 * N];
+                Real slin6 = s.Slin[a9 + 6 * N];
+                Real rotationMatrix7 = s.RotM[a9 + 7 * N];
+                Real sang7 = s.Sang[a9 + 7 * N];
+                Real slin7 = s.Slin[a9 + 7 * N];
+                Real rotationMatrix8 = s.RotM[a9 + 8 * N];
+                Real sang8 = s.Sang[a9 + 8 * N];
+                Real slin8 = s.Slin[a9 + 8 * N];
+                Real cbias0 = s.Cbias[a6];
+                Real cbias1 = s.Cbias[a6 + N];
+                Real cbias2 = s.Cbias[a6 + 2 * N];
+                Real cbias3 = s.Cbias[a6 + 3 * N];
+                Real cbias4 = s.Cbias[a6 + 4 * N];
+                Real cbias5 = s.Cbias[a6 + 5 * N];
 
-                mass[l] = b.Mass[at];
-                lift[l] = b.Lift[at];
-                volume[l] = b.Volume[at];
-                smallI[l] = b.SmallI[at];
-                reach[l] = b.Reach[at];
-                arm[l] = b.Arm[at];
-
-                for (int k = 0; k < 3; k++)
-                {
-                    int a3 = (3 * l + k) * N + i;
-                    inertiaLocal[3 * l + k] = b.Inertia[a3];
-                    childAnchor[3 * l + k] = b.ChildAnchor[a3];
-                    parentAnchor[3 * l + k] = b.ParentAnchor[a3];
-                    position[3 * l + k] = s.Pos[a3];
-                    spin[3 * l + k] = s.Spin[a3];
-                    velocity[3 * l + k] = s.Vel[a3];
-                    relVel[3 * l + k] = s.RelVel[a3];
-                    water[3 * l + k] = s.Water[a3];
-                    wacc[3 * l + k] = s.WaterAcc[a3];
-                }
-
-                for (int k = 0; k < 4; k++)
-                {
-                    int a4 = (4 * l + k) * N + i;
-                    jointFrame[4 * l + k] = b.JointFrame[a4];
-                    restFrame[4 * l + k] = b.RestFrame[a4];
-                    ballRot[4 * l + k] = s.BallRot[a4];
-                    rotation[4 * l + k] = s.Rot[a4];
-                }
-
-                for (int k = 0; k < 9; k++)
-                {
-                    int a9 = (9 * l + k) * N + i;
-                    rotationMatrix[9 * l + k] = s.RotM[a9];
-                    sang[9 * l + k] = s.Sang[a9];
-                    slin[9 * l + k] = s.Slin[a9];
-                }
-
-                for (int k = 0; k < 6; k++) cbias[6 * l + k] = s.Cbias[(6 * l + k) * N + i];
+                parent[l] = parent_;
+                dofCount[l] = dofCount_;
+                dofStart[l] = dofStart_;
+                panelStart[l] = panelStart_;
+                thinAxis[l] = thinAxis_;
+                mass[l] = mass_;
+                lift[l] = lift_;
+                volume[l] = volume_;
+                smallI[l] = smallI_;
+                reach[l] = reach_;
+                arm[l] = arm_;
+                inertiaLocal[3 * l] = inertiaLocal0;
+                childAnchor[3 * l] = childAnchor0;
+                parentAnchor[3 * l] = parentAnchor0;
+                position[3 * l] = position0;
+                spin[3 * l] = spin0;
+                velocity[3 * l] = velocity0;
+                relVel[3 * l] = relVel0;
+                water[3 * l] = water0;
+                wacc[3 * l] = wacc0;
+                inertiaLocal[3 * l + 1] = inertiaLocal1;
+                childAnchor[3 * l + 1] = childAnchor1;
+                parentAnchor[3 * l + 1] = parentAnchor1;
+                position[3 * l + 1] = position1;
+                spin[3 * l + 1] = spin1;
+                velocity[3 * l + 1] = velocity1;
+                relVel[3 * l + 1] = relVel1;
+                water[3 * l + 1] = water1;
+                wacc[3 * l + 1] = wacc1;
+                inertiaLocal[3 * l + 2] = inertiaLocal2;
+                childAnchor[3 * l + 2] = childAnchor2;
+                parentAnchor[3 * l + 2] = parentAnchor2;
+                position[3 * l + 2] = position2;
+                spin[3 * l + 2] = spin2;
+                velocity[3 * l + 2] = velocity2;
+                relVel[3 * l + 2] = relVel2;
+                water[3 * l + 2] = water2;
+                wacc[3 * l + 2] = wacc2;
+                jointFrame[4 * l] = jointFrame0;
+                restFrame[4 * l] = restFrame0;
+                ballRot[4 * l] = ballRot0;
+                rotation[4 * l] = rotation0;
+                jointFrame[4 * l + 1] = jointFrame1;
+                restFrame[4 * l + 1] = restFrame1;
+                ballRot[4 * l + 1] = ballRot1;
+                rotation[4 * l + 1] = rotation1;
+                jointFrame[4 * l + 2] = jointFrame2;
+                restFrame[4 * l + 2] = restFrame2;
+                ballRot[4 * l + 2] = ballRot2;
+                rotation[4 * l + 2] = rotation2;
+                jointFrame[4 * l + 3] = jointFrame3;
+                restFrame[4 * l + 3] = restFrame3;
+                ballRot[4 * l + 3] = ballRot3;
+                rotation[4 * l + 3] = rotation3;
+                rotationMatrix[9 * l] = rotationMatrix0;
+                sang[9 * l] = sang0;
+                slin[9 * l] = slin0;
+                rotationMatrix[9 * l + 1] = rotationMatrix1;
+                sang[9 * l + 1] = sang1;
+                slin[9 * l + 1] = slin1;
+                rotationMatrix[9 * l + 2] = rotationMatrix2;
+                sang[9 * l + 2] = sang2;
+                slin[9 * l + 2] = slin2;
+                rotationMatrix[9 * l + 3] = rotationMatrix3;
+                sang[9 * l + 3] = sang3;
+                slin[9 * l + 3] = slin3;
+                rotationMatrix[9 * l + 4] = rotationMatrix4;
+                sang[9 * l + 4] = sang4;
+                slin[9 * l + 4] = slin4;
+                rotationMatrix[9 * l + 5] = rotationMatrix5;
+                sang[9 * l + 5] = sang5;
+                slin[9 * l + 5] = slin5;
+                rotationMatrix[9 * l + 6] = rotationMatrix6;
+                sang[9 * l + 6] = sang6;
+                slin[9 * l + 6] = slin6;
+                rotationMatrix[9 * l + 7] = rotationMatrix7;
+                sang[9 * l + 7] = sang7;
+                slin[9 * l + 7] = slin7;
+                rotationMatrix[9 * l + 8] = rotationMatrix8;
+                sang[9 * l + 8] = sang8;
+                slin[9 * l + 8] = slin8;
+                cbias[6 * l] = cbias0;
+                cbias[6 * l + 1] = cbias1;
+                cbias[6 * l + 2] = cbias2;
+                cbias[6 * l + 3] = cbias3;
+                cbias[6 * l + 4] = cbias4;
+                cbias[6 * l + 5] = cbias5;
             }
             panelStart[links] = t.PanelStart[links * N + i];
 
             for (int d = 0; d < dof; d++)
             {
                 int at = d * N + i;
-                limitLo[d] = b.LimitLo[at];
-                limitHi[d] = b.LimitHi[at];
-                limitStiff[d] = b.LimitStiff[at];
-                limitDamp[d] = b.LimitDamp[at];
-                q[d] = s.Q[at];
-                qd[d] = s.Qd[at];
+                Real lo = b.LimitLo[at], hi = b.LimitHi[at], stiff = b.LimitStiff[at], damp = b.LimitDamp[at];
+                Real qv = s.Q[at], qdv = s.Qd[at];
+                limitLo[d] = lo; limitHi[d] = hi; limitStiff[d] = stiff; limitDamp[d] = damp;
+                q[d] = qv; qd[d] = qdv;
             }
-
             var basePosition = new V3(s.BasePos[i], s.BasePos[N + i], s.BasePos[2 * N + i]);
+            var baseCarry = new V3(s.BaseCarry[i], s.BaseCarry[N + i], s.BaseCarry[2 * N + i]);
             var baseRotation = new Q4(s.BaseRot[i], s.BaseRot[N + i], s.BaseRot[2 * N + i], s.BaseRot[3 * N + i]);
 
             Real excess = b.Excess[i];
@@ -2569,20 +4460,87 @@ namespace Evosim.Farm.Gpu.Sgl
             bool readsFlow = (mask & (1 << SFlow)) != 0;
             bool readsChemical = (mask & (1 << SChemical)) != 0;
             bool readsEnergy = (mask & (1 << SEnergy)) != 0;
+            bool readsScent = (mask & (1 << SScent)) != 0;
+            bool readsLeafDir = (mask & (1 << SLeafDir)) != 0;
+            bool readsLeaf = (mask & (1 << SLeaf)) != 0 || readsLeafDir;
+            bool readsDrive = (mask & (1 << SStroke)) != 0 || (mask & (1 << SHold)) != 0 || (mask & (1 << SRamp)) != 0;
 
             int gates = br.Gates[i];
             bool hasNutrients = (gates & 1) != 0;
             bool hasReserve = (gates & 2) != 0;
+            bool hasScent = (gates & 4) != 0;
+            bool hasLeaf = (gates & 8) != 0;
+
+            // CreatureSenses.SampleDrive: the envelope as the last step's drive left it, read before this
+            // step's drive moves it. Under the torque drive it reads 0, as sDrive was cleared.
+            if (readsDrive && cfg.BendAndPower != 0)
+            {
+                int dofLength = dof > 0 ? dof : 1;
+                for (int bl = 0; bl < links; bl++)
+                {
+                    Real partSum = position[3 * bl] + position[3 * bl + 1] + position[3 * bl + 2];
+                    if (partSum != partSum || partSum == Real.PositiveInfinity || partSum == Real.NegativeInfinity) continue;
+
+                    int n = dofCount[bl];
+                    int offset = dofStart[bl];
+                    if (n == 0 || offset < 0) continue;
+
+                    double hold = b.HoldGene[bl * N + i];
+                    for (int d = 0; d < n; d++)
+                    {
+                        int at = offset + d;
+                        if (at >= dofLength) break;
+
+                        int e = at * N + i;
+                        double stroke = dr.EPower[e];
+                        sDrive[3 * at] = Clamp((float)stroke);
+                        sDrive[3 * at + 1] = hold > 0 ? (float)MaxD(0.0, MinD(1.0, dr.EHoldLeft[e] / hold)) : 0f;
+                        sDrive[3 * at + 2] = Clamp((float)(dr.EPowerTarget[e] - stroke));
+                    }
+                }
+            }
 
             float energy = 0f;
+            bool lost = false;
             Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi,
                    br, w, cfg, readsDepth, readsUp, readsJoint, readsFlow, readsChemical && hasNutrients,
-                   readsEnergy && hasReserve, sDepth, sUp, sChem, sFlow, sAngle, sRate, ref energy);
+                   readsScent && hasScent, readsEnergy && hasReserve, readsLeaf && hasLeaf, readsLeafDir,
+                   sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, sLeaf, ref energy, ref lost);
+
+            if (lost)
+            {
+                // The chemical sense's walk gave up on this body (TankCellAt): far beyond the glass,
+                // or at a distance that is not finite. It is left unstepped from here, its state as
+                // the step found it, and lost as the finiteness check below loses a body; the
+                // farm's glass guard kills it at its next check.
+                gl.Alive[g] = 0;
+                KeepSpheres(g, links, cs, ps, cfg);
+                ps.R[g] = 0;
+                ps.Active[g] = 0;
+
+                if (cfg.PerPart != 0)
+                {
+                    for (int l = 0; l < links; l++) ps.LR[g * LinkStride + l] = 0;
+                }
+
+                return;
+            }
+
+            // The touch of the rock as the last step's contact pass left it, a bit a link, read before
+            // this step's touch is kept (KeepTouch), as CreatureSenses.Sample reads it.
+            int rock = 0;
+            if (cfg.RockTouch != 0)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    if (gl.RockTouched[g * LinkStride + l] != 0) rock |= 1 << l;
+                }
+            }
 
             // The brain reads the two gates itself (SensorRead): a body with no field or no
             // reserve source reads the standing-in constant on those channels.
             BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
-                      sDepth, sUp, sChem, sFlow, sAngle, sRate, energy);
+                      sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
 
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 2, ref clk);
@@ -2593,7 +4551,106 @@ namespace Evosim.Farm.Gpu.Sgl
 
             // ---- 4. drive (EffectorDrive.Drive) ----------------------------------------------
             bool drivePending = false;
-            if (dof != 0)
+            if (dof != 0 && cfg.BendAndPower != 0)
+            {
+                // EffectorDrive.DriveBendAndPower: each degree of freedom's power and bend through
+                // the joint's threshold and envelope, in double as the CPU keeps them; the power
+                // stays in EPower for the fluid's push below, and a critically damped muscle holds
+                // the bend, capped by the part's power.
+                int sigLen = t.SigLen[i];
+                float powerScale = b.PowerScale[i];
+                double stepD = cfg.DtD;
+                double poseOmega = cfg.PoseOmega;
+
+                long limited = 0;
+
+                for (int bl = 1; bl < links; bl++)
+                {
+                    int n = dofCount[bl];
+                    if (n == 0) continue;
+
+                    int offset = dofStart[bl];
+                    int gene = bl * N + i;
+                    double threshold = b.Threshold[gene];
+                    double reaction = b.Reaction[gene];
+                    double holdGene = b.HoldGene[gene];
+                    double release = b.Release[gene];
+                    Q4 frame = Q4.Read(jointFrame, 4 * bl);
+
+                    double allowed = cfg.LimitDrive != 0 ? (double)(smallI[bl] * cfg.SpinBudget) : double.MaxValue;
+                    double cap = MinD(allowed, (double)b.LinkPower[gene] * powerScale);
+                    double inertia = smallI[bl];
+
+                    V3 torque = V3.Zero;
+
+                    for (int d = 0; d < n; d++)
+                    {
+                        int idx = offset + d;
+                        int e = idx * N + i;
+
+                        float v = idx < sigLen ? dr.Signal[e] : 0f;
+                        double level = MaxF(0f, MinF(1f, v));
+                        double power = level <= threshold ? 0.0 : MinD(1.0, (level - threshold) / (1.0 - threshold));
+                        float wv = idx < sigLen ? dr.Bend[e] : 0f;
+                        double bend = (MaxF(-1f, MinF(1f, wv)) + 1.0) * 0.5;
+
+                        double pw = dr.EPower[e], bd = dr.EBend[e];
+                        double pt = dr.EPowerTarget[e], bt = dr.EBendTarget[e];
+                        double pr = dr.EPowerRate[e], br8 = dr.EBendRate[e];
+                        double holdLeft = dr.EHoldLeft[e];
+
+                        if (holdLeft > 0)
+                        {
+                            holdLeft -= stepD;
+                        }
+                        else if (AbsD(power - pt) > 0.01 || AbsD(bend - bt) > 0.01)
+                        {
+                            bool fromRest = pw == 0 && pt == 0;
+                            double ramp = fromRest ? reaction : release;
+                            if (ramp < stepD) ramp = stepD;
+                            pt = power;
+                            bt = bend;
+                            pr = AbsD(power - pw) / ramp;
+                            br8 = AbsD(bend - bd) / ramp;
+                            holdLeft = holdGene;
+                        }
+
+                        pw = Toward(pw, pt, pr * stepD);
+                        bd = Toward(bd, bt, br8 * stepD);
+
+                        dr.EPower[e] = pw; dr.EBend[e] = bd;
+                        dr.EPowerTarget[e] = pt; dr.EBendTarget[e] = bt;
+                        dr.EPowerRate[e] = pr; dr.EBendRate[e] = br8;
+                        dr.EHoldLeft[e] = holdLeft;
+
+                        if (poseOmega <= 0 || inertia <= 0) continue;
+                        double lo = limitLo[idx], hi = limitHi[idx];
+                        double target = lo + bd * (hi - lo);
+                        double magnitude = inertia * poseOmega * (poseOmega * (target - q[idx]) - 2.0 * qd[idx]);
+                        if (magnitude > cap) { magnitude = cap; limited++; }
+                        else if (magnitude < -cap) { magnitude = -cap; limited++; }
+
+                        torque = torque + frame.Rotate(V3.Axis(d)) * (Real)magnitude;
+                    }
+
+                    M3 rot = M3.Read(rotationMatrix, 9 * bl);
+                    V3 world = rot * torque;
+
+                    s.Applied[(3 * bl) * N + i] = world.X;
+                    s.Applied[(3 * bl + 1) * N + i] = world.Y;
+                    s.Applied[(3 * bl + 2) * N + i] = world.Z;
+
+                    V3.Write(driveTq, 3 * bl, world);
+                    V3.Write(preRelSpin, 3 * bl, V3.Read(spin, 3 * bl) - V3.Read(spin, 3 * parent[bl]));
+                    drivePending = true;
+
+                    V3.Add(fext, 6 * bl, world);
+                    V3.Add(fext, 6 * parent[bl], -world);
+                }
+
+                if (limited != 0) dr.DriveLimited[i] = dr.DriveLimited[i] + limited;
+            }
+            else if (dof != 0)
             {
                 int sigLen = t.SigLen[i];
                 int cursor = dr.Cursor[i];
@@ -2678,6 +4735,7 @@ namespace Evosim.Farm.Gpu.Sgl
             // link order, at the place the CPU applies them.
             long dragLimited = 0;
             int fluidRows = cfg.LinkRows;
+            bool powered = cfg.BendAndPower != 0 && cfg.LimbPush > 0 && cfg.PushOmega > 0;
             for (int fl = 0; fl < links; fl++)
             {
                 int frow = g * LinkStride + fl;
@@ -2691,8 +4749,52 @@ namespace Evosim.Farm.Gpu.Sgl
                 }
                 V3.Add(fext, 6 * fl, new V3(gl.LinkFluid[9 * fluidRows + frow], gl.LinkFluid[10 * fluidRows + frow],
                                             gl.LinkFluid[11 * fluidRows + frow]));
-                V3.Add(fext, 6 * fl + 3, new V3(gl.LinkFluid[12 * fluidRows + frow], gl.LinkFluid[13 * fluidRows + frow],
-                                                gl.LinkFluid[14 * fluidRows + frow]));
+                V3 linkForce = new V3(gl.LinkFluid[12 * fluidRows + frow], gl.LinkFluid[13 * fluidRows + frow],
+                                      gl.LinkFluid[14 * fluidRows + frow]);
+
+                // Under the bend-and-power drive FluidLinks left the force before the power's push
+                // and the buoyancy term: the push from this step's stroke, its work booked as
+                // Fluid.Apply books it, then the buoyancy where the CPU added it.
+                if (powered)
+                {
+                    if (parent[fl] >= 0 && position[3 * fl + 1] <= 0 && dofCount[fl] > 0)
+                    {
+                        M3 frot = M3.Read(rotationMatrix, 9 * fl);
+                        V3 toOrigin = frot * (-V3.Read(childAnchor, 3 * fl));
+                        Real linkReach = toOrigin.Magnitude;
+                        if (linkReach > 0)
+                        {
+                            V3 axis = toOrigin * ((Real)1.0 / linkReach);
+                            Q4 fframe = Q4.Read(jointFrame, 4 * fl);
+                            int fstart = dofStart[fl];
+                            Real omega = cfg.PushOmega;
+                            Real swing2 = 0;
+                            for (int d = 0; d < dofCount[fl]; d++)
+                            {
+                                Real sv = (Real)dr.EPower[(fstart + d) * N + i];
+                                if (sv <= 0) continue;
+                                V3 dofAxis = frot * fframe.Rotate(V3.Axis(d));
+                                Real along = V3.Dot(dofAxis, axis);
+                                swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
+                            }
+
+                            if (swing2 > 0)
+                            {
+                                Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
+                                Real push = cfg.LimbPush * addedMass * linkReach * swing2;
+                                linkForce = linkForce + axis * (-push);
+                                dr.Work[i] = dr.Work[i] + (double)(push * linkReach * System.MathF.Sqrt(swing2)) * cfg.DtD;
+                            }
+                        }
+                    }
+
+                    if (gl.LinkFluid[16 * fluidRows + frow] != 0)
+                    {
+                        linkForce = linkForce + new V3(0, gl.LinkFluid[15 * fluidRows + frow], 0);
+                    }
+                }
+
+                V3.Add(fext, 6 * fl + 3, linkForce);
                 dragLimited += gl.LinkLimited[frow];
             }
             if (dragLimited != 0) dr.DragLimited[i] = dr.DragLimited[i] + dragLimited;
@@ -2704,6 +4806,12 @@ namespace Evosim.Farm.Gpu.Sgl
             if (cfg.PerPart != 0)
             {
                 ContactsPerPartStaged(g, links, fext, cand, cs, gl, gr, cfg);
+                if (cfg.RockTouch != 0) KeepTouch(g, links, gl, cfg);
+                if (cfg.Anchoring != 0)
+                {
+                    Grip(g, links, position, velocity, spin, rotationMatrix, mass, smallI, fext,
+                         hasReserve, br.Reserve[i], cs, gl, cfg);
+                }
             }
             else
             {
@@ -2725,7 +4833,7 @@ namespace Evosim.Farm.Gpu.Sgl
                     dinv, ubar, tau, sang, slin, cbias, position, six, sol, residual);
 
             Integrate(links, dofCount, dofStart, tau, q, qd, ballRot, acc, spin, velocity,
-                      ref basePosition, ref baseRotation, cfg.Dt);
+                      ref basePosition, ref baseCarry, ref baseRotation, cfg.Dt);
 
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 6, ref clk);
@@ -2733,7 +4841,7 @@ namespace Evosim.Farm.Gpu.Sgl
             // ---- 10. poses, 11. velocities ----------------------------------------------------
             Poses(links, parent, dofCount, dofStart, q, ballRot, rotation, rotationMatrix,
                   position, restFrame, jointFrame, parentAnchor, childAnchor,
-                  basePosition, baseRotation);
+                  basePosition, baseRotation, baseCarry, posErr);
             Velocities(links, parent, dofCount, dofStart, q, qd, rotation, jointFrame,
                        childAnchor, position, spin, velocity, sang, slin, cbias);
 
@@ -2811,6 +4919,9 @@ namespace Evosim.Farm.Gpu.Sgl
                     if (links == 1)
                     {
                         ps.LCx[row] = centre.X; ps.LCy[row] = centre.Y; ps.LCz[row] = centre.Z;
+                        ps.LEx[row] = CarryBase ? posErr[0] : 0;
+                        ps.LEy[row] = CarryBase ? posErr[1] : 0;
+                        ps.LEz[row] = CarryBase ? posErr[2] : 0;
                         ps.LR[row] = radius;
                         ps.LVx[row] = mean.X; ps.LVy[row] = mean.Y; ps.LVz[row] = mean.Z;
                     }
@@ -2821,6 +4932,9 @@ namespace Evosim.Farm.Gpu.Sgl
                             ps.LCx[row + l] = position[3 * l];
                             ps.LCy[row + l] = position[3 * l + 1];
                             ps.LCz[row + l] = position[3 * l + 2];
+                            ps.LEx[row + l] = CarryBase ? posErr[3 * l] : 0;
+                            ps.LEy[row + l] = CarryBase ? posErr[3 * l + 1] : 0;
+                            ps.LEz[row + l] = CarryBase ? posErr[3 * l + 2] : 0;
                             ps.LR[row + l] = reach[l];
                             ps.LVx[row + l] = velocity[3 * l];
                             ps.LVy[row + l] = velocity[3 * l + 1];
@@ -2837,51 +4951,156 @@ namespace Evosim.Farm.Gpu.Sgl
             s.BasePos[i] = basePosition.X;
             s.BasePos[N + i] = basePosition.Y;
             s.BasePos[2 * N + i] = basePosition.Z;
+            s.BaseCarry[i] = baseCarry.X;
+            s.BaseCarry[N + i] = baseCarry.Y;
+            s.BaseCarry[2 * N + i] = baseCarry.Z;
             s.BaseRot[i] = baseRotation.X;
             s.BaseRot[N + i] = baseRotation.Y;
             s.BaseRot[2 * N + i] = baseRotation.Z;
             s.BaseRot[3 * N + i] = baseRotation.W;
 
+            // Every read of a link from the thread's arrays before any of its writes, as in the load.
             for (int d = 0; d < dof; d++)
             {
                 int at = d * N + i;
-                s.Q[at] = q[d];
-                s.Qd[at] = qd[d];
-                s.Tau[at] = tau[d];
-                s.LimitImplicit[at] = limitImplicit[d];
+                Real qv = q[d], qdv = qd[d], tv = tau[d], li = limitImplicit[d];
+                s.Q[at] = qv; s.Qd[at] = qdv; s.Tau[at] = tv; s.LimitImplicit[at] = li;
             }
 
             for (int l = 0; l < links; l++)
             {
-                for (int k = 0; k < 3; k++)
-                {
-                    int a3 = (3 * l + k) * N + i;
-                    s.Pos[a3] = position[3 * l + k];
-                    s.Spin[a3] = spin[3 * l + k];
-                    s.Vel[a3] = velocity[3 * l + k];
-                    s.RelVel[a3] = relVel[3 * l + k];
-                    s.Water[a3] = water[3 * l + k];
-                    s.WaterAcc[a3] = wacc[3 * l + k];
-                }
-                for (int k = 0; k < 4; k++)
-                {
-                    int a4 = (4 * l + k) * N + i;
-                    s.BallRot[a4] = ballRot[4 * l + k];
-                    s.Rot[a4] = rotation[4 * l + k];
-                }
-                for (int k = 0; k < 9; k++)
-                {
-                    int a9 = (9 * l + k) * N + i;
-                    s.RotM[a9] = rotationMatrix[9 * l + k];
-                    s.Sang[a9] = sang[9 * l + k];
-                    s.Slin[a9] = slin[9 * l + k];
-                }
-                for (int k = 0; k < 6; k++)
-                {
-                    int a6 = (6 * l + k) * N + i;
-                    s.Cbias[a6] = cbias[6 * l + k];
-                    s.Fext[a6] = fext[6 * l + k];
-                }
+                int a3 = 3 * l * N + i, a4 = 4 * l * N + i, a9 = 9 * l * N + i, a6 = 6 * l * N + i;
+                Real position0 = position[3 * l];
+                Real spin0 = spin[3 * l];
+                Real velocity0 = velocity[3 * l];
+                Real relVel0 = relVel[3 * l];
+                Real water0 = water[3 * l];
+                Real wacc0 = wacc[3 * l];
+                Real position1 = position[3 * l + 1];
+                Real spin1 = spin[3 * l + 1];
+                Real velocity1 = velocity[3 * l + 1];
+                Real relVel1 = relVel[3 * l + 1];
+                Real water1 = water[3 * l + 1];
+                Real wacc1 = wacc[3 * l + 1];
+                Real position2 = position[3 * l + 2];
+                Real spin2 = spin[3 * l + 2];
+                Real velocity2 = velocity[3 * l + 2];
+                Real relVel2 = relVel[3 * l + 2];
+                Real water2 = water[3 * l + 2];
+                Real wacc2 = wacc[3 * l + 2];
+                Real ballRot0 = ballRot[4 * l];
+                Real rotation0 = rotation[4 * l];
+                Real ballRot1 = ballRot[4 * l + 1];
+                Real rotation1 = rotation[4 * l + 1];
+                Real ballRot2 = ballRot[4 * l + 2];
+                Real rotation2 = rotation[4 * l + 2];
+                Real ballRot3 = ballRot[4 * l + 3];
+                Real rotation3 = rotation[4 * l + 3];
+                Real rotationMatrix0 = rotationMatrix[9 * l];
+                Real sang0 = sang[9 * l];
+                Real slin0 = slin[9 * l];
+                Real rotationMatrix1 = rotationMatrix[9 * l + 1];
+                Real sang1 = sang[9 * l + 1];
+                Real slin1 = slin[9 * l + 1];
+                Real rotationMatrix2 = rotationMatrix[9 * l + 2];
+                Real sang2 = sang[9 * l + 2];
+                Real slin2 = slin[9 * l + 2];
+                Real rotationMatrix3 = rotationMatrix[9 * l + 3];
+                Real sang3 = sang[9 * l + 3];
+                Real slin3 = slin[9 * l + 3];
+                Real rotationMatrix4 = rotationMatrix[9 * l + 4];
+                Real sang4 = sang[9 * l + 4];
+                Real slin4 = slin[9 * l + 4];
+                Real rotationMatrix5 = rotationMatrix[9 * l + 5];
+                Real sang5 = sang[9 * l + 5];
+                Real slin5 = slin[9 * l + 5];
+                Real rotationMatrix6 = rotationMatrix[9 * l + 6];
+                Real sang6 = sang[9 * l + 6];
+                Real slin6 = slin[9 * l + 6];
+                Real rotationMatrix7 = rotationMatrix[9 * l + 7];
+                Real sang7 = sang[9 * l + 7];
+                Real slin7 = slin[9 * l + 7];
+                Real rotationMatrix8 = rotationMatrix[9 * l + 8];
+                Real sang8 = sang[9 * l + 8];
+                Real slin8 = slin[9 * l + 8];
+                Real cbias0 = cbias[6 * l];
+                Real fext0 = fext[6 * l];
+                Real cbias1 = cbias[6 * l + 1];
+                Real fext1 = fext[6 * l + 1];
+                Real cbias2 = cbias[6 * l + 2];
+                Real fext2 = fext[6 * l + 2];
+                Real cbias3 = cbias[6 * l + 3];
+                Real fext3 = fext[6 * l + 3];
+                Real cbias4 = cbias[6 * l + 4];
+                Real fext4 = fext[6 * l + 4];
+                Real cbias5 = cbias[6 * l + 5];
+                Real fext5 = fext[6 * l + 5];
+
+                s.Pos[a3] = position0;
+                s.Spin[a3] = spin0;
+                s.Vel[a3] = velocity0;
+                s.RelVel[a3] = relVel0;
+                s.Water[a3] = water0;
+                s.WaterAcc[a3] = wacc0;
+                s.Pos[a3 + N] = position1;
+                s.Spin[a3 + N] = spin1;
+                s.Vel[a3 + N] = velocity1;
+                s.RelVel[a3 + N] = relVel1;
+                s.Water[a3 + N] = water1;
+                s.WaterAcc[a3 + N] = wacc1;
+                s.Pos[a3 + 2 * N] = position2;
+                s.Spin[a3 + 2 * N] = spin2;
+                s.Vel[a3 + 2 * N] = velocity2;
+                s.RelVel[a3 + 2 * N] = relVel2;
+                s.Water[a3 + 2 * N] = water2;
+                s.WaterAcc[a3 + 2 * N] = wacc2;
+                s.BallRot[a4] = ballRot0;
+                s.Rot[a4] = rotation0;
+                s.BallRot[a4 + N] = ballRot1;
+                s.Rot[a4 + N] = rotation1;
+                s.BallRot[a4 + 2 * N] = ballRot2;
+                s.Rot[a4 + 2 * N] = rotation2;
+                s.BallRot[a4 + 3 * N] = ballRot3;
+                s.Rot[a4 + 3 * N] = rotation3;
+                s.RotM[a9] = rotationMatrix0;
+                s.Sang[a9] = sang0;
+                s.Slin[a9] = slin0;
+                s.RotM[a9 + N] = rotationMatrix1;
+                s.Sang[a9 + N] = sang1;
+                s.Slin[a9 + N] = slin1;
+                s.RotM[a9 + 2 * N] = rotationMatrix2;
+                s.Sang[a9 + 2 * N] = sang2;
+                s.Slin[a9 + 2 * N] = slin2;
+                s.RotM[a9 + 3 * N] = rotationMatrix3;
+                s.Sang[a9 + 3 * N] = sang3;
+                s.Slin[a9 + 3 * N] = slin3;
+                s.RotM[a9 + 4 * N] = rotationMatrix4;
+                s.Sang[a9 + 4 * N] = sang4;
+                s.Slin[a9 + 4 * N] = slin4;
+                s.RotM[a9 + 5 * N] = rotationMatrix5;
+                s.Sang[a9 + 5 * N] = sang5;
+                s.Slin[a9 + 5 * N] = slin5;
+                s.RotM[a9 + 6 * N] = rotationMatrix6;
+                s.Sang[a9 + 6 * N] = sang6;
+                s.Slin[a9 + 6 * N] = slin6;
+                s.RotM[a9 + 7 * N] = rotationMatrix7;
+                s.Sang[a9 + 7 * N] = sang7;
+                s.Slin[a9 + 7 * N] = slin7;
+                s.RotM[a9 + 8 * N] = rotationMatrix8;
+                s.Sang[a9 + 8 * N] = sang8;
+                s.Slin[a9 + 8 * N] = slin8;
+                s.Cbias[a6] = cbias0;
+                s.Fext[a6] = fext0;
+                s.Cbias[a6 + N] = cbias1;
+                s.Fext[a6 + N] = fext1;
+                s.Cbias[a6 + 2 * N] = cbias2;
+                s.Fext[a6 + 2 * N] = fext2;
+                s.Cbias[a6 + 3 * N] = cbias3;
+                s.Fext[a6 + 3 * N] = fext3;
+                s.Cbias[a6 + 4 * N] = cbias4;
+                s.Fext[a6 + 4 * N] = fext4;
+                s.Cbias[a6 + 5 * N] = cbias5;
+                s.Fext[a6 + 5 * N] = fext5;
             }
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 9, ref clk);
@@ -2904,6 +5123,21 @@ namespace Evosim.Farm.Gpu.Sgl
             gl.Phase[k * cfg.GN + g] = now - prev;
             prev = now;
         }
+
+        // The same counter in the water and fluid passes, a link a thread, each part's cycles
+        // written to the link's row (LinkStride a slot). The water's parts: the read of the
+        // link's position, the velocity, the acceleration. The fluid's: the read with the link's
+        // local velocity and spin, the panels, the limiter and the other terms, the store.
+        public const int WaterParts = 3;
+        public const int LinkParts = 7;
+
+        private static void LinkMark(SGlob gl, SCfg cfg, int row, int k, ref long prev)
+        {
+            long now = 0;
+            if (CudaAsm.IsSupported) CudaAsm.Emit("mov.u64 %0, %%clock64;", out now);
+            gl.LinkPhase[k * cfg.LinkRows + row] = now - prev;
+            prev = now;
+        }
 #endif
 
         /// <summary>A lost or unstepped body's pending spheres handed its committed ones, so the swap is a copy.</summary>
@@ -2922,6 +5156,8 @@ namespace Evosim.Farm.Gpu.Sgl
                 ps.LCz[row + l] = cs.LCz[row + l]; ps.LR[row + l] = cs.LR[row + l];
                 ps.LVx[row + l] = cs.LVx[row + l]; ps.LVy[row + l] = cs.LVy[row + l];
                 ps.LVz[row + l] = cs.LVz[row + l];
+                ps.LEx[row + l] = cs.LEx[row + l]; ps.LEy[row + l] = cs.LEy[row + l];
+                ps.LEz[row + l] = cs.LEz[row + l];
             }
         }
 
@@ -2947,24 +5183,44 @@ namespace Evosim.Farm.Gpu.Sgl
             int N = cfg.N;
             int a = 3 * l * N + i;
             int ib = cfg.InstBase;
+#if GPU_PHASE_PROBE
+            int row = g * LinkStride + l;
+            long clk = 0;
+            if (CudaAsm.IsSupported) CudaAsm.Emit("mov.u64 %0, %%clock64;", out clk);
+#endif
 
             float x = (float)s.Pos[a];
             float y = (float)s.Pos[a + N];
             float z = (float)s.Pos[a + 2 * N];
+#if GPU_PHASE_PROBE
+            LinkMark(gl, cfg, row, 0, ref clk);
+#endif
 
             float wx, wy, wz;
             VelocityAt(x, y, z, w, ib, cfg, out wx, out wy, out wz);
             s.Water[a] = wx;
             s.Water[a + N] = wy;
             s.Water[a + 2 * N] = wz;
+#if GPU_PHASE_PROBE
+            LinkMark(gl, cfg, row, 1, ref clk);
+#endif
 
-            if (cfg.Accelerating == 0) return;
+            if (cfg.Accelerating == 0)
+            {
+#if GPU_PHASE_PROBE
+                LinkMark(gl, cfg, row, 2, ref clk);
+#endif
+                return;
+            }
 
             float ax, ay, az;
             AccelerationAt(x, y, z, w, ib, cfg, out ax, out ay, out az);
             s.WaterAcc[a] = ax;
             s.WaterAcc[a + N] = ay;
             s.WaterAcc[a + 2 * N] = az;
+#if GPU_PHASE_PROBE
+            LinkMark(gl, cfg, row, 2, ref clk);
+#endif
         }
 
         /// <summary>
@@ -3249,8 +5505,8 @@ namespace Evosim.Farm.Gpu.Sgl
             Real sinTheta = r > 0 ? dz / r : 0;
 
             Real phi = (Real)Math.PI * y / depth;
-            Real cosPhi = System.MathF.Cos(phi);
-            Real sinPhi = System.MathF.Sin(phi);
+            Real cosPhi = CosR(phi);
+            Real sinPhi = SinR(phi);
 
             Real sin1 = sinPhi;
             Real sin2 = (Real)2 * sinPhi * cosPhi;
@@ -3343,8 +5599,8 @@ namespace Evosim.Farm.Gpu.Sgl
             Real vy = 0;
 
             Real phi = (Real)Math.PI * y / depth;
-            Real cosPhi = System.MathF.Cos(phi);
-            Real sinPhi = System.MathF.Sin(phi);
+            Real cosPhi = CosR(phi);
+            Real sinPhi = SinR(phi);
 
             Real sin1 = atFace ? 0 : sinPhi;
             Real sin2 = atFace ? 0 : (Real)2 * sinPhi * cosPhi;
@@ -3782,8 +6038,8 @@ namespace Evosim.Farm.Gpu.Sgl
             Real unitZ = dz * invR;
 
             Real phi = (Real)Math.PI * y / depth;
-            Real cosPhi = System.MathF.Cos(phi);
-            Real sinPhi = System.MathF.Sin(phi);
+            Real cosPhi = CosR(phi);
+            Real sinPhi = SinR(phi);
 
             Real sin1 = atFace ? 0 : sinPhi;
             Real sin2 = atFace ? 0 : (Real)2 * sinPhi * cosPhi;
@@ -3936,8 +6192,8 @@ namespace Evosim.Farm.Gpu.Sgl
             Real u = s * s;
 
             Real phi = (Real)Math.PI * y / depth;
-            Real cosPhi = System.MathF.Cos(phi);
-            Real sinPhi = System.MathF.Sin(phi);
+            Real cosPhi = CosR(phi);
+            Real sinPhi = SinR(phi);
 
             Real sin1 = atFace ? 0 : sinPhi;
             Real sin2 = atFace ? 0 : (Real)2 * sinPhi * cosPhi;
@@ -4160,9 +6416,10 @@ namespace Evosim.Farm.Gpu.Sgl
                 int o = cfg.BedAt + 4 * m;
                 Real kx = w.WR[o], kz = w.WR[o + 1];
                 Real chi = kx * dx + kz * dz + w.WR[o + 2];
+                if (chi > (Real)AngleGuard || chi < -(Real)AngleGuard) Atomic.Add(ref w.Guard[0], 1L);
                 Real a = w.WR[o + 3];
-                Real cos = System.MathF.Cos(chi);
-                Real sin = System.MathF.Sin(chi);
+                Real cos = CosR(chi);
+                Real sin = SinR(chi);
 
                 h += a * cos;
                 gx -= a * kx * sin;
@@ -4211,9 +6468,10 @@ namespace Evosim.Farm.Gpu.Sgl
                 int o = cfg.BedAt + 4 * m;
                 Real kx = w.WR[o], kz = w.WR[o + 1];
                 Real chi = kx * dx + kz * dz + w.WR[o + 2];
+                if (chi > (Real)AngleGuard || chi < -(Real)AngleGuard) Atomic.Add(ref w.Guard[0], 1L);
                 Real a = w.WR[o + 3];
-                Real cos = System.MathF.Cos(chi);
-                Real sin = System.MathF.Sin(chi);
+                Real cos = CosR(chi);
+                Real sin = SinR(chi);
 
                 h += a * cos;
                 gx -= a * kx * sin;
@@ -4231,6 +6489,98 @@ namespace Evosim.Farm.Gpu.Sgl
             height = h;
             gradientX = gx;
             gradientZ = gz;
+        }
+
+        /// <summary>The contact lattice's spacing (r59-pos64): a power of two, so a float holds every point.</summary>
+        private const float LatticeMetres = 0.25f;
+
+        /// <summary>
+        /// BedHeightAndGradient for the contact in single (r59-pos64): the height at the lattice point nearest
+        /// (x, z), and the rise from there to (x + ex, z + ez) in small arguments, with the gradient at the true
+        /// point. The height is the same number for every point of the square, so a body creeping inside it
+        /// meets a floor that moves smoothly with it.
+        /// </summary>
+        private static void BedHeightNear(Real x, Real z, Real ex, Real ez, SWorld w, SCfg cfg,
+            out Real height, out Real rise, out Real gradientX, out Real gradientZ)
+        {
+            if (cfg.BedRelief == 0)
+            {
+                height = 0; rise = 0; gradientX = 0; gradientZ = 0;
+                return;
+            }
+
+            Real x0 = System.MathF.Floor(x * ((Real)1.0 / LatticeMetres) + (Real)0.5) * LatticeMetres;
+            Real z0 = System.MathF.Floor(z * ((Real)1.0 / LatticeMetres) + (Real)0.5) * LatticeMetres;
+            Real ux = (x - x0) + ex;
+            Real uz = (z - z0) + ez;
+
+            Real dx = x0 - cfg.BedRadius;
+            Real dz = z0 - cfg.BedRadius;
+
+            Real h = cfg.TiltX * dx + cfg.TiltZ * dz - cfg.Offset;
+            Real d = cfg.TiltX * ux + cfg.TiltZ * uz;
+            Real gx = cfg.TiltX;
+            Real gz = cfg.TiltZ;
+
+            for (int m = 0; m < cfg.BedModes; m++)
+            {
+                int o = cfg.BedAt + 4 * m;
+                Real kx = w.WR[o], kz = w.WR[o + 1];
+                Real chi = kx * dx + kz * dz + w.WR[o + 2];
+                if (chi > (Real)AngleGuard || chi < -(Real)AngleGuard) Atomic.Add(ref w.Guard[0], 1L);
+                Real a = w.WR[o + 3];
+                Real cos = CosR(chi);
+                Real sin = SinR(chi);
+
+                // sin and cos less one of the small step, by their series: the step is under a radian's tenth
+                // or so on this lattice, and the terms kept leave less than a nanometre.
+                Real t = kx * ux + kz * uz;
+                Real t2 = t * t;
+                Real sinT = t * ((Real)1.0 - t2 * ((Real)(1.0 / 6.0) - t2 * (Real)(1.0 / 120.0)));
+                Real cosT1 = -t2 * ((Real)0.5 - t2 * ((Real)(1.0 / 24.0) - t2 * (Real)(1.0 / 720.0)));
+
+                h += a * cos;
+                d += a * (cos * cosT1 - sin * sinT);
+                Real sinAt = sin + (sin * cosT1 + cos * sinT);
+                gx -= a * kx * sinAt;
+                gz -= a * kz * sinAt;
+            }
+
+            if (cfg.ShoreOn != 0 && h + d > cfg.ShoalHeight)
+            {
+                height = cfg.ShoalHeight;
+                rise = 0;
+                gradientX = 0;
+                gradientZ = 0;
+                return;
+            }
+
+            height = h;
+            rise = d;
+            gradientX = gx;
+            gradientZ = gz;
+        }
+
+        /// <summary>
+        /// The glass's overlap for the contact in single (r59-pos64): the radius at the lattice point nearest
+        /// (x, z), rounded once for its square, its difference from the tank's taken first, and the change
+        /// from there to (x + ex, z + ez) to second order.
+        /// </summary>
+        private static Real GlassOutsideNear(Real x, Real z, Real ex, Real ez, Real r, SCfg cfg)
+        {
+            Real x0 = System.MathF.Floor(x * ((Real)1.0 / LatticeMetres) + (Real)0.5) * LatticeMetres;
+            Real z0 = System.MathF.Floor(z * ((Real)1.0 / LatticeMetres) + (Real)0.5) * LatticeMetres;
+            Real ux = (x - x0) + ex;
+            Real uz = (z - z0) + ez;
+
+            Real px = x0 - cfg.AxisX;
+            Real pz = z0 - cfg.AxisZ;
+            Real rho = System.MathF.Sqrt(px * px + pz * pz);
+            if (!(rho > (Real)1e-3)) return System.MathF.Sqrt((px + ux) * (px + ux) + (pz + uz) * (pz + uz)) + r - cfg.TankRadius;
+
+            Real along = (px * ux + pz * uz) / rho;
+            Real across2 = ux * ux + uz * uz - along * along;
+            return (rho - cfg.TankRadius) + (along + across2 / ((Real)2.0 * rho)) + r;
         }
 
         // ============================================================== the reefs (ReefGeometry)
@@ -4392,9 +6742,9 @@ namespace Evosim.Farm.Gpu.Sgl
             Real capRadius = w.WR[o + 2];
             Real a2 = w.WR[o + 5], a3 = w.WR[o + 6], a4 = w.WR[o + 7];
 
-            Real c2 = System.MathF.Cos((Real)2 * theta + w.WR[o + 8]), s2 = System.MathF.Sin((Real)2 * theta + w.WR[o + 8]);
-            Real c3 = System.MathF.Cos((Real)3 * theta + w.WR[o + 9]), s3 = System.MathF.Sin((Real)3 * theta + w.WR[o + 9]);
-            Real c4 = System.MathF.Cos((Real)4 * theta + w.WR[o + 10]), s4 = System.MathF.Sin((Real)4 * theta + w.WR[o + 10]);
+            Real c2 = CosR((Real)2 * theta + w.WR[o + 8]), s2 = SinR((Real)2 * theta + w.WR[o + 8]);
+            Real c3 = CosR((Real)3 * theta + w.WR[o + 9]), s3 = SinR((Real)3 * theta + w.WR[o + 9]);
+            Real c4 = CosR((Real)4 * theta + w.WR[o + 10]), s4 = SinR((Real)4 * theta + w.WR[o + 10]);
 
             ro = capRadius * ((Real)1 + a2 * c2 + a3 * c3 + a4 * c4);
             o1 = -capRadius * ((Real)2 * a2 * s2 + (Real)3 * a3 * s3 + (Real)4 * a4 * s4);
@@ -4627,15 +6977,16 @@ namespace Evosim.Farm.Gpu.Sgl
         private static void Sample(
             int i, int links, int[] dofCount, int[] dofStart, Real[] position, Real[] rotationMatrix,
             Real[] relVel, Real[] q, Real[] qd, Real[] limitHi, SBrain br, SWorld w, SCfg cfg,
-            bool readsDepth, bool readsUp, bool readsJoint, bool readsFlow, bool readsChemical, bool readsEnergy,
-            float[] sDepth, float[] sUp, float[] sChem, float[] sFlow, float[] sAngle, float[] sRate,
-            ref float energy)
+            bool readsDepth, bool readsUp, bool readsJoint, bool readsFlow, bool readsChemical, bool readsScent,
+            bool readsEnergy, bool leaves, bool readsLeafDir,
+            float[] sDepth, float[] sUp, float[] sChem, float[] sScent, float[] sFlow, float[] sAngle, float[] sRate, float[] sDrive,
+            float[] sLeaf, ref float energy, ref bool lost)
         {
             if (readsEnergy) energy = Squash(br.Reserve[i], cfg.EnergyScale);
 
             bool smells = readsChemical;
 
-            if (!readsDepth && !readsUp && !readsJoint && !readsFlow && !smells) return;
+            if (!readsDepth && !readsUp && !readsJoint && !readsFlow && !smells && !readsScent && !leaves) return;
 
             float flowScale = cfg.FlowScale;
             float rateScale = cfg.RateScale;
@@ -4652,6 +7003,11 @@ namespace Evosim.Farm.Gpu.Sgl
                     sDepth[bl] = 0f;
                     sUp[bl] = 0f;
                     sChem[bl] = 0f;
+                    sScent[bl] = 0f;
+                    sLeaf[4 * bl] = 0f;
+                    sLeaf[4 * bl + 1] = 0f;
+                    sLeaf[4 * bl + 2] = 0f;
+                    sLeaf[4 * bl + 3] = 0f;
 
                     if (readsFlow)
                     {
@@ -4676,9 +7032,17 @@ namespace Evosim.Farm.Gpu.Sgl
 
                 if (smells)
                 {
-                    float density = EdibleDensityAt((float)px, (float)py, (float)pz, w, cfg);
+                    float density = EdibleDensityAt((float)px, (float)py, (float)pz, w, cfg, ref lost);
                     sChem[bl] = density > 0f ? density / (density + cfg.ChemHalf) : 0f;
                 }
+
+                if (readsScent)
+                {
+                    float sc = ScentAt((float)px, (float)py, (float)pz, w, cfg);
+                    sScent[bl] = sc > 0f ? sc / (sc + cfg.ScentHalf) : 0f;
+                }
+
+                if (leaves) SampleLeaf(bl, (float)px, (float)py, (float)pz, rotationMatrix, readsLeafDir, sLeaf, w, cfg);
 
                 if (readsFlow)
                 {
@@ -4725,16 +7089,41 @@ namespace Evosim.Farm.Gpu.Sgl
             return TanhF(seconds / scale);
         }
 
-        private static float EdibleDensityAt(float x, float y, float z, SWorld w, SCfg cfg)
+        private static float EdibleDensityAt(float x, float y, float z, SWorld w, SCfg cfg, ref bool lost)
         {
             int cell = TankCellAt(x, y, z, w, cfg);
+            if (cell < 0)
+            {
+                lost = true;
+                return 0f;
+            }
+
             Real stock = w.Stock[cell];
             int layer = cell / cfg.LayerStride;
             Real edible = layer >= cfg.LayerCount - cfg.RefugeLayers ? stock * cfg.RefugeFraction : stock;
             return (float)(edible / cfg.CellVolume);
         }
 
-        private static int TankCellAt(float x, float y, float z, SWorld w, SCfg cfg)
+        /// <summary>
+        /// The far bound of the chemical sense's walk, in cells past the field's outermost corner.
+        /// Out to it the walk is GridField.TankCellAt's; beyond it the walk starts at it.
+        /// </summary>
+        public const int WalkMarginCells = 4096;
+
+        /// <summary>
+        /// GridField.TankCellAt, or −1 for a body the walk gives up on: the caller leaves that body
+        /// unstepped, as the solver leaves a non-finite one, and the farm's glass guard kills it at
+        /// its next check (card-audit-r57.md, "The chemical sense's walk can hang the card").
+        /// </summary>
+        /// <remarks>
+        /// The CPU walks in from the body's distance to the axis, half a cell a step, which on the
+        /// card would hang a thread: in single, <c>reach -= h</c> stops moving past about 1.7e7 m on
+        /// a 2 m cell, and an infinite distance never moves. So the walk is the CPU's out to a far
+        /// bound, the field's outermost corner plus <see cref="WalkMarginCells"/> cells, and starts
+        /// at that bound for a body beyond it, which only a body far outside the glass can be. A
+        /// distance that is not finite, and a walk longer than the bound allows, give −1.
+        /// </remarks>
+        internal static int TankCellAt(float x, float y, float z, SWorld w, SCfg cfg)
         {
             int iy = y >= 0f ? 0 : (int)(-y / cfg.CellMetres);
             if (iy >= cfg.Ny) iy = cfg.Ny - 1;
@@ -4744,10 +7133,23 @@ namespace Evosim.Farm.Gpu.Sgl
             Real dz = z - cfg.FieldTankR;
             Real r = SqrtR(dx * dx + dz * dz);
 
+            // NaN, or an infinity from a cast or a square past the type's range. A square root is
+            // never −∞.
+            if (r != r || r == Real.PositiveInfinity) return -1;
+
             if (r > 0)
             {
-                for (Real reach = r; reach > 0; reach -= (Real)0.5 * cfg.CellMetres)
+                Real half = (Real)0.5 * cfg.CellMetres;
+                Real ex = MaxR((Real)cfg.FieldTankR, (Real)cfg.Nx * cfg.CellMetres - cfg.FieldTankR);
+                Real ez = MaxR((Real)cfg.FieldTankR, (Real)cfg.Nz * cfg.CellMetres - cfg.FieldTankR);
+                Real far = SqrtR(ex * ex + ez * ez) + (Real)WalkMarginCells * cfg.CellMetres;
+                int cap = (int)(far / half) + 64;
+
+                int walked = 0;
+                for (Real reach = r > far ? far : r; reach > 0; reach -= half)
                 {
+                    if (++walked > cap) return -1;
+
                     int cell = InColumn(
                         Column((float)(cfg.FieldTankR + dx * reach / r), cfg),
                         Column((float)(cfg.FieldTankR + dz * reach / r), cfg), iy, w, cfg);
@@ -4815,7 +7217,7 @@ namespace Evosim.Farm.Gpu.Sgl
         private static void BrainStep(
             int i, int links, int dof, STopo t, SNeur nr, SBrain br, SDrive dr, SCfg cfg,
             int[] dofCount, int[] dofStart,
-            float[] sDepth, float[] sUp, float[] sChem, float[] sFlow, float[] sAngle, float[] sRate, float energy)
+            float[] sDepth, float[] sUp, float[] sChem, float[] sScent, float[] sFlow, float[] sAngle, float[] sRate, float[] sDrive, float energy, int rock, float[] sLeaf)
         {
             int N = cfg.N;
 
@@ -4827,6 +7229,57 @@ namespace Evosim.Farm.Gpu.Sgl
             int prev = parity * cfg.MaxN;
             int cur = (1 - parity) * cfg.MaxN;
 
+            int units = t.CUnits[i];
+            if (units >= 0)
+            {
+                // Brain.StepCentral. Every unit sums its bias and its links in the CPU's order,
+                // ports from now and units from the step before, through tanh. A port is read
+                // where a link names it: the senses do not move within the step, so it reads what
+                // the CPU's one read gave, NaN and infinity as 0.
+                int k = t.CLinkAt[i];
+                int portAt = t.CPortAt[i];
+                for (int u = 0; u < units; u++)
+                {
+                    float sum = nr.Bias[u * N + i];
+                    int count = nr.NIn[u * N + i];
+                    for (int e = 0; e < count; e++, k++)
+                    {
+                        int source = nr.CSource[k];
+                        float v;
+                        if (source >= 0)
+                        {
+                            v = br.S[(prev + source) * N + i];
+                        }
+                        else
+                        {
+                            int slot = portAt + ~source;
+                            v = SensorRead(i, nr.CPortPart[slot], nr.CPortChannel[slot], nr.CPortIndex[slot], links, dof,
+                                           br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate,
+                                           sDrive, energy, rock, sLeaf);
+                            if (v != v || v == float.PositiveInfinity || v == float.NegativeInfinity) v = 0f;
+                        }
+
+                        sum += nr.CWeight[k] * v;
+                    }
+
+                    float value = TanhF(sum);
+                    br.S[(cur + u) * N + i] = value != value ? 0f : value;
+                }
+
+                parity = 1 - parity;
+                br.Parity[i] = parity;
+                prev = parity * cfg.MaxN;
+
+                int totalDof = t.CDof[i];
+                for (int d = 0; d < totalDof; d++)
+                {
+                    dr.Signal[d * N + i] = br.S[(prev + 2 * d) * N + i];
+                    if (cfg.BendAndPower != 0) dr.Bend[d * N + i] = br.S[(prev + 2 * d + 1) * N + i];
+                }
+
+                return;
+            }
+
             for (int group = 0; group < links; group++)
             {
                 int at = t.NOff[group * N + i];
@@ -4835,7 +7288,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 for (int n = 0; n < count; n++)
                 {
                     br.S[(cur + at + n) * N + i] = Evaluate(i, at + n, group, time, prev, links, dof, t, nr, br, cfg,
-                        dofCount, dofStart, sDepth, sUp, sChem, sFlow, sAngle, sRate, energy);
+                        dofCount, dofStart, sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
                 }
             }
 
@@ -4855,6 +7308,14 @@ namespace Evosim.Farm.Gpu.Sgl
                 for (int d = 0; d < dofs; d++)
                 {
                     dr.Signal[(start + d) * N + i] = d < own ? Clamp(br.S[(prev + at + d) * N + i]) : 0f;
+
+                    // Brain.Step's bend, under the bend-and-power drive only: the part's neuron after
+                    // its drive neurons, or still when the part has too few.
+                    if (cfg.BendAndPower != 0)
+                    {
+                        int k = dofs + d;
+                        dr.Bend[(start + d) * N + i] = k < own ? Clamp(br.S[(prev + at + k) * N + i]) : 0f;
+                    }
                 }
             }
         }
@@ -4862,7 +7323,7 @@ namespace Evosim.Farm.Gpu.Sgl
         private static float Evaluate(
             int i, int self, int part, float time, int prev, int links, int dof, STopo t, SNeur nr, SBrain br, SCfg cfg,
             int[] dofCount, int[] dofStart,
-            float[] sDepth, float[] sUp, float[] sChem, float[] sFlow, float[] sAngle, float[] sRate, float energy)
+            float[] sDepth, float[] sUp, float[] sChem, float[] sScent, float[] sFlow, float[] sAngle, float[] sRate, float[] sDrive, float energy, int rock, float[] sLeaf)
         {
             int slot = self * cfg.N + i;
             int op = nr.Op[slot];
@@ -4879,7 +7340,7 @@ namespace Evosim.Farm.Gpu.Sgl
             else
             {
                 value = Apply(i, self, part, prev, links, dof, t, nr, br, cfg,
-                              dofCount, dofStart, sDepth, sUp, sChem, sFlow, sAngle, sRate, energy);
+                              dofCount, dofStart, sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
             }
 
             value = value * nr.Amp[slot] + nr.Bias[slot];
@@ -4890,43 +7351,43 @@ namespace Evosim.Farm.Gpu.Sgl
         private static float Apply(
             int i, int self, int part, int prev, int links, int dof, STopo t, SNeur nr, SBrain br, SCfg cfg,
             int[] dofCount, int[] dofStart,
-            float[] sDepth, float[] sUp, float[] sChem, float[] sFlow, float[] sAngle, float[] sRate, float energy)
+            float[] sDepth, float[] sUp, float[] sChem, float[] sScent, float[] sFlow, float[] sAngle, float[] sRate, float[] sDrive, float energy, int rock, float[] sLeaf)
         {
             int slot = self * cfg.N + i;
             int nIn = nr.NIn[slot];
             float dt = cfg.DtF;
 
-            float a = nIn > 0 ? Read(i, self, 0, part, prev, links, dof, t, nr, br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sFlow, sAngle, sRate, energy) : 0f;
-            float bb = nIn > 1 ? Read(i, self, 1, part, prev, links, dof, t, nr, br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sFlow, sAngle, sRate, energy) : 0f;
-            float c = nIn > 2 ? Read(i, self, 2, part, prev, links, dof, t, nr, br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sFlow, sAngle, sRate, energy) : 0f;
+            float a = nIn > 0 ? Read(i, self, 0, part, prev, links, dof, t, nr, br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf) : 0f;
+            float bb = nIn > 1 ? Read(i, self, 1, part, prev, links, dof, t, nr, br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf) : 0f;
+            float c = nIn > 2 ? Read(i, self, 2, part, prev, links, dof, t, nr, br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf) : 0f;
 
             switch (nr.Op[slot])
             {
                 case 0:     // Sum
                 {
                     float acc = 0f;
-                    for (int k = 0; k < nIn; k++) acc = acc + Read(i, self, k, part, prev, links, dof, t, nr, br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sFlow, sAngle, sRate, energy);
+                    for (int k = 0; k < nIn; k++) acc = acc + Read(i, self, k, part, prev, links, dof, t, nr, br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
                     return acc;
                 }
                 case 1:     // Product
                 {
                     if (nIn == 0) return 0f;
                     float acc = 1f;
-                    for (int k = 0; k < nIn; k++) acc = acc * Read(i, self, k, part, prev, links, dof, t, nr, br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sFlow, sAngle, sRate, energy);
+                    for (int k = 0; k < nIn; k++) acc = acc * Read(i, self, k, part, prev, links, dof, t, nr, br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
                     return acc;
                 }
                 case 4:     // Min
                 {
                     if (nIn == 0) return 0f;
                     float acc = float.MaxValue;
-                    for (int k = 0; k < nIn; k++) acc = MinF(acc, Read(i, self, k, part, prev, links, dof, t, nr, br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sFlow, sAngle, sRate, energy));
+                    for (int k = 0; k < nIn; k++) acc = MinF(acc, Read(i, self, k, part, prev, links, dof, t, nr, br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf));
                     return acc;
                 }
                 case 5:     // Max
                 {
                     if (nIn == 0) return 0f;
                     float acc = float.MinValue;
-                    for (int k = 0; k < nIn; k++) acc = MaxF(acc, Read(i, self, k, part, prev, links, dof, t, nr, br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sFlow, sAngle, sRate, energy));
+                    for (int k = 0; k < nIn; k++) acc = MaxF(acc, Read(i, self, k, part, prev, links, dof, t, nr, br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf));
                     return acc;
                 }
 
@@ -4946,7 +7407,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 case 31:    // SumThreshold
                 {
                     float acc = 0f;
-                    for (int k = 0; k < nIn; k++) acc = acc + Read(i, self, k, part, prev, links, dof, t, nr, br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sFlow, sAngle, sRate, energy);
+                    for (int k = 0; k < nIn; k++) acc = acc + Read(i, self, k, part, prev, links, dof, t, nr, br, cfg, dofCount, dofStart, sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
                     return acc > 0f ? 1f : -1f;
                 }
 
@@ -4985,7 +7446,7 @@ namespace Evosim.Farm.Gpu.Sgl
         private static float Read(
             int i, int self, int k, int part, int prev, int links, int dof, STopo t, SNeur nr, SBrain br, SCfg cfg,
             int[] dofCount, int[] dofStart,
-            float[] sDepth, float[] sUp, float[] sChem, float[] sFlow, float[] sAngle, float[] sRate, float energy)
+            float[] sDepth, float[] sUp, float[] sChem, float[] sScent, float[] sFlow, float[] sAngle, float[] sRate, float[] sDrive, float energy, int rock, float[] sLeaf)
         {
             int N = cfg.N;
             int ks = (3 * self + k) * N + i;
@@ -4995,7 +7456,7 @@ namespace Evosim.Farm.Gpu.Sgl
             {
                 case 0: return nr.Const[ks] * wt;
                 case 1: return SensorRead(i, part, nr.Channel[ks], nr.Index[ks], links, dof, br, cfg,
-                                          dofCount, dofStart, sDepth, sUp, sChem, sFlow, sAngle, sRate, energy) * wt;
+                                          dofCount, dofStart, sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf) * wt;
                 case 2: return FromGroup(i, part, nr.Index[ks], prev, t, br, cfg) * wt;
                 case 3:
                 {
@@ -5026,7 +7487,7 @@ namespace Evosim.Farm.Gpu.Sgl
         private static float SensorRead(
             int i, int part, int channel, int index, int links, int dof, SBrain br, SCfg cfg,
             int[] dofCount, int[] dofStart,
-            float[] sDepth, float[] sUp, float[] sChem, float[] sFlow, float[] sAngle, float[] sRate, float energy)
+            float[] sDepth, float[] sUp, float[] sChem, float[] sScent, float[] sFlow, float[] sAngle, float[] sRate, float[] sDrive, float energy, int rock, float[] sLeaf)
         {
             int N = cfg.N;
             if (part < 0 || part >= links) return 0f;
@@ -5035,19 +7496,26 @@ namespace Evosim.Farm.Gpu.Sgl
             {
                 case SDepth: return sDepth[part];
                 case SUp: return sUp[part];
-                case SJointAngle: return DofRead(part, index, 0, dof, dofCount, dofStart, sAngle, sRate);
-                case SJointRate: return DofRead(part, index, 1, dof, dofCount, dofStart, sAngle, sRate);
+                case SJointAngle: return DofRead(part, index, 0, dof, dofCount, dofStart, sAngle, sRate, sDrive);
+                case SJointRate: return DofRead(part, index, 1, dof, dofCount, dofStart, sAngle, sRate, sDrive);
+                case SStroke: return DofRead(part, index, 2, dof, dofCount, dofStart, sAngle, sRate, sDrive);
+                case SHold: return DofRead(part, index, 3, dof, dofCount, dofStart, sAngle, sRate, sDrive);
+                case SRamp: return DofRead(part, index, 4, dof, dofCount, dofStart, sAngle, sRate, sDrive);
                 case SChemical: return (br.Gates[i] & 1) != 0 ? sChem[part] : cfg.ConstCE;
                 case SEnergy: return (br.Gates[i] & 2) != 0 ? energy : cfg.ConstCE;
                 case SFlow: return index >= 0 && index < 3 ? sFlow[3 * part + index] : 0f;
                 case SContact: return br.Contact[part * N + i] != 0 ? 1f : 0f;
                 case SDamage: return Clamp(br.Damage[part * N + i]);
+                case SScent: return (br.Gates[i] & 4) != 0 ? sScent[part] : 0f;
+                case SRock: return ((rock >> part) & 1) != 0 ? 1f : 0f;
+                case SLeaf: return sLeaf[4 * part];
+                case SLeafDir: return index >= 0 && index < 3 ? sLeaf[4 * part + 1 + index] : 0f;
                 default: return 0f;
             }
         }
 
         private static float DofRead(int part, int index, int which, int dof, int[] dofCount, int[] dofStart,
-                                     float[] sAngle, float[] sRate)
+                                     float[] sAngle, float[] sRate, float[] sDrive)
         {
             int n = dofCount[part];
             int offset = dofStart[part];
@@ -5058,7 +7526,7 @@ namespace Evosim.Farm.Gpu.Sgl
             int length = dof > 0 ? dof : 1;
             if (at >= length) return 0f;
 
-            return which == 0 ? sAngle[at] : sRate[at];
+            return which == 0 ? sAngle[at] : which == 1 ? sRate[at] : sDrive[3 * at + which - 2];
         }
 
         private static float Saw(float turns)
@@ -5096,6 +7564,38 @@ namespace Evosim.Farm.Gpu.Sgl
             return IsNegative(y) ? x : y;
         }
 
+        /// <summary>Math.Min on doubles, as MinR: NaN propagates, -0 under +0.</summary>
+        private static double MinD(double x, double y)
+        {
+            if (x != y)
+            {
+                if (!(x != x)) return x < y ? x : y;
+                return x;
+            }
+            return x < 0 || (x == 0 && 1.0 / x < 0) ? x : y;
+        }
+
+        /// <summary>Math.Max on doubles, as MaxR: NaN propagates, +0 over -0.</summary>
+        private static double MaxD(double x, double y)
+        {
+            if (x != y)
+            {
+                if (!(x != x)) return y < x ? x : y;
+                return x;
+            }
+            return y < 0 || (y == 0 && 1.0 / y < 0) ? x : y;
+        }
+
+        private static double AbsD(double x) => x < 0 ? -x : x;
+
+        /// <summary>EffectorDrive.Toward: one step of a ramp, landing on its end.</summary>
+        private static double Toward(double from, double to, double step)
+        {
+            if (from < to) return from + step >= to ? to : from + step;
+            if (from > to) return from - step <= to ? to : from - step;
+            return from;
+        }
+
         // Single on the card: the oscillator's argument is built in double as the CPU builds it,
         // reduced by whole turns in double, then narrowed; everything else is XMath in float.
         private static float OscSin(double arg)
@@ -5110,6 +7610,11 @@ namespace Evosim.Farm.Gpu.Sgl
         private static float FloorF(float a) => XMath.Floor(a);
         private static Real SqrtR(Real a) => XMath.Sqrt(a);
         private static Real AbsR(Real a) => XMath.Abs(a);
+        internal static float SinR(float a) => MathF.Sin(a);
+        internal static float CosR(float a) => MathF.Cos(a);
+
+        // Single reduces no angle; the bed counts its angles past the double's guard all the same.
+        private const double AngleGuard = 1e9;
 
         // ============================================================== fluid
 
@@ -5139,6 +7644,10 @@ namespace Evosim.Farm.Gpu.Sgl
             Real dt = cfg.Dt;
             long limited = 0;
             bool accelerating = cfg.FluidAccel > 0;
+#if GPU_PHASE_PROBE
+            long clk = 0;
+            if (CudaAsm.IsSupported) CudaAsm.Emit("mov.u64 %0, %%clock64;", out clk);
+#endif
 
             var rotationMatrix = new Real[9];
             var velocity = new Real[3];
@@ -5177,6 +7686,9 @@ namespace Evosim.Farm.Gpu.Sgl
 
             int from = t.PanelStart[i * n + c];
             int to = t.PanelStart[(i + 1) * n + c];
+#if GPU_PHASE_PROBE
+            LinkMark(gl, cfg, row, 3, ref clk);
+#endif
 
             for (int p = from; p < to; p++)
             {
@@ -5198,6 +7710,51 @@ namespace Evosim.Farm.Gpu.Sgl
 
                 localForce = localForce + panelForce;
                 localTorque = localTorque + V3.Cross(centre, panelForce);
+            }
+#if GPU_PHASE_PROBE
+            LinkMark(gl, cfg, row, 4, ref clk);
+#endif
+
+            Real height = s.Pos[(3 * i + 1) * n + c];
+
+            // D161, only in the water, summed after the pressure drag as Fluid.Apply sums it, so
+            // the ledger counts it and the limiter caps it. Not entered at none, the recorded bits.
+            if (cfg.TurningDrag == 1 && height <= 0)
+            {
+                // The shear on each panel's velocity along its face, leading and trailing alike.
+                for (int p = from; p < to; p++)
+                {
+                    var centre = new V3(
+                        pan.Centre[(3 * p) * n + c],
+                        pan.Centre[(3 * p + 1) * n + c],
+                        pan.Centre[(3 * p + 2) * n + c]);
+
+                    var normal = new V3(
+                        pan.Normal[(3 * p) * n + c],
+                        pan.Normal[(3 * p + 1) * n + c],
+                        pan.Normal[(3 * p + 2) * n + c]);
+
+                    V3 panelVelocity = localVelocity + V3.Cross(localSpin, centre);
+                    Real normalSpeed = V3.Dot(panelVelocity, normal);
+
+                    V3 along = panelVelocity - normal * normalSpeed;
+                    Real slide = along.Magnitude;
+                    if (slide == 0) continue;
+
+                    V3 shear = along * (cfg.NegSkin * pan.Area[p * n + c] * slide);
+
+                    localForce = localForce + shear;
+                    localTorque = localTorque + V3.Cross(centre, shear);
+                }
+            }
+            else if (cfg.TurningDrag == 2 && height <= 0)
+            {
+                // A torque about each of the link's own axes against its spin, and no force.
+                Real brake = cfg.NegSpin * localSpin.Magnitude;
+                localTorque = localTorque + new V3(
+                    brake * b.SpinMoment[(3 * i) * n + c] * localSpin.X,
+                    brake * b.SpinMoment[(3 * i + 1) * n + c] * localSpin.Y,
+                    brake * b.SpinMoment[(3 * i + 2) * n + c] * localSpin.Z);
             }
 
             V3 force = rotation * localForce;
@@ -5236,8 +7793,6 @@ namespace Evosim.Farm.Gpu.Sgl
                 }
             }
 
-            Real height = s.Pos[(3 * i + 1) * n + c];
-
             if (accelerating)
             {
                 V3 accelerationForce = V3.Read(wacc, 0) *
@@ -5250,6 +7805,32 @@ namespace Evosim.Farm.Gpu.Sgl
                 }
 
                 force = force + accelerationForce;
+            }
+
+            // Fluid.Apply's two pushes. The swing's is whole here: it reads the spins the step
+            // starts from, which the drive does not change. The power's reads this step's stroke,
+            // which the class kernel's drive writes after this kernel has run, so under it the
+            // force is left before the push and the buoyancy term apart (rows 15 and 16), and the
+            // class kernel adds the push and then the buoyancy, the CPU's order.
+            bool powered = cfg.BendAndPower != 0 && cfg.LimbPush > 0 && cfg.PushOmega > 0;
+            int parentLink = t.Parent[i * n + c];
+            if (cfg.LimbPush > 0 && !powered && parentLink >= 0 && height <= 0)
+            {
+                V3 anchor = new V3(b.ChildAnchor[(3 * i) * n + c], b.ChildAnchor[(3 * i + 1) * n + c],
+                                   b.ChildAnchor[(3 * i + 2) * n + c]);
+                V3 toOrigin = rotation * (-anchor);
+                Real reach = toOrigin.Magnitude;
+                if (reach > 0)
+                {
+                    V3 axis = toOrigin * ((Real)1.0 / reach);
+                    V3 parentSpin = new V3(s.Spin[(3 * parentLink) * n + c], s.Spin[(3 * parentLink + 1) * n + c],
+                                           s.Spin[(3 * parentLink + 2) * n + c]);
+                    V3 swing = w - parentSpin;
+                    V3 across = swing - axis * V3.Dot(swing, axis);
+                    Real addedMass = cfg.AddedMass * cfg.Density * volume;
+                    Real push = cfg.LimbPush * addedMass * reach * V3.Dot(across, across);
+                    force = force + axis * (-push);
+                }
             }
 
             Real netDensity = excess * ((Real)1.0 - lift);
@@ -5266,12 +7847,11 @@ namespace Evosim.Farm.Gpu.Sgl
                 netDensity = 0;
             }
 
+            Real buoyancy = 0;
             if (netDensity != 0)
             {
-                force = force + new V3(
-                    0,
-                    -netDensity * mass * cfg.Gravity / cfg.TissueDensity,
-                    0);
+                buoyancy = -netDensity * mass * cfg.Gravity / cfg.TissueDensity;
+                if (!powered) force = force + new V3(0, buoyancy, 0);
             }
 
             // D111: the part's whole displaced weight at its buoyancy centre, gated on the clamp.
@@ -5288,6 +7868,9 @@ namespace Evosim.Farm.Gpu.Sgl
 
                 torque = torque + V3.Cross(lever, displaced);
             }
+#if GPU_PHASE_PROBE
+            LinkMark(gl, cfg, row, 5, ref clk);
+#endif
 
             gl.LinkFluid[row] = relative.X;
             gl.LinkFluid[rowsAll + row] = relative.Y;
@@ -5304,7 +7887,15 @@ namespace Evosim.Farm.Gpu.Sgl
             gl.LinkFluid[12 * rowsAll + row] = force.X;
             gl.LinkFluid[13 * rowsAll + row] = force.Y;
             gl.LinkFluid[14 * rowsAll + row] = force.Z;
+            if (powered)
+            {
+                gl.LinkFluid[15 * rowsAll + row] = buoyancy;
+                gl.LinkFluid[16 * rowsAll + row] = netDensity != 0 ? 1 : 0;
+            }
             gl.LinkLimited[row] = (int)limited;
+#if GPU_PHASE_PROBE
+            LinkMark(gl, cfg, row, 6, ref clk);
+#endif
         }
 
         private static Real Restore(
@@ -5342,67 +7933,115 @@ namespace Evosim.Farm.Gpu.Sgl
             int lz = gr.Lo[2 * R + self], hz = gr.Hi[2 * R + self];
 
             int found = 0;
+            int dropped = 0;
 
-            for (int x = lx; x <= hx; x++)
-            for (int y = ly; y <= hy; y++)
-            for (int z = lz; z <= hz; z++)
+            // A giant with its list whole reads the list: every row whose cell box meets its own, which
+            // is every row the cell walk would have met in some cell it covers.
+            int gk = gr.IsGiant[self] - 1;
+            if (gk >= 0 && gr.GiantN[gk] <= GiantListCap)
             {
-                int h = Hash(x, y, z) & cfg.Mask;
-
-                for (int k = gr.Start[h]; k < gr.Start[h + 1] && k < cfg.EntryCap; k++)
+                int n = gr.GiantN[gk];
+                for (int i = 0; i < n; i++)
                 {
-                    int other = gr.Items[k];
+                    int other = gr.GiantList[gk * GiantListCap + i];
                     int og = perPart ? other / LinkStride : other;
                     if (og == owner) continue;
-
-                    if (x < gr.Lo[other] || x > gr.Hi[other] ||
-                        y < gr.Lo[R + other] || y > gr.Hi[R + other] ||
-                        z < gr.Lo[2 * R + other] || z > gr.Hi[2 * R + other])
-                    {
-                        continue;
-                    }
-
-                    if (found < CandCap)
-                    {
-                        cand[found] = perPart
-                            ? gl.Rank[og] * LinkStride + (other - og * LinkStride)
-                            : gl.Rank[og];
-                    }
-
-                    found++;
+                    found = Keep(KeyOf(other, og, perPart, gl), cand, found, ref dropped);
                 }
             }
-
-            if (found > CandCap)
+            else
             {
-                if (countOverflow) Atomic.Add(ref gl.Overflow[OverflowCandidates], 1L);
-                found = CandCap;
-            }
-
-            if (found < 2) return found;
-
-            for (int a = 1; a < found; a++)
-            {
-                int key = cand[a];
-                int bi = a - 1;
-                while (bi >= 0 && cand[bi] > key)
+                for (int x = lx; x <= hx; x++)
+                for (int y = ly; y <= hy; y++)
+                for (int z = lz; z <= hz; z++)
                 {
-                    cand[bi + 1] = cand[bi];
-                    bi--;
+                    int h = Hash(x, y, z) & cfg.Mask;
+
+                    for (int k = gr.Start[h]; k < gr.Start[h + 1] && k < cfg.EntryCap; k++)
+                    {
+                        int other = gr.Items[k];
+                        int og = perPart ? other / LinkStride : other;
+                        if (og == owner) continue;
+
+                        if (x < gr.Lo[other] || x > gr.Hi[other] ||
+                            y < gr.Lo[R + other] || y > gr.Hi[R + other] ||
+                            z < gr.Lo[2 * R + other] || z > gr.Hi[2 * R + other])
+                        {
+                            continue;
+                        }
+
+                        found = Keep(KeyOf(other, og, perPart, gl), cand, found, ref dropped);
+                    }
                 }
-                cand[bi + 1] = key;
+
+                // The giants are in no bucket: each is met where the cell walk would have met it, in a
+                // cell both boxes cover, which is wherever the boxes meet. An empty box meets nothing.
+                int ng = gr.Giant[0];
+                if (ng > GiantCap) ng = GiantCap;
+                for (int i = 0; i < ng && lx <= hx; i++)
+                {
+                    int other = gr.Giant[1 + i];
+                    int og = perPart ? other / LinkStride : other;
+                    if (og == owner) continue;
+                    if (!BoxesMeet(lx, hx, ly, hy, lz, hz, other, gr, R)) continue;
+                    found = Keep(KeyOf(other, og, perPart, gl), cand, found, ref dropped);
+                }
             }
 
-            int unique = 1;
-            for (int a = 1; a < found; a++)
+            // Counted once a query, as before, but only when a distinct candidate fell out.
+            if (dropped != 0 && countOverflow) Atomic.Add(ref gl.Overflow[OverflowCandidates], 1L);
+            if (countOverflow) Atomic.Max(ref gl.Overflow[WatchCandidates], (long)found);
+
+            return found;
+        }
+
+        /// <summary>A candidate's sort key: the list rank, or under per-part contact rank·16 + link.</summary>
+        private static int KeyOf(int other, int og, bool perPart, SGlob gl) =>
+            perPart ? gl.Rank[og] * LinkStride + (other - og * LinkStride) : gl.Rank[og];
+
+        /// <summary>Whether a row's cell box, not empty, meets the box lx..hz.</summary>
+        private static bool BoxesMeet(int lx, int hx, int ly, int hy, int lz, int hz, int other, SGrid gr, int R)
+        {
+            int olx = gr.Lo[other], ohx = gr.Hi[other];
+            if (olx > ohx) return false;
+            return olx <= hx && lx <= ohx &&
+                   gr.Lo[R + other] <= hy && ly <= gr.Hi[R + other] &&
+                   gr.Lo[2 * R + other] <= hz && lz <= gr.Hi[2 * R + other];
+        }
+
+        /// <summary>
+        /// One key into the kept keys, which stay ascending and distinct. The order rows arrive in is
+        /// Scatter's race (and the giants' lists' race), so past CandCap the highest key falls out: what
+        /// remains is the CandCap lowest of the distinct keys whatever the race delivered, and an
+        /// overflow is as deterministic as a query under the cap (2026-10-16; the first that arrived
+        /// were kept before, and a resume over overflows parted at once).
+        /// </summary>
+        private static int Keep(int key, int[] cand, int found, ref int dropped)
+        {
+            int lo = 0, hi = found;
+            while (lo < hi)
             {
-                int v = cand[a];
-                if (v == cand[unique - 1]) continue;
-                cand[unique] = v;
-                unique++;
+                int mid = (lo + hi) >> 1;
+                if (cand[mid] < key) lo = mid + 1;
+                else hi = mid;
             }
 
-            return unique;
+            if (lo < found && cand[lo] == key) return found;
+
+            if (found == CandCap)
+            {
+                dropped = 1;
+                if (lo == CandCap) return found;
+                for (int m = CandCap - 1; m > lo; m--) cand[m] = cand[m - 1];
+            }
+            else
+            {
+                for (int m = found; m > lo; m--) cand[m] = cand[m - 1];
+                found++;
+            }
+
+            cand[lo] = key;
+            return found;
         }
 
         /// <summary>Creature.NoteOverlap: appended in candidate order.</summary>
@@ -5417,6 +8056,7 @@ namespace Evosim.Farm.Gpu.Sgl
             int GN = cfg.GN;
             gl.OvId[count * GN + g] = id;
             gl.OvSlot[count * GN + g] = slot;
+            Atomic.Max(ref gl.Overflow[WatchOverlaps], ((long)(count + 1) << 24) | (long)(0xFFFFFF - gl.Rank[g]));
             return count + 1;
         }
 
@@ -5435,6 +8075,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 return count;
             }
 
+            Atomic.Max(ref gl.Overflow[WatchOverlaps], ((long)(count + 1) << 24) | (long)(0xFFFFFF - gl.Rank[g]));
             for (int k = count; k > at; k--)
             {
                 gl.OvId[k * GN + g] = gl.OvId[(k - 1) * GN + g];
@@ -5516,8 +8157,9 @@ namespace Evosim.Farm.Gpu.Sgl
             Real bedStiffness = m * cfg.Omega * cfg.Omega;
             Real bedDamping = (Real)2.0 * cfg.Zeta * m * cfg.Omega;
 
-            AgainstTheWorld(cx, cy, cz, r, vx, vy, vz, m, bedStiffness, bedDamping, w, cfg,
-                            ref fx, ref fy, ref fz, ref bedGlass);
+            Real noKept = 0, noX = 0, noY = 0, noZ = 0;
+            AgainstTheWorld(cx, cy, cz, r, 0, 0, 0, vx, vy, vz, m, bedStiffness, bedDamping, w, cfg,
+                            ref fx, ref fy, ref fz, ref bedGlass, 0, ref noKept, ref noX, ref noY, ref noZ);
 
             BodyPush(ref fx, ref fy, ref fz, m, cfg);
 
@@ -5602,6 +8244,7 @@ namespace Evosim.Farm.Gpu.Sgl
             int row = g * LinkStride + i;
             Real cx = s.LCx[row], cy = s.LCy[row], cz = s.LCz[row];
             Real radius = s.LR[row];
+            Real ex = s.LEx[row], ey = s.LEy[row], ez = s.LEz[row];
 
             int n = Candidates(row, g, cand, gl, gr, cfg, false);
 
@@ -5618,6 +8261,12 @@ namespace Evosim.Farm.Gpu.Sgl
                 Real bx = cx - s.LCx[orow];
                 Real by = cy - s.LCy[orow];
                 Real bz = cz - s.LCz[orow];
+                if (CarryBase)
+                {
+                    bx = bx + (ex - s.LEx[orow]);
+                    by = by + (ey - s.LEy[orow]);
+                    bz = bz + (ez - s.LEz[orow]);
+                }
                 Real distance = System.MathF.Sqrt(bx * bx + by * by + bz * bz);
                 Real penetration = radius + s.LR[orow] - distance;
                 if (penetration <= 0) continue;
@@ -5647,6 +8296,11 @@ namespace Evosim.Farm.Gpu.Sgl
             int links = t.Links[bi];
             if (i >= links) return;
 
+            // A stray of this step (LoseStrays), still alive until its class kernel: its rows are in
+            // no cell, and its bed and glass would be read at its stray position. Read after the
+            // grid, on the stream that waited for it, so the read races nothing.
+            if (gl.StrayCode[g] != 0) return;
+
             int N = cfg.N;
             int R = cfg.Rows;
             int row = g * LinkStride + i;
@@ -5658,6 +8312,7 @@ namespace Evosim.Farm.Gpu.Sgl
             Real totalMass = b.TotalMass[bi];
             Real cx = s.LCx[row], cy = s.LCy[row], cz = s.LCz[row];
             Real radius = s.LR[row];
+            Real ex = s.LEx[row], ey = s.LEy[row], ez = s.LEz[row];
             Real vx = s.LVx[row], vy = s.LVy[row], vz = s.LVz[row];
             Real m = b.Mass[i * N + bi];
 
@@ -5680,6 +8335,13 @@ namespace Evosim.Farm.Gpu.Sgl
                     Real bx = cx - s.LCx[orow];
                     Real by = cy - s.LCy[orow];
                     Real bz = cz - s.LCz[orow];
+                    if (CarryBase)
+                    {
+                        // The float centres' difference, near each other so exact, then the rests'.
+                        bx = bx + (ex - s.LEx[orow]);
+                        by = by + (ey - s.LEy[orow]);
+                        bz = bz + (ez - s.LEz[orow]);
+                    }
                     Real distance = System.MathF.Sqrt(bx * bx + by * by + bz * bz);
                     Real penetration = radius + s.LR[orow] - distance;
                     if (penetration <= 0) continue;
@@ -5728,8 +8390,25 @@ namespace Evosim.Farm.Gpu.Sgl
             Real bedStiffness = m * cfg.Omega * cfg.Omega;
             Real bedDamping = (Real)2.0 * cfg.Zeta * m * cfg.Omega;
 
-            AgainstTheWorld(cx, cy, cz, radius, vx, vy, vz, m, bedStiffness, bedDamping, w, cfg,
-                            ref fx, ref fy, ref fz, ref bedGlass);
+            Real rockKept = 0, rnx = 0, rny = 0, rnz = 0;
+            AgainstTheWorld(cx, cy, cz, radius, ex, ey, ez, vx, vy, vz, m, bedStiffness, bedDamping, w, cfg,
+                            ref fx, ref fy, ref fz, ref bedGlass, cfg.RockTouch, ref rockKept, ref rnx, ref rny, ref rnz);
+
+            // D162: the touch this step, and where: the sphere's deepest point along the normal.
+            if (cfg.RockTouch != 0)
+            {
+                int touched = rockKept > 0 ? 1 : 0;
+                gl.TouchNew[row] = touched;
+                if (touched != 0)
+                {
+                    gl.TouchAt[row] = cx - rnx * radius;
+                    gl.TouchAt[R + row] = cy - rny * radius;
+                    gl.TouchAt[2 * R + row] = cz - rnz * radius;
+                    gl.TouchAt[3 * R + row] = rnx;
+                    gl.TouchAt[4 * R + row] = rny;
+                    gl.TouchAt[5 * R + row] = rnz;
+                }
+            }
 
             BodyPush(ref fx, ref fy, ref fz, m, cfg);
 
@@ -5759,13 +8438,14 @@ namespace Evosim.Farm.Gpu.Sgl
         /// the glass.
         /// </summary>
         private static void AgainstTheWorld(
-            Real cx, Real cy, Real cz, Real r, Real vx, Real vy, Real vz, Real m,
+            Real cx, Real cy, Real cz, Real r, Real ex, Real ey, Real ez, Real vx, Real vy, Real vz, Real m,
             Real bedStiffness, Real bedDamping, SWorld w, SCfg cfg,
-            ref Real fx, ref Real fy, ref Real fz, ref int bedGlass)
+            ref Real fx, ref Real fy, ref Real fz, ref int bedGlass,
+            int noteRock, ref Real rockKept, ref Real rnx, ref Real rny, ref Real rnz)
         {
             if (cfg.HasBed == 0)
             {
-                Real below = -cfg.WorldDepth - (cy - r);
+                Real below = CarryBase ? ((-cfg.WorldDepth - cy) - ey) + r : -cfg.WorldDepth - (cy - r);
                 if (below > 0)
                 {
                     Real up = PairPush(bedStiffness * below - bedDamping * vy, m, vy, cfg);
@@ -5773,16 +8453,29 @@ namespace Evosim.Farm.Gpu.Sgl
                     fy = fy + up;
                     fz = fz + 0;
                     bedGlass = 1;
+                    if (noteRock != 0 && up > 0) NoteRock(0, up, 0, ref rockKept, ref rnx, ref rny, ref rnz);
                 }
             }
             else
             {
-                Real hgt, gx, gz;
-                BedHeightAndGradient(cx, cz, w, cfg, out hgt, out gx, out gz);
-
-                Real floorY = -cfg.BedDepth + hgt;
-                Real slope = System.MathF.Sqrt((Real)1.0 + gx * gx + gz * gz);
-                Real pen = r - (cy - floorY) / slope;
+                Real hgt, gx, gz, pen, slope;
+                if (CarryBase)
+                {
+                    // The floor at a lattice point, rounded once for its square, and the small rise from there
+                    // to the centre's true x and z, rest included.
+                    Real rise;
+                    BedHeightNear(cx, cz, ex, ez, w, cfg, out hgt, out rise, out gx, out gz);
+                    Real floorY = -cfg.BedDepth + hgt;
+                    slope = System.MathF.Sqrt((Real)1.0 + gx * gx + gz * gz);
+                    pen = r - ((cy - floorY) + (ey - rise)) / slope;
+                }
+                else
+                {
+                    BedHeightAndGradient(cx, cz, w, cfg, out hgt, out gx, out gz);
+                    Real floorY = -cfg.BedDepth + hgt;
+                    slope = System.MathF.Sqrt((Real)1.0 + gx * gx + gz * gz);
+                    pen = r - (cy - floorY) / slope;
+                }
 
                 Real rx = 0, ry = 0, rz = 0;
                 if (pen > 0)
@@ -5800,6 +8493,7 @@ namespace Evosim.Farm.Gpu.Sgl
                     fy = fy + ry;
                     fz = fz + rz;
                     bedGlass = 1;
+                    if (noteRock != 0) NoteRock(rx, ry, rz, ref rockKept, ref rnx, ref rny, ref rnz);
                 }
             }
 
@@ -5808,6 +8502,12 @@ namespace Evosim.Farm.Gpu.Sgl
                 SD at;
                 Real distance = ReefSignedDistance(cx, cy, cz, r, w, cfg, out at);
                 Real penetration = r - distance;
+                if (CarryBase)
+                {
+                    // The rest moves the centre along the reef's gradient: first order is enough at microns.
+                    Real glen = System.MathF.Sqrt(at.Gx * at.Gx + at.Gy * at.Gy + at.Gz * at.Gz);
+                    if (glen > (Real)1e-12) penetration = penetration - (at.Gx * ex + at.Gy * ey + at.Gz * ez) / glen;
+                }
 
                 Real rx = 0, ry = 0, rz = 0;
                 if (penetration > 0)
@@ -5835,6 +8535,7 @@ namespace Evosim.Farm.Gpu.Sgl
                     fy = fy + ry;
                     fz = fz + rz;
                     bedGlass = 1;
+                    if (noteRock != 0) NoteRock(rx, ry, rz, ref rockKept, ref rnx, ref rny, ref rnz);
                 }
             }
 
@@ -5844,6 +8545,10 @@ namespace Evosim.Farm.Gpu.Sgl
                 Real z = cz - cfg.AxisZ;
                 Real radial = System.MathF.Sqrt(x * x + z * z);
                 Real outside = radial + r - cfg.TankRadius;
+
+                // In single: the radius at a lattice point, rounded once for its square, and the small change
+                // from there to the centre's true x and z, to second order.
+                if (CarryBase) outside = GlassOutsideNear(cx, cz, ex, ez, r, cfg);
 
                 if (outside > 0)
                 {
@@ -5860,6 +8565,183 @@ namespace Evosim.Farm.Gpu.Sgl
                     bedGlass = 1;
                 }
             }
+        }
+
+        /// <summary>
+        /// Contacts.NoteRock: one push from the rock, kept where it is larger than any this link has
+        /// had this step, with its direction as the rock's normal.
+        /// </summary>
+        private static void NoteRock(Real x, Real y, Real z, ref Real kept, ref Real nx, ref Real ny, ref Real nz)
+        {
+            Real size = System.MathF.Sqrt(x * x + y * y + z * z);
+            if (!(size > kept)) return;
+
+            kept = size;
+            Real inv = (Real)1.0 / size;
+            nx = x * inv; ny = y * inv; nz = z * inv;
+        }
+
+        /// <summary>
+        /// The touch of the rock ContactLinks found this step, kept as the body's record after the
+        /// step's contacts, where the CPU's contact pass leaves it: a link not touching keeps the
+        /// point and normal it last had, as the CPU's does.
+        /// </summary>
+        private static void KeepTouch(int g, int links, SGlob gl, SCfg cfg)
+        {
+            int R = cfg.Rows;
+            for (int l = 0; l < links; l++)
+            {
+                int row = g * LinkStride + l;
+                int touched = gl.TouchNew[row];
+                gl.RockTouched[row] = touched;
+                if (touched == 0) continue;
+
+                gl.RockPx[row] = gl.TouchAt[row];
+                gl.RockPy[row] = gl.TouchAt[R + row];
+                gl.RockPz[row] = gl.TouchAt[2 * R + row];
+                gl.RockNx[row] = gl.TouchAt[3 * R + row];
+                gl.RockNy[row] = gl.TouchAt[4 * R + row];
+                gl.RockNz[row] = gl.TouchAt[5 * R + row];
+            }
+        }
+
+        /// <summary>
+        /// Anchor.Apply, D162's grip, on the touch KeepTouch just kept: an anchoring link grips the
+        /// rock it touches, a spring and a damper hold its origin and its turn, and the grip breaks
+        /// when the pull exceeds its breaking force. The CPU's arithmetic in the CPU's order.
+        /// </summary>
+        private static void Grip(
+            int g, int links, Real[] position, Real[] velocity, Real[] spin, Real[] rotationMatrix,
+            Real[] mass, Real[] smallI, Real[] fext, bool hasReserve, float secondsOfReserve,
+            SSph cs, SGlob gl, SCfg cfg)
+        {
+            int first = g * LinkStride;
+            bool any = false;
+            for (int l = 0; l < links && !any; l++) any = gl.Anchors[first + l] != 0;
+            if (!any) return;
+
+            // ReserveFactor, the lag clock advanced a step; a body with no reserve source holds as if fed.
+            double reserve = 1.0;
+            if (hasReserve)
+            {
+                double seconds = secondsOfReserve;
+                double threshold = cfg.GripThreshold;
+                if (!(seconds > 0))
+                {
+                    reserve = 0.0;
+                }
+                else if (seconds >= threshold)
+                {
+                    gl.ReserveLow[g] = 0;
+                }
+                else
+                {
+                    double low = gl.ReserveLow[g] + cfg.DtD;
+                    gl.ReserveLow[g] = low;
+                    if (!(low <= cfg.GripLag)) reserve = threshold > 0 ? MinD(1.0, seconds / threshold) : 1.0;
+                }
+            }
+
+            Real omega = cfg.Omega;
+            Real zeta = cfg.Zeta;
+
+            for (int l = 0; l < links; l++)
+            {
+                int row = first + l;
+                if (gl.Anchors[row] == 0) continue;
+
+                if (gl.GripHeld[row] == 0)
+                {
+                    if (gl.RockTouched[row] == 0 || !(reserve > 0)) continue;
+
+                    gl.GripHeld[row] = 1;
+                    gl.GripStrength[row] = 1.0;
+                    for (int k = 0; k < 3; k++) gl.GripAnchor[3 * row + k] = position[3 * l + k];
+                    for (int k = 0; k < 9; k++) gl.GripAttitude[9 * row + k] = rotationMatrix[9 * l + k];
+                    gl.GripPoint[3 * row] = gl.RockPx[row];
+                    gl.GripPoint[3 * row + 1] = gl.RockPy[row];
+                    gl.GripPoint[3 * row + 2] = gl.RockPz[row];
+
+                    gl.GripOwed[g] = gl.GripOwed[g] + gl.GripPrice[row];
+                    gl.GripsFormed[g] = gl.GripsFormed[g] + 1;
+                }
+
+                if (!(reserve > 0))
+                {
+                    GripRelease(g, row, gl);
+                    continue;
+                }
+
+                Real m = mass[l];
+                V3 away = V3.Read(position, 3 * l) -
+                          new V3(gl.GripAnchor[3 * row], gl.GripAnchor[3 * row + 1], gl.GripAnchor[3 * row + 2]);
+                V3 linkVelocity = V3.Read(velocity, 3 * l);
+
+                Real stiffness = m * omega * omega;
+                Real damping = (Real)2.0 * zeta * m * omega;
+                V3 pull = (away * stiffness + linkVelocity * damping) * (Real)(-1.0);
+
+                double breaking = gl.GripBreak[row] * gl.GripStrength[row] * reserve;
+                if ((double)pull.Magnitude > breaking)
+                {
+                    GripRelease(g, row, gl);
+                    continue;
+                }
+
+                // The turn: the rotation from the grip's attitude to the link's, as a small vector.
+                int at = 9 * row;
+                M3 now = M3.Read(rotationMatrix, 9 * l);
+                M3 then = new M3(
+                    gl.GripAttitude[at], gl.GripAttitude[at + 1], gl.GripAttitude[at + 2],
+                    gl.GripAttitude[at + 3], gl.GripAttitude[at + 4], gl.GripAttitude[at + 5],
+                    gl.GripAttitude[at + 6], gl.GripAttitude[at + 7], gl.GripAttitude[at + 8]);
+                V3 turned = RotationVector(now * then.Transposed);
+                V3 linkSpin = V3.Read(spin, 3 * l);
+
+                Real inertia = smallI[l];
+                V3 twist = (turned * (inertia * omega * omega) + linkSpin * ((Real)2.0 * zeta * inertia * omega)) * (Real)(-1.0);
+
+                Real fx = pull.X, fy = pull.Y, fz = pull.Z;
+                BodyPush(ref fx, ref fy, ref fz, m, cfg);
+                V3 torque = CapTorque(twist, inertia, cs.LR[row], cfg);
+
+                V3.Add(fext, 6 * l, torque);
+                V3.Add(fext, 6 * l + 3, new V3(fx, fy, fz));
+
+                gl.GripStrength[row] = gl.GripStrength[row] * cfg.GripDecay;
+                gl.GripHeldSeconds[g] = gl.GripHeldSeconds[g] + cfg.DtD;
+            }
+        }
+
+        private static void GripRelease(int g, int row, SGlob gl)
+        {
+            if (gl.GripHeld[row] == 0) return;
+            gl.GripHeld[row] = 0;
+            gl.GripStrength[row] = 0;
+            gl.GripsBroken[g] = gl.GripsBroken[g] + 1;
+        }
+
+        /// <summary>Anchor.RotationVector: the rotation vector of a rotation matrix, axis times angle.</summary>
+        private static V3 RotationVector(M3 r)
+        {
+            V3 axis = new V3(r.M21 - r.M12, r.M02 - r.M20, r.M10 - r.M01);
+            Real sine = (Real)0.5 * axis.Magnitude;
+            Real cosine = (Real)0.5 * (r.M00 + r.M11 + r.M22 - (Real)1.0);
+            if (!(sine > (Real)1e-12)) return axis * (Real)0.5;
+
+            Real angle = System.MathF.Atan2(sine, cosine);
+            return axis * ((Real)0.5 * angle / sine);
+        }
+
+        /// <summary>Anchor.CapTorque: the grip's turn capped at the contact's speed change at the sphere's rim.</summary>
+        private static V3 CapTorque(V3 torque, Real inertia, Real radius, SCfg cfg)
+        {
+            Real cap = cfg.MaxDv;
+            if (!(cap > 0) || !(radius > 0)) return torque;
+
+            Real most = inertia * (cap / radius) / cfg.Dt;
+            Real magnitude = torque.Magnitude;
+            return magnitude > most ? torque * (most / magnitude) : torque;
         }
 
         private static Real PairPush(Real raw, Real reducedMass, Real approach, SCfg cfg)
@@ -6112,11 +8994,12 @@ namespace Evosim.Farm.Gpu.Sgl
             int links, int[] parent, int[] dofCount, int[] dofStart, Real[] q, Real[] ballRot,
             Real[] rotation, Real[] rotationMatrix, Real[] position, Real[] restFrame,
             Real[] jointFrame, Real[] parentAnchor, Real[] childAnchor,
-            V3 basePosition, Q4 baseRotation)
+            V3 basePosition, Q4 baseRotation, V3 baseCarry, Real[] posErr)
         {
             Q4.Write(rotation, 0, baseRotation);
             M3.Write(rotationMatrix, 0, baseRotation.ToMatrix());
             V3.Write(position, 0, basePosition);
+            if (CarryBase) V3.Write(posErr, 0, -baseCarry);
 
             for (int i = 1; i < links; i++)
             {
@@ -6136,8 +9019,29 @@ namespace Evosim.Farm.Gpu.Sgl
                 V3 pAnchor = parentRotation.Rotate(V3.Read(parentAnchor, 3 * i));
                 V3 cAnchor = turned.Rotate(V3.Read(childAnchor, 3 * i));
 
-                V3.Write(position, 3 * i, parentPosition + pAnchor - cAnchor);
+                if (CarryBase)
+                {
+                    // The float position and what its two roundings left out, kept exactly (TwoSum) on
+                    // top of the parent's own rest: the link's centre is position plus posErr.
+                    V3 half = parentPosition + pAnchor;
+                    V3 at = half - cAnchor;
+                    V3 left = V3.Read(posErr, 3 * p) + SumError(parentPosition, pAnchor, half)
+                              + SumError(half, -cAnchor, at);
+                    V3.Write(position, 3 * i, at);
+                    V3.Write(posErr, 3 * i, left);
+                }
+                else
+                {
+                    V3.Write(position, 3 * i, parentPosition + pAnchor - cAnchor);
+                }
             }
+        }
+
+        /// <summary>What rounding left out of <paramref name="s"/> = a + b (Knuth's TwoSum, exact).</summary>
+        private static V3 SumError(V3 a, V3 b, V3 s)
+        {
+            V3 bb = s - a;
+            return (a - (s - bb)) + (b - bb);
         }
 
         private static void Velocities(
@@ -6412,10 +9316,14 @@ namespace Evosim.Farm.Gpu.Sgl
             }
         }
 
+        // r59-pos64: in single the base position is a compensated sum (Integrate). In double it is
+        // the solver's plain sum, to the bit.
+        private const bool CarryBase = 4 == 4;
+
         private static void Integrate(
             int links, int[] dofCount, int[] dofStart, Real[] tau, Real[] q, Real[] qd,
             Real[] ballRot, Real[] acc, Real[] spin, Real[] velocity,
-            ref V3 basePosition, ref Q4 baseRotation, Real dt)
+            ref V3 basePosition, ref V3 baseCarry, ref Q4 baseRotation, Real dt)
         {
             for (int i = 1; i < links; i++)
             {
@@ -6449,7 +9357,20 @@ namespace Evosim.Farm.Gpu.Sgl
             V3.Write(spin, 0, w);
             V3.Write(velocity, 0, v);
 
-            basePosition = basePosition + v * dt;
+            if (CarryBase)
+            {
+                // A compensated sum: the part of the step the position's float could not hold is
+                // carried and added back, so a slow body still moves. The position is basePosition
+                // less baseCarry.
+                V3 add = v * dt - baseCarry;
+                V3 sum = basePosition + add;
+                baseCarry = (sum - basePosition) - add;
+                basePosition = sum;
+            }
+            else
+            {
+                basePosition = basePosition + v * dt;
+            }
             baseRotation = baseRotation.IntegratedBy(w, dt);
         }
 
@@ -6559,6 +9480,173 @@ namespace Evosim.Farm.Gpu.Sgl
 
         // ============================================================== small things
 
+        private static bool IsFiniteR(Real v) =>
+            !(v != v || v == Real.PositiveInfinity || v == Real.NegativeInfinity);
+
+        /// <summary>Contacts.FiniteSphere: a sphere the grid's mean may count.</summary>
+        private static bool FiniteSphere(Real cx, Real cy, Real cz, Real r) =>
+            IsFiniteR(cx) && IsFiniteR(cy) && IsFiniteR(cz) && IsFiniteR(r);
+
+        /// <summary>Contacts.OutOfReach: <c>!(|c| + r &lt; 1e9·cell)</c> on every axis, which NaN fails.</summary>
+        private static bool OutOfReach(Real cx, Real cy, Real cz, Real r, Real cell)
+        {
+            Real reach = (Real)ReachCells * cell;
+            return !(AbsR(cx) + r < reach && AbsR(cy) + r < reach && AbsR(cz) + r < reach);
+        }
+
+        /// <summary>
+        /// ScentField.At, line for line: the scent at a point by trilinear interpolation between the
+        /// centres of the eight cells round it, a point outside the grid reading its nearest edge,
+        /// and a point that is not finite reading 0.
+        /// </summary>
+        private static float ScentAt(float x, float y, float z, SWorld w, SCfg cfg)
+        {
+            int nx = cfg.ScentNx, ny = cfg.ScentNy, nz = cfg.ScentNz;
+            Real u = (Real)(x / ScentCell) - (Real)0.5;
+            Real v = (Real)(-y / ScentCell) - (Real)0.5;
+            Real s = (Real)(z / ScentCell) - (Real)0.5;
+            Real sum = u + v + s;
+            if (sum != sum || sum == Real.PositiveInfinity || sum == Real.NegativeInfinity) return 0f;
+
+            int i0 = ScentClamp(ScentFloor(u), nx), j0 = ScentClamp(ScentFloor(v), ny), k0 = ScentClamp(ScentFloor(s), nz);
+            int i1 = ScentClamp(i0 + 1, nx), j1 = ScentClamp(j0 + 1, ny), k1 = ScentClamp(k0 + 1, nz);
+            Real fu = ScentFrac(u, i0, nx), fw = ScentFrac(v, j0, ny), fs = ScentFrac(s, k0, nz);
+
+            Real c00 = (Real)w.Scent[(i0 * ny + j0) * nz + k0] * ((Real)1 - fs) + (Real)w.Scent[(i0 * ny + j0) * nz + k1] * fs;
+            Real c01 = (Real)w.Scent[(i0 * ny + j1) * nz + k0] * ((Real)1 - fs) + (Real)w.Scent[(i0 * ny + j1) * nz + k1] * fs;
+            Real c10 = (Real)w.Scent[(i1 * ny + j0) * nz + k0] * ((Real)1 - fs) + (Real)w.Scent[(i1 * ny + j0) * nz + k1] * fs;
+            Real c11 = (Real)w.Scent[(i1 * ny + j1) * nz + k0] * ((Real)1 - fs) + (Real)w.Scent[(i1 * ny + j1) * nz + k1] * fs;
+            Real c0 = c00 * ((Real)1 - fw) + c01 * fw, c1 = c10 * ((Real)1 - fw) + c11 * fw;
+            return (float)(c0 * ((Real)1 - fu) + c1 * fu);
+        }
+
+        private const float ScentCell = 2f;   // ScentField.CellMetres
+
+        /// <summary>
+        /// CreatureSenses.SampleLeaf: the leaf field squashed, and in the direction form its gradient in
+        /// the part's own frame, unit length, times that value; zero where the gradient is.
+        /// </summary>
+        private static void SampleLeaf(int bl, float px, float py, float pz, Real[] rotationMatrix, bool direction,
+                                       float[] sLeaf, SWorld w, SCfg cfg)
+        {
+            float s = LeafAt(px, py, pz, w, cfg);
+            float strength = s > 0f ? s / (s + cfg.LeafHalf) : 0f;
+            sLeaf[4 * bl] = strength;
+
+            if (!direction) return;
+
+            float gx, gy, gz;
+            LeafGradientAt(px, py, pz, w, cfg, out gx, out gy, out gz);
+
+            int r = 9 * bl;
+            Real lx = rotationMatrix[r] * gx + rotationMatrix[r + 3] * gy + rotationMatrix[r + 6] * gz;
+            Real ly = rotationMatrix[r + 1] * gx + rotationMatrix[r + 4] * gy + rotationMatrix[r + 7] * gz;
+            Real lz = rotationMatrix[r + 2] * gx + rotationMatrix[r + 5] * gy + rotationMatrix[r + 8] * gz;
+            Real length = SqrtR(lx * lx + ly * ly + lz * lz);
+
+            if (length > 0 && strength > 0f)
+            {
+                Real scale = strength / length;
+                sLeaf[4 * bl + 1] = (float)(lx * scale);
+                sLeaf[4 * bl + 2] = (float)(ly * scale);
+                sLeaf[4 * bl + 3] = (float)(lz * scale);
+            }
+            else
+            {
+                sLeaf[4 * bl + 1] = 0f;
+                sLeaf[4 * bl + 2] = 0f;
+                sLeaf[4 * bl + 3] = 0f;
+            }
+        }
+
+        /// <summary>ScentField.At on the leaf field's own grid and cell, line for line.</summary>
+        private static float LeafAt(float x, float y, float z, SWorld w, SCfg cfg)
+        {
+            int nx = cfg.LeafNx, ny = cfg.LeafNy, nz = cfg.LeafNz;
+            float cell = cfg.LeafCell;
+            Real u = (Real)(x / cell) - (Real)0.5;
+            Real v = (Real)(-y / cell) - (Real)0.5;
+            Real s = (Real)(z / cell) - (Real)0.5;
+            Real sum = u + v + s;
+            if (sum != sum || sum == Real.PositiveInfinity || sum == Real.NegativeInfinity) return 0f;
+
+            int i0 = ScentClamp(ScentFloor(u), nx), j0 = ScentClamp(ScentFloor(v), ny), k0 = ScentClamp(ScentFloor(s), nz);
+            int i1 = ScentClamp(i0 + 1, nx), j1 = ScentClamp(j0 + 1, ny), k1 = ScentClamp(k0 + 1, nz);
+            Real fu = ScentFrac(u, i0, nx), fw = ScentFrac(v, j0, ny), fs = ScentFrac(s, k0, nz);
+
+            Real c00 = (Real)w.Leaf[(i0 * ny + j0) * nz + k0] * ((Real)1 - fs) + (Real)w.Leaf[(i0 * ny + j0) * nz + k1] * fs;
+            Real c01 = (Real)w.Leaf[(i0 * ny + j1) * nz + k0] * ((Real)1 - fs) + (Real)w.Leaf[(i0 * ny + j1) * nz + k1] * fs;
+            Real c10 = (Real)w.Leaf[(i1 * ny + j0) * nz + k0] * ((Real)1 - fs) + (Real)w.Leaf[(i1 * ny + j0) * nz + k1] * fs;
+            Real c11 = (Real)w.Leaf[(i1 * ny + j1) * nz + k0] * ((Real)1 - fs) + (Real)w.Leaf[(i1 * ny + j1) * nz + k1] * fs;
+            Real c0 = c00 * ((Real)1 - fw) + c01 * fw, c1 = c10 * ((Real)1 - fw) + c11 * fw;
+            return (float)(c0 * ((Real)1 - fu) + c1 * fu);
+        }
+
+        /// <summary>
+        /// ScentField.GradientAt on the leaf field, line for line: the interpolation's derivative per
+        /// metre, zero along an axis where the point lies outside the cell centres, y's sign turned.
+        /// </summary>
+        private static void LeafGradientAt(float x, float y, float z, SWorld w, SCfg cfg,
+                                           out float gx, out float gy, out float gz)
+        {
+            gx = 0f; gy = 0f; gz = 0f;
+            int nx = cfg.LeafNx, ny = cfg.LeafNy, nz = cfg.LeafNz;
+            float cell = cfg.LeafCell;
+            Real u = (Real)(x / cell) - (Real)0.5;
+            Real v = (Real)(-y / cell) - (Real)0.5;
+            Real s = (Real)(z / cell) - (Real)0.5;
+            Real sum = u + v + s;
+            if (sum != sum || sum == Real.PositiveInfinity || sum == Real.NegativeInfinity) return;
+
+            int i0 = ScentClamp(ScentFloor(u), nx), j0 = ScentClamp(ScentFloor(v), ny), k0 = ScentClamp(ScentFloor(s), nz);
+            int i1 = ScentClamp(i0 + 1, nx), j1 = ScentClamp(j0 + 1, ny), k1 = ScentClamp(k0 + 1, nz);
+            Real fu = ScentFrac(u, i0, nx), fw = ScentFrac(v, j0, ny), fs = ScentFrac(s, k0, nz);
+            bool inU = LeafInside(u, nx), inW = LeafInside(v, ny), inS = LeafInside(s, nz);
+
+            Real v000 = w.Leaf[(i0 * ny + j0) * nz + k0], v001 = w.Leaf[(i0 * ny + j0) * nz + k1];
+            Real v010 = w.Leaf[(i0 * ny + j1) * nz + k0], v011 = w.Leaf[(i0 * ny + j1) * nz + k1];
+            Real v100 = w.Leaf[(i1 * ny + j0) * nz + k0], v101 = w.Leaf[(i1 * ny + j0) * nz + k1];
+            Real v110 = w.Leaf[(i1 * ny + j1) * nz + k0], v111 = w.Leaf[(i1 * ny + j1) * nz + k1];
+
+            Real c00 = v000 * ((Real)1 - fs) + v001 * fs, c01 = v010 * ((Real)1 - fs) + v011 * fs;
+            Real c10 = v100 * ((Real)1 - fs) + v101 * fs, c11 = v110 * ((Real)1 - fs) + v111 * fs;
+            Real c0 = c00 * ((Real)1 - fw) + c01 * fw, c1 = c10 * ((Real)1 - fw) + c11 * fw;
+
+            Real du = inU ? c1 - c0 : 0;
+            Real dw = inW ? (c01 - c00) * ((Real)1 - fu) + (c11 - c10) * fu : 0;
+            Real ds = inS
+                ? ((v001 - v000) * ((Real)1 - fw) + (v011 - v010) * fw) * ((Real)1 - fu) +
+                  ((v101 - v100) * ((Real)1 - fw) + (v111 - v110) * fw) * fu
+                : 0;
+
+            gx = (float)(du / cell);
+            gy = (float)(-dw / cell);
+            gz = (float)(ds / cell);
+        }
+
+        private static bool LeafInside(Real u, int n) => n > 1 && u > 0 && u < n - 1;
+
+        /// <summary>
+        /// (int)Math.Floor(u) as the farm's .NET 8 on x64 is believed to give it: a value outside int's
+        /// range is int.MinValue (cvttsd2si's integer indefinite), where a card's conversion would
+        /// saturate. Only a body millions of kilometres out could tell, and the reach guard has lost
+        /// such a body before any sense reads it (D157 lets the two engines part there besides).
+        /// </summary>
+        private static int ScentFloor(Real u)
+        {
+            int i = Floor(u);
+            return u >= (Real)(-2147483648.0) && u < (Real)2147483648.0 ? i : int.MinValue;
+        }
+
+        private static int ScentClamp(int i, int n) => i < 0 ? 0 : i >= n ? n - 1 : i;
+
+        private static Real ScentFrac(Real u, int i0, int n)
+        {
+            if (u <= 0 || n == 1) return 0;
+            if (u >= n - 1) return 0;
+            return u - i0;
+        }
+
         private static int Floor(Real v)
         {
             int i = (int)v;
@@ -6595,9 +9683,22 @@ namespace Evosim.Farm.Gpu.Sgl
         public const int Constant = 0, Down = 1, Block = 2;
 
         private readonly Accelerator _acc;
+        private readonly AcceleratorStream _stream;
         private readonly List<IColumn> _all = new List<IColumn>();
         private readonly List<IColumn> _down = new List<IColumn>();
         private readonly List<IColumn> _block = new List<IColumn>();
+
+        // Every column a block does not send up whole anyway (not _block): what a pack changes and
+        // nothing else does between blocks, so a pack sends only its own slots of these (Upload).
+        private readonly List<IColumn> _packed = new List<IColumn>();
+
+        // The local slots packed since the last upload, and how many.
+        private readonly Col<int> _packSlots;
+        private int _packCount;
+
+        // The arenas still being laid out, in the order their first column asked for them, keyed
+        // by element type and copy kind (C); Seal builds each one's buffers once every column is in.
+        private readonly List<IArenaPlan> _plans = new List<IArenaPlan>();
 
         public readonly int Class, L, D, M;
 
@@ -6608,44 +9709,54 @@ namespace Evosim.Farm.Gpu.Sgl
 
         public int Panels { get; private set; } = 1;
 
-        public readonly Col<int> Links, Dof, SigLen, Mask, GSlot, Parent, DofCount, DofStart, PanelStart, ThinAxis,
-            NOff, NCnt, BParent, FirstChild, BDofStart, BDofCount;
+        public readonly Seg<int> Links, Dof, SigLen, Mask, GSlot, Parent, DofCount, DofStart, PanelStart, ThinAxis,
+            NOff, NCnt, BParent, FirstChild, BDofStart, BDofCount, CUnits, CDof, CLinkAt, CPortAt;
 
-        public readonly Col<Real> Mass, Lift, Volume, SmallI, Reach, Arm, Inertia, ChildAnchor, ParentAnchor,
+        public readonly Seg<Real> Mass, Lift, Volume, SmallI, Reach, Arm, Inertia, ChildAnchor, ParentAnchor, SpinMoment,
             JointFrame, RestFrame, LimitLo, LimitHi, LimitStiff, LimitDamp, Excess, TotalMass;
 
-        public readonly Col<float> TorquePerUnit, PowerScale;
+        public readonly Seg<float> TorquePerUnit, PowerScale;
+
+        // The bend-and-power drive: the joint's four genes and the part's power, a link each, and
+        // the brain's bend and the envelope's seven numbers, a degree of freedom each. A body's
+        // width only in a world that runs the drive, Col's one-wide stub otherwise.
+        public readonly Seg<float> Threshold, Reaction, HoldGene, Release;
+        public readonly Seg<Real> LinkPower;
+        public readonly Seg<float> Bend;
+        public readonly Seg<double> EPower, EBend, EPowerTarget, EBendTarget, EPowerRate, EBendRate, EHoldLeft;
 
         public readonly Col<Real> PCentre, PNormal, PArea;
 
-        public readonly Col<Real> BasePos, BaseRot, Q, Qd, Tau, LimitImplicit, BallRot, Pos, Rot, RotM, Spin, Vel,
+        public readonly Seg<Real> BasePos, BaseCarry, BaseRot, Q, Qd, Tau, LimitImplicit, BallRot, Pos, Rot, RotM, Spin, Vel,
             Sang, Slin, Cbias, RelVel, Water, WaterAcc, Fext, Applied;
 
-        public readonly Col<float> Signal, History, RunSum;
-        public readonly Col<int> Cursor, Filled;
-        public readonly Col<long> DriveLimited, DragLimited;
-        public readonly Col<double> Work, Signed, Dissipated, Passive;
+        public readonly Seg<float> Signal, History, RunSum;
+        public readonly Seg<int> Cursor, Filled;
+        public readonly Seg<long> DriveLimited, DragLimited;
+        public readonly Seg<double> Work, Signed, Dissipated, Passive;
 
-        public readonly Col<int> Op, NIn, Kind, NIndex, Channel;
-        public readonly Col<float> Freq, Phase, Amp, Bias, Const, Weight;
+        public readonly Seg<int> Op, NIn, Kind, NIndex, Channel;
+        public readonly Seg<float> Freq, Phase, Amp, Bias, Const, Weight;
 
-        public readonly Col<float> S, Mem, Reserve, Damage;
-        public readonly Col<int> Parity, Contact, Gates;
-        public readonly Col<double> Clock;
+        public readonly Seg<float> S, Mem, Reserve, Damage;
+        public readonly Seg<int> Parity, Contact, Gates;
+        public readonly Seg<double> Clock;
 
-        public readonly Col<Real> Ring;
-        public readonly Col<long> TStep, FirstBadStep;
-        public readonly Col<double> TTime;
-        public readonly Col<int> Enabled, Held, TCursor, FirstBadLink, Resized, Poison, Pending;
+        public readonly Seg<Real> Ring;
+        public readonly Seg<long> TStep, FirstBadStep;
+        public readonly Seg<double> TTime;
+        public readonly Seg<int> Enabled, Held, TCursor, FirstBadLink, Resized, Poison, Pending;
 
-        public ClassSet(Accelerator acc, int index, int links, int neurons, int cap)
+        public ClassSet(Accelerator acc, AcceleratorStream stream, int index, int links, int neurons, int cap, bool bendAndPower)
         {
             _acc = acc;
+            _stream = stream;
             Class = index;
             L = links;
             D = 3 * links;
             M = neurons;
             Cap = Math.Max(1, cap);
+            _packSlots = new Col<int>(acc, stream, 1, 16);
 
             Links = C<int>(1, Constant); Dof = C<int>(1, Constant); SigLen = C<int>(1, Constant);
             Mask = C<int>(1, Constant); GSlot = C<int>(1, Block, -1);
@@ -6653,20 +9764,32 @@ namespace Evosim.Farm.Gpu.Sgl
             PanelStart = C<int>(L + 1, Constant); ThinAxis = C<int>(L, Constant);
             NOff = C<int>(L, Constant); NCnt = C<int>(L, Constant); BParent = C<int>(L, Constant);
             FirstChild = C<int>(L, Constant); BDofStart = C<int>(L, Constant); BDofCount = C<int>(L, Constant);
+            CUnits = C<int>(1, Constant, -1); CDof = C<int>(1, Constant);
+            CLinkAt = C<int>(1, Constant); CPortAt = C<int>(1, Constant);
 
             Mass = C<Real>(L, Constant); Lift = C<Real>(L, Constant); Volume = C<Real>(L, Constant);
             SmallI = C<Real>(L, Constant); Reach = C<Real>(L, Constant); Arm = C<Real>(L, Constant);
             Inertia = C<Real>(3 * L, Constant); ChildAnchor = C<Real>(3 * L, Constant);
-            ParentAnchor = C<Real>(3 * L, Constant);
+            ParentAnchor = C<Real>(3 * L, Constant); SpinMoment = C<Real>(3 * L, Constant);
             JointFrame = C<Real>(4 * L, Constant); RestFrame = C<Real>(4 * L, Constant);
             LimitLo = C<Real>(D, Constant); LimitHi = C<Real>(D, Constant);
             LimitStiff = C<Real>(D, Constant); LimitDamp = C<Real>(D, Constant);
             Excess = C<Real>(1, Constant); TotalMass = C<Real>(1, Constant);
             TorquePerUnit = C<float>(D, Constant); PowerScale = C<float>(1, Block);
 
-            PCentre = C<Real>(3, Constant); PNormal = C<Real>(3, Constant); PArea = C<Real>(1, Constant);
+            int gl = bendAndPower ? L : 0, gd = bendAndPower ? D : 0;
+            Threshold = C<float>(gl, Constant); Reaction = C<float>(gl, Constant);
+            HoldGene = C<float>(gl, Constant); Release = C<float>(gl, Constant);
+            LinkPower = C<Real>(gl, Constant);
+            Bend = C<float>(gd, Down);
+            EPower = C<double>(gd, Down); EBend = C<double>(gd, Down);
+            EPowerTarget = C<double>(gd, Down); EBendTarget = C<double>(gd, Down);
+            EPowerRate = C<double>(gd, Down); EBendRate = C<double>(gd, Down);
+            EHoldLeft = C<double>(gd, Down);
 
-            BasePos = C<Real>(3, Down); BaseRot = C<Real>(4, Down);
+            PCentre = Widening<Real>(3); PNormal = Widening<Real>(3); PArea = Widening<Real>(1);
+
+            BasePos = C<Real>(3, Down); BaseCarry = C<Real>(3, Down); BaseRot = C<Real>(4, Down);
             Q = C<Real>(D, Down); Qd = C<Real>(D, Down); Tau = C<Real>(D, Down); LimitImplicit = C<Real>(D, Down);
             BallRot = C<Real>(4 * L, Down); Pos = C<Real>(3 * L, Down); Rot = C<Real>(4 * L, Down);
             RotM = C<Real>(9 * L, Down); Spin = C<Real>(3 * L, Down); Vel = C<Real>(3 * L, Down);
@@ -6697,15 +9820,78 @@ namespace Evosim.Farm.Gpu.Sgl
             Enabled = C<int>(1, Block); Held = C<int>(1, Down); TCursor = C<int>(1, Down);
             FirstBadLink = C<int>(1, Down, -1); Resized = C<int>(frames, Down);
             Poison = C<int>(1, Block, -1); Pending = C<int>(1, Block | Down);
+
+            Seal();
         }
 
-        private Col<T> C<T>(int width, int kind, T fill = default) where T : unmanaged
+        // A column in its type and kind's arena, one row a fill (Seg). A width of nothing still
+        // takes the one row Col's stub would.
+        private Seg<T> C<T>(int width, int kind, T fill = default) where T : unmanaged
         {
-            var column = new Col<T>(_acc, width, Cap, fill);
+            ArenaPlan<T> plan = null;
+            foreach (IArenaPlan p in _plans)
+            {
+                if (p.Kind == kind && p is ArenaPlan<T> typed) { plan = typed; break; }
+            }
+
+            if (plan == null) _plans.Add(plan = new ArenaPlan<T>(kind));
+            return plan.Add(Math.Max(1, width), fill);
+        }
+
+        // The drag panels' columns widen with the widest body (WidenPanels), which an arena's rows
+        // cannot, so each is a column of its own, constant.
+        private Col<T> Widening<T>(int width) where T : unmanaged
+        {
+            var column = new Col<T>(_acc, _stream, width, Cap);
             _all.Add(column);
-            if ((kind & Down) != 0) _down.Add(column);
-            if ((kind & Block) != 0) _block.Add(column);
+            _packed.Add(column);
             return column;
+        }
+
+        private void Seal()
+        {
+            foreach (IArenaPlan plan in _plans)
+            {
+                IColumn arena = plan.Build(_acc, _stream, Cap);
+                _all.Add(arena);
+                if ((plan.Kind & Down) != 0) _down.Add(arena);
+                if ((plan.Kind & Block) != 0) _block.Add(arena);
+                else _packed.Add(arena);
+            }
+
+            _plans.Clear();
+        }
+
+        private interface IArenaPlan
+        {
+            int Kind { get; }
+
+            IColumn Build(Accelerator acc, AcceleratorStream stream, int cap);
+        }
+
+        private sealed class ArenaPlan<T> : IArenaPlan where T : unmanaged
+        {
+            private readonly List<Seg<T>> _segs = new List<Seg<T>>();
+            private readonly List<T> _fills = new List<T>();
+
+            public ArenaPlan(int kind) => Kind = kind;
+
+            public int Kind { get; }
+
+            public Seg<T> Add(int width, T fill)
+            {
+                var seg = new Seg<T>(_fills.Count, width);
+                for (int k = 0; k < width; k++) _fills.Add(fill);
+                _segs.Add(seg);
+                return seg;
+            }
+
+            public IColumn Build(Accelerator acc, AcceleratorStream stream, int cap)
+            {
+                var arena = new Col<T>(acc, stream, cap, _fills.ToArray());
+                foreach (Seg<T> seg in _segs) seg.Arena = arena;
+                return arena;
+            }
         }
 
         public long Bytes
@@ -6742,16 +9928,45 @@ namespace Evosim.Farm.Gpu.Sgl
             Dirty = true;
         }
 
-        public void Upload()
+        // Both queue their copies without waiting (IColumn.UpQueued); the runner joins the stream
+        // after its block's uploads and after its downloads (Run, sections 5 and 8). Each copy stops
+        // at the class's used slots (IColumn.UpUsedQueued): no kernel reads a slot past them. A copy
+        // moves an arena, every column of one element type and kind, so a class makes a handful.
+        //
+        // A class dirty with packs sends its other columns by the packed slots alone
+        // (IColumn.UpSlotsQueued, 1b). That is sound because between blocks the host writes a class's
+        // columns only in Pack (the packed slots), PackBlock (block columns, which go up whole) and a
+        // freed slot's GSlot (a block column), and the download before brought every used slot of the
+        // down columns back, so in every other slot the card already holds what the host does. A
+        // column re-laid since its last copy (Ensure, WidenPanels) goes up over its used slots.
+        public void Upload(int used)
         {
-            List<IColumn> columns = Dirty ? _all : _block;
-            foreach (IColumn c in columns) c.Up();
+            if (Dirty && _packCount > 0)
+            {
+                _packSlots.UpUsedQueued(_packCount);
+                foreach (IColumn c in _block) c.UpUsedQueued(used);
+                foreach (IColumn c in _packed) c.UpSlotsQueued(_packSlots, _packCount, used);
+            }
+            else
+            {
+                foreach (IColumn c in Dirty ? _all : _block) c.UpUsedQueued(used);
+            }
+
             Dirty = false;
+            _packCount = 0;
         }
 
-        public void Download()
+        /// <summary>A body packed into local slot <paramref name="local"/>: the class goes up at the next block, that slot of it in full.</summary>
+        public void NotePack(int local)
         {
-            foreach (IColumn c in _down) c.Down();
+            if (_packCount == _packSlots.Cap) _packSlots.Resize(2 * _packSlots.Cap);
+            _packSlots.Host[_packCount++] = local;
+            Dirty = true;
+        }
+
+        public void Download(int used)
+        {
+            foreach (IColumn c in _down) c.DownUsedQueued(used);
         }
 
         /// <summary>The probe's count: what Upload would send now, and what Download brings back.</summary>
@@ -6765,28 +9980,50 @@ namespace Evosim.Farm.Gpu.Sgl
             get { long b = 0; foreach (IColumn c in _down) b += c.Bytes; return b; }
         }
 
+        /// <summary>The probe's count of what the same copies would move if they stopped at the class's <paramref name="used"/> slots.</summary>
+        public long UploadBytesFor(int used)
+        {
+            long b = 0;
+            foreach (IColumn c in Dirty ? _all : _block) b += c.BytesFor(used);
+            return b;
+        }
+
+        public long DownloadBytesFor(int used)
+        {
+            long b = 0;
+            foreach (IColumn c in _down) b += c.BytesFor(used);
+            return b;
+        }
+
+        /// <summary>Every column of the class, for the probe's count of page-locked host arrays.</summary>
+        public IReadOnlyList<IColumn> Columns => _all;
+
         public STopo Topo => new STopo
         {
             Links = Links.View, Dof = Dof.View, SigLen = SigLen.View, Mask = Mask.View, GSlot = GSlot.View,
             Parent = Parent.View, DofCount = DofCount.View, DofStart = DofStart.View, PanelStart = PanelStart.View,
             ThinAxis = ThinAxis.View, NOff = NOff.View, NCnt = NCnt.View, BParent = BParent.View,
             FirstChild = FirstChild.View, BDofStart = BDofStart.View, BDofCount = BDofCount.View,
+            CUnits = CUnits.View, CDof = CDof.View, CLinkAt = CLinkAt.View, CPortAt = CPortAt.View,
         };
 
         public SConst ConstSet => new SConst
         {
             Mass = Mass.View, Lift = Lift.View, Volume = Volume.View, SmallI = SmallI.View, Reach = Reach.View,
             Arm = Arm.View, Inertia = Inertia.View, ChildAnchor = ChildAnchor.View, ParentAnchor = ParentAnchor.View,
+            SpinMoment = SpinMoment.View,
             JointFrame = JointFrame.View, RestFrame = RestFrame.View, LimitLo = LimitLo.View, LimitHi = LimitHi.View,
             LimitStiff = LimitStiff.View, LimitDamp = LimitDamp.View, Excess = Excess.View,
             TotalMass = TotalMass.View, TorquePerUnit = TorquePerUnit.View, PowerScale = PowerScale.View,
+            Threshold = Threshold.View, Reaction = Reaction.View, HoldGene = HoldGene.View, Release = Release.View,
+            LinkPower = LinkPower.View,
         };
 
         public SPanels PanelSet => new SPanels { Centre = PCentre.View, Normal = PNormal.View, Area = PArea.View };
 
         public SState StateSet => new SState
         {
-            BasePos = BasePos.View, BaseRot = BaseRot.View, Q = Q.View, Qd = Qd.View, Tau = Tau.View,
+            BasePos = BasePos.View, BaseCarry = BaseCarry.View, BaseRot = BaseRot.View, Q = Q.View, Qd = Qd.View, Tau = Tau.View,
             LimitImplicit = LimitImplicit.View, BallRot = BallRot.View, Pos = Pos.View, Rot = Rot.View,
             RotM = RotM.View, Spin = Spin.View, Vel = Vel.View, Sang = Sang.View, Slin = Slin.View,
             Cbias = Cbias.View, RelVel = RelVel.View, Water = Water.View, WaterAcc = WaterAcc.View,
@@ -6798,6 +10035,9 @@ namespace Evosim.Farm.Gpu.Sgl
             Signal = Signal.View, History = History.View, RunSum = RunSum.View, Cursor = Cursor.View,
             Filled = Filled.View, DriveLimited = DriveLimited.View, DragLimited = DragLimited.View,
             Work = Work.View, Signed = Signed.View, Dissipated = Dissipated.View, Passive = Passive.View,
+            Bend = Bend.View, EPower = EPower.View, EBend = EBend.View, EPowerTarget = EPowerTarget.View,
+            EBendTarget = EBendTarget.View, EPowerRate = EPowerRate.View, EBendRate = EBendRate.View,
+            EHoldLeft = EHoldLeft.View,
         };
 
         public SNeur NeurSet => new SNeur
@@ -6823,6 +10063,7 @@ namespace Evosim.Farm.Gpu.Sgl
         public void Dispose()
         {
             foreach (IColumn c in _all) c.Dispose();
+            _packSlots.Dispose();
         }
     }
 
@@ -6833,13 +10074,19 @@ namespace Evosim.Farm.Gpu.Sgl
     internal sealed class Runner : IGpuRunner
     {
         private readonly Accelerator _acc;
+
+        // Every launch, copy and wait of this engine's: the accelerator's default stream when the engine
+        // is alone on its device, every call as it always was; a stream of its own on a shared device
+        // (GpuDevice), where a wait on the device would wait on another world's kernels too.
+        private readonly AcceleratorStream _stream;
+        private readonly bool _shared;
         private readonly GpuWorld _w;
         private readonly GpuOptions _o;
         private readonly GpuSlots _slots;
         private readonly ClassSet[] _classes;
         private readonly bool _onCpu;
-        private readonly int _scanGroup, _tileGroup;
-        private readonly int _chunk = 256;
+        private readonly int _scanGroup, _tileGroup, _meanGroup;
+        private readonly int _chunk = WholeStep.MeanGroupBodies;
 
         public int GroupSize { get; }
 
@@ -6847,11 +10094,47 @@ namespace Evosim.Farm.Gpu.Sgl
 
         public long[] Overflow { get; } = new long[4];
 
+        // The overflow counts the contact watch has already taken, so each block adds only its own.
+        private long _watchQueries, _watchPast;
+
+        /// <summary>
+        /// The block's contact extremes into the stats row's window (DynamicsWorld.Watch), and the card's
+        /// slots cleared for the next block: the column goes up again at the next block's start.
+        /// </summary>
+        private void FoldWatch(DynamicsWorld world, IReadOnlyList<Creature> list)
+        {
+            ContactWatch watch = world.Watch;
+            long[] h = _overflow.Host;
+            watch.NoteCandidates(h[WholeStep.WatchCandidates]);
+            long over = h[WholeStep.WatchOverlaps];
+            if (over > 0)
+            {
+                int rank = 0xFFFFFF - (int)(over & 0xFFFFFF);
+                if (rank >= 0 && rank < list.Count) watch.NoteOverlaps(over >> 24, rank, list[rank].Id, list[rank].Links);
+            }
+            long packed = h[WholeStep.WatchCells];
+            if (packed > 0)
+            {
+                long cells = packed >> 24;
+                int rank = 0xFFFFFF - (int)(packed & 0xFFFFFF);
+                if (rank >= 0 && rank < list.Count) watch.NoteCells(cells, rank, list[rank].Id, list[rank].Links);
+            }
+            watch.QueriesAtCap += Overflow[0] - _watchQueries;
+            watch.OverlapsPastCap += Overflow[1] - _watchPast;
+            _watchQueries = Overflow[0];
+            _watchPast = Overflow[1];
+            h[WholeStep.WatchCandidates] = 0;
+            h[WholeStep.WatchOverlaps] = 0;
+            h[WholeStep.WatchCells] = 0;
+        }
+
         public long RefusedForClass => _slots.RefusedForClass;
 
         public long NeuronsAtCeiling { get; private set; }
 
         public long NeuronsAtCeilingMost { get; private set; }
+
+        public long BedAnglesPastGuard { get; private set; }
 
         // ---- the globals, by global slot
         private int _gcap = 16;
@@ -6859,8 +10142,27 @@ namespace Evosim.Farm.Gpu.Sgl
         private readonly List<IColumn> _gLink = new List<IColumn>();
         private readonly List<IColumn> _gDown = new List<IColumn>();
 
+        // The reach guard's records by global slot (WholeStep.LoseStrays), zeroed on the card at
+        // each block's start and never uploaded, and its three counters.
+        private readonly List<IColumn> _gStray = new List<IColumn>();
+        private readonly Col<int> _strayCode;
+        private readonly Col<long> _strayStep;
+        private readonly Col<Real> _strayAt;
+        private readonly Col<int> _strayCount;
+
         private readonly Col<int> _gLinks, _gId, _gRank, _gAlive, _gJointed;
         private readonly Col<int> _nOver, _ovSlot, _ovId, _ovPart, _ovHeld, _nHeld, _heldId, _bedGlass;
+        private readonly bool _rock;
+        private readonly Col<int> _rockTouched;
+        private readonly Col<Real>[] _rockP;
+        private readonly Scratch<int> _touchNew;
+        private readonly bool _grip;
+        private readonly Col<int> _anchors, _gripHeld;
+        private readonly Col<double> _gripBreak, _gripPrice, _gripStrength, _reserveLow, _gripOwed, _gripHeldSeconds;
+        private readonly Col<Real> _gripAnchor, _gripAttitude, _gripPoint;
+        private readonly Col<long> _gripsFormed, _gripsBroken;
+        private readonly List<IColumn> _gripStubs = new List<IColumn>();
+        private readonly Scratch<Real> _touchAt;
 
         // The overlap lists move by their first rows only. Every read of them, on the card
         // (NoteOverlapPart, the census, CommitOverlaps) and on the host (PackBlock, the mirror,
@@ -6879,28 +10181,44 @@ namespace Evosim.Farm.Gpu.Sgl
             return Math.Min(most, _o.OverlapCap);
         }
 
+        // Queued, as the block's other copies, and joined with them (Run, sections 5 and 8).
         private void ListsUp(int rows)
         {
-            _ovSlot.UpRows(rows); _ovId.UpRows(rows); _ovPart.UpRows(2 * rows);
-            _ovHeld.UpRows(rows); _heldId.UpRows(rows);
+            _ovSlot.UpRowsQueued(rows); _ovId.UpRowsQueued(rows); _ovPart.UpRowsQueued(2 * rows);
+            _ovHeld.UpRowsQueued(rows); _heldId.UpRowsQueued(rows);
         }
 
         private void ListsDown(int rows)
         {
-            _ovSlot.DownRows(rows); _ovId.DownRows(rows); _ovPart.DownRows(2 * rows);
-            _ovHeld.DownRows(rows); _heldId.DownRows(rows);
+            _ovSlot.DownRowsQueued(rows); _ovId.DownRowsQueued(rows); _ovPart.DownRowsQueued(2 * rows);
+            _ovHeld.DownRowsQueued(rows); _heldId.DownRowsQueued(rows);
         }
         private readonly Col<Real> _gTotalMass, _linkMass;
         private readonly Col<int> _rankToSlot;
-        private readonly Col<long> _census, _overflow;
+        private readonly Col<long> _census, _overflow, _guard;
 
-        // ---- two sphere sets: [set][Cx, Cy, Cz, R, Vx, Vy, Vz, LCx, LCy, LCz, LR, LVx, LVy, LVz]
+        // ---- two sphere sets: [set][Cx, Cy, Cz, R, Vx, Vy, Vz, LCx, LCy, LCz, LR, LVx, LVy, LVz, LEx, LEy, LEz]
         private readonly Col<Real>[][] _sph = new Col<Real>[2][];
         private readonly Col<int>[] _active = new Col<int>[2];
         private int _committed;
 
         // ---- the grid
         private readonly Scratch<int> _lo, _hi, _counts, _start, _gcursor, _items, _partialN, _tileSum, _tileStart;
+        private readonly Scratch<int> _giant, _isGiant, _giantN, _giantList;
+
+        // The giants' threshold (WholeStep.Ranges): 1,024 cells, or EVOSIM_GPU_GIANT_CELLS, where 0 makes no
+        // row a giant. Result-neutral at any value, which is what the variable is for: a check runs a span at
+        // 0, at the default and at 1, and the three must be the same bits.
+        private static readonly int GiantCells = ReadGiantCells();
+
+        private static int ReadGiantCells()
+        {
+            string v = Environment.GetEnvironmentVariable("EVOSIM_GPU_GIANT_CELLS");
+            if (string.IsNullOrEmpty(v)) return 1024;
+            int n = int.Parse(v.Trim(), System.Globalization.CultureInfo.InvariantCulture);
+            if (n < 0) throw new ArgumentException("EVOSIM_GPU_GIANT_CELLS is " + n + "; it is 0 (no giants) or a count of cells.");
+            return n == 0 ? int.MaxValue : n;
+        }
         private readonly Scratch<int> _linkFlags, _stageN, _stageId, _stageSlot, _stagePart, _linkLimited;
         private readonly Scratch<Real> _linkPush, _linkFluid;
         private readonly Scratch<Real> _cell, _partial;
@@ -6910,15 +10228,60 @@ namespace Evosim.Farm.Gpu.Sgl
         // ---- the world
         private readonly Col<Real> _inst, _wr, _stock;
         private readonly Col<int> _wi;
+        private readonly Col<float> _scent;
+        private readonly Col<float> _leaf;
+
+        // The one brain's pools (card-audit-r57.md, the central brain), shared by every class: a
+        // body's links and ports in a run of their own, placed at its pack. A slot keeps its runs
+        // for the next body it holds; the pools are laid again from nothing when the runs left
+        // behind outweigh the live ones.
+        private readonly Col<int> _cSource, _cPortPart, _cPortChannel, _cPortIndex;
+        private readonly Col<float> _cWeight;
+        private int[] _cLinkAt = Array.Empty<int>(), _cLinkRoom = Array.Empty<int>();
+        private int[] _cPortAt = Array.Empty<int>(), _cPortRoom = Array.Empty<int>();
+        private int _cLinksTop, _cPortsTop;
+        private bool _cDirty = true;
+
+        public int PoolSlack { get; set; } = 4096;
+
+        public long PoolRelays { get; private set; }
+
+        public int LinkPoolCapacity => _cSource.Cap;
+
+        // The scent's fill on the card (C3, GpuScent), when the farm hands it the world.
+        private GpuScent _gpuScent;
+
+        /// <summary>
+        /// Takes the scent's fill from <paramref name="world"/> (EVOSIM_GPU_SCENT): the world hands
+        /// its corpses to a GpuScent at each fill, the card fills the grid its kernels read, and the
+        /// host's field is brought home only when a host reader asks (World.BringScentHome).
+        /// </summary>
+        public void FillScentOnCard(World world)
+        {
+            if (world?.Scent == null || _gpuScent != null) return;
+
+            // The field is the engine's from now on, and not only once a body smells it: the block
+            // sizes the column the fill writes from the engine's field, and a founded world steps
+            // blocks before its first body is attached (2026-10-10, r58t1). A restored world had
+            // attached it before its first block, so this changes nothing there.
+            _w.AttachScent(world.Scent);
+            _gpuScent = new GpuScent(_acc, _stream, world.Scent, _scent);
+            world.FillScentElsewhere(_gpuScent.Snapshot, _gpuScent.BringHome);
+        }
         private int _fieldVersion = -1;
         private readonly double[] _instD = new double[GpuWorld.InstStride];
         private double[] _stockD = new double[1];
 
         // ---- the kernels
-        private readonly Action<Index1D, SSph, SGlob, SGrid, SCfg> _meanSerial, _meanChunks, _ranges;
-        private readonly Action<Index1D, SGrid, SCfg> _meanCombine;
+        private readonly Action<Index1D, SSph, SGlob, SGrid, SCfg> _meanSerial, _ranges;
+
+        // The chunked mean, one group a chunk (MeanGroups): a group of up to MeanGroupBodies threads.
+        private readonly Action<KernelConfig, SSph, SGlob, SGrid, SCfg> _meanGroups;
+        private readonly Action<Index1D, SGrid, SCfg> _meanCombine, _rearm, _clearCounts;
+        private readonly Action<Index1D, SSph, SGlob, SGrid, SCfg> _loseStrays;
         private readonly Action<KernelConfig, SGrid, SCfg> _scanReduce, _scanTiles, _scanDown;
         private readonly Action<Index1D, SGlob, SGrid, SCfg> _scatter;
+        private readonly Action<Index1D, SGrid, SCfg> _giantLists;
         private readonly Action<Index1D, SGlob, SCfg> _censusKernel;
         private readonly Action<Index1D, STopo, SState, SGlob, SWorld, SCfg> _water;
         private readonly Action<AcceleratorStream, Index1D, STopo, SState, SGlob, SWorld, SCfg> _waterOn;
@@ -6942,9 +10305,11 @@ namespace Evosim.Farm.Gpu.Sgl
         [ThreadStatic] private static long[] _idScratch;
         [ThreadStatic] private static int[] _partScratch;
 
-        public Runner(Accelerator accelerator, GpuWorld world, GpuOptions options)
+        public Runner(Accelerator accelerator, AcceleratorStream stream, GpuWorld world, GpuOptions options)
         {
             _acc = accelerator;
+            _stream = stream ?? accelerator.DefaultStream;
+            _shared = !ReferenceEquals(_stream, accelerator.DefaultStream);
             _w = world;
             _o = options;
             _onCpu = accelerator.AcceleratorType == AcceleratorType.CPU;
@@ -6953,7 +10318,7 @@ namespace Evosim.Farm.Gpu.Sgl
             _classes = new ClassSet[options.ClassLinks.Length];
             for (int k = 0; k < _classes.Length; k++)
             {
-                _classes[k] = new ClassSet(accelerator, k, options.ClassLinks[k], options.ClassNeurons[k], 16);
+                _classes[k] = new ClassSet(accelerator, _stream, k, options.ClassLinks[k], options.ClassNeurons[k], 16, world.BendAndPower);
             }
 
             int oc = options.OverlapCap;
@@ -6965,21 +10330,52 @@ namespace Evosim.Farm.Gpu.Sgl
             _ovPart = G<int>(_gBody, 2 * oc, true, -1); _ovHeld = G<int>(_gBody, oc, true);
             _nHeld = G<int>(_gBody, 1, true); _heldId = G<int>(_gBody, oc, true); _bedGlass = G<int>(_gBody, 1, true);
             _lists = new HashSet<IColumn> { _ovSlot, _ovId, _ovPart, _ovHeld, _heldId };
+            _strayCode = G<int>(_gStray, 1, true); _strayStep = G<long>(_gStray, 1, true);
 
-            _rankToSlot = new Col<int>(_acc, 1, 16, -1);
-            _census = new Col<long>(_acc, 1, WholeStep.CensusFields * GpuBackend.BlockCeiling);
-            _overflow = new Col<long>(_acc, 1, 4);
+            // D162's touch of the rock, kept by link row and brought home with the body, only in a
+            // world that records it; elsewhere a cell each, outside the lists, which no copy moves.
+            _rock = world.RockTouch;
+            _rockTouched = _rock ? G<int>(_gLink, 1, true) : new Col<int>(_acc, _stream, 1, 1);
+            _rockP = new Col<Real>[6];
+            for (int k = 0; k < 6; k++) _rockP[k] = _rock ? G<Real>(_gLink, 1, true) : new Col<Real>(_acc, _stream, 1, 1);
+            // D162's grip, by link row and by global slot, kept on the card and brought home with the
+            // body, only in a world whose table holds the anchoring cell; elsewhere a cell each.
+            _grip = world.AnchorCell != null;
+            _anchors = GripCol<int>(_gLink, 1, false);
+            _gripBreak = GripCol<double>(_gLink, 1, false);
+            _gripPrice = GripCol<double>(_gLink, 1, false);
+            _gripHeld = GripCol<int>(_gLink, 1, true);
+            _gripStrength = GripCol<double>(_gLink, 1, true);
+            _gripAnchor = GripCol<Real>(_gLink, 3, true);
+            _gripAttitude = GripCol<Real>(_gLink, 9, true);
+            _gripPoint = GripCol<Real>(_gLink, 3, true);
+            _reserveLow = GripCol<double>(_gBody, 1, true);
+            _gripOwed = GripCol<double>(_gBody, 1, true);
+            _gripHeldSeconds = GripCol<double>(_gBody, 1, true);
+            _gripsFormed = GripCol<long>(_gBody, 1, true);
+            _gripsBroken = GripCol<long>(_gBody, 1, true);
+            _strayAt = G<Real>(_gStray, 4, true);
+            _strayCount = new Col<int>(_acc, _stream, 1, 3);
+
+            _rankToSlot = new Col<int>(_acc, _stream, 1, 16, -1);
+            _census = new Col<long>(_acc, _stream, 1, WholeStep.CensusFields * GpuBackend.BlockCeiling);
+            _overflow = new Col<long>(_acc, _stream, 1, 8);
+            _guard = new Col<long>(_acc, _stream, 1, 1);
 
             for (int set = 0; set < 2; set++)
             {
-                var columns = new Col<Real>[14];
-                for (int k = 0; k < 7; k++) columns[k] = new Col<Real>(_acc, 1, _gcap);
-                for (int k = 7; k < 14; k++) columns[k] = new Col<Real>(_acc, 1, WholeStep.LinkStride * _gcap);
+                var columns = new Col<Real>[17];
+                for (int k = 0; k < 7; k++) columns[k] = new Col<Real>(_acc, _stream, 1, _gcap);
+                for (int k = 7; k < 17; k++) columns[k] = new Col<Real>(_acc, _stream, 1, WholeStep.LinkStride * _gcap);
                 _sph[set] = columns;
-                _active[set] = new Col<int>(_acc, 1, _gcap);
+                _active[set] = new Col<int>(_acc, _stream, 1, _gcap);
             }
 
             _lo = new Scratch<int>(_acc, 3 * 16);
+            _giant = new Scratch<int>(_acc, 1 + WholeStep.GiantCap);
+            _isGiant = new Scratch<int>(_acc, 16);
+            _giantN = new Scratch<int>(_acc, WholeStep.GiantCap);
+            _giantList = new Scratch<int>(_acc, WholeStep.GiantCap * WholeStep.GiantListCap);
             _hi = new Scratch<int>(_acc, 3 * 16);
             _counts = new Scratch<int>(_acc, 17);
             _start = new Scratch<int>(_acc, 17);
@@ -6987,15 +10383,18 @@ namespace Evosim.Farm.Gpu.Sgl
             _tileSum = new Scratch<int>(_acc, 1);
             _tileStart = new Scratch<int>(_acc, 1);
             _linkPush = new Scratch<Real>(_acc, 3);
-            _linkFluid = new Scratch<Real>(_acc, 15);
+            _linkFluid = new Scratch<Real>(_acc, 17);
             _linkLimited = new Scratch<int>(_acc, 1);
             _linkFlags = new Scratch<int>(_acc, 1);
+            _touchNew = new Scratch<int>(_acc, 1);
+            _touchAt = new Scratch<Real>(_acc, 6);
             _stageN = new Scratch<int>(_acc, 1);
             _stageId = new Scratch<int>(_acc, WholeStep.StageCap);
             _stageSlot = new Scratch<int>(_acc, WholeStep.StageCap);
             _stagePart = new Scratch<int>(_acc, WholeStep.StageCap);
 #if GPU_PHASE_PROBE
             _phase = new Scratch<long>(_acc, 1);
+            _linkPhase = new Scratch<long>(_acc, 1);
 #endif
             _entryCap = 1024;
             _items = new Scratch<int>(_acc, _entryCap);
@@ -7003,12 +10402,17 @@ namespace Evosim.Farm.Gpu.Sgl
             _partialN = new Scratch<int>(_acc, 1);
             _cell = new Scratch<Real>(_acc, 1);
 
-            _inst = new Col<Real>(_acc, 1, GpuWorld.InstStride * GpuBackend.BlockCeiling);
-            _wr = new Col<Real>(_acc, 1, world.WR.Length);
+            _inst = new Col<Real>(_acc, _stream, 1, GpuWorld.InstStride * GpuBackend.BlockCeiling);
+            _wr = new Col<Real>(_acc, _stream, 1, world.WR.Length);
             for (int k = 0; k < world.WR.Length; k++) _wr.Host[k] = (Real)world.WR[k];
             _wr.Up();
-            _wi = new Col<int>(_acc, 1, 1);
-            _stock = new Col<Real>(_acc, 1, 1);
+            _wi = new Col<int>(_acc, _stream, 1, 1);
+            _stock = new Col<Real>(_acc, _stream, 1, 1);
+            _scent = new Col<float>(_acc, _stream, 1, 1);
+            _leaf = new Col<float>(_acc, _stream, 1, 1);
+            _cSource = new Col<int>(_acc, _stream, 1, 1); _cPortPart = new Col<int>(_acc, _stream, 1, 1);
+            _cPortChannel = new Col<int>(_acc, _stream, 1, 1); _cPortIndex = new Col<int>(_acc, _stream, 1, 1);
+            _cWeight = new Col<float>(_acc, _stream, 1, 1);
 
             _scanGroup = Math.Max(1, Math.Min(1024, accelerator.MaxNumThreadsPerGroup));
 
@@ -7024,31 +10428,35 @@ namespace Evosim.Farm.Gpu.Sgl
             int g = options.GroupSize;
             GroupSize = _onCpu ? accelerator.MaxNumThreadsPerGroup : g;
 
-            _meanSerial = _acc.LoadAutoGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.MeanSerial);
-            _meanCombine = _acc.LoadAutoGroupedStreamKernel<Index1D, SGrid, SCfg>(WholeStep.MeanCombine);
-            _scanReduce = _acc.LoadStreamKernel<SGrid, SCfg>(WholeStep.ScanReduce);
-            _scanTiles = _acc.LoadStreamKernel<SGrid, SCfg>(WholeStep.ScanTiles);
-            _scanDown = _acc.LoadStreamKernel<SGrid, SCfg>(WholeStep.ScanDown);
+            _meanSerial = On(_acc.LoadAutoGroupedKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.MeanSerial));
+            _meanCombine = On(_acc.LoadAutoGroupedKernel<Index1D, SGrid, SCfg>(WholeStep.MeanCombine));
+            _rearm = On(_acc.LoadAutoGroupedKernel<Index1D, SGrid, SCfg>(WholeStep.Rearm));
+            _clearCounts = On(_acc.LoadAutoGroupedKernel<Index1D, SGrid, SCfg>(WholeStep.ClearCounts));
+            _giantLists = On(_acc.LoadAutoGroupedKernel<Index1D, SGrid, SCfg>(WholeStep.GiantLists));
+            _loseStrays = On(_acc.LoadAutoGroupedKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.LoseStrays));
+            _scanReduce = On(_acc.LoadKernel<SGrid, SCfg>(WholeStep.ScanReduce));
+            _scanTiles = On(_acc.LoadKernel<SGrid, SCfg>(WholeStep.ScanTiles));
+            _scanDown = On(_acc.LoadKernel<SGrid, SCfg>(WholeStep.ScanDown));
+            _meanGroups = On(_acc.LoadKernel<SSph, SGlob, SGrid, SCfg>(WholeStep.MeanGroups));
+            _meanGroup = Math.Max(1, Math.Min(WholeStep.MeanGroupBodies, accelerator.MaxNumThreadsPerGroup));
 
             if (grouped)
             {
-                _meanChunks = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.MeanChunks, g);
-                _ranges = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.Ranges, g);
-                _scatter = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SGlob, SGrid, SCfg>(WholeStep.Scatter, g);
-                _censusKernel = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SGlob, SCfg>(WholeStep.Census, g);
-                _water = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks, g);
-                _contact = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks, g);
-                _fluid = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SState, SPanels, SGlob, SCfg>(WholeStep.FluidLinks, g);
+                _ranges = On(_acc.LoadImplicitlyGroupedKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.Ranges, g));
+                _scatter = On(_acc.LoadImplicitlyGroupedKernel<Index1D, SGlob, SGrid, SCfg>(WholeStep.Scatter, g));
+                _censusKernel = On(_acc.LoadImplicitlyGroupedKernel<Index1D, SGlob, SCfg>(WholeStep.Census, g));
+                _water = On(_acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks, g));
+                _contact = On(_acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks, g));
+                _fluid = On(_acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SConst, SState, SPanels, SGlob, SCfg>(WholeStep.FluidLinks, g));
             }
             else
             {
-                _meanChunks = _acc.LoadAutoGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.MeanChunks);
-                _ranges = _acc.LoadAutoGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.Ranges);
-                _scatter = _acc.LoadAutoGroupedStreamKernel<Index1D, SGlob, SGrid, SCfg>(WholeStep.Scatter);
-                _censusKernel = _acc.LoadAutoGroupedStreamKernel<Index1D, SGlob, SCfg>(WholeStep.Census);
-                _water = _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks);
-                _contact = _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks);
-                _fluid = _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SConst, SState, SPanels, SGlob, SCfg>(WholeStep.FluidLinks);
+                _ranges = On(_acc.LoadAutoGroupedKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.Ranges));
+                _scatter = On(_acc.LoadAutoGroupedKernel<Index1D, SGlob, SGrid, SCfg>(WholeStep.Scatter));
+                _censusKernel = On(_acc.LoadAutoGroupedKernel<Index1D, SGlob, SCfg>(WholeStep.Census));
+                _water = On(_acc.LoadAutoGroupedKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks));
+                _contact = On(_acc.LoadAutoGroupedKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks));
+                _fluid = On(_acc.LoadAutoGroupedKernel<Index1D, STopo, SConst, SState, SPanels, SGlob, SCfg>(WholeStep.FluidLinks));
             }
 
             _step = new Action<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace, SGlob,
@@ -7070,11 +10478,11 @@ namespace Evosim.Farm.Gpu.Sgl
                     : _acc.LoadAutoGroupedKernel<Index1D, STopo, SConst, SState, SPanels, SGlob, SCfg>(WholeStep.FluidLinks);
             }
 
-            _step[0] = grouped
-                ? _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+            _step[0] = On(grouped
+                ? _acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
                     STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step0, g)
-                : _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
-                    STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step0);
+                : _acc.LoadAutoGroupedKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+                    STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step0));
             if (_concurrent)
             {
                 _stepOn[0] = grouped
@@ -7084,11 +10492,11 @@ namespace Evosim.Farm.Gpu.Sgl
                         STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step0);
                 _streams[0] = _acc.CreateStream();
             }
-            _step[1] = grouped
-                ? _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+            _step[1] = On(grouped
+                ? _acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
                     STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step1, g)
-                : _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
-                    STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step1);
+                : _acc.LoadAutoGroupedKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+                    STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step1));
             if (_concurrent)
             {
                 _stepOn[1] = grouped
@@ -7098,11 +10506,11 @@ namespace Evosim.Farm.Gpu.Sgl
                         STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step1);
                 _streams[1] = _acc.CreateStream();
             }
-            _step[2] = grouped
-                ? _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+            _step[2] = On(grouped
+                ? _acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
                     STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step2, g)
-                : _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
-                    STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step2);
+                : _acc.LoadAutoGroupedKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+                    STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step2));
             if (_concurrent)
             {
                 _stepOn[2] = grouped
@@ -7112,11 +10520,11 @@ namespace Evosim.Farm.Gpu.Sgl
                         STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step2);
                 _streams[2] = _acc.CreateStream();
             }
-            _step[3] = grouped
-                ? _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+            _step[3] = On(grouped
+                ? _acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
                     STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step3, g)
-                : _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
-                    STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step3);
+                : _acc.LoadAutoGroupedKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+                    STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step3));
             if (_concurrent)
             {
                 _stepOn[3] = grouped
@@ -7127,17 +10535,98 @@ namespace Evosim.Farm.Gpu.Sgl
                 _streams[3] = _acc.CreateStream();
             }
 
-            _acc.Synchronize();
+            Sync();
             CompileMs = watch.Elapsed.TotalMilliseconds;
+        }
+
+        // A kernel in its stream-taking form, launched on this engine's stream: on the default stream
+        // the very launch the stream-kernel loaders make (Runner's _stream). Each wrapper's kernel is kept
+        // for the probe's shape lines, which read the kernel object behind a launcher.
+        private readonly Dictionary<Delegate, Delegate> _raw = new Dictionary<Delegate, Delegate>();
+
+        private Delegate Raw(Delegate launcher) => _raw.TryGetValue(launcher, out Delegate k) ? k : launcher;
+
+        private Action<T1, T2, T3> On<T1, T2, T3>(Action<AcceleratorStream, T1, T2, T3> k)
+        {
+            Action<T1, T2, T3> f = (a1, a2, a3) => k(_stream, a1, a2, a3);
+            _raw[f] = k;
+            return f;
+        }
+        private Action<T1, T2, T3, T4> On<T1, T2, T3, T4>(Action<AcceleratorStream, T1, T2, T3, T4> k)
+        {
+            Action<T1, T2, T3, T4> f = (a1, a2, a3, a4) => k(_stream, a1, a2, a3, a4);
+            _raw[f] = k;
+            return f;
+        }
+        private Action<T1, T2, T3, T4, T5> On<T1, T2, T3, T4, T5>(Action<AcceleratorStream, T1, T2, T3, T4, T5> k)
+        {
+            Action<T1, T2, T3, T4, T5> f = (a1, a2, a3, a4, a5) => k(_stream, a1, a2, a3, a4, a5);
+            _raw[f] = k;
+            return f;
+        }
+        private Action<T1, T2, T3, T4, T5, T6> On<T1, T2, T3, T4, T5, T6>(Action<AcceleratorStream, T1, T2, T3, T4, T5, T6> k)
+        {
+            Action<T1, T2, T3, T4, T5, T6> f = (a1, a2, a3, a4, a5, a6) => k(_stream, a1, a2, a3, a4, a5, a6);
+            _raw[f] = k;
+            return f;
+        }
+        private Action<T1, T2, T3, T4, T5, T6, T7> On<T1, T2, T3, T4, T5, T6, T7>(Action<AcceleratorStream, T1, T2, T3, T4, T5, T6, T7> k)
+        {
+            Action<T1, T2, T3, T4, T5, T6, T7> f = (a1, a2, a3, a4, a5, a6, a7) => k(_stream, a1, a2, a3, a4, a5, a6, a7);
+            _raw[f] = k;
+            return f;
+        }
+        private Action<T1, T2, T3, T4, T5, T6, T7, T8> On<T1, T2, T3, T4, T5, T6, T7, T8>(Action<AcceleratorStream, T1, T2, T3, T4, T5, T6, T7, T8> k)
+        {
+            Action<T1, T2, T3, T4, T5, T6, T7, T8> f = (a1, a2, a3, a4, a5, a6, a7, a8) => k(_stream, a1, a2, a3, a4, a5, a6, a7, a8);
+            _raw[f] = k;
+            return f;
+        }
+        private Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> On<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>(Action<AcceleratorStream, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> k)
+        {
+            Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> f = (a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15) => k(_stream, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15);
+            _raw[f] = k;
+            return f;
+        }
+
+        /// <summary>
+        /// Waits for this engine's work: the device, as it always did, when the engine is alone on it; on
+        /// a shared device, or with the scent filled on the card, its own stream and its class streams,
+        /// and never another world's kernels. The scent's fill stream is left out: the block joins it
+        /// in section 5, so under the probe the wait on the fill is timed there and not in whichever
+        /// section happened to sync first.
+        /// </summary>
+        private void Sync()
+        {
+            if (!_shared && _gpuScent == null)
+            {
+                _acc.Synchronize();
+                return;
+            }
+
+            _stream.Synchronize();
+            foreach (AcceleratorStream s in _streams)
+            {
+                s?.Synchronize();
+            }
         }
 
         private Col<T> G<T>(List<IColumn> list, int width, bool down, T fill = default) where T : unmanaged
         {
             int cap = ReferenceEquals(list, _gLink) ? WholeStep.LinkStride * _gcap : _gcap;
-            var column = new Col<T>(_acc, width, cap, fill);
+            var column = new Col<T>(_acc, _stream, width, cap, fill);
             list.Add(column);
             if (down) _gDown.Add(column);
             return column;
+        }
+
+        private Col<T> GripCol<T>(List<IColumn> list, int width, bool down) where T : unmanaged
+        {
+            if (_grip) return G<T>(list, width, down);
+
+            var stub = new Col<T>(_acc, _stream, width, 1);
+            _gripStubs.Add(stub);
+            return stub;
         }
 
         private static SCfg BaseConfig(GpuWorld w, GpuOptions o)
@@ -7153,8 +10642,13 @@ namespace Evosim.Farm.Gpu.Sgl
                 LimitDrive = w.LimitDrive ? 1 : 0, LimitDrag = w.LimitDrag ? 1 : 0,
                 UseRestore = w.UseRestore ? 1 : 0, FloorRestores = w.FloorRestores ? 1 : 0,
                 CreatureContact = w.CreatureContact ? 1 : 0, OffsetTorque = w.OffsetTorque ? 1 : 0,
+                BendAndPower = w.BendAndPower ? 1 : 0, TurningDrag = w.TurningDrag, RockTouch = w.RockTouch ? 1 : 0,
+                Anchoring = w.AnchorCell != null ? 1 : 0,
+                GripDecay = w.GripDecay, GripThreshold = w.GripThreshold, GripLag = w.GripLag,
 
-                DtD = w.Dt,
+                DtD = w.Dt, PoseOmega = w.PoseOmega,
+                PushOmega = (Real)w.PushOmega, LimbPush = (Real)w.LimbPush,
+                NegSkin = (Real)w.NegSkin, NegSpin = (Real)w.NegSpin,
                 Dt = (Real)w.Dt, Density = (Real)w.Density, DragK = (Real)w.DragK, AddedMass = (Real)w.AddedMass,
                 FluidAccel = (Real)w.FluidAccel, Gravity = (Real)w.Gravity, WorldDepth = (Real)w.WorldDepth,
                 Damping = (Real)w.Damping, SpinBudget = (Real)w.SpinBudget,
@@ -7171,7 +10665,8 @@ namespace Evosim.Farm.Gpu.Sgl
                 HalfThickness = (Real)w.HalfThickness, Fillet = (Real)w.Fillet, ReefFade = (Real)w.ReefFade,
                 SigmaSloped = w.SigmaSloped, SigmaFlat = w.SigmaFlat, Speed = w.Speed,
 
-                SWorldDepth = w.SWorldDepth, ChemHalf = w.ChemHalf, EnergyScale = w.EnergyScale,
+                SWorldDepth = w.SWorldDepth, ChemHalf = w.ChemHalf, ScentHalf = w.ScentHalf, EnergyScale = w.EnergyScale,
+                LeafHalf = w.LeafHalf,
                 FlowScale = w.FlowScale, RateScale = w.RateScale, ConstCE = w.ConstCE, DtF = w.DtF,
 
                 StreamAmpAt = w.StreamAmpAt, StreamRateAt = w.StreamRateAt, CellAmpAt = w.CellAmpAt,
@@ -7208,7 +10703,39 @@ namespace Evosim.Farm.Gpu.Sgl
         // contact grid's geometry read from the mirror: the cell, the largest link and the most
         // cells one link of each class covers. The joins cost a little; the step's numbers do not
         // move, because nothing it launches changes.
-        private static readonly bool ProbeOn = Environment.GetEnvironmentVariable("EVOSIM_GPU_PROBE") == "1";
+        //
+        // From the start under EVOSIM_GPU_PROBE=1, or switched on while the world runs by the farm's pace guard
+        // (Probe), which reads the last print back as lines (ProbeLines). It is switched between blocks, never
+        // inside one, so a block's joins and marks are all on or all off.
+        private bool ProbeOn = Environment.GetEnvironmentVariable("EVOSIM_GPU_PROBE") == "1";
+        private readonly List<string> _probeLines = new List<string>();
+        private readonly List<string> _probeLast = new List<string>();
+
+        public bool Probe
+        {
+            get => ProbeOn;
+            set
+            {
+                if (value && !ProbeOn) _probeBlocks = 0;
+                ProbeOn = value;
+            }
+        }
+
+        public IReadOnlyList<string> ProbeLines => _probeLast;
+
+        // A print's line, written as before and kept for ProbeLines; the print's first line starts a new set.
+        private void ProbeLine(string line)
+        {
+            GpuConsole.Error.WriteLine(line);
+            _probeLines.Add(line);
+        }
+
+        private void ProbeLinesDone()
+        {
+            _probeLast.Clear();
+            _probeLast.AddRange(_probeLines);
+            _probeLines.Clear();
+        }
         private readonly long[] _probeClass = new long[4];
         private readonly long[] _probeGridPart = new long[5];
         private int _probeRows, _probeBuckets;
@@ -7227,11 +10754,11 @@ namespace Evosim.Farm.Gpu.Sgl
         // body's (the most cycles in all), summed over blocks.
         private void PhaseRead()
         {
-            _acc.Synchronize();
+            Sync();
             int P = WholeStep.Phases;
             int n = P * _gcap;
             if (_phaseHost.Length != n) _phaseHost = new long[n];
-            _phase.View.SubView(0, n).CopyToCPU(_phaseHost);
+            _phase.View.SubView(0, n).CopyToCPU(_stream, _phaseHost);
 
             var slowTotal = new long[4];
             var slowG = new int[] { -1, -1, -1, -1 };
@@ -7258,6 +10785,106 @@ namespace Evosim.Farm.Gpu.Sgl
                 _phaseBlocks[c]++;
                 _phaseSlowLinks[c] = Math.Max(_phaseSlowLinks[c], _slots.Body[slowG[c]].Links);
             }
+
+            LinkPhaseRead();
+        }
+
+        private readonly Scratch<long> _linkPhase;
+        private long _linkPhaseRows;
+        private long[] _linkPhaseHost = new long[1];
+        private readonly double[] _linkMean = new double[4 * WholeStep.LinkParts];
+        private readonly double[] _linkSlow = new double[4 * WholeStep.LinkParts];
+        private readonly long[] _linkCount = new long[4];
+        private readonly int[] _linkBlocks = new int[4];
+        private static readonly string[] LinkPartNames =
+            { "read", "velocity", "acceleration", "read", "panels", "terms", "store" };
+
+        // After a block's last step: each class's links' cycles a part in the water and fluid
+        // passes, summed, and its slowest link's in each pass (the most cycles in that pass),
+        // summed over blocks. A tank with no current leaves the water's parts as they were.
+        private void LinkPhaseRead()
+        {
+            int P = WholeStep.LinkParts, W = WholeStep.WaterParts;
+            long rows = _linkPhaseRows;
+            if (rows == 0) return;
+            long n = P * rows;
+            if (_linkPhaseHost.Length != n) _linkPhaseHost = new long[n];
+            _linkPhase.View.SubView(0, n).CopyToCPU(_stream, _linkPhaseHost);
+
+            var slowWater = new long[4];
+            var slowFluid = new long[4];
+            var slowWaterRow = new long[] { -1, -1, -1, -1 };
+            var slowFluidRow = new long[] { -1, -1, -1, -1 };
+            for (int g = 0; g < _slots.Used; g++)
+            {
+                Creature body = _slots.Body[g];
+                if (body == null || !body.Alive) continue;
+                int c = _slots.ClassOf[g];
+                for (int l = 0; l < body.Links; l++)
+                {
+                    long row = (long)g * WholeStep.LinkStride + l;
+                    if (row >= rows) break;
+                    long water = 0, fluid = 0;
+                    for (int p = 0; p < P; p++)
+                    {
+                        long v = _linkPhaseHost[p * rows + row];
+                        _linkMean[c * P + p] += v;
+                        if (p < W) water += v; else fluid += v;
+                    }
+                    _linkCount[c]++;
+                    if (water > slowWater[c]) { slowWater[c] = water; slowWaterRow[c] = row; }
+                    if (fluid > slowFluid[c]) { slowFluid[c] = fluid; slowFluidRow[c] = row; }
+                }
+            }
+
+            for (int c = 0; c < 4; c++)
+            {
+                if (slowFluidRow[c] < 0) continue;
+                for (int p = 0; p < P; p++)
+                {
+                    long row = p < W ? slowWaterRow[c] : slowFluidRow[c];
+                    if (row >= 0) _linkSlow[c * P + p] += _linkPhaseHost[p * rows + row];
+                }
+                _linkBlocks[c]++;
+            }
+        }
+
+        private void PrintLinkPhases()
+        {
+            int P = WholeStep.LinkParts, W = WholeStep.WaterParts;
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            for (int c = 0; c < 4; c++)
+            {
+                if (_linkBlocks[c] == 0) continue;
+                var text = new System.Text.StringBuilder();
+                foreach (bool slowest in new[] { false, true })
+                {
+                    for (int pass = 0; pass < 2; pass++)
+                    {
+                        int from = pass == 0 ? 0 : W, to = pass == 0 ? W : P;
+                        var parts = new System.Text.StringBuilder();
+                        double sum = 0;
+                        for (int p = from; p < to; p++)
+                        {
+                            double v = slowest
+                                ? _linkSlow[c * P + p] / _linkBlocks[c] / 1000.0
+                                : _linkMean[c * P + p] / Math.Max(1, _linkCount[c]) / 1000.0;
+                            sum += v;
+                            parts.Append(string.Format(inv, "{0}{1} {2:0.00}", p == from ? "" : ", ", LinkPartNames[p], v));
+                        }
+                        text.Append(string.Format(inv, "{0}{1} {2:0.00} ({3})",
+                            text.Length == 0 ? "" : "; ", (slowest ? "the slowest link's " : "the mean link's ") +
+                            (pass == 0 ? "water" : "fluid"), sum, parts));
+                    }
+                }
+                ProbeLine(string.Format(inv,
+                    "gpu-probe link phases, class {0}, kilocycles a step over {1:0} links a block: {2}",
+                    c, _linkCount[c] / (double)_linkBlocks[c], text));
+            }
+            System.Array.Clear(_linkMean, 0, _linkMean.Length);
+            System.Array.Clear(_linkSlow, 0, _linkSlow.Length);
+            System.Array.Clear(_linkCount, 0, 4);
+            System.Array.Clear(_linkBlocks, 0, 4);
         }
 
         private void PrintPhases()
@@ -7278,7 +10905,7 @@ namespace Evosim.Farm.Gpu.Sgl
                     mean.Append(string.Format(inv, "{0}{1} {2:0.0}", p == 0 ? "" : ", ", PhaseNames[p], m));
                     slow.Append(string.Format(inv, "{0}{1} {2:0.0}", p == 0 ? "" : ", ", PhaseNames[p], s));
                 }
-                Console.Error.WriteLine(string.Format(inv,
+                ProbeLine(string.Format(inv,
                     "gpu-probe phases, class {0}, kilocycles a step: the mean body {1:0.0} ({2}); the slowest body, up to {3} links, {4:0.0} ({5})",
                     c, meanSum, mean, _phaseSlowLinks[c], slowSum, slow));
             }
@@ -7287,6 +10914,7 @@ namespace Evosim.Farm.Gpu.Sgl
             System.Array.Clear(_phaseBodies, 0, 4);
             System.Array.Clear(_phaseBlocks, 0, 4);
             System.Array.Clear(_phaseSlowLinks, 0, 4);
+            PrintLinkPhases();
         }
 #endif
 
@@ -7294,7 +10922,7 @@ namespace Evosim.Farm.Gpu.Sgl
         // the scatter. Their sum is the grid's time, so the grid term is added here as well.
         private void GridPart(int k, ref long pt)
         {
-            _acc.Synchronize();
+            Sync();
             long pn = Stopwatch.GetTimestamp();
             _probeGridPart[k] += pn - pt;
             _probeGrid += pn - pt;
@@ -7302,11 +10930,77 @@ namespace Evosim.Farm.Gpu.Sgl
         }
         private long _probeGrid, _probeTail, _probeSteps, _probeWater, _probeContact;
 
+        // The water and fluid passes apart, a class at a time, each launch joined when the classes
+        // share a stream. Their sum is the passes' time, so the passes' term is added here as well.
+        private readonly long[] _probeWaterClass = new long[4];
+        private readonly long[] _probeFluidClass = new long[4];
+        private void PassPart(long[] part, int c, ref long pt)
+        {
+            Sync();
+            long pn = Stopwatch.GetTimestamp();
+            part[c] += pn - pt;
+            _probeWater += pn - pt;
+            pt = pn;
+        }
+
         // The host's side of a block: the slots, the packs of new and resized bodies, every
         // body's block pack, the world's snow and instants, the uploads; then the downloads and
         // the mirror, which land one block behind the print.
         private readonly long[] _probeHost = new long[7];
         private readonly long[] _probeBytes = new long[7];
+
+        // The scent grid's share of those: its copy from the host's field (in snow and instants)
+        // and its upload (in up), with the upload's bytes.
+        private readonly long[] _probeScent = new long[2];
+        private long _probeScentBytes;
+
+        // The copies themselves (W0, card-next-r57.md Part 8), from the thread's CopyTally: the up
+        // section's, the down section's and the rest of the block's, each a count and the bytes
+        // moved; the bytes the up and down copies would move if each stopped at the used slots;
+        // and each class's capacity and used slots at the last block.
+        private readonly long[] _probeCopies = new long[3], _probeCopyBytes = new long[3], _probeWaits = new long[3];
+        private long _waitMark;
+        private readonly long[] _probeUsedBytes = new long[2];
+        private readonly int[] _probeCap = new int[4], _probeClassUsed = new int[4];
+
+        private void CopyMark(int k, ref long copies, ref long bytes)
+        {
+            _probeCopies[k] += CopyTally.Copies - copies;
+            _probeCopyBytes[k] += CopyTally.Bytes - bytes;
+            _probeWaits[k] += CopyTally.Waits - _waitMark;
+            _waitMark = CopyTally.Waits;
+            copies = CopyTally.Copies;
+            bytes = CopyTally.Bytes;
+        }
+
+        // A global column's used slots in its own units: a body column holds a slot a row, a link
+        // column LinkStride of them, so the used part is the used slots times the column's
+        // capacity over the bodies' capacity.
+        private int UsedUnits(IColumn c, int gUsed) => gUsed * Math.Max(1, c.Cap / Math.Max(1, _gcap));
+
+        // Whether each host array is page-locked, counted once at the first print: the globals by
+        // their lists, the sphere sets, the classes, and the named columns the up section sends.
+        private string LockedCount()
+        {
+            var columns = new List<IColumn>();
+            columns.AddRange(_gBody);
+            columns.AddRange(_gLink);
+            columns.AddRange(_gStray);
+            for (int set = 0; set < 2; set++)
+            {
+                columns.AddRange(_sph[set]);
+                columns.Add(_active[set]);
+            }
+            foreach (ClassSet cs in _classes) columns.AddRange(cs.Columns);
+            columns.AddRange(new IColumn[]
+            {
+                _rankToSlot, _census, _overflow, _guard, _stock, _scent, _inst, _wr, _wi,
+                _cSource, _cWeight, _cPortPart, _cPortChannel, _cPortIndex, _strayCount,
+            });
+            int locked = 0;
+            foreach (IColumn c in columns) if (c.Locked) locked++;
+            return locked + " of " + columns.Count;
+        }
 
         private void HostMark(int k, ref long th)
         {
@@ -7316,8 +11010,51 @@ namespace Evosim.Farm.Gpu.Sgl
         }
         private int _probeBlocks;
 
+        // The last block's launch shapes, for the kernels' own lines (KernelShape), printed once
+        // at the first print: each class's bodies and link threads, the slots, rows, chunks and
+        // tiles, and the launches a step.
+        private readonly int[] _probeUsed = new int[4], _probeLinkThreads = new int[4];
+        private int _probeGUsed, _probeChunks, _probeTiles;
+        private double _probeLaunches;
+        private bool _probeShaped;
+
+        private void PrintShape()
+        {
+            int g = !_onCpu && _o.GroupSize > 0 ? _o.GroupSize : 0;
+            var lines = new List<string>
+            {
+                string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    "gpu-probe card: {0}, {1} SMs, {2} threads a SM at most, group {3}",
+                    _acc.Name, _acc.NumMultiprocessors, _acc.MaxNumThreadsPerMultiprocessor, g > 0 ? g.ToString() : "auto"),
+            };
+            for (int c = 0; c < _classes.Length; c++)
+            {
+                if (_probeUsed[c] == 0) continue;
+                if (_base.HasCurrent != 0) lines.Add(KernelShape.Describe(_acc, "water " + c, Raw(_water), g, _probeLinkThreads[c]));
+                lines.Add(KernelShape.Describe(_acc, "fluid " + c, Raw(_fluid), g, _probeLinkThreads[c]));
+                if (_base.PerPart != 0) lines.Add(KernelShape.Describe(_acc, "contact " + c, Raw(_contact), g, _probeLinkThreads[c]));
+                lines.Add(KernelShape.Describe(_acc, "step " + c, Raw(_step[c]), g, _probeUsed[c]));
+            }
+            lines.Add(KernelShape.Describe(_acc, "mean groups", Raw(_meanGroups), _meanGroup, (long)_probeChunks * _meanGroup));
+            lines.Add(KernelShape.Describe(_acc, "ranges", Raw(_ranges), g, _probeRows));
+            lines.Add(KernelShape.Describe(_acc, "lose strays", Raw(_loseStrays), g, _probeGUsed));
+            lines.Add(KernelShape.Describe(_acc, "scan reduce", Raw(_scanReduce), _tileGroup, (long)_probeTiles * _tileGroup));
+            lines.Add(KernelShape.Describe(_acc, "scan tiles", Raw(_scanTiles), _scanGroup, _scanGroup));
+            lines.Add(KernelShape.Describe(_acc, "scatter", Raw(_scatter), g, _probeRows));
+            lines.Add(KernelShape.Describe(_acc, "census", Raw(_censusKernel), g, _probeGUsed));
+            foreach (string line in lines) ProbeLine(line.StartsWith("gpu-probe") ? line : "gpu-probe kernel " + line);
+            ProbeLine(KernelShape.LaunchCost(_acc, g > 0 ? g : 32, _probeLaunches));
+            ProbeLine("gpu-probe host arrays page-locked: " + LockedCount() + " columns");
+        }
+
         private void PrintProbe(DynamicsWorld world, IReadOnlyList<Creature> list)
         {
+            if (!_probeShaped)
+            {
+                _probeShaped = true;
+                PrintShape();
+            }
+
             double sum = 0, largest = 0;
             int active = 0;
             for (int r = 0; r < list.Count; r++)
@@ -7361,7 +11098,7 @@ namespace Evosim.Farm.Gpu.Sgl
             }
 
             double f = 1000.0 / Stopwatch.Frequency / Math.Max(1, _probeSteps);
-            Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            ProbeLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
                 "gpu-probe" + (_concurrent ? " concurrent (the classes' time together in the first)" : "") +
                 " t={0:0} s, ms a step: grid {1:0.000}, classes {2:0.000} / {3:0.000} / {4:0.000} / {5:0.000}, tail {6:0.000}; " +
                 "bodies a class {7} / {8} / {9} / {10}; cell {11:0.000} m (mean link {12:0.000} m), largest link {13:0.000} m; " +
@@ -7370,29 +11107,54 @@ namespace Evosim.Farm.Gpu.Sgl
                 _probeTail * f, used[0], used[1], used[2], used[3], cell, mean, largest,
                 most[0], most[1], most[2], most[3], entries[0], entries[1], entries[2], entries[3]));
 
-            Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            ProbeLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
                 "gpu-probe grid parts, ms a step: zero {0:0.000}, mean {1:0.000}, ranges {2:0.000}, scan {3:0.000}, scatter {4:0.000}; rows {5}, buckets {6}; " +
                 "the water and fluid passes before them {7:0.000}; the links' contacts before each class (in its time when concurrent) {8:0.000}",
                 _probeGridPart[0] * f, _probeGridPart[1] * f, _probeGridPart[2] * f, _probeGridPart[3] * f, _probeGridPart[4] * f,
                 _probeRows, _probeBuckets, _probeWater * f, _probeContact * f));
+            if (!_concurrent)
+            {
+                ProbeLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    "gpu-probe passes, ms a step, each launch joined: water a class {0:0.000} / {1:0.000} / {2:0.000} / {3:0.000}; " +
+                    "fluid a class {4:0.000} / {5:0.000} / {6:0.000} / {7:0.000}",
+                    _probeWaterClass[0] * f, _probeWaterClass[1] * f, _probeWaterClass[2] * f, _probeWaterClass[3] * f,
+                    _probeFluidClass[0] * f, _probeFluidClass[1] * f, _probeFluidClass[2] * f, _probeFluidClass[3] * f));
+            }
+            for (int k = 0; k < 4; k++) _probeWaterClass[k] = _probeFluidClass[k] = 0;
 #if GPU_PHASE_PROBE
             PrintPhases();
 #endif
 
             double fb = 1000.0 / Stopwatch.Frequency / 20;
-            Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            ProbeLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
                 "gpu-probe host, ms a block: slots {0:0.00}, packs {1:0.00}, block packs {2:0.00}, snow and instants {3:0.00}, " +
-                "up {4:0.00}; down {5:0.00}, mirror {6:0.00}",
+                "up {4:0.00}; down {5:0.00}, mirror {6:0.00}; the scent's copy {7:0.00} (in snow and instants) and upload " +
+                "{8:0.00} (in up), {9:0.0} MB",
                 _probeHost[0] * fb, _probeHost[1] * fb, _probeHost[2] * fb, _probeHost[3] * fb, _probeHost[4] * fb,
-                _probeHost[5] * fb, _probeHost[6] * fb));
+                _probeHost[5] * fb, _probeHost[6] * fb, _probeScent[0] * fb, _probeScent[1] * fb,
+                _probeScentBytes / (double)(1 << 20) / 20));
             for (int k = 0; k < _probeHost.Length; k++) _probeHost[k] = 0;
+            _probeScent[0] = _probeScent[1] = 0;
+            _probeScentBytes = 0;
             double mb = 1.0 / (1 << 20) / 20;
-            Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            ProbeLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
                 "gpu-probe bytes, MB a block: up body columns {0:0.0}, link columns {1:0.0}, spheres {2:0.0}, classes {3:0.0}, " +
                 "snow and instants {4:0.0}; down body and link columns {5:0.0}, classes {6:0.0}; slots {7}",
                 _probeBytes[0] * mb, _probeBytes[1] * mb, _probeBytes[2] * mb, _probeBytes[3] * mb, _probeBytes[4] * mb,
                 _probeBytes[5] * mb, _probeBytes[6] * mb, _gcap));
             for (int k = 0; k < _probeBytes.Length; k++) _probeBytes[k] = 0;
+            ProbeLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "gpu-probe copies, a block: up {0:0.0} copies ({18:0.0} waiting), {1:0.0} MB moved, {2:0.0} MB in used slots; " +
+                "down {3:0.0} copies ({19:0.0} waiting), {4:0.0} MB moved, {5:0.0} MB in used slots; the rest of the block {6:0.0} copies " +
+                "({20:0.0} waiting), {7:0.0} MB; capacity against used a class {8}/{9} / {10}/{11} / {12}/{13} / {14}/{15}; slots {16}/{17}",
+                _probeCopies[0] / 20.0, _probeCopyBytes[0] * mb, _probeUsedBytes[0] * mb,
+                _probeCopies[1] / 20.0, _probeCopyBytes[1] * mb, _probeUsedBytes[1] * mb,
+                _probeCopies[2] / 20.0, _probeCopyBytes[2] * mb,
+                _probeCap[0], _probeClassUsed[0], _probeCap[1], _probeClassUsed[1],
+                _probeCap[2], _probeClassUsed[2], _probeCap[3], _probeClassUsed[3], _gcap, _slots.Used,
+                _probeWaits[0] / 20.0, _probeWaits[1] / 20.0, _probeWaits[2] / 20.0));
+            for (int k = 0; k < 3; k++) _probeCopies[k] = _probeCopyBytes[k] = _probeWaits[k] = 0;
+            _probeUsedBytes[0] = _probeUsedBytes[1] = 0;
 
             _probeGrid = _probeTail = _probeSteps = _probeWater = _probeContact = 0;
             for (int k = 0; k < 4; k++) _probeClass[k] = 0;
@@ -7404,6 +11166,8 @@ namespace Evosim.Farm.Gpu.Sgl
         {
             long t0 = Stopwatch.GetTimestamp();
             long th = t0;
+            long tc = CopyTally.Copies, tb = CopyTally.Bytes;
+            _waitMark = CopyTally.Waits;
             IReadOnlyList<Creature> list = world.Creatures;
             _list = list;
             int threads = Math.Max(1, world.Threads);
@@ -7412,13 +11176,18 @@ namespace Evosim.Farm.Gpu.Sgl
             // ---- 1. slots, refusals and room
             _slots.Sync(list, _o.Resync);
 
-            foreach (Creature refused in _slots.Refused)
+            // A body no class holds stops the run before anything steps. Losing it, or stepping it
+            // with less brain than it grew, would be a cap on what can evolve: a world rule made by
+            // the engine (card-audit-r57.md, the central brain). The farm writes this as the
+            // run's ending and exits non-zero; the world carries on, on the cpu engine, from its
+            // last checkpoint.
+            if (_slots.Refused.Count > 0)
             {
-                // Not stepped, so not in anyone's contact set: the CPU's lost body. The farm kills
-                // it at its next divergence check (Simulation.CheckFinite's gpu clause).
-                refused.Alive = false;
-                refused.MarkLost();
-                refused.CommitContactSphere();
+                Creature refused = _slots.Refused[0];
+                throw new NotSupportedException(FormattableString.Invariant(
+                    $"The gpu engine cannot hold body {refused.Id} at step {world.Steps}: ") +
+                    _slots.WhyNoClass(refused) + ". It will not change a body to fit, so this world steps on " +
+                    "the cpu engine from its last checkpoint.");
             }
 
             EnsureGlobal(_slots.Used);
@@ -7446,12 +11215,16 @@ namespace Evosim.Farm.Gpu.Sgl
             {
                 Creature c = list[r];
                 if (c.Senses.Nutrients != null) _w.AttachField(c.Senses.Nutrients);
+                if (c.Senses.Scent != null) _w.AttachScent(c.Senses.Scent);
+                if (c.Senses.LeafScent != null) _w.AttachLeafScent(c.Senses.LeafScent);
             }
+
+            PlaceBrains();
 
             foreach (int g in _slots.Packs)
             {
                 ClassSet set = _classes[_slots.ClassOf[g]];
-                set.Dirty = true;
+                set.NotePack(_slots.LocalOf[g]);
                 set.WidenPanels(_slots.Body[g].PanelStart[_slots.Body[g].Links]);
             }
 
@@ -7492,6 +11265,45 @@ namespace Evosim.Farm.Gpu.Sgl
             _w.ReadStock(_stockD);
             for (int k = 0; k < stockLength; k++) _stock.Host[k] = (Real)_stockD[k];
 
+            // The scent's grid as the host last filled it, every block: the host refills it at a
+            // metabolic step, which a block never spans, so the card reads within a block what the
+            // CPU reads, stale or not. Under EVOSIM_GPU_SCENT the card fills it (GpuScent, section 5)
+            // and the host's copy is not read.
+            ScentField scent = _w.Scent;
+            int scentLength = scent == null ? 1 : scent.CellsX * scent.CellsY * scent.CellsZ;
+
+            // Under the card's fill the column is the fill's output, sized to its grid when the fill
+            // was set up. Resized under it, the fill would write past the end of the card's buffer,
+            // which nothing on the card checks.
+            if (_gpuScent != null && _scent.Cap != scentLength)
+            {
+                throw new InvalidOperationException(
+                    "The scent's column holds " + _scent.Cap.ToString(System.Globalization.CultureInfo.InvariantCulture) + " cells and the " +
+                    "block wants " + scentLength.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", under the card's fill: " +
+                    "the fill writes the whole grid into it.");
+            }
+
+            if (_scent.Cap != scentLength) _scent.Resize(scentLength);
+            if (scent != null && _gpuScent == null)
+            {
+                long sc = ProbeOn ? Stopwatch.GetTimestamp() : 0;
+                scent.CopyCellsTo(_scent.Host);
+                if (ProbeOn) _probeScent[0] += Stopwatch.GetTimestamp() - sc;
+            }
+            _base.ScentNx = scent == null ? 1 : scent.CellsX;
+            _base.ScentNy = scent == null ? 1 : scent.CellsY;
+            _base.ScentNz = scent == null ? 1 : scent.CellsZ;
+
+            // D167's leaf smell, as the scent's grid: the host refills it at a metabolic step only.
+            ScentField leaf = _w.LeafScent;
+            int leafLength = leaf == null ? 1 : leaf.CellsX * leaf.CellsY * leaf.CellsZ;
+            if (_leaf.Cap != leafLength) _leaf.Resize(leafLength);
+            if (leaf != null) leaf.CopyCellsTo(_leaf.Host);
+            _base.LeafNx = leaf == null ? 1 : leaf.CellsX;
+            _base.LeafNy = leaf == null ? 1 : leaf.CellsY;
+            _base.LeafNz = leaf == null ? 1 : leaf.CellsZ;
+            _base.LeafCell = leaf == null ? 1f : leaf.CellSizeMetres;
+
             double dt = world.Config.StepSeconds;
             double seconds = world.ElapsedSeconds;
             for (int k = 0; k < steps; k++)
@@ -7519,23 +11331,93 @@ namespace Evosim.Farm.Gpu.Sgl
                 _probeBytes[5] += 6L * probeRows * _gcap * sizeof(int);
                 for (int k = 0; k < _classes.Length; k++)
                     if (_slots.Classes[k].Used > 0) _probeBytes[6] += _classes[k].DownloadBytes;
+
+                // The same copies stopped at the used slots, beside the bytes at capacity above.
+                int probeUsed = _slots.Used;
+                foreach (IColumn c in _gBody) _probeUsedBytes[0] += _lists.Contains(c) ? 0 : c.BytesFor(UsedUnits(c, probeUsed));
+                _probeUsedBytes[0] += 6L * probeRows * probeUsed * sizeof(int);
+                foreach (IColumn c in _gLink) _probeUsedBytes[0] += c.BytesFor(UsedUnits(c, probeUsed));
+                foreach (Col<Real> c in _sph[_committed]) _probeUsedBytes[0] += c.BytesFor(UsedUnits(c, probeUsed));
+                _probeUsedBytes[0] += _stock.Bytes + _inst.Bytes;
+                foreach (IColumn c in _gDown) _probeUsedBytes[1] += _lists.Contains(c) ? 0 : c.BytesFor(UsedUnits(c, probeUsed));
+                _probeUsedBytes[1] += 6L * probeRows * probeUsed * sizeof(int);
+                for (int k = 0; k < _classes.Length; k++)
+                {
+                    int used = _slots.Classes[k].Used;
+                    _probeUsedBytes[0] += _classes[k].UploadBytesFor(used);
+                    if (used > 0) _probeUsedBytes[1] += _classes[k].DownloadBytesFor(used);
+                    _probeCap[k] = _classes[k].Cap;
+                    _probeClassUsed[k] = used;
+                }
+                CopyMark(2, ref tc, ref tb);
             }
 
             // ---- 5. up
+            // Every copy here is queued without a wait on a card (IColumn.UpQueued) and joined once
+            // at the section's end, which card-next-r57.md Part 8's table makes sound: the host
+            // writes none of these arrays again before the download, and the card reads them only
+            // after the join.
             int listRows = ListRows();
-            foreach (IColumn c in _gBody) if (!_lists.Contains(c)) c.Up();
+            int upUsed = _slots.Used;
+            foreach (IColumn c in _gBody) if (!_lists.Contains(c)) c.UpUsedQueued(UsedUnits(c, upUsed));
             ListsUp(listRows);
-            foreach (IColumn c in _gLink) c.Up();
-            _rankToSlot.Up();
-            _census.Up();
-            _overflow.Up();
-            foreach (Col<Real> c in _sph[_committed]) c.Up();
-            _active[_committed].Up();
-            for (int k = 0; k < _classes.Length; k++) _classes[k].Upload();
-            _stock.Up();
-            _inst.Up();
+            foreach (IColumn c in _gLink) c.UpUsedQueued(UsedUnits(c, upUsed));
+            _rankToSlot.UpQueued();
+            _census.UpQueued();
+            _overflow.UpQueued();
+            _guard.UpQueued();
+            _strayCode.View.MemSetToZero(_stream);
+            _strayStep.View.MemSetToZero(_stream);
+            _strayCount.View.MemSetToZero(_stream);
+            foreach (Col<Real> c in _sph[_committed]) c.UpUsedQueued(UsedUnits(c, upUsed));
+            _active[_committed].UpUsedQueued(UsedUnits(_active[_committed], upUsed));
+            for (int k = 0; k < _classes.Length; k++) _classes[k].Upload(_slots.Classes[k].Used);
+            _stock.UpQueued();
+            if (_gpuScent != null)
+            {
+                // The card's own fill (C3) was queued on its own stream at the world's snapshot
+                // (GpuScent). The block joins that stream here, before any kernel reads the grid.
+                // Under the probe the engine's own streams are joined first (Sync leaves the fill's
+                // stream out), so the time is the step's wait on the fill, in the scent's upload's place.
+                long su = 0;
+                if (ProbeOn) { Sync(); su = Stopwatch.GetTimestamp(); }
+                bool filled = _gpuScent.Join();
+                if (ProbeOn)
+                {
+                    _probeScent[1] += Stopwatch.GetTimestamp() - su;
+                    if (filled) _probeScentBytes += _gpuScent.Bytes;
+                }
+                _gpuScent.Audit();
+            }
+            else if (ProbeOn)
+            {
+                // The scent's upload joined on both sides, so its time is its own (C0,
+                // card-next-r57.md): what a fill on the card would no longer pay.
+                Sync();
+                long su = Stopwatch.GetTimestamp();
+                _scent.Up();
+                Sync();
+                _probeScent[1] += Stopwatch.GetTimestamp() - su;
+                _probeScentBytes += _scent.Bytes;
+            }
+            else
+            {
+                _scent.UpQueued();
+            }
+            if (_w.LeafScent != null) _leaf.UpQueued();
+            if (_cDirty)
+            {
+                _cSource.UpQueued(); _cWeight.UpQueued(); _cPortPart.UpQueued(); _cPortChannel.UpQueued(); _cPortIndex.UpQueued();
+                _cDirty = false;
+            }
+            _inst.UpQueued();
 
-            if (ProbeOn) { _acc.Synchronize(); HostMark(4, ref th); }
+            // The join after the uploads (Part 8). The classes' streams, when concurrent, do not
+            // follow this stream's order, and the water and fluid passes of the first step start
+            // on them; without this wait they could read a column before its copy lands.
+            _stream.Synchronize();
+
+            if (ProbeOn) { Sync(); HostMark(4, ref th); CopyMark(0, ref tc, ref tb); }
 
             // ---- 6. the grid's room
             int gUsed = _slots.Used;
@@ -7545,6 +11427,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
             _lo.Ensure(3L * Math.Max(1, rows));
             _hi.Ensure(3L * Math.Max(1, rows));
+            _isGiant.Ensure(Math.Max(1, rows));
             _counts.Ensure(buckets + 1);
             _start.Ensure(buckets + 1);
             _gcursor.Ensure(buckets + 1);
@@ -7556,15 +11439,22 @@ namespace Evosim.Farm.Gpu.Sgl
             _linkPush.Ensure(3 * linkRows);
             // The fluid's rows are links whatever the contact's are: LinkStride a slot.
             long fluidRows = Math.Max(1, (long)WholeStep.LinkStride * gUsed);
-            _linkFluid.Ensure(15 * fluidRows);
+            _linkFluid.Ensure(17 * fluidRows);
             _linkLimited.Ensure(fluidRows);
             _linkFlags.Ensure(linkRows);
+            if (_rock)
+            {
+                _touchNew.Ensure(linkRows);
+                _touchAt.Ensure(6 * linkRows);
+            }
             _stageN.Ensure(linkRows);
             _stageId.Ensure(WholeStep.StageCap * linkRows);
             _stageSlot.Ensure(WholeStep.StageCap * linkRows);
             _stagePart.Ensure(WholeStep.StageCap * linkRows);
 #if GPU_PHASE_PROBE
             _phase.Ensure((long)WholeStep.Phases * _gcap);
+            _linkPhase.Ensure(WholeStep.LinkParts * fluidRows);
+            _linkPhaseRows = WholeStep.LinkStride * gUsed;
 #endif
             if (_entryCap < 16 * rows) _entryCap = 16 * rows;
             _items.Ensure(_entryCap);
@@ -7582,6 +11472,7 @@ namespace Evosim.Farm.Gpu.Sgl
             cfg.Buckets = buckets;
             cfg.Mask = buckets - 1;
             cfg.EntryCap = _entryCap;
+            cfg.GiantCells = GiantCells;
             cfg.Chunk = _chunk;
             cfg.Chunks = chunks;
             cfg.Tiles = tiles;
@@ -7593,7 +11484,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
             SGlob gl = Glob;
             SGrid grid = Grid;
-            SWorld sw = new SWorld { Inst = _inst.View, WR = _wr.View, Stock = _stock.View, WI = _wi.View };
+            SWorld sw = new SWorld { Inst = _inst.View, WR = _wr.View, Stock = _stock.View, WI = _wi.View, Scent = _scent.View, Leaf = _leaf.View, Guard = _guard.View };
 
             long t1 = Stopwatch.GetTimestamp();
 
@@ -7604,6 +11495,26 @@ namespace Evosim.Farm.Gpu.Sgl
             bool serial = _o.SerialMean;
             bool instrument = world.Config.ContactInstrument;
             bool perPart = _base.PerPart != 0;
+
+            if (probe)
+            {
+                // The launches a step, counted as the loop below makes them (the memset is the
+                // driver's, and counted with them); the probe's own joins are not launches.
+                int launches = 1;
+                for (int c = 0; c < _classes.Length; c++)
+                {
+                    int used = _slots.Classes[c].Used;
+                    _probeUsed[c] = used;
+                    _probeLinkThreads[c] = used * _slots.Classes[c].Links;
+                    if (used > 0) launches += (cfg.HasCurrent != 0 ? 1 : 0) + 1 + (perPart ? 1 : 0) + 1;
+                }
+                if (rows > 0) launches += 2 * (serial ? 1 : 2) + 10;
+                if (instrument && gUsed > 0) launches++;
+                _probeLaunches = launches;
+                _probeGUsed = gUsed;
+                _probeChunks = chunks;
+                _probeTiles = tiles;
+            }
 
             for (int k = 0; k < steps; k++)
             {
@@ -7637,12 +11548,14 @@ namespace Evosim.Farm.Gpu.Sgl
                     else
                     {
                         if (cfg.HasCurrent != 0) _water(linkThreads, set.Topo, set.StateSet, gl, sw, cc);
+                        if (probe) PassPart(_probeWaterClass, c, ref pt);
                         _fluid(linkThreads, set.Topo, set.ConstSet, set.StateSet, set.PanelSet, gl, cc);
+                        if (probe) PassPart(_probeFluidClass, c, ref pt);
                     }
                 }
-                if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeWater += pn - pt; pt = pn; }
+                if (probe) { Sync(); long pn = Stopwatch.GetTimestamp(); _probeWater += pn - pt; pt = pn; }
 
-                _counts.View.MemSetToZero();
+                _counts.View.MemSetToZero(_stream);
                 if (probe) GridPart(0, ref pt);
                 if (rows > 0)
                 {
@@ -7652,28 +11565,50 @@ namespace Evosim.Farm.Gpu.Sgl
                     }
                     else
                     {
-                        _meanChunks(chunks, committed, gl, grid, cfg);
+                        _meanGroups(new KernelConfig(chunks, _meanGroup), committed, gl, grid, cfg);
                         _meanCombine(1, grid, cfg);
                     }
                     if (probe) GridPart(1, ref pt);
 
                     _ranges(rows, committed, gl, grid, cfg);
+
+                    // The reach guard (DynamicsWorld.LoseStrays): what strayed is recorded and
+                    // emptied, and the grid built once more without it. Every launch returns at
+                    // once when nothing strayed, so a step without a stray is the step it was. A
+                    // stray the second build finds is lost too, and refused at the block's end.
+                    SCfg redo = cfg;
+                    redo.Redo = 1;
+                    _loseStrays(gUsed, committed, gl, grid, cfg);
+                    _rearm(1, grid, cfg);
+                    _clearCounts(buckets + 1, grid, cfg);
+                    if (serial)
+                    {
+                        _meanSerial(1, committed, gl, grid, redo);
+                    }
+                    else
+                    {
+                        _meanGroups(new KernelConfig(chunks, _meanGroup), committed, gl, grid, redo);
+                        _meanCombine(1, grid, redo);
+                    }
+                    _ranges(rows, committed, gl, grid, redo);
+                    _loseStrays(gUsed, committed, gl, grid, redo);
                     if (probe) GridPart(2, ref pt);
                     _scanReduce(new KernelConfig(tiles, _tileGroup), grid, cfg);
                     _scanTiles(new KernelConfig(1, _scanGroup), grid, cfg);
                     _scanDown(new KernelConfig(tiles, _tileGroup), grid, cfg);
                     if (probe) GridPart(3, ref pt);
                     _scatter(rows, gl, grid, cfg);
+                    _giantLists(rows, grid, cfg);
                     if (probe) GridPart(4, ref pt);
                 }
-                if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeGrid += pn - pt; pt = pn; _probeRows = rows; _probeBuckets = cfg.Buckets; }
+                if (probe) { Sync(); long pn = Stopwatch.GetTimestamp(); _probeGrid += pn - pt; pt = pn; _probeRows = rows; _probeBuckets = cfg.Buckets; }
 
                 if (_concurrent)
                 {
                     // Every class reads the grid the default stream just built, so the grid is
                     // joined first; the census reads every class's pending spheres, so each class
                     // stream is joined after. In between the classes run at once.
-                    _acc.DefaultStream.Synchronize();
+                    _stream.Synchronize();
                     for (int c = 0; c < _classes.Length; c++)
                     {
                         int used = _slots.Classes[c].Used;
@@ -7688,7 +11623,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
                         if (perPart) _contactOn(_streams[c], used * cc.ClassLinks, set.Topo, set.ConstSet, gl, committed, grid, sw, cc);
                         _stepOn[c](_streams[c], used, set.Topo, set.ConstSet, set.PanelSet, set.StateSet, set.DriveSet,
-                                   set.NeurSet, set.BrainSet, set.TraceSet, gl, committed, pending, grid, sw, cc);
+                                   Neur(set), set.BrainSet, set.TraceSet, gl, committed, pending, grid, sw, cc);
                     }
                     for (int c = 0; c < _classes.Length; c++)
                         if (_slots.Classes[c].Used != 0) _streams[c].Synchronize();
@@ -7711,16 +11646,16 @@ namespace Evosim.Farm.Gpu.Sgl
                         if (perPart)
                         {
                             _contact(used * cc.ClassLinks, set.Topo, set.ConstSet, gl, committed, grid, sw, cc);
-                            if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeContact += pn - pt; pt = pn; }
+                            if (probe) { Sync(); long pn = Stopwatch.GetTimestamp(); _probeContact += pn - pt; pt = pn; }
                         }
-                        _step[c](used, set.Topo, set.ConstSet, set.PanelSet, set.StateSet, set.DriveSet, set.NeurSet,
+                        _step[c](used, set.Topo, set.ConstSet, set.PanelSet, set.StateSet, set.DriveSet, Neur(set),
                                  set.BrainSet, set.TraceSet, gl, committed, pending, grid, sw, cc);
-                        if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeClass[c] += pn - pt; pt = pn; }
+                        if (probe) { Sync(); long pn = Stopwatch.GetTimestamp(); _probeClass[c] += pn - pt; pt = pn; }
                     }
                 }
 
                 if (instrument && gUsed > 0) _censusKernel(gUsed, gl, cfg);
-                if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeTail += pn - pt; pt = pn; }
+                if (probe) { Sync(); long pn = Stopwatch.GetTimestamp(); _probeTail += pn - pt; pt = pn; }
 
                 _committed = 1 - _committed;
             }
@@ -7731,32 +11666,46 @@ namespace Evosim.Farm.Gpu.Sgl
             if (probe)
             {
                 _probeSteps += steps;
-                if (++_probeBlocks % 20 == 0) PrintProbe(world, list);
+                if (++_probeBlocks % 20 == 0)
+                {
+                    PrintProbe(world, list);
+                    ProbeLinesDone();
+                }
             }
 
-            _acc.Synchronize();
+            Sync();
             long t2 = Stopwatch.GetTimestamp();
+            if (ProbeOn) CopyMark(2, ref tc, ref tb);
 
             // ---- 8. down
+            // Queued like the uploads, with two joins (card-next-r57.md Part 8). The overlap lists'
+            // rows are counted from two of the body columns (ListRows reads NOver and NHeld), so
+            // those land before the count is taken; the lists land before the mirror reads them.
             for (int k = 0; k < _classes.Length; k++)
             {
-                if (_slots.Classes[k].Used > 0) _classes[k].Download();
+                if (_slots.Classes[k].Used > 0) _classes[k].Download(_slots.Classes[k].Used);
             }
 
-            foreach (IColumn c in _gDown) if (!_lists.Contains(c)) c.Down();
+            int downUsed = _slots.Used;
+            foreach (IColumn c in _gDown) if (!_lists.Contains(c)) c.DownUsedQueued(UsedUnits(c, downUsed));
+            foreach (Col<Real> c in _sph[_committed]) c.DownUsedQueued(UsedUnits(c, downUsed));
+            _active[_committed].DownUsedQueued(UsedUnits(_active[_committed], downUsed));
+            _census.DownQueued();
+            _overflow.DownQueued();
+            _guard.DownQueued();
+            _stream.Synchronize();
+
             ListsDown(ListRows());
-            foreach (Col<Real> c in _sph[_committed]) c.Down();
-            _active[_committed].Down();
-            _census.Down();
-            _overflow.Down();
+            _stream.Synchronize();
 
             if (rows > 0)
             {
-                _start.View.SubView(buckets, 1).CopyToCPU(_one);
+                _start.View.SubView(buckets, 1).CopyToCPU(_stream, _one);
                 if (_one[0] > _entryCap / 2) _entryCap = 2 * _one[0];
             }
 
             long t3 = Stopwatch.GetTimestamp();
+            if (ProbeOn) CopyMark(1, ref tc, ref tb);
 
             // ---- 9. the mirror, the census, the clock
             long ceiling = 0;
@@ -7768,7 +11717,11 @@ namespace Evosim.Farm.Gpu.Sgl
             NeuronsAtCeiling = ceiling;
             if (ceiling > NeuronsAtCeilingMost) NeuronsAtCeilingMost = ceiling;
 
+            HandStraysOver(world, list);
+
             for (int k = 0; k < 4; k++) Overflow[k] = _overflow.Host[k];
+            FoldWatch(world, list);
+            BedAnglesPastGuard = _guard.Host[0];
 
             if (instrument)
             {
@@ -7805,12 +11758,45 @@ namespace Evosim.Farm.Gpu.Sgl
 
             // The five phases, as the CPU names them: the pack and the uploads stand for the grid,
             // the kernels for the bodies, the download for the commit, the rest for the tail.
-            if (ProbeOn) { _probeHost[5] += t3 - t2; _probeHost[6] += t4 - t3; }
+            if (ProbeOn) { _probeHost[5] += t3 - t2; _probeHost[6] += t4 - t3; CopyMark(2, ref tc, ref tb); }
 
             world.BackendPhaseTicks(0, t1 - t0);
             world.BackendPhaseTicks(2, t2 - t1);
             world.BackendPhaseTicks(3, t3 - t2);
             world.BackendPhaseTicks(4, t4 - t3);
+        }
+
+        /// <summary>
+        /// The block's strays, handed to <see cref="DynamicsWorld.StrayHandler"/> in the list's
+        /// order, one a body, with the sphere LoseStrays recorded: the CPU's call, made at the block's
+        /// end rather than inside the step. The body was left unstepped from its stray step, as
+        /// the CPU leaves it, so the mirror holds it as it was when it strayed.
+        /// </summary>
+        private void HandStraysOver(DynamicsWorld world, IReadOnlyList<Creature> list)
+        {
+            _strayCount.Down();
+            int left = _strayCount.Host[WholeStep.StrayLeft];
+            if (left > 0)
+            {
+                throw new InvalidOperationException(
+                    FormattableString.Invariant($"The gpu engine's contact grid had {left} sphere(s) out of its reach ") +
+                    "after it was built again without the block's first strays. The CPU builds it again until " +
+                    "none strays; the card builds it twice, so this world is not the card's to step.");
+            }
+
+            for (int r = 0; r < list.Count; r++)
+            {
+                int g = _slots.RankToSlot[r];
+                if (g < 0 || _strayStep.Host[g] == 0) continue;
+
+                int code = _strayCode.Host[g];
+                int link = code > WholeStep.LinkStride ? -1 : WholeStep.LinkStride - code;
+                var stray = new ContactStray(r, link,
+                    (double)_strayAt.Host[4 * g], (double)_strayAt.Host[4 * g + 1],
+                    (double)_strayAt.Host[4 * g + 2], (double)_strayAt.Host[4 * g + 3]);
+
+                world.StrayHandler?.Invoke(list[r], stray);
+            }
         }
 
         private void EnsureGlobal(int used)
@@ -7820,11 +11806,12 @@ namespace Evosim.Farm.Gpu.Sgl
             int cap = Math.Max(used, 2 * _gcap);
             foreach (IColumn c in _gBody) c.Resize(cap);
             foreach (IColumn c in _gLink) c.Resize(WholeStep.LinkStride * cap);
+            foreach (IColumn c in _gStray) c.Resize(cap);
 
             for (int set = 0; set < 2; set++)
             {
                 for (int k = 0; k < 7; k++) _sph[set][k].Resize(cap);
-                for (int k = 7; k < 14; k++) _sph[set][k].Resize(WholeStep.LinkStride * cap);
+                for (int k = 7; k < 17; k++) _sph[set][k].Resize(WholeStep.LinkStride * cap);
                 _active[set].Resize(cap);
             }
 
@@ -7841,8 +11828,18 @@ namespace Evosim.Farm.Gpu.Sgl
             LinkPush = _linkPush.View, LinkFlags = _linkFlags.View, StageN = _stageN.View,
             LinkFluid = _linkFluid.View, LinkLimited = _linkLimited.View,
             StageId = _stageId.View, StageSlot = _stageSlot.View, StagePart = _stagePart.View,
+            StrayCode = _strayCode.View, StrayStep = _strayStep.View, StrayAt = _strayAt.View,
+            RockTouched = _rockTouched.View, TouchNew = _touchNew.View, TouchAt = _touchAt.View,
+            RockPx = _rockP[0].View, RockPy = _rockP[1].View, RockPz = _rockP[2].View,
+            RockNx = _rockP[3].View, RockNy = _rockP[4].View, RockNz = _rockP[5].View,
+            Anchors = _anchors.View, GripHeld = _gripHeld.View, GripBreak = _gripBreak.View,
+            GripPrice = _gripPrice.View, GripStrength = _gripStrength.View, ReserveLow = _reserveLow.View,
+            GripOwed = _gripOwed.View, GripHeldSeconds = _gripHeldSeconds.View, GripAnchor = _gripAnchor.View,
+            GripAttitude = _gripAttitude.View, GripPoint = _gripPoint.View,
+            GripsFormed = _gripsFormed.View, GripsBroken = _gripsBroken.View,
 #if GPU_PHASE_PROBE
             Phase = _phase.View,
+            LinkPhase = _linkPhase.View,
 #endif
         };
 
@@ -7850,7 +11847,8 @@ namespace Evosim.Farm.Gpu.Sgl
         {
             Lo = _lo.View, Hi = _hi.View, Counts = _counts.View, Start = _start.View, Cursor = _gcursor.View,
             Items = _items.View, PartialN = _partialN.View, Cell = _cell.View, Partial = _partial.View,
-            TileSum = _tileSum.View, TileStart = _tileStart.View,
+            TileSum = _tileSum.View, TileStart = _tileStart.View, Stray = _strayCount.View,
+            Giant = _giant.View, IsGiant = _isGiant.View, GiantN = _giantN.View, GiantList = _giantList.View,
         };
 
         private SSph Sph(int set)
@@ -7862,11 +11860,91 @@ namespace Evosim.Farm.Gpu.Sgl
                 Vx = s[4].View, Vy = s[5].View, Vz = s[6].View,
                 LCx = s[7].View, LCy = s[8].View, LCz = s[9].View, LR = s[10].View,
                 LVx = s[11].View, LVy = s[12].View, LVz = s[13].View,
+                LEx = s[14].View, LEy = s[15].View, LEz = s[16].View,
                 Active = _active[set].View,
             };
         }
 
         // ============================================================== the mirror
+
+        /// <summary>A class's neuron columns with the one brain's pools, for a launch.</summary>
+        private SNeur Neur(ClassSet set)
+        {
+            SNeur nr = set.NeurSet;
+            nr.CSource = _cSource.View;
+            nr.CWeight = _cWeight.View;
+            nr.CPortPart = _cPortPart.View;
+            nr.CPortChannel = _cPortChannel.View;
+            nr.CPortIndex = _cPortIndex.View;
+            return nr;
+        }
+
+        private static int CentralLinks(Creature c) => c.Brain.IsCentral ? BrainAccess.CentralInSource(c.Brain).Length : 0;
+
+        private static int CentralPorts(Creature c) => c.Brain.IsCentral ? BrainAccess.CentralPortPart(c.Brain).Length : 0;
+
+        /// <summary>
+        /// Gives every body about to be packed that carries the one brain a run of links and a run of
+        /// ports in the pools, before the packs run in parallel and fill them. A slot whose runs
+        /// still hold its new body keeps them; otherwise the body takes new runs at the pools' top.
+        /// When the runs above the live ones are more than the live ones and PoolSlack (4,096) links,
+        /// the pools are laid again from nothing and every body with the one brain is packed again.
+        /// </summary>
+        private void PlaceBrains()
+        {
+            int used = _slots.Used;
+            if (_cLinkAt.Length < used)
+            {
+                int size = Math.Max(used, 2 * _cLinkAt.Length);
+                Array.Resize(ref _cLinkAt, size); Array.Resize(ref _cLinkRoom, size);
+                Array.Resize(ref _cPortAt, size); Array.Resize(ref _cPortRoom, size);
+            }
+
+            long liveLinks = 0, livePorts = 0;
+            for (int g = 0; g < used; g++)
+            {
+                Creature c = _slots.Body[g];
+                if (c == null) continue;
+                liveLinks += CentralLinks(c);
+                livePorts += CentralPorts(c);
+            }
+
+            if (_cLinksTop > 2 * liveLinks + PoolSlack || _cPortsTop > 2 * livePorts + PoolSlack)
+            {
+                PoolRelays++;
+                var packs = new HashSet<int>(_slots.Packs);
+                _cLinksTop = 0;
+                _cPortsTop = 0;
+                for (int g = 0; g < used; g++)
+                {
+                    _cLinkRoom[g] = 0;
+                    _cPortRoom[g] = 0;
+                    Creature c = _slots.Body[g];
+                    if (c != null && c.Brain.IsCentral && packs.Add(g)) _slots.Packs.Add(g);
+                }
+            }
+
+            foreach (int g in _slots.Packs)
+            {
+                Creature c = _slots.Body[g];
+                if (!c.Brain.IsCentral) continue;
+
+                int links = CentralLinks(c), ports = CentralPorts(c);
+                if (links > _cLinkRoom[g]) { _cLinkAt[g] = _cLinksTop; _cLinkRoom[g] = links; _cLinksTop += links; }
+                if (ports > _cPortRoom[g]) { _cPortAt[g] = _cPortsTop; _cPortRoom[g] = ports; _cPortsTop += ports; }
+                _cDirty = true;
+            }
+
+            Grow(_cSource, _cLinksTop); Grow(_cWeight, _cLinksTop);
+            Grow(_cPortPart, _cPortsTop); Grow(_cPortChannel, _cPortsTop); Grow(_cPortIndex, _cPortsTop);
+        }
+
+        private void Grow<T>(Col<T> pool, int length) where T : unmanaged
+        {
+            if (pool.Cap >= Math.Max(1, length)) return;
+            pool.Resize(Math.Max(length, 2 * pool.Cap));
+            _cDirty = true;
+        }
 
         /// <summary>A body onto the card whole: its plan, its brain, its state and its spheres.</summary>
         private void Pack(int g)
@@ -7922,6 +12000,7 @@ namespace Evosim.Farm.Gpu.Sgl
                     s.Inertia.Host[a3] = (Real)c.InertiaLocal[3 * l + k];
                     s.ChildAnchor.Host[a3] = (Real)c.ChildAnchor[3 * l + k];
                     s.ParentAnchor.Host[a3] = (Real)c.ParentAnchor[3 * l + k];
+                    s.SpinMoment.Host[a3] = (Real)c.SpinMoment[3 * l + k];
                 }
 
                 for (int k = 0; k < 4; k++)
@@ -7956,6 +12035,19 @@ namespace Evosim.Farm.Gpu.Sgl
 
             float[] perUnit = c.Drive.MirrorTorquePerUnit;
             for (int d = 0; d < s.D; d++) s.TorquePerUnit.Host[d * N + i] = d < perUnit.Length ? perUnit[d] : 0f;
+
+            if (c.Drive.BendAndPower)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    DriveGenes genes = c.JointGenes[l];
+                    s.Threshold.Host[l * N + i] = genes.Threshold;
+                    s.Reaction.Host[l * N + i] = genes.Reaction;
+                    s.HoldGene.Host[l * N + i] = genes.Hold;
+                    s.Release.Host[l * N + i] = genes.Release;
+                    s.LinkPower.Host[l * N + i] = (Real)c.Power[l];
+                }
+            }
 
             int panels = c.PanelStart[links];
             for (int p = 0; p < panels; p++)
@@ -8000,10 +12092,66 @@ namespace Evosim.Farm.Gpu.Sgl
                 }
             }
 
+            // ---- the one brain (Brain.ForCentral): its units in the neurons' rows, its links and
+            // ports in the runs PlaceBrains gave this slot
+            if (brain.IsCentral)
+            {
+                float[] bias = BrainAccess.CentralBias(brain);
+                int[] inStart = BrainAccess.CentralInStart(brain);
+                int[] inSource = BrainAccess.CentralInSource(brain);
+                float[] inWeight = BrainAccess.CentralInWeight(brain);
+                int[] portPart = BrainAccess.CentralPortPart(brain);
+                SensorChannel[] portChannel = BrainAccess.CentralPortChannel(brain);
+                int[] portIndex = BrainAccess.CentralPortIndex(brain);
+
+                s.CUnits.Host[i] = bias.Length;
+                s.CDof.Host[i] = brain.TotalDof;
+                s.CLinkAt.Host[i] = _cLinkAt[g];
+                s.CPortAt.Host[i] = _cPortAt[g];
+
+                for (int u = 0; u < bias.Length; u++)
+                {
+                    s.Bias.Host[u * N + i] = bias[u];
+                    s.NIn.Host[u * N + i] = inStart[u + 1] - inStart[u];
+                }
+
+                Array.Copy(inSource, 0, _cSource.Host, _cLinkAt[g], inSource.Length);
+                Array.Copy(inWeight, 0, _cWeight.Host, _cLinkAt[g], inWeight.Length);
+                for (int p = 0; p < portPart.Length; p++)
+                {
+                    int at = _cPortAt[g] + p;
+                    _cPortPart.Host[at] = portPart[p];
+                    _cPortChannel.Host[at] = (int)portChannel[p];
+                    _cPortIndex.Host[at] = portIndex[p];
+                }
+            }
+            else
+            {
+                s.CUnits.Host[i] = -1;
+            }
+
             // ---- the state
-            s.BasePos.Host[i] = (Real)c.BasePosition.X;
-            s.BasePos.Host[N + i] = (Real)c.BasePosition.Y;
-            s.BasePos.Host[2 * N + i] = (Real)c.BasePosition.Z;
+            if (c.CardBasePairHolds())
+            {
+                // The float and carry the card last held, as a restore brings them back (round 60): the
+                // split below would agree but at a tie.
+                for (int a = 0; a < 3; a++)
+                {
+                    s.BasePos.Host[a * N + i] = (Real)c.CardBaseHi[a];
+                    s.BaseCarry.Host[a * N + i] = (Real)c.CardBaseLo[a];
+                }
+            }
+            else
+            {
+                s.BasePos.Host[i] = (Real)c.BasePosition.X;
+                s.BasePos.Host[N + i] = (Real)c.BasePosition.Y;
+                s.BasePos.Host[2 * N + i] = (Real)c.BasePosition.Z;
+                // The rest the float could not hold, as the step's compensated sum carries it: the position
+                // is BasePos less BaseCarry. Zero in double.
+                s.BaseCarry.Host[i] = (Real)(s.BasePos.Host[i] - c.BasePosition.X);
+                s.BaseCarry.Host[N + i] = (Real)(s.BasePos.Host[N + i] - c.BasePosition.Y);
+                s.BaseCarry.Host[2 * N + i] = (Real)(s.BasePos.Host[2 * N + i] - c.BasePosition.Z);
+            }
             s.BaseRot.Host[i] = (Real)c.BaseRotation.X;
             s.BaseRot.Host[N + i] = (Real)c.BaseRotation.Y;
             s.BaseRot.Host[2 * N + i] = (Real)c.BaseRotation.Z;
@@ -8077,6 +12225,25 @@ namespace Evosim.Farm.Gpu.Sgl
 
             s.Cursor.Host[i] = c.Drive.MirrorCursor;
             s.Filled.Host[i] = c.Drive.MirrorFilled;
+
+            if (c.Drive.BendAndPower)
+            {
+                float[] bend = c.BendSignal;
+                EffectorDrive e = c.Drive;
+                for (int d = 0; d < s.D; d++)
+                {
+                    int at = d * N + i;
+                    s.Bend.Host[at] = d < bend.Length ? bend[d] : 0f;
+                    bool has = d < e.MirrorPower.Length;
+                    s.EPower.Host[at] = has ? e.MirrorPower[d] : 0.0;
+                    s.EBend.Host[at] = has ? e.MirrorBend[d] : 0.5;
+                    s.EPowerTarget.Host[at] = has ? e.MirrorPowerTarget[d] : 0.0;
+                    s.EBendTarget.Host[at] = has ? e.MirrorBendTarget[d] : 0.5;
+                    s.EPowerRate.Host[at] = has ? e.MirrorPowerRate[d] : 0.0;
+                    s.EBendRate.Host[at] = has ? e.MirrorBendRate[d] : 0.0;
+                    s.EHoldLeft.Host[at] = has ? e.MirrorHoldLeft[d] : 0.0;
+                }
+            }
             s.DriveLimited.Host[i] = c.DriveImpulsesLimited;
             s.DragLimited.Host[i] = c.DragImpulsesLimited;
             s.Work.Host[i] = c.MechanicalWorkJoules;
@@ -8094,7 +12261,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 bool has = n < previous.Length;
                 s.S.Host[n * N + i] = has ? previous[n] : 0f;
                 s.S.Host[(M + n) * N + i] = has ? current[n] : 0f;
-                s.Mem.Host[n * N + i] = has ? memory[n] : 0f;
+                s.Mem.Host[n * N + i] = n < memory.Length ? memory[n] : 0f;
             }
 
             s.Parity.Host[i] = 0;
@@ -8161,11 +12328,31 @@ namespace Evosim.Farm.Gpu.Sgl
             int row = g * WholeStep.LinkStride;
             if (c.LinkContactActive)
             {
+                // The float and rest the card last held, where they still sum to the host's centres (a
+                // restore brings them back, round 60): the rest can pass half a float step, so the split
+                // below is not always the card's.
+                bool pair = c.CardLinkPairHolds();
                 for (int l = 0; l < links; l++)
                 {
-                    sph[7].Host[row + l] = (Real)c.LinkContactCentre[3 * l];
-                    sph[8].Host[row + l] = (Real)c.LinkContactCentre[3 * l + 1];
-                    sph[9].Host[row + l] = (Real)c.LinkContactCentre[3 * l + 2];
+                    if (pair)
+                    {
+                        for (int a = 0; a < 3; a++)
+                        {
+                            sph[7 + a].Host[row + l] = (Real)c.CardLinkCentreHi[3 * l + a];
+                            sph[14 + a].Host[row + l] = (Real)c.CardLinkCentreLo[3 * l + a];
+                        }
+                    }
+                    else
+                    {
+                        sph[7].Host[row + l] = (Real)c.LinkContactCentre[3 * l];
+                        sph[8].Host[row + l] = (Real)c.LinkContactCentre[3 * l + 1];
+                        sph[9].Host[row + l] = (Real)c.LinkContactCentre[3 * l + 2];
+                        // What the float centre leaves out of the creature's own; zero in double.
+                        sph[14].Host[row + l] = (Real)(c.LinkContactCentre[3 * l] - sph[7].Host[row + l]);
+                        sph[15].Host[row + l] = (Real)(c.LinkContactCentre[3 * l + 1] - sph[8].Host[row + l]);
+                        sph[16].Host[row + l] = (Real)(c.LinkContactCentre[3 * l + 2] - sph[9].Host[row + l]);
+                    }
+
                     sph[10].Host[row + l] = (Real)c.LinkContactRadius[l];
                     sph[11].Host[row + l] = (Real)c.LinkContactVelocity[3 * l];
                     sph[12].Host[row + l] = (Real)c.LinkContactVelocity[3 * l + 1];
@@ -8175,6 +12362,50 @@ namespace Evosim.Farm.Gpu.Sgl
             else
             {
                 for (int l = 0; l < WholeStep.LinkStride; l++) sph[10].Host[row + l] = 0;
+            }
+
+            // D162's touch of the rock, the record the next step's senses read
+            if (_rock && c.RockTouched != null)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    _rockTouched.Host[row + l] = c.RockTouched[l] ? 1 : 0;
+                    for (int k = 0; k < 3; k++)
+                    {
+                        _rockP[k].Host[row + l] = (Real)c.RockPoint[3 * l + k];
+                        _rockP[3 + k].Host[row + l] = (Real)c.RockNormal[3 * l + k];
+                    }
+                }
+            }
+
+            // D162's grip: which links carry the cell, each one's breaking force and price as the CPU
+            // takes them (Anchor.Form), and the grips the body holds. The price owed goes every block.
+            if (_grip)
+            {
+                AnchoringCell cell = _w.AnchorCell;
+                for (int l = 0; l < links; l++)
+                {
+                    int at = row + l;
+                    bool anchors = c.Anchors != null && c.Anchors[l];
+                    float breaking = anchors ? cell.BreakingForce((float)c.Volume[l]) : 0f;
+
+                    _anchors.Host[at] = anchors ? 1 : 0;
+                    _gripBreak.Host[at] = breaking;
+                    _gripPrice.Host[at] = anchors ? cell.BuildPrice(breaking) : 0f;
+                    _gripHeld.Host[at] = anchors && c.GripHeld[l] ? 1 : 0;
+                    _gripStrength.Host[at] = anchors ? c.GripStrength[l] : 0.0;
+                    for (int k = 0; k < 3; k++)
+                    {
+                        _gripAnchor.Host[3 * at + k] = anchors ? (Real)c.GripAnchor[3 * l + k] : 0;
+                        _gripPoint.Host[3 * at + k] = anchors ? (Real)c.GripPoint[3 * l + k] : 0;
+                    }
+                    for (int k = 0; k < 9; k++) _gripAttitude.Host[9 * at + k] = anchors ? (Real)c.GripAttitude[9 * l + k] : 0;
+                }
+
+                _reserveLow.Host[g] = c.ReserveLowSeconds;
+                _gripHeldSeconds.Host[g] = c.GripHeldSeconds;
+                _gripsFormed.Host[g] = c.GripsFormed;
+                _gripsBroken.Host[g] = c.GripsBroken;
             }
         }
 
@@ -8190,10 +12421,14 @@ namespace Evosim.Farm.Gpu.Sgl
             s.GSlot.Host[i] = g;
             s.PowerScale.Host[i] = c.Drive.PowerScale;
 
+            // The farm drains the grips' price between blocks (Creature.DrainGripOwed).
+            if (_grip) _gripOwed.Host[g] = c.GripOwedJoules;
+
             CreatureSenses senses = c.Senses;
             IReserveSource reserve = senses.Reserve;
             s.Reserve.Host[i] = reserve != null ? reserve.SecondsOfReserve : 0f;
-            s.Gates.Host[i] = (senses.Nutrients != null ? 1 : 0) | (reserve != null ? 2 : 0);
+            s.Gates.Host[i] = (senses.Nutrients != null ? 1 : 0) | (reserve != null ? 2 : 0) |
+                              (senses.Scent != null ? 4 : 0) | (senses.LeafScent != null ? 8 : 0);
 
             bool[] contact = senses.Contact;
             float[] damage = senses.Damage;
@@ -8256,7 +12491,18 @@ namespace Evosim.Farm.Gpu.Sgl
             int links = c.Links;
             int dof = c.Dof;
 
-            c.BasePosition = new Vec3(s.BasePos.Host[i], s.BasePos.Host[N + i], s.BasePos.Host[2 * N + i]);
+            c.BasePosition = new Vec3((double)s.BasePos.Host[i] - s.BaseCarry.Host[i],
+                                      (double)s.BasePos.Host[N + i] - s.BaseCarry.Host[N + i],
+                                      (double)s.BasePos.Host[2 * N + i] - s.BaseCarry.Host[2 * N + i]);
+
+            // The pair itself, which a checkpoint carries and the next pack takes back (round 60).
+            double[] baseHi = c.CardBaseHi ?? (c.CardBaseHi = new double[3]);
+            double[] baseLo = c.CardBaseLo ?? (c.CardBaseLo = new double[3]);
+            for (int a = 0; a < 3; a++)
+            {
+                baseHi[a] = s.BasePos.Host[a * N + i];
+                baseLo[a] = s.BaseCarry.Host[a * N + i];
+            }
             c.BaseRotation = new QuatD(s.BaseRot.Host[i], s.BaseRot.Host[N + i], s.BaseRot.Host[2 * N + i],
                                        s.BaseRot.Host[3 * N + i]);
 
@@ -8330,6 +12576,28 @@ namespace Evosim.Farm.Gpu.Sgl
 
             c.Drive.MirrorCursor = s.Cursor.Host[i];
             c.Drive.MirrorFilled = s.Filled.Host[i];
+
+            if (c.Drive.BendAndPower)
+            {
+                float[] bend = c.BendSignal;
+                int bends = Math.Min(bend.Length, s.D);
+                for (int d = 0; d < bends; d++) bend[d] = s.Bend.Host[d * N + i];
+
+                EffectorDrive e = c.Drive;
+                int envelope = Math.Min(e.MirrorPower.Length, s.D);
+                for (int d = 0; d < envelope; d++)
+                {
+                    int at = d * N + i;
+                    e.MirrorPower[d] = s.EPower.Host[at];
+                    e.MirrorBend[d] = s.EBend.Host[at];
+                    e.MirrorPowerTarget[d] = s.EPowerTarget.Host[at];
+                    e.MirrorBendTarget[d] = s.EBendTarget.Host[at];
+                    e.MirrorPowerRate[d] = s.EPowerRate.Host[at];
+                    e.MirrorBendRate[d] = s.EBendRate.Host[at];
+                    e.MirrorHoldLeft[d] = s.EHoldLeft.Host[at];
+                }
+                e.MirrorStrokeFromPower();
+            }
             c.DriveImpulsesLimited = s.DriveLimited.Host[i];
             c.DragImpulsesLimited = s.DragLimited.Host[i];
             c.MechanicalWorkJoules = s.Work.Host[i];
@@ -8352,7 +12620,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 float p = s.S.Host[(prev + n) * N + i];
                 previous[n] = p;
                 current[n] = s.S.Host[(cur + n) * N + i];
-                memory[n] = s.Mem.Host[n * N + i];
+                if (n < memory.Length) memory[n] = s.Mem.Host[n * N + i];
 
                 // A bound on a neuron's value is a world rule and the owner's; this counts.
                 if (!(Math.Abs(p) < 1e36f)) ceiling++;
@@ -8442,10 +12710,25 @@ namespace Evosim.Farm.Gpu.Sgl
             {
                 int row = g * WholeStep.LinkStride;
                 double[] pc = c.MirrorPendingLinkCentre, pr = c.MirrorPendingLinkRadius, pv = c.MirrorPendingLinkVelocity;
+                if (c.CardLinkCentreHi == null || c.CardLinkCentreHi.Length != 3 * links)
+                {
+                    c.CardLinkCentreHi = new double[3 * links];
+                    c.CardLinkCentreLo = new double[3 * links];
+                }
+
+                double[] hi = c.CardLinkCentreHi, lo = c.CardLinkCentreLo;
 
                 for (int l = 0; l < links; l++)
                 {
-                    double x = sph[7].Host[row + l], y = sph[8].Host[row + l], z = sph[9].Host[row + l];
+                    for (int a = 0; a < 3; a++)
+                    {
+                        hi[3 * l + a] = sph[7 + a].Host[row + l];
+                        lo[3 * l + a] = sph[14 + a].Host[row + l];
+                    }
+
+                    double x = (double)sph[7].Host[row + l] + sph[14].Host[row + l];
+                    double y = (double)sph[8].Host[row + l] + sph[15].Host[row + l];
+                    double z = (double)sph[9].Host[row + l] + sph[16].Host[row + l];
                     double r = sph[10].Host[row + l];
                     double vx = sph[11].Host[row + l], vy = sph[12].Host[row + l], vz = sph[13].Host[row + l];
 
@@ -8457,6 +12740,46 @@ namespace Evosim.Farm.Gpu.Sgl
                     pr[l] = r;
                     pv[3 * l] = vx; pv[3 * l + 1] = vy; pv[3 * l + 2] = vz;
                 }
+            }
+
+            if (_rock && c.RockTouched != null)
+            {
+                int row = g * WholeStep.LinkStride;
+                for (int l = 0; l < links; l++)
+                {
+                    c.RockTouched[l] = _rockTouched.Host[row + l] != 0;
+                    for (int k = 0; k < 3; k++)
+                    {
+                        c.RockPoint[3 * l + k] = _rockP[k].Host[row + l];
+                        c.RockNormal[3 * l + k] = _rockP[3 + k].Host[row + l];
+                    }
+                }
+            }
+
+            if (_grip)
+            {
+                if (c.Anchors != null)
+                {
+                    int row = g * WholeStep.LinkStride;
+                    for (int l = 0; l < links; l++)
+                    {
+                        int at = row + l;
+                        c.GripHeld[l] = _gripHeld.Host[at] != 0;
+                        c.GripStrength[l] = _gripStrength.Host[at];
+                        for (int k = 0; k < 3; k++)
+                        {
+                            c.GripAnchor[3 * l + k] = _gripAnchor.Host[3 * at + k];
+                            c.GripPoint[3 * l + k] = _gripPoint.Host[3 * at + k];
+                        }
+                        for (int k = 0; k < 9; k++) c.GripAttitude[9 * l + k] = _gripAttitude.Host[9 * at + k];
+                    }
+                }
+
+                c.ReserveLowSeconds = _reserveLow.Host[g];
+                c.GripOwedJoules = _gripOwed.Host[g];
+                c.GripHeldSeconds = _gripHeldSeconds.Host[g];
+                c.GripsFormed = _gripsFormed.Host[g];
+                c.GripsBroken = _gripsBroken.Host[g];
             }
 
             return ceiling;
@@ -8521,6 +12844,7 @@ namespace Evosim.Farm.Gpu.Sgl
             _rankToSlot.Dispose();
             _census.Dispose();
             _overflow.Dispose();
+            _guard.Dispose();
             for (int set = 0; set < 2; set++)
             {
                 foreach (Col<Real> c in _sph[set]) c.Dispose();
@@ -8530,10 +12854,20 @@ namespace Evosim.Farm.Gpu.Sgl
             _lo.Dispose(); _hi.Dispose(); _counts.Dispose(); _start.Dispose(); _gcursor.Dispose();
             _items.Dispose(); _partial.Dispose(); _partialN.Dispose(); _cell.Dispose();
             _tileSum.Dispose(); _tileStart.Dispose();
+            _giant.Dispose(); _isGiant.Dispose(); _giantN.Dispose(); _giantList.Dispose();
             _linkPush.Dispose(); _linkFlags.Dispose(); _stageN.Dispose();
+            _touchNew.Dispose(); _touchAt.Dispose();
+            if (!_rock)
+            {
+                _rockTouched.Dispose();
+                foreach (Col<Real> c in _rockP) c.Dispose();
+            }
+            foreach (IColumn c in _gripStubs) c.Dispose();
             _linkFluid.Dispose(); _linkLimited.Dispose();
             _stageId.Dispose(); _stageSlot.Dispose(); _stagePart.Dispose();
-            _inst.Dispose(); _wr.Dispose(); _wi.Dispose(); _stock.Dispose();
+            _inst.Dispose(); _wr.Dispose(); _wi.Dispose(); _stock.Dispose(); _scent.Dispose(); _leaf.Dispose();
+            _gpuScent?.Dispose();
+            _cSource.Dispose(); _cWeight.Dispose(); _cPortPart.Dispose(); _cPortChannel.Dispose(); _cPortIndex.Dispose();
         }
     }
 }

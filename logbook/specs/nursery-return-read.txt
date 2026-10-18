@@ -1,0 +1,70 @@
+gen   score   eaten  upkeep    work  handl | smoothed   gain | top score nodes  root size (m)       litres  attack intake scale
+  0   0.186   197.1 -1013.1     nan    nan |        -      - |     0.370     2  0.60 x 0.30 x 0.60    108.0    1.00   1.00  1.00
+  1   0.172   178.4  -987.5     nan    nan |        -      - |     0.505     2  0.60 x 0.30 x 0.60    108.0    1.00   1.00  1.00
+  2   0.173   171.6  -974.5     nan    nan |        -      - |     0.351     2  0.60 x 0.30 x 0.60    108.0    1.00   1.00  0.70
+  3   0.168   145.9  -839.7     nan    nan |        -      - |     0.739     2  0.43 x 0.30 x 0.60     77.7    1.00   1.00  0.90
+  4   0.197   168.0  -960.5     nan    nan |    162.5      - |     0.885     2  0.43 x 0.30 x 0.60     77.7    1.00   1.00  0.70
+  5   0.244   156.0  -743.6     nan    nan |    152.4      - |     0.643     2  0.43 x 0.30 x 0.60     77.7    1.00   1.00  0.70
+  6   0.265   113.5  -521.5     nan    nan |    139.6      - |     0.933     2  0.43 x 0.30 x 0.47     61.3    1.00   1.00  0.72
+  7   0.232    78.4  -333.2     nan    nan |    123.1      - |     0.676     2  0.43 x 0.30 x 0.47     61.3    1.00   1.00  0.72
+  8   0.275    89.4  -341.7     nan    nan |    113.5      - |     0.641     2  0.43 x 0.30 x 0.60     77.7    1.00   1.00  0.70
+  9   0.332   103.4  -323.6     nan    nan |    102.2      - |     1.143     2  0.43 x 0.30 x 0.60     77.7    1.00   1.00  0.56
+ 10   0.321    89.4  -294.1     nan    nan |     88.8      - |     0.741     2  0.43 x 0.30 x 0.60     77.7    1.00   1.00  0.56
+ 11   0.346    85.0  -247.1     nan    nan |     84.4      - |     0.957     3  0.43 x 0.30 x 0.60     77.7    1.00   1.00  0.56
+ 12   0.336    86.8  -247.8     nan    nan |     85.8      - |     0.729     3  0.43 x 0.30 x 0.60     77.7    1.00   1.00  0.56
+ 13   0.325    73.4  -218.3     nan    nan |     82.7      - |     0.719     2  0.43 x 0.30 x 0.60     77.7    1.00   1.00  0.56
+ 14   0.293    57.3  -203.7     nan    nan |     73.0 -0.550 |     1.057     2  0.43 x 0.28 x 0.60     73.0    1.00   1.00  0.56
+ 15   0.355    56.0  -162.4     nan    nan |     67.3 -0.558 |     1.108     2  0.43 x 0.30 x 0.60     77.7    1.00   1.00  0.56
+ 16   0.380    57.1  -154.3     nan    nan |     61.6 -0.559 |     1.019     2  0.43 x 0.28 x 0.42     50.7    1.00   1.00  0.56
+ 17   0.415    56.8  -137.7     nan    nan |     56.4 -0.542 |     1.324     2  0.43 x 0.28 x 0.42     50.7    1.00   1.00  0.56
+ 18   0.433    53.9  -126.4     nan    nan |     52.3 -0.539 |     1.392     2  0.43 x 0.28 x 0.42     50.7    1.00   1.00  0.56
+ 19   0.538    58.1  -111.2     nan    nan |     52.7 -0.484 |     1.246     2  0.43 x 0.28 x 0.60     73.5    1.00   1.00  0.56
+ 20   0.490    52.0  -105.5     nan    nan |     52.4 -0.411 |     1.029     3  0.43 x 0.30 x 0.60     77.7    1.00   1.00  0.56
+
+scratch/wt-nursery-d178/runs/nursery/leaf-direction-return: 22 genomes under own, brainless, knockout LeafScent,LeafScentDirection
+seeds (the ten r59-direction-tops, own brain, the same held-out episodes): eaten mean 408.6 J, 378.6 to 443.1
+  own                                      score best 1.746 mean 0.562 | eaten best 159.9 mean 84.0 J
+  brainless                                score best 0.433 mean 0.105 | eaten best 70.6 mean 12.3 J
+  knockout LeafScent,LeafScentDirection    score best 0.889 mean 0.267 | eaten best 125.0 mean 40.3 J
+  best: g20.6   (tops [], elite) score 1.746, eaten 89.2 J, knocked out 45.2 J, 22% of the seeds' mean
+  best: g16.17  (tops [16]) score 1.063, eaten 120.1 J, knocked out 42.1 J, 29% of the seeds' mean
+  best: g20.38  (tops [], elite) score 1.050, eaten 76.2 J, knocked out 47.4 J, 19% of the seeds' mean
+  best: g15.20  (tops [15]) score 0.816, eaten 126.6 J, knocked out 65.0 J, 31% of the seeds' mean
+  best: g20.5   (tops [], elite) score 0.775, eaten 60.1 J, knocked out 9.2 J, 15% of the seeds' mean
+  genomes eating at least half the seeds' mean (204.3 J) under their own brain: 0 of 22
+
+== leaf-direction-return-s2 (recipe seed 0x2) ==
+gen   score   eaten  upkeep    work  handl | smoothed   gain | top score nodes  root size (m)       litres  attack intake scale
+  0   0.180   193.0 -1028.3     nan    nan |        -      - |     0.401     2  0.60 x 0.30 x 0.60    108.0    1.00   1.00  1.00
+  1   0.176   182.7  -994.8     nan    nan |        -      - |     0.349     2  0.60 x 0.30 x 0.60    108.0    1.00   1.00  0.88
+  2   0.168   164.5  -924.5     nan    nan |        -      - |     0.345     2  0.60 x 0.30 x 0.60    108.0    1.00   1.00  0.88
+  3   0.186   178.0  -890.1     nan    nan |        -      - |     0.394     2  0.62 x 0.30 x 0.60    112.2    1.00   1.00  1.00
+  4   0.195   189.5  -878.1     nan    nan |    174.2      - |     0.352     2  0.60 x 0.30 x 0.60    108.0    1.00   1.00  1.00
+  5   0.184   174.3  -858.6     nan    nan |    168.5      - |     0.416     2  0.53 x 0.24 x 0.60     75.3    1.00   1.00  1.00
+  6   0.199   179.6  -859.1     nan    nan |    168.5      - |     0.535     2  0.61 x 0.30 x 0.60    110.4    1.00   1.00  1.00
+  7   0.224   164.9  -771.4     nan    nan |    168.2      - |     0.485     2  0.60 x 0.30 x 0.60    108.0    1.00   1.00  0.64
+  8   0.269   160.5  -657.9     nan    nan |    165.0      - |     0.618     2  0.60 x 0.30 x 0.60    108.0    1.00   1.00  0.64
+  9   0.321   133.0  -444.5     nan    nan |    155.4      - |     1.131     2  0.60 x 0.30 x 0.60    108.0    1.00   1.00  0.64
+ 10   0.257    82.2  -331.2     nan    nan |    137.0      - |     0.682     2  0.60 x 0.30 x 0.60    108.0    1.00   1.00  0.64
+ 11   0.262    63.8  -241.8     nan    nan |    113.9      - |     0.608     2  0.60 x 0.30 x 0.60    108.0    1.00   1.00  0.64
+ 12   0.235    58.3  -238.1     nan    nan |     93.3      - |     0.909     2  0.62 x 0.30 x 0.55    102.4    1.00   1.00  0.64
+ 13   0.287    65.9  -226.1     nan    nan |     73.5      - |     0.763     2  0.58 x 0.30 x 0.60    103.9    1.00   1.00  0.51
+ 14   0.260    54.3  -205.9     nan    nan |     58.2 -0.666 |     0.723     2  0.62 x 0.30 x 0.55    102.4    1.00   1.00  0.64
+ 15   0.283    51.7  -184.6     nan    nan |     52.9 -0.686 |     0.792     2  0.58 x 0.30 x 0.55     94.6    1.00   1.00  0.51
+ 16   0.318    56.1  -174.9     nan    nan |     52.1 -0.691 |     0.773     2  0.58 x 0.30 x 0.55     94.6    1.00   1.00  0.51
+ 17   0.305    50.3  -166.3     nan    nan |     51.0 -0.696 |     0.749     2  0.58 x 0.30 x 0.49     85.0    1.00   1.00  0.64
+ 18   0.389    60.2  -161.0     nan    nan |     50.8 -0.692 |     1.085     2  0.58 x 0.30 x 0.49     85.0    1.00   1.00  0.64
+ 19   0.424    59.2  -140.8     nan    nan |     51.8 -0.667 |     1.278     2  0.52 x 0.30 x 0.55     85.5    1.00   1.00  0.51
+ 20   0.374    51.8  -132.3     nan    nan |     52.0 -0.621 |     0.895     2  0.52 x 0.30 x 0.55     85.5    1.00   1.00  0.51
+
+scratch/wt-nursery-d178/runs/nursery/leaf-direction-return-s2: 23 genomes under own, brainless, knockout LeafScent,LeafScentDirection
+seeds (the ten r59-direction-tops, own brain, the same held-out episodes): eaten mean 408.6 J, 378.6 to 443.1
+  own                                      score best 1.018 mean 0.426 | eaten best 180.9 mean 93.9 J
+  brainless                                score best 0.274 mean 0.100 | eaten best 52.1 mean 16.6 J
+  knockout LeafScent,LeafScentDirection    score best 0.622 mean 0.250 | eaten best 178.0 mean 58.2 J
+  best: g20.1   (tops [], elite) score 1.018, eaten 153.6 J, knocked out 72.5 J, 38% of the seeds' mean
+  best: g20.2   (tops [], elite) score 0.885, eaten 131.5 J, knocked out 64.2 J, 32% of the seeds' mean
+  best: g19.18  (tops [19, 20], elite) score 0.831, eaten 82.6 J, knocked out 62.8 J, 20% of the seeds' mean
+  best: g20.3   (tops [], elite) score 0.685, eaten 101.3 J, knocked out 37.9 J, 25% of the seeds' mean
+  best: g20.5   (tops [], elite) score 0.665, eaten 91.5 J, knocked out 75.1 J, 22% of the seeds' mean
+  genomes eating at least half the seeds' mean (204.3 J) under their own brain: 0 of 23

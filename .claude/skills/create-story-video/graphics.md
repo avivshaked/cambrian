@@ -89,7 +89,7 @@ into the film's folder the first time, and from then on reads the copies.
 | `handles_s` | 3 | The seconds a graphic's first and last frames are held before and after it, as for the clips (the owner, 2026-09-28: 3 s in place of 10 s). |
 | `fps` | 30 | Frames a second. |
 | `size` | `3840x2160` | The clips' frame, the same as the footage's: 4K, as the edit is (the owner's ruling of 2026-09-28). |
-| `draft_size` | `960x540` | The frame the animators draw at and the reviewer reads, 16:9. `finish` renders every drawing at `size` once the reviewer passes it (the owner, 2026-09-28: "render a low res version for the reviewer, and only after approving do we render the high quality"). A 4K render took about 2 minutes, and a graphic takes up to three. Leave it out, or set it to `size`, to draw at full size from the start. |
+| `draft_size` | `960x540` | The frame the animators draw at and the reviewer reads, 16:9. `finish` renders every drawing at `size` once the reviewer passes it (the owner ruled on 2026-09-28 that a low-resolution version goes to the reviewer and the high-quality render comes only after approval). A 4K render took about 2 minutes, and a graphic takes up to three. Leave it out, or set it to `size`, to draw at full size from the start. |
 | `codec` | `qtrle` | QuickTime Animation with alpha, which Resolve reads; `prores4444` is the other. |
 | `blender` | `C:/Program Files/Blender Foundation/Blender 5.1/blender.exe` | The Blender the owner installed. |
 | `blender_version` | `5.1.1` | The version `setup` asks for. |
@@ -148,7 +148,7 @@ In the film's folder. Run k of the step is numbered from 1, going on from the hi
 | Who | Brief | Reads | Writes |
 |---|---|---|---|
 | the tool | [graphics.py](graphics.py) | `shots.json`, `facts.md`, `script.md`, the settings and style, the run's snapshots, the scenes | the plan, the clips, the stills, the sheets and `graphics.json` |
-| the animator | [animator-brief.md](animator-brief.md) | its graphic's plan, `facts.md`, the style, [storyblender.py](storyblender.py), [look/](look/), its last printout and any review of it | its scene and the render printouts, through the shell, and its answer |
+| the animator | [animator-brief.md](animator-brief.md) | its graphic's plan, `facts.md`, the style, [storyblender.py](storyblender.py), [look/](look/), its last printout and any review of it | its scene and the render printouts, and its answer |
 | the reviewer | [graphics-reviewer-brief.md](graphics-reviewer-brief.md) | the plan, `graphics.json`, `facts.md`, the sheets and [look/](look/) | nothing but its answer |
 | the main session | this file | what the tool prints, the answers, the owner's words | those, saved |
 | the owner | | the plan's counts, the sheets and the faults | the go on the stills' render, and what to do about a fault |
@@ -185,7 +185,7 @@ You are the animator of a story film.
 Your brief is <checkout>\.claude\skills\create-story-video\animator-brief.md. Read it whole and follow it.
 The film's folder is <folder>.
 You draw graphic <id>, in run <k> of the graphics step.
-Write only inside the film's folder, and only through the shell. Never write in your session scratchpad or in TEMP.
+Write only inside the film's folder. Never write in your session scratchpad or in TEMP.
 Your time budget is 25 minutes.
 ```
 
@@ -202,6 +202,12 @@ The animator is a general-purpose agent on opus. The reviewer is an `Explore` ag
 nothing of the project but its brief.
 
 ## The procedure
+
+The step may run beside a filming pass, since it reads the shot list and not the clips (the owner chose
+this over waiting on 2026-09-28). Start the stills and the animators once the pass's windows are
+recorded. In the film's copy of the settings, set `worker` to one the filming does not hold and
+`render_threads` to 4. Launch one animator at a time, and hold the next while the machine's Utility
+counter reads above about 65%.
 
 1. If the film's folder has no `shots.json`, stop: the shot list step writes it first.
 2. Run `plan <folder>` and save what it prints in `graphics-<k>-plan.txt`. On `NOTHING TO DRAW`, go to

@@ -98,7 +98,7 @@ The subagent's prompt:
 Write a JART (Journal Article Record) for one paper. Read these two files in full:
   1. D:\Projects\experiments\evolution-simulator\logbook\specs\round7-jart-brief.md (your rules; follow "Rules for this session" and "Adapting the template")
   2. <absolute path to the package's source.md>
-Use the template at C:\Users\shake\.claude\skills\jart-review\references\jart-template.md.
+Use the template at %USERPROFILE%\.claude\skills\jart-review\references\jart-template.md.
 In "Local source copy" write: source.md (in <package folder name>).
 Write no file anywhere. Return the complete JART.md as your final message and nothing else: no preface and no code fence.
 Before you return, find each quote you used in source.md, on the page you cite. Mend extraction noise in a quote (ligatures, words split at a line end, garbled accents) and change nothing else; paraphrase any passage too garbled to be sure of.

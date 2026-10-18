@@ -40,12 +40,19 @@ namespace Evosim.Dynamics
 
         /// <summary>
         /// Runs <paramref name="body"/> once for each slab, with the slab's index and its
-        /// half-open range, and returns when all are done. One code path at every slab count,
-        /// including one, for <c>StepOnCpu</c>'s reason.
+        /// half-open range, and returns when all are done. One slab is called directly: the body
+        /// is the same delegate either way, so its arithmetic is the same compiled code, and a
+        /// nursery tank (one thread, a few hundred items) no longer pays a fork and a join for
+        /// each of its ten slab passes a step (logbook/specs/speed-plan.md, A3).
         /// </summary>
         public static void Run(int items, int slabs, Action<int, int, int> body)
         {
             if (slabs <= 0) return;
+            if (slabs == 1)
+            {
+                body(0, 0, items);
+                return;
+            }
 
             var options = new ParallelOptions { MaxDegreeOfParallelism = slabs };
             Parallel.For(0, slabs, options,

@@ -113,6 +113,17 @@ namespace Evosim.Theatre
             /// that into ninety-six walks of a population of thousands every frame.
             /// </remarks>
             public float Tint;
+
+            /// <summary>How much of the body is drawn this frame, 1 whole: a birth fading in, a corpse fading out.</summary>
+            public float Fade = 1f;
+
+            /// <summary>
+            /// The fade last written, and the renderers it was written to. A paint clears the
+            /// renderers, because it puts the opaque material back and may add a neck.
+            /// </summary>
+            public float FadeApplied = 1f;
+            public Renderer[] FadeRenderers;
+            public Phenotype FadeFor;
         }
 
         /// <summary>The simulation synced, or null when the view is fed.</summary>
@@ -138,6 +149,12 @@ namespace Evosim.Theatre
 
         /// <summary>Bodies repainted per frame, as <c>TheatreRunner.RepaintsPerFrame</c>.</summary>
         public int RepaintsPerFrame = 96;
+
+        /// <summary>
+        /// Whether this view draws corpses (D127): the palette paints its bodies as dead tissue, grey
+        /// and dim, whatever their reserve. The film window keeps its corpses in a view of their own.
+        /// </summary>
+        public bool Corpses;
 
         /// <summary>Bodies on screen.</summary>
         public int BodyCount => _bodies.Count;
@@ -380,7 +397,7 @@ namespace Evosim.Theatre
                 // them to the genome's three half-extents. Left to the rotation's budget, a crowd
                 // of 1,800 at 96 a frame waited up to 19 frames for it, and every growth step
                 // (15 frames apart at 30 fps) drew a growing body large and then small again: the
-                // owner's "grow back and forth" in round 48's window films (2026-09-25). Marked
+                // body growing back and forth that the owner saw in round 48's window films (2026-09-25). Marked
                 // undressed, it is reshaped by the next DressUndressed, which runs before every
                 // captured frame.
                 live.Dressed = false;
@@ -418,9 +435,14 @@ namespace Evosim.Theatre
         /// What the body is, for the rebuild test: a different object is a different body (a plan
         /// that moved), the same one with a different <paramref name="phenotype"/> is a growth.
         /// </param>
+        /// <param name="scale">
+        /// One scale on the whole body about its root, 1 for a body drawn as it is: a corpse's shrink,
+        /// which moves every part toward the root with it and so leaves the phenotype, and the
+        /// palette's dressing of it, alone.
+        /// </param>
         public bool Place(
             long id, object source, Phenotype phenotype, Vector3 root,
-            Vector3[] positions, Quaternion[] rotations, float tint = 1f)
+            Vector3[] positions, Quaternion[] rotations, float tint = 1f, float scale = 1f, float fade = 1f)
         {
             if (!_inFrame) throw new InvalidOperationException("Place outside BeginFrame and EndFrame.");
             if (_holder == null || phenotype == null || source == null) return false;
@@ -435,7 +457,7 @@ namespace Evosim.Theatre
             // Checked before anything is built, so a body whose first pose is not finite is never
             // drawn at the origin, and one already standing stays where it last stood (the
             // synced path's rule for a link gone non-finite).
-            bool finite = Finite(root.x) && Finite(root.y) && Finite(root.z);
+            bool finite = Finite(root.x) && Finite(root.y) && Finite(root.z) && Finite(scale) && scale > 0f;
 
             for (int i = 0; finite && i < count; i++)
             {
@@ -461,9 +483,11 @@ namespace Evosim.Theatre
             }
 
             LiveBody live = Ensure(id, source, phenotype, tint);
+            live.Fade = Finite(fade) ? Mathf.Clamp01(fade) : 1f;
             _fedParts += live.Parts.Length;
 
             live.Root.position = root;
+            if (live.Root.localScale.x != scale) live.Root.localScale = new Vector3(scale, scale, scale);
 
             for (int i = 0; i < count && i < live.Parts.Length; i++)
             {
@@ -506,9 +530,46 @@ namespace Evosim.Theatre
 
             Sweep();
             Paint();
+            ApplyFades();
         }
 
         private static bool Finite(float v) => !float.IsNaN(v) && !float.IsInfinity(v);
+
+        /// <summary>
+        /// Writes the fade of each body into its renderers when it has moved: a newborn fading in,
+        /// a corpse fading out. Outside the paint budget, because a fade moves every frame and a body
+        /// repainted once in several frames would step through it. A body whole and written whole
+        /// costs nothing; a rebuild or a paint mid-fade gathers the renderers again and writes.
+        /// </summary>
+        private void ApplyFades()
+        {
+            if (Palette == null) return;
+
+            foreach (KeyValuePair<long, LiveBody> entry in _bodies)
+            {
+                LiveBody live = entry.Value;
+                if (live.Root == null) continue;
+                if (live.Fade >= 1f && live.FadeApplied >= 1f) continue;
+
+                bool stale = live.FadeRenderers == null || live.FadeFor != live.Sized;
+
+                // A fade that has barely moved is not written again, except at its ends.
+                if (!stale && live.Fade > 0f && live.Fade < 1f &&
+                    Mathf.Abs(live.Fade - live.FadeApplied) < 1f / 512f)
+                {
+                    continue;
+                }
+
+                if (stale)
+                {
+                    live.FadeRenderers = live.Root.GetComponentsInChildren<Renderer>(true);
+                    live.FadeFor = live.Sized;
+                }
+
+                Palette.SetFade(live.FadeRenderers, live.Fade);
+                live.FadeApplied = live.Fade;
+            }
+        }
 
         /// <summary>Destroys the bodies that were not in the living list this sweep.</summary>
         private void Sweep()
@@ -605,8 +666,9 @@ namespace Evosim.Theatre
                 LiveBody live = _order[(int)(_paintCursor++ % _order.Count)];
                 if (live.Root == null || live.Sized == null) continue;
 
-                Palette.Paint(live.Id, live.Root, live.Sized, live.Tint, ColourByCellType);
+                Palette.Paint(live.Id, live.Root, live.Sized, live.Tint, ColourByCellType, Corpses);
                 live.Dressed = true;
+                live.FadeRenderers = null;
             }
         }
 
@@ -683,10 +745,15 @@ namespace Evosim.Theatre
                 LiveBody live = entry.Value;
                 if (live.Dressed || live.Root == null || live.Sized == null) continue;
 
-                Palette.Paint(live.Id, live.Root, live.Sized, live.Tint, ColourByCellType);
+                Palette.Paint(live.Id, live.Root, live.Sized, live.Tint, ColourByCellType, Corpses);
                 live.Dressed = true;
+                live.FadeRenderers = null;
                 n++;
             }
+
+            // The film dresses after the frame's fades were written, so a newborn dressed here
+            // would be captured on the opaque material for one frame: the pop at its first frame.
+            if (n > 0) ApplyFades();
 
             return n;
         }

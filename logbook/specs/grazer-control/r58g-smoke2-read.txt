@@ -1,0 +1,162 @@
+run D:\Projects\experiments\evolution-simulator\runs\r58g-smoke2\2026-10-12-153238-dfc0e881
+lineage rows 304, from t 12000.5
+== admitted: 20 inoculant rows against 20 asked
+  id 18728 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18729 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18730 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18731 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18732 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18733 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18734 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18735 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18736 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18737 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18738 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18739 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18740 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18741 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18742 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18743 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18744 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18745 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18746 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+  id 18747 t 12000.5 atk 1 ink 1 abs 0 pho 0 jnt 0 bf 1 as 1
+== the line: 20 bodies, 0 born of it
+== deaths of the line
+  0 deaths: {}; 20 of the line alive at the end
+== kill rows
+  0 in the run, 0 by the line
+== stats: run | r58-s1ir at the same t
+  t 12010: alive 2960|2942; stillbirths 433|431; selfOverlapStillbirths 433|431; partsKilled 0|0; bodiesEaten 0|0; corpsesFromKills 0|0; corpsesEaten 104|104; unitsEaten 61.718801370965096|61.718801370965096; corpses 10352|10352; moduleAdds 51|31; moduleAddsRefused 44761|44761; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 44761|44761; modulesStanding 40|20; moduleRebuilds 51|31
+  t 12020: alive 2971|2950; stillbirths 433|432; selfOverlapStillbirths 433|432; partsKilled 0|0; bodiesEaten 0|0; corpsesFromKills 0|0; corpsesEaten 104|104; unitsEaten 61.718801370965096|61.718801370965096; corpses 10362|10362; moduleAdds 51|31; moduleAddsRefused 44956|44956; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 44956|44956; modulesStanding 40|20; moduleRebuilds 51|31
+  t 12030: alive 2995|2974; stillbirths 433|433; selfOverlapStillbirths 433|433; partsKilled 0|0; bodiesEaten 0|0; corpsesFromKills 0|0; corpsesEaten 104|105; unitsEaten 61.718801370965096|62.6014471310932; corpses 10363|10362; moduleAdds 51|31; moduleAddsRefused 45154|45154; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 45154|45154; modulesStanding 40|20; moduleRebuilds 51|31
+  t 12040: alive 3014|2993; stillbirths 434|434; selfOverlapStillbirths 434|434; partsKilled 0|0; bodiesEaten 0|0; corpsesFromKills 0|0; corpsesEaten 104|105; unitsEaten 61.718801370965096|62.6014471310932; corpses 10368|10367; moduleAdds 51|31; moduleAddsRefused 45352|45352; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 45352|45352; modulesStanding 40|20; moduleRebuilds 51|31
+  t 12050: alive 3038|3018; stillbirths 435|435; selfOverlapStillbirths 435|435; partsKilled 0|0; bodiesEaten 0|0; corpsesFromKills 0|0; corpsesEaten 104|105; unitsEaten 61.718801370965096|62.6014471310932; corpses 10374|10373; moduleAdds 51|31; moduleAddsRefused 45553|45554; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 45553|45554; modulesStanding 40|20; moduleRebuilds 51|31
+  t 12060: alive 3055|3038; stillbirths 436|435; selfOverlapStillbirths 436|435; partsKilled 0|0; bodiesEaten 0|0; corpsesFromKills 0|0; corpsesEaten 104|105; unitsEaten 61.718801370965096|62.6014471310932; corpses 10381|10374; moduleAdds 51|31; moduleAddsRefused 45756|45759; moduleAddsRefusedForReserve 0|0; moduleAddsRefusedForShape 45756|45759; modulesStanding 40|20; moduleRebuilds 51|31
+== positions: the line, and the leaves' mean y
+  t 12010: 20 of the line among 2960; leaves 2909 at mean y -4.09
+    id 18728 x 157.74 y -4.02 z 105.37 flags 0
+    id 18729 x 28.58 y -4.05 z 33.94 flags 0
+    id 18730 x 74.30 y -4.02 z 146.77 flags 0
+    id 18731 x 68.98 y -4.22 z 61.88 flags 0
+    id 18732 x 83.67 y -4.01 z 123.13 flags 0
+    id 18733 x 135.76 y -4.01 z 27.04 flags 0
+    id 18734 x 132.27 y -2.45 z 70.54 flags 0
+    id 18735 x 117.02 y -3.95 z 33.63 flags 0
+    id 18736 x 128.88 y -2.45 z 62.08 flags 0
+    id 18737 x 56.38 y -2.62 z 93.65 flags 0
+    id 18738 x 19.02 y -3.20 z 126.36 flags 0
+    id 18739 x 90.48 y -3.86 z 97.70 flags 0
+    id 18740 x 116.23 y -3.09 z 73.53 flags 0
+    id 18741 x 137.73 y -4.01 z 28.61 flags 0
+    id 18742 x 90.62 y -4.05 z 130.95 flags 0
+    id 18743 x 126.18 y -2.45 z 69.95 flags 0
+    id 18744 x 89.68 y -3.16 z 47.86 flags 0
+    id 18745 x 141.55 y -4.07 z 95.28 flags 0
+    id 18746 x 26.63 y -4.07 z 70.02 flags 0
+    id 18747 x 17.84 y -4.07 z 53.03 flags 0
+  t 12020: 20 of the line among 2969; leaves 2918 at mean y -4.13
+    id 18728 x 157.66 y -4.05 z 105.56 flags 0
+    id 18729 x 28.70 y -4.14 z 33.79 flags 0
+    id 18730 x 74.12 y -4.06 z 146.65 flags 0
+    id 18731 x 68.91 y -4.56 z 61.77 flags 0
+    id 18732 x 83.39 y -4.03 z 123.35 flags 0
+    id 18733 x 135.86 y -4.04 z 27.10 flags 0
+    id 18734 x 132.27 y -2.45 z 70.54 flags 0
+    id 18735 x 116.95 y -3.86 z 33.60 flags 0
+    id 18736 x 128.88 y -2.45 z 62.08 flags 0
+    id 18737 x 56.39 y -2.62 z 93.65 flags 0
+    id 18738 x 19.02 y -3.20 z 126.36 flags 0
+    id 18739 x 90.65 y -3.57 z 98.10 flags 0
+    id 18740 x 116.23 y -3.09 z 73.53 flags 0
+    id 18741 x 137.83 y -4.05 z 28.69 flags 0
+    id 18742 x 90.33 y -4.16 z 130.95 flags 0
+    id 18743 x 126.18 y -2.45 z 69.95 flags 0
+    id 18744 x 89.68 y -3.16 z 47.86 flags 0
+    id 18745 x 141.69 y -4.21 z 95.26 flags 0
+    id 18746 x 25.84 y -4.19 z 70.05 flags 0
+    id 18747 x 17.91 y -4.19 z 52.78 flags 0
+  t 12030: 20 of the line among 2994; leaves 2943 at mean y -4.18
+    id 18728 x 157.53 y -4.10 z 105.81 flags 0
+    id 18729 x 28.86 y -4.25 z 33.57 flags 0
+    id 18730 x 73.84 y -4.09 z 146.44 flags 0
+    id 18731 x 68.78 y -4.91 z 61.57 flags 0
+    id 18732 x 83.03 y -4.06 z 123.39 flags 0
+    id 18733 x 136.00 y -4.08 z 27.20 flags 0
+    id 18734 x 132.27 y -2.45 z 70.54 flags 0
+    id 18735 x 116.86 y -3.75 z 33.57 flags 0
+    id 18736 x 128.88 y -2.45 z 62.08 flags 0
+    id 18737 x 56.40 y -2.62 z 93.65 flags 0
+    id 18738 x 19.02 y -3.20 z 126.36 flags 0
+    id 18739 x 90.87 y -3.21 z 98.56 flags 0
+    id 18740 x 116.23 y -3.09 z 73.53 flags 0
+    id 18741 x 137.96 y -4.09 z 28.79 flags 0
+    id 18742 x 89.88 y -4.27 z 130.84 flags 0
+    id 18743 x 126.18 y -2.45 z 69.95 flags 0
+    id 18744 x 89.68 y -3.16 z 47.87 flags 0
+    id 18745 x 141.83 y -4.38 z 95.21 flags 0
+    id 18746 x 25.01 y -4.33 z 70.11 flags 0
+    id 18747 x 18.00 y -4.33 z 52.48 flags 0
+  t 12040: 20 of the line among 3014; leaves 2962 at mean y -4.25
+    id 18728 x 157.37 y -4.15 z 106.10 flags 0
+    id 18729 x 29.03 y -4.36 z 33.31 flags 0
+    id 18730 x 73.48 y -4.13 z 146.13 flags 0
+    id 18731 x 68.61 y -5.20 z 61.32 flags 0
+    id 18732 x 82.64 y -4.11 z 123.16 flags 0
+    id 18733 x 136.15 y -4.13 z 27.30 flags 0
+    id 18734 x 132.27 y -2.45 z 70.54 flags 0
+    id 18735 x 116.76 y -3.62 z 33.55 flags 0
+    id 18736 x 128.88 y -2.45 z 62.08 flags 0
+    id 18737 x 56.41 y -2.62 z 93.65 flags 0
+    id 18738 x 19.02 y -3.20 z 126.36 flags 0
+    id 18739 x 91.10 y -2.79 z 98.98 flags 0
+    id 18740 x 116.23 y -3.09 z 73.53 flags 0
+    id 18741 x 138.11 y -4.14 z 28.91 flags 0
+    id 18742 x 89.33 y -4.34 z 130.55 flags 0
+    id 18743 x 126.18 y -2.45 z 69.95 flags 0
+    id 18744 x 89.68 y -3.16 z 47.88 flags 0
+    id 18745 x 141.90 y -4.55 z 95.13 flags 0
+    id 18746 x 24.26 y -4.45 z 70.21 flags 0
+    id 18747 x 18.11 y -4.47 z 52.16 flags 0
+  t 12050: 20 of the line among 3037; leaves 2985 at mean y -4.30
+    id 18728 x 157.19 y -4.20 z 106.41 flags 0
+    id 18729 x 29.22 y -4.47 z 33.00 flags 0
+    id 18730 x 73.04 y -4.15 z 145.73 flags 0
+    id 18731 x 68.41 y -5.42 z 61.03 flags 0
+    id 18732 x 82.24 y -4.15 z 122.63 flags 0
+    id 18733 x 136.30 y -4.17 z 27.41 flags 0
+    id 18734 x 132.27 y -2.45 z 70.54 flags 0
+    id 18735 x 116.66 y -3.50 z 33.55 flags 0
+    id 18736 x 128.88 y -2.45 z 62.08 flags 0
+    id 18737 x 56.42 y -2.62 z 93.65 flags 0
+    id 18738 x 19.02 y -3.20 z 126.36 flags 0
+    id 18739 x 91.33 y -2.36 z 99.38 flags 0
+    id 18740 x 116.23 y -3.09 z 73.53 flags 0
+    id 18741 x 138.26 y -4.18 z 29.03 flags 0
+    id 18742 x 88.70 y -4.38 z 130.01 flags 0
+    id 18743 x 126.18 y -2.45 z 69.95 flags 0
+    id 18744 x 89.68 y -3.16 z 47.88 flags 0
+    id 18745 x 141.90 y -4.70 z 95.03 flags 0
+    id 18746 x 23.65 y -4.55 z 70.34 flags 0
+    id 18747 x 18.21 y -4.61 z 51.86 flags 0
+  t 12060: 20 of the line among 3052; leaves 3000 at mean y -4.33
+    id 18728 x 156.97 y -4.24 z 106.72 flags 0
+    id 18729 x 29.41 y -4.56 z 32.67 flags 0
+    id 18730 x 72.54 y -4.17 z 145.25 flags 0
+    id 18731 x 68.20 y -5.57 z 60.74 flags 0
+    id 18732 x 81.87 y -4.17 z 121.82 flags 0
+    id 18733 x 136.45 y -4.21 z 27.52 flags 0
+    id 18734 x 132.27 y -2.45 z 70.54 flags 0
+    id 18735 x 116.57 y -3.38 z 33.56 flags 0
+    id 18736 x 128.88 y -2.45 z 62.08 flags 0
+    id 18737 x 56.43 y -2.62 z 93.65 flags 0
+    id 18738 x 19.02 y -3.20 z 126.36 flags 0
+    id 18739 x 91.57 y -1.94 z 99.78 flags 0
+    id 18740 x 116.23 y -3.09 z 73.53 flags 0
+    id 18741 x 138.41 y -4.22 z 29.16 flags 0
+    id 18742 x 88.04 y -4.41 z 129.22 flags 0
+    id 18743 x 126.18 y -2.45 z 69.95 flags 0
+    id 18744 x 89.68 y -3.16 z 47.89 flags 0
+    id 18745 x 141.78 y -4.84 z 94.89 flags 0
+    id 18746 x 23.19 y -4.63 z 70.50 flags 0
+    id 18747 x 18.32 y -4.73 z 51.58 flags 0

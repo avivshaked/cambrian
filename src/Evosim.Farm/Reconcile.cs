@@ -30,7 +30,18 @@ namespace Evosim.Farm
         {
             // Every way a creature enters or leaves the economy, or the next inoculant would have
             // no body until the next birth or death happened to bump the count.
-            long revision = World.Births + World.Deaths + World.FloorSpawns + World.Inoculated;
+            // D159's immigrants are one of those ways, and Immigrated is 0 outside a migrating
+            // group, so the count everywhere else is the one it always was.
+            //
+            // So is D115's trickle, which counts its founders in TrickleSpawns and in neither of the
+            // floor's counters. Until 2026-10-10 it was left out here, and a trickle founder admitted
+            // in a step with no birth, death or floor spawn waited for its body, fed by the world at
+            // its patch's centre and out of physics, until one of those happened: up to 2 s in round
+            // 57's world just after its floor closed, and 12.5 s in a sparse one (the bodiless
+            // instrument, Metabolise.cs; logbook/specs/build-readings.md). Every trickle world from
+            // round 46's build through round 57 stepped with the wait.
+            long revision = World.Births + World.Deaths + World.FloorSpawns + World.TrickleSpawns +
+                            World.Inoculated + World.Immigrated;
             if (revision == _reconciledAt) return;
 
             _reconciledAt = revision;
@@ -70,9 +81,19 @@ namespace Evosim.Farm
                 // And its dissipation, for the same reason and into the same diagnostic.
                 DissipatedJoules += body.Solver.DrainDissipated();
 
+                // D127: the pose it died in, for its corpse's picture. A body the solver lost is
+                // not finite and gives none.
+                QuatD q = body.Solver.BaseRotation;
+                if (double.IsFinite(q.X) && double.IsFinite(q.Y) && double.IsFinite(q.Z) && double.IsFinite(q.W))
+                {
+                    _corpsePoses[id] = new Quat((float)q.X, (float)q.Y, (float)q.Z, (float)q.W);
+                }
+
                 Dynamics.Remove(id);
                 _bodies.Remove(id);
             }
+
+            if (_corpsePoses.Count > 0) StampCorpsePoses();
 
             // Rebuilt whether or not anything departed, because Build appends to this and a birth
             // alone leaves it correct but a death leaves it holding a body that has gone. The
@@ -85,9 +106,36 @@ namespace Evosim.Farm
             }
         }
 
+        /// <summary>
+        /// D127: hands each corpse founded since the last reconcile the pose its body died in. A
+        /// corpse is appended at its death, so the walk runs from the newest and stops when every
+        /// departed body with a pose has found its corpse; a body that left no corpse (a world without
+        /// corpses, or one that died with nothing to give) is simply not found. A record: nothing
+        /// in the world reads the pose.
+        /// </summary>
+        private void StampCorpsePoses()
+        {
+            System.Collections.Generic.IReadOnlyList<Corpse> corpses = World.Corpses;
+
+            for (int i = corpses.Count - 1; i >= 0 && _corpsePoses.Count > 0; i--)
+            {
+                Corpse corpse = corpses[i];
+                if (corpse.HasPose) continue;
+                if (!_corpsePoses.TryGetValue(corpse.CreatureId, out Quat pose)) continue;
+
+                corpse.SetPose(pose);
+                _corpsePoses.Remove(corpse.CreatureId);
+            }
+
+            _corpsePoses.Clear();
+        }
+
         /// <summary>Builds one newborn's body at the spot the placer reserved for it.</summary>
         private void Build(Organism creature)
         {
+            // The trickle question's instrument (Metabolise.cs): the wait ends here.
+            _bodilessSince.Remove(creature.Id);
+
             Vec3 origin;
             float radius = 0f;
 
@@ -113,7 +161,7 @@ namespace Evosim.Farm
 
                     if (!_restoring)
                     {
-                        Console.Error.WriteLine(
+                        FarmConsole.Error.WriteLine(
                             FormattableString.Invariant(
                                 $"warning: creature {creature.Id} was admitted into a shared volume ") +
                             "with no reserved placement — built at the height the world admitted it " +
@@ -178,6 +226,8 @@ namespace Evosim.Farm
             // the argument; the verification is that GridField.EdibleDensityAt is a pure read of
             // the stock array through a cell index, touching no cache and no frozen flag.
             solver.Senses.Nutrients = World.Nutrients;
+            solver.Senses.Scent = World.Scent;
+            solver.Senses.LeafScent = World.LeafScent;
             solver.Senses.Reserve = creature;
 
             // The throw trace's ring — jointed bodies only, which is the farm's rule since
@@ -190,6 +240,9 @@ namespace Evosim.Farm
                 Solver = solver,
                 Creature = creature,
                 Radius = radius,
+
+                // A newborn has never been read by the divergence check.
+                Touched = true,
 
                 // narrow: the root, in Core's frame.
                 LastRootPosition = new Float3(
@@ -313,7 +366,7 @@ namespace Evosim.Farm
 
             if (map == null || map.Length < solver.Links)
             {
-                Console.Error.WriteLine(
+                FarmConsole.Error.WriteLine(
                     FormattableString.Invariant(
                         $"warning: creature {creature.Id} changed plan with no part map, so its ") +
                     "joints and its brain start empty — the body is still where it was.");
@@ -329,6 +382,8 @@ namespace Evosim.Farm
             solver.AppliedPlanRevision = creature.PlanRevision;
 
             solver.Senses.Nutrients = World.Nutrients;
+            solver.Senses.Scent = World.Scent;
+            solver.Senses.LeafScent = World.LeafScent;
             solver.Senses.Reserve = creature;
 
             // D123 through a plan change (round 49). Core has carried the step's contact and
@@ -382,6 +437,7 @@ namespace Evosim.Farm
             // outside the solver is a body's whole state, which is the debt the next divergence
             // check is owed.
             _movedOutsideTheSolver = true;
+            body.Touched = true;
 
             ModuleRebuilds++;
         }

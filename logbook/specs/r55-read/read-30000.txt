@@ -1,0 +1,49 @@
+
+== r55-s1 (D:\Projects\experiments\evolution-simulator\runs\r55-s1\2026-10-04-171541-54137db3); last stats row t=30000, jointed share 0.04981014071923163
+disk: genomes 37.9 MB, lineage 17.6 MB, 6.7 MB per simulated hour
+t=5000: alive 2484, nursery-rooted 0 (0.000); from floor 0, trickle 0
+t=15000: alive 3397, nursery-rooted 0 (0.000); from floor 0, trickle 0
+t=30000: alive 4477, nursery-rooted 0 (0.000); from floor 0, trickle 0
+founders by origin: {'floor': 42, 'trickle': 820, 'pool': 99}
+
+== r55-s2 (D:\Projects\experiments\evolution-simulator\runs\r55-s2\2026-10-04-115417-d573544f); last stats row t=30000, jointed share 0.003832963485979423
+disk: genomes 14.2 MB, lineage 22.6 MB, 4.4 MB per simulated hour
+t=5000: alive 1637, nursery-rooted 23 (0.014); from floor 0, trickle 23
+   pilot-deep-brain2: 12  body 10 12
+   brain2-nodrive: 6  body 10 5, body 4 1
+   brain2-rep2: 3  body 0 1, body 3 1, body 8 1
+   brain2-nocross: 2  body 4 1, body 8 1
+t=15000: alive 2682, nursery-rooted 28 (0.010); from floor 0, trickle 28
+   pilot-deep-brain2: 25  body 10 24, body 3 1
+   brain2-nocross: 3  body 10 2, body 8 1
+t=30000: alive 4957, nursery-rooted 196 (0.040); from floor 0, trickle 196
+   pilot-deep-brain2: 184  body 0 1, body 1 1, body 10 178, body 3 1, body 4 1, body 8 2
+   brain2-rep2: 7  body 10 4, body 3 1, body 4 2
+   brain2-nocross: 3  body 0 1, body 3 2
+   brain2-nodrive: 2  body 10 1, body 8 1
+founders by origin: {'floor': 39, 'pilot-deep-brain2': 126, 'brain2-nocross': 135, 'brain2-nodrive': 124, 'pool': 90, 'trickle': 347, 'brain2-rep2': 105}
+
+== r55-s3 (D:\Projects\experiments\evolution-simulator\runs\r55-s3\2026-10-04-115421-d573544f); last stats row t=30000, jointed share 0.0010676631522754572
+disk: genomes 42.1 MB, lineage 33.2 MB, 9.0 MB per simulated hour
+t=5000: alive 2121, nursery-rooted 10 (0.005); from floor 0, trickle 10
+   brain2-nocross: 5  body 0 1, body 3 1, body 4 1, body 8 2
+   brain2-nodrive: 2  body 10 1, body 8 1
+   brain2-rep2: 2  body 0 1, body 4 1
+   pilot-deep-brain2: 1  body 10 1
+t=15000: alive 5410, nursery-rooted 6 (0.001); from floor 0, trickle 6
+   pilot-deep-brain2: 3  body 0 1, body 4 1, body 8 1
+   brain2-nodrive: 1  body 0 1
+   brain2-nocross: 1  body 8 1
+   brain2-rep2: 1  body 3 1
+t=30000: alive 7493, nursery-rooted 8 (0.001); from floor 0, trickle 8
+   brain2-rep2: 4  body 0 1, body 10 1, body 3 1, body 4 1
+   pilot-deep-brain2: 2  body 0 1, body 10 1
+   brain2-nodrive: 2  body 3 1, body 8 1
+   brains (pilot-deep-brain2, 1 of the living sampled): links 58.0, hidden 6.00
+founders by origin: {'brain2-nodrive': 121, 'brain2-rep2': 109, 'pilot-deep-brain2': 116, 'floor': 36, 'trickle': 358, 'pool': 86, 'brain2-nocross': 114}
+
+== clauses
+I1: nursery-rooted share at 30000 s r55-s2 0.040, r55-s3 0.001 -> failed (0 of 2)
+I2: not read (I1 did not hold in both); the most numerous run by seed {'r55-s2': 'pilot-deep-brain2', 'r55-s3': 'brain2-rep2'}
+I3 r55-s2: jointed share 0.004 against the control's 0.050 -> failed
+I3 r55-s3: jointed share 0.001 against the control's 0.050 -> failed

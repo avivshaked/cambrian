@@ -93,8 +93,8 @@ One-line summaries, in file order:
 - **D055** (DECISIONS.md:80) — "The seabed is a refuge — the floor layer cannot be grazed."
   Rejected as a world rule (starves the benthic consumer); kept as an instrument knob.
   Directly about consumer/grazing dynamics.
-- **D075** (DECISIONS.md:100, full text at 3626-3659) — **The ruled roadmap.** Owner: "agreed,
-  lock it in" (2026-09-04). Order after the open-budget milestone: (1) movement that pays,
+- **D075** (DECISIONS.md:100, full text at 3626-3659) — **The ruled roadmap.** The owner agreed and said to lock it in
+  (2026-09-04). Order after the open-budget milestone: (1) movement that pays,
   (2) the theatre in parallel, **(3) predation — "a consumer cell type eating living
   tissue; after movement, because the design says it needs perception to be worth
   attempting (§5A's table)"** (DECISIONS.md:3649-3650), (4) cell-type expansion / vent

@@ -88,6 +88,9 @@ namespace Evosim.Dynamics
                 return;
             }
 
+            // A backend reads every body's committed sphere as its block's first step's, and the
+            // last CPU step left them pending (Creature.EnsureContactCommitted).
+            CommitContactSpheres();
             Backend.StepBlock(this, steps);
         }
 

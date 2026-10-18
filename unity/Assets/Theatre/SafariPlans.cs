@@ -992,8 +992,8 @@ namespace Evosim.Theatre
         public const float WideHeartRadius = 10f;
 
         /// <summary>
-        /// A story's card and chapter card (the owner, 2026-09-25: "why can't we do this while
-        /// showing cool world videos? must it be on a black screen?"): a slow sideways drift through
+        /// A story's card and chapter card (the owner asked on 2026-09-25 for
+        /// world footage behind the cards rather than a black screen): a slow sideways drift through
         /// the water in front of the densest part of the crowd, the look carried with the eye so
         /// nothing pans, linear, at <see cref="WideDriftSpeed"/>. The world keeps stepping under it
         /// as under every take.

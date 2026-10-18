@@ -25,7 +25,7 @@ farm replays its own run bit for bit from a checkpoint, and at 16 threads round 
 30,000 s in 24 minutes.
 
 The owner's rulings of that afternoon: checkpoints every 500 s from round 48 seed 3 on; a
-record that stays small ("perhaps we should start considering binary storage"); and safari films
+record that stays small (the owner suggested that we start considering binary storage); and safari films
 soon after an arm ends, or during it, at a scale of 300,000 s runs.
 
 ## What already exists
@@ -158,7 +158,7 @@ every `stats.jsonl` field. The digest at 1 and 16 threads must be unchanged.
 
 ## Part B: films the farm moves and Unity draws
 
-The division of labour, which the owner asked about ("we will not use Unity to render?"): Unity
+The division of labour, which the owner asked about (whether Unity would no longer render): Unity
 draws every pixel as it does now, with the same skin, light, cameras, depth of field and grade.
 What moves is the world. The farm, which replays its own run exactly, writes where every body is
 thirty times a second for the stretch a scene needs, and Unity plays that back the way it already

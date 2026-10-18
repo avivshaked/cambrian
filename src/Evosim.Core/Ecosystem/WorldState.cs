@@ -21,7 +21,9 @@ namespace Evosim.Core
     /// </para>
     /// <para>
     /// <b>What is deliberately not here, and why each is safe.</b> <c>_ledgers</c>,
-    /// <c>_born</c>, <c>_conceptionOrder</c> and <c>_conceptionSurplus</c> are filled from
+    /// <c>_born</c>, <c>_conceptionOrder</c>, <c>_conceptionSurplus</c>, Grow's <c>_juveniles</c>
+    /// the intake's <c>_mouths</c>, <c>_mouthRates</c> and <c>_intakeDemand</c>, and Metabolise's
+    /// pre-pass (<c>_turnShare</c> and its four siblings) are filled from
     /// scratch inside <see cref="Step"/> before anything reads them. <c>_dead</c> is an
     /// accumulator the farm never drains and never reads — it exists for
     /// <see cref="TakeDead"/>, which nothing in the farm calls — so a resumed run starts it
@@ -115,7 +117,90 @@ namespace Evosim.Core
         /// layout this build does not write is, because the harness's half of the file is keyed on
         /// the world's version. Nothing on disk that is read again was written at 11.
         /// </remarks>
-        public const int StateVersion = 12;
+        /// <remarks>
+        /// 13 with round 51's build (D127, D128; 2026-09-27): every creature carries its ageing
+        /// clock and the hazard accumulated along it after its contact record, every corpse its
+        /// first joules and whether it has settled, and the world its count of deaths by age. A
+        /// version-12 stream carries none of them and is refused; every genome in it is format 9
+        /// and refused anyway.
+        /// </remarks>
+        /// <remarks>
+        /// 14 with round 57's build (2026-10-06, <c>logbook/specs/r57-build/scent-restore.md</c>):
+        /// the world carries <see cref="ScentFilledCorpses"/> after its corpses, and a restore fills
+        /// the scent from that prefix, so a module's remains appended after the step's fill are
+        /// smelt by neither the live run nor the resumed one until the next fill. A version-13
+        /// stream has no count and is refused, in a world with the scent and without it; every
+        /// config that wrote one is refused by round 57's tunables anyway.
+        /// </remarks>
+        /// <remarks>
+        /// 15 with round 58's exchange (D159, 2026-10-09): the world carries
+        /// <see cref="Immigrated"/> and <see cref="ImmigrantsRefused"/> after its deaths by age,
+        /// and an immigrant's queued lineage row the world and the creature it came from. Version
+        /// 14 is still read, exactly, as <see cref="PreImmigrationStateVersion"/>.
+        /// </remarks>
+        /// <remarks>
+        /// 16 with round 59's build (D167, 2026-10-12): the world carries the sources of the leaf
+        /// smell's last fill after its absorptive deaths, and a restore fills the leaf field from
+        /// them, so the restored field is the live one cell for cell whatever the growth step
+        /// changed after the fill. Version 15 is still read, exactly, as
+        /// <see cref="PreLeafStateVersion"/>, in a world without the leaf smell.
+        /// </remarks>
+        /// <remarks>
+        /// 17 with round 59's grip (D162, D165, step 5): each organism carries the grip price it
+        /// owes and the grip joules it has paid, and the world its grip total; the harness's
+        /// bodies carry their touch of the rock and their grips (<c>Creature.WriteState</c>).
+        /// Version 16 is refused by name (<see cref="GriplessStateVersion"/>). Version 15 is
+        /// still read, exactly, in a world with neither the leaf smell, the touch of the rock
+        /// nor the anchoring cell.
+        /// </remarks>
+        /// <remarks>
+        /// 18 with round 60's build: each body in the harness's half carries what the card holds in
+        /// two parts, its link-sphere centres' floats and rests and its root's float and carry
+        /// (<c>Creature.WriteState</c>), so a card resume packs the pair the run held and not one
+        /// split afresh from a sum (round 59's B3). The world's own half did not move. Version 17
+        /// is still read, as <see cref="PreCardPairStateVersion"/>.
+        /// </remarks>
+        public const int StateVersion = 18;
+
+        /// <summary>
+        /// Version 17, round 59's and round 60's screens' layout, which this build reads as exactly
+        /// what it holds: it differs from 18 only by each body's card pairs, which a CPU-engine body
+        /// never has and which a restore from 17 rebuilds from the poses, as the build that wrote it
+        /// did. A card world resumed from it is therefore that build's resume, the rest of each link
+        /// centre at zero, and parts from the run as round 59's B3 did.
+        /// </summary>
+        public const int PreCardPairStateVersion = 17;
+
+        /// <summary>
+        /// Version 16, the layout of round 59's build before its grip was checkpointed, refused
+        /// by name. It may hold a body's touch of the rock without that record in its stream, and
+        /// read with this build's reader that is a misread rather than a refusal. No run wrote
+        /// it: only the build's own probes did.
+        /// </summary>
+        public const int GriplessStateVersion = 16;
+
+        /// <summary>
+        /// Version 15, round 58's layout, which this build reads as exactly what it holds in a
+        /// world without round 59's additions: it differs from 17 only by the leaf sources, the
+        /// mouth count and the grip's joules, and a world that wrote it had none of the three. A
+        /// world with the leaf smell, the touch of the rock or the anchoring cell refuses it,
+        /// since what those carry across a step is not in it.
+        /// </summary>
+        public const int PreLeafStateVersion = 15;
+
+        /// <summary>
+        /// Version 14, round 57's layout, which this build reads as exactly what it holds: it
+        /// differs from 15 only by the two immigration counters, and a world that wrote version 14
+        /// had no way to plant an immigrant, so both are 0 in it. That is a fact about the world
+        /// read and not a default standing in for a missing field. No immigrant's lineage row can
+        /// be in such a stream either, and every other row is laid out as 15 lays it out.
+        /// </summary>
+        public const int PreImmigrationStateVersion = 14;
+
+        /// <summary>Whether this build reads a world state of the given layout.</summary>
+        public static bool ReadsStateVersion(int version) =>
+            version == StateVersion || version == PreCardPairStateVersion || version == PreLeafStateVersion ||
+            version == PreImmigrationStateVersion || version == LossyStateVersion;
 
         /// <summary>
         /// The one older layout this build still reads: version 10, the layout of round 48's
@@ -139,23 +224,55 @@ namespace Evosim.Core
         public int StateVersionRead { get; private set; } = StateVersion;
 
         /// <summary>
+        /// Whether this world's bodies carry a touch of the rock or a grip across a step (D162),
+        /// which the harness writes in each body's state from version 17 and no older layout holds.
+        /// </summary>
+        private bool HoldsTouchOrGrip =>
+            Config.SenseBedTouch || Config.CellTypes.Contains(CellTypeIds.Anchoring);
+
+        /// <summary>
         /// Writes the whole of the world's own state.
         /// </summary>
         public void WriteState(BinaryWriter w) => WriteState(w, StateVersion);
 
         /// <summary>
         /// Writes the world in a layout this build reads: <see cref="StateVersion"/>, or
-        /// <see cref="LossyStateVersion"/> for the test that holds the lossy reader to what the
-        /// build before it wrote. Nothing in a run writes the older one.
+        /// <see cref="PreImmigrationStateVersion"/> or <see cref="LossyStateVersion"/> for the
+        /// tests that hold the readers of the older layouts to what the builds before wrote.
+        /// Nothing in a run writes the older ones.
         /// </summary>
         internal void WriteState(BinaryWriter w, int layout)
         {
-            if (layout != StateVersion && layout != LossyStateVersion)
+            if (!ReadsStateVersion(layout))
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(layout), layout,
-                    "This build writes version " + StateVersion + " and, for a test, version " +
-                    LossyStateVersion + ".");
+                    "This build writes version " + StateVersion + " and, for a test, versions " +
+                    PreCardPairStateVersion + ", " + PreLeafStateVersion + ", " + PreImmigrationStateVersion + " and " + LossyStateVersion +
+                    ". Version " + GriplessStateVersion + " is refused by name.");
+            }
+
+            // Version 14 has no place for an immigrant, so a world that holds one is refused
+            // rather than written as a stream that would read back as a world without one.
+            if (layout < PreLeafStateVersion && (Immigrated > 0 || ImmigrantsRefused > 0))
+            {
+                throw new InvalidOperationException(
+                    "This world has had immigrants, and version " + layout + " cannot record them.");
+            }
+
+            // Nor has version 15 a place for the leaf smell's sources (D167), the touch of the
+            // rock or the grip (D162).
+            if (layout < PreCardPairStateVersion && LeafScent != null)
+            {
+                throw new InvalidOperationException(
+                    "This world has the leaf smell, and version " + layout + " cannot record its sources.");
+            }
+
+            if (layout < PreCardPairStateVersion && HoldsTouchOrGrip)
+            {
+                throw new InvalidOperationException(
+                    "This world has the touch of the rock or the anchoring cell, and version " + layout +
+                    " cannot record them.");
             }
 
             StateIo.Tag(w, "WRLD");
@@ -240,6 +357,16 @@ namespace Evosim.Core
                 w.Write(FounderJoulesCapped);
             }
 
+            // D128's count, version 13.
+            if (layout >= 13) w.Write(DeathsByAge);
+
+            // D159's two, version 15.
+            if (layout >= 15)
+            {
+                w.Write(Immigrated);
+                w.Write(ImmigrantsRefused);
+            }
+
             // Where the sun stands. See LightField.RestoreDayFactor.
             w.Write(Field.DayFactor);
 
@@ -280,7 +407,45 @@ namespace Evosim.Core
                 w.Write(corpse.Patch);
                 w.Write(corpse.Joules);
                 w.Write(corpse.AgeSeconds);
+
+                // D127's two, version 13: what the corpse was worth when founded, and whether it
+                // lies at rest on a reef's cap or the bed.
+                if (layout >= 13)
+                {
+                    w.Write(corpse.FirstJoules);
+                    w.Write(corpse.Settled);
+
+                    // And what a picture needs to draw the corpse as the body it was: its plan
+                    // (the genome is the record's, by the creature's id), its size and its pose.
+                    w.Write(corpse.ScaledBy);
+                    int[] counts = corpse.ModuleCounts;
+                    w.Write(counts == null ? 0 : counts.Length);
+                    if (counts != null)
+                    {
+                        for (int k = 0; k < counts.Length; k++) w.Write(counts[k]);
+                    }
+
+                    List<int[]> lost = corpse.LostPartPaths;
+                    w.Write(lost == null ? 0 : lost.Count);
+                    if (lost != null)
+                    {
+                        for (int k = 0; k < lost.Count; k++)
+                        {
+                            w.Write(lost[k].Length);
+                            for (int s = 0; s < lost[k].Length; s++) w.Write(lost[k][s]);
+                        }
+                    }
+
+                    w.Write(corpse.HasPose);
+                    w.Write(corpse.Rotation.X);
+                    w.Write(corpse.Rotation.Y);
+                    w.Write(corpse.Rotation.Z);
+                    w.Write(corpse.Rotation.W);
+                }
             }
+
+            // How many of them the scent's last fill covered, version 14 (scent-restore.md).
+            if (layout >= 14) w.Write(_scentFilledCorpses);
 
             // ---- the two undrained instrument queues
             //
@@ -291,11 +456,29 @@ namespace Evosim.Core
             StateIo.Tag(w, "LNGE");
             w.Write(_lineageEvents.Count);
             bool capped = Config.FounderReserveCapFraction > 0f;
-            for (int i = 0; i < _lineageEvents.Count; i++) WriteLineage(w, _lineageEvents[i], layout, capped);
+            bool corpseLandings = Config.FoundersFollowCorpses;
+            bool lifespans = LifespanRecorded;
+            for (int i = 0; i < _lineageEvents.Count; i++) WriteLineage(w, _lineageEvents[i], layout, capped, corpseLandings, lifespans);
 
             StateIo.Tag(w, "ABSD");
             w.Write(_absorptiveDeaths.Count);
             for (int i = 0; i < _absorptiveDeaths.Count; i++) WriteAbsorptive(w, _absorptiveDeaths[i]);
+
+            // D167: the sources the leaf field's last fill took, four floats each. None in a world
+            // without the leaf smell.
+            if (layout >= 16)
+            {
+                StateIo.Tag(w, "LEAF");
+                w.Write(_leafSourceCount);
+                for (int i = 0; i < 4 * _leafSourceCount; i++) w.Write(_leafSources[i]);
+            }
+
+            // D162, D165: what the grips have cost, version 17. 0 in a world without the cell.
+            if (layout >= 17)
+            {
+                StateIo.Tag(w, "GRIP");
+                w.Write(GripJoulesTotal);
+            }
 
             // ---- the water
 
@@ -313,13 +496,30 @@ namespace Evosim.Core
             StateIo.Tag(r, "WRLD");
 
             int version = r.ReadInt32();
-            if (version != StateVersion && version != LossyStateVersion)
+            if (version == GriplessStateVersion)
+            {
+                throw new InvalidDataException(
+                    "The checkpoint's world state is version " + GriplessStateVersion + ", written by " +
+                    "round 59's build before its grip and its touch of the rock were checkpointed. " +
+                    "It may hold a body whose touch record it does not carry, so it is refused " +
+                    "rather than misread. No run wrote it.");
+            }
+
+            if (!ReadsStateVersion(version))
             {
                 throw new InvalidDataException(
                     "The checkpoint's world state is version " + version + " and this build " +
-                    "reads version " + StateVersion + " (and version " + LossyStateVersion +
-                    ", without the contact record). A checkpoint is refused rather than read " +
-                    "with a field guessed at, under the rule the config reader follows.");
+                    "reads version " + StateVersion + " (version " + PreCardPairStateVersion + ", without the card's pairs; versions " + PreLeafStateVersion + " and " +
+                    PreImmigrationStateVersion + ", without round 59's additions, and version " +
+                    LossyStateVersion + ", without the contact record). A checkpoint is refused " +
+                    "rather than read with a field guessed at, under the rule the config reader follows.");
+            }
+
+            if (version < PreCardPairStateVersion && HoldsTouchOrGrip)
+            {
+                throw new InvalidDataException(
+                    "The checkpoint is version " + version + ", which carries no touch of the rock and " +
+                    "no grip, and this world has the touch of the rock or the anchoring cell (D162).");
             }
 
             ulong seed = r.ReadUInt64();
@@ -399,6 +599,23 @@ namespace Evosim.Core
                 FounderJoulesCapped = 0d;
             }
 
+            // D128's count, version 13; a version-10 stream comes back with none.
+            DeathsByAge = version >= 13 ? r.ReadInt64() : 0L;
+
+            // D159's two, version 15. An older stream reads 0 for both, and 0 is what it holds
+            // rather than a guess: no build that wrote version 14 or earlier could plant an
+            // immigrant (PreImmigrationStateVersion).
+            if (version >= 15)
+            {
+                Immigrated = r.ReadInt64();
+                ImmigrantsRefused = r.ReadInt64();
+            }
+            else
+            {
+                Immigrated = 0L;
+                ImmigrantsRefused = 0L;
+            }
+
             Field.RestoreDayFactor(r.ReadSingle());
 
             ReadRng(r, _conceptionRng);
@@ -422,6 +639,7 @@ namespace Evosim.Core
 
             StateIo.Tag(r, "CRPS");
             int corpses = r.ReadInt32();
+            CorpsesChanged();
             _corpses.Clear();
             for (int i = 0; i < corpses; i++)
             {
@@ -429,30 +647,124 @@ namespace Evosim.Core
                 Float3 position = StateIo.ReadFloat3(r);
                 int patch = r.ReadInt32();
                 double joules = r.ReadDouble();
+                double age = r.ReadDouble();
 
-                var corpse = new Corpse(id, position, patch, joules)
+                // A version-10 stream has neither of D127's two: the corpse comes back worth what
+                // it holds and in the water, which is what the build that wrote it had.
+                double first = version >= 13 ? r.ReadDouble() : joules;
+                bool settled = version >= 13 && r.ReadBoolean();
+
+                var corpse = new Corpse(id, position, patch, joules, first)
                 {
-                    AgeSeconds = r.ReadDouble(),
+                    AgeSeconds = age,
+                    Settled = settled,
                 };
+
+                if (version >= 13)
+                {
+                    corpse.ScaledBy = r.ReadSingle();
+
+                    int countLength = r.ReadInt32();
+                    if (countLength > 0)
+                    {
+                        var counts = new int[countLength];
+                        for (int k = 0; k < countLength; k++) counts[k] = r.ReadInt32();
+                        corpse.ModuleCounts = counts;
+                    }
+
+                    int lostCount = r.ReadInt32();
+                    if (lostCount > 0)
+                    {
+                        var lost = new List<int[]>(lostCount);
+                        for (int k = 0; k < lostCount; k++)
+                        {
+                            var path = new int[r.ReadInt32()];
+                            for (int s = 0; s < path.Length; s++) path[s] = r.ReadInt32();
+                            lost.Add(path);
+                        }
+
+                        corpse.LostPartPaths = lost;
+                    }
+
+                    bool hasPose = r.ReadBoolean();
+                    float qx = r.ReadSingle(), qy = r.ReadSingle(), qz = r.ReadSingle(), qw = r.ReadSingle();
+                    corpse.RestorePose(new Quat(qx, qy, qz, qw), hasPose);
+                }
 
                 _corpses.Add(corpse);
             }
+
+            // Version 14's count. A version-10 stream has none, and its restore fills from every
+            // corpse, which is what the build that wrote it did.
+            int filled = version >= 14 ? r.ReadInt32() : corpses;
+            if (filled < 0 || filled > corpses)
+            {
+                throw new InvalidDataException(
+                    "The checkpoint says the scent's last fill covered " + filled + " corpses, and " +
+                    "it holds " + corpses + ". The fill covers a prefix of the corpses, so the file " +
+                    "is damaged or was written by another layout.");
+            }
+
+            _scentFilledCorpses = filled;
 
             StateIo.Tag(r, "LNGE");
             int events = r.ReadInt32();
             _lineageEvents.Clear();
             bool capped = Config.FounderReserveCapFraction > 0f;
-            for (int i = 0; i < events; i++) _lineageEvents.Add(ReadLineage(r, version, capped));
+            bool corpseLandings = Config.FoundersFollowCorpses;
+            bool lifespans = LifespanRecorded;
+            for (int i = 0; i < events; i++) _lineageEvents.Add(ReadLineage(r, version, capped, corpseLandings, lifespans));
 
             StateIo.Tag(r, "ABSD");
             int deaths = r.ReadInt32();
             _absorptiveDeaths.Clear();
             for (int i = 0; i < deaths; i++) _absorptiveDeaths.Add(ReadAbsorptive(r));
 
+            if (version >= 16)
+            {
+                StateIo.Tag(r, "LEAF");
+                int sources = r.ReadInt32();
+                if (sources < 0 || (sources > 0 && LeafScent == null))
+                {
+                    throw new InvalidDataException(
+                        "The checkpoint holds " + sources + " leaf smell sources, and this world " +
+                        (LeafScent == null ? "has no leaf smell." : "cannot hold a negative count."));
+                }
+
+                if (_leafSources.Length < 4 * sources) _leafSources = new float[4 * sources];
+                for (int i = 0; i < 4 * sources; i++) _leafSources[i] = r.ReadSingle();
+                _leafSourceCount = sources;
+            }
+            else
+            {
+                if (LeafScent != null)
+                {
+                    throw new InvalidDataException(
+                        "The checkpoint is version " + version + ", which carries no leaf smell sources, " +
+                        "and this world has the leaf smell (D167). Its field cannot be restored exactly.");
+                }
+
+                _leafSourceCount = 0;
+            }
+
+            // Version 15 had no grip, and a world restored from it held none (refused above).
+            if (version >= 17)
+            {
+                StateIo.Tag(r, "GRIP");
+                GripJoulesTotal = r.ReadDouble();
+            }
+
             ReadField(r, Nutrients);
             ReadField(r, Matter);
 
             StateIo.Tag(r, "WEND");
+
+            // Derived from the corpses just read, as the step fills it: from the prefix the live
+            // run's last fill covered, so remains appended after it are left out here as there.
+            FillScent();
+
+            // D167: from the sources the last fill took, as the live field was.
+            LeafScent?.FillSources(_leafSources, _leafSourceCount);
 
             StateVersionRead = version;
         }
@@ -586,6 +898,24 @@ namespace Evosim.Core
                 }
             }
 
+            // D128's clock and the hazard accumulated along it, version 13. Neither can be read
+            // back off the body: births and wounds push the clock ahead of the age.
+            if (layout >= 13)
+            {
+                w.Write(creature.AgeClock);
+                w.Write(creature.AgeHazard);
+            }
+
+            // What the body's mouths have kept, version 16: a count nothing else holds.
+            if (layout >= 16) w.Write(creature.MouthJoules);
+
+            // The grip price owed and the grip joules paid, version 17 (D162, D165).
+            if (layout >= 17)
+            {
+                w.Write(creature.PendingGripJoules);
+                w.Write(creature.GripJoules);
+            }
+
             w.Write(GenomeJson.Write(creature.Genome, indent: false, id: creature.Id));
         }
 
@@ -673,6 +1003,23 @@ namespace Evosim.Core
 
             creature.PartContact = contact;
 
+            // D128's two, version 13; a version-10 body comes back unaged, as its build had it.
+            if (version >= 13)
+            {
+                creature.AgeClock = r.ReadDouble();
+                creature.AgeHazard = r.ReadDouble();
+            }
+
+            // Version 15 had no count, and a body restored from it reads 0, as its build had none.
+            if (version >= 16) creature.MouthJoules = r.ReadDouble();
+
+            // Version 15 had no grip, and a world that wrote it could not grip.
+            if (version >= 17)
+            {
+                creature.PendingGripJoules = r.ReadDouble();
+                creature.GripJoules = r.ReadDouble();
+            }
+
             Genome genome = GenomeJson.Read(r.ReadString());
             creature.Genome = genome;
 
@@ -739,7 +1086,7 @@ namespace Evosim.Core
                 r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(),
                 r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
 
-        private static void WriteLineage(BinaryWriter w, LineageEvent e, int layout, bool capped)
+        private static void WriteLineage(BinaryWriter w, LineageEvent e, int layout, bool capped, bool corpseLandings, bool lifespans)
         {
             w.Write((int)e.Kind);
             w.Write(e.ElapsedSeconds);
@@ -803,6 +1150,28 @@ namespace Evosim.Core
             // layout stays version 12. The reader asks the same config.
             if (capped) w.Write(e.CapCutJoules);
 
+            // D129's landing reading, on every row (NaN on all but a mouth founder's), and only in
+            // a world whose mouths follow the corpses, as D124's cut is: every other world's rows
+            // are the bytes they were, and the layout stays version 13. The reader asks the same
+            // config.
+            if (corpseLandings)
+            {
+                w.Write(e.LandingCorpseJoules);
+                w.Write(e.LandingCorpseMeanJoules);
+            }
+
+            // D128's gene on a birth row, the same way: only in a world where it can differ.
+            if (lifespans) w.Write(e.LifespanScale);
+
+            // D159's two, written only on an immigrant's row, for the pool index's reason: every
+            // row a world without immigrants queues is the bytes version 14 wrote, and an
+            // immigrant's row can only be in a stream of version 15.
+            if (e.Kind == LineageEventKind.Birth && e.BirthKind == BirthKind.Immigration)
+            {
+                w.Write(e.ImmigrantFromWorld);
+                w.Write(e.ImmigrantFromId);
+            }
+
             // The kill's own five, appended and written only on a kill row — which is what lets
             // this stay version 4. A birth and a death are byte for byte what the mouth build
             // wrote, so every checkpoint on disk still restores; a version-4 stream can only carry
@@ -824,7 +1193,7 @@ namespace Evosim.Core
             // version 10, above.
         }
 
-        private static LineageEvent ReadLineage(BinaryReader r, int version, bool capped)
+        private static LineageEvent ReadLineage(BinaryReader r, int version, bool capped, bool corpseLandings, bool lifespans)
         {
             var kind = (LineageEventKind)r.ReadInt32();
             double seconds = r.ReadDouble();
@@ -874,6 +1243,17 @@ namespace Evosim.Core
             }
 
             double capCut = capped ? r.ReadDouble() : 0d;
+            float landingCorpse = corpseLandings ? r.ReadSingle() : float.NaN;
+            float landingCorpseMean = corpseLandings ? r.ReadSingle() : float.NaN;
+            float lifespan = lifespans ? r.ReadSingle() : float.NaN;
+
+            int fromWorld = -1;
+            long fromId = -1;
+            if (kind == LineageEventKind.Birth && birthKind == BirthKind.Immigration)
+            {
+                fromWorld = r.ReadInt32();
+                fromId = r.ReadInt64();
+            }
 
             if (kind == LineageEventKind.Kill)
             {
@@ -896,7 +1276,8 @@ namespace Evosim.Core
                     poolIndex, endowmentJoules, budCells, budsExpressed,
                     reproductionMode, gestationShare,
                     landingSnow, landingSnowColumn, landingMatter, landingMatterColumn,
-                    capCut)
+                    capCut, landingCorpse, landingCorpseMean, lifespan,
+                    fromWorld, fromId)
                 : LineageEvent.Death(seconds, id, cause, accountAtDeath, reserveAtDeath);
         }
 

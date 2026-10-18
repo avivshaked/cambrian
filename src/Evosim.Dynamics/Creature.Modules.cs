@@ -100,6 +100,7 @@ namespace Evosim.Dynamics
             }
 
             Brain.CarryStateFrom(previous.Brain, previousPartOfPart);
+            AdoptGripsFrom(previous, previousPartOfPart);
 
             Kinematics.Refresh(this);
             RefreshContactSphere();

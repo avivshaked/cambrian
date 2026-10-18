@@ -1,0 +1,70 @@
+== build from 18:28:35
+    0 Error(s)
+
+Time Elapsed 00:00:04.79
+exe 10/04/2026 18:28:40
+== pfix20: round 42's launcher for 10 s
+pfix20 -> farm (dynamics)
+  exe   D:\Projects\experiments\evolution-simulator\scratch\wt-r56\artifacts\Evosim.Farm\bin\Release\net8.0\Evosim.Farm.exe
+  seed 1, 10 s, 10 min wall, 4 threads
+  runs  D:\Projects\experiments\evolution-simulator\runs
+  out   D:\Projects\experiments\evolution-simulator\runs\pfix20.md
+  log   D:\Projects\experiments\evolution-simulator\scratch\wt-r56\scratch\logs\pfix20.out / D:\Projects\experiments\evolution-simulator\scratch\wt-r56\scratch\logs\pfix20.err
+  90 settings
+  launched, pid 275344
+  waiting up to 60 s for run.json...
+  run.json D:\Projects\experiments\evolution-simulator\runs\pfix20\2026-10-04-172841-52a1d4c8\run.json
+    status       ended
+    engine       dynamics 1.0.0.0
+    gitCommit    12855049e5b84e7583798acb5f4c66b7c96dda68
+    dynamicsHash b5fcbf9353dbb4f2bdf9b4f422e957aac5c4831b10ab49edd5d2596b89ed9c50
+    farmHash     fb7f204891670aa1221f542a44545843fca7d1adaa2b0e940fa1c038c2b04b1f
+    coreHash     170b7b144f83a12f209d1c9153e9f709d5e10cd47da54490bf2a58f8fb856c22
+    configHash   52a1d4c87b6ea69c
+    threads      4
+    processId    275344
+Watch it with: Get-Content 'D:\Projects\experiments\evolution-simulator\runs\pfix20.md' -Tail 3
+Stop it with:  ./scripts/stop-arm.ps1 pfix20 -RunsRoot D:\Projects\experiments\evolution-simulator\runs -Reason manual-other
+pfix20 ended: ended budget at 18:28:43
+pfix20 configHash 52a1d4c87b6ea69c (was 49e582201e1a21dd)
+EnvBindingTests.cs 1 replaced
+ReportTests.cs 2 replaced
+== the crowd fixture (4 threads), from 18:28:44
+r56fix-s4 -> farm (dynamics)
+  exe   D:\Projects\experiments\evolution-simulator\scratch\wt-r56\artifacts\Evosim.Farm\bin\Release\net8.0\Evosim.Farm.exe
+  seed 4, 20000 s, 300 min wall, 4 threads
+  runs  D:\Projects\experiments\evolution-simulator\runs
+  out   D:\Projects\experiments\evolution-simulator\runs\r56fix-s4.md
+  log   D:\Projects\experiments\evolution-simulator\scratch\wt-r56\scratch\logs\r56fix-s4.out / D:\Projects\experiments\evolution-simulator\scratch\wt-r56\scratch\logs\r56fix-s4.err
+  95 settings
+  launched, pid 274960
+  waiting up to 60 s for run.json...
+  run.json D:\Projects\experiments\evolution-simulator\runs\r56fix-s4\2026-10-04-172844-4c1d4a7d\run.json
+    status       running
+    engine       dynamics 1.0.0.0
+    gitCommit    12855049e5b84e7583798acb5f4c66b7c96dda68 (DIRTY)
+    dynamicsHash b5fcbf9353dbb4f2bdf9b4f422e957aac5c4831b10ab49edd5d2596b89ed9c50
+    farmHash     fb7f204891670aa1221f542a44545843fca7d1adaa2b0e940fa1c038c2b04b1f
+    coreHash     170b7b144f83a12f209d1c9153e9f709d5e10cd47da54490bf2a58f8fb856c22
+    configHash   4c1d4a7d844206bb
+    threads      4
+    processId    274960
+Watch it with: Get-Content 'D:\Projects\experiments\evolution-simulator\runs\r56fix-s4.md' -Tail 3
+Stop it with:  ./scripts/stop-arm.ps1 r56fix-s4 -RunsRoot D:\Projects\experiments\evolution-simulator\runs -Reason manual-other
+r56fix-s4 ended: ended budget at 19:00:07
+the crowd fixture is D:\Projects\experiments\evolution-simulator\runs\r56fix-s4\2026-10-04-172844-4c1d4a7d
+RunFixture.cs 1 replaced
+RunFixture.cs 1 replaced
+== done at 19:00:08
+== Evosim.Core.Tests from 19:00:08
+
+Passed!  - Failed:     0, Passed:  1123, Skipped:     0, Total:  1123, Duration: 17 m 10 s - Evosim.Core.Tests.dll (net8.0)
+Evosim.Core.Tests exit 0 at 19:17:22
+== Evosim.Dynamics.Tests from 19:17:22
+Passed!  - Failed:     0, Passed:   170, Skipped:     0, Total:   170, Duration: 3 m 10 s - Evosim.Dynamics.Tests.dll (net8.0)
+Evosim.Dynamics.Tests exit 0 at 19:20:39
+== Evosim.Farm.Tests from 19:20:39
+Passed!  - Failed:     0, Passed:   206, Skipped:     0, Total:   206, Duration: 28 s - Evosim.Farm.Tests.dll (net8.0)
+Evosim.Farm.Tests exit 0 at 19:21:13
+== suites done at 19:21:13
+

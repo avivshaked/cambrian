@@ -30,8 +30,8 @@ namespace Evosim.Theatre
     }
 
     /// <summary>
-    /// A chart a story's scene asks for (the owner, 2026-09-25: "it would be great to be able to
-    /// show some stats when introducing a creature, or introducing a concept"): read from the
+    /// A chart a story's scene asks for (the owner asked on 2026-09-25 for stats to be shown
+    /// when a creature or a concept is introduced): read from the
     /// scene's <c>chart</c> object by <see cref="Read"/>, drawn by <see cref="SafariChartLayer"/>
     /// into the frame the safari writes.
     /// </summary>

@@ -49,3 +49,66 @@ The root file's rules still apply. The entries below were moved word for word, s
   stays off (the first probe of 2026-09-26). Set it in the launching shell's environment
   (`scripts/probe-gpu-env.ps1`). A setting the binding knows, such as
   `EVOSIM_GPU_CONCURRENT`, goes through `-Env` as usual.
+- **A card run takes the thread pool's spin at 5,000 by default** (the owner's choice of 2026-10-09; the
+  measurements are in HANDOFF). Waking the farm's host threads cost about 55 ms a simulated second, and
+  `DOTNET_ThreadPool_UnfairSemaphoreSpinLimit` at 5,000 took the card from 4.14 to 5.24 times real time.
+  On `card-r57` from `bd3d836e`, `run-farm.ps1 -SpinLimit` sets it: `default` is 5000 on the card and unset on the CPU, `unset` clears it,
+  and a number sets that number. `card-run.ps1` and `farm-queue.ps1` pass it through. It changes pace and
+  load and never a number. `run.json` names it as `threadPoolSpinLimit`, and the header's engine line ends
+  `spin N`. Compare a pace only with runs at the same spin.
+- **A founded card run meets code a resume never reaches, so it is checked on its own** (r58t1,
+  2026-10-10; fixed in `c8762e9e` on `r58-runner`). Every card sitting before then was a resume, whose bodies
+  are attached before the first block. A founded world steps blocks with no body, and the scent's fill on
+  the card then wrote a whole grid into a one-cell column. Before a founded round, run the CPU accelerator
+  with every flag the round uses, then a short card run. The CPU accelerator runs at about 0.05 times real
+  time, so its check is short: `card-group.ps1 -Device cpu`, founded, `-Seconds 30 -MigrateEvery 10
+  -CheckpointEvery 15`, about 10 minutes at 4 threads, which reaches three trades and two checkpoints (measured
+  2026-10-10). A resume from its 15 s checkpoint for 15 s more (`-At 15`) checks the group's resume, about
+  5 minutes more; on 2026-10-10 it repeated the whole run exactly. Read a resume against the whole run from
+  the checkpoint on: `gpu-accept` compares from line 1, and the stats' `harnessBodySteps` and `fluidLinkSteps`
+  count from the process's start, so both differ in a resume that matches. It runs at group 4 whatever `-Group` says, so the group of 32 is checked in the card run.
+  A resume's pass is
+  not a founding's. The card engine also refuses a still current (speed 0), whose stream tables are never
+  built.
+- **A card run cut by its wall ends at the end of a block** (`077e61c2` on `r58-runner`, 2026-10-10). The
+  card steps a whole solver block on a block's first step, so the wall nearly always falls inside one. Before
+  the fix the loop left with the solver a block ahead, the final checkpoint refused that state, and the
+  manifest was left reading `running`. A walled card run from before then with checkpoints on may read
+  `running` though it stopped. A CPU run's block is one step and was never affected.
+- **ILGPU's double maths on the card loops on its argument.** In ILGPU 1.5.3, `Sin` and `Cos` in
+  double run CORDIC, whose `RangeLimit` subtracts 2π in a `while` loop (`Src/ILGPU.Algorithms/XMath/Cordic.tt`).
+  `Exp` in double, which `Tanh` calls, loops up to `int.MaxValue` times (`Cordic.Pow.tt`), and `Log`
+  divides by e in a loop (`Cordic.Log.tt`). A body 1e12 m out held one thread for minutes in the bed's
+  sample, and past about 7.2e16 the sine never returns. That hung the first card session of 2026-10-08.
+  Single uses the card's own instructions and the CPU accelerator uses .NET's, so neither shows it.
+  Every sine, cosine and tanh in the kernels therefore goes through `SinR`, `CosR` and `TanhF`, whose
+  double forms are guarded (`KernelGenerator.cs`). The guard is bit-neutral inside 1e9 rad. A body
+  whose bed angle passes it parts from the CPU on the accelerator as well, and `BedAnglesPastGuard`
+  counts such angles. The farm refuses the card in double. A new call to
+  a double maths function in a kernel needs the same guard, or a reason it cannot see a large argument.
+- **Never raise ILGPU 1.5.3's optimisation level above the default for the card.** At O2 it writes
+  `bra.uni` (a branch every thread of a warp takes alike) on predicates that differ within a warp, about
+  865 of the step kernel's 1,018, and the step hung in its first block on the card on 2026-10-08
+  (`card-audit-r57.md` on `nursery-speed`). The CPU accelerator runs the IL and cannot show it; the PTX
+  can, dumped without a card and read by `scripts/reads/ptx-uniform.py`.
+- **A job meant to stay off the card proves it** (the coordinator's standing rule, 2026-10-08, after a
+  driver reset inside an accelerator-only proof's window that nothing in its code could have caused).
+  It sets `CUDA_VISIBLE_DEVICES=-1` in its own environment, so an accidental path to the card finds no
+  device and throws. While it runs, it watches its own processes and the farms it started for a loaded
+  `nvcuda`, and prints at its end whether any loaded it. The test filters and options alone are not
+  that proof. `scripts/card/nvcuda-guard.ps1` does all three.
+- **Every run, test and pace read on the card goes through `scripts/card/`** (scripts/CLAUDE.md has the
+  commands). Each starts the driver watch, checks it alive, stops on an nvlddmkm event and says why. A
+  card run reads its own `run.json` for the transport it asked for, and `card-run-check.ps1` reads back
+  every condition a card run is held to. An identity claim is `gpu-accept.py` exiting 0.
+- **Build the tests in Release, with the compiler server off, before a card test** (2026-10-13). The card
+  test script runs the Release build of the tests with `--no-build`, so a Debug build leaves it testing old
+  code. A build also leaves Roslyn's compiler server resident as a `dotnet.exe`, and the card test refuses
+  to start beside it as a busy machine. Build with `-c Release -p:UseSharedCompilation=false`, or run
+  `dotnet build-server shutdown` after the build. Both stopped the D168 card window at its last step, before
+  it touched the card.
+- **A card contact count from before D168 is about half the CPU's** (`logbook/specs/build-readings.md`).
+  Single precision drops any move smaller than half the gap between neighbouring floats at the body's
+  position, so resting bodies flickered out of touch. Since D168 the card sums each position with a
+  correction term and takes contacts, and the floor and glass under them, from a nearby lattice point.
+  Compare card and CPU contact numbers only on runs from D168 on.

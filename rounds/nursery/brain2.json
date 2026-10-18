@@ -1,0 +1,168 @@
+{
+  "format": 1,
+  "name": "brain2",
+  "description": "The baseline (D148): brain v2's setup, every setting pilot-deep-brain2 used (scratch/nursery/launch-brain2.ps1, nursery-v10 at dc5dd6f), the 5 corpses of 40 J included.",
+  "seed": "0x1",
+  "world": {
+    "config": "rounds/nursery/configs/7319d6b528cc77f1.json",
+    "configHash": "7319d6b528cc77f1",
+    "overrides": {
+      "WorkCostMultiplier": 0.5
+    }
+  },
+  "bodies": {
+    "source": "founders",
+    "founders": 12,
+    "trunk": "absorptive",
+    "pool": null,
+    "keep": [
+      0,
+      1,
+      3,
+      4,
+      8,
+      10
+    ]
+  },
+  "setup": {
+    "seconds": 600,
+    "dt": 0.01,
+    "tankSize": 8,
+    "floorClosed": true,
+    "birthsHeld": true,
+    "snow": {
+      "density": 3,
+      "draw": "halfToDouble",
+      "layers": null,
+      "islands": {
+        "wavelength": 20,
+        "cover": 0.1
+      }
+    },
+    "carrion": {
+      "count": 5,
+      "joules": 40
+    },
+    "start": {
+      "aboveBed": 0.5
+    },
+    "purse": {
+      "rule": "grown",
+      "seconds": null
+    }
+  },
+  "search": {
+    "population": 96,
+    "draws": 16,
+    "generations": 100,
+    "elites": 8,
+    "tournament": 3,
+    "perBody": true,
+    "evolve": "brain",
+    "evolveEnvelope": false,
+    "crossover": {
+      "rate": 0.5,
+      "baseShare": 0.7,
+      "mutationByDistance": 0.785
+    }
+  },
+  "reward": {
+    "class": "Net",
+    "parameters": {}
+  },
+  "exam": {
+    "episodes": 32,
+    "salt": "0x62656e6368",
+    "controls": [
+      {
+        "kind": "own"
+      },
+      {
+        "kind": "frozen"
+      },
+      {
+        "kind": "full"
+      },
+      {
+        "kind": "knockout",
+        "channels": [
+          "Chemical"
+        ]
+      },
+      {
+        "kind": "brainless"
+      },
+      {
+        "kind": "knockout",
+        "channels": [
+          "Depth"
+        ]
+      },
+      {
+        "kind": "knockout",
+        "channels": [
+          "Energy"
+        ]
+      },
+      {
+        "kind": "knockout",
+        "channels": [
+          "Flow"
+        ]
+      },
+      {
+        "kind": "knockout",
+        "channels": [
+          "Scent"
+        ]
+      },
+      {
+        "kind": "knockout",
+        "channels": [
+          "Stroke",
+          "Hold",
+          "Ramp"
+        ]
+      },
+      {
+        "kind": "knockout",
+        "channels": [
+          "JointAngle",
+          "JointAngularVelocity"
+        ]
+      },
+      {
+        "kind": "constant",
+        "power": 0.3
+      },
+      {
+        "kind": "constant",
+        "power": 0.4
+      },
+      {
+        "kind": "constant",
+        "power": 0.5
+      },
+      {
+        "kind": "constant",
+        "power": 0.6
+      },
+      {
+        "kind": "constant",
+        "power": 0.7
+      },
+      {
+        "kind": "kinesis",
+        "mode": "rate",
+        "bias": -0.5,
+        "gain": 10
+      },
+      {
+        "kind": "kinesis",
+        "mode": "rate",
+        "bias": 0,
+        "gain": 20
+      }
+    ]
+  }
+}

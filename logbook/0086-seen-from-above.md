@@ -2,8 +2,8 @@
 
 **2026-09-10**  ·  the first pictures of the three-dimensional world, taken by the agent; two tools that look into a run; a divergence that killed a process instead of a body
 
-The owner had no time for the theatre and said so: "you will need to continue by yourself
-here. use the literal tool to take screenshots (or manufacture them in headless)." So the
+The owner had no time for the theatre and said so, telling the agent to continue by itself,
+using the literal tool to take screenshots or manufacturing them in headless mode. So the
 first look at D088's world is mine, through two tools built for the purpose the same
 afternoon, and this entry says what I saw. The numbers are from one seed of a run still
 going and from a six-hundred-second smoke; nothing here is a result about a world that has

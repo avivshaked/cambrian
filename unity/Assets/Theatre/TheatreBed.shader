@@ -173,6 +173,7 @@ Shader "Evosim/Theatre Bed"
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "TheatreSnow.hlsl"
 
             struct Varyings
             {
@@ -277,8 +278,38 @@ Shader "Evosim/Theatre Bed"
                 float tone = saturate(0.5 + 0.5 * n.y);
                 float3 sand = lerp(_SandDark.rgb, _SandLight.rgb, tone);
 
+                // The underwater look's second batch, item 5: the snow the run settled on the floor,
+                // as a pale dusting in proportion to the floor cell's recorded stock against a fixed
+                // reference (TheatreSnow.hlsl), broken by a slow noise so it reads as a dusting
+                // and not as paint, and lying more on the lit tops of the ripples than in their
+                // troughs. Zero without the run's fields. Scaled in from two to six metres down: what
+                // settles in the lit shallows is stirred and lit to the colour of the sand.
+                //
+                // The dust paler than the sand under it, with a low floor, not a fixed pale grey,
+                // since iteration 15: the grey was two to ten times the sand's own albedo, so the
+                // shaded troughs went three times brighter, and from beyond the glass the near
+                // floor, seen through the least water, drew a white ring round the bed (iteration
+                // 10's bed view at 36,000 s). The floor, about half the lit sand, keeps the dust
+                // visible on sand this dark.
+                float dust = EvoFloorDust(input.positionWS)
+                           * smoothstep(2.0, 6.0, EvoWaterlineY() - input.positionWS.y);
+
+                if (dust > 0.0)
+                {
+                    float3 unusedGradient;
+                    float patch = EvoValueNoise(float3(input.positionWS.xz * 1.7, 0.5), unusedGradient);
+                    float lie = (0.55 + 0.9 * patch) * (0.3 + 0.7 * tone);
+                    float3 pale = max(dot(sand, float3(0.2126, 0.7152, 0.0722)) * 2.2, 0.035) * float3(0.98, 1.0, 1.0);
+
+                    sand = lerp(sand, pale, saturate(dust * lie));
+                }
+
+                // The light left at the sand's depth on the run's day, under the underwater look's
+                // item 3 (EvoDepthLight); one otherwise.
+                float3 depthLight = EvoDepthLight(input.positionWS);
+
                 Light main = GetMainLight();
-                float3 lit = sand * main.color * Wrapped(n, main.direction);
+                float3 lit = sand * main.color * depthLight * Wrapped(n, main.direction);
 
                 #if defined(_ADDITIONAL_LIGHTS)
                 uint count = GetAdditionalLightsCount();
@@ -289,7 +320,7 @@ Shader "Evosim/Theatre Bed"
                 }
                 #endif
 
-                lit += sand * SampleSH(n);
+                lit += sand * SampleSH(n) * depthLight;
 
                 // The same net a body carries, from the same wave field at the same second
                 // (TheatreWater.hlsl, EvoCausticNet), so the light on the sand and the light on a

@@ -4,7 +4,7 @@
 
 ## What was wrong
 
-The owner's "can barely see anything" of the night before was the display chain rather
+The owner's remark of the night before, that they could barely see anything, was the display chain rather
 than the art. The theatre rendered in gamma colour space, with no post-process data, no
 volume, no anti-aliasing and an 8-bit target. Its key light was aimed once at wherever the
 fly camera happened to start. And the dark-field palette's values sat in the bottom tenth

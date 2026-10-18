@@ -1,0 +1,38 @@
+=== checkpoint fidelity
+  checkpoint D:\Projects\experiments\evolution-simulator\runs\r55-s2\2026-10-04-115417-d573544f\checkpoints\000030000.ckpt at 30000 s
+  stepping   200 s on 4 threads, then writing and restoring again
+  stepped to 30200 s: 4996 living, 4996 bodies
+
+  twin step: the two worlds agreed after each of 100 physics steps and 2 metabolic steps
+  member                                           owners differing   first
+  body .Senses._ramp[]                                           4   body 83629.Senses._ramp[0]: 0.013762709 against 0
+  body .Senses._hold[]                                           5   body 81739.Senses._hold[0]: 0.7422407 against 0
+  body .Senses._stroke[]                                         6   body 82124.Senses._stroke[0]: 0.032786895 against 0
+  body .Brain._portValue                                        17   body 81739.Brain._portValue: ... 15 more elements differ
+  body .BendSignal[]                                            17   body 81739.BendSignal[0]: -0.05506167 against 0
+  body .Senses._scent[]                                         85   body 72939.Senses._scent[0]: 0.96689355 against 0
+  body .Brain._portValue[]                                     224   body 71045.Brain._portValue[1]: -0.021298127 against 0
+
+  body 71045.Brain._portValue[1]: -0.021298127 against 0
+  body 71045.Brain._portValue[3]: 0.0036021427 against 0
+  body 71045.Brain._portValue[4]: 0.009540718 against 0
+  body 71522.Brain._portValue[1]: 0.29956678 against 0
+  body 71522.Brain._portValue[2]: 0.01718832 against 0
+  body 71775.Brain._portValue[0]: 0.03812055 against 0
+  body 71775.Brain._portValue[2]: 0.4438437 against 0
+  body 72939.Brain._portValue[0]: 0.03522139 against 0
+  body 72939.Brain._portValue[1]: 0.10435322 against 0
+  body 72939.Brain._portValue[2]: 0.96689355 against 0
+  body 72939.Brain._portValue[3]: -1.0776187E-06 against 0
+  body 72939.Senses._scent[0]: 0.96689355 against 0
+  body 72939.Senses._scent[1]: 0.96637654 against 0
+  body 72939.Senses._scent[2]: 0.96644634 against 0
+  body 73085.Brain._portValue[1]: 0.014464989 against 0
+  body 73085.Brain._portValue[3]: 0.08608429 against 0
+  body 73294.Brain._portValue[0]: 0.042487726 against 0
+  body 73294.Brain._portValue[1]: 0.96288466 against 0
+  body 73294.Brain._portValue[2]: 0.60426027 against 0
+  body 73294.Senses._scent[0]: 0.96288466 against 0
+  ... 752 more
+
+FAIL: 772 difference(s) in 224 body(ies) and 0 organism(s)

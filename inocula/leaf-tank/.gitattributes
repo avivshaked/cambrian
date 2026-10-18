@@ -1,0 +1,2 @@
+# Hand-built genomes, recorded by the SHA-256 of their bytes as committed, with LF line ends: no line-end conversion.
+*.json -text

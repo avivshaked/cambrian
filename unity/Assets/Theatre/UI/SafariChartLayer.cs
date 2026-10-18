@@ -12,9 +12,8 @@ namespace Evosim.Theatre
 {
     /// <summary>
     /// A story's charts, drawn with UI Toolkit into a texture of their own and composited into the
-    /// frame the safari writes (the owner, 2026-09-25: "can we introduce graphs in unity? it would
-    /// be great to be able to show some stats when introducing a creature, or introducing a
-    /// concept").
+    /// frame the safari writes (the owner asked on 2026-09-25 for graphs in Unity, to show
+    /// some stats when a creature or a concept is introduced).
     /// </summary>
     /// <remarks>
     /// <para>
@@ -83,7 +82,8 @@ namespace Evosim.Theatre
         /// <summary>
         /// How much of the whole picture a full chart takes away before its plate, in linear light:
         /// a third, so the world stays moving and visible round and through the card on any station
-        /// (the owner, 2026-09-25: "why can't we do this while showing cool world videos?"). It was
+        /// (the owner asked on 2026-09-25 why a chart could not be shown
+        /// while the world videos play). It was
         /// 0.55 when a full chart sat only on a card whose own dim of 0.6 was stamped on top.
         /// </summary>
         public const float FullWorldDim = 0.33f;

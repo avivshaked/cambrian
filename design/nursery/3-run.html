@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nursery room · run</title>
+<link rel="stylesheet" href="nursery.css">
+<style>
+  /* Areas: the hero (search) and the exam above, five reading panels below. Ultrawide gives the
+     hero more width and the activity a column of its own; under 1600 px the page scrolls. */
+  .page { grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1.5fr) minmax(0, 1fr);
+    grid-template-areas: "band band band band band" "hero hero hero exam exam" "energy parts leader brains act"; }
+  @media (min-aspect-ratio: 2/1) {
+    .page { grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-areas: "band band band band band band" "hero hero hero exam exam act" "energy parts leader brains brains act"; } }
+  @media (max-width: 1600px) {
+    .page { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: auto 30rem auto 22rem 22rem;
+      grid-template-areas: "band band band" "hero hero hero" "exam exam exam" "energy parts leader" "brains act act"; } }
+  .band { grid-area: band; } .hero { grid-area: hero; } .exam { grid-area: exam; }
+  .p-energy { grid-area: energy; } .p-parts { grid-area: parts; } .p-leader { grid-area: leader; } .p-brains { grid-area: brains; } .p-act { grid-area: act; }
+
+  .band { flex-direction: row; align-items: center; padding: .9rem 1.6rem; }
+  .band > * + * { margin-left: 2.4rem; }
+  .ident { min-width: 0; flex: 0 1 34rem; }
+  .ident .name { font-family: var(--mono); font-size: 1.85rem; color: var(--ink-hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ident .name small { font-size: 1rem; color: var(--ink-lo); margin-right: .6rem; }
+  .ident .desc { font-size: .92rem; color: var(--ink); margin-top: .2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .state { font-size: .92rem; letter-spacing: .12rem; color: var(--ink-hi); }
+  .stat .watch { font-size: .73rem; color: var(--ink-dim); margin-top: .1rem; }
+  .pick { display: flex; flex-direction: column; white-space: nowrap; }
+  .pick .sel { margin-top: .3rem; font-family: var(--mono); font-size: 1rem; color: var(--ink-hi); border: 1px solid var(--rule-strong);
+    border-radius: var(--r-sm); padding: .2rem .7rem; display: flex; align-items: center; }
+  .swatch { display: inline-block; width: 1.3rem; height: .55rem; margin-right: .55rem; border-radius: 2px; background: var(--ctl); opacity: .8; }
+  @media (max-width: 1600px) { .band .opt { display: none; } .band { flex-wrap: wrap; row-gap: .8rem; } .band > * + * { margin-left: 1.6rem; } }
+
+  .hero-body { flex: 1; min-height: 0; display: flex; }
+  .hero-charts { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .decades { width: 19rem; margin-left: 1.4rem; flex-shrink: 0; display: flex; flex-direction: column; }
+  .guard { font-size: .8rem; color: var(--ink-lo); }
+  .legend > span.guard { display: inline; white-space: nowrap; }
+  .guard b { color: var(--ink-hi); font-weight: 400; font-family: var(--mono); }
+
+  .exam-t td { height: 2.55rem; vertical-align: middle; line-height: 1.15; }
+  .exam-t td .d { display: block; }
+  .exam-t td .se { color: var(--ink-lo); font-size: .78rem; }
+  .exam-t td .fr { display: block; font-size: .72rem; color: var(--ink-lo); }
+  .exam-t td.sig { background: var(--sig-bg); }
+  .exam-t td.sig .d { color: var(--sig); }
+  .exam-t td.off, .exam-t th.off { color: var(--ink-dim); font-style: italic; }
+  .exam-t th.lead { color: var(--ink); }
+  .exam-t tr.pend td { color: var(--ink-dim); height: 2rem; }
+  .exam-t tr.pool td { border-top: 1px solid var(--rule-strong); color: var(--ink-dim); height: 2rem; }
+  .swim { position: relative; display: inline-block; width: 11rem; height: .4rem; background: var(--track); border-radius: .2rem; vertical-align: middle; margin-right: .6rem; overflow: hidden; }
+  .swim i { position: absolute; left: 0; top: 0; bottom: 0; width: 59%; background: var(--run-mid); border-radius: .2rem; }
+  .swim i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.6), transparent); animation: sweep 1.8s linear infinite; }
+  @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+  .mult { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: .6rem 1rem; }
+  .mult > div, .stack > div { display: flex; flex-direction: column; min-height: 0; }
+  .lab { font-size: .85rem; color: var(--ink-lo); display: flex; align-items: baseline; white-space: nowrap; }
+  .lab b { margin-left: auto; padding-left: .4rem; font-family: var(--mono); font-weight: 400; color: var(--ink-hi); font-size: .85rem; }
+  .stack { flex: 1; min-height: 0; display: grid; grid-template-rows: 1fr 1fr auto; gap: .5rem; }
+  .fields { display: grid; grid-template-columns: 1fr 1fr; column-gap: 1.2rem; }
+  .fields .field { min-height: 1.5rem; }
+  .thumbs { display: flex; margin-bottom: .6rem; flex-shrink: 0; }
+  .thumb { flex: 1; margin-right: .6rem; font-size: .77rem; color: var(--ink-lo); line-height: 1.35; min-width: 0; }
+  .thumb:last-child { margin-right: 0; }
+  .thumb .img { height: 4.4rem; border-radius: var(--r-sm); border: 1px solid var(--rule-strong); margin-bottom: .3rem; overflow: hidden; background: #031820; }
+  .thumb .img svg { width: 100%; height: 100%; display: block; }
+  .thumb b { color: var(--ink-hi); font-weight: 400; }
+  .feed { flex: 1; min-height: 0; overflow: hidden; }
+  .ptabs { display: flex; margin-left: auto; }
+  .ptabs span { font-size: .77rem; letter-spacing: .1rem; color: var(--ink-lo); margin-left: .9rem; padding-bottom: .15rem; }
+  .ptabs span.on { color: var(--ink-hi); border-bottom: 1px solid var(--run); }
+</style>
+</head>
+<body>
+<svg class="caustics" aria-hidden="true"><filter id="caus"><feTurbulence type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="4"/>
+  <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.95  0 0 0 0 1  0 0 0 -2.6 1.55"/></filter><rect width="100%" height="100%" filter="url(#caus)" opacity="0.045"/></svg>
+
+<header class="strip">
+  <span class="brand">nursery room</span>
+  <nav class="tabs"><a class="tab"><b>1</b>REGISTRY</a><a class="tab"><b>2</b>RECIPE</a><a class="tab on"><b>3</b>RUN</a><a class="tab"><b>4</b>TANK</a><a class="tab"><b>5</b>GENOME</a></nav>
+  <span class="crumb">runs/nursery/<b>brain2-pay-path</b>/</span>
+  <span class="spacer"></span>
+  <div class="machine"><span>machine</span><span class="meter"><i style="width:25%"></i><u style="left:50%"></u></span><span><span class="hi">8</span> of <span class="hi">16</span> cap · 32 logical</span><span>cpu <span class="hi">61</span> °C</span></div>
+</header>
+
+<main class="page">
+  <!-- source: run.json, timing.jsonl, the process table; "differs from control" is the diff of the two resolved recipes. -->
+  <section class="panel band" aria-label="is it alive, and on pace">
+    <div class="ident">
+      <div class="name"><small>#8</small>brain2-pay-path</div>
+      <div class="desc">Brain v2's baseline, scored on net joules less 2 J for every metre swum.</div>
+    </div>
+    <span class="status state"><i class="mk mk--running"></i>IN ITS EXAM</span>
+    <div class="stat lit"><span class="k">exam brains</span><span class="v">4<small>of 6</small></span></div>
+    <div class="stat"><span class="k">generations</span><span class="v">100<small>of 100</small></span></div>
+    <div class="stat"><span class="k">pace</span><span class="v sm">7.6<small>min / gen</small></span></div>
+    <div class="stat"><span class="k">last row</span><span class="v sm">1 min 40 s</span><span class="watch">stall alarm past 15 min with no slow-tank line</span></div>
+    <div class="stat opt"><span class="k">exam ends</span><span class="v sm">≈ 19:05</span></div>
+    <div class="stat opt"><span class="k">process</span><span class="v sm">41 288<small>alive</small></span></div>
+    <span class="spacer"></span>
+    <div class="pick"><span class="kicker">control</span><span class="sel"><i class="swatch"></i>#1 brain2 ▾</span></div>
+    <div class="pick"><span class="kicker">differs from control · 1</span><span class="sel" style="border-style:dashed">reward.class Net → WeightedSum</span></div>
+  </section>
+
+  <!-- source: tank-generations.jsonl of this run and of the chosen control. The y axis is score (the recipe's reward, from tank-scores.jsonl) or any measure both runs record, picked by the reader; net J is today's example, not the axis. -->
+  <section class="panel hero" aria-label="is the search improving">
+    <div class="head"><span class="kicker">Search</span><span class="q">Is the search improving?</span>
+      <span class="aside"><span class="tag">score</span><span class="tag on">measure: net J ▾</span><span class="tag" style="margin-left:1rem">PNG</span></span></div>
+    <div class="legend">
+      <span><i style="background:var(--run)"></i>this run, 10-gen mean</span>
+      <span><i class="band" style="background:var(--ctl)"></i>control, mean ± se</span>
+      <span><i style="background:var(--run);height:1px;opacity:.5"></i>each generation</span>
+      <span class="dim">on net J, a measure both runs record, since their rewards differ · both runs swim the same water each generation</span>
+    </div>
+    <div class="hero-body">
+      <div class="hero-charts">
+        <svg class="chart" id="c-search"></svg>
+        <div class="legend" style="margin:.5rem 0 .1rem">
+          <span>this run less control, 10-gen mean</span>
+          <span class="tag on" style="margin-left:0">raw</span><span class="tag">gain since gen 0</span>
+          <span class="spacer"></span>
+          <span class="guard" style="margin-right:0">1 setting differs: <b>reward.class</b>, so the difference is the reward's</span>
+        </div>
+        <svg class="chart" id="c-diff" style="flex:0 0 5.6rem"></svg>
+      </div>
+      <div class="decades">
+        <div class="kicker" style="margin-bottom:.4rem">decades · mean net J</div>
+        <table class="t" id="t-dec"></table>
+        <div class="guard" style="margin-top:.5rem;line-height:1.4">Gen 0 already leads by <b>+30 J</b>: drawn founders start ahead of copied ones. Gain since gen 0 takes it out.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- source: tank-exam.jsonl. Columns are the recipe's exam.controls in their order with their labels; the reader pins columns to lead (default: the best constant and the first knockout). A control is greyed only when the genome makes it uninformative, and the reason is shown (today: no oscillator, so frozen and brainless cost by construction). -->
+  <section class="panel exam" aria-label="what did the exam find">
+    <div class="head"><span class="kicker">Exam</span><span class="q">Does each brain use what it senses?</span><span class="aside">pinned first: best const · −scent<span class="tag" style="margin-left:.8rem">PIN…</span><span class="tag">PNG</span><span class="tag">CSV</span></span></div>
+    <p class="note">Reward <span class="hi">WeightedSum</span>, in score (J − 2·m): own brain less each control over the same 32 held-out draws, ± one se, with the food density at the body (fresh, J/m³) under it.
+      <span style="color:var(--sig);background:var(--sig-bg);padding:0 .25rem">Tinted</span> where it clears two se (D145).</p>
+    <table class="t exam-t" id="t-exam"></table>
+    <p class="note" style="margin-top:.5rem"><span class="hi">Frozen and brainless are greyed:</span> brain v2 has no oscillator, so every stroke starts from a sense and these cost by construction.</p>
+    <div class="head" style="margin:.4rem 0 .2rem"><span class="kicker">against the control's exam</span><span class="aside">own brain · net J</span></div>
+    <svg class="chart" id="c-exam" style="flex:0 0 7.5rem"></svg>
+  </section>
+
+  <!-- source: tank-generations.jsonl: one small chart per recorded measure, as many as the run records. -->
+  <section class="panel p-energy" aria-label="how is the energy made">
+    <div class="head"><span class="kicker">Energy</span><span class="q">How is it made?</span></div>
+    <div class="mult">
+      <div><span class="lab">path, m<b>58.9 · 70.4</b></span><svg class="chart" id="m-path"></svg></div>
+      <div><span class="lab">work, W<b>0.041 · 0.050</b></span><svg class="chart" id="m-work"></svg></div>
+      <div><span class="lab">fresh, J/m³<b>1.24 · 1.18</b></span><svg class="chart" id="m-snow"></svg></div>
+      <div><span class="lab">survived<b>98 % · 97 %</b></span><svg class="chart" id="m-alive"></svg></div>
+    </div>
+  </section>
+
+  <!-- source: tank-scores.jsonl: the reward's value and its named parts, whatever the class names them. -->
+  <section class="panel p-parts" aria-label="why does the top genome score">
+    <div class="head"><span class="kicker">Reward parts</span><span class="q">Why does it score?</span></div>
+    <div class="legend"><span><i style="background:var(--p1)"></i>net × 1</span><span><i style="background:var(--p2)"></i>path × −2</span><span><i style="background:var(--ink-hi)"></i>score</span></div>
+    <svg class="chart" id="c-parts"></svg>
+    <div class="legend dim" style="margin:.3rem 0 0">the top genome each generation · tank-scores.jsonl</div>
+  </section>
+
+  <!-- source: tank-best.jsonl: one row per body in the recipe's pool, any number. -->
+  <section class="panel p-leader" aria-label="which body leads">
+    <div class="head"><span class="kicker">Leader</span><span class="q">Which body leads?</span></div>
+    <svg class="chart" id="c-lead"></svg>
+  </section>
+
+  <!-- source: tank-generations.jsonl and tank-crossovers.jsonl. -->
+  <section class="panel p-brains" aria-label="brains and breeding">
+    <div class="head"><span class="kicker">Brains · breeding</span><span class="q">What are they growing into?</span></div>
+    <div class="stack">
+      <div><span class="lab">hidden units, mean · max<b>6.7 · 10</b></span><svg class="chart" id="b-hid"></svg></div>
+      <div><span class="lab">links, mean · top genome<b>93.3 · 56</b></span><svg class="chart" id="b-lnk"></svg></div>
+      <div class="fields">
+        <div class="field"><span class="field__label">crossovers</span><span class="field__value">44 <span class="unit">of 90</span></span></div>
+        <div class="field"><span class="field__label">mean d</span><span class="field__value">0.027</span></div>
+        <div class="field"><span class="field__label">routes refused</span><span class="field__value">0</span></div>
+        <div class="field"><span class="field__label">mutated</span><span class="field__value">96 %</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- source: the room's activity log filtered to this run, the pictures and films agents attach to it, and nursery.log. -->
+  <section class="panel p-act" aria-label="activity, pictures and log">
+    <div class="head"><span class="kicker">Activity</span><span class="ptabs"><span class="on">ACTIVITY</span><span>LOG</span></span></div>
+    <div class="thumbs">
+      <div class="thumb"><div class="img"><svg viewBox="0 0 100 56" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="sh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5ef0ff" stop-opacity=".18"/><stop offset="1" stop-color="#5ef0ff" stop-opacity="0"/></linearGradient></defs><path d="M30 0 L44 0 L58 56 L34 56Z" fill="url(#sh)"/><ellipse cx="50" cy="47" rx="46" ry="8" fill="none" stroke="rgba(150,230,255,.25)"/><circle cx="22" cy="20" r=".9" fill="#a9c6cf"/><circle cx="66" cy="14" r=".9" fill="#a9c6cf"/><circle cx="80" cy="30" r=".9" fill="#a9c6cf"/><rect x="52" y="31" width="9" height="5" rx="2.5" fill="#e8f8fc"/></svg></div><b>film</b> · body 1, draw 7<br>a8 · 14:58</div>
+      <div class="thumb"><div class="img"><svg viewBox="0 0 100 56" preserveAspectRatio="none"><path d="M0 50 L20 40 L40 33 L60 24 L80 19 L100 16 L100 56 L0 56Z" fill="#5ef0ff" opacity=".14"/><polyline points="0,50 20,40 40,33 60,24 80,19 100,16" fill="none" stroke="#5ef0ff" stroke-width="1.5"/></svg></div><b>picture</b> · search<br>a8 · 14:31</div>
+      <div class="thumb"><div class="img"><svg viewBox="0 0 100 56"><path d="M24 14 L50 34 L78 20 M24 40 L50 34" stroke="#6f929c" fill="none"/><circle cx="24" cy="14" r="4" fill="#5ef0ff"/><circle cx="24" cy="40" r="4" fill="none" stroke="#6f929c"/><circle cx="50" cy="34" r="5" fill="#5ef0ff" opacity=".6"/><circle cx="78" cy="20" r="4" fill="none" stroke="#e8f8fc"/></svg></div><b>picture</b> · brain, gen 52<br>a8 · 16:40</div>
+    </div>
+    <div class="feed">
+      <div class="act new"><span class="w">16:40</span><span class="who">a8</span>picture, brain at gen 52 · <q>hidden units stopped growing; are they used?</q></div>
+      <div class="act"><span class="w">14:58</span><span class="who">a8</span>film, body 1 draw 7 · <q>for the write-up</q></div>
+      <div class="act"><span class="w">14:52</span><span class="who">a8</span>launch, 8 threads · <q>one setting against brain2: the reward</q></div>
+      <div class="act"><span class="w">14:31</span><span class="who">a8</span>runs compared, #3 and #1 · <q>to choose the control</q></div>
+      <div class="act"><span class="w">14:20</span><span class="who">a8</span>recipe written · <q>pre-registered in a41e7d0</q></div>
+    </div>
+  </section>
+</main>
+
+<footer class="bar">
+  <span class="hint"><span class="key">C</span>choose control</span>
+  <span class="hint"><span class="key">T</span>top genome in the tank</span>
+  <span class="hint"><span class="key">G</span>its genome</span>
+  <span class="hint"><span class="key">L</span>activity / log</span>
+  <span class="spacer"></span>
+  <span>polls every 30 s, new bytes only · read 19:21:10 · all numbers invented</span>
+</footer>
+
+<script>
+// Invented data in the real ranges of a brain v2 run. Nothing here is read from a run.
+const N = 100, NS = 'http://www.w3.org/2000/svg';
+let s;
+const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+const gen = (base, rise, noise, tau = 25) => Array.from({length: N}, (_, g) => base + rise * (1 - Math.exp(-g / tau)) + (rnd() - .5) * noise);
+const runMean = a => a.map((_, i) => { const w = a.slice(Math.max(0, i - 9), i + 1); return w.reduce((x, y) => x + y) / w.length; });
+const runSe = a => a.map((_, i) => { const w = a.slice(Math.max(0, i - 9), i + 1), m = w.reduce((x, y) => x + y) / w.length;
+  return w.length < 2 ? 0 : Math.sqrt(w.reduce((p, q) => p + (q - m) ** 2, 0) / (w.length - 1) / w.length); });
+const el = (p, tag, a = {}, t) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (t != null) e.textContent = t; p.appendChild(e); return e; };
+const fmt = v => (Math.abs(v) >= 1000 ? Math.round(v).toLocaleString('en').replace(/,/g, ' ') : String(+v.toFixed(3)).replace('-', '−'));
+
+// A chart drawn to its element's own size, with axes; paddings in rem so they scale with the type.
+function frame(id, {lo, hi, yt, xt = [0, 25, 50, 75, 99], unit = '', padL = 3.3, padB = 1.5, padT = .5, padR = .5, xlab = true}) {
+  const svg = document.getElementById(id); svg.innerHTML = '';
+  const R = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  const w = svg.clientWidth, h = svg.clientHeight; svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  padL *= R; padB *= R; padT *= R; padR *= R;
+  const X = i => padL + i * (w - padL - padR) / (N - 1), Y = v => padT + (hi - v) / (hi - lo) * (h - padT - padB);
+  for (const t of yt) { el(svg, 'line', {class: 'gridl', x1: padL, x2: w - padR, y1: Y(t), y2: Y(t)}); el(svg, 'text', {x: padL - .45 * R, y: Y(t) + .25 * R, 'text-anchor': 'end'}, fmt(t)); }
+  const ax = el(svg, 'g', {class: 'ax'});
+  el(ax, 'line', {x1: padL, x2: padL, y1: padT, y2: h - padB}); el(ax, 'line', {x1: padL, x2: w - padR, y1: h - padB, y2: h - padB});
+  if (xlab) for (const t of xt) { el(ax, 'line', {x1: X(t), x2: X(t), y1: h - padB, y2: h - padB + 3}); el(svg, 'text', {x: X(t), y: h - .2 * R, 'text-anchor': 'middle'}, t); }
+  if (unit) el(svg, 'text', {x: padL + .35 * R, y: padT + .75 * R, style: 'fill:var(--ink-dim)'}, unit);
+  return {svg, X, Y, w, h, padL, padB, padR, R};
+}
+const pts = (c, a) => a.map((v, i) => c.X(i).toFixed(1) + ',' + c.Y(v).toFixed(1)).join(' ');
+const toBase = (c, a, base) => pts(c, a) + ` ${c.X(N - 1)},${c.Y(base)} ${c.X(0)},${c.Y(base)}`;
+function heroArea(c, a, base) { const d = el(c.svg, 'defs'), g = el(d, 'linearGradient', {id: 'hg', x1: 0, y1: 0, x2: 0, y2: 1});
+  el(g, 'stop', {offset: '0%', style: 'stop-color:var(--run);stop-opacity:.18'}); el(g, 'stop', {offset: '100%', style: 'stop-color:var(--run);stop-opacity:0'});
+  el(c.svg, 'polygon', {points: toBase(c, a, base), fill: 'url(#hg)'}); }
+function band(c, m, se) { el(c.svg, 'polygon', {class: 'ctl-band', points: m.map((v, i) => c.X(i) + ',' + c.Y(v + se[i])).join(' ') + ' ' +
+  m.map((v, i) => [i, v]).reverse().map(([i, v]) => c.X(i) + ',' + c.Y(v - se[i])).join(' ')}); }
+
+function draw() {
+  s = 11;
+  const water = Array.from({length: N}, () => (rnd() - .5) * 150);
+  const run = gen(225, 320, 70).map((v, i) => v + water[i]);
+  const ctl = gen(205, 255, 70).map((v, i) => v + water[i] * .9);
+
+  // the hero: glow and fill live here and nowhere else
+  { const c = frame('c-search', {lo: 0, hi: 800, yt: [0, 200, 400, 600, 800], unit: 'net J per genome'});
+    const rm = runMean(run), cm = runMean(ctl), cs = runSe(ctl).map(v => Math.max(v, 12));
+    band(c, cm, cs); el(c.svg, 'polyline', {class: 'ctl-line', points: pts(c, cm)});
+    heroArea(c, rm, 0); el(c.svg, 'polyline', {class: 'run-raw', points: pts(c, run)}); el(c.svg, 'polyline', {class: 'run-line', points: pts(c, rm)});
+    el(c.svg, 'circle', {class: 'live-dot', cx: c.X(N - 1), cy: c.Y(rm[N - 1]), r: .35 * c.R});
+    el(c.svg, 'text', {x: c.X(N - 1) - .5 * c.R, y: c.Y(rm[N - 1]) - .8 * c.R, 'text-anchor': 'end', class: 'halo', style: 'fill:var(--run);font-size:1rem'}, rm[N - 1].toFixed(1) + ' J');
+    el(c.svg, 'text', {x: c.X(N - 1) - .5 * c.R, y: c.Y(cm[N - 1]) + 1.4 * c.R, 'text-anchor': 'end', class: 'halo', style: 'fill:var(--ctl);font-size:.85rem'}, 'brain2 ' + cm[N - 1].toFixed(1)); }
+  { const d = runMean(run.map((v, i) => v - ctl[i]));
+    const c = frame('c-diff', {lo: -50, hi: 150, yt: [0, 100], padB: 1, xlab: false});
+    el(c.svg, 'line', {class: 'zero', x1: c.padL, x2: c.w - c.padR, y1: c.Y(0), y2: c.Y(0)});
+    el(c.svg, 'polyline', {class: 'line', points: pts(c, d)}); }
+  document.getElementById('t-dec').innerHTML = '<tr><th>gens</th><th>run</th><th>ctl</th><th>Δ</th><th>ahead</th></tr>' +
+    Array.from({length: 10}, (_, k) => { const a = run.slice(k * 10, k * 10 + 10), b = ctl.slice(k * 10, k * 10 + 10), m = x => x.reduce((p, q) => p + q) / x.length;
+      const dd = m(a) - m(b); return `<tr><td>${k * 10}–${k * 10 + 9}</td><td class="hi">${m(a).toFixed(0)}</td><td>${m(b).toFixed(0)}</td><td class="hi">${(dd >= 0 ? '+' : '−') + Math.abs(dd).toFixed(0)}</td><td>${a.filter((v, i) => v > b[i]).length}/10</td></tr>`; }).join('');
+
+  // the exam: columns are exam.controls in order; the pinned ones lead (here the defaults, the best
+  // constant and the first knockout); a control the genome makes uninformative is greyed, last
+  { const cols = [['best const', 'lead'], ['−scent', 'lead'], ['−chem'], ['−depth'], ['−flow'], ['−drive'], ['frozen', 'off'], ['brainless', 'off']];
+    const bodies = [[0, 297.4, 1.27], [1, 341.8, 1.31], [3, 352.0, 1.22], [4, 268.3, 1.19], [8, null], [10, null]];
+    let h = '<tr><th>body</th><th>own · fresh</th>' + cols.map(([c, k]) => `<th class="${k || ''}">${c}</th>`).join('') + '</tr>';
+    for (const [b, own, fr] of bodies) {
+      if (own == null) { h += `<tr class="pend"><td>${b}</td><td>—</td><td colspan="8" class="sans" style="text-align:left">${b === 8 ? '<span class="swim"><i></i></span>swimming · 19 of 32 draws under 18 brains' : 'waiting'}</td></tr>`; continue; }
+      h += `<tr><td class="hi">${b}</td><td class="hi"><span class="d">${own.toFixed(1)}</span><span class="fr">${fr.toFixed(2)}</span></td>` + cols.map(([c, k], i) => {
+        let d = (rnd() - .3) * 200, se = 14 + rnd() * 44;
+        if (k === 'off') { d = 180 + rnd() * 90; se = 15; }
+        if (i === 1 && b === 1) { d = 176; se = 53; }
+        const f = (fr + (i === 1 ? -.12 - rnd() * .1 : (rnd() - .5) * .08)).toFixed(2);
+        const sig = k !== 'off' && Math.abs(d) > 2 * se;
+        return `<td class="${sig ? 'sig' : ''} ${k === 'off' ? 'off' : ''}"><span class="d">${(d >= 0 ? '+' : '−') + Math.abs(d).toFixed(0)}<span class="se"> ±${se.toFixed(0)}</span></span><span class="fr">${f}</span></td>`; }).join('') + '</tr>'; }
+    h += '<tr class="pool"><td>pooled</td><td>314.9</td>' + cols.map(([c, k]) => { const d = (rnd() - .3) * 160; return `<td class="${k === 'off' ? 'off' : ''}">${(d >= 0 ? '+' : '−') + Math.abs(d).toFixed(0)}</td>`; }).join('') + '</tr>';
+    document.getElementById('t-exam').innerHTML = h; }
+  { const svg = document.getElementById('c-exam'); svg.innerHTML = ''; const w = svg.clientWidth, h = svg.clientHeight, R = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`); const X = v => 4.5 * R + (v - 300) / 300 * (w - 6 * R), rh = (h - 1.4 * R) / 4;
+    [300, 400, 500, 600].forEach(t => { el(svg, 'line', {class: 'gridl', x1: X(t), x2: X(t), y1: 0, y2: h - 1.3 * R}); el(svg, 'text', {x: X(t), y: h - .2 * R, 'text-anchor': 'middle'}, t + ' J'); });
+    [[0, 452.1, 431.0], [1, 498.0, 462.3], [3, 512.6, 488.1], [4, 409.9, 415.2]].forEach(([b, r, c], i) => { const y = rh * i + rh / 2;
+      el(svg, 'text', {x: 0, y: y + .3 * R}, 'body ' + b);
+      el(svg, 'rect', {x: X(c - 28), y: y - .3 * R, width: X(c + 28) - X(c - 28), height: .6 * R, rx: .3 * R, style: 'fill:var(--ctl);opacity:.2'});
+      el(svg, 'circle', {cx: X(c), cy: y, r: .3 * R, style: 'fill:none;stroke:var(--ctl);stroke-width:1.5'});
+      el(svg, 'line', {x1: X(r - 24), x2: X(r + 24), y1: y, y2: y, style: 'stroke:var(--run-mid);stroke-width:1.5'});
+      el(svg, 'circle', {cx: X(r), cy: y, r: .32 * R, style: 'fill:var(--run)'}); }); }
+
+  // secondary charts: plain lines, the control a ghost band, no glow
+  const small = (id, a, b, lo, hi, yt) => { const c = frame(id, {lo, hi, yt, padL: 2.6, padB: 1.1, xt: [0, 50, 99]});
+    const bm = runMean(b); band(c, bm, runSe(b).map(v => Math.max(v, (hi - lo) * .02)));
+    const am = runMean(a); el(c.svg, 'polyline', {class: 'line', points: pts(c, am)}); };
+  small('m-path', gen(66, -8, 4), gen(64, 7, 4), 50, 80, [50, 65, 80]);
+  small('m-work', gen(0.08, -0.04, 0.012), gen(0.08, -0.03, 0.012), 0, 0.1, [0, 0.05, 0.1]);
+  small('m-snow', gen(0.9, 0.36, 0.12), gen(0.9, 0.28, 0.12), 0.6, 1.5, [0.6, 1, 1.4]);
+  small('m-alive', gen(0.95, 0.03, 0.02), gen(0.95, 0.02, 0.02), 0.9, 1, [0.9, 0.95, 1]);
+
+  { const net = gen(560, 300, 90, 30), path = gen(-136, 22, 14, 30), score = net.map((v, i) => v + path[i]);
+    const c = frame('c-parts', {lo: -200, hi: 900, yt: [-200, 0, 300, 600, 900], unit: 'score', padL: 2.9, padB: 1.2, xt: [0, 50, 99]});
+    const nm = runMean(net), pm = runMean(path), sm = runMean(score);
+    el(c.svg, 'polyline', {points: pts(c, nm), style: 'fill:none;stroke:var(--p1);stroke-width:1.4;opacity:.8'});
+    el(c.svg, 'polyline', {points: pts(c, pm), style: 'fill:none;stroke:var(--p2);stroke-width:1.4'});
+    el(c.svg, 'line', {class: 'zero', x1: c.padL, x2: c.w - c.padR, y1: c.Y(0), y2: c.Y(0)});
+    el(c.svg, 'polyline', {points: pts(c, sm), style: 'fill:none;stroke:var(--ink-hi);stroke-width:1.8'}); }
+
+  // leader: thin muted bars; the current leader's latest cell alone at full light
+  { const svg = document.getElementById('c-lead'); svg.innerHTML = ''; const w = svg.clientWidth, h = svg.clientHeight, R = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    const bodies = [0, 1, 3, 4, 8, 10], L = 4.6 * R, rh = (h - 1.4 * R) / 6, cw = (w - L) / N, bh = Math.max(rh * .34, 3); let cur = 5;
+    const seq = Array.from({length: N}, (_, g) => { if (rnd() < (g < 35 ? .05 : .16)) cur = [1, 1, 1, 0, 2, 5][Math.floor(rnd() * 6)]; return cur; });
+    bodies.forEach((b, r) => { const y = r * rh + rh / 2; el(svg, 'text', {x: 0, y: y + .3 * R, style: r === seq[N - 1] ? 'fill:var(--ink-hi)' : ''}, 'body ' + b);
+      el(svg, 'line', {x1: L, x2: w, y1: y, y2: y, style: 'stroke:var(--track)'}); });
+    seq.forEach((r, g) => el(svg, 'rect', {x: L + g * cw, y: r * rh + rh / 2 - bh / 2, width: Math.max(cw - .6, 1), height: bh,
+      style: g === N - 1 ? 'fill:var(--run);filter:var(--glow)' : 'fill:var(--run);opacity:.3'}));
+    [0, 50, 99].forEach(g => el(svg, 'text', {x: L + g * cw, y: h - .2 * R, 'text-anchor': g ? 'middle' : 'start'}, 'gen ' + g)); }
+
+  { const hid = gen(0, 7.4, .25), mx = hid.map(v => Math.round(v + 2 + rnd() * 1.5));
+    const c = frame('b-hid', {lo: 0, hi: 12, yt: [0, 6, 12], padL: 2, padB: 1.1, xt: [0, 50, 99]});
+    el(c.svg, 'polyline', {class: 'line-lo', points: pts(c, mx)}); el(c.svg, 'polyline', {class: 'line', points: pts(c, hid)}); }
+  { const c = frame('b-lnk', {lo: 40, hi: 100, yt: [40, 70, 100], padL: 2, padB: 1.1, xt: [0, 50, 99]});
+    el(c.svg, 'polyline', {class: 'line-lo', points: pts(c, gen(48, 9, 5))}); el(c.svg, 'polyline', {class: 'line', points: pts(c, gen(82, 11.5, .5))}); }
+}
+draw();
+let t; addEventListener('resize', () => { clearTimeout(t); t = setTimeout(draw, 120); });
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+== r59-s3h at 48000 s; a positions body is [200700, 22.58, -17.71, 118.32, 0]
+other bodies: 150
+birth-row guild flags: none 143, jointed 7
+positions-row flag fields (b[4:]): [0] 143, [6] 4, [2] 3
+in the north-west (x < 60, z > 95): 122
+roots of the other bodies (living other bodies / the root's label, src, pool index, swimmer, born at):
+  root 86244: 142 other here, 142 living in the line; trickle, src trickle, pool None, swimmer None, root born 25861.5; births in the line 3128
+  root 220100: 1 other here, 1 living in the line; trickle, src trickle, pool None, swimmer None, root born 46529; births in the line 0
+  root 223194: 1 other here, 1 living in the line; trickle, src trickle, pool None, swimmer None, root born 47077; births in the line 0
+  root 226653: 1 other here, 1 living in the line; trickle, src trickle, pool None, swimmer None, root born 47515; births in the line 3
+  root 228567: 1 other here, 1 living in the line; trickle, src trickle, pool None, swimmer None, root born 47809.5; births in the line 0
+  root 229918: 1 other here, 1 living in the line; trickle, src trickle, pool None, swimmer None, root born 47950; births in the line 1
+  root 230108: 1 other here, 1 living in the line; trickle, src trickle, pool None, swimmer None, root born 47968.5; births in the line 0
+  root 8: 1 other here, 4737 living in the line; floor, src floor, pool None, swimmer None, root born 3.5; births in the line 206871
+  root 230371: 1 other here, 1 living in the line; trickle, src trickle, pool None, swimmer None, root born 47995.5; births in the line 0
+the other bodies' own births: first 43714 s, median 46604 s, last 47995.5 s
+from the glass median 15.7 m; height median -19.3 m
+  line 86244, every birth by flags: none 3098, stomach 18, mouthed+grazer 11, leaf 2
+  line 220100, every birth by flags: jointed 1
+  line 223194, every birth by flags: jointed 1

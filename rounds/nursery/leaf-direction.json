@@ -1,0 +1,106 @@
+{
+  "format": 1,
+  "name": "leaf-direction",
+  "description": "The leaf tank (D166, D167), the direction form of the leaf smell, sensed to 3 m: the hand-built swimmer, its brain bred in a 20 m tank of 62 of r58-s3j's living leaves at their own depths, in r58-s3j's whole-water spent matter, with the age hazard off in the tank; eight swimmers to a tank, started in the leaves' band. Scored on the energy its mouth took from the leaves it killed (eaten, D170), with Net, kills and meals per swimmer beside it.",
+  "seed": "0x1",
+  "world": {
+    "config": "rounds/nursery/configs/3fd98985cdf68008.json",
+    "configHash": "3fd98985cdf68008",
+    "overrides": {
+      "AgeHazardBaseSeconds": 0,
+      "AgeRepairExponent": 0,
+      "AgeingPerBirth": 0,
+      "AgeingPerWound": 0,
+      "BedShoreDepthMetres": 0,
+      "BedShoreFadeMetres": 0,
+      "BedTiltMetres": 0,
+      "Fluid.SpinDragCoefficient": 0.5,
+      "Fluid.TurningDrag": "Spin",
+      "FoundingTricklePerSecond": 0,
+      "FoundingTricklePoolCount": 0,
+      "FoundingTricklePoolHash": "",
+      "FoundingTricklePoolShare": 0,
+      "InitialMatterPerCubicMetre": 0,
+      "LeafScent": "Direction",
+      "LeafScentRangeMetres": 3,
+      "MatterBudgetUnits": 0,
+      "MatterIslandWavelengthMetres": 0,
+      "ReefCover": 0,
+      "UnbittenDeathsLeaveNoCorpse": true,
+      "WorldAreaSquareMetres": 400
+    }
+  },
+  "bodies": {
+    "source": "pool",
+    "founders": 0,
+    "trunk": null,
+    "pool": "rounds/nursery/pools/6a27d8acada28e03.tsv",
+    "keep": null
+  },
+  "setup": {
+    "seconds": 1800,
+    "dt": 0.01,
+    "tankSize": 8,
+    "floorClosed": true,
+    "birthsHeld": true,
+    "snow": null,
+    "carrion": {
+      "count": 0,
+      "joules": 40
+    },
+    "start": {
+      "aboveBed": 11.5
+    },
+    "purse": {
+      "rule": "grown",
+      "seconds": 3830
+    }
+  },
+  "leaves": {
+    "pool": "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz",
+    "count": 62,
+    "spentUnitsPerCubicMetre": 0.004237
+  },
+  "search": {
+    "population": 48,
+    "draws": 8,
+    "generations": 30,
+    "elites": 8,
+    "tournament": 3,
+    "perBody": true,
+    "evolve": "brain",
+    "evolveEnvelope": false,
+    "crossover": {
+      "rate": 0.5,
+      "baseShare": 0.7,
+      "mutationByDistance": 0.785
+    }
+  },
+  "reward": {
+    "class": "WeightedSum",
+    "parameters": {
+      "weights": {
+        "eaten": 1
+      }
+    }
+  },
+  "exam": {
+    "episodes": 32,
+    "salt": "0x62656e6368",
+    "controls": [
+      {
+        "kind": "own"
+      },
+      {
+        "kind": "brainless"
+      },
+      {
+        "kind": "knockout",
+        "channels": [
+          "LeafScent",
+          "LeafScentDirection"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "uri": "nursery://exam-compare/2/vs/2",
+  "api": {
+    "httpStatus": 200,
+    "body": {
+      "ok": false,
+      "refused": true,
+      "status": 400,
+      "error": "run 2 cannot be its own control"
+    }
+  },
+  "mcp": {
+    "errorCode": -32602,
+    "message": "run 2 cannot be its own control"
+  }
+}

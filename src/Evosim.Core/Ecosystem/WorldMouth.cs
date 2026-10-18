@@ -45,6 +45,12 @@ namespace Evosim.Core
         private IReadOnlyList<CreatureContact> _contacts;
         private readonly Dictionary<long, Organism> _byId = new Dictionary<long, Organism>();
 
+        // The intake's scratch, filled before it is read on every step that has a mouth: the mouths in
+        // living order, what each would take, and each corpse's summed demand.
+        private readonly List<Organism> _mouths = new List<Organism>();
+        private readonly List<double> _mouthRates = new List<double>();
+        private double[] _intakeDemand = new double[0];
+
         /// <summary>
         /// Who last hurt which part, within one <see cref="ApplyMouth"/> pass — the kill row's
         /// <c>by</c>.
@@ -161,10 +167,14 @@ namespace Evosim.Core
             // D123. The two records the senses read are this step's and no older one's, so the
             // last step's are forgotten before the damage pass writes this one's.
             ForgetWhatWasFelt();
+            WorldPhaseProbe.Mark(WorldPhaseProbe.MouthForget);
 
             ApplyDamage(seconds);
+            WorldPhaseProbe.Mark(WorldPhaseProbe.MouthDamage);
             ApplyIntake(seconds);
+            WorldPhaseProbe.Mark(WorldPhaseProbe.MouthIntake);
             ApplyHealing(seconds);
+            WorldPhaseProbe.Mark(WorldPhaseProbe.MouthHeal);
 
             _contacts = null;
 
@@ -411,65 +421,302 @@ namespace Evosim.Core
             float tissueDensity = Config.CellTypes.Resolve(CellTypeIds.Structural)
                 .TissueEnergyPerCubicMetre;
 
-            var demand = new double[_corpses.Count];
+            // A meal takes joules out of a corpse, so D129's column sums are stale after it.
+            CorpsesChanged();
 
+            if (_intakeDemand.Length < _corpses.Count) _intakeDemand = new double[Math.Max(_corpses.Count, 2 * _intakeDemand.Length)];
+            double[] demand = _intakeDemand;
+            WorldPhaseProbe.Count(WorldPhaseProbe.CorpsesAtIntake, _corpses.Count);
+
+            // The mouths in living order, and what each would take: a body's rate reads its own
+            // phenotype, which nothing changes in this pass.
+            _mouths.Clear();
+            _mouthRates.Clear();
             for (int i = 0; i < _living.Count; i++)
             {
                 Organism creature = _living[i];
                 if (!creature.HasIntake) continue;
-
-                for (int c = 0; c < _corpses.Count; c++)
-                {
-                    if (!InReach(creature, _corpses[c], tissueDensity)) continue;
-                    demand[c] += MouthRate(creature, seconds);
-                }
+                _mouths.Add(creature);
+                _mouthRates.Add(MouthRate(creature, seconds));
             }
 
-            for (int i = 0; i < _living.Count; i++)
-            {
-                Organism creature = _living[i];
-                if (!creature.HasIntake) continue;
+            WorldPhaseProbe.Count(WorldPhaseProbe.Mouths, _mouths.Count);
 
-                for (int c = 0; c < _corpses.Count; c++)
+            // Each corpse's reach, once, and the largest: the columns are sized from it. A corpse's
+            // reach depends on its joules, which no mouth changes before the second pass.
+            int mouths = _mouths.Count;
+            int corpses = _corpses.Count;
+            if (_intakeReach.Length < corpses) _intakeReach = new double[Math.Max(corpses, 2 * _intakeReach.Length)];
+            double[] reachOf = _intakeReach;
+            double largest = 0d;
+            for (int c = 0; c < corpses; c++)
+            {
+                double r = CorpseReach(_corpses[c], tissueDensity);
+                reachOf[c] = r;
+                if (r > largest) largest = r;
+            }
+
+            bool columns = IntakeByColumns && SetIntakeColumns(largest);
+            if (columns)
+            {
+                FillColumns(corpses, i => _corpses[i].Position.X, i => _corpses[i].Position.Z,
+                    ref _corpseColumnKeys, ref _corpseColumnItems, out _corpseColumnCount);
+                FillColumns(mouths, i => _mouths[i].X, i => _mouths[i].Z,
+                    ref _mouthColumnKeys, ref _mouthColumnItems, out _mouthColumnCount);
+            }
+
+            // Each corpse's demand, summed over the mouths in reach in living order from zero:
+            // the same additions in the same order as a walk of the mouths, so the same bits. A
+            // corpse writes its own entry alone, so the corpses are summed on any thread. With the
+            // columns, the mouths a corpse sums are those in the columns beside its own, sorted
+            // into living order: every mouth in reach is among them, and a mouth out of reach adds
+            // nothing in either walk.
+            Parallelism.ForRanges(corpses, (from, to) =>
+            {
+                List<int> near = columns ? new List<int>() : null;
+                int[] xs = columns ? new int[3] : null, zs = columns ? new int[3] : null;
+                for (int c = from; c < to; c++)
                 {
                     Corpse corpse = _corpses[c];
-                    if (!(corpse.Joules > 0d)) continue;
-                    if (!(demand[c] > 0d)) continue;
-                    if (!InReach(creature, corpse, tissueDensity)) continue;
-
-                    double wanted = MouthRate(creature, seconds);
-                    double available = corpse.Joules / perUnit;
-
-                    // The share this mouth is entitled to of what the corpse actually holds. At a
-                    // corpse richer than the crowd's appetite every mouth takes what it asked for,
-                    // which is what the min is: the share is a rationing and never a bonus.
-                    double units = demand[c] > available
-                        ? wanted * (available / demand[c])
-                        : wanted;
-
-                    if (!(units > 0d)) continue;
-
-                    double joules = units * perUnit;
-                    if (joules > corpse.Joules) joules = corpse.Joules;
-
-                    corpse.Joules -= joules;
-
-                    // Rule 6's waste, and it is D098's transfer loss in the shape D098 leaves for
-                    // it: what the mouth tore up and did not keep is charged matter still, so it
-                    // goes back into the water where the corpse is rather than out of the world.
-                    // Quantised once at the field's door and booked as the same number, which is
-                    // Bury's rule and StepCorpses' rule.
-                    float waste = (float)(joules * Config.IntakeWasteFraction);
-                    if (waste > 0f)
+                    double reach = reachOf[c];
+                    double sum = 0d;
+                    if (columns)
                     {
-                        Nutrients.Deposit(corpse.Point, waste);
-                        DetritusDepositedTotal += waste;
+                        near.Clear();
+                        Gather(corpse.Position.X, corpse.Position.Z, _mouthColumnKeys, _mouthColumnItems,
+                            _mouthColumnCount, near, xs, zs);
+                        near.Sort();
+                        for (int k = 0; k < near.Count; k++)
+                        {
+                            int m = near[k];
+                            if (Within(_mouths[m], corpse, reach)) sum += _mouthRates[m];
+                        }
+                    }
+                    else
+                    {
+                        for (int m = 0; m < mouths; m++)
+                        {
+                            if (Within(_mouths[m], corpse, reach)) sum += _mouthRates[m];
+                        }
                     }
 
-                    creature.Energy += joules - waste;
-                    UnitsEaten += joules / perUnit;
+                    demand[c] = sum;
+                }
+            });
 
-                    if (corpse.Joules <= 0d) CorpsesEaten++;
+            // The mouths in living order, each walking the corpses in list order: with the columns,
+            // the corpses in the columns beside its own, sorted into list order. A meal only lowers
+            // a corpse's joules, so its reach within this pass never passes the one the columns
+            // were sized from, and every corpse a mouth can take from is among them.
+            List<int> nearCorpses = columns ? new List<int>() : null;
+            int[] cxs = columns ? new int[3] : null, czs = columns ? new int[3] : null;
+            for (int m = 0; m < mouths; m++)
+            {
+                Organism creature = _mouths[m];
+                if (columns)
+                {
+                    nearCorpses.Clear();
+                    Gather(creature.X, creature.Z, _corpseColumnKeys, _corpseColumnItems, _corpseColumnCount,
+                        nearCorpses, cxs, czs);
+                    nearCorpses.Sort();
+                    for (int k = 0; k < nearCorpses.Count; k++)
+                        Take(creature, nearCorpses[k], demand, seconds, perUnit, tissueDensity);
+                }
+                else
+                {
+                    for (int c = 0; c < corpses; c++) Take(creature, c, demand, seconds, perUnit, tissueDensity);
+                }
+            }
+        }
+
+        /// <summary>One mouth's meal of one corpse: the second pass's step, the same with or without the columns.</summary>
+        private void Take(Organism creature, int c, double[] demand, float seconds, double perUnit, float tissueDensity)
+        {
+            Corpse corpse = _corpses[c];
+            if (!(corpse.Joules > 0d)) return;
+            if (!(demand[c] > 0d)) return;
+            if (!InReach(creature, corpse, tissueDensity)) return;
+
+            double wanted = MouthRate(creature, seconds);
+            double available = corpse.Joules / perUnit;
+
+            // The share this mouth is entitled to of what the corpse actually holds. At a
+            // corpse richer than the crowd's appetite every mouth takes what it asked for,
+            // which is what the min is: the share is a rationing and never a bonus.
+            double units = demand[c] > available
+                ? wanted * (available / demand[c])
+                : wanted;
+
+            if (!(units > 0d)) return;
+
+            double joules = units * perUnit;
+            if (joules > corpse.Joules) joules = corpse.Joules;
+
+            corpse.Joules -= joules;
+
+            // Rule 6's waste, and it is D098's transfer loss in the shape D098 leaves for
+            // it: what the mouth tore up and did not keep is charged matter still, so it
+            // goes back into the water where the corpse is rather than out of the world.
+            // Quantised once at the field's door and booked as the same number, which is
+            // Bury's rule and StepCorpses' rule.
+            float waste = (float)(joules * Config.IntakeWasteFraction);
+            if (waste > 0f)
+            {
+                Nutrients.Deposit(corpse.Point, waste);
+                DetritusDepositedTotal += waste;
+            }
+
+            creature.Energy += joules - waste;
+            creature.MouthJoules += joules - waste;
+            UnitsEaten += joules / perUnit;
+
+            if (corpse.Joules <= 0d) CorpsesEaten++;
+        }
+
+        // ------------------------------------------------------------------ the intake's columns
+
+        /// <summary>
+        /// Whether the intake walks only the mouths and corpses in neighbouring columns (the default) or every
+        /// pair. The same bits either way; the full walk is kept for the test that says so.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Round 61's c6101x slowed from 0.92 to 0.55 times real time between 48,000 and 55,800 s
+        /// (2026-10-17) because its mouths rose from 65 to 398 among about 60,000 corpses, and both passes
+        /// walked every pair: the intake grew from 25 to 156 ms a step while the rest of the world step held.
+        /// </para>
+        /// <para>
+        /// <b>Why it is exact.</b> The columns tile x and z at a width of at least the step's largest
+        /// reach, with a margin for rounding, so a mouth and a corpse within reach of each other are in the
+        /// same column or the next one along each axis, across a seam where the box wraps (as
+        /// <see cref="Separation"/> measures). Each pass still applies its own test to every pair it
+        /// visits, in the order the full walk would have, so it visits a superset of the pairs that act,
+        /// in the same order, and the pairs it skips are those whose test fails. The columns are a
+        /// sorted array of keys, rebuilt each step, so nothing about them is carried in a checkpoint.
+        /// </para>
+        /// </remarks>
+        public static bool IntakeByColumns { get; set; } = true;
+
+        private double[] _intakeReach = new double[0];
+        private long[] _corpseColumnKeys = new long[0], _mouthColumnKeys = new long[0];
+        private int[] _corpseColumnItems = new int[0], _mouthColumnItems = new int[0];
+        private int _corpseColumnCount, _mouthColumnCount;
+        private bool _columnWrapX, _columnWrapZ;
+        private int _columnsX, _columnsZ;
+        private double _columnWidthX, _columnWidthZ;
+
+        /// <summary>
+        /// The columns for a step whose largest reach is <paramref name="largest"/>; false when there is no
+        /// finite reach to size them from, and the full walk is taken.
+        /// </summary>
+        private bool SetIntakeColumns(double largest)
+        {
+            if (!(largest > 0d) || double.IsInfinity(largest)) return false;
+
+            double width = largest * (1d + 1e-6) + 1e-4;
+            bool periodic = Config.SharedSpace && Config.WorldShape != WorldShape.Tank;
+            float lx = Nutrients.LengthMetres, lz = Nutrients.WidthMetres;
+
+            _columnWrapX = periodic && lx > 0f;
+            _columnsX = _columnWrapX ? Math.Max(1, (int)Math.Floor(lx / width)) : 0;
+            _columnWidthX = _columnWrapX ? (double)lx / _columnsX : width;
+
+            _columnWrapZ = periodic && lz > 0f;
+            _columnsZ = _columnWrapZ ? Math.Max(1, (int)Math.Floor(lz / width)) : 0;
+            _columnWidthZ = _columnWrapZ ? (double)lz / _columnsZ : width;
+            return true;
+        }
+
+        /// <summary>A coordinate's column on one axis: wrapped into the box where it wraps, and bounded where not.</summary>
+        private static int Column(double v, bool wrap, int count, double width, double extent)
+        {
+            if (wrap)
+            {
+                double m = v - extent * Math.Floor(v / extent);
+                int c = (int)Math.Floor(m / width);
+                return c < 0 ? 0 : c >= count ? count - 1 : c;
+            }
+
+            // Bounded so the neighbours' arithmetic cannot overflow; the bound is monotone, so two
+            // coordinates in neighbouring columns stay in neighbouring or the same columns.
+            double f = Math.Floor(v / width);
+            if (f > 1e9) f = 1e9;
+            if (f < -1e9) f = -1e9;
+            return (int)f;
+        }
+
+        /// <summary>A point's column key, or false for a point that is not finite and so in reach of nothing.</summary>
+        private bool ColumnKey(double x, double z, out int cx, out int cz)
+        {
+            cx = 0;
+            cz = 0;
+            if (double.IsNaN(x) || double.IsInfinity(x) || double.IsNaN(z) || double.IsInfinity(z)) return false;
+
+            cx = Column(x, _columnWrapX, _columnsX, _columnWidthX, Nutrients.LengthMetres);
+            cz = Column(z, _columnWrapZ, _columnsZ, _columnWidthZ, Nutrients.WidthMetres);
+            return true;
+        }
+
+        private static long Key(int cx, int cz) => ((long)cx << 32) | (uint)cz;
+
+        /// <summary>The items' column keys, sorted, beside their indices.</summary>
+        private void FillColumns(int count, Func<int, float> x, Func<int, float> z, ref long[] keys, ref int[] items,
+            out int filled)
+        {
+            if (keys.Length < count) keys = new long[Math.Max(count, 2 * keys.Length)];
+            if (items.Length < count) items = new int[Math.Max(count, 2 * items.Length)];
+
+            filled = 0;
+            for (int i = 0; i < count; i++)
+            {
+                if (!ColumnKey(x(i), z(i), out int cx, out int cz)) continue;
+                keys[filled] = Key(cx, cz);
+                items[filled] = i;
+                filled++;
+            }
+
+            Array.Sort(keys, items, 0, filled);
+        }
+
+        /// <summary>One axis's neighbouring columns, each once: all of them where a wrapped axis has three or fewer.</summary>
+        private static int Neighbours(int c, bool wrap, int count, int[] into)
+        {
+            if (wrap && count <= 3)
+            {
+                for (int k = 0; k < count; k++) into[k] = k;
+                return count;
+            }
+
+            if (wrap)
+            {
+                into[0] = c == 0 ? count - 1 : c - 1;
+                into[1] = c;
+                into[2] = c == count - 1 ? 0 : c + 1;
+                return 3;
+            }
+
+            into[0] = c - 1;
+            into[1] = c;
+            into[2] = c + 1;
+            return 3;
+        }
+
+        /// <summary>The items in the columns beside a point's own, appended unsorted.</summary>
+        private void Gather(double x, double z, long[] keys, int[] items, int filled, List<int> near, int[] xs, int[] zs)
+        {
+            if (filled == 0 || !ColumnKey(x, z, out int cx, out int cz)) return;
+
+            int nx = Neighbours(cx, _columnWrapX, _columnsX, xs);
+            int nz = Neighbours(cz, _columnWrapZ, _columnsZ, zs);
+            for (int a = 0; a < nx; a++)
+            {
+                for (int b = 0; b < nz; b++)
+                {
+                    long key = Key(xs[a], zs[b]);
+                    int at = Array.BinarySearch(keys, 0, filled, key);
+                    if (at < 0) continue;
+                    while (at > 0 && keys[at - 1] == key) at--;
+                    for (; at < filled && keys[at] == key; at++) near.Add(items[at]);
                 }
             }
         }
@@ -502,13 +749,20 @@ namespace Evosim.Core
         /// (<see cref="RunConfig.IntakeReachMetres"/> says why, and says that the reach has to
         /// cover a body's own half-length in consequence).
         /// </remarks>
-        private bool InReach(Organism creature, Corpse corpse, float tissueDensity)
+        private bool InReach(Organism creature, Corpse corpse, float tissueDensity) =>
+            Within(creature, corpse, CorpseReach(corpse, tissueDensity));
+
+        /// <summary>How far from a corpse's centre a body's centre may be and still take from it.</summary>
+        private double CorpseReach(Corpse corpse, float tissueDensity)
         {
             double volume = tissueDensity > 0f ? corpse.Joules / tissueDensity : 0d;
             double radius = volume > 0d ? Math.Pow(3d * volume / (4d * Math.PI), 1d / 3d) : 0d;
 
-            double reach = radius + Config.IntakeReachMetres;
+            return radius + Config.IntakeReachMetres;
+        }
 
+        private bool Within(Organism creature, Corpse corpse, double reach)
+        {
             Float3 at = corpse.Position;
             double dy = (double)creature.HeightY - at.Y;
             double dx = Separation(creature.X, at.X, Nutrients.LengthMetres);
@@ -796,6 +1050,10 @@ namespace Evosim.Core
 
             Phenotype wasBody = creature.Phenotype;
 
+            // Whether the bitten body was a leaf, read before the new plan is adopted: a limb that held its only
+            // photosynthetic tissue is still a leaf's limb (D167's leaf tank, ShedRemains).
+            bool wasLeaf = creature.HasPhotosyntheticTissue;
+
             double adultTissue = Metabolism.TissueJoules(adult, Config);
             Phenotype body = AtTheSameFraction(adult, creature.BodyFraction);
             double tissue = ReferenceEquals(body, adult)
@@ -804,6 +1062,14 @@ namespace Evosim.Core
 
             double released = creature.TissueJoules - tissue;
             if (released < 0d) released = 0d;
+
+            // D128, the owner's addition: a destroyed part ages the body, one doubling of its
+            // hazard for the whole body's tissue, in proportion to the share that went. Read
+            // before the new plan is adopted, while the account is still the whole body's.
+            if (Config.AgeingPerWound > 0f && creature.TissueJoules > 0d)
+            {
+                PushAgeClock(creature, Config.AgeingPerWound * (released / creature.TissueJoules));
+            }
 
             // The share of the one reserve that went with the limb, by volume. Strictly under 1,
             // because the root is never what is taken here and something always remains.
@@ -843,7 +1109,7 @@ namespace Evosim.Core
             NoteKill(creature, partIndex, by, rootLost: false, partsLost, released, fromReserve);
 
             if (given > 0f && Config.CorpseDecayPerSecond > 0f) CorpsesFromKills++;
-            ShedRemains(creature, given);
+            ShedRemains(creature, given, bitten: true, leaf: wasLeaf);
 
             // The owner's rule of 2026-09-19, applied to what is left: a body whose smallest part
             // is under the newborn mass floor is not a body this world builds, and it dies of the

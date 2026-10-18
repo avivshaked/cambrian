@@ -31,8 +31,8 @@ their whole stake growing and never breed (`r41t1e5-s1`, `r41t2e5-s1`, zero birt
 2,500 s). What bounds it is what a breeder must hold: the price of a child, which is the
 child's body plus its reserve plus the overhead burnt at the birth. So the count in a
 closed one-substance world is the capacity over the holding, and the two dials are the
-budget and the overhead. The owner ruled the budget the crowd's dial ("I agree with your
-recommendations. Let's proceed"), and the screens tonight set both.
+budget and the overhead. The owner ruled the budget the crowd's dial (agreeing with the agent's
+recommendations and telling it to proceed), and the screens tonight set both.
 
 ## The world
 
@@ -206,7 +206,7 @@ So the joint is the cause, through the contact machinery, and the free joint is 
 economy made: tissue at 0.38 J, growth off the field, the link earning half a leaf's
 light, and an idle charge of a ten-thousandth of a watt. Round 41's screen founded 60%
 jointed and I recorded it and did not predict it. The owner ruled the price restored and
-an instrument built before the relaunch ("proceed", 03:20).
+an instrument built before the relaunch (telling the agent to proceed, 03:20).
 
 Round 41c is round 41b with `EVOSIM_IDLE` 0.02, round 33's standing charge per
 newton-metre of joint capacity, from 0.0001 in rounds 34 to 41b; nothing else moves

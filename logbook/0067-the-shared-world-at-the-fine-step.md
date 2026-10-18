@@ -9,9 +9,7 @@ floor, no crowd and no wall stop. The lean world also showed something the fed o
 stomach lineage evolving at the vent's floor from nothing, three times in three seeds.
 
 This was pre-registered before the floor build it depends on had landed
-(`logbook/specs/floor-spec.md`). The owner's ruling was short.
-
-> love it. go ahead.
+(`logbook/specs/floor-spec.md`). The owner's ruling was short: they liked it and said to go ahead.
 
 ## Why this round exists
 

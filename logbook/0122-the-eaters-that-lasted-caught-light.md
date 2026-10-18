@@ -471,7 +471,7 @@ under `logbook/specs/r49-read/`.
 | numbers | file | query |
 |---|---|---|
 | every verdict and every clause's per-seed numbers, W1 to X1 | `logbook/specs/r49-read/read.txt`, `read.tsv` | `python scripts/reads/r49-read.py --windows-root <the three windows> --v2-log <V2's log> --logs-dir scratch/wt-r49/scratch/logs --out read.tsv` |
-| the seed table's ends, wall, pace and births | the three manifests (`startedAt`, `endedAt`, `timesRealTime`, `births`, `aliveAtEnd`) and the reports' footers | direct read, local time UTC+1 |
+| the seed table's ends, wall, pace and births | the three manifests (`startedAt`, `endedAt`, `timesRealTime`, `births`, `aliveAtEnd`) and the reports' footers | direct read |
 | the line holding each tank and the jointed bodies in it | `logbook/specs/r49-read/jointclades-s*.txt` | `python scripts/reads/r49-entry/jointclades.py <arm> 4000,16000,30000` |
 | the clamp: founders over a deeper bed and those held above the centre's | `logbook/specs/r49-read/clamped-s*.txt` | `python scripts/reads/r49-entry/clamped.py <arm>` |
 | founder 4422's column | `logbook/specs/r49-read/column-4422.txt` | `python scripts/reads/r49-entry/column.py r49-s1 4422` |

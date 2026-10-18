@@ -1,0 +1,2 @@
+r58-s2j against r58-s2i before 2960 s: lineage.jsonl 17459 same; stats.jsonl: DIFFERS at row 0 (t 10); 295 rows against 295; digest.jsonl 2961 same; absorptive.jsonl 1408 same; positions.jsonl.gz 295 same
+NOT the same

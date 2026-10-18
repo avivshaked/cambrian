@@ -1,11 +1,11 @@
 # The founding trickle, and founders that follow their food: the build spec
 
 *Fable, 2026-09-23 late afternoon, from the owner's rulings in conversation that replaced the
-timed second founding window (`consumer-founding-spec.md`, superseded): "the evolution keeps
-creating founders at probability P per tick ... so that when conditions change, new lines can
-evolve", "use probability to make it more likely to land in high matter concentrates", and,
-on the empty world, "a world that dies out should be game over. no point in running an empty
-simulation if we are not adding creatures to it." D115 and D116. Two rules, both tunables, both
+timed second founding window (`consumer-founding-spec.md`, superseded): the evolution keeps
+creating founders at probability P per tick, so that when conditions change new lines can
+evolve; probability is used to make a founder more likely to land in high matter concentrations; and, on
+the empty world, a world that dies out should be game over, since there is no point in running an
+empty simulation if no creatures are being added to it. D115 and D116. Two rules, both tunables, both
 off by default so every recorded world replays.*
 
 ## 1. The trickle (D115)

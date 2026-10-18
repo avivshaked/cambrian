@@ -1,0 +1,155 @@
+{
+  "ok": true,
+  "run": "2",
+  "control": "4",
+  "available": true,
+  "reason": null,
+  "comparison": {
+    "bodies": [
+      {
+        "body": 0,
+        "run": {
+          "net": 99.78489769002942,
+          "se": 2.0434417164094794,
+          "n": 8,
+          "over": "draws",
+          "genomes": 1
+        },
+        "control": null
+      },
+      {
+        "body": 1,
+        "run": {
+          "net": 112.40677522177927,
+          "se": 2.1051062931336717,
+          "n": 8,
+          "over": "draws",
+          "genomes": 1
+        },
+        "control": {
+          "net": 99.78489769002942,
+          "se": 2.0434417164094794,
+          "n": 8,
+          "over": "draws",
+          "genomes": 1
+        }
+      },
+      {
+        "body": 2,
+        "run": null,
+        "control": {
+          "net": 112.40677522177927,
+          "se": 2.1051062931336717,
+          "n": 8,
+          "over": "draws",
+          "genomes": 1
+        }
+      }
+    ],
+    "runOnlyBodies": [
+      0
+    ],
+    "controlOnlyBodies": [
+      2
+    ],
+    "runUnplaced": 0,
+    "controlUnplaced": 0,
+    "bodiesNote": "the two runs' bodies differ: body 0 is in this run's exam only; body 2 is in the control's exam only",
+    "comparable": true,
+    "note": null,
+    "runBasis": "net",
+    "controlBasis": "net",
+    "runOwn": "own",
+    "controlOwn": "own",
+    "runGenomes": 2,
+    "controlGenomes": 2,
+    "rule": "the difference of two paired means: this run's pooled difference less the control's, with standard error √(se₁² + se₂²); marked where it is more than two of those apart",
+    "brains": [
+      {
+        "label": "frozen",
+        "run": {
+          "diff": 21.034162039468782,
+          "se": 0.9884437816778018,
+          "n": 2
+        },
+        "control": {
+          "diff": 10.534162039468782,
+          "se": 0.4884437816778018,
+          "n": 2
+        },
+        "delta": 10.5,
+        "deltaSe": 1.1025418075507278,
+        "differs": true,
+        "why": null
+      },
+      {
+        "label": "full",
+        "run": {
+          "diff": 15.713194652944445,
+          "se": 0.7588068739227438,
+          "n": 2
+        },
+        "control": {
+          "diff": 7.838194652944445,
+          "se": 0.3838068739227438,
+          "n": 2
+        },
+        "delta": 7.875,
+        "deltaSe": 0.8503502739358387,
+        "differs": true,
+        "why": null
+      },
+      {
+        "label": "brainless",
+        "run": {
+          "diff": 26.28871199537074,
+          "se": 1.2441187401181324,
+          "n": 2
+        },
+        "control": {
+          "diff": 13.163711995370747,
+          "se": 0.6191187401181253,
+          "n": 2
+        },
+        "delta": 13.124999999999993,
+        "deltaSe": 1.3896544368578052,
+        "differs": true,
+        "why": null
+      },
+      {
+        "label": "knockout Chemical",
+        "run": {
+          "diff": 12.560156177164593,
+          "se": 0.6028379323844533,
+          "n": 2
+        },
+        "control": {
+          "diff": 6.260156177164589,
+          "se": 0.302837932384449,
+          "n": 2
+        },
+        "delta": 6.300000000000004,
+        "deltaSe": 0.6746290729078096,
+        "differs": true,
+        "why": null
+      },
+      {
+        "label": "knockout Flow",
+        "run": {
+          "diff": 0,
+          "se": 0,
+          "n": 2
+        },
+        "control": {
+          "diff": 4.765178175915089,
+          "se": 0.22526219634892897,
+          "n": 2
+        },
+        "delta": -4.765178175915089,
+        "deltaSe": 0.22526219634892897,
+        "differs": true,
+        "why": null
+      }
+    ]
+  }
+}

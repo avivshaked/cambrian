@@ -1,5 +1,5 @@
-// The mushroom reefs' rock (logbook/specs/reef-spec.md; the owner, 2026-09-23 night: "an
-// appropriate skin to the reefs, so they look more like a natural rocky structure").
+// The mushroom reefs' rock (logbook/specs/reef-spec.md; the owner asked on the night of 2026-09-23
+// for an appropriate skin for the reefs, so they look more like a natural rocky structure).
 //
 // The bed's shader's family, and deliberately so: the same lighting (a wrapped main light, the
 // additional lights, spherical harmonics), the same caustic net from TheatreWater.hlsl and the
@@ -249,8 +249,12 @@ Shader "Evosim/Theatre Rock"
                 float facesDown = saturate(-geometric.y);
                 float shade = lerp(1.0, _ShadeUnder, saturate(max(underCap * (1.0 - onCap * table), onCap * facesDown)));
 
+                // The light left at the rock's depth on the run's day, under the underwater look's
+                // item 3 (EvoDepthLight); one otherwise.
+                float3 depthLight = EvoDepthLight(input.positionWS);
+
                 Light main = GetMainLight();
-                float3 lit = rock * main.color * Wrapped(n, main.direction) * shade;
+                float3 lit = rock * main.color * depthLight * Wrapped(n, main.direction) * shade;
 
                 #if defined(_ADDITIONAL_LIGHTS)
                 uint count = GetAdditionalLightsCount();
@@ -261,7 +265,7 @@ Shader "Evosim/Theatre Rock"
                 }
                 #endif
 
-                lit += rock * SampleSH(n) * lerp(1.0, 0.55, underCap * (1.0 - onCap * table));
+                lit += rock * SampleSH(n) * depthLight * lerp(1.0, 0.55, underCap * (1.0 - onCap * table));
 
                 // The net, on what the sky can see: the table and the rim's shoulder, not the
                 // room under the cap.

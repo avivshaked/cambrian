@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using Evosim.Core;
 using Evosim.Dynamics;
 using ILGPU;
 using ILGPU.Runtime;
@@ -19,6 +20,12 @@ namespace Evosim.Farm.Gpu
         /// <summary>Cumulative: candidates past the cap, overlaps past it, held ids past it, cell entries past it.</summary>
         long[] Overflow { get; }
 
+        /// <summary>The probe (EVOSIM_GPU_PROBE), switched between blocks; it times and joins and moves no result.</summary>
+        bool Probe { get; set; }
+
+        /// <summary>The probe's last print, a line each; empty until it has printed.</summary>
+        System.Collections.Generic.IReadOnlyList<string> ProbeLines { get; }
+
         long RefusedForClass { get; }
 
         /// <summary>Neurons at or past 1e36 in magnitude at the last readback, and the most at once.</summary>
@@ -26,9 +33,101 @@ namespace Evosim.Farm.Gpu
 
         long NeuronsAtCeilingMost { get; }
 
+        /// <summary>Cumulative: the bed's angles past the double guard's 1e9 rad, in either precision.</summary>
+        long BedAnglesPastGuard { get; }
+
         int GroupSize { get; }
 
         double CompileMs { get; }
+
+        /// <summary>The one brain's pools, for the tests: the slack over twice the live links before
+        /// they are laid again (4,096), how often they have been, and the link pool's room.</summary>
+        int PoolSlack { get; set; }
+
+        long PoolRelays { get; }
+
+        int LinkPoolCapacity { get; }
+
+        /// <summary>The scent's fill on the card from the world's corpses (GpuScent), under <see cref="GpuOptions.Scent"/>.</summary>
+        void FillScentOnCard(World world);
+    }
+
+    /// <summary>
+    /// Where the engine's probe prints: standard error, or a world's own file when two worlds share
+    /// the process (the farm's --pair). Per thread, as the farm's own writers are.
+    /// </summary>
+    public static class GpuConsole
+    {
+        [ThreadStatic] private static System.IO.TextWriter _error;
+
+        public static System.IO.TextWriter Error => _error ?? Console.Error;
+
+        public static void Use(System.IO.TextWriter error) => _error = error;
+    }
+
+    /// <summary>
+    /// A context and its accelerator, which one engine opens for itself or several share
+    /// (card-next-r57.md, part 4: two worlds in one farm process). An engine on a shared device
+    /// keeps its work on a stream of its own and waits on that stream only, so one world's waits
+    /// never wait on the other's kernels. The kernels compile once per context and are cached.
+    /// </summary>
+    public sealed class GpuDevice : IDisposable
+    {
+        internal Context Context { get; }
+
+        internal Accelerator Accelerator { get; }
+
+        /// <summary>The card's name and SM count, or <c>cpu-accelerator</c>.</summary>
+        public string Name { get; }
+
+        /// <summary>The CUDA driver's version, or empty on the CPU accelerator.</summary>
+        public string Driver { get; }
+
+        /// <summary>Held while an engine builds its runner on this device: one world's buffers and kernels at a time.</summary>
+        internal object Gate { get; } = new object();
+
+        public bool OnCpu { get; }
+
+        private GpuDevice(Context context, Accelerator accelerator, string name, string driver, bool onCpu)
+        {
+            Context = context;
+            Accelerator = accelerator;
+            Name = name;
+            Driver = driver;
+            OnCpu = onCpu;
+        }
+
+        /// <summary>The device <paramref name="options"/> names: the CPU accelerator at its thread count, or the first card.</summary>
+        public static GpuDevice Open(GpuOptions options)
+        {
+            if (options.OnCpu)
+            {
+                var device = new CPUDevice(options.CpuThreads, 1, 1);
+                var context = Context.Create(b => b.CPU(device).EnableAlgorithms());
+                var accelerator = context.GetCPUDevice(0).CreateCPUAccelerator(context, CPUAcceleratorMode.Parallel);
+                return new GpuDevice(context, accelerator, "cpu-accelerator", "", true);
+            }
+            else
+            {
+                var context = Context.Create(b => b.Cuda().EnableAlgorithms());
+                if (context.GetCudaDevices().Count == 0)
+                {
+                    context.Dispose();
+                    throw new NotSupportedException(
+                        "EVOSIM_GPU_DEVICE is cuda and ILGPU finds no CUDA device on this machine.");
+                }
+
+                var cuda = (CudaAccelerator)context.GetCudaDevice(0).CreateAccelerator(context);
+                string name = cuda.Name + " (" + cuda.NumMultiprocessors.ToString(CultureInfo.InvariantCulture) + " SMs)";
+                return new GpuDevice(context, cuda, name, cuda.DriverVersion.ToString(), false);
+            }
+        }
+
+        public void Dispose()
+        {
+            Accelerator?.Dispose();
+            Context?.Dispose();
+        }
     }
 
     /// <summary>
@@ -41,8 +140,10 @@ namespace Evosim.Farm.Gpu
         /// <summary>The longest block the instants buffer is first sized for; it grows past it.</summary>
         public const int BlockCeiling = 1000;
 
-        private readonly Context _context;
+        private readonly GpuDevice _device;
+        private readonly bool _ownsDevice;
         private readonly Accelerator _accelerator;
+        private readonly AcceleratorStream _stream;
         private readonly IGpuRunner _runner;
         private readonly GpuWorld _world;
 
@@ -67,7 +168,11 @@ namespace Evosim.Farm.Gpu
         /// the <see cref="DynamicsWorld"/> the simulation built from the same world, which
         /// <see cref="StepBlock"/> checks by the objects they share.
         /// </summary>
-        public GpuBackend(SolverConfig config, GpuOptions options)
+        /// <param name="shared">
+        /// A device other engines step on too (<see cref="GpuDevice"/>), which this engine neither
+        /// opens nor closes; null opens one of its own, as an engine always did.
+        /// </param>
+        public GpuBackend(SolverConfig config, GpuOptions options, GpuDevice shared = null)
         {
             if (config == null) throw new ArgumentNullException(nameof(config));
             Options = options ?? new GpuOptions();
@@ -78,40 +183,36 @@ namespace Evosim.Farm.Gpu
             var gpuWorld = new GpuWorld(config);
             _world = gpuWorld;
 
-            if (Options.OnCpu)
+            if (shared != null && shared.OnCpu != Options.OnCpu)
             {
-                var device = new CPUDevice(Options.CpuThreads, 1, 1);
-                _context = Context.Create(b => b.CPU(device).EnableAlgorithms());
-                _accelerator = _context.GetCPUDevice(0).CreateCPUAccelerator(_context, CPUAcceleratorMode.Parallel);
-                DeviceName = "cpu-accelerator";
-                Driver = "";
+                throw new InvalidOperationException(
+                    "The shared device is " + shared.Name + " and this engine's options name " +
+                    (Options.OnCpu ? "the CPU accelerator" : "a card") + ".");
             }
-            else
-            {
-                _context = Context.Create(b => b.Cuda().EnableAlgorithms());
-                if (_context.GetCudaDevices().Count == 0)
-                {
-                    _context.Dispose();
-                    throw new NotSupportedException(
-                        "EVOSIM_GPU_DEVICE is cuda and ILGPU finds no CUDA device on this machine.");
-                }
 
-                var cuda = (CudaAccelerator)_context.GetCudaDevice(0).CreateAccelerator(_context);
-                _accelerator = cuda;
-                DeviceName = cuda.Name + " (" + cuda.NumMultiprocessors.ToString(CultureInfo.InvariantCulture) + " SMs)";
-                Driver = cuda.DriverVersion.ToString();
-            }
+            _ownsDevice = shared == null;
+            _device = shared ?? GpuDevice.Open(Options);
+            _accelerator = _device.Accelerator;
+            DeviceName = _device.Name;
+            Driver = _device.Driver;
 
             try
             {
-                _runner = Options.Single
-                    ? (IGpuRunner)new Sgl.Runner(_accelerator, gpuWorld, Options)
-                    : new Dbl.Runner(_accelerator, gpuWorld, Options);
+                // An engine alone on its device works on the default stream, every call as it always
+                // was; one of several works on a stream of its own (GpuDevice).
+                lock (_device.Gate)
+                {
+                    if (!_ownsDevice) _accelerator.Bind();
+                    _stream = _ownsDevice ? _accelerator.DefaultStream : _accelerator.CreateStream();
+                    _runner = Options.Single
+                        ? (IGpuRunner)new Sgl.Runner(_accelerator, _stream, gpuWorld, Options)
+                        : new Dbl.Runner(_accelerator, _stream, gpuWorld, Options);
+                }
             }
             catch
             {
-                _accelerator.Dispose();
-                _context.Dispose();
+                if (!_ownsDevice) _stream?.Dispose();
+                if (_ownsDevice) _device.Dispose();
                 throw;
             }
         }
@@ -124,6 +225,9 @@ namespace Evosim.Farm.Gpu
                 _checked = true;
             }
 
+            // A shared device is stepped from each world's own thread, and a CUDA context is
+            // current per thread.
+            if (!_ownsDevice) _accelerator.Bind();
             _runner.Block(world, steps);
         }
 
@@ -157,6 +261,19 @@ namespace Evosim.Farm.Gpu
 
         public long[] Overflow => _runner.Overflow;
 
+        /// <summary>
+        /// The card probe, on from the start under EVOSIM_GPU_PROBE=1 or switched on by the farm's pace guard
+        /// while the world runs. It joins the card between kernels and times them, and moves no result.
+        /// </summary>
+        public bool Probe
+        {
+            get => _runner.Probe;
+            set => _runner.Probe = value;
+        }
+
+        /// <summary>The probe's last print, a line each, every twenty blocks while it is on.</summary>
+        public System.Collections.Generic.IReadOnlyList<string> ProbeLines => _runner.ProbeLines;
+
         public long OverflowTotal
         {
             get
@@ -173,22 +290,44 @@ namespace Evosim.Farm.Gpu
 
         public long NeuronsAtCeilingMost => _runner.NeuronsAtCeilingMost;
 
+        /// <summary>
+        /// How many of the bed's angles have passed 1e9 rad since the engine opened, counted on the
+        /// device in the water's bed sample. In double the card reduces such an angle before its sine
+        /// (KernelGenerator, AngleGuard), so the body that took it parts from the CPU's arithmetic;
+        /// the tests read this to drop a comparison only where the guard acted.
+        /// </summary>
+        public long BedAnglesPastGuard => _runner.BedAnglesPastGuard;
+
         public int GroupSize => _runner.GroupSize;
 
         public double CompileMs => _runner.CompileMs;
+
+        /// <summary>The one brain's pools' slack (a test hook; negative lays them again every block).</summary>
+        internal int PoolSlack { get => _runner.PoolSlack; set => _runner.PoolSlack = value; }
+
+        internal long PoolRelays => _runner.PoolRelays;
+
+        internal int LinkPoolCapacity => _runner.LinkPoolCapacity;
 
         /// <summary>The header's words after <c>engine</c>: <c>gpu single cpu-accelerator g4 classes 2/4/8/16</c>.</summary>
         public string HeaderToken() =>
             "gpu " + (Options.Single ? "single" : "double") + " " + ShortDevice() +
             " g" + GroupSize.ToString(CultureInfo.InvariantCulture) +
             " classes " + Options.ClassesToken() + (Options.Concurrent ? " concurrent" : "") +
-            (Options.Transport ? " transport" : "");
+            (Options.Transport ? " transport" : "") + (Options.Scent ? " scent" : "");
+
+        /// <summary>
+        /// The scent's fill on this engine's card (C3, <see cref="GpuScent"/>): the world hands its
+        /// corpses over where it would have filled, and the card fills the grid its kernels read.
+        /// The farm calls it under <see cref="GpuOptions.Scent"/>.
+        /// </summary>
+        public void FillScentOnCard(World world) => _runner.FillScentOnCard(world);
 
         /// <summary>
         /// The snow's transport on this engine's card (<see cref="GpuTransport"/>), for the farm to
         /// hand the snow's grid when <see cref="GpuOptions.Transport"/> is on.
         /// </summary>
-        public GpuTransport CreateTransport() => new GpuTransport(_accelerator);
+        public GpuTransport CreateTransport() => new GpuTransport(_accelerator, _stream);
 
         private string ShortDevice()
         {
@@ -205,8 +344,8 @@ namespace Evosim.Farm.Gpu
         public void Dispose()
         {
             _runner?.Dispose();
-            _accelerator?.Dispose();
-            _context?.Dispose();
+            if (_ownsDevice) _device?.Dispose();
+            else _stream?.Dispose();
         }
     }
 }

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nursery room · registry</title>
+<link rel="stylesheet" href="nursery.css">
+<style>
+  /* The registry is append-only (rounds/nursery/registry.jsonl): every entry is numbered, a rerun is
+     an entry of its own naming the one it reran. A draft has no number until it runs. */
+  .page { grid-template-columns: minmax(0, 1fr) 30rem; grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: "list sel" "feed sel"; }
+  @media (min-aspect-ratio: 2/1) {
+    .page { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) 30rem; grid-template-rows: minmax(0, 1fr);
+      grid-template-areas: "list feed sel"; } }
+  @media (max-width: 1600px) {
+    .page { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 30rem;
+      grid-template-areas: "list list" "feed sel"; } }
+  .p-list { grid-area: list; } .p-feed { grid-area: feed; } .p-sel { grid-area: sel; }
+
+  .filters { display: flex; align-items: center; margin-bottom: .8rem; flex-wrap: wrap; }
+  .chip { font-size: .85rem; color: var(--ink-lo); padding: .1rem .6rem; border: 1px solid var(--rule); border-radius: 1rem; margin-right: .45rem; white-space: nowrap; }
+  .chip.on { color: var(--ink-hi); border-color: var(--run-low); background: rgba(94, 240, 255, .06); }
+  .search { margin-left: auto; font-size: .85rem; color: var(--ink-dim); border: 1px solid var(--rule-strong); border-radius: var(--r-sm); padding: .25rem .7rem; width: 20rem; }
+  .reg td { height: 3.1rem; vertical-align: middle; }
+  .reg td.n { color: var(--ink-lo); width: 2.6rem; }
+  .reg .nm { font-family: var(--mono); font-size: 1rem; color: var(--ink-hi); display: block; }
+  .reg .ds { font-family: var(--sans); font-size: .8rem; color: var(--ink-lo); display: block; margin-top: .1rem; max-width: 30rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .reg tr.rerun td { height: 2.2rem; }
+  .reg tr.rerun .nm { font-size: .9rem; color: var(--ink); }
+  .reg tr.draft td { opacity: .85; }
+  .reg svg.spark { display: block; width: 8rem; height: 1.8rem; }
+  .gens { display: inline-flex; align-items: center; }
+  .gens i { position: relative; width: 4.5rem; height: .3rem; margin-left: .6rem; background: var(--track); border-radius: .2rem; }
+  .gens i b { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink-lo); border-radius: .2rem; }
+  .gens.live i b { background: var(--run); box-shadow: 0 0 .5rem rgba(94, 240, 255, .6); }
+
+  .feed { flex: 1; min-height: 0; overflow: hidden; }
+  .feed .act { display: grid; grid-template-columns: 5.5rem 1fr; column-gap: .8rem; padding: .55rem 0; }
+  .feed .act .w { grid-row: 1 / 3; }
+  .feed .act .line1 { color: var(--ink-hi); }
+  .feed .act .line1 .tgt { font-family: var(--mono); color: var(--ink); margin-left: .4rem; }
+  .feed .act q { display: block; margin-top: .1rem; }
+
+  .p-sel h2 { margin: 0; font-family: var(--mono); font-weight: 400; font-size: 1.6rem; color: var(--ink-hi); }
+  .p-sel h2 small { font-size: 1rem; color: var(--ink-lo); margin-right: .5rem; }
+  .p-sel .desc { color: var(--ink); font-size: .95rem; margin: .3rem 0 0; line-height: 1.45; }
+  .p-sel svg.big { display: block; width: 100%; height: 7rem; margin-top: .6rem; }
+  .actions { display: flex; flex-wrap: wrap; margin-top: auto; padding-top: .8rem; }
+  .actions .btn { margin: 0 .5rem .5rem 0; }
+</style>
+</head>
+<body>
+<svg class="caustics" aria-hidden="true"><filter id="caus"><feTurbulence type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="4"/>
+  <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.95  0 0 0 0 1  0 0 0 -2.6 1.55"/></filter><rect width="100%" height="100%" filter="url(#caus)" opacity="0.045"/></svg>
+
+<header class="strip">
+  <span class="brand">nursery room</span>
+  <nav class="tabs"><a class="tab on"><b>1</b>REGISTRY</a><a class="tab"><b>2</b>RECIPE</a><a class="tab"><b>3</b>RUN</a><a class="tab"><b>4</b>TANK</a><a class="tab"><b>5</b>GENOME</a></nav>
+  <span class="crumb">rounds/nursery/registry.jsonl · <b>8</b> entries · <b>1</b> running · <b>1</b> draft</span>
+  <span class="spacer"></span>
+  <div class="machine"><span>machine</span><span class="meter"><i style="width:25%"></i><u style="left:50%"></u></span><span><span class="hi">8</span> of <span class="hi">16</span> cap · 32 logical</span><span>cpu <span class="hi">58</span> °C</span></div>
+</header>
+
+<main class="page">
+  <!-- source: rows: the registry, one per entry, newest first; base and reward from each resolved recipe; sparkline from tank-generations.jsonl (score of the top genome). Columns do not name a reward or a measure. -->
+  <section class="panel hero p-list" aria-label="experiments">
+    <div class="head"><span class="kicker">Registry</span><span class="q">What has run, and how did it end?</span>
+      <span class="aside">agents write and launch experiments through the MCP</span></div>
+    <div class="filters">
+      <span class="chip on">all 8</span><span class="chip">running 1</span><span class="chip">completed 3</span><span class="chip">killed 1</span>
+      <span class="chip">failed 1</span><span class="chip">reruns 2</span><span class="chip">drafts 1</span>
+      <span class="search">filter by name, base or reward</span>
+    </div>
+    <table class="t reg">
+      <thead><tr><th class="l">#</th><th class="l">state</th><th class="l">experiment</th><th class="l">base · reward</th><th class="l">started</th>
+        <th>generations</th><th class="l">mean net per gen</th><th>best, 10-gen</th><th class="l">rerun</th><th class="l">recipe</th></tr></thead>
+      <tbody>
+        <tr class="draft"><td class="n">—</td><td class="l"><span class="status"><i class="mk mk--draft"></i>DRAFT</span></td>
+          <td class="l"><span class="nm">brain2-pay-path-full-work</span><span class="ds">Whether paying for less path keeps brain v2's lead once the joints' work is charged in full.</span></td>
+          <td class="l">brain2-pay-path · WeightedSum</td><td class="l dim">—</td><td>0 / 100</td><td class="l dim">—</td><td class="dim">—</td><td class="l dim">—</td><td class="l"><span class="badge">not committed</span></td></tr>
+        <tr class="sel"><td class="n">8</td><td class="l"><span class="status"><i class="mk mk--running"></i>EXAM</span></td>
+          <td class="l"><span class="nm">brain2-pay-path</span><span class="ds">Brain v2's baseline, scored on net joules less 2 J for every metre swum.</span></td>
+          <td class="l">brain2 · WeightedSum</td><td class="l">10-02 05:31</td><td><span class="gens live">100 / 100<i><b style="width:100%"></b></i></span></td>
+          <td class="l"><svg class="spark" data-s="3" data-live="1"></svg></td><td class="hi">546.7 J</td><td class="l dim">—</td><td class="l"><span class="nm" style="font-size:.85rem;color:var(--ink)">3f1c09a2</span><span class="ds">a41e7d0</span></td></tr>
+        <tr class="rerun"><td class="n">7</td><td class="l"><span class="status"><i class="mk mk--done"></i>RERUN</span></td>
+          <td class="l"><span class="nm">rerun of #3 brain2-no-scent</span></td><td class="l dim">same recipe, same build</td><td class="l">10-02 01:10</td><td>100 / 100</td><td class="l dim">—</td><td class="dim">—</td>
+          <td class="l"><span class="badge badge--hi">differs</span> <span class="mono dim" style="font-size:.8rem">tank-scores.jsonl:412</span></td><td class="l"><span class="nm" style="font-size:.85rem;color:var(--ink)">91d0b4e7</span><span class="ds">a41e7d0</span></td></tr>
+        <tr><td class="n">6</td><td class="l"><span class="status"><i class="mk mk--failed"></i>FAILED</span></td>
+          <td class="l"><span class="nm">brain2-smoke</span><span class="ds">Three generations to check the framework after the reward interface landed.</span></td>
+          <td class="l">brain2 · Net</td><td class="l">10-01 23:58</td><td><span class="gens">0 / 3<i><b style="width:0"></b></i></span></td><td class="l dim">—</td><td class="dim">—</td>
+          <td class="l dim">dirty tree, cannot rerun</td><td class="l"><span class="nm" style="font-size:.85rem;color:var(--ink)">0b7c3392</span><span class="ds">dc5dd6f · dirty</span></td></tr>
+        <tr><td class="n">5</td><td class="l"><span class="status"><i class="mk mk--done"></i>COMPLETED</span></td>
+          <td class="l"><span class="nm">brain2-no-drive</span><span class="ds">The drive sense removed: does brain v2 still lead without its stroke feedback?</span></td>
+          <td class="l">brain2 · Net</td><td class="l">10-01 17:44</td><td><span class="gens">100 / 100<i><b style="width:100%"></b></i></span></td>
+          <td class="l"><svg class="spark" data-s="5"></svg></td><td class="hi">488.1 J</td><td class="l"><span class="badge">not rerun</span></td><td class="l"><span class="nm" style="font-size:.85rem;color:var(--ink)">e4a91f58</span><span class="ds">a41e7d0</span></td></tr>
+        <tr><td class="n">4</td><td class="l"><span class="status"><i class="mk mk--killed"></i>KILLED</span></td>
+          <td class="l"><span class="nm">brain2-islands-sparse</span><span class="ds">Snow islands at a quarter cover: does a scent-led brain find food that is harder to find?</span></td>
+          <td class="l">brain2 · Net</td><td class="l">10-01 15:31</td><td><span class="gens">23 / 100<i><b style="width:23%"></b></i></span></td>
+          <td class="l"><svg class="spark" data-s="7" data-n="23"></svg></td><td class="hi">644.0 J</td><td class="l dim">—</td><td class="l"><span class="nm" style="font-size:.85rem;color:var(--ink)">c27a5f13</span><span class="ds">a41e7d0</span></td></tr>
+        <tr><td class="n">3</td><td class="l"><span class="status"><i class="mk mk--done"></i>COMPLETED</span></td>
+          <td class="l"><span class="nm">brain2-no-scent</span><span class="ds">Brain v2 without the scent sense, to see what scent is worth to the search.</span></td>
+          <td class="l">brain2 · Net</td><td class="l">10-01 07:02</td><td><span class="gens">100 / 100<i><b style="width:100%"></b></i></span></td>
+          <td class="l"><svg class="spark" data-s="9"></svg></td><td class="hi">702.9 J</td><td class="l"><span class="badge badge--hi">differs</span> <span class="dim" style="font-size:.8rem">#7</span></td><td class="l"><span class="nm" style="font-size:.85rem;color:var(--ink)">91d0b4e7</span><span class="ds">a41e7d0</span></td></tr>
+        <tr class="rerun"><td class="n">2</td><td class="l"><span class="status"><i class="mk mk--done"></i>RERUN</span></td>
+          <td class="l"><span class="nm">rerun of #1 brain2</span></td><td class="l dim">same recipe, same build</td><td class="l">10-01 00:12</td><td>3 / 3</td><td class="l dim">—</td><td class="dim">—</td>
+          <td class="l"><span class="badge badge--hi">identical</span></td><td class="l"><span class="nm" style="font-size:.85rem;color:var(--ink)">5e88a0c1</span><span class="ds">dc5dd6f</span></td></tr>
+        <tr><td class="n">1</td><td class="l"><span class="status"><i class="mk mk--done"></i>COMPLETED</span></td>
+          <td class="l"><span class="nm">brain2</span><span class="ds">The baseline (D148): brain v2's setup, every setting pilot-deep-brain2 used.</span></td>
+          <td class="l">— · Net</td><td class="l">09-30 00:50</td><td><span class="gens">100 / 100<i><b style="width:100%"></b></i></span></td>
+          <td class="l"><svg class="spark" data-s="11"></svg></td><td class="hi">812.6 J</td><td class="l"><span class="badge badge--hi">identical</span> <span class="dim" style="font-size:.8rem">#2</span></td><td class="l"><span class="nm" style="font-size:.85rem;color:var(--ink)">5e88a0c1</span><span class="ds">dc5dd6f</span></td></tr>
+      </tbody>
+    </table>
+    <p class="note" style="margin-top:.8rem">Best is the top genome's ten-generation running mean of net joules at the run's end. A rerun builds the commit its entry names and compares digests: identical, or the first file and line that differ. All numbers invented.</p>
+  </section>
+
+  <!-- source: rows: the room's activity log (MCP calls and the owner's actions), newest first; who is the caller's name as the MCP reports it. -->
+  <section class="panel p-feed" aria-label="activity">
+    <div class="head"><span class="kicker">Activity</span><span class="q">Who did what, and why?</span><span class="aside">every experiment · newest first</span></div>
+    <div class="feed">
+      <div class="act new"><span class="w">15:02</span><span class="line1">agent a8 · recipe written<span class="tgt">brain2-pay-path-full-work</span></span><q>Whether paying for less path keeps the lead once work is charged in full. Two fields refused.</q></div>
+      <div class="act"><span class="w">14:58</span><span class="line1">agent a8 · film taken<span class="tgt">#8</span></span><q>Body 1, exam draw 7, own brain beside the scent knockout, for the write-up.</q></div>
+      <div class="act"><span class="w">14:31</span><span class="line1">agent a8 · runs compared<span class="tgt">#3 · #1</span></span><q>The scent knockout costs body 1 +176 ± 53 J, which clears two se.</q></div>
+      <div class="act"><span class="w">13:10</span><span class="line1">owner · stop<span class="tgt">#4</span></span><span class="dim" style="display:block;margin-top:.1rem">no reason given</span></div>
+      <div class="act"><span class="w">05:31</span><span class="line1">agent a8 · launch<span class="tgt">#8</span></span><q>One setting against brain2: the reward. Pre-registered in a41e7d0.</q></div>
+      <div class="act"><span class="w">01:10</span><span class="line1">agent 6e · rerun<span class="tgt">#3 → #7</span></span><q>Before the write-up cites #3.</q></div>
+      <div class="act"><span class="w">10-01 22:10</span><span class="line1">agent 80 · picture taken<span class="tgt">#1</span></span><q>Top genome's brain graph at gen 100, for the logbook entry.</q></div>
+    </div>
+  </section>
+
+  <!-- source: the selected entry: run.json, the resolved recipe and its hash, the manifest; the mini chart plots the recipe's own reward (score), labelled with its class. -->
+  <aside class="panel p-sel" aria-label="selected entry">
+    <div class="head"><span class="kicker">Selected</span><span class="aside"><span class="status" style="font-size:.8rem"><i class="mk mk--running"></i>EXAM · 4 OF 6</span></span></div>
+    <h2><small>#8</small>brain2-pay-path</h2>
+    <p class="desc">Brain v2's baseline, scored on net joules less 2 J for every metre swum.</p>
+    <svg class="big" id="c-sel"></svg>
+    <div class="section">
+      <div class="field"><span class="field__label">generations · pace</span><span class="field__value">100 of 100 · 7.6 <span class="unit">min / gen</span></span></div>
+      <div class="field"><span class="field__label">exam ends</span><span class="field__value">≈ 19:05</span></div>
+      <div class="field"><span class="field__label">threads · process</span><span class="field__value">8 · 41 288 <span class="unit">alive</span></span></div>
+    </div>
+    <div class="section">
+      <div class="kicker" style="margin-bottom:.3rem">recipe</div>
+      <div class="field"><span class="field__label">file</span><span class="field__value" style="font-size:.85rem">rounds/nursery/brain2-pay-path.json</span></div>
+      <div class="field"><span class="field__label">base · differs</span><span class="field__value">brain2 · 1 <span class="unit">setting</span></span></div>
+      <div class="field"><span class="field__label">resolved hash</span><span class="field__value">3f1c09a2b7d4e015</span></div>
+      <div class="field"><span class="field__label">pre-registration</span><span class="field__value">committed a41e7d0</span></div>
+    </div>
+    <div class="section">
+      <div class="kicker" style="margin-bottom:.3rem">run</div>
+      <div class="field"><span class="field__label">output</span><span class="field__value" style="font-size:.85rem">runs/nursery/brain2-pay-path/</span></div>
+      <div class="field"><span class="field__label">build</span><span class="field__value" style="font-size:.85rem">nursery 4a3ae524 · core b6623f6d</span></div>
+      <div class="field"><span class="field__label">seed · salt</span><span class="field__value">0x1 · 0x62656e6368</span></div>
+    </div>
+    <div class="actions"><a class="btn btn--primary">OPEN RUN</a><a class="btn">OPEN RECIPE</a><a class="btn">STOP…</a></div>
+    <p class="note" style="margin:0">The owner keeps Stop, which writes the run's ending before it stops the process and asks first. Launch, rerun and compare are agents' operations.</p>
+  </aside>
+</main>
+
+<footer class="bar">
+  <span class="hint"><span class="key">↑↓</span>select</span>
+  <span class="hint"><span class="key">↵</span>open run</span>
+  <span class="hint"><span class="key">/</span>filter</span>
+  <span class="spacer"></span>
+  <span>registry read 15:02:30 · all numbers invented</span>
+</footer>
+
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+const el = (p, tag, a = {}) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); p.appendChild(e); return e; };
+function series(seed, n) { let s = seed * 7919; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  return Array.from({length: n}, (_, g) => 220 + 300 * (1 - Math.exp(-g / 25)) + (r() - .5) * 120); }
+const smooth = a => a.map((_, i) => { const w = a.slice(Math.max(0, i - 9), i + 1); return w.reduce((x, y) => x + y) / w.length; });
+function draw() {
+  for (const svg of document.querySelectorAll('svg.spark')) { svg.innerHTML = '';
+    const w = svg.clientWidth, h = svg.clientHeight, n = +(svg.dataset.n || 100), a = smooth(series(+svg.dataset.s, n));
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`); const X = i => i * (w - 4) / 99, Y = v => h - 2 - (v - 150) / 600 * (h - 4);
+    el(svg, 'polyline', {points: a.map((v, i) => X(i) + ',' + Y(v)).join(' '), style: `fill:none;stroke:${svg.dataset.live ? 'var(--run)' : 'var(--run-mid)'};stroke-width:1.4`});
+    if (svg.dataset.live) el(svg, 'circle', {class: 'live-dot', cx: X(n - 1), cy: Y(a[n - 1]), r: 2.6}); }
+  const svg = document.getElementById('c-sel'); svg.innerHTML = ''; const w = svg.clientWidth, h = svg.clientHeight; svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  const a = series(3, 100), m = smooth(a), X = i => i * (w - 6) / 99, Y = v => h - 4 - (v - 100) / 700 * (h - 10);
+  const d = el(svg, 'defs'), g = el(d, 'linearGradient', {id: 'sg', x1: 0, y1: 0, x2: 0, y2: 1});
+  el(g, 'stop', {offset: 0, style: 'stop-color:var(--run);stop-opacity:.18'}); el(g, 'stop', {offset: 1, style: 'stop-color:var(--run);stop-opacity:0'});
+  el(svg, 'polygon', {points: m.map((v, i) => X(i) + ',' + Y(v)).join(' ') + ` ${X(99)},${h} 0,${h}`, fill: 'url(#sg)'});
+  el(svg, 'polyline', {class: 'run-raw', points: a.map((v, i) => X(i) + ',' + Y(v)).join(' ')});
+  el(svg, 'polyline', {class: 'run-line', points: m.map((v, i) => X(i) + ',' + Y(v)).join(' ')});
+  el(svg, 'circle', {class: 'live-dot', cx: X(99), cy: Y(m[99]), r: 4});
+}
+draw(); let t; addEventListener('resize', () => { clearTimeout(t); t = setTimeout(draw, 120); });
+</script>
+</body>
+</html>

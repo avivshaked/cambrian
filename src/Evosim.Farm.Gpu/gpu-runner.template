@@ -23,9 +23,22 @@ namespace __NS__
         public const int Constant = 0, Down = 1, Block = 2;
 
         private readonly Accelerator _acc;
+        private readonly AcceleratorStream _stream;
         private readonly List<IColumn> _all = new List<IColumn>();
         private readonly List<IColumn> _down = new List<IColumn>();
         private readonly List<IColumn> _block = new List<IColumn>();
+
+        // Every column a block does not send up whole anyway (not _block): what a pack changes and
+        // nothing else does between blocks, so a pack sends only its own slots of these (Upload).
+        private readonly List<IColumn> _packed = new List<IColumn>();
+
+        // The local slots packed since the last upload, and how many.
+        private readonly Col<int> _packSlots;
+        private int _packCount;
+
+        // The arenas still being laid out, in the order their first column asked for them, keyed
+        // by element type and copy kind (C); Seal builds each one's buffers once every column is in.
+        private readonly List<IArenaPlan> _plans = new List<IArenaPlan>();
 
         public readonly int Class, L, D, M;
 
@@ -36,44 +49,54 @@ namespace __NS__
 
         public int Panels { get; private set; } = 1;
 
-        public readonly Col<int> Links, Dof, SigLen, Mask, GSlot, Parent, DofCount, DofStart, PanelStart, ThinAxis,
-            NOff, NCnt, BParent, FirstChild, BDofStart, BDofCount;
+        public readonly Seg<int> Links, Dof, SigLen, Mask, GSlot, Parent, DofCount, DofStart, PanelStart, ThinAxis,
+            NOff, NCnt, BParent, FirstChild, BDofStart, BDofCount, CUnits, CDof, CLinkAt, CPortAt;
 
-        public readonly Col<Real> Mass, Lift, Volume, SmallI, Reach, Arm, Inertia, ChildAnchor, ParentAnchor,
+        public readonly Seg<Real> Mass, Lift, Volume, SmallI, Reach, Arm, Inertia, ChildAnchor, ParentAnchor, SpinMoment,
             JointFrame, RestFrame, LimitLo, LimitHi, LimitStiff, LimitDamp, Excess, TotalMass;
 
-        public readonly Col<float> TorquePerUnit, PowerScale;
+        public readonly Seg<float> TorquePerUnit, PowerScale;
+
+        // The bend-and-power drive: the joint's four genes and the part's power, a link each, and
+        // the brain's bend and the envelope's seven numbers, a degree of freedom each. A body's
+        // width only in a world that runs the drive, Col's one-wide stub otherwise.
+        public readonly Seg<float> Threshold, Reaction, HoldGene, Release;
+        public readonly Seg<Real> LinkPower;
+        public readonly Seg<float> Bend;
+        public readonly Seg<double> EPower, EBend, EPowerTarget, EBendTarget, EPowerRate, EBendRate, EHoldLeft;
 
         public readonly Col<Real> PCentre, PNormal, PArea;
 
-        public readonly Col<Real> BasePos, BaseRot, Q, Qd, Tau, LimitImplicit, BallRot, Pos, Rot, RotM, Spin, Vel,
+        public readonly Seg<Real> BasePos, BaseCarry, BaseRot, Q, Qd, Tau, LimitImplicit, BallRot, Pos, Rot, RotM, Spin, Vel,
             Sang, Slin, Cbias, RelVel, Water, WaterAcc, Fext, Applied;
 
-        public readonly Col<float> Signal, History, RunSum;
-        public readonly Col<int> Cursor, Filled;
-        public readonly Col<long> DriveLimited, DragLimited;
-        public readonly Col<double> Work, Signed, Dissipated, Passive;
+        public readonly Seg<float> Signal, History, RunSum;
+        public readonly Seg<int> Cursor, Filled;
+        public readonly Seg<long> DriveLimited, DragLimited;
+        public readonly Seg<double> Work, Signed, Dissipated, Passive;
 
-        public readonly Col<int> Op, NIn, Kind, NIndex, Channel;
-        public readonly Col<float> Freq, Phase, Amp, Bias, Const, Weight;
+        public readonly Seg<int> Op, NIn, Kind, NIndex, Channel;
+        public readonly Seg<float> Freq, Phase, Amp, Bias, Const, Weight;
 
-        public readonly Col<float> S, Mem, Reserve, Damage;
-        public readonly Col<int> Parity, Contact, Gates;
-        public readonly Col<double> Clock;
+        public readonly Seg<float> S, Mem, Reserve, Damage;
+        public readonly Seg<int> Parity, Contact, Gates;
+        public readonly Seg<double> Clock;
 
-        public readonly Col<Real> Ring;
-        public readonly Col<long> TStep, FirstBadStep;
-        public readonly Col<double> TTime;
-        public readonly Col<int> Enabled, Held, TCursor, FirstBadLink, Resized, Poison, Pending;
+        public readonly Seg<Real> Ring;
+        public readonly Seg<long> TStep, FirstBadStep;
+        public readonly Seg<double> TTime;
+        public readonly Seg<int> Enabled, Held, TCursor, FirstBadLink, Resized, Poison, Pending;
 
-        public ClassSet(Accelerator acc, int index, int links, int neurons, int cap)
+        public ClassSet(Accelerator acc, AcceleratorStream stream, int index, int links, int neurons, int cap, bool bendAndPower)
         {
             _acc = acc;
+            _stream = stream;
             Class = index;
             L = links;
             D = 3 * links;
             M = neurons;
             Cap = Math.Max(1, cap);
+            _packSlots = new Col<int>(acc, stream, 1, 16);
 
             Links = C<int>(1, Constant); Dof = C<int>(1, Constant); SigLen = C<int>(1, Constant);
             Mask = C<int>(1, Constant); GSlot = C<int>(1, Block, -1);
@@ -81,20 +104,32 @@ namespace __NS__
             PanelStart = C<int>(L + 1, Constant); ThinAxis = C<int>(L, Constant);
             NOff = C<int>(L, Constant); NCnt = C<int>(L, Constant); BParent = C<int>(L, Constant);
             FirstChild = C<int>(L, Constant); BDofStart = C<int>(L, Constant); BDofCount = C<int>(L, Constant);
+            CUnits = C<int>(1, Constant, -1); CDof = C<int>(1, Constant);
+            CLinkAt = C<int>(1, Constant); CPortAt = C<int>(1, Constant);
 
             Mass = C<Real>(L, Constant); Lift = C<Real>(L, Constant); Volume = C<Real>(L, Constant);
             SmallI = C<Real>(L, Constant); Reach = C<Real>(L, Constant); Arm = C<Real>(L, Constant);
             Inertia = C<Real>(3 * L, Constant); ChildAnchor = C<Real>(3 * L, Constant);
-            ParentAnchor = C<Real>(3 * L, Constant);
+            ParentAnchor = C<Real>(3 * L, Constant); SpinMoment = C<Real>(3 * L, Constant);
             JointFrame = C<Real>(4 * L, Constant); RestFrame = C<Real>(4 * L, Constant);
             LimitLo = C<Real>(D, Constant); LimitHi = C<Real>(D, Constant);
             LimitStiff = C<Real>(D, Constant); LimitDamp = C<Real>(D, Constant);
             Excess = C<Real>(1, Constant); TotalMass = C<Real>(1, Constant);
             TorquePerUnit = C<float>(D, Constant); PowerScale = C<float>(1, Block);
 
-            PCentre = C<Real>(3, Constant); PNormal = C<Real>(3, Constant); PArea = C<Real>(1, Constant);
+            int gl = bendAndPower ? L : 0, gd = bendAndPower ? D : 0;
+            Threshold = C<float>(gl, Constant); Reaction = C<float>(gl, Constant);
+            HoldGene = C<float>(gl, Constant); Release = C<float>(gl, Constant);
+            LinkPower = C<Real>(gl, Constant);
+            Bend = C<float>(gd, Down);
+            EPower = C<double>(gd, Down); EBend = C<double>(gd, Down);
+            EPowerTarget = C<double>(gd, Down); EBendTarget = C<double>(gd, Down);
+            EPowerRate = C<double>(gd, Down); EBendRate = C<double>(gd, Down);
+            EHoldLeft = C<double>(gd, Down);
 
-            BasePos = C<Real>(3, Down); BaseRot = C<Real>(4, Down);
+            PCentre = Widening<Real>(3); PNormal = Widening<Real>(3); PArea = Widening<Real>(1);
+
+            BasePos = C<Real>(3, Down); BaseCarry = C<Real>(3, Down); BaseRot = C<Real>(4, Down);
             Q = C<Real>(D, Down); Qd = C<Real>(D, Down); Tau = C<Real>(D, Down); LimitImplicit = C<Real>(D, Down);
             BallRot = C<Real>(4 * L, Down); Pos = C<Real>(3 * L, Down); Rot = C<Real>(4 * L, Down);
             RotM = C<Real>(9 * L, Down); Spin = C<Real>(3 * L, Down); Vel = C<Real>(3 * L, Down);
@@ -125,15 +160,78 @@ namespace __NS__
             Enabled = C<int>(1, Block); Held = C<int>(1, Down); TCursor = C<int>(1, Down);
             FirstBadLink = C<int>(1, Down, -1); Resized = C<int>(frames, Down);
             Poison = C<int>(1, Block, -1); Pending = C<int>(1, Block | Down);
+
+            Seal();
         }
 
-        private Col<T> C<T>(int width, int kind, T fill = default) where T : unmanaged
+        // A column in its type and kind's arena, one row a fill (Seg). A width of nothing still
+        // takes the one row Col's stub would.
+        private Seg<T> C<T>(int width, int kind, T fill = default) where T : unmanaged
         {
-            var column = new Col<T>(_acc, width, Cap, fill);
+            ArenaPlan<T> plan = null;
+            foreach (IArenaPlan p in _plans)
+            {
+                if (p.Kind == kind && p is ArenaPlan<T> typed) { plan = typed; break; }
+            }
+
+            if (plan == null) _plans.Add(plan = new ArenaPlan<T>(kind));
+            return plan.Add(Math.Max(1, width), fill);
+        }
+
+        // The drag panels' columns widen with the widest body (WidenPanels), which an arena's rows
+        // cannot, so each is a column of its own, constant.
+        private Col<T> Widening<T>(int width) where T : unmanaged
+        {
+            var column = new Col<T>(_acc, _stream, width, Cap);
             _all.Add(column);
-            if ((kind & Down) != 0) _down.Add(column);
-            if ((kind & Block) != 0) _block.Add(column);
+            _packed.Add(column);
             return column;
+        }
+
+        private void Seal()
+        {
+            foreach (IArenaPlan plan in _plans)
+            {
+                IColumn arena = plan.Build(_acc, _stream, Cap);
+                _all.Add(arena);
+                if ((plan.Kind & Down) != 0) _down.Add(arena);
+                if ((plan.Kind & Block) != 0) _block.Add(arena);
+                else _packed.Add(arena);
+            }
+
+            _plans.Clear();
+        }
+
+        private interface IArenaPlan
+        {
+            int Kind { get; }
+
+            IColumn Build(Accelerator acc, AcceleratorStream stream, int cap);
+        }
+
+        private sealed class ArenaPlan<T> : IArenaPlan where T : unmanaged
+        {
+            private readonly List<Seg<T>> _segs = new List<Seg<T>>();
+            private readonly List<T> _fills = new List<T>();
+
+            public ArenaPlan(int kind) => Kind = kind;
+
+            public int Kind { get; }
+
+            public Seg<T> Add(int width, T fill)
+            {
+                var seg = new Seg<T>(_fills.Count, width);
+                for (int k = 0; k < width; k++) _fills.Add(fill);
+                _segs.Add(seg);
+                return seg;
+            }
+
+            public IColumn Build(Accelerator acc, AcceleratorStream stream, int cap)
+            {
+                var arena = new Col<T>(acc, stream, cap, _fills.ToArray());
+                foreach (Seg<T> seg in _segs) seg.Arena = arena;
+                return arena;
+            }
         }
 
         public long Bytes
@@ -170,16 +268,45 @@ namespace __NS__
             Dirty = true;
         }
 
-        public void Upload()
+        // Both queue their copies without waiting (IColumn.UpQueued); the runner joins the stream
+        // after its block's uploads and after its downloads (Run, sections 5 and 8). Each copy stops
+        // at the class's used slots (IColumn.UpUsedQueued): no kernel reads a slot past them. A copy
+        // moves an arena, every column of one element type and kind, so a class makes a handful.
+        //
+        // A class dirty with packs sends its other columns by the packed slots alone
+        // (IColumn.UpSlotsQueued, 1b). That is sound because between blocks the host writes a class's
+        // columns only in Pack (the packed slots), PackBlock (block columns, which go up whole) and a
+        // freed slot's GSlot (a block column), and the download before brought every used slot of the
+        // down columns back, so in every other slot the card already holds what the host does. A
+        // column re-laid since its last copy (Ensure, WidenPanels) goes up over its used slots.
+        public void Upload(int used)
         {
-            List<IColumn> columns = Dirty ? _all : _block;
-            foreach (IColumn c in columns) c.Up();
+            if (Dirty && _packCount > 0)
+            {
+                _packSlots.UpUsedQueued(_packCount);
+                foreach (IColumn c in _block) c.UpUsedQueued(used);
+                foreach (IColumn c in _packed) c.UpSlotsQueued(_packSlots, _packCount, used);
+            }
+            else
+            {
+                foreach (IColumn c in Dirty ? _all : _block) c.UpUsedQueued(used);
+            }
+
             Dirty = false;
+            _packCount = 0;
         }
 
-        public void Download()
+        /// <summary>A body packed into local slot <paramref name="local"/>: the class goes up at the next block, that slot of it in full.</summary>
+        public void NotePack(int local)
         {
-            foreach (IColumn c in _down) c.Down();
+            if (_packCount == _packSlots.Cap) _packSlots.Resize(2 * _packSlots.Cap);
+            _packSlots.Host[_packCount++] = local;
+            Dirty = true;
+        }
+
+        public void Download(int used)
+        {
+            foreach (IColumn c in _down) c.DownUsedQueued(used);
         }
 
         /// <summary>The probe's count: what Upload would send now, and what Download brings back.</summary>
@@ -193,28 +320,50 @@ namespace __NS__
             get { long b = 0; foreach (IColumn c in _down) b += c.Bytes; return b; }
         }
 
+        /// <summary>The probe's count of what the same copies would move if they stopped at the class's <paramref name="used"/> slots.</summary>
+        public long UploadBytesFor(int used)
+        {
+            long b = 0;
+            foreach (IColumn c in Dirty ? _all : _block) b += c.BytesFor(used);
+            return b;
+        }
+
+        public long DownloadBytesFor(int used)
+        {
+            long b = 0;
+            foreach (IColumn c in _down) b += c.BytesFor(used);
+            return b;
+        }
+
+        /// <summary>Every column of the class, for the probe's count of page-locked host arrays.</summary>
+        public IReadOnlyList<IColumn> Columns => _all;
+
         public STopo Topo => new STopo
         {
             Links = Links.View, Dof = Dof.View, SigLen = SigLen.View, Mask = Mask.View, GSlot = GSlot.View,
             Parent = Parent.View, DofCount = DofCount.View, DofStart = DofStart.View, PanelStart = PanelStart.View,
             ThinAxis = ThinAxis.View, NOff = NOff.View, NCnt = NCnt.View, BParent = BParent.View,
             FirstChild = FirstChild.View, BDofStart = BDofStart.View, BDofCount = BDofCount.View,
+            CUnits = CUnits.View, CDof = CDof.View, CLinkAt = CLinkAt.View, CPortAt = CPortAt.View,
         };
 
         public SConst ConstSet => new SConst
         {
             Mass = Mass.View, Lift = Lift.View, Volume = Volume.View, SmallI = SmallI.View, Reach = Reach.View,
             Arm = Arm.View, Inertia = Inertia.View, ChildAnchor = ChildAnchor.View, ParentAnchor = ParentAnchor.View,
+            SpinMoment = SpinMoment.View,
             JointFrame = JointFrame.View, RestFrame = RestFrame.View, LimitLo = LimitLo.View, LimitHi = LimitHi.View,
             LimitStiff = LimitStiff.View, LimitDamp = LimitDamp.View, Excess = Excess.View,
             TotalMass = TotalMass.View, TorquePerUnit = TorquePerUnit.View, PowerScale = PowerScale.View,
+            Threshold = Threshold.View, Reaction = Reaction.View, HoldGene = HoldGene.View, Release = Release.View,
+            LinkPower = LinkPower.View,
         };
 
         public SPanels PanelSet => new SPanels { Centre = PCentre.View, Normal = PNormal.View, Area = PArea.View };
 
         public SState StateSet => new SState
         {
-            BasePos = BasePos.View, BaseRot = BaseRot.View, Q = Q.View, Qd = Qd.View, Tau = Tau.View,
+            BasePos = BasePos.View, BaseCarry = BaseCarry.View, BaseRot = BaseRot.View, Q = Q.View, Qd = Qd.View, Tau = Tau.View,
             LimitImplicit = LimitImplicit.View, BallRot = BallRot.View, Pos = Pos.View, Rot = Rot.View,
             RotM = RotM.View, Spin = Spin.View, Vel = Vel.View, Sang = Sang.View, Slin = Slin.View,
             Cbias = Cbias.View, RelVel = RelVel.View, Water = Water.View, WaterAcc = WaterAcc.View,
@@ -226,6 +375,9 @@ namespace __NS__
             Signal = Signal.View, History = History.View, RunSum = RunSum.View, Cursor = Cursor.View,
             Filled = Filled.View, DriveLimited = DriveLimited.View, DragLimited = DragLimited.View,
             Work = Work.View, Signed = Signed.View, Dissipated = Dissipated.View, Passive = Passive.View,
+            Bend = Bend.View, EPower = EPower.View, EBend = EBend.View, EPowerTarget = EPowerTarget.View,
+            EBendTarget = EBendTarget.View, EPowerRate = EPowerRate.View, EBendRate = EBendRate.View,
+            EHoldLeft = EHoldLeft.View,
         };
 
         public SNeur NeurSet => new SNeur
@@ -251,6 +403,7 @@ namespace __NS__
         public void Dispose()
         {
             foreach (IColumn c in _all) c.Dispose();
+            _packSlots.Dispose();
         }
     }
 
@@ -261,13 +414,19 @@ namespace __NS__
     internal sealed class Runner : IGpuRunner
     {
         private readonly Accelerator _acc;
+
+        // Every launch, copy and wait of this engine's: the accelerator's default stream when the engine
+        // is alone on its device, every call as it always was; a stream of its own on a shared device
+        // (GpuDevice), where a wait on the device would wait on another world's kernels too.
+        private readonly AcceleratorStream _stream;
+        private readonly bool _shared;
         private readonly GpuWorld _w;
         private readonly GpuOptions _o;
         private readonly GpuSlots _slots;
         private readonly ClassSet[] _classes;
         private readonly bool _onCpu;
-        private readonly int _scanGroup, _tileGroup;
-        private readonly int _chunk = 256;
+        private readonly int _scanGroup, _tileGroup, _meanGroup;
+        private readonly int _chunk = WholeStep.MeanGroupBodies;
 
         public int GroupSize { get; }
 
@@ -275,11 +434,47 @@ namespace __NS__
 
         public long[] Overflow { get; } = new long[4];
 
+        // The overflow counts the contact watch has already taken, so each block adds only its own.
+        private long _watchQueries, _watchPast;
+
+        /// <summary>
+        /// The block's contact extremes into the stats row's window (DynamicsWorld.Watch), and the card's
+        /// slots cleared for the next block: the column goes up again at the next block's start.
+        /// </summary>
+        private void FoldWatch(DynamicsWorld world, IReadOnlyList<Creature> list)
+        {
+            ContactWatch watch = world.Watch;
+            long[] h = _overflow.Host;
+            watch.NoteCandidates(h[WholeStep.WatchCandidates]);
+            long over = h[WholeStep.WatchOverlaps];
+            if (over > 0)
+            {
+                int rank = 0xFFFFFF - (int)(over & 0xFFFFFF);
+                if (rank >= 0 && rank < list.Count) watch.NoteOverlaps(over >> 24, rank, list[rank].Id, list[rank].Links);
+            }
+            long packed = h[WholeStep.WatchCells];
+            if (packed > 0)
+            {
+                long cells = packed >> 24;
+                int rank = 0xFFFFFF - (int)(packed & 0xFFFFFF);
+                if (rank >= 0 && rank < list.Count) watch.NoteCells(cells, rank, list[rank].Id, list[rank].Links);
+            }
+            watch.QueriesAtCap += Overflow[0] - _watchQueries;
+            watch.OverlapsPastCap += Overflow[1] - _watchPast;
+            _watchQueries = Overflow[0];
+            _watchPast = Overflow[1];
+            h[WholeStep.WatchCandidates] = 0;
+            h[WholeStep.WatchOverlaps] = 0;
+            h[WholeStep.WatchCells] = 0;
+        }
+
         public long RefusedForClass => _slots.RefusedForClass;
 
         public long NeuronsAtCeiling { get; private set; }
 
         public long NeuronsAtCeilingMost { get; private set; }
+
+        public long BedAnglesPastGuard { get; private set; }
 
         // ---- the globals, by global slot
         private int _gcap = 16;
@@ -287,8 +482,27 @@ namespace __NS__
         private readonly List<IColumn> _gLink = new List<IColumn>();
         private readonly List<IColumn> _gDown = new List<IColumn>();
 
+        // The reach guard's records by global slot (WholeStep.LoseStrays), zeroed on the card at
+        // each block's start and never uploaded, and its three counters.
+        private readonly List<IColumn> _gStray = new List<IColumn>();
+        private readonly Col<int> _strayCode;
+        private readonly Col<long> _strayStep;
+        private readonly Col<Real> _strayAt;
+        private readonly Col<int> _strayCount;
+
         private readonly Col<int> _gLinks, _gId, _gRank, _gAlive, _gJointed;
         private readonly Col<int> _nOver, _ovSlot, _ovId, _ovPart, _ovHeld, _nHeld, _heldId, _bedGlass;
+        private readonly bool _rock;
+        private readonly Col<int> _rockTouched;
+        private readonly Col<Real>[] _rockP;
+        private readonly Scratch<int> _touchNew;
+        private readonly bool _grip;
+        private readonly Col<int> _anchors, _gripHeld;
+        private readonly Col<double> _gripBreak, _gripPrice, _gripStrength, _reserveLow, _gripOwed, _gripHeldSeconds;
+        private readonly Col<Real> _gripAnchor, _gripAttitude, _gripPoint;
+        private readonly Col<long> _gripsFormed, _gripsBroken;
+        private readonly List<IColumn> _gripStubs = new List<IColumn>();
+        private readonly Scratch<Real> _touchAt;
 
         // The overlap lists move by their first rows only. Every read of them, on the card
         // (NoteOverlapPart, the census, CommitOverlaps) and on the host (PackBlock, the mirror,
@@ -307,28 +521,44 @@ namespace __NS__
             return Math.Min(most, _o.OverlapCap);
         }
 
+        // Queued, as the block's other copies, and joined with them (Run, sections 5 and 8).
         private void ListsUp(int rows)
         {
-            _ovSlot.UpRows(rows); _ovId.UpRows(rows); _ovPart.UpRows(2 * rows);
-            _ovHeld.UpRows(rows); _heldId.UpRows(rows);
+            _ovSlot.UpRowsQueued(rows); _ovId.UpRowsQueued(rows); _ovPart.UpRowsQueued(2 * rows);
+            _ovHeld.UpRowsQueued(rows); _heldId.UpRowsQueued(rows);
         }
 
         private void ListsDown(int rows)
         {
-            _ovSlot.DownRows(rows); _ovId.DownRows(rows); _ovPart.DownRows(2 * rows);
-            _ovHeld.DownRows(rows); _heldId.DownRows(rows);
+            _ovSlot.DownRowsQueued(rows); _ovId.DownRowsQueued(rows); _ovPart.DownRowsQueued(2 * rows);
+            _ovHeld.DownRowsQueued(rows); _heldId.DownRowsQueued(rows);
         }
         private readonly Col<Real> _gTotalMass, _linkMass;
         private readonly Col<int> _rankToSlot;
-        private readonly Col<long> _census, _overflow;
+        private readonly Col<long> _census, _overflow, _guard;
 
-        // ---- two sphere sets: [set][Cx, Cy, Cz, R, Vx, Vy, Vz, LCx, LCy, LCz, LR, LVx, LVy, LVz]
+        // ---- two sphere sets: [set][Cx, Cy, Cz, R, Vx, Vy, Vz, LCx, LCy, LCz, LR, LVx, LVy, LVz, LEx, LEy, LEz]
         private readonly Col<Real>[][] _sph = new Col<Real>[2][];
         private readonly Col<int>[] _active = new Col<int>[2];
         private int _committed;
 
         // ---- the grid
         private readonly Scratch<int> _lo, _hi, _counts, _start, _gcursor, _items, _partialN, _tileSum, _tileStart;
+        private readonly Scratch<int> _giant, _isGiant, _giantN, _giantList;
+
+        // The giants' threshold (WholeStep.Ranges): 1,024 cells, or EVOSIM_GPU_GIANT_CELLS, where 0 makes no
+        // row a giant. Result-neutral at any value, which is what the variable is for: a check runs a span at
+        // 0, at the default and at 1, and the three must be the same bits.
+        private static readonly int GiantCells = ReadGiantCells();
+
+        private static int ReadGiantCells()
+        {
+            string v = Environment.GetEnvironmentVariable("EVOSIM_GPU_GIANT_CELLS");
+            if (string.IsNullOrEmpty(v)) return 1024;
+            int n = int.Parse(v.Trim(), System.Globalization.CultureInfo.InvariantCulture);
+            if (n < 0) throw new ArgumentException("EVOSIM_GPU_GIANT_CELLS is " + n + "; it is 0 (no giants) or a count of cells.");
+            return n == 0 ? int.MaxValue : n;
+        }
         private readonly Scratch<int> _linkFlags, _stageN, _stageId, _stageSlot, _stagePart, _linkLimited;
         private readonly Scratch<Real> _linkPush, _linkFluid;
         private readonly Scratch<Real> _cell, _partial;
@@ -338,15 +568,60 @@ namespace __NS__
         // ---- the world
         private readonly Col<Real> _inst, _wr, _stock;
         private readonly Col<int> _wi;
+        private readonly Col<float> _scent;
+        private readonly Col<float> _leaf;
+
+        // The one brain's pools (card-audit-r57.md, the central brain), shared by every class: a
+        // body's links and ports in a run of their own, placed at its pack. A slot keeps its runs
+        // for the next body it holds; the pools are laid again from nothing when the runs left
+        // behind outweigh the live ones.
+        private readonly Col<int> _cSource, _cPortPart, _cPortChannel, _cPortIndex;
+        private readonly Col<float> _cWeight;
+        private int[] _cLinkAt = Array.Empty<int>(), _cLinkRoom = Array.Empty<int>();
+        private int[] _cPortAt = Array.Empty<int>(), _cPortRoom = Array.Empty<int>();
+        private int _cLinksTop, _cPortsTop;
+        private bool _cDirty = true;
+
+        public int PoolSlack { get; set; } = 4096;
+
+        public long PoolRelays { get; private set; }
+
+        public int LinkPoolCapacity => _cSource.Cap;
+
+        // The scent's fill on the card (C3, GpuScent), when the farm hands it the world.
+        private GpuScent _gpuScent;
+
+        /// <summary>
+        /// Takes the scent's fill from <paramref name="world"/> (EVOSIM_GPU_SCENT): the world hands
+        /// its corpses to a GpuScent at each fill, the card fills the grid its kernels read, and the
+        /// host's field is brought home only when a host reader asks (World.BringScentHome).
+        /// </summary>
+        public void FillScentOnCard(World world)
+        {
+            if (world?.Scent == null || _gpuScent != null) return;
+
+            // The field is the engine's from now on, and not only once a body smells it: the block
+            // sizes the column the fill writes from the engine's field, and a founded world steps
+            // blocks before its first body is attached (2026-10-10, r58t1). A restored world had
+            // attached it before its first block, so this changes nothing there.
+            _w.AttachScent(world.Scent);
+            _gpuScent = new GpuScent(_acc, _stream, world.Scent, _scent);
+            world.FillScentElsewhere(_gpuScent.Snapshot, _gpuScent.BringHome);
+        }
         private int _fieldVersion = -1;
         private readonly double[] _instD = new double[GpuWorld.InstStride];
         private double[] _stockD = new double[1];
 
         // ---- the kernels
-        private readonly Action<Index1D, SSph, SGlob, SGrid, SCfg> _meanSerial, _meanChunks, _ranges;
-        private readonly Action<Index1D, SGrid, SCfg> _meanCombine;
+        private readonly Action<Index1D, SSph, SGlob, SGrid, SCfg> _meanSerial, _ranges;
+
+        // The chunked mean, one group a chunk (MeanGroups): a group of up to MeanGroupBodies threads.
+        private readonly Action<KernelConfig, SSph, SGlob, SGrid, SCfg> _meanGroups;
+        private readonly Action<Index1D, SGrid, SCfg> _meanCombine, _rearm, _clearCounts;
+        private readonly Action<Index1D, SSph, SGlob, SGrid, SCfg> _loseStrays;
         private readonly Action<KernelConfig, SGrid, SCfg> _scanReduce, _scanTiles, _scanDown;
         private readonly Action<Index1D, SGlob, SGrid, SCfg> _scatter;
+        private readonly Action<Index1D, SGrid, SCfg> _giantLists;
         private readonly Action<Index1D, SGlob, SCfg> _censusKernel;
         private readonly Action<Index1D, STopo, SState, SGlob, SWorld, SCfg> _water;
         private readonly Action<AcceleratorStream, Index1D, STopo, SState, SGlob, SWorld, SCfg> _waterOn;
@@ -370,9 +645,11 @@ namespace __NS__
         [ThreadStatic] private static long[] _idScratch;
         [ThreadStatic] private static int[] _partScratch;
 
-        public Runner(Accelerator accelerator, GpuWorld world, GpuOptions options)
+        public Runner(Accelerator accelerator, AcceleratorStream stream, GpuWorld world, GpuOptions options)
         {
             _acc = accelerator;
+            _stream = stream ?? accelerator.DefaultStream;
+            _shared = !ReferenceEquals(_stream, accelerator.DefaultStream);
             _w = world;
             _o = options;
             _onCpu = accelerator.AcceleratorType == AcceleratorType.CPU;
@@ -381,7 +658,7 @@ namespace __NS__
             _classes = new ClassSet[options.ClassLinks.Length];
             for (int k = 0; k < _classes.Length; k++)
             {
-                _classes[k] = new ClassSet(accelerator, k, options.ClassLinks[k], options.ClassNeurons[k], 16);
+                _classes[k] = new ClassSet(accelerator, _stream, k, options.ClassLinks[k], options.ClassNeurons[k], 16, world.BendAndPower);
             }
 
             int oc = options.OverlapCap;
@@ -393,21 +670,52 @@ namespace __NS__
             _ovPart = G<int>(_gBody, 2 * oc, true, -1); _ovHeld = G<int>(_gBody, oc, true);
             _nHeld = G<int>(_gBody, 1, true); _heldId = G<int>(_gBody, oc, true); _bedGlass = G<int>(_gBody, 1, true);
             _lists = new HashSet<IColumn> { _ovSlot, _ovId, _ovPart, _ovHeld, _heldId };
+            _strayCode = G<int>(_gStray, 1, true); _strayStep = G<long>(_gStray, 1, true);
 
-            _rankToSlot = new Col<int>(_acc, 1, 16, -1);
-            _census = new Col<long>(_acc, 1, WholeStep.CensusFields * GpuBackend.BlockCeiling);
-            _overflow = new Col<long>(_acc, 1, 4);
+            // D162's touch of the rock, kept by link row and brought home with the body, only in a
+            // world that records it; elsewhere a cell each, outside the lists, which no copy moves.
+            _rock = world.RockTouch;
+            _rockTouched = _rock ? G<int>(_gLink, 1, true) : new Col<int>(_acc, _stream, 1, 1);
+            _rockP = new Col<Real>[6];
+            for (int k = 0; k < 6; k++) _rockP[k] = _rock ? G<Real>(_gLink, 1, true) : new Col<Real>(_acc, _stream, 1, 1);
+            // D162's grip, by link row and by global slot, kept on the card and brought home with the
+            // body, only in a world whose table holds the anchoring cell; elsewhere a cell each.
+            _grip = world.AnchorCell != null;
+            _anchors = GripCol<int>(_gLink, 1, false);
+            _gripBreak = GripCol<double>(_gLink, 1, false);
+            _gripPrice = GripCol<double>(_gLink, 1, false);
+            _gripHeld = GripCol<int>(_gLink, 1, true);
+            _gripStrength = GripCol<double>(_gLink, 1, true);
+            _gripAnchor = GripCol<Real>(_gLink, 3, true);
+            _gripAttitude = GripCol<Real>(_gLink, 9, true);
+            _gripPoint = GripCol<Real>(_gLink, 3, true);
+            _reserveLow = GripCol<double>(_gBody, 1, true);
+            _gripOwed = GripCol<double>(_gBody, 1, true);
+            _gripHeldSeconds = GripCol<double>(_gBody, 1, true);
+            _gripsFormed = GripCol<long>(_gBody, 1, true);
+            _gripsBroken = GripCol<long>(_gBody, 1, true);
+            _strayAt = G<Real>(_gStray, 4, true);
+            _strayCount = new Col<int>(_acc, _stream, 1, 3);
+
+            _rankToSlot = new Col<int>(_acc, _stream, 1, 16, -1);
+            _census = new Col<long>(_acc, _stream, 1, WholeStep.CensusFields * GpuBackend.BlockCeiling);
+            _overflow = new Col<long>(_acc, _stream, 1, 8);
+            _guard = new Col<long>(_acc, _stream, 1, 1);
 
             for (int set = 0; set < 2; set++)
             {
-                var columns = new Col<Real>[14];
-                for (int k = 0; k < 7; k++) columns[k] = new Col<Real>(_acc, 1, _gcap);
-                for (int k = 7; k < 14; k++) columns[k] = new Col<Real>(_acc, 1, WholeStep.LinkStride * _gcap);
+                var columns = new Col<Real>[17];
+                for (int k = 0; k < 7; k++) columns[k] = new Col<Real>(_acc, _stream, 1, _gcap);
+                for (int k = 7; k < 17; k++) columns[k] = new Col<Real>(_acc, _stream, 1, WholeStep.LinkStride * _gcap);
                 _sph[set] = columns;
-                _active[set] = new Col<int>(_acc, 1, _gcap);
+                _active[set] = new Col<int>(_acc, _stream, 1, _gcap);
             }
 
             _lo = new Scratch<int>(_acc, 3 * 16);
+            _giant = new Scratch<int>(_acc, 1 + WholeStep.GiantCap);
+            _isGiant = new Scratch<int>(_acc, 16);
+            _giantN = new Scratch<int>(_acc, WholeStep.GiantCap);
+            _giantList = new Scratch<int>(_acc, WholeStep.GiantCap * WholeStep.GiantListCap);
             _hi = new Scratch<int>(_acc, 3 * 16);
             _counts = new Scratch<int>(_acc, 17);
             _start = new Scratch<int>(_acc, 17);
@@ -415,15 +723,18 @@ namespace __NS__
             _tileSum = new Scratch<int>(_acc, 1);
             _tileStart = new Scratch<int>(_acc, 1);
             _linkPush = new Scratch<Real>(_acc, 3);
-            _linkFluid = new Scratch<Real>(_acc, 15);
+            _linkFluid = new Scratch<Real>(_acc, 17);
             _linkLimited = new Scratch<int>(_acc, 1);
             _linkFlags = new Scratch<int>(_acc, 1);
+            _touchNew = new Scratch<int>(_acc, 1);
+            _touchAt = new Scratch<Real>(_acc, 6);
             _stageN = new Scratch<int>(_acc, 1);
             _stageId = new Scratch<int>(_acc, WholeStep.StageCap);
             _stageSlot = new Scratch<int>(_acc, WholeStep.StageCap);
             _stagePart = new Scratch<int>(_acc, WholeStep.StageCap);
 #if GPU_PHASE_PROBE
             _phase = new Scratch<long>(_acc, 1);
+            _linkPhase = new Scratch<long>(_acc, 1);
 #endif
             _entryCap = 1024;
             _items = new Scratch<int>(_acc, _entryCap);
@@ -431,12 +742,17 @@ namespace __NS__
             _partialN = new Scratch<int>(_acc, 1);
             _cell = new Scratch<Real>(_acc, 1);
 
-            _inst = new Col<Real>(_acc, 1, GpuWorld.InstStride * GpuBackend.BlockCeiling);
-            _wr = new Col<Real>(_acc, 1, world.WR.Length);
+            _inst = new Col<Real>(_acc, _stream, 1, GpuWorld.InstStride * GpuBackend.BlockCeiling);
+            _wr = new Col<Real>(_acc, _stream, 1, world.WR.Length);
             for (int k = 0; k < world.WR.Length; k++) _wr.Host[k] = (Real)world.WR[k];
             _wr.Up();
-            _wi = new Col<int>(_acc, 1, 1);
-            _stock = new Col<Real>(_acc, 1, 1);
+            _wi = new Col<int>(_acc, _stream, 1, 1);
+            _stock = new Col<Real>(_acc, _stream, 1, 1);
+            _scent = new Col<float>(_acc, _stream, 1, 1);
+            _leaf = new Col<float>(_acc, _stream, 1, 1);
+            _cSource = new Col<int>(_acc, _stream, 1, 1); _cPortPart = new Col<int>(_acc, _stream, 1, 1);
+            _cPortChannel = new Col<int>(_acc, _stream, 1, 1); _cPortIndex = new Col<int>(_acc, _stream, 1, 1);
+            _cWeight = new Col<float>(_acc, _stream, 1, 1);
 
             _scanGroup = Math.Max(1, Math.Min(1024, accelerator.MaxNumThreadsPerGroup));
 
@@ -452,31 +768,35 @@ namespace __NS__
             int g = options.GroupSize;
             GroupSize = _onCpu ? accelerator.MaxNumThreadsPerGroup : g;
 
-            _meanSerial = _acc.LoadAutoGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.MeanSerial);
-            _meanCombine = _acc.LoadAutoGroupedStreamKernel<Index1D, SGrid, SCfg>(WholeStep.MeanCombine);
-            _scanReduce = _acc.LoadStreamKernel<SGrid, SCfg>(WholeStep.ScanReduce);
-            _scanTiles = _acc.LoadStreamKernel<SGrid, SCfg>(WholeStep.ScanTiles);
-            _scanDown = _acc.LoadStreamKernel<SGrid, SCfg>(WholeStep.ScanDown);
+            _meanSerial = On(_acc.LoadAutoGroupedKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.MeanSerial));
+            _meanCombine = On(_acc.LoadAutoGroupedKernel<Index1D, SGrid, SCfg>(WholeStep.MeanCombine));
+            _rearm = On(_acc.LoadAutoGroupedKernel<Index1D, SGrid, SCfg>(WholeStep.Rearm));
+            _clearCounts = On(_acc.LoadAutoGroupedKernel<Index1D, SGrid, SCfg>(WholeStep.ClearCounts));
+            _giantLists = On(_acc.LoadAutoGroupedKernel<Index1D, SGrid, SCfg>(WholeStep.GiantLists));
+            _loseStrays = On(_acc.LoadAutoGroupedKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.LoseStrays));
+            _scanReduce = On(_acc.LoadKernel<SGrid, SCfg>(WholeStep.ScanReduce));
+            _scanTiles = On(_acc.LoadKernel<SGrid, SCfg>(WholeStep.ScanTiles));
+            _scanDown = On(_acc.LoadKernel<SGrid, SCfg>(WholeStep.ScanDown));
+            _meanGroups = On(_acc.LoadKernel<SSph, SGlob, SGrid, SCfg>(WholeStep.MeanGroups));
+            _meanGroup = Math.Max(1, Math.Min(WholeStep.MeanGroupBodies, accelerator.MaxNumThreadsPerGroup));
 
             if (grouped)
             {
-                _meanChunks = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.MeanChunks, g);
-                _ranges = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.Ranges, g);
-                _scatter = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SGlob, SGrid, SCfg>(WholeStep.Scatter, g);
-                _censusKernel = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, SGlob, SCfg>(WholeStep.Census, g);
-                _water = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks, g);
-                _contact = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks, g);
-                _fluid = _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SState, SPanels, SGlob, SCfg>(WholeStep.FluidLinks, g);
+                _ranges = On(_acc.LoadImplicitlyGroupedKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.Ranges, g));
+                _scatter = On(_acc.LoadImplicitlyGroupedKernel<Index1D, SGlob, SGrid, SCfg>(WholeStep.Scatter, g));
+                _censusKernel = On(_acc.LoadImplicitlyGroupedKernel<Index1D, SGlob, SCfg>(WholeStep.Census, g));
+                _water = On(_acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks, g));
+                _contact = On(_acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks, g));
+                _fluid = On(_acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SConst, SState, SPanels, SGlob, SCfg>(WholeStep.FluidLinks, g));
             }
             else
             {
-                _meanChunks = _acc.LoadAutoGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.MeanChunks);
-                _ranges = _acc.LoadAutoGroupedStreamKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.Ranges);
-                _scatter = _acc.LoadAutoGroupedStreamKernel<Index1D, SGlob, SGrid, SCfg>(WholeStep.Scatter);
-                _censusKernel = _acc.LoadAutoGroupedStreamKernel<Index1D, SGlob, SCfg>(WholeStep.Census);
-                _water = _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks);
-                _contact = _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks);
-                _fluid = _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SConst, SState, SPanels, SGlob, SCfg>(WholeStep.FluidLinks);
+                _ranges = On(_acc.LoadAutoGroupedKernel<Index1D, SSph, SGlob, SGrid, SCfg>(WholeStep.Ranges));
+                _scatter = On(_acc.LoadAutoGroupedKernel<Index1D, SGlob, SGrid, SCfg>(WholeStep.Scatter));
+                _censusKernel = On(_acc.LoadAutoGroupedKernel<Index1D, SGlob, SCfg>(WholeStep.Census));
+                _water = On(_acc.LoadAutoGroupedKernel<Index1D, STopo, SState, SGlob, SWorld, SCfg>(WholeStep.WaterLinks));
+                _contact = On(_acc.LoadAutoGroupedKernel<Index1D, STopo, SConst, SGlob, SSph, SGrid, SWorld, SCfg>(WholeStep.ContactLinks));
+                _fluid = On(_acc.LoadAutoGroupedKernel<Index1D, STopo, SConst, SState, SPanels, SGlob, SCfg>(WholeStep.FluidLinks));
             }
 
             _step = new Action<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain, STrace, SGlob,
@@ -499,11 +819,11 @@ namespace __NS__
             }
 
 //@CLASS
-            _step[__CI__] = grouped
-                ? _acc.LoadImplicitlyGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+            _step[__CI__] = On(grouped
+                ? _acc.LoadImplicitlyGroupedKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
                     STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step__CI__, g)
-                : _acc.LoadAutoGroupedStreamKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
-                    STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step__CI__);
+                : _acc.LoadAutoGroupedKernel<Index1D, STopo, SConst, SPanels, SState, SDrive, SNeur, SBrain,
+                    STrace, SGlob, SSph, SSph, SGrid, SWorld, SCfg>(WholeStep.Step__CI__));
             if (_concurrent)
             {
                 _stepOn[__CI__] = grouped
@@ -515,17 +835,98 @@ namespace __NS__
             }
 //@ENDCLASS
 
-            _acc.Synchronize();
+            Sync();
             CompileMs = watch.Elapsed.TotalMilliseconds;
+        }
+
+        // A kernel in its stream-taking form, launched on this engine's stream: on the default stream
+        // the very launch the stream-kernel loaders make (Runner's _stream). Each wrapper's kernel is kept
+        // for the probe's shape lines, which read the kernel object behind a launcher.
+        private readonly Dictionary<Delegate, Delegate> _raw = new Dictionary<Delegate, Delegate>();
+
+        private Delegate Raw(Delegate launcher) => _raw.TryGetValue(launcher, out Delegate k) ? k : launcher;
+
+        private Action<T1, T2, T3> On<T1, T2, T3>(Action<AcceleratorStream, T1, T2, T3> k)
+        {
+            Action<T1, T2, T3> f = (a1, a2, a3) => k(_stream, a1, a2, a3);
+            _raw[f] = k;
+            return f;
+        }
+        private Action<T1, T2, T3, T4> On<T1, T2, T3, T4>(Action<AcceleratorStream, T1, T2, T3, T4> k)
+        {
+            Action<T1, T2, T3, T4> f = (a1, a2, a3, a4) => k(_stream, a1, a2, a3, a4);
+            _raw[f] = k;
+            return f;
+        }
+        private Action<T1, T2, T3, T4, T5> On<T1, T2, T3, T4, T5>(Action<AcceleratorStream, T1, T2, T3, T4, T5> k)
+        {
+            Action<T1, T2, T3, T4, T5> f = (a1, a2, a3, a4, a5) => k(_stream, a1, a2, a3, a4, a5);
+            _raw[f] = k;
+            return f;
+        }
+        private Action<T1, T2, T3, T4, T5, T6> On<T1, T2, T3, T4, T5, T6>(Action<AcceleratorStream, T1, T2, T3, T4, T5, T6> k)
+        {
+            Action<T1, T2, T3, T4, T5, T6> f = (a1, a2, a3, a4, a5, a6) => k(_stream, a1, a2, a3, a4, a5, a6);
+            _raw[f] = k;
+            return f;
+        }
+        private Action<T1, T2, T3, T4, T5, T6, T7> On<T1, T2, T3, T4, T5, T6, T7>(Action<AcceleratorStream, T1, T2, T3, T4, T5, T6, T7> k)
+        {
+            Action<T1, T2, T3, T4, T5, T6, T7> f = (a1, a2, a3, a4, a5, a6, a7) => k(_stream, a1, a2, a3, a4, a5, a6, a7);
+            _raw[f] = k;
+            return f;
+        }
+        private Action<T1, T2, T3, T4, T5, T6, T7, T8> On<T1, T2, T3, T4, T5, T6, T7, T8>(Action<AcceleratorStream, T1, T2, T3, T4, T5, T6, T7, T8> k)
+        {
+            Action<T1, T2, T3, T4, T5, T6, T7, T8> f = (a1, a2, a3, a4, a5, a6, a7, a8) => k(_stream, a1, a2, a3, a4, a5, a6, a7, a8);
+            _raw[f] = k;
+            return f;
+        }
+        private Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> On<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>(Action<AcceleratorStream, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> k)
+        {
+            Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> f = (a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15) => k(_stream, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15);
+            _raw[f] = k;
+            return f;
+        }
+
+        /// <summary>
+        /// Waits for this engine's work: the device, as it always did, when the engine is alone on it; on
+        /// a shared device, or with the scent filled on the card, its own stream and its class streams,
+        /// and never another world's kernels. The scent's fill stream is left out: the block joins it
+        /// in section 5, so under the probe the wait on the fill is timed there and not in whichever
+        /// section happened to sync first.
+        /// </summary>
+        private void Sync()
+        {
+            if (!_shared && _gpuScent == null)
+            {
+                _acc.Synchronize();
+                return;
+            }
+
+            _stream.Synchronize();
+            foreach (AcceleratorStream s in _streams)
+            {
+                s?.Synchronize();
+            }
         }
 
         private Col<T> G<T>(List<IColumn> list, int width, bool down, T fill = default) where T : unmanaged
         {
             int cap = ReferenceEquals(list, _gLink) ? WholeStep.LinkStride * _gcap : _gcap;
-            var column = new Col<T>(_acc, width, cap, fill);
+            var column = new Col<T>(_acc, _stream, width, cap, fill);
             list.Add(column);
             if (down) _gDown.Add(column);
             return column;
+        }
+
+        private Col<T> GripCol<T>(List<IColumn> list, int width, bool down) where T : unmanaged
+        {
+            if (_grip) return G<T>(list, width, down);
+
+            var stub = new Col<T>(_acc, _stream, width, 1);
+            _gripStubs.Add(stub);
+            return stub;
         }
 
         private static SCfg BaseConfig(GpuWorld w, GpuOptions o)
@@ -541,8 +942,13 @@ namespace __NS__
                 LimitDrive = w.LimitDrive ? 1 : 0, LimitDrag = w.LimitDrag ? 1 : 0,
                 UseRestore = w.UseRestore ? 1 : 0, FloorRestores = w.FloorRestores ? 1 : 0,
                 CreatureContact = w.CreatureContact ? 1 : 0, OffsetTorque = w.OffsetTorque ? 1 : 0,
+                BendAndPower = w.BendAndPower ? 1 : 0, TurningDrag = w.TurningDrag, RockTouch = w.RockTouch ? 1 : 0,
+                Anchoring = w.AnchorCell != null ? 1 : 0,
+                GripDecay = w.GripDecay, GripThreshold = w.GripThreshold, GripLag = w.GripLag,
 
-                DtD = w.Dt,
+                DtD = w.Dt, PoseOmega = w.PoseOmega,
+                PushOmega = (Real)w.PushOmega, LimbPush = (Real)w.LimbPush,
+                NegSkin = (Real)w.NegSkin, NegSpin = (Real)w.NegSpin,
                 Dt = (Real)w.Dt, Density = (Real)w.Density, DragK = (Real)w.DragK, AddedMass = (Real)w.AddedMass,
                 FluidAccel = (Real)w.FluidAccel, Gravity = (Real)w.Gravity, WorldDepth = (Real)w.WorldDepth,
                 Damping = (Real)w.Damping, SpinBudget = (Real)w.SpinBudget,
@@ -559,7 +965,8 @@ namespace __NS__
                 HalfThickness = (Real)w.HalfThickness, Fillet = (Real)w.Fillet, ReefFade = (Real)w.ReefFade,
                 SigmaSloped = w.SigmaSloped, SigmaFlat = w.SigmaFlat, Speed = w.Speed,
 
-                SWorldDepth = w.SWorldDepth, ChemHalf = w.ChemHalf, EnergyScale = w.EnergyScale,
+                SWorldDepth = w.SWorldDepth, ChemHalf = w.ChemHalf, ScentHalf = w.ScentHalf, EnergyScale = w.EnergyScale,
+                LeafHalf = w.LeafHalf,
                 FlowScale = w.FlowScale, RateScale = w.RateScale, ConstCE = w.ConstCE, DtF = w.DtF,
 
                 StreamAmpAt = w.StreamAmpAt, StreamRateAt = w.StreamRateAt, CellAmpAt = w.CellAmpAt,
@@ -596,7 +1003,39 @@ namespace __NS__
         // contact grid's geometry read from the mirror: the cell, the largest link and the most
         // cells one link of each class covers. The joins cost a little; the step's numbers do not
         // move, because nothing it launches changes.
-        private static readonly bool ProbeOn = Environment.GetEnvironmentVariable("EVOSIM_GPU_PROBE") == "1";
+        //
+        // From the start under EVOSIM_GPU_PROBE=1, or switched on while the world runs by the farm's pace guard
+        // (Probe), which reads the last print back as lines (ProbeLines). It is switched between blocks, never
+        // inside one, so a block's joins and marks are all on or all off.
+        private bool ProbeOn = Environment.GetEnvironmentVariable("EVOSIM_GPU_PROBE") == "1";
+        private readonly List<string> _probeLines = new List<string>();
+        private readonly List<string> _probeLast = new List<string>();
+
+        public bool Probe
+        {
+            get => ProbeOn;
+            set
+            {
+                if (value && !ProbeOn) _probeBlocks = 0;
+                ProbeOn = value;
+            }
+        }
+
+        public IReadOnlyList<string> ProbeLines => _probeLast;
+
+        // A print's line, written as before and kept for ProbeLines; the print's first line starts a new set.
+        private void ProbeLine(string line)
+        {
+            GpuConsole.Error.WriteLine(line);
+            _probeLines.Add(line);
+        }
+
+        private void ProbeLinesDone()
+        {
+            _probeLast.Clear();
+            _probeLast.AddRange(_probeLines);
+            _probeLines.Clear();
+        }
         private readonly long[] _probeClass = new long[4];
         private readonly long[] _probeGridPart = new long[5];
         private int _probeRows, _probeBuckets;
@@ -615,11 +1054,11 @@ namespace __NS__
         // body's (the most cycles in all), summed over blocks.
         private void PhaseRead()
         {
-            _acc.Synchronize();
+            Sync();
             int P = WholeStep.Phases;
             int n = P * _gcap;
             if (_phaseHost.Length != n) _phaseHost = new long[n];
-            _phase.View.SubView(0, n).CopyToCPU(_phaseHost);
+            _phase.View.SubView(0, n).CopyToCPU(_stream, _phaseHost);
 
             var slowTotal = new long[4];
             var slowG = new int[] { -1, -1, -1, -1 };
@@ -646,6 +1085,106 @@ namespace __NS__
                 _phaseBlocks[c]++;
                 _phaseSlowLinks[c] = Math.Max(_phaseSlowLinks[c], _slots.Body[slowG[c]].Links);
             }
+
+            LinkPhaseRead();
+        }
+
+        private readonly Scratch<long> _linkPhase;
+        private long _linkPhaseRows;
+        private long[] _linkPhaseHost = new long[1];
+        private readonly double[] _linkMean = new double[4 * WholeStep.LinkParts];
+        private readonly double[] _linkSlow = new double[4 * WholeStep.LinkParts];
+        private readonly long[] _linkCount = new long[4];
+        private readonly int[] _linkBlocks = new int[4];
+        private static readonly string[] LinkPartNames =
+            { "read", "velocity", "acceleration", "read", "panels", "terms", "store" };
+
+        // After a block's last step: each class's links' cycles a part in the water and fluid
+        // passes, summed, and its slowest link's in each pass (the most cycles in that pass),
+        // summed over blocks. A tank with no current leaves the water's parts as they were.
+        private void LinkPhaseRead()
+        {
+            int P = WholeStep.LinkParts, W = WholeStep.WaterParts;
+            long rows = _linkPhaseRows;
+            if (rows == 0) return;
+            long n = P * rows;
+            if (_linkPhaseHost.Length != n) _linkPhaseHost = new long[n];
+            _linkPhase.View.SubView(0, n).CopyToCPU(_stream, _linkPhaseHost);
+
+            var slowWater = new long[4];
+            var slowFluid = new long[4];
+            var slowWaterRow = new long[] { -1, -1, -1, -1 };
+            var slowFluidRow = new long[] { -1, -1, -1, -1 };
+            for (int g = 0; g < _slots.Used; g++)
+            {
+                Creature body = _slots.Body[g];
+                if (body == null || !body.Alive) continue;
+                int c = _slots.ClassOf[g];
+                for (int l = 0; l < body.Links; l++)
+                {
+                    long row = (long)g * WholeStep.LinkStride + l;
+                    if (row >= rows) break;
+                    long water = 0, fluid = 0;
+                    for (int p = 0; p < P; p++)
+                    {
+                        long v = _linkPhaseHost[p * rows + row];
+                        _linkMean[c * P + p] += v;
+                        if (p < W) water += v; else fluid += v;
+                    }
+                    _linkCount[c]++;
+                    if (water > slowWater[c]) { slowWater[c] = water; slowWaterRow[c] = row; }
+                    if (fluid > slowFluid[c]) { slowFluid[c] = fluid; slowFluidRow[c] = row; }
+                }
+            }
+
+            for (int c = 0; c < 4; c++)
+            {
+                if (slowFluidRow[c] < 0) continue;
+                for (int p = 0; p < P; p++)
+                {
+                    long row = p < W ? slowWaterRow[c] : slowFluidRow[c];
+                    if (row >= 0) _linkSlow[c * P + p] += _linkPhaseHost[p * rows + row];
+                }
+                _linkBlocks[c]++;
+            }
+        }
+
+        private void PrintLinkPhases()
+        {
+            int P = WholeStep.LinkParts, W = WholeStep.WaterParts;
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            for (int c = 0; c < 4; c++)
+            {
+                if (_linkBlocks[c] == 0) continue;
+                var text = new System.Text.StringBuilder();
+                foreach (bool slowest in new[] { false, true })
+                {
+                    for (int pass = 0; pass < 2; pass++)
+                    {
+                        int from = pass == 0 ? 0 : W, to = pass == 0 ? W : P;
+                        var parts = new System.Text.StringBuilder();
+                        double sum = 0;
+                        for (int p = from; p < to; p++)
+                        {
+                            double v = slowest
+                                ? _linkSlow[c * P + p] / _linkBlocks[c] / 1000.0
+                                : _linkMean[c * P + p] / Math.Max(1, _linkCount[c]) / 1000.0;
+                            sum += v;
+                            parts.Append(string.Format(inv, "{0}{1} {2:0.00}", p == from ? "" : ", ", LinkPartNames[p], v));
+                        }
+                        text.Append(string.Format(inv, "{0}{1} {2:0.00} ({3})",
+                            text.Length == 0 ? "" : "; ", (slowest ? "the slowest link's " : "the mean link's ") +
+                            (pass == 0 ? "water" : "fluid"), sum, parts));
+                    }
+                }
+                ProbeLine(string.Format(inv,
+                    "gpu-probe link phases, class {0}, kilocycles a step over {1:0} links a block: {2}",
+                    c, _linkCount[c] / (double)_linkBlocks[c], text));
+            }
+            System.Array.Clear(_linkMean, 0, _linkMean.Length);
+            System.Array.Clear(_linkSlow, 0, _linkSlow.Length);
+            System.Array.Clear(_linkCount, 0, 4);
+            System.Array.Clear(_linkBlocks, 0, 4);
         }
 
         private void PrintPhases()
@@ -666,7 +1205,7 @@ namespace __NS__
                     mean.Append(string.Format(inv, "{0}{1} {2:0.0}", p == 0 ? "" : ", ", PhaseNames[p], m));
                     slow.Append(string.Format(inv, "{0}{1} {2:0.0}", p == 0 ? "" : ", ", PhaseNames[p], s));
                 }
-                Console.Error.WriteLine(string.Format(inv,
+                ProbeLine(string.Format(inv,
                     "gpu-probe phases, class {0}, kilocycles a step: the mean body {1:0.0} ({2}); the slowest body, up to {3} links, {4:0.0} ({5})",
                     c, meanSum, mean, _phaseSlowLinks[c], slowSum, slow));
             }
@@ -675,6 +1214,7 @@ namespace __NS__
             System.Array.Clear(_phaseBodies, 0, 4);
             System.Array.Clear(_phaseBlocks, 0, 4);
             System.Array.Clear(_phaseSlowLinks, 0, 4);
+            PrintLinkPhases();
         }
 #endif
 
@@ -682,7 +1222,7 @@ namespace __NS__
         // the scatter. Their sum is the grid's time, so the grid term is added here as well.
         private void GridPart(int k, ref long pt)
         {
-            _acc.Synchronize();
+            Sync();
             long pn = Stopwatch.GetTimestamp();
             _probeGridPart[k] += pn - pt;
             _probeGrid += pn - pt;
@@ -690,11 +1230,77 @@ namespace __NS__
         }
         private long _probeGrid, _probeTail, _probeSteps, _probeWater, _probeContact;
 
+        // The water and fluid passes apart, a class at a time, each launch joined when the classes
+        // share a stream. Their sum is the passes' time, so the passes' term is added here as well.
+        private readonly long[] _probeWaterClass = new long[4];
+        private readonly long[] _probeFluidClass = new long[4];
+        private void PassPart(long[] part, int c, ref long pt)
+        {
+            Sync();
+            long pn = Stopwatch.GetTimestamp();
+            part[c] += pn - pt;
+            _probeWater += pn - pt;
+            pt = pn;
+        }
+
         // The host's side of a block: the slots, the packs of new and resized bodies, every
         // body's block pack, the world's snow and instants, the uploads; then the downloads and
         // the mirror, which land one block behind the print.
         private readonly long[] _probeHost = new long[7];
         private readonly long[] _probeBytes = new long[7];
+
+        // The scent grid's share of those: its copy from the host's field (in snow and instants)
+        // and its upload (in up), with the upload's bytes.
+        private readonly long[] _probeScent = new long[2];
+        private long _probeScentBytes;
+
+        // The copies themselves (W0, card-next-r57.md Part 8), from the thread's CopyTally: the up
+        // section's, the down section's and the rest of the block's, each a count and the bytes
+        // moved; the bytes the up and down copies would move if each stopped at the used slots;
+        // and each class's capacity and used slots at the last block.
+        private readonly long[] _probeCopies = new long[3], _probeCopyBytes = new long[3], _probeWaits = new long[3];
+        private long _waitMark;
+        private readonly long[] _probeUsedBytes = new long[2];
+        private readonly int[] _probeCap = new int[4], _probeClassUsed = new int[4];
+
+        private void CopyMark(int k, ref long copies, ref long bytes)
+        {
+            _probeCopies[k] += CopyTally.Copies - copies;
+            _probeCopyBytes[k] += CopyTally.Bytes - bytes;
+            _probeWaits[k] += CopyTally.Waits - _waitMark;
+            _waitMark = CopyTally.Waits;
+            copies = CopyTally.Copies;
+            bytes = CopyTally.Bytes;
+        }
+
+        // A global column's used slots in its own units: a body column holds a slot a row, a link
+        // column LinkStride of them, so the used part is the used slots times the column's
+        // capacity over the bodies' capacity.
+        private int UsedUnits(IColumn c, int gUsed) => gUsed * Math.Max(1, c.Cap / Math.Max(1, _gcap));
+
+        // Whether each host array is page-locked, counted once at the first print: the globals by
+        // their lists, the sphere sets, the classes, and the named columns the up section sends.
+        private string LockedCount()
+        {
+            var columns = new List<IColumn>();
+            columns.AddRange(_gBody);
+            columns.AddRange(_gLink);
+            columns.AddRange(_gStray);
+            for (int set = 0; set < 2; set++)
+            {
+                columns.AddRange(_sph[set]);
+                columns.Add(_active[set]);
+            }
+            foreach (ClassSet cs in _classes) columns.AddRange(cs.Columns);
+            columns.AddRange(new IColumn[]
+            {
+                _rankToSlot, _census, _overflow, _guard, _stock, _scent, _inst, _wr, _wi,
+                _cSource, _cWeight, _cPortPart, _cPortChannel, _cPortIndex, _strayCount,
+            });
+            int locked = 0;
+            foreach (IColumn c in columns) if (c.Locked) locked++;
+            return locked + " of " + columns.Count;
+        }
 
         private void HostMark(int k, ref long th)
         {
@@ -704,8 +1310,51 @@ namespace __NS__
         }
         private int _probeBlocks;
 
+        // The last block's launch shapes, for the kernels' own lines (KernelShape), printed once
+        // at the first print: each class's bodies and link threads, the slots, rows, chunks and
+        // tiles, and the launches a step.
+        private readonly int[] _probeUsed = new int[4], _probeLinkThreads = new int[4];
+        private int _probeGUsed, _probeChunks, _probeTiles;
+        private double _probeLaunches;
+        private bool _probeShaped;
+
+        private void PrintShape()
+        {
+            int g = !_onCpu && _o.GroupSize > 0 ? _o.GroupSize : 0;
+            var lines = new List<string>
+            {
+                string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    "gpu-probe card: {0}, {1} SMs, {2} threads a SM at most, group {3}",
+                    _acc.Name, _acc.NumMultiprocessors, _acc.MaxNumThreadsPerMultiprocessor, g > 0 ? g.ToString() : "auto"),
+            };
+            for (int c = 0; c < _classes.Length; c++)
+            {
+                if (_probeUsed[c] == 0) continue;
+                if (_base.HasCurrent != 0) lines.Add(KernelShape.Describe(_acc, "water " + c, Raw(_water), g, _probeLinkThreads[c]));
+                lines.Add(KernelShape.Describe(_acc, "fluid " + c, Raw(_fluid), g, _probeLinkThreads[c]));
+                if (_base.PerPart != 0) lines.Add(KernelShape.Describe(_acc, "contact " + c, Raw(_contact), g, _probeLinkThreads[c]));
+                lines.Add(KernelShape.Describe(_acc, "step " + c, Raw(_step[c]), g, _probeUsed[c]));
+            }
+            lines.Add(KernelShape.Describe(_acc, "mean groups", Raw(_meanGroups), _meanGroup, (long)_probeChunks * _meanGroup));
+            lines.Add(KernelShape.Describe(_acc, "ranges", Raw(_ranges), g, _probeRows));
+            lines.Add(KernelShape.Describe(_acc, "lose strays", Raw(_loseStrays), g, _probeGUsed));
+            lines.Add(KernelShape.Describe(_acc, "scan reduce", Raw(_scanReduce), _tileGroup, (long)_probeTiles * _tileGroup));
+            lines.Add(KernelShape.Describe(_acc, "scan tiles", Raw(_scanTiles), _scanGroup, _scanGroup));
+            lines.Add(KernelShape.Describe(_acc, "scatter", Raw(_scatter), g, _probeRows));
+            lines.Add(KernelShape.Describe(_acc, "census", Raw(_censusKernel), g, _probeGUsed));
+            foreach (string line in lines) ProbeLine(line.StartsWith("gpu-probe") ? line : "gpu-probe kernel " + line);
+            ProbeLine(KernelShape.LaunchCost(_acc, g > 0 ? g : 32, _probeLaunches));
+            ProbeLine("gpu-probe host arrays page-locked: " + LockedCount() + " columns");
+        }
+
         private void PrintProbe(DynamicsWorld world, IReadOnlyList<Creature> list)
         {
+            if (!_probeShaped)
+            {
+                _probeShaped = true;
+                PrintShape();
+            }
+
             double sum = 0, largest = 0;
             int active = 0;
             for (int r = 0; r < list.Count; r++)
@@ -749,7 +1398,7 @@ namespace __NS__
             }
 
             double f = 1000.0 / Stopwatch.Frequency / Math.Max(1, _probeSteps);
-            Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            ProbeLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
                 "gpu-probe" + (_concurrent ? " concurrent (the classes' time together in the first)" : "") +
                 " t={0:0} s, ms a step: grid {1:0.000}, classes {2:0.000} / {3:0.000} / {4:0.000} / {5:0.000}, tail {6:0.000}; " +
                 "bodies a class {7} / {8} / {9} / {10}; cell {11:0.000} m (mean link {12:0.000} m), largest link {13:0.000} m; " +
@@ -758,29 +1407,54 @@ namespace __NS__
                 _probeTail * f, used[0], used[1], used[2], used[3], cell, mean, largest,
                 most[0], most[1], most[2], most[3], entries[0], entries[1], entries[2], entries[3]));
 
-            Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            ProbeLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
                 "gpu-probe grid parts, ms a step: zero {0:0.000}, mean {1:0.000}, ranges {2:0.000}, scan {3:0.000}, scatter {4:0.000}; rows {5}, buckets {6}; " +
                 "the water and fluid passes before them {7:0.000}; the links' contacts before each class (in its time when concurrent) {8:0.000}",
                 _probeGridPart[0] * f, _probeGridPart[1] * f, _probeGridPart[2] * f, _probeGridPart[3] * f, _probeGridPart[4] * f,
                 _probeRows, _probeBuckets, _probeWater * f, _probeContact * f));
+            if (!_concurrent)
+            {
+                ProbeLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    "gpu-probe passes, ms a step, each launch joined: water a class {0:0.000} / {1:0.000} / {2:0.000} / {3:0.000}; " +
+                    "fluid a class {4:0.000} / {5:0.000} / {6:0.000} / {7:0.000}",
+                    _probeWaterClass[0] * f, _probeWaterClass[1] * f, _probeWaterClass[2] * f, _probeWaterClass[3] * f,
+                    _probeFluidClass[0] * f, _probeFluidClass[1] * f, _probeFluidClass[2] * f, _probeFluidClass[3] * f));
+            }
+            for (int k = 0; k < 4; k++) _probeWaterClass[k] = _probeFluidClass[k] = 0;
 #if GPU_PHASE_PROBE
             PrintPhases();
 #endif
 
             double fb = 1000.0 / Stopwatch.Frequency / 20;
-            Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            ProbeLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
                 "gpu-probe host, ms a block: slots {0:0.00}, packs {1:0.00}, block packs {2:0.00}, snow and instants {3:0.00}, " +
-                "up {4:0.00}; down {5:0.00}, mirror {6:0.00}",
+                "up {4:0.00}; down {5:0.00}, mirror {6:0.00}; the scent's copy {7:0.00} (in snow and instants) and upload " +
+                "{8:0.00} (in up), {9:0.0} MB",
                 _probeHost[0] * fb, _probeHost[1] * fb, _probeHost[2] * fb, _probeHost[3] * fb, _probeHost[4] * fb,
-                _probeHost[5] * fb, _probeHost[6] * fb));
+                _probeHost[5] * fb, _probeHost[6] * fb, _probeScent[0] * fb, _probeScent[1] * fb,
+                _probeScentBytes / (double)(1 << 20) / 20));
             for (int k = 0; k < _probeHost.Length; k++) _probeHost[k] = 0;
+            _probeScent[0] = _probeScent[1] = 0;
+            _probeScentBytes = 0;
             double mb = 1.0 / (1 << 20) / 20;
-            Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            ProbeLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
                 "gpu-probe bytes, MB a block: up body columns {0:0.0}, link columns {1:0.0}, spheres {2:0.0}, classes {3:0.0}, " +
                 "snow and instants {4:0.0}; down body and link columns {5:0.0}, classes {6:0.0}; slots {7}",
                 _probeBytes[0] * mb, _probeBytes[1] * mb, _probeBytes[2] * mb, _probeBytes[3] * mb, _probeBytes[4] * mb,
                 _probeBytes[5] * mb, _probeBytes[6] * mb, _gcap));
             for (int k = 0; k < _probeBytes.Length; k++) _probeBytes[k] = 0;
+            ProbeLine(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "gpu-probe copies, a block: up {0:0.0} copies ({18:0.0} waiting), {1:0.0} MB moved, {2:0.0} MB in used slots; " +
+                "down {3:0.0} copies ({19:0.0} waiting), {4:0.0} MB moved, {5:0.0} MB in used slots; the rest of the block {6:0.0} copies " +
+                "({20:0.0} waiting), {7:0.0} MB; capacity against used a class {8}/{9} / {10}/{11} / {12}/{13} / {14}/{15}; slots {16}/{17}",
+                _probeCopies[0] / 20.0, _probeCopyBytes[0] * mb, _probeUsedBytes[0] * mb,
+                _probeCopies[1] / 20.0, _probeCopyBytes[1] * mb, _probeUsedBytes[1] * mb,
+                _probeCopies[2] / 20.0, _probeCopyBytes[2] * mb,
+                _probeCap[0], _probeClassUsed[0], _probeCap[1], _probeClassUsed[1],
+                _probeCap[2], _probeClassUsed[2], _probeCap[3], _probeClassUsed[3], _gcap, _slots.Used,
+                _probeWaits[0] / 20.0, _probeWaits[1] / 20.0, _probeWaits[2] / 20.0));
+            for (int k = 0; k < 3; k++) _probeCopies[k] = _probeCopyBytes[k] = _probeWaits[k] = 0;
+            _probeUsedBytes[0] = _probeUsedBytes[1] = 0;
 
             _probeGrid = _probeTail = _probeSteps = _probeWater = _probeContact = 0;
             for (int k = 0; k < 4; k++) _probeClass[k] = 0;
@@ -792,6 +1466,8 @@ namespace __NS__
         {
             long t0 = Stopwatch.GetTimestamp();
             long th = t0;
+            long tc = CopyTally.Copies, tb = CopyTally.Bytes;
+            _waitMark = CopyTally.Waits;
             IReadOnlyList<Creature> list = world.Creatures;
             _list = list;
             int threads = Math.Max(1, world.Threads);
@@ -800,13 +1476,18 @@ namespace __NS__
             // ---- 1. slots, refusals and room
             _slots.Sync(list, _o.Resync);
 
-            foreach (Creature refused in _slots.Refused)
+            // A body no class holds stops the run before anything steps. Losing it, or stepping it
+            // with less brain than it grew, would be a cap on what can evolve: a world rule made by
+            // the engine (card-audit-r57.md, the central brain). The farm writes this as the
+            // run's ending and exits non-zero; the world carries on, on the cpu engine, from its
+            // last checkpoint.
+            if (_slots.Refused.Count > 0)
             {
-                // Not stepped, so not in anyone's contact set: the CPU's lost body. The farm kills
-                // it at its next divergence check (Simulation.CheckFinite's gpu clause).
-                refused.Alive = false;
-                refused.MarkLost();
-                refused.CommitContactSphere();
+                Creature refused = _slots.Refused[0];
+                throw new NotSupportedException(FormattableString.Invariant(
+                    $"The gpu engine cannot hold body {refused.Id} at step {world.Steps}: ") +
+                    _slots.WhyNoClass(refused) + ". It will not change a body to fit, so this world steps on " +
+                    "the cpu engine from its last checkpoint.");
             }
 
             EnsureGlobal(_slots.Used);
@@ -834,12 +1515,16 @@ namespace __NS__
             {
                 Creature c = list[r];
                 if (c.Senses.Nutrients != null) _w.AttachField(c.Senses.Nutrients);
+                if (c.Senses.Scent != null) _w.AttachScent(c.Senses.Scent);
+                if (c.Senses.LeafScent != null) _w.AttachLeafScent(c.Senses.LeafScent);
             }
+
+            PlaceBrains();
 
             foreach (int g in _slots.Packs)
             {
                 ClassSet set = _classes[_slots.ClassOf[g]];
-                set.Dirty = true;
+                set.NotePack(_slots.LocalOf[g]);
                 set.WidenPanels(_slots.Body[g].PanelStart[_slots.Body[g].Links]);
             }
 
@@ -880,6 +1565,45 @@ namespace __NS__
             _w.ReadStock(_stockD);
             for (int k = 0; k < stockLength; k++) _stock.Host[k] = (Real)_stockD[k];
 
+            // The scent's grid as the host last filled it, every block: the host refills it at a
+            // metabolic step, which a block never spans, so the card reads within a block what the
+            // CPU reads, stale or not. Under EVOSIM_GPU_SCENT the card fills it (GpuScent, section 5)
+            // and the host's copy is not read.
+            ScentField scent = _w.Scent;
+            int scentLength = scent == null ? 1 : scent.CellsX * scent.CellsY * scent.CellsZ;
+
+            // Under the card's fill the column is the fill's output, sized to its grid when the fill
+            // was set up. Resized under it, the fill would write past the end of the card's buffer,
+            // which nothing on the card checks.
+            if (_gpuScent != null && _scent.Cap != scentLength)
+            {
+                throw new InvalidOperationException(
+                    "The scent's column holds " + _scent.Cap.ToString(System.Globalization.CultureInfo.InvariantCulture) + " cells and the " +
+                    "block wants " + scentLength.ToString(System.Globalization.CultureInfo.InvariantCulture) + ", under the card's fill: " +
+                    "the fill writes the whole grid into it.");
+            }
+
+            if (_scent.Cap != scentLength) _scent.Resize(scentLength);
+            if (scent != null && _gpuScent == null)
+            {
+                long sc = ProbeOn ? Stopwatch.GetTimestamp() : 0;
+                scent.CopyCellsTo(_scent.Host);
+                if (ProbeOn) _probeScent[0] += Stopwatch.GetTimestamp() - sc;
+            }
+            _base.ScentNx = scent == null ? 1 : scent.CellsX;
+            _base.ScentNy = scent == null ? 1 : scent.CellsY;
+            _base.ScentNz = scent == null ? 1 : scent.CellsZ;
+
+            // D167's leaf smell, as the scent's grid: the host refills it at a metabolic step only.
+            ScentField leaf = _w.LeafScent;
+            int leafLength = leaf == null ? 1 : leaf.CellsX * leaf.CellsY * leaf.CellsZ;
+            if (_leaf.Cap != leafLength) _leaf.Resize(leafLength);
+            if (leaf != null) leaf.CopyCellsTo(_leaf.Host);
+            _base.LeafNx = leaf == null ? 1 : leaf.CellsX;
+            _base.LeafNy = leaf == null ? 1 : leaf.CellsY;
+            _base.LeafNz = leaf == null ? 1 : leaf.CellsZ;
+            _base.LeafCell = leaf == null ? 1f : leaf.CellSizeMetres;
+
             double dt = world.Config.StepSeconds;
             double seconds = world.ElapsedSeconds;
             for (int k = 0; k < steps; k++)
@@ -907,23 +1631,93 @@ namespace __NS__
                 _probeBytes[5] += 6L * probeRows * _gcap * sizeof(int);
                 for (int k = 0; k < _classes.Length; k++)
                     if (_slots.Classes[k].Used > 0) _probeBytes[6] += _classes[k].DownloadBytes;
+
+                // The same copies stopped at the used slots, beside the bytes at capacity above.
+                int probeUsed = _slots.Used;
+                foreach (IColumn c in _gBody) _probeUsedBytes[0] += _lists.Contains(c) ? 0 : c.BytesFor(UsedUnits(c, probeUsed));
+                _probeUsedBytes[0] += 6L * probeRows * probeUsed * sizeof(int);
+                foreach (IColumn c in _gLink) _probeUsedBytes[0] += c.BytesFor(UsedUnits(c, probeUsed));
+                foreach (Col<Real> c in _sph[_committed]) _probeUsedBytes[0] += c.BytesFor(UsedUnits(c, probeUsed));
+                _probeUsedBytes[0] += _stock.Bytes + _inst.Bytes;
+                foreach (IColumn c in _gDown) _probeUsedBytes[1] += _lists.Contains(c) ? 0 : c.BytesFor(UsedUnits(c, probeUsed));
+                _probeUsedBytes[1] += 6L * probeRows * probeUsed * sizeof(int);
+                for (int k = 0; k < _classes.Length; k++)
+                {
+                    int used = _slots.Classes[k].Used;
+                    _probeUsedBytes[0] += _classes[k].UploadBytesFor(used);
+                    if (used > 0) _probeUsedBytes[1] += _classes[k].DownloadBytesFor(used);
+                    _probeCap[k] = _classes[k].Cap;
+                    _probeClassUsed[k] = used;
+                }
+                CopyMark(2, ref tc, ref tb);
             }
 
             // ---- 5. up
+            // Every copy here is queued without a wait on a card (IColumn.UpQueued) and joined once
+            // at the section's end, which card-next-r57.md Part 8's table makes sound: the host
+            // writes none of these arrays again before the download, and the card reads them only
+            // after the join.
             int listRows = ListRows();
-            foreach (IColumn c in _gBody) if (!_lists.Contains(c)) c.Up();
+            int upUsed = _slots.Used;
+            foreach (IColumn c in _gBody) if (!_lists.Contains(c)) c.UpUsedQueued(UsedUnits(c, upUsed));
             ListsUp(listRows);
-            foreach (IColumn c in _gLink) c.Up();
-            _rankToSlot.Up();
-            _census.Up();
-            _overflow.Up();
-            foreach (Col<Real> c in _sph[_committed]) c.Up();
-            _active[_committed].Up();
-            for (int k = 0; k < _classes.Length; k++) _classes[k].Upload();
-            _stock.Up();
-            _inst.Up();
+            foreach (IColumn c in _gLink) c.UpUsedQueued(UsedUnits(c, upUsed));
+            _rankToSlot.UpQueued();
+            _census.UpQueued();
+            _overflow.UpQueued();
+            _guard.UpQueued();
+            _strayCode.View.MemSetToZero(_stream);
+            _strayStep.View.MemSetToZero(_stream);
+            _strayCount.View.MemSetToZero(_stream);
+            foreach (Col<Real> c in _sph[_committed]) c.UpUsedQueued(UsedUnits(c, upUsed));
+            _active[_committed].UpUsedQueued(UsedUnits(_active[_committed], upUsed));
+            for (int k = 0; k < _classes.Length; k++) _classes[k].Upload(_slots.Classes[k].Used);
+            _stock.UpQueued();
+            if (_gpuScent != null)
+            {
+                // The card's own fill (C3) was queued on its own stream at the world's snapshot
+                // (GpuScent). The block joins that stream here, before any kernel reads the grid.
+                // Under the probe the engine's own streams are joined first (Sync leaves the fill's
+                // stream out), so the time is the step's wait on the fill, in the scent's upload's place.
+                long su = 0;
+                if (ProbeOn) { Sync(); su = Stopwatch.GetTimestamp(); }
+                bool filled = _gpuScent.Join();
+                if (ProbeOn)
+                {
+                    _probeScent[1] += Stopwatch.GetTimestamp() - su;
+                    if (filled) _probeScentBytes += _gpuScent.Bytes;
+                }
+                _gpuScent.Audit();
+            }
+            else if (ProbeOn)
+            {
+                // The scent's upload joined on both sides, so its time is its own (C0,
+                // card-next-r57.md): what a fill on the card would no longer pay.
+                Sync();
+                long su = Stopwatch.GetTimestamp();
+                _scent.Up();
+                Sync();
+                _probeScent[1] += Stopwatch.GetTimestamp() - su;
+                _probeScentBytes += _scent.Bytes;
+            }
+            else
+            {
+                _scent.UpQueued();
+            }
+            if (_w.LeafScent != null) _leaf.UpQueued();
+            if (_cDirty)
+            {
+                _cSource.UpQueued(); _cWeight.UpQueued(); _cPortPart.UpQueued(); _cPortChannel.UpQueued(); _cPortIndex.UpQueued();
+                _cDirty = false;
+            }
+            _inst.UpQueued();
 
-            if (ProbeOn) { _acc.Synchronize(); HostMark(4, ref th); }
+            // The join after the uploads (Part 8). The classes' streams, when concurrent, do not
+            // follow this stream's order, and the water and fluid passes of the first step start
+            // on them; without this wait they could read a column before its copy lands.
+            _stream.Synchronize();
+
+            if (ProbeOn) { Sync(); HostMark(4, ref th); CopyMark(0, ref tc, ref tb); }
 
             // ---- 6. the grid's room
             int gUsed = _slots.Used;
@@ -933,6 +1727,7 @@ namespace __NS__
 
             _lo.Ensure(3L * Math.Max(1, rows));
             _hi.Ensure(3L * Math.Max(1, rows));
+            _isGiant.Ensure(Math.Max(1, rows));
             _counts.Ensure(buckets + 1);
             _start.Ensure(buckets + 1);
             _gcursor.Ensure(buckets + 1);
@@ -944,15 +1739,22 @@ namespace __NS__
             _linkPush.Ensure(3 * linkRows);
             // The fluid's rows are links whatever the contact's are: LinkStride a slot.
             long fluidRows = Math.Max(1, (long)WholeStep.LinkStride * gUsed);
-            _linkFluid.Ensure(15 * fluidRows);
+            _linkFluid.Ensure(17 * fluidRows);
             _linkLimited.Ensure(fluidRows);
             _linkFlags.Ensure(linkRows);
+            if (_rock)
+            {
+                _touchNew.Ensure(linkRows);
+                _touchAt.Ensure(6 * linkRows);
+            }
             _stageN.Ensure(linkRows);
             _stageId.Ensure(WholeStep.StageCap * linkRows);
             _stageSlot.Ensure(WholeStep.StageCap * linkRows);
             _stagePart.Ensure(WholeStep.StageCap * linkRows);
 #if GPU_PHASE_PROBE
             _phase.Ensure((long)WholeStep.Phases * _gcap);
+            _linkPhase.Ensure(WholeStep.LinkParts * fluidRows);
+            _linkPhaseRows = WholeStep.LinkStride * gUsed;
 #endif
             if (_entryCap < 16 * rows) _entryCap = 16 * rows;
             _items.Ensure(_entryCap);
@@ -970,6 +1772,7 @@ namespace __NS__
             cfg.Buckets = buckets;
             cfg.Mask = buckets - 1;
             cfg.EntryCap = _entryCap;
+            cfg.GiantCells = GiantCells;
             cfg.Chunk = _chunk;
             cfg.Chunks = chunks;
             cfg.Tiles = tiles;
@@ -981,7 +1784,7 @@ namespace __NS__
 
             SGlob gl = Glob;
             SGrid grid = Grid;
-            SWorld sw = new SWorld { Inst = _inst.View, WR = _wr.View, Stock = _stock.View, WI = _wi.View };
+            SWorld sw = new SWorld { Inst = _inst.View, WR = _wr.View, Stock = _stock.View, WI = _wi.View, Scent = _scent.View, Leaf = _leaf.View, Guard = _guard.View };
 
             long t1 = Stopwatch.GetTimestamp();
 
@@ -992,6 +1795,26 @@ namespace __NS__
             bool serial = _o.SerialMean;
             bool instrument = world.Config.ContactInstrument;
             bool perPart = _base.PerPart != 0;
+
+            if (probe)
+            {
+                // The launches a step, counted as the loop below makes them (the memset is the
+                // driver's, and counted with them); the probe's own joins are not launches.
+                int launches = 1;
+                for (int c = 0; c < _classes.Length; c++)
+                {
+                    int used = _slots.Classes[c].Used;
+                    _probeUsed[c] = used;
+                    _probeLinkThreads[c] = used * _slots.Classes[c].Links;
+                    if (used > 0) launches += (cfg.HasCurrent != 0 ? 1 : 0) + 1 + (perPart ? 1 : 0) + 1;
+                }
+                if (rows > 0) launches += 2 * (serial ? 1 : 2) + 10;
+                if (instrument && gUsed > 0) launches++;
+                _probeLaunches = launches;
+                _probeGUsed = gUsed;
+                _probeChunks = chunks;
+                _probeTiles = tiles;
+            }
 
             for (int k = 0; k < steps; k++)
             {
@@ -1025,12 +1848,14 @@ namespace __NS__
                     else
                     {
                         if (cfg.HasCurrent != 0) _water(linkThreads, set.Topo, set.StateSet, gl, sw, cc);
+                        if (probe) PassPart(_probeWaterClass, c, ref pt);
                         _fluid(linkThreads, set.Topo, set.ConstSet, set.StateSet, set.PanelSet, gl, cc);
+                        if (probe) PassPart(_probeFluidClass, c, ref pt);
                     }
                 }
-                if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeWater += pn - pt; pt = pn; }
+                if (probe) { Sync(); long pn = Stopwatch.GetTimestamp(); _probeWater += pn - pt; pt = pn; }
 
-                _counts.View.MemSetToZero();
+                _counts.View.MemSetToZero(_stream);
                 if (probe) GridPart(0, ref pt);
                 if (rows > 0)
                 {
@@ -1040,28 +1865,50 @@ namespace __NS__
                     }
                     else
                     {
-                        _meanChunks(chunks, committed, gl, grid, cfg);
+                        _meanGroups(new KernelConfig(chunks, _meanGroup), committed, gl, grid, cfg);
                         _meanCombine(1, grid, cfg);
                     }
                     if (probe) GridPart(1, ref pt);
 
                     _ranges(rows, committed, gl, grid, cfg);
+
+                    // The reach guard (DynamicsWorld.LoseStrays): what strayed is recorded and
+                    // emptied, and the grid built once more without it. Every launch returns at
+                    // once when nothing strayed, so a step without a stray is the step it was. A
+                    // stray the second build finds is lost too, and refused at the block's end.
+                    SCfg redo = cfg;
+                    redo.Redo = 1;
+                    _loseStrays(gUsed, committed, gl, grid, cfg);
+                    _rearm(1, grid, cfg);
+                    _clearCounts(buckets + 1, grid, cfg);
+                    if (serial)
+                    {
+                        _meanSerial(1, committed, gl, grid, redo);
+                    }
+                    else
+                    {
+                        _meanGroups(new KernelConfig(chunks, _meanGroup), committed, gl, grid, redo);
+                        _meanCombine(1, grid, redo);
+                    }
+                    _ranges(rows, committed, gl, grid, redo);
+                    _loseStrays(gUsed, committed, gl, grid, redo);
                     if (probe) GridPart(2, ref pt);
                     _scanReduce(new KernelConfig(tiles, _tileGroup), grid, cfg);
                     _scanTiles(new KernelConfig(1, _scanGroup), grid, cfg);
                     _scanDown(new KernelConfig(tiles, _tileGroup), grid, cfg);
                     if (probe) GridPart(3, ref pt);
                     _scatter(rows, gl, grid, cfg);
+                    _giantLists(rows, grid, cfg);
                     if (probe) GridPart(4, ref pt);
                 }
-                if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeGrid += pn - pt; pt = pn; _probeRows = rows; _probeBuckets = cfg.Buckets; }
+                if (probe) { Sync(); long pn = Stopwatch.GetTimestamp(); _probeGrid += pn - pt; pt = pn; _probeRows = rows; _probeBuckets = cfg.Buckets; }
 
                 if (_concurrent)
                 {
                     // Every class reads the grid the default stream just built, so the grid is
                     // joined first; the census reads every class's pending spheres, so each class
                     // stream is joined after. In between the classes run at once.
-                    _acc.DefaultStream.Synchronize();
+                    _stream.Synchronize();
                     for (int c = 0; c < _classes.Length; c++)
                     {
                         int used = _slots.Classes[c].Used;
@@ -1076,7 +1923,7 @@ namespace __NS__
 
                         if (perPart) _contactOn(_streams[c], used * cc.ClassLinks, set.Topo, set.ConstSet, gl, committed, grid, sw, cc);
                         _stepOn[c](_streams[c], used, set.Topo, set.ConstSet, set.PanelSet, set.StateSet, set.DriveSet,
-                                   set.NeurSet, set.BrainSet, set.TraceSet, gl, committed, pending, grid, sw, cc);
+                                   Neur(set), set.BrainSet, set.TraceSet, gl, committed, pending, grid, sw, cc);
                     }
                     for (int c = 0; c < _classes.Length; c++)
                         if (_slots.Classes[c].Used != 0) _streams[c].Synchronize();
@@ -1099,16 +1946,16 @@ namespace __NS__
                         if (perPart)
                         {
                             _contact(used * cc.ClassLinks, set.Topo, set.ConstSet, gl, committed, grid, sw, cc);
-                            if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeContact += pn - pt; pt = pn; }
+                            if (probe) { Sync(); long pn = Stopwatch.GetTimestamp(); _probeContact += pn - pt; pt = pn; }
                         }
-                        _step[c](used, set.Topo, set.ConstSet, set.PanelSet, set.StateSet, set.DriveSet, set.NeurSet,
+                        _step[c](used, set.Topo, set.ConstSet, set.PanelSet, set.StateSet, set.DriveSet, Neur(set),
                                  set.BrainSet, set.TraceSet, gl, committed, pending, grid, sw, cc);
-                        if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeClass[c] += pn - pt; pt = pn; }
+                        if (probe) { Sync(); long pn = Stopwatch.GetTimestamp(); _probeClass[c] += pn - pt; pt = pn; }
                     }
                 }
 
                 if (instrument && gUsed > 0) _censusKernel(gUsed, gl, cfg);
-                if (probe) { _acc.Synchronize(); long pn = Stopwatch.GetTimestamp(); _probeTail += pn - pt; pt = pn; }
+                if (probe) { Sync(); long pn = Stopwatch.GetTimestamp(); _probeTail += pn - pt; pt = pn; }
 
                 _committed = 1 - _committed;
             }
@@ -1119,32 +1966,46 @@ namespace __NS__
             if (probe)
             {
                 _probeSteps += steps;
-                if (++_probeBlocks % 20 == 0) PrintProbe(world, list);
+                if (++_probeBlocks % 20 == 0)
+                {
+                    PrintProbe(world, list);
+                    ProbeLinesDone();
+                }
             }
 
-            _acc.Synchronize();
+            Sync();
             long t2 = Stopwatch.GetTimestamp();
+            if (ProbeOn) CopyMark(2, ref tc, ref tb);
 
             // ---- 8. down
+            // Queued like the uploads, with two joins (card-next-r57.md Part 8). The overlap lists'
+            // rows are counted from two of the body columns (ListRows reads NOver and NHeld), so
+            // those land before the count is taken; the lists land before the mirror reads them.
             for (int k = 0; k < _classes.Length; k++)
             {
-                if (_slots.Classes[k].Used > 0) _classes[k].Download();
+                if (_slots.Classes[k].Used > 0) _classes[k].Download(_slots.Classes[k].Used);
             }
 
-            foreach (IColumn c in _gDown) if (!_lists.Contains(c)) c.Down();
+            int downUsed = _slots.Used;
+            foreach (IColumn c in _gDown) if (!_lists.Contains(c)) c.DownUsedQueued(UsedUnits(c, downUsed));
+            foreach (Col<Real> c in _sph[_committed]) c.DownUsedQueued(UsedUnits(c, downUsed));
+            _active[_committed].DownUsedQueued(UsedUnits(_active[_committed], downUsed));
+            _census.DownQueued();
+            _overflow.DownQueued();
+            _guard.DownQueued();
+            _stream.Synchronize();
+
             ListsDown(ListRows());
-            foreach (Col<Real> c in _sph[_committed]) c.Down();
-            _active[_committed].Down();
-            _census.Down();
-            _overflow.Down();
+            _stream.Synchronize();
 
             if (rows > 0)
             {
-                _start.View.SubView(buckets, 1).CopyToCPU(_one);
+                _start.View.SubView(buckets, 1).CopyToCPU(_stream, _one);
                 if (_one[0] > _entryCap / 2) _entryCap = 2 * _one[0];
             }
 
             long t3 = Stopwatch.GetTimestamp();
+            if (ProbeOn) CopyMark(1, ref tc, ref tb);
 
             // ---- 9. the mirror, the census, the clock
             long ceiling = 0;
@@ -1156,7 +2017,11 @@ namespace __NS__
             NeuronsAtCeiling = ceiling;
             if (ceiling > NeuronsAtCeilingMost) NeuronsAtCeilingMost = ceiling;
 
+            HandStraysOver(world, list);
+
             for (int k = 0; k < 4; k++) Overflow[k] = _overflow.Host[k];
+            FoldWatch(world, list);
+            BedAnglesPastGuard = _guard.Host[0];
 
             if (instrument)
             {
@@ -1193,12 +2058,45 @@ namespace __NS__
 
             // The five phases, as the CPU names them: the pack and the uploads stand for the grid,
             // the kernels for the bodies, the download for the commit, the rest for the tail.
-            if (ProbeOn) { _probeHost[5] += t3 - t2; _probeHost[6] += t4 - t3; }
+            if (ProbeOn) { _probeHost[5] += t3 - t2; _probeHost[6] += t4 - t3; CopyMark(2, ref tc, ref tb); }
 
             world.BackendPhaseTicks(0, t1 - t0);
             world.BackendPhaseTicks(2, t2 - t1);
             world.BackendPhaseTicks(3, t3 - t2);
             world.BackendPhaseTicks(4, t4 - t3);
+        }
+
+        /// <summary>
+        /// The block's strays, handed to <see cref="DynamicsWorld.StrayHandler"/> in the list's
+        /// order, one a body, with the sphere LoseStrays recorded: the CPU's call, made at the block's
+        /// end rather than inside the step. The body was left unstepped from its stray step, as
+        /// the CPU leaves it, so the mirror holds it as it was when it strayed.
+        /// </summary>
+        private void HandStraysOver(DynamicsWorld world, IReadOnlyList<Creature> list)
+        {
+            _strayCount.Down();
+            int left = _strayCount.Host[WholeStep.StrayLeft];
+            if (left > 0)
+            {
+                throw new InvalidOperationException(
+                    FormattableString.Invariant($"The gpu engine's contact grid had {left} sphere(s) out of its reach ") +
+                    "after it was built again without the block's first strays. The CPU builds it again until " +
+                    "none strays; the card builds it twice, so this world is not the card's to step.");
+            }
+
+            for (int r = 0; r < list.Count; r++)
+            {
+                int g = _slots.RankToSlot[r];
+                if (g < 0 || _strayStep.Host[g] == 0) continue;
+
+                int code = _strayCode.Host[g];
+                int link = code > WholeStep.LinkStride ? -1 : WholeStep.LinkStride - code;
+                var stray = new ContactStray(r, link,
+                    (double)_strayAt.Host[4 * g], (double)_strayAt.Host[4 * g + 1],
+                    (double)_strayAt.Host[4 * g + 2], (double)_strayAt.Host[4 * g + 3]);
+
+                world.StrayHandler?.Invoke(list[r], stray);
+            }
         }
 
         private void EnsureGlobal(int used)
@@ -1208,11 +2106,12 @@ namespace __NS__
             int cap = Math.Max(used, 2 * _gcap);
             foreach (IColumn c in _gBody) c.Resize(cap);
             foreach (IColumn c in _gLink) c.Resize(WholeStep.LinkStride * cap);
+            foreach (IColumn c in _gStray) c.Resize(cap);
 
             for (int set = 0; set < 2; set++)
             {
                 for (int k = 0; k < 7; k++) _sph[set][k].Resize(cap);
-                for (int k = 7; k < 14; k++) _sph[set][k].Resize(WholeStep.LinkStride * cap);
+                for (int k = 7; k < 17; k++) _sph[set][k].Resize(WholeStep.LinkStride * cap);
                 _active[set].Resize(cap);
             }
 
@@ -1229,8 +2128,18 @@ namespace __NS__
             LinkPush = _linkPush.View, LinkFlags = _linkFlags.View, StageN = _stageN.View,
             LinkFluid = _linkFluid.View, LinkLimited = _linkLimited.View,
             StageId = _stageId.View, StageSlot = _stageSlot.View, StagePart = _stagePart.View,
+            StrayCode = _strayCode.View, StrayStep = _strayStep.View, StrayAt = _strayAt.View,
+            RockTouched = _rockTouched.View, TouchNew = _touchNew.View, TouchAt = _touchAt.View,
+            RockPx = _rockP[0].View, RockPy = _rockP[1].View, RockPz = _rockP[2].View,
+            RockNx = _rockP[3].View, RockNy = _rockP[4].View, RockNz = _rockP[5].View,
+            Anchors = _anchors.View, GripHeld = _gripHeld.View, GripBreak = _gripBreak.View,
+            GripPrice = _gripPrice.View, GripStrength = _gripStrength.View, ReserveLow = _reserveLow.View,
+            GripOwed = _gripOwed.View, GripHeldSeconds = _gripHeldSeconds.View, GripAnchor = _gripAnchor.View,
+            GripAttitude = _gripAttitude.View, GripPoint = _gripPoint.View,
+            GripsFormed = _gripsFormed.View, GripsBroken = _gripsBroken.View,
 #if GPU_PHASE_PROBE
             Phase = _phase.View,
+            LinkPhase = _linkPhase.View,
 #endif
         };
 
@@ -1238,7 +2147,8 @@ namespace __NS__
         {
             Lo = _lo.View, Hi = _hi.View, Counts = _counts.View, Start = _start.View, Cursor = _gcursor.View,
             Items = _items.View, PartialN = _partialN.View, Cell = _cell.View, Partial = _partial.View,
-            TileSum = _tileSum.View, TileStart = _tileStart.View,
+            TileSum = _tileSum.View, TileStart = _tileStart.View, Stray = _strayCount.View,
+            Giant = _giant.View, IsGiant = _isGiant.View, GiantN = _giantN.View, GiantList = _giantList.View,
         };
 
         private SSph Sph(int set)
@@ -1250,11 +2160,91 @@ namespace __NS__
                 Vx = s[4].View, Vy = s[5].View, Vz = s[6].View,
                 LCx = s[7].View, LCy = s[8].View, LCz = s[9].View, LR = s[10].View,
                 LVx = s[11].View, LVy = s[12].View, LVz = s[13].View,
+                LEx = s[14].View, LEy = s[15].View, LEz = s[16].View,
                 Active = _active[set].View,
             };
         }
 
         // ============================================================== the mirror
+
+        /// <summary>A class's neuron columns with the one brain's pools, for a launch.</summary>
+        private SNeur Neur(ClassSet set)
+        {
+            SNeur nr = set.NeurSet;
+            nr.CSource = _cSource.View;
+            nr.CWeight = _cWeight.View;
+            nr.CPortPart = _cPortPart.View;
+            nr.CPortChannel = _cPortChannel.View;
+            nr.CPortIndex = _cPortIndex.View;
+            return nr;
+        }
+
+        private static int CentralLinks(Creature c) => c.Brain.IsCentral ? BrainAccess.CentralInSource(c.Brain).Length : 0;
+
+        private static int CentralPorts(Creature c) => c.Brain.IsCentral ? BrainAccess.CentralPortPart(c.Brain).Length : 0;
+
+        /// <summary>
+        /// Gives every body about to be packed that carries the one brain a run of links and a run of
+        /// ports in the pools, before the packs run in parallel and fill them. A slot whose runs
+        /// still hold its new body keeps them; otherwise the body takes new runs at the pools' top.
+        /// When the runs above the live ones are more than the live ones and PoolSlack (4,096) links,
+        /// the pools are laid again from nothing and every body with the one brain is packed again.
+        /// </summary>
+        private void PlaceBrains()
+        {
+            int used = _slots.Used;
+            if (_cLinkAt.Length < used)
+            {
+                int size = Math.Max(used, 2 * _cLinkAt.Length);
+                Array.Resize(ref _cLinkAt, size); Array.Resize(ref _cLinkRoom, size);
+                Array.Resize(ref _cPortAt, size); Array.Resize(ref _cPortRoom, size);
+            }
+
+            long liveLinks = 0, livePorts = 0;
+            for (int g = 0; g < used; g++)
+            {
+                Creature c = _slots.Body[g];
+                if (c == null) continue;
+                liveLinks += CentralLinks(c);
+                livePorts += CentralPorts(c);
+            }
+
+            if (_cLinksTop > 2 * liveLinks + PoolSlack || _cPortsTop > 2 * livePorts + PoolSlack)
+            {
+                PoolRelays++;
+                var packs = new HashSet<int>(_slots.Packs);
+                _cLinksTop = 0;
+                _cPortsTop = 0;
+                for (int g = 0; g < used; g++)
+                {
+                    _cLinkRoom[g] = 0;
+                    _cPortRoom[g] = 0;
+                    Creature c = _slots.Body[g];
+                    if (c != null && c.Brain.IsCentral && packs.Add(g)) _slots.Packs.Add(g);
+                }
+            }
+
+            foreach (int g in _slots.Packs)
+            {
+                Creature c = _slots.Body[g];
+                if (!c.Brain.IsCentral) continue;
+
+                int links = CentralLinks(c), ports = CentralPorts(c);
+                if (links > _cLinkRoom[g]) { _cLinkAt[g] = _cLinksTop; _cLinkRoom[g] = links; _cLinksTop += links; }
+                if (ports > _cPortRoom[g]) { _cPortAt[g] = _cPortsTop; _cPortRoom[g] = ports; _cPortsTop += ports; }
+                _cDirty = true;
+            }
+
+            Grow(_cSource, _cLinksTop); Grow(_cWeight, _cLinksTop);
+            Grow(_cPortPart, _cPortsTop); Grow(_cPortChannel, _cPortsTop); Grow(_cPortIndex, _cPortsTop);
+        }
+
+        private void Grow<T>(Col<T> pool, int length) where T : unmanaged
+        {
+            if (pool.Cap >= Math.Max(1, length)) return;
+            pool.Resize(Math.Max(length, 2 * pool.Cap));
+            _cDirty = true;
+        }
 
         /// <summary>A body onto the card whole: its plan, its brain, its state and its spheres.</summary>
         private void Pack(int g)
@@ -1310,6 +2300,7 @@ namespace __NS__
                     s.Inertia.Host[a3] = (Real)c.InertiaLocal[3 * l + k];
                     s.ChildAnchor.Host[a3] = (Real)c.ChildAnchor[3 * l + k];
                     s.ParentAnchor.Host[a3] = (Real)c.ParentAnchor[3 * l + k];
+                    s.SpinMoment.Host[a3] = (Real)c.SpinMoment[3 * l + k];
                 }
 
                 for (int k = 0; k < 4; k++)
@@ -1344,6 +2335,19 @@ namespace __NS__
 
             float[] perUnit = c.Drive.MirrorTorquePerUnit;
             for (int d = 0; d < s.D; d++) s.TorquePerUnit.Host[d * N + i] = d < perUnit.Length ? perUnit[d] : 0f;
+
+            if (c.Drive.BendAndPower)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    DriveGenes genes = c.JointGenes[l];
+                    s.Threshold.Host[l * N + i] = genes.Threshold;
+                    s.Reaction.Host[l * N + i] = genes.Reaction;
+                    s.HoldGene.Host[l * N + i] = genes.Hold;
+                    s.Release.Host[l * N + i] = genes.Release;
+                    s.LinkPower.Host[l * N + i] = (Real)c.Power[l];
+                }
+            }
 
             int panels = c.PanelStart[links];
             for (int p = 0; p < panels; p++)
@@ -1388,10 +2392,66 @@ namespace __NS__
                 }
             }
 
+            // ---- the one brain (Brain.ForCentral): its units in the neurons' rows, its links and
+            // ports in the runs PlaceBrains gave this slot
+            if (brain.IsCentral)
+            {
+                float[] bias = BrainAccess.CentralBias(brain);
+                int[] inStart = BrainAccess.CentralInStart(brain);
+                int[] inSource = BrainAccess.CentralInSource(brain);
+                float[] inWeight = BrainAccess.CentralInWeight(brain);
+                int[] portPart = BrainAccess.CentralPortPart(brain);
+                SensorChannel[] portChannel = BrainAccess.CentralPortChannel(brain);
+                int[] portIndex = BrainAccess.CentralPortIndex(brain);
+
+                s.CUnits.Host[i] = bias.Length;
+                s.CDof.Host[i] = brain.TotalDof;
+                s.CLinkAt.Host[i] = _cLinkAt[g];
+                s.CPortAt.Host[i] = _cPortAt[g];
+
+                for (int u = 0; u < bias.Length; u++)
+                {
+                    s.Bias.Host[u * N + i] = bias[u];
+                    s.NIn.Host[u * N + i] = inStart[u + 1] - inStart[u];
+                }
+
+                Array.Copy(inSource, 0, _cSource.Host, _cLinkAt[g], inSource.Length);
+                Array.Copy(inWeight, 0, _cWeight.Host, _cLinkAt[g], inWeight.Length);
+                for (int p = 0; p < portPart.Length; p++)
+                {
+                    int at = _cPortAt[g] + p;
+                    _cPortPart.Host[at] = portPart[p];
+                    _cPortChannel.Host[at] = (int)portChannel[p];
+                    _cPortIndex.Host[at] = portIndex[p];
+                }
+            }
+            else
+            {
+                s.CUnits.Host[i] = -1;
+            }
+
             // ---- the state
-            s.BasePos.Host[i] = (Real)c.BasePosition.X;
-            s.BasePos.Host[N + i] = (Real)c.BasePosition.Y;
-            s.BasePos.Host[2 * N + i] = (Real)c.BasePosition.Z;
+            if (c.CardBasePairHolds())
+            {
+                // The float and carry the card last held, as a restore brings them back (round 60): the
+                // split below would agree but at a tie.
+                for (int a = 0; a < 3; a++)
+                {
+                    s.BasePos.Host[a * N + i] = (Real)c.CardBaseHi[a];
+                    s.BaseCarry.Host[a * N + i] = (Real)c.CardBaseLo[a];
+                }
+            }
+            else
+            {
+                s.BasePos.Host[i] = (Real)c.BasePosition.X;
+                s.BasePos.Host[N + i] = (Real)c.BasePosition.Y;
+                s.BasePos.Host[2 * N + i] = (Real)c.BasePosition.Z;
+                // The rest the float could not hold, as the step's compensated sum carries it: the position
+                // is BasePos less BaseCarry. Zero in double.
+                s.BaseCarry.Host[i] = (Real)(s.BasePos.Host[i] - c.BasePosition.X);
+                s.BaseCarry.Host[N + i] = (Real)(s.BasePos.Host[N + i] - c.BasePosition.Y);
+                s.BaseCarry.Host[2 * N + i] = (Real)(s.BasePos.Host[2 * N + i] - c.BasePosition.Z);
+            }
             s.BaseRot.Host[i] = (Real)c.BaseRotation.X;
             s.BaseRot.Host[N + i] = (Real)c.BaseRotation.Y;
             s.BaseRot.Host[2 * N + i] = (Real)c.BaseRotation.Z;
@@ -1465,6 +2525,25 @@ namespace __NS__
 
             s.Cursor.Host[i] = c.Drive.MirrorCursor;
             s.Filled.Host[i] = c.Drive.MirrorFilled;
+
+            if (c.Drive.BendAndPower)
+            {
+                float[] bend = c.BendSignal;
+                EffectorDrive e = c.Drive;
+                for (int d = 0; d < s.D; d++)
+                {
+                    int at = d * N + i;
+                    s.Bend.Host[at] = d < bend.Length ? bend[d] : 0f;
+                    bool has = d < e.MirrorPower.Length;
+                    s.EPower.Host[at] = has ? e.MirrorPower[d] : 0.0;
+                    s.EBend.Host[at] = has ? e.MirrorBend[d] : 0.5;
+                    s.EPowerTarget.Host[at] = has ? e.MirrorPowerTarget[d] : 0.0;
+                    s.EBendTarget.Host[at] = has ? e.MirrorBendTarget[d] : 0.5;
+                    s.EPowerRate.Host[at] = has ? e.MirrorPowerRate[d] : 0.0;
+                    s.EBendRate.Host[at] = has ? e.MirrorBendRate[d] : 0.0;
+                    s.EHoldLeft.Host[at] = has ? e.MirrorHoldLeft[d] : 0.0;
+                }
+            }
             s.DriveLimited.Host[i] = c.DriveImpulsesLimited;
             s.DragLimited.Host[i] = c.DragImpulsesLimited;
             s.Work.Host[i] = c.MechanicalWorkJoules;
@@ -1482,7 +2561,7 @@ namespace __NS__
                 bool has = n < previous.Length;
                 s.S.Host[n * N + i] = has ? previous[n] : 0f;
                 s.S.Host[(M + n) * N + i] = has ? current[n] : 0f;
-                s.Mem.Host[n * N + i] = has ? memory[n] : 0f;
+                s.Mem.Host[n * N + i] = n < memory.Length ? memory[n] : 0f;
             }
 
             s.Parity.Host[i] = 0;
@@ -1549,11 +2628,31 @@ namespace __NS__
             int row = g * WholeStep.LinkStride;
             if (c.LinkContactActive)
             {
+                // The float and rest the card last held, where they still sum to the host's centres (a
+                // restore brings them back, round 60): the rest can pass half a float step, so the split
+                // below is not always the card's.
+                bool pair = c.CardLinkPairHolds();
                 for (int l = 0; l < links; l++)
                 {
-                    sph[7].Host[row + l] = (Real)c.LinkContactCentre[3 * l];
-                    sph[8].Host[row + l] = (Real)c.LinkContactCentre[3 * l + 1];
-                    sph[9].Host[row + l] = (Real)c.LinkContactCentre[3 * l + 2];
+                    if (pair)
+                    {
+                        for (int a = 0; a < 3; a++)
+                        {
+                            sph[7 + a].Host[row + l] = (Real)c.CardLinkCentreHi[3 * l + a];
+                            sph[14 + a].Host[row + l] = (Real)c.CardLinkCentreLo[3 * l + a];
+                        }
+                    }
+                    else
+                    {
+                        sph[7].Host[row + l] = (Real)c.LinkContactCentre[3 * l];
+                        sph[8].Host[row + l] = (Real)c.LinkContactCentre[3 * l + 1];
+                        sph[9].Host[row + l] = (Real)c.LinkContactCentre[3 * l + 2];
+                        // What the float centre leaves out of the creature's own; zero in double.
+                        sph[14].Host[row + l] = (Real)(c.LinkContactCentre[3 * l] - sph[7].Host[row + l]);
+                        sph[15].Host[row + l] = (Real)(c.LinkContactCentre[3 * l + 1] - sph[8].Host[row + l]);
+                        sph[16].Host[row + l] = (Real)(c.LinkContactCentre[3 * l + 2] - sph[9].Host[row + l]);
+                    }
+
                     sph[10].Host[row + l] = (Real)c.LinkContactRadius[l];
                     sph[11].Host[row + l] = (Real)c.LinkContactVelocity[3 * l];
                     sph[12].Host[row + l] = (Real)c.LinkContactVelocity[3 * l + 1];
@@ -1563,6 +2662,50 @@ namespace __NS__
             else
             {
                 for (int l = 0; l < WholeStep.LinkStride; l++) sph[10].Host[row + l] = 0;
+            }
+
+            // D162's touch of the rock, the record the next step's senses read
+            if (_rock && c.RockTouched != null)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    _rockTouched.Host[row + l] = c.RockTouched[l] ? 1 : 0;
+                    for (int k = 0; k < 3; k++)
+                    {
+                        _rockP[k].Host[row + l] = (Real)c.RockPoint[3 * l + k];
+                        _rockP[3 + k].Host[row + l] = (Real)c.RockNormal[3 * l + k];
+                    }
+                }
+            }
+
+            // D162's grip: which links carry the cell, each one's breaking force and price as the CPU
+            // takes them (Anchor.Form), and the grips the body holds. The price owed goes every block.
+            if (_grip)
+            {
+                AnchoringCell cell = _w.AnchorCell;
+                for (int l = 0; l < links; l++)
+                {
+                    int at = row + l;
+                    bool anchors = c.Anchors != null && c.Anchors[l];
+                    float breaking = anchors ? cell.BreakingForce((float)c.Volume[l]) : 0f;
+
+                    _anchors.Host[at] = anchors ? 1 : 0;
+                    _gripBreak.Host[at] = breaking;
+                    _gripPrice.Host[at] = anchors ? cell.BuildPrice(breaking) : 0f;
+                    _gripHeld.Host[at] = anchors && c.GripHeld[l] ? 1 : 0;
+                    _gripStrength.Host[at] = anchors ? c.GripStrength[l] : 0.0;
+                    for (int k = 0; k < 3; k++)
+                    {
+                        _gripAnchor.Host[3 * at + k] = anchors ? (Real)c.GripAnchor[3 * l + k] : 0;
+                        _gripPoint.Host[3 * at + k] = anchors ? (Real)c.GripPoint[3 * l + k] : 0;
+                    }
+                    for (int k = 0; k < 9; k++) _gripAttitude.Host[9 * at + k] = anchors ? (Real)c.GripAttitude[9 * l + k] : 0;
+                }
+
+                _reserveLow.Host[g] = c.ReserveLowSeconds;
+                _gripHeldSeconds.Host[g] = c.GripHeldSeconds;
+                _gripsFormed.Host[g] = c.GripsFormed;
+                _gripsBroken.Host[g] = c.GripsBroken;
             }
         }
 
@@ -1578,10 +2721,14 @@ namespace __NS__
             s.GSlot.Host[i] = g;
             s.PowerScale.Host[i] = c.Drive.PowerScale;
 
+            // The farm drains the grips' price between blocks (Creature.DrainGripOwed).
+            if (_grip) _gripOwed.Host[g] = c.GripOwedJoules;
+
             CreatureSenses senses = c.Senses;
             IReserveSource reserve = senses.Reserve;
             s.Reserve.Host[i] = reserve != null ? reserve.SecondsOfReserve : 0f;
-            s.Gates.Host[i] = (senses.Nutrients != null ? 1 : 0) | (reserve != null ? 2 : 0);
+            s.Gates.Host[i] = (senses.Nutrients != null ? 1 : 0) | (reserve != null ? 2 : 0) |
+                              (senses.Scent != null ? 4 : 0) | (senses.LeafScent != null ? 8 : 0);
 
             bool[] contact = senses.Contact;
             float[] damage = senses.Damage;
@@ -1644,7 +2791,18 @@ namespace __NS__
             int links = c.Links;
             int dof = c.Dof;
 
-            c.BasePosition = new Vec3(s.BasePos.Host[i], s.BasePos.Host[N + i], s.BasePos.Host[2 * N + i]);
+            c.BasePosition = new Vec3((double)s.BasePos.Host[i] - s.BaseCarry.Host[i],
+                                      (double)s.BasePos.Host[N + i] - s.BaseCarry.Host[N + i],
+                                      (double)s.BasePos.Host[2 * N + i] - s.BaseCarry.Host[2 * N + i]);
+
+            // The pair itself, which a checkpoint carries and the next pack takes back (round 60).
+            double[] baseHi = c.CardBaseHi ?? (c.CardBaseHi = new double[3]);
+            double[] baseLo = c.CardBaseLo ?? (c.CardBaseLo = new double[3]);
+            for (int a = 0; a < 3; a++)
+            {
+                baseHi[a] = s.BasePos.Host[a * N + i];
+                baseLo[a] = s.BaseCarry.Host[a * N + i];
+            }
             c.BaseRotation = new QuatD(s.BaseRot.Host[i], s.BaseRot.Host[N + i], s.BaseRot.Host[2 * N + i],
                                        s.BaseRot.Host[3 * N + i]);
 
@@ -1718,6 +2876,28 @@ namespace __NS__
 
             c.Drive.MirrorCursor = s.Cursor.Host[i];
             c.Drive.MirrorFilled = s.Filled.Host[i];
+
+            if (c.Drive.BendAndPower)
+            {
+                float[] bend = c.BendSignal;
+                int bends = Math.Min(bend.Length, s.D);
+                for (int d = 0; d < bends; d++) bend[d] = s.Bend.Host[d * N + i];
+
+                EffectorDrive e = c.Drive;
+                int envelope = Math.Min(e.MirrorPower.Length, s.D);
+                for (int d = 0; d < envelope; d++)
+                {
+                    int at = d * N + i;
+                    e.MirrorPower[d] = s.EPower.Host[at];
+                    e.MirrorBend[d] = s.EBend.Host[at];
+                    e.MirrorPowerTarget[d] = s.EPowerTarget.Host[at];
+                    e.MirrorBendTarget[d] = s.EBendTarget.Host[at];
+                    e.MirrorPowerRate[d] = s.EPowerRate.Host[at];
+                    e.MirrorBendRate[d] = s.EBendRate.Host[at];
+                    e.MirrorHoldLeft[d] = s.EHoldLeft.Host[at];
+                }
+                e.MirrorStrokeFromPower();
+            }
             c.DriveImpulsesLimited = s.DriveLimited.Host[i];
             c.DragImpulsesLimited = s.DragLimited.Host[i];
             c.MechanicalWorkJoules = s.Work.Host[i];
@@ -1740,7 +2920,7 @@ namespace __NS__
                 float p = s.S.Host[(prev + n) * N + i];
                 previous[n] = p;
                 current[n] = s.S.Host[(cur + n) * N + i];
-                memory[n] = s.Mem.Host[n * N + i];
+                if (n < memory.Length) memory[n] = s.Mem.Host[n * N + i];
 
                 // A bound on a neuron's value is a world rule and the owner's; this counts.
                 if (!(Math.Abs(p) < 1e36f)) ceiling++;
@@ -1830,10 +3010,25 @@ namespace __NS__
             {
                 int row = g * WholeStep.LinkStride;
                 double[] pc = c.MirrorPendingLinkCentre, pr = c.MirrorPendingLinkRadius, pv = c.MirrorPendingLinkVelocity;
+                if (c.CardLinkCentreHi == null || c.CardLinkCentreHi.Length != 3 * links)
+                {
+                    c.CardLinkCentreHi = new double[3 * links];
+                    c.CardLinkCentreLo = new double[3 * links];
+                }
+
+                double[] hi = c.CardLinkCentreHi, lo = c.CardLinkCentreLo;
 
                 for (int l = 0; l < links; l++)
                 {
-                    double x = sph[7].Host[row + l], y = sph[8].Host[row + l], z = sph[9].Host[row + l];
+                    for (int a = 0; a < 3; a++)
+                    {
+                        hi[3 * l + a] = sph[7 + a].Host[row + l];
+                        lo[3 * l + a] = sph[14 + a].Host[row + l];
+                    }
+
+                    double x = (double)sph[7].Host[row + l] + sph[14].Host[row + l];
+                    double y = (double)sph[8].Host[row + l] + sph[15].Host[row + l];
+                    double z = (double)sph[9].Host[row + l] + sph[16].Host[row + l];
                     double r = sph[10].Host[row + l];
                     double vx = sph[11].Host[row + l], vy = sph[12].Host[row + l], vz = sph[13].Host[row + l];
 
@@ -1845,6 +3040,46 @@ namespace __NS__
                     pr[l] = r;
                     pv[3 * l] = vx; pv[3 * l + 1] = vy; pv[3 * l + 2] = vz;
                 }
+            }
+
+            if (_rock && c.RockTouched != null)
+            {
+                int row = g * WholeStep.LinkStride;
+                for (int l = 0; l < links; l++)
+                {
+                    c.RockTouched[l] = _rockTouched.Host[row + l] != 0;
+                    for (int k = 0; k < 3; k++)
+                    {
+                        c.RockPoint[3 * l + k] = _rockP[k].Host[row + l];
+                        c.RockNormal[3 * l + k] = _rockP[3 + k].Host[row + l];
+                    }
+                }
+            }
+
+            if (_grip)
+            {
+                if (c.Anchors != null)
+                {
+                    int row = g * WholeStep.LinkStride;
+                    for (int l = 0; l < links; l++)
+                    {
+                        int at = row + l;
+                        c.GripHeld[l] = _gripHeld.Host[at] != 0;
+                        c.GripStrength[l] = _gripStrength.Host[at];
+                        for (int k = 0; k < 3; k++)
+                        {
+                            c.GripAnchor[3 * l + k] = _gripAnchor.Host[3 * at + k];
+                            c.GripPoint[3 * l + k] = _gripPoint.Host[3 * at + k];
+                        }
+                        for (int k = 0; k < 9; k++) c.GripAttitude[9 * l + k] = _gripAttitude.Host[9 * at + k];
+                    }
+                }
+
+                c.ReserveLowSeconds = _reserveLow.Host[g];
+                c.GripOwedJoules = _gripOwed.Host[g];
+                c.GripHeldSeconds = _gripHeldSeconds.Host[g];
+                c.GripsFormed = _gripsFormed.Host[g];
+                c.GripsBroken = _gripsBroken.Host[g];
             }
 
             return ceiling;
@@ -1909,6 +3144,7 @@ namespace __NS__
             _rankToSlot.Dispose();
             _census.Dispose();
             _overflow.Dispose();
+            _guard.Dispose();
             for (int set = 0; set < 2; set++)
             {
                 foreach (Col<Real> c in _sph[set]) c.Dispose();
@@ -1918,10 +3154,20 @@ namespace __NS__
             _lo.Dispose(); _hi.Dispose(); _counts.Dispose(); _start.Dispose(); _gcursor.Dispose();
             _items.Dispose(); _partial.Dispose(); _partialN.Dispose(); _cell.Dispose();
             _tileSum.Dispose(); _tileStart.Dispose();
+            _giant.Dispose(); _isGiant.Dispose(); _giantN.Dispose(); _giantList.Dispose();
             _linkPush.Dispose(); _linkFlags.Dispose(); _stageN.Dispose();
+            _touchNew.Dispose(); _touchAt.Dispose();
+            if (!_rock)
+            {
+                _rockTouched.Dispose();
+                foreach (Col<Real> c in _rockP) c.Dispose();
+            }
+            foreach (IColumn c in _gripStubs) c.Dispose();
             _linkFluid.Dispose(); _linkLimited.Dispose();
             _stageId.Dispose(); _stageSlot.Dispose(); _stagePart.Dispose();
-            _inst.Dispose(); _wr.Dispose(); _wi.Dispose(); _stock.Dispose();
+            _inst.Dispose(); _wr.Dispose(); _wi.Dispose(); _stock.Dispose(); _scent.Dispose(); _leaf.Dispose();
+            _gpuScent?.Dispose();
+            _cSource.Dispose(); _cWeight.Dispose(); _cPortPart.Dispose(); _cPortChannel.Dispose(); _cPortIndex.Dispose();
         }
     }
 }

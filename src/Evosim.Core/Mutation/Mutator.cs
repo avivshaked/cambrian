@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Evosim.Core
@@ -224,6 +224,13 @@ namespace Evosim.Core
             {
                 g.AdultScale = Step(g.AdultScale, rng, rates);
             }
+
+            // D128's lifespan, last so that no draw above moves. Guarded on the rate, so at 0 (the
+            // default and round 51's) nothing is drawn and every child is the child it was.
+            if (rates.LifespanChance > 0f && rng.Chance(rates.LifespanChance))
+            {
+                g.LifespanScale = Step(g.LifespanScale, rng, rates);
+            }
         }
 
         // ---------------------------------------------------------------- nodes
@@ -261,11 +268,12 @@ namespace Evosim.Core
             MutateAttributes(node, rng, rates, cellTypes);
 
             // Whether a joint is legal here depends on what the part is made of.
-            if (rng.Chance(rates.JointTypeChance)) ChangeJointType(node, rng, cellTypes, genome);
+            if (rng.Chance(rates.JointTypeChance)) ChangeJointType(node, rng, cellTypes, genome, rates);
 
             if (node.JointType.DofCount() > 0)
             {
                 node.Power = PerturbPositive(node.Power, rng, rates);
+                if (rates.DriveGeneChance > 0f) node.Drive = PerturbDrive(node.Drive, rng, rates);
 
                 for (int i = 0; i < node.JointLimits.Length; i++)
                 {
@@ -307,8 +315,13 @@ namespace Evosim.Core
                 node.Edges.Add(RandomEdgeTo(g, rng));
             }
 
-            MutateNeuronSet(node.Neurons, node, g, rng, rates, sensorPool, out NeuronDef[] neurons);
-            node.Neurons = neurons;
+            // D146: a genome with the one brain carries no neurons on its nodes, and its brain is
+            // mutated after development, on the body (CentralMutation), so nothing is drawn here.
+            if (g.Brain == null)
+            {
+                MutateNeuronSet(node.Neurons, node, g, rng, rates, sensorPool, out NeuronDef[] neurons);
+                node.Neurons = neurons;
+            }
 
             return budRequested;
         }
@@ -378,6 +391,41 @@ namespace Evosim.Core
         /// shapes are registered, so adding a fourth shape would quietly change how often the
         /// other three mutate.
         /// </remarks>
+        /// <summary>
+        /// A bud's type, drawn by the types' bud weights (D165). Null when every candidate weighs 0.
+        /// </summary>
+        /// <remarks>
+        /// While every candidate weighs 1 the draw is the uniform one budding always made, one
+        /// <see cref="Rng.Range(int)"/>, so a table without weights draws as it did before them.
+        /// </remarks>
+        private static string DrawBudType(List<string> ids, Rng rng, CellTypeRegistry cellTypes)
+        {
+            bool uniform = true;
+            double total = 0;
+            for (int i = 0; i < ids.Count; i++)
+            {
+                float w = cellTypes.Resolve(ids[i]).BudWeight;
+                if (w != 1f) uniform = false;
+                total += w;
+            }
+
+            if (uniform) return ids[rng.Range(ids.Count)];
+            if (!(total > 0)) return null;
+
+            double u = rng.NextFloat() * total;
+            string last = null;
+            for (int i = 0; i < ids.Count; i++)
+            {
+                float w = cellTypes.Resolve(ids[i]).BudWeight;
+                if (w <= 0f) continue;
+                last = ids[i];
+                if (u < w) return ids[i];
+                u -= w;
+            }
+
+            return last;
+        }
+
         private static string PickOther(PartShapeRegistry shapes, string current, Rng rng)
         {
             var others = new List<string>();
@@ -433,10 +481,13 @@ namespace Evosim.Core
             foreach (string id in cellTypes.Ids()) if (id != source.CellTypeId) ids.Add(id);
             if (ids.Count == 0) return null;
 
+            string drawn = DrawBudType(ids, rng, cellTypes);
+            if (drawn == null) return null;
+
             MorphNode bud = source.Clone();
             bud.Edges.Clear();
 
-            bud.CellTypeId = ids[rng.Range(ids.Count)];
+            bud.CellTypeId = drawn;
 
             bud.Lift = bud.CellTypeId == CellTypeIds.Buoyancy
                 ? rng.Range(genome.MinBuoyancyLift, genome.MaxBuoyancyLift)
@@ -445,6 +496,7 @@ namespace Evosim.Core
             bud.JointType = JointType.Fixed;
             bud.JointLimits = Array.Empty<Float2>();
             bud.Power = 0f;
+            bud.Drive = DriveGenes.Default;
 
             bud.RecursiveLimit = 1;
             bud.Growth = ModuleGrowth.Determinate;
@@ -557,7 +609,7 @@ namespace Evosim.Core
         }
 
         private static void ChangeJointType(
-            MorphNode node, Rng rng, CellTypeRegistry cellTypes, RandomGenomeOptions genome)
+            MorphNode node, Rng rng, CellTypeRegistry cellTypes, RandomGenomeOptions genome, MutationRates rates)
         {
             if (!cellTypes.Resolve(node.CellTypeId).AllowsJoint) return;
 
@@ -593,13 +645,17 @@ namespace Evosim.Core
             // mean of 12.5. At LinkCell's 0.02 W/N·m that is 1.25 W standing per degree of
             // freedom before the joint moves — almost exactly the 1.24 W median link that
             // logbook/0017 measured nothing surviving, and six times what D032 found affordable.
+            // A joint gained (Power was 0) gets drive genes drawn as a founder's; a joint lost
+            // gives them up.
             if (dof > 0 && node.Power <= 0f)
             {
                 node.Power = rng.Range(genome.MinLinkPower, genome.MaxLinkPower);
+                node.Drive = rates.DriveGeneChance > 0f ? DriveGenes.Draw(rng) : DriveGenes.Default;
             }
             else if (dof == 0)
             {
                 node.Power = 0f;
+                node.Drive = DriveGenes.Default;
             }
         }
 
@@ -926,6 +982,29 @@ namespace Evosim.Core
         /// capacity, a joint's range — is meaningless or invalid at or below it, and a
         /// Gaussian step has no lower bound.
         /// </remarks>
+        /// <summary>
+        /// Each drive gene stepped at <see cref="MutationRates.DriveGeneChance"/>, as
+        /// <see cref="Step"/> steps a named dial, then held in its range. The threshold's step is
+        /// scaled by at least 0.05, since a threshold of 0 is common and a step scaled by 0 could
+        /// never leave it.
+        /// </summary>
+        private static DriveGenes PerturbDrive(DriveGenes g, Rng rng, MutationRates rates)
+        {
+            float threshold = g.Threshold;
+            if (rng.Chance(rates.DriveGeneChance))
+                threshold += rng.Gaussian(0f, rates.ScalarStdDev * Math.Max(0.05f, threshold));
+
+            float reaction = rng.Chance(rates.DriveGeneChance) ? Step(g.Reaction, rng, rates) : g.Reaction;
+            float hold = rng.Chance(rates.DriveGeneChance) ? Step(g.Hold, rng, rates) : g.Hold;
+            float release = rng.Chance(rates.DriveGeneChance) ? Step(g.Release, rng, rates) : g.Release;
+
+            return new DriveGenes(
+                Math.Min(DriveGenes.MaxThreshold, Math.Max(0f, threshold)),
+                Seconds(reaction), Seconds(hold), Seconds(release));
+
+            static float Seconds(float s) => Math.Min(DriveGenes.MaxSeconds, Math.Max(DriveGenes.MinSeconds, s));
+        }
+
         private static float PerturbPositive(float value, Rng rng, MutationRates rates)
         {
             float mutated = Perturb(value, rng, rates);

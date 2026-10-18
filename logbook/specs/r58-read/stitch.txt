@@ -1,0 +1,9 @@
+r58-s1i: D:\Projects\experiments\evolution-simulator\scripts\reads\..\..\runs\r58-s1i\2026-10-12-111359-dfc0e881 to 1500 s, then D:\Projects\experiments\evolution-simulator\scripts\reads\..\..\runs\r58-s1ir\2026-10-12-114228-dfc0e881
+  stats.jsonl: 150 rows to 1500 s, then 4650 from 1510 s
+  lineage.jsonl: 5689 rows to 1500 s, then 281195 from 1500.5 s
+r58-s2i: D:\Projects\experiments\evolution-simulator\scripts\reads\..\..\runs\r58-s2i\2026-10-12-111359-dfc0e881 to 1500 s, then D:\Projects\experiments\evolution-simulator\scripts\reads\..\..\runs\r58-s2ir\2026-10-12-114228-dfc0e881
+  stats.jsonl: 150 rows to 1500 s, then 4650 from 1510 s
+  lineage.jsonl: 11011 rows to 1500 s, then 327735 from 1501 s
+r58-s3i: D:\Projects\experiments\evolution-simulator\scripts\reads\..\..\runs\r58-s3i\2026-10-12-111359-dfc0e881 to 1500 s, then D:\Projects\experiments\evolution-simulator\scripts\reads\..\..\runs\r58-s3ir\2026-10-12-114228-dfc0e881
+  stats.jsonl: 150 rows to 1500 s, then 4650 from 1510 s
+  lineage.jsonl: 8606 rows to 1500 s, then 385505 from 1500.5 s

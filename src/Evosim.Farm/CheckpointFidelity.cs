@@ -93,7 +93,7 @@ namespace Evosim.Farm
             Restored first;
             CheckpointHeader header;
             RunConfig config;
-            IReadOnlyList<Genome> pool;
+            TricklePoolFiles.Pool pool;
 
             if (Directory.Exists(checkpointPath))
             {
@@ -102,7 +102,7 @@ namespace Evosim.Farm
                 // state a live process carries from birth and no checkpoint has ever held,
                 // because the world compared has never been restored.
                 config = RunDirectory.ReadConfig(checkpointPath, out _);
-                pool = TricklePoolFiles.Load(checkpointPath, config)?.Genomes;
+                pool = TricklePoolFiles.Load(checkpointPath, config);
                 ulong seed = SeedOf(checkpointPath);
                 header = FoundingHeader(config, seed);
 
@@ -118,7 +118,7 @@ namespace Evosim.Farm
                 header = CheckpointReader.ReadHeader(checkpointPath);
                 string sourceRun = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetFullPath(checkpointPath)));
                 config = RunDirectory.ReadConfig(sourceRun, out _);
-                pool = TricklePoolFiles.Load(sourceRun, config)?.Genomes;
+                pool = TricklePoolFiles.Load(sourceRun, config);
 
                 Console.WriteLine("  checkpoint " + checkpointPath + " at " + F(header.Seconds) + " s");
                 Console.WriteLine("  stepping   " + F(seconds) + " s on " + threads + " threads, then writing and restoring again");
@@ -149,6 +149,11 @@ namespace Evosim.Farm
                     "  stepped on " + extra + " physics steps to " + F(first.World.ElapsedSeconds) +
                     " s: a body's solver was off its plan, which the harness should never leave");
             }
+
+            // The stepped world's contact spheres, committed before anything reads them: its
+            // last physics step left them pending for the next grid build, and the comparison
+            // below reads the committed ones of every body, the restore's against these.
+            first.Sim.Dynamics.CommitContactSpheres();
 
             string again = Path.Combine(scratch, "again.ckpt");
             WriteAgain(again, first, header, config);
@@ -311,12 +316,12 @@ namespace Evosim.Farm
         }
 
         private static Restored Found(
-            RunConfig config, IReadOnlyList<Genome> pool, CheckpointHeader header, int threads,
+            RunConfig config, TricklePoolFiles.Pool pool, CheckpointHeader header, int threads,
             string runDirectory)
         {
             Directory.CreateDirectory(runDirectory);
 
-            var world = new World(config, header.Seed, pool);
+            var world = new World(config, header.Seed, pool?.Genomes, pool?.Weights);
             var sim = new Simulation(
                 world, header.Seed, header.PhysicsStepSeconds, header.StepsPerMetabolicStep, threads, runDirectory);
 
@@ -328,12 +333,12 @@ namespace Evosim.Farm
         }
 
         private static Restored Restore(
-            string path, RunConfig config, IReadOnlyList<Genome> pool, CheckpointHeader header,
+            string path, RunConfig config, TricklePoolFiles.Pool pool, CheckpointHeader header,
             int threads, string runDirectory)
         {
             Directory.CreateDirectory(runDirectory);
 
-            var world = new World(config, header.Seed, pool);
+            var world = new World(config, header.Seed, pool?.Genomes, pool?.Weights);
             var sim = new Simulation(
                 world, header.Seed, header.PhysicsStepSeconds, header.StepsPerMetabolicStep, threads, runDirectory);
             var sampler = new Sampler { PoolNamed = config.FoundingTricklePoolCount > 0 };
@@ -522,11 +527,19 @@ namespace Evosim.Farm
         // which knows its own directory.
         private static readonly HashSet<string> HarnessNotCompared = new HashSet<string>(StringComparer.Ordinal)
         {
-            "_bodies", "_order", "_departed", "_contacts", "_condemned", "_verdictDead", "_verdictReason",
+            "_bodies", "_order", "_departed", "_corpsePoses", "_contacts", "_condemned", "_verdictDead", "_verdictReason",
             "_columnHeld", "_columnHeldAbsorptive", "_bodyStepSum", "_linkStepSum",
             "RunClock", "WritersClock",
             "<World>k__BackingField", "<Dynamics>k__BackingField", "<Solver>k__BackingField",
             "<Volume>k__BackingField", "<Floor>k__BackingField", "<Dumps>k__BackingField",
+
+            // The narrowed second bracket's bookkeeping (card-next-r57.md Part 8), which a
+            // checkpoint does not carry by design: a restore asks for a whole check instead, so the
+            // restored harness reads every body where the stepped one reads the touched ones, and
+            // the verdicts are the same (SecondCheckTests: the restore, and the audit of every
+            // untouched body). Each body's touched mark is left out with them, below.
+            "_physicsSinceWholeCheck", "_touchedOrder",
+            "WholeSecondChecks", "NarrowedSecondChecks", "AuditedBodies", "AuditFaults",
         };
 
         // The solver world's: the creature list, compared body by body; the contact grid, its
@@ -598,6 +611,9 @@ namespace Evosim.Farm
                 foreach (FieldInfo field in AllFields(ba.GetType()))
                 {
                     if (field.IsStatic || field.Name == "Solver" || field.Name == "Creature") continue;
+
+                    // The narrowed bracket's mark: every restored body is touched (see HarnessNotCompared).
+                    if (field.Name == "Touched") continue;
 
                     Compare(path + "." + field.Name, field.GetValue(ba), field.GetValue(bb), into, 1,
                             new HashSet<object>(ByReference.Instance));
@@ -826,18 +842,30 @@ namespace Evosim.Farm
             // contact pass clears it and sets it, and CloseContactStep reads it after the parallel
             // region, so a restored body's false is the stepped body's last-step true and no fault.
             "<TouchedBedOrGlass>k__BackingField",
+
+            // The bend half of the brain's output under the bend-and-power drive (brain v2): Brain.Step
+            // writes every degree of freedom before Drive reads it, in the same StepOne, and Reconcile
+            // refuses a body whose brain's TotalDof is not the body's Dof.
+            "BendSignal",
         };
 
         // The same, for a member whose name is too common to skip everywhere, qualified by the
         // type that declares it. CreatureSenses' per-step arrays: Sample fills each one a brain
         // can read before Brain.Step reads it, on every physics step (a channel the mask does not
-        // read is neither filled nor read). And its reserve, a back-reference to the organism,
+        // read is neither filled nor read), brain v2's scent and drive-sense arrays among them. The
+        // central brain's port values, which StepCentral fills from the senses before it reads them in
+        // the same call. And its reserve, a back-reference to the organism,
         // which is compared as an organism and asked to be the body's own in CheckWiring.
         private static readonly HashSet<string> FilledBeforeReadIn = new HashSet<string>(StringComparer.Ordinal)
         {
             "CreatureSenses._depth", "CreatureSenses._up", "CreatureSenses._angle",
             "CreatureSenses._rate", "CreatureSenses._flow", "CreatureSenses._chemical",
             "CreatureSenses._energy",
+            "CreatureSenses._scent", "CreatureSenses._stroke", "CreatureSenses._hold",
+            "CreatureSenses._ramp", "Brain._portValue",
+            // Round 59's three (D162, D167): the touch of the rock, sampled off the body's record,
+            // which is compared, and the leaf smell's two, sampled off the field.
+            "CreatureSenses._rock", "CreatureSenses._leaf", "CreatureSenses._leafDirection",
             "CreatureSenses.<Reserve>k__BackingField",
         };
 

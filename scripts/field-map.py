@@ -275,6 +275,9 @@ def main():
     parser.add_argument('--no-pictures', action='store_true', help='print the numbers only')
     parser.add_argument('--footprint', type=float, default=None,
                         help='the dump whose above-mean columns are the islands for the second share')
+    parser.add_argument('--footprint-run', default=None,
+                        help='the run whose --footprint dump is read: a resumed run, whose own dumps begin '
+                             'at its resume, takes it from the run it continues (same grid)')
     args = parser.parse_args()
 
     run_dir = args.run or newest_run(args.runs_root, args.arm)
@@ -322,8 +325,14 @@ def main():
     # The islands as seeded: the columns above the live mean at the footprint dump, if asked.
     footprint = None
     if args.footprint is not None:
-        f_second = nearest(matter_dumps.keys(), args.footprint)
-        f_density, f_cell = column_map(read_floats(matter_dumps[f_second]), m, args.layers)
+        f_dumps = matter_dumps
+        if args.footprint_run:
+            with open(os.path.join(args.footprint_run, 'fields', 'layout.json'), 'r', encoding='utf-8') as f:
+                if json.load(f).get('matter') != m:
+                    fail('%s: its matter grid is not %s\'s' % (args.footprint_run, run_dir))
+            f_dumps = dumps_of(args.footprint_run, 'matter')
+        f_second = nearest(f_dumps.keys(), args.footprint)
+        f_density, f_cell = column_map(read_floats(f_dumps[f_second]), m, args.layers)
         f_mask, _ = live_mask(config, m['cellsX'], m['cellsZ'], f_cell)
         f_mean, _, _ = stats(f_density, f_mask)
         footprint = [[f_mask[ix][iz] and f_density[ix][iz] > f_mean for iz in range(m['cellsZ'])]

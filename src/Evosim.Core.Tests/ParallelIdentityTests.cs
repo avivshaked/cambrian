@@ -51,6 +51,8 @@ namespace Evosim.Core.Tests
     /// kind of commit that can move either half of what this asserts.
     /// </para>
     /// </remarks>
+    // Parallelism.Threads is a static: every test class that sets it shares this collection, so xUnit runs them one at a time.
+    [Collection("Parallelism.Threads")]
     [Trait("Category", "Slow")]
     public class ParallelIdentityTests
     {
@@ -59,7 +61,12 @@ namespace Evosim.Core.Tests
         public ParallelIdentityTests(ITestOutputHelper output) => _output = output;
 
         /// <summary>The word this build writes at any thread count. See the class remarks.</summary>
-        private const string TheWord = "c9b0cabce249c1dd";
+        /// <remarks>
+        /// Re-pinned on 2026-09-28 from <c>c9b0cabce249c1dd</c> for round 52's exact door (the
+        /// burn, remineralisation and a corpse's last instalment deposit doubles). The three
+        /// thread counts agreed before the change and after it.
+        /// </remarks>
+        private const string TheWord = "6d59a448ddcefed5";
 
         private const int Steps = 400;
         private const int Bodies = 300;
@@ -92,6 +99,62 @@ namespace Evosim.Core.Tests
             {
                 Parallelism.Threads = was;
             }
+        }
+
+        /// <summary>
+        /// The same world with the age hazard on and a base short enough that bodies die of age
+        /// inside the run, which round 42's own config never does (its base is 0). Metabolise takes
+        /// each body's age step and its shares in a pre-pass across Core's threads
+        /// (card-next-r57.md Part 8), and the walk must meet the same numbers at every thread count:
+        /// the state word, every body's ageing clock and hazard, and the deaths by age.
+        /// </summary>
+        [Fact]
+        public void WithTheAgeHazardOnTheWorldIsTheSameAtEveryThreadCount()
+        {
+            int was = Parallelism.Threads;
+
+            try
+            {
+                (string word, string ages, long aged) one = RunAged(1);
+                (string word, string ages, long aged) four = RunAged(4);
+                (string word, string ages, long aged) sixteen = RunAged(16);
+
+                _output.WriteLine($"threads  1: {one.word}, {one.aged} deaths by age");
+                _output.WriteLine($"threads  4: {four.word}, {four.aged} deaths by age");
+                _output.WriteLine($"threads 16: {sixteen.word}, {sixteen.aged} deaths by age");
+
+                Assert.True(one.aged > 0, "no body died of age, so the hazard's walk was not tested");
+                Assert.Equal(one, four);
+                Assert.Equal(one, sixteen);
+            }
+            finally
+            {
+                Parallelism.Threads = was;
+            }
+        }
+
+        private (string word, string ages, long aged) RunAged(int threads)
+        {
+            Parallelism.Threads = threads;
+
+            RunConfig config = RunConfigJson.Read(File.ReadAllText(ConfigPath), out _);
+            // D128 turns D038's wear off while the hazard is on, and the config refuses both.
+            config.SenescenceDoublingSeconds = 0f;
+            config.AgeHazardBaseSeconds = 60f;
+            var world = new World(config, Seed);
+            var crowd = new Crowd(world, Seed ^ 0x5eedUL);
+
+            crowd.Seed(Bodies);
+            for (int i = 0; i < 200; i++) crowd.Step(0.5f);
+
+            var ages = new System.Text.StringBuilder();
+            foreach (Organism body in world.Living)
+            {
+                ages.Append(BitConverter.DoubleToInt64Bits(body.AgeClock).ToString("x16", CultureInfo.InvariantCulture));
+                ages.Append(BitConverter.DoubleToInt64Bits(body.AgeHazard).ToString("x16", CultureInfo.InvariantCulture));
+            }
+
+            return (StateHash.Of(world), ages.ToString(), world.DeathsByAge);
         }
 
         private string Run(int threads)

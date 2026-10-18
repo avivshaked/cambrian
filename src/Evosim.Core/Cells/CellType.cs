@@ -165,6 +165,38 @@ namespace Evosim.Core
         public float ToughnessMax { get; set; } = 1f;
 
         /// <summary>
+        /// How often a bud draws this type, relative to the others — D165. 1 for every type.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// D165 gives the anchoring cell a bud weight of its own, a setting like any other, starting
+        /// equal to every other type's. While every weight in a table is 1, a bud draws exactly as
+        /// it did before weights existed (<c>Mutator.Bud</c>), and the weight stays out of the hash,
+        /// so a table of ones hashes as it did. 0 means a bud never draws the type.
+        /// </para>
+        /// <para>
+        /// Settable rather than constructor-injected, as <see cref="AttackMax"/> is and for its
+        /// reason: every type has one, so <see cref="CellTypeJson"/> applies it after construction.
+        /// </para>
+        /// </remarks>
+        public float BudWeight
+        {
+            get => _budWeight;
+            set
+            {
+                if (!(value >= 0f) || float.IsInfinity(value))
+                {
+                    throw new System.ArgumentOutOfRangeException(
+                        nameof(value), value, "A bud weight is finite and not negative.");
+                }
+
+                _budWeight = value;
+            }
+        }
+
+        private float _budWeight = 1f;
+
+        /// <summary>
         /// Whether a part of this type may have a movable joint to its parent — §5A.1.
         /// </summary>
         /// <remarks>
@@ -175,6 +207,11 @@ namespace Evosim.Core
         /// scored, and nothing downstream could tell it was never meant to be legal.
         /// </remarks>
         public virtual bool AllowsJoint => false;
+
+        /// <summary>
+        /// Whether this tissue fixes light: what D167's leaf smell counts as photosynthetic area.
+        /// </summary>
+        public virtual bool FixesLight => false;
 
         /// <summary>Energy this cell acquires over one step, in joules. Never negative.</summary>
         /// <remarks>
@@ -305,7 +342,10 @@ namespace Evosim.Core
                 CultureInfo.InvariantCulture,
                 "{0},tissue={1:R},atkMax={2:R},inkMax={3:R},prtMax={4:R},tghMax={5:R}",
                 HashContribution(), TissueEnergyPerCubicMetre,
-                AttackMax, IntakeMax, ProtectionMax, ToughnessMax);
+                AttackMax, IntakeMax, ProtectionMax, ToughnessMax) +
+            // D165: only a weight that changes a draw reaches the hash, so a table of ones hashes
+            // as every table did before weights existed.
+            (BudWeight == 1f ? "" : string.Format(CultureInfo.InvariantCulture, ",bud={0:R}", BudWeight));
 
         public override string ToString() => Id;
     }

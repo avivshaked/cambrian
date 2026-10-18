@@ -77,9 +77,10 @@ namespace Evosim.Theatre.EditorTools
         /// <summary>
         /// The shots this entry knows, in the order they are named in its errors. The canopy
         /// (2026-09-24) looks up through the leaves at Snell's window; its move is
-        /// <c>EVOSIM_THEATRE_CANOPY_MOVE</c> (<see cref="FilmPlans.FilmCanopyMove"/>).
+        /// <c>EVOSIM_THEATRE_CANOPY_MOVE</c> (<see cref="FilmPlans.FilmCanopyMove"/>). The corpse shots,
+        /// sink and vanish (2026-09-28), are <see cref="FilmCorpseShots"/>' and are filmed from a window.
         /// </summary>
-        public static readonly string[] KnownShots = { "orbit", "close", "drift", "canopy" };
+        public static readonly string[] KnownShots = { "orbit", "close", "drift", "canopy", "sink", "vanish" };
 
         /// <summary>The camera's ceiling against its subject in a close shot, m/s (the owner's rule).</summary>
         public const float CloseSpeedCeiling = FilmPlans.CloseSpeedCeiling;
@@ -112,6 +113,12 @@ namespace Evosim.Theatre.EditorTools
         private static bool _traceHasCamera;
         private static float _turns = 0.25f;
         private static double _wallSecondsAllowed = 1800d;
+
+        /// <summary>
+        /// Seconds of the run a second of film (<c>EVOSIM_THEATRE_FILM_SPEED</c>): 1 at the run's
+        /// own pace, more for a time-lapse, which is filmed from a window only.
+        /// </summary>
+        private static double _speed = 1d;
 
         /// <summary>True when the film plays a farm film window (<c>EVOSIM_THEATRE_WINDOW</c>) rather than a continued world.</summary>
         private static bool _fromWindow;
@@ -294,6 +301,12 @@ namespace Evosim.Theatre.EditorTools
 
         private static int FrameCount() => Math.Max(1, (int)Math.Round(_seconds * _fps));
 
+        /// <summary>
+        /// Seconds of the run between two frames, which the shots' rules read (their speed ceilings,
+        /// their smoothing): a frame interval at the run's pace, the speed times it in a time-lapse.
+        /// </summary>
+        private static float FrameSeconds() => (float)(_speed / _fps);
+
         /// <summary>Reads the environment into the request, or says what was wrong with it.</summary>
         private static string ReadTheRequest()
         {
@@ -364,6 +377,30 @@ namespace Evosim.Theatre.EditorTools
             {
                 try { FilmPlans.FilmCanopyMove(); }
                 catch (ArgumentException e) { return e.Message + "."; }
+            }
+
+            // A time-lapse: a continued world is stepped frame by frame in the Editor, so it would
+            // step the speed times the physics a frame, where a window was stepped by the farm.
+            text = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_FILM_SPEED");
+            _speed = 1d;
+            if (!string.IsNullOrWhiteSpace(text) &&
+                (!double.TryParse(text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out _speed) ||
+                 !(_speed >= 1d) || _speed > 3600d))
+            {
+                return "EVOSIM_THEATRE_FILM_SPEED: '" + text + "' is not a speed from 1 to 3600 seconds of the run a second of film.";
+            }
+
+            if (_speed != 1d && !_fromWindow)
+            {
+                return "EVOSIM_THEATRE_FILM_SPEED: a time-lapse is filmed from a farm film window (-FromFarm), not from a checkpoint.";
+            }
+
+            foreach (string name in names)
+            {
+                if (FilmCorpseShots.Knows(name) && !_fromWindow)
+                {
+                    return "EVOSIM_THEATRE_FILM_SHOTS: '" + name + "' follows a corpse, and the corpses are read from a farm film window (-FromFarm).";
+                }
             }
 
             text = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_FILM_TURNS");
@@ -477,7 +514,8 @@ namespace Evosim.Theatre.EditorTools
             (_raw ? "1" : "0") + "|" +
             _closeSeconds.ToString("R", CultureInfo.InvariantCulture) + "|" +
             (_closeStill ? "1" : "0") + "|" +
-            (_fromWindow ? "1" : "0");
+            (_fromWindow ? "1" : "0") + "|" +
+            _speed.ToString("R", CultureInfo.InvariantCulture);
 
         /// <summary>
         /// Picks the request back up on the other side of the domain reload Play mode causes, and
@@ -518,6 +556,9 @@ namespace Evosim.Theatre.EditorTools
             if (f.Length > 10) double.TryParse(f[10], NumberStyles.Float, CultureInfo.InvariantCulture, out _closeSeconds);
             _closeStill = f.Length <= 11 || f[11] == "1";
             _fromWindow = f.Length > 12 && f[12] == "1";
+            _speed = 1d;
+            if (f.Length > 13) double.TryParse(f[13], NumberStyles.Float, CultureInfo.InvariantCulture, out _speed);
+            if (!(_speed >= 1d)) _speed = 1d;
 
             if (_seconds <= 0d || _fps < 1 || _width < 64 || _height < 64 || _shotNames.Length == 0)
             {
@@ -653,8 +694,11 @@ namespace Evosim.Theatre.EditorTools
                         _traceEye = eye; _traceRotation = rotation; _traceHasCamera = true;
                     }
 
+                    // The film's second, not the world's, for the snow's drift: the world's clock
+                    // moves in half-second metabolic steps, and the drift read off it crept for
+                    // eleven frames and jumped on the twelfth at 24 fps (clip21, 2026-10-07).
                     shot.Camera.CapturePlaced(live, eye, rotation, shot.FieldOfView, shot.Portrait, focus, label,
-                        Path.Combine(shot.Directory, frameName));
+                        Path.Combine(shot.Directory, frameName), at);
                     shot.RenderMs.Add(shot.Camera.LastRenderMs);
 
                     if (_next == 0 || _next == shot.Frames / 2 || _next == shot.Frames - 1)
@@ -721,7 +765,7 @@ namespace Evosim.Theatre.EditorTools
 
             foreach (Shot shot in _shots)
             {
-                shot.Pose(live, view, 0f, 1f / _fps, out Vector3 eye, out Quaternion rotation, out float focus);
+                shot.Pose(live, view, 0f, FrameSeconds(), out Vector3 eye, out Quaternion rotation, out float focus);
                 shot.Camera.CapturePlaced(live, eye, rotation, shot.FieldOfView, shot.Portrait, focus, "", null);
             }
 
@@ -797,14 +841,37 @@ namespace Evosim.Theatre.EditorTools
 
             // A film longer than the window is cut to the window: a frame past its last would hold
             // it, and a held frame says nothing a still does not.
-            if (window != null && _t0 + (double)(_frames - 1) / _fps > window.LastSecond + 0.5d / _fps)
+            if (window != null && _t0 + (double)(_frames - 1) * _speed / _fps > window.LastSecond + 0.5d * _speed / _fps)
             {
-                int fits = Math.Max(1, (int)Math.Floor((window.LastSecond - _t0) * _fps + 1e-6) + 1);
+                int fits = Math.Max(1, (int)Math.Floor((window.LastSecond - _t0) * _fps / _speed + 1e-6) + 1);
                 Debug.LogWarning(string.Format(CultureInfo.InvariantCulture,
                     "[Theatre] film: {0} frame(s) asked for from {1:0.###} s, and the window ends at {2:0.###} s: cut to {3}",
                     _frames, _t0, window.LastSecond, fits));
                 _frames = fits;
                 _closeSeconds = Math.Min(_closeSeconds, (double)fits / _fps);
+            }
+
+            if (window != null)
+            {
+                window.Speed = _speed;
+
+                // A window recorded at fewer frames a second than the time-lapse shows holds each of
+                // its frames for several of the film's, and the clip stutters.
+                double recorded = window.Window.Verdict != null ? window.Window.Verdict.Fps : double.NaN;
+                if (!double.IsNaN(recorded) && recorded * _speed < _fps * 0.99d)
+                {
+                    Debug.LogWarning(string.Format(CultureInfo.InvariantCulture,
+                        "[Theatre] film: the window was recorded at {0:0.###} fps, so at {1:0.##}x each of its frames " +
+                        "is held for {2:0.#} film frames; record it at {3:0.###} fps or more for a pose a frame",
+                        recorded, _speed, _fps / (recorded * _speed), _fps / _speed));
+                }
+
+                if (_speed != 1d)
+                {
+                    Debug.Log(string.Format(CultureInfo.InvariantCulture,
+                        "[Theatre] film: a time-lapse at {0:0.##}x, {1:0.#} s of the run in {2:0.#} s of film",
+                        _speed, _frames * _speed / _fps, (double)_frames / _fps));
+                }
             }
 
             if (window != null && _trace)
@@ -830,8 +897,22 @@ namespace Evosim.Theatre.EditorTools
             foreach (string name in _shotNames)
             {
                 bool close = name == "close";
-                Shot shot = Shot.Plan(name, live, liveView, world,
-                    (float)(close ? _closeSeconds : _seconds), _width / (float)_height, _turns, close && _closeStill);
+                Shot shot;
+
+                if (FilmCorpseShots.Knows(name))
+                {
+                    shot = FilmCorpseShots.Plan(name, window, world, (float)((double)_frames / _fps), _speed, out string refusal);
+                    if (shot == null)
+                    {
+                        Finish(1, "the " + name + " shot: " + refusal);
+                        return;
+                    }
+                }
+                else
+                {
+                    shot = Shot.Plan(name, live, liveView, world,
+                        (float)(close ? _closeSeconds : _seconds), _width / (float)_height, _turns, close && _closeStill);
+                }
                 shot.Frames = close ? Math.Max(1, (int)Math.Round(_closeSeconds * _fps)) : _frames;
                 shot.Directory = Path.Combine(_directory, name);
 
@@ -882,7 +963,7 @@ namespace Evosim.Theatre.EditorTools
                 return;
             }
 
-            double target = _t0 + (double)_next / _fps;
+            double target = _t0 + (double)_next * _speed / _fps;
             if (!_freeze)
             {
                 int frame = window.Window.NearestFrame(target);
@@ -901,8 +982,9 @@ namespace Evosim.Theatre.EditorTools
             if (_next == 0) _firstAt = at;
             _lastAt = at;
 
-            string label = string.Format(CultureInfo.InvariantCulture, "{0}  t={1:0.0} s{2}", window.ProvenanceWord, at,
-                _freeze ? "  FROZEN" : "");
+            string label = string.Format(CultureInfo.InvariantCulture, "{0}  t={1:0.0} s{2}{3}", window.ProvenanceWord, at,
+                _freeze ? "  FROZEN" : "",
+                _speed != 1d ? "  " + _speed.ToString("0.##", CultureInfo.InvariantCulture) + "x TIME-LAPSE" : "");
             string frameName = "frame-" + _next.ToString("000000", CultureInfo.InvariantCulture) + ".png";
 
             foreach (Shot shot in _shots)
@@ -910,7 +992,7 @@ namespace Evosim.Theatre.EditorTools
                 if (_next >= shot.Frames) continue;
                 float u = shot.Frames > 1 ? (float)_next / (shot.Frames - 1) : 0f;
 
-                shot.Pose(window, window.View, u, 1f / _fps, out Vector3 eye, out Quaternion rotation, out float focus);
+                shot.Pose(window, window.View, u, FrameSeconds(), out Vector3 eye, out Quaternion rotation, out float focus);
                 shot.Camera.CapturePlaced(window, eye, rotation, shot.FieldOfView, shot.Portrait, focus, label,
                     Path.Combine(shot.Directory, frameName));
                 shot.RenderMs.Add(shot.Camera.LastRenderMs);

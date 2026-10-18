@@ -1,0 +1,7 @@
+{
+  "base": "rounds/nursery/brain2.json",
+  "name": "accept-stop",
+  "description": "The nursery room's phase 2 acceptance of run.stop (nursery-room-build.md): brain2 made small per generation but long in generations, so a STOP arrives mid-run. A stopped run is not registered.",
+  "search": {"population": 16, "draws": 2, "generations": 100},
+  "exam": {"episodes": 1, "controls": [{"kind": "own"}]}
+}

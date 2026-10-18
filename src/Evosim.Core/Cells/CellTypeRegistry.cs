@@ -85,6 +85,18 @@ namespace Evosim.Core
 
         public int Count => _types.Length;
 
+        /// <summary>
+        /// This table with one type appended at its end — how D165's anchoring cell joins a
+        /// world's table without moving any type already in it.
+        /// </summary>
+        public CellTypeRegistry Appending(CellType type)
+        {
+            var types = new CellType[_types.Length + 1];
+            Array.Copy(_types, types, _types.Length);
+            types[_types.Length] = type;
+            return new CellTypeRegistry(types);
+        }
+
         /// <summary>The type at an index. Indices are meaningful only within one registry.</summary>
         public CellType At(int index) => _types[index];
 

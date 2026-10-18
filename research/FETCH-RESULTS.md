@@ -576,3 +576,84 @@ All open-access routes; PubMed Central's own site now serves a proof-of-work Jav
 - Gerritsen & Strickler 1977, *J. Fish. Res. Board Can.* 34:73 (closed). Visser & Kiørboe 2006, *Oecologia* 148:538 (Springer, closed; DTU Orbit carries no copy). Kiørboe 2011, *Biol. Rev.* 86:311 (Wiley, closed). Fenchel 2002, *Science* 296:1068 (closed).
 - Arendt 2008, *Nat. Rev. Genet.* 9:868, and Arendt, Tosches & Marlow 2016, *Nat. Rev. Neurosci.* 17:61 (closed). Bosch et al. 2017, *Trends Neurosci.* 40:92 (GEOMAR copy restricted to registered users).
 - Egbert, Barandiaran & Di Paolo 2012, *Artificial Life* 18:1, DOI 10.1162/artl_a_00047 (MIT Press, closed; no PMC record). Elsberry, Grabowski, Ofria & Pennock 2009, IEEE ALIFE (mirrors only).
+
+## Round 7 (2026-10-05 and 2026-10-06) asked Q12: storage, breeding timing and trait variance under seasonal and stochastic resource supply
+
+No PDF was downloaded this round. So no entry has a package number, a directory under `papers/` or a SHA-256, and the counts at the top of this file are unchanged. Entries are headed by their bibliography key instead. Full texts were read as XML or HTML from legal open copies and were not saved. Where the round's files record a route and not its exact request URL, the entry says so. Gates were recorded and not bypassed.
+
+The round used these public endpoints for abstracts, metadata and retraction status:
+
+| service | endpoint | used for |
+|---|---|---|
+| Europe PMC REST search | `https://www.ebi.ac.uk/europepmc/webservices/rest/search` | abstracts and records |
+| OpenAlex | `https://api.openalex.org/works/doi:<doi>` | metadata, open-access status, the abstract index |
+| CrossRef | `https://api.crossref.org/works/<doi>` | metadata and retraction relations |
+| Semantic Scholar graph API | not recorded | abstracts and metadata |
+| bioRxiv details API | not recorded | the [WYRW25] preprint's versions |
+
+### [FDT11] When to store energy in a stochastic environment (Fischer, Dieckmann & Taborsky 2011)
+- Status: READ IN FULL, NOT SAVED (author manuscript)
+- Source used: NCBI E-utilities efetch XML of PMC3358695 (exact request URL not recorded); figure captions read from the same XML
+- Route: open-access (PubMed Central author manuscript). OpenAlex also lists an IIASA report copy (IR-11-010), not opened
+- DOI: `10.1111/j.1558-5646.2010.01198.x`
+
+### [PW21] Slower environmental cycles maintain greater life-history variation within populations (Park & Wootton 2021)
+- Status: READ IN FULL, NOT SAVED (supplementary data S1–S7 not read)
+- Source used: https://www.ebi.ac.uk/europepmc/webservices/rest/PMC9292183/fullTextXML
+- Route: open-access (CC BY 4.0, Europe PMC full-text XML of PMC9292183)
+- DOI: `10.1111/ele.13867`
+
+### [GSS14] Experimental evolution of bet hedging under manipulated environmental uncertainty in Neurospora crassa (Graham, Smith & Simons 2014)
+- Status: READ IN FULL, NOT SAVED (main text; supplement not read)
+- Source used: https://pmc.ncbi.nlm.nih.gov/articles/PMC4071552/
+- Route: open-access (PMC article page; the publisher bars XML download, so the HTML page was read)
+- DOI: `10.1098/rspb.2014.0706`
+
+### [MK07] Environmental uncertainty, autocorrelation and the evolution of survival (Metcalf & Koons 2007)
+- Status: READ IN FULL, NOT SAVED (figures seen by caption only)
+- Source used: https://pmc.ncbi.nlm.nih.gov/articles/PMC2706199/
+- Route: open-access (PMC article page)
+- DOI: `10.1098/rspb.2007.0561`
+
+### [BWWR15] Evolutionary tipping points in the capacity to adapt to environmental change (Botero, Weissing, Wright & Rubenstein 2015)
+- Status: READ IN FULL, NOT SAVED (main text; SI not read)
+- Source used: https://pmc.ncbi.nlm.nih.gov/articles/PMC4291647/
+- Route: open-access (PMC article page, PNAS open access option)
+- DOI: `10.1073/pnas.1408589111`
+
+### [WYRW25] Beyond the (geometric) mean: stochastic models undermine deterministic predictions of bet hedger evolution (Weissman, Yin, Raynes & Weinreich 2025)
+- Status: JOURNAL VERSION ABSTRACT ONLY; PREPRINT READ IN FULL, NOT SAVED
+- Source used: journal abstract from the Europe PMC REST search; bioRxiv full-text HTML of preprint versions 1 (2023-07-12) and 2 (2024-01-11), DOI `10.1101/2023.07.11.548608` (exact request URLs not recorded)
+- Route: the journal's open copy at eScholarship (CC BY-NC-ND) refused the fetcher with a firewall challenge, not bypassed. The preprint lists three authors (no Yin) and lacks the journal's *Clarkia xantiana* case
+- DOI: `10.1086/735690`
+
+### [VJTF09] The adaptive value of energy storage and capital breeding in seasonal environments (Varpe, Jørgensen, Tarling & Fiksen 2009)
+- Status: ABSTRACT ONLY
+- Source used: OpenAlex abstract index (Semantic Scholar elides the abstract; Europe PMC has no record)
+- Route: closed (OpenAlex reports no open copy)
+- DOI: `10.1111/j.1600-0706.2008.17036.x`
+
+### [WTV18] Temporally autocorrelated environmental fluctuations inhibit the evolution of stress tolerance (Wieczynski, Turner & Vasseur 2018)
+- Status: ABSTRACT ONLY
+- Source used: Europe PMC REST search and Semantic Scholar (identical abstracts)
+- Route: closed. No preprint found; the Vasseur laboratory page has no PDF; Zenodo record 4997465 holds data only
+- DOI: `10.1086/697200`
+
+### [SK12] Bet-hedging: a triple trade-off between means, variances and correlations (Starrfelt & Kokko 2012)
+- Status: ABSTRACT ONLY
+- Source used: Europe PMC REST search and the OpenAlex abstract index (identical abstracts)
+- Route: Europe PMC lists an Unpaywall free PDF at Wiley `pdfdirect`, which returned HTTP 403 to both fetchers; OpenAlex reports it closed
+- DOI: `10.1111/j.1469-185X.2012.00225.x`
+
+### [TGC17] Experimental evolution of bet hedging in rotifer diapause traits as a response to environmental unpredictability (Tarazona, García-Roger & Carmona 2017)
+- Status: ABSTRACT ONLY; design read in a later open paper
+- Source used: Semantic Scholar and the OpenAlex abstract index (identical abstracts; Europe PMC has no record). The design comes from Tarazona et al. 2019, *Scientific Reports*, DOI `10.1038/s41598-019-56100-y`, Europe PMC full-text XML of PMC6927961, Methods and Introduction read in full
+- Route: the legal open copy (Universitat de València repository, hdl 10550/92697, CC BY-NC) sits behind a bot challenge that refused both fetchers, not bypassed
+- DOI: `10.1111/oik.04186`
+
+### Round 7: open copies gated, NOT bypassed (manual-fetch queue)
+
+- Starrfelt & Kokko 2012 [SK12]: Wiley `pdfdirect` returned HTTP 403.
+- Tarazona et al. 2017 [TGC17]: the Universitat de València repository copy, hdl 10550/92697, is behind a bot challenge.
+- Weissman et al. 2025 [WYRW25]: the journal version at eScholarship is behind a firewall challenge.
+- Varpe et al. 2009 [VJTF09] and Wieczynski et al. 2018 [WTV18]: the round found no open copy.

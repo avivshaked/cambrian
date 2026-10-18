@@ -89,6 +89,29 @@ day of machine time on it:
 A genome file is one JSON line — any row of a run's `snapshots/*.jsonl` will do. What the
 calculator does not have: the matter draw at conception, shading, field depletion, drift.
 
+**Run on the card with `scripts/card/`**, never with a bare `run-farm.ps1 -Env @{ EVOSIM_ENGINE = 'gpu' }`.
+Each script refuses a busy machine, a recent driver event or heat at WARN. It starts the driver watch
+(`driver-watch.ps1`) from its own settings file, checks it alive, and stops itself on a driver event.
+Each says in its header what it refuses and what its last line is. `src/Evosim.Farm.Gpu/CLAUDE.md` says
+when the card may run at all.
+
+```powershell
+./scripts/card/card-run.ps1 -Arm c1 -At 47000 -Seconds 2000 -ResumeFrom runs/r57-s2 -Transport   # one run
+./scripts/card/card-pair.ps1 -Pair p1 -ArmA p1a -ArmB p1b -At 47000 -Seconds 300 -ResumeFromA runs/r57-s2 -Transport   # two worlds, one process
+./scripts/card/card-run-check.ps1 -Arm c1 -Since 2026-10-08T15:31 -Transport card                  # every condition (-LogArm p1 for a pair's world)
+python scripts/reads/gpu-accept.py c1 c2 --runs-root scratch/card/runs                             # identity, exit 0
+./scripts/card/pace-read.ps1 -ResumeFrom runs/r57-s2 -Tag p1 -Transport    # card, CPU, card, CPU; a timing read
+./scripts/card/card-test.ps1 -Name t1 -Filter 'FullyQualifiedName~TheTransportOnTheCard' -Gate EVOSIM_GPU_T1_CARD
+./scripts/card/accelerator-batch.ps1 -Name b1     # the engine's proof on the CPU accelerator, off the card
+./scripts/card/core-offcard-test.ps1 -Project Farm -Name f1 -Filter 'FullyQualifiedName~ManifestTests'   # any test, off the card
+python scripts/reads/phase-calc.py scratch/card/runs c1 scratch/logs/c1.err   # a WORLD_PHASE_PROBE build's run
+```
+
+A job meant to stay off the card dot-sources `scripts/card/nvcuda-guard.ps1`, sets
+`CUDA_VISIBLE_DEVICES=-1` with `Enter-OffCard`, and prints `Resolve-OffCard`'s nvcuda line at its end.
+`scripts/tests/card-watch-end/run.ps1` checks offline that the watch ends on the job's end line and not
+on its own first line copied into the job's log.
+
 ## Gotchas
 
 - **A morphology share is contaminated by the population floor.** `MinimumPopulation` (40)
@@ -110,6 +133,27 @@ calculator does not have: the matter draw at conception, shading, field depletio
   The three scripts in `scripts/` carry BOMs; keep it that way when adding one, since this
   project's scripts are written with prose in them. `[ulong]` is also PowerShell 7-only — use
   `[uint64]`, which both editions accept.
+  - **Rewriting a file from PowerShell with .NET drops its BOM.** `[IO.File]::ReadAllText` strips
+    the BOM, so a test of the text for one is always false, and `WriteAllText` with a plain
+    `UTF8Encoding` writes the file back without it. Read the first bytes with `ReadAllBytes`
+    before the edit, and write with `New-Object Text.UTF8Encoding($true)` where they were EF BB BF.
+- **A PowerShell here-string does not reach `git commit -F -`.** PowerShell hands it to git as an
+  argument, not on stdin, so git takes the message for a pathspec and commits nothing. Write the
+  message to a file under `scratch/` and pass `-F <path>`.
+- **PowerShell's variable names ignore case.** `$S` and `$s` are one variable, so a loop over `$s`
+  inside a path built on `$S` rewrites the path mid-loop. On 2026-10-07 it put an empty file in a new
+  folder at the repository's root. Give a root and a loop variable different names.
+- **`Start-Process -ArgumentList` splits an element that holds a space into two arguments.** A
+  detached queue given a date with a space died unseen, and on 2026-10-08 a driver watch given
+  `-EndPattern 'card session ends'` matched the bare word "card" in its log's first line and exited at
+  once, so a card session ran unwatched. Pass anything with a space through a file the script reads
+  (or an ISO date with a `T`), send stderr to a file, and read the launched script's first log line
+  before trusting it.
+- **A watch's end pattern must appear in nothing the job writes before it ends.** Later on
+  2026-10-08 a script copied its driver watch's opening line, which names the end pattern, into the
+  job log the watch reads, so the watch saw "the end" at its first look and left the card run
+  unwatched for 19 seconds. Choose an end pattern written only by the job's final step, and check after
+  the first poll that the watch is still running, not only that its first line is right.
 - **`new-worker.ps1 -Workers 2,3,4` does nothing when run through `powershell -File`.** The
   comma list arrives as one string, fails to bind to `[int[]]`, and the script exits 1 — which
   is also its exit code on success, so nothing distinguishes the two. Six workers were "refreshed"
@@ -120,6 +164,19 @@ calculator does not have: the matter draw at conception, shading, field depletio
   column, and the timeline prints `?` in every cell rather than refusing (2026-09-11). Call
   the scripts that take arrays from PowerShell, or split the list inside the script as
   `theatre-snap.ps1` does.
+- **A splatted string passes its characters one by one.** PowerShell unrolls a one-element array
+  returned from an `if`, so `$more = if ($on) { @('-Transport') }` leaves `$more` a string. Then
+  `& pwsh -File x.ps1 @more` hands the script `-`, `T`, `r` and so on as arguments. A pace sitting
+  stopped on it at argument binding, before any farm started (2026-10-08). Type the variable
+  (`[string[]]$more = ...`) or build the array with `+=`.
+- **A hex literal with the top bit set parses as an int32 in PowerShell.** `0xFFFF0000` and
+  `[int64]'0xFFFF0000'` are both -65,536, so an affinity mask written that way sets the wrong cores,
+  or none. Write the efficiency-core mask in decimal (`4294901760`), as `launch-brain2.ps1` does, and
+  check it with `'{0:X}' -f`. Caught in a dry run on 2026-10-04.
+- **A pinned test run sees only its pin.** In a process pinned to eight cores .NET reports
+  `Environment.ProcessorCount` as 8, so a suite started under a pin fails
+  `TheRealLauncherRefusesAMaskNamingAProcessorTheMachineLacks`: its mask names logical 8, which the machine has.
+  The test passes unpinned. A pinned suite whose only failure is that test is a clean result.
 - **The species column reads 1 unless `EVOSIM_SPECIES_THETA` is set.** `SpeciesDriftThreshold`
   defaults to 0, at which `AssignSpecies` gives every creature species 0 — the instrument is
   off, not reporting one species. Every arm through round 13 ran at 0; calibrate with the

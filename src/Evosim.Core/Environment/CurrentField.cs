@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 
 namespace Evosim.Core
 {
@@ -1797,8 +1798,8 @@ namespace Evosim.Core
         /// <b>Derived, because the first build fixed it at one or two and the field came out
         /// eleven parts vertical to one part horizontal.</b> The per-axis RMS at a knob of 0.3 m/s
         /// read x 0.027, y 0.297, z 0.027, which is a lift and a fall and almost nothing sideways.
-        /// The owner asked for water that moves a body "up and down, left and right, in all
-        /// directions really", so the ruling of 2026-09-10 was to balance the axes.
+        /// The owner asked for water that moves a body up and down, left and right, in all
+        /// directions alike, so the ruling of 2026-09-10 was to balance the axes.
         /// </para>
         /// <para>
         /// <b>The balance is one line of algebra.</b> A single mode's mean square velocities are
@@ -2198,8 +2199,8 @@ namespace Evosim.Core
         /// <b>The two parts are balanced numerically, because there is no closed form to balance
         /// them by.</b> <see cref="BuildStreams"/> measures each part's mean square on a lattice
         /// over the live volume and many phases, scales the overturning so that the vertical
-        /// per-axis RMS equals the horizontal per-axis RMS — the owner's "up and down, left and
-        /// right, in all directions really" of 2026-09-10 — and then scales the whole thing so the
+        /// per-axis RMS equals the horizontal per-axis RMS — the owner's ruling of 2026-09-10 that the
+        /// water move a body in all directions alike — and then scales the whole thing so the
         /// RMS speed is <see cref="Speed"/>. The transport field can do that in algebra
         /// (<see cref="MeasureTransportScale"/>); two families of different shape with cross terms
         /// between them cannot, and a measurement the tests re-take on a different lattice is the
@@ -2993,6 +2994,26 @@ namespace Evosim.Core
         private bool OpenHoistedSample(
             in StreamsColumn column, in StreamsDepth depth, bool wantsBed, bool bedSampled)
         {
+            RequireHoistedWater(wantsBed);
+
+            if (!column.Sampled || !depth.Sampled || (wantsBed && !bedSampled))
+            {
+                throw new InvalidOperationException(
+                    "A default column or depth reached a sample: it would read as the tank's " +
+                    "axis at the waterline rather than refusing. Take them from ColumnOf, " +
+                    "DepthOf and ColumnAt. D105.");
+            }
+
+            return _speed > 0f;
+        }
+
+        /// <summary>
+        /// The water's half of <see cref="OpenHoistedSample"/>: a potential, a tank, and a floor
+        /// that is what the caller says it is. Shared with <see cref="OpenHoistedPass"/>, which
+        /// asks it once for a whole lattice.
+        /// </summary>
+        private void RequireHoistedWater(bool wantsBed)
+        {
             if (!HasPotential)
             {
                 throw new InvalidOperationException(
@@ -3016,16 +3037,6 @@ namespace Evosim.Core
                     FormattableString.Invariant($"shaped floor was sampled without one (bed {(_bed == null ? "absent" : "present")}, ") +
                     FormattableString.Invariant($"column {(wantsBed ? "given" : "not given")}). D105."));
             }
-
-            if (!column.Sampled || !depth.Sampled || (wantsBed && !bedSampled))
-            {
-                throw new InvalidOperationException(
-                    "A default column or depth reached a sample: it would read as the tank's " +
-                    "axis at the waterline rather than refusing. Take them from ColumnOf, " +
-                    "DepthOf and ColumnAt. D105.");
-            }
-
-            return _speed > 0f;
         }
 
         /// <summary>
@@ -3138,6 +3149,498 @@ namespace Evosim.Core
             }
 
             return ay;
+        }
+
+        // ---------------------------------------------- the column kernel: a lattice by columns
+        //
+        // The hoisted entries above answer one point a call, and the grid's edge pass makes about
+        // a hundred thousand such calls a substep in the nursery's tank. Some of what each call
+        // does is the same for the whole pass or the whole column:
+        //
+        //   PER PASS: the guards (OpenHoistedSample, RequirePinnedAt) and the scale float.
+        //   PER COLUMN: the 24 cos χ_k = cos mθ·C_k − sin mθ·S_k, which read the column's angle
+        //     and the pinned instant and nothing else; the overturning's (a_c·wall)·wall, a prefix
+        //     of its four-factor product; and the shore's fade, a function of the column's depth.
+        //   PER EDGE: the rest. That is the depth's three profiles, the 24-term sum, the map's
+        //     off-diagonal and the combine.
+        //
+        // So the kernel takes one column and walks down its depths. Each lattice has its own walk
+        // because each reads one component, and the three need different parts of the sum: the y
+        // edges never read the overturning, and on a flat floor the x and z edges never read the
+        // eddy sum. They take w·Dz and −w·Dx, and the flat field's A_y is thrown away.
+        //
+        // Nothing is reassociated. A prefix of a product may be lifted and a suffix never is;
+        // every sum is taken in StreamsPotentialFrom's k order; every (float) is where it was. An
+        // edge's value is still one expression of its own, so neither the walk's order nor the
+        // thread a column runs on is part of it. ColumnKernelTests holds this against the
+        // per-edge hoisted path bit for bit, edge by edge, on four floors.
+
+        /// <summary>
+        /// Asks once for a whole lattice pass what <see cref="OpenHoistedSample"/> and
+        /// <see cref="RequirePinnedAt"/> ask at every hoisted sample. False when every sample
+        /// would be <see cref="Float3.Zero"/> (still water); the caller then takes the per-sample
+        /// path, which answers that case as it always has.
+        /// </summary>
+        /// <param name="wantsBed">Whether the caller's tables carry a shaped floor's columns.</param>
+        /// <param name="seconds">The clock the pass samples at. Must be the pinned one.</param>
+        /// <remarks>
+        /// The per-sample guard's last test, that no default column, depth or bed column reaches a
+        /// sample, is a property of the caller's tables and not of the water. The grid builds
+        /// every entry of them from <see cref="ColumnOf"/>, <see cref="DepthOf(double)"/>,
+        /// <see cref="DepthOf(in BedColumn, double)"/> and <see cref="ColumnAt"/>, so none is a
+        /// default.
+        /// </remarks>
+        internal bool OpenHoistedPass(bool wantsBed, double seconds)
+        {
+            RequireHoistedWater(wantsBed);
+
+            if (!(_speed > 0f)) return false;
+
+            RequirePinnedAt(seconds);
+            return true;
+        }
+
+        /// <summary>
+        /// One column's 24 <c>cos χ_k</c> at the pinned instant, which is
+        /// <see cref="Eddies"/>' <c>cosM·C_k − sinM·S_k</c> computed once for the column instead
+        /// of once for every edge on it, and the eddy sum that reads them.
+        /// </summary>
+        /// <remarks>
+        /// Twenty-four fields rather than an array, so that a column costs no allocation and the
+        /// sum reads each by a constant name.
+        /// </remarks>
+        private struct ColumnPhases
+        {
+            private double _k0, _k1, _k2, _k3, _k4, _k5, _k6, _k7, _k8, _k9, _k10, _k11;
+            private double _k12, _k13, _k14, _k15, _k16, _k17, _k18, _k19, _k20, _k21, _k22, _k23;
+
+            /// <summary>Eddies' <c>cosChi</c> for every k, from the column's cos mθ and sin mθ.</summary>
+            public void Fill(in StreamsColumn column, double[] cos, double[] sin)
+            {
+                double c = column.Cos1, s = column.Sin1;
+                _k0 = c * cos[0] - s * sin[0];
+                _k1 = c * cos[1] - s * sin[1];
+                _k2 = c * cos[2] - s * sin[2];
+                _k3 = c * cos[3] - s * sin[3];
+                _k4 = c * cos[4] - s * sin[4];
+                _k5 = c * cos[5] - s * sin[5];
+
+                c = column.Cos2;
+                s = column.Sin2;
+                _k6 = c * cos[6] - s * sin[6];
+                _k7 = c * cos[7] - s * sin[7];
+                _k8 = c * cos[8] - s * sin[8];
+                _k9 = c * cos[9] - s * sin[9];
+                _k10 = c * cos[10] - s * sin[10];
+                _k11 = c * cos[11] - s * sin[11];
+
+                c = column.Cos3;
+                s = column.Sin3;
+                _k12 = c * cos[12] - s * sin[12];
+                _k13 = c * cos[13] - s * sin[13];
+                _k14 = c * cos[14] - s * sin[14];
+                _k15 = c * cos[15] - s * sin[15];
+                _k16 = c * cos[16] - s * sin[16];
+                _k17 = c * cos[17] - s * sin[17];
+
+                c = column.Cos4;
+                s = column.Sin4;
+                _k18 = c * cos[18] - s * sin[18];
+                _k19 = c * cos[19] - s * sin[19];
+                _k20 = c * cos[20] - s * sin[20];
+                _k21 = c * cos[21] - s * sin[21];
+                _k22 = c * cos[22] - s * sin[22];
+                _k23 = c * cos[23] - s * sin[23];
+            }
+
+            /// <summary>
+            /// <see cref="StreamsPotentialFrom"/>'s eight <see cref="Eddies"/> calls written out:
+            /// m outer, family next, the three vertical modes inside, which is the order k counts
+            /// in and so the order the sum is taken in. Every term is
+            /// <c>((base_k · profile) · f) · cos χ_k</c>, Eddies' grouping.
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public readonly double EddySum(
+                double[] b, in StreamsColumn column, double sin1, double sin2, double sin3)
+            {
+                double ay = 0d;
+
+                double f = column.F11;
+                ay -= b[0] * sin1 * f * _k0;
+                ay -= b[1] * sin2 * f * _k1;
+                ay -= b[2] * sin3 * f * _k2;
+
+                f = column.F12;
+                ay -= b[3] * sin1 * f * _k3;
+                ay -= b[4] * sin2 * f * _k4;
+                ay -= b[5] * sin3 * f * _k5;
+
+                f = column.F21;
+                ay -= b[6] * sin1 * f * _k6;
+                ay -= b[7] * sin2 * f * _k7;
+                ay -= b[8] * sin3 * f * _k8;
+
+                f = column.F22;
+                ay -= b[9] * sin1 * f * _k9;
+                ay -= b[10] * sin2 * f * _k10;
+                ay -= b[11] * sin3 * f * _k11;
+
+                f = column.F31;
+                ay -= b[12] * sin1 * f * _k12;
+                ay -= b[13] * sin2 * f * _k13;
+                ay -= b[14] * sin3 * f * _k14;
+
+                f = column.F32;
+                ay -= b[15] * sin1 * f * _k15;
+                ay -= b[16] * sin2 * f * _k16;
+                ay -= b[17] * sin3 * f * _k17;
+
+                f = column.F41;
+                ay -= b[18] * sin1 * f * _k18;
+                ay -= b[19] * sin2 * f * _k19;
+                ay -= b[20] * sin3 * f * _k20;
+
+                f = column.F42;
+                ay -= b[21] * sin1 * f * _k21;
+                ay -= b[22] * sin2 * f * _k22;
+                ay -= b[23] * sin3 * f * _k23;
+
+                return ay;
+            }
+        }
+
+        /// <summary>
+        /// The overturning's three cells into the horizontal pair, from the column's lifted
+        /// prefixes <c>(a_c · wall) · wall</c>: <see cref="StreamsPotentialFrom"/>'s
+        /// <c>w += amplitude · wall · wall · sinKy</c> in <c>c</c> order.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static double Overturning(
+            double cw0, double cw1, double cw2, double sin1, double sin2, double sin3)
+        {
+            double w = 0d;
+            w += cw0 * sin1;
+            w += cw1 * sin2;
+            w += cw2 * sin3;
+            return w;
+        }
+
+        /// <summary>
+        /// The x component of the hoisted potential, scaled, down one column of the x edges'
+        /// lattice: <see cref="PotentialAt(in StreamsColumn, in StreamsDepth, double)"/>'s or
+        /// <see cref="PotentialAt(in StreamsColumn, in BedColumn, in StreamsDepth, float, double)"/>'s
+        /// <c>.X</c> at every wanted depth, to the bit.
+        /// </summary>
+        /// <param name="column">The streams' terms at this column.</param>
+        /// <param name="bed">The lattice's bed columns, or null on a flat floor.</param>
+        /// <param name="c">This column's index in <paramref name="bed"/>.</param>
+        /// <param name="depths">The lattice's depth terms.</param>
+        /// <param name="depthAt">This column's first depth's index in <paramref name="depths"/>.</param>
+        /// <param name="depthStride">What one depth advances that index by.</param>
+        /// <param name="heights">The world height of each depth, the float the map reads; unread on a flat floor.</param>
+        /// <param name="count">How many depths the column has.</param>
+        /// <param name="wanted">Which samples to take; an unwanted one is not computed and its slot in <paramref name="into"/> is not written.</param>
+        /// <param name="wantedAt">This column's first depth's index in <paramref name="wanted"/>.</param>
+        /// <param name="wantedStride">What one depth advances that index by.</param>
+        /// <param name="into">One float per depth.</param>
+        /// <remarks>
+        /// Only between <see cref="OpenHoistedPass"/> returning true and the unpin: the guards and
+        /// the clock were asked there, once, and are not asked again here.
+        /// </remarks>
+        internal void HoistedStripX(
+            in StreamsColumn column, BedColumn[] bed, int c,
+            StreamsDepth[] depths, int depthAt, int depthStride, float[] heights, int count,
+            bool[] wanted, int wantedAt, int wantedStride, float[] into)
+        {
+            bool overturns = _streamsOverturning != 0d;
+            double cw0 = 0d, cw1 = 0d, cw2 = 0d;
+
+            if (overturns)
+            {
+                double[] cells = _pinnedCellBase;
+                double wall = column.Wall;
+                cw0 = cells[0] * wall * wall;
+                cw1 = cells[1] * wall * wall;
+                cw2 = cells[2] * wall * wall;
+            }
+
+            double dz = column.Dz;
+
+            if (bed == null)
+            {
+                // A flat floor's x is w·Dz alone: the eddy sum is A_y and is never read here.
+                float scale = HoistedScale(false);
+
+                for (int n = 0, at = wantedAt, d = depthAt; n < count; n++, at += wantedStride, d += depthStride)
+                {
+                    if (!wanted[at]) continue;
+
+                    ref readonly StreamsDepth depth = ref depths[d];
+                    float ax = 0f;
+
+                    if (!depth.AtFace)
+                    {
+                        double w = 0d;
+
+                        if (overturns)
+                        {
+                            double sinPhi = depth.SinPhi, cosPhi = depth.CosPhi;
+                            w = Overturning(
+                                cw0, cw1, cw2,
+                                sinPhi, 2d * sinPhi * cosPhi, sinPhi * (4d * cosPhi * cosPhi - 1d));
+                        }
+
+                        ax = (float)(w * dz);
+                    }
+
+                    into[n] = ax * scale;
+                }
+
+                return;
+            }
+
+            ref readonly BedColumn b = ref bed[c];
+            double depthMetres = _depthMetres;
+            double floorY = b.FloorY, depthSquared = b.DepthSquared, slopeX = b.SlopeX;
+            float bedScale = HoistedScale(true);
+
+            bool fadeOn = _fadeOn;
+            double fade = 1d;
+            if (fadeOn) ShoreFade(b.Depth, out fade, out _, out _);
+
+            double[] instantCos = _pinned.Cos, instantSin = _pinned.Sin, eddyBase = _pinnedEddyBase;
+            var phases = default(ColumnPhases);
+            bool phased = false;
+
+            for (int n = 0, at = wantedAt, d = depthAt; n < count; n++, at += wantedStride, d += depthStride)
+            {
+                if (!wanted[at]) continue;
+
+                // Still water over the shoal, exact zeros, unscaled: the per-sample path's own
+                // early return.
+                if (fadeOn && fade == 0d)
+                {
+                    into[n] = 0f;
+                    continue;
+                }
+
+                // MapFrom's clamp and off-diagonal, from the float the edge is at.
+                double y = heights[n];
+                if (y > 0d) y = 0d;
+                else if (y < floorY) y = floorY;
+                double a = y * depthMetres / depthSquared * slopeX;
+
+                ref readonly StreamsDepth depth = ref depths[d];
+                float ax = 0f, ay = 0f;
+
+                if (!depth.AtFace)
+                {
+                    double sinPhi = depth.SinPhi, cosPhi = depth.CosPhi;
+                    double sin2 = 2d * sinPhi * cosPhi;
+                    double sin3 = sinPhi * (4d * cosPhi * cosPhi - 1d);
+
+                    if (!phased)
+                    {
+                        phases.Fill(column, instantCos, instantSin);
+                        phased = true;
+                    }
+
+                    double sum = phases.EddySum(eddyBase, column, sinPhi, sin2, sin3);
+                    double w = overturns ? Overturning(cw0, cw1, cw2, sinPhi, sin2, sin3) : 0d;
+
+                    ax = (float)(w * dz);
+                    ay = (float)sum;
+                }
+
+                into[n] = fadeOn
+                    ? (float)(fade * (ax + a * ay)) * bedScale
+                    : (float)(ax + a * ay) * bedScale;
+            }
+        }
+
+        /// <summary>
+        /// <see cref="HoistedStripX"/> for the y edges: the <c>.Y</c> component, which is the
+        /// eddy sum alone on a flat floor and <c>c·A_y</c> on a shaped one. The overturning is
+        /// horizontal and never read here, and neither is the map's off-diagonal.
+        /// </summary>
+        internal void HoistedStripY(
+            in StreamsColumn column, BedColumn[] bed, int c,
+            StreamsDepth[] depths, int depthAt, int depthStride, int count,
+            bool[] wanted, int wantedAt, int wantedStride, float[] into)
+        {
+            double[] instantCos = _pinned.Cos, instantSin = _pinned.Sin, eddyBase = _pinnedEddyBase;
+            var phases = default(ColumnPhases);
+            bool phased = false;
+
+            bool shaped = bed != null;
+            bool fadeOn = false;
+            double fade = 1d, stretch = 0d;
+            float scale;
+
+            if (shaped)
+            {
+                ref readonly BedColumn b = ref bed[c];
+                stretch = b.Stretch;
+                scale = HoistedScale(true);
+                fadeOn = _fadeOn;
+                if (fadeOn) ShoreFade(b.Depth, out fade, out _, out _);
+            }
+            else
+            {
+                scale = HoistedScale(false);
+            }
+
+            for (int n = 0, at = wantedAt, d = depthAt; n < count; n++, at += wantedStride, d += depthStride)
+            {
+                if (!wanted[at]) continue;
+
+                if (fadeOn && fade == 0d)
+                {
+                    into[n] = 0f;
+                    continue;
+                }
+
+                ref readonly StreamsDepth depth = ref depths[d];
+                float ay = 0f;
+
+                if (!depth.AtFace)
+                {
+                    double sinPhi = depth.SinPhi, cosPhi = depth.CosPhi;
+
+                    if (!phased)
+                    {
+                        phases.Fill(column, instantCos, instantSin);
+                        phased = true;
+                    }
+
+                    ay = (float)phases.EddySum(
+                        eddyBase, column,
+                        sinPhi, 2d * sinPhi * cosPhi, sinPhi * (4d * cosPhi * cosPhi - 1d));
+                }
+
+                if (!shaped)
+                {
+                    into[n] = ay * scale;
+                }
+                else
+                {
+                    into[n] = fadeOn
+                        ? (float)(fade * (stretch * ay)) * scale
+                        : (float)(stretch * ay) * scale;
+                }
+            }
+        }
+
+        /// <summary>
+        /// <see cref="HoistedStripX"/> for the z edges: the <c>.Z</c> component, <c>−w·Dx</c> on a
+        /// flat floor and <c>−w·Dx + b·A_y</c> on a shaped one.
+        /// </summary>
+        internal void HoistedStripZ(
+            in StreamsColumn column, BedColumn[] bed, int c,
+            StreamsDepth[] depths, int depthAt, int depthStride, float[] heights, int count,
+            bool[] wanted, int wantedAt, int wantedStride, float[] into)
+        {
+            bool overturns = _streamsOverturning != 0d;
+            double cw0 = 0d, cw1 = 0d, cw2 = 0d;
+
+            if (overturns)
+            {
+                double[] cells = _pinnedCellBase;
+                double wall = column.Wall;
+                cw0 = cells[0] * wall * wall;
+                cw1 = cells[1] * wall * wall;
+                cw2 = cells[2] * wall * wall;
+            }
+
+            double dx = column.Dx;
+
+            if (bed == null)
+            {
+                // A flat floor's z is −w·Dx alone, as its x is w·Dz.
+                float scale = HoistedScale(false);
+
+                for (int n = 0, at = wantedAt, d = depthAt; n < count; n++, at += wantedStride, d += depthStride)
+                {
+                    if (!wanted[at]) continue;
+
+                    ref readonly StreamsDepth depth = ref depths[d];
+                    float az = 0f;
+
+                    if (!depth.AtFace)
+                    {
+                        double w = 0d;
+
+                        if (overturns)
+                        {
+                            double sinPhi = depth.SinPhi, cosPhi = depth.CosPhi;
+                            w = Overturning(
+                                cw0, cw1, cw2,
+                                sinPhi, 2d * sinPhi * cosPhi, sinPhi * (4d * cosPhi * cosPhi - 1d));
+                        }
+
+                        az = (float)(-w * dx);
+                    }
+
+                    into[n] = az * scale;
+                }
+
+                return;
+            }
+
+            ref readonly BedColumn b = ref bed[c];
+            double depthMetres = _depthMetres;
+            double floorY = b.FloorY, depthSquared = b.DepthSquared, slopeZ = b.SlopeZ;
+            float bedScale = HoistedScale(true);
+
+            bool fadeOn = _fadeOn;
+            double fade = 1d;
+            if (fadeOn) ShoreFade(b.Depth, out fade, out _, out _);
+
+            double[] instantCos = _pinned.Cos, instantSin = _pinned.Sin, eddyBase = _pinnedEddyBase;
+            var phases = default(ColumnPhases);
+            bool phased = false;
+
+            for (int n = 0, at = wantedAt, d = depthAt; n < count; n++, at += wantedStride, d += depthStride)
+            {
+                if (!wanted[at]) continue;
+
+                if (fadeOn && fade == 0d)
+                {
+                    into[n] = 0f;
+                    continue;
+                }
+
+                double y = heights[n];
+                if (y > 0d) y = 0d;
+                else if (y < floorY) y = floorY;
+                double bz = y * depthMetres / depthSquared * slopeZ;
+
+                ref readonly StreamsDepth depth = ref depths[d];
+                float az = 0f, ay = 0f;
+
+                if (!depth.AtFace)
+                {
+                    double sinPhi = depth.SinPhi, cosPhi = depth.CosPhi;
+                    double sin2 = 2d * sinPhi * cosPhi;
+                    double sin3 = sinPhi * (4d * cosPhi * cosPhi - 1d);
+
+                    if (!phased)
+                    {
+                        phases.Fill(column, instantCos, instantSin);
+                        phased = true;
+                    }
+
+                    double sum = phases.EddySum(eddyBase, column, sinPhi, sin2, sin3);
+                    double w = overturns ? Overturning(cw0, cw1, cw2, sinPhi, sin2, sin3) : 0d;
+
+                    az = (float)(-w * dx);
+                    ay = (float)sum;
+                }
+
+                into[n] = fadeOn
+                    ? (float)(fade * (az + bz * ay)) * bedScale
+                    : (float)(az + bz * ay) * bedScale;
+            }
         }
 
         /// <summary>
@@ -4327,8 +4830,8 @@ namespace Evosim.Core
         // notice is at this clock", fills the slots the clock needs once, and then makes
         // EnsureInstant a lookup that writes nothing at all — which is what lets a caller whose
         // sample points are a fixed lattice at one instant (GridField.SampleEdges) or a crowd of
-        // bodies at one step (DynamicsWorld.SampleWater) split the work across threads without
-        // the field being touched by any of them.
+        // bodies at one step (DynamicsWorld.StepOne, under StepOnCpu's pin) split the work across
+        // threads without the field being touched by any of them.
         //
         // One clock is two phases. The samplers scale seconds as 2π·s/P and the analytic
         // acceleration as (2π/P)·s, which differ by an ulp on about half the steps of a run, and

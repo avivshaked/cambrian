@@ -10,7 +10,7 @@ the launch commit. The predictions are committed before the three seeds launch.*
 Every body the campaign has grown was a fixed plan: development expanded the genome's
 graph once, growth (D087) scaled what was there, and a lost part was lost. Round 45 will
 let a part be killed. The owner's question of the evening was whether a body should be
-able to grow parts back the way a plant grows leaves "based on its programming", and
+able to grow parts back the way a plant grows leaves, based on its programming, and
 whether the genome should decide the difference between the animals that cannot and the
 plants that can. D106 says it is one gene per node, `Growth`, determinate or
 indeterminate, with an indeterminate node's count a bounded rule on the body's reserve

@@ -6,8 +6,11 @@ They are tracked rather than left in `scratch/`, because an entry that cites a g
 cannot show it proves nothing. [`LICENSE-DOCS`](../LICENSE-DOCS) puts this directory under
 the code licence (D060).
 
-Every genome here was copied byte for byte out of a run's own `snapshots/`. None was written
-by hand, and none is edited: a genome file wearing a body's identity has to be that body.
+Every genome here that names a run's body was copied byte for byte out of that run's own
+`snapshots/`, and none is edited: a genome file wearing a body's identity has to be that body.
+The one exception is `leaf-tank/`, whose swimmer was written by hand for the nursery's leaf
+tank (`logbook/specs/nursery-leaf-tank-plan.md`, step 4). It names no body, and its spec gives
+every number in it.
 A stored genome is refused by any build whose `GenomeJson.FormatVersion` has moved past it
 (the gotcha on formats 3, 4 and 5, now in `src/Evosim.Core/CLAUDE.md`). Several of these load only under the build they
 were taken from.

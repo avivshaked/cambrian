@@ -169,4 +169,69 @@ namespace Evosim.Farm
             if (harness > 0L) _harnessTicks += harness;
         }
     }
+
+    /// <summary>
+    /// W3-0's clocks (card-next-r57.md Part 8): the checkpoint and the report row each split into
+    /// building and writing, and the finiteness check's two brackets apart. Read and printed at the
+    /// run's end under <c>EVOSIM_GPU_PROBE</c>; nothing else reads them and nothing branches on
+    /// them.
+    /// </summary>
+    /// <remarks>
+    /// Per thread, because two worlds in one process step on two threads, each its own loop from
+    /// start to end. Static, so a checkpoint neither carries them nor compares them.
+    /// </remarks>
+    internal static class FarmProbe
+    {
+        public const int FiniteFirst = 0, FiniteSecondCheck = 1, FiniteSecondReconcile = 2;
+        public const int CheckpointSettle = 3, CheckpointPayload = 4, CheckpointDigest = 5, CheckpointCompress = 6, CheckpointFile = 7;
+        public const int RowPass = 8, RowAbsorptive = 9, RowFields = 10, RowStats = 11, RowPositions = 12, RowLineage = 13,
+            RowMarkdown = 14, RowReport = 15, CheckpointWait = 16;
+        public const int Count = 17;
+
+        public static readonly string[] Names =
+        {
+            "finite first bracket", "finite second bracket's check", "finite second bracket's reconcile",
+            "checkpoint settle and drains", "checkpoint payload", "checkpoint digest", "checkpoint compress", "checkpoint file",
+            "row pass over the living", "row absorptive log", "row fields", "row stats.jsonl", "row positions",
+            "row lineage and genomes", "row markdown", "row report.md", "checkpoint wait",
+        };
+
+        [ThreadStatic] private static long[] _ticks;
+        [ThreadStatic] private static long[] _calls;
+
+        public static long[] Ticks => _ticks ??= new long[Count];
+
+        public static long[] Calls => _calls ??= new long[Count];
+
+        /// <summary>Books the time since <paramref name="from"/> to <paramref name="part"/>, and returns now.</summary>
+        public static long Mark(int part, long from)
+        {
+            long now = Stopwatch.GetTimestamp();
+            Ticks[part] += now - from;
+            Calls[part]++;
+            return now;
+        }
+
+        /// <summary>Books ticks timed on another thread to <paramref name="part"/>, as one call.</summary>
+        public static void Add(int part, long ticks)
+        {
+            Ticks[part] += ticks;
+            Calls[part]++;
+        }
+
+        /// <summary>One line: each part's ms a simulated second over <paramref name="seconds"/>, and its calls.</summary>
+        public static string Line(double seconds)
+        {
+            double perSecond = 1000.0 / Stopwatch.Frequency / Math.Max(1e-9, seconds);
+            var parts = new string[Count];
+            for (int i = 0; i < Count; i++)
+            {
+                parts[i] = string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    "{0} {1:0.000} ({2})", Names[i], Ticks[i] * perSecond, Calls[i]);
+            }
+
+            return string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "farm-probe, ms a simulated second over {0:0.#} s (calls): ", seconds) + string.Join("; ", parts);
+        }
+    }
 }

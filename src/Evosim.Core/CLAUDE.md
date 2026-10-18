@@ -172,8 +172,8 @@ The root file's rules still apply. The entries below were moved word for word, s
   placed. And past the refill rate, a bigger clearance buys little, since the steady intake
   is `c·k/(c + k)` of the water round it, with k the refill rate.
 - **Two worlds built from one `RunConfig` share one current, and a current is pinned by its world.**
-  `RunConfig.Current` is an object, not a value, and `DynamicsWorld.SampleWater` pins it at each step's
-  instant. So two worlds stepping on two threads from one config throw `This current is pinned at phase
+  `RunConfig.Current` is an object, not a value, and `DynamicsWorld.StepOnCpu` pins it at each step's
+  instant for the whole of the bodies' phase (from 2026-10-03; until then a water pass of its own). So two worlds stepping on two threads from one config throw `This current is pinned at phase
   …` the first time their clocks differ, which is what the nursery's first parallel smoke did
   (2026-09-29). A process that builds more than one world gives each its own config, read from the same
   text (`RunConfigJson.Read`), as `Evosim.Nursery`'s `EpisodeConfig` does. The farm never met it,

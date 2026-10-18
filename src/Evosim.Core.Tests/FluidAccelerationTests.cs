@@ -774,12 +774,23 @@ namespace Evosim.Core.Tests
         /// a number in a commit message.
         /// </para>
         /// <para>
-        /// <b>Three passes and the fastest kept, which is what makes a wall-clock assertion
-        /// safe.</b> This machine runs up to five arms beside a test, and a mean over a loaded
-        /// interval is unbounded above while the minimum over repeats is a much steadier estimate
-        /// of the work itself: noise only ever adds. So the budget can be asserted at the spec's
-        /// figure rather than at a figure padded to survive a busy afternoon, and a real
-        /// regression in the arithmetic still fails it.
+        /// <b>Each loop is warmed for a fixed time before any is timed, because the runtime
+        /// compiles in tiers.</b> A method starts in quick, unoptimised code and is recompiled
+        /// optimised only after it has been called for a while and a delay of about 100 ms has
+        /// passed with no new method compiled. Three passes of 40,000 calls end inside that delay,
+        /// so the ratio measured which tier each loop happened to have reached: it read 5.3 to 6.1
+        /// at the runtime's defaults and 2.4 to 2.8 with tiered compilation off, on the same code
+        /// (2026-10-11). Warming each loop for longer than the delay lets every one reach its
+        /// optimised code first.
+        /// </para>
+        /// <para>
+        /// <b>Then nine rounds, each timing the three loops in turn, and the median ratio kept,
+        /// which is what makes a wall-clock assertion safe.</b> This machine runs up to five arms
+        /// beside a test. A round's velocity and closed-form timings share the machine's state,
+        /// so their ratio cancels most of a load that comes and goes, and the median over rounds
+        /// drops the rounds a burst landed in. So the budget can be asserted at the spec's figure
+        /// rather than at a figure padded to survive a busy afternoon, and a real regression in
+        /// the arithmetic still fails it.
         /// </para>
         /// <para>
         /// The three timings share one instant, so the memo is warm for all of them
@@ -794,7 +805,8 @@ namespace Evosim.Core.Tests
             var rng = new Rng(5UL);
 
             const int Calls = 40000;
-            const int Passes = 3;
+            const int Rounds = 9;
+            const int WarmMilliseconds = 400;
 
             var xs = new float[Calls];
             var ys = new float[Calls];
@@ -811,38 +823,65 @@ namespace Evosim.Core.Tests
 
             double sink = 0d;
 
-            double velocity = Fastest(i => field.VelocityAt(xs[i], ys[i], zs[i], 1d).X);
-            double analytic = Fastest(i => field.AccelerationAt(xs[i], ys[i], zs[i], 1d).X);
-            double stencil = Fastest(i => CurrentField
-                .MaterialDerivative(field.VelocityAt, xs[i], ys[i], zs[i], 1d).X);
+            Func<int, float> velocitySample = i => field.VelocityAt(xs[i], ys[i], zs[i], 1d).X;
+            Func<int, float> analyticSample = i => field.AccelerationAt(xs[i], ys[i], zs[i], 1d).X;
+            Func<int, float> stencilSample = i => CurrentField
+                .MaterialDerivative(field.VelocityAt, xs[i], ys[i], zs[i], 1d).X;
+
+            Warm(velocitySample);
+            Warm(analyticSample);
+            Warm(stencilSample);
+
+            var velocity = new double[Rounds];
+            var analytic = new double[Rounds];
+            var stencil = new double[Rounds];
+            var analyticFactors = new double[Rounds];
+            var stencilFactors = new double[Rounds];
+
+            for (int round = 0; round < Rounds; round++)
+            {
+                velocity[round] = Pass(velocitySample);
+                analytic[round] = Pass(analyticSample);
+                stencil[round] = Pass(stencilSample);
+                analyticFactors[round] = analytic[round] / velocity[round];
+                stencilFactors[round] = stencil[round] / velocity[round];
+            }
+
+            double analyticFactor = Median(analyticFactors);
+            double stencilFactor = Median(stencilFactors);
 
             _output.WriteLine(
-                $"{Calls:n0} samples of the tank's streams at one instant, fastest of {Passes} " +
-                $"passes: VelocityAt {velocity * 1e9 / Calls:0} ns each, AccelerationAt " +
-                $"{analytic * 1e9 / Calls:0} ns each (a factor of {analytic / velocity:0.0}, " +
-                $"budget 3), the nine-sample stencil it replaced {stencil * 1e9 / Calls:0} ns " +
-                $"each (a factor of {stencil / velocity:0.0}). " +
+                $"{Calls:n0} samples of the tank's streams at one instant, each loop warmed " +
+                $"{WarmMilliseconds} ms, medians of {Rounds} rounds: VelocityAt " +
+                $"{Median(velocity) * 1e9 / Calls:0} ns each, AccelerationAt " +
+                $"{Median(analytic) * 1e9 / Calls:0} ns each (a factor of {analyticFactor:0.0}, " +
+                $"budget 3), the nine-sample stencil it replaced {Median(stencil) * 1e9 / Calls:0} ns " +
+                $"each (a factor of {stencilFactor:0.0}). " +
                 $"Sum {sink:0.000} so the loops cannot be optimised away.");
 
             Assert.True(
-                analytic < 3d * velocity,
+                analyticFactor < 3d,
                 FormattableString.Invariant(
-                    $"a closed-form Du/Dt costs {analytic / velocity:0.0} velocity samples, which is over the spec's budget of three."));
+                    $"a closed-form Du/Dt costs {analyticFactor:0.0} velocity samples, which is over the spec's budget of three."));
 
-            double Fastest(Func<int, float> sample)
+            void Warm(Func<int, float> sample)
             {
-                double best = double.MaxValue;
+                var clock = Stopwatch.StartNew();
+                while (clock.ElapsedMilliseconds < WarmMilliseconds) Pass(sample);
+            }
 
-                for (int pass = 0; pass < Passes; pass++)
-                {
-                    var clock = Stopwatch.StartNew();
-                    for (int i = 0; i < Calls; i++) sink += sample(i);
-                    double elapsed = clock.Elapsed.TotalSeconds;
+            double Pass(Func<int, float> sample)
+            {
+                var clock = Stopwatch.StartNew();
+                for (int i = 0; i < Calls; i++) sink += sample(i);
+                return clock.Elapsed.TotalSeconds;
+            }
 
-                    if (elapsed < best) best = elapsed;
-                }
-
-                return best;
+            static double Median(double[] values)
+            {
+                var sorted = (double[])values.Clone();
+                Array.Sort(sorted);
+                return sorted[sorted.Length / 2];
             }
         }
 

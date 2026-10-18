@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nursery room · recipe</title>
+<link rel="stylesheet" href="nursery.css">
+<style>
+  /* the stylesheet's older names, kept here for this page */
+  :root { --t-micro: .77rem; --t-sm: .85rem; --t-md: 1rem; --t-lg: 1.3rem; --s3: .6rem; --s4: .9rem; --s5: 1.2rem; --radius: var(--r-sm); }
+  @media (max-width: 1600px) { .page { grid-template-columns: 14rem 1fr 1fr !important; grid-template-rows: auto auto auto !important; }
+    .launch { grid-column: 2 / 4 !important; grid-row: 3 !important; } .toc { grid-row: 1 / 4 !important; } }
+
+  /* Fields and paths are the recipe format's own (Recipe.cs, format 1; rounds/nursery/brain2.json).
+     "Base" is the base recipe resolved; "differs" compares the two resolved recipes. */
+  .page { grid-template-columns: 16.154rem 1fr 1fr 32.308rem; grid-template-rows: auto 1fr; }
+  .toc { grid-column: 1; grid-row: 1 / 3; } .launch { grid-column: 4; grid-row: 1 / 3; }
+  .author { grid-column: 2 / 4; grid-row: 1; flex-direction: column; padding: 0.769rem var(--s4); }
+  .col-a { grid-column: 2; grid-row: 2; } .col-b { grid-column: 3; grid-row: 2; }
+  .author .line { display: flex; align-items: baseline; }
+  .author .line > * + * { margin-left: var(--s4); }
+  .author h1 { margin: 0; font-family: var(--mono); font-weight: 600; font-size: var(--t-lg); color: var(--ink-hi); }
+  .author .desc { color: var(--ink-hi); font-size: var(--t-md); margin-top: 0.308rem; }
+  .author .by { font-size: var(--t-sm); color: var(--ink-lo); margin-top: 0.462rem; }
+  .author .by .who { font-family: var(--mono); color: var(--ink-hi); }
+  .toc a { display: flex; align-items: center; height: 2.154rem; padding: 0 var(--s3); font-size: var(--t-sm);
+    color: var(--ink-lo); letter-spacing: 1px; border-left: 2px solid transparent; }
+  .toc a.on { color: var(--ink-hi); border-left-color: var(--ink-hi); background: var(--row-hover); }
+  .toc .count { margin-left: auto; font-family: var(--mono); font-size: var(--t-micro); color: var(--ink-hi); }
+  .toc .path { font-family: var(--mono); font-size: 0.769rem; color: var(--ink-dim); margin-left: 0.462rem; letter-spacing: 0; }
+  fieldset { border: 0; margin: 0 0 0.923rem; padding: 0; min-width: 0; }
+  legend { font-size: var(--t-micro); color: var(--ink-lo); letter-spacing: 1.4px; text-transform: uppercase;
+    padding: 0; margin-bottom: 0.308rem; display: flex; width: 100%; }
+  legend span { margin-left: auto; font-family: var(--mono); letter-spacing: 0; text-transform: none; color: var(--ink-lo); }
+  .row { display: grid; grid-template-columns: 1fr 13.077rem 9.231rem; align-items: center; min-height: 1.923rem;
+    border-bottom: 1px solid var(--rule); column-gap: var(--s3); }
+  .row label { font-size: var(--t-sm); color: var(--ink-lo); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row label code { font-family: var(--mono); color: var(--ink-dim); font-size: var(--t-micro); margin-left: 0.462rem; }
+  .row .val { font-family: var(--mono); color: var(--ink-hi); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .val.null { color: var(--ink-dim); }
+  .row .base { font-family: var(--mono); font-size: var(--t-sm); color: var(--ink-lo); text-align: right; white-space: nowrap; }
+  .row--diff { box-shadow: inset 2px 0 0 var(--ink-hi); padding-left: 0.462rem; }
+  .row--diff label { color: var(--ink-hi); }
+  .row--diff .base { text-decoration: line-through; }
+  .row--sub label { padding-left: 1.077rem; }
+  .row--err { padding-bottom: 0.385rem; }
+  .row--err .val { outline: 2px solid var(--ink-hi); outline-offset: 2px; }
+  .msg { grid-column: 1 / -1; font-size: var(--t-sm); color: var(--ink-hi); display: flex; align-items: flex-start; margin-top: 0.385rem; line-height: 1.4; }
+  .msg .plate { margin-right: var(--s3); font-size: var(--t-micro); padding: 0 0.462rem; flex-shrink: 0; }
+  .colhead { display: grid; grid-template-columns: 1fr 13.077rem 9.231rem; column-gap: var(--s3); font-size: var(--t-micro);
+    color: var(--ink-dim); letter-spacing: 1px; margin-bottom: 0.462rem; }
+  .colhead span:nth-child(n+2) { text-align: right; }
+  .either { font-size: 0.769rem; color: var(--ink-dim); padding: 0.231rem 0 0.231rem 1.077rem; border-bottom: 1px solid var(--rule); }
+  .controls { display: grid; grid-template-columns: 1fr 1fr; column-gap: 1.385rem; }
+  .ctl { display: grid; grid-template-columns: 1.692rem 1fr; font-family: var(--mono); font-size: 0.846rem; height: 1.615rem; align-items: center;
+    border-bottom: 1px solid var(--rule); color: var(--ink); white-space: nowrap; overflow: hidden; }
+  .ctl i { font-style: normal; color: var(--ink-dim); }
+  .diffline { font-family: var(--mono); font-size: var(--t-sm); display: grid; grid-template-columns: 1fr auto; column-gap: 0.615rem; padding: 0.308rem 0;
+    border-bottom: 1px solid var(--rule); }
+  .diffline .k { color: var(--ink-hi); }
+  .diffline .v { color: var(--ink-lo); }
+  .diffline .v b { color: var(--ink-hi); font-weight: 400; }
+  .launch .field { height: 1.923rem; }
+  .launch .meter { display: block; }
+  .wt { display: grid; grid-template-columns: 1fr 5.385rem 10rem; align-items: center; min-height: 1.769rem; border-bottom: 1px solid var(--rule);
+    font-size: var(--t-sm); column-gap: 0.615rem; padding-left: 1.077rem; }
+  .wt .k { font-family: var(--mono); color: var(--ink); }
+  .wt .w { font-family: var(--mono); color: var(--ink-hi); text-align: right; }
+  .wt .s { font-size: 0.769rem; color: var(--ink-lo); text-align: right; }
+  .wt--err { box-shadow: inset 2px 0 0 var(--ink-hi); }
+  .wt--err .k, .wt--err .w, .wt--err .s { color: var(--ink-hi); }
+</style>
+</head>
+<body>
+<svg class="caustics" aria-hidden="true"><filter id="caus"><feTurbulence type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="4"/>
+  <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.95  0 0 0 0 1  0 0 0 -2.6 1.55"/></filter><rect width="100%" height="100%" filter="url(#caus)" opacity="0.045"/></svg>
+
+<header class="strip">
+  <span class="brand">nursery room</span>
+  <nav class="tabs"><a class="tab"><b>1</b>REGISTRY</a><a class="tab on"><b>2</b>RECIPE</a><a class="tab"><b>3</b>RUN</a><a class="tab"><b>4</b>TANK</a><a class="tab"><b>5</b>GENOME</a></nav>
+  <span class="crumb">rounds/nursery/<b>brain2-pay-path-full-work.json</b> · base <b>brain2-pay-path</b></span>
+  <span class="status" style="margin-left:1.2rem"><i class="mk mk--draft"></i>DRAFT, NOT COMMITTED</span>
+  <span class="spacer"></span>
+  <div class="machine"><span>machine</span><span class="meter"><i style="width:25%"></i><u style="left:50%"></u></span><span><span class="hi">8</span> of <span class="hi">16</span> cap · 32 logical</span><span>cpu <span class="hi">58</span> °C</span></div>
+</header>
+
+<main class="page">
+  <nav class="panel toc" aria-label="recipe sections">
+    <div class="panel__head"><span class="title">Sections</span></div>
+    <a>RECIPE</a>
+    <a class="on">WORLD<span class="path">world</span><span class="count">1</span></a>
+    <a>BODIES<span class="path">bodies</span></a>
+    <a>SETUP<span class="path">setup</span></a>
+    <a>SEARCH<span class="path">search</span><span class="count plate plate--alarm" style="font-size:.77rem;padding:0 .38rem;color:var(--plate-ink)">1</span></a>
+    <a>REWARD<span class="path">reward</span><span class="count plate plate--alarm" style="font-size:.77rem;padding:0 .38rem;color:var(--plate-ink)">1</span></a>
+    <a>EXAM<span class="path">exam</span></a>
+    <div class="section" style="margin-top:auto">
+      <div class="field"><span class="field__label">differs from base</span><span class="field__value">3</span></div>
+      <div class="field"><span class="field__label">refused</span><span class="field__value">2</span></div>
+      <div class="field"><span class="field__label">format</span><span class="field__value">1</span></div>
+      <label style="display:flex;align-items:center;font-size:11px;margin-top:8px;color:var(--ink-lo)">
+        <span class="mk mk--done" style="border-radius:2px"></span>show only what differs</label>
+    </div>
+  </nav>
+
+  <!-- source: from the recipe file and the activity log: name, description, base, seed, who wrote it and when. -->
+  <section class="panel hero author" aria-label="the recipe and who wrote it">
+    <div class="line"><h1>brain2-pay-path-full-work</h1><span class="mono dim" style="font-size:11px">seed 0x1 · base brain2-pay-path</span>
+      <span class="spacer"></span><a class="btn" style="height:22px;font-size:10px">EDIT BY HAND</a></div>
+    <div class="desc">Whether paying for less path keeps brain v2's lead once the joints' work is charged in full.</div>
+    <div class="by">written by <span class="who">agent · evolution-simulator-a8</span> at 15:02, through the MCP · <span class="dim">the line above is the recipe's own description; the registry shows it under the name</span></div>
+  </section>
+
+  <!-- source: built from the recipe's structure: one fieldset per top-level section, one row per field of the resolved recipe, in file order. A new section or override appears with no design change. Base values come from resolving the base. -->
+  <section class="panel col-a" aria-label="world, bodies, setup">
+    <div class="colhead"><span>FIELD</span><span>THIS RECIPE</span><span>BASE, RESOLVED</span></div>
+    <fieldset>
+      <legend>World <span>world</span></legend>
+      <div class="row"><label>config<code>world.config</code></label><span class="val" style="font-size:11px">configs/7319d6b528cc77f1.json</span><span class="base">same</span></div>
+      <div class="row"><label>config hash<code>world.configHash</code></label><span class="val">7319d6b528cc77f1</span><span class="base">same</span></div>
+      <div class="row row--diff"><label>override: work cost<code>world.overrides.WorkCostMultiplier</code></label><span class="val null">none · config's 1</span><span class="base">0.5</span></div>
+    </fieldset>
+    <fieldset>
+      <legend>Bodies <span>6 kept of 12 founders</span></legend>
+      <div class="row"><label>source<code>bodies.source</code></label><span class="val">founders</span><span class="base">same</span></div>
+      <div class="row"><label>founders drawn<code>bodies.founders</code></label><span class="val">12</span><span class="base">12</span></div>
+      <div class="row"><label>trunk<code>bodies.trunk</code></label><span class="val">absorptive</span><span class="base">same</span></div>
+      <div class="row"><label>pool<code>bodies.pool</code></label><span class="val null">null</span><span class="base">null</span></div>
+      <div class="row"><label>kept<code>bodies.keep</code></label><span class="val">0 1 3 4 8 10</span><span class="base">same</span></div>
+    </fieldset>
+    <fieldset>
+      <legend>Setup <span>the nursery's departures from the world</span></legend>
+      <div class="row"><label>episode length, s<code>setup.seconds</code></label><span class="val">600</span><span class="base">600</span></div>
+      <div class="row"><label>step, s<code>setup.dt</code></label><span class="val">0.01</span><span class="base">0.01</span></div>
+      <div class="row"><label>bodies per tank<code>setup.tankSize</code></label><span class="val">8</span><span class="base">8</span></div>
+      <div class="row"><label>floor closed<code>setup.floorClosed</code></label><span class="val">true</span><span class="base">true</span></div>
+      <div class="row"><label>births held<code>setup.birthsHeld</code></label><span class="val">true</span><span class="base">true</span></div>
+      <div class="row"><label>snow density, J/m³<code>setup.snow.density</code></label><span class="val">3</span><span class="base">3</span></div>
+      <div class="row row--sub"><label>its draw<code>setup.snow.draw</code></label><span class="val">halfToDouble</span><span class="base">same</span></div>
+      <div class="either">snow lies on layers or in islands, never both · this recipe: islands</div>
+      <div class="row row--sub"><label>islands: wavelength, m<code>setup.snow.islands.wavelength</code></label><span class="val">20</span><span class="base">20</span></div>
+      <div class="row row--sub"><label>islands: cover<code>setup.snow.islands.cover</code></label><span class="val">0.1</span><span class="base">0.1</span></div>
+      <div class="row"><label>carrion: count × joules<code>setup.carrion</code></label><span class="val">5 × 40</span><span class="base">same</span></div>
+      <div class="row"><label>start above the bed, m<code>setup.start.aboveBed</code></label><span class="val">0.5</span><span class="base">0.5</span></div>
+      <div class="row"><label>purse rule<code>setup.purse.rule</code></label><span class="val">grown</span><span class="base">grown</span></div>
+      <div class="row row--sub"><label>its seconds<code>setup.purse.seconds</code></label><span class="val null">null · the config's own</span><span class="base">null</span></div>
+    </fieldset>
+  </section>
+
+  <!-- source: as the left column. The reward block lists the class and whatever parameters it has; "is a measure?" comes from the class's own validation. The controls list is exam.controls in order. -->
+  <section class="panel col-b" aria-label="search, reward, exam">
+    <div class="colhead"><span>FIELD</span><span>THIS RECIPE</span><span>BASE, RESOLVED</span></div>
+    <fieldset>
+      <legend>Search <span>null would make an exam-only bench</span></legend>
+      <div class="row"><label>population<code>search.population</code></label><span class="val">96</span><span class="base">96</span></div>
+      <div class="row row--diff row--err"><label>draws a generation<code>search.draws</code></label><span class="val">1000</span><span class="base">16</span>
+        <div class="msg"><span class="plate plate--alarm">REFUSED</span>search.draws must be below 1000: a seed is the generation × 1000 + the draw, so 1000 draws reuse a seed</div></div>
+      <div class="row"><label>generations<code>search.generations</code></label><span class="val">100</span><span class="base">100</span></div>
+      <div class="row"><label>elites · tournament<code>search.elites, .tournament</code></label><span class="val">8 · 3</span><span class="base">same</span></div>
+      <div class="row"><label>per body<code>search.perBody</code></label><span class="val">true</span><span class="base">true</span></div>
+      <div class="row"><label>evolve · envelope<code>search.evolve, .evolveEnvelope</code></label><span class="val">brain · false</span><span class="base">same</span></div>
+      <div class="row"><label>crossover: rate · base share<code>search.crossover</code></label><span class="val">0.5 · 0.7</span><span class="base">same</span></div>
+      <div class="row row--sub"><label>mutation by distance, d_ref<code>search.crossover.mutationByDistance</code></label><span class="val">0.785</span><span class="base">0.785</span></div>
+    </fieldset>
+    <fieldset>
+      <legend>Reward <span>reward.class · reward.parameters</span></legend>
+      <div class="row"><label>class<code>reward.class</code></label><span class="val">WeightedSum</span><span class="base">WeightedSum</span></div>
+      <div class="colhead" style="grid-template-columns:1fr 70px 130px;margin:6px 0 2px;padding-left:14px"><span>reward.parameters.weights</span><span>WEIGHT</span><span>IS A MEASURE?</span></div>
+      <div class="wt"><span class="k">net</span><span class="w">1</span><span class="s">yes, J</span></div>
+      <div class="wt"><span class="k">path</span><span class="w">−2</span><span class="s">yes, m</span></div>
+      <div class="wt wt--err"><span class="k">distance</span><span class="w">0.5</span><span class="s">no</span></div>
+      <div class="msg" style="padding-left:14px"><span class="plate plate--alarm">REFUSED</span>reward 'WeightedSum' weights 'distance', which is not a measure; the measures are start, end, net, food, light, work, upkeep, handling, exuded, path, fresh, survived, diedAt.</div>
+      <p class="dim" style="font-size:11px;line-height:1.45;margin:6px 0 0">Summed in this order, in double precision. The value's unit follows the weights: here J − 2 · m, shown as "score". A ratio or a threshold is a new class with its own test.</p>
+    </fieldset>
+    <fieldset>
+      <legend>Exam <span>exam</span></legend>
+      <div class="row"><label>episodes · salt<code>exam.episodes, .salt</code></label><span class="val">32 · 0x62656e6368</span><span class="base">same</span></div>
+      <div style="font-size:10px;color:var(--ink-dim);letter-spacing:1px;margin:6px 0 2px">CONTROLS · exam.controls, in order, own first · 18 · same as base</div>
+      <div class="controls">
+        <div>
+          <div class="ctl"><i>1</i>own</div><div class="ctl"><i>2</i>frozen</div><div class="ctl"><i>3</i>full</div>
+          <div class="ctl"><i>4</i>knockout Chemical</div><div class="ctl"><i>5</i>brainless</div><div class="ctl"><i>6</i>knockout Depth</div>
+          <div class="ctl"><i>7</i>knockout Energy</div><div class="ctl"><i>8</i>knockout Flow</div><div class="ctl"><i>9</i>knockout Scent</div>
+        </div>
+        <div>
+          <div class="ctl"><i>10</i>knockout Stroke Hold Ramp</div><div class="ctl"><i>11</i>knockout JointAngle JointAngularVel…</div>
+          <div class="ctl"><i>12</i>constant 0.3</div><div class="ctl"><i>13</i>constant 0.4</div><div class="ctl"><i>14</i>constant 0.5</div>
+          <div class="ctl"><i>15</i>constant 0.6</div><div class="ctl"><i>16</i>constant 0.7</div>
+          <div class="ctl"><i>17</i>kinesis rate, bias −0.5, gain 10</div><div class="ctl"><i>18</i>kinesis rate, bias 0, gain 20</div>
+        </div>
+      </div>
+    </fieldset>
+  </section>
+
+  <!-- source: the diff of the two resolved recipes (this one and its base), and the validator's refusals. -->
+  <aside class="panel launch" aria-label="what differs, and launch">
+    <div class="panel__head"><span class="title">Differs from brain2-pay-path</span><span class="aside">3</span></div>
+    <div class="diffline"><span class="k">world.overrides.WorkCostMultiplier</span><span class="v">0.5 → <b>none (1)</b></span></div>
+    <div class="diffline"><span class="k">search.draws</span><span class="v">16 → <b>1000</b></span></div>
+    <div class="diffline"><span class="k">reward.parameters.weights.distance</span><span class="v">— → <b>0.5</b></span></div>
+    <p class="dim" style="font-size:11px;line-height:1.5">Both recipes are resolved, each with its base merged under it, and then compared. Once the two refused fields are fixed, one setting differs.</p>
+
+    <div class="section">
+      <div class="title" style="margin-bottom:6px">This recipe's activity</div>
+      <div class="field"><span class="field__label">15:02 · written</span><span class="field__value" style="font-size:11px">agent · evolution-simulator-a8</span></div>
+      <div class="field"><span class="field__label">15:02 · checked, 2 refused</span><span class="field__value" style="font-size:11px">the room</span></div>
+    </div>
+
+    <div class="section">
+      <div class="title" style="margin-bottom:6px">Identity</div>
+      <div class="field"><span class="field__label">resolved hash</span><span class="field__value dim">— until it is accepted</span></div>
+      <div class="field"><span class="field__label">pre-registration</span><span class="badge">not committed</span></div>
+      <div class="field"><span class="field__label">file on disk</span><span class="field__value" style="font-size:12px">saved 15:02 · untracked</span></div>
+      <p class="dim" style="font-size:11px;line-height:1.5;margin:4px 0 0">A run is entered in the registry only from a committed recipe on a clean tree.</p>
+    </div>
+
+    <div class="section">
+      <div class="title" style="margin-bottom:6px">Launch</div>
+      <div class="field"><span class="field__label">threads</span><span class="field__value">8</span></div>
+      <div class="field"><span class="field__label">machine after launch</span><span class="field__value">16 <span class="unit">of 16 cap</span></span></div>
+      <span class="meter" style="width:100%;margin:.45rem 0 .3rem"><i style="width:25%"></i><em style="left:25%;width:25%"></em><u style="left:50%"></u></span>
+      <div class="field"><span class="field__label">expected pace</span><span class="field__value">≈ 7.6 <span class="unit">min / gen</span></span></div>
+      <div class="field"><span class="field__label">search and exam</span><span class="field__value">≈ 13 h 20 min</span></div>
+      <div class="field"><span class="field__label">output</span><span class="field__value" style="font-size:11px">runs/nursery/brain2-pay-path-full-work/</span></div>
+      <div style="display:flex;margin-top:var(--s4)">
+        <a class="btn btn--off" style="margin-right:8px">LAUNCH</a>
+        <a class="btn btn--off">LAUNCH AS TRIAL <span class="badge" style="margin-left:.6rem;font-size:.7rem">UNREGISTERED · PENDING A RULING</span></a>
+      </div>
+      <p class="dim" style="font-size:11px;line-height:1.5">Launch needs the recipe committed and the tree clean, and enters the run in the registry. A trial would run the file as it stands and never be entered; whether trials exist at all waits on the owner's ruling. An agent does either through the MCP; these buttons are the owner's copy of the same operation. Both wait for the refused fields.</p>
+    </div>
+  </aside>
+</main>
+
+<footer class="bar">
+  <span class="hint"><span class="key">E</span>edit by hand</span>
+  <span class="hint"><span class="key">D</span>only what differs</span>
+  <span class="spacer"></span>
+  <span>fields and messages as Recipe.cs (format 1) and Reward.cs name them · all values invented</span>
+</footer>
+</body>
+</html>

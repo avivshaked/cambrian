@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    The nursery room (logbook/specs/nursery-room-build.md): a local web application that watches
+    the nursery's experiments. One process, three doors: screens, a JSON API and an MCP endpoint,
+    all calling one list of operations (Operations.cs) and one resolver of resources. It reads what
+    the nursery writes and never is the engine. Listens on 127.0.0.1 only.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>10.0</LangVersion>
+    <AssemblyName>Evosim.NurseryRoom</AssemblyName>
+    <RootNamespace>Evosim.NurseryRoom</RootNamespace>
+    <Nullable>disable</Nullable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Evosim.Nursery\Evosim.Nursery.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="[2.2.0]" />
+  </ItemGroup>
+
+</Project>

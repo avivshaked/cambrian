@@ -82,6 +82,10 @@ namespace Evosim.Core
                 case float f: w.Field(entry.Key, f); break;
                 case double d: w.Field(entry.Key, d); break;
                 case int i: w.Field(entry.Key, i); break;
+
+                // D151's weather seed. Its setter holds it at or under 2^53, so the double the
+                // reader parses it into carries it exactly.
+                case ulong u: w.Field(entry.Key, u); break;
                 case bool b: w.Field(entry.Key, b); break;
 
                 // D117's pool hash, the first scalar string tunable: written as it is.
@@ -159,6 +163,7 @@ namespace Evosim.Core
             if (entry.ValueType == typeof(float)) return node.AsFloat();
             if (entry.ValueType == typeof(double)) return node.AsDouble();
             if (entry.ValueType == typeof(int)) return node.AsInt();
+            if (entry.ValueType == typeof(ulong)) return ReadULong(entry, node);
             if (entry.ValueType == typeof(bool)) return node.AsBool();
             if (entry.ValueType == typeof(string)) return node.AsString();
 
@@ -189,6 +194,24 @@ namespace Evosim.Core
 
             throw new InvalidOperationException(
                 $"{entry.Path} is a {entry.ValueType.Name}, which the config format cannot read.");
+        }
+
+        /// <remarks>
+        /// A whole number at or under 2^53, the largest the parser's double carries exactly. A
+        /// fraction or a larger number is refused rather than truncated or rounded into another
+        /// seed under the file's name.
+        /// </remarks>
+        private static ulong ReadULong(TunableEntry entry, JsonNode node)
+        {
+            double value = node.AsDouble();
+            if (!(value >= 0d) || value > 9007199254740992d || Math.Floor(value) != value)
+            {
+                throw new FormatException(
+                    $"{entry.Group}.{entry.Key} is {value.ToString("R", System.Globalization.CultureInfo.InvariantCulture)}; " +
+                    "it is a whole number from 0 to 2^53, the largest a double carries exactly.");
+            }
+
+            return (ulong)value;
         }
 
         /// <remarks>

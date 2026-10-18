@@ -28,6 +28,7 @@ namespace Evosim.Farm.Tests
     /// the spec checks the reader against something the writer did not produce.
     /// </para>
     /// </remarks>
+    [Collection(FarmProcessCollection.Name)]
     public class PoseStreamTests : IDisposable
     {
         private readonly string _directory;

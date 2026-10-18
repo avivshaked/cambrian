@@ -4,10 +4,13 @@ using Evosim.Core;
 using Evosim.Dynamics;
 using Evosim.Dynamics.Placement;
 
+// The second bracket's modes and counters, which the farm's tests read and set.
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Evosim.Farm.Tests")]
+
 namespace Evosim.Farm
 {
     /// <summary>
-    /// The harness — <c>Evosim.Sim.Ecosystem</c> out of Unity: Core's <see cref="World"/> and a
+    /// The harness —<c>Evosim.Sim.Ecosystem</c> out of Unity: Core's <see cref="World"/> and a
     /// <see cref="DynamicsWorld"/> stepped together, one economy step every
     /// <see cref="StepsPerMetabolicStep"/> physics steps.
     /// </summary>
@@ -74,11 +77,23 @@ namespace Evosim.Farm
             public float Radius;
 
             public bool CountedOverMassRatio;
+
+            /// <summary>
+            /// Built, rebuilt or resized outside the solver since the divergence check last read it:
+            /// the bodies the narrowed second bracket reads (card-next-r57.md Part 8).
+            /// </summary>
+            public bool Touched;
         }
 
         private readonly Dictionary<long, Body> _bodies = new Dictionary<long, Body>();
         private readonly List<Body> _order = new List<Body>();
         private readonly HashSet<long> _departed = new HashSet<long>();
+
+        /// <summary>
+        /// D127: the root orientation of each body leaving the solver on this reconcile, by
+        /// creature id, handed to its corpse and cleared. Scratch, empty between reconciles.
+        /// </summary>
+        private readonly Dictionary<long, Quat> _corpsePoses = new Dictionary<long, Quat>();
 
         /// <summary>
         /// The metabolic step's contact list, reused — D106 item 5, <c>HandOverContacts</c>.
@@ -94,9 +109,43 @@ namespace Evosim.Farm
         private long _reconciledAt = -1;
         private bool _movedOutsideTheSolver;
 
+        // Whether the solver has stepped since the divergence check last read every body. While
+        // it has not, a body nothing touched holds the state that check read, so the second
+        // bracket reads only the touched ones (card-next-r57.md Part 8). Raised at every block,
+        // lowered by a whole check, and raised by a restore.
+        private bool _physicsSinceWholeCheck = true;
+        private readonly List<Body> _touchedOrder = new List<Body>();
+
+        /// <summary>How the second bracket chooses its bodies.</summary>
+        /// <remarks>
+        /// <see cref="SecondCheck.NarrowedIgnoringThePhysics"/> is wrong on purpose: it narrows even
+        /// after the solver has stepped, which is the change Part 8 shows would part the run. It
+        /// exists so the tests can show they would catch that.
+        /// </remarks>
+        internal enum SecondCheck { Narrowed, Whole, NarrowedIgnoringThePhysics }
+
+        internal SecondCheck SecondCheckMode = SecondCheck.Narrowed;
+
+        /// <summary>
+        /// Tests only: the narrowed bracket also judges every untouched body, keeps its last root
+        /// and kills nothing, and counts any verdict that is not healthy or any root that moved.
+        /// </summary>
+        internal bool AuditTheNarrowedCheck;
+
+        internal long WholeSecondChecks, NarrowedSecondChecks, AuditedBodies, AuditFaults;
+
         // Physics steps the solver has already taken past this simulation's own count: 0 on the
         // CPU after every call, and up to a block's length less one on the GPU engine.
         private int _solverAhead;
+
+        /// <summary>
+        /// Whether the solver has stepped further than the world: the gpu engine steps a block on its
+        /// first step and only counts the rest, so a world left here holds bodies a block ahead of
+        /// its own clock, which no checkpoint can record (WriteState refuses it). Never true on the
+        /// CPU, whose block is one step. The farm's loop runs a block it is inside to its end before
+        /// it reads the budget or the wall.
+        /// </summary>
+        internal bool InsideBlock => _solverAhead != 0;
         private float _sinceGrowthStep;
 
         private bool[] _columnHeld;
@@ -208,6 +257,10 @@ namespace Evosim.Farm
 
             Dynamics = new DynamicsWorld(Solver) { Threads = threads < 1 ? 1 : threads };
 
+            // A body whose contact sphere left the grid's reach inside a physics step is killed
+            // there, as diverged, before the step reads the grid (OnContactStray).
+            Dynamics.StrayHandler = OnContactStray;
+
             // A diagnostic and not a tunable: the contact grid's cell moves no number (logbook/0115),
             // so it is read here and not hashed. The speed probe of 2026-09-25 sets it.
             string cellText = Environment.GetEnvironmentVariable("EVOSIM_CONTACT_CELL");
@@ -270,13 +323,32 @@ namespace Evosim.Farm
             // check runs again on exactly the steps where one of those three has happened; on
             // every other physics step it is one bool test. Reconcile follows it because the
             // check kills, and it returns at once when nothing died.
+            //
+            // It reads only the touched bodies unless the solver has stepped since the last whole
+            // check: after a stray sphere's kill, or after this bracket's own kills, the flag is
+            // raised past a physics step and every body is read, as before (Part 8).
             if (_movedOutsideTheSolver)
             {
                 phaseStarted = Now();
 
                 _movedOutsideTheSolver = false;
-                CheckFinite();
+
+                bool whole = SecondCheckMode == SecondCheck.Whole ||
+                             (SecondCheckMode == SecondCheck.Narrowed && _physicsSinceWholeCheck);
+
+                if (whole)
+                {
+                    WholeSecondChecks++;
+                    CheckFinite();
+                }
+                else
+                {
+                    NarrowedSecondChecks++;
+                    CheckTouched();
+                }
+                long checkedAt = FarmProbe.Mark(FarmProbe.FiniteSecondCheck, phaseStarted);
                 Reconcile();
+                FarmProbe.Mark(FarmProbe.FiniteSecondReconcile, checkedAt);
 
                 _phaseTicks[PhaseFinite] += Now() - phaseStarted;
             }
@@ -304,6 +376,16 @@ namespace Evosim.Farm
 
                 Dynamics.StepBlock(block);
                 _solverAhead = block;
+                _physicsSinceWholeCheck = true;
+
+                // A body the step killed for a stray sphere (OnContactStray) leaves the solver's
+                // list and the stepping order now, before anything after the solver reads a body.
+                // Never true in a step in which no sphere strayed.
+                if (_strayKilled)
+                {
+                    _strayKilled = false;
+                    Reconcile();
+                }
             }
 
             _solverAhead--;
@@ -344,9 +426,10 @@ namespace Evosim.Farm
         /// re-derived and the motion is left exactly as the solver produced it.
         /// </para>
         /// <para>
-        /// The contact sphere is refreshed and committed with it. It was committed at the foot of
-        /// the solver's own step, before this ran, and a body other creatures read at the place
-        /// it has just left is the one thing a periodic boundary must not produce.
+        /// The contact sphere is refreshed and committed with it. The solver's own step left the
+        /// sphere at the place it has just left pending for the next grid build (the refresh
+        /// commits that one first), and a body other creatures read at the place it has just left
+        /// is the one thing a periodic boundary must not produce.
         /// </para>
         /// </remarks>
         private void WrapAtTheSeams()
@@ -392,15 +475,73 @@ namespace Evosim.Farm
         /// </remarks>
         private void CheckFinite()
         {
+            Judge(_order);
+            _physicsSinceWholeCheck = false;
+        }
+
+        /// <summary>
+        /// The second bracket narrowed (card-next-r57.md Part 8): the bodies built, rebuilt or
+        /// resized since the last check, in the bodies' order, so the deaths come in the order a
+        /// whole check would give them.
+        /// </summary>
+        /// <remarks>
+        /// Run only when the solver has not stepped since the last whole check. A body nothing
+        /// touched then holds the state, the radius and the last root that check read, against the
+        /// same depth, glass, bed and reefs, so its verdict is the healthy one it had and a whole
+        /// check would write the same root over it.
+        /// </remarks>
+        private void CheckTouched()
+        {
+            _touchedOrder.Clear();
+
+            for (int i = 0; i < _order.Count; i++)
+            {
+                Body body = _order[i];
+
+                if (body.Touched)
+                {
+                    _touchedOrder.Add(body);
+                }
+                else if (AuditTheNarrowedCheck)
+                {
+                    Float3 root = body.LastRootPosition;
+                    bool dead = Condemned(body, out _);
+
+                    AuditedBodies++;
+                    if (dead || !SameBits(root, body.LastRootPosition)) AuditFaults++;
+
+                    body.LastRootPosition = root;
+                }
+            }
+
+            Judge(_touchedOrder);
+        }
+
+        /// <summary>Tests only: the ids of the bodies the next narrowed bracket would read.</summary>
+        internal List<long> TouchedIds()
+        {
+            var ids = new List<long>();
+            for (int i = 0; i < _order.Count; i++) if (_order[i].Touched) ids.Add(_order[i].Creature.Id);
+            return ids;
+        }
+
+        private static bool SameBits(Float3 a, Float3 b) =>
+            BitConverter.SingleToInt32Bits(a.X) == BitConverter.SingleToInt32Bits(b.X) &&
+            BitConverter.SingleToInt32Bits(a.Y) == BitConverter.SingleToInt32Bits(b.Y) &&
+            BitConverter.SingleToInt32Bits(a.Z) == BitConverter.SingleToInt32Bits(b.Z);
+
+        private void Judge(List<Body> bodies)
+        {
             _condemned.Clear();
             var reasons = new List<string>();
 
             // Each body's verdict first, across Core's threads (the count the farm hands Core): a
-            // verdict reads its own solver and writes its own two slots and its own body's last
-            // root, and nothing else. The condemned are then gathered in the bodies' order, the
-            // order their deaths were always handled in, so a verdict reached on another thread is
-            // the same verdict in the same place and the split moves no number.
-            int count = _order.Count;
+            // verdict reads its own solver and writes its own two slots, its own body's last root
+            // and its own touched mark, and nothing else. The condemned are then gathered in the
+            // bodies' order, the order their deaths were always handled in, so a verdict reached
+            // on another thread is the same verdict in the same place and the split moves no
+            // number.
+            int count = bodies.Count;
             if (_verdictDead.Length < count)
             {
                 int size = Math.Max(count, 2 * _verdictDead.Length);
@@ -413,13 +554,17 @@ namespace Evosim.Farm
 
             Parallelism.ForRanges(count, (from, to) =>
             {
-                for (int i = from; i < to; i++) dead[i] = Condemned(_order[i], out why[i]);
+                for (int i = from; i < to; i++)
+                {
+                    bodies[i].Touched = false;
+                    dead[i] = Condemned(bodies[i], out why[i]);
+                }
             });
 
             for (int i = 0; i < count; i++)
             {
                 if (!dead[i]) continue;
-                _condemned.Add(_order[i]);
+                _condemned.Add(bodies[i]);
                 reasons.Add(why[i]);
                 why[i] = null;
             }
@@ -497,6 +642,39 @@ namespace Evosim.Farm
             return true;
         }
 
+        /// <summary>
+        /// A body whose contact sphere strayed out of the grid's reach during a physics step
+        /// (<see cref="ContactGrid.Strays"/>): killed as diverged through <see cref="HandleDivergence"/>,
+        /// with a reason naming the sphere, from inside the solver's step, after its grid is built
+        /// and before the water is pinned or any body is stepped.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The body blew up between two divergence checks, which run half a second apart, far enough
+        /// that the grid's cell index would wrap (round 56 seed 2 under one drag panel a side, body
+        /// 86464 at 28,179.5 s). The solver marks it lost and builds its grid again without it once
+        /// this returns, and <see cref="Step"/> reconciles straight after the solver's step, so the
+        /// body leaves the solver's list before anything else reads it.
+        /// </para>
+        /// <para>
+        /// A NaN sphere, which the grid passed before without crashing, now kills its body here.
+        /// Such a body has already diverged, and the check at the next metabolic step would have
+        /// killed it.
+        /// </para>
+        /// </remarks>
+        private void OnContactStray(Creature solver, ContactStray stray)
+        {
+            // Every body in the table is living when the solver steps: the reconcile at the top of
+            // Step has just taken out the dead. A solver that is not the table's is not this run's.
+            if (!_bodies.TryGetValue(solver.Id, out Body body) || !ReferenceEquals(body.Solver, solver)) return;
+
+            HandleDivergence(body, stray.Describe());
+            _strayKilled = true;
+        }
+
+        // Set by OnContactStray inside the solver's step and cleared by Step's reconcile after it.
+        private bool _strayKilled;
+
         /// <summary>Dumps a diverged body's post-mortem and kills it as a counted death.</summary>
         private void HandleDivergence(Body body, string reason)
         {
@@ -518,7 +696,7 @@ namespace Evosim.Farm
                     body.LastRootPosition.X, body.LastRootPosition.Y, body.LastRootPosition.Z),
             });
 
-            Console.Error.WriteLine(
+            FarmConsole.Error.WriteLine(
                 FormattableString.Invariant(
                     $"creature {creature.Id} diverged at t={World.ElapsedSeconds:0.#} s ") +
                 FormattableString.Invariant(

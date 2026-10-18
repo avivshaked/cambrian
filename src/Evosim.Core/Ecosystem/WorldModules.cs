@@ -370,7 +370,7 @@ namespace Evosim.Core
 
             Rebuild(creature, counts, next, afterPaths, adult, adultTissue, body, tissue);
 
-            ShedRemains(creature, given);
+            ShedRemains(creature, given, bitten: false);
 
             ModuleDrops++;
             return true;
@@ -386,12 +386,22 @@ namespace Evosim.Core
         /// third path would be a third thing for the corpse pass and the flux identity to agree
         /// with.
         /// </remarks>
-        private void ShedRemains(Organism creature, float remains)
+        /// <param name="leaf">Whether the body carried photosynthetic tissue before the bite, read before the bite reshaped it.</param>
+        private void ShedRemains(Organism creature, float remains, bool bitten, bool leaf = false)
         {
             if (!(remains > 0f)) return;
 
+            // D167's leaf tank: remains no bite tore off are burnt, never food, and so are remains a bite tore off a body
+            // that was not a leaf (the owner's ruling of 2026-10-13: the tank feeds on leaves alone).
+            if (Config.UnbittenDeathsLeaveNoCorpse && !(bitten && leaf))
+            {
+                BurnUnbitten(creature, remains);
+                return;
+            }
+
             if (Config.CorpseDecayPerSecond > 0f)
             {
+                CorpsesChanged();
                 _corpses.Add(new Corpse(
                     creature.Id, creature.Point.Position, creature.Patch, remains));
 
@@ -624,7 +634,7 @@ namespace Evosim.Core
             paths = new List<int[]>(Config.Development.MaxParts);
 
             Phenotype whole = Developer.Develop(
-                creature.Genome, Config.Development, null, Config.Shapes, counts, paths);
+                creature.Genome, Config.Development, null, Config.Shapes, counts, paths, Config.CellTypes);
 
             List<int[]> lost = creature.LostPartPaths;
             if (lost == null || lost.Count == 0) return whole;

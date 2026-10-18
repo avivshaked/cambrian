@@ -1,0 +1,14 @@
+== Evosim.Core.Tests from 10:05:54
+
+Passed!  - Failed:     0, Passed:  1111, Skipped:     0, Total:  1111, Duration: 15 m 55 s - Evosim.Core.Tests.dll 
+(net8.0)
+Evosim.Core.Tests exit 0 at 10:21:53
+== Evosim.Dynamics.Tests from 10:21:53
+Passed!  - Failed:     0, Passed:   170, Skipped:     0, Total:   170, Duration: 2 m 52 s - Evosim.Dynamics.Tests.dll 
+(net8.0)
+Evosim.Dynamics.Tests exit 0 at 10:24:49
+== Evosim.Farm.Tests from 10:24:49
+Passed!  - Failed:     0, Passed:   204, Skipped:     0, Total:   204, Duration: 26 s - Evosim.Farm.Tests.dll (net8.0)
+Evosim.Farm.Tests exit 0 at 10:25:21
+== done at 10:25:21
+

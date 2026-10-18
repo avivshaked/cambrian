@@ -220,9 +220,18 @@ actually verifying it.
 - **Adding a tunable, or bumping a genome or checkpoint format, refuses everything written before it.** Loading refuses rather than defaults, so the new build cannot read an older `config.json`, genome or checkpoint. The recorded test fixtures need re-recording (`src/Evosim.Core/CLAUDE.md`). Which build refused what is in `logbook/specs/build-readings.md`.
 - **A rule chosen for being cheap gets re-asked when a later change makes it bite.** The report probably already counts it. When a world rule changes, list the rules chosen for cheapness under the old one and ask each whether it still holds.
 - **A watch is one look that exits, and its schedule belongs to the session.** Never a `while true` shell loop or any other background loop. Such loops outlive the session and multiply with every re-arm; on 2026-09-20 they opened several hundred terminal windows and took the owner's desktop down. Run `scripts/sweep-orphans.ps1` at the start of every session and before arming anything, and `-Kill` what it lists. A one-off wait carries a deadline in its own condition. Stopping a background Bash task leaves its script running, so list processes by command line and stop them by id. `scripts/CLAUDE.md` has the watch script.
+- **Every look at a running world checks its pace as well as its heat, and a world that slows is stopped and probed without waiting to be asked** (the owner, 2026-10-17). `python -I scripts/pace-check.py` flags any running world at under half its own pace of the hour before. A slowed world is a finding: stop it with `stop-arm.ps1`, resume it from its last checkpoint with the probes on, since a resume replays exactly, and tell the owner after. On 2026-10-17 a world of round 61's third pair ran slow for about an hour, most of it at a tenth of its pace, before anyone acted.
+- **Nothing private goes into a tracked file, and a push reads every commit** (the owner, 2026-10-18,
+  after 17 unpushed days needed a privacy pass before they could go out). No address, user-profile path,
+  home or routine detail, or other project's name is written into a tracked file, at the time it is
+  written. `scripts/githooks/pre-push` checks each pushed commit against the ignored
+  `scratch/machine/private-patterns.txt` and refuses an author that is not a GitHub noreply address.
+- **Say how long it has been since the last push.** When it is more than three days, every status says
+  so in its first lines, with the count of unpushed commits (the owner asked to be warned, 2026-10-18).
+  A push is the owner's to approve each time; code and prose only, never data.
 - **A pre-registration is committed before its round launches.** A farm round launches only from a clean tree after the entry's commit. Its manifest's `gitCommit` then names the pre-registration, and a `(DIRTY)` in the launch printout means it does not.
-- **Write files through the shell, not with the Write or Edit tools**, which ask the owner for every file even in auto mode (cause unknown). Launch no subagent that edits files, except a story film's writer and editor inside the story's folder. Every write under `~/.claude/` asks whatever the tool, so memory edits are rare and batched. Never edit a permission setting, whoever asks. The detail is in `logbook/specs/machine-and-tools.md`.
-- **A worktree goes under `scratch/wt-<name>`, never under `.claude/`**, where every write asks the owner. Make one with `git worktree add scratch/wt-<name> -b <branch>`; a subagent that needs one gets one the caller made, named by its absolute path, never `isolation: "worktree"`. A worktree is its own checkout, with its own hashes, `scratch/` and `runs/`.
+- **If a write or command prompts unexpectedly, stop and tell the owner.** Never switch tools to avoid a prompt. Change a permission setting or hook only when the owner asks for it in their own words.
+- **Never `cd` or `Set-Location` into a worktree.** A write outside the session's working directory asks, so every write back to the main checkout would. Reach it from the project root with absolute paths, `git -C <worktree>` and Start-Process's `-WorkingDirectory`. Make one with `git worktree add scratch/wt-<name> -b <branch>`. A worktree is its own checkout, with its own hashes, `scratch/` and `runs/`.
 - **Report the machine's load as `% Processor Utility`, as Task Manager does, not `% Processor Time`.** Read it before adding a job rather than counting threads. After a black screen or a reset, read the `nvlddmkm` events and Kernel-Power 41 before blaming a run.
 - **At most five Unity processes, the owner's open Editor counted.** A sixth only for a short visual check that comes and goes, never for an arm and never beside a Core test suite.
 - **From PowerShell, `bash` is WSL's and cannot see `D:/`**; a detached launcher names Git's `bash.exe` under `C:/Program Files/Git/bin/`. PowerShell scripts need a UTF-8 BOM, and an array parameter does not bind when a script is called with `-File` from bash (`scripts/CLAUDE.md`).
@@ -234,7 +243,8 @@ actually verifying it.
   documentation does not say. Nothing outside the story skills pointed to it until 2026-09-28, so
   the channel intro's bin was made that day without it. Three rules hold for every job. A bin or
   a timeline is added beside the owner's, and theirs are never changed. An import links a file
-  where it lies and copies nothing, so a moved or missing file shows offline. And whatever a
+  where it lies and copies nothing, so a moved or missing file shows offline; that place is under
+  `assets/` (`assets/README.md`), never `scratch/` or a downloads folder. And whatever a
   session learns in Resolve goes into the spec with its date.
 
 ## Working with the owner
@@ -243,9 +253,21 @@ actually verifying it.
   agents *and* humans who want to read the research, and the record is meant to become a
   book. Run `python scripts/style-check.py <file>` before committing prose; keep the
   reader's key current (`logbook/README.md`).
+- **The record paraphrases the owner; it does not quote them** (the owner's ruling,
+  2026-10-03). Whatever is committed may be pushed and read by anyone, so a ruling goes in as
+  what was decided, by whom and on which date: "the owner ruled on 2026-10-03 that the
+  watchdog stays out of git", not the owner's sentence in quotation marks. When a ruling is
+  subtle, show the owner the wording before committing it. One file is the exception: the nursery
+  room's `rounds/nursery/activity.jsonl` is committed whole, the reasons the owner types on the
+  room's screen included, and the screen says so beside each reason box (the owner's ruling of
+  2026-10-05, `logbook/specs/nursery-room-tests-plan.md`). Never paraphrase or scrub its rows. Quotes written before this ruling
+  are to be paraphrased in a cleanup that is queued in HANDOFF.
 - **First-person voice is welcome in the record** — the owner invited genuine agent
   reactions, as the agent's own: honest and brief, never performative (logbook/0042's
   personal note is the precedent).
+- **Pick a subagent's model by the work** (the owner's rule of 2026-09-24, amended 2026-10-01, put
+  here on 2026-10-05 so every agent follows it): Sonnet for simple building and bulk reading, Opus for
+  reasoning, reviews and anything visual, and Fable only for the hardest problems.
 - **A subagent cannot wait, so never hand it a task that ends in one.** It cannot sleep and
   cannot return before its report, so a suite or a smoke as its last step turns into a no-op
   shell command every few seconds until someone stops it; on 2026-09-09 that ran for an hour
@@ -253,15 +275,17 @@ actually verifying it.
   and the fast filtered tests are in; the caller launches anything long in the background,
   where a completion notice costs nothing, and reads the result.
 - **A subagent's default temporary location is its session scratchpad, which is outside the
-  project.** A hook blocks any write outside the repository and stalls the agent until the
-  owner approves it, which is a blocked task the caller may not notice for an hour. Every
+  project.** A file there is invisible to the next agent and to the owner, and any other path
+  outside the repository stalls the agent on the owner's guard hook. Every
   subagent brief therefore names the absolute path under `scratch/` it may write to
   (`D:\Projects\experiments\evolution-simulator\scratch\<task>\`) and forbids the session
-  scratchpad and TEMP by name; "write under scratch/" alone was not enough on 2026-09-12.
+  scratchpad and TEMP by name; "write under scratch/" alone was not enough on 2026-09-12. It also names a home under `scratch/` for
+  the agent's own helper scripts and lists: a brief that allowed edits to named files and forbade every
+  other place sent two agents' helpers to their scratchpad on 2026-10-04.
   The same rule binds the calling agent: nothing of the project's is written outside the
   repository (Conventions, below).
-- **A subagent that a skill launches is briefed from the skill's files alone** (the owner,
-  2026-09-26: "any new session should be able to get the same results"). Every session that runs
+- **A subagent that a skill launches is briefed from the skill's files alone** (the owner
+  ruled on 2026-09-26 that any new session should be able to get the same results). Every session that runs
   the skill must hand the subagent the same words, so its prompt is the skill's fixed template with
   nothing filled in but paths and numbers, and everything else it needs is in a file the template names: its
   brief, and the working folder whose files hold the case at hand. Nothing from the session goes
@@ -270,22 +294,22 @@ actually verifying it.
   how it came to be goes in the logbook or in a record file beside it. Round 49's writer was
   briefed with a rewrite that told the story of the draft it replaced, and a prompt that retold it
   again; a new session would have briefed it differently. **Nor is any verdict in such a flow the
-  session's own** (the owner, the same day, of a gate the story flow named and the session decided:
-  "not good enough"). A step that judges is a tool's check, a subagent's answer saved as it came,
+  session's own** (the owner, the same day, said that a gate the story flow named and the session
+  decided was not good enough). A step that judges is a tool's check, a subagent's answer saved as it came,
   or the owner's words saved as they wrote them; a note a subagent reads is one of those three and
   never the session's reading; the flow's state records every verdict, and every loop has a limit
   after which the owner rules. `scripts/story-flow.py` (`next`, `save`, `owner`) is the pattern. A
   reader that must know nothing of the project is an `Explore` agent, which is given no CLAUDE.md,
   memory or git status; a `general-purpose` agent is given all three, and they change by the day.
 - **Sample the pictures while a round runs, not only when it is written up** (owner,
-  2026-09-12 evening: "sometimes you can't really evaluate something without actually
-  seeing it"). The theatre-watch rule above covers the entry; this one covers the run. Take
+  2026-09-12 evening, who said that some things cannot be evaluated without
+  seeing them). The theatre-watch rule above covers the entry; this one covers the run. Take
   a frame or two from a live arm every few thousand simulated seconds (`theatre-snap.ps1`
   on a worker the queue is not using, one frame at a time on a loaded machine) and look at
   them, and say in the status what was seen. Round 37's crust at the glass was in the table
   for hours before anyone read it as a crust.
 - **Check every test render against a reference before the owner sees it** (the owner,
-  2026-09-25: "why are you not picking these problems up yourself using a png sheet?"). The
+  2026-09-25, asked why the agent was not picking these problems up itself from a PNG sheet). The
   first window-route clips of round 48 went to the owner with bodies popping in size every
   growth step and the picture too bright, and the second with the scenery in question, each
   found by the owner and not by the agent, who had looked at the contact sheets only for the
@@ -297,24 +321,24 @@ actually verifying it.
   said in the same message as the clip's path. A change to a render path is checked against
   the path it replaces before anything else is judged.
 - **Say when a ruling blocks the work, and keep working on the rest** (owner, 2026-09-22
-  evening: "If you're waiting on me, I want an explicit message saying you are blocked by a
-  decision you need from me. I want you working all the time."). A status that lists open
+  evening, who wants to be told explicitly when the agent is blocked by a
+  decision it needs from them, and wants it working all the time). A status that lists open
   rulings among other news reads as information; the owner cannot tell the campaign has
   stopped on them. When the next step needs a ruling, lead with a line of the form "I am
   blocked on <decision> from you", and then put the decision in full, never in shorthand
-  (the owner, ten minutes later: "Give me the full topic with recommendations and
-  implications"): the topic in plain words for someone who has not read the proposal, the
+  (the owner, ten minutes later, asked for the full topic with recommendations and
+  implications): the topic in plain words for someone who has not read the proposal, the
   recommendation and why, what each option implies for the record, the rounds, the machine
   and the risk, and the exact question to answer. A pointer to a proposal file is not a
   request for a ruling. A decision still open is set out in full again in every message that
   asks for it, and each option carries its own implications. "Unchanged from my last message"
-  is shorthand too (the owner, 2026-09-25 afternoon: "You know how I prefer to get decision
-  topics right?"). Then say what is being worked on meanwhile. Never end a turn idle while anything not gated
+  is shorthand too (the owner, 2026-09-25 afternoon, asked whether the agent knew how they prefer
+  to get decision topics). Then say what is being worked on meanwhile. Never end a turn idle while anything not gated
   remains: loose ends, instruments, measurements, the round-gap changes that are a new
   realisation of every seed and land best while no arm runs, pre-registration drafts and
   ledger screens for the round that waits.
 - **Cap the load a build puts on the machine** (owner, 2026-09-23 afternoon, on seeing the
-  CPU at 100%: "are we doing farms and unit tests at the same time?"). A subagent's build of
+  CPU at 100%, asked whether farms and unit tests were running at the same time). A subagent's build of
   a tunable ran two farm runs at six threads each beside the test suites, because its brief
   capped nothing. A farm run's result is bit-identical at any load, so nothing was wrong;
   what a loaded machine breaks is pace against a wall limit, every timing reading taken
@@ -323,16 +347,41 @@ actually verifying it.
   and never two farm runs beside tests; a subagent's work takes at most half the machine's
   logical processors while the owner is at it; and a timing read (a wall split, a pace
   number, a kernel time) is taken with nothing else running, or it is re-taken.
+- **Load is no bar; heat and headroom are, and the main agent shares the machine** (the owner,
+  2026-10-09). How much of the machine the work uses does not matter in itself, as long as it does not
+  overheat (the heat watch, `logbook/specs/machine-and-tools.md`) and keeps a little headroom for other
+  work. The coordinator, or any main agent, shares the machine between the projects on it as their work
+  needs, through the queue in `scratch/machine/queue.md`.
 - **A round's checkpoints are thinned only after the owner approves its video as final**, and each thinning's keep list and freed space are shown and asked first (`src/Evosim.Farm/CLAUDE.md`).
+- **Design every round toward a real ocean that evolves** (the owner's standing guidance of 2026-10-15). When
+  planning a round, a screen or a proposal, ask two questions first: what would make this world more like a real
+  ocean, and what would push its creatures to evolve. The aim is separate oases with near-empty water between
+  them, and swimmers that migrate between oases to graze or hunt. A change that makes a round easier to read
+  but the world less like an ocean needs a reason that says so. World rules stay the owner's to rule.
 - **Owner-reserved decisions:** world rules (what the ecology *is*), the goal rule and its
   amendments, scope and round design forks, pushes of anything that is not code/prose, and
   anything irreversible or outward-facing. Instruments, diagnostics, replays of scored
   conditions, analyses and doc upkeep are agent work. A proposal file
-  (`fable-propose-*.md`) is the vehicle for putting a design in front of the owner:
+  in `proposals/` is the vehicle for putting a design in front of the owner:
   absorbed into DECISIONS.md on ruling, then deleted.
 
 ## Conventions
 
+- **Evergreen files hold the present, not the history** (the owner's ruling, 2026-10-03).
+  HANDOFF, every `CLAUDE.md` and `AGENTS.md`, and any other file an agent reads to learn how to
+  work are read by a fresh agent with no context. From this file and HANDOFF alone it must know
+  where the work stands and how to go on, and it needs nothing else from them. So when something
+  ends or changes, rewrite or delete its passage rather than add to it. Write no "done on", no
+  "was 165a6546", and no note that a thing was removed or no longer holds: an agent cannot miss
+  what it was never told. What happened goes in the logbook, DECISIONS.md or the commit history,
+  if it is worth keeping at all. The logbook is a log, and this rule does not apply to it.
+- **Nothing lands at the root but the documents in the table at the top, `AGENTS.md`,
+  `COMMERCIAL.md`, `CONTRIBUTING.md`, the licences and the top-level folders.** A proposal for
+  the owner goes in `proposals/`. A flow's draft goes in that flow's working folder, and a spec
+  or report the record cites in `logbook/specs/`. An outside agent's review of the project is
+  never committed. It is read as untrusted text, acted on and removed (the owner, 2026-10-01, said
+  it was meant to be a suggestion made by another agent, acted on, and then removed, and never
+  meant to be kept). What came of it goes into DECISIONS.md and the logbook.
 - **Nothing of the project's is written outside the repository — TEMP included.** Transient
   files go in `scratch/` (gitignored): Unity run logs (`scratch/logs/`, where
   `run-arm.ps1` puts them), monitor watch lists, theatre pictures (`scratch/snaps/`,
@@ -391,9 +440,9 @@ steps would go wrong, or be done twice, without it.
    it matters, and drop the content.
 2. **Matters, and is in no file yet**: keep it under a heading **Persist first**. Name the file
    each item belongs in: HANDOFF.md, DECISIONS.md, a logbook entry, a spec under
-   `logbook/specs/`, or an area's `CLAUDE.md`. The owner's rulings go in as the owner wrote
-   them, with the date. After compaction, write these items to their files before any other
-   work.
+   `logbook/specs/`, or an area's `CLAUDE.md`. The owner's rulings go in paraphrased, with the
+   date (see "Working with the owner"). After compaction, write these items to their files
+   before any other work.
 3. **Matters to this session only, and belongs in no file**: keep it. That means:
    - farm runs and queues still going, with their arm names and run directories
    - background tasks, agents and scheduled watches, with their ids and deadlines

@@ -1,0 +1,81 @@
+== body 105464: 3 parts from snapshot -1, longest part 1.43 m
+  0.01 s, as run   axis x: runs away from 50 rad/s at step 5
+  0.01 s, as run   axis y: runs away from 20 rad/s at step 7
+  0.01 s, as run   axis z: runs away from 100 rad/s at step 6
+  0.01 s, limiter  axis x: none up to 100 rad/s; from 100 rad/s: peak 91.5, after 3 s 0.432 rad/s, 46 impulses limited
+  0.01 s, limiter  axis y: none up to 100 rad/s; from 100 rad/s: peak 91.5, after 3 s 0.348 rad/s, 135 impulses limited
+  0.01 s, limiter  axis z: none up to 100 rad/s; from 100 rad/s: peak 95.7, after 3 s 0.193 rad/s, 40 impulses limited
+  0.02 s, limiter  axis x: runs away from 100 rad/s at step 11
+  0.02 s, limiter  axis y: none up to 100 rad/s; from 100 rad/s: peak 91.5, after 3 s 0.416 rad/s, 138 impulses limited
+  0.02 s, limiter  axis z: none up to 100 rad/s; from 100 rad/s: peak 95.7, after 3 s 0.307 rad/s, 148 impulses limited
+== body 118901: 4 parts from snapshot 51900, longest part 1.78 m
+  0.01 s, as run   axis x: runs away from 20 rad/s at step 5
+  0.01 s, as run   axis y: runs away from 50 rad/s at step 5
+  0.01 s, as run   axis z: runs away from 50 rad/s at step 5
+  0.01 s, limiter  axis x: runs away from 10 rad/s at step 14
+  0.01 s, limiter  axis y: none up to 100 rad/s; from 100 rad/s: peak 93.2, after 3 s 0.371 rad/s, 281 impulses limited
+  0.01 s, limiter  axis z: runs away from 20 rad/s at step 11
+  0.02 s, limiter  axis x: runs away from 5 rad/s at step 14
+  0.02 s, limiter  axis y: none up to 100 rad/s; from 100 rad/s: peak 93.2, after 3 s 0.382 rad/s, 161 impulses limited
+  0.02 s, limiter  axis z: runs away from 10 rad/s at step 11
+== body 108541: 4 parts from snapshot 50100, longest part 4.21 m
+  0.01 s, as run   axis x: runs away from 10 rad/s at step 5
+  0.01 s, as run   axis y: runs away from 20 rad/s at step 6
+  0.01 s, as run   axis z: runs away from 20 rad/s at step 5
+  0.01 s, limiter  axis x: runs away from 5 rad/s at step 10
+  0.01 s, limiter  axis y: none up to 100 rad/s; from 100 rad/s: peak 96.3, after 3 s 0.151 rad/s, 197 impulses limited
+  0.01 s, limiter  axis z: runs away from 5 rad/s at step 13
+  0.02 s, limiter  axis x: runs away from 2 rad/s at step 10
+  0.02 s, limiter  axis y: none up to 100 rad/s; from 100 rad/s: peak 96.3, after 3 s 0.175 rad/s, 129 impulses limited
+  0.02 s, limiter  axis z: runs away from 5 rad/s at step 9
+== body 112066: 6 parts from snapshot 50900, longest part 9.96 m
+  0.01 s, as run   axis x: runs away from 5 rad/s at step 5
+  0.01 s, as run   axis y: runs away from 20 rad/s at step 6
+  0.01 s, as run   axis z: runs away from 5 rad/s at step 5
+  0.01 s, limiter  axis x: runs away from 0.5 rad/s at step 12
+  0.01 s, limiter  axis y: none up to 100 rad/s; from 100 rad/s: peak 95.1, after 3 s 0.121 rad/s, 387 impulses limited
+  0.01 s, limiter  axis z: runs away from 1 rad/s at step 11
+  0.02 s, limiter  axis x: runs away from 0.5 rad/s at step 9
+  0.02 s, limiter  axis y: runs away from 100 rad/s at step 7
+  0.02 s, limiter  axis z: runs away from 0.5 rad/s at step 10
+== body 102219: 7 parts from snapshot 51100, longest part 21.10 m
+  0.01 s, as run   axis x: runs away from 2 rad/s at step 5
+  0.01 s, as run   axis y: runs away from 20 rad/s at step 5
+  0.01 s, as run   axis z: runs away from 5 rad/s at step 5
+  0.01 s, limiter  axis x: runs away from 0.2 rad/s at step 9
+  0.01 s, limiter  axis y: none up to 100 rad/s; from 100 rad/s: peak 98.3, after 3 s 0.038 rad/s, 196 impulses limited
+  0.01 s, limiter  axis z: runs away from 0.2 rad/s at step 11
+  0.02 s, limiter  axis x: runs away from 0.1 rad/s at step 9
+  0.02 s, limiter  axis y: runs away from 100 rad/s at step 7
+  0.02 s, limiter  axis z: runs away from 0.1 rad/s at step 10
+== body 108599: 8 parts from snapshot 50200, longest part 41.62 m
+  0.01 s, as run   axis x: runs away from 1 rad/s at step 5
+  0.01 s, as run   axis y: runs away from 10 rad/s at step 7
+  0.01 s, as run   axis z: runs away from 1 rad/s at step 7
+  0.01 s, limiter  axis x: runs away from 0.1 rad/s at step 8
+  0.01 s, limiter  axis y: none up to 100 rad/s; from 100 rad/s: peak 98.7, after 3 s 0.026 rad/s, 101 impulses limited
+  0.01 s, limiter  axis z: runs away from 0.1 rad/s at step 9
+  0.02 s, limiter  axis x: runs away from 0.1 rad/s at step 7
+  0.02 s, limiter  axis y: runs away from 100 rad/s at step 7
+  0.02 s, limiter  axis z: runs away from 0.1 rad/s at step 7
+== body 120214: 8 parts from snapshot 52100, longest part 49.50 m
+  0.01 s, as run   axis x: runs away from 0.5 rad/s at step 8
+  0.01 s, as run   axis y: runs away from 20 rad/s at step 5
+  0.01 s, as run   axis z: runs away from 1 rad/s at step 6
+  0.01 s, limiter  axis x: runs away from 0.1 rad/s at step 7
+  0.01 s, limiter  axis y: runs away from 100 rad/s at step 10
+  0.01 s, limiter  axis z: runs away from 0.1 rad/s at step 7
+  0.02 s, limiter  axis x: runs away from 0.1 rad/s at step 6
+  0.02 s, limiter  axis y: runs away from 50 rad/s at step 9
+  0.02 s, limiter  axis z: runs away from 0.1 rad/s at step 7
+== body 134411: 8 parts from snapshot 55100 with module counts 8,0,0,3,1,1,1,1,1, longest part 102.17 m
+  0.01 s, as run   axis x: runs away from 0.5 rad/s at step 5
+  0.01 s, as run   axis y: runs away from 0.5 rad/s at step 6
+  0.01 s, as run   axis z: runs away from 0.5 rad/s at step 5
+  0.01 s, limiter  axis x: runs away from 0.1 rad/s at step 9
+  0.01 s, limiter  axis y: runs away from 0.1 rad/s at step 10
+  0.01 s, limiter  axis z: runs away from 0.1 rad/s at step 8
+  0.02 s, limiter  axis x: runs away from 0.1 rad/s at step 7
+  0.02 s, limiter  axis y: runs away from 0.1 rad/s at step 6
+  0.02 s, limiter  axis z: runs away from 0.1 rad/s at step 6
+EXIT 0 

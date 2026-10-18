@@ -2,9 +2,9 @@
 
 *2026-09-18, evening.* The rules D098 rules, as amended in discussion the same evening, with
 the numbers, the Core symbols, the columns and the tests. `economy-inventory.md` is the map
-of what the build touches; this is what it builds. The owner's words that settle the design:
-"Matter is matter. Absorbing matter costs energy. Energy is produced from contained matter,
-and when used that matter returns to the water to preserve matter." And: photosynthetic
+of what the build touches; this is what it builds. The owner's position that settles the design:
+matter is matter, absorbing matter costs energy, and energy is produced from contained matter,
+which returns to the water when it is used, so that matter is preserved. And: photosynthetic
 cells cannot get energy from what they take in; absorptive cells can.
 
 ## 1. The rules

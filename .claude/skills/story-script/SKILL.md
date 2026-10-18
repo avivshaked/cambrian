@@ -43,6 +43,6 @@ the stage.
 - A number the check refuses is not filmed. A new fact means a row in `checks.tsv` from a query,
   the writer's work.
 - No subagent waits on anything. The editor writes only `script.md`, `script/<N>/editor.md` and
-  `script/<N>/for-writer.md`, through the shell. The readers write nothing.
+  `script/<N>/for-writer.md`. The readers write nothing.
 - The session never edits `script.md`; a caption the owner wants changed goes through their words
   and an owner's round.

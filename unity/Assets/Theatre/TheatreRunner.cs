@@ -890,7 +890,28 @@ namespace Evosim.Theatre
         private void LateUpdate()
         {
             if (FlyCamera != null) _skin.Aim(FlyCamera.transform.rotation);
+
+            // The underwater look's items 3 and 6 in Play mode: the run's light at the second on
+            // screen, once a second of wall clock, which is far finer than a day changes.
+            if ((_skin.Look.DepthLight || _skin.Look.SkyDay) && Time.unscaledTime >= _nextDaylight)
+            {
+                _nextDaylight = Time.unscaledTime + 1f;
+
+                ITheatreFrame frame = _replay != null ? _replay : _live != null ? (ITheatreFrame)_live : _recon;
+                if (frame != null) _skin.PushDaylight(TheatreDaylight.At(frame));
+            }
+
+            // The second batch's snow in Play mode: the run's fields and the water's drift around
+            // the fly camera, every frame (the fields are re-read only when the second moves on).
+            if ((_skin.Look.RunSnow || _skin.Look.SnowDrift) && FlyCamera != null)
+            {
+                ITheatreFrame frame = _replay != null ? _replay : _live != null ? (ITheatreFrame)_live : _recon;
+                if (frame != null) _skin.PushSnow(frame, FlyCamera.transform.position);
+            }
         }
+
+        /// <summary>When the Play mode view next reads the run's light (wall clock, seconds).</summary>
+        private float _nextDaylight;
 
         /// <summary>
         /// Hands the interface the four things it cannot see for itself, once a frame.

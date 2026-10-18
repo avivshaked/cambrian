@@ -1,6 +1,6 @@
 # The open matter budget — implementation spec
 
-Fable, 2026-09-04, D074 (owner: "let us see what happens when matter does not lock").
+Fable, 2026-09-04, D074 (the owner wanted to see what happens when matter does not lock).
 Default-preserving: with both new knobs at 0 a run is step-for-step identical to today.
 Build AFTER the divergence build (`logbook/specs/divergence-spec.md`) has landed in `main`;
 both touch `World.cs` and `EvolutionRun.cs`.

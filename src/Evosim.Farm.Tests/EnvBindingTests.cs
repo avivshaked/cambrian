@@ -43,7 +43,12 @@ namespace Evosim.Farm.Tests
         /// depth off, their endowment 0, senescence wearing intake as D038 did, the
         /// rigid-group floors of the bud ruling, <c>DevelopmentLimits.FloorsWeighRigidGroups</c>,
         /// off, the overhead's per-tissue factor, the two gestation rates and the
-        /// gestation-share range, all at the values that change nothing) to this. A tunable is
+        /// gestation-share range, all at the values that change nothing) to <c>53f8234cb554f0ba</c>,
+        /// D124's founder cap (0 here) to <c>356e87c75e1338e9</c>, and round 51's eleven (D127 and
+        /// D128, 2026-09-27: the free first link, the corpse's sink rate, rest and floor, the ageing
+        /// hazard's base, doubling, two pushes and repair exponent, and the lifespan gene's
+        /// mutation chance and founder range, all at the values that change nothing) to this. A
+        /// tunable is
         /// part of the hash whatever
         /// its default, which is §9's rule and the reason a config written before a tunable is
         /// refused rather than defaulted. What this constant still pins is the thing the test was
@@ -53,7 +58,7 @@ namespace Evosim.Farm.Tests
         /// world, filed under a new name. <c>scratch/r45-build</c>'s regress is what says the
         /// world did not move — every shared field of a 1,000 s run identical at every sample.
         /// </remarks>
-        private const string Round42ConfigHash = "356e87c75e1338e9";
+        private const string Round42ConfigHash = "845becc39e2f22c3";
 
         /// <summary>Round 42 seed 1's environment, from <c>rounds/launch-r42.ps1</c>.</summary>
         /// <remarks>
@@ -250,6 +255,8 @@ namespace Evosim.Farm.Tests
                 {
                     DayNightAmplitude = 0f,
                     DayLengthSeconds = 200f,
+                    SeasonAmplitude = 0f,
+                    SeasonLengthSeconds = 30000f,
                 },
                 CellTypes = new CellTypeRegistry(
                     new StructuralCell(),
@@ -437,6 +444,46 @@ namespace Evosim.Farm.Tests
             Assert.Throws<ArgumentException>(() => EnvBinding.Read(EnvBinding.Of(block)));
         }
 
+        /// <summary>
+        /// D175's route: <c>islands</c> reaches the config and the header, an unknown route names it
+        /// among the known, and a fed world with no islands is refused when it is built.
+        /// </summary>
+        [Fact]
+        public void TheIslandsInfluxRouteIsReadAndPrinted()
+        {
+            var block = Round42Seed1();
+            block["EVOSIM_MATTER_INFLUX_AT"] = " Islands ";
+
+            EnvSettings settings = EnvBinding.Read(EnvBinding.Of(block));
+            RunConfig config = EnvBinding.BuildConfig(settings);
+            Assert.Equal(MatterInflux.Islands, settings.MatterInfluxAt);
+            Assert.Equal(MatterInflux.Islands, config.MatterInfluxAt);
+
+            // Round 42's influx is 0, so the route names nothing and the world is built; the header
+            // says where the matter would land.
+            var world = new World(config, settings.Seed);
+            SpaceFacts space = SpaceFacts.Of(
+                world,
+                hasWall: config.SharedSpace && config.WorldShape == WorldShape.Tank,
+                hasFloor: config.SharedSpace,
+                threads: 1,
+                inoculumHashShort: null);
+            string line = Report.HeaderLine(settings, config, space, "9.9.9.9");
+            Assert.Contains("/s at islands, burial ", line);
+
+            block["EVOSIM_MATTER_INFLUX_AT"] = "isles";
+            ArgumentException unknown = Assert.Throws<ArgumentException>(
+                () => EnvBinding.Read(EnvBinding.Of(block)));
+            Assert.Contains("Known: surface, vent, islands.", unknown.Message);
+
+            // Fed, in round 42's world, which seeds no islands.
+            block["EVOSIM_MATTER_INFLUX_AT"] = "islands";
+            block["EVOSIM_MATTER_INFLUX"] = "1.2";
+            RunConfig fed = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(block)));
+            ArgumentException refused = Assert.Throws<ArgumentException>(() => new World(fed, settings.Seed));
+            Assert.Contains("no islands are seeded", refused.Message);
+        }
+
         /// <summary>The seed is parsed straight to ulong: a float loses exactness above 2^24.</summary>
         [Fact]
         public void TheSeedKeepsItsHighBits()
@@ -445,6 +492,42 @@ namespace Evosim.Farm.Tests
             block["EVOSIM_SEED"] = "18446744073709551615";
 
             Assert.Equal(ulong.MaxValue, EnvBinding.Read(EnvBinding.Of(block)).Seed);
+        }
+
+        /// <summary>
+        /// D151's five light settings reach the config, and an unset one is the recorded world.
+        /// </summary>
+        [Fact]
+        public void TheTwoSeasonsAndTheWeatherReachTheLight()
+        {
+            RunConfig Built(Dictionary<string, string> env) =>
+                EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(env)));
+
+            LightModel none = Built(new Dictionary<string, string>()).Light;
+            Assert.Equal(SeasonShape.Smooth, none.SeasonShape);
+            Assert.Equal(0f, none.SeasonRampSeconds);
+            Assert.Equal(0f, none.WeatherSpread);
+            Assert.Equal(0f, none.WeatherCorrelation);
+            Assert.Equal(1UL, none.WeatherSeed);
+
+            // Round 57's settings.
+            LightModel on = Built(new Dictionary<string, string>
+            {
+                { "EVOSIM_SEASON_SHAPE", "two-season" },
+                { "EVOSIM_SEASON_RAMP", "250" },
+                { "EVOSIM_WEATHER_SPREAD", "0.3" },
+                { "EVOSIM_WEATHER_CORRELATION", "0.5" },
+                { "EVOSIM_WEATHER_SEED", "9007199254740992" },
+            }).Light;
+
+            Assert.Equal(SeasonShape.TwoSeason, on.SeasonShape);
+            Assert.Equal(250f, on.SeasonRampSeconds);
+            Assert.Equal(0.3f, on.WeatherSpread);
+            Assert.Equal(0.5f, on.WeatherCorrelation);
+            Assert.Equal(9007199254740992UL, on.WeatherSeed);
+
+            Assert.Throws<ArgumentException>(() => Built(new Dictionary<string, string> { { "EVOSIM_SEASON_SHAPE", "square" } }));
+            Assert.Throws<ArgumentException>(() => Built(new Dictionary<string, string> { { "EVOSIM_WEATHER_SEED", "1.5" } }));
         }
 
         /// <summary>The physics step is read back rounded, as the hash records it.</summary>

@@ -1,0 +1,62 @@
+2026-10-14 18:28:00 r59 smoke begins: runs in D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs, allowed beside: Evosim\.NurseryRoom\.dll|Evosim\.Nursery\.dll|D:\\Projects\\code\\|build-server shutdown
+2026-10-14 18:28:00   D:\Projects\experiments\evolution-simulator\scratch\wt-r59 on round-59 at cc901ca9, asked for cc901ca9
+2026-10-14 18:28:00   build: card probe False, O2 False; Evosim.Farm.exe 21d43964964a4219, Evosim.Farm.dll e75e574f229c8e76, Evosim.Farm.Gpu.dll 6fba5d0ebdbd82b5, Evosim.Core.dll 85238eaf451ac5a3, Evosim.Dynamics.dll 78cb5f0399a9176f
+2026-10-14 18:28:00   pool list: D:\Projects\experiments\evolution-simulator\scratch\wt-r59\rounds\r59-pool.tsv: 4 stomachs at 0.025 and 10 swimmers at 0.05, hashes checked against origins.tsv; pool share 0.6
+2026-10-14 18:28:01   names free: r59m; r59m-third, r59m-sixth
+2026-10-14 18:28:02   card memory used 4191 MiB (limit 12000), utilization 1%; Unity processes 0; Resolve none
+2026-10-14 18:29:05   cool: card 37 C, heat OK
+2026-10-14 18:29:08   card memory used 4161 MiB (limit 12000), utilization 1%; Unity processes 0; Resolve none
+2026-10-14 18:29:08 == r59m: card-group -Name r59m -Arms r59m-third,r59m-sixth -Seconds 4500 -Group 32 -WallMinutes 60 -Mask 4294901760 -Threads 16 -Transport -Scent -Concurrent -SpinLimit default -RunsRoot D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs -Exe D:\Projects\experiments\evolution-simulator\scratch\wt-r59\artifacts\Evosim.Farm\bin\Release\net8.0\Evosim.Farm.exe -Device cuda -SampleCpu -SampleCores -HeatStop -LogOutside -CheckpointEvery 4500 -AllowBeside Evosim\.NurseryRoom\.dll|Evosim\.Nursery\.dll|D:\\Projects\\code\\|build-server shutdown -Launcher D:\Projects\experiments\evolution-simulator\scratch\wt-r59\rounds\env-r59-planted.ps1,D:\Projects\experiments\evolution-simulator\scratch\wt-r59\rounds\env-r59-sixth.ps1 -Seeds 2,2
+2026-10-14 18:44:19   watch pid 92220: ended
+2026-10-14 18:44:19   2026-10-14 18:29:10   allowed beside: dotnet 96876: "C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe" artifacts\Evosim.NurseryRoom\bin\Debug\net8.0\Evosim.NurseryRoom.dll --root D:\Projects\experiments\evolution-simulator
+2026-10-14 18:44:19   2026-10-14 18:29:10   allowed beside: dotnet 103108: "C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe" D:\Projects\experiments\evolution-simulator\scratch\wt-nursery-d178\artifacts\nursery-d178-900e5267\Evosim.Nursery.dll -
+2026-10-14 18:44:19   2026-10-14 18:29:10   allowed beside: dotnet 107352: "C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe" D:\Projects\experiments\evolution-simulator\scratch\wt-nursery-d178\artifacts\nursery-d178-c70c324c\Evosim.Nursery.dll -
+2026-10-14 18:44:19   2026-10-14 18:44:05   farm exited: True, code 0
+2026-10-14 18:44:19   2026-10-14 18:44:08   r59m-third: ended (budget); t 4500 alive 1207; 14.4 wall min, 5.19 times real time over the 4500 s stepped; run D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs\r59m-third\2026-10-14-172929-98c0f323
+2026-10-14 18:44:19   2026-10-14 18:44:08   r59m-sixth: ended (budget); t 4500 alive 1425; 13.0 wall min, 5.79 times real time over the 4500 s stepped; run D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs\r59m-sixth\2026-10-14-172929-37f12db4
+2026-10-14 18:44:19   2026-10-14 18:44:08   books over 450 stats rows of r59m-third: max |auditResidual| 8.63638706505299E-06 (under 0.1 J: True); max |matterResidual| 1.97693972836532E-06 (under 1e-5: True)
+2026-10-14 18:44:19   2026-10-14 18:44:09   books over 450 stats rows of r59m-sixth: max |auditResidual| 1.51301501318812E-05 (under 0.1 J: True); max |matterResidual| 3.72570838180764E-06 (under 1e-5: True)
+2026-10-14 18:44:20   check r59m-third: ok    ended on budget: ended (budget), t 4500, alive 1207
+2026-10-14 18:44:20   check r59m-third: ok    transport: run.json says 'card', 'card' asked for
+2026-10-14 18:44:20   check r59m-third: ok    books: over 450 rows, |audit| at most 8.63638706505299E-06 J, |matter| at most 1.97693972836532E-06
+2026-10-14 18:44:20   check r59m-third: ok    diverged 0: 0
+2026-10-14 18:44:20   check r59m-third: ok    refused 0: 0
+2026-10-14 18:44:20   check r59m-third: ok    overflow 0: 0/0/0/0
+2026-10-14 18:44:20   check r59m-third: ok    neuronsAtCeiling 0: 0
+2026-10-14 18:44:20   check r59m-third: ok    no driver event: 0 from 18:28:38 to 18:44:19
+2026-10-14 18:44:20   check r59m-third: ok    watch alive at its check: 2026-10-14 18:29:44   watch alive after its first polls (18:29:44)
+2026-10-14 18:44:20   check r59m-third: ok    watch ended on the true end: watch: 2026-10-14T18:44:17 the run ended; no nvlddmkm events; read: 2026-10-14 18:44:08
+2026-10-14 18:44:20   check r59m-third: ok    nothing left running: 
+2026-10-14 18:44:20   check r59m-third: info  pace: 14.4 wall min, 5.19 times real time over the 4500 s stepped
+2026-10-14 18:44:20   check r59m-third: info  drive limited 13348, drag limited 0 (cumulative since the founding)
+2026-10-14 18:44:20   check r59m-third: info  card peak 52 C, 98%, 142.17 W, memory at most 6847 MiB over 58 samples; load 79.5% on average over the 57 samples above 0
+2026-10-14 18:44:20   check r59m-third: info  cpu 67 to 87 C over 58 reads, verdicts OK
+2026-10-14 18:44:20   check r59m-third: VERDICT: every condition holds
+2026-10-14 18:44:20   r59m-third's engine:        gpu single 4090 g32 classes 2/4/8/16 concurrent transport scent spin 5000
+2026-10-14 18:44:20   r59m-third: status ended (budget), seed 2, configHash 98c0f3239f4e6766, source.gitCommit cc901ca9ddf2509c0a785a52c60da4f87e968b7d, gitDirty False
+2026-10-14 18:44:20   r59m-third (planted): attack 0.033, intake 0.033, consumer 2, share 0.6, floor 0, count 14, scent Direction, range 6, drag Spin, spin 0.5, touch true
+2026-10-14 18:44:20   r59m-third: its pool is the list's 14 genomes, text for text (4 stomach, 10 swimmer)
+2026-10-14 18:44:22   check r59m-sixth: ok    ended on budget: ended (budget), t 4500, alive 1425
+2026-10-14 18:44:22   check r59m-sixth: ok    transport: run.json says 'card', 'card' asked for
+2026-10-14 18:44:22   check r59m-sixth: ok    books: over 450 rows, |audit| at most 1.51301501318812E-05 J, |matter| at most 3.72570838180764E-06
+2026-10-14 18:44:22   check r59m-sixth: ok    diverged 0: 0
+2026-10-14 18:44:22   check r59m-sixth: ok    refused 0: 0
+2026-10-14 18:44:22   check r59m-sixth: ok    overflow 0: 0/0/0/0
+2026-10-14 18:44:22   check r59m-sixth: ok    neuronsAtCeiling 0: 0
+2026-10-14 18:44:22   check r59m-sixth: ok    no driver event: 0 from 18:28:38 to 18:44:21
+2026-10-14 18:44:22   check r59m-sixth: ok    watch alive at its check: 2026-10-14 18:29:44   watch alive after its first polls (18:29:44)
+2026-10-14 18:44:22   check r59m-sixth: ok    watch ended on the true end: watch: 2026-10-14T18:44:17 the run ended; no nvlddmkm events; read: 2026-10-14 18:44:08
+2026-10-14 18:44:22   check r59m-sixth: ok    nothing left running: 
+2026-10-14 18:44:22   check r59m-sixth: info  pace: 13.0 wall min, 5.79 times real time over the 4500 s stepped
+2026-10-14 18:44:22   check r59m-sixth: info  drive limited 189732, drag limited 0 (cumulative since the founding)
+2026-10-14 18:44:22   check r59m-sixth: info  card peak 52 C, 98%, 142.17 W, memory at most 6847 MiB over 58 samples; load 79.5% on average over the 57 samples above 0
+2026-10-14 18:44:22   check r59m-sixth: info  cpu 67 to 87 C over 58 reads, verdicts OK
+2026-10-14 18:44:22   check r59m-sixth: VERDICT: every condition holds
+2026-10-14 18:44:22   r59m-sixth's engine:        gpu single 4090 g32 classes 2/4/8/16 concurrent transport scent spin 5000
+2026-10-14 18:44:22   r59m-sixth: status ended (budget), seed 2, configHash 37f12db4a4445f5b, source.gitCommit cc901ca9ddf2509c0a785a52c60da4f87e968b7d, gitDirty False
+2026-10-14 18:44:22   r59m-sixth (sixth): attack 0.0167, intake 0.0167, consumer 1, share 0.6, floor 0, count 14, scent Direction, range 6, drag Spin, spin 0.5, touch true
+2026-10-14 18:44:22   r59m-sixth: its pool is the list's 14 genomes, text for text (4 stomach, 10 swimmer)
+2026-10-14 18:44:22   pace: arm                engine    status           rows t         alive        stepped step wall   pace   whole start-up compile
+2026-10-14 18:44:22   pace: r59m-third         gpu       ended (budget)       10-4500       25-1207      4490    852.9s  5.264  866.9s    14.0s    0.0s
+2026-10-14 18:44:22   pace: r59m-sixth         gpu       ended (budget)       10-4500       24-1425      4490    763.2s  5.883  777.2s    14.0s    9.4s
+2026-10-14 18:44:22 r59 smoke ends

@@ -39,6 +39,10 @@ namespace Evosim.Farm.Gpu
         }
 
         private readonly Accelerator _acc;
+
+        // Every launch and copy of the transport's: its engine's stream (Runner's _stream), the default
+        // stream when the engine is alone on its device.
+        private readonly AcceleratorStream _stream;
         private readonly bool _onCard;
         private readonly int _group;
 
@@ -99,12 +103,21 @@ namespace Evosim.Farm.Gpu
         /// <summary>The card's name, for the log.</summary>
         public string DeviceName => _acc.Name;
 
-        public GpuTransport(Accelerator accelerator)
+        public GpuTransport(Accelerator accelerator, AcceleratorStream stream = null)
         {
             _acc = accelerator ?? throw new ArgumentNullException(nameof(accelerator));
+            _stream = stream ?? accelerator.DefaultStream;
             _onCard = accelerator.AcceleratorType == AcceleratorType.Cuda;
             _group = Math.Min(Group, accelerator.MaxNumThreadsPerGroup);
         }
+
+        // A kernel in its stream-taking form, launched on the transport's stream: on the default stream
+        // the very launch the stream-kernel loaders make.
+        private Action<T1, T2, T3, T4, T5, T6> On<T1, T2, T3, T4, T5, T6>(Action<AcceleratorStream, T1, T2, T3, T4, T5, T6> k) => (a1, a2, a3, a4, a5, a6) => k(_stream, a1, a2, a3, a4, a5, a6);
+        private Action<T1, T2, T3, T4, T5, T6, T7, T8> On<T1, T2, T3, T4, T5, T6, T7, T8>(Action<AcceleratorStream, T1, T2, T3, T4, T5, T6, T7, T8> k) => (a1, a2, a3, a4, a5, a6, a7, a8) => k(_stream, a1, a2, a3, a4, a5, a6, a7, a8);
+        private Action<T1, T2, T3, T4, T5, T6, T7, T8, T9> On<T1, T2, T3, T4, T5, T6, T7, T8, T9>(Action<AcceleratorStream, T1, T2, T3, T4, T5, T6, T7, T8, T9> k) => (a1, a2, a3, a4, a5, a6, a7, a8, a9) => k(_stream, a1, a2, a3, a4, a5, a6, a7, a8, a9);
+        private Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> On<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(Action<AcceleratorStream, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> k) => (a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) => k(_stream, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10);
+        private Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> On<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(Action<AcceleratorStream, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> k) => (a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) => k(_stream, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11);
 
         /// <summary>Whether the grid took this device (its tables are up).</summary>
         public bool Accepted { get; private set; }
@@ -155,19 +168,19 @@ namespace Evosim.Farm.Gpu
             _rowMaxHost = new double[plan.Nx * plan.Ny];
             _inst = _acc.Allocate1D<double>(PotentialTransportPlan.InstantLength);
 
-            _edgeK ??= _acc.LoadImplicitlyGroupedStreamKernel<Index1D, ArrayView<double>, ArrayView<double>,
+            _edgeK ??= On(_acc.LoadImplicitlyGroupedKernel<Index1D, ArrayView<double>, ArrayView<double>,
                 ArrayView<double>, ArrayView<byte>, ArrayView<float>, ArrayView<double>, ArrayView<double>,
-                EdgeParams>(EdgeKernel, _group);
-            _assembleK ??= _acc.LoadImplicitlyGroupedStreamKernel<Index1D, ArrayView<double>, ArrayView<double>,
+                EdgeParams>(EdgeKernel, _group));
+            _assembleK ??= On(_acc.LoadImplicitlyGroupedKernel<Index1D, ArrayView<double>, ArrayView<double>,
                 ArrayView<double>, ArrayView<byte>, ArrayView<int>, ArrayView<double>, ArrayView<double>,
-                ArrayView<double>, GridParams>(AssembleKernel, _group);
-            _outflowK ??= _acc.LoadImplicitlyGroupedStreamKernel<Index1D, ArrayView<byte>, ArrayView<double>,
-                ArrayView<double>, ArrayView<double>, ArrayView<double>, GridParams, double>(OutflowKernel, _group);
-            _fluxK ??= _acc.LoadImplicitlyGroupedStreamKernel<Index1D, ArrayView<byte>, ArrayView<double>,
+                ArrayView<double>, GridParams>(AssembleKernel, _group));
+            _outflowK ??= On(_acc.LoadImplicitlyGroupedKernel<Index1D, ArrayView<byte>, ArrayView<double>,
+                ArrayView<double>, ArrayView<double>, ArrayView<double>, GridParams, double>(OutflowKernel, _group));
+            _fluxK ??= On(_acc.LoadImplicitlyGroupedKernel<Index1D, ArrayView<byte>, ArrayView<double>,
                 ArrayView<double>, ArrayView<double>, ArrayView<double>, ArrayView<double>, ArrayView<double>,
-                ArrayView<double>, GridParams, double>(FluxKernel, _group);
-            _applyK ??= _acc.LoadImplicitlyGroupedStreamKernel<Index1D, ArrayView<double>, ArrayView<double>,
-                ArrayView<double>, ArrayView<double>, GridParams>(ApplyKernel, _group);
+                ArrayView<double>, GridParams, double>(FluxKernel, _group));
+            _applyK ??= On(_acc.LoadImplicitlyGroupedKernel<Index1D, ArrayView<double>, ArrayView<double>,
+                ArrayView<double>, ArrayView<double>, GridParams>(ApplyKernel, _group));
 
             Accepted = true;
             return true;
@@ -176,12 +189,12 @@ namespace Evosim.Farm.Gpu
         public void Upload(double[] stock)
         {
             Pin(stock);
-            _stock.View.CopyFromCPU(stock);
+            _stock.View.CopyFromCPU(_stream, stock);
         }
 
         public void Sample(double[] instant)
         {
-            _inst.View.CopyFromCPU(instant);
+            _inst.View.CopyFromCPU(_stream, instant);
 
             for (int a = 0; a < 3; a++)
             {
@@ -200,7 +213,7 @@ namespace Evosim.Farm.Gpu
             double scale = 0.5 * seconds / _cellVolume;
 
             _outflowK(_grid.Nx * _grid.Ny, _live.View, _fx.View, _fy.View, _fz.View, _rowMax.View, _grid, scale);
-            _rowMax.View.CopyToCPU(_rowMaxHost);
+            _rowMax.View.CopyToCPU(_stream, _rowMaxHost);
 
             double answer = 0d;
             for (int r = 0; r < _rowMaxHost.Length; r++) if (_rowMaxHost[r] > answer) answer = _rowMaxHost[r];
@@ -217,7 +230,7 @@ namespace Evosim.Farm.Gpu
             _applyK(_cells, _stock.View, _qx.View, _qy.View, _qz.View, _grid);
         }
 
-        public void Download(double[] stock) => _stock.View.CopyToCPU(stock);
+        public void Download(double[] stock) => _stock.View.CopyToCPU(_stream, stock);
 
         public void Dispose()
         {

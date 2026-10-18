@@ -34,6 +34,10 @@
          with the SM's cycle counter read between the body phase's parts. A timing build, built to
          its own output and never a scored run's. -->
     <DefineConstants Condition="'$(GpuPhaseProbe)' == '1'">$(DefineConstants);GPU_PHASE_PROBE</DefineConstants>
+    <!-- The scent's order probe (GpuScent.Audit): -p:ScentOrderProbe=1 compiles the fill's
+         generation cell and the block's check of it, on only with EVOSIM_GPU_SCENT_ORDER=1. A test
+         build, built to its own output and never a scored run's. -->
+    <DefineConstants Condition="'$(ScentOrderProbe)' == '1'">$(DefineConstants);SCENT_ORDER_PROBE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

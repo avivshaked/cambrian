@@ -1,0 +1,24 @@
+Round 59, B1: the matter residual's drift in the planted worlds (2026-10-15, coordinator)
+
+Measured (08's card-run-check read and r59-read.py):
+- s1 control: about -2e-6 units throughout.
+- s2: -4.4e-6, -7.5e-6, -1.35e-5 and -2.03e-5 at 12,000, 24,000, 36,000 and 48,000 s; first past 1e-5 at 29,440 s.
+- s3: -2.6e-6, -5.6e-6 and -9.9e-6 at 12,000, 24,000 and 36,000 s, then -1.67e-5 at 48,000 s; first past 1e-5 at 35,490 s.
+- One-signed and about linear, not caused by the resume (s2 never resumed).
+- Standing matter is about 19,000 units, so the drift is about 1e-9 of it.
+- AuditResidual stays small (s2 at most 4.95e-4 J; -2e-5 units would be -2e-3 J). By the code search's discriminating test, the leak is in a leg that moves matter to or from the spent field, not in a charged account.
+- B1 fails in seeds 2 and 3 as 0140 wrote it. The verdict stands.
+
+Code search (read-only, wt-r59 at c851d57c; inference unless marked):
+- Founders' booking (World.cs:6557-6558) is all double: clean.
+- Intake, bite, kill and module drop balance exactly. Their only leaks are clamps that would create matter (the wrong sign).
+- Healing returns matter as float: WorldMouth.cs:660, float returned = (float)(spent / Config.JoulesPerUnit). Healing is on (healingPerSecond 0.01), but HealingJoules over the whole run is only 318 J in s2 and 57 J in s1 (measured). Float error on that is far too small for 2e-5 units. Unlikely.
+- Birth overhead returns matter as float: World.cs:5343, float returnedUnits = overheadPaid / Config.JoulesPerUnit. The parent pays in double. Round 59 has perOffspringOverheadJoules 50 and perOffspringOverheadPerTissueJoule 2 (measured, config), so the overhead varies with the child's tissue and is not exactly representable.
+  - A planted swimmer line breeds near-identical children, so the rounding repeats with one sign. The control's varied births would cancel.
+  - About 5e-9 units per birth over the planted lines' few thousand births fits -2e-5. LEADING CANDIDATE.
+- Light uptake (World.cs:4012, float) runs in every world, the control included, so it is likely unbiased.
+
+Fix (not made): do the overhead's units in double, as round 52 did for the burn (World.cs:4094-4097).
+- It changes the spent field's matter by about 1e-9, so it is a new realisation of every seed.
+- It lands at a round gap, after the r60s screens, with Core -All.
+- Proof would be the same world on the fixed build with the residual flat.

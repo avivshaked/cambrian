@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Evosim.Core
@@ -57,6 +57,12 @@ namespace Evosim.Core
         /// field serve that purpose now, and the metabolic cost does the rest.
         /// </remarks>
         public float Power { get; set; }
+
+        /// <summary>
+        /// The joint's threshold and command envelope (<see cref="DriveGenes"/>). Read only on a
+        /// joint; <see cref="DriveGenes.Default"/> elsewhere. Genome format 11.
+        /// </summary>
+        public DriveGenes Drive { get; set; } = DriveGenes.Default;
 
         /// <summary>
         /// Weight this node's tissue cancels, in kg/m³ of displaced water — buoyancy cells only,
@@ -195,6 +201,7 @@ namespace Evosim.Core
                 JointType = JointType,
                 JointLimits = (Float2[])JointLimits.Clone(),
                 Power = Power,
+                Drive = Drive,
                 Lift = Lift,
                 RecursiveLimit = RecursiveLimit,
                 Growth = Growth,

@@ -14,6 +14,8 @@ Answer, in this order:
 3. Every place you lost the thread: quote the words where it happened, and say what you couldn't
    follow. If there are none, say so.
 4. Every sentence you would have needed to hear twice, quoted. If there are none, say so.
+5. Every word or idea the film uses before it explains it: quote the words where it is first used, and
+   the words that explain it later, or say that nothing does. If there are none, say so.
 
 If you reach your time budget, answer with what you have and say so.
 

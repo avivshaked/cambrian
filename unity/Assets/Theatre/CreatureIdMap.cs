@@ -124,6 +124,8 @@ namespace Evosim.Theatre
 
             _volume = volume;
 
+            // Ecosystem.Reconcile also counts Inoculated, and this does not: a replayed Unity round that
+            // inoculated in a quiet step pairs that body late, and click-selection may switch off.
             long revision = world.Births + world.Deaths + world.FloorSpawns;
             if (revision == _revision) return;
             _revision = revision;

@@ -11,9 +11,7 @@ levelled: standing matter grew in all five seeds, and the world retains about tw
 what the vent delivers.
 
 The owner's ruling on the plan, which was to re-run at 0.6 if the diagnostic held, was one
-word.
-
-> good
+word of approval.
 
 ## Why this round exists
 

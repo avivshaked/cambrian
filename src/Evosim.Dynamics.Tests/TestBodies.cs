@@ -76,7 +76,8 @@ namespace Evosim.Dynamics.Tests
             Float3? rootHalf = null,
             Float3? linkHalf = null,
             float limit = 1.2f,
-            bool neurons = true)
+            bool neurons = true,
+            float? phase = null)
         {
             var genome = new Genome { RootIndex = 0, AdultScale = 1f };
             genome.Reproduction = new ReproductionTraits
@@ -110,7 +111,7 @@ namespace Evosim.Dynamics.Tests
                     Power = power,
                     RecursiveLimit = 1,
                     Neurons = neurons
-                        ? OneOscillatorPerDof(dof, hz, i * 0.6f)
+                        ? OneOscillatorPerDof(dof, hz, phase ?? i * 0.6f)
                         : System.Array.Empty<NeuronDef>(),
                 };
 

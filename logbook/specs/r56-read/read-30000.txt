@@ -1,0 +1,114 @@
+
+== r56-s1 (D:\Projects\experiments\evolution-simulator\runs\r56-s1\2026-10-05-002700-a00d025c); last stats row t=30000
+t=2500: alive 3017, jointed 1376, light factor 1.5
+t=5000: alive 1920, jointed 874, light factor 1
+t=7500: alive 1837, jointed 690, light factor 0.5
+t=10000: alive 2826, jointed 600, light factor 1
+t=12500: alive 4374, jointed 326, light factor 1.5
+t=15000: alive 4821, jointed 177, light factor 1
+t=17500: alive 5026, jointed 176, light factor 0.5
+t=20000: alive 6648, jointed 292, light factor 1
+t=22500: alive 7888, jointed 404, light factor 1.5
+t=25000: alive 7410, jointed 396, light factor 1
+t=27500: alive 6906, jointed 397, light factor 0.5
+t=30000: alive 8112, jointed 433, light factor 1
+t=10000: living 2826, leaves 2219, the leaves' median margin 51.212776, median lifespan gene 1.3125842; largest lineage (root 41) 0.573 of the living
+t=20000: living 6648, leaves 6314, the leaves' median margin 51.41072, median lifespan gene 1.3943915; largest lineage (root 41) 0.995 of the living
+t=30000: living 8112, leaves 7574, the leaves' median margin 43.26125, median lifespan gene 1.177174; largest lineage (root 41) 0.999 of the living
+
+== r55-s1 (D:\Projects\experiments\evolution-simulator\runs\r55-s1\2026-10-04-171541-54137db3); last stats row t=30000
+t=2500: alive 2784, jointed 1058, light factor 1
+t=5000: alive 2484, jointed 743, light factor 1
+t=7500: alive 2768, jointed 609, light factor 1
+t=10000: alive 2950, jointed 349, light factor 1
+t=12500: alive 3265, jointed 336, light factor 1
+t=15000: alive 3397, jointed 341, light factor 1
+t=17500: alive 3446, jointed 260, light factor 1
+t=20000: alive 3837, jointed 262, light factor 1
+t=22500: alive 3792, jointed 233, light factor 1
+t=25000: alive 4336, jointed 287, light factor 1
+t=27500: alive 4312, jointed 244, light factor 1
+t=30000: alive 4477, jointed 223, light factor 1
+t=10000: living 2950, leaves 2575, the leaves' median margin 56.450504, median lifespan gene 1.145144; largest lineage (root 41) 0.551 of the living
+t=20000: living 3837, leaves 3497, the leaves' median margin 214.70337, median lifespan gene 0.7974663; largest lineage (root 26) 0.535 of the living
+t=30000: living 4477, leaves 4185, the leaves' median margin 328.26648, median lifespan gene 0.68296087; largest lineage (root 26) 0.929 of the living
+
+== r56-s2 (D:\Projects\experiments\evolution-simulator\runs\r56-s2\2026-10-04-183358-a174d013); last stats row t=30000
+t=2500: alive 2956, jointed 833, light factor 1.5
+t=5000: alive 1547, jointed 517, light factor 1
+t=7500: alive 1793, jointed 406, light factor 0.5
+t=10000: alive 2407, jointed 264, light factor 1
+t=12500: alive 3575, jointed 161, light factor 1.5
+t=15000: alive 4084, jointed 57, light factor 1
+t=17500: alive 3660, jointed 22, light factor 0.5
+t=20000: alive 4958, jointed 21, light factor 1
+t=22500: alive 5633, jointed 29, light factor 1.5
+t=25000: alive 5855, jointed 21, light factor 1
+t=27500: alive 5970, jointed 37, light factor 0.5
+t=30000: alive 7537, jointed 25, light factor 1
+t=10000: living 2407, leaves 2124, the leaves' median margin 284.65186, median lifespan gene 0.7083239; largest lineage (root 1) 0.358 of the living
+t=20000: living 4958, leaves 4907, the leaves' median margin 112.27301, median lifespan gene 0.603901; largest lineage (root 27) 0.998 of the living
+t=30000: living 7537, leaves 7405, the leaves' median margin 115.798134, median lifespan gene 0.6900443; largest lineage (root 27) 0.998 of the living
+
+== r55-s2 (D:\Projects\experiments\evolution-simulator\runs\r55-s2\2026-10-04-115417-d573544f); last stats row t=30000
+t=2500: alive 2875, jointed 778, light factor 1
+t=5000: alive 1637, jointed 236, light factor 1
+t=7500: alive 1629, jointed 71, light factor 1
+t=10000: alive 2031, jointed 41, light factor 1
+t=12500: alive 2516, jointed 29, light factor 1
+t=15000: alive 2682, jointed 8, light factor 1
+t=17500: alive 2755, jointed 18, light factor 1
+t=20000: alive 3229, jointed 12, light factor 1
+t=22500: alive 3286, jointed 21, light factor 1
+t=25000: alive 3771, jointed 16, light factor 1
+t=27500: alive 4416, jointed 24, light factor 1
+t=30000: alive 4957, jointed 19, light factor 1
+t=10000: living 2031, leaves 1974, the leaves' median margin 366.59796, median lifespan gene 0.5187184; largest lineage (root 1) 0.559 of the living
+t=20000: living 3229, leaves 3173, the leaves' median margin 444.0744, median lifespan gene 0.465198; largest lineage (root 1) 0.983 of the living
+t=30000: living 4957, leaves 4752, the leaves' median margin 422.08237, median lifespan gene 0.643832655; largest lineage (root 1) 0.959 of the living
+
+== r56-s3 (D:\Projects\experiments\evolution-simulator\runs\r56-s3\2026-10-04-215712-a174d013); last stats row t=30000
+t=2500: alive 1969, jointed 102, light factor 1.5
+t=5000: alive 1790, jointed 46, light factor 1
+t=7500: alive 2460, jointed 24, light factor 0.5
+t=10000: alive 4377, jointed 6, light factor 1
+t=12500: alive 7777, jointed 10, light factor 1.5
+t=15000: alive 7412, jointed 5, light factor 1
+t=17500: alive 7091, jointed 14, light factor 0.5
+t=20000: alive 7859, jointed 5, light factor 1
+t=22500: alive 9306, jointed 9, light factor 1.5
+t=25000: alive 8453, jointed 10, light factor 1
+t=27500: alive 7836, jointed 9, light factor 0.5
+t=30000: alive 8415, jointed 4, light factor 1
+t=10000: living 4377, leaves 4303, the leaves' median margin 173.56808, median lifespan gene 1.3349513; largest lineage (root 8) 0.949 of the living
+t=20000: living 7859, leaves 7745, the leaves' median margin 166.16394, median lifespan gene 1.3349513; largest lineage (root 8) 0.997 of the living
+t=30000: living 8415, leaves 8320, the leaves' median margin 166.50969, median lifespan gene 1.3349513; largest lineage (root 8) 0.998 of the living
+
+== r55-s3 (D:\Projects\experiments\evolution-simulator\runs\r55-s3\2026-10-04-115421-d573544f); last stats row t=30000
+t=2500: alive 1716, jointed 349, light factor 1
+t=5000: alive 2121, jointed 265, light factor 1
+t=7500: alive 3328, jointed 61, light factor 1
+t=10000: alive 3784, jointed 14, light factor 1
+t=12500: alive 4734, jointed 12, light factor 1
+t=15000: alive 5410, jointed 9, light factor 1
+t=17500: alive 6320, jointed 16, light factor 1
+t=20000: alive 6473, jointed 11, light factor 1
+t=22500: alive 7318, jointed 9, light factor 1
+t=25000: alive 7063, jointed 14, light factor 1
+t=27500: alive 7212, jointed 11, light factor 1
+t=30000: alive 7493, jointed 8, light factor 1
+t=10000: living 3784, leaves 3739, the leaves' median margin 154.24557, median lifespan gene 1.0712022; largest lineage (root 8) 0.975 of the living
+t=20000: living 6473, leaves 6317, the leaves' median margin 131.7118, median lifespan gene 0.7733344; largest lineage (root 8) 0.986 of the living
+t=30000: living 7493, leaves 6728, the leaves' median margin 130.59749, median lifespan gene 0.7733344; largest lineage (root 8) 0.911 of the living
+
+== clauses
+S1 seed 1: year from 10000: most 5065, fewest 4727; year from 20000: most 7984, fewest 6497 -> failed
+S2 seed 1: jointed share 0.0534 against 0.0498 -> failed
+S3 seed 1: leaves' median margin 43.3 against 328.3 -> failed
+S1 seed 2: year from 10000: most 4317, fewest 3352; year from 20000: most 6144, fewest 5514 -> failed
+S2 seed 2: jointed share 0.0033 against 0.0038 -> failed
+S3 seed 2: leaves' median margin 115.8 against 422.1 -> failed
+S1 seed 3: year from 10000: most 8076, fewest 6619; year from 20000: most 9306, fewest 7518 -> failed
+S2 seed 3: jointed share 0.0005 against 0.0011 -> failed
+S3 seed 3: leaves' median margin 166.5 against 130.6 -> held
+S1 0 of 3 (bar 3 of 3); S2 0 of 3 (bar 2 of 3); S3 1 of 3 (bar 3 of 3)

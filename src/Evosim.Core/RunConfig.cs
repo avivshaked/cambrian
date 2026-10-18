@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
@@ -84,6 +85,10 @@ namespace Evosim.Core
         /// <summary>How often each variation operator fires — §4.5.</summary>
         [TunableGroup]
         public MutationRates Mutation { get; set; } = MutationRates.Default;
+
+        /// <summary>D146: which brain the creatures carry, and how the one brain is founded and grown.</summary>
+        [TunableGroup]
+        public CentralBrainOptions Brain { get; set; } = new CentralBrainOptions();
 
         /// <summary>Water: density, drag, added mass — §5.2.</summary>
         [TunableGroup]
@@ -383,7 +388,8 @@ namespace Evosim.Core
         /// <remarks>
         /// For each founder the trickle's Poisson count asks for, a world with a share above 0
         /// draws one uniform from the trickle's own stream; below the share it admits an exact
-        /// copy of a pool genome (a second uniform picks which), otherwise it draws a founder from
+        /// copy of a pool genome (a second uniform picks which, uniformly or by the weights the
+        /// farm's list file gives, which the world is handed beside the pool), otherwise it draws a founder from
         /// the lottery as D115 does. The pool itself is not in the config: its size is
         /// <see cref="FoundingTricklePoolCount"/> and its bytes are pinned by
         /// <see cref="FoundingTricklePoolHash"/>, and the world is handed the genomes. The range is
@@ -405,14 +411,51 @@ namespace Evosim.Core
         private float _foundingTricklePoolShare;
 
         /// <summary>
+        /// The share of the floor's founders, the ones that top the world up before
+        /// <see cref="FloorClosesAfterSeconds"/>, that are copies of a pool genome rather than a draw
+        /// from the founding lottery — the owner's ruling of 2026-10-04 for round 55. 0, the default,
+        /// is every recorded world and takes no draw.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Round 55's smoke is the reason: a founder that arrives after the floor has closed, into a
+        /// full world, almost never breeds, pool copy or lottery draw alike, while most of the floor's
+        /// founders did. So the trickle alone puts the pool's bodies where they cannot take hold, and
+        /// this puts them among the founders at the start.
+        /// </para>
+        /// <para>
+        /// The pool is the trickle's (<see cref="FoundingTricklePoolCount"/>,
+        /// <see cref="FoundingTricklePoolHash"/>), picked by the same rule: by its weights when the
+        /// world was handed weights, uniformly otherwise. For each floor founder a world with a share
+        /// above 0 draws one uniform from a stream of the floor's own, keyed by the floor's attempt
+        /// count (<c>World.FloorPoolIndex</c>); below the share it admits a pool copy, which a second
+        /// uniform from the same stream picks. The range is the setter's; the world refuses a share
+        /// with no pool or with no floor to found, as it does the trickle's share.
+        /// </para>
+        /// </remarks>
+        [Tunable("population")]
+        public float FoundingFloorPoolShare
+        {
+            get => _foundingFloorPoolShare;
+            set => _foundingFloorPoolShare =
+                value >= 0f && value <= 1f && !float.IsNaN(value)
+                    ? value
+                    : throw new ArgumentOutOfRangeException(
+                        nameof(FoundingFloorPoolShare), value,
+                        "The floor's pool share is a probability, in [0, 1]; 0 is off.");
+        }
+
+        private float _foundingFloorPoolShare;
+
+        /// <summary>
         /// How many genomes the trickle's pool holds — D117. 0, the default, is no pool. The farm
         /// sets it from the files it copies into the run directory's <c>pool/</c>, so that
         /// <c>configHash</c> names the pool's size as well as its bytes.
         /// </summary>
         /// <remarks>
-        /// At most <see cref="MaxTricklePool"/>, because the files are named by a two-digit index
-        /// (<c>pool/NN.json</c>). A count above 0 with the share at 0 is allowed (a pool named
-        /// and unused), and the header says so.
+        /// At most <see cref="MaxTricklePool"/>. The files are named by their index, two digits
+        /// at least (<c>pool/07.json</c>, <c>pool/123.json</c>). A count above 0 with the share
+        /// at 0 is allowed (a pool named and unused), and the header says so.
         /// </remarks>
         [Tunable("population")]
         public int FoundingTricklePoolCount
@@ -423,19 +466,25 @@ namespace Evosim.Core
                     ? value
                     : throw new ArgumentOutOfRangeException(
                         nameof(FoundingTricklePoolCount), value,
-                        "The trickle's pool holds 0 to 100 genomes (D117; its files are named by a " +
-                        "two-digit index); 0 is no pool.");
+                        "The trickle's pool holds 0 to " + MaxTricklePool + " genomes (D117); 0 " +
+                        "is no pool.");
         }
 
         private int _foundingTricklePoolCount;
 
-        /// <summary>The largest pool D117's two-digit file names can carry.</summary>
-        public const int MaxTricklePool = 100;
+        /// <summary>
+        /// The largest pool a run may name: room for round 55's nursery mix, a few hundred genomes
+        /// drawn through the pool (the owner's ruling of 2026-10-04). Indices 0 to 99 keep their
+        /// two-digit file names, so a pool of 100 or fewer is written and hashed as it always was.
+        /// </summary>
+        public const int MaxTricklePool = 1000;
 
         /// <summary>
         /// The pool's fingerprint — D117: a lowercase hex SHA-256 over the pool's genome lines in
         /// order, as the farm writes them into <c>pool/NN.json</c> (each genome through
-        /// <c>GenomeJson.Write</c>, one line and a newline). Empty, the default, is no pool.
+        /// <c>GenomeJson.Write</c>, one line and a newline), followed by the bytes of
+        /// <c>pool/index.tsv</c> when the pool was named by a weighted list. Empty, the default,
+        /// is no pool.
         /// </summary>
         /// <remarks>
         /// In the config so that <c>configHash</c> pins which bodies could arrive, and a resume
@@ -497,7 +546,7 @@ namespace Evosim.Core
         /// <summary>
         /// Seconds of its own standing cost every founder is born holding on top of
         /// <see cref="FounderEnergyJoules"/> — the round 48 founding ruling (owner, 2026-09-24,
-        /// "proceed with your recommendations"). 0, the default, is every recorded world.
+        /// accepting the agent's recommendations). 0, the default, is every recorded world.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -743,6 +792,50 @@ namespace Evosim.Core
         public float SupportWattsPerSquareMetrePerSquareMetre { get; set; }
 
         /// <summary>
+        /// D127: how much of a body's first link holds no energy, m3 of its adult volume. 0, the
+        /// default and every recorded world, prices every part alike.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The first link</b> is the lowest-index part that carries a joint: the first link met
+        /// walking the body from its root, which in every founder is node 1 on the root. Up to this
+        /// volume of its adult size its tissue holds no joules, so it costs nothing to build, to
+        /// grow or to keep, and leaves nothing in a corpse; a larger link pays for the rest as any
+        /// part does. The owner ruled it free, to encourage these.
+        /// </para>
+        /// <para>
+        /// <b>A share of the adult part, so a scaled body stays linear.</b> A body born small or
+        /// growing is its adult scaled by <c>s</c>, and the allowance scales with it
+        /// (<c>cap * s^3</c>), so a body's tissue is exactly its adult's times its body fraction,
+        /// which is what <c>World.Grow</c> and every rebuild assume.
+        /// </para>
+        /// <para>
+        /// <b>One place for each book.</b> <c>Metabolism.TissueJoules</c> is the only sum over a
+        /// body's tissue and <c>Metabolism.Bill</c> the only standing cost, and both leave the free
+        /// share out, so a birth, a growth step, a death and a lost part all read it through them
+        /// and neither identity needs a new term. The link still catches light at its full area
+        /// when <c>EVOSIM_LINK_PHOTO</c> is above 0, and still casts its shade.
+        /// </para>
+        /// <para>
+        /// Round 51's value, 0.01 m3, is round 50's measured first link: a median of 0.003 to
+        /// 0.014 m3 across the three seeds (<c>logbook/specs/r51-build/linkvol.txt</c>).
+        /// <c>EVOSIM_FREE_LINK</c>.
+        /// </para>
+        /// </remarks>
+        [Tunable("world", Unit = "m3")]
+        public float FreeFirstLinkCubicMetres
+        {
+            get => _freeFirstLinkCubicMetres;
+            set => _freeFirstLinkCubicMetres = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(FreeFirstLinkCubicMetres), value,
+                    "The free first link's volume is at least 0 m3 and finite: 0 prices every part alike.");
+        }
+
+        private float _freeFirstLinkCubicMetres;
+
+        /// <summary>
         /// Whether the farm's contact puts a sphere on every part rather than one on the whole
         /// body — D114, 2026-09-23, <c>logbook/specs/per-part-contact-spec.md</c>.
         /// </summary>
@@ -765,6 +858,38 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("world")]
         public bool ContactPerPart { get; set; }
+
+        /// <summary>
+        /// Sliding friction where a part touches the rock or the glass, as a coefficient μ — the
+        /// owner's ruling of 2026-09-30 (D137).
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The own solver's contact pushes only along the surface's normal, so the part of a
+        /// body's motion along the surface was untouched and a body that met the bed slid on it as
+        /// on ice. Above 0, every push from the bed, a reef or the glass carries a friction force
+        /// against the part's sliding velocity, at most μ times the push and never more than
+        /// stops the slide in one step, so a body pressed on the rock stops and stays.
+        /// </para>
+        /// <para>
+        /// ⚠ Unmeasured. Default 0, so every recorded world replays, and at 0 no friction is
+        /// computed. Only the farm binds it (<c>EVOSIM_BED_FRICTION</c>); PhysX had its own.
+        /// A neutrally buoyant body presses on the bed only as hard as it is moving into it or
+        /// pushing on it, so friction slows its arrival and lets a limb push off the rock, but
+        /// does not hold a body that is merely resting.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public float BedFriction
+        {
+            get => _bedFriction;
+            set => _bedFriction = value >= 0f && !float.IsInfinity(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(BedFriction), value, "A friction coefficient is at least 0 and finite: 0 is the frictionless rock.");
+        }
+
+        private float _bedFriction;
 
         /// <summary>How deep the world is, metres — DESIGN.md §5A.2c.</summary>
         /// <remarks>
@@ -1395,8 +1520,8 @@ namespace Evosim.Core
         /// rises by the column's depth over this.
         /// </summary>
         /// <remarks>
-        /// The owner's ask (2026-09-22 night): "a few distinct islands close to the top for
-        /// initial founding plants". A leaf earns nothing below the light's reach, so an island
+        /// The owner's ask (2026-09-22 night): a few distinct islands close to the top for
+        /// the initial founding plants. A leaf earns nothing below the light's reach, so an island
         /// seeded down a 45 m column puts most of its matter where no founder can use it; cut at
         /// twice the light reach it is all in the water a founder can found in, and a founder
         /// spread that deep (<see cref="FounderDepthSpread"/>) lands in it. The matter sinks at
@@ -1414,6 +1539,127 @@ namespace Evosim.Core
         }
 
         private float _matterIslandDepthMetres;
+
+        /// <summary>
+        /// How far from the glass an island column may lie, in metres: no column whose centre is
+        /// nearer the tank's wall than this is an island (D185). 0 by default, which is every
+        /// recorded world.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// D109's map knows nothing of the glass, and in round 60's screens most of the island
+        /// matter lay within 40 m of it, where the crowd then lived against the wall
+        /// (<c>scratch/owner/r60s-islands-against-glass/</c>). The owner ruled on 2026-10-15 that
+        /// round 60's islands keep about one island's radius, 30 m, off the glass.
+        /// </para>
+        /// <para>
+        /// The noise, the wavelength, the cover and the depth are unchanged. The columns within the
+        /// margin are left out before the cover's threshold is taken, so the cover is a share of
+        /// the columns that remain, and each seed keeps its own layout inside them. The influx
+        /// lays its income by the same plan (D175), so it lands off the glass too. A tank only;
+        /// refused in a box, and refused when it leaves no column.
+        /// </para>
+        /// </remarks>
+        [Tunable("world", Unit = "m")]
+        public float MatterIslandGlassMarginMetres
+        {
+            get => _matterIslandGlassMarginMetres;
+            set => _matterIslandGlassMarginMetres = value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(MatterIslandGlassMarginMetres), value,
+                    "A glass margin is finite and not negative; 0 lets an island reach the glass.");
+        }
+
+        private float _matterIslandGlassMarginMetres;
+
+        /// <summary>
+        /// Named seeds that take a category of draws off the world's seed (D192), each written
+        /// <c>name=value</c>. Empty, the default, draws everything from the world's seed, which is
+        /// every recorded world.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// One name so far, <c>landscape</c>: the bed's shape, the reefs' places, D109's island map
+        /// and the current field. Round 60's seeds differed most in their maps, eight islands, three
+        /// and one large, so its worlds could not tell geography from contingency; the owner approved
+        /// one map for every world of round 61 on 2026-10-16, chosen by its geometry before any life
+        /// runs. The founders, the trickle, conception, the deaths and every genome stay on the
+        /// world's seed, so one landscape seed under two world seeds is one landscape lived twice.
+        /// The vertex fields' lattices are not the landscape and keep the world's seed.
+        /// </para>
+        /// <para>
+        /// <b>One field for every category, by the owner's choice</b>, so that a later name
+        /// (<see cref="SeedOverrideNames"/>) is a new allowed word and not a new format. An unknown
+        /// name, a value that is not a whole number from 0 to 2^53, a duplicate or a null is refused,
+        /// so a load refuses rather than defaults. The entries are kept sorted by name and written in
+        /// one spelling, so the hash and the file do not depend on the order they were given in.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public string[] SeedOverrides
+        {
+            get => _seedOverrides;
+            set => _seedOverrides = NormaliseSeedOverrides(value);
+        }
+
+        private string[] _seedOverrides = Array.Empty<string>();
+
+        /// <summary>The categories <see cref="SeedOverrides"/> may name.</summary>
+        public static readonly IReadOnlyList<string> SeedOverrideNames = new[] { "landscape" };
+
+        /// <summary>The seed <see cref="SeedOverrides"/> names for a category, if it names one.</summary>
+        public bool TrySeedOverride(string name, out ulong seed)
+        {
+            foreach (string entry in _seedOverrides)
+            {
+                int eq = entry.IndexOf('=');
+                if (string.Equals(entry.Substring(0, eq), name, StringComparison.Ordinal))
+                {
+                    seed = ulong.Parse(entry.Substring(eq + 1), System.Globalization.CultureInfo.InvariantCulture);
+                    return true;
+                }
+            }
+
+            seed = 0;
+            return false;
+        }
+
+        private static string[] NormaliseSeedOverrides(string[] value)
+        {
+            if (value == null)
+                throw new ArgumentNullException(nameof(SeedOverrides), "Seed overrides are a list, empty for none.");
+
+            var byName = new SortedDictionary<string, ulong>(StringComparer.Ordinal);
+            foreach (string entry in value)
+            {
+                int eq = entry == null ? -1 : entry.IndexOf('=');
+                string name = eq > 0 ? entry.Substring(0, eq).Trim() : null;
+                string raw = eq > 0 ? entry.Substring(eq + 1).Trim() : null;
+                if (name == null || raw.Length == 0)
+                    throw new ArgumentException(
+                        $"A seed override is written name=value, not '{entry}'.", nameof(SeedOverrides));
+                bool known = false;
+                foreach (string allowed in SeedOverrideNames) known |= string.Equals(allowed, name, StringComparison.Ordinal);
+                if (!known)
+                    throw new ArgumentException(
+                        $"'{name}' is not a seed category; the categories are {string.Join(", ", SeedOverrideNames)}.",
+                        nameof(SeedOverrides));
+                if (!ulong.TryParse(raw, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out ulong seed)
+                    || seed > (1UL << 53))
+                    throw new ArgumentException(
+                        $"The {name} seed is '{raw}', not a whole number from 0 to 2^53.", nameof(SeedOverrides));
+                if (byName.ContainsKey(name))
+                    throw new ArgumentException($"The {name} seed is given twice.", nameof(SeedOverrides));
+                byName[name] = seed;
+            }
+
+            var normal = new string[byName.Count];
+            int i = 0;
+            foreach (KeyValuePair<string, ulong> kv in byName)
+                normal[i++] = kv.Key + "=" + kv.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            return normal;
+        }
 
         /// <summary>
         /// Whether a founder, and every body the floor spawns, is placed where the matter is —
@@ -1505,6 +1751,42 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("world")]
         public bool FoundersFollowIncomeDepth { get; set; }
+
+        /// <summary>
+        /// Whether a founder with a mouth, a part whose <c>Intake</c> is above 0, reads the
+        /// corpses as its food under <see cref="FoundersFollowFood"/> and
+        /// <see cref="FoundersFollowFoodDepth"/>: D129 (owner, 2026-09-28, option A of two). Off
+        /// by default, which is every recorded world.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Round 51 showed why. At 30,000 s its dead held as much energy as its living, and about
+        /// nine corpses in ten lay on the bed or a reef's cap, at a median 50 m down in seed 1 at
+        /// 12,000 s. D116 and the round 48 depth read a body whose only food part is a mouth as
+        /// eating nothing, so seed 1's 202 mouth founders after the founding were set at a random
+        /// depth in the top 12 m and landed at a median 6 m, about 40 m over the corpses. One
+        /// corpse was eaten in each seed.
+        /// </para>
+        /// <para>
+        /// With this on, a mouth founder's share of a column is the joules of the corpses in it
+        /// over the fullest column's, on the snow grid's columns. Every corpse that holds joules
+        /// counts where it is now, lying or still sinking. A body with a mouth and another food
+        /// takes the larger of its shares, as a mixotroph does, and a world with no corpse
+        /// accepts a mouth anywhere, as an empty field does. Under the depth rule, a mouth whose
+        /// corpse share is the largest of its shares is set between the richest corpse in the
+        /// column and <see cref="IntakeReachMetres"/> above it. The other foods win a tie. The
+        /// placer's bed and reef rules then lift the founder clear of the rock, as they lift
+        /// every founder, so a body whose radius is more than the reach sits too high over a
+        /// corpse on the bed to eat it from where it lands.
+        /// </para>
+        /// <para>
+        /// Refused without <see cref="FoundersFollowFood"/>, without corpses as objects
+        /// (<see cref="CorpseDecayPerSecond"/> above 0) and without a reach
+        /// (<see cref="IntakeReachMetres"/> above 0). A new realisation of every seed when on.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public bool FoundersFollowCorpses { get; set; }
 
 
         /// <summary>
@@ -1651,8 +1933,8 @@ namespace Evosim.Core
         /// </summary>
         /// <remarks>
         /// <para>
-        /// <b>The owner's gradient</b> (2026-09-15: "the sea bed as a gradient so it's not all one
-        /// depth; this is something we wanted to do from the start"). In a cylinder the shallow arc
+        /// <b>The owner's gradient</b> (2026-09-15: the sea bed as a gradient, so that it is not all one
+        /// depth, something wanted from the start). In a cylinder the shallow arc
         /// is a shore and the cross-section is a lake. It is mean-zero like the rest of the map, so
         /// the water volume and the seeded matter density are unmoved by it.
         /// </para>
@@ -1801,8 +2083,8 @@ namespace Evosim.Core
         /// The share of the tank's surface disc the reefs' caps cover, 0 to under 1: the placer
         /// draws reefs from the reef stream until the union of the caps' outlines, counted on the
         /// grid's own columns, reaches it. 0 (the default) is off, which is every recorded world.
-        /// <c>logbook/specs/reef-spec.md</c> and the owner's ruling of 2026-09-23 night ("areas in
-        /// the tank that do not get light", about a quarter of the surface), <c>EVOSIM_REEF_COVER</c>.
+        /// <c>logbook/specs/reef-spec.md</c> and the owner's ruling of 2026-09-23 night (areas in
+        /// the tank that do not get light, about a quarter of the surface), <c>EVOSIM_REEF_COVER</c>.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -2036,15 +2318,18 @@ namespace Evosim.Core
         /// The two routes matter takes into a real ocean, and they arrive at opposite ends of the
         /// column: rivers and dust at the top, where the light already is, and hydrothermal supply
         /// at the bottom, where D067's plume is already carrying water upward. Which one a world
-        /// gets is a world rule, so it is a knob rather than a constant — and at influx 0 both
-        /// members are the same world, bit for bit.
+        /// gets is a world rule, so it is a knob rather than a constant — and at influx 0 every
+        /// member is the same world, bit for bit. D175 added a third, the islands' tops
+        /// (<see cref="Evosim.Core.MatterInflux.Islands"/>), as a value of this enum rather than
+        /// a field, so a config written before it still loads.
         /// </remarks>
         [Tunable("world")]
         public MatterInflux MatterInfluxAt { get; set; } = MatterInflux.Surface;
 
         /// <summary>
-        /// The fraction of each patch's floor-layer free matter that leaves the world every
-        /// second — D074's burial. Zero is every run before it.
+        /// The fraction of the floor's free matter that leaves the world every second — D074's
+        /// burial, read at each column's own floor on the grid since D175. Zero is every run
+        /// before it.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -2056,7 +2341,13 @@ namespace Evosim.Core
         /// lost, which is what sediment is.
         /// </para>
         /// <para>
-        /// <b>Spent matter only, and only from the floor layer.</b> Never the charged field (that
+        /// <b>Where the floor is.</b> On the cell field the floor is the last layer. On the grid
+        /// it is each column's lowest live cell (D175), which on a flat grid is the last layer
+        /// and gives the same numbers to the bit; on a sloped bed the last layer is water only
+        /// under the deepest hollow, so the old reading buried almost nothing.
+        /// </para>
+        /// <para>
+        /// <b>Spent matter only, and only from the floor.</b> Never the charged field (that
         /// is <see cref="World.Nutrients"/>' pool, the same substance in the other state), and
         /// never the charged matter a living body is made of — burying a creature's skeleton out
         /// from under it while it is still alive would open the matter identity, and the identity
@@ -2065,6 +2356,43 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("world", Unit = "1/s")]
         public float MatterBurialPerSecond { get; set; } = 0f;
+
+        /// <summary>
+        /// The fraction of the floor's free matter that leaves the world every second in the
+        /// desert, the columns outside the islands' influx plan (D190). Below 0, the default, the
+        /// desert buries at <see cref="MatterBurialPerSecond"/> like every column, which is every
+        /// recorded world.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why the open water needs its own rate.</b> In every screen at four times round 57's
+        /// area the crowd outgrew its islands by 20,000 s: the water between them held three to
+        /// six times a leaf's break-even, so leaves lived there and the crowd spread. In the ocean
+        /// the surface far from a source is held below what a plant needs, because what drifts off
+        /// sinks out of the light and is lost. The owner took that rule on 2026-10-15 (D190).
+        /// </para>
+        /// <para>
+        /// <b>Where the desert is.</b> An island column is one that holds a cell of
+        /// <see cref="World.IslandInflux"/>, the plan D175's influx is laid by, so the desert is
+        /// exactly where no income lands. At 0 or above, each live column's floor cell gives this
+        /// fraction of its own stock if it is desert and <see cref="MatterBurialPerSecond"/>'s if
+        /// it is an island; at equal rates that is the old draw to the rounding, since the
+        /// matter grid has no refuge and the old patch draw then takes the same fraction of every
+        /// floor cell. It needs the islands' influx: refused without it.
+        /// </para>
+        /// </remarks>
+        [Tunable("world", Unit = "1/s")]
+        public float MatterBurialDesertPerSecond
+        {
+            get => _matterBurialDesertPerSecond;
+            set => _matterBurialDesertPerSecond = !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(MatterBurialDesertPerSecond), value,
+                    "A desert burial rate is finite; below 0 the desert buries at the islands' rate.");
+        }
+
+        private float _matterBurialDesertPerSecond = -1f;
 
         /// <summary>
         /// How strongly the water stirs detritus vertically, m²/s — §5A.4, D036.
@@ -2300,6 +2628,65 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("field", Unit = "1/s")]
         public float CorpseDecayPerSecond { get; set; }
+
+        /// <summary>
+        /// D127: how fast a corpse sinks, m/s. 0, the default and every recorded world, is the
+        /// snow's own <see cref="NutrientSinkMetresPerSecond"/>, which is what a corpse has always
+        /// sunk at. A dead body is denser than a parcel of snow; the owner's corpse sinks faster.
+        /// <c>EVOSIM_CORPSE_SINK</c>.
+        /// </summary>
+        [Tunable("field", Unit = "m/s")]
+        public float CorpseSinkMetresPerSecond { get; set; }
+
+        /// <summary>
+        /// D127: whether a corpse comes to rest on the first solid surface under it, a reef's cap
+        /// or the bed, and stays there, neither sinking nor carried again, while it dissolves into
+        /// the water cell above the surface. False, the default and every recorded world, is the
+        /// flat clamp at the world's depth with the current still carrying a corpse on the floor.
+        /// <c>EVOSIM_CORPSE_SETTLE</c>.
+        /// </summary>
+        [Tunable("field")]
+        public bool CorpseSettles { get; set; }
+
+        /// <summary>
+        /// D127: the share of its first joules below which a corpse gives the rest to the water at
+        /// once and leaves. 0, the default and every recorded world, is the old floor of 1e-6 J,
+        /// which at a half-life of half an hour keeps a corpse for the length of a run. At 0.02 a
+        /// corpse lasts five and a half half-lives. <c>EVOSIM_CORPSE_FLOOR</c>.
+        /// </summary>
+        [Tunable("field")]
+        public float CorpseLeavesBelowFraction
+        {
+            get => _corpseLeavesBelowFraction;
+            set => _corpseLeavesBelowFraction = value >= 0f && value < 1f
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(CorpseLeavesBelowFraction), value,
+                    "A corpse's floor is a share of its first joules, at least 0 and under 1.");
+        }
+
+        private float _corpseLeavesBelowFraction;
+
+        /// <summary>
+        /// D131: how fast a corpse decays from the step it settles, per second. 0, the default and
+        /// every recorded world, is <see cref="CorpseDecayPerSecond"/>, the rate it sank at, so a
+        /// config at 0 replays. Above 0 a corpse carries its joules down at the slow rate and hands
+        /// them to the water where it lies at this one: 0.005/s is a half-life of about 139 s.
+        /// Refused without <see cref="CorpseSettles"/> and a sinking rate, since nothing would
+        /// settle to take it. <c>EVOSIM_CORPSE_DECAY_SETTLED</c>.
+        /// </summary>
+        [Tunable("field", Unit = "1/s")]
+        public float CorpseSettledDecayPerSecond
+        {
+            get => _corpseSettledDecayPerSecond;
+            set => _corpseSettledDecayPerSecond = value >= 0f && !float.IsInfinity(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(CorpseSettledDecayPerSecond), value,
+                    "A settled corpse's decay is a rate per second, finite and not negative.");
+        }
+
+        private float _corpseSettledDecayPerSecond;
 
         /// <summary>
         /// Fraction of a refuge layer's density that feeding can see and take, in [0, 1] —
@@ -2574,6 +2961,66 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("world")]
         public bool SenescenceWearsIntake { get; set; } = true;
+
+        /// <summary>
+        /// D128: the median age at which a body with a lifespan gene of 1 dies of age alone, s. A
+        /// body's chance of dying rises with its ageing clock as Gompertz's law has it, and 0, the
+        /// default and every recorded world, turns the hazard off.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>A threshold drawn at birth, crossed by a running sum.</b> Each body carries the
+        /// hazard it has accumulated, <c>K (2^(c/D) - 1)</c> summed along its ageing clock
+        /// <c>c</c> with <c>D</c> its doubling time, and dies of age on the step the sum passes an
+        /// exponential threshold drawn from its own id at the seed slot
+        /// <see cref="World.AgeDeathIndex"/>. So the age at death has exactly the Gompertz
+        /// distribution with median at the body's base, whatever the metabolic step, and a jump of
+        /// the clock (a birth, a lost part) multiplies the hazard from then on without adding any
+        /// at the jump.
+        /// </para>
+        /// <para>
+        /// <b>Not beside D038's wear.</b> A world with both above 0 is refused: the two are two
+        /// accounts of ageing, and the wear burns the reserve a corpse is meant to keep (D128).
+        /// <c>EVOSIM_AGE_BASE</c>.
+        /// </para>
+        /// </remarks>
+        [Tunable("world", Unit = "s")]
+        public float AgeHazardBaseSeconds { get; set; }
+
+        /// <summary>
+        /// D128: the hazard's doubling time as a fraction of a body's base, so every body's curve
+        /// has one shape stretched by its base. 0.2 is round 51's (the owner's acceptance of the
+        /// agent's recommendation, 2026-09-27): with a base of 3,000 s, deaths by age spread from
+        /// about 1,500 to 4,600 s, 10% to 99%. Read only when <see cref="AgeHazardBaseSeconds"/>
+        /// is above 0. <c>EVOSIM_AGE_DOUBLING</c>.
+        /// </summary>
+        [Tunable("world")]
+        public float AgeHazardDoublingFraction { get; set; } = 0.2f;
+
+        /// <summary>
+        /// D128, the owner's addition: how far a birth advances the parent's ageing clock, in
+        /// doublings of its hazard for a child whose tissue equals the parent's, scaled by the
+        /// child's tissue over the parent's. 0 is off. <c>EVOSIM_AGE_BIRTH</c>.
+        /// </summary>
+        [Tunable("world")]
+        public float AgeingPerBirth { get; set; }
+
+        /// <summary>
+        /// D128, the owner's addition: how far a destroyed part advances its body's ageing clock,
+        /// in doublings of its hazard for the whole body's tissue, scaled by the part's share of
+        /// it. 0 is off. <c>EVOSIM_AGE_WOUND</c>.
+        /// </summary>
+        [Tunable("world")]
+        public float AgeingPerWound { get; set; }
+
+        /// <summary>
+        /// D128: what a longer life costs. A body's upkeep is multiplied by
+        /// <c>Genome.LifespanScale ^ AgeRepairExponent</c>, so at 1 a lifespan twice the world's
+        /// base doubles the upkeep. 0, the default and round 51's, and a lifespan of exactly 1 both
+        /// leave every bill the number it was. <c>EVOSIM_AGE_REPAIR</c>.
+        /// </summary>
+        [Tunable("world")]
+        public float AgeRepairExponent { get; set; }
 
 
         /// <summary>
@@ -3014,7 +3461,139 @@ namespace Evosim.Core
         private bool _senseFlow;
         private bool _senseContact;
         private bool _senseDamage;
+        private bool _senseScent;
+        private bool _senseDrive;
+        private bool _senseBedTouch;
         private SensorChannel[] _sensorPool;
+
+        /// <summary>
+        /// Whether a genome in this run may draw <see cref="SensorChannel.BedTouch"/>, whether this
+        /// part was against the bed or a reef on the last physics step (D162, round 59's anchoring
+        /// cell). Appended after the drive sense's three in <see cref="SensorPool"/>, for the replay
+        /// reason <see cref="SenseContact"/> gives, and refused without
+        /// <see cref="ContactPerPart"/>, since the touch is read on each part's own sphere.
+        /// <c>EVOSIM_SENSE_BED_TOUCH</c>.
+        /// </summary>
+        [Tunable("sense")]
+        public bool SenseBedTouch
+        {
+            get => _senseBedTouch;
+            set { _senseBedTouch = value; _sensorPool = null; }
+        }
+
+        /// <summary>
+        /// Whether a genome in this run may draw the drive sense: <see cref="SensorChannel.Stroke"/>,
+        /// <see cref="SensorChannel.Hold"/> and <see cref="SensorChannel.Ramp"/>, the state of each
+        /// joint's envelope (the owner, 2026-10-01). Appended after <see cref="SenseScent"/> in
+        /// <see cref="SensorPool"/>, the three in that order, for the replay reason
+        /// <see cref="SenseContact"/> gives; refused where the world does not run the bend-and-power
+        /// drive (<c>FluidConfig.PowerPushRadiansPerSecond</c> 0), since then there is no envelope to
+        /// sense. <c>EVOSIM_SENSE_DRIVE</c>.
+        /// </summary>
+        [Tunable("sense")]
+        public bool SenseDrive
+        {
+            get => _senseDrive;
+            set { _senseDrive = value; _sensorPool = null; }
+        }
+
+        /// <summary>
+        /// Whether a genome in this run may draw <see cref="SensorChannel.Scent"/>, the smell of
+        /// carrion (propose-foraging.md). Appended after <see cref="SenseDamage"/> in
+        /// <see cref="SensorPool"/> for the replay reason <see cref="SenseContact"/> gives, and
+        /// refused where corpses are not objects (<see cref="CorpseDecayPerSecond"/> 0), since
+        /// then there is nothing to smell. <c>EVOSIM_SENSE_SCENT</c>.
+        /// </summary>
+        [Tunable("sense")]
+        public bool SenseScent
+        {
+            get => _senseScent;
+            set { _senseScent = value; _sensorPool = null; }
+        }
+
+        /// <summary>Where a corpse's scent cone reaches 0, metres. <c>EVOSIM_SCENT_RANGE</c>.</summary>
+        /// <remarks>⚠ A design choice (propose-foraging.md), not a measurement.</remarks>
+        [Tunable("sense", Unit = "m")]
+        public float ScentRangeMetres { get; set; } = 10f;
+
+        /// <summary>
+        /// Cone-weighted corpse joules that read as half scale on <see cref="SensorChannel.Scent"/>,
+        /// J: the squash is <c>x / (x + k)</c>, as <see cref="ChemicalHalfScaleJoulesPerCubicMetre"/>'s.
+        /// <c>EVOSIM_SCENT_SCALE</c>.
+        /// </summary>
+        /// <remarks>⚠ A design choice: round 52's corpses held tens of joules each.</remarks>
+        [Tunable("sense", Unit = "J")]
+        public float ScentHalfScaleJoules { get; set; } = 20f;
+
+        /// <summary>
+        /// D167's smell of living leaves, and which of its two forms a genome may draw:
+        /// <see cref="SensorChannel.LeafScent"/> under <see cref="LeafScentForm.Strength"/>,
+        /// <see cref="SensorChannel.LeafScentDirection"/> under <see cref="LeafScentForm.Direction"/>.
+        /// <see cref="LeafScentForm.None"/> is every recorded world: no field is built and nothing
+        /// is drawn.
+        /// </summary>
+        /// <remarks>
+        /// Every living body with photosynthetic tissue emits by that tissue's lit area, as the
+        /// light pass charges it, from its own point; a dead one stops. Appended after
+        /// <see cref="SenseBedTouch"/> in <see cref="SensorPool"/> for the replay reason
+        /// <see cref="SenseContact"/> gives. The coordinator settled the form's details within
+        /// D167 on 2026-10-12 (<c>logbook/specs/r59-anchor-build-plan.md</c>, step 2b).
+        /// <c>EVOSIM_LEAF_SCENT</c>.
+        /// </remarks>
+        [Tunable("sense")]
+        public LeafScentForm LeafScent
+        {
+            get => _leafScent;
+            set { _leafScent = value; _sensorPool = null; }
+        }
+
+        private LeafScentForm _leafScent = LeafScentForm.None;
+
+        /// <summary>Where a leaf's cone reaches 0, metres. <c>EVOSIM_LEAF_SCENT_RANGE</c>.</summary>
+        /// <remarks>⚠ The nursery sets it (D167).</remarks>
+        [Tunable("sense", Unit = "m")]
+        public float LeafScentRangeMetres { get; set; } = 10f;
+
+        /// <summary>The leaf field's cell, metres. <c>EVOSIM_LEAF_SCENT_CELL</c>.</summary>
+        /// <remarks>
+        /// ⚠ The nursery sets it. The fill's cost goes as the inverse cube, and the sense cannot
+        /// resolve anything nearer than about a cell.
+        /// </remarks>
+        [Tunable("sense", Unit = "m")]
+        public float LeafScentCellMetres { get; set; } = 2f;
+
+        /// <summary>
+        /// The leaf smell that reads half scale, in square metres of photosynthetic area at the
+        /// cone's peak. <c>EVOSIM_LEAF_SCENT_HALF</c>.
+        /// </summary>
+        /// <remarks>
+        /// ⚠ The nursery sets it. The emission is fixed at 1 per square metre, so this is the only
+        /// strength the sense has; a second emission number would change nothing the squash reads.
+        /// </remarks>
+        [Tunable("sense", Unit = "m2")]
+        public float LeafScentHalfScaleSquareMetres { get; set; } = 1f;
+
+        /// <summary>
+        /// Whether a body that dies of anything but a bite, and any remains not bitten off, return
+        /// to the water at once as spent units rather than as a corpse or as snow (D167's leaf
+        /// tank). Off is every recorded world.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// For the swimming nursery's tank, whose only food is leaves bitten to death. A death by
+        /// starvation, age or divergence, and a module's remains, are burnt as a reserve is burnt:
+        /// the joules leave as energy out and their units enter the water's spent stock at the
+        /// body's point. So the energy and matter audits close as they do for respiration, the
+        /// leaves can fix the units again, and none of it is food. A bite's kill and a bitten-off
+        /// part leave their corpses as before.
+        /// </para>
+        /// <para>
+        /// The coordinator settled the mechanism within D167 on 2026-10-12; on only in the leaf
+        /// tank. <c>EVOSIM_UNBITTEN_NO_CORPSE</c>.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public bool UnbittenDeathsLeaveNoCorpse { get; set; }
 
         /// <summary>
         /// Edible density that reads as half scale on <see cref="SensorChannel.Chemical"/>, J/m³.
@@ -3079,14 +3658,17 @@ namespace Evosim.Core
         {
             if (_sensorPool != null) return _sensorPool;
 
-            if (!_senseChemical && !_senseEnergy && !_senseFlow && !_senseContact && !_senseDamage)
+            if (!_senseChemical && !_senseEnergy && !_senseFlow && !_senseContact && !_senseDamage && !_senseScent && !_senseDrive &&
+                !_senseBedTouch && _leafScent == LeafScentForm.None)
             {
                 _sensorPool = SensorChannels.DefaultPool;
                 return _sensorPool;
             }
 
             int extra = (_senseChemical ? 1 : 0) + (_senseEnergy ? 1 : 0) + (_senseFlow ? 1 : 0) +
-                        (_senseContact ? 1 : 0) + (_senseDamage ? 1 : 0);
+                        (_senseContact ? 1 : 0) + (_senseDamage ? 1 : 0) + (_senseScent ? 1 : 0) +
+                        (_senseDrive ? 3 : 0) + (_senseBedTouch ? 1 : 0) +
+                        (_leafScent != LeafScentForm.None ? 1 : 0);
             var pool = new SensorChannel[SensorChannels.DefaultPool.Length + extra];
 
             Array.Copy(SensorChannels.DefaultPool, pool, SensorChannels.DefaultPool.Length);
@@ -3099,7 +3681,25 @@ namespace Evosim.Core
             // D106 item 5's two, appended after Flow — the enum-append order the remark above
             // states, so a run with them off consumes the stream it always consumed.
             if (_senseContact) pool[at++] = SensorChannel.Contact;
-            if (_senseDamage) pool[at] = SensorChannel.Damage;
+            if (_senseDamage) pool[at++] = SensorChannel.Damage;
+
+            // propose-foraging.md's scent, appended last for the same reason.
+            if (_senseScent) pool[at++] = SensorChannel.Scent;
+
+            // The drive sense's three, appended after the scent for the same reason.
+            if (_senseDrive)
+            {
+                pool[at++] = SensorChannel.Stroke;
+                pool[at++] = SensorChannel.Hold;
+                pool[at++] = SensorChannel.Ramp;
+            }
+
+            // D162's touch of the rock, appended after the drive sense for the same reason.
+            if (_senseBedTouch) pool[at++] = SensorChannel.BedTouch;
+
+            // D167's leaf smell, whichever form the world carries, after the touch.
+            if (_leafScent == LeafScentForm.Strength) pool[at] = SensorChannel.LeafScent;
+            else if (_leafScent == LeafScentForm.Direction) pool[at] = SensorChannel.LeafScentDirection;
 
             _sensorPool = pool;
             return _sensorPool;
@@ -3294,5 +3894,15 @@ namespace Evosim.Core
         /// column D067's plume carries upward.
         /// </summary>
         Vent = 1,
+
+        /// <summary>
+        /// D175: the top <see cref="RunConfig.MatterIslandDepthMetres"/> of D109's island columns,
+        /// each column in proportion to its stock at t = 0 — a steady supply in a few places, as
+        /// the ocean's patches are fed. The shares are the seeding's own, made again from the
+        /// config and the seed on every construction and never read from the live field, so a
+        /// resumed run lays its influx where the unbroken run did. Needs the grid field and the
+        /// islands; a world without them is refused at construction.
+        /// </summary>
+        Islands = 2,
     }
 }

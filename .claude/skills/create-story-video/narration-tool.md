@@ -32,9 +32,16 @@ narration.md's "The timeline".
 
 - Refuses while the settings name no canon voice, or name one without its path, sha256, transcript,
   engine profile hash and `max_segment_chars`.
-- Makes one segment of each prose paragraph. It splits a paragraph after each passage an earlier draft's
-  next file named, then cuts it to the voice's `max_segment_chars`: at the last passage end that fits, or
-  at the last sentence end. It refuses a sentence longer than that limit.
+- Packs each beat's prose paragraphs into segments up to the voice's `max_segment_chars`, as
+  narration.md's "Segments and pieces" says. A segment never crosses a beat, the end of a paragraph whose
+  last passage needs silence, or a passage an earlier draft's next file named. Paragraphs joined by
+  `Join: next` stay in one segment. Between those breaks it takes the fewest segments, then the packing
+  whose shortest segment is longest.
+- Cuts a paragraph, or a joined run of them, that is longer than the limit: at the last passage end that
+  fits, or at the last sentence end. Every piece but the last is a segment of its own, and the last is
+  packed with what follows it in the beat. A cut inside a `Join: next` run is printed as a `NOTE` with
+  the passages and the characters over, and does not refuse the request. It refuses a sentence longer
+  than the limit.
 - Names each segment `s<passage>.<place>` after its first sentence. Its cues are its sentences, with a
   given name's braces taken off.
 - Sets each segment's first attempt. A segment named in the last draft's next file, or holding a passage

@@ -229,7 +229,7 @@ namespace Evosim.Core.Tests
                 Assert.Equal((double)speed, read.Rms, 0.01 * speed);
 
                 // The owner's ruling of 2026-09-10 applied to the tank's water: up and down, left
-                // and right, in all directions really.
+                // and right, in all directions alike.
                 double most = Math.Max(read.X, Math.Max(read.Y, read.Z));
                 double least = Math.Min(read.X, Math.Min(read.Y, read.Z));
 

@@ -2,9 +2,9 @@
 
 **2026-08-02**  ·  Milestone 1
 
-A human looked at the sandbox for the second time. The movement *"looks almost biological"*,
-which is good. But there are *"boxes inside boxes (on occasion), which is physically
-impossible for one solid box to move inside another."* Right again, and again in seconds.
+A human looked at the sandbox for the second time. They said the movement looked almost biological,
+which is good. But they saw boxes inside boxes on occasion, and said that is physically
+impossible, since one solid box cannot move inside another. Right again, and again in seconds.
 
 Nearly seven creatures in ten had a part buried inside another part. Three separate causes
 were responsible, and the third one could not be fixed by any rule about how a creature is
@@ -86,7 +86,7 @@ propulsion.
 
 That is the exploit class in [`DESIGN.md`](../DESIGN.md) §11.2, and unlike most entries on
 that list this one does not need the search to be clever. It is lying around waiting to be
-found. Finding it now, because somebody said "that looks impossible", is far better than
+found. Finding it now, because somebody said it looked impossible, is far better than
 finding it later as a leaderboard full of shimmering blobs.
 
 ## What the fix costs

@@ -4,8 +4,8 @@
 0118). It carries the four rulings the owner made on 0118's dissection of the stomachs (D119
 to D122). Three subagents built them the same morning in worktrees, and they were merged
 before noon and screened before these predictions were committed (the launch section
-below). The owner's words on the round: "lets proceed with your recommendations. i'm
-curious to see how it all works out." The agent that drafted it ran on Fable; the session
+below). On the round the owner said to proceed with the agent's recommendations, and that they were
+curious to see how it all works out. The agent that drafted it ran on Fable; the session
 moved to Opus 5.5 at midday, when Fable's weekly allowance ran low, and Opus ran the second
 count screen and finished the entry. The reader, `scripts/reads/r48-read.py`, was written
 against the draft.*

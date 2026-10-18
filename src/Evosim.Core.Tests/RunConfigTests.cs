@@ -75,6 +75,7 @@ namespace Evosim.Core.Tests
             new object[] { typeof(FluidConfig) },
             new object[] { typeof(LightModel) },
             new object[] { typeof(CurrentField) },
+            new object[] { typeof(CentralBrainOptions) },
         };
 
         [Fact]
@@ -194,6 +195,11 @@ namespace Evosim.Core.Tests
             {
                 p.SetValue(target, (int)p.GetValue(target) + 3);
             }
+            else if (p.PropertyType == typeof(ulong))
+            {
+                // LightModel.WeatherSeed, the first ulong. Its setter caps it at 2^53.
+                p.SetValue(target, (ulong)p.GetValue(target) + 3UL);
+            }
             else if (p.PropertyType == typeof(bool))
             {
                 p.SetValue(target, !(bool)p.GetValue(target));
@@ -206,7 +212,8 @@ namespace Evosim.Core.Tests
             }
             else if (p.PropertyType == typeof(string[]))
             {
-                p.SetValue(target, new[] { CellTypeIds.Consumer });
+                // D192's seed overrides take only their own words; every other list takes a cell id.
+                p.SetValue(target, p.Name == nameof(RunConfig.SeedOverrides) ? new[] { "landscape=3" } : new[] { CellTypeIds.Consumer });
             }
             else if (p.PropertyType.IsEnum)
             {
@@ -416,6 +423,7 @@ namespace Evosim.Core.Tests
                 Assert.True(
                     entry.ValueType == typeof(float) || entry.ValueType == typeof(double) ||
                     entry.ValueType == typeof(int) || entry.ValueType == typeof(string) ||
+                    entry.ValueType == typeof(ulong) ||
                     entry.ValueType == typeof(bool) || entry.ValueType == typeof(string[]) ||
                     entry.ValueType.IsEnum ||
                     ConfigSchema.EnumElementOf(entry.ValueType) != null,

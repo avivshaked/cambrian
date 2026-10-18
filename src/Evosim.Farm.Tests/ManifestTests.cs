@@ -94,6 +94,56 @@ namespace Evosim.Farm.Tests
             FluidLinkSteps = 5960466800,
         };
 
+        /// <summary>
+        /// The thread pool's spin is written only when set, beside the engine, so a run.json made without it
+        /// keeps its bytes and a pace reading can name the spin it was taken at.
+        /// </summary>
+        [Fact]
+        public void TheSpinIsRecordedOnlyWhenSet()
+        {
+            RunManifest without = Sample();
+            string plain = Manifest.Render(without, ending: null);
+            Assert.DoesNotContain("threadPoolSpinLimit", plain);
+
+            RunManifest with = Sample();
+            with.StartedAtUtc = without.StartedAtUtc;
+            with.ThreadPoolSpinLimit = "5000";
+            string spun = Manifest.Render(with, ending: null);
+            Assert.Equal("5000", Json.Parse(spun)["threadPoolSpinLimit"].AsString());
+
+            // Nothing else moves: the one line is the whole difference.
+            var kept = new List<string>();
+            foreach (string line in spun.Replace("\r\n", "\n").Split('\n'))
+            {
+                if (!line.Contains("\"threadPoolSpinLimit\"")) kept.Add(line);
+            }
+            Assert.Equal(plain.Replace("\r\n", "\n"), string.Join("\n", kept));
+        }
+
+        /// <summary>
+        /// A world that ran in a group names the whole group, and a lone world's run.json keeps its bytes.
+        /// </summary>
+        [Fact]
+        public void TheGroupIsRecordedOnlyWhenSet()
+        {
+            RunManifest alone = Sample();
+            string plain = Manifest.Render(alone, ending: null);
+            Assert.DoesNotContain("\"group\"", plain);
+
+            RunManifest grouped = Sample();
+            grouped.StartedAtUtc = alone.StartedAtUtc;
+            grouped.Group = "r57-ct1a.md, r57-ct1b.md, r57-ct1c.md";
+            string text = Manifest.Render(grouped, ending: null);
+            Assert.Equal("r57-ct1a.md, r57-ct1b.md, r57-ct1c.md", Json.Parse(text)["group"].AsString());
+
+            var kept = new List<string>();
+            foreach (string line in text.Replace("\r\n", "\n").Split('\n'))
+            {
+                if (!line.Contains("\"group\"")) kept.Add(line);
+            }
+            Assert.Equal(plain.Replace("\r\n", "\n"), string.Join("\n", kept));
+        }
+
         /// <summary>The creation half, and the fields a script reaches for by name.</summary>
         [Fact]
         public void TheRunningManifestCarriesTheRunsIdentity()
@@ -257,6 +307,75 @@ namespace Evosim.Farm.Tests
                 byte[] bytes = File.ReadAllBytes(path);
                 Assert.False(bytes.Length > 2 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF);
             }
+        }
+
+        /// <summary>
+        /// Two worlds in one process (card-next-r57.md, part 4) add one field to the gpu block, and only a
+        /// world that shared writes it. A world alone writes the block's keys in the order it always did,
+        /// and the document outside the block is the same text whether its world shared or not, but for
+        /// endedAt, which each render reads from the clock.
+        /// </summary>
+        [Fact]
+        public void OnlyAWorldThatSharedAProcessNamesTheOther()
+        {
+            string[] before =
+            {
+                "precision", "device", "driver", "groupSize", "mean", "classLinks", "classNeurons", "kernelHash",
+                "compileMs", "refusedForClass", "neuronsAtCeiling", "neuronsAtCeilingMost", "overflowCandidates",
+                "overflowOverlaps", "overflowHeld", "overflowEntries",
+            };
+
+            RunManifest m = Sample();
+            m.Engine = "gpu";
+            m.Gpu = new GpuFacts
+            {
+                Precision = "single", Device = "NVIDIA GeForce RTX 4090 (128 SMs)", Driver = "12.8", GroupSize = 32,
+                Mean = "chunked", ClassLinks = "2/4/8/16", ClassNeurons = "64/128/256/512",
+                KernelHash = new string('d', 64), CompileMs = 9539.08,
+            };
+
+            string alone = Manifest.Render(m, SampleEnding());
+            Assert.Equal(before, GpuKeys(alone));
+
+            m.Gpu.SharedProcessWith = "r57-pair-b.md";
+            string shared = Manifest.Render(m, SampleEnding());
+            var after = new List<string>(before) { "sharedProcessWith" };
+            Assert.Equal(after, GpuKeys(shared));
+            Assert.Equal("r57-pair-b.md", Json.Parse(shared)["gpu"]["sharedProcessWith"].AsString());
+
+            Assert.Equal(WithoutGpu(alone), WithoutGpu(shared));
+        }
+
+        /// <summary>The gpu block's keys in the order the text writes them.</summary>
+        private static List<string> GpuKeys(string text)
+        {
+            var keys = new List<string>();
+            string block = GpuBlock(text, out _);
+            foreach (System.Text.RegularExpressions.Match k in
+                     System.Text.RegularExpressions.Regex.Matches(block, "\"([A-Za-z]+)\"\\s*:"))
+            {
+                keys.Add(k.Groups[1].Value);
+            }
+
+            return keys;
+        }
+
+        /// <summary>The text without its gpu block, and with endedAt's clock reading blanked.</summary>
+        private static string WithoutGpu(string text)
+        {
+            string block = GpuBlock(text, out int at);
+            return System.Text.RegularExpressions.Regex.Replace(
+                text.Remove(at, block.Length), "\"endedAt\"\\s*:\\s*\"[^\"]*\"", "\"endedAt\": \"\"");
+        }
+
+        /// <summary>The gpu block's text from its opening brace to its closing one; it holds no nested object.</summary>
+        private static string GpuBlock(string text, out int at)
+        {
+            int key = text.IndexOf("\"gpu\"", StringComparison.Ordinal);
+            Assert.True(key >= 0, "no gpu block");
+            at = text.IndexOf('{', key);
+            int end = text.IndexOf('}', at);
+            return text.Substring(at, end - at + 1);
         }
 
         /// <summary>

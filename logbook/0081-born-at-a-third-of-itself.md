@@ -103,7 +103,7 @@ proposal left open or set without a world to read, and the smoke gives them numb
 5. **`GrowthReserveFloor` 0.1** is twelve to seventeen seconds of reserve at the smoke's
    upkeep, which is a thin buffer; kept, and read in the round.
 
-**Ruled the same afternoon**, all five as recommended ("proceed with your recommendations"),
+**Ruled the same afternoon**, all five as recommended (the owner told the agent to proceed with its recommendations),
 and absorbed as D087 with the proposal deleted. The biomass ceiling is `MaximumTissueJoules`,
 beside the body count, set to 30,000 J for round 33 from round 32's mean adult tissue of
 3.77 J per body; the founders' default range is now the code's. Calibrating it showed that

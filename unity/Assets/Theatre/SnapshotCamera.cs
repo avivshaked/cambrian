@@ -273,8 +273,8 @@ namespace Evosim.Theatre
         public float FillIntensity;
 
         /// <summary>
-        /// A lamp that rides with the camera, for a story's portrait and birth (the owner,
-        /// 2026-09-25: "everything looks a bit darkish"): a soft spot light a little above and to
+        /// A lamp that rides with the camera, for a story's portrait and birth (the owner
+        /// found the pictures too dark on 2026-09-25): a soft spot light a little above and to
         /// the right of the lens, aimed at the focus distance, whose intensity is scaled by the
         /// square of that distance so the subject receives about this much light whatever the
         /// standoff, and what stands nearer receives more and what stands farther less, so the
@@ -570,6 +570,18 @@ namespace Evosim.Theatre
             _camera.backgroundColor = Water;
             _camera.clearFlags = RenderSettings.skybox != null ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
 
+            // The underwater look (logbook/specs/underwater-look/brief.md) never reaches a census
+            // view: side, end, top and iso are records and must stay comparable, so today's look is
+            // held for their render whatever the dials say. Taken before the hiding below, so it
+            // hides today's furniture, and let go after the hiding is undone.
+            TheatreSkin skin = TheatreSkin.Current;
+            bool census = view == View.Side || view == View.End || view == View.Top || view == View.Iso;
+            IDisposable held = census && skin != null ? skin.HoldTodaysLook() : null;
+
+            // Every other view is drawn in the run's own light at the frame's second (items 3 and
+            // 6), with the exposure opened or closed for the light its subject has lost.
+            if (!census && skin != null) skin.PushFrame(frame, _camera.transform.position);
+
             List<WaterBounds> silenced = SilenceTheWater();
             List<Renderer> hidden = HideWhatOnlyTheWaterSees(view);
 
@@ -588,8 +600,18 @@ namespace Evosim.Theatre
 
             // The key rakes from behind this camera for this render, and goes back after, so a
             // picture of one second is lit the same way whichever view was taken before it.
-            TheatreSkin skin = TheatreSkin.Current;
             Quaternion lightsWere = skin != null ? skin.Aim(_camera.transform.rotation) : Quaternion.identity;
+
+            // Item 3's meter: none on the sky view (the window keeps the day's own order), the
+            // day's share alone and at most 1 EV on the bed view, which frames the whole tank, and
+            // depth and day for the close and reef views, whose subjects stand at a depth (the
+            // reef view's where its camera is, the close view's at the middle of its fit).
+            TheatreSkin.MeterView meterView =
+                view == View.Sky ? TheatreSkin.MeterView.Sky
+                : view == View.Close || view == View.Reef ? TheatreSkin.MeterView.Subject
+                : TheatreSkin.MeterView.Wide;
+            float subjectY = view == View.Reef ? _camera.transform.position.y : framed.center.y;
+            float meterWas = MeterOpen(skin, subjectY, meterView);
 
             try
             {
@@ -597,12 +619,14 @@ namespace Evosim.Theatre
             }
             finally
             {
+                MeterClose(meterWas);
                 saved.Restore();
                 if (grade != null) grade.Unfocus();
                 if (skin != null) skin.Aim(lightsWere);
                 if (rake != null) UnityEngine.Object.DestroyImmediate(rake.gameObject);
                 for (int i = 0; i < silenced.Count; i++) silenced[i].enabled = true;
                 for (int i = 0; i < hidden.Count; i++) hidden[i].enabled = true;
+                held?.Dispose();
             }
 
             RenderTexture active = RenderTexture.active;
@@ -648,6 +672,42 @@ namespace Evosim.Theatre
             return png.Length;
         }
 
+        /// <summary>The meter's last logged opening, EV, so a film logs it when it moves and not every frame.</summary>
+        private static float _meterLogged = float.NaN;
+
+        /// <summary>
+        /// Opens or closes the grade's exposure by the underwater look's meter (item 3,
+        /// <see cref="TheatreSkin.MeterEv"/>) for one render, and hands back the exposure to put
+        /// back, or NaN when nothing was changed (the item off, a census view holding the look, or
+        /// no grade).
+        /// </summary>
+        private static float MeterOpen(TheatreSkin skin, float subjectY, TheatreSkin.MeterView view)
+        {
+            TheatreGrade grade = TheatreGrade.Current;
+            if (skin == null || grade == null) return float.NaN;
+
+            float ev = skin.MeterEv(subjectY, view);
+            if (ev == 0f) return float.NaN;
+
+            if (float.IsNaN(_meterLogged) || Mathf.Abs(ev - _meterLogged) >= 0.25f)
+            {
+                _meterLogged = ev;
+                Debug.Log(string.Format(
+                    CultureInfo.InvariantCulture,
+                    "[Theatre] look: meter {0:+0.00;-0.00} EV ({1} view, subject at y {2:0.0} m)", ev, view, subjectY));
+            }
+
+            float was = grade.Exposure;
+            grade.SetExposure(was + ev);
+            return was;
+        }
+
+        private static void MeterClose(float was)
+        {
+            if (float.IsNaN(was)) return;
+            if (TheatreGrade.Current != null) TheatreGrade.Current.SetExposure(was);
+        }
+
         /// <summary>
         /// One frame of a film: the camera stands where the caller puts it, rather than where a
         /// view's fit would, and the picture carries no box, no markers and a one-line label.
@@ -679,13 +739,18 @@ namespace Evosim.Theatre
         /// <param name="path">
         /// The PNG to write, its directory created if it is missing; null renders and writes nothing.
         /// </param>
+        /// <param name="filmSecond">
+        /// The film's own second for this frame, the continuous one its label prints, which the
+        /// snow's drift then follows (<see cref="TheatreSkin.PushFrame"/>); NaN, the default, for
+        /// a still or any caller without one, which leaves the drift on the frame's world second.
+        /// </param>
         /// <returns>
         /// The bytes written, or 0 when the frame went to <see cref="FrameWriter"/>, which writes it
         /// on its own thread; <see cref="FlushWrites"/> waits for it to be on disk.
         /// </returns>
         public int CapturePlaced(
             ITheatreFrame frame, Vector3 eye, Quaternion rotation, float fieldOfView,
-            bool portrait, float focusMetres, string label, string path)
+            bool portrait, float focusMetres, string label, string path, double filmSecond = double.NaN)
         {
             if (frame == null) throw new ArgumentNullException(nameof(frame));
 
@@ -717,6 +782,12 @@ namespace Evosim.Theatre
             TheatreSkin skin = TheatreSkin.Current;
             Quaternion lightsWere = skin != null ? skin.Aim(rotation) : Quaternion.identity;
 
+            // The underwater look's items 3 and 6: the run's light at the frame's second, and the
+            // exposure opened for what the subject (the focus, or six metres ahead) has lost.
+            if (skin != null) skin.PushFrame(frame, eye, filmSecond);
+            float subjectY = (eye + rotation * Vector3.forward * (focusMetres > 0f ? focusMetres : 6f)).y;
+            float meterWas = MeterOpen(skin, subjectY, TheatreSkin.MeterView.Subject);
+
             var watch = System.Diagnostics.Stopwatch.StartNew();
 
             try
@@ -725,6 +796,7 @@ namespace Evosim.Theatre
             }
             finally
             {
+                MeterClose(meterWas);
                 if (grade != null) grade.Unfocus();
                 if (skin != null) skin.Aim(lightsWere);
                 if (back != null) UnityEngine.Object.DestroyImmediate(back.gameObject);
@@ -1688,7 +1760,7 @@ namespace Evosim.Theatre
         /// look, low over the floor, for the one render and destroyed after it. The sand is
         /// dark by design (<c>TheatreBed.shader</c>'s two greys) and the sun's light is spent
         /// forty metres up, so the first bed pictures showed the drape as a shadow of itself
-        /// (the owner, 2026-09-15: "Can barely see anything"); the drape's shader reads URP's
+        /// (the owner, 2026-09-15, could barely see anything); the drape's shader reads URP's
         /// additional lights, so a second directional light lifts it without touching the
         /// bodies' skin more than a fill would. Theatre only, no hash moves.
         /// </summary>
@@ -2341,6 +2413,11 @@ namespace Evosim.Theatre
         private static string Label(ITheatreFrame frame, View view)
         {
             string look = TheatreGrade.Current != null ? TheatreGrade.Current.LabelToken : "look 1";
+
+            // The underwater look names itself (look 3, or the grade's token with the items on),
+            // except on a census view, which holds today's look and says so.
+            bool census = view == View.Side || view == View.End || view == View.Top || view == View.Iso;
+            if (TheatreSkin.Current != null) look = TheatreSkin.Current.LabelToken(look, census);
 
             return frame.LabelFor(NameOf(view), look);
         }

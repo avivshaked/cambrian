@@ -1,4 +1,4 @@
-# Build spec: pictures from the theatre (owner: "build these", 2026-09-10)
+# Build spec: pictures from the theatre (the owner told the agent to build these, 2026-09-10)
 
 Read `CLAUDE.md` (the theatre paragraph, the Play-mode identity check that landed today, the rule
 that anything under `Assets/Evosim` is simulation source and the theatre lives beside it), then

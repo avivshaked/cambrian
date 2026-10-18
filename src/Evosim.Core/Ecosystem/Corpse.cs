@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Evosim.Core
 {
     /// <summary>
@@ -51,12 +53,84 @@ namespace Evosim.Core
         /// <summary>Simulated seconds since the death that founded it.</summary>
         public double AgeSeconds { get; internal set; }
 
+        /// <summary>
+        /// D127: what it held when it was founded, J. A corpse's size in a picture is its body's
+        /// scaled by the cube root of <see cref="Joules"/> over this, and
+        /// <see cref="RunConfig.CorpseLeavesBelowFraction"/> reads the same ratio.
+        /// </summary>
+        public double FirstJoules { get; }
+
+        /// <summary>
+        /// D127: at rest on the first solid surface under it, a reef's cap or the bed, with
+        /// <see cref="RunConfig.CorpseSettles"/> on. A settled corpse neither sinks nor is carried,
+        /// and dissolves where it lies.
+        /// </summary>
+        public bool Settled { get; internal set; }
+
+        /// <summary>
+        /// The body it was, at its size when it died, for a picture. Held in memory only: a
+        /// checkpoint does not carry it, so a restored corpse has none and a picture takes its plan
+        /// from the record by <see cref="CreatureId"/>. Nothing in the economy reads it.
+        /// </summary>
+        public Phenotype Body { get; internal set; }
+
+        /// <summary>
+        /// D127, for a picture: the body's module counts when it died (<see cref="Organism.ModuleCounts"/>),
+        /// null for the genome's own minimum. With <see cref="LostPartPaths"/> and
+        /// <see cref="ScaledBy"/> and the genome the record holds under <see cref="CreatureId"/>, it
+        /// develops the corpse's body again. A limb shed by a living body carries none of the three.
+        /// </summary>
+        public int[] ModuleCounts { get; internal set; }
+
+        /// <summary>D127, for a picture: the parts the body had lost when it died, null for none.</summary>
+        public List<int[]> LostPartPaths { get; internal set; }
+
+        /// <summary>
+        /// D127, for a picture: the body's size when it died as a length ratio to its adult
+        /// (<see cref="Phenotype.ScaledBy"/>); 0 for a limb shed by a living body.
+        /// </summary>
+        public float ScaledBy { get; internal set; }
+
+        /// <summary>
+        /// D127, for a picture: the root's orientation when the body died, as the solver held it,
+        /// set by the harness that stepped the body (<see cref="SetPose"/>). Identity until then.
+        /// </summary>
+        public Quat Rotation { get; private set; } = Quat.Identity;
+
+        /// <summary>Whether <see cref="Rotation"/> has been set.</summary>
+        public bool HasPose { get; private set; }
+
+        /// <summary>
+        /// Stamps the orientation the body died in, once. A record and nothing else: no rule of
+        /// the world reads it, and it is carried in a checkpoint so that a film started from one
+        /// draws the corpse as it lay.
+        /// </summary>
+        public void SetPose(Quat rotation)
+        {
+            if (HasPose) return;
+            Rotation = rotation;
+            HasPose = true;
+        }
+
+        /// <summary>Puts a checkpoint's pose back, set or not.</summary>
+        internal void RestorePose(Quat rotation, bool hasPose)
+        {
+            Rotation = rotation;
+            HasPose = hasPose;
+        }
+
         internal Corpse(long creatureId, Float3 position, int patch, double joules)
+            : this(creatureId, position, patch, joules, joules)
+        {
+        }
+
+        internal Corpse(long creatureId, Float3 position, int patch, double joules, double firstJoules)
         {
             CreatureId = creatureId;
             Position = position;
             Patch = patch;
             Joules = joules;
+            FirstJoules = firstJoules;
         }
 
         /// <summary>Where a deposit from this corpse lands: its position and its patch.</summary>

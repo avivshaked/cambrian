@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nursery room · run</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2302080c'/%3E%3Cpath d='M5 19c5-9 11-9 16-3l6-5v12l-6-5c-5 6-11 6-16-1z' fill='%235ef0ff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="nursery.css">
+<style>
+  /* The mockup's areas: the band, the search hero and the exam above, five reading panels below.
+     Ultrawide gives the hero more width; under 1600 px the page scrolls. */
+  /* The exam table has a column for every brain the run swam, and the owner reads them side by side: it takes three of the five columns, so that all of them are on
+     screen at 1920 wide without scrolling sideways. */
+  /* The bottom row is never shorter than 32rem: the brains panel's charts and its breeding list, whole, need that (and not a share of what the rows above leave). */
+  .page { grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: auto minmax(12rem, 1.1fr) minmax(32rem, 1fr);
+    grid-template-areas: "band band band band band" "hero hero exam exam exam" "energy parts leader brains log"; }
+  @media (min-aspect-ratio: 2/1) {
+    .page { grid-template-columns: repeat(7, minmax(0, 1fr));
+      grid-template-areas: "band band band band band band band" "hero hero hero exam exam exam log" "energy parts leader brains brains brains log"; } }
+  @media (max-width: 1600px) {
+    .page { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: auto 30rem 30rem 22rem 28rem;
+      grid-template-areas: "band band band" "hero hero hero" "exam exam exam" "energy parts leader" "brains brains log"; } }
+  /* A run with no exam file: the exam is a short panel that says so, in a row of its own as high as its text, and the search takes the width */
+  .page.noexam { grid-template-rows: auto minmax(12rem, 1fr) auto minmax(32rem, 1fr);
+    grid-template-areas: "band band band band band" "hero hero hero hero hero" "exam exam exam exam exam" "energy parts leader brains log"; }
+  @media (min-aspect-ratio: 2/1) {
+    .page.noexam { grid-template-areas: "band band band band band band band" "hero hero hero hero hero hero hero" "exam exam exam exam exam exam exam" "energy parts leader brains brains brains log"; } }
+  @media (max-width: 1600px) {
+    .page.noexam { grid-template-rows: auto 30rem auto 22rem 28rem; grid-template-areas: "band band band" "hero hero hero" "exam exam exam" "energy parts leader" "brains brains log"; } }
+  .page.noexam .exam .body { flex: 0 0 auto; }
+  .page.noexam .exam .nodata { margin: .2rem 0 0; }
+  .band { grid-area: band; } .hero { grid-area: hero; } .exam { grid-area: exam; }
+  .p-energy { grid-area: energy; } .p-parts { grid-area: parts; } .p-leader { grid-area: leader; } .p-brains { grid-area: brains; } .p-log { grid-area: log; }
+
+  /* One row at 1600 px and wider, with the control picker, the box of what differs, STOP and RERUN: the parts that can shrink do (an ellipsis, the whole text in a title),
+     and the room that is left goes between the numbers and the picker. Under 1600 px the band may take a second row. */
+  .band { flex-direction: row; flex-wrap: nowrap; row-gap: .8rem; align-items: center; padding: .9rem 1.6rem; }
+  .band > * + * { margin-left: 1.6rem; }
+  #stats { flex: 0 0 auto; }
+  /* The stats are one grid, a column each: the labels share a row and the numbers a baseline, with the
+     mockup's 2.4rem between them. (Their wrapper is not a flex item of the band, so the band's own
+     spacing rule does not reach them.) */
+  #stats { display: grid; grid-template-rows: auto auto auto; column-gap: 2.4rem; align-items: baseline; }
+  #stats .stat { display: contents; }
+  #stats .stat .k { grid-column: var(--c); grid-row: 1; }
+  #stats .stat .v { grid-column: var(--c); grid-row: 2; }
+  #stats .stat .watch { grid-column: var(--c); grid-row: 3; }
+  .ident { min-width: 0; flex: 0 1 20rem; }
+  .ident .name { font-family: var(--mono); font-size: 1.85rem; color: var(--ink-hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ident .name small { font-size: 1rem; color: var(--ink-lo); margin-right: .6rem; }
+  .ident .desc { font-size: .92rem; color: var(--ink); margin-top: .2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .state { font-size: .92rem; letter-spacing: .12rem; color: var(--ink-hi); }
+  .ident .why { font-size: .78rem; color: var(--ink-lo); margin-top: .15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ident .why:empty { display: none; }
+  #state { display: flex; flex-direction: column; min-width: 0; flex: 0 1 15rem; }
+  #state .fromreg { margin-top: .25rem; font-size: .75rem; color: var(--ink-lo); white-space: normal; line-height: 1.25; }
+  /* why STOP and RERUN are off, one line each, under the buttons they belong to (as wide as the two buttons); the whole reason is in the title */
+  .band-act { display: flex; flex-direction: column-reverse; align-items: flex-end; flex: 0 0 auto; }
+  .act-btns { display: flex; align-items: center; }
+  .act-whys { display: flex; flex-direction: column; align-items: flex-end; min-width: 0; max-width: 11.5rem; margin-top: .3rem; }
+  .rerun-why { font-size: .75rem; line-height: 1.3; color: var(--ink-lo); max-width: 11.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rerun-why:empty { display: none; }
+  .act-whys:empty, .act-whys:not(:has(.rerun-why:not(:empty))) { display: none; }
+  button.btn[disabled] { opacity: .75; }
+  .stat .watch { font-size: .73rem; color: var(--ink-dim); margin-top: .1rem; white-space: nowrap; }
+  /* the stall alarm: a run marked running whose files have gone quiet for more than three of its median generations */
+  #stats .stat.alarm .v { color: var(--alarm-ink, #ff8d8d); }
+  #stats .stat.alarm .k { color: var(--alarm-ink, #ff8d8d); }
+  .state .plate { margin-left: .6rem; font-size: .72rem; }
+  /* the control: a second run laid over this one, its picker and what its recipe differs by (the mock's two boxes) */
+  .pick { display: flex; flex-direction: column; white-space: nowrap; min-width: 0; margin-left: 1.6rem; }
+  #pick-control { flex: 0 1 12rem; }
+  #pick-diff { flex: 0 1 17rem; }
+  #pick-control .selbox { max-width: 12rem; }
+  #pick-control select { max-width: 9rem; }
+  .pick .kicker { overflow: hidden; text-overflow: ellipsis; }
+  .pick .kicker label { cursor: pointer; }
+  .pick .selbox { margin-top: .3rem; font-family: var(--mono); font-size: .88rem; color: var(--ink-hi); border: 1px solid var(--rule-strong); border-radius: var(--r-sm);
+    padding: .15rem .6rem; display: flex; align-items: center; max-width: 17rem; min-width: 8rem; overflow: hidden; text-overflow: ellipsis; background: none; text-align: left; }
+  .pick select { background: transparent; border: 0; color: var(--ink-hi); font: inherit; max-width: 14rem; cursor: pointer; padding: 0; appearance: none; text-overflow: ellipsis; }
+  .pick select option { background: #071820; color: var(--ink); }
+  .pick .selbox:focus-within, button.pick:focus-visible .selbox { border-color: var(--run); box-shadow: 0 0 .6rem rgba(94, 240, 255, .2); outline: none; }
+  .pick .selbox.dashed { border-style: dashed; color: var(--ink); }
+  .swatch { display: inline-block; width: 1.3rem; height: .55rem; margin-right: .55rem; border-radius: 2px; background: var(--ctl); opacity: .8; flex-shrink: 0; }
+  button.pick { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+  button.pick[hidden], .pick[hidden] { display: none; }
+  button.pick .selbox .t { overflow: hidden; text-overflow: ellipsis; }
+  .ptabs span[hidden] { display: none; }
+  .ptabs span { white-space: nowrap; }
+  .ptabs { flex-wrap: nowrap; }
+  .p-log .head { flex-wrap: nowrap; }
+  /* the recipe differences, as the log panel's fourth tab */
+  .dline { padding: .4rem 0; border-bottom: 1px solid var(--rule); font-size: .82rem; line-height: 1.4; }
+  .dline .k { font-family: var(--mono); color: var(--ink-hi); display: block; overflow-wrap: anywhere; }
+  .dline .v { color: var(--ink); overflow-wrap: anywhere; }
+  .dline .v b { font-weight: 400; color: var(--ctl); }
+  .dline .v em { font-style: normal; color: var(--run); }
+  .dline .sub { color: var(--ink-lo); font-size: .78rem; }
+  .p-log .scrolly { flex: 1; min-height: 0; overflow: auto; }
+  /* the exam against the control's: the summary rows lead the table, and the dots sit in the columns they belong to */
+  .exam-t tbody.vs td { height: 2rem; border-bottom: 1px solid var(--rule); }
+  .exam-t tbody.vs td.rowname { font-size: .68rem; letter-spacing: .04rem; color: var(--ink-lo); line-height: 1.15; white-space: normal; text-align: left; }
+  .exam-t tbody.vs tr.dots td { height: 5.6rem; padding: 0; vertical-align: top; }
+  .exam-t tbody.vs tr.dots svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .exam-t tbody.vs tr.dots svg text { font-size: 9px; }
+  .exam-t td.ctlcell { color: var(--ctl); }
+  .exam-t td.differs { background: var(--sig-bg); }
+  .exam-t td.differs .d { color: var(--sig); }
+  .exam-t td.nocmp .d { color: var(--ink-dim); }
+  .exam-t th.lead { color: var(--ink-hi); box-shadow: inset 0 -2px 0 var(--run-low); }
+  .exam-t th.lead a { color: var(--ink-hi); }
+  .exam .head .aside { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+  .exam .pinned { color: var(--ink-lo); font-size: .8rem; margin-right: .8rem; white-space: nowrap; max-width: 24rem; overflow: hidden; text-overflow: ellipsis; }
+  .exam .pinned b { font-weight: 400; color: var(--ink-hi); }
+  .exam .aside .tag { margin-left: .5rem; }
+  .exam { position: relative; }
+  .pinmenu { position: absolute; right: 1.2rem; top: 3.4rem; z-index: 6; width: 19rem; max-height: 24rem; overflow: auto; background: #06161e; border: 1px solid var(--rule-strong); border-radius: var(--r-sm);
+    padding: .6rem .8rem; box-shadow: 0 .6rem 2rem rgba(0, 0, 0, .55); }
+  .pinmenu[hidden] { display: none; }
+  .pinmenu .pm-t { font-size: .77rem; letter-spacing: .1rem; text-transform: uppercase; color: var(--ink-lo); margin-bottom: .4rem; }
+  .pinmenu label { display: flex; align-items: baseline; padding: .15rem 0; font-size: .85rem; color: var(--ink); cursor: pointer; }
+  .pinmenu label input { margin-right: .55rem; accent-color: var(--run); }
+  .pinmenu label small { margin-left: .5rem; color: var(--ink-dim); font-size: .72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pinmenu .pm-row { display: flex; margin-top: .6rem; position: sticky; bottom: -.6rem; padding: .5rem 0 .2rem; background: #06161e; border-top: 1px solid var(--rule); }
+  @media (max-width: 1600px) { .band #stats .opt { display: none; } .band { flex-wrap: wrap; row-gap: .8rem; } .band > * + * { margin-left: 1.6rem; } #stats { column-gap: 1.6rem; } #pick-control, #pick-diff { flex-basis: auto; } .band .band-act { margin-left: auto; } }
+
+  .body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .hero-body { flex: 1; min-height: 0; display: flex; }
+  .hero-charts { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .decades { width: 16.5rem; margin-left: 1.4rem; flex-shrink: 0; display: flex; flex-direction: column; overflow: auto; }
+  #dec-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .guard { font-size: .8rem; color: var(--ink-lo); }
+  /* The links to the genome screen: the exam table's genome numbers and the leader panel's newest tops. */
+  a.glink { color: var(--ink-hi); text-decoration: underline; text-decoration-color: var(--run-low); text-underline-offset: .2rem; }
+  a.glink:hover { text-decoration-color: var(--run); }
+  a.glink:focus-visible { outline: 2px solid var(--run); outline-offset: 2px; }
+  .bestrows { flex: 0 0 auto; margin-top: .4rem; font-family: var(--mono); font-size: .8rem; line-height: 1.5; color: var(--ink); }
+  select.tag { background: transparent; appearance: none; cursor: pointer; }
+  select.tag option { background: #071820; color: var(--ink); }
+
+  .exam .scroll { flex: 1; min-height: 0; overflow: auto; }
+  /* One narrow column a brain: the number on a line of its own, its standard error under it, and a heading cut short (its whole label is in the title). */
+  .exam-t { table-layout: fixed; width: 100%; }
+  .exam-t th { padding: 0 .12rem .35rem; white-space: normal; vertical-align: bottom; line-height: 1.15; letter-spacing: .01rem; font-size: .68rem; }
+  .exam-t th a span { display: block; }
+  .exam-t th .fr { display: block; }
+  .exam-t td { height: 2.9rem; vertical-align: middle; line-height: 1.15; padding: 0 .2rem; font-size: .85rem; overflow: hidden; }
+  .exam-t td .d { display: block; }
+  .exam-t td .se { display: block; color: var(--ink-lo); font-size: .72rem; }
+  .exam-t td .fr { display: block; font-size: .72rem; color: var(--ink-lo); }
+  .exam-t td.sig { background: var(--sig-bg); }
+  .exam-t td.sig .d { color: var(--sig); }
+  .exam-t tr.pool td { border-top: 1px solid var(--rule-strong); color: var(--ink-dim); height: 2rem; }
+  /* a control the genome makes uninformative (the reason is in the note under the headings and in each title): greyed, never tinted */
+  .exam-t td.off, .exam-t th.off, .exam-t th.off a { color: var(--ink-dim); font-style: italic; }
+  .exam-t td.off.sig, .exam-t td.off { background: none; }
+  .exam-t td.off .d, .exam-t td.off .se { color: var(--ink-dim); }
+  /* the own brain's net on each body, this run against the control: one compact plot under the table */
+  .bodynet { flex: 0 0 auto; margin-top: .4rem; }
+  .bodynet .bn-head { display: flex; align-items: baseline; font-size: .8rem; color: var(--ink-lo); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bodynet .bn-head .kicker { margin-right: .7rem; }
+  .bodynet svg.chart { flex: none; width: 100%; height: var(--bn-h, 7rem); }
+  .bodynet .bn-note { font-size: .78rem; color: var(--ink-lo); margin: .15rem 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .exam .note.compact { margin-bottom: .3rem; }
+  .exam-t thead th { position: sticky; top: 0; background: var(--panel-top); z-index: 1; }
+  .exam-t td:first-child, .exam-t th:first-child { position: sticky; left: 0; background: var(--panel-top); z-index: 2; }
+
+  .mult { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: minmax(5rem, 1fr); gap: .6rem 1rem; overflow: auto; }
+  .mult > div { display: flex; flex-direction: column; min-height: 5rem; }
+  .lab { font-size: .85rem; color: var(--ink-lo); display: flex; align-items: baseline; white-space: nowrap; }
+  .lab b { margin-left: auto; padding-left: .4rem; font-family: var(--mono); font-weight: 400; color: var(--ink-hi); font-size: .85rem; }
+  /* the breeding fields fill the panel's width in as many columns as it has room for, and the panel never scrolls inside itself */
+  .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); column-gap: 1.2rem; margin-top: .15rem; }
+  .fields .field { min-height: 1.2rem; }
+  .brk { margin-top: .5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* a chart's row is as tall as its cell's minimum (5rem), so that the second row of charts never reaches into the breeding caption under them */
+  .p-brains .mult { overflow: visible; flex: 0 0 auto; grid-auto-rows: 5rem; }
+  .p-brains .mult > div { min-height: 5rem; height: 5rem; }
+  .p-brains .body { overflow: hidden; }
+  .ptabs { display: flex; margin-left: auto; }
+  .ptabs span { font-size: .77rem; letter-spacing: .1rem; color: var(--ink-lo); margin-left: .9rem; padding-bottom: .15rem; cursor: pointer; }
+  .ptabs span.on { color: var(--ink-hi); border-bottom: 1px solid var(--run); }
+  pre.log { flex: 1; min-height: 0; overflow: auto; margin: 0; font-family: var(--mono); font-size: .75rem; line-height: 1.45; color: var(--ink); white-space: pre-wrap; word-break: break-word; }
+</style>
+</head>
+<body>
+<svg class="caustics" aria-hidden="true"><filter id="caus"><feTurbulence type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="4"/>
+  <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.95  0 0 0 0 1  0 0 0 -2.6 1.55"/></filter><rect width="100%" height="100%" filter="url(#caus)" opacity="0.045"/></svg>
+
+<header class="strip" id="strip"></header>
+
+<main class="page">
+  <!-- source: run.json (state, process), the generation rows' wall seconds (pace), the files' write times (last row), tank-exam.jsonl labels against the recipe's exam.controls (exam brains). A phase is read from run.json and the files; a run with no record is shown as "not recorded". -->
+  <section class="panel band" aria-label="is it alive, and on pace">
+    <div class="ident"><div class="name" id="name"></div><div class="desc" id="desc"></div><div class="why" id="why"></div></div>
+    <span id="state"></span>
+    <div id="stats"></div>
+    <span class="spacer"></span>
+    <div class="pick" id="pick-control"><span class="kicker"><label for="control">control</label></span>
+      <span class="selbox"><i class="swatch" id="ctl-swatch" hidden></i><select id="control" aria-label="a second run, laid over this one as its control"><option value="">no control</option></select></span></div>
+    <button class="pick" id="pick-diff" type="button" hidden title="what this run's recipe differs by from its control's: opens the list"></button>
+    <div class="band-act">
+      <span class="act-whys"><span class="rerun-why" id="stop-why"></span><span class="rerun-why" id="rerun-why"></span></span>
+      <span class="act-btns">
+        <button class="btn" data-op="run.stop" title="write a STOP file: the run ends between generations">STOP</button>
+        <button class="btn" data-op="run.rerun" style="margin-left:.5rem" title="run this entry again on this build, into a new folder">RERUN</button>
+      </span>
+    </div>
+  </section>
+
+  <!-- source: tank-generations.jsonl. The measures are the top-level numeric fields of the rows: a pair NameMean / NameBest where the rows have one, and the top genome's score (the reward's value). Nothing is named here. -->
+  <section class="panel hero" aria-label="is the search improving">
+    <div class="head"><span class="kicker">Search</span><span class="q">Is the search improving?</span>
+      <span class="aside"><span class="tag on" id="measure-wrap"><select id="measure" class="tag on" style="border:0;padding:0;margin:0"></select></span>
+        <button class="tag" style="margin-left:1rem" data-op="media.picture" disabled title="phase 2: pictures are not built yet">PNG</button></span></div>
+    <div class="legend" id="hero-legend"></div>
+    <div class="hero-body" id="hero-body">
+      <div class="hero-charts"><svg class="chart" id="c-search"></svg></div>
+      <div class="decades"><div class="kicker" style="margin-bottom:.4rem" id="dec-title">decades</div><table class="t" id="t-dec"></table></div>
+    </div>
+  </section>
+
+  <!-- source: tank-exam.jsonl. Columns are the brain labels in the file's order (the recipe's exam.controls); a row is one genome; a cell is own less that brain, paired, with its standard error. -->
+  <section class="panel exam" aria-label="what did the exam find">
+    <div class="head"><span class="kicker">Exam</span><span class="q">Does each brain use what it senses?</span>
+      <span class="aside"><span class="pinned" id="pinned"></span><button class="tag" id="pin-btn" type="button" hidden aria-haspopup="true" aria-expanded="false" title="pin columns: they lead the table (kept in the address)">PIN…</button><button class="tag" data-op="media.export" disabled title="phase 2: export is not built yet">CSV</button></span></div>
+    <div class="pinmenu" id="pinmenu" hidden role="dialog" aria-label="pin exam columns"></div>
+    <div class="body" id="b-exam"></div>
+  </section>
+
+  <!-- source: tank-generations.jsonl: one small chart per numeric field the rows record, as many as there are. -->
+  <section class="panel p-energy" aria-label="how is the energy made">
+    <div class="head"><span class="kicker">Measures</span><span class="q">How is it made?</span></div>
+    <div class="body" id="b-energy"></div>
+  </section>
+
+  <!-- source: tank-scores.jsonl: the reward's value and its named parts for the top member each generation, whatever the class names them. -->
+  <section class="panel p-parts" aria-label="why does the top genome score">
+    <div class="head"><span class="kicker">Reward parts</span><span class="q">Why does it score?</span></div>
+    <div class="body" id="b-parts"></div>
+  </section>
+
+  <!-- source: tank-generations.jsonl, each row's top.body: one row per body that ever led. -->
+  <section class="panel p-leader" aria-label="which body leads">
+    <div class="head"><span class="kicker">Leader</span><span class="q">Which body leads?</span></div>
+    <div class="body" id="b-leader"></div>
+  </section>
+
+  <!-- source: tank-generations.jsonl (the brain and made objects of each row) and tank-crossovers.jsonl (its totals). -->
+  <section class="panel p-brains" aria-label="brains and breeding">
+    <div class="head"><span class="kicker">Brains</span><span class="q">What are they growing into?</span></div>
+    <div class="body" id="b-brains"></div>
+  </section>
+
+  <!-- source: nursery.log's tail, and the folder's files with what was read of each. -->
+  <section class="panel p-log" aria-label="log and files">
+    <div class="head"><span class="kicker" id="log-kicker">Log</span><span class="ptabs" role="tablist"><span class="on" data-tab="log" role="tab" tabindex="0">LOG</span><span data-tab="files" role="tab" tabindex="0">FILES</span><span data-tab="activity" role="tab" tabindex="0" title="the room's operations that touched this run: launch, stop, rerun, episode steps">ACTIVITY</span><span data-tab="diff" id="tab-diff" role="tab" tabindex="0" hidden title="what this run's recipe differs by from its control's (recipe.diff)">DIFFERS</span></span></div>
+    <div class="body" id="b-log"></div>
+  </section>
+</main>
+
+<footer class="bar">
+  <span class="hint"><span class="key">C</span>choose control</span>
+  <span class="hint"><span class="key">L</span>log · files · activity</span>
+  <span class="spacer"></span>
+  <span id="foot"></span>
+</footer>
+
+<script type="module" src="js/run.js"></script>
+</body>
+</html>

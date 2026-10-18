@@ -64,9 +64,13 @@ Shader "Evosim/Theatre Backdrop"
             half4 Fragment(Varyings input) : SV_Target
             {
                 float3 direction = normalize(input.direction);
-                float eyeY = min(GetCameraPositionWS().y, EvoWaterlineY());
-                float3 colour = EvoWaterColour(eyeY + direction.y * EvoWaterViewMetres());
-                return half4(colour, 1.0);
+
+                // The column by the direction of the look, and with the underwater look on, the
+                // water scattered toward the eye (items 2 and 3 of the first batch) and the second
+                // batch's gain: one function, EvoBackdrop, which is also what every far thing
+                // fades into (EvoMixFog), so the far glass dissolves into this and not into a
+                // different colour.
+                return half4(EvoBackdrop(direction), 1.0);
             }
             ENDHLSL
         }

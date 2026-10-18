@@ -8,9 +8,7 @@ radians per second, and everything downstream of it was NaN. Two repairs came ou
 post-mortem. A divergence is now a counted death with a dump beside it, and above 0.01 a
 limiter caps how much one step can change a joint's spin.
 
-The owner's instruction was short.
-
-> fix the bug(s)
+The owner's instruction was short: fix the bugs.
 
 ## What happened
 

@@ -16,7 +16,8 @@ The written work in this repository:
     HANDOFF.md
     COMMERCIAL.md
     CONTRIBUTING.md
-    fable-propose-*.md     (proposals in front of the owner)
+    *propose-*.md          (proposals in front of the owner)
+    proposals/**           (proposals in front of the owner)
     research/**            (the literature review and provenance records)
     logbook/**             (dated entries on what was tried and what broke)
     logbook/specs/**       (the briefs builds were made from, and the reports back)
@@ -52,7 +53,13 @@ canvas runtime, not this project's work, and is gitignored rather than
 relicensed. The handoff archives (design/*.zip) are gitignored for the same
 reason.
 
-unity/Assets/Theatre/UI/Fonts/** is neither: IBM Plex Mono (Regular and
+design/nursery/** is the same kind of work for the nursery (the general nursery,
+D148): design deliverables made to this project's brief, covered by the code
+licence on the same terms as design/canvas/**. Its README is prose under this
+licence. Claude Design's runtime and handoff archives there are gitignored too.
+
+unity/Assets/Theatre/UI/Fonts/** and src/Evosim.NurseryRoom/wwwroot/fonts/**
+are neither: IBM Plex Mono (Regular and
 SemiBold) and IBM Plex Sans (Regular), copyright IBM Corp., redistributed
 under the SIL Open Font License 1.1 with its text beside them in OFL.txt.
 They are third-party files carried under their own licence, which neither of

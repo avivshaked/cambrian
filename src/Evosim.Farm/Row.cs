@@ -106,6 +106,13 @@ namespace Evosim.Farm
         /// </summary>
         public bool PoolNamed { get; set; }
 
+        /// <summary>
+        /// Whether the world is one of a migrating group (D159): its stats rows then carry the
+        /// two immigration totals. Running totals only, so the sampler's checkpoint state does not
+        /// move. Set by whoever builds the sampler, from the run's settings.
+        /// </summary>
+        public bool Migrating { get; set; }
+
         private readonly List<AbsorptiveSample> _absorptiveRows = new List<AbsorptiveSample>();
 
         private long[] _positionIds = Array.Empty<long>();
@@ -120,7 +127,8 @@ namespace Evosim.Farm
         private JsonlWriter _poses;
 
         /// <summary>The table's columns, base set plus one per patch — <see cref="Report"/>'s.</summary>
-        public static IReadOnlyList<string> Columns(RunConfig config) => new Report("x", config).Columns;
+        public static IReadOnlyList<string> Columns(RunConfig config, bool migrating = false) =>
+            new Report("x", config, migrating).Columns;
 
         // ------------------------------------------------------------------ the whole state
         //
@@ -268,6 +276,7 @@ namespace Evosim.Farm
         public string Write(Simulation sim, RunDirectory dir, IReadOnlyList<string> columns)
         {
             World world = sim.World;
+            long probeAt = System.Diagnostics.Stopwatch.GetTimestamp();
 
             double spend = 0d, workSpend = 0d, depth = 0d, light = 0d, food = 0d;
             double travelled = 0d, age = 0d;
@@ -581,6 +590,7 @@ namespace Evosim.Farm
                 patchMaxShare = alive > 0 ? (double)maxCount / alive : 0d;
             }
 
+            probeAt = FarmProbe.Mark(FarmProbe.RowPass, probeAt);
             _absorptiveRows.Clear();
             int absorptiveTruncated = world.CollectAbsorptiveLog(_absorptiveRows);
             int absorptiveLogged = 0;
@@ -601,6 +611,7 @@ namespace Evosim.Farm
                 }
             }
 
+            probeAt = FarmProbe.Mark(FarmProbe.RowAbsorptive, probeAt);
             sim.DrainMotility(
                 out double speedJointedSum, out long speedJointedSamples,
                 out double speedRigidSum, out long speedRigidSamples);
@@ -658,8 +669,30 @@ namespace Evosim.Farm
                 }
             }
 
+            // D127: the corpses at rest on a reef's cap or the bed, and what they still hold; and of
+            // those, the ones on a cap, which lie above the bed under them.
+            int corpsesSettled = 0, corpsesOnReef = 0;
+            double corpseJoulesSettled = 0d, corpseJoulesOnReef = 0d;
+            foreach (Corpse corpse in world.Corpses)
+            {
+                if (!corpse.Settled) continue;
+                corpsesSettled++;
+                corpseJoulesSettled += corpse.Joules;
+
+                Float3 at = corpse.Position;
+                double bed = world.Bed != null
+                    ? world.Bed.FloorY(at.X, at.Z)
+                    : -world.Config.WorldDepthMetres;
+                if (at.Y > bed + 1e-3)
+                {
+                    corpsesOnReef++;
+                    corpseJoulesOnReef += corpse.Joules;
+                }
+            }
+
             // ---------------------------------------------------------------- stats.jsonl
 
+            probeAt = FarmProbe.Mark(FarmProbe.RowFields, probeAt);
             dir?.Stats.WriteRow(w =>
             {
                 w
@@ -786,6 +819,11 @@ namespace Evosim.Farm
                 .Field("remineralisedWindow", remineralisedWindow)
                 .Field("corpses", world.Corpses.Count)
                 .Field("corpseJoules", world.CorpseJoules)
+                .Field("corpsesSettled", corpsesSettled)
+                .Field("corpseJoulesSettled", corpseJoulesSettled)
+                .Field("corpsesOnReef", corpsesOnReef)
+                .Field("corpseJoulesOnReef", corpseJoulesOnReef)
+                .Field("deathsByAge", world.DeathsByAge)
                 .Field("detritusReturnedTotal", world.DetritusReturnedTotal)
                 .Field("meanAdultScale", alive > 0 ? world.MeanAdultScale : 0f)
                 .Field("meanBirthInvestment", alive > 0 ? world.MeanBirthInvestment : 0f)
@@ -896,6 +934,14 @@ namespace Evosim.Farm
                         .Field("founderJoulesCapped", world.FounderJoulesCapped);
                 }
 
+                // D159. Only in a world of a migrating group, so every other stats row is the
+                // bytes it was: immigrants planted and immigrants refused, both running totals.
+                if (Migrating)
+                {
+                    w.Field("immigrated", world.Immigrated)
+                        .Field("immigrantsRefused", world.ImmigrantsRefused);
+                }
+
                 long[] harnessPhaseMs = sim.HarnessPhaseMs();
 
                 for (int p = 0; p < harnessPhaseMs.Length; p++)
@@ -931,10 +977,37 @@ namespace Evosim.Farm
                 w.BeginArray("floorStockByFloorDecile");
                 for (int d = 0; d < floorDecileShares.Length; d++) w.Value(floorDecileShares[d]);
                 w.EndArray();
+
+                // The contact watch over this row's window and the largest part among the living
+                // (proposals/propose-farm-pace-guard.md, item 1). Round 61's r61-p6103 slowed tenfold
+                // because one part's sphere covered 81,000 cells; these name such a part in the row.
+                // The largest part is its half-diagonal, the radius its contact sphere takes; a tie
+                // goes to the earliest body in the list. On the CPU solver the two counts at the
+                // card's caps read 0.
+                (double largestPart, long largestPartBody, long largestPartParts) = PaceGuard.LargestPart(world);
+
+                ContactWatch watch = sim.Dynamics.Watch;
+                w.Field("contactCandidatesMost", watch.CandidatesMost)
+                    .Field("contactQueriesAtCap", watch.QueriesAtCap)
+                    .Field("contactOverlapsMost", watch.OverlapsMost)
+                    .Field("contactOverlapsMostBody", watch.OverlapsMostBody)
+                    .Field("contactOverlapsMostLinks", (long)watch.OverlapsMostLinks)
+                    .Field("contactOverlapsPastCap", watch.OverlapsPastCap)
+                    .Field("contactCellsMost", watch.CellsMost)
+                    .Field("contactCellsMostBody", watch.CellsMostBody)
+                    .Field("contactCellsMostLinks", (long)watch.CellsMostLinks)
+                    .Field("largestPartMetres", largestPart)
+                    .Field("largestPartBody", largestPartBody)
+                    .Field("largestPartParts", largestPartParts);
             });
+
+            // The window closes with the row. A checkpoint follows the row that closes a window,
+            // so it never holds an open one (ContactWatch).
+            sim.Dynamics.Watch.Reset();
 
             // ---------------------------------------------------- positions.jsonl and poses.jsonl
 
+            probeAt = FarmProbe.Mark(FarmProbe.RowStats, probeAt);
             if (recordPositions)
             {
                 dir.WritePositions(PositionsRow.Write(
@@ -946,6 +1019,7 @@ namespace Evosim.Farm
                 if (dir.Format == RunRecordFormat.Jsonl) WritePoses(sim, dir);
             }
 
+            probeAt = FarmProbe.Mark(FarmProbe.RowPositions, probeAt);
             IReadOnlyList<LineageEvent> lineageEvents = world.DrainLineageEvents();
             if (dir != null)
             {
@@ -956,6 +1030,7 @@ namespace Evosim.Farm
             }
 
             DrainGenomes(world, dir);
+            probeAt = FarmProbe.Mark(FarmProbe.RowLineage, probeAt);
 
             // ---------------------------------------------------------------- the markdown row
 
@@ -1121,6 +1196,15 @@ namespace Evosim.Farm
                 row.Add("**" + (world.PoolSpawns - _lastPoolSpawns).ToString(c) + "**");
             }
 
+            // D159, after the pool and only in a world of a migrating group (Report's Columns says the
+            // same): immigrants planted and refused, running totals as in the stats row, so the window
+            // needs no baseline and the sampler's checkpoint state is what it was.
+            if (Migrating)
+            {
+                row.Add("**" + world.Immigrated.ToString(c) + "**");
+                row.Add(world.ImmigrantsRefused.ToString(c));
+            }
+
             for (int p = 0; p < alivePerPatch.Length; p++) row.Add(alivePerPatch[p].ToString(c));
 
             _lastFloorSpawns = world.FloorSpawns;
@@ -1161,6 +1245,7 @@ namespace Evosim.Farm
                     "mislabelled.");
             }
 
+            FarmProbe.Mark(FarmProbe.RowMarkdown, probeAt);
             return "| " + string.Join(" | ", row) + " |";
         }
 
@@ -1533,6 +1618,18 @@ namespace Evosim.Farm
         /// </remarks>
         private static bool ReadsPerception(Genome genome)
         {
+            // D146: the one brain is wired to every sense of every part from birth, so its genome
+            // alone does not say which channel a link reads (that needs the body's ports). Counted
+            // as perceiving while any link reads a port, which is every founder: an upper bound.
+            if (genome.Brain != null)
+            {
+                var units = new System.Collections.Generic.HashSet<ulong>();
+                foreach (BrainUnit u in genome.Brain.Outputs) units.Add(u.Id);
+                foreach (BrainUnit u in genome.Brain.Hidden) units.Add(u.Id);
+                foreach (BrainLink l in genome.Brain.Links) if (!units.Contains(l.From)) return true;
+                return false;
+            }
+
             for (int n = 0; n < genome.Nodes.Count; n++)
             {
                 NeuronDef[] neurons = genome.Nodes[n].Neurons;

@@ -23,9 +23,10 @@ internal static class Program
     // SnapshotWorld.DevelopWithPlan's rule, repeated.
     private static Phenotype DevelopWithPlan(Genome genome, RunConfig config, int[] counts, List<int[]> lost)
     {
-        if (counts == null && lost == null) return Developer.Develop(genome, config.Development, null, config.Shapes);
+        if (counts == null && lost == null)
+            return Developer.Develop(genome, config.Development, null, config.Shapes, cellTypes: config.CellTypes);
         var paths = new List<int[]>();
-        Phenotype phenotype = Developer.Develop(genome, config.Development, null, config.Shapes, counts, paths);
+        Phenotype phenotype = Developer.Develop(genome, config.Development, null, config.Shapes, counts, paths, config.CellTypes);
         if (lost == null || lost.Count == 0) return phenotype;
         var drop = new bool[phenotype.PartCount];
         bool any = false;

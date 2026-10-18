@@ -1,0 +1,317 @@
+LEAFLESS GRAZER: a hand-built positive control for round 58's mouth
+Written 2026-10-12 from reading the code alone. No process was run: nothing here has been loaded,
+developed or stepped. Marks: [code] read from code, [run] read from a run file, [computed] my
+arithmetic on those, [guessed] judgement with no measurement behind it.
+
+======================================================================================
+0. THE FOUR FILES
+======================================================================================
+
+grazer-04.json          one consumer box, 0.4 m a side (half-extents 0.2), attack 1, intake 1.
+                        This is the body in the brief, without the bladder (section 2 says why).
+grazer-06.json          the same at 0.6 m a side (half-extents 0.3). Kills a bare median leaf in one
+                        step but lives only about 2 minutes on its purse.
+grazer-plate.json       one consumer plate, 0.74 x 0.06 x 0.74 m (half-extents 0.37, 0.03, 0.37),
+                        attack 1, intake 1. Kills a bare median leaf in ONE step, like the 0.6 m cube,
+                        and costs less than the 0.4 m cube. My recommended mouth.
+grazer-plate-late.json  the plate with intake 0, plus a 0.2 m consumer cube (attack 1, intake 1) as
+                        an Indeterminate module that is absent at planting and grows within about
+                        10 s. This is the only one of the four that EVOSIM_INOCULATE_DEPTH actually
+                        places (section 3, finding A).
+
+Shared genes, all four files:
+  format 12, root 0, adultScale 1, Fixed joints, power 0, no neurons, globalBrain [],
+  brain {"outputs":[],"hidden":[],"links":[]}, buoyancyOffset 0, protection 0, toughness 1.
+  reproduction: brood 1, margin 87.2708, mode Lump, gestation 0.5707777, and lifespan 0.9415158.
+  These are copied from genome 167087 (scratch/grazing-fable/r58s1j-mouth.json, a real round-58
+  seed-1 genome that carries a consumer node).
+  investment 1.3: this is NOT 167087's 0.111401. I changed it on purpose (section 3, finding B).
+
+======================================================================================
+1. HOW DIMENSIONS BECOME PART SIZES
+======================================================================================
+
+[code] Developer.Expand: halfExtents = |node.Dimensions x accumulatedScale|, then each axis is
+       raised to at least MinPartHalfExtent (0.01). The root's accumulatedScale is
+       (AdultScale, AdultScale, AdultScale), and each edge multiplies its own Scale into it.
+       So `dimensions` are HALF-extents. Box volume = 8xyz. Box area = 8(xy + yz + zx), built
+       from the drag panels (StandardShapes.BoxShape, PartShape.SurfaceArea).
+[code] The `growth` gene (Determinate or Indeterminate) is D106's module gene: whether a node's
+       count can rise later under the module rule. It is not size growth. Size growth (D087)
+       applies to any body born below its adult size, whatever that gene says.
+[code] At inoculation (World.Inoculate -> NewbornFrom) the body is planted at
+       wanted = investment / brood x (1 - NewbornReserveFraction 0.2).
+       If wanted >= 1 the body is planted as the adult, with birthFraction 1.
+       Otherwise it is adult.Scaled(wanted^(1/3)), birthFraction = tissue ratio (about wanted),
+       and it grows from there.
+[computed] With investment 1.3: wanted = 1.3 x 0.8 = 1.04 >= 1, so every file plants an ADULT.
+       grazer-04 is planted at 0.40 m a side, grazer-06 at 0.60 m, the plate at 0.74 x 0.06 x 0.74.
+       (1.25 would reach exactly 1.0. 1.3 clears the float rounding with margin. At conception the
+       share is capped at 1.25 x adult tissue, so the extra 0.05 only raises the breeding gate by
+       0.05 x tissue.)
+[computed] With 167087's own investment of 0.111401: wanted = 0.0891 and the linear scale is
+       0.0891^(1/3) = 0.447. grazer-04 would be planted at 0.179 m a side with a purse of
+       200 x 0.0891 = 17.8 J and an area of 0.96 x 0.447^2 = 0.19 m^2. That is 0.096 health a step,
+       so about 6 steps to kill a leaf, and the purse goes into growing. Useless as a control.
+
+======================================================================================
+2. BUOYANCY: WHY THE FILES CARRY NO BLADDER
+======================================================================================
+
+[code] Evosim.Dynamics/Fluid.cs (and the same lines in the card kernels, Kernels.F/D.g.cs):
+       excess = TissueExcessDensity (0.02) x BuoyancyModel.ExcessDensityFactor(body.TotalVolume,
+       NeutralBodyVolume). Then per link: netDensity = excess x (1 - lift_i), and the force is
+       -netDensity x mass_i x g / TissueDensity. Mass is volume x one density for every cell type,
+       so all cell types sink alike per cubic metre. Summed over the body, the vertical force is
+       proportional to sum_i V_i (1 - lift_i). Neutral means sum lift_i V_i = sum V_i, which is the
+       brief's rule.
+[code] ExcessDensityFactor = max(0, 1 - (V0/V)^(2/3)), and exactly 0 when V <= V0.
+[run]  Round 58 config: fluid.neutralBodyVolume = 0.25 m^3.
+[computed] So any body whose TOTAL volume is at most 0.25 m^3 feels zero sink, and zero net lift
+       whatever its bladders hold. Lift multiplies a zero.
+         grazer-04       0.064 m^3   neutral, no bladder needed
+         grazer-06       0.216 m^3   neutral, no bladder needed
+         plate           0.0329 m^3  neutral
+         plate-late      0.0409 m^3  neutral (after the module)
+       The median leaf (0.206 m^3) is neutral by the same rule, so its bladders do nothing for
+       depth. They only matter through the D111 buoyancy-offset torque.
+[computed] The brief's bladder, built anyway: half-extents (0.2, 0.2, 0.1) on the 0.4 m cube,
+       lift 3. That gives V_b = 0.032 = V_c/2, and sum lift V = 3 x 0.032 = 0.096 = V_c + V_b,
+       exactly neutral. Total 0.096 m^3, still under 0.25, so it does nothing at all. Its cost:
+       upkeep 2.5 x 0.032 = 0.080 W, lift 0.05 x 3 x 0.032 = 0.0048 W, support
+       0.1 x (0.64/4) x 0.3^2 = 0.0014 W. That is 0.086 W, which shortens the unfed life from
+       358 s to 311 s.
+[code] It also costs bites. Metabolise.HandOverContacts takes the NEAREST part pair of each
+       overlapping body pair, and a bladder has attack 0. A leaf that touches the bladder first
+       takes no damage.
+       Heavy or light? Neither can be chosen for these bodies: below 0.25 m^3 they are exactly
+       neutral. If a body above 0.25 m^3 were ever wanted, I would aim at exactly neutral
+       (lift 3, bladder at half the consumer's volume). Being slightly heavy sinks it to the bed
+       and slightly light floats it to y = 0, and both leave the leaf layer.
+       To add the bladder anyway, append this node and give the root this edge (nextEdgeId 2):
+         edge: {"id":"0000000000000001","child":1,"terminalOnly":false,
+                "parentAnchor":{"x":1,"y":0,"z":0},"childAnchor":{"x":-1,"y":0,"z":0},
+                "scale":{"x":1,"y":1,"z":1},"orientation":{"x":0,"y":0,"z":0,"w":1},
+                "reflect":{"x":false,"y":false,"z":false}}
+         node: {"cell":"buoyancy","shape":"box","joint":"Fixed","power":0,
+                "drive":{"threshold":0,"reaction":0.1,"hold":0.1,"release":0.1},"lift":3,
+                "recursiveLimit":1,"growth":"Determinate","maxModules":1,"attack":0,"intake":0,
+                "protection":0,"toughness":1,"buoyancyOffset":0,
+                "dimensions":{"x":0.1,"y":0.2,"z":0.2},"jointLimits":[],"edges":[],"neurons":[]}
+         (The dimensions are half-extents 0.1 along the joining x axis.)
+
+======================================================================================
+3. THE INOCULATION PATH
+======================================================================================
+
+[code] Farm Program.cs: the genome file is parsed (GenomeJson.Read) at start-up, but NOT
+       validated. Validation runs inside Developer.Develop when the assay fires. ActOnWorld fires
+       once, at the first metabolic step with t >= EVOSIM_INOCULATE_AT, and calls
+       world.Inoculate(genome, COUNT, -DEPTH): the depth is positive metres, negated. On a resume
+       the four settings are the launcher's (settings.*), not the source config's "assay" group.
+       That group holds count 5 and depth 50, and the env defaults may be the same, so set all
+       four explicitly.
+[code] World.Inoculate:
+  - An empty central brain is wired fresh (CentralWiring.Effective, founder: true). Its outputs
+    are one power and one bend per joint degree of freedom, so a body with no joint gets an empty
+    brain again. No brain runs. [code]
+  - The genome is never mutated. Seeds come from the world's stream. [code]
+  - Purse = FounderEnergyJoules x birthFraction = 200 J x 1 = 200 J. No founder endowment
+    (founderEndowmentSeconds 600 is a floor and trickle founder's, not an inoculant's) and no D124
+    cap. 200 J is the most ANY inoculant can carry in this world: birthFraction <= 1, and the
+    config is fixed on a resume. [code, run]
+  - Planted at birthFraction 1 (adult) with investment 1.3. [code, computed]
+  - x, z, depth: Placement.TryReserveFounder(adult phenotype, ref height). [code]
+  - Lineage row: "e":"b","k":"i","p":-1,"g":0, a new species (D057, parent null), "bf":1,
+    "atk":1, "ink":1 (the late plate also writes ink 1, because the flag is read off the GENOME),
+    "prt":0, "ind":0 (1 for the late plate), "gm":0, "gs":0.5707777. There is NO "src" field
+    (FounderSource.None), no "endow", and none of the landing readings (fsnow, fcol...), which
+    are written for founders only. The genome goes to genomes.jsonl.gz with the id. [code]
+  - A body refused a place counts as a crowded stillbirth and still counts in Inoculated, so
+    COUNT is a ceiling. Compare it with the number of "k":"i" rows. [code]
+
+FINDING A, the important one: for a body WITH A MOUTH, EVOSIM_INOCULATE_DEPTH is ignored in
+round 58's world.
+[code] Inoculate calls EnsureFounderAcceptance, and in round 58 foundersFollowFood,
+       foundersFollowCorpses and foundersFollowFoodDepth are all true [run]. HasMouth(adult)
+       means any part with Intake > 0. For such a body:
+       - x, z are accepted with p = (corpse joules in the 1 m column) / (richest column's). A
+         column with no corpse is never accepted. 512 attempts (AttemptBudget 64 x 8).
+       - The depth is replaced by CorpseDepth: a draw in [y_richest_corpse, + intakeReach 0.5 m]
+         in that column. It is held at least one body radius under the surface, lifted clear of
+         the bed and any reef, and admitted at that height ("atFood").
+[run]  At t = 12,000 (stats.jsonl): 10,037 corpses holding 220.5 kJ, of which 9,630 are settled
+       (196.5 kJ) and 826 are on reefs (24.6 kJ).
+[guessed] So grazer-04, grazer-06 and grazer-plate will be planted right beside corpses: mostly
+       settled on the bed, and some on reef caps at about -3 m. They will start by scavenging,
+       not grazing. That tests INTAKE well and ATTACK only if leaves come by.
+[code] grazer-plate-late has intake 0 at planting (its mouth is a module not yet built). It has no
+       absorptive or photosynthetic part, so acceptance is 1 (uniform over the tank disc,
+       r = R sqrt(u), R = sqrt(22000/pi) = 83.7 m [computed]) and FounderDepth returns null. It
+       is placed at the named depth, raised only by the bed or a reef cap. Then the module rule
+       (WorldModules.ApplyModuleRule, every growth step of 10 s) adds the mouth once
+       Energy > moduleAddReserveSeconds 300 x standing W. That is 300 x 0.315 = 94 J, against
+       about 197 J held [computed]. The mouth's tissue (500 x 0.008 = 4 J) is paid from the
+       reserve, and AdoptPlan refreshes HasIntake [code]. The mouth exists from about t+10 s.
+       The drop rule (reserve < 50 s x W for 100 s) would remove it. Unfed, the body starves
+       about 50 s after crossing that line, so the drop never comes first [computed].
+
+FINDING B: the purse sets the window. Unfed lives (computed, below): grazer-04 358 s,
+       grazer-06 119 s, plate 456 s, plate-late about 485 s. All are much shorter than the
+       2,000 s run. A grazer that does not eat in its first 2 to 8 minutes is dead, and children
+       cannot rescue the line. A child gets 20% of its tissue as reserve (8 J for grazer-04), so it
+       lives about 14 s unless it is born at a meal [computed].
+
+FINDING C: the depth in the brief is not round 58 seed 1's at 12,000 s.
+[run]  stats.jsonl, r58-s1j: meanHeight -3.87 m (sd 3.70) at t = 12,000, then -5.31 at 12,500,
+       -5.98 at 13,000, -7.02 at 13,500 and -7.67 m (sd 5.38) at 14,000. 2,876 of the 2,884 living
+       are photosynthetic, so this is the leaves. The brief's -11 m (sd 7) does not match this
+       seed at this time. I propose a depth of 4 m.
+
+======================================================================================
+4. COSTS, PURSE, BLOW, REACH (round 58 prices)
+======================================================================================
+
+[code] Standing watts (Metabolism.StepAt at depth, no food): the sum over parts of
+       (cell upkeep W/m^3 x V)
+       + attackWattsPerUnit x attack x area + intakeWattsPerUnit x intake x area
+       + toughness above 1 x 0.1 x V + offset price x |offset| x V
+       + support 0.1 x (area/4) x distance-from-root^2,
+       all multiplied by the repair factor lifespan^ageRepairExponent = 0.9415158^0.5 = 0.97031.
+       Senescence wear is 1 (doubling 0). Consumer upkeep is 6 W/m^3 [run].
+[code] Blow (WorldMouth.DamageOf): attack x part area x 0.5 s per metabolic step (0.5 s,
+       EnvBinding.MetabolicStepSeconds), minus the defender part's protection x its area. It is
+       taken as a share of the pool, volume x toughness x 13. Healing is 0.01/s, paid in J.
+       One contact entry per overlapping body pair per step, between the nearest parts.
+[code] Intake (WorldMouth.ApplyIntake): sum of intake x area, in units/s of 100 J, from any
+       corpse whose centre is within r_corpse + 0.5 m of the body's position.
+       r_corpse = (3 x J/500 / 4pi)^(1/3). Shared pro rata among mouths. 20% waste goes to the
+       snow. NO handling cost: handlingCostPerJouleEaten applies only to PoolDrawn, the cell
+       filter path.
+
+Median leaf (economics.txt and the brief): root sheet 0.0425 to 0.043 m^3, 7.03 m^2, pool
+0.55 to 0.56; main bladder 0.163 m^3, pool 2.12; body tissue 102.9 J.
+
+[computed]                grazer-04     grazer-06     plate          plate-late (after module)
+  volume m^3              0.064         0.216         0.032856       0.032856 + 0.008
+  area m^2                0.96          2.16          1.2728         1.2728 + 0.24
+  upkeep W                0.384         1.296         0.1971         0.1971 + 0.048
+  attack W                0.096         0.216         0.1273         0.1273 + 0.024
+  intake W                0.096         0.216         0.1273         0     + 0.024
+  support W               0             0             0              0.0001
+  raw W                   0.576         1.728         0.4517         0.4205 (0.3244 before)
+  x repair 0.97031 = W    0.559         1.677         0.438          0.408  (0.315 before)
+  tissue J                32            108           16.4           20.4
+  unfed life on 200 J     358 s         119 s         456 s          about 485 s
+  blow, health per step   0.48          1.08          0.636          0.636 (plate) / 0.12 (cube)
+  steps to kill leaf root 2             1             1              1
+  steps to kill bladder   5             2             4              4
+  leaf protection that
+   stops all damage       > 0.137       > 0.307       > 0.181        > 0.181
+  intake J/s (kept)       96 (76.8)     216 (172.8)   127 (101.8)    24 (19.2)
+
+  The protection thresholds are blow per second over the leaf's 7.03 m^2. Since D106, 3% of the
+  living carry protection [run: protectionShare 0.0298]. A leaf with a cuticle above that line
+  cannot be hurt by this body.
+  Snow scavenging by the consumer cell's old Acquire path: about +0.01 to +0.02 W at
+  edibleDetritusHere 0.28 to 0.45 [run, units assumed J/m^3, guessed]. Too small to matter.
+  Ageing: Gompertz with K = ln2/31 = 0.02236 and doubling 0.2 x 3000 x 0.9415 = 565 s. At age
+  2,000 s the survival is exp(-0.02236 x (2^(2000/565) - 1)) = exp(-0.238) = 0.79, so about 21%
+  die of age by the end of the window [code, computed]. Lifespan 1.5 would make it 8%, at
+  x1.225 upkeep.
+
+Reach against the median leaf's corpse (the corpse is the whole body, root killed, plus its
+reserve R; it sits at the leaf's own position) [computed]:
+  R = 0 J:   103 J, r 0.366 m, reach 0.866 m    R = 50 J:  153 J, r 0.418, reach 0.918
+  R = 150 J: 253 J, r 0.494,   reach 0.994      R = 250 J: 353 J, r 0.553, reach 1.053
+  The sheet's half-span is 1.359 x 0.647 m. A grazer touching the sheet face is 0.2 m off the
+  plane (0.03 m for the plate), so the reach disc on the sheet has radius about 0.84 m. That
+  covers about 55% of the sheet's face (disc 2.22 m^2 less two side caps of 0.143 m^2, over
+  3.52 m^2). A bite near the tips leaves the corpse out of reach.
+  Yield per kill at R = 0: 103 x 0.8 = 82 J kept, which pays grazer-04 for 147 s and the plate
+  for 188 s. The corpse sinks at 0.05 m/s while the neutral grazer stays. grazer-04 empties it
+  in about 1.1 s. The late plate's 0.2 m mouth takes 103/24 = 4.3 s, during which the corpse
+  drops about 0.2 m.
+
+Breeding gate (lump, LumpGate): investment x tissue + overhead(child) + margin x W [code].
+  grazer-04: 1.3 x 32 + max(50, 2 x 33.3) + 87.27 x 0.559 = 41.6 + 66.6 + 48.8 = 157 J.
+  plate: 1.3 x 16.4 + 50 + 87.27 x 0.438 = 21.3 + 50 + 38.2 = 110 J. [computed]
+
+checking scratch/grazing-fable/economics.txt:
+  right: the upkeep, claw and mouth watts (0.38/0.10/0.10 at 0.4 m; 1.30/0.22/0.22 at 0.6 m);
+    the blow of 0.96 health/s and kills in 2 steps at 0.4 m and 1 step at 0.6 m; the mouth's
+    96 and 216 J/s; the corpse radius of 0.37 m and reach of 0.87 m; 82 J kept.
+  missing: the lifespan repair factor (x0.970 for 167087's lifespan).
+  wrong: "after handling 74 J". The mouth's intake is not charged handling [code]. And "pays
+    0.86 W standing for 86 s": 0.86 W is not any grazer's standing cost. At grazer-04's
+    0.559 W, 82 J pays 147 s.
+
+======================================================================================
+5. VALIDATION THE FILES MUST PASS, and what they do
+======================================================================================
+[code] GenomeJson.Read (format 12) requires every one of: format, root, adultScale, lifespan,
+       reproduction {brood, investment, margin, mode, gestation}, nodes[], globalBrain[],
+       nextEdgeId, brain {outputs, hidden, links}. Per node: cell, shape, joint, power, drive
+       {threshold, reaction, hold, release}, lift, recursiveLimit, growth, maxModules, attack,
+       intake, protection, toughness, buoyancyOffset, dimensions, jointLimits, edges, neurons.
+       Per edge (format 12): id as a hex string, child, terminalOnly, parentAnchor, childAnchor,
+       scale, orientation, reflect. Enums by name. "id" at the top is optional.
+[code] Genome.Validate:
+       - brood >= 1; investment finite and > 0 (no ceiling); margin >= 0;
+         gestation in [0, 1]; mode Lump or Gestation.
+       - adultScale and lifespan > 0.
+       - dimensions positive; recursiveLimit and maxModules >= 0.
+       - jointLimits length = joint DOF (Fixed = 0). Power 0 with no joint.
+       - lift only on buoyancy, <= 3.
+       - buoyancyOffset in [-1, 1]. Round 58 prices it (0.02), so a nonzero value is allowed but
+         billed.
+       - attack/intake/protection in [0, cap] and toughness in [1, cap]. The consumer caps are
+         attack 1, intake 1, protection 0.5, toughness 2 (StandardCellTypes ConsumerCell and the
+         config's cellTypes agree).
+       - edge child in range, scale nonzero, orientation finite.
+       - with a central brain, no neurons on nodes and an empty globalBrain.
+       All four files satisfy these by inspection. None of them has been run through the
+       validator.
+[code] World.Inoculate also refuses a body under the newborn mass floor (0.05 kg in the lightest
+       rigid group). The lightest part here, the late plate's mouth, is 8 kg. Admit refuses
+       self-overlap at depth fraction 0.1. The mouth sits face to face on the plate, with zero
+       overlap.
+
+======================================================================================
+6. PROPOSED INOCULATION (resume r58-s1j at a 12,000 s checkpoint, run to about 14,000 s)
+======================================================================================
+Attack test at the leaves' depth (recommended):
+  EVOSIM_INOCULATE       = D:\Projects\experiments\evolution-simulator\scratch\grazer-test\grazer-plate-late.json
+  EVOSIM_INOCULATE_AT    = 12000
+  EVOSIM_INOCULATE_COUNT = 20
+  EVOSIM_INOCULATE_DEPTH = 4
+Intake test (any of the mouth bodies; the depth is overridden by D129 and placed at corpses):
+  EVOSIM_INOCULATE       = ...\grazer-plate.json   (or grazer-04.json / grazer-06.json)
+  EVOSIM_INOCULATE_AT    = 12000
+  EVOSIM_INOCULATE_COUNT = 20
+  EVOSIM_INOCULATE_DEPTH = 4   (inert for these bodies, but set it rather than inherit 50)
+Count 20 [guessed]: leaves at about 0.016 per m^3 in the top 8 m (2,884 over 22,000 m^2) [computed
+from run]. The encounter cross-section is about 9.6 m^2 (grazer radius plus the leaf's
+half-span). Both bodies are neutral tracers in the same water, so they meet only through shear,
+at about 0.005 to 0.03 m/s [guessed]. That is one contact per 300 to 1,600 s per grazer, against
+unfed lives of about 450 s. Twenty grazers should yield a handful of contacts.
+
+======================================================================================
+7. WHAT COULD GO WRONG (check in the smoke)
+======================================================================================
+- A malformed genome fails only at the assay instant: Read at start-up does not validate. A smoke
+  run should resume from a checkpoint and inoculate one step after it.
+- D129 placement (finding A): the simple mouths land on corpses. If no column is accepted in 512
+  draws, the copy is a crowded stillbirth (unlikely at 220 kJ of corpses).
+- plate-late depends on the module rule firing for an inoculant. The code says it will
+  (IndeterminateNodes is set in Admit; round 58 has 36 module adds on file), but this has never
+  been observed for an inoculant. Read moduleAdds rising by about COUNT within 10 s, and the
+  grazers' HasIntake through intakeShare.
+- The purse gives a short window (finding B). Read "starved" deaths at about 360 to 490 s after
+  planting, unless they ate.
+- The bladder and the nearest-part rule are why the files carry no bladder (section 2).
+- Leaves with a cuticle above about 0.14 to 0.31 (by body) are immune.
+- About 21% age deaths in 2,000 s.
+- grazer-06 starves in about 2 minutes. Prefer the plate for a one-step kill.
+- The card path: module rebuilds and contacts both occur in round 58's own record, so nothing new
+  is asked of the solver. The one-step-kill margin depends on the 0.5 s metabolic step [code].

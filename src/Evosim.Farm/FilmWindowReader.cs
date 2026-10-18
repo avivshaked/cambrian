@@ -55,6 +55,13 @@ namespace Evosim.Farm
         public readonly List<string> SourcesDiffer = new List<string>();
 
         public bool EndedExtinct;
+
+        /// <summary>Corpses written (D127), and the genome rows taken from the run for those standing at the start.</summary>
+        public int Corpses;
+
+        public int CorpseSteps;
+        public int CorpseGenomes;
+        public int CorpsesWithoutAGenome;
     }
 
     /// <summary>One birth, death or bite inside a window, from <c>events.jsonl</c>.</summary>
@@ -87,6 +94,74 @@ namespace Evosim.Farm
 
         public int[] ModuleCounts;
         public List<int[]> LostPaths;
+    }
+
+    /// <summary>
+    /// A corpse in a film window (D127): what does not change while it stands, and where it was at
+    /// each metabolic step (<c>corpses.jsonl.gz</c>, <see cref="FilmWindow"/>'s remarks).
+    /// </summary>
+    public sealed class FilmWindowCorpse
+    {
+        public long Id;
+
+        /// <summary>The second it was founded inside the window, or NaN for one standing at the start.</summary>
+        public double Born = double.NaN;
+
+        public double FirstJoules;
+
+        /// <summary>The linear scale its body died at, against its adult (<c>Phenotype.ScaledBy</c>).</summary>
+        public float ScaledBy = 1f;
+
+        /// <summary>Whether the rotation below is the one its body died in. Without one it stands in the developer's frame.</summary>
+        public bool HasPose;
+
+        public float Qx;
+        public float Qy;
+        public float Qz;
+        public float Qw = 1f;
+
+        /// <summary>The plan it died on, or null for the genome's own minimum.</summary>
+        public int[] ModuleCounts;
+
+        public List<int[]> LostPaths;
+
+        /// <summary>The first step second at which the window no longer holds it, or infinity.</summary>
+        public double Gone = double.PositiveInfinity;
+
+        internal readonly List<double> Seconds = new List<double>();
+
+        /// <summary>Five per sample: x, y, z, the share of its first joules, and 1 when settled.</summary>
+        internal readonly List<float> Values = new List<float>();
+
+        public int SampleCount => Seconds.Count;
+
+        /// <summary>The second of one sample: its founding or first sight, then each step.</summary>
+        public double SampleSeconds(int k) => Seconds[k];
+
+        internal void Add(double t, float x, float y, float z, float fraction, bool settled)
+        {
+            // A corpse seen with its pose at the window's opening is written twice at that second,
+            // once in its facts row and once in the step row.
+            if (Seconds.Count > 0 && t <= Seconds[Seconds.Count - 1] + 1e-9) return;
+
+            Seconds.Add(t);
+            Values.Add(x);
+            Values.Add(y);
+            Values.Add(z);
+            Values.Add(fraction);
+            Values.Add(settled ? 1f : 0f);
+        }
+    }
+
+    /// <summary>A corpse at one second: its place, and the share of its first joules it still holds.</summary>
+    public struct FilmWindowCorpsePlace
+    {
+        public FilmWindowCorpse Corpse;
+        public float X;
+        public float Y;
+        public float Z;
+        public float Fraction;
+        public bool Settled;
     }
 
     /// <summary>
@@ -125,6 +200,9 @@ namespace Evosim.Farm
         private readonly Dictionary<long, int> _birthOf = new Dictionary<long, int>();
         private readonly Dictionary<long, int> _deathOf = new Dictionary<long, int>();
         private readonly List<string> _notes = new List<string>();
+        private readonly Dictionary<long, FilmWindowCorpse> _corpses = new Dictionary<long, FilmWindowCorpse>();
+        private readonly List<FilmWindowCorpse> _corpseList = new List<FilmWindowCorpse>();
+        private readonly List<double> _corpseSteps = new List<double>();
 
         /// <summary>The window's directory, full path.</summary>
         public string Directory { get; }
@@ -186,6 +264,7 @@ namespace Evosim.Farm
                 reader.ReadGenomes();
                 reader.ReadPlans();
                 reader.ReadEvents();
+                reader.ReadCorpses();
             }
             catch
             {
@@ -274,6 +353,10 @@ namespace Evosim.Farm
                 PartedField = Str(v, "partedField"),
                 ConfigDiffers = Str(v, "configDiffers"),
                 EndedExtinct = v.Has("endedExtinct") && v["endedExtinct"].Kind == JsonNode.NodeKind.Bool && v["endedExtinct"].AsBool(),
+                Corpses = Int(v, "corpses"),
+                CorpseSteps = Int(v, "corpseSteps"),
+                CorpseGenomes = Int(v, "corpseGenomes"),
+                CorpsesWithoutAGenome = Int(v, "corpsesWithoutAGenome"),
             };
 
             if (v.Has("sourcesDiffer") && v["sourcesDiffer"].Kind == JsonNode.NodeKind.Array)
@@ -696,6 +779,261 @@ namespace Evosim.Farm
             }
         }
 
+        // ---------------------------------------------------------------- the corpses (D127)
+
+        /// <summary>Corpses the window holds, founded inside it or standing at its start.</summary>
+        public int CorpseCount => _corpseList.Count;
+
+        /// <summary>Every corpse the window holds, in the order their facts were written.</summary>
+        public IReadOnlyList<FilmWindowCorpse> Corpses => _corpseList;
+
+        /// <summary>A corpse's facts, or false when the window has none for the id.</summary>
+        public bool TryCorpse(long id, out FilmWindowCorpse corpse) => _corpses.TryGetValue(id, out corpse);
+
+        /// <summary>
+        /// Every corpse standing at a second, with its place and the share of its first joules it
+        /// still holds, into a list the caller keeps.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// A corpse founded inside the window is drawn from its founding second, its first sample. A
+        /// frame holds the world's living bodies, and the body left them at that metabolic step,
+        /// so the frame there is the first without it. One standing at the start is drawn from the
+        /// first frame, and every corpse is gone from its <see cref="FilmWindowCorpse.Gone"/> second.
+        /// </para>
+        /// <para>
+        /// The world moves a corpse only at a metabolic step, so between two steps it has no place of
+        /// its own. The straight line between them is the player's, and it keeps a sinking corpse
+        /// from jumping a few centimetres twice a second. After its last sample it holds still.
+        /// </para>
+        /// </remarks>
+        public void CorpsesAt(double seconds, List<FilmWindowCorpsePlace> into)
+        {
+            if (into == null) return;
+            into.Clear();
+
+            for (int h = 0; h < _corpseList.Count; h++)
+            {
+                FilmWindowCorpse corpse = _corpseList[h];
+                List<double> times = corpse.Seconds;
+                int n = times.Count;
+                if (n == 0) continue;
+
+                if (seconds < times[0] - Eps) continue;
+
+                if (seconds >= corpse.Gone - Eps) continue;
+
+                int k = LastAtOrBefore(times, seconds);
+                if (k < 0) k = 0;
+
+                List<float> v = corpse.Values;
+                int a = 5 * k;
+
+                var place = new FilmWindowCorpsePlace
+                {
+                    Corpse = corpse,
+                    X = v[a],
+                    Y = v[a + 1],
+                    Z = v[a + 2],
+                    Fraction = v[a + 3],
+                    Settled = v[a + 4] > 0.5f,
+                };
+
+                if (k + 1 < n && seconds > times[k])
+                {
+                    int b = a + 5;
+                    float s = (float)((seconds - times[k]) / (times[k + 1] - times[k]));
+
+                    place.X += s * (v[b] - v[a]);
+                    place.Y += s * (v[b + 1] - v[a + 1]);
+                    place.Z += s * (v[b + 2] - v[a + 2]);
+                    place.Fraction += s * (v[b + 3] - v[a + 3]);
+                }
+
+                into.Add(place);
+            }
+        }
+
+        /// <summary>The index of the last second at or before a time, or -1 when there is none.</summary>
+        private static int LastAtOrBefore(List<double> times, double seconds)
+        {
+            int lo = 0;
+            int hi = times.Count - 1;
+            int found = -1;
+
+            while (lo <= hi)
+            {
+                int mid = (lo + hi) >> 1;
+
+                if (times[mid] <= seconds + Eps)
+                {
+                    found = mid;
+                    lo = mid + 1;
+                }
+                else
+                {
+                    hi = mid - 1;
+                }
+            }
+
+            return found;
+        }
+
+        private void ReadCorpses()
+        {
+            string path = Path.Combine(Directory, FilmWindow.CorpsesFileName);
+
+            // A window written before the word changed (2026-09-28) holds the same rows under the
+            // old name. Refused rather than read as a window with no corpses, which is what a
+            // missing file means; a window is recorded again from its run's checkpoint in minutes.
+            if (File.Exists(Path.Combine(Directory, "husks.jsonl.gz")))
+            {
+                throw new InvalidDataException(
+                    "This window was written before its corpses file was renamed from husks.jsonl.gz to " +
+                    FilmWindow.CorpsesFileName + " (2026-09-28), so its corpses would read as none. Record " +
+                    "it again from the run's checkpoint with --film-window.");
+            }
+
+            if (!File.Exists(path)) return;
+
+            int orphans = 0;
+            int unreadable = 0;
+
+            using (GzipMemberReader reader = GzipMemberReader.Open(path))
+            {
+                foreach (string line in reader.Lines())
+                {
+                    try
+                    {
+                        if (line.StartsWith(StepHead, StringComparison.Ordinal)) orphans += ReadCorpseStep(line);
+                        else if (line.StartsWith(CorpseHead, StringComparison.Ordinal)) ReadCorpseFacts(line);
+                        else unreadable++;
+                    }
+                    catch (FormatException)
+                    {
+                        unreadable++;
+                    }
+                }
+
+                if (reader.Torn) _notes.Add(FilmWindow.CorpsesFileName + ": " + reader.TornNote);
+            }
+
+            // A corpse is gone at the first step after its last sample: the world dissolved it, or a
+            // mouth took the last of it, at that metabolic step.
+            foreach (FilmWindowCorpse corpse in _corpseList)
+            {
+                if (corpse.Seconds.Count == 0) continue;
+
+                double last = corpse.Seconds[corpse.Seconds.Count - 1];
+                int k = LastAtOrBefore(_corpseSteps, last);
+
+                if (k + 1 < _corpseSteps.Count) corpse.Gone = _corpseSteps[k + 1];
+            }
+
+            if (orphans > 0) _notes.Add(orphans + " corpse place(s) in a step row with no facts row, not drawn");
+            if (unreadable > 0) _notes.Add(unreadable + " corpse row(s) this build cannot read, not drawn");
+        }
+
+        private const string StepHead = "{\"k\":\"step\"";
+        private const string CorpseHead = "{\"k\":\"corpse\"";
+
+        /// <summary>
+        /// One step row, read by hand: a few thousand corpses of six numbers each, where a tree of
+        /// nodes a number would cost more than the rest of the window. Returns the places whose corpse
+        /// has no facts row, which the writer never leaves.
+        /// </summary>
+        private int ReadCorpseStep(string line)
+        {
+            int tAt = line.IndexOf("\"t\":", StringComparison.Ordinal);
+            int hAt = line.IndexOf("\"h\":[", StringComparison.Ordinal);
+            if (tAt < 0 || hAt < 0) throw new FormatException("a step row without its second or its places");
+
+            int tEnd = line.IndexOf(',', tAt);
+            double t = double.Parse(line.Substring(tAt + 4, tEnd - tAt - 4), NumberStyles.Float, CultureInfo.InvariantCulture);
+
+            if (_corpseSteps.Count == 0 || t > _corpseSteps[_corpseSteps.Count - 1]) _corpseSteps.Add(t);
+
+            int open = hAt + 5;
+            int close = line.LastIndexOf(']');
+            if (close <= open) return 0;
+
+            string[] cells = line.Substring(open, close - open).Split(',');
+            int orphans = 0;
+
+            for (int i = 0; i + 5 < cells.Length; i += 6)
+            {
+                long id = long.Parse(cells[i], NumberStyles.Integer, CultureInfo.InvariantCulture);
+
+                if (!_corpses.TryGetValue(id, out FilmWindowCorpse corpse))
+                {
+                    orphans++;
+                    continue;
+                }
+
+                corpse.Add(t, Float(cells[i + 1]), Float(cells[i + 2]), Float(cells[i + 3]), Float(cells[i + 4]), cells[i + 5] == "1");
+            }
+
+            return orphans;
+        }
+
+        private static float Float(string text) =>
+            float.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture);
+
+        private void ReadCorpseFacts(string line)
+        {
+            JsonNode row = Json.Parse(line);
+            long id = (long)row["id"].AsDouble();
+            if (_corpses.ContainsKey(id)) return;
+
+            var corpse = new FilmWindowCorpse
+            {
+                Id = id,
+                Born = Num(row, "born"),
+                FirstJoules = Num(row, "first"),
+                ScaledBy = row.Has("scaledBy") && row["scaledBy"].Kind == JsonNode.NodeKind.Number ? (float)row["scaledBy"].AsDouble() : 1f,
+                HasPose = row.Has("pose") && row["pose"].Kind == JsonNode.NodeKind.Bool && row["pose"].AsBool(),
+            };
+
+            if (corpse.HasPose && row.Has("rot") && row["rot"].Count == 4)
+            {
+                JsonNode q = row["rot"];
+                corpse.Qx = (float)q[0].AsDouble();
+                corpse.Qy = (float)q[1].AsDouble();
+                corpse.Qz = (float)q[2].AsDouble();
+                corpse.Qw = (float)q[3].AsDouble();
+            }
+
+            var counts = new List<int>();
+            if (row.Has("moduleCounts")) foreach (JsonNode count in row["moduleCounts"].Items()) counts.Add(count.AsInt());
+
+            var lost = new List<int[]>();
+            if (row.Has("lostPaths"))
+            {
+                foreach (JsonNode lostPath in row["lostPaths"].Items())
+                {
+                    var steps = new List<int>();
+                    foreach (JsonNode step in lostPath.Items()) steps.Add(step.AsInt());
+                    lost.Add(steps.ToArray());
+                }
+            }
+
+            // Empty is the genome's own minimum, as the plans' first row reads it.
+            corpse.ModuleCounts = counts.Count > 0 ? counts.ToArray() : null;
+            corpse.LostPaths = lost.Count > 0 ? lost : null;
+
+            if (row.Has("at") && row["at"].Count == 5)
+            {
+                JsonNode at = row["at"];
+                corpse.Add(
+                    row["t"].AsDouble(),
+                    (float)at[0].AsDouble(), (float)at[1].AsDouble(), (float)at[2].AsDouble(),
+                    (float)at[3].AsDouble(), at[4].AsDouble() > 0.5d);
+            }
+
+            _corpses[id] = corpse;
+            _corpseList.Add(corpse);
+        }
+
         // ---------------------------------------------------------------- housekeeping
 
         /// <summary>
@@ -724,10 +1062,10 @@ namespace Evosim.Farm
 
             return string.Format(
                 inv,
-                "{0}: {1} frame(s), {2}, {3} genome(s), {4} plan row(s), {5} event(s); {6}{7}",
+                "{0}: {1} frame(s), {2}, {3} genome(s), {4} plan row(s), {5} event(s), {8} corpse(s); {6}{7}",
                 Directory, FrameCount, span, GenomeCount, PlanRows, _events.Count,
                 ProvenanceWord,
-                v == null ? " (no verdict)" : " (" + v.Reason + ")");
+                v == null ? " (no verdict)" : " (" + v.Reason + ")", _corpseList.Count);
         }
 
         public void Dispose()

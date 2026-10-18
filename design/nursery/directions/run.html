@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nursery room · run · directions</title>
+<script>
+  // Three visual directions for the run screen, one markup. ?dir=a (deep ocean,
+  // bioluminescent), ?dir=b (scientific instrument), ?dir=c (editorial print).
+  document.documentElement.dataset.dir = (new URLSearchParams(location.search).get('dir') || 'a');
+</script>
+<style>
+@font-face { font-family: "Plex Mono"; font-weight: 400; src: url("../../../unity/Assets/Theatre/UI/Fonts/IBMPlexMono-Regular.ttf"); }
+@font-face { font-family: "Plex Mono"; font-weight: 600; src: url("../../../unity/Assets/Theatre/UI/Fonts/IBMPlexMono-SemiBold.ttf"); }
+@font-face { font-family: "Plex Sans"; font-weight: 400; src: url("../../../unity/Assets/Theatre/UI/Fonts/IBMPlexSans-Regular.ttf"); }
+
+/* ============ layout, shared by all three directions ============ */
+* { box-sizing: border-box; }
+html { font-size: clamp(11px, min(1.2vh, 0.68vw), 22px); }
+html, body { margin: 0; height: 100%; }
+body { width: 100vw; height: 100vh; min-width: 1280px; min-height: 680px; overflow: hidden; display: flex; flex-direction: column; position: relative;
+  font-family: var(--sans); font-size: 1rem; color: var(--ink); background: var(--bg); }
+.mono, .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.strip { height: 3.385rem; flex-shrink: 0; display: flex; align-items: center; padding: 0 1.538rem; position: relative; z-index: 1; }
+.brand { font-family: var(--brand-font); font-size: 1.308rem; margin-right: 2.154rem; letter-spacing: var(--brand-ls); }
+.tabs { display: flex; height: 100%; }
+.tab { display: flex; align-items: center; padding: 0 1.231rem; font-size: 0.846rem; letter-spacing: 1.3px; color: var(--ink-lo); border-bottom: 2px solid transparent; }
+.tab b { font-family: var(--mono); font-weight: 400; font-size: 0.769rem; margin-right: 0.462rem; color: var(--ink-dim); }
+.tab.on { color: var(--ink-hi); border-bottom-color: var(--run); }
+.spacer { flex: 1; }
+.machine { display: flex; align-items: center; font-family: var(--mono); font-size: 0.846rem; color: var(--ink-lo); }
+.machine > * + * { margin-left: 0.923rem; }
+.meter { position: relative; width: 8.462rem; height: 0.462rem; background: var(--track); border-radius: 0.231rem; }
+.meter i { position: absolute; left: 0; top: 0; bottom: 0; width: 25%; background: var(--ink); border-radius: 0.231rem; }
+.meter u { position: absolute; top: -0.231rem; bottom: -0.231rem; left: 50%; width: 2px; background: var(--ink-hi); }
+.hi { color: var(--ink-hi); }
+
+.page { flex: 1; min-height: 0; display: grid; gap: 1.077rem; padding: 0.308rem 1.538rem 1.231rem; position: relative; z-index: 1;
+  grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: 7.385rem minmax(0, 1.45fr) minmax(0, 1fr); }
+.lower { grid-column: 1 / -1; display: grid; gap: 1.077rem; grid-template-columns: repeat(5, minmax(0, 1fr)); min-height: 0; }
+.panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; padding: 1.077rem 1.231rem; }
+.head { display: flex; align-items: baseline; margin-bottom: 0.615rem; flex-shrink: 0; }
+.kicker { font-size: 0.769rem; letter-spacing: 1.6px; text-transform: uppercase; color: var(--ink-dim); }
+.q { margin-left: 0.769rem; font-family: var(--q-font); font-size: var(--q-size); color: var(--q-color); }
+.head .aside { margin-left: auto; font-family: var(--mono); font-size: 0.769rem; color: var(--ink-lo); display: flex; align-items: center; }
+.tag { border: 1px solid var(--rule-strong); border-radius: var(--tag-r); padding: 0 0.462rem; line-height: 1.231rem; font-size: 0.769rem; margin-left: 0.385rem; color: var(--ink-lo); font-family: var(--mono); }
+.tag.on { background: var(--ink-hi); color: var(--bg-solid); border-color: var(--ink-hi); }
+svg.chart { display: block; width: 100%; flex: 1; min-height: 0; overflow: visible; }
+svg text { font-family: var(--mono); font-size: 0.769rem; fill: var(--ink-lo); }
+
+/* band: identity and the headline numbers */
+.band { grid-column: 1 / -1; flex-direction: row; align-items: center; padding: 0.923rem 1.692rem; }
+.ident { min-width: 0; max-width: 43.077rem; }
+.ident .name { font-family: var(--title-font); font-size: 1.846rem; color: var(--ink-hi); letter-spacing: var(--title-ls); white-space: nowrap; }
+.ident .name small { font-family: var(--mono); font-size: 1rem; color: var(--ink-lo); margin-right: 0.615rem; letter-spacing: 0; }
+.ident .desc { font-size: 0.923rem; color: var(--ink); margin-top: 0.231rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat { display: flex; flex-direction: column; margin-left: 2.615rem; white-space: nowrap; }
+.stat .k { font-size: 0.769rem; letter-spacing: 1.4px; text-transform: uppercase; color: var(--ink-dim); }
+.stat .v { font-family: var(--big-font); font-size: 2.308rem; line-height: 1.05; color: var(--ink-hi); margin-top: 2px; font-weight: var(--big-weight); }
+.stat .v small { font-family: var(--sans); font-size: 0.923rem; color: var(--ink-lo); font-weight: 400; margin-left: 0.308rem; }
+.stat .v.sm { font-size: 1.538rem; }
+.state { display: flex; align-items: center; font-size: 0.923rem; letter-spacing: 1.6px; color: var(--ink-hi); margin-left: 2.615rem; white-space: nowrap; }
+.pulse { width: 0.923rem; height: 0.923rem; border-radius: 50%; border: 1.5px solid var(--run); margin-right: 0.769rem; position: relative;
+  background: linear-gradient(90deg, var(--run) 50%, transparent 50%); }
+.pulse::after { content: ""; position: absolute; inset: -0.462rem; border-radius: 50%; border: 1px solid var(--run); animation: ring 2.4s ease-out infinite; }
+@keyframes ring { from { opacity: .8; transform: scale(.5); } to { opacity: 0; transform: scale(1.6); } }
+.ctlpick { display: flex; flex-direction: column; margin-left: 2.615rem; }
+.ctlpick .sel { margin-top: 0.308rem; font-family: var(--mono); font-size: 1rem; color: var(--ink-hi); border: 1px solid var(--rule-strong); border-radius: var(--tag-r); padding: 0.231rem 0.769rem; display: flex; align-items: center; }
+.swatch { display: inline-block; width: 1.385rem; height: 0.615rem; margin-right: 0.615rem; border-radius: 2px; }
+
+/* hero: the search */
+.hero { grid-column: 1 / 8; grid-row: 2; }
+.hero-body { flex: 1; min-height: 0; display: flex; }
+.hero-charts { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.decades { width: 20.615rem; margin-left: 1.385rem; flex-shrink: 0; display: flex; flex-direction: column; }
+.legend { display: flex; flex-wrap: wrap; align-items: center; font-size: 0.846rem; color: var(--ink-lo); margin-bottom: 0.308rem; }
+.legend > span { display: inline-flex; align-items: center; margin-right: 1.231rem; }
+.legend i { display: inline-block; width: 1.538rem; height: 0.231rem; margin-right: 0.462rem; border-radius: 2px; }
+.legend i.band { height: 0.769rem; opacity: .45; }
+table.t { width: 100%; border-collapse: collapse; }
+.t th { font-weight: 400; font-size: 0.731rem; letter-spacing: 1.1px; color: var(--ink-dim); text-transform: uppercase; text-align: right; padding: 0 0.385rem 0.385rem; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+.t th:first-child, .t td:first-child { text-align: left; }
+.t td { font-family: var(--mono); font-size: 0.885rem; text-align: right; padding: 0 0.385rem; height: 1.769rem; border-bottom: 1px solid var(--rule); color: var(--ink); white-space: nowrap; }
+.t td.hi { color: var(--ink-hi); }
+
+/* exam */
+.exam { grid-column: 8 / 13; grid-row: 2; }
+.exam .note { font-size: 0.846rem; line-height: 1.5; color: var(--ink-lo); margin: 0 0 0.615rem; }
+.exam td.c { font-size: 0.846rem; color: var(--ink-lo); }
+.exam td.c.sig { color: var(--sig-ink); background: var(--sig-bg); font-weight: var(--sig-weight); }
+.exam td.c.sig.neg { color: var(--ink-hi); background: none; box-shadow: inset 0 -2px 0 var(--sig); }
+.exam tr.pend td { color: var(--ink-dim); }
+.exam tr.pool td { border-top: 1px solid var(--rule-strong); color: var(--ink-dim); }
+.swim { position: relative; display: inline-block; width: 11.538rem; height: 0.462rem; background: var(--track); border-radius: 0.231rem; vertical-align: middle; margin-right: 0.615rem; overflow: hidden; }
+.swim i { position: absolute; left: 0; top: 0; bottom: 0; width: 59%; background: var(--run); border-radius: 0.231rem; }
+.swim i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.7), transparent); animation: sweep 1.8s linear infinite; }
+@keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+/* lower panels */
+.mult { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 0.615rem 1.077rem; }
+.mult > div, .stack > div { display: flex; flex-direction: column; min-height: 0; }
+.mult .lab, .stack .lab { font-size: 0.846rem; color: var(--ink-lo); display: flex; align-items: baseline; }
+.mult .lab b, .stack .lab b { margin-left: auto; font-family: var(--mono); font-weight: 400; color: var(--ink-hi); font-size: 0.846rem; }
+.stack { flex: 1; min-height: 0; display: grid; grid-template-rows: 1fr 1fr auto; gap: 0.462rem; }
+.fields { display: grid; grid-template-columns: 1fr 1fr; column-gap: 1.231rem; }
+.f { display: flex; justify-content: space-between; font-size: 0.846rem; color: var(--ink-lo); height: 1.462rem; align-items: center; border-bottom: 1px solid var(--rule); }
+.f b { font-family: var(--mono); font-weight: 400; color: var(--ink-hi); }
+.thumbs { display: flex; margin-bottom: 0.615rem; }
+.thumb { flex: 1; margin-right: 0.615rem; font-size: 0.769rem; color: var(--ink-lo); line-height: 1.35; min-width: 0; }
+.thumb:last-child { margin-right: 0; }
+.thumb .img { height: 4.308rem; border-radius: var(--tag-r); border: 1px solid var(--rule-strong); margin-bottom: 0.308rem; overflow: hidden; background: var(--thumb-bg); }
+.thumb b { color: var(--ink-hi); font-weight: 400; }
+.feed { flex: 1; min-height: 0; overflow: hidden; }
+.act { font-size: 0.846rem; line-height: 1.45; padding: 0.385rem 0; border-bottom: 1px solid var(--rule); color: var(--ink); }
+.act .w { font-family: var(--mono); color: var(--ink-lo); margin-right: 0.462rem; }
+.act .who { font-family: var(--mono); color: var(--ink-hi); margin-right: 0.308rem; }
+.act q { color: var(--ink-lo); }
+.act.new { animation: arrive 3s ease-out infinite; }
+@keyframes arrive { 0% { background: var(--flash); } 60%, 100% { background: transparent; } }
+.ptabs { display: flex; margin-left: auto; }
+.ptabs span { font-size: 0.769rem; letter-spacing: 1.4px; color: var(--ink-dim); margin-left: 0.923rem; padding-bottom: 2px; }
+.ptabs span.on { color: var(--ink-hi); border-bottom: 1px solid var(--run); }
+
+/* chart marks; colours from the direction */
+.ax line, .ax path { stroke: var(--axis); }
+.gridl { stroke: var(--grid); }
+.zero { stroke: var(--axis); stroke-dasharray: 2 3; }
+.run-line { fill: none; stroke: var(--run); stroke-width: 2.2; stroke-linejoin: round; filter: var(--glow); }
+.run-raw { fill: none; stroke: var(--run); stroke-width: 1; opacity: var(--raw-op); }
+.ctl-line { fill: none; stroke: var(--ctl); stroke-width: 1.4; opacity: .85; }
+.ctl-band { fill: var(--ctl); opacity: var(--band-op); }
+.live-dot { fill: var(--run); filter: var(--glow); animation: blink 1.6s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: .35; } }
+.lead-cell { fill: var(--run); }
+.p-net { fill: var(--p1); } .p-path { fill: var(--p2); }
+.p-net-l { stroke: var(--p1); fill: none; stroke-width: 1.6; } .p-path-l { stroke: var(--p2); fill: none; stroke-width: 1.6; }
+.score-l { stroke: var(--ink-hi); fill: none; stroke-width: 2; }
+
+.caustics { position: absolute; inset: 0; z-index: 0; pointer-events: none; display: var(--caustics); }
+
+/* ============ direction A: deep ocean, bioluminescent ============ */
+[data-dir="a"] {
+  --sans: "Plex Sans", "Segoe UI", sans-serif; --mono: "Plex Mono", Consolas, monospace;
+  --brand-font: "Plex Mono", monospace; --brand-ls: .5px; --title-font: "Plex Mono", monospace; --title-ls: 0;
+  --big-font: "Plex Mono", monospace; --big-weight: 400;
+  --q-font: "Plex Sans", sans-serif; --q-size: 0.923rem; --q-color: rgb(150, 186, 198);
+  --bg: radial-gradient(ellipse 120% 80% at 28% -10%, #0c3b4b 0%, #06202a 38%, #03111a 70%, #020a10 100%);
+  --bg-solid: #03111a;
+  --ink-hi: #e8f8fc; --ink: #a9c6cf; --ink-lo: #6f929c; --ink-dim: #46666f;
+  --rule: rgba(150, 230, 255, .09); --rule-strong: rgba(150, 230, 255, .22); --track: rgba(150, 230, 255, .12);
+  --axis: rgba(150, 230, 255, .28); --grid: rgba(150, 230, 255, .07);
+  --run: #5ef0ff; --ctl: #a08cff; --sig: #ffe27a; --sig-bg: rgba(255, 226, 122, .14); --sig-ink: #ffe27a; --sig-weight: 600;
+  --p1: #5ef0ff; --p2: #ffb86b;
+  --glow: drop-shadow(0 0 0.308rem rgba(94, 240, 255, .75)); --raw-op: .28; --band-op: .16;
+  --tag-r: 0.308rem; --flash: rgba(94, 240, 255, .12); --thumb-bg: #031820; --caustics: block;
+}
+[data-dir="a"] .panel { background: linear-gradient(180deg, rgba(14, 46, 58, .55), rgba(6, 24, 32, .55));
+  border: 1px solid rgba(150, 230, 255, .10); border-radius: 0.923rem; backdrop-filter: blur(0.615rem);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 0.769rem 2.308rem rgba(0, 0, 0, .25); }
+[data-dir="a"] .hero { border-color: rgba(94, 240, 255, .28); box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 0 3.077rem rgba(94, 240, 255, .08); }
+[data-dir="a"] .strip { background: linear-gradient(180deg, rgba(2, 10, 16, .7), rgba(2, 10, 16, 0)); }
+[data-dir="a"] .brand { color: #e8f8fc; text-shadow: 0 0 0.923rem rgba(94, 240, 255, .6); }
+[data-dir="a"] .stat .v { text-shadow: 0 0 1.385rem rgba(94, 240, 255, .35); }
+[data-dir="a"] .stat.hero-num .v { color: var(--run); }
+[data-dir="a"] .exam td.c.sig { border-radius: 0.231rem; text-shadow: 0 0 0.615rem rgba(255, 226, 122, .6); }
+
+/* ============ direction B: scientific instrument ============ */
+[data-dir="b"] {
+  --sans: "Plex Sans", "Segoe UI", sans-serif; --mono: "Plex Mono", Consolas, monospace;
+  --brand-font: "Plex Mono", monospace; --brand-ls: 0; --title-font: "Plex Mono", monospace; --title-ls: -.3px;
+  --big-font: "Plex Mono", monospace; --big-weight: 600;
+  --q-font: "Plex Sans", sans-serif; --q-size: 0.923rem; --q-color: #4b565c;
+  --bg: #e9ecea; --bg-solid: #fbfcfb;
+  --ink-hi: #0e1316; --ink: #343e44; --ink-lo: #6c777d; --ink-dim: #959ea3;
+  --rule: #dde2df; --rule-strong: #b9c1bd; --track: #dde2df;
+  --axis: #8a948f; --grid: #e6eae8;
+  --run: #0a4dff; --ctl: #8c969b; --sig: #0a4dff; --sig-bg: #0a4dff; --sig-ink: #ffffff; --sig-weight: 600;
+  --p1: #0a4dff; --p2: #00a19b;
+  --glow: none; --raw-op: .35; --band-op: .18;
+  --tag-r: 2px; --flash: rgba(10, 77, 255, .08); --thumb-bg: #f1f3f2; --caustics: none;
+}
+[data-dir="b"] body { background-image: linear-gradient(rgba(0,0,0,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.035) 1px, transparent 1px); background-size: 0.923rem 0.923rem; }
+[data-dir="b"] .strip { background: #0e1316; }
+[data-dir="b"] .strip .brand, [data-dir="b"] .strip .tab.on, [data-dir="b"] .strip .hi { color: #fff; }
+[data-dir="b"] .strip .tab, [data-dir="b"] .strip .machine { color: #8d989e; }
+[data-dir="b"] .strip .meter { background: #2a3338; } [data-dir="b"] .strip .meter i { background: #c9d0d4; } [data-dir="b"] .strip .meter u { background: #fff; }
+[data-dir="b"] .page { padding-top: 1.077rem; }
+[data-dir="b"] .panel { background: #fbfcfb; border: 1px solid #c4ccc8; border-radius: 0.231rem; padding: 0 1.077rem 0.923rem; }
+[data-dir="b"] .panel > .head { margin: 0 -1.077rem 0.769rem; padding: 0.538rem 1.077rem; background: #eef1ef; border-bottom: 1px solid #c4ccc8; }
+[data-dir="b"] .band { padding: 0.923rem 1.692rem !important; }
+[data-dir="b"] .kicker { color: #0e1316; font-weight: 600; font-family: var(--mono); letter-spacing: 1px; }
+[data-dir="b"] .hero { border: 1.5px solid #0e1316; }
+[data-dir="b"] .hero > .head { background: #0e1316; color: #fff; border-bottom: 0; }
+[data-dir="b"] .hero > .head .kicker, [data-dir="b"] .hero > .head .q { color: #fff; }
+[data-dir="b"] .hero > .head .tag { color: #c9d0d4; border-color: #4a555b; }
+[data-dir="b"] .hero > .head .tag.on { background: #fff; color: #0e1316; }
+[data-dir="b"] .pulse::after { border-color: var(--run); }
+[data-dir="b"] .run-line { stroke-width: 1.8; }
+
+/* ============ direction C: editorial print ============ */
+[data-dir="c"] {
+  --sans: "Plex Sans", "Segoe UI", sans-serif; --mono: "Plex Mono", Consolas, monospace;
+  --brand-font: Georgia, "Times New Roman", serif; --brand-ls: 0; --title-font: Georgia, serif; --title-ls: -.2px;
+  --big-font: Georgia, serif; --big-weight: 400;
+  --q-font: Georgia, serif; --q-size: 1.462rem; --q-color: #1c1a16;
+  --bg: #f2ece1; --bg-solid: #f2ece1;
+  --ink-hi: #1c1a16; --ink: #3c3830; --ink-lo: #7a7263; --ink-dim: #a39a88;
+  --rule: rgba(28, 26, 22, .13); --rule-strong: rgba(28, 26, 22, .4); --track: rgba(28, 26, 22, .1);
+  --axis: rgba(28, 26, 22, .55); --grid: rgba(28, 26, 22, .08);
+  --run: #0b6e6a; --ctl: #b4a27a; --sig: #0b6e6a; --sig-bg: transparent; --sig-ink: #0b6e6a; --sig-weight: 600;
+  --p1: #0b6e6a; --p2: #8a4f86;
+  --glow: none; --raw-op: .3; --band-op: .3;
+  --tag-r: 0; --flash: rgba(11, 110, 106, .08); --thumb-bg: #e7dfd0; --caustics: none;
+}
+[data-dir="c"] .strip { border-bottom: 2px solid #1c1a16; margin: 0 1.538rem; padding: 0; }
+[data-dir="c"] .brand { font-size: 1.692rem; font-style: italic; }
+[data-dir="c"] .tab { font-family: var(--sans); letter-spacing: 1.6px; }
+[data-dir="c"] .page { gap: 0 2.308rem; padding-top: 0; }
+[data-dir="c"] .lower { gap: 0 2.308rem; }
+[data-dir="c"] .panel { background: none; border: 0; border-top: 1px solid #1c1a16; padding: 0.923rem 0 0.615rem; }
+[data-dir="c"] .band { border-top: 0; border-bottom: 1px solid var(--rule-strong); padding: 0.769rem 0 !important; }
+[data-dir="c"] .head { flex-direction: column; align-items: flex-start; margin-bottom: 0.769rem; }
+[data-dir="c"] .q { margin: 0.231rem 0 0; line-height: 1.15; }
+[data-dir="c"] .head .aside { position: absolute; right: 0; }
+[data-dir="c"] .panel { position: relative; }
+[data-dir="c"] .hero .q { font-size: 2.308rem; }
+[data-dir="c"] .ident .name { font-size: 2.308rem; }
+[data-dir="c"] .stat .v { font-size: 2.615rem; }
+[data-dir="c"] .kicker { color: #9b3d12; color: var(--ink-lo); font-weight: 600; }
+[data-dir="c"] .exam td.c.sig { text-decoration: underline; text-underline-offset: 0.231rem; text-decoration-thickness: 2px; }
+[data-dir="c"] .lower .q { font-size: 1.231rem; }
+[data-dir="c"] .t td { border-bottom-color: rgba(28,26,22,.08); }
+</style>
+</head>
+<body>
+<svg class="caustics" width="100%" height="100%" aria-hidden="true">
+  <filter id="caus"><feTurbulence type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="4"/>
+    <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.95  0 0 0 0 1  0 0 0 -2.6 1.55"/></filter>
+  <rect width="100%" height="55%" filter="url(#caus)" opacity="0.07"/>
+</svg>
+
+<header class="strip">
+  <span class="brand">nursery room</span>
+  <nav class="tabs"><a class="tab"><b>1</b>REGISTRY</a><a class="tab"><b>2</b>RECIPE</a><a class="tab on"><b>3</b>RUN</a><a class="tab"><b>4</b>TANK</a><a class="tab"><b>5</b>GENOME</a></nav>
+  <span class="spacer"></span>
+  <div class="machine"><span>machine</span><span class="meter"><i></i><u></u></span><span><span class="hi">8</span> of <span class="hi">16</span> cap</span><span>cpu <span class="hi">61</span> °C</span></div>
+</header>
+
+<main class="page">
+  <section class="panel band">
+    <div class="ident">
+      <div class="name"><small>#8</small>brain2-pay-path</div>
+      <div class="desc">Brain v2's baseline, scored on net joules less 2 J for every metre swum.</div>
+    </div>
+    <div class="state"><span class="pulse"></span>IN ITS EXAM</div>
+    <div class="stat hero-num"><span class="k">exam brains</span><span class="v">4<small>of 6</small></span></div>
+    <div class="stat"><span class="k">generations</span><span class="v">100<small>of 100</small></span></div>
+    <div class="stat"><span class="k">pace</span><span class="v sm">7.6<small>min / gen</small></span></div>
+    <div class="stat"><span class="k">exam ends</span><span class="v sm">≈ 19:05</span></div>
+    <div class="stat"><span class="k">process</span><span class="v sm">41 288<small>alive</small></span></div>
+    <span class="spacer"></span>
+    <div class="ctlpick"><span class="kicker">control</span><span class="sel"><i class="swatch" style="background:var(--ctl)"></i>#1 brain2 ▾</span></div>
+    <div class="ctlpick"><span class="kicker">differs</span><span class="sel" style="border-style:dashed">reward.class Net → WeightedSum</span></div>
+  </section>
+
+  <section class="panel hero">
+    <div class="head"><span class="kicker">Search</span><span class="q">Is the search improving?</span>
+      <span class="aside"><span class="tag on">net J</span><span class="tag">score</span><span class="tag" style="margin-left:14px">PNG</span></span></div>
+    <div class="legend">
+      <span><i style="background:var(--run)"></i>this run, 10-gen mean</span>
+      <span><i class="band" style="background:var(--ctl)"></i>control, mean ± se</span>
+      <span><i style="background:var(--run);height:1px;opacity:.6"></i>each generation</span>
+      <span style="color:var(--ink-dim)">plotted on net J, the measure both rewards share; same water each generation</span>
+    </div>
+    <div class="hero-body">
+      <div class="hero-charts">
+        <svg class="chart" id="c-search"></svg>
+        <div class="legend" style="margin:6px 0 2px">difference, this run less control, 10-gen mean</div>
+        <svg class="chart" id="c-diff" style="flex:0 0 74px"></svg>
+      </div>
+      <div class="decades">
+        <div class="kicker" style="margin-bottom:6px">decades · mean net J</div>
+        <table class="t" id="t-dec"></table>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel exam">
+    <div class="head"><span class="kicker">Exam</span><span class="q">Does each brain use what it senses?</span><span class="aside"><span class="tag">PNG</span><span class="tag">CSV</span></span></div>
+    <p class="note">Reward <b class="hi">WeightedSum</b>, in score (J − 2·m). Own brain less each control over the same 32 held-out draws, ± one standard error. <span style="color:var(--sig-ink);background:var(--sig-bg);padding:0 3px">Marked</span> where it clears two standard errors (D145).</p>
+    <table class="t exam-t" id="t-exam"></table>
+    <div class="head" style="margin:14px 0 4px"><span class="kicker">against the control's exam</span><span class="aside">own brain · net J</span></div>
+    <svg class="chart" id="c-exam" style="flex:0 0 120px"></svg>
+  </section>
+
+  <div class="lower">
+    <section class="panel">
+      <div class="head"><span class="kicker">Energy</span><span class="q">How is it made?</span></div>
+      <div class="mult">
+        <div><span class="lab">path, m<b>58.9 · 70.4</b></span><svg class="chart" id="m-path"></svg></div>
+        <div><span class="lab">work, W<b>0.041 · 0.050</b></span><svg class="chart" id="m-work"></svg></div>
+        <div><span class="lab">snow at body, J/m³<b>1.24 · 1.18</b></span><svg class="chart" id="m-snow"></svg></div>
+        <div><span class="lab">survived<b>98 % · 97 %</b></span><svg class="chart" id="m-alive"></svg></div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="head"><span class="kicker">Reward parts</span><span class="q">Why does the top genome score?</span></div>
+      <div class="legend"><span><i style="background:var(--p1)"></i>net × 1</span><span><i style="background:var(--p2)"></i>path × −2</span><span><i style="background:var(--ink-hi)"></i>score</span></div>
+      <svg class="chart" id="c-parts"></svg>
+      <div class="legend" style="margin:4px 0 0;color:var(--ink-dim)">from tank-scores.jsonl · top genome each generation</div>
+    </section>
+    <section class="panel">
+      <div class="head"><span class="kicker">Leader</span><span class="q">Which body leads?</span></div>
+      <svg class="chart" id="c-lead"></svg>
+    </section>
+    <section class="panel">
+      <div class="head"><span class="kicker">Brains · breeding</span><span class="q">What are they growing into?</span></div>
+      <div class="stack">
+        <div><span class="lab">hidden units, mean and max<b>6.7 · 10</b></span><svg class="chart" id="b-hid"></svg></div>
+        <div><span class="lab">links, mean and top genome<b>93.3 · 56</b></span><svg class="chart" id="b-lnk"></svg></div>
+        <div class="fields">
+          <div class="f">crossovers<b>44 of 90</b></div><div class="f">mean d<b>0.027</b></div>
+          <div class="f">routes refused<b>0</b></div><div class="f">mutated<b>96 %</b></div>
+        </div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="head" style="flex-direction:row"><span class="kicker">Activity</span><span class="ptabs"><span class="on">ACTIVITY</span><span>LOG</span></span></div>
+      <div class="thumbs">
+        <div class="thumb"><div class="img"><svg width="100%" height="56" viewBox="0 0 100 56" preserveAspectRatio="xMidYMid slice"><ellipse cx="50" cy="44" rx="44" ry="9" fill="none" stroke="var(--rule-strong)"/><circle cx="30" cy="22" r="1" fill="var(--ink-lo)"/><circle cx="62" cy="16" r="1" fill="var(--ink-lo)"/><circle cx="76" cy="28" r="1" fill="var(--ink-lo)"/><rect x="52" y="30" width="8" height="5" rx="2" fill="var(--run)"/></svg></div><b>film</b> · body 1<br>a8 · 14:58</div>
+        <div class="thumb"><div class="img"><svg width="100%" height="56" viewBox="0 0 100 56" preserveAspectRatio="none"><path d="M0 50 L20 40 L40 33 L60 24 L80 19 L100 16 L100 56 L0 56Z" fill="var(--run)" opacity=".2"/><polyline points="0,50 20,40 40,33 60,24 80,19 100,16" fill="none" stroke="var(--run)" stroke-width="1.5"/></svg></div><b>picture</b> · search<br>a8 · 14:31</div>
+        <div class="thumb"><div class="img"><svg width="100%" height="56" viewBox="0 0 100 56"><path d="M24 14 L50 34 L78 20 M24 40 L50 34" stroke="var(--ink-lo)" fill="none"/><circle cx="24" cy="14" r="4" fill="var(--run)"/><circle cx="24" cy="40" r="4" fill="none" stroke="var(--ink-lo)"/><circle cx="50" cy="34" r="5" fill="var(--run)" opacity=".7"/><circle cx="78" cy="20" r="4" fill="none" stroke="var(--ink-hi)"/></svg></div><b>picture</b> · brain<br>a8 · 16:40</div>
+      </div>
+      <div class="feed">
+        <div class="act new"><span class="w">16:40</span><span class="who">a8</span>picture, brain at gen 52 · <q>hidden units stopped growing; are they used?</q></div>
+        <div class="act"><span class="w">14:58</span><span class="who">a8</span>film, body 1 draw 7 · <q>for the write-up</q></div>
+        <div class="act"><span class="w">14:52</span><span class="who">a8</span>launch, 8 threads · <q>one setting against brain2: the reward</q></div>
+        <div class="act"><span class="w">14:20</span><span class="who">a8</span>recipe written · <q>pre-registered in a41e7d0</q></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+// Invented data in the real ranges of a brain v2 run. Nothing here is read from a run.
+let s = 11; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+const N = 100;
+const gen = (base, rise, noise, tau = 25) => Array.from({length: N}, (_, g) => base + rise * (1 - Math.exp(-g / tau)) + (rnd() - .5) * noise);
+const runMean = a => a.map((_, i) => { const w = a.slice(Math.max(0, i - 9), i + 1); return w.reduce((x, y) => x + y) / w.length; });
+const runSe = a => a.map((_, i) => { const w = a.slice(Math.max(0, i - 9), i + 1), m = w.reduce((x, y) => x + y) / w.length;
+  return w.length < 2 ? 0 : Math.sqrt(w.reduce((p, q) => p + (q - m) ** 2, 0) / (w.length - 1) / w.length); });
+const water = Array.from({length: N}, () => (rnd() - .5) * 150);
+const run = gen(225, 320, 70).map((v, i) => v + water[i]);
+const ctl = gen(205, 255, 70).map((v, i) => v + water[i] * .9);
+const NS = 'http://www.w3.org/2000/svg';
+const el = (p, tag, a = {}, t) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (t != null) e.textContent = t; p.appendChild(e); return e; };
+const fmt = v => (Math.abs(v) >= 1000 ? Math.round(v).toLocaleString('en').replace(/,/g, ' ') : +v.toFixed(3) + '');
+
+// A chart drawn to its element's own size, with axes and units.
+function frame(id, {lo, hi, yt, xt = [0, 25, 50, 75, 99], unit = '', padL = 40, padB = 18, padT = 6, padR = 6, xlab = true}) {
+  const svg = document.getElementById(id); const w = svg.clientWidth, h = svg.clientHeight;
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  const X = i => padL + i * (w - padL - padR) / (N - 1), Y = v => padT + (hi - v) / (hi - lo) * (h - padT - padB);
+  const ax = el(svg, 'g', {class: 'ax'});
+  for (const t of yt) { el(svg, 'line', {class: 'gridl', x1: padL, x2: w - padR, y1: Y(t), y2: Y(t)}); el(svg, 'text', {x: padL - 6, y: Y(t) + 3, 'text-anchor': 'end'}, fmt(t)); }
+  el(ax, 'line', {x1: padL, x2: padL, y1: padT, y2: h - padB}); el(ax, 'line', {x1: padL, x2: w - padR, y1: h - padB, y2: h - padB});
+  if (xlab) for (const t of xt) { el(ax, 'line', {x1: X(t), x2: X(t), y1: h - padB, y2: h - padB + 3}); el(svg, 'text', {x: X(t), y: h - 4, 'text-anchor': 'middle'}, t); }
+  if (unit) el(svg, 'text', {x: padL + 4, y: padT + 9, style: 'fill:var(--ink-dim)'}, unit);
+  return {svg, X, Y, w, h, padL, padB, padR};
+}
+const pts = (c, a) => a.map((v, i) => c.X(i).toFixed(1) + ',' + c.Y(v).toFixed(1)).join(' ');
+function area(c, a, cls, base) { const gid = 'g' + Math.random().toString(36).slice(2);
+  const d = el(c.svg, 'defs'); const g = el(d, 'linearGradient', {id: gid, x1: 0, y1: 0, x2: 0, y2: 1});
+  el(g, 'stop', {offset: '0%', style: 'stop-color:var(--run);stop-opacity:.32'}); el(g, 'stop', {offset: '100%', style: 'stop-color:var(--run);stop-opacity:0'});
+  el(c.svg, 'polygon', {points: pts(c, a) + ` ${c.X(N - 1)},${c.Y(base)} ${c.X(0)},${c.Y(base)}`, fill: `url(#${gid})`}); }
+function band(c, m, se) { el(c.svg, 'polygon', {class: 'ctl-band', points: m.map((v, i) => c.X(i) + ',' + c.Y(v + se[i])).join(' ') + ' ' +
+  m.map((v, i) => [i, v]).reverse().map(([i, v]) => c.X(i) + ',' + c.Y(v - se[i])).join(' ')}); }
+
+// hero
+{ const c = frame('c-search', {lo: 0, hi: 800, yt: [0, 200, 400, 600, 800], unit: 'net J per genome', padL: 44, padB: 20});
+  const rm = runMean(run), cm = runMean(ctl), cs = runSe(ctl).map(v => Math.max(v, 12));
+  band(c, cm, cs); el(c.svg, 'polyline', {class: 'ctl-line', points: pts(c, cm)});
+  area(c, rm, 'run', 0); el(c.svg, 'polyline', {class: 'run-raw', points: pts(c, run)}); el(c.svg, 'polyline', {class: 'run-line', points: pts(c, rm)});
+  el(c.svg, 'circle', {class: 'live-dot', cx: c.X(N - 1), cy: c.Y(rm[N - 1]), r: 4.5});
+  el(c.svg, 'text', {x: c.X(N - 1) - 6, y: c.Y(rm[N - 1]) - 10, 'text-anchor': 'end', style: 'fill:var(--run);font-size:12px'}, rm[N - 1].toFixed(1) + ' J');
+  el(c.svg, 'text', {x: c.X(N - 1) - 6, y: c.Y(cm[N - 1]) + 18, 'text-anchor': 'end', style: 'fill:var(--ctl);font-size:11px'}, 'brain2 ' + cm[N - 1].toFixed(1)); }
+{ const d = runMean(run.map((v, i) => v - ctl[i]));
+  const c = frame('c-diff', {lo: -50, hi: 150, yt: [0, 100], padL: 44, padB: 14, xlab: false});
+  el(c.svg, 'line', {class: 'zero', x1: c.padL, x2: c.w - c.padR, y1: c.Y(0), y2: c.Y(0)});
+  el(c.svg, 'polygon', {points: pts(c, d) + ` ${c.X(N - 1)},${c.Y(0)} ${c.X(0)},${c.Y(0)}`, style: 'fill:var(--run);opacity:.18'});
+  el(c.svg, 'polyline', {class: 'run-line', points: pts(c, d), style: 'stroke-width:1.5'}); }
+document.getElementById('t-dec').innerHTML = '<tr><th>gens</th><th>run</th><th>ctl</th><th>Δ</th><th>ahead</th></tr>' +
+  Array.from({length: 10}, (_, k) => { const a = run.slice(k * 10, k * 10 + 10), b = ctl.slice(k * 10, k * 10 + 10), m = x => x.reduce((p, q) => p + q) / x.length;
+    const dd = m(a) - m(b); return `<tr><td>${k * 10}–${k * 10 + 9}</td><td class="hi">${m(a).toFixed(0)}</td><td>${m(b).toFixed(0)}</td><td class="hi">${(dd >= 0 ? '+' : '−') + Math.abs(dd).toFixed(0)}</td><td>${a.filter((v, i) => v > b[i]).length}/10</td></tr>`; }).join('');
+
+// exam: reward WeightedSum, score units
+{ const cols = ['frozen', 'brainless', 'best const', '−scent', '−chem', '−depth', '−flow', '−drive'];
+  const bodies = [[0, 297.4], [1, 341.8], [3, 352.0], [4, 268.3], [8, null], [10, null]];
+  let h = '<tr><th>body</th><th>own, score</th>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr>';
+  for (const [b, own] of bodies) {
+    if (own == null) { h += `<tr class="pend"><td>${b}</td><td>—</td><td colspan="8" style="text-align:left">${b === 8 ? '<span class="swim"><i></i></span>swimming · 19 of 32 draws' : 'waiting'}</td></tr>`; continue; }
+    h += `<tr><td class="hi">${b}</td><td class="hi">${own.toFixed(1)}</td>` + cols.map((c, i) => { let d = (rnd() - .28) * 220, se = 12 + rnd() * 46; if (i === 0) { d = 200 + rnd() * 70; se = 14; }
+      const sig = Math.abs(d) > 2 * se; return `<td class="c${sig ? ' sig' + (d < 0 ? ' neg' : '') : ''}">${(d >= 0 ? '+' : '−') + Math.abs(d).toFixed(0)}<span style="opacity:.6"> ±${se.toFixed(0)}</span></td>`; }).join('') + '</tr>'; }
+  h += '<tr class="pool"><td>pooled</td><td>314.9</td>' + cols.map(() => { const d = (rnd() - .3) * 200; return `<td class="c">${(d >= 0 ? '+' : '−') + Math.abs(d).toFixed(0)}</td>`; }).join('') + '</tr>';
+  document.getElementById('t-exam').innerHTML = h; }
+{ const svg = document.getElementById('c-exam'), w = svg.clientWidth, h = svg.clientHeight; svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  const X = v => 60 + (v - 300) / 300 * (w - 80);
+  [300, 400, 500, 600].forEach(t => { el(svg, 'line', {class: 'gridl', x1: X(t), x2: X(t), y1: 0, y2: h - 16}); el(svg, 'text', {x: X(t), y: h - 3, 'text-anchor': 'middle'}, t + ' J'); });
+  [[0, 452.1, 431.0], [1, 498.0, 462.3], [3, 512.6, 488.1], [4, 409.9, 415.2]].forEach(([b, r, c], i) => { const y = 12 + i * 24;
+    el(svg, 'text', {x: 0, y: y + 3}, 'body ' + b);
+    el(svg, 'rect', {x: X(c - 28), y: y - 4, width: X(c + 28) - X(c - 28), height: 8, rx: 4, style: 'fill:var(--ctl);opacity:.25'});
+    el(svg, 'circle', {cx: X(c), cy: y, r: 4, style: 'fill:none;stroke:var(--ctl);stroke-width:1.5'});
+    el(svg, 'line', {x1: X(r - 24), x2: X(r + 24), y1: y, y2: y, style: 'stroke:var(--run);stroke-width:1.5'});
+    el(svg, 'circle', {class: 'live-dot', cx: X(r), cy: y, r: 4.5, style: 'animation:none'}); }); }
+
+// energy multiples: run with area, control as a ghost band
+const small = (id, a, b, lo, hi, yt) => { const c = frame(id, {lo, hi, yt, padL: 34, padB: 14, xt: [0, 50, 99]});
+  const bm = runMean(b), bs = runSe(b); band(c, bm, bs.map(v => Math.max(v, (hi - lo) * .02))); el(c.svg, 'polyline', {class: 'ctl-line', points: pts(c, bm), style: 'stroke-width:1'});
+  const am = runMean(a); area(c, am, 'run', lo); el(c.svg, 'polyline', {class: 'run-line', points: pts(c, am), style: 'stroke-width:1.6'}); };
+small('m-path', gen(66, -8, 4), gen(64, 7, 4), 50, 80, [50, 65, 80]);
+small('m-work', gen(0.08, -0.04, 0.012), gen(0.08, -0.03, 0.012), 0, 0.1, [0, 0.05, 0.1]);
+small('m-snow', gen(0.9, 0.36, 0.12), gen(0.9, 0.28, 0.12), 0.6, 1.5, [0.6, 1, 1.4]);
+small('m-alive', gen(0.95, 0.03, 0.02), gen(0.95, 0.02, 0.02), 0.9, 1, [0.9, 0.95, 1]);
+
+// reward parts of the top genome: net part above zero, path part below, the score between
+{ const net = gen(560, 300, 90, 30), path = gen(-136, 22, 14, 30), score = net.map((v, i) => v + path[i]);
+  const c = frame('c-parts', {lo: -200, hi: 900, yt: [-200, 0, 300, 600, 900], unit: 'score', padL: 38, padB: 16, xt: [0, 50, 99]});
+  const nm = runMean(net), pm = runMean(path), sm = runMean(score);
+  el(c.svg, 'polygon', {class: 'p-net', points: pts(c, nm) + ` ${c.X(N - 1)},${c.Y(0)} ${c.X(0)},${c.Y(0)}`, opacity: .22});
+  el(c.svg, 'polygon', {class: 'p-path', points: pts(c, pm) + ` ${c.X(N - 1)},${c.Y(0)} ${c.X(0)},${c.Y(0)}`, opacity: .3});
+  el(c.svg, 'polyline', {class: 'p-net-l', points: pts(c, nm)}); el(c.svg, 'polyline', {class: 'p-path-l', points: pts(c, pm)});
+  el(c.svg, 'line', {class: 'zero', x1: c.padL, x2: c.w - c.padR, y1: c.Y(0), y2: c.Y(0)});
+  el(c.svg, 'polyline', {class: 'score-l', points: pts(c, sm)}); }
+
+// leader: one row per body, top genome's body each generation
+{ const svg = document.getElementById('c-lead'), w = svg.clientWidth, h = svg.clientHeight; svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  const bodies = [0, 1, 3, 4, 8, 10], L = 46, rh = (h - 22) / 6, cw = (w - L) / N; let cur = 5;
+  const seq = Array.from({length: N}, (_, g) => { if (rnd() < (g < 35 ? .05 : .16)) cur = [1, 1, 1, 0, 2, 5][Math.floor(rnd() * 6)]; return cur; });
+  bodies.forEach((b, r) => { el(svg, 'text', {x: 0, y: r * rh + rh / 2 + 3}, 'body ' + b); el(svg, 'rect', {x: L, y: r * rh + 3, width: w - L, height: rh - 6, rx: 2, style: 'fill:var(--track);opacity:.5'}); });
+  seq.forEach((r, g) => el(svg, 'rect', {class: 'lead-cell', x: L + g * cw, y: r * rh + 3, width: Math.max(cw - .5, 1), height: rh - 6}));
+  [0, 50, 99].forEach(g => el(svg, 'text', {x: L + g * cw, y: h - 4, 'text-anchor': g ? 'middle' : 'start'}, 'gen ' + g)); }
+
+// brains
+{ const hid = gen(0, 7.4, .25), mx = hid.map(v => Math.round(v + 2 + rnd() * 1.5));
+  const c = frame('b-hid', {lo: 0, hi: 12, yt: [0, 6, 12], padL: 26, padB: 14, xt: [0, 50, 99]});
+  el(c.svg, 'polyline', {points: pts(c, mx), style: 'fill:none;stroke:var(--ink-lo);stroke-width:1;stroke-dasharray:3 2'});
+  area(c, hid, 'run', 0); el(c.svg, 'polyline', {class: 'run-line', points: pts(c, hid), style: 'stroke-width:1.6'}); }
+{ const c = frame('b-lnk', {lo: 40, hi: 100, yt: [40, 70, 100], padL: 26, padB: 14, xt: [0, 50, 99]});
+  el(c.svg, 'polyline', {points: pts(c, gen(48, 9, 5)), style: 'fill:none;stroke:var(--ink-lo);stroke-width:1;stroke-dasharray:3 2'});
+  const l = gen(82, 11.5, .5); area(c, l, 'run', 40); el(c.svg, 'polyline', {class: 'run-line', points: pts(c, l), style: 'stroke-width:1.6'}); }
+</script>
+</body>
+</html>

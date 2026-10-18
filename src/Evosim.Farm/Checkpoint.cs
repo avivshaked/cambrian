@@ -87,6 +87,13 @@ namespace Evosim.Farm
         /// file of either world is laid out alike up to the world's own version field, and one
         /// holding a version-11 world is refused there, a few bytes into the payload.
         /// </remarks>
+        /// <remarks>
+        /// Still 6 at <c>World.StateVersion</c> 17, round 59's grip: each body in the harness's
+        /// half carries its touch of the rock and its grips, but only where the body allocates
+        /// them, which its plan and the world's config decide. The world's own version is read
+        /// first and refuses an older layout in a world that allocates either, so no file this
+        /// build reads holds a body whose blocks it does not expect.
+        /// </remarks>
         public const int Version = 6;
 
         /// <summary>
@@ -493,8 +500,26 @@ namespace Evosim.Farm
             if (header == null) throw new ArgumentNullException(nameof(header));
             if (payload == null) throw new ArgumentNullException(nameof(payload));
 
-            byte[] bytes;
-            int count;
+            long at = System.Diagnostics.Stopwatch.GetTimestamp();
+            CheckpointPayload built = Capture(payload);
+            FarmProbe.Mark(FarmProbe.CheckpointPayload, at);
+
+            var parts = new long[3];
+            long written = Store(path, header, built, 0, parts);
+            FarmProbe.Add(FarmProbe.CheckpointDigest, parts[0]);
+            FarmProbe.Add(FarmProbe.CheckpointCompress, parts[1]);
+            FarmProbe.Add(FarmProbe.CheckpointFile, parts[2]);
+            return written;
+        }
+
+        /// <summary>
+        /// The payload, built on the caller's thread: the only part of a checkpoint that reads the
+        /// world. The bytes are a copy the caller never sees again, so a world stepped on after this
+        /// returns cannot reach the file (card-next-r57.md Part 8).
+        /// </summary>
+        public static CheckpointPayload Capture(Action<BinaryWriter> payload)
+        {
+            if (payload == null) throw new ArgumentNullException(nameof(payload));
 
             using (var buffer = new MemoryStream(1 << 20))
             {
@@ -504,12 +529,36 @@ namespace Evosim.Farm
                     w.Flush();
                 }
 
-                bytes = buffer.GetBuffer();
-                count = (int)buffer.Length;
+                return new CheckpointPayload(buffer.GetBuffer(), (int)buffer.Length);
             }
+        }
+
+        /// <summary>
+        /// The rest of a checkpoint, from the payload's bytes alone: the digest, the compression and
+        /// the file, moved over the final name when it is whole. Safe on any thread.
+        /// </summary>
+        /// <param name="stallMs">
+        /// EVOSIM_TEST_CHECKPOINT_STALL_MS: a pause halfway through the stored payload, with the half
+        /// already on disk, so a test can kill the farm in the middle of a write. 0 in every run that
+        /// is not that test. It moves when the bytes land and never which bytes they are.
+        /// </param>
+        /// <param name="parts">Ticks spent on the digest, the compression and the file, added to.</param>
+        /// <returns>Bytes written.</returns>
+        public static long Store(string path, CheckpointHeader header, CheckpointPayload payload, int stallMs, long[] parts)
+        {
+            if (string.IsNullOrEmpty(path)) throw new ArgumentNullException(nameof(path));
+            if (header == null) throw new ArgumentNullException(nameof(header));
+            if (payload == null) throw new ArgumentNullException(nameof(payload));
+
+            byte[] bytes = payload.Bytes;
+            int count = payload.Count;
+            long at = System.Diagnostics.Stopwatch.GetTimestamp();
 
             header.PayloadBytes = count;
             header.PayloadDigest = Checkpoint.Digest(bytes, count);
+            long now = System.Diagnostics.Stopwatch.GetTimestamp();
+            parts[0] += now - at;
+            at = now;
 
             // This build writes one version, 6, whatever the record: the payload's layout is the
             // world's and has one writer, and version 4's (round 48's) is only read. The payload
@@ -531,6 +580,9 @@ namespace Evosim.Farm
 
             byte[] stored = Checkpoint.Compress(bytes, count);
             int storedCount = stored.Length;
+            now = System.Diagnostics.Stopwatch.GetTimestamp();
+            parts[1] += now - at;
+            at = now;
 
             header.StoredBytes = storedCount;
 
@@ -572,7 +624,21 @@ namespace Evosim.Farm
                 // Version 6 names what the file holds beside what the world wrote.
                 w.Write(header.StoredBytes);
 
-                w.Write(stored, 0, storedCount);
+                if (stallMs > 0)
+                {
+                    // The test hook: half the payload on disk, then the pause, then the rest. The
+                    // same bytes in the same order as the single write below.
+                    int half = storedCount / 2;
+                    w.Write(stored, 0, half);
+                    w.Flush();
+                    file.Flush(flushToDisk: true);
+                    System.Threading.Thread.Sleep(stallMs);
+                    w.Write(stored, half, storedCount - half);
+                }
+                else
+                {
+                    w.Write(stored, 0, storedCount);
+                }
 
                 // The trailer: the stored length again, then the magic again. Either alone would
                 // catch a truncation; both together also catch a file that was overwritten from
@@ -587,7 +653,108 @@ namespace Evosim.Farm
             if (File.Exists(path)) File.Replace(temporary, path, null);
             else File.Move(temporary, path);
 
+            parts[2] += System.Diagnostics.Stopwatch.GetTimestamp() - at;
             return new FileInfo(path).Length;
+        }
+    }
+
+    /// <summary>A checkpoint's payload: the world's bytes as <see cref="CheckpointWriter.Capture"/> built them.</summary>
+    public sealed class CheckpointPayload
+    {
+        public CheckpointPayload(byte[] bytes, int count)
+        {
+            Bytes = bytes ?? throw new ArgumentNullException(nameof(bytes));
+            Count = count;
+        }
+
+        public byte[] Bytes { get; }
+        public int Count { get; }
+    }
+
+    /// <summary>
+    /// One checkpoint's digest, compression and file on a thread of its own, while the loop steps
+    /// on (card-next-r57.md Part 8).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>At most one is in flight</b>: the loop waits for the last before it starts the next, and
+    /// waits at every way out of the run, so a run never ends with a write still going. A write
+    /// that failed throws at that wait, and the run ends as it would have ended on the failure.
+    /// </para>
+    /// <para>
+    /// <b>The thread reads only the payload's bytes</b>, captured on the loop's thread before
+    /// this starts, and its own header. The file holds the bytes the writer would have written
+    /// in line, and the rename still means nothing opens a checkpoint before it is whole.
+    /// </para>
+    /// <para>
+    /// The probe's marks are per thread, so the thread times its own three parts, and the wait
+    /// adds them to the loop's tally beside the time the loop spent waiting.
+    /// </para>
+    /// </remarks>
+    public sealed class BackgroundCheckpoint
+    {
+        private readonly System.Threading.Thread _thread;
+        private readonly long[] _parts = new long[3];
+        private Exception _failure;
+        private long _bytes;
+
+        private BackgroundCheckpoint(string path, CheckpointHeader header, CheckpointPayload payload, int stallMs)
+        {
+            Path = path;
+            _thread = new System.Threading.Thread(() =>
+            {
+                try
+                {
+                    _bytes = CheckpointWriter.Store(path, header, payload, stallMs, _parts);
+                }
+                catch (Exception e)
+                {
+                    _failure = e;
+                }
+            })
+            {
+                // A foreground thread: a process that leaves Main without waiting still waits for it.
+                IsBackground = false,
+                Name = "checkpoint writer",
+            };
+        }
+
+        /// <summary>The file this writes.</summary>
+        public string Path { get; }
+
+        /// <summary>Whether the thread has finished, whole or failed. <see cref="Wait"/> still has to be called.</summary>
+        public bool Done => !_thread.IsAlive;
+
+        /// <summary>Starts the write of a payload already captured.</summary>
+        public static BackgroundCheckpoint Start(string path, CheckpointHeader header, CheckpointPayload payload, int stallMs)
+        {
+            if (string.IsNullOrEmpty(path)) throw new ArgumentNullException(nameof(path));
+            if (header == null) throw new ArgumentNullException(nameof(header));
+            if (payload == null) throw new ArgumentNullException(nameof(payload));
+
+            var write = new BackgroundCheckpoint(path, header, payload, stallMs);
+            write._thread.Start();
+            return write;
+        }
+
+        /// <summary>Waits for the file to be in place, and throws if it could not be written.</summary>
+        /// <returns>Bytes written.</returns>
+        public long Wait()
+        {
+            long from = System.Diagnostics.Stopwatch.GetTimestamp();
+            _thread.Join();
+            FarmProbe.Mark(FarmProbe.CheckpointWait, from);
+
+            FarmProbe.Add(FarmProbe.CheckpointDigest, _parts[0]);
+            FarmProbe.Add(FarmProbe.CheckpointCompress, _parts[1]);
+            FarmProbe.Add(FarmProbe.CheckpointFile, _parts[2]);
+
+            if (_failure != null)
+            {
+                throw new IOException("The checkpoint " + Path + " was not written: " + _failure.Message, _failure);
+            }
+
+            return _bytes;
         }
     }
 

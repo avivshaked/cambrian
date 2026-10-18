@@ -1,4 +1,4 @@
-# Build spec: the throw trace (owner "sounds good. go ahead", 2026-09-12)
+# Build spec: the throw trace (the owner approved and told the agent to go ahead, 2026-09-12)
 
 Read `CLAUDE.md` in full first (the gotchas on divergence, the dump cap, growth's in-place
 resize, `simHash`, and the subagent rules), then `logbook/specs/research-throws-notes.txt` in the

@@ -129,6 +129,16 @@ namespace Evosim.Core
         void Deposit(FieldPoint at, float joules);
 
         /// <summary>
+        /// A deposit of a double, for a transfer whose other half is booked as a double, so the
+        /// two halves agree to the double's rounding and not the float's. Used where round 51's
+        /// B1 found the float door drifting one way for thousands of seconds: the burn's spent
+        /// units, remineralisation's, and a corpse's last instalment
+        /// (<c>logbook/specs/r51-read/b1-probe.txt</c>). A float handed to it lands exactly as
+        /// <see cref="Deposit(FieldPoint, float)"/> would land it.
+        /// </summary>
+        void DepositExact(FieldPoint at, double amount);
+
+        /// <summary>
         /// A deposit by depth and patch — the address every test and tool has used since D061.
         /// A vertex field puts it at the patch's centre, and a grid field the patch's centre
         /// column. The world calls this in one place, D074's surface influx into a cell field,

@@ -43,6 +43,7 @@ namespace Evosim.Farm.Tests
     /// trajectory did not (<see cref="AWorldWithNoBiteStepsAsItDidBefore"/>).
     /// </para>
     /// </remarks>
+    [Collection(FarmProcessCollection.Name)]
     public class BiteRebuildTests
     {
         private readonly ITestOutputHelper _out;
@@ -1327,7 +1328,64 @@ namespace Evosim.Farm.Tests
         /// went from <c>91576b1700773a1aa2990de3d6de3e78</c> to the one pinned here. Its solver
         /// hash did not move, because the leaves have no brain to read what they carry: the
         /// trajectory is the one <c>1f06a67</c> stepped. The touching world changes no plan, and
-        /// both its hashes are <c>1f06a67</c>'s.
+        /// both its hashes were <c>1f06a67</c>'s.
+        /// </para>
+        /// <para>
+        /// <b>Both folded hashes moved again with round 51's build, and neither trajectory did.</b>
+        /// World state version 13 writes every body's ageing clock and hazard, every corpse's
+        /// first joules and rest, and the count of deaths by age (D127, D128), all at 0 in these
+        /// worlds, so the bytes the fold reads changed and the world did not: the touching world's
+        /// folded hash went from <c>ebbc4299be5adeb889a1d478458deb99</c> and the module world's
+        /// from <c>ff558cf1332d129005b2a2e8988137a2</c> to the ones pinned here, and both solver
+        /// hashes are the ones they were.
+        /// </para>
+        /// <para>
+        /// <b>Both folded hashes moved again with round 52's build, and neither trajectory did.</b>
+        /// The burn, remineralisation and a corpse's last instalment hand the dissolved field its
+        /// units through the exact door (<c>IMatterField.DepositExact</c>) where they went through a
+        /// float, so the field's cells hold other bits and the world does not move: the touching
+        /// world's folded hash went from <c>7f1753da85d50dc8e17bd98477312e3f</c> and the module
+        /// world's from <c>cb43858a5a4865f60d98d50a319b7982</c> to the ones pinned here.
+        /// </para>
+        /// <para>
+        /// <b>Both folded hashes moved again with D135's build, and neither trajectory did.</b>
+        /// The world's state writes each creature's genome as JSON, and genome format 11 writes
+        /// every joint's drive genes (all at their defaults here, the drive off), so the bytes the
+        /// fold reads changed and the world did not: the touching world's folded hash went from
+        /// <c>0aeb95997dfba736dd143a05548ac967</c> and the module world's from
+        /// <c>a5e78827bbbd3617944ce53d792fc535</c> to the ones pinned here.
+        /// </para>
+        /// <para>
+        /// <b>Both folded hashes moved again with round 57's build, and neither trajectory did.</b>
+        /// World state version 14 writes the count of corpses the scent's last fill covered
+        /// (<c>logbook/specs/r57-build/scent-restore.md</c>), so the bytes the fold reads changed
+        /// and the world did not: the touching world's folded hash went from
+        /// <c>6a8554b73ba9938daf97c58d3e95eea6</c> and the module world's from
+        /// <c>600ee46bed98bc8a6c3beba7997f8e92</c> to the ones pinned here.
+        /// </para>
+        /// <para>
+        /// <b>Both folded hashes moved again with round 58's runner (D159), and neither trajectory
+        /// did.</b> World state version 15 writes the two immigration counters, both 0 here, so the
+        /// bytes the fold reads changed and the world did not: the touching world's folded hash went
+        /// from <c>97ddb90862cbf8d81cbae116e4394501</c> and the module world's from
+        /// <c>e1861b9a5f549990e02fabdb354c0579</c> to the ones pinned here.
+        /// </para>
+        /// <para>
+        /// <b>Both folded hashes moved again with round 59's build, and neither trajectory did.</b>
+        /// World state version 16 writes the leaf smell's sources, none here, and each body's mouth
+        /// count, 0 in a world with no mouth, so the bytes the fold reads changed and the world did
+        /// not: the touching world's folded hash went from <c>9c27d7d9ebf814a78e53a188a3056f2d</c>
+        /// and the module world's from <c>5c3c0d730964d4039aee0964321dedfb</c> to
+        /// <c>17f747ee1161dd1b41b8851696a832f8</c> and <c>53d5626a593e2e4762ccf8a2f0eea63c</c>.
+        /// Version 17, with its grip (step 5), moved them again to the ones pinned here: it writes
+        /// the world's grip total and each organism's grip price owed and paid, all 0 in a world
+        /// without the anchoring cell, and nothing in a body that allocates no touch or grip.
+        /// </para>
+        /// <para>
+        /// <b>Both folded hashes moved again with round 60's build, and neither trajectory did.</b>
+        /// The world writes state version 18, and a birth's overhead returns its units to the water
+        /// in double: the touching world's folded hash went from <c>2ccd06cadd372bc0181225945db41cf9</c>
+        /// and the module world's from <c>ac0157e30c3f703658ee3c8a1bbc0751</c> to the ones pinned here.
         /// </para>
         /// </remarks>
         /// <param name="world">
@@ -1339,8 +1397,8 @@ namespace Evosim.Farm.Tests
         /// <param name="pinned">The solver's digests folded with the world's states.</param>
         /// <param name="trajectory">The solver's digests alone.</param>
         [Theory]
-        [InlineData("touching", "ebbc4299be5adeb889a1d478458deb99", "1de02f3f7ab7cd2fd2b5b4b83922d153")]
-        [InlineData("modules", "ff558cf1332d129005b2a2e8988137a2", "c2072f14f54654181d54d218124c4dd3")]
+        [InlineData("touching", "99ce43525cbcdddc421309b9a216c7df", "1de02f3f7ab7cd2fd2b5b4b83922d153")]
+        [InlineData("modules", "21d91a7ef608f7211cc6ef3c67d20867", "c2072f14f54654181d54d218124c4dd3")]
         public void AWorldWithNoBiteStepsAsItDidBefore(string world, string pinned, string trajectory)
         {
             bool modules = world == "modules";

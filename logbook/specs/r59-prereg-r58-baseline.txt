@@ -1,0 +1,107 @@
+== round 59's reader: year 6000 s, samples every 1500 s, end 48000 s; swimmers 10 from inocula\r59-direction-tops
+r58-s1ir: D:\Projects\experiments\evolution-simulator\runs\r58-s1ir\2026-10-12-114228-dfc0e881
+   read as one world: r58-s1i/2026-10-12-111359-dfc0e881 to 1500 s then r58-s1ir/2026-10-12-114228-dfc0e881 from 1500 s
+   seed 1, control; engine gpu transport card; configHash dfc0e8819ff9b4e0; gitCommit 141c97a323 gitDirty False (source.gitDirty); status ended reason budget, 48000 of 48000 s
+   world: turningDrag None spinDrag None, senseBedTouch None, leafScent None range None m cell None m half None m2; attack 0.1 intake 0.1 W/unit, consumer upkeep 6 W/m3
+   founding: trickle 0.033333335/s, trickle pool share 0.1, floor pool share 0, pool count 4, pool hash c912b4cbb861dd3c
+   pool: 4 genomes, index.tsv 4 rows; swimmers 0; others: pool 0 (stomach/stomach), pool 1 (stomach/stomach), pool 2 (stomach/stomach), pool 3 (stomach/stomach)
+r58-s2ir: D:\Projects\experiments\evolution-simulator\runs\r58-s2ir\2026-10-12-114228-dfc0e881
+   read as one world: r58-s2i/2026-10-12-111359-dfc0e881 to 1500 s then r58-s2ir/2026-10-12-114228-dfc0e881 from 1500 s
+   seed 2, control; engine gpu transport card; configHash dfc0e8819ff9b4e0; gitCommit 141c97a323 gitDirty False (source.gitDirty); status ended reason budget, 48000 of 48000 s
+   world: turningDrag None spinDrag None, senseBedTouch None, leafScent None range None m cell None m half None m2; attack 0.1 intake 0.1 W/unit, consumer upkeep 6 W/m3
+   founding: trickle 0.033333335/s, trickle pool share 0.1, floor pool share 0, pool count 4, pool hash c912b4cbb861dd3c
+   pool: 4 genomes, index.tsv 4 rows; swimmers 0; others: pool 0 (stomach/stomach), pool 1 (stomach/stomach), pool 2 (stomach/stomach), pool 3 (stomach/stomach)
+   WARNING: seed 2 is a control, against the draft's design
+r58-s3ir: D:\Projects\experiments\evolution-simulator\runs\r58-s3ir\2026-10-12-114228-dfc0e881
+   read as one world: r58-s3i/2026-10-12-111359-dfc0e881 to 1500 s then r58-s3ir/2026-10-12-114228-dfc0e881 from 1500 s
+   seed 3, control; engine gpu transport card; configHash dfc0e8819ff9b4e0; gitCommit 141c97a323 gitDirty False (source.gitDirty); status ended reason budget, 48000 of 48000 s
+   world: turningDrag None spinDrag None, senseBedTouch None, leafScent None range None m cell None m half None m2; attack 0.1 intake 0.1 W/unit, consumer upkeep 6 W/m3
+   founding: trickle 0.033333335/s, trickle pool share 0.1, floor pool share 0, pool count 4, pool hash c912b4cbb861dd3c
+   pool: 4 genomes, index.tsv 4 rows; swimmers 0; others: pool 0 (stomach/stomach), pool 1 (stomach/stomach), pool 2 (stomach/stomach), pool 3 (stomach/stomach)
+   WARNING: seed 3 is a control, against the draft's design
+
+== readings: per world and year (living at the year's end by guild; kills in the year; mouth totals)
+   world      yr summer winter    top  alive   leaf stomac jointe mouthe grazer  kills  leafK  rootK  parts  eaten     units  corps
+   r58-s1ir    1   3262   1125  0.378   1545    719     35    804      0      0      0      0      0      0      0     26.52     24
+   r58-s1ir    2   3178   1912  0.593   2915   2236     26    654      0      0      0      0      0      0      0     35.20     80
+   r58-s1ir    3   4663   3384  0.917   4021   3760     19    243      0      0      0      0      0      0      0     20.61     63
+   r58-s1ir    4   6695   4409  0.994   5048   4747     66    239      0      0      0      0      0      0      0     40.16    124
+   r58-s1ir    5   6624   4715  0.998   6026   5638    101    294      0      0      0      0      0      0      0     23.63     88
+   r58-s1ir    6   8077   5925  0.998   7509   7157    107    250      0      0      0      0      0      0      0     31.33    117
+   r58-s1ir    7  10702   8329  0.999   9486   9169     84    242      0      0      0      0      0      0      0     33.23    128
+   r58-s1ir    8  10996   8364  0.997   8792   8407    127    273      4      0      0      0      0      0      0     21.78    102
+   r58-s2ir    1   5226   1724  0.854   3063   2974     16     76      0      0      0      0      0      0      0     34.35     39
+   r58-s2ir    2   4761   3275  0.997   4419   4393     20      7      0      0      0      0      0      0      0     29.87     58
+   r58-s2ir    3   6654   4728  0.998   5210   5182     24      9      0      0      0      0      0      0      0     19.29     57
+   r58-s2ir    4   7398   4401  0.996   5135   5067     65      6      0      0      0      0      0      0      0     23.62     84
+   r58-s2ir    5   6783   4800  0.998   6325   6058    265      2      0      0      0      0      0      0      0     27.04    112
+   r58-s2ir    6   7351   4848  0.996   6523   5906    614      7      0      0      0      0      0      0      0     59.38    234
+   r58-s2ir    7   8588   5271  0.993   5972   5439    531     20      0      0      0      0      0      0      0     51.88    175
+   r58-s2ir    8   6729   4474  0.982   5648   5089    554     46      0      0      0      0      0      0      0     49.15    125
+   r58-s3ir    1   4058   1491  0.869   2408   2367     23     22      0      0      0      0      0      0      0     45.45     55
+   r58-s3ir    2   3774   2600  0.994   4041   3991     50      1      0      0      0      0      0      0      0     29.49     56
+   r58-s3ir    3   6148   4142  0.994   4775   4697     75      2      0      0      0      0      0      0      0     23.11     74
+   r58-s3ir    4   5932   3987  0.987   4760   4628    131      3      0      0      0      0      0      0      0     35.06    168
+   r58-s3ir    5   5283   3285  0.949   4379   4135    236      9      0      0      0      0      0      0      0     72.75    297
+   r58-s3ir    6   4837   3564  0.895   4714   4106    592     18      0      0      0      0      0      0      0     40.02    103
+   r58-s3ir    7   5442   3714  0.847   5010   4173    825     21      0      0      0      0      0      0      0     50.44    175
+   r58-s3ir    8   5535   4073  0.843   5061   4196    861      7      0      0      0      0      0      0      0     39.81    128
+
+== readings: kills per world and year by attacker class (all / on leaves)
+   r58-s1ir: no kill rows to 48000 s
+   r58-s2ir: no kill rows to 48000 s
+   r58-s3ir: no kill rows to 48000 s
+
+== readings: r58-s1ir, leaf smell recorder: no leafscent.jsonl; not read
+
+== readings: r58-s2ir, leaf smell recorder: no leafscent.jsonl; not read
+
+== readings: r58-s3ir, leaf smell recorder: no leafscent.jsonl; not read
+
+== P1: a planted founder has a child, in each planted world
+   unread: no planted world given
+
+== P2: >= 20 planted-descended living at every sample for a year after 6000 s
+   unread: no planted world given
+
+== P3: planted-descended living >= 1% of the living at the end
+   unread: no planted world given
+
+== P4: over 50% of the planted-descended living are grazers, where P2 holds
+   unread: P2 holds in no planted world
+
+== G1: >= 100 leaf kills a year by own-line grazers in >= 2 of years 6 to 8, in the control
+   r58-s1ir: year 6 0, year 7 0, year 8 0; years at the bar 0 -> failed
+   r58-s2ir: year 6 0, year 7 0, year 8 0; years at the bar 0 -> failed
+   r58-s3ir: year 6 0, year 7 0, year 8 0; years at the bar 0 -> failed
+
+== D1: leaf kills in years 2 to 8, each planted world >= 50 and >= 2x the control's
+   r58-s1ir (control): 0 leaf kills (none)
+   r58-s2ir (control): 0 leaf kills (none)
+   r58-s3ir (control): 0 leaf kills (none)
+
+== C1: living at each year's end, years 2 to 8, within 0.5 to 2 of round 58's means
+   r58-s1ir: 12000 2915 (0.77), 18000 4021 (0.86), 24000 5048 (1.01), 30000 6026 (1.08), 36000 7509 (1.20), 42000 9486 (1.39), 48000 8792 (1.35) -> held
+   r58-s2ir: 12000 4419 (1.17), 18000 5210 (1.12), 24000 5135 (1.03), 30000 6325 (1.13), 36000 6523 (1.04), 42000 5972 (0.88), 48000 5648 (0.87) -> held
+   r58-s3ir: 12000 4041 (1.07), 18000 4775 (1.02), 24000 4760 (0.96), 30000 4379 (0.79), 36000 4714 (0.75), 42000 5010 (0.73), 48000 5061 (0.78) -> held
+
+== C2: one root lineage over 50% of the living at 18000 s
+   r58-s1ir: root 41 (floor, born 15.5 s) holds 3687 of 4021, 0.917
+   r58-s2ir: root 1 (floor, born 0.5 s) holds 5201 of 5210, 0.998
+   r58-s3ir: root 8 (floor, born 3.5 s) holds 4745 of 4775, 0.994
+
+== B1: the books balance
+   r58-s1ir: audit max 0.00182 J, matter max 6.08e-06, diverged 0, divergedTotal 0, ended/budget 48000 of 48000 s -> holds
+   r58-s2ir: audit max 0.00242 J, matter max 1.07e-06, diverged 0, divergedTotal 0, ended/budget 48000 of 48000 s -> holds
+   r58-s3ir: audit max 0.00235 J, matter max 8.97e-07, diverged 0, divergedTotal 0, ended/budget 48000 of 48000 s -> holds
+
+== clauses (D2 by the nursery's bench; B2 and B3 by the card's scripts)
+P1: unread (no planted world given)
+P2: unread (no planted world given)
+P3: unread (no planted world given)
+P4: unread (P2 holds in no planted world)
+G1: failed (0 of 3 controls)
+D1: unread (needs a planted world and a control)
+C1: held (3 of 3 worlds)
+C2: held (3 of 3 worlds)
+B1: held (3 of 3 worlds)

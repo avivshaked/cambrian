@@ -60,8 +60,8 @@ namespace Evosim.Core
         /// (<c>World.EnforceFloor</c>) or an inoculant (<c>World.Inoculate</c>).
         /// </summary>
         /// <param name="adult">
-        /// The developed adult body, for its size, since 2026-09-10 evening: the owner ruled
-        /// ("proceed with your recommendations") that a founder and an inoculant reserve the
+        /// The developed adult body, for its size, since 2026-09-10 evening: the owner ruled,
+        /// accepting the agent's recommendations, that a founder and an inoculant reserve the
         /// room they will grow into, as a child does under <see cref="TryReserveOffspring"/>.
         /// They are born at their own birth fraction too (growth rule 7) and grow in place
         /// exactly as a child does, so a spot reserved at the newborn was one they would grow
@@ -98,6 +98,26 @@ namespace Evosim.Core
         /// </para>
         /// </remarks>
         Func<Phenotype, float, float, float> FounderAcceptance { get => null; set { } }
+
+        /// <summary>
+        /// Reserves room at exactly <paramref name="point"/> for a body that has no parent and whose place is named by the caller
+        /// (<c>World.InoculateAt</c>), or says why not. Nothing is drawn and nothing is moved: a point in the rock, past the glass,
+        /// on a reef or on another body is refused, never raised or shifted.
+        /// </summary>
+        /// <param name="adult">The developed adult body, for the room it will grow into, as <see cref="TryReserveFounder"/> reserves.</param>
+        /// <param name="point">Where the body's root is to stand.</param>
+        /// <param name="patch">The patch the point falls in.</param>
+        /// <param name="refusal">Null when reserved; otherwise the reason, in words.</param>
+        /// <remarks>
+        /// A default member for <see cref="FounderAcceptance"/>'s reason: the tiled placer, the Unity farm's and every test fake are
+        /// unchanged, and refuse, since a placer that keeps no coordinates cannot hold a body at one.
+        /// </remarks>
+        bool TryReserveAt(Phenotype adult, Float3 point, out int patch, out string refusal)
+        {
+            patch = 0;
+            refusal = "this placer keeps no coordinates, so it cannot hold a body at a point";
+            return false;
+        }
 
         /// <summary>
         /// The round 48 founding ruling's depth (<see cref="RunConfig.FoundersFollowFoodDepth"/>):

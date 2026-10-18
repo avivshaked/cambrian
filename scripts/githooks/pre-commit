@@ -99,7 +99,7 @@ done
 # Leaks your directory layout and username. Not fatal; documentation legitimately
 # contains example paths.
 if git diff --cached -U0 --diff-filter=ACM | grep -E "^\+" \
-   | grep -qE '[A-Za-z]:\\+Users\\+[A-Za-z0-9._-]+|/home/[a-z][a-z0-9._-]*/'; then
+   | grep -qE '[A-Za-z]:[\]+Users[\]+[A-Za-z0-9._-]+|/home/[a-z][a-z0-9._-]*/'; then
   warn "absolute user path in staged content — check it is an example, not your real layout"
 fi
 

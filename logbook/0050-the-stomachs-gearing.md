@@ -11,8 +11,8 @@ ten, two worlds grew the campaign's first absorptive lines past twenty members, 
 lines ate their water down below their own break-even and starved. No second wave came after
 them.
 
-The round is two doses of one knob, five seeds each, on the owner's ruling that *"we need
-the absorbers to have children"*. It was pre-registered while round 13 was still running,
+The round is two doses of one knob, five seeds each, on the owner's ruling that the
+absorbers need to have children. It was pre-registered while round 13 was still running,
 and launched as round 13's workers freed.
 
 ## Where round 13 stood when this was written

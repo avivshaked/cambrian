@@ -41,7 +41,7 @@ as the field's root-mean-square speed over the box.
 The first cut was eleven to one vertical. The reason is continuity: a mode's vertical speed
 carries the horizontal wavenumbers and its horizontal speed the vertical one, and with
 wavelengths of the order of the box on every axis the vertical wins in a box 5 m wide and
-60 m deep. The owner's words were "in all directions really", so the vertical mode number
+60 m deep. The owner said the water should move in all directions, so the vertical mode number
 is now derived from the horizontal ones by the one condition that makes the three
 mean squares equal, and the eddies are squat because the box is narrow: vertical
 wavelengths of 20 m down to 4.4 m. The per-axis speeds agree within 0.2%, the fastest water

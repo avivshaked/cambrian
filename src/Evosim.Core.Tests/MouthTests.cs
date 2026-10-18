@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Evosim.Core;
 using Xunit;
 using Xunit.Abstractions;
@@ -311,6 +312,55 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void ADestroyedPartPushesTheBodysAgeingClockByItsShareOfTheTissue()
+        {
+            // D128, the owner's addition: a destroyed part ages the body by one doubling of its
+            // hazard for the whole body's tissue, in proportion to the share that went, times the
+            // strength. The bite is driven by hand and no metabolic step runs, so the push is the
+            // only thing that moves the clock, and at a strength of 0 nothing moves it.
+            foreach (float strength in new[] { 0f, 1f, 2.5f })
+            {
+                RunConfig config = Stage();
+                config.SenescenceDoublingSeconds = 0f;
+                config.AgeHazardBaseSeconds = 3000f;
+                config.AgeHazardDoublingFraction = 0.2f;
+                config.AgeingPerWound = strength;
+
+                var world = new World(config, seed: 3);
+                world.Inoculate(Spine(2), 1, -1f);
+                world.Inoculate(Armed(attack: 1f), 1, -1f);
+
+                Organism leaf = world.Living[0];
+                Organism claw = world.Living[1];
+
+                double tissue = leaf.TissueJoules;
+                double clock = leaf.AgeClock;
+                double clawClock = claw.AgeClock;
+
+                int took = BiteUntilAPartComesOff(world, claw, leaf, part: 1, seconds: 1f, limit: 100);
+
+                Assert.True(took > 0, "the claw never took the part");
+                Assert.Equal(1L, world.PartsKilled);
+                Assert.Contains(world.Living, c => c.Id == leaf.Id);
+
+                double share = (tissue - leaf.TissueJoules) / tissue;
+                double doubling = (double)config.AgeHazardDoublingFraction * config.AgeHazardBaseSeconds *
+                                  leaf.Genome.LifespanScale;
+                double expected = clock + strength * share * doubling;
+
+                _output.WriteLine(
+                    $"strength {strength}: {share:P1} of the tissue went, clock {clock:0.###} -> " +
+                    $"{leaf.AgeClock:0.###} s, expected {expected:0.###} s");
+
+                Assert.True(share > 0d && share < 1d, $"the share that went is {share}");
+                Assert.True(
+                    Math.Abs(leaf.AgeClock - expected) <= 1e-9 * Math.Max(1d, expected),
+                    $"strength {strength}: clock {leaf.AgeClock:R}, expected {expected:R}");
+                Assert.Equal(clawClock, claw.AgeClock);
+            }
+        }
+
+        [Fact]
         public void TheLostPartBecomesACorpseCarryingItsTissueAndItsShareOfTheReserve()
         {
             // Rule 4's parcel. The killer gains nothing: what the part was worth goes into the
@@ -393,6 +443,94 @@ namespace Evosim.Core.Tests
             Fixtures.AssertClose(whole, world.Corpses[0].Joules, Math.Max(1e-9, 1e-6 * whole));
             Fixtures.AssertClose(standingBefore, world.StandingJoules, 1e-9 * standingBefore);
             AssertBooksClose(world, "after the body died");
+        }
+
+        // ------------------------------------------- D167's leaf tank, where only a leaf is food
+
+        /// <summary>The mouth spine in structural tissue: a body a mouth can bite that is not a leaf.</summary>
+        private static Genome SwimmerSpine(int segments)
+        {
+            Genome genome = Spine(segments);
+            genome.Nodes[0].CellTypeId = CellTypeIds.Structural;
+            return genome;
+        }
+
+        /// <summary>
+        /// Bites the named part of a body off under the leaf tank's burn, and returns the victim, the
+        /// world and the spent units the bite returned. The check is on the victim: a part or a body
+        /// bitten off anything with photosynthetic tissue is food, and off anything else it burns.
+        /// </summary>
+        private static (World world, Organism victim, double spentGained) BiteUnderTheBurn(Genome victim, int part)
+        {
+            RunConfig config = Stage();
+            config.CorpseDecayPerSecond = 0.001f;
+            config.UnbittenDeathsLeaveNoCorpse = true;
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(victim, 1, -1f);
+            world.Inoculate(Armed(attack: 1f), 1, -1f);
+
+            Organism body = world.Living[0];
+            Organism claw = world.Living[1];
+            double spentBefore = world.Matter.TotalJoules;
+
+            Assert.True(BiteUntilAPartComesOff(world, claw, body, part, 1f, 100) > 0, "the claw never took the part");
+            AssertBooksClose(world, "after the bite");
+            return (world, body, world.Matter.TotalJoules - spentBefore);
+        }
+
+        [Fact]
+        public void WithTheBurnOnABittenLeafIsFood()
+        {
+            (World world, Organism leaf, double spent) = BiteUnderTheBurn(Spine(1), part: 0);
+
+            _output.WriteLine($"{world.Corpses.Count} corpse(s), {spent:0.######} spent units returned");
+            Assert.True(leaf.HasPhotosyntheticTissue);
+            Assert.Equal(1L, world.BodiesEaten);
+            Assert.DoesNotContain(world.Living, c => c.Id == leaf.Id);
+            Assert.Single(world.Corpses);
+        }
+
+        [Fact]
+        public void WithTheBurnOnABittenSwimmerBurns()
+        {
+            (World world, Organism swimmer, double spent) = BiteUnderTheBurn(SwimmerSpine(1), part: 0);
+
+            _output.WriteLine($"{world.Corpses.Count} corpse(s), {spent:0.######} spent units returned");
+            Assert.False(swimmer.HasPhotosyntheticTissue);
+            Assert.Equal(1L, world.BodiesEaten);
+            Assert.DoesNotContain(world.Living, c => c.Id == swimmer.Id);
+            Assert.Empty(world.Corpses);
+            Assert.True(spent > 0d, "the burnt body returned no spent units");
+        }
+
+        [Fact]
+        public void WithTheBurnOnAPartBittenOffALeafIsFoodAndTheLeafLivesOn()
+        {
+            // The owner's reminder of 2026-10-13: a bite kills cells, and a body dies only when it cannot
+            // bear the loss. A leaf of two parts loses one, the part is food, and the leaf grazes on.
+            (World world, Organism leaf, double spent) = BiteUnderTheBurn(Spine(2), part: 1);
+
+            _output.WriteLine($"{world.Corpses.Count} corpse(s), {spent:0.######} spent units returned");
+            Assert.Equal(1L, world.PartsKilled);
+            Assert.Equal(0L, world.BodiesEaten);
+            Assert.Equal(1, leaf.Phenotype.PartCount);
+            Assert.Contains(world.Living, c => c.Id == leaf.Id);
+            Assert.Single(world.Corpses);
+        }
+
+        [Fact]
+        public void WithTheBurnOnAPartBittenOffASwimmerBurnsAndTheSwimmerLivesOn()
+        {
+            (World world, Organism swimmer, double spent) = BiteUnderTheBurn(SwimmerSpine(2), part: 1);
+
+            _output.WriteLine($"{world.Corpses.Count} corpse(s), {spent:0.######} spent units returned");
+            Assert.Equal(1L, world.PartsKilled);
+            Assert.Equal(0L, world.BodiesEaten);
+            Assert.Equal(1, swimmer.Phenotype.PartCount);
+            Assert.Contains(world.Living, c => c.Id == swimmer.Id);
+            Assert.Empty(world.Corpses);
+            Assert.True(spent > 0d, "the burnt part returned no spent units");
         }
 
         [Fact]
@@ -788,6 +926,11 @@ namespace Evosim.Core.Tests
                 taken / config.JoulesPerUnit, world.UnitsEaten,
                 Math.Max(1e-9, 1e-6 * world.UnitsEaten));
 
+            // The body's own count of what its mouth kept (D167's "eaten").
+            Fixtures.AssertClose(kept, mouth.MouthJoules, Math.Max(1e-9, 1e-5 * taken));
+            Assert.Equal(0d, leaf.MouthJoules);
+            Assert.Equal(0d, claw.MouthJoules);
+
             AssertBooksClose(world, "after a mouthful");
 
             // A corpse is finite. Enough steps and it is gone, counted once and never a source of
@@ -806,6 +949,34 @@ namespace Evosim.Core.Tests
             Assert.True(
                 world.UnitsEaten <= held / config.JoulesPerUnit + 1e-6,
                 "more was eaten than the corpse ever held");
+
+            // Every joule the world's mouths took, less every joule of waste, is in the one mouth's
+            // count; and a checkpoint carries the count bit for bit.
+            double wasted = world.Nutrients.TotalJoules - snowBefore;
+            Fixtures.AssertClose(
+                world.UnitsEaten * config.JoulesPerUnit - wasted, mouth.MouthJoules,
+                Math.Max(1e-9, 1e-5 * held));
+
+            byte[] state;
+            using (var buffer = new System.IO.MemoryStream())
+            {
+                using (var w = new System.IO.BinaryWriter(buffer, System.Text.Encoding.UTF8, leaveOpen: true))
+                {
+                    world.WriteState(w);
+                }
+
+                state = buffer.ToArray();
+            }
+
+            var restored = new World(config, seed: 3);
+            using (var r = new System.IO.BinaryReader(new System.IO.MemoryStream(state), System.Text.Encoding.UTF8))
+            {
+                restored.ReadState(r);
+            }
+
+            Assert.Equal(
+                BitConverter.DoubleToInt64Bits(mouth.MouthJoules),
+                BitConverter.DoubleToInt64Bits(restored.Living.Single(c => c.Id == mouth.Id).MouthJoules));
         }
 
         [Fact]

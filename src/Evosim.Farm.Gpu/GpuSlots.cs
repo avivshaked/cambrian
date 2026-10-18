@@ -99,6 +99,22 @@ namespace Evosim.Farm.Gpu
             return false;
         }
 
+        /// <summary>Why <see cref="ClassFor"/> found no class for a body, in words a run's ending can carry.</summary>
+        public string WhyNoClass(Creature c)
+        {
+            if (c.Phenotype.PartCount != c.Links)
+            {
+                return FormattableString.Invariant($"its plan has {c.Phenotype.PartCount} parts and its body {c.Links} links");
+            }
+
+            if (OverInputs(c)) return "one of its neurons takes more than the kernel's three inputs";
+
+            int neurons = Math.Max(NeuronsOf(c), c.Brain.NeuronCount);
+            ClassSlots top = Classes[Classes.Length - 1];
+            return FormattableString.Invariant(
+                $"it has {c.Links} links and {neurons} neurons, and the largest class holds {top.Links} links and {top.Neurons} neurons");
+        }
+
         /// <summary>The smallest class that holds the body, or -1.</summary>
         public int ClassFor(Creature c)
         {

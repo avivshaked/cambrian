@@ -1,4 +1,4 @@
-# Build spec: positions in the record (owner: "build these", 2026-09-10)
+# Build spec: positions in the record (the owner told the agent to build these, 2026-09-10)
 
 Read `CLAUDE.md` (the conventions on a run directory and `JsonlWriter`'s one-row-one-line rule; the
 gotcha "A lineage dissection can answer less than it looks like it can"; the D088 gotcha), then

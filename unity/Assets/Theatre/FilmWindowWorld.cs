@@ -176,15 +176,61 @@ namespace Evosim.Theatre
         public TheatrePalette Palette
         {
             get => View.Palette;
-            set => View.Palette = value;
+            set
+            {
+                View.Palette = value;
+                if (CorpseView != null) CorpseView.Palette = value;
+            }
         }
 
         /// <summary>Whether the palette paints the guilds.</summary>
         public bool ColourByCellType
         {
             get => View.ColourByCellType;
-            set => View.ColourByCellType = value;
+            set
+            {
+                View.ColourByCellType = value;
+                if (CorpseView != null) CorpseView.ColourByCellType = value;
+            }
         }
+
+        /// <summary>
+        /// The corpses (D127), in a view of their own that the palette paints as dead tissue, or null
+        /// for a window that holds none.
+        /// </summary>
+        public LiveWorldView CorpseView { get; private set; }
+
+        /// <summary>Corpses drawn in the frame shown.</summary>
+        public int CorpsesDrawn { get; private set; }
+
+        /// <summary>Corpses this build could not develop, or whose body has no genome in the window.</summary>
+        public int CorpsesWithoutABody { get; private set; }
+
+        /// <summary>
+        /// How long a newborn takes to grow in and fade in, seconds of the run at the film's own pace,
+        /// from the first frame it is drawn in; a time-lapse stretches it by its <see cref="Speed"/>,
+        /// so it takes this long on screen at any speed. 0 draws it whole at once, as every film did
+        /// before 2026-09-28.
+        /// </summary>
+        private static readonly float BirthSeconds = TheatreSkin.Dial("EVOSIM_THEATRE_BIRTH_SECONDS", 1.5f, 0f, 30f);
+
+        /// <summary>A newborn drawn at its first frame, as a fraction of its own size.</summary>
+        private const float BirthStartScale = 0.25f;
+
+        /// <summary>
+        /// How long a corpse fades out before the run removes it at its floor (D127), seconds of the
+        /// run. 0 lets it vanish between two frames, as every film did before 2026-09-28.
+        /// </summary>
+        private static readonly float CorpseFadeSeconds = TheatreSkin.Dial("EVOSIM_THEATRE_CORPSE_FADE_SECONDS", 600f, 0f, 36000f);
+
+        /// <summary>
+        /// Seconds of the run a second of film: 1 at the run's own pace, more for a time-lapse
+        /// (<c>EVOSIM_THEATRE_FILM_SPEED</c>, set by the film).
+        /// </summary>
+        public double Speed { get; set; } = 1d;
+
+        /// <summary>The second each body born inside the window was first drawn at.</summary>
+        private readonly Dictionary<long, double> _firstDrawn = new Dictionary<long, double>();
 
         private FilmWindowWorld() { }
 
@@ -268,6 +314,11 @@ namespace Evosim.Theatre
             world._modeSet = true;
 
             world.View = new LiveWorldView(world.Record.Config, "Film Window");
+
+            if (world.Window.CorpseCount > 0)
+            {
+                world.CorpseView = new LiveWorldView(world.Record.Config, "Film Window Corpses") { Corpses = true };
+            }
 
             foreach (string note in world.Window.Notes) Debug.LogWarning("[Theatre] film window: " + note);
 
@@ -402,8 +453,14 @@ namespace Evosim.Theatre
                     ? 1f
                     : TheatrePalette.Tint(body.ReserveSeconds, Record.Config.EnergyFullScaleSeconds);
 
+                // A newborn grows in from a quarter of its size and fades in over its first
+                // BirthSeconds, so a birth reads as one and not as a body that pops into the water.
+                // A body alive at the start of the window is drawn whole.
+                float appear = Appear(id);
+                float grow = Mathf.Lerp(BirthStartScale, 1f, appear);
+
                 // A pose that is not finite leaves the body where it last stood, inside the view.
-                if (!View.Place(id, adult.Body, phenotype, pose.Root, adult.Positions, adult.Rotations, tint)) continue;
+                if (!View.Place(id, adult.Body, phenotype, pose.Root, adult.Positions, adult.Rotations, tint, grow, appear)) continue;
 
                 _indexOf[id] = _drawn.Count;
                 _drawn.Add(new Drawn
@@ -428,6 +485,8 @@ namespace Evosim.Theatre
             }
 
             View.EndFrame();
+
+            ShowCorpses();
         }
 
         /// <summary>A body the frame could not lay on any plan: kept standing if it stands, counted.</summary>
@@ -445,7 +504,7 @@ namespace Evosim.Theatre
         }
 
         /// <summary>Dresses every body the palette has not reached yet: what a still needs before it is taken.</summary>
-        public int DressAll() => View.DressUndressed();
+        public int DressAll() => View.DressUndressed() + (CorpseView?.DressUndressed() ?? 0);
 
         // ---------------------------------------------------------------- the bodies
 
@@ -754,6 +813,7 @@ namespace Evosim.Theatre
 
             if (verdict != null && verdict.SourcesDiffer.Count > 0) extra += "  sources differ";
             if (SourceNote != null) extra += "  run differs";
+            if (CorpseView != null) extra += "  " + CorpsesDrawn + " corpses";
 
             int unmatched = WithoutAGenome + PoseRefusals;
             if (unmatched > 0) extra += "  " + unmatched + " unmatched";
@@ -794,12 +854,208 @@ namespace Evosim.Theatre
 
         private static string Seconds(double t) => t.ToString("0.###", CultureInfo.InvariantCulture);
 
+        // ---------------------------------------------------------------- the corpses (D127)
+
+        /// <summary>
+        /// A corpse's body, developed once: its adult at the plan it died on, scaled to the size it
+        /// died at, laid out straight in the attitude it died in.
+        /// </summary>
+        private sealed class CorpseBody
+        {
+            public Phenotype Adult;
+            public Phenotype Body;
+            public Vector3[] Positions;
+            public Quaternion[] Rotations;
+
+            /// <summary>The volume-weighted centre of the laid-out parts, from the root.</summary>
+            public Vector3 Centre;
+        }
+
+        private readonly Dictionary<long, CorpseBody> _corpseBodies = new Dictionary<long, CorpseBody>();
+        private readonly List<FilmWindowCorpsePlace> _corpsePlaces = new List<FilmWindowCorpsePlace>();
+
+        /// <summary>
+        /// Puts every corpse standing at this frame's second where the window has it, shrunk by what
+        /// it has lost, in its own view.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The world's point is the body's centre.</b> The farm reports a body at its centre of
+        /// mass and a corpse is founded there, so the laid-out body hangs from the root at which its
+        /// shrunk centre lands on that point.
+        /// </para>
+        /// <para>
+        /// <b>It shrinks by the cube root of what it holds.</b> A corpse's joules are its tissue, and a
+        /// tissue's joules are its volume, so a corpse holding a share of what it was is drawn at the
+        /// cube root of that share in every length: 0.37 of its first size when it leaves at a
+        /// twentieth. The shrink is a scale on the view's root and not a new phenotype, so a corpse is
+        /// dressed once and never rebuilt.
+        /// </para>
+        /// <para>
+        /// <b>What it cannot show.</b> The pose a corpse keeps is its root's attitude at death, and
+        /// its joints are drawn straight, because no joint angle is kept past the death. A corpse the
+        /// window has no genome for is not drawn, and counted.
+        /// </para>
+        /// </remarks>
+        private void ShowCorpses()
+        {
+            CorpsesDrawn = 0;
+            if (CorpseView == null) return;
+
+            Window.CorpsesAt(Second, _corpsePlaces);
+            CorpseView.BeginFrame();
+
+            for (int i = 0; i < _corpsePlaces.Count; i++)
+            {
+                FilmWindowCorpsePlace place = _corpsePlaces[i];
+                CorpseBody corpse = CorpseBodyOf(place.Corpse);
+                if (corpse == null) continue;
+
+                float shrink = Mathf.Pow(Mathf.Clamp(place.Fraction, 1e-3f, 1f), 1f / 3f);
+                Vector3 root = new Vector3(place.X, place.Y, place.Z) - shrink * corpse.Centre;
+
+                if (CorpseView.Place(
+                        CorpseKey(place.Corpse.Id), corpse.Adult, corpse.Body, root,
+                        corpse.Positions, corpse.Rotations, 0f, shrink, CorpseFade(place.Fraction)))
+                {
+                    CorpsesDrawn++;
+                }
+            }
+
+            CorpseView.EndFrame();
+        }
+
+        /// <summary>
+        /// A corpse's key in its own view and in the palette's cache: never a living body's id, so the
+        /// palette cannot take a corpse for the body it was.
+        /// </summary>
+        private static long CorpseKey(long id) => -(id + 1L);
+
+        /// <summary>
+        /// How far a newborn is through its entrance: 0 at the first frame it is drawn in, 1 after
+        /// <see cref="BirthSeconds"/>, eased. 1 for a body alive at the start of the window.
+        /// </summary>
+        private float Appear(long id)
+        {
+            if (!(BirthSeconds > 0f) || !Window.TryBirthOf(id, out FilmWindowEvent birth)) return 1f;
+
+            if (!_firstDrawn.TryGetValue(id, out double first) || Second < first)
+            {
+                // Timed from the frame it first appears in, a metabolic step or so after its birth
+                // row. A film that opens more than a second after the birth times it from the
+                // birth itself, so a body born long before the first frame is not drawn arriving.
+                first = Second - birth.Seconds <= 1.0 ? Second : birth.Seconds;
+                _firstDrawn[id] = first;
+            }
+
+            float u = Mathf.Clamp01((float)(Second - first) / (BirthSeconds * (float)Math.Max(1d, Speed)));
+            return u * u * (3f - 2f * u);
+        }
+
+        /// <summary>
+        /// How much of a corpse is drawn as it nears the floor at which the run removes it (D127): 1
+        /// until <see cref="CorpseFadeSeconds"/> before it leaves, then eased to 0 at the floor. Read
+        /// from the share it still holds, so the fade ends where the run removes it, whatever
+        /// second the window opens at.
+        /// </summary>
+        private float CorpseFade(float fraction)
+        {
+            float floor = Record.Config.CorpseLeavesBelowFraction;
+            float rate = Record.Config.CorpseDecayPerSecond;
+            if (!(floor > 0f) || !(rate > 0f) || !(CorpseFadeSeconds > 0f)) return 1f;
+
+            float top = floor * Mathf.Exp(rate * CorpseFadeSeconds);
+            float u = Mathf.Clamp01((fraction - floor) / (top - floor));
+            return u * u * (3f - 2f * u);
+        }
+
+        /// <summary>A corpse's body, developed and laid out on first sight, or null when it cannot be.</summary>
+        private CorpseBody CorpseBodyOf(FilmWindowCorpse corpse)
+        {
+            if (_corpseBodies.TryGetValue(corpse.Id, out CorpseBody found)) return found;
+
+            CorpseBody body = null;
+            Grown grown = GrownOf(corpse.Id);
+
+            if (grown == null || grown.Genome == null)
+            {
+                CorpsesWithoutABody++;
+            }
+            else
+            {
+                try
+                {
+                    body = LayOut(grown.Genome, corpse);
+                    if (body == null) CorpsesWithoutABody++;
+                }
+                catch (Exception e)
+                {
+                    CorpsesWithoutABody++;
+
+                    if (_firstUnreadable == null)
+                    {
+                        _firstUnreadable = "corpse of creature " + corpse.Id + ": " + e.Message;
+                        Debug.LogWarning("[Theatre] film window: a corpse this build could not develop, not drawn: " + _firstUnreadable);
+                    }
+                }
+            }
+
+            _corpseBodies[corpse.Id] = body;
+            return body;
+        }
+
+        /// <summary>
+        /// How far a corpse's body reaches at its first size, m, for a shot to frame it by: drawn, it is
+        /// this times the cube root of the share of its joules it holds. NaN when the window has no
+        /// such corpse or this build cannot develop it.
+        /// </summary>
+        public float CorpseReach(long id)
+        {
+            if (!Window.TryCorpse(id, out FilmWindowCorpse corpse)) return float.NaN;
+
+            CorpseBody body = CorpseBodyOf(corpse);
+            return body != null ? SnapshotCamera.ReachOf(body.Body) : float.NaN;
+        }
+
+        private CorpseBody LayOut(Genome genome, FilmWindowCorpse corpse)
+        {
+            Phenotype adult = SnapshotWorld.DevelopWithPlan(genome, Record.Config, corpse.ModuleCounts, corpse.LostPaths);
+            if (adult.PartCount == 0) return null;
+
+            float scale = corpse.ScaledBy;
+            Phenotype sized = scale > 0f && scale < 1f ? adult.Scaled(scale, Record.Config.Shapes) : adult;
+
+            var pose = new RecordedPose
+            {
+                Root = Vector3.zero,
+                Attitude = corpse.HasPose ? new Quaternion(corpse.Qx, corpse.Qy, corpse.Qz, corpse.Qw).normalized : Quaternion.identity,
+                Joint = new float[DofOf(sized)],
+            };
+
+            var body = new CorpseBody
+            {
+                Adult = adult,
+                Body = sized,
+                Positions = new Vector3[sized.PartCount],
+                Rotations = new Quaternion[sized.PartCount],
+            };
+
+            if (!RecordedPoses.Apply(sized, pose, body.Positions, body.Rotations, out _)) return null;
+
+            body.Centre = CentreOf(sized, Vector3.zero, body.Positions);
+            return body;
+        }
+
         // ---------------------------------------------------------------- housekeeping
 
         public void Dispose()
         {
             View?.Dispose();
             View = null;
+
+            CorpseView?.Dispose();
+            CorpseView = null;
+            _corpseBodies.Clear();
 
             Window?.Dispose();
             Window = null;

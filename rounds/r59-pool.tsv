@@ -1,0 +1,15 @@
+path	weight	origin	run	id	kind	ownEaten
+../inocula/pool-r47/stomach-r45s1-100.json	0.025	stomach	pool-r47	-	stomach	-
+../inocula/pool-r47/stomach-link-r46s1-1182.json	0.025	stomach	pool-r47	-	stomach	-
+../inocula/pool-r47/stomach-link-r46s3-1513.json	0.025	stomach	pool-r47	-	stomach	-
+../inocula/pool-r47/stomach-link-r46s3-2156.json	0.025	stomach	pool-r47	-	stomach	-
+../inocula/r59-direction-tops/direction-sparse-g33-47.json	0.05	swimmer	leaf-direction-sparse	g33.47	swimmer	443.1
+../inocula/r59-direction-tops/direction-sparse-g22-27.json	0.05	swimmer	leaf-direction-sparse	g22.27	swimmer	437.3
+../inocula/r59-direction-tops/direction-sparse-g33-30.json	0.05	swimmer	leaf-direction-sparse	g33.30	swimmer	434.1
+../inocula/r59-direction-tops/direction-sparse-g33-37.json	0.05	swimmer	leaf-direction-sparse	g33.37	swimmer	423.1
+../inocula/r59-direction-tops/direction-sparse-g31-19.json	0.05	swimmer	leaf-direction-sparse	g31.19	swimmer	420.0
+../inocula/r59-direction-tops/direction-sparse-g30-40.json	0.05	swimmer	leaf-direction-sparse	g30.40	swimmer	396.9
+../inocula/r59-direction-tops/direction-sparse-g16-2.json	0.05	swimmer	leaf-direction-sparse	g16.2	swimmer	387.4
+../inocula/r59-direction-tops/direction-sparse-g14-31.json	0.05	swimmer	leaf-direction-sparse	g14.31	swimmer	384.4
+../inocula/r59-direction-tops/direction-sparse-g12-35.json	0.05	swimmer	leaf-direction-sparse	g12.35	swimmer	381.2
+../inocula/r59-direction-tops/direction-sparse-g15-36.json	0.05	swimmer	leaf-direction-sparse	g15.36	swimmer	378.6

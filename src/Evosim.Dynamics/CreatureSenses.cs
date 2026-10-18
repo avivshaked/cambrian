@@ -59,14 +59,28 @@ namespace Evosim.Dynamics
         private readonly bool _readsJoint;
         private readonly bool _readsFlow;
         private readonly bool _readsChemical;
+        private readonly bool _readsScent;
         private readonly bool _readsEnergy;
+        private readonly bool _readsDrive;
+        private readonly bool _readsRock;
+        private readonly float[] _rock;
+        private readonly bool _readsLeaf;
+        private readonly bool _readsLeafDirection;
+        private readonly float[] _leaf;
+        private readonly float[] _leafDirection;
+        private readonly float _leafHalfScale;
 
         private readonly float[] _depth;
         private readonly float[] _up;
         private readonly float[] _angle;
         private readonly float[] _rate;
+        private readonly float[] _stroke;
+        private readonly float[] _hold;
+        private readonly float[] _ramp;
         private readonly float[] _flow;
         private readonly float[] _chemical;
+        private readonly float[] _scent;
+        private readonly float _scentHalfScale;
         private float _energy;
 
         private readonly float _worldDepthMetres;
@@ -83,6 +97,19 @@ namespace Evosim.Dynamics
         /// bodies in worlds that have no field at all.
         /// </remarks>
         public IMatterField Nutrients { get; set; }
+
+        /// <summary>
+        /// The field <see cref="SensorChannel.Scent"/> reads — <c>World.Scent</c>. Null reads 0,
+        /// the smell of no corpse, which is a real state and not a stand-in.
+        /// </summary>
+        public ScentField Scent { get; set; }
+
+        /// <summary>
+        /// The field <see cref="SensorChannel.LeafScent"/> and
+        /// <see cref="SensorChannel.LeafScentDirection"/> read — <c>World.LeafScent</c> (D167).
+        /// Null reads 0, the smell of no living leaf.
+        /// </summary>
+        public ScentField LeafScent { get; set; }
 
         /// <summary>
         /// The creature's own account, for <see cref="SensorChannel.Energy"/> — the farm's
@@ -133,7 +160,18 @@ namespace Evosim.Dynamics
                           Brain.MaskReads(_mask, SensorChannel.JointAngularVelocity);
             _readsFlow = Brain.MaskReads(_mask, SensorChannel.Flow);
             _readsChemical = Brain.MaskReads(_mask, SensorChannel.Chemical);
+            _readsScent = Brain.MaskReads(_mask, SensorChannel.Scent);
             _readsEnergy = Brain.MaskReads(_mask, SensorChannel.Energy);
+            _readsDrive = Brain.MaskReads(_mask, SensorChannel.Stroke) ||
+                          Brain.MaskReads(_mask, SensorChannel.Hold) ||
+                          Brain.MaskReads(_mask, SensorChannel.Ramp);
+            _readsRock = Brain.MaskReads(_mask, SensorChannel.BedTouch);
+            _rock = new float[body.Links];
+            _readsLeaf = Brain.MaskReads(_mask, SensorChannel.LeafScent);
+            _readsLeafDirection = Brain.MaskReads(_mask, SensorChannel.LeafScentDirection);
+            _leaf = new float[body.Links];
+            _leafDirection = new float[3 * body.Links];
+            _leafHalfScale = (float)System.Math.Max(1e-6, config.LeafScentHalfScaleSquareMetres);
 
             _worldDepthMetres = (float)System.Math.Max(0.001, config.WorldDepthMetres);
             _chemicalHalfScale =
@@ -145,10 +183,15 @@ namespace Evosim.Dynamics
             _up = new float[body.Links];
             _flow = new float[body.Links * 3];
             _chemical = new float[body.Links];
+            _scent = new float[body.Links];
+            _scentHalfScale = (float)System.Math.Max(1e-6, config.ScentHalfScaleJoules);
 
             int dof = body.Dof > 0 ? body.Dof : 1;
             _angle = new float[dof];
             _rate = new float[dof];
+            _stroke = new float[dof];
+            _hold = new float[dof];
+            _ramp = new float[dof];
         }
 
         /// <summary>Reads the body. Call once per step, before <c>Brain.Step</c>.</summary>
@@ -159,9 +202,23 @@ namespace Evosim.Dynamics
             // slowly than it is read here.
             if (_readsEnergy && Reserve != null) _energy = Squash(Reserve.SecondsOfReserve);
 
-            bool smells = _readsChemical && Nutrients != null;
+            // The touch of the rock as the last step's contact pass left it, so one step stale. A
+            // world without the record reads 0, as an unimplemented channel does.
+            if (_readsRock)
+            {
+                bool[] touched = _body.RockTouched;
+                for (int b = 0; b < _body.Links; b++)
+                {
+                    _rock[b] = touched != null && touched[b] ? 1f : 0f;
+                }
+            }
 
-            if (!_readsDepth && !_readsUp && !_readsJoint && !_readsFlow && !smells) return;
+            bool smells = _readsChemical && Nutrients != null;
+            bool scents = _readsScent && Scent != null;
+            bool leaves = (_readsLeaf || _readsLeafDirection) && LeafScent != null;
+
+            if (!_readsDepth && !_readsUp && !_readsJoint && !_readsFlow && !smells && !scents && !_readsDrive &&
+                !leaves) return;
 
             float flowScale = (float)System.Math.Max(1e-6, _config.FlowFullScaleMetresPerSecond);
             float rateScale = (float)System.Math.Max(1e-6, _config.JointRateFullScale);
@@ -183,6 +240,11 @@ namespace Evosim.Dynamics
                     _depth[b] = 0f;
                     _up[b] = 0f;
                     _chemical[b] = 0f;
+                    _scent[b] = 0f;
+                    _leaf[b] = 0f;
+                    _leafDirection[3 * b] = 0f;
+                    _leafDirection[3 * b + 1] = 0f;
+                    _leafDirection[3 * b + 2] = 0f;
 
                     if (_readsFlow)
                     {
@@ -219,6 +281,14 @@ namespace Evosim.Dynamics
                     _chemical[b] = density > 0f ? density / (density + _chemicalHalfScale) : 0f;
                 }
 
+                if (scents)
+                {
+                    float s = Scent.At((float)px, (float)py, (float)pz);
+                    _scent[b] = s > 0f ? s / (s + _scentHalfScale) : 0f;
+                }
+
+                if (leaves) SampleLeaf(b, (float)px, (float)py, (float)pz);
+
                 if (_readsFlow)
                 {
                     Mat3 rotation = Mat3.Read(_body.RotationMatrix, 9 * b);
@@ -231,7 +301,7 @@ namespace Evosim.Dynamics
                     _flow[at + 2] = Clamp((float)(local.Z / flowScale));
                 }
 
-                if (!_readsJoint) continue;
+                if (!_readsJoint && !_readsDrive) continue;
 
                 int n = _body.DofCount[b];
                 int offset = _body.DofStart[b];
@@ -239,17 +309,72 @@ namespace Evosim.Dynamics
 
                 for (int d = 0; d < n; d++)
                 {
-                    // Against the joint's own upper limit, so a hinge free to swing a little and
-                    // one free to swing a lot both report "at the stop" as 1.
-                    double limit = System.Math.Abs(_body.LimitHi[offset + d]);
+                    if (_readsJoint)
+                    {
+                        // Against the joint's own upper limit, so a hinge free to swing a little and
+                        // one free to swing a lot both report "at the stop" as 1.
+                        double limit = System.Math.Abs(_body.LimitHi[offset + d]);
 
-                    _angle[offset + d] = limit > 1e-6
-                        ? Clamp((float)(_body.Q[offset + d] / limit))
-                        : 0f;
+                        _angle[offset + d] = limit > 1e-6
+                            ? Clamp((float)(_body.Q[offset + d] / limit))
+                            : 0f;
 
-                    _rate[offset + d] = Clamp((float)(_body.Qd[offset + d] / rateScale));
+                        _rate[offset + d] = Clamp((float)(_body.Qd[offset + d] / rateScale));
+                    }
+
+                    if (_readsDrive) SampleDrive(b, offset + d);
                 }
             }
+        }
+
+        /// <summary>
+        /// D167's leaf smell at one part: the squashed field, and in the direction form the field's
+        /// gradient in the part's own frame, unit length, times that value.
+        /// </summary>
+        private void SampleLeaf(int b, float px, float py, float pz)
+        {
+            float s = LeafScent.At(px, py, pz);
+            float strength = s > 0f ? s / (s + _leafHalfScale) : 0f;
+            _leaf[b] = strength;
+
+            if (!_readsLeafDirection) return;
+
+            Float3 g = LeafScent.GradientAt(px, py, pz);
+            Mat3 rotation = Mat3.Read(_body.RotationMatrix, 9 * b);
+            Vec3 local = rotation.TransposedTimes(new Vec3(g.X, g.Y, g.Z));
+            double length = local.Magnitude;
+            int at = 3 * b;
+            if (length > 0 && strength > 0f)
+            {
+                double scale = strength / length;
+                _leafDirection[at] = (float)(local.X * scale);
+                _leafDirection[at + 1] = (float)(local.Y * scale);
+                _leafDirection[at + 2] = (float)(local.Z * scale);
+            }
+            else
+            {
+                _leafDirection[at] = 0f;
+                _leafDirection[at + 1] = 0f;
+                _leafDirection[at + 2] = 0f;
+            }
+        }
+
+        /// <summary>
+        /// The drive sense on one degree of freedom (<see cref="SensorChannel.Stroke"/>,
+        /// <see cref="SensorChannel.Hold"/>, <see cref="SensorChannel.Ramp"/>): the envelope as the
+        /// last step's drive left it, so one step stale, as Flow is. The drive is this body's own and
+        /// is written only by its own step, so the read is no shared state.
+        /// </summary>
+        private void SampleDrive(int link, int at)
+        {
+            if (at >= _stroke.Length) return;
+            EffectorDrive drive = _body.Drive;
+            double stroke = at < drive.Stroke.Length ? drive.Stroke[at] : 0.0;
+            double hold = _body.JointGenes[link].Hold;
+
+            _stroke[at] = Clamp((float)stroke);
+            _hold[at] = hold > 0 ? (float)System.Math.Max(0.0, System.Math.Min(1.0, drive.HoldLeft(at) / hold)) : 0f;
+            _ramp[at] = Clamp((float)(drive.PowerTarget(at) - stroke));
         }
 
         public float Read(int partIndex, SensorChannel channel, int index)
@@ -262,6 +387,11 @@ namespace Evosim.Dynamics
                 case SensorChannel.OrientationUp: return _up[partIndex];
                 case SensorChannel.JointAngle: return Dof(_angle, partIndex, index);
                 case SensorChannel.JointAngularVelocity: return Dof(_rate, partIndex, index);
+
+                // The drive sense (RunConfig.SenseDrive): the joint's envelope, per degree of freedom.
+                case SensorChannel.Stroke: return Dof(_stroke, partIndex, index);
+                case SensorChannel.Hold: return Dof(_hold, partIndex, index);
+                case SensorChannel.Ramp: return Dof(_ramp, partIndex, index);
 
                 // The world, once the body has been given one; the standing-in constant
                 // otherwise, which is not the zero an unimplemented channel reads in the farm.
@@ -277,6 +407,9 @@ namespace Evosim.Dynamics
                 case SensorChannel.Energy:
                     return Reserve != null ? _energy : _config.ConstantChemicalAndEnergy;
 
+                case SensorChannel.Scent:
+                    return Scent != null ? _scent[partIndex] : 0f;
+
                 case SensorChannel.Flow:
                     return index >= 0 && index < 3 ? _flow[partIndex * 3 + index] : 0f;
 
@@ -289,6 +422,19 @@ namespace Evosim.Dynamics
                 case SensorChannel.Contact:
                     return Contact != null && partIndex < Contact.Length && Contact[partIndex]
                         ? 1f
+                        : 0f;
+
+                // D162: this part against the bed or a reef on the last physics step.
+                case SensorChannel.BedTouch:
+                    return partIndex < _rock.Length ? _rock[partIndex] : 0f;
+
+                // D167: the living leaves' smell, and its direction in the part's own frame.
+                case SensorChannel.LeafScent:
+                    return partIndex < _leaf.Length ? _leaf[partIndex] : 0f;
+
+                case SensorChannel.LeafScentDirection:
+                    return index >= 0 && index < 3 && partIndex < _leaf.Length
+                        ? _leafDirection[partIndex * 3 + index]
                         : 0f;
 
                 // Already a share of the part's own pool, so it needs no scale of its own: 0 is

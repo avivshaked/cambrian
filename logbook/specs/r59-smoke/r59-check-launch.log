@@ -1,0 +1,191 @@
+2026-10-14 18:09:22 r59 check begins: runs in D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs, allowed beside: Evosim\.NurseryRoom\.dll|Evosim\.Nursery\.dll|D:\\Projects\\code\\|build-server shutdown
+2026-10-14 18:09:22   D:\Projects\experiments\evolution-simulator\scratch\wt-r59 on round-59 at d5e70be8, asked for d5e70be8
+2026-10-14 18:09:22   build: card probe False, O2 False; Evosim.Farm.exe 21d43964964a4219, Evosim.Farm.dll e75e574f229c8e76, Evosim.Farm.Gpu.dll 6fba5d0ebdbd82b5, Evosim.Core.dll 85238eaf451ac5a3, Evosim.Dynamics.dll 78cb5f0399a9176f
+2026-10-14 18:09:23   pool list: D:\Projects\experiments\evolution-simulator\scratch\wt-r59\rounds\r59-pool.tsv: 4 stomachs at 0.025 and 10 swimmers at 0.05, hashes checked against origins.tsv; pool share 0.6
+2026-10-14 18:09:23   names free: r59-k; r59-k-c, r59-k-p2, r59-k-p3, r59-k-x
+2026-10-14 18:09:23   names free: r59-kr; r59-kr-c, r59-kr-p2, r59-kr-p3, r59-kr-x
+2026-10-14 18:09:23 == r59-k: card-group -Name r59-k -Arms r59-k-c,r59-k-p2,r59-k-p3,r59-k-x -Seconds 30 -Group 32 -WallMinutes 120 -Mask 983040 -Threads 4 -Transport -Scent -Concurrent -SpinLimit default -RunsRoot D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs -Exe D:\Projects\experiments\evolution-simulator\scratch\wt-r59\artifacts\Evosim.Farm\bin\Release\net8.0\Evosim.Farm.exe -Device cpu -SampleCpu -SampleCores -HeatStop -LogOutside -CheckpointEvery 15 -AllowBeside Evosim\.NurseryRoom\.dll|Evosim\.Nursery\.dll|D:\\Projects\\code\\|build-server shutdown -Launcher D:\Projects\experiments\evolution-simulator\scratch\wt-r59\rounds\env-r59.ps1,D:\Projects\experiments\evolution-simulator\scratch\wt-r59\rounds\env-r59-planted.ps1,D:\Projects\experiments\evolution-simulator\scratch\wt-r59\rounds\env-r59-planted.ps1,D:\Projects\experiments\evolution-simulator\scratch\wt-r59\rounds\env-r59-sixth.ps1 -Seeds 1,2,3,2
+2026-10-14 18:20:53   watch pid 68116: ended
+2026-10-14 18:20:53   2026-10-14 18:09:24   allowed beside: dotnet 96876: "C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe" artifacts\Evosim.NurseryRoom\bin\Debug\net8.0\Evosim.NurseryRoom.dll --root D:\Projects\experiments\evolution-simulator
+2026-10-14 18:20:53   2026-10-14 18:09:24   allowed beside: dotnet 103108: "C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe" D:\Projects\experiments\evolution-simulator\scratch\wt-nursery-d178\artifacts\nursery-d178-900e5267\Evosim.Nursery.dll -
+2026-10-14 18:20:53   2026-10-14 18:20:39   farm exited: True, code 0
+2026-10-14 18:20:53   2026-10-14 18:20:42   r59-k-c: ended (budget); t 30 alive 41; 10.2 wall min, 0.05 times real time over the 30 s stepped; run D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs\r59-k-c\2026-10-14-170944-a6a86746
+2026-10-14 18:20:53   2026-10-14 18:20:42   r59-k-p2: ended (budget); t 30 alive 42; 10.3 wall min, 0.05 times real time over the 30 s stepped; run D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs\r59-k-p2\2026-10-14-170945-98c0f323
+2026-10-14 18:20:53   2026-10-14 18:20:42   r59-k-p3: ended (budget); t 30 alive 42; 10.6 wall min, 0.05 times real time over the 30 s stepped; run D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs\r59-k-p3\2026-10-14-170944-98c0f323
+2026-10-14 18:20:53   2026-10-14 18:20:42   r59-k-x: ended (budget); t 30 alive 42; 10.7 wall min, 0.05 times real time over the 30 s stepped; run D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs\r59-k-x\2026-10-14-170946-37f12db4
+2026-10-14 18:20:53   2026-10-14 18:20:42   books over 3 stats rows of r59-k-c: max |auditResidual| 0 (under 0.1 J: True); max |matterResidual| 1.34815749674999E-08 (under 1e-5: True)
+2026-10-14 18:20:53   2026-10-14 18:20:42   books over 3 stats rows of r59-k-p2: max |auditResidual| 9.09494701772928E-13 (under 0.1 J: True); max |matterResidual| 2.07438262123105E-08 (under 1e-5: True)
+2026-10-14 18:20:53   2026-10-14 18:20:42   books over 3 stats rows of r59-k-p3: max |auditResidual| 1.81898940354586E-12 (under 0.1 J: True); max |matterResidual| 9.80914904857855E-08 (under 1e-5: True)
+2026-10-14 18:20:53   2026-10-14 18:20:42   books over 3 stats rows of r59-k-x: max |auditResidual| 8.52368430059869E-07 (under 0.1 J: True); max |matterResidual| 6.10492065789003E-08 (under 1e-5: True)
+2026-10-14 18:20:54   check r59-k-c: ok    ended on budget: ended (budget), t 30, alive 41
+2026-10-14 18:20:54   check r59-k-c: ok    transport: run.json says 'card', 'card' asked for
+2026-10-14 18:20:54   check r59-k-c: ok    books: over 3 rows, |audit| at most 0 J, |matter| at most 1.34815749674999E-08
+2026-10-14 18:20:54   check r59-k-c: ok    diverged 0: 0
+2026-10-14 18:20:54   check r59-k-c: ok    refused 0: 0
+2026-10-14 18:20:54   check r59-k-c: ok    overflow 0: 0/0/0/0
+2026-10-14 18:20:54   check r59-k-c: ok    neuronsAtCeiling 0: 0
+2026-10-14 18:20:54   check r59-k-c: ok    no driver event: 0 from 18:08:53 to 18:20:53
+2026-10-14 18:20:54   check r59-k-c: ok    watch alive at its check: 2026-10-14 18:09:59   watch alive after its first polls (18:09:59)
+2026-10-14 18:20:54   check r59-k-c: ok    watch ended on the true end: watch: 2026-10-14T18:20:51 the run ended; no nvlddmkm events; read: 2026-10-14 18:20:42
+2026-10-14 18:20:54   check r59-k-c: ok    nothing left running: 
+2026-10-14 18:20:54   check r59-k-c: info  pace: 10.2 wall min, 0.05 times real time over the 30 s stepped
+2026-10-14 18:20:54   check r59-k-c: info  drive limited 381, drag limited 0 (cumulative since the founding)
+2026-10-14 18:20:54   check r59-k-c: info  card peak 42 C, 56%, 49.76 W, memory at most 4602 MiB over 43 samples; load 8.1% on average over the 39 samples above 0
+2026-10-14 18:20:54   check r59-k-c: info  cpu 62 to 85 C over 43 reads, verdicts OK
+2026-10-14 18:20:54   check r59-k-c: VERDICT: every condition holds
+2026-10-14 18:20:54   r59-k-c's engine:        gpu single cpu-accelerator g4 classes 2/4/8/16 concurrent transport scent spin 5000
+2026-10-14 18:20:54   r59-k-c: status ended (budget), seed 1, configHash a6a86746235a47a6, source.gitCommit d5e70be8bbc2bb8e505842aa5c3624f0de621da5, gitDirty False
+2026-10-14 18:20:54   r59-k-c (c): attack 0.033, intake 0.033, consumer 2, share 0.1, floor 0, count 4, scent Direction, range 6, drag Spin, spin 0.5, touch true
+2026-10-14 18:20:54   r59-k-c: its pool is the list's 4 genomes, text for text (4 stomach)
+2026-10-14 18:20:56   check r59-k-p2: ok    ended on budget: ended (budget), t 30, alive 42
+2026-10-14 18:20:56   check r59-k-p2: ok    transport: run.json says 'card', 'card' asked for
+2026-10-14 18:20:56   check r59-k-p2: ok    books: over 3 rows, |audit| at most 9.09494701772928E-13 J, |matter| at most 2.07438262123105E-08
+2026-10-14 18:20:56   check r59-k-p2: ok    diverged 0: 0
+2026-10-14 18:20:56   check r59-k-p2: ok    refused 0: 0
+2026-10-14 18:20:56   check r59-k-p2: ok    overflow 0: 0/0/0/0
+2026-10-14 18:20:56   check r59-k-p2: ok    neuronsAtCeiling 0: 0
+2026-10-14 18:20:56   check r59-k-p2: ok    no driver event: 0 from 18:08:53 to 18:20:55
+2026-10-14 18:20:56   check r59-k-p2: ok    watch alive at its check: 2026-10-14 18:09:59   watch alive after its first polls (18:09:59)
+2026-10-14 18:20:56   check r59-k-p2: ok    watch ended on the true end: watch: 2026-10-14T18:20:51 the run ended; no nvlddmkm events; read: 2026-10-14 18:20:42
+2026-10-14 18:20:56   check r59-k-p2: ok    nothing left running: 
+2026-10-14 18:20:56   check r59-k-p2: info  pace: 10.3 wall min, 0.05 times real time over the 30 s stepped
+2026-10-14 18:20:56   check r59-k-p2: info  drive limited 0, drag limited 0 (cumulative since the founding)
+2026-10-14 18:20:56   check r59-k-p2: info  card peak 42 C, 56%, 49.76 W, memory at most 4602 MiB over 43 samples; load 8.1% on average over the 39 samples above 0
+2026-10-14 18:20:56   check r59-k-p2: info  cpu 62 to 85 C over 43 reads, verdicts OK
+2026-10-14 18:20:56   check r59-k-p2: VERDICT: every condition holds
+2026-10-14 18:20:56   r59-k-p2's engine:        gpu single cpu-accelerator g4 classes 2/4/8/16 concurrent transport scent spin 5000
+2026-10-14 18:20:56   r59-k-p2: status ended (budget), seed 2, configHash 98c0f3239f4e6766, source.gitCommit d5e70be8bbc2bb8e505842aa5c3624f0de621da5, gitDirty False
+2026-10-14 18:20:56   r59-k-p2 (planted): attack 0.033, intake 0.033, consumer 2, share 0.6, floor 0, count 14, scent Direction, range 6, drag Spin, spin 0.5, touch true
+2026-10-14 18:20:56   r59-k-p2: its pool is the list's 14 genomes, text for text (4 stomach, 10 swimmer)
+2026-10-14 18:20:58   check r59-k-p3: ok    ended on budget: ended (budget), t 30, alive 42
+2026-10-14 18:20:58   check r59-k-p3: ok    transport: run.json says 'card', 'card' asked for
+2026-10-14 18:20:58   check r59-k-p3: ok    books: over 3 rows, |audit| at most 1.81898940354586E-12 J, |matter| at most 9.80914904857855E-08
+2026-10-14 18:20:58   check r59-k-p3: ok    diverged 0: 0
+2026-10-14 18:20:58   check r59-k-p3: ok    refused 0: 0
+2026-10-14 18:20:58   check r59-k-p3: ok    overflow 0: 0/0/0/0
+2026-10-14 18:20:58   check r59-k-p3: ok    neuronsAtCeiling 0: 0
+2026-10-14 18:20:58   check r59-k-p3: ok    no driver event: 0 from 18:08:53 to 18:20:57
+2026-10-14 18:20:58   check r59-k-p3: ok    watch alive at its check: 2026-10-14 18:09:59   watch alive after its first polls (18:09:59)
+2026-10-14 18:20:58   check r59-k-p3: ok    watch ended on the true end: watch: 2026-10-14T18:20:51 the run ended; no nvlddmkm events; read: 2026-10-14 18:20:42
+2026-10-14 18:20:58   check r59-k-p3: ok    nothing left running: 
+2026-10-14 18:20:58   check r59-k-p3: info  pace: 10.6 wall min, 0.05 times real time over the 30 s stepped
+2026-10-14 18:20:58   check r59-k-p3: info  drive limited 17, drag limited 0 (cumulative since the founding)
+2026-10-14 18:20:58   check r59-k-p3: info  card peak 42 C, 56%, 49.76 W, memory at most 4602 MiB over 43 samples; load 8.1% on average over the 39 samples above 0
+2026-10-14 18:20:58   check r59-k-p3: info  cpu 62 to 85 C over 43 reads, verdicts OK
+2026-10-14 18:20:58   check r59-k-p3: VERDICT: every condition holds
+2026-10-14 18:20:58   r59-k-p3's engine:        gpu single cpu-accelerator g4 classes 2/4/8/16 concurrent transport scent spin 5000
+2026-10-14 18:20:58   r59-k-p3: status ended (budget), seed 3, configHash 98c0f3239f4e6766, source.gitCommit d5e70be8bbc2bb8e505842aa5c3624f0de621da5, gitDirty False
+2026-10-14 18:20:58   r59-k-p3 (planted): attack 0.033, intake 0.033, consumer 2, share 0.6, floor 0, count 14, scent Direction, range 6, drag Spin, spin 0.5, touch true
+2026-10-14 18:20:58   r59-k-p3: its pool is the list's 14 genomes, text for text (4 stomach, 10 swimmer)
+2026-10-14 18:20:59   check r59-k-x: ok    ended on budget: ended (budget), t 30, alive 42
+2026-10-14 18:20:59   check r59-k-x: ok    transport: run.json says 'card', 'card' asked for
+2026-10-14 18:20:59   check r59-k-x: ok    books: over 3 rows, |audit| at most 8.52368430059869E-07 J, |matter| at most 6.10492065789003E-08
+2026-10-14 18:20:59   check r59-k-x: ok    diverged 0: 0
+2026-10-14 18:20:59   check r59-k-x: ok    refused 0: 0
+2026-10-14 18:20:59   check r59-k-x: ok    overflow 0: 0/0/0/0
+2026-10-14 18:20:59   check r59-k-x: ok    neuronsAtCeiling 0: 0
+2026-10-14 18:20:59   check r59-k-x: ok    no driver event: 0 from 18:08:53 to 18:20:58
+2026-10-14 18:20:59   check r59-k-x: ok    watch alive at its check: 2026-10-14 18:09:59   watch alive after its first polls (18:09:59)
+2026-10-14 18:20:59   check r59-k-x: ok    watch ended on the true end: watch: 2026-10-14T18:20:51 the run ended; no nvlddmkm events; read: 2026-10-14 18:20:42
+2026-10-14 18:20:59   check r59-k-x: ok    nothing left running: 
+2026-10-14 18:20:59   check r59-k-x: info  pace: 10.7 wall min, 0.05 times real time over the 30 s stepped
+2026-10-14 18:20:59   check r59-k-x: info  drive limited 0, drag limited 0 (cumulative since the founding)
+2026-10-14 18:20:59   check r59-k-x: info  card peak 42 C, 56%, 49.76 W, memory at most 4602 MiB over 43 samples; load 8.1% on average over the 39 samples above 0
+2026-10-14 18:20:59   check r59-k-x: info  cpu 62 to 85 C over 43 reads, verdicts OK
+2026-10-14 18:20:59   check r59-k-x: VERDICT: every condition holds
+2026-10-14 18:20:59   r59-k-x's engine:        gpu single cpu-accelerator g4 classes 2/4/8/16 concurrent transport scent spin 5000
+2026-10-14 18:20:59   r59-k-x: status ended (budget), seed 2, configHash 37f12db4a4445f5b, source.gitCommit d5e70be8bbc2bb8e505842aa5c3624f0de621da5, gitDirty False
+2026-10-14 18:20:59   r59-k-x (sixth): attack 0.0167, intake 0.0167, consumer 1, share 0.6, floor 0, count 14, scent Direction, range 6, drag Spin, spin 0.5, touch true
+2026-10-14 18:20:59   r59-k-x: its pool is the list's 14 genomes, text for text (4 stomach, 10 swimmer)
+2026-10-14 18:20:59 == r59-kr: card-group -Name r59-kr -Arms r59-kr-c,r59-kr-p2,r59-kr-p3,r59-kr-x -Seconds 15 -Group 32 -WallMinutes 120 -Mask 983040 -Threads 4 -Transport -Scent -Concurrent -SpinLimit default -RunsRoot D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs -Exe D:\Projects\experiments\evolution-simulator\scratch\wt-r59\artifacts\Evosim.Farm\bin\Release\net8.0\Evosim.Farm.exe -Device cpu -SampleCpu -SampleCores -HeatStop -LogOutside -CheckpointEvery 15 -AllowBeside Evosim\.NurseryRoom\.dll|Evosim\.Nursery\.dll|D:\\Projects\\code\\|build-server shutdown -At 15 -ResumeFrom D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs\r59-k-c\2026-10-14-170944-a6a86746,D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs\r59-k-p2\2026-10-14-170945-98c0f323,D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs\r59-k-p3\2026-10-14-170944-98c0f323,D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs\r59-k-x\2026-10-14-170946-37f12db4
+2026-10-14 18:27:07   watch pid 23712: ended
+2026-10-14 18:27:07   2026-10-14 18:21:01   allowed beside: dotnet 96876: "C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe" artifacts\Evosim.NurseryRoom\bin\Debug\net8.0\Evosim.NurseryRoom.dll --root D:\Projects\experiments\evolution-simulator
+2026-10-14 18:27:07   2026-10-14 18:21:01   allowed beside: dotnet 103108: "C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe" D:\Projects\experiments\evolution-simulator\scratch\wt-nursery-d178\artifacts\nursery-d178-900e5267\Evosim.Nursery.dll -
+2026-10-14 18:27:07   2026-10-14 18:21:01   allowed beside: dotnet 107352: "C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe" D:\Projects\experiments\evolution-simulator\scratch\wt-nursery-d178\artifacts\nursery-d178-c70c324c\Evosim.Nursery.dll -
+2026-10-14 18:27:07   2026-10-14 18:27:02   farm exited: True, code 0
+2026-10-14 18:27:07   2026-10-14 18:27:05   r59-kr-c: ended (budget); t 30 alive 41; 5.2 wall min, 0.05 times real time over the 15 s stepped; run D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs\r59-kr-c\2026-10-14-172122-a6a86746
+2026-10-14 18:27:07   2026-10-14 18:27:05   r59-kr-p2: ended (budget); t 30 alive 42; 5.4 wall min, 0.05 times real time over the 15 s stepped; run D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs\r59-kr-p2\2026-10-14-172123-98c0f323
+2026-10-14 18:27:07   2026-10-14 18:27:05   r59-kr-p3: ended (budget); t 30 alive 42; 5.3 wall min, 0.05 times real time over the 15 s stepped; run D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs\r59-kr-p3\2026-10-14-172124-98c0f323
+2026-10-14 18:27:07   2026-10-14 18:27:05   r59-kr-x: ended (budget); t 30 alive 42; 5.6 wall min, 0.04 times real time over the 15 s stepped; run D:\Projects\experiments\evolution-simulator\scratch\wt-r59\runs\r59-kr-x\2026-10-14-172122-37f12db4
+2026-10-14 18:27:07   2026-10-14 18:27:05   books over 2 stats rows of r59-kr-c: max |auditResidual| 0 (under 0.1 J: True); max |matterResidual| 1.34815749674999E-08 (under 1e-5: True)
+2026-10-14 18:27:07   2026-10-14 18:27:05   books over 2 stats rows of r59-kr-p2: max |auditResidual| 9.09494701772928E-13 (under 0.1 J: True); max |matterResidual| 2.07438262123105E-08 (under 1e-5: True)
+2026-10-14 18:27:07   2026-10-14 18:27:05   books over 2 stats rows of r59-kr-p3: max |auditResidual| 1.81898940354586E-12 (under 0.1 J: True); max |matterResidual| 9.80914904857855E-08 (under 1e-5: True)
+2026-10-14 18:27:07   2026-10-14 18:27:05   books over 2 stats rows of r59-kr-x: max |auditResidual| 8.52368430059869E-07 (under 0.1 J: True); max |matterResidual| 6.10492065789003E-08 (under 1e-5: True)
+2026-10-14 18:27:08   check r59-kr-c: ok    ended on budget: ended (budget), t 30, alive 41
+2026-10-14 18:27:08   check r59-kr-c: ok    transport: run.json says 'card', 'card' asked for
+2026-10-14 18:27:08   check r59-kr-c: ok    books: over 2 rows, |audit| at most 0 J, |matter| at most 1.34815749674999E-08
+2026-10-14 18:27:08   check r59-kr-c: ok    diverged 0: 0
+2026-10-14 18:27:08   check r59-kr-c: ok    refused 0: 0
+2026-10-14 18:27:08   check r59-kr-c: ok    overflow 0: 0/0/0/0
+2026-10-14 18:27:08   check r59-kr-c: ok    neuronsAtCeiling 0: 0
+2026-10-14 18:27:08   check r59-kr-c: ok    no driver event: 0 from 18:20:29 to 18:27:07
+2026-10-14 18:27:08   check r59-kr-c: ok    watch alive at its check: 2026-10-14 18:21:34   watch alive after its first polls (18:21:34)
+2026-10-14 18:27:08   check r59-kr-c: ok    watch ended on the true end: watch: 2026-10-14T18:27:06 the run ended; no nvlddmkm events; read: 2026-10-14 18:27:05
+2026-10-14 18:27:08   check r59-kr-c: ok    nothing left running: 
+2026-10-14 18:27:08   check r59-kr-c: info  pace: 5.2 wall min, 0.05 times real time over the 15 s stepped
+2026-10-14 18:27:08   check r59-kr-c: info  drive limited 381, drag limited 0 (cumulative since the founding)
+2026-10-14 18:27:08   check r59-kr-c: info  card peak 39 C, 21%, 47.62 W, memory at most 4355 MiB over 22 samples; load 8.4% on average over the 10 samples above 0
+2026-10-14 18:27:08   check r59-kr-c: info  cpu 70 to 88 C over 22 reads, verdicts OK
+2026-10-14 18:27:08   check r59-kr-c: VERDICT: every condition holds
+2026-10-14 18:27:08   r59-kr-c's engine:        gpu single cpu-accelerator g4 classes 2/4/8/16 concurrent transport scent spin 5000
+2026-10-14 18:27:08   r59-kr-c: status ended (budget), seed 1, configHash a6a86746235a47a6, source.gitCommit d5e70be8bbc2bb8e505842aa5c3624f0de621da5, gitDirty False
+2026-10-14 18:27:10   check r59-kr-p2: ok    ended on budget: ended (budget), t 30, alive 42
+2026-10-14 18:27:10   check r59-kr-p2: ok    transport: run.json says 'card', 'card' asked for
+2026-10-14 18:27:10   check r59-kr-p2: ok    books: over 2 rows, |audit| at most 9.09494701772928E-13 J, |matter| at most 2.07438262123105E-08
+2026-10-14 18:27:10   check r59-kr-p2: ok    diverged 0: 0
+2026-10-14 18:27:10   check r59-kr-p2: ok    refused 0: 0
+2026-10-14 18:27:10   check r59-kr-p2: ok    overflow 0: 0/0/0/0
+2026-10-14 18:27:10   check r59-kr-p2: ok    neuronsAtCeiling 0: 0
+2026-10-14 18:27:10   check r59-kr-p2: ok    no driver event: 0 from 18:20:29 to 18:27:09
+2026-10-14 18:27:10   check r59-kr-p2: ok    watch alive at its check: 2026-10-14 18:21:34   watch alive after its first polls (18:21:34)
+2026-10-14 18:27:10   check r59-kr-p2: ok    watch ended on the true end: watch: 2026-10-14T18:27:06 the run ended; no nvlddmkm events; read: 2026-10-14 18:27:05
+2026-10-14 18:27:10   check r59-kr-p2: ok    nothing left running: 
+2026-10-14 18:27:10   check r59-kr-p2: info  pace: 5.4 wall min, 0.05 times real time over the 15 s stepped
+2026-10-14 18:27:10   check r59-kr-p2: info  drive limited 0, drag limited 0 (cumulative since the founding)
+2026-10-14 18:27:10   check r59-kr-p2: info  card peak 39 C, 21%, 47.62 W, memory at most 4355 MiB over 22 samples; load 8.4% on average over the 10 samples above 0
+2026-10-14 18:27:10   check r59-kr-p2: info  cpu 70 to 88 C over 22 reads, verdicts OK
+2026-10-14 18:27:10   check r59-kr-p2: VERDICT: every condition holds
+2026-10-14 18:27:10   r59-kr-p2's engine:        gpu single cpu-accelerator g4 classes 2/4/8/16 concurrent transport scent spin 5000
+2026-10-14 18:27:10   r59-kr-p2: status ended (budget), seed 2, configHash 98c0f3239f4e6766, source.gitCommit d5e70be8bbc2bb8e505842aa5c3624f0de621da5, gitDirty False
+2026-10-14 18:27:11   check r59-kr-p3: ok    ended on budget: ended (budget), t 30, alive 42
+2026-10-14 18:27:11   check r59-kr-p3: ok    transport: run.json says 'card', 'card' asked for
+2026-10-14 18:27:11   check r59-kr-p3: ok    books: over 2 rows, |audit| at most 1.81898940354586E-12 J, |matter| at most 9.80914904857855E-08
+2026-10-14 18:27:11   check r59-kr-p3: ok    diverged 0: 0
+2026-10-14 18:27:11   check r59-kr-p3: ok    refused 0: 0
+2026-10-14 18:27:11   check r59-kr-p3: ok    overflow 0: 0/0/0/0
+2026-10-14 18:27:11   check r59-kr-p3: ok    neuronsAtCeiling 0: 0
+2026-10-14 18:27:11   check r59-kr-p3: ok    no driver event: 0 from 18:20:29 to 18:27:10
+2026-10-14 18:27:11   check r59-kr-p3: ok    watch alive at its check: 2026-10-14 18:21:34   watch alive after its first polls (18:21:34)
+2026-10-14 18:27:11   check r59-kr-p3: ok    watch ended on the true end: watch: 2026-10-14T18:27:06 the run ended; no nvlddmkm events; read: 2026-10-14 18:27:05
+2026-10-14 18:27:11   check r59-kr-p3: ok    nothing left running: 
+2026-10-14 18:27:11   check r59-kr-p3: info  pace: 5.3 wall min, 0.05 times real time over the 15 s stepped
+2026-10-14 18:27:11   check r59-kr-p3: info  drive limited 17, drag limited 0 (cumulative since the founding)
+2026-10-14 18:27:11   check r59-kr-p3: info  card peak 39 C, 21%, 47.62 W, memory at most 4355 MiB over 22 samples; load 8.4% on average over the 10 samples above 0
+2026-10-14 18:27:11   check r59-kr-p3: info  cpu 70 to 88 C over 22 reads, verdicts OK
+2026-10-14 18:27:11   check r59-kr-p3: VERDICT: every condition holds
+2026-10-14 18:27:11   r59-kr-p3's engine:        gpu single cpu-accelerator g4 classes 2/4/8/16 concurrent transport scent spin 5000
+2026-10-14 18:27:11   r59-kr-p3: status ended (budget), seed 3, configHash 98c0f3239f4e6766, source.gitCommit d5e70be8bbc2bb8e505842aa5c3624f0de621da5, gitDirty False
+2026-10-14 18:27:13   check r59-kr-x: ok    ended on budget: ended (budget), t 30, alive 42
+2026-10-14 18:27:13   check r59-kr-x: ok    transport: run.json says 'card', 'card' asked for
+2026-10-14 18:27:13   check r59-kr-x: ok    books: over 2 rows, |audit| at most 8.52368430059869E-07 J, |matter| at most 6.10492065789003E-08
+2026-10-14 18:27:13   check r59-kr-x: ok    diverged 0: 0
+2026-10-14 18:27:13   check r59-kr-x: ok    refused 0: 0
+2026-10-14 18:27:13   check r59-kr-x: ok    overflow 0: 0/0/0/0
+2026-10-14 18:27:13   check r59-kr-x: ok    neuronsAtCeiling 0: 0
+2026-10-14 18:27:13   check r59-kr-x: ok    no driver event: 0 from 18:20:29 to 18:27:12
+2026-10-14 18:27:13   check r59-kr-x: ok    watch alive at its check: 2026-10-14 18:21:34   watch alive after its first polls (18:21:34)
+2026-10-14 18:27:13   check r59-kr-x: ok    watch ended on the true end: watch: 2026-10-14T18:27:06 the run ended; no nvlddmkm events; read: 2026-10-14 18:27:05
+2026-10-14 18:27:13   check r59-kr-x: ok    nothing left running: 
+2026-10-14 18:27:13   check r59-kr-x: info  pace: 5.6 wall min, 0.04 times real time over the 15 s stepped
+2026-10-14 18:27:13   check r59-kr-x: info  drive limited 0, drag limited 0 (cumulative since the founding)
+2026-10-14 18:27:13   check r59-kr-x: info  card peak 39 C, 21%, 47.62 W, memory at most 4355 MiB over 22 samples; load 8.4% on average over the 10 samples above 0
+2026-10-14 18:27:13   check r59-kr-x: info  cpu 70 to 88 C over 22 reads, verdicts OK
+2026-10-14 18:27:13   check r59-kr-x: VERDICT: every condition holds
+2026-10-14 18:27:13   r59-kr-x's engine:        gpu single cpu-accelerator g4 classes 2/4/8/16 concurrent transport scent spin 5000
+2026-10-14 18:27:13   r59-kr-x: status ended (budget), seed 2, configHash 37f12db4a4445f5b, source.gitCommit d5e70be8bbc2bb8e505842aa5c3624f0de621da5, gitDirty False
+2026-10-14 18:27:13   resume compare: r59-kr-c/2026-10-14-172122-a6a86746: lineage.jsonl 2 same; stats.jsonl 2 same; digest.jsonl 15 same; absorptive.jsonl 0 same; positions.jsonl.gz 2 same
+2026-10-14 18:27:13   resume compare: r59-kr-p2/2026-10-14-172123-98c0f323: lineage.jsonl 8 same; stats.jsonl 2 same; digest.jsonl 15 same; absorptive.jsonl 2 same; positions.jsonl.gz 2 same
+2026-10-14 18:27:13   resume compare: r59-kr-p3/2026-10-14-172124-98c0f323: lineage.jsonl 4 same; stats.jsonl 2 same; digest.jsonl 15 same; absorptive.jsonl 0 same; positions.jsonl.gz 2 same
+2026-10-14 18:27:13   resume compare: r59-kr-x/2026-10-14-172122-37f12db4: lineage.jsonl 12 same; stats.jsonl 2 same; digest.jsonl 15 same; absorptive.jsonl 2 same; positions.jsonl.gz 2 same
+2026-10-14 18:27:13   resume compare: the same after 15 s
+2026-10-14 18:27:13 r59 check ends

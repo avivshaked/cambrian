@@ -1,0 +1,8 @@
+D:\Projects\experiments\evolution-simulator\runs\r61-p6103x2\2026-10-18-043434-119d0f30, snapshot 55140 s: 7345 living bodies, 7345 genomes found
+  bodies: 7345
+  a repeating self-edge: 4077
+  a self-edge that grows an axis: 3506
+  a self-edge that shrinks an axis: 3974
+  a self-edge within 10% of 1 on every axis: 88
+  a cycle through two or more nodes: 2743
+  the largest per-axis self-scale, over bodies with one: median 1.84, 90th percentile 2.56, max 3.74

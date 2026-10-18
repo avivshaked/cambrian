@@ -74,10 +74,8 @@ this is the first time it has paid.
 It is also small: 15 creatures in 2,478, and 0.42% of income. A toehold rather than a
 trophic level.
 
-The human called the mechanism before any of it existed:
-
-> *the world should have more and more material as entities die… as the world gets more populated
-> with food, then animals that consume the dead matter should start to be more common*
+The human called the mechanism before any of it existed: material builds up as entities die. As the world
+fills with food, animals that eat the dead matter grow more common.
 
 Every step of that sentence is now written down, in order.
 

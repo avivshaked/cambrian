@@ -9,9 +9,7 @@ skips the reads that nothing looks at.
 
 This entry is written from the implementing agent's report,
 `logbook/specs/perception-build-report.md`. The owner's ruling on starting the work in parallel
-with the confirmation round, rather than after it, was short.
-
-> agreed, go ahead
+with the confirmation round, rather than after it, was short: agreed, go ahead.
 
 ## What was built
 

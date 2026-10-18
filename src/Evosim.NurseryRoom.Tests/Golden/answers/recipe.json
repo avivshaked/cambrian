@@ -1,0 +1,285 @@
+{
+  "path": "rounds/nursery/brain2-w5.json",
+  "ok": true,
+  "trial": false,
+  "launch": {
+    "state": "registered",
+    "reason": null
+  },
+  "gitState": {
+    "state": "committed",
+    "label": "committed",
+    "detail": "<masked:git>",
+    "lastCommit": {
+      "hash": "<masked:git>",
+      "date": "<masked:git>",
+      "subject": "pre-register the e2e recipes"
+    },
+    "gitMessage": null
+  },
+  "labels": {
+    "format": "recipe format version",
+    "name": "recipe name",
+    "description": "description",
+    "seed": "random seed",
+    "base": "recipe it builds on",
+    "world": "world",
+    "world.config": "world config file",
+    "world.configHash": "hash of the world config (checked on load)",
+    "world.overrides": "world settings changed",
+    "world.overrides.*": "world setting changed: {last}",
+    "bodies": "bodies",
+    "bodies.source": "where the bodies come from",
+    "bodies.founders": "founder bodies drawn",
+    "bodies.trunk": "founders' root cell type",
+    "bodies.pool": "genomes file the bodies come from",
+    "bodies.keep": "bodies kept, by their place in the pool",
+    "bodies.brains": "the pool's own brains kept (absent: a fresh brain each)",
+    "setup": "episode setup",
+    "setup.seconds": "episode length (s)",
+    "setup.dt": "time step (s)",
+    "setup.tankSize": "creatures per tank",
+    "setup.floorClosed": "tanks never refilled from the population floor",
+    "setup.birthsHeld": "births held",
+    "setup.snow": "snow",
+    "setup.snow.density": "snow density (J/m3)",
+    "setup.snow.draw": "how the density is drawn",
+    "setup.snow.layers": "snow layers",
+    "setup.snow.islands": "snow in islands",
+    "setup.snow.islands.wavelength": "island wavelength (m)",
+    "setup.snow.islands.cover": "share of the bed the islands cover",
+    "setup.carrion": "carrion",
+    "setup.carrion.count": "corpses laid",
+    "setup.carrion.joules": "joules per corpse",
+    "setup.start": "start",
+    "setup.start.aboveBed": "start height above the bed (m)",
+    "setup.purse": "starting purse",
+    "setup.purse.rule": "purse rule",
+    "setup.purse.seconds": "purse, seconds of standing cost",
+    "leaves": "leaves",
+    "leaves.pool": "leaf pool file",
+    "leaves.count": "leaves a tank",
+    "leaves.spentUnitsPerCubicMetre": "spent matter in the water at the start (units/m3)",
+    "leaves.patches": "leaves in patches",
+    "leaves.patches.count": "patches",
+    "leaves.patches.radius": "patch radius (m)",
+    "leaves.patches.ring": "radius of the ring the patches lie on (m)",
+    "search": "search",
+    "search.population": "genomes per generation",
+    "search.draws": "tank draws per generation",
+    "search.generations": "generations after the first",
+    "search.elites": "elites kept each generation",
+    "search.tournament": "tournament size",
+    "search.perBody": "selection within each body",
+    "search.evolve": "what evolves",
+    "search.evolveEnvelope": "the joints' drive genes evolve as well",
+    "search.crossover": "crossover",
+    "search.crossover.rate": "share of children made by crossover",
+    "search.crossover.baseShare": "share of crossovers based on the better parent",
+    "search.crossover.mutationByDistance": "mutation scaled by how far apart the parents are",
+    "search.stop": "stop before the cap when the search stalls",
+    "search.stop.measure": "what the stop watches",
+    "search.stop.window": "generations averaged",
+    "search.stop.gain": "least gain that keeps the search going (share)",
+    "search.stop.over": "generations the gain is measured over",
+    "search.stop.floor": "earliest generation the search may stop after",
+    "reward": "reward",
+    "reward.class": "reward class",
+    "reward.parameters": "reward parameters",
+    "reward.parameters.*": "reward parameter: {last}",
+    "exam": "exam",
+    "exam.episodes": "exam episodes",
+    "exam.salt": "number mixed into the exam's seeds",
+    "exam.pool": "genomes examined: every generation's top and the last elites",
+    "exam.controls": "exam brains",
+    "exam.controls[]": "exam brain",
+    "exam.controls[].kind": "brain kind",
+    "exam.controls[].channels": "sensor channels knocked out",
+    "exam.controls[].power": "constant power",
+    "exam.controls[].mode": "kinesis mode",
+    "exam.controls[].bias": "kinesis bias",
+    "exam.controls[].gain": "kinesis gain"
+  },
+  "name": "brain2-w5",
+  "hash": "b45716afab91a524d8e42954a71bd491f2ae56dc298421ad93255547253f5001",
+  "fileSha256": "<masked:sha256>",
+  "text": "{\n  \"format\": 1,\n  \"name\": \"brain2-w5\",\n  \"description\": \"brain2 on round 60's world config format: brain2-w4's config with the tunable the round-60 build added (world.matterIslandGlassMarginMetres (D185)) at 0, which leaves the world as brain2's. Every other setting as brain2-w4, whose description was: brain2 on round 59's world config format: brain2-w3's config with the tunables the round-59 build added (fluid.skinFrictionCoefficient, fluid.spinDragCoefficient, fluid.turningDrag (D161), senses.senseBedTouch (D162), senses.leafScent, senses.leafScentRangeMetres, senses.leafScentCellMetres, senses.leafScentHalfScaleSquareMetres, economy.unbittenDeathsLeaveNoCorpse (D167) and every cell type's budWeight (D165)) at their defaults, which leave the world as brain2's. Every other setting as brain2-w3, whose description was: brain2 on round 57's world config format: brain2-w2's config with the five tunables the round-57 build added (light.seasonShape, light.seasonRampSeconds, light.weatherSpread, light.weatherCorrelation and light.weatherSeed; D151) at their defaults, which leave the world as brain2's. Every other setting as brain2-w2, whose description was: brain2 on the new world config format: brain2's config with the three tunables the round-56 build added (light.seasonAmplitude, light.seasonLengthSeconds, population.foundingFloorPoolShare), set so the world is brain2's; a 3-generation run against nursery-general step 5's checks that it is. Every other setting as brain2, whose description was: The baseline (D148): brain v2's setup, every setting pilot-deep-brain2 used (scratch/nursery/launch-brain2.ps1, nursery-v10 at dc5dd6f), the 5 corpses of 40 J included.\",\n  \"seed\": \"0x1\",\n  \"world\": {\n    \"config\": \"rounds/nursery/configs/a8cbe76c9532bc71.json\",\n    \"configHash\": \"a8cbe76c9532bc71\",\n    \"overrides\": {\n      \"WorkCostMultiplier\": 0.5\n    }\n  },\n  \"bodies\": {\n    \"source\": \"founders\",\n    \"founders\": 12,\n    \"trunk\": \"absorptive\",\n    \"pool\": null,\n    \"keep\": [\n      0,\n      1,\n      3,\n      4,\n      8,\n      10\n    ]\n  },\n  \"setup\": {\n    \"seconds\": 600,\n    \"dt\": 0.01,\n    \"tankSize\": 8,\n    \"floorClosed\": true,\n    \"birthsHeld\": true,\n    \"snow\": {\n      \"density\": 3,\n      \"draw\": \"halfToDouble\",\n      \"layers\": null,\n      \"islands\": {\n        \"wavelength\": 20,\n        \"cover\": 0.1\n      }\n    },\n    \"carrion\": {\n      \"count\": 5,\n      \"joules\": 40\n    },\n    \"start\": {\n      \"aboveBed\": 0.5\n    },\n    \"purse\": {\n      \"rule\": \"grown\",\n      \"seconds\": null\n    }\n  },\n  \"search\": {\n    \"population\": 96,\n    \"draws\": 16,\n    \"generations\": 100,\n    \"elites\": 8,\n    \"tournament\": 3,\n    \"perBody\": true,\n    \"evolve\": \"brain\",\n    \"evolveEnvelope\": false,\n    \"crossover\": {\n      \"rate\": 0.5,\n      \"baseShare\": 0.7,\n      \"mutationByDistance\": 0.785\n    }\n  },\n  \"reward\": {\n    \"class\": \"Net\",\n    \"parameters\": {}\n  },\n  \"exam\": {\n    \"episodes\": 32,\n    \"salt\": \"0x62656e6368\",\n    \"controls\": [\n      {\n        \"kind\": \"own\"\n      },\n      {\n        \"kind\": \"frozen\"\n      },\n      {\n        \"kind\": \"full\"\n      },\n      {\n        \"kind\": \"knockout\",\n        \"channels\": [\n          \"Chemical\"\n        ]\n      },\n      {\n        \"kind\": \"brainless\"\n      },\n      {\n        \"kind\": \"knockout\",\n        \"channels\": [\n          \"Depth\"\n        ]\n      },\n      {\n        \"kind\": \"knockout\",\n        \"channels\": [\n          \"Energy\"\n        ]\n      },\n      {\n        \"kind\": \"knockout\",\n        \"channels\": [\n          \"Flow\"\n        ]\n      },\n      {\n        \"kind\": \"knockout\",\n        \"channels\": [\n          \"Scent\"\n        ]\n      },\n      {\n        \"kind\": \"knockout\",\n        \"channels\": [\n          \"Stroke\",\n          \"Hold\",\n          \"Ramp\"\n        ]\n      },\n      {\n        \"kind\": \"knockout\",\n        \"channels\": [\n          \"JointAngle\",\n          \"JointAngularVelocity\"\n        ]\n      },\n      {\n        \"kind\": \"constant\",\n        \"power\": 0.3\n      },\n      {\n        \"kind\": \"constant\",\n        \"power\": 0.4\n      },\n      {\n        \"kind\": \"constant\",\n        \"power\": 0.5\n      },\n      {\n        \"kind\": \"constant\",\n        \"power\": 0.6\n      },\n      {\n        \"kind\": \"constant\",\n        \"power\": 0.7\n      },\n      {\n        \"kind\": \"kinesis\",\n        \"mode\": \"rate\",\n        \"bias\": -0.5,\n        \"gain\": 10\n      },\n      {\n        \"kind\": \"kinesis\",\n        \"mode\": \"rate\",\n        \"bias\": 0,\n        \"gain\": 20\n      }\n    ]\n  }\n}\n",
+  "canonical": "{\n  \"format\": 1,\n  \"name\": \"brain2-w5\",\n  \"description\": \"brain2 on round 60's world config format: brain2-w4's config with the tunable the round-60 build added (world.matterIslandGlassMarginMetres (D185)) at 0, which leaves the world as brain2's. Every other setting as brain2-w4, whose description was: brain2 on round 59's world config format: brain2-w3's config with the tunables the round-59 build added (fluid.skinFrictionCoefficient, fluid.spinDragCoefficient, fluid.turningDrag (D161), senses.senseBedTouch (D162), senses.leafScent, senses.leafScentRangeMetres, senses.leafScentCellMetres, senses.leafScentHalfScaleSquareMetres, economy.unbittenDeathsLeaveNoCorpse (D167) and every cell type's budWeight (D165)) at their defaults, which leave the world as brain2's. Every other setting as brain2-w3, whose description was: brain2 on round 57's world config format: brain2-w2's config with the five tunables the round-57 build added (light.seasonShape, light.seasonRampSeconds, light.weatherSpread, light.weatherCorrelation and light.weatherSeed; D151) at their defaults, which leave the world as brain2's. Every other setting as brain2-w2, whose description was: brain2 on the new world config format: brain2's config with the three tunables the round-56 build added (light.seasonAmplitude, light.seasonLengthSeconds, population.foundingFloorPoolShare), set so the world is brain2's; a 3-generation run against nursery-general step 5's checks that it is. Every other setting as brain2, whose description was: The baseline (D148): brain v2's setup, every setting pilot-deep-brain2 used (scratch/nursery/launch-brain2.ps1, nursery-v10 at dc5dd6f), the 5 corpses of 40 J included.\",\n  \"seed\": \"0x1\",\n  \"world\": {\n    \"config\": \"rounds/nursery/configs/a8cbe76c9532bc71.json\",\n    \"configHash\": \"a8cbe76c9532bc71\",\n    \"overrides\": {\n      \"WorkCostMultiplier\": 0.5\n    }\n  },\n  \"bodies\": {\n    \"source\": \"founders\",\n    \"founders\": 12,\n    \"trunk\": \"absorptive\",\n    \"pool\": null,\n    \"keep\": [0, 1, 3, 4, 8, 10]\n  },\n  \"setup\": {\n    \"seconds\": 600,\n    \"dt\": 0.01,\n    \"tankSize\": 8,\n    \"floorClosed\": true,\n    \"birthsHeld\": true,\n    \"snow\": {\n      \"density\": 3,\n      \"draw\": \"halfToDouble\",\n      \"layers\": null,\n      \"islands\": {\n        \"wavelength\": 20,\n        \"cover\": 0.1\n      }\n    },\n    \"carrion\": {\n      \"count\": 5,\n      \"joules\": 40\n    },\n    \"start\": {\n      \"aboveBed\": 0.5\n    },\n    \"purse\": {\n      \"rule\": \"grown\",\n      \"seconds\": null\n    }\n  },\n  \"search\": {\n    \"population\": 96,\n    \"draws\": 16,\n    \"generations\": 100,\n    \"elites\": 8,\n    \"tournament\": 3,\n    \"perBody\": true,\n    \"evolve\": \"brain\",\n    \"evolveEnvelope\": false,\n    \"crossover\": {\n      \"rate\": 0.5,\n      \"baseShare\": 0.7,\n      \"mutationByDistance\": 0.785\n    }\n  },\n  \"reward\": {\n    \"class\": \"Net\",\n    \"parameters\": {}\n  },\n  \"exam\": {\n    \"episodes\": 32,\n    \"salt\": \"0x62656e6368\",\n    \"controls\": [\n      {\"kind\":\"own\"},\n      {\"kind\":\"frozen\"},\n      {\"kind\":\"full\"},\n      {\"kind\":\"knockout\",\"channels\":[\"Chemical\"]},\n      {\"kind\":\"brainless\"},\n      {\"kind\":\"knockout\",\"channels\":[\"Depth\"]},\n      {\"kind\":\"knockout\",\"channels\":[\"Energy\"]},\n      {\"kind\":\"knockout\",\"channels\":[\"Flow\"]},\n      {\"kind\":\"knockout\",\"channels\":[\"Scent\"]},\n      {\"kind\":\"knockout\",\"channels\":[\"Stroke\",\"Hold\",\"Ramp\"]},\n      {\"kind\":\"knockout\",\"channels\":[\"JointAngle\",\"JointAngularVelocity\"]},\n      {\"kind\":\"constant\",\"power\":0.3},\n      {\"kind\":\"constant\",\"power\":0.4},\n      {\"kind\":\"constant\",\"power\":0.5},\n      {\"kind\":\"constant\",\"power\":0.6},\n      {\"kind\":\"constant\",\"power\":0.7},\n      {\"kind\":\"kinesis\",\"mode\":\"rate\",\"bias\":-0.5,\"gain\":10},\n      {\"kind\":\"kinesis\",\"mode\":\"rate\",\"bias\":0,\"gain\":20}\n    ]\n  }\n}\n",
+  "resolved": {
+    "format": 1,
+    "name": "brain2-w5",
+    "description": "brain2 on round 60's world config format: brain2-w4's config with the tunable the round-60 build added (world.matterIslandGlassMarginMetres (D185)) at 0, which leaves the world as brain2's. Every other setting as brain2-w4, whose description was: brain2 on round 59's world config format: brain2-w3's config with the tunables the round-59 build added (fluid.skinFrictionCoefficient, fluid.spinDragCoefficient, fluid.turningDrag (D161), senses.senseBedTouch (D162), senses.leafScent, senses.leafScentRangeMetres, senses.leafScentCellMetres, senses.leafScentHalfScaleSquareMetres, economy.unbittenDeathsLeaveNoCorpse (D167) and every cell type's budWeight (D165)) at their defaults, which leave the world as brain2's. Every other setting as brain2-w3, whose description was: brain2 on round 57's world config format: brain2-w2's config with the five tunables the round-57 build added (light.seasonShape, light.seasonRampSeconds, light.weatherSpread, light.weatherCorrelation and light.weatherSeed; D151) at their defaults, which leave the world as brain2's. Every other setting as brain2-w2, whose description was: brain2 on the new world config format: brain2's config with the three tunables the round-56 build added (light.seasonAmplitude, light.seasonLengthSeconds, population.foundingFloorPoolShare), set so the world is brain2's; a 3-generation run against nursery-general step 5's checks that it is. Every other setting as brain2, whose description was: The baseline (D148): brain v2's setup, every setting pilot-deep-brain2 used (scratch/nursery/launch-brain2.ps1, nursery-v10 at dc5dd6f), the 5 corpses of 40 J included.",
+    "seed": "0x1",
+    "world": {
+      "config": "rounds/nursery/configs/a8cbe76c9532bc71.json",
+      "configHash": "a8cbe76c9532bc71",
+      "overrides": {
+        "WorkCostMultiplier": 0.5
+      }
+    },
+    "bodies": {
+      "source": "founders",
+      "founders": 12,
+      "trunk": "absorptive",
+      "pool": null,
+      "keep": [
+        0,
+        1,
+        3,
+        4,
+        8,
+        10
+      ]
+    },
+    "setup": {
+      "seconds": 600,
+      "dt": 0.01,
+      "tankSize": 8,
+      "floorClosed": true,
+      "birthsHeld": true,
+      "snow": {
+        "density": 3,
+        "draw": "halfToDouble",
+        "layers": null,
+        "islands": {
+          "wavelength": 20,
+          "cover": 0.1
+        }
+      },
+      "carrion": {
+        "count": 5,
+        "joules": 40
+      },
+      "start": {
+        "aboveBed": 0.5
+      },
+      "purse": {
+        "rule": "grown",
+        "seconds": null
+      }
+    },
+    "search": {
+      "population": 96,
+      "draws": 16,
+      "generations": 100,
+      "elites": 8,
+      "tournament": 3,
+      "perBody": true,
+      "evolve": "brain",
+      "evolveEnvelope": false,
+      "crossover": {
+        "rate": 0.5,
+        "baseShare": 0.7,
+        "mutationByDistance": 0.785
+      }
+    },
+    "reward": {
+      "class": "Net",
+      "parameters": {}
+    },
+    "exam": {
+      "episodes": 32,
+      "salt": "0x62656e6368",
+      "controls": [
+        {
+          "kind": "own"
+        },
+        {
+          "kind": "frozen"
+        },
+        {
+          "kind": "full"
+        },
+        {
+          "kind": "knockout",
+          "channels": [
+            "Chemical"
+          ]
+        },
+        {
+          "kind": "brainless"
+        },
+        {
+          "kind": "knockout",
+          "channels": [
+            "Depth"
+          ]
+        },
+        {
+          "kind": "knockout",
+          "channels": [
+            "Energy"
+          ]
+        },
+        {
+          "kind": "knockout",
+          "channels": [
+            "Flow"
+          ]
+        },
+        {
+          "kind": "knockout",
+          "channels": [
+            "Scent"
+          ]
+        },
+        {
+          "kind": "knockout",
+          "channels": [
+            "Stroke",
+            "Hold",
+            "Ramp"
+          ]
+        },
+        {
+          "kind": "knockout",
+          "channels": [
+            "JointAngle",
+            "JointAngularVelocity"
+          ]
+        },
+        {
+          "kind": "constant",
+          "power": 0.3
+        },
+        {
+          "kind": "constant",
+          "power": 0.4
+        },
+        {
+          "kind": "constant",
+          "power": 0.5
+        },
+        {
+          "kind": "constant",
+          "power": 0.6
+        },
+        {
+          "kind": "constant",
+          "power": 0.7
+        },
+        {
+          "kind": "kinesis",
+          "mode": "rate",
+          "bias": -0.5,
+          "gain": 10
+        },
+        {
+          "kind": "kinesis",
+          "mode": "rate",
+          "bias": 0,
+          "gain": 20
+        }
+      ]
+    }
+  },
+  "base": null,
+  "check": {
+    "ok": true
+  },
+  "world": {
+    "loaded": true,
+    "problem": null,
+    "config": "rounds/nursery/configs/a8cbe76c9532bc71.json"
+  }
+}

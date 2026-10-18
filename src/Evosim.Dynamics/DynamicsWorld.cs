@@ -1,7 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
+using Evosim.Core;
 
 namespace Evosim.Dynamics
 {
@@ -30,6 +32,12 @@ namespace Evosim.Dynamics
     {
         private readonly List<Creature> _creatures = new List<Creature>();
         private readonly ContactGrid _grid = new ContactGrid();
+
+        /// <summary>
+        /// The contact query's extremes over the stats row's window (<see cref="ContactWatch"/>): the CPU
+        /// solver notes into it as it builds and queries, a backend after each block. The row closes it.
+        /// </summary>
+        public ContactWatch Watch => _grid.Watch;
         private int[][] _neighbourScratch = Array.Empty<int[]>();
 
         public SolverConfig Config { get; }
@@ -66,12 +74,24 @@ namespace Evosim.Dynamics
         /// after-step (the contact census and the digest row).
         /// </summary>
         /// <remarks>
+        /// <para>
+        /// <b>Two of the five are empty from 2026-10-03</b>
+        /// (<c>logbook/specs/farm-physics-speed-read.md</c> P1 and P2). The commit is made inside
+        /// the next step's grid build and its time is the grid's; the water is sampled inside
+        /// each body's own step and its time is the bodies'. The water phase is left holding the
+        /// pin alone and the commit phase nothing, so the rows' <c>wallStepWaterMs</c> and
+        /// <c>wallStepCommitMs</c> read 0 and keep their places in the row. A reading of the five
+        /// across that date compares grid with grid plus commit, and bodies with bodies plus
+        /// water.
+        /// </para>
+        /// <para>
         /// <b>Why the step is timed by phase.</b> Only the third phase runs on more than one
         /// thread. The farm's rows read the whole step as `wallPhysicsMs` and could not say how
         /// much of it was serial, which is what decides whether more threads buy pace: on the
         /// night of 2026-09-22 a full crowd cost 1.6 to 2.7 µs a body-step at 8 and at 12
         /// threads alike, five times the bench's 24-thread number, and the bench's bodies sample
         /// no water. Five timestamps a step, no trajectory touched.
+        /// </para>
         /// </remarks>
         public static readonly string[] PhaseNames = { "grid", "water", "bodies", "commit", "after" };
 
@@ -80,6 +100,26 @@ namespace Evosim.Dynamics
 
         /// <summary>Milliseconds spent in phase <paramref name="phase"/> of <see cref="PhaseNames"/>.</summary>
         public long PhaseMs(int phase) => PhaseTicks[phase] * 1000L / Stopwatch.Frequency;
+
+        /// <summary>
+        /// Off by default. When set, every body's step is timed in four parts into
+        /// <see cref="BodyTicks"/>: the water at its links, its senses, its brain, and the rest of its step.
+        /// </summary>
+        /// <remarks>
+        /// Set once by a measuring program (the nursery's <c>EVOSIM_NURSERY_PROFILE</c>) before any
+        /// world steps. Nothing the step computes reads it or the ticks, so a run with it on is the
+        /// same realisation as one with it off; the nursery's digest check is what says so. Five
+        /// timestamps a body-step, so it costs a few percent of a small body's step while on.
+        /// </remarks>
+        public static bool ProfileBodySteps;
+
+        /// <summary>
+        /// With <see cref="ProfileBodySteps"/>: Stopwatch ticks in a body's senses [0], its brain [1]
+        /// and the rest of its step [2], the body-steps counted [3], and the water sampled at its links
+        /// [4], summed over every body and step. Added with <c>Interlocked</c>, because a farm world's
+        /// bodies share it across threads.
+        /// </summary>
+        public readonly long[] BodyTicks = new long[5];
 
         public DynamicsWorld(SolverConfig config)
         {
@@ -105,7 +145,31 @@ namespace Evosim.Dynamics
         public void Step()
         {
             if (Backend == null) StepOnCpu();
-            else Backend.StepBlock(this, 1);
+            else
+            {
+                // A backend reads every body's committed sphere as its block's first step's.
+                CommitContactSpheres();
+                Backend.StepBlock(this, 1);
+            }
+        }
+
+        /// <summary>
+        /// Commits every body's sphere that the last step left pending: what a reader of the
+        /// committed spheres calls between steps, before the next step's grid build would have.
+        /// </summary>
+        /// <remarks>
+        /// The last CPU step leaves each body's new sphere pending and the next grid build commits
+        /// it (<see cref="Creature.EnsureContactCommitted"/>). A body is committed in its own
+        /// slots alone, so the pass splits across the world's threads and the numbers are the
+        /// same at any count; a body already committed is left as it is.
+        /// </remarks>
+        public void CommitContactSpheres()
+        {
+            int count = _creatures.Count;
+            Slabs.Run(count, Slabs.CountFor(count, Threads), (s, from, to) =>
+            {
+                for (int i = from; i < to; i++) _creatures[i].EnsureContactCommitted();
+            });
         }
 
         private void StepOnCpu()
@@ -116,44 +180,63 @@ namespace Evosim.Dynamics
 
             // D114: the links' spheres rather than the bodies' when the world asks for it.
             _grid.Threads = Threads;
-            if (Config.ContactPerPart) _grid.BuildLinks(_creatures, ContactCellOverrideMetres);
-            else _grid.Build(_creatures, ContactCellOverrideMetres);
+            BuildGrid();
+
+            // A sphere out of the grid's reach is a body diverged since the last check: it is
+            // handed to the caller to kill, taken out of the step, and the grid built again
+            // without it, all before anything reads the grid. Nothing happens here in a step in
+            // which no sphere strays, so such a step is the step it was.
+            if (_grid.Strays.Count > 0) LoseStrays();
 
             long t1 = Stopwatch.GetTimestamp();
 
-            // One code path at every thread count, including one. A serial `for` and a
-            // `Parallel.For` delegate are different code to the JIT, and .NET's tiered
-            // compilation gives quick-JITted and optimised loops different floating-point bits
-            // where the arithmetic sits on a rounding knife-edge — so the serial path could part
-            // from the parallel one at one thread and the digest would say the thread count
-            // changed the trajectory when what changed was which compiler tier ran. The test and
-            // bench projects also set `TieredCompilation` false; a farm that reports a digest
-            // must do the same.
+            // At one thread the bodies are stepped by a plain loop, as every nursery tank is. The
+            // loop and Parallel.For call the same method, StepOne, so its arithmetic is the same
+            // compiled code either way. The rule that kept one code path at every thread count
+            // was against .NET's tiered compilation, which gives quick-JITted and optimised code
+            // different floating-point bits where the arithmetic sits on a rounding knife-edge;
+            // every program and test project that reports a digest sets `TieredCompilation`
+            // false, and that setting is what the rule rests on now. The digest at one and at N
+            // threads is the check (logbook/specs/speed-plan.md, A3).
             var options = new ParallelOptions { MaxDegreeOfParallelism = Threads < 1 ? 1 : Threads };
 
-            // Package C. Before the parallel phase, over the poses the step starts from — the
-            // farm's gather phase — with the field pinned so that the same threads may sample it.
-            SampleWater(options);
+            // Package C. The field pinned at the step's clock for the whole parallel phase, so
+            // that every body samples it from its own thread as the first thing it does
+            // (StepOne). A no-op for still water and for water with nothing to pin.
+            CurrentField current = Config.Current;
+            current?.PinInstant(ElapsedSeconds);
 
             long t2 = Stopwatch.GetTimestamp();
+            long t3;
 
             int count = _creatures.Count;
 
-            Parallel.For(0, count, options, i => StepOne(i, dt));
-
-            long t3 = Stopwatch.GetTimestamp();
-
-            // Between steps, after the parallel phase has ended: what every body will read of
-            // every other on the next one. Committing inside that phase is what made the digest
-            // depend on the thread count (see Creature's contact fields); after it, each body
-            // copies only its own arrays and nothing reads them until the next grid, so the copy
-            // is split across threads.
-            Slabs.Run(count, Slabs.CountFor(count, Threads), (s, from, to) =>
+            try
             {
-                for (int i = from; i < to; i++) _creatures[i].CommitContactSphere();
-            });
+                double seconds = ElapsedSeconds;
+                if (Threads <= 1)
+                {
+                    for (int i = 0; i < count; i++) StepOne(i, dt, seconds);
+                }
+                else
+                {
+                    Parallel.For(0, count, options, i => StepOne(i, dt, seconds));
+                }
+            }
+            finally
+            {
+                current?.UnpinInstant();
+                t3 = Stopwatch.GetTimestamp();
+            }
 
-            long t4 = Stopwatch.GetTimestamp();
+            // No commit here. What every body will read of every other on the next step is
+            // committed by the next grid build, body by body as it gathers them
+            // (Creature.EnsureContactCommitted), or sooner by a reader between steps that needs
+            // it. Committing inside the parallel phase is what made the digest depend on the
+            // thread count (see Creature's contact fields); the build runs after the phase has
+            // ended, so the copy is the same copy, one pass later and without a pass of its own
+            // (logbook/specs/farm-physics-speed-read.md P1).
+            long t4 = t3;
 
             ElapsedSeconds += dt;
             Steps++;
@@ -169,20 +252,99 @@ namespace Evosim.Dynamics
             PhaseTicks[4] += t5 - t4;
         }
 
-        private void StepOne(int index, double dt)
+        private void BuildGrid()
+        {
+            // D114: the links' spheres rather than the bodies' when the world asks for it.
+            if (Config.ContactPerPart) _grid.BuildLinks(_creatures, ContactCellOverrideMetres);
+            else _grid.Build(_creatures, ContactCellOverrideMetres);
+        }
+
+        /// <summary>
+        /// Who is told of a body whose contact sphere strayed out of the grid's reach, before the
+        /// body is taken out of the step: the farm's divergence path, which dumps it and kills it
+        /// as a counted death. Null in a world with no caller to tell, where the body is only lost.
+        /// </summary>
+        /// <remarks>
+        /// Called serially, inside <see cref="Step"/>, after the grid is built and before the water
+        /// is pinned or any body is stepped, once a body, in body order, with the body's first
+        /// stray sphere. The body is still in the list and still as the last step left it. The
+        /// handler must not add or remove bodies; the farm removes the dead at its next reconcile.
+        /// </remarks>
+        public Action<Creature, ContactStray> StrayHandler { get; set; }
+
+        /// <summary>
+        /// Takes every body with a stray sphere out of this step: told to <see cref="StrayHandler"/>,
+        /// marked lost as the solver marks a non-finite body, and left out of the grid, which is
+        /// built again. Again until no sphere strays, because the grid's cell is made of the mean
+        /// radius and a lost body's leaves it.
+        /// </summary>
+        private void LoseStrays()
+        {
+            while (_grid.Strays.Count > 0)
+            {
+                var strays = new List<ContactStray>(_grid.Strays);
+                int last = -1;
+
+                for (int i = 0; i < strays.Count; i++)
+                {
+                    ContactStray stray = strays[i];
+                    if (stray.Body == last) continue;
+                    last = stray.Body;
+
+                    Creature body = _creatures[stray.Body];
+                    StrayHandler?.Invoke(body, stray);
+
+                    body.Alive = false;
+                    body.MarkLost();
+                    body.CommitContactSphere();
+                }
+
+                BuildGrid();
+            }
+        }
+
+        private void StepOne(int index, double dt, double seconds)
         {
             Creature body = _creatures[index];
             if (!body.Alive) return;
 
+            bool profile = ProfileBodySteps;
+            long w0 = profile ? Stopwatch.GetTimestamp() : 0L;
+
+            // Package C, first: the water at every link, over the poses the step starts from, with
+            // the field pinned by the caller. It reads this body and the field alone, and the drag
+            // pass (Fluid.Apply) is its only reader, so it may run anywhere before that; here the
+            // body's arrays are hot for the rest of its step. Until 2026-10-03 it was a parallel
+            // pass of its own between the grid build and this phase
+            // (logbook/specs/farm-physics-speed-read.md P2).
+            Water.Sample(body, Config, seconds);
+
+            long s0 = profile ? Stopwatch.GetTimestamp() : 0L;
+
             body.Senses.Sample();
-            body.Brain.Step((float)dt, body.DriveSignal, body.Senses);
+
+            long s1 = profile ? Stopwatch.GetTimestamp() : 0L;
+
+            body.Brain.Step((float)dt, body.DriveSignal, body.Senses, body.Drive.BendAndPower ? body.BendSignal : null);
+
+            if (profile)
+            {
+                long s2 = Stopwatch.GetTimestamp();
+                Interlocked.Add(ref BodyTicks[0], s1 - s0);
+                Interlocked.Add(ref BodyTicks[1], s2 - s1);
+                Interlocked.Increment(ref BodyTicks[3]);
+                Interlocked.Add(ref BodyTicks[4], s0 - w0);
+                s0 = s2;
+            }
 
             Array.Clear(body.Fext, 0, body.Fext.Length);
             Array.Clear(body.Tau, 0, body.Tau.Length);
 
-            body.Drive.Drive(body.DriveSignal);
+            body.Drive.Drive(body.DriveSignal, body.BendSignal);
             Fluid.Apply(body, Config);
             Contacts.Apply(body, index, _grid, Config, ref _neighbourScratch[index]);
+            if (Config.ContactInstrument) _grid.Watch.NoteOverlaps(body.OverlapCount, index, body.Id, body.Links);
+            Anchor.Apply(body, Config, dt);   // D162, on the touch the contact pass just recorded
             JointTorques(body);
 
             Aba.Solve(body);
@@ -202,10 +364,15 @@ namespace Evosim.Dynamics
             {
                 body.Alive = false;
                 body.MarkLost();
+                body.MarkContactCommitDue();
+                if (profile) Interlocked.Add(ref BodyTicks[2], Stopwatch.GetTimestamp() - s0);
                 return;
             }
 
             body.RefreshContactSphere();
+            body.MarkContactCommitDue();
+
+            if (profile) Interlocked.Add(ref BodyTicks[2], Stopwatch.GetTimestamp() - s0);
         }
 
         /// <summary>

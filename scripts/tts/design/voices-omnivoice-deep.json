@@ -1,0 +1,13 @@
+{
+ "model": "OmniVoice",
+ "note": "The owner asked on 2026-10-09 for British, older, deep voices. The six first designs' women sounded too bright. Each key is designed once per seed by run_deep.py.",
+ "design_text": "Down on the floor of this tank lives a family of twelve hundred and fifty-two creatures, and nearly every one of them is nothing but a stomach. Each is a single box of tissue that eats the marine snow, the dead stuff drifting down. All of them come from one creature that dropped in from outside.",
+ "descriptions": {
+  "F": "british accent, very low pitch, elderly, female",
+  "M": "british accent, very low pitch, elderly, male"
+ },
+ "attributes": {
+  "F": {"accent": "british accent", "pitch": "very low pitch", "age": "elderly", "gender": "female"},
+  "M": {"accent": "british accent", "pitch": "very low pitch", "age": "elderly", "gender": "male"}
+ }
+}

@@ -1,0 +1,4 @@
+# The files every nursery run or room operation appends to. Appending to one is not editing the tree,
+# so the nursery's dirty check leaves each out. One repository-relative path a line; # starts a comment.
+rounds/nursery/registry.jsonl
+rounds/nursery/activity.jsonl

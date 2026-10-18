@@ -21,6 +21,7 @@ namespace Evosim.Farm.Tests
     /// <see cref="Program.Main"/> itself, so the window is compared with what the farm's own loop
     /// wrote and not with a second copy of it.
     /// </remarks>
+    [Collection(FarmProcessCollection.Name)]
     public class FilmWindowTests : IClassFixture<FilmWindowTests.RecordedRun>
     {
         private static readonly EnvBinding.Lookup NoEnvironment = name => null;

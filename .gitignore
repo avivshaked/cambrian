@@ -147,6 +147,11 @@ spikes/**/out/
 runs/
 !runs/.gitkeep
 *.jsonl
+# The nursery's JSONL that is a record and not output: its registry (rounds/nursery/) and the
+# recorded rows its tests read.
+!rounds/nursery/registry.jsonl
+!rounds/nursery/activity.jsonl
+!src/**/fixtures/*.jsonl
 
 # Spike measurement output. Raw CSVs are regenerable, so they're ignored —
 # but FINDINGS.md is the record of what was measured and DESIGN.md §11.1
@@ -163,6 +168,10 @@ artifacts/
 # no permission prompt blocks autonomous work; gitignored so none of it lands in history.
 scratch/
 
+# Where this machine keeps the TTS models that scripts/tts/mlstore.toml declares
+# (copy paths.example.toml); machine paths, so never committed.
+scripts/tts/paths.local.toml
+
 # Python's bytecode cache, written beside any script that imports a sibling module
 # (scripts/reads/ has one since the contact aliases, 2026-09-22).
 __pycache__/
@@ -177,10 +186,17 @@ scripts/tests/positions/fixtures/
 design/*.zip
 # Claude Design canvas runtime, not this project's work (see design/canvas/README.md)
 design/canvas/support.js
+design/nursery/support.js
+design/nursery/*.zip
 
 # Local secrets (the Leonardo key, scripts/leonardo-generate.py); the commit hook blocks *.env too.
 .env
 .env.*
+# The same without the leading dot, the name an editor's copy of env.example gets.
+env.local
+*.env.local
+# Google voice ids tied to the owner's account (scripts/tts/google/audition.py).
+scripts/tts/google/voices.local.json
 
 # =============================================================
 # Film assets: the media stays local, the manifest is tracked
@@ -198,3 +214,6 @@ design/canvas/support.js
 # DaVinci Resolve reference manual beside story-resolve (Blackmagic Design's copyrighted text,
 # the same status as research/papers/). The commit hook refuses any PDF as well.
 /.claude/skills/*/assets/
+
+# Genome pools are data: kept on disk, never pushed (the owner's ruling of 2026-10-18)
+rounds/nursery/pools/

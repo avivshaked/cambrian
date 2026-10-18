@@ -83,8 +83,8 @@ larger and slower crowd.
   still runs a plume in the tank. But a plume has no vector potential, so a tank with one loses
   the conservative transport, and the water would make its own patches again. It has never been
   screened there.
-- **The places (the animal kit's rung C, 2026-09-21)** answered the owner's ask for "natural
-  structures on the floor that ecosystems can evolve around". It has four pieces. C1 is a lit
+- **The places (the animal kit's rung C, 2026-09-21)** answered the owner's ask for natural
+  structures on the floor that ecosystems can evolve around. It has four pieces. C1 is a lit
   shelf, built as round 46's beach. C2 is rock: boulders and hollows a few metres across that
   gather sinking snow and corpses and give a lee from the streams. C3 is the seep, a point on the
   bed that releases matter. C4 is the anchoring cell, which lets a part hold to the bed or a

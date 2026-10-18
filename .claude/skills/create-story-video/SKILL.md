@@ -1,12 +1,13 @@
 ---
 name: create-story-video
-description: Make a story video from one, two or three experiments - edited, narrated, subtitled, with graphics, ready to share with an audience. Being built - on every invocation the skill first says which steps are implemented and which are not, and asks before running any.
+description: Make a story video from one, two or three experiments, or a top-10 countdown of creatures - edited, narrated, subtitled, with graphics, ready to share with an audience. Being built - on every invocation the skill first says which steps are implemented and which are not, and asks before running any.
 ---
 
 # Create story video
 
 The end product is an edited video, narrated, subtitled and with graphics, ready to share with an
-audience. A film covers one, two or three experiments.
+audience. A film is a story of one, two or three experiments, or a countdown of creatures: a top-10
+counted down to number 1, with a runner-up before it ([story.md](story.md), "Two forms").
 
 **This skill is being built. The table's Implemented column says which steps are implemented; every step marked no still needs to be.**
 
@@ -28,7 +29,7 @@ audience. A film covers one, two or three experiments.
 |---|---|---|---|---|---|---|---|
 | 1 | [facts-gathering](facts-gathering.md) | yes | a subagent | the logbook entries or rounds given, and anything else it needs; later, any file of questions a writer or the owner asks | `facts.md` in `scratch/story-video/<name>-<yyyymmddhhmm>/`, and a section added to it for each file of questions | a source checker on 15 facts, then once more after a fix, then the owner | 30 min for a new film, 10 for the section on the project or a file of questions, 10 for each source check |
 | 2 | [story](story.md) | yes | subagents and the owner | `facts.md` | `story.md` in the film's folder: the story the owner approved | a fact checker, a cold reader and a comparer, then the owner approves | 10 min for the angles, then 15 for each draft and 10 for its checks |
-| 3 | [prose](prose.md) | yes | subagents and the owner | `facts.md` and `story.md` | `prose.md` in the film's folder: the narration's words, as prose the owner approved | a line editor in up to two rounds, a tool, a fact checker, a cold listener and a comparer, then the owner approves | 15 min for a draft, 5 for each editor round and 10 for each revision, then 10 for its checks |
+| 3 | [prose](prose.md) | yes | subagents and the owner | `facts.md` and `story.md` | `prose.md` in the film's folder: the narration's words, as prose the owner approved | a tool, a fact checker that weighs each fault, a cold listener and a comparer, then the owner approves | 30 min for a draft, written in passes, then 10 for its checks |
 | 4 | [script](script.md) | yes | subagents and the owner | `prose.md`, `story.md` and `facts.md` | `script.md` in the film's folder: the prose cut into passages, each with its picture, its facts and any words on screen, in the form [script-schema.md](script-schema.md) fixes, that passed its check and that the owner approved | a tool and the composer's own review, then the owner approves | 15 min for each draft |
 | 5 | [narration](narration.md) | yes, run once: round 49 in a test folder, up to the owner's verdict on its first draft; `keep` has not run | a subagent, a tool and the owner | `script.md` and `prose.md`, and the skill's `narration-settings.json` and `pronunciation.json`, copied into the film's folder the first time | `narration.json` and `narration/` in the film's folder: the pieces the owner approved by ear, and each piece's, passage's and sentence's place on the film's timeline, padding included, in the form [narration-schema.md](narration-schema.md) fixes; without the service, the owner's own files or an estimate | the tool, then the owner by ear | 5 min for the tool's work, and 60 for each narrator run |
 | 6 | [shot list](shot-list.md) | yes, not yet run: tested on round 49's script with an estimated narration | the shot-lister (a subagent) and a tool | `script.md`, `narration.json` and `facts.md` | `shots.json` in the film's folder: every shot on the narration's timeline, each with its footage and any graphic laid over it, in the form [shots-schema.md](shots-schema.md) fixes | the tool; the owner does not approve it (their ruling of 2026-09-27) | 15 min for each draft, three drafts before the owner rules |
@@ -46,9 +47,9 @@ The shot list comes after the narration because every timing in it comes from th
   down in the step's file, so that it cannot come back.
 - Nothing is rendered in full before its look is agreed on a test of a few shots or frames. The agent finds
   the best settings itself, from sheets read against the reference. It brings the owner one proposal and
-  the sheet it rests on. The owner, 2026-09-28: "i want you to find the best settings. you can see the film
-  in the sheet. i also want you to stop wasting time by rendering a whole bunch of things before we agree
-  on the right settings".
+  the sheet it rests on. The owner ruled on 2026-09-28 that the agent finds the best settings itself, since
+  the film can be read in the sheet, and that it stops wasting time by rendering many things before the
+  settings are agreed.
 - Each step runs in its own subagent, to protect the main session from context bloat and context
   corruption.
 - Each subagent runs on the cheapest model that can do its work (the owner, 2026-09-28). Sonnet runs

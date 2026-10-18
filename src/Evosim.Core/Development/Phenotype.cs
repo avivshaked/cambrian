@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Evosim.Core
 {
@@ -153,6 +153,20 @@ namespace Evosim.Core
         /// </para>
         /// </remarks>
         public float ScaledBy { get; private set; } = 1f;
+
+        /// <summary>
+        /// D128: the genome's <see cref="Genome.LifespanScale"/>, carried so the bill can price
+        /// repair from the body alone. Set by <see cref="Developer"/> and copied by every copy.
+        /// </summary>
+        public float LifespanScale { get; internal set; } = 1f;
+
+        /// <summary>
+        /// D146: the genome's <see cref="Genome.Brain"/>, the one brain of the central model, or
+        /// null for the per-part neurons. Shared with the genome, not copied: it is read once, when
+        /// <c>Brain.For</c> builds the creature's network. Set by <see cref="Developer"/> and
+        /// carried by every copy.
+        /// </summary>
+        public CentralBrain Brain { get; internal set; }
 
         /// <summary>
         /// What a body's summed lit area has to be multiplied by before it earns or shades:
@@ -430,6 +444,8 @@ namespace Evosim.Core
                 // What this copy was made at, so a checkpoint can make it again rather than
                 // infer it from a tissue fraction that does not carry it. See ScaledBy.
                 ScaledBy = linear,
+                LifespanScale = LifespanScale,
+                Brain = Brain,
             };
 
             for (int i = 0; i < _parts.Count; i++)
@@ -464,6 +480,7 @@ namespace Evosim.Core
                     // step, so a half-grown body pays its adult's bill for them. Whether that is
                     // the world we want is a question for a round, not for a copy constructor.
                     Power = part.Power,
+                    Drive = part.Drive,
                     Lift = part.Lift,
 
                     // D106 item 3's four, on the same argument one field along: attack, intake and
@@ -481,6 +498,7 @@ namespace Evosim.Core
                     ParentAnchorLocal = part.ParentAnchorLocal * linear,
                     ChildAnchorLocal = part.ChildAnchorLocal * linear,
                     Neurons = part.Neurons,
+                    PathId = part.PathId,
                 });
             }
 
@@ -546,6 +564,8 @@ namespace Evosim.Core
                 PrunedForParts = PrunedForParts,
                 PrunedForReach = PrunedForReach,
                 ScaledBy = ScaledBy,
+                LifespanScale = LifespanScale,
+                Brain = Brain,
             };
 
             map = new int[kept];
@@ -580,6 +600,7 @@ namespace Evosim.Core
                     JointType = part.JointType,
                     JointLimits = part.JointLimits,
                     Power = part.Power,
+                    Drive = part.Drive,
                     Lift = part.Lift,
                     Attack = part.Attack,
                     Intake = part.Intake,
@@ -589,6 +610,7 @@ namespace Evosim.Core
                     ParentAnchorLocal = part.ParentAnchorLocal,
                     ChildAnchorLocal = part.ChildAnchorLocal,
                     Neurons = part.Neurons,
+                    PathId = part.PathId,
                 });
             }
 

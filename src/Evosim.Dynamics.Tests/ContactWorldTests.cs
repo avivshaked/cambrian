@@ -72,6 +72,9 @@ namespace Evosim.Dynamics.Tests
 
                 if (step % 500 != 0 && step != steps - 1) continue;
 
+                // The step's own spheres: the next grid build would commit them (P1).
+                world.CommitContactSpheres();
+
                 for (int i = 0; i < world.Creatures.Count; i++)
                 {
                     Creature body = world.Creatures[i];

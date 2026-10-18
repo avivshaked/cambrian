@@ -1,6 +1,6 @@
 # Contact pairs per body, and per jointed body: the instrument round 41c runs with
 
-*2026-09-19, 03:30. Written by the agent on the owner's "proceed" after round 41b was
+*2026-09-19, 03:30. Written by the agent on the owner's go-ahead after round 41b was
 stopped on a contact-pair explosion (HANDOFF; logbook/0107). The pairs tracked the jointed
 count across every run on file and grew several-fold within a run at a flat jointed
 count, and the report could say neither which bodies made them nor how many a body made,

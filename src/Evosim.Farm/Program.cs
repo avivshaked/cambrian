@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Evosim.Core;
 
@@ -54,7 +55,7 @@ namespace Evosim.Farm
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine(e.GetType().Name + ": " + e.Message);
+                FarmConsole.Error.WriteLine(e.GetType().Name + ": " + e.Message);
                 return 1;
             }
         }
@@ -87,6 +88,33 @@ namespace Evosim.Farm
                 return FilmWindow.Run(args);
             }
 
+            // Two worlds in one process on one card: --pair <a.args> <b.args>; or two or more, on the
+            // card or on the CPU engine: --group <a.args> <b.args> [<c.args> ...]. Group says what it
+            // reads and where each world writes.
+            if (args.Length >= 1 && args[0] == "--pair")
+            {
+                if (args.Length != 3)
+                {
+                    FarmConsole.Error.WriteLine("--pair takes two settings files: --pair <a.args> <b.args>.");
+                    return 1;
+                }
+
+                return Group(new[] { args[1], args[2] }, pair: true);
+            }
+
+            if (args.Length >= 1 && args[0] == "--group")
+            {
+                if (args.Length < 3)
+                {
+                    FarmConsole.Error.WriteLine("--group takes two settings files or more: --group <a.args> <b.args> [<c.args> ...].");
+                    return 1;
+                }
+
+                var paths = new string[args.Length - 1];
+                Array.Copy(args, 1, paths, 0, paths.Length);
+                return Group(paths, pair: false);
+            }
+
             var overrides = new Dictionary<string, string>(StringComparer.Ordinal);
 
             foreach (string arg in args)
@@ -100,7 +128,7 @@ namespace Evosim.Farm
                 int eq = arg.IndexOf('=');
                 if (eq <= 0 || !arg.StartsWith("EVOSIM_", StringComparison.Ordinal))
                 {
-                    Console.Error.WriteLine(
+                    FarmConsole.Error.WriteLine(
                         "'" + arg + "' is not a setting. Arguments are EVOSIM_NAME=value pairs; " +
                         "everything else is refused rather than ignored.");
                     return 1;
@@ -109,10 +137,36 @@ namespace Evosim.Farm
                 overrides[arg.Substring(0, eq)] = arg.Substring(eq + 1);
             }
 
+            return RunWorld(overrides, null, null, null);
+        }
+
+        /// <summary>
+        /// One world, from the environment with <paramref name="overrides"/> over it, to its end.
+        /// </summary>
+        /// <param name="sharedDevice">
+        /// The device a group on the card shares (<c>GpuDevice</c>, typed loosely because the engine is
+        /// compiled only where it is), or null for a world that opens its own as it always did.
+        /// </param>
+        /// <param name="pairedWith">The other worlds' reports, recorded in the gpu block; null alone.</param>
+        /// <param name="group">Every world's report in the group, in its order, recorded in run.json; null alone.</param>
+        private static int RunWorld(
+            Dictionary<string, string> overrides, object sharedDevice, string pairedWith, string group,
+            GroupExchange exchange = null, int place = -1)
+        {
             EnvBinding.Lookup env = name =>
                 overrides.TryGetValue(name, out string v) ? v : Environment.GetEnvironmentVariable(name);
 
             EnvSettings settings = EnvBinding.Read(env);
+
+            // D159: the exchange joins the worlds of one --group, which builds it; a lone run has
+            // no neighbour, and a setting that would silently do nothing is refused instead.
+            if (settings.MigrateEvery > 0f && exchange == null)
+            {
+                throw new ArgumentException(
+                    "EVOSIM_MIGRATE_EVERY is " + settings.MigrateEvery.ToString(CultureInfo.InvariantCulture) +
+                    " and this is a lone run. The exchange trades genomes between the worlds of one --group; " +
+                    "launch them together, or unset it.");
+            }
 
             // Ignored, and said aloud rather than only ignored: EvolutionRun never enumerated the
             // environment, so a typo in a launcher has always been silent, and silence is how a
@@ -126,7 +180,7 @@ namespace Evosim.Farm
             IReadOnlyList<string> unknown = EnvBinding.UnknownNames(names);
             if (unknown.Count > 0)
             {
-                Console.Error.WriteLine(
+                FarmConsole.Error.WriteLine(
                     "warning: " + string.Join(", ", unknown) +
                     " is set and is not a setting this build reads — ignored, exactly as the " +
                     "Unity entry ignored it.");
@@ -134,7 +188,7 @@ namespace Evosim.Farm
 
             if (settings.RequestedJobWorkers != 0)
             {
-                Console.Error.WriteLine(
+                FarmConsole.Error.WriteLine(
                     "warning: EVOSIM_PHYSICS_JOBS is " + settings.RequestedJobWorkers +
                     " and this engine has no job system — it changes nothing. The thread count " +
                     "is EVOSIM_THREADS, and it changes pace and not the trajectory.");
@@ -154,14 +208,14 @@ namespace Evosim.Farm
             }
             else if (settings.InoculateAt > 0f)
             {
-                Console.Error.WriteLine(
+                FarmConsole.Error.WriteLine(
                     "warning: EVOSIM_INOCULATE_AT is set but EVOSIM_INOCULATE names no genome " +
                     "file — the assay will not fire.");
             }
 
             if (inoculumHash != null && settings.InoculateAt <= 0f)
             {
-                Console.Error.WriteLine(
+                FarmConsole.Error.WriteLine(
                     "warning: EVOSIM_INOCULATE names a genome file but EVOSIM_INOCULATE_AT is " +
                     "unset or zero — the assay will not fire.");
                 inoculumHashShort = null;
@@ -188,7 +242,7 @@ namespace Evosim.Farm
 
                 if (configEdited != null)
                 {
-                    Console.Error.WriteLine(
+                    FarmConsole.Error.WriteLine(
                         "warning: " + Path.Combine(resumeSourceRun, "config.json") + " " +
                         configEdited);
                 }
@@ -206,7 +260,7 @@ namespace Evosim.Farm
 
                 if (!string.IsNullOrEmpty(settings.TricklePool))
                 {
-                    Console.Error.WriteLine(
+                    FarmConsole.Error.WriteLine(
                         "warning: EVOSIM_TRICKLE_POOL is set on a resume and is ignored: the pool " +
                         "is the resumed run's own, from " +
                         Path.Combine(resumeSourceRun, TricklePoolFiles.DirectoryName) + ".");
@@ -224,6 +278,22 @@ namespace Evosim.Farm
                     config.FoundingTricklePoolCount = pool.Genomes.Count;
                     config.FoundingTricklePoolHash = pool.Hash;
                 }
+            }
+
+            // D159: a resumed world trades as the run it continues traded, at its place in the same
+            // ring, or it is another world from the checkpoint on.
+            if (resumeSourceRun != null) RefuseAnotherExchange(resumeSourceRun, exchange, place);
+
+            // D159's species rule (an immigrant keeps its home species, tagged with the world it
+            // came from) is not built, and World.Immigrate refuses a world with species on. Asked
+            // here, before a directory is made, rather than at the first exchange hours in.
+            if (exchange != null && config.SpeciesDriftThreshold > 0f)
+            {
+                throw new ArgumentException(
+                    "This world runs species accounting (SpeciesDriftThreshold " +
+                    config.SpeciesDriftThreshold.ToString(CultureInfo.InvariantCulture) + ") in a migrating group. " +
+                    "D159's ruling is that an immigrant keeps its home species, tagged with the world it came " +
+                    "from, and this build has no tagged species path. Run the exchange with species off.");
             }
 
             // Record format 2 retires poses.jsonl for the state stream at the report interval,
@@ -253,7 +323,7 @@ namespace Evosim.Farm
             // nowhere else. Constructing it here also means a config the world refuses — a cell
             // that does not divide the box, a tank under rolls — stops the launch before a run
             // directory is made for it.
-            var world = new World(config, settings.Seed, pool?.Genomes);
+            var world = new World(config, settings.Seed, pool?.Genomes, pool?.Weights);
 
             // The engine, before the directory, for the same reason as the world: a gpu world the
             // engine refuses (a box, a water hold, a dt it was not written for) or a device it
@@ -273,9 +343,14 @@ namespace Evosim.Farm
             {
 #if EVOSIM_GPU
                 Evosim.Farm.Gpu.GpuBackend gpu = FarmGpu.Open(
-                    settings, Evosim.Dynamics.SolverConfig.FromWorld(config, physicsDt, world.Bed, world));
+                    settings, Evosim.Dynamics.SolverConfig.FromWorld(config, physicsDt, world.Bed, world),
+                    sharedDevice as Evosim.Farm.Gpu.GpuDevice);
                 engine = gpu;
                 engineToken = gpu.HeaderToken();
+
+                // The scent's fill on the same card, with the host's sums (GpuScent); the world
+                // hands its corpses over where it would have filled.
+                if (gpu.Options.Scent) gpu.FillScentOnCard(world);
 
                 // The snow's transport on the same card, with the CPU's bits; the grid keeps its
                 // decisions (GpuTransport).
@@ -300,6 +375,21 @@ namespace Evosim.Farm
 #endif
             }
 
+            // The kill test's hook, named on the engine line wherever it is set, so a run paused by it
+            // cannot pass for an ordinary one in its header or its console (card-next-r57.md Part 8).
+            if (settings.TestCheckpointStallMs > 0)
+            {
+                engineToken = (engineToken ?? RunManifest.EngineName) +
+                              " TEST-HOOK checkpoint stall " + settings.TestCheckpointStallMs + " ms";
+            }
+
+            // The thread pool's spin (card-next-r57.md Part 7): the runtime reads it from this process's own
+            // environment at start, and it moves the pace and never a number. Named on the engine line, and
+            // so in the report's header, and in run.json, wherever it is set, so a pace read names its spin.
+            string spinLimit = Environment.GetEnvironmentVariable("DOTNET_ThreadPool_UnfairSemaphoreSpinLimit");
+            if (string.IsNullOrEmpty(spinLimit)) spinLimit = null;
+            if (spinLimit != null) engineToken = (engineToken ?? RunManifest.EngineName) + " spin " + spinLimit;
+
             var space = SpaceFacts.Of(
                 world,
                 hasWall: config.SharedSpace && config.WorldShape == WorldShape.Tank,
@@ -315,18 +405,31 @@ namespace Evosim.Farm
 
             // D117. Beside config.json, in the bytes the hash was taken over; a resumed run
             // carries its source's pool forward so that it can itself be resumed.
-            if (pool != null) TricklePoolFiles.Write(dir.Path, pool.Lines);
+            if (pool != null) TricklePoolFiles.Write(dir.Path, pool.Lines, pool.IndexText);
 
             RunManifest manifest = Manifest.Build(
                 settings, config.Hash(), inoculumHash, physicsDt, stepsPerMetabolic, threads);
 
             Manifest.RecordBed(manifest, world.Bed);
+            manifest.TestCheckpointStallMs = settings.TestCheckpointStallMs;
+            manifest.ThreadPoolSpinLimit = spinLimit;
+            manifest.Group = group;
+
+            if (exchange != null)
+            {
+                manifest.MigrateEverySeconds = exchange.Every;
+                manifest.MigrateCount = exchange.Count;
+                manifest.GroupPlace = place;
+                manifest.MigrateTo = exchange.Name(exchange.To(place));
+                manifest.MigrateFrom = exchange.Name(exchange.From(place));
+            }
 
 #if EVOSIM_GPU
             if (engine is Evosim.Farm.Gpu.GpuBackend opened)
             {
                 manifest.Engine = "gpu";
                 manifest.Gpu = FarmGpu.Facts(opened, manifest.RepoRoot);
+                manifest.Gpu.SharedProcessWith = pairedWith;
             }
 #endif
             Manifest.RecordReefs(manifest, world.Reefs);
@@ -353,15 +456,15 @@ namespace Evosim.Farm
 
             Manifest.Write(dir, manifest, ending: null);
 
-            var report = new Report(outPath, config);
+            var report = new Report(outPath, config, migrating: exchange != null);
             report.Begin(settings, config, space, manifest.EngineVersion, engineToken);
             report.Flush();
 
-            Console.WriteLine(report.Text.TrimEnd());
-            Console.WriteLine();
-            Console.WriteLine("run directory: " + dir.Path);
-            Console.WriteLine("report:        " + outPath);
-            Console.WriteLine(
+            FarmConsole.Out.WriteLine(report.Text.TrimEnd());
+            FarmConsole.Out.WriteLine();
+            FarmConsole.Out.WriteLine("run directory: " + dir.Path);
+            FarmConsole.Out.WriteLine("report:        " + outPath);
+            FarmConsole.Out.WriteLine(
                 "record:        " + RunRecordFormat.Describe(settings.RecordFormat) +
                 (resume != null && !settings.Provided.Contains("EVOSIM_RECORD_FORMAT")
                     ? ", the resumed run's own"
@@ -370,14 +473,14 @@ namespace Evosim.Farm
                     ? "; the state stream in place of poses.jsonl, every " +
                       settings.PoseEvery.ToString(CultureInfo.InvariantCulture) + " s (the report interval)"
                     : ""));
-            Console.WriteLine(
+            FarmConsole.Out.WriteLine(
                 "threads:       " + threads.ToString(CultureInfo.InvariantCulture) +
                 "   dt " + physicsDt.ToString(CultureInfo.InvariantCulture) +
                 " s, metabolic step " + (stepsPerMetabolic * physicsDt).ToString(CultureInfo.InvariantCulture) + " s");
 
             if (resume != null)
             {
-                Console.WriteLine(
+                FarmConsole.Out.WriteLine(
                     "resumed from:  " + resumePath + " at " +
                     resume.Seconds.ToString("0.#", CultureInfo.InvariantCulture) + " s" +
                     (manifest.ResumedWithSourceMismatch ? "  (SOURCE MISMATCH)" : ""));
@@ -385,15 +488,24 @@ namespace Evosim.Farm
 
             if (manifest.CheckpointEverySeconds > 0d)
             {
-                Console.WriteLine(
+                FarmConsole.Out.WriteLine(
                     "checkpoints:   " + Checkpoint.DirectoryIn(dir.Path) + " every " +
                     manifest.CheckpointEverySeconds.ToString(CultureInfo.InvariantCulture) + " s");
             }
 
-            if (engineToken != null) Console.WriteLine("engine:        " + engineToken);
+            if (engineToken != null) FarmConsole.Out.WriteLine("engine:        " + engineToken);
+
+            if (exchange != null)
+            {
+                FarmConsole.Out.WriteLine(
+                    "exchange:      every " + exchange.Every.ToString(CultureInfo.InvariantCulture) + " s, " +
+                    exchange.Count.ToString(CultureInfo.InvariantCulture) + " to " + manifest.MigrateTo +
+                    ", from " + manifest.MigrateFrom + " (place " + place.ToString(CultureInfo.InvariantCulture) +
+                    " of " + exchange.Worlds.ToString(CultureInfo.InvariantCulture) + ")");
+            }
 
             return Loop(settings, config, world, dir, report, manifest, outPath,
-                physicsDt, stepsPerMetabolic, threads, resumePath, engine);
+                physicsDt, stepsPerMetabolic, threads, resumePath, engine, exchange, place);
         }
 
         /// <summary>
@@ -450,10 +562,47 @@ namespace Evosim.Farm
             manifest.ResumedWithSourceMismatch = true;
             manifest.ResumeSourceNote = note;
 
-            Console.Error.WriteLine(
+            FarmConsole.Error.WriteLine(
                 "warning: resuming across a source mismatch — " + note + ". What this run " +
                 "produces is a cousin of the recording and not its continuation, and run.json " +
                 "says so.");
+        }
+
+        /// <summary>
+        /// D159: a resume carries on the exchange its source run had, or none if it had none — the
+        /// same cadence, the same count and the same place in the group — and is refused otherwise.
+        /// </summary>
+        /// <remarks>
+        /// The settings are the farm's and not the world's, so the config hash cannot see them; the
+        /// source's run.json is where they are recorded. A world resumed alone from a migrating run
+        /// would plant nothing at its next exchange, and one resumed at another place would name its
+        /// immigrants' home worlds by other numbers, so both are refused rather than run as cousins.
+        /// </remarks>
+        private static void RefuseAnotherExchange(string sourceRun, GroupExchange exchange, int place)
+        {
+            JsonNode source = Json.Parse(File.ReadAllText(Path.Combine(sourceRun, "run.json")));
+            bool sourceMigrated = source.Has("migrateEverySeconds");
+
+            if (!sourceMigrated && exchange == null) return;
+
+            string was = sourceMigrated
+                ? "every " + source["migrateEverySeconds"].AsDouble().ToString("R", CultureInfo.InvariantCulture) + " s, " +
+                  source["migrateCount"].AsInt().ToString(CultureInfo.InvariantCulture) + " a time, at place " +
+                  source["groupPlace"].AsInt().ToString(CultureInfo.InvariantCulture)
+                : "no exchange";
+
+            string now = exchange != null
+                ? "every " + exchange.Every.ToString("R", CultureInfo.InvariantCulture) + " s, " +
+                  exchange.Count.ToString(CultureInfo.InvariantCulture) + " a time, at place " +
+                  place.ToString(CultureInfo.InvariantCulture)
+                : "no exchange";
+
+            if (was == now) return;
+
+            throw new InvalidOperationException(
+                "The run this resumes, " + sourceRun + ", traded genomes " + was + ", and this launch trades " + now +
+                " (D159). A resume carries on the source's exchange: launch the same group, in the same order, " +
+                "with the same EVOSIM_MIGRATE_EVERY and EVOSIM_MIGRATE_COUNT.");
         }
 
         /// <summary>The engine a run directory's run.json names, with the gpu's precision; null when unreadable.</summary>
@@ -526,7 +675,8 @@ namespace Evosim.Farm
         private static int Loop(
             EnvSettings settings, RunConfig config, World world, RunDirectory dir, Report report,
             RunManifest manifest, string outPath, float physicsDt, int stepsPerMetabolic,
-            int threads, string resumePath, Evosim.Dynamics.IStepBackend engine = null)
+            int threads, string resumePath, Evosim.Dynamics.IStepBackend engine = null,
+            GroupExchange exchange = null, int place = -1)
         {
             var sim = new Simulation(
                 world, settings.Seed, physicsDt, stepsPerMetabolic, threads, dir.Path);
@@ -541,7 +691,11 @@ namespace Evosim.Farm
             }
 
             var readings = new Readings(sim);
-            var sampler = new Sampler { PoolNamed = config.FoundingTricklePoolCount > 0 };
+            var sampler = new Sampler
+            {
+                PoolNamed = config.FoundingTricklePoolCount > 0,
+                Migrating = exchange != null,
+            };
 
             // Record format 2's genome file is fed from the world's admission queue, which is off
             // unless a run asks for it (a queue nobody drains is a leak). Before the first step and
@@ -559,7 +713,7 @@ namespace Evosim.Farm
 
             if (poses != null)
             {
-                Console.WriteLine(
+                FarmConsole.Out.WriteLine(
                     "state stream: " + Path.Combine(dir.Path, PoseStream.FileName) + " every " +
                     poseEvery.ToString(CultureInfo.InvariantCulture) + " s" +
                     (Math.Abs(poseEvery - settings.PoseEvery) > 1e-6f
@@ -568,6 +722,20 @@ namespace Evosim.Farm
                           " s asked for: nothing moves inside a metabolic step)"
                         : ""));
             }
+
+            // propose-foraging.md's steering instrument, on wherever the world has a scent.
+            SteeringRecorder steering = world.Scent != null ? new SteeringRecorder(dir.Path, 100.0) : null;
+
+            // D176's instrument for the leaf smell, on wherever the world has one, at the steering
+            // recorder's cadence. Not a world setting, so no tunable: a world with the smell records it.
+            LeafScentRecorder leafScent = world.LeafScent != null ? new LeafScentRecorder(dir.Path, 100.0) : null;
+
+            // D159: every genome this world is sent, as it came, so the world can be stepped again
+            // without the worlds it traded with (ImmigrantRecord). A row an exchange's offer, flushed
+            // as written: the rows are few and a window needs every one.
+            JsonlWriter immigrantRows = exchange != null
+                ? new JsonlWriter(Path.Combine(dir.Path, ImmigrantRecord.FileName), flushEachRow: true)
+                : null;
 
             Genome inoculum = null;
             bool inoculateOn = !string.IsNullOrEmpty(settings.InoculatePath) && settings.InoculateAt > 0f;
@@ -608,6 +776,24 @@ namespace Evosim.Farm
 
             float checkpointEvery = settings.ResolveCheckpointEvery();
             int checkpoints = 0;
+
+            // The checkpoint being written behind the loop, at most one (card-next-r57.md Part 8),
+            // and the count whose files are in place, which is the count the manifest gives.
+            BackgroundCheckpoint inFlight = null;
+            int checkpointsWritten = 0;
+            string runawayCheckpointFailure = null;
+
+            void Land()
+            {
+                if (inFlight == null) return;
+
+                BackgroundCheckpoint write = inFlight;
+                inFlight = null;
+                write.Wait();
+
+                checkpointsWritten++;
+                manifest.LastCheckpoints = checkpointsWritten;
+            }
             double lastCheckpointSeconds = double.NegativeInfinity;
             double deferredCheckpointAt = double.NaN;
 
@@ -618,18 +804,56 @@ namespace Evosim.Farm
                 ? (Math.Floor(world.ElapsedSeconds / checkpointEvery) + 1d) * checkpointEvery
                 : double.MaxValue;
 
+            // D159's next exchange, from the clock as the checkpoints' are, after any restore: a
+            // checkpoint is written after the exchange of its second, so a resumed world's first is
+            // the one after it.
+            double nextExchangeAt = exchange != null
+                ? exchange.NextAfter(world.ElapsedSeconds)
+                : double.MaxValue;
+
             int reportEvery = Math.Max(1, settings.ReportEvery);
             double budgetSeconds = settings.BudgetSeconds;
             double wallMinutes = settings.WallMinutes;
             string stopPath = Path.Combine(dir.Path, "STOP");
+
+            // The writers' clock split by writer (W0, card-next-r57.md Part 8): the poses, the
+            // steering (with the leaf smell's recorder), the report rows, the snapshots and the checkpoints, in ticks and calls. Read
+            // on the loop's own thread and printed at the end under the time probe; nothing reads it
+            // otherwise, and nothing branches on it.
+            var writerTicks = new long[5];
+            var writerCalls = new long[5];
+            double probeFrom = world.ElapsedSeconds;
+
+            // The pace guard and the cap watch (proposals/propose-farm-pace-guard.md, items 2-4), read at every
+            // row. The pace is the clock less the exchanges' waits, so a world held by a slow peer is not slow.
+            PaceGuard pace = PaceGuard.Of(settings);
+            bool canProbe = false;
+            long[] capsAtStart = null;
+#if EVOSIM_GPU
+            canProbe = FarmGpu.CanProbe(sim.Dynamics.Backend);
+            capsAtStart = FarmGpu.Overflow(sim.Dynamics.Backend);
+#endif
+            var caps = new CapWatch(capsAtStart, world.Diverged);
+            var exchangeWait = new Stopwatch();
+            string slowReason = null;
+            bool checkpointNow = false;
+            FarmConsole.Error.WriteLine(pace.Describe());
 
             var clock = Stopwatch.StartNew();
             sim.RunClock = clock;
 
             try
             {
-                while (world.ElapsedSeconds < budgetSeconds &&
-                       clock.Elapsed.TotalMinutes < wallMinutes)
+                // A block the gpu engine has stepped is run to its end before the budget or the wall
+                // is read (Simulation.InsideBlock). The engine steps the whole block on its first
+                // step, so the wall is nearly always crossed inside one, and a world left there is a
+                // block ahead of its own clock: its last checkpoint refused it, and the world died
+                // with no ending (gp-old-a, 2026-10-10). The rest of the block only counts, so the
+                // run stops a few milliseconds later, at the block's end. On the CPU a block is one
+                // step and this reads as before.
+                while (sim.InsideBlock ||
+                       (world.ElapsedSeconds < budgetSeconds &&
+                        clock.Elapsed.TotalMinutes < wallMinutes))
                 {
                     if (!sim.Step()) continue;
 
@@ -639,9 +863,34 @@ namespace Evosim.Farm
                     // last frame is the last instant the world was in and not the one before it.
                     if (poses != null)
                     {
+                        long w0 = Stopwatch.GetTimestamp();
                         sim.WritersClock.Start();
                         poses.Sample(sim);
                         sim.WritersClock.Stop();
+                        writerTicks[0] += Stopwatch.GetTimestamp() - w0;
+                        writerCalls[0]++;
+                    }
+
+                    if (steering != null)
+                    {
+                        long w0 = Stopwatch.GetTimestamp();
+                        sim.WritersClock.Start();
+                        steering.Sample(sim);
+                        sim.WritersClock.Stop();
+                        writerTicks[1] += Stopwatch.GetTimestamp() - w0;
+                        writerCalls[1]++;
+                    }
+
+                    // The leaf smell's recorder in the steering slot of the writers' clock, so the
+                    // probe line keeps its five fields; the slot is the two smell recorders together.
+                    if (leafScent != null)
+                    {
+                        long w0 = Stopwatch.GetTimestamp();
+                        sim.WritersClock.Start();
+                        leafScent.Sample(sim);
+                        sim.WritersClock.Stop();
+                        writerTicks[1] += Stopwatch.GetTimestamp() - w0;
+                        if (steering == null) writerCalls[1]++;
                     }
 
                     // So the error path can say how far the run got. All of it, not only the
@@ -682,6 +931,38 @@ namespace Evosim.Farm
                         world, inoculum, settings.InoculateAt, settings.InoculateCount,
                         settings.InoculateDepth, assayFired);
 
+                    // D159's exchange, after the assay and before the extinction test for the
+                    // assay's reason: an immigrant can refill an empty world. And the group's end,
+                    // read every step, so a world stops one metabolic step after another has ended.
+                    if (exchange != null)
+                    {
+                        bool groupEnded = exchange.EndedBy != null;
+
+                        if (!groupEnded && world.ElapsedSeconds + 1e-9 >= nextExchangeAt)
+                        {
+                            exchangeWait.Start();
+                            groupEnded = !exchange.Run(
+                                place, world, nextExchangeAt,
+                                (from, migrant, id) => immigrantRows.Write(
+                                    ImmigrantRecord.Row(world.ElapsedSeconds, from, migrant, id, world.LastImmigrantRefusal,
+                                        id >= 0 ? ImmigrantRecord.GuildOf(world, id) : -1)));
+                            exchangeWait.Stop();
+                            nextExchangeAt = (Math.Round(nextExchangeAt / exchange.Every) + 1d) * exchange.Every;
+                        }
+
+                        if (groupEnded)
+                        {
+                            status = "stopped";
+                            terminationCode = "group";
+                            ending =
+                                "stopped at t=" +
+                                world.ElapsedSeconds.ToString("0.#", CultureInfo.InvariantCulture) +
+                                " s: the group ended, " + exchange.EndedBy;
+
+                            break;
+                        }
+                    }
+
                     // Checked every step, not only at a report row: an empty world would
                     // otherwise sit doing nothing for up to reportEvery more steps. A crash to
                     // zero is a real outcome, so it ends through the same finishing path as a
@@ -714,20 +995,75 @@ namespace Evosim.Farm
 
                     if (metabolicSteps % reportEvery == 0)
                     {
+                        long w0 = Stopwatch.GetTimestamp();
                         sim.WritersClock.Start();
 
-                        report.AppendRow(sampler.Write(sim, dir, report.Columns));
+                        string row = sampler.Write(sim, dir, report.Columns);
+                        long rowBuilt = Stopwatch.GetTimestamp();
+                        report.AppendRow(row);
                         report.Flush();
+                        long w1 = FarmProbe.Mark(FarmProbe.RowReport, rowBuilt);
+                        writerTicks[2] += w1 - w0;
+                        writerCalls[2]++;
 
                         // Every tenth report: often enough that a killed run keeps something
                         // recent, rare enough that a population of thousands is not serialised
                         // every sample.
-                        if (metabolicSteps % (reportEvery * 10) == 0) sampler.Snapshot(dir, world);
+                        if (metabolicSteps % (reportEvery * 10) == 0)
+                        {
+                            sampler.Snapshot(dir, world);
+                            writerTicks[3] += Stopwatch.GetTimestamp() - w1;
+                            writerCalls[3]++;
+                        }
 
                         sim.WritersClock.Stop();
 
                         stopped = File.Exists(stopPath);
+
+                        // Item 4: the run's first overflow of a card cap asks for a checkpoint at this row, and
+                        // it and a first divergence are said in a line; neither stops the run.
+                        long[] overflowNow = null;
+#if EVOSIM_GPU
+                        overflowNow = FarmGpu.Overflow(sim.Dynamics.Backend);
+#endif
+                        if (caps.Row(world.ElapsedSeconds, overflowNow, world.Diverged, FarmConsole.Error) &&
+                            settings.OverflowCheckpoint)
+                        {
+                            checkpointNow = true;
+                        }
+
+                        // Items 2 and 3: a world slowing well under its trailing pace has the card probe
+                        // switched on for a few rows, then stops at a checkpoint at this row with the reason.
+                        PaceGuard.Act act = pace.Row(
+                            clock.Elapsed.TotalMilliseconds - exchangeWait.Elapsed.TotalMilliseconds,
+                            world.ElapsedSeconds, canProbe);
+
+                        if (act == PaceGuard.Act.Probe)
+                        {
+#if EVOSIM_GPU
+                            FarmGpu.Probe(sim.Dynamics.Backend);
+#endif
+                            FarmConsole.Error.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                                "pace guard at t={0:0.#} s: {1}; the card probe is on for {2} rows, then the run stops",
+                                world.ElapsedSeconds, pace.Pace(), pace.ProbeRows));
+                        }
+                        else if (act == PaceGuard.Act.Stop)
+                        {
+                            IReadOnlyList<string> probeLines = Array.Empty<string>();
+#if EVOSIM_GPU
+                            probeLines = FarmGpu.ProbeLines(sim.Dynamics.Backend);
+#endif
+                            slowReason = pace.Reason(
+                                world, sim.Dynamics.Watch.LastWindow, caps.Since(lastCheckpointSeconds), probeLines);
+                            stopped = true;
+                            checkpointNow = true;
+                        }
                     }
+
+                    // A checkpoint the cap watch or the pace guard asked for is taken at this row, which a
+                    // row has just closed; the cadence after it is the clock's, as before.
+                    double cadenceCheckpointAt = nextCheckpointAt;
+                    if (checkpointNow) nextCheckpointAt = Math.Min(nextCheckpointAt, world.ElapsedSeconds);
 
                     // After the row, never before it. A checkpoint carries the sampler's window
                     // baselines, so one taken before the row that closes a window would hand the
@@ -748,7 +1084,7 @@ namespace Evosim.Farm
                         {
                             deferredCheckpointAt = nextCheckpointAt;
 
-                            Console.Error.WriteLine(
+                            FarmConsole.Error.WriteLine(
                                 "warning: the checkpoint due at " +
                                 nextCheckpointAt.ToString("0.#", CultureInfo.InvariantCulture) +
                                 " s waits: a body's plan has changed and its solver has not been " +
@@ -757,26 +1093,51 @@ namespace Evosim.Farm
                         }
 
                         checkpointDue = false;
+
+                        // One asked for off the cadence is not carried to a later step, which no row closes.
+                        if (checkpointNow) nextCheckpointAt = cadenceCheckpointAt;
                     }
+
+                    checkpointNow = false;
 
                     if (checkpointDue)
                     {
+                        long w0 = Stopwatch.GetTimestamp();
                         sim.WritersClock.Start();
 
                         lastCheckpointSeconds = world.ElapsedSeconds;
                         checkpoints++;
 
-                        WriteCheckpoint(
+                        // The last write first, so at most one is ever in flight.
+                        Land();
+
+                        inFlight = WriteCheckpoint(
                             sim, sampler, dir, manifest, config, settings, physicsDt,
                             stepsPerMetabolic,
                             metabolicSteps, bestSpeedEver, bestSpeedAt, assayFired);
 
                         sim.WritersClock.Stop();
+                        writerTicks[4] += Stopwatch.GetTimestamp() - w0;
+                        writerCalls[4]++;
 
-                        manifest.LastCheckpoints = checkpoints;
+                        nextCheckpointAt = checkpointEvery > 0f
+                            ? (Math.Floor(world.ElapsedSeconds / checkpointEvery) + 1d) * checkpointEvery
+                            : double.MaxValue;
+                        caps.Checkpointed();
+                    }
 
-                        nextCheckpointAt =
-                            (Math.Floor(world.ElapsedSeconds / checkpointEvery) + 1d) * checkpointEvery;
+                    if (stopped && slowReason != null)
+                    {
+                        status = "stopped";
+                        terminationCode = "slow";
+                        ending =
+                            "stopped slow at t=" +
+                            world.ElapsedSeconds.ToString("0.#", CultureInfo.InvariantCulture) + " s" +
+                            (lastCheckpointSeconds == world.ElapsedSeconds ? ", at a checkpoint" : ", with no checkpoint at the stop") +
+                            ": " + slowReason;
+
+                        FarmConsole.Error.WriteLine(ending);
+                        break;
                     }
 
                     if (stopped)
@@ -811,9 +1172,30 @@ namespace Evosim.Farm
                         terminationCode = "wall";
                     }
                 }
+
+                // D159: out of the exchange as soon as the loop is, with the reason, so a world
+                // waiting at an exchange is released and, for anything but the budget, the group
+                // ends.
+                exchange?.Leave(place, terminationCode);
+
+                // The budget, the wall and a stop leave the loop here, and the write behind it lands
+                // inside the try, so a write that failed ends the run as an error below.
+                Land();
             }
             catch (PopulationRunawayException runaway)
             {
+                // A runaway leaves the loop mid-step, with perhaps a write still going. It lands
+                // here; a write that failed is said in the ending rather than lost.
+                try
+                {
+                    Land();
+                }
+                catch (Exception failed)
+                {
+                    FarmConsole.Error.WriteLine(failed.ToString());
+                    runawayCheckpointFailure = failed.Message;
+                }
+
                 // D021: not a crash. It locates the generous end of the calibration exactly as
                 // extinction locates the lean end, and culling to fit a compute budget would be
                 // selection performed by us. D058 files this the same as a wall cut: censored,
@@ -829,15 +1211,40 @@ namespace Evosim.Farm
 
                 terminationCode = "ceiling-" + runaway.Ceiling;
                 status = "ended";
+
+                exchange?.Leave(place, terminationCode);
+
+                if (runawayCheckpointFailure != null)
+                {
+                    ending += "; the checkpoint being written when it ran away was not written (" +
+                              runawayCheckpointFailure + ")";
+                }
             }
             catch (Exception e)
             {
                 clock.Stop();
 
+                // D159: an error ends the group, and releases any world waiting at an exchange.
+                exchange?.Leave(place, "error");
+
+                // The write behind the loop lands before anything closes, so the run never leaves a
+                // write going. Its own failure is said beside the run's, which is the one recorded.
+                try
+                {
+                    Land();
+                }
+                catch (Exception failed)
+                {
+                    FarmConsole.Error.WriteLine(failed.ToString());
+                }
+
                 // The stream first: disposing it writes poses.idx, so even a crashed run leaves
                 // an index rather than a file only a scan can open.
                 manifest.LastPoseFrames = poses?.FrameCount ?? 0;
                 poses?.Dispose();
+                steering?.Dispose();
+                leafScent?.Dispose();
+                immigrantRows?.Dispose();
 
 #if EVOSIM_GPU
                 FarmGpu.Note(manifest, sim.Dynamics.Backend);
@@ -854,11 +1261,29 @@ namespace Evosim.Farm
                 engine?.Dispose();
                 dir.Dispose();
 
-                Console.Error.WriteLine(e.ToString());
+                FarmConsole.Error.WriteLine(e.ToString());
                 return 1;
             }
 
             clock.Stop();
+
+            // The trickle question's instrument (Metabolise.cs): living creatures the harness had
+            // no body for at a metabolic step. A reading for the console and nowhere else.
+            FarmConsole.Error.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                "bodiless: {0} creatures seen without a body at a metabolic step, {1} creature-steps, the longest {2:0.###} s",
+                sim.BodilessCreatures, sim.BodilessCreatureSteps, sim.LongestBodilessSeconds));
+
+            if (Environment.GetEnvironmentVariable("EVOSIM_GPU_PROBE") == "1")
+            {
+                double perSecond = 1000.0 / Stopwatch.Frequency / Math.Max(1e-9, world.ElapsedSeconds - probeFrom);
+                FarmConsole.Error.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                    "writers-probe, ms a simulated second over {0:0.#} s: poses {1:0.00}, steering {2:0.00}, rows {3:0.00}, " +
+                    "snapshots {4:0.00}, checkpoints {5:0.00}; calls {6} / {7} / {8} / {9} / {10}; the writers' clock {11} ms",
+                    world.ElapsedSeconds - probeFrom, writerTicks[0] * perSecond, writerTicks[1] * perSecond,
+                    writerTicks[2] * perSecond, writerTicks[3] * perSecond, writerTicks[4] * perSecond,
+                    writerCalls[0], writerCalls[1], writerCalls[2], writerCalls[3], writerCalls[4], sim.WallWritersMs));
+                FarmConsole.Error.WriteLine(FarmProbe.Line(world.ElapsedSeconds - probeFrom));
+            }
 
             report.Footer(
                 config, readings, ending, clock.ElapsedMilliseconds, sim.WallWritersMs,
@@ -899,7 +1324,7 @@ namespace Evosim.Farm
 
                 if (pending > 0)
                 {
-                    Console.Error.WriteLine(
+                    FarmConsole.Error.WriteLine(
                         "note: no checkpoint at the second the run ended (" +
                         world.ElapsedSeconds.ToString("0.#", CultureInfo.InvariantCulture) +
                         " s): " + pending.ToString(CultureInfo.InvariantCulture) + " bodies had " +
@@ -911,13 +1336,16 @@ namespace Evosim.Farm
                 {
                     checkpoints++;
 
-                    WriteCheckpoint(
+                    // Started and landed at once: nothing steps after it.
+                    inFlight = WriteCheckpoint(
                         sim, sampler, dir, manifest, config, settings, physicsDt, stepsPerMetabolic,
                         metabolicSteps, bestSpeedEver, bestSpeedAt, assayFired);
+                    Land();
                 }
             }
 
-            manifest.LastCheckpoints = checkpoints;
+            // The checkpoints whose files are in place; every write has landed by here.
+            manifest.LastCheckpoints = checkpointsWritten;
 
             sampler.Snapshot(dir, world);
             sampler.Close();
@@ -927,6 +1355,9 @@ namespace Evosim.Farm
             int poseFrames = poses?.FrameCount ?? 0;
             manifest.LastPoseFrames = poseFrames;
             poses?.Dispose();
+            steering?.Dispose();
+            leafScent?.Dispose();
+            immigrantRows?.Dispose();
 
             long[] harnessPhaseMs = sim.HarnessPhaseMs();
 
@@ -986,8 +1417,11 @@ namespace Evosim.Farm
             engine?.Dispose();
             dir.Dispose();
 
-            Console.WriteLine();
-            Console.WriteLine("**Ended:** " + ending + ".");
+            FarmConsole.Out.WriteLine();
+            FarmConsole.Out.WriteLine("**Ended:** " + ending + ".");
+
+            // The pace guard's reason is the error log's last line too (proposals/propose-farm-pace-guard.md).
+            if (slowReason != null) FarmConsole.Error.WriteLine(ending);
 
             return 0;
         }
@@ -1100,8 +1534,9 @@ namespace Evosim.Farm
         }
 
         /// <summary>
-        /// Writes one checkpoint: the world, the harness, the sampler and the loop's own four
-        /// numbers, at the second the caller is standing on.
+        /// Starts one checkpoint: the world, the harness, the sampler and the loop's own four
+        /// numbers, at the second the caller is standing on, captured here and written behind the
+        /// loop. The caller waits for the write it returns before the next and before the run ends.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -1118,12 +1553,13 @@ namespace Evosim.Farm
         /// checkpoint draws, and the resumed run's first rows are the ones that come after it.
         /// </para>
         /// </remarks>
-        private static void WriteCheckpoint(
+        private static BackgroundCheckpoint WriteCheckpoint(
             Simulation sim, Sampler sampler, RunDirectory dir, RunManifest manifest,
             RunConfig config, EnvSettings settings, float physicsDt, int stepsPerMetabolic,
             int metabolicSteps, double bestSpeedEver, double bestSpeedAt, bool assayFired)
         {
             World world = sim.World;
+            long settleStarted = Stopwatch.GetTimestamp();
 
             sim.SettleBeforeCheckpoint();
 
@@ -1133,6 +1569,7 @@ namespace Evosim.Farm
             // The genome queue with it, for the same reason: it is not in the checkpoint, so what
             // it holds belongs on this side of the line.
             Sampler.DrainGenomes(world, dir);
+            FarmProbe.Mark(FarmProbe.CheckpointSettle, settleStarted);
 
             var header = new CheckpointHeader
             {
@@ -1159,24 +1596,29 @@ namespace Evosim.Farm
                 CheckpointEverySeconds = settings.ResolveCheckpointEvery(),
             };
 
-            CheckpointWriter.Write(
-                Checkpoint.PathFor(dir.Path, world.ElapsedSeconds),
-                header,
-                w =>
-                {
-                    StateIo.Tag(w, "PAYL");
-                    world.WriteState(w);
-                    sim.WriteState(w);
-                    sampler.WriteState(w);
+            // The payload here, on the loop's thread, before the next step moves anything; the
+            // digest, the compression and the file on a thread of their own (card-next-r57.md
+            // Part 8). The caller waits for it before the next checkpoint and at every way out.
+            long payloadStarted = Stopwatch.GetTimestamp();
+            CheckpointPayload payload = CheckpointWriter.Capture(w =>
+            {
+                StateIo.Tag(w, "PAYL");
+                world.WriteState(w);
+                sim.WriteState(w);
+                sampler.WriteState(w);
 
-                    StateIo.Tag(w, "LOOP");
-                    w.Write(metabolicSteps);
-                    w.Write(bestSpeedEver);
-                    w.Write(bestSpeedAt);
-                    w.Write(assayFired);
+                StateIo.Tag(w, "LOOP");
+                w.Write(metabolicSteps);
+                w.Write(bestSpeedEver);
+                w.Write(bestSpeedAt);
+                w.Write(assayFired);
 
-                    StateIo.Tag(w, "PEND");
-                });
+                StateIo.Tag(w, "PEND");
+            });
+            FarmProbe.Mark(FarmProbe.CheckpointPayload, payloadStarted);
+
+            return BackgroundCheckpoint.Start(
+                Checkpoint.PathFor(dir.Path, world.ElapsedSeconds), header, payload, settings.TestCheckpointStallMs);
         }
 
         /// <summary>The loop's own four numbers, which a checkpoint carries under <c>LOOP</c>.</summary>
@@ -1267,21 +1709,291 @@ namespace Evosim.Farm
             return "manual-other";
         }
 
+        /// <summary>
+        /// Two worlds or more in one process (card-next-r57.md, part 4): <c>--group a.args b.args [c.args ...]</c>,
+        /// and <c>--pair a.args b.args</c>, which is a group of two on the card. Each file holds a world's
+        /// settings, one <c>EVOSIM_NAME=value</c> a line over the environment as a command line's are; blank
+        /// lines and lines starting with <c>#</c> are skipped. Each world steps on a thread of its own and
+        /// writes what a lone run prints to <c>a.log</c> and <c>a.err</c> beside its settings file. On the
+        /// card the worlds share one device, a stream each; on the CPU engine each world has its own solver,
+        /// as it would alone. The exit code is the worst of them.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Every world takes Core's one thread count (<see cref="Parallelism"/>), so a group whose counts
+        /// differ is refused rather than run at whichever world set it last. A split depends only on the
+        /// count, so the worlds share the pool at a cost in time and none in bits.
+        /// </para>
+        /// <para>
+        /// Nothing passes between the worlds: each is the plain world a lone run steps. Each world's run.json
+        /// names the whole group in its order (<c>group</c>), and on the card its gpu block names the others
+        /// (<c>sharedProcessWith</c>), so a run says it shared a process and with which.
+        /// </para>
+        /// </remarks>
+        private static int Group(string[] paths, bool pair)
+        {
+            string flag = pair ? "--pair" : "--group";
+            int n = paths.Length;
+            var overrides = new Dictionary<string, string>[n];
+            var settings = new EnvSettings[n];
+            var outs = new string[n];
+
+            for (int k = 0; k < n; k++)
+            {
+                overrides[k] = ReadSettingsFile(paths[k]);
+                settings[k] = EnvBinding.Read(Over(overrides[k]));
+                outs[k] = Path.GetFullPath(settings[k].ResolveOutPath());
+            }
+
+            bool onCard = settings[0].EngineIsGpu;
+            for (int k = 1; k < n; k++)
+            {
+                if (settings[k].EngineIsGpu != onCard)
+                {
+                    Console.Error.WriteLine(flag + ": one world asks for the gpu engine and another for the CPU's; a group runs on one.");
+                    return 1;
+                }
+            }
+
+            if (pair && !onCard)
+            {
+                Console.Error.WriteLine("--pair shares one card between two worlds; both need EVOSIM_ENGINE=gpu (--group runs the CPU engine).");
+                return 1;
+            }
+
+            for (int k = 1; k < n; k++)
+            {
+                if (settings[k].ResolveThreads() != settings[0].ResolveThreads())
+                {
+                    Console.Error.WriteLine(
+                        flag + ": the worlds ask for " + settings[0].ResolveThreads().ToString(CultureInfo.InvariantCulture) +
+                        " and " + settings[k].ResolveThreads().ToString(CultureInfo.InvariantCulture) +
+                        " threads, and Core has one thread count for the process.");
+                    return 1;
+                }
+            }
+
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = i + 1; j < n; j++)
+                {
+                    if (string.Equals(outs[i], outs[j], StringComparison.OrdinalIgnoreCase))
+                    {
+                        Console.Error.WriteLine(flag + ": two worlds would write " + outs[i] + ".");
+                        return 1;
+                    }
+                }
+            }
+
+            string group = string.Join(", ", outs.Select(Path.GetFileName));
+            var codes = new int[n];
+
+            // D159's exchange: on for every world or for none, at one cadence and one count, and
+            // with one budget, so the worlds meet at every exchange and none leaves the group at a
+            // budget the others have not reached.
+            GroupExchange exchange = null;
+            bool migrating = settings[0].MigrateEvery > 0f;
+
+            for (int k = 1; k < n; k++)
+            {
+                if (settings[k].MigrateEvery != settings[0].MigrateEvery ||
+                    (migrating && settings[k].MigrateCount != settings[0].MigrateCount))
+                {
+                    Console.Error.WriteLine(
+                        flag + ": the worlds ask for different exchanges (EVOSIM_MIGRATE_EVERY, EVOSIM_MIGRATE_COUNT); " +
+                        "a migrating group exchanges at one cadence and one count, and a group that does not sets neither.");
+                    return 1;
+                }
+
+                if (migrating && settings[k].BudgetSeconds != settings[0].BudgetSeconds)
+                {
+                    Console.Error.WriteLine(
+                        flag + ": the worlds of a migrating group ask for different budgets (EVOSIM_SECONDS); " +
+                        "one that reached its budget first would leave the others with nobody to trade with.");
+                    return 1;
+                }
+            }
+
+            // D159, the coordinator's call of 2026-10-09: a migrating group resumes from one common
+            // second, every world from its own checkpoint at it, or founds every world; a group
+            // resumed at different seconds would take its next exchange with worlds at different
+            // moments of their histories.
+            if (migrating)
+            {
+                var resumed = new string[n];
+                for (int k = 0; k < n; k++) resumed[k] = Checkpoint.Resolve(settings[k].ResumeFrom, settings[k].ResumeAt);
+
+                int resuming = resumed.Count(r => r != null);
+                if (resuming != 0 && resuming != n)
+                {
+                    Console.Error.WriteLine(
+                        flag + ": " + resuming + " of the " + n + " worlds resume and the rest are founded; a migrating " +
+                        "group resumes every world or none.");
+                    return 1;
+                }
+
+                if (resuming == n)
+                {
+                    double[] at = resumed.Select(r => CheckpointReader.ReadHeader(r).Seconds).ToArray();
+                    if (at.Any(s => s != at[0]))
+                    {
+                        Console.Error.WriteLine(
+                            flag + ": the worlds' checkpoints are at " +
+                            string.Join(", ", at.Select(s => s.ToString("0.###", CultureInfo.InvariantCulture))) +
+                            " s; a migrating group resumes from one common second. Name it with EVOSIM_RESUME_AT in every world.");
+                        return 1;
+                    }
+                }
+            }
+
+            if (migrating)
+            {
+                if (settings[0].MigrateCount < 1)
+                {
+                    Console.Error.WriteLine(flag + ": EVOSIM_MIGRATE_COUNT is " + settings[0].MigrateCount + "; a world sends 1 genome or more.");
+                    return 1;
+                }
+
+                exchange = new GroupExchange(outs.Select(Path.GetFileName).ToArray(), settings[0].MigrateEvery, settings[0].MigrateCount);
+            }
+
+            if (!onCard) return RunGroup(paths, overrides, null, outs, group, codes, exchange);
+
+#if EVOSIM_GPU
+            Evosim.Farm.Gpu.GpuOptions first = FarmGpu.Options(settings[0]);
+            for (int k = 1; k < n; k++)
+            {
+                if (FarmGpu.Options(settings[k]).OnCpu != first.OnCpu)
+                {
+                    Console.Error.WriteLine(flag + ": one world asks for the card and another for the CPU accelerator.");
+                    return 1;
+                }
+            }
+
+            using var device = Evosim.Farm.Gpu.GpuDevice.Open(first);
+            return RunGroup(paths, overrides, device, outs, group, codes, exchange);
+#else
+            throw new NotSupportedException(
+                flag + " on the gpu engine shares a card, and this build of the farm has no gpu engine: it is compiled " +
+                "in by src/Evosim.Farm's own csproj (EVOSIM_GPU), and never into Unity.");
+#endif
+        }
+
+        /// <summary>The group's worlds, a thread each, to their ends; the worst exit code.</summary>
+        private static int RunGroup(
+            string[] paths, Dictionary<string, string>[] overrides, object device, string[] outs, string group, int[] codes,
+            GroupExchange exchange)
+        {
+            int n = paths.Length;
+            var worlds = new System.Threading.Thread[n];
+
+            for (int k = 0; k < n; k++)
+            {
+                int self = k;
+                string others = string.Join(", ", outs.Where((_, i) => i != self).Select(Path.GetFileName));
+                worlds[k] = GroupWorld(paths[k], overrides[k], device, others, group, codes, k, exchange);
+            }
+
+            foreach (var t in worlds) t.Start();
+            foreach (var t in worlds) t.Join();
+            return codes.Max();
+        }
+
+        private static System.Threading.Thread GroupWorld(
+            string path, Dictionary<string, string> overrides, object device, string others, string group,
+            int[] codes, int k, GroupExchange exchange)
+        {
+            return new System.Threading.Thread(() =>
+            {
+                string stem = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path)), Path.GetFileNameWithoutExtension(path));
+                using var log = new StreamWriter(stem + ".log", false, new UTF8Encoding(false)) { AutoFlush = true };
+                using var err = new StreamWriter(stem + ".err", false, new UTF8Encoding(false)) { AutoFlush = true };
+                FarmConsole.Use(log, err);
+#if EVOSIM_GPU
+                Evosim.Farm.Gpu.GpuConsole.Use(err);
+#endif
+
+                try
+                {
+                    codes[k] = RunWorld(overrides, device, others, group, exchange, k);
+                }
+                catch (Exception e)
+                {
+                    err.WriteLine(e.GetType().Name + ": " + e.Message);
+                    codes[k] = 1;
+                }
+                finally
+                {
+                    // The loop says why it ended; this is for a world that never reached it or left
+                    // by an exception, so the others are released from the exchange and stop.
+                    exchange?.Leave(k, null);
+                }
+            })
+            { Name = "world " + k.ToString(CultureInfo.InvariantCulture) };
+        }
+
+        private static EnvBinding.Lookup Over(Dictionary<string, string> overrides) =>
+            name => overrides.TryGetValue(name, out string v) ? v : Environment.GetEnvironmentVariable(name);
+
+        /// <summary>A pair's settings file: <c>EVOSIM_NAME=value</c> a line; anything else is refused, as on a command line.</summary>
+        private static Dictionary<string, string> ReadSettingsFile(string path)
+        {
+            var overrides = new Dictionary<string, string>(StringComparer.Ordinal);
+            string[] lines = File.ReadAllLines(path);
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string line = lines[i].Trim();
+                if (line.Length == 0 || line.StartsWith("#", StringComparison.Ordinal)) continue;
+
+                int eq = line.IndexOf('=');
+                if (eq <= 0 || !line.StartsWith("EVOSIM_", StringComparison.Ordinal))
+                {
+                    throw new ArgumentException(
+                        path + " line " + (i + 1).ToString(CultureInfo.InvariantCulture) + ": '" + line +
+                        "' is not a setting. A pair's settings are EVOSIM_NAME=value lines.");
+                }
+
+                overrides[line.Substring(0, eq)] = line.Substring(eq + 1);
+            }
+
+            return overrides;
+        }
+
         private static void Help()
         {
-            Console.WriteLine(
+            FarmConsole.Out.WriteLine(
                 "Evosim.Farm — one evolution arm, stepped by Evosim.Dynamics rather than by Unity.");
-            Console.WriteLine();
-            Console.WriteLine("  Evosim.Farm [EVOSIM_NAME=value ...]");
-            Console.WriteLine();
-            Console.WriteLine(
+            FarmConsole.Out.WriteLine();
+            FarmConsole.Out.WriteLine("  Evosim.Farm [EVOSIM_NAME=value ...]");
+            FarmConsole.Out.WriteLine();
+            FarmConsole.Out.WriteLine(
                 "Every setting is an environment variable, as it was under the editor; an");
-            Console.WriteLine(
+            FarmConsole.Out.WriteLine(
                 "argument of the same form overrides one. The settings this build reads:");
-            Console.WriteLine();
+            FarmConsole.Out.WriteLine();
 
             IReadOnlyList<string> names = EnvBinding.Names;
-            for (int i = 0; i < names.Count; i++) Console.WriteLine("  " + names[i]);
+            for (int i = 0; i < names.Count; i++) FarmConsole.Out.WriteLine("  " + names[i]);
+        }
+    }
+    /// <summary>
+    /// Where the farm prints: the console, or a world's own files when two worlds share the process
+    /// (<c>Program.Pair</c>). Per thread, so each world's lines reach its own files; a thread that set
+    /// nothing prints to the console as the farm always has.
+    /// </summary>
+    internal static class FarmConsole
+    {
+        [ThreadStatic] private static TextWriter _out;
+        [ThreadStatic] private static TextWriter _error;
+
+        public static TextWriter Out => _out ?? Console.Out;
+
+        public static TextWriter Error => _error ?? Console.Error;
+
+        public static void Use(TextWriter output, TextWriter error)
+        {
+            _out = output;
+            _error = error;
         }
     }
 }

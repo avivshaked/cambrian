@@ -1,7 +1,7 @@
 # Round 51's ledger check: can tissue-only husks feed an eater?
 
-*2026-09-27, for D127's conditional rule (the owner: "first check with the ledger whether
-tissue-only husks, gathered on the reefs, can feed an eater; add death by age only if they can't").
+*2026-09-27, for D127's conditional rule (the owner's ruling: first check with the ledger whether
+tissue-only husks, gathered on the reefs, can feed an eater; add death by age only if they cannot).
 A calculation from round 50's record and `scripts/ledger.ps1`, not a run.*
 
 ## The answer

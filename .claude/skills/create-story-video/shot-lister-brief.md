@@ -24,10 +24,8 @@ In the film's folder, and nothing else: no runs, no code, no logbook, no other f
 
 `shots-<n>.json` in the film's folder, in the form of `shots-schema.md`.
 
-- Write it through the shell, never with the Write or Edit tools: write a small Python script that builds
-  the list and writes it with `json.dump`, then run it. This shell breaks a heredoc of more than about
-  150 lines, so write the script in pieces of at most 100 lines (`cat > file <<'EOF'` for the first,
-  `cat >> file <<'EOF'` for the rest). Keep the script in the film's folder as `shots-<n>-build.py`.
+- Write a small Python script that builds the list and writes it with `json.dump`, then run it.
+  Keep the script in the film's folder as `shots-<n>-build.py`.
 - `script_sha256` and `narration_sha256` are the files' sha256 in hex, from Python's `hashlib`.
 - Check your own draft before you answer:
   `python <the folder of this brief>/shots.py check <film folder> <n>`. Its first line is its verdict. Fix
@@ -119,5 +117,5 @@ missing or `facts.md` lacks what a passage needs; do not invent it.
 
 - Use only what `facts.md` holds. Never read a run, the code or the logbook.
 - Never change a spoken word, a hold or a passage number.
-- Write only inside the film's folder, and only through the shell.
+- Write only inside the film's folder.
 - Your time budget is 15 minutes.

@@ -128,7 +128,7 @@ namespace Evosim.Dynamics.Bench
             int undeveloped = 0;
             foreach (Genome genome in genomes)
             {
-                try { developed.Add(Developer.Develop(genome, config.Development, null, config.Shapes)); }
+                try { developed.Add(Developer.Develop(genome, config.Development, null, config.Shapes, cellTypes: config.CellTypes)); }
                 catch (Exception) { undeveloped++; }
             }
 
@@ -666,7 +666,7 @@ namespace Evosim.Dynamics.Bench
                 try
                 {
                     var paths = new List<int[]>();
-                    adult = Developer.Develop(genome, config.Development, null, config.Shapes, counts, paths);
+                    adult = Developer.Develop(genome, config.Development, null, config.Shapes, counts, paths, config.CellTypes);
 
                     if (recordedLost.TryGetValue(id, out List<int[]> lost) && lost.Count > 0)
                     {

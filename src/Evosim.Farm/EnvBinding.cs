@@ -81,6 +81,9 @@ namespace Evosim.Farm
             // D113: the support cost's price, W per m² of lit area per m² of distance from the
             // root. 0 is the recorded world.
             Num("EVOSIM_SUPPORT", 0f, (s, v) => s.Support = v),
+
+            // D127: how much of a body's first link holds no energy, m3 of the adult part.
+            Num("EVOSIM_FREE_LINK", D.FreeFirstLinkCubicMetres, (s, v) => s.FreeLink = v),
             Num("EVOSIM_SELF_OVERLAP", 0f, (s, v) => s.SelfOverlap = v),
             Num("EVOSIM_MAX_REACH", 0f, (s, v) => s.MaxReach = v),
 
@@ -93,6 +96,11 @@ namespace Evosim.Farm
             Num("EVOSIM_MATTER_ISLANDS", 0f, (s, v) => s.MatterIslands = v),
             Num("EVOSIM_MATTER_ISLAND_COVER", D.MatterIslandCover, (s, v) => s.MatterIslandCover = v),
             Num("EVOSIM_MATTER_ISLAND_DEPTH", D.MatterIslandDepthMetres, (s, v) => s.MatterIslandDepth = v),
+            // D185: no island column within this many metres of the glass; 0 is the recorded world.
+            Num("EVOSIM_MATTER_ISLAND_MARGIN", D.MatterIslandGlassMarginMetres, (s, v) => s.MatterIslandMargin = v),
+            // D192: named seeds off the world's seed, comma-separated name=value ("landscape=42");
+            // unset is none, every recorded world. RunConfig refuses an unknown name or a bad value.
+            Custom("EVOSIM_SEED_OVERRIDES", (s, env) => s.SeedOverrides = SeedOverridesOf(env, "EVOSIM_SEED_OVERRIDES")),
             Flag("EVOSIM_FOUNDERS_FOLLOW_MATTER", (s, v) => s.FoundersFollowMatter = v),
 
             // D116: the founder rule reads the field the founder's body eats. Off is the recorded
@@ -109,6 +117,10 @@ namespace Evosim.Farm
             // food together, is largest, in place of the depth rule above for a leaf. Off is the
             // recorded world; refused without the depth rule.
             Flag("EVOSIM_FOUNDERS_INCOME_DEPTH", (s, v) => s.FoundersFollowIncomeDepth = v),
+            // D129: a founder with a mouth reads the corpses as its food in the lottery and, under
+            // the depth rule, is set just above them. Off is the recorded world; refused without
+            // D116, without corpses as objects and without a mouth's reach.
+            Flag("EVOSIM_FOUNDERS_FOLLOW_CORPSES", (s, v) => s.FoundersFollowCorpses = v),
             Num("EVOSIM_FOUNDER_ENDOWMENT", 0f, (s, v) => s.FounderEndowment = v),
 
             // D124, the owner's ruling for round 49 (2026-09-25): a founder starts with at most
@@ -151,6 +163,21 @@ namespace Evosim.Farm
             // RunConfig or its hash (logbook/specs/checkpoint-spec.md).
             Num("EVOSIM_CHECKPOINT_EVERY", 0f, (s, v) => s.CheckpointEvery = v),
 
+            // D159's exchange between the worlds of one --group, round 58: every this many
+            // simulated seconds each world sends EVOSIM_MIGRATE_COUNT copies of living genomes to
+            // the next world in the group's order. Farm settings and not tunables, by the
+            // coordinator's call of 2026-10-09: they say how worlds are joined and nothing about
+            // what a world is, so they reach EnvSettings and run.json and never RunConfig or its
+            // hash. 0 is no exchange, and a lone run refuses anything else.
+            Num("EVOSIM_MIGRATE_EVERY", 0f, (s, v) => s.MigrateEvery = v),
+            Int("EVOSIM_MIGRATE_COUNT", 1f, (s, v) => s.MigrateCount = v),
+
+            // A test hook, not a setting of the run (card-next-r57.md Part 8): a pause in the middle
+            // of every checkpoint's file, so a test can kill the farm while a write is half done. It
+            // moves when the bytes land and never which bytes they are, and it is bounded, recorded
+            // in run.json and the header, and refused by the round launchers.
+            Custom("EVOSIM_TEST_CHECKPOINT_STALL_MS", (s, env) => s.TestCheckpointStallMs = StallMs(env)),
+
             // Which record the run writes (logbook/specs/record-and-film-spec.md, Part A): 2, the
             // default from round 49's build, writes each genome once, slim snapshots, gzipped
             // positions, the state stream in place of poses.jsonl and compressed checkpoints; 1
@@ -176,6 +203,20 @@ namespace Evosim.Farm
             Flag("EVOSIM_GPU_RESYNC", (s, v) => s.GpuResync = v),
             Flag("EVOSIM_GPU_CONCURRENT", (s, v) => s.GpuConcurrent = v),
             Flag("EVOSIM_GPU_TRANSPORT", (s, v) => s.GpuTransport = v),
+            Flag("EVOSIM_GPU_SCENT", (s, v) => s.GpuScent = v),
+
+            // The pace guard and the cap watch (proposals/propose-farm-pace-guard.md): farm settings that read
+            // the wall clock and the counts the run keeps, and move no bit. On unless a launcher says 0. The
+            // ratio's default waits on the owner's ruling. The trip is a test's, as the stall hook is.
+            FlagOn("EVOSIM_PACE_GUARD", (s, v) => s.PaceGuard = v),
+            Num("EVOSIM_PACE_RATIO", 0.5f, (s, v) => s.PaceRatio = v),
+            Int("EVOSIM_PACE_ROWS", 2f, (s, v) => s.PaceRows = v),
+            Int("EVOSIM_PACE_PROBE_ROWS", 1f, (s, v) => s.PaceProbeRows = v),
+            Num("EVOSIM_PACE_WINDOW_MINUTES", 10f, (s, v) => s.PaceWindowMinutes = v),
+            Num("EVOSIM_PACE_HOUR_MINUTES", 60f, (s, v) => s.PaceHourMinutes = v),
+            Num("EVOSIM_PACE_WARMUP_MINUTES", 10f, (s, v) => s.PaceWarmupMinutes = v),
+            Num("EVOSIM_TEST_PACE_TRIP_AT", -1f, (s, v) => s.TestPaceTripAt = v),
+            FlagOn("EVOSIM_OVERFLOW_CHECKPOINT", (s, v) => s.OverflowCheckpoint = v),
 
             Num("EVOSIM_IDLE", 0.02f, (s, v) => s.Idle = v),
             Num("EVOSIM_MAXPOWER", RandomGenomeOptions.Default.MaxLinkPower, (s, v) => s.MaxPower = v),
@@ -183,6 +224,17 @@ namespace Evosim.Farm
             Num("EVOSIM_LINK_PHOTO", 0f, (s, v) => s.LinkPhoto = v),
             Num("EVOSIM_DAY_AMPLITUDE", 0f, (s, v) => s.DayAmplitude = v),
             Num("EVOSIM_DAY_LENGTH", 200f, (s, v) => s.DayLength = v),
+            Num("EVOSIM_SEASON_AMPLITUDE", 0f, (s, v) => s.SeasonAmplitude = v),
+            Num("EVOSIM_SEASON_LENGTH", 30000f, (s, v) => s.SeasonLength = v),
+
+            // D151, round 57's light: the season's shape and its ramp, and the weather's spread,
+            // day-to-day correlation and seed. Every default is the recorded world (smooth, no
+            // ramp, no weather); the seed's default is LightModel's own.
+            Custom("EVOSIM_SEASON_SHAPE", (s, env) => s.SeasonShape = SeasonShapeOf(env, "EVOSIM_SEASON_SHAPE")),
+            Num("EVOSIM_SEASON_RAMP", 0f, (s, v) => s.SeasonRamp = v),
+            Num("EVOSIM_WEATHER_SPREAD", 0f, (s, v) => s.WeatherSpread = v),
+            Num("EVOSIM_WEATHER_CORRELATION", 0f, (s, v) => s.WeatherCorrelation = v),
+            Custom("EVOSIM_WEATHER_SEED", (s, env) => s.WeatherSeed = StrictULong(env, "EVOSIM_WEATHER_SEED", 1UL)),
             Num("EVOSIM_CURRENT", 0f, (s, v) => s.CurrentSpeed = v),
             Num("EVOSIM_MIXING", 0f, (s, v) => s.Mixing = v),
             Num("EVOSIM_SINK", D.NutrientSinkMetresPerSecond, (s, v) => s.NutrientSink = v),
@@ -215,6 +267,8 @@ namespace Evosim.Farm
             Num("EVOSIM_MATTER_INFLUX", D.MatterInfluxPerSecond, (s, v) => s.MatterInflux = v),
             Custom("EVOSIM_MATTER_INFLUX_AT", (s, env) => s.MatterInfluxAt = MatterInfluxOf(env, "EVOSIM_MATTER_INFLUX_AT")),
             Num("EVOSIM_MATTER_BURIAL", D.MatterBurialPerSecond, (s, v) => s.MatterBurial = v),
+            // D190: the desert's own burial, outside the islands' influx; below 0 is the recorded world.
+            Num("EVOSIM_MATTER_BURIAL_DESERT", D.MatterBurialDesertPerSecond, (s, v) => s.MatterBurialDesert = v),
             Num("EVOSIM_DT", DefaultPhysicsStepSeconds, (s, v) => s.PhysicsDt = v),
             Num("EVOSIM_SPECIES_THETA", D.SpeciesDriftThreshold, (s, v) => s.SpeciesTheta = v),
             Num("EVOSIM_PATCHES", D.HorizontalPatches, (s, v) => s.Patches = v),
@@ -240,11 +294,17 @@ namespace Evosim.Farm
             Custom("EVOSIM_TRICKLE", (s, env) => s.Trickle = RateOf(env, "EVOSIM_TRICKLE")),
 
             // D117: the trickle's pool of evolved bodies, a semicolon-separated list of genome
-            // files the farm copies into the run's pool/ and pins by hash, and the share of the
-            // trickle's founders drawn from it. The farm's own, like EVOSIM_RUNS_ROOT: the Unity
+            // files the farm copies into the run's pool/ and pins by hash (or "@" and a weighted
+            // list file, which round 55's few hundred paths need: one variable stays well under
+            // Windows' environment limit), and the share of the trickle's founders drawn from it.
+            // The farm's own, like EVOSIM_RUNS_ROOT: the Unity
             // entry reads neither, and a world built there has no pool.
             Text("EVOSIM_TRICKLE_POOL", (s, v) => s.TricklePool = v),
             Num("EVOSIM_TRICKLE_POOL_SHARE", 0f, (s, v) => s.TricklePoolShare = v),
+
+            // The owner's ruling of 2026-10-04: the share of the floor's founders drawn from the
+            // same pool. 0, unset, is the recorded world.
+            Num("EVOSIM_FLOOR_POOL_SHARE", 0f, (s, v) => s.FloorPoolShare = v),
             Int("EVOSIM_MAX_POP", D.MaximumPopulation, (s, v) => s.MaxPopulation = v),
 
             // double from a float read, as EvolutionRun's own cast is: the ceiling is a double on
@@ -257,6 +317,17 @@ namespace Evosim.Farm
             // The round 48 ruling: 0 wears upkeep alone. Unset is 1, D038 and the recorded world,
             // which is why this switch reads its fallback as on where every other flag reads off.
             FlagOn("EVOSIM_SENESCENCE_WEARS_INTAKE", (s, v) => s.SenescenceWearsIntake = v),
+
+            // D128: death by age, a Gompertz hazard with a median at the base; 0 is off and the
+            // recorded world. The pushes and the repair cost are refused without it.
+            Num("EVOSIM_AGE_BASE", D.AgeHazardBaseSeconds, (s, v) => s.AgeBase = v),
+            Num("EVOSIM_AGE_DOUBLING", D.AgeHazardDoublingFraction, (s, v) => s.AgeDoubling = v),
+            Num("EVOSIM_AGE_BIRTH", D.AgeingPerBirth, (s, v) => s.AgeBirth = v),
+            Num("EVOSIM_AGE_WOUND", D.AgeingPerWound, (s, v) => s.AgeWound = v),
+            Num("EVOSIM_AGE_REPAIR", D.AgeRepairExponent, (s, v) => s.AgeRepair = v),
+            Num("EVOSIM_LIFESPAN_CHANCE", MutationRates.Default.LifespanChance, (s, v) => s.LifespanChance = v),
+            Num("EVOSIM_LIFESPAN_MIN", RandomGenomeOptions.Default.MinLifespan, (s, v) => s.LifespanMin = v),
+            Num("EVOSIM_LIFESPAN_MAX", RandomGenomeOptions.Default.MaxLifespan, (s, v) => s.LifespanMax = v),
             Num("EVOSIM_CELLTYPE_MUTATION", MutationRates.Default.CellTypeChance, (s, v) => s.CellTypeMutation = v),
             Num("EVOSIM_CLEARANCE", 1.0f, (s, v) => s.Clearance = v),
             Num("EVOSIM_TISSUE_ENERGY", 0f, (s, v) => s.TissueEnergy = v),
@@ -281,7 +352,15 @@ namespace Evosim.Farm
             Num("EVOSIM_EXCESS_DENSITY", 0f, (s, v) => s.ExcessDensity = v),
             Num("EVOSIM_ADDED_MASS", 0f, (s, v) => s.AddedMass = v),
             Num("EVOSIM_FLUID_ACCEL", 0f, (s, v) => s.FluidAccel = v),
+            Num("EVOSIM_LIMB_PUSH", 0f, (s, v) => s.LimbPush = v),
+            Num("EVOSIM_POWER_PUSH", 0f, (s, v) => s.PowerPush = v),
+            Num("EVOSIM_POSE_HZ", 0f, (s, v) => s.PoseHz = v),
+            Flag("EVOSIM_DRIVE_GENES", (s, v) => s.DriveGenes = v),
+            Num("EVOSIM_DRIVE_GENE_CHANCE", 0f, (s, v) => s.DriveGeneChance = v),
             Num("EVOSIM_WATER_HOLD", 0f, (s, v) => s.WaterHold = v),
+            Custom("EVOSIM_TURNING_DRAG", (s, env) => s.TurningDrag = TurningDragOf(env, "EVOSIM_TURNING_DRAG")),
+            Num("EVOSIM_SKIN_FRICTION", 0f, (s, v) => s.SkinFriction = v),
+            Num("EVOSIM_SPIN_DRAG", 0f, (s, v) => s.SpinDrag = v),
             Num("EVOSIM_NEURON_COST", D.NeuralCostPerNeuronWatts, (s, v) => s.NeuronCost = v),
             Num("EVOSIM_CONNECTION_COST", D.NeuralCostPerConnectionWatts, (s, v) => s.ConnectionCost = v),
             Num("EVOSIM_WORK_COST", D.WorkCostMultiplier, (s, v) => s.WorkCost = v),
@@ -294,6 +373,13 @@ namespace Evosim.Farm
             Num("EVOSIM_FIELD_CELL", D.FieldCellMetres, (s, v) => s.FieldCell = v),
             Num("EVOSIM_FIELD_MATTER_CELL", D.FieldMatterCellMetres, (s, v) => s.FieldMatterCell = v),
             Num("EVOSIM_CORPSE_DECAY", D.CorpseDecayPerSecond, (s, v) => s.CorpseDecay = v),
+
+            // D127's corpse: its own sink rate (0 is the snow's), whether it settles, and the share
+            // of its first joules below which it gives the rest and leaves (0 is the old floor).
+            Num("EVOSIM_CORPSE_SINK", D.CorpseSinkMetresPerSecond, (s, v) => s.CorpseSink = v),
+            Flag("EVOSIM_CORPSE_SETTLE", (s, v) => s.CorpseSettle = v),
+            Num("EVOSIM_CORPSE_FLOOR", D.CorpseLeavesBelowFraction, (s, v) => s.CorpseFloor = v),
+            Num("EVOSIM_CORPSE_DECAY_SETTLED", D.CorpseSettledDecayPerSecond, (s, v) => s.CorpseDecaySettled = v),
             Custom("EVOSIM_SHAPE", (s, env) => s.WorldShape = WorldShapeOf(env, "EVOSIM_SHAPE")),
             Num("EVOSIM_MATTER_BUDGET", D.MatterBudgetUnits, (s, v) => s.MatterBudget = v),
             Flag("EVOSIM_DRIVE_LIMIT_ALWAYS", (s, v) => s.DriveLimitAlways = v),
@@ -347,12 +433,19 @@ namespace Evosim.Farm
             Num("EVOSIM_INTAKE_WASTE", D.IntakeWasteFraction, (s, v) => s.IntakeWaste = v),
             Num("EVOSIM_PRICE_ATTACK", D.AttackWattsPerUnit, (s, v) => s.PriceAttack = v),
             Num("EVOSIM_PRICE_INTAKE", D.IntakeWattsPerUnit, (s, v) => s.PriceIntake = v),
+
+            // D177: the consumer cell's upkeep, W/m3. The value already lives in every config's cell
+            // table, so the knob adds no field; unset is ConsumerCell's own, the recorded world.
+            Num("EVOSIM_UPKEEP_CONSUMER", new ConsumerCell().UpkeepWattsPerCubicMetre, (s, v) => s.UpkeepConsumer = v),
             Num("EVOSIM_PRICE_PROTECTION", D.ProtectionWattsPerUnit, (s, v) => s.PriceProtection = v),
             Num("EVOSIM_PRICE_TOUGHNESS", D.ToughnessWattsPerUnit, (s, v) => s.PriceToughness = v),
             Num("EVOSIM_ATTRIBUTE_MUT", MutationRates.Default.AttributeMutationChance, (s, v) => s.AttributeMutation = v),
 
             // D114: a contact sphere on every part rather than one a body. Off is the recorded world.
             Flag("EVOSIM_CONTACT_PER_PART", (s, v) => s.ContactPerPart = v),
+
+            // D137: sliding friction at the rock and the glass. 0 is the recorded, frictionless contact.
+            Num("EVOSIM_BED_FRICTION", 0f, (s, v) => s.BedFriction = v),
             Num("EVOSIM_NEUTRAL_VOLUME", 0f, (s, v) => s.NeutralVolume = v),
             Num("EVOSIM_FOUNDER_DEPTH", D.FounderDepthSpread, (s, v) => s.FounderDepth = v),
             Num("EVOSIM_MATTER_INITIAL", 1f, (s, v) => s.InitialMatter = v),
@@ -366,6 +459,31 @@ namespace Evosim.Farm
             // there: the pool's order is what decides which channel a draw yields.
             Flag("EVOSIM_SENSE_CONTACT", (s, v) => s.SenseContact = v),
             Flag("EVOSIM_SENSE_DAMAGE", (s, v) => s.SenseDamage = v),
+            Flag("EVOSIM_SENSE_SCENT", (s, v) => s.SenseScent = v),
+            Flag("EVOSIM_SENSE_DRIVE", (s, v) => s.SenseDrive = v),
+            Flag("EVOSIM_SENSE_BED_TOUCH", (s, v) => s.SenseBedTouch = v),
+            Custom("EVOSIM_LEAF_SCENT", (s, env) => s.LeafScent = LeafScentOf(env, "EVOSIM_LEAF_SCENT")),
+            Num("EVOSIM_LEAF_SCENT_RANGE", 10f, (s, v) => s.LeafScentRange = v),
+            Num("EVOSIM_LEAF_SCENT_CELL", 2f, (s, v) => s.LeafScentCell = v),
+            Num("EVOSIM_LEAF_SCENT_HALF", 1f, (s, v) => s.LeafScentHalf = v),
+            Flag("EVOSIM_UNBITTEN_NO_CORPSE", (s, v) => s.UnbittenNoCorpse = v),
+
+            // D162, D165: the anchoring cell, appended to the world's cell-type table when on, and its
+            // numbers. Every number is AnchoringCell's own default, unmeasured until the nursery's
+            // bench sets it.
+            Flag("EVOSIM_ANCHORING", (s, v) => s.Anchoring = v),
+            Num("EVOSIM_ANCHOR_TENACITY", 5.8e4f, (s, v) => s.AnchorTenacity = v),
+            Num("EVOSIM_ANCHOR_PRICE", 5e-5f, (s, v) => s.AnchorPrice = v),
+            Num("EVOSIM_ANCHOR_DECAY", 3600f, (s, v) => s.AnchorDecay = v),
+            Num("EVOSIM_ANCHOR_RESERVE_THRESHOLD", 120f, (s, v) => s.AnchorReserveThreshold = v),
+            Num("EVOSIM_ANCHOR_RESERVE_LAG", 60f, (s, v) => s.AnchorReserveLag = v),
+            Num("EVOSIM_ANCHOR_UPKEEP", 2.5f, (s, v) => s.AnchorUpkeep = v),
+            Num("EVOSIM_ANCHOR_BUD_WEIGHT", 1f, (s, v) => s.AnchorBudWeight = v),
+
+            // D146: which brain the creatures carry. The one brain's rates stay at their defaults here.
+            Custom("EVOSIM_BRAIN_MODEL", (s, env) => s.BrainModel = BrainModelOf(env, "EVOSIM_BRAIN_MODEL")),
+            Num("EVOSIM_SCENT_RANGE", D.ScentRangeMetres, (s, v) => s.ScentRange = v),
+            Num("EVOSIM_SCENT_SCALE", D.ScentHalfScaleJoules, (s, v) => s.ScentScale = v),
             Num("EVOSIM_CHEMICAL_HALF_SCALE", D.ChemicalHalfScaleJoulesPerCubicMetre, (s, v) => s.ChemicalHalfScale = v),
             Num("EVOSIM_ENERGY_FULL_SCALE", D.EnergyFullScaleSeconds, (s, v) => s.EnergyFullScale = v),
             Num("EVOSIM_FLOW_FULL_SCALE", D.FlowFullScaleMetresPerSecond, (s, v) => s.FlowFullScale = v),
@@ -508,7 +626,13 @@ namespace Evosim.Farm
                 {
                     AddedMassCoefficient = s.AddedMass,
                     FluidAccelerationCoefficient = s.FluidAccel,
+                    LimbPushCoefficient = s.LimbPush,
+                    PowerPushRadiansPerSecond = s.PowerPush,
+                    PoseHertz = s.PoseHz,
                     WaterHoldSeconds = s.WaterHold,
+                    TurningDrag = s.TurningDrag,
+                    SkinFrictionCoefficient = s.SkinFriction,
+                    SpinDragCoefficient = s.SpinDrag,
                     TissueExcessDensity = s.ExcessDensity,
                     NeutralBodyVolume = s.NeutralVolume,
                     SurfaceRestoringFraction = s.SurfaceRestore,
@@ -517,6 +641,13 @@ namespace Evosim.Farm
                 {
                     DayNightAmplitude = s.DayAmplitude,
                     DayLengthSeconds = s.DayLength,
+                    SeasonAmplitude = s.SeasonAmplitude,
+                    SeasonLengthSeconds = s.SeasonLength,
+                    SeasonShape = s.SeasonShape,
+                    SeasonRampSeconds = s.SeasonRamp,
+                    WeatherSpread = s.WeatherSpread,
+                    WeatherCorrelation = s.WeatherCorrelation,
+                    WeatherSeed = s.WeatherSeed,
                 },
                 CellTypes = new CellTypeRegistry(
                     new StructuralCell(),
@@ -527,9 +658,22 @@ namespace Evosim.Farm
                     new NeuralCell(),
                     new PhotosyntheticCell(),
                     new AbsorptiveCell(s.Clearance),
-                    new ConsumerCell(),
+                    new ConsumerCell(upkeepWattsPerCubicMetre: s.UpkeepConsumer),
                     new BuoyancyCell(s.LiftCost)),
             };
+
+            // D165: the anchoring cell joins the table at its end, so every other type keeps its
+            // place and a world without it is the table it always was.
+            if (s.Anchoring)
+            {
+                config.CellTypes = config.CellTypes.Appending(
+                    new AnchoringCell(
+                        s.AnchorTenacity, s.AnchorPrice, s.AnchorDecay,
+                        s.AnchorReserveThreshold, s.AnchorReserveLag, s.AnchorUpkeep)
+                    {
+                        BudWeight = s.AnchorBudWeight,
+                    });
+            }
 
             if (s.TissueEnergy > 0f)
             {
@@ -543,6 +687,8 @@ namespace Evosim.Farm
             config.PerOffspringOverheadPerTissueJoule = s.OverheadPerTissue;
             config.Mutation.GestationModeChance = s.GestationModeChance;
             config.Mutation.GestationShareChance = s.GestationShareChance;
+            config.Mutation.DriveGeneChance = s.DriveGeneChance;
+            config.Genome.DrawDriveGenes = s.DriveGenes;
             config.Genome.MinGestationShare = Math.Min(s.GestationShareMin, s.GestationShareMax);
             config.Genome.MaxGestationShare = Math.Max(s.GestationShareMin, s.GestationShareMax);
             if (s.FounderExtentMin > 0f) config.Genome.MinHalfExtent = s.FounderExtentMin;
@@ -588,6 +734,7 @@ namespace Evosim.Farm
             config.MatterInfluxPerSecond = s.MatterInflux;
             config.MatterInfluxAt = s.MatterInfluxAt;
             config.MatterBurialPerSecond = s.MatterBurial;
+            config.MatterBurialDesertPerSecond = s.MatterBurialDesert;
             config.SpeciesDriftThreshold = s.SpeciesTheta;
             config.HorizontalPatches = s.Patches;
             config.PatchesAcross = s.PatchesAcross;
@@ -599,6 +746,7 @@ namespace Evosim.Farm
             config.LightByExposure = s.LightByExposure;
             config.BuoyancyOffsetWattsPerCubicMetre = s.BuoyancyOffsetCost;
             config.SupportWattsPerSquareMetrePerSquareMetre = s.Support;
+            config.FreeFirstLinkCubicMetres = s.FreeLink;
             config.SelfOverlapDepthFraction = s.SelfOverlap;
             config.Development.MaxBodyReachMetres = s.MaxReach;
             config.Development.FloorsWeighRigidGroups = s.RigidFloors;
@@ -606,10 +754,13 @@ namespace Evosim.Farm
             config.MatterIslandWavelengthMetres = s.MatterIslands;
             config.MatterIslandCover = s.MatterIslandCover;
             config.MatterIslandDepthMetres = s.MatterIslandDepth;
+            config.MatterIslandGlassMarginMetres = s.MatterIslandMargin;
+            config.SeedOverrides = s.SeedOverrides;
             config.FoundersFollowMatter = s.FoundersFollowMatter;
             config.FoundersFollowFood = s.FoundersFollowFood;
             config.FoundersFollowFoodDepth = s.FoundersFollowFoodDepth;
             config.FoundersFollowIncomeDepth = s.FoundersFollowIncomeDepth;
+            config.FoundersFollowCorpses = s.FoundersFollowCorpses;
             config.FounderEndowmentSeconds = s.FounderEndowment;
             config.FounderReserveCapFraction = s.FounderReserveCap;
             config.LightShadeDepth = s.LightShade;
@@ -625,16 +776,36 @@ namespace Evosim.Farm
             // D117's share only: the pool's count and hash are the files', and Program sets them
             // after reading EVOSIM_TRICKLE_POOL, before the config is written.
             config.FoundingTricklePoolShare = s.TricklePoolShare;
+            config.FoundingFloorPoolShare = s.FloorPoolShare;
             config.MaximumPopulation = s.MaxPopulation;
             config.MaximumTissueJoules = s.MaxTissue;
             config.SenescenceDoublingSeconds = s.Senescence;
             config.SenescenceWearsIntake = s.SenescenceWearsIntake;
+            config.AgeHazardBaseSeconds = s.AgeBase;
+            config.AgeHazardDoublingFraction = s.AgeDoubling;
+            config.AgeingPerBirth = s.AgeBirth;
+            config.AgeingPerWound = s.AgeWound;
+            config.AgeRepairExponent = s.AgeRepair;
+            config.Mutation.LifespanChance = s.LifespanChance;
+            config.Genome.MinLifespan = Math.Min(s.LifespanMin, s.LifespanMax);
+            config.Genome.MaxLifespan = Math.Max(s.LifespanMin, s.LifespanMax);
             config.Mutation.CellTypeChance = s.CellTypeMutation;
             config.SenseChemical = s.SenseChemical;
             config.SenseEnergy = s.SenseEnergy;
             config.SenseFlow = s.SenseFlow;
             config.SenseContact = s.SenseContact;
             config.SenseDamage = s.SenseDamage;
+            config.SenseScent = s.SenseScent;
+            config.SenseDrive = s.SenseDrive;
+            config.SenseBedTouch = s.SenseBedTouch;
+            config.LeafScent = s.LeafScent;
+            config.LeafScentRangeMetres = s.LeafScentRange;
+            config.LeafScentCellMetres = s.LeafScentCell;
+            config.LeafScentHalfScaleSquareMetres = s.LeafScentHalf;
+            config.UnbittenDeathsLeaveNoCorpse = s.UnbittenNoCorpse;
+            config.Brain.BrainModel = s.BrainModel;
+            config.ScentRangeMetres = s.ScentRange;
+            config.ScentHalfScaleJoules = s.ScentScale;
             config.ChemicalHalfScaleJoulesPerCubicMetre = s.ChemicalHalfScale;
             config.EnergyFullScaleSeconds = s.EnergyFullScale;
             config.FlowFullScaleMetresPerSecond = s.FlowFullScale;
@@ -650,6 +821,10 @@ namespace Evosim.Farm
             config.FieldCellMetres = s.FieldCell;
             config.FieldMatterCellMetres = s.FieldMatterCell;
             config.CorpseDecayPerSecond = s.CorpseDecay;
+            config.CorpseSinkMetresPerSecond = s.CorpseSink;
+            config.CorpseSettles = s.CorpseSettle;
+            config.CorpseLeavesBelowFraction = s.CorpseFloor;
+            config.CorpseSettledDecayPerSecond = s.CorpseDecaySettled;
             config.WorldShape = s.WorldShape;
             config.MatterBudgetUnits = s.MatterBudget;
             config.DriveLimitAtEveryStep = s.DriveLimitAlways;
@@ -696,6 +871,7 @@ namespace Evosim.Farm
             config.ToughnessWattsPerUnit = s.PriceToughness;
             config.Mutation.AttributeMutationChance = s.AttributeMutation;
             config.ContactPerPart = s.ContactPerPart;
+            config.BedFriction = s.BedFriction;
 
             config.InoculateAtSeconds = s.InoculateAt;
             config.InoculateCount = s.InoculateCount;
@@ -775,6 +951,45 @@ namespace Evosim.Farm
                 : fallback;
         }
 
+        /// <summary>
+        /// A whole number that refuses the launch when it will not parse, where
+        /// <see cref="ULong"/> (EvolutionRun's EnvULong, transcribed) falls back silently. For a
+        /// world setting with no Unity twin, so nothing constrains it to the old reader's habit.
+        /// </summary>
+        private static ulong StrictULong(Lookup env, string name, ulong fallback)
+        {
+            string raw = env(name);
+            if (string.IsNullOrWhiteSpace(raw)) return fallback;
+
+            if (ulong.TryParse(raw.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out ulong v))
+            {
+                return v;
+            }
+
+            throw new ArgumentException(
+                name + " is '" + raw + "', which is not a whole number of at least 0. Unset it or " +
+                "give it one; a setting that fails to parse must not become its default without " +
+                "anyone knowing.");
+        }
+
+        private static SeasonShape SeasonShapeOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrWhiteSpace(raw)) return SeasonShape.Smooth;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "smooth": return SeasonShape.Smooth;
+                case "two-season":
+                case "twoseason": return SeasonShape.TwoSeason;
+
+                default:
+                    throw new ArgumentException(
+                        name + " is '" + raw + "', which is not a season shape. " +
+                        "Known: smooth, two-season.");
+            }
+        }
+
         private static List<long> Steps(Lookup env, string name)
         {
             var steps = new List<long>();
@@ -814,6 +1029,63 @@ namespace Evosim.Farm
 
             throw new ArgumentException(
                 name + " is '" + raw + "', which is none of 'cells', 'vertices' or 'grid'.");
+        }
+
+        /// <summary>D192's seed overrides: a comma-separated list, empty when unset; each entry is RunConfig's to judge.</summary>
+        private static string[] SeedOverridesOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrWhiteSpace(raw)) return Array.Empty<string>();
+            string[] parts = raw.Split(',');
+            for (int i = 0; i < parts.Length; i++) parts[i] = parts[i].Trim();
+            return parts;
+        }
+
+        private static LeafScentForm LeafScentOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrEmpty(raw)) return LeafScentForm.None;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "none": return LeafScentForm.None;
+                case "strength": return LeafScentForm.Strength;
+                case "direction": return LeafScentForm.Direction;
+            }
+
+            throw new ArgumentException(
+                name + " is '" + raw + "', which is none of 'none', 'strength' or 'direction'.");
+        }
+
+        private static TurningDragForm TurningDragOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrEmpty(raw)) return TurningDragForm.None;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "none": return TurningDragForm.None;
+                case "skin": return TurningDragForm.Skin;
+                case "spin": return TurningDragForm.Spin;
+            }
+
+            throw new ArgumentException(
+                name + " is '" + raw + "', which is none of 'none', 'skin' or 'spin'.");
+        }
+
+        private static BrainModel BrainModelOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrEmpty(raw)) return BrainModel.PerNode;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "per-node": return BrainModel.PerNode;
+                case "central": return BrainModel.Central;
+            }
+
+            throw new ArgumentException(
+                name + " is '" + raw + "', which is neither 'per-node' nor 'central'.");
         }
 
         private static CurrentMode CurrentModeOf(Lookup env, string name)
@@ -873,11 +1145,12 @@ namespace Evosim.Farm
             {
                 case "surface": return MatterInflux.Surface;
                 case "vent": return MatterInflux.Vent;
+                case "islands": return MatterInflux.Islands;
 
                 default:
                     throw new ArgumentException(
                         name + " is '" + raw + "', which is not a matter influx route. " +
-                        "Known: surface, vent.");
+                        "Known: surface, vent, islands.");
             }
         }
 
@@ -961,6 +1234,24 @@ namespace Evosim.Farm
 
         private static Knob Custom(string name, Action<EnvSettings, Lookup> apply) =>
             new Knob(name, apply);
+
+        /// <summary>The checkpoint stall hook's milliseconds: 0 unset, else 1 to 10,000 or refused.</summary>
+        internal static int StallMs(Lookup env)
+        {
+            const string name = "EVOSIM_TEST_CHECKPOINT_STALL_MS";
+            string raw = env(name);
+            if (string.IsNullOrEmpty(raw)) return 0;
+
+            if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int ms) || ms < 1 || ms > 10000)
+            {
+                throw new ArgumentException(
+                    name + " is '" + raw + "'. It is a test hook that pauses every checkpoint's write, and it " +
+                    "takes a whole number of milliseconds from 1 to 10,000, so a typo cannot hang a run. Unset " +
+                    "it for any run that is not that test.");
+            }
+
+            return ms;
+        }
     }
 
     /// <summary>
@@ -990,12 +1281,17 @@ namespace Evosim.Farm
         public bool LightByExposure;
         public float BuoyancyOffsetCost;
         public float Support;
+
+        /// <summary>D127's free first link, m3 of the adult part — <c>EVOSIM_FREE_LINK</c>.</summary>
+        public float FreeLink;
         public float SelfOverlap;
         public float MaxReach;
         public bool RigidFloors;
         public float MatterIslands;
         public float MatterIslandCover;
         public float MatterIslandDepth;
+        public float MatterIslandMargin;
+        public string[] SeedOverrides = Array.Empty<string>();
         public bool FoundersFollowMatter;
         public bool FoundersFollowFood;
 
@@ -1004,6 +1300,9 @@ namespace Evosim.Farm
 
         /// <summary>The round 50 founding ruling's leaf depth — <c>EVOSIM_FOUNDERS_INCOME_DEPTH</c>.</summary>
         public bool FoundersFollowIncomeDepth;
+
+        /// <summary>D129's mouth founders at the corpses — <c>EVOSIM_FOUNDERS_FOLLOW_CORPSES</c>.</summary>
+        public bool FoundersFollowCorpses;
 
         /// <summary>The round 48 founding ruling's endowment, s — <c>EVOSIM_FOUNDER_ENDOWMENT</c>.</summary>
         public float FounderEndowment;
@@ -1017,6 +1316,9 @@ namespace Evosim.Farm
         public int ReportEvery;
         public ulong Seed;
         public long DigestEvery;
+
+        /// <summary>EVOSIM_TEST_CHECKPOINT_STALL_MS: 0 in every run but the kill test's.</summary>
+        public int TestCheckpointStallMs;
         public List<long> DigestDumpSteps = new List<long>();
 
         /// <summary>Unity's job workers (D078): read, recorded by neither, applied to nothing here.</summary>
@@ -1035,6 +1337,15 @@ namespace Evosim.Farm
         /// writes none.
         /// </summary>
         public float CheckpointEvery;
+
+        /// <summary>
+        /// D159: how often a world of a migrating group sends immigrants to the next, simulated
+        /// seconds. 0 is no exchange.
+        /// </summary>
+        public float MigrateEvery;
+
+        /// <summary>D159: how many genomes each world sends at every exchange.</summary>
+        public int MigrateCount = 1;
 
         /// <summary>
         /// Which record the run writes, <c>EVOSIM_RECORD_FORMAT</c>:
@@ -1089,6 +1400,36 @@ namespace Evosim.Farm
         /// <summary>The snow's transport on the card, with the CPU's bits (GpuTransport): the same numbers, sooner.</summary>
         public bool GpuTransport;
 
+        /// <summary>The scent's fill on the card from the world's corpses (GpuScent): the same numbers, sooner.</summary>
+        public bool GpuScent;
+
+        /// <summary>The pace guard (PaceGuard): stops a world that slows at a checkpoint, with the reason. On by default.</summary>
+        public bool PaceGuard = true;
+
+        /// <summary>The guard trips when the recent pace is under this share of the reference pace.</summary>
+        public float PaceRatio = 0.5f;
+
+        /// <summary>The fewest rows each of the guard's two windows holds before it is read.</summary>
+        public int PaceRows = 2;
+
+        /// <summary>The rows the card probe runs between the trip and the stop.</summary>
+        public int PaceProbeRows = 1;
+
+        /// <summary>The recent window of wall time, its pace read against the reference's.</summary>
+        public float PaceWindowMinutes = 10f;
+
+        /// <summary>The reference window of wall time, before the recent one.</summary>
+        public float PaceHourMinutes = 60f;
+
+        /// <summary>The wall time from the first row before the guard can trip.</summary>
+        public float PaceWarmupMinutes = 10f;
+
+        /// <summary>EVOSIM_TEST_PACE_TRIP_AT: below 0 in every run but a test's, which trips the guard at that second.</summary>
+        public float TestPaceTripAt = -1f;
+
+        /// <summary>A checkpoint at the row of the run's first overflow of a card cap (CapWatch). On by default.</summary>
+        public bool OverflowCheckpoint = true;
+
         /// <summary>Whether this run asks for the gpu engine; anything but cpu or gpu is refused by the farm.</summary>
         public bool EngineIsGpu => string.Equals(Engine, "gpu", System.StringComparison.Ordinal);
 
@@ -1098,6 +1439,13 @@ namespace Evosim.Farm
         public float LinkPhoto;
         public float DayAmplitude;
         public float DayLength;
+        public float SeasonAmplitude;
+        public float SeasonLength;
+        public SeasonShape SeasonShape;
+        public float SeasonRamp;
+        public float WeatherSpread;
+        public float WeatherCorrelation;
+        public ulong WeatherSeed = 1UL;
         public float CurrentSpeed;
         public float Mixing;
         public float NutrientSink;
@@ -1130,6 +1478,7 @@ namespace Evosim.Farm
         public float MatterInflux;
         public MatterInflux MatterInfluxAt;
         public float MatterBurial;
+        public float MatterBurialDesert;
         public float PhysicsDt;
         public float SpeciesTheta;
         public float Patches;
@@ -1146,17 +1495,37 @@ namespace Evosim.Farm
         public float FloorCloses;
         public float Trickle;
 
-        /// <summary>D117's pool: genome files, semicolon-separated — <c>EVOSIM_TRICKLE_POOL</c>.</summary>
+        /// <summary>
+        /// D117's pool: genome files, semicolon-separated, or <c>@</c> and a weighted list file
+        /// (<see cref="TricklePoolFiles.Prepare"/>) — <c>EVOSIM_TRICKLE_POOL</c>.
+        /// </summary>
         public string TricklePool;
 
         /// <summary>D117's share of the trickle drawn from the pool — <c>EVOSIM_TRICKLE_POOL_SHARE</c>.</summary>
         public float TricklePoolShare;
+
+        /// <summary>The share of the floor's founders drawn from the pool — <c>EVOSIM_FLOOR_POOL_SHARE</c>.</summary>
+        public float FloorPoolShare;
         public int MaxPopulation;
         public double MaxTissue;
         public float Senescence;
 
         /// <summary>Whether senescence divides intake too — <c>EVOSIM_SENESCENCE_WEARS_INTAKE</c>, on when unset.</summary>
         public bool SenescenceWearsIntake;
+
+        /// <summary>D128's hazard: the base, s (<c>EVOSIM_AGE_BASE</c>, 0 off), and its doubling fraction.</summary>
+        public float AgeBase;
+        public float AgeDoubling;
+
+        /// <summary>D128's pushes, in doublings, for a birth and for a destroyed part.</summary>
+        public float AgeBirth;
+        public float AgeWound;
+
+        /// <summary>D128's repair exponent, and the lifespan gene's mutation chance and founder range.</summary>
+        public float AgeRepair;
+        public float LifespanChance;
+        public float LifespanMin;
+        public float LifespanMax;
         public float CellTypeMutation;
         public float Clearance;
         public float TissueEnergy;
@@ -1171,7 +1540,15 @@ namespace Evosim.Farm
         public float ExcessDensity;
         public float AddedMass;
         public float FluidAccel;
+        public float LimbPush;
+        public float PowerPush;
+        public bool DriveGenes;
+        public float DriveGeneChance;
+        public float PoseHz;
         public float WaterHold;
+        public TurningDragForm TurningDrag;
+        public float SkinFriction;
+        public float SpinDrag;
         public float NeuronCost;
         public float ConnectionCost;
         public float WorkCost;
@@ -1184,6 +1561,14 @@ namespace Evosim.Farm
         public float FieldCell;
         public float FieldMatterCell;
         public float CorpseDecay;
+
+        /// <summary>D127's corpse: its sink rate, m/s (0 the snow's), whether it settles, and its floor.</summary>
+        public float CorpseSink;
+        public bool CorpseSettle;
+        public float CorpseFloor;
+
+        /// <summary>D131: a settled corpse's decay per second (0 the sinking rate).</summary>
+        public float CorpseDecaySettled;
         public WorldShape WorldShape;
         public float MatterBudget;
         public bool DriveLimitAlways;
@@ -1226,6 +1611,7 @@ namespace Evosim.Farm
         public float PriceToughness;
         public float AttributeMutation;
         public bool ContactPerPart;
+        public float BedFriction;
         public float NeutralVolume;
         public float FounderDepth;
         public float InitialMatter;
@@ -1236,6 +1622,26 @@ namespace Evosim.Farm
         public bool SenseFlow;
         public bool SenseContact;
         public bool SenseDamage;
+        public bool SenseScent;
+        public bool SenseDrive;
+        public bool SenseBedTouch;
+        public LeafScentForm LeafScent;
+        public float LeafScentRange;
+        public float LeafScentCell;
+        public float LeafScentHalf;
+        public bool UnbittenNoCorpse;
+        public bool Anchoring;
+        public float AnchorTenacity;
+        public float AnchorPrice;
+        public float AnchorDecay;
+        public float AnchorReserveThreshold;
+        public float AnchorReserveLag;
+        public float AnchorUpkeep;
+        public float AnchorBudWeight;
+        public float UpkeepConsumer;
+        public BrainModel BrainModel;
+        public float ScentRange;
+        public float ScentScale;
         public float ChemicalHalfScale;
         public float EnergyFullScale;
         public float FlowFullScale;

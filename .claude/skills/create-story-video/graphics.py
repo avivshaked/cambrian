@@ -153,8 +153,8 @@ def settings_of(folder, lines):
 
 def at_size(s, final):
     """The settings at the size a render works at: the draft size while a graphic is drawn and reviewed, the
-    film's own size when finish renders it for the edit (the owner, 2026-09-28: "render a low res version for
-    the reviewer, and only after approving do we render the high quality")."""
+    film's own size when finish renders it for the edit (the owner ruled on 2026-09-28 that a low-resolution version goes
+    to the reviewer and the high-quality render comes only after approval)."""
     if final or "draft_size" not in s or s["draft_size"] == s["size"]:
         return {**s, "final_size": s["size"]}
     return {**s, "width": s["draft_width"], "height": s["draft_height"], "size": s["draft_size"],

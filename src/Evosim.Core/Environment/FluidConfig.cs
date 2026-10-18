@@ -113,6 +113,72 @@ namespace Evosim.Core
         [Tunable("fluid")]
         public float FluidAccelerationCoefficient { get; set; }
 
+        /// <summary>
+        /// The push a swinging limb gets from the water it throws, as a fraction of
+        /// <c>m_a · r · ω⊥²</c> (propose-foraging.md, the owner's rule of 2026-09-29).
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Every link with a parent feels a force along its own axis, from the link toward its
+        /// joint, of <c>C_T · m_a · r · ω⊥²</c>: <c>m_a</c> the link's added mass
+        /// (<see cref="AddedMassCoefficient"/> · ρ · V), <c>r</c> the distance from the joint to the
+        /// link's origin, and <c>ω⊥</c> the link's angular velocity relative to its parent,
+        /// perpendicular to that axis. The force is never negative and always along the limb, so
+        /// over a symmetric wag the sideways parts cancel and the part along the limb's mean
+        /// direction adds up, and a limb turned through full circles gains nothing. Drag, unchanged,
+        /// takes the speed back. It is applied at the link's origin along the line through the
+        /// joint, so it adds no torque about the link.
+        /// </para>
+        /// <para>
+        /// ⚠ Default 0, so every recorded config replays the world it ran: this is a per-step
+        /// force, and any nonzero value is a new realisation of every seed. It is not physics; it is
+        /// a rule standing in for the reactive force a drag-only fluid lacks, and its value is set
+        /// on the bench so that a reference tail-wagger swims at 4 to 8 cm/s.
+        /// <c>EVOSIM_LIMB_PUSH</c>; the header prints <c>limbPush</c> when it is above 0.
+        /// </para>
+        /// </remarks>
+        [Tunable("fluid")]
+        public float LimbPushCoefficient { get; set; }
+
+        /// <summary>
+        /// The bend-and-power drive's stroke rate, Ω in rad/s (propose-joint-drive.md, the owner's
+        /// ruling of 2026-09-30). 0 runs the torque drive every recorded world ran.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Above 0, each degree of freedom takes two outputs from the brain: neuron <i>d</i> is its
+        /// power and neuron <i>n + d</i> its bend. The power is the neuron's positive half, off at
+        /// or below the joint's threshold gene, so a silent neuron gives none; the bend is read from
+        /// [-1, 1] onto [0, 1], so a silent neuron centres the joint. The bend is held by a muscle
+        /// (<see cref="PoseHertz"/>, capped by the part's Power); the stroke is not simulated.
+        /// A link whose joint has power <i>s</i> is pushed as <see cref="LimbPushCoefficient"/>'s
+        /// rule pushes a link swinging at <c>ω⊥ = s·Ω</c>: <c>C_T · m_a · r · (s·Ω)²</c> along its
+        /// axis toward its joint, each degree of freedom weighted by how far its axis stands from
+        /// the limb's (a twist about the limb's own length gives none). The push's work,
+        /// <c>F · r · s · Ω</c>, is booked as the drive's work, so the work cost prices it.
+        /// </para>
+        /// <para>
+        /// ⚠ Default 0, so every recorded config replays the world it ran. Set on the bench so that
+        /// the reference swimmer at full power swims 4 to 8 cm/s. <c>EVOSIM_POWER_PUSH</c>; the
+        /// header prints <c>powerPush</c> when it is above 0.
+        /// </para>
+        /// </remarks>
+        [Tunable("fluid")]
+        public float PowerPushRadiansPerSecond { get; set; }
+
+        /// <summary>
+        /// How quickly the bend-and-power drive's muscle settles a joint on its bend, as the
+        /// natural frequency of a critically damped spring, Hz. Read only when
+        /// <see cref="PowerPushRadiansPerSecond"/> is above 0; at 0 the bend is not held.
+        /// </summary>
+        /// <remarks>
+        /// The spring's stiffness and damping are this times the link's smallest principal
+        /// inertia, so a heavy limb bends as slowly as a light one in time and no more strongly;
+        /// its torque is capped by the part's Power. <c>EVOSIM_POSE_HZ</c>.
+        /// </remarks>
+        [Tunable("fluid")]
+        public float PoseHertz { get; set; }
+
         /// <summary>Water, with drag only. The state DESIGN.md §5.4 warns is not enough.</summary>
         /// <summary>
         /// How much denser than the water a creature's tissue is, kg/m³. 0 is neutral buoyancy.
@@ -282,6 +348,56 @@ namespace Evosim.Core
         [Tunable("fluid", Unit = "s")]
         public float WaterHoldSeconds { get; set; }
 
+        /// <summary>
+        /// The drag on turning (D161), and which of its two forms the water carries.
+        /// <see cref="TurningDragForm.None"/> is every recorded world: the pressure drag alone,
+        /// which acts only on the part of a panel's velocity along its normal.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Both forms act only on a part whose origin is in the water (<c>y &lt;= 0</c>), as the limb
+        /// pushes and D111's torque do, and both are drag: they are summed with the pressure drag
+        /// before the dissipation ledger and the drag limiter, so the energy audit counts them and
+        /// the limiter caps them. <see cref="TurningDragForm.Skin"/> reads
+        /// <see cref="SkinFrictionCoefficient"/> and <see cref="TurningDragForm.Spin"/> reads
+        /// <see cref="SpinDragCoefficient"/>.
+        /// </para>
+        /// <para>
+        /// ⚠ Default <c>None</c>, so every recorded config replays the world it ran. D161 leaves the
+        /// form and its size to a nursery check before round 59's pre-registration.
+        /// <c>EVOSIM_TURNING_DRAG</c>; the header prints <c>turning</c> when it is not <c>None</c>.
+        /// </para>
+        /// </remarks>
+        [Tunable("fluid")]
+        public TurningDragForm TurningDrag { get; set; } = TurningDragForm.None;
+
+        /// <summary>
+        /// The skin form's coefficient, C_f: each panel feels a shear of ½ρ·C_f·|t|·t per unit area
+        /// against <i>t</i>, its velocity through the water along its own face. Read only under
+        /// <see cref="TurningDragForm.Skin"/>.
+        /// </summary>
+        /// <remarks>
+        /// The shear acts on every panel, leading and trailing, so it brakes a part's sliding along
+        /// its faces as well as its turning. <c>EVOSIM_SKIN_FRICTION</c>.
+        /// </remarks>
+        [Tunable("fluid")]
+        public float SkinFrictionCoefficient { get; set; }
+
+        /// <summary>
+        /// The spin form's coefficient, C_s: a part spinning at ω feels, about each of its own three
+        /// axes <i>k</i>, a torque of ½ρ·C_s·M_k·|ω|·ω_k against its spin, where M_k sums each
+        /// panel's area times the cube of its distance from that axis through the part's centre.
+        /// Read only under <see cref="TurningDragForm.Spin"/>.
+        /// </summary>
+        /// <remarks>
+        /// It is the skin form's answer for a part that only spins, if every panel's motion lay in
+        /// its face, so at equal coefficients the two forms brake a pure spin alike to within the
+        /// panels' normal motion, which the pressure drag already takes. Unlike the skin form it
+        /// leaves a part's sliding alone. <c>EVOSIM_SPIN_DRAG</c>.
+        /// </remarks>
+        [Tunable("fluid")]
+        public float SpinDragCoefficient { get; set; }
+
         public static FluidConfig DragOnly => new FluidConfig();
 
         public FluidConfig Clone() => new FluidConfig
@@ -290,15 +406,36 @@ namespace Evosim.Core
             DragCoefficient = DragCoefficient,
             AddedMassCoefficient = AddedMassCoefficient,
             FluidAccelerationCoefficient = FluidAccelerationCoefficient,
+            LimbPushCoefficient = LimbPushCoefficient,
+            PowerPushRadiansPerSecond = PowerPushRadiansPerSecond,
+            PoseHertz = PoseHertz,
             PanelsPerAxis = PanelsPerAxis,
             TissueExcessDensity = TissueExcessDensity,
             NeutralBodyVolume = NeutralBodyVolume,
             SurfaceRestoringFraction = SurfaceRestoringFraction,
             WaterHoldSeconds = WaterHoldSeconds,
+            TurningDrag = TurningDrag,
+            SkinFrictionCoefficient = SkinFrictionCoefficient,
+            SpinDragCoefficient = SpinDragCoefficient,
         };
 
         public override string ToString() =>
             System.FormattableString.Invariant(
                 $"rho={Density} Cd={DragCoefficient} Ca={AddedMassCoefficient} panels={PanelsPerAxis}²");
+    }
+
+    /// <summary>
+    /// The drag on turning's form (D161, <see cref="FluidConfig.TurningDrag"/>). Serialized by name.
+    /// </summary>
+    public enum TurningDragForm
+    {
+        /// <summary>No drag on turning: every recorded world.</summary>
+        None,
+
+        /// <summary>A shear on each panel's velocity along its face.</summary>
+        Skin,
+
+        /// <summary>A torque on each part against its own spin, and nothing on its sliding.</summary>
+        Spin,
     }
 }

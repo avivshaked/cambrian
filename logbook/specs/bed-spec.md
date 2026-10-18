@@ -2,9 +2,10 @@
 
 **2026-09-15**  ·  ruled by the owner in conversation, and recorded as D092.
 
-> "I really want a shaped bed, have wanted for a while"; "life like without making it
-> computationally problematic"; "doesn't have to be outright cheap, just not too expensive";
-> "writeup the requirements and then pencil it in for the next round"
+The owner said they really wanted a shaped bed and had wanted one for a while, and wanted it
+life-like without making it computationally problematic. It did not have to be outright cheap,
+they said, only not too expensive. They asked for the requirements to be written up and the bed pencilled in for the next
+round.
 
 It builds after round 38's read (0101), on a branch, validated as below, and launches as
 round 39 with its own pre-registration.
@@ -54,9 +55,9 @@ required.
    depth (60 m), so the water volume and the seeded matter density stay round 38's. The
    height map is mean-zero over the disc by construction.
 
-5a. **A gradient across the disc**, added at the owner's word on 2026-09-15. What the owner
-   asked for: "the sea bed as a gradient so it's not all one depth; this is something we
-   wanted to do from the start". It is a tilt along one diameter, the largest scale of the
+5a. **A gradient across the disc**, added at the owner's word on 2026-09-15. The owner
+   asked for the sea bed to be a gradient, so that it is not all one depth, and said this was
+   something wanted from the start. It is a tilt along one diameter, the largest scale of the
    same map. One dial sets the depth difference between the deep side and the shallow arc
    (`BedTiltMetres`, `EVOSIM_BED_TILT`), and it is mean-zero like the rest so the volume
    holds. In a cylinder the
@@ -87,7 +88,7 @@ required.
 
 8. **Cost bound**: the current's samples per part per step may grow by two to three times.
    The round's per-body pace stays within 15% of round 38's, measured on the smoke. That
-   is the ceiling the owner set ("not too expensive"), and it is not a target.
+   is the ceiling the owner set (not too expensive), and it is not a target.
 
 ## The grid and the physics
 

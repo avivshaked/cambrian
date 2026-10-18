@@ -1,7 +1,6 @@
 # Where the harness's wall goes: the profile before the cheapening
 
-*2026-09-19, 11:35. Written by the agent on the owner's "This sounds like a good plan. Let's
-do it", on the plan of the same hour: measure the harness's per-body work before cheapening
+*2026-09-19, 11:35. Written by the agent on the owner's agreement that the plan was good and should go ahead, on the plan of the same hour: measure the harness's per-body work before cheapening
 it the way a game would, keeping replay identity and giving up physical fidelity where it
 buys nothing. Round 41d's jointed seeds run at 0.37 to 0.42x real time at 1,100 bodies with
 the physics a flat quarter of the wall and the harness half, and nothing says what inside

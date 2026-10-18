@@ -1,0 +1,72 @@
+H0 runs/r57-s2/2026-10-06-065827-dfc0e881
+round 57 seed range over the window: alive 1971 to 3953; photosynthetic share 0.9746 to 0.9988; absorptive share 0.005846 to 0.0387; jointed share 0.00169 to 0.2833
+
+== H1 runs/r58h1-s2/2026-10-08-005745-5e1a3174
+  pits found 12 (config bedHollowCount 12), 908 m2 in all, floor 336 m2, deepest drop 1.50 m; repose 0 deg, slide 0 m/s
+  -- test 1, the catch (bar: 5 or more)
+  H1 catch at 10000 s: 479 settled corpses in the pits, 11010 J on 908 m2 (12.13 J/m2); outside 11091, 245280 J on 27316 m2 (8.979 J/m2); ratio 1.35; unsettled corpses 517
+  H1 floor snow stock: 1.600 J/m2 inside, 1.411 outside, ratio 1.13
+  H0 on the same cells, catch at 10000 s: 535 settled corpses in the pits, 12175 J on 908 m2 (13.41 J/m2); outside 12054, 279072 J on 27316 m2 (10.216 J/m2); ratio 1.31; unsettled corpses 545
+  H0 on the same cells, floor snow stock: 1.770 J/m2 inside, 1.395 outside, ratio 1.27
+  -- test 2, the dwellers (bar: 2 or more in a guild with 10 body-samples in the zone)
+  H1 dwellers, 101 positions rows 9000 to 10000 s; the zone is 834 of 28224 m2 (0.0295 of the bed)
+    leaf  born body-samples  274374, in the zone     38, ratio   0.00; within 2 m of the bed   8096, of those in the zone    38, ratio   0.16
+    stom  born body-samples       0, in the zone      0, ratio    nan; within 2 m of the bed      0, of those in the zone     0, ratio    nan
+    mixo  born body-samples    1821, in the zone      0, ratio   0.00; within 2 m of the bed     60, of those in the zone     0, ratio   0.00
+    jnt   born body-samples       0, in the zone      0, ratio    nan; within 2 m of the bed      0, of those in the zone     0, ratio    nan
+    plain born body-samples       3, in the zone      0, ratio   0.00; within 2 m of the bed      3, of those in the zone     0, ratio   0.00
+    founders (apart) body-samples 1211, in the zone 11, ratio 0.31
+    births by parents last seen in the zone 0 over 49 body-samples, elsewhere 1458 over 277360; per body-sample ratio 0.00
+  H0 on the same cells, dwellers, 101 positions rows 9000 to 10000 s; the zone is 834 of 28224 m2 (0.0295 of the bed)
+    leaf  born body-samples  245649, in the zone      6, ratio   0.00; within 2 m of the bed   9076, of those in the zone     6, ratio   0.02
+    stom  born body-samples    5615, in the zone      0, ratio   0.00; within 2 m of the bed   1821, of those in the zone     0, ratio   0.00
+    mixo  born body-samples     260, in the zone      0, ratio   0.00; within 2 m of the bed      0, of those in the zone     0, ratio    nan
+    jnt   born body-samples       2, in the zone      0, ratio   0.00; within 2 m of the bed      0, of those in the zone     0, ratio    nan
+    plain born body-samples       4, in the zone      0, ratio   0.00; within 2 m of the bed      4, of those in the zone     0, ratio   0.00
+    founders (apart) body-samples 1545, in the zone 9, ratio 0.20
+    births by parents last seen in the zone 0 over 15 body-samples, elsewhere 1219 over 253060; per body-sample ratio 0.00
+  -- test 3, the world (bar: outside round 57's three-seed range)
+    alive                  H1 2747, H0 2506, range 1971 to 3953
+    photosynthetic share   H1 0.9982, H0 0.9746, range 0.9746 to 0.9988
+    absorptive share       H1 0.008136, H0 0.02483, range 0.005846 to 0.0387
+    jointed share          H1 0.0146, H0 0.02605, range 0.00169 to 0.2833
+  pace: H1 617 ms of wall per simulated second to 10000 s at 8 threads; H0 713 at 8 threads (not a timing read: neither ran alone)
+  ** H1: catch not met (1.35, H0 1.31); dwellers not met; world not met
+
+== H2 runs/r58h2-s2/2026-10-08-005812-492aeb6b
+  pits found 12 (config bedHollowCount 12), 908 m2 in all, floor 336 m2, deepest drop 1.50 m; repose 30 deg, slide 0.05 m/s
+  -- test 1, the catch (bar: 5 or more)
+  H2 catch at 10000 s: 490 settled corpses in the pits, 11611 J on 908 m2 (12.79 J/m2); outside 11560, 272561 J on 27316 m2 (9.978 J/m2); ratio 1.28; unsettled corpses 495
+  H2 floor snow stock: 1.726 J/m2 inside, 1.490 outside, ratio 1.16
+  H0 on the same cells, catch at 10000 s: 535 settled corpses in the pits, 12175 J on 908 m2 (13.41 J/m2); outside 12054, 279072 J on 27316 m2 (10.216 J/m2); ratio 1.31; unsettled corpses 545
+  H0 on the same cells, floor snow stock: 1.770 J/m2 inside, 1.395 outside, ratio 1.27
+  -- test 2, the dwellers (bar: 2 or more in a guild with 10 body-samples in the zone)
+  H2 dwellers, 101 positions rows 9000 to 10000 s; the zone is 834 of 28224 m2 (0.0295 of the bed)
+    leaf  born body-samples  240307, in the zone      5, ratio   0.00; within 2 m of the bed   5926, of those in the zone     4, ratio   0.02
+    stom  born body-samples     355, in the zone      0, ratio   0.00; within 2 m of the bed    163, of those in the zone     0, ratio   0.00
+    mixo  born body-samples     935, in the zone      0, ratio   0.00; within 2 m of the bed     74, of those in the zone     0, ratio   0.00
+    jnt   born body-samples       0, in the zone      0, ratio    nan; within 2 m of the bed      0, of those in the zone     0, ratio    nan
+    plain born body-samples       0, in the zone      0, ratio    nan; within 2 m of the bed      0, of those in the zone     0, ratio    nan
+    founders (apart) body-samples 1768, in the zone 8, ratio 0.15
+    births by parents last seen in the zone 0 over 13 body-samples, elsewhere 1464 over 243352; per body-sample ratio 0.00
+  H0 on the same cells, dwellers, 101 positions rows 9000 to 10000 s; the zone is 834 of 28224 m2 (0.0295 of the bed)
+    leaf  born body-samples  245649, in the zone      6, ratio   0.00; within 2 m of the bed   9076, of those in the zone     6, ratio   0.02
+    stom  born body-samples    5615, in the zone      0, ratio   0.00; within 2 m of the bed   1821, of those in the zone     0, ratio   0.00
+    mixo  born body-samples     260, in the zone      0, ratio   0.00; within 2 m of the bed      0, of those in the zone     0, ratio    nan
+    jnt   born body-samples       2, in the zone      0, ratio   0.00; within 2 m of the bed      0, of those in the zone     0, ratio    nan
+    plain born body-samples       4, in the zone      0, ratio   0.00; within 2 m of the bed      4, of those in the zone     0, ratio   0.00
+    founders (apart) body-samples 1545, in the zone 9, ratio 0.20
+    births by parents last seen in the zone 0 over 15 body-samples, elsewhere 1219 over 253060; per body-sample ratio 0.00
+  -- test 3, the world (bar: outside round 57's three-seed range)
+    alive                  H2 2410, H0 2506, range 1971 to 3953
+    photosynthetic share   H2 0.9958, H0 0.9746, range 0.9746 to 0.9988
+    absorptive share       H2 0.007144, H0 0.02483, range 0.005846 to 0.0387
+    jointed share          H2 0.008615, H0 0.02605, range 0.00169 to 0.2833
+  pace: H2 672 ms of wall per simulated second to 10000 s at 8 threads; H0 713 at 8 threads (not a timing read: neither ran alone)
+  ** H2: catch not met (1.28, H0 1.31); dwellers not met; world not met
+
+== beside the bar, read 2026-10-08 04:00 by the coordinator (the reader's own functions; floor = pit cells at 95% or more of the pit's drop, wall = the rest of the pit)
+H1 H1 : floor  12.35 J/m2 (194 corpses), wall  11.99 (285), outside   8.98; floor/outside 1.38, wall/outside 1.34
+H1 H0 : floor  12.26 J/m2 (205 corpses), wall  14.08 (330), outside  10.22; floor/outside 1.20, wall/outside 1.38
+H2 H2 : floor  18.42 J/m2 (250 corpses), wall   9.48 (240), outside   9.98; floor/outside 1.85, wall/outside 0.95
+H2 H0 : floor  12.26 J/m2 (205 corpses), wall  14.08 (330), outside  10.22; floor/outside 1.20, wall/outside 1.38

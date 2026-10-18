@@ -4,9 +4,8 @@ Read `research/theatre-look/README.md`, `logbook/0088`, `logbook/specs/skin-spec
 then `unity/Assets/Theatre/TheatreMeshes.cs`, `TheatreSkin.cs`, `TheatreBody.shader`,
 `TheatreBed.shader`, `TheatrePalette.cs` (`Dress`, `Fit`), `SnapshotCamera.cs`.
 
-The owner looked at the first day and said: "it's not bad, but it's still very very
-geometric. I thought we'd be able to use the skin to create the feel of impressions in the
-shapes and make them look a lot less geometric." The rounding and the mottle left the faces
+The owner looked at the first day and said it was not bad but was still very geometric. The owner had thought the skin could give
+the feel of impressions in the shapes and make them look a lot less geometric. The rounding and the mottle left the faces
 flat and parallel. This day is about the silhouette.
 
 Rules as on the first day: edit only under `unity/Assets/Theatre/`; nothing under

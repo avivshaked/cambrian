@@ -76,9 +76,8 @@ exists and from the lineage when it does not.
 
 The writer is a `general-purpose` subagent on Opus, launched with the prompt `next` prints and
 nothing else; its rules are [`story-writer-brief.md`](story-writer-brief.md), and it finds the
-round's entry and pre-registration through `flow.json`. It reads the runs through the shell and
-writes its own files into the story's folder the same way, never with the Write or Edit tools, and
-runs nothing heavy. It runs in two passes. The first writes `arc.md`, `arc-reads.md` and
+round's entry and pre-registration through `flow.json`. It reads the runs through the shell,
+writes its own files into the story's folder and runs nothing heavy. It runs in two passes. The first writes `arc.md`, `arc-reads.md` and
 `arc-choices.md`, and the owner rules on them before a line of narration is written. The second
 writes the story from the arc as ruled.
 
@@ -234,8 +233,8 @@ After the first film the owner asked for four things:
 
 The first and fourth belong to the writer's brief. The second and third are theatre code: the
 `chart` field in `story.json` and a story look with an exposure meter. The subtitles and the
-moving Cards answer the owner's second look at the first film ("why do the subtitles look so
-bad?", "must it be on a black screen?"). All of it was written on 2026-09-25 on the safari
+moving Cards answer the owner's second look at the first film (why the subtitles look so
+bad, and whether the film must sit on a black screen). All of it was written on 2026-09-25 on the safari
 branch (`fc236a7`, `91d3b08`, `ac33d7a`, `868bd94`) and has not yet been seen in Unity. The
 chart's form is in the writer's brief. The look is on for stories only:
 `EVOSIM_THEATRE_STORY_LOOK` unset means on for a story, `1` means on for any safari and `0` off.

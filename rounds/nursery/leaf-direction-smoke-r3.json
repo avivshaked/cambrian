@@ -1,0 +1,102 @@
+{
+  "format": 1,
+  "name": "leaf-direction-smoke-r3",
+  "description": "The leaf tank (D166, D167), the direction form of the leaf smell, sensed to 3 m: the hand-built swimmer, its brain bred in a 40 m tank of 250 of r58-s3j's living leaves at their own depths, the swimmers started in the leaves' band; scored on what its mouth kept (eaten), with Net beside it, until the owner rules the score. Step 7's smoke: one generation of a small search.",
+  "seed": "0x1",
+  "world": {
+    "config": "rounds/nursery/configs/3fd98985cdf68008.json",
+    "configHash": "3fd98985cdf68008",
+    "overrides": {
+      "BedShoreDepthMetres": 0,
+      "BedShoreFadeMetres": 0,
+      "BedTiltMetres": 0,
+      "Fluid.SpinDragCoefficient": 0.5,
+      "Fluid.TurningDrag": "Spin",
+      "FoundingTricklePerSecond": 0,
+      "FoundingTricklePoolCount": 0,
+      "FoundingTricklePoolHash": "",
+      "FoundingTricklePoolShare": 0,
+      "InitialMatterPerCubicMetre": 0,
+      "LeafScent": "Direction",
+      "LeafScentRangeMetres": 3,
+      "MatterBudgetUnits": 0,
+      "MatterIslandWavelengthMetres": 0,
+      "ReefCover": 0,
+      "UnbittenDeathsLeaveNoCorpse": true,
+      "WorldAreaSquareMetres": 1600
+    }
+  },
+  "bodies": {
+    "source": "pool",
+    "founders": 0,
+    "trunk": null,
+    "pool": "rounds/nursery/pools/6a27d8acada28e03.tsv",
+    "keep": null
+  },
+  "setup": {
+    "seconds": 1800,
+    "dt": 0.01,
+    "tankSize": 8,
+    "floorClosed": true,
+    "birthsHeld": true,
+    "snow": null,
+    "carrion": {
+      "count": 0,
+      "joules": 40
+    },
+    "start": {
+      "aboveBed": 11.5
+    },
+    "purse": {
+      "rule": "grown",
+      "seconds": 3830
+    }
+  },
+  "leaves": {
+    "pool": "rounds/nursery/pools/leaves-3f6c390cd561cb09.tsv.gz",
+    "count": 250,
+    "spentUnitsPerCubicMetre": 0.001033375988005691
+  },
+  "search": {
+    "population": 16,
+    "draws": 2,
+    "generations": 1,
+    "elites": 2,
+    "tournament": 3,
+    "perBody": true,
+    "evolve": "brain",
+    "evolveEnvelope": false,
+    "crossover": {
+      "rate": 0.5,
+      "baseShare": 0.7,
+      "mutationByDistance": 0.785
+    }
+  },
+  "reward": {
+    "class": "WeightedSum",
+    "parameters": {
+      "weights": {
+        "eaten": 1
+      }
+    }
+  },
+  "exam": {
+    "episodes": 2,
+    "salt": "0x62656e6368",
+    "controls": [
+      {
+        "kind": "own"
+      },
+      {
+        "kind": "brainless"
+      },
+      {
+        "kind": "knockout",
+        "channels": [
+          "LeafScent",
+          "LeafScentDirection"
+        ]
+      }
+    ]
+  }
+}

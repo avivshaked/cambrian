@@ -1,4 +1,4 @@
-namespace Evosim.Core
+﻿namespace Evosim.Core
 {
     /// <summary>
     /// How often each variation operator fires — DESIGN.md §4.5.
@@ -298,6 +298,19 @@ namespace Evosim.Core
         [Tunable("mutation")]
         public float GestationShareChance { get; set; }
 
+        /// <summary>
+        /// Chance per birth that each drive gene of each joint takes a step (propose-joint-drive.md).
+        /// </summary>
+        /// <remarks>
+        /// Zero by default and zero draws nothing, as <see cref="GestationModeChance"/>: a joint's
+        /// genes are then copied, and a joint gained by mutation takes <c>DriveGenes.Default</c>.
+        /// Above zero, a joint gained draws them as a founder would. The step is
+        /// <c>Mutator.Step</c>'s, held in each gene's range. <c>EVOSIM_DRIVE_GENE_CHANCE</c>.
+        /// ⚠ Unmeasured (§5A.10).
+        /// </remarks>
+        [Tunable("mutation")]
+        public float DriveGeneChance { get; set; }
+
         /// <summary>Chance the genome's adult size is perturbed — fable-propose-growth.md rule 1.</summary>
         /// <remarks>
         /// The investment's rate, deliberately, and not the per-scalar rate a dimension gets.
@@ -318,6 +331,15 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("mutation")]
         public float AdultScaleChance { get; set; } = 0.08f;
+
+        /// <summary>
+        /// D128: the chance a birth moves the lifespan gene (<see cref="Genome.LifespanScale"/>)
+        /// by a <c>ScalarStdDev</c> step relative to its value. 0, the default and round 51's, is
+        /// no draw at all, so a world that leaves the gene alone draws the stream it always drew.
+        /// <c>EVOSIM_LIFESPAN_CHANCE</c>.
+        /// </summary>
+        [Tunable("mutation")]
+        public float LifespanChance { get; set; }
 
         /// <summary>Largest brood a mutation may produce.</summary>
         /// <remarks>

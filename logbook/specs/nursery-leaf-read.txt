@@ -1,0 +1,160 @@
+The leaf tank's two arms and the benches of their saved tops, read on 2026-10-13 (logbook/specs/nursery-leaf-tank-plan.md, step 8).
+Arms: leaf-strength-2 and leaf-direction-2 at aa939309, generations 0 to 30. Benches: leaf-strength-tops and leaf-direction-tops at 83c7097c.
+
+== The curves: scripts/reads/tank-side-by-side.py (branch nursery-d172) ==
+generations 0 to 30, which every arm swam; per arm: eaten, eaten over 5, top score, kills, meals
+gen  leaf-strength-2                           leaf-direction-2                        
+  0     59.9       -   193.4  2.33  1.13          54.3       -   153.7  2.22  1.03     
+  1     58.6       -   164.2  2.31  1.13          49.7       -   222.1  2.13  0.95     
+  2    111.9       -   237.2  2.92  2.13          57.4       -   183.5  2.50  1.12     
+  3    108.0       -   229.1  2.94  2.08          78.4       -   185.9  2.74  1.51     
+  4    146.1    96.9   409.6  3.14  2.79          93.2    66.6   217.8  2.66  1.79     
+  5    155.4   116.0   514.9  3.11  2.96          97.8    75.3   223.2  2.64  1.88     
+  6    184.5   141.2   385.3  3.46  3.57         103.9    86.2   230.7  2.91  1.97     
+  7    178.4   154.5   349.1  3.27  3.42         114.6    97.6   267.0  2.94  2.22     
+  8    220.6   177.0   415.6  3.47  4.20         102.9   102.5   214.5  2.71  1.95     
+  9    217.4   191.3   461.6  3.67  4.14         110.5   106.0   259.3  2.84  2.12     
+ 10    203.3   200.8   438.6  3.64  3.86         104.9   107.4   218.3  3.05  2.04     
+ 11    252.1   214.3   482.7  3.83  4.76         137.9   114.2   305.7  3.23  2.62     
+ 12    203.1   219.3   442.2  3.43  3.91         132.9   117.8   265.6  3.32  2.58     
+ 13    228.4   220.8   428.9  3.65  4.37         119.8   121.2   259.3  3.23  2.31     
+ 14    223.3   222.0   379.1  3.59  4.26         131.0   125.3   231.9  3.21  2.51     
+ 15    232.9   228.0   492.8  3.51  4.39         158.5   136.0   453.4  3.38  2.99     
+ 16    206.2   218.8   417.6  3.64  3.94         163.6   141.2   410.7  3.58  3.12     
+ 17    241.4   226.4   422.2  3.79  4.64         157.6   146.1   330.0  3.55  3.01     
+ 18    211.1   223.0   352.2  3.60  4.03         155.3   153.2   318.9  3.65  2.98     
+ 19    247.5   227.8   439.8  3.83  4.72         180.2   163.1   384.0  3.55  3.41     
+ 20    199.4   221.1   385.7  3.62  3.82         191.4   169.6   391.8  3.80  3.66     
+ 21    206.6   221.2   457.1  3.45  3.97         195.2   175.9   413.2  3.82  3.71     
+ 22    231.1   219.1   528.8  3.72  4.46         203.2   185.0   550.4  3.90  3.80     
+ 23    242.3   225.4   410.9  3.83  4.64         201.7   194.3   464.6  3.91  3.80     
+ 24    234.8   222.8   512.4  3.83  4.51         191.0   196.5   440.7  3.94  3.63     
+ 25    249.3   232.8   445.4  3.79  4.78         205.5   199.3   362.7  3.95  3.93     
+ 26    238.0   239.1   475.6  3.84  4.49         198.3   199.9   326.2  3.98  3.85     
+ 27    231.4   239.2   449.8  3.79  4.41         215.2   202.3   396.5  4.09  4.05     
+ 28    232.1   237.1   462.8  3.74  4.42         207.2   203.4   359.0  3.88  3.95     
+ 29    220.9   234.3   567.6  3.85  4.17         207.1   206.6   415.3  4.10  3.92     
+ 30    224.5   229.4   396.9  3.88  4.27         196.3   204.8   399.1  3.74  3.73     
+leaf-strength-2: last generation written 30, not stopped on the rule (running, at its cap, or no rule)
+leaf-direction-2: last generation written 30, not stopped on the rule (running, at its cap, or no rule)
+
+== The arms' own exams: one genome alone in each tank, 32 episodes (nursery.log) ==
+leaf-strength-2
+exam: 1 genomes under 3 brains, tanks of 8, 32 draws on held-out seeds (salt 422608528232), 1800 s, snow 0 J/m3, work cost 0.5, purse grown
+  own                      net -2065.65 J, against own (score) +0.00 (se NaN), alive 100 %, work 0.277 W, path 212.9 m, turn 0.036 rad/s, eaten 93.8 J, snow at the body 0.17 J/m3, 4.9 min
+  brainless                net -1650.43 J, against own (score) -65.82 (se NaN), alive 100 %, work 0.007 W, path 152.5 m, turn 0.009 rad/s, eaten 28.0 J, snow at the body 0.13 J/m3, 9.9 min
+  knockout LeafScent       net -2039.38 J, against own (score) +2.00 (se NaN), alive 100 %, work 0.263 W, path 206.7 m, turn 0.034 rad/s, eaten 95.8 J, snow at the body 0.16 J/m3, 14.9 min
+leaf-direction-2
+exam: 1 genomes under 3 brains, tanks of 8, 32 draws on held-out seeds (salt 422608528232), 1800 s, snow 0 J/m3, work cost 0.5, purse grown
+  own                      net -2143.19 J, against own (score) +0.00 (se NaN), alive 100 %, work 0.322 W, path 222.2 m, turn 0.049 rad/s, eaten 97.1 J, snow at the body 0.17 J/m3, 5.1 min
+  brainless                net -1646.47 J, against own (score) -78.07 (se NaN), alive 100 %, work 0.000 W, path 154.2 m, turn 0.011 rad/s, eaten 19.0 J, snow at the body 0.14 J/m3, 10.5 min
+  knockout LeafScent,LeafScentDirection net -2134.42 J, against own (score) +13.16 (se NaN), alive 100 %, work 0.324 W, path 233.4 m, turn 0.049 rad/s, eaten 110.3 J, snow at the body 0.17 J/m3, 15.6 min
+
+== The bench of leaf-strength-2's tops: scripts/reads/tops-bench-read.py ==
+bench: 31 genomes under 3 brains, tanks of 8, 32 draws on held-out seeds (salt 1752132708), 1800 s, snow 0 J/m3, work cost 0.5, purse grown
+  own                      net -2159.12 J, against own (score) +0.00 (se 0.00), alive 81 %, work 0.203 W, path 184.9 m, turn 0.032 rad/s, eaten 213.8 J, snow at the body 0.28 J/m3, 19.5 min
+  brainless                net -1638.23 J, against own (score) -169.10 (se 8.34), alive 99 %, work 0.002 W, path 155.0 m, turn 0.010 rad/s, eaten 44.7 J, snow at the body 0.19 J/m3, 40.7 min
+  knockout LeafScent       net -2111.02 J, against own (score) -13.82 (se 6.40), alive 84 %, work 0.197 W, path 185.8 m, turn 0.032 rad/s, eaten 200.0 J, snow at the body 0.28 J/m3, 60.2 min
+gen  search          own   brainless  knockout L   smell cost   same as
+  0   193.4         99.0        59.3        68.7        -30.4   
+  1   164.2        166.4        53.1       133.0        -33.5   
+  2   237.2        195.8        35.2       191.2         -4.6   gen 1
+  3   229.1        205.7        41.4       179.0        -26.7   
+  4   409.6        203.5        42.8       200.3         -3.2   
+  5   514.9        160.3        57.8       134.5        -25.7   
+  6   385.3        125.1        45.9       167.3         42.2   
+  7   349.1        207.9        40.7       203.2         -4.7   
+  8   415.6        204.7        52.2       211.9          7.2   
+  9   461.6        267.5        62.6       227.9        -39.7   
+ 10   438.6        224.9        21.8       172.1        -52.9   
+ 11   482.7        210.3        41.3       187.0        -23.3   
+ 12   442.2        231.4        29.9       215.1        -16.3   
+ 13   428.9        230.4        32.6       139.9        -90.5   
+ 14   379.1        232.0        27.6       222.1        -10.0   gen 13
+ 15   492.8        252.0        48.1       228.3        -23.6   
+ 16   417.6        148.6        29.3       201.6         52.9   
+ 17   422.2        248.1        41.4       235.1        -13.0   
+ 18   352.2        255.0        35.9       252.8         -2.2   
+ 19   439.8        232.6        36.7       255.8         23.2   
+ 20   385.7        178.7        94.4       196.4         17.7   
+ 21   457.1        203.0        45.9       188.2        -14.8   
+ 22   528.8        222.7        43.2       226.8          4.1   
+ 23   410.9        237.8        51.3       264.5         26.7   
+ 24   512.4        250.5        45.1       192.6        -57.9   
+ 25   445.4        256.3        60.4       273.8         17.5   
+ 26   475.6        268.2        76.0       221.2        -46.9   
+ 27   449.8        250.3        28.0       219.4        -31.0   
+ 28   462.8        206.6        18.5       232.8         26.1   
+ 29   567.6        258.9        31.1       148.5       -110.4   
+ 30   396.9        194.3        57.2       209.6         15.3   
+best on held-out seeds (own): gen 26 268.2 J, gen 9 267.5 J, gen 29 258.9 J, gen 25 256.3 J, gen 18 255.0 J
+generations 0-9 (10 tops): own 183.6, brainless 49.1, knockout LeafScent 171.7; smell cost -11.9 J (se 7.8)
+generations 10-19 (10 tops): own 226.6, brainless 34.5, knockout LeafScent 211.0; smell cost -15.6 J (se 12.3)
+generations 20-30 (11 tops): own 229.8, brainless 50.1, knockout LeafScent 215.8; smell cost -14.0 J (se 13.2)
+
+== The bench of leaf-direction-2's tops: scripts/reads/tops-bench-read.py ==
+bench: 31 genomes under 3 brains, tanks of 8, 32 draws on held-out seeds (salt 1752132708), 1800 s, snow 0 J/m3, work cost 0.5, purse grown
+  own                      net -1973.60 J, against own (score) +0.00 (se 0.00), alive 90 %, work 0.146 W, path 180.8 m, turn 0.020 rad/s, eaten 155.6 J, snow at the body 0.23 J/m3, 20.3 min
+  brainless                net -1663.79 J, against own (score) -113.21 (se 10.35), alive 98 %, work 0.000 W, path 153.7 m, turn 0.011 rad/s, eaten 42.4 J, snow at the body 0.19 J/m3, 41.8 min
+  knockout LeafScent,LeafScentDirection net -1978.82 J, against own (score) -3.49 (se 8.45), alive 90 %, work 0.149 W, path 182.8 m, turn 0.020 rad/s, eaten 152.1 J, snow at the body 0.23 J/m3, 62.2 min
+gen  search          own   brainless  knockout L   smell cost   same as
+  0   153.7         76.9        59.8        44.0        -32.9   
+  1   222.1         98.1        15.8        99.9          1.8   
+  2   183.5         67.7        42.9        85.7         18.1   
+  3   185.9        105.2        50.6        88.6        -16.6   
+  4   217.8        124.2        60.0        90.4        -33.8   
+  5   223.2        104.8        55.8        78.6        -26.1   
+  6   230.7        133.1        57.2       112.2        -20.8   
+  7   267.0        188.9        51.0       112.8        -76.2   
+  8   214.5        114.8        39.5        79.9        -34.9   gen 7
+  9   259.3        105.6        35.5       103.5         -2.1   
+ 10   218.3        134.7        53.1        82.6        -52.1   
+ 11   305.7        103.2        58.0       166.7         63.5   
+ 12   265.6        104.9        24.1        78.4        -26.5   
+ 13   259.3        103.5        40.5       139.2         35.7   gen 12
+ 14   231.9        149.3        38.7       159.2          9.9   
+ 15   453.4        139.9        25.9       258.0        118.0   
+ 16   410.7        165.4        54.8       149.2        -16.2   
+ 17   330.0        208.6        49.5       202.4         -6.2   gen 16
+ 18   318.9        136.9        33.5       133.6         -3.3   
+ 19   384.0        150.3        43.2       167.2         16.9   
+ 20   391.8        275.1        48.8       250.9        -24.2   
+ 21   413.2        249.0        36.6       201.7        -47.4   
+ 22   550.4        192.8        34.9       139.3        -53.5   
+ 23   464.6        157.0        37.3       192.0         35.0   
+ 24   440.7        195.5        49.0       192.2         -3.3   
+ 25   362.7        252.6        49.3       123.8       -128.9   gen 24
+ 26   326.2        151.9        24.2       177.3         25.4   
+ 27   396.5        204.2        52.9       244.7         40.5   
+ 28   359.0        210.7        18.5       252.6         41.8   
+ 29   415.3        169.4        51.5       234.2         64.8   
+ 30   399.1        249.5        21.8       274.9         25.3   
+best on held-out seeds (own): gen 20 275.1 J, gen 25 252.6 J, gen 30 249.5 J, gen 21 249.0 J, gen 28 210.7 J
+generations 0-9 (10 tops): own 111.9, brainless 46.8, knockout LeafScent,LeafScentDirection 89.6; smell cost -22.4 J (se 8.1)
+generations 10-19 (10 tops): own 139.7, brainless 42.1, knockout LeafScent,LeafScentDirection 153.6; smell cost 14.0 J (se 15.4)
+generations 20-30 (11 tops): own 209.8, brainless 38.6, knockout LeafScent,LeafScentDirection 207.6; smell cost -2.2 J (se 17.1)
+
+== Re-step of leaf-strength-tops, episode 0, tank 0, own brains, EVOSIM_TANK_TRACE=1; every net equals tank-bench.jsonl's ==
+trace corpses seed 56490: from leaves 33 (8570.0 J), from members 0 (0.0 J), other 0 (0.0 J); bodies eaten 35, corpses from kills 36, corpses eaten 8, module drops 0, carrion placed 0, members' mouths kept 1901.9 J
+trace world: deaths 35, by age 0, parts killed by mouths 1, diverged 0
+trace seed 56490: body 0 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 1784.0 J, died NaN, food 48.1, eaten 73.8, work 284.6, upkeep 1684.8, handling 6.0, exuded 0.0, path 217.9 m, turn 0.029 rad/s, y0 -14.37
+trace seed 56490: body 1 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 1830.8 J, died NaN, food 60.5, eaten 345.6, work 521.1, upkeep 1684.8, handling 7.6, exuded 0.0, path 190.7 m, turn 0.043 rad/s, y0 -9.06
+trace seed 56490: body 2 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 0.0 J, died 394, food 3.3, eaten 0.0, work 128.1, upkeep 368.3, handling 0.4, exuded 0.0, path 62.5 m, turn 0.032 rad/s, y0 -19.21
+trace seed 56490: body 3 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 1997.6 J, died NaN, food 71.8, eaten 403.2, work 422.5, upkeep 1684.8, handling 9.0, exuded 0.0, path 222.2 m, turn 0.038 rad/s, y0 -18.70
+trace seed 56490: body 4 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 1841.2 J, died NaN, food 56.0, eaten 313.9, work 475.8, upkeep 1684.8, handling 7.0, exuded 0.0, path 238.7 m, turn 0.032 rad/s, y0 -17.37
+trace seed 56490: body 5 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 1931.4 J, died NaN, food 61.3, eaten 303.8, work 379.4, upkeep 1684.8, handling 7.7, exuded 0.0, path 211.6 m, turn 0.036 rad/s, y0 -15.55
+trace seed 56490: body 6 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 1981.1 J, died NaN, food 62.0, eaten 461.6, work 488.8, upkeep 1684.8, handling 7.8, exuded 0.0, path 198.1 m, turn 0.037 rad/s, y0 -19.25
+trace seed 56490: body 7 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 0.0 J, died 394, food 3.7, eaten 0.0, work 102.1, upkeep 368.3, handling 0.5, exuded 0.0, path 49.6 m, turn 0.052 rad/s, y0 -11.22
+
+== Re-step of leaf-direction-tops, episode 0, tank 0, own brains, EVOSIM_TANK_TRACE=1; every net equals tank-bench.jsonl's ==
+trace corpses seed 56490: from leaves 19 (4095.9 J), from members 0 (0.0 J), other 0 (0.0 J); bodies eaten 23, corpses from kills 24, corpses eaten 4, module drops 0, carrion placed 0, members' mouths kept 1247.7 J
+trace world: deaths 23, by age 0, parts killed by mouths 1, diverged 0
+trace seed 56490: body 0 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 2189.9 J, died NaN, food 50.6, eaten 258.2, work 66.7, upkeep 1684.8, handling 6.3, exuded 0.0, path 176.2 m, turn 0.017 rad/s, y0 -14.37
+trace seed 56490: body 1 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 1900.5 J, died NaN, food 35.4, eaten 0.0, work 84.6, upkeep 1684.8, handling 4.4, exuded 0.0, path 138.7 m, turn 0.013 rad/s, y0 -9.06
+trace seed 56490: body 2 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 0.0 J, died 1238, food 23.8, eaten 345.6, work 387.9, upkeep 1157.8, handling 3.0, exuded 0.0, path 163.3 m, turn 0.025 rad/s, y0 -19.21
+trace seed 56490: body 3 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 2063.4 J, died NaN, food 25.1, eaten 112.5, work 25.2, upkeep 1684.8, handling 3.1, exuded 0.0, path 134.8 m, turn 0.010 rad/s, y0 -18.70
+trace seed 56490: body 4 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 0.0 J, died 1238, food 25.5, eaten 310.2, work 346.9, upkeep 1157.8, handling 3.2, exuded 0.0, path 135.8 m, turn 0.031 rad/s, y0 -17.37
+trace seed 56490: body 5 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 0.0 J, died 1087, food 6.0, eaten 0.0, work 88.0, upkeep 1016.5, handling 0.7, exuded 0.0, path 93.2 m, turn 0.015 rad/s, y0 -15.55
+trace seed 56490: body 6 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 0.0 J, died 1087, food 5.1, eaten 0.0, work 175.4, upkeep 1016.5, handling 0.6, exuded 0.0, path 86.6 m, turn 0.012 rad/s, y0 -19.25
+trace seed 56490: body 7 start 3638.9 J (reserve 3584.9, tissue 54.0), standing 0.936 W, end 2109.7 J, died NaN, food 48.1, eaten 221.1, work 107.6, upkeep 1684.8, handling 6.0, exuded 0.0, path 180.6 m, turn 0.015 rad/s, y0 -11.22
+

@@ -2,11 +2,10 @@
 
 **2026-09-16**  ·  asked by the owner, and on the constraints as well.
 
-> "put an opus sub agent to do some exploration and thinking how to make the theatre a lot
-> more visually striking; it can plan usage of open source libraries, or leonardo, or even
-> if the output justifies the cost, additional resources"
->
-> "it could suggest alternatives to our decisions should that make sense"
+The owner asked for an Opus subagent to explore and think about how to make the theatre a lot
+more visually striking. It may plan the use of open-source libraries or Leonardo, or even
+additional resources if the output justifies the cost. The owner added that it could suggest
+alternatives to our decisions where that makes sense.
 
 An Opus subagent made the design pass, read-only, from the pictures first and the code
 second. The agent's reading follows, and the report is below it as delivered, with its
@@ -26,7 +25,7 @@ rotation (`TheatreSkin.cs:362`, called once at `TheatreRunner.cs:219`), and neve
 So five of the six snapshot views and every flight around a body are lit by the fill.
 
 The dark field was designed for values that sit in the bottom tenth of the range, and
-nothing redistributes them. That is the whole of "can barely see anything", and it is a
+nothing redistributes them. That is the whole reason the owner could barely see anything, and it is a
 day's work, hash-safe, before any question of style is asked.
 
 The order is the one-day pass first, as the report says and for its reason. Every later
@@ -103,7 +102,7 @@ the code values with no curve to redistribute it. The water is (0.012, 0.032, 0.
 
 Without a tonemap a body's key-lit facets clip to white while everything else sits in four
 or five distinguishable levels. That is what `r39big-m9-t600-bed.png` looks like: a grey
-ramp you can only just find, the picture the owner said "can barely see anything" about.
+ramp you can only just find, the picture the owner said they could barely see anything in.
 
 The key light is aimed at a camera that is not the one rendering. `TheatreSkin.Apply` is
 called once from `TheatreRunner.cs:219` with the fly camera. The key is placed at

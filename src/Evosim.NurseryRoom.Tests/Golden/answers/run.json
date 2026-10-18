@@ -1,0 +1,1185 @@
+{
+  "id": "2",
+  "kind": "entry",
+  "trial": false,
+  "number": 2,
+  "entry": {
+    "recipe": "e2e-alpha",
+    "recipeHash": "aa",
+    "recipePath": "rounds/nursery/brain2-w5.json",
+    "configHash": "c",
+    "gitCommit": "g",
+    "coreHash": "c",
+    "dynamicsHash": "d",
+    "farmHash": "f",
+    "nurseryHash": "n",
+    "out": "scratch/nursery/alpha",
+    "status": "completed",
+    "startedAtUtc": "2026-10-01T09:00:00Z",
+    "endedAtUtc": "2026-10-01T10:00:00Z",
+    "rerunOf": 0,
+    "identical": null,
+    "rerunnable": true,
+    "notRerunnableBecause": null,
+    "reference": null,
+    "digests": {}
+  },
+  "folder": "scratch/nursery/alpha",
+  "nowUtc": "<masked:clock>",
+  "version": "<masked:stamp>",
+  "name": "e2e-alpha",
+  "description": null,
+  "state": {
+    "recorded": "completed",
+    "phase": "completed",
+    "fromRegistry": true,
+    "note": "completed, from the registry; this run predates run.json",
+    "processAlive": null,
+    "processId": null,
+    "startedUtc": "2026-10-01T09:00:00Z",
+    "endedUtc": "2026-10-01T10:00:00Z",
+    "error": null,
+    "threads": null
+  },
+  "progress": {
+    "rows": 12,
+    "lastGen": 11,
+    "planned": null,
+    "paceMinutes": 1,
+    "wallSeconds": 720,
+    "lastRowUtc": "<masked:clock>",
+    "lastRowAgeSeconds": "<masked:age>",
+    "examBrains": 6,
+    "examExpected": null,
+    "examGenomes": 2,
+    "examDone": 6
+  },
+  "stall": {
+    "stalled": false,
+    "evaluated": false,
+    "reason": "the run is not marked running",
+    "medianGenerationSeconds": 60,
+    "limitSeconds": 180,
+    "sinceWriteSeconds": "<masked:age>",
+    "lastWriteUtc": "<masked:clock>",
+    "lastWriteFile": "tank-exam.jsonl"
+  },
+  "files": [
+    {
+      "name": "tank-generations.jsonl",
+      "bytes": 6712,
+      "modifiedUtc": "<masked:clock>",
+      "rows": 12,
+      "bad": 0,
+      "problem": null
+    },
+    {
+      "name": "tank-best.jsonl",
+      "bytes": 23472,
+      "modifiedUtc": "<masked:clock>",
+      "rows": 12,
+      "bad": null,
+      "problem": null
+    },
+    {
+      "name": "tank-scores.jsonl",
+      "bytes": 5033,
+      "modifiedUtc": "<masked:clock>",
+      "rows": 12,
+      "bad": null,
+      "problem": null
+    },
+    {
+      "name": "tank-exam.jsonl",
+      "bytes": 2615,
+      "modifiedUtc": "<masked:clock>",
+      "rows": 12,
+      "bad": 0,
+      "problem": null
+    },
+    {
+      "name": "nursery.log",
+      "bytes": 58,
+      "modifiedUtc": "<masked:clock>",
+      "rows": 4,
+      "bad": null,
+      "problem": null
+    }
+  ],
+  "reward": "Net",
+  "recipeHash": null,
+  "recipe": null,
+  "run": null,
+  "generations": [
+    {
+      "gen": 0,
+      "seconds": 60,
+      "landed": 96,
+      "netMean": 200,
+      "netBest": 350,
+      "alive": 0.95,
+      "workWatts": 0.08,
+      "path": 60,
+      "fresh": 0.9,
+      "top": {
+        "score": 350,
+        "episodes": 16,
+        "body": 1,
+        "born": 0,
+        "nodes": 2
+      },
+      "made": {
+        "children": 90,
+        "crossovers": 47,
+        "transferred": 47,
+        "added": 0,
+        "refused": {},
+        "ends": {
+          "sense": 47,
+          "oscillator": 0,
+          "loop": 0,
+          "unresolved": 0
+        },
+        "routeLength": 1,
+        "unread": 0,
+        "baseBetter": 0.63,
+        "dMean": 0.2,
+        "mutated": 0.7,
+        "neuronsMean": 0.03,
+        "neuronsMax": 1
+      },
+      "brain": {
+        "hidden": 0,
+        "hiddenMax": 1,
+        "links": 82,
+        "linksMax": 116,
+        "topHidden": 0,
+        "topLinks": 48
+      }
+    },
+    {
+      "gen": 1,
+      "seconds": 120,
+      "landed": 96,
+      "netMean": 244.45337278125788,
+      "netBest": 406.4533727812579,
+      "alive": 0.95,
+      "workWatts": 0.078,
+      "path": 62,
+      "fresh": 0.91,
+      "top": {
+        "score": 406.4533727812579,
+        "episodes": 16,
+        "body": 4,
+        "born": 1,
+        "nodes": 2
+      },
+      "made": {
+        "children": 90,
+        "crossovers": 47,
+        "transferred": 47,
+        "added": 0,
+        "refused": {},
+        "ends": {
+          "sense": 47,
+          "oscillator": 0,
+          "loop": 0,
+          "unresolved": 0
+        },
+        "routeLength": 1,
+        "unread": 0,
+        "baseBetter": 0.63,
+        "dMean": 0.2,
+        "mutated": 0.7,
+        "neuronsMean": 0.03,
+        "neuronsMax": 1
+      },
+      "brain": {
+        "hidden": 0.03,
+        "hiddenMax": 1,
+        "links": 83,
+        "linksMax": 117,
+        "topHidden": 0,
+        "topLinks": 49
+      }
+    },
+    {
+      "gen": 2,
+      "seconds": 180,
+      "landed": 96,
+      "netMean": 267.73252057732196,
+      "netBest": 441.73252057732196,
+      "alive": 0.95,
+      "workWatts": 0.076,
+      "path": 64,
+      "fresh": 0.92,
+      "top": {
+        "score": 441.73252057732196,
+        "episodes": 16,
+        "body": 2,
+        "born": 2,
+        "nodes": 2
+      },
+      "made": {
+        "children": 90,
+        "crossovers": 47,
+        "transferred": 47,
+        "added": 0,
+        "refused": {},
+        "ends": {
+          "sense": 47,
+          "oscillator": 0,
+          "loop": 0,
+          "unresolved": 0
+        },
+        "routeLength": 1,
+        "unread": 0,
+        "baseBetter": 0.63,
+        "dMean": 0.2,
+        "mutated": 0.7,
+        "neuronsMean": 0.03,
+        "neuronsMax": 1
+      },
+      "brain": {
+        "hidden": 0.06,
+        "hiddenMax": 1,
+        "links": 84,
+        "linksMax": 118,
+        "topHidden": 0,
+        "topLinks": 50
+      }
+    },
+    {
+      "gen": 3,
+      "seconds": 240,
+      "landed": 96,
+      "netMean": 279.68350761224036,
+      "netBest": 465.68350761224036,
+      "alive": 0.95,
+      "workWatts": 0.074,
+      "path": 66,
+      "fresh": 0.93,
+      "top": {
+        "score": 465.68350761224036,
+        "episodes": 16,
+        "body": 0,
+        "born": 3,
+        "nodes": 2
+      },
+      "made": {
+        "children": 90,
+        "crossovers": 47,
+        "transferred": 47,
+        "added": 0,
+        "refused": {},
+        "ends": {
+          "sense": 47,
+          "oscillator": 0,
+          "loop": 0,
+          "unresolved": 0
+        },
+        "routeLength": 1,
+        "unread": 0,
+        "baseBetter": 0.63,
+        "dMean": 0.2,
+        "mutated": 0.7,
+        "neuronsMean": 0.03,
+        "neuronsMax": 1
+      },
+      "brain": {
+        "hidden": 0.09,
+        "hiddenMax": 1,
+        "links": 85,
+        "linksMax": 119,
+        "topHidden": 0,
+        "topLinks": 51
+      }
+    },
+    {
+      "gen": 4,
+      "seconds": 300,
+      "landed": 96,
+      "netMean": 306.7481801641977,
+      "netBest": 504.7481801641977,
+      "alive": 0.95,
+      "workWatts": 0.07200000000000001,
+      "path": 68,
+      "fresh": 0.9400000000000001,
+      "top": {
+        "score": 504.7481801641977,
+        "episodes": 16,
+        "body": 3,
+        "born": 4,
+        "nodes": 2
+      },
+      "made": {
+        "children": 90,
+        "crossovers": 47,
+        "transferred": 47,
+        "added": 0,
+        "refused": {},
+        "ends": {
+          "sense": 47,
+          "oscillator": 0,
+          "loop": 0,
+          "unresolved": 0
+        },
+        "routeLength": 1,
+        "unread": 0,
+        "baseBetter": 0.63,
+        "dMean": 0.2,
+        "mutated": 0.7,
+        "neuronsMean": 0.03,
+        "neuronsMax": 1
+      },
+      "brain": {
+        "hidden": 0.12,
+        "hiddenMax": 2,
+        "links": 86,
+        "linksMax": 120,
+        "topHidden": 0,
+        "topLinks": 52
+      }
+    },
+    {
+      "gen": 5,
+      "seconds": 360,
+      "landed": 96,
+      "netMean": 353.22679982131723,
+      "netBest": 563.2267998213172,
+      "alive": 0.95,
+      "workWatts": 0.07,
+      "path": 70,
+      "fresh": 0.9500000000000001,
+      "top": {
+        "score": 563.2267998213172,
+        "episodes": 16,
+        "body": 1,
+        "born": 5,
+        "nodes": 2
+      },
+      "made": {
+        "children": 90,
+        "crossovers": 47,
+        "transferred": 47,
+        "added": 0,
+        "refused": {},
+        "ends": {
+          "sense": 47,
+          "oscillator": 0,
+          "loop": 0,
+          "unresolved": 0
+        },
+        "routeLength": 1,
+        "unread": 0,
+        "baseBetter": 0.63,
+        "dMean": 0.2,
+        "mutated": 0.7,
+        "neuronsMean": 0.03,
+        "neuronsMax": 1
+      },
+      "brain": {
+        "hidden": 0.15,
+        "hiddenMax": 2,
+        "links": 87,
+        "linksMax": 121,
+        "topHidden": 0,
+        "topLinks": 53
+      }
+    },
+    {
+      "gen": 6,
+      "seconds": 420,
+      "landed": 96,
+      "netMean": 394.9781501806191,
+      "netBest": 616.9781501806191,
+      "alive": 0.95,
+      "workWatts": 0.068,
+      "path": 72,
+      "fresh": 0.96,
+      "top": {
+        "score": 616.9781501806191,
+        "episodes": 16,
+        "body": 4,
+        "born": 6,
+        "nodes": 2
+      },
+      "made": {
+        "children": 90,
+        "crossovers": 47,
+        "transferred": 47,
+        "added": 0,
+        "refused": {},
+        "ends": {
+          "sense": 47,
+          "oscillator": 0,
+          "loop": 0,
+          "unresolved": 0
+        },
+        "routeLength": 1,
+        "unread": 0,
+        "baseBetter": 0.63,
+        "dMean": 0.2,
+        "mutated": 0.7,
+        "neuronsMean": 0.03,
+        "neuronsMax": 1
+      },
+      "brain": {
+        "hidden": 0.18,
+        "hiddenMax": 2,
+        "links": 88,
+        "linksMax": 122,
+        "topHidden": 0,
+        "topLinks": 54
+      }
+    },
+    {
+      "gen": 7,
+      "seconds": 480,
+      "landed": 96,
+      "netMean": 414.7864754352403,
+      "netBest": 648.7864754352403,
+      "alive": 0.95,
+      "workWatts": 0.066,
+      "path": 74,
+      "fresh": 0.97,
+      "top": {
+        "score": 648.7864754352403,
+        "episodes": 16,
+        "body": 2,
+        "born": 7,
+        "nodes": 2
+      },
+      "made": {
+        "children": 90,
+        "crossovers": 47,
+        "transferred": 47,
+        "added": 0,
+        "refused": {},
+        "ends": {
+          "sense": 47,
+          "oscillator": 0,
+          "loop": 0,
+          "unresolved": 0
+        },
+        "routeLength": 1,
+        "unread": 0,
+        "baseBetter": 0.63,
+        "dMean": 0.2,
+        "mutated": 0.7,
+        "neuronsMean": 0.03,
+        "neuronsMax": 1
+      },
+      "brain": {
+        "hidden": 0.21,
+        "hiddenMax": 2,
+        "links": 89,
+        "linksMax": 123,
+        "topHidden": 0,
+        "topLinks": 55
+      }
+    },
+    {
+      "gen": 8,
+      "seconds": 540,
+      "landed": 96,
+      "netMean": 427.5826029637152,
+      "netBest": 673.5826029637152,
+      "alive": 0.95,
+      "workWatts": 0.064,
+      "path": 76,
+      "fresh": 0.98,
+      "top": {
+        "score": 673.5826029637152,
+        "episodes": 16,
+        "body": 0,
+        "born": 8,
+        "nodes": 2
+      },
+      "made": {
+        "children": 90,
+        "crossovers": 47,
+        "transferred": 47,
+        "added": 0,
+        "refused": {},
+        "ends": {
+          "sense": 47,
+          "oscillator": 0,
+          "loop": 0,
+          "unresolved": 0
+        },
+        "routeLength": 1,
+        "unread": 0,
+        "baseBetter": 0.63,
+        "dMean": 0.2,
+        "mutated": 0.7,
+        "neuronsMean": 0.03,
+        "neuronsMax": 1
+      },
+      "brain": {
+        "hidden": 0.24,
+        "hiddenMax": 3,
+        "links": 90,
+        "linksMax": 124,
+        "topHidden": 0,
+        "topLinks": 56
+      }
+    },
+    {
+      "gen": 9,
+      "seconds": 600,
+      "landed": 96,
+      "netMean": 458.57024624121453,
+      "netBest": 716.5702462412146,
+      "alive": 0.95,
+      "workWatts": 0.062,
+      "path": 78,
+      "fresh": 0.99,
+      "top": {
+        "score": 716.5702462412146,
+        "episodes": 16,
+        "body": 3,
+        "born": 9,
+        "nodes": 2
+      },
+      "made": {
+        "children": 90,
+        "crossovers": 47,
+        "transferred": 47,
+        "added": 0,
+        "refused": {},
+        "ends": {
+          "sense": 47,
+          "oscillator": 0,
+          "loop": 0,
+          "unresolved": 0
+        },
+        "routeLength": 1,
+        "unread": 0,
+        "baseBetter": 0.63,
+        "dMean": 0.2,
+        "mutated": 0.7,
+        "neuronsMean": 0.03,
+        "neuronsMax": 1
+      },
+      "brain": {
+        "hidden": 0.27,
+        "hiddenMax": 3,
+        "links": 91,
+        "linksMax": 125,
+        "topHidden": 0,
+        "topLinks": 57
+      }
+    },
+    {
+      "gen": 10,
+      "seconds": 660,
+      "landed": 96,
+      "netMean": 506.3025055523996,
+      "netBest": 776.3025055523997,
+      "alive": 0.95,
+      "workWatts": 0.06,
+      "path": 80,
+      "fresh": 1,
+      "top": {
+        "score": 776.3025055523997,
+        "episodes": 16,
+        "body": 1,
+        "born": 10,
+        "nodes": 2
+      },
+      "made": {
+        "children": 90,
+        "crossovers": 47,
+        "transferred": 47,
+        "added": 0,
+        "refused": {},
+        "ends": {
+          "sense": 47,
+          "oscillator": 0,
+          "loop": 0,
+          "unresolved": 0
+        },
+        "routeLength": 1,
+        "unread": 0,
+        "baseBetter": 0.63,
+        "dMean": 0.2,
+        "mutated": 0.7,
+        "neuronsMean": 0.03,
+        "neuronsMax": 1
+      },
+      "brain": {
+        "hidden": 0.3,
+        "hiddenMax": 3,
+        "links": 92,
+        "linksMax": 126,
+        "topHidden": 0,
+        "topLinks": 58
+      }
+    },
+    {
+      "gen": 11,
+      "seconds": 720,
+      "landed": 96,
+      "netMean": 544.8015794641192,
+      "netBest": 826.8015794641192,
+      "alive": 0.95,
+      "workWatts": 0.058,
+      "path": 82,
+      "fresh": 1.01,
+      "top": {
+        "score": 826.8015794641192,
+        "episodes": 16,
+        "body": 4,
+        "born": 11,
+        "nodes": 2
+      },
+      "made": {
+        "children": 90,
+        "crossovers": 47,
+        "transferred": 47,
+        "added": 0,
+        "refused": {},
+        "ends": {
+          "sense": 47,
+          "oscillator": 0,
+          "loop": 0,
+          "unresolved": 0
+        },
+        "routeLength": 1,
+        "unread": 0,
+        "baseBetter": 0.63,
+        "dMean": 0.2,
+        "mutated": 0.7,
+        "neuronsMean": 0.03,
+        "neuronsMax": 1
+      },
+      "brain": {
+        "hidden": 0.32999999999999996,
+        "hiddenMax": 3,
+        "links": 93,
+        "linksMax": 127,
+        "topHidden": 0,
+        "topLinks": 59
+      }
+    }
+  ],
+  "scores": [
+    {
+      "gen": 0,
+      "reward": "Net",
+      "members": 4,
+      "mean": 177.5,
+      "top": {
+        "body": 1,
+        "born": 0,
+        "episodes": 4,
+        "value": 350,
+        "parts": {
+          "food": 210,
+          "move": 140
+        }
+      }
+    },
+    {
+      "gen": 1,
+      "reward": "Net",
+      "members": 4,
+      "mean": 224.95337278125788,
+      "top": {
+        "body": 4,
+        "born": 1,
+        "episodes": 4,
+        "value": 406.4533727812579,
+        "parts": {
+          "food": 243.8720236687547,
+          "move": 162.58134911250318
+        }
+      }
+    },
+    {
+      "gen": 2,
+      "reward": "Net",
+      "members": 4,
+      "mean": 251.23252057732196,
+      "top": {
+        "body": 2,
+        "born": 2,
+        "episodes": 4,
+        "value": 441.73252057732196,
+        "parts": {
+          "food": 265.03951234639317,
+          "move": 176.6930082309288
+        }
+      }
+    },
+    {
+      "gen": 3,
+      "reward": "Net",
+      "members": 4,
+      "mean": 266.18350761224036,
+      "top": {
+        "body": 0,
+        "born": 3,
+        "episodes": 4,
+        "value": 465.68350761224036,
+        "parts": {
+          "food": 279.4101045673442,
+          "move": 186.27340304489616
+        }
+      }
+    },
+    {
+      "gen": 4,
+      "reward": "Net",
+      "members": 4,
+      "mean": 296.2481801641977,
+      "top": {
+        "body": 3,
+        "born": 4,
+        "episodes": 4,
+        "value": 504.7481801641977,
+        "parts": {
+          "food": 302.8489080985186,
+          "move": 201.8992720656791
+        }
+      }
+    },
+    {
+      "gen": 5,
+      "reward": "Net",
+      "members": 4,
+      "mean": 345.7267998213172,
+      "top": {
+        "body": 1,
+        "born": 5,
+        "episodes": 4,
+        "value": 563.2267998213172,
+        "parts": {
+          "food": 337.9360798927903,
+          "move": 225.29071992852687
+        }
+      }
+    },
+    {
+      "gen": 6,
+      "reward": "Net",
+      "members": 4,
+      "mean": 390.4781501806191,
+      "top": {
+        "body": 4,
+        "born": 6,
+        "episodes": 4,
+        "value": 616.9781501806191,
+        "parts": {
+          "food": 370.1868901083714,
+          "move": 246.79126007224764
+        }
+      }
+    },
+    {
+      "gen": 7,
+      "reward": "Net",
+      "members": 4,
+      "mean": 413.2864754352403,
+      "top": {
+        "body": 2,
+        "born": 7,
+        "episodes": 4,
+        "value": 648.7864754352403,
+        "parts": {
+          "food": 389.2718852611442,
+          "move": 259.5145901740961
+        }
+      }
+    },
+    {
+      "gen": 8,
+      "reward": "Net",
+      "members": 4,
+      "mean": 429.0826029637152,
+      "top": {
+        "body": 0,
+        "born": 8,
+        "episodes": 4,
+        "value": 673.5826029637152,
+        "parts": {
+          "food": 404.1495617782291,
+          "move": 269.4330411854861
+        }
+      }
+    },
+    {
+      "gen": 9,
+      "reward": "Net",
+      "members": 4,
+      "mean": 463.0702462412146,
+      "top": {
+        "body": 3,
+        "born": 9,
+        "episodes": 4,
+        "value": 716.5702462412146,
+        "parts": {
+          "food": 429.94214774472874,
+          "move": 286.62809849648585
+        }
+      }
+    },
+    {
+      "gen": 10,
+      "reward": "Net",
+      "members": 4,
+      "mean": 513.8025055523997,
+      "top": {
+        "body": 1,
+        "born": 10,
+        "episodes": 4,
+        "value": 776.3025055523997,
+        "parts": {
+          "food": 465.7815033314398,
+          "move": 310.5210022209599
+        }
+      }
+    },
+    {
+      "gen": 11,
+      "reward": "Net",
+      "members": 4,
+      "mean": 555.3015794641192,
+      "top": {
+        "body": 4,
+        "born": 11,
+        "episodes": 4,
+        "value": 826.8015794641192,
+        "parts": {
+          "food": 496.0809476784715,
+          "move": 330.7206317856477
+        }
+      }
+    }
+  ],
+  "crossovers": null,
+  "best": {
+    "rows": 12,
+    "last": {
+      "nodes": 3,
+      "outputs": 4,
+      "hidden": 0,
+      "links": 1
+    }
+  },
+  "exam": {
+    "brains": [
+      "own",
+      "frozen",
+      "full",
+      "brainless",
+      "knockout Chemical",
+      "knockout Flow"
+    ],
+    "headers": [
+      {
+        "index": 0,
+        "label": "own",
+        "kind": "own",
+        "short": "own",
+        "title": "own"
+      },
+      {
+        "index": 1,
+        "label": "frozen",
+        "kind": "frozen",
+        "short": "frozen",
+        "title": "frozen"
+      },
+      {
+        "index": 2,
+        "label": "full",
+        "kind": "full",
+        "short": "full",
+        "title": "full"
+      },
+      {
+        "index": 3,
+        "label": "brainless",
+        "kind": "brainless",
+        "short": "brainless",
+        "title": "brainless"
+      },
+      {
+        "index": 4,
+        "label": "knockout Chemical",
+        "kind": "knockout",
+        "short": "KO Chemical",
+        "title": "knockout Chemical"
+      },
+      {
+        "index": 5,
+        "label": "knockout Flow",
+        "kind": "knockout",
+        "short": "KO Flow",
+        "title": "knockout Flow"
+      }
+    ],
+    "pooledBasis": "net",
+    "own": "own",
+    "basis": "per",
+    "hasScore": false,
+    "hasFresh": false,
+    "draws": 8,
+    "bodies": [
+      {
+        "genome": 0,
+        "body": 0,
+        "ownNet": 99.78489769002942,
+        "ownScore": null,
+        "ownFresh": null,
+        "cells": [
+          {
+            "brain": "own",
+            "net": 99.78489769002942,
+            "score": null,
+            "fresh": null,
+            "diff": null,
+            "se": null,
+            "n": 0,
+            "clears": false
+          },
+          {
+            "brain": "frozen",
+            "net": 79.73917943223844,
+            "score": null,
+            "fresh": null,
+            "diff": 20.04571825779098,
+            "se": 0.3857172406645149,
+            "n": 8,
+            "clears": true
+          },
+          {
+            "brain": "full",
+            "net": 84.83050991100772,
+            "score": null,
+            "fresh": null,
+            "diff": 14.954387779021703,
+            "se": 0.3858592213522149,
+            "n": 8,
+            "clears": true
+          },
+          {
+            "brain": "brainless",
+            "net": 74.74030443477682,
+            "score": null,
+            "fresh": null,
+            "diff": 25.044593255252614,
+            "se": 0.3872041932362422,
+            "n": 8,
+            "clears": true
+          },
+          {
+            "brain": "knockout Chemical",
+            "net": 87.82757944524928,
+            "score": null,
+            "fresh": null,
+            "diff": 11.957318244780147,
+            "se": 0.3896334298330265,
+            "n": 8,
+            "clears": true
+          },
+          {
+            "brain": "knockout Flow",
+            "net": 99.78489769002942,
+            "score": null,
+            "fresh": null,
+            "diff": 0,
+            "se": 0,
+            "n": 8,
+            "clears": false
+          }
+        ]
+      },
+      {
+        "genome": 1,
+        "body": 1,
+        "ownNet": 112.40677522177927,
+        "ownScore": null,
+        "ownFresh": null,
+        "cells": [
+          {
+            "brain": "own",
+            "net": 112.40677522177927,
+            "score": null,
+            "fresh": null,
+            "diff": null,
+            "se": null,
+            "n": 0,
+            "clears": false
+          },
+          {
+            "brain": "frozen",
+            "net": 90.38416940063269,
+            "score": null,
+            "fresh": null,
+            "diff": 22.022605821146595,
+            "se": 0.4082166453638431,
+            "n": 8,
+            "clears": true
+          },
+          {
+            "brain": "full",
+            "net": 95.93477369491208,
+            "score": null,
+            "fresh": null,
+            "diff": 16.4720015268672,
+            "se": 0.4044179865625216,
+            "n": 8,
+            "clears": true
+          },
+          {
+            "brain": "brainless",
+            "net": 84.8739444862904,
+            "score": null,
+            "fresh": null,
+            "diff": 27.532830735488886,
+            "se": 0.4002859668644512,
+            "n": 8,
+            "clears": true
+          },
+          {
+            "brain": "knockout Chemical",
+            "net": 99.24378111223022,
+            "score": null,
+            "fresh": null,
+            "diff": 13.162994109549059,
+            "se": 0.39614459932565266,
+            "n": 8,
+            "clears": true
+          },
+          {
+            "brain": "knockout Flow",
+            "net": 112.40677522177927,
+            "score": null,
+            "fresh": null,
+            "diff": 0,
+            "se": 0,
+            "n": 8,
+            "clears": false
+          }
+        ]
+      }
+    ],
+    "pooled": [
+      {
+        "brain": "own",
+        "net": null,
+        "score": null,
+        "fresh": null,
+        "diff": null,
+        "se": null,
+        "n": 0,
+        "clears": false
+      },
+      {
+        "brain": "frozen",
+        "net": null,
+        "score": null,
+        "fresh": null,
+        "diff": 21.034162039468782,
+        "se": 0.9884437816778018,
+        "n": 2,
+        "clears": true
+      },
+      {
+        "brain": "full",
+        "net": null,
+        "score": null,
+        "fresh": null,
+        "diff": 15.713194652944445,
+        "se": 0.7588068739227438,
+        "n": 2,
+        "clears": true
+      },
+      {
+        "brain": "brainless",
+        "net": null,
+        "score": null,
+        "fresh": null,
+        "diff": 26.28871199537074,
+        "se": 1.2441187401181324,
+        "n": 2,
+        "clears": true
+      },
+      {
+        "brain": "knockout Chemical",
+        "net": null,
+        "score": null,
+        "fresh": null,
+        "diff": 12.560156177164593,
+        "se": 0.6028379323844533,
+        "n": 2,
+        "clears": true
+      },
+      {
+        "brain": "knockout Flow",
+        "net": null,
+        "score": null,
+        "fresh": null,
+        "diff": 0,
+        "se": 0,
+        "n": 2,
+        "clears": false
+      }
+    ]
+  },
+  "examEnd": null,
+  "log": {
+    "total": 4,
+    "lines": [
+      "gen 0 done",
+      "gen 1 done",
+      "exam: own on genome 0",
+      "completed"
+    ]
+  },
+  "uninformative": {
+    "controls": [
+      {
+        "col": 3,
+        "kind": "brainless",
+        "channels": []
+      },
+      {
+        "col": 4,
+        "kind": "knockout",
+        "channels": [
+          "Chemical"
+        ]
+      },
+      {
+        "col": 5,
+        "kind": "knockout",
+        "channels": [
+          "Flow"
+        ]
+      }
+    ],
+    "genomes": [
+      {
+        "genome": 0,
+        "columns": [
+          5
+        ]
+      },
+      {
+        "genome": 1,
+        "columns": [
+          5
+        ]
+      }
+    ]
+  },
+  "exists": true,
+  "folderName": null,
+  "recipePath": "rounds/nursery/brain2-w5.json",
+  "recipeExists": true,
+  "folderShort": "scratch/nursery/alpha"
+}

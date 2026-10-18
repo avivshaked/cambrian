@@ -1,5 +1,5 @@
-// The earth under a shaped bed, seen through the glass (the owner, 2026-09-24: "everything under
-// the ground [is] full of earth, rather than more water").
+// The earth under a shaped bed, seen through the glass (the owner asked on 2026-09-24 that what lies under
+// the ground be full of earth rather than more water).
 //
 // A ring wall just inside the glass from the bed's height at the rim down past the box's floor,
 // built by TheatreSkin.BuildEarth: from outside, the cut face of the sediment the beach and the
@@ -155,9 +155,13 @@ Shader "Evosim/Theatre Earth"
                 // Darker with depth under the top.
                 albedo *= lerp(1.0, 0.55, saturate(below / _DarkenMetres));
 
+                // The light left at this depth on the run's day under the underwater look's item
+                // 3 (EvoDepthLight); one otherwise.
+                float3 depthLight = EvoDepthLight(p);
+
                 Light main = GetMainLight();
-                float3 lit = albedo * main.color * Wrapped(n, main.direction);
-                lit += albedo * SampleSH(n);
+                float3 lit = albedo * main.color * depthLight * Wrapped(n, main.direction);
+                lit += albedo * SampleSH(n) * depthLight;
                 lit += albedo * _Ambient;
 
                 lit = EvoMixFog(lit, input.fogFactor, p);

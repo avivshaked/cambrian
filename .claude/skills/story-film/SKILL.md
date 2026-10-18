@@ -42,7 +42,7 @@ changes nothing.
    - **owner**: the owner rules. Lead with "I am blocked on ... from you", give them the full path of
      the file `next` wrote under `scratch/owner/`, and set out the decision in full, copying any
      choices from that file as they stand. Save their reply whole and word for word to a file in the
-     story's folder, through the shell, and run
+     story's folder, and run
      `story-flow.py owner <folder> <stage> <that file> --verdict <the verdict they gave>`. A reply
      with no verdict gets a question back, never a guess.
    - **wait**: nothing to do until what it names has happened.
@@ -80,8 +80,8 @@ owner's timeline review, the glossary rows (`story-flow.py glossary <folder>`), 
 
 - A heavy job (a render, a narration job, a farm run) never starts beside another. Read the
   machine first, under HANDOFF's current ruling.
-- A subagent waits on nothing. The writer and the editor write their own files through the shell (a
-  heredoc or a Python write, never the Write or Edit tools), and only inside the story's folder.
+- A subagent waits on nothing. The writer and the editor write their own files, and only inside the
+  story's folder.
   The readers write nothing.
 - Every owner review is a blocking ruling: lead with "I am blocked on ... from you", set the
   decision out in full, and keep working on what is not gated.
