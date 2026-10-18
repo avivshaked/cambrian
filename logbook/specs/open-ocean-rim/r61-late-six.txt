@@ -1,0 +1,1126 @@
+====================================================================================================
+run r61-p6101x2 | 2026-10-17-195204-119d0f30 | configHash 119d0f3001f59ecc | window first row to last row | report every 6000 s
+tank r=167 m (8.8e+04 m2), 25 m deep, 4 ring(s) | R 167.37 m; axis (167.37, 167.37); seed 6101; run.json: ended (budget reached) at 72000 s
+fields: 134 stamps (58700 to 72000 s); bed 335 x 335, floor depth terciles 19.6 / 30.4 m
+
+-- profile at t = 60000 s: 7954 bodies; fields stamp 60000 (+0 s)
+  band m     area   bodies     x    matter     x     snow     x   [x = share / area share; area5 = matter grid]
+       0-5    0.059    0.021   0.35    0.041   0.68    0.029   0.50   area5 0.060
+      5-15    0.112    0.068   0.61    0.080   0.73    0.070   0.62   area5 0.110
+     15-30    0.155    0.161   1.03    0.138   0.88    0.135   0.87   area5 0.157
+     30-60    0.262    0.334   1.27    0.358   1.37    0.299   1.14   area5 0.261
+       >60    0.412    0.417   1.01    0.383   0.93    0.467   1.13   area5 0.413
+  by compass sector: stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  +x               0.07(    4)   0.01(    1)   0.02(    3)   0.11(   29)   0.28(  114)   bodies
+                          0.51          0.57          0.63          0.74          0.69   matter
+                          0.27          0.24          0.24          0.34          0.50   snow
+  +x+z             0.19(   11)   0.19(   21)   0.19(   29)   0.22(   56)   0.33(  135)   bodies
+                          0.22          0.23          0.25          0.25          0.43   matter
+                          0.36          0.35          0.33          0.32          0.52   snow
+  +z               0.38(   22)   1.20(  134)   2.33(  360)   2.48(  645)   1.06(  434)   bodies
+                          0.08          0.06          0.10          0.59          0.35   matter
+                          0.49          0.70          1.06          1.38          1.17   snow
+  -x+z             0.12(    7)   0.21(   23)   0.46(   71)   1.22(  318)   1.38(  566)   bodies
+                          0.07          0.09          0.12          0.65          1.10   matter
+                          0.28          0.36          0.54          0.94          1.44   snow
+  -x               0.72(   42)   1.33(  148)   1.72(  265)   2.51(  653)   2.11(  863)   bodies
+                          0.18          0.23          0.43          0.71          0.59   matter
+                          0.68          0.94          1.47          1.89          1.89   snow
+  -x-z             0.24(   14)   0.39(   43)   1.45(  224)   1.49(  388)   0.43(  175)   bodies
+                          0.69          0.74          0.69          1.12          1.63   matter
+                          0.59          0.70          1.16          1.54          1.27   snow
+  -z               0.20(   12)   0.27(   30)   0.52(   80)   0.60(  156)   1.27(  519)   bodies
+                          1.52          1.52          1.47          1.93          1.27   matter
+                          0.58          0.64          0.76          1.05          1.21   snow
+  +x-z             0.89(   52)   1.27(  142)   1.60(  246)   1.57(  411)   1.24(  508)   bodies
+                          2.17          2.38          3.42          4.99          1.37   matter
+                          0.77          1.04          1.41          1.67          1.08   snow
+  by floor depth under the column (terciles of the floor area: shallow < 19.6 m, middle < 30.4 m, deep above): stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  shallow          0.31(   60)   0.76(  280)   1.30(  643)   1.81( 1438)   1.27( 1019)   bodies
+                          0.12          0.12          0.15          0.54          0.75   matter
+                          0.44          0.58          0.85          1.19          1.33   snow
+  middle           0.32(   27)   0.41(   65)   0.85(  207)   1.01(  497)   0.79( 1318)   bodies
+                          0.34          0.41          0.54          0.69          0.77   matter
+                          0.51          0.63          0.87          1.04          1.03   snow
+  deep             0.40(   77)   0.54(  197)   0.86(  428)   0.91(  721)   1.22(  977)   bodies
+                          1.38          1.48          1.77          2.63          1.43   matter
+                          0.56          0.66          0.88          1.16          1.16   snow
+  by kind of body (flags overlap; share of that kind in the band / area share of the band)
+                       0-5      5-15     15-30     30-60       >60      n
+  absorptive          0.31      0.71      0.94      1.24      1.05    993
+  jointed             0.25      0.33      1.26      1.40      0.94    537
+  photosynthetic      0.35      0.61      1.03      1.28      1.01   7939
+  none of three       0.00      0.00      0.00      0.00      2.43      1
+
+-- profile at t = 66000 s: 8413 bodies; fields stamp 66000 (+0 s)
+  band m     area   bodies     x    matter     x     snow     x   [x = share / area share; area5 = matter grid]
+       0-5    0.059    0.024   0.41    0.038   0.64    0.030   0.51   area5 0.060
+      5-15    0.112    0.075   0.67    0.073   0.66    0.069   0.61   area5 0.110
+     15-30    0.155    0.169   1.09    0.123   0.79    0.136   0.88   area5 0.157
+     30-60    0.262    0.340   1.30    0.359   1.38    0.317   1.21   area5 0.261
+       >60    0.412    0.392   0.95    0.407   0.99    0.449   1.09   area5 0.413
+  by compass sector: stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  +x               0.02(    1)   0.03(    3)   0.02(    4)   0.05(   15)   0.12(   52)   bodies
+                          0.47          0.66          0.67          0.80          0.78   matter
+                          0.14          0.15          0.17          0.23          0.35   snow
+  +x+z             0.23(   14)   0.37(   44)   0.52(   85)   0.45(  125)   0.30(  132)   bodies
+                          0.24          0.26          0.26          0.34          0.54   matter
+                          0.41          0.44          0.49          0.52          0.58   snow
+  +z               0.63(   39)   1.20(  142)   1.81(  296)   1.85(  510)   0.86(  371)   bodies
+                          0.08          0.08          0.11          0.70          0.44   matter
+                          0.60          0.79          1.11          1.35          1.08   snow
+  -x+z             0.21(   13)   0.22(   26)   0.47(   76)   1.09(  301)   1.36(  586)   bodies
+                          0.08          0.12          0.15          0.60          1.07   matter
+                          0.27          0.35          0.55          1.06          1.47   snow
+  -x               0.77(   48)   1.30(  153)   2.30(  375)   2.80(  771)   2.35( 1016)   bodies
+                          0.28          0.23          0.44          0.73          0.61   matter
+                          0.80          0.98          1.50          2.12          1.89   snow
+  -x-z             0.11(    7)   0.41(   48)   1.68(  275)   1.75(  483)   0.41(  179)   bodies
+                          0.78          0.77          0.72          1.12          1.62   matter
+                          0.45          0.61          1.21          1.67          1.10   snow
+  -z               0.21(   13)   0.30(   35)   0.51(   84)   0.81(  223)   1.29(  560)   bodies
+                          1.07          1.12          1.34          1.90          1.24   matter
+                          0.37          0.43          0.65          1.08          1.25   snow
+  +x-z             1.06(   66)   1.55(  183)   1.39(  226)   1.58(  435)   0.92(  398)   bodies
+                          2.11          2.05          2.64          4.80          1.57   matter
+                          0.99          1.15          1.34          1.63          1.00   snow
+  by floor depth under the column (terciles of the floor area: shallow < 19.6 m, middle < 30.4 m, deep above): stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  shallow          0.51(  103)   0.81(  315)   1.44(  758)   1.68( 1414)   1.07(  906)   bodies
+                          0.13          0.14          0.15          0.56          0.84   matter
+                          0.53          0.66          0.93          1.32          1.39   snow
+  middle           0.18(   16)   0.49(   82)   0.89(  230)   1.24(  646)   0.86( 1530)   bodies
+                          0.40          0.41          0.55          0.66          0.78   matter
+                          0.44          0.54          0.86          1.13          0.93   snow
+  deep             0.40(   82)   0.61(  237)   0.83(  433)   0.96(  803)   1.01(  858)   bodies
+                          1.25          1.30          1.53          2.62          1.57   matter
+                          0.51          0.59          0.83          1.15          1.13   snow
+  by kind of body (flags overlap; share of that kind in the band / area share of the band)
+                       0-5      5-15     15-30     30-60       >60      n
+  absorptive          0.56      0.95      0.97      1.10      1.02   1057
+  jointed             0.17      0.23      1.22      1.89      0.68    307
+  photosynthetic      0.41      0.67      1.09      1.30      0.95   8397
+  none of three          -         -         -         -         -      0
+
+-- profile at t = 72000 s: 8135 bodies; fields stamp 72000 (+0 s)
+  band m     area   bodies     x    matter     x     snow     x   [x = share / area share; area5 = matter grid]
+       0-5    0.059    0.025   0.43    0.047   0.79    0.036   0.62   area5 0.060
+      5-15    0.112    0.070   0.62    0.092   0.83    0.081   0.73   area5 0.110
+     15-30    0.155    0.182   1.17    0.153   0.98    0.145   0.93   area5 0.157
+     30-60    0.262    0.335   1.28    0.339   1.30    0.295   1.13   area5 0.261
+       >60    0.412    0.388   0.94    0.368   0.89    0.442   1.08   area5 0.413
+  by compass sector: stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  +x               0.00(    0)   0.01(    1)   0.03(    4)   0.05(   13)   0.10(   43)   bodies
+                          0.74          0.79          0.72          0.68          0.69   matter
+                          0.34          0.31          0.24          0.24          0.38   snow
+  +x+z             0.74(   44)   0.46(   53)   0.61(   97)   0.28(   74)   0.24(   99)   bodies
+                          0.26          0.29          0.30          0.29          0.48   matter
+                          0.72          0.72          0.65          0.45          0.52   snow
+  +z               0.72(   43)   1.19(  136)   2.20(  348)   2.11(  563)   0.86(  359)   bodies
+                          0.09          0.08          0.08          0.52          0.39   matter
+                          0.66          0.89          1.18          1.34          1.02   snow
+  -x+z             0.22(   13)   0.17(   19)   0.36(   57)   1.31(  349)   1.55(  649)   bodies
+                          0.07          0.09          0.14          0.54          0.93   matter
+                          0.28          0.36          0.53          0.96          1.42   snow
+  -x               0.95(   57)   1.48(  169)   2.65(  419)   2.94(  783)   2.17(  910)   bodies
+                          0.29          0.31          0.36          0.72          0.52   matter
+                          0.88          1.11          1.59          1.99          1.81   snow
+  -x-z             0.24(   14)   0.54(   62)   1.36(  215)   1.48(  394)   0.39(  164)   bodies
+                          0.85          0.87          1.00          1.23          1.43   matter
+                          0.73          0.86          1.29          1.60          1.14   snow
+  -z               0.20(   12)   0.19(   22)   0.57(   90)   0.50(  132)   1.07(  450)   bodies
+                          1.60          1.60          1.58          1.96          1.36   matter
+                          0.55          0.62          0.75          1.00          1.23   snow
+  +x-z             0.37(   22)   0.94(  107)   1.59(  251)   1.55(  414)   1.16(  484)   bodies
+                          2.46          2.66          3.73          4.45          1.33   matter
+                          0.76          0.92          1.24          1.43          1.09   snow
+  by floor depth under the column (terciles of the floor area: shallow < 19.6 m, middle < 30.4 m, deep above): stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  shallow          0.66(  130)   0.82(  310)   1.59(  809)   1.81( 1474)   1.21(  992)   bodies
+                          0.13          0.15          0.13          0.47          0.65   matter
+                          0.61          0.76          0.99          1.22          1.27   snow
+  middle           0.45(   38)   0.70(  113)   1.01(  253)   1.13(  569)   0.74( 1259)   bodies
+                          0.47          0.51          0.65          0.76          0.78   matter
+                          0.71          0.79          1.00          1.12          0.96   snow
+  deep             0.19(   37)   0.39(  146)   0.83(  419)   0.84(  679)   1.11(  907)   bodies
+                          1.59          1.67          1.98          2.45          1.38   matter
+                          0.58          0.66          0.85          1.04          1.13   snow
+  by kind of body (flags overlap; share of that kind in the band / area share of the band)
+                       0-5      5-15     15-30     30-60       >60      n
+  absorptive          0.35      0.65      1.24      1.48      0.79    820
+  jointed             0.26      1.14      1.80      1.51      0.43    257
+  photosynthetic      0.43      0.62      1.17      1.28      0.94   8119
+  none of three       0.00      0.00      3.22      0.00      1.21      2
+
+-- read 1336 rows, t = 58650.0 to 72000.0, 11158432 body-rows, 14.9 s; sampling step 10.0 s
+
+== dwell in the outer 15 m (0-15 m from the glass): seconds from entering to leaving it or to the sample it was gone from
+   window (entry)      entered  left  died  cens |  finished: median     q1     q3 | Kaplan-Meier: median     q1     q3
+   54000-60000*           1103   512   591     0 |               420    160   1030 |                  420    160   1030
+   60000-66000            7409  3987  3422     0 |               350    140    810 |                  350    140    810
+   66000-72000            8036  3960  3439   637 |               340    130    750 |                  370    150    820
+   all windows           16548  8459  7452   637 |               340    140    790 |                  360    150    830
+
+== dwell in the control band, 30-48.7 m from the glass, the same floor area: seconds from entering to leaving it or to the sample it was gone from
+   window (entry)      entered  left  died  cens |  finished: median     q1     q3 | Kaplan-Meier: median     q1     q3
+   54000-60000*           5203  4144  1059     0 |               140     60    280 |                  140     60    280
+   60000-66000           26474 20843  5631     0 |               140     60    290 |                  140     60    290
+   66000-72000           26704 20701  4958  1045 |               140     60    270 |                  140     60    290
+   all windows           58381 45688 11648  1045 |               140     60    280 |                  140     60    290
+
+== radial speeds, m/s, positive away from the centre (toward the glass): between consecutive samples, by band of the step's mid radius
+   window (ending)    band            steps     mean      sd   mean|v|
+   54000-60000*       0-5              17044   0.0016  0.0126    0.0073
+   54000-60000*       5-15             53393   0.0049  0.0314    0.0188
+   54000-60000*       15-30           153042   0.0082  0.0513    0.0308
+   54000-60000*       30-60           353788  -0.0024  0.1010    0.0551
+   54000-60000*       >60             453505  -0.0025  0.1513    0.0970
+   54000-60000*       0-15 (rim)       70437   0.0041  0.0281    0.0161
+   54000-60000*       30-48.7 (ctl)   234236  -0.0002  0.0846    0.0472
+   60000-66000        0-5             152874   0.0013  0.0133    0.0078
+   60000-66000        5-15            414011   0.0040  0.0330    0.0193
+   60000-66000        15-30           876920   0.0069  0.0566    0.0332
+   60000-66000        30-60          1663352  -0.0027  0.1016    0.0576
+   60000-66000        >60            1905248  -0.0013  0.1412    0.0947
+   60000-66000        0-15 (rim)      566885   0.0033  0.0291    0.0162
+   60000-66000        30-48.7 (ctl)  1109575  -0.0005  0.0913    0.0519
+   66000-72000        0-5             166167   0.0014  0.0144    0.0085
+   66000-72000        5-15            445285   0.0042  0.0344    0.0196
+   66000-72000        15-30           904505   0.0076  0.0559    0.0332
+   66000-72000        30-60          1631907  -0.0022  0.1067    0.0601
+   66000-72000        >60            1862318  -0.0016  0.1430    0.0950
+   66000-72000        0-15 (rim)      611452   0.0035  0.0303    0.0166
+   66000-72000        30-48.7 (ctl)  1081446   0.0004  0.0967    0.0544
+   (* = the window opens before the first row read, so it is partial)
+====================================================================================================
+run r61-c6101x2 | 2026-10-17-195204-701d6224 | configHash 701d6224c27ce74c | window first row to last row | report every 6000 s
+tank r=167 m (8.8e+04 m2), 25 m deep, 4 ring(s) | R 167.37 m; axis (167.37, 167.37); seed 6101; run.json: ended (budget reached) at 72000 s
+fields: 151 stamps (57000 to 72000 s); bed 335 x 335, floor depth terciles 19.6 / 30.4 m
+
+-- profile at t = 60000 s: 11034 bodies; fields stamp 60000 (+0 s)
+  band m     area   bodies     x    matter     x     snow     x   [x = share / area share; area5 = matter grid]
+       0-5    0.059    0.012   0.20    0.039   0.65    0.030   0.51   area5 0.060
+      5-15    0.112    0.050   0.45    0.076   0.69    0.073   0.65   area5 0.110
+     15-30    0.155    0.129   0.83    0.138   0.88    0.142   0.91   area5 0.157
+     30-60    0.262    0.334   1.27    0.375   1.44    0.305   1.16   area5 0.261
+       >60    0.412    0.475   1.15    0.372   0.90    0.450   1.09   area5 0.413
+  by compass sector: stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  +x               0.01(    1)   0.00(    0)   0.02(    4)   0.03(   10)   0.17(   98)   bodies
+                          0.47          0.54          0.64          0.79          0.68   matter
+                          0.28          0.25          0.25          0.37          0.54   snow
+  +x+z             0.16(   13)   0.13(   20)   0.17(   37)   0.14(   52)   0.21(  122)   bodies
+                          0.20          0.22          0.22          0.24          0.43   matter
+                          0.39          0.37          0.34          0.31          0.53   snow
+  +z               0.26(   21)   0.94(  145)   1.75(  375)   2.41(  871)   1.00(  570)   bodies
+                          0.09          0.07          0.12          0.64          0.35   matter
+                          0.54          0.70          1.02          1.37          1.12   snow
+  -x+z             0.14(   11)   0.33(   51)   0.52(  112)   2.11(  765)   2.62( 1484)   bodies
+                          0.06          0.07          0.11          0.69          1.09   matter
+                          0.29          0.37          0.53          0.85          1.30   snow
+  -x               0.48(   39)   0.91(  140)   1.54(  329)   2.67(  965)   3.20( 1818)   bodies
+                          0.25          0.22          0.44          0.78          0.59   matter
+                          0.60          0.88          1.32          1.61          1.58   snow
+  -x-z             0.11(    9)   0.37(   58)   1.40(  299)   1.39(  501)   0.39(  219)   bodies
+                          0.58          0.62          0.69          1.02          1.47   matter
+                          0.61          0.78          1.34          1.61          1.17   snow
+  -z               0.10(    8)   0.14(   21)   0.27(   58)   0.40(  145)   0.89(  503)   bodies
+                          1.52          1.46          1.42          1.90          1.23   matter
+                          0.63          0.72          0.86          1.15          1.30   snow
+  +x-z             0.38(   31)   0.76(  118)   0.99(  212)   1.04(  375)   0.75(  424)   bodies
+                          2.07          2.28          3.49          5.41          1.38   matter
+                          0.79          1.16          1.66          2.02          1.21   snow
+  by floor depth under the column (terciles of the floor area: shallow < 19.6 m, middle < 30.4 m, deep above): stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  shallow          0.23(   62)   0.59(  300)   1.06(  731)   2.10( 2314)   2.44( 2709)   bodies
+                          0.12          0.11          0.15          0.58          0.74   matter
+                          0.44          0.57          0.81          1.10          1.17   snow
+  middle           0.24(   28)   0.38(   83)   0.91(  308)   1.00(  685)   0.72( 1674)   bodies
+                          0.36          0.40          0.54          0.70          0.73   matter
+                          0.52          0.65          0.92          0.98          0.98   snow
+  deep             0.16(   43)   0.33(  170)   0.56(  387)   0.62(  685)   0.77(  855)   bodies
+                          1.30          1.39          1.78          2.74          1.42   matter
+                          0.59          0.73          1.02          1.33          1.26   snow
+  by kind of body (flags overlap; share of that kind in the band / area share of the band)
+                       0-5      5-15     15-30     30-60       >60      n
+  absorptive          0.08      0.22      0.64      1.49      1.17   1720
+  jointed             0.16      0.48      1.50      1.78      0.57    317
+  photosynthetic      0.22      0.48      0.87      1.26      1.13   9929
+  none of three          -         -         -         -         -      0
+
+-- profile at t = 66000 s: 11990 bodies; fields stamp 66000 (+0 s)
+  band m     area   bodies     x    matter     x     snow     x   [x = share / area share; area5 = matter grid]
+       0-5    0.059    0.016   0.27    0.038   0.64    0.032   0.55   area5 0.060
+      5-15    0.112    0.049   0.44    0.073   0.67    0.074   0.66   area5 0.110
+     15-30    0.155    0.133   0.85    0.129   0.82    0.143   0.92   area5 0.157
+     30-60    0.262    0.349   1.33    0.367   1.41    0.316   1.21   area5 0.261
+       >60    0.412    0.454   1.10    0.393   0.95    0.435   1.06   area5 0.413
+  by compass sector: stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  +x               0.00(    0)   0.00(    0)   0.03(    8)   0.03(   10)   0.07(   41)   bodies
+                          0.47          0.56          0.60          0.73          0.73   matter
+                          0.15          0.15          0.18          0.26          0.40   snow
+  +x+z             0.18(   16)   0.22(   37)   0.40(   94)   0.27(  104)   0.28(  171)   bodies
+                          0.26          0.29          0.28          0.34          0.55   matter
+                          0.43          0.45          0.49          0.50          0.56   snow
+  +z               0.45(   40)   0.92(  155)   1.67(  388)   2.25(  882)   0.92(  565)   bodies
+                          0.09          0.08          0.11          0.81          0.47   matter
+                          0.66          0.79          1.02          1.18          0.97   snow
+  -x+z             0.18(   16)   0.23(   38)   0.46(  108)   2.02(  794)   2.44( 1502)   bodies
+                          0.06          0.11          0.15          0.65          1.16   matter
+                          0.31          0.39          0.59          0.92          1.25   snow
+  -x               0.32(   28)   0.66(  111)   1.71(  397)   3.18( 1248)   3.23( 1995)   bodies
+                          0.28          0.27          0.49          0.71          0.63   matter
+                          0.73          0.90          1.34          1.87          1.61   snow
+  -x-z             0.05(    4)   0.33(   55)   1.27(  296)   1.33(  524)   0.34(  207)   bodies
+                          0.70          0.70          0.68          1.18          1.45   matter
+                          0.50          0.71          1.41          1.71          1.12   snow
+  -z               0.07(    6)   0.15(   26)   0.34(   80)   0.51(  202)   0.87(  534)   bodies
+                          1.01          1.04          1.38          1.94          1.23   matter
+                          0.44          0.50          0.75          1.24          1.39   snow
+  +x-z             0.92(   81)   0.97(  164)   0.94(  218)   1.07(  422)   0.69(  423)   bodies
+                          2.19          2.28          2.96          4.87          1.39   matter
+                          1.15          1.36          1.60          1.97          1.17   snow
+  by floor depth under the column (terciles of the floor area: shallow < 19.6 m, middle < 30.4 m, deep above): stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  shallow          0.31(   89)   0.54(  297)   1.16(  868)   2.16( 2590)   2.26( 2719)   bodies
+                          0.14          0.15          0.17          0.61          0.88   matter
+                          0.54          0.65          0.87          1.15          1.13   snow
+  middle           0.12(   15)   0.36(   86)   0.77(  284)   1.13(  845)   0.74( 1873)   bodies
+                          0.42          0.43          0.54          0.64          0.76   matter
+                          0.47          0.59          0.92          1.08          0.92   snow
+  deep             0.30(   87)   0.37(  203)   0.59(  437)   0.63(  751)   0.70(  846)   bodies
+                          1.22          1.29          1.61          2.66          1.43   matter
+                          0.59          0.69          0.97          1.34          1.27   snow
+  by kind of body (flags overlap; share of that kind in the band / area share of the band)
+                       0-5      5-15     15-30     30-60       >60      n
+  absorptive          0.09      0.25      0.59      1.42      1.23   1908
+  jointed             0.59      0.72      1.11      1.40      0.84     87
+  photosynthetic      0.30      0.47      0.91      1.32      1.08  10557
+  none of three       0.00      0.00      0.00      0.00      2.43      1
+
+-- profile at t = 72000 s: 10373 bodies; fields stamp 72000 (+0 s)
+  band m     area   bodies     x    matter     x     snow     x   [x = share / area share; area5 = matter grid]
+       0-5    0.059    0.020   0.33    0.044   0.73    0.037   0.64   area5 0.060
+      5-15    0.112    0.062   0.55    0.086   0.78    0.083   0.74   area5 0.110
+     15-30    0.155    0.168   1.08    0.152   0.97    0.148   0.95   area5 0.157
+     30-60    0.262    0.340   1.30    0.351   1.35    0.294   1.12   area5 0.261
+       >60    0.412    0.411   1.00    0.368   0.89    0.437   1.06   area5 0.413
+  by compass sector: stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  +x               0.00(    0)   0.01(    1)   0.01(    2)   0.01(    3)   0.07(   38)   bodies
+                          0.69          0.74          0.63          0.58          0.64   matter
+                          0.36          0.32          0.25          0.26          0.42   snow
+  +x+z             0.58(   44)   0.47(   68)   0.61(  124)   0.22(   74)   0.17(   93)   bodies
+                          0.20          0.23          0.21          0.25          0.45   matter
+                          0.71          0.69          0.63          0.45          0.52   snow
+  +z               0.97(   74)   1.40(  204)   2.10(  423)   2.52(  856)   0.90(  482)   bodies
+                          0.07          0.07          0.09          0.63          0.37   matter
+                          0.69          0.83          1.03          1.18          1.03   snow
+  -x+z             0.14(   11)   0.21(   31)   0.66(  132)   1.84(  627)   2.27( 1211)   bodies
+                          0.06          0.09          0.10          0.56          0.92   matter
+                          0.29          0.39          0.59          0.91          1.24   snow
+  -x               0.35(   27)   0.98(  143)   2.22(  447)   2.94(  999)   2.56( 1368)   bodies
+                          0.25          0.24          0.41          0.76          0.58   matter
+                          0.70          0.95          1.42          1.81          1.55   snow
+  -x-z             0.16(   12)   0.49(   72)   1.34(  269)   1.34(  455)   0.32(  170)   bodies
+                          0.83          0.85          1.00          1.35          1.34   matter
+                          0.76          0.94          1.38          1.53          1.11   snow
+  -z               0.16(   12)   0.14(   20)   0.36(   73)   0.41(  140)   0.83(  443)   bodies
+                          1.40          1.46          1.63          2.00          1.43   matter
+                          0.70          0.77          0.89          1.17          1.35   snow
+  +x-z             0.31(   24)   0.72(  105)   1.35(  272)   1.08(  368)   0.86(  456)   bodies
+                          2.35          2.55          3.76          4.60          1.41   matter
+                          0.89          1.07          1.45          1.66          1.27   snow
+  by floor depth under the column (terciles of the floor area: shallow < 19.6 m, middle < 30.4 m, deep above): stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  shallow          0.56(  140)   0.82(  393)   1.51(  975)   2.11( 2188)   1.97( 2058)   bodies
+                          0.11          0.12          0.12          0.52          0.65   matter
+                          0.58          0.71          0.91          1.12          1.13   snow
+  middle           0.24(   26)   0.44(   91)   1.00(  317)   1.13(  727)   0.62( 1352)   bodies
+                          0.42          0.45          0.60          0.80          0.74   matter
+                          0.65          0.76          0.97          1.02          0.93   snow
+  deep             0.15(   38)   0.33(  160)   0.70(  450)   0.59(  607)   0.81(  851)   bodies
+                          1.48          1.58          1.99          2.50          1.45   matter
+                          0.68          0.77          0.99          1.19          1.28   snow
+  by kind of body (flags overlap; share of that kind in the band / area share of the band)
+                       0-5      5-15     15-30     30-60       >60      n
+  absorptive          0.16      0.38      0.97      1.49      0.99   1600
+  jointed             0.09      0.55      1.22      0.85      1.26    179
+  photosynthetic      0.36      0.57      1.09      1.26      1.01   9178
+  none of three       0.00      8.91      0.00      0.00      0.00      1
+
+-- read 1504 rows, t = 56970.0 to 72000.0, 17789144 body-rows, 34.1 s; sampling step 10.0 s
+
+== dwell in the outer 15 m (0-15 m from the glass): seconds from entering to leaving it or to the sample it was gone from
+   window (entry)      entered  left  died  cens |  finished: median     q1     q3 | Kaplan-Meier: median     q1     q3
+   54000-60000*           2568  1407  1161     0 |               330    140    820 |                  330    140    820
+   60000-66000            7488  4113  3375     0 |               360    140    880 |                  360    140    880
+   66000-72000            8807  4523  3597   687 |               330    130    750 |                  360    150    830
+   all windows           18863 10043  8133   687 |               340    140    810 |                  360    140    850
+
+== dwell in the control band, 30-48.7 m from the glass, the same floor area: seconds from entering to leaving it or to the sample it was gone from
+   window (entry)      entered  left  died  cens |  finished: median     q1     q3 | Kaplan-Meier: median     q1     q3
+   54000-60000*          17013 14028  2985     0 |               140     60    270 |                  140     60    270
+   60000-66000           35484 28871  6613     0 |               150     70    290 |                  150     70    290
+   66000-72000           37986 30194  6493  1299 |               140     70    270 |                  150     70    290
+   all windows           90483 73093 16091  1299 |               140     60    280 |                  150     70    290
+
+== radial speeds, m/s, positive away from the centre (toward the glass): between consecutive samples, by band of the step's mid radius
+   window (ending)    band            steps     mean      sd   mean|v|
+   54000-60000*       0-5              45575   0.0007  0.0117    0.0069
+   54000-60000*       5-15            151670   0.0020  0.0327    0.0178
+   54000-60000*       15-30           436987   0.0036  0.0532    0.0302
+   54000-60000*       30-60          1176923  -0.0048  0.1064    0.0553
+   54000-60000*       >60            1669294  -0.0051  0.1342    0.0772
+   54000-60000*       0-15 (rim)      197245   0.0017  0.0292    0.0153
+   54000-60000*       30-48.7 (ctl)   725462  -0.0033  0.0940    0.0491
+   60000-66000        0-5             152221   0.0014  0.0118    0.0072
+   60000-66000        5-15            423651   0.0042  0.0318    0.0183
+   60000-66000        15-30           995076   0.0064  0.0559    0.0322
+   60000-66000        30-60          2421938  -0.0018  0.0969    0.0537
+   60000-66000        >60            3218528  -0.0016  0.1250    0.0738
+   60000-66000        0-15 (rim)      575872   0.0034  0.0280    0.0154
+   60000-66000        30-48.7 (ctl)  1532426  -0.0002  0.0865    0.0482
+   66000-72000        0-5             174947   0.0014  0.0122    0.0072
+   66000-72000        5-15            514432   0.0039  0.0333    0.0181
+   66000-72000        15-30          1114094   0.0066  0.0547    0.0321
+   66000-72000        30-60          2369104  -0.0010  0.1039    0.0574
+   66000-72000        >60            2788438  -0.0015  0.1314    0.0781
+   66000-72000        0-15 (rim)      689379   0.0033  0.0294    0.0153
+   66000-72000        30-48.7 (ctl)  1517262   0.0008  0.0934    0.0520
+   (* = the window opens before the first row read, so it is partial)
+====================================================================================================
+run r61-p6102x2 | 2026-10-17-195204-119d0f30 | configHash 119d0f3001f59ecc | window first row to last row | report every 6000 s
+tank r=167 m (8.8e+04 m2), 25 m deep, 4 ring(s) | R 167.37 m; axis (167.37, 167.37); seed 6102; run.json: ended (budget reached) at 72000 s
+fields: 129 stamps (59200 to 72000 s); bed 335 x 335, floor depth terciles 19.6 / 30.4 m
+
+-- profile at t = 60000 s: 9984 bodies; fields stamp 60000 (+0 s)
+  band m     area   bodies     x    matter     x     snow     x   [x = share / area share; area5 = matter grid]
+       0-5    0.059    0.016   0.28    0.040   0.66    0.027   0.47   area5 0.060
+      5-15    0.112    0.072   0.64    0.076   0.69    0.069   0.61   area5 0.110
+     15-30    0.155    0.154   0.99    0.138   0.88    0.136   0.87   area5 0.157
+     30-60    0.262    0.343   1.31    0.377   1.45    0.307   1.17   area5 0.261
+       >60    0.412    0.415   1.01    0.370   0.90    0.461   1.12   area5 0.413
+  by compass sector: stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  +x               0.04(    3)   0.05(    7)   0.04(    7)   0.15(   49)   0.31(  157)   bodies
+                          0.51          0.56          0.65          0.74          0.69   matter
+                          0.28          0.24          0.24          0.36          0.50   snow
+  +x+z             0.12(    9)   0.16(   22)   0.15(   30)   0.19(   61)   0.26(  133)   bodies
+                          0.20          0.21          0.22          0.25          0.44   matter
+                          0.34          0.33          0.30          0.30          0.50   snow
+  +z               0.38(   28)   1.21(  169)   1.92(  373)   2.31(  756)   1.00(  514)   bodies
+                          0.07          0.06          0.09          0.56          0.36   matter
+                          0.46          0.66          1.00          1.42          1.17   snow
+  -x+z             0.10(    7)   0.20(   28)   0.31(   60)   1.20(  392)   1.43(  734)   bodies
+                          0.05          0.08          0.11          0.65          1.00   matter
+                          0.21          0.31          0.49          0.95          1.45   snow
+  -x               0.26(   19)   0.84(  117)   1.45(  280)   2.41(  787)   1.89(  972)   bodies
+                          0.20          0.22          0.45          0.78          0.57   matter
+                          0.47          0.78          1.36          1.85          1.85   snow
+  -x-z             0.04(    3)   0.36(   50)   1.58(  306)   1.53(  499)   0.41(  212)   bodies
+                          0.59          0.62          0.68          1.08          1.48   matter
+                          0.49          0.66          1.23          1.59          1.21   snow
+  -z               0.38(   28)   0.60(   84)   0.63(  122)   0.79(  257)   1.47(  754)   bodies
+                          1.46          1.42          1.39          1.95          1.20   matter
+                          0.68          0.74          0.82          1.04          1.20   snow
+  +x-z             0.88(   65)   1.71(  239)   1.87(  362)   1.90(  622)   1.30(  667)   bodies
+                          2.23          2.32          3.52          5.53          1.42   matter
+                          0.81          1.16          1.56          1.86          1.09   snow
+  by floor depth under the column (terciles of the floor area: shallow < 19.6 m, middle < 30.4 m, deep above): stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  shallow          0.22(   52)   0.61(  282)   1.03(  639)   1.68( 1678)   1.27( 1270)   bodies
+                          0.11          0.11          0.13          0.54          0.70   matter
+                          0.36          0.51          0.77          1.18          1.33   snow
+  middle           0.13(   14)   0.43(   84)   0.90(  275)   1.13(  700)   0.73( 1527)   bodies
+                          0.33          0.38          0.55          0.67          0.74   matter
+                          0.42          0.58          0.90          1.05          1.00   snow
+  deep             0.40(   96)   0.76(  350)   1.01(  626)   1.05( 1045)   1.34( 1346)   bodies
+                          1.36          1.40          1.78          2.82          1.43   matter
+                          0.59          0.73          0.96          1.23          1.16   snow
+  by kind of body (flags overlap; share of that kind in the band / area share of the band)
+                       0-5      5-15     15-30     30-60       >60      n
+  absorptive          0.42      0.44      0.79      0.98      1.33    163
+  jointed             0.00      0.00      0.00      1.76      1.31     13
+  photosynthetic      0.28      0.64      0.99      1.31      1.01   9970
+  none of three       0.00      0.00      0.00      2.86      0.61      4
+
+-- profile at t = 66000 s: 9952 bodies; fields stamp 66000 (+0 s)
+  band m     area   bodies     x    matter     x     snow     x   [x = share / area share; area5 = matter grid]
+       0-5    0.059    0.023   0.40    0.041   0.69    0.031   0.52   area5 0.060
+      5-15    0.112    0.068   0.61    0.079   0.72    0.070   0.63   area5 0.110
+     15-30    0.155    0.158   1.02    0.128   0.82    0.136   0.88   area5 0.157
+     30-60    0.262    0.359   1.37    0.360   1.38    0.317   1.21   area5 0.261
+       >60    0.412    0.392   0.95    0.392   0.95    0.445   1.08   area5 0.413
+  by compass sector: stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  +x               0.03(    2)   0.11(   16)   0.05(    9)   0.04(   12)   0.10(   52)   bodies
+                          0.66          0.86          0.84          0.83          0.83   matter
+                          0.16          0.16          0.18          0.24          0.37   snow
+  +x+z             0.22(   16)   0.28(   39)   0.41(   79)   0.37(  122)   0.29(  146)   bodies
+                          0.24          0.26          0.26          0.31          0.52   matter
+                          0.40          0.41          0.44          0.49          0.55   snow
+  +z               0.60(   44)   1.08(  151)   1.76(  341)   2.13(  695)   0.84(  430)   bodies
+                          0.09          0.08          0.10          0.71          0.45   matter
+                          0.69          0.82          1.05          1.37          1.06   snow
+  -x+z             0.14(   10)   0.14(   19)   0.35(   67)   1.37(  449)   1.51(  772)   bodies
+                          0.08          0.13          0.15          0.58          1.04   matter
+                          0.24          0.32          0.51          1.01          1.42   snow
+  -x               0.26(   19)   0.65(   90)   1.47(  284)   2.91(  950)   2.21( 1134)   bodies
+                          0.32          0.28          0.43          0.69          0.58   matter
+                          0.63          0.83          1.38          2.08          1.86   snow
+  -x-z             0.04(    3)   0.38(   53)   1.71(  330)   1.61(  525)   0.37(  188)   bodies
+                          0.77          0.74          0.70          1.23          1.51   matter
+                          0.42          0.62          1.27          1.66          1.09   snow
+  -z               0.29(   21)   0.44(   61)   0.61(  117)   0.81(  263)   1.35(  690)   bodies
+                          1.16          1.11          1.30          1.85          1.20   matter
+                          0.47          0.53          0.73          1.12          1.25   snow
+  +x-z             1.59(  117)   1.78(  249)   1.80(  348)   1.69(  552)   0.95(  487)   bodies
+                          2.20          2.30          2.81          4.81          1.47   matter
+                          1.17          1.32          1.46          1.71          1.05   snow
+  by floor depth under the column (terciles of the floor area: shallow < 19.6 m, middle < 30.4 m, deep above): stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  shallow          0.34(   81)   0.59(  272)   1.11(  690)   1.86( 1849)   1.27( 1275)   bodies
+                          0.14          0.15          0.15          0.54          0.79   matter
+                          0.50          0.61          0.85          1.29          1.35   snow
+  middle           0.10(   10)   0.32(   63)   0.84(  257)   1.23(  759)   0.75( 1567)   bodies
+                          0.41          0.40          0.50          0.65          0.77   matter
+                          0.40          0.53          0.87          1.11          0.92   snow
+  deep             0.59(  141)   0.75(  343)   1.01(  628)   0.97(  960)   1.05( 1057)   bodies
+                          1.35          1.43          1.63          2.65          1.48   matter
+                          0.60          0.68          0.91          1.20          1.15   snow
+  by kind of body (flags overlap; share of that kind in the band / area share of the band)
+                       0-5      5-15     15-30     30-60       >60      n
+  absorptive          0.17      0.33      0.88      1.36      1.12    294
+  jointed             0.00      1.27      1.38      0.82      1.04     14
+  photosynthetic      0.40      0.61      1.02      1.37      0.95   9939
+  none of three          -         -         -         -         -      0
+
+-- profile at t = 72000 s: 9054 bodies; fields stamp 72000 (+0 s)
+  band m     area   bodies     x    matter     x     snow     x   [x = share / area share; area5 = matter grid]
+       0-5    0.059    0.026   0.44    0.045   0.76    0.037   0.63   area5 0.060
+      5-15    0.112    0.074   0.66    0.089   0.81    0.083   0.74   area5 0.110
+     15-30    0.155    0.175   1.13    0.155   0.99    0.147   0.95   area5 0.157
+     30-60    0.262    0.343   1.31    0.342   1.31    0.297   1.13   area5 0.261
+       >60    0.412    0.382   0.93    0.369   0.89    0.436   1.06   area5 0.413
+  by compass sector: stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  +x               0.03(    2)   0.04(    5)   0.02(    4)   0.02(    6)   0.11(   53)   bodies
+                          0.74          0.78          0.69          0.63          0.67   matter
+                          0.37          0.32          0.24          0.25          0.38   snow
+  +x+z             0.65(   43)   0.51(   65)   0.62(  110)   0.28(   84)   0.21(  100)   bodies
+                          0.23          0.25          0.22          0.27          0.46   matter
+                          0.70          0.69          0.61          0.42          0.49   snow
+  +z               1.07(   71)   1.37(  174)   2.23(  392)   2.29(  678)   0.93(  433)   bodies
+                          0.06          0.06          0.09          0.51          0.36   matter
+                          0.79          0.95          1.17          1.35          1.01   snow
+  -x+z             0.06(    4)   0.21(   27)   0.43(   76)   1.43(  424)   1.48(  688)   bodies
+                          0.08          0.10          0.12          0.57          0.89   matter
+                          0.28          0.38          0.57          0.89          1.33   snow
+  -x               0.48(   32)   1.04(  132)   2.07(  364)   2.71(  804)   2.02(  941)   bodies
+                          0.28          0.22          0.42          0.75          0.51   matter
+                          0.71          0.97          1.54          1.99          1.80   snow
+  -x-z             0.20(   13)   0.63(   80)   1.35(  238)   1.42(  420)   0.36(  166)   bodies
+                          0.83          0.84          0.97          1.18          1.42   matter
+                          0.70          0.87          1.31          1.60          1.15   snow
+  -z               0.48(   32)   0.38(   48)   0.53(   93)   0.61(  182)   1.21(  564)   bodies
+                          1.38          1.44          1.63          1.99          1.44   matter
+                          0.66          0.71          0.82          1.07          1.23   snow
+  +x-z             0.54(   36)   1.09(  139)   1.75(  308)   1.71(  509)   1.10(  514)   bodies
+                          2.50          2.76          3.84          4.57          1.41   matter
+                          0.84          1.00          1.31          1.50          1.10   snow
+  by floor depth under the column (terciles of the floor area: shallow < 19.6 m, middle < 30.4 m, deep above): stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  shallow          0.61(  134)   0.81(  337)   1.44(  815)   1.91( 1729)   1.28( 1166)   bodies
+                          0.12          0.12          0.13          0.47          0.64   matter
+                          0.62          0.75          0.97          1.18          1.21   snow
+  middle           0.23(   22)   0.60(  108)   0.92(  255)   1.03(  580)   0.67( 1271)   bodies
+                          0.45          0.46          0.59          0.73          0.76   matter
+                          0.64          0.75          1.00          1.13          0.94   snow
+  deep             0.35(   77)   0.54(  225)   0.91(  515)   0.88(  798)   1.12( 1022)   bodies
+                          1.53          1.65          2.03          2.50          1.44   matter
+                          0.64          0.72          0.90          1.09          1.14   snow
+  by kind of body (flags overlap; share of that kind in the band / area share of the band)
+                       0-5      5-15     15-30     30-60       >60      n
+  absorptive          0.10      0.39      0.64      1.56      1.07    509
+  jointed             1.13      0.59      2.15      1.02      0.65     15
+  photosynthetic      0.44      0.66      1.13      1.31      0.93   9041
+  none of three          -         -         -         -         -      0
+
+-- read 1285 rows, t = 59160.0 to 72000.0, 12810028 body-rows, 21.0 s; sampling step 10.0 s
+
+== dwell in the outer 15 m (0-15 m from the glass): seconds from entering to leaving it or to the sample it was gone from
+   window (entry)      entered  left  died  cens |  finished: median     q1     q3 | Kaplan-Meier: median     q1     q3
+   54000-60000*            889   463   426     0 |               370    150   1090 |                  370    150   1090
+   60000-66000            7730  4270  3460     0 |               370    150    920 |                  370    150    920
+   66000-72000            8396  4273  3394   729 |               330    130    750 |                  360    150    850
+   all windows           17015  9006  7280   729 |               350    140    840 |                  370    150    890
+
+== dwell in the control band, 30-48.7 m from the glass, the same floor area: seconds from entering to leaving it or to the sample it was gone from
+   window (entry)      entered  left  died  cens |  finished: median     q1     q3 | Kaplan-Meier: median     q1     q3
+   54000-60000*           4304  3529   775     0 |               130     60    280 |                  130     60    280
+   60000-66000           30954 25089  5865     0 |               150     70    310 |                  150     70    310
+   66000-72000           30607 23856  5503  1248 |               140     60    280 |                  150     70    300
+   all windows           65865 52474 12143  1248 |               140     60    290 |                  150     70    310
+
+== radial speeds, m/s, positive away from the centre (toward the glass): between consecutive samples, by band of the step's mid radius
+   window (ending)    band            steps     mean      sd   mean|v|
+   54000-60000*       0-5               9671   0.0022  0.0103    0.0061
+   54000-60000*       5-15             47169   0.0057  0.0262    0.0154
+   54000-60000*       15-30           128639   0.0084  0.0499    0.0285
+   54000-60000*       30-60           288882   0.0006  0.1070    0.0552
+   54000-60000*       >60             348795   0.0010  0.1608    0.0991
+   54000-60000*       0-15 (rim)       56840   0.0051  0.0242    0.0138
+   54000-60000*       30-48.7 (ctl)   186789   0.0018  0.0907    0.0479
+   60000-66000        0-5             160774   0.0014  0.0115    0.0068
+   60000-66000        5-15            459236   0.0039  0.0313    0.0176
+   60000-66000        15-30           989062   0.0065  0.0551    0.0319
+   60000-66000        30-60          2064076  -0.0021  0.0985    0.0547
+   60000-66000        >60            2396482  -0.0010  0.1384    0.0911
+   60000-66000        0-15 (rim)      620010   0.0033  0.0276    0.0148
+   60000-66000        30-48.7 (ctl)  1324751  -0.0003  0.0899    0.0500
+   66000-72000        0-5             179005   0.0013  0.0127    0.0073
+   66000-72000        5-15            481363   0.0038  0.0347    0.0186
+   66000-72000        15-30          1018618   0.0067  0.0553    0.0318
+   66000-72000        30-60          1965600  -0.0015  0.1036    0.0567
+   66000-72000        >60            2167273  -0.0008  0.1409    0.0913
+   66000-72000        0-15 (rim)      660368   0.0031  0.0304    0.0156
+   66000-72000        30-48.7 (ctl)  1280005   0.0005  0.0950    0.0519
+   (* = the window opens before the first row read, so it is partial)
+====================================================================================================
+run r61-c6102x2 | 2026-10-17-195204-701d6224 | configHash 701d6224c27ce74c | window first row to last row | report every 6000 s
+tank r=167 m (8.8e+04 m2), 25 m deep, 4 ring(s) | R 167.37 m; axis (167.37, 167.37); seed 6102; run.json: ended (budget reached) at 72000 s
+fields: 144 stamps (57700 to 72000 s); bed 335 x 335, floor depth terciles 19.6 / 30.4 m
+
+-- profile at t = 60000 s: 7909 bodies; fields stamp 60000 (+0 s)
+  band m     area   bodies     x    matter     x     snow     x   [x = share / area share; area5 = matter grid]
+       0-5    0.059    0.002   0.03    0.035   0.59    0.018   0.31   area5 0.060
+      5-15    0.112    0.021   0.18    0.072   0.65    0.054   0.48   area5 0.110
+     15-30    0.155    0.119   0.77    0.143   0.91    0.138   0.89   area5 0.157
+     30-60    0.262    0.469   1.79    0.387   1.48    0.323   1.23   area5 0.261
+       >60    0.412    0.389   0.95    0.363   0.88    0.466   1.13   area5 0.413
+  by compass sector: stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  +x               0.00(    0)   0.00(    0)   0.00(    0)   0.05(   13)   0.22(   88)   bodies
+                          0.25          0.31          0.42          0.55          0.50   matter
+                          0.17          0.16          0.20          0.30          0.44   snow
+  +x+z             0.02(    1)   0.08(    9)   0.07(   11)   0.08(   21)   0.13(   54)   bodies
+                          0.11          0.12          0.13          0.16          0.31   matter
+                          0.20          0.22          0.23          0.24          0.43   snow
+  +z               0.00(    0)   0.05(    6)   1.61(  247)   6.27( 1625)   1.14(  463)   bodies
+                          0.04          0.06          0.10          0.51          0.44   matter
+                          0.13          0.31          0.99          1.53          1.22   snow
+  -x+z             0.05(    3)   0.02(    2)   0.16(   25)   1.30(  338)   1.61(  655)   bodies
+                          0.03          0.05          0.09          0.67          1.24   matter
+                          0.14          0.20          0.38          0.96          1.46   snow
+  -x               0.03(    2)   0.42(   47)   1.19(  182)   2.66(  690)   1.86(  756)   bodies
+                          0.19          0.27          0.56          1.13          0.65   matter
+                          0.35          0.72          1.43          2.06          1.92   snow
+  -x-z             0.00(    0)   0.09(   10)   1.66(  255)   1.74(  451)   0.15(   62)   bodies
+                          0.46          0.54          0.79          1.34          1.15   matter
+                          0.34          0.54          1.40          1.88          1.25   snow
+  -z               0.05(    3)   0.13(   14)   0.17(   26)   0.37(   97)   1.42(  578)   bodies
+                          1.17          1.19          1.24          1.65          1.16   matter
+                          0.47          0.59          0.76          1.03          1.25   snow
+  +x-z             0.09(    5)   0.68(   75)   1.30(  199)   1.82(  472)   1.04(  424)   bodies
+                          2.47          2.67          4.05          5.84          1.59   matter
+                          0.65          1.13          1.73          1.85          1.10   snow
+  by floor depth under the column (terciles of the floor area: shallow < 19.6 m, middle < 30.4 m, deep above): stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  shallow          0.03(    6)   0.11(   40)   0.77(  381)   3.01( 2385)   1.56( 1237)   bodies
+                          0.07          0.10          0.17          0.61          0.68   matter
+                          0.19          0.33          0.74          1.25          1.33   snow
+  middle           0.00(    0)   0.21(   33)   1.09(  264)   1.31(  646)   0.51(  843)   bodies
+                          0.23          0.31          0.49          0.80          0.71   matter
+                          0.29          0.50          0.98          1.21          1.01   snow
+  deep             0.04(    8)   0.25(   90)   0.61(  300)   0.86(  676)   1.25( 1000)   bodies
+                          1.26          1.36          1.85          2.77          1.44   matter
+                          0.43          0.63          0.99          1.24          1.20   snow
+  by kind of body (flags overlap; share of that kind in the band / area share of the band)
+                       0-5      5-15     15-30     30-60       >60      n
+  absorptive          0.00      0.00      0.21      2.70      0.63    741
+  jointed             0.00      0.07      0.63      1.79      1.04    542
+  photosynthetic      0.03      0.20      0.81      1.71      0.97   7379
+  none of three          -         -         -         -         -      0
+
+-- profile at t = 66000 s: 10128 bodies; fields stamp 66000 (+0 s)
+  band m     area   bodies     x    matter     x     snow     x   [x = share / area share; area5 = matter grid]
+       0-5    0.059    0.005   0.09    0.034   0.56    0.020   0.33   area5 0.060
+      5-15    0.112    0.026   0.24    0.068   0.62    0.054   0.49   area5 0.110
+     15-30    0.155    0.133   0.86    0.128   0.82    0.137   0.88   area5 0.157
+     30-60    0.262    0.471   1.80    0.370   1.42    0.338   1.29   area5 0.261
+       >60    0.412    0.364   0.89    0.399   0.97    0.451   1.10   area5 0.413
+  by compass sector: stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  +x               0.00(    0)   0.00(    0)   0.00(    0)   0.02(    8)   0.03(   15)   bodies
+                          0.28          0.37          0.47          0.57          0.61   matter
+                          0.07          0.09          0.13          0.21          0.31   snow
+  +x+z             0.01(    1)   0.12(   17)   0.30(   60)   0.34(  112)   0.19(  100)   bodies
+                          0.21          0.23          0.25          0.26          0.46   matter
+                          0.25          0.32          0.41          0.47          0.48   snow
+  +z               0.04(    3)   0.36(   51)   2.04(  402)   4.41( 1462)   0.90(  471)   bodies
+                          0.08          0.09          0.13          0.90          0.56   matter
+                          0.21          0.41          0.93          1.22          1.00   snow
+  -x+z             0.00(    0)   0.06(    8)   0.12(   24)   1.60(  531)   1.63(  850)   bodies
+                          0.05          0.08          0.14          0.62          1.23   matter
+                          0.15          0.22          0.39          0.96          1.42   snow
+  -x               0.03(    2)   0.23(   33)   1.17(  229)   3.41( 1132)   2.05( 1071)   bodies
+                          0.37          0.37          0.53          0.86          0.68   matter
+                          0.44          0.67          1.39          2.45          1.99   snow
+  -x-z             0.00(    0)   0.11(   16)   1.50(  295)   2.03(  674)   0.24(  126)   bodies
+                          0.52          0.65          0.89          1.37          1.34   matter
+                          0.30          0.53          1.43          1.91          1.13   snow
+  -z               0.08(    6)   0.10(   14)   0.20(   40)   0.54(  179)   1.31(  681)   bodies
+                          0.80          0.92          1.32          1.84          1.25   matter
+                          0.29          0.37          0.65          1.17          1.37   snow
+  +x-z             0.58(   43)   0.90(  128)   1.51(  296)   2.02(  671)   0.72(  377)   bodies
+                          2.16          2.25          2.87          4.92          1.61   matter
+                          0.94          1.28          1.73          1.91          1.06   snow
+  by floor depth under the column (terciles of the floor area: shallow < 19.6 m, middle < 30.4 m, deep above): stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  shallow          0.02(    4)   0.18(   86)   0.97(  611)   2.71( 2743)   1.44( 1464)   bodies
+                          0.15          0.17          0.20          0.65          0.89   matter
+                          0.25          0.40          0.77          1.29          1.31   snow
+  middle           0.02(    2)   0.20(   39)   0.96(  298)   1.62( 1022)   0.57( 1223)   bodies
+                          0.34          0.37          0.49          0.69          0.75   matter
+                          0.29          0.45          0.95          1.28          0.93   snow
+  deep             0.20(   49)   0.30(  142)   0.69(  437)   0.99( 1004)   0.98( 1004)   bodies
+                          1.07          1.18          1.59          2.63          1.51   matter
+                          0.43          0.58          0.97          1.29          1.23   snow
+  by kind of body (flags overlap; share of that kind in the band / area share of the band)
+                       0-5      5-15     15-30     30-60       >60      n
+  absorptive          0.01      0.08      0.80      2.08      0.78   1384
+  jointed             0.10      0.24      1.41      1.44      0.90    679
+  photosynthetic      0.10      0.25      0.87      1.75      0.90   9169
+  none of three          -         -         -         -         -      0
+
+-- profile at t = 72000 s: 9200 bodies; fields stamp 72000 (+0 s)
+  band m     area   bodies     x    matter     x     snow     x   [x = share / area share; area5 = matter grid]
+       0-5    0.059    0.010   0.17    0.041   0.68    0.028   0.47   area5 0.060
+      5-15    0.112    0.047   0.42    0.083   0.76    0.069   0.62   area5 0.110
+     15-30    0.155    0.184   1.18    0.153   0.98    0.145   0.93   area5 0.157
+     30-60    0.262    0.423   1.61    0.352   1.35    0.307   1.17   area5 0.261
+       >60    0.412    0.336   0.82    0.371   0.90    0.451   1.09   area5 0.413
+  by compass sector: stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  +x               0.00(    0)   0.01(    1)   0.00(    0)   0.02(    5)   0.02(   11)   bodies
+                          0.53          0.56          0.51          0.49          0.58   matter
+                          0.24          0.22          0.17          0.21          0.33   snow
+  +x+z             0.31(   21)   0.50(   65)   0.50(   90)   0.18(   53)   0.10(   46)   bodies
+                          0.21          0.23          0.22          0.23          0.41   matter
+                          0.60          0.64          0.60          0.40          0.43   snow
+  +z               0.27(   18)   1.03(  133)   2.89(  517)   3.99( 1202)   0.89(  422)   bodies
+                          0.07          0.08          0.13          0.74          0.44   matter
+                          0.34          0.57          0.93          1.15          0.94   snow
+  -x+z             0.07(    5)   0.05(    6)   0.35(   62)   1.39(  420)   1.42(  673)   bodies
+                          0.05          0.09          0.12          0.61          1.01   matter
+                          0.19          0.27          0.47          0.91          1.38   snow
+  -x               0.16(   11)   0.55(   71)   1.78(  317)   3.00(  905)   1.81(  855)   bodies
+                          0.30          0.33          0.47          0.71          0.59   matter
+                          0.56          0.84          1.58          2.26          1.94   snow
+  -x-z             0.12(    8)   0.36(   47)   1.43(  255)   1.39(  420)   0.24(  114)   bodies
+                          0.71          0.77          1.04          1.39          1.34   matter
+                          0.57          0.77          1.36          1.73          1.18   snow
+  -z               0.19(   13)   0.17(   22)   0.37(   66)   0.42(  127)   0.99(  471)   bodies
+                          1.25          1.40          1.62          1.97          1.41   matter
+                          0.53          0.63          0.82          1.11          1.37   snow
+  +x-z             0.22(   15)   0.68(   88)   2.16(  386)   2.51(  758)   1.06(  501)   bodies
+                          2.31          2.60          3.80          4.64          1.42   matter
+                          0.72          1.00          1.55          1.61          1.19   snow
+  by floor depth under the column (terciles of the floor area: shallow < 19.6 m, middle < 30.4 m, deep above): stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  shallow          0.22(   50)   0.56(  238)   1.53(  878)   2.39( 2202)   1.29( 1197)   bodies
+                          0.12          0.15          0.17          0.58          0.69   matter
+                          0.40          0.56          0.87          1.16          1.21   snow
+  middle           0.12(   12)   0.37(   67)   0.92(  260)   1.24(  707)   0.49(  940)   bodies
+                          0.40          0.44          0.59          0.70          0.76   matter
+                          0.52          0.67          1.03          1.24          0.96   snow
+  deep             0.13(   29)   0.30(  128)   0.97(  555)   1.07(  981)   1.03(  956)   bodies
+                          1.35          1.51          1.97          2.51          1.41   matter
+                          0.52          0.65          0.96          1.14          1.26   snow
+  by kind of body (flags overlap; share of that kind in the band / area share of the band)
+                       0-5      5-15     15-30     30-60       >60      n
+  absorptive          0.03      0.44      1.12      1.97      0.63   1243
+  jointed             0.15      0.33      0.88      1.25      1.19    563
+  photosynthetic      0.19      0.42      1.18      1.55      0.86   8192
+  none of three          -         -         -         -         -      0
+
+-- read 1439 rows, t = 57620.0 to 72000.0, 13249196 body-rows, 22.4 s; sampling step 10.0 s
+
+== dwell in the outer 15 m (0-15 m from the glass): seconds from entering to leaving it or to the sample it was gone from
+   window (entry)      entered  left  died  cens |  finished: median     q1     q3 | Kaplan-Meier: median     q1     q3
+   54000-60000*            723   436   287     0 |               280    130    540 |                  280    130    540
+   60000-66000            4205  2260  1945     0 |               270    120    600 |                  270    120    600
+   66000-72000            6058  2819  2766   473 |               290    130    610 |                  310    130    650
+   all windows           10986  5515  4998   473 |               280    130    600 |                  290    130    620
+
+== dwell in the control band, 30-48.7 m from the glass, the same floor area: seconds from entering to leaving it or to the sample it was gone from
+   window (entry)      entered  left  died  cens |  finished: median     q1     q3 | Kaplan-Meier: median     q1     q3
+   54000-60000*           8975  7147  1828     0 |               140     60    290 |                  140     60    290
+   60000-66000           33352 26325  7027     0 |               150     60    280 |                  150     60    280
+   66000-72000           34156 26161  6729  1266 |               140     60    260 |                  140     70    280
+   all windows           76483 59633 15584  1266 |               140     60    280 |                  140     60    280
+
+== radial speeds, m/s, positive away from the centre (toward the glass): between consecutive samples, by band of the step's mid radius
+   window (ending)    band            steps     mean      sd   mean|v|
+   54000-60000*       0-5               4393   0.0005  0.0116    0.0071
+   54000-60000*       5-15             30857   0.0035  0.0344    0.0191
+   54000-60000*       15-30           171366   0.0060  0.0548    0.0294
+   54000-60000*       30-60           852463  -0.0023  0.0899    0.0412
+   54000-60000*       >60             704962  -0.0062  0.1592    0.0948
+   54000-60000*       0-15 (rim)       35250   0.0031  0.0324    0.0176
+   54000-60000*       30-48.7 (ctl)   490337  -0.0009  0.0801    0.0393
+   60000-66000        0-5              36720   0.0020  0.0103    0.0063
+   60000-66000        5-15            175620   0.0051  0.0346    0.0201
+   60000-66000        15-30           741686   0.0068  0.0590    0.0331
+   60000-66000        30-60          2516034  -0.0020  0.0958    0.0490
+   60000-66000        >60            2120630  -0.0021  0.1438    0.0917
+   60000-66000        0-15 (rim)      212340   0.0046  0.0318    0.0178
+   60000-66000        30-48.7 (ctl)  1600863  -0.0005  0.0871    0.0455
+   66000-72000        0-5              68935   0.0023  0.0132    0.0076
+   66000-72000        5-15            270289   0.0059  0.0377    0.0201
+   66000-72000        15-30           920862   0.0076  0.0537    0.0308
+   66000-72000        30-60          2471953  -0.0008  0.0998    0.0511
+   66000-72000        >60            2044551  -0.0010  0.1457    0.0926
+   66000-72000        0-15 (rim)      339224   0.0052  0.0342    0.0176
+   66000-72000        30-48.7 (ctl)  1640816   0.0011  0.0901    0.0464
+   (* = the window opens before the first row read, so it is partial)
+====================================================================================================
+run r61-p6103x4 | 2026-10-18-124040-119d0f30 | configHash 119d0f3001f59ecc | window first row to last row | report every 6000 s
+tank r=167 m (8.8e+04 m2), 25 m deep, 4 ring(s) | R 167.37 m; axis (167.37, 167.37); seed 6103; run.json: ended (budget reached) at 72000 s
+fields: 19 stamps (70200 to 72000 s); bed 335 x 335, floor depth terciles 19.6 / 30.4 m
+
+-- profile at t = 72000 s: 2865 bodies; fields stamp 72000 (+0 s)
+  band m     area   bodies     x    matter     x     snow     x   [x = share / area share; area5 = matter grid]
+       0-5    0.059    0.128   2.18    0.030   0.51    0.068   1.16   area5 0.060
+      5-15    0.112    0.134   1.19    0.058   0.53    0.121   1.07   area5 0.110
+     15-30    0.155    0.209   1.34    0.127   0.81    0.168   1.08   area5 0.157
+     30-60    0.262    0.320   1.22    0.359   1.38    0.283   1.08   area5 0.261
+       >60    0.412    0.209   0.51    0.425   1.03    0.360   0.88   area5 0.413
+  by compass sector: stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  +x               0.00(    0)   0.02(    1)   0.02(    1)   0.14(   13)   0.24(   36)   bodies
+                          0.58          0.46          0.33          0.28          0.30   matter
+                          0.51          0.44          0.34          0.35          0.50   snow
+  +x+z             1.43(   30)   1.44(   58)   1.11(   62)   0.78(   73)   0.37(   55)   bodies
+                          0.13          0.15          0.15          0.16          0.25   matter
+                          1.10          1.08          0.98          0.74          0.74   snow
+  +z               2.61(   55)   2.29(   92)   3.54(  197)   5.66(  531)   1.42(  209)   bodies
+                          0.05          0.06          0.13          0.53          0.40   matter
+                          0.90          0.99          1.33          1.78          1.10   snow
+  -x+z             0.19(    4)   0.15(    6)   0.14(    8)   0.36(   34)   0.50(   73)   bodies
+                          0.03          0.05          0.07          0.63          1.34   matter
+                          0.41          0.48          0.54          0.72          0.89   snow
+  -x               0.62(   13)   0.17(    7)   0.36(   20)   0.69(   65)   0.28(   41)   bodies
+                          0.20          0.32          0.86          2.80          0.90   matter
+                          0.67          0.70          0.77          0.92          0.87   snow
+  -x-z             0.29(    6)   0.15(    6)   0.20(   11)   0.31(   29)   0.41(   61)   bodies
+                          0.47          0.51          1.58          2.06          0.56   matter
+                          1.02          0.97          0.86          0.83          0.80   snow
+  -z               4.17(   88)   1.67(   67)   0.43(   24)   0.47(   44)   0.45(   67)   bodies
+                          0.98          0.95          0.95          1.30          2.17   matter
+                          2.10          1.72          1.37          1.33          1.09   snow
+  +x-z             8.14(  172)   3.66(  147)   4.95(  275)   1.35(  127)   0.39(   57)   bodies
+                          1.64          1.75          2.46          3.22          2.34   matter
+                          2.58          2.21          2.46          1.98          1.01   snow
+  by floor depth under the column (terciles of the floor area: shallow < 19.6 m, middle < 30.4 m, deep above): stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  shallow          1.37(   95)   1.16(  154)   1.54(  275)   2.34(  671)   1.06(  306)   bodies
+                          0.08          0.11          0.23          0.84          0.60   matter
+                          0.76          0.82          0.95          1.15          1.00   snow
+  middle           0.30(    9)   0.23(   13)   0.20(   18)   0.26(   46)   0.27(  162)   bodies
+                          0.36          0.37          0.90          1.67          0.67   matter
+                          0.74          0.73          0.66          0.63          0.74   snow
+  deep             3.81(  264)   1.64(  217)   1.71(  305)   0.70(  199)   0.45(  131)   bodies
+                          1.00          1.02          1.35          1.73          2.21   matter
+                          1.74          1.47          1.41          1.29          1.04   snow
+  by kind of body (flags overlap; share of that kind in the band / area share of the band)
+                       0-5      5-15     15-30     30-60       >60      n
+  absorptive          1.36      0.36      1.29      1.53      0.68     25
+  jointed             3.35      1.76      1.36      1.13      0.24     71
+  photosynthetic      2.18      1.20      1.34      1.22      0.51   2848
+  none of three       0.00      0.00      0.00      3.82      0.00      1
+
+-- read 184 rows, t = 70170.0 to 72000.0, 462147 body-rows, 0.7 s; sampling step 10.0 s
+
+== dwell in the outer 15 m (0-15 m from the glass): seconds from entering to leaving it or to the sample it was gone from
+   window (entry)      entered  left  died  cens |  finished: median     q1     q3 | Kaplan-Meier: median     q1     q3
+   66000-72000*           1538   485   414   639 |               180     50    490 |                  390    120    860
+
+== dwell in the control band, 30-48.7 m from the glass, the same floor area: seconds from entering to leaving it or to the sample it was gone from
+   window (entry)      entered  left  died  cens |  finished: median     q1     q3 | Kaplan-Meier: median     q1     q3
+   66000-72000*           2648  1838   489   321 |               100     30    220 |                  110     40    260
+
+== radial speeds, m/s, positive away from the centre (toward the glass): between consecutive samples, by band of the step's mid radius
+   window (ending)    band            steps     mean      sd   mean|v|
+   66000-72000*       0-5              39834   0.0035  0.0313    0.0098
+   66000-72000*       5-15             49988   0.0148  0.0770    0.0330
+   66000-72000*       15-30            83104   0.0195  0.1064    0.0520
+   66000-72000*       30-60           162505  -0.0000  0.1290    0.0622
+   66000-72000*       >60             119313  -0.0010  0.1590    0.0834
+   66000-72000*       0-15 (rim)       89822   0.0098  0.0614    0.0228
+   66000-72000*       30-48.7 (ctl)   107757   0.0027  0.1334    0.0629
+   (* = the window opens before the first row read, so it is partial)
+====================================================================================================
+run r61-c6103x | 2026-10-18-004226-701d6224 | configHash 701d6224c27ce74c | window first row to last row | report every 6000 s
+tank r=167 m (8.8e+04 m2), 25 m deep, 4 ring(s) | R 167.37 m; axis (167.37, 167.37); seed 6103; run.json: ended (budget reached) at 72000 s
+fields: 240 stamps (48100 to 72000 s); bed 335 x 335, floor depth terciles 19.6 / 30.4 m
+
+-- profile at t = 54000 s: 8351 bodies; fields stamp 54000 (+0 s)
+  band m     area   bodies     x    matter     x     snow     x   [x = share / area share; area5 = matter grid]
+       0-5    0.059    0.006   0.11    0.034   0.57    0.022   0.37   area5 0.060
+      5-15    0.112    0.032   0.29    0.067   0.61    0.058   0.52   area5 0.110
+     15-30    0.155    0.141   0.91    0.130   0.83    0.145   0.93   area5 0.157
+     30-60    0.262    0.407   1.55    0.380   1.46    0.350   1.34   area5 0.261
+       >60    0.412    0.413   1.00    0.388   0.94    0.424   1.03   area5 0.413
+  by compass sector: stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  +x               0.00(    0)   0.00(    0)   0.01(    2)   0.03(    9)   0.08(   35)   bodies
+                          0.35          0.39          0.44          0.58          0.57   matter
+                          0.19          0.17          0.17          0.26          0.32   snow
+  +x+z             0.00(    0)   0.03(    4)   0.29(   47)   0.19(   53)   0.15(   63)   bodies
+                          0.14          0.16          0.18          0.20          0.37   matter
+                          0.26          0.29          0.33          0.31          0.32   snow
+  +z               0.00(    0)   0.05(    6)   1.16(  188)   3.17(  866)   0.80(  342)   bodies
+                          0.04          0.09          0.24          0.98          0.57   matter
+                          0.13          0.31          1.07          2.08          1.10   snow
+  -x+z             0.03(    2)   0.03(    3)   0.10(   16)   1.45(  398)   1.86(  798)   bodies
+                          0.03          0.05          0.10          0.79          1.42   matter
+                          0.10          0.13          0.26          0.67          1.13   snow
+  -x               0.10(    6)   0.46(   54)   1.70(  275)   3.41(  934)   2.12(  911)   bodies
+                          0.26          0.30          0.53          1.10          0.69   matter
+                          0.40          0.65          1.31          2.12          1.77   snow
+  -x-z             0.05(    3)   0.37(   43)   0.94(  152)   1.14(  312)   0.28(  122)   bodies
+                          0.61          0.66          0.94          1.15          0.98   matter
+                          0.45          0.71          1.44          1.57          0.95   snow
+  -z               0.34(   21)   0.25(   29)   0.51(   82)   0.79(  215)   1.42(  609)   bodies
+                          1.05          1.07          1.13          1.78          1.36   matter
+                          0.52          0.60          0.73          1.08          1.27   snow
+  +x-z             0.36(   22)   1.10(  129)   2.58(  418)   2.23(  610)   1.33(  572)   bodies
+                          2.10          2.16          3.13          5.07          1.58   matter
+                          0.93          1.30          2.16          2.59          1.39   snow
+  by floor depth under the column (terciles of the floor area: shallow < 19.6 m, middle < 30.4 m, deep above): stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  shallow          0.03(    6)   0.12(   46)   0.84(  436)   2.29( 1916)   1.44( 1207)   bodies
+                          0.08          0.12          0.19          0.76          0.90   matter
+                          0.19          0.32          0.74          1.38          1.11   snow
+  middle           0.06(    5)   0.32(   53)   0.83(  213)   1.19(  617)   0.62( 1094)   bodies
+                          0.32          0.37          0.59          0.81          0.68   matter
+                          0.38          0.56          0.99          1.14          0.86   snow
+  deep             0.21(   43)   0.44(  169)   1.02(  531)   1.04(  864)   1.37( 1151)   bodies
+                          1.17          1.21          1.57          2.55          1.52   matter
+                          0.55          0.71          1.10          1.41          1.32   snow
+  by kind of body (flags overlap; share of that kind in the band / area share of the band)
+                       0-5      5-15     15-30     30-60       >60      n
+  absorptive          0.03      0.02      0.20      1.01      1.70    503
+  jointed             0.27      0.21      0.60      2.09      0.78    128
+  photosynthetic      0.11      0.29      0.93      1.56      0.99   8153
+  none of three       0.00      0.00      0.00      0.00      2.43      2
+
+-- profile at t = 60000 s: 9083 bodies; fields stamp 60000 (+0 s)
+  band m     area   bodies     x    matter     x     snow     x   [x = share / area share; area5 = matter grid]
+       0-5    0.059    0.009   0.15    0.035   0.59    0.021   0.35   area5 0.060
+      5-15    0.112    0.041   0.37    0.072   0.65    0.058   0.51   area5 0.110
+     15-30    0.155    0.142   0.91    0.139   0.88    0.138   0.89   area5 0.157
+     30-60    0.262    0.372   1.42    0.390   1.50    0.336   1.28   area5 0.261
+       >60    0.412    0.436   1.06    0.365   0.88    0.449   1.09   area5 0.413
+  by compass sector: stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  +x               0.03(    2)   0.02(    2)   0.06(   10)   0.06(   18)   0.25(  118)   bodies
+                          0.37          0.40          0.50          0.64          0.60   matter
+                          0.18          0.18          0.23          0.37          0.49   snow
+  +x+z             0.06(    4)   0.09(   11)   0.14(   24)   0.12(   37)   0.14(   66)   bodies
+                          0.12          0.14          0.14          0.17          0.35   matter
+                          0.21          0.22          0.24          0.25          0.45   snow
+  +z               0.00(    0)   0.20(   25)   1.56(  276)   2.50(  745)   0.70(  326)   bodies
+                          0.04          0.06          0.09          0.62          0.41   matter
+                          0.13          0.29          0.98          2.01          1.20   snow
+  -x+z             0.03(    2)   0.07(    9)   0.22(   38)   1.74(  519)   2.21( 1034)   bodies
+                          0.03          0.05          0.08          0.66          1.11   matter
+                          0.13          0.18          0.34          0.74          1.27   snow
+  -x               0.42(   28)   0.68(   86)   1.53(  269)   2.56(  763)   2.17( 1013)   bodies
+                          0.17          0.24          0.46          0.97          0.59   matter
+                          0.38          0.70          1.37          1.84          1.68   snow
+  -x-z             0.02(    1)   0.31(   39)   1.59(  281)   1.66(  493)   0.28(  129)   bodies
+                          0.52          0.58          0.76          1.18          1.13   matter
+                          0.37          0.54          1.17          1.60          1.12   snow
+  -z               0.19(   13)   0.25(   32)   0.35(   61)   0.67(  200)   1.50(  700)   bodies
+                          1.29          1.32          1.28          1.73          1.27   matter
+                          0.59          0.70          0.84          1.11          1.28   snow
+  +x-z             0.43(   29)   1.32(  168)   1.89(  332)   2.03(  605)   1.23(  575)   bodies
+                          2.15          2.40          3.85          5.96          1.62   matter
+                          0.81          1.29          1.92          2.32          1.22   snow
+  by floor depth under the column (terciles of the floor area: shallow < 19.6 m, middle < 30.4 m, deep above): stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  shallow          0.11(   25)   0.24(  102)   0.91(  516)   1.99( 1810)   1.67( 1525)   bodies
+                          0.07          0.09          0.13          0.60          0.72   matter
+                          0.19          0.32          0.72          1.30          1.21   snow
+  middle           0.11(   10)   0.36(   64)   0.99(  275)   1.00(  566)   0.63( 1210)   bodies
+                          0.24          0.31          0.49          0.78          0.66   matter
+                          0.31          0.48          0.85          1.04          0.94   snow
+  deep             0.20(   44)   0.49(  206)   0.88(  500)   1.11( 1004)   1.34( 1226)   bodies
+                          1.25          1.36          1.82          2.82          1.52   matter
+                          0.53          0.72          1.07          1.41          1.27   snow
+  by kind of body (flags overlap; share of that kind in the band / area share of the band)
+                       0-5      5-15     15-30     30-60       >60      n
+  absorptive          0.21      0.52      0.51      1.19      1.31    633
+  jointed             0.00      0.21      0.82      1.10      1.36    125
+  photosynthetic      0.15      0.38      0.94      1.43      1.04   8808
+  none of three       0.00      0.00      0.00      3.82      0.00      1
+
+-- profile at t = 66000 s: 11227 bodies; fields stamp 66000 (+0 s)
+  band m     area   bodies     x    matter     x     snow     x   [x = share / area share; area5 = matter grid]
+       0-5    0.059    0.011   0.19    0.035   0.59    0.024   0.41   area5 0.060
+      5-15    0.112    0.050   0.45    0.072   0.65    0.062   0.55   area5 0.110
+     15-30    0.155    0.149   0.96    0.129   0.82    0.139   0.90   area5 0.157
+     30-60    0.262    0.361   1.38    0.376   1.44    0.333   1.27   area5 0.261
+       >60    0.412    0.428   1.04    0.387   0.94    0.442   1.07   area5 0.413
+  by compass sector: stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  +x               0.00(    0)   0.04(    6)   0.02(    5)   0.04(   15)   0.08(   47)   bodies
+                          0.41          0.49          0.59          0.69          0.66   matter
+                          0.11          0.13          0.16          0.23          0.34   snow
+  +x+z             0.05(    4)   0.20(   32)   0.40(   88)   0.43(  156)   0.29(  170)   bodies
+                          0.23          0.26          0.24          0.28          0.48   matter
+                          0.30          0.35          0.44          0.53          0.56   snow
+  +z               0.11(    9)   0.57(   89)   1.79(  390)   2.20(  808)   0.70(  404)   bodies
+                          0.08          0.09          0.11          0.75          0.46   matter
+                          0.30          0.57          1.15          1.61          1.11   snow
+  -x+z             0.05(    4)   0.14(   22)   0.28(   61)   1.90(  699)   2.26( 1303)   bodies
+                          0.06          0.09          0.13          0.63          1.17   matter
+                          0.18          0.25          0.46          0.90          1.35   snow
+  -x               0.24(   20)   0.54(   85)   1.56(  341)   2.68(  984)   2.34( 1351)   bodies
+                          0.31          0.29          0.42          0.75          0.60   matter
+                          0.59          0.80          1.38          2.14          1.77   snow
+  -x-z             0.05(    4)   0.34(   54)   1.49(  324)   1.43(  527)   0.27(  156)   bodies
+                          0.56          0.62          0.73          1.15          1.32   matter
+                          0.36          0.55          1.24          1.61          1.04   snow
+  -z               0.05(    4)   0.18(   28)   0.43(   93)   0.79(  291)   1.37(  793)   bodies
+                          0.99          1.20          1.37          2.05          1.25   matter
+                          0.32          0.41          0.67          1.15          1.30   snow
+  +x-z             0.98(   81)   1.58(  249)   1.72(  375)   1.55(  570)   1.01(  585)   bodies
+                          2.10          2.20          3.06          5.23          1.56   matter
+                          1.07          1.36          1.68          1.99          1.11   snow
+  by floor depth under the column (terciles of the floor area: shallow < 19.6 m, middle < 30.4 m, deep above): stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  shallow          0.11(   31)   0.38(  197)   1.14(  796)   2.02( 2269)   1.75( 1971)   bodies
+                          0.14          0.16          0.16          0.58          0.85   matter
+                          0.34          0.50          0.88          1.36          1.30   snow
+  middle           0.09(   10)   0.34(   75)   0.83(  287)   1.10(  765)   0.67( 1583)   bodies
+                          0.35          0.35          0.46          0.66          0.70   matter
+                          0.35          0.48          0.84          1.09          0.90   snow
+  deep             0.31(   85)   0.56(  293)   0.85(  594)   0.91( 1016)   1.11( 1255)   bodies
+                          1.15          1.29          1.66          2.78          1.52   matter
+                          0.50          0.64          0.94          1.29          1.21   snow
+  by kind of body (flags overlap; share of that kind in the band / area share of the band)
+                       0-5      5-15     15-30     30-60       >60      n
+  absorptive          0.12      0.47      0.95      1.44      1.01   1504
+  jointed             0.15      0.60      0.84      1.59      0.92    339
+  photosynthetic      0.20      0.46      0.99      1.39      1.02  10859
+  none of three       0.00      0.00      0.00      0.00      2.43      1
+
+-- profile at t = 72000 s: 10553 bodies; fields stamp 72000 (+0 s)
+  band m     area   bodies     x    matter     x     snow     x   [x = share / area share; area5 = matter grid]
+       0-5    0.059    0.021   0.36    0.043   0.71    0.034   0.59   area5 0.060
+      5-15    0.112    0.064   0.57    0.084   0.76    0.080   0.71   area5 0.110
+     15-30    0.155    0.170   1.09    0.152   0.97    0.148   0.96   area5 0.157
+     30-60    0.262    0.321   1.23    0.356   1.37    0.302   1.15   area5 0.261
+       >60    0.412    0.424   1.03    0.366   0.89    0.436   1.06   area5 0.413
+  by compass sector: stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  +x               0.00(    0)   0.02(    3)   0.01(    3)   0.03(   12)   0.10(   56)   bodies
+                          0.69          0.70          0.61          0.56          0.62   matter
+                          0.33          0.30          0.23          0.25          0.38   snow
+  +x+z             0.61(   47)   0.42(   62)   0.51(  105)   0.25(   87)   0.20(  109)   bodies
+                          0.20          0.22          0.22          0.26          0.45   matter
+                          0.64          0.68          0.64          0.44          0.50   snow
+  +z               0.50(   39)   0.99(  146)   2.01(  412)   2.21(  765)   0.85(  463)   bodies
+                          0.07          0.07          0.09          0.60          0.37   matter
+                          0.53          0.80          1.23          1.50          1.06   snow
+  -x+z             0.10(    8)   0.15(   22)   0.55(  112)   1.74(  601)   2.09( 1131)   bodies
+                          0.06          0.08          0.10          0.60          1.00   matter
+                          0.24          0.32          0.52          0.87          1.29   snow
+  -x               0.54(   42)   0.85(  125)   2.10(  431)   2.21(  764)   2.19( 1190)   bodies
+                          0.27          0.27          0.37          0.78          0.52   matter
+                          0.79          1.05          1.58          2.00          1.67   snow
+  -x-z             0.36(   28)   0.53(   79)   1.36(  278)   1.32(  457)   0.35(  191)   bodies
+                          0.80          0.81          0.90          1.16          1.28   matter
+                          0.68          0.81          1.25          1.57          1.13   snow
+  -z               0.24(   19)   0.30(   44)   0.61(  124)   0.71(  247)   1.22(  660)   bodies
+                          1.22          1.28          1.52          2.00          1.46   matter
+                          0.59          0.65          0.79          1.08          1.28   snow
+  +x-z             0.53(   41)   1.34(  199)   1.58(  324)   1.32(  457)   1.24(  670)   bodies
+                          2.40          2.66          4.02          4.95          1.40   matter
+                          0.88          1.07          1.39          1.49          1.16   snow
+  by floor depth under the column (terciles of the floor area: shallow < 19.6 m, middle < 30.4 m, deep above): stock share in the cell / area share in the cell (1.00 = the tank mean); bodies carry their count
+                           0-5          5-15         15-30         30-60           >60
+  shallow          0.45(  114)   0.65(  319)   1.46(  961)   1.88( 1987)   1.62( 1723)   bodies
+                          0.11          0.12          0.12          0.53          0.66   matter
+                          0.52          0.71          1.01          1.24          1.17   snow
+  middle           0.36(   40)   0.42(   88)   0.93(  301)   0.82(  540)   0.66( 1464)   bodies
+                          0.40          0.44          0.55          0.71          0.72   matter
+                          0.64          0.73          0.98          1.11          0.94   snow
+  deep             0.27(   70)   0.56(  273)   0.80(  527)   0.82(  863)   1.21( 1283)   bodies
+                          1.44          1.55          2.01          2.60          1.46   matter
+                          0.62          0.70          0.89          1.08          1.20   snow
+  by kind of body (flags overlap; share of that kind in the band / area share of the band)
+                       0-5      5-15     15-30     30-60       >60      n
+  absorptive          0.38      0.41      0.61      1.01      1.39   1120
+  jointed             0.38      0.59      0.98      1.54      0.86    270
+  photosynthetic      0.37      0.59      1.13      1.24      1.00  10139
+  none of three          -         -         -         -         -      0
+
+-- read 2400 rows, t = 48010.0 to 72000.0, 22790800 body-rows, 43.3 s; sampling step 10.0 s
+
+== dwell in the outer 15 m (0-15 m from the glass): seconds from entering to leaving it or to the sample it was gone from
+   window (entry)      entered  left  died  cens |  finished: median     q1     q3 | Kaplan-Meier: median     q1     q3
+   48000-54000*           3749  2160  1589     0 |               300    130    730 |                  300    130    730
+   54000-60000            4263  2439  1824     0 |               310    140    740 |                  310    140    740
+   60000-66000            6641  3545  3096     0 |               360    150    810 |                  360    150    810
+   66000-72000            9133  4400  3943   790 |               340    140    780 |                  380    150    870
+   all windows           23786 12544 10452   790 |               330    140    780 |                  350    150    810
+
+== dwell in the control band, 30-48.7 m from the glass, the same floor area: seconds from entering to leaving it or to the sample it was gone from
+   window (entry)      entered  left  died  cens |  finished: median     q1     q3 | Kaplan-Meier: median     q1     q3
+   48000-54000*          23265 19364  3901     0 |               140     60    280 |                  140     60    280
+   54000-60000           28522 23141  5381     0 |               140     60    280 |                  140     60    280
+   60000-66000           32466 26157  6309     0 |               150     60    290 |                  150     60    290
+   66000-72000           33900 26743  5935  1222 |               140     60    270 |                  140     60    290
+   all windows          118153 95405 21526  1222 |               140     60    280 |                  140     60    290
+
+== radial speeds, m/s, positive away from the centre (toward the glass): between consecutive samples, by band of the step's mid radius
+   window (ending)    band            steps     mean      sd   mean|v|
+   48000-54000*       0-5              37145   0.0018  0.0093    0.0058
+   48000-54000*       5-15            176861   0.0048  0.0381    0.0195
+   48000-54000*       15-30           548932   0.0067  0.0622    0.0331
+   48000-54000*       30-60          1724445  -0.0024  0.1023    0.0499
+   48000-54000*       >60            1720300  -0.0008  0.1445    0.0917
+   48000-54000*       0-15 (rim)      214006   0.0043  0.0349    0.0171
+   48000-54000*       30-48.7 (ctl)  1118007  -0.0012  0.0926    0.0459
+   54000-60000        0-5              54765   0.0014  0.0116    0.0064
+   54000-60000        5-15            203766   0.0044  0.0360    0.0191
+   54000-60000        15-30           723042   0.0062  0.0604    0.0315
+   54000-60000        30-60          2109260  -0.0020  0.1011    0.0495
+   54000-60000        >60            2183542  -0.0020  0.1427    0.0861
+   54000-60000        0-15 (rim)      258531   0.0038  0.0325    0.0164
+   54000-60000        30-48.7 (ctl)  1358512  -0.0008  0.0918    0.0451
+   60000-66000        0-5              88728   0.0018  0.0117    0.0071
+   60000-66000        5-15            340843   0.0046  0.0314    0.0181
+   60000-66000        15-30           961156   0.0073  0.0556    0.0321
+   60000-66000        30-60          2248692  -0.0020  0.0985    0.0533
+   60000-66000        >60            2721579  -0.0017  0.1305    0.0809
+   60000-66000        0-15 (rim)      429571   0.0040  0.0285    0.0158
+   60000-66000        30-48.7 (ctl)  1432412  -0.0001  0.0900    0.0492
+   66000-72000        0-5             164703   0.0017  0.0127    0.0075
+   66000-72000        5-15            484363   0.0050  0.0355    0.0189
+   66000-72000        15-30          1052759   0.0080  0.0571    0.0329
+   66000-72000        30-60          2249482  -0.0014  0.1049    0.0562
+   66000-72000        >60            2820822  -0.0013  0.1346    0.0823
+   66000-72000        0-15 (rim)      649066   0.0042  0.0314    0.0160
+   66000-72000        30-48.7 (ctl)  1431424   0.0007  0.0962    0.0521
+   (* = the window opens before the first row read, so it is partial)
