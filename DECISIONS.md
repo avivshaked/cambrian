@@ -8760,8 +8760,12 @@ amends D098's rule that used matter returns to the water, for photosynthetic tis
 - Exudation (D070) stays, at a smaller fraction that a screen sets. It leaves charged, so a plant cannot take it back
   until the water's bacteria have spent it (remineralisation), as in the ocean, where the bacteria and not the algae
   take up what algae exude.
-- Other tissue burns as now and releases its spent units into the water. A body with both releases only what its
-  other tissue spends.
+- A body with no eating tissue (no mouth, consumer or absorptive cells) is a plant and holds its whole burn, its
+  brain and joints included, since only eating makes waste. A body with eating tissue holds the share of its burn
+  that its photosynthetic cells' upkeep is of all its cells' upkeep, and releases the rest into the water as now.
+  The coordinator set this reading the same night from the owner's reason that plants do not defecate; the owner
+  is to confirm it.
+- A plant's held units travel with its corpse and return to the water with the corpse's decay.
 
 **Why.** Every living cell burnt charged matter and released the spent unit where it stood, so a crowd of leaves
 fixed its own releases again and lived wherever it drifted. Rounds 60 and 61 filled their open water that way
