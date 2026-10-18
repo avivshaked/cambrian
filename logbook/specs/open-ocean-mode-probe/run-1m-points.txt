@@ -1,0 +1,7 @@
+device NVIDIA GeForce RTX 4090, 1048576 points, 40 repeats, single precision
+today's streams (24 terms + 3 cells): 0.117 ms, 0.111 ns a point
+vectors  modes   trig ms  ns/pt  x today   powers ms  ns/pt  x today   max |trig-powers| / rms
+      8     24     0.064  0.061     0.55       0.124  0.119     1.07   2.25E-005
+     20     60     0.152  0.145     1.30       0.215  0.205     1.85   1.80E-005
+     25     75     0.185  0.177     1.59       0.261  0.248     2.24   2.21E-005
+     27     81     0.193  0.184     1.66       0.280  0.267     2.41   1.91E-005
