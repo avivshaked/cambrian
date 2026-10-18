@@ -8690,3 +8690,38 @@ for it. What binds is how often a grazer kills, which the reach is the first dia
 
 **Rejected.** Halving the upkeep twice more as D201 reads, which would spend a group on an answer the arithmetic gives.
 Leaving dial A for the reach at once, which would leave its last step unscreened.
+
+### D204
+**An open ocean: a square with its edges joined, coral and island shoals inside it, no glass** · 2026-10-18
+
+**Status:** ruled by the owner on the evening of 2026-10-18, on the coordinator's proposal
+(`proposals/propose-open-ocean.md`). The idea was the owner's. The owner left the world's size to the coordinator. On
+the water, the owner preferred a finer mix and the coordinator recommended the same.
+
+**Decision.**
+- New rounds run in the box (D077), a square whose opposite edges are joined, in place of the glass tank (D089).
+  The tank stays in the code, so every recorded world still replays.
+- Before anything is built, a measurement on round 61's worlds says what holds its crowd 15 to 60 m inside the glass:
+  the share of bodies and matter by distance from the glass, by compass sector, by floor depth and by kind of body;
+  the time a body stays at the rim; and the speeds toward and away from the centre.
+- It is built in two steps, each screened before the next: the open square first, then island shoals.
+- The square keeps round 61's area, 88,000 m², about 297 m a side. Islands keep 45 m off the edge, so about 90 m
+  of desert lies between an oasis and its copy across the join. The theatre's fog hides everything past about 50 m,
+  well inside half the width, so no copy is seen. A wider square is a later screen if bodies cross the join often.
+- The bed loses its tilt, which cannot join at the edges. Its waves are set to join. The shallow places are shoals
+  rising to a flat top 1 to 3 m below the surface. There is no dry land for now.
+- The water is a finer mix than the box's five eddies: a spectrum of swirls of several sizes and several layers in
+  depth, with no source and no sink, drifting at their own rates as the tank's streams do (D090), and following
+  the floor around the shoals.
+- The coral of D194 comes into the open square. The mushroom reefs do not.
+- The theatre draws each body, coral and patch of bed at its copy nearest the camera.
+
+**Why.** Life never settled in separate oases in the tank. A first look at rounds 60 and 61 found the outer 15 m
+under-filled and the crowd 30 to 60 m in, off the islands. The glass's friction was off, so the wall is no simple
+trap, and the measurement asks what holds the crowd. A real ocean has no wall, and the owner's aim is separate
+oases with empty water between them (2026-10-15).
+
+**Rejected.** A larger tank with a wide desert ring, which keeps a wall and tells little that rounds 60 and 61 have
+not. A channel with banks rising on two sides, which the owner turned down because a bank at the edge is a wall in
+disguise. Dry land, which needs rules for a body in air and a current at a waterline, for little gain. The box's
+five eddies, 130 to 300 m across, too coarse for oases 90 m apart.
