@@ -8725,3 +8725,22 @@ oases with empty water between them (2026-10-15).
 not. A channel with banks rising on two sides, which the owner turned down because a bank at the edge is a wall in
 disguise. Dry land, which needs rules for a body in air and a current at a waterline, for little gain. The box's
 five eddies, 130 to 300 m across, too coarse for oases 90 m apart.
+
+### D205
+**Round 62 launches in the open ocean, with the grazers' dials and the coral set there** · 2026-10-18
+
+**Status:** ruled by the owner on the evening of 2026-10-18, on the coordinator's recommendation. It adds a step to
+D198's order and changes nothing else in it.
+
+**Decision.** Round 62 waits for the open ocean (D204) and launches in it. Before it are the measurement on round
+61's worlds, the open square and its screens, then the island shoals and theirs. The grazers' dial search (D201,
+D203) goes on in its cousin screens on round 61's build. Its values, and the coral's settings (D194, D198), are then
+checked again in the open square on round 62's build before the round launches.
+
+**Why.** The coral's placement would otherwise be built twice, once for the tank and once for the square, and the tank
+is being retired. The grazers' values had to be checked again on round 62's build in any case (D201). The screens
+before the round are its controls, so a round that changes the world's shape, the coral and the grazers' economy at
+once can still be read.
+
+**Rejected.** Round 62 in the tank and the open ocean from round 63, which launches sooner but places the coral twice
+and spends one more round in a geometry the project is leaving.
