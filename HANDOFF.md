@@ -776,30 +776,64 @@ rest.
   credit, never distance, and niches by body type. At the column kernel's pace a 1,500 s episode puts a
   generation at about 12.6 to 12.8 minutes on 14 efficiency cores, 51's estimate, to be firmed up by its
   slot.
-- **The nursery room** is on main, built by session evolution-simulator-19 (a8), its tests plan done
-  on 2026-10-05: end-to-end flows in a headless browser (`Category=E2e`) and saved answers for its
-  resources (`Golden/answers/`, re-recorded only on purpose with `ROOM_GOLDEN_UPDATE=1`). On main the
-  room suite is 681 and the nursery's 212. Its server is down since the machine's restart of
-  2026-10-08, the owner having no need of the room for now; it runs on `127.0.0.1:5179` from the main
-  checkout's Debug build (`scratch/room-server/build.ps1`), with its logs in `scratch/room-server/`. The build spec is `logbook/specs/nursery-room-build.md`, with the rule that
-  a screen change works only when the end-to-end flows pass. The owner ruled on 2026-10-04 that a8
-  asks the coordinator before anything heavy runs (`scratch/machine/queue.md`). Its machine-slot work
-  (3b's digest rerun, S1, S3 and S4) waits its turn in the queue. The walks' small leftovers are built
-  only if the owner asks. Builder briefs forbid going round the guard's system-path block with `rm`.
-- **Three of the room's questions wait on the owner**, each put to them in full by a8 on 2026-10-07:
-  - *The tank screen shows nothing.* Every registered run is on an older build whose world today's
-    build refuses, so STEP is refused. A is a small fresh run on today's build, about 15 minutes of
-    machine, showing barely evolved bodies. B teaches the room to re-step an old run with that run's
-    own build, about a day of building, and fixes the screen for good. C is A now and B next, which
-    a8 recommends.
-  - *The genome screen.* Whether Opus's design (`scratch/room-genome-design/opus-options.md`) goes to
-    Claude's designer for a visual pass. It has three parts: a strip of what switching each sense off
-    costs, a dial per joint saying whether anything can make it move, and a moment-by-moment strip of
-    what drove each joint, which needs B. Nothing is built until the owner says yes.
-  - *The room's load cap* reads % Processor Utility, which counts a boosting core as more than one, so
-    the room refuses even its own one-thread STEP. The options are to keep it, to count the jobs the
-    queue lists with the meter as a backstop (a8's recommendation), or to count only the room's
-    one-thread jobs by % Processor Time.
+- **The nursery room** is on main, built by a8 to `logbook/specs/nursery-room-build.md`, with the rule that a
+  screen change works only when the end-to-end flows pass (`Category=E2e`). Its saved answers (`Golden/answers/`)
+  are re-recorded only on purpose, with `ROOM_GOLDEN_UPDATE=1`. On main the room suite passes 681 of 686, 4 skipped,
+  and its one E2e failure is Edge's locked profile folder on this machine; the nursery's passes 353 of 354. The server
+  is down, as the owner asked on 2026-10-15, and comes back only on the owner's word. It runs on `127.0.0.1:5179`
+  from the main checkout's Debug build (`scratch/room-server/build.ps1`), with its logs in `scratch/room-server/`,
+  and comes down for any card run, since the card launcher refuses any `dotnet.exe`. The main checkout's
+  `rounds/nursery/room.json` carries two uncommitted edits for it: the fresh run `scratch/nursery/tank-demo-w2` in
+  `runs`, and `affinity` set to the room's slot. a8 asks the coordinator before anything heavy runs
+  (`scratch/machine/queue.md`; the owner, 2026-10-04). The walks' small leftovers are built only if the owner asks.
+  Builder briefs forbid going round the guard's system-path block with `rm`.
+- **The swimming nursery's leaf tank (D166, D167)** is built by a8 to `logbook/specs/nursery-leaf-tank-plan.md`,
+  whose steps hold each arm's read; all of it is on main. Where it stands:
+  - Swimmers evolved in the 400 m² tank (D173, D174) eat almost wholly by the brain, and the direction smell at 6 m
+    pays. Their ten best tops are `inocula/r59-direction-tops/`, which round 59 planted.
+  - With evolving bodies, net energy (D178) breeds idlers; the energy return (D179) breeds cheap foragers that sit
+    near break-even and eat less than half what the tops ate, on two seeds (the plan's step 14).
+  - In D184's patchy tank (`leaf-direction-patches`, registry 20, the plan's step 15) the smell carries nearly all the
+    eating, 83 J against 9 J without it. Re-stepping the exam with the patch watcher (`--restep --patches`,
+    `scripts/reads/patch-*.py`, `founders-batch.py`) puts the share of time within smell of a leaf at 0.44 evolved,
+    0.41 for the founders and 0.40 with no brain. The bodies keep to patches little better than drift, and the
+    smell's value is in reaching a leaf.
+  - Round 59's clause D2 swam the planted-descended grazers alive at 48,000 s (227 and 362 distinct genomes, pools by
+    `scripts/reads/r59-d2-pool.py`) in D173's tank (`r59-d2-s2` and `-s3`, registry 21 and 22), read by
+    `scripts/reads/r59-d2-read.py`. The knockout costs 2.1 J of 22.2 J eaten in seed 2 (1.6 standard errors, not
+    met) and 1.6 J of 10.1 J in seed 3 (2.8, met).
+  - The patch read and the D2 read are not yet in the plan's steps or a logbook entry.
+  - The nursery is on round 60's config format (D185). Its world configs are `a8cbe76c9532bc71` (brain2's `-w5`
+    recipes), `2b125f6cbda84a01` and `e80c201e54b3963f`; recipes on older configs are refused.
+  - Held until the coordinator says (the owner, 2026-10-15: fewer streams): the patchy tank's repeat
+    `leaf-direction-patches-s2-w5`, its founders' baseline (`leaf-direction-patches-s2-founders-w5`), and any new arm.
+  - A recipe whose exam would swim an episode its search swims is refused at load (`EpisodeSeeds.cs`). No nursery
+    branch is rebased: when one needs main, main is merged into it.
+- **The room's next work, as the owner ruled on 2026-10-11**, its timing agreed with the coordinator
+  (evolution-simulator-01) and booked in `scratch/machine/queue.md`:
+  - *The tank screen* steps only runs on today's build, since every registered run is on an older build
+    whose world today's build refuses. The fresh run `tank-demo-w2` (above) gives it one. Re-stepping an
+    old run with its own build waits on the owner: the nursery's `--restep` arrived at `8489b8df`
+    (2026-10-02), after every registered run's commit, so those builds cannot re-step without a graft.
+    The choices put to them on 2026-10-11 are re-stepping on the run's own commit for runs from
+    `8489b8df` on, a graft for the five older entries, and the proposal
+    `logbook/specs/nursery-room-unloadable-recipes.md` on branch `nursery-room` for a clean refusal.
+  - *The cap's merge* waits on the owner: branch `room-cap` (`6d36a4a2`), the full room suite 698 passed,
+    4 skipped, 0 failed. On merge, the main checkout's `rounds/nursery/room.json` takes the branch's
+    keys, with the fresh run's `runs` entry put back, and the server is rebuilt and restarted.
+  - *The genome screen.* Opus's design (`scratch/room-genome-design/opus-options.md`) goes to Claude
+    Design for a visual pass, in the owner's session, beside the room's mockups in `design/nursery/`.
+    It has three parts: a strip of what switching each sense off costs, a dial per joint saying whether
+    anything can make it move, and a moment-by-moment strip of what drove each joint, which needs the
+    re-step above. Nothing is built before the pass comes back. Its brief is
+    `design/nursery/BRIEF-genome.md`, with the options beside it as `genome-options.md`; which design
+    session takes it, the one that drew the room or a fresh one, is the owner's choice.
+  - *The room's load cap* stops reading % Processor Utility, which counts a boosting core as more than
+    one and so refused even the room's own one-thread STEP. It counts the jobs running in the machine's
+    queue instead, with the heat check (`scripts/temp-check.ps1`) as its backstop, following the owner's
+    rule of 2026-10-09 that load is no bar and heat is. The brief is
+    `logbook/specs/nursery-room-queue-cap.md`; it is built on branch `room-cap` in `scratch/wt-room-cap`,
+    with its tests run by `scratch/room-cap/pass.ps1`.
 
 ### Other work and the disk
 
