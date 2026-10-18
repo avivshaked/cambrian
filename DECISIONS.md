@@ -8648,3 +8648,24 @@ breed by themselves.
 **Rejected.** Searching the cost of work first, which cannot pay a 0.9 W body. Round 62's build from 48,000 s, which
 D199 rules out: its new rules and seed 6103's giants would change the worlds beside the dial. Seed 6102 alone, where
 the one line bred, which would rest the values on one world.
+
+### D202
+**The theatre on HDRP: the spike starts, in a project of its own** · 2026-10-18
+
+**Status:** ruled by the owner on the evening of 2026-10-18, who gave the go for the work held in
+`proposals/propose-theatre-hdrp.md`. The coordinator took the proposal's recommended answers to its other two
+questions. The port waits for the owner's ruling on the spike.
+
+**Decision.** Step 1 of the proposal runs: a separate Unity project, `unity-hdrp/`, beside `unity/` with its own
+`Library/`, on Unity's High Definition Render Pipeline. It replays one recorded moment with the theatre's body, bed,
+rock, earth and snow shaders ported, and adds volumetric light, the underwater view, the physical camera and a
+path-traced still. Four moments are rendered in both theatres side by side and checked against the last agreed film:
+a portrait of one body against a crowd, an oasis from above, the desert with an oasis in the distance, and the
+waterline. Unity runs only in the gaps between card runs. The present theatre is untouched and keeps making films.
+
+**Why.** The owner wants a shallow depth of field with real bokeh, and HDRP adds a physical camera, volumetric light in
+the water, an underwater view of the surface and a path tracer. Unity has put HDRP in maintenance, so the spike asks
+whether today's picture is worth a pipeline that will not grow before anything is ported.
+
+**Rejected.** A port in place on a branch of `unity/`, which would put the working theatre at risk for a question a
+spike answers.
