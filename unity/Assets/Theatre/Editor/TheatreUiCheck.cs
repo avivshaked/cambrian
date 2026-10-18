@@ -52,7 +52,7 @@ namespace Evosim.Theatre.EditorTools
     ///
     /// # the live states: a checkpoint instead of a run, or LiveUiCheck.Run, which is this
     /// # entry with the fixture's defaults filled in
-    /// $env:EVOSIM_THEATRE_CHECKPOINT = "$PWD/scratch/checkpoint/runs/ckA"
+    /// $env:EVOSIM_THEATRE_CHECKPOINT = "$PWD/runs/ckA"
     /// $env:EVOSIM_THEATRE_SEEK = '400'
     /// </code>
     /// </remarks>

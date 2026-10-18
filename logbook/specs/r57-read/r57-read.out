@@ -1,0 +1,45 @@
+
+== r57-s1 (scratch/r57-stitch\r57-s1\2026-10-06-065821-dfc0e881); last stats row t=48000, 151664 leaf births to 48000 s
+year 1: summer most 3469, winter fewest 1077 (down 69.0%); light factor 0.179 to 2.690; leaf births 4719, rm median 166.59068, rm IQR 230.62691; first summer day 0.627 of 3532 summer births; at 6000 s the largest root lineage 0.435 of the living, jointed 0.3823
+year 2: summer most 2795, winter fewest 1563 (down 44.1%); light factor 0.139 to 2.198; leaf births 5153, rm median 57.92568, rm IQR 185.63984699999997; first summer day 0.355 of 2859 summer births; at 12000 s the largest root lineage 0.656 of the living, jointed 0.1614
+year 3: summer most 4626, winter fewest 3870 (down 16.3%); light factor 0.192 to 2.105; leaf births 13922, rm median 48.554073, rm IQR 1.571990999999997; first summer day 0.345 of 7190 summer births; at 18000 s the largest root lineage 0.992 of the living, jointed 0.0619
+year 4: summer most 7962, winter fewest 5232 (down 34.3%); light factor 0.212 to 2.616; leaf births 21095, rm median 48.554073, rm IQR 3.281837000000003; first summer day 0.299 of 12369 summer births; at 24000 s the largest root lineage 0.998 of the living, jointed 0.0347
+year 5: summer most 7668, winter fewest 5643 (down 26.4%); light factor 0.180 to 2.311; leaf births 23221, rm median 45.432552, rm IQR 6.601433; first summer day 0.370 of 12801 summer births; at 30000 s the largest root lineage 0.999 of the living, jointed 0.0206
+year 6: summer most 9154, winter fewest 6099 (down 33.4%); light factor 0.201 to 3.129; leaf births 25310, rm median 45.272236, rm IQR 8.723889; first summer day 0.352 of 15184 summer births; at 36000 s the largest root lineage 0.998 of the living, jointed 0.0259
+year 7: summer most 9552, winter fewest 6894 (down 27.8%); light factor 0.224 to 4.227; leaf births 28792, rm median 45.432552, rm IQR 9.736646; first summer day 0.357 of 16609 summer births; at 42000 s the largest root lineage 0.999 of the living, jointed 0.0270
+year 8: summer most 9243, winter fewest 7084 (down 23.4%); light factor 0.198 to 2.426; leaf births 27939, rm median 44.10777, rm IQR 10.257438999999998; first summer day 0.343 of 15486 summer births; at 48000 s the largest root lineage 0.999 of the living, jointed 0.0400
+
+== r57-s2 (scratch/r57-stitch\r57-s2\2026-10-06-065827-dfc0e881); last stats row t=48000, 170175 leaf births to 48000 s
+year 1: summer most 5159, winter fewest 1311 (down 74.6%); light factor 0.179 to 2.690; leaf births 10089, rm median 100.11588, rm IQR 380.10573; first summer day 0.621 of 7379 summer births; at 6000 s the largest root lineage 0.510 of the living, jointed 0.0760
+year 2: summer most 3340, winter fewest 1939 (down 41.9%); light factor 0.139 to 2.198; leaf births 10445, rm median 439.66425, rm IQR 101.57623000000001; first summer day 0.350 of 6457 summer births; at 12000 s the largest root lineage 0.819 of the living, jointed 0.0122
+year 3: summer most 4256, winter fewest 2585 (down 39.3%); light factor 0.192 to 2.105; leaf births 14309, rm median 439.66425, rm IQR 157.2688; first summer day 0.404 of 8387 summer births; at 18000 s the largest root lineage 0.905 of the living, jointed 0.0026
+year 4: summer most 5692, winter fewest 3661 (down 35.7%); light factor 0.212 to 2.616; leaf births 18955, rm median 340.6887, rm IQR 62.56164000000001; first summer day 0.276 of 11123 summer births; at 24000 s the largest root lineage 0.941 of the living, jointed 0.0019
+year 5: summer most 6348, winter fewest 4583 (down 27.8%); light factor 0.180 to 2.311; leaf births 23461, rm median 375.2813, rm IQR 42.310820000000035; first summer day 0.368 of 12850 summer births; at 30000 s the largest root lineage 0.953 of the living, jointed 0.0007
+year 6: summer most 8099, winter fewest 5421 (down 33.1%); light factor 0.201 to 3.129; leaf births 27273, rm median 380.6886, rm IQR 50.99735000000004; first summer day 0.362 of 15794 summer births; at 36000 s the largest root lineage 0.909 of the living, jointed 0.0008
+year 7: summer most 10353, winter fewest 6703 (down 35.3%); light factor 0.224 to 4.227; leaf births 32964, rm median 367.34448, rm IQR 95.84724; first summer day 0.383 of 19783 summer births; at 42000 s the largest root lineage 0.867 of the living, jointed 0.0009
+year 8: summer most 9175, winter fewest 6629 (down 27.7%); light factor 0.198 to 2.426; leaf births 30757, rm median 350.24918, rm IQR 73.95363500000002; first summer day 0.340 of 17373 summer births; at 48000 s the largest root lineage 0.851 of the living, jointed 0.0005
+
+== r57-s3 (scratch/r57-stitch\r57-s3\2026-10-07-023901-dfc0e881-joined); last stats row t=48000, 175053 leaf births to 48000 s
+year 1: summer most 4153, winter fewest 1532 (down 63.1%); light factor 0.179 to 2.690; leaf births 10746, rm median 154.24557, rm IQR 4.071169999999995; first summer day 0.551 of 7453 summer births; at 6000 s the largest root lineage 0.855 of the living, jointed 0.0099
+year 2: summer most 4414, winter fewest 3739 (down 15.3%); light factor 0.139 to 2.198; leaf births 18030, rm median 154.24557, rm IQR 6.781089999999978; first summer day 0.345 of 9310 summer births; at 12000 s the largest root lineage 0.994 of the living, jointed 0.0005
+year 3: summer most 7946, winter fewest 6494 (down 18.3%); light factor 0.192 to 2.105; leaf births 23997, rm median 143.46866, rm IQR 22.829999999999984; first summer day 0.403 of 14075 summer births; at 18000 s the largest root lineage 0.998 of the living, jointed 0.0005
+year 4: summer most 10513, winter fewest 8242 (down 21.6%); light factor 0.212 to 2.616; leaf births 23522, rm median 131.41557, rm IQR 14.211520000000007; first summer day 0.347 of 13149 summer births; at 24000 s the largest root lineage 0.998 of the living, jointed 0.0010
+year 5: summer most 10791, winter fewest 8205 (down 24.0%); light factor 0.180 to 2.311; leaf births 23749, rm median 131.41557, rm IQR 11.603499999999983; first summer day 0.410 of 13324 summer births; at 30000 s the largest root lineage 0.999 of the living, jointed 0.0005
+year 6: summer most 11055, winter fewest 7794 (down 29.5%); light factor 0.201 to 3.129; leaf births 25464, rm median 131.41557, rm IQR 24.28551999999999; first summer day 0.352 of 14319 summer births; at 36000 s the largest root lineage 0.999 of the living, jointed 0.0003
+year 7: summer most 10750, winter fewest 7007 (down 34.8%); light factor 0.224 to 4.227; leaf births 24605, rm median 131.41557, rm IQR 30.08336; first summer day 0.394 of 13702 summer births; at 42000 s the largest root lineage 0.999 of the living, jointed 0.0009
+year 8: summer most 8986, winter fewest 5883 (down 34.5%); light factor 0.198 to 2.426; leaf births 23598, rm median 132.49695, rm IQR 35.89438999999999; first summer day 0.375 of 13543 summer births; at 48000 s the largest root lineage 0.998 of the living, jointed 0.0013
+
+== clauses
+W seed 1: 6 of 7 years bite -> held
+R seed 1: rm median 44.1 against 57.9 -> failed
+V seed 1: rm IQR 10.3 against 185.6 -> held
+T seed 1: first summer day 0.351 of 47279 summer leaf births in years 6 to 8 against 0.321 of 22418 in years 2 to 4 -> held
+W seed 2: 7 of 7 years bite -> held
+R seed 2: rm median 350.2 against 439.7 -> failed
+V seed 2: rm IQR 74.0 against 101.6 -> held
+T seed 2: first summer day 0.362 of 52950 summer leaf births in years 6 to 8 against 0.335 of 25967 in years 2 to 4 -> held
+W seed 3: 5 of 7 years bite -> failed
+R seed 3: rm median 132.5 against 154.2 -> failed
+V seed 3: rm IQR 35.9 against 6.8 -> failed
+T seed 3: first summer day 0.374 of 41564 summer leaf births in years 6 to 8 against 0.368 of 36534 in years 2 to 4 -> held
+R 0 of 3 (bar 3 of 3); T 3 of 3 (bar 3 of 3); V 2 of 3 (bar 3 of 3); W 2 of 3 (bar 3 of 3)

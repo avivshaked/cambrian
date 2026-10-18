@@ -188,7 +188,7 @@
   ./scripts/theatre-snap.ps1 r35-s1 -At 5000 -Views close -Carve 0.35 -Worker 7
 
 .EXAMPLE
-  ./scripts/theatre-snap.ps1 ckA -FromCheckpoint scratch/checkpoint/runs/ckA -At 400 -Carry 100 `
+  ./scripts/theatre-snap.ps1 ckA -FromCheckpoint runs/ckA -At 400 -Carry 100 `
       -Views side,top,close -Worker 6
 
 .EXAMPLE

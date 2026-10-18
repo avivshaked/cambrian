@@ -36,7 +36,7 @@ namespace Evosim.Theatre.EditorTools
     /// therefore not applied and the palette runs bare.
     /// </para>
     /// <code>
-    /// $env:EVOSIM_THEATRE_CHECKPOINT = "$PWD/scratch/checkpoint/runs/ckA"
+    /// $env:EVOSIM_THEATRE_CHECKPOINT = "$PWD/runs/ckA"
     /// $env:EVOSIM_THEATRE_SEEK = "400"
     /// Start-Process -FilePath $unity -Wait -NoNewWindow -ArgumentList @(
     ///   '-projectPath', "$PWD/unity-w6", '-batchmode', '-quit', '-nographics',
@@ -49,7 +49,7 @@ namespace Evosim.Theatre.EditorTools
         private const string Tag = "[LiveCheckpointCheck] ";
 
         /// <summary>The fixture, relative to the repository root, when nothing names another.</summary>
-        private const string Fixture = "scratch/checkpoint/runs/ckA";
+        private const string Fixture = "runs/ckA";
 
         [MenuItem("Evosim/Theatre/Live Checkpoint Check")]
         public static void Run()

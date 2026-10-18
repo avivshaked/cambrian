@@ -161,9 +161,9 @@ records which `EVOSIM_*` names were actually set, because a default and a value 
 equal it are the same number and not the same fact.
 
 ```powershell
-./scripts/run-farm.ps1 -Arm ckA -Seconds 600 -Threads 8 -RunsRoot scratch/checkpoint/runs `
+./scripts/run-farm.ps1 -Arm ckA -Seconds 600 -Threads 8 -RunsRoot runs `
     -Launcher rounds/env-r42.ps1 -Env @{EVOSIM_WATER_HOLD=0; EVOSIM_CHECKPOINT_EVERY=200}
-./scripts/run-farm.ps1 -Arm ckB -Seconds 600 -Threads 8 -RunsRoot scratch/checkpoint/runs `
+./scripts/run-farm.ps1 -Arm ckB -Seconds 600 -Threads 8 -RunsRoot runs `
     -ResumeFrom ckA -At 400
 ```
 

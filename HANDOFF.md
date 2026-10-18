@@ -618,9 +618,9 @@ manifest naming `1917815` with no DIRTY mark, leaving 16 and 17 for builds. The 
 by mistake at 08:53 on 2026-10-07 (its stop checkpoint 21,710 s) and resumed it at 08:54 from that checkpoint, same
 build, threads and processors: run `runs/r57-s3/2026-10-07-075434-dfc0e881`, pid 46128, by
 `scratch/r57-launch/resume-s3.ps1`; it ended on budget at 20:46 on 2026-10-07 with 6,890 alive. Its two
-runs are joined at 21,710 s in `scratch/r57-stitch/r57-s3/2026-10-07-023901-dfc0e881-joined` by
+runs are joined at 21,710 s in `runs/derived/r57-stitch/r57-s3/2026-10-07-023901-dfc0e881-joined` by
 `stitch-resume.py --header-from` (the stitch root holds junctions to the three seeds' runs, so the reader
-takes `--runs-root scratch/r57-stitch`; read `scratch/r57-stitch/r57-read.out`). Round 57's verdict by
+takes `--runs-root runs/derived/r57-stitch`; read `logbook/specs/r57-read/r57-read.out`). Round 57's verdict by
 `r57-read.py`: T holds 3 of 3 (the summer's first-day share of leaf births rose a little in every seed),
 W 2 of 3 (seed 3's winters bit only 15% and 18% in years 2 and 3 while its crowd grew), V 2 of 3 (seed 3's
 spread widened), and R 0 of 3 (the year-8 median rm fell in every seed: 58 to 44 s, 440 to 350 s and 154
@@ -841,7 +841,7 @@ rest.
 
 **Git.** GitHub's main is one squash commit (8bb29ad8, merged 2026-10-18) on the history pushed before 2026-10-01, and local main matches it. The full local history is the local branch `archive/local-2026-10-18`, never pushed. A branch started before the squash (`r62-blades`, `r62-coral` and the rest) lands on main only by `git merge --squash`, or the old commits come back; the pre-push hook refuses them anyway. This repository's `user.email` is the GitHub noreply address. The pushed branch `squash/2026-10-18` is still on GitHub, and deleting it is the owner's call.
 
-**The scratch review** (`scratch/scratch-review/review.txt`) is approved and its deletes are done (`scratch/scratch-review/delete-log.txt`). Still to do: about 13 GB of named runs moved into `runs/` with the record's paths fixed, and about 60 files promoted to their homes with a privacy check. The coral's step 1 is on `r62-coral` (2559dc3f, in `scratch/wt-coral`); its full test suite waits for a free machine.
+**The scratch review** (`scratch/scratch-review/review.txt`) is approved and its deletes are done (`scratch/scratch-review/delete-log.txt`). The run directories the record names are in main's `runs/`, those that are not one arm's runs under `runs/derived/`, with each old path in `logbook/specs/run-moves-2026-10-18.txt`; runs a nursery registry row names stay in their worktrees. Still to do: about 60 files promoted to their homes with a privacy check. The coral's step 1 is on `r62-coral` (2559dc3f, in `scratch/wt-coral`); its full test suite waits for a free machine.
 
 Another session works on the story tools: `.claude/skills/story-resolve/`, `assets/`,
 `logbook/specs/story-resolve.md` and the scripts named story-resolve are left alone. Round 48's story

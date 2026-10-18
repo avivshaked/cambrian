@@ -23,7 +23,7 @@ namespace Evosim.Theatre.EditorTools
     /// </para>
     /// <para>
     /// <b>The defaults are the fixture the checkpoint work was built on</b>
-    /// (<c>scratch/checkpoint/runs/ckA</c>, 400 s — <see cref="LiveCheckpointCheck"/>'s own), and
+    /// (<c>runs/ckA</c>, 400 s — <see cref="LiveCheckpointCheck"/>'s own), and
     /// anything already set in the environment wins over them, so a person pointing this at
     /// another run does not have to know that a default existed.
     /// </para>
@@ -53,7 +53,7 @@ namespace Evosim.Theatre.EditorTools
     public static class LiveUiCheck
     {
         /// <summary>The fixture, relative to the repository root, when nothing names another.</summary>
-        private const string Fixture = "scratch/checkpoint/runs/ckA";
+        private const string Fixture = "runs/ckA";
 
         /// <summary>The second it is restored at, which is one the fixture holds a checkpoint for.</summary>
         private const string RestoreAtSeconds = "400";

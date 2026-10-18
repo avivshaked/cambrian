@@ -156,7 +156,7 @@
   the log how far the two paths are apart (EVOSIM_THEATRE_DOWNSAMPLE_CHECK=1). Changes no frame.
 
 .EXAMPLE
-  ./scripts/theatre-film.ps1 ckUi -At 400 -RunsRoot scratch/live-ui/runs -Seconds 20 -Fps 10
+  ./scripts/theatre-film.ps1 ckUi -At 400 -RunsRoot runs -Seconds 20 -Fps 10
 .EXAMPLE
   ./scripts/theatre-film.ps1 r48-s1 -FromFarm scratch/story-windows/r48-v2/story-01-r48-s1-main -Shots close -Seconds 20
 .EXAMPLE

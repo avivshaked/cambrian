@@ -201,9 +201,9 @@ The root file's rules still apply. The entries below were moved word for word, s
   the dead panel are withheld as on any cousin, and a click selects by a ray against each
   part's own box because a live body has no collider. **A checkpoint version bump orphans
   every checkpoint on disk**: the double-accounts build took the layout from 1 to 2 while
-  `scratch/checkpoint/runs/ckA` was the fixture, so the fixture was refused and
+  `runs/ckA` was the fixture, so the fixture was refused and
   `LiveUiCheck` needed `EVOSIM_THEATRE_CHECKPOINT` pointed at one the build wrote
-  (`scratch/live-ui/runs/ckUi` on 2026-09-22); the layout is 3 since the refusal split, and
+  (`runs/ckUi` on 2026-09-22); the layout is 3 since the refusal split, and
   ckA, ckB and ckC were re-recorded on the reach-bound build the same night (the newest run
   under each arm; the restore and the checkpoint-free run both identical, the checkpoint
   spec's acceptance). Re-record them after every `StateVersion` or `Checkpoint.Version`

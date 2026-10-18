@@ -60,7 +60,7 @@ namespace Evosim.Theatre.EditorTools
     /// </para>
     /// <code>
     /// # NO -quit, and NO -nographics: the entry quits, and rendering needs a graphics device.
-    /// $env:EVOSIM_THEATRE_CHECKPOINT = "$PWD/scratch/live-ui/runs/ckUi/.../checkpoints/000000400.ckpt"
+    /// $env:EVOSIM_THEATRE_CHECKPOINT = "$PWD/runs/ckUi/.../checkpoints/000000400.ckpt"
     /// $env:EVOSIM_THEATRE_SEEK = '400'
     /// $env:EVOSIM_THEATRE_FILM_SECONDS = '20'; $env:EVOSIM_THEATRE_FILM_FPS = '10'
     /// Start-Process -FilePath $unity -Wait -NoNewWindow -ArgumentList @(

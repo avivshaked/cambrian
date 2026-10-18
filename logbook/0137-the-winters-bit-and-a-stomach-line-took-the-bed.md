@@ -185,12 +185,12 @@ richer than the rest. Its two screens run on seed 2, the seed that now has a cro
 
 | claim | source |
 |---|---|
-| W, R, T and V, the per-year readings, the root lineage shares | `scratch/r57-stitch/r57-read.out`, by `scripts/reads/r57-read.py` on `round-57` (`1917815`), run with `--runs-root scratch/r57-stitch` |
+| W, R, T and V, the per-year readings, the root lineage shares | `logbook/specs/r57-read/r57-read.out`, by `scripts/reads/r57-read.py` on `round-57` (`1917815`), run with `--runs-root runs/derived/r57-stitch` |
 | the predictions and their bars | `logbook/0136-winters-and-weather.md` on `round-57` |
 | B1, the end counts | the three runs' `stats.jsonl` and `run.json`, read 2026-10-07 by the thresholds of `scripts/reads/r54-read.py` |
 | the stomach counts by second | `stats.jsonl`, the `absorptive`, `photosynthetic` and `foodJoules` columns |
 | the stomach line, its founder, depth, plan, margin and life | `positions.jsonl.gz` at 48,000 s and `lineage.jsonl` of `runs/r57-s2/2026-10-06-065827-dfc0e881`, read 2026-10-07 |
-| the clade scores | `./scripts/clade-score.ps1 r57-s1 r57-s2 r57-s3 -RunsRoot scratch/r57-stitch`, run 2026-10-07 |
-| seed 3's join at 21,710 s | `scratch/r57-stitch/r57-s3/2026-10-07-023901-dfc0e881-joined`, by `scripts/stitch-resume.py` |
+| the clade scores | `./scripts/clade-score.ps1 r57-s1 r57-s2 r57-s3 -RunsRoot runs/derived/r57-stitch`, run 2026-10-07 |
+| seed 3's join at 21,710 s | `runs/derived/r57-stitch/r57-s3/2026-10-07-023901-dfc0e881-joined`, by `scripts/stitch-resume.py` |
 | the screen replay | HANDOFF, from `scripts/compare-det.py` on `r57-screen-s2` and `r57-s2` |
 | the pictures | `scripts/theatre-snap.ps1 r57-s2 -At 43500,46900 -From snapshot -Worker 5 -Views reef,side` with `EVOSIM_THEATRE_LOOK=4`, in `scratch/snaps/r57-look4/`; copied as JPEG into `logbook/images/` |
