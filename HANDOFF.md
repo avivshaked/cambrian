@@ -241,21 +241,14 @@ first (D166, amending D164's order):
     year in years 6 to 8. In `r61-p6103x4` their kills rose to 1,226 a year as the leaves fell to 2,784, the one world
     where P3 and P4 held. The 1,199 mouthed bodies in `r61-c6101x2` photosynthesise and kill nothing. The first look in the theatre, drawn from the snapshots of `r61-p6103x4`, `r61-p6101x2` and `r61-c6101x2` at 72,000 s (`scratch/owner/r61-theatre-72000/`), shows the crowds in bands at the glass, the north and west rims and a mass in the south-east, with few bodies on the islands; planted and control look alike, `r61-p6103x4` is sparse in two clumps at the rim, and its side view shows kelp blades standing past the water's top. Whether the planted swimmers swim needs a replay or the positions. Before the round is called finished: a talk with the owner, then the write-up. The pace guard runs in the merged build, and overflow and
     divergence never stop a run (D197).
-    On a heat stop the work waits an hour for the room to cool, then resumes from the checkpoint (the owner, 2026-10-17). Still to look at: theatre frames (whether the planted swimmers swim; at 23,000-28,000 s their jointed
-    bodies moved no faster than rigid drifters) and the planted lines' own speeds from the positions, once the card is
-    free. Held for later rounds, each as its own question: a death risk that rises with a line's crowding, harsher
+    On a heat stop the work waits an hour for the room to cool, then resumes from the checkpoint (the owner, 2026-10-17). Held for later rounds, each as its own question: a death risk that rises with a line's crowding, harsher
     winters, staying power for the crossing, strands between islands, and a replay of the tape. Rounds keep 48,000 s;
     a world still developing at the end is run on from its checkpoint. Round 60's seasons were a ratchet: growth in one
     half of each year, a dip of at most 5-10% in the other.
   - **The grazers' economy (the owner's direction of 2026-10-17).** The owner reads round 61 as the dials not yet
     turned far enough: moving should be cheap and killing should pay, and the dials are pushed in favour of movement
     and grazing until they overshoot, with grazers eating the leaves down too far, then brought back between the last
-    two settings. First, once the card is free, a read of round 61's planted worlds from the lineage: how many grazers
-    were born of grazer parents against the pool's founders, how long they lived and what killed them, and the energy a
-    kill brought against a grazer's upkeep, with `scripts/ledger.ps1` screening whether a leaf kill can pay at all. It
-    also asks whether the planted swimmers swim in the farm's water at all, since the nursery holds the water 0.5 s and
-    the farm does not (D152): in all three planted worlds the jointed bodies moved at about half a drifter's speed.
-    Then a proposal for the dial search: short card screens resumed from round 61's planted worlds at 48,000 s, each
+    two settings. The read of round 61's planted worlds from the lineage is done (2026-10-18, `scripts/reads/r61-grazer-economy.py`, outputs and ledger screens in `logbook/specs/r61-grazer-economy/`). Nearly every living grazer is a founder from the trickle: each planted world took 1,115 to 1,188 founders and their lines bred 28, 338 and 134 grazers in 72,000 s, and only one line (p6102's 126388, 243 births, to generation 16, 47,650-62,110 s) outlived its founder's year. Founders die at a median 636-655 s, 96% starved, about when their 455 J endowment runs out at the swimmer's standing cost of 0.908 W (0.288 W of it the attributes' upkeep); the billed work is about a tenth of that. Only 36-45% of founders ever kill; a leaf corpse holds 45-56 J, so one kill eaten whole pays about 46 s of upkeep, and the mouths kept 12-46% of the joules in the corpses grazers made in the late years. The line that bred had a body of one rigid part at 0.164 W. The planted swimmers do swim: 0.054-0.081 m/s against the local drift, rigid bodies 0.004-0.046; the earlier half-a-drifter's figure averaged every jointed body. Then a proposal for the dial search: short card screens resumed from round 61's planted worlds at 48,000 s, each
     dial doubled until it overshoots and then halved back, read on whether grazers grow by themselves and on leaves
     planted against control. The search goes before round 62's coral (D198), on cousins resumed from round 61's
     planted worlds.
