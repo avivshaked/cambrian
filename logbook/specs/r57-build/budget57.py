@@ -1,4 +1,4 @@
-"""Round 57 groundwork: round 56's leaf budget (scratch/r56-light/budget.py) with deeper seasons and weather.
+"""Round 57 groundwork: round 56's leaf budget (logbook/specs/r56-light/budget.py) with deeper seasons and weather.
 
 Computed, not simulated. A body's net in units of its own standing cost W is
     net(t) = r * g(f(t) * w(t)) - 1

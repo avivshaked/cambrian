@@ -1,0 +1,4 @@
+== p07-r56s3-8004  build r56-1672983  parts 2  dof 2
+  part 0 parent -1 consumer sphere joint Fixed mirrored False pos (0.000, 0.000, 0.000) half (0.377, 0.163, 0.208)
+  part 1 parent 0 link capsule joint Universal mirrored False pos (0.000, 0.385, 0.000) half (0.120, 0.135, 0.128)
+    joint to 0: anchors apart 0.0000 m; on parent (0.000, 1.531, 0.000) (face), on child (0.000, -1.000, 0.000) (face)

@@ -1,0 +1,57 @@
+# Computed. Season alone (day off), and with a day cycle on top where named.
+# lean half = Ps/2 (multiplier below 1); breeds at trough = r(1-As) > 1 for the light-bound body
+season s	season amp	day s	day amp	body	r	lean half s	lean half / lifetime	trough multiplier	breeds at trough	deficit spell s	spell / lifetime	reserve needed s	who survives on reserve	mean income vs no cycle
+10000	0.3	-	-	light-bound	2.10	5000	4.0	0.70	yes	0	0.00	0	all	1.000
+10000	0.3	-	-	light-bound	1.25	5000	4.0	0.70	no	2675	2.14	220	adults only; newborns and growing die	1.000
+10000	0.3	-	-	matter-bound	2.10	5000	4.0	0.70	yes	0	0.00	0	all	1.000
+10000	0.3	1000	0.5	light-bound	2.10	5000	4.0	0.35	no	276	0.22	47	adults only; newborns and growing die	1.000
+10000	0.3	1000	0.5	light-bound	1.25	5000	4.0	0.35	no	584	0.47	366	adults only; newborns and growing die	1.000
+10000	0.3	1000	0.5	matter-bound	2.10	5000	4.0	0.35	yes	0	0.00	0	all	0.984
+10000	0.3	1000	0.8	light-bound	2.10	5000	4.0	0.14	no	367	0.29	168	adults only; newborns and growing die	1.000
+10000	0.3	1000	0.8	light-bound	1.25	5000	4.0	0.14	no	552	0.44	460	only adults near their gate	1.000
+10000	0.3	1000	0.8	matter-bound	2.10	5000	4.0	0.14	no	190	0.15	51	adults only; newborns and growing die	0.881
+10000	0.5	-	-	light-bound	2.10	5000	4.0	0.50	yes	0	0.00	0	all	1.000
+10000	0.5	-	-	light-bound	1.25	5000	4.0	0.50	no	3695	2.96	901	only the fullest adults	1.000
+10000	0.5	-	-	matter-bound	2.10	5000	4.0	0.50	yes	0	0.00	0	all	1.000
+10000	0.5	1000	0.5	light-bound	2.10	5000	4.0	0.25	no	457	0.37	138	adults only; newborns and growing die	1.000
+10000	0.5	1000	0.5	light-bound	1.25	5000	4.0	0.25	no	1792	1.43	1032	only the fullest adults	1.000
+10000	0.5	1000	0.5	matter-bound	2.10	5000	4.0	0.25	yes	0	0.00	0	all	0.959
+10000	0.5	1000	0.8	light-bound	2.10	5000	4.0	0.10	no	473	0.38	239	adults only; newborns and growing die	1.000
+10000	0.5	1000	0.8	light-bound	1.25	5000	4.0	0.10	no	739	0.59	1124	only the fullest adults	1.000
+10000	0.5	1000	0.8	matter-bound	2.10	5000	4.0	0.10	no	269	0.22	102	adults only; newborns and growing die	0.869
+10000	0.8	-	-	light-bound	2.10	5000	4.0	0.20	no	2725	2.18	1041	only the fullest adults	1.000
+10000	0.8	-	-	light-bound	1.25	5000	4.0	0.20	no	4195	3.36	2033	none on reserve alone	1.000
+10000	0.8	-	-	matter-bound	2.10	5000	4.0	0.20	no	985	0.79	105	adults only; newborns and growing die	0.888
+10000	0.8	1000	0.5	light-bound	2.10	5000	4.0	0.10	no	2560	2.05	1143	only the fullest adults	1.000
+10000	0.8	1000	0.5	light-bound	1.25	5000	4.0	0.10	no	3648	2.92	2162	none on reserve alone	1.000
+10000	0.8	1000	0.5	matter-bound	2.10	5000	4.0	0.10	no	560	0.45	210	adults only; newborns and growing die	0.868
+10000	0.8	1000	0.8	light-bound	2.10	5000	4.0	0.04	no	1746	1.40	1226	only the fullest adults	1.000
+10000	0.8	1000	0.8	light-bound	1.25	5000	4.0	0.04	no	3598	2.88	2264	none on reserve alone	1.000
+10000	0.8	1000	0.8	matter-bound	2.10	5000	4.0	0.04	no	537	0.43	319	adults only; newborns and growing die	0.811
+30000	0.3	-	-	light-bound	2.10	15000	12.0	0.70	yes	0	0.00	0	all	1.000
+30000	0.3	-	-	light-bound	1.25	15000	12.0	0.70	no	8025	6.42	661	only adults near their gate	1.000
+30000	0.3	-	-	matter-bound	2.10	15000	12.0	0.70	yes	0	0.00	0	all	1.000
+30000	0.3	1000	0.5	light-bound	2.10	15000	12.0	0.35	no	279	0.22	49	adults only; newborns and growing die	1.000
+30000	0.3	1000	0.5	light-bound	1.25	15000	12.0	0.35	no	592	0.47	816	only the fullest adults	1.000
+30000	0.3	1000	0.5	matter-bound	2.10	15000	12.0	0.35	yes	0	0.00	0	all	0.984
+30000	0.3	1000	0.8	light-bound	2.10	15000	12.0	0.14	no	369	0.30	170	adults only; newborns and growing die	1.000
+30000	0.3	1000	0.8	light-bound	1.25	15000	12.0	0.14	no	556	0.45	912	only the fullest adults	1.000
+30000	0.3	1000	0.8	matter-bound	2.10	15000	12.0	0.14	no	192	0.15	52	adults only; newborns and growing die	0.881
+30000	0.5	-	-	light-bound	2.10	15000	12.0	0.50	yes	0	0.00	0	all	1.000
+30000	0.5	-	-	light-bound	1.25	15000	12.0	0.50	no	11085	8.87	2702	none on reserve alone	1.000
+30000	0.5	-	-	matter-bound	2.10	15000	12.0	0.50	yes	0	0.00	0	all	1.000
+30000	0.5	1000	0.5	light-bound	2.10	15000	12.0	0.25	no	468	0.37	142	adults only; newborns and growing die	1.000
+30000	0.5	1000	0.5	light-bound	1.25	15000	12.0	0.25	no	4822	3.86	2853	none on reserve alone	1.000
+30000	0.5	1000	0.5	matter-bound	2.10	15000	12.0	0.25	yes	0	0.00	0	all	0.959
+30000	0.5	1000	0.8	light-bound	2.10	15000	12.0	0.10	no	480	0.38	242	adults only; newborns and growing die	1.000
+30000	0.5	1000	0.8	light-bound	1.25	15000	12.0	0.10	no	766	0.61	2951	none on reserve alone	1.000
+30000	0.5	1000	0.8	matter-bound	2.10	15000	12.0	0.10	no	272	0.22	104	adults only; newborns and growing die	0.869
+30000	0.8	-	-	light-bound	2.10	15000	12.0	0.20	no	8175	6.54	3124	none on reserve alone	1.000
+30000	0.8	-	-	light-bound	1.25	15000	12.0	0.20	no	12585	10.07	6099	none on reserve alone	1.000
+30000	0.8	-	-	matter-bound	2.10	15000	12.0	0.20	no	2955	2.36	315	adults only; newborns and growing die	0.888
+30000	0.8	1000	0.5	light-bound	2.10	15000	12.0	0.10	no	5801	4.64	3268	none on reserve alone	1.000
+30000	0.8	1000	0.5	light-bound	1.25	15000	12.0	0.10	no	9777	7.82	6245	none on reserve alone	1.000
+30000	0.8	1000	0.5	matter-bound	2.10	15000	12.0	0.10	no	614	0.49	454	only adults near their gate	0.869
+30000	0.8	1000	0.8	light-bound	2.10	15000	12.0	0.04	no	4776	3.82	3367	none on reserve alone	1.000
+30000	0.8	1000	0.8	light-bound	1.25	15000	12.0	0.04	no	8752	7.00	6339	none on reserve alone	1.000
+30000	0.8	1000	0.8	matter-bound	2.10	15000	12.0	0.04	no	570	0.46	555	only adults near their gate	0.810

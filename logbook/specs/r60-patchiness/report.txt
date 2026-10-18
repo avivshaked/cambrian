@@ -1,0 +1,474 @@
+ROUND 60 DESIGN STUDY: MATTER THAT CONCENTRATES, IN A LARGER TANK
+Written 2026-10-14 for the owner's question (paraphrased): make matter concentrate and make the tank
+larger, so that life still grows in micro-biomes but the tank is not a uniform soup of creatures. How
+does nature do it?
+This is a study for the owner to rule on. It is not a decision, and nothing here was built or launched.
+Working files: scratch/r60-patchiness/ (helpers/, genomes/, ledger-*.txt, r57s*-*.txt).
+
+======================================================================================================
+SUMMARY
+======================================================================================================
+- The ocean is patchy because new nutrients arrive in a few places and are lost everywhere. Upwelling,
+  vents, island wakes, river mouths and eddies are the arrivals. Sinking, burial, and uptake by the
+  crowd itself are the losses. The patches are a steady state, not a starting condition.
+- Round 57 has neither half. Its matter is a closed stock, so whatever sinks is stored on the bed and
+  comes back up under every column. The crowd's own bodies also carry matter across the tank faster
+  than the water does. So the steady state is soup: in round 57 seed 2, no 10 m square in the tank is
+  empty from 12,000 s on.
+- The stock is also far too large for deserts to exist. Round 57's commonest leaf breaks even at about
+  0.00025 units of matter per cubic metre. The 15,000-unit budget spread evenly is about 100 times
+  that, and the lit water at 48,000 s still held 2.8 times that.
+- Recommended: candidate 1, "islands that are fed". D109's islands are kept and turned into sources:
+  D074's influx arrives where the islands were seeded, and burial takes matter at each column's own
+  floor. It is a Core-only build that adds no new config field.
+- Screen it first in round 57's tank, whose seeds already hold 2 or 3 islands 100 to 134 m apart. Then
+  screen it in a tank four times larger. Wandering sources (candidate 3) can follow; upwelling plumes
+  (candidate 2) are the most natural design and the most expensive.
+
+======================================================================================================
+1. HOW NATURE KEEPS THE OCEAN PATCHY
+======================================================================================================
+Terms used below:
+- "Supply" is new nutrient arriving in the sunlit layer.
+- "Loss" is nutrient leaving that layer for good, or for a long time.
+- "Export" is organic matter sinking out of the sunlit layer.
+- "Nutricline" is the depth where nutrient concentration rises fastest.
+- "Break-even density" (R*) is the standing nutrient density at which a body's income equals its
+  upkeep.
+
+| Mechanism | What it does to patchiness | Source (fetched 2026-10-14) | Grade |
+|---|---|---|---|
+| Upwelling | Deep, cold, nutrient-rich water rises in particular places, on coasts and in the open ocean. The surface it feeds is highly productive, and good fishing grounds sit where upwelling is common. | NOAA Ocean Service, "What is upwelling?", https://oceanservice.noaa.gov/facts/upwelling.html | agency explainer |
+| Wind strength and drift of an upwelling bloom | Strong upwelling winds carry nutrient- and phytoplankton-rich water offshore; light winds keep the phytoplankton near the coast. So how far the water moves during a bloom's life sets where the patch sits. | Copernicus Marine, NW Iberian upwelling modelling page, https://www.copernicus.eu/bg/node/15243 (authors not named on the page) | secondary |
+| Islands and reefs as oases | Near-island "ocean oases" raise nearshore phytoplankton by up to 86% over open-ocean water, out to about 30 km, in 91% of the Pacific reef systems surveyed. The surrounding water is "nutrient impoverished" and "otherwise barren". The mechanisms named are current hitting the island and lifting deep water, internal waves on the bathymetry, and reef and land nutrient inputs. | Gove et al. 2016, Nat. Commun. 7:10581, https://pmc.ncbi.nlm.nih.gov/articles/PMC4757766/ | peer-reviewed |
+| Hydrothermal vents | Vent zones hold 10,000 to 100,000 times the density of organisms of the surrounding deep floor, which lives on sparse marine snow. The community depends on the vent field continuing. | Wikipedia, "Hydrothermal vent", https://en.wikipedia.org/wiki/Hydrothermal_vent | tertiary |
+| Ephemeral point sources (whale falls) | A carcass feeds a local deep-floor community for decades, in stages lasting months to about 100 years. The falls average about 12 km apart, and as little as 5 km along migration routes. | Wikipedia, "Whale fall", https://en.wikipedia.org/wiki/Whale_fall | tertiary |
+| River plumes | Rivers deliver large fluxes of nutrients. A plume's area is 3 to 5 orders of magnitude larger than its depth: 10 to 100 m across for small rivers, 100 to 1,000 km2 for the largest. | Wikipedia, "River plume", https://en.wikipedia.org/wiki/River_plume | tertiary |
+| Eddies: stirring, trapping, pumping | Turbulent stirring by mesoscale and submesoscale flows "has long been recognized as a source of phytoplankton patchiness" (pdf p.6). Nonlinear eddies trap their interior fluid and can carry it into the ocean interior (p.7). Eddy pumping moves density surfaces at the base of the sunlit zone up and down, and lifts nutrients into the light (p.7). | McGillicuddy 2016, Annu. Rev. Mar. Sci. 8:125-59, https://science.whoi.edu/users/mcgillic/12_823/2021/eddies_April_26_30/mcg_annurev-marine-010814-015606.pdf | peer-reviewed review |
+| Fronts | Submesoscale fronts at 0.1 to 10 km "support vertical velocities as large as 100 m d-1" and transport nutrients into the sunlit ocean. They act on timescales like those of phytoplankton growth, and make production patchy in space and time (pdf pp.1, 4). | Mahadevan 2016, Annu. Rev. Mar. Sci. 8:161-84, https://mahadevan.whoi.edu/wp-content/uploads/sites/32/2020/06/annurev-marine-010814-015912.pdf | peer-reviewed review |
+| Sinking export and burial (loss everywhere) | 1 to 40% of primary production is exported below the sunlit zone. About 1% (under 0.5% in the open ocean) reaches the floor, and about 20% of the export is buried in sediments. Remineralisation at depth makes the deep water rich and "leaves the upper surface waters starved of inorganic nutrients". | Wikipedia, "Biological pump", https://en.wikipedia.org/wiki/Biological_pump (first 100,000 characters read) | tertiary |
+| Light at the top, nutrients at depth | The deep chlorophyll maximum, a living layer below the surface, forms at the nutricline near the bottom of the sunlit zone in stratified water. In nutrient-poor seas it holds over half the primary production. | Wikipedia, "Deep chlorophyll maximum", https://en.wikipedia.org/wiki/Deep_chlorophyll_maximum | tertiary |
+| Deserts | Subtropical gyres are "ocean deserts": downwelling and sinking particles strip the surface, and lateral transport across their fronts only partly refills it. Their cyclonic and subpolar neighbours upwell and are productive. | Wikipedia, "Ocean gyre", https://en.wikipedia.org/wiki/Ocean_gyre | tertiary |
+| Tight recycling on reefs | Darwin's paradox: reefs flourish in poor water. The page's chief explanation is that reefs recycle nutrients far more than the open ocean does, helped by sponges that filter-feed and by direct uptake. | Wikipedia, "Coral reef", section "Darwin's paradox", https://en.wikipedia.org/wiki/Coral_reef | tertiary |
+| A patch's size: growth against mixing | Kierstead-Slobodkin: a patch smaller than a critical size L = pi (K/a)^1/2 is erased by turbulent diffusion, where K is the diffusivity and a the growth rate. A larger patch blooms (pdf p.2). | McGillicuddy 2001, "Models of small-scale patchiness", Encyclopedia of Ocean Sciences, doi:10.1006/rwos.2001.0405, https://www2.whoi.edu/staff/dmcgillicuddy/wp-content/uploads/sites/73/2017/06/eos-0405.pdf | reference work |
+| Consumption by the crowd | The crowd draws the standing nutrient down to its own break-even wherever it reaches. Where supply ends, the water stays below break-even. | NOT FETCHED. This is the resource-competition (R*) reading. It is my inference here, partly supported by the "starved surface" passages above. | inference |
+
+My own inferences from these, labelled as such:
+(a) Every source above is local, and the losses (sinking, burial, the crowd's uptake) work everywhere. A
+    patch is the region where the supply flux beats the losses.
+(b) Steady state against a point source is the Kierstead-Slobodkin balance turned round. In two
+    dimensions a tracer from a point source with loss rate k falls off as K0(r/lambda), with
+    lambda = sqrt(D/k). That is the brief's sqrt(D_eff/k), and the same balance as the critical size.
+(c) Ephemeral sources (vents ending, whale falls, eddies passing) make patches that are born, age and
+    die. That puts a price on dispersal between them.
+The review (research/LITERATURE-REVIEW.md) holds the spatial-ecology side (Huffaker 1958, Janssen 1997:
+patchiness and stability). It holds nothing on ocean nutrient supply or patchiness. Those papers would
+need a literature round to be added properly; I have not touched the review.
+
+======================================================================================================
+2. WHY D109'S ISLANDS BECAME SOUP, AND WHAT ROUND 57 SHOWS
+======================================================================================================
+Measured on the record (round 57 seed 2, runs/r57-s2/2026-10-06-065827-dfc0e881, unless named):
+
+Where the matter sits at 48,000 s:
+  - 17,733 units standing in all: the 15,000 budget plus 2,733 brought in as trickle founders' bodies.
+  - 3,974 units are locked in living bodies.
+  - About 5,261 units are in 42,497 corpses, 41,196 of them settled on the bed.
+  - About 4,825 units are in the marine snow.
+  - Only 3,673 units are free spent matter. That figure is from the field dump, by helpers/matter_profile.py.
+
+The free spent matter moved down and stayed there (the share of it in the top 12 m):
+
+| t (s) | 100 | 1,000 | 6,000 | 24,000 | 48,000 |
+|---|---|---|---|---|---|
+| share in top 12 m | 0.86 | 0.40 | 0.27 | 0.09 | 0.05 |
+
+  - At 48,000 s, 42% of it sits in the floor cells.
+  - The top 12 m holds a mean of 0.0007 units/m3, with a column cv of 1.39.
+
+The crowd followed it down. Its median depth went from -3.6 m at 3,000 s to -13.8 m at 48,000 s
+(quartiles -18.5 / -13.8 / -8.8 m; helpers/crowd_vs_bed.py). Light falls with an e-folding depth of
+6 m (light attenuationDepth 6). My reading, marked as inference: the world has built a nutricline and
+a deep chlorophyll maximum, as a stratified ocean does.
+
+Horizontally, the crowd is soup:
+
+| t (s) | share of 10 m squares in the disc that are empty | cv of bodies per square | cv a random (Poisson) crowd would read |
+|---|---|---|---|
+| 3,000 | 0.07 | 0.86 | 0.36 |
+| 12,000 | 0.02 | 0.52 | 0.28 |
+| 30,000 | 0.00 | 0.49 | 0.18 |
+| 48,000 | 0.00 | 0.50 | 0.16 |
+
+  - The correlation of bodies with the matter in their 5 m column is -0.03 over the whole column and
+    -0.27 over the top 12 m. The crowd sits on its own emptied cells.
+
+Bodies travel fast. The table gives each body's horizontal displacement over a lag, as mean squared
+displacement over 4 times the lag (helpers/body_dispersal.py):
+
+| run | lag | rms distance | apparent diffusivity |
+|---|---|---|---|
+| seed 2 from 40,000 s | 100 s | 9.8 m | 0.24 m2/s |
+| seed 2 from 40,000 s | 1,000 s | 28 m | 0.20 m2/s |
+| seed 2 from 40,000 s | 2,000 s | 37 m | 0.17 m2/s |
+| seed 1 from 20,000 s | 500 s | 29 m | 0.42 m2/s |
+| seed 1 from 20,000 s | 1,000 s | 38 m | 0.36 m2/s |
+| seed 1 from 20,000 s | 2,000 s | 45 m | 0.25 m2/s |
+
+  - The median body lives about 1,000 s (meanAge 985 s), so it ends its life 28 to 38 m (rms) from
+    where it was born.
+  - Bodies spread two to four times faster than the matter field does: 0.2 to 0.4 m2/s against
+    D109's fit of 0.1 m2/s for the 5 m grid. The 5 m grid carries only 0.3 to 0.4 of the water's RMS
+    (src/Evosim.Core/CLAUDE.md); a body feels all of it.
+
+Break-even densities, from the ledger. Round 57's commonest genomes at 48,000 s are a three-part leaf
+(1,768 bodies) and a two-part stomach (259).
+  - The leaf breaks even at about 0.00025 units/m3 of spent matter. Its net income is -0.018 W at
+    0.0001 and +0.008 W at 0.0003. It is light-limited only below about 18 m.
+  - The stomach breaks even at 0.47 J/m3 of snow.
+  - Round 57's lit-layer matter (0.0007) and its snow (0.7 to 1.3 J/m3) are both above break-even
+    across the tank.
+
+Testing the working reading:
+(i) "Patchiness in nature is a steady state of localised supply against loss everywhere, not an
+    initial condition." HOLDS, and the record shows the converse. D109's islands were a stock with no
+    supply and no loss. They decay at the rate D/L^2, which is about 9,000 s for 30 m at 0.1 m2/s,
+    matching "soup near 5,000 s" and round 45's column cv of 0.13 to 0.14 by 8,000 s (logbook/0114,
+    J9). Round 57's "loss" is not a loss either: sinking stores the matter on the bed under every
+    column, and it comes back up everywhere through mixing, the streams' overturning and
+    remineralisation. A closed world has a hidden source spread over the whole floor.
+(ii) "A patch's size scales as sqrt(D_eff/k)." HOLDS FOR THE MATTER FIELD, BUT IS NOT THE WHOLE
+    PATCH. Two lengths add:
+    - the matter's halo, lambda_m = sqrt(D_field/k), where k is the loss outside the crowd. Settling
+      at 0.002 m/s out of the top 12 m gives k = 1.7e-4/s and lambda_m of about 24 m. At D071's
+      0.02 m/s it is 7.7 m.
+    - the bodies' excursion, set by D_body times a lifetime: 28 to 38 m rms, measured.
+    Inside the crowd, uptake dominates k: one leaf clears about 1.6 m3/s, roughly 0.013/s of its 5 m
+    cell. So matter is stripped within a few metres of where it arrives, and the visible patch is
+    mostly the bodies' own wandering. The crowd's patch radius is about the source radius plus 25 to
+    35 m. Inference from the measured numbers.
+(iii) "A desert stays empty only where the standing matter is below a body's break-even." HOLDS, with
+    one refinement. The crowd draws the water down to break-even wherever it reaches (inference, the
+    R* argument). So a desert's edge is where the supply flux can no longer pay the crowd's upkeep,
+    not where the physics alone leaves the density.
+(iv) Not in the brief, and the plainest reason of all: the stock is far too large for deserts. 15,000
+    units over about 550,000 m3 is about 0.027 units/m3, roughly 100 times the leaf's break-even.
+    D109 raised the budget tenfold so that founding would work at slow stirring, and that guarantees
+    soup once the matter has mixed. Any design that wants deserts must keep the standing stock outside
+    the patches below about 0.00025 units/m3. That means losing matter, not just placing it.
+(v) The crowd is a transport channel of its own. About a quarter of the standing matter is in living
+    bodies, and another quarter in corpses that drop wherever the bodies wandered. Biomass carries
+    matter at the bodies' 0.2 to 0.4 m2/s, not the field's 0.1. Inference from the measured numbers.
+
+======================================================================================================
+3. CANDIDATE DESIGNS FOR ROUND 60
+======================================================================================================
+What the code has, read from src/Evosim.Core:
+- D074's influx (World.DepositMatterInflux). It lands either over the whole surface layer, or in one
+  box at a "patch" centre, which in a tank is a ring's mid-radius on the theta = 0 ray, PatchWidth
+  wide (74 m at HorizontalPatches 4). It cannot make several sources, and it cannot make one that
+  moves.
+- D074's burial (World.BuryMatter). It takes from the matter grid's bottom array layer,
+  LayerCount - 1. On round 57's shaped bed (-1 to -53.7 m), that layer exists only under the deepest
+  hollow. So in today's tank burial would act almost nowhere. GridField.RefugeStock already reads
+  "each column's lowest live cell" and shows how to fix it.
+- D067's vent cannot run in a tank. An active vent has no vector potential
+  (CurrentField.HasPotential), and GridField.Advect refuses that world.
+- The vent influx with the plume off (a "cold seep") is allowed. It is one box only.
+- D109's island map (GradientNoise; GridField.SeedIslands) is seeded from the run seed and is still on
+  in round 57 (60 m wavelength, cover 0.1, top 12 m).
+  Round 57's seeds hold at t = 100 s (helpers/islands.py):
+
+  | seed | major islands (share of budget, equivalent radius) | centre spacing |
+  |---|---|---|
+  | 1 | 0.65 at r 25 m, 0.17 at r 18 m, 0.06 at r 14 m | 70 to 134 m |
+  | 2 | 0.58 at r 30 m, 0.32 at r 16 m | 120 m |
+  | 3 | 0.72 at r 29 m, 0.22 at r 20 m | 110 m |
+
+- The shade map has a drift (LightShadeDriftMetresPerHour). That is a precedent for a map that moves.
+
+Common numbers:
+- The crowd a supply S feeds. A body cycles about 0.47 units of matter per 1,000 s (round 57: 3,974
+  units locked against a 985 s mean age). If each supplied unit passes through bodies n times before
+  burial, N is about 2,100 x n x S. With n of 2 to 3 (my estimate), S = 1.2 units/s feeds 5,000 to
+  7,500 bodies. D074's box world read 4,000 bodies at 0.6/s and 7,000 to 7,700 at 1.2/s (logbook/0058),
+  which agrees. That is a different world, so it is only a cross-check.
+- The equilibrium stock. Free spent matter levels where burial equals influx. With 42% of free spent
+  matter in floor cells, as in round 57, burial b = 1e-3/s holds about S / (0.42 b), roughly 2,900
+  units at S = 1.2. The arithmetic is mine, and the screens read it.
+
+------------------------------------------------------------------------------------------------------
+CANDIDATE 1: "Islands that are fed" (recommended first)
+------------------------------------------------------------------------------------------------------
+Mechanism:
+- D109's islands stay as they are, seeded at t = 0 with founders in them.
+- D074's influx arrives where the islands were seeded, every step: each column's share is its share
+  of the t = 0 stock, spread through the top MatterIslandDepthMetres. This is the island-mass and
+  upwelling oasis.
+- Burial takes b per second of the spent matter in each column's lowest live cell. This is the
+  distributed loss.
+
+Tunables:
+- MatterInfluxAt takes a new value, Islands. Enums serialise by name, and no field is added.
+- Everything else is an existing knob: MatterInfluxPerSecond, MatterBurialPerSecond,
+  MatterIslandWavelengthMetres / Cover / Depth, MatterBudgetUnits, FoundersFollowMatter (round 45's
+  true), WorldAreaSquareMetres, and optionally MatterSinkMetresPerSecond.
+- Proposed dose: S = 1.2 units/s and b = 1e-3/s, budget 15,000 as islands, sink 0.002 m/s (0.02 as
+  a screen arm).
+
+Predicted patch size and spacing:
+
+| | round 57's tank, 22,000 m2 (60 m wavelength, cover 0.1) | tank 4x larger, 88,000 m2, r 167 m (90 m wavelength, cover 0.05) |
+|---|---|---|
+| Patches | 2 to 3 per seed (measured above) | about 4 to 6, from scaling the island count by area/wavelength^2 (inference) |
+| Island radius | 16 to 30 m | about 20 to 30 m (inference) |
+| Crowd radius (island + 25 to 35 m) | 45 to 65 m | 45 to 65 m |
+| Island centres apart | 100 to 134 m (seed 1 has a pair 70 m apart, which will merge) | about 150 to 200 m |
+| Desert gap between crowds | 0 to 40 m: real but thin | 30 to 100 m |
+| Matter halo beyond the crowd (lambda_m) | about 24 m at sink 0.002, about 8 m at sink 0.02 | same |
+
+- Each patch holds about 2,100 x n x (its share of S) bodies. The share follows the island's t = 0
+  stock, so the largest island takes 0.58 to 0.72 of the supply: big and small biomes side by side.
+- Break-even: the leaf R* is about 0.00025 units/m3 and the stomach 0.47 J/m3 of snow. A desert is
+  empty when its lit-layer spent matter is below 0.00025. That needs burial to take the wanderers'
+  corpse matter before the vertical return lifts it, which the screens read.
+
+Tank size: the mechanism is screenable in round 57's tank. Micro-biomes in the plural need about 4x
+(88,000 m2, r 167 m), or 3x at the cost of thinner deserts.
+
+Cost to the machine:
+- Bodies follow supply, not area. At S = 1.2 the crowd is round 57's (5,000 to 8,000), so the physics
+  costs what it costs now.
+- The fields grow with area. The 1 m snow grid goes from about 0.55 M to 2.2 M live cells, and the
+  2 m leaf-scent grid grows 4x too.
+- From HANDOFF's card split (188 ms a simulated second; the snow's host passes about 3 to 4% of it),
+  a 4x tank adds roughly 10 to 25% of wall at the same crowd. That is an estimate. The r60s-big screen below measures
+  it, and the card's memory with it (three worlds at round 57's size used 4.5 to 4.8 GB).
+- Checkpoints grow with the grids. The influx and burial are host phases of World.Step, so I expect
+  no card port. It should still be confirmed that the card engine runs a config with influx and
+  burial on.
+
+What it changes for the record:
+- No new field, so every older config.json and checkpoint still reads.
+- The per-column burial is identical on a flat grid. No recorded bedded-tank run ever buried, so
+  every recorded world replays.
+- It is a new realisation of every seed.
+- A 4x tank raises one more question: D108 held the bed wavelength, and here the tilt (41 m) and
+  reefMaxCount (64) must be ruled. With the cap left at 64, the reef cover falls fourfold.
+- The ledger cannot forecast a matter flow (D074), so the dose comes from screens.
+
+Risks:
+(1) Islands merge. Seed 1's pair 70 m apart, and anything under about 110 m at this drift, become one
+    patch. A longer wavelength or a smaller cover fixes it.
+(2) A stock that does not level. D074's box arms grew at the influx rate with burial taking 16 to 50%
+    (logbook/0058, 0060). Here burial sits under the crowd and its corpses, but corpse decay
+    (half-life about 1,800 s) and remineralisation (2,000 s) delay it by about 4,600 s. Equilibrium
+    takes about 20,000 s, so a 10,000 s screen reads only the trend.
+(3) A patch's boom and bust feeds the burial. In a winter or a crash the bodies' matter sinks and is
+    buried, and the patch regrows only from S. The founding trickle covers extinction.
+(4) The crowd strips its source. That is the intended steady state, since the source is a flux. The
+    risk is only that n, the recycling, is low and the patches are small.
+(5) Founding. Islands are seeded as today, so founding should be round 45's, which is a prediction to
+    check in the screen.
+
+------------------------------------------------------------------------------------------------------
+CANDIDATE 2: "Upwelling plumes" (closed budget, local return)
+------------------------------------------------------------------------------------------------------
+Mechanism:
+- Keep the closed stock and the bed as the store.
+- Add N axisymmetric overturning cells to the tank's streams. Each rises in a core of radius a, spreads
+  at the top, and sinks in a ring.
+- Cut the everywhere-return: lower MatterMixingDiffusivity, and lower the streams' own overturning,
+  whose vertical RMS is now normalised to equal the horizontal (logbook/specs/streams-spec.md).
+- The deep is filled everywhere by sinking corpses, which is the biological pump, and is returned only
+  at the plumes. This is the closest to the ocean (upwelling plus the pump plus the deep chlorophyll
+  maximum).
+
+Tunables:
+- New: PlumeCount, PlumeSpeed, PlumeRadiusMetres, and an overturning share for the streams.
+- The streams' normalisation changes, so every config is refused.
+
+Predicted patch size:
+- A plume rising at w over a core of radius a delivers deep water at a rate proportional to pi a^2 w.
+  The bloom drifts outward with the surface spreading, at u_out of about w a / (2H).
+- So the patch is a ring of radius about a + u_out x (the uptake time), plus the bodies' 25 to 35 m.
+  With a = 10 m and w = 0.01 m/s that gives a crowd radius of about 40 to 50 m and the same spacing
+  needs as candidate 1 (inference).
+
+Machine: the plumes' velocity, potential and acceleration in closed form on the CPU and the card
+(the card computes the current for every link). Card identity has to be proven again. Several
+agent-days.
+
+Record: refuses every older config and checkpoint, and the fixtures need re-recording.
+
+Risks:
+- A plume also lifts bodies, through the "no top" hole (D050 caps upward force at y = 0) and the
+  centrifuge question (D090).
+- Bodies are expelled from the core, so the crowd sits in a ring.
+- The world may not found if the stock starts deep.
+- The 5 m matter grid carries only 0.3 to 0.4 of a narrow plume's RMS, so a plume under about 15 m
+  across is under-resolved on that grid.
+
+------------------------------------------------------------------------------------------------------
+CANDIDATE 3: "Wandering sources" (candidate 1, with sources that move)
+------------------------------------------------------------------------------------------------------
+Mechanism: candidate 1's influx map drifts across the tank at v, the way the shade map's drift does,
+or is re-drawn every T_s seconds. Patches are born, age and die (vents, whale falls, eddies that
+propagate and trap). A lineage then has to disperse across the deserts, which puts a price on reserve
+and on movement. That is D075's "movement that pays" and the owner's grazing focus.
+
+Tunables: one new field, MatterIslandDriftMetresPerHour (or MatterSourceLifetimeSeconds), plus
+candidate 1's knobs.
+
+Predicted:
+- A passive crowd can track a drifting source by growing at its leading edge. The front's speed is
+  about 2 x sqrt(r D), and at r = ln 2 / 200 s and D = 0.3 m2/s that is about 0.06 m/s, or 230 m an
+  hour (inference).
+- A drift of 10 to 30 m an hour, one wavelength in 3 to 9 hours, is followed by growth. A jump of 110
+  m or more across a desert needs a disperser, since bodies starve in the desert within one lifetime.
+  Expect colonisation to rest on the founding trickle unless reserves evolve.
+- Patch size and spacing are as in candidate 1.
+
+Machine: as candidate 1. The deposit weights are recomputed each step.
+
+Record: one new field, so every older config and checkpoint is refused and the fixtures need
+re-recording (src/Evosim.Core/CLAUDE.md lists them).
+
+Risks:
+- Patches that die faster than they found.
+- The trickle doing the colonising by fiat. FoundersFollowFood places founders where food is, which
+  would hide the dispersal question; the trickle's placement then needs a ruling.
+- Two changes in one round. So candidate 3 is round 61's, after candidate 1 reads.
+
+======================================================================================================
+4. SCREEN PLAN
+======================================================================================================
+Ledger runs I did.
+Config: scratch/wt-r59-anchor/runs/r59g-grip/2026-10-13-123416-9820d73f/config.json. That is round
+57's world with round 59's pieces. Round 57's own config.json is refused by main's build (missing
+budWeight), as the Core gotcha says.
+Genomes: scratch/r60-patchiness/genomes/leaf-48000.json and stomach-48000.json, the commonest living
+leaf and stomach of r57-s2 at 48,000 s (helpers/pick_genomes.py).
+
+  ./scripts/ledger.ps1 -Genome scratch/r60-patchiness/genomes/leaf-48000.json -Config <above> `
+      -Clearance 10 -Depth 0,6,12,18,24 -Density 1 -Spent <s>
+      with s = 0.00001, 0.00003, 0.0001, 0.0003, 0.001, 0.003, 0.01, 0.05
+
+Leaf readings (net W at birth, 0 to 12 m depth). Output: scratch/r60-patchiness/ledger-leaf-sweep.txt.
+  The leaf has two parts after development (0.0101 m3, lit area 0.264 m2) and a standing cost of
+  0.032 W.
+
+| spent density (units/m3) | 0.00001 | 0.0001 | 0.0003 | 0.001 | 0.01 | 0.05 |
+|---|---|---|---|---|---|---|
+| net W at birth | -0.031 | -0.018 | +0.008 | +0.100 | +1.09 at 0 m, 0.79 at 6 m, 0.27 at 12 m | +2.21 at 0 m |
+| R0 | 0 | 0 | 9 | 119 | | |
+| first child | | | 7,529 s | 625 s | | |
+
+  - At 18 m the leaf is light-capped at 0.080 W, and at 24 m at 0.009 W.
+  - Break-even is about 0.00025 units/m3.
+  - At low density, uptake works out to about 6 m3/s per m2 of lit area: Vmax 0.3 units/(s m2) over a
+    half-saturation of 0.05 units/m3.
+
+  ./scripts/ledger.ps1 -Genome scratch/r60-patchiness/genomes/stomach-48000.json -Config <above> `
+      -Clearance 10 -Depth 5,15 -Density 0.1,0.3,0.5,1,2,4 -Spent 0.001
+
+Stomach readings (output: scratch/r60-patchiness/ledger-stomach.txt). The stomach has two parts
+(0.0197 m3) and a standing cost of 0.084 W.
+
+| snow density (J/m3) | 0.3 | 0.5 | 1 | 2 |
+|---|---|---|---|---|
+| net W | -0.031 | +0.005 | +0.093 | +0.27 |
+
+  - The ledger's break-even column reads 0.47 J/m3, the same at both depths.
+  - Both break-evens are densities of the cell the body empties (the mouth gotcha in
+    src/Evosim.Core/CLAUDE.md).
+
+Python reads of the record (all under scratch/r60-patchiness/helpers/, outputs beside them):
+matter_profile.py, crowd_vs_bed.py (output r57s2-crowd-vs-bed.txt), body_dispersal.py (outputs
+r57s1-body-dispersal.txt and r57s2-body-dispersal.txt), radial.py and islands.py.
+
+Build before the screens (agent work: Core only, a few hours):
+B1. MatterInfluxAt.Islands. DepositMatterInflux spreads each step's influx over the island columns'
+    live cells in the top MatterIslandDepthMetres, in proportion to the t = 0 seeded stock. The
+    weights are held from SeedIslands.
+B2. BuryMatter takes each column's lowest live cell, as RefugeStock reads it.
+Tests:
+- the identity (initial + influxed - buried = free + locked);
+- the influx landing only in island columns;
+- burial on a shaped grid taking from every column's floor;
+- a flat grid's burial unchanged to the bit;
+- the constant-field check beside every conservation check.
+Then the filtered Core tests, and Core -All before any commit that touches the world.
+
+Farm screens (for you to run; I ran none). Base: round 59's world launcher once it exists. Until then,
+rounds/env-r57.ps1 with round 59's pieces, as in r59g-control's config. 10,000 s each, seed 1 (the
+seed with the close pair and three islands) and seed 2 (two islands 120 m apart).
+
+| arm | Env overrides | question |
+|---|---|---|
+| r60s-c | none | control on the same build |
+| r60s-i1 | EVOSIM_MATTER_INFLUX=1.2, EVOSIM_MATTER_INFLUX_AT=islands, EVOSIM_MATTER_BURIAL=0.001, EVOSIM_FOUNDERS_FOLLOW_MATTER=1 | candidate 1 at the proposed dose |
+| r60s-i2 | i1 + EVOSIM_MATTER_SINK=0.02 | stronger export (D071's sink) |
+| r60s-i3 | i1 with EVOSIM_MATTER_BURIAL=0.003 | dose |
+| r60s-big | the winner + EVOSIM_AREA=88000, EVOSIM_MATTER_ISLANDS=90, EVOSIM_MATTER_ISLAND_COVER=0.05, EVOSIM_REEF_MAX_COUNT=256 | patches in a 4x tank, and the cost; seed 1 only |
+
+Readouts, with proposed bars at 10,000 s (the control at 12,000 s read 0.02 empty and cv 0.52):
+- The share of empty 10 m squares (crowd_vs_bed.py): at least 0.3.
+- In-footprint share: at least 0.6, from
+  python scripts/field-map.py <arm> --at 1000,5000,10000 --layers 3 --footprint 100 --no-pictures
+- The lit-layer spent matter in the deserts (matter_profile.py, or field-map's column map): below
+  0.00025 units/m3.
+- alive at least 1,000.
+- Burial at least 50% of influx over the last 2,000 s (the "mat in" and "mat buried" columns), and the
+  trend of matterStanding.
+- Wall per simulated second against r60s-i1 (the big arm's cost), and the card's memory.
+- Pictures from the theatre at 5,000 and 10,000 s, by the root rule.
+
+Expected wall time, estimated from HANDOFF's paces:
+- The crowd in the first 10,000 s is 2,000 to 5,000 bodies. On the card alone, at 5 times real time
+  or more, each arm takes 35 to 60 minutes; three worlds in one group take about 45 to 70 minutes.
+- On the CPU at 16 threads, about 1.5 to 3 hours each.
+- r60s-big: the same crowd plus 10 to 25% for the grids.
+- First check that the card runs influx and burial. HorizontalPatches is not involved: the islands
+  deposit needs no patches.
+
+Optional, before the build, with existing code: one cold seep. Settings: EVOSIM_MATTER_INFLUX=0.6,
+EVOSIM_MATTER_INFLUX_AT=vent, EVOSIM_VENT_PATCH=0, EVOSIM_VENT_DEPTH=5, EVOSIM_PATCHES=36, which gives
+a box 25 m wide, centred about 7 m from the tank's axis, in the top 5 m. Burial stays at 0, because
+today's burial acts only under the deep hollow.
+It measures the crowd's radius around one source directly, which is the number section 3 leans on.
+But it is confounded: the islands are still seeded, and EVOSIM_PATCHES has other readers to check
+first. I would skip it unless the build is delayed.
+
+======================================================================================================
+5. RECOMMENDATION, AND THE QUESTIONS FOR THE OWNER
+======================================================================================================
+Recommendation: candidate 1 for round 60, screened in round 57's tank first (r60s-i1 to i3, then the 4x
+arm).
+- It answers D109's lesson with the smallest change: the islands stay, they become a steady state, and
+  the matter outside them is lost.
+- It adds no new config field and needs nothing on the card.
+- Every number it needs comes from the screens rather than from a guess.
+- Candidate 3 (moving sources) is round 61's, once patches are known to hold.
+- Candidate 2 (plumes) is the most natural and the most expensive. It is worth it only if candidate 1's
+  patches are too static to matter.
+
+Questions for the owner:
+Q1. The world rule. Should round 60's matter be an open budget (D074: influx and burial) in the tank,
+    so that patchiness is a steady state of local supply against loss everywhere, rather than a
+    closed stock?
+    Implication: the crowd's size becomes a flow set by the influx (about 2,100 to 6,000 bodies per
+    unit a second), and the stock levels in about 20,000 s.
+Q2. Where the supply arrives: (a) on the islands seeded at t = 0, which is candidate 1 and recommended;
+    (b) in upwelling plumes, candidate 2; (c) on islands that drift, candidate 3, now or later.
+Q3. Burial at each column's own floor rather than the grid's bottom layer. This is how D074's rule
+    has to be read in a tank with a bed. Is the change agent work, or does it want your ruling?
+Q4. The tank. Screen in round 57's 22,000 m2 first, then about 88,000 m2 (r 167 m) for 4 to 6
+    patches? Or a different size? And, at the larger size:
+    - is the bed's 41 m tilt held, or scaled with the radius?
+    - is the reef cap (reefMaxCount 64) raised so that reef cover stays at 0.25?
+    - the cost is about 10 to 25% more wall, estimated, at the same crowd.
+Q5. The dose to screen: S = 1.2 units/s with burial 0.001 and 0.003 per second, plus D071's faster
+    matter sink (0.02 m/s) as an arm. Can the agent choose within this range from the screens?
+Q6. Founders follow matter (FoundersFollowMatter on, as in round 45) so that the founders start in
+    the islands. Or keep round 57's food-following placement?

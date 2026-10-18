@@ -2,7 +2,7 @@
 
 *2026-10-16, written the night before and committed before the round's launch. The owner delegated its approval
 and the choice of its dose and desert rate to me under fixed rules (D189 to D191). Every guess says it is
-a guess. The screens it rests on are read in `scratch/r60s-read/summary.md`, and the rulings are D175, D180,
+a guess. The screens it rests on are read in `logbook/specs/r60-screens/summary.md`, and the rulings are D175, D180,
 D181 and D185 to D191 in `DECISIONS.md`.*
 
 ## What it asks
@@ -43,7 +43,7 @@ The dose is 3.6 units/s, with 45,000 units to start. D191's rule chose it with t
 screens, only the one at 0.02/s held at 20,000 s. It kept at least 1,000 alive, with 0.6 of them on the islands and
 0.3 of the squares empty.
 
-The screens of this world on seed 1 (measured, `scratch/r60s-read/summary.md`):
+The screens of this world on seed 1 (measured, `logbook/specs/r60-screens/summary.md`):
 
 | dose (units/s) | alive at 10,000 s | at 20,000 s | empty 10 m squares, 10,000 / 20,000 s | on the islands, 10,000 / 20,000 s |
 |---|---|---|---|---|

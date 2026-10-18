@@ -1,4 +1,4 @@
-﻿# Round 59's launcher (D174, D176, D177, D178; scratch/r59-prereg/draft.txt until its entry lands): three isolated
+﻿# Round 59's launcher (D174, D176, D177, D178; logbook/specs/r59-prereg/draft.txt until its entry lands): three isolated
 # worlds founded on the graphics card as one group, each from its own block (card-group.ps1 -Launcher with one block a
 # world): seed 1 the control (rounds/env-r59.ps1), seeds 2 and 3 planted (rounds/env-r59-planted.ps1). One step a
 # call, on this checkout's Release build:

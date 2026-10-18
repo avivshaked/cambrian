@@ -565,7 +565,7 @@ each patch and the glass lies about 6 m, one smell reach, so the glass does not 
 D173's rows, drawn as before and placed largest first, then dealt to the patches in turn: 11, 10 and 10. Inside a patch
 there are 1.2 times as many leaves to the square metre as in D173's tank.
 
-**Why these numbers.** The fed-island screens (D175, `scratch/r60s-read/summary.md`) held 2 or 3 islands a seed, of 16
+**Why these numbers.** The fed-island screens (D175, `logbook/specs/r60-screens/summary.md`) held 2 or 3 islands a seed, of 16
 to 30 m radius, with their centres 100 to 134 m apart. They covered 9 to 17 percent of the water. Here, centre spacing
 over patch radius is 6, against round 60's 4 to 6. The gap between patches is 2 patch widths, against 1.5 to 2.8. The
 patches cover 10 percent of the surface. One ratio is left unmatched on purpose. Round 60's islands are

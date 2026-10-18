@@ -71,7 +71,7 @@ and bed views of `r57-s2` at 27,000 s (winter) and 36,000 s (summer) from the sn
 frames stand in `scratch/look-build/stills-1/before`, `stills-2/before` and `stills-4/before`.
 
 Each iteration is read by eye on a side-by-side sheet of the old look, the first batch and the new one.
-It is also read by number with `scratch/look-build/contrast.py`'s measures. The bar has four parts:
+It is also read by number with `scripts/underwater-look/contrast.py`'s measures. The bar has four parts:
 
 - a luma spread (5th to 95th percentile) and a local contrast (mean s.d. in 32 px blocks) at least 0.95
   of the old look's on every view;

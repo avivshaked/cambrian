@@ -162,7 +162,7 @@ absorbed, once the owner agrees.
 | claim | source |
 |---|---|
 | every verdict, the clause numbers and the readings | `logbook/specs/r54-read/read-30000.txt` and `.tsv` (`scripts/reads/r54-read.py`, default arms `r54b`) |
-| seed 1's identity with the first launch through 5,510 s | `scratch/edit/r54b-identity.py`, run 2026-10-01 at 05:45; recorded in HANDOFF |
+| seed 1's identity with the first launch through 5,510 s | `logbook/specs/r54-read/r54b-identity.py`, run 2026-10-01 at 05:45; recorded in HANDOFF |
 | wall clock, threads, ending, alive at the end | each run's `run.json` |
 | jointed bodies at 4,000, 16,000 and 30,000 s, and none inherited in seeds 2 and 3 at the end | each run's `stats.jsonl`, the `jointed` and `jointedInherited` columns |
 | the line holding each tank, its founder and its jointed share | the reader's O4 rows |

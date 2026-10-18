@@ -2,7 +2,7 @@
 
 *2026-10-04, written before round 56's first seed and committed before it starts. It rests on the owner's
 rulings of 2026-10-04 (HANDOFF item 1b, `proposals/propose-r56-light-cycles.md`), on the groundwork in
-`scratch/r56-light/` and on round 55's seeds while they ran. Every number is computed, measured or guessed,
+`logbook/specs/r56-light/` and on round 55's seeds while they ran. Every number is computed, measured or guessed,
 and each says which.*
 
 ## What it asks

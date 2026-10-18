@@ -4,7 +4,7 @@
 
 Wherever Core joins two parts, the theatre must not draw a gap between them, in any mode: a solo
 still, a snapshot reconstruction or a live frame. Core's geometry is whole: in every body measured,
-the two anchors of each joint coincide to 0.0000 m (`scratch/creature-stills/partcheck/*.txt`). A
+the two anchors of each joint coincide to 0.0000 m (`logbook/specs/theatre-joins/partcheck-*.txt`). A
 gap in a picture is therefore the skin's doing, and it shows a creature that never existed. The
 owner wants no body in the film that looks disjointed.
 

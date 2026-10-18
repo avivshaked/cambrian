@@ -1,0 +1,47 @@
+Round 60's dropped contact candidates (overflowCandidates), read span by span on the card.
+Whole-run totals: r60-s6001 0, r60-s6002 6,257,897, r60-s6003 19,008; overflowOverlaps, overflowHeld and
+overflowEntries 0 in all three. Every span runs round 60's code (desert-burial 22ab1d73, binaries at round 60's pins,
+configHash a44977ba), alone on the card, 8 threads on 16-23, by the speed agent's rounds/r60-ov-span.ps1 (in the
+desert-burial checkout), and must end with its last stats row equal to the whole run's in alive, births and deaths.
+
+r60-s6002
+span (s)            overflowCandidates  alive at span end  run
+0 - 1,500           0                   1,409              r60-f-s6002 (the founding check, same seed and configHash; its 1,500 s stats row equals the round's)
+1,500 - 24,000      0                   3,851              r60ov-6002-1500-24000 (4.26 times real time alone)
+24,000 - 30,000     0                   7,975              r60ov-6002-24000-30000 (2.90 times real time alone)
+30,000 - 36,000     544                 12,912             r60ov-6002-30000-36000 (2.06 times real time alone)
+30,000 - 33,000     24                  11,328             r60ov-6002-30000-33000 (2.21 times real time alone)
+30,000 - 31,500     0                   10,187             r60ov-6002-30000-31500 (2.28 times real time alone)
+
+So 31,500 - 33,000 holds the first 24 (30,000 - 33,000 less a zero span), 33,000 - 36,000 holds 520 (544 less 24), and
+36,000 - 48,000 holds 6,257,353 (the whole run less 544). The subtraction assumes counts add over spans, which holds
+because a resume steps the same states (inference, supported by every span's matching stats row).
+
+The dense end, read for the cap test (round 60's build at 256):
+46,500 - 48,000     2,491,424           16,312             r60ov-6002-46500-48000 (0.75 times real time alone; its
+                                                           digest parts from r60-s6002's at the first second, 46,501,
+                                                           and its end row differs: 16,312 against 16,345 alive)
+
+Why a resume over overflows parts from its run: Scatter (gpu-kernel.template ~962) fills each hash bucket by atomic
+insert, so the order a query meets its candidates in is a race; under the cap the query sorts them, past it the first
+256 to arrive were kept. A query also met a row once for every cell the two share, and each arrival took a slot
+before the old sort and dedup, so duplicates filled the cap.
+
+The cap test, each span alone on 16-23, s6002 resumed from round 60's checkpoints:
+span (s)          build                                   overflow   pace (x real)  card peak MiB  against the round
+31,500 - 33,000   256 (22ab1d73)                          24         2.07           8,692          every digest equal
+31,500 - 33,000   512 (cand-cap 9e54908a)                 0          2.07           8,874          every digest equal
+31,500 - 33,000   512 + lowest keys (cand-cap-det 9ee72ce8), a and b
+                                                          0, 0       2.11, 2.12     -              a and b equal to each other and to the round
+46,500 - 48,000   256 (22ab1d73)                          2,491,424  0.75           8,895          parts at 46,501
+46,500 - 48,000   512 (cand-cap 9e54908a)                 915,155    0.68           9,093          parts at 46,501
+46,500 - 48,000   512 + lowest keys (9ee72ce8), a and b   0, 0       0.74, 0.75     9,099 (a)      a and b equal in lineage, stats, digest,
+                                                                                                   absorptive and positions; both part from
+                                                                                                   the round, whose own run had dropped
+Under the lowest-keys rule a query counts as overflowing only when a distinct candidate falls out; 0 at 46,500 -
+48,000 means at most 512 distinct candidates per query there, and says nothing of 256 or of a denser world.
+
+r60-s6003
+span (s)            overflowCandidates  alive at span end  run
+not read span by span (the coordinator, 2026-10-16: no further bisection beyond what the cap test needs); its whole
+run counted 19,008.

@@ -1,0 +1,6 @@
+== p04-r57s1-20184  build r57-1917815  parts 3  dof 2
+  part 0 parent -1 photosynthetic box joint Fixed mirrored False pos (0.000, 0.000, 0.000) half (0.163, 0.085, 0.268)
+  part 1 parent 0 link sphere joint TwistHinge mirrored False pos (0.296, -0.000, -0.000) half (0.187, 0.098, 0.114)
+    joint to 0: anchors apart 0.0000 m; on parent (1.000, -0.000, -0.000) (face), on child (-0.711, 0.000, 0.000) (inside)
+  part 2 parent 0 absorptive sphere joint Fixed mirrored False pos (0.000, -0.106, 0.000) half (0.021, 0.021, 0.021)
+    joint to 0: anchors apart 0.0000 m; on parent (0.000, -1.000, 0.000) (face), on child (0.000, 0.996, 0.000) (face)

@@ -59,7 +59,7 @@ Each run directory holds the following:
   Read a live run row by row and stop at a last line with no line break.
 - **`genomes.jsonl.gz`**: the genome, keyed by the organism's id.
 - **`poses.bin`**: the body over its life, read with `python scripts/poses-read.py <run dir> --at <s>`.
-  `scratch/creature-pick/stream-scan.py` lists the jointed, the odd and the large in a run. Its tables
+  `scripts/reads/stream-scan.py` lists the jointed, the odd and the large in a run. Its tables
   are `scratch/creature-pick/stream-<arm>.tsv`, with columns `id`, `first`, `last`, `maxdof`, `flags`,
   `frames` and `maxfrac`.
 - **`snapshots/NNNNNNNNN.jsonl.gz`**: every living genome every 100 s.

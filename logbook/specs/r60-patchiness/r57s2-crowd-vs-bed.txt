@@ -1,0 +1,40 @@
+t 3000 (row 3000) alive 1829   depth quartiles -6.6 -3.6 -1.9 m
+  bed class (m)  area share  body share  ratio
+   0- 5          0.003       0.008       2.64
+   5-10          0.079       0.132       1.68
+  10-15          0.122       0.138       1.13
+  15-20          0.143       0.134       0.94
+  20-30          0.305       0.184       0.60
+  30-60          0.348       0.403       1.16
+  10 m squares inside the disc: 189, mean 7.7 bodies, cv 0.86 (Poisson 0.36), empty share 0.07
+  5 m columns: corr(bodies, matter whole column) 0.21, corr(bodies, matter top 12 m) -0.02
+t 12000 (row 12000) alive 2775   depth quartiles -7.2 -4.0 -2.0 m
+  bed class (m)  area share  body share  ratio
+   0- 5          0.003       0.001       0.23
+   5-10          0.079       0.092       1.17
+  10-15          0.122       0.150       1.23
+  15-20          0.143       0.168       1.17
+  20-30          0.305       0.325       1.06
+  30-60          0.348       0.265       0.76
+  10 m squares inside the disc: 189, mean 13.1 bodies, cv 0.52 (Poisson 0.28), empty share 0.02
+  5 m columns: corr(bodies, matter whole column) -0.33, corr(bodies, matter top 12 m) -0.27
+t 30000 (row 30000) alive 6835   depth quartiles -13.5 -9.8 -5.6 m
+  bed class (m)  area share  body share  ratio
+   0- 5          0.003       0.000       0.14
+   5-10          0.079       0.024       0.30
+  10-15          0.122       0.087       0.71
+  15-20          0.143       0.119       0.83
+  20-30          0.305       0.403       1.32
+  30-60          0.348       0.366       1.05
+  10 m squares inside the disc: 189, mean 32.5 bodies, cv 0.49 (Poisson 0.18), empty share 0.00
+  5 m columns: corr(bodies, matter whole column) -0.03, corr(bodies, matter top 12 m) -0.30
+t 48000 (row 48000) alive 8436   depth quartiles -18.5 -13.8 -8.8 m
+  bed class (m)  area share  body share  ratio
+   0- 5          0.003       0.000       0.11
+   5-10          0.079       0.023       0.29
+  10-15          0.122       0.078       0.64
+  15-20          0.143       0.121       0.84
+  20-30          0.305       0.374       1.22
+  30-60          0.348       0.404       1.16
+  10 m squares inside the disc: 189, mean 40.1 bodies, cv 0.50 (Poisson 0.16), empty share 0.00
+  5 m columns: corr(bodies, matter whole column) -0.03, corr(bodies, matter top 12 m) -0.27

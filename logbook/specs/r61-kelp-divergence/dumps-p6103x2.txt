@@ -1,0 +1,360 @@
+genomes 137939; snapshots 49600 to 55100 s
+-- 102219 t 51130 parts 7 (dump 8) from snapshot 51100 bf 1.000: mass 101.3 kg, longest 21.10 m, thinnest 0.0200 m, area/mass 0.109 m2/kg, moments 7.84E+000 1.39E+003 1.40E+003, max/min 1.79E+002
+    part 0 parent -1 photosynthetic box: 0.441 x 0.368 x 0.0691 m, 11.22 kg
+    part 1 parent 0 photosynthetic box: 0.327 x 0.723 x 0.0278 m, 6.56 kg
+    part 2 parent 1 photosynthetic box: 0.242 x 1.420 x 0.0200 m, 6.88 kg
+    part 3 parent 2 photosynthetic box: 0.180 x 2.788 x 0.0200 m, 10.01 kg
+    part 4 parent 3 photosynthetic box: 0.133 x 5.474 x 0.0200 m, 14.57 kg
+    part 5 parent 4 photosynthetic box: 0.099 x 10.747 x 0.0200 m, 21.20 kg
+    part 6 parent 5 photosynthetic box: 0.073 x 21.101 x 0.0200 m, 30.86 kg
+-- 105464 t 49510 parts 3 (dump 8) from snapshot none (grown whole) bf 1.000: mass 27.5 kg, longest 1.43 m, thinnest 0.0200 m, area/mass 0.071 m2/kg, moments 1.80E+000 1.81E+000 3.59E+000, max/min 2.00E+000
+    part 0 parent -1 photosynthetic box: 0.508 x 0.371 x 0.0691 m, 12.99 kg
+    part 1 parent 0 photosynthetic box: 0.376 x 0.727 x 0.0238 m, 6.52 kg
+    part 2 parent 1 photosynthetic box: 0.279 x 1.428 x 0.0200 m, 7.97 kg
+-- 106947 t 49760 parts 4 (dump 7) from snapshot 49700 bf 1.000: mass 39.9 kg, longest 3.41 m, thinnest 0.0200 m, area/mass 0.084 m2/kg, moments 2.64E+000 1.43E+001 1.69E+001, max/min 6.40E+000
+    part 0 parent -1 photosynthetic box: 0.430 x 0.442 x 0.0691 m, 13.14 kg
+    part 1 parent 0 photosynthetic box: 0.319 x 0.874 x 0.0238 m, 6.64 kg
+    part 2 parent 1 photosynthetic box: 0.236 x 1.727 x 0.0200 m, 8.16 kg
+    part 3 parent 2 photosynthetic box: 0.175 x 3.412 x 0.0200 m, 11.96 kg
+-- 107091 t 51100.5 parts 7 (dump 7) from snapshot 51100 bf 1.000: mass 81.3 kg, longest 18.58 m, thinnest 0.0200 m, area/mass 0.083 m2/kg, moments 1.73E+000 8.40E+002 8.41E+002, max/min 4.86E+002
+    part 0 parent -1 photosynthetic box: 0.196 x 0.606 x 0.0498 m, 8.88 kg
+    part 1 parent 0 photosynthetic box: 0.151 x 1.072 x 0.0250 m, 6.06 kg
+    part 2 parent 1 photosynthetic box: 0.116 x 1.897 x 0.0200 m, 6.57 kg
+    part 3 parent 2 photosynthetic box: 0.089 x 3.356 x 0.0200 m, 8.92 kg
+    part 4 parent 3 photosynthetic box: 0.068 x 5.937 x 0.0200 m, 12.11 kg
+    part 5 parent 4 photosynthetic box: 0.052 x 10.504 x 0.0200 m, 16.43 kg
+    part 6 parent 5 photosynthetic box: 0.040 x 18.583 x 0.0200 m, 22.30 kg
+-- 107183 t 49790 parts 4 (dump 7) from snapshot 49700 bf 1.000: mass 33.0 kg, longest 2.89 m, thinnest 0.0200 m, area/mass 0.086 m2/kg, moments 2.27E+000 8.69E+000 1.10E+001, max/min 4.82E+000
+    part 0 parent -1 photosynthetic box: 0.441 x 0.339 x 0.0691 m, 10.33 kg
+    part 1 parent 0 photosynthetic box: 0.327 x 0.693 x 0.0238 m, 5.40 kg
+    part 2 parent 1 photosynthetic box: 0.242 x 1.415 x 0.0200 m, 6.86 kg
+    part 3 parent 2 photosynthetic box: 0.180 x 2.890 x 0.0200 m, 10.38 kg
+-- 108541 t 50160 parts 4 (dump 6) from snapshot 50100 bf 1.000: mass 38.2 kg, longest 4.21 m, thinnest 0.0200 m, area/mass 0.089 m2/kg, moments 2.33E+000 2.37E+001 2.60E+001, max/min 1.12E+001
+    part 0 parent -1 photosynthetic box: 0.417 x 0.328 x 0.0675 m, 9.23 kg
+    part 1 parent 0 photosynthetic box: 0.309 x 0.767 x 0.0271 m, 6.44 kg
+    part 2 parent 1 photosynthetic box: 0.229 x 1.797 x 0.0200 m, 8.23 kg
+    part 3 parent 2 photosynthetic box: 0.170 x 4.206 x 0.0200 m, 14.28 kg
+-- 108599 t 50200 parts 8 (dump 8) from snapshot 50200 bf 1.000: mass 235.7 kg, longest 41.62 m, thinnest 0.0200 m, area/mass 0.076 m2/kg, moments 1.89E+001 1.25E+004 1.25E+004, max/min 6.62E+002
+    part 0 parent -1 photosynthetic box: 0.464 x 0.370 x 0.0779 m, 20.08 kg
+    part 1 parent 0 photosynthetic box: 0.344 x 0.727 x 0.0313 m, 11.74 kg
+    part 2 parent 1 photosynthetic box: 0.255 x 1.427 x 0.0200 m, 10.92 kg
+    part 3 parent 2 photosynthetic box: 0.189 x 2.801 x 0.0200 m, 15.89 kg
+    part 4 parent 3 photosynthetic box: 0.140 x 5.499 x 0.0200 m, 23.13 kg
+    part 5 parent 4 photosynthetic box: 0.104 x 10.797 x 0.0200 m, 33.66 kg
+    part 6 parent 5 photosynthetic box: 0.077 x 21.198 x 0.0200 m, 48.98 kg
+    part 7 parent 6 photosynthetic box: 0.057 x 41.619 x 0.0200 m, 71.29 kg
+-- 108656 t 50210 parts 7 (dump 8) from snapshot 50200 bf 1.000: mass 116.2 kg, longest 21.22 m, thinnest 0.0200 m, area/mass 0.107 m2/kg, moments 1.16E+001 1.63E+003 1.64E+003, max/min 1.42E+002
+    part 0 parent -1 photosynthetic box: 0.508 x 0.371 x 0.0691 m, 12.99 kg
+    part 1 parent 0 photosynthetic box: 0.376 x 0.727 x 0.0238 m, 6.52 kg
+    part 2 parent 1 photosynthetic box: 0.279 x 1.428 x 0.0200 m, 7.97 kg
+    part 3 parent 2 photosynthetic box: 0.207 x 2.804 x 0.0200 m, 11.59 kg
+    part 4 parent 3 photosynthetic box: 0.153 x 5.506 x 0.0200 m, 16.87 kg
+    part 5 parent 4 photosynthetic box: 0.114 x 10.809 x 0.0200 m, 24.55 kg
+    part 6 parent 5 photosynthetic box: 0.084 x 21.223 x 0.0200 m, 35.73 kg
+-- 108737 t 50050 parts 5 (dump 8) from snapshot 50000 bf 1.000: mass 65.1 kg, longest 7.84 m, thinnest 0.0200 m, area/mass 0.094 m2/kg, moments 6.67E+000 1.27E+002 1.34E+002, max/min 2.01E+001
+    part 0 parent -1 photosynthetic box: 0.441 x 0.459 x 0.0691 m, 13.97 kg
+    part 1 parent 0 photosynthetic box: 0.327 x 0.933 x 0.0238 m, 7.26 kg
+    part 2 parent 1 photosynthetic box: 0.242 x 1.896 x 0.0200 m, 9.18 kg
+    part 3 parent 2 photosynthetic box: 0.180 x 3.855 x 0.0200 m, 13.84 kg
+    part 4 parent 3 photosynthetic box: 0.133 x 7.838 x 0.0200 m, 20.86 kg
+-- 108737 t 50050 parts 5 (dump 8) from snapshot 50000 bf 1.000: mass 65.1 kg, longest 7.84 m, thinnest 0.0200 m, area/mass 0.094 m2/kg, moments 6.67E+000 1.27E+002 1.34E+002, max/min 2.01E+001
+    part 0 parent -1 photosynthetic box: 0.441 x 0.459 x 0.0691 m, 13.97 kg
+    part 1 parent 0 photosynthetic box: 0.327 x 0.933 x 0.0238 m, 7.26 kg
+    part 2 parent 1 photosynthetic box: 0.242 x 1.896 x 0.0200 m, 9.18 kg
+    part 3 parent 2 photosynthetic box: 0.180 x 3.855 x 0.0200 m, 13.84 kg
+    part 4 parent 3 photosynthetic box: 0.133 x 7.838 x 0.0200 m, 20.86 kg
+-- 109991 t 50210 parts 5 (dump 7) from snapshot 50200 bf 1.000: mass 64.1 kg, longest 8.35 m, thinnest 0.0200 m, area/mass 0.095 m2/kg, moments 5.77E+000 1.43E+002 1.49E+002, max/min 2.58E+001
+    part 0 parent -1 photosynthetic box: 0.410 x 0.480 x 0.0691 m, 13.60 kg
+    part 1 parent 0 photosynthetic box: 0.304 x 0.980 x 0.0238 m, 7.10 kg
+    part 2 parent 1 photosynthetic box: 0.226 x 2.001 x 0.0200 m, 9.03 kg
+    part 3 parent 2 photosynthetic box: 0.167 x 4.086 x 0.0200 m, 13.66 kg
+    part 4 parent 3 photosynthetic box: 0.124 x 8.346 x 0.0200 m, 20.68 kg
+-- 109991 t 50210 parts 5 (dump 7) from snapshot 50200 bf 1.000: mass 64.1 kg, longest 8.35 m, thinnest 0.0200 m, area/mass 0.095 m2/kg, moments 5.77E+000 1.43E+002 1.49E+002, max/min 2.58E+001
+    part 0 parent -1 photosynthetic box: 0.410 x 0.480 x 0.0691 m, 13.60 kg
+    part 1 parent 0 photosynthetic box: 0.304 x 0.980 x 0.0238 m, 7.10 kg
+    part 2 parent 1 photosynthetic box: 0.226 x 2.001 x 0.0200 m, 9.03 kg
+    part 3 parent 2 photosynthetic box: 0.167 x 4.086 x 0.0200 m, 13.66 kg
+    part 4 parent 3 photosynthetic box: 0.124 x 8.346 x 0.0200 m, 20.68 kg
+-- 110070 t 50280 parts 4 (dump 8) from snapshot 50200 bf 1.000: mass 37.5 kg, longest 2.85 m, thinnest 0.0200 m, area/mass 0.076 m2/kg, moments 3.00E+000 7.94E+000 1.09E+001, max/min 3.64E+000
+    part 0 parent -1 photosynthetic box: 0.496 x 0.377 x 0.0745 m, 13.92 kg
+    part 1 parent 0 photosynthetic box: 0.341 x 0.740 x 0.0300 m, 7.55 kg
+    part 2 parent 1 photosynthetic box: 0.234 x 1.453 x 0.0200 m, 6.80 kg
+    part 3 parent 2 photosynthetic box: 0.161 x 2.852 x 0.0200 m, 9.18 kg
+-- 111384 t 50800.5 parts 8 (dump 8) from snapshot 50800 bf 1.000: mass 282.6 kg, longest 43.60 m, thinnest 0.0200 m, area/mass 0.074 m2/kg, moments 3.05E+001 1.65E+004 1.65E+004, max/min 5.41E+002
+    part 0 parent -1 photosynthetic box: 0.531 x 0.388 x 0.0830 m, 25.61 kg
+    part 1 parent 0 photosynthetic box: 0.393 x 0.761 x 0.0286 m, 12.86 kg
+    part 2 parent 1 photosynthetic box: 0.292 x 1.494 x 0.0200 m, 13.08 kg
+    part 3 parent 2 photosynthetic box: 0.216 x 2.934 x 0.0200 m, 19.03 kg
+    part 4 parent 3 photosynthetic box: 0.160 x 5.760 x 0.0200 m, 27.70 kg
+    part 5 parent 4 photosynthetic box: 0.119 x 11.309 x 0.0200 m, 40.31 kg
+    part 6 parent 5 photosynthetic box: 0.088 x 22.205 x 0.0200 m, 58.66 kg
+    part 7 parent 6 photosynthetic box: 0.065 x 43.595 x 0.0200 m, 85.37 kg
+-- 111427 t 50510 parts 6 (dump 7) from snapshot 50500 bf 1.000: mass 104.2 kg, longest 19.52 m, thinnest 0.0200 m, area/mass 0.108 m2/kg, moments 7.46E+000 1.35E+003 1.36E+003, max/min 1.82E+002
+    part 0 parent -1 photosynthetic box: 0.410 x 0.538 x 0.0559 m, 12.34 kg
+    part 1 parent 0 photosynthetic box: 0.304 x 1.103 x 0.0200 m, 6.71 kg
+    part 2 parent 1 photosynthetic box: 0.226 x 2.263 x 0.0200 m, 10.21 kg
+    part 3 parent 2 photosynthetic box: 0.167 x 4.641 x 0.0200 m, 15.52 kg
+    part 4 parent 3 photosynthetic box: 0.124 x 9.519 x 0.0200 m, 23.59 kg
+    part 5 parent 4 photosynthetic box: 0.092 x 19.524 x 0.0200 m, 35.87 kg
+-- 111618 t 50780 parts 6 (dump 7) from snapshot 50700 bf 1.000: mass 122.5 kg, longest 18.16 m, thinnest 0.0200 m, area/mass 0.101 m2/kg, moments 1.20E+001 1.40E+003 1.41E+003, max/min 1.18E+002
+    part 0 parent -1 photosynthetic box: 0.443 x 0.457 x 0.0691 m, 13.97 kg
+    part 1 parent 0 photosynthetic box: 0.341 x 0.954 x 0.0323 m, 10.50 kg
+    part 2 parent 1 photosynthetic box: 0.263 x 1.993 x 0.0200 m, 10.47 kg
+    part 3 parent 2 photosynthetic box: 0.202 x 4.162 x 0.0200 m, 16.84 kg
+    part 4 parent 3 photosynthetic box: 0.156 x 8.693 x 0.0200 m, 27.10 kg
+    part 5 parent 4 photosynthetic box: 0.120 x 18.156 x 0.0200 m, 43.60 kg
+-- 112066 t 50970 parts 6 (dump 7) from snapshot 50900 bf 1.000: mass 35.8 kg, longest 9.96 m, thinnest 0.0200 m, area/mass 0.102 m2/kg, moments 2.14E+000 6.76E+001 6.97E+001, max/min 3.25E+001
+    part 0 parent -1 photosynthetic box: 0.449 x 0.341 x 0.0675 m, 10.35 kg
+    part 1 parent 0 photosynthetic box: 0.264 x 0.670 x 0.0271 m, 4.81 kg
+    part 2 parent 1 photosynthetic box: 0.156 x 1.316 x 0.0200 m, 4.10 kg
+    part 3 parent 2 photosynthetic box: 0.092 x 2.584 x 0.0200 m, 4.74 kg
+    part 4 parent 3 photosynthetic box: 0.054 x 5.073 x 0.0200 m, 5.47 kg
+    part 5 parent 4 photosynthetic box: 0.032 x 9.961 x 0.0200 m, 6.33 kg
+-- 112230 t 51110 parts 7 (dump 8) from snapshot 51100 bf 1.000: mass 49.1 kg, longest 18.77 m, thinnest 0.0200 m, area/mass 0.120 m2/kg, moments 2.72E+000 4.09E+002 4.12E+002, max/min 1.51E+002
+    part 0 parent -1 photosynthetic box: 0.417 x 0.328 x 0.0606 m, 8.28 kg
+    part 1 parent 0 photosynthetic box: 0.268 x 0.644 x 0.0243 m, 4.20 kg
+    part 2 parent 1 photosynthetic box: 0.172 x 1.264 x 0.0200 m, 4.36 kg
+    part 3 parent 2 photosynthetic box: 0.111 x 2.481 x 0.0200 m, 5.50 kg
+    part 4 parent 3 photosynthetic box: 0.071 x 4.871 x 0.0200 m, 6.94 kg
+    part 5 parent 4 photosynthetic box: 0.046 x 9.563 x 0.0200 m, 8.77 kg
+    part 6 parent 5 photosynthetic box: 0.029 x 18.775 x 0.0200 m, 11.07 kg
+-- 112412 t 51470.5 parts 6 (dump 7) from snapshot 51400 bf 1.000: mass 77.0 kg, longest 11.21 m, thinnest 0.0200 m, area/mass 0.096 m2/kg, moments 6.58E+000 2.81E+002 2.88E+002, max/min 4.37E+001
+    part 0 parent -1 photosynthetic box: 0.440 x 0.384 x 0.0831 m, 14.03 kg
+    part 1 parent 0 photosynthetic box: 0.326 x 0.754 x 0.0334 m, 8.21 kg
+    part 2 parent 1 photosynthetic box: 0.242 x 1.481 x 0.0200 m, 7.15 kg
+    part 3 parent 2 photosynthetic box: 0.179 x 2.908 x 0.0200 m, 10.41 kg
+    part 4 parent 3 photosynthetic box: 0.133 x 5.709 x 0.0200 m, 15.15 kg
+    part 5 parent 4 photosynthetic box: 0.098 x 11.209 x 0.0200 m, 22.05 kg
+-- 112627 t 50641 parts 4 (dump 8) from snapshot 50600 bf 1.000: mass 30.7 kg, longest 2.24 m, thinnest 0.0200 m, area/mass 0.076 m2/kg, moments 2.09E+000 4.23E+000 6.30E+000, max/min 3.02E+000
+    part 0 parent -1 photosynthetic box: 0.440 x 0.296 x 0.0831 m, 10.82 kg
+    part 1 parent 0 photosynthetic box: 0.326 x 0.582 x 0.0334 m, 6.33 kg
+    part 2 parent 1 photosynthetic box: 0.242 x 1.142 x 0.0200 m, 5.52 kg
+    part 3 parent 2 photosynthetic box: 0.179 x 2.242 x 0.0200 m, 8.03 kg
+-- 112675 t 50710 parts 7 (dump 8) from snapshot 50700 bf 1.000: mass 84.1 kg, longest 16.97 m, thinnest 0.0200 m, area/mass 0.106 m2/kg, moments 7.12E+000 7.22E+002 7.29E+002, max/min 1.02E+002
+    part 0 parent -1 photosynthetic box: 0.440 x 0.296 x 0.0831 m, 10.82 kg
+    part 1 parent 0 photosynthetic box: 0.326 x 0.582 x 0.0334 m, 6.33 kg
+    part 2 parent 1 photosynthetic box: 0.242 x 1.142 x 0.0200 m, 5.52 kg
+    part 3 parent 2 photosynthetic box: 0.179 x 2.242 x 0.0200 m, 8.03 kg
+    part 4 parent 3 photosynthetic box: 0.133 x 4.401 x 0.0200 m, 11.68 kg
+    part 5 parent 4 photosynthetic box: 0.098 x 8.641 x 0.0200 m, 17.00 kg
+    part 6 parent 5 photosynthetic box: 0.073 x 16.966 x 0.0200 m, 24.74 kg
+-- 112897 t 50720 parts 6 (dump 8) from snapshot 50700 bf 1.000: mass 100.1 kg, longest 8.64 m, thinnest 0.0200 m, area/mass 0.044 m2/kg, moments 4.58E+000 1.89E+002 1.94E+002, max/min 4.23E+001
+    part 0 parent -1 photosynthetic capsule: 0.440 x 0.296 x 0.0831 m, 11.21 kg
+    part 1 parent 0 photosynthetic capsule: 0.326 x 0.582 x 0.0334 m, 13.22 kg
+    part 2 parent 1 photosynthetic capsule: 0.242 x 1.142 x 0.0200 m, 14.75 kg
+    part 3 parent 2 photosynthetic capsule: 0.179 x 2.242 x 0.0200 m, 17.18 kg
+    part 4 parent 3 photosynthetic capsule: 0.133 x 4.401 x 0.0200 m, 20.03 kg
+    part 5 parent 4 photosynthetic capsule: 0.098 x 8.641 x 0.0200 m, 23.72 kg
+-- 113330 t 51140 parts 6 (dump 7) from snapshot 51100 bf 1.000: mass 39.3 kg, longest 10.50 m, thinnest 0.0200 m, area/mass 0.115 m2/kg, moments 8.44E-001 1.32E+002 1.33E+002, max/min 1.57E+002
+    part 0 parent -1 photosynthetic box: 0.196 x 0.606 x 0.0498 m, 5.92 kg
+    part 1 parent 0 photosynthetic box: 0.151 x 1.072 x 0.0250 m, 4.04 kg
+    part 2 parent 1 photosynthetic box: 0.116 x 1.897 x 0.0200 m, 4.38 kg
+    part 3 parent 2 photosynthetic box: 0.089 x 3.356 x 0.0200 m, 5.95 kg
+    part 4 parent 3 photosynthetic box: 0.068 x 5.937 x 0.0200 m, 8.07 kg
+    part 5 parent 4 photosynthetic box: 0.052 x 10.504 x 0.0200 m, 10.96 kg
+-- 113610 t 51330 parts 7 (dump 8) from snapshot 51300 bf 1.000: mass 94.2 kg, longest 19.74 m, thinnest 0.0200 m, area/mass 0.109 m2/kg, moments 9.00E+000 1.13E+003 1.14E+003, max/min 1.26E+002
+    part 0 parent -1 photosynthetic box: 0.449 x 0.345 x 0.0675 m, 10.45 kg
+    part 1 parent 0 photosynthetic box: 0.331 x 0.677 x 0.0271 m, 6.08 kg
+    part 2 parent 1 photosynthetic box: 0.244 x 1.328 x 0.0200 m, 6.49 kg
+    part 3 parent 2 photosynthetic box: 0.180 x 2.608 x 0.0200 m, 9.39 kg
+    part 4 parent 3 photosynthetic box: 0.133 x 5.121 x 0.0200 m, 13.60 kg
+    part 5 parent 4 photosynthetic box: 0.098 x 10.054 x 0.0200 m, 19.69 kg
+    part 6 parent 5 photosynthetic box: 0.072 x 19.740 x 0.0200 m, 28.51 kg
+-- 114749 t 51210 parts 6 (dump 7) from snapshot 51200 bf 1.000: mass 55.2 kg, longest 17.06 m, thinnest 0.0200 m, area/mass 0.118 m2/kg, moments 1.09E+000 5.38E+002 5.39E+002, max/min 4.94E+002
+    part 0 parent -1 photosynthetic box: 0.201 x 0.620 x 0.0509 m, 6.33 kg
+    part 1 parent 0 photosynthetic box: 0.154 x 1.203 x 0.0256 m, 4.74 kg
+    part 2 parent 1 photosynthetic box: 0.118 x 2.334 x 0.0200 m, 5.52 kg
+    part 3 parent 2 photosynthetic box: 0.091 x 4.530 x 0.0200 m, 8.21 kg
+    part 4 parent 3 photosynthetic box: 0.070 x 8.792 x 0.0200 m, 12.22 kg
+    part 5 parent 4 photosynthetic box: 0.053 x 17.062 x 0.0200 m, 18.20 kg
+-- 114886 t 51110 parts 5 (dump 6) from snapshot 51100 bf 1.000: mass 28.4 kg, longest 5.94 m, thinnest 0.0200 m, area/mass 0.106 m2/kg, moments 5.67E-001 3.12E+001 3.17E+001, max/min 5.60E+001
+    part 0 parent -1 photosynthetic box: 0.196 x 0.606 x 0.0498 m, 5.92 kg
+    part 1 parent 0 photosynthetic box: 0.151 x 1.072 x 0.0250 m, 4.04 kg
+    part 2 parent 1 photosynthetic box: 0.116 x 1.897 x 0.0200 m, 4.38 kg
+    part 3 parent 2 photosynthetic box: 0.089 x 3.356 x 0.0200 m, 5.95 kg
+    part 4 parent 3 photosynthetic box: 0.068 x 5.937 x 0.0200 m, 8.07 kg
+-- 115130 t 51220 parts 6 (dump 7) from snapshot 51200 bf 1.000: mass 39.3 kg, longest 10.50 m, thinnest 0.0200 m, area/mass 0.115 m2/kg, moments 8.44E-001 1.32E+002 1.33E+002, max/min 1.57E+002
+    part 0 parent -1 photosynthetic box: 0.196 x 0.606 x 0.0498 m, 5.92 kg
+    part 1 parent 0 photosynthetic box: 0.151 x 1.072 x 0.0250 m, 4.04 kg
+    part 2 parent 1 photosynthetic box: 0.116 x 1.897 x 0.0200 m, 4.38 kg
+    part 3 parent 2 photosynthetic box: 0.089 x 3.356 x 0.0200 m, 5.95 kg
+    part 4 parent 3 photosynthetic box: 0.068 x 5.937 x 0.0200 m, 8.07 kg
+    part 5 parent 4 photosynthetic box: 0.052 x 10.504 x 0.0200 m, 10.96 kg
+-- 116113 t 51860.5 parts 7 (dump 8) from snapshot 51800 bf 1.000: mass 195.1 kg, longest 20.20 m, thinnest 0.0200 m, area/mass 0.107 m2/kg, moments 1.18E+001 3.79E+003 3.80E+003, max/min 3.21E+002
+    part 0 parent -1 photosynthetic box: 0.217 x 0.347 x 0.0452 m, 3.41 kg
+    part 1 parent 0 photosynthetic box: 0.221 x 0.684 x 0.0259 m, 3.91 kg
+    part 2 parent 1 photosynthetic box: 0.225 x 1.346 x 0.0200 m, 6.05 kg
+    part 3 parent 2 photosynthetic box: 0.228 x 2.649 x 0.0200 m, 12.10 kg
+    part 4 parent 3 photosynthetic box: 0.232 x 5.214 x 0.0200 m, 24.21 kg
+    part 5 parent 4 photosynthetic box: 0.236 x 10.263 x 0.0200 m, 48.45 kg
+    part 6 parent 5 photosynthetic box: 0.240 x 20.201 x 0.0200 m, 96.95 kg
+-- 116157 t 51300 parts 7 (dump 7) from snapshot 51300 bf 1.000: mass 51.1 kg, longest 17.33 m, thinnest 0.0200 m, area/mass 0.091 m2/kg, moments 9.63E-001 4.69E+002 4.70E+002, max/min 4.88E+002
+    part 0 parent -1 photosynthetic box: 0.217 x 0.298 x 0.0452 m, 4.39 kg
+    part 1 parent 0 photosynthetic box: 0.156 x 0.587 x 0.0259 m, 3.55 kg
+    part 2 parent 1 photosynthetic box: 0.112 x 1.155 x 0.0200 m, 3.87 kg
+    part 3 parent 2 photosynthetic box: 0.080 x 2.273 x 0.0200 m, 5.46 kg
+    part 4 parent 3 photosynthetic box: 0.057 x 4.474 x 0.0200 m, 7.70 kg
+    part 5 parent 4 photosynthetic box: 0.041 x 8.805 x 0.0200 m, 10.86 kg
+    part 6 parent 5 photosynthetic box: 0.029 x 17.332 x 0.0200 m, 15.32 kg
+-- 116300 t 51300 parts 7 (dump 7) from snapshot 51300 bf 1.000: mass 81.3 kg, longest 18.58 m, thinnest 0.0200 m, area/mass 0.083 m2/kg, moments 1.73E+000 8.40E+002 8.41E+002, max/min 4.86E+002
+    part 0 parent -1 photosynthetic box: 0.196 x 0.606 x 0.0498 m, 8.88 kg
+    part 1 parent 0 photosynthetic box: 0.151 x 1.072 x 0.0250 m, 6.06 kg
+    part 2 parent 1 photosynthetic box: 0.116 x 1.897 x 0.0200 m, 6.57 kg
+    part 3 parent 2 photosynthetic box: 0.089 x 3.356 x 0.0200 m, 8.92 kg
+    part 4 parent 3 photosynthetic box: 0.068 x 5.937 x 0.0200 m, 12.11 kg
+    part 5 parent 4 photosynthetic box: 0.052 x 10.504 x 0.0200 m, 16.43 kg
+    part 6 parent 5 photosynthetic box: 0.040 x 18.583 x 0.0200 m, 22.30 kg
+-- 116366 t 51551.5 parts 6 (dump 7) from snapshot 51500 bf 1.000: mass 33.5 kg, longest 8.44 m, thinnest 0.0200 m, area/mass 0.105 m2/kg, moments 1.72E+000 5.78E+001 5.95E+001, max/min 3.47E+001
+    part 0 parent -1 photosynthetic box: 0.391 x 0.289 x 0.0691 m, 7.81 kg
+    part 1 parent 0 photosynthetic box: 0.255 x 0.568 x 0.0238 m, 3.45 kg
+    part 2 parent 1 photosynthetic box: 0.166 x 1.116 x 0.0200 m, 3.70 kg
+    part 3 parent 2 photosynthetic box: 0.108 x 2.190 x 0.0200 m, 4.74 kg
+    part 4 parent 3 photosynthetic box: 0.070 x 4.300 x 0.0200 m, 6.06 kg
+    part 5 parent 4 photosynthetic box: 0.046 x 8.442 x 0.0200 m, 7.75 kg
+-- 116545 t 51320 parts 5 (dump 7) from snapshot 51300 bf 1.000: mass 16.9 kg, longest 5.94 m, thinnest 0.0200 m, area/mass 0.110 m2/kg, moments 2.09E-001 1.17E+001 1.19E+001, max/min 5.68E+001
+    part 0 parent -1 photosynthetic box: 0.196 x 0.606 x 0.0498 m, 5.92 kg
+    part 1 parent 0 photosynthetic box: 0.115 x 1.072 x 0.0250 m, 3.07 kg
+    part 2 parent 1 photosynthetic box: 0.067 x 1.897 x 0.0200 m, 2.54 kg
+    part 3 parent 2 photosynthetic box: 0.039 x 3.356 x 0.0200 m, 2.62 kg
+    part 4 parent 3 photosynthetic box: 0.023 x 5.937 x 0.0200 m, 2.71 kg
+-- 116797 t 51370 parts 4 (dump 8) from snapshot none (grown whole) bf 1.000: mass 21.0 kg, longest 2.78 m, thinnest 0.0200 m, area/mass 0.092 m2/kg, moments 4.50E-001 5.18E+000 5.63E+000, max/min 1.25E+001
+    part 0 parent -1 photosynthetic box: 0.222 x 0.606 x 0.0498 m, 6.70 kg
+    part 1 parent 0 photosynthetic box: 0.170 x 1.007 x 0.0250 m, 4.29 kg
+    part 2 parent 1 photosynthetic box: 0.131 x 1.673 x 0.0200 m, 4.38 kg
+    part 3 parent 2 photosynthetic box: 0.100 x 2.780 x 0.0200 m, 5.58 kg
+-- 117212 t 51440 parts 4 (dump 8) from snapshot 51400 bf 1.000: mass 17.8 kg, longest 2.55 m, thinnest 0.0200 m, area/mass 0.093 m2/kg, moments 2.99E-001 3.67E+000 3.96E+000, max/min 1.33E+001
+    part 0 parent -1 photosynthetic box: 0.196 x 0.606 x 0.0498 m, 5.92 kg
+    part 1 parent 0 photosynthetic box: 0.151 x 0.978 x 0.0250 m, 3.68 kg
+    part 2 parent 1 photosynthetic box: 0.116 x 1.578 x 0.0200 m, 3.65 kg
+    part 3 parent 2 photosynthetic box: 0.089 x 2.546 x 0.0200 m, 4.51 kg
+-- 117430 t 51630 parts 7 (dump 8) from snapshot 51600 bf 1.000: mass 63.9 kg, longest 17.37 m, thinnest 0.0200 m, area/mass 0.113 m2/kg, moments 2.81E+000 5.07E+002 5.10E+002, max/min 1.81E+002
+    part 0 parent -1 photosynthetic box: 0.281 x 0.566 x 0.0596 m, 9.47 kg
+    part 1 parent 0 photosynthetic box: 0.206 x 1.002 x 0.0299 m, 6.18 kg
+    part 2 parent 1 photosynthetic box: 0.151 x 1.773 x 0.0200 m, 5.36 kg
+    part 3 parent 2 photosynthetic box: 0.111 x 3.136 x 0.0200 m, 6.95 kg
+    part 4 parent 3 photosynthetic box: 0.081 x 5.548 x 0.0200 m, 9.03 kg
+    part 5 parent 4 photosynthetic box: 0.060 x 9.816 x 0.0200 m, 11.72 kg
+    part 6 parent 5 photosynthetic box: 0.044 x 17.366 x 0.0200 m, 15.21 kg
+-- 118817 t 51830 parts 5 (dump 8) from snapshot 51800 bf 1.000: mass 19.1 kg, longest 3.98 m, thinnest 0.0200 m, area/mass 0.108 m2/kg, moments 4.99E-001 1.05E+001 1.10E+001, max/min 2.20E+001
+    part 0 parent -1 photosynthetic box: 0.234 x 0.268 x 0.0499 m, 3.14 kg
+    part 1 parent 0 photosynthetic box: 0.181 x 0.526 x 0.0233 m, 2.21 kg
+    part 2 parent 1 photosynthetic box: 0.139 x 1.033 x 0.0200 m, 2.87 kg
+    part 3 parent 2 photosynthetic box: 0.107 x 2.027 x 0.0200 m, 4.34 kg
+    part 4 parent 3 photosynthetic box: 0.083 x 3.980 x 0.0200 m, 6.57 kg
+-- 118817 t 51830 parts 5 (dump 8) from snapshot 51800 bf 1.000: mass 19.1 kg, longest 3.98 m, thinnest 0.0200 m, area/mass 0.108 m2/kg, moments 4.99E-001 1.05E+001 1.10E+001, max/min 2.20E+001
+    part 0 parent -1 photosynthetic box: 0.234 x 0.268 x 0.0499 m, 3.14 kg
+    part 1 parent 0 photosynthetic box: 0.181 x 0.526 x 0.0233 m, 2.21 kg
+    part 2 parent 1 photosynthetic box: 0.139 x 1.033 x 0.0200 m, 2.87 kg
+    part 3 parent 2 photosynthetic box: 0.107 x 2.027 x 0.0200 m, 4.34 kg
+    part 4 parent 3 photosynthetic box: 0.083 x 3.980 x 0.0200 m, 6.57 kg
+-- 118901 t 51960 parts 4 (dump 7) from snapshot 51900 bf 1.000: mass 9.3 kg, longest 1.78 m, thinnest 0.0200 m, area/mass 0.103 m2/kg, moments 2.09E-001 8.71E-001 1.08E+000, max/min 5.16E+000
+    part 0 parent -1 photosynthetic box: 0.280 x 0.236 x 0.0446 m, 2.95 kg
+    part 1 parent 0 photosynthetic box: 0.179 x 0.463 x 0.0200 m, 1.65 kg
+    part 2 parent 1 photosynthetic box: 0.114 x 0.908 x 0.0200 m, 2.07 kg
+    part 3 parent 2 photosynthetic box: 0.072 x 1.784 x 0.0200 m, 2.58 kg
+-- 118979 t 52200 parts 8 (dump 8) from snapshot 52200 bf 1.000: mass 145.0 kg, longest 38.40 m, thinnest 0.0200 m, area/mass 0.083 m2/kg, moments 9.75E+000 5.70E+003 5.71E+003, max/min 5.86E+002
+    part 0 parent -1 photosynthetic box: 0.449 x 0.341 x 0.0675 m, 15.53 kg
+    part 1 parent 0 photosynthetic box: 0.309 x 0.670 x 0.0282 m, 8.74 kg
+    part 2 parent 1 photosynthetic box: 0.212 x 1.316 x 0.0200 m, 8.37 kg
+    part 3 parent 2 photosynthetic box: 0.146 x 2.584 x 0.0200 m, 11.30 kg
+    part 4 parent 3 photosynthetic box: 0.100 x 5.073 x 0.0200 m, 15.25 kg
+    part 5 parent 4 photosynthetic box: 0.069 x 9.961 x 0.0200 m, 20.58 kg
+    part 6 parent 5 photosynthetic box: 0.047 x 19.557 x 0.0200 m, 27.77 kg
+    part 7 parent 6 photosynthetic box: 0.033 x 38.397 x 0.0200 m, 37.47 kg
+-- 119669 t 51950 parts 4 (dump 7) from snapshot 51900 bf 1.000: mass 27.5 kg, longest 2.57 m, thinnest 0.0200 m, area/mass 0.083 m2/kg, moments 1.44E+000 5.55E+000 6.98E+000, max/min 4.85E+000
+    part 0 parent -1 photosynthetic box: 0.348 x 0.339 x 0.0691 m, 8.15 kg
+    part 1 parent 0 photosynthetic box: 0.268 x 0.666 x 0.0323 m, 5.75 kg
+    part 2 parent 1 photosynthetic box: 0.206 x 1.308 x 0.0200 m, 5.40 kg
+    part 3 parent 2 photosynthetic box: 0.159 x 2.567 x 0.0200 m, 8.16 kg
+-- 120214 t 52100 parts 8 (dump 8) from snapshot 52100 bf 1.000: mass 205.9 kg, longest 49.50 m, thinnest 0.0200 m, area/mass 0.084 m2/kg, moments 7.22E+000 1.76E+004 1.76E+004, max/min 2.44E+003
+    part 0 parent -1 photosynthetic box: 0.402 x 0.281 x 0.0528 m, 8.94 kg
+    part 1 parent 0 photosynthetic box: 0.298 x 0.588 x 0.0200 m, 5.26 kg
+    part 2 parent 1 photosynthetic box: 0.221 x 1.231 x 0.0200 m, 8.16 kg
+    part 3 parent 2 photosynthetic box: 0.164 x 2.577 x 0.0200 m, 12.66 kg
+    part 4 parent 3 photosynthetic box: 0.121 x 5.395 x 0.0200 m, 19.65 kg
+    part 5 parent 4 photosynthetic box: 0.090 x 11.294 x 0.0200 m, 30.49 kg
+    part 6 parent 5 photosynthetic box: 0.067 x 23.644 x 0.0200 m, 47.31 kg
+    part 7 parent 6 photosynthetic box: 0.049 x 49.499 x 0.0200 m, 73.42 kg
+-- 120254 t 52430 parts 1 (dump 1) from snapshot 52400 bf 1.000: mass 2.7 kg, longest 0.25 m, thinnest 0.0449 m, area/mass 0.043 m2/kg, moments 6.02E-003 1.42E-002 1.94E-002, max/min 3.22E+000
+    part 0 parent -1 photosynthetic box: 0.158 x 0.249 x 0.0449 m, 2.66 kg
+-- 120577 t 52270 parts 8 (dump 8) from snapshot 52200 bf 1.000: mass 73.4 kg, longest 29.35 m, thinnest 0.0200 m, area/mass 0.088 m2/kg, moments 4.38E+000 1.48E+003 1.48E+003, max/min 3.38E+002
+    part 0 parent -1 photosynthetic box: 0.465 x 0.261 x 0.0831 m, 15.14 kg
+    part 1 parent 0 photosynthetic box: 0.274 x 0.512 x 0.0331 m, 6.99 kg
+    part 2 parent 1 photosynthetic box: 0.162 x 1.006 x 0.0200 m, 4.89 kg
+    part 3 parent 2 photosynthetic box: 0.095 x 1.975 x 0.0200 m, 5.66 kg
+    part 4 parent 3 photosynthetic box: 0.056 x 3.878 x 0.0200 m, 6.55 kg
+    part 5 parent 4 photosynthetic box: 0.033 x 7.613 x 0.0200 m, 7.59 kg
+    part 6 parent 5 photosynthetic box: 0.020 x 14.948 x 0.0200 m, 8.97 kg
+    part 7 parent 6 photosynthetic box: 0.020 x 29.348 x 0.0200 m, 17.61 kg
+-- 120937 t 52260 parts 14 (dump 16) from snapshot 52200 bf 1.000: mass 46.5 kg, longest 14.79 m, thinnest 0.0200 m, area/mass 0.125 m2/kg, moments 1.39E+000 3.21E+002 3.22E+002, max/min 2.32E+002
+    part 0 parent -1 photosynthetic box: 0.241 x 0.482 x 0.0511 m, 5.93 kg
+    part 1 parent 0 photosynthetic box: 0.177 x 0.854 x 0.0244 m, 3.68 kg
+    part 2 parent 1 photosynthetic box: 0.130 x 1.510 x 0.0200 m, 3.91 kg
+    part 3 parent 2 photosynthetic box: 0.095 x 2.672 x 0.0200 m, 5.08 kg
+    part 4 parent 3 photosynthetic box: 0.070 x 4.726 x 0.0200 m, 6.59 kg
+    part 5 parent 4 photosynthetic box: 0.051 x 8.362 x 0.0200 m, 8.56 kg
+    part 6 parent 5 photosynthetic box: 0.038 x 14.793 x 0.0200 m, 11.11 kg
+    part 7 parent 6 neural box: 0.020 x 1.647 x 0.0200 m, 0.66 kg
+    part 8 parent 5 neural box: 0.020 x 0.931 x 0.0200 m, 0.37 kg
+    part 9 parent 4 neural box: 0.020 x 0.526 x 0.0200 m, 0.21 kg
+    part 10 parent 3 neural box: 0.020 x 0.297 x 0.0200 m, 0.12 kg
+    part 11 parent 2 neural box: 0.023 x 0.168 x 0.0200 m, 0.08 kg
+    part 12 parent 1 neural box: 0.032 x 0.095 x 0.0252 m, 0.08 kg
+    part 13 parent 0 neural box: 0.043 x 0.054 x 0.0528 m, 0.12 kg
+-- 120946 t 52610 parts 7 (dump 8) from snapshot 52600 bf 1.000: mass 77.1 kg, longest 18.22 m, thinnest 0.0200 m, area/mass 0.106 m2/kg, moments 4.88E+000 6.11E+002 6.16E+002, max/min 1.26E+002
+    part 0 parent -1 photosynthetic box: 0.341 x 0.594 x 0.0684 m, 13.85 kg
+    part 1 parent 0 photosynthetic box: 0.243 x 1.051 x 0.0344 m, 8.79 kg
+    part 2 parent 1 photosynthetic box: 0.174 x 1.860 x 0.0200 m, 6.47 kg
+    part 3 parent 2 photosynthetic box: 0.124 x 3.290 x 0.0200 m, 8.17 kg
+    part 4 parent 3 photosynthetic box: 0.089 x 5.821 x 0.0200 m, 10.32 kg
+    part 5 parent 4 photosynthetic box: 0.063 x 10.299 x 0.0200 m, 13.04 kg
+    part 6 parent 5 photosynthetic box: 0.045 x 18.220 x 0.0200 m, 16.48 kg
+-- 121286 t 52580 parts 4 (dump 7) from snapshot 52500 bf 1.000: mass 21.8 kg, longest 1.98 m, thinnest 0.0200 m, area/mass 0.070 m2/kg, moments 1.10E+000 1.67E+000 2.76E+000, max/min 2.50E+000
+    part 0 parent -1 photosynthetic box: 0.465 x 0.261 x 0.0831 m, 10.09 kg
+    part 1 parent 0 photosynthetic box: 0.274 x 0.512 x 0.0331 m, 4.66 kg
+    part 2 parent 1 photosynthetic box: 0.162 x 1.006 x 0.0200 m, 3.26 kg
+    part 3 parent 2 photosynthetic box: 0.095 x 1.975 x 0.0200 m, 3.77 kg
+-- 121480 t 52350 parts 7 (dump 8) from snapshot 52300 bf 1.000: mass 37.2 kg, longest 14.95 m, thinnest 0.0200 m, area/mass 0.111 m2/kg, moments 2.37E+000 1.43E+002 1.45E+002, max/min 6.13E+001
+    part 0 parent -1 photosynthetic box: 0.465 x 0.261 x 0.0831 m, 10.09 kg
+    part 1 parent 0 photosynthetic box: 0.274 x 0.512 x 0.0331 m, 4.66 kg
+    part 2 parent 1 photosynthetic box: 0.162 x 1.006 x 0.0200 m, 3.26 kg
+    part 3 parent 2 photosynthetic box: 0.095 x 1.975 x 0.0200 m, 3.77 kg
+    part 4 parent 3 photosynthetic box: 0.056 x 3.878 x 0.0200 m, 4.37 kg
+    part 5 parent 4 photosynthetic box: 0.033 x 7.613 x 0.0200 m, 5.06 kg
+    part 6 parent 5 photosynthetic box: 0.020 x 14.948 x 0.0200 m, 5.98 kg
+-- 121530 t 52310 parts 7 (dump 8) from snapshot 52300 bf 1.000: mass 34.2 kg, longest 14.95 m, thinnest 0.0200 m, area/mass 0.120 m2/kg, moments 2.04E+000 1.43E+002 1.45E+002, max/min 7.11E+001
+    part 0 parent -1 photosynthetic box: 0.465 x 0.261 x 0.0665 m, 8.07 kg
+    part 1 parent 0 photosynthetic box: 0.274 x 0.512 x 0.0265 m, 3.72 kg
+    part 2 parent 1 photosynthetic box: 0.162 x 1.006 x 0.0200 m, 3.26 kg
+    part 3 parent 2 photosynthetic box: 0.095 x 1.975 x 0.0200 m, 3.77 kg
+    part 4 parent 3 photosynthetic box: 0.056 x 3.878 x 0.0200 m, 4.37 kg
+    part 5 parent 4 photosynthetic box: 0.033 x 7.613 x 0.0200 m, 5.06 kg
+    part 6 parent 5 photosynthetic box: 0.020 x 14.948 x 0.0200 m, 5.98 kg
+-- 121563 t 52360 parts 3 (dump 7) from snapshot 52300 bf 1.000: mass 15.5 kg, longest 1.01 m, thinnest 0.0200 m, area/mass 0.067 m2/kg, moments 4.10E-001 6.26E-001 1.03E+000, max/min 2.51E+000
+    part 0 parent -1 photosynthetic box: 0.465 x 0.261 x 0.0689 m, 8.37 kg
+    part 1 parent 0 photosynthetic box: 0.274 x 0.512 x 0.0275 m, 3.86 kg
+    part 2 parent 1 photosynthetic box: 0.162 x 1.006 x 0.0200 m, 3.26 kg
+-- 121842 t 52630 parts 6 (dump 7) from snapshot 52600 bf 1.000: mass 24.2 kg, longest 8.02 m, thinnest 0.0200 m, area/mass 0.108 m2/kg, moments 4.28E-001 2.82E+001 2.86E+001, max/min 6.69E+001
+    part 0 parent -1 photosynthetic box: 0.255 x 0.463 x 0.0614 m, 7.23 kg
+    part 1 parent 0 photosynthetic box: 0.158 x 0.819 x 0.0308 m, 3.98 kg
+    part 2 parent 1 photosynthetic box: 0.097 x 1.448 x 0.0200 m, 2.82 kg
+    part 3 parent 2 photosynthetic box: 0.060 x 2.562 x 0.0200 m, 3.09 kg
+    part 4 parent 3 photosynthetic box: 0.037 x 4.533 x 0.0200 m, 3.38 kg
+    part 5 parent 4 photosynthetic box: 0.023 x 8.019 x 0.0200 m, 3.70 kg
+-- 122485 t 52550 parts 6 (dump 7) from snapshot 52500 bf 1.000: mass 68.7 kg, longest 11.03 m, thinnest 0.0200 m, area/mass 0.102 m2/kg, moments 4.78E+000 2.76E+002 2.81E+002, max/min 5.88E+001
+    part 0 parent -1 photosynthetic box: 0.348 x 0.378 x 0.0691 m, 9.08 kg
+    part 1 parent 0 photosynthetic box: 0.272 x 0.742 x 0.0323 m, 6.52 kg
+    part 2 parent 1 photosynthetic box: 0.213 x 1.457 x 0.0200 m, 6.22 kg
+    part 3 parent 2 photosynthetic box: 0.167 x 2.862 x 0.0200 m, 9.56 kg
+    part 4 parent 3 photosynthetic box: 0.131 x 5.618 x 0.0200 m, 14.71 kg
+    part 5 parent 4 photosynthetic box: 0.103 x 11.031 x 0.0200 m, 22.62 kg
+-- 122590 t 52470 parts 3 (dump 7) from snapshot none (grown whole) bf 1.000: mass 17.8 kg, longest 1.26 m, thinnest 0.0200 m, area/mass 0.075 m2/kg, moments 8.59E-001 8.95E-001 1.75E+000, max/min 2.03E+000
+    part 0 parent -1 photosynthetic box: 0.410 x 0.287 x 0.0691 m, 8.13 kg
+    part 1 parent 0 photosynthetic box: 0.297 x 0.600 x 0.0238 m, 4.24 kg
+    part 2 parent 1 photosynthetic box: 0.214 x 1.257 x 0.0200 m, 5.39 kg
+-- 123768 t 52760.5 parts 4 (dump 7) from snapshot 52700 bf 1.000: mass 31.5 kg, longest 3.12 m, thinnest 0.0200 m, area/mass 0.083 m2/kg, moments 1.36E+000 9.39E+000 1.07E+001, max/min 7.90E+000
+    part 0 parent -1 photosynthetic box: 0.329 x 0.412 x 0.0691 m, 9.36 kg
+    part 1 parent 0 photosynthetic box: 0.253 x 0.808 x 0.0323 m, 6.61 kg
+    part 2 parent 1 photosynthetic box: 0.195 x 1.587 x 0.0200 m, 6.20 kg
+    part 3 parent 2 photosynthetic box: 0.150 x 3.116 x 0.0200 m, 9.38 kg
+EXIT 0 

@@ -1,0 +1,7 @@
+{
+  "base": "rounds/nursery/brain2-w2.json",
+  "name": "tank-demo-w2",
+  "description": "A small fresh run on main's build so the room's tank screen has something it can step (the owner's choice C, 2026-10-11, part A): brain2-w2's world and bodies, 12 generations of a small search, a short exam against the frozen and brainless controls. Its bodies are barely evolved; it shows the screen working, not a result.",
+  "search": {"population": 48, "draws": 4, "generations": 12},
+  "exam": {"episodes": 4, "controls": [{"kind": "own"}, {"kind": "frozen"}, {"kind": "brainless"}]}
+}

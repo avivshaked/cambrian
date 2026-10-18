@@ -40,7 +40,7 @@ Every island lies at least 30 m off the glass by construction (D185), and in nea
 island is trimmed at that margin, so an island at the margin counts as clear. The rule, set before any landscape
 was read past the first eight: the most islands of at least 10 columns, the nearest island centres at least 40 m
 apart, and no island over 0.4 of the island columns. Of 40 landscapes, four pass
-(`scratch/r60-build/pick-map.py` over the map check's logs):
+(`scripts/reads/pick-map.py` over the map check's logs):
 
 | landscape | islands of 10+ columns | nearest centres | largest island's share | island columns |
 |---|---|---|---|---|

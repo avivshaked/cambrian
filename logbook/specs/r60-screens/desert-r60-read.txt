@@ -1,0 +1,71 @@
+== round 60's reader: year 6000 s, end 20000 s, islands as seeded at 100 s
+
+== r60s-d005-s1: seed 1, configHash fe00b44b1595cddd, commit fa0a5e6c, ended/budget, reach 20000 s; r60s-d005-s1/2026-10-15-222008-fe00b44b
+   dose: influx 3.6 units/s, budget 45000 units
+   islands as seeded (dump at 100 s): 447 of 3521 water columns (0.13) in 6 islands; the largest, in columns: #0 150, #5 131, #4 82, #1 35, #3 28, #2 21; nearest island column centre to the glass 19.8 m
+        t  alive  leaf  stom   jnt mouth  graz  empty on-isl isl>=5% top islands              desert  <b-e  standing bur/inf top line leafkills  migr m-mth m-grz m-leaf lines2+
+     6000    698   545     2   150     0     0   0.83   0.76       3 0.29 0.27 0.16 0.04     0.00034  0.43      7004    2.74     0.39         0   164     0     0     60    3/13
+    12000    985   793     5   188     0     0   0.83   0.81       4 0.34 0.19 0.18 0.09     0.00040  0.39      7357    0.98     0.39         0   172     0     0    121     1/7
+    18000   2073  1573    11   492     0     0   0.70   0.78       4 0.27 0.26 0.14 0.07     0.00035  0.42      8672    0.94     0.56         0   273     0     0    107     1/6
+    20000   3727  3063    17   652     0     0   0.52   0.59       4 0.23 0.15 0.14 0.06     0.00041  0.32      9585    0.92     0.74         0   304     0     0    194     1/7
+
+== r60s-d02-s1: seed 1, configHash a44977baf4565aa8, commit fa0a5e6c, ended/budget, reach 20000 s; r60s-d02-s1/2026-10-15-222008-a44977ba
+   dose: influx 3.6 units/s, budget 45000 units
+   islands as seeded (dump at 100 s): 429 of 3521 water columns (0.12) in 6 islands; the largest, in columns: #0 142, #5 134, #4 73, #1 35, #3 28, #2 17; nearest island column centre to the glass 19.8 m
+        t  alive  leaf  stom   jnt mouth  graz  empty on-isl isl>=5% top islands              desert  <b-e  standing bur/inf top line leafkills  migr m-mth m-grz m-leaf lines2+
+     6000    430   229     7   197     0     0   0.90   0.83       4 0.38 0.24 0.15 0.06     0.00018  0.58      4871    2.83     0.43         0    82     0     0     25     1/8
+    12000    877   643     6   231     0     0   0.83   0.78       4 0.30 0.22 0.19 0.07     0.00022  0.53      5455    0.97     0.43         0   165     0     0    121    2/11
+    18000   1696  1551    19   126     0     0   0.77   0.82       3 0.39 0.21 0.17 0.04     0.00021  0.54      6898    0.93     0.47         0   296     0     0    238    1/10
+    20000   2221  2077    45    99     0     0   0.68   0.74       4 0.36 0.17 0.14 0.07     0.00027  0.47      7458    0.94     0.57         0   135     0     0    124    4/10
+
+== M1: >= 1000 alive at every year's end from year 2 to 3
+   r60s-d005-s1: 12000 985 MISS, 18000 2073 -> failed
+   r60s-d02-s1: 12000 877 MISS, 18000 1696 -> failed
+
+== M2: >= 0.3 of the 10 m squares empty at every year's end from year 2 to 3
+   r60s-d005-s1: 12000 0.83, 18000 0.70 -> held
+   r60s-d02-s1: 12000 0.83, 18000 0.77 -> held
+
+== M3: >= 0.6 of the living on the islands at 20000 s
+   r60s-d005-s1: 0.59 on the islands -> failed
+   r60s-d02-s1: 0.74 on the islands -> held
+
+== M4: >= 3 islands each with >= 5% of the living at 20000 s
+   r60s-d005-s1: 4 islands at >= 5% (#4 0.23, #5 0.15, #0 0.14, #1 0.06, #3 0.02, #2 0.01) -> held
+   r60s-d02-s1: 4 islands at >= 5% (#0 0.36, #4 0.17, #5 0.14, #1 0.07, #3 0.00, #2 0.00) -> held
+
+== M5: burial 0.8 to 1.2 times the influx over the last year at 20000 s
+   r60s-d005-s1: buried 20174 of 21982 influxed over the year, 0.918 -> held
+   r60s-d02-s1: buried 20580 of 21958 influxed over the year, 0.937 -> held
+
+== M6: the desert's median top-12 m column below 0.00025 at 20000 s
+   r60s-d005-s1: desert median 0.000408 units/m3 (dump 20000 s), 0.32 of desert columns below -> failed
+   r60s-d02-s1: desert median 0.000271 units/m3 (dump 20000 s), 0.47 of desert columns below -> failed
+
+== L1: no root line over 0.5 of the living at 20000 s
+   r60s-d005-s1: largest root line 0.743 of the living -> failed
+   r60s-d02-s1: largest root line 0.574 of the living -> failed
+
+== G1: >= 100 leaf kills by grazers in >= 2 of years 6 to 8
+   r60s-d005-s1: year 6 0 (not reached), year 7 0 (not reached), year 8 0 (not reached) -> unread
+   r60s-d02-s1: year 6 0 (not reached), year 7 0 (not reached), year 8 0 (not reached) -> unread
+
+== S1: grazers, 3000 to 48000 s: readers' mean cosine exceeds the others' by >= 0.1, each side >= 1000 body-samples
+   r60s-d005-s1: readers 0 at -, others 0 at -, difference - -> unread
+   r60s-d02-s1: readers 0 at -, others 0 at -, difference - -> unread
+
+== B1: the books balance
+   r60s-d005-s1: audit max 6.5e-06 J, matter max 1.42e-06, diverged 0, divergedTotal 0, ended/budget 20000 of 20000 s -> holds
+   r60s-d02-s1: audit max 6.09e-06 J, matter max 1.12e-06, diverged 0, divergedTotal 0, ended/budget 20000 of 20000 s -> holds
+
+== clauses (B2 by card-run-check.ps1, B3 by group-resume-compare.py)
+M1: failed (0 of 2 worlds hold, 3 needed of 3; >= 1000 alive)
+M2: held (2 of 2 worlds hold, 2 needed of 3; >= 0.3 of the 10 m squares empty)
+M3: unread (1 of 2 worlds hold, 2 needed of 3; >= 0.6 of the living on the islands)
+M4: held (2 of 2 worlds hold, 2 needed of 3; >= 3 islands each with >= 5% of the living)
+M5: unread (2 of 2 worlds hold, 3 needed of 3; burial 0.8 to 1.2 times the influx over the last year)
+M6: unread (0 of 2 worlds hold, 1 needed of 3; the desert's median top-12 m column below 0.00025)
+L1: failed (0 of 2 worlds hold, 2 needed of 3; no root line over 0.5 of the living)
+G1: unread (0 of 2 worlds hold, 1 needed of 3; leaf kills by grazers)
+S1: unread (0 held, 0 failed, 2 unread of 2 worlds)
+B1: unread (2 of 2 worlds hold, 3 needed of 3; audit, matter, divergence, ended on budget)

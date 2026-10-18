@@ -157,7 +157,7 @@ two builds never edit the same files at once.
     error and failed request read, at 1920×1080 and 1366×768.
   - The walk is done by driving Edge over its DevTools protocol from PowerShell, with .NET's own
     websocket client, so nothing is installed. The driver is
-    `scratch/room6-inspect/cdp-lib.ps1`, to be moved under `scripts/` once reviewed.
+    `scripts/cdp-lib.ps1`, to be moved under `scripts/` once reviewed.
   - What the walk found is reported with the phase.
 - **A rule a screen applies to the science is checked against the nursery's code before it ships.**
   The rule decides what a reader takes a number to mean: what is greyed, what counts, what is
@@ -333,7 +333,7 @@ merged into main as `b751dc5`). Both builds were by Sonnet subagents, each revie
 - **Six end-to-end flows** take about 35 s. Each failed once on purpose against faults put in by
   hand. `Program.Create` takes an optional git runner, so the flows can show git states real git
   cannot make. The flows carry walk 7's checks except those that need the real runs, and
-  `scratch/nursery-general/room7/walk7-checks.md` names the ones they leave out.
+  `design/nursery/briefs/room7-walk7-checks.md` names the ones they leave out.
 - **Every reason box** says that the reason is kept in the activity log, which is committed to git
   and may be published. The owner ruled on 2026-10-05 that the log is committed whole.
 - **Five saved answers** and their masks are in `Golden/`. Renaming one field in each resource failed

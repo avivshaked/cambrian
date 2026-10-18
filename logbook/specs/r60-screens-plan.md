@@ -79,7 +79,7 @@ The short step's peak is now the whole card's, so it is logged beside the readin
 
 5. **big**, on the card: r60s-big alone on seed 1 (world `r60s-big-s1`, since the step log is `r60s-big.log`) for 10,000 s, as a group of one on s1's settings, with
    checkpoints at 5,000 and 10,000 s. Its block, `env-r60s-big.ps1`, is the winner's, r60s-i2 (named on 2026-10-15
-   from the eight screens' reads, `scratch/r60s-read/summary.md`), with `EVOSIM_AREA=88000`,
+   from the eight screens' reads, `logbook/specs/r60-screens/summary.md`), with `EVOSIM_AREA=88000`,
    `EVOSIM_MATTER_ISLANDS=90` (the islands' wavelength in metres), `EVOSIM_MATTER_ISLAND_COVER=0.05` and
    `EVOSIM_REEF_MAX_COUNT=256`. The bed's 41 m tilt is held. Each of the four settings is read back from its
    `config.json` after it ends.

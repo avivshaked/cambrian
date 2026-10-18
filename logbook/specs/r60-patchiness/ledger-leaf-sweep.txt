@@ -1,0 +1,65 @@
+leaf-48000 (r57-s2 commonest leaf), config r59g-grip (round 57 world + round 59 pieces)
+## spent 0.00001
+- Fixation at surface: 0.0016 W (0 units/s)
+| cuticle at the leaf cap (0.5) |0.5273 W, 33275.95% of this body's fixation at the surface |
+|0|1|-0.0305|none|2|0|never|0.5027|
+|6|1|-0.0305|none|2|0|never|0.5027|
+|12|1|-0.0305|none|2|0|never|0.5027|
+|18|1|-0.0305|none|2|0|never|0.5027|
+|24|1|-0.0305|none|2|0|never|0.5027|
+## spent 0.00003
+- Fixation at surface: 0.0048 W (0 units/s)
+| cuticle at the leaf cap (0.5) |0.5273 W, 11096.42% of this body's fixation at the surface |
+|0|1|-0.0278|none|2|0|never|0.5027|
+|6|1|-0.0278|none|2|0|never|0.5027|
+|12|1|-0.0278|none|2|0|never|0.5027|
+|18|1|-0.0278|none|2|0|never|0.5027|
+|24|1|-0.0278|none|2|0|never|0.5027|
+## spent 0.0001
+- Fixation at surface: 0.0158 W (0.0002 units/s)
+| cuticle at the leaf cap (0.5) |0.5273 W, 3333.584% of this body's fixation at the surface |
+|0|1|-0.0184|none|3|0|never|0.5027|
+|6|1|-0.0184|none|3|0|never|0.5027|
+|12|1|-0.0184|none|3|0|never|0.5027|
+|18|1|-0.0184|none|3|0|never|0.5027|
+|24|1|-0.0184|none|3|0|never|0.5027|
+## spent 0.0003
+- Fixation at surface: 0.0473 W (0.0005 units/s)
+| cuticle at the leaf cap (0.5) |0.5273 W, 1115.63% of this body's fixation at the surface |
+|0|1|0.0083|none|60000*|9|7529|0.5027|
+|6|1|0.0083|none|60000*|9|7529|0.5027|
+|12|1|0.0083|none|60000*|9|7529|0.5027|
+|18|1|0.0083|none|60000*|9|7529|0.5027|
+|24|1|0.0083|none|60000*|9|7529|0.5027|
+## spent 0.001
+- Fixation at surface: 0.1554 W (0.0016 units/s)
+| cuticle at the leaf cap (0.5) |0.5273 W, 339.3468% of this body's fixation at the surface |
+|0|1|0.1002|none|60000*|119|625|0.5027|
+|6|1|0.1002|none|60000*|119|625|0.5027|
+|12|1|0.1002|none|60000*|119|625|0.5027|
+|18|1|0.0799|none|60000*|95|783.5|0.5027|
+|24|1|0.0093|none|60000*|10|6757.5|0.5027|
+## spent 0.003
+- Fixation at surface: 0.4485 W (0.0045 units/s)
+| cuticle at the leaf cap (0.5) |0.5273 W, 117.5515% of this body's fixation at the surface |
+|0|1|0.3494|none|60000*|416|179.5|0.5027|
+|6|1|0.3494|none|60000*|416|179.5|0.5027|
+|12|1|0.272|none|60000*|324|230.5|0.5027|
+|18|1|0.0799|none|60000*|95|783.5|0.5027|
+|24|1|0.0093|none|60000*|10|6757.5|0.5027|
+## spent 0.01
+- Fixation at surface: 1.3207 W (0.0132 units/s)
+| cuticle at the leaf cap (0.5) |0.5273 W, 39.9232% of this body's fixation at the surface |
+|0|1|1.0908|none|60000*|1301|57.5|0.5027|
+|6|1|0.7941|none|60000*|947|79|0.5027|
+|12|1|0.272|none|60000*|324|230.5|0.5027|
+|18|1|0.0799|none|60000*|95|783.5|0.5027|
+|24|1|0.0093|none|60000*|10|6757.5|0.5027|
+## spent 0.05
+- Fixation at surface: 2.6414 W (0.0264 units/s)
+| cuticle at the leaf cap (0.5) |0.5273 W, 19.9616% of this body's fixation at the surface |
+|0|1|2.2134|none|60000*|2641|28.5|0.5027|
+|6|1|0.7941|none|60000*|947|79|0.5027|
+|12|1|0.272|none|60000*|324|230.5|0.5027|
+|18|1|0.0799|none|60000*|95|783.5|0.5027|
+|24|1|0.0093|none|60000*|10|6757.5|0.5027|

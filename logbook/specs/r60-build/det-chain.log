@@ -1,0 +1,27 @@
+17:44:28 == r60det-6002-31500-33000-a
+2026-10-16 17:44:29   source D:\Projects\experiments\evolution-simulator\runs\r60-s6002\2026-10-16-002026-a44977ba, status ended (budget), source.gitCommit 22ab1d73057c4d388557bb53a6943b441f5ca3f8, configHash a44977baf4565aa8, checkpoint D:\Projects\experiments\evolution-simulator\runs\r60-s6002\2026-10-16-002026-a44977ba\checkpoints\000031500.ckpt; alive/births/deaths at 33000 s 11328/57097/46792; its whole-run overflow 6257897/0/0/0
+2026-10-16 17:58:51   2026-10-16 17:58:28   r60det-6002-31500-33000-a: ended (budget); t 33000 alive 11328; 11.8 wall min, 2.11 times real time over the 1500 s stepped; run D:\Projects\experiments\evolution-simulator\runs\r60det-6002-31500-33000-a\2026-10-16-164629-a44977ba
+2026-10-16 17:58:54   check r60det-6002-31500-33000-a: info  pace: 11.8 wall min, 2.11 times real time over the 1500 s stepped
+2026-10-16 17:58:54   alive/births/deaths at 33000 s: 11328/57097/46792, r60-s6002's 11328/57097/46792
+2026-10-16 17:58:54   overflow over 31500-33000 s: 0/0/0/0 (candidates/overlaps/held/entries)
+17:58:54 == r60det-6002-31500-33000-b
+2026-10-16 17:58:54   source D:\Projects\experiments\evolution-simulator\runs\r60-s6002\2026-10-16-002026-a44977ba, status ended (budget), source.gitCommit 22ab1d73057c4d388557bb53a6943b441f5ca3f8, configHash a44977baf4565aa8, checkpoint D:\Projects\experiments\evolution-simulator\runs\r60-s6002\2026-10-16-002026-a44977ba\checkpoints\000031500.ckpt; alive/births/deaths at 33000 s 11328/57097/46792; its whole-run overflow 6257897/0/0/0
+2026-10-16 18:12:55   2026-10-16 18:12:44   r60det-6002-31500-33000-b: ended (budget); t 33000 alive 11328; 11.8 wall min, 2.12 times real time over the 1500 s stepped; run D:\Projects\experiments\evolution-simulator\runs\r60det-6002-31500-33000-b\2026-10-16-170047-a44977ba
+2026-10-16 18:12:58   check r60det-6002-31500-33000-b: info  pace: 11.8 wall min, 2.12 times real time over the 1500 s stepped
+2026-10-16 18:12:58   alive/births/deaths at 33000 s: 11328/57097/46792, r60-s6002's 11328/57097/46792
+2026-10-16 18:12:58   overflow over 31500-33000 s: 0/0/0/0 (candidates/overlaps/held/entries)
+18:12:58 == r60det-6002-46500-48000-a
+2026-10-16 18:12:58   source D:\Projects\experiments\evolution-simulator\runs\r60-s6002\2026-10-16-002026-a44977ba, status ended (budget), source.gitCommit 22ab1d73057c4d388557bb53a6943b441f5ca3f8, configHash a44977baf4565aa8, checkpoint D:\Projects\experiments\evolution-simulator\runs\r60-s6002\2026-10-16-002026-a44977ba\checkpoints\000046500.ckpt; alive/births/deaths at 48000 s 16345/157654/142834; its whole-run overflow 6257897/0/0/0
+2026-10-16 18:48:44   2026-10-16 18:48:35   r60det-6002-46500-48000-a: ended (budget); t 48000 alive 16451; 33.6 wall min, 0.74 times real time over the 1500 s stepped; run D:\Projects\experiments\evolution-simulator\runs\r60det-6002-46500-48000-a\2026-10-16-171453-a44977ba
+2026-10-16 18:48:47   check r60det-6002-46500-48000-a: info  pace: 33.6 wall min, 0.74 times real time over the 1500 s stepped
+2026-10-16 18:48:47   alive/births/deaths at 48000 s: 16451/157690/142764, r60-s6002's 16345/157654/142834
+2026-10-16 18:48:47   the state at 48000 s differs from r60-s6002's, as it may once the 256 run dropped
+2026-10-16 18:48:47   overflow over 46500-48000 s: 0/0/0/0 (candidates/overlaps/held/entries)
+18:48:47 == r60det-6002-46500-48000-b
+2026-10-16 18:48:48   source D:\Projects\experiments\evolution-simulator\runs\r60-s6002\2026-10-16-002026-a44977ba, status ended (budget), source.gitCommit 22ab1d73057c4d388557bb53a6943b441f5ca3f8, configHash a44977baf4565aa8, checkpoint D:\Projects\experiments\evolution-simulator\runs\r60-s6002\2026-10-16-002026-a44977ba\checkpoints\000046500.ckpt; alive/births/deaths at 48000 s 16345/157654/142834; its whole-run overflow 6257897/0/0/0
+2026-10-16 19:24:34   2026-10-16 19:24:11   r60det-6002-46500-48000-b: ended (budget); t 48000 alive 16451; 33.4 wall min, 0.75 times real time over the 1500 s stepped; run D:\Projects\experiments\evolution-simulator\runs\r60det-6002-46500-48000-b\2026-10-16-175042-a44977ba
+2026-10-16 19:24:37   check r60det-6002-46500-48000-b: info  pace: 33.4 wall min, 0.75 times real time over the 1500 s stepped
+2026-10-16 19:24:37   alive/births/deaths at 48000 s: 16451/157690/142764, r60-s6002's 16345/157654/142834
+2026-10-16 19:24:37   the state at 48000 s differs from r60-s6002's, as it may once the 256 run dropped
+2026-10-16 19:24:37   overflow over 46500-48000 s: 0/0/0/0 (candidates/overlaps/held/entries)
+19:24:37 det chain ends

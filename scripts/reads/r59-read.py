@@ -1,5 +1,5 @@
 """The reader for round 59's clauses P1 to P4, G1, D1, D3, D4, C1, C2 and B1 (the draft pre-registration,
-scratch/r59-prereg/draft.txt, "Predictions" and "The readings", as D176 and D177 ruled it): three isolated worlds
+logbook/specs/r59-prereg/draft.txt, "Predictions" and "The readings", as D176 and D177 ruled it): three isolated worlds
 on round 57's year, every one with the leaf smell in its direction form, seeds 2 and 3 planted with the ten
 swimmers of inocula/r59-direction-tops through the trickle's pool, seed 1 the control. D176 set the planting:
 the swimmers take half the trickle beside round 54's four stomachs at one founder in ten, the floor draws

@@ -146,7 +146,7 @@ Learn the shapes and the ranges from real files, read locally:
 - a finished search: `scratch/nursery/pilot-deep-brain2/` (its `tank-generations.jsonl`,
   `tank-best.jsonl`, `tank-crossovers.jsonl`, `nursery.log`; its exam, `tank-exam.jsonl`, lands
   about 14:40 on 2026-10-02);
-- a run record: `scratch/nursery-general/record-smoke2/run.json`;
+- a run record: `design/nursery/record-smoke2-run.json`;
 - the recipe's sections: the spec's section 2 and 3. The recipe's file format lands with step 2 of
   the build, and this session will send it.
 

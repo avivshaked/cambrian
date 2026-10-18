@@ -1,0 +1,5 @@
+Unhandled exception. System.FormatException: Missing required field 'brain'. Present: format, configHash, assay, bed, current, development, economy, feeding, field, fluid, genome, growth, light, mouth, mutation, patches, physics, population, reef, sense, species, world, cellTypes.
+   at Evosim.Core.JsonNode.get_Item(String name) in D:\Projects\experiments\evolution-simulator\scratch\r56-light\src-r55\src\Evosim.Core\Serialization\JsonNode.cs:line 62
+   at Evosim.Core.RunConfigJson.Read(String text, String& hashMismatch) in D:\Projects\experiments\evolution-simulator\scratch\r56-light\src-r55\src\Evosim.Core\Serialization\RunConfigJson.cs:line 142
+   at Evosim.Ledger.Program.Run(String[] args) in D:\Projects\experiments\evolution-simulator\scratch\r56-light\src-r55\src\Evosim.Ledger\Program.cs:line 62
+   at Evosim.Ledger.Program.Main(String[] args) in D:\Projects\experiments\evolution-simulator\scratch\r56-light\src-r55\src\Evosim.Ledger\Program.cs:line 44

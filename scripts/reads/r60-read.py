@@ -1,5 +1,5 @@
 """The reader for round 60's clauses M1 to M7, L1, G1, S1 and B1 (the draft pre-registration,
-scratch/r60-prereg/0142-draft.md, "Predictions" and "The readings"): three worlds of r60s-big3's fed islands at the
+logbook/specs/r60-prereg/0142-draft.md, "Predictions" and "The readings"): three worlds of r60s-big3's fed islands at the
 round's dose, seeds 6001, 6002 and 6003, nothing planted, no control.
 
 Not read here: B2 (the card holds) by scripts/card/card-run-check.ps1; B3 (a world resumes) by

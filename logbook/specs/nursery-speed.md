@@ -161,7 +161,7 @@ digest check: a trial run whose result files must be byte-identical to the refer
 | | Speed-up | Expected gain | How the gain was estimated | State |
 |---|---|---|---|---|
 | A1 | The tank jobs handed out one at a time, so no thread runs the last jobs alone | 1.46 times a generation at 14 threads (measured, `a1-p14`) | The slot's profile, above | Built (f8ffe93); 1.46 times measured at 14 threads, byte-identical |
-| A2 | The water sampled at each body part by one fused, flattened routine, as the snow kernel did for the grid | 12 to 14% of the physics step (believed) | `scratch/nursery-speed/read/opus-a2-a3.md`, items 2 and 3 | Designed |
+| A2 | The water sampled at each body part by one fused, flattened routine, as the snow kernel did for the grid | 12 to 14% of the physics step (believed) | `logbook/specs/nursery-speed/opus-a2-a3.md`, items 2 and 3 | Designed |
 | A3 | A world stepping on one thread loops directly, without setting up parallel work eleven times a step | about 6% of an episode (measured: 2.7 s of physics in 45, below) | The same read, item 1 | Built (39ec602), byte-identical |
 | A4 | The bed's sample skipped when a part is clear of the floor | about 5% of the physics step (believed) | Built as P3 on main, and in this branch since the merge of main at 544f809 | Merged; the slot measures the build with it |
 | A5 | An episode ends once every body in its tank is dead | none at today's settings (measured: no tank of 384 lost every body) | The profile counts the seconds swum after the last death | Not recommended unless the settings change |

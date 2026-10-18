@@ -17,7 +17,7 @@ stepped explicitly and the drag limiter is off at this step. The rate does not t
 - Grown from the last snapshot before death, which is often a module short, they are straight blades whose longest
   part is 10-50 m. 108599 has 8 parts and its last is 41.6 x 0.057 x 0.02 m. Moments about the transverse axes run
   1e2 to 1.8e4 kg m2, about the long axis 1 to 30.
-  (scratch/r61-giants/dumps-p6103x2.txt, GiantFind --dumps)
+  (logbook/specs/r61-kelp-divergence/dumps-p6103x2.txt, GiantFind --dumps)
 - One dump is not a blow-up: 120254, a one-part body of the family found inside reef 46 by 0.19 m.
 - 52 are blow-ups: 51 by "link 0's contact sphere out of the grid's reach" and one, 119669, by its root height
   (1.1e15 m).
@@ -45,7 +45,7 @@ starting spin (ladder 0.02-20 rad/s) at which it runs past 1e6 rad/s.
   42 m           1            2              2                  2                     20, after 189 steps
   50 m           0.5          1              2                  1                     20, after 182 steps
   (rad/s, the most sensitive axis; with drag every runaway takes 5-8 steps, 13-21 about the long axis.)
-  (scratch/r61-giants/spin-p6103x2.txt)
+  (logbook/specs/r61-kelp-divergence/spin-p6103x2.txt)
 
 - The threshold falls with the blade's length, from 20 rad/s at 1.4 m to 0.5 rad/s at 50 m. A 50 m blade turning
   half a radian a second, its tip moving 12 m/s, blows up in eight steps.
@@ -66,7 +66,7 @@ starting spin (ladder 0.02-20 rad/s) at which it runs past 1e6 rad/s.
 
 5. Does the rate track the giants? No
 - Pearson r is 0.11 between the divergence rate and the count of bodies with a row of 1,024 cells or more, over 22
-  windows from 49,600 to 55,000 s (scratch/r61-giants/rate-vs-giants.txt).
+  windows from 49,600 to 55,000 s (logbook/specs/r61-kelp-divergence/rate-vs-giants.txt).
 - The rate rose from about 10 per 1,000 s (49,600-51,000) to 20-27 (51,000-55,000). The giant bodies rose to about
   140 at 50,800 s, fell to 80 by 53,000 and climbed to 180 by 55,000.
 - A giant is a size, and the blow-up is a spin that falls with length. A count of 7- and 8-module blades would be the
@@ -82,5 +82,5 @@ starting spin (ladder 0.02-20 rad/s) at which it runs past 1e6 rad/s.
 - (d) Leave it. The blow-up then works as a death that falls on the longest kelp blades, an unphysical size cap on
   the line.
 
-Files: scratch/r61-giants/dumps-p6103x2.txt, spin-p6103x2.txt, rows-p6103x2.txt, rate-vs-giants.txt,
+Files: logbook/specs/r61-kelp-divergence/dumps-p6103x2.txt, spin-p6103x2.txt, rows-p6103x2.txt, rate-vs-giants.txt,
 diverged-census.py, giant-find/Program.cs (modes --dumps and --spin), diverged-p6103x2.cmd, spin-p6103x2.cmd.

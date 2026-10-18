@@ -1,0 +1,46 @@
+== r60s-big2-s1  /d/Projects/experiments/evolution-simulator/scratch/wt-r60-fed/runs/r60s-big2-s1/2026-10-15-060358-461af5ed/
+footprint: 327 of 3501 live columns (0.09)
+t  1000  alive  7372  cols 0.055  x sd 62.1  standing  55029.2  influx/2000s  4772.8  buried  9745.8 (2.04 of influx)  desert top12 mean 0.00353 median 0.00143 below-break-even 0.13  islands top12 mean 0.02025
+t  2000  alive  7103  cols 0.056  x sd 60.2  standing  46286.7  influx/2000s  9572.8  buried 23288.3 (2.43 of influx)  desert top12 mean 0.00147 median 0.00126 below-break-even 0.07  islands top12 mean 0.00568
+t  5000  alive  3579  cols 0.033  x sd 63.3  standing  32021.6  influx/2000s  9775.9  buried 16690.5 (1.71 of influx)  desert top12 mean 0.00173 median 0.00115 below-break-even 0.07  islands top12 mean 0.01068
+t  7500  alive  6560  cols 0.053  x sd 62.0  standing  28958.8  influx/2000s  9714.8  buried 11724.2 (1.21 of influx)  desert top12 mean 0.00113 median 0.00096 below-break-even 0.04  islands top12 mean 0.00389
+t 10000  alive  6617  cols 0.059  x sd 65.9  standing  29360.6  influx/2000s  9710.8  buried  9274.0 (0.96 of influx)  desert top12 mean 0.00141 median 0.00108 below-break-even 0.04  islands top12 mean 0.00713
+-- crowd_vs_bed
+t 1000 (row 1000) alive 7370   depth quartiles -4.4 -2.6 -1.4 m
+  bed class (m)  area share  body share  ratio
+   0- 5          0.003       0.003       0.99
+   5-10          0.077       0.119       1.54
+  10-15          0.122       0.209       1.71
+  15-20          0.144       0.044       0.30
+  20-30          0.307       0.042       0.14
+  30-60          0.346       0.583       1.69
+  10 m squares inside the disc: 823, mean 6.9 bodies, cv 3.87 (Poisson 0.38), empty share 0.75
+  5 m columns: corr(bodies, matter whole column) 0.46, corr(bodies, matter top 12 m) 0.39
+t 5000 (row 5000) alive 3577   depth quartiles -4.0 -2.4 -1.3 m
+  bed class (m)  area share  body share  ratio
+   0- 5          0.003       0.013       4.28
+   5-10          0.077       0.250       3.23
+  10-15          0.122       0.122       1.00
+  15-20          0.144       0.039       0.27
+  20-30          0.307       0.041       0.13
+  30-60          0.346       0.536       1.55
+  10 m squares inside the disc: 823, mean 3.6 bodies, cv 3.40 (Poisson 0.53), empty share 0.69
+  5 m columns: corr(bodies, matter whole column) 0.70, corr(bodies, matter top 12 m) 0.75
+t 10000 (row 10000) alive 6615   depth quartiles -6.1 -3.5 -1.7 m
+  bed class (m)  area share  body share  ratio
+   0- 5          0.003       0.025       8.40
+   5-10          0.077       0.320       4.14
+  10-15          0.122       0.101       0.83
+  15-20          0.144       0.032       0.22
+  20-30          0.307       0.062       0.20
+  30-60          0.346       0.459       1.33
+  10 m squares inside the disc: 823, mean 6.6 bodies, cv 2.76 (Poisson 0.39), empty share 0.55
+  5 m columns: corr(bodies, matter whole column) 0.50, corr(bodies, matter top 12 m) 0.45
+-- field-map
+runrec: 2026-10-15-060358-461af5ed: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+footprint: the 327 of 3521 live columns above the mean at 100 s (0.09 of the water)
+bed: fields/bed.f32, 11023 of 88005 live snow columns have a floor within 12 m of the surface (0.125 of the columns); snow-shelf12 is the snow stock's share in them, snow-floor12 the mean density of their floor cells in J/m3 (fields/*.snow-floor.f32)
+second  bodies-at  alive  col-cv   max-units/m3  mean-units/m3  in-islands  in-footprint  snow-shelf12  snow-floor12
+  1000       1000   7370    1.78        0.1099        0.00596        0.88          0.70        0.2326        0.6895  D:/Projects/experiments/evolution-simulator/scratch/r60s-read/fields/r60s-big2-s1\r60s-big2-s1-t0001000-map.png
+  5000       5000   3577    1.48        0.0339        0.00278        0.84          0.68        0.2294        2.8764  D:/Projects/experiments/evolution-simulator/scratch/r60s-read/fields/r60s-big2-s1\r60s-big2-s1-t0005000-map.png
+ 10000      10000   6615    1.26        0.0234        0.00219        0.62          0.42        0.1618        2.1947  D:/Projects/experiments/evolution-simulator/scratch/r60s-read/fields/r60s-big2-s1\r60s-big2-s1-t0010000-map.png

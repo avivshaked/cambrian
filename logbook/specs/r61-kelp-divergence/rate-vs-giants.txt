@@ -1,0 +1,25 @@
+stats rows t 49510 to 55120; diverged (cumulative) 121
+49600-49800 s: diverged   2 ( 10.0 per 1,000 s); bodies with a giant row 60 -> 68
+49800-50000 s: diverged   0 (  0.0 per 1,000 s); bodies with a giant row 68 -> 94
+50000-50200 s: diverged   2 ( 10.0 per 1,000 s); bodies with a giant row 94 -> 120
+50200-50400 s: diverged   4 ( 20.0 per 1,000 s); bodies with a giant row 120 -> 133
+50400-50600 s: diverged   1 (  5.0 per 1,000 s); bodies with a giant row 133 -> 139
+50600-50800 s: diverged   4 ( 20.0 per 1,000 s); bodies with a giant row 139 -> 142
+50800-51000 s: diverged   2 ( 10.0 per 1,000 s); bodies with a giant row 142 -> 130
+51000-51200 s: diverged   5 ( 25.0 per 1,000 s); bodies with a giant row 130 -> 115
+51200-51400 s: diverged   7 ( 35.0 per 1,000 s); bodies with a giant row 115 -> 112
+51400-51600 s: diverged   3 ( 15.0 per 1,000 s); bodies with a giant row 112 -> 110
+51600-51800 s: diverged   1 (  5.0 per 1,000 s); bodies with a giant row 110 -> 102
+51800-52000 s: diverged   4 ( 20.0 per 1,000 s); bodies with a giant row 102 -> 92
+52000-52200 s: diverged   1 (  5.0 per 1,000 s); bodies with a giant row 92 -> 97
+52200-52400 s: diverged   6 ( 30.0 per 1,000 s); bodies with a giant row 97 -> 83
+52400-52600 s: diverged   4 ( 20.0 per 1,000 s); bodies with a giant row 83 -> 90
+52600-52800 s: diverged   5 ( 25.0 per 1,000 s); bodies with a giant row 90 -> 80
+52800-53000 s: diverged   4 ( 20.0 per 1,000 s); bodies with a giant row 80 -> 80
+53000-53400 s: diverged  11 ( 27.5 per 1,000 s); bodies with a giant row 80 -> 88
+53400-53800 s: diverged   8 ( 20.0 per 1,000 s); bodies with a giant row 88 -> 87
+53800-54200 s: diverged   8 ( 20.0 per 1,000 s); bodies with a giant row 87 -> 128
+54200-54600 s: diverged  11 ( 27.5 per 1,000 s); bodies with a giant row 128 -> 151
+54600-55000 s: diverged   9 ( 22.5 per 1,000 s); bodies with a giant row 151 -> 180
+Pearson r, rate against the mean count of bodies with a giant row: 0.11
+divergences per giant body per 1,000 s: 0.156, 0.000, 0.093, 0.158, 0.037, 0.142, 0.073, 0.204, 0.308, 0.135, 0.047, 0.206, 0.053, 0.333, 0.231, 0.293, 0.248, 0.326, 0.229, 0.186, 0.197, 0.136

@@ -25,7 +25,7 @@ folder unless a path below says otherwise.
    B0 to B6.
 2. `logbook/specs/nursery-gpu-plan.md`: an earlier read-only plan for the nursery on the graphics
    card, with its stages, line counts and days.
-3. `D:\Projects\experiments\evolution-simulator\scratch\nursery-speed\read\opus-a2-a3.md`: a read of
+3. `D:\Projects\experiments\evolution-simulator\logbook\specs\nursery-speed\opus-a2-a3.md`: a read of
    the physics step's bit-identical savings (a serial path at one thread, folded tables, a fused water
    sampler, a contact-bed early-out, trace off, fluid panels, SkipLocalsInit) and three that change
    results (N1, N2, W1).

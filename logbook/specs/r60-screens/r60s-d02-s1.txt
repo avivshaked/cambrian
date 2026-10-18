@@ -1,0 +1,43 @@
+== r60s-d02-s1  /d/Projects/experiments/evolution-simulator/scratch/wt-burial/runs/r60s-d02-s1/2026-10-15-222008-a44977ba
+footprint: 428 of 3501 live columns (0.12)
+t 10000  alive   791  cols 0.008  x sd 62.5  standing   5314.1  influx/2000s  7311.5  buried  6872.2 (0.94 of influx)  desert top12 mean 0.00052 median 0.00024 below-break-even 0.51  islands top12 mean 0.00451
+t 15000  alive  1417  cols 0.014  x sd 68.3  standing   6431.6  influx/2000s  7355.0  buried  6542.8 (0.89 of influx)  desert top12 mean 0.00045 median 0.00027 below-break-even 0.48  islands top12 mean 0.00436
+t 20000  alive  2221  cols 0.022  x sd 70.1  standing   7458.0  influx/2000s  7335.2  buried  6775.1 (0.92 of influx)  desert top12 mean 0.00040 median 0.00027 below-break-even 0.47  islands top12 mean 0.00350
+-- crowd_vs_bed
+t 10000 (row 10000) alive 791   depth quartiles -2.4 -1.6 -0.8 m
+  bed class (m)  area share  body share  ratio
+   0- 5          0.003       0.000       0.00
+   5-10          0.077       0.033       0.43
+  10-15          0.122       0.449       3.67
+  15-20          0.144       0.092       0.64
+  20-30          0.307       0.101       0.33
+  30-60          0.346       0.325       0.94
+  10 m squares inside the disc: 823, mean 1.0 bodies, cv 4.22 (Poisson 1.02), empty share 0.80
+  5 m columns: corr(bodies, matter whole column) 0.42, corr(bodies, matter top 12 m) 0.52
+t 15000 (row 15000) alive 1417   depth quartiles -3.5 -2.1 -0.9 m
+  bed class (m)  area share  body share  ratio
+   0- 5          0.003       0.000       0.00
+   5-10          0.077       0.049       0.64
+  10-15          0.122       0.418       3.41
+  15-20          0.144       0.073       0.50
+  20-30          0.307       0.186       0.61
+  30-60          0.346       0.274       0.79
+  10 m squares inside the disc: 823, mean 1.7 bodies, cv 3.59 (Poisson 0.76), empty share 0.74
+  5 m columns: corr(bodies, matter whole column) 0.41, corr(bodies, matter top 12 m) 0.53
+t 20000 (row 20000) alive 2221   depth quartiles -3.6 -2.1 -1.0 m
+  bed class (m)  area share  body share  ratio
+   0- 5          0.003       0.000       0.00
+   5-10          0.077       0.018       0.24
+  10-15          0.122       0.332       2.71
+  15-20          0.144       0.234       1.62
+  20-30          0.307       0.195       0.63
+  30-60          0.346       0.221       0.64
+  10 m squares inside the disc: 823, mean 2.7 bodies, cv 3.34 (Poisson 0.61), empty share 0.68
+  5 m columns: corr(bodies, matter whole column) 0.49, corr(bodies, matter top 12 m) 0.63
+-- field-map
+runrec: 2026-10-15-222008-a44977ba: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+footprint: the 429 of 3521 live columns above the mean at 100 s (0.12 of the water)
+bed: fields/bed.f32, 11023 of 88005 live snow columns have a floor within 12 m of the surface (0.125 of the columns); snow-shelf12 is the snow stock's share in them, snow-floor12 the mean density of their floor cells in J/m3 (fields/*.snow-floor.f32)
+second  bodies-at  alive  col-cv   max-units/m3  mean-units/m3  in-islands  in-footprint  snow-shelf12  snow-floor12
+ 10000      10000    791    2.04        0.0246        0.00104        0.84          0.75        0.0974        0.1649  D:/Projects/experiments/evolution-simulator/scratch/r60s-read/fields/r60s-d02-s1\r60s-d02-s1-t0010000-map.png
+ 20000      20000   2221    2.05        0.0182        0.00083        0.82          0.74        0.1071        0.2967  D:/Projects/experiments/evolution-simulator/scratch/r60s-read/fields/r60s-d02-s1\r60s-d02-s1-t0020000-map.png

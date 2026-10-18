@@ -1,0 +1,23 @@
+# The typical dominant leaf's budget, rounds 54 and 55 (2026-10-04). Status: M measured from a run's files, C computed (ledger or formula), G guessed.
+quantity	r54b-s2 (t=30,000)	r55-s2 (t=13,500)	status	source
+dominant clade, share of living leaves	founder 1 (floor, t=0.5): 98.2%	founder 1 (floor, t=0.5): 81.8%	M	r54b-s2-clades.tsv, r55-s2-clades.tsv
+typical member (nearest the clade's trait medians)	id 73354: 2 leaf nodes, lump, brood 1	id 24352: 1 leaf node, lump, brood 1	M	typical-*.txt, typical-*.json
+clade medians: investment, margin, lifespan gene, adult scale	0.042, 362 s, 0.61, 1.04	0.075, 444 s, 0.45, 0.74	M	typical-*.txt
+volume, tissue	0.0202 m3, 10.1 J	0.0721 m3, 36.0 J	C	ledger-sweep.txt (round-55 build, r55-s2 config)
+standing upkeep W	0.052 W	0.150 W	C	ledger-sweep.txt
+income at the surface mean, isolated, spent 0.007/m3, exposure 1.45: 0 / 6 / 9 / 12 m (net W)	1.35 / 1.35 / 0.80 / 0.46	2.36 / 2.36 / 1.37 / 0.77	C	ledger-sweep.txt (uptake ceiling binds at 0-6 m)
+world mean light income and spend per living body	0.158 W and 0.050 W (ratio 3.17)	0.277 W and 0.109 W (ratio 2.55)	M	income-spend.tsv (sum of lifetime totals over sum of ages)
+income ratio after exudation r = 0.85 x income / spend, range over the run	1.5 to 2.7	1.6 to 2.2	M	income-spend.tsv
+share of leaf body-steps uptake-limited (upt lim)	63-75%	65-81%	M	report column
+child cost (investment x tissue + overhead, floor 50 J)	50.4 J	52.7 J	C	ledger units/child x rho 100
+reserve just after breeding = margin x W	18.8 J = 362 s of upkeep	66 J = 442 s	C	Organism.LumpGate
+breeding gate = cost + margin x W	69.2 J = 1,333 s of upkeep	119 J = 794 s	C	Organism.LumpGate
+reserve of a growing body (GrowthReserveFloor 0.1 of tissue value)	about 16 s of upkeep	about 16 s	C	0.1 x 500 J/m3 / 3 W/m3, less support
+reserve of a newborn (NewbornReserveFraction 0.2 of its start)	about 42 s of upkeep	about 42 s	C	0.25 x 500/3
+survival in total darkness, adult	362-1,333 s	442-794 s	C	reserve / W (no light, no income)
+share of the living at full adult size (bf >= 0.999)	85%	76%	M	snapshot bf
+median age at death, inherited leaves (born early enough to have died)	1,254 s (p25 457, p75 1,927)	1,244 s (p25 503, p75 1,880)	M	r54b-s2-ages.tsv, r55-s2-ages.tsv
+median age at first birth, of those that bred	835 s (p25 541, p75 1,228)	787 s (p25 309, p75 1,233)	M	same
+share that ever bred; children per dead body	43%; 1.07	35%; 1.11	M	same
+deaths by cause: aged / starved, median age	1,694 s / 361 s	1,683 s / 481 s	M	r54b-s2-ages-by-cause.tsv, r55-s2-ages-by-cause.tsv
+share of deaths starved	40%	43%	M	same

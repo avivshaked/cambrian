@@ -3,7 +3,7 @@
 Written 2026-10-07. The owner asked that morning for renders that feel more underwater without losing the
 4K clarity they have, with the water itself visible and the world above the water shown. The owner left
 the choices to the coordinator. Two surveys stand behind this brief: an Opus reading of the skin
-(`scratch/underwater-look/survey.txt`) and a Sonnet survey of underwater rendering on the web. What
+(`logbook/specs/underwater-look/survey.txt`) and a Sonnet survey of underwater rendering on the web. What
 follows is what to build.
 
 ## Rules for every item

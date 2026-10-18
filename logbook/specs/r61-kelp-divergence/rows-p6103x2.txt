@@ -1,0 +1,485 @@
+genomes 138057 from 4 runs; giants from 1024 cells
+== 49600 s: 8886 bodies (0 without a genome), 25701 rows, cell 0.958 m; rows at 1024 cells or more: 64 certainly, 73 at most, on 58 to 63 bodies
+  body 95582 part 7 of 8: half-diagonal 11.93 m, 15625 to 17576 cells
+  body 101187 part 7 of 8: half-diagonal 11.93 m, 15625 to 17576 cells
+  body 106117 part 5 of 6: half-diagonal 11.84 m, 15625 to 17576 cells
+  body 106025 part 6 of 7: half-diagonal 10.61 m, 12167 to 13824 cells
+  body 98720 part 6 of 7: half-diagonal 10.61 m, 12167 to 13824 cells
+  body 101531 part 7 of 8: half-diagonal 10.41 m, 10648 to 12167 cells
+  body 100737 part 5 of 6: half-diagonal 8.64 m, 6859 to 8000 cells
+  body 99755 part 6 of 7: half-diagonal 7.93 m, 4913 to 5832 cells
+  body 100942 part 6 of 7: half-diagonal 7.93 m, 4913 to 5832 cells
+  body 103806 part 6 of 7: half-diagonal 7.93 m, 4913 to 5832 cells
+  body 104480 part 6 of 7: half-diagonal 7.93 m, 4913 to 5832 cells
+  body 105261 part 5 of 7: half-diagonal 7.85 m, 4913 to 5832 cells
+  body 95582: 2 such rows, the largest 11.93 m
+  body 98720: 2 such rows, the largest 10.61 m
+  body 99755: 2 such rows, the largest 7.93 m
+  body 100942: 2 such rows, the largest 7.93 m
+  body 101187: 2 such rows, the largest 11.93 m
+  body 101531: 2 such rows, the largest 10.41 m
+  body 103806: 2 such rows, the largest 7.93 m
+  body 104480: 2 such rows, the largest 7.93 m
+== 49800 s: 8918 bodies (0 without a genome), 25764 rows, cell 0.967 m; rows at 1024 cells or more: 71 certainly, 80 at most, on 66 to 70 bodies
+  body 95582 part 7 of 8: half-diagonal 11.93 m, 15625 to 17576 cells
+  body 101187 part 7 of 8: half-diagonal 11.93 m, 15625 to 17576 cells
+  body 106117 part 5 of 6: half-diagonal 11.84 m, 15625 to 17576 cells
+  body 106025 part 6 of 7: half-diagonal 10.61 m, 10648 to 12167 cells
+  body 101531 part 7 of 8: half-diagonal 10.41 m, 10648 to 12167 cells
+  body 105449 part 5 of 6: half-diagonal 10.14 m, 9261 to 10648 cells
+  body 100737 part 5 of 6: half-diagonal 8.64 m, 5832 to 6859 cells
+  body 107194 part 5 of 7: half-diagonal 8.15 m, 4913 to 5832 cells
+  body 99755 part 6 of 7: half-diagonal 7.93 m, 4913 to 5832 cells
+  body 103806 part 6 of 7: half-diagonal 7.93 m, 4913 to 5832 cells
+  body 104480 part 6 of 7: half-diagonal 7.93 m, 4913 to 5832 cells
+  body 106217 part 6 of 7: half-diagonal 7.93 m, 4913 to 5832 cells
+  body 95582: 2 such rows, the largest 11.93 m
+  body 99755: 2 such rows, the largest 7.93 m
+  body 101187: 2 such rows, the largest 11.93 m
+  body 101531: 2 such rows, the largest 10.41 m
+  body 103806: 2 such rows, the largest 7.93 m
+  body 104480: 2 such rows, the largest 7.93 m
+  body 105449: 2 such rows, the largest 10.14 m
+  body 106025: 2 such rows, the largest 10.61 m
+== 50000 s: 8985 bodies (0 without a genome), 26194 rows, cell 0.997 m; rows at 1024 cells or more: 92 certainly, 107 at most, on 87 to 101 bodies
+  body 101187 part 7 of 8: half-diagonal 11.93 m, 13824 to 15625 cells
+  body 101531 part 7 of 8: half-diagonal 10.41 m, 9261 to 10648 cells
+  body 105449 part 5 of 6: half-diagonal 10.14 m, 9261 to 10648 cells
+  body 107546 part 5 of 6: half-diagonal 9.14 m, 6859 to 8000 cells
+  body 107733 part 6 of 7: half-diagonal 9.11 m, 6859 to 8000 cells
+  body 108598 part 6 of 7: half-diagonal 9.11 m, 6859 to 8000 cells
+  body 108820 part 6 of 7: half-diagonal 9.11 m, 6859 to 8000 cells
+  body 100737 part 5 of 6: half-diagonal 8.64 m, 5832 to 6859 cells
+  body 107194 part 5 of 7: half-diagonal 8.15 m, 4913 to 5832 cells
+  body 108190 part 5 of 7: half-diagonal 8.15 m, 4913 to 5832 cells
+  body 103806 part 6 of 7: half-diagonal 7.93 m, 4096 to 4913 cells
+  body 104480 part 6 of 7: half-diagonal 7.93 m, 4096 to 4913 cells
+  body 101187: 2 such rows, the largest 11.93 m
+  body 101531: 2 such rows, the largest 10.41 m
+  body 105449: 2 such rows, the largest 10.14 m
+  body 107733: 2 such rows, the largest 9.11 m
+  body 108598: 2 such rows, the largest 9.11 m
+  body 108820: 2 such rows, the largest 9.11 m
+  body 97108: 1 such rows, the largest 5.40 m
+  body 97158: 1 such rows, the largest 4.71 m
+== 50200 s: 8960 bodies (0 without a genome), 26556 rows, cell 1.038 m; rows at 1024 cells or more: 118 certainly, 141 at most, on 112 to 128 bodies
+  body 108599 part 7 of 8: half-diagonal 20.81 m, 68921 to 74088 cells
+  body 101187 part 7 of 8: half-diagonal 11.93 m, 12167 to 13824 cells
+  body 108656 part 6 of 7: half-diagonal 10.61 m, 9261 to 10648 cells
+  body 108599 part 6 of 8: half-diagonal 10.60 m, 9261 to 10648 cells
+  body 101531 part 7 of 8: half-diagonal 10.41 m, 9261 to 10648 cells
+  body 105449 part 5 of 6: half-diagonal 10.14 m, 8000 to 9261 cells
+  body 109006 part 6 of 7: half-diagonal 9.73 m, 6859 to 8000 cells
+  body 108647 part 6 of 8: half-diagonal 9.39 m, 6859 to 8000 cells
+  body 107546 part 5 of 6: half-diagonal 9.14 m, 5832 to 6859 cells
+  body 107733 part 6 of 7: half-diagonal 9.11 m, 5832 to 6859 cells
+  body 108598 part 6 of 7: half-diagonal 9.11 m, 5832 to 6859 cells
+  body 108820 part 6 of 7: half-diagonal 9.11 m, 5832 to 6859 cells
+  body 108599: 3 such rows, the largest 20.81 m
+  body 101187: 2 such rows, the largest 11.93 m
+  body 101531: 2 such rows, the largest 10.41 m
+  body 105449: 2 such rows, the largest 10.14 m
+  body 107733: 2 such rows, the largest 9.11 m
+  body 108598: 2 such rows, the largest 9.11 m
+  body 108647: 2 such rows, the largest 9.39 m
+  body 108656: 2 such rows, the largest 10.61 m
+== 50400 s: 9150 bodies (0 without a genome), 27438 rows, cell 1.051 m; rows at 1024 cells or more: 128 certainly, 155 at most, on 124 to 142 bodies
+  body 108961 part 6 of 7: half-diagonal 19.23 m, 50653 to 54872 cells
+  body 101222 part 7 of 8: half-diagonal 16.66 m, 32768 to 35937 cells
+  body 101187 part 7 of 8: half-diagonal 11.93 m, 12167 to 13824 cells
+  body 101531 part 7 of 8: half-diagonal 10.41 m, 8000 to 9261 cells
+  body 105449 part 5 of 6: half-diagonal 10.14 m, 8000 to 9261 cells
+  body 109006 part 6 of 7: half-diagonal 9.73 m, 6859 to 8000 cells
+  body 110526 part 6 of 7: half-diagonal 9.73 m, 6859 to 8000 cells
+  body 108647 part 6 of 8: half-diagonal 9.39 m, 5832 to 6859 cells
+  body 107091 part 6 of 7: half-diagonal 9.29 m, 5832 to 6859 cells
+  body 107546 part 5 of 6: half-diagonal 9.14 m, 5832 to 6859 cells
+  body 107733 part 6 of 7: half-diagonal 9.11 m, 5832 to 6859 cells
+  body 108820 part 6 of 7: half-diagonal 9.11 m, 5832 to 6859 cells
+  body 101187: 2 such rows, the largest 11.93 m
+  body 101222: 2 such rows, the largest 16.66 m
+  body 101531: 2 such rows, the largest 10.41 m
+  body 105449: 2 such rows, the largest 10.14 m
+  body 107091: 2 such rows, the largest 9.29 m
+  body 107733: 2 such rows, the largest 9.11 m
+  body 108647: 2 such rows, the largest 9.39 m
+  body 108820: 2 such rows, the largest 9.11 m
+== 50600 s: 9142 bodies (0 without a genome), 27330 rows, cell 1.060 m; rows at 1024 cells or more: 129 certainly, 162 at most, on 127 to 151 bodies
+  body 101222 part 7 of 8: half-diagonal 16.66 m, 32768 to 35937 cells
+  body 112133 part 6 of 7: half-diagonal 12.07 m, 12167 to 13824 cells
+  body 105449 part 5 of 6: half-diagonal 10.14 m, 8000 to 9261 cells
+  body 109006 part 6 of 7: half-diagonal 9.73 m, 6859 to 8000 cells
+  body 110526 part 6 of 7: half-diagonal 9.73 m, 6859 to 8000 cells
+  body 108647 part 6 of 8: half-diagonal 9.39 m, 5832 to 6859 cells
+  body 107091 part 6 of 7: half-diagonal 9.29 m, 5832 to 6859 cells
+  body 107546 part 5 of 6: half-diagonal 9.14 m, 5832 to 6859 cells
+  body 107733 part 6 of 7: half-diagonal 9.11 m, 5832 to 6859 cells
+  body 108820 part 6 of 7: half-diagonal 9.11 m, 5832 to 6859 cells
+  body 109254 part 6 of 7: half-diagonal 9.11 m, 5832 to 6859 cells
+  body 109361 part 6 of 7: half-diagonal 9.11 m, 5832 to 6859 cells
+  body 101222: 2 such rows, the largest 16.66 m
+  body 105449: 2 such rows, the largest 10.14 m
+  body 107091: 2 such rows, the largest 9.29 m
+  body 107733: 2 such rows, the largest 9.11 m
+  body 108647: 2 such rows, the largest 9.39 m
+  body 108820: 2 such rows, the largest 9.11 m
+  body 109006: 2 such rows, the largest 9.73 m
+  body 109254: 2 such rows, the largest 9.11 m
+== 50800 s: 9030 bodies (0 without a genome), 27053 rows, cell 1.080 m; rows at 1024 cells or more: 135 certainly, 170 at most, on 131 to 154 bodies
+  body 112133 part 7 of 8: half-diagonal 25.27 m, 103823 to 110592 cells
+  body 111384 part 7 of 8: half-diagonal 21.80 m, 68921 to 74088 cells
+  body 112133 part 6 of 8: half-diagonal 12.07 m, 12167 to 13824 cells
+  body 111384 part 6 of 8: half-diagonal 11.10 m, 9261 to 10648 cells
+  body 102219 part 6 of 7: half-diagonal 10.55 m, 8000 to 9261 cells
+  body 105449 part 5 of 6: half-diagonal 10.14 m, 6859 to 8000 cells
+  body 112713 part 6 of 8: half-diagonal 9.78 m, 6859 to 8000 cells
+  body 109006 part 6 of 7: half-diagonal 9.73 m, 6859 to 8000 cells
+  body 110039 part 6 of 7: half-diagonal 9.73 m, 6859 to 8000 cells
+  body 110526 part 6 of 7: half-diagonal 9.73 m, 6859 to 8000 cells
+  body 110245 part 6 of 7: half-diagonal 9.73 m, 6859 to 8000 cells
+  body 108647 part 6 of 8: half-diagonal 9.39 m, 5832 to 6859 cells
+  body 111384: 3 such rows, the largest 21.80 m
+  body 112133: 3 such rows, the largest 25.27 m
+  body 102219: 2 such rows, the largest 10.55 m
+  body 107091: 2 such rows, the largest 9.29 m
+  body 107733: 2 such rows, the largest 9.11 m
+  body 108820: 2 such rows, the largest 9.11 m
+  body 109006: 2 such rows, the largest 9.73 m
+  body 109254: 2 such rows, the largest 9.11 m
+== 51000 s: 8793 bodies (0 without a genome), 26344 rows, cell 1.077 m; rows at 1024 cells or more: 118 certainly, 157 at most, on 116 to 145 bodies
+  body 112133 part 7 of 8: half-diagonal 25.27 m, 103823 to 110592 cells
+  body 112133 part 6 of 8: half-diagonal 12.07 m, 12167 to 13824 cells
+  body 102219 part 6 of 7: half-diagonal 10.55 m, 8000 to 9261 cells
+  body 105449 part 5 of 6: half-diagonal 10.14 m, 6859 to 8000 cells
+  body 112713 part 6 of 8: half-diagonal 9.78 m, 6859 to 8000 cells
+  body 110039 part 6 of 7: half-diagonal 9.73 m, 6859 to 8000 cells
+  body 110526 part 6 of 7: half-diagonal 9.73 m, 6859 to 8000 cells
+  body 110245 part 6 of 7: half-diagonal 9.73 m, 6859 to 8000 cells
+  body 108647 part 6 of 8: half-diagonal 9.39 m, 5832 to 6859 cells
+  body 107091 part 6 of 7: half-diagonal 9.29 m, 5832 to 6859 cells
+  body 107546 part 5 of 6: half-diagonal 9.14 m, 4913 to 5832 cells
+  body 108820 part 6 of 7: half-diagonal 9.11 m, 4913 to 5832 cells
+  body 112133: 3 such rows, the largest 25.27 m
+  body 102219: 2 such rows, the largest 10.55 m
+  body 107091: 2 such rows, the largest 9.29 m
+  body 108820: 2 such rows, the largest 9.11 m
+  body 109254: 2 such rows, the largest 9.11 m
+  body 109361: 2 such rows, the largest 9.11 m
+  body 110039: 2 such rows, the largest 9.73 m
+  body 110245: 2 such rows, the largest 9.73 m
+== 51200 s: 8702 bodies (0 without a genome), 26004 rows, cell 1.096 m; rows at 1024 cells or more: 99 certainly, 146 at most, on 97 to 133 bodies
+  body 112133 part 7 of 8: half-diagonal 25.27 m, 103823 to 110592 cells
+  body 112133 part 6 of 8: half-diagonal 12.07 m, 12167 to 13824 cells
+  body 114620 part 6 of 7: half-diagonal 10.10 m, 6859 to 8000 cells
+  body 112713 part 6 of 8: half-diagonal 9.78 m, 5832 to 6859 cells
+  body 110039 part 6 of 7: half-diagonal 9.73 m, 5832 to 6859 cells
+  body 110526 part 6 of 7: half-diagonal 9.73 m, 5832 to 6859 cells
+  body 110245 part 6 of 7: half-diagonal 9.73 m, 5832 to 6859 cells
+  body 108692 part 5 of 6: half-diagonal 9.65 m, 5832 to 6859 cells
+  body 108647 part 6 of 8: half-diagonal 9.39 m, 5832 to 6859 cells
+  body 110652 part 6 of 8: half-diagonal 9.39 m, 5832 to 6859 cells
+  body 111391 part 6 of 8: half-diagonal 9.39 m, 5832 to 6859 cells
+  body 107546 part 5 of 6: half-diagonal 9.14 m, 4913 to 5832 cells
+  body 112133: 3 such rows, the largest 25.27 m
+  body 108820: 2 such rows, the largest 9.11 m
+  body 109254: 2 such rows, the largest 9.11 m
+  body 109361: 2 such rows, the largest 9.11 m
+  body 110039: 2 such rows, the largest 9.73 m
+  body 110245: 2 such rows, the largest 9.73 m
+  body 110526: 2 such rows, the largest 9.73 m
+  body 111020: 2 such rows, the largest 9.11 m
+== 51400 s: 8683 bodies (0 without a genome), 25961 rows, cell 1.102 m; rows at 1024 cells or more: 95 certainly, 145 at most, on 93 to 131 bodies
+  body 112133 part 7 of 8: half-diagonal 25.27 m, 97336 to 103823 cells
+  body 112133 part 6 of 8: half-diagonal 12.07 m, 10648 to 12167 cells
+  body 114620 part 6 of 7: half-diagonal 10.10 m, 6859 to 8000 cells
+  body 112713 part 6 of 8: half-diagonal 9.78 m, 5832 to 6859 cells
+  body 110039 part 6 of 7: half-diagonal 9.73 m, 5832 to 6859 cells
+  body 110245 part 6 of 7: half-diagonal 9.73 m, 5832 to 6859 cells
+  body 108647 part 6 of 8: half-diagonal 9.39 m, 5832 to 6859 cells
+  body 110652 part 6 of 8: half-diagonal 9.39 m, 5832 to 6859 cells
+  body 111391 part 6 of 8: half-diagonal 9.39 m, 5832 to 6859 cells
+  body 112806 part 6 of 8: half-diagonal 9.39 m, 5832 to 6859 cells
+  body 109361 part 6 of 7: half-diagonal 9.11 m, 4913 to 5832 cells
+  body 111020 part 6 of 7: half-diagonal 9.11 m, 4913 to 5832 cells
+  body 112133: 3 such rows, the largest 25.27 m
+  body 109361: 2 such rows, the largest 9.11 m
+  body 110039: 2 such rows, the largest 9.73 m
+  body 110245: 2 such rows, the largest 9.73 m
+  body 111020: 2 such rows, the largest 9.11 m
+  body 111780: 2 such rows, the largest 9.11 m
+  body 112543: 2 such rows, the largest 9.11 m
+  body 112713: 2 such rows, the largest 9.78 m
+== 51600 s: 8441 bodies (0 without a genome), 25289 rows, cell 1.122 m; rows at 1024 cells or more: 96 certainly, 137 at most, on 94 to 126 bodies
+  body 112133 part 7 of 8: half-diagonal 25.27 m, 97336 to 103823 cells
+  body 112133 part 6 of 8: half-diagonal 12.07 m, 10648 to 12167 cells
+  body 116113 part 6 of 7: half-diagonal 10.10 m, 6859 to 8000 cells
+  body 112713 part 6 of 8: half-diagonal 9.78 m, 5832 to 6859 cells
+  body 110039 part 6 of 7: half-diagonal 9.73 m, 5832 to 6859 cells
+  body 110245 part 6 of 7: half-diagonal 9.73 m, 5832 to 6859 cells
+  body 117328 part 6 of 7: half-diagonal 9.72 m, 5832 to 6859 cells
+  body 110652 part 6 of 8: half-diagonal 9.39 m, 4913 to 5832 cells
+  body 111391 part 6 of 8: half-diagonal 9.39 m, 4913 to 5832 cells
+  body 112806 part 6 of 8: half-diagonal 9.39 m, 4913 to 5832 cells
+  body 109361 part 6 of 7: half-diagonal 9.11 m, 4913 to 5832 cells
+  body 111020 part 6 of 7: half-diagonal 9.11 m, 4913 to 5832 cells
+  body 112133: 3 such rows, the largest 25.27 m
+  body 109361: 2 such rows, the largest 9.11 m
+  body 110039: 2 such rows, the largest 9.73 m
+  body 110245: 2 such rows, the largest 9.73 m
+  body 111020: 2 such rows, the largest 9.11 m
+  body 111780: 2 such rows, the largest 9.11 m
+  body 112543: 2 such rows, the largest 9.11 m
+  body 113177: 2 such rows, the largest 9.11 m
+== 51800 s: 8239 bodies (0 without a genome), 24525 rows, cell 1.126 m; rows at 1024 cells or more: 89 certainly, 129 at most, on 87 to 117 bodies
+  body 112133 part 7 of 8: half-diagonal 25.27 m, 91125 to 97336 cells
+  body 112133 part 6 of 8: half-diagonal 12.07 m, 10648 to 12167 cells
+  body 116781 part 6 of 7: half-diagonal 10.12 m, 5832 to 6859 cells
+  body 116113 part 6 of 7: half-diagonal 10.10 m, 5832 to 6859 cells
+  body 116573 part 6 of 7: half-diagonal 10.10 m, 5832 to 6859 cells
+  body 112713 part 6 of 8: half-diagonal 9.78 m, 5832 to 6859 cells
+  body 110039 part 6 of 7: half-diagonal 9.73 m, 5832 to 6859 cells
+  body 110245 part 6 of 7: half-diagonal 9.73 m, 5832 to 6859 cells
+  body 117328 part 6 of 7: half-diagonal 9.72 m, 5832 to 6859 cells
+  body 118366 part 6 of 7: half-diagonal 9.72 m, 5832 to 6859 cells
+  body 110652 part 6 of 8: half-diagonal 9.39 m, 4913 to 5832 cells
+  body 111391 part 6 of 8: half-diagonal 9.39 m, 4913 to 5832 cells
+  body 112133: 3 such rows, the largest 25.27 m
+  body 110039: 2 such rows, the largest 9.73 m
+  body 110245: 2 such rows, the largest 9.73 m
+  body 111020: 2 such rows, the largest 9.11 m
+  body 111780: 2 such rows, the largest 9.11 m
+  body 112543: 2 such rows, the largest 9.11 m
+  body 113177: 2 such rows, the largest 9.11 m
+  body 113653: 2 such rows, the largest 9.11 m
+== 52000 s: 8069 bodies (0 without a genome), 23962 rows, cell 1.141 m; rows at 1024 cells or more: 79 certainly, 118 at most, on 77 to 108 bodies
+  body 112133 part 7 of 8: half-diagonal 25.27 m, 91125 to 97336 cells
+  body 119052 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 112133 part 6 of 8: half-diagonal 12.07 m, 10648 to 12167 cells
+  body 116781 part 6 of 7: half-diagonal 10.12 m, 5832 to 6859 cells
+  body 116573 part 6 of 7: half-diagonal 10.10 m, 5832 to 6859 cells
+  body 119607 part 6 of 7: half-diagonal 10.10 m, 5832 to 6859 cells
+  body 112713 part 6 of 8: half-diagonal 9.78 m, 5832 to 6859 cells
+  body 110039 part 6 of 7: half-diagonal 9.73 m, 5832 to 6859 cells
+  body 118366 part 6 of 7: half-diagonal 9.72 m, 5832 to 6859 cells
+  body 119429 part 6 of 7: half-diagonal 9.72 m, 5832 to 6859 cells
+  body 110652 part 6 of 8: half-diagonal 9.39 m, 4913 to 5832 cells
+  body 111391 part 6 of 8: half-diagonal 9.39 m, 4913 to 5832 cells
+  body 112133: 3 such rows, the largest 25.27 m
+  body 110039: 2 such rows, the largest 9.73 m
+  body 111020: 2 such rows, the largest 9.11 m
+  body 111780: 2 such rows, the largest 9.11 m
+  body 112543: 2 such rows, the largest 9.11 m
+  body 113177: 2 such rows, the largest 9.11 m
+  body 113653: 2 such rows, the largest 9.11 m
+  body 116781: 2 such rows, the largest 10.12 m
+== 52200 s: 7922 bodies (0 without a genome), 23572 rows, cell 1.166 m; rows at 1024 cells or more: 84 certainly, 120 at most, on 80 to 114 bodies
+  body 112133 part 7 of 8: half-diagonal 25.27 m, 85184 to 91125 cells
+  body 118979 part 7 of 8: half-diagonal 19.20 m, 35937 to 39304 cells
+  body 118490 part 7 of 8: half-diagonal 16.44 m, 24389 to 27000 cells
+  body 120577 part 7 of 8: half-diagonal 14.67 m, 17576 to 19683 cells
+  body 119052 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 120386 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 120387 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 120688 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 112133 part 6 of 8: half-diagonal 12.07 m, 9261 to 10648 cells
+  body 116573 part 6 of 7: half-diagonal 10.10 m, 5832 to 6859 cells
+  body 119607 part 6 of 7: half-diagonal 10.10 m, 5832 to 6859 cells
+  body 120669 part 6 of 7: half-diagonal 10.10 m, 5832 to 6859 cells
+  body 112133: 3 such rows, the largest 25.27 m
+  body 118490: 3 such rows, the largest 16.44 m
+  body 118979: 2 such rows, the largest 19.20 m
+  body 120577: 2 such rows, the largest 14.67 m
+  body 104886: 1 such rows, the largest 5.40 m
+  body 105120: 1 such rows, the largest 5.40 m
+  body 106594: 1 such rows, the largest 5.40 m
+  body 106689: 1 such rows, the largest 6.66 m
+== 52400 s: 7814 bodies (0 without a genome), 23166 rows, cell 1.159 m; rows at 1024 cells or more: 69 certainly, 110 at most, on 64 to 102 bodies
+  body 112133 part 7 of 8: half-diagonal 25.27 m, 85184 to 91125 cells
+  body 121072 part 7 of 8: half-diagonal 23.15 m, 64000 to 68921 cells
+  body 118490 part 7 of 8: half-diagonal 16.44 m, 24389 to 27000 cells
+  body 118208 part 6 of 7: half-diagonal 14.78 m, 17576 to 19683 cells
+  body 120739 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 119052 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 120387 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 120627 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 120688 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 120689 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 112133 part 6 of 8: half-diagonal 12.07 m, 9261 to 10648 cells
+  body 121072 part 6 of 8: half-diagonal 11.79 m, 9261 to 10648 cells
+  body 112133: 3 such rows, the largest 25.27 m
+  body 118490: 3 such rows, the largest 16.44 m
+  body 121072: 3 such rows, the largest 23.15 m
+  body 118208: 2 such rows, the largest 14.78 m
+  body 121009: 2 such rows, the largest 10.61 m
+  body 104886: 1 such rows, the largest 5.40 m
+  body 105120: 1 such rows, the largest 5.40 m
+  body 106689: 1 such rows, the largest 6.66 m
+== 52600 s: 7695 bodies (0 without a genome), 22814 rows, cell 1.164 m; rows at 1024 cells or more: 76 certainly, 117 at most, on 71 to 109 bodies
+  body 112133 part 7 of 8: half-diagonal 25.27 m, 85184 to 91125 cells
+  body 121072 part 7 of 8: half-diagonal 23.15 m, 64000 to 68921 cells
+  body 120724 part 7 of 8: half-diagonal 16.66 m, 24389 to 27000 cells
+  body 118490 part 7 of 8: half-diagonal 16.44 m, 24389 to 27000 cells
+  body 120739 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 119052 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 120387 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 120627 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 120688 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 120689 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 112133 part 6 of 8: half-diagonal 12.07 m, 9261 to 10648 cells
+  body 121072 part 6 of 8: half-diagonal 11.79 m, 9261 to 10648 cells
+  body 112133: 3 such rows, the largest 25.27 m
+  body 118490: 3 such rows, the largest 16.44 m
+  body 121072: 3 such rows, the largest 23.15 m
+  body 120724: 2 such rows, the largest 16.66 m
+  body 121009: 2 such rows, the largest 10.61 m
+  body 107554: 1 such rows, the largest 6.90 m
+  body 108758: 1 such rows, the largest 5.54 m
+  body 108827: 1 such rows, the largest 7.85 m
+== 52800 s: 7543 bodies (0 without a genome), 22417 rows, cell 1.157 m; rows at 1024 cells or more: 67 certainly, 107 at most, on 63 to 98 bodies
+  body 112133 part 7 of 8: half-diagonal 25.27 m, 85184 to 91125 cells
+  body 121072 part 7 of 8: half-diagonal 23.15 m, 68921 to 74088 cells
+  body 118490 part 7 of 8: half-diagonal 16.44 m, 24389 to 27000 cells
+  body 121907 part 5 of 6: half-diagonal 14.33 m, 15625 to 17576 cells
+  body 120739 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 119052 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 120627 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 120688 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 120689 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 123806 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 112133 part 6 of 8: half-diagonal 12.07 m, 9261 to 10648 cells
+  body 121072 part 6 of 8: half-diagonal 11.79 m, 9261 to 10648 cells
+  body 112133: 3 such rows, the largest 25.27 m
+  body 118490: 3 such rows, the largest 16.44 m
+  body 121072: 3 such rows, the largest 23.15 m
+  body 119965: 2 such rows, the largest 8.68 m
+  body 121009: 2 such rows, the largest 10.61 m
+  body 121907: 2 such rows, the largest 14.33 m
+  body 110457: 1 such rows, the largest 6.53 m
+  body 110864: 1 such rows, the largest 7.48 m
+== 53000 s: 7492 bodies (0 without a genome), 22160 rows, cell 1.151 m; rows at 1024 cells or more: 66 certainly, 103 at most, on 64 to 97 bodies
+  body 118490 part 7 of 8: half-diagonal 16.44 m, 24389 to 27000 cells
+  body 120739 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 119052 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 120627 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 120688 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 120689 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 123806 part 5 of 6: half-diagonal 12.40 m, 10648 to 12167 cells
+  body 125019 part 6 of 7: half-diagonal 11.79 m, 9261 to 10648 cells
+  body 121009 part 6 of 14: half-diagonal 10.61 m, 6859 to 8000 cells
+  body 123111 part 6 of 8: half-diagonal 10.61 m, 6859 to 8000 cells
+  body 117714 part 6 of 7: half-diagonal 10.10 m, 5832 to 6859 cells
+  body 119607 part 6 of 7: half-diagonal 10.10 m, 5832 to 6859 cells
+  body 118490: 3 such rows, the largest 16.44 m
+  body 119965: 2 such rows, the largest 8.68 m
+  body 121009: 2 such rows, the largest 10.61 m
+  body 123111: 2 such rows, the largest 10.61 m
+  body 125019: 2 such rows, the largest 11.79 m
+  body 111521: 1 such rows, the largest 9.08 m
+  body 112141: 1 such rows, the largest 7.50 m
+  body 113597: 1 such rows, the largest 6.30 m
+== 53400 s: 7630 bodies (0 without a genome), 22660 rows, cell 1.187 m; rows at 1024 cells or more: 72 certainly, 116 at most, on 68 to 108 bodies
+  body 125285 part 7 of 8: half-diagonal 19.08 m, 35937 to 39304 cells
+  body 127303 part 7 of 8: half-diagonal 19.08 m, 35937 to 39304 cells
+  body 126579 part 5 of 9: half-diagonal 16.91 m, 24389 to 27000 cells
+  body 118490 part 7 of 8: half-diagonal 16.44 m, 21952 to 24389 cells
+  body 119052 part 5 of 6: half-diagonal 12.40 m, 9261 to 10648 cells
+  body 120627 part 5 of 6: half-diagonal 12.40 m, 9261 to 10648 cells
+  body 120688 part 5 of 6: half-diagonal 12.40 m, 9261 to 10648 cells
+  body 120689 part 5 of 6: half-diagonal 12.40 m, 9261 to 10648 cells
+  body 120503 part 5 of 6: half-diagonal 12.40 m, 9261 to 10648 cells
+  body 123806 part 5 of 6: half-diagonal 12.40 m, 9261 to 10648 cells
+  body 118503 part 6 of 7: half-diagonal 12.07 m, 9261 to 10648 cells
+  body 118300 part 6 of 7: half-diagonal 12.07 m, 9261 to 10648 cells
+  body 118300: 2 such rows, the largest 12.07 m
+  body 118490: 2 such rows, the largest 16.44 m
+  body 118503: 2 such rows, the largest 12.07 m
+  body 122741: 2 such rows, the largest 11.84 m
+  body 123111: 2 such rows, the largest 10.61 m
+  body 125285: 2 such rows, the largest 19.08 m
+  body 126579: 2 such rows, the largest 16.91 m
+  body 127303: 2 such rows, the largest 19.08 m
+== 53800 s: 7484 bodies (0 without a genome), 22091 rows, cell 1.223 m; rows at 1024 cells or more: 78 certainly, 113 at most, on 72 to 102 bodies
+  body 118503 part 7 of 8: half-diagonal 25.27 m, 74088 to 79507 cells
+  body 125285 part 7 of 8: half-diagonal 19.08 m, 32768 to 35937 cells
+  body 126148 part 7 of 8: half-diagonal 19.08 m, 32768 to 35937 cells
+  body 127303 part 7 of 8: half-diagonal 19.08 m, 32768 to 35937 cells
+  body 127584 part 7 of 8: half-diagonal 19.08 m, 32768 to 35937 cells
+  body 126579 part 5 of 9: half-diagonal 16.91 m, 21952 to 24389 cells
+  body 120627 part 5 of 6: half-diagonal 12.40 m, 9261 to 10648 cells
+  body 120688 part 5 of 6: half-diagonal 12.40 m, 9261 to 10648 cells
+  body 120503 part 5 of 6: half-diagonal 12.40 m, 9261 to 10648 cells
+  body 123806 part 5 of 6: half-diagonal 12.40 m, 9261 to 10648 cells
+  body 118503 part 6 of 8: half-diagonal 12.07 m, 8000 to 9261 cells
+  body 118300 part 6 of 7: half-diagonal 12.07 m, 8000 to 9261 cells
+  body 118503: 3 such rows, the largest 25.27 m
+  body 118300: 2 such rows, the largest 12.07 m
+  body 122741: 2 such rows, the largest 11.84 m
+  body 123240: 2 such rows, the largest 11.79 m
+  body 125285: 2 such rows, the largest 19.08 m
+  body 125430: 2 such rows, the largest 11.91 m
+  body 126148: 2 such rows, the largest 19.08 m
+  body 126579: 2 such rows, the largest 16.91 m
+== 54200 s: 7537 bodies (0 without a genome), 22123 rows, cell 1.298 m; rows at 1024 cells or more: 117 certainly, 156 at most, on 111 to 146 bodies
+  body 118503 part 7 of 8: half-diagonal 25.27 m, 59319 to 64000 cells
+  body 127303 part 7 of 8: half-diagonal 19.08 m, 27000 to 29791 cells
+  body 127584 part 7 of 8: half-diagonal 19.08 m, 27000 to 29791 cells
+  body 126579 part 5 of 9: half-diagonal 16.91 m, 19683 to 21952 cells
+  body 122777 part 6 of 7: half-diagonal 16.12 m, 15625 to 17576 cells
+  body 120628 part 5 of 6: half-diagonal 13.34 m, 9261 to 10648 cells
+  body 130134 part 7 of 8: half-diagonal 13.32 m, 9261 to 10648 cells
+  body 120503 part 5 of 6: half-diagonal 12.40 m, 8000 to 9261 cells
+  body 123806 part 5 of 6: half-diagonal 12.40 m, 8000 to 9261 cells
+  body 118503 part 6 of 8: half-diagonal 12.07 m, 6859 to 8000 cells
+  body 118300 part 6 of 7: half-diagonal 12.07 m, 6859 to 8000 cells
+  body 125430 part 6 of 7: half-diagonal 11.91 m, 6859 to 8000 cells
+  body 118503: 2 such rows, the largest 25.27 m
+  body 122777: 2 such rows, the largest 16.12 m
+  body 125430: 2 such rows, the largest 11.91 m
+  body 126579: 2 such rows, the largest 16.91 m
+  body 127303: 2 such rows, the largest 19.08 m
+  body 127584: 2 such rows, the largest 19.08 m
+  body 130134: 2 such rows, the largest 13.32 m
+  body 130518: 2 such rows, the largest 11.84 m
+== 54600 s: 7468 bodies (0 without a genome), 21806 rows, cell 1.387 m; rows at 1024 cells or more: 151 certainly, 160 at most, on 147 to 155 bodies
+  body 127303 part 7 of 8: half-diagonal 19.08 m, 21952 to 24389 cells
+  body 127584 part 7 of 8: half-diagonal 19.08 m, 21952 to 24389 cells
+  body 122777 part 6 of 7: half-diagonal 16.12 m, 13824 to 15625 cells
+  body 133373 part 6 of 7: half-diagonal 14.46 m, 9261 to 10648 cells
+  body 130134 part 7 of 8: half-diagonal 13.32 m, 8000 to 9261 cells
+  body 123806 part 5 of 6: half-diagonal 12.40 m, 5832 to 6859 cells
+  body 130583 part 6 of 7: half-diagonal 11.84 m, 5832 to 6859 cells
+  body 131072 part 6 of 7: half-diagonal 11.84 m, 5832 to 6859 cells
+  body 131747 part 6 of 7: half-diagonal 11.84 m, 5832 to 6859 cells
+  body 132174 part 6 of 7: half-diagonal 11.84 m, 5832 to 6859 cells
+  body 132351 part 6 of 7: half-diagonal 11.84 m, 5832 to 6859 cells
+  body 133349 part 6 of 7: half-diagonal 11.84 m, 5832 to 6859 cells
+  body 122777: 2 such rows, the largest 16.12 m
+  body 127303: 2 such rows, the largest 19.08 m
+  body 127584: 2 such rows, the largest 19.08 m
+  body 130134: 2 such rows, the largest 13.32 m
+  body 133373: 2 such rows, the largest 14.46 m
+  body 119667: 1 such rows, the largest 8.85 m
+  body 120851: 1 such rows, the largest 9.72 m
+  body 121398: 1 such rows, the largest 9.72 m
+== 55000 s: 7380 bodies (0 without a genome), 21136 rows, cell 1.444 m; rows at 1024 cells or more: 175 certainly, 192 at most, on 173 to 187 bodies
+  body 127303 part 7 of 8: half-diagonal 19.08 m, 19683 to 21952 cells
+  body 122777 part 6 of 7: half-diagonal 16.12 m, 12167 to 13824 cells
+  body 133373 part 6 of 7: half-diagonal 14.46 m, 9261 to 10648 cells
+  body 130134 part 7 of 8: half-diagonal 13.32 m, 6859 to 8000 cells
+  body 135594 part 7 of 8: half-diagonal 12.91 m, 5832 to 6859 cells
+  body 123806 part 5 of 6: half-diagonal 12.40 m, 5832 to 6859 cells
+  body 136459 part 6 of 7: half-diagonal 12.17 m, 4913 to 5832 cells
+  body 130583 part 6 of 7: half-diagonal 11.84 m, 4913 to 5832 cells
+  body 131072 part 6 of 7: half-diagonal 11.84 m, 4913 to 5832 cells
+  body 131747 part 6 of 7: half-diagonal 11.84 m, 4913 to 5832 cells
+  body 132174 part 6 of 7: half-diagonal 11.84 m, 4913 to 5832 cells
+  body 132351 part 6 of 7: half-diagonal 11.84 m, 4913 to 5832 cells
+  body 122777: 2 such rows, the largest 16.12 m
+  body 127303: 2 such rows, the largest 19.08 m
+  body 130134: 2 such rows, the largest 13.32 m
+  body 133373: 2 such rows, the largest 14.46 m
+  body 135594: 2 such rows, the largest 12.91 m
+  body 123806: 1 such rows, the largest 12.40 m
+  body 125694: 1 such rows, the largest 10.10 m
+  body 126382: 1 such rows, the largest 10.61 m
+EXIT 0 

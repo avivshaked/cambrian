@@ -1,0 +1,54 @@
+dotnet:  C:\Program Files\Unity\Hub\Editor\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe
+project: D:\Projects\experiments\evolution-simulator\src\Evosim.Ledger\Evosim.Ledger.csproj
+
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Evosim.Core -> D:\Projects\experiments\evolution-simulator\artifacts\Evosim.Core\bin\Debug\netstandard2.1\Evosim.Core.dll
+  Evosim.Ledger -> D:\Projects\experiments\evolution-simulator\artifacts\Evosim.Ledger\bin\Debug\net8.0\Evosim.Ledger.dll
+warning: Stored hash 8b0c7b062f6faa34 does not match the settings in this file (264f3d2e8536d01d). The file was edited after it was written, which is fine — but results filed under the stored hash were produced by different settings.
+Spent density: 1 units/m3, from initialMatterPerCubicMetre (the config holds a budget of 15000 units, whose density needs a built world's live volume)
+
+## Body — inocula/r59-direction-tops/direction-sparse-g12-35.json
+
+- Parts: 2
+- Volume: 0.1174 m3
+- Lit area: 0.4253 m2
+- Silhouette: 0.486 m2
+- Lit area (capped): 0.4253 m2 (cap on)
+- Tissue: 54 J
+- Standing cost: 0.3842 W (0.0038 units/s)
+- support W: 0.002 at 0.1 W/m2/m2, 0.5333% of the standing cost; reach 0.086 m area-weighted, farthest part 0.56 m
+- Fixation at surface: 0 W (0 units/s)
+- Attribute upkeep: 0.288 W, 74.9521% of the standing cost and 28800010000% of fixation at the surface
+- Truncated: False
+- Cell types: consumer x1 (0.108 m3) link x1 (0.0094 m3)
+
+## Modules — the add rule's price (D106 item 2)
+
+Every node is determinate, so the module rule has nothing to add here and `module repay s` is not a number this genome has.
+
+## Mouth — the four attributes' prices (D106 item 3)
+
+Reference part: the body's largest — 1.44 m2, 0.108 m3, health pool 1.404 at toughness 1.
+
+| reading | value |
+|---|---|
+| claw at the structural cap (1) |0.144 W, 8640.002 J over a 60000 s lifetime |
+| this body as a corpse |54 J, 43.2 J kept at waste 0.2 |
+| claw repaid by one such corpse |299.9999 s of claw |
+| cuticle at the leaf cap (0.5) |0.72 W, 0% of this body's fixation at the surface |
+| mouth at the consumer cap (1) |0.144 W |
+| shell at the structural toughness cap |0.0324 W |
+| steps to kill this part, unprotected |2 metabolic steps (0.5 s each) |
+| steps to kill it behind a capped cuticle |4 |
+| a capped mouth emptying a corpse of this body |0.375 s, against 2597.403 s of decay |
+
+
+### Clearance = 10 (as stored)
+
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | units/child |
+|---|---|---|---|---|---|---|---|
+|5|1|-0.3086|none|45.5|0|never|1.7604|
+
+*lifetime marked with an asterisk was censored at the 60000 s cap rather than ending in starvation.
+

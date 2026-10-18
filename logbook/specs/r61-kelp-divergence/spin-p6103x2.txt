@@ -1,0 +1,113 @@
+== body 105464: 3 parts from snapshot -1, longest part 1.43 m
+  as run           axis x: none up to 20 rad/s
+  as run           axis y: runs away from 20 rad/s at step 7
+  as run           axis z: none up to 20 rad/s
+  no spin drag     axis x: none up to 20 rad/s
+  no spin drag     axis y: runs away from 20 rad/s at step 7
+  no spin drag     axis z: none up to 20 rad/s
+  no pressure drag axis x: none up to 20 rad/s
+  no pressure drag axis y: none up to 20 rad/s
+  no pressure drag axis z: none up to 20 rad/s
+  half step        axis x: none up to 20 rad/s
+  half step        axis y: none up to 20 rad/s
+  half step        axis z: none up to 20 rad/s
+  no drag at all   axis x: none up to 20 rad/s
+  no drag at all   axis y: none up to 20 rad/s
+  no drag at all   axis z: none up to 20 rad/s
+== body 118901: 4 parts from snapshot 51900, longest part 1.78 m
+  as run           axis x: runs away from 20 rad/s at step 5
+  as run           axis y: none up to 20 rad/s
+  as run           axis z: none up to 20 rad/s
+  no spin drag     axis x: none up to 20 rad/s
+  no spin drag     axis y: none up to 20 rad/s
+  no spin drag     axis z: none up to 20 rad/s
+  no pressure drag axis x: none up to 20 rad/s
+  no pressure drag axis y: none up to 20 rad/s
+  no pressure drag axis z: none up to 20 rad/s
+  half step        axis x: none up to 20 rad/s
+  half step        axis y: none up to 20 rad/s
+  half step        axis z: none up to 20 rad/s
+  no drag at all   axis x: runs away from 20 rad/s at step 249
+  no drag at all   axis y: none up to 20 rad/s
+  no drag at all   axis z: runs away from 20 rad/s at step 272
+== body 108541: 4 parts from snapshot 50100, longest part 4.21 m
+  as run           axis x: runs away from 10 rad/s at step 5
+  as run           axis y: runs away from 20 rad/s at step 6
+  as run           axis z: runs away from 20 rad/s at step 5
+  no spin drag     axis x: runs away from 20 rad/s at step 5
+  no spin drag     axis y: runs away from 20 rad/s at step 6
+  no spin drag     axis z: none up to 20 rad/s
+  no pressure drag axis x: runs away from 20 rad/s at step 5
+  no pressure drag axis y: none up to 20 rad/s
+  no pressure drag axis z: runs away from 20 rad/s at step 6
+  half step        axis x: runs away from 20 rad/s at step 5
+  half step        axis y: none up to 20 rad/s
+  half step        axis z: none up to 20 rad/s
+  no drag at all   axis x: runs away from 20 rad/s at step 212
+  no drag at all   axis y: none up to 20 rad/s
+  no drag at all   axis z: runs away from 20 rad/s at step 297
+== body 112066: 6 parts from snapshot 50900, longest part 9.96 m
+  as run           axis x: runs away from 5 rad/s at step 5
+  as run           axis y: runs away from 20 rad/s at step 6
+  as run           axis z: runs away from 5 rad/s at step 5
+  no spin drag     axis x: runs away from 5 rad/s at step 8
+  no spin drag     axis y: runs away from 20 rad/s at step 6
+  no spin drag     axis z: runs away from 10 rad/s at step 6
+  no pressure drag axis x: runs away from 5 rad/s at step 7
+  no pressure drag axis y: runs away from 10 rad/s at step 13
+  no pressure drag axis z: runs away from 5 rad/s at step 7
+  half step        axis x: runs away from 5 rad/s at step 7
+  half step        axis y: none up to 20 rad/s
+  half step        axis z: runs away from 10 rad/s at step 5
+  no drag at all   axis x: runs away from 20 rad/s at step 188
+  no drag at all   axis y: none up to 20 rad/s
+  no drag at all   axis z: runs away from 20 rad/s at step 284
+== body 102219: 7 parts from snapshot 51100, longest part 21.10 m
+  as run           axis x: runs away from 2 rad/s at step 5
+  as run           axis y: runs away from 20 rad/s at step 5
+  as run           axis z: runs away from 5 rad/s at step 5
+  no spin drag     axis x: runs away from 5 rad/s at step 5
+  no spin drag     axis y: runs away from 20 rad/s at step 5
+  no spin drag     axis z: runs away from 10 rad/s at step 6
+  no pressure drag axis x: runs away from 5 rad/s at step 5
+  no pressure drag axis y: runs away from 5 rad/s at step 16
+  no pressure drag axis z: runs away from 5 rad/s at step 5
+  half step        axis x: runs away from 5 rad/s at step 5
+  half step        axis y: none up to 20 rad/s
+  half step        axis z: runs away from 5 rad/s at step 6
+  no drag at all   axis x: runs away from 20 rad/s at step 189
+  no drag at all   axis y: none up to 20 rad/s
+  no drag at all   axis z: none up to 20 rad/s
+== body 108599: 8 parts from snapshot 50200, longest part 41.62 m
+  as run           axis x: runs away from 1 rad/s at step 5
+  as run           axis y: runs away from 10 rad/s at step 7
+  as run           axis z: runs away from 1 rad/s at step 7
+  no spin drag     axis x: runs away from 2 rad/s at step 5
+  no spin drag     axis y: runs away from 10 rad/s at step 7
+  no spin drag     axis z: runs away from 5 rad/s at step 5
+  no pressure drag axis x: runs away from 2 rad/s at step 5
+  no pressure drag axis y: runs away from 2 rad/s at step 21
+  no pressure drag axis z: runs away from 2 rad/s at step 5
+  half step        axis x: runs away from 2 rad/s at step 5
+  half step        axis y: runs away from 20 rad/s at step 7
+  half step        axis z: runs away from 2 rad/s at step 7
+  no drag at all   axis x: runs away from 20 rad/s at step 189
+  no drag at all   axis y: none up to 20 rad/s
+  no drag at all   axis z: none up to 20 rad/s
+== body 120214: 8 parts from snapshot 52100, longest part 49.50 m
+  as run           axis x: runs away from 0.5 rad/s at step 8
+  as run           axis y: runs away from 20 rad/s at step 5
+  as run           axis z: runs away from 1 rad/s at step 6
+  no spin drag     axis x: runs away from 1 rad/s at step 7
+  no spin drag     axis y: runs away from 20 rad/s at step 5
+  no spin drag     axis z: runs away from 5 rad/s at step 5
+  no pressure drag axis x: runs away from 2 rad/s at step 5
+  no pressure drag axis y: runs away from 2 rad/s at step 17
+  no pressure drag axis z: runs away from 2 rad/s at step 5
+  half step        axis x: runs away from 1 rad/s at step 8
+  half step        axis y: none up to 20 rad/s
+  half step        axis z: runs away from 2 rad/s at step 6
+  no drag at all   axis x: runs away from 20 rad/s at step 182
+  no drag at all   axis y: none up to 20 rad/s
+  no drag at all   axis z: runs away from 20 rad/s at step 280
+EXIT 0 

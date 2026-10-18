@@ -1,7 +1,7 @@
 # The day sitting of 2026-10-10: the speed items timed on the card
 
 *Run by the speed agent from 12:36 to 13:15 on 2026-10-10, alone on the card, under the coordinator's heat watch
-(card at most 53 °C, the CPU at most 80 °C). The script is `scratch/nursery-speed/day-sitting.ps1` and its log
+(card at most 53 °C, the CPU at most 80 °C). The script is `logbook/specs/nursery-speed/day-sitting.ps1` and its log
 `scratch/logs/day-sitting.log`. Its pass ends the speed work that gated round 58 (D160).*
 
 ## What ran

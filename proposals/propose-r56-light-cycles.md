@@ -8,7 +8,7 @@ the questions at the end.*
 On 2026-10-04 the owner ruled that round 56 is light cycles, day and night and seasons, on round 55's
 world, and left round 57 open (HANDOFF item 1b). This proposal sets out what exists, what is missing,
 what the leaves can bear, and the questions still open. The groundwork's tables and scripts are in
-`scratch/r56-light/`.
+`logbook/specs/r56-light/`.
 
 ## What exists
 
@@ -54,7 +54,7 @@ and about two hours of machine for the fixtures and suites.
 
 Each setting can be read against the typical leaf of rounds 54 and 55. Its median lifetime is about 1,250
 s. A grown body holds 360 to 1,330 s of its own upkeep in reserve. A growing body holds about 16 s and a
-newborn about 42 s (measured and computed in `scratch/r56-light/leaf-budget.tsv`). The world pays a
+newborn about 42 s (measured and computed in `logbook/specs/r56-light/leaf-budget.tsv`). The world pays a
 typical leaf about 2.1 times its spend; a marginal one, 1.25 times.
 
 | Cycle | What it does to a typical leaf | Status |

@@ -1,0 +1,39 @@
+# Computed. Night: day cycle alone (season off). Units: seconds; reserve need in seconds of the body's standing cost.
+# r = income ratio after exudation at the mean light; k = 2 for the matter-bound body.
+day s	amplitude	body	r	night (P/2) / lifetime	deficit spell s	spell / lifetime	reserve needed s	who survives the night on reserve	mean income vs no cycle
+200	0.5	light-bound	2.10	0.08	0	0.00	0	all	1.000
+200	0.5	light-bound	1.25	0.08	74	0.06	18	newborns and up; growing bodies die	1.000
+200	0.5	matter-bound	2.10	0.08	0	0.00	0	all	1.000
+200	0.8	light-bound	2.10	0.08	54	0.04	21	newborns and up; growing bodies die	1.000
+200	0.8	light-bound	1.25	0.08	84	0.07	41	newborns and up; growing bodies die	1.000
+200	0.8	matter-bound	2.10	0.08	20	0.02	2	all (juveniles at the edge)	0.888
+200	1.0	light-bound	2.10	0.08	64	0.05	42	adults only; newborns and growing die	1.000
+200	1.0	light-bound	1.25	0.08	88	0.07	56	adults only; newborns and growing die	1.000
+200	1.0	matter-bound	2.10	0.08	44	0.04	30	newborns and up; growing bodies die	0.782
+1000	0.5	light-bound	2.10	0.40	0	0.00	0	all	1.000
+1000	0.5	light-bound	1.25	0.40	370	0.30	90	adults only; newborns and growing die	1.000
+1000	0.5	matter-bound	2.10	0.40	0	0.00	0	all	1.000
+1000	0.8	light-bound	2.10	0.40	272	0.22	104	adults only; newborns and growing die	1.000
+1000	0.8	light-bound	1.25	0.40	420	0.34	203	adults only; newborns and growing die	1.000
+1000	0.8	matter-bound	2.10	0.40	98	0.08	11	all (juveniles at the edge)	0.888
+1000	1.0	light-bound	2.10	0.40	324	0.26	212	adults only; newborns and growing die	1.000
+1000	1.0	light-bound	1.25	0.40	436	0.35	281	adults only; newborns and growing die	1.000
+1000	1.0	matter-bound	2.10	0.40	224	0.18	148	adults only; newborns and growing die	0.782
+3000	0.5	light-bound	2.10	1.20	0	0.00	0	all	1.000
+3000	0.5	light-bound	1.25	1.20	1108	0.89	270	adults only; newborns and growing die	1.000
+3000	0.5	matter-bound	2.10	1.20	0	0.00	0	all	1.000
+3000	0.8	light-bound	2.10	1.20	818	0.65	312	adults only; newborns and growing die	1.000
+3000	0.8	light-bound	1.25	1.20	1258	1.01	610	only adults near their gate	1.000
+3000	0.8	matter-bound	2.10	1.20	296	0.24	32	newborns and up; growing bodies die	0.888
+3000	1.0	light-bound	2.10	1.20	974	0.78	637	only adults near their gate	1.000
+3000	1.0	light-bound	1.25	1.20	1306	1.05	843	only the fullest adults	1.000
+3000	1.0	matter-bound	2.10	1.20	674	0.54	445	only adults near their gate	0.782
+10000	0.5	light-bound	2.10	4.00	0	0.00	0	all	1.000
+10000	0.5	light-bound	1.25	4.00	3695	2.96	901	only the fullest adults	1.000
+10000	0.5	matter-bound	2.10	4.00	0	0.00	0	all	1.000
+10000	0.8	light-bound	2.10	4.00	2725	2.18	1041	only the fullest adults	1.000
+10000	0.8	light-bound	1.25	4.00	4195	3.36	2033	none on reserve alone	1.000
+10000	0.8	matter-bound	2.10	4.00	985	0.79	105	adults only; newborns and growing die	0.888
+10000	1.0	light-bound	2.10	4.00	3245	2.60	2124	none on reserve alone	1.000
+10000	1.0	light-bound	1.25	4.00	4355	3.48	2809	none on reserve alone	1.000
+10000	1.0	matter-bound	2.10	4.00	2245	1.80	1483	none on reserve alone	0.782

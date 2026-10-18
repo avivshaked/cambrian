@@ -1,0 +1,30 @@
+UNDERWATER LOOK SURVEY, 2026-10-07 (Opus subagent; read-only; no code changed, nothing run)
+
+The full report was handed back to the coordinator. This file keeps the points a later agent
+needs to find without the session.
+
+Two findings from reading the code (not yet seen on screen):
+
+1. The sun in the ceiling and the key light can point different ways. TheatreSkin.Aim
+   (TheatreSkin.cs:212-218) turns the key behind every camera, but PushWater, which takes the
+   sun from the key (ResolveSun, 632-673), runs only from Apply, Relight and Dress (524, 556,
+   800). The window's sun disc, the caustics' sideways shift and the shafts keep the bearing the
+   key had when the world was dressed. The light on bodies follows each camera.
+
+2. Light does not fall with depth on a body. The key and the ambient are the same at 1 m and
+   50 m; only caustics (TheatreWater.hlsl:341-344) and the ceiling's brightness
+   (TheatreSurface.shader:225-227) fade. The theatre reads no part of the run's light config.
+   Round 57's config has attenuationDepth 6 m; the theatre's light reach is 18 m.
+
+Also: the SSAO renderer feature (unity/Assets/Rendering/UniversalRenderer.asset:68-79) is built
+and no theatre shader samples it (no _SCREEN_SPACE_OCCLUSION anywhere under Assets/Theatre).
+
+What the run records that a view of the world above could be honest to: config.json "light"
+(surfaceIrradiance, attenuationDepth, dayLengthSeconds, dayNightAmplitude, season*, weather*),
+stats.jsonl "dayFactor" per sample (Row.cs:719 on round-57), and LightModel.DayFactorAt /
+WeatherFactorAt as pure functions of t. Irradiance depends on height only, so the world has no
+sun direction; at amplitude 0.5 the day factor never reaches zero, so the world has no night.
+
+Test seconds: r57-s2 (runs/r57-s2/2026-10-06-065827-dfc0e881), checkpoints and snapshots at
+36000 s (dayFactor 2.82, summer, 7,650 alive) and 27000 s (dayFactor 0.34, winter, 5,554
+alive). Reference for the sky view: scratch/snaps/r57-s2/r57-s2-t36000-recon-sky.png.

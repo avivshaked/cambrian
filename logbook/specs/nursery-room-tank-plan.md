@@ -1,7 +1,7 @@
 # The nursery room's tank: how an exam episode is re-stepped exactly
 
 Written 2026-10-02 from an Opus planner's read of the code at `1738587` on `nursery-room` (brief:
-`scratch/nursery-general/room5/plan-brief.md`). Nothing here has run yet. Every claim is from
+`design/nursery/briefs/room5-plan-brief.md`). Nothing here has run yet. Every claim is from
 reading code, and the steps marked **swim** are what test it. Phase 3's done-when (in
 `nursery-room-build.md`) is the target: the tank screen re-steps an exam episode of
 `pilot-deep-brain2` and marks it exact.

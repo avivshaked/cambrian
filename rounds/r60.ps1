@@ -1,4 +1,4 @@
-﻿# Round 60's launcher (scratch/r60-prereg/0142-draft.md until its entry lands): the fed islands of r60s-big3 (D185) at
+﻿# Round 60's launcher (logbook/specs/r60-prereg/0142-draft.md until its entry lands): the fed islands of r60s-big3 (D185) at
 # the round's dose and desert burial (rounds/env-r60.ps1, which refuses until both are filled; D190, D191), seeds
 # 6001, 6002 and 6003 (D180), founded on the graphics card as one group of three worlds, r60-s6001, r60-s6002 and
 # r60-s6003. One step a call, on this checkout's Release build:

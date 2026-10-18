@@ -82,7 +82,7 @@ other setting round 56's control seed's.
 
 ## What the leaves can bear
 
-This uses round 56's leaf-budget model (`scratch/r56-light/budget.py`), with the two-season year and
+This uses round 56's leaf-budget model (`logbook/specs/r56-light/budget.py`), with the two-season year and
 weather added in `logbook/specs/r57-build/budget57.py`, over 200 drawn years a setting. A body's net is its
 income ratio times the light it can use, less its upkeep. The reserve it needs is the deepest fall of
 that net over a year, in seconds of its own upkeep.

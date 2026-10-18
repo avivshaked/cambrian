@@ -14,7 +14,7 @@ Grazing is the owner's goal for these rounds. A grazer here is a body with a mou
 bites them and eats what the bite frees. The world's leaves are bodies that live on light and matter alone. No
 world so far has grown grazers. Round 58's three isolated worlds recorded no bite at all in 48,000 s: their
 running count of parts killed by a mouth stood at 0 at every year's end, though bodies carrying a mouth's
-attack cells were born in all three (measured, `scratch/r59-prereg/helpers/r58-kills.py` and `r58-mouths.py`
+attack cells were born in all three (measured, `logbook/specs/r59-prereg/helpers/r58-kills.py` and `r58-mouths.py`
 on `r58-s1ir`, `r58-s2ir` and `r58-s3ir`; round 59's reader on the same worlds is kept in
 `logbook/specs/r59-prereg-r58-baseline.txt`).
 
@@ -63,7 +63,7 @@ Round 59 adds four pieces, set in `rounds/env-r59.ps1` on the round's branch, `r
   strengths 0.033 W a unit, against 0.1 (`EVOSIM_PRICE_ATTACK`, `EVOSIM_PRICE_INTAKE`). The owner ruled that
   swimming must pay: a planted swimmer stood at 0.91 W at the old prices, 0.62 W of it its box of consumer
   tissue and 0.29 W its mouth and claw, against 0.17 to 0.24 W eaten in the tank, and stands at 0.30 W at the
-  new (computed, `scripts/ledger.ps1`, `scratch/swim-cost/`). Every mouth in the world pays the new prices.
+  new (computed, `scripts/ledger.ps1`, `logbook/specs/swim-cost/`). Every mouth in the world pays the new prices.
   D178's smokes kept the third (below).
 
 The anchoring cell, a cell that grips the bed or a reef, stays off (D171). The mouth keeps its rules. Every death

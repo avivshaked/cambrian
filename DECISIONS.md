@@ -7981,7 +7981,7 @@ untested where food is scarce. Planting every seed, which would leave no control
 **Fed islands are built and screened for round 60: matter arrives on D109's islands and is buried at each column's floor** · 2026-10-14
 
 **Status:** the owner approved testing it on 2026-10-14 in the afternoon, on the coordinator's proposal
-(`proposals/propose-r60-patchy-matter.md`, from a design study in `scratch/r60-patchiness/report.txt`). The
+(`proposals/propose-r60-patchy-matter.md`, from a design study in `logbook/specs/r60-patchiness/report.txt`). The
 owner had asked that round 60 concentrate the matter in a larger tank, so that life grows in micro-biomes
 and the tank is not a soup of creatures. This entry rules the build and the screens. Whether round 60
 carries the rule, its tank size, its dose and where its founders start are ruled when the screens are read.
@@ -8012,7 +8012,7 @@ Wandering sources: one more change, proposed for round 61.
 **Round 59's open choices: plant as round 55 did, record the leaf smell's use, and the turning drag at 0.5** · 2026-10-14
 
 **Status:** the owner took the coordinator's four recommendations on 2026-10-14 in the afternoon, on the draft
-of round 59's pre-registration (`scratch/r59-prereg/draft.txt`). The owner also asked that the swimmers'
+of round 59's pre-registration (`logbook/specs/r59-prereg/draft.txt`). The owner also asked that the swimmers'
 energy problem be worked out, since by the tank's numbers a planted swimmer starves in about 500 s.
 
 **Decision.**
@@ -8056,7 +8056,7 @@ box of consumer tissue, 0.29 W for its mouth and claw at their caps, and 0.02 W 
 another 0.16 to 0.28 W in the leaf tank, where it ate 0.17 to 0.24 W. The stroke is a fifth of the bill and
 the equipment the rest, so a cheaper stroke could not close the gap. At a third of both prices the same
 swimmer stands at 0.30 W, and one with its box halved on each side at 0.05 W
-(`scratch/swim-cost/`). Every mouth in the world pays the new prices, not the planted swimmers alone, so the
+(`logbook/specs/swim-cost/`). Every mouth in the world pays the new prices, not the planted swimmers alone, so the
 world's own eaters, and any grazing that evolves among them, are cheaper too.
 
 **Rejected.** A cheaper stroke alone, worth about 0.1 W against a gap of 0.7 W. A smaller swimmer's body bred in
@@ -8138,7 +8138,7 @@ own seeds makes that comparison unnecessary, and the carried seed would keep one
 **Round 60's large tank is screened once more with its dose scaled to its area; founders start in the islands** · 2026-10-15
 
 **Status:** the owner took the coordinator's recommendations on the morning of 2026-10-15, after D175's
-screens were read (`scratch/r60s-read/summary.md`). It answers the proposal's question 4 and opens question 3
+screens were read (`logbook/specs/r60-screens/summary.md`). It answers the proposal's question 4 and opens question 3
 for one screen beyond the screened range. Questions 2 and 3 for round 60 itself are ruled on this screen.
 
 **Decision.**
@@ -8227,7 +8227,7 @@ started only in bare water. Patches several smell reaches wide, as round 60's is
 **Round 60's islands keep 30 m off the glass, and two more large-tank screens set the dose** · 2026-10-15
 
 **Status:** the owner took the coordinator's recommendations on the morning of 2026-10-15, after `r60s-big2`
-was read (`scratch/r60s-read/summary.md`). The owner had said that they did not want the patches against the
+was read (`logbook/specs/r60-screens/summary.md`). The owner had said that they did not want the patches against the
 glass. It amends D109's island placement for round 60 and follows D181.
 
 **Decision.**
@@ -8253,7 +8253,7 @@ unanswered.
 **One more large-tank screen at a middle dose, and the scaled dose run on to 20,000 s, before round 60's dose is ruled** · 2026-10-15
 
 **Status:** the owner took the coordinator's recommendation on 2026-10-15 at midday, after `r60s-big3` and
-`r60s-big3h` were read (`scratch/r60s-read/summary.md`), and follows D185.
+`r60s-big3h` were read (`logbook/specs/r60-screens/summary.md`), and follows D185.
 
 **Decision.**
 - `r60s-big3m` runs on seed 1 at four times the area, with D185's margin and D181's founders. Its dose is the
@@ -8275,7 +8275,7 @@ come first, so the screens cost round 60 no time.
 **The middle dose is run on to 20,000 s before round 60's dose is confirmed** · 2026-10-15
 
 **Status:** the owner took the coordinator's recommendation on 2026-10-15 in the afternoon, after D186's
-screens were read (`scratch/r60s-read/summary.md`).
+screens were read (`logbook/specs/r60-screens/summary.md`).
 
 **Decision.** `r60s-big3m` is resumed from its 10,000 s checkpoint and run to 20,000 s, and read on D175's
 measures at 15,000 and 20,000 s. If its patches hold, round 60 takes the middle dose: 3.6 units/s, and 45,000
@@ -8296,7 +8296,7 @@ out over a round. The scaled dose, whose patches dissolve by 20,000 s.
 **The half dose is run on to 20,000 s before round 60's dose is ruled** · 2026-10-15
 
 **Status:** the owner took the coordinator's recommendation on the evening of 2026-10-15, after `r60s-big3mc`
-was read (`scratch/r60s-read/summary.md`). It follows D187, whose condition the middle dose missed.
+was read (`logbook/specs/r60-screens/summary.md`). It follows D187, whose condition the middle dose missed.
 
 **Decision.** `r60s-big3h` is resumed from its 10,000 s checkpoint and run to 20,000 s, and read on D175's
 measures at 15,000 and 20,000 s. Round 60's dose is then ruled on the three doses run that far.
@@ -8382,7 +8382,7 @@ whichever of them has the most of its crowd on the islands at 20,000 s, with at 
 **Round 61 plants the nursery's grazers on one fixed map, beside a control on the same seeds** · 2026-10-16
 
 **Status:** the owner approved the coordinator's design on the morning of 2026-10-16, after round 60's seeds 6001
-and 6002 were read (`scratch/r60-read/s6001-s6002.txt`).
+and 6002 were read (`logbook/specs/r60-read/s6001-s6002.txt`).
 
 **Decision.**
 - Round 61 keeps round 60's world (the dose, the desert's burial, the founders in the islands) and adds no world

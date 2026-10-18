@@ -1,0 +1,33 @@
+== r60s-i1-s1  /d/Projects/experiments/evolution-simulator/scratch/wt-r60-fed/runs/r60s-i1-s1/2026-10-15-020738-55e17e17/
+footprint: 149 of 877 live columns (0.17)
+t  5000  alive  1843  cols 0.077  x sd 32.9  standing  15273.0  influx/2000s  2534.9  buried  2489.3 (0.98 of influx)  desert top12 mean 0.00720 median 0.00653 below-break-even 0.00  islands top12 mean 0.01265
+t 10000  alive  2393  cols 0.099  x sd 37.2  standing  15660.0  influx/2000s  2531.9  buried  2280.6 (0.90 of influx)  desert top12 mean 0.00574 median 0.00522 below-break-even 0.00  islands top12 mean 0.00942
+-- crowd_vs_bed
+t 5000 (row 5000) alive 1843   depth quartiles -4.1 -2.2 -1.0 m
+  bed class (m)  area share  body share  ratio
+   0- 5          0.003       0.001       0.18
+   5-10          0.079       0.055       0.70
+  10-15          0.123       0.112       0.92
+  15-20          0.143       0.123       0.86
+  20-30          0.306       0.385       1.26
+  30-60          0.346       0.323       0.94
+  10 m squares inside the disc: 189, mean 8.0 bodies, cv 1.27 (Poisson 0.35), empty share 0.15
+  5 m columns: corr(bodies, matter whole column) 0.58, corr(bodies, matter top 12 m) 0.64
+t 10000 (row 10000) alive 2393   depth quartiles -6.5 -3.3 -1.5 m
+  bed class (m)  area share  body share  ratio
+   0- 5          0.003       0.001       0.28
+   5-10          0.079       0.039       0.50
+  10-15          0.123       0.098       0.80
+  15-20          0.143       0.124       0.87
+  20-30          0.306       0.411       1.34
+  30-60          0.346       0.327       0.95
+  10 m squares inside the disc: 189, mean 11.3 bodies, cv 0.94 (Poisson 0.30), empty share 0.02
+  5 m columns: corr(bodies, matter whole column) 0.34, corr(bodies, matter top 12 m) 0.47
+-- field-map
+runrec: 2026-10-15-020738-55e17e17: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+footprint: the 150 of 880 live columns above the mean at 100 s (0.17 of the water)
+bed: fields/bed.f32, 2748 of 21994 live snow columns have a floor within 12 m of the surface (0.125 of the columns); snow-shelf12 is the snow stock's share in them, snow-floor12 the mean density of their floor cells in J/m3 (fields/*.snow-floor.f32)
+second  bodies-at  alive  col-cv   max-units/m3  mean-units/m3  in-islands  in-footprint  snow-shelf12  snow-floor12
+  1000       1000   3546    1.20        0.0796        0.00951        0.69          0.61        0.1903        2.0362  D:/Projects/experiments/evolution-simulator/scratch/r60s-read/fields/r60s-i1-s1\r60s-i1-s1-t0001000-map.png
+  5000       5000   1843    0.60        0.0302        0.00855        0.69          0.42        0.0867        2.1589  D:/Projects/experiments/evolution-simulator/scratch/r60s-read/fields/r60s-i1-s1\r60s-i1-s1-t0005000-map.png
+ 10000      10000   2393    0.47        0.0184        0.00699        0.59          0.32        0.0640        1.9717  D:/Projects/experiments/evolution-simulator/scratch/r60s-read/fields/r60s-i1-s1\r60s-i1-s1-t0010000-map.png

@@ -134,7 +134,7 @@ first (D166, amending D164's order):
   - The held-out seed check is on `nursery-d178` (`94933166`). A stop on a signed score needs another base
     before it is used again.
 - **Round 60's matter: fed islands (D175).** The owner wants round 60's tank larger, with life in micro-biomes
-  and not a soup of creatures. A design study (`scratch/r60-patchiness/report.txt`, the proposal
+  and not a soup of creatures. A design study (`logbook/specs/r60-patchiness/report.txt`, the proposal
   `proposals/propose-r60-patchy-matter.md`) found round 57's matter a closed stock about a hundred times a
   leaf's break-even, returned by the bed under every column. The owner approved building and screening fed
   islands on 2026-10-14: D074's influx placed on D109's islands, and burial at each column's floor. It is built
@@ -145,7 +145,7 @@ first (D166, amending D164's order):
   `035f255a`, plan `logbook/specs/r60-screens-plan.md`) runs a check off the card, a short card step, then
   groups g1 and g2 (control, influx 1.2 with burial 0.001, the same with settling 0.02, and burial 0.003, on
   seeds 1 and 2), then solo alone with the other project held; every arm keeps round 59's D116 founder rule. They run after
-  round 59 ends. The screens are read (`scratch/r60s-read/summary.md`, maps in `scratch/r60s-read/fields/`).
+  round 59 ends. The screens are read (`logbook/specs/r60-screens/summary.md`, maps in `scratch/r60s-read/fields/`).
   - At round 57's area only the faster settling (i2: influx 1.2, burial 0.001, settling 0.02) is patchy, on
     both seeds: 40-44% of 10 m squares are empty, against 1-6% elsewhere. Crowds are 656 and 1,929.
   - `r60s-big` (i2 at four times the area, seed 1) is the patchiest yet, with 92% of squares empty and the
@@ -169,16 +169,16 @@ first (D166, amending D164's order):
     north-east glass, big3's pattern reached more slowly. `r60s-big3hc` runs the half dose on (D188).
   - **Round 60 has run and is read; its entry is not written.** It ran from 01:19 to 10:04 on 2026-10-16 (logbook/0142
     on branch `desert-burial`, `scratch/wt-burial`, launched from `22ab1d73`; runs in main's `runs/r60-s600*`). The read of
-    all three seeds is `scratch/r60-read/s6003.txt`, with island maps in `scratch/r60-read/`. M1, M2, M3, M4 and L1 failed;
+    all three seeds is `logbook/specs/r60-read/s6003.txt`, with island maps in `logbook/specs/r60-read/`. M1, M2, M3, M4 and L1 failed;
     M5, M6, B1 and B3 held; G1 and M7 held in seed 6002 alone; S1 is unread. The crowds (10,558, 16,345 and 17,325 at
     the end) spread off the islands, and one line took each tank. B2 failed: the card dropped contact candidates in
     seeds 6002 (6,257,897 queries over the cap) and 6003 (19,008). Seed 6002's spans
-    (`scratch/r60-read/overflow-spans.txt`) dropped nothing to 31,500 s, 24 in 31,500-33,000, 520 in 33,000-36,000, and
+    (`logbook/specs/r60-read/overflow-spans.txt`) dropped nothing to 31,500 s, 24 in 31,500-33,000, 520 in 33,000-36,000, and
     the rest after 36,000. Past the cap the kept candidates are a race, so a world that overflows does not replay from
     its checkpoints: seed 6002 resumed at 46,500 s differed from its first second. Seed 6002's years 7 and 8, where G1
     and M7 rest, are one unreplayable realisation, and the entry says so. At 16,700 bodies a world ran at 0.75 times
     real time alone on the card. In seed 6002 the crossers M7 counted had neither leaf nor mouth: no grazer crossed. Still to do:
-    theatre frames once the card is free, then the entry (logbook/0143, drafted in `scratch/r60-read/0143-draft.md`)
+    theatre frames once the card is free, then the entry (logbook/0143, drafted in `logbook/specs/r60-read/0143-draft.md`)
     and the full result to the owner. `desert-burial` merges to main after 25 moves the three nursery configs its
     tunable refuses (a8cbe76c, 2b125f6c, e80c201e).
   - **The card's contact cap is fixed (D193, the owner's consent of 2026-10-16).** The grid enters a part in every
@@ -186,7 +186,7 @@ first (D166, amending D164's order):
     Branch `cand-cap-det` (`scratch/wt-cap2`, `9ee72ce8`, on `cand-cap` `9e54908a`) holds 512 distinct candidates,
     refuses repeats, and past the cap keeps the lowest keys. On seed 6002's spans 31,500-33,000 and 46,500-48,000 it
     dropped nothing, matched the round where the round had not overflowed, and two runs of each were identical
-    (`scratch/r60-build/det-chain.log`), at 0.74 times real time on the dense span. It is on `r61` and merges to main
+    (`logbook/specs/r60-build/det-chain.log`), at 0.74 times real time on the dense span. It is on `r61` and merges to main
     with it. It shows nothing about a denser world; round 61's B2 asks.
   - The owner's aim (D191, CLAUDE.md): separate oases with swimmers that migrate between them to graze or hunt, a
     real ocean.
@@ -195,16 +195,16 @@ first (D166, amending D164's order):
     new rule, the nursery's leaf swimmers planted through the trickle from 3,000 s, landscape 1 (six islands) in every
     world, two arms on life seeds 6101 and 6102: `r61-p6101`, `r61-c6101`, `r61-p6102` and `r61-c6102` (main's `runs/`),
     one card group from 19:58 to 05:17, 9.3 h. B2 held (no contact dropped, card memory at most 12,871 MiB), and B3 held
-    (`r61-p6101b` from 45,000 s matches in every record). The read is `scratch/r61-read/r61-read-48000.txt`, by
+    (`r61-p6101b` from 45,000 s matches in every record). The read is `logbook/specs/r61-read/r61-read-48000.txt`, by
     `scripts/reads/r61-read.py` on `r61`, which reproduced round 60's reader on round 60's worlds
-    (`scratch/r61-read/r61-reader-on-r60.txt`); round 60's reader on round 61 is `scratch/r61-read/r60-clauses.txt`.
+    (`logbook/specs/r61-read/r61-reader-on-r60.txt`); round 60's reader on round 61 is `logbook/specs/r61-read/r60-clauses.txt`.
     P2, C1 and B1 held; P1, P3 to P7 and L1 failed; S1 is unread. The planted grazers killed 138 to 335 leaves a year
     in years 6 to 8, the controls none, but only 5 to 19 were alive at any year's end. One line held 99.8% and 99.9%
     of each planted world. The pairs bin apart under D195 on P3 (leaves planted over control 0.64 and 2.51), P4 (+0.01
     and -0.28) and P5 (0.00 and -0.19), so the third pair ran (`r61-p6103` and `r61-c6103`, group `r61-3`,
     2026-10-17). `r61-p6103` slowed tenfold from 45,300 s on giant parts (the giant-parts bullet below), was stopped
     at 46,050 s and resumed to 48,000 s as `r61-p6103r` on the giants fix (b81ca261), proven bit-identical by three
-    gates. Read on all six worlds with `--seeds 6101,6102,6103` (`scratch/r61-read/r61-read-48000-six.txt`): P1
+    gates. Read on all six worlds with `--seeds 6101,6102,6103` (`logbook/specs/r61-read/r61-read-48000-six.txt`): P1
     failed, P2 held (138-335 leaf kills a year in all three planted worlds, none in the controls), P3, P4, P5, P7 and
     L1 failed, P6 and C1 held, S1 unread, and B1 failed on `r61-p6103`'s one diverged body (79817, an 8-part rigid
     chain of the giants' family, 45,080 s). Seed 6103's bins: P3 1.23 behind, P4 -0.07 behind, P5 -0.01 no effect, so
@@ -239,8 +239,7 @@ first (D166, amending D164's order):
     `logbook/specs/r61-read/read-72000.txt`: P2 and C1 held, P1, P3 to P7 and L1 failed, S1 is unread, and B1 failed
     on `r61-p6103x4`'s 488 diverged bodies alone. The grazers stayed at 8 to 59 a world yet killed 127 to 335 leaves a
     year in years 6 to 8. In `r61-p6103x4` their kills rose to 1,226 a year as the leaves fell to 2,784, the one world
-    where P3 and P4 held. The 1,199 mouthed bodies in `r61-c6101x2` photosynthesise and kill nothing. Before the round
-    is called finished: a look in the theatre, a talk with the owner, then the write-up. The pace guard runs in the merged build, and overflow and
+    where P3 and P4 held. The 1,199 mouthed bodies in `r61-c6101x2` photosynthesise and kill nothing. The first look in the theatre, drawn from the snapshots of `r61-p6103x4`, `r61-p6101x2` and `r61-c6101x2` at 72,000 s (`scratch/owner/r61-theatre-72000/`), shows the crowds in bands at the glass, the north and west rims and a mass in the south-east, with few bodies on the islands; planted and control look alike, `r61-p6103x4` is sparse in two clumps at the rim, and its side view shows kelp blades standing past the water's top. Whether the planted swimmers swim needs a replay or the positions. Before the round is called finished: a talk with the owner, then the write-up. The pace guard runs in the merged build, and overflow and
     divergence never stop a run (D197).
     On a heat stop the work waits an hour for the room to cool, then resumes from the checkpoint (the owner, 2026-10-17). Still to look at: theatre frames (whether the planted swimmers swim; at 23,000-28,000 s their jointed
     bodies moved no faster than rigid drifters) and the planted lines' own speeds from the positions, once the card is
@@ -268,8 +267,8 @@ first (D166, amending D164's order):
     0.010 m. The 8th copy is a photosynthetic ribbon 0.36 m wide, 36.8 m long and 2 cm thick, on a rigid chain of 8
     boxes, so the 1e6 m³ volume ceiling never bites. The line's birth-plan parts did not grow over generations. Body
     79817, which blew up at 45,080 s, was a rigid chain of the same family. The output is
-    `scratch/r61-giants/gf-p6103.txt`. A census of the largest part every 1,500 s in rounds 59-61
-    (`scratch/r61-giants/census/`) shows drift in every round: photosynthetic plates at the thickness floor grow
+    `logbook/specs/r61-kelp-divergence/gf-p6103.txt`. A census of the largest part every 1,500 s in rounds 59-61
+    (`logbook/specs/r61-kelp-divergence/census/`) shows drift in every round: photosynthetic plates at the thickness floor grow
     long or wide over tens of thousands of seconds, to 2-3 m in most worlds, in planted and control alike. Two
     worlds found a chain whose self-scale compounds the length: `r61-p6103` (7.0 m by 45,000 s, then the jumps) and
     `r60-s6002` (7.36 m at 46,500 s), whose overflow after 36,000 s, and so round 60's B2 failure, is very likely
@@ -617,7 +616,7 @@ tree's runs: `r57-s1` on logical 16 to 23 and `r57-s2` on 24 to 31, 8 threads ea
 manifest naming `1917815` with no DIRTY mark, leaving 16 and 17 for builds. The coordinator stopped it
 by mistake at 08:53 on 2026-10-07 (its stop checkpoint 21,710 s) and resumed it at 08:54 from that checkpoint, same
 build, threads and processors: run `runs/r57-s3/2026-10-07-075434-dfc0e881`, pid 46128, by
-`scratch/r57-launch/resume-s3.ps1`; it ended on budget at 20:46 on 2026-10-07 with 6,890 alive. Its two
+`rounds/r57-resume-s3.ps1`; it ended on budget at 20:46 on 2026-10-07 with 6,890 alive. Its two
 runs are joined at 21,710 s in `runs/derived/r57-stitch/r57-s3/2026-10-07-023901-dfc0e881-joined` by
 `stitch-resume.py --header-from` (the stitch root holds junctions to the three seeds' runs, so the reader
 takes `--runs-root runs/derived/r57-stitch`; read `logbook/specs/r57-read/r57-read.out`). Round 57's verdict by
@@ -634,19 +633,19 @@ premature and not round 58's experiment. Its nursery light bench is parked (a8 t
 The hollows (D155, `logbook/specs/r58-build/hollows-design.md`, built on `round-58`) failed their bar
 for a material change in two screens (`logbook/specs/r58-build/screens-h12-read.txt`) and are set aside
 (D156). The owner's other focus, set on 2026-10-07, is a render that feels more underwater without
-losing its 4K clarity, with the world above the water shown; its choices are the coordinator's. The look: an Opus survey (`scratch/underwater-look/survey.txt`) and a Sonnet survey of
+losing its 4K clarity, with the world above the water shown; its choices are the coordinator's. The look: an Opus survey (`logbook/specs/underwater-look/survey.txt`) and a Sonnet survey of
 underwater rendering, on the owner's suggestion that the water itself be visible. Its first batch is
 on main, off by default and on with `EVOSIM_THEATRE_LOOK=3` (`unity/Assets/Theatre/CLAUDE.md`), checked
 on before-and-after stills of r57-s2 and r56-s2 (`scratch/owner/underwater-look/`); the countdown film
 renders with it. The first batch lifted the darks into a veil: on the creature close-up the luma spread
-fell by 30% (`scratch/look-build/contrast.py`), as the owner suspected. On 2026-10-07 the owner asked for a
+fell by 30% (`scripts/underwater-look/contrast.py`), as the owner suspected. On 2026-10-07 the owner asked for a
 second batch, iterated until the pictures are really nice: contrast first, with the snow drifting with the
 run's own current at its own sink rate and its density taken from the run's recorded snow
 (`logbook/specs/underwater-look/brief-2.md`). It is on main (`d767551`), off by default and on with
 `EVOSIM_THEATRE_LOOK=4`, after 22 iterations of stills and two clips (`scratch/look-build/iter/`,
 `scratch/owner/underwater-look-2/`); the owner liked the clip. Round 57's snow is nearly even (0.7 to
 1.3 J per cubic metre across the tank, a tenth over the year), so the drawn snow looks much the same
-everywhere in it. A clip is checked frame to frame with `scratch/look-build/iter/motion.py` (no frame's
+everywhere in it. A clip is checked frame to frame with `scripts/underwater-look/motion.py` (no frame's
 change above twice the median), which found the snow's half-second jump the owner saw in the first clip.
 Still weaker: the winter sky from below and the whole-tank views from outside. Not started: the camera
 above the surface and the waterline shot. An open matter budget (D074's influx and
@@ -783,7 +782,7 @@ rest.
   are re-recorded only on purpose, with `ROOM_GOLDEN_UPDATE=1`. On main the room suite passes 681 of 686, 4 skipped,
   and its one E2e failure is Edge's locked profile folder on this machine; the nursery's passes 353 of 354. The server
   is down, as the owner asked on 2026-10-15, and comes back only on the owner's word. It runs on `127.0.0.1:5179`
-  from the main checkout's Debug build (`scratch/room-server/build.ps1`), with its logs in `scratch/room-server/`,
+  from the main checkout's Debug build (`scripts/room-server-build.ps1`), with its logs in `scratch/room-server/`,
   and comes down for any card run, since the card launcher refuses any `dotnet.exe`. The main checkout's
   `rounds/nursery/room.json` carries two uncommitted edits for it: the fresh run `scratch/nursery/tank-demo-w2` in
   `runs`, and `affinity` set to the room's slot. a8 asks the coordinator before anything heavy runs
@@ -835,13 +834,13 @@ rest.
     queue instead, with the heat check (`scripts/temp-check.ps1`) as its backstop, following the owner's
     rule of 2026-10-09 that load is no bar and heat is. The brief is
     `logbook/specs/nursery-room-queue-cap.md`; it is built on branch `room-cap` in `scratch/wt-room-cap`,
-    with its tests run by `scratch/room-cap/pass.ps1`.
+    with its tests run by `logbook/specs/nursery-room-queue-cap/pass.ps1`.
 
 ### Other work and the disk
 
 **Git.** GitHub's main is one squash commit (8bb29ad8, merged 2026-10-18) on the history pushed before 2026-10-01, and local main matches it. The full local history is the local branch `archive/local-2026-10-18`, never pushed. A branch started before the squash (`r62-blades`, `r62-coral` and the rest) lands on main only by `git merge --squash`, or the old commits come back; the pre-push hook refuses them anyway. This repository's `user.email` is the GitHub noreply address. The pushed branch `squash/2026-10-18` is still on GitHub, and deleting it is the owner's call.
 
-**The scratch review** (`scratch/scratch-review/review.txt`) is approved and its deletes are done (`scratch/scratch-review/delete-log.txt`). The run directories the record names are in main's `runs/`, those that are not one arm's runs under `runs/derived/`, with each old path in `logbook/specs/run-moves-2026-10-18.txt`; runs a nursery registry row names stay in their worktrees. Still to do: about 60 files promoted to their homes with a privacy check. The coral's step 1 is on `r62-coral` (2559dc3f, in `scratch/wt-coral`); its full test suite waits for a free machine.
+**The scratch review** (`scratch/scratch-review/review.txt`) is approved and its deletes are done (`scratch/scratch-review/delete-log.txt`). The run directories the record names are in main's `runs/`, those that are not one arm's runs under `runs/derived/`, with each old path in `logbook/specs/run-moves-2026-10-18.txt`; runs a nursery registry row names stay in their worktrees. The files the record cites are promoted to their homes (2026-10-18). Three span launchers stay in their worktrees until a line naming another project is scrubbed: `rounds/r60-ov-span.ps1`, `r60-det-span.ps1` and `r60-cap-span.ps1`. The coral's step 1 is on `r62-coral` (2559dc3f, in `scratch/wt-coral`); its full test suite waits for a free machine.
 
 Another session works on the story tools: `.claude/skills/story-resolve/`, `assets/`,
 `logbook/specs/story-resolve.md` and the scripts named story-resolve are left alone. Round 48's story
@@ -958,7 +957,7 @@ and never in a shell loop; a queue that must outlive a turn is started detached.
    read-only, saved as it came; its brief beside it). It ranks 28 items, the bit-identical ones first, and
    orders the build in 13 steps, each proven before the next: a nursery change by the digest check, a
    farm change by its build against main's on a resume of `r56-s2` as a cousin, at 1 and 8 threads, every
-   stats, digest and lineage row compared (`scratch/nursery-speed/farm-a3-check.ps1`, read with
+   stats, digest and lineage row compared (`logbook/specs/nursery-speed/farm-a3-check.ps1`, read with
    `scripts/reads/gpu-accept.py`); today's build refuses every round's config before round 56, so a
    round's own rows cannot be the reference. Its projections, believed: the nursery from
    304 s a generation to about 165 s pinned, or 100 to 110 s on all cores; the farm 1.15 to 1.3 times from

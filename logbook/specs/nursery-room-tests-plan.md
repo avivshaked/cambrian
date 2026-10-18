@@ -29,7 +29,7 @@ Done when 6e has the conflict and has said so.
 ## 2. One full walk of the room as it stands
 
 A Sonnet agent walks all five screens in headless Edge, at 1920×1080 and 1366×768, on the real
-runs first. The brief is the last full walk's (`scratch/nursery-general/room6/walk4-brief.md`),
+runs first. The brief is the last full walk's (`design/nursery/briefs/room6-walk4-brief.md`),
 with its list of claims replaced by everything built since that walk.
 
 That covers changes no walk has seen:
@@ -149,7 +149,7 @@ adding its new checks to the flows, so the same fault is never paid for twice.
 
 Step 1 ended with 6e keeping the merge. Step 2's walk ran on 2026-10-05. It passed every item it
 was given and found six small faults. Its list of checks is in
-`scratch/nursery-general/room7/walk7-checks.md`. The owner then agreed these changes:
+`design/nursery/briefs/room7-walk7-checks.md`. The owner then agreed these changes:
 - **The room is on main.** The coordinator merged `nursery-room` into main's merge on 2026-10-04.
   On 2026-10-05 the owner said they support the room staying on main unless the coordinator has a
   strong objection. Steps 3 and 4 build on branch `room-e2e` from main, which the coordinator

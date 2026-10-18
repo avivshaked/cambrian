@@ -1,0 +1,5 @@
+lag    100 s  matched  7167  rms 8.9 m  MSD/4t 0.199 m2/s  mean|d|/t 0.0678 m/s
+lag    500 s  matched  6030  rms 29.0 m  MSD/4t 0.421 m2/s  mean|d|/t 0.0459 m/s
+lag   1000 s  matched  4316  rms 38.0 m  MSD/4t 0.360 m2/s  mean|d|/t 0.0317 m/s
+lag   2000 s  matched  1738  rms 44.8 m  MSD/4t 0.251 m2/s  mean|d|/t 0.0184 m/s
+lag   3000 s  matched   476  rms 49.3 m  MSD/4t 0.203 m2/s  mean|d|/t 0.0132 m/s

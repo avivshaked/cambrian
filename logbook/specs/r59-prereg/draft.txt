@@ -1,0 +1,273 @@
+# Round 59's predictions: trained grazers planted in a world that can smell its leaves
+
+*2026-10-14, written after the leaf tank's third arm and the card's timing of the leaf smell, and committed
+before round 59's three worlds start. The owner approved the plan on 2026-10-14 (D174) [CHECK: and this entry
+on <date>]. It rests on D161, D167, D168, D171, D172, D173 and D174, on the leaf tank's reads
+(`logbook/specs/nursery-leaf-read.txt` on `nursery-leaf`, `nursery-leaf-sparse-read.txt` and
+`nursery-leaf-sparse3-read.txt` on `nursery-d172`) and on round 58's isolated worlds (logbook/0139). Every
+number says whether it is measured, computed or guessed.*
+
+## What it asks
+
+Grazing is the owner's goal for these rounds. A grazer here is a body with a mouth that finds living leaves,
+bites them and eats what the bite frees. The world's leaves are bodies that live on light and matter alone. No
+world so far has grown grazers. Round 58's three isolated worlds recorded no bite at all in 48,000 s: their
+running count of parts killed by a mouth stood at 0 at every year's end, though bodies carrying a mouth's
+attack cells were born in all three (measured, `scratch/r59-prereg/helpers/r58-kills.py` and `r58-mouths.py`
+on `r58-s1ir`, `r58-s2ir` and `r58-s3ir`) [CHECK: copy the helpers' output into `logbook/specs/` if this
+sentence stays].
+
+The nursery is a separate program that breeds brains on fixed bodies in a small tank. Over the last two days it
+bred a swimmer that eats leaves. Its body is a box with a mouth and one hinged fin. In a tank with 31 living leaves
+and nothing else to eat, its best genomes ate about 440 J of leaf in a 1,800 s episode. Across the arm's examined
+genomes, knocking out their sense of the leaves' smell cost 35% of their eating, about six standard errors
+(measured, D174). That sense is
+new: since D167, living leaves give off a smell of their own, and a body can read its strength and direction.
+
+Round 59 gives every world that smell and plants the ten best swimmers into two of three isolated worlds. Seed
+1 gets none and is the control. The round asks whether the planted swimmers' lines outlive their first
+generations (P), whether grazing evolves in the control from the world's own founders (G), whether the planted
+worlds eat more leaves than the control and use the smell to do it (D), and whether the new pieces leave the
+crowd and the founding as round 58 had them (C).
+
+## The world
+
+Round 59 runs round 57's world, which round 58 also ran, from `rounds/env-r57.ps1`. Its year of 6,000 s has
+three days of summer at 1.6 of the mean light and three of winter at 0.4. Its day is 1,000 s long, and the
+weather changes daily. The sky is drawn from its own seed, 57, so every world of the round shares one sky. The
+tank is 22,000 m2 and 25 m deep [CHECK: the area and depth as env-r55.ps1 sets them, unchanged since].
+Species tracking is off.
+
+Round 59 adds three pieces, set in `rounds/env-r59l.ps1` on `r59-leaftime` [CHOOSE: copy it to
+`rounds/env-r59.ps1` in the round's build, or launch from the branch as it is]:
+
+- **A drag on turning** (D161). Water resists a body's turning, which stops single-part bodies from rocking and
+  spinning without end. It is the spin form at a coefficient of 0.5 (`EVOSIM_TURNING_DRAG` `spin`,
+  `EVOSIM_SPIN_DRAG` 0.5). The nursery's drag check found that the spin form at 0.5 brings two spinning
+  stomachs from 1.35 and 2.52 rad/s to 0.04 rad/s, and leaves the swimmers' speeds as they were (measured,
+  `nursery-leaf-tank-plan.md` step 6 on `nursery-d172`). The coordinator chose 0.5 for the tank, and the plan
+  leaves the size to the owner here [CHOOSE: 0.5, the size the nursery bred the planted swimmers under, or
+  another].
+- **The touch of the rock, and its sense** (`EVOSIM_SENSE_BED_TOUCH` 1). A part that touches the bed or a reef
+  reads 1 on a new channel, a step late. The glass reads 0.
+- **The leaves' smell, in its direction form** (D167, D174). Each living leaf gives off a smell in proportion to
+  its lit leaf area. It spreads as a cone of 6 m around the leaf and stops when the leaf dies. Each part of a
+  body reads three numbers, the smell's direction in the part's own frame, scaled by its strength
+  (`EVOSIM_LEAF_SCENT` `direction`, `EVOSIM_LEAF_SCENT_RANGE` 6, `EVOSIM_LEAF_SCENT_CELL` 2,
+  `EVOSIM_LEAF_SCENT_HALF` 1). The field's cells are 2 m, and its half-scale is 1 m2 of leaf. These are the
+  values the planted swimmers were bred under (the tank's config `3fd98985cdf68008` carries a 2 m cell and a
+  1 m2 half-scale, and the arm's recipe a 6 m reach) [CHOOSE: confirm the cell and half-scale; the block's
+  header holds them at the farm's defaults until this entry names them]. The 3 m arm showed the reach is what made
+  the nose pay. At 31 leaves and 3 m, knocking the smell out cost 7 J of 159, under one standard error, and at
+  6 m it cost 92 J of 261 (measured, `nursery-leaf-sparse3-read.txt`).
+
+The anchoring cell, a cell that grips the bed or a reef, stays off (D171). The mouth keeps its rules. Every death
+in the world leaves a corpse, as before. The tank's rule that only a leaf bitten to death leaves food (D169)
+is the tank's alone.
+
+Since D168, the card's single precision tracks small movements and light contacts. Round 58 ran without it, and
+there the card counted about half the CPU's contacts (measured, `logbook/specs/build-readings.md`). A bite reads
+the same overlaps, so round 58's bite chances and contact columns cannot be compared with round 59's. A count of
+kills higher than round 58's zero may come from D168 alone (inference).
+
+The new settings and the new checkpoint format refuse round 58's checkpoints, so every world is founded fresh.
+Nothing replays round 58.
+
+## The seeds and the planting
+
+Three isolated worlds on seeds 1, 2 and 3, with no exchange: round 58 showed that joined worlds spread one
+winner (logbook/0139). Seed 1 is the control. Its trickle is round 57's and 58's. The trickle adds a founder
+about once every 30 s after the floor closes at 3,000 s (`EVOSIM_TRICKLE` `1/30`). One trickle founder in ten
+is a copy of one of round 54's four stomachs (`rounds/r55-pool-control.tsv` at `EVOSIM_TRICKLE_POOL_SHARE` 0.1),
+and the floor draws nothing from a pool (`EVOSIM_FLOOR_POOL_SHARE` 0). A stomach is a body that lives on the
+matter it absorbs.
+
+Seeds 2 and 3 carry the same trickle and add the ten swimmers to its pool. They are the ten genomes of
+`inocula/r59-direction-tops/`, cut on 2026-10-14 from the direction arm `leaf-direction-sparse` (`9dfe61ae`).
+Each ate between 379 and 443 J an episode under its own brain on held-out tanks, and each lost between 147 and
+306 J to the smell's knockout (measured, that folder's `origins.tsv`). Each enters as an exact copy, with its own
+brain.
+
+The planting goes through the trickle's pool, as D174 says round 55's did. Two points are not settled.
+
+1. **The list and the share** [CHECK: this is the pool's share of the trickle against round 55]. The weights in a
+   pool's list are relative, and the share of the trickle drawn from the pool is a setting of its own
+   (`World.cs`, D117's draw). `pool.tsv` gives the ten 0.1 each, a tenth of whatever the pool's share is. Named
+   alone as `EVOSIM_TRICKLE_POOL`, it would take the four stomachs out of seeds 2 and 3's trickle. Seeds 2 and 3
+   would then differ from the control by more than the planting. So the round needs a list of its own: the
+   four stomachs and the ten swimmers, with the stomachs held at one trickle founder in ten, as
+   `rounds/r55-pool-list.py` made round 55's. [CHOOSE: (a) the swimmers at one trickle founder in ten, so each
+   stomach weighs 0.025, each swimmer 0.01, and the share is 0.2. That is about 20 swimmers a year and 150 in
+   the round (computed: 200 trickle founders a year, 169 to 230 a year measured in round 58's isolated worlds, over 7.5
+   years after the floor closes). (b) The swimmers at one founder in two, round 55's nursery share, with each
+   swimmer at 0.05 and a share of 0.6. That is about 100 a year and 750 in the round (computed). Round 55's 460 to 490
+   nursery founders a seed at that share left one line that held 4% of one seed and 0.1% of the other (measured,
+   `logbook/specs/r55-read/read-30000.txt`).]
+2. **The floor** [CHOOSE: (a) the floor's share 0, as D174's "through the trickle pool" reads; the first swimmers
+   then arrive after 3,000 s, into a full world. (b) The floor drawing from the pool at the trickle's share, as
+   round 55 did. Round 55's smoke found that 32 of 45 floor founders had a child and 3 of 56 pool founders
+   arriving after the floor closed did (measured, logbook/0134). In round 55 itself, though, no nursery founder
+   placed at the floor left a living line (measured, `logbook/specs/r55-read/interim-2026-10-04.md`). There is
+   one list for the floor and the trickle, so under (b) the floor would also draw stomachs, which the control's
+   floor does not.]
+
+Here is why I expect little from the planting. The tank and the world differ in five ways that matter to a
+planted swimmer.
+
+- **Its purse.** In the tank each swimmer started with 3,639 J, enough for 3,830 s at its standing cost of 0.936 W
+  (measured, the tank's traces). A world founder starts with 600 s of its standing cost
+  (`EVOSIM_FOUNDER_ENDOWMENT` 600), about 560 J, capped at 0.9 of its breeding gate (computed) [CHECK: a pool
+  founder's endowment in the world, from its birth row's `endow`].
+- **Its income against its costs.** Even the best swimmer in the tank lost energy. Over 1,800 s the direction
+  arm's examined genomes ended 1,953 J poorer on average (measured). To break even a swimmer must eat about
+  1,900 to 2,300 J an episode, against the 379 to 443 J the ten ate (computed from the traces' upkeep, work and
+  food). Its consumer box may earn something from the world's drifting dead matter, which the tank had none of.
+  I have not measured how much.
+- **The leaves.** The tank held 31 leaves on 400 m2, 0.078 to the square metre. Round 58's isolated worlds
+  held 0.14 to 0.22 living bodies to the square metre in year 2's summer, and 0.25 to 0.50 in year 8's
+  (computed from logbook/0139's reader). Most of those bodies are leaves [CHECK]. The leaves are also another
+  line's, of another shape.
+- **Its life.** The tank had no age rule (D169), and the world does.
+- **Its brain.** The swimmers were bred without the touch sense. Read from code, a stored link resolves by its
+  port, so the new channel shifts none of the swimmer's links (`CentralWiring.cs`). It just gives the new
+  channel no links [CHECK].
+
+So by the tank's numbers a planted swimmer starves in about 500 s unless it eats four to six times what it ate
+there (computed). Round 55's planted swimmers did that: 93% and 96% of the jointed nursery-rooted bodies died
+starving, at a median age of 478 and 496 s, and 1 to 2% bred (measured, round 55's interim read). The one line that
+held, in seed 2, held by dropping its joints. That is why the P clauses below are modest.
+
+## The engine and the length
+
+All three worlds run on the graphics card in single precision (D157), with D168's fix, at group 32, with the
+snow's transport, the carrion smell's fill and the concurrent mode on the card, as round 58 did. The leaf smell's
+field is filled on the host, once a metabolic step, and the card reads it.
+
+The card's timing of the leaf smell ran on 2026-10-14 from 15:17 to 15:34 at `7105c799`. One world of round 59
+alone on the card, from 1,000 s with 3,439 to 3,584 bodies, stepped at 7.02 and 7.14 times real time at 6 m
+(measured, `logbook/specs/r59-leaf-timing-plan.md`, "What the window measured", on `r59-leaftime`
+`157619c9`). The fill took 5.6 ms a simulated second, about 4% of the stepping wall. The pace falls as the crowd
+grows, so 7.1 is an upper bound. In D159's sitting a world in a group of three kept 68% of a lone world's pace.
+That puts a group of three at about 4.8 times real time at 1,000 s (computed). Round 58's isolated group ran its
+46,500 s in 3 hours 19 minutes, about 3.9 times real time over the whole run (computed from logbook/0139). So I
+guess a group of three takes about 3 to 4 hours for 48,000 s.
+
+The round's launcher founds a group from one environment block (`scripts/card/card-group.ps1 -Launcher`). The
+control and the planted seeds differ in their pool, so they cannot be founded as one group as it stands.
+[CHOOSE: (a) a change to `card-group.ps1` that takes a block a world, tested before the build is frozen, and one
+group of three; (b) seed 1 alone through `card-run.ps1`, then seeds 2 and 3 as a group of two. That is two
+sittings of about 2 and 3 hours (guessed).] [CHECK: an isolated world stepped in a group is byte for byte the
+same world stepped alone. Round 58's twins show only that two groups agree up to the first exchange.]
+
+The length is [CHOOSE: 48,000 s, rounds 57's and 58's length, which gives eight years, eight winters and about
+fifty leaf generations (computed in logbook/0136). Or 30,000 s, round 55's, which saves about 40% of the card time
+and reads five years]. I propose 48,000 s, so that the crowd, the founding and the years read against round 58
+year by year. Checkpoints come every 1,500 s. The runs are `r59-s1`, `r59-s2` and `r59-s3` [CHOOSE the names].
+
+## The smoke before launch
+
+The smoke checks that the world admits the planted genomes and that they are born, move and feed. The
+trickle opens only when the floor closes, at 3,000 s (`World.FoundersStillArriving`). So a smoke of a few
+hundred seconds with the floor's share at 0 plants nothing. [CHOOSE: (a) seed 2's world on the card, founded,
+to 4,500 s. At 7 times real time that is about 11 minutes of stepping (computed). It holds about 50 trickle
+founders, and so about 5 swimmers under share (a) and 25 under (b) (computed). (b) The same to 1,000 s with the
+floor drawing from the pool for the smoke alone. That is a different config, which checks admission and birth
+but is no part of the round.] Before it, as a founded round needs, the CPU accelerator steps the world founded
+with every card flag the round uses for 30 s, with a checkpoint at 15 s and a resume from it
+(`src/Evosim.Farm.Gpu/CLAUDE.md`).
+
+The smoke passes when all of these hold:
+
+- the run's `pool/index.tsv` lists the fourteen genomes, and the ten swimmers' hashes match `origins.tsv`;
+- every pool founder's birth row reads `src` `pool` with a pool index, and the swimmers' rows read `atk` 1,
+  `ink` 1, `jnt` 1, `abs` 0 and `pho` 0 [CHECK: the flags a swimmer's row should carry];
+- none is refused for room, and each appears in `positions.jsonl` and moves;
+- `card-run-check.ps1` holds every condition, and the books close;
+- the config names the drag, the touch sense and the direction form at 6 m.
+
+I also read each swimmer's fate in the smoke, as round 55's interim read did: its age at death, its cause, and
+any kill row it wrote. They are readings, and no bar rests on them.
+
+## Predictions
+
+The years are round 57's: year k runs from 6,000 (k-1) to 6,000 k s. A line, or root lineage, is every body
+descended from one founder, a body born without a parent. A planted line is one whose founder is a swimmer from
+the pool. A leaf is a body with photosynthetic tissue and neither absorptive tissue nor a joint (round 58's
+reader's rule). A mouthed body carries attack and intake cells (`atk` and `ink` 1). A grazer is a mouthed body
+with no photosynthetic tissue. A leaf kill is a kill row whose victim is a leaf. *Every bar below is my choice,
+set before any run of round 59's world* [CHOOSE: each bar].
+
+| # | prediction | falsified by |
+|---|---|---|
+| P1 | **the planted swimmers breed**: in each of seeds 2 and 3, at least one planted founder has a child. Round 55's jointed nursery bodies bred at 1 to 2%, and the tank's swimmers ate a fifth of what they spend. I guess this holds, weakly | lineage.jsonl, pool/index.tsv |
+| P2 | **a planted line lasts a year**: in at least one of seeds 2 and 3, the living descended from planted founders, of any guild, number at least 20 at every sample for at least one year after 6,000 s. One line in round 55's seed 2 would have passed this (22 to 42 living from 20,000 to 23,000 s, 196 at 30,000 s). I guess it fails | the same |
+| P3 | **the planted lines hold some of the world**: at 48,000 s, at least 1% of the living descend from planted founders, in at least one of seeds 2 and 3. Round 55 reached 4.0% and 0.1% at 30,000 s with about three times as many planted founders as share (a) gives. I guess this fails | the same |
+| P4 | **a lasting planted line still grazes**: among the living descended from planted founders at the end of the year in which P2 holds, more than half are grazers. Read only if P2 holds, and otherwise unread. Round 55's lasting line kept its body and dropped its joints. I guess it fails | the same |
+| G1 | **grazing evolves from the world's own founders**: in seed 1, at least 100 leaf kills a year by grazers of lines not founded from any pool, in at least 2 of years 6 to 8. Round 58's isolated worlds killed nothing in eight years, before D168 (measured). I guess this fails | lineage.jsonl's birth and kill rows |
+| D1 | **the planted worlds kill more leaves**: leaf kills over years 2 to 8 in each of seeds 2 and 3 number at least 50 and at least twice seed 1's. The planted founders count. The reading splits the founders' kills from their descendants', and the world's own lines' kills from both. A swimmer in the sparse tank killed about 2.8 leaves an episode, so about 150 swimmers living about 500 s would kill about 100 (computed under share (a), guessed lifetimes). I guess this holds | the same |
+| D2 | **the planted lines steer by the smell**: in each seed where the planted-descended grazers alive at 48,000 s hold at least 8 distinct genomes, those genomes swim in D173's tank (31 leaves, 6 m) under their own brain, no brain and the smell knocked out, 32 held-out episodes, and the knockout costs at least two standard errors of their eating. Read only where the 8 exist, and otherwise unread. I guess it is unread | the bench's exam, `scripts/reads/tops-exam-read.py` |
+| C1 | **the crowd stands with round 58's**: the living at every year's end, years 2 to 8, between half and twice the mean of round 58's isolated worlds at the same second, in 3 of 3 seeds. Those means are 3,792, 4,669, 4,981, 5,577, 6,249, 6,823 and 6,500 at 12,000 to 48,000 s (computed from their stats rows). I guess this holds | stats.jsonl |
+| C2 | **one line takes each world again**: one root lineage holds over half the living by the end of year 3, in 3 of 3 seeds. Round 58's isolated worlds were at 92%, 99.8% and 99.4% then (measured). I guess this holds, and that a planted line is never that one | lineage.jsonl |
+| B1 | **the books balance**: the audit under 0.1 J and the matter residual under 1e-5 units at every sample, nothing diverges, and every world ends on its budget, in 3 of 3 | stats rows, run.json |
+| B2 | **the card holds**: `card-run-check.ps1` holds every condition in 3 of 3, with no contact candidate dropped. Round 58's seed 1 twin began dropping between 42,000 and 43,500 s, as its crowd passed about 9,500 (logbook/0139). If drops come, the read marks the second they begin, and every clause is read again to that second | the card's log, card-run-check |
+| B3 | **a world resumes** [CHOOSE: keep]: seed 2, resumed on the card from its 45,000 s checkpoint to 48,000 s, matches the unbroken run in stats, digest and lineage rows, apart from the step counters and the wall timings. The checkpoint format is new this round. About 15 minutes of the card | the resumed run, `scripts/reads/group-resume-compare.py` [CHECK: it reads a lone world] |
+
+D2 is the only clause that tests the smell itself, because the world has no knockout. Read from code, a
+knockout exists only in the nursery (`src/Evosim.Nursery/KnockoutReach.cs`, the exam's controls). The farm
+cannot step a world with a sense switched off without a new setting, and that would be a new world. The bench
+takes a recipe with no search and the genomes as its pool, as `leaf-direction-tops` did [CHECK: whether the tank
+accepts a genome from the world, and what its eating means for a body with photosynthetic or absorptive tissue].
+[CHOOSE: build before the launch a leaf smell recorder for the world, beside `SteeringRecorder.cs`, which records
+the carrion smell's. Every 100 s it would record the cosine between each body's motion and the leaf smell's
+gradient, split by whether the body's brain reads the leaf channel. It is a recording, so it moves no hash. With
+it, a clause D3 would ask whether the planted seeds' grazers that read the smell move up its gradient more than
+those that do not. Without it, the round reads the smell's use only through D2.]
+
+## The readings
+
+- Per world and year: the most living in summer, the fewest in winter, the largest root lineage's share, and
+  the leaves', the stomachs', the jointed bodies' and the grazers' living (round 58's yearly table).
+- Per planted seed, at every 1,500 s: swimmers admitted, their children, the planted-descended living by
+  guild, the planted lines alive and the largest. The swimmers that died that span, by cause and median age, as
+  round 55's interim read gave them.
+- Per world and year: leaf kills and all kills, split into those by planted founders, by their descendants and
+  by the world's own lines. The world's `unitsEaten` and `corpsesEaten`. The run keeps no row for a meal, so which body
+  ate a corpse is not in it (`scripts/reads/r58g-reach.py`'s docstring). Kills are the only per-line sign of
+  grazing.
+- Where the grazers are: a grazer that kills often should sit nearer the leaves than chance. Per world at year ends, the median distance from each grazer to its nearest leaf, against random
+  points at the same depths, from `positions.jsonl`.
+- Which of the ten swimmers rooted each planted line, and whether one swimmer wins in both seeds.
+- With the recorder, if it is built: the leaf smell's cosine for readers and non-readers per sample.
+- The pictures: the theatre at year 8's summer peak in seeds 1 and 2, and a planted line where one holds.
+  Frames of a live world every few thousand simulated seconds while the round runs.
+
+## What the round does not ask
+
+Whether the smell changes the world by itself: every seed carries it, so no world here lacks it. Whether the
+strength form would have done as well: the tank answered that (D174). Whether 3 m would do in the world: the
+tank's third arm says no for the planted genomes, and the world is not asked. Whether the anchoring cell lets
+grazers sit and wait: it is off (D171). Whether joined worlds spread a grazer: the seeds are isolated. Which of
+the ten swimmers is best: the round can say which rooted a lasting line, and one or two seeds cannot rank ten
+genomes. Whether grazing would come with a larger share of planted founders: the round runs one share.
+
+## The reader
+
+`scripts/reads/r59-read.py` reads P, G, D1, C and B1 [CHECK: not yet written]. It is built from round 58's reader
+for the lines, guilds and yearly tables, and from `r58g-read.py` and `r58g-reach.py` for the kill rows by
+attacker. It roots every body in its founder and labels each founder by its birth row's `src`: floor, trickle or
+pool. A pool founder's genome is named by its pool index against the run's `pool/index.tsv`. The docstring states
+each clause as computed. It is tried on the smoke before launch, where its swimmer count must equal the pool rows
+in the lineage. D2 is read by the nursery's bench after the round, from genomes extracted from each seed's last
+snapshot [CHECK: the extraction path]. B2 is read by `card-run-check.ps1`.
+
+## Before the launch
+
+The pre-registration's record is the commit that adds this entry, on a clean tree, with the round's build. Every
+world's manifest names that commit as `gitCommit` with no DIRTY mark, read from `source.gitDirty` and not the
+blank top-level fields (logbook/0139). The build is [CHECK: the branch and commit. The timing ran at
+`7105c799` on `r59-leaftime`; the round's build must hold the environment block, the pool list, the reader,
+any recorder and any change to `card-group.ps1`, and must pass the suites again if any of them touches `src`].
+The round's pool list is [CHOOSE: `rounds/r59-pool.tsv`, written by a script beside `r55-pool-list.py`], and its
+config pins the fourteen genomes by hash. The smoke passes first, then the CPU accelerator's founded check, then
+the round. Every card sitting runs alone, under the driver watch and the heat stop, with nothing of anyone's
+beside it (logbook/0139).

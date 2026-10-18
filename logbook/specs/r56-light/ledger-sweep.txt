@@ -1,0 +1,84 @@
+=== genome r55-s2 spent 0.004 exposure 1.45
+Spent density: 0.004 units/m3, from --spent
+- Parts: 4
+- Volume: 0.0721 m3
+- Lit area: 0.6662 m2
+- Lit area (capped): 0.5528 m2 (cap on)
+- Tissue: 36.0348 J
+- Standing cost: 0.1499 W (0.0015 units/s)
+- Fixation at surface: 1.7811 W (0.0178 units/s)
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | units/child |
+|0|0|1.364|none|60000*|1551|87|0.5269|
+|6|0|1.364|none|60000*|1551|87|0.5269|
+|9|0|1.364|none|60000*|1551|87|0.5269|
+|12|0|0.7721|none|60000*|877|153.5|0.5269|
+=== genome r55-s2 spent 0.007 exposure 1.45
+Spent density: 0.007 units/m3, from --spent
+- Parts: 4
+- Volume: 0.0721 m3
+- Lit area: 0.6662 m2
+- Lit area (capped): 0.5528 m2 (cap on)
+- Tissue: 36.0348 J
+- Standing cost: 0.1499 W (0.0015 units/s)
+- Fixation at surface: 2.9529 W (0.0295 units/s)
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | units/child |
+|0|0|2.36|none|60000*|2686|50.5|0.5269|
+|6|0|2.3563|none|60000*|2681|50.5|0.5269|
+|9|0|1.3702|none|60000*|1558|86.5|0.5269|
+|12|0|0.7721|none|60000*|877|153.5|0.5269|
+=== genome r55-s2 spent 0.011 exposure 1.45
+Spent density: 0.011 units/m3, from --spent
+- Parts: 4
+- Volume: 0.0721 m3
+- Lit area: 0.6662 m2
+- Lit area (capped): 0.5528 m2 (cap on)
+- Tissue: 36.0348 J
+- Standing cost: 0.1499 W (0.0015 units/s)
+- Fixation at surface: 4.336 W (0.0434 units/s)
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | units/child |
+|0|0|3.5357|none|60000*|4024|33.5|0.5269|
+|6|0|2.3563|none|60000*|2681|50.5|0.5269|
+|9|0|1.3702|none|60000*|1558|86.5|0.5269|
+|12|0|0.7721|none|60000*|877|153.5|0.5269|
+=== genome r54b-s2 spent 0.004 exposure 1.45
+Spent density: 0.004 units/m3, from --spent
+- Parts: 2
+- Volume: 0.0202 m3
+- Lit area: 0.3298 m2
+- Lit area (capped): 0.3088 m2 (cap on)
+- Tissue: 10.1236 J
+- Standing cost: 0.0519 W (0.0005 units/s)
+- Fixation at surface: 0.9952 W (0.01 units/s)
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | units/child |
+|0|0|0.794|none|60000*|944|87.5|0.5042|
+|6|0|0.794|none|60000*|944|87.5|0.5042|
+|9|0|0.794|none|60000*|944|87.5|0.5042|
+|12|0|0.4633|none|60000*|550|149.5|0.5042|
+=== genome r54b-s2 spent 0.007 exposure 1.45
+Spent density: 0.007 units/m3, from --spent
+- Parts: 2
+- Volume: 0.0202 m3
+- Lit area: 0.3298 m2
+- Lit area (capped): 0.3088 m2 (cap on)
+- Tissue: 10.1236 J
+- Standing cost: 0.0519 W (0.0005 units/s)
+- Fixation at surface: 1.6499 W (0.0165 units/s)
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | units/child |
+|0|0|1.3505|none|60000*|1606|51.5|0.5042|
+|6|0|1.3485|none|60000*|1604|51.5|0.5042|
+|9|0|0.7975|none|60000*|948|87|0.5042|
+|12|0|0.4633|none|60000*|550|149.5|0.5042|
+=== genome r54b-s2 spent 0.011 exposure 1.45
+Spent density: 0.011 units/m3, from --spent
+- Parts: 2
+- Volume: 0.0202 m3
+- Lit area: 0.3298 m2
+- Lit area (capped): 0.3088 m2 (cap on)
+- Tissue: 10.1236 J
+- Standing cost: 0.0519 W (0.0005 units/s)
+- Fixation at surface: 2.4226 W (0.0242 units/s)
+| depth (m) | density (J/m3) | net W at birth | break-even (J/m3) | lifetime (s) | R0 | first child (s) | units/child |
+|0|0|2.0074|none|60000*|2388|34.5|0.5042|
+|6|0|1.3485|none|60000*|1604|51.5|0.5042|
+|9|0|0.7975|none|60000*|948|87|0.5042|
+|12|0|0.4633|none|60000*|550|149.5|0.5042|

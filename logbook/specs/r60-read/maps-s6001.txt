@@ -1,0 +1,7 @@
+runrec: 2026-10-16-002025-a44977ba: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+footprint: the 391 of 3521 live columns above the mean at 100 s (0.11 of the water)
+bed: fields/bed.f32, 10916 of 88005 live snow columns have a floor within 12 m of the surface (0.124 of the columns); snow-shelf12 is the snow stock's share in them, snow-floor12 the mean density of their floor cells in J/m3 (fields/*.snow-floor.f32)
+second  bodies-at  alive  col-cv   max-units/m3  mean-units/m3  in-islands  in-footprint  snow-shelf12  snow-floor12
+  6000       6000    506    2.35        0.0259        0.00107        0.89          0.71        0.0602        0.1561  D:\Projects\experiments\evolution-simulator\scratch\r60-read\fields\r60-s6001\r60-s6001-t0006000-map.png
+ 24000      24000   3086    2.18        0.0247        0.00089        0.85          0.75        0.0822        0.3046  D:\Projects\experiments\evolution-simulator\scratch\r60-read\fields\r60-s6001\r60-s6001-t0024000-map.png
+ 48000      48000  10551    1.78        0.0118        0.00048        0.48          0.41        0.0756        0.7839  D:\Projects\experiments\evolution-simulator\scratch\r60-read\fields\r60-s6001\r60-s6001-t0048000-map.png

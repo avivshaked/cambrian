@@ -3,7 +3,7 @@
 *2026-10-14. On the owner's question the same day: could round 60 concentrate the matter and enlarge
 the tank, so that life grows in micro-biomes but the tank is not a soup of creatures, as the ocean is
 not. For the owner's ruling; absorbed into DECISIONS.md on ruling, then deleted. The design study
-behind it, with its sources, helper scripts and ledger readings, is `scratch/r60-patchiness/report.txt`.*
+behind it, with its sources, helper scripts and ledger readings, is `logbook/specs/r60-patchiness/report.txt`.*
 
 ## 1. Why the tank is soup
 

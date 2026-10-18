@@ -1,4 +1,4 @@
-﻿# Round 60's world (scratch/r60-prereg/0142-draft.md until its entry lands): r60s-big3's world (rounds/env-r60s-big3.ps1,
+﻿# Round 60's world (logbook/specs/r60-prereg/0142-draft.md until its entry lands): r60s-big3's world (rounds/env-r60s-big3.ps1,
 # D185) at the round's dose and desert burial (D190, D191). Both are the pre-registration's to fill: until $influx,
 # $budget and $desert below are set, the block refuses, so no world can be founded on settings nobody chose. $desert
 # is the desert's burial rate per second (RunConfig.MatterBurialDesertPerSecond), or -1 for none of its own, the
