@@ -221,17 +221,26 @@ hold to 100, and 134411 runs away from 50. The rolling blade is no longer flung.
 second for one step, and the roll swings back to 47 radians a second the opposite way. The spin then settles to
 under 2 within twelve steps.
 
+### The card carries the same limiter
+
+The card's kernel has its own copy of the per-link law, and now of the welded one too, as commit a0d87f9f. In the
+kernel's link loop each part's force is capped as before, and what the cap took is kept in three spare rows of the
+part's fluid record. After the loop, each creature's thread finds its welded bodies and sums their torques and
+inertias in link order. It then caps the torque on the principal axes, found with the same Jacobi rotations. The two
+helpers are the solver's `LimitWeldedDrag` and `SymmetricEigen`, line for line. With the switch off, the kernel's
+arithmetic is unchanged.
+
+Identity is checked the two ways every card change is. Run in double precision on ILGPU's CPU accelerator, the
+kernel equals the solver to the bit after every block. That holds at 0.02 s, and at 0.01 s with the gate open,
+through a death and a birth. Each case is first shown to part from the per-link limiter under the same gate, so the test can
+fail. Every other off-card Gpu test passes, 59 of 59, under the guard that proves the card was never opened. On the
+card, in single precision, round 61's unplanted world with all three switches on ran 300 seconds from the
+founding at group sizes 32 and 64, seed 6201. The two runs agree on all 30 stats samples, all 301 digest rows and
+every lineage line, with no divergence and no overflow. The limiter engaged 8,564 times in each, and the energy
+and matter books closed to within 1e-6 J and 1e-6. The card stepped it at about 1.5 times real time.
+
 ### What round 62 still needs built
 
-- The card needs its own copy of the welded limiter. The card's kernel has its own copy of the per-link law. Until it
-  carries the welded one too, the card refuses a world with the switch on. The work is to note each part's force
-  cap in the kernel's link loop. After the loop, each creature's thread finds its welded bodies, sums their
-  torques and inertias, and finds the principal axes with the same Jacobi rotations. Every product in it is
-  written so the card cannot fuse it. The test that runs the double-precision kernel on ILGPU's CPU accelerator
-  against the solver must then pass with the switch on, at both steps. My estimate is two to three hours of agent work
-  and a quarter of an hour of CPU tests. After that comes about an hour alone on the card, for the identity
-  gates at two group sizes on the coordinator's go. One risk is pace. Each thread holds about 2 kB more scratch
-  in double for a 16-link body, and the card's pace falls as a thread's local memory grows (inference).
 - The Dynamics run fixture (`r60fix-s4`) is already unreadable on the base build. It needs recording on the
   round 62 build.
 - A cousin resumed from a round 61 checkpoint needs a config with the three fields written in. Under reading
