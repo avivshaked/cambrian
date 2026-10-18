@@ -8694,8 +8694,8 @@ Leaving dial A for the reach at once, which would leave its last step unscreened
 ### D204
 **An open ocean: a square with its edges joined, coral and island shoals inside it, no glass** · 2026-10-18
 
-**Status:** ruled by the owner on the evening of 2026-10-18, on the coordinator's proposal
-(`proposals/propose-open-ocean.md`). The idea was the owner's. The owner left the world's size to the coordinator. On
+**Status:** ruled by the owner on the evening of 2026-10-18, on the coordinator's proposal, whose survey of what
+assumes the tank is `logbook/specs/open-ocean-survey.md`. The idea was the owner's. The owner left the world's size to the coordinator. On
 the water, the owner preferred a finer mix and the coordinator recommended the same.
 
 **Decision.**
