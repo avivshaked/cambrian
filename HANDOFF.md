@@ -278,8 +278,7 @@ first (D166, amending D164's order):
     share on a checkpoint once the card is free and builds the fade change on its own branch off 41086157, and the
     coordinator drafts the coral build spec (`logbook/specs/coral-build.md`). The grazer dial search goes before the
     coral and the blades' rules land with round 62 (D196, D198).
-  - **The theatre on HDRP** is proposed and held (`proposals/propose-theatre-hdrp.md`): a spike in a separate
-    project, then a port, started only on the owner's go.
+  - **The theatre on HDRP**: the spike runs (D202), in a separate project `unity-hdrp/`, with Unity only between card runs; the port waits for the owner's ruling on the spike's four moments.
   - A later question, raised with the owner on 2026-10-16: holdfasts at the oases' edges. D171 closed the
     anchoring cell after a control in which nothing gripped, in slow water at the caps with nothing to hold on
     for. Fed islands give a body on a rock at an island's edge drifting matter to catch, as anemones, barnacles
