@@ -8705,8 +8705,9 @@ the water, the owner preferred a finer mix and the coordinator recommended the s
   the share of bodies and matter by distance from the glass, by compass sector, by floor depth and by kind of body;
   the time a body stays at the rim; and the speeds toward and away from the centre.
 - It is built in two steps, each screened before the next: the open square first, then island shoals.
-- The square keeps round 61's area, 88,000 m², about 297 m a side. Islands keep 45 m off the edge, so about 90 m
-  of desert lies between an oasis and its copy across the join. The theatre's fog hides everything past about 50 m,
+- The square is 300 m a side, 90,000 m², round 61's area rounded up so that every grid (1, 2, 5 and 30 m) tiles the
+  side exactly and the seam's cells are regular. Islands keep 45 m off the edge, so about 90 m of desert lies between
+  an oasis and its copy across the join. The theatre's fog hides everything past about 50 m,
   well inside half the width, so no copy is seen. A wider square is a later screen if bodies cross the join often.
 - The bed loses its tilt, which cannot join at the edges. Its waves are set to join. The shallow places are shoals
   rising to a flat top 1 to 3 m below the surface. There is no dry land for now.
