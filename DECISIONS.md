@@ -8777,3 +8777,36 @@ water's cells as it does now.
 
 **Rejected.** Making spent matter sink toward the floor, where the desert's burial would take it, which changes the
 water's transport and acts on the symptom.
+
+### D207
+**D206's form: release follows eating, made smooth, and a body's own leaves take its spent matter first** · 2026-10-19
+
+**Status:** ruled by the owner on 2026-10-19. It settles the reading D206 left for the owner to confirm, and amends
+it. It is built behind a switch of its own (`PlantsKeepOwnFirst` or its successor), so every world run under D206
+as first built still replays.
+
+**Decision.**
+- The owner chose D206's form A: a body that cannot eat holds its spent matter, and a body that eats releases.
+- A body's spent units first go to its own leaves, up to what they can fix in one step at the present light, less
+  the spent units the body already holds. Only the remainder goes on to the next rule. Every burn follows this:
+  the main burn, grips, the overhead of a birth and healing.
+- Of the remainder, a body with no eating tissue holds it all. A body with eating tissue holds its photosynthetic
+  cells' upkeep over its photosynthetic and eating cells' upkeep together, and releases the rest. A pure animal
+  releases everything, and a tiny mouth on a plant moves the share by a tiny amount.
+
+**Why.** As first built, D206 had a cliff: one small mouth sent a plant's whole brain and muscle burn into the
+water. That stood in the way of the path from plant to grazer. The owner asked what nature does
+(`logbook/specs/matter-ocean-scan.md`). Animals excrete what their food carries beyond their needs, and on reefs
+that excretion is the main fertiliser, so release follows eating. A hybrid releases less than a pure eater, and
+often less than either pure form, because its own leaves take up what its mouth frees: a mixotroph kept the
+phosphorus it ate and released only in the dark, and a coral's waste feeds its algae. Release rises when the leaves
+are idle, at night or with abundant prey. Own leaves first reproduces each of these.
+
+**Rejected.**
+- Release by cell type everywhere (form B): nothing in the evidence ties release to tissue.
+- Nothing released while alive (form C): every consumer source contradicts it, and it removes the way animals
+  fertilise an oasis.
+- The tissue mix alone: it is smooth, but it puts a hybrid halfway between plant and animal, where nature puts it
+  lowest.
+- The share following the body's recent diet: closer, but it still releases a hybrid's eaten share, and needs new
+  state in every body.
