@@ -395,6 +395,74 @@ namespace Evosim.Theatre
         /// </summary>
         public float FloorDust = TheatreSkin.Dial("EVOSIM_THEATRE_FLOOR_DUST", 0.35f, 0f, 1f);
 
+        /// <summary>
+        /// How many motes the shells hold, as a multiple of each shell's own share of cells
+        /// (<c>EVOSIM_THEATRE_SNOW_QUANTITY</c>, 0.25 to 3, default 1), capped at 0.95 of the cells.
+        /// The owner asked on 2026-10-11 for more snow in round 57's film, whose 4K shots near the bed
+        /// showed almost none.
+        /// </summary>
+        public float SnowQuantity = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_QUANTITY", 1f, 0.25f, 3f);
+
+        /// <summary>
+        /// The least share of the reference density a column counts as for the shells' motes
+        /// (<c>EVOSIM_THEATRE_SNOW_LEAST</c>, 0 to 1, default 0), so water the run left thin in snow
+        /// still shows some. The bed's dusting is untouched.
+        /// </summary>
+        public float SnowLeast = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_LEAST", 0f, 0f, 1f);
+
+        /// <summary>
+        /// How much brighter than the open water behind it a mote stands, from the water's own light
+        /// over and above the sun's (<c>EVOSIM_THEATRE_SNOW_AMBIENT</c>, 0 to 6, default 0): a share of
+        /// the water's brightness at the mote's height, in the mote's colour. Near round 57's bed the sun left at a mote's
+        /// depth was too little to show it against the bright water, at any gain or quantity (2026-10-11).
+        /// </summary>
+        public float SnowAmbient = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_AMBIENT", 0f, 0f, 6f);
+
+        /// <summary>
+        /// The snow through a lens (<c>EVOSIM_THEATRE_SNOW_BLUR</c>, 1 on, default 0): every mote blurred
+        /// by a thin lens's circle of confusion at its depth, sharp only near the focus. The owner observed
+        /// on 2026-10-19 that real marine snow is soft near the lens and far from it and sharp only near
+        /// the focus, and that this is what gives it depth; the shells drew every mote sharp.
+        /// </summary>
+        public bool SnowBlur = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_BLUR", 0f, 0f, 1f) >= 0.5f;
+
+        /// <summary>The snow's lens's f-number (<c>EVOSIM_THEATRE_SNOW_FSTOP</c>, 1 to 22, default 2), on the grade's frame.</summary>
+        public float SnowFStop = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_FSTOP", 2f, 1f, 22f);
+
+        /// <summary>
+        /// The snow's focus, m along the view axis (<c>EVOSIM_THEATRE_SNOW_FOCUS</c>, default 0): 0 takes a
+        /// portrait's own focus, and otherwise the scene's depth at the frame's centre.
+        /// </summary>
+        public float SnowFocusMetres = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_FOCUS", 0f, 0f, 100f);
+
+        /// <summary>The most a mote is blurred, pixels of radius at 1080 lines (<c>EVOSIM_THEATRE_SNOW_BLUR_CAP</c>, default 24).</summary>
+        public float SnowBlurCap = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_BLUR_CAP", 24f, 1f, 200f);
+
+        /// <summary>
+        /// The power of a blurred mote's area ratio its brightness keeps (<c>EVOSIM_THEATRE_SNOW_BLUR_KEEP</c>,
+        /// 0 to 1, default 1): 1 spreads its light over the larger disc and conserves it, as a lens does;
+        /// less keeps a soft mote brighter than its light allows.
+        /// </summary>
+        public float SnowBlurKeep = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_BLUR_KEEP", 1f, 0f, 1f);
+
+        /// <summary>
+        /// The spread of the motes' sizes (<c>EVOSIM_THEATRE_SNOW_SIZE_SPREAD</c>, 0 to 1.2, default 0): the
+        /// standard deviation of their log radius, with the mean area kept.
+        /// </summary>
+        public float SnowSizeSpread = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_SIZE_SPREAD", 0f, 0f, 1.2f);
+
+        /// <summary>The share of motes that are large flakes (<c>EVOSIM_THEATRE_SNOW_BIG_SHARE</c>, 0 to 0.5, default 0).</summary>
+        public float SnowBigShare = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_BIG_SHARE", 0f, 0f, 0.5f);
+
+        /// <summary>How many times larger a large flake is (<c>EVOSIM_THEATRE_SNOW_BIG_FACTOR</c>, 1 to 8, default 3).</summary>
+        public float SnowBigFactor = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_BIG_FACTOR", 3f, 1f, 8f);
+
+        /// <summary>How irregular a flake's outline is (<c>EVOSIM_THEATRE_SNOW_SHAPE</c>, 0 round to 1, default 0).</summary>
+        public float SnowShape = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_SHAPE", 0f, 0f, 1f);
+
+        /// <summary>How soft a flake's edge is, as a share of its radius (<c>EVOSIM_THEATRE_SNOW_FLUFF</c>, 0 to 2, default 0).</summary>
+        public float SnowFluff = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_FLUFF", 0f, 0f, 2f);
+
         // ---------------------------------------------------------------- second batch, the drift
 
         /// <summary>
@@ -479,7 +547,7 @@ namespace Evosim.Theatre
             "second batch: fade to backdrop {0} (from {1:0.#} m, full at {20:0.#} m, scatter x{2:0.##}, water gain {3:0.##}), " +
             "tone step {4} (black {5:0.###}, toe {6:0.##} shoulder {19:0.##} about {7:0.##}), shaft place {8} (share {9:0.##}, power {10:0.#}, " +
             "sheet {21:0.#} m, patch {22:0.#} m, depth {23:0.#} m, shimmer {25:0.##}, onset {26:0.#} m, over object {11:0.##}, strength {12:0.###}{24}), " +
-            "run snow {13} (reference {14:0.##} J/m3, floor {15:0.##} J, dust {16:0.##}), " +
+            "run snow {13} (reference {14:0.##} J/m3, floor {15:0.##} J, dust {16:0.##}, quantity x{27:0.##}, least {28:0.##}, ambient {29:0.##}), " +
             "snow drift {17} (alive {18:0.##})",
             On(FadeToBackdrop), FadeStartMetres, FadeScatterScale, WaterGain,
             On(ToneStep), BlackPoint, ToneS, TonePivot,
@@ -487,7 +555,14 @@ namespace Evosim.Theatre
             On(RunSnow), SnowReference, FloorReference, FloorDust,
             On(SnowDrift), SnowAlive, ToneShoulder, FadeFullMetres,
             ShaftSheetMetres, ShaftPatchMetres, ShaftDepthMetres, ShaftDebug > 0.5f ? ", DEBUG " + ShaftDebug.ToString("0", CultureInfo.InvariantCulture) + ": the shaft term alone" : "",
-            ShaftShimmer, ShaftOnsetMetres);
+            ShaftShimmer, ShaftOnsetMetres, SnowQuantity, SnowLeast, SnowAmbient) + ", " + DescribeSnowLens();
+
+        /// <summary>The snow's lens and flakes, for the log.</summary>
+        public string DescribeSnowLens() => string.Format(
+            CultureInfo.InvariantCulture,
+            "snow lens {0} (f/{1:0.#}, focus {2}, cap {3:0} px, keep {4:0.##}), flakes (spread {5:0.##}, large {6:0.###} x{7:0.#}, shape {8:0.##}, fluff {9:0.##})",
+            On(SnowBlur), SnowFStop, SnowFocusMetres > 0f ? SnowFocusMetres.ToString("0.##", CultureInfo.InvariantCulture) + " m" : "the shot's",
+            SnowBlurCap, SnowBlurKeep, SnowSizeSpread, SnowBigShare, SnowBigFactor, SnowShape, SnowFluff);
 
         /// <summary>
         /// The look's token for a picture's label: the grade's own (<c>look 2</c>) with every switch

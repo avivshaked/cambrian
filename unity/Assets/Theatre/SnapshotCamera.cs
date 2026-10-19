@@ -785,6 +785,7 @@ namespace Evosim.Theatre
             // The underwater look's items 3 and 6: the run's light at the frame's second, and the
             // exposure opened for what the subject (the focus, or six metres ahead) has lost.
             if (skin != null) skin.PushFrame(frame, eye, filmSecond);
+            if (skin != null) skin.PushSnowLens(portrait ? focusMetres : 0f, _camera.fieldOfView);
             float subjectY = (eye + rotation * Vector3.forward * (focusMetres > 0f ? focusMetres : 6f)).y;
             float meterWas = MeterOpen(skin, subjectY, TheatreSkin.MeterView.Subject);
 
