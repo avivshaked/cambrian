@@ -30,7 +30,10 @@ At the lowest wavenumbers, where most of the energy sits, use off-axis vectors o
 conveyor until its phase drifts. On the card each vector takes one sincos of its phase, on positions already folded into the square: the speed
 agent's probe found that cheaper on this card than building phasors by integer powers (logbook/specs/open-ocean-mode-probe/).
 
-**Three vertical shapes,** sin(qπη) for q = 1, 2, 3, as the streams carry three. A mode is a (vector, q) pair: 25 vectors
+**Three vertical shapes,** sin((q − ½)πη) for q = 1, 2, 3: zero at the bed and ±1 at the surface, so the water is
+still against the floor and moves most at the top, as a real ocean's does, and drifting plants and matter travel
+between oases. The grid needs the potential to vanish only at the bed, so every check holds. The tank's sin(qπη)
+kept the surface still, which the coordinator set aside on 2026-10-19 on the speed agent's finding. A mode is a (vector, q) pair: 25 vectors
 give 75 modes. The probe measured 75 modes at about 1.4 times today's streams per point, about 0.15 ns, noise beside a
 step.
 
