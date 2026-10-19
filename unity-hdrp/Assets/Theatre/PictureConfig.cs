@@ -1,0 +1,377 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using Evosim.Core;
+
+namespace Evosim.Theatre
+{
+    /// <summary>
+    /// A run's <c>config.json</c> read for a picture and for nothing else — §11 of
+    /// <c>logbook/specs/snapshot-render-spec.md</c> (the owner's ruling, 2026-09-18).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Why a second reader exists at all.</b> <see cref="RunConfigJson"/> refuses a config
+    /// missing a tunable, which is right for everything that simulates: a run measured under a
+    /// value nobody set is a result filed under the wrong name. The first use of the snapshot
+    /// render hit that rule on round 39 seed 1, whose config predates D098's economy group, and
+    /// the owner ruled that a picture may read an old run tolerantly. Nothing here reaches a
+    /// simulation. What a still frame needs is the shape of the water, its size, its floor and
+    /// how many patches it holds, and every recorded run carries all of them.
+    /// </para>
+    /// <para>
+    /// <b>It is tried second and never instead.</b> <see cref="RunRecord.LoadForPicture"/> asks
+    /// the strict reader first, so a run this build recorded is read exactly as it was before
+    /// this class existed, and the tolerant path leaves its mark on the log and on the label
+    /// (<c>OLD-RUN READ</c>).
+    /// </para>
+    /// <para>
+    /// <b>What it will not do.</b> It refuses a config with no world group, or one missing the
+    /// shape, the area or the depth, naming the field: those decide where the camera stands and
+    /// what the box is, and a frame drawn from a guess about them would be a picture of another
+    /// world. Everything it does default is stated: an absent bed group is the flat bed that
+    /// every config written before D092 meant, an absent patch count is one patch, and an absent
+    /// development group is <see cref="DevelopmentLimits.Default"/>, which is what
+    /// <see cref="RunConfig"/> itself would hold. The caller is handed the list.
+    /// </para>
+    /// <para>
+    /// <b>The object it returns is not a run's config.</b> Every field the picture does not read
+    /// is left at whatever <see cref="RunConfig"/>'s own initialiser holds, and its
+    /// <see cref="RunConfig.Hash"/> is therefore meaningless. It exists to be read by
+    /// <see cref="SnapshotCamera"/>, <c>TheatreRunner</c>'s furniture and
+    /// <see cref="Developer"/>, and it must never be handed to anything that steps.
+    /// </para>
+    /// </remarks>
+    public static class PictureConfig
+    {
+        /// <summary>
+        /// Reads the handful of settings a still frame needs.
+        /// </summary>
+        /// <param name="runDirectory">A resolved run directory.</param>
+        /// <param name="absent">
+        /// What the file did not carry and what was assumed in its place, or null when it carried
+        /// everything. Logged by the caller, never swallowed.
+        /// </param>
+        public static RunConfig Read(string runDirectory, out string absent)
+        {
+            string path = Path.Combine(runDirectory, "config.json");
+
+            if (!File.Exists(path))
+            {
+                throw new FileNotFoundException(
+                    "No config.json in '" + runDirectory + "'. The shape of the water lives " +
+                    "there and nowhere else a picture can read.", path);
+            }
+
+            JsonNode root = Json.Parse(File.ReadAllText(path));
+            var missing = new List<string>();
+
+            if (!root.Has("world"))
+            {
+                throw new FormatException(
+                    "config.json has no 'world' group, so nothing in it says what shape or size " +
+                    "the water was. Present: " + Keys(root) + ".");
+            }
+
+            JsonNode world = root["world"];
+
+            var config = new RunConfig
+            {
+                SharedSpace = Bool(world, "sharedSpace", "world"),
+                WorldAreaSquareMetres = Number(world, "worldAreaSquareMetres", "world"),
+                WorldDepthMetres = Number(world, "worldDepthMetres", "world"),
+                WorldShape = Shape(world),
+            };
+
+            // D092's floor. Absent means the flat bed, which is exactly what a config written
+            // before the dials existed meant by saying nothing: World builds no BedShape unless
+            // a relief or a tilt is above zero.
+            if (root.Has("bed"))
+            {
+                JsonNode bed = root["bed"];
+
+                config.BedReliefMetres = Optional(bed, "bedReliefMetres", 0f, missing, "bed.bedReliefMetres");
+                config.BedTiltMetres = Optional(bed, "bedTiltMetres", 0f, missing, "bed.bedTiltMetres");
+                config.BedScaleMetres = Optional(bed, "bedScaleMetres", 0f, missing, "bed.bedScaleMetres");
+
+                // The beach (logbook/specs/beach-spec.md). Absent is the shore off, which is what
+                // every config written before the dials meant.
+                config.BedShoreDepthMetres = Optional(bed, "bedShoreDepthMetres", 0f, missing, "bed.bedShoreDepthMetres");
+                config.BedShoreFadeMetres = Optional(bed, "bedShoreFadeMetres", 0f, missing, "bed.bedShoreFadeMetres");
+            }
+            else
+            {
+                missing.Add("bed (the flat floor every world before D092 had)");
+            }
+
+            // The mushroom reefs (logbook/specs/reef-spec.md, the group as redesigned under the
+            // owner's cover ruling of 2026-09-23 night). Absent is no reef, which is what every
+            // config written before the dials meant; a dial absent from a group that is there
+            // takes the build's default, and says so. The first reef build's group (a count, one
+            // radius, a stem radius) carries no cover: it is read as no reef and named, because
+            // its rock was placed by a rule this build no longer has.
+            if (root.Has("reef"))
+            {
+                JsonNode reef = root["reef"];
+                var d = new RunConfig();
+
+                if (!reef.Has("reefCover") && reef.Has("reefCount"))
+                {
+                    float count = reef["reefCount"].AsFloat();
+                    missing.Add(
+                        count > 0f
+                            ? "reef.reefCover (a first-build reef group of " + count.ToString("0", CultureInfo.InvariantCulture) +
+                              " reef(s), placed by a rule this build does not have; no rock drawn)"
+                            : "reef.reefCover (a first-build reef group with no reef)");
+                }
+                else
+                {
+                    config.ReefCover = Optional(reef, "reefCover", 0f, missing, "reef.reefCover");
+                    config.ReefMaxCount = (int)Optional(reef, "reefMaxCount", d.ReefMaxCount, missing, "reef.reefMaxCount");
+                    config.ReefCapRadiusMinMetres = Optional(reef, "reefCapRadiusMinMetres", d.ReefCapRadiusMinMetres, missing, "reef.reefCapRadiusMinMetres");
+                    config.ReefCapRadiusMaxMetres = Optional(reef, "reefCapRadiusMaxMetres", d.ReefCapRadiusMaxMetres, missing, "reef.reefCapRadiusMaxMetres");
+                    config.ReefOutlineRoughness = Optional(reef, "reefOutlineRoughness", d.ReefOutlineRoughness, missing, "reef.reefOutlineRoughness");
+                    config.ReefCapDepthMetres = Optional(reef, "reefCapDepthMetres", d.ReefCapDepthMetres, missing, "reef.reefCapDepthMetres");
+                    config.ReefCapDepthJitterMetres = Optional(reef, "reefCapDepthJitterMetres", d.ReefCapDepthJitterMetres, missing, "reef.reefCapDepthJitterMetres");
+                    config.ReefCapThicknessMetres = Optional(reef, "reefCapThicknessMetres", d.ReefCapThicknessMetres, missing, "reef.reefCapThicknessMetres");
+                    config.ReefStemRadiusFraction = Optional(reef, "reefStemRadiusFraction", d.ReefStemRadiusFraction, missing, "reef.reefStemRadiusFraction");
+                    config.ReefFadeMetres = Optional(reef, "reefFadeMetres", d.ReefFadeMetres, missing, "reef.reefFadeMetres");
+
+                    // The grid's column size, which the placer counts the cover on: a picture
+                    // must draw the rock the farm drew, and the cover's count is the one place
+                    // the placement reads a dial outside the reef group.
+                    if (root.Has("field") && root["field"].Has("fieldCellMetres"))
+                    {
+                        config.FieldCellMetres = root["field"]["fieldCellMetres"].AsFloat();
+                    }
+                    else if (config.ReefCover > 0f)
+                    {
+                        missing.Add("field.fieldCellMetres (" + config.FieldCellMetres.ToString("0.##", CultureInfo.InvariantCulture) + " used for the reefs' cover count)");
+                    }
+                }
+            }
+            else
+            {
+                missing.Add("reef (no reef, as every world before the reefs)");
+            }
+
+            // The seams the box view stamps, and the rings the tank's does. One patch is what a
+            // config written before the layout existed described.
+            if (root.Has("patches"))
+            {
+                JsonNode patches = root["patches"];
+
+                config.HorizontalPatches = Optional(patches, "horizontalPatches", 1f, missing, "patches.horizontalPatches");
+                config.PatchesAcross = Optional(patches, "patchesAcross", 1f, missing, "patches.patchesAcross");
+            }
+            else
+            {
+                missing.Add("patches (one patch assumed)");
+            }
+
+            // Not in §11's list, and read anyway, because it decides the phenotype: the pruning
+            // limits are what turn a genome into the body that is drawn. Defaulting them silently
+            // would draw parts the run had pruned, which is the one kind of wrongness this mode
+            // is not allowed to hide.
+            if (root.Has("development"))
+            {
+                JsonNode limits = root["development"];
+
+                config.Development = new DevelopmentLimits
+                {
+                    MaxParts = (int)Optional(limits, "maxParts", DevelopmentLimits.Default.MaxParts, missing, "development.maxParts"),
+                    MaxDepth = (int)Optional(limits, "maxDepth", DevelopmentLimits.Default.MaxDepth, missing, "development.maxDepth"),
+                    MinPartVolume = Optional(limits, "minPartVolume", DevelopmentLimits.Default.MinPartVolume, missing, "development.minPartVolume"),
+                    MaxPartVolume = Optional(limits, "maxPartVolume", DevelopmentLimits.Default.MaxPartVolume, missing, "development.maxPartVolume"),
+                    MinPartHalfExtent = Optional(limits, "minPartHalfExtent", DevelopmentLimits.Default.MinPartHalfExtent, missing, "development.minPartHalfExtent"),
+                    MaxBodyReachMetres = Optional(limits, "maxBodyReachMetres", DevelopmentLimits.Default.MaxBodyReachMetres, missing, "development.maxBodyReachMetres"),
+
+                    // Round 48's rule (D119): a welded part is weighed with its group and not
+                    // alone. Until 2026-09-25 this reader left it off, so every 3 cm bud fell
+                    // under minPartVolume and was pruned from every picture of a round 48 run,
+                    // the stomach on a leaf included, while the run itself carried it.
+                    FloorsWeighRigidGroups = OptionalBool(limits, "floorsWeighRigidGroups", DevelopmentLimits.Default.FloorsWeighRigidGroups, missing, "development.floorsWeighRigidGroups"),
+                };
+            }
+            else
+            {
+                missing.Add("development (the default limits)");
+            }
+
+            // The light (the underwater look's item 3, logbook/specs/underwater-look/brief.md): how
+            // fast it falls with depth and how the day and the season swing it, so a picture can
+            // light a body at the depth the run put it. Read for the picture and for nothing else;
+            // a field this build does not know (a two-season year, the weather) is left to the
+            // recorded dayFactor, which TheatreDaylight reads from stats.jsonl in preference.
+            ReadTheLight(root, config, missing);
+
+            // The guilds a body can carry. Taken from the file where it can be, because a run
+            // whose cell types are not this build's is a run whose colours would be a guess; the
+            // names are checked against the standard registry either way, since that is the one
+            // Genome.Validate asks and the one TheatrePalette paints from.
+            ReadTheCellTypes(root, config, missing);
+
+            absent = missing.Count == 0 ? null : string.Join(", ", missing.ToArray());
+            return config;
+        }
+
+        private static void ReadTheLight(JsonNode root, RunConfig config, List<string> missing)
+        {
+            if (!root.Has("light"))
+            {
+                missing.Add("light (the build's default light used)");
+                return;
+            }
+
+            JsonNode light = root["light"];
+            LightModel d = config.Light ?? new LightModel();
+
+            // Each through its own setter, which refuses a value the model cannot hold; a refusal
+            // here leaves that one field at the build's default and names it, because a picture is
+            // not refused over its lighting.
+            var model = new LightModel(d.SurfaceIrradiance, d.AttenuationDepth);
+
+            Set(light, "surfaceIrradiance", d.SurfaceIrradiance, v => model.SurfaceIrradiance = v, missing);
+            Set(light, "attenuationDepth", d.AttenuationDepth, v => model.AttenuationDepth = v, missing);
+            Set(light, "dayNightAmplitude", d.DayNightAmplitude, v => model.DayNightAmplitude = v, missing);
+            Set(light, "dayLengthSeconds", d.DayLengthSeconds, v => model.DayLengthSeconds = v, missing);
+            Set(light, "seasonAmplitude", d.SeasonAmplitude, v => model.SeasonAmplitude = v, missing);
+            Set(light, "seasonLengthSeconds", d.SeasonLengthSeconds, v => model.SeasonLengthSeconds = v, missing);
+
+            config.Light = model;
+        }
+
+        private static void Set(JsonNode group, string key, float fallback, Action<float> set, List<string> missing)
+        {
+            string name = "light." + key;
+
+            if (!group.Has(key))
+            {
+                missing.Add(name + " (" + fallback.ToString("0.####", CultureInfo.InvariantCulture) + " used)");
+                set(fallback);
+                return;
+            }
+
+            try
+            {
+                set(group[key].AsFloat());
+            }
+            catch (Exception e)
+            {
+                missing.Add(name + " refused (" + e.GetType().Name + "; " +
+                            fallback.ToString("0.####", CultureInfo.InvariantCulture) + " used)");
+                set(fallback);
+            }
+        }
+
+        private static void ReadTheCellTypes(JsonNode root, RunConfig config, List<string> missing)
+        {
+            if (!root.Has("cellTypes"))
+            {
+                missing.Add("cellTypes (the standard registry's names)");
+                return;
+            }
+
+            var unknown = new List<string>();
+
+            foreach (JsonNode cell in root["cellTypes"].Items())
+            {
+                if (!cell.Has("id")) continue;
+
+                string id = cell["id"].AsString();
+                if (!CellTypeRegistry.Standard.Contains(id)) unknown.Add(id);
+            }
+
+            if (unknown.Count > 0)
+            {
+                // Named rather than worked around: a genome carrying such a cell is refused by
+                // Genome.Validate, which reads the standard registry, so the reader is owed the
+                // reason its bodies did not draw.
+                missing.Add(
+                    "cellTypes the standard registry does not carry (" +
+                    string.Join(", ", unknown.ToArray()) + "), whose bodies cannot be drawn");
+            }
+
+            try
+            {
+                config.CellTypes = CellTypeJson.ReadRegistry(root["cellTypes"]);
+            }
+            catch (Exception e)
+            {
+                missing.Add("cellTypes unreadable (" + e.GetType().Name + "), standard names used");
+            }
+        }
+
+        private static WorldShape Shape(JsonNode world)
+        {
+            string name = Text(world, "worldShape", "world");
+
+            if (!Enum.TryParse(name, true, out WorldShape shape))
+            {
+                throw new FormatException(
+                    "world.worldShape is '" + name + "', which this build does not know. The " +
+                    "shapes are " + string.Join(", ", Enum.GetNames(typeof(WorldShape))) + ".");
+            }
+
+            return shape;
+        }
+
+        private static float Number(JsonNode group, string key, string name)
+        {
+            if (!group.Has(key)) throw Refuse(group, key, name);
+
+            return group[key].AsFloat();
+        }
+
+        private static bool Bool(JsonNode group, string key, string name)
+        {
+            if (!group.Has(key)) throw Refuse(group, key, name);
+
+            return group[key].AsBool();
+        }
+
+        private static string Text(JsonNode group, string key, string name)
+        {
+            if (!group.Has(key)) throw Refuse(group, key, name);
+
+            return group[key].AsString();
+        }
+
+        /// <summary>A number the picture can do without, with what was used in its place recorded.</summary>
+        private static float Optional(
+            JsonNode group, string key, float fallback, List<string> missing, string name)
+        {
+            if (group.Has(key)) return group[key].AsFloat();
+
+            missing.Add(
+                name + " (" + fallback.ToString("0.####", CultureInfo.InvariantCulture) + " used)");
+
+            return fallback;
+        }
+
+        private static bool OptionalBool(
+            JsonNode group, string key, bool fallback, List<string> missing, string name)
+        {
+            if (group.Has(key)) return group[key].AsBool();
+
+            missing.Add(name + " (" + (fallback ? "on" : "off") + " used)");
+
+            return fallback;
+        }
+
+        private static FormatException Refuse(JsonNode group, string key, string name) =>
+            new FormatException(
+                "config.json's '" + name + "' group has no '" + key + "', and a picture cannot " +
+                "be framed without it. Present: " + Keys(group) + ".");
+
+        private static string Keys(JsonNode node)
+        {
+            var keys = new List<string>();
+            foreach (string key in node.Keys()) keys.Add(key);
+
+            keys.Sort(StringComparer.Ordinal);
+            return keys.Count == 0 ? "nothing" : string.Join(", ", keys.ToArray());
+        }
+    }
+}

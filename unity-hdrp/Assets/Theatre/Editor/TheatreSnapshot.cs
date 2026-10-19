@@ -1,0 +1,1629 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using Debug = UnityEngine.Debug;
+
+namespace Evosim.Theatre.EditorTools
+{
+    /// <summary>
+    /// Pictures of a replayed world, at named simulated seconds, written where an agent can read
+    /// them.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Why this exists.</b> The owner opened round 33 in the theatre on 2026-09-10 and saw in
+    /// a minute what thirty-three rounds of tables had not shown: the world was two vertical
+    /// ribbons about a metre wide in a box twenty metres long, every clade a column packed round
+    /// the spot its founder landed on (logbook/0083). Nothing in the record could have said so.
+    /// The report carried a mean depth and per-patch bins and no number at all for where a body
+    /// stood along the box, and the agent reading it cannot open the Editor to look. This entry
+    /// gives that agent the owner's view as a file: four framed views of the world at each of
+    /// several simulated seconds, as PNGs.
+    /// </para>
+    /// <para>
+    /// <b>It is the Play-mode loop, not a loop of its own.</b> Shaped after
+    /// <see cref="TheatreIdentityCheck.RunInPlayMode"/> and for its reason: the scene's own
+    /// <c>TheatreRunner</c> opens the run and steps it from its <c>Update</c>, many steps to a
+    /// frame, exactly as it does under a person's hands, and this class only watches the clock
+    /// and takes the picture. The edit-mode identity check ran one step per iteration of its own
+    /// loop and passed for three days while the Play-mode replay was wrong, because the fault
+    /// lived in the frame and not in the step. A picture taken from a private loop would be a
+    /// picture of a world nobody watches.
+    /// </para>
+    /// <para>
+    /// <b>The identity check stays on, and the picture says what it found.</b> The runner
+    /// compares the live world against the run's own <c>stats.jsonl</c> at every sample, so the
+    /// log carries the verdict and the label burnt into each frame says NOT A FAITHFUL REPLAY
+    /// when this build is not the build that recorded the run. A still of a cousin world under
+    /// the arm's own name would be the quietest way this project could mislead itself.
+    /// </para>
+    /// <para>
+    /// <b>It writes the pictures and nothing else.</b> Never into the run directory, and never
+    /// outside the repository: an output directory that resolves outside the repository root is
+    /// refused rather than written to, which is the owner's rule of 2026-09-03 turned into a
+    /// precondition.
+    /// </para>
+    /// <code>
+    /// # NO -quit, and NO -nographics: the entry quits, and rendering needs a graphics device.
+    /// $env:EVOSIM_THEATRE_RUN = "$PWD/runs/r35tsmoke3"
+    /// $env:EVOSIM_THEATRE_SNAP_TIMES = '300,600'
+    /// Start-Process -FilePath $unity -Wait -NoNewWindow -ArgumentList @(
+    ///   '-projectPath', "$PWD/unity-w6", '-batchmode',
+    ///   '-executeMethod', 'Evosim.Theatre.EditorTools.TheatreSnapshot.Run',
+    ///   '-logFile', "$PWD/scratch/logs/theatre-snap.log")
+    /// </code>
+    /// </remarks>
+    public static class TheatreSnapshot
+    {
+        /// <summary>The pending request, carried across the domain reload Play mode causes.</summary>
+        /// <remarks>
+        /// <c>SessionState</c> rather than a file, for the reason the identity check gives: it
+        /// lives in this Editor process, survives the reload, and touches no disk at all.
+        /// </remarks>
+        private const string PendingKey = "Evosim.Theatre.Snapshot.Pending";
+
+        /// <summary>The exit code, once the pictures are taken and the Editor is leaving.</summary>
+        private const string ExitKey = "Evosim.Theatre.Snapshot.Exit";
+
+        /// <summary>
+        /// How close to a target the runner is slowed down.
+        /// </summary>
+        /// <remarks>
+        /// The runner steps until its frame budget runs out, so at ten thousand times real time a
+        /// frame can carry eight simulated seconds and a picture asked for at 300 s would be
+        /// taken at 308 s. Cruising to within this many seconds and then crawling costs a second
+        /// or two of wall clock and puts the shot inside half a metabolic step of the second it
+        /// was asked for. The label prints the second the world was actually at, never the one
+        /// that was asked for.
+        /// </remarks>
+        private const double ApproachSeconds = 10d;
+
+        private static double[] _times;
+        private static SnapshotCamera.View[] _views;
+        private static string _directory;
+        private static int _width = 1600;
+        private static int _height = 900;
+
+        /// <summary>
+        /// Whether the interface is left on. Off by default, which is the whole record's format.
+        /// </summary>
+        /// <remarks>
+        /// <b>Every picture in <c>logbook/images/</c> carries the burnt-in label and no chrome</b>,
+        /// and a frame that suddenly grew a census panel would not be comparable with any of them.
+        /// So <c>H</c>'s effect is the default here, exactly as it was when the overlay was an
+        /// IMGUI block, and <c>EVOSIM_THEATRE_CHROME=1</c> (<c>theatre-snap.ps1 -Chrome</c>) is how
+        /// the interface itself gets photographed for review.
+        /// </remarks>
+        private static bool _chrome;
+
+        /// <summary>
+        /// Draw the world from the run's own files instead of replaying it —
+        /// <c>EVOSIM_THEATRE_SNAP_FROM=snapshot</c>, <c>theatre-snap.ps1 -From snapshot</c>.
+        /// </summary>
+        /// <remarks>
+        /// <b>Why a second way to take the same picture.</b> A replay of a 30,000 s seed runs no
+        /// faster than the farm did, so a frame late in a run costs a day of an Editor's life and
+        /// round 41's first early look timed out on the wall with nothing written (2026-09-18).
+        /// The farm already records every living body's genome and every living body's place, on
+        /// the same cadence, so the picture is a join rather than a re-simulation. What it cannot
+        /// recover it says on every frame: no file holds how far a body had grown, so every body
+        /// is drawn at its adult size, and a body whose attitude the farm did not record in
+        /// <c>poses.jsonl</c> is drawn upright besides
+        /// (<c>logbook/specs/snapshot-render-spec.md</c>,
+        /// <see cref="Evosim.Theatre.SnapshotWorld"/>).
+        /// </remarks>
+        private static bool _fromSnapshot;
+
+        /// <summary>
+        /// Carry a farm checkpoint on live and photograph that instead —
+        /// <c>EVOSIM_THEATRE_CHECKPOINT</c>, <c>theatre-snap.ps1 -FromCheckpoint</c>.
+        /// </summary>
+        /// <remarks>
+        /// <b>Why a third way to take the same picture.</b> The picker
+        /// (<see cref="Evosim.Theatre.LiveCheckpoint"/>) restores a recorded second out of a
+        /// <c>.ckpt</c> file and carries it on in the Editor, and until this switch existed the
+        /// only reading of what it drew was <see cref="LiveCheckpointCheck"/>'s counters: the
+        /// check runs in edit mode with no graphics device, so it can say that forty bodies came
+        /// back and nothing at all about what they look like. An agent has no eyes, so it takes
+        /// pictures — and a world that is stepped rather than reconstructed is the one place the
+        /// live path's own faults would show. What comes out is never the run: a restore is a
+        /// cousin whatever the four digests say, and the label carries
+        /// <c>continued from checkpoint at &lt;s&gt; s (cousin)</c> on every frame, which is the
+        /// whole of the provenance a still can carry. From 2026-09-22 <c>-Chrome</c> is allowed
+        /// with it, because the interface reads a live world now: the fifth frame then says the
+        /// same thing in the strip's own words.
+        /// </remarks>
+        private static bool _fromCheckpoint;
+
+        /// <summary>
+        /// Draw a farm film window's frames instead —
+        /// <c>EVOSIM_THEATRE_SNAP_FROM=window</c> with <c>EVOSIM_THEATRE_WINDOW</c>,
+        /// <c>theatre-snap.ps1 -From window -Window &lt;dir&gt;</c>.
+        /// </summary>
+        /// <remarks>
+        /// <b>Why a fourth way.</b> A window is a stretch of a run the farm stepped again from a
+        /// checkpoint and wrote down at a frame rate (<c>Evosim.Farm --film-window</c>, B1): every
+        /// body where the farm's solver put it, joints and size included. The picture draws that
+        /// (<see cref="Evosim.Theatre.FilmWindowWorld"/>), so it is neither a replay, which the
+        /// Editor cannot make of a farm run, nor a reconstruction, which guesses the pose. Its
+        /// label opens with FARM FILM WINDOW and the window's own verdict: FAITHFUL only when the
+        /// farm's rows agreed with the run's, COUSIN or UNVERIFIED otherwise. Each second asked for
+        /// is drawn at the frame nearest it, and a second outside the window is refused before
+        /// Play mode.
+        /// </remarks>
+        private static bool _fromWindow;
+
+        /// <summary>The checkpoint named: a <c>.ckpt</c>, a run directory or an arm directory.</summary>
+        /// <remarks>
+        /// Kept for the log alone. What opens the world is the runner, from the same environment
+        /// variable, exactly as it opens one under a person's hands.
+        /// </remarks>
+        private static string _checkpoint;
+
+        /// <summary>How far the restored world is stepped live before the pictures are taken, s.</summary>
+        /// <remarks>
+        /// Zero is the restore itself, which is the picture that says whether the checkpoint came
+        /// back whole. Anything above it is the picture that says whether the world it came back
+        /// into runs: a body that was restored into the wrong place moves out of it, and a bed or
+        /// a current that was not restored shows in where the crowd has gone.
+        /// </remarks>
+        private static double _carrySeconds;
+
+        /// <summary>The second the shot is taken at: the restore's own, plus the carry.</summary>
+        /// <remarks>
+        /// Read off the restored world rather than from <c>-At</c>, because the two need not
+        /// agree: a checkpoint is resolved to the one at or before the second that was asked for,
+        /// so a request for 450 s of a run that wrote one at 400 s is carried from 400.
+        /// </remarks>
+        private static double _carryTo;
+
+        /// <summary>Where the armed chrome picture will be written, or null.</summary>
+        private static string _chromePath;
+
+        /// <summary>Editor ticks the chrome capture has been armed for.</summary>
+        private static int _chromeTicks;
+
+        private static double _wallSecondsAllowed;
+        private static double _deadline;
+        private static int _next;
+        private static bool _paceSet;
+        private static bool _pastTheRecordSaid;
+        private static TheatreRunner _runner;
+        private static SnapshotCamera _camera;
+        private static bool _driving;
+        private static readonly List<string> _written = new List<string>();
+
+        // ------------------------------------------------------------------ the batch entry
+
+        /// <summary>
+        /// Batchmode entry point. <b>Launch it without <c>-quit</c> and without
+        /// <c>-nographics</c>.</b> It enters Play mode, drives nothing, photographs the world at
+        /// each requested second and exits the Editor with 0 or 1.
+        /// </summary>
+        public static void Run()
+        {
+            // A checkpoint carries its own run directory with it (LiveCheckpoint.SourceRun), so a
+            // continuation names no run at all and EVOSIM_THEATRE_RUN has nothing left to say —
+            // the same rule the runner opens under.
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_RUN")) &&
+                string.IsNullOrEmpty(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHECKPOINT")) &&
+                string.IsNullOrEmpty(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_WINDOW")))
+            {
+                Debug.LogError(
+                    "[Theatre] none of EVOSIM_THEATRE_RUN, EVOSIM_THEATRE_CHECKPOINT and " +
+                    "EVOSIM_THEATRE_WINDOW is set: nothing to photograph.");
+
+                if (Application.isBatchMode) EditorApplication.Exit(1);
+                return;
+            }
+
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogError("[Theatre] already in Play mode: stop it before asking for this.");
+                return;
+            }
+
+            string refusal = ReadTheRequest();
+
+            if (refusal != null)
+            {
+                Debug.LogError("[Theatre] " + refusal);
+                if (Application.isBatchMode) EditorApplication.Exit(1);
+                return;
+            }
+
+            // A graphics device is what a picture is made on, and -nographics takes it away. The
+            // failure without this check is a null RenderTexture deep inside the first Capture,
+            // which reads like a bug in the camera rather than like a wrong command line.
+            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
+            {
+                Debug.LogError(
+                    "[Theatre] this Editor has no graphics device, so it cannot render anything. " +
+                    "Drop -nographics from the command line; -batchmode on its own is right.");
+
+                if (Application.isBatchMode) EditorApplication.Exit(1);
+                return;
+            }
+
+            if (!OpenTheTheatreScene()) return;
+
+            Debug.Log(
+                "[Theatre] snapshot: " + _times.Length + " time(s), " + _views.Length +
+                " view(s), " + _width + "x" + _height + ", into " +
+                (_directory ?? "scratch/snaps/<arm>") +
+                (_fromSnapshot
+                    ? ", drawn from the run's own snapshots and positions"
+                    : _fromWindow
+                    ? ", drawn from the film window's frames"
+                    : _fromCheckpoint
+                        ? ", continued from the checkpoint at " + Seconds(_times[0]) +
+                          " s and carried " + Seconds(_carrySeconds) + " s live"
+                        : ", replayed") +
+                ". Entering Play mode.");
+
+            // Invariant on the way out as well as back in: a machine whose decimal separator is a
+            // comma would otherwise write a number this cannot read.
+            SessionState.SetString(PendingKey, Pack());
+
+            // Armed here as well as after the reload, because a project with domain reloading
+            // turned off in its Enter Play Mode Options never reaches the reload path, and an
+            // unarmed request in a batch Editor is a process that sits in Play mode for ever.
+            Arm();
+            EditorApplication.EnterPlaymode();
+        }
+
+        /// <summary>
+        /// Reads the environment into the static request, or says what was wrong with it.
+        /// </summary>
+        /// <remarks>
+        /// Refuses rather than defaults, on every field where a default would be a guess about
+        /// what the caller meant. That is §9's rule for the config and it is worth as much here:
+        /// a snapshot silently taken at the wrong second, or written somewhere nobody looks, is
+        /// worse than one that did not happen.
+        /// </remarks>
+        private static string ReadTheRequest()
+        {
+            _times = TimesFrom(
+                Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SNAP_TIMES"), out string wrong);
+
+            if (_times == null) return "EVOSIM_THEATRE_SNAP_TIMES: " + wrong;
+
+            _views = SnapshotCamera.ParseViews(
+                Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SNAP_VIEWS"), out wrong);
+
+            if (_views == null) return "EVOSIM_THEATRE_SNAP_VIEWS: " + wrong;
+
+            if (!SizeFrom(Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SNAP_SIZE"),
+                    out _width, out _height, out wrong))
+            {
+                return "EVOSIM_THEATRE_SNAP_SIZE: " + wrong;
+            }
+
+            _directory = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SNAP_OUT");
+
+            if (!string.IsNullOrWhiteSpace(_directory))
+            {
+                string inside = InsideTheRepository(_directory);
+                if (inside != null) return "EVOSIM_THEATRE_SNAP_OUT: " + inside;
+            }
+            else
+            {
+                // Left null and resolved once the run is open, because the default carries the
+                // arm's name and nothing knows it until the record has been read.
+                _directory = null;
+            }
+
+            _wallSecondsAllowed =
+                60d * IntFrom("EVOSIM_THEATRE_WALL_MINUTES", 30, 1, 1440);
+
+            _chrome = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHROME") == "1";
+
+            _fromSnapshot = string.Equals(
+                Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SNAP_FROM"), "snapshot",
+                StringComparison.OrdinalIgnoreCase);
+
+            _checkpoint = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHECKPOINT");
+            _fromCheckpoint = !string.IsNullOrWhiteSpace(_checkpoint);
+
+            _fromWindow = string.Equals(
+                Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SNAP_FROM"), "window",
+                StringComparison.OrdinalIgnoreCase);
+
+            string window = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_WINDOW");
+
+            // The runner opens a window whenever one is named, so a window named under another
+            // mode would open something other than what this waits for.
+            if (!_fromWindow && !string.IsNullOrWhiteSpace(window))
+            {
+                return
+                    "EVOSIM_THEATRE_WINDOW is set, so the theatre will open that film window; ask " +
+                    "for it with -From window (EVOSIM_THEATRE_SNAP_FROM=window), or unset it.";
+            }
+
+            if (_fromWindow)
+            {
+                if (_fromCheckpoint)
+                {
+                    return
+                        "a film window is drawn from its own frames and a checkpoint is carried " +
+                        "on live, never both. Drop the checkpoint or drop -From window.";
+                }
+
+                return WhatTheWindowCannotDo(window);
+            }
+
+            if (_fromSnapshot && _fromCheckpoint)
+            {
+                return
+                    "a picture is drawn from the run's files or stepped out of a checkpoint, " +
+                    "never both: one reconstructs a second the run recorded and the other carries " +
+                    "a cousin of the world on from one. Drop -From snapshot or drop the " +
+                    "checkpoint.";
+            }
+
+            if (_fromCheckpoint) return WhatTheContinuationCannotDo();
+
+            return _fromSnapshot ? WhatTheSnapshotsCannotDo() : null;
+        }
+
+        /// <summary>
+        /// Why this request cannot be carried on from a checkpoint, or null.
+        /// </summary>
+        /// <remarks>
+        /// Answered before Play mode, as the reconstruction's refusals are and for the same
+        /// reason: a batch Editor takes a minute to reach its first frame. What is <i>not</i>
+        /// answered here is whether the checkpoint exists and can be read back — that is
+        /// <see cref="Evosim.Theatre.LiveCheckpoint.Find"/>'s and the runner's, and a second copy
+        /// of it taken here would be a second opinion about what a checkpoint is.
+        /// </remarks>
+        private static string WhatTheContinuationCannotDo()
+        {
+            if (_times.Length != 1)
+            {
+                return
+                    "a continuation is opened at one checkpoint, so one second is all it can be " +
+                    "asked for; " + _times.Length + " were. The second is the checkpoint's, and " +
+                    "how far past it the pictures are taken is the carry.";
+            }
+
+            _carrySeconds = DoubleFrom("EVOSIM_THEATRE_SNAP_CARRY", 0d, out string wrong);
+
+            if (wrong != null) return "EVOSIM_THEATRE_SNAP_CARRY: " + wrong;
+
+            // -Chrome was refused here until 2026-09-22, when the interface was still typed on a
+            // PhysX replay and the live mode took the panel down as it opened, so there would
+            // have been nothing over the world to photograph. It reads a live world now
+            // (TheatreUi.OpenLive), and a chrome frame of a continuation is the picture that
+            // carries its own provenance: the strip says COUSIN and names the second it was
+            // picked up from.
+            return null;
+        }
+
+        /// <summary>
+        /// Why this request cannot be drawn from a film window, or null: no window, one this build
+        /// cannot read, a second outside it, or the interface asked for.
+        /// </summary>
+        /// <remarks>
+        /// Answered before Play mode, as the reconstruction's refusals are. The close view is
+        /// allowed, where a reconstruction refuses it: a window's bodies wear the pose and the
+        /// size the farm's solver had, which is what a portrait needs.
+        /// </remarks>
+        private static string WhatTheWindowCannotDo(string window)
+        {
+            if (string.IsNullOrWhiteSpace(window))
+            {
+                return "-From window names no window: set EVOSIM_THEATRE_WINDOW (-Window).";
+            }
+
+            if (_chrome)
+            {
+                return
+                    "-Chrome is refused with a film window: the interface reads a replay's or a " +
+                    "live world's census, and a window has frames and a verdict and neither.";
+            }
+
+            try
+            {
+                using (Evosim.Farm.FilmWindowReader reader = Evosim.Farm.FilmWindowReader.Open(window))
+                {
+                    if (reader.FrameCount == 0) return "the window at " + window + " holds no frame.";
+
+                    double first = reader.SecondOf(0);
+                    double last = reader.SecondOf(reader.FrameCount - 1);
+                    double slack = reader.Stream.Header.CadenceSeconds > 0f
+                        ? reader.Stream.Header.CadenceSeconds
+                        : 0.1d;
+
+                    foreach (double t in _times)
+                    {
+                        if (t < first - slack || t > last + slack)
+                        {
+                            return
+                                Seconds(t) + " s is outside the window, whose frames run from " +
+                                Seconds(first) + " s to " + Seconds(last) + " s.";
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                return "the window cannot be read: " + e.Message;
+            }
+
+            return null;
+        }
+
+        /// <summary>A non-negative number of seconds from the environment, or the fallback.</summary>
+        private static double DoubleFrom(string name, double fallback, out string refusal)
+        {
+            refusal = null;
+
+            string text = Environment.GetEnvironmentVariable(name);
+            if (string.IsNullOrWhiteSpace(text)) return fallback;
+
+            if (!double.TryParse(text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture,
+                    out double value))
+            {
+                refusal = "'" + text.Trim() + "' is not a number of seconds.";
+                return fallback;
+            }
+
+            if (value < 0d)
+            {
+                refusal = "a carry cannot be negative; " + text.Trim() + " is.";
+                return fallback;
+            }
+
+            return value;
+        }
+
+        /// <summary>
+        /// Why this request cannot be drawn from the run's files, or null.
+        /// </summary>
+        /// <remarks>
+        /// <b>Every one of these is answered before Play mode.</b> A batch Editor takes a minute
+        /// to reach its first frame, and a refusal that arrived there would cost that minute for
+        /// nothing and would leave the caller reading a log to find out that the second it asked
+        /// for was never written. The rule is the config loader's: refuse, and say what was there
+        /// instead of what was asked for.
+        /// </remarks>
+        private static string WhatTheSnapshotsCannotDo()
+        {
+            foreach (SnapshotCamera.View view in _views)
+            {
+                if (view != SnapshotCamera.View.Close) continue;
+
+                return
+                    "the close view is refused when the picture is drawn from a snapshot. A " +
+                    "portrait of two bodies is exactly where this mode's faults show: no file " +
+                    "records how far a body had grown, so every body is drawn at its adult " +
+                    "size, and a run that recorded no poses.jsonl draws every body upright in " +
+                    "the developer's own frame besides. Take a world view this way, and the " +
+                    "close view with -From replay.";
+            }
+
+            if (_chrome)
+            {
+                return
+                    "-Chrome is refused when the picture is drawn from a snapshot: the interface " +
+                    "reads a replay's census, its identity check and its timeline, and a " +
+                    "reconstruction has none of them.";
+            }
+
+            string directory;
+
+            try
+            {
+                directory = SnapshotWorld.Resolve(
+                    Environment.GetEnvironmentVariable("EVOSIM_THEATRE_RUN"));
+            }
+            catch (Exception e)
+            {
+                return e.Message;
+            }
+
+            double[] stream = SnapshotWorld.StreamSeconds(directory);
+
+            if (!SnapshotWorld.HasPositions(directory) && stream.Length == 0)
+            {
+                return
+                    "this run has no positions.jsonl and no poses.bin, so nothing in it says " +
+                    "where a body was. A tiled world writes neither, and neither does any run " +
+                    "recorded before 2026-09-10.";
+            }
+
+            double[] snapshots = SnapshotWorld.SnapshotSeconds(directory);
+
+            if (snapshots.Length == 0)
+            {
+                return "this run wrote no snapshots, so there are no genomes to draw.";
+            }
+
+            double[] positions = SnapshotWorld.PositionSeconds(directory);
+
+            foreach (double t in _times)
+            {
+                // The state stream first, because it is what makes a second between snapshots
+                // drawable: its frames are half a second apart and a snapshot is a thousand. The
+                // genomes then come from the last snapshot at or before the second, so the only
+                // thing that has to hold is that there is one.
+                if (Holds(stream, t))
+                {
+                    if (SnapshotWorld.SnapshotFileAtOrBefore(directory, t) == null)
+                    {
+                        return
+                            "poses.bin has a frame at " + Seconds(t) + " s and the run wrote no " +
+                            "snapshot at or before it, so there are no genomes to draw. " +
+                            Nearest(snapshots, t);
+                    }
+
+                    continue;
+                }
+
+                if (!Holds(snapshots, t))
+                {
+                    return
+                        Seconds(t) + " s is neither a snapshot second nor a second poses.bin " +
+                        "holds a frame at. " + Nearest(snapshots, t) +
+                        (stream.Length > 0
+                            ? " The stream's own nearest: " + Nearest(stream, t)
+                            : " This run recorded no state stream, so only a snapshot second " +
+                              "can be drawn.");
+                }
+
+                if (!Holds(positions, t))
+                {
+                    return
+                        "the snapshot at " + Seconds(t) + " s has no row in positions.jsonl, so " +
+                        "nothing says where those bodies were. " + Nearest(positions, t);
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Whether a second is one of these, to a millisecond.</summary>
+        private static bool Holds(double[] seconds, double t)
+        {
+            foreach (double s in seconds)
+            {
+                if (Math.Abs(s - t) <= 1e-3) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Which of these seconds lie either side of one that is not among them.</summary>
+        private static string Nearest(double[] seconds, double t)
+        {
+            double below = double.NaN, above = double.NaN;
+
+            foreach (double s in seconds)
+            {
+                if (s <= t && (double.IsNaN(below) || s > below)) below = s;
+                if (s >= t && (double.IsNaN(above) || s < above)) above = s;
+            }
+
+            if (!double.IsNaN(below) && !double.IsNaN(above))
+            {
+                return
+                    "The ones either side are " + Seconds(below) + " s and " + Seconds(above) +
+                    " s.";
+            }
+
+            if (!double.IsNaN(below)) return "The last one is " + Seconds(below) + " s.";
+            if (!double.IsNaN(above)) return "The first one is " + Seconds(above) + " s.";
+
+            return "There are none.";
+        }
+
+        private static string Seconds(double t) =>
+            t.ToString("0.###", CultureInfo.InvariantCulture);
+
+        /// <summary>Ascending simulated seconds, all positive. The order is the caller's promise.</summary>
+        private static double[] TimesFrom(string text, out string refusal)
+        {
+            refusal = null;
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                refusal = "not set. Give it comma separated simulated seconds, e.g. 300,600.";
+                return null;
+            }
+
+            string[] words = text.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            var times = new List<double>(words.Length);
+
+            foreach (string word in words)
+            {
+                if (!double.TryParse(word.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture,
+                        out double t))
+                {
+                    refusal = "'" + word.Trim() + "' is not a number of seconds.";
+                    return null;
+                }
+
+                if (!(t > 0d))
+                {
+                    refusal = "a time must be past zero; " + word.Trim() + " is not.";
+                    return null;
+                }
+
+                if (times.Count > 0 && t <= times[times.Count - 1])
+                {
+                    refusal =
+                        "times must ascend, and " + t.ToString("0.###", CultureInfo.InvariantCulture) +
+                        " does not follow " +
+                        times[times.Count - 1].ToString("0.###", CultureInfo.InvariantCulture) +
+                        ". The world is stepped forward once, so it cannot go back for a picture.";
+                    return null;
+                }
+
+                times.Add(t);
+            }
+
+            if (times.Count == 0)
+            {
+                refusal = "no time was named.";
+                return null;
+            }
+
+            return times.ToArray();
+        }
+
+        private static bool SizeFrom(string text, out int width, out int height, out string refusal)
+        {
+            width = 1600;
+            height = 900;
+            refusal = null;
+
+            if (string.IsNullOrWhiteSpace(text)) return true;
+
+            string[] halves = text.Trim().Split('x', 'X');
+
+            if (halves.Length != 2 ||
+                !int.TryParse(halves[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out width) ||
+                !int.TryParse(halves[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out height))
+            {
+                refusal = "'" + text + "' is not a size. Write it as WxH, e.g. 1600x900.";
+                return false;
+            }
+
+            if (width < 64 || height < 64 ||
+                width > SnapshotCamera.MaximumSide || height > SnapshotCamera.MaximumSide)
+            {
+                refusal =
+                    "a side must be between 64 and " + SnapshotCamera.MaximumSide + " pixels.";
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>Why the directory is not somewhere this may write, or null.</summary>
+        /// <remarks>
+        /// Nothing of the project's is written outside the repository, TEMP included: the owner's
+        /// rule of 2026-09-03, made after the per-arm logs had lived in TEMP for weeks. A
+        /// snapshot is the first thing here that takes a path from its caller, so it is the first
+        /// thing that can break that rule by accident.
+        /// </remarks>
+        private static string InsideTheRepository(string directory)
+        {
+            string root, full;
+
+            try
+            {
+                root = Path.GetFullPath(BuildIdentity.RepositoryRoot())
+                    .TrimEnd(Path.DirectorySeparatorChar);
+
+                full = Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar);
+            }
+            catch (Exception e)
+            {
+                return e.GetType().Name + ": " + e.Message;
+            }
+
+            if (full.Equals(root, StringComparison.OrdinalIgnoreCase) ||
+                full.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            return "'" + full + "' is outside the repository at '" + root +
+                   "', and nothing of this project's is written outside it. Put the pictures " +
+                   "under scratch/.";
+        }
+
+        private static bool OpenTheTheatreScene()
+        {
+            // The scene has to be the theatre's, because the runner in it is what plays the run.
+            // Rebuilt rather than refused if it is missing, and left alone if it is already open,
+            // so running this from the menu does not throw away an unsaved scene.
+            if (SceneManager.GetActiveScene().path == TheatreSceneBuilder.ScenePath) return true;
+
+            if (!Application.isBatchMode)
+            {
+                EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
+            }
+
+            if (File.Exists(TheatreSceneBuilder.ScenePath))
+            {
+                EditorSceneManager.OpenScene(TheatreSceneBuilder.ScenePath, OpenSceneMode.Single);
+                return true;
+            }
+
+            if (TheatreSceneBuilder.Build()) return true;
+
+            Debug.LogError("[Theatre] no theatre scene, and it could not be built.");
+            if (Application.isBatchMode) EditorApplication.Exit(1);
+            return false;
+        }
+
+        // ------------------------------------------------------------------ across the reload
+
+        private static string Pack()
+        {
+            var times = new List<string>(_times.Length);
+            foreach (double t in _times) times.Add(t.ToString("R", CultureInfo.InvariantCulture));
+
+            var views = new List<string>(_views.Length);
+            foreach (SnapshotCamera.View v in _views) views.Add(SnapshotCamera.NameOf(v));
+
+            return string.Join(",", times.ToArray()) + "|" +
+                   string.Join(",", views.ToArray()) + "|" +
+                   (_directory ?? "") + "|" +
+                   _width.ToString(CultureInfo.InvariantCulture) + "x" +
+                   _height.ToString(CultureInfo.InvariantCulture) + "|" +
+                   _wallSecondsAllowed.ToString("R", CultureInfo.InvariantCulture) + "|" +
+                   _next.ToString(CultureInfo.InvariantCulture) + "|" +
+                   (_chrome ? "1" : "0") + "|" +
+                   (_fromSnapshot ? "snapshot" : _fromCheckpoint ? "checkpoint" : _fromWindow ? "window" : "replay") + "|" +
+                   _carrySeconds.ToString("R", CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Picks the request back up on the other side of the domain reload Play mode causes.
+        /// </summary>
+        /// <remarks>
+        /// Entering Play mode wipes every static field and every subscription this class had, so
+        /// the request lives in <c>SessionState</c> and this reads it back on each reload. A
+        /// reload in the middle of a shoot, from a script recompiled while playing, lands here
+        /// too and simply carries on from the next time not yet taken.
+        /// </remarks>
+        [InitializeOnLoadMethod]
+        private static void ResumeAcrossTheDomainReload()
+        {
+            string exit = SessionState.GetString(ExitKey, "");
+
+            if (!string.IsNullOrEmpty(exit))
+            {
+                if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+
+                SessionState.EraseString(ExitKey);
+                Quit(int.TryParse(exit, out int code) ? code : 1);
+                return;
+            }
+
+            string pending = SessionState.GetString(PendingKey, "");
+            if (string.IsNullOrEmpty(pending)) return;
+
+            string[] fields = pending.Split('|');
+            if (fields.Length < 5) { SessionState.EraseString(PendingKey); return; }
+
+            _times = TimesFrom(fields[0], out _);
+            _views = SnapshotCamera.ParseViews(fields[1], out _);
+            _directory = string.IsNullOrEmpty(fields[2]) ? null : fields[2];
+            SizeFrom(fields[3], out _width, out _height, out _);
+
+            _wallSecondsAllowed =
+                double.TryParse(fields[4], NumberStyles.Float, CultureInfo.InvariantCulture,
+                    out double wall)
+                    ? wall
+                    : 1800d;
+
+            // Which times are already on disk, so a recompile in the middle of a shoot does not
+            // photograph the same second twice and does not walk the world backwards looking for
+            // a second it has passed.
+            _next = fields.Length > 5 &&
+                    int.TryParse(fields[5], NumberStyles.Integer, CultureInfo.InvariantCulture,
+                        out int taken)
+                ? taken
+                : 0;
+
+            _chrome = fields.Length > 6 && fields[6] == "1";
+            _fromSnapshot = fields.Length > 7 && fields[7] == "snapshot";
+            _fromCheckpoint = fields.Length > 7 && fields[7] == "checkpoint";
+            _fromWindow = fields.Length > 7 && fields[7] == "window";
+
+            _carrySeconds =
+                fields.Length > 8 &&
+                double.TryParse(fields[8], NumberStyles.Float, CultureInfo.InvariantCulture,
+                    out double carry)
+                    ? carry
+                    : 0d;
+
+            // The path is not carried across: the runner opens the world from the environment,
+            // which this process still has, and nothing on this side of the reload reads it.
+            _checkpoint = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CHECKPOINT");
+
+            if (_times == null || _views == null) { SessionState.EraseString(PendingKey); return; }
+            if (_next >= _times.Length) { SessionState.EraseString(PendingKey); return; }
+
+            Arm();
+        }
+
+        /// <summary>Puts the driver on the editor's update loop and starts its wall clock.</summary>
+        /// <remarks>
+        /// The clock is fresh on each arming rather than carried across, so a recompile in the
+        /// middle of a shoot grants a fresh window instead of ending one that was going to
+        /// finish.
+        /// </remarks>
+        private static void Arm()
+        {
+            _deadline = EditorApplication.timeSinceStartup + _wallSecondsAllowed;
+            _paceSet = false;
+            _pastTheRecordSaid = false;
+            _runner = null;
+
+            // Set from the restored world on the first tick that sees one, never from -At: a
+            // recompile in the middle of a continuation would otherwise carry from wherever the
+            // world had got to rather than from where the checkpoint put it.
+            _carryTo = double.NaN;
+
+            if (_driving) return;
+
+            _driving = true;
+            EditorApplication.update += Drive;
+        }
+
+        // ------------------------------------------------------------------ the shoot
+
+        /// <summary>One editor tick: read the clock, close on the next time, take the picture.</summary>
+        private static void Drive()
+        {
+            try
+            {
+                if (EditorApplication.timeSinceStartup > _deadline)
+                {
+                    Finish(1, "TIMED OUT with " + (_times.Length - _next) + " time(s) unphotographed");
+                    return;
+                }
+
+                // Play mode takes a moment to start. Nothing to read until it has.
+                if (!EditorApplication.isPlaying) return;
+
+                if (_runner == null)
+                {
+                    _runner = UnityEngine.Object.FindFirstObjectByType<TheatreRunner>();
+
+                    if (_runner == null)
+                    {
+                        Finish(1, "no TheatreRunner in the scene: nothing is playing the run");
+                        return;
+                    }
+                }
+
+                if (_fromSnapshot)
+                {
+                    DriveTheReconstruction();
+                    return;
+                }
+
+                if (_fromWindow)
+                {
+                    DriveTheWindow();
+                    return;
+                }
+
+                if (_fromCheckpoint)
+                {
+                    DriveTheContinuation();
+                    return;
+                }
+
+                TheatreReplay replay = _runner.Replay;
+
+                if (replay == null)
+                {
+                    // Start may not have run yet on the first tick; an error means it has, and
+                    // that the run was refused.
+                    if (!string.IsNullOrEmpty(_runner.Error)) Finish(1, "refused: " + _runner.Error);
+                    return;
+                }
+
+                if (!_paceSet) SetThePace(replay);
+
+                double target = _times[_next];
+                double now = replay.ElapsedSeconds;
+
+                if (now + 1e-9 < target)
+                {
+                    Approach(replay, target - now);
+                    return;
+                }
+
+                _runner.Paused = true;
+
+                // A chrome picture takes three ticks: the panel is resized to the texture when it
+                // is armed, the density classes come off the geometry event that resize raises,
+                // and the layout they ask for lands a frame after that. The world is paused
+                // across the whole run of them, so every layer is the same instant.
+                if (TheatreUiCapture.Armed)
+                {
+                    if (++_chromeTicks < 2) return;
+                    _chromeTicks = 0;
+
+                    LandTheChromeShot();
+                }
+                else
+                {
+                    Shoot(replay, target);
+
+                    // Armed by Shoot when -Chrome was asked for. Come back for it.
+                    if (TheatreUiCapture.Armed) return;
+                }
+
+                _next++;
+                SessionState.SetString(PendingKey, Pack());
+
+                if (_next >= _times.Length)
+                {
+                    Finish(0, _written.Count + " picture(s) written");
+                    return;
+                }
+
+                _runner.Paused = false;
+            }
+            catch (Exception e)
+            {
+                Finish(1, e.GetType().Name + ": " + e.Message + "\n" + e.StackTrace);
+            }
+        }
+
+        /// <summary>
+        /// One editor tick with nothing to step: ask for the second, wait for the bodies, shoot.
+        /// </summary>
+        /// <remarks>
+        /// The same shape as <see cref="Drive"/>'s own loop, with the wait on a build instead of
+        /// on a clock. The world is built across frames
+        /// (<see cref="Evosim.Theatre.SnapshotWorld.BuildSome"/>) because an Editor that spends
+        /// half a minute inside one <c>Update</c> looks exactly like one that has wedged.
+        /// </remarks>
+        private static void DriveTheReconstruction()
+        {
+            SnapshotWorld world = _runner.Reconstruction;
+
+            if (world == null)
+            {
+                // Start may not have run yet on the first tick; an error means it has, and that
+                // the run was refused.
+                if (!string.IsNullOrEmpty(_runner.Error)) Finish(1, "refused: " + _runner.Error);
+                return;
+            }
+
+            if (!_paceSet)
+            {
+                _paceSet = true;
+                _runner.Paused = true;
+                _runner.ShowOverlay = false;
+
+                // A quarter of a second a frame for the build, which is the budget the replay
+                // gets for its steps and for the same reason: a batch Editor has nothing else to
+                // do with the frame.
+                _runner.FrameBudgetSeconds = 0.25f;
+
+                Debug.Log(
+                    "[Theatre] " + world.Record.Path + "\n" +
+                    "  arm " + world.Record.ArmName + ", seed " + world.Record.Seed +
+                    ", config " + world.Record.ConfigHash + "\n" +
+                    "  drawn from the run's own snapshots and positions.jsonl; " +
+                    "no identity check: nothing was simulated");
+            }
+
+            double target = _times[_next];
+
+            // Asked for once: Begin sets the second it is drawing, so the next tick falls through
+            // to the wait rather than starting the build again.
+            if (Math.Abs(world.Second - target) > 1e-3)
+            {
+                _runner.ShowSnapshotSecond(target);
+                return;
+            }
+
+            if (!world.Ready) return;
+
+            ShootTheReconstruction(world, target);
+
+            _next++;
+            SessionState.SetString(PendingKey, Pack());
+
+            if (_next >= _times.Length) Finish(0, _written.Count + " picture(s) written");
+        }
+
+        /// <summary>Every requested view of the reconstructed world, written out.</summary>
+        /// <remarks>
+        /// <c>-recon-</c> stands in the file name where the replay's view name stands alone, so a
+        /// directory can hold both kinds of picture of one second and nobody has to open a file
+        /// to know which kind they have.
+        /// </remarks>
+        private static void ShootTheReconstruction(SnapshotWorld world, double asked)
+        {
+            string arm = world.Record.ArmName ?? "run";
+
+            if (_directory == null)
+            {
+                _directory = Path.Combine(
+                    Path.Combine(BuildIdentity.RepositoryRoot(), "scratch"), "snaps");
+
+                _directory = Path.Combine(_directory, arm);
+            }
+
+            if (_camera == null) _camera = new SnapshotCamera(_width, _height);
+
+            string stamp = asked.ToString("0.###", CultureInfo.InvariantCulture);
+
+            foreach (SnapshotCamera.View view in _views)
+            {
+                string path = Path.Combine(
+                    _directory,
+                    arm + "-t" + stamp + "-recon-" + SnapshotCamera.NameOf(view) + ".png");
+
+                int bytes = _camera.Capture(world, view, path, out string remark);
+                _written.Add(path);
+
+                Debug.Log(
+                    "[Theatre] wrote " + path + " (" + bytes + " bytes) at t=" + stamp +
+                    " s, reconstructed\n" +
+                    "  " + remark + "\n" +
+                    "  " + world.JoinedCount + " bodies joined, every one at its adult size, " +
+                    (world.PosedCount == 0
+                        ? "every one in the developer's own frame"
+                        : world.PosedCount + " in the pose poses.jsonl recorded") +
+                    "; no identity check: nothing was simulated");
+            }
+        }
+
+        // ------------------------------------------------------------------ the film window
+
+        /// <summary>
+        /// One editor tick with a film window in front of it: show the frame nearest the next
+        /// second, dress every body, shoot.
+        /// </summary>
+        /// <remarks>
+        /// Nothing is stepped or waited for: a frame is shown in one call, transforms and all, and
+        /// the palette's budget is lifted for the still (<see cref="Evosim.Theatre.FilmWindowWorld.DressAll"/>)
+        /// so no body is photographed in the plain material. The runner is paused, so its own
+        /// playback holds the frame that was asked for.
+        /// </remarks>
+        private static void DriveTheWindow()
+        {
+            FilmWindowWorld world = _runner.Window;
+
+            if (world == null)
+            {
+                if (!string.IsNullOrEmpty(_runner.Error)) Finish(1, "refused: " + _runner.Error);
+                return;
+            }
+
+            if (!_paceSet)
+            {
+                _paceSet = true;
+                _runner.Paused = true;
+                _runner.ShowOverlay = false;
+
+                Debug.Log(
+                    "[Theatre] " + world.Window.Directory + "\n" +
+                    "  over " + world.Record.Path + ", arm " + world.Record.ArmName + ", seed " +
+                    world.Record.Seed + "\n" +
+                    "  drawn from the farm's film window; the word is the window's verdict: " +
+                    world.ProvenanceWord);
+            }
+
+            double target = _times[_next];
+            int frame = world.Window.NearestFrame(target);
+
+            if (frame < 0)
+            {
+                Finish(1, "the window holds no frame");
+                return;
+            }
+
+            // Shown on this tick and photographed on the next, so the scene has had a frame to
+            // settle whatever the view built.
+            if (world.FrameIndex != frame)
+            {
+                _runner.ShowWindowFrame(frame);
+                return;
+            }
+
+            world.DressAll();
+            ShootTheWindow(world, target);
+
+            _next++;
+            SessionState.SetString(PendingKey, Pack());
+
+            if (_next >= _times.Length) Finish(0, _written.Count + " picture(s) written");
+        }
+
+        /// <summary>Every requested view of the window's frame, written out.</summary>
+        /// <remarks>
+        /// <c>-window-</c> stands in the file name where a reconstruction's <c>-recon-</c> stands,
+        /// so a directory can hold a replay's, a reconstruction's and a window's picture of one
+        /// second and the name says which is which.
+        /// </remarks>
+        private static void ShootTheWindow(FilmWindowWorld world, double asked)
+        {
+            string arm = world.Record.ArmName ?? "run";
+
+            if (_directory == null)
+            {
+                _directory = Path.Combine(
+                    Path.Combine(BuildIdentity.RepositoryRoot(), "scratch"), "snaps");
+
+                _directory = Path.Combine(_directory, arm);
+            }
+
+            if (_camera == null) _camera = new SnapshotCamera(_width, _height);
+
+            string stamp = asked.ToString("0.###", CultureInfo.InvariantCulture);
+
+            foreach (SnapshotCamera.View view in _views)
+            {
+                string path = Path.Combine(
+                    _directory,
+                    arm + "-t" + stamp + "-window-" + SnapshotCamera.NameOf(view) + ".png");
+
+                int bytes = _camera.Capture(world, view, path, out string remark);
+                _written.Add(path);
+
+                Debug.Log(
+                    "[Theatre] wrote " + path + " (" + bytes + " bytes) at t=" + stamp +
+                    " s, frame t=" + world.Second.ToString("0.###", CultureInfo.InvariantCulture) +
+                    " s, FARM FILM WINDOW · " + world.ProvenanceWord + "\n" +
+                    "  " + remark + "\n" +
+                    "  " + world.Describe());
+            }
+        }
+
+        // ------------------------------------------------------------------ the continuation
+
+        /// <summary>
+        /// One editor tick with a restored world in front of it: carry it the asked-for seconds,
+        /// then photograph it.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="Drive"/>'s own loop with one target instead of a list, and it is the
+        /// runner's loop that steps the world here too — <c>TheatreRunner.StepLive</c> runs the
+        /// farm's harness from its <c>Update</c> and syncs the bodies once a frame, exactly as it
+        /// does under a person's hands. What this class does is read the clock, slow the pace as
+        /// the target comes up, and pause.
+        /// </remarks>
+        private static void DriveTheContinuation()
+        {
+            TheatreDynamicsReplay live = _runner.Live;
+
+            if (live == null)
+            {
+                // Start may not have run yet on the first tick; an error means it has, and that
+                // the checkpoint was refused.
+                if (!string.IsNullOrEmpty(_runner.Error)) Finish(1, "refused: " + _runner.Error);
+
+                // A run the Editor's farm recorded opens as a PhysX replay and never as a live
+                // world, so a checkpoint that resolved to one of those is a wrong request rather
+                // than a wait.
+                if (_runner.Replay != null)
+                {
+                    Finish(1,
+                        "the theatre opened a PhysX replay rather than a continued world: a " +
+                        "checkpoint belongs to a run the console farm recorded");
+                }
+
+                return;
+            }
+
+            if (!_paceSet)
+            {
+                SetTheLivePace(live);
+
+                // One frame before anything is photographed: the bodies are posed from the
+                // runner's own Update, and a picture taken on the tick the world opened would be
+                // of a scene whose transforms had not been written yet.
+                return;
+            }
+
+            double now = live.ElapsedSeconds;
+
+            if (now + 1e-9 < _carryTo)
+            {
+                bool near = _carryTo - now <= ApproachSeconds;
+
+                _runner.Rate = near ? 5f : 10000f;
+                _runner.FrameBudgetSeconds = near ? 0.02f : 0.25f;
+                return;
+            }
+
+            _runner.Paused = true;
+
+            // The same three ticks a replay's chrome frame takes, and for the same reason: the
+            // panel is resized to the texture when it is armed, the density classes come off the
+            // geometry event that resize raises, and the layout they ask for lands a frame after
+            // that. The world is paused across all of them, so every layer is the same instant.
+            if (TheatreUiCapture.Armed)
+            {
+                if (++_chromeTicks < 2) return;
+                _chromeTicks = 0;
+
+                LandTheChromeShot();
+            }
+            else
+            {
+                ShootTheContinuation(live);
+
+                // Armed by ShootTheContinuation when -Chrome was asked for. Come back for it.
+                if (TheatreUiCapture.Armed) return;
+            }
+
+            Finish(0, _written.Count + " picture(s) written");
+        }
+
+        /// <summary>Unpauses the restored world, sets the target, and says where it was picked up.</summary>
+        private static void SetTheLivePace(TheatreDynamicsReplay live)
+        {
+            _paceSet = true;
+
+            _runner.Paused = _carrySeconds <= 0d;
+            _runner.Rate = 10000f;
+            _runner.FrameBudgetSeconds = 0.25f;
+
+            // The same rule as a replay's: chromeless by default so the record's frames stay
+            // comparable with every earlier picture, and up when -Chrome asked for one.
+            _runner.ShowOverlay = _chrome;
+
+            // From the world rather than from -At. A checkpoint is resolved to the one at or
+            // before the second asked for, so the two need not agree and the picture's own second
+            // is the one that is true.
+            _carryTo = live.ElapsedSeconds + _carrySeconds;
+
+            LiveCheckpoint checkpoint = live.ContinuedFrom;
+
+            Debug.Log(
+                "[Theatre] " + live.Record.Path + "\n" +
+                "  arm " + live.Record.ArmName + ", seed " + live.Record.Seed +
+                ", dt " + live.Sim.PhysicsDt + " s, threads " + live.Threads +
+                ", config " + live.Record.ConfigHash + "\n" +
+                "  " + (checkpoint != null
+                    ? checkpoint.Line()
+                    : "no checkpoint: this world was founded at t=0") + "\n" +
+                "  carrying to t=" + Seconds(_carryTo) + " s, " + Seconds(_carrySeconds) +
+                " s live past the restore");
+        }
+
+        /// <summary>Every requested view of the carried world, written out.</summary>
+        /// <remarks>
+        /// <c>-ckpt-</c> stands in the file name where the replay's view name stands alone, as
+        /// <c>-recon-</c> does for a reconstruction, so a directory can hold all three kinds of
+        /// picture of one world and nobody has to open a file to know which kind they have.
+        /// </remarks>
+        private static void ShootTheContinuation(TheatreDynamicsReplay live)
+        {
+            string arm = live.Record.ArmName ?? "run";
+
+            if (_directory == null)
+            {
+                _directory = Path.Combine(
+                    Path.Combine(BuildIdentity.RepositoryRoot(), "scratch"), "snaps");
+
+                _directory = Path.Combine(_directory, arm);
+            }
+
+            if (_camera == null) _camera = new SnapshotCamera(_width, _height);
+
+            string stamp = live.ElapsedSeconds.ToString("0.###", CultureInfo.InvariantCulture);
+            LiveWorldView view = _runner.LiveView;
+
+            foreach (SnapshotCamera.View which in _views)
+            {
+                string path = Path.Combine(
+                    _directory,
+                    arm + "-t" + stamp + "-ckpt-" + SnapshotCamera.NameOf(which) + ".png");
+
+                int bytes = _camera.Capture(live, which, path, out string remark);
+                _written.Add(path);
+
+                Debug.Log(
+                    "[Theatre] wrote " + path + " (" + bytes + " bytes) at t=" + stamp +
+                    " s, carried " + Seconds(_carrySeconds) + " s from the checkpoint\n" +
+                    "  " + remark + "\n" +
+                    "  " + (live.ContinuedFrom != null
+                        ? live.ContinuedFrom.Label()
+                        : "no checkpoint: founded at t=0") +
+                    (view != null
+                        ? "; the view drew " + view.BodyCount + " bodies and " + view.PartCount +
+                          " parts"
+                        : "; no live view in the scene"));
+            }
+
+            if (_chrome) ArmTheChromeShot(arm, stamp + "-ckpt");
+        }
+
+        /// <summary>Unpauses the runner and lets it step as hard as a frame allows.</summary>
+        /// <remarks>
+        /// The same pace the Play-mode identity check sets, and for the same reason: a frame that
+        /// carried one step would not be the theatre a person watches, and the world in the
+        /// picture must be the world the runner produces rather than one this class stepped by
+        /// hand.
+        /// </remarks>
+        private static void SetThePace(TheatreReplay replay)
+        {
+            _paceSet = true;
+
+            _runner.Paused = false;
+            _runner.Rate = 10000f;
+            _runner.FrameBudgetSeconds = 0.25f;
+            _runner.ShowOverlay = _chrome;
+
+            Debug.Log(
+                "[Theatre] " + replay.Record.Path + "\n" +
+                "  arm " + replay.Record.ArmName + ", seed " + replay.Record.Seed +
+                ", dt " + replay.Record.PhysicsDtSeconds + ", config " + replay.Record.ConfigHash + "\n" +
+                "  source: " + (replay.Faithful ? "identical to the recording" : replay.SourceDifference) + "\n" +
+                "  physics jobs: " + replay.PhysicsJobWorkers +
+                (replay.ThreadCaveat != null ? ", " + replay.ThreadCaveat : ", as recorded") + "\n" +
+                "  " + replay.Record.Samples.Count + " recorded samples, last at t=" +
+                replay.RecordedThroughSeconds.ToString("0.#", CultureInfo.InvariantCulture) + " s");
+        }
+
+        private static void Approach(TheatreReplay replay, double remaining)
+        {
+            bool near = remaining <= ApproachSeconds;
+
+            _runner.Rate = near ? 5f : 10000f;
+            _runner.FrameBudgetSeconds = near ? 0.02f : 0.25f;
+
+            if (_pastTheRecordSaid) return;
+            if (_times[_times.Length - 1] <= replay.RecordedThroughSeconds + 1e-6) return;
+
+            _pastTheRecordSaid = true;
+            Debug.LogWarning(
+                "[Theatre] the last time asked for is past the record's last sample (t=" +
+                replay.RecordedThroughSeconds.ToString("0.#", CultureInfo.InvariantCulture) +
+                " s). The world runs on deterministically from there, and nothing after that " +
+                "instant is checked against anything.");
+        }
+
+        /// <summary>Every requested view of the world as it stands, written out.</summary>
+        private static void Shoot(TheatreReplay replay, double asked)
+        {
+            string arm = replay.Record.ArmName ?? "run";
+
+            if (_directory == null)
+            {
+                _directory = Path.Combine(
+                    Path.Combine(BuildIdentity.RepositoryRoot(), "scratch"), "snaps");
+
+                _directory = Path.Combine(_directory, arm);
+            }
+
+            if (_camera == null) _camera = new SnapshotCamera(_width, _height);
+
+            string stamp = asked.ToString("0.###", CultureInfo.InvariantCulture);
+
+            foreach (SnapshotCamera.View view in _views)
+            {
+                string path = Path.Combine(
+                    _directory, arm + "-t" + stamp + "-" + SnapshotCamera.NameOf(view) + ".png");
+
+                int bytes = _camera.Capture(replay, view, path, out string remark);
+                _written.Add(path);
+
+                Debug.Log(
+                    "[Theatre] wrote " + path + " (" + bytes + " bytes) at t=" +
+                    replay.Census.T.ToString("0.##", CultureInfo.InvariantCulture) +
+                    " s, asked for " + stamp + " s\n" +
+                    "  " + remark + "\n" +
+                    "  " + replay.IdentityLine());
+            }
+
+            if (_chrome) ArmTheChromeShot(arm, stamp);
+        }
+
+        /// <summary>
+        /// Arms the interface's picture: the viewer's camera and the panel are pointed at one
+        /// texture, and <see cref="LandTheChromeShot"/> reads it back on the next tick.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The four views cannot carry it.</b> <see cref="SnapshotCamera"/> renders a camera of
+        /// its own into a <c>RenderTexture</c>, and a screen-space UI panel never draws into one —
+        /// the same reason that class stamps its label into the pixels by hand rather than using
+        /// <c>GUI.Label</c>.
+        /// </para>
+        /// <para>
+        /// <b>A screen capture is not the answer either, which cost a run to learn.</b> This was
+        /// <c>ScreenCapture.CaptureScreenshot</c> until 2026-09-13, and under <c>-batchmode</c>
+        /// that logs "queued" and writes nothing at all. <see cref="TheatreUiCapture"/> does it
+        /// the way the four views are done, so the chrome frame is a real file at the run's
+        /// <c>-Size</c> rather than a Game View of whatever shape the batch Editor happened to
+        /// have. It is the viewer's own camera, though, not one of the four framings: what is
+        /// wanted is the theatre as a person sees it, interface and all.
+        /// </para>
+        /// </remarks>
+        private static void ArmTheChromeShot(string arm, string stamp)
+        {
+            try
+            {
+                _chromePath = Path.Combine(_directory, arm + "-t" + stamp + "-chrome.png");
+
+                if (!TheatreUiCapture.Arm(
+                        _width, _height, _runner.ViewCamera, _runner.Ui?.Panel, out string note))
+                {
+                    Debug.LogWarning("[Theatre] no chrome picture: " + note);
+                    _chromePath = null;
+                }
+            }
+            catch (Exception e)
+            {
+                TheatreUiCapture.Disarm();
+                _chromePath = null;
+                Debug.LogWarning("[Theatre] the chrome capture failed: " + e.Message);
+            }
+        }
+
+        /// <summary>Reads the armed chrome picture back and writes it.</summary>
+        private static void LandTheChromeShot()
+        {
+            string path = _chromePath;
+            _chromePath = null;
+
+            int bytes = TheatreUiCapture.Shoot(path, out string note);
+
+            if (bytes > 0)
+            {
+                _written.Add(path);
+                Debug.Log("[Theatre] chrome: " + note + " -> " + path);
+            }
+            else
+            {
+                Debug.LogWarning("[Theatre] the chrome picture was not written: " + note);
+            }
+        }
+
+        /// <summary>Writes the verdict, stops Play mode, and arranges the exit code.</summary>
+        private static void Finish(int code, string verdict)
+        {
+            EditorApplication.update -= Drive;
+            _driving = false;
+            SessionState.EraseString(PendingKey);
+
+            if (_camera != null) { _camera.Dispose(); _camera = null; }
+
+            // An armed capture holds the panel's target texture, and the viewer would never see
+            // the interface again in this session.
+            TheatreUiCapture.Disarm();
+            _chromePath = null;
+            _chromeTicks = 0;
+
+            var files = new System.Text.StringBuilder();
+            foreach (string path in _written) files.Append("\n  ").Append(path);
+
+            Debug.Log(
+                "[Theatre] snapshot: " + verdict + files +
+                (_written.Count == 0 ? "\n  nothing was written" : ""));
+
+            if (code != 0) Debug.LogError("[Theatre] snapshot FAILED: " + verdict);
+
+            _runner = null;
+
+            if (!EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Quit(code);
+                return;
+            }
+
+            // Leave Play mode first, and carry the code across the reload that leaving causes:
+            // the same two ways back to Quit the identity check needs, one for a project that
+            // reloads the domain on exiting Play and one for a project that does not.
+            SessionState.SetString(ExitKey, code.ToString(CultureInfo.InvariantCulture));
+            EditorApplication.playModeStateChanged += QuitOnLeavingPlayMode;
+            EditorApplication.isPlaying = false;
+        }
+
+        private static void QuitOnLeavingPlayMode(PlayModeStateChange change)
+        {
+            if (change != PlayModeStateChange.EnteredEditMode) return;
+
+            EditorApplication.playModeStateChanged -= QuitOnLeavingPlayMode;
+
+            string exit = SessionState.GetString(ExitKey, "");
+            if (string.IsNullOrEmpty(exit)) return;
+
+            SessionState.EraseString(ExitKey);
+            Quit(int.TryParse(exit, out int code) ? code : 1);
+        }
+
+        /// <summary>Ends the batch Editor with the verdict's code, and does nothing in a person's.</summary>
+        private static void Quit(int code)
+        {
+            if (!Application.isBatchMode)
+            {
+                Debug.Log("[Theatre] snapshot finished with code " + code + ".");
+                return;
+            }
+
+            EditorApplication.Exit(code);
+        }
+
+        private static int IntFrom(string name, int fallback, int least, int most)
+        {
+            string text = Environment.GetEnvironmentVariable(name);
+
+            if (string.IsNullOrEmpty(text) ||
+                !int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value))
+            {
+                return fallback;
+            }
+
+            return Mathf.Clamp(value, least, most);
+        }
+
+        // ------------------------------------------------------------------ the owner's menu
+
+        /// <summary>
+        /// Photographs the theatre as it stands, for whoever is watching it.
+        /// </summary>
+        /// <remarks>
+        /// The same four views the batch entry takes, of the world already on screen, into the
+        /// same directory. Deliberately no seeking and no pausing: what this takes is the frame
+        /// the person is looking at, which is the whole point of asking for it by hand.
+        /// </remarks>
+        [MenuItem("Evosim/Theatre/Snapshot Now")]
+        public static void SnapshotNow()
+        {
+            if (!EditorApplication.isPlaying)
+            {
+                Debug.LogError(
+                    "[Theatre] nothing is playing. Press Play on the theatre scene first; this " +
+                    "photographs the world that is on screen.");
+                return;
+            }
+
+            var runner = UnityEngine.Object.FindFirstObjectByType<TheatreRunner>();
+
+            if (runner == null || runner.Replay == null)
+            {
+                Debug.LogError(
+                    "[Theatre] no replayed world on screen" +
+                    (runner != null && !string.IsNullOrEmpty(runner.Error)
+                        ? ": " + runner.Error
+                        : ". Mode B, with a run directory, is what this photographs."));
+                return;
+            }
+
+            TheatreReplay replay = runner.Replay;
+            string arm = replay.Record.ArmName ?? "run";
+
+            string directory = Path.Combine(
+                Path.Combine(Path.Combine(BuildIdentity.RepositoryRoot(), "scratch"), "snaps"), arm);
+
+            SnapshotCamera.View[] views = SnapshotCamera.ParseViews(null, out _);
+            string stamp = replay.ElapsedSeconds.ToString("0.###", CultureInfo.InvariantCulture);
+
+            using (var camera = new SnapshotCamera(1600, 900))
+            {
+                foreach (SnapshotCamera.View view in views)
+                {
+                    string path = Path.Combine(
+                        directory, arm + "-t" + stamp + "-" + SnapshotCamera.NameOf(view) + ".png");
+
+                    int bytes = camera.Capture(replay, view, path, out string remark);
+                    Debug.Log("[Theatre] wrote " + path + " (" + bytes + " bytes)\n  " + remark);
+                }
+            }
+        }
+    }
+}

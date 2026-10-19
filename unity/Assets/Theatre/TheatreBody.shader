@@ -1042,7 +1042,7 @@ Shader "Evosim/Theatre Body"
 
                 if (fade > 0.001)
                 {
-                    float net = EvoCausticNet(input.positionWS, _Time.y);
+                    float net = EvoCausticNet(input.positionWS, EvoTime());
 
                     lit += _CausticColor.rgb * (net * fade * saturate(n.y) * _CausticStrength);
                 }

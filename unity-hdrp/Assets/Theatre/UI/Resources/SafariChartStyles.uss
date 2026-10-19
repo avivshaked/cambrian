@@ -1,0 +1,40 @@
+/* ============================================================
+   SafariChartStyles.uss: the story's charts (SafariChartLayer.cs).
+
+   A chart is drawn on a panel of its own into a texture that is
+   composited into the safari's frame, so nothing here reaches the
+   interface. The rules are the interface's (TheatreUiStyles.uss):
+   Plex Sans for words, Plex Mono for numbers, SemiBold Mono for the
+   one number that matters (an account's current value), no hue but
+   the clade's, which the code sets. Sizes and colours are set per
+   label in code, at the 1920 by 1080 reference layout; this sheet
+   names only the faces and zeroes what the theme would add.
+
+   The plate under a card is the composite shader's, not a
+   background here, so nothing on this panel has a background.
+   ============================================================ */
+
+.chart-text {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    background-color: rgba(0, 0, 0, 0);
+    -unity-text-outline-width: 0;
+}
+
+.chart-sans {
+    -unity-font-definition: resource("Fonts/IBMPlexSans-Regular SDF");
+}
+
+.chart-mono {
+    -unity-font-definition: resource("Fonts/IBMPlexMono-Regular SDF");
+}
+
+.chart-strong {
+    -unity-font-definition: resource("Fonts/IBMPlexMono-SemiBold SDF");
+}

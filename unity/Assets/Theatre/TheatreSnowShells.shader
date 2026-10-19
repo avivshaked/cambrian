@@ -256,7 +256,7 @@ Shader "Evosim/Theatre Snow Shells"
                     return half4(0, 0, 0, 0);
                 }
 
-                float time = _Time.y;
+                float time = EvoTime();
                 float3 sum = float3(0.0, 0.0, 0.0);
 
                 sum += Shell(origin, dir, max(t0, _Near.x), min(t1, _Near.y), _Near, _Radii.x, _Radii.w, 0.0, time);

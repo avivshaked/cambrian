@@ -137,7 +137,7 @@ Shader "Evosim/Theatre Shafts"
                 float square = pow(saturate(abs(dot(input.normalWS, view))), 0.8);
 
                 // The surface above, at this shaft's own top: the beam breathes with the wave.
-                float gain = EvoShaftGain(input.shaft.xy, _Time.y);
+                float gain = EvoShaftGain(input.shaft.xy, EvoTime());
 
                 float alpha = _ShaftStrength * input.shaft.z * gain *
                               across * along * depth * square * inside;

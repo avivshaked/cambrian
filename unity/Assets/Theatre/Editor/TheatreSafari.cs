@@ -180,6 +180,24 @@ namespace Evosim.Theatre.EditorTools
 
         private static float Interval => _check ? _checkEvery : 1f / _fps;
 
+        /// <summary>
+        /// The shaders' clock from the take, not from Unity (<c>EVOSIM_THEATRE_SAFARI_CLOCK</c>, 1 on,
+        /// default 0): each take's water starts at <see cref="ClockStart"/> seconds and advances one
+        /// frame interval a frame, so two renders of a take (the URP and HDRP theatres, D202) show
+        /// the same ripples, caustics, shafts and snow on the same frame. Unity's own clock starts
+        /// when Play mode opens and stands at a different second in every render
+        /// (<c>TheatreWater.hlsl</c>'s <c>EvoTime</c>).
+        /// </summary>
+        private static readonly bool TakeClock = TheatreSkin.Dial("EVOSIM_THEATRE_SAFARI_CLOCK", 0f, 0f, 1f) >= 0.5f;
+        private const float ClockStart = 100f;
+
+        private static void SetClock(int takeFrame)
+        {
+            if (!TakeClock) return;
+            Shader.SetGlobalFloat("_EvoClockOn", 1f);
+            Shader.SetGlobalFloat("_EvoClock", ClockStart + takeFrame * Interval);
+        }
+
         // ---------------------------------------------------------------- start
 
         public static void Start(bool check)
@@ -1013,6 +1031,7 @@ namespace Evosim.Theatre.EditorTools
 
             _director.SyncView();
             shot.Pose(live, view, 0f, Interval, out Vector3 eye, out Quaternion rotation, out float focus);
+            SetClock(0);
             _camera.CapturePlaced(live, eye, rotation, shot.FieldOfView, shot.Portrait, focus, "", null);
             _warmFrames++;
 
@@ -1055,6 +1074,7 @@ namespace Evosim.Theatre.EditorTools
             _camera.MeterExclude = chart ? _charts.MeterExclude(_width, _height) : new RectInt(0, 0, 0, 0);
 
             string path = Path.Combine(_takeDirectory, "frame-" + pose.TakeFrame.ToString("000000", CultureInfo.InvariantCulture) + ".png");
+            SetClock(pose.TakeFrame);
             _camera.CapturePlaced(live, pose.Eye, pose.Rotation, pose.FieldOfView, pose.Portrait, pose.Focus, _burnLabel ? pose.Label : null, path);
 
             // The meter follows the picture slowly, and holds under a full chart, whose dimmed

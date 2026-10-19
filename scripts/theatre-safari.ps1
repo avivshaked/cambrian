@@ -55,6 +55,10 @@
   the machine at 100% beside a farm run on 2026-09-25, against the owner's half-machine ruling.
 .PARAMETER Size
   Frame size as WxH, both even. Default 1920x1080 (960x540 with -Check).
+.PARAMETER Project
+  Another Unity project at the repository's root to render in instead of a worker, such as
+  unity-hdrp, the theatre's HDRP spike (D202). -Worker is then ignored.
+
 .PARAMETER Worker
   Worker number, default 6.
 .PARAMETER WallMinutes
@@ -153,6 +157,7 @@ param(
     [int]$EncodeThreads = 4,
     [string]$Size = '',
     [int]$Worker = 6,
+    [string]$Project = '',
     [int]$WallMinutes = 60,
     [string]$Guide = '',
     [double]$SeekMax = 300,
@@ -265,13 +270,15 @@ if ($checkpoints.Count -eq 0 -and -not $windowsPath) {
 # ---------------------------------------------------------------- the worker
 
 $proj = Join-Path $root "unity-w$Worker"
+# -Project names another Unity project at the root instead, such as unity-hdrp, the theatre's HDRP spike (D202).
+if ($Project) { $proj = Join-Path $root $Project }
 if (-not (Test-Path $proj)) { throw "No worker project at $proj. Create it with scripts/new-worker.ps1 from a shell." }
 
 $busy = Get-CimInstance Win32_Process -Filter "Name='Unity.exe'" |
     Where-Object { $_.CommandLine -match ([regex]::Escape($proj) + '(?=["\s]|$)') }
 if ($busy) { throw "A Unity process (PID $($busy.ProcessId)) already has $proj open." }
 if (Test-Path (Join-Path $proj 'Temp/UnityLockfile')) {
-    throw "unity-w$Worker has Temp/UnityLockfile. If no Unity process holds it (Get-Process Unity), delete it and run again."
+    throw "$(Split-Path $proj -Leaf) has Temp/UnityLockfile. If no Unity process holds it (Get-Process Unity), delete it and run again."
 }
 
 $date = (Get-Date).ToString('yyyy-MM-dd', $invariant)

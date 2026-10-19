@@ -1,0 +1,2904 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using UnityEngine;
+using UnityEngine.Experimental.Rendering;
+using Evosim.Core;
+using Evosim.Sim;
+
+namespace Evosim.Theatre
+{
+    /// <summary>
+    /// The theatre, photographed: a framed view of the world on screen, written out as a PNG.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Why this exists.</b> On 2026-09-10 the owner opened round 33 in the theatre and saw in
+    /// a minute what thirty-three rounds of tables could not show: the whole world was two
+    /// vertical ribbons about a metre wide in a box twenty metres long (logbook/0083). The agent
+    /// that read those rounds has no eyes. It read a report carrying a mean depth and per-patch
+    /// bins and nothing at all about x or z, and it believed a wider world than the one that ran.
+    /// A picture was the missing instrument, and a PNG file is a picture an agent can read.
+    /// </para>
+    /// <para>
+    /// <b>The frame comes from the run's own config, never from a constant.</b> The box is
+    /// <c>SharedSpace</c>'s literal water: K patches of <c>sqrt(area / K)</c> metres along x, one
+    /// patch across z, <c>WorldDepthMetres</c> down. A hard-coded 20 by 5 by 60 would have been
+    /// right for the campaign and wrong for the first run that changed a patch count, and it
+    /// would have been wrong silently, which is the failure mode this project spends most of its
+    /// gotchas on.
+    /// </para>
+    /// <para>
+    /// <b>Three of the four census views are orthographic and the fourth is not.</b> Side, end
+    /// and top are the literal projections the names promise, and a perspective camera would
+    /// foreshorten the far half of the box and make a column look like a cone. The iso view is
+    /// perspective, because its whole job is to give the eye the depth cue the three flat views
+    /// deliberately throw away. The two views that are not of the census, close and sky, are both
+    /// perspective and neither is framed on the box: one is a portrait of a body and the other is
+    /// taken from inside the water looking up at the surface.
+    /// </para>
+    /// <para>
+    /// <b>The label and the markers are composited into the pixels, not rendered.</b>
+    /// <c>GUI.Label</c> in <c>OnGUI</c> draws to the screen and never into a
+    /// <see cref="RenderTexture"/>, and a <c>TextMesh</c> would put the text in the world, where
+    /// it would be framed, lit and occluded like everything else in it. So the text is stamped
+    /// into the <see cref="Color32"/> array after <c>ReadPixels</c>, from the five by seven
+    /// bitmap font at the bottom of this file: no font asset, no shader, no dependence on which
+    /// render pipeline resolved. The box's own wireframe is stamped the same way for the same
+    /// reason, over whatever the scene's <see cref="WaterBounds"/> drew, so that the frame reads
+    /// even if a camera this class made never gets that component's immediate-mode geometry.
+    /// </para>
+    /// <para>
+    /// <b>A body gets a marker when its mesh is too small to see.</b> The box is 60 m deep and 20
+    /// m long, so a side view fitted to the depth puts about 15 pixels in a metre and a 0.3 m
+    /// creature covers four of them; at that size a body is an artefact rather than a shape. Any
+    /// body whose projected diameter is under <see cref="MinimumBodyPixels"/> therefore gets a
+    /// screen-space marker of <see cref="MarkerPixels"/> at its centre of mass, coloured by guild
+    /// the way <see cref="TheatrePalette"/> colours a part. The markers are stamped over the
+    /// rendered image and so ignore occlusion: two bodies a metre apart along the view axis draw
+    /// the same size, and the nearer one does not hide the further. That is the right trade for a
+    /// picture whose question is where the bodies are, and it is a wrong one for any question
+    /// about what a body looks like, which is Mode A's.
+    /// </para>
+    /// <para>
+    /// <b>It writes only the file it is asked for.</b> Nothing goes into the run directory: Mode B
+    /// never writes there, and a viewer that can modify the record is a viewer whose recording
+    /// cannot be trusted afterwards.
+    /// </para>
+    /// </remarks>
+    public sealed class SnapshotCamera : IDisposable
+    {
+        /// <summary>Which way the camera looks. The first four frame the whole box.</summary>
+        public enum View
+        {
+            /// <summary>Along z: the box's length by its depth, the view the ribbons showed up in.</summary>
+            Side = 0,
+
+            /// <summary>Along x: the box's width by its depth.</summary>
+            End = 1,
+
+            /// <summary>Straight down: length by width, the footprint.</summary>
+            Top = 2,
+
+            /// <summary>Three quarters, from above one corner. The perspective census view.</summary>
+            Iso = 3,
+
+            /// <summary>
+            /// The six largest bodies, from a three quarter angle, close enough to see one.
+            /// </summary>
+            /// <remarks>
+            /// <para>
+            /// <b>Why a fifth view.</b> The other four frame the whole box, which is what a
+            /// question about where the bodies are needs. The campaign's water is 20 m long in a
+            /// 1600 px frame, so a metre is about eighty pixels and a 0.3 m creature is
+            /// twenty-four of them: enough to say it is there and its guild, and nowhere near
+            /// enough to say what its surface does. A skin cannot be judged from a picture that
+            /// cannot resolve it, so this one throws away the census and frames a handful of
+            /// bodies instead.
+            /// </para>
+            /// <para>
+            /// <b>Largest, because the question is the silhouette.</b> The bodies with the most
+            /// pixels on them are the ones a carve can be read off, and picking them by size
+            /// makes the choice repeatable rather than a matter of where the camera happened to
+            /// point. It is not a sample of the world and must not be read as one: nothing about
+            /// the population, the guild mix or the spread is visible in it.
+            /// </para>
+            /// <para>
+            /// <b>The six largest in the world are not six neighbours, and the first cut of this
+            /// view learned it the expensive way.</b> Asked for the six largest bodies in r35-s1
+            /// at t = 5,000 s, it framed 19.35 by 13.28 m, which is the whole box: the clades sit
+            /// in columns metres apart (logbook/0083), so the largest body in one column and the
+            /// largest in another are as far apart as anything in the world. The picture came out
+            /// at about twenty pixels a body, which is the world view again. So the anchor is the
+            /// largest body and the other five are the largest of its neighbours; see
+            /// <see cref="CloseOn"/>.
+            /// </para>
+            /// <para>
+            /// <b>It carries no box and no markers.</b> A frame a few metres across cuts the
+            /// water's edges at odd angles, and a marker is a five pixel square standing in for
+            /// a body too small to draw, which is the opposite of this view's purpose.
+            /// </para>
+            /// </remarks>
+            Close = 4,
+
+            /// <summary>
+            /// Up at the surface from three metres under, for the sun and the window.
+            /// </summary>
+            /// <remarks>
+            /// <para>
+            /// <b>Why a sixth view.</b> The fourth day put a sea on the world's ceiling: a
+            /// rippling surface, the sky refracted through it into Snell's window with the sun in
+            /// it, and shafts of light coming down (logbook/specs/skin-spec-4.md). Not one of the
+            /// other five can see any of it. Four of them photograph the census from outside the
+            /// box and have the sea turned off for them
+            /// (<see cref="HideWhatOnlyTheWaterSees"/>), and the close view looks along the water
+            /// at a body. So this one stands inside the water and looks up, which is the only
+            /// place the day's work exists.
+            /// </para>
+            /// <para>
+            /// <b>Three metres down, at the box's centre, sixty degrees up, wide.</b> Three
+            /// metres is close enough that the window fills a good part of the frame and far
+            /// enough that it is a window rather than a ceiling tile; sixty degrees puts the
+            /// vertical near the top of the frame and leaves the bottom third for the water and
+            /// the bodies in it; and the lens is wide because the whole point is one frame that
+            /// holds the window, the sun, the shafts and what is swimming under them.
+            /// </para>
+            /// <para>
+            /// <b>It looks along the sun's bearing.</b> The disc is wherever the scene's
+            /// directional light is, so a camera pointed at a fixed compass bearing would find it
+            /// in some runs and not others. The bearing is read from the same global the shaders
+            /// draw the sun from (<c>TheatreWater.hlsl</c>, <c>_EvoSun</c>), so the picture and
+            /// the ceiling cannot disagree about where the sun is.
+            /// </para>
+            /// <para>
+            /// <b>No box and no markers, as the close view has none.</b> The box's wireframe
+            /// would be stamped across the window, and a five pixel marker is for a body too
+            /// small to draw, which from inside the water at this range is not the case.
+            /// </para>
+            /// </remarks>
+            Sky = 5,
+
+            /// <summary>
+            /// The floor from low over the deep side, looking across it: the lowest fourteen
+            /// metres of the box framed from a shallow three quarters, so that a shaped bed's
+            /// hollows and its ridge read as shading where the census views cannot resolve a
+            /// metre of relief at thirteen pixels a metre (D092, 2026-09-15). A portrait of the
+            /// sand, never a census; not in the default set.
+            /// </summary>
+            Bed = 6,
+
+            /// <summary>
+            /// Under the first reef's cap (logbook/specs/reef-spec.md), from two and a half cap
+            /// radii off the axis, a metre under the underside, looking a little up at the stem:
+            /// the dark room, the underside over it and the lit water beyond. Named or not taken,
+            /// as the close view is; it is a picture of one rock and never a census. Added
+            /// 2026-09-23 night for the owner's requirement that the caps be looked at before
+            /// round 47 runs.
+            /// </summary>
+            Reef = 7
+        }
+
+        /// <summary>How many bodies <see cref="View.Close"/> frames.</summary>
+        public const int CloseBodies = 6;
+
+        /// <summary>How far under the surface <see cref="View.Sky"/> stands, in metres.</summary>
+        public const float SkyDepthMetres = 3f;
+
+        /// <summary>How far above the horizontal <see cref="View.Sky"/> looks, in degrees.</summary>
+        public const float SkyRiseDegrees = 60f;
+
+        /// <summary>The wide lens <see cref="View.Sky"/> uses, in degrees across the frame's height.</summary>
+        public const float SkyFieldOfView = 76f;
+
+        /// <summary>A projected body narrower than this gets a marker instead of being trusted.</summary>
+        public const float MinimumBodyPixels = 4f;
+
+        /// <summary>
+        /// How many chords a tank's circle is stamped from — <c>logbook/specs/tank-spec.md</c>.
+        /// </summary>
+        /// <remarks>
+        /// Forty-eight, which is <c>Evosim.Sim.TankWall.Segments</c>: the glass a body actually
+        /// hits is a forty-eight-sided prism, so the outline is the wall rather than a smoothed
+        /// idea of it. At 1600 px across a 11.3 m tank a chord is about thirty pixels, which reads
+        /// as a circle; the patch rings use the same number so that one picture has one arc
+        /// resolution in it.
+        /// </remarks>
+        public const int CircleSegments = 48;
+
+        /// <summary>The marker's coloured square, in pixels, inside a one-pixel dark surround.</summary>
+        public const int MarkerPixels = 5;
+
+        /// <summary>Pixels per cell of the label's font. Three is legible at 1600 across.</summary>
+        public const int LabelScale = 3;
+
+        /// <summary>
+        /// The water: the frame's background and the colour the fog carries everything towards.
+        /// </summary>
+        /// <remarks>
+        /// Near black rather than the sandbox's blue since the skin landed. A dark field is the
+        /// arrangement plankton is photographed under and the one the theatre's shaders are written
+        /// for (research/theatre-look/README.md, "Lighting, before any material"); against a lit
+        /// blue the rim that carries the guild is the thing that disappears. The value is
+        /// <see cref="TheatreSkin.Water"/>'s, kept in step by eye rather than by reference, since
+        /// this class must work on a scene that never built a skin.
+        /// </remarks>
+        public Color Water = new Color(0.012f, 0.032f, 0.048f);
+
+        /// <summary>
+        /// A caption burnt into the lower third of the next <see cref="CapturePlaced"/> picture,
+        /// white on a quiet plate, in the label's bitmap font; null or empty draws none, which is
+        /// what the film and every snapshot leave it at. The safari's headless route sets it
+        /// (safari-spec.md item 10), except for a story, whose captions are set as subtitles at
+        /// the join (<see cref="SafariCaptions.TextInFrames"/>, 2026-09-25).
+        /// </summary>
+        public string Caption;
+
+        /// <summary>
+        /// How much of the next <see cref="CapturePlaced"/> picture is darkened before its label
+        /// and caption are drawn, 0 (none, what everything but a story's held card leaves it at)
+        /// to 1 (black).
+        /// </summary>
+        public float Dim;
+
+        /// <summary>
+        /// The last picture written, label and caption burnt in: what a composite puts the
+        /// interface's layer over (the safari's call-outs, through <see cref="TheatreUiCapture.ArmOver"/>).
+        /// </summary>
+        /// <remarks>
+        /// Uploaded when asked for. A frame that went to the background writer never passed
+        /// through this texture, so its pixels are copied in here, once, the first time a
+        /// composite wants them.
+        /// </remarks>
+        public Texture2D LastFrame
+        {
+            get
+            {
+                if (_readbackStale && _pixels != null && _pixels.Length == _width * _height)
+                {
+                    _readback.SetPixels32(_pixels);
+                    _readback.Apply(false);
+                    _readbackStale = false;
+                }
+
+                return _readback;
+            }
+        }
+
+        /// <summary>
+        /// A portrait's fill light from the camera's side, at this intensity; 0 (the default) adds
+        /// none, so a film's close shot is lit as it always was. The safari's light rule (item 9):
+        /// the skin's sun stands and the portrait adds a fill from the camera's side, low.
+        /// </summary>
+        public float FillIntensity;
+
+        /// <summary>
+        /// A lamp that rides with the camera, for a story's portrait and birth (the owner
+        /// found the pictures too dark on 2026-09-25): a soft spot light a little above and to
+        /// the right of the lens, aimed at the focus distance, whose intensity is scaled by the
+        /// square of that distance so the subject receives about this much light whatever the
+        /// standoff, and what stands nearer receives more and what stands farther less, so the
+        /// water's depth still reads. 0 (the default) adds none, so every film, snapshot and
+        /// census picture is lit as it always was. <see cref="StoryLook"/> sets it.
+        /// </summary>
+        public float LampIntensity;
+
+        /// <summary>
+        /// Called with the rendered target (at the supersampled size, before it is box-filtered and
+        /// read back) when a placed frame is to be written: whatever it draws into the target is
+        /// in the picture, under the label and the caption, which are stamped after the read-back.
+        /// A story's chart is composited this way (<see cref="SafariChartLayer"/>). Null, the
+        /// default, draws nothing.
+        /// </summary>
+        public Action<RenderTexture> OverRender;
+
+        /// <summary>
+        /// Measure each placed frame's mean luma (<see cref="LastMeanLuma"/>) after the read-back,
+        /// before the dim, the label and the caption are stamped; and read a warm-up render back
+        /// (a null path) so it can be measured too. Off by default: nothing but a story's exposure
+        /// meter (<see cref="StoryExposure"/>) reads it.
+        /// </summary>
+        public bool Meter;
+
+        /// <summary>
+        /// Pixels the meter leaves out (a chart's card), in output pixels with the origin at the
+        /// bottom left as the read-back holds them; an empty rectangle leaves nothing out.
+        /// </summary>
+        public RectInt MeterExclude;
+
+        /// <summary>
+        /// The last measured frame's centre-weighted mean luma, 0 to 1 of full scale: Rec. 709
+        /// weights on the stored sRGB bytes, every fourth pixel of every fourth row, the middle
+        /// counting about three times the corners (<c>MeanLuma</c>). NaN until one is measured.
+        /// </summary>
+        public float LastMeanLuma { get; private set; } = float.NaN;
+
+        /// <summary>The render target's size, the output's times the supersample.</summary>
+        public int TargetWidth => _target.width;
+        public int TargetHeight => _target.height;
+
+        // The palette's three guilds. Duplicated as plain fields rather than shared with
+        // TheatrePalette, which paints renderers through a MaterialPropertyBlock and has no
+        // opinion about a pixel; the values are the same and the runner's inspector owns them.
+        public Color Photosynthetic = new Color(0.34f, 0.72f, 0.36f);
+        public Color Absorptive = new Color(0.90f, 0.55f, 0.22f);
+        public Color Structural = new Color(0.72f, 0.74f, 0.78f);
+
+        private readonly int _width;
+        private readonly int _height;
+        private readonly RenderTexture _target;
+        private readonly Texture2D _readback;
+
+        /// <summary>
+        /// How many rendered pixels make one output pixel on each axis: the picture is rendered
+        /// at this multiple and box-filtered down in the readback, which is the one anti-aliasing
+        /// that survives <c>-batchmode</c> without a graphics-side pass (2026-09-16).
+        /// <c>EVOSIM_THEATRE_SUPERSAMPLE</c>, 1 to 3, default 2.
+        /// </summary>
+        public static int Supersample => Mathf.Clamp(Mathf.RoundToInt(TheatreSkin.Dial("EVOSIM_THEATRE_SUPERSAMPLE", 2f, 1f, 3f)), 1, 3);
+
+        private readonly int _super;
+
+        /// <summary>
+        /// A supersample for the cameras made from now on, 1 to 3, or 0 for <see cref="Supersample"/>: a story
+        /// scene's own focus sets it (<see cref="SafariFocus"/>), since URP caps the Bokeh blur in the
+        /// render target's pixels.
+        /// </summary>
+        public static int SupersampleOverride;
+        private Texture2D _readbackFull;
+        private readonly GameObject _holder;
+        private readonly Camera _camera;
+
+        private Color32[] _pixels;
+
+        /// <summary>The largest picture this will make. A 4K frame is 33 MB of readback.</summary>
+        public const int MaximumSide = 4096;
+
+        /// <summary>
+        /// The supersampled picture box-filtered on the CPU, as every picture was until 2026-09-24,
+        /// in place of the card's pass (<c>TheatreBoxDown.shader</c>).
+        /// <c>EVOSIM_THEATRE_CPU_DOWNSAMPLE=1</c>, for a comparison of the two; the census views
+        /// (<see cref="Capture"/>) are on the CPU either way.
+        /// </summary>
+        public static bool CpuDownsample => Environment.GetEnvironmentVariable("EVOSIM_THEATRE_CPU_DOWNSAMPLE") == "1";
+
+        /// <summary>
+        /// A placed frame encoded and written on the main thread, as every frame was until
+        /// 2026-09-24, in place of <see cref="FrameWriter"/>'s threads.
+        /// <c>EVOSIM_THEATRE_SYNC_ENCODE=1</c>.
+        /// </summary>
+        public static bool SyncEncode => Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SYNC_ENCODE") == "1";
+
+        /// <summary>
+        /// On the first <see cref="CheckedFrames"/> placed frames of each camera, the picture is
+        /// also filtered on the CPU and encoded on the main thread, and the log says how far the
+        /// two paths are apart: the check that the fast path changed no pixel.
+        /// <c>EVOSIM_THEATRE_DOWNSAMPLE_CHECK=1</c>.
+        /// </summary>
+        public static bool DownsampleCheck => Environment.GetEnvironmentVariable("EVOSIM_THEATRE_DOWNSAMPLE_CHECK") == "1";
+
+        /// <summary>How many frames a camera checks under <see cref="DownsampleCheck"/>.</summary>
+        public const int CheckedFrames = 3;
+
+        private const string BoxDownShader = "Hidden/Evosim/Theatre Box Down";
+        private static readonly int FactorId = Shader.PropertyToID("_Factor");
+        private static readonly int EncodeId = Shader.PropertyToID("_Encode");
+        private static Material _boxDown;
+        private static bool _boxDownRefused;
+
+        // The card's box filter: the supersampled target filtered into a 1x linear target, read
+        // back into a 1x linear texture. Null on the CPU path.
+        private readonly RenderTexture _down;
+        private readonly Texture2D _readbackDown;
+        private readonly bool _sync;
+        private readonly bool _check;
+        private int _checked;
+
+        // Pixel buffers for placed frames. The one being drawn is _pixels; a buffer handed to the
+        // writer comes back here when the writer is done reading it.
+        private readonly Stack<Color32[]> _free = new Stack<Color32[]>();
+        private bool _pixelsInFlight;
+        private bool _readbackStale;
+
+        /// <summary>
+        /// How this camera makes a placed frame, for the log: where the box filter runs and where
+        /// the PNG is encoded.
+        /// </summary>
+        public string Route =>
+            (_super == 1 ? "no supersample" : _down != null ? "box filter on the card (" + _super + "x)" : "box filter on the CPU (" + _super + "x)") +
+            (_streamed ? ", streamed to ffmpeg's h264_nvenc (no PNG)"
+                : _sync ? ", PNG encoded on the main thread" : ", PNG encoded on " + FrameWriter.ThreadCount + " writer threads");
+
+        // Whether this camera handed a frame to the take's stream, for the route's word.
+        private bool _streamed;
+
+        /// <summary>Every placed frame this camera wrote, stage by stage.</summary>
+        public StageTimes Times { get; } = new StageTimes();
+
+        public SnapshotCamera(int width, int height)
+        {
+            _width = Mathf.Clamp(width, 64, MaximumSide);
+            _height = Mathf.Clamp(height, 64, MaximumSide);
+
+            _super = SupersampleOverride > 0 ? Mathf.Clamp(SupersampleOverride, 1, 3) : Supersample;
+            while (_super > 1 && Mathf.Max(_width, _height) * _super > 2 * MaximumSide) _super--;
+
+            _target = new RenderTexture(_width * _super, _height * _super, 24, RenderTextureFormat.ARGB32)
+            {
+                name = "Theatre Snapshot",
+                antiAliasing = 1,
+            };
+
+            _readback = new Texture2D(_width, _height, TextureFormat.RGBA32, false);
+
+            // The full-size read-back is made when a path asks for it: the card's filter never
+            // does, and at a 2x supersample of 1920x1080 it is a 33 MB texture a take.
+            _readbackFull = _super > 1 ? null : _readback;
+
+            _sync = SyncEncode;
+            _check = DownsampleCheck;
+
+            if (_super > 1 && !CpuDownsample && BoxDownMaterial() != null)
+            {
+                // Linear, so the filter's output is stored as the byte it is and read back as one:
+                // the bytes are already the sRGB-encoded ones the CPU path averaged.
+                _down = new RenderTexture(_width, _height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear)
+                {
+                    name = "Theatre Snapshot (box filtered)",
+                    antiAliasing = 1,
+                    filterMode = FilterMode.Point,
+                };
+
+                if (_down.sRGB || !_down.Create())
+                {
+                    Debug.LogWarning("[Theatre] snapshot: the box filter's 1x target could not be made linear; filtering on the CPU.");
+                    Discard(_down);
+                    _down = null;
+                }
+                else
+                {
+                    _readbackDown = new Texture2D(_width, _height, TextureFormat.RGBA32, false, true);
+                }
+            }
+
+            // Hidden and not saved: this camera belongs to one call and must never be caught by
+            // a scene save or turn up in the hierarchy the owner is flying around in.
+            _holder = new GameObject("Theatre Snapshot Camera")
+            {
+                hideFlags = HideFlags.HideAndDontSave,
+            };
+
+            _camera = _holder.AddComponent<Camera>();
+            _camera.clearFlags = CameraClearFlags.SolidColor;
+            _camera.backgroundColor = Water;
+            _camera.nearClipPlane = 0.05f;
+            _camera.farClipPlane = 8000f;
+            _camera.targetTexture = _target;
+            _camera.cullingMask = ~0;
+            TheatreGrade.Attach(_camera);
+
+            // Disabled, because this camera renders when it is asked to and never once a frame.
+            // An enabled second camera would render the whole world every frame of a run that
+            // spends its frames stepping physics.
+            _camera.enabled = false;
+        }
+
+        /// <summary>
+        /// Reads a comma separated view list, or every view when it is empty.
+        /// </summary>
+        /// <param name="text">Something like <c>side,top</c>. Case and spaces do not matter.</param>
+        /// <param name="refusal">Which word was not a view, or null.</param>
+        public static View[] ParseViews(string text, out string refusal)
+        {
+            refusal = null;
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                // Close and bed are not in the default set: each answers a different question
+                // from the census views and takes a picture nobody asked for whenever a caller
+                // wants a census, so each is named or it is not taken. The sky view joined the
+                // set on 2026-09-16 (the look's design pass read it as the most striking frame
+                // in the archive, and nobody had judged it): it costs one render and moves no
+                // census frame.
+                return new[] { View.Side, View.End, View.Top, View.Iso, View.Sky };
+            }
+
+            string[] words = text.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            var views = new List<View>(words.Length);
+
+            foreach (string word in words)
+            {
+                string trimmed = word.Trim();
+                if (trimmed.Length == 0) continue;
+
+                if (!Enum.TryParse(trimmed, true, out View view))
+                {
+                    refusal =
+                        "'" + trimmed +
+                        "' is not a view; the views are side, end, top, iso, close, sky, bed, reef.";
+                    return null;
+                }
+
+                if (!views.Contains(view)) views.Add(view);
+            }
+
+            if (views.Count == 0)
+            {
+                refusal = "no view was named.";
+                return null;
+            }
+
+            return views.ToArray();
+        }
+
+        /// <summary>The name a view goes into a file name under.</summary>
+        public static string NameOf(View view) => view.ToString().ToLowerInvariant();
+
+        /// <summary>
+        /// Frames the world, renders it, stamps the markers and the label, and writes the PNG.
+        /// </summary>
+        /// <param name="frame">
+        /// The world on screen. Read, never stepped: a replay of it, or a reconstruction of it
+        /// drawn from the run's own files (<see cref="SnapshotWorld"/>).
+        /// </param>
+        /// <param name="view">Which way to look.</param>
+        /// <param name="path">The file to write. Its directory is created if it is missing.</param>
+        /// <param name="remark">What the picture cost and what it could not hold, for the log.</param>
+        /// <returns>The bytes written.</returns>
+        public int Capture(ITheatreFrame frame, View view, string path, out string remark)
+        {
+            if (frame == null) throw new ArgumentNullException(nameof(frame));
+
+            // Read before the camera is placed, because the label's height is what the vertical
+            // fit leaves clear of: a two line label on a reconstruction would otherwise stamp
+            // itself across the surface of the water.
+            _label = LabelLines(Label(frame, view));
+
+            Bounds box = BoxOf(frame, out string boxNote);
+
+            // What the camera is fitted to, which is the whole water for every view but the close
+            // one. The sky view is fitted to nothing at all and stands where it stands, but it is
+            // handed the box too, because the fog below is spanned across whatever is passed here.
+            Bounds framed =
+                view == View.Close ? CloseOn(frame, box, ref boxNote)
+                : view == View.Bed ? FloorSlab(box, frame)
+                : box;
+
+            _bedLook = BedLook(frame);
+            _reefs = frame.Reefs;
+
+            Frame(view, framed);
+
+            // The water column behind everything when the skin built one (TheatreBackdrop.shader),
+            // the flat deep colour otherwise: the same choice the fly camera makes in Apply.
+            _camera.backgroundColor = Water;
+            _camera.clearFlags = RenderSettings.skybox != null ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
+
+            // The underwater look (logbook/specs/underwater-look/brief.md) never reaches a census
+            // view: side, end, top and iso are records and must stay comparable, so today's look is
+            // held for their render whatever the dials say. Taken before the hiding below, so it
+            // hides today's furniture, and let go after the hiding is undone.
+            TheatreSkin skin = TheatreSkin.Current;
+            bool census = view == View.Side || view == View.End || view == View.Top || view == View.Iso;
+            IDisposable held = census && skin != null ? skin.HoldTodaysLook() : null;
+
+            // Every other view is drawn in the run's own light at the frame's second (items 3 and
+            // 6), with the exposure opened or closed for the light its subject has lost.
+            if (!census && skin != null) skin.PushFrame(frame, _camera.transform.position);
+
+            List<WaterBounds> silenced = SilenceTheWater();
+            List<Renderer> hidden = HideWhatOnlyTheWaterSees(view);
+
+            // The fog is framed on what is being looked at rather than on the box. In the close
+            // view that is the point: a few metres of water put the rest of the world into the
+            // background where it belongs, which is the dark field arrangement done with depth.
+            Fog saved = FrameTheFog(framed, view);
+            Light rake = view == View.Bed ? RakeTheFloor() : view == View.Close ? BackLight() : null;
+
+            // A portrait is focused on its subject and nothing else: the crowd in front and
+            // behind falls into the lens's own blur on top of the fog's (the look's design pass,
+            // F1). A census view is never focused, since a diagram in focus everywhere is the
+            // point of a diagram.
+            TheatreGrade grade = view == View.Close ? TheatreGrade.Current : null;
+            if (grade != null) grade.Focus(Vector3.Distance(_camera.transform.position, framed.center), 5.6f);
+
+            // The key rakes from behind this camera for this render, and goes back after, so a
+            // picture of one second is lit the same way whichever view was taken before it.
+            Quaternion lightsWere = skin != null ? skin.Aim(_camera.transform.rotation) : Quaternion.identity;
+
+            // Item 3's meter: none on the sky view (the window keeps the day's own order), the
+            // day's share alone and at most 1 EV on the bed view, which frames the whole tank, and
+            // depth and day for the close and reef views, whose subjects stand at a depth (the
+            // reef view's where its camera is, the close view's at the middle of its fit).
+            TheatreSkin.MeterView meterView =
+                view == View.Sky ? TheatreSkin.MeterView.Sky
+                : view == View.Close || view == View.Reef ? TheatreSkin.MeterView.Subject
+                : TheatreSkin.MeterView.Wide;
+            float subjectY = view == View.Reef ? _camera.transform.position.y : framed.center.y;
+            float meterWas = MeterOpen(skin, subjectY, meterView);
+
+            try
+            {
+                HdrpLook.Render(_camera, box);
+            }
+            finally
+            {
+                MeterClose(meterWas);
+                saved.Restore();
+                if (grade != null) grade.Unfocus();
+                if (skin != null) skin.Aim(lightsWere);
+                if (rake != null) UnityEngine.Object.DestroyImmediate(rake.gameObject);
+                for (int i = 0; i < silenced.Count; i++) silenced[i].enabled = true;
+                for (int i = 0; i < hidden.Count; i++) hidden[i].enabled = true;
+                held?.Dispose();
+            }
+
+            RenderTexture active = RenderTexture.active;
+            RenderTexture.active = _target;
+
+            try
+            {
+                Full.ReadPixels(new Rect(0f, 0f, _width * _super, _height * _super), 0, 0, false);
+            }
+            finally
+            {
+                RenderTexture.active = active;
+            }
+
+            // A fresh array, never one of the placed frames' buffers: a buffer the writer holds
+            // is read on its thread until it comes back.
+            _pixels = _super > 1 ? BoxDown(Full.GetPixels32(), _super) : Full.GetPixels32();
+            _pixelsInFlight = false;
+            _readbackStale = false;
+
+            // Neither the close view nor the sky view carries the box. The close view's frame cuts
+            // the water's edges at odd angles, and the sky view stands inside the box looking up,
+            // where the wireframe would be stamped straight across the window.
+            if (view != View.Close && view != View.Sky && view != View.Bed && view != View.Reef) DrawBox(box, frame);
+
+            DrawBodies(frame, view, out int marked, out int outside, out int bodies);
+            DrawLabel(_label);
+
+            _readback.SetPixels32(_pixels);
+            _readback.Apply(false);
+
+            byte[] png = _readback.EncodeToPNG();
+
+            string directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            File.WriteAllBytes(path, png);
+
+            remark =
+                bodies + " bodies, " + marked + " too small to see and marked at " +
+                MarkerPixels + " px, " + outside + " outside the frame" +
+                (boxNote != null ? "; " + boxNote : "");
+
+            return png.Length;
+        }
+
+        /// <summary>The meter's last logged opening, EV, so a film logs it when it moves and not every frame.</summary>
+        private static float _meterLogged = float.NaN;
+
+        /// <summary>
+        /// Opens or closes the grade's exposure by the underwater look's meter (item 3,
+        /// <see cref="TheatreSkin.MeterEv"/>) for one render, and hands back the exposure to put
+        /// back, or NaN when nothing was changed (the item off, a census view holding the look, or
+        /// no grade).
+        /// </summary>
+        private static float MeterOpen(TheatreSkin skin, float subjectY, TheatreSkin.MeterView view)
+        {
+            TheatreGrade grade = TheatreGrade.Current;
+            if (skin == null || grade == null) return float.NaN;
+
+            float ev = skin.MeterEv(subjectY, view);
+            if (ev == 0f) return float.NaN;
+
+            if (float.IsNaN(_meterLogged) || Mathf.Abs(ev - _meterLogged) >= 0.25f)
+            {
+                _meterLogged = ev;
+                Debug.Log(string.Format(
+                    CultureInfo.InvariantCulture,
+                    "[Theatre] look: meter {0:+0.00;-0.00} EV ({1} view, subject at y {2:0.0} m)", ev, view, subjectY));
+            }
+
+            float was = grade.Exposure;
+            grade.SetExposure(was + ev);
+            return was;
+        }
+
+        private static void MeterClose(float was)
+        {
+            if (float.IsNaN(was)) return;
+            if (TheatreGrade.Current != null) TheatreGrade.Current.SetExposure(was);
+        }
+
+        /// <summary>
+        /// One frame of a film: the camera stands where the caller puts it, rather than where a
+        /// view's fit would, and the picture carries no box, no markers and a one-line label.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why a second capture beside <see cref="Capture"/>.</b> Every view there is a fit:
+        /// the camera is placed from the world's bounds so that the thing asked about is inside
+        /// the frame. A film shot is a move, and its camera is placed by a plan from one frame to
+        /// the next (<c>TheatreFilm</c>, logbook/specs/safari-spec.md §9), so the placement is the
+        /// caller's and only the render is shared. The render is the close view's in every other
+        /// respect: the scene's own fog, the furniture that only the water sees left in (a film
+        /// is shot inside the water), the key aimed from behind this camera for the one render,
+        /// and the portrait's back light and focus when <paramref name="portrait"/> is set.
+        /// </para>
+        /// <para>
+        /// <b>No box and no markers, by the owner's filming rules</b> (video-tools-notes.md: "no
+        /// wireframe box, ring lines or markers"). The water's own immediate-mode box is silenced
+        /// for the render as it is for every picture here, and nothing is stamped but the label.
+        /// </para>
+        /// </remarks>
+        /// <param name="frame">The world being filmed. Read, never stepped.</param>
+        /// <param name="eye">Where the camera stands, world metres.</param>
+        /// <param name="rotation">Which way it looks.</param>
+        /// <param name="fieldOfView">The vertical field of view, degrees.</param>
+        /// <param name="portrait">Light and focus the frame as a portrait of one subject.</param>
+        /// <param name="focusMetres">The focus distance for a portrait; ignored otherwise.</param>
+        /// <param name="label">The one line burnt into the corner; null or empty burns no label.</param>
+        /// <param name="path">
+        /// The PNG to write, its directory created if it is missing; null renders and writes nothing.
+        /// </param>
+        /// <param name="filmSecond">
+        /// The film's own second for this frame, the continuous one its label prints, which the
+        /// snow's drift then follows (<see cref="TheatreSkin.PushFrame"/>); NaN, the default, for
+        /// a still or any caller without one, which leaves the drift on the frame's world second.
+        /// </param>
+        /// <returns>
+        /// The bytes written, or 0 when the frame went to <see cref="FrameWriter"/>, which writes it
+        /// on its own thread (<see cref="FlushWrites"/> waits for it to be on disk), or to the take's
+        /// <see cref="FrameStream"/> while one is open (<see cref="FrameStream.Close"/> finishes the mp4).
+        /// </returns>
+        public int CapturePlaced(
+            ITheatreFrame frame, Vector3 eye, Quaternion rotation, float fieldOfView,
+            bool portrait, float focusMetres, string label, string path, double filmSecond = double.NaN)
+        {
+            if (frame == null) throw new ArgumentNullException(nameof(frame));
+
+            long entered = System.Diagnostics.Stopwatch.GetTimestamp();
+
+            _label = LabelLines(label);
+
+            Bounds box = BoxOf(frame, out _);
+
+            _camera.orthographic = false;
+            _camera.aspect = (float)_width / _height;
+            _camera.fieldOfView = Mathf.Clamp(fieldOfView, 5f, 120f);
+            _camera.transform.SetPositionAndRotation(eye, rotation);
+            _camera.nearClipPlane = 0.05f;
+            _camera.farClipPlane = 2f * box.size.magnitude + 200f;
+            _camera.backgroundColor = Water;
+            _camera.clearFlags = RenderSettings.skybox != null ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
+
+            List<WaterBounds> silenced = SilenceTheWater();
+            Light back = portrait ? BackLight() : null;
+            Light fill = portrait && FillIntensity > 0f ? FillLight(FillIntensity) : null;
+            Light lamp = LampIntensity > 0f ? Lamp(eye, rotation, focusMetres) : null;
+
+            // A film's or a safari's portrait is focused on its subject's depth with the lens the
+            // field of view makes (TheatreGrade.FocusPortrait); the census views above never are.
+            TheatreGrade grade = portrait && focusMetres > 0f ? TheatreGrade.Current : null;
+            if (grade != null) grade.FocusPortrait(focusMetres, _camera.fieldOfView);
+
+            TheatreSkin skin = TheatreSkin.Current;
+            Quaternion lightsWere = skin != null ? skin.Aim(rotation) : Quaternion.identity;
+
+            // The underwater look's items 3 and 6: the run's light at the frame's second, and the
+            // exposure opened for what the subject (the focus, or six metres ahead) has lost.
+            if (skin != null) skin.PushFrame(frame, eye, filmSecond);
+            float subjectY = (eye + rotation * Vector3.forward * (focusMetres > 0f ? focusMetres : 6f)).y;
+            float meterWas = MeterOpen(skin, subjectY, TheatreSkin.MeterView.Subject);
+
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+
+            try
+            {
+                HdrpLook.Render(_camera, box);
+            }
+            finally
+            {
+                MeterClose(meterWas);
+                if (grade != null) grade.Unfocus();
+                if (skin != null) skin.Aim(lightsWere);
+                if (back != null) UnityEngine.Object.DestroyImmediate(back.gameObject);
+                if (fill != null) UnityEngine.Object.DestroyImmediate(fill.gameObject);
+                if (lamp != null) UnityEngine.Object.DestroyImmediate(lamp.gameObject);
+                for (int i = 0; i < silenced.Count; i++) silenced[i].enabled = true;
+            }
+
+            // A warm-up render: drawn so the grade's history and the scene's first-draw work are
+            // done, read back by nobody (TheatreFilm's warm-up), unless the meter wants it.
+            if (path == null && !Meter) return 0;
+
+            // What is drawn over the render (a story's chart), on the supersampled target, so the
+            // box filter smooths its edges with the world's.
+            if (path != null && OverRender != null) OverRender(_target);
+
+            RenderTexture active = RenderTexture.active;
+
+            try
+            {
+                if (_down != null)
+                {
+                    // The card averages each block of the supersampled picture into one pixel of
+                    // the 1x target (TheatreBoxDown.shader, the CPU's arithmetic to the bit), and
+                    // only the 1x picture comes back: 8 MB at 1920x1080 where the CPU path read
+                    // back 33 MB.
+                    _boxDown.SetFloat(FactorId, _super);
+                    _boxDown.SetFloat(EncodeId, _target.sRGB ? 1f : 0f);
+                    Graphics.Blit(_target, _down, _boxDown);
+
+                    RenderTexture.active = _down;
+                    _readbackDown.ReadPixels(new Rect(0f, 0f, _width, _height), 0, 0, false);
+                }
+                else
+                {
+                    RenderTexture.active = _target;
+                    Full.ReadPixels(new Rect(0f, 0f, _width * _super, _height * _super), 0, 0, false);
+                }
+            }
+            finally
+            {
+                RenderTexture.active = active;
+            }
+
+            // The render and the read-back, which waits for the device, so this is the frame's
+            // drawing cost on the CPU and the GPU together, without the encoding and the write.
+            // On the card's path the box filter is inside it.
+            LastRenderMs = watch.Elapsed.TotalMilliseconds;
+            long mark = System.Diagnostics.Stopwatch.GetTimestamp();
+
+            _pixels = Acquire();
+
+            if (_down != null)
+            {
+                // A view of the texture's own memory, copied into the frame's buffer: no 8 MB
+                // array made and thrown away a frame, as GetPixels32 would.
+                _readbackDown.GetPixelData<Color32>(0).CopyTo(_pixels);
+            }
+            else
+            {
+                Color32[] full = Full.GetPixels32();
+                if (_super > 1) BoxDown(full, _super, _pixels);
+                else Array.Copy(full, _pixels, _pixels.Length);
+            }
+
+            if (_check && _checked < CheckedFrames && path != null) CheckTheFilter();
+
+            // The meter reads the picture as rendered, before anything is stamped on it.
+            if (Meter) LastMeanLuma = MeanLuma(MeterExclude);
+            if (path == null) return 0;
+
+            LastPixelsMs = Since(ref mark);
+
+            if (Dim > 0f) Darken(0, 0, _width, _height, Dim);
+            DrawLabel(_label);
+            if (!string.IsNullOrEmpty(Caption)) DrawCaption(Caption);
+
+            LastLabelMs = Since(ref mark);
+
+            string directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+
+            int written = 0;
+
+            if (FrameStream.IsOpen)
+            {
+                // The take's stream (EVOSIM_THEATRE_STREAM=nvenc): the frame goes, in order, to the
+                // take's ffmpeg, which encodes it on the card into the take's mp4. No PNG is written,
+                // whatever EVOSIM_THEATRE_SYNC_ENCODE says; the path only says a frame is kept.
+                if (_check && _checked < CheckedFrames) CheckTheStream(path);
+
+                FrameStream.Enqueue(_pixels, _width, _height, Times, Release);
+                _pixelsInFlight = true;
+                _readbackStale = true;
+                _streamed = true;
+
+                LastEncodeMs = Since(ref mark);
+                LastWriteMs = 0d;
+            }
+            else if (_sync)
+            {
+                _readback.SetPixels32(_pixels);
+                _readback.Apply(false);
+                _readbackStale = false;
+
+                byte[] png = _readback.EncodeToPNG();
+                LastEncodeMs = Since(ref mark);
+
+                File.WriteAllBytes(path, png);
+                LastWriteMs = Since(ref mark);
+                written = png.Length;
+            }
+            else
+            {
+                if (_check && _checked < CheckedFrames) CheckTheEncoder();
+
+                // To the writer's threads, which encode and write it while the next frame is
+                // stepped and drawn. This waits only when four frames are already in flight, and
+                // throws the first failure an earlier frame met.
+                FrameWriter.Enqueue(_pixels, _readback.graphicsFormat, _width, _height, path, Times, Release);
+                _pixelsInFlight = true;
+                _readbackStale = true;
+
+                LastEncodeMs = Since(ref mark);
+                LastWriteMs = 0d;
+            }
+
+            if (_check && _checked < CheckedFrames) _checked++;
+
+            LastCaptureMs = 1000d * (System.Diagnostics.Stopwatch.GetTimestamp() - entered) / System.Diagnostics.Stopwatch.Frequency;
+            Times.Add(LastRenderMs, LastPixelsMs, LastLabelMs, LastEncodeMs, LastWriteMs, LastCaptureMs);
+
+            return written;
+        }
+
+        /// <summary>The last placed capture's render and read-back, milliseconds.</summary>
+        public double LastRenderMs { get; private set; }
+
+        /// <summary>
+        /// The last placed capture's 1x pixels into the frame's buffer, ms: a copy on the card's
+        /// path, the full read-back's array and the box filter on the CPU's.
+        /// </summary>
+        public double LastPixelsMs { get; private set; }
+
+        /// <summary>The last placed capture's label and caption, burnt into the pixels, ms.</summary>
+        public double LastLabelMs { get; private set; }
+
+        /// <summary>
+        /// The last placed capture's encode on the main thread, ms: the upload and the PNG encode
+        /// on the synchronous path, the hand-off to the writer (its wait for a free slot included)
+        /// otherwise.
+        /// </summary>
+        public double LastEncodeMs { get; private set; }
+
+        /// <summary>The last placed capture's file write on the main thread, ms; 0 when the writer wrote it.</summary>
+        public double LastWriteMs { get; private set; }
+
+        /// <summary>The whole of the last placed capture, from the call to its return, ms.</summary>
+        public double LastCaptureMs { get; private set; }
+
+        /// <summary>
+        /// Waits for every frame handed to the writer to be on disk, and throws the first failure
+        /// any of them met. The film and the safari call it at the end of every take, before
+        /// they write anything that lists frames, and before they quit.
+        /// </summary>
+        public static void FlushWrites() => FrameWriter.Flush();
+
+        private static double Since(ref long mark)
+        {
+            long now = System.Diagnostics.Stopwatch.GetTimestamp();
+            double ms = 1000d * (now - mark) / System.Diagnostics.Stopwatch.Frequency;
+            mark = now;
+            return ms;
+        }
+
+        /// <summary>
+        /// A buffer for the next placed frame: the last one again when nothing else reads it,
+        /// else one the writer has handed back, else a new one. The writer holds at most
+        /// <see cref="FrameWriter.MostInFlight"/>, so a camera never makes more than five.
+        /// </summary>
+        private Color32[] Acquire()
+        {
+            int n = _width * _height;
+
+            if (_pixels != null && !_pixelsInFlight && _pixels.Length == n) return _pixels;
+
+            lock (_free)
+            {
+                while (_free.Count > 0)
+                {
+                    Color32[] spare = _free.Pop();
+                    if (spare.Length == n) { _pixelsInFlight = false; return spare; }
+                }
+            }
+
+            _pixelsInFlight = false;
+            return new Color32[n];
+        }
+
+        /// <summary>The writer's thread handing a buffer back.</summary>
+        private void Release(Color32[] pixels)
+        {
+            lock (_free) _free.Push(pixels);
+        }
+
+        /// <summary>The full-size read-back texture, made the first time a path needs it.</summary>
+        private Texture2D Full
+        {
+            get
+            {
+                if (_readbackFull == null)
+                {
+                    _readbackFull = new Texture2D(_width * _super, _height * _super, TextureFormat.RGBA32, false);
+                }
+
+                return _readbackFull;
+            }
+        }
+
+        /// <summary>
+        /// The card's box filter, or null when its shader is missing or refused here, in which
+        /// case every camera filters on the CPU and the log says so once.
+        /// </summary>
+        private static Material BoxDownMaterial()
+        {
+            if (_boxDown != null) return _boxDown;
+            if (_boxDownRefused) return null;
+
+            Shader shader = Shader.Find(BoxDownShader);
+            if (shader == null || !shader.isSupported)
+            {
+                _boxDownRefused = true;
+                Debug.LogWarning("[Theatre] snapshot: '" + BoxDownShader + "' is " +
+                                 (shader == null ? "not in the project" : "not supported by this device") +
+                                 "; every picture is box-filtered on the CPU.");
+                return null;
+            }
+
+            _boxDown = new Material(shader) { name = "Theatre Box Down", hideFlags = HideFlags.HideAndDontSave };
+            return _boxDown;
+        }
+
+        /// <summary>
+        /// The CPU's box filter run on the same render the card just filtered, and the two
+        /// compared pixel by pixel (<see cref="DownsampleCheck"/>). Called before the label is
+        /// drawn, so it compares the filters and nothing else.
+        /// </summary>
+        private void CheckTheFilter()
+        {
+            if (_down == null)
+            {
+                Debug.Log("[Theatre] frame check: " + Route + ", so there is no card filter to compare.");
+                return;
+            }
+
+            RenderTexture active = RenderTexture.active;
+            try
+            {
+                RenderTexture.active = _target;
+                Full.ReadPixels(new Rect(0f, 0f, _width * _super, _height * _super), 0, 0, false);
+            }
+            finally
+            {
+                RenderTexture.active = active;
+            }
+
+            var cpu = new Color32[_width * _height];
+            BoxDown(Full.GetPixels32(), _super, cpu);
+
+            int worst = 0, differ = 0, worstAlpha = 0;
+            for (int i = 0; i < cpu.Length; i++)
+            {
+                Color32 a = cpu[i], b = _pixels[i];
+                int d = Math.Max(Math.Abs(a.r - b.r), Math.Max(Math.Abs(a.g - b.g), Math.Abs(a.b - b.b)));
+                if (d > 0) differ++;
+                if (d > worst) worst = d;
+                worstAlpha = Math.Max(worstAlpha, Math.Abs(a.a - b.a));
+            }
+
+            Debug.Log(string.Format(CultureInfo.InvariantCulture,
+                "[Theatre] frame check {0} of {1} ({2}x{3}, {4}x supersample, target sRGB {5}): the card's box filter against the CPU's: " +
+                "largest channel difference {6}, {7} of {8} pixels differ, largest alpha difference {9}{10}",
+                _checked + 1, CheckedFrames, _width, _height, _super, _target.sRGB, worst, differ, cpu.Length, worstAlpha,
+                worst == 0 ? " (identical)" : ""));
+        }
+
+        /// <summary>
+        /// The frame encoded as the writer will encode it and as the synchronous path did, and
+        /// both decoded and compared with the pixels (<see cref="DownsampleCheck"/>): the check
+        /// that the writer's encoder keeps the rows the right way up and the bytes unchanged.
+        /// </summary>
+        private void CheckTheEncoder()
+        {
+            byte[] writers = ImageConversion.EncodeArrayToPNG(_pixels, _readback.graphicsFormat, (uint)_width, (uint)_height);
+
+            _readback.SetPixels32(_pixels);
+            _readback.Apply(false);
+            byte[] old = _readback.EncodeToPNG();
+
+            bool sameBytes = writers != null && old != null && writers.Length == old.Length;
+            if (sameBytes)
+            {
+                for (int i = 0; i < old.Length; i++)
+                {
+                    if (writers[i] != old[i]) { sameBytes = false; break; }
+                }
+            }
+
+            string decoded = Decodes(writers, "the writer's") + "; " + Decodes(old, "the old encoder's");
+
+            Debug.Log(string.Format(CultureInfo.InvariantCulture,
+                "[Theatre] frame check {0} of {1}: the writer's PNG ({2} bytes) {3} the old encoder's ({4} bytes); {5}",
+                _checked + 1, CheckedFrames, writers?.Length ?? 0, sameBytes ? "is byte for byte" : "differs from", old?.Length ?? 0, decoded));
+        }
+
+        /// <summary>
+        /// Under the stream there is no PNG to compare encoders on, so the check writes the frame,
+        /// label and all, as the old encoder would have, to <c>check-frame-NNNNNN.png</c> beside
+        /// the take (a name the encode step's <c>frame-*.png</c> never matches): the reference the
+        /// take's mp4 is compared with for colour, brightness and orientation
+        /// (<c>python scripts/tests/theatre-stream/test_stream_encode.py --compare &lt;take dir&gt;</c>).
+        /// </summary>
+        private void CheckTheStream(string path)
+        {
+            _readback.SetPixels32(_pixels);
+            _readback.Apply(false);
+            _readbackStale = false;
+
+            byte[] png = _readback.EncodeToPNG();
+            string reference = Path.Combine(Path.GetDirectoryName(path) ?? "", "check-" + Path.GetFileName(path));
+            File.WriteAllBytes(reference, png);
+
+            Debug.Log(string.Format(CultureInfo.InvariantCulture,
+                "[Theatre] frame check {0} of {1}: the frame goes to the take's stream, not to a PNG; its pixels are in {2} ({3} bytes) to compare with the take's mp4",
+                _checked + 1, CheckedFrames, reference, png?.Length ?? 0));
+        }
+
+        /// <summary>Whether a PNG decodes to exactly the frame's pixels, said for the log.</summary>
+        private string Decodes(byte[] png, string whose)
+        {
+            if (png == null || png.Length == 0) return whose + " is empty";
+
+            var read = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            try
+            {
+                if (!read.LoadImage(png, false)) return whose + " does not decode";
+                if (read.width != _width || read.height != _height) return whose + " decodes to " + read.width + "x" + read.height;
+
+                Color32[] back = read.GetPixels32();
+                int worst = 0, differ = 0, flipped = 0;
+                for (int i = 0; i < back.Length; i++)
+                {
+                    Color32 a = back[i], b = _pixels[i];
+                    int d = Math.Max(Math.Abs(a.r - b.r), Math.Max(Math.Abs(a.g - b.g), Math.Max(Math.Abs(a.b - b.b), Math.Abs(a.a - b.a))));
+                    if (d > 0) differ++;
+                    if (d > worst) worst = d;
+
+                    int y = i / _width, x = i - y * _width;
+                    Color32 m = _pixels[(_height - 1 - y) * _width + x];
+                    if (a.r == m.r && a.g == m.g && a.b == m.b) flipped++;
+                }
+
+                if (differ == 0) return whose + " decodes to the frame's pixels exactly";
+                return string.Format(CultureInfo.InvariantCulture,
+                    "{0} decodes with {1} pixels off by up to {2}{3}", whose, differ, worst,
+                    flipped == back.Length ? " (UPSIDE DOWN)" : "");
+            }
+            finally
+            {
+                Discard(read);
+            }
+        }
+
+        /// <summary>
+        /// What each placed frame cost, stage by stage: the main thread's stages from
+        /// <see cref="CapturePlaced"/>, and the writer's encode and write when the frame went to
+        /// <see cref="FrameWriter"/>.
+        /// </summary>
+        /// <remarks>
+        /// Every figure is wall time, and a wall time is a fact about the machine as it was: one
+        /// taken beside two farm runs is a reading of that machine and not of the code
+        /// (CLAUDE.md, "Cap the load a build puts on the machine").
+        /// </remarks>
+        public sealed class StageTimes
+        {
+            private readonly object _gate = new object();
+            private readonly List<double> _render = new List<double>();
+            private readonly List<double> _pixels = new List<double>();
+            private readonly List<double> _label = new List<double>();
+            private readonly List<double> _encode = new List<double>();
+            private readonly List<double> _write = new List<double>();
+            private readonly List<double> _total = new List<double>();
+            private readonly List<double> _writerEncode = new List<double>();
+            private readonly List<double> _writerWrite = new List<double>();
+
+            /// <summary>Frames recorded on the main thread.</summary>
+            public int Frames
+            {
+                get { lock (_gate) return _total.Count; }
+            }
+
+            internal void Add(double render, double pixels, double label, double encode, double write, double total)
+            {
+                lock (_gate)
+                {
+                    _render.Add(render);
+                    _pixels.Add(pixels);
+                    _label.Add(label);
+                    _encode.Add(encode);
+                    _write.Add(write);
+                    _total.Add(total);
+                }
+            }
+
+            /// <summary>Called on a writer thread with one frame's encode and write.</summary>
+            internal void AddWriter(double encode, double write)
+            {
+                lock (_gate)
+                {
+                    _writerEncode.Add(encode);
+                    _writerWrite.Add(write);
+                }
+            }
+
+            /// <summary>Folds another camera's frames into these: the safari's whole-trip line.</summary>
+            public void Add(StageTimes other)
+            {
+                if (other == null || ReferenceEquals(other, this)) return;
+
+                lock (other._gate)
+                {
+                    lock (_gate)
+                    {
+                        _render.AddRange(other._render);
+                        _pixels.AddRange(other._pixels);
+                        _label.AddRange(other._label);
+                        _encode.AddRange(other._encode);
+                        _write.AddRange(other._write);
+                        _total.AddRange(other._total);
+                        _writerEncode.AddRange(other._writerEncode);
+                        _writerWrite.AddRange(other._writerWrite);
+                    }
+                }
+            }
+
+            /// <summary>
+            /// One line for the log: the median of each stage on the main thread, the whole call's
+            /// median, mean and slowest, and the writer's medians when it wrote any.
+            /// </summary>
+            public string Line()
+            {
+                lock (_gate)
+                {
+                    if (_total.Count == 0) return "no frames written";
+
+                    string line = string.Format(CultureInfo.InvariantCulture,
+                        "{0} frames; a frame on the main thread: median {1:0.0} ms, mean {2:0.0} ms, slowest {3:0.0} ms " +
+                        "(medians: render and read-back {4:0.0}, pixels {5:0.0}, label and caption {6:0.0}, encode or hand-off {7:0.0}, write {8:0.0})",
+                        _total.Count, Median(_total), Mean(_total), Max(_total),
+                        Median(_render), Median(_pixels), Median(_label), Median(_encode), Median(_write));
+
+                    if (_writerEncode.Count > 0)
+                    {
+                        line += string.Format(CultureInfo.InvariantCulture,
+                            "; off it, {0} frames: encode median {1:0.0} ms (slowest {2:0.0}), write median {3:0.0} ms (slowest {4:0.0})",
+                            _writerEncode.Count, Median(_writerEncode), Max(_writerEncode), Median(_writerWrite), Max(_writerWrite));
+                    }
+
+                    return line;
+                }
+            }
+
+            private static double Median(List<double> values)
+            {
+                if (values.Count == 0) return 0d;
+                var sorted = new List<double>(values);
+                sorted.Sort();
+                return sorted[sorted.Count / 2];
+            }
+
+            private static double Mean(List<double> values)
+            {
+                if (values.Count == 0) return 0d;
+                double sum = 0d;
+                foreach (double v in values) sum += v;
+                return sum / values.Count;
+            }
+
+            private static double Max(List<double> values)
+            {
+                double most = 0d;
+                foreach (double v in values) most = Math.Max(most, v);
+                return most;
+            }
+        }
+
+        /// <summary>
+        /// How far the last written picture's pixels spread, as the standard deviation of their
+        /// luminance on 0 to 255, and their mean. A headless device can render nothing and still
+        /// hand back a buffer, which reads as a uniform frame: this is the check for it.
+        /// </summary>
+        public void LastPictureSpread(out float mean, out float deviation)
+        {
+            mean = 0f;
+            deviation = 0f;
+            if (_pixels == null || _pixels.Length == 0) return;
+
+            double sum = 0d, squares = 0d;
+            int n = 0;
+
+            // Every seventh pixel is plenty for a spread, and keeps this out of the frame's cost.
+            for (int i = 0; i < _pixels.Length; i += 7)
+            {
+                Color32 c = _pixels[i];
+                double y = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+                sum += y;
+                squares += y * y;
+                n++;
+            }
+
+            double m = sum / n;
+            mean = (float)m;
+            deviation = (float)Math.Sqrt(Math.Max(0d, squares / n - m * m));
+        }
+
+        /// <summary>The furthest a part reaches from the body's origin: the close view's size rule.</summary>
+        public static float ReachOf(Phenotype phenotype) => Radius(phenotype);
+
+        /// <summary>What the render settings' fog was, so one render can borrow them.</summary>
+        private struct Fog
+        {
+            public bool On;
+            public FogMode Mode;
+            public Color Colour;
+            public float Density;
+            public float Start;
+            public float End;
+
+            public static Fog Save() => new Fog
+            {
+                On = RenderSettings.fog,
+                Mode = RenderSettings.fogMode,
+                Colour = RenderSettings.fogColor,
+                Density = RenderSettings.fogDensity,
+                Start = RenderSettings.fogStartDistance,
+                End = RenderSettings.fogEndDistance,
+            };
+
+            public void Restore()
+            {
+                RenderSettings.fog = On;
+                RenderSettings.fogMode = Mode;
+                RenderSettings.fogColor = Colour;
+                RenderSettings.fogDensity = Density;
+                RenderSettings.fogStartDistance = Start;
+                RenderSettings.fogEndDistance = End;
+            }
+        }
+
+        /// <summary>
+        /// Rescales the fog to the span this view is looking through, for the length of one
+        /// render, and hands back what it changed.
+        /// </summary>
+        /// <remarks>
+        /// <b>Why the picture does not simply use the Play mode fog.</b>
+        /// <see cref="TheatreSkin"/> sets an exponential squared fog tuned for a person flying
+        /// inside the water, where twenty metres should be dim. Three of these four views are
+        /// orthographic, and an orthographic camera stands off the whole box before it starts:
+        /// the top view of the campaign's sixty metre column looks through a hundred and twenty
+        /// metres of it, at which that density is black. The first constraint on these pictures is
+        /// that they can be read, so the fog here is linear and spanned across the box: it starts
+        /// at the near face and reaches a little past the far one, which leaves about a third of a
+        /// body's light at the back wall whatever the box's size. The look is the same look; only
+        /// the depth it is measured over follows the frame.
+        /// </remarks>
+        private Fog FrameTheFog(Bounds box, View view)
+        {
+            Fog saved = Fog.Save();
+
+            if (!RenderSettings.fog) return saved;
+
+            // A portrait is taken in the water the theatre shows a viewer, at the scene's own
+            // density: a few metres of it is nearly clear. The 1.54 spans below were chosen for
+            // a census view of near-black water, and over the two metres of a close view they
+            // fogged the subject a third of the way into the water; once the water was lit
+            // (2026-09-16) that read as a body dissolving into teal.
+            if (view == View.Close) return saved;
+
+            Vector3 eye = _camera.transform.position;
+            Vector3 forward = _camera.transform.forward;
+            Vector3 half = 0.5f * box.size;
+
+            float near = float.MaxValue;
+            float far = float.MinValue;
+
+            for (int sx = -1; sx <= 1; sx += 2)
+            {
+                for (int sy = -1; sy <= 1; sy += 2)
+                {
+                    for (int sz = -1; sz <= 1; sz += 2)
+                    {
+                        Vector3 corner = box.center +
+                            new Vector3(sx * half.x, sy * half.y, sz * half.z);
+
+                        float along = Vector3.Dot(corner - eye, forward);
+
+                        near = Mathf.Min(near, along);
+                        far = Mathf.Max(far, along);
+                    }
+                }
+            }
+
+            near = Mathf.Max(0f, near);
+            float span = Mathf.Max(0.5f, far - near);
+
+            RenderSettings.fogMode = FogMode.Linear;
+            RenderSettings.fogStartDistance = near;
+
+            // 1.54 spans is where a linear fog leaves 35% of the light at the far wall, which is
+            // "dim but present" without turning the back of the box into background.
+            RenderSettings.fogEndDistance = near + 1.54f * span;
+
+            return saved;
+        }
+
+        /// <summary>
+        /// Turns the scene's own water off for the length of one render, and hands back what it
+        /// turned off.
+        /// </summary>
+        /// <remarks>
+        /// <b>The incident.</b> The first eight pictures this class ever made each carried a
+        /// second, smaller box floating inside the real one, with its own grid and its own patch
+        /// seams, about a fifteenth of the size and off to one side.
+        /// <see cref="WaterBounds"/> draws the box in immediate mode from
+        /// <c>OnRenderObject</c>, which fires once per camera, and <c>GL</c> in that callback
+        /// takes its matrices from whatever the render state holds rather than from the camera
+        /// the frame is being drawn for; under a scriptable pipeline that was the runner's fly
+        /// camera, sitting a few metres off one corner. So the water drew a perspective view of
+        /// the box into an orthographic picture of the same box. It is off during the render for
+        /// that reason, and it costs nothing: this class composites the box, the floor and the
+        /// seams itself, from the config, in <see cref="DrawBox"/>.
+        /// </remarks>
+        private static List<WaterBounds> SilenceTheWater()
+        {
+            var silenced = new List<WaterBounds>(2);
+
+            foreach (WaterBounds water in
+                     UnityEngine.Object.FindObjectsByType<WaterBounds>(FindObjectsSortMode.None))
+            {
+                if (water == null || !water.enabled) continue;
+
+                water.enabled = false;
+                silenced.Add(water);
+            }
+
+            return silenced;
+        }
+
+        /// <summary>
+        /// Turns off the furniture that only exists to be seen from inside the water, for the
+        /// length of one render, and hands back what it turned off.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>What and why.</b> The fourth day put a rippling surface on the world's ceiling and a
+        /// handful of light shafts under it (logbook/specs/skin-spec-4.md), and said in as many
+        /// words that the views taken from outside the box must be unchanged by it: the top view
+        /// still sees the world, and nothing new stands in front of the box in the side, the end
+        /// or the iso. The shaders refuse any eye above the waterline by themselves, which covers
+        /// the top and the iso, but the side and the end cameras stand under the water looking in,
+        /// where a shaft is a bright slab straight across the census.
+        /// </para>
+        /// <para>
+        /// <b>Done by camera rather than by geometry, deliberately.</b> The obvious rule, draw
+        /// them only for an eye inside the box, would also have taken the sea away from the Play
+        /// mode viewer, whose camera starts twenty six metres outside it
+        /// (<c>TheatreSceneBuilder</c>). What separates a census picture from a viewer is which
+        /// camera is rendering, and that is known here and nowhere else.
+        /// </para>
+        /// <para>
+        /// The close and the sky views keep it. Sky is a picture of the surface and would be an
+        /// empty frame without it, and close is a portrait taken inside the water where the light
+        /// falling on a body is the subject.
+        /// </para>
+        /// </remarks>
+        private static List<Renderer> HideWhatOnlyTheWaterSees(View view)
+        {
+            var hidden = new List<Renderer>(2);
+
+            // The bed view is inside the water and keeps the ceiling and the shafts, but the
+            // glass drew a bright tube around the floor in the first picture with it (2026-09-16)
+            // and the view is a diagram of the floor, so the wall alone goes.
+            bool bedOnly = view == View.Bed;
+
+            if (view == View.Close || view == View.Sky || view == View.Reef) return hidden;
+
+            // From the marker's own list, not the engine's finder: the furniture is created with
+            // HideFlags.DontSave and FindObjectsByType leaves such objects out, which is why the
+            // shafts stood in every side view until 2026-09-16 (TheatreInsideOnly's remarks).
+            var marks = new List<TheatreInsideOnly>(TheatreInsideOnly.All);
+
+            foreach (TheatreInsideOnly mark in marks)
+            {
+                if (mark == null) continue;
+                if (bedOnly && mark.gameObject.name != "Theatre Glass") continue;
+
+                var renderer = mark.GetComponent<Renderer>();
+                if (renderer == null || !renderer.enabled) continue;
+
+                renderer.enabled = false;
+                hidden.Add(renderer);
+            }
+
+            return hidden;
+        }
+
+        // ---------------------------------------------------------------- the frame
+
+        /// <summary>
+        /// The water the run was simulated in, as a box in world coordinates.
+        /// </summary>
+        /// <remarks>
+        /// D077's shared volume is a literal box and the theatre already draws it that way
+        /// (<see cref="WaterBounds.ShowBox"/>), from the same three numbers: K patches of
+        /// <c>sqrt(area / K)</c>, laid out <c>K/A</c> along x by <c>A</c> across z
+        /// (fable-propose-box.md). A tiled recording has no box at all, only a lattice a hundred
+        /// metres apart in otherwise empty space, so there the frame is four tiles of it and the
+        /// remark says the picture is of a lattice.
+        ///
+        /// <para>
+        /// <b>A tank is framed by its bounding square</b> — <c>[0, 2R)²</c> about an axis at
+        /// <c>(R, R)</c>, <c>TankGeometry</c>, <c>logbook/specs/tank-spec.md</c>. A camera fitted
+        /// to the circle's own bounding box is fitted to the circle, since the two touch on all
+        /// four sides; the corners cost a few percent of the frame and buy the whole of the rest
+        /// of the theatre keeping one rectangle to reason about — the skin's bed and surface, the
+        /// snow's volume and the close view's neighbourhood all read these bounds.
+        /// </para>
+        /// </remarks>
+        /// <summary>
+        /// How far the shaped floor's deepest point lies below the configured depth, m — 0 on a
+        /// flat bed and on any replay that has not built a world yet.
+        /// </summary>
+        /// <remarks>
+        /// <c>BedShape.LowestMetres</c> is signed and negative below the mean, so this is its
+        /// negation, floored at 0: a map whose lowest point happened to sit above −depth would
+        /// otherwise shrink the box and cut the water off at the bottom.
+        /// </remarks>
+        private static float BelowTheMeanFloor(ITheatreFrame frame)
+        {
+            BedShape bed = frame?.Bed;
+            if (bed == null || !bed.HasRelief) return 0f;
+
+            return Mathf.Max(0f, (float)-bed.LowestMetres);
+        }
+
+        public static Bounds BoxOf(ITheatreFrame frame, out string note)
+        {
+            note = null;
+            RunConfig config = frame.Record.Config;
+            float depth = Mathf.Max(0.1f, config.WorldDepthMetres);
+
+            if (config.SharedSpace && config.WorldShape == WorldShape.Tank)
+            {
+                float side = 2f * TankGeometry.RadiusFor(config.WorldAreaSquareMetres);
+
+                // D092: with a shaped floor the water reaches below −depth wherever a hollow does,
+                // so the box's bottom is the floor's own lowest point. Read off the world the
+                // replay built rather than rebuilt from the config here, so the camera frames the
+                // floor the physics has. Zero on a flat bed, where this is the box it always was.
+                float below = BelowTheMeanFloor(frame);
+
+                return new Bounds(
+                    new Vector3(0.5f * side, -0.5f * (depth + below), 0.5f * side),
+                    new Vector3(side, depth + below, side));
+            }
+
+            if (config.SharedSpace)
+            {
+                int patches = Mathf.Max(1, (int)config.HorizontalPatches);
+                int across = Mathf.Clamp((int)config.PatchesAcross, 1, patches);
+                float patchMetres = Mathf.Max(0.1f, Mathf.Sqrt(config.WorldAreaSquareMetres / patches));
+                float length = patchMetres * Mathf.Max(1, patches / across);
+                float width = patchMetres * across;
+
+                return new Bounds(
+                    new Vector3(0.5f * length, -0.5f * depth, 0.5f * width),
+                    new Vector3(length, depth, width));
+            }
+
+            float reach = 2f * Ecosystem.TileSpacing;
+            note = "a tiled recording has no box, so the frame is four tile spacings of lattice";
+
+            return new Bounds(new Vector3(0f, -0.5f * depth, 0f), new Vector3(reach, depth, reach));
+        }
+
+        /// <summary>
+        /// The water that holds the six largest bodies, as the box <see cref="View.Close"/> is
+        /// fitted to.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Sized by <see cref="Radius"/>, the same reach the marker rule measures a body by, so
+        /// that "largest" means the same thing in both places. Each body contributes its own
+        /// reach on every axis, so a long creature lying across the frame is inside it and not
+        /// cut in half by its own selection.
+        /// </para>
+        /// <para>
+        /// <b>The largest body, and then its largest neighbours.</b> Asking for the six largest
+        /// in the world frames the whole world whenever two of them are in different columns,
+        /// which is what r35-s1 did (see <see cref="View.Close"/>). The neighbourhood is set from
+        /// the anchor's own reach rather than in metres, so the frame holds the same fraction of
+        /// a body whether the world's creatures are centimetres or metres across.
+        /// </para>
+        /// <para>
+        /// <b>What is given up, and it should be said.</b> The five neighbours are the largest
+        /// near the largest, so a body of a different guild or a different size class in the next
+        /// column over is not in the picture and cannot be read out of it. This view is a
+        /// portrait of one crowd and never a census.
+        /// </para>
+        /// </remarks>
+        private static Bounds CloseOn(ITheatreFrame frame, Bounds box, ref string note)
+        {
+            int count = frame.BodyCount;
+
+            int anchor = -1;
+            float anchorReach = 0f;
+
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 at = frame.PositionOf(i);
+                if (!IsFinite(at)) continue;
+
+                float r = Radius(frame.PhenotypeOf(i));
+                if (anchor >= 0 && r <= anchorReach) continue;
+
+                anchor = i;
+                anchorReach = r;
+            }
+
+            if (anchor < 0)
+            {
+                note = Join(note, "nothing was alive to frame, so the close view is of the box");
+                return box;
+            }
+
+            // How far out the neighbours may be. Six reaches of the anchor is a frame that holds
+            // the anchor across about a sixth of its width, which is a body of a couple of
+            // hundred pixels at 1600 across; the metre floor keeps a frame of that shape when
+            // every body in the world is small.
+            float around = Mathf.Max(1.2f, 6f * anchorReach);
+            Vector3 centre = frame.PositionOf(anchor);
+
+            var chosen = new List<int>(CloseBodies) { anchor };
+            var reach = new List<float>(CloseBodies) { anchorReach };
+
+            for (int i = 0; i < count; i++)
+            {
+                if (i == anchor) continue;
+
+                Vector3 at = frame.PositionOf(i);
+                if (!IsFinite(at)) continue;
+                if ((at - centre).sqrMagnitude > around * around) continue;
+
+                float r = Radius(frame.PhenotypeOf(i));
+
+                int slot = chosen.Count;
+                while (slot > 1 && reach[slot - 1] < r) slot--;
+
+                if (slot >= CloseBodies) continue;
+
+                chosen.Insert(slot, i);
+                reach.Insert(slot, r);
+
+                if (chosen.Count > CloseBodies)
+                {
+                    chosen.RemoveAt(CloseBodies);
+                    reach.RemoveAt(CloseBodies);
+                }
+            }
+
+            Bounds framed = default;
+
+            for (int i = 0; i < chosen.Count; i++)
+            {
+                Vector3 at = frame.PositionOf(chosen[i]);
+                var size = 2.4f * reach[i] * Vector3.one;
+
+                if (i == 0) framed = new Bounds(at, size);
+                else framed.Encapsulate(new Bounds(at, size));
+            }
+
+            note = Join(
+                note,
+                "close on " + chosen.Count + " bodies within " +
+                around.ToString("0.##", CultureInfo.InvariantCulture) + " m of the largest, of reach " +
+                Least(reach).ToString("0.###", CultureInfo.InvariantCulture) + " to " +
+                anchorReach.ToString("0.###", CultureInfo.InvariantCulture) + " m, framed over " +
+                Metres(framed.size) + "; " + Ellipsoids(frame));
+
+            return framed;
+        }
+
+        private static float Least(List<float> values)
+        {
+            float worst = float.MaxValue;
+            for (int i = 0; i < values.Count; i++) worst = Mathf.Min(worst, values[i]);
+
+            return values.Count == 0 ? 0f : worst;
+        }
+
+        private static string Join(string first, string second) =>
+            string.IsNullOrEmpty(first) ? second : first + "; " + second;
+
+        private static string Metres(Vector3 size) => string.Format(
+            CultureInfo.InvariantCulture, "{0:0.##} by {1:0.##} by {2:0.##} m",
+            size.x, size.y, size.z);
+
+        private static bool IsFinite(Vector3 v) =>
+            !float.IsNaN(v.x) && !float.IsNaN(v.y) && !float.IsNaN(v.z) &&
+            !float.IsInfinity(v.x) && !float.IsInfinity(v.y) && !float.IsInfinity(v.z);
+
+        /// <summary>
+        /// How far from round the world's round parts are, as the theatre draws them.
+        /// </summary>
+        /// <remarks>
+        /// The theatre draws a sphere part as an ellipsoid of the genome's three half-extents
+        /// (<c>TheatrePalette.Aspect</c>), because the simulation reduced them to their mean and
+        /// collides as a ball. Whether that shows in a picture depends entirely on how far from
+        /// equal a genome's three numbers are, and that is a fact about the run rather than about
+        /// the skin, so it is measured here and printed with the picture instead of being assumed
+        /// either way. The ratio is the smallest half-extent over the largest: one is a ball.
+        /// </remarks>
+        private static string Ellipsoids(ITheatreFrame frame)
+        {
+            int count = frame.BodyCount;
+
+            int round = 0;
+            double total = 0.0;
+            float flattest = 1f;
+
+            for (int i = 0; i < count; i++)
+            {
+                Phenotype phenotype = frame.PhenotypeOf(i);
+                if (phenotype == null) continue;
+
+                foreach (PhenotypePart part in phenotype.Parts)
+                {
+                    bool sphere = part.ShapeId == ShapeIds.Sphere;
+                    bool capsule = part.ShapeId == ShapeIds.Capsule;
+
+                    if (!sphere && !capsule) continue;
+
+                    Float3 h = part.HalfExtents;
+
+                    float hx = Mathf.Abs(h.X), hy = Mathf.Abs(h.Y), hz = Mathf.Abs(h.Z);
+
+                    // A capsule's length is a dimension the shape really has; only its cross
+                    // section was averaged away, so only X and Z are asked about.
+                    float low = sphere ? Mathf.Min(hx, Mathf.Min(hy, hz)) : Mathf.Min(hx, hz);
+                    float high = sphere ? Mathf.Max(hx, Mathf.Max(hy, hz)) : Mathf.Max(hx, hz);
+
+                    if (high <= 0f) continue;
+
+                    float ratio = low / high;
+
+                    round++;
+                    total += ratio;
+                    flattest = Mathf.Min(flattest, ratio);
+                }
+            }
+
+            if (round == 0) return "no sphere or capsule part is alive, so nothing is drawn as an ellipsoid";
+
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                "{0} round parts alive, short over long axis {1:0.###} on average and {2:0.###} at the flattest",
+                round, total / round, flattest);
+        }
+
+        /// <summary>The bed view's look: down the tilt from the shallow arc, or the first cut's fixed bearing on a flat bed.</summary>
+        private ReefGeometry _reefs;
+        private Vector3 _bedLook = new Vector3(-0.7f, -0.21f, 1f).normalized;
+
+        private static Vector3 BedLook(ITheatreFrame frame)
+        {
+            BedShape bed = frame?.Bed;
+            if (bed == null || !bed.HasRelief || bed.TiltMetres <= 0f)
+                return new Vector3(-0.7f, -0.21f, 1f).normalized;
+
+            // The floor rises along (cos θ, sin θ), so the shallow arc is that way and the deep
+            // arc the other; the camera stands over the shallow arc and looks down the ramp.
+            float theta = bed.TiltDirectionRadians;
+            return new Vector3(-Mathf.Cos(theta), -0.36f, -Mathf.Sin(theta)).normalized;
+        }
+
+        /// <summary>
+        /// A light for the bed view alone: a directional light raking along the camera's own
+        /// look, low over the floor, for the one render and destroyed after it. The sand is
+        /// dark by design (<c>TheatreBed.shader</c>'s two greys) and the sun's light is spent
+        /// forty metres up, so the first bed pictures showed the drape as a shadow of itself
+        /// (the owner, 2026-09-15, could barely see anything); the drape's shader reads URP's
+        /// additional lights, so a second directional light lifts it without touching the
+        /// bodies' skin more than a fill would. Theatre only, no hash moves.
+        /// </summary>
+        /// <summary>
+        /// The third light of a portrait: behind and above the subject, shining towards the
+        /// camera, so a body's edge is lit against the dark and a translucent part glows
+        /// through (the look's design pass, B2; the dark-field idea done properly rather than a
+        /// third front light). Destroyed after the render. Weaker than the key on purpose,
+        /// so URP keeps the key as the main light and the sun stays where the skin put it.
+        /// <c>EVOSIM_THEATRE_BACK</c>, default 2.4.
+        /// </summary>
+        private Light BackLight()
+        {
+            var holder = new GameObject("Theatre Back Light") { hideFlags = HideFlags.HideAndDontSave };
+            Vector3 towardsCamera = -_camera.transform.forward;
+            holder.transform.rotation = Quaternion.LookRotation(
+                (towardsCamera + Vector3.down * 0.45f).normalized, Vector3.up);
+
+            var light = holder.AddComponent<Light>();
+            light.type = LightType.Directional;
+            light.color = new Color(0.55f, 0.85f, 1f);
+            light.intensity = TheatreSkin.Dial("EVOSIM_THEATRE_BACK", 2.4f, 0f, 12f);
+            light.shadows = LightShadows.None;
+            return light;
+        }
+
+        /// <summary>The portrait's fill: from the camera's right and a little above, destroyed after the render.</summary>
+        private Light FillLight(float intensity)
+        {
+            var holder = new GameObject("Theatre Fill Light") { hideFlags = HideFlags.HideAndDontSave };
+            holder.transform.rotation = _camera.transform.rotation * Quaternion.Euler(10f, -35f, 0f);
+            var light = holder.AddComponent<Light>();
+            light.type = LightType.Directional;
+            light.color = new Color(0.8f, 0.9f, 1f);
+            light.intensity = intensity;
+            light.shadows = LightShadows.None;
+            return light;
+        }
+
+        /// <summary>
+        /// The story's lamp (<see cref="LampIntensity"/>): a soft spot light from just above and to
+        /// the right of the lens, aimed at the focus distance, destroyed after the render.
+        /// </summary>
+        /// <remarks>
+        /// A spot and not a directional light, because a directional light lifts the whole water
+        /// column equally and the depth of the picture goes with it; this one falls off with the
+        /// square of the distance, as the lamp on a diver's camera does. URP gives a punctual light
+        /// <c>intensity / d²</c>, so the intensity is <see cref="LampIntensity"/> times the square
+        /// of the distance to the aim point, and the subject there receives about that much. Its
+        /// inner cone is narrow and its outer wide, so the edge of the pool of light is soft.
+        /// Forced per pixel, so URP's per-object light limit keeps it: a story's portrait turns the
+        /// safari's directional fill off when the lamp is on (<see cref="StoryLook"/>), which keeps
+        /// the count at the key, the skin's fill, the portrait's back light and this.
+        /// </remarks>
+        private Light Lamp(Vector3 eye, Quaternion rotation, float focusMetres)
+        {
+            float focus = focusMetres > 0.1f ? Mathf.Min(focusMetres, 40f) : 3f;
+            Vector3 up = rotation * Vector3.up;
+            Vector3 right = rotation * Vector3.right;
+            Vector3 forward = rotation * Vector3.forward;
+
+            Vector3 at = eye + up * (0.15f * focus) + right * (0.1f * focus);
+            Vector3 aim = eye + forward * focus;
+            Vector3 towards = aim - at;
+            float reach = Mathf.Max(0.1f, towards.magnitude);
+
+            var holder = new GameObject("Theatre Story Lamp") { hideFlags = HideFlags.HideAndDontSave };
+            holder.transform.SetPositionAndRotation(at, Quaternion.LookRotation(towards / reach, up));
+
+            var light = holder.AddComponent<Light>();
+            light.type = LightType.Spot;
+            light.color = new Color(1f, 0.97f, 0.92f);
+            light.intensity = LampIntensity * reach * reach;
+            light.range = Mathf.Max(4f, 3f * reach);
+            light.spotAngle = 80f;
+            light.innerSpotAngle = 20f;
+            light.shadows = LightShadows.None;
+            light.renderMode = LightRenderMode.ForcePixel;
+            return light;
+        }
+
+        /// <summary>
+        /// The centre-weighted mean luma of the frame's pixels, 0 to 1: Rec. 709 weights on the
+        /// stored sRGB bytes, every fourth pixel of every fourth row, staggered, the rectangle left
+        /// out.
+        /// </summary>
+        /// <remarks>
+        /// Centre-weighted as a camera's meter is: a pixel counts <c>1 - 0.5 r²</c>, where r is its
+        /// distance from the centre with the half-width and half-height as one, and never under a
+        /// quarter. A frame's middle then counts about three times its corners, so a tank seen
+        /// whole against the dark water beyond the glass is metered on the tank and not on the
+        /// dark, which a flat mean would answer by opening to the ceiling.
+        /// </remarks>
+        private float MeanLuma(RectInt skip)
+        {
+            if (_pixels == null || _pixels.Length < _width * _height) return float.NaN;
+
+            const int step = 4;
+            bool skipping = skip.width > 0 && skip.height > 0;
+            double sum = 0d, weights = 0d;
+            double cx = 0.5d * (_width - 1), cy = 0.5d * (_height - 1);
+            double hx = Math.Max(1d, 0.5d * _width), hy = Math.Max(1d, 0.5d * _height);
+
+            for (int y = 0; y < _height; y += step)
+            {
+                int row = y * _width;
+                bool inRows = skipping && y >= skip.yMin && y < skip.yMax;
+                double ny = (y - cy) / hy;
+                for (int x = (y / step) % step; x < _width; x += step)
+                {
+                    if (inRows && x >= skip.xMin && x < skip.xMax) continue;
+                    double nx = (x - cx) / hx;
+                    double w = Math.Max(0.25d, 1d - 0.5d * (nx * nx + ny * ny));
+                    Color32 c = _pixels[row + x];
+                    sum += w * (0.2126d * c.r + 0.7152d * c.g + 0.0722d * c.b);
+                    weights += w;
+                }
+            }
+
+            return weights > 0d ? (float)(sum / weights / 255d) : float.NaN;
+        }
+
+        private Light RakeTheFloor()
+        {
+            var holder = new GameObject("Theatre Bed Rake") { hideFlags = HideFlags.HideAndDontSave };
+            holder.transform.rotation = _camera.transform.rotation;
+            var light = holder.AddComponent<Light>();
+            light.type = LightType.Directional;
+            light.color = new Color(0.9f, 0.95f, 1f);
+            // 7 in linear colour space (2026-09-16), where the 4 that lit the sand's greys in
+            // gamma space left the floor a dark slab with no relief in it.
+            light.intensity = 7f;
+            light.shadows = LightShadows.None;
+            return light;
+        }
+
+        /// <summary>
+        /// The floor and the water just over it: from the lowest rock to four metres above the
+        /// highest, so that a tilted bed is framed whole (D093's runs 30 m from arc to arc, and
+        /// the box's lowest fourteen metres caught a strip of it, 2026-09-15); on a flat bed, or
+        /// a recording with no bed, the lowest fourteen metres of the box as before.
+        /// </summary>
+        private static Bounds FloorSlab(Bounds box, ITheatreFrame frame)
+        {
+            float height = 14f;
+            BedShape bed = frame?.Bed;
+            if (bed != null && bed.HasRelief)
+                height = (float)(bed.HighestMetres - bed.LowestMetres) + 4f;
+
+            Vector3 size = new Vector3(box.size.x, Mathf.Min(height, box.size.y), box.size.z);
+            Vector3 centre = new Vector3(box.center.x, box.min.y + 0.5f * size.y, box.center.z);
+            return new Bounds(centre, size);
+        }
+
+        /// <summary>Points the camera and sizes it so the whole box is inside the picture.</summary>
+        /// <remarks>
+        /// Fitted from the box's eight corners rather than from its diagonal: the diagonal is a
+        /// bound and not the frame, and on a box 20 by 5 by 60 it would waste a third of the
+        /// picture. The margin is the only slack, and it is small enough that the box's edges are
+        /// visible as edges.
+        /// </remarks>
+        private void Frame(View view, Bounds box)
+        {
+            const float margin = 1.06f;
+
+            // The sky view is not fitted to anything: it stands in the water rather than outside
+            // it, so the corner arithmetic below, which asks how far back a camera has to stand to
+            // hold the whole box, has no answer for it. Placed and returned here instead.
+            if (view == View.Sky)
+            {
+                FrameTheSky(box);
+                return;
+            }
+
+            if (view == View.Reef)
+            {
+                FrameTheReef(box);
+                return;
+            }
+
+            Quaternion rotation;
+            bool perspective = false;
+
+            switch (view)
+            {
+                case View.Side:
+                    // Along +z from the near face: +x runs to the right, so the box's length is
+                    // the picture's width and depth is its height.
+                    rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
+                    break;
+
+                case View.End:
+                    rotation = Quaternion.LookRotation(Vector3.right, Vector3.up);
+                    break;
+
+                case View.Top:
+                    // Up is +z, so the picture reads like a map: length across, width up.
+                    rotation = Quaternion.LookRotation(Vector3.down, Vector3.forward);
+                    break;
+
+                case View.Close:
+                    // A shallower three quarters than the iso view's, and a longer lens. Looking
+                    // steeply down on a body a metre away puts most of it in its own shadow and
+                    // spreads the near end of it across the frame; from nearer the horizon the
+                    // key rakes across the carve, which is what a carve has to be seen by.
+                    rotation = Quaternion.LookRotation(
+                        new Vector3(-0.78f, -0.34f, 1f).normalized, Vector3.up);
+                    perspective = true;
+                    break;
+
+                case View.Bed:
+                    // Down the ramp from the shallow arc, twenty degrees under the horizon: a
+                    // floor is read by the light raking across it, and looking along the tilt
+                    // rather than across it (the first cut's fixed bearing read D093's floor as a
+                    // ribbon, 2026-09-15) puts the relief bands in profile against the deep arc.
+                    // The slab it is fitted to is the floor and the water just over it.
+                    rotation = Quaternion.LookRotation(_bedLook, Vector3.up);
+                    perspective = true;
+                    break;
+
+                default:
+                    rotation = Quaternion.LookRotation(
+                        new Vector3(-0.85f, -0.55f, 1f).normalized, Vector3.up);
+                    perspective = true;
+                    break;
+            }
+
+            Vector3 centre = box.center;
+            Quaternion inverse = Quaternion.Inverse(rotation);
+            Vector3 half = 0.5f * box.size;
+
+            float aspect = (float)_width / _height;
+            float reachX = 0f, reachY = 0f, reachZ = 0f;
+
+            var corners = new Vector3[8];
+            int n = 0;
+
+            for (int sx = -1; sx <= 1; sx += 2)
+            {
+                for (int sy = -1; sy <= 1; sy += 2)
+                {
+                    for (int sz = -1; sz <= 1; sz += 2)
+                    {
+                        Vector3 corner = new Vector3(sx * half.x, sy * half.y, sz * half.z);
+                        corners[n++] = inverse * corner;
+
+                        reachX = Mathf.Max(reachX, Mathf.Abs(corners[n - 1].x));
+                        reachY = Mathf.Max(reachY, Mathf.Abs(corners[n - 1].y));
+                        reachZ = Mathf.Max(reachZ, Mathf.Abs(corners[n - 1].z));
+                    }
+                }
+            }
+
+            _camera.orthographic = !perspective;
+            _camera.aspect = aspect;
+
+            // The label is burnt into the top of the picture, and the surface of the water is the
+            // top of the box: fitted edge to edge, the first thing the label hid was the one line
+            // that says which end is up. So the vertical fit is squeezed into the band left
+            // between a label's height at the top and the same at the bottom, which keeps the box
+            // centred and its surface line clear of the text.
+            float clear =
+                1f - 2f * ((_label != null ? _label.Length : 1) * BarHeight + LabelScale) /
+                (float)_height;
+            clear = Mathf.Clamp(clear, 0.25f, 1f);
+
+            float standoff;
+
+            if (!perspective)
+            {
+                _camera.orthographicSize = margin * Mathf.Max(reachY / clear, reachX / aspect);
+                standoff = reachZ + Mathf.Max(10f, reachZ);
+            }
+            else
+            {
+                _camera.fieldOfView = view == View.Close ? 28f : 34f;
+
+                float tanV = Mathf.Tan(0.5f * _camera.fieldOfView * Mathf.Deg2Rad);
+                float tanH = tanV * aspect;
+                float need = 0f;
+
+                foreach (Vector3 c in corners)
+                {
+                    need = Mathf.Max(need, Mathf.Abs(c.y) / (tanV * clear) - c.z);
+                    need = Mathf.Max(need, Mathf.Abs(c.x) / tanH - c.z);
+                }
+
+                standoff = margin * Mathf.Max(need, reachZ + 1f);
+            }
+
+            Vector3 forward = rotation * Vector3.forward;
+            _camera.transform.SetPositionAndRotation(centre - forward * standoff, rotation);
+            _camera.nearClipPlane = Mathf.Max(0.05f, 0.001f * standoff);
+            _camera.farClipPlane = standoff + 2f * reachZ + 200f;
+        }
+
+        /// <summary>Stands the camera in the water under the surface and points it up at the sun.</summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The bearing comes from the sun the shaders draw.</b>
+        /// <see cref="TheatreSkin.PushWater"/> sets <c>_EvoSun</c> from the scene's directional
+        /// light, and the surface's window and the shafts are both built on it, so reading the
+        /// same global here is the only way to be sure the camera is looking where the sun
+        /// actually is. A scene that never dressed itself leaves the global at zero, and the
+        /// picture then looks along the box's length, which is at least a view of the water.
+        /// </para>
+        /// <para>
+        /// <b>The depth is bounded by the box.</b> Three metres under is the intent, but a run in
+        /// a shallower world would put the camera under its own floor, so it is at most half the
+        /// water's depth.
+        /// </para>
+        /// </remarks>
+        private void FrameTheSky(Bounds box)
+        {
+            float depth = Mathf.Min(SkyDepthMetres, 0.5f * box.size.y);
+
+            var eye = new Vector3(box.center.x, box.max.y - depth, box.center.z);
+
+            Vector4 sun = Shader.GetGlobalVector("_EvoSun");
+            var bearing = new Vector3(sun.x, 0f, sun.z);
+
+            if (bearing.sqrMagnitude < 1e-6f) bearing = Vector3.right;
+            bearing = bearing.normalized;
+
+            Vector3 forward =
+                (bearing + Vector3.up * Mathf.Tan(SkyRiseDegrees * Mathf.Deg2Rad)).normalized;
+
+            _camera.orthographic = false;
+            _camera.aspect = (float)_width / _height;
+            _camera.fieldOfView = SkyFieldOfView;
+            _camera.nearClipPlane = 0.05f;
+            _camera.farClipPlane = 4f * box.size.magnitude + 200f;
+
+            _camera.transform.SetPositionAndRotation(
+                eye, Quaternion.LookRotation(forward, Vector3.up));
+        }
+
+        /// <summary>
+        /// The reef view's eye: two and a half cap radii from the first reef's axis, a metre
+        /// under the cap's underside, looking at the stem where it meets the underside, so the
+        /// room under the cap fills the middle of the frame with the lit water beyond it. With
+        /// no reef in the world it stands where the sky view stands and says so in the remark
+        /// through the label's own text (the picture is then the sky's).
+        /// <c>EVOSIM_THEATRE_REEF_AT=x,z</c> aims it at a point in the water instead, such as an
+        /// oasis with no rock in it: a metre and a half under the surface, from ten metres off
+        /// toward the tank's centre and two metres lower, looking up into the crowd.
+        /// </summary>
+        private void FrameTheReef(Bounds box)
+        {
+            if (AimAt(out float aimX, out float aimZ))
+            {
+                var awayFromAim = new Vector3(box.center.x - aimX, 0f, box.center.z - aimZ);
+                if (awayFromAim.sqrMagnitude < 1e-6f) awayFromAim = Vector3.right;
+                Vector3 aim = new Vector3(aimX, box.max.y - 1.5f, aimZ);
+                Vector3 from = aim + awayFromAim.normalized * 10f + Vector3.down * 2f;
+
+                _camera.orthographic = false;
+                _camera.aspect = (float)_width / _height;
+                _camera.fieldOfView = 55f;
+                _camera.nearClipPlane = 0.05f;
+                _camera.farClipPlane = 4f * box.size.magnitude + 200f;
+                _camera.transform.SetPositionAndRotation(
+                    from, Quaternion.LookRotation((aim - from).normalized, Vector3.up));
+                return;
+            }
+
+            if (_reefs == null || _reefs.Count == 0)
+            {
+                FrameTheSky(box);
+                return;
+            }
+
+            float x = (float)_reefs.CentreX(0);
+            float z = (float)_reefs.CentreZ(0);
+            float underside = (float)_reefs.CapUndersideY(0);
+            float radius = (float)_reefs.CapRadius(0);
+
+            // Off the axis toward the tank's centre, so the glass is behind the camera and the
+            // water beyond the rock is the open tank.
+            var away = new Vector3(box.center.x - x, 0f, box.center.z - z);
+            if (away.sqrMagnitude < 1e-6f) away = Vector3.right;
+            away = away.normalized;
+
+            Vector3 target = new Vector3(x, underside - 0.5f, z);
+            Vector3 eye = target + away * (2.5f * radius) + Vector3.down * 0.5f;
+
+            // EVOSIM_THEATRE_REEF_ABOVE=1 looks at the same rock from over its table instead: a
+            // check of the rock's lit top (the crust, the boulders), which the room under the cap
+            // cannot see. Off unless named, so the reef view is the view the record describes.
+            if (System.Environment.GetEnvironmentVariable("EVOSIM_THEATRE_REEF_ABOVE") == "1")
+            {
+                float top = (float)_reefs.CapTopY(0);
+                target = new Vector3(x, top, z);
+                eye = target + away * (1.6f * radius) + Vector3.up * (0.9f * radius);
+                eye.y = Mathf.Min(eye.y, -0.3f);
+            }
+
+            _camera.orthographic = false;
+            _camera.aspect = (float)_width / _height;
+            _camera.fieldOfView = 55f;
+            _camera.nearClipPlane = 0.05f;
+            _camera.farClipPlane = 4f * box.size.magnitude + 200f;
+
+            _camera.transform.SetPositionAndRotation(
+                eye, Quaternion.LookRotation((target - eye).normalized, Vector3.up));
+        }
+
+        // EVOSIM_THEATRE_REEF_AT, read invariantly: "x,z" in the run's own metres.
+        private static bool AimAt(out float x, out float z)
+        {
+            x = z = 0f;
+            string text = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_REEF_AT");
+            if (string.IsNullOrWhiteSpace(text)) return false;
+
+            string[] parts = text.Split(',');
+            return parts.Length == 2
+                && float.TryParse(parts[0].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out x)
+                && float.TryParse(parts[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out z);
+        }
+
+        // ---------------------------------------------------------------- what is stamped
+
+        /// <summary>
+        /// The box's twelve edges and its patch seams, drawn into the pixels.
+        /// </summary>
+        /// <remarks>
+        /// Composited rather than rendered so that the frame reads whatever happened in the
+        /// scene: <see cref="WaterBounds"/> draws the same box in immediate mode from
+        /// <c>OnRenderObject</c>, and if that callback ever stops reaching a camera made here the
+        /// picture would be bodies in a void with no scale, no floor and no seams, which is
+        /// exactly the picture that cannot be read. Drawn under the markers and over the render,
+        /// so an edge crosses in front of a body it passes; at one pixel wide that costs nothing
+        /// and it keeps the box's corner visible where a body sits in it.
+        /// </remarks>
+        private void DrawBox(Bounds box, ITheatreFrame frame)
+        {
+            Vector3 lo = box.min;
+            Vector3 hi = box.max;
+
+            Color surface = new Color(0.45f, 0.75f, 0.95f, 1f);
+            Color floor = new Color(0.62f, 0.50f, 0.33f, 1f);
+            Color vertical = new Color(0.30f, 0.48f, 0.62f, 1f);
+            Color seam = new Color(0.95f, 0.85f, 0.45f, 1f);
+
+            RunConfig water = frame.Record.Config;
+
+            // fable-propose-aquarium.md ruling 1. The frame is the bounding square either way
+            // (BoxOf), but what is stamped into the pixels is the water: a tank's outline is the
+            // circle and its patches are rings, and drawing the square would put a wall through
+            // four corners of open frame and invite a reader to measure a body against it.
+            if (water.SharedSpace && water.WorldShape == WorldShape.Tank)
+            {
+                DrawTank(box, water, surface, floor, vertical, seam);
+                return;
+            }
+
+            // The surface rectangle at y = 0 and the floor rectangle at y = -depth, in their own
+            // colours: which is which is the one thing a still picture of a water column must
+            // never leave ambiguous.
+            Rectangle(hi.y, lo, hi, surface);
+            Rectangle(lo.y, lo, hi, floor);
+
+            Line(new Vector3(lo.x, lo.y, lo.z), new Vector3(lo.x, hi.y, lo.z), vertical);
+            Line(new Vector3(hi.x, lo.y, lo.z), new Vector3(hi.x, hi.y, lo.z), vertical);
+            Line(new Vector3(lo.x, lo.y, hi.z), new Vector3(lo.x, hi.y, hi.z), vertical);
+            Line(new Vector3(hi.x, lo.y, hi.z), new Vector3(hi.x, hi.y, hi.z), vertical);
+
+            RunConfig config = frame.Record.Config;
+            if (!config.SharedSpace) return;
+
+            // D077's seams: under a shared volume a patch is a region a body is in and crosses,
+            // so the lines between them are geometry the run has, not an index drawn as if it
+            // were a place. Both axes, since fable-propose-box.md; at A = 1 the second loop runs
+            // no times and this is the picture every recording before the layout was drawn as.
+            int patches = Mathf.Max(1, (int)config.HorizontalPatches);
+            int across = Mathf.Clamp((int)config.PatchesAcross, 1, patches);
+            int along = Mathf.Max(1, patches / across);
+            float width = (hi.x - lo.x) / along;
+            float depthPerPatch = (hi.z - lo.z) / across;
+
+            for (int k = 1; k < along; k++)
+            {
+                float x = lo.x + k * width;
+
+                Line(new Vector3(x, lo.y, lo.z), new Vector3(x, hi.y, lo.z), seam);
+                Line(new Vector3(x, lo.y, hi.z), new Vector3(x, hi.y, hi.z), seam);
+                Line(new Vector3(x, hi.y, lo.z), new Vector3(x, hi.y, hi.z), seam);
+                Line(new Vector3(x, lo.y, lo.z), new Vector3(x, lo.y, hi.z), seam);
+            }
+
+            for (int k = 1; k < across; k++)
+            {
+                float z = lo.z + k * depthPerPatch;
+
+                Line(new Vector3(lo.x, lo.y, z), new Vector3(lo.x, hi.y, z), seam);
+                Line(new Vector3(hi.x, lo.y, z), new Vector3(hi.x, hi.y, z), seam);
+                Line(new Vector3(lo.x, hi.y, z), new Vector3(hi.x, hi.y, z), seam);
+                Line(new Vector3(lo.x, lo.y, z), new Vector3(hi.x, lo.y, z), seam);
+            }
+        }
+
+        /// <summary>
+        /// The tank's two circles, its eight verticals and its patch rings, drawn into the pixels.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The same picture <see cref="WaterBounds.ShowTank"/> draws in the scene</b>, for the
+        /// reason <see cref="DrawBox"/> composites the box: the immediate-mode draw is one
+        /// callback away from not reaching a camera made here, and a census view with no water in
+        /// it cannot be read. The radius is the config's own <c>sqrt(area/π)</c>
+        /// (<c>TankGeometry</c>) rather than half the frame, so a frame later widened for any
+        /// reason would still draw the glass where the glass is.
+        /// </para>
+        /// <para>
+        /// <b>Rings, not seams.</b> A tank's patches are annuli of equal area
+        /// (<c>logbook/specs/tank-spec.md</c>), so the boundaries are circles at
+        /// <c>R·sqrt(k/K)</c> and the outermost of them is the glass, already drawn.
+        /// </para>
+        /// </remarks>
+        private void DrawTank(
+            Bounds box, RunConfig water, Color surface, Color floor, Color vertical, Color seam)
+        {
+            float radius = TankGeometry.RadiusFor(water.WorldAreaSquareMetres);
+            var axis = new Vector3(radius, 0f, radius);
+
+            float top = box.max.y;
+            float bottom = box.min.y;
+
+            Circle(top, axis, radius, surface);
+            Circle(bottom, axis, radius, floor);
+
+            for (int i = 0; i < 8; i++)
+            {
+                float angle = 2f * Mathf.PI * i / 8f;
+                float x = axis.x + radius * Mathf.Cos(angle);
+                float z = axis.z + radius * Mathf.Sin(angle);
+
+                Line(new Vector3(x, bottom, z), new Vector3(x, top, z), vertical);
+            }
+
+            int rings = Mathf.Max(1, (int)water.HorizontalPatches);
+
+            for (int k = 1; k < rings; k++)
+            {
+                float r = radius * Mathf.Sqrt(k / (float)rings);
+
+                Circle(top, axis, r, seam);
+                Circle(bottom, axis, r, seam);
+            }
+        }
+
+        /// <summary>One horizontal circle, as a closed polyline of <see cref="CircleSegments"/> chords.</summary>
+        private void Circle(float y, Vector3 axis, float radius, Color colour)
+        {
+            if (!(radius > 0f)) return;
+
+            var previous = new Vector3(axis.x + radius, y, axis.z);
+
+            for (int i = 1; i <= CircleSegments; i++)
+            {
+                float angle = 2f * Mathf.PI * i / CircleSegments;
+                var next = new Vector3(
+                    axis.x + radius * Mathf.Cos(angle), y, axis.z + radius * Mathf.Sin(angle));
+
+                Line(previous, next, colour);
+                previous = next;
+            }
+        }
+
+        private void Rectangle(float y, Vector3 lo, Vector3 hi, Color colour)
+        {
+            var a = new Vector3(lo.x, y, lo.z);
+            var b = new Vector3(hi.x, y, lo.z);
+            var c = new Vector3(hi.x, y, hi.z);
+            var d = new Vector3(lo.x, y, hi.z);
+
+            Line(a, b, colour);
+            Line(b, c, colour);
+            Line(c, d, colour);
+            Line(d, a, colour);
+        }
+
+        /// <summary>One marker per living body, where the mesh is too small to be one.</summary>
+        /// <remarks>
+        /// The position is the creature's own <c>X</c>, <c>HeightY</c> and <c>Z</c>, which the
+        /// harness sets from its centre of mass at every metabolic step (D083's
+        /// <c>World.Observe</c>). That is the world's own reading of where a body is, so the
+        /// picture and the report cannot disagree about it; going through the scene instead would
+        /// need the id map, which can go unreliable, and would have put a second answer to the
+        /// same question into the picture.
+        /// </remarks>
+        private void DrawBodies(
+            ITheatreFrame frame, View view, out int marked, out int outside, out int bodies)
+        {
+            marked = 0;
+            outside = 0;
+            bodies = 0;
+
+            // A marker stands in for a body too small to draw. The close view exists to show
+            // what a body looks like, so a square painted over one would answer its own question,
+            // and the sky view stands inside the water at a few metres, where a body is tens of
+            // pixels across and a marker would only hide the light falling on it.
+            bool marking = view != View.Close && view != View.Sky && view != View.Reef;
+
+            int count = frame.BodyCount;
+            float tanV = Mathf.Tan(0.5f * _camera.fieldOfView * Mathf.Deg2Rad);
+
+            for (int i = 0; i < count; i++)
+            {
+                bodies++;
+
+                Vector3 world = frame.PositionOf(i);
+
+                if (float.IsNaN(world.x) || float.IsNaN(world.y) || float.IsNaN(world.z) ||
+                    float.IsInfinity(world.x) || float.IsInfinity(world.y) ||
+                    float.IsInfinity(world.z))
+                {
+                    outside++;
+                    continue;
+                }
+
+                Vector3 screen = Project(world);
+
+                if (screen.z <= 0f ||
+                    screen.x < 0f || screen.x >= _width ||
+                    screen.y < 0f || screen.y >= _height)
+                {
+                    outside++;
+                    continue;
+                }
+
+                float pixelsPerMetre = _camera.orthographic
+                    ? _height / (2f * _camera.orthographicSize)
+                    : _height / (2f * Mathf.Max(0.01f, screen.z) * tanV);
+
+                if (2f * Radius(frame.PhenotypeOf(i)) * pixelsPerMetre >= MinimumBodyPixels) continue;
+                if (!marking) continue;
+
+                marked++;
+                Marker((int)screen.x, (int)screen.y, ColourOf(frame, i));
+            }
+        }
+
+        /// <summary>
+        /// Which guild a body is marked as.
+        /// </summary>
+        /// <remarks>
+        /// One marker is one body and a body can be both, so a mixotroph reads as a stomach: what
+        /// the picture is asked for is who eats whom, and an absorptive part is the whole of that
+        /// question. The same three colours <see cref="TheatrePalette"/> paints parts in, so a
+        /// marked body and a rendered one do not disagree.
+        /// </remarks>
+        private Color ColourOf(ITheatreFrame frame, int index) =>
+            frame.AbsorptiveAt(index) ? Absorptive :
+            frame.PhotosyntheticAt(index) ? Photosynthetic : Structural;
+
+        /// <summary>The furthest a part reaches from the body's origin. TheatreRunner's rule.</summary>
+        private static float Radius(Phenotype phenotype)
+        {
+            float worst = 0.05f;
+            if (phenotype == null) return worst;
+
+            foreach (PhenotypePart part in phenotype.Parts)
+            {
+                Float3 h = part.HalfExtents;
+                float reach = Mathf.Sqrt(Float3.Dot(part.Position, part.Position)) +
+                              Mathf.Max(Mathf.Abs(h.X), Mathf.Max(Mathf.Abs(h.Y), Mathf.Abs(h.Z)));
+
+                worst = Mathf.Max(worst, reach);
+            }
+
+            return worst;
+        }
+
+        /// <summary>What the picture says about itself: which world, when, how many, which way.</summary>
+        /// <remarks>
+        /// Written by the world being photographed, because what has to be said about it depends
+        /// on what it is: a replay says whether it is faithful, and a reconstruction says that it
+        /// is one. Both go into the pixels rather than into the log, because a picture travels
+        /// without its log, and a still of a world that is not the run it is named after would be
+        /// the most quietly misleading artefact this project could make.
+        /// </remarks>
+        private static string Label(ITheatreFrame frame, View view)
+        {
+            string look = TheatreGrade.Current != null ? TheatreGrade.Current.LabelToken : "look 1";
+
+            // The underwater look names itself (look 3, or the grade's token with the items on),
+            // except on a census view, which holds today's look and says so.
+            bool census = view == View.Side || view == View.End || view == View.Top || view == View.Iso;
+            if (TheatreSkin.Current != null) look = TheatreSkin.Current.LabelToken(look, census);
+
+            return frame.LabelFor(NameOf(view), look);
+        }
+
+        /// <summary>
+        /// The rendered pixels box-filtered down by <paramref name="factor"/> on each axis, in
+        /// the readback's own bottom-up order, so the markers and the label stamp into output
+        /// pixels as they always did.
+        /// </summary>
+        private Color32[] BoxDown(Color32[] full, int factor) => BoxDown(full, factor, new Color32[_width * _height]);
+
+        /// <summary>The same filter into a buffer the caller holds, which it returns.</summary>
+        private Color32[] BoxDown(Color32[] full, int factor, Color32[] down)
+        {
+            int wide = _width * factor;
+            int n = factor * factor;
+
+            for (int y = 0; y < _height; y++)
+            {
+                for (int x = 0; x < _width; x++)
+                {
+                    int r = 0, g = 0, b = 0;
+                    for (int dy = 0; dy < factor; dy++)
+                    {
+                        int row = (y * factor + dy) * wide + x * factor;
+                        for (int dx = 0; dx < factor; dx++)
+                        {
+                            Color32 c = full[row + dx];
+                            r += c.r; g += c.g; b += c.b;
+                        }
+                    }
+
+                    down[y * _width + x] = new Color32((byte)(r / n), (byte)(g / n), (byte)(b / n), 255);
+                }
+            }
+
+            return down;
+        }
+
+        // ---------------------------------------------------------------- pixels
+
+        private void Marker(int x, int y, Color colour)
+        {
+            int half = MarkerPixels / 2;
+
+            // The dark surround first, so a marker on pale water and a marker on a lit body both
+            // read as a marker rather than as a bright patch of whatever is behind it.
+            Fill(x - half - 1, y - half - 1, MarkerPixels + 2, MarkerPixels + 2,
+                new Color32(8, 10, 12, 255));
+
+            Fill(x - half, y - half, MarkerPixels, MarkerPixels, colour);
+        }
+
+        private void Fill(int x, int y, int width, int height, Color32 colour)
+        {
+            int x1 = Mathf.Min(_width - 1, x + width - 1);
+            int y1 = Mathf.Min(_height - 1, y + height - 1);
+
+            for (int py = Mathf.Max(0, y); py <= y1; py++)
+            {
+                int row = py * _width;
+                for (int px = Mathf.Max(0, x); px <= x1; px++) _pixels[row + px] = colour;
+            }
+        }
+
+        /// <summary>
+        /// A world point in output pixels. The camera renders at <c>_super</c> times the output
+        /// on each axis, so its own screen coordinates are that many times too large for the
+        /// pixel array the markers stamp into (the first supersampled side view, 2026-09-16,
+        /// drew a quarter of the box at twice the size).
+        /// </summary>
+        private Vector3 Project(Vector3 world)
+        {
+            Vector3 screen = _camera.WorldToScreenPoint(world);
+            screen.x /= _super;
+            screen.y /= _super;
+            return screen;
+        }
+
+        /// <summary>A world-space segment, projected and drawn one pixel wide.</summary>
+        private void Line(Vector3 from, Vector3 to, Color32 colour)
+        {
+            Vector3 a = Project(from);
+            Vector3 b = Project(to);
+
+            // Behind the camera the projection folds the point through the origin, which draws a
+            // line across the whole picture that is not in the world. Dropped rather than
+            // clipped: every view here stands outside the box looking at it, so this is the case
+            // that should not arise and must not be drawn if it does.
+            if (a.z <= 0f || b.z <= 0f) return;
+
+            int x0 = Mathf.RoundToInt(a.x), y0 = Mathf.RoundToInt(a.y);
+            int x1 = Mathf.RoundToInt(b.x), y1 = Mathf.RoundToInt(b.y);
+
+            int dx = Mathf.Abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+            int dy = -Mathf.Abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+            int error = dx + dy;
+
+            // Bresenham, with a step cap: a projected segment can be enormous, and a picture is
+            // never worth an unbounded loop.
+            for (int guard = 0; guard < 4 * (_width + _height); guard++)
+            {
+                if (x0 >= 0 && x0 < _width && y0 >= 0 && y0 < _height)
+                {
+                    _pixels[y0 * _width + x0] = colour;
+                }
+
+                if (x0 == x1 && y0 == y1) return;
+
+                int twice = 2 * error;
+                if (twice >= dy) { error += dy; x0 += sx; }
+                if (twice <= dx) { error += dx; y0 += sy; }
+            }
+        }
+
+        /// <summary>How tall one line of the label's bar is. Read by the frame, which keeps clear of it.</summary>
+        private static int BarHeight => 7 * LabelScale + 4 * LabelScale;
+
+        /// <summary>
+        /// The label this picture carries, one string per drawn line. Set before the camera is
+        /// framed, because the fit leaves the bar's height clear at the top and the bottom.
+        /// </summary>
+        private string[] _label;
+
+        /// <summary>
+        /// A label's own lines, each wrapped to what the frame can hold.
+        /// </summary>
+        /// <remarks>
+        /// <b>Wrapped rather than clipped, which the first reconstruction earned.</b> A picture
+        /// of 299 bodies joined out of 302 carried <c>3 UNMATCHED</c> at the end of its second
+        /// line, and at 1600 px across it read <c>3 UNMAT</c> and then the edge of the frame.
+        /// The caveat is the reason the line exists, so it takes another line instead. Broken at
+        /// a space where there is one and mid-word where there is not, because a label is a fact
+        /// and not a paragraph.
+        /// </remarks>
+        private string[] LabelLines(string text)
+        {
+            var lines = new List<string>(3);
+
+            // What fits between the two pads, in glyphs of six cells with the last one's gap back.
+            int most = Mathf.Max(8, (_width - 4 * LabelScale + LabelScale) / (6 * LabelScale));
+
+            foreach (string given in (text ?? "").ToUpperInvariant().Split('\n'))
+            {
+                string rest = given;
+
+                while (rest.Length > most)
+                {
+                    int cut = rest.LastIndexOf(' ', Mathf.Min(most, rest.Length - 1));
+                    if (cut <= 0) cut = most;
+
+                    lines.Add(rest.Substring(0, cut).TrimEnd());
+                    rest = rest.Substring(cut).TrimStart();
+                }
+
+                lines.Add(rest);
+            }
+
+            return lines.ToArray();
+        }
+
+        /// <summary>
+        /// The label, burnt into the top of the picture.
+        /// </summary>
+        /// <remarks>
+        /// <c>EVOSIM_THEATRE_SNAP_NO_LABEL=1</c> leaves the label off, for a picture shown as a picture
+        /// with its provenance said beside it rather than on it; off by default, so every picture
+        /// the record cites carries its label.
+        /// One bar of one line until 2026-09-18, and the arithmetic is unchanged for one: a
+        /// reconstruction says what it is on a line of its own, and a caveat that ran off the
+        /// edge of the frame would be one a reader could miss.
+        /// </remarks>
+        private static readonly bool NoLabel = TheatreSkin.Dial("EVOSIM_THEATRE_SNAP_NO_LABEL", 0f, 0f, 1f) >= 0.5f;
+
+        private void DrawLabel(string[] lines)
+        {
+            if (lines == null || lines.Length == 0 || NoLabel) return;
+
+            // No words, no bar: a story whose label is set as a subtitle at the join passes none
+            // (SafariCaptions.TextInFrames), and an empty bar would still stamp a black nick.
+            bool any = false;
+            foreach (string line in lines) any |= !string.IsNullOrEmpty(line);
+            if (!any) return;
+
+            int cell = LabelScale;
+            int pad = 2 * cell;
+
+            int longest = 0;
+            foreach (string line in lines) longest = Mathf.Max(longest, line.Length);
+
+            int barWidth = Mathf.Min(_width, longest * 6 * cell - cell + 2 * pad);
+            int barHeight = lines.Length * BarHeight;
+            int barX = 0;
+            int barY = _height - barHeight;
+
+            Fill(barX, barY, barWidth, barHeight, new Color32(0, 0, 0, 255));
+
+            for (int row = 0; row < lines.Length; row++)
+            {
+                int x = barX + pad;
+                int top = _height - pad - 1 - row * BarHeight;
+
+                foreach (char c in lines[row])
+                {
+                    Glyph(c, x, top, cell);
+                    x += 6 * cell;
+                    if (x > _width) break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// A caption in the lower third: the label's font at a larger cell, centred, white, over a
+        /// plate that darkens what is behind it rather than covering it.
+        /// </summary>
+        private void DrawCaption(string text)
+        {
+            int cell = Mathf.Max(LabelScale, _height / 216);
+            int advance = 6 * cell;
+            int most = Mathf.Max(8, (int)(0.8f * _width) / advance);
+
+            var lines = new List<string>(3);
+            string rest = text.ToUpperInvariant().Replace('\n', ' ');
+            while (rest.Length > most)
+            {
+                int cut = rest.LastIndexOf(' ', Mathf.Min(most, rest.Length - 1));
+                if (cut <= 0) cut = most;
+                lines.Add(rest.Substring(0, cut).TrimEnd());
+                rest = rest.Substring(cut).TrimStart();
+            }
+            lines.Add(rest);
+
+            int lineHeight = 11 * cell;
+            int longest = 0;
+            foreach (string line in lines) longest = Mathf.Max(longest, line.Length);
+
+            int bottom = (int)(0.18f * _height);
+            int blockTop = bottom + lines.Count * lineHeight;
+            int plateWidth = Mathf.Min(_width, longest * advance - cell + 4 * cell);
+            Darken((_width - plateWidth) / 2, bottom - cell, plateWidth, lines.Count * lineHeight + cell, 0.55f);
+
+            for (int row = 0; row < lines.Count; row++)
+            {
+                string line = lines[row];
+                int x = (_width - (line.Length * advance - cell)) / 2;
+                int top = blockTop - row * lineHeight - 2 * cell;
+                foreach (char c in line)
+                {
+                    Glyph(c, x, top, cell);
+                    x += advance;
+                    if (x > _width) break;
+                }
+            }
+        }
+
+        private void Darken(int x, int y, int width, int height, float by)
+        {
+            int x1 = Mathf.Min(_width - 1, x + width - 1);
+            int y1 = Mathf.Min(_height - 1, y + height - 1);
+            float keep = 1f - Mathf.Clamp01(by);
+
+            for (int py = Mathf.Max(0, y); py <= y1; py++)
+            {
+                int rowStart = py * _width;
+                for (int px = Mathf.Max(0, x); px <= x1; px++)
+                {
+                    Color32 c = _pixels[rowStart + px];
+                    _pixels[rowStart + px] = new Color32((byte)(c.r * keep), (byte)(c.g * keep), (byte)(c.b * keep), 255);
+                }
+            }
+        }
+
+        private void Glyph(char c, int x, int top, int cell)
+        {
+            string rows = Font(c);
+            var ink = new Color32(255, 255, 255, 255);
+
+            for (int r = 0; r < 7; r++)
+            {
+                for (int column = 0; column < 5; column++)
+                {
+                    if (rows[r * 5 + column] != '#') continue;
+
+                    Fill(x + column * cell, top - (r + 1) * cell + 1, cell, cell, ink);
+                }
+            }
+        }
+
+        // ---------------------------------------------------------------- the font
+
+        /// <summary>
+        /// A five by seven bitmap font, as thirty-five characters per glyph.
+        /// </summary>
+        /// <remarks>
+        /// Written out here rather than taken from a font asset because a picture's label must
+        /// not depend on an asset importing, a shader resolving or a render pipeline being the
+        /// one somebody expected. Seven rows of five, top row first, <c>#</c> for ink. Anything
+        /// this table does not have prints as a hollow box, which is visible in the picture, and
+        /// silence would not be.
+        /// </remarks>
+        private static readonly Dictionary<char, string> Glyphs = Build();
+
+        private static string Font(char c) =>
+            Glyphs.TryGetValue(c, out string rows) ? rows : Glyphs['\0'];
+
+        private static Dictionary<char, string> Build()
+        {
+            var font = new Dictionary<char, string>(64);
+
+            void Add(char c, string a, string b, string d, string e, string f, string g, string h)
+                => font[c] = a + b + d + e + f + g + h;
+
+            Add('\0', "#####", "#...#", "#...#", "#...#", "#...#", "#...#", "#####");
+            Add(' ', ".....", ".....", ".....", ".....", ".....", ".....", ".....");
+
+            Add('A', ".###.", "#...#", "#...#", "#####", "#...#", "#...#", "#...#");
+            Add('B', "####.", "#...#", "#...#", "####.", "#...#", "#...#", "####.");
+            Add('C', ".####", "#....", "#....", "#....", "#....", "#....", ".####");
+            Add('D', "####.", "#...#", "#...#", "#...#", "#...#", "#...#", "####.");
+            Add('E', "#####", "#....", "#....", "####.", "#....", "#....", "#####");
+            Add('F', "#####", "#....", "#....", "####.", "#....", "#....", "#....");
+            Add('G', ".###.", "#...#", "#....", "#.###", "#...#", "#...#", ".###.");
+            Add('H', "#...#", "#...#", "#...#", "#####", "#...#", "#...#", "#...#");
+            Add('I', ".###.", "..#..", "..#..", "..#..", "..#..", "..#..", ".###.");
+            Add('J', "..###", "...#.", "...#.", "...#.", "...#.", "#..#.", ".##..");
+            Add('K', "#...#", "#..#.", "#.#..", "##...", "#.#..", "#..#.", "#...#");
+            Add('L', "#....", "#....", "#....", "#....", "#....", "#....", "#####");
+            Add('M', "#...#", "##.##", "#.#.#", "#.#.#", "#...#", "#...#", "#...#");
+            Add('N', "#...#", "##..#", "#.#.#", "#.#.#", "#..##", "#...#", "#...#");
+            Add('O', ".###.", "#...#", "#...#", "#...#", "#...#", "#...#", ".###.");
+            Add('P', "####.", "#...#", "#...#", "####.", "#....", "#....", "#....");
+            Add('Q', ".###.", "#...#", "#...#", "#...#", "#.#.#", "#..#.", ".##.#");
+            Add('R', "####.", "#...#", "#...#", "####.", "#.#..", "#..#.", "#...#");
+            Add('S', ".####", "#....", "#....", ".###.", "....#", "....#", "####.");
+            Add('T', "#####", "..#..", "..#..", "..#..", "..#..", "..#..", "..#..");
+            Add('U', "#...#", "#...#", "#...#", "#...#", "#...#", "#...#", ".###.");
+            Add('V', "#...#", "#...#", "#...#", "#...#", "#...#", ".#.#.", "..#..");
+            Add('W', "#...#", "#...#", "#...#", "#.#.#", "#.#.#", "##.##", "#...#");
+            Add('X', "#...#", "#...#", ".#.#.", "..#..", ".#.#.", "#...#", "#...#");
+            Add('Y', "#...#", "#...#", ".#.#.", "..#..", "..#..", "..#..", "..#..");
+            Add('Z', "#####", "....#", "...#.", "..#..", ".#...", "#....", "#####");
+
+            Add('0', ".###.", "#...#", "#..##", "#.#.#", "##..#", "#...#", ".###.");
+            Add('1', "..#..", ".##..", "..#..", "..#..", "..#..", "..#..", ".###.");
+            Add('2', ".###.", "#...#", "....#", "...#.", "..#..", ".#...", "#####");
+            Add('3', "#####", "...#.", "..#..", "...#.", "....#", "#...#", ".###.");
+            Add('4', "...#.", "..##.", ".#.#.", "#..#.", "#####", "...#.", "...#.");
+            Add('5', "#####", "#....", "####.", "....#", "....#", "#...#", ".###.");
+            Add('6', "..##.", ".#...", "#....", "####.", "#...#", "#...#", ".###.");
+            Add('7', "#####", "....#", "...#.", "..#..", ".#...", ".#...", ".#...");
+            Add('8', ".###.", "#...#", "#...#", ".###.", "#...#", "#...#", ".###.");
+            Add('9', ".###.", "#...#", "#...#", ".####", "....#", "...#.", ".##..");
+
+            Add('.', ".....", ".....", ".....", ".....", ".....", ".##..", ".##..");
+            Add(',', ".....", ".....", ".....", ".....", ".##..", ".##..", ".#...");
+            Add(':', ".....", ".##..", ".##..", ".....", ".##..", ".##..", ".....");
+            Add(';', ".....", ".##..", ".##..", ".....", ".##..", ".##..", ".#...");
+            Add('-', ".....", ".....", ".....", "#####", ".....", ".....", ".....");
+            Add('+', ".....", "..#..", "..#..", "#####", "..#..", "..#..", ".....");
+            Add('=', ".....", ".....", "#####", ".....", "#####", ".....", ".....");
+            Add('_', ".....", ".....", ".....", ".....", ".....", ".....", "#####");
+            Add('/', "....#", "....#", "...#.", "..#..", ".#...", "#....", "#....");
+            Add('(', "..##.", ".#...", "#....", "#....", "#....", ".#...", "..##.");
+            Add(')', ".##..", "...#.", "....#", "....#", "....#", "...#.", ".##..");
+            Add('[', ".###.", ".#...", ".#...", ".#...", ".#...", ".#...", ".###.");
+            Add(']', ".###.", "...#.", "...#.", "...#.", "...#.", "...#.", ".###.");
+            Add('%', "##..#", "##.#.", "..#..", ".#...", "#..##", "...##", ".....");
+            Add('!', "..#..", "..#..", "..#..", "..#..", "..#..", ".....", "..#..");
+            Add('?', ".###.", "#...#", "....#", "...#.", "..#..", ".....", "..#..");
+            Add('\'', "..#..", "..#..", ".....", ".....", ".....", ".....", ".....");
+            Add('*', ".....", "#.#.#", ".###.", "#####", ".###.", "#.#.#", ".....");
+            Add('#', ".#.#.", ".#.#.", "#####", ".#.#.", "#####", ".#.#.", ".#.#.");
+
+            // The separator the reconstruction's first line uses between what a frame is and how
+            // it was read (§11's RECONSTRUCTED FROM SNAPSHOT · OLD-RUN READ). Without a glyph of
+            // its own it would print as the hollow box this table gives an unknown character,
+            // which is visible but says nothing.
+            Add('·', ".....", ".....", ".....", "..#..", ".....", ".....", ".....");
+
+            return font;
+        }
+
+        /// <remarks>
+        /// Frames this camera handed to <see cref="FrameWriter"/> are not waited for here: their
+        /// buffers are the writer's until it hands them back, and a failure among them is thrown
+        /// by the host's next <see cref="FlushWrites"/>, never swallowed by a disposal.
+        /// </remarks>
+        public void Dispose()
+        {
+            if (_camera != null) _camera.targetTexture = null;
+
+            Discard(_holder);
+            Discard(_target);
+            if (_readbackFull != null && _readbackFull != _readback) Discard(_readbackFull);
+            Discard(_readback);
+            Discard(_down);
+            Discard(_readbackDown);
+        }
+
+        /// <summary>Immediate outside Play mode, deferred inside it, which is what each allows.</summary>
+        private static void Discard(UnityEngine.Object thing)
+        {
+            if (thing == null) return;
+
+            if (Application.isPlaying) UnityEngine.Object.Destroy(thing);
+            else UnityEngine.Object.DestroyImmediate(thing);
+        }
+    }
+}

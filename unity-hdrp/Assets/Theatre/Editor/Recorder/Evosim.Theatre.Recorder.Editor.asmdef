@@ -1,0 +1,29 @@
+{
+    "name": "Evosim.Theatre.Recorder.Editor",
+    "rootNamespace": "Evosim.Theatre.Recording",
+    "references": [
+        "Evosim.Theatre",
+        "Unity.Recorder.Editor",
+        "Unity.Recorder",
+        "Unity.Recorder.Base"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "EVOSIM_UNITY_RECORDER"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.recorder",
+            "expression": "5.0.0",
+            "define": "EVOSIM_UNITY_RECORDER"
+        }
+    ],
+    "noEngineReferences": false
+}

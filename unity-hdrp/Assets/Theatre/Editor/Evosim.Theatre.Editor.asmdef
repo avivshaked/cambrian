@@ -1,0 +1,24 @@
+{
+    "name": "Evosim.Theatre.Editor",
+    "rootNamespace": "Evosim.Theatre.EditorTools",
+    "references": [
+        "Evosim.Core",
+        "Evosim.Dynamics",
+        "Evosim.Farm",
+        "Evosim.Sim",
+        "Evosim.Theatre",
+        "Unity.RenderPipelines.HighDefinition.Runtime",
+        "Unity.RenderPipelines.Core.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

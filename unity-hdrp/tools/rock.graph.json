@@ -1,0 +1,63 @@
+{
+  "name": "Theatre Rock",
+  "path": "Evosim",
+  "template": "C:/Program Files/Unity/Hub/Editor/6000.5.6f1/Editor/Data/Resources/PackageManager/BuiltInPackages/com.unity.render-pipelines.high-definition/Samples~/WaterSamples/Materials/Glacier/Graphs/Iceberg_SG.shadergraph",
+  "hlsl": "Theatre/Hdrp/TheatreRockHdrp.hlsl",
+  "properties_from": "../../unity/Assets/Theatre/TheatreRock.shader",
+  "skip_properties": [],
+  "material_type": 4,
+  "double_sided": 0,
+  "fragment": {
+    "function": "EvoRockSurface",
+    "inputs": [
+      [
+        "PositionOS",
+        "position:object",
+        3
+      ],
+      [
+        "NormalWS",
+        "normal:world",
+        3
+      ],
+      [
+        "Colour",
+        "color:vertex",
+        4
+      ]
+    ],
+    "outputs": [
+      [
+        "BaseColor",
+        3,
+        "block:SurfaceDescription.BaseColor"
+      ],
+      [
+        "NormalOut",
+        3,
+        "block:SurfaceDescription.NormalWS"
+      ],
+      [
+        "Smoothness",
+        1,
+        "block:SurfaceDescription.Smoothness"
+      ],
+      [
+        "Metallic",
+        1,
+        "block:SurfaceDescription.Metallic"
+      ],
+      [
+        "Occlusion",
+        1,
+        "block:SurfaceDescription.Occlusion"
+      ],
+      [
+        "Specular",
+        3,
+        "block:SurfaceDescription.Specular"
+      ]
+    ]
+  },
+  "specular_block": true
+}

@@ -273,7 +273,7 @@ Shader "Evosim/Theatre Rock"
 
                 if (fade > 0.001)
                 {
-                    float net = EvoCausticNet(input.positionWS, _Time.y);
+                    float net = EvoCausticNet(input.positionWS, EvoTime());
 
                     lit += _CausticColor.rgb * (net * fade * _CausticStrength) * (0.25 + 0.75 * rock / max(1e-4, _RockCrust.rgb));
                 }

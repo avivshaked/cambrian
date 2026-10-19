@@ -32,6 +32,10 @@
   Simulated seconds, ascending: -At 300,600. The world is stepped forward once and cannot go
   back for a picture, so the order is the caller's promise and a descending list is refused.
 
+.PARAMETER Project
+  Another Unity project at the repository's root to render in instead of a worker, such as
+  unity-hdrp, the theatre's HDRP spike (D202). -Worker is then ignored.
+
 .PARAMETER Worker
   Worker number, default 6. Worker 1 is unity/ and is refused.
 
@@ -200,6 +204,7 @@ param(
     [Parameter(Mandatory, Position = 0)][string]$Arm,
     [Parameter(Mandatory)][string[]]$At,
     [int]$Worker = 6,
+    [string]$Project = '',
     [string[]]$Views = @(),
     [string]$RunsRoot = 'runs',
     [string]$Size = '1600x900',
@@ -348,6 +353,8 @@ if ($Worker -eq 1) {
 }
 
 $proj = Join-Path $root "unity-w$Worker"
+# -Project names another Unity project at the root instead, such as unity-hdrp, the theatre's HDRP spike (D202).
+if ($Project) { $proj = Join-Path $root $Project }
 if (-not (Test-Path $proj)) {
     throw "No worker project at $proj. Create it with scripts/new-worker.ps1 -Workers @($Worker) from a shell."
 }

@@ -1,0 +1,85 @@
+{
+  "name": "Theatre Bed",
+  "path": "Evosim",
+  "template": "C:/Program Files/Unity/Hub/Editor/6000.5.6f1/Editor/Data/Resources/PackageManager/BuiltInPackages/com.unity.render-pipelines.high-definition/Samples~/WaterSamples/Materials/Glacier/Graphs/Iceberg_SG.shadergraph",
+  "hlsl": "Theatre/Hdrp/TheatreBedHdrp.hlsl",
+  "properties_from": "../../unity/Assets/Theatre/TheatreBed.shader",
+  "skip_properties": [],
+  "material_type": 4,
+  "double_sided": 0,
+  "vertex": {
+    "function": "EvoBedVertex",
+    "inputs": [
+      [
+        "PositionOS",
+        "position:object",
+        3
+      ],
+      [
+        "NormalOS",
+        "normal:object",
+        3
+      ]
+    ],
+    "outputs": [
+      [
+        "Position",
+        3,
+        "block:VertexDescription.Position"
+      ],
+      [
+        "Normal",
+        3,
+        "block:VertexDescription.Normal"
+      ],
+      [
+        "SurfaceNormalWS",
+        3,
+        "interp:BedNormal"
+      ]
+    ]
+  },
+  "fragment": {
+    "function": "EvoBedSurface",
+    "inputs": [
+      [
+        "SurfaceNormalWS",
+        "interp:BedNormal",
+        3
+      ],
+      [
+        "PositionAWS",
+        "position:absolute",
+        3
+      ]
+    ],
+    "outputs": [
+      [
+        "BaseColor",
+        3,
+        "block:SurfaceDescription.BaseColor"
+      ],
+      [
+        "NormalOut",
+        3,
+        "block:SurfaceDescription.NormalWS"
+      ],
+      [
+        "Smoothness",
+        1,
+        "block:SurfaceDescription.Smoothness"
+      ],
+      [
+        "Metallic",
+        1,
+        "block:SurfaceDescription.Metallic"
+      ],
+      [
+        "Specular",
+        3,
+        "block:SurfaceDescription.Specular"
+      ]
+    ]
+  },
+  "specular_block": true
+}

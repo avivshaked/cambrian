@@ -145,7 +145,7 @@ Shader "Evosim/Theatre Surface"
                 // moment it is seen edge on, which from three metres under is most of the frame.
                 float2 slope;
                 float curvature;
-                positionWS.y += EvoRipple(positionWS.xz, _Time.y, slope, curvature);
+                positionWS.y += EvoRipple(positionWS.xz, EvoTime(), slope, curvature);
 
                 output.positionWS = positionWS;
                 output.positionCS = TransformWorldToHClip(positionWS);
@@ -217,7 +217,7 @@ Shader "Evosim/Theatre Surface"
                     // sky's own brightness made grey and dimmed, never a fixed white: the first
                     // stills (2026-10-07) used a literal near-white, which in this linear project
                     // is brighter than any of the sky, and a winter window came out blown.
-                    float field = Clouds(through, _Time.y);
+                    float field = Clouds(through, EvoTime());
                     float cover = smoothstep(0.72 - 0.45 * overcast, 0.90 - 0.40 * overcast, field);
                     cover = max(cover, 0.85 * overcast * overcast);
 
@@ -282,7 +282,7 @@ Shader "Evosim/Theatre Surface"
                 // The normal is taken per pixel from the same field the vertex moved by, at the
                 // same time: a normal interpolated from a grid this coarse would step, and the
                 // window's rim is exactly where a stepped normal shows.
-                float3 n = EvoRippleNormal(input.positionWS.xz, _Time.y);
+                float3 n = EvoRippleNormal(input.positionWS.xz, EvoTime());
 
                 // The ray, followed the way the light came rather than the way the eye looks: it
                 // leaves the eye, arrives here travelling upward, and carries on into the air.

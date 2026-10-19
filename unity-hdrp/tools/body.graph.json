@@ -1,0 +1,48 @@
+{
+  "name": "Theatre Body",
+  "path": "Evosim",
+  "template": "C:/Program Files/Unity/Hub/Editor/6000.5.6f1/Editor/Data/Resources/PackageManager/BuiltInPackages/com.unity.render-pipelines.high-definition/Samples~/WaterSamples/Materials/Glacier/Graphs/Iceberg_SG.shadergraph",
+  "hlsl": "Theatre/Hdrp/TheatreBodyHdrp.hlsl",
+  "properties_from": "../../unity/Assets/Theatre/TheatreBody.shader",
+  "skip_properties": ["_SrcBlend", "_DstBlend", "_ZWrite"],
+  "material_type": 0,
+  "double_sided": 0,
+  "vertex": {
+    "function": "EvoBodyVertex",
+    "inputs": [
+      ["PositionOS", "position:object", 3],
+      ["NormalOS", "normal:object", 3],
+      ["Shape", "uv:3", 4],
+      ["LeafIn", "uv:4", 4]
+    ],
+    "outputs": [
+      ["Position", 3, "block:VertexDescription.Position"],
+      ["Normal", 3, "block:VertexDescription.Normal"],
+      ["CarveOS", 3, "interp:CarveOS"],
+      ["CarveDepth", 1, "interp:CarveDepth"],
+      ["Leaf", 4, "interp:Leaf"],
+      ["Thickness", 1, "interp:BodyThickness"]
+    ]
+  },
+  "fragment": {
+    "function": "EvoBodySurface",
+    "inputs": [
+      ["CarveOS", "interp:CarveOS", 3],
+      ["CarveDepth", "interp:CarveDepth", 1],
+      ["Leaf", "interp:Leaf", 4],
+      ["Thickness", "interp:BodyThickness", 1],
+      ["NormalWS", "normal:world", 3],
+      ["PositionAWS", "position:absolute", 3],
+      ["ViewWS", "view:world", 3]
+    ],
+    "outputs": [
+      ["BaseColor", 3, "block:SurfaceDescription.BaseColor"],
+      ["NormalOut", 3, "block:SurfaceDescription.NormalWS"],
+      ["Smoothness", 1, "block:SurfaceDescription.Smoothness"],
+      ["Metallic", 1, "block:SurfaceDescription.Metallic"],
+      ["Emission", 3, "block:SurfaceDescription.Emission"],
+      ["Alpha", 1, "block:SurfaceDescription.Alpha"],
+      ["ThicknessOut", 1, "none"]
+    ]
+  }
+}

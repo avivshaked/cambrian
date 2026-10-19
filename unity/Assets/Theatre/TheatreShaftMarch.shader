@@ -280,7 +280,7 @@ Shader "Evosim/Theatre Shaft March"
 
                     // The beam this point is in, and the light the surface focused onto it, as a
                     // multiple of the flat water's; between beams the in-scatter has the water.
-                    float gain = min(EvoCausticGain(p, _Time.y), 4.0);
+                    float gain = min(EvoCausticGain(p, EvoTime()), 4.0);
                     float shaft;
 
                     if (place)
@@ -289,7 +289,7 @@ Shader "Evosim/Theatre Shaft March"
                         // caps' shadow; the focusing at the sample's depth only a fifth of it, since at
                         // full share it redraws the short waves' comb inside a sheet.
                         float2 top = SurfaceEntry(p);
-                        shaft = SheetAt(top, _Time.y) * PlaceMask(top, _Time.y)
+                        shaft = SheetAt(top, EvoTime()) * PlaceMask(top, EvoTime())
                               * (_PlaceDebug > 1.5 ? 1.0 : CapShade(p))
                               * lerp(1.0, gain, 0.2 * _MarchFocus);
 
@@ -297,7 +297,7 @@ Shader "Evosim/Theatre Shaft March"
                         // left the surface (EvoBeamAt), so fine streaks run through a sheet and move
                         // with the waves, as they do under a real sea. At full share this is the comb
                         // the sheets replaced; a third of it reads as streaks inside soft light.
-                        shaft *= lerp(1.0, 0.55 + 1.5 * EvoBeamAt(p, _Time.y), _SheetShimmer);
+                        shaft *= lerp(1.0, 0.55 + 1.5 * EvoBeamAt(p, EvoTime()), _SheetShimmer);
 
                         // Strongest near the surface, fading with depth; and in from the lens
                         // between two and eight metres, so the mid-distance carries them and a sheet
@@ -308,7 +308,7 @@ Shader "Evosim/Theatre Shaft March"
                     }
                     else
                     {
-                        shaft = pow(EvoBeamAt(p, _Time.y), _MarchContrast) * lerp(1.0, gain, _MarchFocus);
+                        shaft = pow(EvoBeamAt(p, EvoTime()), _MarchContrast) * lerp(1.0, gain, _MarchFocus);
                     }
 
                     // Down to the sample along the refracted sun, and back to the eye through

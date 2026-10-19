@@ -1,0 +1,47 @@
+{
+  "name": "Theatre Ceiling",
+  "path": "Evosim",
+  "template": "C:/Program Files/Unity/Hub/Editor/6000.5.6f1/Editor/Data/Resources/PackageManager/BuiltInPackages/com.unity.render-pipelines.high-definition/Samples~/WaterSamples/Materials/Glacier/Graphs/Iceberg_SG.shadergraph",
+  "hlsl": "Theatre/Hdrp/TheatreCeilingHdrp.hlsl",
+  "properties_from": "../../unity/Assets/Theatre/TheatreSurface.shader",
+  "skip_properties": [],
+  "material_type": 0,
+  "double_sided": 0,
+  "fragment": {
+    "function": "EvoCeilingSurface",
+    "inputs": [
+      [
+        "PositionAWS",
+        "position:absolute",
+        3
+      ],
+      [
+        "ViewWS",
+        "view:world",
+        3
+      ]
+    ],
+    "outputs": [
+      [
+        "BaseColor",
+        3,
+        "block:SurfaceDescription.BaseColor"
+      ],
+      [
+        "Emission",
+        3,
+        "block:SurfaceDescription.Emission"
+      ],
+      [
+        "Smoothness",
+        1,
+        "block:SurfaceDescription.Smoothness"
+      ],
+      [
+        "Metallic",
+        1,
+        "block:SurfaceDescription.Metallic"
+      ]
+    ]
+  }
+}

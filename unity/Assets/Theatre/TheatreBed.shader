@@ -330,7 +330,7 @@ Shader "Evosim/Theatre Bed"
 
                 if (fade > 0.001)
                 {
-                    float net = EvoCausticNet(input.positionWS, _Time.y);
+                    float net = EvoCausticNet(input.positionWS, EvoTime());
 
                     lit += _CausticColor.rgb * (net * fade * _CausticStrength) * (0.35 + 0.65 * sand);
                 }

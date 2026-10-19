@@ -150,6 +150,16 @@ float4 _EvoLook2;
 // metre; z the open water's brightness as a multiple of the column under the second batch.
 float4 _EvoFade;
 
+// The shaders' clock, for everything that moves with the water: the ripples, the caustics, the
+// shafts and the snow. Unity's own clock by default. A render that must match another frame for
+// frame (the HDRP spike's side-by-side, D202) sets _EvoClockOn and hands its own clock in
+// _EvoClock: the safari's take time under EVOSIM_THEATRE_SAFARI_CLOCK, since Unity's clock starts
+// counting when Play mode opens and so stands at a different second in every render.
+float _EvoClock;
+float _EvoClockOn;
+
+float EvoTime() { return _EvoClockOn > 0.5 ? _EvoClock : _Time.y; }
+
 // Each dial falls back rather than refusing, because a scene that never built a skin still draws
 // bodies and a bed, and a zero wavelength there would divide the sea by nothing. The fallbacks
 // are TheatreSkin's own defaults.

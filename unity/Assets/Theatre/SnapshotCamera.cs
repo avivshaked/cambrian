@@ -2583,13 +2583,18 @@ namespace Evosim.Theatre
         /// The label, burnt into the top of the picture.
         /// </summary>
         /// <remarks>
+        /// <c>EVOSIM_THEATRE_SNAP_NO_LABEL=1</c> leaves the label off, for a picture shown as a picture
+        /// with its provenance said beside it rather than on it; off by default, so every picture
+        /// the record cites carries its label.
         /// One bar of one line until 2026-09-18, and the arithmetic is unchanged for one: a
         /// reconstruction says what it is on a line of its own, and a caveat that ran off the
         /// edge of the frame would be one a reader could miss.
         /// </remarks>
+        private static readonly bool NoLabel = TheatreSkin.Dial("EVOSIM_THEATRE_SNAP_NO_LABEL", 0f, 0f, 1f) >= 0.5f;
+
         private void DrawLabel(string[] lines)
         {
-            if (lines == null || lines.Length == 0) return;
+            if (lines == null || lines.Length == 0 || NoLabel) return;
 
             // No words, no bar: a story whose label is set as a subtitle at the join passes none
             // (SafariCaptions.TextInFrames), and an empty bar would still stamp a black nick.

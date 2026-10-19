@@ -1,0 +1,485 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using Evosim.Core;
+using Evosim.Sim;
+
+namespace Evosim.Theatre
+{
+    /// <summary>
+    /// The census the HUD and the identity check both read, taken once per metabolic step.
+    /// </summary>
+    /// <remarks>
+    /// Every field comes from the same accessor <c>EvolutionRun.Row</c> builds its column from,
+    /// so the HUD and the run's own table agree by construction rather than by inspection. Taken
+    /// once per metabolic step rather than per frame: at 2 Hz of simulated time the walk over the
+    /// population is nothing, and per frame it would be the most expensive thing the viewer does.
+    /// </remarks>
+    public struct WorldCensus
+    {
+        public double T;
+        public int Alive;
+        public long Births;
+        public long Deaths;
+        public int Absorptive;
+        public int Photosynthetic;
+        public int Jointed;
+        public double MeanHeight;
+        public double AuditPercent;
+        public double AuditResidual;
+        public double MatterHere;
+        public long Diverged;
+
+        /// <summary>
+        /// The matter identity: what the world was seeded with plus what came in, less what was
+        /// buried and what is standing. It must read 0, like the audit.
+        /// </summary>
+        /// <remarks>
+        /// The same four terms <c>EvolutionRun</c> builds the report's <c>mat resid</c> column
+        /// from, taken from the same properties on <see cref="World"/>, so the interface and the
+        /// run's own table cannot disagree about whether matter is conserved. It is here because
+        /// the energy audit does not see matter: a world once created 22,000 units in 3,000 s with
+        /// <c>audit</c> at 0.0000% on every row (CLAUDE.md), and an interface that showed only the
+        /// audit would have called that world healthy.
+        /// </remarks>
+        public double MatterResidual;
+
+        /// <summary>Matter standing in the fields, the bodies and the corpses.</summary>
+        public double MatterStanding;
+    }
+
+    /// <summary>
+    /// Mode B: a recorded run, rebuilt from its own directory and stepped again — D075 item 1.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This is a re-run, not a playback.</b> Nothing about a creature's position was ever
+    /// stored (survey §2: snapshots hold genome graphs, `lineage.jsonl` holds no geometry), so
+    /// there is nothing to play back. What there is instead is determinism: same machine, same
+    /// build, same <c>(config, seed, step)</c> replays bit for bit (logbook/0052), so running the
+    /// world again <i>is</i> watching the run. The identity check below is what turns that from a
+    /// claim into a reading.
+    /// </para>
+    /// <para>
+    /// <b>It writes nothing into the run directory.</b> A viewer that could modify the record is
+    /// a viewer whose recording cannot be trusted afterwards.
+    /// </para>
+    /// <para>
+    /// <b>The physics scene is configured exactly as <c>EvolutionRun</c> configures it</b> —
+    /// script simulation mode, zero gravity, self-collision on, the depenetration cap — and
+    /// restored on dispose. Unity's own defaults are not neutral (CLAUDE.md), and a replay that
+    /// forgot one of them would differ from the record for a reason no column would name.
+    /// </para>
+    /// </remarks>
+    public sealed class TheatreReplay : IDisposable, ITheatreFrame
+    {
+        public RunRecord Record { get; private set; }
+        public Ecosystem Eco { get; private set; }
+
+        /// <summary>True when this build's source matches the source the run recorded.</summary>
+        public bool Faithful { get; private set; }
+
+        /// <summary>How this build differs from the recorded one, or null.</summary>
+        public string SourceDifference { get; private set; }
+
+        /// <summary>
+        /// Why the thread count makes this less than a replay, or null when it does not — D078,
+        /// logbook/0069.
+        /// </summary>
+        /// <remarks>
+        /// Set when the run's manifest does not say how many job worker threads its physics ran
+        /// on, which is every run recorded before D078. Such a run was made at the old default,
+        /// where the shared world forks from itself after about 148,000 steps whatever this
+        /// process does, so nothing here can make the replay faithful and the overlay has to say
+        /// so. A tiled recording is unaffected — nothing ever touches, so no two bodies were ever
+        /// solved together — but the manifest cannot be trusted to say which the run was without
+        /// reading the config, so the caveat is worded for the case that matters.
+        /// </remarks>
+        public string ThreadCaveat { get; private set; }
+
+        /// <summary>Job worker threads this replay's physics is running on.</summary>
+        public int PhysicsJobWorkers { get; private set; }
+
+        /// <summary>The last census taken, refreshed every metabolic step.</summary>
+        public WorldCensus Census;
+
+        /// <summary>Samples compared against the record so far.</summary>
+        public int SamplesMatched { get; private set; }
+
+        /// <summary>Samples in the record that the replay stepped past without landing on.</summary>
+        public int SamplesSkipped { get; private set; }
+
+        /// <summary>The first disagreement with the record, or null while there is none.</summary>
+        public string FirstMismatch { get; private set; }
+
+        /// <summary>Simulated seconds elapsed in the replay.</summary>
+        public double ElapsedSeconds => Eco?.World.ElapsedSeconds ?? 0d;
+
+        /// <summary>The last sample time the record holds — where a full replay ends.</summary>
+        public double RecordedThroughSeconds =>
+            Record.Samples.Count > 0 ? Record.Samples[Record.Samples.Count - 1].T : 0d;
+
+        private int _nextSample;
+        private SimulationMode _previousMode;
+        private Vector3 _previousGravity;
+        private int _previousJobWorkers;
+        private bool _sceneConfigured;
+
+        // Drained at each sample and discarded, exactly where EvolutionRun drains them. Not
+        // instrumentation the theatre wants — the point is that the queues inside World stay
+        // bounded, and that the replay calls the same methods at the same moments the recording
+        // did. A world that accumulated a hundred megabytes of undrained lineage rows would be
+        // this viewer's own doing.
+        private readonly List<AbsorptiveSample> _absorptiveScratch = new List<AbsorptiveSample>();
+
+        private TheatreReplay() { }
+
+        /// <summary>
+        /// Loads a run and builds its world. Returns null and sets <paramref name="refusal"/>
+        /// when the run cannot be replayed faithfully and <paramref name="allowMismatch"/> is
+        /// false.
+        /// </summary>
+        /// <param name="runDirectory">A run directory, or the arm directory above it.</param>
+        /// <param name="allowMismatch">
+        /// Play a run recorded by different source anyway. What comes out is a plausible world
+        /// rather than this run, and the caller must say so on screen.
+        /// </param>
+        /// <param name="refusal">Why the run was refused, or null.</param>
+        public static TheatreReplay Open(string runDirectory, bool allowMismatch, out string refusal)
+        {
+            refusal = null;
+
+            var replay = new TheatreReplay();
+
+            try
+            {
+                replay.Record = RunRecord.Load(runDirectory);
+            }
+            catch (Exception e)
+            {
+                refusal = e.Message;
+                return null;
+            }
+
+            // A run that injected an inoculum (D060's assay) fired World.Inoculate from the
+            // batch runner at a set time, and this step path has no such event: a replay would
+            // be that world only until the injection. Refused with the reason rather than
+            // played as a cousin (the Astra review, 2026-09-07).
+            if (replay.Record.Config.InoculateAtSeconds > 0f)
+            {
+                refusal =
+                    "This run injected an inoculum at t=" +
+                    replay.Record.Config.InoculateAtSeconds.ToString("0.#") +
+                    " s, and the theatre does not replay injections yet; from that moment " +
+                    "what it produced would not be this run.";
+                return null;
+            }
+
+            replay.SourceDifference = BuildIdentity.Difference(
+                replay.Record.CoreHash, replay.Record.SimHash, replay.Record.UnityVersion);
+            replay.Faithful = replay.SourceDifference == null;
+
+            if (!replay.Faithful && !allowMismatch)
+            {
+                refusal =
+                    "This build is not the build that recorded the run, so what it produced " +
+                    "would not be that run: " + replay.SourceDifference +
+                    ". Tick 'Allow Source Mismatch' to watch it anyway — it plays with a banner " +
+                    "saying it is not a faithful replay.";
+                return null;
+            }
+
+            // Before the Ecosystem, not after: Ecosystem and EffectorDriver both read the step at
+            // construction, and a replay at the wrong step is a different chaotic realisation.
+            Ecosystem.ConfigurePhysicsStep(replay.Record.PhysicsDtSeconds);
+
+            // D078, for the same reason and in the same place. The thread count is the second
+            // thing a shared-world replay depends on and the first that nobody thought to record:
+            // set from the run's own manifest, so a recording made at 0 is re-run at 0.
+            replay._previousJobWorkers = Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount;
+
+            if (replay.Record.PhysicsJobWorkers.HasValue)
+            {
+                replay.PhysicsJobWorkers =
+                    Ecosystem.ConfigurePhysicsJobWorkers(replay.Record.PhysicsJobWorkers.Value);
+            }
+            else
+            {
+                // The old default, which is what the run was made at and what this process starts
+                // at: left alone rather than forced to a number, so nothing here pretends to know
+                // more than the manifest does.
+                replay.PhysicsJobWorkers = replay._previousJobWorkers;
+                replay.ThreadCaveat =
+                    "physics threads unrecorded — not a faithful replay after the first contact fork";
+            }
+
+            replay._previousMode = Physics.simulationMode;
+            replay._previousGravity = Physics.gravity;
+            Physics.simulationMode = SimulationMode.Script;
+            FluidEnvironment.ConfigureScene(selfCollision: true);
+            replay._sceneConfigured = true;
+
+            // Parented to nothing, exactly as EvolutionRun builds it. A parent transform would be
+            // tidier in the hierarchy and would put one more matrix between development and the
+            // solver; identity is worth more than tidiness.
+            replay.Eco = new Ecosystem(replay.Record.Config, replay.Record.Seed);
+
+            replay.Refresh();
+            return replay;
+        }
+
+        /// <summary>
+        /// One physics step. Returns true on the steps the economy ran, where the census is
+        /// refreshed and the record is checked.
+        /// </summary>
+        /// <param name="map">
+        /// Kept in step with the population, if selection is wanted. Bracketed around the step
+        /// rather than driven from inside it, because what the map has to observe is the
+        /// difference the step makes — see <see cref="CreatureIdMap"/>.
+        /// </param>
+        public bool Step(CreatureIdMap map = null)
+        {
+            if (Eco == null) return false;
+
+            map?.BeforeStep(Eco.World, Eco.Volume);
+            bool metabolic = Eco.Step();
+            map?.AfterStep();
+
+            if (!metabolic) return false;
+
+            Refresh();
+            Compare();
+            return true;
+        }
+
+        /// <summary>The world as the run's own report would have counted it.</summary>
+        private void Refresh()
+        {
+            World world = Eco.World;
+            IReadOnlyList<Organism> living = world.Living;
+
+            double height = 0d;
+            int absorptive = 0, jointed = 0;
+
+            for (int i = 0; i < living.Count; i++)
+            {
+                Organism creature = living[i];
+                height += creature.HeightY;
+
+                bool hasAbsorptive = false;
+                int dof = 0;
+
+                for (int p = 0; p < creature.Phenotype.Parts.Count; p++)
+                {
+                    PhenotypePart part = creature.Phenotype.Parts[p];
+                    if (part.CellTypeId == CellTypeIds.Absorptive) hasAbsorptive = true;
+                    dof += part.JointType.DofCount();
+                }
+
+                if (hasAbsorptive) absorptive++;
+                if (dof > 0) jointed++;
+            }
+
+            int alive = living.Count;
+            double meanHeight = alive > 0 ? height / alive : 0d;
+
+            Census = new WorldCensus
+            {
+                T = world.ElapsedSeconds,
+                Alive = alive,
+                Births = world.Births,
+                Deaths = world.Deaths,
+                Absorptive = absorptive,
+                Photosynthetic = world.CountPhotosynthetic(),
+                Jointed = jointed,
+                MeanHeight = meanHeight,
+                AuditResidual = world.AuditResidual,
+                AuditPercent = world.EnergyIn > 0d ? 100d * world.AuditResidual / world.EnergyIn : 0d,
+                MatterHere = world.Matter.DensityAt((float)meanHeight, 0),
+                Diverged = world.Diverged,
+                MatterStanding = world.StandingMatterUnits,
+
+                // D098: the identity is World's own, not re-derived here. There is one substance
+                // now, so the theatre has no arithmetic to do and no way to disagree with the
+                // world it is watching. The sign is World's too, and it is the other way round
+                // from the one this line used to compute: standing less what went in.
+                MatterResidual = world.MatterResidual,
+            };
+        }
+
+        /// <summary>
+        /// The honesty check: at every recorded sample time, is this world the recorded world?
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Compared exactly, including the two doubles. <c>Json.Writer</c> writes them with "R",
+        /// the shortest string that parses back to the same bits, so a stored sample and a live
+        /// one are comparable to the last bit — and on a build that replays bit for bit, anything
+        /// less than exact equality is a real difference rather than a rounding artefact.
+        /// </para>
+        /// <para>
+        /// The queue drains sit here, at the sample, because that is where <c>EvolutionRun</c>
+        /// does them. They are discarded: the theatre writes nothing.
+        /// </para>
+        /// </remarks>
+        private void Compare()
+        {
+            World world = Eco.World;
+
+            world.DrainLineageEvents();
+            _absorptiveScratch.Clear();
+            world.CollectAbsorptiveLog(_absorptiveScratch);
+            Eco.DrainMotility(out _, out _, out _, out _);
+
+            IReadOnlyList<RunSample> samples = Record.Samples;
+            if (_nextSample >= samples.Count) return;
+
+            double t = world.ElapsedSeconds;
+
+            // A sample the replay has stepped past without landing on. Both clocks advance by the
+            // metabolic step from zero, so this should not happen; if it does, the run's samples
+            // are on a different grid and saying so is more use than silently skipping them.
+            while (_nextSample < samples.Count && samples[_nextSample].T < t - 1e-6)
+            {
+                SamplesSkipped++;
+                _nextSample++;
+            }
+
+            if (_nextSample >= samples.Count) return;
+
+            RunSample recorded = samples[_nextSample];
+            if (Math.Abs(recorded.T - t) > 1e-6) return;
+
+            _nextSample++;
+
+            string column = FirstDifference(recorded);
+            if (column == null)
+            {
+                SamplesMatched++;
+                return;
+            }
+
+            if (FirstMismatch == null)
+            {
+                FirstMismatch = $"t={recorded.T:0.#}: {column}";
+            }
+        }
+
+        private string FirstDifference(RunSample recorded)
+        {
+            if (recorded.Alive != Census.Alive)
+            {
+                return $"alive {recorded.Alive} recorded, {Census.Alive} here";
+            }
+
+            if (recorded.Births != Census.Births)
+            {
+                return $"births {recorded.Births} recorded, {Census.Births} here";
+            }
+
+            if (recorded.Deaths != Census.Deaths)
+            {
+                return $"deaths {recorded.Deaths} recorded, {Census.Deaths} here";
+            }
+
+            if (recorded.AuditResidual != Census.AuditResidual)
+            {
+                return $"audit {recorded.AuditResidual:R} recorded, {Census.AuditResidual:R} here";
+            }
+
+            if (recorded.MeanHeight != Census.MeanHeight)
+            {
+                return $"mean depth {recorded.MeanHeight:0.####} recorded, " +
+                       $"{Census.MeanHeight:0.####} here";
+            }
+
+            return null;
+        }
+
+        // ---------------------------------------------------------------- the camera's world
+
+        /// <summary>
+        /// What <see cref="SnapshotCamera"/> asks of a world it is photographing.
+        /// </summary>
+        /// <remarks>
+        /// Read straight off the living population, which is where the camera read them before
+        /// this interface existed: the creature's own <c>X</c>, <c>HeightY</c> and <c>Z</c>, set
+        /// by the harness from its centre of mass at every metabolic step, so the picture and the
+        /// report cannot disagree about where a body is.
+        /// </remarks>
+        public BedShape Bed => Eco?.World?.Bed;
+
+        /// <inheritdoc />
+        public ReefGeometry Reefs => Eco?.World?.Reefs;
+
+        public int BodyCount => Eco?.World?.Living?.Count ?? 0;
+
+        public Vector3 PositionOf(int index)
+        {
+            Organism creature = Eco.World.Living[index];
+            return new Vector3(creature.X, creature.HeightY, creature.Z);
+        }
+
+        public Phenotype PhenotypeOf(int index) => Eco.World.Living[index].Phenotype;
+
+        public bool AbsorptiveAt(int index) => Eco.World.Living[index].HasAbsorptiveTissue;
+
+        public bool PhotosyntheticAt(int index) => Eco.World.Living[index].HasPhotosyntheticTissue;
+
+        /// <summary>
+        /// The one line a replay's picture carries: which world, when, how many, which way.
+        /// </summary>
+        /// <remarks>
+        /// The faithfulness of the replay is on the same line rather than left to the log,
+        /// because a picture travels without its log. A run this build did not record is a cousin
+        /// of that run and not that run (D078, logbook/0052), and a still frame of a cousin
+        /// labelled with the arm's name would be the most quietly misleading artefact this
+        /// project could make.
+        /// </remarks>
+        public string LabelFor(string view, string look)
+        {
+            string arm = Record.ArmName ?? "run";
+            string faithful = Faithful && ThreadCaveat == null ? "" : "  NOT A FAITHFUL REPLAY";
+
+            return string.Format(
+                System.Globalization.CultureInfo.InvariantCulture,
+                "{0}  t={1:0.#}s  alive {2}  {3}  {5}{4}",
+                arm, Census.T, Census.Alive, view, faithful, look);
+        }
+
+        /// <summary>One line for a HUD or a log: what the identity check currently says.</summary>
+        public string IdentityLine()
+        {
+            if (Record.Samples.Count == 0)
+            {
+                return "identity: no recorded samples to check against";
+            }
+
+            if (FirstMismatch != null)
+            {
+                return $"identity: MISMATCH — {FirstMismatch} ({SamplesMatched} matched before it)";
+            }
+
+            if (SamplesMatched == 0)
+            {
+                return $"identity: no sample reached yet (first at t={Record.Samples[0].T:0.#})";
+            }
+
+            string skipped = SamplesSkipped > 0 ? $", {SamplesSkipped} skipped" : "";
+            return $"identity: {SamplesMatched} of {Record.Samples.Count} samples match{skipped}";
+        }
+
+        public void Dispose()
+        {
+            Eco?.DestroyAll();
+            Eco = null;
+
+            if (!_sceneConfigured) return;
+
+            Physics.simulationMode = _previousMode;
+            Physics.gravity = _previousGravity;
+            Ecosystem.ConfigurePhysicsJobWorkers(_previousJobWorkers);
+            _sceneConfigured = false;
+        }
+    }
+}
