@@ -8911,3 +8911,32 @@ still be open after a night of the card.
 create energy. The owner holds that a rule without a dial cannot be screened, so a missing dial is a gap to
 close. Doubling leaf tissue's energy keeps the books closed, because the energy is fixed from sunlight before any
 grazer eats it.
+
+### D212
+**Corpses and detritus spoil with age, behind a dial, built now; the refractory share waits** · 2026-10-19
+
+**Status:** ruled by the owner on the evening of 2026-10-19, on `propose-aging-matter.md`, which it absorbs. The
+owner asked for the world's entropy of matter to come sooner rather than later, so that old corpses are less of
+a feast for grazers, and agreed to the coordinator's plan for it the same evening.
+
+**Decision.**
+- A spoilage clock. A corpse's and detritus's food value falls with age at a half-life set by a dial. The energy
+  lost leaves as heat, as the bacteria that spoil carrion respire it. The matter is not lost and remineralises as
+  now. The dial's default is off, so every recorded world replays.
+- It is built at once, on the round 62 build line, with its copy on the card and a card identity check.
+- Two of the grazer screen's worlds, `r62g-ctl` and `r62g-reach`, are extended from 12,000 s to 24,000 s as the
+  long baseline without spoilage. A screen of the mouth's reach crossed with two or three half-lives, with a second
+  seed, follows once the clock is built. It replaces the nine-world reach follow-up.
+- The proposal's refractory share, a slow sink of remineralised matter, is set aside. It is a separate question.
+- A composition per unit of matter stays set aside, as the proposal had it.
+
+**Why.** The grazer screen (`logbook/specs/r62-grazer-screen/` on `r62-graze`) found that the one dial that moved
+grazers, a reach of 2 m, did so by scavenging. The read in 500 s windows found that grazers starve in the first
+thousand seconds of summer, when fresh corpses stop falling, and that they do not then turn to living leaves. About
+85% of the standing corpse energy then lay settled on the bed; that the shortage is of fresh corpses is an
+inference. A corpse that feeds as well on its last day as on its first rewards slow scavenging and gives no reason
+to kill a living leaf, which does not spoil. Microbes spoil carrion within a day or two in the sea
+(`logbook/specs/matter-ocean-scan.md`). Reach is tuned with spoilage on, since spoilage shrinks what reach won.
+
+**Rejected.** Running the nine-world reach follow-up first: it would tune reach against the scavenging that
+spoilage is meant to cut.
