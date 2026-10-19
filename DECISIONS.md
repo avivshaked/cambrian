@@ -8892,3 +8892,22 @@ grow, and the physics read puts the senses and brain at about two thirds of a bo
 
 **Rejected.** Running the round as launched and reading the reach pairs at 10,000 s: the grazer question would
 still be open after a night of the card.
+
+### D211
+**Every world rule has a dial, or a stated reason why it has none; the grazer screen gets an eating-rate dial and a leaf food-value dial** · 2026-10-19
+
+**Status:** ruled by the owner on 2026-10-19, overruling the coordinator's choice to screen only with existing dials.
+
+**Decision.**
+- Every world rule carries a tunable, or a stated reason why it has none. The reason is recorded beside the rule in
+  code or in `src/Evosim.Core/CLAUDE.md`. A rule found without either is given a dial or a reason.
+- Two dials are built before the grazer screen. One scales how fast a mouth takes food (`EVOSIM_INTAKE_SCALE`,
+  rationing included). The other scales leaf tissue's energy density alone (`EVOSIM_LEAF_TISSUE_ENERGY` or as
+  built). Both default to 1 and replay every earlier world. A richer leaf costs more to grow, paid from light, so
+  food value rises without energy made from nothing.
+- The screen's arms use them: a mouth four times faster, leaves twice as rich, and both in the combination.
+
+**Why.** The coordinator had dropped both arms because neither dial existed, and a direct food multiplier would
+create energy. The owner holds that a rule without a dial cannot be screened, so a missing dial is a gap to
+close. Doubling leaf tissue's energy keeps the books closed, because the energy is fixed from sunlight before any
+grazer eats it.
