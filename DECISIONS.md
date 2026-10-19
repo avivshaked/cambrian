@@ -8810,3 +8810,33 @@ are idle, at night or with abundant prey. Own leaves first reproduces each of th
   lowest.
 - The share following the body's recent diet: closer, but it still releases a hybrid's eaten share, and needs new
   state in every body.
+
+### D208
+**The theatre stays on URP; the HDRP spike closes, and its gains come over as URP work** · 2026-10-19
+
+**Status:** ruled by the owner on 2026-10-19 on the coordinator's recommendation. It answers D202's spike.
+
+**Decision.**
+- The theatre is not ported to HDRP. The spike's project and findings stay on the branch `hdrp-spike` as its
+  record.
+- The look work goes on in URP: a camera lens with depth of field on the bodies and the scenery as well as the
+  snow; stronger snow (more flakes, more blur, larger ones); a glint on the reef's rock; and a contrast and
+  lighting pass against round 57's film. A short film is judged after it.
+
+**Why.** The spike was run two ways (`scratch/owner/hdrp-spike-pair/`, `scratch/owner/hdrp-native/`).
+- Matched to the URP look ingredient for ingredient, the two pipelines drew nearly the same picture. HDRP's
+  richer stone in its first frames came from a specular glint that URP can draw.
+- Used its own way (volumetric fog, a physical camera, transmission through the bodies), HDRP's one clear gain
+  was the lens. That costs about 130 ms of a 154 ms render, and URP can have a lens too.
+- HDRP's light through the bodies left them a duller green than URP's hand-made glow, and its full subsurface
+  scattering drew them black.
+- A native frame took about 1.4 s to settle.
+
+The difference the owner felt against round 57's film is the look, not the pipeline: lighting, contrast and what
+is on screen.
+
+**Rejected.**
+- Porting to HDRP: every theatre shader, the film path and the worker routine would move, with two projects carried
+  meanwhile, for no visible gain.
+- A third spike with HDRP's water surface and its underwater caustics: after two tests the evidence points one
+  way.
