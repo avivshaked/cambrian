@@ -270,7 +270,9 @@ actually verifying it.
   here on 2026-10-05 so every agent follows it): Sonnet for simple building and bulk reading, Opus for
   reasoning, reviews and anything visual, and Fable only for the hardest problems. A top-level agent hands work to the
   fitting subagent rather than doing all of it in its own model (the owner, 2026-10-19, to conserve tokens). On a build it plans and
-  defines the work, a Sonnet subagent builds it and runs the first tests, and the top-level agent reviews the result.
+  defines the work, a Sonnet subagent builds it and runs the first tests, and the top-level agent reviews the result. Haiku, the
+  cheapest, takes web searches, single facts fetched from a page, file and code location, log tallies and summaries of long
+  output, and sorting or tagging rows, but never a build that needs judgement, a review or a picture (the owner, the same day).
 - **A subagent cannot wait, so never hand it a task that ends in one.** It cannot sleep and
   cannot return before its report, so a suite or a smoke as its last step turns into a no-op
   shell command every few seconds until someone stops it; on 2026-09-09 that ran for an hour
