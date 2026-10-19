@@ -8940,3 +8940,23 @@ to kill a living leaf, which does not spoil. Microbes spoil carrion within a day
 
 **Rejected.** Running the nine-world reach follow-up first: it would tune reach against the scavenging that
 spoilage is meant to cut.
+
+### D213
+**The spoilage screen: eight worlds of reach crossed with corpse half-life, 24,000 s** · 2026-10-19
+
+**Status:** ruled by the coordinator overnight on 2026-10-19, under the owner's leave that evening to decide and
+report in the morning. It absorbs `proposals/propose-r62-reach.md` (cf1cb11b), whose text moves to
+`logbook/specs/r62-spoil-screen-proposal.md` as the screen's spec.
+
+**Decision.**
+- The dial is D212's spoilage clock, as built: corpses only (`CorpseHalfLifeSeconds`, 0 off). Detritus already
+  spoils through the remineralisation rate, which gets no second dial.
+- Half-lives of 500 s, half a world day, and 2,000 s, near the remineralisation's 1,386 s.
+- Seed 6201: reach 2 m at 500 and 2,000 s; reach 3 m off, at 500 and at 2,000 s; the default reach at 500 s. Seed
+  6202: reach 2 m off and at 500 s. The default reach and 2 m without spoilage at 6201 are the grazer screen's two
+  worlds, extended to 24,000 s.
+- Every world runs 24,000 s, four years, so that season is not tangled with run time. It launches after the
+  spoilage build's card identity check.
+
+**Why.** The owner asked to see a long run, and the grazer screen's season read rests on one summer with grazers
+in it. The default reach at 500 s asks whether spoilage alone pushes grazers to kill living leaves.
