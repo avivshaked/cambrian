@@ -1,0 +1,11 @@
+== r62-sq-6101: leaves by place, windows of 1500 s to 6000 s; 6 islands of 368 columns of 3600 (0.10)
+        window | leaves isl  desert | born isl  desert /leaf/ks isl  desert | died isl  desert /leaf/ks isl  desert | isl->des des->isl /isl leaf/ks | island-born: died isl / died desert / alive
+       0-1500  |        332     268 |      833     332        1.672   0.825 |       67     158        0.134   0.393 |     1011      642        2.029 | 156 / 671 / 6
+    1500-3000  |        264     599 |      283      94        0.714   0.105 |      115     571        0.290   0.635 |      983      594        2.479 | 55 / 197 / 31
+    3000-4500  |         90     359 |      103      93        0.766   0.173 |      109     400        0.810   0.743 |      373      345        2.772 | 16 / 48 / 39
+    4500-6000  |         59     181 |       81      73        0.911   0.268 |       46     185        0.517   0.680 |      249      185        2.800 | 1 / 5 / 75
+   causes of leaf deaths (island | desert):
+       0-1500  | starved 37, aged 30 | starved 114, aged 44
+    1500-3000  | starved 60, aged 55 | starved 293, aged 278
+    3000-4500  | aged 58, starved 51 | aged 243, starved 157
+    4500-6000  | aged 31, starved 15 | aged 119, starved 66
