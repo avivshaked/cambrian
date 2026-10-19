@@ -18,6 +18,13 @@ The root file's rules still apply. The entries below were moved word for word, s
   rules through WMI at each restart. No farm run, Unity or watch uses WSL. Our own `Get-CimInstance Win32_Process`
   listings (the orphan sweep, process checks) add bursts of a few seconds. Read that log's `ClientProcessId`
   before blaming a run. Stopping WSL is the owner's call.
+- **A session with TEMP at `C:\WINDOWS\TEMP` and no `python` means the user Path grew too long to load.** On
+  2026-10-19, after a restart, every Claude session came up like that. The user Path in `HKCU\Environment` had grown
+  to 5,331 characters, about fifty of them `...\.dotnet-home\.dotnet\tools` entries. The .NET SDK's first run adds
+  one each time a build sets `DOTNET_CLI_HOME` to a new folder. The owner trimmed it to 1,207 characters, and a new
+  shell had Python at once without signing out. A session started before the fix keeps the old environment until
+  VS Code is restarted. Any build that sets `DOTNET_CLI_HOME` also sets `DOTNET_ADD_GLOBAL_TOOLS_TO_PATH=false`.
+  Changing the user's environment is the owner's step, never an agent's.
 - **A blue screen beside a GPU probe was the file-system filter stack, and a minidump is
   readable without a debugger.** The one crash in this machine's log (2026-09-22, bugcheck
   0x3B) faulted in `FLTMGR.SYS` on a `dotnet.exe` thread, entered through the Xbox Gaming
