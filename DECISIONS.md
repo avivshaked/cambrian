@@ -8840,3 +8840,31 @@ is on screen.
   meanwhile, for no visible gain.
 - A third spike with HDRP's water surface and its underwater caustics: after two tests the evidence points one
   way.
+
+### D209
+**Round 62: the current at 0.02 m/s, six worlds in pairs on the mouth's reach, launched on today's driver** · 2026-10-19
+
+**Status:** ruled by the owner on 2026-10-19, on the coordinator's recommendations.
+
+**Decision.**
+- Round 62 runs in D204's open square on `r62-build`, with D206 and D207 on and D194's coral, the snow carried
+  on the card. The ocean current's speed is 0.02 m/s everywhere, a fifth of round 61's.
+- Six worlds, founded, 72,000 s, on three seeds in pairs: three at round 61's grazer dials, and three with the
+  mouth's reach at 2.0 m, the step of D201's search held on 2026-10-19 morning.
+- The round launches on the card's present driver. The driver update goes in after the round.
+
+**Why.** The square's collapse screens (`logbook/specs/r62-collapse-screens/`) found that only the slower current
+made oases. At 0.02 m/s three quarters of the living sat on five islands, four fifths of the 10 m squares were
+empty, and the population held steady through the stretch where the control and the first founding fell. At
+0.1 m/s the current carried island leaves off five to ten times faster. Neither twice the matter nor D206 off made
+oases. The grazers starve on intake, at about a sixteenth of what they burn
+(`logbook/specs/r62-dial-screens/grazer-turnover.md`), and the mouth's reach is one of the two dials the read
+names, so the pairs test it under the new rules while the round grows its oases. The speed work of the same day
+(`logbook/specs/box-transport-speed.md` on the build) runs a world of the square at about 2.4 times real time
+five-up, so the round fits a night.
+
+**Rejected.**
+- 0.04 to 0.05 m/s, unscreened.
+- Calm water over the shoals with a faster current between them: it is closest to a real ocean and kept for a
+  later round, since it needs a build.
+- Screening grazer dials in the square before the round: it costs a day, and the pairs do the same work.
