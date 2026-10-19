@@ -8868,3 +8868,27 @@ five-up, so the round fits a night.
 - Calm water over the shoals with a faster current between them: it is closest to a real ocean and kept for a
   later round, since it needs a build.
 - Screening grazer dials in the square before the round: it costs a day, and the pairs do the same work.
+
+### D210
+**Round 62 stops minutes in; grazer dials are screened in the square before it relaunches** · 2026-10-19
+
+**Status:** ruled by the owner on 2026-10-19 at about 17:05. It amends D209's launch, and D209's world stands.
+
+**Decision.**
+- The six worlds launched at 16:53 are stopped at about 600 s. Their directories stay in `runs/` as the record
+  of the attempt and are not read as the round.
+- A grazer screen runs first in the square on `r62-build`: six founded worlds at one seed for 12,000 s, aimed at
+  how much food a grazer gets. The arms are the control, the reach at 2.0 m, a faster mouth, more energy per unit
+  eaten, a larger founder endowment, and a combination. It is read for grazer births, generations, replacement and
+  intake per grazer-second.
+- Round 62 relaunches with what the screen finds, under an amended pre-registration, and on a faster build if the
+  brain's spread across the card's threads lands in time.
+
+**Why.** The owner judged that round 62 without working grazer dials would look different but end as round 61
+did. The read puts a grazer's intake at about a sixteenth of what it burns, which one reach step is unlikely to
+close. The day's speed work made a screen of the square a matter of hours, not the day the coordinator had
+counted when recommending the paired launch. The owner also expects the pace to fall toward real time as crowds
+grow, and the physics read puts the senses and brain at about two thirds of a body's cost on the card.
+
+**Rejected.** Running the round as launched and reading the reach pairs at 10,000 s: the grazer question would
+still be open after a night of the card.
