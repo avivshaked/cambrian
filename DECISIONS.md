@@ -8917,10 +8917,10 @@ grazer eats it.
 
 **Status:** ruled by the owner on the evening of 2026-10-19, on `propose-aging-matter.md`, which it absorbs. The
 owner asked for the world's entropy of matter to come sooner rather than later, so that old corpses are less of
-a feast for grazers, and agreed to the coordinator's plan for it the same evening.
+a feast for grazers. The owner agreed to the coordinator's plan for it the same evening.
 
 **Decision.**
-- A spoilage clock. A corpse's and detritus's food value falls with age at a half-life set by a dial. The energy
+- A spoilage clock: a corpse's and detritus's food value falls with age at a half-life set by a dial. The energy
   lost leaves as heat, as the bacteria that spoil carrion respire it. The matter is not lost and remineralises as
   now. The dial's default is off, so every recorded world replays.
 - It is built at once, on the round 62 build line, with its copy on the card and a card identity check.
@@ -8931,8 +8931,8 @@ a feast for grazers, and agreed to the coordinator's plan for it the same evenin
 - A composition per unit of matter stays set aside, as the proposal had it.
 
 **Why.** The grazer screen (`logbook/specs/r62-grazer-screen/` on `r62-graze`) found that the one dial that moved
-grazers, a reach of 2 m, did so by scavenging. The read in 500 s windows found that grazers starve in the first
-thousand seconds of summer, when fresh corpses stop falling, and that they do not then turn to living leaves. About
+grazers, a reach of 2 m, did so by scavenging. In 500 s windows, grazers starve in the first
+thousand seconds of summer, when fresh corpses stop falling, and they do not then turn to living leaves. About
 85% of the standing corpse energy then lay settled on the bed; that the shortage is of fresh corpses is an
 inference. A corpse that feeds as well on its last day as on its first rewards slow scavenging and gives no reason
 to kill a living leaf, which does not spoil. Microbes spoil carrion within a day or two in the sea
