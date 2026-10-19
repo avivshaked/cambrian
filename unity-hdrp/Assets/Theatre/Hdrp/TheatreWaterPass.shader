@@ -397,26 +397,35 @@ Shader "Hidden/Evosim/Theatre Water Pass"
     }
 
     // The marine snow: TheatreSnowShells.shader's fragment, with the eye and the ray from the depth
-    // buffer as in Shafts. Added over the frame, as in URP.
-    float4 Snow(Varyings varyings) : SV_Target
+    // buffer as in Shafts. The light it adds, the ray's direction, and the nearest mote whose core
+    // covers the pixel (evoSnowNearT, 1e9 for none), which the depth pass writes for the lens.
+    float3 SnowWalk(Varyings varyings, out float3 dir, out float nearT)
     {
-        UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(varyings);
+        dir = float3(0.0, 0.0, 1.0);
+        nearT = 1e9;
 
         float3 origin = GetAbsolutePositionWS(float3(0.0, 0.0, 0.0));
         float inside = saturate(_Waterline - origin.y);
-        if (inside <= 0.002) return float4(0.0, 0.0, 0.0, 0.0);
+        if (inside <= 0.002) return float3(0.0, 0.0, 0.0);
 
         float depth = LoadCameraDepth(varyings.positionCS.xy);
         PositionInputs posInput = GetPositionInput(varyings.positionCS.xy, _ScreenSize.zw, depth, UNITY_MATRIX_I_VP, UNITY_MATRIX_V);
-        float3 dir = -GetWorldSpaceNormalizeViewDir(posInput.positionWS);
+        dir = -GetWorldSpaceNormalizeViewDir(posInput.positionWS);
         float tScene = depth == UNITY_RAW_FAR_CLIP_VALUE ? 1e6 : length(posInput.positionWS);
 
         float t0 = _ProjectionParams.y;
         float t1 = tScene;
-        if (!EvoClipToWater(origin, dir, _BoxMin.xyz, _BoxMax.xyz, _Tank, t0, t1)) return float4(0.0, 0.0, 0.0, 0.0);
+        if (!EvoClipToWater(origin, dir, _BoxMin.xyz, _BoxMax.xyz, _Tank, t0, t1)) return float3(0.0, 0.0, 0.0);
 
         float time = EvoTime();
         float4 sum = float4(0.0, 0.0, 0.0, 0.0);
+
+        // The lens's focus, as URP's fragment takes it: the shot's, or the scene's depth at the
+        // frame's centre. With HDRP's own depth of field on, the shells' lens is off (HdrpLook).
+        evoSnowNearT = 1e9;
+        evoSnowFocus = _EvoSnowLens.x;
+        if (_EvoSnowLens.y > 0.0 && evoSnowFocus <= 0.0)
+            evoSnowFocus = min(LinearEyeDepth(LoadCameraDepth(uint2(_ScreenSize.xy * 0.5)), _ZBufferParams), 12.0);
 
         sum += Shell(origin, dir, max(t0, _Near.x), min(t1, _Near.y), _Near, _Radii.x, _Radii.w, 0.0, time);
         sum += Shell(origin, dir, max(t0, _Middle.x), min(t1, _Middle.y), _Middle, _Radii.y, 1e4, 17.0, time);
@@ -426,8 +435,35 @@ Shader "Hidden/Evosim/Theatre Water Pass"
         float day = EvoDayGain() * (EvoLookFade() ? max(0.0, _EvoFade.z) : 1.0);
         float3 ambient = _MoteColor.rgb * (_MoteAmbient * day * inside) * sum.a;
 
-        float3 colour = _MoteColor.rgb * (_ShellGain * inside * phase) * sum.rgb + ambient;
+        nearT = evoSnowNearT;
+        return _MoteColor.rgb * (_ShellGain * inside * phase) * sum.rgb + ambient;
+    }
+
+    // Added over the frame, as in URP.
+    float4 Snow(Varyings varyings) : SV_Target
+    {
+        UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(varyings);
+        float3 dir;
+        float nearT;
+        float3 colour = SnowWalk(varyings, dir, nearT);
         return float4(colour * GetCurrentExposureMultiplier(), 0.0);
+    }
+
+    // The snow's depth, for HDRP's depth of field (HdrpLook's native look): the nearest mote's depth
+    // where its core covers the pixel, so the lens blurs each mote by its own distance and not by
+    // the distance of what lies behind it. Nothing is written where no mote's core is.
+    float4 SnowDepth(Varyings varyings, out float depthOut : SV_Depth) : SV_Target
+    {
+        UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(varyings);
+        float3 dir;
+        float nearT;
+        SnowWalk(varyings, dir, nearT);
+        if (nearT >= 1e8) discard;
+
+        // Camera-relative rendering: the eye is the origin of the space the matrices take.
+        float4 clip = mul(UNITY_MATRIX_VP, float4(dir * nearT, 1.0));
+        depthOut = clip.z / clip.w;
+        return float4(0.0, 0.0, 0.0, 0.0);
     }
 
     // The URP debug view writes the shaft term over a black frame: kept 0.
@@ -512,6 +548,18 @@ Shader "Hidden/Evosim/Theatre Water Pass"
 
             HLSLPROGRAM
                 #pragma fragment Snow
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "Theatre Snow Depth"
+            ZWrite On
+            ZTest LEqual
+            ColorMask 0
+            Cull Off
+
+            HLSLPROGRAM
+                #pragma fragment SnowDepth
             ENDHLSL
         }
     }

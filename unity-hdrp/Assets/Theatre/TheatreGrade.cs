@@ -249,7 +249,9 @@ namespace Evosim.Theatre
 
             if (PortraitMode == TheatreFocusMode.Off) { Unfocus(); return; }
 
-            if (PortraitMode == TheatreFocusMode.Gaussian)
+            // HDRP's own look focuses through the physical camera whatever the story asks
+            // (HdrpLook.Native: the owner's second test of D202 asked for a physical camera).
+            if (PortraitMode == TheatreFocusMode.Gaussian && !HdrpLook.Native)
             {
                 // HDRP's manual ranges stand in for URP's Gaussian: sharp to the start, fully
                 // blurred by the end, nothing in front blurred.

@@ -27,6 +27,8 @@ float4 _EvoHdrpLightDir[EVO_HDRP_LIGHTS];
 float4 _EvoHdrpLightColour[EVO_HDRP_LIGHTS];
 float _EvoHdrpLightCount;
 float _EvoHdrpBodyDebug;      // the test view, from HdrpLook (EVOSIM_HDRP_BODY_DEBUG)
+float _EvoHdrpNativeBody;     // 1 under HdrpLook's native look: the light through the tissue is
+                              // HDRP's own transmission (the graph "Theatre Body SSS"), not this file's
 
 // The URP body's light through a thin part: Barre-Brisebois and Bouchard's single pass
 // approximation [BB11] in Austin's URP arrangement [JA], word for word.
@@ -132,8 +134,11 @@ void EvoBodySurface_float(float3 CarveOS, float CarveDepth, float4 Leaf, float T
         through += EvoTransmission(n, v, normalize(_EvoHdrpLightDir[i].xyz), colour, thickness);
     }
     through *= _TransTint.rgb * _TransGain;
+    // Under the native look HDRP carries the light through the body itself, by the subsurface
+    // scattering type's transmission and the thickness below, through the diffusion profile.
+    if (_EvoHdrpNativeBody > 0.5) through = float3(0.0, 0.0, 0.0);
     if (Leaf.w > 0.5)
-        through += _TransTint.rgb * (_TransGain * _LeafSkyGlow * EvoTransmission(n, v, float3(0.0, 1.0, 0.0), keyColour, thickness));
+        through += _EvoHdrpNativeBody > 0.5 ? float3(0.0, 0.0, 0.0) : _TransTint.rgb * (_TransGain * _LeafSkyGlow * EvoTransmission(n, v, float3(0.0, 1.0, 0.0), keyColour, thickness));
     BaseColor = saturate(body * leafTone * own) * depthLight;
     NormalOut = n;
     // The sheen by guild: a gut wall's gloss against a leaf's matte.

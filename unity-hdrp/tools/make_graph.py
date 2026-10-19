@@ -23,6 +23,13 @@ The spec names:
   specular_block       true adds the Specular Color block, which the template lacks, for material
                        type 4: the bed and the rock set their specular there (TheatreDepthHdrp.hlsl)
   double_sided         0 off, 1 on
+  transmission         true turns on the subsurface scattering type's transmission
+  diffusion_profile    an asset under Assets/ whose GUID the Diffusion Profile block names, for the
+                       subsurface scattering type (material_type 1); HDRP draws it only while the
+                       profile is in a volume's Diffusion Profile List (HdrpLook)
+  extra_blocks         [[descriptor, display name, value]]: one-float fragment blocks the template
+                       lacks, as HDRP's own Skin graph writes them (SubsurfaceMask, Thickness,
+                       TransmissionMask), for an output to wire to or to hold their value
 
 The output is <name>.shadergraph beside the HLSL. Unity reads it on the next import.
 """
@@ -183,6 +190,8 @@ def build(spec_path):
             kind = spec.get("material_type", 0)
             o["m_MaterialType"] = kind
             o["m_MaterialTypeMask"] = 1 << {0: 1, 1: 0}.get(kind, kind)
+            if "transmission" in spec:
+                o["m_SSSTransmission"] = bool(spec["transmission"])
         if o["m_Type"].endswith("SystemData"):
             o["m_DoubleSidedMode"] = spec.get("double_sided", 0)
             # Opaque and whole. The Iceberg template clips on alpha and its Alpha block holds 0
@@ -192,6 +201,40 @@ def build(spec_path):
             o["m_ZWrite"] = True
     if "SurfaceDescription.Alpha" in blocks:
         blocks["SurfaceDescription.Alpha"][1][0]["m_Value"] = 1.0
+
+    def add_block(descriptor, sslot):
+        b = {"m_SGVersion": 0, "m_Type": "UnityEditor.ShaderGraph.BlockNode", "m_ObjectId": new_id(),
+             "m_Group": {"m_Id": ""}, "m_Name": descriptor,
+             "m_DrawState": {"m_Expanded": True, "m_Position": {"serializedVersion": "2", "x": 0.0, "y": 0.0,
+                                                                "width": 0.0, "height": 0.0}},
+             "m_Slots": [{"m_Id": sslot["m_ObjectId"]}], "synonyms": [], "m_Precision": 0,
+             "m_PreviewExpanded": True, "m_DismissedVersion": 0, "m_PreviewMode": 0,
+             "m_CustomColors": {"m_SerializableColors": []},
+             "m_SerializedDescriptor": descriptor}
+        blocks[descriptor] = (b, [sslot])
+        graph["m_FragmentContext"]["m_Blocks"].append({"m_Id": b["m_ObjectId"]})
+
+    # One-float blocks the template lacks, as HDRP's Skin graph writes them.
+    for descriptor, display, value in spec.get("extra_blocks", []):
+        if descriptor in blocks:
+            continue
+        add_block(descriptor, slot(0, display, 1, False, stage=2,
+                                   extra={"m_ShaderOutputName": descriptor.split(".", 1)[1],
+                                          "m_Value": float(value), "m_DefaultValue": float(value)}))
+
+    # The Diffusion Profile block, naming the asset by its GUID as the Editor serialises it.
+    if spec.get("diffusion_profile"):
+        dmeta = open(os.path.join(assets, spec["diffusion_profile"]) + ".meta", encoding="utf-8").read()
+        dguid = re.search(r"guid: (\w+)", dmeta).group(1)
+        dslot = {"m_SGVersion": 0, "m_Type": "UnityEditor.Rendering.HighDefinition.DiffusionProfileInputMaterialSlot",
+                 "m_ObjectId": new_id(), "m_Id": 0, "m_DisplayName": "Diffusion Profile", "m_SlotType": 0,
+                 "m_Hidden": False, "m_ShaderOutputName": "DiffusionProfileHash", "m_StageCapability": 2,
+                 "m_Value": 0.0, "m_DefaultValue": 0.0, "m_Labels": [],
+                 "m_DiffusionProfile": {"selectedEntry": 0, "popupEntries": []},
+                 "m_SerializedDiffusionProfile": json.dumps(
+                     {"diffusionProfileAsset": {"fileID": 11400000, "guid": dguid, "type": 2}}, indent=4),
+                 "m_Version": 1}
+        add_block("SurfaceDescription.DiffusionProfileHash", dslot)
 
     # The Specular Color block, as HDRP's own graphs write it (its particle samples), for the
     # specular colour material type.

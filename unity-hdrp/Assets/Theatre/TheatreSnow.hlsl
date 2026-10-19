@@ -22,6 +22,26 @@ float4 _EvoSnowCells;
 // the bed goes at the reference; w: the least density ratio a column counts as for the shells' motes.
 float4 _EvoSnowRef;
 
+// The shells' lens, pushed for every render by the snapshot (TheatreSkin.PushSnowLens). x: the focus
+// distance along the view axis, m (0: the scene's depth at the frame's centre, as an autofocus takes
+// it); y: the lens's aperture, its diameter in m (0: every mote sharp, as before 2026-10-19); z: the
+// most a mote is blurred, in pixels of radius; w: the power of a blurred mote's area ratio its
+// brightness keeps (1: its light spread over the larger disc and conserved).
+float4 _EvoSnowLens;
+
+// The flakes. x: the spread of the motes' sizes, the standard deviation of their log radius, with
+// the mean area kept (0: one size a shell); y: the share of motes that are large flakes; z: how many
+// times larger; w: how irregular a flake's outline is (0: round).
+float4 _EvoSnowFlake;
+
+// x: how soft a flake's edge is, as a share of its radius (0: a pixel's edge); yzw unused.
+float4 _EvoSnowFluff;
+
+// Set by the shells' fragment before the walk: the focus it settled on, and the nearest mote whose
+// core covers the pixel, which HDRP's snow writes as depth for its own depth of field.
+static float evoSnowFocus;
+static float evoSnowNearT;
+
 bool EvoRunSnow() { return _EvoLook2.y > 0.5; }
 
 // The recorded snow at a world position: x the column's density, y the floor's stock. Bilinear

@@ -37,8 +37,21 @@ namespace Evosim.Theatre
     /// </remarks>
     public static class HdrpLook
     {
+        /// <summary>
+        /// HDRP's own look, no longer matched to the URP theatre's (<c>EVOSIM_HDRP_NATIVE</c>, 1 on, default 0;
+        /// the owner's second test of D202, 2026-10-19, to see how far HDRP goes when it is used its own
+        /// way). It changes the defaults of the dials below: HDRP's volumetric fog in place of the water
+        /// pass, its shafts from the sun's cookie scattered in that fog in place of the URP march, its
+        /// water surface in place of the ported ceiling, the bodies in its subsurface scattering with
+        /// transmission, the stone with its own specular, its reflections, the snow writing its depth so
+        /// the physical camera's depth of field blurs every mote by its own distance, and every frame
+        /// rendered <see cref="Settle"/> times under TAA so the temporal effects converge. Each dial
+        /// still overrides its own default.
+        /// </summary>
+        public static bool Native = TheatreSkin.Dial("EVOSIM_HDRP_NATIVE", 0f, 0f, 1f) >= 0.5f;
+
         public static int PathTraceSamples = (int)TheatreSkin.Dial("EVOSIM_HDRP_PATHTRACE", 0f, 0f, 16384f);
-        public static bool WaterSurfaceOn = TheatreSkin.Dial("EVOSIM_HDRP_WATER", 0f, 0f, 1f) >= 0.5f;
+        public static bool WaterSurfaceOn = TheatreSkin.Dial("EVOSIM_HDRP_WATER", Native ? 1f : 0f, 0f, 1f) >= 0.5f;
         public static bool Volumetric = TheatreSkin.Dial("EVOSIM_HDRP_VOLUMETRIC", 1f, 0f, 1f) >= 0.5f;
         public static float FogMetres = TheatreSkin.Dial("EVOSIM_HDRP_FOG_METRES", 0f, 0f, 10000f);
         public static float LightScale = TheatreSkin.Dial("EVOSIM_HDRP_LIGHT_SCALE", Mathf.PI, 0f, 100f);
@@ -54,7 +67,7 @@ namespace Evosim.Theatre
         /// objects (<c>TheatreWaterPass.shader</c>; <c>EVOSIM_HDRP_WATER_PASS</c>, 1 on, the default).
         /// HDRP's own fog is off while it is on.
         /// </summary>
-        public static bool WaterPassOn = TheatreSkin.Dial("EVOSIM_HDRP_WATER_PASS", 1f, 0f, 1f) >= 0.5f;
+        public static bool WaterPassOn = TheatreSkin.Dial("EVOSIM_HDRP_WATER_PASS", Native ? 0f : 1f, 0f, 1f) >= 0.5f;
 
         /// <summary>
         /// The sky's strength, which is the ambient light every surface takes from it
@@ -75,7 +88,7 @@ namespace Evosim.Theatre
         /// (<c>TheatreWaterPass.shader</c>; <c>EVOSIM_HDRP_SHAFTS</c>, 1 on, the default). They are
         /// drawn only where the skin turns its own march on, and need the water pass.
         /// </summary>
-        public static bool ShaftsOn = TheatreSkin.Dial("EVOSIM_HDRP_SHAFTS", 1f, 0f, 1f) >= 0.5f;
+        public static bool ShaftsOn = TheatreSkin.Dial("EVOSIM_HDRP_SHAFTS", Native ? 0f : 1f, 0f, 1f) >= 0.5f;
 
         /// <summary>
         /// The marine snow as the URP theatre's shells draw it, one more pass after the shafts
@@ -87,7 +100,7 @@ namespace Evosim.Theatre
         /// The URP theatre's tone step after HDRP's post-processing (<see cref="HdrpToneStep"/>;
         /// <c>EVOSIM_HDRP_TONE_STEP</c>, 1 on, the default). It runs only where the skin turns it on.
         /// </summary>
-        public static bool ToneStepOn = TheatreSkin.Dial("EVOSIM_HDRP_TONE_STEP", 1f, 0f, 1f) >= 0.5f;
+        public static bool ToneStepOn = TheatreSkin.Dial("EVOSIM_HDRP_TONE_STEP", Native ? 0f : 1f, 0f, 1f) >= 0.5f;
 
         /// <summary>
         /// Whether HDRP's lights draw a specular highlight (<c>EVOSIM_HDRP_LIGHT_SPECULAR</c>, 1 on, the
@@ -97,7 +110,54 @@ namespace Evosim.Theatre
         public static bool LightSpecular = TheatreSkin.Dial("EVOSIM_HDRP_LIGHT_SPECULAR", 1f, 0f, 1f) >= 0.5f;
 
         /// <summary>HDRP's environment reflections (<c>EVOSIM_HDRP_REFLECTIONS</c>, 0 off, the default).</summary>
-        public static bool Reflections = TheatreSkin.Dial("EVOSIM_HDRP_REFLECTIONS", 0f, 0f, 1f) >= 0.5f;
+        public static bool Reflections = TheatreSkin.Dial("EVOSIM_HDRP_REFLECTIONS", Native ? 1f : 0f, 0f, 1f) >= 0.5f;
+
+        /// <summary>
+        /// How the bodies take light through their tissue (<c>EVOSIM_HDRP_BODY_LIGHT</c>): 0 the URP body's own
+        /// term by hand, as the matched look draws it; 1, the default under the native look, HDRP's translucent
+        /// type ("Evosim/Theatre Body Translucent"), its transmission through the profile
+        /// <c>Resources/TheatreBodyDiffusion.asset</c>; 2 HDRP's subsurface scattering with transmission
+        /// ("Evosim/Theatre Body SSS"), which drew every body black on 2026-10-19 for a reason not found.
+        /// The guild's rim and the fed body's glow stay, as emission, in all three.
+        /// </summary>
+        public static int BodyLight = (int)TheatreSkin.Dial("EVOSIM_HDRP_BODY_LIGHT", Native ? 1f : 0f, 0f, 2f);
+
+        private static bool BodySss => BodyLight > 0;
+
+        /// <summary>
+        /// The snow writes its nearest mote's depth (<c>EVOSIM_HDRP_SNOW_DEPTH</c>, 1 on, default 1 under the
+        /// native look), so HDRP's depth of field blurs each mote by its own distance and not by the
+        /// distance of the water behind it.
+        /// </summary>
+        public static bool SnowDepth = TheatreSkin.Dial("EVOSIM_HDRP_SNOW_DEPTH", Native ? 1f : 0f, 0f, 1f) >= 0.5f;
+
+        /// <summary>
+        /// Renders a frame takes (<c>EVOSIM_HDRP_SETTLE</c>, 1 to 64, default 8 under the native look, else 1),
+        /// the camera's history reset before the first: a film frame is one pose after a jump, and HDRP's
+        /// TAA, its volumetric fog and its physically based depth of field each accumulate over frames.
+        /// </summary>
+        public static int Settle = (int)TheatreSkin.Dial("EVOSIM_HDRP_SETTLE", Native ? 8f : 1f, 1f, 64f);
+
+        /// <summary>HDRP's temporal antialiasing (<c>EVOSIM_HDRP_TAA</c>, 1 on, default 1 under the native look).</summary>
+        public static bool Taa = TheatreSkin.Dial("EVOSIM_HDRP_TAA", Native ? 1f : 0f, 0f, 1f) >= 0.5f;
+
+        /// <summary>
+        /// The water surface's own underwater rendering, inside a box over the world (<c>EVOSIM_HDRP_UNDERWATER</c>,
+        /// 1 on, default 0): HDRP's absorption and scattering under the surface, in place of the fog.
+        /// </summary>
+        public static bool Underwater = TheatreSkin.Dial("EVOSIM_HDRP_UNDERWATER", 0f, 0f, 1f) >= 0.5f;
+
+        /// <summary>The fog's colour from the sky toward each direction (<c>EVOSIM_HDRP_FOG_SKY</c>, default 1 under the native look).</summary>
+        public static bool FogSky = TheatreSkin.Dial("EVOSIM_HDRP_FOG_SKY", Native ? 1f : 0f, 0f, 1f) >= 0.5f;
+
+        /// <summary>The water surface's own moving caustics (<c>EVOSIM_HDRP_WATER_CAUSTICS</c>, their intensity, default 0, off).</summary>
+        public static float WaterCaustics = TheatreSkin.Dial("EVOSIM_HDRP_WATER_CAUSTICS", 0f, 0f, 10f);
+
+        /// <summary>
+        /// The render on which the cost of each of HDRP's features is timed (<c>EVOSIM_HDRP_BENCH</c>, the
+        /// render's count from 1; 0, the default, times nothing). See <see cref="RunBench"/>.
+        /// </summary>
+        public static int Bench = (int)TheatreSkin.Dial("EVOSIM_HDRP_BENCH", 0f, 0f, 1000000f);
 
         private static readonly FrameSettingsField[] NoReflections =
         {
@@ -144,10 +204,13 @@ namespace Evosim.Theatre
             Prepare(camera, world);
             if (BodyDebug > 0f && camera != null) LogNearestBody(camera);
 
+            _renders++;
+            if (Bench > 0 && _renders == Bench) RunBench(camera);
+
             if (PathTraceSamples <= 0 || !SystemInfo.supportsRayTracing)
             {
                 if (_pathTracing != null) _pathTracing.enable.Override(false);
-                camera.Render();
+                RenderSettled(camera, Settle);
                 return;
             }
 
@@ -157,6 +220,127 @@ namespace Evosim.Theatre
             _pathTracing.maximumSamples.Override(PathTraceSamples);
             for (int i = 0; i < PathTraceSamples; i++) camera.Render();
             _pathTracing.enable.Override(false);
+        }
+
+        private static int _renders;
+
+        // One frame: the camera's history reset, as at a cut, then rendered as many times as the
+        // temporal effects need; the clock does not move between them (EVOSIM_THEATRE_SAFARI_CLOCK).
+        private static void RenderSettled(Camera camera, int times)
+        {
+            _frameWatch.Restart();
+            if (ResetEachFrame && (times > 1 || Taa)) HDCamera.GetOrCreate(camera).Reset();
+            for (int i = 0; i < Mathf.Max(1, times); i++) camera.Render();
+
+            // Every frame's time, the GPU waited for: the cost of the look as it renders, and a growing
+            // time is seen at once (an in-process bench that reset the camera between settings grew
+            // from 45 ms to 1.9 s a render on 2026-10-19).
+            if (camera.targetTexture != null) AsyncGPUReadback.Request(camera.targetTexture).WaitForCompletion();
+            _frameWatch.Stop();
+            Debug.Log(string.Format(CultureInfo.InvariantCulture, "[HdrpLook] frame {0}: {1} renders in {2:0} ms",
+                _renders, Mathf.Max(1, times), _frameWatch.Elapsed.TotalMilliseconds));
+        }
+
+        /// <summary>
+        /// Whether a frame resets the camera's history before its renders (<c>EVOSIM_HDRP_RESET</c>, 1 on, the default).
+        /// A test dial: a frame's time grew through the take with it on (2026-10-19).
+        /// </summary>
+        public static bool ResetEachFrame = TheatreSkin.Dial("EVOSIM_HDRP_RESET", 1f, 0f, 1f) >= 0.5f;
+
+        private static readonly System.Diagnostics.Stopwatch _frameWatch = new System.Diagnostics.Stopwatch();
+
+        /// <summary>
+        /// The cost of each of HDRP's features on one frame: the frame rendered with everything the look
+        /// turns on, then with each feature off in turn through the camera's frame settings (the snow by
+        /// its passes, TAA by the camera's antialiasing), each a mean over thirty renders after four to warm
+        /// up, the GPU waited for. Logged as "[HdrpLook] bench"; the frame's own render follows unchanged.
+        /// </summary>
+        private static void RunBench(Camera camera)
+        {
+            HDAdditionalCameraData data = camera.GetComponent<HDAdditionalCameraData>();
+            if (data == null || camera.targetTexture == null) { Debug.LogWarning("[HdrpLook] bench: no camera data or target"); return; }
+
+            // The depth of field costs far more than the rest together (the first bench, 2026-10-19), and
+            // its time varies by more than the others cost, so each of the others is timed with it off
+            // and set against the frame without it.
+            var cases = new (string name, FrameSettingsField[] off, bool snowOff, bool taaOff)[]
+            {
+                ("everything", new FrameSettingsField[0], false, false),
+                ("without depth of field", new[] { FrameSettingsField.DepthOfField }, false, false),
+                ("without depth of field, volumetric fog", new[] { FrameSettingsField.DepthOfField, FrameSettingsField.Volumetrics }, false, false),
+                ("without depth of field, the water surface", new[] { FrameSettingsField.DepthOfField, FrameSettingsField.Water }, false, false),
+                ("without depth of field, subsurface scattering and transmission", new[] { FrameSettingsField.DepthOfField, FrameSettingsField.SubsurfaceScattering, FrameSettingsField.Transmission }, false, false),
+                ("without depth of field, the snow's passes", new[] { FrameSettingsField.DepthOfField }, true, false),
+                ("without depth of field, reflections", new[] { FrameSettingsField.DepthOfField, FrameSettingsField.SSR, FrameSettingsField.SkyReflection, FrameSettingsField.ReflectionProbe }, false, false),
+                ("without depth of field, temporal antialiasing", new[] { FrameSettingsField.DepthOfField }, false, true),
+                ("without any of these", new[] { FrameSettingsField.Volumetrics, FrameSettingsField.Water, FrameSettingsField.SubsurfaceScattering,
+                    FrameSettingsField.Transmission, FrameSettingsField.DepthOfField, FrameSettingsField.SSR, FrameSettingsField.SkyReflection,
+                    FrameSettingsField.ReflectionProbe }, true, true),
+            };
+
+            var was = new Dictionary<FrameSettingsField, bool>();
+            foreach (var c in cases)
+                foreach (FrameSettingsField f in c.off)
+                    if (!was.ContainsKey(f)) was[f] = data.renderingPathCustomFrameSettings.IsEnabled(f);
+            var snowWas = new List<bool>();
+            foreach (CustomPass pass in SnowPasses) snowWas.Add(pass.enabled);
+            HDAdditionalCameraData.AntialiasingMode aaWas = data.antialiasing;
+
+            var watch = new System.Diagnostics.Stopwatch();
+
+            // One case's time a render: its settings applied, four renders to warm up, thirty timed.
+            double TimeCase((string name, FrameSettingsField[] off, bool snowOff, bool taaOff) c)
+            {
+                foreach (var pair in was)
+                {
+                    data.renderingPathCustomFrameSettings.SetEnabled(pair.Key, pair.Value && System.Array.IndexOf(c.off, pair.Key) < 0);
+                    data.renderingPathCustomFrameSettingsOverrideMask.mask[(uint)pair.Key] = true;
+                }
+                for (int i = 0; i < SnowPasses.Count; i++) SnowPasses[i].enabled = snowWas[i] && !c.snowOff;
+                data.antialiasing = c.taaOff ? HDAdditionalCameraData.AntialiasingMode.None : aaWas;
+
+                HDCamera.GetOrCreate(camera).Reset();
+                for (int i = 0; i < 4; i++) camera.Render();
+                AsyncGPUReadback.Request(camera.targetTexture).WaitForCompletion();
+
+                const int Runs = 30;
+                watch.Restart();
+                for (int i = 0; i < Runs; i++) camera.Render();
+                AsyncGPUReadback.Request(camera.targetTexture).WaitForCompletion();
+                watch.Stop();
+                return watch.Elapsed.TotalMilliseconds / Runs;
+            }
+
+            // The first bench of 2026-10-19 drifted upward through its cases, so every case is set against
+            // its own baseline, timed just before and just after it: the frame with everything for the
+            // depth of field, the frame without the depth of field for the rest.
+            foreach (var c in cases)
+            {
+                if (c.name == "everything") continue;
+                var baseline = cases[c.name == "without any of these" || c.name.StartsWith("without depth of field,") ? 1 : 0];
+                double before = TimeCase(baseline);
+                double ms = TimeCase(c);
+                double after = TimeCase(baseline);
+                double against = 0.5 * (before + after);
+                Debug.Log(string.Format(CultureInfo.InvariantCulture,
+                    "[HdrpLook] bench {0}x{1}: {2}: {3:0.0} ms a render, {4:+0.0;-0.0} against {5} ({6:0.0} before, {7:0.0} after), a frame of {8} renders {9:0} ms",
+                    camera.targetTexture.width, camera.targetTexture.height, c.name, ms, ms - against, baseline.name, before, after, Settle, ms * Settle));
+            }
+            {
+                double all = TimeCase(cases[0]);
+                double none = TimeCase(cases[1]);
+                Debug.Log(string.Format(CultureInfo.InvariantCulture,
+                    "[HdrpLook] bench {0}x{1}: everything {2:0.0} ms a render, without depth of field {3:0.0} ms: the depth of field {4:0.0} ms",
+                    camera.targetTexture.width, camera.targetTexture.height, all, none, all - none));
+            }
+
+            foreach (var pair in was)
+            {
+                data.renderingPathCustomFrameSettings.SetEnabled(pair.Key, pair.Value);
+                data.renderingPathCustomFrameSettingsOverrideMask.mask[(uint)pair.Key] = true;
+            }
+            for (int i = 0; i < SnowPasses.Count; i++) SnowPasses[i].enabled = snowWas[i];
+            data.antialiasing = aaWas;
         }
 
         private static int _nearestLogged;
@@ -197,6 +381,7 @@ namespace Evosim.Theatre
             Follow(UrpMarch, _passMaterial, ShaftPasses, ShaftsOn, true);
             Follow(UrpShells, _snowMaterial, SnowPasses, SnowOn, false);
             SwapCeiling();
+            SwapBodies();
             ValidateMaterials();
             ConvertLights();
             if (WaterSurfaceOn && world.HasValue) EnsureWater(skin, world.Value);
@@ -220,7 +405,10 @@ namespace Evosim.Theatre
                     data.renderingPathCustomFrameSettingsOverrideMask.mask[(uint)field] = true;
                 }
                 data.volumeLayerMask = ~0;
+                data.antialiasing = Taa ? HDAdditionalCameraData.AntialiasingMode.TemporalAntialiasing : HDAdditionalCameraData.AntialiasingMode.None;
             }
+
+            Shader.SetGlobalFloat("_EvoHdrpNativeBody", BodySss ? 1f : 0f);
 
             if (!_described)
             {
@@ -271,10 +459,15 @@ namespace Evosim.Theatre
         }
 
         public static string Describe() => string.Format(CultureInfo.InvariantCulture,
-            "fog {0} m mean free path{1}, water surface {2}, lights x{3:0.###}, path tracing {4}",
-            _fog != null ? _fog.meanFreePath.value : 0f, Volumetric ? " volumetric" : "",
+            "{5}fog {0} m mean free path{1}, water surface {2}, lights x{3:0.###}, path tracing {4}; water pass {6}, shafts {7}, " +
+            "tone step {8}, reflections {9}, bodies {10}, stone specular {11:0.##}, snow depth {12}, {13} renders a frame, TAA {14}, " +
+            "underwater {15}, water caustics {16:0.##}, sun's caustic net {17:0.#} m",
+            _fog != null && _fog.enabled.value ? _fog.meanFreePath.value : 0f, Volumetric ? " volumetric" : "",
             _water != null ? "on" : "off", LightScale,
-            PathTraceSamples > 0 ? PathTraceSamples + " samples" : "off");
+            PathTraceSamples > 0 ? PathTraceSamples + " samples" : "off", Native ? "NATIVE: " : "",
+            WaterPassOn ? "on" : "off", ShaftsOn ? "on" : "off", ToneStepOn ? "on" : "off", Reflections ? "on" : "off",
+            BodyLight == 2 ? "subsurface scattering" : BodyLight == 1 ? "translucent" : "standard", StoneSpecular, SnowDepth ? "on" : "off", Settle, Taa ? "on" : "off",
+            Underwater ? "on" : "off", WaterCaustics, CausticMetres);
 
         private static void EnsureVolume(TheatreSkin skin)
         {
@@ -306,6 +499,14 @@ namespace Evosim.Theatre
                 var contact = _profile.Add<ContactShadows>(true);
                 contact.enable.Override(false);
 
+                // The bodies' diffusion profile: HDRP draws a profile only while a volume lists it.
+                if (BodySss)
+                {
+                    var profile = Resources.Load<DiffusionProfileSettings>("TheatreBodyDiffusion");
+                    if (profile == null) Debug.LogWarning("[HdrpLook] no Resources/TheatreBodyDiffusion; the bodies' scattering has no profile");
+                    else _profile.Add<DiffusionProfileList>(true).diffusionProfiles.Override(new[] { profile });
+                }
+
                 _pathTracing = _profile.Add<PathTracing>(true);
                 _pathTracing.enable.Override(false);
                 _pathTracing.maximumDepth.Override(6);
@@ -334,7 +535,9 @@ namespace Evosim.Theatre
             // volumetric fog off or the shafts' path at zero.
             bool shaftsOnly = WaterPassOn;
             _fog.enabled.Override(!WaterPassOn || (Volumetric && ShaftMetres > 0f));
-            _fog.colorMode.Override(FogColorMode.ConstantColor);
+            // Under the native look the fog takes the sky's colour toward each direction, so the water is
+            // lighter looking up and darker looking down, as the URP backdrop is (EVOSIM_HDRP_FOG_SKY).
+            _fog.colorMode.Override(FogSky && !shaftsOnly ? FogColorMode.SkyColor : FogColorMode.ConstantColor);
             _fog.color.Override(shaftsOnly ? Color.black : water);
             _fog.albedo.Override(shaftsOnly ? Color.white : Normalised(water));
             // The URP look's water takes light out at its absorption plus its scattering per metre,
@@ -385,7 +588,7 @@ namespace Evosim.Theatre
         /// The bed's, the rock's and the earth's specular as a share of a dielectric's (<c>EVOSIM_HDRP_STONE_SPECULAR</c>,
         /// default 0, as the URP theatre draws them; 1 is HDRP Lit's own 0.04). The bodies keep theirs.
         /// </summary>
-        public static float StoneSpecular = TheatreSkin.Dial("EVOSIM_HDRP_STONE_SPECULAR", 0f, 0f, 1f);
+        public static float StoneSpecular = TheatreSkin.Dial("EVOSIM_HDRP_STONE_SPECULAR", Native ? 1f : 0f, 0f, 1f);
 
         private static void PushDepthLight(Bounds? world)
         {
@@ -546,14 +749,102 @@ namespace Evosim.Theatre
                 hdrp.CopyMatchingPropertiesFromMaterial(urp);
                 HDMaterial.ValidateMaterial(hdrp);
                 r.sharedMaterial = hdrp;
+                // Under HDRP's own water surface the ported ceiling would be a second sea at the same height.
+                // Without HDRP's underwater rendering its water surface draws nothing seen from below.
+                r.forceRenderingOff = WaterSurfaceOn && Underwater;
                 // Left on or off as the skin and the snapshot set it: the census and reef views turn
                 // the ceiling off for their render (SnapshotCamera.HideWhatOnlyTheWaterSees).
             }
         }
 
+        // The skin's body material and the subsurface scattering one drawn in its place (BodySss).
+        private const string UrpBody = "Evosim/Theatre Body";
+        private static readonly Dictionary<Material, Material> Bodies = new Dictionary<Material, Material>();
+        private static bool _bodyWarned;
+        private static float _bodyProfileHash = float.NaN;
+
+        // The bodies' profile's hash as the float a material carries: the bits of the profile's uint
+        // hash, which DiffusionProfileSettings keeps in an internal field.
+        private static float BodyProfileHash()
+        {
+            var settings = Resources.Load<DiffusionProfileSettings>("TheatreBodyDiffusion");
+            if (settings == null) return float.NaN;
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public;
+            object profile = typeof(DiffusionProfileSettings).GetField("profile", flags)?.GetValue(settings);
+            object hash = profile?.GetType().GetField("hash", flags)?.GetValue(profile);
+            if (!(hash is uint bits) || bits == 0) { Debug.LogWarning("[HdrpLook] the bodies' diffusion profile has no hash"); return float.NaN; }
+            Debug.Log("[HdrpLook] the bodies' diffusion profile hash " + bits);
+            return System.BitConverter.Int32BitsToSingle(unchecked((int)bits));
+        }
+
+        /// <summary>
+        /// The bodies through HDRP's subsurface scattering (<see cref="BodySss"/>): every renderer on the
+        /// skin's body material is given the graph "Evosim/Theatre Body SSS", which takes the same
+        /// properties, with the skin's material's values copied across before every render. The palette's
+        /// per body values are property blocks on the renderers and stay where they are.
+        /// </summary>
+        private static void SwapBodies()
+        {
+            if (!BodySss) return;
+            string wanted = BodyLight == 2 ? "Evosim/Theatre Body SSS" : "Evosim/Theatre Body Translucent";
+            Shader shader = Shader.Find(wanted);
+            if (shader == null)
+            {
+                if (!_bodyWarned) Debug.LogWarning("[HdrpLook] no " + wanted + " shader; the bodies stay standard");
+                _bodyWarned = true;
+                return;
+            }
+
+            foreach (Renderer r in InScene<Renderer>())
+            {
+                Material[] materials = r.sharedMaterials;
+                bool changed = false;
+                for (int i = 0; i < materials.Length; i++)
+                {
+                    Material m = materials[i];
+                    if (m == null || m.shader == null) continue;
+
+                    Material urp = null;
+                    if (m.shader.name == UrpBody) urp = m;
+                    else foreach (var pair in Bodies) if (pair.Value == m) urp = pair.Key;
+                    if (urp == null) continue;
+
+                    if (!Bodies.TryGetValue(urp, out Material sss) || sss == null)
+                    {
+                        sss = new Material(shader) { name = urp.name + (BodyLight == 2 ? " (HDRP SSS)" : " (HDRP translucent)"), hideFlags = HideFlags.DontSave };
+                        Bodies[urp] = sss;
+                    }
+                    if (materials[i] != sss) { materials[i] = sss; changed = true; }
+                }
+                if (changed) r.sharedMaterials = materials;
+            }
+
+            foreach (var pair in Bodies)
+            {
+                if (pair.Key == null || pair.Value == null) continue;
+                pair.Value.CopyMatchingPropertiesFromMaterial(pair.Key);
+                pair.Value.shaderKeywords = pair.Key.shaderKeywords;
+
+                // As the stone's specular colour (ValidateMaterials): a graph material made in code is
+                // given no material feature keyword, and without these HDRP draws the standard variant,
+                // with no scattering and no transmission, and never reads the diffusion profile
+                // (2026-10-19: two profiles rendered the same frame to the pixel).
+                if (BodyLight == 2) pair.Value.EnableKeyword("_MATERIAL_FEATURE_SUBSURFACE_SCATTERING");
+                pair.Value.EnableKeyword("_MATERIAL_FEATURE_TRANSMISSION");
+
+                // The profile by the material's own hash, which the graph's block reads before the hash
+                // it was imported with: one set in code does not depend on the graph's asset reference.
+                // Set as the float HDMaterial.SetDiffusionProfile writes; that call also adds the profile to
+                // the material as an asset in the Editor, which fails for a material made in code.
+                if (float.IsNaN(_bodyProfileHash)) _bodyProfileHash = BodyProfileHash();
+                if (!float.IsNaN(_bodyProfileHash)) pair.Value.SetFloat("_DiffusionProfileHash", _bodyProfileHash);
+            }
+        }
+
         private static void EnsureWaterPass()
         {
-            if (!WaterPassOn || _passVolume != null || _holder == null) return;
+            if (_passVolume != null || _holder == null) return;
+            if (!WaterPassOn && !ShaftsOn && !SnowOn) return;
 
             Shader shader = Shader.Find("Hidden/Evosim/Theatre Water Pass");
             if (shader == null) { Debug.LogWarning("[HdrpLook] no Theatre Water Pass shader; the water is HDRP's fog alone"); return; }
@@ -568,18 +859,25 @@ namespace Evosim.Theatre
             _passVolume.injectionPoint = CustomPassInjectionPoint.AfterOpaqueAndSky;
             // Then the shafts, the same way: the march's colour is screened over the frame under
             // item 3 (multiplied by one less it, then added) and added otherwise. Then the snow, added.
-            foreach (string name in new[] { "Theatre Water Keep", "Theatre Water Add", "Theatre Shaft Keep", "Theatre Shaft Add", "Theatre Snow Add" })
+            // Under the native look the water pass's own two are left out, and the snow writes its
+            // depth after its light, for the physical camera's depth of field (EVOSIM_HDRP_SNOW_DEPTH).
+            foreach (string name in new[] { "Theatre Water Keep", "Theatre Water Add", "Theatre Shaft Keep", "Theatre Shaft Add", "Theatre Snow Add", "Theatre Snow Depth" })
             {
+                if (name.StartsWith("Theatre Water") && !WaterPassOn) continue;
+                if (name == "Theatre Snow Depth" && !SnowDepth) continue;
                 bool snow = name.StartsWith("Theatre Snow");
                 var pass = _passVolume.AddPassOfType<FullScreenCustomPass>();
                 pass.name = name;
                 pass.fullscreenPassMaterial = snow ? _snowMaterial : _passMaterial;
                 pass.materialPassName = name;
                 pass.fetchColorBuffer = false;
+                pass.targetColorBuffer = CustomPass.TargetBuffer.Camera;
+                pass.targetDepthBuffer = CustomPass.TargetBuffer.Camera;
                 if (name.StartsWith("Theatre Shaft")) { pass.enabled = false; ShaftPasses.Add(pass); }
                 if (snow) { pass.enabled = false; SnowPasses.Add(pass); }
             }
-            Debug.Log("[HdrpLook] the water pass is on: keep, then add, after the opaque objects and the sky");
+            Debug.Log("[HdrpLook] the passes after the opaque objects and the sky: " +
+                      string.Join(", ", _passVolume.customPasses.ConvertAll(x => x.name)));
         }
 
         private static void EnsureToneStep()
@@ -753,8 +1051,19 @@ namespace Evosim.Theatre
             // The ceiling only. The light under it is the volumetric fog's and the sun's caustic net's:
             // HDRP's own underwater pass needs a volume box and draws a fog of its own, and its
             // caustics would lay a second net over the sun's.
-            _water.underWater = false;
-            _water.caustics = false;
+            _water.underWater = Underwater;
+            _water.caustics = WaterCaustics > 0f;
+            _water.causticsIntensity = WaterCaustics;
+            if (Underwater)
+            {
+                // HDRP's underwater effect on a surface that is not infinite applies inside a box.
+                var bounds = new GameObject("Theatre HDRP Underwater") { hideFlags = HideFlags.DontSave };
+                bounds.transform.position = box.center;
+                var collider = bounds.AddComponent<BoxCollider>();
+                collider.size = box.size + new Vector3(1f, 1f, 1f);
+                collider.isTrigger = true;
+                _water.volumeBounds = collider;
+            }
 
             Color water = skin != null ? skin.Water : new Color(0.012f, 0.032f, 0.048f);
             _water.refractionColor = Normalised(water);

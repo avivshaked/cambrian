@@ -418,6 +418,51 @@ namespace Evosim.Theatre
         /// </summary>
         public float SnowAmbient = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_AMBIENT", 0f, 0f, 6f);
 
+        /// <summary>
+        /// The snow through a lens (<c>EVOSIM_THEATRE_SNOW_BLUR</c>, 1 on, default 0): every mote blurred
+        /// by a thin lens's circle of confusion at its depth, sharp only near the focus. The owner observed
+        /// on 2026-10-19 that real marine snow is soft near the lens and far from it and sharp only near
+        /// the focus, and that this is what gives it depth; the shells drew every mote sharp.
+        /// </summary>
+        public bool SnowBlur = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_BLUR", 0f, 0f, 1f) >= 0.5f;
+
+        /// <summary>The snow's lens's f-number (<c>EVOSIM_THEATRE_SNOW_FSTOP</c>, 1 to 22, default 2), on the grade's frame.</summary>
+        public float SnowFStop = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_FSTOP", 2f, 1f, 22f);
+
+        /// <summary>
+        /// The snow's focus, m along the view axis (<c>EVOSIM_THEATRE_SNOW_FOCUS</c>, default 0): 0 takes a
+        /// portrait's own focus, and otherwise the scene's depth at the frame's centre.
+        /// </summary>
+        public float SnowFocusMetres = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_FOCUS", 0f, 0f, 100f);
+
+        /// <summary>The most a mote is blurred, pixels of radius at 1080 lines (<c>EVOSIM_THEATRE_SNOW_BLUR_CAP</c>, default 24).</summary>
+        public float SnowBlurCap = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_BLUR_CAP", 24f, 1f, 200f);
+
+        /// <summary>
+        /// The power of a blurred mote's area ratio its brightness keeps (<c>EVOSIM_THEATRE_SNOW_BLUR_KEEP</c>,
+        /// 0 to 1, default 1): 1 spreads its light over the larger disc and conserves it, as a lens does;
+        /// less keeps a soft mote brighter than its light allows.
+        /// </summary>
+        public float SnowBlurKeep = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_BLUR_KEEP", 1f, 0f, 1f);
+
+        /// <summary>
+        /// The spread of the motes' sizes (<c>EVOSIM_THEATRE_SNOW_SIZE_SPREAD</c>, 0 to 1.2, default 0): the
+        /// standard deviation of their log radius, with the mean area kept.
+        /// </summary>
+        public float SnowSizeSpread = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_SIZE_SPREAD", 0f, 0f, 1.2f);
+
+        /// <summary>The share of motes that are large flakes (<c>EVOSIM_THEATRE_SNOW_BIG_SHARE</c>, 0 to 0.5, default 0).</summary>
+        public float SnowBigShare = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_BIG_SHARE", 0f, 0f, 0.5f);
+
+        /// <summary>How many times larger a large flake is (<c>EVOSIM_THEATRE_SNOW_BIG_FACTOR</c>, 1 to 8, default 3).</summary>
+        public float SnowBigFactor = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_BIG_FACTOR", 3f, 1f, 8f);
+
+        /// <summary>How irregular a flake's outline is (<c>EVOSIM_THEATRE_SNOW_SHAPE</c>, 0 round to 1, default 0).</summary>
+        public float SnowShape = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_SHAPE", 0f, 0f, 1f);
+
+        /// <summary>How soft a flake's edge is, as a share of its radius (<c>EVOSIM_THEATRE_SNOW_FLUFF</c>, 0 to 2, default 0).</summary>
+        public float SnowFluff = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_FLUFF", 0f, 0f, 2f);
+
         // ---------------------------------------------------------------- second batch, the drift
 
         /// <summary>
@@ -510,7 +555,14 @@ namespace Evosim.Theatre
             On(RunSnow), SnowReference, FloorReference, FloorDust,
             On(SnowDrift), SnowAlive, ToneShoulder, FadeFullMetres,
             ShaftSheetMetres, ShaftPatchMetres, ShaftDepthMetres, ShaftDebug > 0.5f ? ", DEBUG " + ShaftDebug.ToString("0", CultureInfo.InvariantCulture) + ": the shaft term alone" : "",
-            ShaftShimmer, ShaftOnsetMetres, SnowQuantity, SnowLeast, SnowAmbient);
+            ShaftShimmer, ShaftOnsetMetres, SnowQuantity, SnowLeast, SnowAmbient) + ", " + DescribeSnowLens();
+
+        /// <summary>The snow's lens and flakes, for the log.</summary>
+        public string DescribeSnowLens() => string.Format(
+            CultureInfo.InvariantCulture,
+            "snow lens {0} (f/{1:0.#}, focus {2}, cap {3:0} px, keep {4:0.##}), flakes (spread {5:0.##}, large {6:0.###} x{7:0.#}, shape {8:0.##}, fluff {9:0.##})",
+            On(SnowBlur), SnowFStop, SnowFocusMetres > 0f ? SnowFocusMetres.ToString("0.##", CultureInfo.InvariantCulture) + " m" : "the shot's",
+            SnowBlurCap, SnowBlurKeep, SnowSizeSpread, SnowBigShare, SnowBigFactor, SnowShape, SnowFluff);
 
         /// <summary>
         /// The look's token for a picture's label: the grade's own (<c>look 2</c>) with every switch

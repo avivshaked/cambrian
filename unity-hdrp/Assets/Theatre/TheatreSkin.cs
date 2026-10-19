@@ -714,6 +714,30 @@ namespace Evosim.Theatre
         }
 
         /// <summary>
+        /// The snow's lens for one render (<c>_EvoSnowLens</c>, TheatreSnow.hlsl): the focus, and the
+        /// aperture the camera's field of view makes on the grade's frame at <see cref="TheatreLook.SnowFStop"/>.
+        /// Every mote sharp, as before, with <see cref="TheatreLook.SnowBlur"/> off.
+        /// </summary>
+        /// <param name="focusMetres">The shot's focus along the view axis, or 0 for none.</param>
+        /// <param name="fieldOfView">The camera's vertical field of view, degrees.</param>
+        public void PushSnowLens(float focusMetres, float fieldOfView)
+        {
+            if (!Look.SnowBlur)
+            {
+                Shader.SetGlobalVector("_EvoSnowLens", Vector4.zero);
+                return;
+            }
+
+            float format = TheatreGrade.Current != null ? TheatreGrade.Current.FormatMillimetres : 24f;
+            float focal = Camera.FieldOfViewToFocalLength(Mathf.Clamp(fieldOfView, 1f, 179f), format);
+            float aperture = focal / 1000f / Mathf.Clamp(Look.SnowFStop, 1f, 22f);
+            float focus = Look.SnowFocusMetres > 0f ? Look.SnowFocusMetres : Mathf.Max(0f, focusMetres);
+
+            Shader.SetGlobalVector("_EvoSnowLens", new Vector4(
+                focus, aperture, Mathf.Clamp(Look.SnowBlurCap, 1f, 200f), Mathf.Clamp01(Look.SnowBlurKeep)));
+        }
+
+        /// <summary>
         /// The second batch's switches and numbers (<c>logbook/specs/underwater-look/brief-2.md</c>):
         /// <c>_EvoLook2</c>, <c>_EvoFade</c>, the snow's references and drift, the shafts' placement
         /// on the march's material, and the tone step. All zero, and the tone step off, while a
@@ -741,6 +765,13 @@ namespace Evosim.Theatre
 
             Shader.SetGlobalVector("_EvoSnowDrift", new Vector4(
                 _snowDrift.x, _snowDrift.y, _snowDrift.z, on && Look.SnowDrift ? 1f : 0f));
+
+            Shader.SetGlobalVector("_EvoSnowFlake", new Vector4(
+                Mathf.Clamp(Look.SnowSizeSpread, 0f, 1.2f),
+                Mathf.Clamp(Look.SnowBigShare, 0f, 0.5f),
+                Mathf.Clamp(Look.SnowBigFactor, 1f, 8f),
+                Mathf.Clamp01(Look.SnowShape)));
+            Shader.SetGlobalVector("_EvoSnowFluff", new Vector4(Mathf.Clamp(Look.SnowFluff, 0f, 2f), 0f, 0f, 0f));
 
             if (_marchMaterial != null)
             {

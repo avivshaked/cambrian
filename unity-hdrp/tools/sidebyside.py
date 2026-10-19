@@ -1,6 +1,7 @@
 """The HDRP spike's side-by-side film (D202): the URP theatre on the left, HDRP on the right.
 
     python -I sidebyside.py --out <film.mp4> --fps 24 --moment "<name>|<urp take dir>|<hdrp take dir>" [...]
+        [--labels "<left>|<right>"]
 
 Each moment is one safari take rendered in both theatres with the take clock
 (EVOSIM_THEATRE_SAFARI_CLOCK=1), so frame N of the two takes shows the water at the same instant.
@@ -48,7 +49,10 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--fps", type=int, default=24)
     ap.add_argument("--moment", action="append", required=True)
+    ap.add_argument("--labels", default="|".join(LABELS),
+                    help="the two halves' labels, left|right (default the spike's URP and HDRP)")
     args = ap.parse_args()
+    labels = tuple(args.labels.split("|", 1))
 
     moments = []
     for spec in args.moment:
@@ -86,13 +90,13 @@ def main():
                 if prev[side] is not None:
                     jumps[side].append(np.abs(y - prev[side]).mean())
                 prev[side] = y
-                label(img, f"{LABELS[side]}  ·  {name}", f)
+                label(img, f"{labels[side]}  ·  {name}", f)
                 frame.paste(img, (side * w, 0))
             enc.stdin.write(frame.tobytes())
         for side in (0, 1):
             j = np.array(jumps[side]) if jumps[side] else np.zeros(1)
             med = max(1e-6, float(np.median(j)))
-            print(f"{name:10s} {LABELS[side]:22s} frames {len(a):4d}  mean luma {np.mean(means[side]):5.1f}"
+            print(f"{name:10s} {labels[side]:22s} frames {len(a):4d}  mean luma {np.mean(means[side]):5.1f}"
                   f"  jump median {med:5.2f}  largest {j.max():5.2f}  ratio {j.max() / med:4.1f}")
 
     enc.stdin.close()

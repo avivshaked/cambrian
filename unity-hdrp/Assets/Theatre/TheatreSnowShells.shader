@@ -15,9 +15,14 @@
 // from a random draw per frame, and two renders of one instant are one picture. The motes stay
 // in the world as the camera moves, so they parallax the way specks in water do.
 //
-// Small and sharp: a mote is a disc with a one-pixel edge, never blurred. A near mote's size on
-// screen is capped, so one passing the lens is a bright speck and not a blob; a far mote too
-// small for a pixel is drawn at most of one and dimmed by the area it was given. Its brightness
+// Small, and sharp only at the focus. With the lens's dials at zero a mote is a disc with a
+// one-pixel edge, never blurred. With them on (_EvoSnowLens, _EvoSnowFlake, _EvoSnowFluff in
+// TheatreSnow.hlsl; the owner, 2026-10-19: real snow is soft near and far and sharp only near the
+// focus, which is what gives it depth) each mote is blurred by a thin lens's circle of confusion at
+// its depth, its size is drawn from a spread with a few large flakes, and its outline is a few
+// lobes of its own. A near mote's sharp size on screen is capped, so one passing the lens is a
+// bright speck and not a blob; a far mote too small for a pixel is drawn at most of one and dimmed
+// by the area it was given. Its brightness
 // is the shafts' light at the mote (item 4's EvoCausticGain and EvoSunAt), so the snow sparkles
 // where the shafts are and dims with depth.
 //
@@ -201,15 +206,63 @@ Shader "Evosim/Theatre Snow Shells"
 
                         if (t > tA && t < tB)
                         {
-                            float dist = length(q0 + dir * t - m);
+                            float3 off = q0 + dir * t - m;
+                            float dist = length(off);
                             float pixel = max(1e-5, EvoPixelMetres(t));
+
+                            // The mote's own size (_EvoSnowFlake): the shell's radius spread
+                            // log-normally about it with the mean area kept, and a share of the
+                            // motes made large flakes. One size a shell with the dials at zero.
+                            float3 g = EvoHash3(c * 2.17 + seed + 3.1);
+                            float own = radius;
+                            if (_EvoSnowFlake.x > 0.0)
+                            {
+                                float normal = (g.x + g.y + g.z - 1.5) * 2.0;
+                                own *= exp(_EvoSnowFlake.x * normal - _EvoSnowFlake.x * _EvoSnowFlake.x);
+                            }
+                            if (frac(g.x * 7.31 + g.z * 3.17) < _EvoSnowFlake.y) own *= max(1.0, _EvoSnowFlake.z);
 
                             // At least most of a pixel, so a far mote is a speck and not a
                             // flicker; at most the cap, so a near one is never a blob.
-                            float r = max(radius, 0.75 * pixel);
+                            float r = max(own, 0.75 * pixel);
                             r = min(r, capPixels * pixel);
 
-                            float cover = saturate((r - dist) / pixel + 0.5);
+                            // A flake's outline, in the plane across the line of sight: a few lobes
+                            // of the mote's own, turning slowly, so no two specks are the same disc.
+                            float outline = 1.0;
+                            if (_EvoSnowFlake.w > 0.0 && dist > 1e-7)
+                            {
+                                float3 side = normalize(cross(abs(dir.y) < 0.99 ? float3(0.0, 1.0, 0.0) : float3(1.0, 0.0, 0.0), dir));
+                                float3 rise = cross(dir, side);
+                                float a = atan2(dot(off, rise), dot(off, side));
+                                float3 turn = 6.2831853 * g + time * (0.04 + 0.08 * g.zxy);
+                                outline = 1.0 + _EvoSnowFlake.w * (0.30 * g.y * cos(2.0 * a + turn.x) +
+                                                                   0.22 * cos(3.0 * a + turn.y) +
+                                                                   0.14 * g.x * cos(5.0 * a + turn.z));
+                                outline = max(0.35, outline);
+                            }
+
+                            // The lens (_EvoSnowLens): a thin lens's circle of confusion at the mote,
+                            // in metres at its depth, which is half the aperture times the mote's
+                            // distance from the focus over the focus. Capped in pixels of a
+                            // 1080-line frame, whatever the render's size, and kept
+                            // inside the mote's cell, whose walls the ray's walk does not look past.
+                            float blur = 0.0;
+                            if (_EvoSnowLens.y > 0.0)
+                            {
+                                float depth = t * dot(dir, -UNITY_MATRIX_V[2].xyz);
+                                float focus = max(0.05, evoSnowFocus);
+                                blur = 0.5 * _EvoSnowLens.y * abs(depth - focus) / focus;
+                                blur = min(blur, _EvoSnowLens.z * pixel * max(1.0, _ScreenParams.y) / 1080.0);
+                                blur = min(blur, max(0.0, 0.07 * cell - r));
+                            }
+
+                            // The flake's edge: a pixel wide when sharp, as wide as the blur when
+                            // not, and softened by the fluff. The disc's half-light radius grows by
+                            // half the blur, so its light spreads over r + blur and no further.
+                            float soft = pixel + blur + _EvoSnowFluff.x * r;
+                            float reach = r * outline + 0.5 * blur;
+                            float cover = saturate((reach - dist) / soft + 0.5);
 
                             if (cover > 0.0)
                             {
@@ -217,8 +270,16 @@ Shader "Evosim/Theatre Snow Shells"
 
                                 if (EvoInWater(world, _BoxMin.xyz, _BoxMax.xyz, _Tank))
                                 {
-                                    // A mote widened to a pixel keeps its own light, spread.
-                                    float energy = min(1.0, (radius * radius) / (r * r));
+                                    // A mote widened to a pixel keeps its own light, spread; a
+                                    // blurred one spreads it again, over its larger disc, by the
+                                    // power the lens's dial gives.
+                                    float energy = min(1.0, (own * own) / (r * r));
+                                    if (blur > 0.0)
+                                    {
+                                        float wide = r + 0.5 * blur;
+                                        energy *= pow(saturate((r * r) / (wide * wide)), _EvoSnowLens.w);
+                                    }
+                                    if (dist < r * outline) evoSnowNearT = min(evoSnowNearT, t);
 
                                     float gain = min(EvoCausticGain(world, time), 7.0);
                                     float3 kept = exp(-(_EvoAbsorb.xyz + _EvoAbsorb.w) * EvoWaterPathMetres(world));
@@ -272,8 +333,15 @@ Shader "Evosim/Theatre Snow Shells"
                     return half4(0, 0, 0, 0);
                 }
 
-                float time = _Time.y;
+                float time = EvoTime();
                 float4 sum = float4(0.0, 0.0, 0.0, 0.0);
+
+                // The lens's focus: the shot's, or with none the scene's depth at the frame's
+                // centre, as an autofocus takes it, no further than the water lets anything be seen.
+                evoSnowNearT = 1e9;
+                evoSnowFocus = _EvoSnowLens.x;
+                if (_EvoSnowLens.y > 0.0 && evoSnowFocus <= 0.0)
+                    evoSnowFocus = min(EvoSceneEyeDepth(float2(0.5, 0.5)), 12.0);
 
                 sum += Shell(origin, dir, max(t0, _Near.x), min(t1, _Near.y), _Near, _Radii.x, _Radii.w, 0.0, time);
                 sum += Shell(origin, dir, max(t0, _Middle.x), min(t1, _Middle.y), _Middle, _Radii.y, 1e4, 17.0, time);
