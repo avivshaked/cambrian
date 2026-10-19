@@ -215,6 +215,9 @@ namespace Evosim.Theatre
             if (_depthOfField == null) return;
             if (!PortraitDepthOfField) { Unfocus(); return; }
 
+            // The theatre's own lens draws the depth of field instead (D208), from the same aperture.
+            if (TheatreLens.Wanted) { Unfocus(); return; }
+
             if (PortraitMode == DepthOfFieldMode.Gaussian)
             {
                 float at = Mathf.Max(0.1f, distanceMetres);

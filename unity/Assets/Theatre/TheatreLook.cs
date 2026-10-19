@@ -463,6 +463,27 @@ namespace Evosim.Theatre
         /// <summary>How soft a flake's edge is, as a share of its radius (<c>EVOSIM_THEATRE_SNOW_FLUFF</c>, 0 to 2, default 0).</summary>
         public float SnowFluff = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_FLUFF", 0f, 0f, 2f);
 
+        /// <summary>
+        /// The theatre's own lens on the bodies and the scenery (<c>EVOSIM_THEATRE_LENS</c>, 1 on, default 0;
+        /// D208, item 1): depth of field from the shot's focus through a thin lens, in place of URP's own,
+        /// whose blur is capped at 14 pixels of the render target (<see cref="TheatreLens"/>). With it on, the
+        /// snow takes the grade's aperture rather than <see cref="SnowFStop"/>, so the two are one lens.
+        /// </summary>
+        public bool Lens = TheatreSkin.Dial("EVOSIM_THEATRE_LENS", 0f, 0f, 1f) >= 0.5f;
+
+        /// <summary>The lens's largest blur, pixels of radius at 1080 lines (<c>EVOSIM_THEATRE_LENS_CAP</c>, 1 to 120, default 24).</summary>
+        public float LensBlurCap = TheatreSkin.Dial("EVOSIM_THEATRE_LENS_CAP", 24f, 1f, 120f);
+
+        /// <summary>
+        /// A specular glint on the reef's rock (<c>EVOSIM_THEATRE_ROCK_GLINT</c>, 0 to 0.5, default 0; D208, item
+        /// 3): the sun's highlight off the wet stone, as a reflectance at the lobe's peak, brightest where the
+        /// caustic net lands. HDRP drew it in D202's first test and its stone read richer for it.
+        /// </summary>
+        public float RockGlint = TheatreSkin.Dial("EVOSIM_THEATRE_ROCK_GLINT", 0f, 0f, 0.5f);
+
+        /// <summary>The glint's roughness (<c>EVOSIM_THEATRE_ROCK_GLINT_ROUGHNESS</c>, 0.05 to 1, default 0.35): smaller is a tighter, sharper highlight.</summary>
+        public float RockGlintRoughness = TheatreSkin.Dial("EVOSIM_THEATRE_ROCK_GLINT_ROUGHNESS", 0.35f, 0.05f, 1f);
+
         // ---------------------------------------------------------------- second batch, the drift
 
         /// <summary>
@@ -562,7 +583,9 @@ namespace Evosim.Theatre
             CultureInfo.InvariantCulture,
             "snow lens {0} (f/{1:0.#}, focus {2}, cap {3:0} px, keep {4:0.##}), flakes (spread {5:0.##}, large {6:0.###} x{7:0.#}, shape {8:0.##}, fluff {9:0.##})",
             On(SnowBlur), SnowFStop, SnowFocusMetres > 0f ? SnowFocusMetres.ToString("0.##", CultureInfo.InvariantCulture) + " m" : "the shot's",
-            SnowBlurCap, SnowBlurKeep, SnowSizeSpread, SnowBigShare, SnowBigFactor, SnowShape, SnowFluff);
+            SnowBlurCap, SnowBlurKeep, SnowSizeSpread, SnowBigShare, SnowBigFactor, SnowShape, SnowFluff) +
+            string.Format(CultureInfo.InvariantCulture, ", lens {0} (cap {1:0} px), rock glint {2:0.###} (roughness {3:0.##})",
+                On(Lens), LensBlurCap, RockGlint, RockGlintRoughness);
 
         /// <summary>
         /// The look's token for a picture's label: the grade's own (<c>look 2</c>) with every switch

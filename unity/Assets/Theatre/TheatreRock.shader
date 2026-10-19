@@ -41,6 +41,11 @@ Shader "Evosim/Theatre Rock"
         _CausticReach("Metres below the surface caustics reach", Range(1, 400)) = 18
 
         _ShadeUnder("Main light left under the cap", Range(0, 1)) = 0.3
+
+        // The glint (EVOSIM_THEATRE_ROCK_GLINT; D208, item 3): the sun's highlight off the wet stone, a
+        // reflectance at the lobe's peak (0: none, as before 2026-10-19), and its roughness.
+        _GlintStrength("Glint, peak reflectance", Range(0, 0.5)) = 0
+        _GlintRoughness("Glint roughness", Range(0.05, 1)) = 0.35
         _Wrap("Diffuse wrap", Range(0, 1)) = 0.3
 
         // Per reef, through a MaterialPropertyBlock: the reef frame's cap top and underside
@@ -81,6 +86,8 @@ Shader "Evosim/Theatre Rock"
                 float _CausticStrength;
                 float _CausticReach;
                 float _ShadeUnder;
+                float _GlintStrength;
+                float _GlintRoughness;
                 float _Wrap;
                 float _CapTopLocal;
                 float _CapUnderLocal;
@@ -267,13 +274,33 @@ Shader "Evosim/Theatre Rock"
 
                 lit += rock * SampleSH(n) * depthLight * lerp(1.0, 0.55, underCap * (1.0 - onCap * table));
 
+                // The glint: the sun's highlight off the wet stone, a GGX lobe scaled to one at its peak
+                // so the dial is the highlight's reflectance there, comparable with the rock's own tones.
+                // The caustic net focuses the sun into filaments, so the glint is brightest under them,
+                // as HDRP drew it with the net on the sun's cookie (D202); the cuts hold no water film.
+                if (_GlintStrength > 0.0)
+                {
+                    float3 view = GetWorldSpaceNormalizeViewDir(input.positionWS);
+                    float3 halfway = normalize(main.direction + view);
+                    float nh = saturate(dot(n, halfway));
+                    float nl = saturate(dot(n, main.direction));
+                    float a2 = pow(max(0.05, _GlintRoughness), 4.0);
+                    float d = (nh * nh) * (a2 - 1.0) + 1.0;
+                    float lobe = a2 * a2 / max(1e-8, d * d);
+
+                    float sky = EvoCausticFade(input.positionWS, _CausticReach) * (1.0 - underCap);
+                    float focused = lerp(1.0, min(EvoCausticGain(input.positionWS, EvoTime()), 4.0), saturate(sky));
+
+                    lit += main.color * depthLight * (_GlintStrength * lobe * nl * focused * shade * (1.0 - cavity));
+                }
+
                 // The net, on what the sky can see: the table and the rim's shoulder, not the
                 // room under the cap.
                 float fade = EvoCausticFade(input.positionWS, _CausticReach) * saturate(n.y) * (1.0 - underCap);
 
                 if (fade > 0.001)
                 {
-                    float net = EvoCausticNet(input.positionWS, _Time.y);
+                    float net = EvoCausticNet(input.positionWS, EvoTime());
 
                     lit += _CausticColor.rgb * (net * fade * _CausticStrength) * (0.25 + 0.75 * rock / max(1e-4, _RockCrust.rgb));
                 }

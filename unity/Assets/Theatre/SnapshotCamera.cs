@@ -786,6 +786,7 @@ namespace Evosim.Theatre
             // exposure opened for what the subject (the focus, or six metres ahead) has lost.
             if (skin != null) skin.PushFrame(frame, eye, filmSecond);
             if (skin != null) skin.PushSnowLens(portrait ? focusMetres : 0f, _camera.fieldOfView);
+            TheatreLens.Arm(portrait ? focusMetres : 0f, _camera.fieldOfView);
             float subjectY = (eye + rotation * Vector3.forward * (focusMetres > 0f ? focusMetres : 6f)).y;
             float meterWas = MeterOpen(skin, subjectY, TheatreSkin.MeterView.Subject);
 
@@ -798,6 +799,7 @@ namespace Evosim.Theatre
             finally
             {
                 MeterClose(meterWas);
+                TheatreLens.Disarm();
                 if (grade != null) grade.Unfocus();
                 if (skin != null) skin.Aim(lightsWere);
                 if (back != null) UnityEngine.Object.DestroyImmediate(back.gameObject);

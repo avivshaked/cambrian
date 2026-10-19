@@ -440,6 +440,9 @@ namespace Evosim.Theatre
         private GameObject _march;
         private Material _marchMaterial;
         private GameObject _shells;
+
+        /// <summary>The snow shells' renderer, or null: the lens draws them after itself (<see cref="TheatreLens"/>).</summary>
+        public Renderer ShellsRenderer => _shells != null ? _shells.GetComponent<Renderer>() : null;
         private Material _shellMaterial;
 
         private bool _fogSaved;
@@ -709,7 +712,10 @@ namespace Evosim.Theatre
 
             float format = TheatreGrade.Current != null ? TheatreGrade.Current.FormatMillimetres : 24f;
             float focal = Camera.FieldOfViewToFocalLength(Mathf.Clamp(fieldOfView, 1f, 179f), format);
-            float aperture = focal / 1000f / Mathf.Clamp(Look.SnowFStop, 1f, 22f);
+
+            // Under the theatre's lens the snow is seen through the same glass as everything else.
+            float stop = Look.Lens && TheatreGrade.Current != null ? TheatreGrade.Current.PortraitAperture : Look.SnowFStop;
+            float aperture = focal / 1000f / Mathf.Clamp(stop, 1f, 22f);
             float focus = Look.SnowFocusMetres > 0f ? Look.SnowFocusMetres : Mathf.Max(0f, focusMetres);
 
             Shader.SetGlobalVector("_EvoSnowLens", new Vector4(
@@ -1707,6 +1713,8 @@ namespace Evosim.Theatre
             material.SetVector("_RockCrust", LinearOf(RockCrust));
             material.SetVector("_CausticColor", LinearOf(new Color(0.55f, 0.85f, 0.95f, 1f)));
             material.SetFloat("_CausticReach", Mathf.Clamp(SurfaceLightMetres, 1f, 60f));
+            material.SetFloat("_GlintStrength", Mathf.Clamp(Look.RockGlint, 0f, 0.5f));
+            material.SetFloat("_GlintRoughness", Mathf.Clamp(Look.RockGlintRoughness, 0.05f, 1f));
             return material;
         }
 
