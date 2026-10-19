@@ -792,7 +792,8 @@ rest.
     `scripts/reads/r59-d2-pool.py`) in D173's tank (`r59-d2-s2` and `-s3`, registry 21 and 22), read by
     `scripts/reads/r59-d2-read.py`. The knockout costs 2.1 J of 22.2 J eaten in seed 2 (1.6 standard errors, not
     met) and 1.6 J of 10.1 J in seed 3 (2.8, met).
-  - The patch read and the D2 read are not yet in the plan's steps or a logbook entry.
+  - The patch read is the plan's step 15 and logbook/0146; D2 is the plan's step 16 and logbook/0141. The reads'
+    outputs are `logbook/specs/nursery-patches-read.txt`.
   - The nursery is on round 60's config format (D185). Its world configs are `a8cbe76c9532bc71` (brain2's `-w5`
     recipes), `2b125f6cbda84a01` and `e80c201e54b3963f`; recipes on older configs are refused.
   - Held until the coordinator says (the owner, 2026-10-15: fewer streams): the patchy tank's repeat

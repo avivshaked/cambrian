@@ -600,7 +600,76 @@ its patch's centre. So the water that smells a patch is narrower than a full 6 m
 measured across the surface from leaf centres, so it is an upper bound on the water a swimmer at a leaf's height smells
 nothing in. The ring's turn is spread evenly: each 10-degree bin of the 120 holds 35 to 51 of the 520 seeds.
 
-The pace bench runs on the coordinator's word, and the two arms on the coordinator's go after it.
+**The pace bench.** Both benches ran alone on the morning of 2026-10-15, at 8 threads on logical 24-31. They used the
+frozen build of `21409f31` (registry entries 18 and 19). Two episodes of the ten founders took 76.9 s in the patchy
+tank and 25.2 s in the 400 m² tank. An episode there costs 3.05 times as much. The founders ate 256 J an episode in the patchy tank
+and 188 J in the small one, under their own brains.
+
+**The read.** `leaf-direction-patches` ran from 08:04 that morning, on 24-31 or 28-31 as the card's chains allowed. The
+results do not depend on the cores. The rule stopped the search after generation 20, and the exam ended at 13:33
+(registry entry 20). The reads' outputs are in `logbook/specs/nursery-patches-read.txt`, with step 16's after them.
+
+In the search, eating stayed between 64 and 123 J an episode, ending at 77 J. Spending fell from 1,063 J to 137 J. The
+population's mean return rose from 0.09 to 0.64, and the best genome's first passed 1 at generation 8. The tops' adult
+scale shrank to 0.48 and their box to 0.34 m by 0.31 m by 0.47 m, with attack and intake left at 1. It is step 14's
+search again, in a tank eight times the size: the body grows cheap and the eating holds level.
+
+The exam swam 23 genomes on 32 held-out episodes:
+
+| Brain | Return, best | Return, mean | Eaten, best | Eaten, mean |
+|---|---|---|---|---|
+| Own | 1.24 | 0.54 | 218 J | 83 J |
+| None | 0.11 | 0.02 | 30 J | 3 J |
+| Smell knocked out | 0.21 | 0.06 | 47 J | 9 J |
+
+Without the smell these bodies eat 9 J where they ate 83 J, nine-tenths of it gone. In the 400 m² tank the knockout
+cost about half (step 14). One genome eats more than half of the seeds' 409 J, 218 J at a return of 0.98, where none
+did in the small tank. The seeds' 409 J comes from D173's exam, in other tanks at the old prices.
+
+**Whether the bodies keep to a patch.** The exam's tanks were swum again under the patch watcher, branch
+`nursery-patchwatch`. `--restep --patches` re-steps one exam tank. At every economy step it writes each body's position,
+whether the body smells a live, lit leaf, and that leaf's patch. Patches are found by grouping
+leaves within 12 m of each other. `scripts/reads/patch-batch.py` lists the 192 re-steps of the exam, under the genomes'
+own brains and with the smell knocked out. `founders-batch.py` lists the same draws swum by the ten founders under three
+brains: their own, none, and the smell knocked out. `patch-run.ps1` runs either list, and `patch-read.py` reads it. All
+1,472 re-stepped brains matched the exam's record bit for bit.
+
+| | Time within smell of a leaf | Exits per body | Exits that turn back within 30 s | Crossings to another patch, per body |
+|---|---|---|---|---|
+| Evolved, own brain | 0.44 | 10.0 | 0.48 | 2.4 |
+| Evolved, smell knocked out | 0.43 | 12.0 | 0.50 | 3.0 |
+| Founders, own brain | 0.41 | 12.2 | 0.48 | 3.2 |
+| Founders, smell knocked out | 0.39 | 13.7 | 0.49 | 3.5 |
+| No brain | 0.40 | 10.9 | 0.51 | 2.6 |
+
+Every body that started out of smell found a leaf's smell, at a median of 209 to 226 s under every brain. The tops of
+generations 0 to 20 scatter around the same values, with no trend. So the evolved bodies hold to a patch no better than the founders, or than a body
+with no brain at all. My inference: a body adrift in these tanks spends about four-tenths of its time near leaves
+without trying. The smell's ninefold worth lies in the last metres, in turning onto a leaf the body already smells.
+
+The repeat on seed 0x2, `leaf-direction-patches-s2`, waits for the coordinator. Round 60's build refuses the config it
+was written on, and it runs as `leaf-direction-patches-s2-w5`.
+
+### 16. Round 59's clause D2
+
+Round 59's pre-registration (logbook/0140) sets clause D2 for each seed whose planted-descended grazers alive at
+48,000 s hold at least 8 distinct genomes. Those genomes swim in D173's tank under their own brains, under none, and
+with the smell knocked out. The clause is met when the knockout costs at least two standard errors of their eating.
+The coordinator chose to swim every distinct genome. The planted line and the grazer test are round 59's reader's, imported as it stands.
+`scripts/reads/r59-d2-pool.py` writes each seed's pool, `leaf-recipes.py r59d2` the two bench recipes, and
+`scripts/reads/r59-d2-read.py` reads them. The nursery's `--check` refused two genomes of seed 3 whose bodies grow an
+absorptive cell, which a leaf tank cannot hold, and they were left out.
+
+| Seed | Genomes | Eaten, own | Eaten, knockout | Eaten, no brain | Cost of the knockout | Standard errors | D2 |
+|---|---|---|---|---|---|---|---|
+| 2 | 227 | 22.2 J | 20.1 J | 10.2 J | 2.1 J (se 1.3) | 1.6 | not met |
+| 3 | 362 | 10.1 J | 8.4 J | 4.4 J | 1.6 J (se 0.6) | 2.8 | met |
+
+The benches ran on 2026-10-15 from `e80caf83`, at 8 threads on 16-31 (registry entries 21 and 22). In both seeds the
+brain doubles the grazers' eating and the smell adds little to it. The knockout lowers the eating of about half the
+genomes and raises it for nearly as many. Nearly all of each seed's grazers descend from one planted founder, 220 of
+seed 2's 235 and 356 of seed 3's 370. So the standard error over genomes treats close kin as independent. My inference:
+seed 3's pass rests on that, and the planted grazers have kept their brains but not much use for the smell.
 
 ## The machine
 

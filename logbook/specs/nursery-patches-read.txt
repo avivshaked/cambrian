@@ -1,0 +1,115 @@
+# D182/D184's patchy arm and round 59's clause D2: the reads' outputs, 2026-10-15 (written up 2026-10-19)
+
+## The pace bench (registry 18 and 19)
+  slow tank, seed 34236: 60 s wall at 1572.0 s simulated, 31 living, 42 links, diverged 0; bodies 2p alive y -22.9 e 256; 2p alive y -19.1 e 605
+  slow tank, seed 56490: 60 s wall at 1419.5 s simulated, 31 living, 48 links, diverged 0; bodies 2p alive y -12.0 e 349; 2p alive y -14.1 e 324; 2p alive y -24.5 e 843; 2p alive y -22.9 e 1418; 2p alive y -3.0 e 577; 2p alive y -21.0 e 370; 2p alive y -1.5 e 275; 2p alive y -12.4 e 526
+  slow tank, seed 56490: 60 s wall at 1577.0 s simulated, 30 living, 43 links, diverged 0; bodies 2p alive y -21.2 e 1168; 2p alive y -23.6 e 196
+  own                      net -803.81 J, against own (score) +0.00 (se 0.00), alive 100 %, work 0.283 W, path 258.2 m, turn 0.038 rad/s, eaten 256.3 J, snow at the body 0.07 J/m3, 1.3 min
+entered in the registry as entry 18 (rounds\nursery\registry.jsonl)
+
+  leaves: 31 a tank, drawn from the 2894 of scratch\wt-nursery-d178\rounds\nursery\pools\leaves-3f6c390cd561cb09.tsv.gz; the water starts with 0.004237 spent units/m3
+  pool scratch\wt-nursery-d178\rounds\nursery\pools\410a70db44a4b20a.tsv: 10 genomes, bodies 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+bench: 10 genomes under 1 brains, tanks of 8, 2 draws on held-out seeds (salt 1752132708), 1800 s, snow 0 J/m3, work cost 0.5, purse grown
+  own                      net -867.10 J, against own (score) +0.00 (se 0.00), alive 90 %, work 0.261 W, path 214.1 m, turn 0.035 rad/s, eaten 187.6 J, snow at the body 0.16 J/m3, 0.4 min
+entered in the registry as entry 19 (rounds\nursery\registry.jsonl)
+
+## leaf-direction-patches: the search (python scripts/reads/bodies-read.py)
+gen   score   eaten  upkeep    work  handl | smoothed   gain | top score nodes  root size (m)       litres  attack intake scale
+  0   0.086    93.7 -1062.5     nan    nan |        -      - |     0.341     2  0.60 x 0.30 x 0.60    108.0    1.00   1.00  1.00
+  1   0.082    86.9 -1045.6     nan    nan |        -      - |     0.362     2  0.43 x 0.30 x 0.60     77.7    1.00   1.00  0.90
+  2   0.087    85.9 -1003.4     nan    nan |        -      - |     0.415     2  0.43 x 0.30 x 0.60     77.7    1.00   1.00  0.90
+  3   0.104    85.7  -868.7     nan    nan |        -      - |     0.740     2  0.60 x 0.30 x 0.60    108.0    1.00   1.00  0.64
+  4   0.121    98.0 -1005.4     nan    nan |     82.6      - |     0.644     2  0.60 x 0.30 x 0.60    108.0    1.00   1.00  0.64
+  5   0.172   122.7  -805.4     nan    nan |     87.0      - |     0.604     2  0.60 x 0.30 x 0.60    108.0    1.00   1.00  0.64
+  6   0.150    85.8  -603.8     nan    nan |     87.3      - |     0.585     2  0.43 x 0.30 x 0.60     77.7    1.00   1.00  0.64
+  7   0.188    97.5  -564.3     nan    nan |     88.4      - |     0.853     2  0.60 x 0.30 x 0.60    108.0    1.00   1.00  0.64
+  8   0.237    86.3  -469.9     nan    nan |     90.3      - |     1.022     2  0.43 x 0.30 x 0.60     77.7    1.00   1.00  0.64
+  9   0.210    66.2  -334.2     nan    nan |     83.5      - |     0.697     2  0.60 x 0.30 x 0.60    108.0    1.00   1.00  0.64
+ 10   0.251    72.5  -313.5     nan    nan |     72.9      - |     0.874     2  0.30 x 0.30 x 0.47     42.7    1.00   1.00  0.78
+ 11   0.293    73.6  -268.9     nan    nan |     70.6      - |     0.964     2  0.44 x 0.30 x 0.47     62.5    1.00   1.00  0.72
+ 12   0.370    92.9  -264.4     nan    nan |     71.3      - |     1.099     2  0.44 x 0.30 x 0.49     64.4    1.00   1.00  0.72
+ 13   0.323    78.2  -227.8     nan    nan |     68.8      - |     1.194     2  0.43 x 0.30 x 0.47     61.3    1.00   1.00  0.72
+ 14   0.333    78.8  -238.3     nan    nan |     70.6 -0.145 |     1.665     2  0.44 x 0.30 x 0.47     62.5    1.00   1.00  0.72
+ 15   0.311    72.8  -219.4     nan    nan |     70.6 -0.188 |     1.047     4  0.44 x 0.33 x 0.47     69.2    1.00   1.00  0.72
+ 16   0.388    85.4  -215.9     nan    nan |     73.3 -0.160 |     1.208     2  0.44 x 0.30 x 0.47     62.5    1.00   1.00  0.72
+ 17   0.462    84.0  -211.8     nan    nan |     71.0 -0.197 |     2.110     2  0.34 x 0.31 x 0.47     51.0    1.00   1.00  0.48
+ 18   0.378    64.4  -165.8     nan    nan |     67.4 -0.254 |     1.709     2  0.34 x 0.31 x 0.47     51.0    1.00   1.00  0.48
+ 19   0.495    72.6  -148.0     nan    nan |     67.3 -0.194 |     1.523     2  0.34 x 0.31 x 0.47     51.0    1.00   1.00  0.48
+ 20   0.636    77.4  -137.0     nan    nan |     68.6 -0.059 |     2.227     2  0.34 x 0.31 x 0.47     51.0    1.00   1.00  0.48
+
+## leaf-direction-patches: the exam (python scripts/reads/return-exam-read.py)
+scratch/wt-nursery-d178/runs/nursery/leaf-direction-patches: 23 genomes under own, brainless, knockout LeafScent,LeafScentDirection
+seeds (the ten r59-direction-tops, own brain, the same held-out episodes): eaten mean 408.6 J, 378.6 to 443.1
+  own                                      score best 1.242 mean 0.539 | eaten best 217.7 mean 83.4 J
+  brainless                                score best 0.109 mean 0.017 | eaten best 30.3 mean 3.4 J
+  knockout LeafScent,LeafScentDirection    score best 0.207 mean 0.059 | eaten best 47.1 mean 9.4 J
+  best: g20.41  (tops [], elite) score 1.242, eaten 70.6 J, knocked out 1.7 J, 17% of the seeds' mean
+  best: g20.17  (tops [20], elite) score 0.988, eaten 50.0 J, knocked out 0.0 J, 12% of the seeds' mean
+  best: g12.26  (tops [12]) score 0.982, eaten 217.7 J, knocked out 15.3 J, 53% of the seeds' mean
+  best: g17.47  (tops [17, 19], elite) score 0.918, eaten 51.1 J, knocked out 11.6 J, 13% of the seeds' mean
+  best: g20.20  (tops [], elite) score 0.907, eaten 139.6 J, knocked out 2.7 J, 34% of the seeds' mean
+  genomes eating at least half the seeds' mean (204.3 J) under their own brain: 1 of 23; best score among them 0.982
+
+## The patch measures of the exam (python scripts/reads/patch-read.py scratch/leaf-tank/patch-arm1 <run>)
+leaf-direction-patches exam: 192 episodes read, 0 missing; 1472 nets checked against the record, 0 differ
+
+knockout LeafScent,LeafScentDirection: n 736  in smell 0.43  exits/body 12.00  of exits: turn-back 0.50 late 0.20 transit 0.25 unended 0.05  transits/body 2.98  bare starts 506, found smell 1.00, median first 225 s  alive 1792 s
+  g0     n  32  in smell 0.35  exits/body 12.84  of exits: turn-back 0.45 late 0.29 transit 0.21 unended 0.05  transits/body 2.75  bare starts  21, found smell 1.00, median first 155 s  alive 1799 s
+  g1     n  32  in smell 0.42  exits/body 13.28  of exits: turn-back 0.52 late 0.22 transit 0.21 unended 0.04  transits/body 2.78  bare starts  22, found smell 1.00, median first 262 s  alive 1798 s
+  g3     n  32  in smell 0.40  exits/body 11.75  of exits: turn-back 0.53 late 0.15 transit 0.27 unended 0.05  transits/body 3.16  bare starts  26, found smell 1.00, median first 207 s  alive 1799 s
+  g6     n  32  in smell 0.44  exits/body 13.06  of exits: turn-back 0.54 late 0.20 transit 0.21 unended 0.06  transits/body 2.75  bare starts  24, found smell 1.00, median first 234 s  alive 1799 s
+  g7     n  32  in smell 0.38  exits/body 11.78  of exits: turn-back 0.45 late 0.19 transit 0.32 unended 0.05  transits/body 3.78  bare starts  21, found smell 1.00, median first 281 s  alive 1799 s
+  g8     n  32  in smell 0.47  exits/body 12.72  of exits: turn-back 0.51 late 0.19 transit 0.25 unended 0.05  transits/body 3.22  bare starts  18, found smell 1.00, median first 196 s  alive 1799 s
+  g9     n  32  in smell 0.47  exits/body 12.78  of exits: turn-back 0.52 late 0.18 transit 0.25 unended 0.05  transits/body 3.25  bare starts  20, found smell 1.00, median first 247 s  alive 1799 s
+  g10    n  32  in smell 0.48  exits/body 12.50  of exits: turn-back 0.46 late 0.21 transit 0.28 unended 0.05  transits/body 3.53  bare starts  24, found smell 1.00, median first 171 s  alive 1714 s
+  g11    n  32  in smell 0.44  exits/body 13.53  of exits: turn-back 0.52 late 0.21 transit 0.23 unended 0.04  transits/body 3.16  bare starts  20, found smell 1.00, median first 161 s  alive 1799 s
+  g12    n  32  in smell 0.50  exits/body 13.94  of exits: turn-back 0.49 late 0.19 transit 0.27 unended 0.05  transits/body 3.78  bare starts  21, found smell 1.00, median first 208 s  alive 1799 s
+  g13    n  32  in smell 0.46  exits/body 12.81  of exits: turn-back 0.49 late 0.22 transit 0.25 unended 0.04  transits/body 3.19  bare starts  21, found smell 1.00, median first 181 s  alive 1799 s
+  g14    n  32  in smell 0.41  exits/body 12.50  of exits: turn-back 0.49 late 0.20 transit 0.25 unended 0.06  transits/body 3.16  bare starts  18, found smell 1.00, median first 220 s  alive 1799 s
+  g15    n  32  in smell 0.41  exits/body 14.44  of exits: turn-back 0.46 late 0.22 transit 0.28 unended 0.04  transits/body 4.00  bare starts  26, found smell 1.00, median first 251 s  alive 1799 s
+  g16    n  32  in smell 0.45  exits/body 12.59  of exits: turn-back 0.52 late 0.16 transit 0.28 unended 0.04  transits/body 3.47  bare starts  19, found smell 1.00, median first 251 s  alive 1799 s
+  g17    n  32  in smell 0.41  exits/body 10.22  of exits: turn-back 0.44 late 0.22 transit 0.27 unended 0.07  transits/body 2.72  bare starts  22, found smell 1.00, median first 216 s  alive 1756 s
+  g18    n  32  in smell 0.41  exits/body 11.59  of exits: turn-back 0.50 late 0.18 transit 0.26 unended 0.06  transits/body 2.97  bare starts  24, found smell 1.00, median first 371 s  alive 1799 s
+  g20    n  32  in smell 0.39  exits/body 11.84  of exits: turn-back 0.54 late 0.19 transit 0.22 unended 0.05  transits/body 2.56  bare starts  24, found smell 0.96, median first 147 s  alive 1747 s
+  elite  n 192  in smell 0.42  exits/body 10.31  of exits: turn-back 0.50 late 0.22 transit 0.23 unended 0.06  transits/body 2.37  bare starts 135, found smell 1.00, median first 240 s  alive 1799 s
+
+own: n 736  in smell 0.44  exits/body 10.04  of exits: turn-back 0.48 late 0.22 transit 0.24 unended 0.06  transits/body 2.37  bare starts 506, found smell 1.00, median first 226 s  alive 1793 s
+  g0     n  32  in smell 0.39  exits/body 11.41  of exits: turn-back 0.44 late 0.25 transit 0.24 unended 0.07  transits/body 2.78  bare starts  21, found smell 1.00, median first 160 s  alive 1799 s
+  g1     n  32  in smell 0.40  exits/body  9.22  of exits: turn-back 0.41 late 0.24 transit 0.29 unended 0.07  transits/body 2.66  bare starts  22, found smell 1.00, median first 294 s  alive 1799 s
+  g3     n  32  in smell 0.39  exits/body  9.72  of exits: turn-back 0.47 late 0.20 transit 0.27 unended 0.06  transits/body 2.59  bare starts  26, found smell 1.00, median first 208 s  alive 1799 s
+  g6     n  32  in smell 0.48  exits/body 10.88  of exits: turn-back 0.47 late 0.24 transit 0.24 unended 0.05  transits/body 2.56  bare starts  24, found smell 1.00, median first 234 s  alive 1799 s
+  g7     n  32  in smell 0.45  exits/body  9.41  of exits: turn-back 0.41 late 0.22 transit 0.32 unended 0.06  transits/body 2.97  bare starts  21, found smell 1.00, median first 281 s  alive 1799 s
+  g8     n  32  in smell 0.50  exits/body 10.53  of exits: turn-back 0.45 late 0.23 transit 0.24 unended 0.07  transits/body 2.50  bare starts  18, found smell 1.00, median first 196 s  alive 1799 s
+  g9     n  32  in smell 0.47  exits/body 10.84  of exits: turn-back 0.51 late 0.21 transit 0.24 unended 0.04  transits/body 2.56  bare starts  20, found smell 1.00, median first 247 s  alive 1799 s
+  g10    n  32  in smell 0.47  exits/body 11.66  of exits: turn-back 0.55 late 0.21 transit 0.18 unended 0.05  transits/body 2.16  bare starts  24, found smell 1.00, median first 171 s  alive 1799 s
+  g11    n  32  in smell 0.46  exits/body  9.22  of exits: turn-back 0.47 late 0.22 transit 0.25 unended 0.06  transits/body 2.28  bare starts  20, found smell 1.00, median first 161 s  alive 1772 s
+  g12    n  32  in smell 0.49  exits/body  9.69  of exits: turn-back 0.48 late 0.21 transit 0.26 unended 0.05  transits/body 2.50  bare starts  21, found smell 1.00, median first 208 s  alive 1799 s
+  g13    n  32  in smell 0.50  exits/body 10.81  of exits: turn-back 0.49 late 0.26 transit 0.21 unended 0.05  transits/body 2.28  bare starts  21, found smell 1.00, median first 181 s  alive 1799 s
+  g14    n  32  in smell 0.41  exits/body  9.44  of exits: turn-back 0.50 late 0.23 transit 0.21 unended 0.06  transits/body 2.00  bare starts  18, found smell 1.00, median first 220 s  alive 1772 s
+  g15    n  32  in smell 0.40  exits/body  9.72  of exits: turn-back 0.46 late 0.25 transit 0.23 unended 0.06  transits/body 2.19  bare starts  26, found smell 1.00, median first 251 s  alive 1799 s
+  g16    n  32  in smell 0.48  exits/body 10.69  of exits: turn-back 0.49 late 0.20 transit 0.25 unended 0.06  transits/body 2.62  bare starts  19, found smell 1.00, median first 251 s  alive 1748 s
+  g17    n  32  in smell 0.45  exits/body  9.84  of exits: turn-back 0.56 late 0.20 transit 0.18 unended 0.06  transits/body 1.78  bare starts  22, found smell 1.00, median first 216 s  alive 1799 s
+  g18    n  32  in smell 0.36  exits/body 10.78  of exits: turn-back 0.50 late 0.20 transit 0.24 unended 0.06  transits/body 2.62  bare starts  24, found smell 1.00, median first 371 s  alive 1799 s
+  g20    n  32  in smell 0.42  exits/body 10.75  of exits: turn-back 0.52 late 0.20 transit 0.22 unended 0.06  transits/body 2.31  bare starts  24, found smell 1.00, median first 151 s  alive 1799 s
+  elite  n 192  in smell 0.44  exits/body  9.39  of exits: turn-back 0.50 late 0.21 transit 0.23 unended 0.06  transits/body 2.17  bare starts 135, found smell 1.00, median first 239 s  alive 1791 s
+
+## The founders' baseline (python scripts/reads/patch-read.py scratch/leaf-tank/patch-founders)
+patch-founders founders: 192 episodes read, 0 missing; 0 nets checked against the record, 0 differ
+
+brainless: n 320  in smell 0.40  exits/body 10.85  of exits: turn-back 0.51 late 0.20 transit 0.24 unended 0.05  transits/body 2.58  bare starts 221, found smell 1.00, median first 215 s  alive 1799 s
+
+knockout LeafScent,LeafScentDirection: n 320  in smell 0.39  exits/body 13.65  of exits: turn-back 0.49 late 0.21 transit 0.26 unended 0.04  transits/body 3.52  bare starts 221, found smell 0.99, median first 209 s  alive 1788 s
+
+own: n 320  in smell 0.41  exits/body 12.16  of exits: turn-back 0.48 late 0.21 transit 0.26 unended 0.05  transits/body 3.15  bare starts 221, found smell 0.99, median first 209 s  alive 1789 s
+
+## Round 59's D2, seed 2 (python scripts/reads/r59-d2-read.py)
+own                                      eaten mean 22.22 J over 227 genomes
+brainless                                eaten mean 10.24 J over 227 genomes
+knockout LeafScent,LeafScentDirection    eaten mean 20.10 J over 227 genomes
+knockout cost on eating: 2.13 J, se 1.32, 1.6 se; NOT MET (< 2 se); genomes it costs 111, helps 109, equal 7
+
+## Round 59's D2, seed 3
+own                                      eaten mean 10.06 J over 362 genomes
+brainless                                eaten mean 4.35 J over 362 genomes
+knockout LeafScent,LeafScentDirection    eaten mean 8.43 J over 362 genomes
+knockout cost on eating: 1.63 J, se 0.58, 2.8 se; MET (>= 2 se); genomes it costs 182, helps 157, equal 23
