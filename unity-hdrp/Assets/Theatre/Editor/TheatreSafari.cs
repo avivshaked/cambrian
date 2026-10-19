@@ -195,7 +195,7 @@ namespace Evosim.Theatre.EditorTools
         /// when Play mode opens and stands at a different second in every render
         /// (<c>TheatreWater.hlsl</c>'s <c>EvoTime</c>).
         /// </summary>
-        private static readonly bool TakeClock = TheatreSkin.Dial("EVOSIM_THEATRE_SAFARI_CLOCK", 0f, 0f, 1f) >= 0.5f;
+        private static readonly bool TakeClock = (Environment.GetEnvironmentVariable("EVOSIM_THEATRE_SAFARI_CLOCK") ?? "").Trim() == "1";
         private const float ClockStart = 100f;
 
         private static void SetClock(int takeFrame)
