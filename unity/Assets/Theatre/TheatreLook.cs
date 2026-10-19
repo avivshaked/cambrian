@@ -471,6 +471,38 @@ namespace Evosim.Theatre
         /// </summary>
         public bool Lens = TheatreSkin.Dial("EVOSIM_THEATRE_LENS", 0f, 0f, 1f) >= 0.5f;
 
+        /// <summary>
+        /// The snow keeps each flake's light (<c>EVOSIM_THEATRE_SNOW_CONSERVE</c>, 1 on, default 0): a flake the lens
+        /// or the fluff spreads is drawn as much fainter as it is larger, its light spread thinly over the area
+        /// it covers, as a lens spreads it. The owner's note of 2026-10-19: blurred flakes that kept their
+        /// brightness read as a snowfall.
+        /// </summary>
+        public bool SnowConserve = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_CONSERVE", 0f, 0f, 1f) >= 0.5f;
+
+        /// <summary>
+        /// How far a large flake is a loose aggregate (<c>EVOSIM_THEATRE_SNOW_AGGREGATE</c>, 0 to 2, default 0): its
+        /// brightness divided by its size over its shell's to this power, so at 1 its light grows with its size
+        /// and not its area.
+        /// </summary>
+        public float SnowAggregate = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_AGGREGATE", 0f, 0f, 2f);
+
+        /// <summary>
+        /// The bodies obey the water (<c>EVOSIM_THEATRE_BODY_WATER</c>, 0 to 1, default 0): their guild rim and
+        /// inner glow take the light left at their depth on the run's day, red first, as the key and the ambient
+        /// do, in place of shining at full strength wherever they are. The owner's note of 2026-10-19: the bodies
+        /// read as self-lit.
+        /// </summary>
+        public float BodyWater = TheatreSkin.Dial("EVOSIM_THEATRE_BODY_WATER", 0f, 0f, 1f);
+
+        /// <summary>How much of the bodies' guild rim is taken away (<c>EVOSIM_THEATRE_BODY_RIM_CUT</c>, 0 to 1, default 0).</summary>
+        public float BodyRimCut = TheatreSkin.Dial("EVOSIM_THEATRE_BODY_RIM_CUT", 0f, 0f, 1f);
+
+        /// <summary>How much of the bodies' inner glow is taken away (<c>EVOSIM_THEATRE_BODY_GLOW_CUT</c>, 0 to 1, default 0).</summary>
+        public float BodyGlowCut = TheatreSkin.Dial("EVOSIM_THEATRE_BODY_GLOW_CUT", 0f, 0f, 1f);
+
+        /// <summary>How much of the light through the bodies' tissue is taken away (<c>EVOSIM_THEATRE_BODY_TRANS_CUT</c>, 0 to 1, default 0).</summary>
+        public float BodyTransCut = TheatreSkin.Dial("EVOSIM_THEATRE_BODY_TRANS_CUT", 0f, 0f, 1f);
+
         /// <summary>The lens's largest blur, pixels of radius at 1080 lines (<c>EVOSIM_THEATRE_LENS_CAP</c>, 1 to 120, default 24).</summary>
         public float LensBlurCap = TheatreSkin.Dial("EVOSIM_THEATRE_LENS_CAP", 24f, 1f, 120f);
 
@@ -584,8 +616,10 @@ namespace Evosim.Theatre
             "snow lens {0} (f/{1:0.#}, focus {2}, cap {3:0} px, keep {4:0.##}), flakes (spread {5:0.##}, large {6:0.###} x{7:0.#}, shape {8:0.##}, fluff {9:0.##})",
             On(SnowBlur), SnowFStop, SnowFocusMetres > 0f ? SnowFocusMetres.ToString("0.##", CultureInfo.InvariantCulture) + " m" : "the shot's",
             SnowBlurCap, SnowBlurKeep, SnowSizeSpread, SnowBigShare, SnowBigFactor, SnowShape, SnowFluff) +
-            string.Format(CultureInfo.InvariantCulture, ", lens {0} (cap {1:0} px), rock glint {2:0.###} (roughness {3:0.##})",
-                On(Lens), LensBlurCap, RockGlint, RockGlintRoughness);
+            string.Format(CultureInfo.InvariantCulture, ", lens {0} (cap {1:0} px), rock glint {2:0.###} (roughness {3:0.##}), " +
+                "snow conserve {4}, aggregate {5:0.##}, bodies obey the water {6:0.##} (rim cut {7:0.##}, glow cut {8:0.##}, through cut {9:0.##})",
+                On(Lens), LensBlurCap, RockGlint, RockGlintRoughness, On(SnowConserve), SnowAggregate,
+                BodyWater, BodyRimCut, BodyGlowCut, BodyTransCut);
 
         /// <summary>
         /// The look's token for a picture's label: the grade's own (<c>look 2</c>) with every switch

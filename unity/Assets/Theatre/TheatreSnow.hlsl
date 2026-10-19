@@ -34,7 +34,10 @@ float4 _EvoSnowLens;
 // times larger; w: how irregular a flake's outline is (0: round).
 float4 _EvoSnowFlake;
 
-// x: how soft a flake's edge is, as a share of its radius (0: a pixel's edge); yzw unused.
+// x: how soft a flake's edge is, as a share of its radius (0: a pixel's edge); y: how far a large flake is a
+// loose aggregate, its brightness divided by its size over the shell's to this power (0: as bright as a small
+// one); z: 1 keeps each flake's light when the lens or the fluff spreads it, over the area it is drawn on, as a
+// lens does (0: the older rule, _EvoSnowLens.w's power of the half-light radius); w unused.
 float4 _EvoSnowFluff;
 
 // Set by the shells' fragment before the walk: the focus it settled on, and the nearest mote whose

@@ -274,11 +274,27 @@ Shader "Evosim/Theatre Snow Shells"
                                     // blurred one spreads it again, over its larger disc, by the
                                     // power the lens's dial gives.
                                     float energy = min(1.0, (own * own) / (r * r));
-                                    if (blur > 0.0)
+                                    if (_EvoSnowFluff.z > 0.5)
+                                    {
+                                        // The flake's light kept over the area it is drawn on: a disc
+                                        // of radius reach with an edge as wide as soft covers about
+                                        // pi (reach^2 + soft^2 / 12), against pi (r^2 + pixel^2 / 12)
+                                        // drawn sharp, so a defocused or fluffy flake spreads the
+                                        // same light thinly (the owner's note of 2026-10-19).
+                                        float sharpArea = r * r + pixel * pixel / 12.0;
+                                        float drawnArea = reach * reach + soft * soft / 12.0;
+                                        energy *= saturate(sharpArea / max(1e-12, drawnArea));
+                                    }
+                                    else if (blur > 0.0)
                                     {
                                         float wide = r + 0.5 * blur;
                                         energy *= pow(saturate((r * r) / (wide * wide)), _EvoSnowLens.w);
                                     }
+
+                                    // A large flake is a loose aggregate: its light grows with its
+                                    // size, not its area.
+                                    if (_EvoSnowFluff.y > 0.0 && own > radius)
+                                        energy *= pow(saturate(radius / own), _EvoSnowFluff.y);
                                     if (dist < r * outline) evoSnowNearT = min(evoSnowNearT, t);
 
                                     float gain = min(EvoCausticGain(world, time), 7.0);

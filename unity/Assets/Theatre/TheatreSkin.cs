@@ -756,7 +756,14 @@ namespace Evosim.Theatre
                 Mathf.Clamp(Look.SnowBigShare, 0f, 0.5f),
                 Mathf.Clamp(Look.SnowBigFactor, 1f, 8f),
                 Mathf.Clamp01(Look.SnowShape)));
-            Shader.SetGlobalVector("_EvoSnowFluff", new Vector4(Mathf.Clamp(Look.SnowFluff, 0f, 2f), 0f, 0f, 0f));
+            Shader.SetGlobalVector("_EvoSnowFluff", new Vector4(
+                Mathf.Clamp(Look.SnowFluff, 0f, 2f), Mathf.Clamp(Look.SnowAggregate, 0f, 2f), Look.SnowConserve ? 1f : 0f, 0f));
+
+            // The bodies and the water (TheatreBody.shader's _EvoBodyWater): zero, today's bodies, while a census
+            // view holds today's look.
+            Shader.SetGlobalVector("_EvoBodyWater", on ? new Vector4(
+                Mathf.Clamp01(Look.BodyWater), Mathf.Clamp01(Look.BodyRimCut),
+                Mathf.Clamp01(Look.BodyGlowCut), Mathf.Clamp01(Look.BodyTransCut)) : Vector4.zero);
 
             if (_marchMaterial != null)
             {

@@ -927,6 +927,12 @@ Shader "Evosim/Theatre Body"
                 return lightColour * (back * thickness);
             }
 
+            // The bodies and the water (TheatreSkin; the owner's note of 2026-10-19 that the bodies read as
+            // self-lit). x: how far the guild rim and the inner glow take the light left at the body's depth,
+            // as the key and the ambient do (0: they shine at full strength anywhere); y, z, w: how much of
+            // the rim, the inner glow and the light through the tissue is taken away. Zero is today's body.
+            float4 _EvoBodyWater;
+
             half4 Fragment(Varyings input) : SV_Target
             {
                 float3 n = CarvedNormal(
@@ -983,13 +989,14 @@ Shader "Evosim/Theatre Body"
                 float3 depthLight = EvoDepthLight(input.positionWS);
                 float3 keyColour = main.color * depthLight;
                 float3 lit = body * keyColour * (Wrapped(n, main.direction) * _KeyGain);
-                lit += _TransTint.rgb * (_TransGain * Transmission(n, v, main.direction, keyColour, thickness));
+                float through = _TransGain * (1.0 - saturate(_EvoBodyWater.w));
+                lit += _TransTint.rgb * (through * Transmission(n, v, main.direction, keyColour, thickness));
 
                 // The light from the surface through a blade, seen from below or beside it: the
                 // world's light comes from above, whatever the key does for the camera.
                 if (input.leaf.w > 0.5)
                 {
-                    lit += _TransTint.rgb * (_TransGain * _LeafSkyGlow *
+                    lit += _TransTint.rgb * (through * _LeafSkyGlow *
                         Transmission(n, v, float3(0.0, 1.0, 0.0), keyColour, thickness));
                 }
 
@@ -1009,7 +1016,7 @@ Shader "Evosim/Theatre Body"
                     float3 colour = extra.color * extra.distanceAttenuation;
 
                     lit += body * colour * Wrapped(n, extra.direction);
-                    lit += _TransTint.rgb * (_TransGain * Transmission(n, v, extra.direction, colour, thickness));
+                    lit += _TransTint.rgb * (through * Transmission(n, v, extra.direction, colour, thickness));
                 }
                 #endif
 
@@ -1023,12 +1030,16 @@ Shader "Evosim/Theatre Body"
                 float facing = 1.0 - saturate(dot(n, v));
                 float rim = pow(facing, _RimPower);
 
-                lit += _RimColor.rgb * (rim * _RimStrength * rimScale);
+                // Under _EvoBodyWater.x the rim and the glow are lit by the water's own light at this depth,
+                // red first, rather than shining as if from inside.
+                float3 waterLight = lerp(float3(1.0, 1.0, 1.0), depthLight, saturate(_EvoBodyWater.x));
+                lit += _RimColor.rgb * waterLight * (rim * _RimStrength * rimScale * (1.0 - saturate(_EvoBodyWater.y)));
 
                 // The inner glow: a well fed body is lit from inside, a starving one is pale.
                 // The same reading the palette's tint already carries, on the same per body
                 // property, so the two cannot disagree.
-                lit += _RimColor.rgb * (_GlowStrength * _Reserve * rimScale * (0.30 + 0.70 * pow(facing, 0.7)));
+                lit += _RimColor.rgb * waterLight * (_GlowStrength * _Reserve * rimScale * (1.0 - saturate(_EvoBodyWater.z)) *
+                    (0.30 + 0.70 * pow(facing, 0.7)));
 
                 // Caustics, on the upward faces of whatever is in the top few metres.
                 //
@@ -1042,7 +1053,7 @@ Shader "Evosim/Theatre Body"
 
                 if (fade > 0.001)
                 {
-                    float net = EvoCausticNet(input.positionWS, _Time.y);
+                    float net = EvoCausticNet(input.positionWS, EvoTime());
 
                     lit += _CausticColor.rgb * (net * fade * saturate(n.y) * _CausticStrength);
                 }
