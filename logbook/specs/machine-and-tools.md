@@ -12,6 +12,12 @@ The root file's rules still apply. The entries below were moved word for word, s
   Claude session and every cron died with it. Read event 1074 before blaming a run for a restart. A long run
   left overnight resumes from its last checkpoint. After a feature update, re-run a known reference before
   comparing any pace across the update.
+- **A WMI Provider Host spike in Task Manager is usually WSL, not a run.** On 2026-10-19 the owner saw it at
+  54% of the machine. Over a few seconds it averaged 5 to 10%. The `Microsoft-Windows-WMI-Activity/Operational` log
+  showed `wslservice.exe` restarting the WSL VM every three minutes or so, and re-registering its Hyper-V firewall
+  rules through WMI at each restart. No farm run, Unity or watch uses WSL. Our own `Get-CimInstance Win32_Process`
+  listings (the orphan sweep, process checks) add bursts of a few seconds. Read that log's `ClientProcessId`
+  before blaming a run. Stopping WSL is the owner's call.
 - **A blue screen beside a GPU probe was the file-system filter stack, and a minidump is
   readable without a debugger.** The one crash in this machine's log (2026-09-22, bugcheck
   0x3B) faulted in `FLTMGR.SYS` on a `dotnet.exe` thread, entered through the Xbox Gaming
