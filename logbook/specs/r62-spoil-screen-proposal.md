@@ -66,13 +66,34 @@ long baseline, for about 4.5 to 5 hours. That figure assumes the living count st
 1,700, which it did to 12,000 s and is not measured past it. Checkpoints every 1,500 s let a long run be read at
 12,000 s and stopped there.
 
-## Ready to launch
+## The ruling and the launch
 
-- The clock's build: `r62-spoil`, after its tests, the accelerator suite and a short card identity run with the
-  dial on.
-- Launchers and the group launcher: written once the build lands, with each arm's config hash from an accelerator
-  preflight.
+The coordinator ruled it as D213 overnight: the eight worlds as set out, every one at 24,000 s. The clock is built
+on `r62-spoil` (92b61136). The group launcher is `rounds/launch-r62s.ps1` there, and each arm's launcher is
+`rounds/env-r62s-<arm>.ps1`. Each arm's config hash was read from a 2 s founded run on that build; a config hash
+does not depend on the seed.
 
-## The question
+| World | Seed | configHash |
+|---|---|---|
+| `r62s-r2-h500` | 6201 | `3d4dd684363d2bf4` |
+| `r62s-r2-h2000` | 6201 | `67ec4cdd99843691` |
+| `r62s-r3-h0` | 6201 | `4c4a6bac75591d2e` |
+| `r62s-r3-h500` | 6201 | `c5c9f4167e070655` |
+| `r62s-r3-h2000` | 6201 | `81298c13ed9bf940` |
+| `r62s-c-h500` | 6201 | `d94611a9299d5e39` |
+| `r62t-r2-h0` | 6202 | `090817dcb96e1b0f` |
+| `r62t-r2-h500` | 6202 | `3d4dd684363d2bf4` |
 
-Does the spoilage-by-reach screen run as set out, with these eight worlds, at 12,000 s or 24,000 s?
+`r62s-c-h500` keeps the control's own reach of 0.5 m. Its config is the grazer screen's control config, apart from
+the half-life and the hash.
+
+## A finding from the long baseline
+
+The long baseline's two worlds reached 24,000 s on 2026-10-20 at 01:11, with the books closed except for one
+line. In `r62gx-ctl` the matter residual drifted steadily, with no step between samples larger than 3 × 10⁻⁶. It
+read −1.4 × 10⁻⁶ units at 2,000 s, −6.5 × 10⁻⁶ at 12,000 s and −2.54 × 10⁻⁵ at 24,000 s, by which time 4,418
+bodies were alive. That passes the farm's line of 10⁻⁵, which was set on runs of 12,000 s. It is about 6 × 10⁻¹⁰
+of the standing matter. My reading is that rounding in the deposits accumulates as the crowd grows, and that no flow
+is lost; this is inference. `r62gx-reach` stayed under the line, at 6.6 × 10⁻⁶. The coordinator ruled that the
+drift does not block the screen. Which deposit rounds, and whether the line should scale with a run's length, wait
+for daylight.
