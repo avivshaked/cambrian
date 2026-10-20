@@ -171,8 +171,29 @@ The oases held in every world. Between 0.75 and 0.79 of the 10 m squares were em
 0.77 of the living sat on five islands. The desert stayed below the line, and burial ran at 0.89 to 0.95 of the
 influx.
 
-One world needs a closer read before its numbers are quoted. `r62s-r3-h2000` ended with the most alive (7,366) and
-the fewest mouthed of the 3 m worlds (59). Yet its intake column read 2.63. Forty-three of its grazers were born of
-parents without a mouth, which no other world shows. My reading is that mouths evolved in other lines, and that the
-intake column charges their intake to the grazers; this is inference. A read of intake by body and by line will
-settle it.
+### The 2.63 in `r62s-r3-h2000` is the scavengers'
+
+`r62s-r3-h2000` ended with the most alive (7,366) and the fewest grazers of the 3 m worlds (59). Yet its intake
+column read 2.63. The column charges every mouth's intake to the grazers, and this world grew a second guild that
+the column cannot see. It had 8,296 births of bodies with intake but no attack, against 183 in `r62s-r3-h0` and
+196 in `r62s-r3-h500`. They cannot kill, so they live on corpses. The 43 grazers the read counts as born of unmouthed
+parents were born of these scavengers, regaining the attack.
+
+A read by body measures the split. A checkpoint carries each body's kept intake over its life
+(`Organism.MouthJoules`). The read-only `--mouth-census` on branch `r62-mouth` (`552c4de6`) writes it for every
+living body at every checkpoint. `scripts/reads/r62-mouth-read.py` on the same branch joins it to the birth rows.
+Bodies that die between checkpoints take their meals with them, so the sums cover only 0.44 to 0.57 of the world's
+intake. The read therefore also estimates each class's intake, from its survivors' rate over all its body-seconds.
+That estimate covers 1.02 to 1.07 of the world's intake, a little over, since the bodies that survive have eaten
+better than those that die. Its figures are upper bounds. The tables are `mouth-r62s-r3-*.txt` beside this note.
+
+| World | Grazers' share of the intake | Grazers' intake over upkeep | Scavengers' share |
+|---|---|---|---|
+| `r62s-r3-h0` | 0.98 | 1.16 | 0.02 |
+| `r62s-r3-h500` | 0.98 | 1.04 | 0.02 |
+| `r62s-r3-h2000` | 0.41 | 1.15 | 0.59 |
+
+The grazers of the three 3 m worlds therefore paid their way alike, at 1.04 to 1.16 of their upkeep. In
+`r62s-r3-h2000` the scavengers took most of the carrion, and their 2.0 million body-seconds were three times the
+grazers'. Each scavenger met about half its upkeep by the estimate, so they lived on less. Why a scavenger guild
+grew only at a half-life of 2,000 s, on one seed, is not answered here.

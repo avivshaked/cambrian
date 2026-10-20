@@ -1,0 +1,243 @@
+== round 62 mouth read: runs\r62s-r3-h0\2026-10-20-004603-4c4a6bac
+# mouth-census of runs\r62s-r3-h0\2026-10-20-004603-4c4a6bac
+# configHash 4c4a6bac75591d2e
+# source 1500: differs from the run's (farmHash: checkpoint 78d8587c6ba4ΓÇª, this build 709e27bb1b52ΓÇª)
+# source 3000: differs from the run's (farmHash: checkpoint 78d8587c6ba4ΓÇª, this build 709e27bb1b52ΓÇª)
+# source 4500: differs from the run's (farmHash: checkpoint 78d8587c6ba4ΓÇª, this build 709e27bb1b52ΓÇª)
+# source 6000: differs from the run's (farmHash: checkpoint 78d8587c6ba4ΓÇª, this build 709e27bb1b52ΓÇª)
+# source 7500: differs from the run's (farmHash: checkpoint 78d8587c6ba4ΓÇª, this build 709e27bb1b52ΓÇª)
+# source 9000: differs from the run's (farmHash: checkpoint 78d8587c6ba4ΓÇª, this build 709e27bb1b52ΓÇª)
+# source 10500: differs from the run's (farmHash: checkpoint 78d8587c6ba4ΓÇª, this build 709e27bb1b52ΓÇª)
+# source 12000: differs from the run's (farmHash: checkpoint 78d8587c6ba4ΓÇª, this build 709e27bb1b52ΓÇª)
+# source 13500: differs from the run's (farmHash: checkpoint 78d8587c6ba4ΓÇª, this build 709e27bb1b52ΓÇª)
+# source 15000: differs from the run's (farmHash: checkpoint 78d8587c6ba4ΓÇª, this build 709e27bb1b52ΓÇª)
+# source 16500: differs from the run's (farmHash: checkpoint 78d8587c6ba4ΓÇª, this build 709e27bb1b52ΓÇª)
+# source 18000: differs from the run's (farmHash: checkpoint 78d8587c6ba4ΓÇª, this build 709e27bb1b52ΓÇª)
+# source 19500: differs from the run's (farmHash: checkpoint 78d8587c6ba4ΓÇª, this build 709e27bb1b52ΓÇª)
+# source 21000: differs from the run's (farmHash: checkpoint 78d8587c6ba4ΓÇª, this build 709e27bb1b52ΓÇª)
+# source 22500: differs from the run's (farmHash: checkpoint 78d8587c6ba4ΓÇª, this build 709e27bb1b52ΓÇª)
+# source 24000: differs from the run's (farmHash: checkpoint 78d8587c6ba4ΓÇª, this build 709e27bb1b52ΓÇª)
+census seconds: 1500, 3000, 4500, 6000, 7500, 9000, 10500, 12000, 13500, 15000, 16500, 18000, 19500, 21000, 22500, 24000; upkeep 0.908 W; joulesPerUnit 100, intakeWasteFraction 0.2
+
+-- (1500, 3000] s, 1500 s: summed census intake 0.0 J, world 0.0 J (stats 1500 to 3000 s), coverage -, estimated 0.0 J, coverage -
+class                      alive t2      body-s    intake J   W/body  /upkeep   share  died in dead body-s W/survivor       est J est share
+grazer                            0           0         0.0        -        -       -        0           0          -         0.0         -
+scavenger                         0           0         0.0        -        -       -        0           0          -         0.0         -
+biter                             4        4278         0.0   0.0000    0.000       -        2         207     0.0000         0.0         -
+none                           1884     3320096         0.0   0.0000    0.000       -     1706     1217045     0.0000         0.0         -
+  of grazer: founder              0           0         0.0        -        -       -        0           0          -         0.0         -
+  of grazer: mouthed parent        0           0         0.0        -        -       -        0           0          -         0.0         -
+  of grazer: unmouthed parent        0           0         0.0        -        -       -        0           0          -         0.0         -
+
+-- (3000, 4500] s, 1500 s: summed census intake 5403.0 J, world 12106.4 J (stats 3000 to 4500 s), coverage 0.446, estimated 14537.9 J, coverage 1.201
+class                      alive t2      body-s    intake J   W/body  /upkeep   share  died in dead body-s W/survivor       est J est share
+grazer                           13       13958      5403.0   0.3871    0.426   1.000       30        8770     1.0415     14537.9     1.000
+scavenger                         0        1122         0.0   0.0000    0.000   0.000        6        1122          -         0.0     0.000
+biter                             4        6676         0.0   0.0000    0.000   0.000        2        1266     0.0000         0.0     0.000
+none                           1501     2350832         0.0   0.0000    0.000   0.000     1638     1033970     0.0000         0.0     0.000
+  of grazer: founder              9       11706      2377.3   0.2031    0.224   0.440       10        7784     0.6061      7095.8     0.488
+  of grazer: mouthed parent        4        2252      3025.8   1.3439    1.480   0.560       20         986     2.3910      5383.2     0.370
+  of grazer: unmouthed parent        0           0         0.0        -        -   0.000        0           0          -         0.0     0.000
+
+-- (4500, 6000] s, 1500 s: summed census intake 7630.7 J, world 29066.9 J (stats 4500 to 6000 s), coverage 0.263, estimated 34695.7 J, coverage 1.194
+class                      alive t2      body-s    intake J   W/body  /upkeep   share  died in dead body-s W/survivor       est J est share
+grazer                           14       24390      7607.8   0.3119    0.344   0.997       69       19036     1.4211     34660.5     0.999
+scavenger                         1        1684        22.9   0.0136    0.015   0.003        4         591     0.0209        35.2     0.001
+biter                             1        3568         0.0   0.0000    0.000   0.000        5        3464     0.0000         0.0     0.000
+none                           1322     1899631         0.0   0.0000    0.000   0.000     1194      725562     0.0000         0.0     0.000
+  of grazer: founder              6       13420      1637.4   0.1220    0.134   0.215       19       10948     0.6625      8890.8     0.256
+  of grazer: mouthed parent        8       10970      5970.4   0.5442    0.599   0.782       50        8088     2.0716     22726.7     0.655
+  of grazer: unmouthed parent        0           0         0.0        -        -   0.000        0           0          -         0.0     0.000
+
+-- (6000, 7500] s, 1500 s: summed census intake 19554.4 J, world 42568.9 J (stats 6000 to 7500 s), coverage 0.459, estimated 50521.0 J, coverage 1.187
+class                      alive t2      body-s    intake J   W/body  /upkeep   share  died in dead body-s W/survivor       est J est share
+grazer                           27       27472     16220.0   0.5904    0.650   0.829       64       15558     1.3613     37398.5     0.740
+scavenger                         7        6186      3334.4   0.5390    0.594   0.171       44        4614     2.1211     13122.5     0.260
+biter                             4        3191         0.0   0.0000    0.000   0.000        0           0     0.0000         0.0     0.000
+none                           2651     3091566         0.0   0.0000    0.000   0.000     1147      811341     0.0000         0.0     0.000
+  of grazer: founder             10       10089      4446.3   0.4407    0.485   0.227        9        5406     0.9493      9578.0     0.190
+  of grazer: mouthed parent       17       17384     11773.7   0.6773    0.746   0.602       55       10152     1.6281     28302.3     0.560
+  of grazer: unmouthed parent        0           0         0.0        -        -   0.000        0           0          -         0.0     0.000
+
+-- (7500, 9000] s, 1500 s: summed census intake 27073.0 J, world 62268.7 J (stats 7500 to 9000 s), coverage 0.435, estimated 63772.1 J, coverage 1.024
+class                      alive t2      body-s    intake J   W/body  /upkeep   share  died in dead body-s W/survivor       est J est share
+grazer                           41       51860     27073.0   0.5220    0.575   1.000      111       29844     1.2297     63772.1     1.000
+scavenger                         2        5202         0.0   0.0000    0.000   0.000       34        4868     0.0000         0.0     0.000
+biter                             6        6607         0.0   0.0000    0.000   0.000        3        2324     0.0000         0.0     0.000
+none                           2847     4400088         0.0   0.0000    0.000   0.000     2096     1455532     0.0000         0.0     0.000
+  of grazer: founder             14       23046      6396.4   0.2775    0.306   0.236       24       15809     0.8838     20369.1     0.319
+  of grazer: mouthed parent       27       28814     20676.6   0.7176    0.790   0.764       87       14035     1.3991     40312.4     0.632
+  of grazer: unmouthed parent        0           0         0.0        -        -   0.000        0           0          -         0.0     0.000
+
+-- (9000, 10500] s, 1500 s: summed census intake 22127.4 J, world 56536.4 J (stats 9000 to 10500 s), coverage 0.391, estimated 71285.2 J, coverage 1.261
+class                      alive t2      body-s    intake J   W/body  /upkeep   share  died in dead body-s W/survivor       est J est share
+grazer                           26       52124     21245.7   0.4076    0.449   0.960      117       35985     1.3164     68616.9     0.963
+scavenger                         2        1439       881.7   0.6127    0.675   0.040       13         964     1.8543      2668.3     0.037
+biter                             4        6612         0.0   0.0000    0.000   0.000        5        2170     0.0000         0.0     0.000
+none                           2104     3707326         0.0   0.0000    0.000   0.000     2304     1542658     0.0000         0.0     0.000
+  of grazer: founder             12       19022      8162.4   0.4291    0.473   0.369       19       11472     1.0812     20566.2     0.289
+  of grazer: mouthed parent       14       33102     13083.3   0.3952    0.435   0.591       98       24512     1.5232     50420.0     0.707
+  of grazer: unmouthed parent        0           0         0.0        -        -   0.000        0           0          -         0.0     0.000
+
+-- (10500, 12000] s, 1500 s: summed census intake 11940.8 J, world 23326.9 J (stats 10500 to 12000 s), coverage 0.512, estimated 30753.3 J, coverage 1.318
+class                      alive t2      body-s    intake J   W/body  /upkeep   share  died in dead body-s W/survivor       est J est share
+grazer                           14       27292     10829.7   0.3968    0.437   0.907       61       16810     1.0332     28198.1     0.917
+scavenger                         2        3902      1111.1   0.2847    0.314   0.093       12        2206     0.6548      2555.2     0.083
+biter                            15       10034         0.0   0.0000    0.000   0.000        2        1426     0.0000         0.0     0.000
+none                           1531     2378162         0.0   0.0000    0.000   0.000     1613      935510     0.0000         0.0     0.000
+  of grazer: founder              8       13614      3912.7   0.2874    0.317   0.328       20        9175     0.8815     12000.9     0.390
+  of grazer: mouthed parent        6       13678      6917.0   0.5057    0.557   0.579       41        7635     1.1446     15656.2     0.509
+  of grazer: unmouthed parent        0           0         0.0        -        -   0.000        0           0          -         0.0     0.000
+
+-- (12000, 13500] s, 1500 s: summed census intake 16062.3 J, world 27328.1 J (stats 12000 to 13500 s), coverage 0.588, estimated 30058.9 J, coverage 1.100
+class                      alive t2      body-s    intake J   W/body  /upkeep   share  died in dead body-s W/survivor       est J est share
+grazer                           25       27056     16062.3   0.5937    0.654   1.000       55       12598     1.1110     30058.9     1.000
+scavenger                         0         836         0.0   0.0000    0.000   0.000        8         836          -         0.0     0.000
+biter                            42       47482         0.0   0.0000    0.000   0.000        8        6450     0.0000         0.0     0.000
+none                           3164     3616784         0.0   0.0000    0.000   0.000     1283      869770     0.0000         0.0     0.000
+  of grazer: founder             13       17750      9288.0   0.5233    0.576   0.578       11        7134     0.8749     15529.1     0.517
+  of grazer: mouthed parent       12        9307      6774.4   0.7279    0.802   0.422       44        5465     1.7632     16410.5     0.546
+  of grazer: unmouthed parent        0           0         0.0        -        -   0.000        0           0          -         0.0     0.000
+
+-- (13500, 15000] s, 1500 s: summed census intake 32439.0 J, world 90647.7 J (stats 13500 to 15000 s), coverage 0.358, estimated 84112.1 J, coverage 0.928
+class                      alive t2      body-s    intake J   W/body  /upkeep   share  died in dead body-s W/survivor       est J est share
+grazer                           57       77114     32171.0   0.4172    0.459   0.992      226       47488     1.0859     83739.7     0.996
+scavenger                         2        1039       268.0   0.2580    0.284   0.008        6         291     0.3583       372.3     0.004
+biter                            48       69682         0.0   0.0000    0.000   0.000       27       20558     0.0000         0.0     0.000
+none                           3718     5382660         0.0   0.0000    0.000   0.000     2127     1493997     0.0000         0.0     0.000
+  of grazer: founder             10       18770      6351.3   0.3384    0.373   0.196       21       12877     1.0777     20228.6     0.240
+  of grazer: mouthed parent       47       58344     25819.7   0.4425    0.487   0.796      205       34612     1.0880     63475.9     0.755
+  of grazer: unmouthed parent        0           0         0.0        -        -   0.000        0           0          -         0.0     0.000
+
+-- (15000, 16500] s, 1500 s: summed census intake 43738.8 J, world 109970.7 J (stats 15000 to 16500 s), coverage 0.398, estimated 123479.8 J, coverage 1.123
+class                      alive t2      body-s    intake J   W/body  /upkeep   share  died in dead body-s W/survivor       est J est share
+grazer                           73      109408     43738.8   0.3998    0.440   1.000      338       70654     1.1286    123479.8     1.000
+scavenger                         0        1641         0.0   0.0000    0.000   0.000        8        1641          -         0.0     0.000
+biter                            62       78652         0.0   0.0000    0.000   0.000       29       18784     0.0000         0.0     0.000
+none                           3691     5575076         0.0   0.0000    0.000   0.000     2625     1821011     0.0000         0.0     0.000
+  of grazer: founder             15       20045      9094.3   0.4537    0.500   0.208       20       12308     1.1754     23561.5     0.191
+  of grazer: mouthed parent       58       89364     34644.5   0.3877    0.427   0.792      318       58346     1.1169     99813.2     0.808
+  of grazer: unmouthed parent        0           0         0.0        -        -   0.000        0           0          -         0.0     0.000
+
+-- (16500, 18000] s, 1500 s: summed census intake 32695.0 J, world 86958.3 J (stats 16500 to 18000 s), coverage 0.376, estimated 92606.7 J, coverage 1.065
+class                      alive t2      body-s    intake J   W/body  /upkeep   share  died in dead body-s W/survivor       est J est share
+grazer                           51       96800     32695.0   0.3378    0.372   1.000      264       62624     0.9567     92606.7     1.000
+scavenger                         0         491         0.0   0.0000    0.000   0.000        5         491          -         0.0     0.000
+biter                            51       78824         0.0   0.0000    0.000   0.000       43       21262     0.0000         0.0     0.000
+none                           3416     4950834         0.0   0.0000    0.000   0.000     2570     1590752     0.0000         0.0     0.000
+  of grazer: founder              6       22098      3009.6   0.1362    0.150   0.092       24       17350     0.6339     14007.4     0.151
+  of grazer: mouthed parent       45       74702     29685.5   0.3974    0.438   0.908      240       45274     1.0088     75356.3     0.814
+  of grazer: unmouthed parent        0           0         0.0        -        -   0.000        0           0          -         0.0     0.000
+
+-- (18000, 19500] s, 1500 s: summed census intake 45330.8 J, world 93088.6 J (stats 18000 to 19500 s), coverage 0.487, estimated 103927.5 J, coverage 1.116
+class                      alive t2      body-s    intake J   W/body  /upkeep   share  died in dead body-s W/survivor       est J est share
+grazer                           74       92783     44412.7   0.4787    0.527   0.980      266       52440     1.1009    102141.4     0.983
+scavenger                         2        1351       918.1   0.6796    0.748   0.020        7         656     1.3220      1786.1     0.017
+biter                            65       88807         0.0   0.0000    0.000   0.000       37       25308     0.0000         0.0     0.000
+none                           4850     6273094         0.0   0.0000    0.000   0.000     2417     1690356     0.0000         0.0     0.000
+  of grazer: founder             10       15132      6081.0   0.4019    0.443   0.134       17        9200     1.0251     15512.6     0.149
+  of grazer: mouthed parent       64       77650     38331.7   0.4936    0.544   0.846      249       43239     1.1139     86496.5     0.832
+  of grazer: unmouthed parent        0           0         0.0        -        -   0.000        0           0          -         0.0     0.000
+
+-- (19500, 21000] s, 1500 s: summed census intake 63766.9 J, world 125769.1 J (stats 19500 to 21000 s), coverage 0.507, estimated 127097.6 J, coverage 1.011
+class                      alive t2      body-s    intake J   W/body  /upkeep   share  died in dead body-s W/survivor       est J est share
+grazer                           91      131593     59998.6   0.4559    0.502   0.941      323       67531     0.9366    123246.2     0.970
+scavenger                         2        3011      3768.2   1.2515    1.378   0.059        4          65     1.2791      3851.4     0.030
+biter                            66      104514         0.0   0.0000    0.000   0.000       56       37856     0.0000         0.0     0.000
+none                           5239     8117443         0.0   0.0000    0.000   0.000     3439     2440772     0.0000         0.0     0.000
+  of grazer: founder             13       22546      7129.2   0.3162    0.348   0.112       18       13032     0.7493     16894.5     0.133
+  of grazer: mouthed parent       78      109047     52869.5   0.4848    0.534   0.829      305       54499     0.9692    105691.4     0.832
+  of grazer: unmouthed parent        0           0         0.0        -        -   0.000        0           0          -         0.0     0.000
+
+-- (21000, 22500] s, 1500 s: summed census intake 62700.2 J, world 139691.9 J (stats 21000 to 22500 s), coverage 0.449, estimated 140418.6 J, coverage 1.005
+class                      alive t2      body-s    intake J   W/body  /upkeep   share  died in dead body-s W/survivor       est J est share
+grazer                          118      150578     62301.5   0.4138    0.456   0.994      432       83331     0.9265    139504.8     0.993
+scavenger                         2        1628       398.7   0.2448    0.270   0.006        6         918     0.5611       913.8     0.007
+biter                            68       95570         0.0   0.0000    0.000   0.000       46       32351     0.0000         0.0     0.000
+none                           4759     7158768         0.0   0.0000    0.000   0.000     3603     2438590     0.0000         0.0     0.000
+  of grazer: founder             18       15726      8818.2   0.5607    0.618   0.141       15        6162     0.9219     14498.7     0.103
+  of grazer: mouthed parent      100      134851     53483.3   0.3966    0.437   0.853      417       77170     0.9272    125036.2     0.890
+  of grazer: unmouthed parent        0           0         0.0        -        -   0.000        0           0          -         0.0     0.000
+
+-- (22500, 24000] s, 1500 s: summed census intake 85527.8 J, world 188559.6 J (stats 22500 to 24000 s), coverage 0.454, estimated 198905.2 J, coverage 1.055
+class                      alive t2      body-s    intake J   W/body  /upkeep   share  died in dead body-s W/survivor       est J est share
+grazer                          145      199493     85180.9   0.4270    0.470   0.996      548      113320     0.9885    197196.3     0.991
+scavenger                         2        2500       346.8   0.1387    0.153   0.004       11        1993     0.6834      1708.9     0.009
+biter                            71       93673         0.0   0.0000    0.000   0.000       39       23360     0.0000         0.0     0.000
+none                           4917     6923654         0.0   0.0000    0.000   0.000     3230     2123186     0.0000         0.0     0.000
+  of grazer: founder             14       24375      5382.2   0.2208    0.243   0.063       26       15058     0.5776     14080.2     0.071
+  of grazer: mouthed parent      131      175118     79798.7   0.4557    0.502   0.933      522       98262     1.0383    181824.1     0.914
+  of grazer: unmouthed parent        0           0         0.0        -        -   0.000        0           0          -         0.0     0.000
+
+== whole run, (1500, 24000] s: summed over intervals
+class                      alive end       body-s     intake J   W/body  /upkeep   share  died in
+grazer                           145      1081922     464940.1   0.4297    0.473   0.977     2904
+scavenger                          2        32034      11050.1   0.3450    0.380   0.023      168
+biter                             71       698168          0.0   0.0000    0.000   0.000      304
+none                            4917     69146014          0.0   0.0000    0.000   0.000    32992
+  of grazer: founder              14       247340      82086.3   0.3319    0.366   0.172      253
+  of grazer: mouthed parent       131       834582     382853.8   0.4587    0.505   0.804     2651
+  of grazer: unmouthed parent         0            0          0.0        -        -   0.000        0
+summed census intake 475990.2 J, world 1087888.1 J, coverage 0.438
+
+== whole run, estimated: each interval's survivors' rate over all the class's body-seconds
+class                            body-s        est J   W/body  /upkeep   share
+grazer                          1081922    1139157.9   1.0529    1.160   0.977
+scavenger                         32034      27013.6   0.8433    0.929   0.023
+biter                            698168          0.0   0.0000    0.000   0.000
+none                           69146014          0.0   0.0000    0.000   0.000
+  of grazer: founder             247340     212813.2   0.8604    0.948   0.182
+  of grazer: mouthed parent       834582     916904.9   1.0986    1.210   0.786
+  of grazer: unmouthed parent            0          0.0        -        -   0.000
+estimated intake 1166171.5 J, world 1087888.1 J, coverage 1.072
+
+== the 10 lines with the most kept intake, (1500, 24000] s (root = founder reached by walking p up)
+ root id root class  line intake J  share  bodies born in the line, by class
+   13886 grazer            61791.7  0.130  grazer 508
+   16095 grazer            55171.1  0.116  grazer 604
+   23153 grazer            47257.9  0.099  grazer 305
+    7757 grazer            17962.5  0.038  grazer 68
+   37848 grazer            14045.4  0.030  grazer 53
+   21816 grazer            13188.0  0.028  grazer 49
+   26464 grazer            11161.5  0.023  grazer 38
+   29953 grazer            10910.8  0.023  grazer 129
+   23523 grazer             9279.5  0.019  grazer 49
+   24893 grazer             8415.8  0.018  grazer 61
+
+Notes:
+  662 census rows carry flags that differ from the birth row's (by the birth row's k: {'r': 662}); the body has lost a part since it was born, and the birth row's flags are used
+  (1500, 3000]: 1708 bodies died inside the interval; their meals are missing from the sums, and their 1217252 body-seconds are in the body-s column
+  (3000, 4500]: 1676 bodies died inside the interval; their meals are missing from the sums, and their 1045128 body-seconds are in the body-s column
+  (4500, 6000]: 1272 bodies died inside the interval; their meals are missing from the sums, and their 748653 body-seconds are in the body-s column
+  (6000, 7500]: 1255 bodies died inside the interval; their meals are missing from the sums, and their 831513 body-seconds are in the body-s column
+  (7500, 9000]: 2244 bodies died inside the interval; their meals are missing from the sums, and their 1492568 body-seconds are in the body-s column
+  (9000, 10500]: 2439 bodies died inside the interval; their meals are missing from the sums, and their 1581778 body-seconds are in the body-s column
+  (10500, 12000]: 1688 bodies died inside the interval; their meals are missing from the sums, and their 955952 body-seconds are in the body-s column
+  (12000, 13500]: 1354 bodies died inside the interval; their meals are missing from the sums, and their 889654 body-seconds are in the body-s column
+  (13500, 15000]: 2386 bodies died inside the interval; their meals are missing from the sums, and their 1562334 body-seconds are in the body-s column
+  (15000, 16500]: 3000 bodies died inside the interval; their meals are missing from the sums, and their 1912090 body-seconds are in the body-s column
+  (16500, 18000]: 2882 bodies died inside the interval; their meals are missing from the sums, and their 1675129 body-seconds are in the body-s column
+  (18000, 19500]: 2727 bodies died inside the interval; their meals are missing from the sums, and their 1768759 body-seconds are in the body-s column
+  (19500, 21000]: 3822 bodies died inside the interval; their meals are missing from the sums, and their 2546223 body-seconds are in the body-s column
+  (21000, 22500]: 4087 bodies died inside the interval; their meals are missing from the sums, and their 2555190 body-seconds are in the body-s column
+  (22500, 24000]: 3828 bodies died inside the interval; their meals are missing from the sums, and their 2261860 body-seconds are in the body-s column
+
+Columns:
+  class       by the birth row's flags: grazer atk 1 and ink 1 (prt either), scavenger atk 0 and ink 1, biter atk 1 and
+              ink 0, none neither. "of grazer" splits the grazers by parent: a founder (p -1 or never seen), a parent born
+              with ink 1 (mouthed), a parent born with ink 0 (unmouthed). The split rows are inside the grazer row.
+  alive t2    bodies in the census at the interval's end (whole run: at the last second).
+  body-s      seconds lived inside the interval by every body of the class, from the birth and death rows, clipped to it.
+              It includes bodies that died inside the interval, whose meals no census holds.
+  intake J    kept mouth intake of the bodies alive at t2: MouthJoules(t2) less MouthJoules(t1), or MouthJoules(t2) for a
+              body born after t1. Net of waste, as Organism.MouthJoules is.
+  W/body      intake J over body-s. It reads low by the dead bodies' seconds; W/survivor is intake over the body-seconds of
+              the bodies alive at t2 only, which is the like-for-like number.
+  /upkeep     W/body over --upkeep-w (0.908 W).
+  share       the class's part of the interval's summed census intake (the four classes sum to 1).
+  died in     bodies of the class that died inside the interval; dead body-s the seconds they lived there.
+  coverage    summed census intake over the world's kept intake, stats.jsonl unitsEaten at the rows at or before t1 and t2,
+              differenced, times joulesPerUnit 100 times (1 - intakeWasteFraction 0.2). Below 1 by the meals of
+              bodies that died in the interval; far from 1 either way means the census or the join is wrong.
+  line        the root founder reached by walking p up to -1; line intake is the summed intake of its bodies alive at a
+              census second after the first; the mix counts every body born in the line before the last census second.
