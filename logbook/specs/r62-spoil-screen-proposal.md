@@ -97,3 +97,82 @@ of the standing matter. My reading is that rounding in the deposits accumulates 
 is lost; this is inference. `r62gx-reach` stayed under the line, at 6.6 × 10⁻⁶. The coordinator ruled that the
 drift does not block the screen. Which deposit rounds, and whether the line should scale with a run's length, wait
 for daylight.
+
+## The result
+
+The eight worlds ran as one card group from 00:46 to 06:34 on 2026-10-20. Every world reached 24,000 s with its
+books closed, and none diverged. The tables are in `r62-spoil-screen/` beside this note: `read.txt`,
+`cohorts.txt`, `seasons.txt`, `windows.txt` and `r60-read.txt`. They read the eight worlds beside the long
+baseline, whose two worlds stand for seed 6201's 0.5 m and 2 m without spoilage.
+
+At 3 m the grazers keep themselves going, with or without spoilage. At 2 m spoilage cuts them back. Spoilage alone
+does nothing.
+
+| World | Reach | Half-life | Grazers bred | Deepest chain | Intake ÷ upkeep | Mouthed alive at 24,000 s |
+|---|---|---|---|---|---|---|
+| `r62gx-ctl` | 0.5 m | off | 35 | 1 | 0.22 | 19 |
+| `r62s-c-h500` | 0.5 m | 500 s | 16 | 1 | 0.17 | 12 |
+| `r62gx-reach` | 2 m | off | 1,334 | 35 | 1.09 | 126 |
+| `r62s-r2-h2000` | 2 m | 2,000 s | 473 | 10 | 0.86 | 24 |
+| `r62s-r2-h500` | 2 m | 500 s | 257 | 3 | 0.69 | 30 |
+| `r62t-r2-h0` (seed 6202) | 2 m | off | 512 | 5 | 0.84 | 31 |
+| `r62t-r2-h500` (seed 6202) | 2 m | 500 s | 534 | 6 | 0.86 | 15 |
+| `r62s-r3-h0` | 3 m | off | 2,782 | 18 | 1.11 | 145 |
+| `r62s-r3-h500` | 3 m | 500 s | 2,756 | 23 | 1.04 | 152 |
+| `r62s-r3-h2000` | 3 m | 2,000 s | 1,483 | 27 | 2.63 | 59 |
+
+The intake column charges every mouth's kept intake in the world to the grazers, so it is an upper bound on
+theirs. The deepest chain is the longest run of mouthed parent to mouthed child.
+
+The proposal asked four questions of each cell.
+
+- **Does replacement reach one?** Only at 3 m. The measure is mouthed children per grazer, by the cohorts born
+  from 12,000 to 21,000 s.
+
+  | 3 m world | 12,000-15,000 s | 15,000-18,000 s | 18,000-21,000 s |
+  |---|---|---|---|
+  | without spoilage | 1.24 | 0.89 | 1.08 |
+  | 500 s | 1.16 | 1.08 | 1.08 |
+  | 2,000 s | 1.06 | 0.88 | 1.02 |
+
+  No 2 m world passed one in any cohort. The best was 0.95, in the long baseline. Seed 6202 at 2 m stayed between
+  0.42 and 0.86, with spoilage or without. The last cohort in every world is cut short by the end of the run.
+- **Does a grazer kill living leaves more often than it empties corpses it did not make?** No, in any world with
+  grazers. Corpses that no grazer killed fed most of the intake in every cell. Take 3 m at 500 s, in the first
+  windows of the summer that began at 17,750 s. Kills brought in 5 to 6 kJ a window, and other corpses about
+  24 kJ.
+- **Does the start of summer stop being a famine?** At 3 m, yes. The windows from 17,500 to 19,000 s are the
+  test. In them the 3 m grazers met 1.04 to 1.20 of their upkeep without spoilage, and 0.96 to 1.14 at 500 s.
+  At 2 m on seed 6201 with spoilage they met 0.52 to 0.82.
+- **Do the living leaves stay above half the control's?** Yes, in every world. The control held 3,403 leaves at
+  24,000 s, and the fewest elsewhere was 3,589.
+
+What spoilage does, cell by cell:
+
+- **At 2 m on seed 6201 it cuts the grazers.** Bred fell from 1,334 without spoilage to 473 at 2,000 s and 257 at
+  500 s. The deepest chain fell from 35 to 10 and 3. Kills per grazer-second rose a little (2.7, 2.9 and
+  3.2 × 10⁻³), but there were fewer grazers to make them.
+- **At 2 m on seed 6202 it changes nothing**, and 2 m never boomed there: 512 bred without spoilage, 534 at
+  500 s. Seed 6201's 2 m boom does not repeat on a second seed. My reading is that 2 m sits at the edge, where a
+  seed decides.
+- **At 3 m and 500 s it changes almost nothing.** Bred was 2,782 and 2,756. A mouth that reaches 3 m still finds
+  enough fresh corpses. Kills per grazer-second rose from 1.9 to 2.2 × 10⁻³, and kills of living leaves over the
+  run from 1,675 to 1,890. Corpses emptied fell from 12,223 to 8,725.
+- **Alone, at 0.5 m, it does nothing.** Sixteen grazers were bred, and replacement stayed under 0.11 in every
+  cohort. Spoiling the corpses does not push a short-reach grazer onto living leaves.
+- **It shrinks the store of corpses.** Take the 3 m worlds in the windows at 18,000 s. The standing corpse energy
+  was about 230 kJ without spoilage, 120 kJ at 2,000 s and 60 kJ at 500 s.
+- **The worlds with spoilage held more leaves**, in three pairs of four. At 0.5 m it was 4,812 against 3,403, at
+  3 m 5,722 against 4,683, and on seed 6202 5,068 against 4,089. The pair at 2 m on seed 6201 went the other way,
+  3,720 against 4,204. My reading, which is inference, is that a spoiled corpse's matter goes straight to the spent
+  field, where the leaves take it up. An unspoiled corpse would have carried it down to burial.
+
+The oases held in every world. Between 0.75 and 0.79 of the 10 m squares were empty at 24,000 s. Between 0.73 and
+0.77 of the living sat on five islands. The desert stayed below the line, and burial ran at 0.89 to 0.95 of the
+influx.
+
+One world needs a closer read before its numbers are quoted. `r62s-r3-h2000` ended with the most alive (7,366) and
+the fewest mouthed of the 3 m worlds (59). Yet its intake column read 2.63. Forty-three of its grazers were born of
+parents without a mouth, which no other world shows. My reading is that mouths evolved in other lines, and that the
+intake column charges their intake to the grazers; this is inference. A read of intake by body and by line will
+settle it.
