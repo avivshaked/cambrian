@@ -54,7 +54,7 @@ namespace Evosim.Theatre
 
         public bool Enabled = TheatreSkin.Dial("EVOSIM_THEATRE_GRADE", 1f, 0f, 1f) >= 0.5f;
         public float PostExposure = TheatreSkin.Dial("EVOSIM_THEATRE_EXPOSURE", 0.4f, -4f, 4f);
-        public float Contrast = TheatreSkin.Dial("EVOSIM_THEATRE_CONTRAST", 8f, -50f, 50f);
+        public float Contrast = TheatreSkin.Dial("EVOSIM_THEATRE_CONTRAST", TheatreLook.ByLook(8f, 14f), -50f, 50f);
         public float BloomIntensity = TheatreSkin.Dial("EVOSIM_THEATRE_BLOOM", 0.35f, 0f, 3f);
         public float BloomThreshold = 0.9f;
         public float BloomScatter = 0.6f;
@@ -78,7 +78,7 @@ namespace Evosim.Theatre
         /// The portrait's aperture as an f-number, <c>EVOSIM_THEATRE_DOF_APERTURE</c>, default 2
         /// (the films review asked for f/1.4 to f/2.8; URP accepts 1 to 32).
         /// </summary>
-        public float PortraitAperture = TheatreSkin.Dial("EVOSIM_THEATRE_DOF_APERTURE", 2f, 1f, 32f);
+        public float PortraitAperture = TheatreSkin.Dial("EVOSIM_THEATRE_DOF_APERTURE", TheatreLook.ByLook(2f, 1.4f), 1f, 32f);
 
         /// <summary>
         /// The height of the film frame the lens is matched against, in millimetres,

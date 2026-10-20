@@ -1785,7 +1785,7 @@ namespace Evosim.Theatre
             var light = holder.AddComponent<Light>();
             light.type = LightType.Directional;
             light.color = new Color(0.55f, 0.85f, 1f);
-            light.intensity = TheatreSkin.Dial("EVOSIM_THEATRE_BACK", 2.4f, 0f, 12f);
+            light.intensity = TheatreSkin.Dial("EVOSIM_THEATRE_BACK", TheatreLook.ByLook(2.4f, 0.4f), 0f, 12f);
             light.shadows = LightShadows.None;
             return light;
         }

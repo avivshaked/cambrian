@@ -556,7 +556,8 @@ namespace Evosim.Theatre
             // the sun to be.
             PushWater();
 
-            if (Look.Any) Debug.Log("[Theatre] " + Look.Describe());
+            // Always told, switches on or off, so the log names the look set a picture was drawn with.
+            Debug.Log("[Theatre] " + Look.Describe());
         }
 
         /// <summary>

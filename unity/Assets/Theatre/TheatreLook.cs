@@ -25,6 +25,12 @@ namespace Evosim.Theatre
     /// the new snow.
     /// </para>
     /// <para>
+    /// <b>The look set.</b> Which defaults the tuning dials of the lens, the snow, the bodies, the rock
+    /// and the grade start from is named by <c>EVOSIM_THEATRE_LOOK_SET</c> (<see cref="LookSet"/>):
+    /// <c>fix</c> by default, and <c>today</c> for the numbers every earlier film was drawn with. Each of
+    /// those dials takes its default through <see cref="ByLook"/>, and its own variable still wins.
+    /// </para>
+    /// <para>
     /// <b>Never on a record.</b> The census stills (side, end, top, iso) and the solo stills keep
     /// today's look whatever these say: <see cref="SnapshotCamera"/> holds the look off around a
     /// census render (<see cref="TheatreSkin.HoldTodaysLook"/>) and <c>TheatreSoloStill</c> builds
@@ -237,7 +243,7 @@ namespace Evosim.Theatre
         // ---------------------------------------------------------------- item 5
 
         /// <summary>The shell snow's brightness (<c>EVOSIM_THEATRE_SHELL_GAIN</c>, 0 to 4, default 1).</summary>
-        public float ShellGain = TheatreSkin.Dial("EVOSIM_THEATRE_SHELL_GAIN", 1f, 0f, 4f);
+        public float ShellGain = TheatreSkin.Dial("EVOSIM_THEATRE_SHELL_GAIN", ByLook(1f, 1f), 0f, 4f);
 
         // ---------------------------------------------------------------- second batch, item 1
 
@@ -284,7 +290,7 @@ namespace Evosim.Theatre
         /// 1.2): 1 is a straight line after the black point. At 1.35 with the black point at 0.02 the
         /// creature close-up's near rock went to black on its shaded face (iteration 12).
         /// </summary>
-        public float ToneS = TheatreSkin.Dial("EVOSIM_THEATRE_TONE_S", 1.2f, 1f, 2f);
+        public float ToneS = TheatreSkin.Dial("EVOSIM_THEATRE_TONE_S", ByLook(1.2f, 1.3f), 1f, 2f);
 
         /// <summary>
         /// The S's shoulder, the power over the pivot (<c>EVOSIM_THEATRE_TONE_SHOULDER</c>, 1 to 2,
@@ -401,7 +407,7 @@ namespace Evosim.Theatre
         /// The owner asked on 2026-10-11 for more snow in round 57's film, whose 4K shots near the bed
         /// showed almost none.
         /// </summary>
-        public float SnowQuantity = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_QUANTITY", 1f, 0.25f, 3f);
+        public float SnowQuantity = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_QUANTITY", ByLook(1f, 1.25f), 0.25f, 3f);
 
         /// <summary>
         /// The least share of the reference density a column counts as for the shells' motes
@@ -424,7 +430,7 @@ namespace Evosim.Theatre
         /// on 2026-10-19 that real marine snow is soft near the lens and far from it and sharp only near
         /// the focus, and that this is what gives it depth; the shells drew every mote sharp.
         /// </summary>
-        public bool SnowBlur = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_BLUR", 0f, 0f, 1f) >= 0.5f;
+        public bool SnowBlur = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_BLUR", ByLook(0f, 1f), 0f, 1f) >= 0.5f;
 
         /// <summary>The snow's lens's f-number (<c>EVOSIM_THEATRE_SNOW_FSTOP</c>, 1 to 22, default 2), on the grade's frame.</summary>
         public float SnowFStop = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_FSTOP", 2f, 1f, 22f);
@@ -449,19 +455,19 @@ namespace Evosim.Theatre
         /// The spread of the motes' sizes (<c>EVOSIM_THEATRE_SNOW_SIZE_SPREAD</c>, 0 to 1.2, default 0): the
         /// standard deviation of their log radius, with the mean area kept.
         /// </summary>
-        public float SnowSizeSpread = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_SIZE_SPREAD", 0f, 0f, 1.2f);
+        public float SnowSizeSpread = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_SIZE_SPREAD", ByLook(0f, 0.6f), 0f, 1.2f);
 
         /// <summary>The share of motes that are large flakes (<c>EVOSIM_THEATRE_SNOW_BIG_SHARE</c>, 0 to 0.5, default 0).</summary>
-        public float SnowBigShare = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_BIG_SHARE", 0f, 0f, 0.5f);
+        public float SnowBigShare = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_BIG_SHARE", ByLook(0f, 0.08f), 0f, 0.5f);
 
         /// <summary>How many times larger a large flake is (<c>EVOSIM_THEATRE_SNOW_BIG_FACTOR</c>, 1 to 8, default 3).</summary>
-        public float SnowBigFactor = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_BIG_FACTOR", 3f, 1f, 8f);
+        public float SnowBigFactor = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_BIG_FACTOR", ByLook(3f, 2.5f), 1f, 8f);
 
         /// <summary>How irregular a flake's outline is (<c>EVOSIM_THEATRE_SNOW_SHAPE</c>, 0 round to 1, default 0).</summary>
-        public float SnowShape = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_SHAPE", 0f, 0f, 1f);
+        public float SnowShape = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_SHAPE", ByLook(0f, 0.6f), 0f, 1f);
 
         /// <summary>How soft a flake's edge is, as a share of its radius (<c>EVOSIM_THEATRE_SNOW_FLUFF</c>, 0 to 2, default 0).</summary>
-        public float SnowFluff = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_FLUFF", 0f, 0f, 2f);
+        public float SnowFluff = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_FLUFF", ByLook(0f, 1f), 0f, 2f);
 
         /// <summary>
         /// The theatre's own lens on the bodies and the scenery (<c>EVOSIM_THEATRE_LENS</c>, 1 on, default 0;
@@ -469,7 +475,7 @@ namespace Evosim.Theatre
         /// whose blur is capped at 14 pixels of the render target (<see cref="TheatreLens"/>). With it on, the
         /// snow takes the grade's aperture rather than <see cref="SnowFStop"/>, so the two are one lens.
         /// </summary>
-        public bool Lens = TheatreSkin.Dial("EVOSIM_THEATRE_LENS", 0f, 0f, 1f) >= 0.5f;
+        public bool Lens = TheatreSkin.Dial("EVOSIM_THEATRE_LENS", ByLook(0f, 1f), 0f, 1f) >= 0.5f;
 
         /// <summary>
         /// The snow keeps each flake's light (<c>EVOSIM_THEATRE_SNOW_CONSERVE</c>, 1 on, default 0): a flake the lens
@@ -477,14 +483,14 @@ namespace Evosim.Theatre
         /// it covers, as a lens spreads it. The owner's note of 2026-10-19: blurred flakes that kept their
         /// brightness read as a snowfall.
         /// </summary>
-        public bool SnowConserve = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_CONSERVE", 0f, 0f, 1f) >= 0.5f;
+        public bool SnowConserve = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_CONSERVE", ByLook(0f, 1f), 0f, 1f) >= 0.5f;
 
         /// <summary>
         /// How far a large flake is a loose aggregate (<c>EVOSIM_THEATRE_SNOW_AGGREGATE</c>, 0 to 2, default 0): its
         /// brightness divided by its size over its shell's to this power, so at 1 its light grows with its size
         /// and not its area.
         /// </summary>
-        public float SnowAggregate = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_AGGREGATE", 0f, 0f, 2f);
+        public float SnowAggregate = TheatreSkin.Dial("EVOSIM_THEATRE_SNOW_AGGREGATE", ByLook(0f, 1f), 0f, 2f);
 
         /// <summary>
         /// The bodies obey the water (<c>EVOSIM_THEATRE_BODY_WATER</c>, 0 to 1, default 0): their guild rim and
@@ -492,16 +498,16 @@ namespace Evosim.Theatre
         /// do, in place of shining at full strength wherever they are. The owner's note of 2026-10-19: the bodies
         /// read as self-lit.
         /// </summary>
-        public float BodyWater = TheatreSkin.Dial("EVOSIM_THEATRE_BODY_WATER", 0f, 0f, 1f);
+        public float BodyWater = TheatreSkin.Dial("EVOSIM_THEATRE_BODY_WATER", ByLook(0f, 1f), 0f, 1f);
 
         /// <summary>How much of the bodies' guild rim is taken away (<c>EVOSIM_THEATRE_BODY_RIM_CUT</c>, 0 to 1, default 0).</summary>
-        public float BodyRimCut = TheatreSkin.Dial("EVOSIM_THEATRE_BODY_RIM_CUT", 0f, 0f, 1f);
+        public float BodyRimCut = TheatreSkin.Dial("EVOSIM_THEATRE_BODY_RIM_CUT", ByLook(0f, 0.4f), 0f, 1f);
 
         /// <summary>How much of the bodies' inner glow is taken away (<c>EVOSIM_THEATRE_BODY_GLOW_CUT</c>, 0 to 1, default 0).</summary>
-        public float BodyGlowCut = TheatreSkin.Dial("EVOSIM_THEATRE_BODY_GLOW_CUT", 0f, 0f, 1f);
+        public float BodyGlowCut = TheatreSkin.Dial("EVOSIM_THEATRE_BODY_GLOW_CUT", ByLook(0f, 0.5f), 0f, 1f);
 
         /// <summary>How much of the light through the bodies' tissue is taken away (<c>EVOSIM_THEATRE_BODY_TRANS_CUT</c>, 0 to 1, default 0).</summary>
-        public float BodyTransCut = TheatreSkin.Dial("EVOSIM_THEATRE_BODY_TRANS_CUT", 0f, 0f, 1f);
+        public float BodyTransCut = TheatreSkin.Dial("EVOSIM_THEATRE_BODY_TRANS_CUT", ByLook(0f, 0.3f), 0f, 1f);
 
         /// <summary>The lens's largest blur, pixels of radius at 1080 lines (<c>EVOSIM_THEATRE_LENS_CAP</c>, 1 to 120, default 24).</summary>
         public float LensBlurCap = TheatreSkin.Dial("EVOSIM_THEATRE_LENS_CAP", 24f, 1f, 120f);
@@ -511,10 +517,10 @@ namespace Evosim.Theatre
         /// 3): the sun's highlight off the wet stone, as a reflectance at the lobe's peak, brightest where the
         /// caustic net lands. HDRP drew it in D202's first test and its stone read richer for it.
         /// </summary>
-        public float RockGlint = TheatreSkin.Dial("EVOSIM_THEATRE_ROCK_GLINT", 0f, 0f, 0.5f);
+        public float RockGlint = TheatreSkin.Dial("EVOSIM_THEATRE_ROCK_GLINT", ByLook(0f, 0.1f), 0f, 0.5f);
 
         /// <summary>The glint's roughness (<c>EVOSIM_THEATRE_ROCK_GLINT_ROUGHNESS</c>, 0.05 to 1, default 0.35): smaller is a tighter, sharper highlight.</summary>
-        public float RockGlintRoughness = TheatreSkin.Dial("EVOSIM_THEATRE_ROCK_GLINT_ROUGHNESS", 0.35f, 0.05f, 1f);
+        public float RockGlintRoughness = TheatreSkin.Dial("EVOSIM_THEATRE_ROCK_GLINT_ROUGHNESS", ByLook(0.35f, 0.5f), 0.05f, 1f);
 
         // ---------------------------------------------------------------- second batch, the drift
 
@@ -528,8 +534,60 @@ namespace Evosim.Theatre
 
         // ---------------------------------------------------------------- reading
 
-        /// <summary>Every switch off: the look before this batch. What the solo still uses.</summary>
-        public static TheatreLook Off => new TheatreLook();
+        // ---------------------------------------------------------------- the look set
+
+        /// <summary>
+        /// The named set of defaults the look dials start from, read once from
+        /// <c>EVOSIM_THEATRE_LOOK_SET</c>: <c>fix</c> or <c>today</c>, which draws what every film and frame
+        /// made before the set existed was drawn with. Unset or empty, a film (the look on,
+        /// <c>EVOSIM_THEATRE_LOOK</c> at 1 or more) takes <c>fix</c> and a census or solo still <c>today</c>.
+        /// Anything else is said once in the log and read as <c>fix</c>. A dial's own environment variable
+        /// still wins over the set, set or not, exactly as it did before.
+        /// </summary>
+        public static string LookSet { get; } = ReadLookSet();
+
+        /// <summary>True while <see cref="Off"/> builds a look, so its dials take today's defaults whatever the set says.</summary>
+        [ThreadStatic] private static bool _buildingOff;
+
+        /// <summary>The set this look's dials took their defaults from, for the log.</summary>
+        public readonly string Set = _buildingOff ? "today" : LookSet;
+
+        private static string ReadLookSet()
+        {
+            // Unset, the fix is the default only where the film's look is on (EVOSIM_THEATRE_LOOK at 1 or
+            // more, which every film sets): a census or solo still is a record picture, compared with every
+            // one taken before it, and keeps today's look unless the set is named.
+            string text = Environment.GetEnvironmentVariable("EVOSIM_THEATRE_LOOK_SET");
+            if (string.IsNullOrWhiteSpace(text))
+                return TheatreSkin.Dial("EVOSIM_THEATRE_LOOK", 0f, 0f, 4f) >= 1f ? "fix" : "today";
+
+            string set = text.Trim().ToLowerInvariant();
+            if (set == "fix" || set == "today") return set;
+
+            Debug.LogWarning("[Theatre] EVOSIM_THEATRE_LOOK_SET is not 'fix' or 'today' ('" + text + "'); using fix.");
+            return "fix";
+        }
+
+        /// <summary>
+        /// A look dial's default for the set in force: <paramref name="today"/> in the <c>today</c> set,
+        /// <paramref name="fix"/> in the <c>fix</c> set. The dial's own variable still wins over either.
+        /// </summary>
+        internal static float ByLook(float today, float fix) => _buildingOff || LookSet == "today" ? today : fix;
+
+        /// <summary>
+        /// Every switch off: the look before this batch. What the solo still uses, so its dials take
+        /// today's defaults whatever the set says, as the solo still always has.
+        /// </summary>
+        public static TheatreLook Off
+        {
+            get
+            {
+                bool was = _buildingOff;
+                _buildingOff = true;
+                try { return new TheatreLook(); }
+                finally { _buildingOff = was; }
+            }
+        }
 
         /// <summary>The switches as the environment sets them.</summary>
         public static TheatreLook FromEnvironment()
@@ -580,10 +638,11 @@ namespace Evosim.Theatre
         /// <summary>One line for the log: which switches are on and the numbers they use.</summary>
         public string Describe()
         {
-            if (!Any) return "underwater look: off (every switch at its default)";
+            string set = "look set " + Set + "; ";
+            if (!Any) return set + "underwater look: off (every switch at its default)";
 
             Vector3 a = AbsorptionPerMetre;
-            return string.Format(
+            return set + string.Format(
                 CultureInfo.InvariantCulture,
                 "underwater look: one sun {0}, water scatter {1}, depth light {2}, shaft march {3}, snow shells {4}, sky day {5}; " +
                 "sun az {6:0.#} el {7:0.#} deg; sigma_abs {8:0.####}/{9:0.####}/{10:0.####} per m, sigma_bs {11:0.####} per m, g {12:0.##}, phase gain {13:0.##}; " +

@@ -149,6 +149,13 @@ the clip. A batch import parses a shader without compiling it: `Evosim.Theatre.E
 compiles every theatre pass for d3d11, and its log carries three errors from a shader broken on
 purpose (`Look Check Broken`), which are the check working.
 
+**A look set names the defaults of the lens, snow, body, rock and grade dials** (`TheatreLook.LookSet`, from
+`EVOSIM_THEATRE_LOOK_SET`). Unset, `fix` is the default wherever the film's look is on (`EVOSIM_THEATRE_LOOK` at 1 or more) and `today` for census and solo stills; `fix` for new films was decided on 2026-10-19 by the coordinating agent
+under the owner's overnight delegation, to be confirmed by the owner. `today` reproduces every film and frame made
+before the set existed, so a render to be compared with an earlier one sets `EVOSIM_THEATRE_LOOK_SET=today`. A
+single dial's own environment variable still wins over the set, and the log's look line begins `look set fix` or
+`look set today`.
+
 Keys: `Space` pause, `[` `]` pace, `L` pace lock (at or under real time, for filming), `K` seek,
 `C` colour, `X` raw shapes (the colliders as the physics has them, no rounding, carve, taper or
 bend), `F` follow, `R` reload, `H` hide, `P` provenance, click to select; fly with `WASD`+`QE`, right-drag to look, wheel for speed.
