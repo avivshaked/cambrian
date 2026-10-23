@@ -104,6 +104,11 @@ The root file's rules still apply. The entries below were moved word for word, s
   commands). Each starts the driver watch, checks it alive, stops on an nvlddmkm event and says why. A
   card run reads its own `run.json` for the transport it asked for, and `card-run-check.ps1` reads back
   every condition a card run is held to. An identity claim is `gpu-accept.py` exiting 0.
+- **A card launch refuses while any other `Evosim.Farm.exe` runs**, unless its launcher's `-AllowBeside`
+  names it, and a theatre film window (`--film-window`) is one. So nothing that starts a farm process,
+  a film window included, starts while a card launch is pending. A window started from inside a PowerShell
+  `Start-Job` hung at 0.3 s of CPU on 2026-10-23 and blocked a launch until the owner ended it; start
+  windows directly. That the job's stdin pipe caused the hang is an inference.
 - **Build the tests in Release, with the compiler server off, before a card test** (2026-10-13). The card
   test script runs the Release build of the tests with `--no-build`, so a Debug build leaves it testing old
   code. A build also leaves Roslyn's compiler server resident as a `dotnet.exe`, and the card test refuses
