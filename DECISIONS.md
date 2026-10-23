@@ -9109,3 +9109,33 @@ also renders poorly.
 **Risk.** Contact is rarer than reach, and at 0.5 m of reach grazers starved (`r62g`). If biters die out in every
 world, the next dial is how much a bite yields. Contact is judged on the parts' contact shapes, the same as a
 kill's, so a long leaf can be touched a little off its surface.
+
+### D220
+**A bite eats as it wounds, and the dead stay edible by contact for a short window** · 2026-10-23
+
+**Status:** ruled by the owner on the evening of 2026-10-23, on the coordinator's recommendation. It amends D219,
+whose rule that no corpse is made it replaces. The owner observed that a real grazer goes on eating a plant after
+the plant has died.
+
+**Decision.**
+- A biting cell feeds as it wounds. Damage that gets past a part's armour drains its health as today, and the
+  same share of the part's tissue goes to the biter at once, less the intake waste, whose matter returns to the
+  water. A tough part takes more bites for the same mouthful.
+- A part dies when its health reaches zero, and by then it has been eaten whole. While it is above zero it heals
+  as today, paid from its owner's energy.
+- A body dies as today: when its root dies, when it falls under the mass floor, or from starvation or age.
+- Whatever dies uneaten, a whole body or the limbs cut off beyond an eaten joint, stays where it is as a physical
+  body with no brain and no upkeep. Biters eat it by contact in the same way. It decays over a window, a new dial
+  starting at 60 s, and what is left when the window closes returns its matter to the water and its energy as
+  heat. The theatre draws it fading.
+- There is no corpse point and no eating reach. Everything stays behind D219's dial, off by default.
+
+**Why.** Eating by the wound pays every touch that gets through, so evolution has a slope to climb, where a meal only
+at the kill pays nothing until the end. Armour, toughness and healing become defences with a price. Keeping the
+dead as short-lived bodies lets grazers finish a plant, and with a 60 s window only a few hundred remains exist at
+once in a world of about ten thousand bodies (an estimate), so the cost to the physics is small and the sea floor
+does not fill with corpses.
+
+**Risk.** The build keeps dead bodies in the physics without a brain or metabolism, which is new code, larger than
+bite feeding alone. A window that is too long brings back scavenging as a way of life, and one too short leaves
+nothing to finish.
