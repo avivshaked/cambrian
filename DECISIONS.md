@@ -9065,3 +9065,20 @@ spoil carrion fast and grazers live on living plankton. The screen also tests a 
 
 **Risk.** Grazers may starve out, as most mouths in round 61 did on kills alone. That would say killing must get
 easier before carcasses can go.
+
+### D218
+**D217's screen gains two worlds: a half-life of 30 s with the islands' matter dose raised by half** · 2026-10-23
+
+**Status:** ruled by the owner on the afternoon of 2026-10-23, on the coordinator's recommendation, before D217's
+screen launched. The owner said that more matter would be needed in the islands' fountains. It amends D217.
+
+**Decision.** Two worlds join D217's group, on seeds 6201 and 6202. Each has a corpse half-life of 30 s and the
+islands' influx at 1.5 times round 62's dose, everything else as D217's. The group is six worlds.
+
+**Why.** Rot destroys a corpse's energy, not its matter, which returns to the water at once. So fast rot alone does not
+starve the leaves. But without carcasses a grazer lives on kills, and how often it meets a leaf depends on how
+dense the leaves are. More matter makes more leaves, packed closer. Kept as its own arm, the dose can rescue the
+grazers if fast rot starves them, without confounding fast rot's own reading.
+
+**Risk.** Round 60's screens found that a larger dose dissolved the oases (D186, D187). These worlds are read for the
+oases as well as the grazers.
