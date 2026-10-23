@@ -9020,3 +9020,25 @@ toward living food.
 **Rejected.** Pushing the reach until the grazers eat the leaves below half an unchanged twin's (D201's method):
 it is a way to find a balance, not a goal. A fixed share of 25% from own kills by the end: about three to five
 times what 3 m gives, it would have decided the dial rather than the guild's health.
+
+### D216
+**D215's third test is read across worlds: the share must rise in at least four of the six** · 2026-10-23
+
+**Status:** ruled by the owner on the afternoon of 2026-10-23, on the coordinator's recommendation, before any of
+round 62's worlds reached 24,000 s. It amends D215.
+
+**Decision.**
+- D215's third test passes when the proxy share of the grazers' intake from their own kills rises from 12,000 to
+  24,000 s in at least four of the six worlds, as the first two tests are read in most worlds.
+- If round 62 stops at 24,000 s, the coordinator drafts a short screen of a dial that makes a kill pay the killer:
+  the killer's first claim on its own corpse for a short time, with spoilage on in every arm, against the present
+  rule. The draft goes to the owner before it runs, since the dial is a world rule.
+
+**Why.** Seeds 6201's two worlds replay the spoilage screen's 3 m worlds bit for bit, and on the proxy their share
+falls in both, so the rule was set knowing seed 6201 fails it. A looser bar would let the round pass on its weakest
+evidence. A larger reach helps grazers reach corpses as much as living leaves, so pushing it further feeds
+scavenging. Today a corpse is shared among the mouths near it in proportion to their rates, with no priority for
+the killer, so a kill does not pay the one that made it.
+
+**Rejected.** The share rising on two of the three seeds, the twins counted together: it risks about 14 more hours
+of the card, at a falling pace, on a dial already failing on one seed.
