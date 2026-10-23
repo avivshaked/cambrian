@@ -8988,3 +8988,35 @@ the reach by up to 0.6 m. The screens found the edge between 2 and 3 m, so the s
 **Rejected.** Variant A, no spoilage: it leaves the rot the owner asked for to a later round, where it would be
 tangled with other changes. Variant B, spoilage everywhere: no world would say what the rot changed. Building the
 mouth point first: about a day of building and a screen before the round, on a rule the screens did not measure.
+
+### D215
+**Round 62's bar for a healthy grazer guild, and what its 24,000 s read decides** · 2026-10-23
+
+**Status:** ruled by the owner on 2026-10-23, at midday, on the coordinator's recommendation. It was set while
+round 62 ran, before its first read. The owner said that overshooting the leaves was only an easy way to find the
+balance, and that a healthy grazer population may be good enough.
+
+**Decision.** A grazer guild is healthy when it passes three tests.
+1. **It keeps itself going.** At least 80% of the living grazers were born in the world, not founded by the
+   trickle. At least one birth cohort of 3,000 s a world has a replacement of 1 or more. The deepest chain of
+   mouthed parent to mouthed child reaches 10. The 80% is checked against the spoilage screen's 3 m worlds before
+   the read, and is lowered if those worlds sat below it.
+2. **It is stable.** Grazers are alive in every world at every season's end, and meet at least 0.9 of their upkeep
+   in the 500 s windows at the start of each summer.
+3. **Its share of living food rises.** The share of the grazers' intake from their own kills of living bodies rises
+   over the round. Its level is not a bar.
+
+At the 24,000 s read, round 62 runs on to 72,000 s if the first two tests hold in most worlds and the share of
+the third rises from 12,000 to 24,000 s. If that share is flat or falling, the round stops at 24,000 s and stands
+as a round of that length, and a short screen tries a stronger dial: a larger reach, or a richer kill. If the first
+or second test fails, the dial search resumes.
+
+**Why.** Round 61's grazers looked present but were nearly all founders dying young, which the first test rules
+out. A guild that lives on corpses alone puts no pressure on its lines to find and bite living leaves, which the
+owner wants to see evolve. A rough sum from the screen puts the share of own kills at 3 m near 5-10% of the upkeep,
+an estimate. A fixed level would mostly measure the dial, while a rising share is evidence that evolution is moving
+toward living food.
+
+**Rejected.** Pushing the reach until the grazers eat the leaves below half an unchanged twin's (D201's method):
+it is a way to find a balance, not a goal. A fixed share of 25% from own kills by the end: about three to five
+times what 3 m gives, it would have decided the dial rather than the guild's health.
