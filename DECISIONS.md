@@ -9042,3 +9042,26 @@ the killer, so a kill does not pay the one that made it.
 
 **Rejected.** The share rising on two of the three seeds, the twins counted together: it risks about 14 more hours
 of the card, at a falling pace, on a dial already failing on one seed.
+
+### D217
+**A screen of fast rot: corpse half-lives of 30 s and 120 s, before any killer's claim is built** · 2026-10-23
+
+**Status:** ruled by the owner on the afternoon of 2026-10-23, on the coordinator's recommendation, after round 62
+stopped at 24,000 s under D215 and D216. The owner asked what would happen without carcasses. It sets aside D216's
+draft of a killer's claim until this screen is read.
+
+**Decision.**
+- Four worlds founded to 24,000 s on round 62's build and world (`r62-launch`), at a reach of 3 m, with a corpse
+  half-life of 30 s and of 120 s on seeds 6201 and 6202. Round 62's `r62-h6201` and `r62-h6202`, at 500 s, are the
+  controls and are not run again.
+- They are read on D215's three tests, with D216's rule for the third.
+- No code changes: the half-life is D212's dial, proven to replay on the card this morning.
+
+**Why.** At round 62's 500 s, grazers lived mostly by scavenging, and the share of their intake from their own kills
+fell in every world. With a half-life of a few tens of seconds a corpse is worth little a minute after death, so
+only a mouth beside the death, usually the one that bit, is fed. Scavenging then nearly ends as a way of life, and
+matter from starvation and age returns to the water for the leaves. That is close to an open ocean, where microbes
+spoil carrion fast and grazers live on living plankton. The screen also tests a killer's claim, at no build cost.
+
+**Risk.** Grazers may starve out, as most mouths in round 61 did on kills alone. That would say killing must get
+easier before carcasses can go.
