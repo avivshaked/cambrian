@@ -98,6 +98,12 @@ is lost; this is inference. `r62gx-reach` stayed under the line, at 6.6 × 10⁻
 drift does not block the screen. Which deposit rounds, and whether the line should scale with a run's length, wait
 for daylight.
 
+Round 62, stopped at 24,330 to 26,610 s on 2026-10-23, shows the same. At its end read, the max |matter residual|
+passed 10⁻⁵ in three of its six worlds: `r62-h6202` at 1.31 × 10⁻⁵, `r62-n6203` at 1.25 × 10⁻⁵ and `r62-h6203` at
+1.29 × 10⁻⁵. The other three read 3.5 × 10⁻⁶ to 9.4 × 10⁻⁶. The energy books stayed under 0.1 J in all six
+(`card-run-r62.log` in `scratch/wt-r62launch/scratch/logs/`). It gets a proper look before round 63's bounds are set
+(the coordinator, 2026-10-23).
+
 ## The result
 
 The eight worlds ran as one card group from 00:46 to 06:34 on 2026-10-20. Every world reached 24,000 s with its
