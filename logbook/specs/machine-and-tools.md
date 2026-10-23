@@ -151,7 +151,11 @@ The root file's rules still apply. The entries below were moved word for word, s
     is logged in the last 15 minutes. HOT when both are.
   - **The cooling.** The CPU has an air cooler, a tower of metal fins (the owner, 2026-10-05); the
     board is an ASUS PRIME Z790-P WIFI and nothing is on its AIO Pump header. The fans are set in
-    Armoury Crate's Fan Xpert, which the owner controls, with AI Cooling II off. Since 2026-10-06 at
+    Armoury Crate's Fan Xpert, which the owner controls, with AI Cooling II off. The board keeps
+    applying the saved curves when Fan Xpert's page will not open: after the restart of 2026-10-19 it
+    showed Page Error H-2004 even after Armoury Crate was restarted, while `AsusFanControlService` ran
+    and the owner heard the fans follow the load. The curves can also be set in the BIOS (Monitor, Q-Fan
+    Configuration), which needs a restart. Since 2026-10-06 at
     17:17 the CPU fan runs 30% to 20 °C, 45% at 40 °C, 80% at 50 °C and 100% from 70 °C; chassis fans 1
     and 2 follow the CPU's temperature, 30% to 20 °C, 45% at 40 °C, about 70 to 75% at 72 to 75 °C and
     100% from 80 °C, quieter than before. Fan Xpert's CPU reading is the board's, about 53 to 55 °C under

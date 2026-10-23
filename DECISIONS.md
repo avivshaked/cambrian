@@ -8966,8 +8966,8 @@ in it. The default reach at 500 s asks whether spoilage alone pushes grazers to 
 
 **Status:** ruled by the owner on the morning of 2026-10-23, on the coordinator's recommendation. It absorbs
 `proposals/propose-r62-relaunch.md`, whose text moves to `logbook/specs/r62-relaunch-proposal.md`. The owner
-confirmed the same morning the decisions the coordinator took overnight on 2026-10-19 under their leave: D212's
-clock on corpses only, D213, the mouth point at the middle of the eating part's free end, the fixed film look as
+also confirmed that morning the decisions the coordinator took overnight on 2026-10-19 under their leave. They
+are D212's clock on corpses only, D213, the mouth point at the middle of the eating part's free end, the fixed film look as
 the default for new films, and heavy jobs kept off logical 0-15 while the machine runs warm.
 
 **Decision.**
