@@ -9139,3 +9139,34 @@ does not fill with corpses.
 **Risk.** The build keeps dead bodies in the physics without a brain or metabolism, which is new code, larger than
 bite feeding alone. A window that is too long brings back scavenging as a way of life, and one too short leaves
 nothing to finish.
+
+### D221
+**The details of D220's contact eating and remains** · 2026-10-23
+
+**Status:** ruled by the owner on the evening of 2026-10-23, accepting every recommendation of the speed agent and
+the coordinator on the build spec (`logbook/specs/contact-eating-spec.md` on `mouth-point`). It completes D220.
+
+**Decision.**
+- **The meal is gated by the mouth.** A wound's tissue feeds the biter only through a biting part that carries
+  intake, and what it keeps is capped at that part's intake rate. The intake scale stays the yield dial.
+- **Waste feeds the water.** The intake waste and any wounded tissue over the cap go to the dissolved food at the
+  bitten body, as detritus does today.
+- **A grazed leaf loses light.** A part's lit area shrinks with its health, which under D220 is the share of its
+  tissue still uneaten.
+- **Remains keep the body's reserve.** A dying body's reserve and gestation account stay in its remains and are
+  eaten with its tissue. A cut-off limb takes its share of the reserve by volume.
+- **Remains are whole until the window closes**, then go all at once by D220's route, and the theatre fades them
+  by age.
+- **Remains go limp.** They have no brain, limp joints and no powered float. They drift, sink by their own buoyancy
+  and collide like bodies.
+- **A body whose physics diverged** leaves no remains and goes at once by D220's route.
+- **A plant's held spent units** go to the spent field at death, as today for a death with no corpse.
+- **Remains of remains keep the first death's second**, so eating through a dead body's joint does not renew the
+  window.
+- Two consequences the build carries: healing buys back eaten tissue from the reserve, so a healed part cannot be
+  eaten twice; and growth reads a body's whole tissue, so a bitten adult is not re-scaled as a juvenile.
+- The dials are `EVOSIM_CONTACT_EATING` (off by default) and `EVOSIM_REMAINS_WINDOW` (60 s).
+
+**Why.** A capped meal makes a mouth worth growing and keeps one dial for the yield. Light lost to grazing makes a
+plant pay for being eaten, so plants have a reason to evolve defences. Limp, sinking remains are the nearest to the
+sea, and a single window keeps the dead from becoming a way of life.
