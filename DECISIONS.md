@@ -8960,3 +8960,31 @@ report in the morning. It absorbs `proposals/propose-r62-reach.md` (cf1cb11b), w
 
 **Why.** The owner asked to see a long run, and the grazer screen's season read rests on one summer with grazers
 in it. The default reach at 500 s asks whether spoilage alone pushes grazers to kill living leaves.
+
+### D214
+**Round 62 relaunches as twins: 3 m reach with and without corpse spoilage on each seed; the mouth point waits for round 63** · 2026-10-23
+
+**Status:** ruled by the owner on the morning of 2026-10-23, on the coordinator's recommendation. It absorbs
+`proposals/propose-r62-relaunch.md`, whose text moves to `logbook/specs/r62-relaunch-proposal.md`. The owner
+confirmed the same morning the decisions the coordinator took overnight on 2026-10-19 under their leave: D212's
+clock on corpses only, D213, the mouth point at the middle of the eating part's free end, the fixed film look as
+the default for new films, and heavy jobs kept off logical 0-15 while the machine runs warm.
+
+**Decision.**
+- Round 62 relaunches on the spoilage build (`r62-spoil`) as six worlds in one card group, on seeds 6201 to 6203.
+  On each seed one world has the mouth's reach at 3.0 m without spoilage. Its twin has the same reach with a
+  corpse half-life of 500 s. There is no 0.5 m control.
+- The reach is measured from the body's centre, as in both screens. The trickle draws from round 59's pool at a
+  share of 0.5, as in both screens.
+- The round runs to 72,000 s, with a read at 24,000 s.
+- The amended pre-registration is committed before the launch, from the proposal's predictions for each twin.
+- The mouth point is built beside the running round, and screened and tested for round 63.
+
+**Why.** The screens showed grazers keeping themselves going at 3 m on one seed only, and could not show what
+spoilage does to a guild that lasts. Twins on each seed answer both for the same card time. The 0.5 m control is
+already on record: nothing kept grazers alive at that reach in either screen. Measuring from the mouth point shifts
+the reach by up to 0.6 m. The screens found the edge between 2 and 3 m, so the shift needs its own screen.
+
+**Rejected.** Variant A, no spoilage: it leaves the rot the owner asked for to a later round, where it would be
+tangled with other changes. Variant B, spoilage everywhere: no world would say what the rot changed. Building the
+mouth point first: about a day of building and a screen before the round, on a rule the screens did not measure.
