@@ -9170,3 +9170,21 @@ the coordinator on the build spec (`logbook/specs/contact-eating-spec.md` on `mo
 **Why.** A capped meal makes a mouth worth growing and keeps one dial for the yield. Light lost to grazing makes a
 plant pay for being eaten, so plants have a reason to evolve defences. Limp, sinking remains are the nearest to the
 sea, and a single window keeps the dead from becoming a way of life.
+
+### D222
+**D215's bar under contact eating: living food for the third test, and two worlds of three** · 2026-10-23
+
+**Status:** ruled by the owner on the evening of 2026-10-23, on the coordinator's recommendation, for the screen of
+D219-D221 (`r62ce`). It amends D215's third test and D216's count for that screen.
+
+**Decision.**
+- **Test 3** becomes: grazers' kept intake from bites on living bodies is at least half of their kept intake in the
+  last 3,000 s bin. The trend from the 12,000-15,000 s bin is reported and not required to rise.
+- **The pass rule** with three worlds: tests 1 and 2 together hold in at least 2 of 3, and test 3 in at least 2 of 3.
+- Travel is reported with no pass mark: island migrants per year, and each grazer's path length and distance from
+  its birthplace.
+
+**Why.** With no corpse point every bite is the biter's own, so own kills against carrion no longer divides anything.
+Living food against remains is the nearest measure of a grazer that lives on the living. With remains lasting 60 s
+the share may start high and stay flat, which is the aim, so a required rise would fail the best case. Two of three
+is D216's four of six scaled.
