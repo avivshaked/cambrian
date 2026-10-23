@@ -9034,7 +9034,7 @@ round 62's worlds reached 24,000 s. It amends D215.
   the killer's first claim on its own corpse for a short time, with spoilage on in every arm, against the present
   rule. The draft goes to the owner before it runs, since the dial is a world rule.
 
-**Why.** Seeds 6201's two worlds replay the spoilage screen's 3 m worlds bit for bit, and on the proxy their share
+**Why.** Seed 6201's two worlds replay the spoilage screen's 3 m worlds bit for bit, and on the proxy their share
 falls in both, so the rule was set knowing seed 6201 fails it. A looser bar would let the round pass on its weakest
 evidence. A larger reach helps grazers reach corpses as much as living leaves, so pushing it further feeds
 scavenging. Today a corpse is shared among the mouths near it in proportion to their rates, with no priority for
