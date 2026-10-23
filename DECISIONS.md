@@ -9082,3 +9082,30 @@ grazers if fast rot starves them, without confounding fast rot's own reading.
 
 **Risk.** Round 60's screens found that a larger dose dissolved the oases (D186, D187). These worlds are read for the
 oases as well as the grazers.
+
+### D219
+**Mouths eat only on contact, and there are no corpses: a bite feeds on the living body it touches** · 2026-10-23
+
+**Status:** ruled by the owner on the evening of 2026-10-23, after D217's screen. Fast rot did not make kills pay their
+killers (the third test rose in 1 of 6 worlds), and D218's larger dose ran both of its worlds into the population
+ceiling. The owner had asked twice for a world without corpses, and ruled that a mouth must touch what it eats, as it
+touches what it kills, with no reach. It sets aside D216's draft of a killer's claim, which is not screened.
+
+**Decision.**
+- A biting cell eats only by contact: the same touch that damages a body now feeds the biter from that body's
+  tissue. There is no eating reach.
+- No corpse is made. A body that dies leaves nothing to eat, and nothing of it is drawn in the theatre.
+- Matter is routed by explicit rule, since corpses no longer carry it (the owner said it must be controlled by
+  hand). The build spec states every route: what a bite moves to the biter, where its waste goes, and where a dead
+  body's matter and energy go. The owner sees the routes before the screen runs.
+- Built off by default on `mouth-point`, so with it off the world is round 62's bit for bit. It is screened against
+  today's rule at round 62's island dose, and read on D215's three tests plus how far bodies travel.
+
+**Why.** It is the closest of the options to an open ocean: grazers live on living food, carrion is not a way of
+life, and the absorbers lose the dissolved food that corpses fed them. It reuses the contact the kills already
+detect, so it costs far less than corpses as physical husks, which the owner set aside. A sea floor of corpses
+also renders poorly.
+
+**Risk.** Contact is rarer than reach, and at 0.5 m of reach grazers starved (`r62g`). If biters die out in every
+world, the next dial is how much a bite yields. Contact is judged on the parts' contact shapes, the same as a
+kill's, so a long leaf can be touched a little off its surface.
