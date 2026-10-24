@@ -9343,3 +9343,27 @@ stay in `proposals/` until their open questions are ruled.
 **Why.** A mirrored pair is priced and lit as two limbs and pushed as one, and since D219 a touch decides who eats
 whom, so both faults now cost bodies directly. The ball-joint swing shows the power the farm logged on each axis.
 The chain wave shows on no body yet and costs nothing until one evolves.
+
+### D229
+**A fin's push follows its width, fat is built behind a switch, and a shape family is drafted** · 2026-10-25
+
+**Status:** ruled by the owner just after midnight on 2026-10-25, on the coordinator's recommendations that followed
+D228. Each rule is built behind a switch, off by default, so recorded worlds replay. Nothing reaches a round
+until it has been benched or screened.
+
+**Decision.**
+- A stroking limb's push takes its added mass from the limb's shape across the swing. A flat blade swung broadside
+  moves about `ρ · π/4 · width² · length` of water and a round limb about `ρ · π · radius² · length`, where today
+  every limb moves a fixed share of its volume (`src/Evosim.Dynamics/Fluid.cs`). The stroke's price follows the
+  push, so a wide fin costs more to beat. It is benched in still water, sticks against paddles, before any screen.
+- Fat is built now, with the world rule that a body's reserve is capped and fat tissue raises the cap. It is
+  screened after grazers pass D222.
+- A proposal is drafted for one family of part shapes whose genes vary smoothly, the superellipsoid with a taper,
+  to give the variety of form the owner asked for in D228. It is built after contact on true shapes.
+- The owner agreed to train swimmers before the moving-oasis screen. The fin law comes first. A nursery curriculum
+  follows, in which travel between two food patches pays. Then the moving-oasis screen runs with those swimmers put
+  in beside a cold start.
+
+**Why.** The owner saw that limbs read as sticks. Under D135 a stick and a paddle of the same volume push alike, so
+nothing selects a fin for its width. Fat costs only agent time until it is screened, and it matters most once oases
+move. Swimmers bred under today's drive would learn a stroke the fin law then changes.
