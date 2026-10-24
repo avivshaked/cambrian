@@ -9237,3 +9237,36 @@ feast on top, by contact, to make sure the top arm overshoots.
 **Risk.** The 1,500 s arm keeps thousands of remains in the solver, so its pace falls, and it leans back toward a
 carrion world. It is an overshoot arm, not a candidate rule. The store share may make leaves too cheap to graze
 down, and the oases may fail.
+
+### D225
+**No roll-back yet: a deeper wound, screened at 4, 16 and 64 times the bite rate** · 2026-10-24
+
+**Status:** decided by the coordinator on the afternoon of 2026-10-24, at the owner's delegation (D224's status
+gives its terms). It follows the screen of D224 (`r62cs`, read in `logbook/specs/r62cs-read/README.md` on
+`mouth-point`). The coordinator stopped the two 60 s worlds before their end, at 21,020 s and 22,680 s, as their
+crowds neared the ceiling of 25,000, and the read scores that pair at 21,000 s.
+
+**Decision.**
+- Nothing is rolled back, because nothing overshot. D224's store share stays on, and the remains window goes to
+  500 s, round 62's corpse half-life.
+- The next screen raises the consumer cell's bite rate to 4, 16 and 64 times round 62's value, on seeds 6201 and
+  6202. The bite rate is the joules a bite takes per second of contact, for each cubic metre of biting tissue. Everything else is
+  as in `r62cs`'s 500 s arm. Six worlds in one card group to 24,000 s.
+- The intake scale rises with the bite rate wherever the speed agent's check shows the intake cap would bind, so
+  the arms test the wound and not the cap. Before launch, a short run shows each arm's bite rate reaching the
+  meals on the host and on the card.
+- It is read on D222's bar against `r62ce`, `r62cs` and round 62's controls, with travel, the guild mix and the
+  population. The arm that makes grazers overpowered sets where the roll-back starts.
+
+**Why.** Under the store share, bred grazers rose from 1-5 a world to 138-175, and a kill kept 56-89 J against
+24-27 J in `r62ce`. That is still five to eight times short of the roughly 420 J a kill kept under round 62's
+corpse rule. Grazers already kill at the controls' rate, and the window hardly mattered: grazers kept the same
+power at 1,500 s as at 60 s. So what falls short is the size of each meal. Grazers find meals often enough. The bite
+rate sets how deep each second of contact wounds, and the store share follows the tissue taken, so a deeper wound
+scales both. The 4x arm sits near the gap, and the two above it are there to overshoot. The bite rate is an
+existing setting of the consumer cell, so the screen adds no new world rule.
+
+**Risk.** A deeper wound feeds predators and scavengers as well as grazers, since one rate sets every bite. At 64
+times the leaves may be grazed down until the oases fail. Either would mark the overshoot. The 60 s worlds
+of `r62cs` grew absorbers, not grazers, toward the crowd ceiling, so a crowd near 25,000 is read by guild before it
+is called an overshoot.
