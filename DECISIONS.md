@@ -9210,3 +9210,30 @@ so 16 is near round 62's meal and the two arms above it make sure grazing pays. 
 
 **Risk.** At the top arm biters may eat the leaves down until the oases fail. That would mark the overshoot, and
 the healthy value lies between the arms.
+
+### D224
+**Overshoot: a living bite takes its share of the store, and the remains last longer** · 2026-10-24
+
+**Status:** decided by the coordinator on the morning of 2026-10-24, at the owner's delegation. The owner left the
+choice to the coordinator and set the tactic: overshoot until grazers are overpowered, then roll the dials back.
+It supersedes D223, whose yield screen is not run: the speed agent found from `r62ce`'s totals that the intake cap
+cuts at most 5-8% of what bites take, so no yield setting can close the gap.
+
+**Decision.**
+- A new dial, off by default: a bite on a living body takes the same share of the body's reserve and gestation
+  account as of its tissue, as a bite on remains already does under D221. With it off the world is `r62ce`'s bit
+  for bit.
+- A screen of six worlds in one card group to 24,000 s, seeds 6201 and 6202, everything else as `r62ce`: the new
+  dial on with the remains window at 60 s; on with the window at 500 s, round 62's corpse half-life; and on with the
+  window at 1,500 s.
+- Read on D222's bar against `r62ce` and round 62's controls, with travel, the guild mix and the population. The
+  arm that makes grazers overpowered sets where the roll-back starts.
+
+**Why.** In `r62ce` a bite took tissue only, and a dying body's reserve went to remains that closed unbitten: 7.1 MJ
+burnt in one world against 62 kJ ever taken by bites. Eating a plant's tissue also takes the sugars stored in it,
+so the store share is the realistic rule and pays grazing on the living. The longer windows stack the remains'
+feast on top, by contact, to make sure the top arm overshoots.
+
+**Risk.** The 1,500 s arm keeps thousands of remains in the solver, so its pace falls, and it leans back toward a
+carrion world. It is an overshoot arm, not a candidate rule. The store share may make leaves too cheap to graze
+down, and the oases may fail.
