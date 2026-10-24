@@ -9294,3 +9294,25 @@ over the part's health pool, so D225's screen as written would have left every b
 body's health would deepen bites too, but it would also weaken bodies to every other blow and muddy the read. The
 coordinator chose D225's knob without checking that it reached the bite, which is the mistake this project's
 `CLAUDE.md` warns of first.
+
+### D227
+**The deeper wound's screen runs at 2, 4 and 16 times, with the cap out of the way** · 2026-10-24
+
+**Status:** decided by the coordinator on the evening of 2026-10-24, at the owner's delegation (D224's status gives
+its terms). It supersedes D226's arms. The rest of D226 stands.
+
+**Decision.**
+- The screen's arms set the bite damage scale to 2, 4 and 16 times, each at an intake scale of 16, on seeds 6201 and
+  6202. Six worlds in one card group to 24,000 s, everything else as `r62cs`'s 500 s arm.
+- If the 2x arm also proves saturated, that is recorded as a result and not rerun.
+
+**Why.** The speed agent's check on seed 6201 to 4,500 s (`check-r62bd`) found the dial saturated by 4x. A wound
+cannot take a part below no health, and at 4x every mouth's touch already finished the part it met, so the worlds
+at 4, 16 and 64 times were the same world bit for bit. At 1x the wound is not saturated, so 2x probes between. The
+16x arm matters only if leaves evolve enough armour that a 4x touch no longer finishes a part, which a long run
+under heavy grazing may bring. At an intake scale of 16 the cap cut nothing of what bites offered, against half at
+1, so the arms test the wound alone. In the check's thin sample the deeper wound raised grazers' income through more
+kills, about five times `r62cs`'s, while each kill's meal fell.
+
+**Risk.** If even the saturated wound fails D222's bar, then one part's tissue and its share of the store bound a
+meal, and the next step changes what a kill yields, not how deep it cuts.
