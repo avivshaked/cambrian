@@ -9316,3 +9316,30 @@ kills, about five times `r62cs`'s, while each kill's meal fell.
 
 **Risk.** If even the saturated wound fails D222's bar, then one part's tissue and its share of the store bound a
 meal, and the next step changes what a kill yields, not how deep it cuts.
+
+### D228
+**The mirrored joint is fixed, contact follows each part's true shape, and the theatre's stroke stands** · 2026-10-24
+
+**Status:** ruled by the owner late on 2026-10-24, on the coordinator's recommendations over
+`proposals/propose-new-part-shapes.md`, `propose-new-cell-types.md` and `propose-doing-must-pay.md`. The proposals
+stay in `proposals/` until their open questions are ruled.
+
+**Decision.**
+- The mirrored joint is fixed: each part of a mirrored pair is joined where development places it, not where its twin
+  is joined (`logbook/specs/mirrored-anchor-finding.md` on `mouth-point`). It is built behind a switch, off by
+  default, so recorded worlds replay.
+- Contact is tested on each part's true shape, behind its own switch, off by default. The two solver changes share
+  one round of the card's identity checks.
+- No new named shape is added for now. The owner wants more variety of form than box, sphere and capsule give, and
+  asked for a way to add it that makes sense. That design is open.
+- The theatre's drawn stroke keeps b0's two choices inside D135's ruling 7. A ball joint swings each powered axis by
+  its own logged power, and a chain of powered limbs carries a wave along it as D135's ruling 9 reads.
+- The owner accepted the cell-type recommendations. Poison costs the eater energy and is built after grazers pass
+  D222, the grip returns as a screen arm if it needs no build, the lateral line and cilia are held, and armour's
+  share is read first. The owner questioned holding fat, so fat is still to be ruled.
+- The owner wants the moving-oasis rules tried, and asked whether swimmers should be trained first. The owner also
+  asked whether a fin's push should follow its shape, since today's limbs read as sticks. Both are open.
+
+**Why.** A mirrored pair is priced and lit as two limbs and pushed as one, and since D219 a touch decides who eats
+whom, so both faults now cost bodies directly. The ball-joint swing shows the power the farm logged on each axis.
+The chain wave shows on no body yet and costs nothing until one evolves.
