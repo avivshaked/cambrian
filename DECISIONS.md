@@ -9188,3 +9188,25 @@ D219-D221 (`r62ce`). It amends D215's third test and D216's count for that scree
 Living food against remains is the nearest measure of a grazer that lives on the living. With remains lasting 60 s
 the share may start high and stay flat, which is the aim, so a required rise would fail the best case. Two of three
 is D216's four of six scaled.
+
+### D223
+**After the contact-eating screen: raise the bite's yield until grazing pays easily** · 2026-10-24
+
+**Status:** ruled by the owner on the morning of 2026-10-24, after the screen of D219-D222 (`r62ce`, read in
+`logbook/specs/r62ce-read/README.md` on `mouth-point`). The owner said grazing should pay easily. The coordinator
+had recommended a screen of the yield dial at 4, 16 and 64 times, and moves it upward in keeping with that word.
+
+**Decision.**
+- The screen raises the intake scale, the yield dial of D221's capped meal, to 16, 64 and 256 times round 62's
+  value, on seeds 6201 and 6202, everything else as `r62ce`. Six worlds in one card group to 24,000 s.
+- The top arm is set high enough that the cap never binds, so a biter keeps everything it wounds past armour, less
+  the waste. If the speed agent's check shows the cap stops binding at a lower value, that value replaces 256.
+- It is read on D222's bar against `r62ce` and round 62's controls, with travel, the guild mix and the population.
+
+**Why.** In `r62ce` a kill kept 24-31 J against about 400 J under round 62's rule, because a bite fed only at the
+moment of contact and only up to the biting part's intake rate. Grazers were bred one to five a world against
+hundreds to thousands, and the remains' window burnt far more than the grazers ate. The gap is about fifteen times,
+so 16 is near round 62's meal and the two arms above it make sure grazing pays. No other ruling changes.
+
+**Risk.** At the top arm biters may eat the leaves down until the oases fail. That would mark the overshoot, and
+the healthy value lies between the arms.
