@@ -9270,3 +9270,27 @@ existing setting of the consumer cell, so the screen adds no new world rule.
 times the leaves may be grazed down until the oases fail. Either would mark the overshoot. The 60 s worlds
 of `r62cs` grew absorbers, not grazers, toward the crowd ceiling, so a crowd near 25,000 is read by guild before it
 is called an overshoot.
+
+### D226
+**D225's deeper wound is carried by a new bite-damage dial, since the bite rate never reaches a bite** · 2026-10-24
+
+**Status:** decided by the coordinator on the evening of 2026-10-24, at the owner's delegation (D224's status gives
+its terms). It supersedes D225's choice of knob. The rest of D225 stands.
+
+**Decision.**
+- A new dial, the bite damage scale, multiplies the wound a bite deals and nothing else. Its default is 1, at which
+  the world is `r62cs`'s bit for bit. Claws, predators and the ageing a wound adds do not change, beyond what a
+  deeper wound does to them in turn.
+- D225's screen runs on it at 4, 16 and 64 times, with the intake scale raised wherever the cap would bind.
+- It is read on intake over upkeep and kills per grazer-second as well as on joules a kill. A body holds only so
+  much tissue, so a deeper wound may raise income through more kills per second while each kill's meal stays the
+  same.
+- A card resume on this build does not repeat its run, even before the store share acts. A world of the screen that
+  is stopped is rerun from its start or read as a cousin.
+
+**Why.** The speed agent found that under contact eating the consumer cell's bite rate is read only where a mouth
+scavenges detritus from the water. The wound comes from the biter's attack against the bitten part's protection,
+over the part's health pool, so D225's screen as written would have left every bite unchanged. Lowering every
+body's health would deepen bites too, but it would also weaken bodies to every other blow and muddy the read. The
+coordinator chose D225's knob without checking that it reached the bite, which is the mistake this project's
+`CLAUDE.md` warns of first.
