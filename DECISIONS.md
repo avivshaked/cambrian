@@ -9495,3 +9495,34 @@ be. Built after D232's kill-meal screen, tested in the nursery before any world 
 
 **Why.** A smell that every part reads exactly makes a nose's size worth nothing. A noisy count makes size pay, an organ
 makes placement matter, and a price makes size a bet, as the owner asked.
+
+### D236
+**The swimmer curriculum: two leaf patches that take turns being fed, so travel pays** · 2026-10-25
+
+**Status:** ruled by the owner on 2026-10-25, accepting all eleven recommendations of
+`proposals/propose-swimmer-curriculum.md`, which is absorbed here and deleted. The owner left the tank's numbers to the
+coordinator to calibrate. Where planted swimmers enter under moving fountains stays the owner's, with the moving-oasis
+screen's design.
+
+**Decision.**
+- The nursery's curriculum tank holds two discs of living leaves that take turns being fed. In the fed disc an eaten leaf
+  grows back; when the feeding switches, the old disc withers and the new one opens at random at least 120° round the
+  ring. Draft values, calibrated on a bench of the founders before any arm: a 600 s period, regrowth after 120 s, a
+  withering of 300 s, an 1,800 s episode.
+- Two rungs: the first in D184's 3,400 m² tank with a 30 m gap between the discs, the second in a larger tank whose gap is
+  set so that drift alone misses the new disc within one period (48 m by default). A rung at the world's 90 m runs only if
+  the moving-oasis screen asks for it. The second rung runs on two recipe seeds, the first once.
+- The eating rule is the one the moving-oasis screen will carry: contact eating at its dials, with D232's gut if its
+  screen passes. Only food from leaves counts. The arms wait for D232's read, and the build does not.
+- The founders are round 59's ten leaf tops and the same ten with the round limb replaced by a flat blade of equal
+  volume, in one pool. The tank's switches match the screen's: the fin law and the mirrored joint on, D231 once benched,
+  D234 as ruled after its film. Today's whole-body smell, not D235's nose, which is tested after.
+- The score stays D179's energy return. Travel is measured at the exam and never scored. The exam adds a frozen stroke
+  and constant full power to D172's brains, and a swimmer counts as trained on five tests fixed before launch, with
+  standard errors taken by founder lineage.
+- The inoculum is five genomes from each of the second rung's seeds, chosen by exam. The moving-oasis screen has three
+  arms on two seeds: a cold start, the untrained founders planted, and the trained swimmers planted.
+
+**Why.** In the patchy tank of D184, a body with no brain spent nearly as much time near leaves as an evolved one, and
+crossed between patches as often, so drift did the travelling and nothing paid a swimmer for leaving. A tank where food
+moves makes staying lose and searching win, the moving-oasis world's question asked in thirty minutes.
