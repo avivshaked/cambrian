@@ -1,7 +1,7 @@
 # The kill-meal screen's predictions: a kill swallowed whole into the killer's gut
 
-*Draft, 2026-10-25, on `kill-gut`. It is committed before the screen's launch, once the check has run and the config
-hashes are read. The ruling is D232 in `DECISIONS.md`, with the coordinator's readings in
+*2026-10-25, committed on `main` after integration branch 1 landed (`e1633e99`), before the check launches. The check
+and the screen launch from a clean worktree of this file's commit (`scratch/wt-r62kg`). The ruling is D232 in `DECISIONS.md`, with the coordinator's readings in
 `logbook/specs/d232-kill-gut-build.md`. The tests and the pass rule are D222's. The world is `r62cs`'s 500 s arm
 (`logbook/specs/r62cs-prereg/predictions.md`), and this file names only what differs. Every number below that is not
 a measurement is a guess, and says so.*
@@ -29,19 +29,35 @@ gut is digested at the mouth's per-step cap, which bites fill first, less the in
 (`rounds/env-r62kg.ps1`). Two worlds, founded, 24,000 s each, in one group on the card: `r62kg-6201` and
 `r62kg-6202` (`rounds/launch-r62kg.ps1`).
 
-Config hash, read off the launch build's identity runs: *to be filled in before commit*. The build is *to be filled
-in*.
+The config hash is `277612f7dc63322b`, read off the identity round's world `r62i1on-kg` (`identity.md`). The build is
+integration branch 1's: core `a2a4aa0d`, dynamics `ec56227d`, farm `d552cc81`, as the identity round's manifests record
+them. The launch's own manifest must carry the same three.
 
-First, a check: `r62kgck-6201`, the same world founded for 4,500 s (`rounds/check-r62kg.ps1`), read for the gut's
-size, the meal a kill keeps and the cap's cut before the machine spends a day.
+First, a check: `r62kgck-6201`, the same world founded at group 32 for 6,000 s with a checkpoint every 1,500 s
+(`rounds/check-r62kg.ps1`). It is read at 4,500 s and 6,000 s for the gut's size, the meal a kill keeps and the cap's
+cut, before the machine spends a day.
+
+Then the gut's card identity, by the coordinator's ruling of 2026-10-25. The identity round showed the gut changes
+nothing on the card until a kill, but no world it ran had killed by 600 s, so it never showed a swallow there. The
+check's world is resumed from its own checkpoint for 600 s, once at group 32 and once at group 64
+(`rounds/resume-r62kg.ps1`). The checkpoint is the one of 1,500, 3,000 and 4,500 s whose next 600 s in the check hold
+the most bodies eaten. The two runs are compared with each other by `gpu-accept.py`, and never with the check, which a
+card resume does not repeat on this line of builds. The pair counts only if `killsSwallowed` and `bodiesEaten` are
+both above 0 in both runs. If either is 0, the gap stands, it is reported, and the run is not stretched to find a
+kill. The screen launches only after the pair passes.
 
 The controls are not run again:
 - `r62cs-w500-6201` and `-6202`, the base;
 - `r62bd-x2-6201` and `-6202`, the deeper wound;
 - round 62's `r62-h6201` and `r62-h6202`, the corpse rule.
 
-With the switch off the build steps `r62cs`'s world bit for bit. The crowd fixture shows it on the CPU solver, and
-the identity runs show it on the card at groups 32 and 64 (`identity.md`, *to be written*).
+With the switch off the build steps `r62cs`'s world bit for bit. Three checks show it:
+- On the CPU solver, the crowd fixture re-recorded on integration branch 1 (`runs/cefix-s4/2026-10-25-174030-d1ead9fe`)
+  equals the D228-D229 fixture in every stats value over 20,000 s.
+- In Core, two state digests with contact eating on and the gut off, one of bites and kills and one of remains and the
+  bite on the store, were recorded on `main` before the gut and are reproduced bit for bit.
+- On the card, the identity round (`identity.md`) is D227's build bit for bit with every switch off, and each switch
+  on is identical at groups 32 and 64.
 
 ## The tests
 
@@ -92,6 +108,8 @@ These are guesses. The proposal's inference, not a measurement, is the only basi
 
 - If the check's kept joules a kill stay under 150 J, the gut is not handing the meal over, and the build is probed
   before the screen runs.
+- If the resume pair differs at 32 and 64, the gut's card path is probed before the screen runs. If either run of the
+  pair swallows nothing, the gap is reported to the coordinator and the screen waits for a ruling.
 - If a world's matter residual passes ten times the long baseline's drift of 2.54e-5, the world is stopped and the
   routes probed.
 - If a world's pace falls below half its own pace of the hour before, it is stopped and probed (the pace rule).

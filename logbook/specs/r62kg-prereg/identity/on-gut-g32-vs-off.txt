@@ -1,0 +1,16 @@
+A: scratch/fin-shape/identity-int1-off/r62i1off-off-g32/2026-10-25-204408-9a233f1f/
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.1868 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 3790cbb42d dirty False dynamics ec56227d6bd7 farm d552cc816410 config 9a233f1f6b2664b1
+  pace     600 s of 600 in 3.3921259183333334 min, 2.948003771308507 x real time, status ended (budget), diverged 0
+B: scratch/fin-shape/identity-int1-on/r62i1on-gut-g32/2026-10-25-205210-9a030c14/
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 22424.5396 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 1dda6e0542 dirty False dynamics ec56227d6bd7 farm d552cc816410 config 9a030c14837cd274
+  pace     600 s of 600 in 3.3979515483333333 min, 2.942949555859593 x real time, status ended (budget), diverged 0
+split A  physics 52%, world 45%, harness 1%, writers 1%
+split B  physics 51%, world 46%, harness 2%, writers 1%
+stats    identical through t=0; first difference at t=10 in 8 fields, e.g. biteCapCut=<absent>/0, gutCapBound=<absent>/0, gutCapCut=<absent>/0, gutDigested=<absent>/0, gutJoules=<absent>/0
+digest   identical on all 601 shared rows to step 60000
+lineage  byte-equal (1570 lines)
+positions not in both runs
