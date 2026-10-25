@@ -66,6 +66,16 @@ namespace Evosim.Dynamics
             // D229's fin law. Not entered at false, the recorded solver's bits.
             bool shaped = config.ShapedAddedMass;
 
+            // D231: the powered stroke pushes the parts welded beyond a jointed link too. Not entered at false,
+            // and the tables are read only for a link whose assembly has more than one part.
+            bool strokeAssembly = powered && config.StrokePushesAssembly;
+            if (strokeAssembly && body.StrokeAssemblyParts == null)
+            {
+                throw new System.InvalidOperationException(
+                    "SolverConfig.StrokePushesAssembly is on and this body was built with it off, so it has no " +
+                    "assembly table. A body is built, and resized, under the config it is stepped with.");
+            }
+
             // D161's drag on turning. Not entered at None, the recorded solver's bits.
             bool skin = config.TurningDrag == TurningDragForm.Skin;
             bool spinning = config.TurningDrag == TurningDragForm.Spin;
@@ -293,10 +303,28 @@ namespace Evosim.Dynamics
                         bool shapedPush = shaped && shapedPart.ShapeId != ShapeIds.Sphere;
                         double shapedSum = 0;
 
+                        // D231: a link with parts welded beyond it. Its constants were written at build and
+                        // at every resize; nothing is computed or allocated here but the sums.
+                        bool assembly = strokeAssembly && body.StrokeAssemblyParts[i] > 1;
+                        double assemblySum = 0;
+                        double assemblyMass = 0;
+
                         for (int d = 0; d < body.DofCount[i]; d++)
                         {
                             double s = body.Drive.Stroke[start + d];
                             if (s <= 0) continue;
+
+                            if (assembly)
+                            {
+                                // q_d = (s_d Omega)^2 (1 - along_d^2), with the along of the link's own frame.
+                                double alongStored = body.StrokeAlong[start + d];
+                                double q = s * omega * s * omega * (1.0 - alongStored * alongStored);
+                                swing2 += q;
+                                assemblySum += q * body.StrokeFirstMoment[start + d];
+                                assemblyMass += q * body.StrokeAddedMass[start + d];
+                                continue;
+                            }
+
                             Vec3 dofAxis = rotation * frame.Rotate(Creature.AxisOf(d));
                             double along = Vec3.Dot(dofAxis, axis);
                             swing2 += s * omega * s * omega * (1.0 - along * along);
@@ -323,11 +351,21 @@ namespace Evosim.Dynamics
                             double addedMass = config.AddedMassCoefficient * config.Density * body.Volume[i];
                             double push = config.LimbPushCoefficient * addedMass * reach * swing2;
                             if (shapedPush) push = config.LimbPushCoefficient * shapedSum;
+
+                            // D231: C_T times the sum of q_d I1_d, and the lever is the push-weighted one,
+                            // (sum q_d I1_d) / (sum q_d M_d). Another link's lever is the reach (LeverOf).
+                            double lever = reach;
+                            if (assembly)
+                            {
+                                push = config.LimbPushCoefficient * assemblySum;
+                                lever = AssemblyLeverOf(assemblySum, assemblyMass, reach);
+                            }
+
                             force += axis * (-push);
 
                             // The work is the push times the lever it acts at and the swing's speed. A
                             // lever other than reach (LeverOf) must enter this line too.
-                            body.MechanicalWorkJoules += push * reach * System.Math.Sqrt(swing2) * config.StepSeconds;
+                            body.MechanicalWorkJoules += push * lever * System.Math.Sqrt(swing2) * config.StepSeconds;
                         }
                     }
                 }
@@ -410,6 +448,18 @@ namespace Evosim.Dynamics
         /// follow it.
         /// </summary>
         public static double LeverOf(double reach, Vec3 axis, Vec3 direction) => reach;
+
+        /// <summary>
+        /// D231: the lever a stroke's push acts at when it moves a whole assembly, in metres: where the moved
+        /// water sits, <c>I1 / M</c>, the first moment of the added mass about the joint over the added mass.
+        /// For a stroke of several degrees of freedom the caller passes the sums weighted by each degree's
+        /// push, <c>Σ q I1</c> and <c>Σ q M</c>; for one degree the weights cancel. The sibling of
+        /// <see cref="LeverOf"/>, which stays the one place a lone part's lever is chosen. Where nothing
+        /// is moved (<paramref name="addedMass"/> not above 0) there is no push to place, and the reach is
+        /// returned so that the work line stays finite.
+        /// </summary>
+        public static double AssemblyLeverOf(double firstMoment, double addedMass, double reach) =>
+            addedMass > 0 ? firstMoment / addedMass : reach;
 
         /// <summary>
         /// D229, the fin law: the added mass of one part moving in one direction, in kg.

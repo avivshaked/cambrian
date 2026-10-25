@@ -41,6 +41,7 @@ namespace Evosim.SwimProbe
             string configPath = null;   // a config the build reads, when the run's own predates a tunable
             bool finBench = false;      // D229's fin-law bench: no run, two bodies of equal volume, the law off and on
             double finPush = 0.3, finOmega = 2.0, finStroke = 0.8, finHertz = 1.0;
+            bool assemblyBench = false; // D231's bench: a blade welded beyond a link, a flat blade and a stick, three laws, four powers
 
             for (int i = 0; i < args.Length; i++)
             {
@@ -62,6 +63,7 @@ namespace Evosim.SwimProbe
                     case "--push": push = double.Parse(args[++i], Inv); break;
                     case "--config": configPath = args[++i]; break;
                     case "--fin-bench": finBench = true; break;
+                    case "--assembly-bench": assemblyBench = true; break;
                     case "--fin-push": finPush = double.Parse(args[++i], Inv); break;
                     case "--fin-omega": finOmega = double.Parse(args[++i], Inv); break;
                     case "--fin-stroke": finStroke = double.Parse(args[++i], Inv); break;
@@ -71,6 +73,7 @@ namespace Evosim.SwimProbe
             }
 
             if (finBench) return FinBench.Run(seconds, finPush, finOmega, finStroke, finHertz, outDir);
+            if (assemblyBench) return AssemblyBench.Run(seconds, finPush, finOmega, finHertz, outDir);
 
             Directory.CreateDirectory(outDir);
             _config = RunConfigJson.Read(File.ReadAllText(configPath ?? Path.Combine(run, "config.json")), out string mismatch);

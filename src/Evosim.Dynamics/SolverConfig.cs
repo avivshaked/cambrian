@@ -31,6 +31,13 @@ namespace Evosim.Dynamics
         /// the shaped branch.
         /// </summary>
         public bool ShapedAddedMass;
+
+        /// <summary>
+        /// D231 — <c>FluidConfig.StrokePushesAssembly</c>. False is the recorded solver: the powered
+        /// stroke pushes the jointed link's own part alone and <see cref="Fluid.Apply"/> reads no
+        /// assembly table. Needs <see cref="ShapedAddedMass"/> and the bend-and-power drive.
+        /// </summary>
+        public bool StrokePushesAssembly;
         public double PowerPushRadiansPerSecond;
         public double PoseHertz;
         public double TissueExcessDensity;
@@ -325,6 +332,7 @@ namespace Evosim.Dynamics
                 FluidAccelerationCoefficient = fluid.FluidAccelerationCoefficient,
                 LimbPushCoefficient = fluid.LimbPushCoefficient,
                 ShapedAddedMass = fluid.ShapedAddedMass,
+                StrokePushesAssembly = fluid.StrokePushesAssembly,
                 PowerPushRadiansPerSecond = fluid.PowerPushRadiansPerSecond,
                 PoseHertz = fluid.PoseHertz,
                 TissueExcessDensity = fluid.TissueExcessDensity,

@@ -55,6 +55,16 @@ namespace Evosim.Farm
                     "run this world on the cpu engine, or use trueshape, which the card carries");
             }
 
+            // D231's stroke that pushes its welded assembly is built on the host only. The card's kernels push the
+            // jointed link's own part alone, so a world with it would part from the host's at its first stroke.
+            // This stands until the card's port of the assembly table.
+            if (solver.StrokePushesAssembly)
+            {
+                throw new System.InvalidOperationException(
+                    "the gpu engine has no stroke that pushes its assembly (EVOSIM_STROKE_ASSEMBLY); " +
+                    "run this world on the cpu engine");
+            }
+
             // D157 makes single the card's engine. In double, ILGPU 1.5.3 computes sin, cos and exp on
             // the card in loops whose length grows with the argument, so a far body can hold one
             // thread for minutes (card-audit-r57.md, the card in double hangs on a far body). The CPU

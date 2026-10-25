@@ -369,6 +369,8 @@ namespace Evosim.Farm
             Num("EVOSIM_LIMB_PUSH", 0f, (s, v) => s.LimbPush = v),
             // D229: a stroking limb's added mass follows its shape. Read only with the push on.
             Flag("EVOSIM_SHAPED_ADDED_MASS", (s, v) => s.ShapedAddedMass = v),
+            // D231: a stroke pushes the parts welded beyond its jointed link. Needs the fin law and the power push.
+            Flag("EVOSIM_STROKE_ASSEMBLY", (s, v) => s.StrokeAssembly = v),
             Num("EVOSIM_POWER_PUSH", 0f, (s, v) => s.PowerPush = v),
             Num("EVOSIM_POSE_HZ", 0f, (s, v) => s.PoseHz = v),
             Flag("EVOSIM_DRIVE_GENES", (s, v) => s.DriveGenes = v),
@@ -706,6 +708,7 @@ namespace Evosim.Farm
                     FluidAccelerationCoefficient = s.FluidAccel,
                     LimbPushCoefficient = s.LimbPush,
                     ShapedAddedMass = s.ShapedAddedMass,
+                    StrokePushesAssembly = s.StrokeAssembly,
                     PowerPushRadiansPerSecond = s.PowerPush,
                     PoseHertz = s.PoseHz,
                     WaterHoldSeconds = s.WaterHold,
@@ -1729,6 +1732,7 @@ namespace Evosim.Farm
         public float FluidAccel;
         public float LimbPush;
         public bool ShapedAddedMass;
+        public bool StrokeAssembly;
         public float PowerPush;
         public bool DriveGenes;
         public float DriveGeneChance;

@@ -776,6 +776,30 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             Assert.Contains(" · contact shape trueshapeatpoint", Report.HeaderLine(settings, config, space, "9.9.9.9"));
         }
 
+        /// <summary>D231: the stroke that pushes its assembly is named in the header only when it is on.</summary>
+        [Fact]
+        public void TheStrokeAssemblyIsNamedInTheHeaderOnlyWhenOn()
+        {
+            string off = Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9");
+            Assert.DoesNotContain("stroke pushes assembly", off);
+
+            var block = EnvBindingTests.Round42Seed1();
+            block["EVOSIM_SHAPED_ADDED_MASS"] = "1";
+            block["EVOSIM_STROKE_ASSEMBLY"] = "1";
+            EnvSettings settings = EnvBinding.Read(EnvBinding.Of(block));
+            RunConfig config = EnvBinding.BuildConfig(settings);
+            Assert.True(config.Fluid.StrokePushesAssembly);
+
+            var world = new World(config, settings.Seed);
+            SpaceFacts space = SpaceFacts.Of(
+                world,
+                hasWall: config.SharedSpace && config.WorldShape == WorldShape.Tank,
+                hasFloor: config.SharedSpace,
+                threads: 24,
+                inoculumHashShort: null);
+            Assert.Contains(" · stroke pushes assembly", Report.HeaderLine(settings, config, space, "9.9.9.9"));
+        }
+
         /// <summary>
         /// D219, D220: the contact-eating dials reach the config from <c>EVOSIM_CONTACT_EATING</c> and
         /// <c>EVOSIM_REMAINS_WINDOW</c>, and the header names them only when the first is on.

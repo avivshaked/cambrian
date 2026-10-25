@@ -399,6 +399,9 @@ namespace Evosim.Dynamics
             _config = config;
             _shapes = shapes;
 
+            // D231's two refusals come before anything is built: a body the switch cannot push is never made.
+            RefuseStrokeAssembly(config);
+
             Id = id;
             Phenotype = phenotype;
             Links = phenotype.PartCount;
@@ -461,6 +464,13 @@ namespace Evosim.Dynamics
 
             PanelStart = new int[Links + 1];
             WritePanels(panelSets, panels);
+
+            // D231's assembly constants, only when the switch is on: with it off nothing is allocated.
+            if (config.StrokePushesAssembly)
+            {
+                AllocateStrokeAssembly();
+                WriteStrokeAssembly();
+            }
 
             // ---- state and scratch
 

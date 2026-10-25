@@ -129,6 +129,7 @@ namespace Evosim.Dynamics
             WritePanels(panelSets, panels);
             RefreshLinkReach();
             if (LinkCoreHalf != null) WriteLinkCores();
+            if (StrokeAssemblyParts != null) WriteStrokeAssembly();   // D231: the strips follow the new sizes
 
             // Torque per unit of signal is read from Power, which growth does not scale — so this
             // is the identity today. It is called anyway, because "what a fresh build would

@@ -249,12 +249,13 @@ namespace Evosim.Farm.Gpu
                 !ReferenceEquals(stepped.Reefs, built.Reefs) || !ReferenceEquals(stepped.Coral, built.Coral) || stepped.StepSeconds != built.StepSeconds ||
                 stepped.ContactPerPart != built.ContactPerPart || stepped.CreatureContact != built.CreatureContact ||
                 stepped.TankRadiusMetres != built.TankRadiusMetres ||
-                stepped.ShapedAddedMass != built.ShapedAddedMass || stepped.ContactShape != built.ContactShape ||
+                stepped.ShapedAddedMass != built.ShapedAddedMass || stepped.StrokePushesAssembly != built.StrokePushesAssembly ||
+                stepped.ContactShape != built.ContactShape ||
                 stepped.SeamLengthMetres != built.SeamLengthMetres || stepped.SeamWidthMetres != built.SeamWidthMetres)
             {
                 throw new InvalidOperationException(
                     "The gpu engine was built for one world and handed another to step: its current, " +
-                    "bed, reefs, step, contact model, contact shape or added-mass law differ from the ones its kernels read.");
+                    "bed, reefs, step, contact model, contact shape, added-mass law or stroke assembly differ from the ones its kernels read.");
             }
         }
 

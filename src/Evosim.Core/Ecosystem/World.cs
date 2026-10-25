@@ -2691,6 +2691,28 @@ namespace Evosim.Core
                     "(Fluid.PowerPushRadiansPerSecond 0), so there is no envelope to sense.", nameof(config));
             }
 
+            // D231: a stroke pushes its welded assembly by the fin law's strips, so it needs the fin law; and only
+            // the power push has a fixed stroke direction to take them along, so the swing push is refused.
+            if (config.Fluid != null && config.Fluid.StrokePushesAssembly)
+            {
+                if (!config.Fluid.ShapedAddedMass)
+                {
+                    throw new ArgumentException(
+                        "StrokePushesAssembly is on and ShapedAddedMass is off. D231 integrates D229's plate " +
+                        "formula in strips along the assembly, so it needs the fin law (EVOSIM_SHAPED_ADDED_MASS).",
+                        nameof(config));
+                }
+
+                if (config.Fluid.LimbPushCoefficient > 0f && !(config.Fluid.PowerPushRadiansPerSecond > 0f))
+                {
+                    throw new ArgumentException(
+                        "StrokePushesAssembly is on and the limb push is the swing push (LimbPushCoefficient above 0 " +
+                        "without the bend-and-power drive, PowerPushRadiansPerSecond 0). The swing's direction changes " +
+                        "every step and D231's strips are taken along a fixed stroke, so only the power push is built.",
+                        nameof(config));
+                }
+            }
+
             // D162: the grip forms on each part's own contact sphere, as the touch is read.
             if (config.CellTypes.Contains(CellTypeIds.Anchoring) && !config.ContactPerPart)
             {

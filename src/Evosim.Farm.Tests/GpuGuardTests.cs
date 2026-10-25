@@ -105,6 +105,29 @@ namespace Evosim.Farm.Tests
             Assert.Contains("trueshapeatpoint", thrown.InnerException.Message);
         }
 
+        /// <summary>
+        /// D231's stroke that pushes its welded assembly is built on the host only: the farm refuses it before it
+        /// opens a device, naming the setting, until the card's port removes the refusal.
+        /// </summary>
+        [Fact]
+        public void TheFarmRefusesTheStrokeAssemblyOnTheCardAndNamesIt()
+        {
+            var block = GpuTank.Launcher(perPart: true, reefs: false);
+            block["EVOSIM_ENGINE"] = "gpu";
+            block["EVOSIM_GPU_DEVICE"] = "cuda";
+            block["EVOSIM_GPU_PRECISION"] = "single";
+            EnvSettings s = EnvBinding.Read(EnvBinding.Of(block));
+            (_, SolverConfig solver) = GpuTank.Build(perPart: true, reefs: false);
+            solver.StrokePushesAssembly = true;
+
+            MethodInfo open = typeof(EnvBinding).Assembly.GetType("Evosim.Farm.FarmGpu", throwOnError: true)
+                .GetMethod("Open", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
+            var thrown = Assert.Throws<TargetInvocationException>(() => open.Invoke(null, new object[] { s, solver, null }));
+            Assert.IsType<InvalidOperationException>(thrown.InnerException);
+            Assert.Contains("EVOSIM_STROKE_ASSEMBLY", thrown.InnerException.Message);
+        }
+
         private static MethodInfo Helper(Type step, string name)
         {
             MethodInfo m = step.GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);

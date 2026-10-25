@@ -127,6 +127,7 @@
     "shapedAddedMass": false,
     "skinFrictionCoefficient": 0,
     "spinDragCoefficient": 0,
+    "strokePushesAssembly": false,
     "surfaceRestoringFraction": 1,
     "tissueExcessDensity": 0.02,
     "turningDrag": "None",

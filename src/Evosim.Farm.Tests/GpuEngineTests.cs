@@ -385,6 +385,27 @@ namespace Evosim.Farm.Tests
         }
 
         [Fact]
+        public void ABackendBuiltForOneStrokeLawRefusesToStepTheOther()
+        {
+            // The same world twice, as one config and its copy, so that only D231's switch can differ.
+            (_, SolverConfig built) = GpuTank.Build(reefs: false);
+            var copy = (SolverConfig)typeof(object)
+                .GetMethod("MemberwiseClone", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .Invoke(built, null);
+
+            GpuBackend.Check(built, copy);
+
+            copy.StrokePushesAssembly = true;
+            Refused(() => GpuBackend.Check(built, copy), "stroke assembly");
+
+            built.StrokePushesAssembly = true;
+            GpuBackend.Check(built, copy);
+
+            copy.StrokePushesAssembly = false;
+            Refused(() => GpuBackend.Check(built, copy), "stroke assembly");
+        }
+
+        [Fact]
         public void AWaterHoldIsRefusedNamingIt()
         {
             (_, SolverConfig s) = GpuTank.Build(reefs: false);
