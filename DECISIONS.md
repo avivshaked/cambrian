@@ -9408,3 +9408,61 @@ blade, was pure cost, and evolution could not find it.
 
 **Risk.** A large blade on a small link may push far beyond anything else. The billed work limits it, the bench shows
 its scale, and an overshoot is rolled back at the delegation.
+
+### D232
+**A kill swallows the whole body into the killer's gut, and leaves no remains** · 2026-10-25
+
+**Status:** ruled by the owner on 2026-10-25, on the speed agent's proposal (`proposals/propose-kill-meal.md` on
+`mouth-point`, option A, to be absorbed here and deleted) and the coordinator's recommendation. It follows D230. Built
+behind a switch, off by default, so recorded worlds replay.
+
+**Decision.**
+- When a bite kills a body, the killer swallows the whole body: its remaining tissue and store go into the killer's
+  gut, and no remains are left. A body that dies any other way leaves remains as today.
+- The gut is digested at the killer's mouth rate, the same per-step cap a bite meets, less the intake waste. What is
+  still in the gut when the killer dies goes with its own body.
+- The gut holds the whole body, with no cap for now. A cap from D229's fat rule stays possible once fat is built.
+- The screen runs as drafted: `r62cs-w500` at an intake scale of 16 and a bite damage of 1, with the gut on, on seeds
+  6201 and 6202 to 24,000 s in one card group, after a 4,500 s check of one seed. Its controls are `r62cs-w500`,
+  `r62bd-x2` and `r62-h`, not run again. An overshoot is rolled back by a slower digestion rate, at the owner's
+  delegation.
+
+**Why.** A grazer's meal is bounded by the one part it eats (D230), about 70 J against the corpse rule's 420 J, and no
+dial already ruled reaches it. The gut hands over the whole body at the mouth's own rate, so the per-step cap does not
+throw it away, and the killer eats only what it touched, as D219 requires.
+
+### D233
+**The shape family is built as a fourth shape, on the coordinator's recommendations** · 2026-10-25
+
+**Status:** ruled by the owner on 2026-10-25 on `proposals/propose-shape-family.md`, which is absorbed here and
+deleted. Its decision 8, the fin's leverage, was settled by D231. Built after contact on true shapes (D228).
+
+**Decision.**
+- A tapered superellipsoid joins box, sphere and capsule as a fourth shape. The three named shapes stay and are never
+  converted.
+- Its genes are a profile exponent from 0.1 to 1, a cross-section exponent from 0.1 to 2 and a taper ratio from 0.25
+  to 4, each mutated by a reflected Gaussian step on its logarithm under a new chance, 0 by default.
+- The shapes mutation may pick become a per-world list, defaulting to today's three.
+- The first world that uses it lists all four shapes and keeps today's founders, so the new shape must win its place.
+- A family part touches as a hull of 98 surface points inside D228's general contact test.
+- Only a genome that carries a family node changes format, as formats 13 and 14. Every other genome is written byte
+  for byte as today.
+- Its card change shares an identity sitting with another solver change where one is close.
+- A bench runs before any screen: family fins against box fins in still water under the fin law, and a pace read on a
+  crowded checkpoint.
+
+**Why.** The owner asked for more variety of form that makes sense (D228). One shape whose genes vary smoothly lets a
+lineage walk from slab to lens to egg to tapering rod without jumps, and keeps every recorded world readable.
+
+### D234
+**Mirrored twins move as mirror images, shown to the owner before it is ruled final** · 2026-10-25
+
+**Status:** the owner accepted the coordinator's recommendation on 2026-10-25, but will decide only after seeing it in
+action. It is built under D228's mirrored-joint switch and filmed for the owner before it reaches any screen.
+
+**Decision.** Under the mirrored-joint switch, a mirrored twin's joint drive is reflected with its geometry, so the same
+brain signal bends and beats a pair as mirror images rather than in a seesaw. A film shows one mirrored body with the
+switch off and on.
+
+**Why.** A genome that mirrors a limb most naturally means a mirror image in motion too, as in every bilateral animal,
+and paired fins can then row together.
