@@ -9386,3 +9386,25 @@ terms). The read is `logbook/specs/r62bd-read/README.md` on `mouth-point` (19b42
 joules kept from a kill stayed level at 61 to 77 J, five to seven times short of about 420 J. At 4 and 16 times
 every touch finished the part it met, and the 2x arm kept as much as the 16x arm. A grazer's meal is bounded by the
 one part it eats, which is the outcome D227's risk named. The screen was not watched in the theatre before the read.
+
+### D231
+**A stroke pushes the whole assembly beyond its joint, with its leverage where the moved water sits** · 2026-10-25
+
+**Status:** ruled by the owner on 2026-10-25, on the coordinator's recommendation. It extends D229's fin law and is
+built behind a switch, off by default, so recorded worlds replay. Nothing reaches a round until it has been benched.
+
+**Decision.**
+- A jointed link's stroke pushes the link together with every part rigidly attached beyond it, up to the next joint.
+- The water the assembly moves follows D229's formulas, taken across the assembly's width across the swing, and the
+  stroke's price follows the push through the work already billed.
+- The push's leverage is taken from where that moved water sits along the assembly, so a wide blade at the tip does the
+  work, as in a real fin. This settles decision 8 of `proposals/propose-shape-family.md`.
+- A bench comes first, in still water: a small link carrying a flat blade, a flat link, and a stick.
+
+**Why.** The owner saw that a link is the moving muscle itself and that fins read as sticks. The speed agent read the
+solver: only the jointed link's own part is pushed, and a paddle welded beyond it gets no push and adds only drag and
+weight (`src/Evosim.Dynamics/Fluid.cs` on `fin-shape`). So the design of real fins, muscle at the base driving a broad
+blade, was pure cost, and evolution could not find it.
+
+**Risk.** A large blade on a small link may push far beyond anything else. The billed work limits it, the bench shows
+its scale, and an overshoot is rolled back at the delegation.
