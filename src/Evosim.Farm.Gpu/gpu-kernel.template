@@ -4893,7 +4893,7 @@ namespace __NS__
                         else lz = -lz;
                     }
 
-                    sFlow[3 * bl] =Clamp((float)(lx / flowScale));
+                    sFlow[3 * bl] = Clamp((float)(lx / flowScale));
                     sFlow[3 * bl + 1] = Clamp((float)(ly / flowScale));
                     sFlow[3 * bl + 2] = Clamp((float)(lz / flowScale));
                 }
