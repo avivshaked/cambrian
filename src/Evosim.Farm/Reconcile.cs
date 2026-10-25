@@ -284,9 +284,10 @@ namespace Evosim.Farm
             solver.Senses.LeafScent = World.LeafScent;
             solver.Senses.Reserve = creature;
 
-            // D235: a nose's noise is keyed on the world's seed and this organism, and its sniffs
-            // are timed by the world's clock. Read only in a world whose table lists the nose.
-            solver.Senses.Sniffs = World;
+            // D235: a nose's noise is keyed on the world's seed and this organism, and Step sniffs
+            // it once per metabolic step (SniffNoses). Read only in a world whose table lists the nose.
+            solver.Senses.HeldSniff = true;
+            solver.Senses.NoiseSeed = World.Seed;
             solver.Senses.BodyId = creature.Id;
 
             // The throw trace's ring — jointed bodies only, which is the farm's rule since
@@ -589,9 +590,10 @@ namespace Evosim.Farm
             solver.Senses.LeafScent = World.LeafScent;
             solver.Senses.Reserve = creature;
 
-            // D235: a nose's noise is keyed on the world's seed and this organism, and its sniffs
-            // are timed by the world's clock. Read only in a world whose table lists the nose.
-            solver.Senses.Sniffs = World;
+            // D235: a nose's noise is keyed on the world's seed and this organism, and Step sniffs
+            // it once per metabolic step (SniffNoses). Read only in a world whose table lists the nose.
+            solver.Senses.HeldSniff = true;
+            solver.Senses.NoiseSeed = World.Seed;
             solver.Senses.BodyId = creature.Id;
 
             // D123 through a plan change (round 49). Core has carried the step's contact and

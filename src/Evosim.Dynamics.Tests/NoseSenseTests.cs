@@ -117,11 +117,12 @@ namespace Evosim.Dynamics.Tests
 
         // ------------------------------------------------------------------ a nose world
 
-        /// <summary>A world's seed and clock, moved by hand.</summary>
-        private sealed class Clock : ISniffSource
+        /// <summary>A body's senses as the farm sets them: sniffed by hand, with this seed and id.</summary>
+        private static void Farmed(Creature c, long id, ulong seed = 99UL)
         {
-            public ulong Seed { get; set; } = 99UL;
-            public double ElapsedSeconds { get; set; }
+            c.Senses.HeldSniff = true;
+            c.Senses.NoiseSeed = seed;
+            c.Senses.BodyId = id;
         }
 
         private const double Half = 0.5;
@@ -223,49 +224,47 @@ namespace Evosim.Dynamics.Tests
         }
 
         [Fact]
-        public void ASniffIsHeldUntilTheClockMoves()
+        public void ASniffIsHeldThroughThePhysicsStepsUntilTheNext()
         {
             Creature c = Snout(new NoseCell(), new Float3(0.1f, 0.05f, 0.05f), new Vec3(20.2, -10, 20));
-            var clock = new Clock { ElapsedSeconds = 0.5 };
-            c.Senses.Sniffs = clock;
-            c.Senses.BodyId = 7;
+            Farmed(c, 7);
 
+            // Nothing is read before the first sniff; Sample leaves a farmed nose alone.
             c.Senses.Sample();
+            Assert.Equal(0f, c.Senses.Read(1, SensorChannel.LeafScent, 0));
+
+            c.Senses.Sniff(1);
             float first = c.Senses.Read(1, SensorChannel.LeafScent, 0);
+            Assert.True(first > 0f);
 
             c.PlaceAt(new Vec3(21.5, -9.6, 20.4), QuatD.Identity);
             c.Senses.Sample();
             Assert.Equal(first, c.Senses.Read(1, SensorChannel.LeafScent, 0));
 
-            clock.ElapsedSeconds = 1.0;
-            c.Senses.Sample();
+            c.Senses.Sniff(2);
             Assert.NotEqual(first, c.Senses.Read(1, SensorChannel.LeafScent, 0));
 
             // The same sniff of the same body at the same place reads the same, and another body does not.
             Creature twin = Snout(new NoseCell(), new Float3(0.1f, 0.05f, 0.05f), new Vec3(21.5, -9.6, 20.4));
-            twin.Senses.Sniffs = clock;
-            twin.Senses.BodyId = 7;
-            twin.Senses.Sample();
+            Farmed(twin, 7);
+            twin.Senses.Sniff(2);
             Assert.Equal(c.Senses.Read(1, SensorChannel.LeafScent, 0), twin.Senses.Read(1, SensorChannel.LeafScent, 0));
 
             Creature other = Snout(new NoseCell(), new Float3(0.1f, 0.05f, 0.05f), new Vec3(21.5, -9.6, 20.4));
-            other.Senses.Sniffs = clock;
-            other.Senses.BodyId = 8;
-            other.Senses.Sample();
+            Farmed(other, 8);
+            other.Senses.Sniff(2);
             Assert.NotEqual(c.Senses.Read(1, SensorChannel.LeafScent, 0), other.Senses.Read(1, SensorChannel.LeafScent, 0));
         }
 
         /// <summary>The raw counts a nose read over <paramref name="sniffs"/> sniffs, unsquashed.</summary>
         private static double[] Counts(Creature c, int sniffs, Action<Creature> before = null)
         {
-            var clock = new Clock();
-            c.Senses.Sniffs = clock;
-            c.Senses.BodyId = 3;
+            Farmed(c, 3);
             var counts = new double[sniffs];
             for (int s = 0; s < sniffs; s++)
             {
-                clock.ElapsedSeconds = 0.5 * (s + 1);
                 before?.Invoke(c);
+                c.Senses.Sniff(s + 1);
                 c.Senses.Sample();
                 double r = c.Senses.Read(1, SensorChannel.LeafScent, 0);
                 counts[s] = Half * r / (1.0 - r);
@@ -341,8 +340,8 @@ namespace Evosim.Dynamics.Tests
         {
             var exact = new NoseCell(leafNoise: 0f);
             Creature c = Snout(exact, new Float3(0.1f, 0.05f, 0.05f), new Vec3(20.2, -10, 20));
-            c.Senses.Sniffs = new Clock { ElapsedSeconds = 0.5 };
-            c.Senses.Sample();
+            Farmed(c, 1);
+            c.Senses.Sniff(1);
 
             Vec3 tip = Tip(c, 1);
             Float3 g = c.Senses.LeafScent.GradientAt((float)tip.X, (float)tip.Y, (float)tip.Z);
@@ -358,13 +357,11 @@ namespace Evosim.Dynamics.Tests
             double Error(Float3 half)
             {
                 Creature n = Snout(noisy, half, new Vec3(20.2, -10, 20));
-                var clock = new Clock();
-                n.Senses.Sniffs = clock;
+                Farmed(n, 1);
                 double sum = 0;
                 for (int s = 0; s < 400; s++)
                 {
-                    clock.ElapsedSeconds = 0.5 * (s + 1);
-                    n.Senses.Sample();
+                    n.Senses.Sniff(s + 1);
                     Vec3 at = Tip(n, 1);
                     Float3 grad = n.Senses.LeafScent.GradientAt((float)at.X, (float)at.Y, (float)at.Z);
                     var truth = new Vec3(grad.X, grad.Y, grad.Z);
@@ -390,8 +387,8 @@ namespace Evosim.Dynamics.Tests
 
         /// <summary>
         /// The record's leaves, with the nose in the table and a nose on the end of every chain,
-        /// each chain under the one brain; the clock moves every 50 physics steps, as a metabolic
-        /// step does.
+        /// each chain under the one brain; the noses sniff every 50 physics steps, as the farm sniffs
+        /// at each metabolic step.
         /// </summary>
         private static ulong NoseWorld(NoseCell nose, ulong seed, bool fields, int bodies = 6, bool noses = true)
         {
@@ -401,7 +398,6 @@ namespace Evosim.Dynamics.Tests
             CellTypeRegistry table = Table(nose);
 
             var leaf = Leaves();
-            var clock = new Clock { Seed = seed };
             var world = new DynamicsWorld(config);
             for (int i = 0; i < bodies; i++)
             {
@@ -431,15 +427,19 @@ namespace Evosim.Dynamics.Tests
 
                 var c = new Creature(i, Developer.Develop(g, DevelopmentLimits.Default, cellTypes: table), config);
                 c.PlaceAt(new Vec3(19.0 + 0.7 * i, -10.4 + 0.15 * i, 19.6 + 0.3 * (i % 3)), QuatD.Identity);
-                c.Senses.Sniffs = clock;
-                c.Senses.BodyId = 100 + i;
+                Farmed(c, 100 + i, seed);
                 if (fields) c.Senses.LeafScent = leaf;
                 world.Add(c);
             }
 
             for (int s = 0; s < 300; s++)
             {
-                if (s % 50 == 0) clock.ElapsedSeconds += 0.5;
+                // The farm's sniff, at the top of each metabolic step's block.
+                if (s % 50 == 0)
+                {
+                    foreach (Creature c in world.Creatures) c.Senses.Sniff(s / 50);
+                }
+
                 world.Step();
             }
 

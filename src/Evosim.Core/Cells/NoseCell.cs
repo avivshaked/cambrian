@@ -17,26 +17,6 @@ namespace Evosim.Core
     }
 
     /// <summary>
-    /// The world as a nose needs it: the seed its noise is keyed on and the clock that marks each
-    /// sniff (D235). <see cref="World"/> is one.
-    /// </summary>
-    /// <remarks>
-    /// Both are read inside the parallel region and written only between physics steps, by
-    /// <see cref="World.Step"/>, so neither is a shared write.
-    /// </remarks>
-    public interface ISniffSource
-    {
-        /// <summary>The world's seed.</summary>
-        ulong Seed { get; }
-
-        /// <summary>
-        /// The world's clock. It moves once per metabolic step, so every physics step between two
-        /// metabolic steps reads one value, and that value names the sniff.
-        /// </summary>
-        double ElapsedSeconds { get; }
-    }
-
-    /// <summary>
     /// A nose: the one part that smells in a world whose table lists it — D235, absorbed from
     /// <c>proposals/propose-nose.md</c>.
     /// </summary>
@@ -241,8 +221,7 @@ namespace Evosim.Core
         /// <param name="bodyId">The organism's id.</param>
         /// <param name="partPath">The part's <see cref="PhenotypePart.PathId"/>, the same at any size.</param>
         /// <param name="sniff">
-        /// The sniff: the bits of the world's clock at it (<see cref="ISniffSource.ElapsedSeconds"/>),
-        /// one value per metabolic step.
+        /// The sniff: the index of the metabolic step it is taken at, which a checkpoint restores.
         /// </param>
         public static ulong SniffKey(ulong seed, long bodyId, ulong partPath, long sniff)
         {
