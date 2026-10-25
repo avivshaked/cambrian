@@ -141,8 +141,11 @@ The root file's rules still apply. The entries below were moved word for word, s
   - **Nor beside a theatre render step.** `scratch/theatre-realism/batch-heat.ps1` stops a render batch at
     89 °C. On 2026-10-25 at 13:51 it read 90 °C and stopped batch b43. A Farm build at one MSBuild node and
     two threads on logical 2-15, given its slot by the coordinator, ran beside a Unity step, with small test
-    jobs as well. Builds and full suites run in a HOLD window, with no render. Between render steps, a job
-    under about three minutes may run once the batch's `run.log` shows the step's end and no newer start.
+    jobs as well. Builds and tests run only in a HOLD window, with no render, and none between render steps:
+    on the same day, a small job started 36 s after a step ended reached 89 °C and cost the batch two takes. A
+    compile ignores the thread count and uses every core in its affinity mask, which is how 14-core masks
+    reached 89 °C twice that day. Each job in a HOLD window runs on a mask of four cores (for example
+    `0xF0000` or `0xF00000`), with at most two such lanes at once and their compiles staggered.
   - The GPU (RTX 4090) is read by `nvidia-smi`. WARN at 80 °C or a hardware slowdown; HOT at 85 °C or a
     thermal slowdown (clock event reasons 0x20 or 0x40).
   - The CPU's temperature comes from MSI Afterburner, which the owner starts. While it runs, its
