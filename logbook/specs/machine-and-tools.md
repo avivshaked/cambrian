@@ -138,6 +138,11 @@ The root file's rules still apply. The entries below were moved word for word, s
     group's own cores had ended minutes before (logbook/0139). The group was resumed from a checkpoint and
     nothing was lost. Since then, no read, build or subagent process of anyone's runs beside a card group,
     and a subagent's brief says so while one runs.
+  - **Nor beside a theatre render step.** `scratch/theatre-realism/batch-heat.ps1` stops a render batch at
+    89 °C. On 2026-10-25 at 13:51 it read 90 °C and stopped batch b43. A Farm build at one MSBuild node and
+    two threads on logical 2-15, given its slot by the coordinator, ran beside a Unity step, with small test
+    jobs as well. Builds and full suites run in a HOLD window, with no render. Between render steps, a job
+    under about three minutes may run once the batch's `run.log` shows the step's end and no newer start.
   - The GPU (RTX 4090) is read by `nvidia-smi`. WARN at 80 °C or a hardware slowdown; HOT at 85 °C or a
     thermal slowdown (clock event reasons 0x20 or 0x40).
   - The CPU's temperature comes from MSI Afterburner, which the owner starts. While it runs, its
