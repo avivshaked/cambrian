@@ -47,6 +47,18 @@ namespace Evosim.Dynamics
     /// <b>Flow is one step stale here too.</b> It is filled by the previous step's drag pass,
     /// which is the farm's ordering exactly: <c>Sample</c> runs before <c>Fluid.Apply</c>.
     /// </para>
+    /// <para>
+    /// <b>In a world whose table lists the nose, only noses smell</b> (D235, <see cref="NoseCell"/>).
+    /// The leaf smell, the carrion smell and the chemical sense read zero on every other part. A
+    /// nose reads them at its tip (<see cref="MouthPoint.Local"/>), with noise that falls with its
+    /// area, once per sniff: when <see cref="Sniffs"/>' clock has moved since the last read, and
+    /// held through the physics steps until it moves again. The noise is a hash of the world's
+    /// seed, <see cref="BodyId"/>, the part's path and the sniff, so it is stateless and no
+    /// checkpoint carries it; a body built afresh at a checkpoint's metabolic step sniffs on its
+    /// first physics step, as the body it replaces would have. With no <see cref="Sniffs"/> (a
+    /// bench) a nose reads its tip exactly on every step. A world whose table lacks the nose
+    /// reads every part as before, to the bit.
+    /// </para>
     /// </remarks>
     public sealed class CreatureSenses : ISensorField
     {
@@ -82,6 +94,12 @@ namespace Evosim.Dynamics
         private readonly float[] _scent;
         private readonly float _scentHalfScale;
         private float _energy;
+
+        // D235: the world's nose, or null; which parts are noses; the sniff last read.
+        private readonly NoseCell _nose;
+        private readonly bool[] _isNose;
+        private bool _sniffed;
+        private long _sniffKey;
 
         private readonly float _worldDepthMetres;
         private readonly float _chemicalHalfScale;
@@ -148,6 +166,16 @@ namespace Evosim.Dynamics
         /// </summary>
         public float[] Damage { get; set; }
 
+        /// <summary>
+        /// The world's seed and clock, which key and time a nose's sniffs (D235) — the farm's
+        /// <c>World</c>. Null reads a nose's tip exactly on every step. Read only in a world whose
+        /// table lists the nose.
+        /// </summary>
+        public ISniffSource Sniffs { get; set; }
+
+        /// <summary>The organism's id, which keys a nose's noise (D235). Set with <see cref="Sniffs"/>.</summary>
+        public long BodyId { get; set; }
+
         public CreatureSenses(Creature body, SolverConfig config)
         {
             _body = body;
@@ -185,6 +213,19 @@ namespace Evosim.Dynamics
             _chemical = new float[body.Links];
             _scent = new float[body.Links];
             _scentHalfScale = (float)System.Math.Max(1e-6, config.ScentHalfScaleJoules);
+
+            // A part's type does not change while this body lives: growth keeps it and a plan
+            // change builds a new body. The type is read rather than PhenotypePart.Smells, so a
+            // body grown against the wrong table still smells by the world's rule.
+            _nose = config.Nose;
+            _isNose = new bool[body.Links];
+            if (_nose != null)
+            {
+                for (int b = 0; b < body.Links; b++)
+                {
+                    _isNose[b] = body.Phenotype.Parts[b].CellTypeId == CellTypeIds.Nose;
+                }
+            }
 
             int dof = body.Dof > 0 ? body.Dof : 1;
             _angle = new float[dof];
@@ -225,6 +266,12 @@ namespace Evosim.Dynamics
 
             int patch = _body.Patch;
             if (smells && (patch < 0 || patch >= Nutrients.PatchCount)) patch = 0;
+
+            // D235: in a nose world no part smells at its centre; the noses are read after the loop.
+            bool nosed = _nose != null;
+            bool partsSmell = !nosed && smells;
+            bool partsScent = !nosed && scents;
+            bool partsLeaf = !nosed && leaves;
 
             for (int b = 0; b < _body.Links; b++)
             {
@@ -269,7 +316,7 @@ namespace Evosim.Dynamics
                     _up[b] = (float)_body.RotationMatrix[9 * b + 4];
                 }
 
-                if (smells)
+                if (partsSmell)
                 {
                     // The *edible* density and not the field's own, at the part's own position
                     // and in the creature's own patch: what a mouth may draw is what a nose
@@ -281,13 +328,13 @@ namespace Evosim.Dynamics
                     _chemical[b] = density > 0f ? density / (density + _chemicalHalfScale) : 0f;
                 }
 
-                if (scents)
+                if (partsScent)
                 {
                     float s = Scent.At((float)px, (float)py, (float)pz);
                     _scent[b] = s > 0f ? s / (s + _scentHalfScale) : 0f;
                 }
 
-                if (leaves) SampleLeaf(b, (float)px, (float)py, (float)pz);
+                if (partsLeaf) SampleLeaf(b, (float)px, (float)py, (float)pz);
 
                 if (_readsFlow)
                 {
@@ -330,6 +377,134 @@ namespace Evosim.Dynamics
 
                     if (_readsDrive) SampleDrive(b, offset + d);
                 }
+            }
+
+            if (nosed && (smells || scents || leaves)) Sniff(smells, scents, leaves, patch);
+        }
+
+        /// <summary>
+        /// D235: every nose part reads the smells the body reads at its tip, with noise, once per
+        /// sniff. See the class remarks and <see cref="NoseCell"/>.
+        /// </summary>
+        private void Sniff(bool smells, bool scents, bool leaves, int patch)
+        {
+            ISniffSource source = Sniffs;
+            bool noisy = source != null;
+            long sniff = 0;
+            if (noisy)
+            {
+                // Held through the sniff: the clock moves only at the metabolic step.
+                sniff = System.BitConverter.DoubleToInt64Bits(source.ElapsedSeconds);
+                if (_sniffed && sniff == _sniffKey) return;
+                _sniffed = true;
+                _sniffKey = sniff;
+            }
+
+            Phenotype phenotype = _body.Phenotype;
+
+            for (int b = 0; b < _body.Links; b++)
+            {
+                if (!_isNose[b]) continue;
+
+                Vec3 centre = Vec3.Read(_body.Position, 3 * b);
+                double finite = centre.X + centre.Y + centre.Z;
+                if (double.IsNaN(finite) || double.IsInfinity(finite))
+                {
+                    _chemical[b] = 0f;
+                    _scent[b] = 0f;
+                    _leaf[b] = 0f;
+                    _leafDirection[3 * b] = 0f;
+                    _leafDirection[3 * b + 1] = 0f;
+                    _leafDirection[3 * b + 2] = 0f;
+                    continue;
+                }
+
+                // The tip, as a mouth's is found, posed as the farm poses a mouth: in double, narrowed once.
+                PhenotypePart part = phenotype.Parts[b];
+                Float3 t = MouthPoint.Local(phenotype, b);
+                var tipLocal = new Vec3(t.X, t.Y, t.Z);
+                Mat3 rotation = Mat3.Read(_body.RotationMatrix, 9 * b);
+                Vec3 tip = centre + rotation * tipLocal;
+                float tx = (float)tip.X, ty = (float)tip.Y, tz = (float)tip.Z;
+
+                double reach = tipLocal.Magnitude;
+                double length = 2.0 * reach;
+                double area = part.SurfaceArea;
+                if (_nose.FacingIntake && reach > 0.0)
+                {
+                    Vec3 outward = rotation * (tipLocal * (1.0 / reach));
+                    Vec3 moving = Vec3.Read(_body.RelativeVelocity, 3 * b);
+                    area = _nose.EffectiveArea(area, moving.X * outward.X + moving.Y * outward.Y + moving.Z * outward.Z);
+                }
+
+                ulong key = noisy ? NoseCell.SniffKey(source.Seed, BodyId, part.PathId, sniff) : 0UL;
+
+                if (smells)
+                {
+                    float density = Nutrients.EdibleDensityAt(new FieldPoint(new Float3(tx, ty, tz), patch));
+                    double c = Count(NoseSmell.Chemical, density, area, key, noisy);
+                    _chemical[b] = c > 0.0 ? (float)(c / (c + _chemicalHalfScale)) : 0f;
+                }
+
+                if (scents)
+                {
+                    double c = Count(NoseSmell.Carrion, Scent.At(tx, ty, tz), area, key, noisy);
+                    _scent[b] = c > 0.0 ? (float)(c / (c + _scentHalfScale)) : 0f;
+                }
+
+                if (leaves) SniffLeaf(b, tx, ty, tz, rotation, area, length, key, noisy);
+            }
+        }
+
+        // What a nose counts of one smell: the field plus its noise, never below zero.
+        private double Count(NoseSmell smell, float field, double area, ulong key, bool noisy) =>
+            noisy
+                ? _nose.Read(smell, field, area, NoseCell.Normal(key, (int)smell))
+                : field > 0f ? field : 0.0;
+
+        /// <summary>
+        /// D167's leaf smell at a nose's tip (D235): the noisy count squashed, and in the direction
+        /// form the gradient in the part's own frame with <c>4σ / L</c> of noise on each axis,
+        /// unit length, times the strength.
+        /// </summary>
+        private void SniffLeaf(
+            int b, float tx, float ty, float tz, Mat3 rotation, double area, double length, ulong key, bool noisy)
+        {
+            float s = LeafScent.At(tx, ty, tz);
+            double c = Count(NoseSmell.Leaf, s, area, key, noisy);
+            float strength = c > 0.0 ? (float)(c / (c + _leafHalfScale)) : 0f;
+            _leaf[b] = strength;
+
+            if (!_readsLeafDirection) return;
+
+            Float3 g = LeafScent.GradientAt(tx, ty, tz);
+            Vec3 local = rotation.TransposedTimes(new Vec3(g.X, g.Y, g.Z));
+            if (noisy)
+            {
+                double spread = _nose.GradientSigma(NoseSmell.Leaf, s, area, length);
+                if (spread > 0.0)
+                {
+                    local = new Vec3(
+                        local.X + spread * NoseCell.Normal(key, NoseCell.GradientDrawX),
+                        local.Y + spread * NoseCell.Normal(key, NoseCell.GradientDrawX + 1),
+                        local.Z + spread * NoseCell.Normal(key, NoseCell.GradientDrawX + 2));
+                }
+            }
+
+            double magnitude = local.Magnitude;
+            int at = 3 * b;
+            if (magnitude > 0 && strength > 0f)
+            {
+                double scale = strength / magnitude;
+                _leafDirection[at] = (float)(local.X * scale);
+                _leafDirection[at + 1] = (float)(local.Y * scale);
+                _leafDirection[at + 2] = (float)(local.Z * scale);
+            }
+            else
+            {
+                _leafDirection[at] = 0f;
+                _leafDirection[at + 1] = 0f;
+                _leafDirection[at + 2] = 0f;
             }
         }
 
@@ -386,6 +561,9 @@ namespace Evosim.Dynamics
         public float Read(int partIndex, SensorChannel channel, int index)
         {
             if (partIndex < 0 || partIndex >= _depth.Length) return 0f;
+
+            // D235: in a nose world a part that is not a nose smells nothing, under either brain.
+            if (_nose != null && !_isNose[partIndex] && channel.IsSmell()) return 0f;
 
             switch (channel)
             {

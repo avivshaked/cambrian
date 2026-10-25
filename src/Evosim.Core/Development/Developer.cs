@@ -116,6 +116,13 @@ namespace Evosim.Core
                 parentAnchorLocal: Float3.Zero,
                 childAnchorLocal: Float3.Zero);
 
+            // D235: in a world whose table lists the nose, only noses smell. Nothing is touched under
+            // any other table, so every part keeps Smells' default and every body is the one before.
+            if (cellTypes != null && cellTypes.Contains(CellTypeIds.Nose))
+            {
+                foreach (PhenotypePart part in phenotype.Parts) part.Smells = part.CellTypeId == CellTypeIds.Nose;
+            }
+
             // D113: each part's distance from the root, once the body is whole, which is what the
             // support cost is priced on. Measured from the root part's own centre and not from
             // the frame's origin, so a root transform moves nothing a body pays.

@@ -64,10 +64,14 @@ namespace Evosim.Core
         /// The joint channels and the drive sense have one per degree of freedom and none on a
         /// rigid part, where today's neurons may name an index past the end and read zero. The
         /// reserve is the whole body's, so it is a port of the root alone: on every part it would
-        /// be one number many times over.
+        /// be one number many times over. A smell has none on a part that may not smell (D235,
+        /// <see cref="PhenotypePart.Smells"/>), so in a world whose table lists the nose each nose
+        /// carries its own set of smell ports and no other part carries any.
         /// </remarks>
         public static int IndicesOn(PhenotypePart part, SensorChannel channel)
         {
+            if (!part.Smells && channel.IsSmell()) return 0;
+
             switch (channel)
             {
                 case SensorChannel.JointAngle:

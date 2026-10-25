@@ -527,7 +527,8 @@ namespace Evosim.Core
                     spentDensity: spentDensity,
                     uptakeRatePerSquareMetre: config.UptakeRatePerSquareMetre,
                     uptakeHalfSaturation: config.UptakeHalfSaturation,
-                    joulesPerUnit: config.JoulesPerUnit);
+                    joulesPerUnit: config.JoulesPerUnit,
+                    surfaceArea: part.SurfaceArea);
 
                 // What the part pays for: all of it, or what the free link's allowance leaves.
                 float kept = part.Index == freeLink
@@ -993,7 +994,8 @@ namespace Evosim.Core
                 spentDensity: 0f,
                 uptakeRatePerSquareMetre: config.UptakeRatePerSquareMetre,
                 uptakeHalfSaturation: config.UptakeHalfSaturation,
-                joulesPerUnit: config.JoulesPerUnit);
+                joulesPerUnit: config.JoulesPerUnit,
+                surfaceArea: part.SurfaceArea);
 
             float k = part.Index == freeLink
                 ? 1f - FreeShare(part, phenotype, config.FreeFirstLinkCubicMetres)

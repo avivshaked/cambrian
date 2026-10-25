@@ -16,6 +16,7 @@ namespace Evosim.Core
         public const string Consumer = "consumer";
         public const string Buoyancy = "buoyancy";
         public const string Anchoring = "anchoring";
+        public const string Nose = "nose";
     }
 
     /// <summary>

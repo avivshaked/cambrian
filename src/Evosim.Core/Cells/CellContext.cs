@@ -136,6 +136,13 @@ namespace Evosim.Core
         /// </remarks>
         public float JoulesPerUnit { get; }
 
+        /// <summary>
+        /// The part's whole surface, m² — <see cref="PhenotypePart.SurfaceArea"/>. What a nose's
+        /// receptors cover and what it pays upkeep on (D235). 0 in a context built by hand, which
+        /// no type but the nose reads.
+        /// </summary>
+        public float SurfaceArea { get; }
+
         public CellContext(
             float seconds,
             float volume,
@@ -151,8 +158,10 @@ namespace Evosim.Core
             float spentDensity = 0f,
             float uptakeRatePerSquareMetre = 0f,
             float uptakeHalfSaturation = 0f,
-            float joulesPerUnit = 0f)
+            float joulesPerUnit = 0f,
+            float surfaceArea = 0f)
         {
+            SurfaceArea = surfaceArea;
             SpentDensity = spentDensity;
             UptakeRatePerSquareMetre = uptakeRatePerSquareMetre;
             UptakeHalfSaturation = uptakeHalfSaturation;

@@ -557,6 +557,15 @@ namespace Evosim.Farm.Gpu
                     "narrowphase of per-part contact, and EVOSIM_CONTACT_PER_PART is off.");
             }
 
+            // D235's nose is built on the host first; the kernels sample every part's smell at its
+            // centre on every step, which in a nose world is the wrong sense.
+            if (s.Nose != null)
+            {
+                throw new NotSupportedException(
+                    "The gpu engine does not carry the nose (D235): the world's cell-type table lists '" +
+                    CellTypeIds.Nose + "', and only the CPU samples a nose. Run it on the CPU.");
+            }
+
             if (s.WaterHoldSeconds > 0)
             {
                 throw new NotSupportedException(
