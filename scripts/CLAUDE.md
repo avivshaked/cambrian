@@ -140,6 +140,16 @@ on its own first line copied into the job's log.
 - **A PowerShell here-string does not reach `git commit -F -`.** PowerShell hands it to git as an
   argument, not on stdin, so git takes the message for a pathspec and commits nothing. Write the
   message to a file under `scratch/` and pass `-F <path>`.
+- **A PowerShell function returns everything it prints, not only what follows `return`.** A gate
+  function that wrote a bare status string and then returned `$false` handed back an array, which
+  reads as true, so on 2026-10-25 a theatre batch ignored its hold, its stop file and its heat gate
+  and launched Unity beside a card run. In a function whose result is tested, send status lines to
+  `Write-Host` and discard any other output with `| Out-Null`, and test the gate alone with its
+  hold in place before trusting it.
+- **Compare times in UTC, never local time.** The clocks go back an hour on the last Sunday of
+  October, and a spacing or deadline built on `Get-Date` and `LastWriteTime` then reads an hour
+  wrong, or goes negative inside the repeated hour (2026-10-25). Use `[DateTime]::UtcNow` and
+  `LastWriteTimeUtc`, or a stopwatch; keep local time for log stamps only.
 - **PowerShell's variable names ignore case.** `$S` and `$s` are one variable, so a loop over `$s`
   inside a path built on `$S` rewrites the path mid-loop. On 2026-10-07 it put an empty file in a new
   folder at the repository's root. Give a root and a loop variable different names.
