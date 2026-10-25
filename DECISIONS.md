@@ -9367,3 +9367,22 @@ until it has been benched or screened.
 **Why.** The owner saw that limbs read as sticks. Under D135 a stick and a paddle of the same volume push alike, so
 nothing selects a fin for its width. Fat costs only agent time until it is screened, and it matters most once oases
 move. Swimmers bred under today's drive would learn a stroke the fin law then changes.
+
+### D230
+**The deeper wound is spent at twice its depth, and the next lever, the meal, goes to the owner** · 2026-10-25
+
+**Status:** decided by the coordinator early on 2026-10-25, at the owner's delegation (D224's status gives its
+terms). The read is `logbook/specs/r62bd-read/README.md` on `mouth-point` (19b427bc).
+
+**Decision.**
+- `r62bd` fails D222 in all six worlds, at every depth of wound. Nothing is rolled back, because nothing overshot:
+  leaves stand at 114 to 150% of `r62cs`'s at the same second, and no world reached the ceiling.
+- The bite damage dial stays at 1 for the next screen. At 2 times it already buys all the income it can.
+- The next lever changes what a kill yields. A kill feeding from the whole body, or a bite taking from parts beyond
+  the one it touches, is a new rule of eating, so it is the owner's. The speed agent drafts the proposal, and it
+  first checks whether any dial already ruled could reach the corpse rule's meal without a new rule.
+
+**Why.** Kills per grazer-second rose only 1.1 to 1.7 times, against the three times or more predicted, and the
+joules kept from a kill stayed level at 61 to 77 J, five to seven times short of about 420 J. At 4 and 16 times
+every touch finished the part it met, and the 2x arm kept as much as the 16x arm. A grazer's meal is bounded by the
+one part it eats, which is the outcome D227's risk named. The screen was not watched in the theatre before the read.
