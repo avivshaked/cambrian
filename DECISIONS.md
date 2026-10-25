@@ -9466,3 +9466,32 @@ switch off and on.
 
 **Why.** A genome that mirrors a limb most naturally means a mirror image in motion too, as in every bilateral animal,
 and paired fins can then row together.
+
+### D235
+**Smell moves into a nose, whose size, placement and price decide how well a body smells** · 2026-10-25
+
+**Status:** ruled by the owner on 2026-10-25, all eleven decisions of `proposals/propose-nose.md` as recommended,
+which is absorbed here and deleted. The owner asked that the computational cost be watched and cut wherever it can
+be. Built after D232's kill-meal screen, tested in the nursery before any world carries it.
+
+**Decision.**
+- A new cell type, the nose. When a world's table lists it, only nose parts smell; the leaf smell, the carrion smell and
+  the chemical sense read zero on every other part. A world whose table lacks it is unchanged.
+- A nose reads at its tip, the field plus noise that falls with the square root of its surface area, with two constants
+  per smell kept on the type and calibrated in the nursery. The noise is drawn once per 0.5 s sniff from a hash of the
+  seed, the body, the part, the smell and the step, so replays hold on the CPU and the card.
+- It pays upkeep mostly by surface area, about 0.5 W/m² to start and 3 W/m³ by volume, and builds at 500 J/m³.
+- Intake from water flowing into the nose's face is built switched off and tested second.
+- Both smell forms are kept, the direction form made noisier for a shorter nose, and the nursery decides which the worlds
+  carry. Pair tests run with D228's mirrored-joint switch on.
+- Every nose carries every smell the world opens, as separate channels, with one set of brain inputs per nose.
+- Carrion keeps its smell. Animal smell, one field by non-photosynthetic tissue with a body's own smell subtracted, is
+  designed now and built only once grazers live on living leaves; it replaces the lateral-line candidate.
+- The nursery tests a nose against today's whole-body smell in the patch tank, with three conditions before worlds carry
+  it. The theatre draws noses as rhinophores, with no caption claiming that sea slugs smell with them.
+- Cost is cut where the rule allows: a nose samples once per sniff rather than every physics step, parts that are not
+  noses read nothing, and any new field fills at the metabolic cadence on the card. Each is checked against the pace
+  of the world without the nose.
+
+**Why.** A smell that every part reads exactly makes a nose's size worth nothing. A noisy count makes size pay, an organ
+makes placement matter, and a price makes size a bet, as the owner asked.
