@@ -67,6 +67,12 @@ namespace __NS__
         // world that runs the law, one-wide otherwise.
         public readonly Seg<int> ShapeCode;
         public readonly Seg<Real> HalfExt;
+
+        // D231's stroke that pushes its assembly: a link's parts in its assembly, and a degree of freedom's
+        // along, added mass and first moment. A link or a degree of freedom wide only in a world that runs it,
+        // one-wide otherwise.
+        public readonly Seg<int> StrokeParts;
+        public readonly Seg<Real> StrokeAlong, StrokeMass, StrokeMoment;
         public readonly Seg<float> Bend;
         public readonly Seg<double> EPower, EBend, EPowerTarget, EBendTarget, EPowerRate, EBendRate, EHoldLeft;
 
@@ -92,7 +98,7 @@ namespace __NS__
         public readonly Seg<double> TTime;
         public readonly Seg<int> Enabled, Held, TCursor, FirstBadLink, Resized, Poison, Pending;
 
-        public ClassSet(Accelerator acc, AcceleratorStream stream, int index, int links, int neurons, int cap, bool bendAndPower, bool shapedMass)
+        public ClassSet(Accelerator acc, AcceleratorStream stream, int index, int links, int neurons, int cap, bool bendAndPower, bool shapedMass, bool strokeAssembly)
         {
             _acc = acc;
             _stream = stream;
@@ -129,6 +135,10 @@ namespace __NS__
 
             int gs = shapedMass ? L : 0;
             ShapeCode = C<int>(gs, Constant); HalfExt = C<Real>(3 * gs, Constant);
+
+            int sa = strokeAssembly ? L : 0, sd = strokeAssembly ? D : 0;
+            StrokeParts = C<int>(sa, Constant);
+            StrokeAlong = C<Real>(sd, Constant); StrokeMass = C<Real>(sd, Constant); StrokeMoment = C<Real>(sd, Constant);
             Bend = C<float>(gd, Down);
             EPower = C<double>(gd, Down); EBend = C<double>(gd, Down);
             EPowerTarget = C<double>(gd, Down); EBendTarget = C<double>(gd, Down);
@@ -365,6 +375,8 @@ namespace __NS__
             TotalMass = TotalMass.View, TorquePerUnit = TorquePerUnit.View, PowerScale = PowerScale.View,
             Threshold = Threshold.View, Reaction = Reaction.View, HoldGene = HoldGene.View, Release = Release.View,
             LinkPower = LinkPower.View, ShapeCode = ShapeCode.View, HalfExt = HalfExt.View,
+            StrokeParts = StrokeParts.View, StrokeAlong = StrokeAlong.View,
+            StrokeMass = StrokeMass.View, StrokeMoment = StrokeMoment.View,
         };
 
         public SPanels PanelSet => new SPanels { Centre = PCentre.View, Normal = PNormal.View, Area = PArea.View };
@@ -675,7 +687,7 @@ namespace __NS__
             _classes = new ClassSet[options.ClassLinks.Length];
             for (int k = 0; k < _classes.Length; k++)
             {
-                _classes[k] = new ClassSet(accelerator, _stream, k, options.ClassLinks[k], options.ClassNeurons[k], 16, world.BendAndPower, world.ShapedMass);
+                _classes[k] = new ClassSet(accelerator, _stream, k, options.ClassLinks[k], options.ClassNeurons[k], 16, world.BendAndPower, world.ShapedMass, world.StrokeAssembly);
             }
 
             int oc = options.OverlapCap;
@@ -965,6 +977,7 @@ namespace __NS__
                 CreatureContact = w.CreatureContact ? 1 : 0, OffsetTorque = w.OffsetTorque ? 1 : 0,
                 ShapedMass = w.ShapedMass ? 1 : 0,
                 TrueShape = w.TrueShape ? 1 : 0,
+                StrokeAssembly = w.StrokeAssembly ? 1 : 0,
                 BendAndPower = w.BendAndPower ? 1 : 0, TurningDrag = w.TurningDrag, RockTouch = w.RockTouch ? 1 : 0,
                 Anchoring = w.AnchorCell != null ? 1 : 0,
                 GripDecay = w.GripDecay, GripThreshold = w.GripThreshold, GripLag = w.GripLag,
@@ -2433,6 +2446,30 @@ namespace __NS__
                             "The fin law has no added mass for the shape '" + part.ShapeId +
                             "'; it knows box, capsule and sphere.");
                     }
+                }
+            }
+
+            // D231's stroke that pushes its assembly: the host body's own tables, as Creature.WriteStrokeAssembly
+            // left them at its build and at its last resize (a resize re-packs the body whole, so the card never
+            // holds the old sizes' constants). A link's parts in its assembly, then a degree of freedom's
+            // along, added mass and first moment, indexed like DofStart.
+            if (_w.StrokeAssembly)
+            {
+                if (c.StrokeAssemblyParts == null)
+                {
+                    throw new InvalidOperationException(
+                        "The gpu engine runs the stroke that pushes its assembly and this body was built " +
+                        "without it, so it has no assembly table. A body is built under the config it is stepped with.");
+                }
+
+                for (int l = 0; l < links; l++) s.StrokeParts.Host[l * N + i] = c.StrokeAssemblyParts[l];
+
+                for (int d = 0; d < dof; d++)
+                {
+                    int at = d * N + i;
+                    s.StrokeAlong.Host[at] = (Real)c.StrokeAlong[d];
+                    s.StrokeMass.Host[at] = (Real)c.StrokeAddedMass[d];
+                    s.StrokeMoment.Host[at] = (Real)c.StrokeFirstMoment[d];
                 }
             }
 

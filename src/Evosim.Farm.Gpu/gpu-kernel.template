@@ -74,6 +74,13 @@ namespace __NS__
         // it, three numbers: a box's half-extents, or a capsule's radius and half-span.
         public ArrayView<int> ShapeCode;
         public ArrayView<Real> HalfExt;
+
+        // D231's stroke that pushes its assembly. A link each: the parts in the assembly it anchors (0 for
+        // a link that is not jointed); a degree of freedom each, indexed like DofStart: the cosine between
+        // its axis and the limb's, the added mass of the assembly moving along its stroke, and that mass's
+        // first moment about the joint. One row wide when the switch is off.
+        public ArrayView<int> StrokeParts;
+        public ArrayView<Real> StrokeAlong, StrokeMass, StrokeMoment;
     }
 
     public struct SPanels { public ArrayView<Real> Centre, Normal, Area; }
@@ -235,6 +242,7 @@ namespace __NS__
         public int ShapedMass;   // D229: the limb pushes take the part's shaped added mass (Fluid.AddedMassOf)
         public int AnyRemains;   // D220: 1 for a block in which some body is remains; 0 reads no remains flag at all
         public int TrueShape;    // D228: a part touches as its convex core with a margin (SolverConfig.ContactShape)
+        public int StrokeAssembly;   // D231: the powered stroke pushes the assembly welded beyond a jointed link (SolverConfig.StrokePushesAssembly)
 
         public long TraceStep;
         public double TraceTime, DtD, PoseOmega, GripDecay, GripThreshold, GripLag;
@@ -1866,10 +1874,28 @@ namespace __NS__
                             }
                             Real shapedSum = 0;
 
+                            // D231, as Fluid.Apply: a link with parts welded beyond it takes its constants from
+                            // the tables, and none of the lines below. Not entered with the switch off.
+                            bool assembly = cfg.StrokeAssembly != 0 && b.StrokeParts[fl * N + i] > 1;
+                            Real assemblySum = 0;
+                            Real assemblyMass = 0;
+
                             for (int d = 0; d < dofCount[fl]; d++)
                             {
                                 Real sv = (Real)dr.EPower[(fstart + d) * N + i];
                                 if (sv <= 0) continue;
+
+                                if (assembly)
+                                {
+                                    // q_d = (s_d Omega)^2 (1 - along_d^2), with the along of the link's own frame.
+                                    Real alongStored = b.StrokeAlong[(fstart + d) * N + i];
+                                    Real strokeQ = sv * omega * sv * omega * ((Real)1.0 - alongStored * alongStored);
+                                    swing2 += strokeQ;
+                                    assemblySum += strokeQ * b.StrokeMoment[(fstart + d) * N + i];
+                                    assemblyMass += strokeQ * b.StrokeMass[(fstart + d) * N + i];
+                                    continue;
+                                }
+
                                 V3 dofAxis = frot * fframe.Rotate(V3.Axis(d));
                                 Real along = V3.Dot(dofAxis, axis);
                                 swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
@@ -1895,10 +1921,20 @@ namespace __NS__
                                 Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
                                 Real push = cfg.LimbPush * addedMass * linkReach * swing2;
                                 if (shapeCode != 0) push = cfg.LimbPush * shapedSum;
+
+                                // D231: C_T times the sum of q_d I1_d, and the push-weighted lever
+                                // (sum q_d I1_d) / (sum q_d M_d). Another link's lever is the reach.
+                                Real lever = linkReach;
+                                if (assembly)
+                                {
+                                    push = cfg.LimbPush * assemblySum;
+                                    lever = AssemblyLeverOf(assemblySum, assemblyMass, linkReach);
+                                }
+
                                 linkForce = linkForce + axis * (-push);
                                 // The work is the push times the lever it acts at: a lever other than the reach
                                 // (LeverOf) must enter this line too, as on the CPU.
-                                dr.Work[i] = dr.Work[i] + (double)(push * linkReach * __M__.Sqrt(swing2)) * cfg.DtD;
+                                dr.Work[i] = dr.Work[i] + (double)(push * lever * __M__.Sqrt(swing2)) * cfg.DtD;
                             }
                         }
                     }
@@ -5757,6 +5793,14 @@ namespace __NS__
         /// reach, exactly. The one place a later rule would move it; the work line must follow.
         /// </summary>
         private static Real LeverOf(Real reach, V3 axis, V3 direction) => reach;
+
+        /// <summary>
+        /// Fluid.AssemblyLeverOf (D231): the lever a stroke's push acts at when it moves a whole assembly,
+        /// the first moment of the added mass over the added mass, <c>I1 / M</c>. Where nothing is moved
+        /// (the mass not above 0) the reach, so that the work line stays finite.
+        /// </summary>
+        private static Real AssemblyLeverOf(Real firstMoment, Real addedMass, Real reach) =>
+            addedMass > 0 ? firstMoment / addedMass : reach;
 
         /// <summary>
         /// Fluid.AddedMassOf (D229) for a box (shape 1) or a capsule (shape 2), in the same operations in

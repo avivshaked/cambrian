@@ -46,6 +46,9 @@ namespace Evosim.Farm.Gpu
         /// <summary>D229's fin law: the limb pushes take the part's shaped added mass (<c>Fluid.AddedMassOf</c>).</summary>
         public bool ShapedMass;
 
+        /// <summary>D231: the powered stroke pushes the assembly welded beyond a jointed link (<c>SolverConfig.StrokePushesAssembly</c>).</summary>
+        public bool StrokeAssembly;
+
         /// <summary>D228: a part touches as its convex core with a margin (<c>SolverConfig.ContactShape</c>), not as the ball of its half-diagonal.</summary>
         public bool TrueShape;
 
@@ -174,6 +177,7 @@ namespace Evosim.Farm.Gpu
             PushOmega = s.PowerPushRadiansPerSecond;
             LimbPush = s.LimbPushCoefficient;
             ShapedMass = s.ShapedAddedMass;
+            StrokeAssembly = s.StrokePushesAssembly;
             TrueShape = s.ContactShape == ContactShapeForm.TrueShape;
 
             TurningDrag = s.TurningDrag == TurningDragForm.Skin ? 1 : s.TurningDrag == TurningDragForm.Spin ? 2 : 0;

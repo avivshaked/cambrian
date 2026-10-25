@@ -134,3 +134,10 @@ The root file's rules still apply. The entries below were moved word for word, s
   kernel alike. Each link's core and margin sit by link row in `SGlob` (`CoreHx` to `CoreM`), because a link reads other
   classes' cores, and go up only after a pack; the turns are nine more columns in each sphere set. All of it is a
   one-cell stub when the switch is off.
+- **A stroke that pushes its assembly has a second copy on the card** (D231, `EVOSIM_STROKE_ASSEMBLY`). The class kernel's
+  power push transcribes the host's assembly branch in `Fluid.Apply` line for line, `Fluid.AssemblyLeverOf` included,
+  so a change to either is made in the other in the same change. The tables it reads are the host body's own
+  (`Creature.StrokeAssemblyParts`, `StrokeAlong`, `StrokeAddedMass`, `StrokeFirstMoment`), packed into `SConst` by
+  `Pack`: one value a link for the parts, one a degree of freedom for the other three, indexed like `DofStart`. A resize
+  re-packs the body whole, so the card never holds the constants of an old size. Each table is one row wide when the
+  switch is off. The swing push has no assembly branch, and the host refuses the switch with it.
