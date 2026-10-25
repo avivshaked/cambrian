@@ -196,6 +196,10 @@ namespace Evosim.Theatre
                     // D199's reading three, read for the same reason: a picture of a run that
                     // carried it must grow its bodies to the run's rule.
                     ScaleLengthensOnce = OptionalBool(limits, "scaleLengthensOnce", DevelopmentLimits.Default.ScaleLengthensOnce, missing, "development.scaleLengthensOnce"),
+
+                    // D228's mirrored joint, read for the same reason: a run that reflected its
+                    // mirrored anchors must pose its bodies by the reflected anchors.
+                    ReflectMirroredAnchors = OptionalBool(limits, "reflectMirroredAnchors", DevelopmentLimits.Default.ReflectMirroredAnchors, missing, "development.reflectMirroredAnchors"),
                 };
             }
             else

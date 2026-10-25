@@ -164,7 +164,13 @@ namespace Evosim.Dynamics
             return axis * (0.5 * angle / sine);
         }
 
-        private static Vec3 CapTorque(Vec3 torque, double inertia, double radius, SolverConfig config)
+        /// <summary>
+        /// A torque bounded so that one step of it cannot turn the link's rim faster than the world's contact cap
+        /// (<see cref="SolverConfig.MaxContactSpeedChange"/>): at most <c>inertia * (cap / radius) / dt</c>, the
+        /// torque that changes the link's angular speed by <c>cap / radius</c> in one step. The direction is kept.
+        /// No bound when the cap or the radius is not positive.
+        /// </summary>
+        internal static Vec3 CapTorque(Vec3 torque, double inertia, double radius, SolverConfig config)
         {
             double cap = config.MaxContactSpeedChange;
             if (!(cap > 0) || !(radius > 0)) return torque;

@@ -159,10 +159,18 @@ namespace Evosim.Core
         /// <summary>Min/max per DOF, in radians.</summary>
         public Float2[] JointLimits { get; internal set; } = Array.Empty<Float2>();
 
-        /// <summary>Joint anchor in the parent's local space, in metres. Zero at the root.</summary>
+        /// <summary>
+        /// Joint anchor in the parent's local space, in metres. Zero at the root. With
+        /// <see cref="DevelopmentLimits.ReflectMirroredAnchors"/> on, in the parent's proper frame
+        /// (the frame <see cref="Rotation"/> poses), reflected for a mirrored copy.
+        /// </summary>
         public Float3 ParentAnchorLocal { get; internal set; }
 
-        /// <summary>Joint anchor in this part's local space, in metres. Zero at the root.</summary>
+        /// <summary>
+        /// Joint anchor in this part's local space, in metres. Zero at the root. With
+        /// <see cref="DevelopmentLimits.ReflectMirroredAnchors"/> on, in the part's proper frame,
+        /// flipped on x for a <see cref="Mirrored"/> part.
+        /// </summary>
         public Float3 ChildAnchorLocal { get; internal set; }
 
         /// <summary>

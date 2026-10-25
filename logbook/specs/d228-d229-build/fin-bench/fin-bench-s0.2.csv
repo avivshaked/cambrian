@@ -1,0 +1,5 @@
+body,shapedAddedMass,volume,distance,workJoules,workPerMetre
+stick,off,0.0672,0.45578,0.06258,0.13731
+paddle,off,0.0672,0.45578,0.06258,0.13731
+stick,on,0.0672,0.66108,0.0983,0.1487
+paddle,on,0.0672,4.69671,1.96608,0.41861

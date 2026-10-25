@@ -314,6 +314,40 @@ namespace Evosim.Dynamics
         private double[] _pendingLinkRadius;
         private double[] _pendingLinkVelocity;
 
+        // D228, the true shape (RunConfig.ContactShape): each link's turn travels with its sphere, committed
+        // and pending exactly as the centre is, so that contact reads only the frozen snapshot and never a
+        // body's live pose. The core and margin are the link's shape and size, which change only at a growth
+        // resize between steps. All null unless the world asked for the true shape: with it off nothing is
+        // allocated and nothing is copied.
+
+        /// <summary>
+        /// Each link's world orientation as of the last commit, a row-major 3x3 matrix, 9 per link; null
+        /// unless <see cref="SolverConfig.ContactShape"/> is the true shape.
+        /// </summary>
+        public double[] LinkContactRotation;
+
+        /// <summary>
+        /// Each link's convex core as half-extents in its own frame, 3 per link (a sphere's is the origin, a
+        /// capsule's runs along local Y, a box's is the box less its smallest half-extent); null unless the
+        /// true shape. <see cref="ConvexCore.Of"/>.
+        /// </summary>
+        public double[] LinkCoreHalf;
+
+        /// <summary>Each link's margin, metres: the radius of the ball swept round its core. Null unless the true shape.</summary>
+        public double[] LinkMargin;
+
+        private double[] _pendingLinkRotation;
+
+        /// <summary>
+        /// Each link's angular velocity in the world as of the last commit (<see cref="Spin"/>, the one the solver
+        /// integrates), 3 per link; null unless <see cref="SolverConfig.ContactShape"/> is
+        /// <see cref="ContactShapeForm.TrueShapeAtPoint"/>. The velocity of a point of the link is
+        /// <c>v + spin x r</c>.
+        /// </summary>
+        public double[] LinkContactSpin;
+
+        private double[] _pendingLinkSpin;
+
         // The touch of the rock, per link: written by the link's own contact pass and read by the
         // next step's senses (and, from step 4, by the grip). Null unless SolverConfig.RockTouch.
 
@@ -472,6 +506,29 @@ namespace Evosim.Dynamics
                 _pendingLinkCentre = new double[3 * Links];
                 _pendingLinkRadius = new double[Links];
                 _pendingLinkVelocity = new double[3 * Links];
+
+                if (config.ContactShape.IsTrueShape())
+                {
+                    LinkContactRotation = new double[9 * Links];
+                    _pendingLinkRotation = new double[9 * Links];
+                    LinkCoreHalf = new double[3 * Links];
+                    LinkMargin = new double[Links];
+                    WriteLinkCores();
+
+                    // The force at the contact point reads the other side's velocity there, so the spin travels
+                    // with the sphere. Only at that level: the true shape at the centre allocates none.
+                    if (config.ContactShape.AtPoint())
+                    {
+                        LinkContactSpin = new double[3 * Links];
+                        _pendingLinkSpin = new double[3 * Links];
+                    }
+                }
+            }
+            else if (config.ContactShape.IsTrueShape())
+            {
+                throw new System.ArgumentException(
+                    "SolverConfig.ContactShape is TrueShape and ContactPerPart is off: the true shape is the " +
+                    "narrowphase of per-part contact (D228).");
             }
 
             if (config.RockTouch)
@@ -582,6 +639,10 @@ namespace Evosim.Dynamics
         /// </remarks>
         private void RefreshLinkSpheres()
         {
+            // D228: the turn of every link, one-link body included (its link is link 0).
+            if (_pendingLinkRotation != null) Array.Copy(RotationMatrix, _pendingLinkRotation, 9 * Links);
+            if (_pendingLinkSpin != null) Array.Copy(Spin, _pendingLinkSpin, 3 * Links);
+
             if (Links == 1)
             {
                 Vec3.Write(_pendingLinkCentre, 0, _pendingCentre);
@@ -628,6 +689,8 @@ namespace Evosim.Dynamics
                 Array.Copy(_pendingLinkCentre, LinkContactCentre, 3 * Links);
                 Array.Copy(_pendingLinkRadius, LinkContactRadius, Links);
                 Array.Copy(_pendingLinkVelocity, LinkContactVelocity, 3 * Links);
+                if (_pendingLinkRotation != null) Array.Copy(_pendingLinkRotation, LinkContactRotation, 9 * Links);
+                if (_pendingLinkSpin != null) Array.Copy(_pendingLinkSpin, LinkContactSpin, 3 * Links);
             }
 
             _commitDue = false;
@@ -686,6 +749,23 @@ namespace Evosim.Dynamics
             Array.Copy(_pendingLinkCentre, LinkContactCentre, 3 * Links);
             Array.Copy(_pendingLinkRadius, LinkContactRadius, Links);
             Array.Copy(_pendingLinkVelocity, LinkContactVelocity, 3 * Links);
+            if (_pendingLinkRotation != null) Array.Copy(_pendingLinkRotation, LinkContactRotation, 9 * Links);
+            if (_pendingLinkSpin != null) Array.Copy(_pendingLinkSpin, LinkContactSpin, 3 * Links);
+        }
+
+        /// <summary>
+        /// Each link's convex core and margin, from its shape and half-extents as they now are (D228).
+        /// Written at a build and rewritten at a growth resize, beside <see cref="LinkReach"/>.
+        /// </summary>
+        private void WriteLinkCores()
+        {
+            for (int i = 0; i < Links; i++)
+            {
+                PhenotypePart part = Phenotype.Parts[i];
+                ConvexCore.Of(_shapes.Resolve(part.ShapeId), part.HalfExtents, out Vec3 half, out double margin);
+                Vec3.Write(LinkCoreHalf, 3 * i, half);
+                LinkMargin[i] = margin;
+            }
         }
 
         /// <summary>Half the diagonal of each link's own extent, metres — the sphere's padding.</summary>

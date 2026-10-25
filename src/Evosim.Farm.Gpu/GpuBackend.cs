@@ -238,20 +238,23 @@ namespace Evosim.Farm.Gpu
         /// and reefs, the same step, the same contact model. Everything else the two configs
         /// hold came from one <c>RunConfig</c> through one factory.
         /// </summary>
-        private void Check(SolverConfig stepped)
+        private void Check(SolverConfig stepped) => Check(_world.Config, stepped);
+
+        /// <summary><see cref="Check(SolverConfig)"/> for two configs, so that a test can hold it without a device.</summary>
+        internal static void Check(SolverConfig built, SolverConfig stepped)
         {
-            SolverConfig built = _world.Config;
             if (ReferenceEquals(stepped, built)) return;
 
             if (!ReferenceEquals(stepped.Current, built.Current) || !ReferenceEquals(stepped.Bed, built.Bed) ||
                 !ReferenceEquals(stepped.Reefs, built.Reefs) || !ReferenceEquals(stepped.Coral, built.Coral) || stepped.StepSeconds != built.StepSeconds ||
                 stepped.ContactPerPart != built.ContactPerPart || stepped.CreatureContact != built.CreatureContact ||
                 stepped.TankRadiusMetres != built.TankRadiusMetres ||
+                stepped.ShapedAddedMass != built.ShapedAddedMass || stepped.ContactShape != built.ContactShape ||
                 stepped.SeamLengthMetres != built.SeamLengthMetres || stepped.SeamWidthMetres != built.SeamWidthMetres)
             {
                 throw new InvalidOperationException(
                     "The gpu engine was built for one world and handed another to step: its current, " +
-                    "bed, reefs, step or contact model differ from the ones its kernels read.");
+                    "bed, reefs, step, contact model, contact shape or added-mass law differ from the ones its kernels read.");
             }
         }
 

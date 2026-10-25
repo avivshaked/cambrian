@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "dc1e08eaa7dc2b0d",
+  "configHash": "a43be57fc259323c",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -80,6 +80,7 @@
     "maxParts": 16,
     "minPartHalfExtent": 0.01,
     "minPartVolume": 0.0001,
+    "reflectMirroredAnchors": false,
     "scaleLengthensOnce": false,
     "selfOverlapDepthFraction": 0.1
   },
@@ -123,6 +124,7 @@
     "panelsPerAxis": 2,
     "poseHertz": 0,
     "powerPushRadiansPerSecond": 0,
+    "shapedAddedMass": false,
     "skinFrictionCoefficient": 0,
     "spinDragCoefficient": 0,
     "surfaceRestoringFraction": 1,
@@ -348,6 +350,7 @@
     "buoyancyOffsetWattsPerCubicMetre": 0,
     "conceptionOrder": "Age",
     "contactPerPart": false,
+    "contactShape": "Spheres",
     "readAcrossSeams": false,
     "floorRefugeMetres": 0,
     "foundersFollowCorpses": false,

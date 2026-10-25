@@ -82,6 +82,29 @@ namespace Evosim.Farm.Tests
             Assert.Contains("single only", thrown.InnerException.Message);
         }
 
+        /// <summary>
+        /// D228's contact at the point is built on the host only: the farm refuses it before it opens a device,
+        /// naming the value, until the card's port removes the refusal. The true shape at the centre is not refused.
+        /// </summary>
+        [Fact]
+        public void TheFarmRefusesContactAtThePointOnTheCardAndNamesIt()
+        {
+            var block = GpuTank.Launcher(perPart: true, reefs: false);
+            block["EVOSIM_ENGINE"] = "gpu";
+            block["EVOSIM_GPU_DEVICE"] = "cuda";
+            block["EVOSIM_GPU_PRECISION"] = "single";
+            EnvSettings s = EnvBinding.Read(EnvBinding.Of(block));
+            (_, SolverConfig solver) = GpuTank.Build(perPart: true, reefs: false);
+            solver.ContactShape = Evosim.Core.ContactShapeForm.TrueShapeAtPoint;
+
+            MethodInfo open = typeof(EnvBinding).Assembly.GetType("Evosim.Farm.FarmGpu", throwOnError: true)
+                .GetMethod("Open", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
+            var thrown = Assert.Throws<TargetInvocationException>(() => open.Invoke(null, new object[] { s, solver, null }));
+            Assert.IsType<InvalidOperationException>(thrown.InnerException);
+            Assert.Contains("trueshapeatpoint", thrown.InnerException.Message);
+        }
+
         private static MethodInfo Helper(Type step, string name)
         {
             MethodInfo m = step.GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);

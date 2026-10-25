@@ -24,6 +24,13 @@ namespace Evosim.Dynamics
         public double AddedMassCoefficient;
         public double FluidAccelerationCoefficient;
         public double LimbPushCoefficient;
+
+        /// <summary>
+        /// D229, the fin law — <c>FluidConfig.ShapedAddedMass</c>. False is the recorded solver:
+        /// both limb pushes take <c>C_a · ρ · V</c> and <see cref="Fluid.Apply"/> does not enter
+        /// the shaped branch.
+        /// </summary>
+        public bool ShapedAddedMass;
         public double PowerPushRadiansPerSecond;
         public double PoseHertz;
         public double TissueExcessDensity;
@@ -199,6 +206,17 @@ namespace Evosim.Dynamics
         public bool ContactPerPart;
 
         /// <summary>
+        /// D228: what a part is to the per-part contact — <c>RunConfig.ContactShape</c>.
+        /// <see cref="ContactShapeForm.Spheres"/> is the recorded contact and takes
+        /// <see cref="Contacts"/>'s recorded path with nothing added to it. <see cref="ContactShapeForm.TrueShape"/>
+        /// needs <see cref="ContactPerPart"/>, allocates each body's committed link turns and cores at
+        /// its construction, and takes <see cref="ContactTrueShape"/>'s path.
+        /// <see cref="ContactShapeForm.TrueShapeAtPoint"/> is the same path with the force at the contact point
+        /// and each link's committed spin as well; the card refuses it until its port.
+        /// </summary>
+        public ContactShapeForm ContactShape;
+
+        /// <summary>
         /// The box's extent along x and z when bodies touch across its seams, m — D204,
         /// <c>RunConfig.ReadAcrossSeams</c>. 0 on both is no seam, the recorded contact.
         /// </summary>
@@ -306,6 +324,7 @@ namespace Evosim.Dynamics
                 AddedMassCoefficient = fluid.AddedMassCoefficient,
                 FluidAccelerationCoefficient = fluid.FluidAccelerationCoefficient,
                 LimbPushCoefficient = fluid.LimbPushCoefficient,
+                ShapedAddedMass = fluid.ShapedAddedMass,
                 PowerPushRadiansPerSecond = fluid.PowerPushRadiansPerSecond,
                 PoseHertz = fluid.PoseHertz,
                 TissueExcessDensity = fluid.TissueExcessDensity,
@@ -317,6 +336,7 @@ namespace Evosim.Dynamics
                 SkinFrictionCoefficient = fluid.SkinFrictionCoefficient,
                 SpinDragCoefficient = fluid.SpinDragCoefficient,
                 ContactPerPart = config.ContactPerPart,
+                ContactShape = config.ContactShape,
             BedFriction = config.BedFriction,
                 RockTouch = config.SenseBedTouch,
                 Anchoring = config.CellTypes.Contains(CellTypeIds.Anchoring)

@@ -141,6 +141,29 @@ namespace Evosim.Core
         public float LimbPushCoefficient { get; set; }
 
         /// <summary>
+        /// D229, the fin law: a stroking limb's added mass follows its shape and the direction it
+        /// moves, instead of <see cref="AddedMassCoefficient"/> · ρ · V.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Off, both limb pushes (the swinging limb's and the powered stroke's) use the volume
+        /// formula and a flat blade pushes no more than a round stick of equal volume. On, each
+        /// push takes the part's own textbook added mass for the direction of its motion: a box
+        /// takes the plate formula ρ·π/4·w²·L, with <c>L</c> its extent along the limb and <c>w</c>
+        /// its extent across both the limb and the motion; a capsule takes the strip formula on its
+        /// cylinder plus its two ends as a sphere, whatever the direction; a sphere takes ½·ρ·V,
+        /// which is today's number at C_a = 0.5. Nothing else in the push changes, and the work
+        /// the powered stroke books follows the push, so a wider fin pays more by itself.
+        /// </para>
+        /// <para>
+        /// ⚠ Default false, so every recorded config replays the world it ran. A world with the
+        /// push on and this on is a new realisation of every seed. <c>EVOSIM_SHAPED_ADDED_MASS</c>.
+        /// </para>
+        /// </remarks>
+        [Tunable("fluid")]
+        public bool ShapedAddedMass { get; set; }
+
+        /// <summary>
         /// The bend-and-power drive's stroke rate, Ω in rad/s (propose-joint-drive.md, the owner's
         /// ruling of 2026-09-30). 0 runs the torque drive every recorded world ran.
         /// </summary>
@@ -407,6 +430,7 @@ namespace Evosim.Core
             AddedMassCoefficient = AddedMassCoefficient,
             FluidAccelerationCoefficient = FluidAccelerationCoefficient,
             LimbPushCoefficient = LimbPushCoefficient,
+            ShapedAddedMass = ShapedAddedMass,
             PowerPushRadiansPerSecond = PowerPushRadiansPerSecond,
             PoseHertz = PoseHertz,
             PanelsPerAxis = PanelsPerAxis,

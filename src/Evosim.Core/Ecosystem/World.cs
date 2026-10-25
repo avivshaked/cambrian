@@ -2700,6 +2700,15 @@ namespace Evosim.Core
                     "builds (D162).", nameof(config));
             }
 
+            // D228: the true shape is the per-part contact's narrowphase; the body sphere has no parts to test.
+            if (config.ContactShape != ContactShapeForm.Spheres && !config.ContactPerPart)
+            {
+                throw new ArgumentException(
+                    "ContactShape is " + config.ContactShape + " and ContactPerPart is off. The true shape is " +
+                    "the narrowphase of per-part contact (D228); a body sphere has no parts to test.",
+                    nameof(config));
+            }
+
             // The touch of the rock is read on each part's own contact sphere (D114).
             if (config.SenseBedTouch && !config.ContactPerPart)
             {

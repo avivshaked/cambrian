@@ -954,7 +954,11 @@ namespace Evosim.Dynamics
             // exactly as every recorded world ran it.
             if (config.ContactPerPart)
             {
-                ApplyPerPart(body, index, grid, config, ref scratch);
+                // D228. A branch and nothing else on the recorded path: the spheres below are untouched.
+                if (config.ContactShape.IsTrueShape())
+                    ContactTrueShape.Apply(body, index, grid, config, ref scratch);
+                else
+                    ApplyPerPart(body, index, grid, config, ref scratch);
                 return;
             }
 

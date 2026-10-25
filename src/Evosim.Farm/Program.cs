@@ -88,6 +88,13 @@ namespace Evosim.Farm
                 return FilmWindow.Run(args);
             }
 
+            // --mirror-census <run dir> <seconds> <out file>: each mirrored part's joint against its
+            // twin's, in the solver and in development (MirrorCensus).
+            if (args.Length >= 1 && args[0] == "--mirror-census")
+            {
+                return MirrorCensus.Run(args);
+            }
+
             // Two worlds in one process on one card: --pair <a.args> <b.args>; or two or more, on the
             // card or on the CPU engine: --group <a.args> <b.args> [<c.args> ...]. Group says what it
             // reads and where each world writes.

@@ -63,6 +63,9 @@ namespace Evosim.Dynamics
             // swam a median 1.2 cm/s with no power at all (the swim test, 2026-09-30).
             bool pushing = config.LimbPushCoefficient > 0 && !powered;
 
+            // D229's fin law. Not entered at false, the recorded solver's bits.
+            bool shaped = config.ShapedAddedMass;
+
             // D161's drag on turning. Not entered at None, the recorded solver's bits.
             bool skin = config.TurningDrag == TurningDragForm.Skin;
             bool spinning = config.TurningDrag == TurningDragForm.Spin;
@@ -238,7 +241,33 @@ namespace Evosim.Dynamics
                         Vec3 swing = spin - Vec3.Read(body.Spin, 3 * body.Parent[i]);
                         Vec3 across = swing - axis * Vec3.Dot(swing, axis);
                         double addedMass = config.AddedMassCoefficient * config.Density * body.Volume[i];
+                        bool shapedSwing = false;
+                        double shapedLever = reach;
+                        if (shaped)
+                        {
+                            // D229: the part's added mass for the direction of its swing, and the
+                            // lever it acts at for that direction. A sphere keeps the line below,
+                            // whose bits are the shaped value's.
+                            Vec3 swingMotion = Vec3.Cross(across, axis);
+                            double acrossLength = swingMotion.Magnitude;
+                            PhenotypePart shapedPart = body.Phenotype.Parts[i];
+                            if (acrossLength > 0 && shapedPart.ShapeId != ShapeIds.Sphere)
+                            {
+                                // across is the swing's angular velocity off the limb's line, the
+                                // turning axis; the limb moves along across x axis, as each degree of
+                                // freedom's does along dofAxis x axis below.
+                                Vec3 swingDirection = swingMotion * (1.0 / acrossLength);
+                                addedMass = AddedMassOf(
+                                    shapedPart.ShapeId, shapedPart.HalfExtents, rotation, axis,
+                                    swingDirection,
+                                    config.Density, config.AddedMassCoefficient, body.Volume[i]);
+                                shapedLever = LeverOf(reach, axis, swingDirection);
+                                shapedSwing = true;
+                            }
+                        }
+
                         double push = config.LimbPushCoefficient * addedMass * reach * Vec3.Dot(across, across);
+                        if (shapedSwing) push = config.LimbPushCoefficient * addedMass * shapedLever * Vec3.Dot(across, across);
                         force += axis * (-push);
                     }
                 }
@@ -256,6 +285,14 @@ namespace Evosim.Dynamics
                         QuatD frame = QuatD.Read(body.JointFrame, 4 * i);
                         int start = body.DofStart[i];
                         double swing2 = 0;
+
+                        // D229: each degree of freedom moves the limb in its own direction, the
+                        // unit vector of dofAxis x axis, and the added mass is the part's for it.
+                        // A sphere takes the unshaped line below, whose bits are the shaped value's.
+                        PhenotypePart shapedPart = shaped ? body.Phenotype.Parts[i] : null;
+                        bool shapedPush = shaped && shapedPart.ShapeId != ShapeIds.Sphere;
+                        double shapedSum = 0;
+
                         for (int d = 0; d < body.DofCount[i]; d++)
                         {
                             double s = body.Drive.Stroke[start + d];
@@ -263,13 +300,33 @@ namespace Evosim.Dynamics
                             Vec3 dofAxis = rotation * frame.Rotate(Creature.AxisOf(d));
                             double along = Vec3.Dot(dofAxis, axis);
                             swing2 += s * omega * s * omega * (1.0 - along * along);
+
+                            if (shapedPush)
+                            {
+                                Vec3 motion = Vec3.Cross(dofAxis, axis);
+                                double motionLength = motion.Magnitude;
+                                if (motionLength > 0)
+                                {
+                                    Vec3 strokeDirection = motion * (1.0 / motionLength);
+                                    shapedSum += LeverOf(reach, axis, strokeDirection) *
+                                        AddedMassOf(
+                                            shapedPart.ShapeId, shapedPart.HalfExtents, rotation, axis,
+                                            strokeDirection,
+                                            config.Density, config.AddedMassCoefficient, body.Volume[i]) *
+                                        (s * omega * s * omega * (1.0 - along * along));
+                                }
+                            }
                         }
 
                         if (swing2 > 0)
                         {
                             double addedMass = config.AddedMassCoefficient * config.Density * body.Volume[i];
                             double push = config.LimbPushCoefficient * addedMass * reach * swing2;
+                            if (shapedPush) push = config.LimbPushCoefficient * shapedSum;
                             force += axis * (-push);
+
+                            // The work is the push times the lever it acts at and the swing's speed. A
+                            // lever other than reach (LeverOf) must enter this line too.
                             body.MechanicalWorkJoules += push * reach * System.Math.Sqrt(swing2) * config.StepSeconds;
                         }
                     }
@@ -343,6 +400,86 @@ namespace Evosim.Dynamics
             }
 
             Apply(body, config);
+        }
+
+        /// <summary>
+        /// D229: the lever a limb's push acts at, in metres, for one direction of motion. Today it is
+        /// <paramref name="reach"/>, the distance from the joint to the link's origin, exactly, so the
+        /// shaped push's bits are the unshaped lever's. It is the one place a later rule would put the
+        /// lever where the added mass sits along the limb; the work line (<see cref="Apply"/>) must
+        /// follow it.
+        /// </summary>
+        public static double LeverOf(double reach, Vec3 axis, Vec3 direction) => reach;
+
+        /// <summary>
+        /// D229, the fin law: the added mass of one part moving in one direction, in kg.
+        /// </summary>
+        /// <param name="shapeId">The part's <c>PhenotypePart.ShapeId</c>.</param>
+        /// <param name="halfExtents">The part's half-extents, in its own frame.</param>
+        /// <param name="rotation">The part's rotation, from its own frame to the frame the other two vectors are in.</param>
+        /// <param name="axis">The limb's unit length axis, joint to link, in that frame.</param>
+        /// <param name="direction">The unit direction of motion, in that frame.</param>
+        /// <param name="density">The water's density, kg/m³.</param>
+        /// <param name="coefficient">D135's <c>C_a</c>, used for a sphere alone.</param>
+        /// <param name="volume">The part's volume, m³, used for a sphere alone.</param>
+        /// <remarks>
+        /// <para>
+        /// A box takes the plate formula ρ·π/4·w²·L: <c>L</c> its caliper extent along the limb axis,
+        /// <c>w</c> its caliper extent along the direction perpendicular to both the motion and the
+        /// limb axis. Its extent along the motion does not enter. The limb's line need not be the
+        /// box's long axis: both calipers are taken along the box's own axes, <c>L = 2·Σ|axis·e_k|·h_k</c>
+        /// and <c>w = 2·Σ|n·e_k|·h_k</c>, with <c>n</c> the unit vector of axis × motion. The motion is
+        /// first projected off the axis; if nothing is left of it there is no transverse motion, and
+        /// the function returns 0, since that direction's term carries (1 − along²) = 0 anyway.
+        /// </para>
+        /// <para>
+        /// A capsule takes the strip formula on its cylinder, ρ·π·r²·(2·halfSpan), plus its two ends
+        /// as a sphere, ½·ρ·4/3·π·r³, in every direction. A sphere takes exactly
+        /// <c>C_a · ρ · V</c>, the unshaped value. Any other shape is refused.
+        /// </para>
+        /// </remarks>
+        public static double AddedMassOf(
+            string shapeId, Float3 halfExtents, Mat3 rotation, Vec3 axis, Vec3 direction,
+            double density, double coefficient, double volume)
+        {
+            if (shapeId == ShapeIds.Sphere) return coefficient * density * volume;
+
+            if (shapeId == ShapeIds.Capsule)
+            {
+                double r = CapsuleShape.Radius(halfExtents);
+                double halfSpan = CapsuleShape.HalfSpan(halfExtents);
+                return density * System.Math.PI * r * r * (2.0 * halfSpan) +
+                       0.5 * density * (4.0 / 3.0) * System.Math.PI * r * r * r;
+            }
+
+            if (shapeId == ShapeIds.Box)
+            {
+                Vec3 localAxis = rotation.TransposedTimes(axis);
+                Vec3 localDirection = rotation.TransposedTimes(direction);
+                Vec3 transverse = localDirection - localAxis * Vec3.Dot(localDirection, localAxis);
+                if (!(transverse.SqrMagnitude > 0)) return 0.0;
+                Vec3 across = Vec3.Cross(localAxis, transverse);
+                double acrossLength = across.Magnitude;
+                if (!(acrossLength > 0)) return 0.0;
+                across = across * (1.0 / acrossLength);
+
+                double hx = System.Math.Abs((double)halfExtents.X);
+                double hy = System.Math.Abs((double)halfExtents.Y);
+                double hz = System.Math.Abs((double)halfExtents.Z);
+
+                double length = 2.0 * (System.Math.Abs(localAxis.X) * hx +
+                                       System.Math.Abs(localAxis.Y) * hy +
+                                       System.Math.Abs(localAxis.Z) * hz);
+                double width = 2.0 * (System.Math.Abs(across.X) * hx +
+                                      System.Math.Abs(across.Y) * hy +
+                                      System.Math.Abs(across.Z) * hz);
+
+                return density * (System.Math.PI / 4.0) * width * width * length;
+            }
+
+            throw new System.ArgumentException(
+                "The fin law has no added mass for the shape '" + shapeId +
+                "'; it knows box, capsule and sphere.", nameof(shapeId));
         }
 
         /// <summary>

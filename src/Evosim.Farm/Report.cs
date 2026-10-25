@@ -370,6 +370,7 @@ namespace Evosim.Farm
                       (s.DragLimitWelded ? " welded" : " link")
                     : "") +
                 (s.ScaleLengthensOnce ? " · scale lengthens once" : "") +
+                (s.ReflectMirroredAnchors ? " · mirrored anchors reflected" : "") +
                 " · matterBudget " + F(s.MatterBudget) +
                 " · addedMass " + F(s.AddedMass) +
                 " · fluidAccel " + F(s.FluidAccel) +
@@ -431,6 +432,8 @@ namespace Evosim.Farm
                 (config.PlantsKeepMatter ? " · plants keep matter" : "") +
                 // D207, only when on, so every recorded header reads as it did.
                 (config.PlantsKeepOwnFirst ? " own leaves first" : "") +
+                // D228, only when not the recorded spheres, so every recorded header reads as it did.
+                (config.ContactShape != ContactShapeForm.Spheres ? " · contact shape " + config.ContactShape.ToString().ToLowerInvariant() : "") +
                 // The owner's intake scale, only when not 1, so every recorded header reads as it did.
                 (config.IntakeScale != 1f ? " · intake ×" + config.IntakeScale.ToString("0.###", Inv) : "") +
                 // D212, only when on, so every recorded header reads as it did.

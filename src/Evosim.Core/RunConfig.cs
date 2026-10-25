@@ -860,6 +860,31 @@ namespace Evosim.Core
         public bool ContactPerPart { get; set; }
 
         /// <summary>
+        /// What a part is to the contact: its bounding ball, or its true shape — D228,
+        /// <c>logbook/specs/d228-d229-build-plan.md</c> sections 3 and 4.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="ContactShapeForm.Spheres"/> is every recorded world: each part touches as the
+        /// ball of its half-diagonal. <see cref="ContactShapeForm.TrueShape"/> keeps that ball as the
+        /// broadphase and tests the narrowphase on the part's convex core and margin (a point and the
+        /// sphere's radius, a segment and the capsule's radius, a box shrunk by its smallest
+        /// half-extent), by GJK, and the bed, the reefs, the coral and the glass on the core's support
+        /// point toward the surface. The force acts where it does today, at the link's centre.
+        /// <see cref="ContactShapeForm.TrueShapeAtPoint"/> is that narrowphase with the force at the contact
+        /// point: the torque <c>r x F</c> (each touch's capped) and the damper on the point's velocity.
+        /// </para>
+        /// <para>
+        /// ⚠ Needs <see cref="ContactPerPart"/>: a config with this on and that off is refused at
+        /// construction. Default <c>Spheres</c>, so every recorded world replays. Only the farm binds
+        /// it (<c>EVOSIM_CONTACT_SHAPE</c>). An enum so that a later build can add a level that
+        /// applies the force at the contact point without moving any recorded config's hash.
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public ContactShapeForm ContactShape { get; set; } = ContactShapeForm.Spheres;
+
+        /// <summary>
         /// Whether what lies on either side of the box's seam is read the short way round: bodies
         /// touch across it and the smells cross it. D204's open ocean, whose edges are joined.
         /// </summary>
@@ -4509,5 +4534,30 @@ namespace Evosim.Core
 
         /// <summary>D194's branching coral on the islands, placed by <see cref="CoralGeometry.Place(RunConfig, CoralFootprint, BedShape, System.Func{float, float, float}, ulong, bool)"/>.</summary>
         Coral = 1,
+    }
+
+    /// <summary>
+    /// What a part is to the per-part contact - <see cref="RunConfig.ContactShape"/>, D228. By name in the
+    /// file and the hash, as every enum tunable is. Appended in order, never inserted: a later level that
+    /// applies the force at the contact point is a third value.
+    /// </summary>
+    public enum ContactShapeForm
+    {
+        /// <summary>Each part touches as the ball of its half-diagonal: every recorded world.</summary>
+        Spheres = 0,
+
+        /// <summary>
+        /// Each part touches as its convex core with a margin, by GJK, and the world's surfaces test its
+        /// support point. The force acts at the link's centre.
+        /// </summary>
+        TrueShape = 1,
+
+        /// <summary>
+        /// Everything <see cref="TrueShape"/> is, and the force acts at the contact point instead of the
+        /// link's centre: the lever is the point less the centre, the torque <c>r x F</c> goes into the
+        /// link's torque (each touch's capped), and the damper reads the point's velocity. A body that
+        /// rests on a corner tips.
+        /// </summary>
+        TrueShapeAtPoint = 2,
     }
 }

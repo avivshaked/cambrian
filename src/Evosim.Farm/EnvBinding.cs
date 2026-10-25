@@ -95,6 +95,11 @@ namespace Evosim.Farm
             // Off is the recorded world, where every copy compounds.
             Flag("EVOSIM_SCALE_LENGTHENS_ONCE", (s, v) => s.ScaleLengthensOnce = v),
 
+            // D228: a mirrored part's joint anchors are stored in its proper frame, so a reflected
+            // copy is posed where development put it. Off is the recorded world, where the solver
+            // joins a mirrored part where its twin is joined.
+            Flag("EVOSIM_REFLECT_MIRRORED_ANCHORS", (s, v) => s.ReflectMirroredAnchors = v),
+
             // D109: the matter seeded as islands, founders planted in them, and the light's shade
             // map from the same noise, drifting or not. Every default is the recorded world.
             Num("EVOSIM_MATTER_ISLANDS", 0f, (s, v) => s.MatterIslands = v),
@@ -362,6 +367,8 @@ namespace Evosim.Farm
             Num("EVOSIM_ADDED_MASS", 0f, (s, v) => s.AddedMass = v),
             Num("EVOSIM_FLUID_ACCEL", 0f, (s, v) => s.FluidAccel = v),
             Num("EVOSIM_LIMB_PUSH", 0f, (s, v) => s.LimbPush = v),
+            // D229: a stroking limb's added mass follows its shape. Read only with the push on.
+            Flag("EVOSIM_SHAPED_ADDED_MASS", (s, v) => s.ShapedAddedMass = v),
             Num("EVOSIM_POWER_PUSH", 0f, (s, v) => s.PowerPush = v),
             Num("EVOSIM_POSE_HZ", 0f, (s, v) => s.PoseHz = v),
             Flag("EVOSIM_DRIVE_GENES", (s, v) => s.DriveGenes = v),
@@ -502,6 +509,10 @@ namespace Evosim.Farm
 
             // D114: a contact sphere on every part rather than one a body. Off is the recorded world.
             Flag("EVOSIM_CONTACT_PER_PART", (s, v) => s.ContactPerPart = v),
+
+            // D228: a part touches as its convex core with a margin ('trueshape') rather than the ball of its
+            // half-diagonal ('spheres', the recorded world). Needs the per-part contact above.
+            Custom("EVOSIM_CONTACT_SHAPE", (s, env) => s.ContactShape = ContactShapeOf(env, "EVOSIM_CONTACT_SHAPE")),
 
             // D204: bodies touch, and the smells reach, across the box's seams. Off is the recorded box.
             Flag("EVOSIM_READ_ACROSS_SEAMS", (s, v) => s.ReadAcrossSeams = v),
@@ -694,6 +705,7 @@ namespace Evosim.Farm
                     AddedMassCoefficient = s.AddedMass,
                     FluidAccelerationCoefficient = s.FluidAccel,
                     LimbPushCoefficient = s.LimbPush,
+                    ShapedAddedMass = s.ShapedAddedMass,
                     PowerPushRadiansPerSecond = s.PowerPush,
                     PoseHertz = s.PoseHz,
                     WaterHoldSeconds = s.WaterHold,
@@ -828,6 +840,7 @@ namespace Evosim.Farm
             config.Development.MaxBodyReachMetres = s.MaxReach;
             config.Development.FloorsWeighRigidGroups = s.RigidFloors;
             config.Development.ScaleLengthensOnce = s.ScaleLengthensOnce;
+            config.Development.ReflectMirroredAnchors = s.ReflectMirroredAnchors;
 
             config.MatterIslandWavelengthMetres = s.MatterIslands;
             config.MatterIslandCover = s.MatterIslandCover;
@@ -986,6 +999,7 @@ namespace Evosim.Farm
             config.ToughnessWattsPerUnit = s.PriceToughness;
             config.Mutation.AttributeMutationChance = s.AttributeMutation;
             config.ContactPerPart = s.ContactPerPart;
+            config.ContactShape = s.ContactShape;
             config.ReadAcrossSeams = s.ReadAcrossSeams;
             config.PlantsKeepMatter = s.PlantsKeepMatter;
             config.PlantsKeepOwnFirst = s.PlantsKeepOwnFirst;
@@ -1189,6 +1203,22 @@ namespace Evosim.Farm
 
             throw new ArgumentException(
                 name + " is '" + raw + "', which is none of 'none', 'skin' or 'spin'.");
+        }
+
+        private static ContactShapeForm ContactShapeOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrEmpty(raw)) return ContactShapeForm.Spheres;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "spheres": return ContactShapeForm.Spheres;
+                case "trueshape": return ContactShapeForm.TrueShape;
+                case "trueshapeatpoint": return ContactShapeForm.TrueShapeAtPoint;
+            }
+
+            throw new ArgumentException(
+                name + " is '" + raw + "', which is none of 'spheres', 'trueshape' or 'trueshapeatpoint'.");
         }
 
         private static BrainModel BrainModelOf(Lookup env, string name)
@@ -1423,6 +1453,9 @@ namespace Evosim.Farm
 
         /// <summary>D199's reading three — <c>EVOSIM_SCALE_LENGTHENS_ONCE</c>.</summary>
         public bool ScaleLengthensOnce;
+
+        /// <summary>D228 — <c>EVOSIM_REFLECT_MIRRORED_ANCHORS</c>.</summary>
+        public bool ReflectMirroredAnchors;
         public float MatterIslands;
         public float MatterIslandCover;
         public float MatterIslandDepth;
@@ -1695,6 +1728,7 @@ namespace Evosim.Farm
         public float AddedMass;
         public float FluidAccel;
         public float LimbPush;
+        public bool ShapedAddedMass;
         public float PowerPush;
         public bool DriveGenes;
         public float DriveGeneChance;
@@ -1816,6 +1850,7 @@ namespace Evosim.Farm
         public float PriceToughness;
         public float AttributeMutation;
         public bool ContactPerPart;
+        public ContactShapeForm ContactShape;
         public bool ReadAcrossSeams;
         public bool PlantsKeepMatter;
         public bool PlantsKeepOwnFirst;

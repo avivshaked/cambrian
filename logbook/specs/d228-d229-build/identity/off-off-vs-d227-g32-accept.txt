@@ -1,0 +1,16 @@
+A: scratch/contact-eating/identity-bdl/r62bdl-off-g32/2026-10-24-191632-60e7fe56//
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 2.426 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 4e94b0e09d dirty False dynamics bb71b2180005 farm 2ed00b9974b4 config 60e7fe563fbe0c74
+  pace     600 s of 600 in 3.3702294033333335 min, 2.967157069518614 x real time, status ended (budget), diverged 0
+B: scratch/fin-shape/identity-off/r62fsoff-off-g32/2026-10-25-082706-f24e8223//
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.2099 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 15d688fd85 dirty False dynamics 8445b3289383 farm c430f9045cdc config f24e82238bbdd3ab
+  pace     600 s of 600 in 3.3390664 min, 2.9948490991374115 x real time, status ended (budget), diverged 0
+split A  physics 50%, world 47%, harness 2%, writers 1%
+split B  physics 50%, world 47%, harness 2%, writers 1%
+stats    identical on all 60 shared samples to t=600 (wall clocks left out)
+digest   identical on all 601 shared rows to step 60000
+lineage  byte-equal (1570 lines)
+positions not in both runs

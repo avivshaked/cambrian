@@ -364,6 +364,27 @@ namespace Evosim.Farm.Tests
         }
 
         [Fact]
+        public void ABackendBuiltForOneContactShapeRefusesToStepTheOther()
+        {
+            // The same world twice, as one config and its copy, so that only the shape can differ.
+            (_, SolverConfig built) = GpuTank.Build(reefs: false);
+            var copy = (SolverConfig)typeof(object)
+                .GetMethod("MemberwiseClone", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .Invoke(built, null);
+
+            GpuBackend.Check(built, copy);
+
+            copy.ContactShape = ContactShapeForm.TrueShape;
+            Refused(() => GpuBackend.Check(built, copy), "contact shape");
+
+            built.ContactShape = ContactShapeForm.TrueShape;
+            GpuBackend.Check(built, copy);
+
+            copy.ContactShape = ContactShapeForm.Spheres;
+            Refused(() => GpuBackend.Check(built, copy), "contact shape");
+        }
+
+        [Fact]
         public void AWaterHoldIsRefusedNamingIt()
         {
             (_, SolverConfig s) = GpuTank.Build(reefs: false);
@@ -493,6 +514,26 @@ namespace Evosim.Farm.Tests
             }
         }
 
+        /// <summary>
+        /// D228's crowd: bodies close enough to touch each other, the plates and the capsules among them, with the
+        /// bed under the lowest and the last at the glass.
+        /// </summary>
+        private static void PopulateCrowd(DynamicsWorld world, World core, int count, ulong seed, int firstId)
+        {
+            var rng = new Rng(seed);
+            Vec3 axis = GpuTank.Axis(core);
+
+            for (int k = 0; k < count; k++)
+            {
+                double x = axis.X + 0.45 * (k % 4) - 0.7;
+                double z = axis.Z + 0.45 * ((k / 4) % 3) - 0.45;
+                double y = core.Bed.FloorY(x, z) + 0.5 + 0.45 * (k / 12);
+                var at = new Vec3(x, y, z);
+                if (k == count - 1) at = new Vec3(axis.X + core.TankRadiusMetres - 0.4, -6.0, axis.Z);
+                world.AddInIdOrder(GpuTank.Body(firstId + k, world.Config, core, rng, at));
+            }
+        }
+
         private void AssertSame(DynamicsWorld cpu, DynamicsWorld gpu, string when)
         {
             byte[] a = GpuTank.Snapshot(cpu), b = GpuTank.Snapshot(gpu);
@@ -556,23 +597,54 @@ namespace Evosim.Farm.Tests
         [InlineData("drive")]
         [InlineData("power")]
         [InlineData("swing")]
+        [InlineData("shapedpower")]
+        [InlineData("shapedswing")]
+        [InlineData("trueshape")]
+        [InlineData("trueshape-crowd")]
         public void TheDriveAndThePushesOnTheCpuAcceleratorAreTheSolver(string world)
         {
             var drive = new Dictionary<string, string> { { "EVOSIM_POWER_PUSH", "2" }, { "EVOSIM_POSE_HZ", "2" } };
             var power = new Dictionary<string, string>(drive) { { "EVOSIM_LIMB_PUSH", "0.3" } };
             var swing = new Dictionary<string, string> { { "EVOSIM_LIMB_PUSH", "0.3" } };
 
-            Dictionary<string, string> settings = world == "drive" ? drive : world == "power" ? power : swing;
-            Dictionary<string, string> without = world == "power" ? drive : null;
+            // D229's fin law: the power's push and the swing's with the shaped added mass on, each shown
+            // to part on the CPU from the same push with the volume formula.
+            var shapedPower = new Dictionary<string, string>(power) { { "EVOSIM_SHAPED_ADDED_MASS", "1" } };
+            var shapedSwing = new Dictionary<string, string>(swing) { { "EVOSIM_SHAPED_ADDED_MASS", "1" } };
 
-            (DynamicsWorld plain, World core0) = Pair(true, false, without);
-            (DynamicsWorld cpu, World coreA) = Pair(true, false, settings);
-            (DynamicsWorld gpu, World coreB) = Pair(true, false, settings);
+            // D228's contact on the true shape: the bodies' parts touch as their convex cores with margins, the
+            // bed, the reefs and the glass on the core's support point. The second puts plates and capsules close
+            // enough to touch each other and the bed. Each is shown to part on the CPU from the spheres' world.
+            var trueShape = new Dictionary<string, string> { { "EVOSIM_CONTACT_SHAPE", "trueshape" } };
+            bool crowd = world == "trueshape-crowd";
+            bool reefs = world.StartsWith("trueshape");
 
-            Populate(plain, core0, 6, 11UL, 1);
-            Populate(cpu, coreA, 6, 11UL, 1);
-            Populate(gpu, coreB, 6, 11UL, 1);
-            Assert.Equal(world != "swing", cpu.Creatures[0].Drive.BendAndPower);
+            Dictionary<string, string> settings =
+                world == "drive" ? drive : world == "power" ? power : world == "swing" ? swing
+                : world == "shapedpower" ? shapedPower : world == "shapedswing" ? shapedSwing : trueShape;
+            Dictionary<string, string> without =
+                world == "power" ? drive : world == "shapedpower" ? power : world == "shapedswing" ? swing : null;
+
+            (DynamicsWorld plain, World core0) = Pair(true, reefs, without);
+            (DynamicsWorld cpu, World coreA) = Pair(true, reefs, settings);
+            (DynamicsWorld gpu, World coreB) = Pair(true, reefs, settings);
+
+            if (crowd)
+            {
+                PopulateCrowd(plain, core0, 14, 11UL, 1);
+                PopulateCrowd(cpu, coreA, 14, 11UL, 1);
+                PopulateCrowd(gpu, coreB, 14, 11UL, 1);
+            }
+            else
+            {
+                Populate(plain, core0, 6, 11UL, 1);
+                Populate(cpu, coreA, 6, 11UL, 1);
+                Populate(gpu, coreB, 6, 11UL, 1);
+            }
+            Assert.Equal(world != "swing" && world != "shapedswing" && !world.StartsWith("trueshape"),
+                         cpu.Creatures[0].Drive.BendAndPower);
+            Assert.Equal(world.StartsWith("shaped"), cpu.Config.ShapedAddedMass);
+            Assert.Equal(world.StartsWith("trueshape"), cpu.Config.ContactShape == ContactShapeForm.TrueShape);
 
             using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
             gpu.UseBackend(backend);

@@ -1,0 +1,6 @@
+stats: resumed rows after 0 s: 2000, of which in the recording: 2000, 10 to 20000 s
+  fields compared per row: 170, values compared: 340000
+  first difference: none
+  only in the resumed rows: []
+  only in the recorded rows: []
+lineage rows in (0, 20000] s: recorded 10408, resumed 10408, equal apart from ['iak', 'ic', 'iok']: True

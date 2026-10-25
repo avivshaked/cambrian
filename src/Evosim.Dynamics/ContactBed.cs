@@ -119,6 +119,21 @@ namespace Evosim.Dynamics
         }
 
         /// <summary>
+        /// The unit normal of the bed's surface under a point, pointing up out of the rock: the map's
+        /// <c>(-dh/dx, 1, -dh/dz)</c> over its length, the normal <see cref="PushExact"/> pushes along
+        /// (D228's true shape takes minus this as the direction to the rock). A flat bed has no map; its
+        /// normal is straight up and the caller does not ask.
+        /// </summary>
+        public static Vec3 NormalUnder(Vec3 centre, SolverConfig config)
+        {
+            config.Bed.HeightAndGradient(
+                centre.X, centre.Z, out _, out double gradientX, out double gradientZ);
+
+            double slope = System.Math.Sqrt(1.0 + gradientX * gradientX + gradientZ * gradientZ);
+            return new Vec3(-gradientX, 1.0, -gradientZ) * (1.0 / slope);
+        }
+
+        /// <summary>
         /// <see cref="Push(Vec3, double, Vec3, double, SolverConfig, double, double)"/> without
         /// the early-out: the twelve modes sampled at the centre, every time.
         /// </summary>

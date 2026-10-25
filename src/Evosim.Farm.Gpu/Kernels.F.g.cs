@@ -69,6 +69,11 @@ namespace Evosim.Farm.Gpu.Sgl
         // part's Power, which caps its muscle.
         public ArrayView<float> Threshold, Reaction, HoldGene, Release;
         public ArrayView<Real> LinkPower;
+
+        // D229's fin law, a link each: the part's shape (0 a sphere, 1 a box, 2 a capsule) and, beside
+        // it, three numbers: a box's half-extents, or a capsule's radius and half-span.
+        public ArrayView<int> ShapeCode;
+        public ArrayView<Real> HalfExt;
     }
 
     public struct SPanels { public ArrayView<Real> Centre, Normal, Area; }
@@ -130,6 +135,10 @@ namespace Evosim.Farm.Gpu.Sgl
     {
         public ArrayView<int> Links, Id, Rank, Alive, Jointed, RankToSlot;
         public ArrayView<Real> TotalMass, LinkMass;
+
+        // D228's cores, by link row: each link's core half-extents and margin (ConvexCore.Of), packed with the
+        // body and uploaded only when a pack changes them. A stub of one cell unless cfg.TrueShape.
+        public ArrayView<Real> CoreHx, CoreHy, CoreHz, CoreM;
         public ArrayView<int> NOver, OvSlot, OvId, OvPart, OvHeld, NHeld, HeldId, BedGlass;
         public ArrayView<long> Census, Overflow;
         public ArrayView<Real> LinkPush, LinkFluid;
@@ -172,6 +181,9 @@ namespace Evosim.Farm.Gpu.Sgl
     {
         public ArrayView<Real> Cx, Cy, Cz, R, Vx, Vy, Vz;
         public ArrayView<Real> LCx, LCy, LCz, LR, LVx, LVy, LVz, LEx, LEy, LEz;
+
+        // D228: each link's turn, row-major, committed with its sphere. A stub of one cell unless cfg.TrueShape.
+        public ArrayView<Real> LRot0, LRot1, LRot2, LRot3, LRot4, LRot5, LRot6, LRot7, LRot8;
         public ArrayView<int> Active;
     }
 
@@ -220,7 +232,9 @@ namespace Evosim.Farm.Gpu.Sgl
         public int ReefCount, LimitDrive, LimitDrag, UseRestore, FloorRestores, CreatureContact;
         public int WeldedDrag;   // D199/D200: under LimitDrag, the torque capped by the welded body (WeldedDrag)
         public int OffsetTorque, SplitColumns, Redo, BendAndPower, TurningDrag, RockTouch, Anchoring;
+        public int ShapedMass;   // D229: the limb pushes take the part's shaped added mass (Fluid.AddedMassOf)
         public int AnyRemains;   // D220: 1 for a block in which some body is remains; 0 reads no remains flag at all
+        public int TrueShape;    // D228: a part touches as its convex core with a margin (SolverConfig.ContactShape)
 
         public long TraceStep;
         public double TraceTime, DtD, PoseOmega, GripDecay, GripThreshold, GripLag;
@@ -1837,6 +1851,20 @@ namespace Evosim.Farm.Gpu.Sgl
                             int fstart = dofStart[fl];
                             Real omega = cfg.PushOmega;
                             Real swing2 = 0;
+
+                            // D229, as Fluid.Apply: each degree of freedom moves the limb in the unit
+                            // vector of dofAxis x axis, and the added mass is the part's for it. A sphere
+                            // (shape 0) keeps the unshaped line.
+                            int shapeCode = cfg.ShapedMass != 0 ? b.ShapeCode[fl * N + i] : 0;
+                            Real hx0 = 0, hx1 = 0, hx2 = 0;
+                            if (shapeCode != 0)
+                            {
+                                hx0 = b.HalfExt[(3 * fl) * N + i];
+                                hx1 = b.HalfExt[(3 * fl + 1) * N + i];
+                                hx2 = b.HalfExt[(3 * fl + 2) * N + i];
+                            }
+                            Real shapedSum = 0;
+
                             for (int d = 0; d < dofCount[fl]; d++)
                             {
                                 Real sv = (Real)dr.EPower[(fstart + d) * N + i];
@@ -1844,13 +1872,31 @@ namespace Evosim.Farm.Gpu.Sgl
                                 V3 dofAxis = frot * fframe.Rotate(V3.Axis(d));
                                 Real along = V3.Dot(dofAxis, axis);
                                 swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
+
+                                if (shapeCode != 0)
+                                {
+                                    V3 motion = V3.Cross(dofAxis, axis);
+                                    Real motionLength = motion.Magnitude;
+                                    if (motionLength > 0)
+                                    {
+                                        V3 strokeDirection = motion * ((Real)1.0 / motionLength);
+                                        shapedSum += LeverOf(linkReach, axis, strokeDirection) *
+                                            ShapedAddedMass(
+                                                shapeCode, hx0, hx1, hx2, frot, axis,
+                                                strokeDirection, cfg.Density) *
+                                            (sv * omega * sv * omega * ((Real)1.0 - along * along));
+                                    }
+                                }
                             }
 
                             if (swing2 > 0)
                             {
                                 Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
                                 Real push = cfg.LimbPush * addedMass * linkReach * swing2;
+                                if (shapeCode != 0) push = cfg.LimbPush * shapedSum;
                                 linkForce = linkForce + axis * (-push);
+                                // The work is the push times the lever it acts at: a lever other than the reach
+                                // (LeverOf) must enter this line too, as on the CPU.
                                 dr.Work[i] = dr.Work[i] + (double)(push * linkReach * System.MathF.Sqrt(swing2)) * cfg.DtD;
                             }
                         }
@@ -2018,6 +2064,23 @@ namespace Evosim.Farm.Gpu.Sgl
                             ps.LVx[row + l] = velocity[3 * l];
                             ps.LVy[row + l] = velocity[3 * l + 1];
                             ps.LVz[row + l] = velocity[3 * l + 2];
+                        }
+                    }
+
+                    // D228: each link's turn travels with its sphere (RefreshLinkSpheres copies RotationMatrix).
+                    if (cfg.TrueShape != 0)
+                    {
+                        for (int l = 0; l < links; l++)
+                        {
+                            ps.LRot0[row + l] = rotationMatrix[9 * l];
+                            ps.LRot1[row + l] = rotationMatrix[9 * l + 1];
+                            ps.LRot2[row + l] = rotationMatrix[9 * l + 2];
+                            ps.LRot3[row + l] = rotationMatrix[9 * l + 3];
+                            ps.LRot4[row + l] = rotationMatrix[9 * l + 4];
+                            ps.LRot5[row + l] = rotationMatrix[9 * l + 5];
+                            ps.LRot6[row + l] = rotationMatrix[9 * l + 6];
+                            ps.LRot7[row + l] = rotationMatrix[9 * l + 7];
+                            ps.LRot8[row + l] = rotationMatrix[9 * l + 8];
                         }
                     }
                 }
@@ -2858,6 +2921,20 @@ namespace Evosim.Farm.Gpu.Sgl
                             int fstart = dofStart[fl];
                             Real omega = cfg.PushOmega;
                             Real swing2 = 0;
+
+                            // D229, as Fluid.Apply: each degree of freedom moves the limb in the unit
+                            // vector of dofAxis x axis, and the added mass is the part's for it. A sphere
+                            // (shape 0) keeps the unshaped line.
+                            int shapeCode = cfg.ShapedMass != 0 ? b.ShapeCode[fl * N + i] : 0;
+                            Real hx0 = 0, hx1 = 0, hx2 = 0;
+                            if (shapeCode != 0)
+                            {
+                                hx0 = b.HalfExt[(3 * fl) * N + i];
+                                hx1 = b.HalfExt[(3 * fl + 1) * N + i];
+                                hx2 = b.HalfExt[(3 * fl + 2) * N + i];
+                            }
+                            Real shapedSum = 0;
+
                             for (int d = 0; d < dofCount[fl]; d++)
                             {
                                 Real sv = (Real)dr.EPower[(fstart + d) * N + i];
@@ -2865,13 +2942,31 @@ namespace Evosim.Farm.Gpu.Sgl
                                 V3 dofAxis = frot * fframe.Rotate(V3.Axis(d));
                                 Real along = V3.Dot(dofAxis, axis);
                                 swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
+
+                                if (shapeCode != 0)
+                                {
+                                    V3 motion = V3.Cross(dofAxis, axis);
+                                    Real motionLength = motion.Magnitude;
+                                    if (motionLength > 0)
+                                    {
+                                        V3 strokeDirection = motion * ((Real)1.0 / motionLength);
+                                        shapedSum += LeverOf(linkReach, axis, strokeDirection) *
+                                            ShapedAddedMass(
+                                                shapeCode, hx0, hx1, hx2, frot, axis,
+                                                strokeDirection, cfg.Density) *
+                                            (sv * omega * sv * omega * ((Real)1.0 - along * along));
+                                    }
+                                }
                             }
 
                             if (swing2 > 0)
                             {
                                 Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
                                 Real push = cfg.LimbPush * addedMass * linkReach * swing2;
+                                if (shapeCode != 0) push = cfg.LimbPush * shapedSum;
                                 linkForce = linkForce + axis * (-push);
+                                // The work is the push times the lever it acts at: a lever other than the reach
+                                // (LeverOf) must enter this line too, as on the CPU.
                                 dr.Work[i] = dr.Work[i] + (double)(push * linkReach * System.MathF.Sqrt(swing2)) * cfg.DtD;
                             }
                         }
@@ -3039,6 +3134,23 @@ namespace Evosim.Farm.Gpu.Sgl
                             ps.LVx[row + l] = velocity[3 * l];
                             ps.LVy[row + l] = velocity[3 * l + 1];
                             ps.LVz[row + l] = velocity[3 * l + 2];
+                        }
+                    }
+
+                    // D228: each link's turn travels with its sphere (RefreshLinkSpheres copies RotationMatrix).
+                    if (cfg.TrueShape != 0)
+                    {
+                        for (int l = 0; l < links; l++)
+                        {
+                            ps.LRot0[row + l] = rotationMatrix[9 * l];
+                            ps.LRot1[row + l] = rotationMatrix[9 * l + 1];
+                            ps.LRot2[row + l] = rotationMatrix[9 * l + 2];
+                            ps.LRot3[row + l] = rotationMatrix[9 * l + 3];
+                            ps.LRot4[row + l] = rotationMatrix[9 * l + 4];
+                            ps.LRot5[row + l] = rotationMatrix[9 * l + 5];
+                            ps.LRot6[row + l] = rotationMatrix[9 * l + 6];
+                            ps.LRot7[row + l] = rotationMatrix[9 * l + 7];
+                            ps.LRot8[row + l] = rotationMatrix[9 * l + 8];
                         }
                     }
                 }
@@ -3879,6 +3991,20 @@ namespace Evosim.Farm.Gpu.Sgl
                             int fstart = dofStart[fl];
                             Real omega = cfg.PushOmega;
                             Real swing2 = 0;
+
+                            // D229, as Fluid.Apply: each degree of freedom moves the limb in the unit
+                            // vector of dofAxis x axis, and the added mass is the part's for it. A sphere
+                            // (shape 0) keeps the unshaped line.
+                            int shapeCode = cfg.ShapedMass != 0 ? b.ShapeCode[fl * N + i] : 0;
+                            Real hx0 = 0, hx1 = 0, hx2 = 0;
+                            if (shapeCode != 0)
+                            {
+                                hx0 = b.HalfExt[(3 * fl) * N + i];
+                                hx1 = b.HalfExt[(3 * fl + 1) * N + i];
+                                hx2 = b.HalfExt[(3 * fl + 2) * N + i];
+                            }
+                            Real shapedSum = 0;
+
                             for (int d = 0; d < dofCount[fl]; d++)
                             {
                                 Real sv = (Real)dr.EPower[(fstart + d) * N + i];
@@ -3886,13 +4012,31 @@ namespace Evosim.Farm.Gpu.Sgl
                                 V3 dofAxis = frot * fframe.Rotate(V3.Axis(d));
                                 Real along = V3.Dot(dofAxis, axis);
                                 swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
+
+                                if (shapeCode != 0)
+                                {
+                                    V3 motion = V3.Cross(dofAxis, axis);
+                                    Real motionLength = motion.Magnitude;
+                                    if (motionLength > 0)
+                                    {
+                                        V3 strokeDirection = motion * ((Real)1.0 / motionLength);
+                                        shapedSum += LeverOf(linkReach, axis, strokeDirection) *
+                                            ShapedAddedMass(
+                                                shapeCode, hx0, hx1, hx2, frot, axis,
+                                                strokeDirection, cfg.Density) *
+                                            (sv * omega * sv * omega * ((Real)1.0 - along * along));
+                                    }
+                                }
                             }
 
                             if (swing2 > 0)
                             {
                                 Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
                                 Real push = cfg.LimbPush * addedMass * linkReach * swing2;
+                                if (shapeCode != 0) push = cfg.LimbPush * shapedSum;
                                 linkForce = linkForce + axis * (-push);
+                                // The work is the push times the lever it acts at: a lever other than the reach
+                                // (LeverOf) must enter this line too, as on the CPU.
                                 dr.Work[i] = dr.Work[i] + (double)(push * linkReach * System.MathF.Sqrt(swing2)) * cfg.DtD;
                             }
                         }
@@ -4060,6 +4204,23 @@ namespace Evosim.Farm.Gpu.Sgl
                             ps.LVx[row + l] = velocity[3 * l];
                             ps.LVy[row + l] = velocity[3 * l + 1];
                             ps.LVz[row + l] = velocity[3 * l + 2];
+                        }
+                    }
+
+                    // D228: each link's turn travels with its sphere (RefreshLinkSpheres copies RotationMatrix).
+                    if (cfg.TrueShape != 0)
+                    {
+                        for (int l = 0; l < links; l++)
+                        {
+                            ps.LRot0[row + l] = rotationMatrix[9 * l];
+                            ps.LRot1[row + l] = rotationMatrix[9 * l + 1];
+                            ps.LRot2[row + l] = rotationMatrix[9 * l + 2];
+                            ps.LRot3[row + l] = rotationMatrix[9 * l + 3];
+                            ps.LRot4[row + l] = rotationMatrix[9 * l + 4];
+                            ps.LRot5[row + l] = rotationMatrix[9 * l + 5];
+                            ps.LRot6[row + l] = rotationMatrix[9 * l + 6];
+                            ps.LRot7[row + l] = rotationMatrix[9 * l + 7];
+                            ps.LRot8[row + l] = rotationMatrix[9 * l + 8];
                         }
                     }
                 }
@@ -4900,6 +5061,20 @@ namespace Evosim.Farm.Gpu.Sgl
                             int fstart = dofStart[fl];
                             Real omega = cfg.PushOmega;
                             Real swing2 = 0;
+
+                            // D229, as Fluid.Apply: each degree of freedom moves the limb in the unit
+                            // vector of dofAxis x axis, and the added mass is the part's for it. A sphere
+                            // (shape 0) keeps the unshaped line.
+                            int shapeCode = cfg.ShapedMass != 0 ? b.ShapeCode[fl * N + i] : 0;
+                            Real hx0 = 0, hx1 = 0, hx2 = 0;
+                            if (shapeCode != 0)
+                            {
+                                hx0 = b.HalfExt[(3 * fl) * N + i];
+                                hx1 = b.HalfExt[(3 * fl + 1) * N + i];
+                                hx2 = b.HalfExt[(3 * fl + 2) * N + i];
+                            }
+                            Real shapedSum = 0;
+
                             for (int d = 0; d < dofCount[fl]; d++)
                             {
                                 Real sv = (Real)dr.EPower[(fstart + d) * N + i];
@@ -4907,13 +5082,31 @@ namespace Evosim.Farm.Gpu.Sgl
                                 V3 dofAxis = frot * fframe.Rotate(V3.Axis(d));
                                 Real along = V3.Dot(dofAxis, axis);
                                 swing2 += sv * omega * sv * omega * ((Real)1.0 - along * along);
+
+                                if (shapeCode != 0)
+                                {
+                                    V3 motion = V3.Cross(dofAxis, axis);
+                                    Real motionLength = motion.Magnitude;
+                                    if (motionLength > 0)
+                                    {
+                                        V3 strokeDirection = motion * ((Real)1.0 / motionLength);
+                                        shapedSum += LeverOf(linkReach, axis, strokeDirection) *
+                                            ShapedAddedMass(
+                                                shapeCode, hx0, hx1, hx2, frot, axis,
+                                                strokeDirection, cfg.Density) *
+                                            (sv * omega * sv * omega * ((Real)1.0 - along * along));
+                                    }
+                                }
                             }
 
                             if (swing2 > 0)
                             {
                                 Real addedMass = cfg.AddedMass * cfg.Density * volume[fl];
                                 Real push = cfg.LimbPush * addedMass * linkReach * swing2;
+                                if (shapeCode != 0) push = cfg.LimbPush * shapedSum;
                                 linkForce = linkForce + axis * (-push);
+                                // The work is the push times the lever it acts at: a lever other than the reach
+                                // (LeverOf) must enter this line too, as on the CPU.
                                 dr.Work[i] = dr.Work[i] + (double)(push * linkReach * System.MathF.Sqrt(swing2)) * cfg.DtD;
                             }
                         }
@@ -5081,6 +5274,23 @@ namespace Evosim.Farm.Gpu.Sgl
                             ps.LVx[row + l] = velocity[3 * l];
                             ps.LVy[row + l] = velocity[3 * l + 1];
                             ps.LVz[row + l] = velocity[3 * l + 2];
+                        }
+                    }
+
+                    // D228: each link's turn travels with its sphere (RefreshLinkSpheres copies RotationMatrix).
+                    if (cfg.TrueShape != 0)
+                    {
+                        for (int l = 0; l < links; l++)
+                        {
+                            ps.LRot0[row + l] = rotationMatrix[9 * l];
+                            ps.LRot1[row + l] = rotationMatrix[9 * l + 1];
+                            ps.LRot2[row + l] = rotationMatrix[9 * l + 2];
+                            ps.LRot3[row + l] = rotationMatrix[9 * l + 3];
+                            ps.LRot4[row + l] = rotationMatrix[9 * l + 4];
+                            ps.LRot5[row + l] = rotationMatrix[9 * l + 5];
+                            ps.LRot6[row + l] = rotationMatrix[9 * l + 6];
+                            ps.LRot7[row + l] = rotationMatrix[9 * l + 7];
+                            ps.LRot8[row + l] = rotationMatrix[9 * l + 8];
                         }
                     }
                 }
@@ -5300,6 +5510,15 @@ namespace Evosim.Farm.Gpu.Sgl
                 ps.LVz[row + l] = cs.LVz[row + l];
                 ps.LEx[row + l] = cs.LEx[row + l]; ps.LEy[row + l] = cs.LEy[row + l];
                 ps.LEz[row + l] = cs.LEz[row + l];
+
+                if (cfg.TrueShape != 0)
+                {
+                    ps.LRot0[row + l] = cs.LRot0[row + l]; ps.LRot1[row + l] = cs.LRot1[row + l];
+                    ps.LRot2[row + l] = cs.LRot2[row + l]; ps.LRot3[row + l] = cs.LRot3[row + l];
+                    ps.LRot4[row + l] = cs.LRot4[row + l]; ps.LRot5[row + l] = cs.LRot5[row + l];
+                    ps.LRot6[row + l] = cs.LRot6[row + l]; ps.LRot7[row + l] = cs.LRot7[row + l];
+                    ps.LRot8[row + l] = cs.LRot8[row + l];
+                }
             }
         }
 
@@ -8665,7 +8884,30 @@ namespace Evosim.Farm.Gpu.Sgl
                     V3 swing = w - parentSpin;
                     V3 across = swing - axis * V3.Dot(swing, axis);
                     Real addedMass = cfg.AddedMass * cfg.Density * volume;
+
+                    // D229: the part's added mass for the direction of its swing. A sphere (shape 0)
+                    // keeps the line above.
+                    bool shapedSwing = false;
+                    Real shapedLever = reach;
+                    if (cfg.ShapedMass != 0)
+                    {
+                        int shapeCode = b.ShapeCode[i * n + c];
+                        V3 swingMotion = V3.Cross(across, axis);
+                        Real acrossLength = swingMotion.Magnitude;
+                        if (acrossLength > 0 && shapeCode != 0)
+                        {
+                            V3 swingDirection = swingMotion * ((Real)1.0 / acrossLength);
+                            addedMass = ShapedAddedMass(
+                                shapeCode, b.HalfExt[(3 * i) * n + c], b.HalfExt[(3 * i + 1) * n + c],
+                                b.HalfExt[(3 * i + 2) * n + c], rotation, axis,
+                                swingDirection, cfg.Density);
+                            shapedLever = LeverOf(reach, axis, swingDirection);
+                            shapedSwing = true;
+                        }
+                    }
+
                     Real push = cfg.LimbPush * addedMass * reach * V3.Dot(across, across);
+                    if (shapedSwing) push = cfg.LimbPush * addedMass * shapedLever * V3.Dot(across, across);
                     force = force + axis * (-push);
                 }
             }
@@ -8733,6 +8975,44 @@ namespace Evosim.Farm.Gpu.Sgl
 #if GPU_PHASE_PROBE
             LinkMark(gl, cfg, row, 6, ref clk);
 #endif
+        }
+
+        /// <summary>
+        /// Fluid.LeverOf (D229): the lever a limb's push acts at for one direction of motion. Today the
+        /// reach, exactly. The one place a later rule would move it; the work line must follow.
+        /// </summary>
+        private static Real LeverOf(Real reach, V3 axis, V3 direction) => reach;
+
+        /// <summary>
+        /// Fluid.AddedMassOf (D229) for a box (shape 1) or a capsule (shape 2), in the same operations in
+        /// the same order, so the double kernel is the solver's to the bit. A box's h0..h2 are its
+        /// half-extents; a capsule's h0 is its radius and h1 its half-span, which the host took from
+        /// CapsuleShape. A sphere never comes here, for its value is the unshaped line's.
+        /// </summary>
+        private static Real ShapedAddedMass(
+            int shape, Real h0, Real h1, Real h2, M3 rotation, V3 axis, V3 direction, Real density)
+        {
+            if (shape == 2)
+            {
+                return density * (Real)Math.PI * h0 * h0 * ((Real)2.0 * h1) +
+                       (Real)0.5 * density * (Real)(4.0 / 3.0) * (Real)Math.PI * h0 * h0 * h0;
+            }
+
+            V3 localAxis = rotation.TransposedTimes(axis);
+            V3 localDirection = rotation.TransposedTimes(direction);
+            V3 transverse = localDirection - localAxis * V3.Dot(localDirection, localAxis);
+            if (!(transverse.SqrMagnitude > 0)) return 0;
+            V3 across = V3.Cross(localAxis, transverse);
+            Real acrossLength = across.Magnitude;
+            if (!(acrossLength > 0)) return 0;
+            across = across * ((Real)1.0 / acrossLength);
+
+            Real length = (Real)2.0 * (System.MathF.Abs(localAxis.X) * h0 + System.MathF.Abs(localAxis.Y) * h1 +
+                                       System.MathF.Abs(localAxis.Z) * h2);
+            Real width = (Real)2.0 * (System.MathF.Abs(across.X) * h0 + System.MathF.Abs(across.Y) * h1 +
+                                      System.MathF.Abs(across.Z) * h2);
+
+            return density * (Real)(Math.PI / 4.0) * width * width * length;
         }
 
         /// <summary>
@@ -9298,6 +9578,9 @@ namespace Evosim.Farm.Gpu.Sgl
 
             int n = Candidates(row, g, cand, gl, gr, cfg, false);
 
+            // D228: the true shape's narrowphase needs GJK's simplex.
+            var simplex = new Real[GjkSimplex];
+
             for (int k = 0; k < n; k++)
             {
                 int key = cand[k];
@@ -9320,6 +9603,16 @@ namespace Evosim.Farm.Gpu.Sgl
                 Real distance = System.MathF.Sqrt(bx * bx + by * by + bz * bz);
                 Real penetration = radius + s.LR[orow] - distance;
                 if (penetration <= 0) continue;
+
+                if (cfg.TrueShape != 0)
+                {
+                    Real onx, ony, onz, open;
+                    if (!TrueShapePair(s, gl, simplex, g, i, og, j, bx, by, bz, radius, s.LR[orow],
+                                       out onx, out ony, out onz, out open))
+                    {
+                        continue;
+                    }
+                }
 
                 nOver = NoteOverlapPart(g, nOver, gl.Id[og], og, i, j, gl, cfg);
             }
@@ -9366,6 +9659,9 @@ namespace Evosim.Farm.Gpu.Sgl
             Real vx = s.LVx[row], vy = s.LVy[row], vz = s.LVz[row];
             Real m = b.Mass[i * N + bi];
 
+            // D228: the true shape's narrowphase needs GJK's simplex.
+            var simplex = new Real[GjkSimplex];
+
             Real fx = 0, fy = 0, fz = 0;
 
             if (cfg.CreatureContact != 0)
@@ -9395,6 +9691,48 @@ namespace Evosim.Farm.Gpu.Sgl
                     Real distance = System.MathF.Sqrt(bx * bx + by * by + bz * bz);
                     Real penetration = radius + s.LR[orow] - distance;
                     if (penetration <= 0) continue;
+
+                    if (cfg.TrueShape != 0)
+                    {
+                        // D228: the sphere test above is the broadphase. The pair touches when its cores,
+                        // swept by their margins, overlap (ContactTrueShape.Apply's pair loop); the force law
+                        // is today's, on that penetration and along that normal.
+                        Real tnx, tny, tnz, tpen;
+                        if (!TrueShapePair(s, gl, simplex, g, i, og, j, bx, by, bz, radius, s.LR[orow],
+                                           out tnx, out tny, out tnz, out tpen))
+                        {
+                            continue;
+                        }
+
+                        if (instrument)
+                        {
+                            if (staged < StageCap)
+                            {
+                                gl.StageId[staged * R + row] = gl.Id[og];
+                                gl.StageSlot[staged * R + row] = og;
+                                gl.StagePart[staged * R + row] = j;
+                            }
+                            staged++;
+                        }
+
+                        Real tOtherMass = gl.LinkMass[orow];
+                        Real tReduced = m * tOtherMass / (m + tOtherMass);
+
+                        Real tStiffness = tReduced * cfg.Omega * cfg.Omega;
+                        Real tDamping = (Real)2.0 * cfg.Zeta * tReduced * cfg.Omega;
+
+                        Real tdvx = vx - s.LVx[orow];
+                        Real tdvy = vy - s.LVy[orow];
+                        Real tdvz = vz - s.LVz[orow];
+                        Real tApproach = tdvx * tnx + tdvy * tny + tdvz * tnz;
+
+                        Real tp = PairPush(tStiffness * tpen - tDamping * tApproach, tReduced, tApproach, cfg);
+
+                        fx = fx + tnx * tp;
+                        fy = fy + tny * tp;
+                        fz = fz + tnz * tp;
+                        continue;
+                    }
 
                     if (instrument)
                     {
@@ -9435,6 +9773,65 @@ namespace Evosim.Farm.Gpu.Sgl
                     fy = fy + ny * p;
                     fz = fz + nz * p;
                 }
+            }
+
+            if (cfg.TrueShape != 0)
+            {
+                // D228: the world's surfaces on the core's support point (ContactTrueShape.Apply), then the
+                // tail below, written out for it so that the recorded path's lines are left as they are.
+                V3 tHalf = new V3(gl.CoreHx[row], gl.CoreHy[row], gl.CoreHz[row]);
+                M3 tRotation = new M3(
+                    s.LRot0[row], s.LRot1[row], s.LRot2[row],
+                    s.LRot3[row], s.LRot4[row], s.LRot5[row],
+                    s.LRot6[row], s.LRot7[row], s.LRot8[row]);
+                Real tMargin = gl.CoreM[row];
+
+                Real tBedStiffness = m * cfg.Omega * cfg.Omega;
+                Real tBedDamping = (Real)2.0 * cfg.Zeta * m * cfg.Omega;
+
+                Real tKept = 0, tnx = 0, tny = 0, tnz = 0, tpx = 0, tpy = 0, tpz = 0;
+                AgainstTheWorldTrue(cx, cy, cz, radius, ex, ey, ez, vx, vy, vz, m, tBedStiffness, tBedDamping,
+                                    tHalf, tRotation, tMargin, w, cfg,
+                                    ref fx, ref fy, ref fz, ref bedGlass, cfg.RockTouch,
+                                    ref tKept, ref tnx, ref tny, ref tnz, ref tpx, ref tpy, ref tpz);
+
+                // D162: the touch this step, and where: the support sphere's deepest point along the normal.
+                if (cfg.RockTouch != 0)
+                {
+                    int tTouched = tKept > 0 ? 1 : 0;
+                    gl.TouchNew[row] = tTouched;
+                    if (tTouched != 0)
+                    {
+                        gl.TouchAt[row] = tpx;
+                        gl.TouchAt[R + row] = tpy;
+                        gl.TouchAt[2 * R + row] = tpz;
+                        gl.TouchAt[3 * R + row] = tnx;
+                        gl.TouchAt[4 * R + row] = tny;
+                        gl.TouchAt[5 * R + row] = tnz;
+                    }
+                }
+
+                BodyPush(ref fx, ref fy, ref fz, m, cfg);
+
+                int tFlags = bedGlass != 0 ? 1 : 0;
+                if (fx != 0 || fy != 0 || fz != 0)
+                {
+                    tFlags |= 2;
+                    if (links == 1)
+                    {
+                        Real tShare = m * ((Real)1.0 / totalMass);
+                        fx = fx * tShare;
+                        fy = fy * tShare;
+                        fz = fz * tShare;
+                    }
+                }
+
+                gl.LinkPush[row] = fx;
+                gl.LinkPush[R + row] = fy;
+                gl.LinkPush[2 * R + row] = fz;
+                gl.LinkFlags[row] = tFlags;
+                if (instrument) gl.StageN[row] = staged;
+                return;
             }
 
             Real bedStiffness = m * cfg.Omega * cfg.Omega;
@@ -9616,6 +10013,694 @@ namespace Evosim.Farm.Gpu.Sgl
                     fy = fy + iy * p;
                     fz = fz + iz * p;
                     bedGlass = 1;
+                }
+            }
+        }
+
+        // ============================================================== D228: contact on the true shape
+        //
+        // ContactTrueShape on the card, behind cfg.TrueShape. A part is a convex core, a box with any
+        // half-extent 0, swept by a ball of its margin (ConvexCore.Of); a pair is tested by GJK on the two
+        // cores, and a surface by the core's support point toward it. The sphere test stays the broadphase
+        // and the early-out. ConvexCore.Distance and Support are transcribed here operation for operation,
+        // with a local array for the simplex in place of stackalloc, so that in double the accelerator is
+        // the solver to the bit; in single it is the same code in single precision. A change to ConvexCore
+        // is therefore made here in the same change.
+
+        public const int GjkSimplex = 40;
+        private const int GjkMaxIterations = 32;
+        private const Real GjkTolerance = (Real)1e-10;
+        private const Real GjkTouching = (Real)1e-9;
+
+        // The simplex buffer: the difference's points, then A's, then B's, three reals a vertex, four
+        // vertices; then the four weights of the nearest point.
+        private const int GjkW = 0, GjkA = 12, GjkB = 24, GjkL = 36;
+
+        /// <summary>ConvexCore.Support: the core's farthest point along a direction. A local component that is 0 or NaN reads as +.</summary>
+        private static V3 GjkSupport(V3 half, M3 rotation, V3 centre, V3 direction)
+        {
+            V3 local = rotation.TransposedTimes(direction);
+
+            V3 corner = new V3(
+                local.X < 0 ? -half.X : half.X,
+                local.Y < 0 ? -half.Y : half.Y,
+                local.Z < 0 ? -half.Z : half.Z);
+
+            return centre + rotation * corner;
+        }
+
+        private static V3 GjkVertex(Real[] s, int block, int k) =>
+            new V3(s[block + 3 * k], s[block + 3 * k + 1], s[block + 3 * k + 2]);
+
+        private static void GjkPut(Real[] s, int block, int k, V3 p)
+        {
+            s[block + 3 * k] = p.X;
+            s[block + 3 * k + 1] = p.Y;
+            s[block + 3 * k + 2] = p.Z;
+        }
+
+        private static void GjkAddVertex(Real[] s, ref int n, V3 pa, V3 pb)
+        {
+            GjkPut(s, GjkA, n, pa);
+            GjkPut(s, GjkB, n, pb);
+            GjkPut(s, GjkW, n, pa - pb);
+            n++;
+        }
+
+        private static bool GjkHeld(Real[] s, int n, V3 w)
+        {
+            for (int k = 0; k < n; k++)
+            {
+                if (s[GjkW + 3 * k] == w.X && s[GjkW + 3 * k + 1] == w.Y && s[GjkW + 3 * k + 2] == w.Z) return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// ConvexCore.Distance: the distance between two cores and the nearest point of each, or false when
+        /// they intersect or touch.
+        /// </summary>
+        private static bool GjkDistance(
+            V3 halfA, M3 rotationA, V3 centreA,
+            V3 halfB, M3 rotationB, V3 centreB,
+            Real[] s, out Real distance, out V3 pointA, out V3 pointB)
+        {
+            // Each core contains its own centre, so coincident centres are an intersection.
+            V3 first = centreB - centreA;
+            if (first.SqrMagnitude <= GjkTouching * GjkTouching)
+            {
+                distance = 0;
+                pointA = centreA;
+                pointB = centreB;
+                return false;
+            }
+
+            int n = 0;
+            GjkAddVertex(s, ref n,
+                GjkSupport(halfA, rotationA, centreA, first),
+                GjkSupport(halfB, rotationB, centreB, -first));
+
+            s[GjkL] = (Real)1.0;
+            V3 v = GjkVertex(s, GjkW, 0);
+            bool inside = false;
+
+            int pass = 0;
+            for (; pass < GjkMaxIterations; pass++)
+            {
+                if (!GjkReduce(s, ref n, out v)) { inside = true; break; }
+
+                Real vv = v.SqrMagnitude;
+                if (vv <= GjkTouching * GjkTouching) break;
+
+                // The difference's support point along -v: A's along -v, B's along +v.
+                V3 wa = GjkSupport(halfA, rotationA, centreA, -v);
+                V3 wb = GjkSupport(halfB, rotationB, centreB, v);
+                V3 w = wa - wb;
+
+                // No progress possible: the support point is a vertex already held, or the gap is closed.
+                if (vv - V3.Dot(v, w) <= GjkTolerance * System.MathF.Sqrt(vv)) break;
+                if (GjkHeld(s, n, w)) break;
+
+                GjkAddVertex(s, ref n, wa, wb);
+            }
+
+            // The cap was reached with a vertex added and not yet reduced: reduce it, so the weights are current.
+            if (pass == GjkMaxIterations && !GjkReduce(s, ref n, out v)) inside = true;
+
+            if (inside)
+            {
+                distance = 0;
+                pointA = centreA;
+                pointB = centreB;
+                return false;
+            }
+
+            // The nearest points are the weights' combination of A's and B's.
+            V3 pa = V3.Zero, pb = V3.Zero;
+            for (int k = 0; k < n; k++)
+            {
+                Real lam = s[GjkL + k];
+                pa = pa + GjkVertex(s, GjkA, k) * lam;
+                pb = pb + GjkVertex(s, GjkB, k) * lam;
+            }
+
+            pointA = pa;
+            pointB = pb;
+            distance = (pa - pb).Magnitude;
+            return distance > GjkTouching;
+        }
+
+        /// <summary>
+        /// ConvexCore.Reduce: the point of the simplex's hull nearest the origin, its weights written, every
+        /// vertex it does not use dropped. False when the simplex is a tetrahedron holding the origin.
+        /// </summary>
+        private static bool GjkReduce(Real[] s, ref int n, out V3 v)
+        {
+            if (n == 1)
+            {
+                s[GjkL] = (Real)1.0;
+            }
+            else if (n == 2)
+            {
+                Real a, b;
+                GjkSegment(GjkVertex(s, GjkW, 0), GjkVertex(s, GjkW, 1), out a, out b);
+                s[GjkL] = a;
+                s[GjkL + 1] = b;
+            }
+            else if (n == 3)
+            {
+                Real a, b, c;
+                GjkTriangle(GjkVertex(s, GjkW, 0), GjkVertex(s, GjkW, 1), GjkVertex(s, GjkW, 2),
+                    out a, out b, out c);
+                s[GjkL] = a;
+                s[GjkL + 1] = b;
+                s[GjkL + 2] = c;
+            }
+            else
+            {
+                if (!GjkTetrahedron(s)) { v = V3.Zero; return false; }
+            }
+
+            // Keep the vertices the nearest point uses, in order.
+            int m = 0;
+            for (int k = 0; k < n; k++)
+            {
+                Real lam = s[GjkL + k];
+                if (!(lam > 0)) continue;
+
+                if (m != k)
+                {
+                    GjkPut(s, GjkW, m, GjkVertex(s, GjkW, k));
+                    GjkPut(s, GjkA, m, GjkVertex(s, GjkA, k));
+                    GjkPut(s, GjkB, m, GjkVertex(s, GjkB, k));
+                    s[GjkL + m] = lam;
+                }
+                m++;
+            }
+            n = m;
+
+            V3 sum = V3.Zero;
+            for (int k = 0; k < n; k++) sum = sum + GjkVertex(s, GjkW, k) * s[GjkL + k];
+            v = sum;
+            return true;
+        }
+
+        /// <summary>ConvexCore.Segment: the weights of the point of segment a-b nearest the origin.</summary>
+        private static void GjkSegment(V3 a, V3 b, out Real la, out Real lb)
+        {
+            V3 ab = b - a;
+            Real len2 = V3.Dot(ab, ab);
+            Real t = len2 > 0 ? -V3.Dot(a, ab) / len2 : (Real)0.0;
+
+            if (!(t > 0)) { la = (Real)1.0; lb = (Real)0.0; }
+            else if (t >= (Real)1.0) { la = (Real)0.0; lb = (Real)1.0; }
+            else { la = (Real)1.0 - t; lb = t; }
+        }
+
+        /// <summary>ConvexCore.Triangle: the weights of the point of triangle a-b-c nearest the origin (Ericson).</summary>
+        private static void GjkTriangle(V3 a, V3 b, V3 c, out Real la, out Real lb, out Real lc)
+        {
+            V3 ab = b - a, ac = c - a;
+            V3 normal = V3.Cross(ab, ac);
+
+            if (normal.SqrMagnitude <= (Real)1e-20 * V3.Dot(ab, ab) * V3.Dot(ac, ac) || !(V3.Dot(ab, ab) > 0))
+            {
+                GjkEdges(a, b, c, out la, out lb, out lc);
+                return;
+            }
+
+            // The origin's offsets from a, b and c.
+            Real d1 = -V3.Dot(ab, a), d2 = -V3.Dot(ac, a);
+            if (d1 <= 0 && d2 <= 0) { la = 1; lb = 0; lc = 0; return; }
+
+            Real d3 = -V3.Dot(ab, b), d4 = -V3.Dot(ac, b);
+            if (d3 >= 0 && d4 <= d3) { la = 0; lb = 1; lc = 0; return; }
+
+            Real vc = d1 * d4 - d3 * d2;
+            if (vc <= 0 && d1 >= 0 && d3 <= 0)
+            {
+                Real t = d1 / (d1 - d3);
+                la = 1 - t; lb = t; lc = 0;
+                return;
+            }
+
+            Real d5 = -V3.Dot(ab, c), d6 = -V3.Dot(ac, c);
+            if (d6 >= 0 && d5 <= d6) { la = 0; lb = 0; lc = 1; return; }
+
+            Real vb = d5 * d2 - d1 * d6;
+            if (vb <= 0 && d2 >= 0 && d6 <= 0)
+            {
+                Real t = d2 / (d2 - d6);
+                la = 1 - t; lb = 0; lc = t;
+                return;
+            }
+
+            Real va = d3 * d6 - d5 * d4;
+            if (va <= 0 && (d4 - d3) >= 0 && (d5 - d6) >= 0)
+            {
+                Real t = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+                la = 0; lb = 1 - t; lc = t;
+                return;
+            }
+
+            Real denom = (Real)1.0 / (va + vb + vc);
+            Real bv = vb * denom, cv = vc * denom;
+            la = (Real)1.0 - bv - cv; lb = bv; lc = cv;
+        }
+
+        /// <summary>ConvexCore.Edges: the nearest point of a triangle taken on its three edges, in the order ab, bc, ca.</summary>
+        private static void GjkEdges(V3 a, V3 b, V3 c, out Real la, out Real lb, out Real lc)
+        {
+            Real p, q;
+            GjkSegment(a, b, out p, out q);
+            Real best = (a * p + b * q).SqrMagnitude;
+            la = p; lb = q; lc = 0;
+
+            GjkSegment(b, c, out p, out q);
+            Real d = (b * p + c * q).SqrMagnitude;
+            if (d < best) { best = d; la = 0; lb = p; lc = q; }
+
+            GjkSegment(c, a, out p, out q);
+            d = (c * p + a * q).SqrMagnitude;
+            if (d < best) { la = q; lb = 0; lc = p; }
+        }
+
+        /// <summary>
+        /// ConvexCore.Tetrahedron: the weights of the nearest point of the tetrahedron in the buffer's four
+        /// vertices; false when the origin is inside it.
+        /// </summary>
+        private static bool GjkTetrahedron(Real[] s)
+        {
+            V3 p0 = GjkVertex(s, GjkW, 0), p1 = GjkVertex(s, GjkW, 1), p2 = GjkVertex(s, GjkW, 2), p3 = GjkVertex(s, GjkW, 3);
+
+            Real best = Real.PositiveInfinity;
+            Real w0 = 0, w1 = 0, w2 = 0, w3 = 0;
+            bool any = false;
+
+            // Faces (0,1,2) | 3, (0,2,3) | 1, (0,3,1) | 2, (1,3,2) | 0.
+            for (int face = 0; face < 4; face++)
+            {
+                V3 a, b, c, d;
+                if (face == 0) { a = p0; b = p1; c = p2; d = p3; }
+                else if (face == 1) { a = p0; b = p2; c = p3; d = p1; }
+                else if (face == 2) { a = p0; b = p3; c = p1; d = p2; }
+                else { a = p1; b = p3; c = p2; d = p0; }
+
+                V3 normal = V3.Cross(b - a, c - a);
+                Real signOrigin = -V3.Dot(a, normal);
+                Real signFourth = V3.Dot(d - a, normal);
+                if (signOrigin * signFourth > 0) continue;
+
+                Real la, lb, lc;
+                GjkTriangle(a, b, c, out la, out lb, out lc);
+                Real dist = (a * la + b * lb + c * lc).SqrMagnitude;
+                if (!(dist < best))
+                {
+                    any = true;
+                    continue;
+                }
+
+                best = dist;
+                any = true;
+                if (face == 0) { w0 = la; w1 = lb; w2 = lc; w3 = 0; }
+                else if (face == 1) { w0 = la; w1 = 0; w2 = lb; w3 = lc; }
+                else if (face == 2) { w0 = la; w1 = lc; w2 = 0; w3 = lb; }
+                else { w0 = 0; w1 = la; w2 = lc; w3 = lb; }
+            }
+
+            if (!any) return false;
+
+            s[GjkL] = w0;
+            s[GjkL + 1] = w1;
+            s[GjkL + 2] = w2;
+            s[GjkL + 3] = w3;
+            return true;
+        }
+
+        /// <summary>
+        /// ContactTrueShape.Pair on the link pair (this link g/i, the other og/j), computed with the one of
+        /// the lower (body id, link) as the first core, as the solver does: the first core at the origin and
+        /// the second at minus the sphere test's difference, so no absolute coordinate enters GJK. (bx, by, bz)
+        /// is that difference as ContactLinks computed it, this link's centre less the other's. The normal
+        /// returned is this link's; False when the penetration is not positive.
+        /// </summary>
+        private static bool TrueShapePair(
+            SSph s, SGlob gl, Real[] simplex, int g, int i, int og, int j,
+            Real bx, Real by, Real bz, Real radius, Real otherRadius,
+            out Real nx, out Real ny, out Real nz, out Real penetration)
+        {
+            int row = g * LinkStride + i;
+            int orow = og * LinkStride + j;
+
+            bool firstIsThis = gl.Id[g] < gl.Id[og] || (gl.Id[g] == gl.Id[og] && i < j);
+            int rowA = firstIsThis ? row : orow;
+            int rowB = firstIsThis ? orow : row;
+            Real radiusA = firstIsThis ? radius : otherRadius;
+            Real radiusB = firstIsThis ? otherRadius : radius;
+
+            // A less B, as the host reads the sphere test in the canonical order: the negation of this less other.
+            V3 between = firstIsThis ? new V3(bx, by, bz) : new V3(-bx, -by, -bz);
+
+            V3 centreA = V3.Zero;
+            V3 centreB = V3.Zero - between;
+
+            V3 halfA = new V3(gl.CoreHx[rowA], gl.CoreHy[rowA], gl.CoreHz[rowA]);
+            V3 halfB = new V3(gl.CoreHx[rowB], gl.CoreHy[rowB], gl.CoreHz[rowB]);
+            Real marginA = gl.CoreM[rowA];
+            Real marginB = gl.CoreM[rowB];
+            M3 rotationA = new M3(
+                s.LRot0[rowA], s.LRot1[rowA], s.LRot2[rowA],
+                s.LRot3[rowA], s.LRot4[rowA], s.LRot5[rowA],
+                s.LRot6[rowA], s.LRot7[rowA], s.LRot8[rowA]);
+            M3 rotationB = new M3(
+                s.LRot0[rowB], s.LRot1[rowB], s.LRot2[rowB],
+                s.LRot3[rowB], s.LRot4[rowB], s.LRot5[rowB],
+                s.LRot6[rowB], s.LRot7[rowB], s.LRot8[rowB]);
+
+            V3 normalAB;
+            V3 pairPoint;   // kept as the host keeps it, unapplied
+
+            Real d;
+            V3 pa, pb;
+            if (GjkDistance(halfA, rotationA, centreA, halfB, rotationB, centreB, simplex, out d, out pa, out pb))
+            {
+                // Apart: along the closest points, from B toward A.
+                V3 gap = pa - pb;
+                normalAB = gap * ((Real)1.0 / d);
+                penetration = marginA + marginB - d;
+
+                // Each surface point is the closest core point moved out by its margin toward the other.
+                pairPoint = ((pa - normalAB * marginA) + (pb + normalAB * marginB)) * (Real)0.5;
+            }
+            else
+            {
+                // The cores meet: the centres' difference, as today, and a push that never weakens as the pair
+                // goes deeper than the margins' sum.
+                V3 deepBetween = centreA - centreB;
+                Real deepDistance = deepBetween.Magnitude;
+                normalAB = deepDistance > (Real)1e-9 ? deepBetween * ((Real)1.0 / deepDistance) : new V3(0, 1, 0);
+
+                Real sum = marginA + marginB;
+                Real deep = radiusA + radiusB - deepDistance;
+                penetration = deep > sum ? deep : sum;
+
+                // The point between the centres at the ratio of the margins.
+                Real along = sum > 0 ? marginA / sum : (Real)0.5;
+                pairPoint = centreA - deepBetween * along;
+            }
+
+            V3 normal = firstIsThis ? normalAB : -normalAB;
+            nx = normal.X; ny = normal.Y; nz = normal.Z;
+            return penetration > 0;
+        }
+
+        /// <summary>
+        /// A core's support point along a direction as a sphere's centre, a float and its rest: in double the
+        /// host's centre plus the turned corner; in single the float centre moved by the corner with the
+        /// rounding of the sum moved into the rest, so the rest stays at the size the world's samplers
+        /// (BedHeightNear, GlassOutsideNear) are written for.
+        /// </summary>
+        private static void SupportSphere(
+            V3 half, M3 rotation, Real cx, Real cy, Real cz, Real ex, Real ey, Real ez, V3 direction,
+            out Real sx, out Real sy, out Real sz, out Real sex, out Real sey, out Real sez)
+        {
+            V3 at = GjkSupport(half, rotation, CarryBase ? V3.Zero : new V3(cx, cy, cz), direction);
+
+            if (CarryBase)
+            {
+                // Knuth's two-sum, per axis: s + err is cx + at.X exactly.
+                sx = cx + at.X; Real bbx = sx - cx; sex = ex + ((cx - (sx - bbx)) + (at.X - bbx));
+                sy = cy + at.Y; Real bby = sy - cy; sey = ey + ((cy - (sy - bby)) + (at.Y - bby));
+                sz = cz + at.Z; Real bbz = sz - cz; sez = ez + ((cz - (sz - bbz)) + (at.Z - bbz));
+            }
+            else
+            {
+                sx = at.X; sy = at.Y; sz = at.Z;
+                sex = ex; sey = ey; sez = ez;
+            }
+        }
+
+        /// <summary>
+        /// ContactTrueShape's NoteRock: one push from the rock, kept where it is larger than any this link has
+        /// had this step, with its direction as the rock's normal and the support sphere's deepest point along
+        /// it as the touch.
+        /// </summary>
+        private static void NoteRockAt(
+            Real x, Real y, Real z, Real sx, Real sy, Real sz, Real margin,
+            ref Real kept, ref Real nx, ref Real ny, ref Real nz, ref Real px, ref Real py, ref Real pz)
+        {
+            Real size = System.MathF.Sqrt(x * x + y * y + z * z);
+            if (!(size > kept)) return;
+
+            kept = size;
+            Real inv = (Real)1.0 / size;
+            nx = x * inv; ny = y * inv; nz = z * inv;
+            px = sx - nx * margin; py = sy - ny * margin; pz = sz - nz * margin;
+        }
+
+        /// <summary>
+        /// ContactTrueShape's four surfaces on one link, in Contacts.ApplyPerPart's order: the bed (flat, or
+        /// ContactBed on the height map), the reefs and the coral, and the glass. Each takes the link's bounding
+        /// sphere (centre, rest and radius r) as the early-out, then the direction to the surface, then the core's
+        /// support point along it, and runs the recorded routine for that surface on a sphere of the margin's radius
+        /// there. The contact point of the host's routines is not kept: nothing applies a force there.
+        /// </summary>
+        private static void AgainstTheWorldTrue(
+            Real cx, Real cy, Real cz, Real r, Real ex, Real ey, Real ez, Real vx, Real vy, Real vz, Real m,
+            Real bedStiffness, Real bedDamping, V3 half, M3 rotation, Real margin, SWorld w, SCfg cfg,
+            ref Real fx, ref Real fy, ref Real fz, ref int bedGlass,
+            int noteRock, ref Real rockKept, ref Real rnx, ref Real rny, ref Real rnz,
+            ref Real rpx, ref Real rpy, ref Real rpz)
+        {
+            Real sx, sy, sz, sex, sey, sez;
+
+            if (cfg.HasBed == 0)
+            {
+                // FlatBed: straight down.
+                Real bounded = CarryBase ? ((-cfg.WorldDepth - cy) - ey) + r : -cfg.WorldDepth - (cy - r);
+                if (bounded > 0)
+                {
+                    SupportSphere(half, rotation, cx, cy, cz, ex, ey, ez, new V3(0, -1, 0),
+                                  out sx, out sy, out sz, out sex, out sey, out sez);
+
+                    Real below = CarryBase ? ((-cfg.WorldDepth - sy) - sey) + margin : -cfg.WorldDepth - (sy - margin);
+                    if (below > 0)
+                    {
+                        Real up = PairPush(bedStiffness * below - bedDamping * vy, m, vy, cfg);
+                        if (up > 0)
+                        {
+                            fx = fx + 0;
+                            fy = fy + up;
+                            fz = fz + 0;
+                            bedGlass = 1;
+                            if (noteRock != 0)
+                                NoteRockAt(0, up, 0, sx, sy, sz, margin, ref rockKept, ref rnx, ref rny, ref rnz, ref rpx, ref rpy, ref rpz);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // HeightBed: the bounding sphere's push, then minus the bed's normal under the centre.
+                Real hgt, gx, gz, pen, slope;
+                if (CarryBase)
+                {
+                    Real rise;
+                    BedHeightNear(cx, cz, ex, ez, w, cfg, out hgt, out rise, out gx, out gz);
+                    Real floorY = -cfg.BedDepth + hgt;
+                    slope = System.MathF.Sqrt((Real)1.0 + gx * gx + gz * gz);
+                    pen = r - ((cy - floorY) + (ey - rise)) / slope;
+                }
+                else
+                {
+                    BedHeightAndGradient(cx, cz, w, cfg, out hgt, out gx, out gz);
+                    Real floorY = -cfg.BedDepth + hgt;
+                    slope = System.MathF.Sqrt((Real)1.0 + gx * gx + gz * gz);
+                    pen = r - (cy - floorY) / slope;
+                }
+
+                Real rx = 0, ry = 0, rz = 0;
+                Real nx = 0, ny = 0, nz = 0;
+                if (pen > 0)
+                {
+                    Real inv = (Real)1.0 / slope;
+                    nx = -gx * inv; ny = (Real)1.0 * inv; nz = -gz * inv;
+                    Real approach = vx * nx + vy * ny + vz * nz;
+                    Real p = PairPush(bedStiffness * pen - bedDamping * approach, m, approach, cfg);
+                    rx = nx * p; ry = ny * p; rz = nz * p;
+                }
+
+                if (rx != 0 || ry != 0 || rz != 0)
+                {
+                    SupportSphere(half, rotation, cx, cy, cz, ex, ey, ez, new V3(-nx, -ny, -nz),
+                                  out sx, out sy, out sz, out sex, out sey, out sez);
+
+                    Real shgt, sgx, sgz, spen, sslope;
+                    if (CarryBase)
+                    {
+                        Real srise;
+                        BedHeightNear(sx, sz, sex, sez, w, cfg, out shgt, out srise, out sgx, out sgz);
+                        Real sfloorY = -cfg.BedDepth + shgt;
+                        sslope = System.MathF.Sqrt((Real)1.0 + sgx * sgx + sgz * sgz);
+                        spen = margin - ((sy - sfloorY) + (sey - srise)) / sslope;
+                    }
+                    else
+                    {
+                        BedHeightAndGradient(sx, sz, w, cfg, out shgt, out sgx, out sgz);
+                        Real sfloorY = -cfg.BedDepth + shgt;
+                        sslope = System.MathF.Sqrt((Real)1.0 + sgx * sgx + sgz * sgz);
+                        spen = margin - (sy - sfloorY) / sslope;
+                    }
+
+                    Real tx = 0, ty = 0, tz = 0;
+                    if (spen > 0)
+                    {
+                        Real sinv = (Real)1.0 / sslope;
+                        Real snx = -sgx * sinv, sny = (Real)1.0 * sinv, snz = -sgz * sinv;
+                        Real sapproach = vx * snx + vy * sny + vz * snz;
+                        Real sp = PairPush(bedStiffness * spen - bedDamping * sapproach, m, sapproach, cfg);
+                        tx = snx * sp; ty = sny * sp; tz = snz * sp;
+                    }
+
+                    if (tx != 0 || ty != 0 || tz != 0)
+                    {
+                        fx = fx + tx;
+                        fy = fy + ty;
+                        fz = fz + tz;
+                        bedGlass = 1;
+                        if (noteRock != 0)
+                            NoteRockAt(tx, ty, tz, sx, sy, sz, margin, ref rockKept, ref rnx, ref rny, ref rnz, ref rpx, ref rpy, ref rpz);
+                    }
+                }
+            }
+
+            if (cfg.ReefCount != 0 || cfg.CoralCount != 0)
+            {
+                // Reef: the bounding sphere's push, then minus its direction.
+                SD at;
+                Real distance = cfg.CoralCount != 0
+                    ? CoralSignedDistance(cx, cy, cz, r, w, cfg, out at)
+                    : ReefSignedDistance(cx, cy, cz, r, w, cfg, out at);
+                Real penetration = r - distance;
+                if (CarryBase)
+                {
+                    Real glen = System.MathF.Sqrt(at.Gx * at.Gx + at.Gy * at.Gy + at.Gz * at.Gz);
+                    if (glen > (Real)1e-12) penetration = penetration - (at.Gx * ex + at.Gy * ey + at.Gz * ez) / glen;
+                }
+
+                Real rx = 0, ry = 0, rz = 0;
+                if (penetration > 0)
+                {
+                    Real length = System.MathF.Sqrt(at.Gx * at.Gx + at.Gy * at.Gy + at.Gz * at.Gz);
+                    Real nx, ny, nz;
+                    if (length > (Real)1e-12)
+                    {
+                        Real inv = (Real)1.0 / length;
+                        nx = at.Gx * inv; ny = at.Gy * inv; nz = at.Gz * inv;
+                    }
+                    else
+                    {
+                        nx = 0; ny = 1; nz = 0;
+                    }
+
+                    Real approach = vx * nx + vy * ny + vz * nz;
+                    Real p = PairPush(bedStiffness * penetration - bedDamping * approach, m, approach, cfg);
+                    rx = nx * p; ry = ny * p; rz = nz * p;
+                }
+
+                if (rx != 0 || ry != 0 || rz != 0)
+                {
+                    Real magnitude = System.MathF.Sqrt(rx * rx + ry * ry + rz * rz);
+                    Real unit = (Real)1.0 / magnitude;
+                    SupportSphere(half, rotation, cx, cy, cz, ex, ey, ez, new V3(-(rx * unit), -(ry * unit), -(rz * unit)),
+                                  out sx, out sy, out sz, out sex, out sey, out sez);
+
+                    SD sat;
+                    Real sdistance = cfg.CoralCount != 0
+                        ? CoralSignedDistance(sx, sy, sz, margin, w, cfg, out sat)
+                        : ReefSignedDistance(sx, sy, sz, margin, w, cfg, out sat);
+                    Real spenetration = margin - sdistance;
+                    if (CarryBase)
+                    {
+                        Real sglen = System.MathF.Sqrt(sat.Gx * sat.Gx + sat.Gy * sat.Gy + sat.Gz * sat.Gz);
+                        if (sglen > (Real)1e-12)
+                            spenetration = spenetration - (sat.Gx * sex + sat.Gy * sey + sat.Gz * sez) / sglen;
+                    }
+
+                    Real tx = 0, ty = 0, tz = 0;
+                    if (spenetration > 0)
+                    {
+                        Real slength = System.MathF.Sqrt(sat.Gx * sat.Gx + sat.Gy * sat.Gy + sat.Gz * sat.Gz);
+                        Real snx, sny, snz;
+                        if (slength > (Real)1e-12)
+                        {
+                            Real sinv = (Real)1.0 / slength;
+                            snx = sat.Gx * sinv; sny = sat.Gy * sinv; snz = sat.Gz * sinv;
+                        }
+                        else
+                        {
+                            snx = 0; sny = 1; snz = 0;
+                        }
+
+                        Real sapproach = vx * snx + vy * sny + vz * snz;
+                        Real sp = PairPush(bedStiffness * spenetration - bedDamping * sapproach, m, sapproach, cfg);
+                        tx = snx * sp; ty = sny * sp; tz = snz * sp;
+                    }
+
+                    if (tx != 0 || ty != 0 || tz != 0)
+                    {
+                        fx = fx + tx;
+                        fy = fy + ty;
+                        fz = fz + tz;
+                        bedGlass = 1;
+                        if (noteRock != 0)
+                            NoteRockAt(tx, ty, tz, sx, sy, sz, margin, ref rockKept, ref rnx, ref rny, ref rnz, ref rpx, ref rpy, ref rpz);
+                    }
+                }
+            }
+
+            if (cfg.TankRadius > 0)
+            {
+                // Glass: the outward radial direction. The push runs inward. It sets no touch.
+                Real x = cx - cfg.AxisX;
+                Real z = cz - cfg.AxisZ;
+                Real radial = System.MathF.Sqrt(x * x + z * z);
+                Real outside = radial + r - cfg.TankRadius;
+                if (CarryBase) outside = GlassOutsideNear(cx, cz, ex, ez, r, cfg);
+
+                if (outside > 0)
+                {
+                    Real ox, oz;
+                    if (radial > (Real)1e-9) { ox = x / radial; oz = z / radial; }
+                    else { ox = -1; oz = 0; }
+
+                    SupportSphere(half, rotation, cx, cy, cz, ex, ey, ez, new V3(ox, 0, oz),
+                                  out sx, out sy, out sz, out sex, out sey, out sez);
+
+                    Real gsx = sx - cfg.AxisX;
+                    Real gsz = sz - cfg.AxisZ;
+                    Real supportRadial = System.MathF.Sqrt(gsx * gsx + gsz * gsz);
+                    Real soutside = supportRadial + margin - cfg.TankRadius;
+                    if (CarryBase) soutside = GlassOutsideNear(sx, sz, sex, sez, margin, cfg);
+
+                    if (soutside > 0)
+                    {
+                        Real ix, iz;
+                        if (supportRadial > (Real)1e-9) { ix = -gsx / supportRadial; iz = -gsz / supportRadial; }
+                        else { ix = 1; iz = 0; }
+
+                        Real approach = vx * ix + vy * 0 + vz * iz;
+                        Real p = PairPush(bedStiffness * soutside - bedDamping * approach, m, approach, cfg);
+
+                        Real tx = ix * p, ty = 0 * p, tz = iz * p;
+                        if (tx != 0 || ty != 0 || tz != 0)
+                        {
+                            fx = fx + tx;
+                            fy = fy + ty;
+                            fz = fz + tz;
+                            bedGlass = 1;
+                        }
+                    }
                 }
             }
         }
@@ -10841,6 +11926,11 @@ namespace Evosim.Farm.Gpu.Sgl
         // width only in a world that runs the drive, Col's one-wide stub otherwise.
         public readonly Seg<float> Threshold, Reaction, HoldGene, Release;
         public readonly Seg<Real> LinkPower;
+
+        // D229's fin law: each link's shape code and the three numbers beside it. A link wide only in a
+        // world that runs the law, one-wide otherwise.
+        public readonly Seg<int> ShapeCode;
+        public readonly Seg<Real> HalfExt;
         public readonly Seg<float> Bend;
         public readonly Seg<double> EPower, EBend, EPowerTarget, EBendTarget, EPowerRate, EBendRate, EHoldLeft;
 
@@ -10866,7 +11956,7 @@ namespace Evosim.Farm.Gpu.Sgl
         public readonly Seg<double> TTime;
         public readonly Seg<int> Enabled, Held, TCursor, FirstBadLink, Resized, Poison, Pending;
 
-        public ClassSet(Accelerator acc, AcceleratorStream stream, int index, int links, int neurons, int cap, bool bendAndPower)
+        public ClassSet(Accelerator acc, AcceleratorStream stream, int index, int links, int neurons, int cap, bool bendAndPower, bool shapedMass)
         {
             _acc = acc;
             _stream = stream;
@@ -10900,6 +11990,9 @@ namespace Evosim.Farm.Gpu.Sgl
             Threshold = C<float>(gl, Constant); Reaction = C<float>(gl, Constant);
             HoldGene = C<float>(gl, Constant); Release = C<float>(gl, Constant);
             LinkPower = C<Real>(gl, Constant);
+
+            int gs = shapedMass ? L : 0;
+            ShapeCode = C<int>(gs, Constant); HalfExt = C<Real>(3 * gs, Constant);
             Bend = C<float>(gd, Down);
             EPower = C<double>(gd, Down); EBend = C<double>(gd, Down);
             EPowerTarget = C<double>(gd, Down); EBendTarget = C<double>(gd, Down);
@@ -11135,7 +12228,7 @@ namespace Evosim.Farm.Gpu.Sgl
             LimitStiff = LimitStiff.View, LimitDamp = LimitDamp.View, Excess = Excess.View,
             TotalMass = TotalMass.View, TorquePerUnit = TorquePerUnit.View, PowerScale = PowerScale.View,
             Threshold = Threshold.View, Reaction = Reaction.View, HoldGene = HoldGene.View, Release = Release.View,
-            LinkPower = LinkPower.View,
+            LinkPower = LinkPower.View, ShapeCode = ShapeCode.View, HalfExt = HalfExt.View,
         };
 
         public SPanels PanelSet => new SPanels { Centre = PCentre.View, Normal = PNormal.View, Area = PArea.View };
@@ -11319,8 +12412,14 @@ namespace Evosim.Farm.Gpu.Sgl
         private readonly Col<int> _rankToSlot;
         private readonly Col<long> _census, _overflow, _guard;
 
-        // ---- two sphere sets: [set][Cx, Cy, Cz, R, Vx, Vy, Vz, LCx, LCy, LCz, LR, LVx, LVy, LVz, LEx, LEy, LEz]
+        // ---- two sphere sets: [set][Cx, Cy, Cz, R, Vx, Vy, Vz, LCx, LCy, LCz, LR, LVx, LVy, LVz, LEx, LEy, LEz,
+        // LRot0 .. LRot8], the last nine a link row wide under D228's true shape and one cell otherwise
         private readonly Col<Real>[][] _sph = new Col<Real>[2][];
+
+        // D228's cores by link row: the half-extents (3) and the margin, which a pack writes and a block
+        // uploads only after one (_coreUp). A cell each unless the world is on the true shape.
+        private readonly Col<Real>[] _core = new Col<Real>[4];
+        private bool _coreUp;
         private readonly Col<int>[] _active = new Col<int>[2];
         private int _committed;
 
@@ -11440,7 +12539,7 @@ namespace Evosim.Farm.Gpu.Sgl
             _classes = new ClassSet[options.ClassLinks.Length];
             for (int k = 0; k < _classes.Length; k++)
             {
-                _classes[k] = new ClassSet(accelerator, _stream, k, options.ClassLinks[k], options.ClassNeurons[k], 16, world.BendAndPower);
+                _classes[k] = new ClassSet(accelerator, _stream, k, options.ClassLinks[k], options.ClassNeurons[k], 16, world.BendAndPower, world.ShapedMass);
             }
 
             int oc = options.OverlapCap;
@@ -11485,11 +12584,14 @@ namespace Evosim.Farm.Gpu.Sgl
             _overflow = new Col<long>(_acc, _stream, 1, 8);
             _guard = new Col<long>(_acc, _stream, 1, 1);
 
+            for (int k = 0; k < 4; k++) _core[k] = new Col<Real>(_acc, _stream, 1, world.TrueShape ? WholeStep.LinkStride * _gcap : 1);
+
             for (int set = 0; set < 2; set++)
             {
-                var columns = new Col<Real>[17];
+                var columns = new Col<Real>[26];
                 for (int k = 0; k < 7; k++) columns[k] = new Col<Real>(_acc, _stream, 1, _gcap);
                 for (int k = 7; k < 17; k++) columns[k] = new Col<Real>(_acc, _stream, 1, WholeStep.LinkStride * _gcap);
+                for (int k = 17; k < 26; k++) columns[k] = new Col<Real>(_acc, _stream, 1, world.TrueShape ? WholeStep.LinkStride * _gcap : 1);
                 _sph[set] = columns;
                 _active[set] = new Col<int>(_acc, _stream, 1, _gcap);
             }
@@ -11765,6 +12867,8 @@ namespace Evosim.Farm.Gpu.Sgl
                 LimitDrive = w.LimitDrive ? 1 : 0, LimitDrag = w.LimitDrag ? 1 : 0, WeldedDrag = w.WeldedDrag ? 1 : 0,
                 UseRestore = w.UseRestore ? 1 : 0, FloorRestores = w.FloorRestores ? 1 : 0,
                 CreatureContact = w.CreatureContact ? 1 : 0, OffsetTorque = w.OffsetTorque ? 1 : 0,
+                ShapedMass = w.ShapedMass ? 1 : 0,
+                TrueShape = w.TrueShape ? 1 : 0,
                 BendAndPower = w.BendAndPower ? 1 : 0, TurningDrag = w.TurningDrag, RockTouch = w.RockTouch ? 1 : 0,
                 Anchoring = w.AnchorCell != null ? 1 : 0,
                 GripDecay = w.GripDecay, GripThreshold = w.GripThreshold, GripLag = w.GripLag,
@@ -12117,6 +13221,7 @@ namespace Evosim.Farm.Gpu.Sgl
             columns.AddRange(_gBody);
             columns.AddRange(_gLink);
             columns.AddRange(_gStray);
+            columns.AddRange(_core);
             for (int set = 0; set < 2; set++)
             {
                 columns.AddRange(_sph[set]);
@@ -12361,6 +13466,7 @@ namespace Evosim.Farm.Gpu.Sgl
             }
 
             Parallel.For(0, _slots.Packs.Count, parallel, p => Pack(_slots.Packs[p]));
+            if (_w.TrueShape && _slots.Packs.Count > 0) _coreUp = true;
 
             if (ProbeOn) HostMark(1, ref th);
 
@@ -12505,6 +13611,12 @@ namespace Evosim.Farm.Gpu.Sgl
             _strayCount.View.MemSetToZero(_stream);
             foreach (Col<Real> c in _sph[_committed]) c.UpUsedQueued(UsedUnits(c, upUsed));
             _active[_committed].UpUsedQueued(UsedUnits(_active[_committed], upUsed));
+            if (_coreUp)
+            {
+                // D228's cores change only in a pack (a birth, a growth resize), so they go up after one.
+                foreach (Col<Real> c in _core) c.UpUsedQueued(UsedUnits(c, upUsed));
+                _coreUp = false;
+            }
             for (int k = 0; k < _classes.Length; k++) _classes[k].Upload(_slots.Classes[k].Used);
             _stock.UpQueued();
             if (_gpuScent != null)
@@ -12954,7 +14066,14 @@ namespace Evosim.Farm.Gpu.Sgl
             {
                 for (int k = 0; k < 7; k++) _sph[set][k].Resize(cap);
                 for (int k = 7; k < 17; k++) _sph[set][k].Resize(WholeStep.LinkStride * cap);
+                if (_w.TrueShape) for (int k = 17; k < 26; k++) _sph[set][k].Resize(WholeStep.LinkStride * cap);
                 _active[set].Resize(cap);
+            }
+
+            if (_w.TrueShape)
+            {
+                foreach (Col<Real> c in _core) c.Resize(WholeStep.LinkStride * cap);
+                _coreUp = true;
             }
 
             _gcap = cap;
@@ -12965,6 +14084,7 @@ namespace Evosim.Farm.Gpu.Sgl
             Links = _gLinks.View, Id = _gId.View, Rank = _gRank.View, Alive = _gAlive.View, Jointed = _gJointed.View,
             Remains = _gRemains.View,
             RankToSlot = _rankToSlot.View, TotalMass = _gTotalMass.View, LinkMass = _linkMass.View,
+            CoreHx = _core[0].View, CoreHy = _core[1].View, CoreHz = _core[2].View, CoreM = _core[3].View,
             NOver = _nOver.View, OvSlot = _ovSlot.View, OvId = _ovId.View, OvPart = _ovPart.View,
             OvHeld = _ovHeld.View, NHeld = _nHeld.View, HeldId = _heldId.View, BedGlass = _bedGlass.View,
             Census = _census.View, Overflow = _overflow.View,
@@ -13004,6 +14124,9 @@ namespace Evosim.Farm.Gpu.Sgl
                 LCx = s[7].View, LCy = s[8].View, LCz = s[9].View, LR = s[10].View,
                 LVx = s[11].View, LVy = s[12].View, LVz = s[13].View,
                 LEx = s[14].View, LEy = s[15].View, LEz = s[16].View,
+                LRot0 = s[17].View, LRot1 = s[18].View, LRot2 = s[19].View,
+                LRot3 = s[20].View, LRot4 = s[21].View, LRot5 = s[22].View,
+                LRot6 = s[23].View, LRot7 = s[24].View, LRot8 = s[25].View,
                 Active = _active[set].View,
             };
         }
@@ -13178,6 +14301,44 @@ namespace Evosim.Farm.Gpu.Sgl
 
             float[] perUnit = c.Drive.MirrorTorquePerUnit;
             for (int d = 0; d < s.D; d++) s.TorquePerUnit.Host[d * N + i] = d < perUnit.Length ? perUnit[d] : 0f;
+
+            // D229's fin law: each link's shape and the three numbers its added mass reads. A box's
+            // are its half-extents; a capsule's, the radius and half-span CapsuleShape derives from
+            // them, in the floats the CPU derives them in. A shape the law has no formula for is refused.
+            if (_w.ShapedMass)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    PhenotypePart part = c.Phenotype.Parts[l];
+                    Float3 h = part.HalfExtents;
+                    int at = l * N + i;
+                    int a3 = (3 * l) * N + i;
+                    if (part.ShapeId == ShapeIds.Sphere)
+                    {
+                        s.ShapeCode.Host[at] = 0;
+                    }
+                    else if (part.ShapeId == ShapeIds.Box)
+                    {
+                        s.ShapeCode.Host[at] = 1;
+                        s.HalfExt.Host[a3] = (Real)Math.Abs((double)h.X);
+                        s.HalfExt.Host[a3 + N] = (Real)Math.Abs((double)h.Y);
+                        s.HalfExt.Host[a3 + 2 * N] = (Real)Math.Abs((double)h.Z);
+                    }
+                    else if (part.ShapeId == ShapeIds.Capsule)
+                    {
+                        s.ShapeCode.Host[at] = 2;
+                        s.HalfExt.Host[a3] = (Real)(double)CapsuleShape.Radius(h);
+                        s.HalfExt.Host[a3 + N] = (Real)(double)CapsuleShape.HalfSpan(h);
+                        s.HalfExt.Host[a3 + 2 * N] = 0;
+                    }
+                    else
+                    {
+                        throw new ArgumentException(
+                            "The fin law has no added mass for the shape '" + part.ShapeId +
+                            "'; it knows box, capsule and sphere.");
+                    }
+                }
+            }
 
             if (c.Drive.BendAndPower)
             {
@@ -13505,6 +14666,18 @@ namespace Evosim.Farm.Gpu.Sgl
             else
             {
                 for (int l = 0; l < WholeStep.LinkStride; l++) sph[10].Host[row + l] = 0;
+            }
+
+            // D228: each link's committed turn with its sphere, and its core and margin (rewritten at a growth
+            // resize, which packs the body again)
+            if (_w.TrueShape && c.LinkContactActive)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    for (int k = 0; k < 9; k++) sph[17 + k].Host[row + l] = (Real)c.LinkContactRotation[9 * l + k];
+                    for (int k = 0; k < 3; k++) _core[k].Host[row + l] = (Real)c.LinkCoreHalf[3 * l + k];
+                    _core[3].Host[row + l] = (Real)c.LinkMargin[l];
+                }
             }
 
             // D162's touch of the rock, the record the next step's senses read
@@ -13884,6 +15057,21 @@ namespace Evosim.Farm.Gpu.Sgl
                     pr[l] = r;
                     pv[3 * l] = vx; pv[3 * l + 1] = vy; pv[3 * l + 2] = vz;
                 }
+
+                // D228: the turns, committed and pending alike (the next pack and a checkpoint read them).
+                if (_w.TrueShape)
+                {
+                    double[] pq = c.MirrorPendingLinkRotation;
+                    for (int l = 0; l < links; l++)
+                    {
+                        for (int k = 0; k < 9; k++)
+                        {
+                            double q = sph[17 + k].Host[row + l];
+                            c.LinkContactRotation[9 * l + k] = q;
+                            pq[9 * l + k] = q;
+                        }
+                    }
+                }
             }
 
             if (_rock && c.RockTouched != null)
@@ -13986,6 +15174,7 @@ namespace Evosim.Farm.Gpu.Sgl
             foreach (IColumn c in _gBody) c.Dispose();
             foreach (IColumn c in _gLink) c.Dispose();
             _rankToSlot.Dispose();
+            foreach (Col<Real> c in _core) c.Dispose();
             _census.Dispose();
             _overflow.Dispose();
             _guard.Dispose();

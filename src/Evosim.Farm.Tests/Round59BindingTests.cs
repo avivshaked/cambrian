@@ -97,5 +97,81 @@ namespace Evosim.Farm.Tests
 
             Assert.Throws<ArgumentException>(() => Built(new Dictionary<string, string> { { "EVOSIM_LEAF_SCENT", "taste" } }));
         }
+
+        /// <summary>D229's fin law: <c>EVOSIM_SHAPED_ADDED_MASS</c> reaches the fluid config, and unset it is off.</summary>
+        [Fact]
+        public void TheShapedAddedMassSwitchReachesTheFluidConfigAndIsOffWhenUnset()
+        {
+            Assert.False(Built(new Dictionary<string, string>()).Fluid.ShapedAddedMass);
+            Assert.True(Built(new Dictionary<string, string> { { "EVOSIM_SHAPED_ADDED_MASS", "1" } }).Fluid.ShapedAddedMass);
+        }
+
+        /// <summary>D228's mirrored joint: <c>EVOSIM_REFLECT_MIRRORED_ANCHORS</c> reaches the development limits, and unset it is off.</summary>
+        [Fact]
+        public void TheReflectMirroredAnchorsSwitchReachesTheDevelopmentLimitsAndIsOffWhenUnset()
+        {
+            Assert.False(Built(new Dictionary<string, string>()).Development.ReflectMirroredAnchors);
+            Assert.True(Built(new Dictionary<string, string> { { "EVOSIM_REFLECT_MIRRORED_ANCHORS", "1" } }).Development
+                .ReflectMirroredAnchors);
+
+            // Beside its neighbour, which it does not move.
+            RunConfig both = Built(new Dictionary<string, string>
+            {
+                { "EVOSIM_REFLECT_MIRRORED_ANCHORS", "1" }, { "EVOSIM_SCALE_LENGTHENS_ONCE", "1" },
+            });
+            Assert.True(both.Development.ReflectMirroredAnchors);
+            Assert.True(both.Development.ScaleLengthensOnce);
+            Assert.False(Built(new Dictionary<string, string> { { "EVOSIM_SCALE_LENGTHENS_ONCE", "1" } })
+                .Development.ReflectMirroredAnchors);
+        }
+
+        /// <summary>
+        /// D228's true shape: <c>EVOSIM_CONTACT_SHAPE</c> takes <c>spheres</c> or <c>trueshape</c>, unset is the
+        /// spheres, a third value is refused, and the header says so only when it is not the spheres.
+        /// </summary>
+        [Fact]
+        public void TheContactShapeSwitchTakesSpheresOrTrueShapeAndRefusesAThird()
+        {
+            Assert.Equal(ContactShapeForm.Spheres, Built(new Dictionary<string, string>()).ContactShape);
+            Assert.Equal(ContactShapeForm.Spheres, Built(new Dictionary<string, string> { { "EVOSIM_CONTACT_SHAPE", "spheres" } }).ContactShape);
+
+            var on = new Dictionary<string, string> { { "EVOSIM_CONTACT_SHAPE", "TrueShape" }, { "EVOSIM_CONTACT_PER_PART", "1" } };
+            RunConfig config = Built(on);
+            Assert.Equal(ContactShapeForm.TrueShape, config.ContactShape);
+            Assert.True(config.ContactPerPart);
+
+            Assert.Throws<ArgumentException>(() => Built(new Dictionary<string, string> { { "EVOSIM_CONTACT_SHAPE", "hull" } }));
+
+            // Reaches the solver's config as well.
+            Assert.Equal(ContactShapeForm.TrueShape, Evosim.Dynamics.SolverConfig.From(config, 0.01).ContactShape);
+        }
+
+        /// <summary>
+        /// D228's third value: <c>EVOSIM_CONTACT_SHAPE=trueshapeatpoint</c> (any case) binds to
+        /// <see cref="ContactShapeForm.TrueShapeAtPoint"/>, needs per-part contact like the second, reaches the solver's
+        /// config, and the header names it in lower case.
+        /// </summary>
+        [Fact]
+        public void TheContactShapeSwitchTakesTheThirdValueTrueShapeAtPoint()
+        {
+            var on = new Dictionary<string, string> { { "EVOSIM_CONTACT_SHAPE", "TrueShapeAtPoint" }, { "EVOSIM_CONTACT_PER_PART", "1" } };
+            RunConfig config = Built(on);
+            Assert.Equal(ContactShapeForm.TrueShapeAtPoint, config.ContactShape);
+            Assert.True(config.ContactPerPart);
+            Assert.Equal(ContactShapeForm.TrueShapeAtPoint, Evosim.Dynamics.SolverConfig.From(config, 0.01).ContactShape);
+
+            // The lower-case token reads the same, and the second value is still its own.
+            on["EVOSIM_CONTACT_SHAPE"] = "trueshapeatpoint";
+            Assert.Equal(ContactShapeForm.TrueShapeAtPoint, Built(on).ContactShape);
+            on["EVOSIM_CONTACT_SHAPE"] = "trueshape";
+            Assert.Equal(ContactShapeForm.TrueShape, Built(on).ContactShape);
+
+            // The hash separates the three values, and the first two are what they were.
+            var spheres = new RunConfig { ContactPerPart = true, ContactShape = ContactShapeForm.Spheres };
+            var shape = new RunConfig { ContactPerPart = true, ContactShape = ContactShapeForm.TrueShape };
+            var point = new RunConfig { ContactPerPart = true, ContactShape = ContactShapeForm.TrueShapeAtPoint };
+            Assert.NotEqual(shape.Hash(), point.Hash());
+            Assert.NotEqual(spheres.Hash(), point.Hash());
+        }
     }
 }

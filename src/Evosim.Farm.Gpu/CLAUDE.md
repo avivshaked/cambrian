@@ -127,3 +127,10 @@ The root file's rules still apply. The entries below were moved word for word, s
   position, so resting bodies flickered out of touch. Since D168 the card sums each position with a
   correction term and takes contacts, and the floor and glass under them, from a nearby lattice point.
   Compare card and CPU contact numbers only on runs from D168 on.
+- **Contact on the true shape has a second copy on the card** (D228, `EVOSIM_CONTACT_SHAPE=trueshape`).
+  `gpu-kernel.template` transcribes `ConvexCore` (GJK, `Support`) and `ContactTrueShape` (the pair loop and the four
+  surfaces) operation for operation, so a change to either is made in the template in the same change. The pair runs in
+  its own frame, the first core at the origin and the second at minus the sphere test's difference, in the solver and the
+  kernel alike. Each link's core and margin sit by link row in `SGlob` (`CoreHx` to `CoreM`), because a link reads other
+  classes' cores, and go up only after a pack; the turns are nine more columns in each sphere set. All of it is a
+  one-cell stub when the switch is off.

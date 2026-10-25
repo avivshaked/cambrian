@@ -266,7 +266,16 @@ namespace Evosim.Core
                 // D111, on every shape; a sphere carries it and the solver finds no axis for it.
                 BuoyancyOffset = node.BuoyancyOffset,
                 ParentAnchorLocal = parentAnchorLocal,
-                ChildAnchorLocal = childAnchorLocal,
+
+                // DevelopmentLimits.ReflectMirroredAnchors (D228): the child's own anchor in the
+                // part's proper frame. Decompose stored R with transform = R · F, F = diag(-1,1,1)
+                // for a reflected part, and an engine poses the part at parent + R_p · ParentAnchor
+                // - R · ChildAnchor. Development put it at parent + L_p · M · aP - L · aC with
+                // L = R · F, so the child's anchor must be F · aC. The parent's side, F_p · M · aP,
+                // was made by the parent's Expand and arrives here as parentAnchorLocal.
+                ChildAnchorLocal = limits.ReflectMirroredAnchors && mirrored
+                    ? new Float3(-childAnchorLocal.X, childAnchorLocal.Y, childAnchorLocal.Z)
+                    : childAnchorLocal,
                 Neurons = node.Neurons,
                 PathId = pathId,
             });
@@ -374,7 +383,9 @@ namespace Evosim.Core
                         depth + 1,
                         childNode.JointType,
                         childLimits,
-                        anchorOnParent,
+                        limits.ReflectMirroredAnchors
+                            ? ReflectedParentAnchor(anchorOnParent, mirror, part.Mirrored)
+                            : anchorOnParent,
                         anchorOnChild);
 
                     if (path != null) path.RemoveRange(path.Count - 2, 2);
@@ -384,6 +395,20 @@ namespace Evosim.Core
                     if (phenotype.PartCount >= limits.MaxParts) return;
                 }
             }
+        }
+
+        /// <summary>
+        /// The parent's side of a joint in the parent's proper frame: <c>F_parent · M · a</c>, with
+        /// <c>M</c> the copy's mirror and <c>F_parent</c> the flip <see cref="Mat4.Decompose"/>
+        /// applied to the parent. Negating a float is exact, so this is the same as multiplying
+        /// by the two diagonal matrices.
+        /// </summary>
+        private static Float3 ReflectedParentAnchor(Float3 a, Bool3 mirror, bool parentMirrored)
+        {
+            float x = mirror.X ? -a.X : a.X;
+            float y = mirror.Y ? -a.Y : a.Y;
+            float z = mirror.Z ? -a.Z : a.Z;
+            return new Float3(parentMirrored ? -x : x, y, z);
         }
 
         /// <summary>

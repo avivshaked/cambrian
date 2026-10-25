@@ -128,6 +128,7 @@ namespace Evosim.Dynamics
             WriteJointLimits(_config);
             WritePanels(panelSets, panels);
             RefreshLinkReach();
+            if (LinkCoreHalf != null) WriteLinkCores();
 
             // Torque per unit of signal is read from Power, which growth does not scale — so this
             // is the identity today. It is called anyway, because "what a fresh build would

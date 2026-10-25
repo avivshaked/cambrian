@@ -62,6 +62,11 @@ namespace __NS__
         // width only in a world that runs the drive, Col's one-wide stub otherwise.
         public readonly Seg<float> Threshold, Reaction, HoldGene, Release;
         public readonly Seg<Real> LinkPower;
+
+        // D229's fin law: each link's shape code and the three numbers beside it. A link wide only in a
+        // world that runs the law, one-wide otherwise.
+        public readonly Seg<int> ShapeCode;
+        public readonly Seg<Real> HalfExt;
         public readonly Seg<float> Bend;
         public readonly Seg<double> EPower, EBend, EPowerTarget, EBendTarget, EPowerRate, EBendRate, EHoldLeft;
 
@@ -87,7 +92,7 @@ namespace __NS__
         public readonly Seg<double> TTime;
         public readonly Seg<int> Enabled, Held, TCursor, FirstBadLink, Resized, Poison, Pending;
 
-        public ClassSet(Accelerator acc, AcceleratorStream stream, int index, int links, int neurons, int cap, bool bendAndPower)
+        public ClassSet(Accelerator acc, AcceleratorStream stream, int index, int links, int neurons, int cap, bool bendAndPower, bool shapedMass)
         {
             _acc = acc;
             _stream = stream;
@@ -121,6 +126,9 @@ namespace __NS__
             Threshold = C<float>(gl, Constant); Reaction = C<float>(gl, Constant);
             HoldGene = C<float>(gl, Constant); Release = C<float>(gl, Constant);
             LinkPower = C<Real>(gl, Constant);
+
+            int gs = shapedMass ? L : 0;
+            ShapeCode = C<int>(gs, Constant); HalfExt = C<Real>(3 * gs, Constant);
             Bend = C<float>(gd, Down);
             EPower = C<double>(gd, Down); EBend = C<double>(gd, Down);
             EPowerTarget = C<double>(gd, Down); EBendTarget = C<double>(gd, Down);
@@ -356,7 +364,7 @@ namespace __NS__
             LimitStiff = LimitStiff.View, LimitDamp = LimitDamp.View, Excess = Excess.View,
             TotalMass = TotalMass.View, TorquePerUnit = TorquePerUnit.View, PowerScale = PowerScale.View,
             Threshold = Threshold.View, Reaction = Reaction.View, HoldGene = HoldGene.View, Release = Release.View,
-            LinkPower = LinkPower.View,
+            LinkPower = LinkPower.View, ShapeCode = ShapeCode.View, HalfExt = HalfExt.View,
         };
 
         public SPanels PanelSet => new SPanels { Centre = PCentre.View, Normal = PNormal.View, Area = PArea.View };
@@ -540,8 +548,14 @@ namespace __NS__
         private readonly Col<int> _rankToSlot;
         private readonly Col<long> _census, _overflow, _guard;
 
-        // ---- two sphere sets: [set][Cx, Cy, Cz, R, Vx, Vy, Vz, LCx, LCy, LCz, LR, LVx, LVy, LVz, LEx, LEy, LEz]
+        // ---- two sphere sets: [set][Cx, Cy, Cz, R, Vx, Vy, Vz, LCx, LCy, LCz, LR, LVx, LVy, LVz, LEx, LEy, LEz,
+        // LRot0 .. LRot8], the last nine a link row wide under D228's true shape and one cell otherwise
         private readonly Col<Real>[][] _sph = new Col<Real>[2][];
+
+        // D228's cores by link row: the half-extents (3) and the margin, which a pack writes and a block
+        // uploads only after one (_coreUp). A cell each unless the world is on the true shape.
+        private readonly Col<Real>[] _core = new Col<Real>[4];
+        private bool _coreUp;
         private readonly Col<int>[] _active = new Col<int>[2];
         private int _committed;
 
@@ -661,7 +675,7 @@ namespace __NS__
             _classes = new ClassSet[options.ClassLinks.Length];
             for (int k = 0; k < _classes.Length; k++)
             {
-                _classes[k] = new ClassSet(accelerator, _stream, k, options.ClassLinks[k], options.ClassNeurons[k], 16, world.BendAndPower);
+                _classes[k] = new ClassSet(accelerator, _stream, k, options.ClassLinks[k], options.ClassNeurons[k], 16, world.BendAndPower, world.ShapedMass);
             }
 
             int oc = options.OverlapCap;
@@ -706,11 +720,14 @@ namespace __NS__
             _overflow = new Col<long>(_acc, _stream, 1, 8);
             _guard = new Col<long>(_acc, _stream, 1, 1);
 
+            for (int k = 0; k < 4; k++) _core[k] = new Col<Real>(_acc, _stream, 1, world.TrueShape ? WholeStep.LinkStride * _gcap : 1);
+
             for (int set = 0; set < 2; set++)
             {
-                var columns = new Col<Real>[17];
+                var columns = new Col<Real>[26];
                 for (int k = 0; k < 7; k++) columns[k] = new Col<Real>(_acc, _stream, 1, _gcap);
                 for (int k = 7; k < 17; k++) columns[k] = new Col<Real>(_acc, _stream, 1, WholeStep.LinkStride * _gcap);
+                for (int k = 17; k < 26; k++) columns[k] = new Col<Real>(_acc, _stream, 1, world.TrueShape ? WholeStep.LinkStride * _gcap : 1);
                 _sph[set] = columns;
                 _active[set] = new Col<int>(_acc, _stream, 1, _gcap);
             }
@@ -946,6 +963,8 @@ namespace __NS__
                 LimitDrive = w.LimitDrive ? 1 : 0, LimitDrag = w.LimitDrag ? 1 : 0, WeldedDrag = w.WeldedDrag ? 1 : 0,
                 UseRestore = w.UseRestore ? 1 : 0, FloorRestores = w.FloorRestores ? 1 : 0,
                 CreatureContact = w.CreatureContact ? 1 : 0, OffsetTorque = w.OffsetTorque ? 1 : 0,
+                ShapedMass = w.ShapedMass ? 1 : 0,
+                TrueShape = w.TrueShape ? 1 : 0,
                 BendAndPower = w.BendAndPower ? 1 : 0, TurningDrag = w.TurningDrag, RockTouch = w.RockTouch ? 1 : 0,
                 Anchoring = w.AnchorCell != null ? 1 : 0,
                 GripDecay = w.GripDecay, GripThreshold = w.GripThreshold, GripLag = w.GripLag,
@@ -1298,6 +1317,7 @@ namespace __NS__
             columns.AddRange(_gBody);
             columns.AddRange(_gLink);
             columns.AddRange(_gStray);
+            columns.AddRange(_core);
             for (int set = 0; set < 2; set++)
             {
                 columns.AddRange(_sph[set]);
@@ -1542,6 +1562,7 @@ namespace __NS__
             }
 
             Parallel.For(0, _slots.Packs.Count, parallel, p => Pack(_slots.Packs[p]));
+            if (_w.TrueShape && _slots.Packs.Count > 0) _coreUp = true;
 
             if (ProbeOn) HostMark(1, ref th);
 
@@ -1686,6 +1707,12 @@ namespace __NS__
             _strayCount.View.MemSetToZero(_stream);
             foreach (Col<Real> c in _sph[_committed]) c.UpUsedQueued(UsedUnits(c, upUsed));
             _active[_committed].UpUsedQueued(UsedUnits(_active[_committed], upUsed));
+            if (_coreUp)
+            {
+                // D228's cores change only in a pack (a birth, a growth resize), so they go up after one.
+                foreach (Col<Real> c in _core) c.UpUsedQueued(UsedUnits(c, upUsed));
+                _coreUp = false;
+            }
             for (int k = 0; k < _classes.Length; k++) _classes[k].Upload(_slots.Classes[k].Used);
             _stock.UpQueued();
             if (_gpuScent != null)
@@ -2135,7 +2162,14 @@ namespace __NS__
             {
                 for (int k = 0; k < 7; k++) _sph[set][k].Resize(cap);
                 for (int k = 7; k < 17; k++) _sph[set][k].Resize(WholeStep.LinkStride * cap);
+                if (_w.TrueShape) for (int k = 17; k < 26; k++) _sph[set][k].Resize(WholeStep.LinkStride * cap);
                 _active[set].Resize(cap);
+            }
+
+            if (_w.TrueShape)
+            {
+                foreach (Col<Real> c in _core) c.Resize(WholeStep.LinkStride * cap);
+                _coreUp = true;
             }
 
             _gcap = cap;
@@ -2146,6 +2180,7 @@ namespace __NS__
             Links = _gLinks.View, Id = _gId.View, Rank = _gRank.View, Alive = _gAlive.View, Jointed = _gJointed.View,
             Remains = _gRemains.View,
             RankToSlot = _rankToSlot.View, TotalMass = _gTotalMass.View, LinkMass = _linkMass.View,
+            CoreHx = _core[0].View, CoreHy = _core[1].View, CoreHz = _core[2].View, CoreM = _core[3].View,
             NOver = _nOver.View, OvSlot = _ovSlot.View, OvId = _ovId.View, OvPart = _ovPart.View,
             OvHeld = _ovHeld.View, NHeld = _nHeld.View, HeldId = _heldId.View, BedGlass = _bedGlass.View,
             Census = _census.View, Overflow = _overflow.View,
@@ -2185,6 +2220,9 @@ namespace __NS__
                 LCx = s[7].View, LCy = s[8].View, LCz = s[9].View, LR = s[10].View,
                 LVx = s[11].View, LVy = s[12].View, LVz = s[13].View,
                 LEx = s[14].View, LEy = s[15].View, LEz = s[16].View,
+                LRot0 = s[17].View, LRot1 = s[18].View, LRot2 = s[19].View,
+                LRot3 = s[20].View, LRot4 = s[21].View, LRot5 = s[22].View,
+                LRot6 = s[23].View, LRot7 = s[24].View, LRot8 = s[25].View,
                 Active = _active[set].View,
             };
         }
@@ -2359,6 +2397,44 @@ namespace __NS__
 
             float[] perUnit = c.Drive.MirrorTorquePerUnit;
             for (int d = 0; d < s.D; d++) s.TorquePerUnit.Host[d * N + i] = d < perUnit.Length ? perUnit[d] : 0f;
+
+            // D229's fin law: each link's shape and the three numbers its added mass reads. A box's
+            // are its half-extents; a capsule's, the radius and half-span CapsuleShape derives from
+            // them, in the floats the CPU derives them in. A shape the law has no formula for is refused.
+            if (_w.ShapedMass)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    PhenotypePart part = c.Phenotype.Parts[l];
+                    Float3 h = part.HalfExtents;
+                    int at = l * N + i;
+                    int a3 = (3 * l) * N + i;
+                    if (part.ShapeId == ShapeIds.Sphere)
+                    {
+                        s.ShapeCode.Host[at] = 0;
+                    }
+                    else if (part.ShapeId == ShapeIds.Box)
+                    {
+                        s.ShapeCode.Host[at] = 1;
+                        s.HalfExt.Host[a3] = (Real)Math.Abs((double)h.X);
+                        s.HalfExt.Host[a3 + N] = (Real)Math.Abs((double)h.Y);
+                        s.HalfExt.Host[a3 + 2 * N] = (Real)Math.Abs((double)h.Z);
+                    }
+                    else if (part.ShapeId == ShapeIds.Capsule)
+                    {
+                        s.ShapeCode.Host[at] = 2;
+                        s.HalfExt.Host[a3] = (Real)(double)CapsuleShape.Radius(h);
+                        s.HalfExt.Host[a3 + N] = (Real)(double)CapsuleShape.HalfSpan(h);
+                        s.HalfExt.Host[a3 + 2 * N] = 0;
+                    }
+                    else
+                    {
+                        throw new ArgumentException(
+                            "The fin law has no added mass for the shape '" + part.ShapeId +
+                            "'; it knows box, capsule and sphere.");
+                    }
+                }
+            }
 
             if (c.Drive.BendAndPower)
             {
@@ -2686,6 +2762,18 @@ namespace __NS__
             else
             {
                 for (int l = 0; l < WholeStep.LinkStride; l++) sph[10].Host[row + l] = 0;
+            }
+
+            // D228: each link's committed turn with its sphere, and its core and margin (rewritten at a growth
+            // resize, which packs the body again)
+            if (_w.TrueShape && c.LinkContactActive)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    for (int k = 0; k < 9; k++) sph[17 + k].Host[row + l] = (Real)c.LinkContactRotation[9 * l + k];
+                    for (int k = 0; k < 3; k++) _core[k].Host[row + l] = (Real)c.LinkCoreHalf[3 * l + k];
+                    _core[3].Host[row + l] = (Real)c.LinkMargin[l];
+                }
             }
 
             // D162's touch of the rock, the record the next step's senses read
@@ -3065,6 +3153,21 @@ namespace __NS__
                     pr[l] = r;
                     pv[3 * l] = vx; pv[3 * l + 1] = vy; pv[3 * l + 2] = vz;
                 }
+
+                // D228: the turns, committed and pending alike (the next pack and a checkpoint read them).
+                if (_w.TrueShape)
+                {
+                    double[] pq = c.MirrorPendingLinkRotation;
+                    for (int l = 0; l < links; l++)
+                    {
+                        for (int k = 0; k < 9; k++)
+                        {
+                            double q = sph[17 + k].Host[row + l];
+                            c.LinkContactRotation[9 * l + k] = q;
+                            pq[9 * l + k] = q;
+                        }
+                    }
+                }
             }
 
             if (_rock && c.RockTouched != null)
@@ -3167,6 +3270,7 @@ namespace __NS__
             foreach (IColumn c in _gBody) c.Dispose();
             foreach (IColumn c in _gLink) c.Dispose();
             _rankToSlot.Dispose();
+            foreach (Col<Real> c in _core) c.Dispose();
             _census.Dispose();
             _overflow.Dispose();
             _guard.Dispose();

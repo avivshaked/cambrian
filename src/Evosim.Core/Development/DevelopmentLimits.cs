@@ -207,6 +207,34 @@ namespace Evosim.Core
         [Tunable("development")]
         public bool ScaleLengthensOnce { get; set; }
 
+        /// <summary>
+        /// Whether a mirrored part's two joint anchors are stored in the part's proper frame, so
+        /// that an engine rebuilding the body from the anchors puts a reflected copy where
+        /// development put it. D228. Off is the recorded world, where the anchors are stored as
+        /// the genome gave them and the solver joins a mirrored part where its twin is joined.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The rule.</b> A part's transform is <c>R · F</c>: <see cref="Mat4.Decompose"/>
+        /// stores a proper rotation <c>R</c> and records a reflected part by negating the first
+        /// column, so <c>F</c> is <c>diag(-1, 1, 1)</c> for a part whose accumulated determinant
+        /// is negative and the identity otherwise. An engine poses a child at
+        /// <c>parent + R_parent · ParentAnchor − R_child · ChildAnchor</c>. Development's own
+        /// placement is <c>parent + L_parent · M · anchorOnParent − L_child · anchorOnChild</c>,
+        /// with <c>L = R · F</c> and <c>M</c> the edge's mirror for the copy. On, the stored
+        /// anchors are <c>ChildAnchorLocal = F_child · anchorOnChild</c> and
+        /// <c>ParentAnchorLocal = F_parent · M · anchorOnParent</c>, which make the two agree.
+        /// </para>
+        /// <para>
+        /// <b>What it reaches.</b> A body with no reflected part is bit-identical on or off.
+        /// A body with one is a different body, in every engine that poses it from its anchors,
+        /// so a world whose bodies reflect is a new realisation from its first mirrored birth.
+        /// <c>logbook/specs/mirrored-anchor-finding.md</c>.
+        /// </para>
+        /// </remarks>
+        [Tunable("development")]
+        public bool ReflectMirroredAnchors { get; set; }
+
         public static DevelopmentLimits Default => new DevelopmentLimits();
 
         public DevelopmentLimits Clone() => new DevelopmentLimits
@@ -219,6 +247,7 @@ namespace Evosim.Core
             MaxBodyReachMetres = MaxBodyReachMetres,
             FloorsWeighRigidGroups = FloorsWeighRigidGroups,
             ScaleLengthensOnce = ScaleLengthensOnce,
+            ReflectMirroredAnchors = ReflectMirroredAnchors,
         };
 
         public override string ToString() =>
@@ -230,6 +259,7 @@ namespace Evosim.Core
                 ? System.FormattableString.Invariant($" reach<={MaxBodyReachMetres:0.##}")
                 : " reach=off") +
             (FloorsWeighRigidGroups ? " floors=rigid" : "") +
-            (ScaleLengthensOnce ? " scale=lengthens-once" : "");
+            (ScaleLengthensOnce ? " scale=lengthens-once" : "") +
+            (ReflectMirroredAnchors ? " anchors=reflected" : "");
     }
 }

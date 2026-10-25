@@ -158,7 +158,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 .Replace(
                     " · configHash ",
                     " · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + ContactToken + ReproductionToken + Round51Token + " · configHash ")
-                .Replace("`ff557bce2685293a`", "`dc1e08eaa7dc2b0d`");
+                .Replace("`ff557bce2685293a`", "`a43be57fc259323c`");
 
             Assert.Equal(expected, Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9"));
         }
@@ -198,7 +198,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             Assert.Contains(" · reach off · floors per part · matter uniform · founders anywhere · endowment off · founder cap off · shade off · ", line);
             Assert.Contains(" · matter-mix 2 m2/s · area 2200 m2 · ", line);
 
-            Assert.EndsWith(" · configHash `dc1e08eaa7dc2b0d`", line);
+            Assert.EndsWith(" · configHash `a43be57fc259323c`", line);
 
             // D110, off: the light is the orientation average, printed beside the cap.
             Assert.Contains(" · silhouette on · light averaged · ", line);
@@ -723,6 +723,57 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
 
             block["EVOSIM_CORPSE_HALF_LIFE"] = "-1";
             Assert.ThrowsAny<Exception>(() => EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(block))));
+        }
+
+        /// <summary>D228: the contact shape is shown in the header only when it is not the recorded spheres.</summary>
+        [Fact]
+        public void TheContactShapeIsShownOnlyWhenItIsTheTrueShape()
+        {
+            string off = Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9");
+            Assert.DoesNotContain("contact shape", off);
+
+            var block = EnvBindingTests.Round42Seed1();
+            block["EVOSIM_CONTACT_PER_PART"] = "1";
+            block["EVOSIM_CONTACT_SHAPE"] = "trueshape";
+            EnvSettings settings = EnvBinding.Read(EnvBinding.Of(block));
+            RunConfig config = EnvBinding.BuildConfig(settings);
+            Assert.Equal(ContactShapeForm.TrueShape, config.ContactShape);
+
+            var world = new World(config, settings.Seed);
+            SpaceFacts space = SpaceFacts.Of(
+                world,
+                hasWall: config.SharedSpace && config.WorldShape == WorldShape.Tank,
+                hasFloor: config.SharedSpace,
+                threads: 24,
+                inoculumHashShort: null);
+            Assert.Contains(" · contact shape trueshape", Report.HeaderLine(settings, config, space, "9.9.9.9"));
+
+            // Spheres named outright reads as unset.
+            block["EVOSIM_CONTACT_SHAPE"] = "spheres";
+            settings = EnvBinding.Read(EnvBinding.Of(block));
+            config = EnvBinding.BuildConfig(settings);
+            Assert.DoesNotContain("contact shape", Report.HeaderLine(settings, config, space, "9.9.9.9"));
+        }
+
+        /// <summary>D228's third value is named in the header as it is spelled in the launcher, in lower case.</summary>
+        [Fact]
+        public void TheContactShapeAtThePointIsNamedInTheHeader()
+        {
+            var block = EnvBindingTests.Round42Seed1();
+            block["EVOSIM_CONTACT_PER_PART"] = "1";
+            block["EVOSIM_CONTACT_SHAPE"] = "trueshapeatpoint";
+            EnvSettings settings = EnvBinding.Read(EnvBinding.Of(block));
+            RunConfig config = EnvBinding.BuildConfig(settings);
+            Assert.Equal(ContactShapeForm.TrueShapeAtPoint, config.ContactShape);
+
+            var world = new World(config, settings.Seed);
+            SpaceFacts space = SpaceFacts.Of(
+                world,
+                hasWall: config.SharedSpace && config.WorldShape == WorldShape.Tank,
+                hasFloor: config.SharedSpace,
+                threads: 24,
+                inoculumHashShort: null);
+            Assert.Contains(" · contact shape trueshapeatpoint", Report.HeaderLine(settings, config, space, "9.9.9.9"));
         }
 
         /// <summary>
