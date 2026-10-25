@@ -36,6 +36,9 @@ namespace Evosim.Dynamics
         /// <summary>The pending link turns, 9 a link (D228's true shape); null unless the world asked for it.</summary>
         internal double[] MirrorPendingLinkRotation => _pendingLinkRotation;
 
+        /// <summary>The pending link spins, 3 a link (D228's contact at the point); null unless the world is at that level.</summary>
+        internal double[] MirrorPendingLinkSpin => _pendingLinkSpin;
+
         // ---- the overlap list of the step just taken, and the held list the next will read
 
         /// <summary>

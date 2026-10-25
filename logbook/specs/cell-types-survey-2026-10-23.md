@@ -1,5 +1,7 @@
 # Proposal: new cell types for more kinds of life, starting with poison and fat
 
+*Ruled: D228 and D229 rule every decision below, and the file is kept as the record of its survey (the round 62 cell-type table, the armour shares, and the designs of the held lateral line and cilia). Moved from `proposals/` on 2026-10-25.*
+
 *A draft for the owner, written at the coordinator's request, 2026-10-23. It follows D219-D221, which make mouths eat only
 what they touch and leave no corpse point, only remains edible by contact for 60 s. Cell types are world rules, so nothing here is built before the owner rules.
 Every claim about the code names its file. What is a guess is marked as inference.*

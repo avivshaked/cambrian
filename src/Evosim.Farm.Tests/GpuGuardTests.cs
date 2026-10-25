@@ -83,26 +83,37 @@ namespace Evosim.Farm.Tests
         }
 
         /// <summary>
-        /// D228's contact at the point is built on the host only: the farm refuses it before it opens a device,
-        /// naming the value, until the card's port removes the refusal. The true shape at the centre is not refused.
+        /// D228's contact at the point is on the card (the kernels carry the spin, the vertices and the torque), so the
+        /// farm no longer refuses it by name. Opened on the card in double, which the farm refuses for its own reason, it
+        /// gets past the contact shape to that refusal, as the true shape at the centre and the spheres do. Nothing
+        /// here opens a device.
         /// </summary>
         [Fact]
-        public void TheFarmRefusesContactAtThePointOnTheCardAndNamesIt()
+        public void TheFarmDoesNotRefuseContactAtThePointOnTheCard()
         {
-            var block = GpuTank.Launcher(perPart: true, reefs: false);
-            block["EVOSIM_ENGINE"] = "gpu";
-            block["EVOSIM_GPU_DEVICE"] = "cuda";
-            block["EVOSIM_GPU_PRECISION"] = "single";
-            EnvSettings s = EnvBinding.Read(EnvBinding.Of(block));
-            (_, SolverConfig solver) = GpuTank.Build(perPart: true, reefs: false);
-            solver.ContactShape = Evosim.Core.ContactShapeForm.TrueShapeAtPoint;
+            foreach (Evosim.Core.ContactShapeForm form in new[]
+            {
+                Evosim.Core.ContactShapeForm.Spheres,
+                Evosim.Core.ContactShapeForm.TrueShape,
+                Evosim.Core.ContactShapeForm.TrueShapeAtPoint,
+            })
+            {
+                var block = GpuTank.Launcher(perPart: true, reefs: false);
+                block["EVOSIM_ENGINE"] = "gpu";
+                block["EVOSIM_GPU_DEVICE"] = "cuda";
+                block["EVOSIM_GPU_PRECISION"] = "double";
+                EnvSettings s = EnvBinding.Read(EnvBinding.Of(block));
+                (_, SolverConfig solver) = GpuTank.Build(perPart: true, reefs: false);
+                solver.ContactShape = form;
 
-            MethodInfo open = typeof(EnvBinding).Assembly.GetType("Evosim.Farm.FarmGpu", throwOnError: true)
-                .GetMethod("Open", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                MethodInfo open = typeof(EnvBinding).Assembly.GetType("Evosim.Farm.FarmGpu", throwOnError: true)
+                    .GetMethod("Open", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
-            var thrown = Assert.Throws<TargetInvocationException>(() => open.Invoke(null, new object[] { s, solver, null }));
-            Assert.IsType<InvalidOperationException>(thrown.InnerException);
-            Assert.Contains("trueshapeatpoint", thrown.InnerException.Message);
+                var thrown = Assert.Throws<TargetInvocationException>(() => open.Invoke(null, new object[] { s, solver, null }));
+                Assert.IsType<InvalidOperationException>(thrown.InnerException);
+                Assert.Contains("single only", thrown.InnerException.Message);
+                Assert.DoesNotContain("trueshapeatpoint", thrown.InnerException.Message);
+            }
         }
 
         private static MethodInfo Helper(Type step, string name)

@@ -501,6 +501,8 @@ namespace Evosim.Farm
             Flag("EVOSIM_BITE_TAKES_STORE", (s, v) => s.BiteTakesStore = v),
             // D226: a multiplier on the damage of a mouth's blow. Read only with the dial above on.
             Num("EVOSIM_BITE_DAMAGE_SCALE", 1f, (s, v) => s.BiteDamageScale = v),
+            // D232: a kill is swallowed whole into the killer's gut and leaves no remains. Read only with contact eating on.
+            Flag("EVOSIM_KILL_GUT", (s, v) => s.KillSwallowsBody = v),
 
             // D177: the consumer cell's upkeep, W/m3. The value already lives in every config's cell
             // table, so the knob adds no field; unset is ConsumerCell's own, the recorded world.
@@ -998,6 +1000,7 @@ namespace Evosim.Farm
             config.RemainsWindowSeconds = s.RemainsWindow;
             config.BiteTakesStore = s.BiteTakesStore;
             config.BiteDamageScale = s.BiteDamageScale;
+            config.KillSwallowsBody = s.KillSwallowsBody;
             config.ProtectionWattsPerUnit = s.PriceProtection;
             config.ToughnessWattsPerUnit = s.PriceToughness;
             config.Mutation.AttributeMutationChance = s.AttributeMutation;
@@ -1850,6 +1853,9 @@ namespace Evosim.Farm
 
         /// <summary>D226: the multiplier on a mouth's blow (<c>EVOSIM_BITE_DAMAGE_SCALE</c>), read only with the dial above on.</summary>
         public float BiteDamageScale;
+
+        /// <summary>D232: a kill is swallowed whole into the killer's gut (<c>EVOSIM_KILL_GUT</c>), read only with the contact-eating dial on.</summary>
+        public bool KillSwallowsBody;
         public float PriceProtection;
         public float PriceToughness;
         public float AttributeMutation;

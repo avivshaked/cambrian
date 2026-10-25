@@ -566,8 +566,12 @@ namespace __NS__
         private readonly Col<long> _census, _overflow, _guard;
 
         // ---- two sphere sets: [set][Cx, Cy, Cz, R, Vx, Vy, Vz, LCx, LCy, LCz, LR, LVx, LVy, LVz, LEx, LEy, LEz,
-        // LRot0 .. LRot8], the last nine a link row wide under D228's true shape and one cell otherwise
+        // LRot0 .. LRot8, LSp0 .. LSp2], the nine LRot columns a link row wide under D228's true shape and one cell
+        // otherwise, and the three LSp columns (each link's spin, level (b)) a link row wide at TrueShapeAtPoint only
         private readonly Col<Real>[][] _sph = new Col<Real>[2][];
+
+        // How many of a sphere set's columns a block copies: all 29 at TrueShapeAtPoint, the first 26 otherwise.
+        private readonly int _sphCopied;
 
         // D228's cores by link row: the half-extents (3) and the margin, which a pack writes and a block
         // uploads only after one (_coreUp). A cell each unless the world is on the true shape.
@@ -739,12 +743,15 @@ namespace __NS__
 
             for (int k = 0; k < 4; k++) _core[k] = new Col<Real>(_acc, _stream, 1, world.TrueShape ? WholeStep.LinkStride * _gcap : 1);
 
+            _sphCopied = world.AtPoint ? 29 : 26;
+
             for (int set = 0; set < 2; set++)
             {
-                var columns = new Col<Real>[26];
+                var columns = new Col<Real>[29];
                 for (int k = 0; k < 7; k++) columns[k] = new Col<Real>(_acc, _stream, 1, _gcap);
                 for (int k = 7; k < 17; k++) columns[k] = new Col<Real>(_acc, _stream, 1, WholeStep.LinkStride * _gcap);
                 for (int k = 17; k < 26; k++) columns[k] = new Col<Real>(_acc, _stream, 1, world.TrueShape ? WholeStep.LinkStride * _gcap : 1);
+                for (int k = 26; k < 29; k++) columns[k] = new Col<Real>(_acc, _stream, 1, world.AtPoint ? WholeStep.LinkStride * _gcap : 1);
                 _sph[set] = columns;
                 _active[set] = new Col<int>(_acc, _stream, 1, _gcap);
             }
@@ -760,7 +767,7 @@ namespace __NS__
             _gcursor = new Scratch<int>(_acc, 17);
             _tileSum = new Scratch<int>(_acc, 1);
             _tileStart = new Scratch<int>(_acc, 1);
-            _linkPush = new Scratch<Real>(_acc, 3);
+            _linkPush = new Scratch<Real>(_acc, world.AtPoint ? 6 : 3);
             _linkFluid = new Scratch<Real>(_acc, 20);   // rows 17-19: D199/D200's force cut
             _linkLimited = new Scratch<int>(_acc, 1);
             _linkFlags = new Scratch<int>(_acc, 1);
@@ -982,7 +989,7 @@ namespace __NS__
                 CreatureContact = w.CreatureContact ? 1 : 0, OffsetTorque = w.OffsetTorque ? 1 : 0,
                 ShapedMass = w.ShapedMass ? 1 : 0,
                 MirrorDrive = w.MirroredDrive ? 1 : 0,
-                TrueShape = w.TrueShape ? 1 : 0,
+                TrueShape = w.TrueShape ? 1 : 0, AtPoint = w.AtPoint ? 1 : 0,
                 StrokeAssembly = w.StrokeAssembly ? 1 : 0,
                 BendAndPower = w.BendAndPower ? 1 : 0, TurningDrag = w.TurningDrag, RockTouch = w.RockTouch ? 1 : 0,
                 Anchoring = w.AnchorCell != null ? 1 : 0,
@@ -1724,7 +1731,8 @@ namespace __NS__
             _strayCode.View.MemSetToZero(_stream);
             _strayStep.View.MemSetToZero(_stream);
             _strayCount.View.MemSetToZero(_stream);
-            foreach (Col<Real> c in _sph[_committed]) c.UpUsedQueued(UsedUnits(c, upUsed));
+            // The spin columns (26 to 28) travel only at D228's level (b); a one-cell stub is not copied at the other values.
+            for (int k = 0; k < _sphCopied; k++) _sph[_committed][k].UpUsedQueued(UsedUnits(_sph[_committed][k], upUsed));
             _active[_committed].UpUsedQueued(UsedUnits(_active[_committed], upUsed));
             if (_coreUp)
             {
@@ -1797,7 +1805,8 @@ namespace __NS__
             _tileSum.Ensure(tiles);
             _tileStart.Ensure(tiles);
             long linkRows = Math.Max(1, rows);
-            _linkPush.Ensure(3 * linkRows);
+            // Three rows of the push; under D228's level (b) three more, the torque about the link's centre.
+            _linkPush.Ensure((_w.AtPoint ? 6 : 3) * linkRows);
             // The fluid's rows are links whatever the contact's are: LinkStride a slot.
             long fluidRows = Math.Max(1, (long)WholeStep.LinkStride * gUsed);
             _linkFluid.Ensure(20 * fluidRows);
@@ -2057,7 +2066,7 @@ namespace __NS__
 
             int downUsed = _slots.Used;
             foreach (IColumn c in _gDown) if (!_lists.Contains(c)) c.DownUsedQueued(UsedUnits(c, downUsed));
-            foreach (Col<Real> c in _sph[_committed]) c.DownUsedQueued(UsedUnits(c, downUsed));
+            for (int k = 0; k < _sphCopied; k++) _sph[_committed][k].DownUsedQueued(UsedUnits(_sph[_committed][k], downUsed));
             _active[_committed].DownUsedQueued(UsedUnits(_active[_committed], downUsed));
             _census.DownQueued();
             _overflow.DownQueued();
@@ -2182,6 +2191,7 @@ namespace __NS__
                 for (int k = 0; k < 7; k++) _sph[set][k].Resize(cap);
                 for (int k = 7; k < 17; k++) _sph[set][k].Resize(WholeStep.LinkStride * cap);
                 if (_w.TrueShape) for (int k = 17; k < 26; k++) _sph[set][k].Resize(WholeStep.LinkStride * cap);
+                if (_w.AtPoint) for (int k = 26; k < 29; k++) _sph[set][k].Resize(WholeStep.LinkStride * cap);
                 _active[set].Resize(cap);
             }
 
@@ -2242,6 +2252,7 @@ namespace __NS__
                 LRot0 = s[17].View, LRot1 = s[18].View, LRot2 = s[19].View,
                 LRot3 = s[20].View, LRot4 = s[21].View, LRot5 = s[22].View,
                 LRot6 = s[23].View, LRot7 = s[24].View, LRot8 = s[25].View,
+                LSp0 = s[26].View, LSp1 = s[27].View, LSp2 = s[28].View,
                 Active = _active[set].View,
             };
         }
@@ -2846,6 +2857,15 @@ namespace __NS__
                 }
             }
 
+            // D228 level (b): each link's committed spin with its sphere. Only a world at TrueShapeAtPoint has the array.
+            if (_w.AtPoint && c.LinkContactActive && c.LinkContactSpin != null)
+            {
+                for (int l = 0; l < links; l++)
+                {
+                    for (int k = 0; k < 3; k++) sph[26 + k].Host[row + l] = (Real)c.LinkContactSpin[3 * l + k];
+                }
+            }
+
             // D162's touch of the rock, the record the next step's senses read
             if (_rock && c.RockTouched != null)
             {
@@ -3235,6 +3255,21 @@ namespace __NS__
                             double q = sph[17 + k].Host[row + l];
                             c.LinkContactRotation[9 * l + k] = q;
                             pq[9 * l + k] = q;
+                        }
+                    }
+                }
+
+                // D228 level (b): the spins, committed and pending alike, as the turns are.
+                if (_w.AtPoint && c.LinkContactSpin != null)
+                {
+                    double[] ps = c.MirrorPendingLinkSpin;
+                    for (int l = 0; l < links; l++)
+                    {
+                        for (int k = 0; k < 3; k++)
+                        {
+                            double q = sph[26 + k].Host[row + l];
+                            c.LinkContactSpin[3 * l + k] = q;
+                            ps[3 * l + k] = q;
                         }
                     }
                 }

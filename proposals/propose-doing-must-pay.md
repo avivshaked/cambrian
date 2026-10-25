@@ -169,7 +169,7 @@ winter on what they hold, but fix less, so the grazers' food thins. Round 62's b
 asks for grazers alive at every season's end (D215). Today that test fails in four of six fast-rot worlds at the
 summer windows (the table in `logbook/specs/r62-rot-screen/d215-table.md` on `r62-launch`). A deeper winter makes it
 harder, so it is a stress on the grazers. It fits the oases neither better nor worse, and it gives Proposal 1's fat
-cell something to answer (`proposals/propose-new-cell-types.md`).
+cell something to answer (`logbook/specs/cell-types-survey-2026-10-23.md`).
 
 The risk is that grazers die out each winter and the trickle refounds them, which reads as a guild and is not one.
 D215's born share catches it. A screen is one or two seeds at 0.8 beside the base, read on D215's tests and births by

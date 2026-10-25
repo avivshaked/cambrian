@@ -450,6 +450,8 @@ namespace Evosim.Farm
                 (config.ContactEating && config.BiteTakesStore ? " · a bite takes the store" : "") +
                 // D226, only when not 1, so every recorded header reads as it did.
                 (config.BiteDamageScale != 1f ? " · bite damage ×" + config.BiteDamageScale.ToString("0.###", Inv) : "") +
+                // D232, only when on (and so only with contact eating), so every recorded header reads as it did.
+                (config.ContactEating && config.KillSwallowsBody ? " · a kill swallows the body" : "") +
 
                 // The ruling of 2026-09-24, at the end before the hash and rendered either way.
                 // The floor is the `overhead` token above, which is unchanged; this says whether

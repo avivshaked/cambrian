@@ -154,6 +154,44 @@ namespace Evosim.Farm.Tests
         }
 
         /// <summary>
+        /// A body of one box part, drawn by hand and not at random (D228's contact at the point is tried on plates), set
+        /// at a place and an attitude with a velocity and a spin, and wired as <see cref="Body"/> wires one: the same
+        /// senses, the same reserve, no neurons. The committed sphere is refreshed after the velocity and the spin are
+        /// written, so the first block reads them as the host does.
+        /// </summary>
+        public static Creature Plate(int id, SolverConfig solver, World world, Float3 half, Vec3 at, QuatD turn,
+                                    Vec3 velocity = default, Vec3 spin = default)
+        {
+            var genome = new Genome { RootIndex = 0, AdultScale = 1f };
+            genome.Reproduction = new ReproductionTraits { BroodSize = 1, BirthInvestment = 0.5f, ReserveMargin = 0f };
+            genome.Nodes.Add(new MorphNode
+            {
+                Dimensions = half,
+                CellTypeId = CellTypeIds.Structural,
+                ShapeId = ShapeIds.Box,
+                JointType = JointType.Fixed,
+                JointLimits = Array.Empty<Float2>(),
+                RecursiveLimit = 1,
+            });
+
+            Phenotype plan = Developer.Develop(genome, DevelopmentLimits.Default);
+            var body = new Creature(id, plan, solver);
+            body.PlaceAt(at, turn);
+            Vec3.Write(body.Velocity, 0, velocity);
+            Vec3.Write(body.Spin, 0, spin);
+            body.RefreshContactSphere();
+            body.CommitContactSphere();
+
+            body.Senses.Nutrients = world.Nutrients;
+            body.Senses.Scent = world.Scent;
+            body.Senses.LeafScent = world.LeafScent;
+            body.Senses.Reserve = new Reserve { SecondsOfReserve = 40f + id };
+            body.Senses.Contact = new bool[body.Links];
+            body.Senses.Damage = new float[body.Links];
+            return body;
+        }
+
+        /// <summary>
         /// D146's one brain for a drawn genome, as World.GrowBrain makes a founder's and then mutates
         /// it a few times so it grows links, ports and hidden units. With <paramref name="bigLinks"/>
         /// above 0 it then splits a dozen links into hidden units and adds links until it holds that
@@ -522,6 +560,49 @@ namespace Evosim.Farm.Tests
             Refused(() => GpuBackend.Check(built, copy), "contact shape");
         }
 
+        /// <summary>
+        /// D228's two true-shape values are two engines on the card: the kernels of the one carry the spin, the torque
+        /// and the vertices' law behind a flag, so a backend built for one steps no world of the other, in either order.
+        /// </summary>
+        [Fact]
+        public void ABackendBuiltForTheTrueShapeRefusesContactAtThePointAndTheReverse()
+        {
+            (_, SolverConfig built) = GpuTank.Build(reefs: false);
+            var copy = (SolverConfig)typeof(object)
+                .GetMethod("MemberwiseClone", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .Invoke(built, null);
+
+            built.ContactShape = ContactShapeForm.TrueShape;
+            copy.ContactShape = ContactShapeForm.TrueShapeAtPoint;
+            Refused(() => GpuBackend.Check(built, copy), "contact shape");
+
+            built.ContactShape = ContactShapeForm.TrueShapeAtPoint;
+            copy.ContactShape = ContactShapeForm.TrueShape;
+            Refused(() => GpuBackend.Check(built, copy), "contact shape");
+
+            // Its own value is accepted, and so is nothing else it was not built for.
+            copy.ContactShape = ContactShapeForm.TrueShapeAtPoint;
+            GpuBackend.Check(built, copy);
+
+            copy.ContactShape = ContactShapeForm.Spheres;
+            Refused(() => GpuBackend.Check(built, copy), "contact shape");
+        }
+
+        /// <summary>
+        /// Both true-shape values need per-part contact on the card, and the refusal names the setting that is off.
+        /// </summary>
+        [Fact]
+        public void ContactAtThePointNeedsPerPartContactOnTheCardAsTheTrueShapeDoes()
+        {
+            foreach (ContactShapeForm form in new[] { ContactShapeForm.TrueShape, ContactShapeForm.TrueShapeAtPoint })
+            {
+                (_, SolverConfig s) = GpuTank.Build(reefs: false);
+                s.ContactShape = form;
+                s.ContactPerPart = false;
+                Refused(() => GpuWorld.Refuse(s), "EVOSIM_CONTACT_PER_PART");
+            }
+        }
+
         [Fact]
         public void ABackendBuiltForOneStrokeLawRefusesToStepTheOther()
         {
@@ -711,6 +792,66 @@ namespace Evosim.Farm.Tests
             }
         }
 
+        /// <summary>
+        /// A place on the bed and the attitude of a plate lying on it: the centre a distance <paramref name="along"/>
+        /// off the bed's surface along its normal, and the turn that carries the plate's up onto that normal, then
+        /// tipped by <paramref name="tip"/> about its own z axis (0 for flat).
+        /// </summary>
+        private static void OnTheBed(World core, double x, double z, double along, double tip, out Vec3 at, out QuatD turn)
+        {
+            core.Bed.HeightAndGradient(x, z, out double height, out double gradientX, out double gradientZ);
+
+            double slope = Math.Sqrt(1.0 + gradientX * gradientX + gradientZ * gradientZ);
+            Vec3 up = new Vec3(-gradientX, 1.0, -gradientZ) * (1.0 / slope);
+
+            QuatD level = QuatD.Identity;
+            Vec3 axis = Vec3.Cross(Vec3.UnitY, up);
+            if (axis.Magnitude > 1e-12)
+            {
+                level = QuatD.FromAxisAngle(axis * (1.0 / axis.Magnitude), Math.Acos(Math.Max(-1.0, Math.Min(1.0, up.Y))));
+            }
+
+            // The tip is taken in the plate's own frame first, then the plate is laid on the bed.
+            turn = tip == 0 ? level : level * QuatD.FromAxisAngle(Vec3.UnitZ, tip);
+            at = new Vec3(x, core.Bed.FloorY(x, z), z) + up * along;
+        }
+
+        /// <summary>
+        /// D228 level (b)'s crowd: <see cref="PopulateCrowd"/>'s random bodies and four plates (half-extents 0.5, 0.05,
+        /// 0.5) placed by hand, ids 101 to 104. One lies flat on the bed, a millimetre into it; one rests on an edge,
+        /// tipped 25 degrees about its z axis, a millimetre into the bed on that edge, as the host's drop test sets it;
+        /// and two touch face to face in mid-water, the upper one tilted so that they meet along an edge, both
+        /// moving and spinning, so that the pair's contact point is off both centres and each side's velocity there
+        /// is its centre's plus its spin crossed with the lever.
+        /// </summary>
+        private static void PopulateAtPoint(DynamicsWorld world, World core, int count, ulong seed, int firstId)
+        {
+            PopulateCrowd(world, core, count, seed, firstId);
+
+            var half = new Float3(0.5f, 0.05f, 0.5f);
+            Vec3 axis = GpuTank.Axis(core);
+            double tip = 25.0 * Math.PI / 180.0;
+
+            OnTheBed(core, axis.X + 3.5, axis.Z + 3.0, 0.05 - 0.001, 0, out Vec3 flatAt, out QuatD flatTurn);
+            world.AddInIdOrder(GpuTank.Plate(101, world.Config, core, half, flatAt, flatTurn));
+
+            // The lowest point of a core with half-extents (0.45, 0, 0.45) tipped by theta about z is 0.45 sin(theta) under
+            // its centre, and the margin is 0.05 more.
+            OnTheBed(core, axis.X + 3.5, axis.Z - 3.0, 0.45 * Math.Sin(tip) + 0.05 - 0.001, tip, out Vec3 edgeAt, out QuatD edgeTurn);
+            world.AddInIdOrder(GpuTank.Plate(102, world.Config, core, half, edgeAt, edgeTurn));
+
+            // Face to face in mid-water: the upper plate's lowest point is 0.45 sin(0.3) + 0.05 under its centre, and the
+            // lower plate's top is 0.05 over its own; two millimetres of overlap.
+            var lower = new Vec3(axis.X - 4.0, -9.0, axis.Z - 3.0);
+            Vec3 upper = lower + new Vec3(0.1, 0.05 + 0.45 * Math.Sin(0.3) + 0.05 - 0.002, 0.05);
+            world.AddInIdOrder(GpuTank.Plate(
+                103, world.Config, core, half, lower, QuatD.Identity,
+                new Vec3(0.3, -0.2, 0.1), new Vec3(0.4, -0.7, 0.2)));
+            world.AddInIdOrder(GpuTank.Plate(
+                104, world.Config, core, half, upper, QuatD.FromAxisAngle(Vec3.UnitX, 0.3),
+                new Vec3(-0.1, 0.05, 0.4), new Vec3(-0.3, 0.2, 0.9)));
+        }
+
         private void AssertSame(DynamicsWorld cpu, DynamicsWorld gpu, string when)
         {
             byte[] a = GpuTank.Snapshot(cpu), b = GpuTank.Snapshot(gpu);
@@ -779,6 +920,8 @@ namespace Evosim.Farm.Tests
         [InlineData("shapedswing")]
         [InlineData("trueshape")]
         [InlineData("trueshape-crowd")]
+        [InlineData("trueshapeatpoint")]
+        [InlineData("trueshapeatpoint-crowd")]
         public void TheDriveAndThePushesOnTheCpuAcceleratorAreTheSolver(string world)
         {
             var drive = new Dictionary<string, string> { { "EVOSIM_POWER_PUSH", "2" }, { "EVOSIM_POSE_HZ", "2" } };
@@ -800,21 +943,34 @@ namespace Evosim.Farm.Tests
             // bed, the reefs and the glass on the core's support point. The second puts plates and capsules close
             // enough to touch each other and the bed. Each is shown to part on the CPU from the spheres' world.
             var trueShape = new Dictionary<string, string> { { "EVOSIM_CONTACT_SHAPE", "trueshape" } };
-            bool crowd = world == "trueshape-crowd";
+
+            // D228's level (b), the force at the contact point: the same narrowphase with the lever, the point's
+            // velocity and the torque r x F. The crowd adds three set-ups by hand, a plate lying flat on the bed, a
+            // plate on an edge and two plates touching face to face with spin, and is shown to part on the CPU from
+            // the same crowd with the force at the centre, so that the lever is shown to have reached the solver.
+            var atPoint = new Dictionary<string, string> { { "EVOSIM_CONTACT_SHAPE", "trueshapeatpoint" } };
+            bool crowd = world.EndsWith("-crowd");
             bool reefs = world.StartsWith("trueshape");
 
             Dictionary<string, string> settings =
                 world == "drive" ? drive : world == "power" ? power : world == "swing" ? swing
-                : world == "shapedpower" ? shapedPower : strokes ? strokeAssembly : world == "shapedswing" ? shapedSwing : trueShape;
+                : world == "shapedpower" ? shapedPower : strokes ? strokeAssembly : world == "shapedswing" ? shapedSwing
+                : world.StartsWith("trueshapeatpoint") ? atPoint : trueShape;
             Dictionary<string, string> without =
                 world == "power" ? drive : world == "shapedpower" ? power : strokes ? shapedPower
-                : world == "shapedswing" ? swing : null;
+                : world == "shapedswing" ? swing : world == "trueshapeatpoint-crowd" ? trueShape : null;
 
             (DynamicsWorld plain, World core0) = Pair(true, reefs, without);
             (DynamicsWorld cpu, World coreA) = Pair(true, reefs, settings);
             (DynamicsWorld gpu, World coreB) = Pair(true, reefs, settings);
 
-            if (crowd)
+            if (world == "trueshapeatpoint-crowd")
+            {
+                PopulateAtPoint(plain, core0, 14, 11UL, 1);
+                PopulateAtPoint(cpu, coreA, 14, 11UL, 1);
+                PopulateAtPoint(gpu, coreB, 14, 11UL, 1);
+            }
+            else if (crowd)
             {
                 PopulateCrowd(plain, core0, 14, 11UL, 1);
                 PopulateCrowd(cpu, coreA, 14, 11UL, 1);
@@ -837,7 +993,10 @@ namespace Evosim.Farm.Tests
             Assert.Equal(world.StartsWith("shaped") || strokes, cpu.Config.ShapedAddedMass);
             Assert.Equal(strokes, cpu.Config.StrokePushesAssembly);
             Assert.False(plain.Config.StrokePushesAssembly);
-            Assert.Equal(world.StartsWith("trueshape"), cpu.Config.ContactShape == ContactShapeForm.TrueShape);
+            Assert.Equal(
+                world.StartsWith("trueshapeatpoint") ? ContactShapeForm.TrueShapeAtPoint
+                : world.StartsWith("trueshape") ? ContactShapeForm.TrueShape : ContactShapeForm.Spheres,
+                cpu.Config.ContactShape);
 
             if (strokes)
             {
@@ -906,6 +1065,13 @@ namespace Evosim.Farm.Tests
             Assert.True(parted, world + ": the world stepped as the one without its setting");
             Assert.Equal(0, backend.RefusedForClass);
             Assert.Equal(0L, backend.OverflowTotal);
+
+            // The hand-placed set-ups must have met what they were placed for, or the match proves nothing about them.
+            if (world == "trueshapeatpoint-crowd")
+            {
+                Assert.True(cpu.OverlapPairs > 0, world + ": no pair of bodies touched");
+                Assert.True(cpu.BedOrGlassBodies > 0, world + ": no body touched the bed or the glass");
+            }
         }
 
         /// <summary>

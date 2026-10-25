@@ -1,0 +1,16 @@
+A: scratch/fin-shape/identity-int1-off/r62i1off-off-g32/2026-10-25-204408-9a233f1f/
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.1868 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 3790cbb42d dirty False dynamics ec56227d6bd7 farm d552cc816410 config 9a233f1f6b2664b1
+  pace     600 s of 600 in 3.3921259183333334 min, 2.948003771308507 x real time, status ended (budget), diverged 0
+B: scratch/fin-shape/identity-int1-on/r62i1on-atpoint-g32/2026-10-25-205210-7f8d660e/
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.2146 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 1dda6e0542 dirty False dynamics ec56227d6bd7 farm d552cc816410 config 7f8d660e4f610625
+  pace     600 s of 600 in 3.471286345 min, 2.880776463285399 x real time, status ended (budget), diverged 0
+split A  physics 52%, world 45%, harness 1%, writers 1%
+split B  physics 52%, world 46%, harness 1%, writers 1%
+stats    identical through t=10; first difference at t=20 in 44 fields, e.g. bedOrGlassBodies=13/24, bedOrGlassBodiesPerStep=0.013/0.024, buoyantDepth=-6.0628120634290905/-6.092149363623725, burntTotal=2.2338639331281107/2.2338639295658025, burntWindow=1.5234951192923716/1.5234951157300634
+digest   identical through step 1400; parts at step 1500 (t=14.999999664723873), bodies 45/45
+lineage  first differs at line 55
+positions not in both runs

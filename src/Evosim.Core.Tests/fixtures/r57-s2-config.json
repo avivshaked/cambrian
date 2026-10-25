@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "22d555d37697ce50",
+  "configHash": "cd9cc88c0054cf90",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -240,6 +240,7 @@
     "remainsWindowSeconds": 60,
     "biteTakesStore": false,
     "biteDamageScale": 1,
+    "killSwallowsBody": false,
     "protectionWattsPerUnit": 1,
     "toughnessWattsPerUnit": 0.1
   },

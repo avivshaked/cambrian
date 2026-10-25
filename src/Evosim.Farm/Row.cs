@@ -1027,6 +1027,23 @@ namespace Evosim.Farm
                         w.Field("mouthBlows", world.MouthBlows)
                             .Field("mouthBlowsFinishing", world.MouthBlowsFinishing);
                     }
+
+                    // D232. Only with the kill swallowed into a gut: the joules the living hold in guts now (as they
+                    // stand), then cumulative: the kills swallowed and the joules swallowed, the joules digested and
+                    // the intake waste of them, what the bites offered above the per-step cap, and the cap's hold on
+                    // the gut (the joules it left in guts, summed over the body-steps on which it bound, and how many
+                    // such body-steps). A window is read by differencing two rows, as the columns beside them are.
+                    if (world.Config.KillSwallowsBody)
+                    {
+                        w.Field("gutJoules", world.GutJoulesHeld)
+                            .Field("killsSwallowed", world.KillsSwallowed)
+                            .Field("gutSwallowedJoules", world.SwallowedJoules)
+                            .Field("gutDigested", world.GutDigestedJoules)
+                            .Field("gutWaste", world.GutWasteJoules)
+                            .Field("biteCapCut", world.BiteCapCutJoules)
+                            .Field("gutCapCut", world.GutCapCutJoules)
+                            .Field("gutCapBound", world.GutCapBound);
+                    }
                 }
 
                 // D214. Only in a world that measures the reach from the mouth points, so every other stats

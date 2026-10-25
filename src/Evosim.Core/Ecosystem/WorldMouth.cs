@@ -212,6 +212,11 @@ namespace Evosim.Core
 
             int killed = CollectTheDead();
 
+            // D232. After the dead are collected, so a kill's meal begins to digest the step it is swallowed, and after
+            // the bites have settled, so the bites have taken their share of each mouth's cap and the gut fills the
+            // rest. Off, nothing runs.
+            if (Config.KillSwallowsBody) DigestGuts(seconds);
+
             // D220. The remains lose the parts eaten whole as a living body does, and then every body whose window has
             // passed closes. After the mouth pass, so a window is whole until the step that closes it.
             if (Config.ContactEating)

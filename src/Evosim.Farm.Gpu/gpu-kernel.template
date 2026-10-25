@@ -154,6 +154,8 @@ namespace __NS__
         public ArrayView<Real> CoreHx, CoreHy, CoreHz, CoreM;
         public ArrayView<int> NOver, OvSlot, OvId, OvPart, OvHeld, NHeld, HeldId, BedGlass;
         public ArrayView<long> Census, Overflow;
+        // LinkPush: the contact force a link row hands its class kernel, three rows of Rows (x, y, z); under cfg.AtPoint
+        // three more follow (the torque r x F about the link's centre, x, y, z).
         public ArrayView<Real> LinkPush, LinkFluid;
         public ArrayView<int> LinkFlags, StageN, StageId, StageSlot, StagePart, LinkLimited;
 
@@ -197,6 +199,10 @@ namespace __NS__
 
         // D228: each link's turn, row-major, committed with its sphere. A stub of one cell unless cfg.TrueShape.
         public ArrayView<Real> LRot0, LRot1, LRot2, LRot3, LRot4, LRot5, LRot6, LRot7, LRot8;
+
+        // D228 level (b): each link's angular velocity in the world, committed with its sphere (Creature.LinkContactSpin).
+        // A stub of one cell unless cfg.AtPoint.
+        public ArrayView<Real> LSp0, LSp1, LSp2;
         public ArrayView<int> Active;
     }
 
@@ -250,6 +256,7 @@ namespace __NS__
         public int AnyRemains;   // D220: 1 for a block in which some body is remains; 0 reads no remains flag at all
         public int TrueShape;    // D228: a part touches as its convex core with a margin (SolverConfig.ContactShape)
         public int StrokeAssembly;   // D231: the powered stroke pushes the assembly welded beyond a jointed link (SolverConfig.StrokePushesAssembly)
+        public int AtPoint;      // D228 level (b): with TrueShape, the force acts at the contact point (ContactShapeForm.TrueShapeAtPoint)
 
         public long TraceStep;
         public double TraceTime, DtD, PoseOmega, GripDecay, GripThreshold, GripLag;
@@ -2140,6 +2147,17 @@ namespace __NS__
                             ps.LRot8[row + l] = rotationMatrix[9 * l + 8];
                         }
                     }
+
+                    // D228 level (b): each link's world-frame spin travels with its sphere (RefreshLinkSpheres copies Spin).
+                    if (cfg.AtPoint != 0)
+                    {
+                        for (int l = 0; l < links; l++)
+                        {
+                            ps.LSp0[row + l] = spin[3 * l];
+                            ps.LSp1[row + l] = spin[3 * l + 1];
+                            ps.LSp2[row + l] = spin[3 * l + 2];
+                        }
+                    }
                 }
             }
 
@@ -2366,6 +2384,12 @@ namespace __NS__
                     ps.LRot4[row + l] = cs.LRot4[row + l]; ps.LRot5[row + l] = cs.LRot5[row + l];
                     ps.LRot6[row + l] = cs.LRot6[row + l]; ps.LRot7[row + l] = cs.LRot7[row + l];
                     ps.LRot8[row + l] = cs.LRot8[row + l];
+                }
+
+                if (cfg.AtPoint != 0)
+                {
+                    ps.LSp0[row + l] = cs.LSp0[row + l]; ps.LSp1[row + l] = cs.LSp1[row + l];
+                    ps.LSp2[row + l] = cs.LSp2[row + l];
                 }
             }
         }
@@ -6413,6 +6437,15 @@ namespace __NS__
                     fext[6 * i + 3] += gl.LinkPush[row];
                     fext[6 * i + 4] += gl.LinkPush[R + row];
                     fext[6 * i + 5] += gl.LinkPush[2 * R + row];
+
+                    // D228 level (b): the torque of the touches about the link's centre, where the grip puts its own
+                    // (Grip: V3.Add(fext, 6 * l, torque)). Added where the host adds it, under the same gate as the force.
+                    if (cfg.AtPoint != 0)
+                    {
+                        fext[6 * i] += gl.LinkPush[3 * R + row];
+                        fext[6 * i + 1] += gl.LinkPush[4 * R + row];
+                        fext[6 * i + 2] += gl.LinkPush[5 * R + row];
+                    }
                 }
             }
 
@@ -6522,6 +6555,17 @@ namespace __NS__
 
             Real fx = 0, fy = 0, fz = 0;
 
+            // D228 level (b): this link's committed spin and smallest inertia, and the torque the touches sum, read
+            // and kept only at that level (ContactTrueShape.Apply: spin and inertia are zero and the torque unused at the others).
+            V3 pSpin = V3.Zero;
+            Real pInertia = 0;
+            Real qx = 0, qy = 0, qz = 0;
+            if (cfg.AtPoint != 0)
+            {
+                pSpin = new V3(s.LSp0[row], s.LSp1[row], s.LSp2[row]);
+                pInertia = b.SmallI[i * N + bi];
+            }
+
             if (cfg.CreatureContact != 0)
             {
                 int n = Candidates(row, g, cand, gl, gr, cfg, true);
@@ -6549,6 +6593,57 @@ namespace __NS__
                     Real distance = __M__.Sqrt(bx * bx + by * by + bz * bz);
                     Real penetration = radius + s.LR[orow] - distance;
                     if (penetration <= 0) continue;
+
+                    if (cfg.AtPoint != 0)
+                    {
+                        // D228 level (b): ContactTrueShape.Apply's pair at the contact point. The pair is found as at
+                        // the level below (the same cores in the same frame) and hands back its contact point; the
+                        // lever to it from this centre and from the other's, and each side's velocity at it, are read
+                        // in that frame. The push is today's law along the pair's normal; its torque r x F is capped
+                        // by the grip's cap and summed.
+                        V3 aNormal, aLever, aOtherLever;
+                        Real aPenetration;
+                        if (!TrueShapePairAt(s, gl, simplex, g, i, og, j, bx, by, bz, radius, s.LR[orow],
+                                             out aNormal, out aPenetration, out aLever, out aOtherLever))
+                        {
+                            continue;
+                        }
+
+                        if (instrument)
+                        {
+                            if (staged < StageCap)
+                            {
+                                gl.StageId[staged * R + row] = gl.Id[og];
+                                gl.StageSlot[staged * R + row] = og;
+                                gl.StagePart[staged * R + row] = j;
+                            }
+                            staged++;
+                        }
+
+                        Real aOtherMass = gl.LinkMass[orow];
+                        Real aReduced = m * aOtherMass / (m + aOtherMass);
+
+                        Real aStiffness = aReduced * cfg.Omega * cfg.Omega;
+                        Real aDamping = (Real)2.0 * cfg.Zeta * aReduced * cfg.Omega;
+
+                        V3 aThisVelocity = new V3(vx, vy, vz) + V3.Cross(pSpin, aLever);
+                        V3 aOtherSpin = new V3(s.LSp0[orow], s.LSp1[orow], s.LSp2[orow]);
+                        V3 aOtherVelocity = new V3(s.LVx[orow], s.LVy[orow], s.LVz[orow]) + V3.Cross(aOtherSpin, aOtherLever);
+                        Real aApproach = V3.Dot(aThisVelocity - aOtherVelocity, aNormal);
+
+                        Real aPush = PairPush(aStiffness * aPenetration - aDamping * aApproach, aReduced, aApproach, cfg);
+                        V3 aForce = aNormal * aPush;
+
+                        fx = fx + aForce.X;
+                        fy = fy + aForce.Y;
+                        fz = fz + aForce.Z;
+
+                        V3 aTorque = CapTorque(V3.Cross(aLever, aForce), pInertia, radius, cfg);
+                        qx = qx + aTorque.X;
+                        qy = qy + aTorque.Y;
+                        qz = qz + aTorque.Z;
+                        continue;
+                    }
 
                     if (cfg.TrueShape != 0)
                     {
@@ -6631,6 +6726,77 @@ namespace __NS__
                     fy = fy + ny * p;
                     fz = fz + nz * p;
                 }
+            }
+
+            if (cfg.AtPoint != 0)
+            {
+                // D228 level (b): the world's surfaces at every vertex of the core (ContactTrueShape.Apply with atPoint),
+                // the touches' torque summed beside the force, then the tail below with the torque kept as well.
+                V3 aHalf = new V3(gl.CoreHx[row], gl.CoreHy[row], gl.CoreHz[row]);
+                M3 aRotation = new M3(
+                    s.LRot0[row], s.LRot1[row], s.LRot2[row],
+                    s.LRot3[row], s.LRot4[row], s.LRot5[row],
+                    s.LRot6[row], s.LRot7[row], s.LRot8[row]);
+                Real aMargin = gl.CoreM[row];
+
+                // The link's principal inertias in its own axes (Creature.InertiaLocal), which the vertices' effective mass reads.
+                V3 aInertia = new V3(b.Inertia[3 * i * N + bi], b.Inertia[(3 * i + 1) * N + bi], b.Inertia[(3 * i + 2) * N + bi]);
+
+                Real aBedStiffness = m * cfg.Omega * cfg.Omega;
+                Real aBedDamping = (Real)2.0 * cfg.Zeta * m * cfg.Omega;
+
+                Real aKept = 0, aNormalX = 0, aNormalY = 0, aNormalZ = 0, aTouchX = 0, aTouchY = 0, aTouchZ = 0;
+                AgainstTheWorldPoint(cx, cy, cz, radius, ex, ey, ez, vx, vy, vz, m, aBedStiffness, aBedDamping,
+                                     aHalf, aRotation, aMargin, pSpin, aInertia, pInertia, w, cfg,
+                                     ref fx, ref fy, ref fz, ref qx, ref qy, ref qz, ref bedGlass, cfg.RockTouch,
+                                     ref aKept, ref aNormalX, ref aNormalY, ref aNormalZ,
+                                     ref aTouchX, ref aTouchY, ref aTouchZ);
+
+                // D162: the touch this step, and where: the deepest vertex's sphere's deepest point along the normal.
+                if (cfg.RockTouch != 0)
+                {
+                    int aTouched = aKept > 0 ? 1 : 0;
+                    gl.TouchNew[row] = aTouched;
+                    if (aTouched != 0)
+                    {
+                        gl.TouchAt[row] = aTouchX;
+                        gl.TouchAt[R + row] = aTouchY;
+                        gl.TouchAt[2 * R + row] = aTouchZ;
+                        gl.TouchAt[3 * R + row] = aNormalX;
+                        gl.TouchAt[4 * R + row] = aNormalY;
+                        gl.TouchAt[5 * R + row] = aNormalZ;
+                    }
+                }
+
+                BodyPush(ref fx, ref fy, ref fz, m, cfg);
+
+                int aFlags = bedGlass != 0 ? 1 : 0;
+                if (fx != 0 || fy != 0 || fz != 0)
+                {
+                    aFlags |= 2;
+                    if (links == 1)
+                    {
+                        // A one-link body's force is spread by m (1/M), its torque likewise; BodyPush bounds the force
+                        // and the cap bounded each torque already, and the one does not scale the other.
+                        Real aShare = m * ((Real)1.0 / totalMass);
+                        fx = fx * aShare;
+                        fy = fy * aShare;
+                        fz = fz * aShare;
+                        qx = qx * aShare;
+                        qy = qy * aShare;
+                        qz = qz * aShare;
+                    }
+                }
+
+                gl.LinkPush[row] = fx;
+                gl.LinkPush[R + row] = fy;
+                gl.LinkPush[2 * R + row] = fz;
+                gl.LinkPush[3 * R + row] = qx;
+                gl.LinkPush[4 * R + row] = qy;
+                gl.LinkPush[5 * R + row] = qz;
+                gl.LinkFlags[row] = aFlags;
+                if (instrument) gl.StageN[row] = staged;
+                return;
             }
 
             if (cfg.TrueShape != 0)
@@ -7273,6 +7439,88 @@ namespace __NS__
         }
 
         /// <summary>
+        /// <see cref="TrueShapePair"/> for D228's level (b): the same pair, in the same frame, with the same
+        /// arithmetic, and the contact point it keeps handed back as two levers, this link's and the other's. Each
+        /// is the point less that side's centre in the pair's frame (the first core at the origin, the second at
+        /// minus the sphere test's difference), so the same four numbers whichever of the two does the work
+        /// (ContactTrueShape.Apply: <c>lever</c> and <c>otherLever</c>). A copy rather than a change to
+        /// <see cref="TrueShapePair"/>, so that the kernels of the other two values of the switch keep their lines.
+        /// </summary>
+        private static bool TrueShapePairAt(
+            SSph s, SGlob gl, Real[] simplex, int g, int i, int og, int j,
+            Real bx, Real by, Real bz, Real radius, Real otherRadius,
+            out V3 normal, out Real penetration, out V3 lever, out V3 otherLever)
+        {
+            int row = g * LinkStride + i;
+            int orow = og * LinkStride + j;
+
+            bool firstIsThis = gl.Id[g] < gl.Id[og] || (gl.Id[g] == gl.Id[og] && i < j);
+            int rowA = firstIsThis ? row : orow;
+            int rowB = firstIsThis ? orow : row;
+            Real radiusA = firstIsThis ? radius : otherRadius;
+            Real radiusB = firstIsThis ? otherRadius : radius;
+
+            // A less B, as the host reads the sphere test in the canonical order: the negation of this less other.
+            V3 between = firstIsThis ? new V3(bx, by, bz) : new V3(-bx, -by, -bz);
+
+            V3 centreA = V3.Zero;
+            V3 centreB = V3.Zero - between;
+
+            V3 halfA = new V3(gl.CoreHx[rowA], gl.CoreHy[rowA], gl.CoreHz[rowA]);
+            V3 halfB = new V3(gl.CoreHx[rowB], gl.CoreHy[rowB], gl.CoreHz[rowB]);
+            Real marginA = gl.CoreM[rowA];
+            Real marginB = gl.CoreM[rowB];
+            M3 rotationA = new M3(
+                s.LRot0[rowA], s.LRot1[rowA], s.LRot2[rowA],
+                s.LRot3[rowA], s.LRot4[rowA], s.LRot5[rowA],
+                s.LRot6[rowA], s.LRot7[rowA], s.LRot8[rowA]);
+            M3 rotationB = new M3(
+                s.LRot0[rowB], s.LRot1[rowB], s.LRot2[rowB],
+                s.LRot3[rowB], s.LRot4[rowB], s.LRot5[rowB],
+                s.LRot6[rowB], s.LRot7[rowB], s.LRot8[rowB]);
+
+            V3 normalAB;
+            V3 pairPoint;
+
+            Real d;
+            V3 pa, pb;
+            if (GjkDistance(halfA, rotationA, centreA, halfB, rotationB, centreB, simplex, out d, out pa, out pb))
+            {
+                // Apart: along the closest points, from B toward A.
+                V3 gap = pa - pb;
+                normalAB = gap * ((Real)1.0 / d);
+                penetration = marginA + marginB - d;
+
+                // Each surface point is the closest core point moved out by its margin toward the other.
+                pairPoint = ((pa - normalAB * marginA) + (pb + normalAB * marginB)) * (Real)0.5;
+            }
+            else
+            {
+                // The cores meet: the centres' difference, as today, and a push that never weakens as the pair
+                // goes deeper than the margins' sum.
+                V3 deepBetween = centreA - centreB;
+                Real deepDistance = deepBetween.Magnitude;
+                normalAB = deepDistance > (Real)1e-9 ? deepBetween * ((Real)1.0 / deepDistance) : new V3(0, 1, 0);
+
+                Real sum = marginA + marginB;
+                Real deep = radiusA + radiusB - deepDistance;
+                penetration = deep > sum ? deep : sum;
+
+                // The point between the centres at the ratio of the margins.
+                Real along = sum > 0 ? marginA / sum : (Real)0.5;
+                pairPoint = centreA - deepBetween * along;
+            }
+
+            normal = firstIsThis ? normalAB : -normalAB;
+
+            // Each side's centre in the pair's frame: A at the origin, B at minus the difference.
+            V3 minusBetween = V3.Zero - between;
+            lever = pairPoint - (firstIsThis ? V3.Zero : minusBetween);
+            otherLever = pairPoint - (firstIsThis ? minusBetween : V3.Zero);
+            return penetration > 0;
+        }
+
+        /// <summary>
         /// A core's support point along a direction as a sphere's centre, a float and its rest: in double the
         /// host's centre plus the turned corner; in single the float centre moved by the corner with the
         /// rounding of the sum moved into the rest, so the rest stays at the size the world's samplers
@@ -7560,6 +7808,397 @@ namespace __NS__
                         }
                     }
                 }
+            }
+        }
+
+        // ---- D228 level (b): the world's surfaces at every vertex of the core, behind cfg.AtPoint
+        //
+        // ContactTrueShape.Apply with atPoint, for the bed, the reefs and the coral, and the glass, in that order.
+        // Each surface takes the bounding sphere as the early-out with a still link (the host reads no velocity there
+        // at this level), then the direction to the surface at the link's centre, then every distinct vertex of the
+        // core in a fixed order (ContactTrueShape.Vertices): each vertex's sphere test at the vertex's own velocity
+        // v + spin x r, on a spring and damper scaled to the mass the vertex meets (m_eff), summed. The sum is the
+        // surface's push; the touch's torque is the vertices' moment plus the friction's lever (the card has no
+        // friction: FarmGpu.Open refuses a bed with any), capped once by the grip's cap (Rock). The three surfaces
+        // share the one vertex routine below, so that the kernel carries it once.
+
+        private const int PointFlat = 0, PointHeight = 1, PointReef = 2, PointGlass = 3;
+
+        /// <summary>
+        /// ContactTrueShape.EffectiveMass: the mass a push at <paramref name="lever"/> from the link's centre, along
+        /// <paramref name="normal"/>, meets: <c>m / (1 + m q)</c> with <c>q = (r x n) . I^-1 (r x n)</c>, the inverse
+        /// inertia taken in the link's own axes (the diagonal).
+        /// </summary>
+        private static Real EffectiveMassAt(V3 lever, V3 normal, V3 inertia, M3 rotation, Real mass)
+        {
+            V3 local = rotation.TransposedTimes(V3.Cross(lever, normal));
+
+            Real turning =
+                (inertia.X > 0 ? local.X * local.X / inertia.X : (Real)0.0) +
+                (inertia.Y > 0 ? local.Y * local.Y / inertia.Y : (Real)0.0) +
+                (inertia.Z > 0 ? local.Z * local.Z / inertia.Z : (Real)0.0);
+
+            return mass / ((Real)1.0 + mass * turning);
+        }
+
+        /// <summary>
+        /// ContactTrueShape.Vertices for one surface: the touch of a link on every distinct vertex of its core, in the
+        /// order of the sign patterns 0 to 7 (bit 0 a minus on x, bit 1 on y, bit 2 on z; a pattern with a minus on an
+        /// axis of no half-extent repeats another's vertex and is skipped). Each vertex is a sphere of the margin's
+        /// radius at the vertex, tested by the surface's recorded routine with the vertex's velocity, the mass it meets
+        /// and the spring and damper scaled to that mass. Returns the pushes' sum.
+        /// </summary>
+        /// <param name="supX">The deepest vertex (the largest push, the first in the order on a tie) as a sphere's centre; the link's centre with none.</param>
+        /// <param name="point">The push-weighted contact point less the link's centre, which the host forms as <c>point - centre</c>.</param>
+        /// <param name="moment">The pushes' moment about the centre, <c>sum (p_k - centre) x F_k</c>, not capped.</param>
+        private static V3 VerticesPoint(
+            int kind, V3 half, M3 rotation, Real cx, Real cy, Real cz, Real ex, Real ey, Real ez,
+            V3 direction, Real margin, V3 velocity, V3 spin, Real m, Real stiffness, Real damping, V3 inertia,
+            SWorld w, SCfg cfg,
+            out Real supX, out Real supY, out Real supZ, out V3 point, out V3 moment)
+        {
+            // The touch's push direction, read once for every vertex.
+            V3 pushDirection = -direction;
+
+            // The origin the vertex is built from: in double the link's centre, as the host builds it; in single zero,
+            // so that the lever stays a small number (as SupportSphere builds its corner).
+            V3 origin = CarryBase ? V3.Zero : new V3(cx, cy, cz);
+
+            V3 total = V3.Zero;
+            V3 weighted = V3.Zero;
+            Real weight = 0;
+            Real deepest = 0;
+            int pushing = 0;
+            V3 only = origin;
+
+            supX = cx; supY = cy; supZ = cz;
+            moment = V3.Zero;
+
+            for (int pattern = 0; pattern < 8; pattern++)
+            {
+                bool minusX = (pattern & 1) != 0, minusY = (pattern & 2) != 0, minusZ = (pattern & 4) != 0;
+                if ((minusX && !(half.X > 0)) || (minusY && !(half.Y > 0)) || (minusZ && !(half.Z > 0))) continue;
+
+                // The corner is built as GjkSupport builds it, so that a vertex that is the support point is the same bits.
+                V3 corner = new V3(
+                    minusX ? -half.X : half.X,
+                    minusY ? -half.Y : half.Y,
+                    minusZ ? -half.Z : half.Z);
+
+                V3 vertex = origin + rotation * corner;
+                V3 vertexPoint = vertex + direction * margin;
+                V3 lever = vertexPoint - origin;
+
+                // The mass this vertex pushes against, and the spring and damper of that mass.
+                Real effective = EffectiveMassAt(lever, pushDirection, inertia, rotation, m);
+                Real scale = effective / m;
+                Real vStiffness = stiffness * scale;
+                Real vDamping = damping * scale;
+
+                V3 pointVelocity = velocity + V3.Cross(spin, lever);
+
+                // The vertex as a sphere's centre: a float and its rest in single (Knuth's two-sum per axis, as
+                // SupportSphere), the vertex itself in double.
+                Real sx, sy, sz, sex, sey, sez;
+                if (CarryBase)
+                {
+                    sx = cx + vertex.X; Real bbx = sx - cx; sex = ex + ((cx - (sx - bbx)) + (vertex.X - bbx));
+                    sy = cy + vertex.Y; Real bby = sy - cy; sey = ey + ((cy - (sy - bby)) + (vertex.Y - bby));
+                    sz = cz + vertex.Z; Real bbz = sz - cz; sez = ez + ((cz - (sz - bbz)) + (vertex.Z - bbz));
+                }
+                else
+                {
+                    sx = vertex.X; sy = vertex.Y; sz = vertex.Z;
+                    sex = ex; sey = ey; sez = ez;
+                }
+
+                V3 push = V3.Zero;
+
+                if (kind == PointFlat)
+                {
+                    // FlatSphere: straight up.
+                    Real below = CarryBase ? ((-cfg.WorldDepth - sy) - sey) + margin : -cfg.WorldDepth - (sy - margin);
+                    if (below > 0)
+                    {
+                        Real up = PairPush(vStiffness * below - vDamping * pointVelocity.Y, effective, pointVelocity.Y, cfg);
+                        push = new V3(0, up, 0);
+                    }
+                }
+                else if (kind == PointHeight)
+                {
+                    // HeightSphere: ContactBed.Push on the sphere at the vertex.
+                    Real shgt, sgx, sgz, spen, sslope;
+                    if (CarryBase)
+                    {
+                        Real srise;
+                        BedHeightNear(sx, sz, sex, sez, w, cfg, out shgt, out srise, out sgx, out sgz);
+                        Real sfloorY = -cfg.BedDepth + shgt;
+                        sslope = __M__.Sqrt((Real)1.0 + sgx * sgx + sgz * sgz);
+                        spen = margin - ((sy - sfloorY) + (sey - srise)) / sslope;
+                    }
+                    else
+                    {
+                        BedHeightAndGradient(sx, sz, w, cfg, out shgt, out sgx, out sgz);
+                        Real sfloorY = -cfg.BedDepth + shgt;
+                        sslope = __M__.Sqrt((Real)1.0 + sgx * sgx + sgz * sgz);
+                        spen = margin - (sy - sfloorY) / sslope;
+                    }
+
+                    if (spen > 0)
+                    {
+                        Real sinv = (Real)1.0 / sslope;
+                        Real snx = -sgx * sinv, sny = (Real)1.0 * sinv, snz = -sgz * sinv;
+                        Real sapproach = pointVelocity.X * snx + pointVelocity.Y * sny + pointVelocity.Z * snz;
+                        Real sp = PairPush(vStiffness * spen - vDamping * sapproach, effective, sapproach, cfg);
+                        push = new V3(snx * sp, sny * sp, snz * sp);
+                    }
+                }
+                else if (kind == PointReef)
+                {
+                    // ReefSphere: ContactReef.Push on the sphere at the vertex.
+                    SD sat;
+                    Real sdistance = cfg.CoralCount != 0
+                        ? CoralSignedDistance(sx, sy, sz, margin, w, cfg, out sat)
+                        : ReefSignedDistance(sx, sy, sz, margin, w, cfg, out sat);
+                    Real spenetration = margin - sdistance;
+                    if (CarryBase)
+                    {
+                        Real sglen = __M__.Sqrt(sat.Gx * sat.Gx + sat.Gy * sat.Gy + sat.Gz * sat.Gz);
+                        if (sglen > (Real)1e-12)
+                            spenetration = spenetration - (sat.Gx * sex + sat.Gy * sey + sat.Gz * sez) / sglen;
+                    }
+
+                    if (spenetration > 0)
+                    {
+                        Real slength = __M__.Sqrt(sat.Gx * sat.Gx + sat.Gy * sat.Gy + sat.Gz * sat.Gz);
+                        Real snx, sny, snz;
+                        if (slength > (Real)1e-12)
+                        {
+                            Real sinv = (Real)1.0 / slength;
+                            snx = sat.Gx * sinv; sny = sat.Gy * sinv; snz = sat.Gz * sinv;
+                        }
+                        else
+                        {
+                            snx = 0; sny = 1; snz = 0;
+                        }
+
+                        Real sapproach = pointVelocity.X * snx + pointVelocity.Y * sny + pointVelocity.Z * snz;
+                        Real sp = PairPush(vStiffness * spenetration - vDamping * sapproach, effective, sapproach, cfg);
+                        push = new V3(snx * sp, sny * sp, snz * sp);
+                    }
+                }
+                else
+                {
+                    // GlassSphere: the cylinder about the vertical axis; the push runs inward.
+                    Real gsx = sx - cfg.AxisX;
+                    Real gsz = sz - cfg.AxisZ;
+                    Real supportRadial = __M__.Sqrt(gsx * gsx + gsz * gsz);
+                    Real soutside = supportRadial + margin - cfg.TankRadius;
+                    if (CarryBase) soutside = GlassOutsideNear(sx, sz, sex, sez, margin, cfg);
+
+                    if (soutside > 0)
+                    {
+                        Real ix, iz;
+                        if (supportRadial > (Real)1e-9) { ix = -gsx / supportRadial; iz = -gsz / supportRadial; }
+                        else { ix = 1; iz = 0; }
+
+                        Real approach = pointVelocity.X * ix + pointVelocity.Y * 0 + pointVelocity.Z * iz;
+                        Real p = PairPush(vStiffness * soutside - vDamping * approach, effective, approach, cfg);
+                        push = new V3(ix * p, 0 * p, iz * p);
+                    }
+                }
+
+                Real size = push.Magnitude;
+                if (!(size > 0)) continue;
+
+                pushing++;
+                total = total + push;
+                weighted = weighted + vertexPoint * size;
+                weight = weight + size;
+                moment = moment + V3.Cross(lever, push);
+                only = vertexPoint;
+
+                if (size > deepest)
+                {
+                    deepest = size;
+                    supX = sx; supY = sy; supZ = sz;
+                }
+            }
+
+            V3 contact = pushing > 1 ? weighted * ((Real)1.0 / weight) : (pushing == 1 ? only : origin);
+            point = contact - origin;
+            return total;
+        }
+
+        /// <summary>
+        /// ContactTrueShape.Apply's four surfaces on one link at D228's level (b), in Contacts.ApplyPerPart's order:
+        /// the bed (flat, or ContactBed on the height map), the reefs and the coral, and the glass, each through
+        /// <see cref="VerticesPoint"/>. The pushes go into the force, and each touch's capped torque into the
+        /// torque (<c>Rock</c>). The rock touch is the surface's summed push, kept where it is larger than any this
+        /// link has had this step, with the deepest vertex as its support (<c>NoteRock</c>).
+        /// </summary>
+        private static void AgainstTheWorldPoint(
+            Real cx, Real cy, Real cz, Real r, Real ex, Real ey, Real ez, Real vx, Real vy, Real vz, Real m,
+            Real bedStiffness, Real bedDamping, V3 half, M3 rotation, Real margin, V3 spin, V3 inertia, Real smallInertia,
+            SWorld w, SCfg cfg,
+            ref Real fx, ref Real fy, ref Real fz, ref Real qx, ref Real qy, ref Real qz, ref int bedGlass,
+            int noteRock, ref Real rockKept, ref Real rnx, ref Real rny, ref Real rnz,
+            ref Real rpx, ref Real rpy, ref Real rpz)
+        {
+            for (int surface = 0; surface < 3; surface++)
+            {
+                int kind = -1;
+                V3 direction = V3.Zero;
+
+                if (surface == 0)
+                {
+                    if (cfg.HasBed == 0)
+                    {
+                        // FlatBed: straight down. The early-out is the geometry's.
+                        Real bounded = CarryBase ? ((-cfg.WorldDepth - cy) - ey) + r : -cfg.WorldDepth - (cy - r);
+                        if (bounded > 0)
+                        {
+                            kind = PointFlat;
+                            direction = new V3(0, -1, 0);
+                        }
+                    }
+                    else
+                    {
+                        // HeightBed: the bounding sphere's push at rest, then minus the bed's normal under the centre.
+                        Real hgt, gx, gz, pen, slope;
+                        if (CarryBase)
+                        {
+                            Real rise;
+                            BedHeightNear(cx, cz, ex, ez, w, cfg, out hgt, out rise, out gx, out gz);
+                            Real floorY = -cfg.BedDepth + hgt;
+                            slope = __M__.Sqrt((Real)1.0 + gx * gx + gz * gz);
+                            pen = r - ((cy - floorY) + (ey - rise)) / slope;
+                        }
+                        else
+                        {
+                            BedHeightAndGradient(cx, cz, w, cfg, out hgt, out gx, out gz);
+                            Real floorY = -cfg.BedDepth + hgt;
+                            slope = __M__.Sqrt((Real)1.0 + gx * gx + gz * gz);
+                            pen = r - (cy - floorY) / slope;
+                        }
+
+                        Real rx = 0, ry = 0, rz = 0;
+                        Real nx = 0, ny = 0, nz = 0;
+                        if (pen > 0)
+                        {
+                            Real inv = (Real)1.0 / slope;
+                            nx = -gx * inv; ny = (Real)1.0 * inv; nz = -gz * inv;
+
+                            // ContactBed.Push with a zero velocity: the approach is the zero vector's dot.
+                            Real approach = (Real)0.0 * nx + (Real)0.0 * ny + (Real)0.0 * nz;
+                            Real p = PairPush(bedStiffness * pen - bedDamping * approach, m, approach, cfg);
+                            rx = nx * p; ry = ny * p; rz = nz * p;
+                        }
+
+                        if (rx != 0 || ry != 0 || rz != 0)
+                        {
+                            kind = PointHeight;
+                            direction = new V3(-nx, -ny, -nz);
+                        }
+                    }
+                }
+                else if (surface == 1)
+                {
+                    if (cfg.ReefCount != 0 || cfg.CoralCount != 0)
+                    {
+                        // Reef: the bounding sphere's push at rest, then minus its direction.
+                        SD at;
+                        Real distance = cfg.CoralCount != 0
+                            ? CoralSignedDistance(cx, cy, cz, r, w, cfg, out at)
+                            : ReefSignedDistance(cx, cy, cz, r, w, cfg, out at);
+                        Real penetration = r - distance;
+                        if (CarryBase)
+                        {
+                            Real glen = __M__.Sqrt(at.Gx * at.Gx + at.Gy * at.Gy + at.Gz * at.Gz);
+                            if (glen > (Real)1e-12) penetration = penetration - (at.Gx * ex + at.Gy * ey + at.Gz * ez) / glen;
+                        }
+
+                        Real rx = 0, ry = 0, rz = 0;
+                        if (penetration > 0)
+                        {
+                            Real length = __M__.Sqrt(at.Gx * at.Gx + at.Gy * at.Gy + at.Gz * at.Gz);
+                            Real nx, ny, nz;
+                            if (length > (Real)1e-12)
+                            {
+                                Real inv = (Real)1.0 / length;
+                                nx = at.Gx * inv; ny = at.Gy * inv; nz = at.Gz * inv;
+                            }
+                            else
+                            {
+                                nx = 0; ny = 1; nz = 0;
+                            }
+
+                            Real approach = (Real)0.0 * nx + (Real)0.0 * ny + (Real)0.0 * nz;
+                            Real p = PairPush(bedStiffness * penetration - bedDamping * approach, m, approach, cfg);
+                            rx = nx * p; ry = ny * p; rz = nz * p;
+                        }
+
+                        if (rx != 0 || ry != 0 || rz != 0)
+                        {
+                            Real magnitude = __M__.Sqrt(rx * rx + ry * ry + rz * rz);
+                            Real unit = (Real)1.0 / magnitude;
+                            kind = PointReef;
+                            direction = new V3(-(rx * unit), -(ry * unit), -(rz * unit));
+                        }
+                    }
+                }
+                else
+                {
+                    if (cfg.TankRadius > 0)
+                    {
+                        // Glass: the outward radial direction. The push runs inward. It sets no touch.
+                        Real x = cx - cfg.AxisX;
+                        Real z = cz - cfg.AxisZ;
+                        Real radial = __M__.Sqrt(x * x + z * z);
+                        Real outside = radial + r - cfg.TankRadius;
+                        if (CarryBase) outside = GlassOutsideNear(cx, cz, ex, ez, r, cfg);
+
+                        if (outside > 0)
+                        {
+                            Real ox, oz;
+                            if (radial > (Real)1e-9) { ox = x / radial; oz = z / radial; }
+                            else { ox = -1; oz = 0; }
+
+                            kind = PointGlass;
+                            direction = new V3(ox, 0, oz);
+                        }
+                    }
+                }
+
+                if (kind < 0) continue;
+
+                Real dsx, dsy, dsz;
+                V3 pointAt, moment;
+                V3 total = VerticesPoint(
+                    kind, half, rotation, cx, cy, cz, ex, ey, ez, direction, margin, new V3(vx, vy, vz), spin, m,
+                    bedStiffness, bedDamping, inertia, w, cfg,
+                    out dsx, out dsy, out dsz, out pointAt, out moment);
+
+                // The flat bed counts a push upward; the others any push.
+                bool pushed = kind == PointFlat ? total.Y > 0 : (total.X != 0 || total.Y != 0 || total.Z != 0);
+                if (!pushed) continue;
+
+                // Rock: the push into the force; no friction on the card (FarmGpu.Open refuses BedFriction > 0), so the
+                // slide is the zero vector the host holds with the friction off, and the torque is the vertices'
+                // moment, capped once.
+                fx = fx + total.X;
+                fy = fy + total.Y;
+                fz = fz + total.Z;
+
+                V3 slide = V3.Zero;
+                V3 capped = CapTorque(moment + V3.Cross(pointAt, slide), smallInertia, r, cfg);
+                qx = qx + capped.X;
+                qy = qy + capped.Y;
+                qz = qz + capped.Z;
+
+                bedGlass = 1;
+                if (noteRock != 0 && kind != PointGlass)
+                    NoteRockAt(total.X, total.Y, total.Z, dsx, dsy, dsz, margin, ref rockKept, ref rnx, ref rny, ref rnz, ref rpx, ref rpy, ref rpz);
             }
         }
 

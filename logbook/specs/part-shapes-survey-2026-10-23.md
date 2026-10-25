@@ -1,5 +1,7 @@
 # Proposal: part shapes, where contact and the mirrored joint come before any new shape
 
+*Ruled: D228 and D233 rule every decision below; D233's shape family overtook the shapes compared here. The file is kept as the record of its survey (the shape counts in round 62, and why a plate and a cylinder were not proposed). Moved from `proposals/` on 2026-10-25.*
+
 *A draft for the owner, written at the coordinator's request, 2026-10-23. Shapes change what bodies can be, so they
 are a world rule and nothing is built before the owner rules. Every claim about the code names its file. What is a
 guess is marked as inference.*
@@ -155,7 +157,7 @@ add a name for something the box already does.
 
 ## How shapes meet the new cell types
 
-The proposal on cell types (`proposals/propose-new-cell-types.md`) suggests poison and fat first.
+The proposal on cell types (`logbook/specs/cell-types-survey-2026-10-23.md`) suggests poison and fat first.
 
 - **Poison** is charged on the touch that feeds. With contact as balls, a biter may feed on a poisoned frond it is not
   touching. Contact by shape makes the touch, and the dose, land where the bodies meet.

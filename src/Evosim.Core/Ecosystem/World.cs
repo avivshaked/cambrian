@@ -846,6 +846,10 @@ namespace Evosim.Core
                     // exactly 0 on every lump breeder, and x + 0 is x, so a world without a
                     // gestating body sums to the same bits it always did.
                     sum += _living[i].Energy + _living[i].TissueJoules + _living[i].GestationJoules;
+
+                    // D232: a swallowed body held in the gut is charged matter the body carries. Exactly 0 with the
+                    // switch off, and x + 0 is x.
+                    sum += _living[i].GutJoules;
                 }
                 return sum;
             }
@@ -1500,6 +1504,11 @@ namespace Evosim.Core
                     // The gestation account is standing like the reserve: see
                     // StandingJoulesInBodies for why adding it moves no recorded world.
                     sum += _living[i].Energy + _living[i].TissueJoules + _living[i].GestationJoules;
+
+                    // D232: the gut is standing energy like the reserve, from the kill that fills it to the
+                    // digestion that empties it into the reserve or the death that sends it to the remains. Exactly 0
+                    // with the switch off, so the sum is the number it always was.
+                    sum += _living[i].GutJoules;
                 }
 
                 // The fourth account, and only ever nonzero where a corpse exists: a body's
@@ -2804,6 +2813,15 @@ namespace Evosim.Core
                     "BiteDamageScale is not 1 and ContactEating is off. The scale deepens the wound of a bite that " +
                     "feeds, so without contact eating there is nothing for it to read; a header naming it would " +
                     "describe a world the run did not have (D226).",
+                    nameof(config));
+            }
+
+            if (config.KillSwallowsBody && !config.ContactEating)
+            {
+                throw new ArgumentException(
+                    "KillSwallowsBody is on and ContactEating is off. A kill is swallowed only where bites feed as " +
+                    "they wound and a body that dies leaves remains for the swallow to replace, so there is no kill " +
+                    "for it to read; a header naming it would describe a world the run did not have (D232).",
                     nameof(config));
             }
 
@@ -5200,9 +5218,33 @@ namespace Evosim.Core
                 // be trusted, so it is burnt and founds nothing (choice 7). A plant's held units went to the spent
                 // field above, as a death without a corpse sends them (choice 8).
                 double store = (reserveAtDeath > 0d ? reserveAtDeath : 0d) + (accountAtDeath > 0d ? accountAtDeath : 0d);
-                LeaveRemains(
-                    creature, creature.TissueJoules, store, wholeBody: true, killedBy: killedBy,
-                    diverged: cause == DeathCause.Diverged);
+
+                if (Config.KillSwallowsBody)
+                {
+                    // D232: what the body still held in its gut goes with it, as part of its store: into its own
+                    // remains, or burnt with a diverged body, or, if a bite killed it and its killer is a living body,
+                    // into that killer's gut with the rest.
+                    store += creature.GutJoules;
+                    creature.GutJoules = 0d;
+
+                    Organism swallower = cause == DeathCause.Eaten ? SwallowerOf(creature, killedBy) : null;
+                    if (swallower != null)
+                    {
+                        SwallowWhole(swallower, creature, creature.TissueJoules, store);
+                    }
+                    else
+                    {
+                        LeaveRemains(
+                            creature, creature.TissueJoules, store, wholeBody: true, killedBy: killedBy,
+                            diverged: cause == DeathCause.Diverged);
+                    }
+                }
+                else
+                {
+                    LeaveRemains(
+                        creature, creature.TissueJoules, store, wholeBody: true, killedBy: killedBy,
+                        diverged: cause == DeathCause.Diverged);
+                }
             }
             else if (Config.UnbittenDeathsLeaveNoCorpse && (cause != DeathCause.Eaten || !creature.HasPhotosyntheticTissue))
             {

@@ -127,13 +127,20 @@ The root file's rules still apply. The entries below were moved word for word, s
   position, so resting bodies flickered out of touch. Since D168 the card sums each position with a
   correction term and takes contacts, and the floor and glass under them, from a nearby lattice point.
   Compare card and CPU contact numbers only on runs from D168 on.
-- **Contact on the true shape has a second copy on the card** (D228, `EVOSIM_CONTACT_SHAPE=trueshape`).
-  `gpu-kernel.template` transcribes `ConvexCore` (GJK, `Support`) and `ContactTrueShape` (the pair loop and the four
-  surfaces) operation for operation, so a change to either is made in the template in the same change. The pair runs in
-  its own frame, the first core at the origin and the second at minus the sphere test's difference, in the solver and the
-  kernel alike. Each link's core and margin sit by link row in `SGlob` (`CoreHx` to `CoreM`), because a link reads other
-  classes' cores, and go up only after a pack; the turns are nine more columns in each sphere set. All of it is a
-  one-cell stub when the switch is off.
+- **Contact on the true shape has a second copy on the card** (D228, `EVOSIM_CONTACT_SHAPE=trueshape` and
+  `trueshapeatpoint`). `gpu-kernel.template` transcribes `ConvexCore` (GJK, `Support`) and `ContactTrueShape` (the pair
+  loop and the four surfaces) operation for operation, so a change to either is made in the template in the same change.
+  The pair runs in its own frame, the first core at the origin and the second at minus the sphere test's difference, in
+  the solver and the kernel alike. Each link's core and margin sit by link row in `SGlob` (`CoreHx` to `CoreM`), because a
+  link reads other classes' cores, and go up only after a pack; the turns are nine more columns in each sphere set. All of
+  it is a one-cell stub when the switch is off.
+  `trueshapeatpoint` (`cfg.AtPoint`) adds the force at the contact point. Each sphere set carries each link's world-frame
+  spin in three more columns (`LSp0` to `LSp2`, a link row wide at that value only, and not copied by a block at the
+  others). `ContactLinks` writes the touches' torque in three more rows of `LinkPush`, which `ContactsPerPartStaged` adds
+  to `Fext` beside the force. The link's inertia is `SConst.Inertia` and `SConst.SmallI`, which the card carries for every
+  link already. Its pair is `TrueShapePairAt`, a copy of `TrueShapePair` that hands back the contact point's two levers,
+  and its surfaces are `AgainstTheWorldPoint` over the one vertex routine `VerticesPoint`. The card has no friction
+  (`FarmGpu.Open` refuses a bed with any), so `Rock`'s friction is the zero vector there.
 - **A stroke that pushes its assembly has a second copy on the card** (D231, `EVOSIM_STROKE_ASSEMBLY`). The class kernel's
   power push transcribes the host's assembly branch in `Fluid.Apply` line for line, `Fluid.AssemblyLeverOf` included,
   so a change to either is made in the other in the same change. The tables it reads are the host body's own

@@ -158,7 +158,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 .Replace(
                     " · configHash ",
                     " · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + ContactToken + ReproductionToken + Round51Token + " · configHash ")
-                .Replace("`ff557bce2685293a`", "`a43be57fc259323c`");
+                .Replace("`ff557bce2685293a`", "`1fa0b21e4065eafa`");
 
             Assert.Equal(expected, Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9"));
         }
@@ -198,7 +198,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             Assert.Contains(" · reach off · floors per part · matter uniform · founders anywhere · endowment off · founder cap off · shade off · ", line);
             Assert.Contains(" · matter-mix 2 m2/s · area 2200 m2 · ", line);
 
-            Assert.EndsWith(" · configHash `a43be57fc259323c`", line);
+            Assert.EndsWith(" · configHash `1fa0b21e4065eafa`", line);
 
             // D110, off: the light is the orientation average, printed beside the cap.
             Assert.Contains(" · silhouette on · light averaged · ", line);
@@ -926,6 +926,50 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             zero["EVOSIM_CONTACT_EATING"] = "1";
             zero["EVOSIM_BITE_DAMAGE_SCALE"] = "0";
             Assert.ThrowsAny<Exception>(() => new World(EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(zero))), 1UL));
+        }
+
+        /// <summary>
+        /// D232: <c>EVOSIM_KILL_GUT</c> reaches the config, is off when unset, is shown in the header only when on, and
+        /// the world refuses it on with contact eating off, with a message that names it.
+        /// </summary>
+        [Fact]
+        public void TheKillGutSwitchIsBoundShownOnlyWhenOnAndRefusedWithContactEatingOff()
+        {
+            var block = EnvBindingTests.Round42Seed1();
+            block["EVOSIM_CONTACT_EATING"] = "1";
+
+            EnvSettings offSettings = EnvBinding.Read(EnvBinding.Of(block));
+            RunConfig off = EnvBinding.BuildConfig(offSettings);
+            Assert.False(off.KillSwallowsBody);
+
+            block["EVOSIM_KILL_GUT"] = "1";
+            EnvSettings settings = EnvBinding.Read(EnvBinding.Of(block));
+            RunConfig config = EnvBinding.BuildConfig(settings);
+            Assert.True(config.KillSwallowsBody);
+            Assert.NotEqual(off.Hash(), config.Hash());
+
+            string Header(EnvSettings s, RunConfig c)
+            {
+                var world = new World(c, s.Seed);
+                SpaceFacts space = SpaceFacts.Of(
+                    world,
+                    hasWall: c.SharedSpace && c.WorldShape == WorldShape.Tank,
+                    hasFloor: c.SharedSpace,
+                    threads: 24,
+                    inoculumHashShort: null);
+                return Report.HeaderLine(s, c, space, "9.9.9.9");
+            }
+
+            Assert.DoesNotContain("a kill swallows the body", Header(offSettings, off));
+            Assert.Contains(" · a kill swallows the body", Header(settings, config));
+
+            var refused = EnvBindingTests.Round42Seed1();
+            refused["EVOSIM_KILL_GUT"] = "1";
+            RunConfig withoutContact = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(refused)));
+            Assert.True(withoutContact.KillSwallowsBody);
+            Assert.False(withoutContact.ContactEating);
+            ArgumentException error = Assert.Throws<ArgumentException>(() => new World(withoutContact, 1UL));
+            Assert.Contains("KillSwallowsBody", error.Message);
         }
 
         private static string Round42HeaderLine(int threads, string engineVersion)

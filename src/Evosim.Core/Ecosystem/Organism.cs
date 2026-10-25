@@ -142,6 +142,15 @@ namespace Evosim.Core
         public double BiteKeptJoules { get; internal set; }
 
         /// <summary>
+        /// D232, a kill swallows the body: the joules this body has swallowed from the bodies its bites killed and not
+        /// yet digested into <see cref="Energy"/>. Charged matter like the reserve, counted with it wherever the books
+        /// count a living body's joules, and not spendable until it is digested. One number, the swallowed tissue and
+        /// store together, with no cap. 0 always with <see cref="RunConfig.KillSwallowsBody"/> off, and checkpointed
+        /// only with it on. What it holds when the body dies goes into the body's own remains as part of its store.
+        /// </summary>
+        public double GutJoules { get; internal set; }
+
+        /// <summary>
         /// D220, contact eating: true for a body that is remains, a dead body or a cut-off limb that lies in the water
         /// for a window and can be bitten. Such a body is in <see cref="World.Remains"/> and never in
         /// <see cref="World.Living"/>. Its <see cref="Energy"/> is its store (the reserve and the gestation account it

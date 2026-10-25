@@ -59,6 +59,9 @@ namespace Evosim.Core.Bench
                 // The gestation account (2026-09-24), hashed only when it holds anything, so a
                 // world without a gestating lineage keeps the word it always had.
                 if (creature.GestationJoules != 0d) Double(ref h, creature.GestationJoules);
+
+                // D232's gut, hashed only when it holds anything, so a world without the switch keeps its word.
+                if (creature.GutJoules != 0d) Double(ref h, creature.GutJoules);
                 Float(ref h, creature.Age);
                 Float(ref h, creature.HeightY);
                 Float(ref h, creature.X);
