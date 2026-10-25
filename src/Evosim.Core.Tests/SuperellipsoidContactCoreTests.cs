@@ -331,11 +331,12 @@ namespace Evosim.Core.Tests
         // ---------------------------------------------------------------- the clip's exit and the cache
 
         [Fact]
-        public void TheExitBuildIsWithinATenMillionthOfTheSizeOfTheFullPassBuildForEveryForm()
+        public void TheExactClipIsWithinATenMillionthOfTheSizeOfTheFullPassBuildForEveryFormAndNeverFallsBack()
         {
-            // The coordinator's ruling of 2026-10-25: the clip stops a point once a pass moves it by no more than the
-            // tolerance, and the polish once the point is inside every plane; that build stands within 1e-7 of the
-            // size of the build that runs every pass, its margin is the same, and its bulge stays under the limit.
+            // The coordinator's rulings of 2026-10-25: the exact clip solves for the nearest point that Dykstra's
+            // projection approaches. Its build stands within 1e-7 of the size of the reference build, Dykstra's run to
+            // all 200 passes and the polish to all 200; its margin is the same; its bulge stays under the limit; and
+            // no point of any form falls back to Dykstra's.
             double size = Math.Max(Halves.X, Math.Max(Halves.Y, Halves.Z));
             double worst = 0.0;
             string worstForm = null;
@@ -352,8 +353,10 @@ namespace Evosim.Core.Tests
                 for (int i = 0; i < exit.Length; i++) apart = Math.Max(apart, (exit[i] - full[i]).Length);
                 if (apart > worst) { worst = apart; worstForm = form.ToString(); }
 
-                _output.WriteLine($"{form}: exit against full passes {apart:E3} m; bulge {exitBulge:E3} m against {fullBulge:E3} m");
-                Assert.True(apart <= 1e-7 * size, $"{form}: the exit build stands {apart} from the full one");
+                string report = shape.ContactClipReport(Halves);
+                _output.WriteLine($"{form}: exact against the reference {apart:E3} m; bulge {exitBulge:E3} m against {fullBulge:E3} m; {report}");
+                Assert.True(apart <= 1e-7 * size, $"{form}: the exact build stands {apart} from the reference");
+                Assert.EndsWith("fallbacks 0", report);
                 Assert.True(exitBulge <= Superellipsoid.ContactBulgeLimit * exitMargin, $"{form}: the exit build's bulge {exitBulge}");
                 Assert.True(exitBulge <= 2e-3 * size, $"{form}: the exit build's bulge {exitBulge} is past the sampling's error");
             }
@@ -427,7 +430,7 @@ namespace Evosim.Core.Tests
 
         [Fact]
         [Trait("Category", "Slow")]
-        public void OneColdBuildsTimeWithTheExitAndWithEveryPass()
+        public void OneColdBuildsTimeWithTheExactClipAndWithEveryPass()
         {
             // A reading, not a check: one isolated build of a form not built before in this process, timed alone on a
             // quiet lane, after a different form has warmed the code. The least of three tries of each is reported.
@@ -448,7 +451,7 @@ namespace Evosim.Core.Tests
                     full = Math.Min(full, clock.Elapsed.TotalMilliseconds);
                 }
 
-                _output.WriteLine($"{form}: one cold build {exit:0.0} ms with the exit, {full:0.0} ms with every pass");
+                _output.WriteLine($"{form}: one cold build {exit:0.0} ms with the exact clip, {full:0.0} ms with every pass; {new Superellipsoid(form).ContactClipReport(Halves)}");
             }
         }
 

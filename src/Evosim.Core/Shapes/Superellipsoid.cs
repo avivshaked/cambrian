@@ -398,25 +398,26 @@ namespace Evosim.Core
         private static readonly Double3[] ClipDirections = BuildClipDirections();
 
         /// <summary>
-        /// The most passes of Dykstra's projection that move a core point to the inner body's nearest point. A point
-        /// stops sooner once a whole pass moves it by no more than <see cref="ContactClipTolerance"/> of the form's
-        /// size (the coordinator's ruling of 2026-10-25). The exit is a pure function of the build's inputs, so a
-        /// build takes the same passes on every run and every replay.
+        /// The passes of Dykstra's projection in the reference build (<see cref="ContactCore(Float3, bool, out double, out double, out double)"/>
+        /// with its flag set), and the most in the fallback a point takes if the exact clip ever gives up.
         /// </summary>
         public const int ContactClipPasses = 200;
 
-        /// <summary>
-        /// The most passes of plain cyclic projection that follow and make the point lie inside every half-space. A
-        /// point stops sooner only once it is inside every plane to within <see cref="ContactClipTolerance"/> of the
-        /// form's size, never on how far it moved.
-        /// </summary>
+        /// <summary>The passes of plain cyclic projection that finish Dykstra's, in the same two places.</summary>
         public const int ContactPolishPasses = 200;
 
         /// <summary>
-        /// The share of the form's size, its largest half-extent, under which a pass of the clip counts as still and
-        /// a plane's excess as met.
+        /// The share of the form's size, its largest half-extent, within which a plane counts as met: by the exact
+        /// clip's answer, by the fallback's polish, and as the still pass of the fallback's Dykstra.
         /// </summary>
         public const double ContactClipTolerance = 1e-9;
+
+        /// <summary>
+        /// The most steps of the exact clip for one point: each adds the plane the point stands farthest outside and
+        /// solves for the nearest point of the planes held, so at most three are held at once. A point that needs
+        /// more falls back to Dykstra's projection, and the build counts it.
+        /// </summary>
+        public const int ContactExactSteps = 64;
 
         /// <summary>
         /// The index, in the 98 points of a contact core, of one of the cube's eight corners: bit 0 of
@@ -517,11 +518,75 @@ namespace Evosim.Core
             ContactCore(halfExtents, false, out margin, out bulge, out shortfall);
 
         /// <summary>
-        /// <see cref="ContactCore(Float3, out double, out double, out double)"/>, with <paramref name="fullPasses"/>
-        /// true running every clip and polish pass to its cap with no exit: the build the exit is measured against.
+        /// <see cref="ContactCore(Float3, out double, out double, out double)"/>, with <paramref name="reference"/> true
+        /// building each point by Dykstra's projection run to its 200 passes and the polish to its 200, with no exit:
+        /// the build the exact clip is held against.
         /// </summary>
         public Double3[] ContactCore(
-            Float3 halfExtents, bool fullPasses, out double margin, out double bulge, out double shortfall)
+            Float3 halfExtents, bool reference, out double margin, out double bulge, out double shortfall) =>
+            BuildContactCore(halfExtents, reference, null, out margin, out bulge, out shortfall);
+
+        /// <summary>
+        /// What the exact clip did for each point of the core at <paramref name="halfExtents"/>, for a reader: the steps
+        /// it took, the planes it held at the end, the smallest angle between two held planes' normals and the passes
+        /// Dykstra's projection would need at that angle, and how many points fell back.
+        /// </summary>
+        /// <remarks>
+        /// Alternating projection between two planes closes on their meeting line by about cos² of the angle between
+        /// their normals each pass, so planes whose normals are nearly parallel take many passes: about
+        /// ln(tolerance) / ln(cos² θ). The 282 clipping directions stand about 0.21 rad apart, which at a tolerance of
+        /// a billionth of the size is some 470 passes.
+        /// </remarks>
+        public string ContactClipReport(Float3 halfExtents)
+        {
+            var work = new ClipWork(CoreLattice.Length);
+            BuildContactCore(halfExtents, false, work, out double margin, out _, out _);
+
+            int[] held = new int[4];
+            int most = 0, total = 0, predictedOver = 0;
+            double smallest = double.PositiveInfinity;
+            for (int i = 0; i < work.Steps.Length; i++)
+            {
+                held[Math.Min(3, work.Held[i])]++;
+                most = Math.Max(most, work.Steps[i]);
+                total += work.Steps[i];
+                smallest = Math.Min(smallest, work.Angle[i]);
+                if (work.Held[i] >= 2 && PredictedPasses(work.Angle[i]) > ContactClipPasses) predictedOver++;
+            }
+
+            return string.Format(
+                System.Globalization.CultureInfo.InvariantCulture,
+                "margin {0:0.######} m; points holding 0/1/2/3 planes {1}/{2}/{3}/{4}; steps mean {5:0.00}, most {6}; " +
+                "smallest angle between held normals {7:0.####} rad, where Dykstra would need about {8:0} passes; " +
+                "points past Dykstra's 200 {9}; fallbacks {10}",
+                margin, held[0], held[1], held[2], held[3], (double)total / work.Steps.Length, most,
+                smallest, PredictedPasses(smallest), predictedOver, work.Fallbacks);
+        }
+
+        private static double PredictedPasses(double angle)
+        {
+            if (double.IsPositiveInfinity(angle)) return 0.0;
+            double rate = Math.Cos(angle) * Math.Cos(angle);
+            return rate >= 1.0 ? double.PositiveInfinity : Math.Log(ContactClipTolerance) / Math.Log(rate);
+        }
+
+        // A build's record of the exact clip's work, point by point, for ContactClipReport.
+        private sealed class ClipWork
+        {
+            public readonly int[] Steps, Held;
+            public readonly double[] Angle;
+            public int Fallbacks;
+
+            public ClipWork(int points)
+            {
+                Steps = new int[points];
+                Held = new int[points];
+                Angle = new double[points];
+            }
+        }
+
+        private Double3[] BuildContactCore(
+            Float3 halfExtents, bool reference, ClipWork work, out double margin, out double bulge, out double shortfall)
         {
             double a = AbsA(halfExtents), b = AbsB(halfExtents), c = AbsC(halfExtents);
             var points = new Double3[CoreLattice.Length];
@@ -554,7 +619,23 @@ namespace Evosim.Core
             {
                 for (int i = 0; i < points.Length; i++)
                 {
-                    points[i] = Clip(surface[i] - normals[i] * margin, solid, margin, corrections, tolerance, fullPasses);
+                    Double3 start = surface[i] - normals[i] * margin;
+                    if (reference)
+                    {
+                        points[i] = Clip(start, solid, margin, corrections, tolerance, true);
+                        continue;
+                    }
+
+                    bool exact = Nearest(start, solid, margin, tolerance, out points[i], out int steps, out int held, out double angle);
+                    if (!exact) points[i] = Clip(start, solid, margin, corrections, tolerance, false);
+
+                    if (work != null)
+                    {
+                        work.Steps[i] = steps;
+                        work.Held[i] = held;
+                        work.Angle[i] = angle;
+                        if (!exact) work.Fallbacks++;
+                    }
                 }
 
                 MeasureAgainst(points, margin, solid, out bulge, out shortfall);
@@ -648,10 +729,193 @@ namespace Evosim.Core
         }
 
         /// <summary>
-        /// The point of the inner body nearest <paramref name="point"/>: the half-spaces <c>x·u ≤ h(u) − margin</c>
-        /// over <see cref="ClipDirections"/>, by Dykstra's projection for at most <see cref="ContactClipPasses"/>
-        /// passes, stopping after a pass that moves it by no more than <paramref name="tolerance"/> unless
-        /// <paramref name="fullPasses"/>, then <see cref="Feasible"/>.
+        /// The point of the inner body nearest <paramref name="point"/>, solved rather than approached: the half-spaces
+        /// <c>x·u ≤ h(u) − margin</c> over <see cref="ClipDirections"/>, by an active set of at most three planes.
+        /// False, with the last point reached, if <see cref="ContactExactSteps"/> run out or no set of the held planes
+        /// solves, which the caller answers with Dykstra's projection.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Each step finds the plane the current point stands farthest outside, by more than
+        /// <paramref name="tolerance"/>, and adds it to the planes held. The nearest point of the start in the
+        /// intersection of those (at most four) is then found exactly: the smallest subset, in a fixed order, whose
+        /// projection of the start onto its planes' meeting keeps every multiplier at least zero and meets every held
+        /// plane. That subset is the new held set. The distance from the start grows at every step, so no held set
+        /// comes back, and in three dimensions the answer is a face, an edge or a corner of the polytope.
+        /// </para>
+        /// <para>
+        /// The coordinator's ruling of 2026-10-25 asked for a cold build of at most 50 ms. Dykstra's projection
+        /// closes on a meeting of nearly parallel planes by cos² of their angle each pass, and the clipping planes of
+        /// a smooth form meet at about 0.21 rad, so its points took hundreds of passes (<see cref="ContactClipReport"/>).
+        /// The answer here is the same point, the limit Dykstra's approaches, found in a few steps.
+        /// </para>
+        /// </remarks>
+        private static bool Nearest(
+            Double3 start, double[] solid, double margin, double tolerance,
+            out Double3 nearest, out int steps, out int heldCount, out double smallestAngle)
+        {
+            Span<int> held = stackalloc int[3];
+            Span<int> candidates = stackalloc int[4];
+            Span<int> subset = stackalloc int[3];
+            Span<int> chosen = stackalloc int[3];
+            int count = 0;
+            Double3 x = start;
+
+            for (steps = 0; steps < ContactExactSteps; steps++)
+            {
+                int worst = -1;
+                double worstExcess = tolerance;
+                for (int d = 0; d < ClipDirections.Length; d++)
+                {
+                    double excess = Double3.Dot(x, ClipDirections[d]) - (solid[d] - margin);
+                    if (excess > worstExcess)
+                    {
+                        worstExcess = excess;
+                        worst = d;
+                    }
+                }
+
+                if (worst < 0)
+                {
+                    nearest = x;
+                    heldCount = count;
+                    smallestAngle = SmallestAngle(held, count);
+                    return true;
+                }
+
+                int n = 0;
+                for (int i = 0; i < count; i++) candidates[n++] = held[i];
+                candidates[n++] = worst;
+
+                bool solved = false;
+                int chosenCount = 0;
+                Double3 next = x;
+                for (int size = 1; size <= Math.Min(3, n) && !solved; size++)
+                {
+                    for (int mask = 1; mask < (1 << n) && !solved; mask++)
+                    {
+                        if (Bits(mask) != size) continue;
+
+                        int k = 0;
+                        for (int i = 0; i < n; i++)
+                        {
+                            if ((mask & (1 << i)) != 0) subset[k++] = candidates[i];
+                        }
+
+                        if (!OntoPlanes(start, subset, k, solid, margin, tolerance, out Double3 y)) continue;
+
+                        bool meets = true;
+                        for (int i = 0; i < n && meets; i++)
+                        {
+                            int d = candidates[i];
+                            if (Double3.Dot(y, ClipDirections[d]) - (solid[d] - margin) > tolerance) meets = false;
+                        }
+
+                        if (!meets) continue;
+
+                        solved = true;
+                        next = y;
+                        chosenCount = k;
+                        for (int i = 0; i < k; i++) chosen[i] = subset[i];
+                    }
+                }
+
+                if (!solved) break;
+
+                x = next;
+                count = chosenCount;
+                for (int i = 0; i < count; i++) held[i] = chosen[i];
+            }
+
+            nearest = x;
+            heldCount = count;
+            smallestAngle = SmallestAngle(held, count);
+            return false;
+        }
+
+        /// <summary>
+        /// The projection of <paramref name="start"/> onto the meeting of the <paramref name="count"/> planes
+        /// <c>x·u = h(u) − margin</c> named by <paramref name="planes"/>: <c>x = start − Σ λ u</c> with the
+        /// multipliers λ from their Gram system. False when the system is near singular or a multiplier is below
+        /// zero by more than <paramref name="tolerance"/>, either of which says the set is not the answer.
+        /// </summary>
+        private static bool OntoPlanes(
+            Double3 start, Span<int> planes, int count, double[] solid, double margin, double tolerance, out Double3 point)
+        {
+            point = start;
+            Double3 u0 = ClipDirections[planes[0]];
+            double r0 = Double3.Dot(start, u0) - (solid[planes[0]] - margin);
+
+            if (count == 1)
+            {
+                if (r0 < -tolerance) return false;
+                point = start - u0 * r0;
+                return true;
+            }
+
+            Double3 u1 = ClipDirections[planes[1]];
+            double r1 = Double3.Dot(start, u1) - (solid[planes[1]] - margin);
+            double g01 = Double3.Dot(u0, u1);
+
+            if (count == 2)
+            {
+                double det2 = 1.0 - g01 * g01;
+                if (!(det2 > 1e-10)) return false;
+
+                double l0 = (r0 - g01 * r1) / det2;
+                double l1 = (r1 - g01 * r0) / det2;
+                if (l0 < -tolerance || l1 < -tolerance) return false;
+
+                point = start - u0 * l0 - u1 * l1;
+                return true;
+            }
+
+            Double3 u2 = ClipDirections[planes[2]];
+            double r2 = Double3.Dot(start, u2) - (solid[planes[2]] - margin);
+            double g02 = Double3.Dot(u0, u2), g12 = Double3.Dot(u1, u2);
+
+            // The Gram matrix [[1, g01, g02], [g01, 1, g12], [g02, g12, 1]], solved by Cramer's rule.
+            double det = 1.0 + 2.0 * g01 * g02 * g12 - g01 * g01 - g02 * g02 - g12 * g12;
+            if (!(Math.Abs(det) > 1e-10)) return false;
+
+            double a0 = (r0 * (1.0 - g12 * g12) - g01 * (r1 - g12 * r2) + g02 * (r1 * g12 - r2)) / det;
+            double a1 = ((r1 - g12 * r2) - r0 * (g01 - g12 * g02) + g02 * (g01 * r2 - r1 * g02)) / det;
+            double a2 = ((r2 - r1 * g12) - g01 * (g01 * r2 - r1 * g02) + r0 * (g01 * g12 - g02)) / det;
+            if (a0 < -tolerance || a1 < -tolerance || a2 < -tolerance) return false;
+
+            point = start - u0 * a0 - u1 * a1 - u2 * a2;
+            return true;
+        }
+
+        private static int Bits(int mask)
+        {
+            int bits = 0;
+            for (; mask != 0; mask &= mask - 1) bits++;
+            return bits;
+        }
+
+        /// <summary>The smallest angle between the normals of two held planes, radians; infinity with fewer than two.</summary>
+        private static double SmallestAngle(Span<int> held, int count)
+        {
+            double smallest = double.PositiveInfinity;
+            for (int i = 0; i < count; i++)
+            {
+                for (int j = i + 1; j < count; j++)
+                {
+                    double cosine = Math.Max(-1.0, Math.Min(1.0, Double3.Dot(ClipDirections[held[i]], ClipDirections[held[j]])));
+                    smallest = Math.Min(smallest, Math.Acos(cosine));
+                }
+            }
+
+            return smallest;
+        }
+
+        /// <summary>
+        /// The point of the inner body nearest <paramref name="point"/> by Dykstra's projection: the reference build's
+        /// clip, and the fallback of a point the exact clip gives up on. The half-spaces <c>x·u ≤ h(u) − margin</c>
+        /// over <see cref="ClipDirections"/>, for at most <see cref="ContactClipPasses"/> passes, stopping after a pass
+        /// that moves it by no more than <paramref name="tolerance"/> unless <paramref name="fullPasses"/>, then
+        /// <see cref="Feasible"/>.
         /// </summary>
         /// <remarks>
         /// Plain cyclic projection ends somewhere in the intersection, not at its nearest point: a box's corner
