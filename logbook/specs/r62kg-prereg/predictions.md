@@ -116,3 +116,61 @@ These are guesses. The proposal's inference, not a measurement, is the only basi
 - If a world reaches 25,000, its guilds are read. It is called the overshoot only if grazers lead it.
 - An overshoot sets the roll-back: a digestion rate below the mouth's cap, a dial built then, at the owner's
   delegation.
+
+## What the check found (2026-10-25, before the screen)
+
+The check ran to its budget of 6,000 s on the named build (`identity.md`). The gut works as built:
+- 12 kills were swallowed, 564.5 J in all;
+- 249.8 J was digested, 50.0 J of it lost as waste;
+- nothing was held in a gut at 6,000 s, and the mouth's cap never cut the gut (`gutCapCut` 0).
+
+The resume pair passed (`identity.md`).
+
+**The meal a kill keeps.** The rule above is read by the measure that gave `r62bd-x2`'s 61 to 77 J. That measure is
+the J/kill column of `scripts/reads/r62g-read.py`: the stats' `unitsEaten` from 0 s, times the joules a unit, less
+the waste, over the kill rows whose attacker is a grazer. It counts bites only, and D232 does not book the gut's
+digestion into `unitsEaten`. So the gut's kept 199.9 J is added for the check, 5.9 J a kill over its 34 kills. The
+61 to 77 J was read at 24,000 s; the check reaches 6,000 s. At 6,000 s the same column reads:
+
+| World | 6201 | 6202 |
+|---|---|---|
+| The check, bites only | 156.4 J | |
+| The check, with the gut's kept digestion | 162.3 J | |
+| `r62bd-x2`, the deeper wound | 120.9 J | 138.6 J |
+| `r62cs-w500`, the base | 140.6 J | 143.5 J |
+| `r62-h`, the corpse rule | 906.6 J | 937.2 J |
+
+Two caveats apply:
+- The column charges every mouth's intake in the world to the grazers' kills, a body that killed nothing included.
+- The intake scale is 16 in the check and in `r62bd-x2`, but the bite damage is 1 in the check against 2 in
+  `r62bd-x2`.
+
+At 6,000 s the check reads above 150 J, but the worlds with no gut read 121 to 144 J at the same second. The check is
+within about 15 % of them, and about a sixth of the corpse rule.
+
+The column falls through a run. The corpse rule falls from about 920 J at 6,000 s to 418 to 434 J at 24,000 s, and
+`r62bd-x2` from 121 to 139 J to 66 to 77 J. Had the check fallen the same way, it would end near 85 to 90 J. That is
+inference, not a measurement.
+
+**Why the meal is small.** The kill rows to 6,000 s give what each body still held when a grazer killed it (its tissue
+and store at the kill):
+
+| World | Kills of a whole body | Holding under 1 J | Mean held | Largest four |
+|---|---|---|---|---|
+| The check | 30 | 19 | 30.5 J | 64, 78, 315, 330 J |
+| `r62bd-x2-6201` | 52 | 36 | 36.4 J | 272, 410, 466, 496 J |
+
+In both worlds about two kills in three come on a bite that has already taken the last part's tissue and store. A
+kill with nothing left is not swallowed, so 34 kills gave 12 swallows. The gut changes where the remainder
+goes, into the killer instead of into remains, and not its size. The prediction of 350 to 450 J a kill was the
+proposal's inference, and it does not hold. The swallow averages 47 J, or 23 J without the one 315 J case.
+
+**The rule does not trip, and it had a flaw in its window.** By its letter, 162 J is at or above 150 J, so there is no
+probe. The coordinator ruled on 2026-10-25 that the rule is read by its letter, not by what the data seemed to mean
+after it was seen. But the rule took its threshold from values read at 24,000 s and applied it to a check that ends at
+6,000 s. At 6,000 s the worlds with no gut already read 121 to 144 J, so 150 J could not tell the gut from bites
+alone. This flaw was found before the screen launched. The screen runs as pre-registered.
+
+**A forecast, added before the screen launches.** This is inference from the check, not a measurement. The screen
+fails tests 1 and 2 in both worlds, as `r62bd` did. Its J/kill column at 24,000 s reads near 85 to 90 J, not 350 to
+450 J. If the screen passes tests 1 and 2, or its column ends above 150 J, this forecast was wrong.

@@ -73,3 +73,34 @@ after the pair passes. The integration branch landed before the pair: the gut is
 paths are proved on the card here.
 
 The heat stayed at OK through the three groups: the processor at 50 to 68 °C, the card at 40 to 44 °C.
+
+## The resume pair (2026-10-25)
+
+The pair closes the gap. The check, `r62kgck-6201`, ran from `scratch/wt-r62kg` at `afd04461`. That commit is the
+pre-registration's `9c01db64` with one change, to the two launchers under `rounds/`: one world on the card goes
+through `scripts/card/card-run.ps1`, since `card-group.ps1` refuses fewer than two. Its source trees are the
+pre-registration's, and its manifest carries core `a2a4aa0d`, dynamics `ec56227d`, farm `d552cc81` and config
+`277612f7dc63322b`, all as named. Of its checkpoints at 1,500, 3,000 and 4,500 s, only the 4,500 s one is followed by
+bodies eaten in the next 600 s (8, with 3 kills swallowed), so the pair resumed from it.
+
+| Run | Group | Lineage | Bodies eaten, first sample to 5,100 s | Kills swallowed | Wall to 600 s |
+|---|---|---|---|---|---|
+| `r62kgpr-6201-g32` | 32 | 1,910 lines | 4 to 10 | 1 to 2 | 2.791 min |
+| `r62kgpr-6201-g64` | 64 | byte-equal | 4 to 10 | 1 to 2 | 2.773 min |
+
+`gpu-accept.py` exits 0: the stats are identical on all 60 shared samples, the digest on all 600 rows, and the lineage
+byte for byte. Both runs swallow a kill and eat bodies, so the pair counts. The gut's swallow and its digestion are
+identical on the card at groups 32 and 64. The largest audit residual is 1.1e-5 J and the largest matter residual
+5.9e-6.
+
+**The mutual kill.** At 4,657.5 s in the check, bodies 5344 and 5665 killed each other in one pass. The lineage
+rows show where the joules went:
+1. 5344's bite killed 5665 first. 5344 was alive, so it swallowed 5665's 314.65 J store into its gut.
+2. 5665's bite then killed 5344. 5344's store took in its gut (330.49 J in all), and its killer was already dead, so
+   it swallowed nothing and 5344 became remains.
+3. The same bite took 5344's root. Its tissue and store moved into the remains of its lost subtree, body 6590, and
+   the empty root closed at once (its closing row reads 0 J).
+4. No body bit 6590, and it closed at 5,157.5 s with 645.14 J, burnt into the spent field at its point.
+
+So the 314.65 J was never digested. It went back to the world's matter by the remains' close, and the books stayed
+closed through it.
