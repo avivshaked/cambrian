@@ -34,6 +34,19 @@ namespace Evosim.Core
         public string ShapeId { get; set; } = ShapeIds.Box;
 
         /// <summary>
+        /// The genes the shape reads beside the half-extents — D233. <see cref="PartForm.None"/> for
+        /// every shape that takes none.
+        /// </summary>
+        /// <remarks>
+        /// Written only on a node of a shape that takes a form (<see cref="PartShape.TakesForm"/>), and
+        /// required there: <c>Genome.Validate</c> refuses a form on any other node and refuses a family
+        /// node without one inside the form's ranges. A shape mutation to a shape that takes none
+        /// clears it. <b>The genome file does not carry it yet</b>, so <see cref="GenomeJson"/> refuses
+        /// to write a node that holds one, and every genome that can be stored is a named-shape genome.
+        /// </remarks>
+        public PartForm Form { get; set; } = PartForm.None;
+
+        /// <summary>
         /// Joint connecting a part grown from this node to its parent. Ignored at the root,
         /// which has no parent. Mutable, with limits resampled to the new DOF count (§4.1).
         /// </summary>
@@ -198,6 +211,7 @@ namespace Evosim.Core
                 Dimensions = Dimensions,
                 CellTypeId = CellTypeId,
                 ShapeId = ShapeId,
+                Form = Form,
                 JointType = JointType,
                 JointLimits = (Float2[])JointLimits.Clone(),
                 Power = Power,

@@ -378,7 +378,10 @@ namespace Evosim.Core
         /// arithmetic.</b> Half-extents, position and both anchors are lengths and scale by
         /// <paramref name="linear"/>; volume and surface are re-measured by the part's own shape
         /// rather than multiplied by a power, so a shape whose volume is not a simple cube of its
-        /// extents stays honest. Nothing else about a part changes: a growing creature keeps its
+        /// extents stays honest. The one exception is a family part's surface (D233): it has no closed
+        /// formula and costs a measurement of thousands of points, so the copy shares the adult's
+        /// <see cref="FamilyGeometry"/> and takes the area as its reference times the square of the
+        /// length ratio, which is exact for a uniform scaling. Nothing else about a part changes: a growing creature keeps its
         /// plan, its cell types, its joints and its neurons, and only its size moves.
         /// </para>
         /// <para>
@@ -453,6 +456,7 @@ namespace Evosim.Core
                 PhenotypePart part = _parts[i];
                 Float3 halfExtents = part.HalfExtents * linear;
                 PartShape shape = shapes.Resolve(part.ShapeId);
+                float familyScale = part.Family != null ? part.FamilyScale * linear : 1f;
 
                 scaled.Add(new PhenotypePart
                 {
@@ -469,8 +473,18 @@ namespace Evosim.Core
                     Mirrored = part.Mirrored,
                     CellTypeId = part.CellTypeId,
                     ShapeId = part.ShapeId,
-                    Volume = shape.Volume(halfExtents),
-                    SurfaceArea = shape.SurfaceArea(halfExtents),
+
+                    // D233. A family part shares its geometry with the adult it was scaled from and
+                    // reads its panels through a scale, so growth measures no surface: the area is
+                    // the reference area times the square of the length ratio, and nothing is built.
+                    // Volume is the shape's, at the size and with the form, as a named part's is.
+                    Form = part.Form,
+                    Family = part.Family,
+                    FamilyScale = familyScale,
+                    Volume = shape.Volume(halfExtents, part.Form),
+                    SurfaceArea = part.Family != null
+                        ? part.Family.ReferenceSurfaceArea * (familyScale * familyScale)
+                        : shape.SurfaceArea(halfExtents),
                     JointType = part.JointType,
                     JointLimits = part.JointLimits,
 
@@ -595,6 +609,9 @@ namespace Evosim.Core
                     Mirrored = part.Mirrored,
                     CellTypeId = part.CellTypeId,
                     ShapeId = part.ShapeId,
+                    Form = part.Form,
+                    Family = part.Family,
+                    FamilyScale = part.FamilyScale,
                     Volume = part.Volume,
                     SurfaceArea = part.SurfaceArea,
                     JointType = part.JointType,
@@ -750,6 +767,9 @@ namespace Evosim.Core
                     Mirrored = part.Mirrored,
                     CellTypeId = part.CellTypeId,
                     ShapeId = part.ShapeId,
+                    Form = part.Form,
+                    Family = part.Family,
+                    FamilyScale = part.FamilyScale,
                     Volume = part.Volume,
                     SurfaceArea = part.SurfaceArea,
                     JointType = asRoot ? JointType.Fixed : part.JointType,

@@ -290,6 +290,13 @@ namespace Evosim.Core
                 // record is unchanged.
                 units += Math.Abs(na.BuoyancyOffset - nb.BuoyancyOffset) / 2f;
 
+                // D233. Two family nodes differ by their three genes, each on its logarithm, since a
+                // mutation steps the logarithm, and each over its whole range counting one unit, as an
+                // anchor's does. A family node against a named one already counts its shape mismatch
+                // above. Nothing is added unless both carry a form, so every distance in the record
+                // keeps its bits.
+                if (!na.Form.IsNone && !nb.Form.IsNone) units += FormUnits(na.Form, nb.Form);
+
                 int minLimits = Math.Min(na.JointLimits.Length, nb.JointLimits.Length);
                 for (int d = 0; d < minLimits; d++)
                 {
@@ -369,6 +376,19 @@ namespace Evosim.Core
             float denom = Math.Abs(x) + Math.Abs(y);
             return denom < 1e-9f ? 0f : Math.Abs(x - y) / denom;
         }
+
+        /// <summary>
+        /// Two family forms' distance, D233: for each gene the gap between the logarithms over the
+        /// logarithm of its range, so each gene is in <c>[0, 1]</c> inside the ranges and the three sum
+        /// to at most 3, as three scalar fields do.
+        /// </summary>
+        private static float FormUnits(PartForm a, PartForm b) =>
+            LogGap(a.Profile, b.Profile, PartForm.ProfileMin, PartForm.ProfileMax) +
+            LogGap(a.Section, b.Section, PartForm.SectionMin, PartForm.SectionMax) +
+            LogGap(a.Taper, b.Taper, PartForm.TaperMin, PartForm.TaperMax);
+
+        private static float LogGap(float x, float y, float min, float max) =>
+            (float)(Math.Abs(Math.Log(x) - Math.Log(y)) / Math.Log(max / min));
 
         /// <summary>
         /// Mean per-axis difference of two vectors already confined to <c>[-1, 1]</c> —

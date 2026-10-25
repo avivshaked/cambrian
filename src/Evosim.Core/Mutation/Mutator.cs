@@ -255,8 +255,16 @@ namespace Evosim.Core
 
             MutateModuleGene(node, rng, rates);
 
-            if (rng.Chance(rates.ShapeChance)) node.ShapeId = PickOther(
-                PartShapeRegistry.Standard, node.ShapeId, rng);
+            if (rng.Chance(rates.ShapeChance))
+            {
+                node.ShapeId = PickOther(PartShapeRegistry.Standard, node.ShapeId, rng);
+
+                // D233. A form belongs to the shape that takes it. A node that has changed to one
+                // that takes none carries None, or Genome.Validate would refuse the child for a form
+                // nothing reads. No draw: the form is cleared, not resampled, and the stream is the
+                // one it always was.
+                if (!PartShapeRegistry.Standard.Resolve(node.ShapeId).TakesForm) node.Form = PartForm.None;
+            }
 
             // The owner's ruling of 2026-09-24: a cell type is never changed in place, only added
             // or removed. The draw stays here, in the stream where the in-place change drew it, so

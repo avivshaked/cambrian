@@ -309,6 +309,17 @@ namespace Evosim.Core
 
         private static void WriteNode(Json.Writer w, MorphNode node, bool central)
         {
+            // D233. A node's form has no field in the file yet, and a writer that left it out would
+            // store a family node as a shape the reader cannot give a form: another creature under the
+            // stored one's name. Refused until the format that carries the genes is built.
+            if (!node.Form.IsNone)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot write a node of shape '{node.ShapeId}' with form {node.Form}: the genome " +
+                    "format that carries a superellipsoid's genes is not built yet, and this one would " +
+                    "drop them.");
+            }
+
             w.BeginObject();
             w.Field("cell", node.CellTypeId);
             w.Field("shape", node.ShapeId);

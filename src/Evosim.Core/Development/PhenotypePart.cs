@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Evosim.Core
 {
@@ -73,6 +74,25 @@ namespace Evosim.Core
 
         /// <summary>Geometry — <see cref="PartShape.Id"/>, DESIGN.md §4.1.</summary>
         public string ShapeId { get; internal set; } = ShapeIds.Box;
+
+        /// <summary>
+        /// The genes the shape reads beside the half-extents — <see cref="MorphNode.Form"/>, D233.
+        /// <see cref="PartForm.None"/> on a part of a shape that takes none.
+        /// </summary>
+        public PartForm Form { get; internal set; }
+
+        /// <summary>
+        /// The superellipsoid and its panels at one size, shared by this part and every scaled copy of
+        /// it, or null on a part of a named shape. Set exactly when the shape takes a form.
+        /// </summary>
+        public FamilyGeometry Family { get; internal set; }
+
+        /// <summary>
+        /// This part's half-extents over <see cref="FamilyGeometry.ReferenceHalfExtents"/>: 1 on the
+        /// part the developer built, the length ratio of <see cref="Phenotype.Scaled"/> on a copy.
+        /// Left at 1 on a part of a named shape, which has no family to scale.
+        /// </summary>
+        public float FamilyScale { get; internal set; } = 1f;
 
         /// <summary>Joint to the parent. Meaningless at the root, where it is <see cref="JointType.Fixed"/>.</summary>
         public JointType JointType { get; internal set; } = JointType.Fixed;
@@ -249,6 +269,16 @@ namespace Evosim.Core
         /// </remarks>
         public float ExposureFactor(double upAlongX, double upAlongY, double upAlongZ)
         {
+            // D233. A family part's shadow is read off its own panels, at resolution 2 and at the
+            // reference size: the factor is a ratio of two areas that scale together, so it is the
+            // same at every size and a scaled copy reads the panels unscaled. No build per call.
+            if (Family != null)
+            {
+                return Superellipsoid.ExposureFactor(
+                    Family.ReferencePanels(FamilyGeometry.MeasureResolution),
+                    upAlongX, upAlongY, upAlongZ);
+            }
+
             if (ShapeId == ShapeIds.Sphere) return 1f;
 
             double hx = Math.Abs(HalfExtents.X);
@@ -276,6 +306,37 @@ namespace Evosim.Core
             Float3 y = worldRotation.Rotate(new Float3(0f, 1f, 0f));
             Float3 z = worldRotation.Rotate(new Float3(0f, 0f, 1f));
             return ExposureFactor(x.Y, y.Y, z.Y);
+        }
+
+        /// <summary>
+        /// A family part's drag panels at its own size: the shared reference panels, each centre times
+        /// <see cref="FamilyScale"/> and each area times its square, normals as they are — D233.
+        /// </summary>
+        /// <param name="resolution">Panels per axis, as <see cref="PartShape.AddPanels(Float3, int, PartForm, List{DragPanel})"/> takes it.</param>
+        /// <param name="into">Appended to, not cleared.</param>
+        /// <remarks>
+        /// A uniform scaling by s moves a panel's centre by s and its area by s² and leaves its
+        /// normal, so this is the surface at the part's size without measuring it. At a scale of 1
+        /// the product is exact and the panels are the reference's to the bit.
+        /// </remarks>
+        public void AddFamilyPanels(int resolution, List<DragPanel> into)
+        {
+            if (Family == null)
+            {
+                throw new InvalidOperationException(
+                    $"Part {Index} is a '{ShapeId}' part and has no family geometry. A named shape " +
+                    "builds its panels from the shape.");
+            }
+
+            float scale = FamilyScale;
+            float areaScale = scale * scale;
+            IReadOnlyList<DragPanel> reference = Family.ReferencePanels(resolution);
+
+            for (int i = 0; i < reference.Count; i++)
+            {
+                DragPanel panel = reference[i];
+                into.Add(new DragPanel(panel.Centre * scale, panel.Normal, panel.Area * areaScale));
+            }
         }
 
         public bool IsRoot => ParentIndex < 0;

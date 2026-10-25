@@ -336,6 +336,15 @@ namespace Evosim.Dynamics
         /// <summary>Each link's margin, metres: the radius of the ball swept round its core. Null unless the true shape.</summary>
         public double[] LinkMargin;
 
+        /// <summary>
+        /// Each link's hull core, D233: for a link with a family part, the 98 points of its contact core at
+        /// the part's present size, three doubles a point in the link's own frame (<see cref="ConvexCore.OfFamily"/>),
+        /// with <see cref="LinkMargin"/> its margin and <see cref="LinkCoreHalf"/> zero; null for a link of a
+        /// named shape, which has a box, segment or point core. The whole array is null unless the true shape.
+        /// Rewritten in place at a growth resize.
+        /// </summary>
+        public double[][] LinkCoreHull;
+
         private double[] _pendingLinkRotation;
 
         /// <summary>
@@ -513,6 +522,7 @@ namespace Evosim.Dynamics
                     _pendingLinkRotation = new double[9 * Links];
                     LinkCoreHalf = new double[3 * Links];
                     LinkMargin = new double[Links];
+                    LinkCoreHull = new double[Links][];
                     WriteLinkCores();
 
                     // The force at the contact point reads the other side's velocity there, so the spin travels
@@ -762,6 +772,18 @@ namespace Evosim.Dynamics
             for (int i = 0; i < Links; i++)
             {
                 PhenotypePart part = Phenotype.Parts[i];
+
+                // D233: a family part's core is the hull of its contact core's points, scaled to its size. The
+                // array is made once and written in place at every resize.
+                if (part.Family != null)
+                {
+                    double[] hull = LinkCoreHull[i] ?? (LinkCoreHull[i] = new double[3 * Superellipsoid.ContactCorePoints]);
+                    ConvexCore.OfFamily(part, hull, out Vec3 hullHalf, out double hullMargin);
+                    Vec3.Write(LinkCoreHalf, 3 * i, hullHalf);
+                    LinkMargin[i] = hullMargin;
+                    continue;
+                }
+
                 ConvexCore.Of(_shapes.Resolve(part.ShapeId), part.HalfExtents, out Vec3 half, out double margin);
                 Vec3.Write(LinkCoreHalf, 3 * i, half);
                 LinkMargin[i] = margin;
@@ -778,12 +800,33 @@ namespace Evosim.Dynamics
             var reach = new double[Links];
             for (int i = 0; i < Links; i++)
             {
+                if (HasHullCore(i))
+                {
+                    reach[i] = FamilyReach(Phenotype.Parts[i]);
+                    continue;
+                }
+
                 Float3 h = Phenotype.Parts[i].HalfExtents;
                 reach[i] = System.Math.Sqrt(
                     (double)h.X * h.X + (double)h.Y * h.Y + (double)h.Z * h.Z);
             }
             return reach;
         }
+
+        /// <summary>
+        /// Whether link <paramref name="i"/> has a hull core: the world is on the true shape and the link's
+        /// part is a family part. Only then is its broadphase sphere the family's reach rather than the
+        /// half-diagonal; a world on the spheres keeps the half-diagonal, which is that world's contact shape.
+        /// </summary>
+        private bool HasHullCore(int i) => LinkCoreHull != null && Phenotype.Parts[i].Family != null;
+
+        /// <summary>
+        /// A family part's broadphase radius at its present size: the geometry's reach at the reference size
+        /// (every core point plus the margin, and every point of the solid) times the part's
+        /// <see cref="PhenotypePart.FamilyScale"/>. The half-diagonal does not hold a tapered part: a taper of 4
+        /// reaches 1.6 half-extents at its wide end.
+        /// </summary>
+        private static double FamilyReach(PhenotypePart part) => part.Family.ReferenceReach * (double)part.FamilyScale;
 
         /// <summary>
         /// The rest axis of one degree of freedom, in the joint frame — X for the first,
@@ -824,14 +867,22 @@ namespace Evosim.Dynamics
         /// <c>ArticulationBody</c>'s tensor from its collider and its mass, and this is the
         /// analytic answer for the same three solids: the box from its half-extents, the sphere
         /// from <see cref="SphereShape.Radius"/>, the capsule as a cylinder plus two
-        /// hemispheres about <see cref="CapsuleShape.HalfSpan"/>. A shape the registry resolves
-        /// to none of the three falls back to the box's tensor over its half-extents, which is
+        /// hemispheres about <see cref="CapsuleShape.HalfSpan"/>. A shape that is none of the three
+        /// and is not the family's falls back to the box's tensor over its half-extents, which is
         /// the loosest honest answer and is counted nowhere — no run in the record carries one.
+        /// The family's shape (D233) never falls back: its tensor needs the part's form, so this
+        /// overload refuses it and <see cref="InertiaOf(PartShape, PhenotypePart, double)"/> is the
+        /// one to call.
         /// </remarks>
         public static Vec3 InertiaOf(PartShape shape, Float3 halfExtents, double mass)
         {
             switch (shape)
             {
+                case SuperellipsoidShape _:
+                    throw new ArgumentException(
+                        "A superellipsoid's inertia needs the part's form; call the overload that " +
+                        "takes the part.", nameof(shape));
+
                 case SphereShape _:
                 {
                     double r = SphereShape.Radius(halfExtents);
@@ -874,6 +925,25 @@ namespace Evosim.Dynamics
                         k * (hx * hx + hy * hy));
                 }
             }
+        }
+
+        /// <summary>
+        /// The diagonal inertia tensor of one developed part about its own centre, in its own axes —
+        /// <see cref="InertiaOf(PartShape, Float3, double)"/> for a part of a named shape, and the
+        /// superellipsoid's own for a family part (D233).
+        /// </summary>
+        /// <remarks>
+        /// A family part's frame has its centre of mass at the origin (<see cref="Superellipsoid"/>), so
+        /// the tensor about the origin is the one about the centre of mass. It is the geometry's
+        /// per-kilogram tensor at the part's present half-extents times the mass, an arithmetic of
+        /// factors and powers that costs no panel and no beta function at a growth step.
+        /// </remarks>
+        public static Vec3 InertiaOf(PartShape shape, PhenotypePart part, double mass)
+        {
+            if (part.Family == null) return InertiaOf(shape, part.HalfExtents, mass);
+
+            Double3 perMass = part.Family.Geometry.InertiaPerMass(part.HalfExtents);
+            return new Vec3(perMass.X, perMass.Y, perMass.Z) * mass;
         }
 
         internal static Vec3 ToVec(Float3 v) => new Vec3(v.X, v.Y, v.Z);

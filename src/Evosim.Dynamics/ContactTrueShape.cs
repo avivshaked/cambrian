@@ -39,6 +39,12 @@ namespace Evosim.Dynamics
     /// friction is computed once from the sum, and the touch's torque is capped once.
     /// </para>
     /// <para>
+    /// <b>A family part's core is a hull</b> (D233, <see cref="Creature.LinkCoreHull"/>): the convex hull of 98 points,
+    /// found by <see cref="ConvexCore"/>'s support function, which GJK and the single support point of every
+    /// surface read. At the level at the point it touches at its eight corner points, each as a box's vertex is,
+    /// and at the support point only when none of the eight pushes. A link of a named shape takes none of these paths.
+    /// </para>
+    /// <para>
     /// <b>Each vertex's spring and damper read the mass at that point.</b> A corner of a turning body is lighter
     /// than its centre: along the touch's normal <c>n</c> a push at the lever <c>r</c> meets
     /// <c>m_eff = 1 / (1/m + (r x n) . I^-1 (r x n))</c> (<see cref="EffectiveMass"/>), about a third of <c>m</c>
@@ -76,10 +82,24 @@ namespace Evosim.Dynamics
         internal static bool Pair(
             Vec3 centreA, Mat3 rotationA, Vec3 halfA, double marginA, double radiusA,
             Vec3 centreB, Mat3 rotationB, Vec3 halfB, double marginB, double radiusB,
+            out Vec3 normalAB, out double penetration, out Vec3 point) =>
+            Pair(
+                centreA, rotationA, halfA, null, marginA, radiusA,
+                centreB, rotationB, halfB, null, marginB, radiusB,
+                out normalAB, out penetration, out point);
+
+        /// <summary>
+        /// <see cref="Pair(Vec3, Mat3, Vec3, double, double, Vec3, Mat3, Vec3, double, double, out Vec3, out double, out Vec3)"/>
+        /// with each side's core possibly a hull (D233): <paramref name="hullA"/> and <paramref name="hullB"/> are
+        /// the family links' points, three doubles each, or null for a box, segment or point core.
+        /// </summary>
+        internal static bool Pair(
+            Vec3 centreA, Mat3 rotationA, Vec3 halfA, double[] hullA, double marginA, double radiusA,
+            Vec3 centreB, Mat3 rotationB, Vec3 halfB, double[] hullB, double marginB, double radiusB,
             out Vec3 normalAB, out double penetration, out Vec3 point)
         {
             if (ConvexCore.Distance(
-                halfA, rotationA, centreA, halfB, rotationB, centreB,
+                halfA, hullA, rotationA, centreA, halfB, hullB, rotationB, centreB,
                 out double d, out Vec3 pa, out Vec3 pb))
             {
                 // Apart: along the closest points, from B toward A.
@@ -109,11 +129,68 @@ namespace Evosim.Dynamics
         }
 
         /// <summary>One link's core support point along a direction, in the world.</summary>
-        internal static Vec3 CoreSupport(Creature body, int link, Vec3 centre, Vec3 direction) =>
-            ConvexCore.Support(
-                Vec3.Read(body.LinkCoreHalf, 3 * link),
+        internal static Vec3 CoreSupport(Creature body, int link, Vec3 centre, Vec3 direction)
+        {
+            double[] hull = HullOf(body, link);
+            if (hull == null)
+            {
+                return ConvexCore.Support(
+                    Vec3.Read(body.LinkCoreHalf, 3 * link),
+                    Mat3.Read(body.LinkContactRotation, 9 * link),
+                    centre, direction);
+            }
+
+            return ConvexCore.Support(
+                Vec3.Read(body.LinkCoreHalf, 3 * link), hull,
                 Mat3.Read(body.LinkContactRotation, 9 * link),
                 centre, direction);
+        }
+
+        /// <summary>A link's hull core (D233): the family part's points, or null for a named shape's box, segment or point.</summary>
+        internal static double[] HullOf(Creature body, int link) =>
+            body.LinkCoreHull == null ? null : body.LinkCoreHull[link];
+
+        /// <summary>
+        /// One of the eight corner points of a hull core as a world point, <c>centre + R p</c>, with <c>p</c> the
+        /// core point that the cube's corner of the pattern maps to (bit 0 of <paramref name="pattern"/> is a minus
+        /// on x, bit 1 on y, bit 2 on z, as <see cref="CoreVertex"/> numbers a box's). Two patterns can give points
+        /// that nearly coincide, on a flat or a small core; <see cref="HullCornerYields"/> says which stays.
+        /// </summary>
+        internal static Vec3 HullCorner(double[] hull, int pattern, Mat3 rotation, Vec3 centre)
+        {
+            int at = 3 * Superellipsoid.ContactCoreCorner(pattern);
+            return centre + rotation * new Vec3(hull[at], hull[at + 1], hull[at + 2]);
+        }
+
+        /// <summary>
+        /// Whether a corner point of a hull core gives way to another within <paramref name="tolerance"/> of it: one
+        /// that stands deeper along <paramref name="direction"/>, or as deep with a lower pattern. Corners that close
+        /// are one corner (the coordinator's ruling of 2026-10-25, <see cref="Superellipsoid.ContactCornerMerge"/> of the
+        /// margin), as <see cref="CoreVertex"/> refuses a pattern that repeats another's vertex along an axis of no
+        /// half-extent, and the one that stays is the deepest, so a flat core rests on its lower face. A plate's flat
+        /// core then touches at four corners, as the box's does.
+        /// </summary>
+        internal static bool HullCornerYields(
+            double[] hull, int pattern, double tolerance, Mat3 rotation, Vec3 centre, Vec3 direction)
+        {
+            Vec3 corner = HullCorner(hull, pattern, rotation, centre);
+            double depth = Vec3.Dot(corner, direction);
+            double limit = tolerance * tolerance;
+
+            for (int other = 0; other < 8; other++)
+            {
+                if (other == pattern) continue;
+
+                Vec3 near = HullCorner(hull, other, rotation, centre);
+                Vec3 apart = near - corner;
+                if (Vec3.Dot(apart, apart) > limit) continue;
+
+                double otherDepth = Vec3.Dot(near, direction);
+                if (otherDepth > depth || (otherDepth == depth && other < pattern)) return true;
+            }
+
+            return false;
+        }
 
         /// <summary>
         /// The per-part contact pass on the true shape: <see cref="Contacts.ApplyPerPart"/>'s force law, with
@@ -197,9 +274,9 @@ namespace Evosim.Dynamics
                         // numbers (src/Evosim.Farm.Gpu/CLAUDE.md), and the double kernel matches this to the bit.
                         if (!Pair(
                             Vec3.Zero, Mat3.Read(bodyA.LinkContactRotation, 9 * linkA),
-                            Vec3.Read(bodyA.LinkCoreHalf, 3 * linkA), bodyA.LinkMargin[linkA], radiusA,
+                            Vec3.Read(bodyA.LinkCoreHalf, 3 * linkA), HullOf(bodyA, linkA), bodyA.LinkMargin[linkA], radiusA,
                             Vec3.Zero - between, Mat3.Read(bodyB.LinkContactRotation, 9 * linkB),
-                            Vec3.Read(bodyB.LinkCoreHalf, 3 * linkB), bodyB.LinkMargin[linkB], radiusB,
+                            Vec3.Read(bodyB.LinkCoreHalf, 3 * linkB), HullOf(bodyB, linkB), bodyB.LinkMargin[linkB], radiusB,
                             out Vec3 normalAB, out double penetration, out Vec3 pairPoint))
                         {
                             continue;
@@ -464,6 +541,16 @@ namespace Evosim.Dynamics
             double mass, SolverConfig config, double stiffness, double damping,
             out Vec3 support, out Vec3 point, out Vec3 moment)
         {
+            // D233: a family link's core is a hull, which touches at its eight corner points and not at the
+            // box's distinct vertices. Every other link takes the lines below, untouched.
+            double[] hull = HullOf(body, link);
+            if (hull != null)
+            {
+                return HullVertices(
+                    kind, body, link, hull, centre, direction, margin, velocity, spin, mass, config,
+                    stiffness, damping, out support, out point, out moment);
+            }
+
             Vec3 half = Vec3.Read(body.LinkCoreHalf, 3 * link);
             Mat3 rotation = Mat3.Read(body.LinkContactRotation, 9 * link);
 
@@ -516,6 +603,128 @@ namespace Evosim.Dynamics
 
             point = pushing > 1 ? weighted * (1.0 / weight) : (pushing == 1 ? only : centre);
             return total;
+        }
+
+        /// <summary>
+        /// <see cref="Vertices"/> for a hull core (D233): the touch at the corner points (the moved points of the cube's
+        /// eight corners, one for each group the merge joins, <see cref="HullCornerYields"/>), each as a box's vertex is
+        /// touched, with its own spring and damper at the mass it meets and not divided among them. When none of the
+        /// corners pushes, the touch is at the hull's support point toward the surface, the same way. When some push
+        /// and the support point stands deeper than the deepest of them by more than
+        /// <see cref="Superellipsoid.ContactSupportSwitch"/> of the margin, the support point takes that corner's
+        /// place, so the springs never grow in number (the coordinator's ruling of 2026-10-25).
+        /// </summary>
+        /// <remarks>
+        /// On the eroded core an egg's lowest corner stands a little above its lowest point, and without the switch it
+        /// pushed from the corner's depth: 0.82 of its true push at 3 mm. A flat plate's support point is as deep as
+        /// its lower corners, and a tilted box's is its deepest corner, so neither switches. The pushes are summed in
+        /// pattern order, the support point in its corner's place.
+        /// </remarks>
+        private static Vec3 HullVertices(
+            int kind, Creature body, int link, double[] hull, Vec3 centre, Vec3 direction, double margin,
+            Vec3 velocity, Vec3 spin, double mass, SolverConfig config, double stiffness, double damping,
+            out Vec3 support, out Vec3 point, out Vec3 moment)
+        {
+            Mat3 rotation = Mat3.Read(body.LinkContactRotation, 9 * link);
+
+            Vec3 pushDirection = -direction;
+            Vec3 inertia = Vec3.Read(body.InertiaLocal, 3 * link);
+            double merge = Superellipsoid.ContactCornerMerge * margin;
+
+            Span<Vec3> pushes = stackalloc Vec3[8];
+            Span<Vec3> vertices = stackalloc Vec3[8];
+            Span<Vec3> points = stackalloc Vec3[8];
+
+            // The corners that push, and the deepest of them along the direction to the surface.
+            int deepest = -1;
+            double deepestDepth = double.NegativeInfinity;
+            for (int pattern = 0; pattern < 8; pattern++)
+            {
+                pushes[pattern] = Vec3.Zero;
+                if (HullCornerYields(hull, pattern, merge, rotation, centre, direction)) continue;
+
+                Vec3 vertex = HullCorner(hull, pattern, rotation, centre);
+                Vec3 push = HullPush(
+                    kind, vertex, centre, direction, pushDirection, margin, velocity, spin, inertia, rotation, mass,
+                    config, stiffness, damping, out Vec3 vertexPoint);
+                if (!(push.Magnitude > 0)) continue;
+
+                pushes[pattern] = push;
+                vertices[pattern] = vertex;
+                points[pattern] = vertexPoint;
+
+                double depth = Vec3.Dot(vertex, direction);
+                if (depth > deepestDepth)
+                {
+                    deepestDepth = depth;
+                    deepest = pattern;
+                }
+            }
+
+            // The support point: alone when no corner pushes, in the deepest corner's place when clearly deeper.
+            Vec3 lowest = ConvexCore.Support(Vec3.Zero, hull, rotation, centre, direction);
+            bool alone = deepest < 0;
+            if (alone || Vec3.Dot(lowest, direction) > deepestDepth + Superellipsoid.ContactSupportSwitch * margin)
+            {
+                Vec3 push = HullPush(
+                    kind, lowest, centre, direction, pushDirection, margin, velocity, spin, inertia, rotation, mass,
+                    config, stiffness, damping, out Vec3 lowestPoint);
+                if (push.Magnitude > 0)
+                {
+                    int slot = alone ? 0 : deepest;
+                    pushes[slot] = push;
+                    vertices[slot] = lowest;
+                    points[slot] = lowestPoint;
+                }
+            }
+
+            Vec3 total = Vec3.Zero;
+            Vec3 weighted = Vec3.Zero;
+            double weight = 0;
+            double largest = 0;
+            int pushing = 0;
+            Vec3 only = centre;
+
+            support = centre;
+            moment = Vec3.Zero;
+
+            for (int pattern = 0; pattern < 8; pattern++)
+            {
+                Vec3 push = pushes[pattern];
+                double size = push.Magnitude;
+                if (!(size > 0)) continue;
+
+                pushing++;
+                total += push;
+                weighted += points[pattern] * size;
+                weight += size;
+                moment += Vec3.Cross(points[pattern] - centre, push);
+                only = points[pattern];
+
+                if (size > largest)
+                {
+                    largest = size;
+                    support = vertices[pattern];
+                }
+            }
+
+            point = pushing > 1 ? weighted * (1.0 / weight) : (pushing == 1 ? only : centre);
+            return total;
+        }
+
+        /// <summary>One point of a hull core's touch: the surface's sphere test at the point, at the mass it meets.</summary>
+        private static Vec3 HullPush(
+            int kind, Vec3 vertex, Vec3 centre, Vec3 direction, Vec3 pushDirection, double margin, Vec3 velocity,
+            Vec3 spin, Vec3 inertia, Mat3 rotation, double mass, SolverConfig config, double stiffness, double damping,
+            out Vec3 vertexPoint)
+        {
+            vertexPoint = vertex + direction * margin;
+            double effective = EffectiveMass(vertexPoint - centre, pushDirection, inertia, rotation, mass);
+            double scale = effective / mass;
+
+            return SphereAt(
+                kind, vertex, vertexPoint, centre, margin, velocity, spin, true, effective, config,
+                stiffness * scale, damping * scale);
         }
 
         // Each surface comes in three parts: the touch (the early-out, the direction, then the single support

@@ -380,7 +380,7 @@ namespace Evosim.Farm
 #if EVOSIM_GPU
                 Evosim.Farm.Gpu.GpuBackend gpu = FarmGpu.Open(
                     settings, Evosim.Dynamics.SolverConfig.FromWorld(config, physicsDt, world.Bed, world),
-                    sharedDevice as Evosim.Farm.Gpu.GpuDevice);
+                    config.Shapes, sharedDevice as Evosim.Farm.Gpu.GpuDevice);
                 engine = gpu;
                 engineToken = gpu.HeaderToken();
 

@@ -76,8 +76,9 @@ namespace Evosim.Farm.Tests
             MethodInfo open = typeof(EnvBinding).Assembly.GetType("Evosim.Farm.FarmGpu", throwOnError: true)
                 .GetMethod("Open", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
-            // The third argument is the device a pair shares; null opens one of the engine's own.
-            var thrown = Assert.Throws<TargetInvocationException>(() => open.Invoke(null, new object[] { s, solver, null }));
+            // The third argument is the world's shapes; the fourth is the device a pair shares, and null opens one of
+            // the engine's own.
+            var thrown = Assert.Throws<TargetInvocationException>(() => open.Invoke(null, new object[] { s, solver, Evosim.Core.PartShapeRegistry.Standard, null }));
             Assert.IsType<InvalidOperationException>(thrown.InnerException);
             Assert.Contains("single only", thrown.InnerException.Message);
         }
@@ -109,11 +110,36 @@ namespace Evosim.Farm.Tests
                 MethodInfo open = typeof(EnvBinding).Assembly.GetType("Evosim.Farm.FarmGpu", throwOnError: true)
                     .GetMethod("Open", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
-                var thrown = Assert.Throws<TargetInvocationException>(() => open.Invoke(null, new object[] { s, solver, null }));
+                var thrown = Assert.Throws<TargetInvocationException>(() => open.Invoke(null, new object[] { s, solver, Evosim.Core.PartShapeRegistry.Standard, null }));
                 Assert.IsType<InvalidOperationException>(thrown.InnerException);
                 Assert.Contains("single only", thrown.InnerException.Message);
                 Assert.DoesNotContain("trueshapeatpoint", thrown.InnerException.Message);
             }
+        }
+
+        /// <summary>
+        /// D233's family touches on the host through a hull of core points, which the card does not carry: the farm
+        /// refuses a world whose shapes hold one that takes a form, before it opens a device, naming the shape. The
+        /// world is otherwise one the card takes, so the family is what is refused.
+        /// </summary>
+        [Fact]
+        public void TheFarmRefusesAFamilyShapeOnTheCardAndNamesIt()
+        {
+            var block = GpuTank.Launcher(perPart: true, reefs: false);
+            block["EVOSIM_ENGINE"] = "gpu";
+            block["EVOSIM_GPU_DEVICE"] = "cuda";
+            block["EVOSIM_GPU_PRECISION"] = "single";
+            EnvSettings s = EnvBinding.Read(EnvBinding.Of(block));
+            (_, SolverConfig solver) = GpuTank.Build(perPart: true, reefs: false);
+            var shapes = new Evosim.Core.PartShapeRegistry(
+                new Evosim.Core.BoxShape(), new Evosim.Core.SuperellipsoidShape());
+
+            MethodInfo open = typeof(EnvBinding).Assembly.GetType("Evosim.Farm.FarmGpu", throwOnError: true)
+                .GetMethod("Open", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
+            var thrown = Assert.Throws<TargetInvocationException>(() => open.Invoke(null, new object[] { s, solver, shapes, null }));
+            Assert.IsType<InvalidOperationException>(thrown.InnerException);
+            Assert.Contains(Evosim.Core.ShapeIds.Superellipsoid, thrown.InnerException.Message);
         }
 
         private static MethodInfo Helper(Type step, string name)

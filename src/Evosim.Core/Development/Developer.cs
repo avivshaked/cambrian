@@ -67,7 +67,7 @@ namespace Evosim.Core
             if (genome == null) throw new ArgumentNullException(nameof(genome));
             shapes = shapes ?? PartShapeRegistry.Standard;
 
-            IReadOnlyList<string> issues = genome.Validate(cellTypes);
+            IReadOnlyList<string> issues = genome.Validate(cellTypes, shapes: shapes);
             if (issues.Count > 0)
             {
                 throw new ArgumentException(
@@ -182,7 +182,7 @@ namespace Evosim.Core
             // treat as half the size — three systems disagreeing with the limit that admitted
             // the part.
             PartShape shape = shapes.Resolve(node.ShapeId);
-            float volume = shape.Volume(halfExtents);
+            float volume = shape.Volume(halfExtents, node.Form);
 
             // Both tails, one counter. A part is dropped for being unrepresentably small (§4.5's
             // extinction by shrinking) or unrepresentably large (DevelopmentLimits.MaxPartVolume),
@@ -231,6 +231,11 @@ namespace Evosim.Core
                 }
             }
 
+            // D233. A family part measures its surface once, here, at the size it is built at, and
+            // its area, its exposure and its drag all read that one set of panels (scaled, in a
+            // grown copy). A named part measures its area from the shape, as it always did.
+            FamilyGeometry family = FamilyGeometry.For(shape, node.Form, halfExtents);
+
             PhenotypePart part = phenotype.Add(new PhenotypePart
             {
                 ParentIndex = parentPartIndex,
@@ -242,8 +247,10 @@ namespace Evosim.Core
                 Mirrored = mirrored,
                 CellTypeId = node.CellTypeId,
                 ShapeId = node.ShapeId,
+                Form = node.Form,
+                Family = family,
                 Volume = volume,
-                SurfaceArea = shape.SurfaceArea(halfExtents),
+                SurfaceArea = family != null ? family.ReferenceSurfaceArea : shape.SurfaceArea(halfExtents),
                 JointType = jointType,
                 JointLimits = jointLimits,
                 Power = jointType == JointType.Fixed ? 0f : node.Power,
@@ -332,9 +339,9 @@ namespace Evosim.Core
                 // box that is a point on a face, as before; for a sphere or capsule it is a
                 // point on the curve. Scaling by half-extents instead would attach children to a
                 // bounding box that is not there, leaving a visible gap on every round part.
-                Float3 anchorOnParent = shape.SurfacePoint(edge.ParentAnchor, halfExtents);
+                Float3 anchorOnParent = shape.SurfacePoint(edge.ParentAnchor, halfExtents, node.Form);
                 Float3 anchorOnChild = shapes.Resolve(childNode.ShapeId)
-                    .SurfacePoint(edge.ChildAnchor, childHalfExtents);
+                    .SurfacePoint(edge.ChildAnchor, childHalfExtents, childNode.Form);
 
                 int mirrorOrdinal = -1;
 

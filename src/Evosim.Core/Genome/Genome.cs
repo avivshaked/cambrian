@@ -176,10 +176,17 @@ namespace Evosim.Core
         /// above 0). False refuses any nonzero offset; null asks only the range, which is the
         /// question a genome on its own can answer (development, a file being read).
         /// </param>
+        /// <param name="shapes">
+        /// Registry to resolve <see cref="MorphNode.ShapeId"/> against, and to ask whether the shape
+        /// takes a <see cref="MorphNode.Form"/>. Defaults to <see cref="PartShapeRegistry.Standard"/>,
+        /// which holds no shape that takes one.
+        /// </param>
         public IReadOnlyList<string> Validate(
-            CellTypeRegistry cellTypes = null, bool? buoyancyOffsetPriced = null)
+            CellTypeRegistry cellTypes = null, bool? buoyancyOffsetPriced = null,
+            PartShapeRegistry shapes = null)
         {
             var issues = new List<string>();
+            PartShapeRegistry shapeTable = shapes ?? PartShapeRegistry.Standard;
 
             if (Nodes.Count == 0)
             {
@@ -306,11 +313,32 @@ namespace Evosim.Core
                 // here rather than trusted as a convention: a genome whose stomach is also its
                 // elbow would develop, run and be scored, and nothing downstream could tell it
                 // was never meant to be legal.
-                if (!PartShapeRegistry.Standard.Contains(node.ShapeId))
+                if (!shapeTable.Contains(node.ShapeId))
                 {
                     issues.Add(
                         $"Node {n}: unknown shape '{node.ShapeId}'. " +
-                        $"Registered: {string.Join(", ", PartShapeRegistry.Standard.Ids())}.");
+                        $"Registered: {string.Join(", ", shapeTable.Ids())}.");
+                }
+                else if (shapeTable.Resolve(node.ShapeId).TakesForm)
+                {
+                    // D233. A family part is never measured without its genes, and a genome that
+                    // loaded with them defaulted would be a different creature wearing this one's
+                    // identity (§9), so a missing form is refused, not read as some default.
+                    if (!node.Form.InRange)
+                    {
+                        issues.Add(
+                            $"Node {n}: shape '{node.ShapeId}' takes a form, but the node's is " +
+                            (node.Form.IsNone ? "none" : node.Form.ToString()) +
+                            $". Profile must lie in [{PartForm.ProfileMin}, {PartForm.ProfileMax}], " +
+                            $"section in [{PartForm.SectionMin}, {PartForm.SectionMax}] and " +
+                            $"taper in [{PartForm.TaperMin}, {PartForm.TaperMax}].");
+                    }
+                }
+                else if (!node.Form.IsNone)
+                {
+                    issues.Add(
+                        $"Node {n}: form {node.Form} on a '{node.ShapeId}' part. That shape takes " +
+                        "no form, so nothing would read it.");
                 }
 
                 CellTypeRegistry registry = cellTypes ?? CellTypeRegistry.Standard;

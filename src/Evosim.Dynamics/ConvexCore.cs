@@ -16,6 +16,12 @@ namespace Evosim.Dynamics
 
         /// <summary>A box: the box less its smallest half-extent on every side. A flat plate's is its rectangle.</summary>
         Box,
+
+        /// <summary>
+        /// A family part's: the convex hull of the 98 points of its contact core (<see cref="Superellipsoid.ContactCore(Float3, out double, out double, out double)"/>),
+        /// held in a flat array of three doubles a point beside the link's zero half-extents.
+        /// </summary>
+        Hull,
     }
 
     /// <summary>
@@ -111,6 +117,37 @@ namespace Evosim.Dynamics
         }
 
         /// <summary>
+        /// A family part's core and margin (D233), written into <paramref name="hull"/> without allocating:
+        /// the part's <see cref="FamilyGeometry"/> core at the reference size, each point times
+        /// <see cref="PhenotypePart.FamilyScale"/>, and the margin likewise. The half-extents are 0, since a
+        /// hull is not a box.
+        /// </summary>
+        /// <param name="part">A part with a <see cref="PhenotypePart.Family"/>.</param>
+        /// <param name="hull">Three doubles for each of <see cref="Superellipsoid.ContactCorePoints"/> points.</param>
+        public static CoreKind OfFamily(PhenotypePart part, double[] hull, out Vec3 half, out double margin)
+        {
+            if (part == null) throw new ArgumentNullException(nameof(part));
+            if (part.Family == null)
+            {
+                throw new ArgumentException("A hull core is for a part with a family geometry.", nameof(part));
+            }
+
+            if (hull == null || hull.Length != 3 * Superellipsoid.ContactCorePoints)
+            {
+                throw new ArgumentException(
+                    "A hull holds three doubles for each of " + Superellipsoid.ContactCorePoints + " points.", nameof(hull));
+            }
+
+            double scale = part.FamilyScale;
+            double[] reference = part.Family.ReferenceCorePoints;
+            for (int k = 0; k < hull.Length; k++) hull[k] = reference[k] * scale;
+
+            half = Vec3.Zero;
+            margin = part.Family.ReferenceCoreMargin * scale;
+            return CoreKind.Hull;
+        }
+
+        /// <summary>
         /// The core's farthest point along <paramref name="direction"/> in the world frame. A local
         /// component of the direction that is 0 (or not a number) reads as +.
         /// </summary>
@@ -132,6 +169,35 @@ namespace Evosim.Dynamics
         }
 
         /// <summary>
+        /// The core's farthest point along <paramref name="direction"/> when the core may be a hull: with a
+        /// null <paramref name="hull"/> it is the box overload, line for line; with one it is the hull point
+        /// of the largest dot product with the direction taken in the core's frame, the first of the fixed
+        /// order winning a tie (and the first point when the direction is not a number), then turned and moved.
+        /// </summary>
+        /// <param name="half">The box core's half-extents; not read when there is a hull.</param>
+        /// <param name="hull">Three doubles a point, or null.</param>
+        public static Vec3 Support(Vec3 half, double[] hull, Mat3 rotation, Vec3 centre, Vec3 direction)
+        {
+            if (hull == null) return Support(half, rotation, centre, direction);
+
+            Vec3 local = rotation.TransposedTimes(direction);
+
+            int best = 0;
+            double bestDot = local.X * hull[0] + local.Y * hull[1] + local.Z * hull[2];
+            for (int k = 3; k + 2 < hull.Length; k += 3)
+            {
+                double dot = local.X * hull[k] + local.Y * hull[k + 1] + local.Z * hull[k + 2];
+                if (dot > bestDot)
+                {
+                    bestDot = dot;
+                    best = k;
+                }
+            }
+
+            return centre + rotation * new Vec3(hull[best], hull[best + 1], hull[best + 2]);
+        }
+
+        /// <summary>
         /// The distance between two cores and the nearest point of each, or false when they intersect or
         /// touch (the distance is then at most <see cref="Touching"/>, and the points are the last the
         /// routine held).
@@ -140,6 +206,33 @@ namespace Evosim.Dynamics
         public static bool Distance(
             Vec3 halfA, Mat3 rotationA, Vec3 centreA,
             Vec3 halfB, Mat3 rotationB, Vec3 centreB,
+            out double distance, out Vec3 pointA, out Vec3 pointB) =>
+            Distance(
+                halfA, null, rotationA, centreA,
+                halfB, null, rotationB, centreB,
+                out distance, out pointA, out pointB);
+
+        /// <summary>
+        /// <see cref="Distance(Vec3, Mat3, Vec3, Vec3, Mat3, Vec3, out double, out Vec3, out Vec3)"/> with
+        /// each side's core possibly a hull (null for a box core). The one path: the box overload calls this
+        /// with two nulls.
+        /// </summary>
+        /// <remarks>
+        /// <b>GJK on a hull.</b> The routine asks a core for its support point only, so a polytope with 98
+        /// vertices needs nothing else. Termination (1), the nearest point of the simplex within
+        /// <see cref="Touching"/> of the origin, reads the simplex alone. (2), a support point already held, is an
+        /// exact comparison of the difference's three numbers, and the hull's support point is a deterministic
+        /// function of the direction and the turn (the first of the largest dot products), so the same feature
+        /// returns the same bits. (3), the gap <c>|v|^2 - v.w</c> against <see cref="Tolerance"/> times <c>|v|</c>,
+        /// holds for any convex set, since <c>w</c> is its support point along <c>-v</c>. A hull of 98 points
+        /// that approximates a ball has more nearby features than a box's eight corners, so it may take more
+        /// passes to close; (4), the cap of <see cref="MaxIterations"/>, ends the routine with the nearest point
+        /// of the last simplex, which is at least the true distance, so a penetration read from it is never too
+        /// large. A hull whose points are all nearly one point (an even ball) closes at once by (3).
+        /// </remarks>
+        public static bool Distance(
+            Vec3 halfA, double[] hullA, Mat3 rotationA, Vec3 centreA,
+            Vec3 halfB, double[] hullB, Mat3 rotationB, Vec3 centreB,
             out double distance, out Vec3 pointA, out Vec3 pointB)
         {
             Span<double> s = stackalloc double[40];
@@ -156,8 +249,8 @@ namespace Evosim.Dynamics
 
             int n = 0;
             AddVertex(s, ref n,
-                Support(halfA, rotationA, centreA, first),
-                Support(halfB, rotationB, centreB, -first));
+                Support(halfA, hullA, rotationA, centreA, first),
+                Support(halfB, hullB, rotationB, centreB, -first));
 
             // The point nearest the origin of the simplex's hull; the first vertex alone to begin with.
             s[L] = 1.0;
@@ -173,8 +266,8 @@ namespace Evosim.Dynamics
                 if (vv <= Touching * Touching) break;
 
                 // The difference's support point along -v: A's along -v, B's along +v.
-                Vec3 wa = Support(halfA, rotationA, centreA, -v);
-                Vec3 wb = Support(halfB, rotationB, centreB, v);
+                Vec3 wa = Support(halfA, hullA, rotationA, centreA, -v);
+                Vec3 wb = Support(halfB, hullB, rotationB, centreB, v);
                 Vec3 w = wa - wb;
 
                 // No progress possible: the support point is a vertex already held, or the gap is closed.

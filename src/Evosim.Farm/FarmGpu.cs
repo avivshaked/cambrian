@@ -33,8 +33,24 @@ namespace Evosim.Farm
         /// The engine for the world <paramref name="solver"/> describes: refusals first, then the device,
         /// its own or <paramref name="shared"/> with another world in the process (Program.Pair).
         /// </summary>
-        public static GpuBackend Open(EnvSettings s, SolverConfig solver, GpuDevice shared = null)
+        public static GpuBackend Open(
+            EnvSettings s, SolverConfig solver, Evosim.Core.PartShapeRegistry shapes, GpuDevice shared = null)
         {
+            // D233's family carries its form to the host's contact as a hull of core points (ConvexCore.OfFamily).
+            // The card packs every core as a box's half-extents, so a family link would touch there as the box of its
+            // half-extents and part from the host at its first touch. A world develops only the shapes its list holds,
+            // so a list with no shape that takes a form holds no family part. This stands until the card's port.
+            if (shapes == null) throw new System.ArgumentNullException(nameof(shapes));
+            for (int i = 0; i < shapes.Count; i++)
+            {
+                if (shapes[i].TakesForm)
+                {
+                    throw new System.InvalidOperationException(
+                        "the gpu engine has no family shape ('" + shapes[i].Id + "' takes a form, D233); " +
+                        "run this world on the cpu engine");
+                }
+            }
+
             // The card carries the limb push, the bend-and-power drive and its senses, and the scent
             // (card-audit-r57.md). The bed's friction is in the CPU solver only, so a world with it
             // would part from the CPU's at its first slide.

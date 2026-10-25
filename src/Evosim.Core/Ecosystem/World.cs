@@ -2383,7 +2383,7 @@ namespace Evosim.Core
                 // this world's registry, and D111's refusal of an offset nothing prices. A pool
                 // genome is named deliberately, as an inoculant is, so a body the world cannot
                 // admit is a mistake in the launcher and not a founder to count as refused.
-                IReadOnlyList<string> issues = genome.Validate(config.CellTypes, priced);
+                IReadOnlyList<string> issues = genome.Validate(config.CellTypes, priced, config.Shapes);
                 if (issues.Count > 0)
                 {
                     throw new ArgumentException(

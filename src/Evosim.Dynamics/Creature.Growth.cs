@@ -220,7 +220,7 @@ namespace Evosim.Dynamics
                 // PhysX recomputes a link's tensor from its collider whenever the mass is written,
                 // so an inflated mass inflates the tensor in proportion. The same is done here,
                 // from an analytic tensor rather than from the engine's — see the report.
-                Vec3 diag = InertiaOf(shape, part.HalfExtents, plain) * (effective / plain);
+                Vec3 diag = InertiaOf(shape, part, plain) * (effective / plain);
                 Vec3.Write(InertiaLocal, 3 * i, diag);
                 SmallestInertia[i] = System.Math.Min(diag.X, System.Math.Min(diag.Y, diag.Z));
 
@@ -241,7 +241,7 @@ namespace Evosim.Dynamics
                 QuatD.Write(JointFrame, 4 * i, frame);
                 QuatD.Write(RestFrame, 4 * i, rest);
 
-                panelSets[i] = DragPanelSet.For(shape, part.HalfExtents, config.PanelsPerAxis, scratch);
+                panelSets[i] = DragPanelSet.For(shape, part, config.PanelsPerAxis, scratch);
                 panels += panelSets[i].Count;
             }
 
@@ -381,6 +381,13 @@ namespace Evosim.Dynamics
 
             for (int i = 0; i < Links; i++)
             {
+                // D233: a family link's reach follows the size through its part's scale, as its core does.
+                if (HasHullCore(i))
+                {
+                    _linkReach[i] = FamilyReach(Phenotype.Parts[i]);
+                    continue;
+                }
+
                 Float3 h = Phenotype.Parts[i].HalfExtents;
                 _linkReach[i] = System.Math.Sqrt(
                     (double)h.X * h.X + (double)h.Y * h.Y + (double)h.Z * h.Z);

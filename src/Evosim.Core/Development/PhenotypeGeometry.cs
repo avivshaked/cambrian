@@ -30,7 +30,7 @@ namespace Evosim.Core
             // Into the part's own frame, where the shape is axis-aligned.
             Float3 local = part.Rotation.Conjugate.Rotate(point - part.Position);
 
-            return shapes.Resolve(part.ShapeId).ContainsPoint(local, part.HalfExtents);
+            return shapes.Resolve(part.ShapeId).ContainsPoint(local, part.HalfExtents, part.Form);
         }
 
         /// <summary>
