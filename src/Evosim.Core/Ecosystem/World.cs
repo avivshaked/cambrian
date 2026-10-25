@@ -5189,7 +5189,15 @@ namespace Evosim.Core
             // Nothing else about the death changes, and the lineage row is the same row. Guarded
             // on the knob rather than written as a general path, so at 0 the deposit below runs
             // exactly as it always has and every world on file replays.
-            if (Config.ContactEating)
+            if (cause == DeathCause.Withered)
+            {
+                // WitherForTank: the nursery's switching tank withers a leaf. Burnt as BurnUnbitten burns, whatever the
+                // config says of corpses and remains: no corpse is founded, no remains are cut, and nothing is left to eat.
+                // A plant's held units go to the spent field below, as any death without a corpse sends them.
+                BurnUnbitten(creature, remains);
+                creature.TissueJoules = 0d;
+            }
+            else if (Config.ContactEating)
             {
                 // D219, D220: no corpse is founded. The body itself becomes remains, keeping its tissue account and
                 // taking its reserve and gestation account as one store (choice 4). A diverged body's geometry cannot
@@ -5333,6 +5341,40 @@ namespace Evosim.Core
 
             Diverged++;
             Bury(creature, index, DeathCause.Diverged);
+        }
+
+        /// <summary>
+        /// Withers a living body: the nursery's switching leaf tank (D236) ends a leaf that nothing killed, leaving no food.
+        /// <b>No world calls this.</b> <see cref="Step"/> never does, and the farm has no use for it; only the nursery's switching
+        /// tank (<c>leaves.patches.switching</c>) calls it, between steps.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The body's tissue, reserve and gestation account are burnt as <see cref="BurnUnbitten"/> burns them: booked as
+        /// <see cref="EnergyOut"/>, the units to the spent field where the body lies and into <see cref="BurntTotal"/>, and a plant's held
+        /// units sent to the spent field as a death without a corpse sends them. It founds no corpse and no remains whatever
+        /// <see cref="RunConfig.ContactEating"/> says, takes the body out of the living, counts the death and writes the lineage row with
+        /// <see cref="DeathCause.Withered"/>. <see cref="Diverged"/> is not counted: nothing failed.
+        /// </para>
+        /// <para>
+        /// Called from outside <see cref="Step"/>, between steps, as <see cref="KillDiverged"/> is, and for the same reason it is safe: it
+        /// touches no <see cref="Rng"/> stream and takes no branch any other creature's step depends on. A solver learns the body has
+        /// gone as it learns of any death, from <see cref="Deaths"/> changing.
+        /// </para>
+        /// </remarks>
+        public void WitherForTank(Organism creature)
+        {
+            if (creature == null) throw new ArgumentNullException(nameof(creature));
+
+            int index = _living.IndexOf(creature);
+            if (index < 0)
+            {
+                throw new ArgumentException(
+                    $"Creature {creature.Id} is not living in this world, so there is nothing to wither.",
+                    nameof(creature));
+            }
+
+            Bury(creature, index, DeathCause.Withered);
         }
 
         /// <summary>

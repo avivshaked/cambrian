@@ -715,7 +715,7 @@ namespace Evosim.Nursery
             RestepOutcome outcome = Restep.Swim(plan, watcher);
             if (!watcher.HasScent) throw new InvalidDataException("--patches reads the leaf smell, and this tank has none");
             var rows = plan.Members.Where(m => watcher.Tracks[m.Slot].StartedInScent.HasValue)
-                .Select(m => PatchWatcher.Row(plan.Request, m, watcher.Tracks[m.Slot], watcher.PatchCount));
+                .Select(m => PatchWatcher.Row(plan.Request, m, watcher.Tracks[m.Slot], watcher.PatchCount, watcher.Travel?[m.Slot], watcher.OpenedAt));
             File.WriteAllText(Path.Combine(outFolder, "patches.jsonl"), string.Join("\n", rows) + "\n");
             RestepFiles.PublishResult(outFolder, ResultText(plan, outcome));
             stdout.WriteLine($"wrote {outFolder}: {watcher.PatchCount} patches of {watcher.LeafCount} leaves, {plan.Members.Count} nets");

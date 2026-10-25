@@ -110,6 +110,8 @@ namespace Evosim.Nursery
         public sealed class Layout
         {
             public readonly List<(double x, double z)> Centres = new List<(double x, double z)>();
+            /// <summary>The ring's turn this tank drew, radians: the angle of patch 0 (D236's plan stands on it). 0 without patches.</summary>
+            public double Turn;
             public readonly List<(float x, float z, float radius, int patch)> Leaves = new List<(float x, float z, float radius, int patch)>();
         }
 
@@ -234,7 +236,10 @@ namespace Evosim.Nursery
                         $"the leaf patches reach {patches.RingMetres + patches.RadiusMetres} m from the axis (ring {patches.RingMetres} m and radius {patches.RadiusMetres} m), beyond the glass at {tank} m"));
                 turn = 2d * Math.PI * rng.NextFloat();
                 if (layout != null)
+                {
+                    layout.Turn = turn;
                     for (int p = 0; p < patches.Count; p++) layout.Centres.Add(LeafPatches.Centre(tank, patches.RingMetres, patches.Count, turn, p));
+                }
             }
 
             var leaves = new List<Organism>(count);
@@ -379,6 +384,10 @@ namespace Evosim.Nursery
             var lines = new string[seeds.Count];
             // D182: with patches, every seed's layout is printed, whether or not it failed.
             var layouts = LeafPatchesSet == null ? null : new (string line, double gap, double glass, double free)?[seeds.Count];
+            // D236: with switching patches, each seed's plan and the check that every fresh complement can be laid.
+            Recipe.SwitchingSetting switching = LeafSwitchingSet;
+            var plans = switching == null ? null : new (string line, LeafSwitchPlan plan)?[seeds.Count];
+            int complementsRefused = 0, complementsChecked = 0;
             Parallel.For(0, seeds.Count, new ParallelOptions { MaxDegreeOfParallelism = _o.Threads }, k =>
             {
                 (string name, ulong seed) = seeds[k];
@@ -398,6 +407,39 @@ namespace Evosim.Nursery
                         return;
                     }
                     if (layout != null) layouts[k] = LeafPatches.Describe(name, layout, world.TankRadiusMetres, config.LeafScentRangeMetres);
+                    if (switching != null && layout != null)
+                    {
+                        var switcher = new LeafSwitcher(_recipe.Leaves.Patches, _leafPool, config, seed, world.TankRadiusMetres, _o.Seconds,
+                            layout.Turn, LeafSwitcher.DealtOf(layout.Leaves), sim.Floor);
+                        LeafSwitchPlan plan = switcher.Schedule.Plan;
+                        plans[k] = (LeafSwitcher.Describe(name, plan), plan);
+                        foreach (LeafSwitch s in plan.Switches)
+                        {
+                            // A world of its own for each: the tank empty but for the complement, the placer and the floor as an episode has them.
+                            var fresh = new World(config, seed);
+                            fresh.BirthsHeld = true;
+                            var freshSim = new Simulation(fresh, seed, _o.Dt, stepsPerMetabolic, 1, null);
+                            try
+                            {
+                                System.Threading.Interlocked.Increment(ref complementsChecked);
+                                int refused = switcher.LayComplementForCheck(fresh, s);
+                                if (refused > 0)
+                                {
+                                    System.Threading.Interlocked.Increment(ref complementsRefused);
+                                    lines[k] = $"  {name}: switch {s.Index} (at {s.Time:0} s): {refused} leaves of its fresh complement found no place";
+                                }
+                            }
+                            catch (InvalidDataException e)
+                            {
+                                System.Threading.Interlocked.Increment(ref complementsRefused);
+                                lines[k] = $"  {name}: switch {s.Index} (at {s.Time:0} s): its fresh complement does not fit: {e.Message}";
+                            }
+                            finally
+                            {
+                                freshSim.Dispose();
+                            }
+                        }
+                    }
 
                     float bed = -config.WorldDepthMetres;
                     int placed = 0;
@@ -433,6 +475,22 @@ namespace Evosim.Nursery
                 if (laid.Length > 0)
                     Console.WriteLine(FormattableString.Invariant(
                         $"leaf patches over {laid.Length} laid seeds: nearest gap {laid.Min(l => l.gap):0.0} to {laid.Max(l => l.gap):0.0} m, edge to glass {laid.Min(l => l.glass):0.0} to {laid.Max(l => l.glass):0.0} m, smell-free share {laid.Min(l => l.free):0.00} to {laid.Max(l => l.free):0.00}"));
+            }
+            if (plans != null)
+            {
+                Recipe.SwitchingSetting sw = switching;
+                Console.WriteLine(
+                    FormattableString.Invariant($"switching patches (D236): the fed disc regrows a leaf {sw.RegrowAfterSeconds} s after it leaves the living, and every {sw.PeriodSeconds} s the fed disc and the other wither over {sw.WitherOverSeconds} s ") +
+                    FormattableString.Invariant($"and the other disc is fed by a fresh complement at a new angle at least {sw.MinimumTurnDegrees} degrees from the one that withered, over {_o.Seconds} s episodes. ") +
+                    "Per seed: the first fed disc, and for each switch its time, the new opening's angle and centre, the angle turned and the distance between the two centres.");
+                foreach (var pl in plans) if (pl != null) Console.WriteLine(pl.Value.line);
+                var every = plans.Where(pl => pl != null).SelectMany(pl => pl.Value.plan.Switches).ToArray();
+                Console.WriteLine(every.Length == 0
+                    ? "switching patches: no switch falls inside an episode"
+                    : FormattableString.Invariant($"switching patches over {plans.Count(pl => pl != null)} laid seeds: {every.Length} switches, turned {every.Min(s => s.TurnDegrees):0.0} to {every.Max(s => s.TurnDegrees):0.0} degrees, ") +
+                      FormattableString.Invariant($"centres {every.Min(s => s.CentreDistance):0.0} to {every.Max(s => s.CentreDistance):0.0} m apart"));
+                Console.WriteLine($"switching patches: {complementsChecked} fresh complements laid in worlds built for the check, {complementsRefused} refused");
+                leafFailures += complementsRefused;
             }
             foreach (string line in lines) if (line != null) Console.WriteLine(line);
             Console.WriteLine($"leaf placement: {seeds.Count} seeds ({generations} generations of {_o.Draws} draws, {exam.Length} exam episodes), " +

@@ -40,7 +40,7 @@ namespace Evosim.Nursery.Tests
         // ------------------------------------------------------------------ the section
 
         /// <summary>
-        /// Every recipe on file, and the hash the nursery build before the section gave it (HEAD ff3fecbb's Evosim.Nursery.dll, and r59 step 6's 4e9b22b2 for the -w4 and leaf-drag recipes, D185's move's --check for the -w5 ones, reading each
+        /// Every recipe on file, and the hash the nursery build before the section gave it (HEAD ff3fecbb's Evosim.Nursery.dll, and r59 step 6's 4e9b22b2 for the -w4 and leaf-drag recipes, D185's move's --check for the -w5 ones, round 62's move's --check for brain2-w7, reading each
         /// with <c>Recipe.Read</c>). A recipe without leaves is written without the section, so each hashes as it did.
         /// </summary>
         [Theory]
@@ -76,6 +76,7 @@ namespace Evosim.Nursery.Tests
         [InlineData("brain2-w5-t16-hold.json", "aeac25e1db1b58d8800de4a72e00884fdefb717f389eeb2221c9fdafed19fec0")]
         [InlineData("brain2-w4.json", "a9bb4c84eb47a38f0187ff9ff2949a7d7d7b745ef531ee6304c00ab2565070f2")]
         [InlineData("brain2-w5.json", "b45716afab91a524d8e42954a71bd491f2ae56dc298421ad93255547253f5001")]
+        [InlineData("brain2-w7.json", "742c8ec75fd53c7f0e27c0f39b1a9fd1b6d207ac09595f0e07ec8f70b6f1ef62")]
         [InlineData("brain2.json", "ef0743270c7c48a3ea671320892302b23482e63432391e0e54d3e4ec4a19d61a")]
         [InlineData("leaf-drag-off.json", "fb0fc19381dc0782b6bba7548beca7a9276881ba642d0200019a95af97f83f5a")]
         [InlineData("leaf-drag-skin-0p05.json", "c48e7a64a7eb66a8ed757f9c48ed6194686ee691d632ccabf5204a594feb1648")]

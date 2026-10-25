@@ -1,0 +1,21 @@
+path	weight	run	id	body	ownEaten
+../r59-direction-tops/direction-sparse-g33-47.json	0.05	leaf-direction-sparse	g33.47	0	443.1
+../r59-direction-tops/direction-sparse-g22-27.json	0.05	leaf-direction-sparse	g22.27	0	437.3
+../r59-direction-tops/direction-sparse-g33-30.json	0.05	leaf-direction-sparse	g33.30	0	434.1
+../r59-direction-tops/direction-sparse-g33-37.json	0.05	leaf-direction-sparse	g33.37	0	423.1
+../r59-direction-tops/direction-sparse-g31-19.json	0.05	leaf-direction-sparse	g31.19	0	420.0
+../r59-direction-tops/direction-sparse-g30-40.json	0.05	leaf-direction-sparse	g30.40	0	396.9
+../r59-direction-tops/direction-sparse-g16-2.json	0.05	leaf-direction-sparse	g16.2	0	387.4
+../r59-direction-tops/direction-sparse-g14-31.json	0.05	leaf-direction-sparse	g14.31	0	384.4
+../r59-direction-tops/direction-sparse-g12-35.json	0.05	leaf-direction-sparse	g12.35	0	381.2
+../r59-direction-tops/direction-sparse-g15-36.json	0.05	leaf-direction-sparse	g15.36	0	378.6
+direction-sparse-g33-47-blade.json	0.05	leaf-direction-sparse	g33.47-blade	0	
+direction-sparse-g22-27-blade.json	0.05	leaf-direction-sparse	g22.27-blade	0	
+direction-sparse-g33-30-blade.json	0.05	leaf-direction-sparse	g33.30-blade	0	
+direction-sparse-g33-37-blade.json	0.05	leaf-direction-sparse	g33.37-blade	0	
+direction-sparse-g31-19-blade.json	0.05	leaf-direction-sparse	g31.19-blade	0	
+direction-sparse-g30-40-blade.json	0.05	leaf-direction-sparse	g30.40-blade	0	
+direction-sparse-g16-2-blade.json	0.05	leaf-direction-sparse	g16.2-blade	0	
+direction-sparse-g14-31-blade.json	0.05	leaf-direction-sparse	g14.31-blade	0	
+direction-sparse-g12-35-blade.json	0.05	leaf-direction-sparse	g12.35-blade	0	
+direction-sparse-g15-36-blade.json	0.05	leaf-direction-sparse	g15.36-blade	0	

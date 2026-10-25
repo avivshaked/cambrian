@@ -740,6 +740,39 @@ namespace Evosim.Core.Tests
             }
         }
 
+        /// <summary>
+        /// The digest of <see cref="BitingWorld"/>'s state after each of 400 steps, dial on and dial off, recorded at 91795444, the build
+        /// before D236's leaf-food counter (Organism.FoodFromLeavesJoules) and before the switching tank's WitherForTank. With the variable
+        /// EVOSIM_CE_DIGEST_RECORD naming a file, the test writes the digests there instead of comparing.
+        /// </summary>
+        private const string BitingWorldDigests =
+            "on 03ba92ab45bc204a7c899b977c904edfe3b63b49df84328ed9206e7ea7322ce0 off f3c0cde918f4e572461dea7dadf026496c5855132b29c39973a2e3ff0daf75b0";
+
+        [Fact]
+        public void ABitingWorldStepsToTheStatesItSteppedToBeforeTheLeafFoodCounter()
+        {
+            string Digest(bool on)
+            {
+                World world = BitingWorld(on);
+                using (var sha = SHA256.Create())
+                {
+                    RunBites(world, 400, step =>
+                    {
+                        byte[] state = StateOf(world);
+                        sha.TransformBlock(state, 0, state.Length, null, 0);
+                    });
+                    sha.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                    return BitConverter.ToString(sha.Hash).Replace("-", "").ToLowerInvariant();
+                }
+            }
+
+            string digests = $"on {Digest(true)} off {Digest(false)}";
+            _output.WriteLine(digests);
+            string record = Environment.GetEnvironmentVariable("EVOSIM_CE_DIGEST_RECORD");
+            if (!string.IsNullOrEmpty(record)) { File.WriteAllText(record, digests); return; }
+            Assert.Equal(BitingWorldDigests, digests);
+        }
+
         [Fact]
         public void TheMatterAndEnergyBooksCloseOverAFewHundredStepsOfADialOnWorldWithBites()
         {
@@ -2334,6 +2367,116 @@ namespace Evosim.Core.Tests
         }
 
         private const string PinnedDialOffDigest = "EOxfRGP4KCEMErOdqsb5lYm3EWC4ujTP2Xr8y8L2Qu4=";
+
+        // ------------------------------------------------------------------------ Organism.FoodFromLeavesJoules (the nursery's "eaten" under contact eating)
+
+        [Fact]
+        public void ABiteOnALeafAddsToTheBitersLeafFoodWhatItAddsToTheWorldsLeafTotal()
+        {
+            RunConfig config = Stage(on: true);
+            var world = new World(config, seed: 3);
+            world.Inoculate(Leaf(2), 1, -1f);
+            world.Inoculate(Hunter(ConsumerIntake), 1, -1f);
+            Organism leaf = world.Living[0];
+            Organism hunter = world.Living[1];
+            Assert.True(leaf.HasPhotosyntheticTissue);
+            Assert.Equal(0d, hunter.FoodFromLeavesJoules);
+
+            world.SetContacts(Touching(hunter, 0, leaf, 1));
+            world.ApplyMouth(1f);
+
+            _output.WriteLine($"world total {world.BiteKeptFromLeavesJoules:R}, hunter {hunter.FoodFromLeavesJoules:R}");
+            Assert.True(world.BiteKeptFromLeavesJoules > 0d, "the fixture should feed");
+            Assert.Equal(world.BiteKeptFromLeavesJoules, hunter.FoodFromLeavesJoules);
+            Assert.Equal(hunter.BiteKeptJoules, hunter.FoodFromLeavesJoules);
+            Assert.Equal(0d, leaf.FoodFromLeavesJoules);
+
+            // And it is cumulative: a second bite adds to both by the same amount.
+            double world1 = world.BiteKeptFromLeavesJoules, hunter1 = hunter.FoodFromLeavesJoules;
+            world.SetContacts(Touching(hunter, 0, leaf, 1));
+            world.ApplyMouth(1f);
+            Assert.True(world.BiteKeptFromLeavesJoules > world1);
+            Assert.Equal(world.BiteKeptFromLeavesJoules - world1, hunter.FoodFromLeavesJoules - hunter1, 12);
+        }
+
+        [Fact]
+        public void ABiteOnABodyWithoutPhotosyntheticTissueAndABiteOnRemainsAddNothingToLeafFood()
+        {
+            // A body with no photosynthetic tissue.
+            RunConfig config = Stage(on: true);
+            var world = new World(config, seed: 3);
+            world.Inoculate(Fixtures.ArmedBox(half: 0.3f), 1, -1f);
+            world.Inoculate(Hunter(ConsumerIntake), 1, -1f);
+            Organism box = world.Living[0];
+            Organism hunter = world.Living[1];
+            Assert.False(box.HasPhotosyntheticTissue);
+
+            world.SetContacts(Touching(hunter, 0, box, 0));
+            world.ApplyMouth(1f);
+
+            Assert.True(world.BiteKeptFromOthersJoules > 0d, "the fixture should feed");
+            Assert.True(hunter.BiteKeptJoules > 0d);
+            Assert.Equal(0d, hunter.FoodFromLeavesJoules);
+            Assert.Equal(0d, world.BiteKeptFromLeavesJoules);
+
+            // Remains.
+            Cut cut = CutOffLimbs();
+            double before = cut.Hunter.FoodFromLeavesJoules;
+            double keptBefore = cut.Hunter.BiteKeptJoules;
+            double remainsBefore = cut.World.BiteKeptFromRemainsJoules;
+            cut.World.SetContacts(Touching(cut.Hunter, 0, cut.First, 0));
+            cut.World.ApplyMouth(0.3f);
+
+            Assert.True(cut.World.BiteKeptFromRemainsJoules > remainsBefore, "the fixture should feed on the remains");
+            Assert.True(cut.Hunter.BiteKeptJoules > keptBefore);
+            Assert.Equal(before, cut.Hunter.FoodFromLeavesJoules);
+        }
+
+        [Fact]
+        public void LeafFoodSummedOverEveryBodyEverEqualsTheWorldsLeafTotalAndStaysZeroWithTheDialOff()
+        {
+            World world = BitingWorld(on: true);
+            RunBites(world, 400);
+
+            double sum = world.Living.Sum(c => c.FoodFromLeavesJoules) + world.Dead.Sum(c => c.FoodFromLeavesJoules);
+            _output.WriteLine($"{world.Living.Count} living, {world.Dead.Count} dead: summed {sum:R} against the world's {world.BiteKeptFromLeavesJoules:R}");
+            Assert.True(world.BiteKeptFromLeavesJoules > 0d, "nothing was kept from leaves");
+            AssertRelative(world.BiteKeptFromLeavesJoules, sum, 1e-9, "the per-body counters against the world's total");
+
+            World off = BitingWorld(on: false);
+            RunBites(off, 400);
+            Assert.Equal(0d, off.BiteKeptFromLeavesJoules);
+            Assert.All(off.Living.Concat(off.Dead), c => Assert.Equal(0d, c.FoodFromLeavesJoules));
+        }
+
+        [Fact]
+        public void LeafFoodIsInNeitherTheCheckpointNorTheConfigHash()
+        {
+            string hashBefore = new RunConfig().Hash();
+            World world = BitingWorld(on: true);
+            string configHash = world.Config.Hash();
+            RunBites(world, 150);
+            Assert.Equal(configHash, world.Config.Hash());
+            Assert.Equal(hashBefore, new RunConfig().Hash());
+            Assert.DoesNotContain(typeof(RunConfig).GetProperties(), p => p.Name.Contains("FoodFromLeaves"));
+
+            Assert.Contains(world.Living, c => c.FoodFromLeavesJoules > 0d);
+            Assert.Contains(world.Living, c => c.BiteKeptJoules > 0d);
+
+            // The checkpoint's bytes are the same with the counters at zero, which is what a world that never counted them would write.
+            byte[] counted = StateOf(world);
+            double[] saved = world.Living.Select(c => c.FoodFromLeavesJoules).ToArray();
+            foreach (Organism c in world.Living) Poke(c, "FoodFromLeavesJoules", 0d);
+            byte[] uncounted = StateOf(world);
+            Assert.Equal(counted, uncounted);
+            for (int i = 0; i < saved.Length; i++) Poke(world.Living[i], "FoodFromLeavesJoules", saved[i]);
+
+            // A restored body counts from its restore.
+            World restored = Restored(world.Config, 11, counted);
+            Assert.All(restored.Living, c => Assert.Equal(0d, c.FoodFromLeavesJoules));
+            Assert.Equal(world.Living.Select(c => c.BiteKeptJoules).ToList(), restored.Living.Select(c => c.BiteKeptJoules).ToList());
+            Assert.Equal(counted, StateOf(restored));
+        }
 
         // ------------------------------------------------------------------------ the dial on, pinned
 

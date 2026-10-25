@@ -142,6 +142,19 @@ namespace Evosim.Nursery
         {
             public int Count;
             public double RadiusMetres, RingMetres;
+            /// <summary>D236's switching patches; null (the field absent) is the patches of D182, fixed for the episode.</summary>
+            public SwitchingSetting Switching;
+        }
+
+        /// <summary>
+        /// D236's switching patches, for a tank of two: the fed disc regrows what dies <see cref="RegrowAfterSeconds"/> later, the other holds
+        /// still, and every <see cref="PeriodSeconds"/> the fed disc withers over <see cref="WitherOverSeconds"/> and the other is fed by a fresh
+        /// complement at a new angle on the ring, at least <see cref="MinimumTurnDegrees"/> from the one that withered. Optional, written only
+        /// when set, so that every recipe made before it hashes as it did (LeafSwitching.cs holds the rules).
+        /// </summary>
+        public sealed class SwitchingSetting
+        {
+            public double PeriodSeconds, RegrowAfterSeconds, WitherOverSeconds, MinimumTurnDegrees;
         }
 
         public sealed class SearchSetting
@@ -458,7 +471,10 @@ namespace Evosim.Nursery
             if (patches && l["patches"].Kind != JsonNode.NodeKind.Null)
             {
                 JsonNode p = l["patches"];
-                Exactly(p, "leaves.patches", "count", "radius", "ring");
+                // D236's switching is optional, as the patches are: absent is the fixed discs every recipe before it swam.
+                bool switching = p.Kind == JsonNode.NodeKind.Object && p.Has("switching");
+                if (switching) Exactly(p, "leaves.patches", "count", "radius", "ring", "switching");
+                else Exactly(p, "leaves.patches", "count", "radius", "ring");
                 var pa = new PatchSetting
                 {
                     Count = Int(p, "count", "leaves.patches"),
@@ -470,9 +486,30 @@ namespace Evosim.Nursery
                 if (!(pa.RadiusMetres > 0)) throw Bad("leaves.patches.radius", "must be more than 0 m");
                 if (!(pa.RingMetres >= 0)) throw Bad("leaves.patches.ring", "must be 0 m or more");
                 if (pa.Count > 1 && !(pa.RingMetres > 0)) throw Bad("leaves.patches.ring", "must be more than 0 m when there is more than one patch, or the patches lie on one another");
+                if (switching && p["switching"].Kind != JsonNode.NodeKind.Null) pa.Switching = ReadSwitching(p["switching"], pa);
                 le.Patches = pa;
             }
             r.Leaves = le;
+        }
+
+        private static SwitchingSetting ReadSwitching(JsonNode s, PatchSetting patches)
+        {
+            const string at = "leaves.patches.switching";
+            Exactly(s, at, "period", "regrowAfter", "witherOver", "minimumTurn");
+            var sw = new SwitchingSetting
+            {
+                PeriodSeconds = Num(s, "period", at),
+                RegrowAfterSeconds = Num(s, "regrowAfter", at),
+                WitherOverSeconds = Num(s, "witherOver", at),
+                MinimumTurnDegrees = Num(s, "minimumTurn", at),
+            };
+            if (patches.Count != 2) throw Bad(at, $"is for two patches, and leaves.patches.count is {patches.Count}");
+            if (!(sw.PeriodSeconds > 0)) throw Bad(at + ".period", "must be more than 0 s");
+            if (!(sw.RegrowAfterSeconds >= 0)) throw Bad(at + ".regrowAfter", "must be 0 s or more");
+            if (!(sw.WitherOverSeconds > 0)) throw Bad(at + ".witherOver", "must be more than 0 s");
+            if (sw.WitherOverSeconds > sw.PeriodSeconds) throw Bad(at + ".witherOver", $"is {sw.WitherOverSeconds} s, more than the period of {sw.PeriodSeconds} s");
+            if (!(sw.MinimumTurnDegrees >= 0 && sw.MinimumTurnDegrees <= 180)) throw Bad(at + ".minimumTurn", "must be from 0 to 180 degrees");
+            return sw;
         }
 
         private static void ReadSearch(JsonNode s, Recipe r)
@@ -759,6 +796,16 @@ namespace Evosim.Nursery
                     w.Field("count", Leaves.Patches.Count);
                     w.Field("radius", Leaves.Patches.RadiusMetres);
                     w.Field("ring", Leaves.Patches.RingMetres);
+                    // Written only when set, for the patches' own reason.
+                    if (Leaves.Patches.Switching != null)
+                    {
+                        w.BeginObject("switching");
+                        w.Field("period", Leaves.Patches.Switching.PeriodSeconds);
+                        w.Field("regrowAfter", Leaves.Patches.Switching.RegrowAfterSeconds);
+                        w.Field("witherOver", Leaves.Patches.Switching.WitherOverSeconds);
+                        w.Field("minimumTurn", Leaves.Patches.Switching.MinimumTurnDegrees);
+                        w.EndObject();
+                    }
                     w.EndObject();
                 }
                 w.EndObject();

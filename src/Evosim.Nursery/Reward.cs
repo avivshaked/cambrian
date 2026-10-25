@@ -55,8 +55,10 @@ namespace Evosim.Nursery
         public double Food, Light, Work, Upkeep, Handling, Exuded;
 
         /// <summary>
-        /// Joules the body's mouths kept over the episode, net of the waste returned to the water: its
-        /// <c>Organism.MouthJoules</c> at the end less at the start. A body that died keeps what it ate
+        /// Joules the body's mouths kept over the episode, net of the waste returned to the water. With the world's contact
+        /// eating off, its <c>Organism.MouthJoules</c> at the end less at the start (the corpses it took). With contact eating
+        /// on, its <c>Organism.FoodFromLeavesJoules</c> at the end less at the start: the joules kept from bites on living
+        /// leaves, so a bite on another member is not eaten. A body that died keeps what it ate
         /// before it died. <see cref="Food"/> is the ledger's income from the water and never holds a meal.
         /// </summary>
         public double Eaten;
@@ -64,7 +66,7 @@ namespace Evosim.Nursery
         /// <summary>
         /// The kills the body's bites made: each body or part a world's kill row names it the attacker of (a whole leaf, or a
         /// limb), counted while it lives. With <see cref="Killed"/>, the joules those kills held, and <see cref="Meals"/>, the
-        /// economy steps in which its mouths kept food, they say whether a body stays with what it kills.
+        /// economy steps in which its mouths kept food (those on which the counter <see cref="Eaten"/> reads rose), they say whether a body stays with what it kills.
         /// </summary>
         public double Kills, Killed, Meals;
 

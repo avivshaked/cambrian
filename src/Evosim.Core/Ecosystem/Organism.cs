@@ -142,6 +142,18 @@ namespace Evosim.Core
         public double BiteKeptJoules { get; internal set; }
 
         /// <summary>
+        /// The joules this body has kept from food that came from leaves, over its life: its bites on living bodies with
+        /// photosynthetic tissue under contact eating (D219), the per-body share of
+        /// <see cref="World.BiteKeptFromLeavesJoules"/>. Cumulative. A count, as <see cref="BiteKeptJoules"/> is:
+        /// <see cref="Energy"/> holds the joules. An instrument the nursery reads for "eaten"; it changes no config and no
+        /// world. 0 with contact eating off. <b>Not checkpointed</b>: a restored or resumed body counts from its restore,
+        /// and it is in no config hash. With <see cref="RunConfig.KillSwallowsBody"/> on it misses a leaf the body
+        /// killed and swallowed: <see cref="GutJoules"/> holds a kill as one number, so what the gut digests is not
+        /// told apart by where it came from, and nothing from the gut is counted here.
+        /// </summary>
+        public double FoodFromLeavesJoules { get; internal set; }
+
+        /// <summary>
         /// D232, a kill swallows the body: the joules this body has swallowed from the bodies its bites killed and not
         /// yet digested into <see cref="Energy"/>. Charged matter like the reserve, counted with it wherever the books
         /// count a living body's joules, and not spendable until it is digested. One number, the swallowed tissue and
@@ -902,6 +914,12 @@ namespace Evosim.Core
         /// reserve it had, and the reserve goes to its corpse with its tissue.
         /// </summary>
         Aged = 3,
+
+        /// <summary>
+        /// The nursery's switching leaf tank withered it (D236, <see cref="World.WitherForTank"/>): burnt where it stood, leaving no corpse,
+        /// no remains and no food. No world but that tank has this cause.
+        /// </summary>
+        Withered = 4,
     }
 
     /// <summary>How a creature entered the population. Never conflated — DESIGN.md §5A.6, D021.</summary>

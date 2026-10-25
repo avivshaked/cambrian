@@ -152,6 +152,13 @@ namespace Evosim.Nursery
 
         // ------------------------------------------------------------------ one tank
 
+        /// <summary>
+        /// The cumulative count a member's "eaten" is the change of. With contact eating off, <c>Organism.MouthJoules</c> (the corpse path); with it
+        /// on, <c>Organism.FoodFromLeavesJoules</c> (a bite's meal goes to a counter that does not say what was bitten, so only what came from
+        /// leaves is food in the tank). With it off this is exactly the read the tank always made.
+        /// </summary>
+        private static double EatenCount(Organism o, bool contactEating) => contactEating ? o.FoodFromLeavesJoules : o.MouthJoules;
+
         /// <param name="watcher">
         /// Null for every swim the nursery makes (<see cref="SwimTanks"/> passes none). A watcher (<see cref="ITankWatcher"/>, <c>--restep</c>) only
         /// reads: it is handed an <see cref="EpisodeProbe"/>, never the <see cref="Rng"/>, and with it null the statements below run as they always did.
@@ -195,7 +202,15 @@ namespace Evosim.Nursery
                 // The leaf tank (LeafTank.cs): the water's spent units and the leaves, before the bred bodies so that the placer
                 // finds the leaves where they stand. Drawn on a stream of their own, so a recipe without leaves draws and places
                 // exactly what it did. The leaves are not members: nothing below reads them but the world.
-                if (_leafPool != null) LayLeaves(world, sim, seed, arena.Config);
+                // D236's switching patches (LeafSwitching.cs): the switcher keeps the episode's discs fed and withered. Null for every recipe without
+                // leaves.patches.switching, which then lays what it laid and draws nothing new.
+                LeafSwitcher switcher = null;
+                if (_leafPool != null)
+                {
+                    LeafPatches.Layout laid = LeafSwitchingSet == null ? null : new LeafPatches.Layout();
+                    List<Organism> leaves = LayLeaves(world, sim, seed, arena.Config, laid);
+                    if (laid != null) switcher = NewSwitcher(world, sim, seed, arena, leaves, laid);
+                }
 
                 var focal = new Organism[n];
                 for (int i = 0; i < n; i++)
@@ -219,6 +234,10 @@ namespace Evosim.Nursery
                 var startReserve = new double[n];
                 var standing = new double[n];
                 var startY = new double[n];
+                // What "eaten" reads. With the world's contact eating off, the body's mouths count (Organism.MouthJoules, which the corpse path adds to).
+                // With it on, a bite's meal goes to a counter that does not say what was bitten, so eaten is the joules kept from food that came from
+                // leaves (Organism.FoodFromLeavesJoules): a swimmer that bites another member is not fed by it.
+                bool contactEating = world.Config.ContactEating;
                 var startMouth = new double[n];
                 var lastMouth = new double[n];
                 for (int i = 0; i < n; i++)
@@ -238,8 +257,8 @@ namespace Evosim.Nursery
                     result[i].Landed = true;
                     result[i].Start = o.Energy + o.TissueJoules + o.GestationJoules;
                     startReserve[i] = o.Energy;
-                    startMouth[i] = o.MouthJoules;
-                    lastMouth[i] = o.MouthJoules;
+                    startMouth[i] = EatenCount(o, contactEating);
+                    lastMouth[i] = startMouth[i];
                     standing[i] = Metabolism.StandingWatts(o.Phenotype, arena.Config);
                     startY[i] = o.Point.Position.Y;
                     if (_tankTrace)
@@ -298,6 +317,7 @@ namespace Evosim.Nursery
                 if (watcher != null)
                 {
                     probe = new EpisodeProbe(world, sim, focal);
+                    probe.AttachSchedule(switcher?.Schedule);
                     watcher.Begin(probe);
                 }
 
@@ -331,13 +351,16 @@ namespace Evosim.Nursery
                             result[i].Killed += e.TissueJoulesLost + e.ReserveJoulesLost;
                         }
                     }
+                    // D236: the switching tank's turn, after the world's step and before anything reads the leaves. Nothing without switching.
+                    switcher?.AfterEconomy(world);
                     for (int i = 0; i < n; i++)
                     {
                         Organism o = focal[i];
                         if (o == null || !double.IsNaN(result[i].DiedAt)) continue;
                         if (!world.Living.Contains(o)) { result[i].DiedAt = world.ElapsedSeconds; continue; }
-                        if (o.MouthJoules > lastMouth[i]) result[i].Meals++;
-                        lastMouth[i] = o.MouthJoules;
+                        double eatenNow = EatenCount(o, contactEating);
+                        if (eatenNow > lastMouth[i]) result[i].Meals++;
+                        lastMouth[i] = eatenNow;
                         if (o.HasAbsorptiveTissue)
                         {
                             EnergyLedger l = o.LastLedger;
@@ -391,7 +414,7 @@ namespace Evosim.Nursery
                 }
                 if (_tankTrace)
                     Say(FormattableString.Invariant(
-                        $"    trace corpses seed {seed % 100000}: from leaves {censusCount[0]} ({censusJoules[0]:0.0} J), from members {censusCount[1]} ({censusJoules[1]:0.0} J), other {censusCount[2]} ({censusJoules[2]:0.0} J); bodies eaten {world.BodiesEaten}, corpses from kills {world.CorpsesFromKills}, corpses eaten {world.CorpsesEaten}, module drops {world.ModuleDrops}, carrion placed {world.CorpsesPlaced}, members' mouths kept {Enumerable.Range(0, n).Where(i => focal[i] != null).Sum(i => focal[i].MouthJoules - startMouth[i]):0.0} J"));
+                        $"    trace corpses seed {seed % 100000}: from leaves {censusCount[0]} ({censusJoules[0]:0.0} J), from members {censusCount[1]} ({censusJoules[1]:0.0} J), other {censusCount[2]} ({censusJoules[2]:0.0} J); bodies eaten {world.BodiesEaten}, corpses from kills {world.CorpsesFromKills}, corpses eaten {world.CorpsesEaten}, module drops {world.ModuleDrops}, carrion placed {world.CorpsesPlaced}, members' mouths kept {Enumerable.Range(0, n).Where(i => focal[i] != null).Sum(i => EatenCount(focal[i], contactEating) - startMouth[i]):0.0} J"));
 
                 for (int i = 0; i < n; i++)
                 {
@@ -405,7 +428,7 @@ namespace Evosim.Nursery
                     result[i].Fresh = steps[i] > 0 ? result[i].Fresh / steps[i] : double.NaN;
                     result[i].Turn = turnSteps[i] > 0 ? result[i].Turn / turnSteps[i] : double.NaN;
                     // What the mouth kept. The count is added to only while the body lives, so a body that died holds what it had eaten.
-                    result[i].Eaten = o.MouthJoules - startMouth[i];
+                    result[i].Eaten = EatenCount(o, contactEating) - startMouth[i];
                     if (_tankTrace && i == 0)
                         Say(FormattableString.Invariant($"    trace world: deaths {world.Deaths}, by age {world.DeathsByAge}, parts killed by mouths {world.PartsKilled}, diverged {world.Diverged}"));
                     if (_tankTrace)

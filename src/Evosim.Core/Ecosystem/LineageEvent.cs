@@ -687,6 +687,7 @@ namespace Evosim.Core
                 case DeathCause.Diverged: return "diverged";
                 case DeathCause.Eaten: return "eaten";
                 case DeathCause.Aged: return "aged";
+                case DeathCause.Withered: return "withered";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(cause), cause, "New DeathCause, new lineage.jsonl code — add one " +
