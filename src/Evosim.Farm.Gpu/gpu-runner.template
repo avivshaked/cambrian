@@ -491,6 +491,9 @@ namespace __NS__
         private readonly Col<int> _strayCount;
 
         private readonly Col<int> _gLinks, _gId, _gRank, _gAlive, _gJointed;
+
+        // D220's remains flag, by global slot: the host Creature.Remains, set every block (PackBlock).
+        private readonly Col<int> _gRemains;
         private readonly Col<int> _nOver, _ovSlot, _ovId, _ovPart, _ovHeld, _nHeld, _heldId, _bedGlass;
         private readonly bool _rock;
         private readonly Col<int> _rockTouched;
@@ -664,6 +667,7 @@ namespace __NS__
             int oc = options.OverlapCap;
             _gLinks = G<int>(_gBody, 1, true); _gId = G<int>(_gBody, 1, false); _gRank = G<int>(_gBody, 1, false);
             _gAlive = G<int>(_gBody, 1, true); _gJointed = G<int>(_gBody, 1, false);
+            _gRemains = G<int>(_gBody, 1, false);
             _gTotalMass = G<Real>(_gBody, 1, false);
             _linkMass = G<Real>(_gLink, 1, false);
             _nOver = G<int>(_gBody, 1, true); _ovSlot = G<int>(_gBody, oc, true, -1); _ovId = G<int>(_gBody, oc, true);
@@ -723,7 +727,7 @@ namespace __NS__
             _tileSum = new Scratch<int>(_acc, 1);
             _tileStart = new Scratch<int>(_acc, 1);
             _linkPush = new Scratch<Real>(_acc, 3);
-            _linkFluid = new Scratch<Real>(_acc, 17);
+            _linkFluid = new Scratch<Real>(_acc, 20);   // rows 17-19: D199/D200's force cut
             _linkLimited = new Scratch<int>(_acc, 1);
             _linkFlags = new Scratch<int>(_acc, 1);
             _touchNew = new Scratch<int>(_acc, 1);
@@ -939,7 +943,7 @@ namespace __NS__
                 HasCurrent = w.HasCurrent ? 1 : 0, Accelerating = w.Accelerating ? 1 : 0, Sloped = w.Sloped ? 1 : 0,
                 HasBed = w.HasBed ? 1 : 0, BedRelief = w.BedRelief ? 1 : 0, BedModes = w.BedModes,
                 ShoreOn = w.ShoreOn ? 1 : 0, FadeOn = w.FadeOn ? 1 : 0, ReefCount = w.ReefCount,
-                LimitDrive = w.LimitDrive ? 1 : 0, LimitDrag = w.LimitDrag ? 1 : 0,
+                LimitDrive = w.LimitDrive ? 1 : 0, LimitDrag = w.LimitDrag ? 1 : 0, WeldedDrag = w.WeldedDrag ? 1 : 0,
                 UseRestore = w.UseRestore ? 1 : 0, FloorRestores = w.FloorRestores ? 1 : 0,
                 CreatureContact = w.CreatureContact ? 1 : 0, OffsetTorque = w.OffsetTorque ? 1 : 0,
                 BendAndPower = w.BendAndPower ? 1 : 0, TurningDrag = w.TurningDrag, RockTouch = w.RockTouch ? 1 : 0,
@@ -956,6 +960,7 @@ namespace __NS__
 
                 Omega = (Real)w.Omega, Zeta = (Real)w.Zeta, MaxSep = (Real)w.MaxSep, MaxDv = (Real)w.MaxDv,
                 TankRadius = (Real)w.TankRadius, AxisX = (Real)w.AxisX, AxisZ = (Real)w.AxisZ, CellOverride = 0,
+                SeamL = (Real)w.SeamLength, SeamW = (Real)w.SeamWidth,
                 BedRadius = (Real)w.BedRadius, BedDepth = (Real)w.BedDepth, TiltX = (Real)w.TiltX,
                 TiltZ = (Real)w.TiltZ, Offset = (Real)w.Offset, ShoalHeight = (Real)w.ShoalHeight,
 
@@ -963,7 +968,14 @@ namespace __NS__
                 Overturning = (Real)w.Overturning, PerSecond = (Real)w.PerSecond, Squared = (Real)w.Squared,
                 ShoreDepth = (Real)w.ShoreDepth, ShoreFadeW = (Real)w.ShoreFadeW,
                 HalfThickness = (Real)w.HalfThickness, Fillet = (Real)w.Fillet, ReefFade = (Real)w.ReefFade,
+                CoralCount = w.CoralCount, CoralCellsX = w.CoralCellsX, CoralCellsZ = w.CoralCellsZ,
+                CoralColonyAt = w.CoralColonyAt, CoralPieceAt = w.CoralPieceAt, CoralGridAt = w.CoralGridAt,
+                CoralListAt = w.CoralListAt, CoralFadeGridAt = w.CoralFadeGridAt, CoralFadeListAt = w.CoralFadeListAt,
+                CoralFillet = (Real)w.CoralFillet, CoralFade = (Real)w.CoralFade,
+                CoralFloor = (Real)w.CoralFloor, CoralCell = (Real)w.CoralCell,
+                CoralPeriodX = (Real)w.CoralPeriodX, CoralPeriodZ = (Real)w.CoralPeriodZ,
                 SigmaSloped = w.SigmaSloped, SigmaFlat = w.SigmaFlat, Speed = w.Speed,
+                Ocean = w.Ocean ? 1 : 0, OceanL = w.OceanL, OceanW = w.OceanW, OceanKAt = w.OceanKAt,
 
                 SWorldDepth = w.SWorldDepth, ChemHalf = w.ChemHalf, ScentHalf = w.ScentHalf, EnergyScale = w.EnergyScale,
                 LeafHalf = w.LeafHalf,
@@ -1505,6 +1517,7 @@ namespace __NS__
                 _classes[k].GSlot.Host[local] = -1;
                 _gLinks.Host[g] = 0;
                 _gAlive.Host[g] = 0;
+                _gRemains.Host[g] = 0;
                 _nOver.Host[g] = 0;
                 _nHeld.Host[g] = 0;
                 _active[_committed].Host[g] = 0;
@@ -1553,6 +1566,7 @@ namespace __NS__
                 _base.Nx = _w.Nx; _base.Ny = _w.Ny; _base.Nz = _w.Nz; _base.LayerCount = _w.LayerCount;
                 _base.RefugeLayers = _w.RefugeLayers; _base.LayerStride = _w.LayerStride;
                 _base.CellMetres = _w.CellMetres; _base.FieldTankR = _w.FieldTankR;
+                _base.FieldL = _w.FieldL; _base.FieldW = _w.FieldW;
                 _base.RefugeFraction = _w.RefugeFraction; _base.CellVolume = _w.CellVolume;
                 _base.SplitColumns = _w.SplitColumns ? 1 : 0;
                 _base.LowestAt = _w.LowestAt; _base.IntervalFirstAt = _w.IntervalFirstAt;
@@ -1591,6 +1605,7 @@ namespace __NS__
                 if (ProbeOn) _probeScent[0] += Stopwatch.GetTimestamp() - sc;
             }
             _base.ScentNx = scent == null ? 1 : scent.CellsX;
+            _base.SmellWraps = (scent != null && scent.Wraps) || (_w.LeafScent != null && _w.LeafScent.Wraps) ? 1 : 0;
             _base.ScentNy = scent == null ? 1 : scent.CellsY;
             _base.ScentNz = scent == null ? 1 : scent.CellsZ;
 
@@ -1739,7 +1754,7 @@ namespace __NS__
             _linkPush.Ensure(3 * linkRows);
             // The fluid's rows are links whatever the contact's are: LinkStride a slot.
             long fluidRows = Math.Max(1, (long)WholeStep.LinkStride * gUsed);
-            _linkFluid.Ensure(17 * fluidRows);
+            _linkFluid.Ensure(20 * fluidRows);
             _linkLimited.Ensure(fluidRows);
             _linkFlags.Ensure(linkRows);
             if (_rock)
@@ -1777,6 +1792,14 @@ namespace __NS__
             cfg.Chunks = chunks;
             cfg.Tiles = tiles;
             cfg.CellOverride = (Real)world.ContactCellOverrideMetres;
+
+            // D220: whether any body of this block is remains. A block without any (every block of a world with
+            // the dial off) reads no flag on the card and takes every old path on a test it cannot fail.
+            cfg.AnyRemains = 0;
+            for (int rg = 0; rg < _slots.Used; rg++)
+            {
+                if (_slots.Body[rg] != null && _slots.Body[rg].Remains) { cfg.AnyRemains = 1; break; }
+            }
 
             // The farm switches the instrument on after it builds the solver's config, so it is
             // read from the world being stepped and not from the one the kernels were built for.
@@ -2121,6 +2144,7 @@ namespace __NS__
         private SGlob Glob => new SGlob
         {
             Links = _gLinks.View, Id = _gId.View, Rank = _gRank.View, Alive = _gAlive.View, Jointed = _gJointed.View,
+            Remains = _gRemains.View,
             RankToSlot = _rankToSlot.View, TotalMass = _gTotalMass.View, LinkMass = _linkMass.View,
             NOver = _nOver.View, OvSlot = _ovSlot.View, OvId = _ovId.View, OvPart = _ovPart.View,
             OvHeld = _ovHeld.View, NHeld = _nHeld.View, HeldId = _heldId.View, BedGlass = _bedGlass.View,
@@ -2747,6 +2771,7 @@ namespace __NS__
             _gRank.Host[g] = _slots.Rank[g];
             _gAlive.Host[g] = c.Alive ? 1 : 0;
             _gJointed.Host[g] = c.Jointed ? 1 : 0;
+            _gRemains.Host[g] = c.Remains ? 1 : 0;
             _gTotalMass.Host[g] = (Real)c.TotalMass;
 
             int row = g * WholeStep.LinkStride;

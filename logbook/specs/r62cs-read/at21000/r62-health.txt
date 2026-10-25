@@ -1,0 +1,72 @@
+== round 62 grazer health (D215): born share at 12000,21000; own-kill share per 3000 s from 12000 to 21000 s
+   The own-kill share is a PROXY, an upper bound on the grazers' intake from their own kills: the corpse joules
+   grazers' kills founded (kept at 1 - waste) over every mouth's kept intake. The record does not say which corpse
+   a mouth ate. Accepted for test 3's trend in round 62 (the coordinator, 2026-10-23); its level is not a measurement.
+
+r62cs-w60-6201  (read to 21000 s; joulesPerUnit 100, intakeWasteFraction 0.2)
+   second  living  founded   born born share
+    12000       9        9      0      0.000
+    21000      12       11      1      0.083
+  contact eating (D219-D221): part 2 is the kept intake bitten off the living over all kept intake
+            bin    living J      kept J   share    graz-s
+   12000-15000        13595       13991   0.972     31589
+   15000-18000        20759       21457   0.967     45456
+   18000-21000        20959       22637   0.926     40276
+  test 3 (D222): the living share in 18000-21000 s is 0.926, holds at 0.5
+  trend, reported and not required: the share falls, 0.972 in 12000-15000 s to 0.926 in 18000-21000 s
+
+r62cs-w60-6202  (read to 21000 s; joulesPerUnit 100, intakeWasteFraction 0.2)
+   second  living  founded   born born share
+    12000      16       16      0      0.000
+    21000      15       15      0      0.000
+  contact eating (D219-D221): part 2 is the kept intake bitten off the living over all kept intake
+            bin    living J      kept J   share    graz-s
+   12000-15000        19405       20101   0.965     41502
+   15000-18000        19988       21458   0.931     39042
+   18000-21000        21180       22139   0.957     39406
+  test 3 (D222): the living share in 18000-21000 s is 0.957, holds at 0.5
+  trend, reported and not required: the share falls, 0.965 in 12000-15000 s to 0.957 in 18000-21000 s
+
+r62ce-6201  (read to 21000 s; joulesPerUnit 100, intakeWasteFraction 0.2)
+   second  living  founded   born born share
+    12000       9        9      0      0.000
+    21000      11       11      0      0.000
+  contact eating (D219-D221): part 2 is the kept intake bitten off the living over all kept intake
+            bin    living J      kept J   share    graz-s
+   12000-15000         4456        5325   0.837     28874
+   15000-18000         5094        5948   0.856     37295
+   18000-21000         5382        6906   0.779     36904
+  test 3 (D222): the living share in 18000-21000 s is 0.779, holds at 0.5
+  trend, reported and not required: the share falls, 0.837 in 12000-15000 s to 0.779 in 18000-21000 s
+
+r62ce-6202  (read to 21000 s; joulesPerUnit 100, intakeWasteFraction 0.2)
+   second  living  founded   born born share
+    12000      14       14      0      0.000
+    21000      11       11      0      0.000
+  contact eating (D219-D221): part 2 is the kept intake bitten off the living over all kept intake
+            bin    living J      kept J   share    graz-s
+   12000-15000         7280        8053   0.904     39717
+   15000-18000         6455        7619   0.847     35478
+   18000-21000         4737        5537   0.856     37309
+  test 3 (D222): the living share in 18000-21000 s is 0.856, holds at 0.5
+  trend, reported and not required: the share falls, 0.904 in 12000-15000 s to 0.856 in 18000-21000 s
+
+r62-h6201  (read to 21000 s; joulesPerUnit 100, intakeWasteFraction 0.2)
+   second  living  founded   born born share
+    12000      15       11      4      0.267
+    21000     101       12     89      0.881
+            bin  kills     kill J    intake J   share  kills/g-s    graz-s
+   12000-15000     261      16463       66835   0.246   4.47e-03     58434
+   15000-18000     485      30654      176098   0.174   3.01e-03    161339
+   18000-21000     434      31706      210851   0.150   1.84e-03    235684
+  trend: the share falls, 0.246 in 12000-15000 s to 0.150 in 18000-21000 s
+
+r62-h6202  (read to 21000 s; joulesPerUnit 100, intakeWasteFraction 0.2)
+   second  living  founded   born born share
+    12000      27       18      9      0.333
+    21000     178       18    160      0.899
+            bin  kills     kill J    intake J   share  kills/g-s    graz-s
+   12000-15000     410      25668      100714   0.255   4.80e-03     85504
+   15000-18000     604      38190      217765   0.175   2.77e-03    217978
+   18000-21000     858      46284      335158   0.138   2.09e-03    411306
+  trend: the share falls, 0.255 in 12000-15000 s to 0.138 in 18000-21000 s

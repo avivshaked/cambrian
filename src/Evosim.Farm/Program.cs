@@ -231,6 +231,8 @@ namespace Evosim.Farm
             CheckpointHeader resume = null;
             string resumeSourceRun = null;
             RunConfig config;
+            RunConfig sourceConfig = null;
+            IReadOnlyList<string> cousinChanges = null;
             TricklePoolFiles.Pool pool = null;
 
             if (resumePath != null)
@@ -265,9 +267,36 @@ namespace Evosim.Farm
                         "is the resumed run's own, from " +
                         Path.Combine(resumeSourceRun, TricklePoolFiles.DirectoryName) + ".");
                 }
+
+                // D201: a cousin carries on under an edited copy of the source's config, refused
+                // here, before a directory is made, if it changes anything but the dials a screen
+                // turns. The checkpoint is checked against the source's config, which wrote it.
+                if (!string.IsNullOrEmpty(settings.ResumeConfig) || settings.ResumeTrickleOff)
+                {
+                    RunConfig cousin = CousinConfig.Build(
+                        config, settings.ResumeConfig, settings.ResumeTrickleOff,
+                        out IReadOnlyList<string> changes);
+
+                    // Unchanged, the copy read from the file is still the one stepped, so the test
+                    // that it resumes bit-identical proves the file's round trip as well.
+                    if (changes.Count > 0)
+                    {
+                        sourceConfig = config;
+                        cousinChanges = changes;
+                    }
+
+                    config = cousin;
+                }
             }
             else
             {
+                if (!string.IsNullOrEmpty(settings.ResumeConfig) || settings.ResumeTrickleOff)
+                {
+                    throw new ArgumentException(
+                        "EVOSIM_RESUME_CONFIG and EVOSIM_RESUME_TRICKLE_OFF change a resumed world " +
+                        "and need EVOSIM_RESUME; a founded world takes its settings from the launcher.");
+                }
+
                 config = EnvBinding.BuildConfig(settings);
 
                 // D117. Read, re-serialised in this build's bytes and hashed before the config
@@ -433,6 +462,7 @@ namespace Evosim.Farm
             }
 #endif
             Manifest.RecordReefs(manifest, world.Reefs);
+            Manifest.RecordCoral(manifest, world.Coral);
 
             if (settings.GpuTransport) manifest.Transport = "card";
 
@@ -451,7 +481,9 @@ namespace Evosim.Farm
 
             if (resume != null)
             {
-                RecordResume(manifest, settings, resume, resumePath, resumeSourceRun, config);
+                RecordResume(
+                    manifest, settings, resume, resumePath, resumeSourceRun, sourceConfig ?? config,
+                    sourceConfig != null ? config : null, cousinChanges);
             }
 
             Manifest.Write(dir, manifest, ending: null);
@@ -483,7 +515,8 @@ namespace Evosim.Farm
                 FarmConsole.Out.WriteLine(
                     "resumed from:  " + resumePath + " at " +
                     resume.Seconds.ToString("0.#", CultureInfo.InvariantCulture) + " s" +
-                    (manifest.ResumedWithSourceMismatch ? "  (SOURCE MISMATCH)" : ""));
+                    (manifest.ResumedWithSourceMismatch ? "  (SOURCE MISMATCH)" : "") +
+                    (manifest.ResumedAsCousin ? "  (COUSIN of config " + manifest.ResumeSourceConfigHash + ")" : ""));
             }
 
             if (manifest.CheckpointEverySeconds > 0d)
@@ -523,8 +556,22 @@ namespace Evosim.Farm
         /// </remarks>
         private static void RecordResume(
             RunManifest manifest, EnvSettings settings, CheckpointHeader resume, string resumePath,
-            string sourceRun, RunConfig config)
+            string sourceRun, RunConfig config, RunConfig cousin, IReadOnlyList<string> cousinChanges)
         {
+            // D201: a cousin's own config hash is the manifest's, and its source's is kept beside
+            // it with every field that changed; the checkpoint is checked below against the
+            // source's, which is the config that wrote it.
+            if (cousin != null)
+            {
+                manifest.ResumedAsCousin = true;
+                manifest.ResumeSourceConfigHash = config.Hash();
+                manifest.ResumeCousinChanges = new List<string>(cousinChanges);
+
+                FarmConsole.Error.WriteLine(
+                    "resuming as a cousin of " + Path.GetFileName(sourceRun) + " (config " +
+                    config.Hash() + " -> " + cousin.Hash() + "): " + string.Join("; ", cousinChanges) + ".");
+            }
+
             // The directory's name, not its path: a run is named for the instant it started and
             // its settings hash, and that name joins to the arm's own directory wherever the tree
             // has since been moved to.
@@ -666,7 +713,8 @@ namespace Evosim.Farm
             device.Dispose();
             throw new ArgumentException(
                 "EVOSIM_GPU_TRANSPORT is on and this world's snow is not one the card carries: the " +
-                "card takes a tank's grid under the streams with the hoisted terms, and this world " +
+                "card takes a tank's grid under the streams with the hoisted terms, or the box's under the open ocean " +
+                "on a shaped floor with its phase tables and no shore, and this world " +
                 "has " + (world.Nutrients is GridField ? "another transport path" : "no grid for its snow") +
                 ". Turn the setting off.");
         }
@@ -768,6 +816,16 @@ namespace Evosim.Farm
                 bestSpeedAt = restored.BestSpeedAt;
                 assayFired = restored.AssayFired;
             }
+
+            // The run header's line for the intake's origin books: from 0 s in a world founded here, and
+            // from the checkpoint's second in one restored from layout 19 or older, so the reader of a
+            // run knows the six intake totals cover only part of the world.
+            FarmConsole.Out.WriteLine(
+                "intake books:  from " +
+                world.IntakeOriginBooksFromSeconds.ToString("0.#", CultureInfo.InvariantCulture) + " s" +
+                (world.IntakeOriginBooksFromSeconds > 0d
+                    ? "  (restored from an older layout: earlier kills read as carrion)"
+                    : ""));
 
             // The bodies this run did not admit itself: a resumed run's inherited roster (and, in a
             // founded one, nobody). Their genomes go into this directory's genomes.jsonl.gz first,

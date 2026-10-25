@@ -310,7 +310,7 @@ namespace Evosim.Farm
             bool recordPositions = dir != null && dir.RecordsPositions;
             int positionCount = 0;
 
-            if (recordPositions) EnsurePositionCapacity(world.Living.Count);
+            if (recordPositions) EnsurePositionCapacity(world.Living.Count + world.Remains.Count);
 
             var alivePerPatch = new int[Math.Max(1, (int)world.Config.HorizontalPatches)];
 
@@ -460,6 +460,26 @@ namespace Evosim.Farm
                 {
                     belowWorld++;
                     if (creatureAbsorptive) absorptiveBelowWorld++;
+                }
+            }
+
+            // D220: the remains lying in the water, after the living, each with its flags and a new bit for remains.
+            // Positions only: every other column of this row is about the living. The list is empty with the dial
+            // off, so the row is the bytes it was.
+            if (recordPositions)
+            {
+                for (int i = 0; i < world.Remains.Count; i++)
+                {
+                    Organism dead = world.Remains[i];
+                    if (!sim.TryRootPosition(dead.Id, out Float3 deadRoot)) continue;
+
+                    _positionIds[positionCount] = dead.Id;
+                    _positionX[positionCount] = deadRoot.X;
+                    _positionY[positionCount] = deadRoot.Y;
+                    _positionZ[positionCount] = deadRoot.Z;
+                    _positionFlags[positionCount] = PoseRecorder.GuildFlags(dead);
+
+                    positionCount++;
                 }
             }
 
@@ -885,6 +905,22 @@ namespace Evosim.Farm
                 .Field("unitsEaten", world.UnitsEaten)
                 .Field("corpsesEaten", world.CorpsesEaten)
                 .Field("healingJoules", world.HealingJoules)
+
+                // The intake's origin books: joules kept (after the waste) from corpses the eater's own bite
+                // made, another body's bite made, and no bite made, cumulative, then the same three over eaters
+                // that carry attack as well as intake. A reader differences them into a window. The lineage
+                // death row carries each body's own three (iok, iak, ic).
+                .Field("intakeOwnKillJ", world.IntakeOwnKillJoules)
+                .Field("intakeOtherKillJ", world.IntakeOtherKillJoules)
+                .Field("intakeCarrionJ", world.IntakeCarrionJoules)
+                .Field("mouthedIntakeOwnKillJ", world.MouthedIntakeOwnKillJoules)
+                .Field("mouthedIntakeOtherKillJ", world.MouthedIntakeOtherKillJoules)
+                .Field("mouthedIntakeCarrionJ", world.MouthedIntakeCarrionJoules)
+
+                // The second the six totals above begin at: 0 in a world founded on this build, and the
+                // checkpoint's second in one restored from layout 19 or older, whose standing corpses
+                // carry no killer. A read that compares the totals across runs differences from here.
+                .Field("intakeOriginFrom", world.IntakeOriginBooksFromSeconds)
                 .Field("attackShare", attackShare)
                 .Field("intakeShare", intakeShare)
                 .Field("protectionShare", protectionShare);
@@ -940,6 +976,64 @@ namespace Evosim.Farm
                 {
                     w.Field("immigrated", world.Immigrated)
                         .Field("immigrantsRefused", world.ImmigrantsRefused);
+                }
+
+                // D206. Only in a world that keeps its plants' matter, so every other stats row is
+                // the bytes it was: the spent units bodies and corpses hold now, and the store's
+                // three running totals, kept, charged back by fixation, and released to the water.
+                if (world.Config.PlantsKeepMatter)
+                {
+                    w.Field("heldUnits", world.HeldUnits)
+                        .Field("heldTotal", world.HeldTotal)
+                        .Field("rechargedTotal", world.RechargedTotal)
+                        .Field("heldReleasedTotal", world.HeldReleasedTotal);
+                }
+
+                // D212. Only in a world whose corpses spoil, so every other stats row is the bytes it was:
+                // the joules spoiled so far, cumulative, which left as heat and went to the spent field.
+                if (world.Config.CorpseHalfLifeSeconds > 0f)
+                {
+                    w.Field("corpseSpoiledTotal", world.CorpseSpoiledTotal);
+                }
+
+                // D219, D220. Only in a world whose bites feed, so every other stats row is the bytes it was:
+                // joules biting parts kept from the living bodies with and without photosynthetic tissue, the bites'
+                // waste to the water, and the tissue healing re-bought, each cumulative. Then the remains (D220):
+                // the joules kept from bites on them, the remains standing (a count, and their tissue plus store in
+                // joules, both as they stand) and the remains closed with the joules burnt at the close (cumulative).
+                if (world.Config.ContactEating)
+                {
+                    w.Field("biteKeptLeaves", world.BiteKeptFromLeavesJoules)
+                        .Field("biteKeptOthers", world.BiteKeptFromOthersJoules)
+                        .Field("biteWaste", world.BiteWasteJoules)
+                        .Field("healTissue", world.HealTissueJoules)
+                        .Field("biteKeptRemains", world.BiteKeptFromRemainsJoules)
+                        .Field("remainsStanding", world.RemainsStanding)
+                        .Field("remainsJoules", world.RemainsStandingJoules)
+                        .Field("remainsClosed", world.RemainsClosed)
+                        .Field("remainsClosedJoules", world.RemainsClosedJoules);
+
+                    // D224. Only with the bite taking the store too: the joules a bite on a living body took from the
+                    // bitten body's reserve and gestation account, cumulative.
+                    if (world.Config.BiteTakesStore)
+                    {
+                        w.Field("biteStore", world.BiteStoreTakenJoules);
+                    }
+
+                    // D227. Only with the bite damage dial off 1: the mouth's blows that did damage, and those that
+                    // finished the part they touched, cumulative.
+                    if (world.Config.BiteDamageScale != 1f)
+                    {
+                        w.Field("mouthBlows", world.MouthBlows)
+                            .Field("mouthBlowsFinishing", world.MouthBlowsFinishing);
+                    }
+                }
+
+                // D214. Only in a world that measures the reach from the mouth points, so every other stats
+                // row is the bytes it was: the bodies measured from their centre for want of a point.
+                if (world.Config.IntakeReachFromMouth)
+                {
+                    w.Field("mouthPointFallbacks", world.MouthPointFallbacks);
                 }
 
                 long[] harnessPhaseMs = sim.HarnessPhaseMs();

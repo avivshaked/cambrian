@@ -35,7 +35,8 @@ namespace Evosim.Farm.Gpu
 
         public struct GridParams
         {
-            public int Nx, Ny, Nz, Split, LayerStride;
+            // Wrap is 1 in the box, whose faces and fluxes cross its seams, and 0 in a tank.
+            public int Nx, Ny, Nz, Split, LayerStride, Wrap;
         }
 
         private readonly Accelerator _acc;
@@ -48,6 +49,8 @@ namespace Evosim.Farm.Gpu
 
         private Action<Index1D, ArrayView<double>, ArrayView<double>, ArrayView<double>, ArrayView<byte>,
             ArrayView<float>, ArrayView<double>, ArrayView<double>, EdgeParams> _edgeK;
+        private Action<Index1D, ArrayView<double>, ArrayView<double>, ArrayView<double>, ArrayView<byte>,
+            ArrayView<float>, ArrayView<double>, ArrayView<double>, EdgeParams> _oceanEdgeK;
         private Action<Index1D, ArrayView<double>, ArrayView<double>, ArrayView<double>, ArrayView<byte>,
             ArrayView<int>, ArrayView<double>, ArrayView<double>, ArrayView<double>, GridParams> _assembleK;
         private Action<Index1D, ArrayView<byte>, ArrayView<double>, ArrayView<double>, ArrayView<double>,
@@ -71,6 +74,7 @@ namespace Evosim.Farm.Gpu
         private GridParams _grid;
         private float _cellVolume;
         private int _cells;
+        private bool _ocean;
 
         // The grid's stock, pinned and registered with the driver as page-locked for as long as the
         // grid hands this array, so its copies are direct transfers (GpuColumns' remarks).
@@ -128,10 +132,11 @@ namespace Evosim.Farm.Gpu
 
             ReleaseTables();
 
+            _ocean = plan.Ocean;
             _grid = new GridParams
             {
                 Nx = plan.Nx, Ny = plan.Ny, Nz = plan.Nz, Split = plan.SplitColumns ? 1 : 0,
-                LayerStride = plan.LayerStride,
+                LayerStride = plan.LayerStride, Wrap = plan.Ocean ? 1 : 0,
             };
             _cells = plan.Live.Length;
             _cellVolume = plan.CellVolume;
@@ -140,8 +145,11 @@ namespace Evosim.Farm.Gpu
             for (int a = 0; a < 3; a++)
             {
                 PotentialTransportAxis axis = axes[a];
-                _cols[a] = _acc.Allocate1D(axis.Columns);
-                _deps[a] = _acc.Allocate1D(axis.Depths);
+
+                // The box ocean's column table is its phases and its depth table the sines at each
+                // edge's mapped height (PotentialTransportAxis); the streams' are their own terms.
+                _cols[a] = _acc.Allocate1D(plan.Ocean ? axis.OceanPhases : axis.Columns);
+                _deps[a] = _acc.Allocate1D(plan.Ocean ? axis.LayerSines : axis.Depths);
                 _bed[a] = _acc.Allocate1D(axis.Bed ?? new double[PotentialTransportPlan.BedTerms]);
                 _open[a] = _acc.Allocate1D(Bytes(axis.Open));
                 _reef[a] = _acc.Allocate1D(axis.ReefFade ?? new float[1]);
@@ -166,11 +174,14 @@ namespace Evosim.Farm.Gpu
             _qz = _acc.Allocate1D<double>(_cells);
             _rowMax = _acc.Allocate1D<double>(plan.Nx * plan.Ny);
             _rowMaxHost = new double[plan.Nx * plan.Ny];
-            _inst = _acc.Allocate1D<double>(PotentialTransportPlan.InstantLength);
+            _inst = _acc.Allocate1D<double>(plan.Instant);
 
             _edgeK ??= On(_acc.LoadImplicitlyGroupedKernel<Index1D, ArrayView<double>, ArrayView<double>,
                 ArrayView<double>, ArrayView<byte>, ArrayView<float>, ArrayView<double>, ArrayView<double>,
                 EdgeParams>(EdgeKernel, _group));
+            _oceanEdgeK ??= On(_acc.LoadImplicitlyGroupedKernel<Index1D, ArrayView<double>, ArrayView<double>,
+                ArrayView<double>, ArrayView<byte>, ArrayView<float>, ArrayView<double>, ArrayView<double>,
+                EdgeParams>(OceanEdgeKernel, _group));
             _assembleK ??= On(_acc.LoadImplicitlyGroupedKernel<Index1D, ArrayView<double>, ArrayView<double>,
                 ArrayView<double>, ArrayView<byte>, ArrayView<int>, ArrayView<double>, ArrayView<double>,
                 ArrayView<double>, GridParams>(AssembleKernel, _group));
@@ -198,8 +209,8 @@ namespace Evosim.Farm.Gpu
 
             for (int a = 0; a < 3; a++)
             {
-                _edgeK((int)_edges[a].Length, _cols[a].View, _deps[a].View, _bed[a].View, _open[a].View,
-                    _reef[a].View, _inst.View, _edges[a].View, _edgeParams[a]);
+                (_ocean ? _oceanEdgeK : _edgeK)((int)_edges[a].Length, _cols[a].View, _deps[a].View, _bed[a].View,
+                    _open[a].View, _reef[a].View, _inst.View, _edges[a].View, _edgeParams[a]);
             }
 
             _assembleK(_cells, _edges[0].View, _edges[1].View, _edges[2].View, _live.View, _lowest.View,
@@ -446,6 +457,97 @@ namespace Evosim.Farm.Gpu
             edges[e] = M(value, h);
         }
 
+        // GridField.HorizontalEdgePlane (components 0 and 2) and VerticalEdgePlane (1) at one edge of
+        // the box's ocean, through CurrentField's PotentialAt with the phase table, MapFrom,
+        // OceanLayersAt and OceanPotentialUnit. A seam's edge is the copy of the edge it joins, which
+        // is that edge's own arithmetic at that edge's indices; the planes' loops copy it, here it is
+        // computed again, and the two are the same bits. phases is the column's cos χ, sin χ table
+        // and sines the sin θ at each edge's mapped height (PotentialTransportAxis).
+        private static void OceanEdgeKernel(Index1D idx, ArrayView<double> phases, ArrayView<double> sines,
+            ArrayView<double> bed, ArrayView<byte> open, ArrayView<float> reef, ArrayView<double> inst,
+            ArrayView<double> edges, EdgeParams s)
+        {
+            int e = idx;
+            int nx = s.Nx, ny = s.Ny, nz = s.Nz;
+            double h = s.H;
+            int c, sineIdx, source;
+            float y;
+
+            if (s.Component == 0)
+            {
+                int nzp = nz + 1;
+                int k = e % nzp; int t = e / nzp; int i = t % nx; int j = t / nx;
+                if (j == 0 || j == ny) { edges[e] = 0d; return; }
+                if (k == nz) k = 0;
+                source = (j * nx + i) * nzp + k;
+                c = i * nzp + k;
+                sineIdx = (j - 1) * s.Stride + c;
+                y = -(float)M(j, h);
+            }
+            else if (s.Component == 2)
+            {
+                int k = e % nz; int t = e / nz; int i = t % (nx + 1); int j = t / (nx + 1);
+                if (j == 0 || j == ny) { edges[e] = 0d; return; }
+                if (i == nx) i = 0;
+                source = (j * (nx + 1) + i) * nz + k;
+                c = i * nz + k;
+                sineIdx = (j - 1) * s.Stride + c;
+                y = -(float)M(j, h);
+            }
+            else
+            {
+                int nzp = nz + 1;
+                int k = e % nzp; int t = e / nzp; int i = t % (nx + 1); int j = t / (nx + 1);
+                if (i == nx) i = 0;
+                if (k == nz) k = 0;
+                source = (j * (nx + 1) + i) * nzp + k;
+                c = i * nzp + k;
+                sineIdx = j * s.Stride + c;
+                y = -(float)M(j + 0.5, h);
+            }
+
+            if (open[source] == 0) { edges[e] = 0d; return; }
+
+            // MapFrom's clamp and coefficients.
+            int bb = c * PotentialTransportPlan.BedTerms;
+            double yy = y;
+            if (yy > 0d) yy = 0d;
+            else if (yy < bed[bb]) yy = bed[bb];
+            double stretch = bed[bb + 1];
+            double scale = M(yy, s.DepthMetres) / bed[bb + 2];
+            double a = M(scale, bed[bb + 3]);
+            double b = M(scale, bed[bb + 4]);
+
+            // OceanLayersAt's shapes from its sine, by its recurrence.
+            double sn = sines[sineIdx];
+            double twice = M(2d, 1d - M(M(2d, sn), sn));
+            double s1 = sn;
+            double s2 = M(twice, s1) + sn;
+            double s3 = M(twice, s2) - s1;
+
+            // OceanPotentialUnit with the column's cos χ and sin χ read.
+            double ay = 0d;
+            int p = c * PotentialTransportPlan.OceanPhaseTerms;
+
+            for (int v = 0, k = 0; v < 25; v++, k += 3, p += 2)
+            {
+                double alpha = M(inst[k], s1) + M(inst[k + 1], s2) + M(inst[k + 2], s3);
+                double beta = M(inst[75 + k], s1) + M(inst[75 + k + 1], s2) + M(inst[75 + k + 2], s3);
+                ay = ay + (M(phases[p], alpha) - M(phases[p + 1], beta));
+            }
+
+            float ayf = (float)ay;
+
+            // The sloped one-form of (0, ay, 0), the scale, and the coral's fade, each a float product.
+            float px = MF((float)(0d + M(a, (double)ayf)), s.Scale);
+            float py = MF((float)M(stretch, (double)ayf), s.Scale);
+            float pz = MF((float)(0d + M(b, (double)ayf)), s.Scale);
+
+            float value = s.Component == 0 ? px : s.Component == 1 ? py : pz;
+            if (s.HasReef != 0) value = MF(value, reef[source]);
+            edges[e] = M(value, h);
+        }
+
         // GridField.AssembleFaces at one cell of a tank.
         private static void AssembleKernel(Index1D idx, ArrayView<double> ex, ArrayView<double> ey,
             ArrayView<double> ez, ArrayView<byte> live, ArrayView<int> lowest, ArrayView<double> fx,
@@ -466,13 +568,13 @@ namespace Evosim.Farm.Gpu
             int ezBelowEast = ezBelowWest + nz;
             int ezEast = (iy * (nx + 1) + ix) * nz + nz;
 
-            int east = ix + 1 == nx ? -1 : (iy * nx + ix + 1) * nz + iz;
+            int east = ix + 1 == nx ? (g.Wrap != 0 ? iy * nx * nz + iz : -1) : (iy * nx + ix + 1) * nz + iz;
             if (east >= 0 && live[east] == 0) east = -1;
             fx[cell] = east >= 0
                 ? ey[eyEast + iz] + ez[ezEast + iz] - ey[eyEast + iz + 1] - ez[ezBelowEast + iz]
                 : 0d;
 
-            int front = iz + 1 == nz ? -1 : row + iz + 1;
+            int front = iz + 1 == nz ? (g.Wrap != 0 ? row : -1) : row + iz + 1;
             if (front >= 0 && live[front] == 0) front = -1;
             fz[cell] = front >= 0
                 ? ex[exBelow + iz + 1] + ey[eyEast + iz + 1] - ex[exHere + iz + 1] - ey[eyWest + iz + 1]
@@ -493,7 +595,9 @@ namespace Evosim.Farm.Gpu
             int ix = r % nx; int iy = r / nx;
             int row = (iy * nx + ix) * nz;
             int above = row - nx * nz;
-            int westRow = ix == 0 ? -1 : (iy * nx + ix - 1) * nz;
+            int west = ix == 0 ? (g.Wrap != 0 ? nx - 1 : -1) : ix - 1;
+            int westRow = west < 0 ? -1 : (iy * nx + west) * nz;
+            int backOfFirst = g.Wrap != 0 ? nz - 1 : -1;
             double largest = 0d;
 
             for (int iz = 0; iz < nz; iz++)
@@ -502,7 +606,8 @@ namespace Evosim.Farm.Gpu
                 if (live[cell] == 0) continue;
                 double sum = Math.Abs(fx[cell]) + Math.Abs(fz[cell]) + Math.Abs(fy[cell]);
                 if (westRow >= 0) sum += Math.Abs(fx[westRow + iz]);
-                if (iz > 0) sum += Math.Abs(fz[row + iz - 1]);
+                int back = iz == 0 ? backOfFirst : iz - 1;
+                if (back >= 0) sum += Math.Abs(fz[row + back]);
                 if (iy > 0) sum += Math.Abs(fy[above + iz]);
                 double outflow = M(sum, scale);
                 if (outflow > largest) largest = outflow;
@@ -528,7 +633,7 @@ namespace Evosim.Farm.Gpu
             {
                 // A face onto the glass or a dead cell carries nothing (AssembleFaces), so a
                 // negative face always has a live cell east of it.
-                int east = ix + 1 == nx ? cell : (iy * nx + ix + 1) * nz + iz;
+                int east = ix + 1 == nx ? (g.Wrap != 0 ? iy * nx * nz + iz : cell) : (iy * nx + ix + 1) * nz + iz;
                 qx[cell] = M(M(q > 0d ? stock[cell] : stock[east], q), scale);
             }
             else
@@ -539,7 +644,7 @@ namespace Evosim.Farm.Gpu
             q = fz[cell];
             if (q != 0d)
             {
-                int front = iz + 1 == nz ? cell : row + iz + 1;
+                int front = iz + 1 == nz ? (g.Wrap != 0 ? row : cell) : row + iz + 1;
                 qz[cell] = M(M(q > 0d ? stock[cell] : stock[front], q), scale);
             }
             else

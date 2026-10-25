@@ -618,6 +618,161 @@ namespace Evosim.Core
             return cut;
         }
 
+        /// <summary>
+        /// D220, contact eating: the part at <paramref name="partIndex"/> and everything that hangs from it, as a body
+        /// of its own, re-rooted at that part.
+        /// </summary>
+        /// <param name="partIndex">The part that becomes the new root.</param>
+        /// <param name="map">
+        /// Filled with, for each part of the copy, its index in this body: ascending, and starting at
+        /// <paramref name="partIndex"/>. The direction <see cref="WithoutSubtrees"/> reports and
+        /// <see cref="Developer.MatchParts"/> produces.
+        /// </param>
+        /// <remarks>
+        /// <para>
+        /// <b>A surgery, as <see cref="WithoutSubtrees"/> is, and the same one seen from the other side.</b> A part's
+        /// geometry is absolute in the creature's own frame, so cutting a limb moves nothing: the copy keeps every
+        /// part's position, rotation and extents, and only the indices close up. What changes is the new root: it
+        /// has no parent, so its joint, its anchors and its torque capacity are those of a root (a fixed joint, zero
+        /// anchors, no power), and every depth is counted from it. Cutting at the root is the whole body, unchanged.
+        /// </para>
+        /// <para>
+        /// This body and the copy cut off it partition it: the copy's parts and
+        /// <c>WithoutSubtrees(drop)</c> with only <paramref name="partIndex"/> marked together name every part
+        /// once.
+        /// </para>
+        /// </remarks>
+        public Phenotype SubtreeAt(int partIndex, out int[] map)
+        {
+            if (partIndex < 0 || partIndex >= _parts.Count)
+            {
+                throw new System.ArgumentOutOfRangeException(
+                    nameof(partIndex), partIndex, "A body of " + _parts.Count + " parts has no part " + partIndex + ".");
+            }
+
+            var member = new bool[_parts.Count];
+            member[partIndex] = true;
+            int count = 1;
+
+            for (int i = partIndex + 1; i < _parts.Count; i++)
+            {
+                int parent = _parts[i].ParentIndex;
+                if (parent >= partIndex && member[parent])
+                {
+                    member[i] = true;
+                    count++;
+                }
+            }
+
+            map = new int[count];
+            int at = 0;
+            for (int i = partIndex; i < _parts.Count; i++) if (member[i]) map[at++] = i;
+
+            return Select(map);
+        }
+
+        /// <summary>
+        /// A copy holding only the parts <paramref name="map"/> names, in that order: part <c>k</c> of the copy is
+        /// part <c>map[k]</c> of this body. D220, contact eating.
+        /// </summary>
+        /// <param name="map">
+        /// Strictly ascending part indices. The first is the copy's root, and every other entry's parent is also in
+        /// the list: a body is a tree, and a part with no parent but the root is not a part of it.
+        /// </param>
+        /// <remarks>
+        /// <para>
+        /// <b>One function for every cut of remains, and a checkpoint's way back.</b> A cut-off limb is this body
+        /// selected at a subtree; the remains of a remains are that selected again; and a checkpoint stores the
+        /// body a remains was cut from and one composed map, which selects the same parts from the same source.
+        /// Selecting twice gives the copy selecting once with the maps composed gives, to the bit, because each part
+        /// is copied from its source part by itself and a re-rooting depends on that part alone.
+        /// </para>
+        /// <para>
+        /// A part whose parent is not in the list is re-rooted only if it is the first; one that is not the first
+        /// refuses the call. A part that is already a root is copied as it is.
+        /// </para>
+        /// </remarks>
+        public Phenotype Select(int[] map)
+        {
+            if (map == null) throw new System.ArgumentNullException(nameof(map));
+            if (map.Length == 0) throw new System.ArgumentException("A selection of no parts is not a body.", nameof(map));
+
+            var moved = new int[_parts.Count];
+            for (int i = 0; i < moved.Length; i++) moved[i] = -1;
+
+            for (int k = 0; k < map.Length; k++)
+            {
+                int s = map[k];
+                if (s < 0 || s >= _parts.Count || (k > 0 && s <= map[k - 1]))
+                {
+                    throw new System.ArgumentException(
+                        "A selection names strictly ascending parts of the body; entry " + k + " is " + s + ".", nameof(map));
+                }
+
+                moved[s] = k;
+            }
+
+            int rootDepth = _parts[map[0]].Depth;
+
+            var cut = new Phenotype
+            {
+                Limits = Limits.Clone(),
+                PrunedForVolume = PrunedForVolume,
+                PrunedForDepth = PrunedForDepth,
+                PrunedForParts = PrunedForParts,
+                PrunedForReach = PrunedForReach,
+                ScaledBy = ScaledBy,
+                LifespanScale = LifespanScale,
+                Brain = Brain,
+            };
+
+            for (int k = 0; k < map.Length; k++)
+            {
+                PhenotypePart part = _parts[map[k]];
+                bool asRoot = k == 0 && part.ParentIndex >= 0;
+
+                int parent = part.ParentIndex < 0 || asRoot ? -1 : moved[part.ParentIndex];
+                if (k > 0 && parent < 0)
+                {
+                    throw new System.ArgumentException(
+                        "Part " + map[k] + " is selected without its parent " + part.ParentIndex + ".", nameof(map));
+                }
+
+                cut.Add(new PhenotypePart
+                {
+                    ParentIndex = parent,
+                    SourceNode = part.SourceNode,
+                    Depth = part.Depth - rootDepth,
+                    HalfExtents = part.HalfExtents,
+                    Position = part.Position,
+                    DistanceFromRoot = part.DistanceFromRoot,
+                    Rotation = part.Rotation,
+                    Mirrored = part.Mirrored,
+                    CellTypeId = part.CellTypeId,
+                    ShapeId = part.ShapeId,
+                    Volume = part.Volume,
+                    SurfaceArea = part.SurfaceArea,
+                    JointType = asRoot ? JointType.Fixed : part.JointType,
+                    JointLimits = asRoot ? System.Array.Empty<Float2>() : part.JointLimits,
+                    Power = asRoot ? 0f : part.Power,
+                    Drive = asRoot ? default(DriveGenes) : part.Drive,
+                    Lift = part.Lift,
+                    Attack = part.Attack,
+                    Intake = part.Intake,
+                    Protection = part.Protection,
+                    Toughness = part.Toughness,
+                    BuoyancyOffset = part.BuoyancyOffset,
+                    ParentAnchorLocal = asRoot ? default(Float3) : part.ParentAnchorLocal,
+                    ChildAnchorLocal = asRoot ? default(Float3) : part.ChildAnchorLocal,
+                    Neurons = part.Neurons,
+                    PathId = part.PathId,
+                });
+            }
+
+            cut.MeasureSilhouette();
+            return cut;
+        }
+
         internal PhenotypePart Add(PhenotypePart part)
         {
             part.Index = _parts.Count;

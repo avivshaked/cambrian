@@ -1,0 +1,43 @@
+runrec: 2026-10-24-023204-a99d10a5: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-23-090508-c5c9f416: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-24-023204-a99d10a5: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-23-090508-c5c9f416: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-24-023204-a99d10a5: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-23-090508-c5c9f416: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+== travel: bodies seen 600 s or more in 12000-24000 s, sampled every 100 s
+
+r62ce-6201  (runs/r62ce-6201\2026-10-24-023204-a99d10a5)
+   guild     bodies  path m/ks    net m    far
+   grazer       128       48.9      9.8   0.00
+   leaf       50887       19.2      8.7   0.00
+   other       1517       20.0      9.5   0.00
+
+r62-h6201  (runs/r62-h6201\2026-10-23-090508-c5c9f416)
+   guild     bodies  path m/ks    net m    far
+   grazer       498       23.8      8.2   0.00
+   leaf       22624       18.9      8.7   0.00
+   other        218       21.7      9.5   0.00
+
+r62ce-6202  (runs/r62ce-6202\2026-10-24-023204-a99d10a5)
+   guild     bodies  path m/ks    net m    far
+   grazer       151       45.8     11.2   0.00
+   leaf       57588       19.2      8.6   0.00
+   other       1568       20.2      8.9   0.00
+
+r62-h6202  (runs/r62-h6202\2026-10-23-090508-c5c9f416)
+   guild     bodies  path m/ks    net m    far
+   grazer       934       20.2      7.2   0.00
+   leaf       22257       19.1      8.3   0.00
+   other        190       18.9      6.8   0.00
+
+r62ce-6203  (runs/r62ce-6203\2026-10-24-023204-a99d10a5)
+   guild     bodies  path m/ks    net m    far
+   grazer       130       49.1     10.7   0.00
+   leaf       38410       19.5      9.3   0.00
+   other        900       20.4      9.5   0.00
+
+r62-h6203  (runs/r62-h6203\2026-10-23-090508-c5c9f416)
+   guild     bodies  path m/ks    net m    far
+   grazer       193       40.8      9.8   0.00
+   leaf       21762       19.1      9.3   0.00
+   other         44       19.4      7.6   0.00

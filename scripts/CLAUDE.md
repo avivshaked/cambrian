@@ -112,6 +112,12 @@ A job meant to stay off the card dot-sources `scripts/card/nvcuda-guard.ps1`, se
 `scripts/tests/card-watch-end/run.ps1` checks offline that the watch ends on the job's end line and not
 on its own first line copied into the job's log.
 
+`card-run.ps1` moves its caller into its own checkout (`Set-Location`), so call it as `pwsh -NoProfile -File`,
+never with `&` from a shell that persists between commands. A read of the config hash with `-ConfigHash
+0000000000000000` stops a founded run at its preflight. Its driver watch then runs on to its deadline, about
+17 minutes on, and every card script refuses the machine as busy until then. The watch
+belongs to a run that has ended, so it can be stopped by its process id (2026-10-19).
+
 ## Gotchas
 
 - **A morphology share is contaminated by the population floor.** `MinimumPopulation` (40)

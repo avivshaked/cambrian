@@ -133,8 +133,14 @@ namespace Evosim.Farm
         /// <summary>Flag bit 2: a part of the developed body is photosynthetic (a leaf).</summary>
         public const int PhotosyntheticBit = 4;
 
+        /// <summary>
+        /// Flag bit 3: the body is remains (D220), a dead body or a cut-off limb lying in the water for a window.
+        /// <c>PositionsRow.RemainsBit</c>'s twin, and set only in a world run with contact eating.
+        /// </summary>
+        public const int RemainsBit = 8;
+
         /// <summary>Every flag bit version 2 defines. A writer refuses any other.</summary>
-        public const int AllFlagBits = AbsorptiveBit | JointedBit | PhotosyntheticBit;
+        public const int AllFlagBits = AbsorptiveBit | JointedBit | PhotosyntheticBit | RemainsBit;
 
         /// <summary>What <see cref="PoseBody.Flags"/> reads on a version 1 stream, which carries none.</summary>
         public const int FlagsNotRecorded = -1;
@@ -474,7 +480,7 @@ namespace Evosim.Farm
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(flags), flags,
-                    "A body's flags are the three guild bits and nothing else.");
+                    "A body's flags are the three guild bits, the remains bit and nothing else.");
             }
 
             Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, flags,
@@ -506,7 +512,7 @@ namespace Evosim.Farm
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(flags), flags,
-                    "A body's flags are the three guild bits and nothing else.");
+                    "A body's flags are the three guild bits, the remains bit and nothing else.");
             }
 
             Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, flags, reserveSeconds, breedFraction,
@@ -532,7 +538,7 @@ namespace Evosim.Farm
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(flags), flags,
-                    "A body's flags are the three guild bits and nothing else.");
+                    "A body's flags are the three guild bits, the remains bit and nothing else.");
             }
 
             Put(id, x, y, z, qx, qy, qz, qw, bodyFraction, flags, reserveSeconds, breedFraction, reserveJoules, dof, joints);

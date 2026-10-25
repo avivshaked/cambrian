@@ -43,7 +43,10 @@ The root file's rules still apply. The entries below were moved word for word, s
   header reads founders anywhere and the trickle off, while its `configHash` and rows are round
   52's). Read a resumed run's world from its `config.json` and hash, never from its header. A resume across any of the
   four hashes is refused unless `EVOSIM_ALLOW_SOURCE_MISMATCH`, and is then a cousin the
-  manifest marks. And the last checkpoint after a `STOP` is the second the run stopped at,
+  manifest marks. A dial screen (D201) resumes under an edited copy of the source's config with
+  `-ResumeConfig` and `-TrickleOff` (the trickle's rate and its pool share to 0): only the
+  economy and mouth dials and the cell types may differ, anything else is refused by name, and run.json's `resumedFrom` carries `cousin`,
+  `sourceConfigHash` and `changes`. The readers stitch a cousin to its source like any resume. And the last checkpoint after a `STOP` is the second the run stopped at,
   because the file is written after the report row and before the stop is acted on.
   **A checkpoint carried everything the solver reads and not everything a sense reads,
   until `StateVersion` 6** (2026-09-23): `Organism.PartDamage`, the health each part had
@@ -281,12 +284,21 @@ The root file's rules still apply. The entries below were moved word for word, s
   round 52's extension (`r52-s1y`, four threads on the nursery's freed lane) held round 53's seed 3
   from 05:49 to 06:42, until the watch saw no seed running and stopped the extension. Start a run
   beside a queue only once the queue's last seed is running, or stop it at the seed's end.
+- **A running farm holds its checkout's build open.** The process keeps `artifacts/Evosim.Farm/bin/` and the
+  libraries copied there locked until it ends, so any build in that checkout that touches the farm, its tests
+  included, fails to copy them (MSB3027, "locked by Evosim.Farm"). Build and test in another worktree while
+  a run of this one goes on (2026-10-19, the square's founding beside the card's ocean).
 - **The farm hashes the source above its working directory, not the source it was built from.**
   `Manifest` finds the repository by walking up from the process's working directory (or takes
   `EVOSIM_REPO_ROOT`) and hashes `src/` there. A worktree and the main tree differ in carriage
   returns, as `simHash` does, so round 49's film windows, run from the main tree on the round's
   own exe, named all three hashes as differing from the run's, and V1 asks for none (2026-09-26;
   the windows read FAITHFUL on every row all the same). Run a window, a resume or a check from
-  the checkout the run was launched from. And **stopping a background Bash task leaves its script
-  running**: the task's handle went and both of its `bash.exe` went on to launch the next farm
+  the checkout the run was launched from. **A worktree's own edits can move its hashes too.** Git
+  Bash's `sed -i` writes a CRLF file back with bare LF, and the Write tool makes a new file with LF,
+  while a checkout of the same commit writes CRLF. On 2026-10-19 `CurrentField.cs`, the new
+  `CurrentField.Ocean.cs` and `SolverConfigWorld.cs` carried bare LF in r62-base's worktree. Edit
+  through a script that keeps each file's endings, and before a launch scan the hashed folders for
+  bare LF. The tree hash reads raw bytes, so such a file changes `coreHash` while `git status` stays clean, since
+  autocrlf compares without endings; `git ls-files --eol src` names it as `w/lf`. And **stopping a background Bash task leaves its script running**: the task's handle went and both of its `bash.exe` went on to launch the next farm
   process. List them by command line and stop them by id.

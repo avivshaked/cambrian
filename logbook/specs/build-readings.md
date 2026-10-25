@@ -442,3 +442,18 @@ cost (the cost side is closed, the prize side is open; `mean m/s` reads the wate
   did. B1's birth overhead now returns to the water in double. That is a different rounding of the matter at
   every birth, so a world recorded on an earlier build may part from its replay at its first birth; I have not
   measured where.
+- **On `mouth-point`, from `44712ce3` (2026-10-23) to 2026-10-24, the worktree's `coreHash` is not a checkout's.**
+  In `scratch/wt-mouthpoint`, `src/Evosim.Core/Ecosystem/Corpse.cs` sat on disk in bare LF while every other Core
+  file was CRLF. The tree hash reads raw bytes, and `git status` showed the tree clean. Every run launched from that
+  worktree in that span carries the LF hash: `r62ce`, `r62cs`, the `cefix-s4` fixtures, and the identity, window
+  and probe runs of both screens. A fresh checkout of the same commit hashes differently, though its code is the
+  same and only the endings differ:
+  - `bc99c43b` and `4935a4b8` (`r62ce`, the fixture of 08:08): `5a66b5fd` in the worktree, `3e5f17b4` in a checkout;
+  - `d8e4f2e2` to `7e0811da` (`r62cs`, the D224 fixture, every identity run): `75e257f4` in the worktree,
+    `f5965ee9` in a checkout.
+
+  The file was rewritten in CRLF on the evening of 2026-10-24, with no commit, since git sees no change in it. So a
+  run of the D224 build launched after that names `f5965ee9`, and resuming an `r62cs` checkpoint on it is refused
+  without `EVOSIM_ALLOW_SOURCE_MISMATCH`. `card-group.ps1` sets that by itself. On this build a card resume parts
+  from its run anyway, at the first row (`logbook/specs/r62cs-prereg/identity.md`). To check a commit's hash both
+  ways, use `git ls-files --eol src` and a digest of the commit's blobs in CRLF.

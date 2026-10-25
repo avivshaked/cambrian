@@ -15,7 +15,10 @@
 # worlds in -Arms' order (EVOSIM_MIGRATE_EVERY and EVOSIM_MIGRATE_COUNT); 0 runs them unjoined, which is how
 # round 58's isolated arm runs beside the connected one. -CheckpointEvery writes checkpoints (EVOSIM_CHECKPOINT_EVERY).
 # A migrating group resumes only from a migrating group's own runs, one a world at one second (the farm refuses
-# anything else). Every world runs
+# anything else). A resumed group may carry on as D201's cousins: -ResumeConfig names an edited copy of the source's
+# config.json, one for all or one a world ('none' for none), and -TrickleOff turns every world's trickle off
+# (EVOSIM_RESUME_CONFIG, EVOSIM_RESUME_TRICKLE_OFF; the farm refuses any field but the dials D201 allows).
+# -WaitForManifestSeconds (120 by default) is how long every world has to write run.json. Every world runs
 # in single precision at group -Group, with -Transport putting its snow transport on the card, -Scent its scent's
 # fill (EVOSIM_GPU_SCENT=1) and -Concurrent the card's concurrent mode (EVOSIM_GPU_CONCURRENT=1). The process steps
 # them on a thread each over one device, a stream each, and Core's one pool of -Threads (16 by default) serves all
@@ -78,6 +81,13 @@ param(
     [string]$AllowBeside = '',
     [string]$Exe = '',
     [string]$RunsRoot = 'scratch\card\runs',
+    # D201, a resumed group only: an edited copy of the source's config.json to carry on under, one for every world or a
+    # comma list of one a world ('none' for a world under its source's own config; '-' too, but a list that starts with
+    # it is read as a parameter name on a -File command line), and -TrickleOff for every world.
+    [string]$ResumeConfig = '',
+    [switch]$TrickleOff,
+    # How long every world has to write run.json: a world of thousands resumed from a late checkpoint loads for a minute or more.
+    [ValidateRange(30, 1800)][int]$WaitForManifestSeconds = 120,
     [switch]$Probe,
     # cpu runs the same group on ILGPU's CPU accelerator, off the card (nvcuda-guard.ps1): CUDA_VISIBLE_DEVICES=-1.
     [ValidateSet('cuda', 'cpu')][string]$Device = 'cuda')
@@ -151,6 +161,16 @@ if ($founding) {
 } else {
     if ($sourceList.Count -ne 1 -and $sourceList.Count -ne $armList.Count) { Say "card group STOPPED: -ResumeFrom names $($sourceList.Count) sources for $($armList.Count) worlds (one for all, or one a world)"; exit 1 }
     if ($Launcher -or $Seeds) { Say 'card group STOPPED: -Launcher and -Seeds found a group, and a resumed world reads both from its source'; exit 1 }
+}
+$cousinList = @($ResumeConfig -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
+if ($founding -and ($cousinList.Count -gt 0 -or $TrickleOff)) { Say 'card group STOPPED: -ResumeConfig and -TrickleOff change a resumed world, and this group is founded'; exit 1 }
+if ($cousinList.Count -gt 0 -and $cousinList.Count -ne 1 -and $cousinList.Count -ne $armList.Count) { Say "card group STOPPED: -ResumeConfig names $($cousinList.Count) configs for $($armList.Count) worlds (one for all, or one a world)"; exit 1 }
+$cousinPaths = @()
+foreach ($c in $cousinList) {
+    if ($c -eq '-' -or $c -eq 'none') { $cousinPaths += ''; continue }
+    $cp = Under $c
+    if (-not (Test-Path -LiteralPath $cp)) { Say "card group STOPPED: no config at $cp"; exit 1 }
+    $cousinPaths += (Resolve-Path -LiteralPath $cp).Path
 }
 
 if ($AllowBeside) {
@@ -229,6 +249,11 @@ for ($k = 0; $k -lt $armList.Count; $k++) {
         $s.EVOSIM_ALLOW_SOURCE_MISMATCH = 1
         $s.EVOSIM_RESUME = $sources[[math]::Min($k, $sources.Count - 1)]
         $s.EVOSIM_RESUME_AT = AtOf $k
+        if ($cousinPaths.Count -gt 0) {
+            $cousin = $cousinPaths[[math]::Min($k, $cousinPaths.Count - 1)]
+            if ($cousin) { $s.EVOSIM_RESUME_CONFIG = $cousin }
+        }
+        if ($TrickleOff) { $s.EVOSIM_RESUME_TRICKLE_OFF = 1 }
     }
     $s.EVOSIM_DIGEST_EVERY = 100
     $s.EVOSIM_ENGINE = 'gpu'
@@ -239,7 +264,7 @@ for ($k = 0; $k -lt $armList.Count; $k++) {
     $s.EVOSIM_REPO_ROOT = $buildRoot
     $s.EVOSIM_RUNS_ROOT = $runs
     $s.EVOSIM_SECONDS = EndOf $k
-    Say "  ${arm}: $(if ($founding) { "founded with seed $($seedList[$k])" } else { "resumes $($sources[[math]::Min($k, $sources.Count - 1)]) at $(AtOf $k) s" }), to $(EndOf $k) s"
+    Say "  ${arm}: $(if ($founding) { "founded with seed $($seedList[$k])" } else { "resumes $($sources[[math]::Min($k, $sources.Count - 1)]) at $(AtOf $k) s$(if ($s.Contains('EVOSIM_RESUME_CONFIG')) { " under $($s.EVOSIM_RESUME_CONFIG)" })$(if ($TrickleOff) { ', trickle off' })" }), to $(EndOf $k) s"
     $s.EVOSIM_SEED = if ($founding) { [uint64]$seedList[$k] } else { 1 }
     $s.EVOSIM_THREADS = $Threads
     $s.EVOSIM_WALL_MINUTES = $WallMinutes
@@ -332,14 +357,14 @@ function Stop-All([string]$why, [int]$code) {
 }
 
 # Every world's run.json, each naming this process: the pin is checked on the process they name.
-$d = (Get-Date).AddMinutes(2)
+$d = (Get-Date).AddSeconds($WaitForManifestSeconds)
 $seen = @{}
 while ((Get-Date) -lt $d -and $seen.Count -lt $armList.Count -and -not $p.HasExited) {
     foreach ($arm in $armList) { $m = Manifest $arm; if ($m) { $seen[$arm] = $m.Json } }
     if ($seen.Count -lt $armList.Count) { Start-Sleep -Seconds 1 }
 }
 if ($seen.Count -lt $armList.Count) {
-    $why = if ($p.HasExited) { "the farm exited (code $($p.ExitCode)) before every world wrote run.json; read $out.err and each world's .err" } else { 'not every world wrote run.json within 2 minutes' }
+    $why = if ($p.HasExited) { "the farm exited (code $($p.ExitCode)) before every world wrote run.json; read $out.err and each world's .err" } else { "not every world wrote run.json within $WaitForManifestSeconds s" }
     if (-not $p.HasExited) { Stop-All $why 1 }
     # The farm is gone before a world began, so nothing is left on the card to watch; without this the watch
     # waits out its deadline and the next launch's busy check finds it.

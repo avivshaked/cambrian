@@ -160,6 +160,11 @@ namespace Evosim.Farm
         public double ReefCoverTarget;
         public double ReefCoverGot;
 
+        /// <summary>The coral's colonies, pieces and digest (<c>CoralGeometry.Digest</c>); 0 and none without coral.</summary>
+        public int CoralColonies;
+        public int CoralPieces;
+        public ulong CoralDigest;
+
         /// <summary>D102's ratio: the water the streams were built to, read off the built world.</summary>
         /// <remarks>
         /// 1 in a box and in every tank whose axes balance, which is every recording before the
@@ -214,6 +219,22 @@ namespace Evosim.Farm
 
         /// <summary>Which of the four hashes differed, for the manifest to say so in words.</summary>
         public string ResumeSourceNote;
+
+        /// <summary>
+        /// D201: whether the run carried on under an edited copy of its source's config
+        /// (<c>EVOSIM_RESUME_CONFIG</c>, <c>EVOSIM_RESUME_TRICKLE_OFF</c>) that changed a dial.
+        /// </summary>
+        /// <remarks>
+        /// Such a run is a cousin of its source by construction. Its <c>configHash</c> is its own,
+        /// and the source's is <see cref="ResumeSourceConfigHash"/>.
+        /// </remarks>
+        public bool ResumedAsCousin;
+
+        /// <summary>The source run's config hash, under <see cref="ResumedAsCousin"/>.</summary>
+        public string ResumeSourceConfigHash;
+
+        /// <summary>Every field the cousin changed, as <c>group.key: source -> cousin</c>.</summary>
+        public List<string> ResumeCousinChanges;
 
         /// <summary>
         /// What was true as of the last metabolic step, for the error path.
@@ -459,6 +480,21 @@ namespace Evosim.Farm
             manifest.ReefCoverGot = reefs.CoverGot;
         }
 
+        /// <summary>
+        /// Records the coral from the built world: its counts and the digest of every colony and
+        /// piece to the bit, which the theatre and a replay check their coral against. Nothing
+        /// without coral, so every other manifest is unchanged.
+        /// </summary>
+        public static void RecordCoral(RunManifest manifest, CoralRock coral)
+        {
+            if (manifest == null) throw new ArgumentNullException(nameof(manifest));
+            if (coral == null || coral.Count == 0) return;
+
+            manifest.CoralColonies = coral.Count;
+            manifest.CoralPieces = coral.Coral.PieceCount;
+            manifest.CoralDigest = coral.Coral.Digest();
+        }
+
         /// <summary>Writes <c>run.json</c> into the run directory: the first call, or the second.</summary>
         public static void Write(RunDirectory dir, RunManifest m, RunEnding ending)
         {
@@ -612,6 +648,14 @@ namespace Evosim.Farm
             w.Field("reefCover", m.ReefCoverTarget);
             w.Field("reefCoverGot", m.ReefCoverGot);
 
+            // D194's coral (logbook/specs/coral-build.md), appended only in a coral world.
+            if (m.CoralColonies > 0)
+            {
+                w.Field("coralColonies", m.CoralColonies);
+                w.Field("coralPieces", m.CoralPieces);
+                w.Field("coralDigest", m.CoralDigest.ToString("x16", System.Globalization.CultureInfo.InvariantCulture));
+            }
+
 
             // D102 — after the bed's seven, per the same append-only rule and in the place
             // EvolutionRun writes it. Derived from the world the launch produced rather than from
@@ -643,6 +687,16 @@ namespace Evosim.Farm
                 w.Field("checkpointHash", m.ResumedFromCheckpointHash);
                 w.Field("sourceMismatch", m.ResumedWithSourceMismatch);
                 w.Field("note", m.ResumeSourceNote);
+
+                if (m.ResumedAsCousin)
+                {
+                    w.Field("cousin", true);
+                    w.Field("sourceConfigHash", m.ResumeSourceConfigHash);
+                    w.BeginArray("changes");
+                    foreach (string change in m.ResumeCousinChanges) w.Value(change);
+                    w.EndArray();
+                }
+
                 w.EndObject();
             }
 

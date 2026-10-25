@@ -306,7 +306,9 @@ namespace Evosim.Core.Tests
         [Fact]
         public void AVersionFourteenStreamIsReadExactly()
         {
-            Assert.Equal(18, World.StateVersion);
+            Assert.Equal(20, World.StateVersion);
+            Assert.Equal(19, World.PreOriginStateVersion);
+            Assert.Equal(18, World.PreHeldStateVersion);
             Assert.Equal(17, World.PreCardPairStateVersion);
             Assert.Equal(15, World.PreLeafStateVersion);
             Assert.Equal(14, World.PreImmigrationStateVersion);
@@ -333,8 +335,10 @@ namespace Evosim.Core.Tests
                 restored.Step(MetabolicStep);
             }
 
+            // At version 19: a world read from a layout before 20 starts its intake origin books at the second it
+            // was read (IntakeOriginBooksFromSeconds), so at 20 it differs from its source by that label alone.
             Assert.Equal(Rows(world), Rows(restored));
-            Assert.Equal(StateOf(world), StateOf(restored));
+            Assert.Equal(StateOf(world, World.PreOriginStateVersion), StateOf(restored, World.PreOriginStateVersion));
 
             world.Immigrate(Fixtures.SingleLeaf(), 0, 1, 0);
             Assert.ThrowsAny<Exception>(() => StateOf(world, World.PreImmigrationStateVersion));

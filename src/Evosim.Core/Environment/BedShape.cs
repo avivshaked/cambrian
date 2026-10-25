@@ -183,8 +183,17 @@ namespace Evosim.Core
         /// </remarks>
         public static readonly double[] ShelfBandsMetres = { 6d, 12d, 24d };
 
-        /// <summary>The tank's radius, m — the disc this map is fitted over.</summary>
+        /// <summary>The tank's radius, m — the disc this map is fitted over. 0 in the square.</summary>
         public float RadiusMetres { get; }
+
+        /// <summary>Whether this is D204's square floor (<see cref="ForBox"/>) rather than a tank's.</summary>
+        public bool IsBox { get; }
+
+        /// <summary>The footprint's extent along x, m: the square's side, or the tank's diameter.</summary>
+        public float LengthMetres { get; }
+
+        /// <summary>The footprint's extent along z, m: the square's side, or the tank's diameter.</summary>
+        public float WidthMetres { get; }
 
         /// <summary>The world's depth, m. The flat bed is at <c>−this</c> and the map is its offset.</summary>
         public float DepthMetres { get; }
@@ -359,8 +368,70 @@ namespace Evosim.Core
         public BedShape(
             float tankRadiusMetres, float depthMetres, float reliefMetres, float tiltMetres,
             float scaleMetres, ulong seed, float shoreDepthMetres = 0f, float shoreFadeMetres = 0f)
+            : this(
+                tankRadiusMetres, 0f, 0f, depthMetres, reliefMetres, tiltMetres, scaleMetres, seed,
+                shoreDepthMetres, shoreFadeMetres)
         {
-            if (!(tankRadiusMetres > 0f) || float.IsInfinity(tankRadiusMetres))
+        }
+
+        /// <summary>
+        /// Draws the floor of D204's open square: the tank's bands, each wave turned to the
+        /// nearest one that fits a whole number of times along both sides, so the floor meets
+        /// itself at both seams. No tilt, since a plane cannot join.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The same draws in the same order as the tank's</b>: the tilt's direction (unused),
+        /// then each mode's direction, wavenumber and phase, so a seed's floor in the square is its
+        /// floor in the tank with every wave nudged onto the square's lattice of wavenumbers. At a
+        /// side of 300 m the lattice's points are 2π/300 m⁻¹ apart, so a wave of the largest band
+        /// (100 m by default, three to a side) can turn by a dozen degrees and change its length by a
+        /// fifth, about the band's own jitter, and the smaller bands by less (my arithmetic).
+        /// </para>
+        /// <para>
+        /// <b>Fitted over the whole square</b>, where the tank's is fitted over its disc: the range,
+        /// the slope bound and the mean are read on every half-metre column. The map is a sum of
+        /// cosines with whole wavenumbers, so it repeats exactly along both sides and is defined,
+        /// and the same floor, at a place a few metres past a face.
+        /// </para>
+        /// </remarks>
+        /// <param name="lengthMetres">The square's side along x, m — <c>SharedVolume.LengthMetres</c>.</param>
+        /// <param name="widthMetres">The square's side along z, m — <c>SharedVolume.WidthMetres</c>.</param>
+        /// <param name="depthMetres">The world's depth, m, as the tank's.</param>
+        /// <param name="reliefMetres">The floor's relief, m, as the tank's.</param>
+        /// <param name="scaleMetres">The largest band's wavelength, m, as the tank's; 0 for a third of the shorter side.</param>
+        /// <param name="seed">The landscape's draw, as the tank's.</param>
+        /// <param name="shoreDepthMetres">The shore's depth, m, as the tank's.</param>
+        /// <param name="shoreFadeMetres">The current's fade above the shore, m, as the tank's.</param>
+        public static BedShape ForBox(
+            float lengthMetres, float widthMetres, float depthMetres, float reliefMetres,
+            float scaleMetres, ulong seed, float shoreDepthMetres = 0f, float shoreFadeMetres = 0f)
+        {
+            if (!(lengthMetres > 0f) || float.IsInfinity(lengthMetres))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(lengthMetres), lengthMetres, "A box's side is positive and finite.");
+            }
+
+            if (!(widthMetres > 0f) || float.IsInfinity(widthMetres))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(widthMetres), widthMetres, "A box's side is positive and finite.");
+            }
+
+            return new BedShape(
+                0f, lengthMetres, widthMetres, depthMetres, reliefMetres, 0f, scaleMetres, seed,
+                shoreDepthMetres, shoreFadeMetres);
+        }
+
+        private BedShape(
+            float tankRadiusMetres, float boxLengthMetres, float boxWidthMetres,
+            float depthMetres, float reliefMetres, float tiltMetres,
+            float scaleMetres, ulong seed, float shoreDepthMetres, float shoreFadeMetres)
+        {
+            bool box = boxLengthMetres > 0f;
+
+            if (!box && (!(tankRadiusMetres > 0f) || float.IsInfinity(tankRadiusMetres)))
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(tankRadiusMetres), tankRadiusMetres,
@@ -500,6 +571,9 @@ namespace Evosim.Core
             }
 
             RadiusMetres = tankRadiusMetres;
+            IsBox = box;
+            LengthMetres = box ? boxLengthMetres : 2f * tankRadiusMetres;
+            WidthMetres = box ? boxWidthMetres : 2f * tankRadiusMetres;
             DepthMetres = depthMetres;
             ReliefMetres = reliefMetres;
             TiltMetres = tiltMetres;
@@ -515,7 +589,9 @@ namespace Evosim.Core
 
             ScaleMetres = scaleMetres > 0f
                 ? scaleMetres
-                : (float)(2d * tankRadiusMetres / 3d);
+                : box
+                    ? (float)(Math.Min(boxLengthMetres, boxWidthMetres) / 3d)
+                    : (float)(2d * tankRadiusMetres / 3d);
 
             HasRelief = reliefMetres > 0f || tiltMetres > 0f;
 
@@ -543,8 +619,8 @@ namespace Evosim.Core
             // arms of one round that differ only in BedReliefMetres then fall the same way, and
             // the comparison is of the relief rather than of two unrelated floors.
             TiltDirectionRadians = (float)(2d * Math.PI * rng.NextFloat());
-            _tiltX = tiltMetres * Math.Cos(TiltDirectionRadians) / (2d * tankRadiusMetres);
-            _tiltZ = tiltMetres * Math.Sin(TiltDirectionRadians) / (2d * tankRadiusMetres);
+            _tiltX = box ? 0d : tiltMetres * Math.Cos(TiltDirectionRadians) / (2d * tankRadiusMetres);
+            _tiltZ = box ? 0d : tiltMetres * Math.Sin(TiltDirectionRadians) / (2d * tankRadiusMetres);
 
             for (int band = 0; band < Bands; band++)
             {
@@ -566,6 +642,28 @@ namespace Evosim.Core
                     _kz[m] = k * Math.Sin(theta);
                     _phase[m] = 2d * Math.PI * rng.NextFloat();
 
+                    // D204: in the square, the nearest wave that fits whole along both sides, and
+                    // the spectrum's amplitude read at the wavenumber it became.
+                    if (box)
+                    {
+                        long nx = (long)Math.Round(_kx[m] * boxLengthMetres / (2d * Math.PI));
+                        long nz = (long)Math.Round(_kz[m] * boxWidthMetres / (2d * Math.PI));
+
+                        // A wave longer than the square rounds to no wave at all: the nearest whole
+                        // one along whichever axis it leans on more.
+                        if (nx == 0 && nz == 0)
+                        {
+                            if (Math.Abs(_kx[m]) * boxLengthMetres >= Math.Abs(_kz[m]) * boxWidthMetres)
+                                nx = _kx[m] < 0d ? -1 : 1;
+                            else
+                                nz = _kz[m] < 0d ? -1 : 1;
+                        }
+
+                        _kx[m] = 2d * Math.PI * nx / boxLengthMetres;
+                        _kz[m] = 2d * Math.PI * nz / boxWidthMetres;
+                        k = Math.Sqrt(_kx[m] * _kx[m] + _kz[m] * _kz[m]);
+                    }
+
                     // Red: the amplitude of the drawn wavenumber, not of the band's nominal one,
                     // so the jitter carries the spectrum with it.
                     _amplitude[m] = Math.Pow(k / (2d * Math.PI / ScaleMetres), -SpectrumExponent);
@@ -579,24 +677,29 @@ namespace Evosim.Core
             // bound and the mean — are arithmetic on stored numbers rather than three more
             // lattices. Spec item 1's column is the half metre, and the map is measured on the
             // resolution it will be built at.
-            int side = (int)Math.Ceiling(2d * tankRadiusMetres / MeasureStepMetres);
-            if (side < 2) side = 2;
+            // The square's lattice is its whole area, every column in it; the tank's is the bounding
+            // square, and the disc's columns in it.
+            int sideX = (int)Math.Ceiling((box ? boxLengthMetres : 2d * tankRadiusMetres) / MeasureStepMetres);
+            int sideZ = box ? (int)Math.Ceiling(boxWidthMetres / MeasureStepMetres) : sideX;
+            if (sideX < 2) sideX = 2;
+            if (sideZ < 2) sideZ = 2;
 
-            var rawHeight = new double[side * side];
-            var rawGradientX = new double[side * side];
-            var rawGradientZ = new double[side * side];
-            var columnX = new double[side * side];
-            var columnZ = new double[side * side];
+            var rawHeight = new double[sideX * sideZ];
+            var rawGradientX = new double[sideX * sideZ];
+            var rawGradientZ = new double[sideX * sideZ];
+            var columnX = new double[sideX * sideZ];
+            var columnZ = new double[sideX * sideZ];
             int columns = 0;
 
-            for (int ix = 0; ix < side; ix++)
+            for (int ix = 0; ix < sideX; ix++)
             {
                 double x = (ix + 0.5d) * MeasureStepMetres;
+                if (box && x >= boxLengthMetres) continue;
 
-                for (int iz = 0; iz < side; iz++)
+                for (int iz = 0; iz < sideZ; iz++)
                 {
                     double z = (iz + 0.5d) * MeasureStepMetres;
-                    if (!TankGeometry.Inside(x, z, tankRadiusMetres)) continue;
+                    if (box ? z >= boxWidthMetres : !TankGeometry.Inside(x, z, tankRadiusMetres)) continue;
 
                     double dx = x - _radius;
                     double dz = z - _radius;
@@ -880,9 +983,23 @@ namespace Evosim.Core
             {
                 if (clamped != null && clamped[i]) continue;
 
-                // Inside the disc by the whole neighbourhood, or the ring is a half ring.
-                double fromAxis = Math.Sqrt(columnX[i] * columnX[i] + columnZ[i] * columnZ[i]);
-                if (fromAxis + radius > _radius) continue;
+                // Inside the disc by the whole neighbourhood, or the ring is a half ring. In the
+                // square, inside its faces by the whole neighbourhood: the ring is not read round the
+                // seam, so a column within a radius of a face is not judged. A reading, and the
+                // square's edge band is a few per cent of it.
+                if (IsBox)
+                {
+                    if (columnX[i] - radius < 0d || columnX[i] + radius > LengthMetres ||
+                        columnZ[i] - radius < 0d || columnZ[i] + radius > WidthMetres)
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    double fromAxis = Math.Sqrt(columnX[i] * columnX[i] + columnZ[i] * columnZ[i]);
+                    if (fromAxis + radius > _radius) continue;
+                }
 
                 bool lowest = true, highest = true;
                 double ringSum = 0d;

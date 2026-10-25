@@ -731,6 +731,20 @@ namespace Evosim.Core
         public float TankRadiusMetres { get; }
 
         /// <summary>
+        /// The box's extent along x and along z, m: <c>W·K/A</c> and <c>W·A</c>, with
+        /// <c>W = sqrt(area/K)</c> in float as the fields take it. 0 in a tank.
+        /// </summary>
+        /// <remarks>
+        /// D204's square reads its seams from here: the bed's waves are fitted to join at them and
+        /// the contact reads across them. The placer computes the same two products from the
+        /// fields' patch width, and the farm holds the two equal.
+        /// </remarks>
+        public float BoxLengthMetres { get; }
+
+        /// <inheritdoc cref="BoxLengthMetres"/>
+        public float BoxWidthMetres { get; }
+
+        /// <summary>
         /// The sea floor's shape, or null when the bed is flat — D092,
         /// <c>logbook/specs/bed-spec.md</c>. Null in every world before round 39.
         /// </summary>
@@ -755,6 +769,13 @@ namespace Evosim.Core
         /// be a body standing in stone or water flowing through it.
         /// </remarks>
         public ReefGeometry Reefs { get; }
+
+        /// <summary>
+        /// D194's coral, as every reader of the rock reads it, or null in every world at
+        /// <see cref="ReefShape.Mushroom"/>. Placed from <see cref="ReefPlacementIndex"/> and built
+        /// once, as <see cref="Reefs"/> is and for its reason: one object for every reader.
+        /// </summary>
+        public CoralRock Coral { get; }
 
         /// <summary>Dead matter in the water, and what feeds on it — §5A.2c.</summary>
         public IMatterField Nutrients { get; }
@@ -789,12 +810,20 @@ namespace Evosim.Core
         /// <see cref="RunConfig.JoulesPerUnit"/>, and there is no third place for a unit to hide.
         /// </para>
         /// <para>
+        /// <b>D206 adds the third place</b>, and only with <see cref="RunConfig.PlantsKeepMatter"/>
+        /// on: the spent units a plant or its corpse holds, <see cref="HeldUnits"/>. Off, they are
+        /// 0 and the sum is the number it always was.
+        /// </para>
+        /// <para>
         /// Before D098 this added a body's <c>LockedMatter</c> and a corpse's own matter account
         /// to the field, because matter and energy were separate substances that happened to
         /// travel together. They are not, and the accounts that made them look separate are gone.
         /// </para>
         /// </remarks>
-        public double StandingMatterUnits => Matter.TotalJoules + StandingJoules / Config.JoulesPerUnit;
+        public double StandingMatterUnits =>
+            Config.PlantsKeepMatter
+                ? Matter.TotalJoules + StandingJoules / Config.JoulesPerUnit + HeldUnits
+                : Matter.TotalJoules + StandingJoules / Config.JoulesPerUnit;
 
         /// <summary>The same number under the name the reports have always used.</summary>
         public double StandingMatter => StandingMatterUnits;
@@ -925,7 +954,7 @@ namespace Evosim.Core
             for (int i = 0; i < _living.Count; i++)
             {
                 Organism creature = _living[i];
-                float area = PhotosyntheticLitArea(creature, types, byExposure, capOn);
+                float area = PhotosyntheticLitArea(creature, types, byExposure, capOn, Config.ContactEating);
                 if (!(area > 0f)) continue;
 
                 Float3 p = creature.Point.Position;
@@ -943,8 +972,12 @@ namespace Evosim.Core
         /// A body's photosynthetic lit area, m²: what <c>Metabolism</c> hands each light-fixing
         /// part as its lit area, summed over those parts.
         /// </summary>
+        /// <param name="byHealth">
+        /// D219, contact eating: each part's area scaled by its health, as <see cref="Metabolism"/> bills it.
+        /// False, the default and every recorded world, leaves the area as it was.
+        /// </param>
         public static float PhotosyntheticLitArea(
-            Organism creature, CellTypeRegistry types, bool byExposure, bool capOn)
+            Organism creature, CellTypeRegistry types, bool byExposure, bool capOn, bool byHealth = false)
         {
             Phenotype body = creature.Phenotype;
             float[] exposure = byExposure ? creature.CurrentExposure : null;
@@ -952,10 +985,18 @@ namespace Evosim.Core
                 ? body.LitAreaFactor(capOn)
                 : body.LitAreaFactor(exposure, creature.UpInBody, capOn);
 
+            float[] health = byHealth ? creature.PartHealth : null;
+
             float area = 0f;
             foreach (PhenotypePart part in body.Parts)
             {
                 if (!types.Resolve(part.CellTypeId).FixesLight) continue;
+                if (health != null)
+                {
+                    area += Metabolism.LitAreaAtHealth(part, exposure, litFactor, health);
+                    continue;
+                }
+
                 area += exposure == null
                     ? part.LitArea * litFactor
                     : part.LitArea * exposure[part.Index] * litFactor;
@@ -1142,6 +1183,13 @@ namespace Evosim.Core
         /// between the two states without a body being involved at all.
         /// </remarks>
         public double RemineralisedTotal { get; private set; }
+
+        /// <summary>
+        /// Joules D212's clock has spoiled out of the corpses, cumulative: each left as heat
+        /// (<see cref="EnergyOut"/>) and went to the spent field as <c>joules / JoulesPerUnit</c> units.
+        /// Stays 0 at <see cref="RunConfig.CorpseHalfLifeSeconds"/> 0, and is checkpointed only above it.
+        /// </summary>
+        public double CorpseSpoiledTotal { get; private set; }
 
         /// <summary>
         /// Every joule a feeder has ever returned to <see cref="Nutrients"/> as faeces — D098's
@@ -1459,6 +1507,15 @@ namespace Evosim.Core
                 // last of it is deposited. The loop runs zero times at CorpseDecayPerSecond 0, so
                 // this line adds nothing at all to a world on file.
                 sum += CorpseJoules;
+
+                // D220: the remains standing hold charged matter too, their tissue and their store, from the death or
+                // the cut that founds them to the step that burns them. The list is empty with the dial off, so the
+                // loop runs zero times and the sum is the number it always was.
+                for (int i = 0; i < _remains.Count; i++)
+                {
+                    sum += _remains[i].Energy + _remains[i].TissueJoules + _remains[i].GestationJoules;
+                }
+
                 return sum;
             }
         }
@@ -1621,6 +1678,18 @@ namespace Evosim.Core
                         "the speed to 0 for still water.",
                         nameof(config));
                 }
+
+                if (config.Current != null &&
+                    config.Current.Mode == CurrentMode.Ocean && config.Current.Speed > 0f)
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"WorldShape is Tank and the current is Ocean at {config.Current.Speed} m/s. ") +
+                        "The open ocean's current is the water of a box that joins at both seams " +
+                        "(D204), and a tank's water is the streams: set CurrentMode.Transport to " +
+                        "say so, or the speed to 0 for still water.",
+                        nameof(config));
+                }
             }
 
             if (patchesAcross > 1 && config.DispersalChancePerStep > 0f)
@@ -1641,23 +1710,26 @@ namespace Evosim.Core
                 ? TankGeometry.RadiusFor(config.WorldAreaSquareMetres)
                 : 0f;
 
-            // D092, logbook/specs/bed-spec.md. The bed is the tank's: a height map on a periodic
-            // box would have to meet itself at both seams, which is a constraint the spectrum has
-            // no way to satisfy and which nothing in the round needs. Refused rather than ignored,
-            // for this constructor's usual reason — a run that recorded a relief and ran a flat
-            // floor would be filed under settings it did not have.
-            if (config.WorldShape != WorldShape.Tank &&
-                (config.BedReliefMetres > 0f || config.BedTiltMetres > 0f))
+            if (config.WorldShape != WorldShape.Tank)
+            {
+                int count = Math.Max(1, (int)config.HorizontalPatches);
+                int across = Math.Min(Math.Max(1, (int)config.PatchesAcross), count);
+                float patch = (float)Math.Sqrt(config.WorldAreaSquareMetres / count);
+                BoxLengthMetres = patch * Math.Max(1, count / across);
+                BoxWidthMetres = patch * across;
+            }
+
+            // D092, logbook/specs/bed-spec.md, and D204. The box's bed has waves that join at both
+            // seams (BedShape.ForBox) and no tilt, since a plane cannot join. Refused rather than
+            // ignored, for this constructor's usual reason: a run that recorded a tilt and ran a
+            // level floor would be filed under settings it did not have.
+            if (config.WorldShape != WorldShape.Tank && config.BedTiltMetres > 0f)
             {
                 throw new ArgumentException(
                     FormattableString.Invariant(
-                        $"WorldShape is {config.WorldShape} and the bed asks for a relief of ") +
-                    FormattableString.Invariant(
-                        $"{config.BedReliefMetres} m and a tilt of {config.BedTiltMetres} m. ") +
-                    "The bed is the tank's: the box is periodic on both horizontal axes, so a " +
-                    "height map over it would have to meet itself at two seams. Set " +
-                    "WorldShape.Tank, or leave both at 0 for the flat floor every recorded " +
-                    "world has.",
+                        $"WorldShape is {config.WorldShape} and the bed asks for a tilt of {config.BedTiltMetres} m. ") +
+                    "The box is periodic on both horizontal axes, and a tilt is a plane, which cannot " +
+                    "meet itself at the seams (D204). Its relief joins; leave the tilt at 0.",
                     nameof(config));
             }
 
@@ -1678,13 +1750,30 @@ namespace Evosim.Core
                     TankRadiusMetres, config.WorldDepthMetres, config.BedReliefMetres,
                     config.BedTiltMetres, config.BedScaleMetres, Rng.SeedFor(landscape, BedShapeIndex),
                     config.BedShoreDepthMetres, config.BedShoreFadeMetres)
-                : null;
+                : config.WorldShape != WorldShape.Tank && config.BedReliefMetres > 0f
+                    ? BedShape.ForBox(
+                        BoxLengthMetres, BoxWidthMetres, config.WorldDepthMetres, config.BedReliefMetres,
+                        config.BedScaleMetres, Rng.SeedFor(landscape, BedShapeIndex),
+                        config.BedShoreDepthMetres, config.BedShoreFadeMetres)
+                    : null;
 
             // Round 47's reefs (logbook/specs/reef-spec.md, redesigned 2026-09-23 night). Refused
             // in full — a reef in a box, a cap through the surface, a cap no tank can hold — before
             // a single draw, and drawn from their own stream to the cover only when there is one:
             // at ReefCover 0 this is one pass over the dials' defaults and a null.
             ReefGeometry.Refuse(config, TankRadiusMetres);
+
+            // Round 62's coral (logbook/specs/coral-build.md). At ReefShape Mushroom, every recorded
+            // world, this is one pass over the coral dials' defaults, draws nothing and leaves Coral
+            // null. Otherwise the coral is grown from the reef stream, which the mushrooms then leave
+            // alone (a coral world has ReefCover 0), and read through one CoralRock by every reader of
+            // the rock, as the reefs are.
+            CoralFootprint coralFootprint = config.WorldShape == WorldShape.Tank
+                ? CoralFootprint.Tank(TankRadiusMetres)
+                : CoralFootprint.Box(BoxLengthMetres, BoxWidthMetres);
+            CoralGeometry coral = CoralGeometry.PlaceFromLandscape(config, coralFootprint, Bed, landscape);
+            Coral = coral != null && coral.Count > 0 ? new CoralRock(coral, coralFootprint, config) : null;
+
             Reefs = config.ReefCover > 0f
                 ? ReefGeometry.Place(config, TankRadiusMetres, Bed, Rng.SeedFor(landscape, ReefPlacementIndex))
                 : null;
@@ -1724,6 +1813,7 @@ namespace Evosim.Core
             // The caps' shadow, on the column each covers (LightField.Reefs' remarks for why not
             // through the pooled canopy). Null, and untouched, in every recorded world.
             Field.Reefs = Reefs;
+            Field.Coral = Coral;
 
             if (config.FieldModel == MatterField.Vertices)
             {
@@ -1794,7 +1884,7 @@ namespace Evosim.Core
                     config.WorldAreaSquareMetres, config.NutrientSinkMetresPerSecond,
                     config.WorldDepthMetres, config.FloorRefugeMetres, config.RefugeEdibleFraction,
                     patchCount, config.FieldCellMetres, patchesAcross,
-                    config.WorldShape, TankRadiusMetres, Bed, Reefs);
+                    config.WorldShape, TankRadiusMetres, Bed, Reefs, Coral);
 
                 // Its own, coarser cell: matter is drawn in whole conceptions rather than grazed,
                 // and a metre of water cannot afford a child (RunConfig.FieldMatterCellMetres).
@@ -1803,7 +1893,7 @@ namespace Evosim.Core
                 Matter = new GridField(
                     config.WorldAreaSquareMetres, config.MatterSinkMetresPerSecond,
                     config.WorldDepthMetres, 0f, 0f, patchCount, config.FieldMatterCellMetres,
-                    patchesAcross, config.WorldShape, TankRadiusMetres, Bed, Reefs);
+                    patchesAcross, config.WorldShape, TankRadiusMetres, Bed, Reefs, Coral);
             }
             else
             {
@@ -1821,14 +1911,16 @@ namespace Evosim.Core
 
             if (config.SenseScent)
             {
+                // D204: round the seams when the world reads across them.
                 Scent = new ScentField(Nutrients.LengthMetres, Nutrients.WidthMetres,
-                    config.WorldDepthMetres, config.ScentRangeMetres);
+                    config.WorldDepthMetres, config.ScentRangeMetres, ScentField.CellMetres, config.ReadAcrossSeams);
             }
 
             if (config.LeafScent != LeafScentForm.None)
             {
                 LeafScent = new ScentField(Nutrients.LengthMetres, Nutrients.WidthMetres,
-                    config.WorldDepthMetres, config.LeafScentRangeMetres, config.LeafScentCellMetres);
+                    config.WorldDepthMetres, config.LeafScentRangeMetres, config.LeafScentCellMetres,
+                    config.ReadAcrossSeams);
             }
 
             // Seeded uniformly — across every patch as well as every layer, D061 — and never
@@ -2023,6 +2115,7 @@ namespace Evosim.Core
             // The reefs' fade on the streams (logbook/specs/reef-spec.md §2), after SetBox, which
             // clears it: a current handed to a second world must not keep the first world's rock.
             config.Current?.SetReefs(Reefs);
+            config.Current?.SetCoral(Coral);
 
             Seed = seed;
 
@@ -2615,12 +2708,71 @@ namespace Evosim.Core
                     "each part's own contact sphere, which only per-part contact builds.", nameof(config));
             }
 
+            // D207 amends D206's form; without D206 no body holds anything for its leaves to take first.
+            if (config.PlantsKeepOwnFirst && !config.PlantsKeepMatter)
+            {
+                throw new ArgumentException(
+                    "PlantsKeepOwnFirst is on and PlantsKeepMatter is off. D207 amends D206's form: without " +
+                    "D206 no body holds its spent matter, so there is nothing for its own leaves to take first.",
+                    nameof(config));
+            }
+
+            // D204: the seams a contact reads across are the box's; a tank has glass and no seam.
+            if (config.ReadAcrossSeams && config.WorldShape == WorldShape.Tank)
+            {
+                throw new ArgumentException(
+                    "ReadAcrossSeams is on in a tank. The tank's boundary is its glass and it has no " +
+                    "seam to touch across; the setting belongs to the box (D204).", nameof(config));
+            }
+
             if (config.CorpseSettledDecayPerSecond > 0f &&
                 !(config.CorpseDecayPerSecond > 0f && config.CorpseSettles))
             {
                 throw new ArgumentException(
                     "CorpseSettledDecayPerSecond is above 0 and corpses do not settle " +
                     "(CorpseDecayPerSecond 0 or CorpseSettles off), so no corpse would ever decay at it.",
+                    nameof(config));
+            }
+
+            if (config.CorpseHalfLifeSeconds > 0f && !(config.CorpseDecayPerSecond > 0f))
+            {
+                throw new ArgumentException(
+                    "CorpseHalfLifeSeconds is above 0 and CorpseDecayPerSecond is 0. At 0 a death " +
+                    "deposits at once and no corpse ever lies anywhere, so there is no food to spoil (D212).",
+                    nameof(config));
+            }
+
+            if (config.IntakeReachFromMouth && !(config.IntakeReachMetres > 0f))
+            {
+                throw new ArgumentException(
+                    "IntakeReachFromMouth is on and IntakeReachMetres is 0. At 0 no mouth eats from a " +
+                    "corpse, so there is no reach to measure from a mouth point (D214).",
+                    nameof(config));
+            }
+
+            if (config.BiteTakesStore && !config.ContactEating)
+            {
+                throw new ArgumentException(
+                    "BiteTakesStore is on and ContactEating is off. A bite takes the store only where bites take " +
+                    "tissue as they wound, so there is no bite for it to read; a header naming it would describe " +
+                    "a world the run did not have (D224).",
+                    nameof(config));
+            }
+
+            if (!(config.BiteDamageScale > 0f) || float.IsInfinity(config.BiteDamageScale))
+            {
+                throw new ArgumentException(
+                    "BiteDamageScale is " + config.BiteDamageScale + ". It multiplies the damage of a mouth's blow, so it " +
+                    "is finite and above 0 (D226).",
+                    nameof(config));
+            }
+
+            if (config.BiteDamageScale != 1f && !config.ContactEating)
+            {
+                throw new ArgumentException(
+                    "BiteDamageScale is not 1 and ContactEating is off. The scale deepens the wound of a bite that " +
+                    "feeds, so without contact eating there is nothing for it to read; a header naming it would " +
+                    "describe a world the run did not have (D226).",
                     nameof(config));
             }
 
@@ -2850,6 +3002,149 @@ namespace Evosim.Core
         public double GripJoulesTotal { get; private set; }
 
         /// <summary>
+        /// Spent units a body's burn puts back, in <c>Matter</c>'s units: the share it keeps
+        /// (D206, <see cref="Metabolism.HeldShare"/>) goes to its own <see cref="Organism.SpentUnits"/>
+        /// and <see cref="HeldTotal"/>, and the rest into the spent field where the body is and
+        /// <see cref="BurntTotal"/>. With <see cref="RunConfig.PlantsKeepMatter"/> off it is the
+        /// deposit and the count it always was.
+        /// </summary>
+        private void ReturnSpent(Organism creature, double returned)
+        {
+            if (Config.PlantsKeepMatter && creature.HasPhotosyntheticTissue)
+            {
+                bool ownFirst = Config.PlantsKeepOwnFirst;
+                float share = ownFirst
+                    ? Metabolism.SmoothHeldShare(creature.Phenotype, Config)
+                    : Metabolism.HeldShare(creature.Phenotype, Config);
+
+                // D207: the body's own leaves first, up to one step's light capacity less what it holds.
+                // A body that holds the whole burn holds it in one addition, as D206 does.
+                if (ownFirst && share < 1f)
+                {
+                    double room = creature.LastLedger.LightCapacity / (double)Config.JoulesPerUnit - creature.SpentUnits;
+                    if (room > 0d)
+                    {
+                        double first = returned < room ? returned : room;
+                        creature.SpentUnits += first;
+                        HeldTotal += first;
+                        returned -= first;
+                        if (!(returned > 0d)) return;
+                    }
+                }
+
+                if (share > 0f)
+                {
+                    double held = share >= 1f ? returned : returned * share;
+                    creature.SpentUnits += held;
+                    HeldTotal += held;
+                    returned -= held;
+                    if (!(returned > 0d)) return;
+                }
+            }
+
+            Matter.DepositExact(creature.Point, returned);
+            BurntTotal += returned;
+        }
+
+        /// <summary>Whether D206's rule reaches this body: it is on, and the body has photosynthetic tissue.</summary>
+        private bool Keeps(Organism creature) => Config.PlantsKeepMatter && creature.HasPhotosyntheticTissue;
+
+        /// <summary>
+        /// D206: the joules a body's own spent units can be charged with this step, up to what the
+        /// light offers (<see cref="EnergyLedger.LightCapacity"/>). The water's uptake does not bound
+        /// them: the units are already in the body.
+        /// </summary>
+        private float OwnFixation(Organism creature, in EnergyLedger ledger)
+        {
+            if (!(creature.SpentUnits > 0d) || !(ledger.LightCapacity > 0f)) return 0f;
+            float own = (float)(creature.SpentUnits * Config.JoulesPerUnit);
+            return own < ledger.LightCapacity ? own : ledger.LightCapacity;
+        }
+
+        /// <summary>
+        /// D206: what a keeping body's fixation asks of the water, J: the bill's fixation from the
+        /// water, up to the capacity its own units leave.
+        /// </summary>
+        private float WaterFixation(Organism creature, in EnergyLedger ledger)
+        {
+            float room = ledger.LightCapacity - OwnFixation(creature, ledger);
+            if (!(room > 0f)) return 0f;
+            return ledger.LightIncome < room ? ledger.LightIncome : room;
+        }
+
+        /// <summary>
+        /// D206's fixation for a body that keeps its matter: its own units charged first, then the
+        /// water's for the capacity they leave, under the partial-take rule (D098's leg 1). Returns
+        /// the ledger with the whole fixation and its exudation.
+        /// </summary>
+        private EnergyLedger FixKept(Organism creature, EnergyLedger ledger)
+        {
+            float own = OwnFixation(creature, ledger);
+            float water = WaterFixation(creature, ledger);
+
+            if (water > 0f)
+            {
+                float wanted = water / Config.JoulesPerUnit;
+                float tookUnits = Matter.Take(creature.Point, wanted);
+                if (tookUnits < wanted)
+                {
+                    FixationShortTakes++;
+                    water = tookUnits * Config.JoulesPerUnit;
+                }
+            }
+
+            if (own > 0f)
+            {
+                // All of the store when the light can charge all of it, so the store empties to
+                // exactly zero rather than to a rounding of the float joules.
+                double units = own < ledger.LightCapacity
+                    ? creature.SpentUnits
+                    : Math.Min(creature.SpentUnits, own / (double)Config.JoulesPerUnit);
+                creature.SpentUnits -= units;
+                RechargedTotal += units;
+            }
+
+            float total = own + water;
+            return total == ledger.LightIncome ? ledger : ledger.WithFixation(total, Config.ExudationFraction);
+        }
+
+        /// <summary>
+        /// Spent units D206's plants have kept from their burns, cumulative: the share of the burn
+        /// that <see cref="BurntTotal"/> does not count. Zero with <see cref="RunConfig.PlantsKeepMatter"/> off.
+        /// </summary>
+        public double HeldTotal { get; private set; }
+
+        /// <summary>
+        /// Spent units D206's bodies took back by fixation from their own store, cumulative: the
+        /// fixation that drew nothing from the water.
+        /// </summary>
+        public double RechargedTotal { get; private set; }
+
+        /// <summary>
+        /// Spent units D206's store has returned to the water, cumulative: at a death with no
+        /// corpse, and with a corpse's instalments. So the store's books close:
+        /// <see cref="HeldUnits"/> = <see cref="HeldTotal"/> − <see cref="RechargedTotal"/> −
+        /// this, to the rounding of the sums.
+        /// </summary>
+        public double HeldReleasedTotal { get; private set; }
+
+        /// <summary>
+        /// Spent units the living and the corpses hold, units — D206's store. O(n), an instrument
+        /// for a report row and the matter books.
+        /// </summary>
+        public double HeldUnits
+        {
+            get
+            {
+                if (!Config.PlantsKeepMatter) return 0d;
+                double sum = 0d;
+                for (int i = 0; i < _living.Count; i++) sum += _living[i].SpentUnits;
+                for (int i = 0; i < _corpses.Count; i++) sum += _corpses[i].SpentUnits;
+                return sum;
+            }
+        }
+
+        /// <summary>
         /// Charges what the body's grips owe, from its reserve, as a burn: the joules leave as heat
         /// and the same over ρ arrives in the spent field where the body is. A body that cannot pay
         /// in full is left at exactly zero and dies at the check that follows, as a body short of
@@ -2865,9 +3160,7 @@ namespace Evosim.Core
             if (!(paid > 0d)) return;
 
             EnergyOut += paid;
-            double returned = paid / Config.JoulesPerUnit;
-            Matter.DepositExact(creature.Point, returned);
-            BurntTotal += returned;
+            ReturnSpent(creature, paid / Config.JoulesPerUnit);
 
             GripJoulesTotal += paid;
             creature.GripJoules += paid;
@@ -3268,11 +3561,10 @@ namespace Evosim.Core
         /// other.
         /// </para>
         /// <para>
-        /// <b>The last crumb is deposited rather than left to halve for ever.</b> Below 1e-6 J and
-        /// 1e-6 matter the remainder goes in whole and the corpse is removed. Both stocks have to
-        /// be under, since one of them can empty a step before the other. Without a floor a
-        /// corpse would live for the length of the run, and the standing account would carry
-        /// thousands of objects holding nothing.
+        /// <b>The last crumb is deposited rather than left to halve for ever.</b> Below 1e-6 J the
+        /// remainder goes in whole and the corpse is removed. A corpse is one stock since D098, so
+        /// the joules are the only test. Without a floor a corpse would live for the length of the
+        /// run, and the standing account would carry thousands of objects holding nothing.
         /// </para>
         /// <para>
         /// <b><see cref="DetritusDepositedTotal"/> counts the instalments, not the death.</b> Its
@@ -3328,11 +3620,59 @@ namespace Evosim.Core
             }
             WorldPhaseProbe.Mark(WorldPhaseProbe.CorpseDrift);
 
+            if (Config.CorpseHalfLifeSeconds > 0f) SpoilCorpses(seconds);
+
+            // D206: a corpse's held spent units leave with its instalment, before the instalment
+            // pass reads the corpse and compacts the list. Off, no corpse holds any.
+            if (Config.PlantsKeepMatter) ReleaseHeld(sinkingFraction, settledFraction, floor);
+
             double deposited = DetritusDepositedTotal;
             DepositCorpses(_corpses, Nutrients, sinkingFraction, settledFraction, floor, ref deposited,
                 ref _depositCell, ref _depositAmount, ref _depositLast);
             DetritusDepositedTotal = deposited;
             WorldPhaseProbe.Mark(WorldPhaseProbe.CorpseDeposits);
+        }
+
+        /// <summary>
+        /// D212: the clock on a corpse's food, run between the drift and the instalments. Each corpse, sinking
+        /// or settled, loses <c>Joules × (1 − 2^(−dt / H))</c> with H <see cref="RunConfig.CorpseHalfLifeSeconds"/>,
+        /// so what it still holds halves every H seconds whether or not anything eats it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The energy is heat and the matter goes to the spent field.</b> The bacteria that spoil carrion
+        /// respire what they take, so the joules leave as <see cref="EnergyOut"/>, as a burn's do; the units
+        /// they were charged on are not respired, and go to the spent field at the corpse's point as
+        /// <see cref="BurnUnbitten"/> and the reserve's return send theirs. Both books close in the same
+        /// line, so the audit and the matter residual have nothing new to explain.
+        /// </para>
+        /// <para>
+        /// <b>Serial, in the list's order,</b> because the grid's total is order-sensitive. A corpse's held
+        /// spent units (D206's <c>SpentUnits</c>) are not touched: they still leave with its instalments.
+        /// </para>
+        /// <para>
+        /// <b>Side effects, left as they fall.</b> A spoiled corpse holds fewer joules, so its mouth reach
+        /// (<c>WorldMouth.CorpseReach</c>, from joules), its scent and <see cref="RunConfig.CorpseLeavesBelowFraction"/>'s
+        /// test against <c>FirstJoules</c> all shrink with it, and it leaves sooner than the instalments alone
+        /// would send it. The age it carries is already checkpointed, and the clock needs no state of its own.
+        /// </para>
+        /// </remarks>
+        private void SpoilCorpses(float seconds)
+        {
+            double fraction = 1.0 - Math.Pow(2.0, -(double)seconds / Config.CorpseHalfLifeSeconds);
+            if (!(fraction > 0d)) return;
+
+            for (int i = 0; i < _corpses.Count; i++)
+            {
+                Corpse corpse = _corpses[i];
+                double spoiled = corpse.Joules * fraction;
+                if (!(spoiled > 0d)) continue;
+
+                corpse.Joules -= spoiled;
+                EnergyOut += spoiled;
+                Matter.DepositExact(corpse.Point, spoiled / Config.JoulesPerUnit);
+                CorpseSpoiledTotal += spoiled;
+            }
         }
 
         /// <summary>
@@ -3415,6 +3755,30 @@ namespace Evosim.Core
             }
 
             if (kept < n) corpses.RemoveRange(kept, n - kept);
+        }
+
+        /// <summary>
+        /// D206: each corpse's held spent units, released into the spent field in the share its
+        /// instalment this step takes of its joules, and all of them on the step it leaves (the
+        /// same test <see cref="Instalment"/> makes). Reads the corpse's joules and writes only its
+        /// held units, so the instalment pass that follows meets the corpse it would have met.
+        /// </summary>
+        private void ReleaseHeld(double sinkingFraction, double settledFraction, double floor)
+        {
+            for (int i = 0; i < _corpses.Count; i++)
+            {
+                Corpse corpse = _corpses[i];
+                if (!(corpse.SpentUnits > 0d)) continue;
+
+                Instalment(corpse, sinkingFraction, settledFraction, floor, out bool last);
+                double fraction = corpse.Settled ? settledFraction : sinkingFraction;
+                double units = last || fraction >= 1.0 ? corpse.SpentUnits : corpse.SpentUnits * fraction;
+                if (!(units > 0d)) continue;
+
+                Matter.DepositExact(corpse.Point, units);
+                corpse.SpentUnits = last ? 0d : corpse.SpentUnits - units;
+                HeldReleasedTotal += units;
+            }
         }
 
         /// <summary>
@@ -3532,11 +3896,11 @@ namespace Evosim.Core
 
             if (drifts)
             {
-                // A corpse carries a position, so under CurrentMode.Transport it rides the
-                // water where it actually is rather than the water at its patch's centre.
-                // The rolls take the patch, which is all that field is a function of, so
+                // A corpse carries a position, so under CurrentMode.Transport and the ocean it
+                // rides the water where it actually is rather than the water at its patch's
+                // centre. The rolls take the patch, which is all that field is a function of, so
                 // every run in the record drifts on the same arithmetic it always did.
-                Float3 v = current.Mode == CurrentMode.Transport || tank
+                Float3 v = current.Mode != CurrentMode.Rolls || tank
                     ? current.VelocityAt(p.X, p.Y, p.Z, ElapsedSeconds)
                     : current.VelocityAt(p.Y, ElapsedSeconds, corpse.Patch, PatchCount);
 
@@ -3603,6 +3967,14 @@ namespace Evosim.Core
                     double top = Reefs.CapTopY(r);
                     if (top > rest && top <= fromY && Reefs.InsideOutline(r, x, z)) rest = top;
                 }
+            }
+
+            // The coral's plates (coral-build.md, the readers): the highest plate top over the
+            // point's column, when it is under the point. Branches let a corpse pass to the bed.
+            if (Coral != null)
+            {
+                double top = Coral.PlateTop(x, z);
+                if (top > rest && top <= fromY) rest = top;
             }
 
             return (float)rest;
@@ -3932,15 +4304,21 @@ namespace Evosim.Core
             float[] litAreas = _litAreas;
             bool capOn = Config.LightSilhouetteCap;
 
+            // D219: a grazed part casts the shadow of its health, as the leaf bills the light of it. A body nothing has
+            // wounded has no health array and casts what it always did, so the dial off is the recorded call.
+            bool shadeByHealth = Config.ContactEating;
+
             Parallelism.ForRanges(_living.Count, (from, to) =>
             {
                 for (int i = from; i < to; i++)
                 {
                     Organism creature = _living[i];
                     float[] exposure = byExposure ? creature.CurrentExposure : null;
-                    litAreas[i] = exposure == null
-                        ? creature.Phenotype.EffectiveLitArea(capOn)
-                        : creature.Phenotype.EffectiveLitArea(exposure, creature.UpInBody, capOn);
+                    litAreas[i] = shadeByHealth
+                        ? ShadowAtHealth(creature, byExposure, capOn)
+                        : exposure == null
+                            ? creature.Phenotype.EffectiveLitArea(capOn)
+                            : creature.Phenotype.EffectiveLitArea(exposure, creature.UpInBody, capOn);
                 }
             });
 
@@ -3948,6 +4326,17 @@ namespace Evosim.Core
             {
                 Organism creature = _living[i];
                 Field.Contribute(creature.HeightY, litAreas[i], creature.Patch);
+            }
+
+            // D220: the dead shade the living until they close. Remains cast their shadow at their health, after the
+            // living in the field's order, and earn nothing on it.
+            if (shadeByHealth)
+            {
+                for (int i = 0; i < _remains.Count; i++)
+                {
+                    Organism body = _remains[i];
+                    Field.Contribute(body.HeightY, ShadowAtHealth(body, byExposure, capOn), body.Patch);
+                }
             }
             WorldPhaseProbe.Mark(WorldPhaseProbe.LightContribute);
             Field.Solve();
@@ -4007,7 +4396,10 @@ namespace Evosim.Core
                 // is every feeder and every producer in the dark.
                 if (ledger.LightIncome > 0f)
                 {
-                    Matter.Demand(creature.Point, ledger.LightIncome / Config.JoulesPerUnit);
+                    // D206: a body that keeps its matter asks the water only for what its own
+                    // units leave of the light's capacity.
+                    float fromWater = Keeps(creature) ? WaterFixation(creature, ledger) : ledger.LightIncome;
+                    if (fromWater > 0f) Matter.Demand(creature.Point, fromWater / Config.JoulesPerUnit);
                 }
             }
 
@@ -4109,6 +4501,16 @@ namespace Evosim.Core
                             rationed, rationedSpent, creature.PendingWorkJoules, seconds, age,
                             exposure, creature.UpInBody);
 
+                    // D219: a grazed leaf fixes less light. Its own statement, so the recorded calls above are
+                    // the only ones that run with the dial off.
+                    if (Config.ContactEating && creature.PartHealth != null)
+                    {
+                        ledger = Metabolism.StepAtHealth(
+                            creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
+                            rationed, rationedSpent, creature.PendingWorkJoules, seconds, age,
+                            exposure, creature.UpInBody, creature.PartHealth);
+                    }
+
                     LedgerTicks += System.Diagnostics.Stopwatch.GetTimestamp() - billStarted;
 
                     // A share is a fraction of the demand, and scaling the density delivers
@@ -4123,7 +4525,10 @@ namespace Evosim.Core
                     // The same bound on the other field: uptake re-saturates at the rationed
                     // spent density, so a producer in a stripped cell would otherwise plan to
                     // fix more than its share of that cell.
-                    float fixationAllowance = spentShare * _ledgers[i].LightIncome;
+                    // D206: a body that keeps its matter demanded only the water's part.
+                    float fixationAllowance = Keeps(creature)
+                        ? spentShare * WaterFixation(creature, _ledgers[i])
+                        : spentShare * _ledgers[i].LightIncome;
                     if (ledger.LightIncome > fixationAllowance)
                     {
                         ledger = ledger.WithLightIncome(fixationAllowance);
@@ -4157,7 +4562,11 @@ namespace Evosim.Core
                 // more; it charges a spent unit, and the unit has to actually be there. The same
                 // partial-take rule the charged field has had since the Astra review's R1: the
                 // producer is credited what the water gave.
-                if (ledger.LightIncome > 0f)
+                if (Keeps(creature))
+                {
+                    ledger = FixKept(creature, ledger);
+                }
+                else if (ledger.LightIncome > 0f)
                 {
                     float wanted = ledger.LightIncome / Config.JoulesPerUnit;
                     float tookUnits = Matter.Take(creature.Point, wanted);
@@ -4183,6 +4592,12 @@ namespace Evosim.Core
                     creature.LastShare = share;
                     creature.LastLedger = ledger;
                     creature.LastStepSeconds = seconds;
+                }
+                else if (Config.PlantsKeepOwnFirst && creature.HasPhotosyntheticTissue)
+                {
+                    // D207: every burn reads its leaves' capacity from here, the side burns between
+                    // metabolic steps included. Saved with the body, so a resume reads the same.
+                    creature.LastLedger = ledger;
                 }
 
                 // Drained here and nowhere else. Both branches above priced the same joules, so
@@ -4245,9 +4660,9 @@ namespace Evosim.Core
                     // float, and the water gained half an ulp less or more than the reserve gave
                     // up. In round 51 those halves kept one sign for thousands of seconds and were
                     // 98% of B1's matter residual (logbook/specs/r51-read/b1-probe.txt).
-                    double returned = burnt / Config.JoulesPerUnit;
-                    Matter.DepositExact(creature.Point, returned);
-                    BurntTotal += returned;
+                    // D206: a plant keeps the units of what it burns (ReturnSpent). Off, this is
+                    // the deposit and the count it always was.
+                    ReturnSpent(creature, burnt / Config.JoulesPerUnit);
                 }
 
                 // D162: the grips formed since the last metabolic step, charged as a burn is.
@@ -4336,6 +4751,15 @@ namespace Evosim.Core
                     creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
                     density, spent, creature.PendingWorkJoules, seconds, creature.Age,
                     exposure, creature.UpInBody);
+
+            // D219: a grazed leaf fixes less light. Its own statement; with the dial off it never runs.
+            if (Config.ContactEating && creature.PartHealth != null)
+            {
+                ledger = Metabolism.StepAtHealth(
+                    creature.Phenotype, Config, Field.IrradianceAt(creature.HeightY, creature.Patch, creature.X, creature.Z),
+                    density, spent, creature.PendingWorkJoules, seconds, creature.Age,
+                    exposure, creature.UpInBody, creature.PartHealth);
+            }
 
             if (timed) LedgerTicks += System.Diagnostics.Stopwatch.GetTimestamp() - billStarted;
 
@@ -4505,17 +4929,23 @@ namespace Evosim.Core
         private void GrowOne(Organism creature, float reserveFloor)
         {
             double adultTissue = creature.AdultTissueJoules;
-            double remaining = adultTissue - creature.TissueJoules;
+
+            // D219: a bitten body is measured intact, the account plus what has been eaten of it, so a bitten
+            // adult is not mistaken for a juvenile and re-scaled smaller. Off, the account is the body.
+            double tissueNow = creature.TissueJoules;
+            if (Config.ContactEating) tissueNow = IntactTissue(creature);
+
+            double remaining = adultTissue - tissueNow;
             if (!(remaining > 0d)) return;
 
             // What the reserve can spare. The floor is a fraction of the body this creature
             // already has, so a large body keeps a large buffer and a newborn keeps a small
             // one — the same proportion of the same thing at every size.
-            double target = creature.Energy - (double)reserveFloor * creature.TissueJoules;
+            double target = creature.Energy - (double)reserveFloor * tissueNow;
             if (target > remaining) target = remaining;
             if (!(target > 0d)) return;
 
-            double fraction = (creature.TissueJoules + target) / adultTissue;
+            double fraction = (tissueNow + target) / adultTissue;
             if (fraction > 1d) fraction = 1d;
 
             // The cube root, because the fraction is a volume and the parts are scaled by a
@@ -4528,6 +4958,16 @@ namespace Evosim.Core
             double actual = fraction >= 1d ? adultTissue : Metabolism.TissueJoules(grown, Config);
             double spend = actual - creature.TissueJoules;
 
+            // D219: the account the body will hold at the new size is the tissue of the parts it holds, and the
+            // reserve pays only for that rise: the hole an eaten part leaves grows with the body for nothing,
+            // so what the reserve pays is what the account gains and no joule goes missing.
+            double account = actual;
+            if (Config.ContactEating && creature.PartHealth != null)
+            {
+                account = UneatenTissue(grown, creature.PartHealth);
+                spend = account - creature.TissueJoules;
+            }
+
             // The one case this refuses: a body whose re-measured tissue costs a hair more
             // than the reserve holds. It is reachable only when the increment is already down
             // in the rounding, and growing anyway would take a creature to a negative reserve
@@ -4536,7 +4976,7 @@ namespace Evosim.Core
 
             WorldPhaseProbe.Count(WorldPhaseProbe.Grown, 1);
             creature.Energy -= spend;
-            creature.TissueJoules = actual;
+            creature.TissueJoules = account;
             creature.Phenotype = grown;
             creature.BodyFraction = actual >= adultTissue ? 1f : (float)(actual / adultTissue);
 
@@ -4681,7 +5121,7 @@ namespace Evosim.Core
         /// the water with the tissue and feeds somebody.
         /// </para>
         /// </remarks>
-        private void Bury(Organism creature, int index, DeathCause cause)
+        private void Bury(Organism creature, int index, DeathCause cause, long killedBy = -1L)
         {
             // The absorptive log's final row, taken before the death path zeroes anything:
             // this is the terminal budget, and the reserve it records is the (negative)
@@ -4710,12 +5150,30 @@ namespace Evosim.Core
             if (creature.GestationJoules > 0d) remains += creature.GestationJoules;
             creature.GestationJoules = 0d;
 
+            // D206: the spent units a plant kept. A corpse takes them and lets them go with its
+            // instalments; any other death puts them in the spent field where the body lay. Zero
+            // for every body with PlantsKeepMatter off, so nothing below moves.
+            double held = creature.SpentUnits;
+            creature.SpentUnits = 0d;
+            bool heldToCorpse = false;
+
             // Rule 6 of fable-propose-grid.md: above zero the body leaves a corpse instead, and
             // the deposit below happens in instalments from wherever the corpse has drifted to.
             // Nothing else about the death changes, and the lineage row is the same row. Guarded
             // on the knob rather than written as a general path, so at 0 the deposit below runs
             // exactly as it always has and every world on file replays.
-            if (Config.UnbittenDeathsLeaveNoCorpse && (cause != DeathCause.Eaten || !creature.HasPhotosyntheticTissue))
+            if (Config.ContactEating)
+            {
+                // D219, D220: no corpse is founded. The body itself becomes remains, keeping its tissue account and
+                // taking its reserve and gestation account as one store (choice 4). A diverged body's geometry cannot
+                // be trusted, so it is burnt and founds nothing (choice 7). A plant's held units went to the spent
+                // field above, as a death without a corpse sends them (choice 8).
+                double store = (reserveAtDeath > 0d ? reserveAtDeath : 0d) + (accountAtDeath > 0d ? accountAtDeath : 0d);
+                LeaveRemains(
+                    creature, creature.TissueJoules, store, wholeBody: true, killedBy: killedBy,
+                    diverged: cause == DeathCause.Diverged);
+            }
+            else if (Config.UnbittenDeathsLeaveNoCorpse && (cause != DeathCause.Eaten || !creature.HasPhotosyntheticTissue))
             {
                 // D167's leaf tank: only a leaf a bite killed leaves food. Every other death burns, a body without
                 // photosynthetic tissue killed by a bite among them (the owner's ruling of 2026-10-13: the tank feeds on
@@ -4737,7 +5195,10 @@ namespace Evosim.Core
                     ModuleCounts = creature.ModuleCounts,
                     LostPartPaths = creature.LostPartPaths,
                     ScaledBy = creature.Phenotype.ScaledBy,
+                    SpentUnits = held,
+                    KilledBy = killedBy,
                 });
+                heldToCorpse = true;
 
                 // No counterpart line for either account: StandingJoules reads a living body's
                 // tissue and reserve and a corpse's joules into the same total, and the body's
@@ -4762,12 +5223,20 @@ namespace Evosim.Core
                 creature.TissueJoules = 0d;
             }
 
+            if (held > 0d && !heldToCorpse)
+            {
+                Matter.DepositExact(creature.Point, held);
+                HeldReleasedTotal += held;
+            }
+
             _living.RemoveAt(index);
             _dead.Add(creature);
             Deaths++;
 
             _lineageEvents.Add(LineageEvent.Death(
-                ElapsedSeconds, creature.Id, cause, accountAtDeath, reserveAtDeath));
+                ElapsedSeconds, creature.Id, cause, accountAtDeath, reserveAtDeath,
+                creature.MouthJoulesOwnKill, creature.MouthJoulesOtherKill, creature.MouthJoulesCarrion,
+                creature.BiteKeptJoules));
         }
 
         /// <summary>
@@ -4873,6 +5342,9 @@ namespace Evosim.Core
                 Organism creature = _living[i];
                 creature.Patch = Placement.PatchOf(creature);
             }
+
+            // D220: remains lie in the region they drifted to, and are bitten and burnt there.
+            for (int i = 0; i < _remains.Count; i++) _remains[i].Patch = Placement.PatchOf(_remains[i]);
         }
 
         private void Disperse()
@@ -5497,9 +5969,8 @@ namespace Evosim.Core
                 // build (round 60's). Until then the units were a float, and a planted line breeding
                 // near-identical children rounded the same way at every birth: round 59's B1 drift,
                 // about 2e-5 units by 48,000 s in its two planted seeds (scratch/r59-read/b1-drift.txt).
-                double returnedUnits = overhead / Config.JoulesPerUnit;
-                Matter.DepositExact(parent.Point, returnedUnits);
-                BurntTotal += returnedUnits;
+                // D206: a plant parent keeps the units of the overhead too, as of every burn.
+                ReturnSpent(parent, overhead / Config.JoulesPerUnit);
             }
 
             Organism child = Admit(

@@ -860,6 +860,29 @@ namespace Evosim.Core
         public bool ContactPerPart { get; set; }
 
         /// <summary>
+        /// Whether what lies on either side of the box's seam is read the short way round: bodies
+        /// touch across it and the smells cross it. D204's open ocean, whose edges are joined.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The box has wrapped a body's root at the seams since D077, but its contact read the
+        /// plain difference between two spheres, so a body just inside one face never touched a
+        /// body just inside the opposite face, though the water between them is a metre wide. The
+        /// smells of carrion and of leaves stopped at the faces the same way. With it on, the
+        /// contact grid joins its cells across both seams and the push reads each difference the
+        /// short way round, and the smell grids lay a cone across a seam and read across it.
+        /// </para>
+        /// <para>
+        /// <b>Off by default, so every recorded box world replays.</b> A pair nearer than half the
+        /// box on both axes takes no new float with it on, so a world in which no pair ever met
+        /// across a seam is the same world to the bit. A tank refuses it: its glass is the
+        /// boundary and it has no seam. Only the farm binds it (<c>EVOSIM_READ_ACROSS_SEAMS</c>).
+        /// </para>
+        /// </remarks>
+        [Tunable("world")]
+        public bool ReadAcrossSeams { get; set; }
+
+        /// <summary>
         /// Sliding friction where a part touches the rock or the glass, as a coefficient μ — the
         /// owner's ruling of 2026-09-30 (D137).
         /// </summary>
@@ -1329,6 +1352,30 @@ namespace Evosim.Core
         public float IntakeReachMetres { get; set; }
 
         /// <summary>
+        /// D214: measure the intake reach from each eating part's mouth point and not from the body's
+        /// centre. <b>Off, the default and every recorded world, measures from the centre as before.</b>
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// On, a corpse is in reach of a body when any eating part's posed mouth point
+        /// (<see cref="MouthPoint"/>) lies within the corpse's radius plus <see cref="IntakeReachMetres"/>,
+        /// each part measured from its own point, with the seam's shorter arc on x and z as for the
+        /// centre. <c>World.MouthRate</c> is unchanged: it still sums the intake of every eating part.
+        /// The farm poses the points from the solver's links and hands them to Core each metabolic step
+        /// (<c>World.ObserveMouths</c>); Core computes no pose. A body handed no points that step, with
+        /// no eating part or none the farm could pose, is measured from its centre and counted in
+        /// <c>World.MouthPointFallbacks</c>.
+        /// </para>
+        /// <para>
+        /// Refused with <see cref="IntakeReachMetres"/> at 0, which is already no corpse intake at all.
+        /// <see cref="FoundersFollowCorpses"/> keeps placing founders by the centre either way.
+        /// A new realisation of every seed when on.
+        /// </para>
+        /// </remarks>
+        [Tunable("mouth")]
+        public bool IntakeReachFromMouth { get; set; }
+
+        /// <summary>
         /// The share of what a mouth takes from a corpse that never reaches the reserve and is
         /// deposited as marine snow where the corpse is — rule 6.
         /// </summary>
@@ -1363,6 +1410,90 @@ namespace Evosim.Core
         /// </summary>
         [Tunable("mouth", Unit = "W/unit/m2")]
         public float IntakeWattsPerUnit { get; set; }
+
+        /// <summary>
+        /// The rate every mouth takes from a corpse at, times this: the owner's dial of 2026-10-19 for
+        /// the r62 grazer screen. 1, the default, is every recorded world.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// A mouth takes <see cref="MorphNode.Intake"/> times its part's area in charged units a second
+        /// (<c>WorldMouth.MouthRate</c>), the Intake gene capped by its cell type. This scales what the
+        /// world grants that gene, for the demand that rations a shared corpse and for the take alike, so
+        /// the corpse's joules still bound every meal and the books close with no new term. The mouth's
+        /// price (<see cref="IntakeWattsPerUnit"/>) stays on the gene and does not move with it.
+        /// </para>
+        /// <para>
+        /// At 1 nothing is multiplied, so a world without it is the recorded arithmetic to the bit. Only
+        /// the farm binds it (<c>EVOSIM_INTAKE_SCALE</c>, header <c>intake ×</c>).
+        /// </para>
+        /// </remarks>
+        [Tunable("mouth")]
+        public float IntakeScale
+        {
+            get => _intakeScale;
+            set => _intakeScale = value > 0f && !float.IsInfinity(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(nameof(IntakeScale), value, "A scale is above 0 and finite.");
+        }
+
+        private float _intakeScale = 1f;
+
+        /// <summary>
+        /// D219, D220: a mouth eats only what it touches. A bite takes tissue out of the body it wounds
+        /// as it wounds, the biter's part keeping the share its intake can carry and the rest going to
+        /// the water; no corpse is founded and the corpse meal never runs; healing re-buys the tissue
+        /// it restores; growth reads the intact body; a grazed leaf fixes less light. Off, the default
+        /// and every recorded world, none of it runs and the world is the recorded one to the bit.
+        /// <c>EVOSIM_CONTACT_EATING</c>.
+        /// </summary>
+        /// <remarks>
+        /// With it on <see cref="IntakeReachMetres"/> and <see cref="IntakeReachFromMouth"/> are read by
+        /// nothing, and <see cref="IntakeScale"/> is the yield dial. The spec is
+        /// <c>logbook/specs/contact-eating-spec.md</c>.
+        /// </remarks>
+        [Tunable("mouth")]
+        public bool ContactEating { get; set; }
+
+        /// <summary>
+        /// D220: how long a dead body or a cut-off limb stays in the water as edible remains, seconds.
+        /// Read only with <see cref="ContactEating"/> on. Refused when negative or not finite.
+        /// <c>EVOSIM_REMAINS_WINDOW</c>.
+        /// </summary>
+        [Tunable("mouth", Unit = "s")]
+        public float RemainsWindowSeconds
+        {
+            get => _remainsWindowSeconds;
+            set => _remainsWindowSeconds = value >= 0f && !float.IsInfinity(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(RemainsWindowSeconds), value,
+                    "The remains window is seconds, finite and not negative.");
+        }
+
+        private float _remainsWindowSeconds = 60f;
+
+        /// <summary>
+        /// D224: a bite on a living body takes the same share of the body's reserve and gestation account as of
+        /// its tissue, as a bite on remains already takes of their store (D220, choice 4). What it takes joins the
+        /// offer and is kept or wasted with the tissue. Off, the default, a bite on a living body takes tissue only
+        /// and the world is the recorded one to the bit. Read only with <see cref="ContactEating"/> on, and refused
+        /// on without it. <c>EVOSIM_BITE_TAKES_STORE</c>.
+        /// </summary>
+        [Tunable("mouth")]
+        public bool BiteTakesStore { get; set; }
+
+        /// <summary>
+        /// D226: a multiplier on the damage of a mouth's blow, read before the wound turns the damage into a share of
+        /// the bitten part's health pool. A mouth's blow is one whose attacking part carries intake and whose
+        /// attacker is not remains; a claw's blow (attack without intake) and every blow from remains are unchanged.
+        /// At 1, the default, the expression handed to the wound is the recorded one and the world is the recorded
+        /// one to the bit. Above 1 a bite takes a deeper share of the part's tissue (and, with
+        /// <see cref="BiteTakesStore"/>, of its store). Finite and above 0, and refused at any value but 1 without
+        /// <see cref="ContactEating"/>. <c>EVOSIM_BITE_DAMAGE_SCALE</c>.
+        /// </summary>
+        [Tunable("mouth")]
+        public float BiteDamageScale { get; set; } = 1f;
 
         /// <summary>
         /// Upkeep per unit of <see cref="MorphNode.Protection"/> per square metre, watts — rule 7.
@@ -1556,8 +1687,13 @@ namespace Evosim.Core
         /// The noise, the wavelength, the cover and the depth are unchanged. The columns within the
         /// margin are left out before the cover's threshold is taken, so the cover is a share of
         /// the columns that remain, and each seed keeps its own layout inside them. The influx
-        /// lays its income by the same plan (D175), so it lands off the glass too. A tank only;
-        /// refused in a box, and refused when it leaves no column.
+        /// lays its income by the same plan (D175), so it lands off the glass too. Refused when it
+        /// leaves no column.
+        /// </para>
+        /// <para>
+        /// <b>In a box it is the margin from every face</b> (D204): no island column lies nearer a
+        /// seam than this, so the seam runs through desert and the islands' map need not join
+        /// there. D204's square keeps its islands 45 m off the edge.
         /// </para>
         /// </remarks>
         [Tunable("world", Unit = "m")]
@@ -2256,6 +2392,338 @@ namespace Evosim.Core
                 : throw new ArgumentOutOfRangeException(
                     name, value, "A reef's dimension is finite and not negative.");
 
+        /// <summary>
+        /// What a reef is: <see cref="Evosim.Core.ReefShape.Mushroom"/>, the lobed caps on stems
+        /// of round 47 to round 61 (the reef group above), or <see cref="Evosim.Core.ReefShape.Coral"/>,
+        /// D194's branching coral, trees of capsules and plates rooted on the bed and placed on the
+        /// islands (the rest of this group, <see cref="CoralGeometry"/>).
+        /// <c>logbook/specs/coral-build.md</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Mushroom is every recorded world.</b> With it, every coral dial must stand at its
+        /// default (<see cref="CoralGeometry.Refuse(RunConfig, CoralFootprint, bool)"/>), so no mushroom world carries coral numbers
+        /// in its hash, and the mushrooms' draws, mask and bits are the ones recorded before the
+        /// coral (<c>MushroomUnchangedTests</c>).
+        /// </para>
+        /// <para>
+        /// <b>Coral replaces the mushrooms.</b> It needs <see cref="ReefCover"/> 0, so the reef
+        /// group stands at its defaults, and the islands, since the coral grows from them. The
+        /// coral is drawn from the reef stream, which D192 seeds from the landscape's seed.
+        /// </para>
+        /// </remarks>
+        [Tunable("coral")]
+        public ReefShape ReefShape { get; set; } = ReefShape.Mushroom;
+
+        /// <summary>
+        /// The share of the colonies drawn as island colonies, the rest growing in the desert as
+        /// stepping stones. D194 ruled at least 0.8, and less is refused. The desert's canopy is
+        /// this share's complement over it times the islands' canopy target.
+        /// </summary>
+        [Tunable("coral")]
+        public float CoralIslandShare
+        {
+            get => _coralIslandShare;
+            set => _coralIslandShare = value >= 0f && value <= 1f && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(nameof(CoralIslandShare), value, "A share is 0 to 1.");
+        }
+
+        private float _coralIslandShare = 0.85f;
+
+        /// <summary>
+        /// The share of each island's canopy columns the coral roofs (D194's dial): island colonies
+        /// are added until each island reaches it, counted island by island on the canopy's 1 m
+        /// columns, each column by the share of its 4 by 4 samples under a piece.
+        /// </summary>
+        [Tunable("coral")]
+        public float CoralIslandRoof
+        {
+            get => _coralIslandRoof;
+            set => _coralIslandRoof = value >= 0f && value <= 1f && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(nameof(CoralIslandRoof), value, "A roof is a share, 0 to 1.");
+        }
+
+        private float _coralIslandRoof = 0.2f;
+
+        /// <summary>The most colonies a world may hold; a world that needs more is refused, as <see cref="ReefMaxCount"/> is.</summary>
+        [Tunable("coral")]
+        public int CoralMaxColonies
+        {
+            get => _coralMaxColonies;
+            set => _coralMaxColonies = CoralCount(nameof(CoralMaxColonies), value);
+        }
+
+        private int _coralMaxColonies = 200;
+
+        /// <summary>The most pieces one colony grows: growth stops when it is reached.</summary>
+        [Tunable("coral")]
+        public int CoralMaxPiecesPerColony
+        {
+            get => _coralMaxPiecesPerColony;
+            set => _coralMaxPiecesPerColony = CoralCount(nameof(CoralMaxPiecesPerColony), value);
+        }
+
+        private int _coralMaxPiecesPerColony = 60;
+
+        /// <summary>The most pieces the coral may hold in all; a world that needs more is refused.</summary>
+        [Tunable("coral")]
+        public int CoralMaxPieces
+        {
+            get => _coralMaxPieces;
+            set => _coralMaxPieces = CoralCount(nameof(CoralMaxPieces), value);
+        }
+
+        private int _coralMaxPieces = 6000;
+
+        /// <summary>The shortest trunk, m: each trunk's height is uniform between this and the longest.</summary>
+        [Tunable("coral", Unit = "m")]
+        public float CoralTrunkHeightMinMetres
+        {
+            get => _coralTrunkHeightMinMetres;
+            set => _coralTrunkHeightMinMetres = CoralDial(nameof(CoralTrunkHeightMinMetres), value);
+        }
+
+        private float _coralTrunkHeightMinMetres = 3f;
+
+        /// <summary>The longest trunk, m.</summary>
+        [Tunable("coral", Unit = "m")]
+        public float CoralTrunkHeightMaxMetres
+        {
+            get => _coralTrunkHeightMaxMetres;
+            set => _coralTrunkHeightMaxMetres = CoralDial(nameof(CoralTrunkHeightMaxMetres), value);
+        }
+
+        private float _coralTrunkHeightMaxMetres = 8f;
+
+        /// <summary>The thinnest trunk's radius, m: each trunk's is uniform between this and the thickest.</summary>
+        [Tunable("coral", Unit = "m")]
+        public float CoralTrunkRadiusMinMetres
+        {
+            get => _coralTrunkRadiusMinMetres;
+            set => _coralTrunkRadiusMinMetres = CoralDial(nameof(CoralTrunkRadiusMinMetres), value);
+        }
+
+        private float _coralTrunkRadiusMinMetres = 0.35f;
+
+        /// <summary>The thickest trunk's radius, m.</summary>
+        [Tunable("coral", Unit = "m")]
+        public float CoralTrunkRadiusMaxMetres
+        {
+            get => _coralTrunkRadiusMaxMetres;
+            set => _coralTrunkRadiusMaxMetres = CoralDial(nameof(CoralTrunkRadiusMaxMetres), value);
+        }
+
+        private float _coralTrunkRadiusMaxMetres = 0.6f;
+
+        /// <summary>The fewest children a branching segment's top spawns; each draws its count uniformly from this to the most.</summary>
+        [Tunable("coral")]
+        public int CoralChildrenMin
+        {
+            get => _coralChildrenMin;
+            set => _coralChildrenMin = CoralCount(nameof(CoralChildrenMin), value);
+        }
+
+        private int _coralChildrenMin = 2;
+
+        /// <summary>The most children a branching segment's top spawns.</summary>
+        [Tunable("coral")]
+        public int CoralChildrenMax
+        {
+            get => _coralChildrenMax;
+            set => _coralChildrenMax = CoralCount(nameof(CoralChildrenMax), value);
+        }
+
+        private int _coralChildrenMax = 3;
+
+        /// <summary>
+        /// The mean angle a child is tilted from its parent's axis, degrees. Each child's tilt is
+        /// uniform within <see cref="CoralTiltSpreadDegrees"/> either side of it.
+        /// </summary>
+        [Tunable("coral", Unit = "deg")]
+        public float CoralTiltMeanDegrees
+        {
+            get => _coralTiltMeanDegrees;
+            set => _coralTiltMeanDegrees = CoralDial(nameof(CoralTiltMeanDegrees), value);
+        }
+
+        private float _coralTiltMeanDegrees = 35f;
+
+        /// <summary>How far a child's tilt strays from the mean, degrees, uniform either way.</summary>
+        [Tunable("coral", Unit = "deg")]
+        public float CoralTiltSpreadDegrees
+        {
+            get => _coralTiltSpreadDegrees;
+            set => _coralTiltSpreadDegrees = CoralDial(nameof(CoralTiltSpreadDegrees), value);
+        }
+
+        private float _coralTiltSpreadDegrees = 15f;
+
+        /// <summary>A child's length as a share of its parent's.</summary>
+        [Tunable("coral")]
+        public float CoralLengthFactor
+        {
+            get => _coralLengthFactor;
+            set => _coralLengthFactor = CoralDial(nameof(CoralLengthFactor), value);
+        }
+
+        private float _coralLengthFactor = 0.75f;
+
+        /// <summary>A child's radius as a share of its parent's.</summary>
+        [Tunable("coral")]
+        public float CoralRadiusFactor
+        {
+            get => _coralRadiusFactor;
+            set => _coralRadiusFactor = CoralDial(nameof(CoralRadiusFactor), value);
+        }
+
+        private float _coralRadiusFactor = 0.7f;
+
+        /// <summary>The deepest piece, counted in ancestors: the trunk is depth 0, and no piece grows past this.</summary>
+        [Tunable("coral")]
+        public int CoralMaxDepth
+        {
+            get => _coralMaxDepth;
+            set => _coralMaxDepth = value >= 0
+                ? value
+                : throw new ArgumentOutOfRangeException(nameof(CoralMaxDepth), value, "A depth is at least 0, the trunk alone.");
+        }
+
+        private int _coralMaxDepth = 4;
+
+        /// <summary>The thinnest branch, m: a child whose radius would fall under this is not grown.</summary>
+        [Tunable("coral", Unit = "m")]
+        public float CoralMinRadiusMetres
+        {
+            get => _coralMinRadiusMetres;
+            set => _coralMinRadiusMetres = CoralDial(nameof(CoralMinRadiusMetres), value);
+        }
+
+        private float _coralMinRadiusMetres = 0.12f;
+
+        /// <summary>The chance that a tip, a segment that grew no child, carries a flat plate at its end.</summary>
+        [Tunable("coral")]
+        public float CoralPlateChance
+        {
+            get => _coralPlateChance;
+            set => _coralPlateChance = value >= 0f && value <= 1f && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(nameof(CoralPlateChance), value, "A chance is 0 to 1.");
+        }
+
+        private float _coralPlateChance = 0.3f;
+
+        /// <summary>The smallest plate's disc radius, m: each plate's is uniform between this and the largest.</summary>
+        [Tunable("coral", Unit = "m")]
+        public float CoralPlateRadiusMinMetres
+        {
+            get => _coralPlateRadiusMinMetres;
+            set => _coralPlateRadiusMinMetres = CoralDial(nameof(CoralPlateRadiusMinMetres), value);
+        }
+
+        private float _coralPlateRadiusMinMetres = 0.8f;
+
+        /// <summary>The largest plate's disc radius, m.</summary>
+        [Tunable("coral", Unit = "m")]
+        public float CoralPlateRadiusMaxMetres
+        {
+            get => _coralPlateRadiusMaxMetres;
+            set => _coralPlateRadiusMaxMetres = CoralDial(nameof(CoralPlateRadiusMaxMetres), value);
+        }
+
+        private float _coralPlateRadiusMaxMetres = 2.5f;
+
+        /// <summary>A plate's thickness, m: the diameter of the sphere that sweeps its disc.</summary>
+        [Tunable("coral", Unit = "m")]
+        public float CoralPlateThicknessMetres
+        {
+            get => _coralPlateThicknessMetres;
+            set => _coralPlateThicknessMetres = CoralDial(nameof(CoralPlateThicknessMetres), value);
+        }
+
+        private float _coralPlateThicknessMetres = 0.25f;
+
+        /// <summary>The fillet of the cubic smooth minimum that joins a colony's pieces, m.</summary>
+        [Tunable("coral", Unit = "m")]
+        public float CoralFilletMetres
+        {
+            get => _coralFilletMetres;
+            set => _coralFilletMetres = CoralDial(nameof(CoralFilletMetres), value);
+        }
+
+        private float _coralFilletMetres = 0.15f;
+
+        /// <summary>
+        /// The distance from a colony's hull over which the streams fade, m: today's quintic of
+        /// the hull's distance. Its start is <see cref="ReefFadeMetres"/>'s default. Read by the
+        /// hull's fade, step 2 of <c>logbook/specs/coral-build.md</c>.
+        /// </summary>
+        [Tunable("coral", Unit = "m")]
+        public float CoralFadeMetres
+        {
+            get => _coralFadeMetres;
+            set => _coralFadeMetres = CoralDial(nameof(CoralFadeMetres), value);
+        }
+
+        private float _coralFadeMetres = 8f;
+
+        /// <summary>
+        /// The least the fade falls to inside a colony's hull (D194's floor), 0 to under 1, so water
+        /// keeps moving through a thicket. Read by the hull's fade, step 2 of
+        /// <c>logbook/specs/coral-build.md</c>.
+        /// </summary>
+        [Tunable("coral")]
+        public float CoralFadeFloor
+        {
+            get => _coralFadeFloor;
+            set => _coralFadeFloor = value >= 0f && value < 1f && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(nameof(CoralFadeFloor), value, "A floor is at least 0 and under 1.");
+        }
+
+        private float _coralFadeFloor = 0.25f;
+
+        /// <summary>
+        /// The light a fully covered canopy column lets through, 0 to 1: a column covered by a share
+        /// c of its samples passes <c>1 − c(1 − this)</c> below the canopy's top. Read by the canopy
+        /// map, step 2 of <c>logbook/specs/coral-build.md</c>.
+        /// </summary>
+        [Tunable("coral")]
+        public float CoralTransmission
+        {
+            get => _coralTransmission;
+            set => _coralTransmission = value >= 0f && value <= 1f && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(nameof(CoralTransmission), value, "A transmission is 0 to 1.");
+        }
+
+        private float _coralTransmission = 0.3f;
+
+        /// <summary>
+        /// The cell of the static grid over the coral's pieces, m, kept apart from the bodies'
+        /// contact grid. Read by the static grid, step 2 of <c>logbook/specs/coral-build.md</c>.
+        /// </summary>
+        [Tunable("coral", Unit = "m")]
+        public float CoralGridCellMetres
+        {
+            get => _coralGridCellMetres;
+            set => _coralGridCellMetres = CoralDial(nameof(CoralGridCellMetres), value);
+        }
+
+        private float _coralGridCellMetres = 4f;
+
+        private static float CoralDial(string name, float value) =>
+            value >= 0f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    name, value, "A coral dial is finite and not negative.");
+
+        private static int CoralCount(string name, int value) =>
+            value >= 1
+                ? value
+                : throw new ArgumentOutOfRangeException(name, value, "A coral count is at least 1.");
+
         /// <summary>How fast matter falls, m/s — D048.</summary>
         /// <remarks>
         /// Separate from <see cref="NutrientSinkMetresPerSecond"/> rather than shared. They
@@ -2689,6 +3157,32 @@ namespace Evosim.Core
         private float _corpseSettledDecayPerSecond;
 
         /// <summary>
+        /// D212: the half-life of a corpse's food value, seconds: what it still holds halves every this
+        /// long whether or not anything eats it. 0, the default and every recorded world, is off: a
+        /// corpse then holds its joules until its instalments hand them to the water. Refused without
+        /// <see cref="CorpseDecayPerSecond"/> above 0, since a world with no corpse objects has nothing
+        /// to spoil. <c>EVOSIM_CORPSE_HALF_LIFE</c>.
+        /// </summary>
+        /// <remarks>
+        /// The energy spoiled leaves as heat (<c>EnergyOut</c>), as the bacteria that spoil carrion
+        /// respire it, and the matter it was charged on goes to the spent field, as a burn's does. It is
+        /// a clock on the food and not an instalment: the corpse stays where it is, smaller in joules,
+        /// and so in reach and scent. See <c>World.StepCorpses</c>.
+        /// </remarks>
+        [Tunable("field", Unit = "s")]
+        public float CorpseHalfLifeSeconds
+        {
+            get => _corpseHalfLifeSeconds;
+            set => _corpseHalfLifeSeconds = value >= 0f && !float.IsInfinity(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(CorpseHalfLifeSeconds), value,
+                    "A corpse's spoilage half-life is seconds, finite and not negative; 0 is off.");
+        }
+
+        private float _corpseHalfLifeSeconds;
+
+        /// <summary>
         /// Fraction of a refuge layer's density that feeding can see and take, in [0, 1] —
         /// arm C's knob on D055's refuge. Zero is D055's own refuge: total exclusion.
         /// </summary>
@@ -2895,6 +3389,64 @@ namespace Evosim.Core
         }
 
         private float _exudationFraction;
+
+        /// <summary>
+        /// D206: a plant keeps its matter. What a plant burns leaves as heat, and the spent unit
+        /// stays in the body (<c>Organism.SpentUnits</c>) for its fixation to charge again.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Which bodies hold, and how much</b> (the coordinator's reading of D206, 2026-10-19).
+        /// A body with photosynthetic tissue and no eating tissue (no mouth, and no consumer or
+        /// absorptive cell) is a plant and holds its whole burn. A body with both holds the share of
+        /// its burn that its photosynthetic cells' upkeep is of all its cells' upkeep, and releases
+        /// the rest to the water as D098's leg 2 always did. Every other body releases all of it.
+        /// </para>
+        /// <para>
+        /// <b>Fixation charges the body's own units first</b>, up to what the light offers, and
+        /// draws from the water only for the capacity they leave, under the water's uptake and
+        /// share as before. A plant needs the water's matter only to grow or to breed. The held
+        /// units go to the corpse at death and leave it with its decay instalments, into the spent
+        /// field. Exudation (D070) is unchanged and leaves charged.
+        /// </para>
+        /// <para>
+        /// <b>Off by default, so every world on file replays.</b> Off, no body holds anything and
+        /// the step is the recorded arithmetic. Only the farm binds it
+        /// (<c>EVOSIM_PLANTS_KEEP_MATTER</c>, header <c>keeps</c>).
+        /// </para>
+        /// </remarks>
+        [Tunable("feeding")]
+        public bool PlantsKeepMatter { get; set; }
+
+        /// <summary>
+        /// D207: D206's form made smooth, and a body's own leaves take its spent matter first. Needs
+        /// <see cref="PlantsKeepMatter"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Own leaves first.</b> At every burn (the metabolic step's, a grip's, a birth's overhead and
+        /// healing) a body with photosynthetic tissue holds its spent units first up to what its leaves can
+        /// fix in one step at the present light, in units (the light capacity of its last metabolic step,
+        /// <c>Organism.LastLedger</c>, over ρ), less the units it already holds. Only the remainder goes on.
+        /// A body not yet through a metabolic step has no capacity, so the whole burn goes on.
+        /// </para>
+        /// <para>
+        /// <b>The remainder, smooth</b> (<see cref="Metabolism.SmoothHeldShare"/>). A body with no eating
+        /// tissue holds it all. A body with eating tissue holds its photosynthetic cells' upkeep over its
+        /// photosynthetic and eating upkeep together: a consumer or absorptive cell's whole upkeep, and the
+        /// mouth's own price (D106's intake price) on any other part, which only a cell table that gives
+        /// another cell a mouth can have (the standard table gives one to the consumer alone). Muscle, brain
+        /// and structure count on neither side, so a tiny mouth moves the share by a tiny amount, where D206
+        /// as first built dropped a plant from all of its burn to its leaves' share of the whole.
+        /// </para>
+        /// <para>
+        /// <b>Off by default, so every world D206 ran replays.</b> A pure plant holds its whole burn either way,
+        /// in one addition, so its arithmetic is D206's to the bit. Only the farm binds it
+        /// (<c>EVOSIM_PLANTS_KEEP_OWN_FIRST</c>, header <c>own leaves first</c>).
+        /// </para>
+        /// </remarks>
+        [Tunable("feeding")]
+        public bool PlantsKeepOwnFirst { get; set; }
 
         /// <summary>
         /// Seconds of life after which a body costs twice as much to keep — DESIGN.md §5A.2, D038.
@@ -3374,6 +3926,46 @@ namespace Evosim.Core
         /// </remarks>
         [Tunable("physics")]
         public bool DriveLimitAtEveryStep { get; set; }
+
+        /// <summary>
+        /// Whether the water's drag limiter caps the drag torque on each welded body as a whole,
+        /// by its inertia on every principal axis, rather than on each link by its own smallest
+        /// inertia along its spin: D199's rebuilt limiter, in the form the owner chose on
+        /// 2026-10-18. The force is capped link by link under either law. False is every run on
+        /// file.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Why.</b> The per-link law caps a part welded into a long rigid blade by that one
+        /// part's turning resistance, about 0.02 kg·m² against the blade's 12,500, and caps only
+        /// the torque along the spin. A 42 m blade then ran away from a tenth of the spin it took
+        /// with no limiter at all (logbook/specs/r62-blades.md). The force stays with the links
+        /// because a cap by the whole body's mass, against its centre's velocity, let a fast roll
+        /// fling a short blade: its centre barely moves while each part crosses the water at speed.
+        /// </para>
+        /// <para>
+        /// <b>What it changes.</b> Only where the limiter engages: above dt 0.01, or at every step
+        /// under <see cref="DragLimitAtEveryStep"/>. The farm's CPU solver and the card's kernel
+        /// both carry it. <c>EVOSIM_DRAG_LIMIT_WELDED</c>. The header prints <c>dragLimit</c> only
+        /// when this or <see cref="DragLimitAtEveryStep"/> is on, followed by the gate and then
+        /// <c>welded</c> or <c>link</c>.
+        /// </para>
+        /// </remarks>
+        [Tunable("physics")]
+        public bool DragLimitByWeldedBody { get; set; }
+
+        /// <summary>
+        /// Whether the water's drag limiter engages at every step rather than only above dt 0.01:
+        /// D196, held by D199 until <see cref="DragLimitByWeldedBody"/> was measured. False is
+        /// every run on file, where at 0.01 the drag is applied as computed.
+        /// </summary>
+        /// <remarks>
+        /// <c>EVOSIM_DRAG_LIMIT_ALWAYS</c>. Where the header prints <c>dragLimit</c>, it prints
+        /// <c>always</c> or <c>&gt;0.01</c> after it, as <see cref="DriveLimitAtEveryStep"/> does
+        /// for the drive.
+        /// </remarks>
+        [Tunable("physics")]
+        public bool DragLimitAtEveryStep { get; set; }
 
         /// <summary>
         /// Whether a genome in this run may draw <see cref="SensorChannel.Chemical"/> — the smell
@@ -3904,5 +4496,18 @@ namespace Evosim.Core
         /// islands; a world without them is refused at construction.
         /// </summary>
         Islands = 2,
+    }
+
+    /// <summary>
+    /// What a reef is - <see cref="RunConfig.ReefShape"/>, <c>logbook/specs/coral-build.md</c>. By name in
+    /// the file and the hash, as every enum tunable is.
+    /// </summary>
+    public enum ReefShape
+    {
+        /// <summary>Round 47's lobed caps on stems, placed by <see cref="ReefGeometry.Place"/>: every recorded world.</summary>
+        Mushroom = 0,
+
+        /// <summary>D194's branching coral on the islands, placed by <see cref="CoralGeometry.Place(RunConfig, CoralFootprint, BedShape, System.Func{float, float, float}, ulong, bool)"/>.</summary>
+        Coral = 1,
     }
 }

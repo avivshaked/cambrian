@@ -330,6 +330,25 @@ namespace Evosim.Dynamics
             }
         }
 
+        /// <summary>
+        /// Stills the drive for good (D220, remains): the smoothing window, the power and bend envelopes, the stroke
+        /// and the last applied torque all go to zero, so a body that no longer runs a brain pushes nothing and a
+        /// checkpoint of it holds the still drive. The bend rests at its centre, where a fresh drive starts it.
+        /// </summary>
+        internal void Silence()
+        {
+            System.Array.Clear(_history, 0, _history.Length);
+            System.Array.Clear(_runningSum, 0, _runningSum.Length);
+            System.Array.Clear(AppliedTorque, 0, AppliedTorque.Length);
+            System.Array.Clear(Stroke, 0, Stroke.Length);
+            System.Array.Clear(_power, 0, _power.Length);
+            System.Array.Clear(_powerTarget, 0, _powerTarget.Length);
+            System.Array.Clear(_powerRate, 0, _powerRate.Length);
+            System.Array.Clear(_bendRate, 0, _bendRate.Length);
+            System.Array.Clear(_holdLeft, 0, _holdLeft.Length);
+            for (int i = 0; i < _bend.Length; i++) { _bend[i] = 0.5; _bendTarget[i] = 0.5; }
+        }
+
         private static double Toward(double from, double to, double step)
         {
             if (from < to) return from + step >= to ? to : from + step;

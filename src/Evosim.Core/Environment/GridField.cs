@@ -144,6 +144,17 @@ namespace Evosim.Core
         private CurrentField.BedColumn[] _bedColumnY;
         private CurrentField.BedColumn[] _bedColumnZ;
 
+        // The box ocean's cos χ and sin χ for each of its vectors at each of the three edge
+        // families' (x, z), in the bed columns' indexing times CurrentField.OceanPhaseStride.
+        // Neither the height nor the clock enters χ, so the trigonometry the direct path pays at
+        // every edge of every pass is paid once. Null except in the box's ocean on a shaped floor;
+        // built against one current and one build of its vectors, and rebuilt for another.
+        private CurrentField _oceanPhasesFor;
+        private int _oceanPhasesBuild;
+        private double[] _oceanPhaseX;
+        private double[] _oceanPhaseY;
+        private double[] _oceanPhaseZ;
+
         // D105's hoist: everything the streams' potential derives from a lattice point's (x, z)
         // and from the height it reads the flat field at, which is neither the clock's nor the
         // sample's. Built once per current, in the same three edge lattices the bed columns use,
@@ -267,6 +278,12 @@ namespace Evosim.Core
         public ReefGeometry Reefs { get; }
 
         /// <summary>
+        /// The coral whose rock the mask kills, or null — every world at <see cref="ReefShape.Mushroom"/>.
+        /// A cell is rock when its centre is, by the reefs' test (coral-build.md, the readers).
+        /// </summary>
+        public CoralRock Coral { get; }
+
+        /// <summary>
         /// Cells the mask calls live: the whole array in a box, the cells whose centres lie inside
         /// the circle in a tank, and of those the ones above the floor when there is a bed.
         /// </summary>
@@ -331,7 +348,7 @@ namespace Evosim.Core
             float worldArea, float sinkMetresPerSecond, float worldDepth,
             float refugeMetres, float refugeEdibleFraction, int patchCount, float cellMetres,
             int patchesAcross = 1, WorldShape shape = WorldShape.Box, float tankRadiusMetres = 0f,
-            BedShape bed = null, ReefGeometry reefs = null)
+            BedShape bed = null, ReefGeometry reefs = null, CoralRock coral = null)
         {
             if (!(worldArea > 0f) || float.IsInfinity(worldArea))
                 throw new ArgumentOutOfRangeException(nameof(worldArea), worldArea, "Must be positive and finite.");
@@ -367,12 +384,17 @@ namespace Evosim.Core
                     "logbook/specs/tank-spec.md.");
             }
 
-            if (bed != null && bed.HasRelief && shape != WorldShape.Tank)
+            // D204: a box takes the square's floor (BedShape.ForBox), whose waves join at both seams,
+            // and a tank takes the disc's. Either way round is a floor fitted to another footprint.
+            if (bed != null && bed.HasRelief && bed.IsBox != (shape != WorldShape.Tank))
             {
                 throw new ArgumentException(
-                    "A bed with relief was handed to a box. The height map is fitted over the " +
-                    "tank's disc and the box is periodic on both horizontal axes, where a floor " +
-                    "would have to meet itself at two seams. logbook/specs/bed-spec.md.",
+                    bed.IsBox
+                        ? "The square's bed (BedShape.ForBox) was handed to a tank. Its waves are fitted " +
+                          "to join at a box's seams, and the tank's bed is fitted over its disc."
+                        : "A tank's bed was handed to a box. The height map is fitted over the tank's disc " +
+                          "and the box is periodic on both horizontal axes, where a floor has to meet itself " +
+                          "at two seams; the box's is BedShape.ForBox (D204). logbook/specs/bed-spec.md.",
                     nameof(bed));
             }
 
@@ -384,7 +406,7 @@ namespace Evosim.Core
                     nameof(reefs));
             }
 
-            if (bed != null && bed.HasRelief &&
+            if (bed != null && bed.HasRelief && !bed.IsBox &&
                 (Math.Abs(bed.DepthMetres - worldDepth) > 1e-4f ||
                  Math.Abs(bed.RadiusMetres - tankRadiusMetres) > 1e-4f))
             {
@@ -409,6 +431,22 @@ namespace Evosim.Core
             PatchWidthMetres = (float)Math.Sqrt(worldArea / patchCount);
             Shape = shape;
             TankRadiusMetres = shape == WorldShape.Tank ? tankRadiusMetres : 0f;
+
+            // The square's bed against this box, now that the box's extents are known: one
+            // geometry reaches the fields, the water and the placer, as the tank's check says.
+            if (bed != null && bed.HasRelief && bed.IsBox &&
+                (Math.Abs(bed.DepthMetres - worldDepth) > 1e-4f ||
+                 bed.LengthMetres != LengthMetres || bed.WidthMetres != WidthMetres))
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"The bed is a map over a square {bed.LengthMetres} by {bed.WidthMetres} m and ") +
+                    FormattableString.Invariant($"{bed.DepthMetres} m deep, and this field is ") +
+                    FormattableString.Invariant($"{LengthMetres} by {WidthMetres} m and {worldDepth} m. ") +
+                    "One geometry reaches the fields, the water and the placer, or the mask and the " +
+                    "collider are two different floors.",
+                    nameof(bed));
+            }
 
             _ny = (int)Math.Round(worldDepth / cellMetres);
 
@@ -471,7 +509,8 @@ namespace Evosim.Core
             // report's per-depth bins are read against ArrayDepthMetres, and the refuge band
             // (RefugeLayerCount, counted up from the array's floor) sits under the deepest column
             // rather than under the mean one.
-            if (shape == WorldShape.Tank && bed != null && bed.HasRelief)
+            // The square's (D204) over every column, since all of them are inside.
+            if (bed != null && bed.HasRelief)
             {
                 double lowest = 0d;
 
@@ -482,7 +521,7 @@ namespace Evosim.Core
                     for (int iz = 0; iz < _nz; iz++)
                     {
                         double cz = (iz + 0.5d) * cellMetres;
-                        if (!TankGeometry.Inside(cx, cz, tankRadiusMetres)) continue;
+                        if (shape == WorldShape.Tank && !TankGeometry.Inside(cx, cz, tankRadiusMetres)) continue;
 
                         double below = -bed.FloorY(cx, cz) - worldDepth;
                         if (below > lowest) lowest = below;
@@ -548,8 +587,18 @@ namespace Evosim.Core
 
             Bed = bed != null && bed.HasRelief ? bed : null;
             Reefs = reefs != null && reefs.Count > 0 ? reefs : null;
+            Coral = coral != null && coral.Count > 0 ? coral : null;
+            if (Reefs != null && Coral != null)
+            {
+                throw new ArgumentException(
+                    "Both mushroom reefs and coral were handed to the grid; a world has one or the other (D194).",
+                    nameof(coral));
+            }
 
-            if (shape != WorldShape.Tank)
+            // A box is all water unless its floor has a shape (D204) or it holds coral, and then it
+            // takes the tank's mask with every column inside: a cell is water when its centre is
+            // above the floor and outside the rock.
+            if (shape != WorldShape.Tank && Bed == null && Coral == null)
             {
                 BuildIntervals();
                 return;
@@ -573,7 +622,7 @@ namespace Evosim.Core
                 for (int iz = 0; iz < _nz; iz++)
                 {
                     float cz = (iz + 0.5f) * cellMetres;
-                    bool inside = TankGeometry.Inside(cx, cz, tankRadiusMetres);
+                    bool inside = shape != WorldShape.Tank || TankGeometry.Inside(cx, cz, tankRadiusMetres);
 
                     // The bed's second condition — D092, logbook/specs/bed-spec.md item 9. A cell
                     // is water when its own centre is above the floor under its own column, which
@@ -601,6 +650,13 @@ namespace Evosim.Core
                             continue;
                         }
 
+                        if (Coral != null &&
+                            Coral.Inside(
+                                (ix + 0.5d) * cellMetres, -((iy + 0.5d) * cellMetres), (iz + 0.5d) * cellMetres))
+                        {
+                            continue;
+                        }
+
                         _live[Index(ix, iy, iz)] = true;
                         live++;
                         lowest = iy;
@@ -620,10 +676,14 @@ namespace Evosim.Core
             if (live == 0)
             {
                 throw new ArgumentException(
-                    FormattableString.Invariant(
-                        $"No cell of {cellMetres} m has its centre inside a tank of radius ") +
-                    FormattableString.Invariant($"{tankRadiusMetres} m, so the water has no cells ") +
-                    "in it at all. Use a cell smaller than the radius.",
+                    shape == WorldShape.Tank
+                        ? FormattableString.Invariant(
+                              $"No cell of {cellMetres} m has its centre inside a tank of radius ") +
+                          FormattableString.Invariant($"{tankRadiusMetres} m, so the water has no cells ") +
+                          "in it at all. Use a cell smaller than the radius."
+                        : FormattableString.Invariant(
+                              $"No cell of {cellMetres} m has its centre above the box's floor, so the ") +
+                          "water has no cells in it at all. Use a smaller cell or a deeper floor.",
                     nameof(cellMetres));
             }
 
@@ -986,7 +1046,49 @@ namespace Evosim.Core
             if (iy >= _ny) iy = _ny - 1;
             if (iy < 0) iy = 0;
 
+            // D204: a box with a floor of its own has a mask, and a point below the floor is
+            // clamped up to it, as in a tank (InColumn). A column with no water at all, a shoal
+            // whose top the cell's centre does not clear, gives way to the nearest column that
+            // has some, found the short way round the seams.
+            if (_live != null) return BoxCellAt(ix, iy, iz);
+
             return Index(ix, iy, iz);
+        }
+
+        /// <summary>
+        /// The cell a box with a mask gives a point in column <c>(ix, iz)</c> at layer
+        /// <paramref name="iy"/>: that column's, clamped up to its floor, or the same layer's in
+        /// the nearest column that holds water, ring by ring of columns outward, round the seams.
+        /// </summary>
+        /// <remarks>
+        /// Within a ring the columns are taken in a fixed order (x, then z, ascending), so the
+        /// answer is a function of the point alone. A box always holds water somewhere, which the
+        /// constructor's live count has already said.
+        /// </remarks>
+        private int BoxCellAt(int ix, int iy, int iz)
+        {
+            int cell = InColumn(ix, iz, iy);
+            if (cell >= 0) return cell;
+
+            int reach = Math.Max(_nx, _nz);
+            for (int ring = 1; ring <= reach; ring++)
+            {
+                for (int dx = -ring; dx <= ring; dx++)
+                {
+                    for (int dz = -ring; dz <= ring; dz++)
+                    {
+                        if (Math.Abs(dx) != ring && Math.Abs(dz) != ring) continue;
+
+                        int x = ((ix + dx) % _nx + _nx) % _nx;
+                        int z = ((iz + dz) % _nz + _nz) % _nz;
+
+                        cell = InColumn(x, z, iy);
+                        if (cell >= 0) return cell;
+                    }
+                }
+            }
+
+            throw new InvalidOperationException("A box with a mask holds no water at all.");
         }
 
         /// <summary>
@@ -1488,8 +1590,9 @@ namespace Evosim.Core
         /// <b>D185's glass margin.</b> Above 0, a live column whose centre lies nearer the tank's
         /// wall than <paramref name="glassMarginMetres"/> is left out before the threshold is
         /// taken, so the cover is a share of the columns that remain. At 0 nothing is left out and
-        /// the plan is the recorded one bit for bit. Refused in a box, which has no glass, and when
-        /// it leaves no live column.
+        /// the plan is the recorded one bit for bit. Refused when it leaves no live column. In a box
+        /// (D204) it is the margin from every face: a column whose centre lies nearer a face than
+        /// this is left out, so the islands stand clear of the seams.
         /// </para>
         /// </remarks>
         public IslandPlan PlanIslands(Func<float, float, float> map, float cover, float depthMetres = 0f,
@@ -1502,12 +1605,12 @@ namespace Evosim.Core
                 throw new ArgumentOutOfRangeException(nameof(depthMetres), depthMetres, "An island depth is not negative; 0 is the whole column.");
             if (!(glassMarginMetres >= 0f) || float.IsInfinity(glassMarginMetres))
                 throw new ArgumentOutOfRangeException(nameof(glassMarginMetres), glassMarginMetres, "A glass margin is finite and not negative.");
-            if (glassMarginMetres > 0f && Shape != WorldShape.Tank)
-                throw new ArgumentException("A glass margin for the islands needs a tank: a box has no glass.", nameof(glassMarginMetres));
-
             // D185: a column is eligible while its centre lies at least the margin inside the glass.
+            // D204: in the square, at least the margin from every face, so the seam lies in desert
+            // and the islands' map need not join there.
             double inner = TankRadiusMetres - (double)glassMarginMetres;
             bool margined = glassMarginMetres > 0f;
+            bool tank = Shape == WorldShape.Tank;
             int nearGlass = 0;
 
             // The layers an island fills: every one to the bed, or those whose top lies above the
@@ -1529,7 +1632,7 @@ namespace Evosim.Core
                     if (_live != null && _lowestLive[column] < 0) continue;
 
                     float cz = (iz + 0.5f) * CellMetres;
-                    if (margined)
+                    if (margined && tank)
                     {
                         double dx = cx - (double)TankRadiusMetres, dz = cz - (double)TankRadiusMetres;
                         if (Math.Sqrt(dx * dx + dz * dz) > inner)
@@ -1537,6 +1640,13 @@ namespace Evosim.Core
                             nearGlass++;
                             continue;
                         }
+                    }
+                    else if (margined &&
+                             (cx < glassMarginMetres || cx > LengthMetres - glassMarginMetres ||
+                              cz < glassMarginMetres || cz > WidthMetres - glassMarginMetres))
+                    {
+                        nearGlass++;
+                        continue;
                     }
 
                     value[column] = map(cx, cz);
@@ -1549,8 +1659,11 @@ namespace Evosim.Core
                 if (nearGlass > 0)
                     throw new ArgumentException(
                         "The glass margin of " + glassMarginMetres.ToString(System.Globalization.CultureInfo.InvariantCulture) +
-                        " m leaves no live column for the islands in a tank of radius " +
-                        TankRadiusMetres.ToString(System.Globalization.CultureInfo.InvariantCulture) + " m.", nameof(glassMarginMetres));
+                        (tank
+                            ? " m leaves no live column for the islands in a tank of radius " +
+                              TankRadiusMetres.ToString(System.Globalization.CultureInfo.InvariantCulture) + " m."
+                            : " m leaves no live column for the islands inside the box's faces."),
+                        nameof(glassMarginMetres));
                 return null;
             }
 
@@ -2799,7 +2912,7 @@ namespace Evosim.Core
             // A field of a place: the transport field in a box, and the streams in a tank
             // whatever the mode says (CurrentField.Shape). D037's rolls are a field of depth,
             // time and patch and take the route below, unchanged.
-            bool ofAPlace = current.Shape == WorldShape.Tank || current.Mode == CurrentMode.Transport;
+            bool ofAPlace = current.Shape == WorldShape.Tank || current.Mode != CurrentMode.Rolls;
 
             if (ofAPlace && !current.HasPotential)
             {
@@ -2849,7 +2962,7 @@ namespace Evosim.Core
             if (current == null || !current.AdvectFields) return;
             if (!(dt > 0f)) return;
 
-            bool transport = current.Shape == WorldShape.Tank || current.Mode == CurrentMode.Transport;
+            bool transport = current.Shape == WorldShape.Tank || current.Mode != CurrentMode.Rolls;
             int substeps = transport ? CourantSubsteps(current, dt, seconds) : 1;
             float step = dt / substeps;
 
@@ -2951,28 +3064,49 @@ namespace Evosim.Core
         /// <summary>How many clocks across one period <see cref="FadedWaterMaximum"/> is sampled at.</summary>
         public const int FadedWaterPhases = 8;
 
-        private ReefGeometry _fadedMaximumFor;
+        private object _fadedMaximumFor;
 
         /// <summary>
-        /// The speed the Courant refusal reads: the open water's ceiling, or the reefs' measured
-        /// faded maximum where that is larger. The first alone in water with no reefs, bit for bit.
+        /// The speed the Courant refusal reads: the open water's ceiling, or the rock's measured
+        /// faded maximum where that is larger — the reefs', or the coral's hulls' (coral-build.md,
+        /// the readers). The first alone in water with no rock, bit for bit.
         /// </summary>
         private double TransportCeiling(CurrentField current, double seconds)
         {
             double bound = current.MaximumTransportSpeed;
             ReefGeometry reefs = current.Reefs;
-            if (reefs == null) return bound;
+            CoralRock coral = current.Coral;
+            if (reefs == null && coral == null) return bound;
 
-            if (!ReferenceEquals(_fadedMaximumFor, reefs))
+            object rock = (object)coral ?? reefs;
+            if (!ReferenceEquals(_fadedMaximumFor, rock))
             {
-                FadedWaterMaximum = MeasureFadedWater(current, reefs, seconds);
-                _fadedMaximumFor = reefs;
+                FadedWaterMaximum = coral != null
+                    ? MeasureFadedWater(
+                        current, (x, z, widen) => coral.FadeReachesColumn(x, z, widen), coral.FadeAt, seconds)
+                    : MeasureFadedWater(current, (x, z, widen) => NearReef(reefs, x, z, widen), reefs.FadeAt, seconds);
+                _fadedMaximumFor = rock;
             }
 
             return Math.Max(bound, FadedWaterMaximum);
         }
 
-        private double MeasureFadedWater(CurrentField current, ReefGeometry reefs, double seconds)
+        // Whether a column's centre lies within some reef's fade reach, widened.
+        private static bool NearReef(ReefGeometry reefs, double cx, double cz, double widen)
+        {
+            for (int reef = 0; reef < reefs.Count; reef++)
+            {
+                double dx = cx - reefs.CentreX(reef), dz = cz - reefs.CentreZ(reef);
+                double reach = reefs.FadeReach(reef) + widen;
+                if (dx * dx + dz * dz < reach * reach) return true;
+            }
+
+            return false;
+        }
+
+        private double MeasureFadedWater(
+            CurrentField current, Func<double, double, double, bool> nearColumn,
+            Func<double, double, double, double> fadeAt, double seconds)
         {
             double h = CellMetres;
             double fastest = 0d;
@@ -2988,16 +3122,7 @@ namespace Evosim.Core
                 for (int iz = 0; iz < _nz; iz++)
                 {
                     double cz = (iz + 0.5d) * h;
-                    bool near = false;
-
-                    for (int reef = 0; reef < reefs.Count && !near; reef++)
-                    {
-                        double dx = cx - reefs.CentreX(reef), dz = cz - reefs.CentreZ(reef);
-                        double reach = reefs.FadeReach(reef) + h;
-                        near = dx * dx + dz * dz < reach * reach;
-                    }
-
-                    if (!near) continue;
+                    if (!nearColumn(cx, cz, h)) continue;
 
                     for (int iy = 0; iy < _ny; iy++)
                     {
@@ -3011,10 +3136,10 @@ namespace Evosim.Core
                         float frontZ = (float)((iz + 1) * h), midZ = (float)((iz + 0.5) * h);
                         float lowY = -(float)((iy + 1) * h);
 
-                        bool east = EastOf(ix, iy, iz) >= 0 && reefs.FadeAt(eastX, centreY, midZ) < 1d;
-                        bool front = FrontOf(ix, iy, iz) >= 0 && reefs.FadeAt(midX, centreY, frontZ) < 1d;
+                        bool east = EastOf(ix, iy, iz) >= 0 && fadeAt(eastX, centreY, midZ) < 1d;
+                        bool front = FrontOf(ix, iy, iz) >= 0 && fadeAt(midX, centreY, frontZ) < 1d;
                         bool down = iy < _ny - 1 && (_live == null || _live[Index(ix, iy + 1, iz)]) &&
-                                    reefs.FadeAt(midX, lowY, midZ) < 1d;
+                                    fadeAt(midX, lowY, midZ) < 1d;
 
                         if (!(east || front || down)) continue;
 
@@ -3224,7 +3349,12 @@ namespace Evosim.Core
         private object _deviceReefs;
         private bool _deviceHoists;
         private bool _deviceTakes;
+        private bool _deviceOcean;
         private double[] _deviceInstant;
+
+        // The switches a plan was built under: the streams' hoist and the bed's columns, and the
+        // box ocean's phase tables, which its plan reads.
+        private bool DeviceHoists => PrecomputeStreamsTerms && PrecomputeBedColumns && PrecomputeOceanPhases;
 
         // One step on the device, in the CPU path's order: the instant pinned at the step's clock,
         // the faces, the substep count (the CPU's rule and refusal), the first substep on those
@@ -3236,8 +3366,8 @@ namespace Evosim.Core
             if (device == null) return false;
 
             if (!ReferenceEquals(_deviceFor, device) || !ReferenceEquals(_deviceCurrent, current) ||
-                !ReferenceEquals(_deviceBed, current.Bed) || !ReferenceEquals(_deviceReefs, current.Reefs) ||
-                _deviceHoists != (PrecomputeStreamsTerms && PrecomputeBedColumns))
+                !ReferenceEquals(_deviceBed, current.Bed) || !ReferenceEquals(_deviceReefs, (object)current.Coral ?? current.Reefs) ||
+                _deviceHoists != DeviceHoists)
             {
                 PlanForDevice(device, current);
             }
@@ -3245,7 +3375,7 @@ namespace Evosim.Core
             if (!_deviceTakes) return false;
 
             device.Upload(_stock);
-            current.CopyStreamsInstant(seconds, _deviceInstant);
+            CopyInstant(current, seconds);
             device.Sample(_deviceInstant);
 
             int substeps = SubstepsFor(device.LargestOutflowFraction(dt), dt, current);
@@ -3256,7 +3386,7 @@ namespace Evosim.Core
 
             for (int i = 1; i < substeps; i++)
             {
-                current.CopyStreamsInstant(seconds + i * (double)step, _deviceInstant);
+                CopyInstant(current, seconds + i * (double)step);
                 device.Sample(_deviceInstant);
                 device.Apply(step);
             }
@@ -3265,16 +3395,137 @@ namespace Evosim.Core
             return true;
         }
 
+        // The instant the plan's kind reads, pinned at one clock.
+        private void CopyInstant(CurrentField current, double seconds)
+        {
+            if (_deviceOcean) current.CopyOceanInstant(seconds, _deviceInstant);
+            else current.CopyStreamsInstant(seconds, _deviceInstant);
+        }
+
         private void PlanForDevice(IPotentialTransportDevice device, CurrentField current)
         {
             _deviceFor = device;
             _deviceCurrent = current;
             _deviceBed = current.Bed;
-            _deviceReefs = current.Reefs;
-            _deviceHoists = PrecomputeStreamsTerms && PrecomputeBedColumns;
-            PotentialTransportPlan plan = PlanPotentialTransport(current);
+            _deviceReefs = (object)current.Coral ?? current.Reefs;
+            _deviceHoists = DeviceHoists;
+            PotentialTransportPlan plan = Shape == WorldShape.Tank
+                ? PlanPotentialTransport(current)
+                : PlanOceanTransport(current);
             _deviceTakes = plan != null && device.Accept(plan);
-            _deviceInstant ??= new double[PotentialTransportPlan.InstantLength];
+            _deviceOcean = plan != null && plan.Ocean;
+
+            int length = _deviceOcean ? PotentialTransportPlan.OceanInstantLength : PotentialTransportPlan.InstantLength;
+            if (_deviceInstant == null || _deviceInstant.Length != length) _deviceInstant = new double[length];
+        }
+
+        // The tables SampleEdges' box ocean path reads with its phase tables (PrecomputeOceanPhases),
+        // flattened, or null where the CPU would take another path or the plan has not been shown
+        // to match: no potential, still water, a switch off, no live mask, or the shore's fade,
+        // which the world refuses in a box and no device test has carried.
+        private PotentialTransportPlan PlanOceanTransport(CurrentField current)
+        {
+            if (Shape == WorldShape.Tank || current.Shape == WorldShape.Tank) return null;
+            if (!current.OceanPhasesApply || current.ShoreFadeOn || !(current.Speed > 0f)) return null;
+            if (!PrecomputeOceanPhases || !PrecomputeBedColumns) return null;
+            if (_live == null || _nx < 2 || _ny < 2 || _nz < 2) return null;
+
+            EnsureFaceBuffers();
+            EnsureBedColumns(current);
+            if (_bedColumnX == null) return null;
+
+            EnsureOceanPhases(current);
+            EnsureEdgeFades(current);
+
+            double h = CellMetres;
+            int columnsX = _nx * (_nz + 1), columnsY = (_nx + 1) * (_nz + 1), columnsZ = (_nx + 1) * _nz;
+
+            // sin θ at each edge's mapped height: the x and z edges on node planes 1 … ny − 1 at
+            // -(float)(j·h), the y edges on layers 0 … ny − 1 at -(float)((j + ½)·h), as the
+            // planes' loops pass them.
+            var sinesX = new double[Math.Max(0, _ny - 1) * columnsX];
+            var sinesZ = new double[Math.Max(0, _ny - 1) * columnsZ];
+            var sinesY = new double[_ny * columnsY];
+
+            Parallelism.ForRanges(_ny, (from, to) =>
+            {
+                for (int j = from; j < to; j++)
+                {
+                    float layer = -(float)((j + 0.5) * h);
+                    for (int c = 0; c < columnsY; c++)
+                    {
+                        sinesY[j * columnsY + c] = current.OceanMappedSine(_bedColumnY[c], layer);
+                    }
+
+                    if (j == 0) continue;
+
+                    float plane = -(float)(j * h);
+                    for (int c = 0; c < columnsX; c++)
+                    {
+                        sinesX[(j - 1) * columnsX + c] = current.OceanMappedSine(_bedColumnX[c], plane);
+                    }
+
+                    for (int c = 0; c < columnsZ; c++)
+                    {
+                        sinesZ[(j - 1) * columnsZ + c] = current.OceanMappedSine(_bedColumnZ[c], plane);
+                    }
+                }
+            });
+
+            return new PotentialTransportPlan
+            {
+                Ocean = true,
+                Nx = _nx,
+                Ny = _ny,
+                Nz = _nz,
+                CellMetres = CellMetres,
+                CellVolume = CellVolume,
+                SplitColumns = _splitColumns,
+                LayerStride = _layerStride,
+                Live = _live,
+                LowestLive = _lowestLive,
+                HasBed = true,
+                ShoreFade = false,
+                HasReefs = _edgeFadeX != null,
+                Overturns = false,
+                DepthMetres = current.DepthMetresWidened,
+                Scale = current.OceanScale,
+                DepthStep = 1,
+                X = OceanAxisFor(current, _edgeX.Length, columnsX, _oceanPhaseX, sinesX, _bedColumnX, _edgeOpenX, _edgeFadeX),
+                Y = OceanAxisFor(current, _edgeY.Length, columnsY, _oceanPhaseY, sinesY, _bedColumnY, _edgeOpenY, _edgeFadeY),
+                Z = OceanAxisFor(current, _edgeZ.Length, columnsZ, _oceanPhaseZ, sinesZ, _bedColumnZ, _edgeOpenZ, _edgeFadeZ),
+            };
+        }
+
+        private static PotentialTransportAxis OceanAxisFor(
+            CurrentField current, int length, int stride, double[] phases, double[] sines,
+            CurrentField.BedColumn[] bed, bool[] open, float[] reefFade)
+        {
+            const int B = PotentialTransportPlan.BedTerms;
+            var flatBed = new double[bed.Length * B];
+
+            for (int i = 0; i < bed.Length; i++)
+            {
+                CurrentField.BedColumn x = bed[i];
+                int at = i * B;
+                flatBed[at] = x.FloorY;
+                flatBed[at + 1] = x.Stretch;
+                flatBed[at + 2] = x.DepthSquared;
+                flatBed[at + 3] = x.SlopeX;
+                flatBed[at + 4] = x.SlopeZ;
+                flatBed[at + 5] = 1d;
+            }
+
+            return new PotentialTransportAxis
+            {
+                Length = length,
+                Stride = stride,
+                Bed = flatBed,
+                Open = open,
+                ReefFade = reefFade,
+                OceanPhases = phases,
+                LayerSines = sines,
+            };
         }
 
         // The tables SampleEdges' hoisted tank path reads, flattened, or null where the CPU would
@@ -3778,6 +4029,19 @@ namespace Evosim.Core
         public bool PrecomputeBedColumns { get; set; } = true;
 
         /// <summary>
+        /// Whether the box ocean's <c>cos χ</c> and <c>sin χ</c> are tabled once per edge column
+        /// rather than computed at every edge of every pass. True, and the two paths are the same
+        /// products summed in the same order, so this decides speed and memory and nothing else:
+        /// about 110 MB at a 1 m cell over the 300 m square.
+        /// </summary>
+        /// <remarks>
+        /// It exists so that a test can sample one grid both ways and assert the edges agree bit for
+        /// bit. It reaches only the box's ocean on a shaped floor with the bed columns precomputed;
+        /// every other water takes the paths it took before.
+        /// </remarks>
+        public bool PrecomputeOceanPhases { get; set; } = true;
+
+        /// <summary>
         /// Whether the streams' per-column and per-depth terms are precomputed for the edge
         /// lattices rather than derived at every edge — D105. True, and the two paths are the
         /// same arithmetic in the same order and grouping, so this decides speed and memory and
@@ -3821,6 +4085,12 @@ namespace Evosim.Core
         /// agreement. Identical numbers prove nothing if both sides took the same path.
         /// </summary>
         public long ColumnPasses { get; private set; }
+
+        /// <summary>
+        /// How many edge passes have read the box ocean's phase tables on this grid
+        /// (<see cref="PrecomputeOceanPhases"/>): a reading, for <see cref="ColumnPasses"/>' reason.
+        /// </summary>
+        public long OceanPhasePasses { get; private set; }
 
         /// <summary>
         /// Builds the three edge families' streams terms for this current, or clears them for
@@ -4030,6 +4300,61 @@ namespace Evosim.Core
             _bedColumnsFor = current;
         }
 
+        /// <summary>
+        /// Builds the box ocean's phase tables for this water at the three edge lattices'
+        /// <c>(x, z)</c>, as the floats the edge loops pass, or keeps them if they are this water's
+        /// and this build's. See <see cref="PrecomputeOceanPhases"/>.
+        /// </summary>
+        private void EnsureOceanPhases(CurrentField current)
+        {
+            int build = current.OceanPhasesBuild();
+
+            if (ReferenceEquals(_oceanPhasesFor, current) && _oceanPhasesBuild == build) return;
+
+            _oceanPhasesFor = null;
+            _oceanPhaseX = _oceanPhaseY = _oceanPhaseZ = null;
+
+            double h = CellMetres;
+            const int Stride = CurrentField.OceanPhaseStride;
+
+            var phaseX = new double[_nx * (_nz + 1) * Stride];
+            var phaseZ = new double[(_nx + 1) * _nz * Stride];
+            var phaseY = new double[(_nx + 1) * (_nz + 1) * Stride];
+
+            Parallelism.ForRanges(_nx + 1, (from, to) =>
+            {
+                for (int i = from; i < to; i++)
+                {
+                    if (i < _nx)
+                    {
+                        float xm = (float)((i + 0.5) * h);
+                        for (int k = 0; k <= _nz; k++)
+                        {
+                            current.OceanPhasesAt(xm, (float)(k * h), phaseX, (i * (_nz + 1) + k) * Stride);
+                        }
+                    }
+
+                    float x = (float)(i * h);
+
+                    for (int k = 0; k < _nz; k++)
+                    {
+                        current.OceanPhasesAt(x, (float)((k + 0.5) * h), phaseZ, (i * _nz + k) * Stride);
+                    }
+
+                    for (int k = 0; k <= _nz; k++)
+                    {
+                        current.OceanPhasesAt(x, (float)(k * h), phaseY, (i * (_nz + 1) + k) * Stride);
+                    }
+                }
+            });
+
+            _oceanPhaseX = phaseX;
+            _oceanPhaseY = phaseY;
+            _oceanPhaseZ = phaseZ;
+            _oceanPhasesBuild = build;
+            _oceanPhasesFor = current;
+        }
+
         /// <summary>Fills the three edge families from the current's potential at one clock.</summary>
         /// <remarks>
         /// <para>
@@ -4088,6 +4413,20 @@ namespace Evosim.Core
                 }
             }
 
+            // The box ocean's phase tables, where the bed columns stand for it to read with.
+            if (PrecomputeOceanPhases && bedX != null && current.OceanPhasesApply)
+            {
+                EnsureOceanPhases(current);
+                OceanPhasePasses++;
+
+                SampleEdges(
+                    current, seconds,
+                    new EdgeTerms(bedX, _oceanPhaseX),
+                    new EdgeTerms(bedY, _oceanPhaseY),
+                    new EdgeTerms(bedZ, _oceanPhaseZ));
+                return;
+            }
+
             SampleEdges(
                 current, seconds,
                 new EdgeTerms(bedX, null, null, 0, 0),
@@ -4098,7 +4437,7 @@ namespace Evosim.Core
         // The reefs' fade at every edge midpoint, as the float the potential is multiplied by —
         // logbook/specs/reef-spec.md §2. Geometry and not state, so built once per rock; null in
         // every world without reefs, where the edge loops read nothing from them.
-        private ReefGeometry _edgeFadesFor;
+        private object _edgeFadesFor;
         private float[] _edgeFadeX;
         private float[] _edgeFadeY;
         private float[] _edgeFadeZ;
@@ -4111,16 +4450,17 @@ namespace Evosim.Core
         /// </summary>
         private void EnsureEdgeFades(CurrentField current)
         {
-            ReefGeometry reefs = current.Reefs;
+            // The coral's hulls or the reefs: ReefFadeAt reads whichever the water fades around.
+            object rock = (object)current.Coral ?? current.Reefs;
 
-            if (reefs == null)
+            if (rock == null)
             {
                 _edgeFadesFor = null;
                 _edgeFadeX = _edgeFadeY = _edgeFadeZ = null;
                 return;
             }
 
-            if (ReferenceEquals(_edgeFadesFor, reefs)) return;
+            if (ReferenceEquals(_edgeFadesFor, rock)) return;
 
             double h = CellMetres;
             var fadeX = new float[_edgeX.Length];
@@ -4162,7 +4502,7 @@ namespace Evosim.Core
             _edgeFadeX = fadeX;
             _edgeFadeY = fadeY;
             _edgeFadeZ = fadeZ;
-            _edgeFadesFor = reefs;
+            _edgeFadesFor = rock;
         }
 
         /// <summary>
@@ -4181,9 +4521,27 @@ namespace Evosim.Core
                 Depths = depths;
                 Stride = stride;
                 Step = step;
+                OceanPhases = null;
+            }
+
+            /// <summary>The box ocean's lattice: the bed columns and the phase table, no streams terms.</summary>
+            public EdgeTerms(CurrentField.BedColumn[] bed, double[] oceanPhases)
+            {
+                Bed = bed;
+                Columns = null;
+                Depths = null;
+                Stride = 0;
+                Step = 0;
+                OceanPhases = oceanPhases;
             }
 
             public CurrentField.BedColumn[] Bed { get; }
+
+            /// <summary>
+            /// The box ocean's <c>cos χ</c>, <c>sin χ</c> table in the bed columns' indexing times
+            /// <see cref="CurrentField.OceanPhaseStride"/>, or null. Read only on the direct path.
+            /// </summary>
+            public double[] OceanPhases { get; }
 
             public CurrentField.StreamsColumn[] Columns { get; }
 
@@ -4388,6 +4746,7 @@ namespace Evosim.Core
             float[] fadeX = _edgeFadeX, fadeZ = _edgeFadeZ;
             int depthBaseX = d * termsX.Stride, stepX = termsX.Step;
             int depthBaseZ = d * termsZ.Stride, stepZ = termsZ.Step;
+            double[] phasesX = termsX.OceanPhases, phasesZ = termsZ.OceanPhases;
 
             for (int i = 0; i < _nx; i++)
             {
@@ -4420,8 +4779,12 @@ namespace Evosim.Core
                     {
                         value = bedX == null
                             ? current.PotentialAt(x, y, (float)(k * h), seconds).X
-                            : current.PotentialAt(
-                                  x, y, (float)(k * h), seconds, bedX[c]).X;
+                            : phasesX != null
+                                ? current.PotentialAt(
+                                      x, y, (float)(k * h), seconds, bedX[c],
+                                      phasesX, c * CurrentField.OceanPhaseStride).X
+                                : current.PotentialAt(
+                                      x, y, (float)(k * h), seconds, bedX[c]).X;
                     }
                     else if (bedX == null)
                     {
@@ -4471,8 +4834,12 @@ namespace Evosim.Core
                         value = bedZ == null
                             ? current.PotentialAt(
                                   (float)(i * h), y, (float)((k + 0.5) * h), seconds).Z
-                            : current.PotentialAt(
-                                  (float)(i * h), y, (float)((k + 0.5) * h), seconds, bedZ[c]).Z;
+                            : phasesZ != null
+                                ? current.PotentialAt(
+                                      (float)(i * h), y, (float)((k + 0.5) * h), seconds, bedZ[c],
+                                      phasesZ, c * CurrentField.OceanPhaseStride).Z
+                                : current.PotentialAt(
+                                      (float)(i * h), y, (float)((k + 0.5) * h), seconds, bedZ[c]).Z;
                     }
                     else if (bedZ == null)
                     {
@@ -4511,6 +4878,7 @@ namespace Evosim.Core
             bool[] openY = _edgeOpenY;
             float[] fadeY = _edgeFadeY;
             int depthBaseY = j * termsY.Stride, stepY = termsY.Step;
+            double[] phasesY = termsY.OceanPhases;
 
             for (int i = 0; i <= _nx; i++)
             {
@@ -4540,8 +4908,12 @@ namespace Evosim.Core
                     {
                         value = bedY == null
                             ? current.PotentialAt((float)(i * h), y, (float)(k * h), seconds).Y
-                            : current.PotentialAt(
-                                  (float)(i * h), y, (float)(k * h), seconds, bedY[c]).Y;
+                            : phasesY != null
+                                ? current.PotentialAt(
+                                      (float)(i * h), y, (float)(k * h), seconds, bedY[c],
+                                      phasesY, c * CurrentField.OceanPhaseStride).Y
+                                : current.PotentialAt(
+                                      (float)(i * h), y, (float)(k * h), seconds, bedY[c]).Y;
                     }
                     else if (bedY == null)
                     {

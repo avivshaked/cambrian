@@ -1,0 +1,85 @@
+runrec: 2026-10-24-192853-6da8f3c6: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-24-192853-6da8f3c6: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-24-192853-490de19b: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-24-192853-490de19b: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-24-192853-169145a4: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-24-192853-169145a4: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-24-101118-0f736451: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-24-101118-0f736451: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-24-023204-a99d10a5: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-24-023204-a99d10a5: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-23-090508-c5c9f416: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-23-090508-c5c9f416: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+== travel: bodies seen 600 s or more in 12000-24000 s, sampled every 100 s
+
+r62bd-x2-6201  (D:\Projects\experiments\evolution-simulator\runs\r62bd-x2-6201\2026-10-24-192853-6da8f3c6)
+   guild     bodies  path m/ks    net m    far
+   grazer       151       39.0     12.2   0.00
+   leaf       64776       19.4      9.4   0.00
+   other       8304       19.5      9.2   0.00
+
+r62bd-x2-6202  (D:\Projects\experiments\evolution-simulator\runs\r62bd-x2-6202\2026-10-24-192853-6da8f3c6)
+   guild     bodies  path m/ks    net m    far
+   grazer       177       38.4     11.8   0.00
+   leaf       43599       19.3      9.1   0.00
+   other       4754       18.8      8.1   0.00
+
+r62bd-x4-6201  (D:\Projects\experiments\evolution-simulator\runs\r62bd-x4-6201\2026-10-24-192853-490de19b)
+   guild     bodies  path m/ks    net m    far
+   grazer       166       40.3     11.3   0.00
+   leaf       62588       19.3      9.0   0.00
+   other       1816       19.3      8.7   0.00
+
+r62bd-x4-6202  (D:\Projects\experiments\evolution-simulator\runs\r62bd-x4-6202\2026-10-24-192853-490de19b)
+   guild     bodies  path m/ks    net m    far
+   grazer       177       39.2     10.4   0.00
+   leaf       46869       19.2      9.2   0.00
+   other       1959       20.9     10.4   0.00
+
+r62bd-x16-6201  (D:\Projects\experiments\evolution-simulator\runs\r62bd-x16-6201\2026-10-24-192853-169145a4)
+   guild     bodies  path m/ks    net m    far
+   grazer       165       40.4     10.4   0.00
+   leaf       57992       19.6      9.0   0.00
+   other       2202       18.2      8.3   0.00
+
+r62bd-x16-6202  (D:\Projects\experiments\evolution-simulator\runs\r62bd-x16-6202\2026-10-24-192853-169145a4)
+   guild     bodies  path m/ks    net m    far
+   grazer       179       38.0     12.2   0.00
+   leaf       47138       19.3      9.3   0.00
+   other       3291       20.0      8.9   0.00
+
+r62cs-w500-6201  (D:\Projects\experiments\evolution-simulator\runs\r62cs-w500-6201\2026-10-24-101118-0f736451)
+   guild     bodies  path m/ks    net m    far
+   grazer       162       39.6     11.1   0.00
+   leaf       50493       19.6      9.1   0.00
+   other       1534       19.7      8.5   0.00
+
+r62cs-w500-6202  (D:\Projects\experiments\evolution-simulator\runs\r62cs-w500-6202\2026-10-24-101118-0f736451)
+   guild     bodies  path m/ks    net m    far
+   grazer       181       38.5     11.0   0.00
+   leaf       40296       19.2      9.1   0.00
+   other       1024       19.9      7.8   0.00
+
+r62ce-6201  (D:\Projects\experiments\evolution-simulator\runs\r62ce-6201\2026-10-24-023204-a99d10a5)
+   guild     bodies  path m/ks    net m    far
+   grazer       128       48.9      9.8   0.00
+   leaf       50887       19.2      8.7   0.00
+   other       1517       20.0      9.5   0.00
+
+r62ce-6202  (D:\Projects\experiments\evolution-simulator\runs\r62ce-6202\2026-10-24-023204-a99d10a5)
+   guild     bodies  path m/ks    net m    far
+   grazer       151       45.8     11.2   0.00
+   leaf       57588       19.2      8.6   0.00
+   other       1568       20.2      8.9   0.00
+
+r62-h6201  (D:\Projects\experiments\evolution-simulator\runs\r62-h6201\2026-10-23-090508-c5c9f416)
+   guild     bodies  path m/ks    net m    far
+   grazer       498       23.8      8.2   0.00
+   leaf       22624       18.9      8.7   0.00
+   other        218       21.7      9.5   0.00
+
+r62-h6202  (D:\Projects\experiments\evolution-simulator\runs\r62-h6202\2026-10-23-090508-c5c9f416)
+   guild     bodies  path m/ks    net m    far
+   grazer       934       20.2      7.2   0.00
+   leaf       22257       19.1      8.3   0.00
+   other        190       18.9      6.8   0.00

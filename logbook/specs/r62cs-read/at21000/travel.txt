@@ -1,0 +1,43 @@
+runrec: 2026-10-24-101118-36147b55: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-24-101118-36147b55: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-24-023204-a99d10a5: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-24-023204-a99d10a5: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-23-090508-c5c9f416: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+runrec: 2026-10-23-090508-c5c9f416: positions from positions.jsonl.gz, record format 2 (run.json recordFormat 2)
+== travel: bodies seen 600 s or more in 12000-21000 s, sampled every 100 s
+
+r62cs-w60-6201  (D:\Projects\experiments\evolution-simulator\runs\r62cs-w60-6201\2026-10-24-101118-36147b55)
+   guild     bodies  path m/ks    net m    far
+   grazer       100       45.4     10.2   0.00
+   leaf       44920       19.0      8.6   0.00
+   other       4251       18.9      8.8   0.00
+
+r62cs-w60-6202  (D:\Projects\experiments\evolution-simulator\runs\r62cs-w60-6202\2026-10-24-101118-36147b55)
+   guild     bodies  path m/ks    net m    far
+   grazer       108       47.6      9.9   0.00
+   leaf       47533       19.2      8.6   0.00
+   other       6030       19.3      9.0   0.00
+
+r62ce-6201  (D:\Projects\experiments\evolution-simulator\runs\r62ce-6201\2026-10-24-023204-a99d10a5)
+   guild     bodies  path m/ks    net m    far
+   grazer        97       49.4      9.7   0.00
+   leaf       35768       19.0      8.6   0.00
+   other        646       19.5      9.8   0.00
+
+r62ce-6202  (D:\Projects\experiments\evolution-simulator\runs\r62ce-6202\2026-10-24-023204-a99d10a5)
+   guild     bodies  path m/ks    net m    far
+   grazer       109       47.3     11.5   0.00
+   leaf       39899       19.0      8.5   0.00
+   other        743       19.3      8.8   0.00
+
+r62-h6201  (D:\Projects\experiments\evolution-simulator\runs\r62-h6201\2026-10-23-090508-c5c9f416)
+   guild     bodies  path m/ks    net m    far
+   grazer       292       29.0      8.4   0.00
+   leaf       16363       18.7      8.7   0.00
+   other         66       20.7     10.0   0.00
+
+r62-h6202  (D:\Projects\experiments\evolution-simulator\runs\r62-h6202\2026-10-23-090508-c5c9f416)
+   guild     bodies  path m/ks    net m    far
+   grazer       464       24.5      7.7   0.00
+   leaf       15877       18.9      8.3   0.00
+   other         62       17.1      6.2   0.00

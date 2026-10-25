@@ -158,7 +158,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 .Replace(
                     " · configHash ",
                     " · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + ContactToken + ReproductionToken + Round51Token + " · configHash ")
-                .Replace("`ff557bce2685293a`", "`845becc39e2f22c3`");
+                .Replace("`ff557bce2685293a`", "`dc1e08eaa7dc2b0d`");
 
             Assert.Equal(expected, Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9"));
         }
@@ -198,7 +198,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             Assert.Contains(" · reach off · floors per part · matter uniform · founders anywhere · endowment off · founder cap off · shade off · ", line);
             Assert.Contains(" · matter-mix 2 m2/s · area 2200 m2 · ", line);
 
-            Assert.EndsWith(" · configHash `845becc39e2f22c3`", line);
+            Assert.EndsWith(" · configHash `dc1e08eaa7dc2b0d`", line);
 
             // D110, off: the light is the orientation average, printed beside the cap.
             Assert.Contains(" · silhouette on · light averaged · ", line);
@@ -692,6 +692,165 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             env["EVOSIM_SENESCENCE"] = "3000";
             RunConfig both = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(env)));
             Assert.Throws<ArgumentException>(() => new World(both, settings.Seed));
+        }
+
+        /// <summary>
+        /// D212: the spoilage dial reaches the config from <c>EVOSIM_CORPSE_HALF_LIFE</c> and the header names it
+        /// only when it is above 0, so every recorded header reads as it did.
+        /// </summary>
+        [Fact]
+        public void TheSpoilHalfLifeIsBoundAndShownOnlyWhenOn()
+        {
+            string off = Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9");
+            Assert.DoesNotContain("spoil half-life", off);
+
+            var block = EnvBindingTests.Round42Seed1();
+            block["EVOSIM_CORPSE_HALF_LIFE"] = "500";
+            EnvSettings settings = EnvBinding.Read(EnvBinding.Of(block));
+            RunConfig config = EnvBinding.BuildConfig(settings);
+            Assert.Equal(500f, config.CorpseHalfLifeSeconds);
+
+            var world = new World(config, settings.Seed);
+            SpaceFacts space = SpaceFacts.Of(
+                world,
+                hasWall: config.SharedSpace && config.WorldShape == WorldShape.Tank,
+                hasFloor: config.SharedSpace,
+                threads: 24,
+                inoculumHashShort: null);
+            string on = Report.HeaderLine(settings, config, space, "9.9.9.9");
+            Assert.Contains(" · spoil half-life 500 s · ", on);
+            Assert.NotEqual(EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(EnvBindingTests.Round42Seed1()))).Hash(), config.Hash());
+
+            block["EVOSIM_CORPSE_HALF_LIFE"] = "-1";
+            Assert.ThrowsAny<Exception>(() => EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(block))));
+        }
+
+        /// <summary>
+        /// D219, D220: the contact-eating dials reach the config from <c>EVOSIM_CONTACT_EATING</c> and
+        /// <c>EVOSIM_REMAINS_WINDOW</c>, and the header names them only when the first is on.
+        /// </summary>
+        [Fact]
+        public void TheContactEatingDialsAreBoundAndShownOnlyWhenOn()
+        {
+            string off = Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9");
+            Assert.DoesNotContain("remains window", off);
+
+            RunConfig recorded = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(EnvBindingTests.Round42Seed1())));
+            Assert.False(recorded.ContactEating);
+            Assert.Equal(60f, recorded.RemainsWindowSeconds);
+
+            var block = EnvBindingTests.Round42Seed1();
+            block["EVOSIM_CONTACT_EATING"] = "1";
+            block["EVOSIM_REMAINS_WINDOW"] = "90";
+            EnvSettings settings = EnvBinding.Read(EnvBinding.Of(block));
+            RunConfig config = EnvBinding.BuildConfig(settings);
+            Assert.True(config.ContactEating);
+            Assert.Equal(90f, config.RemainsWindowSeconds);
+            Assert.NotEqual(recorded.Hash(), config.Hash());
+
+            var world = new World(config, settings.Seed);
+            SpaceFacts space = SpaceFacts.Of(
+                world,
+                hasWall: config.SharedSpace && config.WorldShape == WorldShape.Tank,
+                hasFloor: config.SharedSpace,
+                threads: 24,
+                inoculumHashShort: null);
+            string on = Report.HeaderLine(settings, config, space, "9.9.9.9");
+            Assert.Contains(" · bites feed, remains window 90 s · ", on);
+
+            block["EVOSIM_REMAINS_WINDOW"] = "-1";
+            Assert.ThrowsAny<Exception>(() => EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(block))));
+        }
+
+        /// <summary>
+        /// D224: <c>EVOSIM_BITE_TAKES_STORE</c> reaches the config, is off when unset, is shown in the header only when
+        /// on, and the world refuses it on with contact eating off.
+        /// </summary>
+        [Fact]
+        public void TheBiteTakesStoreDialIsBoundShownOnlyWhenOnAndRefusedWithContactEatingOff()
+        {
+            var block = EnvBindingTests.Round42Seed1();
+            block["EVOSIM_CONTACT_EATING"] = "1";
+
+            EnvSettings offSettings = EnvBinding.Read(EnvBinding.Of(block));
+            RunConfig off = EnvBinding.BuildConfig(offSettings);
+            Assert.False(off.BiteTakesStore);
+
+            block["EVOSIM_BITE_TAKES_STORE"] = "1";
+            EnvSettings settings = EnvBinding.Read(EnvBinding.Of(block));
+            RunConfig config = EnvBinding.BuildConfig(settings);
+            Assert.True(config.BiteTakesStore);
+            Assert.NotEqual(off.Hash(), config.Hash());
+
+            string Header(EnvSettings s, RunConfig c)
+            {
+                var world = new World(c, s.Seed);
+                SpaceFacts space = SpaceFacts.Of(
+                    world,
+                    hasWall: c.SharedSpace && c.WorldShape == WorldShape.Tank,
+                    hasFloor: c.SharedSpace,
+                    threads: 24,
+                    inoculumHashShort: null);
+                return Report.HeaderLine(s, c, space, "9.9.9.9");
+            }
+
+            Assert.DoesNotContain("a bite takes the store", Header(offSettings, off));
+            Assert.Contains(" · a bite takes the store", Header(settings, config));
+
+            var refused = EnvBindingTests.Round42Seed1();
+            refused["EVOSIM_BITE_TAKES_STORE"] = "1";
+            RunConfig withoutContact = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(refused)));
+            Assert.True(withoutContact.BiteTakesStore);
+            Assert.False(withoutContact.ContactEating);
+            Assert.Throws<ArgumentException>(() => new World(withoutContact, 1UL));
+        }
+
+        /// <summary>
+        /// D226: <c>EVOSIM_BITE_DAMAGE_SCALE</c> reaches the config, is 1 when unset, is shown in the header only when
+        /// not 1, and the world refuses it away from 1 with contact eating off.
+        /// </summary>
+        [Fact]
+        public void TheBiteDamageScaleDialIsBoundShownOnlyWhenNotOneAndRefusedWithContactEatingOff()
+        {
+            var block = EnvBindingTests.Round42Seed1();
+            block["EVOSIM_CONTACT_EATING"] = "1";
+
+            EnvSettings offSettings = EnvBinding.Read(EnvBinding.Of(block));
+            RunConfig off = EnvBinding.BuildConfig(offSettings);
+            Assert.Equal(1f, off.BiteDamageScale);
+
+            block["EVOSIM_BITE_DAMAGE_SCALE"] = "4";
+            EnvSettings settings = EnvBinding.Read(EnvBinding.Of(block));
+            RunConfig config = EnvBinding.BuildConfig(settings);
+            Assert.Equal(4f, config.BiteDamageScale);
+            Assert.NotEqual(off.Hash(), config.Hash());
+
+            string Header(EnvSettings s, RunConfig c)
+            {
+                var world = new World(c, s.Seed);
+                SpaceFacts space = SpaceFacts.Of(
+                    world,
+                    hasWall: c.SharedSpace && c.WorldShape == WorldShape.Tank,
+                    hasFloor: c.SharedSpace,
+                    threads: 24,
+                    inoculumHashShort: null);
+                return Report.HeaderLine(s, c, space, "9.9.9.9");
+            }
+
+            Assert.DoesNotContain("bite damage", Header(offSettings, off));
+            Assert.Contains(" · bite damage ×4", Header(settings, config));
+
+            var refused = EnvBindingTests.Round42Seed1();
+            refused["EVOSIM_BITE_DAMAGE_SCALE"] = "4";
+            RunConfig withoutContact = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(refused)));
+            Assert.Equal(4f, withoutContact.BiteDamageScale);
+            Assert.False(withoutContact.ContactEating);
+            Assert.Throws<ArgumentException>(() => new World(withoutContact, 1UL));
+
+            var zero = EnvBindingTests.Round42Seed1();
+            zero["EVOSIM_CONTACT_EATING"] = "1";
+            zero["EVOSIM_BITE_DAMAGE_SCALE"] = "0";
+            Assert.ThrowsAny<Exception>(() => new World(EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(zero))), 1UL));
         }
 
         private static string Round42HeaderLine(int threads, string engineVersion)

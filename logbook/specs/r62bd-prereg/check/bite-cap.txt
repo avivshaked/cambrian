@@ -1,0 +1,42 @@
+r62bdck-x4-i1  (scratch/contact-eating/check-bd/r62bdck-x4-i1/2026-10-24-175926-bf5d80b5//; intakeWasteFraction 0.2)
+        bin       offered J      kept J   cut+no-intake J   cut share   store J
+      0-1500             0.0         0.0               0.0         nan       0.0
+   1500-3000            26.1         0.0              26.1       1.000      17.6
+   3000-4500          1848.0       716.5             952.4       0.515    1015.4
+
+r62bdck-x4-i4  (scratch/contact-eating/check-bd/r62bdck-x4-i4/2026-10-24-175925-49d6db26//; intakeWasteFraction 0.2)
+        bin       offered J      kept J   cut+no-intake J   cut share   store J
+      0-1500             0.0         0.0               0.0         nan       0.0
+   1500-3000            26.1         0.0              26.1       1.000      17.6
+   3000-4500          2293.5      1752.9             102.4       0.045    1493.3
+
+r62bdck-x16-i1  (scratch/contact-eating/check-bd/r62bdck-x16-i1/2026-10-24-175926-bbb6c0b9//; intakeWasteFraction 0.2)
+        bin       offered J      kept J   cut+no-intake J   cut share   store J
+      0-1500             0.0         0.0               0.0         nan       0.0
+   1500-3000            26.1         0.0              26.1       1.000      17.6
+   3000-4500          1848.0       716.5             952.4       0.515    1015.4
+
+r62bdck-x16-i16  (scratch/contact-eating/check-bd/r62bdck-x16-i16/2026-10-24-175926-169145a4//; intakeWasteFraction 0.2)
+        bin       offered J      kept J   cut+no-intake J   cut share   store J
+      0-1500             0.0         0.0               0.0         nan       0.0
+   1500-3000            26.1         0.0              26.1       1.000      17.6
+   3000-4500          1965.3      1572.3               0.0       0.000    1046.0
+
+r62bdck-x64-i1  (scratch/contact-eating/check-bd/r62bdck-x64-i1/2026-10-24-175925-09bf9994//; intakeWasteFraction 0.2)
+        bin       offered J      kept J   cut+no-intake J   cut share   store J
+      0-1500             0.0         0.0               0.0         nan       0.0
+   1500-3000            26.1         0.0              26.1       1.000      17.6
+   3000-4500          1848.0       716.5             952.4       0.515    1015.4
+
+r62bdck-x64-i64  (scratch/contact-eating/check-bd/r62bdck-x64-i64/2026-10-24-175925-dac52d87//; intakeWasteFraction 0.2)
+        bin       offered J      kept J   cut+no-intake J   cut share   store J
+      0-1500             0.0         0.0               0.0         nan       0.0
+   1500-3000            26.1         0.0              26.1       1.000      17.6
+   3000-4500          1965.3      1572.3               0.0       0.000    1046.0
+
+r62cs-w500-6201  (runs/r62cs-w500-6201/2026-10-24-101118-0f736451//; intakeWasteFraction 0.2)
+        bin       offered J      kept J   cut+no-intake J   cut share   store J
+      0-1500             0.0         0.0               0.0         nan       0.0
+   1500-3000            26.1         0.0              26.1       1.000      17.6
+   3000-4500           909.4       572.1             194.2       0.214     543.4
+

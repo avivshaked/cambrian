@@ -114,6 +114,83 @@ namespace Evosim.Farm.Tests
             Assert.Equal(6, Simulation.HarnessPhaseFields.Length);
         }
 
+        /// <summary>
+        /// D224: the stats row carries <c>biteStore</c> only in a world whose bites take the store, beside the other
+        /// bite columns, and a world with contact eating alone writes the columns it wrote before.
+        /// </summary>
+        [Fact]
+        public void TheStatsRowCarriesTheBiteStoreColumnOnlyWithTheDialOn()
+        {
+            foreach (bool takesStore in new[] { false, true })
+            {
+                string scratch = SimulationTests.Scratch(takesStore ? "bite-store-on" : "bite-store-off");
+                RunConfig config = RemainsFixtures.Config(contactEating: true);
+                config.BiteTakesStore = takesStore;
+
+                var world = new World(config, 1UL);
+                RunDirectory dir = RunDirectory.Create(scratch, config, DateTime.UtcNow);
+                string statsPath;
+
+                using (dir)
+                using (var sim = new Simulation(world, 1UL, 0.02f, 25, threads: 2, runDirectory: dir.Path))
+                {
+                    for (int i = 0; i < 20; i++) sim.Step();
+
+                    var report = new Report(Path.Combine(scratch, "report.md"), sim.Config);
+                    new Sampler().Write(sim, dir, report.Columns);
+                    statsPath = Path.Combine(dir.Path, "stats.jsonl");
+                }
+
+                string[] rows = JsonlWriter.ReadRows(statsPath);
+                JsonNode last = Json.Parse(rows[rows.Length - 1]);
+
+                Assert.True(last.Has("biteKeptLeaves"), "the contact-eating columns are on the row");
+                Assert.Equal(takesStore, last.Has("biteStore"));
+                if (takesStore) Assert.Equal(world.BiteStoreTakenJoules, last["biteStore"].AsDouble(), 6);
+            }
+        }
+
+        /// <summary>
+        /// D227: the stats row carries <c>mouthBlows</c> and <c>mouthBlowsFinishing</c> only with the bite damage dial
+        /// off 1, and a world with the dial at 1 writes the columns it wrote before.
+        /// </summary>
+        [Fact]
+        public void TheStatsRowCarriesTheMouthBlowColumnsOnlyWithTheDamageDialOffOne()
+        {
+            foreach (float scale in new[] { 1f, 4f })
+            {
+                string scratch = SimulationTests.Scratch(scale == 1f ? "mouth-blows-off" : "mouth-blows-on");
+                RunConfig config = RemainsFixtures.Config(contactEating: true);
+                config.BiteDamageScale = scale;
+
+                var world = new World(config, 1UL);
+                RunDirectory dir = RunDirectory.Create(scratch, config, DateTime.UtcNow);
+                string statsPath;
+
+                using (dir)
+                using (var sim = new Simulation(world, 1UL, 0.02f, 25, threads: 2, runDirectory: dir.Path))
+                {
+                    for (int i = 0; i < 20; i++) sim.Step();
+
+                    var report = new Report(Path.Combine(scratch, "report.md"), sim.Config);
+                    new Sampler().Write(sim, dir, report.Columns);
+                    statsPath = Path.Combine(dir.Path, "stats.jsonl");
+                }
+
+                string[] rows = JsonlWriter.ReadRows(statsPath);
+                JsonNode last = Json.Parse(rows[rows.Length - 1]);
+
+                Assert.True(last.Has("biteKeptLeaves"), "the contact-eating columns are on the row");
+                Assert.Equal(scale != 1f, last.Has("mouthBlows"));
+                Assert.Equal(scale != 1f, last.Has("mouthBlowsFinishing"));
+                if (scale != 1f)
+                {
+                    Assert.Equal((double)world.MouthBlows, last["mouthBlows"].AsDouble());
+                    Assert.Equal((double)world.MouthBlowsFinishing, last["mouthBlowsFinishing"].AsDouble());
+                }
+            }
+        }
+
         [Fact]
         public void TheSnowFloorDumpIsOneFloatAColumnAndNeverMoreThanTheColumn()
         {

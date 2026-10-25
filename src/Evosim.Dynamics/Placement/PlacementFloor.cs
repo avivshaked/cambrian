@@ -54,7 +54,7 @@ namespace Evosim.Dynamics.Placement
         /// The world's height map — <c>World.Bed</c> — or null for the flat slab, which is every
         /// recorded world.
         /// </param>
-        public PlacementFloor(float depthMetres, BedShape bed = null, ReefGeometry reefs = null)
+        public PlacementFloor(float depthMetres, BedShape bed = null, ReefGeometry reefs = null, CoralRock coral = null)
         {
             // SeaFloor.Build's own gate: `bed == null || !bed.HasRelief` goes to Flat, which
             // stores no bed at all. So HasRelief below reads false for a shape with no relief,
@@ -62,9 +62,14 @@ namespace Evosim.Dynamics.Placement
             _bed = bed != null && bed.HasRelief ? bed : null;
             _topY = -depthMetres;
             _reefs = reefs != null && reefs.Count > 0 ? reefs : null;
+            _coral = coral != null && coral.Count > 0 ? coral : null;
         }
 
         private readonly ReefGeometry _reefs;
+        private readonly CoralRock _coral;
+
+        /// <summary>The coral the placer keeps bodies out of, or null — every world at <see cref="ReefShape.Mushroom"/>.</summary>
+        public CoralRock Coral => _coral;
 
         /// <summary>
         /// The reefs' rock the placer keeps bodies out of, or null — every recorded world.
@@ -73,7 +78,7 @@ namespace Evosim.Dynamics.Placement
         public ReefGeometry Reefs => _reefs;
 
         /// <summary>Whether there is rock besides the bed to keep a body out of.</summary>
-        public bool HasReefs => _reefs != null;
+        public bool HasReefs => _reefs != null || _coral != null;
 
         /// <summary>
         /// The reefs' rule for a candidate spot: true and the height unchanged when a sphere of
@@ -98,6 +103,13 @@ namespace Evosim.Dynamics.Placement
         /// </remarks>
         public bool ClearOfReefs(float x, ref float y, float z, float boundingRadius)
         {
+            // The coral has no table to land on: a spot that does not clear it is drawn again.
+            if (_coral != null)
+            {
+                double clear = System.Math.Max(0f, boundingRadius) + ClearanceMetres;
+                return _coral.SignedDistance(x, y, z, clear, out _, out _) >= clear;
+            }
+
             if (_reefs == null) return true;
 
             double need = System.Math.Max(0f, boundingRadius) + ClearanceMetres;

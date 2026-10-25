@@ -102,6 +102,7 @@ namespace Evosim.Core
                 moduleCounts,
                 partPaths,
                 partPaths == null ? null : new List<int>(limits.MaxDepth + 1),
+                limits.ScaleLengthensOnce ? new List<long>(limits.MaxDepth + 1) : null,
                 genome.RootIndex,
                 BrainIds.Root,
                 rootTransform ?? Mat4.Identity,
@@ -160,6 +161,7 @@ namespace Evosim.Core
             int[] moduleCounts,
             List<int[]> partPaths,
             List<int> path,
+            List<long> edgesOnPath,
             int nodeIndex,
             ulong pathId,
             Mat4 transform,
@@ -300,7 +302,21 @@ namespace Evosim.Core
                 if (!CanEnter(genome, occurrences, moduleCounts, edge.Child)) continue;
 
                 MorphNode childNode = genome.Nodes[edge.Child];
-                Float3 childScale = accumulatedScale * edge.Scale;
+
+                // DevelopmentLimits.ScaleLengthensOnce (D199): an edge this path has followed
+                // already lengthens nothing again, and still shortens what it shortens. Null when
+                // off, and the scale compounds at every copy as it always has.
+                Float3 edgeScale = edge.Scale;
+                long edgeKey = ((long)nodeIndex << 32) | (uint)e;
+                if (edgesOnPath != null && edgesOnPath.Contains(edgeKey))
+                {
+                    edgeScale = new Float3(
+                        edgeScale.X > 1f ? 1f : edgeScale.X,
+                        edgeScale.Y > 1f ? 1f : edgeScale.Y,
+                        edgeScale.Z > 1f ? 1f : edgeScale.Z);
+                }
+
+                Float3 childScale = accumulatedScale * edgeScale;
                 Float3 childHalfExtents = Float3.Abs(childNode.Dimensions * childScale);
 
                 // Anchors are directions, and each shape decides where its own surface is. For a
@@ -338,6 +354,7 @@ namespace Evosim.Core
                     // edge index is not bounded, so the step is a pair and not a packed integer.
                     path?.Add(e);
                     path?.Add(mirrorOrdinal);
+                    edgesOnPath?.Add(edgeKey);
 
                     Expand(
                         genome,
@@ -348,6 +365,7 @@ namespace Evosim.Core
                         moduleCounts,
                         partPaths,
                         path,
+                        edgesOnPath,
                         edge.Child,
                         BrainIds.Child(pathId, edge.Id, e, mirrorOrdinal),
                         transform * local,
@@ -360,6 +378,7 @@ namespace Evosim.Core
                         anchorOnChild);
 
                     if (path != null) path.RemoveRange(path.Count - 2, 2);
+                    edgesOnPath?.RemoveAt(edgesOnPath.Count - 1);
                     occurrences[edge.Child]--;
 
                     if (phenotype.PartCount >= limits.MaxParts) return;

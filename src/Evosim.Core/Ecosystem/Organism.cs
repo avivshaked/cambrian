@@ -122,6 +122,57 @@ namespace Evosim.Core
         public double MouthJoules { get; internal set; }
 
         /// <summary>
+        /// Of <see cref="MouthJoules"/>, the joules taken from corpses this body's own bite made
+        /// (<see cref="Corpse.KilledBy"/> its own id). A count: the three origin counts add to
+        /// <see cref="MouthJoules"/> to within the rounding of adding them in another order.
+        /// </summary>
+        public double MouthJoulesOwnKill { get; internal set; }
+
+        /// <summary>Of <see cref="MouthJoules"/>, the joules taken from corpses another body's bite made.</summary>
+        public double MouthJoulesOtherKill { get; internal set; }
+
+        /// <summary>Of <see cref="MouthJoules"/>, the joules taken from corpses no bite made (carrion).</summary>
+        public double MouthJoulesCarrion { get; internal set; }
+
+        /// <summary>
+        /// D219, contact eating: the joules this body's biting parts have kept from the bodies they wounded, over
+        /// its life. A count, as <see cref="MouthJoules"/> is: <see cref="Energy"/> holds the joules. 0 with the
+        /// dial off, and checkpointed only with it on.
+        /// </summary>
+        public double BiteKeptJoules { get; internal set; }
+
+        /// <summary>
+        /// D220, contact eating: true for a body that is remains, a dead body or a cut-off limb that lies in the water
+        /// for a window and can be bitten. Such a body is in <see cref="World.Remains"/> and never in
+        /// <see cref="World.Living"/>. Its <see cref="Energy"/> is its store (the reserve and the gestation account it
+        /// died with, as one number), its <see cref="TissueJoules"/> its tissue at its parts' health, and it has no
+        /// brain, no upkeep, no healing and no growth. False for every body with the dial off.
+        /// </summary>
+        public bool IsRemains { get; internal set; }
+
+        /// <summary>
+        /// D220: the simulated second the remains' window began: the death of the body, or the moment a limb was cut
+        /// off, and for a part shed from remains the second of the remains it came from. Meaningful only when
+        /// <see cref="IsRemains"/>.
+        /// </summary>
+        public double RemainsSince { get; internal set; }
+
+        /// <summary>
+        /// D220: the joules the remains' store holds: the reserve and the gestation account the body died with, as the
+        /// bites of the window leave them. Zero for a living body, whose reserve is <see cref="Energy"/>.
+        /// </summary>
+        public double RemainsStoreJoules => IsRemains ? Energy + GestationJoules : 0d;
+
+        /// <summary>
+        /// D220: for remains, the part of the body developed from <see cref="Genome"/>, <see cref="ModuleCounts"/> and
+        /// <see cref="LostPartPaths"/> (and scaled by <c>Phenotype.ScaledBy</c>) that each of the remains' parts is,
+        /// ascending; null when the remains are that whole body. A cut-off limb is not a body any genome develops, so
+        /// a checkpoint stores the body it was cut from and this map and selects the limb back
+        /// (<see cref="Phenotype.Select"/>). Not state a step reads: set when the remains are founded or shed from.
+        /// </summary>
+        internal int[] RemainsMap { get; set; }
+
+        /// <summary>
         /// Joules this body's grips owe since its last metabolic step (D162): the anchoring cell's
         /// build price for each grip formed, handed over by the solver
         /// (<see cref="World.OweGrip"/>) and charged at the next metabolic step.
@@ -151,6 +202,19 @@ namespace Evosim.Core
         /// </para>
         /// </remarks>
         public double GestationJoules { get; internal set; }
+
+        /// <summary>
+        /// Spent units the body holds, units — D206's store. Zero for every body unless
+        /// <see cref="RunConfig.PlantsKeepMatter"/> is on.
+        /// </summary>
+        /// <remarks>
+        /// <b>Matter, and not energy.</b> A plant's burn leaves the world as heat and leaves its
+        /// units here, and fixation charges them again before it draws on the water. They are no
+        /// reserve: nothing can be paid out of them, a bite takes none of them, and a child is born
+        /// with none. They are in <c>World.StandingMatterUnits</c>, and at death they pass to the
+        /// corpse.
+        /// </remarks>
+        public double SpentUnits { get; internal set; }
 
         /// <summary>
         /// The reserve as it stood when this metabolic step began — read by <c>World.Gestate</c>
@@ -388,6 +452,26 @@ namespace Evosim.Core
         /// </para>
         /// </remarks>
         public float[] PartExposure { get; set; }
+
+        /// <summary>
+        /// D214: the posed mouth points of this body's eating parts, 3 floats each (x, y, z in the
+        /// frame <see cref="X"/> and <see cref="Z"/> are in), the first <see cref="MouthPointCount"/> of
+        /// them valid. Null in every world with <see cref="RunConfig.IntakeReachFromMouth"/> off.
+        /// </summary>
+        /// <remarks>
+        /// Set by <see cref="World.ObserveMouths"/>, which the harness calls each metabolic step before
+        /// <c>World.Step</c>; Core poses nothing. <b>Not checkpointed</b>: the harness fills it from the
+        /// solver's links before the world reads it, as it does <see cref="PartExposure"/>, and
+        /// <c>CheckpointFidelity</c> lists it with the members a step fills before it reads.
+        /// </remarks>
+        public float[] MouthPoints { get; internal set; }
+
+        /// <summary>
+        /// How many points <see cref="MouthPoints"/> holds for this step. 0 is none: the body is
+        /// measured from its centre. <c>World.AdoptPlan</c> sets it to 0, since a changed plan
+        /// re-indexes the eating parts.
+        /// </summary>
+        public int MouthPointCount { get; internal set; }
 
         /// <summary>
         /// The world's up in this body's own frame (the developer's), at the last metabolic step —

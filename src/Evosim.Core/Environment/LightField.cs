@@ -453,9 +453,20 @@ namespace Evosim.Core
 
             // The reefs' caps (logbook/specs/reef-spec.md §2): a separate factor after the map and
             // only when there are reefs, so a world without them is the expression above to the bit.
+            // The coral's canopy map in its place (coral-build.md, the readers); a world has one or the other.
+            CoralRock coral = Coral;
+            if (coral != null) return irradiance * coral.LightTransmission(x, heightY, z);
+
             ReefGeometry reefs = Reefs;
             return reefs == null ? irradiance : irradiance * reefs.LightTransmission(x, heightY, z);
         }
+
+        /// <summary>
+        /// The coral whose canopy shades the water under it, or null — every world at
+        /// <see cref="ReefShape.Mushroom"/>. Read per column from its canopy map, as the caps are, for
+        /// <see cref="Reefs"/>' reasons.
+        /// </summary>
+        public CoralRock Coral { get; set; }
 
         /// <summary>
         /// The reefs whose caps shade the water under them, or null — every recorded world.

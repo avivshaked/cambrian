@@ -356,11 +356,11 @@ namespace Evosim.Farm.Tests
         }
 
         [Fact]
-        public void ABoxIsRefusedNamingTheShape()
+        public void ABoxIsRefusedWithoutItsSeams()
         {
             (_, SolverConfig s) = GpuTank.Build(reefs: false);
             s.TankRadiusMetres = 0;
-            Refused(() => GpuWorld.Refuse(s), "EVOSIM_SHAPE");
+            Refused(() => GpuWorld.Refuse(s), "EVOSIM_READ_ACROSS_SEAMS");
         }
 
         [Fact]
@@ -605,6 +605,73 @@ namespace Evosim.Farm.Tests
             }
 
             Assert.True(parted, world + ": the world stepped as the one without its setting");
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
+        }
+
+        /// <summary>
+        /// D199/D200's limiter (<c>EVOSIM_DRAG_LIMIT_WELDED</c>): the force capped link by link and
+        /// the torque by each welded body, at the 0.02 s step where the limiter engages and at 0.01 s
+        /// with its gate opened (<c>EVOSIM_DRAG_LIMIT_ALWAYS</c>). Each is the solver's to the bit
+        /// after every block, a death and a birth included, and each is first shown to part on the CPU
+        /// from the per-link limiter under the same gate, so a switch that never reached the kernel
+        /// cannot pass as a match.
+        /// </summary>
+        [Theory]
+        [InlineData("coarse")]
+        [InlineData("always")]
+        public void TheWeldedLimiterOnTheCpuAcceleratorIsTheSolver(string gate)
+        {
+            var link = gate == "coarse"
+                ? new Dictionary<string, string>()
+                : new Dictionary<string, string> { { "EVOSIM_DT", "0.01" }, { "EVOSIM_DRAG_LIMIT_ALWAYS", "1" } };
+            var welded = new Dictionary<string, string>(link) { { "EVOSIM_DRAG_LIMIT_WELDED", "1" } };
+
+            (DynamicsWorld plain, World core0) = Pair(true, false, link);
+            (DynamicsWorld cpu, World coreA) = Pair(true, false, welded);
+            (DynamicsWorld gpu, World coreB) = Pair(true, false, welded);
+            Assert.True(cpu.Config.DragLimiterEngages && cpu.Config.DragLimitByWeldedBody);
+            Assert.False(plain.Config.DragLimitByWeldedBody);
+
+            Populate(plain, core0, 6, 11UL, 1);
+            Populate(cpu, coreA, 6, 11UL, 1);
+            Populate(gpu, coreB, 6, 11UL, 1);
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            for (int block = 0; block < 4; block++)
+            {
+                plain.StepBlock(25);
+                cpu.StepBlock(25);
+                gpu.StepBlock(25);
+                AssertSame(cpu, gpu, gate + ", after block " + block);
+
+                if (block == 1)
+                {
+                    foreach ((DynamicsWorld w, World core) in new[] { (plain, core0), (cpu, coreA), (gpu, coreB) })
+                    {
+                        w.Remove(w.Creatures[0].Id);
+                        Populate(w, core, 1, 99UL, 50);
+                    }
+                }
+            }
+
+            bool parted = false;
+            for (int i = 0; i < cpu.Creatures.Count && !parted; i++)
+            {
+                double[] a = plain.Creatures[i].Spin, b = cpu.Creatures[i].Spin;
+                for (int k = 0; k < a.Length && !parted; k++)
+                {
+                    parted = BitConverter.DoubleToInt64Bits(a[k]) != BitConverter.DoubleToInt64Bits(b[k]);
+                }
+            }
+
+            long limited = 0;
+            foreach (Creature c in cpu.Creatures) limited += c.DragImpulsesLimited;
+            _out.WriteLine(gate + ": " + limited + " drag impulses limited on the CPU");
+
+            Assert.True(parted, gate + ": the welded world stepped as the per-link one");
             Assert.Equal(0, backend.RefusedForClass);
             Assert.Equal(0L, backend.OverflowTotal);
         }

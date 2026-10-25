@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Evosim.Core;
 using Evosim.Dynamics;
 using Evosim.Dynamics.Placement;
@@ -40,8 +41,12 @@ namespace Evosim.Farm
             // 57's world just after its floor closed, and 12.5 s in a sparse one (the bodiless
             // instrument, Metabolise.cs; logbook/specs/build-readings.md). Every trickle world from
             // round 46's build through round 57 stepped with the wait.
+            //
+            // D220's two are 0 outside a contact-eating world, where remains are neither founded nor closed, so the
+            // count there is the one it always was. A founding or a close is a body to build or to remove; a whole
+            // body that dies into remains is a death and is counted above.
             long revision = World.Births + World.Deaths + World.FloorSpawns + World.TrickleSpawns +
-                            World.Inoculated + World.Immigrated;
+                            World.Inoculated + World.Immigrated + World.RemainsFounded + World.RemainsClosed;
             if (revision == _reconciledAt) return;
 
             _reconciledAt = revision;
@@ -52,6 +57,7 @@ namespace Evosim.Farm
             _movedOutsideTheSolver = true;
 
             System.Collections.Generic.IReadOnlyList<Organism> living = World.Living;
+            System.Collections.Generic.IReadOnlyList<Organism> remains = World.Remains;
 
             _departed.Clear();
             foreach (System.Collections.Generic.KeyValuePair<long, Body> entry in _bodies)
@@ -69,6 +75,24 @@ namespace Evosim.Farm
                 Build(creature);
             }
 
+            // D220: a body leaves the solver only when its id is in neither list. One that has passed from the
+            // living to the remains keeps its solver body, which carries on from its pose and its velocity and is
+            // told it is remains; one the solver has never held (a restore's, or a founding with no body to pose it
+            // from) is built as a newborn is.
+            for (int i = 0; i < remains.Count; i++)
+            {
+                Organism dead = remains[i];
+                _departed.Remove(dead.Id);
+
+                if (_bodies.TryGetValue(dead.Id, out Body held))
+                {
+                    held.Solver.BecomeRemains();
+                    continue;
+                }
+
+                Build(dead);
+            }
+
             foreach (long id in _departed)
             {
                 Body body = _bodies[id];
@@ -82,9 +106,10 @@ namespace Evosim.Farm
                 DissipatedJoules += body.Solver.DrainDissipated();
 
                 // D127: the pose it died in, for its corpse's picture. A body the solver lost is
-                // not finite and gives none.
+                // not finite and gives none. Remains leave no corpse, so they are not asked.
                 QuatD q = body.Solver.BaseRotation;
-                if (double.IsFinite(q.X) && double.IsFinite(q.Y) && double.IsFinite(q.Z) && double.IsFinite(q.W))
+                if (!body.Creature.IsRemains &&
+                    double.IsFinite(q.X) && double.IsFinite(q.Y) && double.IsFinite(q.Z) && double.IsFinite(q.W))
                 {
                     _corpsePoses[id] = new Quat((float)q.X, (float)q.Y, (float)q.Z, (float)q.W);
                 }
@@ -100,9 +125,25 @@ namespace Evosim.Farm
             // early return above is what keeps this off the hot path.
             _order.Clear();
 
-            for (int i = 0; i < living.Count; i++)
+            if (remains.Count == 0)
             {
-                if (_bodies.TryGetValue(living[i].Id, out Body body)) _order.Add(body);
+                for (int i = 0; i < living.Count; i++)
+                {
+                    if (_bodies.TryGetValue(living[i].Id, out Body body)) _order.Add(body);
+                }
+
+                return;
+            }
+
+            // D220: the solver's order is ascending id over the living and the remains together, so it is still a
+            // function of the population. Both lists are in ascending id order; this is their merge.
+            int l = 0, r = 0;
+            while (l < living.Count || r < remains.Count)
+            {
+                bool takeLiving = r >= remains.Count || (l < living.Count && living[l].Id < remains[r].Id);
+                Organism next = takeLiving ? living[l++] : remains[r++];
+
+                if (_bodies.TryGetValue(next.Id, out Body ordered)) _order.Add(ordered);
             }
         }
 
@@ -131,7 +172,13 @@ namespace Evosim.Farm
         }
 
         /// <summary>Builds one newborn's body at the spot the placer reserved for it.</summary>
-        private void Build(Organism creature)
+        /// <param name="creature">The organism: a newborn, or remains the solver has no body for.</param>
+        /// <param name="poseSource">
+        /// D220: for remains cut off another body, the solver body they were cut from, as it stands. The new body is
+        /// then posed from its links instead of placed. Null for every other body.
+        /// </param>
+        /// <param name="poseLinks">For each link of the new body, the link of <paramref name="poseSource"/> it is.</param>
+        private void Build(Organism creature, Creature poseSource = null, int[] poseLinks = null)
         {
             // The trickle question's instrument (Metabolise.cs): the wait ends here.
             _bodilessSince.Remove(creature.Id);
@@ -139,7 +186,13 @@ namespace Evosim.Farm
             Vec3 origin;
             float radius = 0f;
 
-            if (Volume != null)
+            if (poseSource != null)
+            {
+                // Posed from the body it was cut from: no place was reserved for it and none is wanted.
+                origin = new Vec3(creature.X, creature.HeightY, creature.Z);
+                if (Volume != null) radius = SharedVolume.BoundingRadius(creature.Phenotype);
+            }
+            else if (Volume != null)
             {
                 radius = SharedVolume.BoundingRadius(creature.Phenotype);
 
@@ -159,7 +212,7 @@ namespace Evosim.Farm
                     // recorded. See Simulation.State.cs.
                     origin = new Vec3(creature.X, creature.HeightY, creature.Z);
 
-                    if (!_restoring)
+                    if (!_restoring && !creature.IsRemains)
                     {
                         FarmConsole.Error.WriteLine(
                             FormattableString.Invariant(
@@ -194,7 +247,8 @@ namespace Evosim.Farm
 
             var solver = new Creature((int)creature.Id, creature.Phenotype, Solver, Config.Shapes);
 
-            solver.PlaceAsDeveloped(origin, creature.Phenotype);
+            if (poseSource != null) solver.PoseFromLinksOf(poseSource, poseLinks);
+            else solver.PlaceAsDeveloped(origin, creature.Phenotype);
 
             // D066, and before the first step: so the water this body is asked for is the water
             // of the patch it was born into rather than patch 0's.
@@ -252,7 +306,10 @@ namespace Evosim.Farm
             body.PreviousCentre = CentreOfMass(solver);
             body.PreviousRoot = body.LastRootPosition;
 
-            NoteMassRatio(body);
+            // D220: remains are not counted in the mass-ratio instrument, which is about the living bodies that
+            // were built. A body built for remains is told what it is before it is ever stepped.
+            if (creature.IsRemains) solver.BecomeRemains();
+            else NoteMassRatio(body);
 
             // The invariant that cannot fail quietly: Brain indexes drive by walking every part
             // in order and the solver indexes it through the joint's own DOF offset, and the two
@@ -302,7 +359,7 @@ namespace Evosim.Farm
         /// comparison a body, and the trajectory is the one the tree before it stepped.
         /// </para>
         /// </remarks>
-        private void RebuildChangedPlans()
+        internal void RebuildChangedPlans()
         {
             System.Collections.Generic.IReadOnlyList<Organism> living = World.Living;
 
@@ -317,6 +374,147 @@ namespace Evosim.Farm
 
                 RebuildOnTheNewPlan(body, creature);
             }
+
+            // D220: remains that shed a part are rebuilt on the plan they have now by the same path, keeping what
+            // their surviving links were doing. The list is empty with the dial off.
+            IReadOnlyList<Organism> remains = World.Remains;
+
+            for (int i = 0; i < remains.Count; i++)
+            {
+                Organism dead = remains[i];
+
+                if (!_bodies.TryGetValue(dead.Id, out Body body)) continue;
+                if (dead.PlanRevision == body.Solver.AppliedPlanRevision) continue;
+
+                RebuildOnTheNewPlan(body, dead);
+            }
+        }
+
+        /// <summary>The solver bodies and links a founding of remains is posed from, while a drain is being worked.</summary>
+        private sealed class FoundingSource
+        {
+            /// <summary>The solver body the remains were (in the end) cut from, as it stood at the cut.</summary>
+            public Creature Solver;
+
+            /// <summary>For each part of the remains' plan as founded, the link of <see cref="Solver"/> it is, or -1.</summary>
+            public int[] Links;
+        }
+
+        private readonly Dictionary<long, FoundingSource> _foundingSources = new Dictionary<long, FoundingSource>();
+
+        /// <summary>
+        /// D220: builds a solver body for each remains Core founded since the last call, posed from the links of the
+        /// body it was cut from.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Before anything rebuilds the source.</b> The pose is read off the source's solver body as it stands, so
+        /// this runs straight after <c>World.Step</c> (and after the module rule at the growth step), ahead of
+        /// <see cref="RebuildChangedPlans"/> and <see cref="RebuildOnTheNewPlan"/>.
+        /// </para>
+        /// <para>
+        /// <b>Which link is which.</b> A founding names each of the new body's parts by its index in the plan the
+        /// cut started from. That plan is the source's solver plan only when nothing changed the source earlier in
+        /// the step; <see cref="RemainsFounding.SourcePrior"/> carries the source's pending map at the cut, which
+        /// takes the index back to the solver plan. A source that is itself remains founded in this drain has no
+        /// solver body of its own yet, so its link table (the plan it was founded on, mapped to the first source's
+        /// links) stands in for one, and the chain is followed to the body that has. A body is then built on the
+        /// plan its organism holds now, which can be a later shed's, through the organism's own pending map.
+        /// </para>
+        /// <para>
+        /// A founding with no solver body to pose it from, or no root link, is left for <see cref="Reconcile"/> to
+        /// build as it builds any body it finds without one.
+        /// </para>
+        /// </remarks>
+        internal void PoseFoundings()
+        {
+            IReadOnlyList<RemainsFounding> foundings = World.DrainRemainsFoundings();
+            if (foundings.Count == 0) return;
+
+            _foundingSources.Clear();
+
+            for (int i = 0; i < foundings.Count; i++)
+            {
+                RemainsFounding founding = foundings[i];
+
+                Creature solver;
+                int[] through = null;
+
+                if (_foundingSources.TryGetValue(founding.FromBodyId, out FoundingSource chain))
+                {
+                    solver = chain.Solver;
+                    through = chain.Links;
+                }
+                else if (_bodies.TryGetValue(founding.FromBodyId, out Body from))
+                {
+                    solver = from.Solver;
+                }
+                else
+                {
+                    continue;
+                }
+
+                int[] prior = founding.SourcePrior;
+                var links = new int[founding.Map.Length];
+
+                for (int k = 0; k < links.Length; k++)
+                {
+                    int at = founding.Map[k];
+                    if (prior != null) at = at >= 0 && at < prior.Length ? prior[at] : -1;
+                    if (through != null) at = at >= 0 && at < through.Length ? through[at] : -1;
+
+                    links[k] = at;
+                }
+
+                _foundingSources[founding.RemainsId] = new FoundingSource { Solver = solver, Links = links };
+            }
+
+            for (int i = 0; i < foundings.Count; i++)
+            {
+                long id = foundings[i].RemainsId;
+
+                if (!_foundingSources.TryGetValue(id, out FoundingSource source)) continue;
+                if (_bodies.ContainsKey(id)) continue;
+
+                Organism remains = FindRemains(id);
+                if (remains == null) continue;
+
+                // The organism's plan now, which a shed after the founding in the same step has moved: its pending
+                // map runs from the plan it was founded on to the one it holds, and is taken here as Build would.
+                int[] pending = remains.TakePartMapFromPreviousPlan();
+                var posed = new int[remains.Phenotype.PartCount];
+
+                for (int j = 0; j < posed.Length; j++)
+                {
+                    int founded = pending != null ? (j < pending.Length ? pending[j] : -1) : j;
+                    posed[j] = founded >= 0 && founded < source.Links.Length ? source.Links[founded] : -1;
+                }
+
+                if (posed.Length == 0 || posed[0] < 0 || posed[0] >= source.Solver.Links) continue;
+
+                Build(remains, source.Solver, posed);
+            }
+
+            _foundingSources.Clear();
+        }
+
+        /// <summary>The remains with this id, or null where none stands. The list is in ascending id order.</summary>
+        private Organism FindRemains(long id)
+        {
+            IReadOnlyList<Organism> remains = World.Remains;
+            int low = 0, high = remains.Count - 1;
+
+            while (low <= high)
+            {
+                int middle = (low + high) >> 1;
+                long at = remains[middle].Id;
+
+                if (at == id) return remains[middle];
+                if (at < id) low = middle + 1;
+                else high = middle - 1;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -401,6 +599,9 @@ namespace Evosim.Farm
             }
 
             if (solver.Jointed) solver.EnableTrace();
+
+            // D220: remains stay remains through a rebuild on a new plan.
+            if (creature.IsRemains) solver.BecomeRemains();
 
             if (solver.Brain.TotalDof != solver.Dof)
             {

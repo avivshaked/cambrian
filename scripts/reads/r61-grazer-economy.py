@@ -141,11 +141,27 @@ class Economy:
             elif e == "k":
                 self.kill_j.append((t, r["id"], r.get("by"), (r.get("tj") or 0.0) + (r.get("rj") or 0.0)))
         want = ("t", "alive", "jointed", "poolSpawns", "trickleSpawns", "unitsEaten", "corpsesEaten", "corpsesFromKills",
-                "workJoulesPerSecond", "speedJointed", "speedRigid")
+                "workJoulesPerSecond", "speedJointed", "speedRigid",
+                "biteKeptLeaves", "biteKeptOthers", "biteKeptRemains")
         self.stats = [{k: r.get(k) for k in want} for r in w.seg_rows("stats.jsonl")]
         cfg = w.config
         self.jpu = float(r59.find(cfg, "joulesPerUnit") or 100.0)
         self.waste = float(r59.find(cfg, "intakeWasteFraction") or 0.0)
+        # D219-D221: with contact eating on, a mouth's food is what its bites kept (the stats' biteKept columns, joules
+        # already net of the waste), and unitsEaten (corpse meals) stays 0. keptJ is the cumulative kept intake under
+        # either rule, so a reader differences it into a window whichever rule the run had; keptLivingJ is the part
+        # of it bitten off the living (None under the corpse rule, where the split does not exist).
+        self.contact = bool(r59.find(cfg, "contactEating"))
+        keep = 1.0 - self.waste
+        for s in self.stats:
+            if self.contact:
+                living = (s.get("biteKeptLeaves") or 0.0) + (s.get("biteKeptOthers") or 0.0)
+                s["keptLivingJ"] = living
+                s["keptJ"] = living + (s.get("biteKeptRemains") or 0.0)
+            else:
+                u = s.get("unitsEaten")
+                s["keptLivingJ"] = None
+                s["keptJ"] = u * self.jpu * keep if u is not None else None
         self.years = list(range(1, int(self.end // self.year + 1e-9) + 1))
 
     # ---- helpers

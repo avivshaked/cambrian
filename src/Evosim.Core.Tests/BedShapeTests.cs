@@ -504,19 +504,19 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
-        public void TheWorldRefusesABedInABox()
+        public void TheWorldRefusesATiltInABox()
         {
-            // D092's ruling in the shape World states it: the bed is the tank's, because the box
-            // is periodic on both horizontal axes and a height map on a ring would have to meet
-            // itself at two seams.
+            // D204: the box's relief joins at its seams (BedShape.ForBox, OpenSquareTests), but a
+            // tilt is a plane, and a plane on a ring would have to meet itself at two seams.
             var config = new RunConfig
             {
                 WorldShape = WorldShape.Box,
                 BedReliefMetres = 2f,
+                BedTiltMetres = 3f,
             };
 
             ArgumentException thrown = Assert.Throws<ArgumentException>(() => new World(config));
-            Assert.Contains("bed is the tank's", thrown.Message);
+            Assert.Contains("a tilt is a plane", thrown.Message);
 
             _output.WriteLine(thrown.Message);
         }

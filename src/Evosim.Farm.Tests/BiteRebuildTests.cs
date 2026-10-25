@@ -1385,7 +1385,20 @@ namespace Evosim.Farm.Tests
         /// <b>Both folded hashes moved again with round 60's build, and neither trajectory did.</b>
         /// The world writes state version 18, and a birth's overhead returns its units to the water
         /// in double: the touching world's folded hash went from <c>2ccd06cadd372bc0181225945db41cf9</c>
-        /// and the module world's from <c>ac0157e30c3f703658ee3c8a1bbc0751</c> to the ones pinned here.
+        /// and the module world's from <c>ac0157e30c3f703658ee3c8a1bbc0751</c> to
+        /// <c>99ce43525cbcdddc421309b9a216c7df</c> and <c>21d91a7ef608f7211cc6ef3c67d20867</c>.
+        /// </para>
+        /// <para>
+        /// <b>And again with round 62's build (D206), and neither trajectory did.</b> The world writes
+        /// state version 19, with D206's store: a double for each organism and each corpse and the
+        /// store's three counters, all 0 with the rule off. The folded hashes moved to
+        /// <c>996dd1d569e5846e17c53f53d14c033f</c> and <c>603b11c91a98a953823a7a8e8c7a6e36</c>.
+        /// </para>
+        /// <para>
+        /// <b>And again with the intake's origin books (state version 20), and neither trajectory did.</b>
+        /// Each corpse writes its killer and the world six totals and a second. The same build writing
+        /// version 19 gives the version-19 hashes above exactly, so only the new fields moved them. The
+        /// folded hashes moved to the ones pinned here.
         /// </para>
         /// </remarks>
         /// <param name="world">
@@ -1397,8 +1410,8 @@ namespace Evosim.Farm.Tests
         /// <param name="pinned">The solver's digests folded with the world's states.</param>
         /// <param name="trajectory">The solver's digests alone.</param>
         [Theory]
-        [InlineData("touching", "99ce43525cbcdddc421309b9a216c7df", "1de02f3f7ab7cd2fd2b5b4b83922d153")]
-        [InlineData("modules", "21d91a7ef608f7211cc6ef3c67d20867", "c2072f14f54654181d54d218124c4dd3")]
+        [InlineData("touching", "e378635f9aaa3bc0db1183467fd670b0", "1de02f3f7ab7cd2fd2b5b4b83922d153")]
+        [InlineData("modules", "2a1747785fe170a7bb2f8cb85a1ac505", "c2072f14f54654181d54d218124c4dd3")]
         public void AWorldWithNoBiteStepsAsItDidBefore(string world, string pinned, string trajectory)
         {
             bool modules = world == "modules";

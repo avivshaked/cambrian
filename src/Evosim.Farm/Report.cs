@@ -264,7 +264,7 @@ namespace Evosim.Farm
                 " · current " + F(s.CurrentSpeed) + " m/s " +
                 s.CurrentMode.ToString().ToLowerInvariant() +
                 " over " + F(s.CurrentPeriod) + " s" +
-                (s.CurrentMode == CurrentMode.Transport
+                (s.CurrentMode != CurrentMode.Rolls
                     ? " (cell " + F(s.CurrentCell) + " m unread)"
                     : " in " + F(s.CurrentCell) + " m cells") +
 
@@ -276,8 +276,8 @@ namespace Evosim.Farm
                 // name water the simulation does not have. 1.00 in a box and in every tank whose
                 // axes balance.
                 " · axes v:h " + config.Current.StreamsAxisRatio.ToString("0.00", Inv) +
-                " · rolls " + (s.CurrentMode == CurrentMode.Transport
-                    ? "unread in transport"
+                " · rolls " + (s.CurrentMode != CurrentMode.Rolls
+                    ? "unread in " + s.CurrentMode.ToString().ToLowerInvariant()
                     : s.CurrentRolls
                         ? s.CurrentBlink > 0f ? "blink " + F(s.CurrentBlink) + " s" : "steady"
                         : "off") +
@@ -340,6 +340,13 @@ namespace Evosim.Farm
                 " · matter from " + F(s.InitialMatter) + "/m3" +
                 " · tissue " + config.CellTypes.Resolve(CellTypeIds.Photosynthetic)
                     .TissueEnergyPerCubicMetre.ToString("0.###", Inv) + " J/m3" +
+                // The owner's leaf energy: the structural cell's beside the leaf's, only when they differ, so
+                // every recorded header (one value for every cell) reads as it did.
+                (config.CellTypes.Resolve(CellTypeIds.Structural).TissueEnergyPerCubicMetre !=
+                 config.CellTypes.Resolve(CellTypeIds.Photosynthetic).TissueEnergyPerCubicMetre
+                    ? " (structural " + config.CellTypes.Resolve(CellTypeIds.Structural)
+                        .TissueEnergyPerCubicMetre.ToString("0.###", Inv) + ")"
+                    : "") +
                 " · overhead " + config.PerOffspringOverheadJoules.ToString("0.###", Inv) + " J" +
                 " · founders " + config.Genome.MinHalfExtent.ToString("0.###", Inv) + "-" +
                 config.Genome.MaxHalfExtent.ToString("0.###", Inv) + " m" +
@@ -355,6 +362,14 @@ namespace Evosim.Farm
                 // Where `physics jobs` stood. A pace setting, in the slot a pace setting had.
                 " · threads " + F(space.Threads) +
                 " · driveLimit " + (s.DriveLimitAlways ? "always" : ">0.01") +
+
+                // D199's two, printed only when one is on, so a header of the recorded world reads
+                // as it always has.
+                (s.DragLimitAlways || s.DragLimitWelded
+                    ? " · dragLimit " + (s.DragLimitAlways ? "always" : ">0.01") +
+                      (s.DragLimitWelded ? " welded" : " link")
+                    : "") +
+                (s.ScaleLengthensOnce ? " · scale lengthens once" : "") +
                 " · matterBudget " + F(s.MatterBudget) +
                 " · addedMass " + F(s.AddedMass) +
                 " · fluidAccel " + F(s.FluidAccel) +
@@ -391,7 +406,10 @@ namespace Evosim.Farm
                 // are, for the module token's reason: a reader must never have to work out
                 // whether a missing one means "off" or "written before the mouth existed".
                 " · mouth hp=" + F(s.Health) + " heal=" + F(s.Healing) + "/s@" + F(s.HealingCost) +
-                "J reach=" + F(s.IntakeReach) + " waste=" + F(s.IntakeWaste) +
+                "J reach=" + F(s.IntakeReach) +
+                // D214, only when on, so every recorded header reads as it did.
+                (config.IntakeReachFromMouth ? " (from mouth points)" : "") +
+                " waste=" + F(s.IntakeWaste) +
                 " prices atk=" + F(s.PriceAttack) + " ink=" + F(s.PriceIntake) +
                 " prt=" + F(s.PriceProtection) + " tgh=" + F(s.PriceToughness) +
                 " mut=" + F(s.AttributeMutation) +
@@ -407,6 +425,26 @@ namespace Evosim.Farm
                 // contact_aliases.py read which from this token.
                 " · contact " + (config.ContactPerPart ? "per part" : "per body") +
                 (config.BedFriction > 0 ? " friction " + F(config.BedFriction) : "") +
+                // D204, only when on, so every recorded header reads as it did.
+                (config.ReadAcrossSeams ? " across seams" : "") +
+                // D206, only when on, so every recorded header reads as it did.
+                (config.PlantsKeepMatter ? " · plants keep matter" : "") +
+                // D207, only when on, so every recorded header reads as it did.
+                (config.PlantsKeepOwnFirst ? " own leaves first" : "") +
+                // The owner's intake scale, only when not 1, so every recorded header reads as it did.
+                (config.IntakeScale != 1f ? " · intake ×" + config.IntakeScale.ToString("0.###", Inv) : "") +
+                // D212, only when on, so every recorded header reads as it did.
+                (config.CorpseHalfLifeSeconds > 0f
+                    ? " · spoil half-life " + config.CorpseHalfLifeSeconds.ToString("0.###", Inv) + " s"
+                    : "") +
+                // D219, D220, only when on, so every recorded header reads as it did.
+                (config.ContactEating
+                    ? " · bites feed, remains window " + config.RemainsWindowSeconds.ToString("0.###", Inv) + " s"
+                    : "") +
+                // D224, only when on (and so only with contact eating), so every recorded header reads as it did.
+                (config.ContactEating && config.BiteTakesStore ? " · a bite takes the store" : "") +
+                // D226, only when not 1, so every recorded header reads as it did.
+                (config.BiteDamageScale != 1f ? " · bite damage ×" + config.BiteDamageScale.ToString("0.###", Inv) : "") +
 
                 // The ruling of 2026-09-24, at the end before the hash and rendered either way.
                 // The floor is the `overhead` token above, which is unchanged; this says whether
@@ -519,7 +557,7 @@ namespace Evosim.Farm
                     (space.HasFloor ? BedToken(space.Bed) : "no bed") +
                     // The reefs after the bed and its shore (logbook/specs/reef-spec.md §1): the
                     // dials as the config holds them, or "no reef".
-                    ", " + ReefGeometry.HeaderToken(config, space.Reefs);
+                    ", " + ReefGeometry.HeaderToken(config, space.Reefs) + CoralToken(config, space.Coral);
             }
 
 
@@ -535,7 +573,23 @@ namespace Evosim.Farm
 
             return
                 "shared " + layout + " m, depth " + F(config.WorldDepthMetres) + ", wrap, " +
-                (space.HasFloor ? "bed" : "no bed");
+                (space.HasFloor ? "bed" : "no bed") + CoralToken(config, space.Coral);
+        }
+
+        /// <summary>
+        /// D194's coral after the bed and the reefs, with its separator, or nothing without coral, so
+        /// every other header is unchanged: what was grown, the island share and roof it was grown
+        /// to, and the readers' dials.
+        /// </summary>
+        public static string CoralToken(RunConfig config, CoralRock coral)
+        {
+            if (coral == null) return "";
+
+            return
+                ", coral " + coral.Count.ToString(Inv) + " colonies of " + coral.Coral.PieceCount.ToString(Inv) +
+                " pieces, island share " + F(config.CoralIslandShare) + " roof " + F(config.CoralIslandRoof) +
+                ", fade " + F(config.CoralFadeMetres) + " m to " + F(config.CoralFadeFloor) +
+                ", light " + F(config.CoralTransmission) + ", digest " + coral.Coral.Digest().ToString("x16", Inv);
         }
 
         /// <summary>
@@ -951,6 +1005,9 @@ namespace Evosim.Farm
         /// <summary>The world's reefs, for the header's count and cover got; null with none.</summary>
         public ReefGeometry Reefs;
 
+        /// <summary>The world's coral, for the header's token; null with none.</summary>
+        public CoralRock Coral;
+
         public int Threads;
         public string InoculumHashShort;
 
@@ -975,6 +1032,7 @@ namespace Evosim.Farm
                 HasFloor = hasFloor,
                 Bed = world.Bed,
                 Reefs = world.Reefs,
+                Coral = world.Coral,
                 Threads = threads,
                 InoculumHashShort = inoculumHashShort,
                 PoolWeighted = world.TricklePoolWeights != null,

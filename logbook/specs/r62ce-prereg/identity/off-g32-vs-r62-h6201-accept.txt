@@ -1,0 +1,16 @@
+A: scratch/contact-eating/identity/r62ceid-off-g32/2026-10-24-021920-6901478b/
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 45726.2999 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit b7611b583a dirty False dynamics bb71b2180005 farm 96ab5286e3e8 config 6901478b8e2fea6a
+  pace     600 s of 600 in 2.450874038333333 min, 4.080177048511353 x real time, status ended (budget), diverged 0
+B: runs/r62-h6201/2026-10-23-090508-c5c9f416/
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 13800.6674 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit b5fcd5b684 dirty False dynamics 273d39fff289 farm 78d8587c6ba4 config c5c9f4167e070655
+  pace     24880 s of 72000 in 262.1366865933333 min, 1.5818719312263272 x real time, status stopped (manual-futility), diverged 0
+split A  physics 52%, world 45%, harness 1%, writers 2%
+split B  physics 51%, world 40%, harness 9%, writers 1%
+stats    identical through t=0; first difference at t=10 in 7 fields, e.g. intakeCarrionJ=0/<absent>, intakeOriginFrom=0/<absent>, intakeOtherKillJ=0/<absent>, intakeOwnKillJ=0/<absent>, mouthedIntakeCarrionJ=0/<absent>
+digest   identical on all 601 shared rows to step 60000
+lineage  byte-equal on the shorter run's 1618 lines; the other goes on
+positions not in both runs

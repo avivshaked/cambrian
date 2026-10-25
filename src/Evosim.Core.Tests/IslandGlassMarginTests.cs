@@ -171,10 +171,13 @@ namespace Evosim.Core.Tests
             ArgumentException tooWide = Assert.Throws<ArgumentException>(() => new World(Tank(radius + 1f), seed: 3));
             Assert.Contains("leaves no live column", tooWide.Message);
 
+            // D204: in the box the margin is kept from every face, so one of half the side or more
+            // leaves nothing between the faces.
             var box = new GridField(400f, 0f, Depth, 0f, 0f, 1, 2f);
             var map = new GradientNoise(3UL, 10f);
-            ArgumentException boxed = Assert.Throws<ArgumentException>(() => box.PlanIslands(map.Fbm, 0.2f, 6f, Margin));
-            Assert.Contains("needs a tank", boxed.Message);
+            ArgumentException boxed = Assert.Throws<ArgumentException>(
+                () => box.PlanIslands(map.Fbm, 0.2f, 6f, box.LengthMetres / 2f + 1f));
+            Assert.Contains("inside the box's faces", boxed.Message);
         }
 
         /// <summary>

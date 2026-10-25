@@ -281,10 +281,21 @@ namespace Evosim.Farm
 
                 World.Placement = Volume;
 
+                // D204: the seams the contact reads across are the ones the root is wrapped at.
+                if (Solver.Seamed &&
+                    (Solver.SeamLengthMetres != Volume.LengthMetres || Solver.SeamWidthMetres != Volume.WidthMetres))
+                {
+                    throw new InvalidOperationException(
+                        FormattableString.Invariant(
+                            $"The contact's seams ({Solver.SeamLengthMetres:R} by {Solver.SeamWidthMetres:R} m) ") +
+                        FormattableString.Invariant(
+                            $"are not the placer's box ({Volume.LengthMetres:R} by {Volume.WidthMetres:R} m)."));
+                }
+
                 // The bed before anything is placed: the placer asks it how much clearance a body
                 // needs and the very first floor spawn has to get the answer. The shape is the
                 // world's own (D092), never rebuilt here.
-                Floor = new PlacementFloor(config.WorldDepthMetres, world.Bed, world.Reefs);
+                Floor = new PlacementFloor(config.WorldDepthMetres, world.Bed, world.Reefs, world.Coral);
                 Volume.Floor = Floor;
             }
 
@@ -664,7 +675,7 @@ namespace Evosim.Farm
         /// </remarks>
         private void OnContactStray(Creature solver, ContactStray stray)
         {
-            // Every body in the table is living when the solver steps: the reconcile at the top of
+            // Every body in the table is living or remains when the solver steps: the reconcile at the top of
             // Step has just taken out the dead. A solver that is not the table's is not this run's.
             if (!_bodies.TryGetValue(solver.Id, out Body body) || !ReferenceEquals(body.Solver, solver)) return;
 
@@ -695,6 +706,22 @@ namespace Evosim.Farm
                 LastRootPosition = new Vec3(
                     body.LastRootPosition.X, body.LastRootPosition.Y, body.LastRootPosition.Z),
             });
+
+            // D220, choice 7: remains whose body diverged are burnt at once, and leave no remains. They are not a
+            // death: the body died when it became remains, and what is closed here is what is left of it.
+            if (creature.IsRemains)
+            {
+                FarmConsole.Error.WriteLine(
+                    FormattableString.Invariant(
+                        $"remains {creature.Id} diverged at t={World.ElapsedSeconds:0.#} s ") +
+                    FormattableString.Invariant(
+                        $"(physics step {Steps + 1}, {body.Solver.Links} parts, {body.Solver.Dof} dof") +
+                    (reason != null ? ", " + reason : string.Empty) +
+                    ") — burnt and closed, see the diverged/ dump.");
+
+                World.CloseDivergedRemains(creature);
+                return;
+            }
 
             FarmConsole.Error.WriteLine(
                 FormattableString.Invariant(

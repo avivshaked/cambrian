@@ -27,7 +27,9 @@ The root file's rules still apply. The entries below were moved word for word, s
   **The snow's transport has a second copy on the card** (`EVOSIM_GPU_TRANSPORT`, 2026-09-26).
   `src/Evosim.Farm.Gpu/GpuTransport.cs` transcribes `GridField`'s edge sampling, face assembly,
   outflow bound and three passes, and `CurrentField`'s hoisted potential, in their order and
-  grouping. Core keeps the decisions and hands a device the arithmetic
+  grouping: a tank's streams, and the box's open ocean on a shaped floor, whose plan carries the
+  phase tables and the sine at each edge's mapped height so the card never calls its own
+  sine (`logbook/specs/box-transport-speed.md`). Core keeps the decisions and hands a device the arithmetic
   (`GridField.TransportDevice`), and a device declines any grid its plan does not cover. A change
   to that arithmetic in Core is therefore made in the kernel in the same change.
   `GpuTransportTests` runs the kernels on ILGPU's CPU accelerator and fails when the two part,
@@ -89,6 +91,11 @@ The root file's rules still apply. The entries below were moved word for word, s
   whose bed angle passes it parts from the CPU on the accelerator as well, and `BedAnglesPastGuard`
   counts such angles. The farm refuses the card in double. A new call to
   a double maths function in a kernel needs the same guard, or a reason it cannot see a large argument.
+- **The card holds its own copy of a body's drive, signals, stroke and grips, and uploads it only when it packs
+  the body.** A host change to that state between blocks, such as `Creature.BecomeRemains()` (D220), reaches the
+  card only if `GpuSlots.Sync` queues the body for a full pack. Sync compares `SeenRemains` with `Creature.Remains`
+  for this. A new per-body fact that the host changes needs the same comparison. Without it the card steps the
+  stale copy, and `GpuRemainsTests`' mid-run cases fail.
 - **Never raise ILGPU 1.5.3's optimisation level above the default for the card.** At O2 it writes
   `bra.uni` (a branch every thread of a warp takes alike) on predicates that differ within a warp, about
   865 of the step kernel's 1,018, and the step hung in its first block on the card on 2026-10-08

@@ -9,7 +9,8 @@ columns above the water's mean over the top three layers at --footprint-at secon
 margin, joined by their sides. An island counts when it has at least --min-columns columns (10 by default, 250 m² on
 5 m columns); the line gives how many count, each one's columns and its nearest column centre to the glass, the share
 of the island columns the largest holds, and the nearest distance between the centres of two counted islands. The
-choice is the reader's: D192 asks for about five or six islands clear of the glass.
+choice is the reader's: D192 asks for about five or six islands clear of the glass. D204's open square reads the same,
+with the edges for the glass and the centres' distance taken the shortest way round the seams.
 
 Reads the files only; writes nothing. Standard library only.
 """
@@ -52,12 +53,20 @@ def main():
         counted = sorted((k for k in range(len(f.sizes)) if f.sizes[k] >= a.min_columns), key=lambda k: -f.sizes[k])
         cx = {k: sx[k] / f.sizes[k] for k in counted}
         cz = {k: sz[k] / f.sizes[k] for k in counted}
-        gap = min((math.hypot(cx[i] - cx[j], cz[i] - cz[j]) for i in counted for j in counted if i < j), default=float("nan"))
+        # In D204's open square two centres are as near as the shortest way round the seams; the margin keeps every
+        # island clear of them, so its plain mean is its centre.
+        def apart(i, j):
+            dx, dz = abs(cx[i] - cx[j]), abs(cz[i] - cz[j])
+            if f.box:
+                dx, dz = min(dx, f.side[0] - dx), min(dz, f.side[1] - dz)
+            return math.hypot(dx, dz)
+
+        gap = min((apart(i, j) for i in counted for j in counted if i < j), default=float("nan"))
         total = sum(f.sizes)
         print(f"landscape {landscape} ({w.name}): {len(counted)} islands of {a.min_columns}+ columns, of {len(f.sizes)}; "
               f"{total} island columns ({total / f.n_water:.2f} of the water); largest {f.sizes[counted[0]] / total if counted else 0:.2f} "
               f"of them; nearest centres {gap:.0f} m apart; "
-              + ", ".join(f"{f.sizes[k]} cols {f.glass[k]:.0f} m off the glass" for k in counted))
+              + ", ".join(f"{f.sizes[k]} cols {f.glass[k]:.0f} m off the {'edge' if f.box else 'glass'}" for k in counted))
 
 
 if __name__ == "__main__":

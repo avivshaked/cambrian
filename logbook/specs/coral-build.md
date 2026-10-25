@@ -114,6 +114,85 @@ The grid gives the same bits as a scan of every piece when every piece that can 
 and the lists stay ascending. A test proves it on the CPU and on the card at query radii up to 20 m. Round 61's
 parts reached an 18.4 m half-diagonal.
 
+## Step 2, as built
+
+Built on the CPU on branch `r62-card` on 2026-10-19, in CoralRock and its readers. Six things differ from the
+plan above.
+
+1. The grid lists colonies, where the plan listed pieces. A smooth minimum folded in order does not give the same bits when a far
+   piece is left out. The piece can move the running value, which a later near piece then meets inside the fillet.
+   A cell therefore lists every colony whose widened box meets it, and a query reads every piece of each colony it
+   cannot rule out. The bound that rules a colony out is its box's distance, less its thickest piece and a sixth of
+   the fillet for each fold. The grid then gives a scan's bits whenever the distance is under the query's limit.
+   The test holds that over about 2,500 queries a world, at limits up to 20 m.
+2. The hull's distance is the ellipsoid's near-Euclidean estimate, and no hull is flatter than 2 to 1. The scaled
+   sphere's distance named above stretched the 8 m fade by each hull's aspect. In the test tank one colony's fade
+   reached 94 m along its long axis, which would have slowed the water over whole islands. The estimate,
+   `k0 (k0 - 1) / k1` with `k0 = |p/a|` and `k1 = |p/a^2|`, is exact along the axes. Off them it strays as the
+   aspect grows. At an 8 m fade it ends the fade within 10 m of a hull of aspect 2, 13 m at 3 and 42 m at 11. A
+   flat colony's short axes are raised to half its longest (CoralRock.HullAspect), and its hull is thicker than the colony.
+   The fade now reaches at most 18 m from a colony's centre in both test worlds.
+3. In D204's square every reader is periodic. A body's parts are not folded with its root, and a fade can reach
+   past a face. A distance query folds its point into the box and also reads the image across any face within its
+   limit. The hulls are read the short way round, and the canopy's column is the folded point's. A hull whose fade
+   would reach half the box is refused.
+4. A founder is never landed on coral. A spot that does not clear the rock is drawn again, as a spot in a stem is.
+5. Corpses rest on the highest plate top over their column when it is under them, as on a cap.
+6. The manifest keeps the coral's counts and its digest, where the plan kept every piece. The pieces are placed again from the
+   seed and the config, as the reefs are on every load. The digest checks that the coral is the same. Only a coral
+   world writes these fields, so every other manifest is unchanged. The run header names the coral on the same
+   rule.
+
+The card refuses a coral world until step 3. On the CPU the tests measure the following.
+
+- The faded water's divergence, by a 12.5 mm stencil, is at most 1.4e-5 /s in the square's ocean. The water there
+  runs at up to 0.35 m/s. In the tank's streams it is 5.4e-5 /s.
+- The analytic acceleration matches a stencil to 0.03 to 0.05% RMS.
+- Water beyond every fade is the unfaded water to the bit. Where the fade is under one half, the water runs at
+  0.36 of the open water's mean speed in the square and 0.54 in the tank.
+- Across a seam the faded ocean parts by 7e-7 m/s, and the distance and fade by 2e-14.
+- A sphere sinking onto a plate rests within 2.4 mm of the plate's top plus its radius. One pressed into a trunk
+  is pushed out.
+- The mushrooms' tests and the default Core suite (1,252 tests) pass unchanged.
+
+The fade reads a colony list per cell, as the distance does, on the same cells. A cell lists, in ascending order,
+every colony whose cull box meets it. The cull box is the hull's semi-axes times 1 + fade/least semi-axis, beyond
+which `HullDistance` returns infinity before any arithmetic. In the square the box is listed across the seams, and
+the point's cell is its folded place's. In a tank the edge cells run on to infinity. Each span is widened by a
+millimetre and a millionth, so rounding in the cull or in the point's cell never reads a list short of a hull it
+keeps. A hull listed but culled adds nothing, and the product runs in colony order either way, so the lists move
+no bits. `TheFadesListsGiveTheScansBits` holds the value, gradient and Hessian against the full scan on 20,000
+points a rock. The card reads the same lists from two more blocks of the world's reals.
+
+On round 62's square (30 colonies), timed on one thread with `OceanTracers --coral` beside a farm run, the fade
+fell from 0.57 µs a call to 0.13 µs. A link's water, which calls it twice, fell from 5.63 µs to 3.74 µs, at the
+same checksum. That fall is more than twice the fade's own, so part of it is likely noise in a reading taken on a
+loaded machine. Without the lists the fade's cost grows with the colony count, about seven times at the 200-colony
+cap. With them it grows only with the colonies near a point.
+
+## Step 3, as built
+
+Built on branch `r62-card` on 2026-10-19. The kernel template transcribes CoralRock's distance and its hulls'
+fade line for line. That covers the colony grid, the pieces and their smooth union, the square's fold and images,
+and the fade's gradient and Hessian. The kernel reads them where it reads the reefs'. The water's velocity and
+acceleration take the coral's fade, in the tank's streams and in the box ocean. Contact takes the coral's
+distance, on the body sphere and on each link. Light, placement, corpses and the divergence guard run on the host, which already reads
+the coral.
+
+GpuWorld packs the coral into the world's reals, as the reefs are packed: sixteen numbers a colony, nine a piece,
+then the grid's cell starts and colony lists. Every index is under 2^24, so a list survives single precision.
+The rows are read from CoralRock's private arrays by reflection, so `GpuCoralTests.TheRowsAreTheRocksOwn` holds
+them against the rock's public readers. The current's coral and the bodies' coral must be one object. An ocean
+whose overturning is not 0 is refused, since the CPU's ocean passes 0 to the coral's chain rule.
+
+Two departures from the plan above. The grid lists colonies, as on the CPU. The canopy map is not on the card,
+since nothing on the card reads light.
+
+The kernel in double on ILGPU's CPU accelerator gives the solver's bits after 100 steps, with bodies on a plate,
+against a trunk, in the fade and in open water. That holds in the 60 m square and in a 1,600 m2 tank, with and
+without per-part contact (`GpuCoralTests`). The card's own identity pair, at two group sizes, comes with the
+round's screen.
+
 ## The card
 
 The capsule, the plate, the union, the hull's fade and the canopy read go into the kernel template under the

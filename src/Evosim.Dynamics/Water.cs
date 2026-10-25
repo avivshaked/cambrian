@@ -64,7 +64,9 @@ namespace Evosim.Dynamics
                 return;
             }
 
-            bool transport = current.Mode == CurrentMode.Transport;
+            // A field of a place, read per link: the transport field, the ocean, and the tank's
+            // streams, whose launchers all name Transport (World refuses the rolls in a tank).
+            bool transport = current.Mode != CurrentMode.Rolls;
             int patchCount = config.PatchCount;
 
             for (int i = 0; i < body.Links; i++)

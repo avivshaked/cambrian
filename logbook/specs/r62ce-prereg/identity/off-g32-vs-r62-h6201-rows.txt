@@ -1,0 +1,6 @@
+stats: resumed rows after 0 s: 60, of which in the recording: 60, 10 to 600 s
+  fields compared per row: 179, values compared: 10740
+  first difference: none
+  only in the resumed rows: ['intakeCarrionJ', 'intakeOriginFrom', 'intakeOtherKillJ', 'intakeOwnKillJ', 'mouthedIntakeCarrionJ', 'mouthedIntakeOtherKillJ', 'mouthedIntakeOwnKillJ']
+  only in the recorded rows: []
+lineage rows in (0, 600] s: recorded 1618, resumed 1618, equal apart from ['iak', 'ic', 'iok']: True

@@ -63,6 +63,48 @@ namespace Evosim.Farm
             if (waited > LongestBodilessSeconds) LongestBodilessSeconds = waited;
         }
 
+        /// <summary>
+        /// D220: hands Core where each remains body is, so the point Core bites and burns remains at follows the
+        /// body as it drifts and sinks.
+        /// </summary>
+        /// <remarks>
+        /// A remains body is asked for nothing else: no work (its drive is still, and what the solver tallied is
+        /// drained and dropped), no grip, no mouths, no senses. Its speed is in none of the swimmers' speeds. The
+        /// placer notes it, so no newborn is placed inside it. The solver's tallies are drained all the same, as a living body's are, so
+        /// the limiter and dissipation instruments lose nothing to a body's having died. The list is empty with the
+        /// dial off.
+        /// </remarks>
+        private void ObserveRemains()
+        {
+            IReadOnlyList<Organism> remains = World.Remains;
+
+            for (int i = 0; i < remains.Count; i++)
+            {
+                Organism dead = remains[i];
+                if (!_bodies.TryGetValue(dead.Id, out Body body)) continue;
+
+                Creature solver = body.Solver;
+
+                // Remains are solid: the placer keeps a newborn out of them as out of the living. Noted after the
+                // living, so a world without remains notes exactly what it did.
+                Volume?.Note(dead.Id, body.LastRootPosition, body.Radius);
+
+                Float3 centre = CentreOfMass(solver);
+
+                solver.DrainMechanicalWork();
+                DriveImpulsesLimited += solver.DrainDriveImpulsesLimited();
+                DragImpulsesLimited += solver.DrainDragImpulsesLimited();
+                DissipatedJoules += solver.DrainDissipated();
+
+                // narrow: the centre is Core's float frame, as for any body.
+                World.Observe(dead, centre, 0f);
+
+                body.Settled = true;
+                body.PreviousCentre = centre;
+                body.PreviousRoot = body.LastRootPosition;
+            }
+        }
+
         private void Metabolise()
         {
             long checkStarted = Now();
@@ -89,6 +131,7 @@ namespace Evosim.Farm
 
             IReadOnlyList<Organism> living = World.Living;
             bool byExposure = Config.LightByExposure;
+            bool mouthReach = Config.IntakeReachFromMouth;
 
             // D110. The pose the world prices each body's light on, taken body by body across
             // Core's threads before the pass below: an exposure reads its own solver's pose and its
@@ -152,6 +195,10 @@ namespace Evosim.Farm
                 // narrow: interval is the solver's double and Observe takes a float.
                 World.Observe(creature, centre, (float)interval);
 
+                // D214: the mouths' posed points, handed over beside the centre they replace in the reach
+                // test, and before World.Step below reads them. Skipped with the tunable off.
+                if (mouthReach && creature.HasIntake) ObserveMouths(solver, creature);
+
                 // D162: what the body's grips formed since the last hand-over owe.
                 if (solver.CanGrip) World.OweGrip(creature, solver.DrainGripOwed());
 
@@ -197,6 +244,8 @@ namespace Evosim.Farm
                 work += interval;
             }
 
+            ObserveRemains();
+
             MeanSpeed = counted > 0 ? speedSum / counted : 0d;
             MaxSpeed = fastest;
             WorkThisStep = work;
@@ -218,6 +267,7 @@ namespace Evosim.Farm
             // contact list, the two senses and a checkpoint all read one plan's indices against
             // the other's. Timed with the growth step's rebuilds, which are the same work.
             long rebuildStarted = Now();
+            PoseFoundings();
             RebuildChangedPlans();
             _phaseTicks[PhaseGrowth] += Now() - rebuildStarted;
 
@@ -239,6 +289,17 @@ namespace Evosim.Farm
                     if (_bodies.TryGetValue(after[i].Id, out Body body))
                     {
                         body.Solver.Patch = after[i].Patch;
+                    }
+                }
+
+                // D220: remains drift in the water of the region they lie in.
+                IReadOnlyList<Organism> lying = World.Remains;
+
+                for (int i = 0; i < lying.Count; i++)
+                {
+                    if (_bodies.TryGetValue(lying[i].Id, out Body body))
+                    {
+                        body.Solver.Patch = lying[i].Patch;
                     }
                 }
             }
@@ -318,6 +379,62 @@ namespace Evosim.Farm
             // the body's own frame; the hull is in that frame, so up is carried the last step.
             var upOnRoot = new Float3((float)m[3], (float)m[4], (float)m[5]);
             creature.UpInBody = phenotype.Parts[0].Rotation.Rotate(upOnRoot);
+        }
+
+        // D214's scratch: the posed points of one body, handed to Core, which copies them.
+        private float[] _mouthScratch = new float[0];
+
+        /// <summary>
+        /// Poses each eating part's mouth point with the solver's link and hands the points to Core —
+        /// D214, <c>RunConfig.IntakeReachFromMouth</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The solver's phenotype, not Core's.</b> <c>Creature.Phenotype</c> is the scaled body the
+        /// solver holds, which can lag Core's growth by up to one growth step; the point is read from
+        /// it, so it is where the solver's link is. <c>MouthPoint.Local</c> gives the point in the
+        /// part's own frame; link <i>i</i> is part <i>i</i>, and its origin is the part's centre
+        /// (<c>Creature.CentreOfMass</c> weights the same positions). The pose is
+        /// <c>Position + RotationMatrix * local</c> in double, narrowed once, which is the frame
+        /// <c>CentreOfMass</c> is narrowed from: no axis or depth convention is applied to either.
+        /// </para>
+        /// <para>
+        /// <b>Only while the solver holds the creature's plan</b>, the guard <see cref="Exposure"/> uses.
+        /// Otherwise Core is handed none and measures the body from its centre.
+        /// </para>
+        /// </remarks>
+        private void ObserveMouths(Creature solver, Organism creature)
+        {
+            Phenotype phenotype = solver.Phenotype;
+            int links = solver.Links;
+
+            if (links != creature.Phenotype.PartCount ||
+                links != phenotype.PartCount ||
+                creature.PlanRevision != solver.AppliedPlanRevision)
+            {
+                World.ObserveMouths(creature, null, 0);
+                return;
+            }
+
+            int count = 0;
+            for (int i = 0; i < links; i++)
+            {
+                if (!MouthPoint.IsEatingPart(phenotype.Parts[i])) continue;
+
+                if (_mouthScratch.Length < 3 * (count + 1)) System.Array.Resize(ref _mouthScratch, 3 * (count + 1) + 12);
+
+                Float3 local = MouthPoint.Local(phenotype, i);
+                Mat3 r = Mat3.Read(solver.RotationMatrix, 9 * i);
+                Vec3 world = Vec3.Read(solver.Position, 3 * i) + r * new Vec3(local.X, local.Y, local.Z);
+
+                // narrow: Core's frame is float, as the centre handed to Observe is.
+                _mouthScratch[3 * count] = (float)world.X;
+                _mouthScratch[3 * count + 1] = (float)world.Y;
+                _mouthScratch[3 * count + 2] = (float)world.Z;
+                count++;
+            }
+
+            World.ObserveMouths(creature, _mouthScratch, count);
         }
 
         /// <summary>
@@ -425,6 +542,10 @@ namespace Evosim.Farm
             // which Creature.Resize refuses by design. It is one comparison per growth step at
             // the module tunables' defaults, which is every world in the record.
             World.ApplyModuleRule(sinceLastGrowthStep);
+
+            // D220: a module the rule dropped leaves remains cut off a body whose solver body is still on the
+            // plan it had; they are posed from it before the loop below rebuilds it.
+            PoseFoundings();
 
             IReadOnlyList<Organism> living = World.Living;
 

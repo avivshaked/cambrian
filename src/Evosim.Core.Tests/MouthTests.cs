@@ -980,6 +980,73 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
+        public void AnIntakeScaleMultipliesWhatAMouthTakesAndTheBooksClose()
+        {
+            // The owner's dial of 2026-10-19: the rate the world grants the Intake gene, times the
+            // scale, for the take and for the demand that rations a corpse; the corpse still bounds it.
+            RunConfig config = Stage();
+            config.CorpseDecayPerSecond = 0.0001f;
+            config.IntakeReachMetres = 5f;
+            config.IntakeWasteFraction = 0.25f;
+            config.IntakeScale = 4f;
+
+            var world = new World(config, seed: 3);
+            world.Inoculate(Spine(1), 1, -1f);
+            world.Inoculate(Armed(attack: 1f), 1, -1f);
+            world.Inoculate(
+                Armed(intake: CellTypeRegistry.Standard.Resolve(CellTypeIds.Consumer).IntakeMax,
+                      cellTypeId: CellTypeIds.Consumer),
+                1, -1f);
+
+            Organism leaf = world.Living[0];
+            Organism claw = world.Living[1];
+            Organism mouth = world.Living[2];
+
+            Assert.True(BiteUntilAPartComesOff(world, claw, leaf, 0, 1f, 100) > 0);
+            Assert.Single(world.Corpses);
+
+            Corpse corpse = world.Corpses[0];
+            double held = corpse.Joules;
+            double reserveBefore = mouth.Energy;
+
+            PhenotypePart jaw = mouth.Phenotype.Parts[0];
+            double wanted = 4d * jaw.Intake * jaw.SurfaceArea * 0.5d * config.JoulesPerUnit;
+            double expected = Math.Min(wanted, held);
+
+            world.ApplyMouth(0.5f);
+
+            double taken = held - corpse.Joules;
+            _output.WriteLine($"took {taken:0.######} J of {held:0.####} (wanted {wanted:0.######}) at four times the rate");
+
+            Fixtures.AssertClose(expected, taken, Math.Max(1e-9, 1e-6 * expected));
+            Fixtures.AssertClose(taken * (1d - config.IntakeWasteFraction), mouth.Energy - reserveBefore,
+                Math.Max(1e-9, 1e-5 * taken));
+            AssertBooksClose(world, "after a mouthful at four times the rate");
+
+            for (int step = 0; step < 500 && world.Corpses.Count > 0; step++)
+            {
+                world.ApplyMouth(0.5f);
+                AssertBooksClose(world, "while the corpse was eaten down at four times the rate");
+            }
+
+            Assert.True(world.CorpsesEaten >= 1L, "the corpse was never emptied");
+            Assert.True(
+                world.UnitsEaten <= held / config.JoulesPerUnit + 1e-6,
+                "more was eaten than the corpse ever held");
+        }
+
+        [Fact]
+        public void AnIntakeScaleIsOneByDefaultAndRefusesWhatIsNotAboveZeroAndFinite()
+        {
+            var config = new RunConfig();
+            Assert.Equal(1f, config.IntakeScale);
+            foreach (float bad in new[] { 0f, -1f, float.NaN, float.PositiveInfinity })
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => config.IntakeScale = bad);
+            }
+        }
+
+        [Fact]
         public void AMouthOutOfReachTakesNothing()
         {
             // The distance test is a test. Reach is measured from the corpse's own surface to the

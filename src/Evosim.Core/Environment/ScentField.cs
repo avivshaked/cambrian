@@ -49,6 +49,12 @@ namespace Evosim.Core
         private readonly float _cell;
         private readonly float[] _v;
 
+        // D204: whether x and z are rings, the box's seams joined (RunConfig.ReadAcrossSeams).
+        private readonly bool _wraps;
+
+        /// <summary>Whether the grid's x and z are rings: a cone crosses a seam, and a read is taken across it.</summary>
+        public bool Wraps => _wraps;
+
         public float RangeMetres => _range;
 
         /// <summary>This field's cell, metres: <see cref="CellMetres"/> unless built with another.</summary>
@@ -68,6 +74,16 @@ namespace Evosim.Core
         /// field takes its own (<c>RunConfig.LeafScentCellMetres</c>).
         /// </param>
         public ScentField(float length, float width, float depth, float range, float cell)
+            : this(length, width, depth, range, cell, wraps: false)
+        {
+        }
+
+        /// <param name="wraps">
+        /// D204: x and z are rings, the box's seams joined. The box's sides must then be a whole
+        /// number of cells, and the cone narrower than the box, or a cell would meet one source
+        /// twice.
+        /// </param>
+        public ScentField(float length, float width, float depth, float range, float cell, bool wraps)
         {
             if (!(range > 0) || float.IsInfinity(range))
                 throw new ArgumentOutOfRangeException(nameof(range), range, "the scent's range must be a positive number of metres");
@@ -79,6 +95,29 @@ namespace Evosim.Core
             _ny = Math.Max(1, (int)Math.Ceiling(depth / cell));
             _nz = Math.Max(1, (int)Math.Ceiling(width / cell));
             _v = new float[_nx * _ny * _nz];
+            _wraps = wraps;
+
+            if (wraps)
+            {
+                if (Math.Abs(_nx * (double)cell - length) > 1e-4 || Math.Abs(_nz * (double)cell - width) > 1e-4)
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"A smell grid of {cell} m cells does not divide a box {length} by {width} m, so ") +
+                        "it cannot join at the seams. Pick a cell that divides both sides.",
+                        nameof(cell));
+                }
+
+                int reach = (int)Math.Ceiling(range / cell);
+                if (2 * reach + 1 > _nx || 2 * reach + 1 > _nz)
+                {
+                    throw new ArgumentException(
+                        FormattableString.Invariant(
+                            $"A smell of {range} m reaches across the whole box {length} by {width} m, so ") +
+                        "a cone would meet itself round a seam.",
+                        nameof(range));
+                }
+            }
         }
 
         private int Index(int i, int j, int k) => (i * _ny + j) * _nz + k;
@@ -189,6 +228,11 @@ namespace Evosim.Core
         private void AddRows(Float3 p, double joules, int from, int to)
         {
             if (!(joules > 0)) return;
+            if (_wraps)
+            {
+                AddRowsRound(p, joules, from, to);
+                return;
+            }
             int reach = (int)Math.Ceiling(_range / _cell);
             int ci = (int)Math.Floor(p.X / _cell);
             int cj = (int)Math.Floor(-p.Y / _cell);
@@ -234,8 +278,69 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// <see cref="AddRows"/> round the seams: the cone's cells taken in the box's own numbering
+        /// from the source's unwrapped cell, each distance measured from the unwrapped cell centre,
+        /// so the cone is the same shape whichever side of a seam it lies across.
+        /// </summary>
+        private void AddRowsRound(Float3 p, double joules, int from, int to)
+        {
+            int reach = (int)Math.Ceiling(_range / _cell);
+            int ci = (int)Math.Floor(p.X / _cell);
+            int cj = (int)Math.Floor(-p.Y / _cell);
+            int ck = (int)Math.Floor(p.Z / _cell);
+
+            double r2 = (double)_range * _range;
+            for (int i = ci - reach; i <= ci + reach; i++)
+            {
+                int im = Ring(i, _nx);
+                if (im < from / _ny || im > (to - 1) / _ny) continue;
+
+                double dx = (i + 0.5) * _cell - p.X;
+                double xx = dx * dx;
+                if (xx >= r2) continue;
+                for (int j = Math.Max(0, cj - reach); j <= Math.Min(_ny - 1, cj + reach); j++)
+                {
+                    int row = im * _ny + j;
+                    if (row < from || row >= to) continue;
+                    double dy = -(j + 0.5) * _cell - p.Y;
+                    double xy = xx + dy * dy;
+                    if (xy >= r2) continue;
+                    int at = row * _nz;
+                    for (int k = ck - reach; k <= ck + reach; k++)
+                    {
+                        double dz = (k + 0.5) * _cell - p.Z;
+                        double s = xy + dz * dz;
+                        if (s >= r2) continue;
+                        double d = Math.Sqrt(s);
+                        if (d >= _range) continue;
+                        _v[at + Ring(k, _nz)] += (float)(joules * (1.0 - d / _range));
+                    }
+                }
+            }
+        }
+
+        private static int Ring(int i, int n)
+        {
+            int m = i % n;
+            return m < 0 ? m + n : m;
+        }
+
+        /// <summary>
+        /// The two cells either side of a point along a ring and the point's fraction between
+        /// their centres: <see cref="At"/>'s clamp and fraction for an axis with no edge.
+        /// </summary>
+        private static void RoundAxis(double u, int n, out int i0, out int i1, out double f)
+        {
+            double floor = Math.Floor(u);
+            f = u - floor;
+            i0 = Ring((int)floor, n);
+            i1 = Ring(i0 + 1, n);
+        }
+
+        /// <summary>
         /// The scent at a point, joules-weighted, by trilinear interpolation between the centres of
-        /// the eight cells round it; a point outside the grid reads its nearest edge.
+        /// the eight cells round it; a point outside the grid reads its nearest edge. Round the
+        /// seams, x and z have no edge.
         /// </summary>
         public float At(float x, float y, float z)
         {
@@ -244,6 +349,11 @@ namespace Evosim.Core
             int i0 = Clamp((int)Math.Floor(u), _nx), j0 = Clamp((int)Math.Floor(w), _ny), k0 = Clamp((int)Math.Floor(s), _nz);
             int i1 = Clamp(i0 + 1, _nx), j1 = Clamp(j0 + 1, _ny), k1 = Clamp(k0 + 1, _nz);
             double fu = Frac(u, i0, _nx), fw = Frac(w, j0, _ny), fs = Frac(s, k0, _nz);
+            if (_wraps)
+            {
+                RoundAxis(u, _nx, out i0, out i1, out fu);
+                RoundAxis(s, _nz, out k0, out k1, out fs);
+            }
             double c00 = _v[Index(i0, j0, k0)] * (1 - fs) + _v[Index(i0, j0, k1)] * fs;
             double c01 = _v[Index(i0, j1, k0)] * (1 - fs) + _v[Index(i0, j1, k1)] * fs;
             double c10 = _v[Index(i1, j0, k0)] * (1 - fs) + _v[Index(i1, j0, k1)] * fs;
@@ -265,6 +375,13 @@ namespace Evosim.Core
             int i1 = Clamp(i0 + 1, _nx), j1 = Clamp(j0 + 1, _ny), k1 = Clamp(k0 + 1, _nz);
             double fu = Frac(u, i0, _nx), fw = Frac(w, j0, _ny), fs = Frac(s, k0, _nz);
             bool inU = Inside(u, _nx), inW = Inside(w, _ny), inS = Inside(s, _nz);
+            if (_wraps)
+            {
+                RoundAxis(u, _nx, out i0, out i1, out fu);
+                RoundAxis(s, _nz, out k0, out k1, out fs);
+                inU = _nx > 1;
+                inS = _nz > 1;
+            }
 
             double v000 = _v[Index(i0, j0, k0)], v001 = _v[Index(i0, j0, k1)];
             double v010 = _v[Index(i0, j1, k0)], v011 = _v[Index(i0, j1, k1)];

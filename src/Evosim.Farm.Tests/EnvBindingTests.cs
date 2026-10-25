@@ -58,7 +58,7 @@ namespace Evosim.Farm.Tests
         /// world, filed under a new name. <c>scratch/r45-build</c>'s regress is what says the
         /// world did not move — every shared field of a 1,000 s run identical at every sample.
         /// </remarks>
-        private const string Round42ConfigHash = "845becc39e2f22c3";
+        private const string Round42ConfigHash = "dc1e08eaa7dc2b0d";
 
         /// <summary>Round 42 seed 1's environment, from <c>rounds/launch-r42.ps1</c>.</summary>
         /// <remarks>
@@ -394,6 +394,64 @@ namespace Evosim.Farm.Tests
         }
 
         [Fact]
+        public void TheOceanIsAModeTheLauncherCanName()
+        {
+            // D204's open ocean current, by name and in any case; a name the parser does not know
+            // is refused with the three it does.
+            var block = Round42Seed1();
+
+            block["EVOSIM_CURRENT_MODE"] = "Ocean";
+            Assert.Equal(CurrentMode.Ocean, EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(block))).Current.Mode);
+
+            block["EVOSIM_CURRENT_MODE"] = "gyre";
+            var refused = Assert.Throws<ArgumentException>(() => EnvBinding.Read(EnvBinding.Of(block)));
+            Assert.Contains("'ocean'", refused.Message);
+        }
+
+        [Fact]
+        public void EveryCoralDialIsALauncherNameThatReachesTheConfig()
+        {
+            // D194's coral: the shape by name, and each of the coral group's dials, set off its default,
+            // lands on its own property. A dial added to RunConfig's coral group without a name fails here.
+            var block = Round42Seed1();
+            block["EVOSIM_REEF_SHAPE"] = "Coral";
+            Assert.Equal(ReefShape.Coral, EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(block))).ReefShape);
+            Assert.Equal(ReefShape.Mushroom, EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(Round42Seed1()))).ReefShape);
+
+            var defaults = new RunConfig();
+            int dials = 0;
+            foreach (System.Reflection.PropertyInfo dial in typeof(RunConfig).GetProperties())
+            {
+                if (!dial.Name.StartsWith("Coral", StringComparison.Ordinal)) continue;
+                if (dial.GetCustomAttributes(typeof(TunableAttribute), true).Length == 0) continue;
+
+                string stem = dial.Name.Substring("Coral".Length);
+                foreach (string unit in new[] { "Metres", "Degrees" })
+                {
+                    if (stem.EndsWith(unit, StringComparison.Ordinal)) stem = stem.Substring(0, stem.Length - unit.Length);
+                }
+
+                string name = "EVOSIM_CORAL_" + System.Text.RegularExpressions.Regex.Replace(stem, "(?<!^)(?=[A-Z])", "_").ToUpperInvariant();
+                object was = dial.GetValue(defaults);
+                object off = was is int i ? (object)(i + 1) : (object)((float)was * 1.1f);
+                string text = off is int n ? n.ToString(System.Globalization.CultureInfo.InvariantCulture) : ((float)off).ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+
+                var one = Round42Seed1();
+                one[name] = text;
+                RunConfig config = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(one)));
+                Assert.True(off.Equals(dial.GetValue(config)), name + " did not reach " + dial.Name);
+                Assert.Empty(EnvBinding.UnknownNames(one.Keys));
+                dials++;
+            }
+
+            Assert.Equal(26, dials);
+
+            block["EVOSIM_REEF_SHAPE"] = "staghorn";
+            var refused = Assert.Throws<ArgumentException>(() => EnvBinding.Read(EnvBinding.Of(block)));
+            Assert.Contains("'coral'", refused.Message);
+        }
+
+        [Fact]
         public void TheRigidFloorsFlagReachesTheDevelopmentLimitsAndTheHeader()
         {
             // The bud ruling (2026-09-24): off is the recorded world and prints so; on reaches the
@@ -413,6 +471,39 @@ namespace Evosim.Farm.Tests
         /// An unknown <c>EVOSIM_</c> variable is ignored, exactly as the Unity entry ignores one —
         /// and is listed, which is the only thing the port adds.
         /// </summary>
+        /// <summary>
+        /// The owner's two grazer dials (2026-10-19): the photosynthetic cell's tissue energy alone, and
+        /// the mouth's intake scale. Both reach the config and its hash, and at 1 the recorded config is
+        /// untouched.
+        /// </summary>
+        [Fact]
+        public void TheGrazerDialsReachTheConfigAndAtOneLeaveItAlone()
+        {
+            Dictionary<string, string> block = Round42Seed1();
+            RunConfig plain = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(block)));
+            Assert.Equal(1f, plain.IntakeScale);
+
+            block["EVOSIM_LEAF_TISSUE_ENERGY"] = "2";
+            block["EVOSIM_INTAKE_SCALE"] = "4";
+            RunConfig dialled = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(block)));
+
+            Assert.Equal(4f, dialled.IntakeScale);
+            Assert.Equal(plain.CellTypes.Count, dialled.CellTypes.Count);
+            for (int i = 0; i < plain.CellTypes.Count; i++)
+            {
+                float before = plain.CellTypes.At(i).TissueEnergyPerCubicMetre;
+                float expected = plain.CellTypes.At(i).Id == CellTypeIds.Photosynthetic ? before * 2f : before;
+                Assert.Equal(expected, dialled.CellTypes.At(i).TissueEnergyPerCubicMetre);
+            }
+
+            Assert.NotEqual(plain.Hash(), dialled.Hash());
+            Assert.Empty(EnvBinding.UnknownNames(block.Keys));
+
+            block["EVOSIM_LEAF_TISSUE_ENERGY"] = "1";
+            block["EVOSIM_INTAKE_SCALE"] = "1";
+            Assert.Equal(Round42ConfigHash, EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(block))).Hash());
+        }
+
         [Fact]
         public void UnknownVariablesAreIgnoredAndListed()
         {

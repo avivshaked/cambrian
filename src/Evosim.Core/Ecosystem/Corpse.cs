@@ -37,6 +37,19 @@ namespace Evosim.Core
         /// <summary>The creature this was, so a dissection can join it to <c>lineage.jsonl</c>.</summary>
         public long CreatureId { get; }
 
+        /// <summary>
+        /// The id of the body whose bite made this corpse, or -1 when no bite did: an age, a starvation or a
+        /// divergence death, a part a module rule shed, a corpse placed by hand, or a kill whose finishing
+        /// blow the pass could not name. Set once when the corpse is founded, and carried in a checkpoint.
+        /// A record and nothing else: no rule of the world reads it, only the intake's books of who ate
+        /// what (<see cref="World.IntakeOwnKillJoules"/> and its two neighbours).
+        /// </summary>
+        /// <remarks>
+        /// <b>The attacker the kill row names.</b> It is the <c>by</c> of the <c>"e":"k"</c> row the same kill
+        /// wrote, from the same <c>_lastAttacker</c> entry, so a corpse and its kill row never disagree.
+        /// </remarks>
+        public long KilledBy { get; internal set; } = -1L;
+
         /// <summary>Where it is, m. Founded at the body's last accepted position.</summary>
         public Float3 Position { get; internal set; }
 
@@ -49,6 +62,12 @@ namespace Evosim.Core
 
         /// <summary>Charged matter not yet given back to the water, J — tissue plus reserve.</summary>
         public double Joules { get; internal set; }
+
+        /// <summary>
+        /// Spent units the body held at death, units — D206. They leave with the corpse's decay
+        /// instalments, into the spent field, and the last of them when the corpse leaves.
+        /// </summary>
+        public double SpentUnits { get; internal set; }
 
         /// <summary>Simulated seconds since the death that founded it.</summary>
         public double AgeSeconds { get; internal set; }

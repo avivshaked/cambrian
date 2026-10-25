@@ -86,6 +86,9 @@ namespace Evosim.Farm.Gpu
         {
             public int Nx, Ny, Nz, BinCells, BinsX, BinsZ, Reach, Cap;
             public float Range;
+
+            // D204: 1 when x and z are rings (ScentField.Wraps), the bins then whole and wrapped too.
+            public int Wraps;
         }
 
         private readonly Accelerator _acc;
@@ -132,7 +135,33 @@ namespace Evosim.Farm.Gpu
                 BinCells = Math.Max(1, reach),
                 Reach = reach,
                 Range = field.RangeMetres,
+                Wraps = field.Wraps ? 1 : 0,
             };
+
+            // Round the seams the bins must be whole and at least three a ring, so a cell's three
+            // neighbouring bins along an axis are three different bins and hold every corpse that
+            // reaches it: the smallest bin of at least the reach that divides both rings.
+            if (field.Wraps)
+            {
+                int bin = 0;
+                for (int b = Math.Max(1, reach); b <= Math.Min(_p.Nx, _p.Nz) / 3; b++)
+                {
+                    if (_p.Nx % b == 0 && _p.Nz % b == 0)
+                    {
+                        bin = b;
+                        break;
+                    }
+                }
+
+                if (bin == 0)
+                {
+                    throw new NotSupportedException(FormattableString.Invariant(
+                        $"The scent's grid of {_p.Nx} by {_p.Nz} cells has no bin of at least {reach} cells that ") +
+                        "divides both rings three times or more, which the card's fill needs round the seams.");
+                }
+
+                _p.BinCells = bin;
+            }
             _p.BinsX = (_p.Nx + _p.BinCells - 1) / _p.BinCells;
             _p.BinsZ = (_p.Nz + _p.BinCells - 1) / _p.BinCells;
 
@@ -154,7 +183,7 @@ namespace Evosim.Farm.Gpu
             _gen = new Col<int>(_acc, _fill, 1, 1);
             _seen = new Col<int>(_acc, _stream, 1, 1);
             _expected = new ScentField(_p.Nx * ScentField.CellMetres, _p.Nz * ScentField.CellMetres,
-                _p.Ny * ScentField.CellMetres, _p.Range);
+                _p.Ny * ScentField.CellMetres, _p.Range, ScentField.CellMetres, field.Wraps);
             _want = new float[cells];
             _stamp = _acc.LoadAutoGroupedKernel<Index1D, ArrayView<int>, int>(StampKernel);
             _copy = _acc.LoadAutoGroupedKernel<Index1D, ArrayView<int>, ArrayView<int>>(CopyKernel);
@@ -199,7 +228,9 @@ namespace Evosim.Farm.Gpu
                 _cellOf[3 * c] = i;
                 _cellOf[3 * c + 1] = j;
                 _cellOf[3 * c + 2] = k;
-                int b = Clamp(i, _p.Nx) / _p.BinCells * _p.BinsZ + Clamp(k, _p.Nz) / _p.BinCells;
+                int b = _p.Wraps != 0
+                    ? Ring(i, _p.Nx) / _p.BinCells * _p.BinsZ + Ring(k, _p.Nz) / _p.BinCells
+                    : Clamp(i, _p.Nx) / _p.BinCells * _p.BinsZ + Clamp(k, _p.Nz) / _p.BinCells;
                 _binOf[c] = b;
                 _cursor[b]++;
                 kept++;
@@ -368,6 +399,23 @@ namespace Evosim.Farm.Gpu
 
         private static int Clamp(int i, int n) => i < 0 ? 0 : i >= n ? n - 1 : i;
 
+        private static int Ring(int i, int n)
+        {
+            int m = i % n;
+            return m < 0 ? m + n : m;
+        }
+
+        /// <summary>
+        /// A cell's offset from a corpse's cell along a ring, taken the short way: the copy of the
+        /// cell within half the ring of the corpse, which is the one ScentField.AddRowsRound meets.
+        /// </summary>
+        private static long Near(long d, int n)
+        {
+            long m = d % n;
+            if (m < 0) m += n;
+            return 2 * m > n ? m - n : m;
+        }
+
         private static void FillKernel(Index1D index, ArrayView<float> grid, ArrayView<float> pos,
             ArrayView<double> joules, ArrayView<int> cells, ArrayView<int> binStart, Params p)
         {
@@ -378,8 +426,9 @@ namespace Evosim.Farm.Gpu
             int i = row / p.Ny;
 
             int bx = i / p.BinCells, bz = k / p.BinCells;
-            int x0 = Math.Max(0, bx - 1), x1 = Math.Min(p.BinsX - 1, bx + 1);
-            int z0 = Math.Max(0, bz - 1), z1 = Math.Min(p.BinsZ - 1, bz + 1);
+            bool wraps = p.Wraps != 0;
+            int x0 = wraps ? bx - 1 : Math.Max(0, bx - 1), x1 = wraps ? bx + 1 : Math.Min(p.BinsX - 1, bx + 1);
+            int z0 = wraps ? bz - 1 : Math.Max(0, bz - 1), z1 = wraps ? bz + 1 : Math.Min(p.BinsZ - 1, bz + 1);
 
             ArrayView<int> cursor = LocalMemory.Allocate<int>(9);
             ArrayView<int> end = LocalMemory.Allocate<int>(9);
@@ -388,7 +437,9 @@ namespace Evosim.Farm.Gpu
             {
                 for (int iz = z0; iz <= z1; iz++)
                 {
-                    int b = ix * p.BinsZ + iz;
+                    // Round the seams the neighbouring bins wrap; the constructor made them three or
+                    // more a ring, so no bin is taken twice.
+                    int b = wraps ? Ring(ix, p.BinsX) * p.BinsZ + Ring(iz, p.BinsZ) : ix * p.BinsZ + iz;
                     cursor[bins] = binStart[b];
                     end[bins] = binStart[b + 1];
                     bins++;
@@ -429,17 +480,31 @@ namespace Evosim.Farm.Gpu
                 // minus the reach, clamped to the grid, which this cell is in. Long, so a cell far
                 // outside the int range cannot wrap.
                 long ci = cells[c], cj = cells[cap + c], ck = cells[2 * cap + c];
-                if (i < ci - p.Reach || i > ci + p.Reach) continue;
-                if (j < cj - p.Reach || j > cj + p.Reach) continue;
-                if (k < ck - p.Reach || k > ck + p.Reach) continue;
+                double cxc = cx, czc = cz;
+                if (wraps)
+                {
+                    // ScentField.AddRowsRound: the copy of this cell nearest the corpse, and its centre.
+                    long di = Near(i - ci, p.Nx), dk = Near(k - ck, p.Nz);
+                    if (di < -p.Reach || di > p.Reach) continue;
+                    if (j < cj - p.Reach || j > cj + p.Reach) continue;
+                    if (dk < -p.Reach || dk > p.Reach) continue;
+                    cxc = M(ci + di + 0.5, ScentField.CellMetres);
+                    czc = M(ck + dk + 0.5, ScentField.CellMetres);
+                }
+                else
+                {
+                    if (i < ci - p.Reach || i > ci + p.Reach) continue;
+                    if (j < cj - p.Reach || j > cj + p.Reach) continue;
+                    if (k < ck - p.Reach || k > ck + p.Reach) continue;
+                }
 
-                double dx = cx - pos[c];
+                double dx = cxc - pos[c];
                 double xx = M(dx, dx);
                 if (xx >= r2) continue;
                 double dy = cy - pos[cap + c];
                 double xy = xx + M(dy, dy);
                 if (xy >= r2) continue;
-                double dz = cz - pos[2 * cap + c];
+                double dz = czc - pos[2 * cap + c];
                 double s = xy + M(dz, dz);
                 if (s >= r2) continue;
                 double d = Math.Sqrt(s);

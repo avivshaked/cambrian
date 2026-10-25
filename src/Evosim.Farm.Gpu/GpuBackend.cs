@@ -244,9 +244,10 @@ namespace Evosim.Farm.Gpu
             if (ReferenceEquals(stepped, built)) return;
 
             if (!ReferenceEquals(stepped.Current, built.Current) || !ReferenceEquals(stepped.Bed, built.Bed) ||
-                !ReferenceEquals(stepped.Reefs, built.Reefs) || stepped.StepSeconds != built.StepSeconds ||
+                !ReferenceEquals(stepped.Reefs, built.Reefs) || !ReferenceEquals(stepped.Coral, built.Coral) || stepped.StepSeconds != built.StepSeconds ||
                 stepped.ContactPerPart != built.ContactPerPart || stepped.CreatureContact != built.CreatureContact ||
-                stepped.TankRadiusMetres != built.TankRadiusMetres)
+                stepped.TankRadiusMetres != built.TankRadiusMetres ||
+                stepped.SeamLengthMetres != built.SeamLengthMetres || stepped.SeamWidthMetres != built.SeamWidthMetres)
             {
                 throw new InvalidOperationException(
                     "The gpu engine was built for one world and handed another to step: its current, " +

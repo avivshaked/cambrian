@@ -177,6 +177,36 @@ namespace Evosim.Core
         [Tunable("development")]
         public bool FloorsWeighRigidGroups { get; set; }
 
+        /// <summary>
+        /// Whether an edge's scale stops lengthening once a path has followed that edge: D199's
+        /// reading three of D196. Off is the recorded world, where every copy multiplies the
+        /// scale again on every axis.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>The rule.</b> The first time a path from the root follows an edge, the copy takes
+        /// the edge's scale on every axis, as it always has. Each later time the same path follows
+        /// the same edge, an axis the edge lengthens (a scale over 1) is left as it arrived, and an
+        /// axis it shortens is shortened again, down to <see cref="MinPartHalfExtent"/>. So a
+        /// self-edge of scale s on a node of size S makes S, S·s, then holds every lengthened axis
+        /// at S·s while the shortened ones keep tapering. A cycle through several nodes is held
+        /// the same way, each of its edges once per path.
+        /// </para>
+        /// <para>
+        /// <b>Why it exists.</b> Round 61's kelp blades compounded their length to 40-100 m, and
+        /// such a rigid blade under explicit drag runs away at the 0.01 s step
+        /// (logbook/specs/r62-blades.md). A tapering tail was never a problem, and the owner
+        /// kept it (D199).
+        /// </para>
+        /// <para>
+        /// <b>What it reaches.</b> Most living bodies grow by a repeating edge, so a stored
+        /// genome's body is a property of this switch as well as of the build, and a world
+        /// resumed under it re-develops every body to the new rule at load.
+        /// </para>
+        /// </remarks>
+        [Tunable("development")]
+        public bool ScaleLengthensOnce { get; set; }
+
         public static DevelopmentLimits Default => new DevelopmentLimits();
 
         public DevelopmentLimits Clone() => new DevelopmentLimits
@@ -188,6 +218,7 @@ namespace Evosim.Core
             MinPartHalfExtent = MinPartHalfExtent,
             MaxBodyReachMetres = MaxBodyReachMetres,
             FloorsWeighRigidGroups = FloorsWeighRigidGroups,
+            ScaleLengthensOnce = ScaleLengthensOnce,
         };
 
         public override string ToString() =>
@@ -198,6 +229,7 @@ namespace Evosim.Core
             (MaxBodyReachMetres > 0f
                 ? System.FormattableString.Invariant($" reach<={MaxBodyReachMetres:0.##}")
                 : " reach=off") +
-            (FloorsWeighRigidGroups ? " floors=rigid" : "");
+            (FloorsWeighRigidGroups ? " floors=rigid" : "") +
+            (ScaleLengthensOnce ? " scale=lengthens-once" : "");
     }
 }

@@ -94,6 +94,13 @@ namespace Evosim.Farm
         /// first and refuses an older layout in a world that allocates either, so no file this
         /// build reads holds a body whose blocks it does not expect.
         /// </remarks>
+        /// <remarks>
+        /// Still 6 at <c>World.StateVersion</c> 20, the intake's origin books: the corpse's killer, each body's
+        /// three counts and the world's six totals are the world's half, and the harness's half did not
+        /// move. The world's own version is read first; layouts 14 to 19 and round 48's are still read, with
+        /// the corpse killers unknown (-1), the origin books 0 and <c>World.IntakeOriginBooksFromSeconds</c>
+        /// set to the checkpoint's second.
+        /// </remarks>
         public const int Version = 6;
 
         /// <summary>

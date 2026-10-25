@@ -132,7 +132,20 @@ class Fed:
         # The squares' disc, as crowd_vs_bed.py takes it: half the bed grid's width in 1 m cells.
         self.Rb = lay["bed"]["cellsX"] / 2.0 if "bed" in lay else self.R
         nx, nz, c, R = self.nx, self.nz, self.cell, self.R
-        self.water = [[((ix + 0.5) * c - R) ** 2 + ((iz + 0.5) * c - R) ** 2 <= R * R for iz in range(nz)] for ix in range(nx)]
+        # D204's open square: every column is water, and the margin and the "glass" distance run from the nearest
+        # edge (the matter grid tiles the square, so its sides are the square's). Every tank reads as it always did.
+        self.box = r59.find(w.config, "worldShape") == "Box"
+        L, W = nx * c, nz * c
+        if self.box:
+            self.water = [[True] * nz for _ in range(nx)]
+        else:
+            self.water = [[((ix + 0.5) * c - R) ** 2 + ((iz + 0.5) * c - R) ** 2 <= R * R for iz in range(nz)] for ix in range(nx)]
+
+        def edge(ix, iz):
+            x, z = (ix + 0.5) * c, (iz + 0.5) * c
+            return min(x, L - x, z, W - z) if self.box else R - math.hypot(x - R, z - R)
+
+        self.side = (L, W) if self.box else None
         d0 = dumps(first)
         if not d0:
             sys.exit(f"{first}: no matter dumps under fields/")
@@ -142,7 +155,7 @@ class Fed:
         mean = sum(live) / len(live)
         # D185: no island column within the glass margin, as Core's plan.
         self.margin = float(r59.find(w.config, "matterIslandGlassMarginMetres") or 0.0)
-        clear = [[R - math.hypot((ix + 0.5) * c - R, (iz + 0.5) * c - R) >= self.margin for iz in range(nz)] for ix in range(nx)]
+        clear = [[edge(ix, iz) >= self.margin for iz in range(nz)] for ix in range(nx)]
         self.isl = [[self.water[ix][iz] and clear[ix][iz] and top3[ix][iz] > mean for iz in range(nz)] for ix in range(nx)]
         self.n_water = len(live)
         # Islands: groups of island columns joined by their sides.
@@ -169,8 +182,7 @@ class Fed:
             for iz in range(nz):
                 k = self.comp[ix][iz]
                 if k >= 0:
-                    g = R - math.hypot((ix + 0.5) * c - R, (iz + 0.5) * c - R)
-                    self.glass[k] = min(self.glass[k], g)
+                    self.glass[k] = min(self.glass[k], edge(ix, iz))
         self.stats = list(w.seg_rows("stats.jsonl"))
 
     def columns(self, v, layers):

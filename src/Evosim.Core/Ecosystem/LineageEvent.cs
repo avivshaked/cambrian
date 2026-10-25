@@ -16,6 +16,19 @@ namespace Evosim.Core
         /// which is the case round 45's J3 needs and the one nothing recorded before this.
         /// </summary>
         Kill = 2,
+
+        /// <summary>
+        /// D220, contact eating: new remains cut off a body (a limb a bite or a module drop took, or a part of
+        /// remains eaten whole). A whole body that dies keeps its id and is a death row, not this. Written only in a
+        /// world run with <see cref="RunConfig.ContactEating"/>.
+        /// </summary>
+        RemainsFounded = 3,
+
+        /// <summary>
+        /// D220: remains that closed, their window passed or nothing of them left, and what they held was burnt.
+        /// Written only in a world run with <see cref="RunConfig.ContactEating"/>.
+        /// </summary>
+        RemainsClosed = 4,
     }
 
     /// <summary>
@@ -336,6 +349,28 @@ namespace Evosim.Core
         public double ReserveJoulesAtDeath { get; }
 
         /// <summary>
+        /// Death only — the joules the body's mouths kept over its life from corpses its own bite made,
+        /// <see cref="Organism.MouthJoulesOwnKill"/> at death; 0 on every other row. The row's <c>iok</c>,
+        /// written only when above 0, so a body that never ate its own kill writes the row it always did.
+        /// </summary>
+        public double IntakeOwnKillJoules { get; }
+
+        /// <summary>Death only — the joules kept from corpses another body's bite made, the row's <c>iak</c> (written only when above 0).</summary>
+        public double IntakeOtherKillJoules { get; }
+
+        /// <summary>Death only — the joules the body's biting parts kept from the bodies they wounded (D219, contact eating), the row's <c>bk</c> (written only when above 0).</summary>
+        public double BiteKeptJoules { get; }
+
+        /// <summary>Death only — the joules kept from corpses no bite made (carrion), the row's <c>ic</c> (written only when above 0).</summary>
+        public double IntakeCarrionJoules { get; }
+
+        /// <summary>
+        /// Remains closed only (D220) — the joules the remains held when their window closed and were burnt, the
+        /// row's <c>j</c>. 0 on every other row.
+        /// </summary>
+        public double RemainsJoules { get; }
+
+        /// <summary>
         /// Kill only — the body whose part did the damage that finished this one, or -1 when
         /// nothing in this step's contact list can be named for it.
         /// </summary>
@@ -443,8 +478,15 @@ namespace Evosim.Core
             double capCutJoules = 0d,
             float landingCorpse = float.NaN, float landingCorpseMean = float.NaN,
             float lifespan = float.NaN,
-            int immigrantFromWorld = -1, long immigrantFromId = -1)
+            int immigrantFromWorld = -1, long immigrantFromId = -1,
+            double intakeOwnKill = 0d, double intakeOtherKill = 0d, double intakeCarrion = 0d,
+            double biteKept = 0d, double remainsJoules = 0d)
         {
+            RemainsJoules = remainsJoules;
+            BiteKeptJoules = biteKept;
+            IntakeOwnKillJoules = intakeOwnKill;
+            IntakeOtherKillJoules = intakeOtherKill;
+            IntakeCarrionJoules = intakeCarrion;
             ImmigrantFromWorld = immigrantFromWorld;
             ImmigrantFromId = immigrantFromId;
             CapCutJoules = capCutJoules;
@@ -534,7 +576,9 @@ namespace Evosim.Core
         /// </summary>
         public static LineageEvent Death(
             double elapsedSeconds, long id, DeathCause cause,
-            double gestationJoules = 0d, double reserveJoules = 0d) =>
+            double gestationJoules = 0d, double reserveJoules = 0d,
+            double intakeOwnKill = 0d, double intakeOtherKill = 0d, double intakeCarrion = 0d,
+            double biteKept = 0d) =>
             new LineageEvent(
                 LineageEventKind.Death, elapsedSeconds, id, parentId: -1, birthKind: default,
                 generationDepth: 0, speciesId: 0, hasAbsorptive: false, hasJoint: false,
@@ -543,7 +587,38 @@ namespace Evosim.Core
                 hasAttack: false, hasIntake: false, hasProtection: false, cause: cause,
                 attackerId: -1, rootLost: false, partsLost: 0,
                 tissueJoulesLost: 0d, reserveJoulesLost: 0d,
-                gestationJoulesAtDeath: gestationJoules, reserveJoulesAtDeath: reserveJoules);
+                gestationJoulesAtDeath: gestationJoules, reserveJoulesAtDeath: reserveJoules,
+                intakeOwnKill: intakeOwnKill, intakeOtherKill: intakeOtherKill, intakeCarrion: intakeCarrion,
+                biteKept: biteKept);
+
+        /// <summary>
+        /// New remains cut off a body (D220): the remains' id, the body (living or remains) they were cut from, and
+        /// the second. The row's <c>e</c> is "r", its <c>id</c> the remains and its <c>from</c> the body.
+        /// </summary>
+        public static LineageEvent RemainsFoundedFrom(double elapsedSeconds, long remainsId, long fromBodyId) =>
+            new LineageEvent(
+                LineageEventKind.RemainsFounded, elapsedSeconds, remainsId, parentId: fromBodyId, birthKind: default,
+                generationDepth: 0, speciesId: 0, hasAbsorptive: false, hasJoint: false,
+                hasPhotosynthetic: false, patch: 0, birthFraction: 0f, adultScale: 0f,
+                reserveMargin: 0f, indeterminateNodes: 0,
+                hasAttack: false, hasIntake: false, hasProtection: false, cause: default,
+                attackerId: -1, rootLost: false, partsLost: 0,
+                tissueJoulesLost: 0d, reserveJoulesLost: 0d);
+
+        /// <summary>
+        /// Remains closed (D220): the remains' id, the second and the joules burnt. The row's <c>e</c> is "rc", its
+        /// <c>id</c> the remains and its <c>j</c> the joules.
+        /// </summary>
+        public static LineageEvent RemainsClosedAt(double elapsedSeconds, long remainsId, double joules) =>
+            new LineageEvent(
+                LineageEventKind.RemainsClosed, elapsedSeconds, remainsId, parentId: -1, birthKind: default,
+                generationDepth: 0, speciesId: 0, hasAbsorptive: false, hasJoint: false,
+                hasPhotosynthetic: false, patch: 0, birthFraction: 0f, adultScale: 0f,
+                reserveMargin: 0f, indeterminateNodes: 0,
+                hasAttack: false, hasIntake: false, hasProtection: false, cause: default,
+                attackerId: -1, rootLost: false, partsLost: 0,
+                tissueJoulesLost: 0d, reserveJoulesLost: 0d,
+                remainsJoules: joules);
 
         /// <summary>
         /// One part off one body — D106 item 1. <paramref name="indeterminateNodes"/> is the
@@ -760,6 +835,22 @@ namespace Evosim.Core
                     .Field("part", PartIndex)
                     .Field("byPart", AttackerPartIndex);
             }
+            else if (Kind == LineageEventKind.RemainsFounded)
+            {
+                // D220. "r" is the event; a birth's own kind "r" (reproduction) is under "k" on a row that is a
+                // birth, so the two never meet. Every reader gates on "e" first and skips what it does not know.
+                w.Field("e", "r")
+                    .Field("t", ElapsedSeconds)
+                    .Field("id", Id)
+                    .Field("from", ParentId);
+            }
+            else if (Kind == LineageEventKind.RemainsClosed)
+            {
+                w.Field("e", "rc")
+                    .Field("t", ElapsedSeconds)
+                    .Field("id", Id)
+                    .Field("j", RemainsJoules);
+            }
             else
             {
                 w.Field("e", "d")
@@ -774,6 +865,17 @@ namespace Evosim.Core
                 // hold.
                 if (GestationJoulesAtDeath > 0d) w.Field("ga", GestationJoulesAtDeath);
                 if (ReserveJoulesAtDeath > 0d) w.Field("res", ReserveJoulesAtDeath);
+
+                // The body's kept intake by the origin of the corpse it came from: its own kills, another
+                // body's kills, and carrion. Each written only when above 0, so a body that never ate
+                // writes the row it always did. Their sum is what the mouths kept over the life.
+                if (IntakeOwnKillJoules > 0d) w.Field("iok", IntakeOwnKillJoules);
+                if (IntakeOtherKillJoules > 0d) w.Field("iak", IntakeOtherKillJoules);
+                if (IntakeCarrionJoules > 0d) w.Field("ic", IntakeCarrionJoules);
+
+                // D219, contact eating: what the body's biting parts kept from the bodies they wounded. Written
+                // only when above 0, and only a dial-on world keeps any.
+                if (BiteKeptJoules > 0d) w.Field("bk", BiteKeptJoules);
             }
 
             w.EndObject();

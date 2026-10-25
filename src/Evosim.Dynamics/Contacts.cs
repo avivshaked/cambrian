@@ -138,6 +138,7 @@ namespace Evosim.Dynamics
             // to eight cells and a query reads a few dozen candidates.
             double rule = MeanRadius > 0.125 ? 2.0 * MeanRadius : 0.25;
             _cellSize = cellOverride > 0 ? cellOverride : rule;
+            JoinSeams();
 
             if (_lo.Length < 3 * _count)
             {
@@ -173,9 +174,10 @@ namespace Evosim.Dynamics
                     continue;
                 }
 
-                int lx = Floor((c.X - r) / _cellSize), hx = Floor((c.X + r) / _cellSize);
+                int lx = Floor((c.X - r) / _cellX), hx = Floor((c.X + r) / _cellX);
                 int ly = Floor((c.Y - r) / _cellSize), hy = Floor((c.Y + r) / _cellSize);
-                int lz = Floor((c.Z - r) / _cellSize), hz = Floor((c.Z + r) / _cellSize);
+                int lz = Floor((c.Z - r) / _cellZ), hz = Floor((c.Z + r) / _cellZ);
+                if (_wrapX > 0) ClampToSeams(ref hx, lx, ref hz, lz);
 
                 _lo[3 * i] = lx; _hi[3 * i] = hx;
                 _lo[3 * i + 1] = ly; _hi[3 * i + 1] = hy;
@@ -315,7 +317,7 @@ namespace Evosim.Dynamics
                     for (int y = _lo[3 * i + 1]; y <= _hi[3 * i + 1]; y++)
                     for (int z = _lo[3 * i + 2]; z <= _hi[3 * i + 2]; z++)
                     {
-                        int key = Hash(x, y, z) & mask;
+                        int key = Hash(SeamX(x), y, SeamZ(z)) & mask;
                         _entryKey[e] = key;
                         _entryRow[e] = i;
                         _partition[row0 + (key >> shift)]++;
@@ -518,6 +520,7 @@ namespace Evosim.Dynamics
 
             double rule = MeanRadius > 0.125 ? 2.0 * MeanRadius : 0.25;
             _cellSize = cellOverride > 0 ? cellOverride : rule;
+            JoinSeams();
 
             if (_lo.Length < 3 * rows)
             {
@@ -530,7 +533,7 @@ namespace Evosim.Dynamics
             int rowSlabs = Slabs.CountFor(rows, Threads);
             if (_slabEntries.Length < rowSlabs) _slabEntries = new long[rowSlabs];
             if (_slabStray.Length < rowSlabs) _slabStray = new int[rowSlabs];
-            double cell = _cellSize;
+            double cell = _cellSize, cellX = _cellX, cellZ = _cellZ;
 
             Slabs.Run(rows, rowSlabs, (s, from, to) =>
             {
@@ -563,9 +566,10 @@ namespace Evosim.Dynamics
                         continue;
                     }
 
-                    int lx = Floor((cx - r) / cell), hx = Floor((cx + r) / cell);
+                    int lx = Floor((cx - r) / cellX), hx = Floor((cx + r) / cellX);
                     int ly = Floor((cy - r) / cell), hy = Floor((cy + r) / cell);
-                    int lz = Floor((cz - r) / cell), hz = Floor((cz + r) / cell);
+                    int lz = Floor((cz - r) / cellZ), hz = Floor((cz + r) / cellZ);
+                    if (_wrapX > 0) ClampToSeams(ref hx, lx, ref hz, lz);
 
                     _lo[3 * row] = lx; _hi[3 * row] = hx;
                     _lo[3 * row + 1] = ly; _hi[3 * row + 1] = hy;
@@ -651,19 +655,14 @@ namespace Evosim.Dynamics
             for (int y = ly; y <= hy; y++)
             for (int z = lz; z <= hz; z++)
             {
-                int h = Hash(x, y, z) & _mask;
+                int h = Hash(SeamX(x), y, SeamZ(z)) & _mask;
 
                 for (int k = _bucketStart[h]; k < _bucketStart[h + 1]; k++)
                 {
                     int other = _items[k];
                     if (_rowBody[other] == owner) continue;
 
-                    if (x < _lo[3 * other] || x > _hi[3 * other] ||
-                        y < _lo[3 * other + 1] || y > _hi[3 * other + 1] ||
-                        z < _lo[3 * other + 2] || z > _hi[3 * other + 2])
-                    {
-                        continue;
-                    }
+                    if (!Covers(other, x, y, z)) continue;
 
                     if (found == into.Length) Array.Resize(ref into, into.Length * 2);
                     into[found++] = other;
@@ -702,7 +701,7 @@ namespace Evosim.Dynamics
             for (int y = ly; y <= hy; y++)
             for (int z = lz; z <= hz; z++)
             {
-                int h = Hash(x, y, z) & _mask;
+                int h = Hash(SeamX(x), y, SeamZ(z)) & _mask;
 
                 for (int k = _bucketStart[h]; k < _bucketStart[h + 1]; k++)
                 {
@@ -711,12 +710,7 @@ namespace Evosim.Dynamics
 
                     // A hash collision puts another cell's entries in this bucket; an entry is
                     // this cell's only if the cell is inside that body's range.
-                    if (x < _lo[3 * other] || x > _hi[3 * other] ||
-                        y < _lo[3 * other + 1] || y > _hi[3 * other + 1] ||
-                        z < _lo[3 * other + 2] || z > _hi[3 * other + 2])
-                    {
-                        continue;
-                    }
+                    if (!Covers(other, x, y, z)) continue;
 
                     if (found == into.Length) Array.Resize(ref into, into.Length * 2);
                     into[found++] = other;
@@ -789,6 +783,95 @@ namespace Evosim.Dynamics
 
         private static int Hash(int x, int y, int z) =>
             (x * 73856093) ^ (y * 19349663) ^ (z * 83492791);
+
+        // ------------------------------------------------------------ the seams, D204
+
+        /// <summary>
+        /// The box's extent along x and z when bodies touch across its seams, m
+        /// (<see cref="SolverConfig.SeamLengthMetres"/>); 0 is no seam. Set by the world before
+        /// every build, as <see cref="Threads"/> is.
+        /// </summary>
+        public double SeamLength { get; set; }
+
+        /// <inheritdoc cref="SeamLength"/>
+        public double SeamWidth { get; set; }
+
+        private double _cellX = 1.0, _cellZ = 1.0; // the cell along x and z
+        private int _wrapX, _wrapZ;                 // the cells round each seam; 0 without one
+
+        /// <summary>
+        /// The cell along the two seamed axes: <see cref="_cellSize"/> without a seam, and with
+        /// one the whole fraction of the box nearest above it, so that a whole number of cells
+        /// goes round each seam and a cell index can be taken modulo that number.
+        /// </summary>
+        /// <remarks>
+        /// <b>The cell moves no number</b> (the pairs are sorted and the overlap test is the
+        /// caller's), so widening it along x and z changes the pace and not the world. Without a
+        /// seam the two are <see cref="_cellSize"/> itself, and every division below is the one
+        /// the recorded grid took.
+        /// </remarks>
+        private void JoinSeams()
+        {
+            if (SeamLength > 0 && SeamWidth > 0)
+            {
+                _wrapX = Math.Max(1, (int)(SeamLength / _cellSize));
+                _wrapZ = Math.Max(1, (int)(SeamWidth / _cellSize));
+                _cellX = SeamLength / _wrapX;
+                _cellZ = SeamWidth / _wrapZ;
+            }
+            else
+            {
+                _wrapX = 0;
+                _wrapZ = 0;
+                _cellX = _cellSize;
+                _cellZ = _cellSize;
+            }
+        }
+
+        /// <summary>
+        /// Holds a sphere's span to one turn of each seam: a sphere wider than the box would
+        /// otherwise enter some cells twice. Never true of a body the world can hold, whose
+        /// sphere is metres across in a box of hundreds.
+        /// </summary>
+        private void ClampToSeams(ref int hx, int lx, ref int hz, int lz)
+        {
+            if (hx - lx >= _wrapX) hx = lx + _wrapX - 1;
+            if (hz - lz >= _wrapZ) hz = lz + _wrapZ - 1;
+        }
+
+        /// <summary>A cell index along x as the hash reads it: itself, or taken round the seam.</summary>
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        private int SeamX(int x) => _wrapX == 0 ? x : Modulo(x, _wrapX);
+
+        /// <summary>A cell index along z as the hash reads it: itself, or taken round the seam.</summary>
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        private int SeamZ(int z) => _wrapZ == 0 ? z : Modulo(z, _wrapZ);
+
+        private static int Modulo(int v, int n)
+        {
+            int m = v % n;
+            return m < 0 ? m + n : m;
+        }
+
+        /// <summary>
+        /// Whether a row's span covers cell <c>(x, y, z)</c>, with the cell on x and z taken
+        /// round the seam when there is one: the span is unwrapped, so the cell's distance past
+        /// its low end, modulo the cells round, must be within its length.
+        /// </summary>
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        private bool Covers(int row, int x, int y, int z)
+        {
+            if (y < _lo[3 * row + 1] || y > _hi[3 * row + 1]) return false;
+
+            if (_wrapX == 0)
+            {
+                return x >= _lo[3 * row] && x <= _hi[3 * row] &&
+                       z >= _lo[3 * row + 2] && z <= _hi[3 * row + 2];
+            }
+
+            return Modulo(x - _lo[3 * row], _wrapX) <= _hi[3 * row] - _lo[3 * row] &&
+                   Modulo(z - _lo[3 * row + 2], _wrapZ) <= _hi[3 * row + 2] - _lo[3 * row + 2];
+        }
     }
 
     /// <summary>
@@ -841,6 +924,29 @@ namespace Evosim.Dynamics
     /// </remarks>
     public static class Contacts
     {
+        /// <summary>
+        /// The difference between two centres the short way round the box's seams — D204.
+        /// </summary>
+        /// <remarks>
+        /// A component within half the box is returned as it came, so a pair that does not reach
+        /// across a seam takes no new float; one further than half is moved by the box's whole
+        /// extent, once, which is all a pair of centres inside the box and a few metres past it
+        /// ever needs. <c>y</c> has no seam.
+        /// </remarks>
+        public static Vec3 ShortWay(Vec3 between, SolverConfig config)
+        {
+            double x = between.X, z = between.Z;
+            double length = config.SeamLengthMetres, width = config.SeamWidthMetres;
+
+            if (x > 0.5 * length) x -= length;
+            else if (x < -0.5 * length) x += length;
+
+            if (z > 0.5 * width) z -= width;
+            else if (z < -0.5 * width) z += width;
+
+            return new Vec3(x, between.Y, z);
+        }
+
         public static void Apply(
             Creature body, int index, ContactGrid grid, SolverConfig config, ref int[] scratch)
         {
@@ -867,6 +973,7 @@ namespace Evosim.Dynamics
                     if (!other.ContactActive) continue;
 
                     Vec3 between = body.ContactCentre - other.ContactCentre;
+                    if (config.Seamed) between = ShortWay(between, config);
                     double distance = between.Magnitude;
                     double penetration = body.ContactRadius + other.ContactRadius - distance;
                     if (penetration <= 0) continue;
@@ -934,7 +1041,7 @@ namespace Evosim.Dynamics
             // The reefs (logbook/specs/reef-spec.md §2): the bed's law and material against the
             // rock's signed distance, counted with the bed and the glass. No branch is taken in a
             // world without reefs, so its arithmetic is the one above to the bit.
-            if (config.Reefs != null)
+            if (config.Reefs != null || config.Coral != null)
             {
                 Vec3 reef = ContactReef.Push(
                     body.ContactCentre, body.ContactRadius, body.ContactVelocity, mass,
@@ -1091,6 +1198,7 @@ namespace Evosim.Dynamics
                         int j = grid.RowLink(row);
 
                         Vec3 between = centre - Vec3.Read(other.LinkContactCentre, 3 * j);
+                        if (config.Seamed) between = ShortWay(between, config);
                         double distance = between.Magnitude;
                         double penetration = radius + other.LinkContactRadius[j] - distance;
                         if (penetration <= 0) continue;
@@ -1155,7 +1263,7 @@ namespace Evosim.Dynamics
                 }
 
                 // The reefs, on this link's sphere — the body sphere's rule, read on a link.
-                if (config.Reefs != null)
+                if (config.Reefs != null || config.Coral != null)
                 {
                     Vec3 reef = ContactReef.Push(
                         centre, radius, velocity, mass, config, bedStiffness, bedDamping);

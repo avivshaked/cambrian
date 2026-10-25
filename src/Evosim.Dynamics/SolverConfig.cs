@@ -118,6 +118,12 @@ namespace Evosim.Dynamics
         /// <summary><c>RunConfig.DriveLimitAtEveryStep</c>.</summary>
         public bool DriveLimitAtEveryStep;
 
+        /// <summary><c>RunConfig.DragLimitByWeldedBody</c>: the limiter's law, where it engages.</summary>
+        public bool DragLimitByWeldedBody;
+
+        /// <summary><c>RunConfig.DragLimitAtEveryStep</c>: the limiter's gate opened at 0.01.</summary>
+        public bool DragLimitAtEveryStep;
+
         public double MaxJointAngularVelocity = 30.0;
 
         /// <summary>
@@ -191,6 +197,20 @@ namespace Evosim.Dynamics
         /// the first creature is built and never changed after.
         /// </remarks>
         public bool ContactPerPart;
+
+        /// <summary>
+        /// The box's extent along x and z when bodies touch across its seams, m — D204,
+        /// <c>RunConfig.ReadAcrossSeams</c>. 0 on both is no seam, the recorded contact.
+        /// </summary>
+        /// <remarks>
+        /// The world's box (<c>World.BoxLengthMetres</c> and <c>BoxWidthMetres</c>), the float
+        /// products widened. The farm holds them equal to the placer's extents, so the seam the
+        /// contact reads across is the one the root is wrapped at.
+        /// </remarks>
+        public double SeamLengthMetres, SeamWidthMetres;
+
+        /// <summary>Whether the contact reads across the box's seams.</summary>
+        public bool Seamed => SeamLengthMetres > 0;
 
         /// <summary>
         /// Sliding friction at the rock and the glass, μ — D137, <c>RunConfig.BedFriction</c>.
@@ -319,6 +339,8 @@ namespace Evosim.Dynamics
 
                 StepSeconds = stepSeconds,
                 DriveLimitAtEveryStep = config.DriveLimitAtEveryStep,
+                DragLimitByWeldedBody = config.DragLimitByWeldedBody,
+                DragLimitAtEveryStep = config.DragLimitAtEveryStep,
 
                 FlowFullScaleMetresPerSecond = config.FlowFullScaleMetresPerSecond,
                 ChemicalHalfScaleJoulesPerCubicMetre =
@@ -336,7 +358,10 @@ namespace Evosim.Dynamics
         /// </summary>
         public bool LimitersEngage => StepSeconds > 0.0100001 || DriveLimitAtEveryStep;
 
-        /// <summary>The drag limiter's own gate, which has no "at every step" tunable.</summary>
-        public bool DragLimiterEngages => StepSeconds > 0.0100001;
+        /// <summary>
+        /// The drag limiter's own gate: above 0.01, or at every step under
+        /// <see cref="DragLimitAtEveryStep"/>.
+        /// </summary>
+        public bool DragLimiterEngages => StepSeconds > 0.0100001 || DragLimitAtEveryStep;
     }
 }

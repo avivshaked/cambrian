@@ -109,7 +109,7 @@ namespace Evosim.Farm
             bool current = layout > World.LossyStateVersion;
 
             // Each body's card pairs from version 18 (round 60); 17 and older have no place for them.
-            bool cardBlock = layout >= World.StateVersion;
+            bool cardBlock = layout >= World.CardPairStateVersion;
 
             // The GPU engine steps a block to the metabolic step, which is where every checkpoint
             // is written; a checkpoint inside a block would hold a solver ahead of this count.
@@ -167,11 +167,33 @@ namespace Evosim.Farm
             StateIo.Tag(w, "BDYS");
             w.Write(_order.Count);
 
+            // D220: with contact eating on, the living are written first and the remains after them, each body with
+            // its remains flag. A restore finds each body by its id, so the order here is only the file's. With the
+            // dial off there is one pass over every body and no flag, which is the file every earlier build wrote.
+            bool contactEating = Config.ContactEating;
+
+            for (int pass = 0; pass < (contactEating ? 2 : 1); pass++)
+            {
+                WriteBodies(w, current, cardBlock, contactEating, pass);
+            }
+
+            StateIo.Tag(w, "HEND");
+        }
+
+        /// <summary>
+        /// Writes the bodies of one pass: every body when contact eating is off, and with it on the living (pass 0) or
+        /// the remains (pass 1).
+        /// </summary>
+        private void WriteBodies(BinaryWriter w, bool current, bool cardBlock, bool contactEating, int pass)
+        {
             for (int i = 0; i < _order.Count; i++)
             {
                 Body body = _order[i];
 
+                if (contactEating && (body.Creature.IsRemains ? 1 : 0) != pass) continue;
+
                 w.Write(body.Creature.Id);
+                if (contactEating) w.Write(body.Solver.Remains);
                 w.Write(body.Radius);
                 StateIo.WriteFloat3(w, body.LastRootPosition);
                 StateIo.WriteFloat3(w, body.PreviousCentre);
@@ -189,8 +211,6 @@ namespace Evosim.Farm
 
                 body.Solver.WriteState(w, cardBlock);
             }
-
-            StateIo.Tag(w, "HEND");
         }
 
         /// <summary>
@@ -342,7 +362,7 @@ namespace Evosim.Farm
 
             // Each body's card pairs from version 18 (round 60); a version-17 stream has none, and
             // its bodies' link spheres are rebuilt from the poses as that build rebuilt them.
-            bool cardBlock = World.StateVersionRead >= World.StateVersion;
+            bool cardBlock = World.StateVersionRead >= World.CardPairStateVersion;
 
             StateIo.Tag(r, "HARN");
 
@@ -455,6 +475,20 @@ namespace Evosim.Farm
                 }
 
                 seen.Add(id);
+
+                // D220: the remains flag the writer saw on the solver body, against the one the rebuild gave it from
+                // its organism. They are the same fact; a difference is a checkpoint that is not one moment.
+                if (Config.ContactEating)
+                {
+                    bool remains = r.ReadBoolean();
+
+                    if (remains != body.Solver.Remains)
+                    {
+                        throw new InvalidDataException(
+                            "Body " + id + " was saved " + (remains ? "as" : "not as") + " remains and the restored " +
+                            "world has it " + (body.Solver.Remains ? "as" : "not as") + " remains.");
+                    }
+                }
 
                 body.Radius = r.ReadSingle();
                 body.LastRootPosition = StateIo.ReadFloat3(r);

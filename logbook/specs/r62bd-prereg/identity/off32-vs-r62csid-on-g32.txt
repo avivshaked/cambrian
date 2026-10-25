@@ -1,0 +1,16 @@
+A: runs/r62csid-on-g32/2026-10-24-100041-b5de4374/
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 13877.1158 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 6f176e2767 dirty False dynamics bb71b2180005 farm d6da2b07aadf config b5de43749017cfbb
+  pace     600 s of 600 in 2.4437222716666667 min, 4.0921180430130475 x real time, status ended (budget), diverged 0
+B: scratch/contact-eating/identity-bd/r62bdid-off-g32/2026-10-24-175014-60e7fe56/
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 14216.4008 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 0bf939dda5 dirty False dynamics bb71b2180005 farm 075e5750c320 config 60e7fe563fbe0c74
+  pace     600 s of 600 in 2.4587173 min, 4.067161360925877 x real time, status ended (budget), diverged 0
+split A  physics 52%, world 45%, harness 1%, writers 2%
+split B  physics 51%, world 45%, harness 1%, writers 2%
+stats    identical on all 60 shared samples to t=600 (wall clocks left out)
+digest   identical on all 601 shared rows to step 60000
+lineage  byte-equal (1570 lines)
+positions not in both runs

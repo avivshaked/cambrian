@@ -1,0 +1,108 @@
+== r62bd-x2-6201 (D:\Projects\experiments\evolution-simulator\runs\r62bd-x2-6201\2026-10-24-192853-6da8f3c6)
+peak alive 21722 at 24000 s (ceiling 25,000)
+at 12000 s: alive 4691, leaves 4520, absorbers 179, jointed 206, non-photosynthetic 171
+at 24000 s: alive 21722, leaves 18966, absorbers 2879, jointed 610, non-photosynthetic 2756
+bin (s)	blows	finishing	share
+0-3000	0	0	n/a
+3000-6000	100	83	0.8300
+6000-9000	301	282	0.9369
+9000-12000	329	312	0.9483
+12000-15000	248	240	0.9677
+15000-18000	333	328	0.9850
+18000-21000	557	545	0.9785
+21000-24000	550	542	0.9855
+== r62bd-x2-6202 (D:\Projects\experiments\evolution-simulator\runs\r62bd-x2-6202\2026-10-24-192853-6da8f3c6)
+peak alive 14863 at 24000 s (ceiling 25,000)
+at 12000 s: alive 3782, leaves 3673, absorbers 103, jointed 234, non-photosynthetic 109
+at 24000 s: alive 14863, leaves 13524, absorbers 1384, jointed 324, non-photosynthetic 1339
+bin (s)	blows	finishing	share
+0-3000	0	0	n/a
+3000-6000	161	133	0.8261
+6000-9000	223	206	0.9238
+9000-12000	320	283	0.8844
+12000-15000	400	366	0.9150
+15000-18000	334	312	0.9341
+18000-21000	491	480	0.9776
+21000-24000	648	643	0.9923
+== r62bd-x4-6201 (D:\Projects\experiments\evolution-simulator\runs\r62bd-x4-6201\2026-10-24-192853-490de19b)
+peak alive 16352 at 24000 s (ceiling 25,000)
+at 12000 s: alive 4347, leaves 4322, absorbers 34, jointed 275, non-photosynthetic 25
+at 24000 s: alive 16352, leaves 15598, absorbers 952, jointed 511, non-photosynthetic 754
+bin (s)	blows	finishing	share
+0-3000	0	0	n/a
+3000-6000	69	69	1.0000
+6000-9000	342	341	0.9971
+9000-12000	283	283	1.0000
+12000-15000	238	238	1.0000
+15000-18000	557	557	1.0000
+18000-21000	483	483	1.0000
+21000-24000	554	553	0.9982
+== r62bd-x4-6202 (D:\Projects\experiments\evolution-simulator\runs\r62bd-x4-6202\2026-10-24-192853-490de19b)
+peak alive 14210 at 24000 s (ceiling 25,000)
+at 12000 s: alive 3817, leaves 3749, absorbers 96, jointed 208, non-photosynthetic 68
+at 24000 s: alive 14210, leaves 13497, absorbers 766, jointed 339, non-photosynthetic 713
+bin (s)	blows	finishing	share
+0-3000	0	0	n/a
+3000-6000	149	149	1.0000
+6000-9000	133	133	1.0000
+9000-12000	252	251	0.9960
+12000-15000	341	341	1.0000
+15000-18000	380	380	1.0000
+18000-21000	351	351	1.0000
+21000-24000	563	563	1.0000
+== r62bd-x16-6201 (D:\Projects\experiments\evolution-simulator\runs\r62bd-x16-6201\2026-10-24-192853-169145a4)
+peak alive 15512 at 24000 s (ceiling 25,000)
+at 12000 s: alive 4398, leaves 4369, absorbers 28, jointed 298, non-photosynthetic 29
+at 24000 s: alive 15512, leaves 14484, absorbers 1132, jointed 1178, non-photosynthetic 1028
+bin (s)	blows	finishing	share
+0-3000	0	0	n/a
+3000-6000	69	69	1.0000
+6000-9000	344	344	1.0000
+9000-12000	427	427	1.0000
+12000-15000	301	301	1.0000
+15000-18000	576	576	1.0000
+18000-21000	299	299	1.0000
+21000-24000	903	902	0.9989
+== r62bd-x16-6202 (D:\Projects\experiments\evolution-simulator\runs\r62bd-x16-6202\2026-10-24-192853-169145a4)
+peak alive 16061 at 24000 s (ceiling 25,000)
+at 12000 s: alive 3687, leaves 3642, absorbers 48, jointed 177, non-photosynthetic 45
+at 24000 s: alive 16061, leaves 14473, absorbers 1605, jointed 164, non-photosynthetic 1588
+bin (s)	blows	finishing	share
+0-3000	0	0	n/a
+3000-6000	149	149	1.0000
+6000-9000	133	133	1.0000
+9000-12000	266	266	1.0000
+12000-15000	294	294	1.0000
+15000-18000	321	321	1.0000
+18000-21000	469	469	1.0000
+21000-24000	679	679	1.0000
+== r62cs-w500-6201 (D:\Projects\experiments\evolution-simulator\runs\r62cs-w500-6201\2026-10-24-101118-0f736451)
+peak alive 13631 at 24000 s (ceiling 25,000)
+at 12000 s: alive 4181, leaves 4163, absorbers 29, jointed 307, non-photosynthetic 18
+at 24000 s: alive 13631, leaves 12663, absorbers 2578, jointed 432, non-photosynthetic 968
+no mouth-blow columns (the dial at 1): finishing share not read
+== r62cs-w500-6202 (D:\Projects\experiments\evolution-simulator\runs\r62cs-w500-6202\2026-10-24-101118-0f736451)
+peak alive 12245 at 24000 s (ceiling 25,000)
+at 12000 s: alive 3503, leaves 3483, absorbers 9, jointed 301, non-photosynthetic 20
+at 24000 s: alive 12245, leaves 11466, absorbers 784, jointed 1111, non-photosynthetic 779
+no mouth-blow columns (the dial at 1): finishing share not read
+== r62ce-6201 (D:\Projects\experiments\evolution-simulator\runs\r62ce-6201\2026-10-24-023204-a99d10a5)
+peak alive 15388 at 24000 s (ceiling 25,000)
+at 12000 s: alive 4427, leaves 4412, absorbers 17, jointed 313, non-photosynthetic 15
+at 24000 s: alive 15388, leaves 14570, absorbers 1072, jointed 818, non-photosynthetic 818
+no mouth-blow columns (the dial at 1): finishing share not read
+== r62ce-6202 (D:\Projects\experiments\evolution-simulator\runs\r62ce-6202\2026-10-24-023204-a99d10a5)
+peak alive 15827 at 24000 s (ceiling 25,000)
+at 12000 s: alive 4428, leaves 4406, absorbers 30, jointed 94, non-photosynthetic 22
+at 24000 s: alive 15827, leaves 14963, absorbers 926, jointed 719, non-photosynthetic 864
+no mouth-blow columns (the dial at 1): finishing share not read
+== r62-h6201 (D:\Projects\experiments\evolution-simulator\runs\r62-h6201\2026-10-23-090508-c5c9f416)
+peak alive 6359 at 24000 s (ceiling 25,000)
+at 12000 s: alive 1680, leaves 1656, absorbers 25, jointed 100, non-photosynthetic 24
+at 24000 s: alive 6359, leaves 6049, absorbers 231, jointed 312, non-photosynthetic 310
+no mouth-blow columns (the dial at 1): finishing share not read
+== r62-h6202 (D:\Projects\experiments\evolution-simulator\runs\r62-h6202\2026-10-23-090508-c5c9f416)
+peak alive 6095 at 20720 s (ceiling 25,000)
+at 12000 s: alive 1895, leaves 1860, absorbers 59, jointed 46, non-photosynthetic 35
+at 24000 s: alive 5966, leaves 5554, absorbers 204, jointed 96, non-photosynthetic 412
+no mouth-blow columns (the dial at 1): finishing share not read

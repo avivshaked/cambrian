@@ -165,6 +165,22 @@ namespace Evosim.Dynamics
                 }
             }
 
+            // The coral's rock on the same terms; the dump names the colony.
+            CoralRock coral = config.Coral;
+
+            if (coral != null)
+            {
+                double inside = -coral.SignedDistance(rootX, rootY, rootZ, -boundingRadius, out int colony, out _);
+
+                if (inside > boundingRadius)
+                {
+                    reason = FormattableString.Invariant(
+                        $"inside coral colony {colony} by {inside:0.###} m at x {rootX:0.##}, y {rootY:0.##}, z {rootZ:0.##}");
+
+                    return true;
+                }
+            }
+
 
             // Guard 4, every other link. The farm asks this of the links' positions; this asks it
             // of their spins and velocities too, which is the set Creature.IsFinite already reads

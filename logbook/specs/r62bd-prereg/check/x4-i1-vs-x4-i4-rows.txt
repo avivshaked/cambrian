@@ -1,0 +1,7 @@
+stats: resumed rows after 0 s: 450, of which in the recording: 450, 10 to 4500 s
+  fields compared per row: 189, values compared: 85050
+  first difference: t 3260 field gestatedJoules: recorded 75429.95145646554, resumed 75429.95145588857
+  only in the resumed rows: []
+  only in the recorded rows: []
+lineage rows in (0, 4500] s: recorded 14006, resumed 14023, equal apart from ['iak', 'ic', 'iok']: False
+  first differing lineage row 8765: fields ['res']

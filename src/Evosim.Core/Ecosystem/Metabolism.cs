@@ -186,6 +186,22 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// This ledger with its fixation set to <paramref name="lightIncome"/>, above or below what
+        /// it was, and its exudation priced on it as <c>Metabolism.Bill</c> prices it — D206.
+        /// </summary>
+        /// <remarks>
+        /// A plant that keeps its matter fixes its own spent units first, which the water's uptake
+        /// does not bound, so its fixation can come out above what the bill offered from the water
+        /// alone; <see cref="WithLightIncome"/> only lowers it. The capacity is untouched.
+        /// </remarks>
+        public EnergyLedger WithFixation(float lightIncome, float exudationFraction) =>
+            new EnergyLedger(
+                lightIncome, FoodIncome, PoolDrawn, LightCapacity,
+                Upkeep, Neural, Work,
+                exudationFraction > 0f ? exudationFraction * lightIncome : 0f,
+                Handling);
+
+        /// <summary>
         /// What the body actually keeps this step: income, less metabolism, less what it released
         /// to the water (D070).
         /// </summary>
@@ -358,6 +374,40 @@ namespace Evosim.Core
         }
 
         /// <summary>
+        /// The bill of a body whose parts carry health — D219, contact eating. Each part's lit area is
+        /// scaled by its health, so a grazed leaf fixes less light until it heals; everything else is the
+        /// bill <see cref="StepAt(Phenotype, RunConfig, float, float, float, float, float, float, float[], Float3)"/>
+        /// (with a pose) or the orientation-averaged one (<paramref name="exposure"/> null) hands back.
+        /// </summary>
+        /// <param name="exposure">The pose's factors, or null for the orientation average.</param>
+        /// <param name="upInBody">The world's up in the body's frame; read only with a pose.</param>
+        /// <param name="health">One share a part, <see cref="Organism.PartHealth"/>; null is a whole body.</param>
+        public static EnergyLedger StepAtHealth(
+            Phenotype phenotype,
+            RunConfig config,
+            float irradiance,
+            float nutrientDensity,
+            float spentDensity,
+            float workJoules,
+            float seconds,
+            float ageSeconds,
+            float[] exposure,
+            Float3 upInBody,
+            float[] health)
+        {
+            if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
+            if (config == null) throw new ArgumentNullException(nameof(config));
+
+            float litFactor = exposure == null
+                ? phenotype.LitAreaFactor(config.LightSilhouetteCap)
+                : phenotype.LitAreaFactor(exposure, upInBody, config.LightSilhouetteCap);
+
+            return Bill(
+                phenotype, config, irradiance, nutrientDensity, spentDensity, workJoules, seconds,
+                ageSeconds, exposure, litFactor, health);
+        }
+
+        /// <summary>
         /// The same with each part's factor given and no pose — the ledger's <c>-Exposure</c>
         /// screen, D110. The cap is the orientation-averaged one,
         /// <see cref="Phenotype.LitAreaFactor(bool)"/>.
@@ -405,7 +455,8 @@ namespace Evosim.Core
             float seconds,
             float ageSeconds,
             float[] exposure,
-            float litFactor)
+            float litFactor,
+            float[] health = null)
         {
 
             // Senescence, as a multiplier on the terms of staying alive rather than as a clock
@@ -460,9 +511,11 @@ namespace Evosim.Core
                 var context = new CellContext(
                     seconds: seconds,
                     volume: part.Volume,
-                    litArea: exposure == null
-                        ? part.LitArea * litFactor
-                        : part.LitArea * exposure[part.Index] * litFactor,
+                    litArea: health != null
+                        ? LitAreaAtHealth(part, exposure, litFactor, health)
+                        : exposure == null
+                            ? part.LitArea * litFactor
+                            : part.LitArea * exposure[part.Index] * litFactor,
                     irradiance: irradiance,
                     nutrientDensity: nutrientDensity,
                     contact: null,
@@ -741,6 +794,210 @@ namespace Evosim.Core
             }
 
             return total;
+        }
+
+        /// <summary>
+        /// D219, contact eating: one part's tissue at its current size, in joules, the share of
+        /// <see cref="TissueJoules(Phenotype, RunConfig)"/> that part contributes, the free first link's
+        /// zero share included. The parts' sum, in part order, is that function's total to the bit.
+        /// </summary>
+        public static double PartTissueJoules(Phenotype phenotype, PhenotypePart part, RunConfig config)
+        {
+            if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
+            if (part == null) throw new ArgumentNullException(nameof(part));
+            if (config == null) throw new ArgumentNullException(nameof(config));
+
+            int freeLink = config.FreeFirstLinkCubicMetres > 0f ? FreeLinkIndex(phenotype) : -1;
+            return PartTissueJoules(phenotype, part, config, freeLink);
+        }
+
+        /// <summary>
+        /// <see cref="PartTissueJoules(Phenotype, PhenotypePart, RunConfig)"/> with the free link's index
+        /// given, for a caller that walks the parts and has read it once.
+        /// </summary>
+        public static double PartTissueJoules(Phenotype phenotype, PhenotypePart part, RunConfig config, int freeLink)
+        {
+            if (part.Index == freeLink)
+            {
+                double share = FreeShare(part, phenotype, config.FreeFirstLinkCubicMetres);
+                return (double)Math.Max(0f, part.Volume) *
+                       config.CellTypes.Resolve(part.CellTypeId).TissueEnergyPerCubicMetre *
+                       (1d - share);
+            }
+
+            return (double)Math.Max(0f, part.Volume) *
+                   config.CellTypes.Resolve(part.CellTypeId).TissueEnergyPerCubicMetre;
+        }
+
+        /// <summary>
+        /// D219, contact eating: a part's lit area scaled by its health, so a grazed leaf fixes
+        /// less light until it heals. A part beyond the health array's end is whole.
+        /// </summary>
+        internal static float LitAreaAtHealth(PhenotypePart part, float[] exposure, float litFactor, float[] health)
+        {
+            float lit = exposure == null
+                ? part.LitArea * litFactor
+                : part.LitArea * exposure[part.Index] * litFactor;
+
+            return part.Index < health.Length ? lit * health[part.Index] : lit;
+        }
+
+        /// <summary>
+        /// D206: the share of a body's burn that stays in it as spent units, in [0, 1].
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// 0 for a body with no photosynthetic part. 1 for one with photosynthetic parts and no
+        /// eating tissue (no part with a mouth's <see cref="PhenotypePart.Intake"/>, and no
+        /// consumer or absorptive cell): a plant holds its whole burn, its brain and joints
+        /// included. Otherwise its photosynthetic parts' upkeep over all its parts' upkeep, each
+        /// part priced as <see cref="Bill"/> prices it: the cell's own upkeep and D106's, D111's
+        /// and D113's prices, less D127's free share.
+        /// </para>
+        /// <para>
+        /// <b>A property of the body alone.</b> Every one of those terms is a rate times the
+        /// step's seconds over the part's static shape, and senescence and D128's repair multiply
+        /// them all by one factor, so the ratio is the same at every step and age. A plan change
+        /// or a growth step changes the body, and the share is read off the body as it stands.
+        /// </para>
+        /// </remarks>
+        public static float HeldShare(Phenotype phenotype, RunConfig config)
+        {
+            if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
+            if (config == null) throw new ArgumentNullException(nameof(config));
+
+            bool photosynthetic = false, eats = false;
+            IReadOnlyList<PhenotypePart> parts = phenotype.Parts;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                PhenotypePart part = parts[i];
+                string id = part.CellTypeId;
+                if (id == CellTypeIds.Photosynthetic) photosynthetic = true;
+                if (id == CellTypeIds.Consumer || id == CellTypeIds.Absorptive || part.Intake > 0f) eats = true;
+            }
+
+            if (!photosynthetic) return 0f;
+            if (!eats) return 1f;
+
+            bool priced =
+                config.AttackWattsPerUnit > 0f || config.IntakeWattsPerUnit > 0f ||
+                config.ProtectionWattsPerUnit > 0f || config.ToughnessWattsPerUnit > 0f;
+            int freeLink = config.FreeFirstLinkCubicMetres > 0f ? FreeLinkIndex(phenotype) : -1;
+
+            double plant = 0d, all = 0d;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                PhenotypePart part = parts[i];
+                double watts = HeldPartWatts(phenotype, part, config, priced, freeLink, out _);
+
+                all += watts;
+                if (part.CellTypeId == CellTypeIds.Photosynthetic) plant += watts;
+            }
+
+            return all > 0d ? (float)(plant / all) : 0f;
+        }
+
+        /// <summary>
+        /// D207: the share of what is left of a body's burn, after its own leaves have taken theirs, that
+        /// stays in it, in [0, 1] (<see cref="RunConfig.PlantsKeepOwnFirst"/>).
+        /// </summary>
+        /// <remarks>
+        /// 0 for a body with no photosynthetic part, 1 for one with no eating tissue, as
+        /// <see cref="HeldShare"/>. Otherwise its photosynthetic upkeep over its photosynthetic and eating
+        /// upkeep together, each part priced as <see cref="HeldShare"/> prices it. Eating is a consumer or
+        /// absorptive cell's whole upkeep, and on any other part the mouth's intake price
+        /// (<see cref="AttributeWatts"/>' intake term), which only a cell table that gives another cell a
+        /// mouth can have; a photosynthetic part's own mouth price is taken off its side. Every other part
+        /// counts on neither side, so the share moves with the mouth's size rather than jumping when a
+        /// mouth appears.
+        /// </remarks>
+        public static float SmoothHeldShare(Phenotype phenotype, RunConfig config)
+        {
+            if (phenotype == null) throw new ArgumentNullException(nameof(phenotype));
+            if (config == null) throw new ArgumentNullException(nameof(config));
+
+            bool photosynthetic = false, eats = false;
+            IReadOnlyList<PhenotypePart> parts = phenotype.Parts;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                PhenotypePart part = parts[i];
+                string id = part.CellTypeId;
+                if (id == CellTypeIds.Photosynthetic) photosynthetic = true;
+                if (id == CellTypeIds.Consumer || id == CellTypeIds.Absorptive || part.Intake > 0f) eats = true;
+            }
+
+            if (!photosynthetic) return 0f;
+            if (!eats) return 1f;
+
+            bool priced =
+                config.AttackWattsPerUnit > 0f || config.IntakeWattsPerUnit > 0f ||
+                config.ProtectionWattsPerUnit > 0f || config.ToughnessWattsPerUnit > 0f;
+            int freeLink = config.FreeFirstLinkCubicMetres > 0f ? FreeLinkIndex(phenotype) : -1;
+
+            double plant = 0d, eating = 0d;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                PhenotypePart part = parts[i];
+                string id = part.CellTypeId;
+                double watts = HeldPartWatts(phenotype, part, config, priced, freeLink, out double kept);
+                double mouth = priced && part.Intake > 0f
+                    ? (double)config.IntakeWattsPerUnit * part.Intake * Math.Max(0f, part.SurfaceArea) * kept
+                    : 0d;
+
+                if (id == CellTypeIds.Consumer || id == CellTypeIds.Absorptive)
+                {
+                    eating += watts;
+                }
+                else if (id == CellTypeIds.Photosynthetic)
+                {
+                    plant += watts - mouth;
+                    eating += mouth;
+                }
+                else
+                {
+                    eating += mouth;
+                }
+            }
+
+            double both = plant + eating;
+            return both > 0d ? (float)(plant / both) : 1f;
+        }
+
+        /// <summary>
+        /// One part's upkeep as <see cref="HeldShare"/> prices it, W: its cell's upkeep and D106's,
+        /// D111's and D113's prices, less D127's free share, which <paramref name="kept"/> returns.
+        /// </summary>
+        private static double HeldPartWatts(
+            Phenotype phenotype, PhenotypePart part, RunConfig config, bool priced, int freeLink, out double kept)
+        {
+            CellType cell = config.CellTypes.Resolve(part.CellTypeId);
+            var context = new CellContext(
+                seconds: 1f,
+                volume: part.Volume,
+                litArea: 0f,
+                irradiance: 0f,
+                nutrientDensity: 0f,
+                contact: null,
+                power: part.Power,
+                dof: part.JointType.DofCount(),
+                lift: part.Lift,
+                satiationWattsPerCubicMetre: config.SatiationWattsPerCubicMetre,
+                clearanceToeDensity: config.ClearanceToeDensity,
+                spentDensity: 0f,
+                uptakeRatePerSquareMetre: config.UptakeRatePerSquareMetre,
+                uptakeHalfSaturation: config.UptakeHalfSaturation,
+                joulesPerUnit: config.JoulesPerUnit);
+
+            float k = part.Index == freeLink
+                ? 1f - FreeShare(part, phenotype, config.FreeFirstLinkCubicMetres)
+                : 1f;
+            kept = k;
+
+            double watts = (double)cell.Upkeep(context) * k;
+            if (priced) watts += (double)AttributeWatts(part, config) * k;
+            if (config.BuoyancyOffsetWattsPerCubicMetre > 0f) watts += (double)BuoyancyOffsetWatts(part, config) * k;
+            if (config.SupportWattsPerSquareMetrePerSquareMetre > 0f) watts += (double)SupportWatts(part, config) * k;
+            return watts;
         }
 
         /// <summary>

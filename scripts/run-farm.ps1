@@ -76,6 +76,17 @@
   build's. What comes out is a cousin of the recording rather than its continuation, and the
   manifest says so; without this the resume is refused and prints which of the four differ.
 
+.PARAMETER ResumeConfig
+  D201. An edited copy of the resumed run's config.json to carry on under. Only the economy and
+  mouth dials and the cell types may differ from the source's; anything else is refused by name
+  before a directory is made. A run that changes a dial is a cousin of its source: its configHash
+  is its own, and run.json's resumedFrom carries cousin, sourceConfigHash and the changes.
+
+.PARAMETER TrickleOff
+  D201. The founding trickle off from the checkpoint on: its rate and its pool share set to 0 (the
+  world refuses a pool share of a trickle that never runs), nothing else changed.
+  The run is then a cousin as under -ResumeConfig, with which it may be given.
+
 .PARAMETER ExpectDynamicsHash
   Optional. The dynamicsHash the solver source is expected to carry. There is nothing to check
   before the launch — the digest is over src/Evosim.Dynamics as the run itself reads it — so the
@@ -119,6 +130,8 @@ param(
     [string]$ResumeFrom = '',
     [double]$At = 0,
     [switch]$AllowSourceMismatch,
+    [string]$ResumeConfig = '',
+    [switch]$TrickleOff,
     [string]$ExpectDynamicsHash = '',
     [int]$WaitForManifestSeconds = 60,
     [string]$SpinLimit = 'default'
@@ -219,9 +232,15 @@ if ($ResumeFrom -ne '') {
     $settings['EVOSIM_RESUME'] = (Resolve-Path -LiteralPath $resumePath).Path
     if ($At -gt 0) { $settings['EVOSIM_RESUME_AT'] = $At }
     if ($AllowSourceMismatch) { $settings['EVOSIM_ALLOW_SOURCE_MISMATCH'] = 1 }
+    if ($ResumeConfig -ne '') {
+        $cousinPath = Resolve-UnderRepo $ResumeConfig
+        if (-not (Test-Path -LiteralPath $cousinPath)) { throw "-ResumeConfig '$ResumeConfig' is not a file that exists." }
+        $settings['EVOSIM_RESUME_CONFIG'] = (Resolve-Path -LiteralPath $cousinPath).Path
+    }
+    if ($TrickleOff) { $settings['EVOSIM_RESUME_TRICKLE_OFF'] = 1 }
 }
-elseif ($At -gt 0 -or $AllowSourceMismatch) {
-    throw '-At and -AllowSourceMismatch say where to resume from, and -ResumeFrom was not given.'
+elseif ($At -gt 0 -or $AllowSourceMismatch -or $ResumeConfig -ne '' -or $TrickleOff) {
+    throw '-At, -AllowSourceMismatch, -ResumeConfig and -TrickleOff say where and how to resume, and -ResumeFrom was not given.'
 }
 
 # The thread pool's spin: not a setting of the world, so not on the command line, but the runtime's own
@@ -340,6 +359,9 @@ if ($manifest.resumedFrom) {
     Write-Host "                 checkpoint $($manifest.resumedFrom.checkpointHash)"
     if ($manifest.resumedFrom.sourceMismatch) {
         Write-Warning "Resumed across a source change: $($manifest.resumedFrom.note)"
+    }
+    if ($manifest.resumedFrom.cousin) {
+        Write-Host "    cousin of    config $($manifest.resumedFrom.sourceConfigHash): $($manifest.resumedFrom.changes -join '; ')"
     }
 }
 if ($manifest.source.note) { Write-Warning "run.json note: $($manifest.source.note)" }

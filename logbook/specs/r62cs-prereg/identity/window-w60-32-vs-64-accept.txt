@@ -1,0 +1,16 @@
+A: scratch/contact-eating/identity-cs-window/r62cswin-w60-g32/2026-10-24-160738-36147b55/
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.7982 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit ddb6224244 dirty False dynamics bb71b2180005 farm d6da2b07aadf config 36147b559fe8eeb7
+  pace     6600 s of 6600 in 4.012386028333333 min, 27.415108921035657 x real time, status ended (budget), diverged 0
+B: scratch/contact-eating/identity-cs-window/r62cswin-w60-g64/2026-10-24-161343-36147b55/
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 64, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.8279 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit ddb6224244 dirty False dynamics bb71b2180005 farm d6da2b07aadf config 36147b559fe8eeb7
+  pace     6600 s of 6600 in 3.90437308 min, 28.173537145686907 x real time, status ended (budget), diverged 0
+split A  physics 59%, world 33%, harness 6%, writers 1%
+split B  physics 61%, world 32%, harness 6%, writers 1%
+stats    identical on all 60 shared samples to t=6600 (wall clocks left out)
+digest   identical on all 600 shared rows to step 660000
+lineage  byte-equal (3352 lines)
+positions not in both runs

@@ -1,3 +1,4 @@
+using System;
 using Evosim.Core;
 
 namespace Evosim.Dynamics
@@ -46,6 +47,13 @@ namespace Evosim.Dynamics
         /// <c>World.Reefs</c>, the one object every reader of the rock shares.
         /// </summary>
         public ReefGeometry Reefs;
+
+        /// <summary>
+        /// D194's coral, or null — every world at <see cref="ReefShape.Mushroom"/>. Read where
+        /// <see cref="Reefs"/> is, through its own distance (<see cref="CoralRock.SignedDistance(double, double, double, double, out int, out ReefGeometry.Distance)"/>);
+        /// a world has one or the other. Carried from <c>World.Coral</c>.
+        /// </summary>
+        public CoralRock Coral;
 
         /// <summary>
         /// The glass's axis, m. <b>Core's frame, and not a dial:</b> the tank's water is
@@ -167,6 +175,22 @@ namespace Evosim.Dynamics
             // Round 47's reefs, from the world that placed them; null without a world, which is
             // the bench and the solver tests, and null in every world without reefs.
             solver.Reefs = world?.Reefs;
+            solver.Coral = world?.Coral;
+
+            // D204: the seams a contact reads across, the world's box (World.BoxLengthMetres). The
+            // farm holds them equal to the placer's, which wraps the roots.
+            if (config.ReadAcrossSeams)
+            {
+                if (world == null)
+                {
+                    throw new ArgumentException(
+                        "ReadAcrossSeams needs the world's box, and no world was handed over.",
+                        nameof(world));
+                }
+
+                solver.SeamLengthMetres = world.BoxLengthMetres;
+                solver.SeamWidthMetres = world.BoxWidthMetres;
+            }
 
 
             return solver;

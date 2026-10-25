@@ -57,7 +57,7 @@ namespace Evosim.Core
     /// standard way a smooth periodic flow mixes at all, and it gives dispersion without a mean.
     /// </para>
     /// </remarks>
-    public sealed class CurrentField
+    public sealed partial class CurrentField
     {
         /// <summary>Peak water speed, m/s. 0 is still water and the world every earlier run measured.</summary>
         /// <remarks>
@@ -248,7 +248,21 @@ namespace Evosim.Core
         /// </para>
         /// </remarks>
         [Tunable("current")]
-        public CurrentMode Mode { get; set; } = CurrentMode.Rolls;
+        public CurrentMode Mode
+        {
+            get => _mode;
+            set
+            {
+                if (_mode == value) return;
+                _mode = value;
+
+                // Whether the water follows the floor is the mode's in a box (D204): the ocean does
+                // and the rolls and the transport field do not. See ChooseBed.
+                ChooseBed();
+            }
+        }
+
+        private CurrentMode _mode = CurrentMode.Rolls;
 
         /// <summary>
         /// Speed of the upwelling plume, m/s — D067. 0 (the default) is no vent, which is every
@@ -506,12 +520,38 @@ namespace Evosim.Core
                     nameof(depthMetres), depthMetres, "A depth is positive and finite.");
             }
 
-            if (bed != null && bed.HasRelief && shape != WorldShape.Tank)
+            if (bed != null && bed.HasRelief && shape != WorldShape.Tank && !bed.IsBox)
             {
                 throw new ArgumentException(
-                    "A bed with relief was handed to a box. The height map is the tank's floor " +
-                    "and the box is periodic on both horizontal axes, where a floor would have " +
-                    "to meet itself at two seams. logbook/specs/bed-spec.md.",
+                    "A tank's bed was handed to a box. The box's floor is BedShape.ForBox, which " +
+                    "meets itself at both seams (D204).",
+                    nameof(bed));
+            }
+
+            // D204 gives the box a floor, and only the open ocean's current follows one: the rolls
+            // and the transport field would carry water through the rock. Still water over the
+            // box's floor is a world under any mode.
+            if (bed != null && bed.HasRelief && shape != WorldShape.Tank &&
+                Mode != CurrentMode.Ocean && _speed > 0f)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"A bed with relief was handed to a box whose water moves ({Mode} at {_speed} m/s). ") +
+                    "Only CurrentMode.Ocean follows a floor; the box's other fields would carry " +
+                    "water through the rock. Set the mode to Ocean, or the speed to 0.",
+                    nameof(bed));
+            }
+
+            if (bed != null && bed.HasRelief && shape != WorldShape.Tank &&
+                (Math.Abs(bed.LengthMetres - patchWidthMetres * (patchCount / patchesAcross)) > 1e-3f ||
+                 Math.Abs(bed.WidthMetres - patchWidthMetres * patchesAcross) > 1e-3f))
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant(
+                        $"The bed is a floor {bed.LengthMetres} m by {bed.WidthMetres} m and this box is ") +
+                    FormattableString.Invariant(
+                        $"{patchWidthMetres * (patchCount / patchesAcross)} m by {patchWidthMetres * patchesAcross} m. ") +
+                    "A floor that does not span the box does not meet itself at the seams.",
                     nameof(bed));
             }
 
@@ -535,7 +575,38 @@ namespace Evosim.Core
             _seed = seed;
             _shape = shape;
             _tankRadiusMetres = shape == WorldShape.Tank ? tankRadiusMetres : 0f;
-            _bed = shape == WorldShape.Tank && bed != null && bed.HasRelief ? bed : null;
+            _givenBed = bed;
+
+            ChooseBed();
+
+            // The reefs are the world's, set after this by SetReefs; a box handed a second
+            // geometry must not keep the first one's rock.
+            _reefs = null;
+            _coral = null;
+
+            // Built lazily on the first sample, so a Rolls world never pays for it and a config
+            // handed to two worlds of different geometry rebuilds rather than describing the first.
+            _transportAmplitude = null;
+            _streamsBuilt = false;
+            _oceanBuilt = false;
+        }
+
+        /// <summary>
+        /// Sets the floor this water follows from the bed <see cref="SetBox"/> was handed: a tank's
+        /// always, a box's under <see cref="CurrentMode.Ocean"/> alone (D204), and none on a flat bed.
+        /// </summary>
+        /// <remarks>
+        /// Called from <see cref="SetBox"/> and again whenever <see cref="Mode"/> changes, so a mode
+        /// set after the box cannot leave the water following a floor its field does not read, or
+        /// ignoring one it does. In a tank the answer is the one <see cref="SetBox"/> always gave.
+        /// </remarks>
+        private void ChooseBed()
+        {
+            BedShape bed = _givenBed;
+
+            _bed = bed != null && bed.HasRelief && (_shape == WorldShape.Tank || _mode == CurrentMode.Ocean)
+                ? bed
+                : null;
 
             // The beach's fade rides on the bed it belongs to (logbook/specs/beach-spec.md §3):
             // one object hands the water both the floor and how the current dies over its shoal.
@@ -543,15 +614,11 @@ namespace Evosim.Core
             _shoreDepth = _fadeOn ? _bed.ShoreDepthMetres : 0d;
             _shoreFade = _fadeOn ? _bed.ShoreFadeMetres : 0d;
 
-            // The reefs are the world's, set after this by SetReefs; a box handed a second
-            // geometry must not keep the first one's rock.
-            _reefs = null;
-
-            // Built lazily on the first sample, so a Rolls world never pays for it and a config
-            // handed to two worlds of different geometry rebuilds rather than describing the first.
-            _transportAmplitude = null;
-            _streamsBuilt = false;
+            _oceanBuilt = false;
         }
+
+        // The bed SetBox was handed, whether or not this water follows it — see ChooseBed.
+        private BedShape _givenBed;
 
         private int _patchCount;
         private int _patchesAcross = 1;
@@ -572,12 +639,23 @@ namespace Evosim.Core
         // sampler tests it before touching anything reef-shaped, so a tank without reefs is the
         // arithmetic it was to the bit.
         private ReefGeometry _reefs;
+        private CoralRock _coral;
 
         /// <summary>
         /// The reefs the streams fade around, or null — every recorded world.
         /// <c>logbook/specs/reef-spec.md</c> §2.
         /// </summary>
         public ReefGeometry Reefs => _reefs;
+
+        /// <summary>The coral this water fades around (D194), or null; see <see cref="SetCoral"/>.</summary>
+        public CoralRock Coral => _coral;
+
+        // Whether any rock fades this water: the mushrooms or the coral, never both.
+        private bool HasRock => _reefs != null || _coral != null;
+
+        // The rock's fade, its gradient and its Hessian: the coral's hulls, or the mushrooms'.
+        private bool RockFade(double x, double y, double z, out ReefGeometry.Distance f) =>
+            _coral != null ? _coral.Fade(x, y, z, out f) : _reefs.Fade(x, y, z, out f);
 
         /// <summary>
         /// Hands the water the world's reefs, after <see cref="SetBox"/>. The streams' potential is
@@ -619,6 +697,36 @@ namespace Evosim.Core
             }
 
             _reefs = reefs != null && reefs.Count > 0 ? reefs : null;
+            if (_reefs != null && _coral != null)
+            {
+                throw new ArgumentException(
+                    "Mushroom reefs were handed to water that fades around coral; a world has one or the other (D194).",
+                    nameof(reefs));
+            }
+        }
+
+        /// <summary>
+        /// D194's coral: the water fades around each colony's hull, to <see cref="CoralRock.FadeFloor"/>
+        /// inside it, by the same <c>g·u + ∇g × A</c> the mushrooms use — the tank's streams in a tank,
+        /// the open ocean in a box. Null or empty clears it.
+        /// </summary>
+        public void SetCoral(CoralRock coral)
+        {
+            if (coral != null && coral.Count > 0 && _shape != WorldShape.Tank && Mode != CurrentMode.Ocean)
+            {
+                throw new ArgumentException(
+                    FormattableString.Invariant($"Coral was handed to water in a {_shape} under {Mode}. ") +
+                    "The coral fades the tank's streams or the open ocean (EVOSIM_CURRENT_MODE ocean). D194, D204.",
+                    nameof(coral));
+            }
+
+            _coral = coral != null && coral.Count > 0 ? coral : null;
+            if (_reefs != null && _coral != null)
+            {
+                throw new ArgumentException(
+                    "Coral was handed to water that fades around mushroom reefs; a world has one or the other (D194).",
+                    nameof(coral));
+            }
         }
 
         /// <summary>
@@ -633,7 +741,7 @@ namespace Evosim.Core
         /// the bit.
         /// </remarks>
         public float ReefFadeAt(float x, float y, float z) =>
-            _reefs == null ? 1f : (float)_reefs.FadeAt(x, y, z);
+            _coral != null ? (float)_coral.FadeAt(x, y, z) : _reefs == null ? 1f : (float)_reefs.FadeAt(x, y, z);
 
         /// <summary>
         /// The shore's fade at a column of water depth <paramref name="d"/>, and its first two
@@ -1014,9 +1122,11 @@ namespace Evosim.Core
         {
             Float3 flow = _shape == WorldShape.Tank
                 ? StreamsAt(PatchCentreX(patch), heightY, PatchCentreZ(patch), seconds)
-                : Mode == CurrentMode.Transport
-                    ? TransportAt(PatchCentreX(patch), heightY, PatchCentreZ(patch), seconds)
-                    : RollOrSteady(heightY, seconds, patch, patchCount);
+                : Mode == CurrentMode.Ocean
+                    ? OceanAt(PatchCentreX(patch), heightY, PatchCentreZ(patch), seconds)
+                    : Mode == CurrentMode.Transport
+                        ? TransportAt(PatchCentreX(patch), heightY, PatchCentreZ(patch), seconds)
+                        : RollOrSteady(heightY, seconds, patch, patchCount);
 
             if (!VentActive(patchCount)) return flow;
 
@@ -1055,14 +1165,16 @@ namespace Evosim.Core
             // The tank's water is the streams whatever the mode says — see Shape. The vent is added
             // exactly as it is to the other two fields, and is off in every launcher that has a
             // tank in it.
-            if (_shape != WorldShape.Tank && Mode != CurrentMode.Transport)
+            if (_shape != WorldShape.Tank && Mode == CurrentMode.Rolls)
             {
                 return VelocityAt(y, seconds, PatchOfXZ(x, z), Math.Max(1, _patchCount));
             }
 
             Float3 flow = _shape == WorldShape.Tank
-                ? _reefs == null ? StreamsAt(x, y, z, seconds) : ReefStreamsAt(x, y, z, seconds)
-                : TransportAt(x, y, z, seconds);
+                ? !HasRock ? StreamsAt(x, y, z, seconds) : ReefStreamsAt(x, y, z, seconds)
+                : Mode == CurrentMode.Ocean
+                    ? _coral == null ? OceanAt(x, y, z, seconds) : CoralOceanAt(x, y, z, seconds)
+                    : TransportAt(x, y, z, seconds);
             if (!VentActive(_patchCount)) return flow;
 
             double depth = -(double)y;
@@ -1094,9 +1206,9 @@ namespace Evosim.Core
         public void VelocityAndAccelerationAt(
             float x, float y, float z, double seconds, out Float3 velocity, out Float3 acceleration)
         {
-            if (_shape == WorldShape.Tank && _reefs != null && _speed > 0f && !VentActive(_patchCount))
+            if (_shape == WorldShape.Tank && HasRock && _speed > 0f && !VentActive(_patchCount))
             {
-                bool near = _reefs.Fade(x, y, z, out ReefGeometry.Distance f);
+                bool near = RockFade(x, y, z, out ReefGeometry.Distance f);
                 velocity = ReefStreamsAt(x, y, z, seconds, near, f);
                 acceleration = ReefStreamsAccelerationAt(x, y, z, seconds, near, f);
                 return;
@@ -1138,7 +1250,7 @@ namespace Evosim.Core
         /// </para>
         /// </remarks>
         public bool HasPotential =>
-            (_shape == WorldShape.Tank || Mode == CurrentMode.Transport) && !VentActive(_patchCount);
+            (_shape == WorldShape.Tank || Mode != CurrentMode.Rolls) && !VentActive(_patchCount);
 
         /// <summary>
         /// The vector potential <c>A</c> whose curl is <see cref="VelocityAt(float, float, float, double)"/>,
@@ -1199,9 +1311,14 @@ namespace Evosim.Core
             {
                 // The reefs' fade, last and as one float multiply, so the grid's hoisted edges can
                 // apply the same factor to the same product (ReefFadeAt's remarks).
-                return _reefs == null
+                return !HasRock
                     ? TankPotential(x, y, z, seconds)
                     : TankPotential(x, y, z, seconds) * ReefFadeAt(x, y, z);
+            }
+
+            if (Mode == CurrentMode.Ocean)
+            {
+                return _coral == null ? OceanPotentialAt(x, y, z, seconds) : CoralOceanPotentialAt(x, y, z, seconds);
             }
 
             EnsureTransport();
@@ -1256,6 +1373,14 @@ namespace Evosim.Core
 
             if (_speed <= 0f) return Float3.Zero;
 
+            // A box has a floor only under the ocean (ChooseBed).
+            if (_shape != WorldShape.Tank)
+            {
+                return _coral == null
+                    ? OceanPotentialAt(x, y, z, seconds, column)
+                    : OceanPotentialAt(x, y, z, seconds, column) * CoralFoldedFade(x, y, z);
+            }
+
             EnsureStreams();
 
             double t = 2.0 * Math.PI * seconds / _periodSeconds;
@@ -1263,7 +1388,7 @@ namespace Evosim.Core
             Float3 potential = StreamsSlopedPotentialUnit(x, y, z, t, _streamsOverturning, column)
                                * (float)(_speed * _streamsScale * _bedScale);
 
-            return _reefs == null ? potential : potential * ReefFadeAt(x, y, z);
+            return !HasRock ? potential : potential * ReefFadeAt(x, y, z);
         }
 
         /// <summary>
@@ -1298,7 +1423,7 @@ namespace Evosim.Core
         {
             if (_speed <= 0f) return Float3.Zero;
 
-            bool near = _reefs.Fade(x, y, z, out ReefGeometry.Distance f);
+            bool near = RockFade(x, y, z, out ReefGeometry.Distance f);
             return ReefStreamsAt(x, y, z, seconds, near, f);
         }
 
@@ -1577,9 +1702,15 @@ namespace Evosim.Core
 
             if (_shape == WorldShape.Tank && !VentActive(_patchCount))
             {
-                return _reefs == null
+                return !HasRock
                     ? StreamsAccelerationAt(x, y, z, seconds)
                     : ReefStreamsAccelerationAt(x, y, z, seconds);
+            }
+
+            // The ocean in closed form too, through the same assembly (OceanAccelerationAt).
+            if (OceanWater && !VentActive(_patchCount))
+            {
+                return _coral == null ? OceanAccelerationAt(x, y, z, seconds) : CoralOceanAccelerationAt(x, y, z, seconds);
             }
 
             // The delegate is made at the first call, or by PinInstant before a parallel pass,
@@ -1588,7 +1719,7 @@ namespace Evosim.Core
             return MaterialDerivative(
                 _sampler ?? (_sampler = VelocityAt),
                 x, y, z, seconds,
-                horizontal: _shape == WorldShape.Tank || Mode == CurrentMode.Transport);
+                horizontal: _shape == WorldShape.Tank || Mode != CurrentMode.Rolls);
         }
 
         /// <summary>The water's acceleration at a place and a time, m/s².</summary>
@@ -1762,6 +1893,8 @@ namespace Evosim.Core
                     EnsureStreams();
                     return _speed * _streamsBound;
                 }
+
+                if (Mode == CurrentMode.Ocean) return _speed * OceanBound;
 
                 if (Mode != CurrentMode.Transport) return 0f;
                 EnsureTransport();
@@ -2389,6 +2522,14 @@ namespace Evosim.Core
                     "potential is the flat tank's or the box's. Ask Bed first. D092.");
             }
 
+            // A box's floor is read where its water is: folded into the box, as the ocean folds
+            // the point before it maps it, so the column and the direct path read one floor.
+            if (_shape != WorldShape.Tank)
+            {
+                x = WrapAxis(x, LengthMetres);
+                z = WrapAxis(z, WidthMetres);
+            }
+
             _bed.HeightAndGradient(x, z, out double h, out double hx, out double hz);
 
             return new BedColumn(_depthMetres, h, hx, hz);
@@ -2514,7 +2655,7 @@ namespace Evosim.Core
 
             if (_fadeOn) return StreamsFadedUnit(x, z, t, overturning, m);
 
-            Float3 u = StreamsUnit(x, m.MappedY, z, t, overturning);
+            Float3 u = FlatUnit(x, m.MappedY, z, t, overturning);
 
             return new Float3(
                 (float)(m.C * u.X),
@@ -2550,7 +2691,7 @@ namespace Evosim.Core
 
             if (_fadeOn) return FadedPotential(x, z, t, overturning, m);
 
-            Float3 a = StreamsPotentialUnit(x, m.MappedY, z, t, overturning);
+            Float3 a = FlatPotentialUnit(x, m.MappedY, z, t, overturning);
 
             return new Float3(
                 (float)(a.X + m.A * a.Y),
@@ -2572,7 +2713,7 @@ namespace Evosim.Core
         {
             if (m.Fade == 0d) return Float3.Zero;
 
-            Float3 a = StreamsPotentialUnit(x, m.MappedY, z, t, overturning);
+            Float3 a = FlatPotentialUnit(x, m.MappedY, z, t, overturning);
 
             return FadedPotentialOf(a, m);
         }
@@ -2612,7 +2753,7 @@ namespace Evosim.Core
 
             if (f == 0d) return Float3.Zero;
 
-            Float3 u = StreamsUnit(x, m.MappedY, z, t, overturning);
+            Float3 u = FlatUnit(x, m.MappedY, z, t, overturning);
 
             double vx = m.C * u.X;
             double vy = u.Y - m.A * u.X - m.B * u.Z;
@@ -2620,7 +2761,7 @@ namespace Evosim.Core
 
             if (fd == 0d) return new Float3((float)(f * vx), (float)(f * vy), (float)(f * vz));
 
-            Float3 a = StreamsPotentialUnit(x, m.MappedY, z, t, overturning);
+            Float3 a = FlatPotentialUnit(x, m.MappedY, z, t, overturning);
 
             double px = a.X + m.A * a.Y;
             double py = m.C * a.Y;
@@ -2647,7 +2788,7 @@ namespace Evosim.Core
 
             if (_fadeOn) return FadedPotential(x, z, t, overturning, m);
 
-            Float3 a = StreamsPotentialUnit(x, m.MappedY, z, t, overturning);
+            Float3 a = FlatPotentialUnit(x, m.MappedY, z, t, overturning);
 
             return new Float3(
                 (float)(a.X + m.A * a.Y),
@@ -3705,7 +3846,7 @@ namespace Evosim.Core
             double bz = y * depth * (hzz * inverseSquared + 2d * hz * hz * inverseCubed);
             double by = cz;
 
-            StreamsGradient f = StreamsUnitWithGradient(x, y * c, z, t, overturning);
+            StreamsGradient f = FlatUnitWithGradient(x, y * c, z, t, overturning);
 
             // The flat field's partials read along the map's columns: d/dx = d/dx̂ + a·d/dŷ,
             // d/dy = c·d/dŷ, d/dz = d/dẑ + b·d/dŷ.
@@ -3778,7 +3919,7 @@ namespace Evosim.Core
             double a, double b, double c,
             double ax, double az, double bz, double cx, double cz)
         {
-            StreamsGradient p = StreamsPotentialUnitWithGradient(x, mappedY, z, t, overturning);
+            StreamsGradient p = FlatPotentialUnitWithGradient(x, mappedY, z, t, overturning);
 
             // The flat potential's partials along the map's columns, as the velocity's are read:
             // d/dx = d/dx̂ + a·d/dŷ, d/dy = c·d/dŷ, d/dz = d/dẑ + b·d/dŷ.
@@ -4885,6 +5026,7 @@ namespace Evosim.Core
 
             // The two lazy builds, taken here rather than on some worker's first sample.
             if (_shape == WorldShape.Tank) EnsureStreams();
+            else if (Mode == CurrentMode.Ocean) EnsureOcean();
             else EnsureTransport();
 
             double t = 2.0 * Math.PI * seconds / _periodSeconds;
@@ -4913,6 +5055,12 @@ namespace Evosim.Core
 
                 _pinned = instant;
                 FoldAmplitudes(instant);
+            }
+            else if (Mode == CurrentMode.Ocean)
+            {
+                // The ocean's samplers read its own instants, and its acceleration is analytic, so
+                // the pin fills its slots for both groupings of the clock and needs no stencil.
+                PinOcean(seconds);
             }
             else
             {
@@ -5617,7 +5765,7 @@ namespace Evosim.Core
         /// </remarks>
         private Float3 ReefStreamsAccelerationAt(float x, float y, float z, double seconds)
         {
-            bool near = _reefs.Fade(x, y, z, out ReefGeometry.Distance f);
+            bool near = RockFade(x, y, z, out ReefGeometry.Distance f);
             return ReefStreamsAccelerationAt(x, y, z, seconds, near, f);
         }
 
@@ -5634,7 +5782,7 @@ namespace Evosim.Core
             EnsureStreams();
 
             double clock = 2.0 * Math.PI / _periodSeconds;
-            StreamsGradient g = ReefFadedGradient(x, y, z, clock * seconds, f);
+            StreamsGradient g = ReefFadedGradient(x, y, z, clock * seconds, f, _streamsOverturning);
 
             double sigma = (double)_speed * _streamsScale * _bedScale;
             double perSecond = sigma * clock;
@@ -5670,15 +5818,15 @@ namespace Evosim.Core
         /// </para>
         /// </remarks>
         private StreamsGradient ReefFadedGradient(
-            double x, double y, double z, double t, in ReefGeometry.Distance f)
+            double x, double y, double z, double t, in ReefGeometry.Distance f, double overturning)
         {
             StreamsGradient u = _bed == null
-                ? StreamsUnitWithGradient(x, y, z, t, _streamsOverturning)
-                : StreamsSlopedUnitWithGradient(x, y, z, t, _streamsOverturning);
+                ? FlatUnitWithGradient(x, y, z, t, overturning)
+                : StreamsSlopedUnitWithGradient(x, y, z, t, overturning);
 
             StreamsGradient p = _bed == null
-                ? StreamsPotentialUnitWithGradient(x, y, z, t, _streamsOverturning)
-                : SlopedPotentialWithGradient(x, y, z, t, _streamsOverturning);
+                ? FlatPotentialUnitWithGradient(x, y, z, t, overturning)
+                : SlopedPotentialWithGradient(x, y, z, t, overturning);
 
             double gv = f.S;
             double gx = f.Gx, gy = f.Gy, gz = f.Gz;
@@ -5769,7 +5917,7 @@ namespace Evosim.Core
             double az = y * depth * (hxz * inverseSquared + 2d * hx * hz * inverseCubed);
             double bz = y * depth * (hzz * inverseSquared + 2d * hz * hz * inverseCubed);
 
-            StreamsGradient p = StreamsPotentialUnitWithGradient(x, y * c, z, t, overturning);
+            StreamsGradient p = FlatPotentialUnitWithGradient(x, y * c, z, t, overturning);
 
             double dxAx = p.Xx + a * p.Xy, dyAx = c * p.Xy, dzAx = p.Xz + b * p.Xy;
             double dxAy = p.Yx + a * p.Yy, dyAy = c * p.Yy, dzAy = p.Yz + b * p.Yy;
@@ -5880,12 +6028,12 @@ namespace Evosim.Core
 
             StreamsGradient g;
 
-            if (_reefs != null && _reefs.Fade(x, y, z, out ReefGeometry.Distance fade))
+            if (HasRock && RockFade(x, y, z, out ReefGeometry.Distance fade))
             {
                 // The reefs' chain rule (ReefFadedGradient); zeros inside the rock.
                 g = fade.S == 0d && fade.Gx == 0d && fade.Gy == 0d && fade.Gz == 0d
                     ? default(StreamsGradient)
-                    : ReefFadedGradient(x, y, z, clock * seconds, fade);
+                    : ReefFadedGradient(x, y, z, clock * seconds, fade, _streamsOverturning);
             }
             else
             {
@@ -6301,6 +6449,9 @@ namespace Evosim.Core
                       // run did not have is how a reading gets filed under the wrong water.
                       ? FormattableString.Invariant(
                             $"{_speed:0.###} m/s RMS streams, {_periodSeconds:0.#} s period")
+                      : Mode == CurrentMode.Ocean
+                      ? FormattableString.Invariant(
+                            $"{_speed:0.###} m/s RMS ocean, {_periodSeconds:0.#} s period")
                       : Mode == CurrentMode.Transport
                       // The knob means the RMS over the box here and the peak under the rolls, so
                       // the string says which rather than printing one number under two meanings.
@@ -6323,7 +6474,7 @@ namespace Evosim.Core
 
     /// <summary>
     /// Which field <see cref="CurrentField"/> is — see <see cref="CurrentField.Mode"/> for why
-    /// there are two.
+    /// the first two, and <see cref="CurrentMode.Ocean"/> for the third.
     /// </summary>
     public enum CurrentMode
     {
@@ -6345,5 +6496,13 @@ namespace Evosim.Core
         /// its equations, on <c>CurrentField.TransportAt</c>.
         /// </remarks>
         Transport = 1,
+
+        /// <summary>
+        /// D204's open ocean: 75 modes over a box that joins at both seams, swirls of 30 m to
+        /// 150 m layered in depth, following the floor. A tank's water is the streams whatever this
+        /// says. <c>logbook/specs/open-ocean-current.md</c>; the construction is written out on
+        /// <c>CurrentField.Ocean.cs</c>.
+        /// </summary>
+        Ocean = 2,
     }
 }

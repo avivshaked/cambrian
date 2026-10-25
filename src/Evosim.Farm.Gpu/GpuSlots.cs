@@ -19,7 +19,9 @@ namespace Evosim.Farm.Gpu
     /// <para>
     /// <b>A body is uploaded when it is new to the card</b> — a birth, or a module rebuild,
     /// which the harness makes as a new object under the old id — <b>or resized</b>
-    /// (<see cref="Creature.Resizes"/> moved). Every other body's state on the card is the
+    /// (<see cref="Creature.Resizes"/> moved), <b>or turned to remains</b> (D220:
+    /// <see cref="Creature.Remains"/> moved, and <c>BecomeRemains</c> has silenced the host's drive and let go
+    /// of its grips, which the card's copy knows nothing of). Every other body's state on the card is the
     /// state the last block left, which the host mirror was given at its end.
     /// </para>
     /// </remarks>
@@ -46,6 +48,13 @@ namespace Evosim.Farm.Gpu
         public int[] ClassOf = new int[16];
         public int[] LocalOf = new int[16];
         public long[] SeenResizes = new long[16];
+
+        /// <summary>
+        /// Whether each slot's body was remains when the card last held it whole (D220). A body that turns to
+        /// remains while on the card has had its drive silenced and its grips let go on the host
+        /// (<c>Creature.BecomeRemains</c>), which the card's copy knows nothing of, so the change packs it.
+        /// </summary>
+        public bool[] SeenRemains = new bool[16];
         public int[] Rank = new int[16];
 
         /// <summary>The solver list's order: rank to global slot, -1 for a refused body.</summary>
@@ -166,9 +175,10 @@ namespace Evosim.Farm.Gpu
 
                 if (_slotOf.TryGetValue(c, out int g))
                 {
-                    if (resync || c.Resizes != SeenResizes[g])
+                    if (resync || c.Resizes != SeenResizes[g] || c.Remains != SeenRemains[g])
                     {
                         SeenResizes[g] = c.Resizes;
+                        SeenRemains[g] = c.Remains;
                         Packs.Add(g);
                     }
 
@@ -200,6 +210,7 @@ namespace Evosim.Farm.Gpu
                 ClassOf[g] = k;
                 LocalOf[g] = local;
                 SeenResizes[g] = c.Resizes;
+                SeenRemains[g] = c.Remains;
                 Rank[g] = r;
                 _slotOf[c] = g;
                 Packs.Add(g);
@@ -224,6 +235,7 @@ namespace Evosim.Farm.Gpu
                 Array.Resize(ref ClassOf, size);
                 Array.Resize(ref LocalOf, size);
                 Array.Resize(ref SeenResizes, size);
+                Array.Resize(ref SeenRemains, size);
                 Array.Resize(ref Rank, size);
             }
 

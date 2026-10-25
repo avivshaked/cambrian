@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "66575a645a3bd2d7",
+  "configHash": "2c3f9152257c55df",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -29,6 +29,35 @@
     "weightChance": 0.1,
     "weightStdDev": 0.1
   },
+  "coral": {
+    "coralChildrenMax": 3,
+    "coralChildrenMin": 2,
+    "coralFadeFloor": 0.25,
+    "coralFadeMetres": 8,
+    "coralFilletMetres": 0.15,
+    "coralGridCellMetres": 4,
+    "coralIslandRoof": 0.2,
+    "coralIslandShare": 0.85,
+    "coralLengthFactor": 0.75,
+    "coralMaxColonies": 200,
+    "coralMaxDepth": 4,
+    "coralMaxPieces": 6000,
+    "coralMaxPiecesPerColony": 60,
+    "coralMinRadiusMetres": 0.12,
+    "coralPlateChance": 0.3,
+    "coralPlateRadiusMaxMetres": 2.5,
+    "coralPlateRadiusMinMetres": 0.8,
+    "coralPlateThicknessMetres": 0.25,
+    "coralRadiusFactor": 0.7,
+    "coralTiltMeanDegrees": 35,
+    "coralTiltSpreadDegrees": 15,
+    "coralTransmission": 0.3,
+    "coralTrunkHeightMaxMetres": 8,
+    "coralTrunkHeightMinMetres": 3,
+    "coralTrunkRadiusMaxMetres": 0.6,
+    "coralTrunkRadiusMinMetres": 0.35,
+    "reefShape": "Mushroom"
+  },
   "current": {
     "advectFields": true,
     "cellMetres": 30,
@@ -51,6 +80,7 @@
     "maxParts": 16,
     "minPartHalfExtent": 0.01,
     "minPartVolume": 0.0001,
+    "scaleLengthensOnce": false,
     "selfOverlapDepthFraction": 0.1
   },
   "economy": {
@@ -63,10 +93,13 @@
   "feeding": {
     "clearanceToeDensity": 0,
     "exudationFraction": 0.15,
+    "plantsKeepMatter": false,
+    "plantsKeepOwnFirst": false,
     "satiationWattsPerCubicMetre": 0
   },
   "field": {
     "corpseDecayPerSecond": 0.000385,
+    "corpseHalfLifeSeconds": 0,
     "corpseLeavesBelowFraction": 0.05,
     "corpseSettledDecayPerSecond": 0,
     "corpseSettles": true,
@@ -196,8 +229,14 @@
     "healingPerSecond": 0.01,
     "healthPerCubicMetre": 13,
     "intakeReachMetres": 0.5,
+    "intakeReachFromMouth": false,
     "intakeWasteFraction": 0.2,
     "intakeWattsPerUnit": 0.1,
+    "intakeScale": 1,
+    "contactEating": false,
+    "remainsWindowSeconds": 60,
+    "biteTakesStore": false,
+    "biteDamageScale": 1,
     "protectionWattsPerUnit": 1,
     "toughnessWattsPerUnit": 0.1
   },
@@ -239,6 +278,8 @@
     "perPatchShading": 0
   },
   "physics": {
+    "dragLimitAtEveryStep": false,
+    "dragLimitByWeldedBody": false,
     "driveLimitAtEveryStep": false,
     "physicsStepSeconds": 0.01
   },
@@ -307,6 +348,7 @@
     "buoyancyOffsetWattsPerCubicMetre": 0.02,
     "conceptionOrder": "Age",
     "contactPerPart": true,
+    "readAcrossSeams": false,
     "floorRefugeMetres": 0,
     "foundersFollowCorpses": true,
     "foundersFollowFood": true,

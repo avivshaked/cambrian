@@ -38,12 +38,13 @@ namespace Evosim.Dynamics
             Vec3 centre, double radius, Vec3 velocity, double mass,
             SolverConfig config, double stiffness, double damping)
         {
-            ReefGeometry reefs = config.Reefs;
-
-            // Bounded at the radius: a reef whose cheap bound is past it is never evaluated, and
-            // a sphere clear of every reef reads a bound at or past its radius and no push.
-            double distance = reefs.SignedDistance(
-                centre.X, centre.Y, centre.Z, radius, out _, out ReefGeometry.Distance at);
+            // Bounded at the radius: a reef or a colony whose cheap bound is past it is never
+            // evaluated, and a sphere clear of the rock reads a bound at or past its radius and no
+            // push. The coral's distance is its pieces' union (coral-build.md, the readers).
+            ReefGeometry.Distance at;
+            double distance = config.Coral != null
+                ? config.Coral.SignedDistance(centre.X, centre.Y, centre.Z, radius, out _, out at)
+                : config.Reefs.SignedDistance(centre.X, centre.Y, centre.Z, radius, out _, out at);
 
             double penetration = radius - distance;
             if (!(penetration > 0)) return Vec3.Zero;

@@ -35,6 +35,12 @@ namespace Evosim.Dynamics
             bool limit = config.DragLimiterEngages;
             double dt = config.StepSeconds;
 
+            // D199: where the limiter engages, the force is capped link by link under either law,
+            // and the torque either link by link or, under DragLimitByWeldedBody, by each welded
+            // body as a whole once every link's drag is noted.
+            bool welded = limit && config.DragLimitByWeldedBody;
+            bool perLink = limit && !welded;
+
             // D064, once per creature: the excess density a body feels is scaled by its whole
             // volume, so sinking is something a lineage grows into.
             double excess = config.TissueExcessDensity;
@@ -170,6 +176,7 @@ namespace Evosim.Dynamics
 
                 if (limit)
                 {
+                    Vec3 uncapped = force;
                     double speed = relative.Magnitude;
                     if (speed > 0)
                     {
@@ -183,6 +190,11 @@ namespace Evosim.Dynamics
                         }
                     }
 
+                    if (welded) body.NoteWeldedForceCut(i, force - uncapped);
+                }
+
+                if (perLink)
+                {
                     double spinRate = spin.Magnitude;
                     if (spinRate > 0)
                     {
@@ -265,7 +277,9 @@ namespace Evosim.Dynamics
 
                 // D049/D050/D064/D077's one signed term: excess weight less what the part lifts,
                 // clamped at the waterline and mirrored at the floor where there is no bed.
-                double netDensity = excess * (1.0 - body.Lift[i]);
+                // D220: remains take no float lift. The test is false for every body of a world without contact
+                // eating, and the product is then the one it always was.
+                double netDensity = excess * (1.0 - (body.Remains ? 0.0 : body.Lift[i]));
                 double unclamped = netDensity;
 
                 if (restoringFraction > 0)
@@ -313,6 +327,8 @@ namespace Evosim.Dynamics
                 Vec3.Add(body.Fext, 6 * i, torque);
                 Vec3.Add(body.Fext, 6 * i + 3, force);
             }
+
+            if (welded) body.LimitWeldedDrag(dt);
         }
 
         /// <summary>

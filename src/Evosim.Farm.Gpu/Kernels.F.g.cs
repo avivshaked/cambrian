@@ -135,6 +135,10 @@ namespace Evosim.Farm.Gpu.Sgl
         public ArrayView<Real> LinkPush, LinkFluid;
         public ArrayView<int> LinkFlags, StageN, StageId, StageSlot, StagePart, LinkLimited;
 
+        // D220's remains, by global slot: 1 for a body whose organism is remains (Creature.Remains), uploaded
+        // with every block. Read only under cfg.AnyRemains, so a world without remains never loads it.
+        public ArrayView<int> Remains;
+
         // D162's touch of the rock, by link row: the record the last step left (RockTouched and its
         // point and normal), which the senses read and the farm keeps, and this step's (TouchNew,
         // and TouchAt's point then normal, a component per Rows), which ContactLinks writes and
@@ -212,8 +216,11 @@ namespace Evosim.Farm.Gpu.Sgl
         public int InstBase, StepIndex, PerPart, Instrument, Chunk, Chunks, Tiles, ClassUsed, ClassLinks, LinkRows;
 
         public int HasCurrent, Accelerating, Sloped, HasBed, BedRelief, BedModes, ShoreOn, FadeOn;
+        public int Ocean;        // D204: the open ocean's current in a box (CurrentMode.Ocean)
         public int ReefCount, LimitDrive, LimitDrag, UseRestore, FloorRestores, CreatureContact;
+        public int WeldedDrag;   // D199/D200: under LimitDrag, the torque capped by the welded body (WeldedDrag)
         public int OffsetTorque, SplitColumns, Redo, BendAndPower, TurningDrag, RockTouch, Anchoring;
+        public int AnyRemains;   // D220: 1 for a block in which some body is remains; 0 reads no remains flag at all
 
         public long TraceStep;
         public double TraceTime, DtD, PoseOmega, GripDecay, GripThreshold, GripLag;
@@ -222,23 +229,44 @@ namespace Evosim.Farm.Gpu.Sgl
         public Real RestoringDensity, TissueDensity;
 
         public Real Omega, Zeta, MaxSep, MaxDv, TankRadius, AxisX, AxisZ, CellOverride;
+
+        // D204: the box's extent along x and z when bodies touch across its seams, 0 without them
+        // (SolverConfig.SeamLengthMetres).
+        public Real SeamL, SeamW;
         public Real PushOmega, LimbPush, NegSkin, NegSpin;
         public Real BedRadius, BedDepth, TiltX, TiltZ, Offset, ShoalHeight;
 
         public Real CurDepth, CurTankR, EddyWeight, Overturning, PerSecond, Squared, ShoreDepth, ShoreFadeW;
         public Real HalfThickness, Fillet, ReefFade;
+
+        // D194's coral (CoralRock): its colonies, 0 without; the fade, its floor, the fillet, the grid's cell and
+        // cells, and the square's periods (0 in a tank). Its rows sit in SWorld.WR from the four offsets below.
+        public int CoralCount, CoralCellsX, CoralCellsZ;
+        public int CoralColonyAt, CoralPieceAt, CoralGridAt, CoralListAt, CoralFadeGridAt, CoralFadeListAt;
+        public Real CoralFillet, CoralFade, CoralFloor, CoralCell, CoralPeriodX, CoralPeriodZ;
         public float SigmaSloped, SigmaFlat, Speed;
+
+        // The current's own extents along x and z, as floats (CurrentField.LengthMetres and WidthMetres):
+        // the ocean folds a place into the box with them.
+        public float OceanL, OceanW;
 
         public float SWorldDepth, ChemHalf, EnergyScale, FlowScale, RateScale, ConstCE, DtF;
         public float ScentHalf;
         public int ScentNx, ScentNy, ScentNz;
+
+        // D204: 1 when the smell grids' x and z are rings (ScentField.Wraps), the seams joined.
+        public int SmellWraps;
         public float LeafHalf, LeafCell;
         public int LeafNx, LeafNy, LeafNz;
         public int Nx, Ny, Nz, LayerCount, RefugeLayers, LayerStride;
         public float CellMetres, FieldTankR, RefugeFraction, CellVolume;
 
+        // The snow grid's box, m: its seams in D204's square, where FieldTankR is 0.
+        public float FieldL, FieldW;
+
         // Offsets into SWorld.WR and SWorld.WI.
         public int StreamAmpAt, StreamRateAt, CellAmpAt, BedAt, ReefAt;
+        public int OceanKAt;     // the ocean's 25 k_x then its 25 k_z in SWorld.WR
         public int LowestAt, IntervalFirstAt, IntervalTopAt, IntervalBottomAt;
     }
 
@@ -526,7 +554,13 @@ namespace Evosim.Farm.Gpu.Sgl
         public const int ACos = 0, ASin = 24, AEnv = 48, ACellEnv = 72, ACell = 75;
         public const int BCos = 78, BSin = 102, BEnv = 126, BEnvRate = 150, BCellEnv = 174,
             BCellEnvRate = 177, BCell = 180, BCellRate = 183;
-        public const int InstStride = 186;
+        public const int InstStride = 450;
+
+        // The ocean's instant in the same rows, in place of the streams': every mode's W·cos φ and
+        // W·sin φ at the samplers' phase (A), then the two and their clock derivatives at the
+        // acceleration's (B). CurrentField.EnsureOceanInstant's slots, in its mode order.
+        public const int OceanVectors = 25, OceanLayers = 3, OceanModes = 75;
+        public const int OCos = 0, OSin = 75, OBCos = 150, OBSin = 225, OBCosRate = 300, OBSinRate = 375;
 
         private const int SDepth = 9, SUp = 3, SJointAngle = 0, SJointRate = 1, SChemical = 6, SEnergy = 7,
             SFlow = 8, SContact = 2, SDamage = 5, SScent = 10,
@@ -767,9 +801,15 @@ namespace Evosim.Farm.Gpu.Sgl
                 return;
             }
 
-            int lx = Floor((cx - r) / cell), hx = Floor((cx + r) / cell);
+            SeamCells(cell, cfg, out int wx, out int wz, out Real cellX, out Real cellZ);
+
+            int lx = Floor((cx - r) / cellX), hx = Floor((cx + r) / cellX);
             int ly = Floor((cy - r) / cell), hy = Floor((cy + r) / cell);
-            int lz = Floor((cz - r) / cell), hz = Floor((cz + r) / cell);
+            int lz = Floor((cz - r) / cellZ), hz = Floor((cz + r) / cellZ);
+
+            // ContactGrid.ClampToSeams: a sphere wider than the box would enter some cells twice.
+            if (wx > 0 && hx - lx >= wx) hx = lx + wx - 1;
+            if (wz > 0 && hz - lz >= wz) hz = lz + wz - 1;
 
             gr.Lo[row] = lx; gr.Hi[row] = hx;
             gr.Lo[R + row] = ly; gr.Hi[R + row] = hy;
@@ -793,7 +833,7 @@ namespace Evosim.Farm.Gpu.Sgl
             for (int y = ly; y <= hy; y++)
             for (int z = lz; z <= hz; z++)
             {
-                Atomic.Add(ref gr.Counts[Hash(x, y, z) & cfg.Mask], 1);
+                Atomic.Add(ref gr.Counts[Hash(Wrap(x, wx), y, Wrap(z, wz)) & cfg.Mask], 1);
             }
         }
 
@@ -1015,12 +1055,13 @@ namespace Evosim.Farm.Gpu.Sgl
             int lx = gr.Lo[row], hx = gr.Hi[row];
             int ly = gr.Lo[R + row], hy = gr.Hi[R + row];
             int lz = gr.Lo[2 * R + row], hz = gr.Hi[2 * R + row];
+            SeamCells(gr.Cell[0], cfg, out int wx, out int wz, out _, out _);
 
             for (int x = lx; x <= hx; x++)
             for (int y = ly; y <= hy; y++)
             for (int z = lz; z <= hz; z++)
             {
-                int slot = Atomic.Add(ref gr.Cursor[Hash(x, y, z) & cfg.Mask], 1);
+                int slot = Atomic.Add(ref gr.Cursor[Hash(Wrap(x, wx), y, Wrap(z, wz)) & cfg.Mask], 1);
                 if (slot < cfg.EntryCap) gr.Items[slot] = row;
                 else Atomic.Add(ref gl.Overflow[OverflowEntries], 1L);
             }
@@ -1044,11 +1085,12 @@ namespace Evosim.Farm.Gpu.Sgl
             if (lx > hx) return;
             int ly = gr.Lo[R + row], hy = gr.Hi[R + row];
             int lz = gr.Lo[2 * R + row], hz = gr.Hi[2 * R + row];
+            SeamCells(gr.Cell[0], cfg, out int wx, out int wz, out _, out _);
 
             for (int k = 0; k < n; k++)
             {
                 int giant = gr.Giant[1 + k];
-                if (!BoxesMeet(lx, hx, ly, hy, lz, hz, giant, gr, R)) continue;
+                if (!BoxesMeet(lx, hx, ly, hy, lz, hz, giant, gr, R, wx, wz)) continue;
                 int slot = Atomic.Add(ref gr.GiantN[k], 1);
                 if (slot < GiantListCap) gr.GiantList[k * GiantListCap + slot] = row;
             }
@@ -1235,6 +1277,9 @@ namespace Evosim.Farm.Gpu.Sgl
             var sol = new Real[6];
             var residual = new Real[3];
             var cand = new int[CandCap];
+            var weldAnchor = new int[MaxLinks];
+            var jacobiM = new Real[9];
+            var jacobiV = new Real[9];
 
             // A card does not zero a thread's local memory. The senses the brain may read without
             // this step writing them (a channel whose mask bit is clear) read 0, never garbage.
@@ -1483,9 +1528,14 @@ namespace Evosim.Farm.Gpu.Sgl
             bool hasScent = (gates & 4) != 0;
             bool hasLeaf = (gates & 8) != 0;
 
+            // D220: a body whose organism is remains runs no senses, no brain, no drive and no grip, as
+            // DynamicsWorld.StepOne skips them. cfg.AnyRemains is the block's, so in a world without remains
+            // every thread takes the old path on a test it cannot fail, and the flag is never loaded.
+            bool remains = cfg.AnyRemains != 0 && gl.Remains[g] != 0;
+
             // CreatureSenses.SampleDrive: the envelope as the last step's drive left it, read before this
             // step's drive moves it. Under the torque drive it reads 0, as sDrive was cleared.
-            if (readsDrive && cfg.BendAndPower != 0)
+            if (!remains && readsDrive && cfg.BendAndPower != 0)
             {
                 int dofLength = dof > 0 ? dof : 1;
                 for (int bl = 0; bl < links; bl++)
@@ -1514,10 +1564,13 @@ namespace Evosim.Farm.Gpu.Sgl
 
             float energy = 0f;
             bool lost = false;
-            Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi,
-                   br, w, cfg, readsDepth, readsUp, readsJoint, readsFlow, readsChemical && hasNutrients,
-                   readsScent && hasScent, readsEnergy && hasReserve, readsLeaf && hasLeaf, readsLeafDir,
-                   sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, sLeaf, ref energy, ref lost);
+            if (!remains)
+            {
+                Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi,
+                       br, w, cfg, readsDepth, readsUp, readsJoint, readsFlow, readsChemical && hasNutrients,
+                       readsScent && hasScent, readsEnergy && hasReserve, readsLeaf && hasLeaf, readsLeafDir,
+                       sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, sLeaf, ref energy, ref lost);
+            }
 
             if (lost)
             {
@@ -1541,7 +1594,7 @@ namespace Evosim.Farm.Gpu.Sgl
             // The touch of the rock as the last step's contact pass left it, a bit a link, read before
             // this step's touch is kept (KeepTouch), as CreatureSenses.Sample reads it.
             int rock = 0;
-            if (cfg.RockTouch != 0)
+            if (!remains && cfg.RockTouch != 0)
             {
                 for (int l = 0; l < links; l++)
                 {
@@ -1550,9 +1603,12 @@ namespace Evosim.Farm.Gpu.Sgl
             }
 
             // The brain reads the two gates itself (SensorRead): a body with no field or no
-            // reserve source reads the standing-in constant on those channels.
-            BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
-                      sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
+            // reserve source reads the standing-in constant on those channels. Remains run none.
+            if (!remains)
+            {
+                BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
+                          sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
+            }
 
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 2, ref clk);
@@ -1563,7 +1619,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
             // ---- 4. drive (EffectorDrive.Drive) ----------------------------------------------
             bool drivePending = false;
-            if (dof != 0 && cfg.BendAndPower != 0)
+            if (!remains && dof != 0 && cfg.BendAndPower != 0)
             {
                 // EffectorDrive.DriveBendAndPower: each degree of freedom's power and bend through
                 // the joint's threshold and envelope, in double as the CPU keeps them; the power
@@ -1662,7 +1718,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
                 if (limited != 0) dr.DriveLimited[i] = dr.DriveLimited[i] + limited;
             }
-            else if (dof != 0)
+            else if (!remains && dof != 0)
             {
                 int sigLen = t.SigLen[i];
                 int cursor = dr.Cursor[i];
@@ -1769,7 +1825,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 // Fluid.Apply books it, then the buoyancy where the CPU added it.
                 if (powered)
                 {
-                    if (parent[fl] >= 0 && position[3 * fl + 1] <= 0 && dofCount[fl] > 0)
+                    if (!remains && parent[fl] >= 0 && position[3 * fl + 1] <= 0 && dofCount[fl] > 0)
                     {
                         M3 frot = M3.Read(rotationMatrix, 9 * fl);
                         V3 toOrigin = frot * (-V3.Read(childAnchor, 3 * fl));
@@ -1809,6 +1865,12 @@ namespace Evosim.Farm.Gpu.Sgl
                 V3.Add(fext, 6 * fl + 3, linkForce);
                 dragLimited += gl.LinkLimited[frow];
             }
+            if (cfg.LimitDrag != 0 && cfg.WeldedDrag != 0)
+            {
+                dragLimited += WeldedDrag(g * LinkStride, fluidRows, links, parent, dofCount, mass, position,
+                                          rotationMatrix, inertiaLocal, spin, dragF, dragT, fext, weldAnchor,
+                                          jacobiM, jacobiV, gl, cfg);
+            }
             if (dragLimited != 0) dr.DragLimited[i] = dr.DragLimited[i] + dragLimited;
 
 #if GPU_PHASE_PROBE
@@ -1819,7 +1881,7 @@ namespace Evosim.Farm.Gpu.Sgl
             {
                 ContactsPerPartStaged(g, links, fext, cand, cs, gl, gr, cfg);
                 if (cfg.RockTouch != 0) KeepTouch(g, links, gl, cfg);
-                if (cfg.Anchoring != 0)
+                if (cfg.Anchoring != 0 && !remains)
                 {
                     Grip(g, links, position, velocity, spin, rotationMatrix, mass, smallI, fext,
                          hasReserve, br.Reserve[i], cs, gl, cfg);
@@ -1846,6 +1908,11 @@ namespace Evosim.Farm.Gpu.Sgl
 
             Integrate(links, dofCount, dofStart, tau, q, qd, ballRot, acc, spin, velocity,
                       ref basePosition, ref baseCarry, ref baseRotation, cfg.Dt);
+
+            // D077's third rule inside the card's block (D204): a root that has left the box comes
+            // back in at the opposite face, before the poses are built from it, as Simulation's
+            // WrapAtTheSeams puts it back before anything reads a position.
+            if (cfg.SeamL > 0) WrapAtTheSeams(ref basePosition, ref baseCarry, cfg);
 
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 6, ref clk);
@@ -2231,6 +2298,9 @@ namespace Evosim.Farm.Gpu.Sgl
             var sol = new Real[6];
             var residual = new Real[3];
             var cand = new int[CandCap];
+            var weldAnchor = new int[MaxLinks];
+            var jacobiM = new Real[9];
+            var jacobiV = new Real[9];
 
             // A card does not zero a thread's local memory. The senses the brain may read without
             // this step writing them (a channel whose mask bit is clear) read 0, never garbage.
@@ -2479,9 +2549,14 @@ namespace Evosim.Farm.Gpu.Sgl
             bool hasScent = (gates & 4) != 0;
             bool hasLeaf = (gates & 8) != 0;
 
+            // D220: a body whose organism is remains runs no senses, no brain, no drive and no grip, as
+            // DynamicsWorld.StepOne skips them. cfg.AnyRemains is the block's, so in a world without remains
+            // every thread takes the old path on a test it cannot fail, and the flag is never loaded.
+            bool remains = cfg.AnyRemains != 0 && gl.Remains[g] != 0;
+
             // CreatureSenses.SampleDrive: the envelope as the last step's drive left it, read before this
             // step's drive moves it. Under the torque drive it reads 0, as sDrive was cleared.
-            if (readsDrive && cfg.BendAndPower != 0)
+            if (!remains && readsDrive && cfg.BendAndPower != 0)
             {
                 int dofLength = dof > 0 ? dof : 1;
                 for (int bl = 0; bl < links; bl++)
@@ -2510,10 +2585,13 @@ namespace Evosim.Farm.Gpu.Sgl
 
             float energy = 0f;
             bool lost = false;
-            Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi,
-                   br, w, cfg, readsDepth, readsUp, readsJoint, readsFlow, readsChemical && hasNutrients,
-                   readsScent && hasScent, readsEnergy && hasReserve, readsLeaf && hasLeaf, readsLeafDir,
-                   sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, sLeaf, ref energy, ref lost);
+            if (!remains)
+            {
+                Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi,
+                       br, w, cfg, readsDepth, readsUp, readsJoint, readsFlow, readsChemical && hasNutrients,
+                       readsScent && hasScent, readsEnergy && hasReserve, readsLeaf && hasLeaf, readsLeafDir,
+                       sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, sLeaf, ref energy, ref lost);
+            }
 
             if (lost)
             {
@@ -2537,7 +2615,7 @@ namespace Evosim.Farm.Gpu.Sgl
             // The touch of the rock as the last step's contact pass left it, a bit a link, read before
             // this step's touch is kept (KeepTouch), as CreatureSenses.Sample reads it.
             int rock = 0;
-            if (cfg.RockTouch != 0)
+            if (!remains && cfg.RockTouch != 0)
             {
                 for (int l = 0; l < links; l++)
                 {
@@ -2546,9 +2624,12 @@ namespace Evosim.Farm.Gpu.Sgl
             }
 
             // The brain reads the two gates itself (SensorRead): a body with no field or no
-            // reserve source reads the standing-in constant on those channels.
-            BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
-                      sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
+            // reserve source reads the standing-in constant on those channels. Remains run none.
+            if (!remains)
+            {
+                BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
+                          sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
+            }
 
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 2, ref clk);
@@ -2559,7 +2640,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
             // ---- 4. drive (EffectorDrive.Drive) ----------------------------------------------
             bool drivePending = false;
-            if (dof != 0 && cfg.BendAndPower != 0)
+            if (!remains && dof != 0 && cfg.BendAndPower != 0)
             {
                 // EffectorDrive.DriveBendAndPower: each degree of freedom's power and bend through
                 // the joint's threshold and envelope, in double as the CPU keeps them; the power
@@ -2658,7 +2739,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
                 if (limited != 0) dr.DriveLimited[i] = dr.DriveLimited[i] + limited;
             }
-            else if (dof != 0)
+            else if (!remains && dof != 0)
             {
                 int sigLen = t.SigLen[i];
                 int cursor = dr.Cursor[i];
@@ -2765,7 +2846,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 // Fluid.Apply books it, then the buoyancy where the CPU added it.
                 if (powered)
                 {
-                    if (parent[fl] >= 0 && position[3 * fl + 1] <= 0 && dofCount[fl] > 0)
+                    if (!remains && parent[fl] >= 0 && position[3 * fl + 1] <= 0 && dofCount[fl] > 0)
                     {
                         M3 frot = M3.Read(rotationMatrix, 9 * fl);
                         V3 toOrigin = frot * (-V3.Read(childAnchor, 3 * fl));
@@ -2805,6 +2886,12 @@ namespace Evosim.Farm.Gpu.Sgl
                 V3.Add(fext, 6 * fl + 3, linkForce);
                 dragLimited += gl.LinkLimited[frow];
             }
+            if (cfg.LimitDrag != 0 && cfg.WeldedDrag != 0)
+            {
+                dragLimited += WeldedDrag(g * LinkStride, fluidRows, links, parent, dofCount, mass, position,
+                                          rotationMatrix, inertiaLocal, spin, dragF, dragT, fext, weldAnchor,
+                                          jacobiM, jacobiV, gl, cfg);
+            }
             if (dragLimited != 0) dr.DragLimited[i] = dr.DragLimited[i] + dragLimited;
 
 #if GPU_PHASE_PROBE
@@ -2815,7 +2902,7 @@ namespace Evosim.Farm.Gpu.Sgl
             {
                 ContactsPerPartStaged(g, links, fext, cand, cs, gl, gr, cfg);
                 if (cfg.RockTouch != 0) KeepTouch(g, links, gl, cfg);
-                if (cfg.Anchoring != 0)
+                if (cfg.Anchoring != 0 && !remains)
                 {
                     Grip(g, links, position, velocity, spin, rotationMatrix, mass, smallI, fext,
                          hasReserve, br.Reserve[i], cs, gl, cfg);
@@ -2842,6 +2929,11 @@ namespace Evosim.Farm.Gpu.Sgl
 
             Integrate(links, dofCount, dofStart, tau, q, qd, ballRot, acc, spin, velocity,
                       ref basePosition, ref baseCarry, ref baseRotation, cfg.Dt);
+
+            // D077's third rule inside the card's block (D204): a root that has left the box comes
+            // back in at the opposite face, before the poses are built from it, as Simulation's
+            // WrapAtTheSeams puts it back before anything reads a position.
+            if (cfg.SeamL > 0) WrapAtTheSeams(ref basePosition, ref baseCarry, cfg);
 
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 6, ref clk);
@@ -3227,6 +3319,9 @@ namespace Evosim.Farm.Gpu.Sgl
             var sol = new Real[6];
             var residual = new Real[3];
             var cand = new int[CandCap];
+            var weldAnchor = new int[MaxLinks];
+            var jacobiM = new Real[9];
+            var jacobiV = new Real[9];
 
             // A card does not zero a thread's local memory. The senses the brain may read without
             // this step writing them (a channel whose mask bit is clear) read 0, never garbage.
@@ -3475,9 +3570,14 @@ namespace Evosim.Farm.Gpu.Sgl
             bool hasScent = (gates & 4) != 0;
             bool hasLeaf = (gates & 8) != 0;
 
+            // D220: a body whose organism is remains runs no senses, no brain, no drive and no grip, as
+            // DynamicsWorld.StepOne skips them. cfg.AnyRemains is the block's, so in a world without remains
+            // every thread takes the old path on a test it cannot fail, and the flag is never loaded.
+            bool remains = cfg.AnyRemains != 0 && gl.Remains[g] != 0;
+
             // CreatureSenses.SampleDrive: the envelope as the last step's drive left it, read before this
             // step's drive moves it. Under the torque drive it reads 0, as sDrive was cleared.
-            if (readsDrive && cfg.BendAndPower != 0)
+            if (!remains && readsDrive && cfg.BendAndPower != 0)
             {
                 int dofLength = dof > 0 ? dof : 1;
                 for (int bl = 0; bl < links; bl++)
@@ -3506,10 +3606,13 @@ namespace Evosim.Farm.Gpu.Sgl
 
             float energy = 0f;
             bool lost = false;
-            Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi,
-                   br, w, cfg, readsDepth, readsUp, readsJoint, readsFlow, readsChemical && hasNutrients,
-                   readsScent && hasScent, readsEnergy && hasReserve, readsLeaf && hasLeaf, readsLeafDir,
-                   sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, sLeaf, ref energy, ref lost);
+            if (!remains)
+            {
+                Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi,
+                       br, w, cfg, readsDepth, readsUp, readsJoint, readsFlow, readsChemical && hasNutrients,
+                       readsScent && hasScent, readsEnergy && hasReserve, readsLeaf && hasLeaf, readsLeafDir,
+                       sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, sLeaf, ref energy, ref lost);
+            }
 
             if (lost)
             {
@@ -3533,7 +3636,7 @@ namespace Evosim.Farm.Gpu.Sgl
             // The touch of the rock as the last step's contact pass left it, a bit a link, read before
             // this step's touch is kept (KeepTouch), as CreatureSenses.Sample reads it.
             int rock = 0;
-            if (cfg.RockTouch != 0)
+            if (!remains && cfg.RockTouch != 0)
             {
                 for (int l = 0; l < links; l++)
                 {
@@ -3542,9 +3645,12 @@ namespace Evosim.Farm.Gpu.Sgl
             }
 
             // The brain reads the two gates itself (SensorRead): a body with no field or no
-            // reserve source reads the standing-in constant on those channels.
-            BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
-                      sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
+            // reserve source reads the standing-in constant on those channels. Remains run none.
+            if (!remains)
+            {
+                BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
+                          sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
+            }
 
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 2, ref clk);
@@ -3555,7 +3661,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
             // ---- 4. drive (EffectorDrive.Drive) ----------------------------------------------
             bool drivePending = false;
-            if (dof != 0 && cfg.BendAndPower != 0)
+            if (!remains && dof != 0 && cfg.BendAndPower != 0)
             {
                 // EffectorDrive.DriveBendAndPower: each degree of freedom's power and bend through
                 // the joint's threshold and envelope, in double as the CPU keeps them; the power
@@ -3654,7 +3760,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
                 if (limited != 0) dr.DriveLimited[i] = dr.DriveLimited[i] + limited;
             }
-            else if (dof != 0)
+            else if (!remains && dof != 0)
             {
                 int sigLen = t.SigLen[i];
                 int cursor = dr.Cursor[i];
@@ -3761,7 +3867,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 // Fluid.Apply books it, then the buoyancy where the CPU added it.
                 if (powered)
                 {
-                    if (parent[fl] >= 0 && position[3 * fl + 1] <= 0 && dofCount[fl] > 0)
+                    if (!remains && parent[fl] >= 0 && position[3 * fl + 1] <= 0 && dofCount[fl] > 0)
                     {
                         M3 frot = M3.Read(rotationMatrix, 9 * fl);
                         V3 toOrigin = frot * (-V3.Read(childAnchor, 3 * fl));
@@ -3801,6 +3907,12 @@ namespace Evosim.Farm.Gpu.Sgl
                 V3.Add(fext, 6 * fl + 3, linkForce);
                 dragLimited += gl.LinkLimited[frow];
             }
+            if (cfg.LimitDrag != 0 && cfg.WeldedDrag != 0)
+            {
+                dragLimited += WeldedDrag(g * LinkStride, fluidRows, links, parent, dofCount, mass, position,
+                                          rotationMatrix, inertiaLocal, spin, dragF, dragT, fext, weldAnchor,
+                                          jacobiM, jacobiV, gl, cfg);
+            }
             if (dragLimited != 0) dr.DragLimited[i] = dr.DragLimited[i] + dragLimited;
 
 #if GPU_PHASE_PROBE
@@ -3811,7 +3923,7 @@ namespace Evosim.Farm.Gpu.Sgl
             {
                 ContactsPerPartStaged(g, links, fext, cand, cs, gl, gr, cfg);
                 if (cfg.RockTouch != 0) KeepTouch(g, links, gl, cfg);
-                if (cfg.Anchoring != 0)
+                if (cfg.Anchoring != 0 && !remains)
                 {
                     Grip(g, links, position, velocity, spin, rotationMatrix, mass, smallI, fext,
                          hasReserve, br.Reserve[i], cs, gl, cfg);
@@ -3838,6 +3950,11 @@ namespace Evosim.Farm.Gpu.Sgl
 
             Integrate(links, dofCount, dofStart, tau, q, qd, ballRot, acc, spin, velocity,
                       ref basePosition, ref baseCarry, ref baseRotation, cfg.Dt);
+
+            // D077's third rule inside the card's block (D204): a root that has left the box comes
+            // back in at the opposite face, before the poses are built from it, as Simulation's
+            // WrapAtTheSeams puts it back before anything reads a position.
+            if (cfg.SeamL > 0) WrapAtTheSeams(ref basePosition, ref baseCarry, cfg);
 
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 6, ref clk);
@@ -4223,6 +4340,9 @@ namespace Evosim.Farm.Gpu.Sgl
             var sol = new Real[6];
             var residual = new Real[3];
             var cand = new int[CandCap];
+            var weldAnchor = new int[MaxLinks];
+            var jacobiM = new Real[9];
+            var jacobiV = new Real[9];
 
             // A card does not zero a thread's local memory. The senses the brain may read without
             // this step writing them (a channel whose mask bit is clear) read 0, never garbage.
@@ -4471,9 +4591,14 @@ namespace Evosim.Farm.Gpu.Sgl
             bool hasScent = (gates & 4) != 0;
             bool hasLeaf = (gates & 8) != 0;
 
+            // D220: a body whose organism is remains runs no senses, no brain, no drive and no grip, as
+            // DynamicsWorld.StepOne skips them. cfg.AnyRemains is the block's, so in a world without remains
+            // every thread takes the old path on a test it cannot fail, and the flag is never loaded.
+            bool remains = cfg.AnyRemains != 0 && gl.Remains[g] != 0;
+
             // CreatureSenses.SampleDrive: the envelope as the last step's drive left it, read before this
             // step's drive moves it. Under the torque drive it reads 0, as sDrive was cleared.
-            if (readsDrive && cfg.BendAndPower != 0)
+            if (!remains && readsDrive && cfg.BendAndPower != 0)
             {
                 int dofLength = dof > 0 ? dof : 1;
                 for (int bl = 0; bl < links; bl++)
@@ -4502,10 +4627,13 @@ namespace Evosim.Farm.Gpu.Sgl
 
             float energy = 0f;
             bool lost = false;
-            Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi,
-                   br, w, cfg, readsDepth, readsUp, readsJoint, readsFlow, readsChemical && hasNutrients,
-                   readsScent && hasScent, readsEnergy && hasReserve, readsLeaf && hasLeaf, readsLeafDir,
-                   sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, sLeaf, ref energy, ref lost);
+            if (!remains)
+            {
+                Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi,
+                       br, w, cfg, readsDepth, readsUp, readsJoint, readsFlow, readsChemical && hasNutrients,
+                       readsScent && hasScent, readsEnergy && hasReserve, readsLeaf && hasLeaf, readsLeafDir,
+                       sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, sLeaf, ref energy, ref lost);
+            }
 
             if (lost)
             {
@@ -4529,7 +4657,7 @@ namespace Evosim.Farm.Gpu.Sgl
             // The touch of the rock as the last step's contact pass left it, a bit a link, read before
             // this step's touch is kept (KeepTouch), as CreatureSenses.Sample reads it.
             int rock = 0;
-            if (cfg.RockTouch != 0)
+            if (!remains && cfg.RockTouch != 0)
             {
                 for (int l = 0; l < links; l++)
                 {
@@ -4538,9 +4666,12 @@ namespace Evosim.Farm.Gpu.Sgl
             }
 
             // The brain reads the two gates itself (SensorRead): a body with no field or no
-            // reserve source reads the standing-in constant on those channels.
-            BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
-                      sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
+            // reserve source reads the standing-in constant on those channels. Remains run none.
+            if (!remains)
+            {
+                BrainStep(i, links, dof, t, nr, br, dr, cfg, dofCount, dofStart,
+                          sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, energy, rock, sLeaf);
+            }
 
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 2, ref clk);
@@ -4551,7 +4682,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
             // ---- 4. drive (EffectorDrive.Drive) ----------------------------------------------
             bool drivePending = false;
-            if (dof != 0 && cfg.BendAndPower != 0)
+            if (!remains && dof != 0 && cfg.BendAndPower != 0)
             {
                 // EffectorDrive.DriveBendAndPower: each degree of freedom's power and bend through
                 // the joint's threshold and envelope, in double as the CPU keeps them; the power
@@ -4650,7 +4781,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
                 if (limited != 0) dr.DriveLimited[i] = dr.DriveLimited[i] + limited;
             }
-            else if (dof != 0)
+            else if (!remains && dof != 0)
             {
                 int sigLen = t.SigLen[i];
                 int cursor = dr.Cursor[i];
@@ -4757,7 +4888,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 // Fluid.Apply books it, then the buoyancy where the CPU added it.
                 if (powered)
                 {
-                    if (parent[fl] >= 0 && position[3 * fl + 1] <= 0 && dofCount[fl] > 0)
+                    if (!remains && parent[fl] >= 0 && position[3 * fl + 1] <= 0 && dofCount[fl] > 0)
                     {
                         M3 frot = M3.Read(rotationMatrix, 9 * fl);
                         V3 toOrigin = frot * (-V3.Read(childAnchor, 3 * fl));
@@ -4797,6 +4928,12 @@ namespace Evosim.Farm.Gpu.Sgl
                 V3.Add(fext, 6 * fl + 3, linkForce);
                 dragLimited += gl.LinkLimited[frow];
             }
+            if (cfg.LimitDrag != 0 && cfg.WeldedDrag != 0)
+            {
+                dragLimited += WeldedDrag(g * LinkStride, fluidRows, links, parent, dofCount, mass, position,
+                                          rotationMatrix, inertiaLocal, spin, dragF, dragT, fext, weldAnchor,
+                                          jacobiM, jacobiV, gl, cfg);
+            }
             if (dragLimited != 0) dr.DragLimited[i] = dr.DragLimited[i] + dragLimited;
 
 #if GPU_PHASE_PROBE
@@ -4807,7 +4944,7 @@ namespace Evosim.Farm.Gpu.Sgl
             {
                 ContactsPerPartStaged(g, links, fext, cand, cs, gl, gr, cfg);
                 if (cfg.RockTouch != 0) KeepTouch(g, links, gl, cfg);
-                if (cfg.Anchoring != 0)
+                if (cfg.Anchoring != 0 && !remains)
                 {
                     Grip(g, links, position, velocity, spin, rotationMatrix, mass, smallI, fext,
                          hasReserve, br.Reserve[i], cs, gl, cfg);
@@ -4834,6 +4971,11 @@ namespace Evosim.Farm.Gpu.Sgl
 
             Integrate(links, dofCount, dofStart, tau, q, qd, ballRot, acc, spin, velocity,
                       ref basePosition, ref baseCarry, ref baseRotation, cfg.Dt);
+
+            // D077's third rule inside the card's block (D204): a root that has left the box comes
+            // back in at the opposite face, before the poses are built from it, as Simulation's
+            // WrapAtTheSeams puts it back before anything reads a position.
+            if (cfg.SeamL > 0) WrapAtTheSeams(ref basePosition, ref baseCarry, cfg);
 
 #if GPU_PHASE_PROBE
             PhaseMark(gl, cfg, g, 6, ref clk);
@@ -5232,8 +5374,16 @@ namespace Evosim.Farm.Gpu.Sgl
         {
             if (cfg.Speed <= 0f) { ox = 0f; oy = 0f; oz = 0f; return; }
 
-            SD f;
-            if (cfg.ReefCount == 0 || !ReefFade(x, y, z, w, cfg, out f))
+            // CurrentField.OceanAt: a place folded into the box first.
+            if (cfg.Ocean != 0) { x = OceanFold(x, cfg.OceanL); z = OceanFold(z, cfg.OceanW); }
+
+            // The rock's fade: the coral's hulls (CurrentField.CoralOceanAt and ReefStreamsAt over CoralRock.Fade), or the reefs'.
+            SD f = default(SD);
+            bool near = false;
+            if (cfg.CoralCount != 0) near = CoralFade(x, y, z, w, cfg, out f);
+            else if (cfg.ReefCount != 0) near = ReefFade(x, y, z, w, cfg, out f);
+
+            if (!near)
             {
                 StreamsAt(x, y, z, w, ib, cfg, out ox, out oy, out oz);
                 return;
@@ -5259,7 +5409,7 @@ namespace Evosim.Farm.Gpu.Sgl
             if (cfg.Sloped == 0)
             {
                 // StreamsUnit(...) * (_speed * _streamsScale): a float product.
-                StreamsUnit(x, y, z, cfg.Overturning, w, ib, cfg, out ux, out uy, out uz);
+                FlatUnit(x, y, z, cfg.Overturning, w, ib, cfg, out ux, out uy, out uz);
                 ox = ux * cfg.SigmaFlat; oy = uy * cfg.SigmaFlat; oz = uz * cfg.SigmaFlat;
                 return;
             }
@@ -5277,7 +5427,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
             if (cfg.Sloped == 0)
             {
-                StreamsPotentialUnit(x, y, z, cfg.Overturning, w, ib, cfg, out ax, out ay, out az);
+                FlatPotentialUnit(x, y, z, cfg.Overturning, w, ib, cfg, out ax, out ay, out az);
                 ox = ax * cfg.SigmaFlat; oy = ay * cfg.SigmaFlat; oz = az * cfg.SigmaFlat;
                 return;
             }
@@ -5338,7 +5488,7 @@ namespace Evosim.Farm.Gpu.Sgl
             }
 
             float ux, uy, uz;
-            StreamsUnit(x, m.MappedY, z, cfg.Overturning, w, ib, cfg, out ux, out uy, out uz);
+            FlatUnit(x, m.MappedY, z, cfg.Overturning, w, ib, cfg, out ux, out uy, out uz);
 
             ox = (float)(m.C * ux);
             oy = (float)(uy - m.A * ux - m.B * uz);
@@ -5358,7 +5508,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 // FadedPotential.
                 if (m.Fade == 0) { ox = 0f; oy = 0f; oz = 0f; return; }
 
-                StreamsPotentialUnit(x, m.MappedY, z, cfg.Overturning, w, ib, cfg, out ax, out ay, out az);
+                FlatPotentialUnit(x, m.MappedY, z, cfg.Overturning, w, ib, cfg, out ax, out ay, out az);
 
                 Real f = m.Fade;
                 ox = (float)(f * (ax + m.A * ay));
@@ -5367,7 +5517,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 return;
             }
 
-            StreamsPotentialUnit(x, m.MappedY, z, cfg.Overturning, w, ib, cfg, out ax, out ay, out az);
+            FlatPotentialUnit(x, m.MappedY, z, cfg.Overturning, w, ib, cfg, out ax, out ay, out az);
 
             ox = (float)(ax + m.A * ay);
             oy = (float)(m.C * ay);
@@ -5384,7 +5534,7 @@ namespace Evosim.Farm.Gpu.Sgl
             if (f == 0) { ox = 0f; oy = 0f; oz = 0f; return; }
 
             float ux, uy, uz;
-            StreamsUnit(x, m.MappedY, z, cfg.Overturning, w, ib, cfg, out ux, out uy, out uz);
+            FlatUnit(x, m.MappedY, z, cfg.Overturning, w, ib, cfg, out ux, out uy, out uz);
 
             Real vx = m.C * ux;
             Real vy = uy - m.A * ux - m.B * uz;
@@ -5399,7 +5549,7 @@ namespace Evosim.Farm.Gpu.Sgl
             }
 
             float ax, ay, az;
-            StreamsPotentialUnit(x, m.MappedY, z, cfg.Overturning, w, ib, cfg, out ax, out ay, out az);
+            FlatPotentialUnit(x, m.MappedY, z, cfg.Overturning, w, ib, cfg, out ax, out ay, out az);
 
             Real px = ax + m.A * ay;
             Real py = m.C * ay;
@@ -5484,6 +5634,214 @@ namespace Evosim.Farm.Gpu.Sgl
         }
 
         /// <summary>CurrentField.StreamsPotentialUnit at the samplers' instant (A).</summary>
+        // ------------------------------------------------------------------ D204's open ocean
+
+        /// <summary>CurrentField.WrapAxis: a coordinate folded into [0, extent), in single as the processor's.</summary>
+        private static float OceanFold(float v, float extent)
+        {
+            if (v >= 0f && v < extent) return v;
+            float folded = v - extent * System.MathF.Floor(v / extent);
+            if (folded >= extent || folded < 0f) folded = 0f;
+            return folded;
+        }
+
+        /// <summary>CurrentField.FlatUnit: the ocean's flat field in a box, the streams' in a tank.</summary>
+        private static void FlatUnit(Real x, Real y, Real z, Real overturning, SWorld w, int ib, SCfg cfg,
+                                     out float ox, out float oy, out float oz)
+        {
+            if (cfg.Ocean != 0) { OceanUnit(x, y, z, w, ib, cfg, out ox, out oy, out oz); return; }
+            StreamsUnit(x, y, z, overturning, w, ib, cfg, out ox, out oy, out oz);
+        }
+
+        /// <summary>CurrentField.FlatPotentialUnit.</summary>
+        private static void FlatPotentialUnit(Real x, Real y, Real z, Real overturning, SWorld w, int ib, SCfg cfg,
+                                              out float ox, out float oy, out float oz)
+        {
+            if (cfg.Ocean != 0) { OceanPotentialUnit(x, y, z, w, ib, cfg, out ox, out oy, out oz); return; }
+            StreamsPotentialUnit(x, y, z, overturning, w, ib, cfg, out ox, out oy, out oz);
+        }
+
+        /// <summary>CurrentField.FlatUnitWithGradient.</summary>
+        private static SG FlatUnitWithGradient(Real x, Real y, Real z, Real overturning, SWorld w, int ib, SCfg cfg) =>
+            cfg.Ocean != 0
+                ? OceanUnitWithGradient(x, y, z, w, ib, cfg)
+                : StreamsUnitWithGradient(x, y, z, overturning, w, ib, cfg);
+
+        /// <summary>CurrentField.FlatPotentialUnitWithGradient.</summary>
+        private static SG FlatPotentialUnitWithGradient(Real x, Real y, Real z, Real overturning, SWorld w, int ib, SCfg cfg) =>
+            cfg.Ocean != 0
+                ? OceanPotentialUnitWithGradient(x, y, z, w, ib, cfg)
+                : StreamsPotentialUnitWithGradient(x, y, z, overturning, w, ib, cfg);
+
+        /// <summary>
+        /// CurrentField.OceanLayersAt: the three layers' shapes sin((q - 1/2)πη) at a flat height and
+        /// their slopes, by the recurrence over the odd multiples of θ = πη/2.
+        /// </summary>
+        private static void OceanLayersAt(Real y, SCfg cfg,
+                                          out Real s1, out Real s2, out Real s3, out Real d1, out Real d2, out Real d3)
+        {
+            Real depth = cfg.CurDepth;
+
+            if (y > 0) y = 0;
+            else if (y < -depth) y = -depth;
+
+            Real theta = (Real)0.5 * (Real)Math.PI * ((Real)1 + y / depth);
+            Real sin = SinR(theta);
+            Real cos = CosR(theta);
+            Real twice = (Real)2 * ((Real)1 - (Real)2 * sin * sin);
+
+            s1 = sin;
+            s2 = twice * s1 + sin;
+            s3 = twice * s2 - s1;
+
+            Real c1 = cos;
+            Real c2 = twice * c1 - cos;
+            Real c3 = twice * c2 - c1;
+
+            Real unit = (Real)0.5 * (Real)Math.PI / depth;
+
+            d1 = unit * c1;
+            d2 = (Real)3 * unit * c2;
+            d3 = (Real)5 * unit * c3;
+        }
+
+        /// <summary>CurrentField.OceanUnit: the flat ocean at unit speed and scale, at a folded place (A).</summary>
+        private static void OceanUnit(Real x, Real y, Real z, SWorld w, int ib, SCfg cfg,
+                                      out float ox, out float oy, out float oz)
+        {
+            Real s1, s2, s3, d1, d2, d3;
+            OceanLayersAt(y, cfg, out s1, out s2, out s3, out d1, out d2, out d3);
+
+            Real ux = 0, uz = 0;
+
+            for (int v = 0, k = 0; v < OceanVectors; v++, k += OceanLayers)
+            {
+                Real alpha = w.Inst[ib + OCos + k] * s1 + w.Inst[ib + OCos + k + 1] * s2 + w.Inst[ib + OCos + k + 2] * s3;
+                Real beta = w.Inst[ib + OSin + k] * s1 + w.Inst[ib + OSin + k + 1] * s2 + w.Inst[ib + OSin + k + 2] * s3;
+
+                Real kx = w.WR[cfg.OceanKAt + v], kz = w.WR[cfg.OceanKAt + OceanVectors + v];
+                Real chi = kx * x + kz * z;
+                Real sinChi = SinR(chi), cosChi = CosR(chi);
+
+                Real q = sinChi * alpha + cosChi * beta;
+
+                ux += kz * q;
+                uz -= kx * q;
+            }
+
+            ox = (float)ux; oy = 0f; oz = (float)uz;
+        }
+
+        /// <summary>CurrentField.OceanPotentialUnit: (0, A_y, 0) at unit speed and scale (A).</summary>
+        private static void OceanPotentialUnit(Real x, Real y, Real z, SWorld w, int ib, SCfg cfg,
+                                               out float ox, out float oy, out float oz)
+        {
+            Real s1, s2, s3, d1, d2, d3;
+            OceanLayersAt(y, cfg, out s1, out s2, out s3, out d1, out d2, out d3);
+
+            Real ay = 0;
+
+            for (int v = 0, k = 0; v < OceanVectors; v++, k += OceanLayers)
+            {
+                Real alpha = w.Inst[ib + OCos + k] * s1 + w.Inst[ib + OCos + k + 1] * s2 + w.Inst[ib + OCos + k + 2] * s3;
+                Real beta = w.Inst[ib + OSin + k] * s1 + w.Inst[ib + OSin + k + 1] * s2 + w.Inst[ib + OSin + k + 2] * s3;
+
+                Real chi = w.WR[cfg.OceanKAt + v] * x + w.WR[cfg.OceanKAt + OceanVectors + v] * z;
+
+                ay += CosR(chi) * alpha - SinR(chi) * beta;
+            }
+
+            ox = 0f; oy = (float)ay; oz = 0f;
+        }
+
+        /// <summary>CurrentField.OceanUnitWithGradient: the field, its clock derivative and its Jacobian (B).</summary>
+        private static SG OceanUnitWithGradient(Real x, Real y, Real z, SWorld w, int ib, SCfg cfg)
+        {
+            Real s1, s2, s3, d1, d2, d3;
+            OceanLayersAt(y, cfg, out s1, out s2, out s3, out d1, out d2, out d3);
+
+            var g = default(SG);
+
+            for (int v = 0, k = 0; v < OceanVectors; v++, k += OceanLayers)
+            {
+                Real c0 = w.Inst[ib + OBCos + k], c1 = w.Inst[ib + OBCos + k + 1], c2 = w.Inst[ib + OBCos + k + 2];
+                Real n0 = w.Inst[ib + OBSin + k], n1 = w.Inst[ib + OBSin + k + 1], n2 = w.Inst[ib + OBSin + k + 2];
+                Real r0 = w.Inst[ib + OBCosRate + k], r1 = w.Inst[ib + OBCosRate + k + 1], r2 = w.Inst[ib + OBCosRate + k + 2];
+                Real m0 = w.Inst[ib + OBSinRate + k], m1 = w.Inst[ib + OBSinRate + k + 1], m2 = w.Inst[ib + OBSinRate + k + 2];
+
+                Real alpha = c0 * s1 + c1 * s2 + c2 * s3;
+                Real beta = n0 * s1 + n1 * s2 + n2 * s3;
+                Real alphaY = c0 * d1 + c1 * d2 + c2 * d3;
+                Real betaY = n0 * d1 + n1 * d2 + n2 * d3;
+                Real alphaT = r0 * s1 + r1 * s2 + r2 * s3;
+                Real betaT = m0 * s1 + m1 * s2 + m2 * s3;
+
+                Real kx = w.WR[cfg.OceanKAt + v], kz = w.WR[cfg.OceanKAt + OceanVectors + v];
+                Real chi = kx * x + kz * z;
+                Real sinChi = SinR(chi), cosChi = CosR(chi);
+
+                Real p = cosChi * alpha - sinChi * beta;
+                Real q = sinChi * alpha + cosChi * beta;
+                Real qy = sinChi * alphaY + cosChi * betaY;
+                Real qt = sinChi * alphaT + cosChi * betaT;
+
+                g.Vx += kz * q;
+                g.Vz -= kx * q;
+
+                g.Tx += kz * qt;
+                g.Tz -= kx * qt;
+
+                g.Xx += kz * kx * p;
+                g.Xy += kz * qy;
+                g.Xz += kz * kz * p;
+
+                g.Zx -= kx * kx * p;
+                g.Zy -= kx * qy;
+                g.Zz -= kx * kz * p;
+            }
+
+            return g;
+        }
+
+        /// <summary>CurrentField.OceanPotentialUnitWithGradient: the potential, its clock derivative and its Jacobian (B).</summary>
+        private static SG OceanPotentialUnitWithGradient(Real x, Real y, Real z, SWorld w, int ib, SCfg cfg)
+        {
+            Real s1, s2, s3, d1, d2, d3;
+            OceanLayersAt(y, cfg, out s1, out s2, out s3, out d1, out d2, out d3);
+
+            var g = default(SG);
+
+            for (int v = 0, k = 0; v < OceanVectors; v++, k += OceanLayers)
+            {
+                Real c0 = w.Inst[ib + OBCos + k], c1 = w.Inst[ib + OBCos + k + 1], c2 = w.Inst[ib + OBCos + k + 2];
+                Real n0 = w.Inst[ib + OBSin + k], n1 = w.Inst[ib + OBSin + k + 1], n2 = w.Inst[ib + OBSin + k + 2];
+                Real r0 = w.Inst[ib + OBCosRate + k], r1 = w.Inst[ib + OBCosRate + k + 1], r2 = w.Inst[ib + OBCosRate + k + 2];
+                Real m0 = w.Inst[ib + OBSinRate + k], m1 = w.Inst[ib + OBSinRate + k + 1], m2 = w.Inst[ib + OBSinRate + k + 2];
+
+                Real alpha = c0 * s1 + c1 * s2 + c2 * s3;
+                Real beta = n0 * s1 + n1 * s2 + n2 * s3;
+                Real alphaY = c0 * d1 + c1 * d2 + c2 * d3;
+                Real betaY = n0 * d1 + n1 * d2 + n2 * d3;
+                Real alphaT = r0 * s1 + r1 * s2 + r2 * s3;
+                Real betaT = m0 * s1 + m1 * s2 + m2 * s3;
+
+                Real kx = w.WR[cfg.OceanKAt + v], kz = w.WR[cfg.OceanKAt + OceanVectors + v];
+                Real chi = kx * x + kz * z;
+                Real sinChi = SinR(chi), cosChi = CosR(chi);
+
+                Real p = cosChi * alpha - sinChi * beta;
+                Real q = sinChi * alpha + cosChi * beta;
+
+                g.Vy += p;
+                g.Yx -= kx * q;
+                g.Yy += cosChi * alphaY - sinChi * betaY;
+                g.Yz -= kz * q;
+                g.Ty += cosChi * alphaT - sinChi * betaT;
+            }
+
+            return g;
+        }
+
         private static void StreamsPotentialUnit(Real x, Real y, Real z, Real overturning, SWorld w, int ib, SCfg cfg,
                                                  out float ox, out float oy, out float oz)
         {
@@ -5699,10 +6057,16 @@ namespace Evosim.Farm.Gpu.Sgl
         {
             if (cfg.Speed <= 0f) { ox = 0f; oy = 0f; oz = 0f; return; }
 
-            SG g;
-            SD f;
+            // CurrentField.OceanAccelerationAt: a place folded into the box first.
+            if (cfg.Ocean != 0) { x = OceanFold(x, cfg.OceanL); z = OceanFold(z, cfg.OceanW); }
 
-            if (cfg.ReefCount != 0 && ReefFade(x, y, z, w, cfg, out f))
+            SG g;
+            SD f = default(SD);
+            bool near = false;
+            if (cfg.CoralCount != 0) near = CoralFade(x, y, z, w, cfg, out f);
+            else if (cfg.ReefCount != 0) near = ReefFade(x, y, z, w, cfg, out f);
+
+            if (near)
             {
                 if (f.S == 0 && f.Gx == 0 && f.Gy == 0 && f.Gz == 0) { ox = 0f; oy = 0f; oz = 0f; return; }
 
@@ -5727,7 +6091,7 @@ namespace Evosim.Farm.Gpu.Sgl
         /// <summary>The flat or the sloped streams' gradient at the acceleration's instant (B).</summary>
         private static SG StreamsGradientAt(Real x, Real y, Real z, SWorld w, int ib, SCfg cfg) =>
             cfg.Sloped == 0
-                ? StreamsUnitWithGradient(x, y, z, cfg.Overturning, w, ib, cfg)
+                ? FlatUnitWithGradient(x, y, z, cfg.Overturning, w, ib, cfg)
                 : StreamsSlopedUnitWithGradient(x, y, z, cfg.Overturning, w, ib, cfg);
 
         /// <summary>CurrentField.ReefFadedGradient: u'' = g·u + G × A and its Jacobian.</summary>
@@ -5736,7 +6100,7 @@ namespace Evosim.Farm.Gpu.Sgl
             SG u = StreamsGradientAt(x, y, z, w, ib, cfg);
 
             SG p = cfg.Sloped == 0
-                ? StreamsPotentialUnitWithGradient(x, y, z, cfg.Overturning, w, ib, cfg)
+                ? FlatPotentialUnitWithGradient(x, y, z, cfg.Overturning, w, ib, cfg)
                 : SlopedPotentialWithGradient(x, y, z, cfg.Overturning, w, ib, cfg);
 
             Real gv = f.S;
@@ -5820,7 +6184,7 @@ namespace Evosim.Farm.Gpu.Sgl
             Real bz = y * depth * (hzz * inverseSquared + (Real)2 * hz * hz * inverseCubed);
             Real by = cz;
 
-            SG f = StreamsUnitWithGradient(x, y * c, z, overturning, w, ib, cfg);
+            SG f = FlatUnitWithGradient(x, y * c, z, overturning, w, ib, cfg);
 
             Real dxVx = f.Xx + a * f.Xy, dyVx = c * f.Xy, dzVx = f.Xz + b * f.Xy;
             Real dxVy = f.Yx + a * f.Yy, dyVy = c * f.Yy, dzVy = f.Yz + b * f.Yy;
@@ -5869,7 +6233,7 @@ namespace Evosim.Farm.Gpu.Sgl
             Real a, Real b, Real c,
             Real ax, Real az, Real bz, Real cx, Real cz)
         {
-            SG p = StreamsPotentialUnitWithGradient(x, mappedY, z, overturning, w, ib, cfg);
+            SG p = FlatPotentialUnitWithGradient(x, mappedY, z, overturning, w, ib, cfg);
 
             Real dxAx = p.Xx + a * p.Xy, dyAx = c * p.Xy, dzAx = p.Xz + b * p.Xy;
             Real dxAy = p.Yx + a * p.Yy, dyAy = c * p.Yy, dzAy = p.Yz + b * p.Yy;
@@ -5956,7 +6320,7 @@ namespace Evosim.Farm.Gpu.Sgl
             Real az = y * depth * (hxz * inverseSquared + (Real)2 * hx * hz * inverseCubed);
             Real bz = y * depth * (hzz * inverseSquared + (Real)2 * hz * hz * inverseCubed);
 
-            SG p = StreamsPotentialUnitWithGradient(x, y * c, z, overturning, w, ib, cfg);
+            SG p = FlatPotentialUnitWithGradient(x, y * c, z, overturning, w, ib, cfg);
 
             Real dxAx = p.Xx + a * p.Xy, dyAx = c * p.Xy, dzAx = p.Xz + b * p.Xy;
             Real dxAy = p.Yx + a * p.Yy, dyAy = c * p.Yy, dzAy = p.Yz + b * p.Yy;
@@ -6947,6 +7311,401 @@ namespace Evosim.Farm.Gpu.Sgl
             return touched;
         }
 
+        // ============================================================== the coral (CoralRock)
+        //
+        // A colony's sixteen numbers in SWorld.WR from cfg.CoralColonyAt: its box (min x, y, z, max x, y, z), the
+        // allowance under its box's distance, its hull's centre (x, y, z), semi-axes (x, y, z) and least semi-axis,
+        // its first piece and its piece count. A piece's nine from cfg.CoralPieceAt: its kind (0 a capsule, 1 a
+        // plate), its ends A and B, its radius and its half thickness. The grid's cell starts (cells + 1) from
+        // cfg.CoralGridAt and its colony lists from cfg.CoralListAt, and the fade's (CoralRock._fadeStart and
+        // _fadeColonies) from cfg.CoralFadeGridAt and CoralFadeListAt, all as reals: every index is under 2^24.
+
+        public const int CoralColonyStride = 16, CoralPieceStride = 9;
+
+        /// <summary>CoralRock.Fold: a coordinate folded into [0, period).</summary>
+        private static Real CoralFold(Real v, Real period)
+        {
+            if (v >= 0 && v < period) return v;
+            Real folded = v - period * System.MathF.Floor(v / period);
+            return folded >= period || folded < 0 ? (Real)0 : folded;
+        }
+
+        /// <summary>CoralRock.ShortWay: the short way along a periodic side, d itself in a tank.</summary>
+        private static Real CoralShortWay(Real d, Real period)
+        {
+            if (!(period > 0)) return d;
+            Real half = (Real)0.5 * period;
+            if (d > half) return d - period;
+            if (d < -half) return d + period;
+            return d;
+        }
+
+        /// <summary>CoralRock.FadeCell: the cell whose fade list a point reads, its folded place's in the square.</summary>
+        private static int CoralFadeCell(Real x, Real z, SCfg cfg)
+        {
+            Real fx = cfg.CoralPeriodX > 0 ? CoralFold(x, cfg.CoralPeriodX) : x;
+            Real fz = cfg.CoralPeriodZ > 0 ? CoralFold(z, cfg.CoralPeriodZ) : z;
+            int i = (int)System.MathF.Floor(fx / cfg.CoralCell), j = (int)System.MathF.Floor(fz / cfg.CoralCell);
+            if (i > cfg.CoralCellsX - 1) i = cfg.CoralCellsX - 1;
+            if (i < 0) i = 0;
+            if (j > cfg.CoralCellsZ - 1) j = cfg.CoralCellsZ - 1;
+            if (j < 0) j = 0;
+            return i * cfg.CoralCellsZ + j;
+        }
+
+        /// <summary>CoralRock.CellRange: the grid's cells under a span, clamped.</summary>
+        private static void CoralCellRange(Real lo, Real hi, int cells, SCfg cfg, out int first, out int last)
+        {
+            int a = (int)System.MathF.Floor(lo / cfg.CoralCell), b = (int)System.MathF.Floor(hi / cfg.CoralCell);
+            first = a < cells - 1 ? a : cells - 1;
+            if (first < 0) first = 0;
+            last = b < cells - 1 ? b : cells - 1;
+            if (last < 0) last = 0;
+        }
+
+        /// <summary>CoralRock.ListedCells: the cells a colony is listed in, its box widened by its allowance.</summary>
+        private static void CoralListed(int c, SWorld w, SCfg cfg, out int i0, out int i1, out int j0, out int j1)
+        {
+            int o = cfg.CoralColonyAt + c * CoralColonyStride;
+            Real allowance = w.WR[o + 6];
+            CoralCellRange(w.WR[o] - allowance, w.WR[o + 3] + allowance, cfg.CoralCellsX, cfg, out i0, out i1);
+            CoralCellRange(w.WR[o + 2] - allowance, w.WR[o + 5] + allowance, cfg.CoralCellsZ, cfg, out j0, out j1);
+        }
+
+        /// <summary>CoralRock.FirstCell: whether (i, j) is the query window's first cell listing colony c.</summary>
+        private static bool CoralFirstCell(int c, int i, int j, int i0, int j0, SWorld w, SCfg cfg)
+        {
+            int ci0, ci1, cj0, cj1;
+            CoralListed(c, w, cfg, out ci0, out ci1, out cj0, out cj1);
+            return i == (i0 > ci0 ? i0 : ci0) && j == (j0 > cj0 ? j0 : cj0);
+        }
+
+        /// <summary>CoralRock.LowerBound: a colony's box distance less its allowance.</summary>
+        private static Real CoralLowerBound(int c, Real x, Real y, Real z, SWorld w, SCfg cfg)
+        {
+            int o = cfg.CoralColonyAt + c * CoralColonyStride;
+            Real dx = MaxR(0, MaxR(w.WR[o] - x, x - w.WR[o + 3]));
+            Real dy = MaxR(0, MaxR(w.WR[o + 1] - y, y - w.WR[o + 4]));
+            Real dz = MaxR(0, MaxR(w.WR[o + 2] - z, z - w.WR[o + 5]));
+            return System.MathF.Sqrt(dx * dx + dy * dy + dz * dz) - w.WR[o + 6];
+        }
+
+        /// <summary>CoralRock.OfPiece: a capsule's or a plate's distance and gradient.</summary>
+        private static SD CoralOfPiece(int piece, Real x, Real y, Real z, SWorld w, SCfg cfg)
+        {
+            int o = cfg.CoralPieceAt + piece * CoralPieceStride;
+            Real ax = w.WR[o + 1], ay = w.WR[o + 2], az = w.WR[o + 3];
+            var d = default(SD);
+
+            if (w.WR[o] == 0)
+            {
+                Real bx = w.WR[o + 4] - ax, by = w.WR[o + 5] - ay, bz = w.WR[o + 6] - az;
+                Real px = x - ax, py = y - ay, pz = z - az;
+                Real bb = bx * bx + by * by + bz * bz;
+                Real t = bb > 0 ? (px * bx + py * by + pz * bz) / bb : (Real)0;
+                if (t < 0) t = 0;
+                else if (t > 1) t = 1;
+
+                Real qx = px - t * bx, qy = py - t * by, qz = pz - t * bz;
+                Real length = System.MathF.Sqrt(qx * qx + qy * qy + qz * qz);
+                d.S = length - w.WR[o + 7];
+                if (length > 0)
+                {
+                    d.Gx = qx / length;
+                    d.Gy = qy / length;
+                    d.Gz = qz / length;
+                }
+                else
+                {
+                    d.Gy = 1;
+                }
+
+                return d;
+            }
+
+            Real ex = x - ax, ey = y - ay, ez = z - az;
+            Real rho = System.MathF.Sqrt(ex * ex + ez * ez);
+            Real past = rho - w.WR[o + 7];
+            if (past > 0)
+            {
+                Real span = System.MathF.Sqrt(past * past + ey * ey);
+                d.S = span - w.WR[o + 8];
+                d.Gx = past * ex / rho / span;
+                d.Gy = ey / span;
+                d.Gz = past * ez / rho / span;
+                return d;
+            }
+
+            d.S = AbsR(ey) - w.WR[o + 8];
+            d.Gy = ey >= 0 ? (Real)1 : (Real)(-1);
+            return d;
+        }
+
+        /// <summary>CoralRock.SmoothUnion: the cubic smooth minimum's value and gradient.</summary>
+        private static SD CoralUnion(SD a, SD b, Real k)
+        {
+            Real gap = a.S - b.S;
+            Real spread = AbsR(gap);
+            if (spread >= k) return gap <= 0 ? a : b;
+
+            Real h = (k - spread) / k;
+            Real wa = gap < 0 ? (Real)1 - (Real)0.5 * h * h : (Real)0.5 * h * h;
+            Real wb = (Real)1 - wa;
+
+            var d = default(SD);
+            d.S = MinR(a.S, b.S) - k * h * h * h / (Real)6;
+            d.Gx = wa * a.Gx + wb * b.Gx;
+            d.Gy = wa * a.Gy + wb * b.Gy;
+            d.Gz = wa * a.Gz + wb * b.Gz;
+            return d;
+        }
+
+        /// <summary>CoralRock.OfColony: a colony's pieces by the smooth minimum, in order.</summary>
+        private static SD CoralOfColony(int c, Real x, Real y, Real z, SWorld w, SCfg cfg)
+        {
+            int o = cfg.CoralColonyAt + c * CoralColonyStride;
+            int first = (int)w.WR[o + 14], count = (int)w.WR[o + 15];
+            SD d = CoralOfPiece(first, x, y, z, w, cfg);
+            for (int k = 1; k < count; k++) d = CoralUnion(d, CoralOfPiece(first + k, x, y, z, w, cfg), cfg.CoralFillet);
+            return d;
+        }
+
+        /// <summary>CoralRock.Query: the grid's query at a point in the footprint's frame, unfolded.</summary>
+        private static Real CoralQuery(Real x, Real y, Real z, Real limit, SWorld w, SCfg cfg, out int nearest, out SD at)
+        {
+            Real reach = MaxR(limit, 0);
+            int i0, i1, j0, j1;
+            CoralCellRange(x - reach, x + reach, cfg.CoralCellsX, cfg, out i0, out i1);
+            CoralCellRange(z - reach, z + reach, cfg.CoralCellsZ, cfg, out j0, out j1);
+
+            nearest = -1;
+            at = default(SD);
+
+            int first = -1;
+            Real firstBound = Real.PositiveInfinity;
+
+            for (int i = i0; i <= i1; i++)
+            {
+                for (int j = j0; j <= j1; j++)
+                {
+                    int cell = i * cfg.CoralCellsZ + j;
+                    int end = (int)w.WR[cfg.CoralGridAt + cell + 1];
+                    for (int e = (int)w.WR[cfg.CoralGridAt + cell]; e < end; e++)
+                    {
+                        int c = (int)w.WR[cfg.CoralListAt + e];
+                        if (!CoralFirstCell(c, i, j, i0, j0, w, cfg)) continue;
+
+                        Real bound = CoralLowerBound(c, x, y, z, w, cfg);
+                        if (bound < firstBound || (bound == firstBound && c < first))
+                        {
+                            firstBound = bound;
+                            first = c;
+                        }
+                    }
+                }
+            }
+
+            if (first < 0 || firstBound >= limit) return first < 0 ? limit : firstBound;
+
+            at = CoralOfColony(first, x, y, z, w, cfg);
+            nearest = first;
+            Real best = at.S;
+
+            for (int i = i0; i <= i1; i++)
+            {
+                for (int j = j0; j <= j1; j++)
+                {
+                    int cell = i * cfg.CoralCellsZ + j;
+                    int end = (int)w.WR[cfg.CoralGridAt + cell + 1];
+                    for (int e = (int)w.WR[cfg.CoralGridAt + cell]; e < end; e++)
+                    {
+                        int c = (int)w.WR[cfg.CoralListAt + e];
+                        if (c == first || !CoralFirstCell(c, i, j, i0, j0, w, cfg)) continue;
+
+                        Real bound = CoralLowerBound(c, x, y, z, w, cfg);
+                        if (bound > best || (bound == best && c > nearest)) continue;
+
+                        SD d = CoralOfColony(c, x, y, z, w, cfg);
+                        if (d.S < best || (d.S == best && c < nearest))
+                        {
+                            best = d.S;
+                            nearest = c;
+                            at = d;
+                        }
+                    }
+                }
+            }
+
+            return best;
+        }
+
+        /// <summary>
+        /// CoralRock.SignedDistance with a finite limit: the grid's query, and in the square the folded point and
+        /// each image across a face within the limit (CoralRock.Periodic), the least kept, a tie to the earlier.
+        /// </summary>
+        private static Real CoralSignedDistance(Real x, Real y, Real z, Real limit, SWorld w, SCfg cfg, out SD at)
+        {
+            int nearest;
+            if (!(cfg.CoralPeriodX > 0)) return CoralQuery(x, y, z, limit, w, cfg, out nearest, out at);
+
+            Real px = cfg.CoralPeriodX, pz = cfg.CoralPeriodZ;
+            Real fx = CoralFold(x, px), fz = CoralFold(z, pz);
+            Real best = CoralQuery(fx, y, fz, limit, w, cfg, out nearest, out at);
+
+            Real reach = MaxR(limit, 0);
+            Real ox0 = fx < reach ? px : (Real)0, ox1 = fx > px - reach ? -px : (Real)0;
+            Real oz0 = fz < reach ? pz : (Real)0, oz1 = fz > pz - reach ? -pz : (Real)0;
+
+            for (int a = 0; a < 3; a++)
+            {
+                Real ox = a == 0 ? (Real)0 : a == 1 ? ox0 : ox1;
+                if (a > 0 && ox == 0) continue;
+
+                for (int b = 0; b < 3; b++)
+                {
+                    Real oz = b == 0 ? (Real)0 : b == 1 ? oz0 : oz1;
+                    if (b > 0 && oz == 0) continue;
+                    if (a == 0 && b == 0) continue;
+
+                    int n;
+                    SD g;
+                    Real d = CoralQuery(fx + ox, y, fz + oz, limit, w, cfg, out n, out g);
+                    if (n >= 0 && (nearest < 0 || d < best))
+                    {
+                        best = d;
+                        nearest = n;
+                        at = g;
+                    }
+                    else if (nearest < 0 && d < best)
+                    {
+                        best = d;
+                    }
+                }
+            }
+
+            return best;
+        }
+
+        /// <summary>
+        /// CoralRock.HullDistance: a hull's near-Euclidean distance k0(k0 − 1)/k1, +∞ where the cull rules its
+        /// fade out, negative inside; with k0 and p/a, the short way round in the square.
+        /// </summary>
+        private static Real CoralHullDistance(int c, Real x, Real y, Real z, SWorld w, SCfg cfg,
+                                              out Real k0, out Real mx, out Real my, out Real mz)
+        {
+            int o = cfg.CoralColonyAt + c * CoralColonyStride;
+            Real edge = (Real)1 + cfg.CoralFade / w.WR[o + 13];
+            mx = CoralShortWay(x - w.WR[o + 7], cfg.CoralPeriodX) / w.WR[o + 10];
+            my = (y - w.WR[o + 8]) / w.WR[o + 11];
+            mz = CoralShortWay(z - w.WR[o + 9], cfg.CoralPeriodZ) / w.WR[o + 12];
+            Real q2 = mx * mx + my * my + mz * mz;
+            k0 = System.MathF.Sqrt(q2);
+            if (q2 >= edge * edge) return Real.PositiveInfinity;
+            if (k0 <= 1) return k0 - (Real)1;
+
+            Real wx = mx / w.WR[o + 10], wy = my / w.WR[o + 11], wz = mz / w.WR[o + 12];
+            Real k1 = System.MathF.Sqrt(wx * wx + wy * wy + wz * wz);
+            return k0 * (k0 - (Real)1) / k1;
+        }
+
+        /// <summary>One entry of the hull distance's Hessian (CoralRock.Fade's Entry).</summary>
+        private static Real CoralHessianEntry(
+            Real diag0, Real diag1, Real g0i, Real g0j, Real g1i, Real g1j, Real dai, Real daj,
+            Real k0, Real k1, Real a, Real b, Real k1Squared, Real k1Cubed)
+        {
+            Real h0 = diag0 / k0 - g0i * g0j / k0;
+            Real h1 = diag1 / k1 - g1i * g1j / k1;
+            Real ha = (Real)2 * g0i * g0j + b * h0;
+            return ha / k1 - (dai * g1j + g1i * daj) / k1Squared - a * h1 / k1Squared + (Real)2 * a * g1i * g1j / k1Cubed;
+        }
+
+        /// <summary>
+        /// CoralRock.Fade: the product over the colonies of each hull's quintic lifted onto the floor, with its
+        /// gradient and Hessian; false, the fade 1, where no hull's fade reaches.
+        /// </summary>
+        private static bool CoralFade(Real x, Real y, Real z, SWorld w, SCfg cfg, out SD fade)
+        {
+            fade = default(SD);
+            fade.S = 1;
+            bool touched = false;
+            Real floor = cfg.CoralFloor, lift = (Real)1 - cfg.CoralFloor, fadeMetres = cfg.CoralFade;
+
+            int cell = CoralFadeCell(x, z, cfg);
+            int end = (int)w.WR[cfg.CoralFadeGridAt + cell + 1];
+            for (int e = (int)w.WR[cfg.CoralFadeGridAt + cell]; e < end; e++)
+            {
+                int c = (int)w.WR[cfg.CoralFadeListAt + e];
+                Real k0, mx, my, mz;
+                Real s = CoralHullDistance(c, x, y, z, w, cfg, out k0, out mx, out my, out mz);
+                Real xi = s / fadeMetres;
+                if (xi >= 1) continue;
+
+                touched = true;
+
+                var f = default(SD);
+                if (xi <= 0)
+                {
+                    f.S = floor;
+                }
+                else
+                {
+                    int o = cfg.CoralColonyAt + c * CoralColonyStride;
+                    Real ax = w.WR[o + 10], ay = w.WR[o + 11], az = w.WR[o + 12];
+                    Real ax2 = ax * ax, ay2 = ay * ay, az2 = az * az;
+                    Real wx = mx / ax, wy = my / ay, wz = mz / az;
+                    Real k1 = System.MathF.Sqrt(wx * wx + wy * wy + wz * wz);
+                    Real a = k0 * (k0 - (Real)1);
+                    Real b = (Real)2 * k0 - (Real)1;
+
+                    Real g0x = wx / k0, g0y = wy / k0, g0z = wz / k0;
+                    Real g1x = wx / ax2 / k1, g1y = wy / ay2 / k1, g1z = wz / az2 / k1;
+                    Real dax = b * g0x, day = b * g0y, daz = b * g0z;
+
+                    Real k1Squared = k1 * k1, k1Cubed = k1Squared * k1;
+                    Real sx = dax / k1 - a * g1x / k1Squared;
+                    Real sy = day / k1 - a * g1y / k1Squared;
+                    Real sz = daz / k1 - a * g1z / k1Squared;
+
+                    Real hxx = CoralHessianEntry((Real)1 / ax2, (Real)1 / (ax2 * ax2), g0x, g0x, g1x, g1x, dax, dax, k0, k1, a, b, k1Squared, k1Cubed);
+                    Real hyy = CoralHessianEntry((Real)1 / ay2, (Real)1 / (ay2 * ay2), g0y, g0y, g1y, g1y, day, day, k0, k1, a, b, k1Squared, k1Cubed);
+                    Real hzz = CoralHessianEntry((Real)1 / az2, (Real)1 / (az2 * az2), g0z, g0z, g1z, g1z, daz, daz, k0, k1, a, b, k1Squared, k1Cubed);
+                    Real hxy = CoralHessianEntry(0, 0, g0x, g0y, g1x, g1y, dax, day, k0, k1, a, b, k1Squared, k1Cubed);
+                    Real hxz = CoralHessianEntry(0, 0, g0x, g0z, g1x, g1z, dax, daz, k0, k1, a, b, k1Squared, k1Cubed);
+                    Real hyz = CoralHessianEntry(0, 0, g0y, g0z, g1y, g1z, day, daz, k0, k1, a, b, k1Squared, k1Cubed);
+
+                    Real rest = (Real)1 - xi;
+                    Real q = xi * xi * xi * ((Real)10 + xi * ((Real)(-15) + (Real)6 * xi));
+                    Real q1 = lift * (Real)30 * xi * xi * rest * rest / fadeMetres;
+                    Real qq = lift * (Real)60 * xi * rest * ((Real)1 - (Real)2 * xi) / (fadeMetres * fadeMetres);
+
+                    f.S = floor + lift * q;
+                    f.Gx = q1 * sx; f.Gy = q1 * sy; f.Gz = q1 * sz;
+                    f.Hxx = qq * sx * sx + q1 * hxx;
+                    f.Hxy = qq * sx * sy + q1 * hxy;
+                    f.Hxz = qq * sx * sz + q1 * hxz;
+                    f.Hyy = qq * sy * sy + q1 * hyy;
+                    f.Hyz = qq * sy * sz + q1 * hyz;
+                    f.Hzz = qq * sz * sz + q1 * hzz;
+                }
+
+                SD p = fade;
+                var n = default(SD);
+                n.S = p.S * f.S;
+                n.Gx = f.S * p.Gx + p.S * f.Gx;
+                n.Gy = f.S * p.Gy + p.S * f.Gy;
+                n.Gz = f.S * p.Gz + p.S * f.Gz;
+                n.Hxx = f.S * p.Hxx + (Real)2 * p.Gx * f.Gx + p.S * f.Hxx;
+                n.Hyy = f.S * p.Hyy + (Real)2 * p.Gy * f.Gy + p.S * f.Hyy;
+                n.Hzz = f.S * p.Hzz + (Real)2 * p.Gz * f.Gz + p.S * f.Hzz;
+                n.Hxy = f.S * p.Hxy + p.Gx * f.Gy + f.Gx * p.Gy + p.S * f.Hxy;
+                n.Hxz = f.S * p.Hxz + p.Gx * f.Gz + f.Gx * p.Gz + p.S * f.Hxz;
+                n.Hyz = f.S * p.Hyz + p.Gy * f.Gz + f.Gy * p.Gz + p.S * f.Hyz;
+                fade = n;
+            }
+
+            return touched;
+        }
+
         /// <summary>Math.Max's IEEE 754:2019 maximum: NaN propagates, +0 over -0.</summary>
         private static Real MaxR(Real x, Real y)
         {
@@ -7091,7 +7850,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
         private static float EdibleDensityAt(float x, float y, float z, SWorld w, SCfg cfg, ref bool lost)
         {
-            int cell = TankCellAt(x, y, z, w, cfg);
+            int cell = cfg.FieldTankR > 0 ? TankCellAt(x, y, z, w, cfg) : BoxCellAt(x, y, z, w, cfg);
             if (cell < 0)
             {
                 lost = true;
@@ -7169,6 +7928,67 @@ namespace Evosim.Farm.Gpu.Sgl
             }
 
             return (iy * cfg.Nx + Column(cfg.FieldTankR, cfg)) * cfg.Nz + Column(cfg.FieldTankR, cfg);
+        }
+
+        /// <summary>
+        /// GridField.CellAt in a box (D204): the column the point falls in, x and z taken round the
+        /// seams, clamped up to its floor; a column with no water gives way to the nearest one that
+        /// has some, ring by ring round the seams (GridField.BoxCellAt). −1 for a point that is not
+        /// a number, which the caller leaves for the farm's guard, as the tank's walk does.
+        /// </summary>
+        internal static int BoxCellAt(float x, float y, float z, SWorld w, SCfg cfg)
+        {
+            float u = BoxFold(x, cfg.FieldL), v = BoxFold(z, cfg.FieldW);
+            if (u != u || v != v) return -1;
+
+            int iy = y >= 0f ? 0 : (int)(-y / cfg.CellMetres);
+            if (iy >= cfg.Ny) iy = cfg.Ny - 1;
+            if (iy < 0) iy = 0;
+
+            int ix = (int)(u / cfg.CellMetres);
+            if (ix >= cfg.Nx) ix = cfg.Nx - 1;
+            if (ix < 0) ix = 0;
+
+            int iz = (int)(v / cfg.CellMetres);
+            if (iz >= cfg.Nz) iz = cfg.Nz - 1;
+            if (iz < 0) iz = 0;
+
+            int cell = InColumn(ix, iz, iy, w, cfg);
+            if (cell >= 0) return cell;
+
+            int reach = cfg.Nx > cfg.Nz ? cfg.Nx : cfg.Nz;
+            for (int ring = 1; ring <= reach; ring++)
+            {
+                for (int dx = -ring; dx <= ring; dx++)
+                {
+                    for (int dz = -ring; dz <= ring; dz++)
+                    {
+                        if (dx != -ring && dx != ring && dz != -ring && dz != ring) continue;
+
+                        int cx = ((ix + dx) % cfg.Nx + cfg.Nx) % cfg.Nx;
+                        int cz = ((iz + dz) % cfg.Nz + cfg.Nz) % cfg.Nz;
+                        cell = InColumn(cx, cz, iy, w, cfg);
+                        if (cell >= 0) return cell;
+                    }
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>
+        /// GridField.WrapAxis in float: a coordinate folded into [0, extent). NaN for a coordinate
+        /// that is not a number or one so far out that the fold means nothing.
+        /// </summary>
+        private static float BoxFold(float v, float extent)
+        {
+            if (v >= 0f && v < extent) return v;
+            float turns = v / extent;
+            if (!(turns > -1e7f && turns < 1e7f)) return float.NaN;
+
+            float folded = v - extent * (float)Floor(turns);
+            if (folded >= extent || folded < 0f) folded = 0f;
+            return folded;
         }
 
         private static int InColumn(int ix, int iz, int iy, SWorld w, SCfg cfg)
@@ -7667,6 +8487,11 @@ namespace Evosim.Farm.Gpu.Sgl
             Real excess = b.Excess[c];
             Real mass = b.Mass[i * n + c];
             Real lift = b.Lift[i * n + c];
+
+            // D220: remains take no float lift, as Fluid.Apply's `body.Remains ? 0.0 : body.Lift[i]`. The
+            // flag is read only in a block with remains; a lift of 0 gives (1 - 0), the CPU's own 1.0.
+            if (cfg.AnyRemains != 0 && gl.Remains[g] != 0) lift = 0;
+
             Real volume = b.Volume[i * n + c];
             Real smallI = b.SmallI[i * n + c];
             Real arm = b.Arm[i * n + c];
@@ -7779,16 +8604,28 @@ namespace Evosim.Farm.Gpu.Sgl
                     }
                 }
 
-                Real spinRate = w.Magnitude;
-                if (spinRate > 0)
+                // D199/D200: under the welded law, what the cap took from the force (rows 17 to 19,
+                // Creature.NoteWeldedForceCut), and no torque cap here; WeldedDrag caps the torque.
+                if (cfg.WeldedDrag != 0)
                 {
-                    V3 axis = w * ((Real)1.0 / spinRate);
-                    Real opposing = -V3.Dot(torque, axis);
-                    Real allowed = smallI * spinRate / dt;
-                    if (opposing > allowed)
+                    V3 cut = force - drag;
+                    gl.LinkFluid[17 * rowsAll + row] = cut.X;
+                    gl.LinkFluid[18 * rowsAll + row] = cut.Y;
+                    gl.LinkFluid[19 * rowsAll + row] = cut.Z;
+                }
+                else
+                {
+                    Real spinRate = w.Magnitude;
+                    if (spinRate > 0)
                     {
-                        torque = torque + axis * (opposing - allowed);
-                        limited++;
+                        V3 axis = w * ((Real)1.0 / spinRate);
+                        Real opposing = -V3.Dot(torque, axis);
+                        Real allowed = smallI * spinRate / dt;
+                        if (opposing > allowed)
+                        {
+                            torque = torque + axis * (opposing - allowed);
+                            limited++;
+                        }
                     }
                 }
             }
@@ -7898,6 +8735,158 @@ namespace Evosim.Farm.Gpu.Sgl
 #endif
         }
 
+        /// <summary>
+        /// Creature.LimitWeldedDrag (D199/D200), for one body: each welded body's drag torque about
+        /// its centre of mass, the moments of its links' capped forces included, capped on its
+        /// principal axes. Each sum is taken over the body's links in link order, the order the CPU
+        /// adds them in, so the double kernel is the solver's to the bit. Returns the caps that bound.
+        /// </summary>
+        private static long WeldedDrag(
+            int rowBase, int fluidRows, int links, int[] parent, int[] dofCount, Real[] mass, Real[] position,
+            Real[] rotationMatrix, Real[] inertiaLocal, Real[] spin, Real[] dragF, Real[] dragT, Real[] fext,
+            int[] anchor, Real[] jm, Real[] jv, SGlob gl, SCfg cfg)
+        {
+            long limited = 0;
+            Real dt = cfg.Dt;
+
+            for (int l = 0; l < links; l++)
+            {
+                anchor[l] = parent[l] >= 0 && dofCount[l] == 0 ? anchor[parent[l]] : l;
+            }
+
+            for (int a = 0; a < links; a++)
+            {
+                if (anchor[a] != a) continue;
+
+                Real total = 0, mx = 0, my = 0, mz = 0;
+                for (int l = a; l < links; l++)
+                {
+                    if (anchor[l] != a) continue;
+                    Real m = mass[l];
+                    total += m;
+                    mx += m * position[3 * l];
+                    my += m * position[3 * l + 1];
+                    mz += m * position[3 * l + 2];
+                }
+
+                var centre = new V3(mx / total, my / total, mz / total);
+
+                Real tx = 0, ty = 0, tz = 0;
+                Real ixx = 0, iyy = 0, izz = 0, ixy = 0, ixz = 0, iyz = 0;
+                for (int l = a; l < links; l++)
+                {
+                    if (anchor[l] != a) continue;
+
+                    int frow = rowBase + l;
+                    V3 r = V3.Read(position, 3 * l) - centre;
+                    V3 cut = new V3(gl.LinkFluid[17 * fluidRows + frow], gl.LinkFluid[18 * fluidRows + frow],
+                                    gl.LinkFluid[19 * fluidRows + frow]);
+                    V3 f = V3.Read(dragF, 3 * l) + cut;
+                    V3 t = V3.Read(dragT, 3 * l) + V3.Cross(r, f);
+                    tx += t.X;
+                    ty += t.Y;
+                    tz += t.Z;
+
+                    M3 own = M3.RotateDiagonal(M3.Read(rotationMatrix, 9 * l), V3.Read(inertiaLocal, 3 * l));
+                    Real m = mass[l];
+                    Real rr = V3.Dot(r, r);
+                    ixx += own.M00 + m * (rr - r.X * r.X);
+                    iyy += own.M11 + m * (rr - r.Y * r.Y);
+                    izz += own.M22 + m * (rr - r.Z * r.Z);
+                    ixy += own.M01 - m * r.X * r.Y;
+                    ixz += own.M02 - m * r.X * r.Z;
+                    iyz += own.M12 - m * r.Y * r.Z;
+                }
+
+                V3 w = V3.Read(spin, 3 * a);
+                if (!(w.SqrMagnitude > 0)) continue;
+
+                var torque = new V3(tx, ty, tz);
+                SymmetricEigen(ixx, iyy, izz, ixy, ixz, iyz, jm, jv);
+
+                V3 torqueCut = V3.Zero;
+                for (int k = 0; k < 3; k++)
+                {
+                    var axis = new V3(jv[k], jv[3 + k], jv[6 + k]);
+                    Real moment = jm[4 * k];
+                    if (!(moment > 0)) continue;
+
+                    Real wk = V3.Dot(w, axis);
+                    Real along = V3.Dot(torque, axis);
+                    if (along * wk >= 0) continue;
+
+                    Real allowed = moment * (wk < 0 ? -wk : wk) / dt;
+                    if ((along < 0 ? -along : along) > allowed)
+                    {
+                        torqueCut = torqueCut + axis * ((along > 0 ? allowed : -allowed) - along);
+                        limited++;
+                    }
+                }
+
+                if (torqueCut.SqrMagnitude > 0) V3.Add(fext, 6 * a, torqueCut);
+            }
+
+            return limited;
+        }
+
+        /// <summary>
+        /// Creature.SymmetricEigen: cyclic Jacobi rotations on a symmetric 3x3, left in
+        /// <paramref name="m"/> (the eigenvalues on its diagonal) and <paramref name="v"/> (the unit
+        /// eigenvectors as its columns), row-major, in the CPU's order of operations.
+        /// </summary>
+        private static void SymmetricEigen(Real a00, Real a11, Real a22, Real a01, Real a02, Real a12, Real[] m, Real[] v)
+        {
+            m[0] = a00; m[1] = a01; m[2] = a02;
+            m[3] = a01; m[4] = a11; m[5] = a12;
+            m[6] = a02; m[7] = a12; m[8] = a22;
+            for (int e = 0; e < 9; e++) v[e] = 0;
+            v[0] = 1; v[4] = 1; v[8] = 1;
+
+            Real scale = a00 * a00 + a11 * a11 + a22 * a22;
+
+            for (int sweep = 0; sweep < 32; sweep++)
+            {
+                Real off = m[1] * m[1] + m[2] * m[2] + m[5] * m[5];
+                if (!(off > (Real)1e-30 * scale)) break;
+
+                for (int pair = 0; pair < 3; pair++)
+                {
+                    int p = pair == 2 ? 1 : 0;
+                    int q = pair == 0 ? 1 : 2;
+
+                    Real apq = m[3 * p + q];
+                    if (apq == 0) continue;
+
+                    Real theta = (m[3 * q + q] - m[3 * p + p]) / ((Real)2.0 * apq);
+                    Real tan = (theta >= 0 ? (Real)1.0 : (Real)(-1.0)) /
+                               ((theta < 0 ? -theta : theta) + System.MathF.Sqrt(theta * theta + (Real)1.0));
+                    Real cos = (Real)1.0 / System.MathF.Sqrt(tan * tan + (Real)1.0);
+                    Real sin = tan * cos;
+
+                    for (int k = 0; k < 3; k++)
+                    {
+                        Real kp = m[3 * k + p], kq = m[3 * k + q];
+                        m[3 * k + p] = cos * kp - sin * kq;
+                        m[3 * k + q] = sin * kp + cos * kq;
+                    }
+
+                    for (int k = 0; k < 3; k++)
+                    {
+                        Real pk = m[3 * p + k], qk = m[3 * q + k];
+                        m[3 * p + k] = cos * pk - sin * qk;
+                        m[3 * q + k] = sin * pk + cos * qk;
+                    }
+
+                    for (int k = 0; k < 3; k++)
+                    {
+                        Real kp = v[3 * k + p], kq = v[3 * k + q];
+                        v[3 * k + p] = cos * kp - sin * kq;
+                        v[3 * k + q] = sin * kp + cos * kq;
+                    }
+                }
+            }
+        }
+
         private static Real Restore(
             Real netDensity, Real heightY, Real restoringDensity, Real worldDepthMetres,
             bool floorRestores)
@@ -7934,6 +8923,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
             int found = 0;
             int dropped = 0;
+            SeamCells(gr.Cell[0], cfg, out int wx, out int wz, out _, out _);
 
             // A giant with its list whole reads the list: every row whose cell box meets its own, which
             // is every row the cell walk would have met in some cell it covers.
@@ -7955,7 +8945,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 for (int y = ly; y <= hy; y++)
                 for (int z = lz; z <= hz; z++)
                 {
-                    int h = Hash(x, y, z) & cfg.Mask;
+                    int h = Hash(Wrap(x, wx), y, Wrap(z, wz)) & cfg.Mask;
 
                     for (int k = gr.Start[h]; k < gr.Start[h + 1] && k < cfg.EntryCap; k++)
                     {
@@ -7963,9 +8953,9 @@ namespace Evosim.Farm.Gpu.Sgl
                         int og = perPart ? other / LinkStride : other;
                         if (og == owner) continue;
 
-                        if (x < gr.Lo[other] || x > gr.Hi[other] ||
+                        if (!Spans(x, gr.Lo[other], gr.Hi[other], wx) ||
                             y < gr.Lo[R + other] || y > gr.Hi[R + other] ||
-                            z < gr.Lo[2 * R + other] || z > gr.Hi[2 * R + other])
+                            !Spans(z, gr.Lo[2 * R + other], gr.Hi[2 * R + other], wz))
                         {
                             continue;
                         }
@@ -7983,7 +8973,7 @@ namespace Evosim.Farm.Gpu.Sgl
                     int other = gr.Giant[1 + i];
                     int og = perPart ? other / LinkStride : other;
                     if (og == owner) continue;
-                    if (!BoxesMeet(lx, hx, ly, hy, lz, hz, other, gr, R)) continue;
+                    if (!BoxesMeet(lx, hx, ly, hy, lz, hz, other, gr, R, wx, wz)) continue;
                     found = Keep(KeyOf(other, og, perPart, gl), cand, found, ref dropped);
                 }
             }
@@ -7999,14 +8989,74 @@ namespace Evosim.Farm.Gpu.Sgl
         private static int KeyOf(int other, int og, bool perPart, SGlob gl) =>
             perPart ? gl.Rank[og] * LinkStride + (other - og * LinkStride) : gl.Rank[og];
 
-        /// <summary>Whether a row's cell box, not empty, meets the box lx..hz.</summary>
-        private static bool BoxesMeet(int lx, int hx, int ly, int hy, int lz, int hz, int other, SGrid gr, int R)
+        /// <summary>
+        /// Whether a row's cell box, not empty, meets the box lx..hz: on x and z round the seam when
+        /// there is one (<paramref name="wx"/>, <paramref name="wz"/> above 0).
+        /// </summary>
+        private static bool BoxesMeet(int lx, int hx, int ly, int hy, int lz, int hz, int other, SGrid gr, int R, int wx, int wz)
         {
             int olx = gr.Lo[other], ohx = gr.Hi[other];
             if (olx > ohx) return false;
-            return olx <= hx && lx <= ohx &&
+            return Meet(lx, hx, olx, ohx, wx) &&
                    gr.Lo[R + other] <= hy && ly <= gr.Hi[R + other] &&
-                   gr.Lo[2 * R + other] <= hz && lz <= gr.Hi[2 * R + other];
+                   Meet(lz, hz, gr.Lo[2 * R + other], gr.Hi[2 * R + other], wz);
+        }
+
+        /// <summary>
+        /// ContactGrid.JoinSeams: the cells round each seam (0 without one) and the cell along x and
+        /// z, a whole fraction of the box, from the grid's cell. Every kernel that reads the grid
+        /// derives them from the same cell by the same arithmetic.
+        /// </summary>
+        private static void SeamCells(Real cell, SCfg cfg, out int wx, out int wz, out Real cellX, out Real cellZ)
+        {
+            if (cfg.SeamL > 0 && cfg.SeamW > 0)
+            {
+                wx = (int)(cfg.SeamL / cell);
+                wz = (int)(cfg.SeamW / cell);
+                if (wx < 1) wx = 1;
+                if (wz < 1) wz = 1;
+                cellX = cfg.SeamL / wx;
+                cellZ = cfg.SeamW / wz;
+            }
+            else
+            {
+                wx = 0;
+                wz = 0;
+                cellX = cell;
+                cellZ = cell;
+            }
+        }
+
+        /// <summary>A cell index round a seam of <paramref name="n"/> cells; itself when n is 0.</summary>
+        private static int Wrap(int v, int n)
+        {
+            if (n == 0) return v;
+            int m = v % n;
+            return m < 0 ? m + n : m;
+        }
+
+        /// <summary>ContactGrid.Covers on one axis: whether the span lo..hi covers cell x, round the seam.</summary>
+        private static bool Spans(int x, int lo, int hi, int n) =>
+            n == 0 ? x >= lo && x <= hi : Wrap(x - lo, n) <= hi - lo;
+
+        /// <summary>Whether two spans meet on one axis: on a ring, the start of one lies in the other.</summary>
+        private static bool Meet(int a0, int a1, int b0, int b1, int n) =>
+            n == 0 ? b0 <= a1 && a0 <= b1 : Wrap(b0 - a0, n) <= a1 - a0 || Wrap(a0 - b0, n) <= b1 - b0;
+
+        /// <summary>
+        /// Contacts.ShortWay on one axis, in the processor's order: the plain difference, moved by
+        /// the box's whole extent once when it is further than half, so the accelerator in double is
+        /// the solver to the bit. In single a pair across a seam loses about an ulp of the box's
+        /// length in its separation, some 1e-5 m at 300 m, far under any contact's scale.
+        /// </summary>
+        private static Real ShortWay(Real a, Real b, Real length)
+        {
+            Real d = a - b;
+            if (!(length > 0)) return d;
+            Real half = (Real)0.5 * length;
+            if (d > half) return d - length;
+            if (d < -half) return d + length;
+            return d;
         }
 
         /// <summary>
@@ -8115,9 +9165,9 @@ namespace Evosim.Farm.Gpu.Sgl
                     int other = gl.RankToSlot[cand[k]];
                     if (other < 0 || s.Active[other] == 0) continue;
 
-                    Real bx = cx - s.Cx[other];
+                    Real bx = ShortWay(cx, s.Cx[other], cfg.SeamL);
                     Real by = cy - s.Cy[other];
-                    Real bz = cz - s.Cz[other];
+                    Real bz = ShortWay(cz, s.Cz[other], cfg.SeamW);
                     Real distance = System.MathF.Sqrt(bx * bx + by * by + bz * bz);
                     Real penetration = r + s.R[other] - distance;
                     if (penetration <= 0) continue;
@@ -8332,9 +9382,9 @@ namespace Evosim.Farm.Gpu.Sgl
                     int j = key - rank * LinkStride;
                     int orow = og * LinkStride + j;
 
-                    Real bx = cx - s.LCx[orow];
+                    Real bx = ShortWay(cx, s.LCx[orow], cfg.SeamL);
                     Real by = cy - s.LCy[orow];
-                    Real bz = cz - s.LCz[orow];
+                    Real bz = ShortWay(cz, s.LCz[orow], cfg.SeamW);
                     if (CarryBase)
                     {
                         // The float centres' difference, near each other so exact, then the rests'.
@@ -8497,10 +9547,13 @@ namespace Evosim.Farm.Gpu.Sgl
                 }
             }
 
-            if (cfg.ReefCount != 0)
+            if (cfg.ReefCount != 0 || cfg.CoralCount != 0)
             {
+                // ContactReef: the coral's distance (CoralRock.SignedDistance), or the reefs'.
                 SD at;
-                Real distance = ReefSignedDistance(cx, cy, cz, r, w, cfg, out at);
+                Real distance = cfg.CoralCount != 0
+                    ? CoralSignedDistance(cx, cy, cz, r, w, cfg, out at)
+                    : ReefSignedDistance(cx, cy, cz, r, w, cfg, out at);
                 Real penetration = r - distance;
                 if (CarryBase)
                 {
@@ -9320,6 +10373,39 @@ namespace Evosim.Farm.Gpu.Sgl
         // the solver's plain sum, to the bit.
         private const bool CarryBase = 4 == 4;
 
+        /// <summary>
+        /// SharedVolume.TryWrap on the card: the root moved by the box's length on each axis it has
+        /// left, the velocities untouched. The position is the base less its carry. Off the far face
+        /// the length comes off the base, which is exact there; off the near face it goes onto the
+        /// base, and what that sum rounds away goes into the carry, so the place moves by the
+        /// length and by nothing else. A coordinate that is not a number is left for the farm's
+        /// guard, as the processor leaves it.
+        /// </summary>
+        private static void WrapAtTheSeams(ref V3 basePosition, ref V3 baseCarry, SCfg cfg)
+        {
+            Real x = basePosition.X, cx = baseCarry.X;
+            Real z = basePosition.Z, cz = baseCarry.Z;
+            WrapAxis(ref x, ref cx, cfg.SeamL);
+            WrapAxis(ref z, ref cz, cfg.SeamW);
+            basePosition = new V3(x, basePosition.Y, z);
+            baseCarry = new V3(cx, baseCarry.Y, cz);
+        }
+
+        private static void WrapAxis(ref Real v, ref Real carry, Real length)
+        {
+            if (v >= length)
+            {
+                v = v - length;
+            }
+            else if (v < 0)
+            {
+                Real moved = v + length;
+                Real lost = (moved - length) - v;
+                v = moved;
+                carry = carry + lost;
+            }
+        }
+
         private static void Integrate(
             int links, int[] dofCount, int[] dofStart, Real[] tau, Real[] q, Real[] qd,
             Real[] ballRot, Real[] acc, Real[] spin, Real[] velocity,
@@ -9511,6 +10597,11 @@ namespace Evosim.Farm.Gpu.Sgl
             int i0 = ScentClamp(ScentFloor(u), nx), j0 = ScentClamp(ScentFloor(v), ny), k0 = ScentClamp(ScentFloor(s), nz);
             int i1 = ScentClamp(i0 + 1, nx), j1 = ScentClamp(j0 + 1, ny), k1 = ScentClamp(k0 + 1, nz);
             Real fu = ScentFrac(u, i0, nx), fw = ScentFrac(v, j0, ny), fs = ScentFrac(s, k0, nz);
+            if (cfg.SmellWraps != 0)
+            {
+                SmellRound(u, nx, out i0, out i1, out fu);
+                SmellRound(s, nz, out k0, out k1, out fs);
+            }
 
             Real c00 = (Real)w.Scent[(i0 * ny + j0) * nz + k0] * ((Real)1 - fs) + (Real)w.Scent[(i0 * ny + j0) * nz + k1] * fs;
             Real c01 = (Real)w.Scent[(i0 * ny + j1) * nz + k0] * ((Real)1 - fs) + (Real)w.Scent[(i0 * ny + j1) * nz + k1] * fs;
@@ -9573,6 +10664,11 @@ namespace Evosim.Farm.Gpu.Sgl
             int i0 = ScentClamp(ScentFloor(u), nx), j0 = ScentClamp(ScentFloor(v), ny), k0 = ScentClamp(ScentFloor(s), nz);
             int i1 = ScentClamp(i0 + 1, nx), j1 = ScentClamp(j0 + 1, ny), k1 = ScentClamp(k0 + 1, nz);
             Real fu = ScentFrac(u, i0, nx), fw = ScentFrac(v, j0, ny), fs = ScentFrac(s, k0, nz);
+            if (cfg.SmellWraps != 0)
+            {
+                SmellRound(u, nx, out i0, out i1, out fu);
+                SmellRound(s, nz, out k0, out k1, out fs);
+            }
 
             Real c00 = (Real)w.Leaf[(i0 * ny + j0) * nz + k0] * ((Real)1 - fs) + (Real)w.Leaf[(i0 * ny + j0) * nz + k1] * fs;
             Real c01 = (Real)w.Leaf[(i0 * ny + j1) * nz + k0] * ((Real)1 - fs) + (Real)w.Leaf[(i0 * ny + j1) * nz + k1] * fs;
@@ -9601,7 +10697,17 @@ namespace Evosim.Farm.Gpu.Sgl
             int i0 = ScentClamp(ScentFloor(u), nx), j0 = ScentClamp(ScentFloor(v), ny), k0 = ScentClamp(ScentFloor(s), nz);
             int i1 = ScentClamp(i0 + 1, nx), j1 = ScentClamp(j0 + 1, ny), k1 = ScentClamp(k0 + 1, nz);
             Real fu = ScentFrac(u, i0, nx), fw = ScentFrac(v, j0, ny), fs = ScentFrac(s, k0, nz);
+            if (cfg.SmellWraps != 0)
+            {
+                SmellRound(u, nx, out i0, out i1, out fu);
+                SmellRound(s, nz, out k0, out k1, out fs);
+            }
             bool inU = LeafInside(u, nx), inW = LeafInside(v, ny), inS = LeafInside(s, nz);
+            if (cfg.SmellWraps != 0)
+            {
+                inU = nx > 1;
+                inS = nz > 1;
+            }
 
             Real v000 = w.Leaf[(i0 * ny + j0) * nz + k0], v001 = w.Leaf[(i0 * ny + j0) * nz + k1];
             Real v010 = w.Leaf[(i0 * ny + j1) * nz + k0], v011 = w.Leaf[(i0 * ny + j1) * nz + k1];
@@ -9639,6 +10745,19 @@ namespace Evosim.Farm.Gpu.Sgl
         }
 
         private static int ScentClamp(int i, int n) => i < 0 ? 0 : i >= n ? n - 1 : i;
+
+        /// <summary>
+        /// ScentField.RoundAxis: the two cells either side of a point along a ring and its fraction
+        /// between their centres, for a smell grid whose seams are joined.
+        /// </summary>
+        private static void SmellRound(Real u, int n, out int i0, out int i1, out Real f)
+        {
+            int floor = ScentFloor(u);
+            f = u - floor;
+            int m = floor % n;
+            i0 = m < 0 ? m + n : m;
+            i1 = i0 + 1 == n ? 0 : i0 + 1;
+        }
 
         private static Real ScentFrac(Real u, int i0, int n)
         {
@@ -10151,6 +11270,9 @@ namespace Evosim.Farm.Gpu.Sgl
         private readonly Col<int> _strayCount;
 
         private readonly Col<int> _gLinks, _gId, _gRank, _gAlive, _gJointed;
+
+        // D220's remains flag, by global slot: the host Creature.Remains, set every block (PackBlock).
+        private readonly Col<int> _gRemains;
         private readonly Col<int> _nOver, _ovSlot, _ovId, _ovPart, _ovHeld, _nHeld, _heldId, _bedGlass;
         private readonly bool _rock;
         private readonly Col<int> _rockTouched;
@@ -10324,6 +11446,7 @@ namespace Evosim.Farm.Gpu.Sgl
             int oc = options.OverlapCap;
             _gLinks = G<int>(_gBody, 1, true); _gId = G<int>(_gBody, 1, false); _gRank = G<int>(_gBody, 1, false);
             _gAlive = G<int>(_gBody, 1, true); _gJointed = G<int>(_gBody, 1, false);
+            _gRemains = G<int>(_gBody, 1, false);
             _gTotalMass = G<Real>(_gBody, 1, false);
             _linkMass = G<Real>(_gLink, 1, false);
             _nOver = G<int>(_gBody, 1, true); _ovSlot = G<int>(_gBody, oc, true, -1); _ovId = G<int>(_gBody, oc, true);
@@ -10383,7 +11506,7 @@ namespace Evosim.Farm.Gpu.Sgl
             _tileSum = new Scratch<int>(_acc, 1);
             _tileStart = new Scratch<int>(_acc, 1);
             _linkPush = new Scratch<Real>(_acc, 3);
-            _linkFluid = new Scratch<Real>(_acc, 17);
+            _linkFluid = new Scratch<Real>(_acc, 20);   // rows 17-19: D199/D200's force cut
             _linkLimited = new Scratch<int>(_acc, 1);
             _linkFlags = new Scratch<int>(_acc, 1);
             _touchNew = new Scratch<int>(_acc, 1);
@@ -10639,7 +11762,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 HasCurrent = w.HasCurrent ? 1 : 0, Accelerating = w.Accelerating ? 1 : 0, Sloped = w.Sloped ? 1 : 0,
                 HasBed = w.HasBed ? 1 : 0, BedRelief = w.BedRelief ? 1 : 0, BedModes = w.BedModes,
                 ShoreOn = w.ShoreOn ? 1 : 0, FadeOn = w.FadeOn ? 1 : 0, ReefCount = w.ReefCount,
-                LimitDrive = w.LimitDrive ? 1 : 0, LimitDrag = w.LimitDrag ? 1 : 0,
+                LimitDrive = w.LimitDrive ? 1 : 0, LimitDrag = w.LimitDrag ? 1 : 0, WeldedDrag = w.WeldedDrag ? 1 : 0,
                 UseRestore = w.UseRestore ? 1 : 0, FloorRestores = w.FloorRestores ? 1 : 0,
                 CreatureContact = w.CreatureContact ? 1 : 0, OffsetTorque = w.OffsetTorque ? 1 : 0,
                 BendAndPower = w.BendAndPower ? 1 : 0, TurningDrag = w.TurningDrag, RockTouch = w.RockTouch ? 1 : 0,
@@ -10656,6 +11779,7 @@ namespace Evosim.Farm.Gpu.Sgl
 
                 Omega = (Real)w.Omega, Zeta = (Real)w.Zeta, MaxSep = (Real)w.MaxSep, MaxDv = (Real)w.MaxDv,
                 TankRadius = (Real)w.TankRadius, AxisX = (Real)w.AxisX, AxisZ = (Real)w.AxisZ, CellOverride = 0,
+                SeamL = (Real)w.SeamLength, SeamW = (Real)w.SeamWidth,
                 BedRadius = (Real)w.BedRadius, BedDepth = (Real)w.BedDepth, TiltX = (Real)w.TiltX,
                 TiltZ = (Real)w.TiltZ, Offset = (Real)w.Offset, ShoalHeight = (Real)w.ShoalHeight,
 
@@ -10663,7 +11787,14 @@ namespace Evosim.Farm.Gpu.Sgl
                 Overturning = (Real)w.Overturning, PerSecond = (Real)w.PerSecond, Squared = (Real)w.Squared,
                 ShoreDepth = (Real)w.ShoreDepth, ShoreFadeW = (Real)w.ShoreFadeW,
                 HalfThickness = (Real)w.HalfThickness, Fillet = (Real)w.Fillet, ReefFade = (Real)w.ReefFade,
+                CoralCount = w.CoralCount, CoralCellsX = w.CoralCellsX, CoralCellsZ = w.CoralCellsZ,
+                CoralColonyAt = w.CoralColonyAt, CoralPieceAt = w.CoralPieceAt, CoralGridAt = w.CoralGridAt,
+                CoralListAt = w.CoralListAt, CoralFadeGridAt = w.CoralFadeGridAt, CoralFadeListAt = w.CoralFadeListAt,
+                CoralFillet = (Real)w.CoralFillet, CoralFade = (Real)w.CoralFade,
+                CoralFloor = (Real)w.CoralFloor, CoralCell = (Real)w.CoralCell,
+                CoralPeriodX = (Real)w.CoralPeriodX, CoralPeriodZ = (Real)w.CoralPeriodZ,
                 SigmaSloped = w.SigmaSloped, SigmaFlat = w.SigmaFlat, Speed = w.Speed,
+                Ocean = w.Ocean ? 1 : 0, OceanL = w.OceanL, OceanW = w.OceanW, OceanKAt = w.OceanKAt,
 
                 SWorldDepth = w.SWorldDepth, ChemHalf = w.ChemHalf, ScentHalf = w.ScentHalf, EnergyScale = w.EnergyScale,
                 LeafHalf = w.LeafHalf,
@@ -11205,6 +12336,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 _classes[k].GSlot.Host[local] = -1;
                 _gLinks.Host[g] = 0;
                 _gAlive.Host[g] = 0;
+                _gRemains.Host[g] = 0;
                 _nOver.Host[g] = 0;
                 _nHeld.Host[g] = 0;
                 _active[_committed].Host[g] = 0;
@@ -11253,6 +12385,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 _base.Nx = _w.Nx; _base.Ny = _w.Ny; _base.Nz = _w.Nz; _base.LayerCount = _w.LayerCount;
                 _base.RefugeLayers = _w.RefugeLayers; _base.LayerStride = _w.LayerStride;
                 _base.CellMetres = _w.CellMetres; _base.FieldTankR = _w.FieldTankR;
+                _base.FieldL = _w.FieldL; _base.FieldW = _w.FieldW;
                 _base.RefugeFraction = _w.RefugeFraction; _base.CellVolume = _w.CellVolume;
                 _base.SplitColumns = _w.SplitColumns ? 1 : 0;
                 _base.LowestAt = _w.LowestAt; _base.IntervalFirstAt = _w.IntervalFirstAt;
@@ -11291,6 +12424,7 @@ namespace Evosim.Farm.Gpu.Sgl
                 if (ProbeOn) _probeScent[0] += Stopwatch.GetTimestamp() - sc;
             }
             _base.ScentNx = scent == null ? 1 : scent.CellsX;
+            _base.SmellWraps = (scent != null && scent.Wraps) || (_w.LeafScent != null && _w.LeafScent.Wraps) ? 1 : 0;
             _base.ScentNy = scent == null ? 1 : scent.CellsY;
             _base.ScentNz = scent == null ? 1 : scent.CellsZ;
 
@@ -11439,7 +12573,7 @@ namespace Evosim.Farm.Gpu.Sgl
             _linkPush.Ensure(3 * linkRows);
             // The fluid's rows are links whatever the contact's are: LinkStride a slot.
             long fluidRows = Math.Max(1, (long)WholeStep.LinkStride * gUsed);
-            _linkFluid.Ensure(17 * fluidRows);
+            _linkFluid.Ensure(20 * fluidRows);
             _linkLimited.Ensure(fluidRows);
             _linkFlags.Ensure(linkRows);
             if (_rock)
@@ -11477,6 +12611,14 @@ namespace Evosim.Farm.Gpu.Sgl
             cfg.Chunks = chunks;
             cfg.Tiles = tiles;
             cfg.CellOverride = (Real)world.ContactCellOverrideMetres;
+
+            // D220: whether any body of this block is remains. A block without any (every block of a world with
+            // the dial off) reads no flag on the card and takes every old path on a test it cannot fail.
+            cfg.AnyRemains = 0;
+            for (int rg = 0; rg < _slots.Used; rg++)
+            {
+                if (_slots.Body[rg] != null && _slots.Body[rg].Remains) { cfg.AnyRemains = 1; break; }
+            }
 
             // The farm switches the instrument on after it builds the solver's config, so it is
             // read from the world being stepped and not from the one the kernels were built for.
@@ -11821,6 +12963,7 @@ namespace Evosim.Farm.Gpu.Sgl
         private SGlob Glob => new SGlob
         {
             Links = _gLinks.View, Id = _gId.View, Rank = _gRank.View, Alive = _gAlive.View, Jointed = _gJointed.View,
+            Remains = _gRemains.View,
             RankToSlot = _rankToSlot.View, TotalMass = _gTotalMass.View, LinkMass = _linkMass.View,
             NOver = _nOver.View, OvSlot = _ovSlot.View, OvId = _ovId.View, OvPart = _ovPart.View,
             OvHeld = _ovHeld.View, NHeld = _nHeld.View, HeldId = _heldId.View, BedGlass = _bedGlass.View,
@@ -12447,6 +13590,7 @@ namespace Evosim.Farm.Gpu.Sgl
             _gRank.Host[g] = _slots.Rank[g];
             _gAlive.Host[g] = c.Alive ? 1 : 0;
             _gJointed.Host[g] = c.Jointed ? 1 : 0;
+            _gRemains.Host[g] = c.Remains ? 1 : 0;
             _gTotalMass.Host[g] = (Real)c.TotalMass;
 
             int row = g * WholeStep.LinkStride;

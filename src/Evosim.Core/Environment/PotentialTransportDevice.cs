@@ -48,7 +48,8 @@ namespace Evosim.Core
     }
 
     /// <summary>
-    /// A tank grid's fixed transport tables, flattened for a device. Every array is in the
+    /// A grid's fixed transport tables, flattened for a device: a tank's under the streams, or the
+    /// box's under the open ocean (<see cref="Ocean"/>). Every array is in the
     /// indexing of the CPU's own loops, and the masks are the grid's own arrays, read and never
     /// written.
     /// </summary>
@@ -66,7 +67,28 @@ namespace Evosim.Core
         /// <summary>The instant's coefficients (<see cref="IPotentialTransportDevice.Sample"/>).</summary>
         public const int InstantLength = 75;
 
+        /// <summary>
+        /// The box ocean's instant: its 75 modes' cosine coefficients and then their 75 sine
+        /// coefficients, pinned at the instant's clock (<see cref="Ocean"/>).
+        /// </summary>
+        public const int OceanInstantLength = 150;
+
+        /// <summary>The doubles one edge column takes in <see cref="PotentialTransportAxis.OceanPhases"/>.</summary>
+        public const int OceanPhaseTerms = CurrentField.OceanPhaseStride;
+
         internal PotentialTransportPlan() { }
+
+        /// <summary>
+        /// The box's open ocean on a shaped floor rather than a tank's streams: the edges read
+        /// <see cref="PotentialTransportAxis.OceanPhases"/> and
+        /// <see cref="PotentialTransportAxis.LayerSines"/> in place of the streams' columns and
+        /// depths, the instant is <see cref="OceanInstantLength"/> long, and the faces wrap at the
+        /// box's seams.
+        /// </summary>
+        public bool Ocean { get; internal set; }
+
+        /// <summary>How many coefficients <see cref="IPotentialTransportDevice.Sample"/> is handed.</summary>
+        public int Instant => Ocean ? OceanInstantLength : InstantLength;
 
         public int Nx { get; internal set; }
 
@@ -139,5 +161,20 @@ namespace Evosim.Core
 
         /// <summary>Null without reefs.</summary>
         public float[] ReefFade { get; internal set; }
+
+        /// <summary>
+        /// The box ocean's <c>cos χ</c> and <c>sin χ</c> for each vector at each column, in the
+        /// bed columns' indexing times <see cref="PotentialTransportPlan.OceanPhaseTerms"/>
+        /// (<see cref="CurrentField.OceanPhasesAt"/>). Null for the streams.
+        /// </summary>
+        public double[] OceanPhases { get; internal set; }
+
+        /// <summary>
+        /// The box ocean's <c>sin θ</c> at each edge's mapped height, <c>θ = πη/2</c>, at
+        /// <c>d · <see cref="Stride"/> + c</c> (<see cref="CurrentField.OceanMappedSine"/>): the one
+        /// transcendental the layers' shapes need, from which the device takes them by the CPU's
+        /// own recurrence. Null for the streams.
+        /// </summary>
+        public double[] LayerSines { get; internal set; }
     }
 }

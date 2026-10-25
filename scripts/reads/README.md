@@ -32,3 +32,13 @@ against its whole run, world by world, after the resume's second. It takes the s
 run folders in pairs, and exits 0 when every world is the same and 1 when one differs. Its
 docstring names the three things it leaves out by construction (the steering sampler, the stats'
 wall timings and two harness counters) and why.
+
+`open-ocean-vectors.py` is not a read of a run. It draws the open ocean's 25 wave vectors by the rule
+`logbook/specs/open-ocean-current-build.md` states, and prints the table `CurrentField.Ocean.cs` carries
+with the widest gap between directions.
+
+`src/Evosim.OceanTracers` screens a world before any life runs in it. It is a small .NET 8 console that builds a
+world's floor, current and islands from a launcher's resolved settings, as the simulation does. It releases
+tracers over each island and counts where the water takes them: over their own island, over another, or over
+the desert. With `--maps FIRST-LAST` it lists each map seed's islands instead, as `r61-maps.py` does for a
+founded run. It lives under `src/` so that its build lands in `artifacts/`.

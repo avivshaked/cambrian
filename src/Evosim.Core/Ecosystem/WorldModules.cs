@@ -267,6 +267,17 @@ namespace Evosim.Core
 
             double spend = tissue - creature.TissueJoules;
 
+            // D219: the account the body will hold on the new plan is the tissue of the parts it holds, so the
+            // reserve pays the difference between that and the account it has; the intact comparison
+            // `tissue - IntactTissue` is the same price less the eaten share, which is not bought.
+            double accountAfter = tissue;
+            if (Config.ContactEating)
+            {
+                _ = DevelopPlan(creature, counts, out List<int[]> beforePaths);
+                accountAfter = UneatenTissue(body, Remap(creature.PartHealth, Developer.MatchParts(beforePaths, afterPaths)));
+                spend = accountAfter - creature.TissueJoules;
+            }
+
             // Rule 2's last clause: paid in full from the reserve or not paid at all. The body
             // keeps its reserve and asks again next growth step, which is what makes a module a
             // thing a lineage saves for.
@@ -342,6 +353,28 @@ namespace Evosim.Core
                 : Metabolism.TissueJoules(body, Config);
 
             double released = creature.TissueJoules - tissue;
+
+            // D219: what leaves is the account less what the survivors hold on the new plan (see KillPart).
+            LimbCut limb = null;
+            if (Config.ContactEating)
+            {
+                _ = DevelopPlan(creature, counts, out List<int[]> beforePaths);
+                int[] dropMap = Developer.MatchParts(beforePaths, afterPaths);
+                released = creature.TissueJoules - UneatenTissue(body, Remap(creature.PartHealth, dropMap));
+
+                // D220: what the body was, taken before the plan changes, for the remains cut off it.
+                limb = new LimbCut
+                {
+                    Old = wasBody,
+                    OldHealth = creature.PartHealth == null ? null : (float[])creature.PartHealth.Clone(),
+                    NewToOld = dropMap,
+                    PriorPending = creature.PartMapFromPreviousPlan,
+                    DeadPart = -1,
+                    Counts = creature.ModuleCounts == null ? null : (int[])creature.ModuleCounts.Clone(),
+                    LostPaths = creature.LostPartPaths == null ? null : new List<int[]>(creature.LostPartPaths),
+                };
+            }
+
             if (!(released > 0d)) return false;
 
             // The module's share of the one reserve, by volume — D106's "pro-rata share of the
@@ -370,7 +403,14 @@ namespace Evosim.Core
 
             Rebuild(creature, counts, next, afterPaths, adult, adultTissue, body, tissue);
 
-            ShedRemains(creature, given, bitten: false);
+            if (Config.ContactEating)
+            {
+                LeaveRemains(creature, released, fromReserve, wholeBody: false, killedBy: -1L, cut: limb);
+            }
+            else
+            {
+                ShedRemains(creature, given, bitten: false);
+            }
 
             ModuleDrops++;
             return true;
@@ -387,9 +427,17 @@ namespace Evosim.Core
         /// with.
         /// </remarks>
         /// <param name="leaf">Whether the body carried photosynthetic tissue before the bite, read before the bite reshaped it.</param>
-        private void ShedRemains(Organism creature, float remains, bool bitten, bool leaf = false)
+        private void ShedRemains(Organism creature, float remains, bool bitten, bool leaf = false, long killedBy = -1L)
         {
             if (!(remains > 0f)) return;
+
+            // D219: no corpse is founded. A caller that has the tissue and the reserve apart calls
+            // LeaveRemains itself; one that has only the sum sends it as tissue.
+            if (Config.ContactEating)
+            {
+                LeaveRemains(creature, remains, 0d, wholeBody: false, killedBy: killedBy);
+                return;
+            }
 
             // D167's leaf tank: remains no bite tore off are burnt, never food, and so are remains a bite tore off a body
             // that was not a leaf (the owner's ruling of 2026-10-13: the tank feeds on leaves alone).
@@ -403,7 +451,10 @@ namespace Evosim.Core
             {
                 CorpsesChanged();
                 _corpses.Add(new Corpse(
-                    creature.Id, creature.Point.Position, creature.Patch, remains));
+                    creature.Id, creature.Point.Position, creature.Patch, remains)
+                {
+                    KilledBy = killedBy,
+                });
 
                 return;
             }
@@ -482,6 +533,11 @@ namespace Evosim.Core
             // world with the tunable off.
             creature.PartExposure = null;
 
+            // D214. The same for the posed mouth points: they were taken on the old plan's eating parts,
+            // so the body is measured from its centre until the harness has posed the new plan's. A count
+            // only, so nothing is allocated or read with the tunable off.
+            creature.MouthPointCount = 0;
+
             // Round 49. Composed with a map the harness has not taken yet, so what it takes runs
             // from the plan its solver was built on: the mouth's pass can take two parts off one
             // body before the harness sees either. Null in is null out.
@@ -494,6 +550,10 @@ namespace Evosim.Core
             creature.AdultTissueJoules = adultTissue;
             creature.Phenotype = body;
             creature.TissueJoules = tissue;
+
+            // D219: the account is the tissue of the parts the body still holds, at their health; the
+            // intact figure `tissue` still sets the body's fraction of its adult size below.
+            if (Config.ContactEating) creature.TissueJoules = UneatenTissue(body, creature.PartHealth);
 
             creature.BodyFraction = adultTissue > 0d && tissue < adultTissue
                 ? (float)(tissue / adultTissue)

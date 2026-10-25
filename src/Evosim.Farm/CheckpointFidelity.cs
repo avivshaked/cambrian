@@ -169,11 +169,11 @@ namespace Evosim.Farm
 
             // The organisms, by id.
             var organisms = new Dictionary<long, Organism>();
-            foreach (Organism o in second.World.Living) organisms[o.Id] = o;
+            foreach (Organism o in Everyone(second.World)) organisms[o.Id] = o;
 
             int organismsDiffering = 0;
 
-            foreach (Organism a in first.World.Living)
+            foreach (Organism a in Everyone(first.World))
             {
                 if (!organisms.TryGetValue(a.Id, out Organism b))
                 {
@@ -479,7 +479,7 @@ namespace Evosim.Farm
         private static void CheckWiring(string which, Restored world, List<string> into)
         {
             var organisms = new Dictionary<long, Organism>();
-            foreach (Organism o in world.World.Living) organisms[o.Id] = o;
+            foreach (Organism o in Everyone(world.World)) organisms[o.Id] = o;
 
             foreach (Creature body in world.Sim.Dynamics.Creatures)
             {
@@ -520,7 +520,7 @@ namespace Evosim.Farm
         // The harness's members that are not compared as members: the body table and the list in
         // stepping order, compared by id below; the scratch a step fills before it reads (the
         // departed set, the contact list handed to Core, the condemned list and the divergence
-        // check's two verdict slots, the spread's column flags); the profile's two denominators,
+        // check's two verdict slots, the founding table, the spread's column flags); the profile's two denominators,
         // which count this process's work as the wall clock does; the clocks themselves; the world
         // and the solver world, compared elsewhere; the solver's config and the bed, which are
         // functions of the config; the placer, which is compared by digest; and the dump writer,
@@ -528,6 +528,10 @@ namespace Evosim.Farm
         private static readonly HashSet<string> HarnessNotCompared = new HashSet<string>(StringComparer.Ordinal)
         {
             "_bodies", "_order", "_departed", "_corpsePoses", "_contacts", "_condemned", "_verdictDead", "_verdictReason",
+
+            // D220: the table the founding of remains is posed from while a drain is worked, filled and cleared inside
+            // one call and empty between steps.
+            "_foundingSources",
             "_columnHeld", "_columnHeldAbsorptive", "_bodyStepSum", "_linkStepSum",
             "RunClock", "WritersClock",
             "<World>k__BackingField", "<Dynamics>k__BackingField", "<Solver>k__BackingField",
@@ -638,11 +642,11 @@ namespace Evosim.Farm
             }
 
             Organism living = null;
-            foreach (Organism o in sim.World.Living) if (o.Id == id) { living = o; break; }
+            foreach (Organism o in Everyone(sim.World)) if (o.Id == id) { living = o; break; }
 
             if (!ReferenceEquals(creature, living))
             {
-                into.Add(path + ".Creature (wiring): not the world's living organism " + id);
+                into.Add(path + ".Creature (wiring): not the world's living organism or remains " + id);
             }
         }
 
@@ -763,19 +767,29 @@ namespace Evosim.Farm
             }
         }
 
+        /// <summary>
+        /// Every organism the world holds a body for: the living and then, with contact eating on (D220), the remains
+        /// lying in the water. The remains list is empty with the dial off.
+        /// </summary>
+        private static IEnumerable<Organism> Everyone(World world)
+        {
+            foreach (Organism o in world.Living) yield return o;
+            foreach (Organism o in world.Remains) yield return o;
+        }
+
         private static string LowestDifferingOrganism(World a, World b)
         {
             var byId = new Dictionary<long, Organism>();
-            foreach (Organism o in b.Living) byId[o.Id] = o;
+            foreach (Organism o in Everyone(b)) byId[o.Id] = o;
 
             var ids = new List<long>();
-            foreach (Organism o in a.Living) ids.Add(o.Id);
+            foreach (Organism o in Everyone(a)) ids.Add(o.Id);
             ids.Sort();
 
             foreach (long id in ids)
             {
                 Organism oa = null;
-                foreach (Organism o in a.Living) if (o.Id == id) { oa = o; break; }
+                foreach (Organism o in Everyone(a)) if (o.Id == id) { oa = o; break; }
 
                 if (!byId.TryGetValue(id, out Organism ob)) return "organism " + id + " (missing in the restored twin)";
 
@@ -833,6 +847,10 @@ namespace Evosim.Farm
             // then, the last metabolic step's record since D123), so it is compared.
             "_overlapParts",
             "<PartExposure>k__BackingField", "<UpInBody>k__BackingField",
+
+            // D214's posed mouth points, which the harness fills from the restored links before the
+            // world's intake reads them.
+            "<MouthPoints>k__BackingField", "<MouthPointCount>k__BackingField",
 
             // The reserve a gestating body started the step with (2026-09-24), filled at the top
             // of World.Step before Gestate reads it.

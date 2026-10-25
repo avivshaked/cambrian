@@ -98,6 +98,38 @@ namespace Evosim.Core
         /// <summary>Charged units ever taken from a corpse by a mouth — rule 6. Cumulative.</summary>
         public double UnitsEaten { get; private set; }
 
+        /// <summary>
+        /// Joules mouths have kept (after <see cref="RunConfig.IntakeWasteFraction"/>) from corpses their own
+        /// bite made, ever. Cumulative. The instrument for how much of a grazer's intake is its own kills; it
+        /// changes no number of the world and is not a tunable.
+        /// </summary>
+        public double IntakeOwnKillJoules { get; private set; }
+
+        /// <summary>Joules mouths have kept from corpses another body's bite made, ever. Cumulative.</summary>
+        public double IntakeOtherKillJoules { get; private set; }
+
+        /// <summary>Joules mouths have kept from corpses no bite made (age, starvation, shed parts), ever. Cumulative.</summary>
+        public double IntakeCarrionJoules { get; private set; }
+
+        /// <summary><see cref="IntakeOwnKillJoules"/> over eaters that carry attack as well as intake. Cumulative.</summary>
+        public double MouthedIntakeOwnKillJoules { get; private set; }
+
+        /// <summary><see cref="IntakeOtherKillJoules"/> over eaters that carry attack as well as intake. Cumulative.</summary>
+        public double MouthedIntakeOtherKillJoules { get; private set; }
+
+        /// <summary><see cref="IntakeCarrionJoules"/> over eaters that carry attack as well as intake. Cumulative.</summary>
+        public double MouthedIntakeCarrionJoules { get; private set; }
+
+        /// <summary>
+        /// The simulated second the intake's origin books begin at: 0 for a world founded on this build, and
+        /// the checkpoint's own second for a world restored from layout 19 or older, which carries no corpse
+        /// killer and no origin totals. From that second on the books are exact; before it they hold nothing,
+        /// and a corpse already standing then reads as made by no bite (carrion) whatever made it. A read
+        /// that sums the six totals over a run restored from an older layout is therefore a sum over the part
+        /// of the world after this second. Written into layout 20, so it survives further resumes.
+        /// </summary>
+        public double IntakeOriginBooksFromSeconds { get; private set; }
+
         /// <summary>Corpses a mouth has emptied to nothing, ever. Cumulative.</summary>
         public long CorpsesEaten { get; private set; }
 
@@ -178,7 +210,17 @@ namespace Evosim.Core
 
             _contacts = null;
 
-            return CollectTheDead();
+            int killed = CollectTheDead();
+
+            // D220. The remains lose the parts eaten whole as a living body does, and then every body whose window has
+            // passed closes. After the mouth pass, so a window is whole until the step that closes it.
+            if (Config.ContactEating)
+            {
+                CollectTheDeadRemains();
+                CloseExpiredRemains();
+            }
+
+            return killed;
         }
 
         /// <summary>
@@ -256,6 +298,15 @@ namespace Evosim.Core
             _byId.Clear();
             for (int i = 0; i < _living.Count; i++) _byId[_living[i].Id] = _living[i];
 
+            bool bitesFeed = Config.ContactEating;
+
+            // D226: the dial on a mouth's blow, read once a pass. It is 1 unless contact eating is on.
+            float biteScale = Config.BiteDamageScale;
+
+            // D220: a contact's ids are looked up in the living and the remains together. A remains part is wounded
+            // and bitten exactly as a living part is.
+            if (bitesFeed) for (int i = 0; i < _remains.Count; i++) _byId[_remains[i].Id] = _remains[i];
+
             for (int i = 0; i < contacts.Count; i++)
             {
                 CreatureContact touch = contacts[i];
@@ -275,16 +326,61 @@ namespace Evosim.Core
                 PhenotypePart hittingA = partsA[touch.PartA];
                 PhenotypePart hittingB = partsB[touch.PartB];
 
-                NoteContact(a, touch.PartA);
-                NoteContact(b, touch.PartB);
+                // Remains feel nothing: they have no brain to read the record.
+                if (!a.IsRemains) NoteContact(a, touch.PartA);
+                if (!b.IsRemains) NoteContact(b, touch.PartB);
 
-                Wound(
-                    b, touch.PartB, hittingB, DamageOf(hittingA, hittingB, seconds),
+                // D226: with the dial at 1 the damage handed to Wound is DamageOf's own expression, as it always was.
+                float blowOnB = DamageOf(hittingA, hittingB, seconds);
+                if (biteScale != 1f && hittingA.Intake > 0f && !a.IsRemains) blowOnB *= biteScale;
+
+                // D227: a mouth's blow is counted from the health before and after; the health is only read.
+                bool mouthOnB = blowOnB > 0f && hittingA.Intake > 0f && !a.IsRemains;
+                float healthB0 = mouthOnB ? HealthOf(b, touch.PartB) : 0f;
+
+                float tookFromB = Wound(
+                    b, touch.PartB, hittingB, blowOnB,
                     a.Id, touch.PartA);
-                Wound(
-                    a, touch.PartA, hittingA, DamageOf(hittingB, hittingA, seconds),
+
+                if (mouthOnB) CountMouthBlow(healthB0, b, touch.PartB);
+
+                // D219: the wound takes its share of the bitten part's tissue and offers it to the biting part.
+                if (bitesFeed) OfferBite(a, touch.PartA, hittingA, b, touch.PartB, tookFromB, seconds);
+
+                float blowOnA = DamageOf(hittingB, hittingA, seconds);
+                if (biteScale != 1f && hittingB.Intake > 0f && !b.IsRemains) blowOnA *= biteScale;
+
+                bool mouthOnA = blowOnA > 0f && hittingB.Intake > 0f && !b.IsRemains;
+                float healthA0 = mouthOnA ? HealthOf(a, touch.PartA) : 0f;
+
+                float tookFromA = Wound(
+                    a, touch.PartA, hittingA, blowOnA,
                     b.Id, touch.PartB);
+
+                if (mouthOnA) CountMouthBlow(healthA0, a, touch.PartA);
+
+                if (bitesFeed) OfferBite(b, touch.PartB, hittingB, a, touch.PartA, tookFromA, seconds);
             }
+
+            // D219: every offer of the pass, settled in the order the wounds were made.
+            if (bitesFeed) SettleBites();
+        }
+
+        /// <summary>A part's health as <see cref="Wound"/> will find it: a body with no health array is whole.</summary>
+        private static float HealthOf(Organism creature, int partIndex)
+        {
+            float[] health = creature.PartHealth;
+            return health == null ? 1f : health[partIndex];
+        }
+
+        /// <summary>
+        /// D227: counts one mouth's blow that did damage, and counts it again as finishing when the part had health
+        /// before it and has none now. Reads only; the world's arithmetic is not touched.
+        /// </summary>
+        private void CountMouthBlow(float healthBefore, Organism bitten, int partIndex)
+        {
+            MouthBlows++;
+            if (healthBefore > 0f && !(HealthOf(bitten, partIndex) > 0f)) MouthBlowsFinishing++;
         }
 
         /// <summary>
@@ -307,11 +403,15 @@ namespace Evosim.Core
             return net > 0f ? net * seconds : 0f;
         }
 
-        private void Wound(
+        /// <summary>
+        /// Lowers one part's health by a blow. Returns the share of the part's health it took — D219 reads
+        /// it as the share of the part's tissue that was bitten off; every other caller ignores it.
+        /// </summary>
+        private float Wound(
             Organism creature, int partIndex, PhenotypePart part, float damage, long attackerId,
             int attackerPart)
         {
-            if (!(damage > 0f)) return;
+            if (!(damage > 0f)) return 0f;
 
             NoteAttacker(creature, partIndex, attackerId, attackerPart);
 
@@ -325,11 +425,16 @@ namespace Evosim.Core
                 creature.PartHealth = health;
             }
 
-            float[] lost = creature.PartDamage;
-            if (lost == null)
+            // D220: remains have no brain to sense the damage, so nothing is recorded for one.
+            float[] lost = null;
+            if (!creature.IsRemains)
             {
-                lost = new float[creature.Phenotype.PartCount];
-                creature.PartDamage = lost;
+                lost = creature.PartDamage;
+                if (lost == null)
+                {
+                    lost = new float[creature.Phenotype.PartCount];
+                    creature.PartDamage = lost;
+                }
             }
 
             // A pool of zero is a part with no volume or no toughness to speak of, and any blow at
@@ -344,7 +449,9 @@ namespace Evosim.Core
             // Summed over this step's blows only: ForgetWhatWasFelt zeroed the array at the top of
             // the pass (D123). Health is a share of the pool, so the loss already is one, and the
             // step's sum cannot pass 1 because healing comes after this pass.
-            lost[partIndex] += was - health[partIndex];
+            if (lost != null) lost[partIndex] += was - health[partIndex];
+
+            return was - health[partIndex];
         }
 
         /// <summary>Remembers whose blow this was, for as long as this pass lasts.</summary>
@@ -411,6 +518,9 @@ namespace Evosim.Core
         /// </remarks>
         private void ApplyIntake(float seconds)
         {
+            // D219: a mouth eats only what it touches, so the corpse meal never runs.
+            if (Config.ContactEating) return;
+
             if (!(Config.IntakeReachMetres > 0f) || _corpses.Count == 0) return;
 
             bool anyMouth = false;
@@ -440,6 +550,11 @@ namespace Evosim.Core
                 _mouthRates.Add(MouthRate(creature, seconds));
             }
 
+            // D214. With the tunable on, a body handed no points this step is measured from its centre
+            // and counted, and the columns' margin is the widest a mouth point lies from its body's
+            // centre across x and z. Off, nothing here runs and `margin` stays 0.
+            double margin = Config.IntakeReachFromMouth ? MouthMargin() : 0d;
+
             WorldPhaseProbe.Count(WorldPhaseProbe.Mouths, _mouths.Count);
 
             // Each corpse's reach, once, and the largest: the columns are sized from it. A corpse's
@@ -456,7 +571,10 @@ namespace Evosim.Core
                 if (r > largest) largest = r;
             }
 
-            bool columns = IntakeByColumns && SetIntakeColumns(largest);
+            // A mouth point lies up to `margin` from its body's centre, which the columns key on, so the
+            // columns are widened by it: a point within a corpse's reach puts its centre within reach plus
+            // margin. Off the margin is 0 and the argument is the largest reach itself, unchanged.
+            bool columns = IntakeByColumns && SetIntakeColumns(margin > 0d ? largest + margin * (1d + 1e-6) : largest);
             if (columns)
             {
                 FillColumns(corpses, i => _corpses[i].Position.X, i => _corpses[i].Position.Z,
@@ -566,11 +684,59 @@ namespace Evosim.Core
                 DetritusDepositedTotal += waste;
             }
 
-            creature.Energy += joules - waste;
-            creature.MouthJoules += joules - waste;
+            // What the mouth keeps, once: the very value both lines below added before this instrument, so
+            // nothing in the world's arithmetic moves. The origin books sum it where it is handed over.
+            double kept = joules - waste;
+
+            creature.Energy += kept;
+            creature.MouthJoules += kept;
             UnitsEaten += joules / perUnit;
 
+            NoteOrigin(creature, corpse, kept);
+
             if (corpse.Joules <= 0d) CorpsesEaten++;
+        }
+
+        /// <summary>
+        /// Books the joules a mouth kept by whose bite made the corpse it took them from: its own, another's,
+        /// or none (carrion). A sum of the amount <see cref="Take"/> hands over, taken where it hands it over;
+        /// no rule of the world reads any of the six totals or the body's three.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Classes.</b> The corpse's <see cref="Corpse.KilledBy"/> is the eater's own id: own kill. Another
+        /// body's id: other kill. -1, which is every corpse a bite did not make: carrion. The three add to
+        /// <see cref="Organism.MouthJoules"/> for a body and to the kept intake for the world, to within the
+        /// rounding of adding the same amounts in a different order.
+        /// </para>
+        /// <para>
+        /// <b>The mouthed totals</b> are the same sums over eaters that carry attack as well as intake
+        /// (<see cref="Organism.HasAttack"/> and <see cref="Organism.HasIntake"/>).
+        /// </para>
+        /// </remarks>
+        private void NoteOrigin(Organism creature, Corpse corpse, double kept)
+        {
+            long killer = corpse.KilledBy;
+            bool mouthed = creature.HasAttack && creature.HasIntake;
+
+            if (killer >= 0L && killer == creature.Id)
+            {
+                creature.MouthJoulesOwnKill += kept;
+                IntakeOwnKillJoules += kept;
+                if (mouthed) MouthedIntakeOwnKillJoules += kept;
+            }
+            else if (killer >= 0L)
+            {
+                creature.MouthJoulesOtherKill += kept;
+                IntakeOtherKillJoules += kept;
+                if (mouthed) MouthedIntakeOtherKillJoules += kept;
+            }
+            else
+            {
+                creature.MouthJoulesCarrion += kept;
+                IntakeCarrionJoules += kept;
+                if (mouthed) MouthedIntakeCarrionJoules += kept;
+            }
         }
 
         // ------------------------------------------------------------------ the intake's columns
@@ -735,6 +901,9 @@ namespace Evosim.Core
                 }
             }
 
+            // The owner's intake scale (RunConfig.IntakeScale). At 1 nothing is multiplied.
+            if (Config.IntakeScale != 1f) rate *= Config.IntakeScale;
+
             return rate * seconds;
         }
 
@@ -761,14 +930,128 @@ namespace Evosim.Core
             return radius + Config.IntakeReachMetres;
         }
 
+        /// <summary>
+        /// Mouth points the world has handed a body this step that were missing, per body per intake pass,
+        /// with <see cref="RunConfig.IntakeReachFromMouth"/> on: the body was measured from its centre.
+        /// Cumulative, a diagnostic that is not checkpointed. Stays 0 with the tunable off.
+        /// </summary>
+        public long MouthPointFallbacks { get; private set; }
+
+        /// <summary>
+        /// Hands the world the posed mouth points of one body's eating parts, in Core's frame, for this
+        /// step's intake — D214. The harness poses them from the solver's links, with
+        /// <see cref="MouthPoint.Local"/> and <see cref="MouthPoint.Posed"/>; Core poses nothing.
+        /// </summary>
+        /// <param name="creature">The body.</param>
+        /// <param name="points">3 floats per point: x, y, z. Only the first <c>3 * count</c> are read.</param>
+        /// <param name="count">How many points. 0 is none, and the body is measured from its centre.</param>
+        /// <remarks>
+        /// A no-op with <see cref="RunConfig.IntakeReachFromMouth"/> off, so nothing is allocated or kept.
+        /// A non-finite point is refused as <see cref="Observe(Organism, Float3, float)"/> refuses a
+        /// non-finite centre: the solver has diverged.
+        /// </remarks>
+        public void ObserveMouths(Organism creature, float[] points, int count)
+        {
+            if (creature == null) throw new ArgumentNullException(nameof(creature));
+            if (!Config.IntakeReachFromMouth) return;
+
+            if (count < 0 || (count > 0 && (points == null || points.Length < 3 * count)))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(count), count, "The points array must hold 3 floats for each of the " + count + " points.");
+            }
+
+            for (int i = 0; i < 3 * count; i++)
+            {
+                if (float.IsNaN(points[i]) || float.IsInfinity(points[i]))
+                {
+                    throw new ArgumentOutOfRangeException(
+                        nameof(points), points[i],
+                        $"Creature {creature.Id} has a non-finite mouth point, so the solver has already diverged.");
+                }
+            }
+
+            if (count == 0)
+            {
+                creature.MouthPointCount = 0;
+                return;
+            }
+
+            float[] own = creature.MouthPoints;
+            if (own == null || own.Length < 3 * count)
+            {
+                own = new float[3 * count];
+                creature.MouthPoints = own;
+            }
+
+            Array.Copy(points, own, 3 * count);
+            creature.MouthPointCount = count;
+        }
+
+        /// <summary>
+        /// With the tunable on: counts the mouths handed no points and returns the largest distance across
+        /// x and z (the seam's shorter arc) from a mouth's centre to one of its points.
+        /// </summary>
+        private double MouthMargin()
+        {
+            double widest = 0d;
+
+            for (int m = 0; m < _mouths.Count; m++)
+            {
+                Organism creature = _mouths[m];
+                int count = creature.MouthPointCount;
+                if (count <= 0 || creature.MouthPoints == null)
+                {
+                    MouthPointFallbacks++;
+                    continue;
+                }
+
+                float[] p = creature.MouthPoints;
+                for (int k = 0; k < count; k++)
+                {
+                    double dx = Separation(creature.X, p[3 * k], Nutrients.LengthMetres);
+                    double dz = Separation(creature.Z, p[3 * k + 2], Nutrients.WidthMetres);
+                    double d = Math.Sqrt(dx * dx + dz * dz);
+                    if (d > widest) widest = d;
+                }
+            }
+
+            return widest;
+        }
+
         private bool Within(Organism creature, Corpse corpse, double reach)
         {
+            // D214. Each eating part from its own point; a body with none is measured from its centre.
+            if (Config.IntakeReachFromMouth && creature.MouthPointCount > 0 && creature.MouthPoints != null)
+            {
+                return WithinOfAMouth(creature, corpse, reach);
+            }
+
             Float3 at = corpse.Position;
             double dy = (double)creature.HeightY - at.Y;
             double dx = Separation(creature.X, at.X, Nutrients.LengthMetres);
             double dz = Separation(creature.Z, at.Z, Nutrients.WidthMetres);
 
             return dx * dx + dy * dy + dz * dz <= reach * reach;
+        }
+
+        /// <summary><see cref="Within"/> for a body with mouth points: any one of them in reach is enough.</summary>
+        private bool WithinOfAMouth(Organism creature, Corpse corpse, double reach)
+        {
+            Float3 at = corpse.Position;
+            float[] p = creature.MouthPoints;
+            int count = creature.MouthPointCount;
+
+            for (int k = 0; k < count; k++)
+            {
+                double dy = (double)p[3 * k + 1] - at.Y;
+                double dx = Separation(p[3 * k], at.X, Nutrients.LengthMetres);
+                double dz = Separation(p[3 * k + 2], at.Z, Nutrients.WidthMetres);
+
+                if (dx * dx + dy * dy + dz * dz <= reach * reach) return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -816,6 +1099,9 @@ namespace Evosim.Core
             double step = (double)Config.HealingPerSecond * seconds;
             if (!(step > 0d)) return;
 
+            // D219: healing also re-buys the tissue the restored health stands for.
+            bool rebuys = Config.ContactEating;
+
             for (int i = 0; i < _living.Count; i++)
             {
                 Organism creature = _living[i];
@@ -828,6 +1114,10 @@ namespace Evosim.Core
                 int n = health.Length < parts.Count ? health.Length : parts.Count;
 
                 double wanted = 0d;
+                double wantedTissue = 0d;
+                int freeLink = rebuys && Config.FreeFirstLinkCubicMetres > 0f
+                    ? Metabolism.FreeLinkIndex(creature.Phenotype)
+                    : -1;
 
                 for (int p = 0; p < n; p++)
                 {
@@ -838,12 +1128,19 @@ namespace Evosim.Core
 
                     wanted += share * Metabolism.HealthPool(parts[p], Config) *
                               Config.HealingJoulesPerHealth;
+
+                    if (rebuys) wantedTissue += share * Metabolism.PartTissueJoules(creature.Phenotype, parts[p], Config, freeLink);
                 }
 
-                if (!(wanted > 0d)) continue;
+                // The health's price and the tissue's together: a body that cannot pay both heals in proportion
+                // to what it can pay. With the dial off wantedTissue is 0 and this is `wanted` to the bit.
+                double wantedAll = wanted + wantedTissue;
+                if (!(wantedAll > 0d)) continue;
 
-                double afford = wanted <= creature.Energy ? 1d : creature.Energy / wanted;
+                double afford = wantedAll <= creature.Energy ? 1d : creature.Energy / wantedAll;
                 if (!(afford > 0d)) continue;
+
+                double rebought = 0d;
 
                 for (int p = 0; p < n; p++)
                 {
@@ -852,8 +1149,15 @@ namespace Evosim.Core
                     double share = 1d - health[p];
                     if (share > step) share = step;
 
+                    float before = health[p];
                     float healed = (float)(health[p] + share * afford);
                     health[p] = healed > 1f ? 1f : healed;
+
+                    if (rebuys)
+                    {
+                        rebought += (double)(health[p] - before) *
+                                    Metabolism.PartTissueJoules(creature.Phenotype, parts[p], Config, freeLink);
+                    }
                 }
 
                 double spent = wanted * afford;
@@ -863,11 +1167,29 @@ namespace Evosim.Core
                 EnergyOut += spent;
                 HealingJoules += spent;
 
+                if (rebuys)
+                {
+                    // Charged matter staying charged: from the reserve into the tissue account, nothing burnt.
+                    if (rebought > creature.Energy) rebought = creature.Energy > 0d ? creature.Energy : 0d;
+                    creature.Energy -= rebought;
+                    creature.TissueJoules += rebought;
+                    HealTissueJoules += rebought;
+                }
+
                 // The one float in the transfer, and it is the field's API rather than an account
                 // — World.Metabolise's burn says so at the same line, for the same reason.
-                float returned = (float)(spent / Config.JoulesPerUnit);
-                Matter.Deposit(creature.Point, returned);
-                BurntTotal += returned;
+                // D206: a plant keeps the units of its healing, as of every burn. Off, the
+                // float deposit below is the recorded one.
+                if (Config.PlantsKeepMatter && creature.HasPhotosyntheticTissue)
+                {
+                    ReturnSpent(creature, spent / Config.JoulesPerUnit);
+                }
+                else
+                {
+                    float returned = (float)(spent / Config.JoulesPerUnit);
+                    Matter.Deposit(creature.Point, returned);
+                    BurntTotal += returned;
+                }
             }
         }
 
@@ -987,7 +1309,7 @@ namespace Evosim.Core
             {
                 BodiesEaten++;
 
-                if (Config.CorpseDecayPerSecond > 0f) CorpsesFromKills++;
+                if (Config.CorpseDecayPerSecond > 0f && !Config.ContactEating) CorpsesFromKills++;
 
                 // Before Bury, which zeroes both accounts and queues the death row: what the body
                 // was worth is what the kill moved, and the two rows then read in the order the
@@ -997,7 +1319,7 @@ namespace Evosim.Core
                     tissueJoules: creature.TissueJoules,
                     reserveJoules: Math.Max(0d, creature.Energy) + creature.GestationJoules);
 
-                Bury(creature, index, DeathCause.Eaten);
+                Bury(creature, index, DeathCause.Eaten, killedBy: by.By);
                 return true;
             }
 
@@ -1020,6 +1342,9 @@ namespace Evosim.Core
                     "plan change that did not go through AdoptPlan.");
             }
 
+            // D220: the paths the body had lost before this part, which the remains cut off it were developed with.
+            List<int[]> lostBefore = creature.LostPartPaths;
+
             var lost = creature.LostPartPaths != null
                 ? new List<int[]>(creature.LostPartPaths)
                 : new List<int[]>(1);
@@ -1034,7 +1359,7 @@ namespace Evosim.Core
             if (adult.PartCount == 0)
             {
                 BodiesEaten++;
-                if (Config.CorpseDecayPerSecond > 0f) CorpsesFromKills++;
+                if (Config.CorpseDecayPerSecond > 0f && !Config.ContactEating) CorpsesFromKills++;
 
                 // The bite did not take the root and the body died of it anyway, so the row says
                 // root: what it means is that the loss took the body, which is what a reader
@@ -1044,7 +1369,7 @@ namespace Evosim.Core
                     tissueJoules: creature.TissueJoules,
                     reserveJoules: Math.Max(0d, creature.Energy) + creature.GestationJoules);
 
-                Bury(creature, index, DeathCause.Eaten);
+                Bury(creature, index, DeathCause.Eaten, killedBy: by.By);
                 return true;
             }
 
@@ -1061,6 +1386,31 @@ namespace Evosim.Core
                 : Metabolism.TissueJoules(body, Config);
 
             double released = creature.TissueJoules - tissue;
+
+            // D219: the account holds the parts still held, so what leaves with the limbs is the account
+            // before less the account the survivors hold on the new plan. The intact figure `tissue` is
+            // compared with the intact body (account plus what was eaten), which is the same difference:
+            // the eaten share of the part that died left the account when it was bitten.
+            LimbCut limb = null;
+            if (Config.ContactEating)
+            {
+                int[] dialMap = Developer.MatchParts(before, after);
+                double survivors = UneatenTissue(body, Remap(creature.PartHealth, dialMap));
+                released = creature.TissueJoules - survivors;
+
+                // D220: what the body was, taken before the plan changes, for the remains cut off it.
+                limb = new LimbCut
+                {
+                    Old = wasBody,
+                    OldHealth = creature.PartHealth == null ? null : (float[])creature.PartHealth.Clone(),
+                    NewToOld = dialMap,
+                    PriorPending = creature.PartMapFromPreviousPlan,
+                    DeadPart = partIndex,
+                    Counts = creature.ModuleCounts == null ? null : (int[])creature.ModuleCounts.Clone(),
+                    LostPaths = lostBefore == null ? null : new List<int[]>(lostBefore),
+                };
+            }
+
             if (released < 0d) released = 0d;
 
             // D128, the owner's addition: a destroyed part ages the body, one doubling of its
@@ -1108,8 +1458,17 @@ namespace Evosim.Core
             // the mass-floor burial, which is a death and belongs after this.
             NoteKill(creature, partIndex, by, rootLost: false, partsLost, released, fromReserve);
 
-            if (given > 0f && Config.CorpseDecayPerSecond > 0f) CorpsesFromKills++;
-            ShedRemains(creature, given, bitten: true, leaf: wasLeaf);
+            if (given > 0f && Config.CorpseDecayPerSecond > 0f && !Config.ContactEating) CorpsesFromKills++;
+
+            // D219: no corpse. The limbs' tissue and their share of the reserve go to the remains.
+            if (Config.ContactEating)
+            {
+                LeaveRemains(creature, released, fromReserve, wholeBody: false, killedBy: by.By, cut: limb);
+            }
+            else
+            {
+                ShedRemains(creature, given, bitten: true, leaf: wasLeaf, killedBy: by.By);
+            }
 
             // The owner's rule of 2026-09-19, applied to what is left: a body whose smallest part
             // is under the newborn mass floor is not a body this world builds, and it dies of the

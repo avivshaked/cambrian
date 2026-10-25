@@ -91,6 +91,10 @@ namespace Evosim.Farm
             // part is carried in. Off is the recorded world.
             Flag("EVOSIM_RIGID_FLOORS", (s, v) => s.RigidFloors = v),
 
+            // D199: an edge's scale lengthens once on a path and still shortens at every copy.
+            // Off is the recorded world, where every copy compounds.
+            Flag("EVOSIM_SCALE_LENGTHENS_ONCE", (s, v) => s.ScaleLengthensOnce = v),
+
             // D109: the matter seeded as islands, founders planted in them, and the light's shade
             // map from the same noise, drifting or not. Every default is the recorded world.
             Num("EVOSIM_MATTER_ISLANDS", 0f, (s, v) => s.MatterIslands = v),
@@ -189,6 +193,8 @@ namespace Evosim.Farm
             Text("EVOSIM_RESUME", (s, v) => s.ResumeFrom = v),
             Num("EVOSIM_RESUME_AT", 0f, (s, v) => s.ResumeAt = v),
             Flag("EVOSIM_ALLOW_SOURCE_MISMATCH", (s, v) => s.AllowSourceMismatch = v),
+            Text("EVOSIM_RESUME_CONFIG", (s, v) => s.ResumeConfig = v),
+            Flag("EVOSIM_RESUME_TRICKLE_OFF", (s, v) => s.ResumeTrickleOff = v),
 
             // Which engine steps the bodies, and how the gpu one runs (logbook/specs/
             // gpu-port-spec.md). Farm settings like the thread count, never tunables: an engine is
@@ -331,6 +337,9 @@ namespace Evosim.Farm
             Num("EVOSIM_CELLTYPE_MUTATION", MutationRates.Default.CellTypeChance, (s, v) => s.CellTypeMutation = v),
             Num("EVOSIM_CLEARANCE", 1.0f, (s, v) => s.Clearance = v),
             Num("EVOSIM_TISSUE_ENERGY", 0f, (s, v) => s.TissueEnergy = v),
+            // The owner's leaf energy (2026-10-19): the photosynthetic cell's tissue energy, times this. 1 is the
+            // recorded table.
+            Num("EVOSIM_LEAF_TISSUE_ENERGY", 1f, (s, v) => s.LeafTissueEnergy = v),
             Num("EVOSIM_OVERHEAD", D.PerOffspringOverheadJoules, (s, v) => s.Overhead = v),
 
             // The ruling of 2026-09-24. EVOSIM_OVERHEAD is the overhead's floor and stays its
@@ -380,9 +389,15 @@ namespace Evosim.Farm
             Flag("EVOSIM_CORPSE_SETTLE", (s, v) => s.CorpseSettle = v),
             Num("EVOSIM_CORPSE_FLOOR", D.CorpseLeavesBelowFraction, (s, v) => s.CorpseFloor = v),
             Num("EVOSIM_CORPSE_DECAY_SETTLED", D.CorpseSettledDecayPerSecond, (s, v) => s.CorpseDecaySettled = v),
+            // D212: the half-life of a corpse's food value, seconds. 0 is off, every recorded world.
+            Num("EVOSIM_CORPSE_HALF_LIFE", D.CorpseHalfLifeSeconds, (s, v) => s.CorpseHalfLife = v),
             Custom("EVOSIM_SHAPE", (s, env) => s.WorldShape = WorldShapeOf(env, "EVOSIM_SHAPE")),
             Num("EVOSIM_MATTER_BUDGET", D.MatterBudgetUnits, (s, v) => s.MatterBudget = v),
             Flag("EVOSIM_DRIVE_LIMIT_ALWAYS", (s, v) => s.DriveLimitAlways = v),
+
+            // D199: the drag limiter's law by the welded body, and its gate opened at 0.01.
+            Flag("EVOSIM_DRAG_LIMIT_WELDED", (s, v) => s.DragLimitWelded = v),
+            Flag("EVOSIM_DRAG_LIMIT_ALWAYS", (s, v) => s.DragLimitAlways = v),
             Num("EVOSIM_BED_RELIEF", D.BedReliefMetres, (s, v) => s.BedRelief = v),
             Num("EVOSIM_BED_TILT", D.BedTiltMetres, (s, v) => s.BedTilt = v),
             Num("EVOSIM_BED_SCALE", D.BedScaleMetres, (s, v) => s.BedScale = v),
@@ -406,6 +421,38 @@ namespace Evosim.Farm
             Num("EVOSIM_REEF_CAP_THICKNESS", D.ReefCapThicknessMetres, (s, v) => s.ReefCapThickness = v),
             Num("EVOSIM_REEF_STEM_FRACTION", D.ReefStemRadiusFraction, (s, v) => s.ReefStemFraction = v),
             Num("EVOSIM_REEF_FADE", D.ReefFadeMetres, (s, v) => s.ReefFade = v),
+            // D194's coral (logbook/specs/coral-build.md): every reef a colony of capsules and plates
+            // on the islands, at EVOSIM_REEF_SHAPE coral with EVOSIM_REEF_COVER 0. Mushroom by default,
+            // so a launcher that names none of these runs the reefs it always ran; each coral dial
+            // defaults to RunConfig's, D194's and D198's values.
+            Custom("EVOSIM_REEF_SHAPE", (s, env) => s.ReefShape = ReefShapeOf(env, "EVOSIM_REEF_SHAPE")),
+            Num("EVOSIM_CORAL_ISLAND_SHARE", D.CoralIslandShare, (s, v) => s.CoralIslandShare = v),
+            Num("EVOSIM_CORAL_ISLAND_ROOF", D.CoralIslandRoof, (s, v) => s.CoralIslandRoof = v),
+            Int("EVOSIM_CORAL_MAX_COLONIES", D.CoralMaxColonies, (s, v) => s.CoralMaxColonies = v),
+            Int("EVOSIM_CORAL_MAX_PIECES_PER_COLONY", D.CoralMaxPiecesPerColony, (s, v) => s.CoralMaxPiecesPerColony = v),
+            Int("EVOSIM_CORAL_MAX_PIECES", D.CoralMaxPieces, (s, v) => s.CoralMaxPieces = v),
+            Num("EVOSIM_CORAL_TRUNK_HEIGHT_MIN", D.CoralTrunkHeightMinMetres, (s, v) => s.CoralTrunkHeightMin = v),
+            Num("EVOSIM_CORAL_TRUNK_HEIGHT_MAX", D.CoralTrunkHeightMaxMetres, (s, v) => s.CoralTrunkHeightMax = v),
+            Num("EVOSIM_CORAL_TRUNK_RADIUS_MIN", D.CoralTrunkRadiusMinMetres, (s, v) => s.CoralTrunkRadiusMin = v),
+            Num("EVOSIM_CORAL_TRUNK_RADIUS_MAX", D.CoralTrunkRadiusMaxMetres, (s, v) => s.CoralTrunkRadiusMax = v),
+            Int("EVOSIM_CORAL_CHILDREN_MIN", D.CoralChildrenMin, (s, v) => s.CoralChildrenMin = v),
+            Int("EVOSIM_CORAL_CHILDREN_MAX", D.CoralChildrenMax, (s, v) => s.CoralChildrenMax = v),
+            Num("EVOSIM_CORAL_TILT_MEAN", D.CoralTiltMeanDegrees, (s, v) => s.CoralTiltMean = v),
+            Num("EVOSIM_CORAL_TILT_SPREAD", D.CoralTiltSpreadDegrees, (s, v) => s.CoralTiltSpread = v),
+            Num("EVOSIM_CORAL_LENGTH_FACTOR", D.CoralLengthFactor, (s, v) => s.CoralLengthFactor = v),
+            Num("EVOSIM_CORAL_RADIUS_FACTOR", D.CoralRadiusFactor, (s, v) => s.CoralRadiusFactor = v),
+            Int("EVOSIM_CORAL_MAX_DEPTH", D.CoralMaxDepth, (s, v) => s.CoralMaxDepth = v),
+            Num("EVOSIM_CORAL_MIN_RADIUS", D.CoralMinRadiusMetres, (s, v) => s.CoralMinRadius = v),
+            Num("EVOSIM_CORAL_PLATE_CHANCE", D.CoralPlateChance, (s, v) => s.CoralPlateChance = v),
+            Num("EVOSIM_CORAL_PLATE_RADIUS_MIN", D.CoralPlateRadiusMinMetres, (s, v) => s.CoralPlateRadiusMin = v),
+            Num("EVOSIM_CORAL_PLATE_RADIUS_MAX", D.CoralPlateRadiusMaxMetres, (s, v) => s.CoralPlateRadiusMax = v),
+            Num("EVOSIM_CORAL_PLATE_THICKNESS", D.CoralPlateThicknessMetres, (s, v) => s.CoralPlateThickness = v),
+            Num("EVOSIM_CORAL_FILLET", D.CoralFilletMetres, (s, v) => s.CoralFillet = v),
+            Num("EVOSIM_CORAL_FADE", D.CoralFadeMetres, (s, v) => s.CoralFade = v),
+            Num("EVOSIM_CORAL_FADE_FLOOR", D.CoralFadeFloor, (s, v) => s.CoralFadeFloor = v),
+            Num("EVOSIM_CORAL_TRANSMISSION", D.CoralTransmission, (s, v) => s.CoralTransmission = v),
+            Num("EVOSIM_CORAL_GRID_CELL", D.CoralGridCellMetres, (s, v) => s.CoralGridCell = v),
+
             Num("EVOSIM_NEWBORN_RESERVE", D.NewbornReserveFraction, (s, v) => s.NewbornReserve = v),
             Num("EVOSIM_GROWTH_FLOOR", D.GrowthReserveFloor, (s, v) => s.GrowthFloor = v),
             Num("EVOSIM_MIN_NEWBORN_KG", D.MinNewbornPartKilograms, (s, v) => s.MinNewbornKg = v),
@@ -430,9 +477,21 @@ namespace Evosim.Farm
             Num("EVOSIM_HEAL", D.HealingPerSecond, (s, v) => s.Healing = v),
             Num("EVOSIM_HEAL_COST", D.HealingJoulesPerHealth, (s, v) => s.HealingCost = v),
             Num("EVOSIM_INTAKE_REACH", D.IntakeReachMetres, (s, v) => s.IntakeReach = v),
+            // D214: measure the reach from each eating part's mouth point, not the body's centre. 0 is off.
+            Flag("EVOSIM_INTAKE_REACH_FROM_MOUTH", (s, v) => s.IntakeReachFromMouth = v),
             Num("EVOSIM_INTAKE_WASTE", D.IntakeWasteFraction, (s, v) => s.IntakeWaste = v),
             Num("EVOSIM_PRICE_ATTACK", D.AttackWattsPerUnit, (s, v) => s.PriceAttack = v),
             Num("EVOSIM_PRICE_INTAKE", D.IntakeWattsPerUnit, (s, v) => s.PriceIntake = v),
+            // The owner's intake scale (2026-10-19). 1 is every recorded mouth.
+            Num("EVOSIM_INTAKE_SCALE", 1f, (s, v) => s.IntakeScale = v),
+            // D219, D220: a mouth eats only what it touches; a bite feeds as it wounds. Off is every recorded world.
+            Flag("EVOSIM_CONTACT_EATING", (s, v) => s.ContactEating = v),
+            // D220: how long the dead stay edible, seconds. Read only with the dial above on.
+            Num("EVOSIM_REMAINS_WINDOW", D.RemainsWindowSeconds, (s, v) => s.RemainsWindow = v),
+            // D224: a bite on a living body takes its share of the reserve and gestation account too. Read only with the dial above on.
+            Flag("EVOSIM_BITE_TAKES_STORE", (s, v) => s.BiteTakesStore = v),
+            // D226: a multiplier on the damage of a mouth's blow. Read only with the dial above on.
+            Num("EVOSIM_BITE_DAMAGE_SCALE", 1f, (s, v) => s.BiteDamageScale = v),
 
             // D177: the consumer cell's upkeep, W/m3. The value already lives in every config's cell
             // table, so the knob adds no field; unset is ConsumerCell's own, the recorded world.
@@ -443,6 +502,14 @@ namespace Evosim.Farm
 
             // D114: a contact sphere on every part rather than one a body. Off is the recorded world.
             Flag("EVOSIM_CONTACT_PER_PART", (s, v) => s.ContactPerPart = v),
+
+            // D204: bodies touch, and the smells reach, across the box's seams. Off is the recorded box.
+            Flag("EVOSIM_READ_ACROSS_SEAMS", (s, v) => s.ReadAcrossSeams = v),
+
+            // D206: a plant keeps the units of what it burns. Off is the recorded economy.
+            Flag("EVOSIM_PLANTS_KEEP_MATTER", (s, v) => s.PlantsKeepMatter = v),
+            // D207: own leaves first, and D206's share made smooth. Off is D206 as first built.
+            Flag("EVOSIM_PLANTS_KEEP_OWN_FIRST", (s, v) => s.PlantsKeepOwnFirst = v),
 
             // D137: sliding friction at the rock and the glass. 0 is the recorded, frictionless contact.
             Num("EVOSIM_BED_FRICTION", 0f, (s, v) => s.BedFriction = v),
@@ -683,6 +750,16 @@ namespace Evosim.Farm
                 }
             }
 
+            // The owner's leaf energy (2026-10-19), after the line above: the photosynthetic cell alone, in the
+            // cell table the config carries and hashes, so a world with it replays from its own config.json.
+            // A leaf costs this much more to build, paid from light, and its corpse holds this much more. At 1
+            // the table is not touched.
+            if (s.LeafTissueEnergy != 1f)
+            {
+                CellType leaf = config.CellTypes.Resolve(CellTypeIds.Photosynthetic);
+                leaf.TissueEnergyPerCubicMetre = leaf.TissueEnergyPerCubicMetre * s.LeafTissueEnergy;
+            }
+
             config.PerOffspringOverheadJoules = s.Overhead;
             config.PerOffspringOverheadPerTissueJoule = s.OverheadPerTissue;
             config.Mutation.GestationModeChance = s.GestationModeChance;
@@ -750,6 +827,7 @@ namespace Evosim.Farm
             config.SelfOverlapDepthFraction = s.SelfOverlap;
             config.Development.MaxBodyReachMetres = s.MaxReach;
             config.Development.FloorsWeighRigidGroups = s.RigidFloors;
+            config.Development.ScaleLengthensOnce = s.ScaleLengthensOnce;
 
             config.MatterIslandWavelengthMetres = s.MatterIslands;
             config.MatterIslandCover = s.MatterIslandCover;
@@ -825,9 +903,12 @@ namespace Evosim.Farm
             config.CorpseSettles = s.CorpseSettle;
             config.CorpseLeavesBelowFraction = s.CorpseFloor;
             config.CorpseSettledDecayPerSecond = s.CorpseDecaySettled;
+            config.CorpseHalfLifeSeconds = s.CorpseHalfLife;
             config.WorldShape = s.WorldShape;
             config.MatterBudgetUnits = s.MatterBudget;
             config.DriveLimitAtEveryStep = s.DriveLimitAlways;
+            config.DragLimitByWeldedBody = s.DragLimitWelded;
+            config.DragLimitAtEveryStep = s.DragLimitAlways;
 
             config.BedReliefMetres = s.BedRelief;
             config.BedTiltMetres = s.BedTilt;
@@ -845,6 +926,34 @@ namespace Evosim.Farm
             config.ReefCapThicknessMetres = s.ReefCapThickness;
             config.ReefStemRadiusFraction = s.ReefStemFraction;
             config.ReefFadeMetres = s.ReefFade;
+
+            config.ReefShape = s.ReefShape;
+            config.CoralIslandShare = s.CoralIslandShare;
+            config.CoralIslandRoof = s.CoralIslandRoof;
+            config.CoralMaxColonies = s.CoralMaxColonies;
+            config.CoralMaxPiecesPerColony = s.CoralMaxPiecesPerColony;
+            config.CoralMaxPieces = s.CoralMaxPieces;
+            config.CoralTrunkHeightMinMetres = s.CoralTrunkHeightMin;
+            config.CoralTrunkHeightMaxMetres = s.CoralTrunkHeightMax;
+            config.CoralTrunkRadiusMinMetres = s.CoralTrunkRadiusMin;
+            config.CoralTrunkRadiusMaxMetres = s.CoralTrunkRadiusMax;
+            config.CoralChildrenMin = s.CoralChildrenMin;
+            config.CoralChildrenMax = s.CoralChildrenMax;
+            config.CoralTiltMeanDegrees = s.CoralTiltMean;
+            config.CoralTiltSpreadDegrees = s.CoralTiltSpread;
+            config.CoralLengthFactor = s.CoralLengthFactor;
+            config.CoralRadiusFactor = s.CoralRadiusFactor;
+            config.CoralMaxDepth = s.CoralMaxDepth;
+            config.CoralMinRadiusMetres = s.CoralMinRadius;
+            config.CoralPlateChance = s.CoralPlateChance;
+            config.CoralPlateRadiusMinMetres = s.CoralPlateRadiusMin;
+            config.CoralPlateRadiusMaxMetres = s.CoralPlateRadiusMax;
+            config.CoralPlateThicknessMetres = s.CoralPlateThickness;
+            config.CoralFilletMetres = s.CoralFillet;
+            config.CoralFadeMetres = s.CoralFade;
+            config.CoralFadeFloor = s.CoralFadeFloor;
+            config.CoralTransmission = s.CoralTransmission;
+            config.CoralGridCellMetres = s.CoralGridCell;
 
             config.NewbornReserveFraction = s.NewbornReserve;
             config.GrowthReserveFloor = s.GrowthFloor;
@@ -864,13 +973,22 @@ namespace Evosim.Farm
             config.HealingPerSecond = s.Healing;
             config.HealingJoulesPerHealth = s.HealingCost;
             config.IntakeReachMetres = s.IntakeReach;
+            config.IntakeReachFromMouth = s.IntakeReachFromMouth;
             config.IntakeWasteFraction = s.IntakeWaste;
             config.AttackWattsPerUnit = s.PriceAttack;
             config.IntakeWattsPerUnit = s.PriceIntake;
+            config.IntakeScale = s.IntakeScale;
+            config.ContactEating = s.ContactEating;
+            config.RemainsWindowSeconds = s.RemainsWindow;
+            config.BiteTakesStore = s.BiteTakesStore;
+            config.BiteDamageScale = s.BiteDamageScale;
             config.ProtectionWattsPerUnit = s.PriceProtection;
             config.ToughnessWattsPerUnit = s.PriceToughness;
             config.Mutation.AttributeMutationChance = s.AttributeMutation;
             config.ContactPerPart = s.ContactPerPart;
+            config.ReadAcrossSeams = s.ReadAcrossSeams;
+            config.PlantsKeepMatter = s.PlantsKeepMatter;
+            config.PlantsKeepOwnFirst = s.PlantsKeepOwnFirst;
             config.BedFriction = s.BedFriction;
 
             config.InoculateAtSeconds = s.InoculateAt;
@@ -1088,6 +1206,20 @@ namespace Evosim.Farm
                 name + " is '" + raw + "', which is neither 'per-node' nor 'central'.");
         }
 
+        private static ReefShape ReefShapeOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrEmpty(raw)) return ReefShape.Mushroom;
+
+            switch (raw.Trim().ToLowerInvariant())
+            {
+                case "mushroom": return ReefShape.Mushroom;
+                case "coral": return ReefShape.Coral;
+            }
+
+            throw new ArgumentException(name + " is '" + raw + "', which is neither 'mushroom' nor 'coral'.");
+        }
+
         private static CurrentMode CurrentModeOf(Lookup env, string name)
         {
             string raw = env(name);
@@ -1097,10 +1229,11 @@ namespace Evosim.Farm
             {
                 case "rolls": return CurrentMode.Rolls;
                 case "transport": return CurrentMode.Transport;
+                case "ocean": return CurrentMode.Ocean;
             }
 
             throw new ArgumentException(
-                name + " is '" + raw + "', which is neither 'rolls' nor 'transport'.");
+                name + " is '" + raw + "', which is none of 'rolls', 'transport' and 'ocean'.");
         }
 
         private static WorldShape WorldShapeOf(Lookup env, string name)
@@ -1287,6 +1420,9 @@ namespace Evosim.Farm
         public float SelfOverlap;
         public float MaxReach;
         public bool RigidFloors;
+
+        /// <summary>D199's reading three — <c>EVOSIM_SCALE_LENGTHENS_ONCE</c>.</summary>
+        public bool ScaleLengthensOnce;
         public float MatterIslands;
         public float MatterIslandCover;
         public float MatterIslandDepth;
@@ -1372,6 +1508,23 @@ namespace Evosim.Farm
         /// <c>Allow Source Mismatch</c> follows.
         /// </remarks>
         public bool AllowSourceMismatch;
+
+        /// <summary>
+        /// D201: an edited copy of the resumed run's config.json to carry on under. Null carries on
+        /// under the source's own. Requires <see cref="ResumeFrom"/>.
+        /// </summary>
+        /// <remarks>
+        /// Only the dials <see cref="CousinConfig"/> allows may differ, and a run that differs in
+        /// any is a cousin of its source and says so in run.json.
+        /// </remarks>
+        public string ResumeConfig;
+
+        /// <summary>
+        /// D201: the founding trickle off from the checkpoint on, its rate and its pool share set
+        /// to 0 and nothing else changed; the pool stays pinned and loaded. Requires
+        /// <see cref="ResumeFrom"/>.
+        /// </summary>
+        public bool ResumeTrickleOff;
 
         /// <summary>
         /// Which engine steps the bodies: <c>cpu</c> (the solver, every recorded run) or
@@ -1529,6 +1682,7 @@ namespace Evosim.Farm
         public float CellTypeMutation;
         public float Clearance;
         public float TissueEnergy;
+        public float LeafTissueEnergy;
         public float Overhead;
         public float OverheadPerTissue;
         public float GestationModeChance;
@@ -1569,9 +1723,16 @@ namespace Evosim.Farm
 
         /// <summary>D131: a settled corpse's decay per second (0 the sinking rate).</summary>
         public float CorpseDecaySettled;
+        public float CorpseHalfLife;
         public WorldShape WorldShape;
         public float MatterBudget;
         public bool DriveLimitAlways;
+
+        /// <summary>D199's drag limiter by the welded body — <c>EVOSIM_DRAG_LIMIT_WELDED</c>.</summary>
+        public bool DragLimitWelded;
+
+        /// <summary>D196's drag limiter at every step — <c>EVOSIM_DRAG_LIMIT_ALWAYS</c>.</summary>
+        public bool DragLimitAlways;
         public float BedRelief;
         public float BedTilt;
         public float BedScale;
@@ -1587,6 +1748,34 @@ namespace Evosim.Farm
         public float ReefCapThickness;
         public float ReefStemFraction;
         public float ReefFade;
+
+        public ReefShape ReefShape;
+        public float CoralIslandShare;
+        public float CoralIslandRoof;
+        public int CoralMaxColonies;
+        public int CoralMaxPiecesPerColony;
+        public int CoralMaxPieces;
+        public float CoralTrunkHeightMin;
+        public float CoralTrunkHeightMax;
+        public float CoralTrunkRadiusMin;
+        public float CoralTrunkRadiusMax;
+        public int CoralChildrenMin;
+        public int CoralChildrenMax;
+        public float CoralTiltMean;
+        public float CoralTiltSpread;
+        public float CoralLengthFactor;
+        public float CoralRadiusFactor;
+        public int CoralMaxDepth;
+        public float CoralMinRadius;
+        public float CoralPlateChance;
+        public float CoralPlateRadiusMin;
+        public float CoralPlateRadiusMax;
+        public float CoralPlateThickness;
+        public float CoralFillet;
+        public float CoralFade;
+        public float CoralFadeFloor;
+        public float CoralTransmission;
+        public float CoralGridCell;
 
         public float NewbornReserve;
         public float GrowthFloor;
@@ -1604,13 +1793,32 @@ namespace Evosim.Farm
         public float Healing;
         public float HealingCost;
         public float IntakeReach;
+
+        /// <summary>D214: the reach from each eating part's mouth point — <c>EVOSIM_INTAKE_REACH_FROM_MOUTH</c>.</summary>
+        public bool IntakeReachFromMouth;
         public float IntakeWaste;
         public float PriceAttack;
         public float PriceIntake;
+        public float IntakeScale;
+
+        /// <summary>D219, D220: bites feed as they wound and no corpse is founded (<c>EVOSIM_CONTACT_EATING</c>).</summary>
+        public bool ContactEating;
+
+        /// <summary>D220: seconds the dead stay edible (<c>EVOSIM_REMAINS_WINDOW</c>), read only with the dial on.</summary>
+        public float RemainsWindow;
+
+        /// <summary>D224: a bite on a living body takes its share of the store too (<c>EVOSIM_BITE_TAKES_STORE</c>), read only with the dial above on.</summary>
+        public bool BiteTakesStore;
+
+        /// <summary>D226: the multiplier on a mouth's blow (<c>EVOSIM_BITE_DAMAGE_SCALE</c>), read only with the dial above on.</summary>
+        public float BiteDamageScale;
         public float PriceProtection;
         public float PriceToughness;
         public float AttributeMutation;
         public bool ContactPerPart;
+        public bool ReadAcrossSeams;
+        public bool PlantsKeepMatter;
+        public bool PlantsKeepOwnFirst;
         public float BedFriction;
         public float NeutralVolume;
         public float FounderDepth;

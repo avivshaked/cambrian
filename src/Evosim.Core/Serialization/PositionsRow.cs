@@ -45,13 +45,20 @@ namespace Evosim.Core
         /// <summary>Bit 2: any part of the developed body is <see cref="CellTypeIds.Photosynthetic"/>.</summary>
         public const int PhotosyntheticBit = 4;
 
+        /// <summary>
+        /// Bit 3: the body is remains (D220), a dead body or a cut-off limb lying in the water for a window and
+        /// still in the solver. Set only in a world run with <c>RunConfig.ContactEating</c>; the other three bits
+        /// are decided from the body's developed parts as for any body.
+        /// </summary>
+        public const int RemainsBit = 8;
+
         /// <summary>Every bit this format defines. Anything else on a flag is refused.</summary>
         /// <remarks>
         /// Refused rather than masked off, because a reader that meets an unknown bit has no way
         /// to tell a new guild from a corrupted row, and the same rule the loaders keep (refuse
         /// rather than default, §9) is the only one that keeps a stored guild honest.
         /// </remarks>
-        public const int AllBits = AbsorptiveBit | JointedBit | PhotosyntheticBit;
+        public const int AllBits = AbsorptiveBit | JointedBit | PhotosyntheticBit | RemainsBit;
 
         private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
 

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The open ocean's tracer screen and map list (logbook/specs/open-ocean-current-build.md, check 5): builds a
+    world's floor, current and islands from a launcher's resolved settings as World does, and screens how much
+    water passes between the islands, or lists each map seed's islands (the maps option). Steps no life. Under src/ so
+    Directory.Build.props sends the build to artifacts/.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <AssemblyName>Evosim.OceanTracers</AssemblyName>
+    <RootNamespace>Evosim.OceanTracers</RootNamespace>
+    <Nullable>disable</Nullable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Evosim.Core\Evosim.Core.csproj" />
+    <ProjectReference Include="..\Evosim.Farm\Evosim.Farm.csproj" />
+  </ItemGroup>
+
+</Project>

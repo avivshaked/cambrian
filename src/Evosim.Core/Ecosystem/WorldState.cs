@@ -160,7 +160,44 @@ namespace Evosim.Core
         /// split afresh from a sum (round 59's B3). The world's own half did not move. Version 17
         /// is still read, as <see cref="PreCardPairStateVersion"/>.
         /// </remarks>
-        public const int StateVersion = 18;
+        /// <remarks>
+        /// 19 with D206 (2026-10-19): the spent units each body and each corpse holds, and the
+        /// store's three counters. The harness's half did not move. Version 18 is still read, as
+        /// <see cref="PreHeldStateVersion"/>.
+        /// </remarks>
+        /// <remarks>
+        /// 20 with the intake's origin books: each corpse carries the id of the body whose bite made it
+        /// (<see cref="Corpse.KilledBy"/>), each body the joules its mouths kept from its own kills, another's
+        /// and carrion, each death row queued before a checkpoint those three, and the world its six totals
+        /// and the second its books begin at (<see cref="IntakeOriginBooksFromSeconds"/>). The harness's half
+        /// did not move. Version 19 is still read, as <see cref="PreOriginStateVersion"/>, and so is every
+        /// layout 19 was: each reads the corpse killer as -1 (unknown), every count as 0, and sets the books'
+        /// start to the checkpoint's own second, so a read can tell that the books cover part of the world.
+        /// </remarks>
+        public const int StateVersion = 20;
+
+        /// <summary>
+        /// Version 19, D206's layout, which this build reads as exactly what it held, with the origin books
+        /// unknown: every corpse's killer reads -1, every body's and the world's counts 0, and
+        /// <see cref="IntakeOriginBooksFromSeconds"/> is the checkpoint's second. That is a labelled
+        /// absence and not a guess: the world carries the second the books begin at.
+        /// </summary>
+        public const int PreOriginStateVersion = 19;
+
+        /// <summary>
+        /// Version 18, round 60's to round 62's dial screens' layout, which this build reads as
+        /// exactly what it holds: it differs from 19 only by D206's store, and a world that wrote
+        /// it had no rule that could put a unit in one, so every body and corpse holds 0. That is a
+        /// fact about the world read and not a default standing in for a missing field.
+        /// </summary>
+        public const int PreHeldStateVersion = 18;
+
+        /// <summary>
+        /// The first layout whose harness half carries each body's card pairs (round 60): the
+        /// harness reads its half by this, and not by <see cref="StateVersion"/>, so a world layout
+        /// that moves alone leaves the harness's reading where it was.
+        /// </summary>
+        public const int CardPairStateVersion = 18;
 
         /// <summary>
         /// Version 17, round 59's and round 60's screens' layout, which this build reads as exactly
@@ -199,7 +236,8 @@ namespace Evosim.Core
 
         /// <summary>Whether this build reads a world state of the given layout.</summary>
         public static bool ReadsStateVersion(int version) =>
-            version == StateVersion || version == PreCardPairStateVersion || version == PreLeafStateVersion ||
+            version == StateVersion || version == PreOriginStateVersion || version == PreHeldStateVersion ||
+            version == PreCardPairStateVersion || version == PreLeafStateVersion ||
             version == PreImmigrationStateVersion || version == LossyStateVersion;
 
         /// <summary>
@@ -248,7 +286,7 @@ namespace Evosim.Core
                 throw new ArgumentOutOfRangeException(
                     nameof(layout), layout,
                     "This build writes version " + StateVersion + " and, for a test, versions " +
-                    PreCardPairStateVersion + ", " + PreLeafStateVersion + ", " + PreImmigrationStateVersion + " and " + LossyStateVersion +
+                    PreOriginStateVersion + ", " + PreHeldStateVersion + ", " + PreCardPairStateVersion + ", " + PreLeafStateVersion + ", " + PreImmigrationStateVersion + " and " + LossyStateVersion +
                     ". Version " + GriplessStateVersion + " is refused by name.");
             }
 
@@ -266,6 +304,13 @@ namespace Evosim.Core
             {
                 throw new InvalidOperationException(
                     "This world has the leaf smell, and version " + layout + " cannot record its sources.");
+            }
+
+            // Nor has version 18 a place for D206's store.
+            if (layout < PreOriginStateVersion && Config.PlantsKeepMatter)
+            {
+                throw new InvalidOperationException(
+                    "This world keeps its plants' matter (D206), and version " + layout + " cannot record the store.");
             }
 
             if (layout < PreCardPairStateVersion && HoldsTouchOrGrip)
@@ -384,6 +429,17 @@ namespace Evosim.Core
             w.Write(_living.Count);
             for (int i = 0; i < _living.Count; i++) WriteOrganism(w, _living[i], layout);
 
+            // D220: the remains lying in the water, after the living and in id order, each as an organism record plus
+            // its window's start and the part map that selects its body from the one it was cut from. Only in a world
+            // whose bites feed, so every other world writes the bytes it wrote before and the layout stays version 20.
+            // The reader asks the same config.
+            if (Config.ContactEating)
+            {
+                StateIo.Tag(w, "RMNS");
+                w.Write(_remains.Count);
+                for (int i = 0; i < _remains.Count; i++) WriteOrganism(w, _remains[i], layout);
+            }
+
             // ---- the species registry
 
             StateIo.Tag(w, "SPEC");
@@ -442,6 +498,12 @@ namespace Evosim.Core
                     w.Write(corpse.Rotation.Z);
                     w.Write(corpse.Rotation.W);
                 }
+
+                // D206's store, version 19.
+                if (layout >= 19) w.Write(corpse.SpentUnits);
+
+                // Whose bite made it, version 20.
+                if (layout >= 20) w.Write(corpse.KilledBy);
             }
 
             // How many of them the scent's last fill covered, version 14 (scent-restore.md).
@@ -458,11 +520,31 @@ namespace Evosim.Core
             bool capped = Config.FounderReserveCapFraction > 0f;
             bool corpseLandings = Config.FoundersFollowCorpses;
             bool lifespans = LifespanRecorded;
-            for (int i = 0; i < _lineageEvents.Count; i++) WriteLineage(w, _lineageEvents[i], layout, capped, corpseLandings, lifespans);
+            for (int i = 0; i < _lineageEvents.Count; i++) WriteLineage(w, _lineageEvents[i], layout, capped, corpseLandings, lifespans, Config.ContactEating);
 
             StateIo.Tag(w, "ABSD");
             w.Write(_absorptiveDeaths.Count);
             for (int i = 0; i < _absorptiveDeaths.Count; i++) WriteAbsorptive(w, _absorptiveDeaths[i]);
+
+            // D220: the foundings the farm has not drained, which belong to the resumed run's first step as the
+            // lineage rows do.
+            if (Config.ContactEating)
+            {
+                StateIo.Tag(w, "RFND");
+                w.Write(_remainsFoundings.Count);
+                for (int i = 0; i < _remainsFoundings.Count; i++)
+                {
+                    RemainsFounding founding = _remainsFoundings[i];
+                    w.Write(founding.RemainsId);
+                    w.Write(founding.FromBodyId);
+                    w.Write(founding.Map.Length);
+                    for (int k = 0; k < founding.Map.Length; k++) w.Write(founding.Map[k]);
+
+                    // Not founding.SourcePrior: it describes the source's pending plan map, which is transient and not
+                    // in a checkpoint (Organism.PartMapFromPreviousPlan), and the farm drains the foundings in the
+                    // step they are made, so a checkpoint it writes holds none.
+                }
+            }
 
             // D167: the sources the leaf field's last fill took, four floats each. None in a world
             // without the leaf smell.
@@ -478,6 +560,59 @@ namespace Evosim.Core
             {
                 StateIo.Tag(w, "GRIP");
                 w.Write(GripJoulesTotal);
+            }
+
+            // D206's three counters, version 19. 0 in a world without the rule.
+            if (layout >= 19)
+            {
+                StateIo.Tag(w, "HELD");
+                w.Write(HeldTotal);
+                w.Write(RechargedTotal);
+                w.Write(HeldReleasedTotal);
+            }
+
+            // The intake's origin books, version 20: the world's six totals.
+            if (layout >= 20)
+            {
+                StateIo.Tag(w, "ORIG");
+                w.Write(IntakeOwnKillJoules);
+                w.Write(IntakeOtherKillJoules);
+                w.Write(IntakeCarrionJoules);
+                w.Write(MouthedIntakeOwnKillJoules);
+                w.Write(MouthedIntakeOtherKillJoules);
+                w.Write(MouthedIntakeCarrionJoules);
+                w.Write(IntakeOriginBooksFromSeconds);
+            }
+
+            // D212's total, only in a world whose corpses spoil, so that every world without the dial
+            // writes the bytes it wrote before and the layout stays version 19. The clock itself needs
+            // nothing: a corpse's age is already in its record. The reader asks the same config.
+            if (Config.CorpseHalfLifeSeconds > 0f) w.Write(CorpseSpoiledTotal);
+
+            // D219's four totals, only in a world whose bites feed, so every world without the dial writes the
+            // bytes it wrote before and the layout stays version 20. The reader asks the same config.
+            if (Config.ContactEating)
+            {
+                w.Write(BiteKeptFromLeavesJoules);
+                w.Write(BiteKeptFromOthersJoules);
+                w.Write(BiteWasteJoules);
+                w.Write(HealTissueJoules);
+
+                // D220's three: the joules kept from remains, and the remains closed with the joules burnt at the close.
+                w.Write(BiteKeptFromRemainsJoules);
+                w.Write(RemainsClosed);
+                w.Write(RemainsClosedJoules);
+                w.Write(RemainsFounded);
+
+                // D224's total, only with the bite taking the store too, so a world without it writes the bytes it wrote.
+                if (Config.BiteTakesStore) w.Write(BiteStoreTakenJoules);
+
+                // D227's two, only with the damage dial off 1, so a world at 1 writes the bytes it wrote.
+                if (Config.BiteDamageScale != 1f)
+                {
+                    w.Write(MouthBlows);
+                    w.Write(MouthBlowsFinishing);
+                }
             }
 
             // ---- the water
@@ -509,7 +644,7 @@ namespace Evosim.Core
             {
                 throw new InvalidDataException(
                     "The checkpoint's world state is version " + version + " and this build " +
-                    "reads version " + StateVersion + " (version " + PreCardPairStateVersion + ", without the card's pairs; versions " + PreLeafStateVersion + " and " +
+                    "reads version " + StateVersion + " (version " + PreOriginStateVersion + ", without the intake's origin books; version " + PreHeldStateVersion + ", without D206's store; version " + PreCardPairStateVersion + ", without the card's pairs; versions " + PreLeafStateVersion + " and " +
                     PreImmigrationStateVersion + ", without round 59's additions, and version " +
                     LossyStateVersion + ", without the contact record). A checkpoint is refused " +
                     "rather than read with a field guessed at, under the rule the config reader follows.");
@@ -624,7 +759,15 @@ namespace Evosim.Core
             StateIo.Tag(r, "LIVE");
             int living = r.ReadInt32();
             _living.Clear();
-            for (int i = 0; i < living; i++) _living.Add(ReadOrganism(r, version));
+            for (int i = 0; i < living; i++) _living.Add(ReadOrganism(r, version, remains: false));
+
+            _remains.Clear();
+            if (Config.ContactEating)
+            {
+                StateIo.Tag(r, "RMNS");
+                int standing = r.ReadInt32();
+                for (int i = 0; i < standing; i++) _remains.Add(ReadOrganism(r, version, remains: true));
+            }
 
             StateIo.Tag(r, "SPEC");
             int species = r.ReadInt32();
@@ -691,6 +834,13 @@ namespace Evosim.Core
                     corpse.RestorePose(new Quat(qx, qy, qz, qw), hasPose);
                 }
 
+                // Version 18 had no store, and no rule that could fill one.
+                if (version >= 19) corpse.SpentUnits = r.ReadDouble();
+
+                // An older layout has no killer: the corpse comes back as -1, which the books' start
+                // second (IntakeOriginBooksFromSeconds) labels as unknown and not as carrion.
+                if (version >= 20) corpse.KilledBy = r.ReadInt64();
+
                 _corpses.Add(corpse);
             }
 
@@ -713,12 +863,27 @@ namespace Evosim.Core
             bool capped = Config.FounderReserveCapFraction > 0f;
             bool corpseLandings = Config.FoundersFollowCorpses;
             bool lifespans = LifespanRecorded;
-            for (int i = 0; i < events; i++) _lineageEvents.Add(ReadLineage(r, version, capped, corpseLandings, lifespans));
+            for (int i = 0; i < events; i++) _lineageEvents.Add(ReadLineage(r, version, capped, corpseLandings, lifespans, Config.ContactEating));
 
             StateIo.Tag(r, "ABSD");
             int deaths = r.ReadInt32();
             _absorptiveDeaths.Clear();
             for (int i = 0; i < deaths; i++) _absorptiveDeaths.Add(ReadAbsorptive(r));
+
+            _remainsFoundings = new List<RemainsFounding>();
+            if (Config.ContactEating)
+            {
+                StateIo.Tag(r, "RFND");
+                int foundings = r.ReadInt32();
+                for (int i = 0; i < foundings; i++)
+                {
+                    long remainsId = r.ReadInt64();
+                    long fromBodyId = r.ReadInt64();
+                    var map = new int[r.ReadInt32()];
+                    for (int k = 0; k < map.Length; k++) map[k] = r.ReadInt32();
+                    _remainsFoundings.Add(new RemainsFounding(remainsId, fromBodyId, map));
+                }
+            }
 
             if (version >= 16)
             {
@@ -752,6 +917,77 @@ namespace Evosim.Core
             {
                 StateIo.Tag(r, "GRIP");
                 GripJoulesTotal = r.ReadDouble();
+            }
+
+            if (version >= 19)
+            {
+                StateIo.Tag(r, "HELD");
+                HeldTotal = r.ReadDouble();
+                RechargedTotal = r.ReadDouble();
+                HeldReleasedTotal = r.ReadDouble();
+            }
+
+            // An older layout carries no origin books: the corpse killers read -1 (set above), every count
+            // is 0, and the books begin at this checkpoint's second.
+            if (version >= 20)
+            {
+                StateIo.Tag(r, "ORIG");
+                IntakeOwnKillJoules = r.ReadDouble();
+                IntakeOtherKillJoules = r.ReadDouble();
+                IntakeCarrionJoules = r.ReadDouble();
+                MouthedIntakeOwnKillJoules = r.ReadDouble();
+                MouthedIntakeOtherKillJoules = r.ReadDouble();
+                MouthedIntakeCarrionJoules = r.ReadDouble();
+                IntakeOriginBooksFromSeconds = r.ReadDouble();
+            }
+            else
+            {
+                IntakeOwnKillJoules = IntakeOtherKillJoules = IntakeCarrionJoules = 0d;
+                MouthedIntakeOwnKillJoules = MouthedIntakeOtherKillJoules = MouthedIntakeCarrionJoules = 0d;
+                IntakeOriginBooksFromSeconds = ElapsedSeconds;
+            }
+
+            // D212's total, under the config the writer asked (see Write).
+            CorpseSpoiledTotal = Config.CorpseHalfLifeSeconds > 0f ? r.ReadDouble() : 0d;
+
+            // D219's four totals, under the config the writer asked (see Write).
+            if (Config.ContactEating)
+            {
+                BiteKeptFromLeavesJoules = r.ReadDouble();
+                BiteKeptFromOthersJoules = r.ReadDouble();
+                BiteWasteJoules = r.ReadDouble();
+                HealTissueJoules = r.ReadDouble();
+                BiteKeptFromRemainsJoules = r.ReadDouble();
+                RemainsClosed = r.ReadInt64();
+                RemainsClosedJoules = r.ReadDouble();
+                RemainsFounded = r.ReadInt64();
+                BiteStoreTakenJoules = Config.BiteTakesStore ? r.ReadDouble() : 0d;
+
+                // D227's two, under the config the writer asked (see Write).
+                if (Config.BiteDamageScale != 1f)
+                {
+                    MouthBlows = r.ReadInt64();
+                    MouthBlowsFinishing = r.ReadInt64();
+                }
+                else
+                {
+                    MouthBlows = 0L;
+                    MouthBlowsFinishing = 0L;
+                }
+            }
+            else
+            {
+                BiteKeptFromLeavesJoules = 0d;
+                BiteKeptFromOthersJoules = 0d;
+                BiteWasteJoules = 0d;
+                HealTissueJoules = 0d;
+                BiteKeptFromRemainsJoules = 0d;
+                RemainsClosed = 0L;
+                RemainsClosedJoules = 0d;
+                RemainsFounded = 0L;
+                BiteStoreTakenJoules = 0d;
+                MouthBlows = 0L;
+                MouthBlowsFinishing = 0L;
             }
 
             ReadField(r, Nutrients);
@@ -806,11 +1042,16 @@ namespace Evosim.Core
 
             // How the body is built back: the adult is developed from the genome, and this is
             // the one call that turns it into the body this creature has. See Phenotype.ScaledBy.
-            bool isAdult = ReferenceEquals(creature.Phenotype, creature.AdultPhenotype);
+            // D220: a body of remains may be a limb cut off the body this describes, so it is the adult when the scale
+            // it was cut at is whole, and the map below selects it from that body.
+            bool remains = creature.IsRemains;
+            bool isAdult = remains
+                ? creature.Phenotype.ScaledBy == 1f
+                : ReferenceEquals(creature.Phenotype, creature.AdultPhenotype);
             w.Write(isAdult);
             w.Write(creature.Phenotype.ScaledBy);
 
-            if (!isAdult && creature.Phenotype.ScaledBy == 1f)
+            if (!remains && !isAdult && creature.Phenotype.ScaledBy == 1f)
             {
                 throw new InvalidOperationException(
                     FormattableString.Invariant(
@@ -916,10 +1157,37 @@ namespace Evosim.Core
                 w.Write(creature.GripJoules);
             }
 
+            // D206's store, version 19.
+            if (layout >= 19) w.Write(creature.SpentUnits);
+
+            // The mouths' kept joules by the origin of the corpse, version 20.
+            if (layout >= 20)
+            {
+                w.Write(creature.MouthJoulesOwnKill);
+                w.Write(creature.MouthJoulesOtherKill);
+                w.Write(creature.MouthJoulesCarrion);
+            }
+
+            // D219: what the body's biting parts have kept, only in a world whose bites feed.
+            if (Config.ContactEating) w.Write(creature.BiteKeptJoules);
+
+            // D220: the window's start and the map that selects the remains' parts from the body they were cut from;
+            // a length of 0 is the whole body.
+            if (remains)
+            {
+                w.Write(creature.RemainsSince);
+                int[] selection = creature.RemainsMap;
+                w.Write(selection == null ? 0 : selection.Length);
+                if (selection != null)
+                {
+                    for (int i = 0; i < selection.Length; i++) w.Write(selection[i]);
+                }
+            }
+
             w.Write(GenomeJson.Write(creature.Genome, indent: false, id: creature.Id));
         }
 
-        private Organism ReadOrganism(BinaryReader r, int version)
+        private Organism ReadOrganism(BinaryReader r, int version, bool remains)
         {
             var creature = new Organism
             {
@@ -1020,6 +1288,34 @@ namespace Evosim.Core
                 creature.GripJoules = r.ReadDouble();
             }
 
+            // Version 18 had no store, and no rule that could fill one.
+            if (version >= 19) creature.SpentUnits = r.ReadDouble();
+
+            if (version >= 20)
+            {
+                creature.MouthJoulesOwnKill = r.ReadDouble();
+                creature.MouthJoulesOtherKill = r.ReadDouble();
+                creature.MouthJoulesCarrion = r.ReadDouble();
+            }
+
+            if (Config.ContactEating) creature.BiteKeptJoules = r.ReadDouble();
+
+            int[] selection = null;
+            if (remains)
+            {
+                creature.IsRemains = true;
+                creature.RemainsSince = r.ReadDouble();
+
+                int selectionLength = r.ReadInt32();
+                if (selectionLength > 0)
+                {
+                    selection = new int[selectionLength];
+                    for (int i = 0; i < selectionLength; i++) selection[i] = r.ReadInt32();
+                }
+
+                creature.RemainsMap = selection;
+            }
+
             Genome genome = GenomeJson.Read(r.ReadString());
             creature.Genome = genome;
 
@@ -1032,6 +1328,14 @@ namespace Evosim.Core
 
             creature.AdultPhenotype = adult;
             creature.Phenotype = isAdult ? adult : adult.Scaled(scale, Config.Shapes);
+
+            // D220: remains cut off a body are that body, selected. Both phenotypes name the limb, as they did when
+            // it was cut.
+            if (selection != null)
+            {
+                creature.Phenotype = creature.Phenotype.Select(selection);
+                creature.AdultPhenotype = creature.Phenotype;
+            }
 
             if (health != null && health.Length != creature.Phenotype.PartCount)
             {
@@ -1086,7 +1390,7 @@ namespace Evosim.Core
                 r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(),
                 r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
 
-        private static void WriteLineage(BinaryWriter w, LineageEvent e, int layout, bool capped, bool corpseLandings, bool lifespans)
+        private static void WriteLineage(BinaryWriter w, LineageEvent e, int layout, bool capped, bool corpseLandings, bool lifespans, bool contactEating)
         {
             w.Write((int)e.Kind);
             w.Write(e.ElapsedSeconds);
@@ -1145,6 +1449,21 @@ namespace Evosim.Core
                 w.Write(e.LandingMatterColumnDensity);
             }
 
+            // The death row's three origin counts, version 20, on a death row only.
+            if (layout >= 20 && e.Kind == LineageEventKind.Death)
+            {
+                w.Write(e.IntakeOwnKillJoules);
+                w.Write(e.IntakeOtherKillJoules);
+                w.Write(e.IntakeCarrionJoules);
+            }
+
+            // D219: a death row's bite-kept joules, only in a world whose bites feed.
+            if (contactEating && e.Kind == LineageEventKind.Death) w.Write(e.BiteKeptJoules);
+
+            // D220: the joules a closed remains burnt, on that row only. A founding row's second body id rides in
+            // the parent field every row writes.
+            if (contactEating && e.Kind == LineageEventKind.RemainsClosed) w.Write(e.RemainsJoules);
+
             // D124's cut, on every row (0 on all but a cut founder's), and only in a world whose
             // config turns the cap on: every other world's rows are the bytes they were, and the
             // layout stays version 12. The reader asks the same config.
@@ -1193,7 +1512,7 @@ namespace Evosim.Core
             // version 10, above.
         }
 
-        private static LineageEvent ReadLineage(BinaryReader r, int version, bool capped, bool corpseLandings, bool lifespans)
+        private static LineageEvent ReadLineage(BinaryReader r, int version, bool capped, bool corpseLandings, bool lifespans, bool contactEating)
         {
             var kind = (LineageEventKind)r.ReadInt32();
             double seconds = r.ReadDouble();
@@ -1242,6 +1561,17 @@ namespace Evosim.Core
                 landingMatterColumn = r.ReadSingle();
             }
 
+            double intakeOwn = 0d, intakeOther = 0d, intakeCarrion = 0d;
+            if (version >= 20 && kind == LineageEventKind.Death)
+            {
+                intakeOwn = r.ReadDouble();
+                intakeOther = r.ReadDouble();
+                intakeCarrion = r.ReadDouble();
+            }
+
+            double biteKept = contactEating && kind == LineageEventKind.Death ? r.ReadDouble() : 0d;
+            double remainsJoules = contactEating && kind == LineageEventKind.RemainsClosed ? r.ReadDouble() : 0d;
+
             double capCut = capped ? r.ReadDouble() : 0d;
             float landingCorpse = corpseLandings ? r.ReadSingle() : float.NaN;
             float landingCorpseMean = corpseLandings ? r.ReadSingle() : float.NaN;
@@ -1254,6 +1584,9 @@ namespace Evosim.Core
                 fromWorld = r.ReadInt32();
                 fromId = r.ReadInt64();
             }
+
+            if (kind == LineageEventKind.RemainsFounded) return LineageEvent.RemainsFoundedFrom(seconds, id, parentId);
+            if (kind == LineageEventKind.RemainsClosed) return LineageEvent.RemainsClosedAt(seconds, id, remainsJoules);
 
             if (kind == LineageEventKind.Kill)
             {
@@ -1278,7 +1611,8 @@ namespace Evosim.Core
                     landingSnow, landingSnowColumn, landingMatter, landingMatterColumn,
                     capCut, landingCorpse, landingCorpseMean, lifespan,
                     fromWorld, fromId)
-                : LineageEvent.Death(seconds, id, cause, accountAtDeath, reserveAtDeath);
+                : LineageEvent.Death(
+                    seconds, id, cause, accountAtDeath, reserveAtDeath, intakeOwn, intakeOther, intakeCarrion, biteKept);
         }
 
         private static void WriteAbsorptive(BinaryWriter w, AbsorptiveSample s)

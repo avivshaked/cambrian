@@ -254,6 +254,10 @@ namespace Evosim.Dynamics
 
         private void BuildGrid()
         {
+            // D204: the seams the grid joins its cells across, 0 without them.
+            _grid.SeamLength = Config.SeamLengthMetres;
+            _grid.SeamWidth = Config.SeamWidthMetres;
+
             // D114: the links' spheres rather than the bodies' when the world asks for it.
             if (Config.ContactPerPart) _grid.BuildLinks(_creatures, ContactCellOverrideMetres);
             else _grid.Build(_creatures, ContactCellOverrideMetres);
@@ -321,11 +325,15 @@ namespace Evosim.Dynamics
 
             long s0 = profile ? Stopwatch.GetTimestamp() : 0L;
 
-            body.Senses.Sample();
+            // D220: remains run no senses and no brain, push no drive and hold no grip. With the flag off (every
+            // body of a world without contact eating) each test is false and the step is the one it always was.
+            bool remains = body.Remains;
+
+            if (!remains) body.Senses.Sample();
 
             long s1 = profile ? Stopwatch.GetTimestamp() : 0L;
 
-            body.Brain.Step((float)dt, body.DriveSignal, body.Senses, body.Drive.BendAndPower ? body.BendSignal : null);
+            if (!remains) body.Brain.Step((float)dt, body.DriveSignal, body.Senses, body.Drive.BendAndPower ? body.BendSignal : null);
 
             if (profile)
             {
@@ -340,11 +348,11 @@ namespace Evosim.Dynamics
             Array.Clear(body.Fext, 0, body.Fext.Length);
             Array.Clear(body.Tau, 0, body.Tau.Length);
 
-            body.Drive.Drive(body.DriveSignal, body.BendSignal);
+            if (!remains) body.Drive.Drive(body.DriveSignal, body.BendSignal);
             Fluid.Apply(body, Config);
             Contacts.Apply(body, index, _grid, Config, ref _neighbourScratch[index]);
             if (Config.ContactInstrument) _grid.Watch.NoteOverlaps(body.OverlapCount, index, body.Id, body.Links);
-            Anchor.Apply(body, Config, dt);   // D162, on the touch the contact pass just recorded
+            if (!remains) Anchor.Apply(body, Config, dt);   // D162, on the touch the contact pass just recorded
             JointTorques(body);
 
             Aba.Solve(body);

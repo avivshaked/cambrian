@@ -29,12 +29,15 @@ namespace Evosim.Farm.Gpu
     /// </remarks>
     public sealed class GpuWorld
     {
-        public const int InstStride = 186;
+        public const int InstStride = 450;
         public const int ReefStride = 16;
 
         // ---- flags
         public bool HasCurrent, Accelerating, Sloped, HasBed, BedRelief, ShoreOn, FadeOn;
         public bool LimitDrive, LimitDrag, UseRestore, FloorRestores, CreatureContact, OffsetTorque, PerPart;
+
+        /// <summary>D199/D200: under <see cref="LimitDrag"/>, the torque capped by the welded body.</summary>
+        public bool WeldedDrag;
 
         // ---- the bend-and-power drive and the limb push (EffectorDrive, Fluid.Apply)
         public bool BendAndPower;
@@ -58,6 +61,9 @@ namespace Evosim.Farm.Gpu
         public double RestoringDensity, TissueDensity, TissueExcess, NeutralVolume;
         public double Omega, Zeta, MaxSep, MaxDv, TankRadius, AxisX, AxisZ;
 
+        /// <summary>D204: the box's seams the contact reads across, m; 0 without them.</summary>
+        public double SeamLength, SeamWidth;
+
         // ---- the bed
         public double BedRadius, BedDepth, TiltX, TiltZ, Offset, ShoalHeight;
         public int BedModes;
@@ -66,9 +72,23 @@ namespace Evosim.Farm.Gpu
         public double CurDepth, CurTankR, EddyWeight, Overturning, PerSecond, Squared, ShoreDepth, ShoreFadeW;
         public float SigmaSloped, SigmaFlat, Speed;
 
+        /// <summary>
+        /// D204: the open ocean's current in a box (CurrentMode.Ocean), its own extents along x and z
+        /// (CurrentField.LengthMetres and WidthMetres, the floats it folds with), and where its wave
+        /// numbers sit in <see cref="WR"/>.
+        /// </summary>
+        public bool Ocean;
+        public float OceanL, OceanW;
+        public int OceanKAt;
+
         // ---- the reefs
         public double HalfThickness, Fillet, ReefFade;
         public int ReefCount;
+
+        // ---- D194's coral (CoralRock), its rows in WR: see the kernel's coral section for their layout
+        public int CoralCount, CoralCellsX, CoralCellsZ, CoralColonyAt, CoralPieceAt, CoralGridAt, CoralListAt;
+        public int CoralFadeGridAt, CoralFadeListAt;
+        public double CoralFillet, CoralFade, CoralFloor, CoralCell, CoralPeriodX, CoralPeriodZ;
 
         // ---- the senses
         public float SWorldDepth, ChemHalf, EnergyScale, FlowScale, RateScale, ConstCE, DtF;
@@ -87,6 +107,9 @@ namespace Evosim.Farm.Gpu
         public GridField Field { get; private set; }
         public int Nx, Ny, Nz, LayerCount, RefugeLayers, LayerStride;
         public float CellMetres, FieldTankR, RefugeFraction, CellVolume;
+
+        /// <summary>The snow grid's box, m (GridField.LengthMetres and WidthMetres): its seams in D204's square.</summary>
+        public float FieldL, FieldW;
         public bool SplitColumns;
 
         /// <summary>The world's reals: the stream tables, the bed's modes, the reefs.</summary>
@@ -105,6 +128,7 @@ namespace Evosim.Farm.Gpu
         private readonly CurrentField _current;
         private readonly float _period;
         private readonly double[] _sPhase, _sRate, _sBreathPhase, _sBreathRate, _cPhase, _cRate, _cBreathPhase, _cBreathRate;
+        private readonly double[] _oAmp, _oPhase, _oRate, _oBreathPhase, _oBreathRate;
         private FieldInfo _stockField;
 
         public SolverConfig Config { get; }
@@ -134,6 +158,7 @@ namespace Evosim.Farm.Gpu
             Damping = s.JointDriveDamping;
             LimitDrive = s.LimitersEngage;
             LimitDrag = s.DragLimiterEngages;
+            WeldedDrag = s.DragLimitByWeldedBody;
             SpinBudget = s.StepSeconds > 0 ? s.MaxJointAngularVelocity / s.StepSeconds : 0;
             OffsetTorque = s.BuoyancyOffsetTorque;
             PerPart = s.ContactPerPart;
@@ -165,6 +190,8 @@ namespace Evosim.Farm.Gpu
             TankRadius = s.TankRadiusMetres;
             AxisX = s.TankAxisX;
             AxisZ = s.TankAxisZ;
+            SeamLength = s.SeamLengthMetres;
+            SeamWidth = s.SeamWidthMetres;
 
             SWorldDepth = (float)Math.Max(0.001, s.WorldDepthMetres);
             ChemHalf = (float)Math.Max(1e-6, s.ChemicalHalfScaleJoulesPerCubicMetre);
@@ -191,11 +218,12 @@ namespace Evosim.Farm.Gpu
                 current.UnpinInstant();
 
                 Speed = (float)Reflect.Field(current, "_speed");
+                Ocean = current.Mode == CurrentMode.Ocean && current.Shape != WorldShape.Tank;
 
                 // A still current builds no streams (CurrentField.PinInstant returns before its lazy
                 // build at speed 0), and every table below would be null. Named here rather than met
                 // as a NullReferenceException (2026-10-10).
-                if (!(Speed > 0f) || Reflect.Field(current, "_streamAmplitude") == null)
+                if (!(Speed > 0f) || Reflect.Field(current, Ocean ? "_oceanAmplitude" : "_streamAmplitude") == null)
                 {
                     throw new NotSupportedException(
                         "The gpu engine carries a moving current, and this world's is still (EVOSIM_CURRENT " +
@@ -220,29 +248,57 @@ namespace Evosim.Farm.Gpu
                         "test knob); the gpu engine carries the breathing envelope only.");
                 }
 
-                var streamAmp = (double[])Reflect.Field(current, "_streamAmplitude");
-                var streamRate = (double[])Reflect.Field(current, "_streamRate");
-                var cellAmp = (double[])Reflect.Field(current, "_cellAmplitude");
-                if (streamAmp.Length != 24 || streamRate.Length != 24 || cellAmp.Length != 3)
+                if (Ocean)
                 {
-                    throw new NotSupportedException(
-                        "The current's tables are not the 24 terms and 3 cells the kernel is written for.");
+                    // CurrentField.Ocean.cs: 25 vectors of 3 layers, its wave numbers into the reals and
+                    // the rest for the instants, which are transcribed on the host.
+                    var kx = (double[])Reflect.Field(current, "_oceanKx");
+                    var kz = (double[])Reflect.Field(current, "_oceanKz");
+                    _oAmp = (double[])Reflect.Field(current, "_oceanAmplitude");
+                    _oPhase = (double[])Reflect.Field(current, "_oceanPhase");
+                    _oRate = (double[])Reflect.Field(current, "_oceanRate");
+                    _oBreathPhase = (double[])Reflect.Field(current, "_oceanBreathPhase");
+                    _oBreathRate = (double[])Reflect.Field(current, "_oceanBreathRate");
+                    if (kx.Length != 25 || kz.Length != 25 || _oAmp.Length != 75 || _oRate.Length != 75)
+                    {
+                        throw new NotSupportedException(
+                            "The ocean's tables are not the 25 vectors of 3 layers the kernel is written for.");
+                    }
+
+                    StreamRateAt = StreamAmpAt;
+                    CellAmpAt = StreamAmpAt;
+                    OceanKAt = reals.Count;
+                    reals.AddRange(kx);
+                    reals.AddRange(kz);
+                    OceanL = current.LengthMetres;
+                    OceanW = current.WidthMetres;
                 }
+                else
+                {
+                    var streamAmp = (double[])Reflect.Field(current, "_streamAmplitude");
+                    var streamRate = (double[])Reflect.Field(current, "_streamRate");
+                    var cellAmp = (double[])Reflect.Field(current, "_cellAmplitude");
+                    if (streamAmp.Length != 24 || streamRate.Length != 24 || cellAmp.Length != 3)
+                    {
+                        throw new NotSupportedException(
+                            "The current's tables are not the 24 terms and 3 cells the kernel is written for.");
+                    }
 
-                reals.AddRange(streamAmp);
-                StreamRateAt = reals.Count;
-                reals.AddRange(streamRate);
-                CellAmpAt = reals.Count;
-                reals.AddRange(cellAmp);
+                    reals.AddRange(streamAmp);
+                    StreamRateAt = reals.Count;
+                    reals.AddRange(streamRate);
+                    CellAmpAt = reals.Count;
+                    reals.AddRange(cellAmp);
 
-                _sPhase = (double[])Reflect.Field(current, "_streamPhase");
-                _sRate = streamRate;
-                _sBreathPhase = (double[])Reflect.Field(current, "_streamBreathPhase");
-                _sBreathRate = (double[])Reflect.Field(current, "_streamBreathRate");
-                _cPhase = (double[])Reflect.Field(current, "_cellPhase");
-                _cRate = (double[])Reflect.Field(current, "_cellRate");
-                _cBreathPhase = (double[])Reflect.Field(current, "_cellBreathPhase");
-                _cBreathRate = (double[])Reflect.Field(current, "_cellBreathRate");
+                    _sPhase = (double[])Reflect.Field(current, "_streamPhase");
+                    _sRate = streamRate;
+                    _sBreathPhase = (double[])Reflect.Field(current, "_streamBreathPhase");
+                    _sBreathRate = (double[])Reflect.Field(current, "_streamBreathRate");
+                    _cPhase = (double[])Reflect.Field(current, "_cellPhase");
+                    _cRate = (double[])Reflect.Field(current, "_cellRate");
+                    _cBreathPhase = (double[])Reflect.Field(current, "_cellBreathPhase");
+                    _cBreathRate = (double[])Reflect.Field(current, "_cellBreathRate");
+                }
 
                 BedShape curBed = current.Bed;
                 Sloped = curBed != null;
@@ -253,6 +309,22 @@ namespace Evosim.Farm.Gpu
                         "engine carries one bed (SolverConfig.Bed and CurrentField.Bed must be one object).");
                 }
 
+                if (!ReferenceEquals(current.Coral, s.Coral))
+                {
+                    throw new NotSupportedException(
+                        "The current fades around different coral from the coral the bodies touch; the gpu " +
+                        "engine carries one (SolverConfig.Coral and CurrentField.Coral must be one object).");
+                }
+
+                // The coral's ocean takes its chain rule with no overturning (CurrentField.CoralOceanAccelerationAt
+                // passes 0); the kernel reads cfg.Overturning, which is 0 in the ocean.
+                if (Ocean && current.Coral != null && Overturning != 0)
+                {
+                    throw new NotSupportedException(
+                        "The ocean's coral fade reads an overturning of 0, and this current carries " +
+                        Overturning.ToString("R", CultureInfo.InvariantCulture) + ".");
+                }
+
                 if (!ReferenceEquals(current.Reefs, s.Reefs))
                 {
                     throw new NotSupportedException(
@@ -260,17 +332,33 @@ namespace Evosim.Farm.Gpu
                         "engine carries one set (SolverConfig.Reefs and CurrentField.Reefs must be one object).");
                 }
 
-                // StreamsAt: `_speed * _streamsScale` is a float product; the sloped multiplier
-                // widens it, multiplies by the double _bedScale and narrows.
-                float flat = Speed * scale;
-                SigmaFlat = flat;
-                SigmaSloped = (float)(flat * bedScale);
+                if (Ocean)
+                {
+                    // OceanAt: `u * (float)(_speed * _oceanScale)`, flat or sloped alike, and
+                    // OceanAccelerationAt's `(double)_speed * _oceanScale`.
+                    double oceanScale = (double)Reflect.Field(current, "_oceanScale");
+                    SigmaFlat = (float)(Speed * oceanScale);
+                    SigmaSloped = SigmaFlat;
 
-                // StreamsAccelerationAt and ReefStreamsAccelerationAt.
-                double clock = 2.0 * Math.PI / _period;
-                double sigma = (double)Speed * scale * bedScale;
-                PerSecond = sigma * clock;
-                Squared = sigma * sigma;
+                    double clock = 2.0 * Math.PI / _period;
+                    double sigma = (double)Speed * oceanScale;
+                    PerSecond = sigma * clock;
+                    Squared = sigma * sigma;
+                }
+                else
+                {
+                    // StreamsAt: `_speed * _streamsScale` is a float product; the sloped multiplier
+                    // widens it, multiplies by the double _bedScale and narrows.
+                    float flat = Speed * scale;
+                    SigmaFlat = flat;
+                    SigmaSloped = (float)(flat * bedScale);
+
+                    // StreamsAccelerationAt and ReefStreamsAccelerationAt.
+                    double clock = 2.0 * Math.PI / _period;
+                    double sigma = (double)Speed * scale * bedScale;
+                    PerSecond = sigma * clock;
+                    Squared = sigma * sigma;
+                }
             }
             else
             {
@@ -345,6 +433,74 @@ namespace Evosim.Farm.Gpu
                 }
             }
 
+            // ---- D194's coral: CoralRock's own arrays, read as the reefs' are (a renamed field fails the build's
+            // tests, not the compiler; GpuCoralTests checks the packing against the rock's public readers).
+            CoralRock coral = s.Coral;
+            if (coral != null)
+            {
+                CoralCount = coral.Count;
+                CoralFillet = (double)Reflect.Field(coral, "_fillet");
+                CoralFade = coral.FadeMetres;
+                CoralFloor = coral.FadeFloor;
+                CoralCell = (double)Reflect.Field(coral, "_cell");
+                CoralCellsX = (int)Reflect.Field(coral, "_cellsX");
+                CoralCellsZ = (int)Reflect.Field(coral, "_cellsZ");
+                CoralPeriodX = (double)Reflect.Field(coral, "_periodX");
+                CoralPeriodZ = (double)Reflect.Field(coral, "_periodZ");
+
+                string[] rows = { "_minX", "_minY", "_minZ", "_maxX", "_maxY", "_maxZ", "_allowance",
+                                  "_cx", "_cy", "_cz", "_ax", "_ay", "_az", "_amin" };
+                var columns = new double[rows.Length][];
+                for (int k = 0; k < rows.Length; k++) columns[k] = (double[])Reflect.Field(coral, rows[k]);
+
+                CoralGeometry geometry = coral.Coral;
+                CoralColonyAt = reals.Count;
+                for (int c = 0; c < CoralCount; c++)
+                {
+                    for (int k = 0; k < rows.Length; k++) reals.Add(columns[k][c]);
+                    CoralGeometry.Colony colony = geometry.ColonyAt(c);
+                    reals.Add(colony.FirstPiece);
+                    reals.Add(colony.PieceCount);
+                }
+
+                CoralPieceAt = reals.Count;
+                for (int p = 0; p < geometry.PieceCount; p++)
+                {
+                    CoralGeometry.Piece piece = geometry.PieceAt(p);
+                    reals.Add(piece.Kind == CoralGeometry.PieceKind.Plate ? 1.0 : 0.0);
+                    reals.Add(piece.AX); reals.Add(piece.AY); reals.Add(piece.AZ);
+                    reals.Add(piece.BX); reals.Add(piece.BY); reals.Add(piece.BZ);
+                    reals.Add(piece.Radius);
+                    reals.Add(piece.HalfThickness);
+                }
+
+                var starts = (int[])Reflect.Field(coral, "_cellStart");
+                var lists = (int[])Reflect.Field(coral, "_cellColonies");
+                if (starts.Length != CoralCellsX * CoralCellsZ + 1 || lists.Length >= (1 << 24))
+                {
+                    throw new NotSupportedException(
+                        "The coral's grid is not the cells and lists the kernel reads (CoralRock's _cellStart, _cellColonies).");
+                }
+
+                CoralGridAt = reals.Count;
+                foreach (int v in starts) reals.Add(v);
+                CoralListAt = reals.Count;
+                foreach (int v in lists) reals.Add(v);
+
+                var fadeStarts = (int[])Reflect.Field(coral, "_fadeStart");
+                var fadeLists = (int[])Reflect.Field(coral, "_fadeColonies");
+                if (fadeStarts.Length != CoralCellsX * CoralCellsZ + 1 || fadeLists.Length >= (1 << 24))
+                {
+                    throw new NotSupportedException(
+                        "The coral's fade lists are not the cells and lists the kernel reads (CoralRock's _fadeStart, _fadeColonies).");
+                }
+
+                CoralFadeGridAt = reals.Count;
+                foreach (int v in fadeStarts) reals.Add(v);
+                CoralFadeListAt = reals.Count;
+                foreach (int v in fadeLists) reals.Add(v);
+            }
+
             if (reals.Count == 0) reals.Add(0);
             WR = reals.ToArray();
         }
@@ -355,11 +511,12 @@ namespace Evosim.Farm.Gpu
         /// </summary>
         public static void Refuse(SolverConfig s)
         {
-            if (!(s.TankRadiusMetres > 0))
+            bool box = !(s.TankRadiusMetres > 0);
+            if (box && !(s.SeamLengthMetres > 0 && s.SeamWidthMetres > 0))
             {
                 throw new NotSupportedException(
-                    "The gpu engine steps a tank only (EVOSIM_SHAPE tank); this world is a box, whose " +
-                    "seams the farm wraps between steps.");
+                    "The gpu engine steps a box only with its seams read across (EVOSIM_READ_ACROSS_SEAMS 1, " +
+                    "D204); this box's seams the farm wraps between steps.");
             }
 
             if (s.WaterHoldSeconds > 0)
@@ -385,14 +542,31 @@ namespace Evosim.Farm.Gpu
             CurrentField current = s.Current;
             if (current == null) return;
 
-            if (current.Shape != WorldShape.Tank)
+            if (box || current.Shape != WorldShape.Tank)
             {
-                throw new NotSupportedException(
-                    "The gpu engine carries the tank's streams only; the current is built for a " +
-                    current.Shape + " (EVOSIM_SHAPE).");
-            }
+                if (current.Shape == WorldShape.Tank || current.Mode != CurrentMode.Ocean)
+                {
+                    throw new NotSupportedException(
+                        "The gpu engine carries the tank's streams in a tank and the open ocean's current in a " +
+                        "box (EVOSIM_CURRENT_MODE ocean); this current is " + current.Mode + " built for a " +
+                        current.Shape + " (EVOSIM_SHAPE).");
+                }
 
-            if (current.Mode != CurrentMode.Transport)
+                if ((bool)Reflect.Field(current, "_fadeOn"))
+                {
+                    throw new NotSupportedException(
+                        "The gpu engine carries the open ocean without the shore's fade (EVOSIM_BED_SHORE and " +
+                        "EVOSIM_BED_SHORE_FADE 0); its faded field is not yet shown to match on the card.");
+                }
+
+                if (s.Reefs != null && s.Reefs.Count > 0)
+                {
+                    throw new NotSupportedException(
+                        "The gpu engine carries the open ocean without reefs (EVOSIM_REEF_COVER 0); the reefs' " +
+                        "fade around it is not yet shown to match on the card.");
+                }
+            }
+            else if (current.Mode != CurrentMode.Transport)
             {
                 throw new NotSupportedException(
                     "The gpu engine samples the water by place (EVOSIM_CURRENT_MODE Transport); the current's " +
@@ -455,11 +629,13 @@ namespace Evosim.Farm.Gpu
                     "Two bodies smell two different fields; the gpu engine carries one snow field.");
             }
 
-            if (!(field is GridField grid) || grid.Shape != WorldShape.Tank)
+            // A tank's grid, or D204's box's: the kernel finds the cell by the tank's walk or by the
+            // box's wrap (BoxCellAt).
+            if (!(field is GridField grid))
             {
                 throw new NotSupportedException(
-                    "The gpu engine's chemical sense reads a tank's grid field (EVOSIM_FIELD grid, EVOSIM_SHAPE " +
-                    "tank); a body was handed a " + field.GetType().Name + ".");
+                    "The gpu engine's chemical sense reads a grid field (EVOSIM_FIELD grid); a body was " +
+                    "handed a " + field.GetType().Name + ".");
             }
 
             Field = grid;
@@ -471,6 +647,8 @@ namespace Evosim.Farm.Gpu
             LayerStride = Nx * Nz;
             CellMetres = grid.CellMetres;
             FieldTankR = grid.TankRadiusMetres;
+            FieldL = grid.LengthMetres;
+            FieldW = grid.WidthMetres;
             RefugeFraction = grid.RefugeEdibleFraction;
             CellVolume = grid.CellVolume;
 
@@ -558,8 +736,42 @@ namespace Evosim.Farm.Gpu
             double a = 2.0 * Math.PI * seconds / _period;
             double b = 2.0 * Math.PI / _period * seconds;
 
+            if (Ocean)
+            {
+                FillOcean(a, into, at, false);
+                FillOcean(b, into, at + 150, true);
+                return;
+            }
+
             Fill(a, into, at, false);
             Fill(b, into, at + 78, true);
+        }
+
+        /// <summary>
+        /// CurrentField.EnsureOceanInstant's arithmetic: every mode's W·cos φ and W·sin φ, and with
+        /// <paramref name="withRates"/> their clock derivatives after them, 75 apiece.
+        /// </summary>
+        private void FillOcean(double t, double[] into, int at, bool withRates)
+        {
+            for (int k = 0; k < 75; k++)
+            {
+                double rate = _oRate[k];
+                double phase = _oPhase[k] + rate * t;
+                double cos = Math.Cos(phase);
+                double sin = Math.Sin(phase);
+
+                double breath = _oBreathRate[k] * t + _oBreathPhase[k];
+                double envelope = 0.75d + 0.25d * Math.Sin(breath);
+                double envelopeRate = 0.25d * _oBreathRate[k] * Math.Cos(breath);
+
+                double amp = _oAmp[k];
+
+                into[at + k] = amp * envelope * cos;
+                into[at + 75 + k] = amp * envelope * sin;
+                if (!withRates) continue;
+                into[at + 150 + k] = amp * (envelopeRate * cos - envelope * rate * sin);
+                into[at + 225 + k] = amp * (envelopeRate * sin + envelope * rate * cos);
+            }
         }
 
         private void Fill(double t, double[] into, int at, bool withRates)
@@ -611,6 +823,12 @@ namespace Evosim.Farm.Gpu
             Instant(seconds, mine, 0);
 
             _current.PinInstant(seconds);
+            if (Ocean)
+            {
+                try { return VerifyOcean(seconds, mine); }
+                finally { _current.UnpinInstant(); }
+            }
+
             try
             {
                 var slots = (Array)Reflect.Field(_current, "_slots");
@@ -669,6 +887,47 @@ namespace Evosim.Farm.Gpu
             {
                 _current.UnpinInstant();
             }
+        }
+
+        /// <summary><see cref="VerifyInstant"/> for the ocean: its pinned slots against <see cref="FillOcean"/>.</summary>
+        private (int values, int mismatches) VerifyOcean(double seconds, double[] mine)
+        {
+            var slots = (Array)Reflect.Field(_current, "_oceanSlots");
+            double a = 2.0 * Math.PI * seconds / _period;
+            double b = 2.0 * Math.PI / _period * seconds;
+            int values = 0, bad = 0;
+
+            foreach (object slot in slots)
+            {
+                if (slot == null) continue;
+
+                double held = (double)Reflect.Field(slot, "At");
+                bool isA = held == a, isB = held == b;
+                if (!isA && !isB) continue;
+
+                var cos = (double[])Reflect.Field(slot, "Cos");
+                var sin = (double[])Reflect.Field(slot, "Sin");
+                var cosRate = (double[])Reflect.Field(slot, "CosRate");
+                var sinRate = (double[])Reflect.Field(slot, "SinRate");
+
+                void Cmp(double x, double y)
+                {
+                    values++;
+                    if (BitConverter.DoubleToInt64Bits(x) != BitConverter.DoubleToInt64Bits(y)) bad++;
+                }
+
+                for (int k = 0; k < 75; k++)
+                {
+                    if (isA) { Cmp(cos[k], mine[k]); Cmp(sin[k], mine[75 + k]); }
+                    if (isB)
+                    {
+                        Cmp(cos[k], mine[150 + k]); Cmp(sin[k], mine[225 + k]);
+                        Cmp(cosRate[k], mine[300 + k]); Cmp(sinRate[k], mine[375 + k]);
+                    }
+                }
+            }
+
+            return (values, bad);
         }
     }
 

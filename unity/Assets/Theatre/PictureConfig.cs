@@ -192,6 +192,10 @@ namespace Evosim.Theatre
                     // under minPartVolume and was pruned from every picture of a round 48 run,
                     // the stomach on a leaf included, while the run itself carried it.
                     FloorsWeighRigidGroups = OptionalBool(limits, "floorsWeighRigidGroups", DevelopmentLimits.Default.FloorsWeighRigidGroups, missing, "development.floorsWeighRigidGroups"),
+
+                    // D199's reading three, read for the same reason: a picture of a run that
+                    // carried it must grow its bodies to the run's rule.
+                    ScaleLengthensOnce = OptionalBool(limits, "scaleLengthensOnce", DevelopmentLimits.Default.ScaleLengthensOnce, missing, "development.scaleLengthensOnce"),
                 };
             }
             else

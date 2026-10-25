@@ -131,6 +131,35 @@ namespace Evosim.Farm
                 written++;
             }
 
+            // D220: the remains lying in the water, after the living, each flagged as remains so the theatre can
+            // draw the dead and fade them by age. The list is empty with the dial off.
+            IReadOnlyList<Organism> remains = sim.World.Remains;
+
+            for (int i = 0; i < remains.Count; i++)
+            {
+                Organism creature = remains[i];
+                if (!sim.TryPose(creature.Id, out Creature body)) continue;
+
+                _writer.Body(
+                    creature.Id,
+                    (float)body.BasePosition.X,
+                    (float)body.BasePosition.Y,
+                    (float)body.BasePosition.Z,
+                    (float)body.BaseRotation.X,
+                    (float)body.BaseRotation.Y,
+                    (float)body.BaseRotation.Z,
+                    (float)body.BaseRotation.W,
+                    creature.BodyFraction,
+                    GuildFlags(creature),
+                    creature.SecondsOfReserve,
+                    BreedFraction(creature, sim.World.Config),
+                    (float)creature.Energy,
+                    body.Dof,
+                    body.Q);
+
+                written++;
+            }
+
             _writer.EndFrame();
             return written;
         }
@@ -151,7 +180,7 @@ namespace Evosim.Farm
         /// A body's guild flags, decided exactly as the sampler decides them for
         /// <c>positions.jsonl</c> (<c>Sampler.Write</c>): absorptive when any developed part is
         /// absorptive, jointed when the parts' joints have any degree of freedom between them, and
-        /// photosynthetic by the organism's own cached flag.
+        /// photosynthetic by the organism's own cached flag; and, for remains (D220), the remains bit.
         /// </summary>
         /// <remarks>
         /// Written out again here rather than shared because the sampler computes the three tests
@@ -174,7 +203,8 @@ namespace Evosim.Farm
 
             return (absorptive ? PositionsRow.AbsorptiveBit : 0) |
                    (dof > 0 ? PositionsRow.JointedBit : 0) |
-                   (creature.HasPhotosyntheticTissue ? PositionsRow.PhotosyntheticBit : 0);
+                   (creature.HasPhotosyntheticTissue ? PositionsRow.PhotosyntheticBit : 0) |
+                   (creature.IsRemains ? PositionsRow.RemainsBit : 0);
         }
 
         public void Dispose()
