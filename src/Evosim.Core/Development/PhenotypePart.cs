@@ -64,9 +64,23 @@ namespace Evosim.Core
         /// A box is symmetric under the axis flip used to recover a proper rotation, so
         /// geometry is unaffected — but joint axis conventions are not, and a mirrored limb
         /// needs its hinge axis flipped to move as a mirror image rather than in parallel.
-        /// Evosim.Sim consumes this.
+        /// Evosim.Sim consumes this. In the dynamics solver, <see cref="ReflectedDrive"/> says
+        /// whether that flip is on.
         /// </remarks>
         public bool Mirrored { get; internal set; }
+
+        /// <summary>
+        /// Whether an engine reflects this part's joint drive with its geometry (D234): true for a
+        /// <see cref="Mirrored"/> part grown with <see cref="DevelopmentLimits.ReflectMirroredAnchors"/> on,
+        /// false for every other part. A reflected part's signed joint quantities (angle, rate, target,
+        /// torque) are read negated, on the degrees of freedom whose axis the reflection reverses, so the
+        /// same brain signal moves a twin as the mirror image of its original rather than against it.
+        /// </summary>
+        /// <remarks>
+        /// Set where the anchors are set, from the same switch, so that the part's pose and its drive are
+        /// reflected together or not at all.
+        /// </remarks>
+        public bool ReflectedDrive { get; internal set; }
 
         /// <summary>What this part is made of — <see cref="CellType.Id"/>, DESIGN.md §5A.1.</summary>
         public string CellTypeId { get; internal set; } = CellTypeIds.Structural;

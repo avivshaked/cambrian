@@ -38,6 +38,14 @@ namespace Evosim.Dynamics
         /// assembly table. Needs <see cref="ShapedAddedMass"/> and the bend-and-power drive.
         /// </summary>
         public bool StrokePushesAssembly;
+
+        /// <summary>
+        /// D234: the world's bodies were developed with <c>DevelopmentLimits.ReflectMirroredAnchors</c> on, so
+        /// a mirrored part reflects its joint drive. It is not a dial: <see cref="From"/> copies the
+        /// development switch so that the card can size its per-link mirror column, and the CPU solver never
+        /// reads it, since each body carries the answer in its own <see cref="Creature.MirrorMask"/>.
+        /// </summary>
+        public bool MirroredDrive;
         public double PowerPushRadiansPerSecond;
         public double PoseHertz;
         public double TissueExcessDensity;
@@ -333,6 +341,7 @@ namespace Evosim.Dynamics
                 LimbPushCoefficient = fluid.LimbPushCoefficient,
                 ShapedAddedMass = fluid.ShapedAddedMass,
                 StrokePushesAssembly = fluid.StrokePushesAssembly,
+                MirroredDrive = config.Development.ReflectMirroredAnchors,
                 PowerPushRadiansPerSecond = fluid.PowerPushRadiansPerSecond,
                 PoseHertz = fluid.PoseHertz,
                 TissueExcessDensity = fluid.TissueExcessDensity,

@@ -240,6 +240,10 @@ namespace Evosim.Core
                 Position = position,
                 Rotation = rotation,
                 Mirrored = mirrored,
+
+                // D234, under D228's switch: a reflected part's joint drive is reflected with its anchors, so
+                // that the same signal moves a twin as the mirror image of its original.
+                ReflectedDrive = limits.ReflectMirroredAnchors && mirrored,
                 CellTypeId = node.CellTypeId,
                 ShapeId = node.ShapeId,
                 Volume = volume,

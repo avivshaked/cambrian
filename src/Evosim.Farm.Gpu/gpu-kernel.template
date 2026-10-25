@@ -81,6 +81,12 @@ namespace __NS__
         // first moment about the joint. One row wide when the switch is off.
         public ArrayView<int> StrokeParts;
         public ArrayView<Real> StrokeAlong, StrokeMass, StrokeMoment;
+        // D234's mirrored twin, a link each: the bit mask of the degrees of freedom whose signed
+        // quantities are read negated (Creature.MirrorMask). A link wide only in a world whose bodies
+        // reflect their drive, a one-wide stub otherwise, and then never read (cfg.MirrorDrive is 0). Bit d is
+        // degree of freedom d; bit 3 says the part reflects the vectors its senses read in its own frame, and
+        // bits 4 and 5 are the axis of that reflection (Creature.FrameNormal).
+        public ArrayView<int> MirrorMask;
     }
 
     public struct SPanels { public ArrayView<Real> Centre, Normal, Area; }
@@ -240,6 +246,7 @@ namespace __NS__
         public int WeldedDrag;   // D199/D200: under LimitDrag, the torque capped by the welded body (WeldedDrag)
         public int OffsetTorque, SplitColumns, Redo, BendAndPower, TurningDrag, RockTouch, Anchoring;
         public int ShapedMass;   // D229: the limb pushes take the part's shaped added mass (Fluid.AddedMassOf)
+        public int MirrorDrive;  // D234: a mirrored twin's drive and senses are read through its link's mirror mask
         public int AnyRemains;   // D220: 1 for a block in which some body is remains; 0 reads no remains flag at all
         public int TrueShape;    // D228: a part touches as its convex core with a margin (SolverConfig.ContactShape)
         public int StrokeAssembly;   // D231: the powered stroke pushes the assembly welded beyond a jointed link (SolverConfig.StrokePushesAssembly)
@@ -1589,7 +1596,7 @@ namespace __NS__
             bool lost = false;
             if (!remains)
             {
-                Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi,
+                Sample(i, links, dofCount, dofStart, position, rotationMatrix, relVel, q, qd, limitHi, b,
                        br, w, cfg, readsDepth, readsUp, readsJoint, readsFlow, readsChemical && hasNutrients,
                        readsScent && hasScent, readsEnergy && hasReserve, readsLeaf && hasLeaf, readsLeafDir,
                        sDepth, sUp, sChem, sScent, sFlow, sAngle, sRate, sDrive, sLeaf, ref energy, ref lost);
@@ -1662,6 +1669,7 @@ namespace __NS__
 
                     int offset = dofStart[bl];
                     int gene = bl * N + i;
+                    int mirror = cfg.MirrorDrive != 0 ? b.MirrorMask[gene] : 0;   // D234, Creature.MirrorMask
                     double threshold = b.Threshold[gene];
                     double reaction = b.Reaction[gene];
                     double holdGene = b.HoldGene[gene];
@@ -1715,13 +1723,21 @@ namespace __NS__
                         dr.EHoldLeft[e] = holdLeft;
 
                         if (poseOmega <= 0 || inertia <= 0) continue;
-                        double lo = limitLo[idx], hi = limitHi[idx];
+
+                        // D234, EffectorDrive.DriveBendAndPower: a reflected degree of freedom works in the signed
+                        // reading, the genome's own stops (the stored ones swapped and negated back), the signed
+                        // angle and rate, and the torque reversed back to the stored angle. The sign is exactly 1
+                        // everywhere else, and in a world without the rule no mask is read at all.
+                        bool flipped = mirror != 0 && ((mirror >> d) & 1) != 0;
+                        double sign = flipped ? -1.0 : 1.0;
+                        double lo = flipped ? -(double)limitHi[idx] : (double)limitLo[idx];
+                        double hi = flipped ? -(double)limitLo[idx] : (double)limitHi[idx];
                         double target = lo + bd * (hi - lo);
-                        double magnitude = inertia * poseOmega * (poseOmega * (target - q[idx]) - 2.0 * qd[idx]);
+                        double magnitude = inertia * poseOmega * (poseOmega * (target - sign * q[idx]) - 2.0 * (sign * qd[idx]));
                         if (magnitude > cap) { magnitude = cap; limited++; }
                         else if (magnitude < -cap) { magnitude = -cap; limited++; }
 
-                        torque = torque + frame.Rotate(V3.Axis(d)) * (Real)magnitude;
+                        torque = torque + frame.Rotate(V3.Axis(d)) * (Real)(sign * magnitude);
                     }
 
                     M3 rot = M3.Read(rotationMatrix, 9 * bl);
@@ -1776,6 +1792,7 @@ namespace __NS__
                     if (n == 0) continue;
 
                     int offset = dofStart[bl];
+                    int mirror = cfg.MirrorDrive != 0 ? b.MirrorMask[bl * N + i] : 0;   // D234, Creature.MirrorMask
                     Q4 frame = Q4.Read(jointFrame, 4 * bl);
 
                     Real allowed = cfg.LimitDrive != 0 ? smallI[bl] * cfg.SpinBudget : 0;
@@ -1794,6 +1811,9 @@ namespace __NS__
                             if (magnitude > allowed) { magnitude = allowed; limited++; }
                             else if (magnitude < -allowed) { magnitude = -allowed; limited++; }
                         }
+
+                        // D234: a reflected degree of freedom's torque is reversed, after the limiter.
+                        if (((mirror >> d) & 1) != 0) magnitude = -magnitude;
 
                         torque = torque + frame.Rotate(V3.Axis(d)) * magnitude;
                     }
@@ -4782,7 +4802,7 @@ namespace __NS__
 
         private static void Sample(
             int i, int links, int[] dofCount, int[] dofStart, Real[] position, Real[] rotationMatrix,
-            Real[] relVel, Real[] q, Real[] qd, Real[] limitHi, SBrain br, SWorld w, SCfg cfg,
+            Real[] relVel, Real[] q, Real[] qd, Real[] limitHi, SConst b, SBrain br, SWorld w, SCfg cfg,
             bool readsDepth, bool readsUp, bool readsJoint, bool readsFlow, bool readsChemical, bool readsScent,
             bool readsEnergy, bool leaves, bool readsLeafDir,
             float[] sDepth, float[] sUp, float[] sChem, float[] sScent, float[] sFlow, float[] sAngle, float[] sRate, float[] sDrive,
@@ -4848,7 +4868,11 @@ namespace __NS__
                     sScent[bl] = sc > 0f ? sc / (sc + cfg.ScentHalf) : 0f;
                 }
 
-                if (leaves) SampleLeaf(bl, (float)px, (float)py, (float)pz, rotationMatrix, readsLeafDir, sLeaf, w, cfg);
+                // D234: a part that reflects reads the vectors in its own frame with the component along the
+                // reflection's axis negated (CreatureSenses, Creature.ReflectFrameVector). 0 reflects nothing.
+                int frameMirror = cfg.MirrorDrive != 0 ? b.MirrorMask[bl * cfg.N + i] : 0;
+
+                if (leaves) SampleLeaf(bl, (float)px, (float)py, (float)pz, rotationMatrix, readsLeafDir, frameMirror, sLeaf, w, cfg);
 
                 if (readsFlow)
                 {
@@ -4861,7 +4885,15 @@ namespace __NS__
                     Real ly = m01 * vx + m11 * vy + m21 * vz;
                     Real lz = m02 * vx + m12 * vy + m22 * vz;
 
-                    sFlow[3 * bl] = Clamp((float)(lx / flowScale));
+                    if ((frameMirror & 8) != 0)
+                    {
+                        int axis = (frameMirror >> 4) & 3;
+                        if (axis == 0) lx = -lx;
+                        else if (axis == 1) ly = -ly;
+                        else lz = -lz;
+                    }
+
+                    sFlow[3 * bl] =Clamp((float)(lx / flowScale));
                     sFlow[3 * bl + 1] = Clamp((float)(ly / flowScale));
                     sFlow[3 * bl + 2] = Clamp((float)(lz / flowScale));
                 }
@@ -4872,16 +4904,23 @@ namespace __NS__
                 int offset = dofStart[bl];
                 if (n == 0 || offset < 0) continue;
 
+                // D234: CreatureSenses reads a reflected degree of freedom's angle and rate with the sign
+                // reversed, against the reversed lower stop as its upper one. The mask is read only in a world
+                // whose bodies reflect their drive; elsewhere the sign is 1 and the line is the old one.
+                int mirror = cfg.MirrorDrive != 0 ? b.MirrorMask[bl * cfg.N + i] : 0;
+
                 for (int d = 0; d < n; d++)
                 {
                     int at = offset + d;
-                    Real limit = AbsR(limitHi[at]);
+                    bool flipped = ((mirror >> d) & 1) != 0;
+                    Real sign = flipped ? (Real)(-1) : (Real)1;
+                    Real limit = AbsR(flipped ? -b.LimitLo[at * cfg.N + i] : limitHi[at]);
 
                     sAngle[at] = limit > (Real)1e-6
-                        ? Clamp((float)(q[at] / limit))
+                        ? Clamp((float)(sign * q[at] / limit))
                         : 0f;
 
-                    sRate[at] = Clamp((float)(qd[at] / rateScale));
+                    sRate[at] = Clamp((float)(sign * qd[at] / rateScale));
                 }
             }
         }
@@ -8522,7 +8561,7 @@ namespace __NS__
         /// the part's own frame, unit length, times that value; zero where the gradient is.
         /// </summary>
         private static void SampleLeaf(int bl, float px, float py, float pz, Real[] rotationMatrix, bool direction,
-                                       float[] sLeaf, SWorld w, SCfg cfg)
+                                       int frameMirror, float[] sLeaf, SWorld w, SCfg cfg)
         {
             float s = LeafAt(px, py, pz, w, cfg);
             float strength = s > 0f ? s / (s + cfg.LeafHalf) : 0f;
@@ -8537,6 +8576,16 @@ namespace __NS__
             Real lx = rotationMatrix[r] * gx + rotationMatrix[r + 3] * gy + rotationMatrix[r + 6] * gz;
             Real ly = rotationMatrix[r + 1] * gx + rotationMatrix[r + 4] * gy + rotationMatrix[r + 7] * gz;
             Real lz = rotationMatrix[r + 2] * gx + rotationMatrix[r + 5] * gy + rotationMatrix[r + 8] * gz;
+
+            // D234, as the flow in Sample: the component along the reflection's axis negated.
+            if ((frameMirror & 8) != 0)
+            {
+                int axis = (frameMirror >> 4) & 3;
+                if (axis == 0) lx = -lx;
+                else if (axis == 1) ly = -ly;
+                else lz = -lz;
+            }
+
             Real length = SqrtR(lx * lx + ly * ly + lz * lz);
 
             if (length > 0 && strength > 0f)

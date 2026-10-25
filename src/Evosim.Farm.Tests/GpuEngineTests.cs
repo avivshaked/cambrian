@@ -86,7 +86,7 @@ namespace Evosim.Farm.Tests
         /// </summary>
         public static Creature Body(int id, SolverConfig solver, World world, Rng rng, Vec3 at, int maxNeurons = 256,
                                    SensorChannel[] sensorPool = null, bool central = false, int bigLinks = 0,
-                                   string bodyCell = null)
+                                   string bodyCell = null, DevelopmentLimits limits = null)
         {
             for (int attempt = 0; ; attempt++)
             {
@@ -107,8 +107,8 @@ namespace Evosim.Farm.Tests
                 }
 
                 Phenotype plan = bodyCell == null
-                    ? Developer.Develop(genome, DevelopmentLimits.Default)
-                    : Developer.Develop(genome, DevelopmentLimits.Default, cellTypes: world.Config.CellTypes);
+                    ? Developer.Develop(genome, limits ?? DevelopmentLimits.Default)
+                    : Developer.Develop(genome, limits ?? DevelopmentLimits.Default, cellTypes: world.Config.CellTypes);
                 if (plan.PartCount > 16) continue;
 
                 var body = new Creature(id, plan, solver);
@@ -904,6 +904,97 @@ namespace Evosim.Farm.Tests
             }
 
             Assert.True(parted, world + ": the world stepped as the one without its setting");
+            Assert.Equal(0, backend.RefusedForClass);
+            Assert.Equal(0L, backend.OverflowTotal);
+        }
+
+        /// <summary>
+        /// D228's crowd of mirrored twins, bodies developed with the world's own limits (the other cases develop
+        /// with the defaults, whose switch is off): a cluster a couple of metres across at mid-depth.
+        /// </summary>
+        private static void PopulateTwins(DynamicsWorld world, World core, int count, ulong seed, int firstId)
+        {
+            var rng = new Rng(seed);
+            Vec3 axis = GpuTank.Axis(core);
+
+            for (int k = 0; k < count; k++)
+            {
+                var at = new Vec3(axis.X + 0.7 * (k % 3) - 0.7, -9.0 - 0.6 * (k / 3), axis.Z + 0.5 * (k % 2));
+                world.AddInIdOrder(GpuTank.Body(firstId + k, world.Config, core, rng, at, limits: core.Config.Development));
+            }
+        }
+
+        /// <summary>
+        /// D234: a mirrored twin's joint drive reflected with its geometry, under the torque drive and under the
+        /// bend-and-power drive with the limb push (<c>EVOSIM_REFLECT_MIRRORED_ANCHORS</c>): its torque, the stops it
+        /// reads and the angle and rate its brain reads, each the solver's to the bit after every block, a death and a
+        /// birth included. Each world is first shown to hold a body with a reflected degree of freedom and to part on
+        /// the CPU from the world without the switch, so that a switch that never reached the kernel cannot pass as a
+        /// match.
+        /// </summary>
+        [Theory]
+        [InlineData("torque")]
+        [InlineData("power")]
+        public void TheMirroredTwinsOnTheCpuAcceleratorAreTheSolver(string drive)
+        {
+            var drives = drive == "power"
+                ? new Dictionary<string, string>
+                    { { "EVOSIM_POWER_PUSH", "2" }, { "EVOSIM_POSE_HZ", "2" }, { "EVOSIM_LIMB_PUSH", "0.3" } }
+                : new Dictionary<string, string>();
+            var twins = new Dictionary<string, string>(drives) { { "EVOSIM_REFLECT_MIRRORED_ANCHORS", "1" } };
+
+            (DynamicsWorld plain, World core0) = Pair(true, false, drives);
+            (DynamicsWorld cpu, World coreA) = Pair(true, false, twins);
+            (DynamicsWorld gpu, World coreB) = Pair(true, false, twins);
+
+            PopulateTwins(plain, core0, 10, 31UL, 1);
+            PopulateTwins(cpu, coreA, 10, 31UL, 1);
+            PopulateTwins(gpu, coreB, 10, 31UL, 1);
+
+            Assert.False(plain.Config.MirroredDrive);
+            Assert.True(cpu.Config.MirroredDrive);
+            Assert.Equal(drive == "power", cpu.Creatures[0].Drive.BendAndPower);
+
+            int reflected = 0;
+            foreach (Creature body in cpu.Creatures)
+            {
+                for (int link = 0; link < body.Links; link++) if (body.MirrorMask[link] != 0) reflected++;
+            }
+
+            _out.WriteLine(drive + ": " + reflected + " links reflect a degree of freedom");
+            Assert.True(reflected > 0, "no body drew a mirrored jointed limb: draw the crowd again with another seed");
+
+            using var backend = new GpuBackend(gpu.Config, GpuTank.CpuDouble());
+            gpu.UseBackend(backend);
+
+            for (int block = 0; block < 4; block++)
+            {
+                plain.StepBlock(25);
+                cpu.StepBlock(25);
+                gpu.StepBlock(25);
+                AssertSame(cpu, gpu, drive + " twins, after block " + block);
+
+                if (block == 1)
+                {
+                    foreach ((DynamicsWorld w, World core) in new[] { (plain, core0), (cpu, coreA), (gpu, coreB) })
+                    {
+                        w.Remove(w.Creatures[0].Id);
+                        PopulateTwins(w, core, 1, 99UL, 50);
+                    }
+                }
+            }
+
+            bool parted = false;
+            for (int i = 0; i < cpu.Creatures.Count && !parted; i++)
+            {
+                double[] a = plain.Creatures[i].Position, b = cpu.Creatures[i].Position;
+                for (int k = 0; k < a.Length && !parted; k++)
+                {
+                    parted = BitConverter.DoubleToInt64Bits(a[k]) != BitConverter.DoubleToInt64Bits(b[k]);
+                }
+            }
+
+            Assert.True(parted, drive + ": the world stepped as the one without its switch");
             Assert.Equal(0, backend.RefusedForClass);
             Assert.Equal(0L, backend.OverflowTotal);
         }

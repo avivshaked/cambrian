@@ -48,6 +48,8 @@ namespace Evosim.Farm.Gpu
 
         /// <summary>D231: the powered stroke pushes the assembly welded beyond a jointed link (<c>SolverConfig.StrokePushesAssembly</c>).</summary>
         public bool StrokeAssembly;
+        /// <summary>D234: a mirrored part reflects its joint drive (<c>SolverConfig.MirroredDrive</c>); the card packs each link's mask and applies it.</summary>
+        public bool MirroredDrive;
 
         /// <summary>D228: a part touches as its convex core with a margin (<c>SolverConfig.ContactShape</c>), not as the ball of its half-diagonal.</summary>
         public bool TrueShape;
@@ -178,6 +180,7 @@ namespace Evosim.Farm.Gpu
             LimbPush = s.LimbPushCoefficient;
             ShapedMass = s.ShapedAddedMass;
             StrokeAssembly = s.StrokePushesAssembly;
+            MirroredDrive = s.MirroredDrive;
             TrueShape = s.ContactShape == ContactShapeForm.TrueShape;
 
             TurningDrag = s.TurningDrag == TurningDragForm.Skin ? 1 : s.TurningDrag == TurningDragForm.Spin ? 2 : 0;
