@@ -69,6 +69,67 @@ namespace Evosim.Core
         /// </summary>
         public long MouthBlowsFinishing { get; private set; }
 
+        /// <summary>
+        /// Bodies whose death was a kill that went into a killer's gut, ever (D232): a body a bite killed whose killer
+        /// was a living body, with something to swallow. Cumulative; 0 and not checkpointed unless
+        /// <see cref="RunConfig.KillSwallowsBody"/> is on.
+        /// </summary>
+        public long KillsSwallowed { get; private set; }
+
+        /// <summary>
+        /// Joules that went into guts at kills, ever (D232): the dead body's tissue and store, and the gut it carried.
+        /// Cumulative; 0 and not checkpointed unless <see cref="RunConfig.KillSwallowsBody"/> is on.
+        /// </summary>
+        public double SwallowedJoules { get; private set; }
+
+        /// <summary>
+        /// Joules taken out of guts by digestion, ever (D232): each step's amount before the intake waste, which is the
+        /// share of the mouth's per-step cap the bites left. Cumulative; checkpointed only with the switch on.
+        /// </summary>
+        public double GutDigestedJoules { get; private set; }
+
+        /// <summary>
+        /// Of <see cref="GutDigestedJoules"/>, the intake waste, which went to Nutrients at the digester's point (D232):
+        /// the same route as a bite's waste, booked in <see cref="DetritusDepositedTotal"/> and not in
+        /// <see cref="BiteWasteJoules"/>. Cumulative; checkpointed only with the switch on.
+        /// </summary>
+        public double GutWasteJoules { get; private set; }
+
+        /// <summary>
+        /// Joules of bites' offers that a mouth's per-step cap cut, ever (D232): what the bites offered above the cap,
+        /// which went to the water as waste with the intake waste of the rest. Counted only with the switch on, so the
+        /// screen reads how hard the cap binds on bites and, beside it, on the gut. Cumulative; checkpointed only
+        /// with the switch on.
+        /// </summary>
+        public double BiteCapCutJoules { get; private set; }
+
+        /// <summary>
+        /// Joules the per-step cap held back in guts, summed over the body-steps on which it bound (D232): for each
+        /// body with a gut that the cap left more of than it let out, what stayed. Divide by
+        /// <see cref="GutCapBound"/> for the mean held back on a binding step. Cumulative; checkpointed only with the
+        /// switch on.
+        /// </summary>
+        public double GutCapCutJoules { get; private set; }
+
+        /// <summary>The body-steps on which the cap held something back in a gut, ever (D232). Cumulative; checkpointed only with the switch on.</summary>
+        public long GutCapBound { get; private set; }
+
+        /// <summary>The joules the living hold in their guts now (D232). O(n), for a report row.</summary>
+        public double GutJoulesHeld
+        {
+            get
+            {
+                double sum = 0d;
+                for (int i = 0; i < _living.Count; i++) sum += _living[i].GutJoules;
+                return sum;
+            }
+        }
+
+        // What the bites of this step took of each biting body's cap, in offered joules, by body id (D232). Filled by
+        // SettleBites and read and cleared by DigestGuts in the same pass, so nothing of it survives a step and
+        // nothing is checkpointed. Looked up and never iterated, so no order is taken from it.
+        private readonly Dictionary<long, double> _gutBiteUse = new Dictionary<long, double>();
+
         // ------------------------------------------------------------------ the tissue of a body, part by part
 
         /// <summary>
@@ -742,6 +803,7 @@ namespace Evosim.Core
             if (_biteOffers.Count == 0) return;
 
             double keptShare = 1d - Config.IntakeWasteFraction;
+            bool gutOn = Config.KillSwallowsBody;
 
             for (int i = 0; i < _biteOffers.Count; i++)
             {
@@ -754,6 +816,16 @@ namespace Evosim.Core
                     double cap = _biteCaps[o.Slot];
                     double fraction = total > cap ? cap / total : 1d;
                     keep = fraction * o.Joules * keptShare;
+
+                    if (gutOn)
+                    {
+                        // D232: the share of the cap this offer used, in offered joules, is what the gut finds gone
+                        // when it digests; and what the cap cut off the offer is the screen's instrument.
+                        double underCap = fraction * o.Joules;
+                        _gutBiteUse.TryGetValue(o.Biter.Id, out double usedBefore);
+                        _gutBiteUse[o.Biter.Id] = usedBefore + underCap;
+                        if (fraction < 1d) BiteCapCutJoules += o.Joules - underCap;
+                    }
                 }
 
                 // The field takes a float and these are doubles. The water's share is decided in the field's
@@ -786,6 +858,126 @@ namespace Evosim.Core
             _biteSlots.Clear();
             _biteTotals.Clear();
             _biteCaps.Clear();
+        }
+
+        // ------------------------------------------------------------------ the gut (D232)
+
+        /// <summary>
+        /// The living body that swallows <paramref name="victim"/>, or null (D232).
+        /// </summary>
+        /// <param name="victim">The body a bite killed, still in the living when this is asked.</param>
+        /// <param name="killedBy">
+        /// The id <see cref="Wound"/> last recorded against the part whose death was the body's (<see cref="AttackerOf"/>):
+        /// whichever blow of the pass reached that part last, in the order of the contact list, whether or not it was
+        /// the one that took the last of the part's health, and whether its part carries a mouth or a claw alone.
+        /// </param>
+        /// <remarks>
+        /// The recorded killer swallows, and only when it is a living body with a mouth at this moment: a killer whose
+        /// mouths take nothing (a claw alone), a body of remains, an id no
+        /// one holds, no attacker at all and a killer that died earlier in the same collection (the living are walked
+        /// from the back, and a killer is buried by its own turn) all leave remains as they do with the switch off. If
+        /// two bodies kill each other in one step the one the walk reaches first is swallowed and the other, reached
+        /// next, finds its killer gone and leaves remains holding what it had swallowed.
+        /// </remarks>
+        private Organism SwallowerOf(Organism victim, long killedBy)
+        {
+            if (killedBy < 0L) return null;
+
+            for (int i = _living.Count - 1; i >= 0; i--)
+            {
+                Organism candidate = _living[i];
+                if (candidate.Id != killedBy) continue;
+
+                // Swallowing is a mouth's act (the coordinator's reading of D232): a killer whose mouths take nothing
+                // leaves remains, as a claw-only kill does with the switch off.
+                if (ReferenceEquals(candidate, victim) || !(MouthRate(candidate, 1f) > 0d)) return null;
+                return candidate;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// A kill goes into a gut (D232): the dead body's tissue and its store (which already holds what its own gut
+        /// held) become the killer's gut, and the body leaves without remains. Charged matter moves from one body's
+        /// accounts to another's, which <see cref="StandingJoules"/> sums, so nothing is booked.
+        /// </summary>
+        private void SwallowWhole(Organism killer, Organism victim, double tissueJoules, double storeJoules)
+        {
+            double joules = (tissueJoules > 0d ? tissueJoules : 0d) + (storeJoules > 0d ? storeJoules : 0d);
+
+            victim.TissueJoules = 0d;
+            victim.Energy = 0d;
+            victim.GestationJoules = 0d;
+            victim.GutJoules = 0d;
+
+            if (!(joules > 0d)) return;
+
+            killer.GutJoules += joules;
+            KillsSwallowed++;
+            SwallowedJoules += joules;
+        }
+
+        /// <summary>
+        /// Each body with a gut digests it into its reserve, at most what its mouth's per-step cap left after its bites
+        /// (D232). The cap is the one a bite meets, <c>intake × area × IntakeScale × step × joules a unit</c> summed over
+        /// the body's biting parts (<see cref="MouthRate"/>); the bites of the pass used theirs first and
+        /// <see cref="SettleBites"/> left the amount in <c>_gutBiteUse</c>, so the gut fills what is left. A body whose
+        /// cap is 0 digests nothing and keeps its gut. Of what is digested the intake waste goes to Nutrients at the
+        /// body's point and the rest into its reserve, as a kept bite's share does; the gut loses what both receive.
+        /// </summary>
+        /// <remarks>
+        /// One walk of the living in list order, each body touching only its own accounts and the field's deposit, so
+        /// the order decides nothing but the order of the deposits, which is the list's and so the same at any thread
+        /// count (nothing here runs on a thread of its own).
+        /// </remarks>
+        private void DigestGuts(float seconds)
+        {
+            double keptShare = 1d - Config.IntakeWasteFraction;
+            double perUnit = Config.JoulesPerUnit;
+
+            for (int i = 0; i < _living.Count; i++)
+            {
+                Organism body = _living[i];
+                double gut = body.GutJoules;
+                if (!(gut > 0d)) continue;
+
+                double cap = MouthRate(body, seconds) * perUnit;
+                double room = cap;
+                if (_gutBiteUse.TryGetValue(body.Id, out double used)) room -= used;
+                if (!(room > 0d)) room = 0d;
+
+                double digest = gut < room ? gut : room;
+
+                if (digest < gut)
+                {
+                    GutCapCutJoules += gut - digest;
+                    GutCapBound++;
+                }
+
+                if (!(digest > 0d)) continue;
+
+                // The water's share is decided in the field's precision first and the reserve takes the difference,
+                // as SettleBites does, so what the gut loses and what the reserve and the water gain are one number.
+                // Unlike a bite's, the difference is not floored at 0: a rounding of the waste up past the digest (only
+                // at a waste fraction of 1) must not leave the books a float's error short.
+                double keep = digest * keptShare;
+                float waste = (float)(digest - keep);
+                double toReserve = digest - waste;
+
+                body.GutJoules = gut - digest;
+                body.Energy += toReserve;
+                GutDigestedJoules += digest;
+
+                if (waste > 0f)
+                {
+                    Nutrients.Deposit(body.Point, waste);
+                    DetritusDepositedTotal += waste;
+                    GutWasteJoules += waste;
+                }
+            }
+
+            _gutBiteUse.Clear();
         }
     }
 

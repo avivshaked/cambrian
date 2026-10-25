@@ -44,17 +44,6 @@ namespace Evosim.Farm
                     "the gpu engine has no bed's friction (EVOSIM_BED_FRICTION); run this world on the cpu engine");
             }
 
-            // D228's contact at the point (ContactShapeForm.TrueShapeAtPoint) is built on the host only. The card's
-            // kernels take the true shape's pair and surfaces with the force at the centre, and read any other value
-            // as the spheres, so a world with it would part from the host's at its first touch. This stands until the
-            // card's port of the lever, the point's velocity and the torque.
-            if (solver.ContactShape == Evosim.Core.ContactShapeForm.TrueShapeAtPoint)
-            {
-                throw new System.InvalidOperationException(
-                    "the gpu engine has no contact at the point (EVOSIM_CONTACT_SHAPE trueshapeatpoint); " +
-                    "run this world on the cpu engine, or use trueshape, which the card carries");
-            }
-
             // D157 makes single the card's engine. In double, ILGPU 1.5.3 computes sin, cos and exp on
             // the card in loops whose length grows with the argument, so a far body can hold one
             // thread for minutes (card-audit-r57.md, the card in double hangs on a far body). The CPU

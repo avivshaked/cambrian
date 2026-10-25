@@ -191,6 +191,52 @@ namespace Evosim.Farm.Tests
             }
         }
 
+        /// <summary>
+        /// D232: the stats row carries the gut's columns only with the kill swallowed into a gut, beside the other bite
+        /// columns, and a world with contact eating alone writes the columns it wrote before.
+        /// </summary>
+        [Fact]
+        public void TheStatsRowCarriesTheGutColumnsOnlyWithTheKillSwallowed()
+        {
+            string[] columns =
+            {
+                "gutJoules", "killsSwallowed", "gutSwallowedJoules", "gutDigested", "gutWaste", "biteCapCut", "gutCapCut", "gutCapBound",
+            };
+
+            foreach (bool gut in new[] { false, true })
+            {
+                string scratch = SimulationTests.Scratch(gut ? "gut-on" : "gut-off");
+                RunConfig config = RemainsFixtures.Config(contactEating: true);
+                config.KillSwallowsBody = gut;
+
+                var world = new World(config, 1UL);
+                RunDirectory dir = RunDirectory.Create(scratch, config, DateTime.UtcNow);
+                string statsPath;
+
+                using (dir)
+                using (var sim = new Simulation(world, 1UL, 0.02f, 25, threads: 2, runDirectory: dir.Path))
+                {
+                    for (int i = 0; i < 20; i++) sim.Step();
+
+                    var report = new Report(Path.Combine(scratch, "report.md"), sim.Config);
+                    new Sampler().Write(sim, dir, report.Columns);
+                    statsPath = Path.Combine(dir.Path, "stats.jsonl");
+                }
+
+                string[] rows = JsonlWriter.ReadRows(statsPath);
+                JsonNode last = Json.Parse(rows[rows.Length - 1]);
+
+                Assert.True(last.Has("biteKeptLeaves"), "the contact-eating columns are on the row");
+                foreach (string column in columns) Assert.Equal(gut, last.Has(column));
+                if (gut)
+                {
+                    Assert.Equal(world.GutJoulesHeld, last["gutJoules"].AsDouble(), 6);
+                    Assert.Equal((double)world.KillsSwallowed, last["killsSwallowed"].AsDouble());
+                    Assert.Equal(world.GutDigestedJoules, last["gutDigested"].AsDouble(), 6);
+                }
+            }
+        }
+
         [Fact]
         public void TheSnowFloorDumpIsOneFloatAColumnAndNeverMoreThanTheColumn()
         {

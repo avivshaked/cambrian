@@ -49,6 +49,9 @@ namespace Evosim.Farm.Gpu
         /// <summary>D228: a part touches as its convex core with a margin (<c>SolverConfig.ContactShape</c>), not as the ball of its half-diagonal.</summary>
         public bool TrueShape;
 
+        /// <summary>D228 level (b): with <see cref="TrueShape"/>, the force acts at the contact point (<c>ContactShapeForm.TrueShapeAtPoint</c>), and each link's spin is carried with its sphere.</summary>
+        public bool AtPoint;
+
         // ---- D161's drag on turning (Fluid.Apply): 0 none, 1 skin, 2 spin, and each form's
         // negated factor as the CPU hoists it
         public int TurningDrag;
@@ -174,7 +177,8 @@ namespace Evosim.Farm.Gpu
             PushOmega = s.PowerPushRadiansPerSecond;
             LimbPush = s.LimbPushCoefficient;
             ShapedMass = s.ShapedAddedMass;
-            TrueShape = s.ContactShape == ContactShapeForm.TrueShape;
+            TrueShape = s.ContactShape.IsTrueShape();
+            AtPoint = s.ContactShape.AtPoint();
 
             TurningDrag = s.TurningDrag == TurningDragForm.Skin ? 1 : s.TurningDrag == TurningDragForm.Spin ? 2 : 0;
             NegSkin = -(0.5 * s.Density * s.SkinFrictionCoefficient);
@@ -527,11 +531,11 @@ namespace Evosim.Farm.Gpu
                     "D204); this box's seams the farm wraps between steps.");
             }
 
-            if (s.ContactShape == ContactShapeForm.TrueShape && !s.ContactPerPart)
+            if (s.ContactShape.IsTrueShape() && !s.ContactPerPart)
             {
                 throw new NotSupportedException(
-                    "The gpu engine takes the true shape (EVOSIM_CONTACT_SHAPE trueshape) as the narrowphase of " +
-                    "per-part contact, and EVOSIM_CONTACT_PER_PART is off.");
+                    "The gpu engine takes the true shape (EVOSIM_CONTACT_SHAPE trueshape or trueshapeatpoint) as the " +
+                    "narrowphase of per-part contact, and EVOSIM_CONTACT_PER_PART is off.");
             }
 
             if (s.WaterHoldSeconds > 0)

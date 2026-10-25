@@ -1521,6 +1521,17 @@ namespace Evosim.Core
         public float BiteDamageScale { get; set; } = 1f;
 
         /// <summary>
+        /// D232: when a bite kills a body, the killer swallows the whole body. The dead body's remaining tissue and
+        /// store, and whatever its own gut held, go into the killer's gut and no remains are left; the gut is digested
+        /// at the killer's mouth rate, the per-step cap a bite meets, less the intake waste, and what is still in it
+        /// when the killer dies goes with its own body. A body that dies any other way leaves remains as before. Off,
+        /// the default, nothing here runs and the world is the recorded one to the bit. Refused on without
+        /// <see cref="ContactEating"/>. <c>EVOSIM_KILL_GUT</c>.
+        /// </summary>
+        [Tunable("mouth")]
+        public bool KillSwallowsBody { get; set; }
+
+        /// <summary>
         /// Upkeep per unit of <see cref="MorphNode.Protection"/> per square metre, watts — rule 7.
         /// See <see cref="AttackWattsPerUnit"/>; the ledger screen asks that a cuticle at a leaf's
         /// cap cost more than a tenth of the leaf's income, so leaves do not armour for free.

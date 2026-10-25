@@ -161,7 +161,7 @@ the pace falls. By how much is measured on the bench before any screen (inferenc
 
 ### Level (b): the force at the contact point (host built 2026-10-25)
 
-It is a third value of the switch, `TrueShapeAtPoint`, so no recorded hash moves. The card refuses it until its port.
+It is a third value of the switch, `TrueShapeAtPoint`, so no recorded hash moves.
 - *The lever* runs from the link's origin to the contact point. The origin is the link's centre, and every force
   in `Fext` acts there.
 - *The damper* reads the point's velocity `v + ω × r`, from a spin committed with the sphere.
@@ -199,12 +199,61 @@ The suites on the host build pass:
 - Core without the slow tests, 1,387;
 - Farm without the card, slow, `GpuMeanTests` and accelerator tests, 373.
 
-The card port and its identity round come next.
+**The card's port.** It is `cfg.AtPoint` in the kernel, and `src/Evosim.Farm.Gpu/CLAUDE.md`
+says where each piece sits:
+- the spin goes up in three more columns of each sphere set;
+- the torque goes down in three more rows of `LinkPush` and joins `Fext` beside the force;
+- the pair and the surfaces are copies of the host's routines that also return the contact point.
+
+`FarmGpu.Open` no longer refuses the value. Its accelerator case passes against the solver. The card identity round,
+shared with D232's kill gut on one integration branch, is identical at groups 32 and 64. Level (b) parts its world from
+the switch-off world 15 s in, and costs about 2 % of the wall to 600 s, on one reading (inference). The round's record
+is `logbook/specs/r62kg-prereg/identity.md`.
 
 **The coordinator's readings of D228 (2026-10-25).**
 - *GJK on cores with margins*, as above, so that the superellipsoid joins later by its support function.
 - *The world's surfaces follow the shape too.* The bed, reef, coral and glass test the true shape.
 - *The mouth reads the first pair found*, as D219 reads it.
+
+## 4b. A stroke pushes its assembly (D231)
+
+The owner ruled D231 on 2026-10-25. Today only the jointed link's own part is pushed. A part welded beyond it, a link
+with a parent and no degree of freedom, gets no power push of its own (`Fluid.cs:278` requires `DofCount > 0`) and
+adds nothing to its anchor's.
+
+**What changes.**
+- *The assembly.* A jointed link's assembly is the link plus every link beyond it reached through welds only, up to
+  the next jointed link. The welded parts keep their own drag and get no push of their own.
+- *The added mass, by strips along the limb's axis.* Each part in the assembly is projected onto the axis and onto
+  `n`, the unit vector of axis × stroke direction, by its support function, so a box's calipers are D229's. The chord
+  `c(s)` at a distance `s` from the joint is the envelope of the widths of the parts that cover `s`. The added mass is
+  `M = ∫ ρπ/4 c² ds`, and its first moment about the joint is `I1 = ∫ ρπ/4 c² s ds`.
+- *The leverage* is `r̄ = I1 / M`, where the moved water sits, through the `LeverOf` hook. The push is
+  `C_T Σ_d q_d M_d r̄_d`, with `q_d = (s_d Ω)² (1 − along²)` for each degree of freedom `d`.
+- *Precomputed.* A welded assembly is rigid, and each degree of freedom's stroke direction is fixed in the link's
+  frame. So `along`, `M_d` and `I1_d` are constants per link and degree of freedom, recomputed at build and on every
+  resize. The card's port is then a table of two numbers per degree of freedom.
+- *A link with nothing welded beyond it* takes D229's own code, so a world with the switch on and no welds is D229's
+  world to the bit.
+- *Only the power push.* The swing push (`Fluid.cs:234`) refuses the switch, since its direction changes every step.
+  D231 also requires D229's `ShapedAddedMass`.
+
+**The coordinator's readings of D231 (2026-10-25).**
+- *The billed work is the push times `r̄` times the swing's speed*: D229's work line with `r̄` in place of reach. A
+  lone link's push and price stay D229's, and the ruling holds that the price follows the push through the work
+  already billed. Billing each strip's thrust times its own speed was set aside. It would reprice every lone link: a
+  box jointed at its end would pay `1 + L²/(12 reach²)`, which is 1.33 times D229's work for the same push.
+- *Its own switch*, `FluidConfig.StrokePushesAssembly` (`EVOSIM_STROKE_ASSEMBLY`), off by default. No existing enum
+  can carry it, so it moves every config's hash, as D228's and D229's fields did. Since `fin-shape` is unmerged, it
+  refuses no config that those fields do not already refuse. The crowd fixture is re-recorded once, for level (b)
+  and D231 together.
+
+**Order.** The host build comes first, after level (b)'s card port and its accelerator tests. Then:
+- *a bench* in still water, at powers 0.8, 0.4, 0.295 and 0.2, giving distance, work and J/m with the law off, at
+  D229 and at D231. It compares three bodies of equal volume: a small link with a flat blade welded at its tip, the
+  same blade as the jointed link, and a stick;
+- *the card's port*;
+- *its card identity*, in the same sitting as level (b)'s if both are ready.
 
 ## 5. Fat
 

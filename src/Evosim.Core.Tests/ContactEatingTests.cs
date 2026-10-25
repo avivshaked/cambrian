@@ -22,12 +22,12 @@ namespace Evosim.Core.Tests
 
         public ContactEatingTests(ITestOutputHelper output) => _output = output;
 
-        private static readonly float ConsumerIntake = CellTypeRegistry.Standard.Resolve(CellTypeIds.Consumer).IntakeMax;
+        internal static readonly float ConsumerIntake = CellTypeRegistry.Standard.Resolve(CellTypeIds.Consumer).IntakeMax;
 
         // ------------------------------------------------------------------------ the fixtures
 
         /// <summary>A childless, bright world with health worth measuring.</summary>
-        private static RunConfig Stage(bool on, float waste = 0.25f, float healing = 0f)
+        internal static RunConfig Stage(bool on, float waste = 0.25f, float healing = 0f)
         {
             var config = new RunConfig
             {
@@ -55,19 +55,19 @@ namespace Evosim.Core.Tests
             return config;
         }
 
-        private static Genome Leaf(int parts, float half = 0.2f) => Fixtures.MouthSpine(parts, half);
+        internal static Genome Leaf(int parts, float half = 0.2f) => Fixtures.MouthSpine(parts, half);
 
         /// <summary>A body with a claw and a mouth at its cell type's cap.</summary>
-        private static Genome Hunter(float intake) =>
+        internal static Genome Hunter(float intake) =>
             Fixtures.ArmedBox(attack: 1f, intake: intake, cellTypeId: CellTypeIds.Consumer);
 
         /// <summary>A claw and no mouth.</summary>
-        private static Genome Claw() => Fixtures.ArmedBox(attack: 1f);
+        internal static Genome Claw() => Fixtures.ArmedBox(attack: 1f);
 
-        private static List<CreatureContact> Touching(Organism a, int partA, Organism b, int partB) =>
+        internal static List<CreatureContact> Touching(Organism a, int partA, Organism b, int partB) =>
             new List<CreatureContact> { new CreatureContact(a.Id, partA, b.Id, partB) };
 
-        private static void AssertRelative(double expected, double actual, double relative, string what)
+        internal static void AssertRelative(double expected, double actual, double relative, string what)
         {
             double tolerance = Math.Max(1e-12, relative * Math.Abs(expected));
             Assert.True(
@@ -75,7 +75,7 @@ namespace Evosim.Core.Tests
                 $"{what}: expected {expected:R}, got {actual:R} (tolerance {tolerance:R})");
         }
 
-        private static void AssertBooksClose(World world, string where)
+        internal static void AssertBooksClose(World world, string where)
         {
             Assert.True(
                 Math.Abs(world.AuditResidual) <= 1e-6 * Math.Max(1d, world.StandingJoules),
@@ -85,13 +85,13 @@ namespace Evosim.Core.Tests
                 $"{where}: matter residual {world.MatterResidual:R} against {world.MatterInitialTotal:R} units");
         }
 
-        private static double TissueOf(Organism body, int part, RunConfig config) =>
+        internal static double TissueOf(Organism body, int part, RunConfig config) =>
             Metabolism.PartTissueJoules(body.Phenotype, body.Phenotype.Parts[part], config);
 
         /// <summary>The share of a part's health one hand-driven step took, read off the health array.</summary>
         private static double ShareTaken(Organism body, int part) => 1d - body.PartHealth[part];
 
-        private static byte[] StateOf(World world)
+        internal static byte[] StateOf(World world)
         {
             using (var buffer = new MemoryStream())
             {
@@ -105,7 +105,7 @@ namespace Evosim.Core.Tests
             }
         }
 
-        private static World Restored(RunConfig config, ulong seed, byte[] state)
+        internal static World Restored(RunConfig config, ulong seed, byte[] state)
         {
             var world = new World(config, seed);
             using (var buffer = new MemoryStream(state, writable: false))
@@ -836,7 +836,7 @@ namespace Evosim.Core.Tests
         /// A tree of five photosynthetic parts: 0 the root, 1 a part of its own, 2 and 3 a chain that hangs from 1, and 4
         /// a second branch on 1. Eating 1 whole cuts off two limbs, {2, 3} and {4}.
         /// </summary>
-        private static Genome Branching()
+        internal static Genome Branching()
         {
             var genome = new Genome();
             MorphNode root = Fixtures.Box(0.2f);
@@ -870,7 +870,7 @@ namespace Evosim.Core.Tests
             return genome;
         }
 
-        private static RunConfig RemainsStage(float window = 60f, float healing = 0f)
+        internal static RunConfig RemainsStage(float window = 60f, float healing = 0f)
         {
             RunConfig config = Stage(on: true, healing: healing);
             config.RemainsWindowSeconds = window;
@@ -1672,7 +1672,7 @@ namespace Evosim.Core.Tests
         }
 
         /// <summary>Sets a body's reserve or gestation account, which only the world sets in play: a fixture's hand.</summary>
-        private static void Poke(Organism body, string property, double value) =>
+        internal static void Poke(Organism body, string property, double value) =>
             typeof(Organism).GetProperty(property, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SetValue(body, value);
 
         [Fact]
@@ -2334,5 +2334,72 @@ namespace Evosim.Core.Tests
         }
 
         private const string PinnedDialOffDigest = "EOxfRGP4KCEMErOdqsb5lYm3EWC4ujTP2Xr8y8L2Qu4=";
+
+        // ------------------------------------------------------------------------ the dial on, pinned
+
+        /// <summary>
+        /// The digest of a world's state stream over <paramref name="steps"/> half-second steps, its state hashed every
+        /// <paramref name="every"/> steps and the stream closed with its counts of deaths, parts killed and bodies eaten.
+        /// <paramref name="contacts"/> hands the world each step's contacts.
+        /// </summary>
+        internal static string StreamDigest(World world, int steps, int every, Func<World, int, List<CreatureContact>> contacts)
+        {
+            var sha = SHA256.Create();
+            var all = new StringBuilder();
+
+            for (int step = 0; step < steps; step++)
+            {
+                world.SetContacts(contacts(world, step));
+                world.Step(0.5f);
+                if (step % every == every - 1) all.Append(Convert.ToBase64String(sha.ComputeHash(StateOf(world)))).Append('|');
+            }
+
+            all.Append(world.Deaths).Append('|').Append(world.PartsKilled).Append('|').Append(world.BodiesEaten);
+            return Convert.ToBase64String(sha.ComputeHash(Encoding.UTF8.GetBytes(all.ToString())));
+        }
+
+        /// <summary>
+        /// Contact eating's own path against recorded bits. Before 2026-10-25 nothing pinned a world with the dial on, so
+        /// a change to <c>WorldContact</c> or <c>WorldMouth</c> was checked by its books and never by its bytes.
+        /// </summary>
+        /// <remarks>
+        /// Pinned from this same scenario run on <c>main</c> at <c>1e9b2aca</c>, before D232's kill gut, in a worktree of
+        /// that commit. The gut off writes nothing to the state, so the bytes must be the same on every later build. A
+        /// format bump of the world's state re-pins it, as it would any recording.
+        /// </remarks>
+        [Fact]
+        public void TheDialOnBitingWorldsStateStreamIsTheBytesPinnedBeforeTheKillGut()
+        {
+            World world = BitingWorld(on: true);
+            string digest = StreamDigest(world, 300, 50, Bites);
+            _output.WriteLine(
+                "dial-on digest " + digest + $"; parts killed {world.PartsKilled}, bodies eaten {world.BodiesEaten}, " +
+                $"healing {world.HealingJoules:0.###} J, deaths {world.Deaths}, kept {world.BiteKeptFromLeavesJoules:0.###} + " +
+                $"{world.BiteKeptFromOthersJoules:0.###} J");
+
+            Assert.True(world.HealingJoules > 0d && world.PartsKilled + world.BodiesEaten > 0L, "the scenario never healed or killed");
+            Assert.True(world.BiteKeptFromLeavesJoules + world.BiteKeptFromOthersJoules > 0d, "no bite was kept");
+            Assert.Equal(PinnedDialOnDigest, digest);
+        }
+
+        /// <summary>The same for the remains window and the bite on the store, over the 700 steps that close remains.</summary>
+        /// <remarks>Pinned as <see cref="TheDialOnBitingWorldsStateStreamIsTheBytesPinnedBeforeTheKillGut"/> is.</remarks>
+        [Fact]
+        public void TheStoreWorldsStateStreamIsTheBytesPinnedBeforeTheKillGut()
+        {
+            World world = StoreWorld();
+            string digest = StreamDigest(world, 700, 100, RemainsBites);
+            _output.WriteLine(
+                "store digest " + digest + $"; store taken {world.BiteStoreTakenJoules:0.###} J, from remains " +
+                $"{world.BiteKeptFromRemainsJoules:0.###} J, remains closed {world.RemainsClosed}, deaths {world.Deaths}");
+
+            Assert.True(world.BiteStoreTakenJoules > 0d, "no bite took a store");
+            Assert.True(world.BiteKeptFromRemainsJoules > 0d, "no bite on remains was kept");
+            Assert.True(world.RemainsClosed > 0L, "no remains closed");
+            Assert.Equal(PinnedStoreDigest, digest);
+        }
+
+        private const string PinnedDialOnDigest = "jfWBue/6sF+VBgPFECfn13fxaxrAkb3i6MwvfE2ZnwI=";
+        private const string PinnedStoreDigest = "LWDBiKrM/c9n8VAMfuOXMA1ICHEJiXm/T4/kzL6Npfk=";
     }
 }

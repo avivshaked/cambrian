@@ -613,6 +613,18 @@ namespace Evosim.Core
                     w.Write(MouthBlows);
                     w.Write(MouthBlowsFinishing);
                 }
+
+                // D232's seven, only with the kill swallowed into a gut, so a world without it writes the bytes it wrote.
+                if (Config.KillSwallowsBody)
+                {
+                    w.Write(KillsSwallowed);
+                    w.Write(SwallowedJoules);
+                    w.Write(GutDigestedJoules);
+                    w.Write(GutWasteJoules);
+                    w.Write(BiteCapCutJoules);
+                    w.Write(GutCapCutJoules);
+                    w.Write(GutCapBound);
+                }
             }
 
             // ---- the water
@@ -974,6 +986,28 @@ namespace Evosim.Core
                     MouthBlows = 0L;
                     MouthBlowsFinishing = 0L;
                 }
+
+                // D232's seven, under the config the writer asked (see Write).
+                if (Config.KillSwallowsBody)
+                {
+                    KillsSwallowed = r.ReadInt64();
+                    SwallowedJoules = r.ReadDouble();
+                    GutDigestedJoules = r.ReadDouble();
+                    GutWasteJoules = r.ReadDouble();
+                    BiteCapCutJoules = r.ReadDouble();
+                    GutCapCutJoules = r.ReadDouble();
+                    GutCapBound = r.ReadInt64();
+                }
+                else
+                {
+                    KillsSwallowed = 0L;
+                    SwallowedJoules = 0d;
+                    GutDigestedJoules = 0d;
+                    GutWasteJoules = 0d;
+                    BiteCapCutJoules = 0d;
+                    GutCapCutJoules = 0d;
+                    GutCapBound = 0L;
+                }
             }
             else
             {
@@ -988,6 +1022,13 @@ namespace Evosim.Core
                 BiteStoreTakenJoules = 0d;
                 MouthBlows = 0L;
                 MouthBlowsFinishing = 0L;
+                KillsSwallowed = 0L;
+                SwallowedJoules = 0d;
+                GutDigestedJoules = 0d;
+                GutWasteJoules = 0d;
+                BiteCapCutJoules = 0d;
+                GutCapCutJoules = 0d;
+                GutCapBound = 0L;
             }
 
             ReadField(r, Nutrients);
@@ -1171,6 +1212,10 @@ namespace Evosim.Core
             // D219: what the body's biting parts have kept, only in a world whose bites feed.
             if (Config.ContactEating) w.Write(creature.BiteKeptJoules);
 
+            // D232: what the body holds in its gut, only in a world whose kills are swallowed, so every other world
+            // writes the bytes it wrote before. A body of remains writes its 0.
+            if (Config.KillSwallowsBody) w.Write(creature.GutJoules);
+
             // D220: the window's start and the map that selects the remains' parts from the body they were cut from;
             // a length of 0 is the whole body.
             if (remains)
@@ -1299,6 +1344,9 @@ namespace Evosim.Core
             }
 
             if (Config.ContactEating) creature.BiteKeptJoules = r.ReadDouble();
+
+            // D232, under the config the writer asked (see WriteOrganism).
+            if (Config.KillSwallowsBody) creature.GutJoules = r.ReadDouble();
 
             int[] selection = null;
             if (remains)
