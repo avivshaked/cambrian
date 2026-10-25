@@ -208,7 +208,7 @@ The card port and its identity round come next.
 
 ## 5. Fat
 
-**What changes**, by `proposals/propose-new-cell-types.md`. A body's reserve is capped. Fat tissue raises the cap by a
+**What changes**, by `logbook/specs/cell-types-survey-2026-10-23.md`. A body's reserve is capped. Fat tissue raises the cap by a
 set number of joules per cubic metre, at a low upkeep and a high build price, and it adds weight. That is one world
 dial for the cap, and a fat cell type in the cell table. The details of the cap, which bodies it binds today, and the
 cell's numbers are drafted from the proposal into its own brief when item 5 begins, and come to the coordinator then.
