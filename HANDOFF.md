@@ -71,6 +71,7 @@ The owner launches every agent by hand. Ping the owner's phone when the next age
 | evolution-simulator-b0 | The theatre. One Unity at a time on logical 0-1 |
 | evolution-simulator-b4 | D233's shape maths on `shape-family`, light tests at 2 threads on 2-15 |
 | evolution-simulator-b9 | D235's nose host code on `nose`, light tests at 2 threads on 2-15. No full Dynamics suite and no Farm build while renders run, unless the coordinator gives a slot |
+| evolution-simulator-6d | The nursery: D236's curriculum tank on `curriculum` (`scratch/wt-curriculum`), light tests at 2 threads on 2-15. It does not launch nursery runs; the coordinator books them |
 | assay-d6 | Another project, Assay, sharing the machine. Its agents relay through it, so every Assay line goes to assay-d6. It is suspended now, and since its lane A (0-3) overlaps b0 and the test cores, it asks the coordinator before resuming |
 | csck506-deep-learning-ac | Coursework |
 
