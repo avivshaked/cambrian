@@ -473,6 +473,8 @@ namespace Evosim.Nursery
             }
             if (o == null) return null;
 
+            // Under the growth climb (D241) the owed tissue as reserve would buy a climb, not an adult, so the leaf is made adult outright and owes nothing.
+            if (_config.GrowthAdultSeconds > 0f) world.MakeAdult(o);
             double owed = Math.Max(0d, Metabolism.TissueJoules(o.AdultPhenotype, _config) - o.TissueJoules);
             if (owed > 0d) world.GiveReserve(o, owed);
             return o;

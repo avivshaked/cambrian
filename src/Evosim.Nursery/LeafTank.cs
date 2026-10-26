@@ -297,6 +297,8 @@ namespace Evosim.Nursery
                     throw new InvalidDataException($"the tank found no place for leaf {leaf.Id} of {_leafPool.Path} in {LeafAttempts} draws (the last: {last}); it holds too many leaves");
 
                 // Grown, as the bred bodies' purse rule "grown" pays them: the tissue it owes, given to its reserve, which its growth then spends.
+                // Under the growth climb (D241) that reserve would buy a climb, not an adult, so the leaf is made adult outright and owes nothing below.
+                if (config.GrowthAdultSeconds > 0f) world.MakeAdult(o);
                 double owed = Math.Max(0d, Metabolism.TissueJoules(o.AdultPhenotype, config) - o.TissueJoules);
                 if (owed > 0d) world.GiveReserve(o, owed);
                 leaves.Add(o);

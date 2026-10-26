@@ -588,7 +588,7 @@ namespace Evosim.Nursery
                 var seeded = File.ReadAllLines(_o.Pool).Where(l => l.Length > 0).Select(l =>
                 {
                     int tab = l.IndexOf('\t');
-                    return new Body { Index = int.Parse(l.Substring(0, tab), Inv), Ancestor = GenomeJson.Read(l.Substring(tab + 1)) };
+                    return new Body { Index = int.Parse(l.Substring(0, tab), Inv), Ancestor = GrowthStart.Give(GenomeJson.Read(l.Substring(tab + 1)), _config) };
                 }).ToList();
                 if (_o.KeepBodies != null)
                 {
@@ -604,7 +604,7 @@ namespace Evosim.Nursery
                 var pool = File.ReadAllLines(_o.Pool).Where(l => l.Length > 0).Select(l =>
                 {
                     int tab = l.IndexOf('\t');
-                    return (GenomeJson.Read(l.Substring(tab + 1)), int.Parse(l.Substring(0, tab), Inv));
+                    return (GrowthStart.Give(GenomeJson.Read(l.Substring(tab + 1)), _config), int.Parse(l.Substring(0, tab), Inv));
                 }).ToList();
                 if (_o.KeepBodies != null)
                 {
@@ -672,7 +672,7 @@ namespace Evosim.Nursery
                 // its ancestor brain is wired fresh to that body (every member of the search draws
                 // its own, EvolveTank).
                 if (Central) genome = FreshBrain(genome, Rng.SeedFor(Rng.SeedFor(_o.Seed, 0x42524E00UL), k));
-                picked.Add(new Body { Index = picked.Count, SourceId = (long)k, Ancestor = genome, Parts = adult.PartCount, Joints = joints });
+                picked.Add(new Body { Index = picked.Count, SourceId = (long)k, Ancestor = GrowthStart.Give(genome, _config), Parts = adult.PartCount, Joints = joints });
             }
             foreach (Body b in picked)
                 Say(FormattableString.Invariant($"  body {b.Index}: founder draw {b.SourceId}, {b.Parts} parts, {b.Joints} joints"));
@@ -784,7 +784,7 @@ namespace Evosim.Nursery
             var pool = File.ReadAllLines(_o.MeasureDref).Where(l => l.Length > 0).Select(l =>
             {
                 int tab = l.IndexOf('\t');
-                return (body: int.Parse(l.Substring(0, tab), Inv), genome: GenomeJson.Read(l.Substring(tab + 1)));
+                return (body: int.Parse(l.Substring(0, tab), Inv), genome: GrowthStart.Give(GenomeJson.Read(l.Substring(tab + 1)), _config));
             }).ToList();
             var rng = new Rng(Rng.SeedFor(_o.Seed, 0x6472656655UL));
             var all = new List<double>();
@@ -955,6 +955,30 @@ namespace Evosim.Nursery
             if (seen.Contains("--dref-samples") && o.MeasureDref == null) throw new ArgumentException("--dref-samples acts only with --measure-dref");
             if (o.MeasureDref != null && o.DrefSamples < 1) throw new ArgumentException("--dref-samples must be 1 or more");
             return o;
+        }
+    }
+
+    /// <summary>
+    /// D241's growth-reserve gene, given to a bred-pool genome as the search and the exam read it (logbook/specs/growth-runway-design.md).
+    /// Called once, where a pool line becomes a genome and before any episode: episodes run in parallel on shared genome objects, and a member's
+    /// genome text is its identity in the run's logs, so nothing inside an episode writes the gene. The tank's own bodies, the leaves and a
+    /// re-step need nothing, because <c>World.Admit</c> gives a gene-less genome the same value on a clone.
+    /// </summary>
+    public static class GrowthStart
+    {
+        /// <summary>
+        /// With the climb on (<see cref="RunConfig.GrowthAdultSeconds"/> above 0) and no gene on <paramref name="genome"/>, sets it to
+        /// <see cref="RunConfig.GrowthReserveStartSeconds"/>; otherwise leaves the genome alone, so a gene it already carries is kept, and with the
+        /// climb off (T = 0) nothing is written. <paramref name="config"/> is the episode's own (the recipe's overrides applied). Returns
+        /// <paramref name="genome"/> itself, changed in place, so that it can stand where a genome is read.
+        /// </summary>
+        public static Genome Give(Genome genome, RunConfig config)
+        {
+            if (genome == null) throw new ArgumentNullException(nameof(genome));
+            if (config == null) throw new ArgumentNullException(nameof(config));
+            if (config.GrowthAdultSeconds > 0f && !genome.GrowthReserveSeconds.HasValue)
+                genome.GrowthReserveSeconds = config.GrowthReserveStartSeconds;
+            return genome;
         }
     }
 }

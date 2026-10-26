@@ -249,6 +249,9 @@ namespace Evosim.Nursery
                     // top, uncapped, so that a body that eats nothing lives that long once grown.
                     // A founder pays its growth out of the reserve on its first step, and an
                     // endowment alone starves a growing body inside a minute.
+                    // Under the growth climb (D241) the owed tissue as reserve would buy a climb of up to 1.58 T, not a grown body, so the body is
+                    // made adult outright: nothing is owed below, and the purse is the purse seconds of the adult's standing watts alone.
+                    if (world.Config.GrowthAdultSeconds > 0f) world.MakeAdult(o);
                     double adultTissue = Metabolism.TissueJoules(o.AdultPhenotype, arena.Config);
                     double seconds = !double.IsNaN(_o.PurseSeconds) ? _o.PurseSeconds : arena.Config.FounderEndowmentSeconds;
                     double target = Math.Max(0d, adultTissue - o.TissueJoules) + seconds * Metabolism.StandingWatts(o.AdultPhenotype, arena.Config);
@@ -913,7 +916,7 @@ namespace Evosim.Nursery
                     rows.WriteLine(w.ToString());
                 }
             Say($"  the exam's pool (D172): {tops.Count} tops and the last generation's elites, {pool.Count} genomes once each");
-            return TankBench(pool.Select(e => (GenomeJson.Read(e.Text), e.Body)).ToList(), "exam", pool.Select(e => e.Id).ToArray());
+            return TankBench(pool.Select(e => (GrowthStart.Give(GenomeJson.Read(e.Text), _config), e.Body)).ToList(), "exam", pool.Select(e => e.Id).ToArray());
         }
 
         // ------------------------------------------------------------------ the bench

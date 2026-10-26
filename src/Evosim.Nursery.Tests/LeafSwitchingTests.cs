@@ -212,9 +212,11 @@ namespace Evosim.Nursery.Tests
             public double Turn;
         }
 
-        private static Rig MakeRig(ulong seed, double period = 20, double regrow = 5, double wither = 8, double minTurn = 120, int perDisc = 3, double episode = 200)
+        /// <param name="climb">D241's growth climb on (T = 120 s): the t = 0 leaves are made adult outright, as LayLeaves places them under it, in place of the owed tissue as reserve.</param>
+        private static Rig MakeRig(ulong seed, double period = 20, double regrow = 5, double wither = 8, double minTurn = 120, int perDisc = 3, double episode = 200,
+            bool climb = false)
         {
-            RunConfig config = LeafTankFixtures.Config();
+            RunConfig config = LeafTankFixtures.Config(growthAdultSeconds: climb ? ClimbSeconds : 0f);
             var world = new World(config, seed) { BirthsHeld = true };
             var patches = new Recipe.PatchSetting
             {
@@ -243,6 +245,7 @@ namespace Evosim.Nursery.Tests
                     float x = (float)(cx + 1.2 * Math.Cos(2.1 * i)), z = (float)(cz + 1.2 * Math.Sin(2.1 * i));
                     float y = Math.Min(-radius, Math.Max(-config.WorldDepthMetres + radius, leaf.HeightY));
                     Organism o = world.InoculateAt(leaf.Genome, new Float3(x, y, z));
+                    if (climb) world.MakeAdult(o);
                     double owed = Math.Max(0d, Metabolism.TissueJoules(o.AdultPhenotype, config) - o.TissueJoules);
                     if (owed > 0d) world.GiveReserve(o, owed);
                     leaves.Add(o);
@@ -426,6 +429,59 @@ namespace Evosim.Nursery.Tests
             }
             Assert.Equal(Run(21), Run(21));
             Assert.NotEqual(Run(21), Run(22));
+        }
+
+        // ------------------------------------------------------------------ D241: laid adult under the growth climb
+
+        private const float ClimbSeconds = 120f;
+
+        /// <summary>The bodies alive now that were not in <paramref name="before"/>.</summary>
+        private static List<Organism> NewSince(Rig rig, HashSet<long> before) =>
+            rig.World.Living.Where(o => !before.Contains(o.Id)).ToList();
+
+        /// <summary>
+        /// A leaf laid just now (no step since) is its adult, and was given no reserve: it holds what its genome is born with in a bare world of its own,
+        /// which is the endowment alone. Under T = 0 the same leaf would hold the owed tissue on top.
+        /// </summary>
+        private static void AssertLaidAdult(Organism leaf)
+        {
+            Assert.Equal(leaf.AdultTissueJoules, leaf.TissueJoules);
+            Assert.Equal(1f, leaf.BodyFraction);
+            Organism born = LeafTankFixtures.Newborn(LeafTankFixtures.Config(growthAdultSeconds: ClimbSeconds), leaf.Genome, leaf.X, leaf.HeightY, leaf.Z);
+            Assert.Equal(born.Energy, leaf.Energy, 9);
+        }
+
+        [Fact]
+        public void UnderTheClimbARegrownLeafIsAdultWithNoReserveGiven()
+        {
+            Rig rig = MakeRig(11, climb: true);
+            int fed = rig.Schedule.Plan.FirstFedDisc;
+            Advance(rig, 2.0);
+            rig.World.KillDiverged(LivingOf(rig, fed)[0]);
+            Step(rig);
+            double seen = rig.World.ElapsedSeconds;
+            Advance(rig, seen + 4.5);
+
+            var before = new HashSet<long>(rig.World.Living.Select(o => o.Id));
+            Step(rig);
+            Assert.True(rig.Schedule.Regrown >= 1, "no leaf was regrown");
+            List<Organism> fresh = NewSince(rig, before);
+            Assert.NotEmpty(fresh);
+            Assert.All(fresh, AssertLaidAdult);
+        }
+
+        [Fact]
+        public void UnderTheClimbAFreshComplementLeafAtASwitchIsAdultWithNoReserveGiven()
+        {
+            Rig rig = MakeRig(13, climb: true);
+            Advance(rig, 19.5);
+
+            var before = new HashSet<long>(rig.World.Living.Select(o => o.Id));
+            Step(rig);                                          // 20 s: the switch, and the fresh complement laid in the same turn
+            Assert.Equal(3, rig.Schedule.Openings.Count);
+            List<Organism> fresh = NewSince(rig, before);
+            Assert.NotEmpty(fresh);
+            Assert.All(fresh, AssertLaidAdult);
         }
 
         // ------------------------------------------------------------------ whole episodes, swum in the solver

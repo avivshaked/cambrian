@@ -520,6 +520,8 @@ namespace Evosim.Nursery.Tests
             // D236 piece 4: what the tank calls eaten (the leaves' joules under contact eating, else the mouth's), as a number. It reads one
             // of two cumulative counters of a body; it hands out no organism and writes nothing.
             "EatenJoules",
+            // D241: the adult's tissue, the body fraction and the adult's standing watts, as numbers, to read a body placed grown under the climb.
+            "AdultTissue", "BodyFraction", "AdultStandingWatts",
         };
 
         [Fact]
