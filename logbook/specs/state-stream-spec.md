@@ -130,14 +130,15 @@ Inflated, the records are version 1's with one byte inserted before the degree-o
 | 4 | 12 | 3 × float32 | root link position, metres |
 | 16 | 16 | 4 × float32 | root link quaternion, x y z w |
 | 32 | 4 | float32 | body fraction, tissue over adult tissue |
-| 36 | 1 | uint8 | guild flags: absorptive 1, jointed 2, photosynthetic 4 |
+| 36 | 1 | uint8 | flags: absorptive 1, jointed 2, photosynthetic 4, remains 8 |
 | 37 | 1 | uint8 | degrees of freedom, *d* |
 | 38 | 4 × *d* | float32 | joint coordinates, the solver's own order |
 
 The flag bits are `positions.jsonl`'s, `PositionsRow`'s constants, and the writer sets them by the
 sampler's definition. A body is absorptive when any part is absorptive tissue, jointed when its
 joints' degrees of freedom sum above zero, and photosynthetic when it carries photosynthetic
-tissue. A writer refuses a flag value above 7. A version 1 frame read by this build reports every
+tissue. Remains (D220), a dead body or a cut-off limb lying in the water for its window, carry 8, and only in a
+world run with contact eating. A writer refuses a flag value above 15. A version 1 frame read by this build reports every
 body's flags as −1, meaning not recorded, and never as 0, which would claim a body with no guild.
 
 The reader refuses three things in a version 2 frame that a version 1 frame cannot have. The
