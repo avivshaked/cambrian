@@ -94,6 +94,51 @@ namespace Evosim.Core.Tests
             return (o.StandingWatts, o.TissueJoules, o.AdultTissueJoules, o.BodyFraction);
         }
 
+        // ---------------------------------------------------------------- MakeAdult
+
+        [Fact]
+        public void MakeAdultPutsAJuvenileAtItsAdultAndBothBooksStillClose()
+        {
+            // D241, 6d's question: the tissue MakeAdult gives is booked as income, as a founder's start is, so the
+            // energy audit and the matter identity close after it as they did before it.
+            RunConfig config = Stage(60f);
+            Organism o = Found(config, Juvenile(0.65f), out World world);
+            Assert.True(o.BodyFraction < 1f, $"the founder is a juvenile at T = 60 (fraction {o.BodyFraction})");
+
+            double auditBefore = world.AuditResidual, matterBefore = world.MatterResidual;
+            double owed = o.AdultTissueJoules - o.TissueJoules;
+            double reserve = o.Energy;
+
+            world.MakeAdult(o);
+
+            Assert.Equal(1f, o.BodyFraction);
+            Assert.Same(o.AdultPhenotype, o.Phenotype);
+            Assert.Equal(o.AdultTissueJoules, o.TissueJoules);
+            Assert.Equal(reserve, o.Energy);
+            Assert.Equal(owed, world.AdultGiftJoules, 6);
+
+            double scale = Math.Max(1d, world.StandingJoules);
+            Assert.True(Math.Abs(world.AuditResidual - auditBefore) <= 1e-9 * scale,
+                $"the audit moved from {auditBefore:R} to {world.AuditResidual:R}");
+            Assert.True(Math.Abs(world.MatterResidual - matterBefore) <= 1e-9 * Math.Max(1d, world.MatterInitialTotal),
+                $"the matter identity moved from {matterBefore:R} to {world.MatterResidual:R}");
+
+            // And one step on, as any world's books are.
+            world.Step(0.5f);
+            Assert.True(Math.Abs(world.AuditResidual) <= 1e-6 * Math.Max(1d, world.StandingJoules),
+                $"audit residual {world.AuditResidual:R} a step after");
+        }
+
+        [Fact]
+        public void MakeAdultRefusesABodyNotAmongTheLiving()
+        {
+            RunConfig config = Stage(60f);
+            Organism o = Found(config, Juvenile(0.65f), out World world);
+            Organism stranger = Found(config, Juvenile(0.65f), out _);
+            Assert.Throws<InvalidOperationException>(() => world.MakeAdult(stranger));
+            Assert.True(o.BodyFraction < 1f);
+        }
+
         // ---------------------------------------------------------------- T = 0
 
         [Fact]
