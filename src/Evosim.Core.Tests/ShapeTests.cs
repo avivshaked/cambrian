@@ -230,9 +230,9 @@ namespace Evosim.Core.Tests
         public void ShapeOrderAndMembershipAreInTheConfigHash()
         {
             // Shape mutation picks by an RNG draw, so order decides which shape a draw yields.
-            var a = new RunConfig { Shapes = new PartShapeRegistry(new BoxShape(), new SphereShape()) };
-            var b = new RunConfig { Shapes = new PartShapeRegistry(new SphereShape(), new BoxShape()) };
-            var c = new RunConfig { Shapes = new PartShapeRegistry(new BoxShape()) };
+            var a = new RunConfig { ShapeIds = new[] { ShapeIds.Box, ShapeIds.Sphere } };
+            var b = new RunConfig { ShapeIds = new[] { ShapeIds.Sphere, ShapeIds.Box } };
+            var c = new RunConfig { ShapeIds = new[] { ShapeIds.Box } };
 
             Assert.NotEqual(a.Hash(), b.Hash());
             Assert.NotEqual(a.Hash(), c.Hash());

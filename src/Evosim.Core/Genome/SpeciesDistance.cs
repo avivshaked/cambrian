@@ -291,10 +291,10 @@ namespace Evosim.Core
                 units += Math.Abs(na.BuoyancyOffset - nb.BuoyancyOffset) / 2f;
 
                 // D233. Two family nodes differ by their three genes, each on its logarithm, since a
-                // mutation steps the logarithm, and each over its whole range counting one unit, as an
-                // anchor's does. A family node against a named one already counts its shape mismatch
-                // above. Nothing is added unless both carry a form, so every distance in the record
-                // keeps its bits.
+                // mutation steps the logarithm, and the mean of the three over their ranges counts one
+                // unit at opposite corners of all three, as a shape mismatch does. A family node
+                // against a named one already counts its shape mismatch in the topology term. Nothing
+                // is added unless both carry a form, so every distance in the record keeps its bits.
                 if (!na.Form.IsNone && !nb.Form.IsNone) units += FormUnits(na.Form, nb.Form);
 
                 int minLimits = Math.Min(na.JointLimits.Length, nb.JointLimits.Length);
@@ -379,13 +379,14 @@ namespace Evosim.Core
 
         /// <summary>
         /// Two family forms' distance, D233: for each gene the gap between the logarithms over the
-        /// logarithm of its range, so each gene is in <c>[0, 1]</c> inside the ranges and the three sum
-        /// to at most 3, as three scalar fields do.
+        /// logarithm of its range, so each gene is in <c>[0, 1]</c> inside the ranges, and the mean of
+        /// the three, so opposite corners of all three ranges are exactly one unit, the same as a
+        /// shape mismatch.
         /// </summary>
         private static float FormUnits(PartForm a, PartForm b) =>
-            LogGap(a.Profile, b.Profile, PartForm.ProfileMin, PartForm.ProfileMax) +
-            LogGap(a.Section, b.Section, PartForm.SectionMin, PartForm.SectionMax) +
-            LogGap(a.Taper, b.Taper, PartForm.TaperMin, PartForm.TaperMax);
+            (LogGap(a.Profile, b.Profile, PartForm.ProfileMin, PartForm.ProfileMax) +
+             LogGap(a.Section, b.Section, PartForm.SectionMin, PartForm.SectionMax) +
+             LogGap(a.Taper, b.Taper, PartForm.TaperMin, PartForm.TaperMax)) / 3f;
 
         private static float LogGap(float x, float y, float min, float max) =>
             (float)(Math.Abs(Math.Log(x) - Math.Log(y)) / Math.Log(max / min));

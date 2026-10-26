@@ -212,8 +212,14 @@ namespace Evosim.Core.Tests
             }
             else if (p.PropertyType == typeof(string[]))
             {
-                // D192's seed overrides take only their own words; every other list takes a cell id.
-                p.SetValue(target, p.Name == nameof(RunConfig.SeedOverrides) ? new[] { "landscape=3" } : new[] { CellTypeIds.Consumer });
+                // D192's seed overrides take only their own words, D233's shape ids take only shape
+                // ids (the family joins the default three); every other list takes a cell id.
+                p.SetValue(
+                    target,
+                    p.Name == nameof(RunConfig.SeedOverrides) ? new[] { "landscape=3" }
+                    : p.Name == nameof(RunConfig.ShapeIds)
+                        ? new[] { ShapeIds.Box, ShapeIds.Sphere, ShapeIds.Capsule, ShapeIds.Superellipsoid }
+                        : new[] { CellTypeIds.Consumer });
             }
             else if (p.PropertyType.IsEnum)
             {

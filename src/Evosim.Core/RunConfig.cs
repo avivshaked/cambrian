@@ -74,13 +74,109 @@ namespace Evosim.Core
         [Tunable("development")]
         public float SelfOverlapDepthFraction { get; set; }
 
-        /// <summary>The geometries available to parts — §4.1.</summary>
+        /// <summary>
+        /// The ids of the shapes this world allows, in order — §4.1, D233. The default is box, sphere
+        /// and capsule, which is every world recorded before the family.
+        /// </summary>
         /// <remarks>
-        /// Ordered, and the order is hashed: shape mutation picks by an RNG draw, so a registry
-        /// rebuilt in a different order yields different shapes from the same seed.
+        /// <para>
+        /// <b>The list is what the file and the hash carry; <see cref="Shapes"/> is built from it.</b>
+        /// It was once a registry assigned in code, which reached the hash and never reached
+        /// <c>config.json</c>, so a world with a custom list saved and reloaded as the standard three
+        /// with a hash that no longer matched. An id is looked up in
+        /// <see cref="PartShapeRegistry.Catalogue"/>; an unknown or repeated id is refused when
+        /// <see cref="Shapes"/> is first read, which a load does at once to check the stored hash.
+        /// </para>
+        /// <para>
+        /// Ordered, and the order is hashed: shape mutation picks by an RNG draw, so a list rebuilt in
+        /// a different order yields different shapes from the same seed. Naming
+        /// <see cref="Evosim.Core.ShapeIds.Superellipsoid"/> here is what lets the family into a world.
+        /// </para>
+        /// </remarks>
+        [Tunable("development")]
+        public string[] ShapeIds
+        {
+            get => _shapeIds;
+            set => _shapeIds = value ?? throw new ArgumentNullException(
+                nameof(ShapeIds), "A run needs at least one shape id.");
+        }
+
+        private string[] _shapeIds = { Evosim.Core.ShapeIds.Box, Evosim.Core.ShapeIds.Sphere, Evosim.Core.ShapeIds.Capsule };
+
+        /// <summary>
+        /// The geometries available to parts, built from <see cref="ShapeIds"/> against
+        /// <see cref="PartShapeRegistry.Catalogue"/> — §4.1, D233.
+        /// </summary>
+        /// <remarks>
+        /// Get-only, so the list a world allows has one source. The registry is cached with a copy of
+        /// the ids it was built from, in one immutable object swapped in whole, and rebuilt when the
+        /// contents of <see cref="ShapeIds"/> differ, so a reader on another thread sees either the
+        /// old pair or the new and never half of each. Throws on an unknown id, naming the known ones,
+        /// and on a repeated one.
         /// </remarks>
         [TunableRegistry]
-        public PartShapeRegistry Shapes { get; set; } = PartShapeRegistry.Standard;
+        public PartShapeRegistry Shapes
+        {
+            get
+            {
+                string[] ids = _shapeIds;
+                ShapeList built = _shapeList;
+                if (built != null && built.Matches(ids)) return built.Registry;
+
+                built = ShapeList.Build(ids);
+                _shapeList = built;
+                return built.Registry;
+            }
+        }
+
+        private volatile ShapeList _shapeList;
+
+        /// <summary>The ids a registry was built from, with the registry: one object, never edited.</summary>
+        private sealed class ShapeList
+        {
+            private readonly string[] _ids;
+            public readonly PartShapeRegistry Registry;
+
+            private ShapeList(string[] ids, PartShapeRegistry registry)
+            {
+                _ids = ids;
+                Registry = registry;
+            }
+
+            public bool Matches(string[] ids)
+            {
+                if (ids == null || ids.Length != _ids.Length) return false;
+                for (int i = 0; i < ids.Length; i++)
+                {
+                    if (!string.Equals(ids[i], _ids[i], StringComparison.Ordinal)) return false;
+                }
+                return true;
+            }
+
+            public static ShapeList Build(string[] ids)
+            {
+                if (ids == null || ids.Length == 0)
+                {
+                    throw new ArgumentException("A run needs at least one shape id.", nameof(ShapeIds));
+                }
+
+                var shapes = new PartShape[ids.Length];
+                for (int i = 0; i < ids.Length; i++)
+                {
+                    if (!PartShapeRegistry.Catalogue.Contains(ids[i]))
+                    {
+                        throw new ArgumentException(
+                            $"Unknown shape id '{ids[i]}' in ShapeIds. Known: {PartShapeRegistry.Catalogue}.",
+                            nameof(ShapeIds));
+                    }
+
+                    shapes[i] = PartShapeRegistry.Catalogue.Resolve(ids[i]);
+                }
+
+                // The registry refuses a repeated id, with the id in its message.
+                return new ShapeList((string[])ids.Clone(), new PartShapeRegistry(shapes));
+            }
+        }
 
         /// <summary>How often each variation operator fires — §4.5.</summary>
         [TunableGroup]

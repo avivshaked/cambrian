@@ -252,3 +252,47 @@ fixture to be re-recorded, and it rides with an integration branch's identity si
 - Under growth, a family part's panels are its development panels scaled, centres by s and areas by s², and the
   shape is not asked for panels again. The scaled set equals a fresh build at the new size to rounding.
 - The exposure a family part reads each metabolic step comes from panels cached on the part, which nothing rebuilds.
+
+## The genes piece: format, mutation and the world's shape list
+
+The design went to the coordinator before any build, and the coordinator accepted it on 2026-10-26.
+Its full text is kept with the branch's working files.
+
+A world's shape list had a gap. It reached the config hash but was never written to the config file. A world with a
+custom list would have come back from its own directory as the standard three, under a hash that no longer matched.
+The list is now a tunable, `RunConfig.ShapeIds`, which the file carries. The world's registry is built from it
+against a catalogue of the four shapes the build knows. The catalogue answers geometry only. The mutation draw
+and the genome's own check take the world's list.
+
+A family part's three genes step together under `MutationRates.FormChance`, which is 0 by default and then draws
+nothing. Each step is a Gaussian of 0.15 on the gene's logarithm, reflected back into its range. A part that mutates
+into the family starts at the member nearest its old shape. A box starts at profile 0.1, section 0.1 and taper 1, a
+sphere at 1, 1 and 1, and a capsule at 0.5, 1 and 1. A part that leaves drops its genes. Only a genome with a family node is
+written as format 13, or 14 with the one brain, and every other genome is written as before.
+
+The coordinator ruled on four points the same day.
+
+- Species distance between two family nodes is the mean of the three genes' log gaps over their ranges, so opposite
+  corners count one unit, as a shape mismatch does. The sum that the earlier piece landed counted three.
+- Mutation takes the world's list as a last parameter, defaulting to the standard three.
+- The farm binds both knobs, `EVOSIM_SHAPES` as a comma list checked against the catalogue and `EVOSIM_FORM_CHANCE`.
+  The header names either one only when a world departs from the recorded one.
+- The Unity side keeps the standard three as its fallback, in the fluid environment and twice in
+  the phenotype builder. Those files sit under `simHash`, and the Unity farm is idle. The theatre piece changes them
+  to the catalogue when it draws the family.
+
+The new fallback changed what two tests can claim. A family genome developed with no registry was refused before, and now develops on the
+catalogue to the same body as with one. The inocula test was planned as byte identity for every format 11 or 12 file.
+That held for 396 of the 401 genomes read. The others were written by an older writer, which printed a float to more
+digits than today's writer (0.434093744 where it prints 0.43409374). What holds for every one is that it reads, keeps
+its format, and that this writer's text comes back from itself byte for byte.
+
+The two Core config fixtures carry the new keys at their defaults. Round 42's hash moved from 1fa0b21e4065eafa to
+a4acaae9b9551f71, and the farm's tests pin the new one. Round 57's second seed moved from cd9cc88c0054cf90 to
+d7b122ba2c8dae41.
+
+Two re-records are owed. The coordinator ruled on 2026-10-26 that both ride the landing, done once on the tree
+merged with the pace build, since both branches move every config hash. The crowd fixture of the Dynamics tests is a
+new 20,000-second farm run of round 44's world. The nursery's world configs under its `configs` folder are brought
+forward as new files named by their new hashes, with their parents kept. Until then this branch's Dynamics suite and
+the nursery's config test refuse the old files.

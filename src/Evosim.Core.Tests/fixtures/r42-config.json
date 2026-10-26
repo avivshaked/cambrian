@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "1fa0b21e4065eafa",
+  "configHash": "a4acaae9b9551f71",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -82,7 +82,12 @@
     "minPartVolume": 0.0001,
     "reflectMirroredAnchors": false,
     "scaleLengthensOnce": false,
-    "selfOverlapDepthFraction": 0.1
+    "selfOverlapDepthFraction": 0.1,
+    "shapeIds": [
+      "box",
+      "sphere",
+      "capsule"
+    ]
   },
   "economy": {
     "neuralCostPerConnectionWatts": 0,
@@ -253,6 +258,7 @@
     "cellTypeChance": 0.005,
     "driveGeneChance": 0,
     "flagChance": 0.03,
+    "formChance": 0,
     "gestationModeChance": 0,
     "gestationShareChance": 0,
     "investmentChance": 0.08,
