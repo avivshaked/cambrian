@@ -1,0 +1,16 @@
+A: scratch/pace-build/identity-on/r62pon-k3n-g32/2026-10-26-031823-5954a5cc//
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.4905 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit ac2d7bac33 dirty False dynamics 5def5ed2225c farm de92616d4fb3 config 5954a5cc5e5954b5
+  pace     600 s of 600 in 5.375606933333334 min, 1.860255060315422 x real time, status ended (budget), diverged 0
+B: scratch/pace-build/identity-on/r62pon-k3n-g64/2026-10-26-032708-5954a5cc//
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 64, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.7622 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit ac2d7bac33 dirty False dynamics 5def5ed2225c farm de92616d4fb3 config 5954a5cc5e5954b5
+  pace     600 s of 600 in 5.403619785 min, 1.85061133053054 x real time, status ended (budget), diverged 0
+split A  physics 74%, world 24%, harness 1%, writers 1%
+split B  physics 74%, world 24%, harness 1%, writers 1%
+stats    identical on all 60 shared samples to t=600 (wall clocks left out)
+digest   identical on all 1801 shared rows to step 180000
+lineage  byte-equal (1632 lines)
+positions not in both runs
