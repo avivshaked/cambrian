@@ -1,0 +1,60 @@
+== round 60's reader: year 3000 s, end 24000 s, islands as seeded at 100 s
+
+== r62p-k3n-6201: seed 6201, configHash 5954a5cc5e5954b5, commit 9a6d593e, ended/budget, reach 24000 s; r62p-k3n-6201/2026-10-26-034325-5954a5cc
+   dose: influx 3.6 units/s, budget 45000 units
+   islands as seeded (dump at 100 s): 231 of 3600 water columns (0.06) in 9 islands; the largest, in columns: #5 51, #3 41, #0 36, #8 35, #7 33, #1 18, #2 14, #6 2; nearest island column centre to the glass 47.5 m (margin 45 m)
+        t  alive  leaf  stom   jnt mouth  graz  empty on-isl isl>=5% top islands              desert  <b-e  standing bur/inf top line leafkills  migr m-mth m-grz m-leaf m-nph lines2+
+     3000   2648  2060     9   579     0     0   0.78   0.68       5 0.20 0.17 0.16 0.08     0.00001  0.78     10175    4.19     0.23         0     2     0     0      2     0    2/16
+     6000   2448  1990    10   449     7     7   0.80   0.72       5 0.19 0.18 0.16 0.12     0.00002  0.74      9429    1.07     0.26        52     0     0     0      0     0    0/27
+     9000   4353  3610    18   729    14    14   0.76   0.76       5 0.21 0.20 0.16 0.10     0.00002  0.75     12341    0.74     0.26       141     3     0     0      3     0    2/39
+    12000   3284  2732    26   526     7     7   0.77   0.63       5 0.20 0.17 0.11 0.10     0.00003  0.71     11237    1.10     0.33       125     4     0     0      4     0    0/25
+    15000   5941  4901    70   975    15    15   0.71   0.71       5 0.17 0.17 0.15 0.12     0.00003  0.73     13586    0.79     0.28       313     1     0     0      1     0    2/33
+    18000   6499  5535   136   841     5     5   0.71   0.67       5 0.20 0.15 0.12 0.11     0.00003  0.71     14942    0.88     0.31       377     2     0     0      2     0    0/34
+    21000   9310  7902   358  1092    12    12   0.68   0.59       5 0.16 0.13 0.12 0.09     0.00004  0.71     18373    0.69     0.32       320    25     0     0     25     0    2/35
+    24000  10219  8816   476   970    12    12   0.66   0.61       5 0.17 0.14 0.14 0.09     0.00004  0.70     19532    0.90     0.30       476     9     0     0      9     0    2/34
+
+== M1: >= 1000 alive at every year's end from year 2 to 8
+   r62p-k3n-6201: 6000 2448, 9000 4353, 12000 3284, 15000 5941, 18000 6499, 21000 9310, 24000 10219 -> held
+
+== M2: >= 0.3 of the 10 m squares empty at every year's end from year 2 to 8
+   r62p-k3n-6201: 6000 0.80, 9000 0.76, 12000 0.77, 15000 0.71, 18000 0.71, 21000 0.68, 24000 0.66 -> held
+
+== M3: >= 0.6 of the living on the islands at 24000 s
+   r62p-k3n-6201: 0.61 on the islands -> held
+
+== M4: >= 3 islands each with >= 5% of the living at 24000 s
+   r62p-k3n-6201: 5 islands at >= 5% (#3 0.17, #8 0.14, #5 0.14, #0 0.09, #7 0.06, #1 0.01) -> held
+
+== M5: burial 0.8 to 1.2 times the influx over the last year at 24000 s
+   r62p-k3n-6201: buried 10023 of 11181 influxed over the year, 0.896 -> held
+
+== M6: the desert's median top-12 m column below 0.00025 at 24000 s
+   r62p-k3n-6201: desert median 0.000041 units/m3 (dump 24000 s), 0.70 of desert columns below -> held
+
+== M7: >= 20 crossers without photosynthetic tissue in each of years 6 to 8, and a root line over 2 or more islands at 24000 s
+   r62p-k3n-6201: year 6 0 MISS, year 7 0 MISS, year 8 0 MISS; root lines over 2+ islands at 24000 s: 2 -> failed
+
+== L1: no root line over 0.5 of the living at 24000 s
+   r62p-k3n-6201: largest root line 0.302 of the living -> held
+
+== G1: >= 100 leaf kills by grazers in >= 2 of years 6 to 8
+   r62p-k3n-6201: year 6 377, year 7 320, year 8 476 -> held
+
+== S1: grazers, 1500 to 24000 s: readers' mean cosine exceeds the others' by >= 0.1, each side >= 1000 body-samples
+   r62p-k3n-6201: readers 1693 at -0.013, others 83 at -0.299, difference +0.287 -> unread
+
+== B1: the books balance
+   r62p-k3n-6201: audit max 0.00017 J, matter max 9.05e-06, diverged 0, divergedTotal 0, ended/budget 24000 of 24000 s -> holds
+
+== clauses (B2 by card-run-check.ps1, B3 by group-resume-compare.py)
+M1: unread (1 of 1 worlds hold, 3 needed of 3; >= 1000 alive)
+M2: unread (1 of 1 worlds hold, 2 needed of 3; >= 0.3 of the 10 m squares empty)
+M3: unread (1 of 1 worlds hold, 2 needed of 3; >= 0.6 of the living on the islands)
+M4: unread (1 of 1 worlds hold, 2 needed of 3; >= 3 islands each with >= 5% of the living)
+M5: unread (1 of 1 worlds hold, 3 needed of 3; burial 0.8 to 1.2 times the influx over the last year)
+M6: held (1 of 1 worlds hold, 1 needed of 3; the desert's median top-12 m column below 0.00025)
+M7: unread (0 of 1 worlds hold, 1 needed of 3; crossers without photosynthetic tissue, and a root line over 2+ islands)
+L1: unread (1 of 1 worlds hold, 2 needed of 3; no root line over 0.5 of the living)
+G1: held (1 of 1 worlds hold, 1 needed of 3; leaf kills by grazers)
+S1: unread (0 held, 0 failed, 1 unread of 1 worlds)
+B1: unread (1 of 1 worlds hold, 3 needed of 3; audit, matter, divergence, ended on budget)

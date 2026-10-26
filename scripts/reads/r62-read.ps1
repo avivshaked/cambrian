@@ -24,7 +24,7 @@ $me.ProcessorAffinity = [IntPtr]$Mask
 $me.PriorityClass = 'BelowNormal'
 $reads = $PSScriptRoot
 $list = @($Worlds -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
-$arms = $list | ForEach-Object { Join-Path $RunsRoot $_ }
+$arms = @($list | ForEach-Object { Join-Path $RunsRoot $_ })
 
 # Every world's last stats row must have reached -End.
 foreach ($a in $arms) {

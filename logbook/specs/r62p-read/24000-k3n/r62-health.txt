@@ -1,0 +1,17 @@
+== round 62 grazer health (D215): born share at 12000,24000; own-kill share per 3000 s from 12000 to 24000 s
+   The own-kill share is a PROXY, an upper bound on the grazers' intake from their own kills: the corpse joules
+   grazers' kills founded (kept at 1 - waste) over every mouth's kept intake. The record does not say which corpse
+   a mouth ate. Accepted for test 3's trend in round 62 (the coordinator, 2026-10-23); its level is not a measurement.
+
+r62p-k3n-6201  (read to 24000 s; joulesPerUnit 100, intakeWasteFraction 0.2)
+   second  living  founded   born born share
+    12000       7        7      0      0.000
+    24000      12       11      1      0.083
+  contact eating (D219-D221): part 2 is the kept intake bitten off the living over all kept intake
+            bin    living J      kept J   share    graz-s
+   12000-15000        23335       26309   0.887     28158
+   15000-18000        28724       36464   0.788     38863
+   18000-21000        16095       18770   0.858     31479
+   21000-24000        35525       40643   0.874     35794
+  test 3 (D222): the living share in 21000-24000 s is 0.874, holds at 0.5
+  trend, reported and not required: the share falls, 0.887 in 12000-15000 s to 0.874 in 21000-24000 s
