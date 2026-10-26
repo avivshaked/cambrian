@@ -371,7 +371,9 @@ namespace Evosim.Dynamics
             // inside the parallel phase, because every accumulator it touches is this body's.
             body.Settle(dt);
 
-            body.RecordTraceFrame(Steps + 1, (Steps + 1) * dt);
+            // The frame's time is the world clock's, as the card's runner stamps it (D239): dt over the pace
+            // factor a step, which is dt itself at 1.
+            body.RecordTraceFrame(Steps + 1, (Steps + 1) * Config.ClockStepSeconds);
 
             if (!body.IsFinite())
             {

@@ -322,9 +322,43 @@ namespace Evosim.Farm.Tests
                 }
             }
 
+            // The world's own counters, then each body's checkpointed state, so the message names which part.
+            string counters = Counter("Steps", cpu.Steps, gpu.Steps) ?? Counter("OverlapPairs", cpu.OverlapPairs, gpu.OverlapPairs) ??
+                              Counter("OverlapPairsJointed", cpu.OverlapPairsJointed, gpu.OverlapPairsJointed) ??
+                              Counter("OverlapPairsHeld", cpu.OverlapPairsHeld, gpu.OverlapPairsHeld) ??
+                              Counter("OverlapBodies", cpu.OverlapBodies, gpu.OverlapBodies) ??
+                              Counter("BedOrGlassBodies", cpu.BedOrGlassBodies, gpu.BedOrGlassBodies) ??
+                              Counter("OverlapPairsThisStep", cpu.OverlapPairsThisStep, gpu.OverlapPairsThisStep) ??
+                              Counter("OverlapPairsJointedThisStep", cpu.OverlapPairsJointedThisStep, gpu.OverlapPairsJointedThisStep) ??
+                              Counter("OverlapPairsHeldThisStep", cpu.OverlapPairsHeldThisStep, gpu.OverlapPairsHeldThisStep) ??
+                              Counter("OverlapBodiesThisStep", cpu.OverlapBodiesThisStep, gpu.OverlapBodiesThisStep) ??
+                              Counter("BedOrGlassBodiesThisStep", cpu.BedOrGlassBodiesThisStep, gpu.BedOrGlassBodiesThisStep);
+            if (counters != null) return "the world's " + counters;
+
+            for (int i = 0; i < cpu.Creatures.Count; i++)
+            {
+                byte[] sa = BodyState(cpu.Creatures[i]), sb = BodyState(gpu.Creatures[i]);
+                int at = 0;
+                while (at < sa.Length && at < sb.Length && sa[at] == sb[at]) at++;
+                if (at < sa.Length || at < sb.Length)
+                {
+                    return "body " + cpu.Creatures[i].Id + "'s checkpointed state, first at byte " + at + " of " + sa.Length + "/" +
+                           sb.Length + " (a field outside the list above)";
+                }
+            }
+
             return "the world's counters or a checkpointed field outside the list above " +
                    "(census " + cpu.OverlapPairs + "/" + gpu.OverlapPairs + ", clock " +
                    cpu.ElapsedSeconds.ToString("R") + "/" + gpu.ElapsedSeconds.ToString("R") + ")";
+        }
+
+        private static string Counter(string name, long a, long b) => a == b ? null : name + " " + a + " against " + b;
+
+        private static byte[] BodyState(Creature c)
+        {
+            using var stream = new MemoryStream();
+            using (var w = new CanonicalWriter(stream)) c.WriteState(w, cardBlock: false);
+            return stream.ToArray();
         }
 
         private static string Compare(double[] a, double[] b, string name)
@@ -782,8 +816,9 @@ namespace Evosim.Farm.Tests
                 AssertSame(cpu, gpu, "at k = 3, after block " + block);
             }
 
-            // The world clock is dt over k a step on both engines: 100 steps of 0.02 s at k = 3.
-            Assert.Equal(100 * 0.02 / 3.0, cpu.ElapsedSeconds, 9);
+            // The world clock is dt over k a step on both engines: 100 steps of 0.02 s at k = 3, the step as the
+            // config holds it (a float's 0.02 widened, not the decimal), so the sum is 0.6666666518, not 2/3.
+            Assert.Equal(100 * cpu.Config.StepSeconds / 3.0, cpu.ElapsedSeconds, 9);
             Assert.Equal(cpu.ElapsedSeconds, gpu.ElapsedSeconds, 12);
 
             bool parted = false;
