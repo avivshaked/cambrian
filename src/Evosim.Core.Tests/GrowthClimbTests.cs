@@ -324,7 +324,9 @@ namespace Evosim.Core.Tests
 
             // An adult at birth (a share of 3 caps at the whole body) breeds on the same reserve.
             Genome adult = Juvenile(0.65f);
-            adult.Reproduction.BirthInvestment = 3f;
+            ReproductionTraits traits = adult.Reproduction;
+            traits.BirthInvestment = 3f;
+            adult.Reproduction = traits;
             Organism parent = Found(Stage(1000f), adult, out World adultWorld);
             Assert.Equal(1f, parent.BodyFraction);
             adultWorld.Step(0.5f);

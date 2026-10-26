@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "20f7587b780d886c",
+  "configHash": "1d5b1496e18d9d51",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -209,8 +209,13 @@
     "terminalChance": 0.3
   },
   "growth": {
+    "growthAdultSeconds": 0,
     "growthReserveFloor": 0.1,
+    "growthReserveMaxSeconds": 300,
+    "growthReserveMinSeconds": 1,
+    "growthReserveStartSeconds": 30,
     "growthStepSeconds": 10,
+    "juvenileStrengthScales": false,
     "minNewbornPartKilograms": 0.5,
     "moduleAddReserveSeconds": 0,
     "moduleDropAfterSeconds": 0,
@@ -261,6 +266,7 @@
     "formChance": 0,
     "gestationModeChance": 0,
     "gestationShareChance": 0,
+    "growthReserveChance": 0,
     "investmentChance": 0.08,
     "jointTypeChance": 0.04,
     "lifespanChance": 0,

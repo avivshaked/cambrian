@@ -142,7 +142,9 @@ namespace Evosim.Farm.Tests
 
             // A juvenile: born at 0.65 of its adult (0.8125 x the 0.8 the newborn keeps as body).
             Genome juvenile = RemainsFixtures.Claw();
-            juvenile.Reproduction.BirthInvestment = 0.8125f;
+            ReproductionTraits traits = juvenile.Reproduction;
+            traits.BirthInvestment = 0.8125f;
+            juvenile.Reproduction = traits;
 
             world.Inoculate(juvenile, count: 1, heightY: -2.5f);
             sim.SettleBeforeCheckpoint();
