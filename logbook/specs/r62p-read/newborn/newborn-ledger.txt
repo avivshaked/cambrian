@@ -1,0 +1,157 @@
+run D:\Projects\experiments\evolution-simulator\runs\r62p-t3-6201\2026-10-26-034325-a9cd635c, to 24000 s
+config: NewbornReserveFraction 0.5, GrowthReserveFloor 0.1, IntakeScale 16, WorkCostMultiplier 0.0555556, neural cost 0 / 0 W, overhead floor 50 J + 2 J a tissue joule, paceFactor 1
+bred grazers born 2565, dead 2507; ate (bk/iok/iak/ic > 0 or a kill) 1224, never ate 1283
+  never-ate by bk alone (grazer-tally's test): 1712
+  dead without a single pose frame (died before the next 10 s frame): 126
+
+== Q1 spending at birth and over the first 60 s (median [quartiles])
+-- bred, never ate (with a frame): 1186
+  birth body fraction bf0 (birth row)            0.65 [0.621, 0.65] n=1186
+  first frame age s                              5 [2.5, 7.5] n=1186
+  body fraction at first frame bf1               1 [1, 1] n=1186
+  bf1 / bf0                                      1.54 [1.54, 1.61] n=1186
+  share at bf1 >= 0.999 (adult at first frame)   0.896
+  reserve J1 at first frame J                    10.5 [4.17, 13.9] n=1186
+  standing cost U1 at first frame W              0.838 [0.499, 0.908] n=1186
+  seconds of reserve S1 at first frame           13.6 [9.91, 16.4] n=1186
+  U1 / bf1 W (per adult-size unit)               0.866 [0.522, 0.908] n=1186
+  derived adult tissue A J                       55.6 [35.6, 60.6] n=1159
+  derived reserve at birth bf0*A J               36.1 [22.2, 39.1] n=1159
+  derived growth spend (bf1-bf0)*A J             19.3 [11.1, 21.4] n=1159
+  derived growth spend / reserve at birth        0.538 [0.538, 0.611] n=1186
+  age at death s                                 23.5 [18, 29] n=1186
+  first-frame clock: age1 + S1 s                 18.9 [15.6, 20.7] n=1186
+    age  0-10 s: frames 1138, bf 1.000, J 10.70, U W 0.840
+    age 10-20 s: frames  950, bf 1.000, J 5.59, U W 0.868
+    age 20-30 s: frames  499, bf 1.000, J 2.44, U W 0.755
+    age 30-40 s: frames  185, bf 1.000, J 2.88, U W 0.585
+    age 40-50 s: frames   89, bf 1.000, J 4.81, U W 0.486
+    age 50-60 s: frames   53, bf 1.000, J 4.83, U W 0.474
+    age 60-70 s: frames   38, bf 1.000, J 3.10, U W 0.452
+-- bred, ate (with a frame): 1195
+  birth body fraction bf0 (birth row)            0.65 [0.65, 0.657] n=1195
+  first frame age s                              5 [2.5, 8] n=1195
+  body fraction at first frame bf1               1 [1, 1] n=1195
+  bf1 / bf0                                      1.54 [1.52, 1.54] n=1195
+  share at bf1 >= 0.999 (adult at first frame)   0.972
+  reserve J1 at first frame J                    12.2 [8.48, 15.3] n=1195
+  standing cost U1 at first frame W              0.895 [0.614, 0.908] n=1195
+  seconds of reserve S1 at first frame           14.9 [12.3, 18] n=1195
+  U1 / bf1 W (per adult-size unit)               0.898 [0.614, 0.908] n=1195
+  derived adult tissue A J                       56.6 [38.8, 61.1] n=1195
+  derived reserve at birth bf0*A J               37 [29.3, 39.8] n=1195
+  derived growth spend (bf1-bf0)*A J             19.6 [11.1, 21.5] n=1195
+  derived growth spend / reserve at birth        0.538 [0.521, 0.539] n=1195
+  age at death s                                 96 [25.5, 497] n=1195
+  first-frame clock: age1 + S1 s                 19.6 [18.3, 22.9] n=1195
+    age  0-10 s: frames 1135, bf 1.000, J 12.44, U W 0.897
+    age 10-20 s: frames 1112, bf 1.000, J 9.24, U W 0.886
+    age 20-30 s: frames  899, bf 1.000, J 26.17, U W 0.865
+    age 30-40 s: frames  759, bf 1.000, J 50.05, U W 0.844
+    age 40-50 s: frames  716, bf 1.000, J 63.23, U W 0.844
+    age 50-60 s: frames  688, bf 1.000, J 79.44, U W 0.847
+    age 60-70 s: frames  663, bf 1.000, J 90.40, U W 0.844
+-- adult grazer frames (bf >= 0.999, age >= 120 s), bred and founder: 47688 frames of 864 bodies
+  standing cost U W                              0.908 [0.762, 0.908] n=47686
+  founders only U W                              0.908 [0.908, 0.908] n=14706
+  reserve J                                      313 [146, 513] n=47688
+  seconds of reserve                             419 [220, 614] n=47688
+  derived: world billed stroke work per jointed body W (workJoulesPerSecond x WorkCostMultiplier / jointed, rows from 3000 s)  0.0111 [0.00871, 0.0145] n=2101
+  measured: billed work over all spending of the living (workJoules / spendJoules)  0.00316 [0.00233, 0.00458] n=2400
+
+== Q2 income ceiling
+  mouthBlows 20247, finishing 9056, biteKeptLeaves 671917 J, biteKeptOthers 107934 J, biteWaste 404754 J (last row; cumulative?)
+  mouthBlows never falls between rows: True
+  derived: kept joules a blow on leaves and others  38.5 J
+  bred eaters' kept intake over life W            0.597 [0, 1.86] n=1224
+  bred eaters' kept joules J                      94.4 [0, 735] n=1224
+  bred eaters' kills (whole bodies)               2 [1, 6] n=1224
+  founders' kept intake over life W               0.333 [0, 1.85] n=256
+
+== Q3 distance to the nearest living leaf, and speed
+-- bred, never ate: at first frame
+  nearest leaf, root to root 3D m                1.45 [1.22, 1.69] n=1186
+  nearest leaf, horizontal m                     0.534 [0.342, 0.76] n=1186
+  share with a leaf within 1 m (3D)              0.077
+  share with a leaf within 2 m (3D)              0.907
+  net horizontal speed, frames within 60 s m/s   0.0472 [0.01, 0.148] n=1729
+    speed from a frame at age  0-10 s m/s      0.0562 [0.00808, 0.163] n=902
+    speed from a frame at age 10-20 s m/s      0.0407 [0.0106, 0.133] n=499
+    speed from a frame at age 20-30 s m/s      0.0334 [0.0133, 0.111] n=185
+    speed from a frame at age 30-40 s m/s      0.0435 [0.017, 0.0967] n=89
+  distance to the parent at first frame m        3.93 [2.93, 4.67] n=1165
+  height above the parent at first frame m       0.025 [-0.206, 0.276] n=1165
+  jointed at birth (jnt 1): 1106 of 1283
+  members (with frames) whose median speed in 60 s is under 0.03 m/s: 367 of 941 with a speed
+    jnt 1: n 1015, speed within 60 s m/s 0.0741 [0.0166, 0.169] n=1413
+    jnt 0: n 171, speed within 60 s m/s 0.00731 [0.00354, 0.0161] n=316
+  causes of death: {'starved': 1282, 'aged': 1}
+  kills by the group's members: 0 [0, 0] n=1283; kept by bk only (no kill) 0, kill only (bk 0) 0
+-- bred, ate: at first frame
+  nearest leaf, root to root 3D m                1.38 [1.16, 1.61] n=1195
+  nearest leaf, horizontal m                     0.47 [0.294, 0.669] n=1195
+  share with a leaf within 1 m (3D)              0.107
+  share with a leaf within 2 m (3D)              0.945
+  net horizontal speed, frames within 60 s m/s   0.161 [0.0829, 0.221] n=4152
+    speed from a frame at age  0-10 s m/s      0.139 [0.0663, 0.195] n=1052
+    speed from a frame at age 10-20 s m/s      0.162 [0.0796, 0.224] n=899
+    speed from a frame at age 20-30 s m/s      0.174 [0.0946, 0.235] n=759
+    speed from a frame at age 30-40 s m/s      0.179 [0.0981, 0.234] n=716
+  distance to the parent at first frame m        3.74 [2.8, 4.55] n=1178
+  height above the parent at first frame m       0.001 [-0.274, 0.245] n=1178
+  jointed at birth (jnt 1): 1135 of 1224
+  members (with frames) whose median speed in 60 s is under 0.03 m/s: 164 of 1107 with a speed
+    jnt 1: n 1112, speed within 60 s m/s 0.168 [0.0972, 0.225] n=3906
+    jnt 0: n 83, speed within 60 s m/s 0.0147 [0.00603, 0.0307] n=246
+  causes of death: {'starved': 788, 'aged': 171, 'eaten': 265}
+  kills by the group's members: 2 [1, 6] n=1224; kept by bk only (no kill) 103, kill only (bk 0) 429
+-- adult grazers: net horizontal speed m/s       0.147 [0.04, 0.229] n=46824
+-- adult grazers: nearest leaf 3D m              1.32 [1.05, 1.74] n=47688
+-- living leaves a frame, from 3000 s             5.21e+03 [3.68e+03, 6.81e+03] n=2101
+
+== Q4 eaters against never-eaters (bred, dead), median [quartiles]
+  birth body fraction bf0                          never 0.65 [0.601, 0.65] n=1283      ate 0.65 [0.649, 0.655] n=1224
+  reserve at first frame J1 J                      never 10.5 [4.17, 13.9] n=1186       ate 12.2 [8.48, 15.3] n=1195
+  U1 W                                             never 0.838 [0.499, 0.908] n=1186    ate 0.895 [0.614, 0.908] n=1195
+  derived A J                                      never 55.6 [35.6, 60.6] n=1159       ate 56.6 [38.8, 61.1] n=1195
+  nearest leaf at first frame 3D m                 never 1.45 [1.22, 1.69] n=1186       ate 1.38 [1.16, 1.61] n=1195
+  parent's reserve before J                        never 554 [248, 628] n=1282          ate 581 [331, 641] n=1223
+  parent's funds over its gate                     never 0.894 [0.825, 0.947] n=1282    ate 0.91 [0.836, 0.951] n=1223
+  parent's gate J (J/breed)                        never 676 [335, 685] n=1276          ate 685 [413, 685] n=1221
+  parent's body fraction                           never 1 [1, 1] n=1282                ate 1 [1, 1] n=1223
+  parent's age at the birth s                      never 402 [230, 643] n=1283          ate 398 [217, 636] n=1224
+  parent's reserve change over the 10 s before J   never -2.47 [-7.33, 24.4] n=1280     ate -2.43 [-7.19, 26.7] n=1220
+  parent's kills in the 100 s before               never 2 [1, 4] n=1283                ate 3 [1, 4] n=1224
+  parent's kills before the birth                  never 8 [4, 13] n=1283               ate 9 [5, 14] n=1224
+  parent's nearest leaf 3D m                       never 1.06 [0.926, 1.33] n=1282      ate 1.08 [0.93, 1.29] n=1223
+  parent's reserve drop across the birth frame J   never 10.5 [-22.6, 48.8] n=1256      ate 17.1 [-21.6, 58.9] n=1206
+  parent's lifetime kept J (if dead)               never 2e+03 [1.25e+03, 2.45e+03] n=1219 ate 2.02e+03 [1.25e+03, 2.45e+03] n=1187
+  birth time s                                     never 1.88e+04 [1.43e+04, 2.23e+04] n=1283 ate 1.86e+04 [1.41e+04, 2.2e+04] n=1224
+  parent feeding (reserve rose over the 10 s before)      never 501/1283 (0.39)  ate 493/1224 (0.40)
+  parent made a kill in the 100 s before                  never 1145/1283 (0.89)  ate 1125/1224 (0.92)
+  parent is a founder                                     never 277/1283 (0.22)  ate 331/1224 (0.27)
+  parent is a grazer                                      never 1283/1283 (1.00)  ate 1224/1224 (1.00)
+  leaf within 1 m at first frame                          never 91/1283 (0.07)  ate 128/1224 (0.10)
+  adult size at first frame                               never 1063/1283 (0.83)  ate 1161/1224 (0.95)
+  share that ate, by nearest leaf at first frame (3D):
+    0.00-0.75   m:   17 dead, ate 0.53
+    0.75-1      m:  201 dead, ate 0.59
+    1.00-1.5    m: 1219 dead, ate 0.52
+    1.50-2.5    m:  915 dead, ate 0.47
+    2.50-5      m:   29 dead, ate 0.21
+    5.00-1e+09  m:    0 dead, ate 0.00
+  share that ate, by reserve at first frame J1:
+      0-5     J:  544 dead, ate 0.37
+      5-10    J:  390 dead, ate 0.46
+     10-20    J: 1209 dead, ate 0.55
+     20-40    J:  214 dead, ate 0.63
+     40-1e+09 J:   24 dead, ate 0.96
+
+== Q5 life history
+  breedings that made a bred grazer: 2539; children a breeding 1 [1, 1] n=2539; share with one child 0.990
+  derived joules a child: tissue+reserve 73.3 [49.8, 79] n=2412; overhead 73.3 [50, 79] n=2412; price 147 [99.8, 158] n=2412
+  breedings in a dead parent's life (grazer children only) 5 [2, 8] n=468
+  children per parent that ever ate                2 [1, 4] n=504
+  parent's breeding gate J/breed J (frame before)  684 [367, 685] n=2555
+  parent's reserve drop across the birth frame J   12.6 [-22, 52.5] n=2520
+  bred grazers by generation: {1: 618, 2: 540, 3: 435, 4: 345, 5: 177, 6: 92, 7: 85, 8: 95, 9: 46, 10: 30, 11: 38, 12: 42}

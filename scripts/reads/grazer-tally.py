@@ -76,6 +76,11 @@ for name, keep in (("bred grazers", lambda b: b.get("p", -1) >= 0), ("founder gr
     if dead:
         print(f"  age at death s: median {statistics.median(ages):.1f}, quartiles {q(ages, .25):.1f} / {q(ages, .75):.1f}")
         print(f"  never kept a meal (bk 0): {never} of {len(dead)}")
+        # With the kill gut on (D232), a swallowed kill reaches the reserve through the gut and never touches bk, so a
+        # body that only ate what it killed reads bk 0. A kill row naming it as the attacker counts as a meal here.
+        killers = {k.get("by") for k in kills}
+        never_any = sum(1 for d in dead if (d.get("bk") or 0.0) <= 0 and d["id"] not in killers)
+        print(f"  never ate at all (bk 0 and no kill, the kill gut's meals counted): {never_any} of {len(dead)}")
         eaters = [v for v in bk if v > 0]
         if eaters:
             print(f"  bk of those that ate, J: median {statistics.median(eaters):.2f}, max {max(eaters):.1f}")

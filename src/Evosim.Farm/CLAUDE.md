@@ -294,7 +294,9 @@ The root file's rules still apply. The entries below were moved word for word, s
   returns, as `simHash` does, so round 49's film windows, run from the main tree on the round's
   own exe, named all three hashes as differing from the run's, and V1 asks for none (2026-09-26;
   the windows read FAITHFUL on every row all the same). Run a window, a resume or a check from
-  the checkout the run was launched from. **A worktree's own edits can move its hashes too.** Git
+  the checkout the run was launched from. A printout's "this build" is that tree's hash, never the dll's: run a
+  worktree's dll with `-WorkingDirectory` set to that worktree, or `EVOSIM_REPO_ROOT` set to it (2026-10-26, a t3
+  window on `wt-pace`'s dll run from the main tree named main's hashes). **A worktree's own edits can move its hashes too.** Git
   Bash's `sed -i` writes a CRLF file back with bare LF, and the Write tool makes a new file with LF,
   while a checkout of the same commit writes CRLF. On 2026-10-19 `CurrentField.cs`, the new
   `CurrentField.Ocean.cs` and `SolverConfigWorld.cs` carried bare LF in r62-base's worktree. Edit

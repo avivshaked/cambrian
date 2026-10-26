@@ -1,0 +1,56 @@
+== round 60's reader: year 6000 s, end 24000 s, islands as seeded at 100 s
+
+== r62p-t3-6201: seed 6201, configHash a9cd635c6257af36, commit 9a6d593e, ended/budget, reach 24000 s; r62p-t3-6201/2026-10-26-034325-a9cd635c
+   dose: influx 3.6 units/s, budget 45000 units
+   islands as seeded (dump at 100 s): 231 of 3600 water columns (0.06) in 9 islands; the largest, in columns: #5 51, #3 41, #0 36, #8 35, #7 33, #1 18, #2 14, #6 2; nearest island column centre to the glass 47.5 m (margin 45 m)
+        t  alive  leaf  stom   jnt mouth  graz  empty on-isl isl>=5% top islands              desert  <b-e  standing bur/inf top line leafkills  migr m-mth m-grz m-leaf m-nph lines2+
+     6000   2748  2284    10   455    12    12   0.78   0.70       5 0.16 0.16 0.16 0.15     0.00002  0.73     10022    2.59     0.23       155     3     0     0      3     0    0/36
+    12000   3452  3077    48   329    11    11   0.76   0.64       4 0.17 0.16 0.14 0.12     0.00003  0.69     11618    0.93     0.24      1290     7     0     0      7     0    1/28
+    18000   5689  5103   251   342    18    18   0.70   0.63       5 0.17 0.16 0.13 0.11     0.00003  0.70     14943    0.85     0.27      2112    13     0     0     12     0    1/38
+    24000   8443  7440   628   385    69    69   0.64   0.57       5 0.17 0.14 0.10 0.09     0.00005  0.69     19012    0.82     0.29      3263    69     1     1     59     1    2/43
+
+== M1: >= 1000 alive at every year's end from year 2 to 4
+   r62p-t3-6201: 12000 3452, 18000 5689, 24000 8443 -> held
+
+== M2: >= 0.3 of the 10 m squares empty at every year's end from year 2 to 4
+   r62p-t3-6201: 12000 0.76, 18000 0.70, 24000 0.64 -> held
+
+== M3: >= 0.6 of the living on the islands at 24000 s
+   r62p-t3-6201: 0.57 on the islands -> failed
+
+== M4: >= 3 islands each with >= 5% of the living at 24000 s
+   r62p-t3-6201: 5 islands at >= 5% (#8 0.17, #0 0.14, #5 0.10, #3 0.09, #7 0.06, #1 0.01) -> held
+
+== M5: burial 0.8 to 1.2 times the influx over the last year at 24000 s
+   r62p-t3-6201: buried 18125 of 22194 influxed over the year, 0.817 -> held
+
+== M6: the desert's median top-12 m column below 0.00025 at 24000 s
+   r62p-t3-6201: desert median 0.000049 units/m3 (dump 24000 s), 0.69 of desert columns below -> held
+
+== M7: >= 20 crossers without photosynthetic tissue in each of years 6 to 8, and a root line over 2 or more islands at 24000 s
+   r62p-t3-6201: , year 6 not reached, year 7 not reached, year 8 not reached; root lines over 2+ islands at 24000 s: 2 -> unread
+
+== L1: no root line over 0.5 of the living at 24000 s
+   r62p-t3-6201: largest root line 0.287 of the living -> held
+
+== G1: >= 100 leaf kills by grazers in >= 2 of years 6 to 8
+   r62p-t3-6201: year 6 0 (not reached), year 7 0 (not reached), year 8 0 (not reached) -> unread
+
+== S1: grazers, 3000 to 48000 s: readers' mean cosine exceeds the others' by >= 0.1, each side >= 1000 body-samples
+   r62p-t3-6201: readers 5199 at -0.004, others 882 at -0.127, difference +0.123 -> unread
+
+== B1: the books balance
+   r62p-t3-6201: audit max 0.000256 J, matter max 6.34e-06, diverged 0, divergedTotal 0, ended/budget 24000 of 24000 s -> holds
+
+== clauses (B2 by card-run-check.ps1, B3 by group-resume-compare.py)
+M1: unread (1 of 1 worlds hold, 3 needed of 3; >= 1000 alive)
+M2: unread (1 of 1 worlds hold, 2 needed of 3; >= 0.3 of the 10 m squares empty)
+M3: unread (0 of 1 worlds hold, 2 needed of 3; >= 0.6 of the living on the islands)
+M4: unread (1 of 1 worlds hold, 2 needed of 3; >= 3 islands each with >= 5% of the living)
+M5: unread (1 of 1 worlds hold, 3 needed of 3; burial 0.8 to 1.2 times the influx over the last year)
+M6: held (1 of 1 worlds hold, 1 needed of 3; the desert's median top-12 m column below 0.00025)
+M7: unread (0 of 1 worlds hold, 1 needed of 3; crossers without photosynthetic tissue, and a root line over 2+ islands)
+L1: unread (1 of 1 worlds hold, 2 needed of 3; no root line over 0.5 of the living)
+G1: unread (0 of 1 worlds hold, 1 needed of 3; leaf kills by grazers)
+S1: unread (0 held, 0 failed, 1 unread of 1 worlds)
+B1: unread (1 of 1 worlds hold, 3 needed of 3; audit, matter, divergence, ended on budget)
