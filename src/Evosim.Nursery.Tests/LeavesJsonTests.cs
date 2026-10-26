@@ -26,15 +26,19 @@ namespace Evosim.Nursery.Tests
         public void EachLeafCarriesItsGenomeItsPosesAndWhenItLeft()
         {
             var leaves = new List<FrameRecorder.LeafTrack> { Track(7, 0.1, 300, 0.02, 12.5), Track(9, 0.1, 150.4, 0, 40.125) };
-            string text = FrameRecorder.LeavesJson(leaves, 300);
+            leaves[0].Column = 0; leaves[0].Links = 1; leaves[1].Column = 7; leaves[1].Links = 1;
+            string text = FrameRecorder.LeavesJson(leaves, 300, 14);
             Assert.DoesNotContain("\r", text);
 
             JsonNode doc = Json.Parse(text);
             Assert.Equal(2, doc["leafCount"].AsInt());
+            Assert.Equal(14, doc["leafFrameFloats"].AsInt());
+            Assert.Equal("leaf-frames.bin", doc["leafFrames"].AsString());
             JsonNode[] rows = doc["leaves"].Items().ToArray();
             Assert.Equal(7, rows[0]["id"].AsInt());
             Assert.Equal(JsonNode.NodeKind.Null, rows[0]["goneAfter"].Kind);
             Assert.Equal(150.4, rows[1]["goneAfter"].AsDouble());
+            Assert.Equal(7, rows[1]["column"].AsInt());
             Assert.Equal(new[] { 40.125, -12.5, 3.25, 0, 0, 0, 1 }, rows[1]["first"].Items().First().Items().Select(v => v.AsDouble()).ToArray());
             Assert.Equal(JsonNode.NodeKind.Object, rows[1]["genome"].Kind);
             Assert.Contains(GenomeJson.Write(leaves[1].Genome), text);
