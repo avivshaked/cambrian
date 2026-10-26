@@ -128,12 +128,34 @@ namespace Evosim.Nursery.Tests
         }
 
         [Fact]
-        public void AWorldAtAPaceFactorAboveOneIsRefusedByName()
+        public void AWorldAtAPaceFactorAboveOneIsReadAndItsFactorReachesTheEpisodesConfig()
         {
-            // D239: a tank steps 0.5 s over dt physics steps to a metabolic step, so it carries no pace factor.
-            string refused = Refusal(Child("\"name\": \"paced\", \"world\": {\"overrides\": {\"PaceFactor\": 3}}"));
-            Assert.Contains("PaceFactor", refused);
-            Assert.Contains("D239", refused);
+            // D240: the tank carries the world's pace factor. At dt 0.01 and k = 3 a metabolic step holds 150 physics steps, which the recipe may make.
+            Recipe r = Recipe.Load(Child("\"name\": \"paced\", \"world\": {\"overrides\": {\"PaceFactor\": 3}}"));
+            RunConfig c = r.EpisodeConfig(File.ReadAllText(r.ConfigFullPath));
+            Assert.Equal(3f, c.PaceFactor);
+            Assert.Equal(0.01f, r.Dt);
+
+            // The factor is the world's: the same recipe at 1 is another hash, and an episode config at another hash.
+            Recipe plain = Recipe.Load(Child("\"name\": \"paced\", \"world\": {\"overrides\": {}}"));
+            Assert.Equal(1f, plain.EpisodeConfig(File.ReadAllText(plain.ConfigFullPath)).PaceFactor);
+            Assert.NotEqual(plain.Hash(), r.Hash());
+            Assert.NotEqual(plain.EpisodeConfig(File.ReadAllText(plain.ConfigFullPath)).Hash(), c.Hash());
+        }
+
+        [Theory]
+        [InlineData(3, 0.04, "setup.dt")]
+        [InlineData(3, 0.4, "setup.dt")]
+        [InlineData(1, 0.03, "setup.dt")]
+        public void ADtThatCannotMakeAMetabolicStepAtTheFactorIsRefusedAtReadNamingTheSettingAndItsValue(int k, double dt, string setting)
+        {
+            // D240: the same check the farm makes (EnvBinding.ResolvePhysicsStep), made when the recipe is read, so --check refuses it and not the first episode.
+            string dtText = dt.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+            string refused = Refusal(Child("\"name\": \"bad-dt\", \"setup\": {\"dt\": " + dtText + "}, \"world\": {\"overrides\": {\"PaceFactor\": " + k + "}}"));
+            Assert.Contains(setting, refused);
+            Assert.Contains(dtText, refused);
+            Assert.Contains("PaceFactor of " + k, refused);
+            Assert.Contains("Must", refused);   // says what would be accepted: the farm's own words
         }
 
         [Fact]

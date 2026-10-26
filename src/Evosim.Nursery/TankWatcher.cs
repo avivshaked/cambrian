@@ -139,15 +139,22 @@ namespace Evosim.Nursery
         /// <summary>The slots of the tank: one per genome handed in, whether or not its body landed.</summary>
         public int MemberCount => _focal.Length;
 
-        /// <summary>Physics steps taken. A frame's time is this times <see cref="PhysicsDt"/>.</summary>
+        /// <summary>Physics steps taken. The physics clock is this times <see cref="PhysicsDt"/>; the tank's time is <see cref="ClockSeconds"/>.</summary>
         public long Steps => _sim.Steps;
 
         public float PhysicsDt => _sim.PhysicsDt;
 
         public int StepsPerMetabolicStep => _sim.StepsPerMetabolicStep;
 
-        /// <summary>Physics steps times the step: the clock the poses are on.</summary>
+        /// <summary>Physics steps times the step: the physics clock, which is world time only at a pace factor of 1 (D239); see <see cref="ClockSeconds"/>.</summary>
         public double PhysicsSeconds => _sim.Steps * (double)_sim.PhysicsDt;
+
+        /// <summary>
+        /// World time between economy steps, s (D240): the clock the poses, the economy and the switching schedule's openings share.
+        /// <b>At a pace factor of 1 it is <see cref="PhysicsSeconds"/> itself, the same expression</b>, so its bits are the ones that clock always had;
+        /// above 1 it is physics steps times the step over the factor, in double. The watchers take their times from it.
+        /// </summary>
+        public double ClockSeconds => _sim.PaceFactor == 1f ? _sim.Steps * (double)_sim.PhysicsDt : _sim.Steps * (double)_sim.PhysicsDt / _sim.PaceFactor;
 
         /// <summary>The economy's clock, which moves once a metabolic step.</summary>
         public double EconomySeconds => _world.ElapsedSeconds;
@@ -277,7 +284,10 @@ namespace Evosim.Nursery
             return true;
         }
 
-        /// <summary>The root link's world angular velocity, rad/s, as the last step left it: what the episode's <c>turn</c> reads. False where the solver holds no body.</summary>
+        /// <summary>
+        /// The root link's world angular velocity in the solver's units, rad a physics second, as the last step left it: what the episode's <c>turn</c>
+        /// reads, which reports it in rad a world second (k times this at a pace factor k, D240). False where the solver holds no body.
+        /// </summary>
         public bool TryRootSpin(int member, out double wx, out double wy, out double wz)
         {
             wx = wy = wz = double.NaN;

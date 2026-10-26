@@ -46,6 +46,8 @@ namespace Evosim.Nursery
         /// <summary>The episode is the exam's draw; <c>Tank</c> is the index of the tank in that draw's deal that <see cref="Members"/> are.</summary>
         public int Generation, Episode, Brain, Tank;
         public int[] Members = Array.Empty<int>();
+
+        /// <summary>Frames a second of the tank's clock, which is world time (D240): at a pace factor of k a frame is k / (rate × dt) physics steps after the last.</summary>
         public double SampleRate = DefaultSampleRate;
 
         private static readonly string[] Required = { "recipe", "recipeHash", "pool", "seed", "salt", "generation", "episode", "brain", "tank", "members" };
@@ -188,6 +190,14 @@ namespace Evosim.Nursery
         public int PoolCount;
         public double Seconds;
         public float Dt;
+
+        /// <summary>The episode config's pace factor k (D239, D240); 1 for every plan made before it.</summary>
+        public float PaceFactor = 1f;
+
+        /// <summary>Physics steps in a metabolic step: 0.5·k / dt.</summary>
+        public int StepsPerMetabolicStep;
+
+        /// <summary>Physics steps between frames: k / (rate × dt), the rate being per world second.</summary>
         public int StepsPerSample;
         public double SampleRate;
         public List<RestepMember> Members = new List<RestepMember>();
@@ -210,6 +220,7 @@ namespace Evosim.Nursery
             sb.Append("episode seed ").Append(EpisodeSeed.ToString(inv)).Append('\n');
             sb.Append("seconds ").Append(Seconds.ToString("R", inv)).Append(", dt ").Append(Dt.ToString("R", inv))
               .Append(", sample rate ").Append(SampleRate.ToString("R", inv)).Append(" per second (every ").Append(StepsPerSample.ToString(inv)).Append(" steps)\n");
+            sb.Append("pace factor ").Append(PaceFactor.ToString("R", inv)).Append(", ").Append(StepsPerMetabolicStep.ToString(inv)).Append(" physics steps a metabolic step\n");
             foreach (RestepMember m in Members)
                 sb.Append("member ").Append(m.Slot.ToString(inv)).Append(": pool ").Append(m.PoolIndex.ToString(inv)).Append(", body ").Append(m.Body.ToString(inv)).Append('\n');
             return sb.ToString();
@@ -405,9 +416,14 @@ namespace Evosim.Nursery
                 if (episodeConfig.FoundingTricklePerSecond > 0f || episodeConfig.FoundingTricklePoolCount > 0)
                     throw new InvalidDataException("the episode config runs a founding trickle; make it with EVOSIM_TRICKLE 0 and no pool");
 
-                double stepsPerSample = 1d / (q.SampleRate * recipe.Dt);
+                // D240: the sample rate is per world second, and a world second holds k seconds of physics, so a sample is k / (rate × dt) physics
+                // steps apart. At k = 1 the expression is the one it always was.
+                float pace = episodeConfig.PaceFactor;
+                Evosim.Farm.EnvBinding.ResolvePhysicsStep(recipe.Dt, pace, out int perMetabolic);   // the recipe's read refused a dt that cannot make the step
+                double stepsPerSample = pace == 1f ? 1d / (q.SampleRate * recipe.Dt) : pace / (q.SampleRate * recipe.Dt);
                 if (Math.Abs(stepsPerSample - Math.Round(stepsPerSample)) > 1e-3 || Math.Round(stepsPerSample) < 1d)
-                    throw new InvalidDataException($"a sample rate of {q.SampleRate.ToString("R", CultureInfo.InvariantCulture)} a second is not a whole number of the recipe's {recipe.Dt.ToString("R", CultureInfo.InvariantCulture)} s steps");
+                    throw new InvalidDataException($"a sample rate of {q.SampleRate.ToString("R", CultureInfo.InvariantCulture)} a second is not a whole number of the recipe's {recipe.Dt.ToString("R", CultureInfo.InvariantCulture)} s steps" +
+                        (pace == 1f ? "" : $" at the world's PaceFactor of {pace.ToString("R", CultureInfo.InvariantCulture)}: a world second holds that many seconds of physics, so a sample is {stepsPerSample.ToString("R", CultureInfo.InvariantCulture)} steps apart"));
 
                 // The pool's lines the members name: a body index and a genome, read before anything is set.
                 var genomes = new Genome[q.Members.Length];
@@ -468,7 +484,7 @@ namespace Evosim.Nursery
                         RecipeHash = recipeHash, ConfigHash = recipe.ConfigHash, EpisodeConfigHash = _search.Config.Hash(),
                         EpisodeSeed = SeedsFor(q.Generation, q.Episode + 1, q.Salt)[q.Episode],
                         ControlIndex = q.Brain, ControlLabel = control.Label, ControlKind = control.Kind,
-                        PoolCount = lines.Length, Seconds = _search.Seconds, Dt = _o.Dt,
+                        PoolCount = lines.Length, Seconds = _search.Seconds, Dt = _o.Dt, PaceFactor = pace, StepsPerMetabolicStep = perMetabolic,
                         StepsPerSample = (int)Math.Round(stepsPerSample), SampleRate = q.SampleRate,
                         Genomes = new Genome[q.Members.Length],
                     };
@@ -649,11 +665,16 @@ namespace Evosim.Nursery
             w.EndArray();
             w.Field("seconds", plan.Seconds);
             w.Field("dt", plan.Dt);
+            w.Field("paceFactor", plan.PaceFactor);   // D240: with it a reader can tell that dt is physics seconds, k of them to a world second
+            w.Field("stepsPerMetabolicStep", plan.StepsPerMetabolicStep);
             w.Field("sampleRate", plan.SampleRate);
             w.Field("stepsPerSample", plan.StepsPerSample);
             w.Field("frames", recorder.FrameCount);
             w.Field("frameFloats", recorder.Channels.Count);
-            w.Field("encoding", "float32 little-endian, frame-major: frame k is frameFloats values, channel order as listed; the first channel is the physics clock t");
+            // At a pace factor of 1 the clock is the physics clock, and the text is the one it always was; above 1 it says what t is.
+            w.Field("encoding", plan.PaceFactor == 1f
+                ? "float32 little-endian, frame-major: frame k is frameFloats values, channel order as listed; the first channel is the physics clock t"
+                : "float32 little-endian, frame-major: frame k is frameFloats values, channel order as listed; the first channel is the world clock t, in world seconds (physics steps times dt over paceFactor), and sampleRate is per world second");
             w.Field("islandRule", recorder.IslandRule);
             IslandScan scan = recorder.Islands;
             if (scan != null)

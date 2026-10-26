@@ -97,8 +97,10 @@ namespace Evosim.Nursery
     /// <remarks>
     /// <para>
     /// <b>The file.</b> Little-endian float32, frame-major: a frame is <see cref="Channels"/>.Count floats in the channels' order, and the first
-    /// channel is <c>t</c>, the physics clock in seconds, so no frame's time is assumed. A frame is taken on every physics step that is a multiple
-    /// of <see cref="StepsPerSample"/>, so the first is at t = 1 / rate and not at t = 0: at the start no body has a solver yet, and so no pose to read.
+    /// channel is <c>t</c>, the tank's clock in seconds (<see cref="EpisodeProbe.ClockSeconds"/>: world seconds, which at a pace factor of 1 are the
+    /// physics clock's), so no frame's time is assumed. A frame is taken on every physics step that is a multiple of <see cref="StepsPerSample"/>, so
+    /// the first is at t = 1 / rate and not at t = 0: at the start no body has a solver yet, and so no pose to read. The rate is per world second
+    /// (D240), so a step count a frame is k / (rate × dt) at a pace factor of k.
     /// </para>
     /// <para>
     /// <b>The layout is read from the first frame's bodies</b> (their links, their degrees of freedom, the channels their brains read, the units of
@@ -333,7 +335,7 @@ namespace Evosim.Nursery
             if (_layout == null) BuildLayout(probe);
 
             int written = 0;
-            Put(ref written, (float)probe.PhysicsSeconds);
+            Put(ref written, (float)probe.ClockSeconds);
             for (int i = 0; i < _layout.Length; i++) WriteMember(probe, i, _layout[i], ref written);
             for (int c = 0; c < _placedJoules.Length; c++)
             {

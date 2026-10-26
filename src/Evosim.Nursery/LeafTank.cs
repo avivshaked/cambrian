@@ -379,7 +379,9 @@ namespace Evosim.Nursery
             ulong[] exam = SeedsFor(0, _o.FinalEpisodes, _o.ExamSalt);
             for (int e = 0; e < exam.Length; e++) seeds.Add(($"exam {e}", exam[e]));
 
-            int stepsPerMetabolic = (int)Math.Round(Simulation.MetabolicStepSeconds / _o.Dt);
+            // D240: 0.5·k / dt physics steps to a metabolic step at the world's pace factor k, the same count TankEpisode makes, and the fresh
+            // worlds of the complement check below take it too. At k = 1 it is the count this line always made.
+            EnvBinding.ResolvePhysicsStep(_o.Dt, config.PaceFactor, out int stepsPerMetabolic);
             int leafFailures = 0, bodyFailures = 0;
             var lines = new string[seeds.Count];
             // D182: with patches, every seed's layout is printed, whether or not it failed.

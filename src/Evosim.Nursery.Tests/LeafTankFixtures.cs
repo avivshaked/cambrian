@@ -72,18 +72,19 @@ namespace Evosim.Nursery.Tests
         /// A bench recipe (no search; the exam's own brain alone, two episodes) on the config and the pool; <paramref name="leaves"/> is the
         /// section's JSON or null to leave the section out. <paramref name="carrion"/> corpses of 40 J each lie on the bed (none by default).
         /// </summary>
-        public static string RecipeJson(string config, string hash, string pool, int tankSize, string leaves = null, double seconds = 2, int carrion = 0, double? purseSeconds = null) =>
+        public static string RecipeJson(string config, string hash, string pool, int tankSize, string leaves = null, double seconds = 2, int carrion = 0, double? purseSeconds = null,
+            string overrides = "{}", double dt = 0.01, double aboveBed = 0.5, string moreControls = "") =>
             "{\n" +
             "  \"format\": 1, \"name\": \"leaf-test\", \"description\": \"\", \"seed\": \"0x1\",\n" +
-            "  \"world\": {\"config\": \"" + config + "\", \"configHash\": \"" + hash + "\", \"overrides\": {}},\n" +
+            "  \"world\": {\"config\": \"" + config + "\", \"configHash\": \"" + hash + "\", \"overrides\": " + overrides + "},\n" +
             "  \"bodies\": {\"source\": \"pool\", \"founders\": 0, \"trunk\": null, \"pool\": \"" + pool + "\", \"keep\": null},\n" +
-            "  \"setup\": {\"seconds\": " + seconds.ToString("R", CultureInfo.InvariantCulture) + ", \"dt\": 0.01, \"tankSize\": " + tankSize +
-            ", \"floorClosed\": true, \"birthsHeld\": true, \"snow\": null, \"carrion\": {\"count\": " + carrion + ", \"joules\": 40}, \"start\": {\"aboveBed\": 0.5}," +
+            "  \"setup\": {\"seconds\": " + seconds.ToString("R", CultureInfo.InvariantCulture) + ", \"dt\": " + dt.ToString("R", CultureInfo.InvariantCulture) + ", \"tankSize\": " + tankSize +
+            ", \"floorClosed\": true, \"birthsHeld\": true, \"snow\": null, \"carrion\": {\"count\": " + carrion + ", \"joules\": 40}, \"start\": {\"aboveBed\": " + aboveBed.ToString("R", CultureInfo.InvariantCulture) + "}," +
             " \"purse\": {\"rule\": \"grown\", \"seconds\": " + (purseSeconds.HasValue ? purseSeconds.Value.ToString("R", CultureInfo.InvariantCulture) : "null") + "}},\n" +
             (leaves == null ? "" : "  \"leaves\": " + leaves + ",\n") +
             "  \"search\": null,\n" +
             "  \"reward\": {\"class\": \"Net\", \"parameters\": {}},\n" +
-            "  \"exam\": {\"episodes\": 4, \"salt\": \"0x62656e6368\", \"controls\": [{\"kind\": \"own\"}]}\n" +
+            "  \"exam\": {\"episodes\": 4, \"salt\": \"0x62656e6368\", \"controls\": [{\"kind\": \"own\"}" + moreControls + "]}\n" +
             "}\n";
 
         public static string Write(string dir, string name, string text)
@@ -125,17 +126,24 @@ namespace Evosim.Nursery.Tests
         /// Episode <paramref name="episode"/> of the recipe's exam, the own brain, every member of the pool in one tank, swum in-process through
         /// <see cref="Restep"/> with <paramref name="watcher"/>. The caller holds the "restep" collection, since the nursery's settings are static.
         /// </summary>
-        public static RestepOutcome Swim(string dir, string recipePath, int poolCount, int tankSize, int episode, ITankWatcher watcher)
+        public static RestepOutcome Swim(string dir, string recipePath, int poolCount, int tankSize, int episode, ITankWatcher watcher) =>
+            Restep.Swim(Plan(dir, recipePath, poolCount, tankSize, episode), watcher);
+
+        /// <summary>
+        /// The plan <see cref="Swim"/> swims, loaded and not yet swum (<paramref name="sampleRate"/> null takes the request's default of 10 a second), for a
+        /// test that builds its own watcher from the plan's numbers (steps per sample, steps per metabolic step). The caller holds the "restep" collection.
+        /// </summary>
+        public static RestepPlan Plan(string dir, string recipePath, int poolCount, int tankSize, int episode, double? sampleRate = null, int brain = 0)
         {
             string recipeRel = RestepFixtures.Relative(recipePath);
             string hash = Recipe.Load(recipePath).Hash();
             Recipe r = Recipe.Load(recipePath);
             int[] members = RestepFixtures.Deal(poolCount, tankSize, episode, 0);
-            string json = RestepFixtures.RequestJson(recipeRel, hash, RestepFixtures.Relative(r.PoolFullPath), members, episode: episode);
+            string extra = sampleRate.HasValue ? ", \"sampleRate\": " + sampleRate.Value.ToString("R", CultureInfo.InvariantCulture) : "";
+            string json = RestepFixtures.RequestJson(recipeRel, hash, RestepFixtures.Relative(r.PoolFullPath), members, brain: brain, extra: extra, episode: episode);
             string outDir = Path.Combine(dir, "out-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(outDir);
-            RestepPlan plan = Restep.Load(RestepRequest.Parse(json), RestepFixtures.Root, outDir);
-            return Restep.Swim(plan, watcher);
+            return Restep.Load(RestepRequest.Parse(json), RestepFixtures.Root, outDir);
         }
 
         public static string Line(RestepMemberOutcome m) => FormattableString.Invariant(

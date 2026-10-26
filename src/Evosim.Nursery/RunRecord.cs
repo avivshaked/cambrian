@@ -129,6 +129,13 @@ namespace Evosim.Nursery
         public int Threads;
 
         /// <summary>
+        /// D240: the tank's physics step, the world's pace factor k (D239) and the physics steps in a metabolic step (0.5·k / dt), so that a batch
+        /// says which pace it ran at. <see cref="StepsPerMetabolicStep"/> 0 means unset, and then <c>run.json</c> has no <c>physics</c> object.
+        /// </summary>
+        public float PhysicsDt, PaceFactor = 1f;
+        public int StepsPerMetabolicStep;
+
+        /// <summary>
         /// The exam's plan, set and written to run.json before the exam's first episode (a run that never reaches an exam has none, and the
         /// record then holds no <c>exam</c> field). Progress is read from <c>tank-exam.jsonl</c>'s rows, as before.
         /// </summary>
@@ -328,6 +335,16 @@ namespace Evosim.Nursery
             foreach (KeyValuePair<string, ulong> kv in Salts) w.Field(kv.Key, kv.Value);
             w.EndObject();
             w.Field("threads", Threads);
+
+            // Written only when set, so that a record that never reached a recipe keeps the text it had.
+            if (StepsPerMetabolicStep > 0)
+            {
+                w.BeginObject("physics");
+                w.Field("dt", PhysicsDt);
+                w.Field("paceFactor", PaceFactor);
+                w.Field("stepsPerMetabolicStep", StepsPerMetabolicStep);
+                w.EndObject();
+            }
 
             if (Exam != null) Exam.Render(w);
 
