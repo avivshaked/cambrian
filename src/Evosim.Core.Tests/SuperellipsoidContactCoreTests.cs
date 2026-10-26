@@ -428,10 +428,13 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
-        public void TheExactClipIsWithinATenMillionthOfTheSizeOfADykstraBuildOfTwoThousandPasses()
+        [Trait("Category", "Slow")]
+        public void TheExactClipIsWithinATenMillionthOfTheSizeOfADykstraBuildOfFiveThousandPasses()
         {
-            // The coordinator's rulings of 2026-10-26: the reference is Dykstra's projection run to 2,000 passes and the
-            // polish to 2,000, since at 200 it had not converged on a smooth form; the bound of 1e-7 of the size is kept.
+            // The coordinator's rulings of 2026-10-26: the reference is Dykstra's projection run to 5,000 passes and the
+            // polish to 5,000, since at 200 it stood 17 mm from the certified point on the ellipsoid and at 2,000 still
+            // 57 micrometres; the bound of 1e-7 of the size is kept. Slow, about 90 s; the certificate is the proof in the
+            // default suite.
             // Every form's gap is written before the bound is asserted, so a failure names them all; the margin is the
             // same; the bulge stays under the limit.
             double size = Math.Max(Halves.X, Math.Max(Halves.Y, Halves.Z));
@@ -441,14 +444,14 @@ namespace Evosim.Core.Tests
             {
                 var shape = new Superellipsoid(form);
                 Double3[] exact = shape.ContactCore(Halves, 0, out double exactMargin, out double exactBulge, out _);
-                Double3[] reference = shape.ContactCore(Halves, 2000, out double referenceMargin, out double referenceBulge, out _);
+                Double3[] reference = shape.ContactCore(Halves, 5000, out double referenceMargin, out double referenceBulge, out _);
 
                 Assert.Equal(referenceMargin, exactMargin);
 
                 double apart = 0.0;
                 for (int i = 0; i < exact.Length; i++) apart = Math.Max(apart, (exact[i] - reference[i]).Length);
 
-                _output.WriteLine($"{form}: exact against 2,000 passes {apart:E3} m; bulge {exactBulge:E3} m against {referenceBulge:E3} m");
+                _output.WriteLine($"{form}: exact against 5,000 passes {apart:E3} m; bulge {exactBulge:E3} m against {referenceBulge:E3} m");
                 if (apart > 1e-7 * size) over.Add($"{form} by {apart:E3} m");
 
                 Assert.True(exactBulge <= Superellipsoid.ContactBulgeLimit * exactMargin, $"{form}: the exact build's bulge {exactBulge}");
