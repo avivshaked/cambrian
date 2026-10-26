@@ -1311,6 +1311,12 @@ namespace Evosim.Core
         /// </summary>
         public double FounderJoulesCapped { get; private set; }
 
+        /// <summary>
+        /// D241: the tissue joules <see cref="MakeAdult"/> has given, booked as income in both books as a founder's start
+        /// is. Zero in any world nothing calls it in.
+        /// </summary>
+        public double AdultGiftJoules { get; private set; }
+
         /// <summary>Mean <see cref="Genome.AdultScale"/> over the living — rule 9. NaN when empty.</summary>
         /// <remarks>
         /// <b>The three dials and the body scale, computed on demand rather than tracked.</b> They
@@ -5164,8 +5170,8 @@ namespace Evosim.Core
         /// <para>
         /// <b>What it writes is what a growth step's last line writes for an adult</b>: the tissue
         /// account, the phenotype (the adult itself, not a copy), the body fraction, and the two cached
-        /// readings. The tissue is a gift and appears on no ledger as a spend, which is the caller's
-        /// meaning; the caller says so in its own record.
+        /// readings. The tissue is a gift, booked as income in the energy audit and the matter identity as
+        /// a founder's start is, and counted in <see cref="AdultGiftJoules"/>.
         /// </para>
         /// <para>
         /// Refused for a body that is not among the living, and for one whose plan has changed since it
@@ -5198,6 +5204,14 @@ namespace Evosim.Core
             {
                 account = UneatenTissue(adult, creature.PartHealth);
             }
+
+            // The gift is created, as a founder's start is (Admit's leg 9), so both books take it as
+            // income: the energy audit and the matter identity close over it, and the record can say
+            // how much the placements gave.
+            double gift = account - creature.TissueJoules;
+            EnergyIn += gift;
+            MatterInfluxedTotal += gift / Config.JoulesPerUnit;
+            AdultGiftJoules += gift;
 
             creature.TissueJoules = account;
             creature.Phenotype = adult;
