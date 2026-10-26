@@ -114,3 +114,30 @@ Growing to adult takes A of it, so its runway is about 0.3A, 16.6 J, for any res
 share's cap made it 0.25A, 13.75 J. So the reserve dial is close to inert. The runway is moved by the investment gene,
 the growth floor (`GrowthReserveFloor`) or the breeding overhead, and half the newborns then fail because they barely
 move in their first 10 seconds. Changing any of these is a world rule, and so the owner's.
+
+## The genome diff (2026-10-26 evening)
+
+`scripts/reads/genome-diff-read.py` compared each bred grazer's genome with its parent's, by category (`genome-diff.txt`,
+beside this file). 2,003 of the 2,565 bred grazers had a speed from the ledger's first frame pair; 554 had no such pair
+and 8 were born too late to count (measured).
+
+| Group | n | Brain changed | Structure changed | Structure, mean summed change |
+|---|---|---|---|---|
+| Slow (under 0.03 m/s), never ate | 377 | 70 % | 66 % | 28.1 |
+| Slow, ate | 184 | 69 % | 65 % | 32.9 |
+| Moving, never ate | 525 | 99 % | 43 % | 6.3 |
+| Moving, ate | 917 | 99 % | 45 % | 5.7 |
+
+All measured. Every child differs from its parent somewhere. The slow newborns are the ones whose structure changed:
+66 % of them against 44 % of the moving ones, and with about five times the summed change, many parts or neurons added
+or dropped. Drive, limits, body sizes, cells and the whole-creature dials change at the same rate in every group. So
+structure separates slow from moving. It does not separate eaters from the rest: 53 % of those that never ate had a
+structural change, against 48 % of those that ate. Speed does separate them: 33 % of the slow newborns ate, against
+64 % of the moving ones.
+
+My reading, which is inference: a child whose body plan mutated carries a brain fitted to its parent's body, and so
+it barely swims. That accounts for most of the slow third. "Brain changed" reads lower in the slow groups because
+the read matches nodes by index. Neurons on a node that was added or dropped count under structure, not brain. Two
+limits on this: a node inserted mid-list makes every later node pair with the wrong partner, which inflates the
+structure figures, and the 554 newborns without a speed are left out. How often a birth changes the structure is set
+by the mutation rates, which are the owner's.

@@ -1,0 +1,30 @@
+== round 62 grazer health (D215): born share at 12000,24000; own-kill share per 3000 s from 12000 to 24000 s
+   The own-kill share is a PROXY, an upper bound on the grazers' intake from their own kills: the corpse joules
+   grazers' kills founded (kept at 1 - waste) over every mouth's kept intake. The record does not say which corpse
+   a mouth ate. Accepted for test 3's trend in round 62 (the coordinator, 2026-10-23); its level is not a measurement.
+
+r62kg-6201  (read to 24000 s; joulesPerUnit 100, intakeWasteFraction 0.2)
+   second  living  founded   born born share
+    12000      12       11      1      0.083
+    24000      15       14      1      0.067
+  contact eating (D219-D221): part 2 is the kept intake bitten off the living over all kept intake
+            bin    living J      kept J   share    graz-s
+   12000-15000        10945       13301   0.823     32252
+   15000-18000        21351       24277   0.879     40578
+   18000-21000        10683       12556   0.851     30545
+   21000-24000        19895       24079   0.826     38982
+  test 3 (D222): the living share in 21000-24000 s is 0.826, holds at 0.5
+  trend, reported and not required: the share rises, 0.823 in 12000-15000 s to 0.826 in 21000-24000 s
+
+r62kg-6202  (read to 24000 s; joulesPerUnit 100, intakeWasteFraction 0.2)
+   second  living  founded   born born share
+    12000      18       16      2      0.111
+    24000      17       14      3      0.176
+  contact eating (D219-D221): part 2 is the kept intake bitten off the living over all kept intake
+            bin    living J      kept J   share    graz-s
+   12000-15000        21838       24647   0.886     45902
+   15000-18000        16120       18849   0.855     32353
+   18000-21000        22731       26772   0.849     41122
+   21000-24000        23712       29235   0.811     46040
+  test 3 (D222): the living share in 21000-24000 s is 0.811, holds at 0.5
+  trend, reported and not required: the share falls, 0.886 in 12000-15000 s to 0.811 in 21000-24000 s

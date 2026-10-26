@@ -1,0 +1,16 @@
+r62kg-6201
+  born 3000-6000: n 40 (bred 5), mouthed kids/body 0.20, bred ones 0.00
+  born 6000-9000: n 73 (bred 32), mouthed kids/body 0.63, bred ones 0.00
+  born 9000-12000: n 58 (bred 25), mouthed kids/body 0.24, bred ones 0.00
+  born 12000-15000: n 55 (bred 21), mouthed kids/body 0.51, bred ones 0.00
+  born 15000-18000: n 100 (bred 61), mouthed kids/body 0.55, bred ones 0.13
+  born 18000-21000: n 66 (bred 25), mouthed kids/body 0.59, bred ones 0.00
+  born 21000-24000: n 89 (bred 47), mouthed kids/body 0.29, bred ones 0.00
+r62kg-6202
+  born 3000-6000: n 64 (bred 20), mouthed kids/body 0.44, bred ones 0.00
+  born 6000-9000: n 60 (bred 16), mouthed kids/body 0.25, bred ones 0.00
+  born 9000-12000: n 72 (bred 26), mouthed kids/body 0.35, bred ones 0.00
+  born 12000-15000: n 91 (bred 49), mouthed kids/body 0.67, bred ones 0.12
+  born 15000-18000: n 81 (bred 46), mouthed kids/body 0.36, bred ones 0.00
+  born 18000-21000: n 128 (bred 81), mouthed kids/body 0.68, bred ones 0.00
+  born 21000-24000: n 125 (bred 78), mouthed kids/body 0.57, bred ones 0.05
