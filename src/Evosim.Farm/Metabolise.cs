@@ -576,7 +576,9 @@ namespace Evosim.Farm
                 Creature solver = body.Solver;
                 Vec3 before = Vec3.Read(solver.Position, 0);
 
+                BeforeResize?.Invoke(solver);
                 solver.Resize(creature.Phenotype, creature.BodyFraction);
+                AfterResize?.Invoke(solver);
 
                 double jump = (Vec3.Read(solver.Position, 0) - before).Magnitude;
                 if (jump > MaxResizeJumpMetres) MaxResizeJumpMetres = jump;

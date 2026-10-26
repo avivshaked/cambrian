@@ -18,7 +18,8 @@ namespace Evosim.Dynamics
     /// <c>Organism.Phenotype = AdultPhenotype.Scaled(f^(1/3))</c> — a fresh copy of the adult
     /// with every length (half-extents, position, both anchors) multiplied by one scalar, every
     /// volume and surface re-measured by the part's own shape, and the plan, the cell types, the
-    /// joints, the limits, the power, the lift and the neurons carried across untouched. The
+    /// joints, the limits, the lift and the neurons carried across untouched, and the power too unless
+    /// the world scales it with the body (<c>RunConfig.JuvenileStrengthScales</c>, D241). The
     /// developer is never re-run, so a part cannot appear or disappear as a body grows, and the
     /// part count and the joint types are invariants of the creature's whole life. This method
     /// consumes that scaled phenotype; it never scales anything itself.
@@ -130,9 +131,12 @@ namespace Evosim.Dynamics
             RefreshLinkReach();
             if (LinkCoreHalf != null) WriteLinkCores();
 
-            // Torque per unit of signal is read from Power, which growth does not scale — so this
-            // is the identity today. It is called anyway, because "what a fresh build would
-            // produce" is the acceptance, not "what happens to be invariant this month".
+            // Torque per unit of signal is read from Power, which growth scales only when the world
+            // asks for it (RunConfig.JuvenileStrengthScales, D241: Phenotype.ScaledFor) — so this is
+            // the identity with the switch off, and with it on it rewrites every joint's torque per
+            // unit of signal from the Power the scaled phenotype now carries. It is called either way,
+            // because "what a fresh build would produce" is the acceptance, not "what happens to be
+            // invariant this month".
             Drive.Refresh();
 
             // The root stays where it is and everything else follows the new anchors outward.

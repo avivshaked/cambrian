@@ -505,6 +505,7 @@ namespace Evosim.Farm
                 // D241's climb, after the family and before the hash, and only when the world has it or
                 // can mutate the gene, so every other line is what it was.
                 ClimbToken(config) +
+                (config.JuvenileStrengthScales ? " · juvenile strength scaled" : "") +
                 " · configHash `" + config.Hash() + "`" +
                 // D159's exchange, after the hash because it is a farm setting and no part of the
                 // config, and only in a migrating world, so every other line is what it was. A lone

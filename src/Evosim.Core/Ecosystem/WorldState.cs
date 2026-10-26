@@ -1377,7 +1377,7 @@ namespace Evosim.Core
             Phenotype adult = DevelopPlan(creature, counts, out _);
 
             creature.AdultPhenotype = adult;
-            creature.Phenotype = isAdult ? adult : adult.Scaled(scale, Config.Shapes);
+            creature.Phenotype = isAdult ? adult : adult.ScaledFor(Config, scale);
 
             // D220: remains cut off a body are that body, selected. Both phenotypes name the limb, as they did when
             // it was cut.
