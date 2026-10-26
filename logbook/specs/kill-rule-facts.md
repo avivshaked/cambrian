@@ -25,7 +25,7 @@ gut changes where the remainder goes, into the killer instead of into remains on
 much the remainder is.
 
 Which kinds of body were killed comes from the kill rows whose attacker was born a grazer, each victim classed by its
-birth row (`scratch/fin-shape/overshoot/newborn-tally.py`, run on 2026-10-26). In the check, grazers killed 27 leaves
+birth row (`scripts/reads/grazer-tally.py`, run on 2026-10-26). In the check, grazers killed 27 leaves
 and 3 grazers whole. Two of the three are the one large swallow, at 4,657.5 s, where two grazers killed each other in
 the same step (measured). In `r62bd-x2-6201` over 24,000 s grazers killed 1,710 leaves, 185 absorbers and 12 grazers
 (measured). So a grazer's kill is nearly always a leaf, and a grazer kills another grazer about once in 150 kills.

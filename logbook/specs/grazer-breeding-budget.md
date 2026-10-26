@@ -151,7 +151,7 @@ the clock, which is harmless.
   economy or mouth groups (above).
 - The newborn's reserve binds bred lines separately, and only `NewbornReserveFraction` moves it.
 - E and s are world means from the mouth-blow columns, which count every mouth. Each grazer's death row carries what
-  its bites kept in its life. Summed over the dead (`scratch/fin-shape/overshoot/newborn-tally.py`, 2026-10-26), they
+  its bites kept in its life. Summed over the dead (`scripts/reads/grazer-tally.py`, 2026-10-26), they
   show the mean is the grazers' own but hides two kinds of grazer. In `r62bd-x2-6201` the founder grazers that died
   kept 133,322 J over 219,180 s of life, 0.61 W, the same as the world column. Half of them, 124 of 252, never kept a
   meal at all. Those that ate kept a median of 910 J each. The median-lived founder, at 683 s, kept 49 J. So a grazer
