@@ -151,6 +151,8 @@ namespace Evosim.Nursery
         {
             // --restep (Restep.cs) steps one episode of a finished run again and writes its frames; it takes no recipe or run of its own.
             if (args.Length > 0 && args[0] == "--restep") return Restep.Cli(args);
+            // --graft-nose (NoseGraftCli.cs) writes D235's graft film's config and pool; it swims nothing.
+            if (args.Length > 0 && args[0] == "--graft-nose") return NoseGraftCli.Cli(args);
 
             try
             {
@@ -923,7 +925,8 @@ namespace Evosim.Nursery
             "       Evosim.Nursery --recipe <recipe.json> --check\n" +
             "       Evosim.Nursery --rerun <entry> --out <dir> [--threads n]\n" +
             "       Evosim.Nursery --recipe <recipe.json> --measure-dref <genomes.tsv> [--dref-samples n] --out <dir>\n" +
-            "       Evosim.Nursery --restep <request.json> --out <dir> [--check] [--threads 1]";
+            "       Evosim.Nursery --restep <request.json> --out <dir> [--check] [--threads 1]\n" +
+            "       Evosim.Nursery --graft-nose <pool.tsv> --config <config.json> --out <dir>";
 
         private static Options Parse(string[] args)
         {
