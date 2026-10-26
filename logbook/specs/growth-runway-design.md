@@ -25,8 +25,8 @@ easy to set. With r = (m/M)^¼, dr/dt = (a / 4M^¼)(1 − r), so 1 − r falls e
 τ = 4M^¼/a (derived).
 
 **One dial, the time to adulthood.** `RunConfig.GrowthAdultSeconds` T is the time a grazer born at 0.65 of its adult's
-tissue takes to reach 0.95 of it, growing at the law's full rate. From 0.65 to 0.95 is 2.063 time constants, so
-τ = T/2.063 (derived). T = 0, the default, is today's instant growth: the branch is never entered, and every recorded
+tissue takes to reach 0.95 of it, growing at the law's full rate. From 0.65 to 0.95 is 2.081 time constants, so
+τ = T/2.081 (derived). T = 0, the default, is today's instant growth: the branch is never entered, and every recorded
 world runs as it does today.
 
 **Adulthood is a snap at 0.95.** The law approaches M without reaching it. A body whose growth would carry it to 0.95
@@ -38,7 +38,7 @@ true West, Brown and Enquist world would have one a, so that time scales as M^¼
 a second tunable. Between a 56 J grazer and a ten-times-larger body, M^¼ is a factor of 1.8. I recommend the single
 dial, with the M^¼ form as an option the owner can ask for.
 
-**The growth draw at birth** (derived). At T = 60, 120 and 240 s, a newborn grazer's law allows 0.56, 0.28 and 0.14 W,
+**The growth draw at birth** (derived). At T = 60, 120 and 240 s, a newborn grazer's law allows 0.57, 0.28 and 0.14 W,
 against an upkeep at birth of 0.62 W. Today it takes 19.3 J in one step.
 
 ## The gene
@@ -52,8 +52,8 @@ against an upkeep at birth of 0.62 W. Today it takes 19.3 J in one step.
   under its own `MutationRates.GrowthReserveChance`, tested against 0 before any draw, so a world without it takes
   exactly today's draws.
 - **Its start.** Founders, trickle and pool founders, inocula and nursery tank bodies start at
-  `RunConfig.GrowthReserveStartSeconds`. The coordinator recommends 30 s to the owner. Evolution moves it from
-  there.
+  `RunConfig.GrowthReserveStartSeconds`, written into their genomes. The screens below set it, and evolution moves
+  it from there.
 - **On the lineage row.** Each birth row carries the value its body was born with, as `grs` when T > 0, so the
   record shows it evolve.
 
@@ -70,11 +70,11 @@ to 0.908 W adult, as tissue to the 0.9 (the audit's exponent).
 | T | G | Body at 30 s | Reserve at 30 s | Starves, unfed, at |
 |---|---|---|---|---|
 | today | — | adult from 0.5 s | — | 19.5 s |
-| 60 s | 0 | 0.86 | 3.7 J | 35 s |
+| 60 s | 0 | 0.86 | 3.6 J | 35 s |
 | 60 s | 30 s | 0.77 | 9.5 J | 43.5 s |
 | 60 s | 60 s | 0.66 | 18.1 J | 59.5 s |
 | 120 s | 0 | 0.78 | 9.3 J | 41.5 s |
-| 120 s | 30 s | 0.73 | 12.2 J | 48 s |
+| 120 s | 30 s | 0.74 | 12.1 J | 48 s |
 | 120 s | 60 s | 0.66 | 18.1 J | 59.5 s |
 | 240 s | 0 | 0.72 | 13.3 J | 47.5 s |
 | 240 s | 30 s | 0.71 | 14.4 J | 52 s |
@@ -128,25 +128,30 @@ b4's branch `shape-genes` (`2b8e3e58`) writes formats 13 and 14 only for a genom
 other genome still writes 11 or 12. Two independent extensions would need four more numbers: growth alone, growth
 with the one brain, and each with a family node. I propose one numbering, agreed with b4 before `shape-genes` merges:
 
-- **Formats 13 and 14 become the extended formats.** They are 11 and 12 plus every optional gene: b4's family forms,
-  and `growthReserveSeconds`.
-- **The field is always present in 13 and 14.** It holds `null` for a genome that carries no gene. So a missing field
-  is still refused, under the refuse-rather-than-default rule, and a null is a stated absence.
+- **Formats 13 and 14 become the extended formats.** They are 11 and 12 plus either optional extension: b4's family
+  forms, and `growthReserveSeconds`. The refusal on `shape-genes` of a 13 or 14 with no family node becomes a refusal
+  of one carrying neither extension.
+- **The gene's key is always written in 13 and 14,** as a number or as `null`. So a dropped key is still refused,
+  under the refuse-rather-than-default rule, and a null is a stated absence. The family forms stay keyed by each
+  node's shape, because the shape already says whether a form must be present (b4's adjustment).
 - **The writer writes the lowest format that holds what the genome carries.** A genome with neither extension
   writes 11 or 12 byte for byte as today, so every genome written today loads and round-trips unchanged, and every
   stored inoculum and pool genome with it.
-- **A genome without the gene, admitted to a world with T > 0,** is given `GrowthReserveStartSeconds` at admission,
-  as a founder's start is given, and its birth row records it. It is not loaded with a default: it is admitted with a
-  stated value, the way an inoculant is given its purse. Its children carry the gene and write 13 or 14.
+- **The gene is carried only when present** (the coordinator's ruling). In a world without the climb, no genome ever
+  has it. In a world with it, every entry point gives the gene `GrowthReserveStartSeconds` explicitly: founders,
+  trickle and pool founders, inocula and nursery tank bodies. The value is written into the genome and logged as
+  `grs` on the birth row, and nothing fills it in at load. Children inherit it.
+- **A genome that carries the gene, entering a world with T = 0, is refused by name,** as a family shape is refused in
+  a world without the family.
 
 ## What it does to leaves and plants' early production
 
 A bred leaf is born at a median of 0.19 of its adult (measured, 65,027 births). From 0.19 the law takes 3.28 time
-constants to reach 0.95, so 1.59 T (derived). That is 95, 190 and 382 s at T = 60, 120 and 240 s, against a median
+constants to reach 0.95, so 1.58 T (derived). That is 95, 189 and 379 s at T = 60, 120 and 240 s, against a median
 bred leaf life of 1,717 s (measured).
 
 The law binds only where light pays faster than it allows. Today's leaf growth speed is not in the record: the lineage
-has no body fraction after birth. So whether 1.59 T is slower than leaves grow now is unmeasured. A read of the
+has no body fraction after birth. So whether 1.58 T is slower than leaves grow now is unmeasured. A read of the
 checkpoints' body fractions by age, in a HOLD window, answers it.
 
 Where the law does bind, a leaf stays small longer. Its light area runs as its fraction to the ⅔, so at 0.19 it holds
@@ -162,7 +167,7 @@ sets it.
 A founder starts with `FounderEnergyJoules × birthFraction` plus 600 s of its newborn upkeep, capped by D124 at 0.9
 of its gate plus what its growth costs (`World.FounderStartCap`). That start is far above 30 s of its upkeep, so a
 founder grows at the law's full rate. A grazer founder, born at 0.65, takes T to adulthood. A leaf founder, born at
-0.14, takes 1.66 T (derived). It holds the rest of its start as reserve meanwhile.
+0.14, takes 1.64 T (derived). It holds the rest of its start as reserve meanwhile.
 
 The cap's growth term stays exact, because growth's debits still sum to the adult's tissue less the newborn's, only
 over more steps. The breeding gate at adulthood enforces D124's purpose, that no founder breeds on its gift, in the
@@ -172,7 +177,7 @@ structure as well as in the cap.
 
 The nursery trains under every condition set for the world, so it gains the rate law and the gene with the rest. Its
 tanks (`Evosim.Nursery.LeafTank`, `Tank`) start a body grown by paying it the tissue it owes as reserve, which its
-growth then spends at once. Under the law that payment buys a climb of up to 1.59 T instead. The seam is to place tank
+growth then spends at once. Under the law that payment buys a climb of up to 1.58 T instead. The seam is to place tank
 bodies at their adult directly when the tank means "grown". Tank genomes from the pools carry no gene and are given
 the start value. This and 6d's pace seam both touch the tanks' placement, so I'll put it to 6d with the pace questions.
 
@@ -180,7 +185,7 @@ the start value. This and 6d's pace seam both touch the tanks' placement, so I'l
 
 Applying growth to the physics took 0.47 % of t3's wall (measured: 55.6 s of 11,761 s, `wallHarnessGrowthMs`). That
 was with nearly every body resized once. The harness applies size every `GrowthStepSeconds` (10 s). A leaf climbing
-1.59 T would be resized about 10, 19 and 38 times at T = 60, 120 and 240 s, so applying growth might take about 5, 9
+1.58 T would be resized about 10, 19 and 38 times at T = 60, 120 and 240 s, so applying growth might take about 5, 9
 and 18 % of the wall (a guess that scales today's cost by the count). Raising `GrowthStepSeconds` while bodies climb,
 or resizing only on a 5 % change of length, keeps it near today's.
 
