@@ -160,7 +160,7 @@ the last digit printed, and the worst bulge over the forms was 6.7e-6 m. The pri
 seven cores took about three times as long as before. An estimate put a family world of cefix-s4's size over an hour
 and a half slower.
 
-Two remedies followed, ruled by the coordinator the same evening and not yet compiled. Each point now leaves the clip
+Two remedies followed, ruled by the coordinator the same evening. Each point now leaves the clip
 once a whole pass moves it by no more than a billionth of the form's size. It leaves the polish only once it lies
 inside every plane to that tolerance. That exit is a pure function of the build's inputs, so a build takes the same
 passes on every run and replay, and the 200 stay as a cap. A test holds the exit build within 1e-7 of the size of the
@@ -168,6 +168,46 @@ full one for every form. And built cores are kept in one cache for the process. 
 form's three genes and the three half-extents. A newborn whose part did not change since an ancestor's reuses that
 core. Because a build is a pure function, a cached core is the cold build to the bit, and tests hold a hit and a
 rebuild after eviction to that. The cache keeps the 4,096 cores used most recently, about 10 MB.
+
+The exit was not enough. One cold build was timed alone, against the same build with every pass. The full build took
+436 ms. With the exit the box-like form took 21 ms and the egg 211 ms. The form of profile 1, section 2 and
+taper 4 took 348 ms. I had estimated 0.14 s for a full build and a fivefold saving from the exit, and both were
+wrong. The coordinator set a target of 50 ms for the worst form and asked that the fix follow the cause.
+
+The cause is the angle between the planes. Alternating projection closes on the line where two planes meet by about
+the square of the cosine of the angle between their normals at each pass. The 282 clipping directions stand about
+0.21 rad apart, and on a smooth stretch of surface a point's nearest place on the polytope lies where two neighbours
+meet. Reaching a billionth of the size there takes some 470 passes. The box-like form's lattice planes meet at right
+angles, and so it alone was quick. I first blamed the thin rim of the eroded lens, and that was wrong too.
+
+So the clip now solves for the nearest point instead of approaching it. In three dimensions at most three planes meet
+at it. Each step adds the plane the point stands farthest outside. It then finds the nearest point of the start within
+the planes it holds, from the smallest set whose multipliers are none below zero and which meets every held plane. The
+distance from the start grows at every step, so no set comes back. It stops when no plane is missed by more than a
+billionth of the size. A point that ran out of steps would fall back to Dykstra's, but none does. It takes four steps
+on average and eight at most.
+
+Proving it took one more turn. Against Dykstra's run to 200 passes the exact core stood 17 mm away on the ellipsoid,
+and the 200-pass build was itself outside some planes. The coordinator ruled that correctness be proved without a
+reference. A test checks the conditions that make a point the nearest point of a convex set. The point lies inside
+every plane, each held plane passes through it, and the start less the point is a sum of the held normals with no
+negative weight. Every point of every form passes, with every misfit under 2e-14 m. Dykstra's build converges onto
+those points. It stood 57 micrometres away at 2,000 passes and 4.3e-9 m at 5,000, inside the kept bound of 1e-7 of the
+size. That comparison runs in the slow suite.
+
+A cold build now takes about 12 ms for every form, timed alone on 2026-10-26, each the least of three tries.
+
+| Form (profile, section, taper) | Exact clip | Dykstra's, 200 passes | Its smallest angle between held planes |
+|---|---|---|---|
+| 1, 2, 4 | 12.2 ms | 358.5 ms | 0.279 rad |
+| 0.6, 1, 1.5 (the egg) | 11.5 ms | 357.1 ms | 0.212 rad |
+| 0.1, 0.1, 1 (box-like) | 11.0 ms | 354.8 ms | 1.571 rad |
+
+The clip no longer decides the cost; sampling the solid's support does. A newborn's solver body is built on the serial
+path, in the farm's reconciliation loop, and that is where a family part's core is built or fetched. What follows is
+an estimate and not a measurement. Take a family world of cefix-s4's size, about 10,400 births of four parts each,
+with every part of the family. If 15% of cores miss the cache, it runs about a minute and a quarter longer. If none
+hit, it runs about eight minutes longer. The genes piece will measure it.
 
 The bed, the reef, the coral and the glass touch a box at every vertex of its core. A family core has 98, which is
 far too many springs. It touches at its eight corner points, the cube's diagonals pushed onto the surface. Of a pair the
