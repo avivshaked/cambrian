@@ -1,7 +1,7 @@
 """The gpu engine's acceptance reads (logbook/specs/gpu-port-spec.md section 4): two farm runs of
 one world, compared the way the spec's three acceptances ask.
 
-    python scripts/reads/gpu-accept.py <run A> <run B> [--runs-root DIR] [--every N]
+    python scripts/reads/gpu-accept.py <run A> <run B> [--runs-root DIR] [--every N] [--new-columns A,B]
 
 A run is a run directory, or an arm name under --runs-root (default runs/), in which case the
 newest run directory under it is read. What it prints:
@@ -96,7 +96,7 @@ def wall_split(stats):
     return ', '.join(f'{p[4:-2].lower()} {100.0 * (last.get(p) or 0) / total:.0f}%' for p in parts)
 
 
-def compare_stats(a, b):
+def compare_stats(a, b, new_columns=frozenset()):
     A = {r['t']: r for r in a}
     B = {r['t']: r for r in b}
     shared = sorted(set(A) & set(B))
@@ -105,7 +105,8 @@ def compare_stats(a, b):
     only = len(set(A) ^ set(B))
     for i, t in enumerate(shared):
         r, q = A[t], B[t]
-        keys = [k for k in set(r) | set(q) if not k.startswith(WALL_PREFIX)]
+        keys = [k for k in set(r) | set(q) if not k.startswith(WALL_PREFIX)
+                and not (k in new_columns and (k in r) != (k in q))]
         diff = sorted(k for k in keys if r.get(k, '<absent>') != q.get(k, '<absent>'))
         if diff:
             prev = shared[i - 1] if i else 0
@@ -197,7 +198,11 @@ def main():
     p.add_argument('--every', type=int, default=0, help='print the side-by-side columns every Nth shared sample')
     p.add_argument('--pace-at', type=int, default=0, metavar='BODIES',
                    help='times real time and the wall split over the samples holding this many bodies (a tenth either way)')
+    p.add_argument('--new-columns', default='', metavar='A,B',
+                   help='stats fields a newer build writes and an older one did not: left out where only one run holds '
+                        'them, compared where both do (D239: mouthBlows,mouthBlowsFinishing)')
     args = p.parse_args()
+    new_columns = frozenset(c for c in args.new_columns.split(',') if c)
 
     da, db = run_dir(args.a, args.runs_root), run_dir(args.b, args.runs_root)
     describe('A', da)
@@ -209,7 +214,9 @@ def main():
     print(f'split A  {wall_split(sa)}')
     print(f'split B  {wall_split(sb)}')
 
-    same, shared = compare_stats(sa, sb)
+    same, shared = compare_stats(sa, sb, new_columns)
+    if new_columns:
+        print(f'stats    left out where only one run holds them: {", ".join(sorted(new_columns))}')
     same &= compare_digest(rows(os.path.join(da, 'digest.jsonl')), rows(os.path.join(db, 'digest.jsonl')))
     for name in ('lineage.jsonl', 'positions.jsonl'):
         same &= compare_bytes(name.split('.')[0], os.path.join(da, name), os.path.join(db, name))
