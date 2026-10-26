@@ -209,8 +209,9 @@ seam, and the climb keeps it. What changes is how large each application is:
   about a 2.4 % change in length a resize, and less as the body nears its adult (derived).
 
 The climb splits one large jump into many small ones. That should be easier on the solver, since a large resize is
-where joint spin-up and divergence come from (logbook/0059, 0077; inference). The harness's `MaxResizeJumpMetres` and
-the `diverged` count read it in the screens.
+where joint spin-up and divergence come from (logbook/0059, 0077; inference). The screens read it in the `diverged` count,
+and b4's Farm test on a climbing body measures the momentum jump at each resize against today's single one. The
+harness's `MaxResizeJumpMetres` reads 0 by construction, since a resize never moves the root.
 
 The resize keeps the root's velocity and spin to the bit, and the joint coordinates and rates. The links' velocities
 are re-derived from them, so linear momentum jumps with the mass and angular momentum with the geometry
