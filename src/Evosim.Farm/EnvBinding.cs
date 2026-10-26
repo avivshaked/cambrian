@@ -100,6 +100,11 @@ namespace Evosim.Farm
             // joins a mirrored part where its twin is joined.
             Flag("EVOSIM_REFLECT_MIRRORED_ANCHORS", (s, v) => s.ReflectMirroredAnchors = v),
 
+            // D241: a scaled body's joint torque scales with the cube of its length, as muscle does
+            // (force with cross-section, moment arm with length), at birth, growth and rebuild. Off is the
+            // recorded world, where a juvenile has its adult's torque on smaller limbs.
+            Flag("EVOSIM_JUVENILE_STRENGTH", (s, v) => s.JuvenileStrength = v),
+
             // D233: the shapes the world allows, comma-separated ids in their order ("box,sphere,
             // capsule,superellipsoid"). Unset is box, sphere and capsule, every recorded world. An id
             // the catalogue does not know, or one named twice, is refused here.
@@ -1048,6 +1053,7 @@ namespace Evosim.Farm
             config.Mutation.FormChance = s.FormChance;
 
             config.GrowthAdultSeconds = s.GrowthAdult;
+            config.JuvenileStrengthScales = s.JuvenileStrength;
             config.GrowthReserveStartSeconds = s.GrowthReserveStart;
             config.GrowthReserveMinSeconds = s.GrowthReserveMin;
             config.GrowthReserveMaxSeconds = s.GrowthReserveMax;
@@ -1559,6 +1565,9 @@ namespace Evosim.Farm
 
         /// <summary>D228 — <c>EVOSIM_REFLECT_MIRRORED_ANCHORS</c>.</summary>
         public bool ReflectMirroredAnchors;
+
+        /// <summary>D241's juvenile strength — <c>EVOSIM_JUVENILE_STRENGTH</c>. Off is the recorded world.</summary>
+        public bool JuvenileStrength;
         public float MatterIslands;
         public float MatterIslandCover;
         public float MatterIslandDepth;

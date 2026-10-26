@@ -282,7 +282,7 @@ namespace Evosim.Farm
             Organism creature = body.Creature;
             Phenotype built = adult
                 ? creature.AdultPhenotype
-                : creature.AdultPhenotype.Scaled(scale, Config.Shapes);
+                : creature.AdultPhenotype.ScaledFor(Config, scale);
 
             body.Solver.Resize(built);
         }

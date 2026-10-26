@@ -88,6 +88,28 @@ namespace Evosim.Farm.Tests
         }
 
         [Fact]
+        public void JuvenileStrengthIsOffUnsetAndOnNamesItselfInTheHeaderBeforeTheHash()
+        {
+            var off = new Dictionary<string, string>();
+            var on = new Dictionary<string, string> { { "EVOSIM_JUVENILE_STRENGTH", "1" } };
+
+            RunConfig unset = Built(off);
+            RunConfig set = Built(on);
+
+            Assert.False(unset.JuvenileStrengthScales);
+            Assert.True(set.JuvenileStrengthScales);
+            Assert.NotEqual(unset.Hash(), set.Hash());
+
+            Assert.DoesNotContain(" · juvenile strength scaled", Header(off));
+
+            string header = Header(on);
+            Assert.Contains(" · juvenile strength scaled", header);
+            Assert.True(
+                header.IndexOf(" · juvenile strength scaled", StringComparison.Ordinal) <
+                header.IndexOf(" · configHash ", StringComparison.Ordinal));
+        }
+
+        [Fact]
         public void AConfigTheClimbCannotRunIsRefusedWhenTheWorldIsBuilt()
         {
             RunConfig negative = Built(new Dictionary<string, string> { { "EVOSIM_GROWTH_ADULT", "-5" } });

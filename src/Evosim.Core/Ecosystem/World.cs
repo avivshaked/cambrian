@@ -5118,8 +5118,8 @@ namespace Evosim.Core
             // length. Phenotype.Scaled says why the adult is the thing scaled from.
             Phenotype grown = fraction >= 1d
                 ? creature.AdultPhenotype
-                : creature.AdultPhenotype.Scaled(
-                    (float)Math.Pow(fraction, 1d / 3d), Config.Shapes);
+                : creature.AdultPhenotype.ScaledFor(
+                    Config, (float)Math.Pow(fraction, 1d / 3d));
 
             double actual = fraction >= 1d ? adultTissue : Metabolism.TissueJoules(grown, Config);
             double spend = actual - creature.TissueJoules;
@@ -6131,7 +6131,7 @@ namespace Evosim.Core
 
             Phenotype newborn = stillborn || fraction >= 1d
                 ? body
-                : body.Scaled((float)Math.Pow(fraction, 1d / 3d), Config.Shapes);
+                : body.ScaledFor(Config, (float)Math.Pow(fraction, 1d / 3d));
 
             double tissue = stillborn || fraction >= 1d
                 ? adultTissue
@@ -7279,7 +7279,7 @@ namespace Evosim.Core
             }
             else
             {
-                newborn = adult.Scaled((float)Math.Pow(wanted, 1d / 3d), Config.Shapes);
+                newborn = adult.ScaledFor(Config, (float)Math.Pow(wanted, 1d / 3d));
                 tissue = Metabolism.TissueJoules(newborn, Config);
                 birthFraction = adultTissue > 0d ? (float)(tissue / adultTissue) : 1f;
             }

@@ -209,6 +209,16 @@ namespace Evosim.Farm
         /// </summary>
         public long ModuleRebuilds { get; private set; }
         public double MaxResizeJumpMetres { get; private set; }
+
+        /// <summary>
+        /// A test-only read (D241's growth physics tests): called with a body's solver just before and just
+        /// after <see cref="Creature.Resize(Phenotype, float)"/> at a growth step. Null in a run, and then the
+        /// growth step is what it always was.
+        /// </summary>
+        internal Action<Creature> BeforeResize;
+
+        /// <summary>See <see cref="BeforeResize"/>.</summary>
+        internal Action<Creature> AfterResize;
         public double MaxResizeStepMetres { get; private set; }
         public double MaxJointMassRatio { get; private set; }
         public long BodiesOverMassRatio10 { get; private set; }

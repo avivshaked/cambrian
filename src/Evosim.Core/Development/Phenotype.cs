@@ -372,6 +372,12 @@ namespace Evosim.Core
         /// <see cref="PartShapeRegistry.Catalogue"/>, which answers geometry for every shape the build
         /// knows (D233); a run passes its own world list, exactly as <see cref="Developer.Develop"/> does.
         /// </param>
+        /// <param name="scalePower">
+        /// D241: scale each part's <see cref="PhenotypePart.Power"/> by the cube of
+        /// <paramref name="linear"/>, so a juvenile's joints are as strong as its muscle is. False, the
+        /// default, copies the adult's Power across, which is every recorded world. A world's callers go
+        /// through <see cref="ScaledFor"/>, which reads <see cref="RunConfig.JuvenileStrengthScales"/>.
+        /// </param>
         /// <remarks>
         /// <para>
         /// <b>The developer's scale folding is the model, and this is deliberately the same
@@ -399,7 +405,7 @@ namespace Evosim.Core
         /// the plan, which is a fact about the genome and not about how grown the creature is.
         /// </para>
         /// </remarks>
-        public Phenotype Scaled(float linear, PartShapeRegistry shapes = null)
+        public Phenotype Scaled(float linear, PartShapeRegistry shapes = null, bool scalePower = false)
         {
             if (!(linear > 0f) || float.IsInfinity(linear))
             {
@@ -488,12 +494,16 @@ namespace Evosim.Core
                     JointType = part.JointType,
                     JointLimits = part.JointLimits,
 
-                    // Torque capacity and lift are not lengths and are not scaled. Power is what
-                    // the genome says a link can push with and lift is kg/m³ of displaced water,
-                    // so both already mean the same thing at any size — and both are billed per
-                    // step, so a half-grown body pays its adult's bill for them. Whether that is
-                    // the world we want is a question for a round, not for a copy constructor.
-                    Power = part.Power,
+                    // Lift is kg/m³ of displaced water, so it means the same thing at any size, and
+                    // it is billed per step, so a half-grown body pays its adult's bill for it.
+                    // Power is the genome's peak torque of a link. With scalePower off (every
+                    // recorded world) it is copied across, so a juvenile has its adult's torque on
+                    // smaller limbs, and pays its adult's idle bill for it. With scalePower on
+                    // (D241, RunConfig.JuvenileStrengthScales) it scales as muscle does: force with
+                    // cross-section (L²) and moment arm with L, so torque with L³, which is the mass
+                    // fraction. The idle bill reads Power, so it falls with it. Whether that is the
+                    // world we want is a question for a round, not for a copy constructor.
+                    Power = scalePower ? part.Power * linear * linear * linear : part.Power,
                     Drive = part.Drive,
                     Lift = part.Lift,
 
@@ -517,6 +527,19 @@ namespace Evosim.Core
             }
 
             return scaled;
+        }
+
+        /// <summary>
+        /// <see cref="Scaled"/> as the world's rules ask for it: the shapes are the config's, and each
+        /// part's Power scales with the cube of the length ratio when
+        /// <see cref="RunConfig.JuvenileStrengthScales"/> is on (D241). Every caller in the world and the
+        /// farm goes through this, so a body is made one way at birth, at a growth step, at a checkpoint
+        /// and in the harness.
+        /// </summary>
+        public Phenotype ScaledFor(RunConfig config, float linear)
+        {
+            if (config == null) throw new System.ArgumentNullException(nameof(config));
+            return Scaled(linear, config.Shapes, config.JuvenileStrengthScales);
         }
 
         /// <summary>

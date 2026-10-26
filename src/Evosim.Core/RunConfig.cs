@@ -1452,6 +1452,23 @@ namespace Evosim.Core
         [Tunable("growth", Unit = "s")]
         public float GrowthReserveMaxSeconds { get; set; } = 300f;
 
+        /// <summary>
+        /// D241: a scaled body's joint torque (<see cref="PhenotypePart.Power"/>) scales as muscle does,
+        /// not as the adult's. <b>False is off: a juvenile has its adult's torque on smaller limbs.</b>
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Muscle force goes with cross-section (L²) and the moment arm with L, so torque goes with L³,
+        /// which is the mass fraction. With the switch on, <see cref="Phenotype.ScaledFor"/> multiplies
+        /// each part's Power by the cube of the length ratio, at birth, at every growth step, on a
+        /// checkpoint's rebuild and in the harness. The idle bill reads Power, so a juvenile's standing
+        /// cost falls with it. It acts whenever a body is scaled, so it is independent of
+        /// <see cref="GrowthAdultSeconds"/>. The coordinator's accepted plan of 2026-10-26.
+        /// </para>
+        /// </remarks>
+        [Tunable("growth")]
+        public bool JuvenileStrengthScales { get; set; }
+
         // ------------------------------------------------------------------ D106 item 3: the mouth
         //
         // logbook/specs/mouth-spec.md. Nine knobs and one rule between them: a part has health, it
