@@ -1,0 +1,17 @@
+A: scratch/fin-shape/identity-int1-off/r62i1off-x4-g32/2026-10-25-204408-e30df6b8//
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.7769 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit 3790cbb42d dirty False dynamics ec56227d6bd7 farm d552cc816410 config e30df6b8e120c72f
+  pace     600 s of 600 in 3.3845583483333335 min, 2.95459524428773 x real time, status ended (budget), diverged 0
+B: scratch/pace-build/identity-off/r62poff-x4-g32/2026-10-26-031216-caa1d5a3//
+  engine   gpu single on NVIDIA GeForce RTX 4090 (128 SMs) (driver 13.5), group 32, mean chunked, classes 2/4/8/16 links / 8/32/128/256 neurons, compile 0.8248 ms
+  gpu      overflow candidates 0 overlaps 0 held 0 cell entries 0; refused for class 0; neurons at 1e36 0 (most 0)
+  source   commit ac2d7bac33 dirty False dynamics 5def5ed2225c farm de92616d4fb3 config caa1d5a39f408397
+  pace     600 s of 600 in 3.318522985 min, 3.013388801343499 x real time, status ended (budget), diverged 0
+split A  physics 52%, world 45%, harness 1%, writers 1%
+split B  physics 51%, world 46%, harness 2%, writers 1%
+stats    identical on all 60 shared samples to t=600 (wall clocks left out)
+stats    left out where only one run holds them: mouthBlows, mouthBlowsFinishing
+digest   identical on all 601 shared rows to step 60000
+lineage  byte-equal (1582 lines)
+positions not in both runs
