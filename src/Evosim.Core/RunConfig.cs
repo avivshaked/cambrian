@@ -1400,6 +1400,58 @@ namespace Evosim.Core
         [Tunable("growth", Unit = "s")]
         public float ModuleDropAfterSeconds { get; set; }
 
+        // ------------------------------------------------------------------ D241: growth as a climb
+        //
+        // logbook/specs/growth-runway-design.md. Four knobs and the mutation chance of
+        // MutationRates.GrowthReserveChance. At GrowthAdultSeconds 0 the branch is never entered and
+        // every recorded world runs as it did: growth invests everything above the floor each step.
+
+        /// <summary>
+        /// D241: the time T a body born at 0.65 of its adult's tissue takes to reach 0.95 of it,
+        /// growing at the rate law's full rate, in world seconds. <b>0 is off: today's growth.</b>
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// With T above 0, <c>World.GrowOne</c> invests each step the smallest of the rate law's
+        /// allowance, what the reserve can spare above <c>keep</c>, and what is left of the adult.
+        /// The law is West, Brown and Enquist's ontogenetic growth model, dm/dt = a m^3/4 (1 -
+        /// (m/M)^1/4), whose closed form makes 1 - r fall exponentially, with r = (m/M)^1/4, at the
+        /// time constant tau = T / ln((1 - 0.65^1/4)/(1 - 0.95^1/4)), about T / 2.081. One T for every
+        /// body, in world seconds, whatever the pace factor: growth ticks on metabolic steps.
+        /// Reaching 0.95 takes the rest of the adult in the same step, if the reserve pays for it.
+        /// </para>
+        /// <para>
+        /// With T above 0 a body also breeds only once adult (<c>BodyFraction</c> 1), and every
+        /// admitted genome carries <see cref="Genome.GrowthReserveSeconds"/>. With T = 0 a genome
+        /// that carries the gene is refused at admission. Negative or non-finite T is refused at
+        /// construction. The owner's ruling of 2026-10-26 (D241); ⚠ the number is screened before
+        /// it is used (the pre-registered groups of the design).
+        /// </para>
+        /// </remarks>
+        [Tunable("growth", Unit = "s")]
+        public float GrowthAdultSeconds { get; set; }
+
+        /// <summary>
+        /// D241: the value <c>World.Admit</c> gives the growth-reserve gene of a genome that carries
+        /// none, at T above 0, in seconds of the body's own standing cost. Inert at T = 0.
+        /// </summary>
+        [Tunable("growth", Unit = "s")]
+        public float GrowthReserveStartSeconds { get; set; } = 30f;
+
+        /// <summary>
+        /// D241: the lower end of the growth-reserve gene's range, in seconds. A logarithm needs a
+        /// positive floor, and 1 s is effectively none: the tissue floor
+        /// (<see cref="GrowthReserveFloor"/>) binds below it. Inert at T = 0.
+        /// </summary>
+        [Tunable("growth", Unit = "s")]
+        public float GrowthReserveMinSeconds { get; set; } = 1f;
+
+        /// <summary>
+        /// D241: the upper end of the growth-reserve gene's range, in seconds. Inert at T = 0.
+        /// </summary>
+        [Tunable("growth", Unit = "s")]
+        public float GrowthReserveMaxSeconds { get; set; } = 300f;
+
         // ------------------------------------------------------------------ D106 item 3: the mouth
         //
         // logbook/specs/mouth-spec.md. Nine knobs and one rule between them: a part has health, it

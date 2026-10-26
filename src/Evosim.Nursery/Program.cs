@@ -737,7 +737,9 @@ namespace Evosim.Nursery
                         parent, new Rng(rng.NextUInt() | ((ulong)rng.NextUInt() << 32)), _config.Mutation,
                         _config.CellTypes, _config.Genome, _config.SensorPool(),
                         buoyancyOffsetPriced: _config.BuoyancyOffsetWattsPerCubicMetre > 0f,
-                        shapes: _config.Shapes);
+                        shapes: _config.Shapes,
+                        growthReserveMin: _config.GrowthReserveMinSeconds,
+                        growthReserveMax: _config.GrowthReserveMaxSeconds);
                     if (mutant.Nodes.Count != parent.Nodes.Count) continue;
                     Envelope.Take(g, mutant);
                     took = true;
@@ -759,7 +761,9 @@ namespace Evosim.Nursery
                     parent, new Rng(rng.NextUInt() | ((ulong)rng.NextUInt() << 32)), _config.Mutation,
                     _config.CellTypes, _config.Genome, pool,
                     buoyancyOffsetPriced: _config.BuoyancyOffsetWattsPerCubicMetre > 0f,
-                    shapes: _config.Shapes);
+                    shapes: _config.Shapes,
+                    growthReserveMin: _config.GrowthReserveMinSeconds,
+                    growthReserveMax: _config.GrowthReserveMaxSeconds);
                 if (mutant.Nodes.Count != parent.Nodes.Count) continue;
                 return Graft(parent, mutant);
             }

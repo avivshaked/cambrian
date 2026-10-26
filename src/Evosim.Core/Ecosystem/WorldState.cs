@@ -520,7 +520,8 @@ namespace Evosim.Core
             bool capped = Config.FounderReserveCapFraction > 0f;
             bool corpseLandings = Config.FoundersFollowCorpses;
             bool lifespans = LifespanRecorded;
-            for (int i = 0; i < _lineageEvents.Count; i++) WriteLineage(w, _lineageEvents[i], layout, capped, corpseLandings, lifespans, Config.ContactEating);
+            bool climb = Config.GrowthAdultSeconds > 0f;
+            for (int i = 0; i < _lineageEvents.Count; i++) WriteLineage(w, _lineageEvents[i], layout, capped, corpseLandings, lifespans, Config.ContactEating, climb);
 
             StateIo.Tag(w, "ABSD");
             w.Write(_absorptiveDeaths.Count);
@@ -875,7 +876,8 @@ namespace Evosim.Core
             bool capped = Config.FounderReserveCapFraction > 0f;
             bool corpseLandings = Config.FoundersFollowCorpses;
             bool lifespans = LifespanRecorded;
-            for (int i = 0; i < events; i++) _lineageEvents.Add(ReadLineage(r, version, capped, corpseLandings, lifespans, Config.ContactEating));
+            bool climb = Config.GrowthAdultSeconds > 0f;
+            for (int i = 0; i < events; i++) _lineageEvents.Add(ReadLineage(r, version, capped, corpseLandings, lifespans, Config.ContactEating, climb));
 
             StateIo.Tag(r, "ABSD");
             int deaths = r.ReadInt32();
@@ -1438,7 +1440,7 @@ namespace Evosim.Core
                 r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(),
                 r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
 
-        private static void WriteLineage(BinaryWriter w, LineageEvent e, int layout, bool capped, bool corpseLandings, bool lifespans, bool contactEating)
+        private static void WriteLineage(BinaryWriter w, LineageEvent e, int layout, bool capped, bool corpseLandings, bool lifespans, bool contactEating, bool climb)
         {
             w.Write((int)e.Kind);
             w.Write(e.ElapsedSeconds);
@@ -1530,6 +1532,10 @@ namespace Evosim.Core
             // D128's gene on a birth row, the same way: only in a world where it can differ.
             if (lifespans) w.Write(e.LifespanScale);
 
+            // D241's gene on a birth row, the same way: only in a world with the climb, so every other
+            // world's rows are the bytes they were. The reader asks the same config.
+            if (climb) w.Write(e.GrowthReserveSeconds);
+
             // D159's two, written only on an immigrant's row, for the pool index's reason: every
             // row a world without immigrants queues is the bytes version 14 wrote, and an
             // immigrant's row can only be in a stream of version 15.
@@ -1560,7 +1566,7 @@ namespace Evosim.Core
             // version 10, above.
         }
 
-        private static LineageEvent ReadLineage(BinaryReader r, int version, bool capped, bool corpseLandings, bool lifespans, bool contactEating)
+        private static LineageEvent ReadLineage(BinaryReader r, int version, bool capped, bool corpseLandings, bool lifespans, bool contactEating, bool climb)
         {
             var kind = (LineageEventKind)r.ReadInt32();
             double seconds = r.ReadDouble();
@@ -1624,6 +1630,7 @@ namespace Evosim.Core
             float landingCorpse = corpseLandings ? r.ReadSingle() : float.NaN;
             float landingCorpseMean = corpseLandings ? r.ReadSingle() : float.NaN;
             float lifespan = lifespans ? r.ReadSingle() : float.NaN;
+            float growthReserve = climb ? r.ReadSingle() : float.NaN;
 
             int fromWorld = -1;
             long fromId = -1;
@@ -1658,7 +1665,7 @@ namespace Evosim.Core
                     reproductionMode, gestationShare,
                     landingSnow, landingSnowColumn, landingMatter, landingMatterColumn,
                     capCut, landingCorpse, landingCorpseMean, lifespan,
-                    fromWorld, fromId)
+                    fromWorld, fromId, growthReserve)
                 : LineageEvent.Death(
                     seconds, id, cause, accountAtDeath, reserveAtDeath, intakeOwn, intakeOther, intakeCarrion, biteKept);
         }

@@ -297,16 +297,22 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
-        public void Format13And14RefuseAGenomeWithNoFamilyNode()
+        public void Format13And14RefuseAGenomeWithNeitherExtension()
         {
+            // D241: 13 and 14 hold either extension, so the key the gene is written under is present (as
+            // null) and the refusal is the one for a file that holds neither a family node nor the gene.
             string plain = GenomeJson.Write(Fixtures.SingleBox());
-            FormatException e = ReadRefusal(plain.Replace("\"format\":11", "\"format\":13"));
-            Assert.Contains("none of its nodes", e.Message);
+            FormatException e = ReadRefusal(
+                plain.Replace("\"format\":11", "\"format\":13")
+                     .Replace("\"lifespan\":1,", "\"lifespan\":1,\"growthReserve\":null,"));
+            Assert.Contains("it has neither", e.Message);
 
             Genome central = Fixtures.SingleBox();
             central.Brain = new CentralBrain();
-            e = ReadRefusal(GenomeJson.Write(central).Replace("\"format\":12", "\"format\":14"));
-            Assert.Contains("none of its nodes", e.Message);
+            e = ReadRefusal(
+                GenomeJson.Write(central).Replace("\"format\":12", "\"format\":14")
+                     .Replace("\"lifespan\":1,", "\"lifespan\":1,\"growthReserve\":null,"));
+            Assert.Contains("it has neither", e.Message);
         }
 
         [Fact]

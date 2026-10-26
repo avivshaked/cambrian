@@ -272,6 +272,18 @@ namespace Evosim.Core
                 RelativeDiff(a.Reproduction.GestationShare, b.Reproduction.GestationShare);
             if (gestation != 0f) units += gestation;
 
+            // D241. The growth-reserve gene, on its logarithm as a mutation steps it, over its
+            // range. The range is the default's (RunConfig.GrowthReserveMinSeconds and
+            // GrowthReserveMaxSeconds): a distance is a pure function of two genomes and has no
+            // config to ask. Its own statement, and only when both carry the gene, so a pair
+            // without it adds exactly nothing and every recorded world's species replay.
+            if (a.GrowthReserveSeconds.HasValue && b.GrowthReserveSeconds.HasValue)
+            {
+                units += LogGap(
+                    a.GrowthReserveSeconds.Value, b.GrowthReserveSeconds.Value,
+                    GrowthReserveRangeMin, GrowthReserveRangeMax);
+            }
+
             int minNodes = Math.Min(a.Nodes.Count, b.Nodes.Count);
             for (int i = 0; i < minNodes; i++)
             {
@@ -387,6 +399,15 @@ namespace Evosim.Core
             (LogGap(a.Profile, b.Profile, PartForm.ProfileMin, PartForm.ProfileMax) +
              LogGap(a.Section, b.Section, PartForm.SectionMin, PartForm.SectionMax) +
              LogGap(a.Taper, b.Taper, PartForm.TaperMin, PartForm.TaperMax)) / 3f;
+
+        /// <summary>
+        /// D241: the range the growth-reserve gene's gap is judged over, in seconds. These are the
+        /// defaults of <see cref="RunConfig.GrowthReserveMinSeconds"/> and
+        /// <see cref="RunConfig.GrowthReserveMaxSeconds"/>; a world that moves its range does not
+        /// move this, so the gap is a unit of the default's range and is comparable across worlds.
+        /// </summary>
+        private const float GrowthReserveRangeMin = 1f;
+        private const float GrowthReserveRangeMax = 300f;
 
         private static float LogGap(float x, float y, float min, float max) =>
             (float)(Math.Abs(Math.Log(x) - Math.Log(y)) / Math.Log(max / min));

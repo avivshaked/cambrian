@@ -165,7 +165,7 @@
         /// <para>
         /// When it fires, profile, section and taper each take one step: a Gaussian of
         /// <see cref="ScalarStdDev"/> on the log of the gene, folded back into the gene's range by
-        /// reflection (<c>Mutator.StepFormGene</c>). The step is on the log because the ranges are
+        /// reflection (<c>Mutator.StepLogGene</c>). The step is on the log because the ranges are
         /// ratios, so the same rate moves a gene a similar share of its range wherever it sits.
         /// </para>
         /// <para>
@@ -366,6 +366,18 @@
         /// </summary>
         [Tunable("mutation")]
         public float LifespanChance { get; set; }
+
+        /// <summary>
+        /// D241: the chance a birth steps the growth-reserve gene
+        /// (<see cref="Genome.GrowthReserveSeconds"/>) on its logarithm, a Gaussian of
+        /// <see cref="ScalarStdDev"/> reflected into
+        /// [<see cref="RunConfig.GrowthReserveMinSeconds"/>, <see cref="RunConfig.GrowthReserveMaxSeconds"/>].
+        /// 0, the default, is no draw at all, so a world that leaves the gene alone draws the stream it
+        /// always drew; and only a genome that carries the gene is rolled for.
+        /// <c>EVOSIM_GROWTH_RESERVE_MUT</c>.
+        /// </summary>
+        [Tunable("mutation")]
+        public float GrowthReserveChance { get; set; }
 
         /// <summary>Largest brood a mutation may produce.</summary>
         /// <remarks>

@@ -112,26 +112,31 @@ namespace Evosim.Core
         public const int CentralFormatVersion = 12;
 
         /// <summary>
-        /// 13 - D233 (2026-10), the superellipsoid family's form. Written only for a genome that holds
-        /// at least one node of a shape that takes a form (<see cref="PartShape.TakesForm"/> in
-        /// <see cref="PartShapeRegistry.Catalogue"/>), and only for the old model; the one brain is
-        /// <see cref="FamilyCentralFormatVersion"/>. Such a node carries a <c>form</c> object,
-        /// <c>profile</c>, <c>section</c> and <c>taper</c>, directly after its <c>shape</c>; every
-        /// other node writes nothing new. A genome with no family node is still written as 11 or 12,
-        /// byte for byte as before, so every recorded run and every inoculum stays readable and writes
-        /// back the same text. Formats 11 to 14 are all read.
+        /// 13 - the extended format, 11 plus either optional extension, for the old model; the one
+        /// brain is <see cref="FamilyCentralFormatVersion"/>. The extensions are D233's superellipsoid
+        /// form, written for a genome that holds at least one node of a shape that takes a form
+        /// (<see cref="PartShape.TakesForm"/> in <see cref="PartShapeRegistry.Catalogue"/>): such a
+        /// node carries a <c>form</c> object, <c>profile</c>, <c>section</c> and <c>taper</c>, directly
+        /// after its <c>shape</c>; and D241's growth-reserve gene, written for a genome that carries
+        /// <see cref="Genome.GrowthReserveSeconds"/>. A format 13 or 14 always holds the whole-creature
+        /// key <c>growthReserve</c> directly after <c>lifespan</c>, as a number or as JSON
+        /// <c>null</c> when the genome does not carry the gene, so a dropped key is still refused
+        /// under the rule that loading refuses rather than defaults. A genome with neither extension
+        /// is still written as 11 or 12, byte for byte as before, so every recorded run and every
+        /// inoculum stays readable and writes back the same text. A format 13 or 14 that holds neither
+        /// extension is refused, since written back it would be 11 or 12. Formats 11 to 14 are all read.
         /// </summary>
         public const int FamilyFormatVersion = 13;
 
         /// <summary>
-        /// 14 - format 13 for a genome that carries D146's one brain: the same <c>form</c> on its
-        /// family nodes, and everything else as in <see cref="CentralFormatVersion"/>.
+        /// 14 - format 13 for a genome that carries D146's one brain: the same extensions, and
+        /// everything else as in <see cref="CentralFormatVersion"/>.
         /// </summary>
         public const int FamilyCentralFormatVersion = 14;
 
         /// <summary>
         /// The format <see cref="Write"/> gives a genome: 11 or 12 as before, or 13 or 14 when it holds
-        /// a node of a shape that takes a form.
+        /// a node of a shape that takes a form or carries D241's growth-reserve gene.
         /// </summary>
         public static int FormatFor(Genome genome)
         {
@@ -144,7 +149,7 @@ namespace Evosim.Core
                 if (TakesForm(node.ShapeId)) { family = true; break; }
             }
 
-            return family
+            return family || genome.GrowthReserveSeconds.HasValue
                 ? (central ? FamilyCentralFormatVersion : FamilyFormatVersion)
                 : (central ? CentralFormatVersion : FormatVersion);
         }
@@ -216,6 +221,27 @@ namespace Evosim.Core
             w.Field("adultScale", genome.AdultScale);
             w.Field("lifespan", genome.LifespanScale);
 
+            // D241. Whole-creature, and only in the extended formats, where it is always written: a
+            // number, or null for a stated absence, so a dropped key is a refusal and not a default.
+            if (format == FamilyFormatVersion || format == FamilyCentralFormatVersion)
+            {
+                if (genome.GrowthReserveSeconds.HasValue)
+                {
+                    float gene = genome.GrowthReserveSeconds.Value;
+                    if (float.IsNaN(gene) || float.IsInfinity(gene) || gene <= 0f)
+                    {
+                        throw new InvalidOperationException(
+                            $"Cannot write growth reserve {gene}: it must be finite and positive.");
+                    }
+
+                    w.Field("growthReserve", gene);
+                }
+                else
+                {
+                    w.FieldNull("growthReserve");
+                }
+            }
+
             w.BeginObject("reproduction")
                 .Field("brood", genome.Reproduction.BroodSize)
                 .Field("investment", genome.Reproduction.BirthInvestment)
@@ -248,11 +274,13 @@ namespace Evosim.Core
             {
                 throw new FormatException(
                     $"Genome is format {format}, this build reads {FormatVersion} and, for the one brain of D146, {CentralFormatVersion}; " +
-                    $"and, for a genome that holds a superellipsoid, {FamilyFormatVersion} and {FamilyCentralFormatVersion}. There is no " +
+                    $"and, for a genome that holds either extension (a superellipsoid, or the growth-reserve gene), {FamilyFormatVersion} and " +
+                    $"{FamilyCentralFormatVersion}. There is no " +
                     "migration path: re-run, or check out the revision that wrote it. " +
-                    "(Formats 13 and 14 added the form of a part whose shape takes one (`form`: " +
-                    "profile, section, taper; D233): 13 is 11 and 14 is 12 for a genome that holds " +
-                    "such a part. " +
+                    "(Formats 13 and 14 are the extended formats, 13 being 11 and 14 being 12 plus " +
+                    "either optional extension: the form of a part whose shape takes one (`form`: " +
+                    "profile, section, taper; D233), and the growth-reserve gene (`growthReserve`, " +
+                    "a number or null, always present in these two formats; D241). " +
                     "Format 11 added a joint's drive genes (`Drive`: threshold, reaction, hold, " +
                     "release; propose-joint-drive.md), which scripts/convert-format10-to-11.py " +
                     "adds at their defaults. " +
@@ -274,11 +302,49 @@ namespace Evosim.Core
                     "investment.)");
             }
 
+            bool extended = format == FamilyFormatVersion || format == FamilyCentralFormatVersion;
+
+            // D241. The gene's key is written in 13 and 14 only; in 11 and 12 it is refused, as is a
+            // 13 or 14 without it, and a value that is no positive finite number. The world's range is
+            // judged at admission.
+            float? growthReserve = null;
+            if (!extended && root.Has("growthReserve"))
+            {
+                throw new FormatException(
+                    $"Genome is format {format}, which has no growth-reserve gene, but it carries a " +
+                    "'growthReserve' key. The gene is written only in formats 13 and 14 (D241).");
+            }
+
+            if (extended)
+            {
+                if (!root.Has("growthReserve"))
+                {
+                    throw new FormatException(
+                        $"Genome is format {format}, which always carries 'growthReserve' (a number, or " +
+                        "null for a genome without the gene), and it is missing. Present: " +
+                        string.Join(", ", root.Keys()) + ".");
+                }
+
+                JsonNode gene = root["growthReserve"];
+                if (gene.Kind != JsonNode.NodeKind.Null)
+                {
+                    float value = gene.AsFloat();
+                    if (float.IsNaN(value) || float.IsInfinity(value) || value <= 0f)
+                    {
+                        throw new FormatException(
+                            $"Genome's growthReserve is {value}, which must be finite and positive (D241).");
+                    }
+
+                    growthReserve = value;
+                }
+            }
+
             var genome = new Genome
             {
                 RootIndex = root["root"].AsInt(),
                 AdultScale = root["adultScale"].AsFloat(),
                 LifespanScale = root["lifespan"].AsFloat(),
+                GrowthReserveSeconds = growthReserve,
                 Reproduction = new ReproductionTraits
                 {
                     BroodSize = root["reproduction"]["brood"].AsInt(),
@@ -301,13 +367,14 @@ namespace Evosim.Core
                 index++;
             }
 
-            // The writer never makes a format 13 or 14 without a family node, and reading one would
-            // write back as 11 or 12: the text would not round-trip, so the file is refused.
-            if (family && !anyFamilyNode)
+            // The writer never makes a format 13 or 14 for a genome with neither extension, and reading
+            // one would write back as 11 or 12: the text would not round-trip, so the file is refused.
+            if (extended && !anyFamilyNode && !growthReserve.HasValue)
             {
                 throw new FormatException(
                     $"Genome is format {format}, which is written only for a genome that holds a node " +
-                    "of a shape that takes a form, and none of its nodes is one. Written back it would " +
+                    "of a shape that takes a form or carries the growth-reserve gene (D241), and it has " +
+                    "neither. Written back it would " +
                     $"be format {(central ? CentralFormatVersion : FormatVersion)}, so the text would " +
                     "not round-trip.");
             }

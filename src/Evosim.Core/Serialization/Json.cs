@@ -145,6 +145,14 @@ namespace Evosim.Core
                 return this;
             }
 
+            /// <summary>A field whose value is JSON <c>null</c>: a stated absence (D241's growth gene).</summary>
+            public Writer FieldNull(string name)
+            {
+                Key(name);
+                _sb.Append("null");
+                return this;
+            }
+
             public Writer Field(string name, bool value)
             {
                 Key(name);

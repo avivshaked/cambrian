@@ -744,7 +744,9 @@ namespace Evosim.Nursery
                     parent, new Rng(rng.NextUInt() | ((ulong)rng.NextUInt() << 32)), _config.Mutation,
                     _config.CellTypes, _config.Genome, pool,
                     buoyancyOffsetPriced: _config.BuoyancyOffsetWattsPerCubicMetre > 0f,
-                    shapes: _config.Shapes);
+                    shapes: _config.Shapes,
+                    growthReserveMin: _config.GrowthReserveMinSeconds,
+                    growthReserveMax: _config.GrowthReserveMaxSeconds);
                 if (!kinds.SetEquals(mutant.Nodes.Select(nd => nd.CellTypeId))) continue;
                 // D146: a body that changed takes its brain with it, as a birth in the world does
                 // (World.Conceive): edges numbered, the brain wired to the new body, then mutated.

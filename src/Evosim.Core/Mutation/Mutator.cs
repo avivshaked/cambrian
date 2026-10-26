@@ -62,11 +62,19 @@ namespace Evosim.Core
         /// the child is validated against it - D233. Defaults to
         /// <see cref="PartShapeRegistry.Standard"/>, which holds no shape that takes a form.
         /// </param>
+        /// <param name="growthReserveMin">
+        /// D241: the range the growth-reserve gene is stepped inside, seconds
+        /// (<see cref="RunConfig.GrowthReserveMinSeconds"/> and <see cref="RunConfig.GrowthReserveMaxSeconds"/>).
+        /// Read only when <see cref="MutationRates.GrowthReserveChance"/> is above 0 and the parent
+        /// carries the gene.
+        /// </param>
+        /// <param name="growthReserveMax">See <paramref name="growthReserveMin"/>.</param>
         public static Genome Mutate(
             Genome parent, Rng rng, MutationRates rates = null, CellTypeRegistry cellTypes = null,
             RandomGenomeOptions genome = null, SensorChannel[] sensorPool = null,
             bool buoyancyOffsetPriced = false, MutationLog log = null,
-            PartShapeRegistry shapes = null)
+            PartShapeRegistry shapes = null,
+            float growthReserveMin = 1f, float growthReserveMax = 300f)
         {
             if (parent == null) throw new ArgumentNullException(nameof(parent));
             if (rng == null) throw new ArgumentNullException(nameof(rng));
@@ -79,7 +87,7 @@ namespace Evosim.Core
 
             Genome child = parent.Clone();
 
-            MutateReproduction(child, rng, rates);
+            MutateReproduction(child, rng, rates, growthReserveMin, growthReserveMax);
 
             // D081 (2026-09-07): the global brain is retired. A child is born without one, and
             // the array is emptied here, FIRST, for the reason its mutation used to run first: a
@@ -174,7 +182,8 @@ namespace Evosim.Core
         /// rate whatever the body plan holds; a size encoded in the nodes would be walked once
         /// per node, and a lineage could not get bigger without also getting a different shape.
         /// </remarks>
-        private static void MutateReproduction(Genome g, Rng rng, MutationRates rates)
+        private static void MutateReproduction(
+            Genome g, Rng rng, MutationRates rates, float growthReserveMin, float growthReserveMax)
         {
             ReproductionTraits r = g.Reproduction;
 
@@ -238,6 +247,17 @@ namespace Evosim.Core
             {
                 g.LifespanScale = Step(g.LifespanScale, rng, rates);
             }
+
+            // D241's growth-reserve gene, after the last of the whole-creature dials so that no draw
+            // above moves. Guarded on the rate before any draw, and only a genome that carries the gene
+            // is rolled for, so a world without the climb takes the stream it always took. The same
+            // reflected log step as the form genes, into the world's range.
+            if (rates.GrowthReserveChance > 0f && g.GrowthReserveSeconds.HasValue &&
+                rng.Chance(rates.GrowthReserveChance))
+            {
+                g.GrowthReserveSeconds = StepLogGene(
+                    g.GrowthReserveSeconds.Value, growthReserveMin, growthReserveMax, rng, rates);
+            }
         }
 
         // ---------------------------------------------------------------- nodes
@@ -287,9 +307,9 @@ namespace Evosim.Core
             {
                 PartForm form = node.Form;
                 node.Form = new PartForm(
-                    StepFormGene(form.Profile, PartForm.ProfileMin, PartForm.ProfileMax, rng, rates),
-                    StepFormGene(form.Section, PartForm.SectionMin, PartForm.SectionMax, rng, rates),
-                    StepFormGene(form.Taper, PartForm.TaperMin, PartForm.TaperMax, rng, rates));
+                    StepLogGene(form.Profile, PartForm.ProfileMin, PartForm.ProfileMax, rng, rates),
+                    StepLogGene(form.Section, PartForm.SectionMin, PartForm.SectionMax, rng, rates),
+                    StepLogGene(form.Taper, PartForm.TaperMin, PartForm.TaperMax, rng, rates));
             }
 
             // The owner's ruling of 2026-09-24: a cell type is never changed in place, only added
@@ -486,7 +506,8 @@ namespace Evosim.Core
         }
 
         /// <summary>
-        /// One step of a form gene - D233. A Gaussian of <see cref="MutationRates.ScalarStdDev"/> on
+        /// One step of a gene that lives on a logarithmic range: D233's form genes, and D241's
+        /// growth reserve. A Gaussian of <see cref="MutationRates.ScalarStdDev"/> on
         /// the log of the gene, folded back into [ln min, ln max] by reflection, then back to a
         /// float inside [min, max].
         /// </summary>
@@ -497,7 +518,7 @@ namespace Evosim.Core
         /// lands in it. The final clamp catches only an <c>exp</c> that rounds one ulp past an end, so
         /// that <see cref="PartForm.InRange"/> always holds. One <c>Gaussian</c> draw per gene.
         /// </remarks>
-        private static float StepFormGene(float gene, float min, float max, Rng rng, MutationRates rates)
+        private static float StepLogGene(float gene, float min, float max, Rng rng, MutationRates rates)
         {
             double low = Math.Log(min);
             double high = Math.Log(max);

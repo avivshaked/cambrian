@@ -490,6 +490,15 @@ namespace Evosim.Farm
             // the recorded world, and draws nothing.
             Num("EVOSIM_FORM_CHANCE", MutationRates.Default.FormChance, (s, v) => s.FormChance = v),
 
+            // D241: growth as a climb. T is the time to adulthood in world seconds (0 is today's growth),
+            // the start, min and max are the growth-reserve gene's, and the last is the chance a birth
+            // steps it. Each defaults to Core's, so a launcher that names none runs the recorded world.
+            Num("EVOSIM_GROWTH_ADULT", D.GrowthAdultSeconds, (s, v) => s.GrowthAdult = v),
+            Num("EVOSIM_GROWTH_RESERVE_START", D.GrowthReserveStartSeconds, (s, v) => s.GrowthReserveStart = v),
+            Num("EVOSIM_GROWTH_RESERVE_MIN", D.GrowthReserveMinSeconds, (s, v) => s.GrowthReserveMin = v),
+            Num("EVOSIM_GROWTH_RESERVE_MAX", D.GrowthReserveMaxSeconds, (s, v) => s.GrowthReserveMax = v),
+            Num("EVOSIM_GROWTH_RESERVE_MUT", MutationRates.Default.GrowthReserveChance, (s, v) => s.GrowthReserveMutation = v),
+
             // D106 items 1, 3 and 4's ten. Every one of them is off or neutral by default, so a
             // launcher that names none of them runs the world it always ran: health is present
             // and nothing damages it, nothing heals, nothing reaches a corpse and no attribute
@@ -1037,6 +1046,12 @@ namespace Evosim.Farm
             config.ModuleDropAfterSeconds = s.ModuleDropAfter;
             config.Mutation.ModuleGeneMutationChance = s.ModuleMutation;
             config.Mutation.FormChance = s.FormChance;
+
+            config.GrowthAdultSeconds = s.GrowthAdult;
+            config.GrowthReserveStartSeconds = s.GrowthReserveStart;
+            config.GrowthReserveMinSeconds = s.GrowthReserveMin;
+            config.GrowthReserveMaxSeconds = s.GrowthReserveMax;
+            config.Mutation.GrowthReserveChance = s.GrowthReserveMutation;
 
             config.HealthPerCubicMetre = s.Health;
             config.HealingPerSecond = s.Healing;
@@ -1924,6 +1939,21 @@ namespace Evosim.Farm
 
         /// <summary>D233's form walk — <c>EVOSIM_FORM_CHANCE</c>. 0 draws nothing.</summary>
         public float FormChance;
+
+        /// <summary>D241's time to adulthood, world seconds — <c>EVOSIM_GROWTH_ADULT</c>. 0 is today's growth.</summary>
+        public float GrowthAdult;
+
+        /// <summary>D241's growth-reserve gene: the start given at admission, seconds — <c>EVOSIM_GROWTH_RESERVE_START</c>.</summary>
+        public float GrowthReserveStart;
+
+        /// <summary>The gene's range floor, seconds — <c>EVOSIM_GROWTH_RESERVE_MIN</c>.</summary>
+        public float GrowthReserveMin;
+
+        /// <summary>The gene's range ceiling, seconds — <c>EVOSIM_GROWTH_RESERVE_MAX</c>.</summary>
+        public float GrowthReserveMax;
+
+        /// <summary>The chance a birth steps the gene — <c>EVOSIM_GROWTH_RESERVE_MUT</c>. 0 draws nothing.</summary>
+        public float GrowthReserveMutation;
         public float Health;
         public float Healing;
         public float HealingCost;
