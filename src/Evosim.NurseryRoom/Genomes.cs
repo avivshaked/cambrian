@@ -723,7 +723,7 @@ namespace Evosim.NurseryRoom
 
             d["genome"] = new
             {
-                format = held.Central ? GenomeJson.CentralFormatVersion : GenomeJson.FormatVersion,
+                format = GenomeJson.FormatFor(genome),
                 root = genome.RootIndex,
                 nodes = genome.Nodes.Count,
                 adultScale = F(genome.AdultScale),

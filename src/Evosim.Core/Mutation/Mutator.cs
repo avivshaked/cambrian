@@ -57,10 +57,16 @@ namespace Evosim.Core
         /// type and its index in the returned genome. Cleared first. The lineage row reads it
         /// (<c>World.Conceive</c>); nothing about the mutation depends on it.
         /// </param>
+        /// <param name="shapes">
+        /// The world's shape list (<see cref="RunConfig.Shapes"/>): the shape draw picks from it and
+        /// the child is validated against it - D233. Defaults to
+        /// <see cref="PartShapeRegistry.Standard"/>, which holds no shape that takes a form.
+        /// </param>
         public static Genome Mutate(
             Genome parent, Rng rng, MutationRates rates = null, CellTypeRegistry cellTypes = null,
             RandomGenomeOptions genome = null, SensorChannel[] sensorPool = null,
-            bool buoyancyOffsetPriced = false, MutationLog log = null)
+            bool buoyancyOffsetPriced = false, MutationLog log = null,
+            PartShapeRegistry shapes = null)
         {
             if (parent == null) throw new ArgumentNullException(nameof(parent));
             if (rng == null) throw new ArgumentNullException(nameof(rng));
@@ -68,6 +74,7 @@ namespace Evosim.Core
             rates = rates ?? MutationRates.Default;
             cellTypes = cellTypes ?? CellTypeRegistry.Standard;
             genome = genome ?? RandomGenomeOptions.Default;
+            shapes = shapes ?? PartShapeRegistry.Standard;
             log?.Clear();
 
             Genome child = parent.Clone();
@@ -101,7 +108,7 @@ namespace Evosim.Core
             {
                 if (MutateNode(
                         child, child.Nodes[n], rng, rates, cellTypes, genome, sensorPool,
-                        buoyancyOffsetPriced))
+                        buoyancyOffsetPriced, shapes))
                 {
                     (budSources ??= new List<int>()).Add(n);
                 }
@@ -142,7 +149,7 @@ namespace Evosim.Core
                 }
             }
 
-            IReadOnlyList<string> issues = child.Validate(cellTypes, buoyancyOffsetPriced);
+            IReadOnlyList<string> issues = child.Validate(cellTypes, buoyancyOffsetPriced, shapes);
             if (issues.Count > 0)
             {
                 throw new InvalidOperationException(
@@ -241,7 +248,8 @@ namespace Evosim.Core
         /// </returns>
         private static bool MutateNode(
             Genome g, MorphNode node, Rng rng, MutationRates rates, CellTypeRegistry cellTypes,
-            RandomGenomeOptions genome, SensorChannel[] sensorPool, bool buoyancyOffsetPriced)
+            RandomGenomeOptions genome, SensorChannel[] sensorPool, bool buoyancyOffsetPriced,
+            PartShapeRegistry shapes)
         {
             node.Dimensions = new Float3(
                 PerturbPositive(node.Dimensions.X, rng, rates),
@@ -257,13 +265,31 @@ namespace Evosim.Core
 
             if (rng.Chance(rates.ShapeChance))
             {
-                node.ShapeId = PickOther(PartShapeRegistry.Standard, node.ShapeId, rng);
+                string left = node.ShapeId;
+                node.ShapeId = PickOther(shapes, node.ShapeId, rng);
 
                 // D233. A form belongs to the shape that takes it. A node that has changed to one
                 // that takes none carries None, or Genome.Validate would refuse the child for a form
-                // nothing reads. No draw: the form is cleared, not resampled, and the stream is the
-                // one it always was.
-                if (!PartShapeRegistry.Standard.Resolve(node.ShapeId).TakesForm) node.Form = PartForm.None;
+                // nothing reads. A node that has changed to one that takes a form enters it at the
+                // member nearest the shape it left (NearestForm). No draw either way: the form is set
+                // or cleared, not resampled, and the stream is the one it always was. A world with a
+                // single shape draws the shape it has, and then the form is left as it is.
+                if (!string.Equals(node.ShapeId, left, StringComparison.Ordinal))
+                {
+                    node.Form = shapes.Resolve(node.ShapeId).TakesForm ? NearestForm(left) : PartForm.None;
+                }
+            }
+
+            // D233. The form walk, directly after the shape draw so that its place in the stream is
+            // fixed. Nothing is drawn while the rate is 0 (Rng.Chance draws even at 0, so the test
+            // against 0 is the guard), and only a part whose shape takes a form is rolled for.
+            if (rates.FormChance > 0f && shapes.Resolve(node.ShapeId).TakesForm && rng.Chance(rates.FormChance))
+            {
+                PartForm form = node.Form;
+                node.Form = new PartForm(
+                    StepFormGene(form.Profile, PartForm.ProfileMin, PartForm.ProfileMax, rng, rates),
+                    StepFormGene(form.Section, PartForm.SectionMin, PartForm.SectionMax, rng, rates),
+                    StepFormGene(form.Taper, PartForm.TaperMin, PartForm.TaperMax, rng, rates));
             }
 
             // The owner's ruling of 2026-09-24: a cell type is never changed in place, only added
@@ -432,6 +458,59 @@ namespace Evosim.Core
             }
 
             return last;
+        }
+
+        /// <summary>
+        /// The member of the superellipsoid family nearest a named shape, where a part enters the
+        /// family - D233. A box is the flat-ended square block (profile 0.1, section 0.1, taper 1), a
+        /// sphere is the ball (1, 1, 1), and a capsule is the half-round (0.5, 1, 1).
+        /// </summary>
+        /// <remarks>
+        /// A fixed point for each, and not a fit to the part's volume: a fit would make the entry
+        /// depend on the half-extents, since the capsule's radius is their mean, and would add code
+        /// for a shape that only starts the walk. Throws on any other id, because no nearest member
+        /// is defined for it, and a guess would be a form nobody chose.
+        /// </remarks>
+        private static PartForm NearestForm(string shapeId)
+        {
+            switch (shapeId)
+            {
+                case ShapeIds.Box: return new PartForm(0.1f, 0.1f, 1f);
+                case ShapeIds.Sphere: return new PartForm(1f, 1f, 1f);
+                case ShapeIds.Capsule: return new PartForm(0.5f, 1f, 1f);
+                default:
+                    throw new InvalidOperationException(
+                        $"No nearest family member is defined for shape '{shapeId}', so a part " +
+                        "cannot enter the family from it.");
+            }
+        }
+
+        /// <summary>
+        /// One step of a form gene - D233. A Gaussian of <see cref="MutationRates.ScalarStdDev"/> on
+        /// the log of the gene, folded back into [ln min, ln max] by reflection, then back to a
+        /// float inside [min, max].
+        /// </summary>
+        /// <remarks>
+        /// The step is on the log because the ranges are ratios (a taper of 4 is the mirror of a taper
+        /// of 0.25), and it is made in double so that the fold and the exponential lose nothing a float
+        /// would. Reflection repeats until the value is inside, so a step longer than the range still
+        /// lands in it. The final clamp catches only an <c>exp</c> that rounds one ulp past an end, so
+        /// that <see cref="PartForm.InRange"/> always holds. One <c>Gaussian</c> draw per gene.
+        /// </remarks>
+        private static float StepFormGene(float gene, float min, float max, Rng rng, MutationRates rates)
+        {
+            double low = Math.Log(min);
+            double high = Math.Log(max);
+            double x = Math.Log(gene) + (double)rates.ScalarStdDev * rng.Gaussian();
+
+            while (x < low || x > high)
+            {
+                if (x < low) x = 2d * low - x;
+                else x = 2d * high - x;
+            }
+
+            float stepped = (float)Math.Exp(x);
+            return stepped < min ? min : stepped > max ? max : stepped;
         }
 
         private static string PickOther(PartShapeRegistry shapes, string current, Rng rng)

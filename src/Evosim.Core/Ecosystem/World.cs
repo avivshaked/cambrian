@@ -5854,7 +5854,7 @@ namespace Evosim.Core
                 parent.Genome, new Rng(seed), Config.Mutation, Config.CellTypes, Config.Genome,
                 Config.SensorPool(),
                 buoyancyOffsetPriced: Config.BuoyancyOffsetWattsPerCubicMetre > 0f,
-                log: _mutationLog);
+                log: _mutationLog, shapes: Config.Shapes);
 
             // D146: a central genome numbers any edge the mutation copied or made, so no two parts
             // share a path id, before the body that the brain is wired against is developed.

@@ -82,7 +82,12 @@
     "minPartVolume": 0.0001,
     "reflectMirroredAnchors": false,
     "scaleLengthensOnce": false,
-    "selfOverlapDepthFraction": 0.1
+    "selfOverlapDepthFraction": 0.1,
+    "shapeIds": [
+      "box",
+      "sphere",
+      "capsule"
+    ]
   },
   "economy": {
     "neuralCostPerConnectionWatts": 0,
@@ -253,6 +258,7 @@
     "cellTypeChance": 0.005,
     "driveGeneChance": 0.08,
     "flagChance": 0.03,
+    "formChance": 0,
     "gestationModeChance": 0.08,
     "gestationShareChance": 0.08,
     "investmentChance": 0.08,

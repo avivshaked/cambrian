@@ -400,7 +400,7 @@ namespace Evosim.Dynamics
                 throw new ArgumentException("A body with no parts cannot be stepped.", nameof(phenotype));
             }
 
-            shapes = shapes ?? PartShapeRegistry.Standard;
+            shapes = shapes ?? PartShapeRegistry.Catalogue;
 
             // Kept so that a growth resize cannot be handed a different world or a different
             // shape registry from the one the body was built with — the class of fault that

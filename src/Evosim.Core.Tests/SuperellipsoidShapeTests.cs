@@ -275,22 +275,23 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
-        public void TwoFamilyNodesDifferByTheirLogGenesEachRangeOneUnit()
+        public void TwoFamilyNodesDifferByTheMeanOfTheirLogGenes()
         {
             // The parameter units alone. Doubling the taper is a quarter of its range on the log
-            // scale (ln 2 / ln 16); halving the profile is ln 2 / ln 10 of its own.
+            // scale (ln 2 / ln 16); halving the profile is ln 2 / ln 10 of its own. The distance is
+            // the mean of the three genes' shares, so each of those is a third of its share.
             Genome a = FamilyGenome(new PartForm(0.6f, 1f, 1f), withChild: false);
             Genome b = FamilyGenome(new PartForm(0.6f, 1f, 2f), withChild: false);
             Genome c = FamilyGenome(new PartForm(0.3f, 1f, 2f), withChild: false);
 
             Assert.Equal(0f, SpeciesDistance.Between(a, a.Clone(), 0f, 0f, 1f, 0f));
-            Fixtures.AssertClose((float)(Math.Log(2) / Math.Log(16)), SpeciesDistance.Between(a, b, 0f, 0f, 1f, 0f), 1e-5f);
-            Fixtures.AssertClose((float)(Math.Log(2) / Math.Log(10)), SpeciesDistance.Between(b, c, 0f, 0f, 1f, 0f), 1e-5f);
+            Fixtures.AssertClose((float)(Math.Log(2) / Math.Log(16) / 3d), SpeciesDistance.Between(a, b, 0f, 0f, 1f, 0f), 1e-5f);
+            Fixtures.AssertClose((float)(Math.Log(2) / Math.Log(10) / 3d), SpeciesDistance.Between(b, c, 0f, 0f, 1f, 0f), 1e-5f);
 
-            // From one end of every range to the other is three units, one a gene.
+            // From one end of every range to the other is one unit, the same as a shape mismatch.
             Genome low = FamilyGenome(new PartForm(PartForm.ProfileMin, PartForm.SectionMin, PartForm.TaperMin), false);
             Genome high = FamilyGenome(new PartForm(PartForm.ProfileMax, PartForm.SectionMax, PartForm.TaperMax), false);
-            Fixtures.AssertClose(3f, SpeciesDistance.Between(low, high, 0f, 0f, 1f, 0f), 1e-5f);
+            Fixtures.AssertClose(1f, SpeciesDistance.Between(low, high, 0f, 0f, 1f, 0f), 1e-5f);
         }
 
         [Fact]
@@ -357,15 +358,15 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
-        public void TheJsonWriterRefusesAFamilyNode()
+        public void TheJsonWriterWritesAFamilyNodeInFormat13AndANamedGenomeAsBefore()
         {
             Genome genome = FamilyGenome(Egg, withChild: false);
 
-            InvalidOperationException e = Assert.Throws<InvalidOperationException>(() => GenomeJson.Write(genome));
-            Assert.Contains("not built yet", e.Message);
+            // D233: the form has its field now, and the genome is format 13 (see ShapeGenesTests).
+            Assert.Contains("\"format\":" + GenomeJson.FamilyFormatVersion, GenomeJson.Write(genome));
 
             // And the named genome writes, as it always did.
-            Assert.False(string.IsNullOrEmpty(GenomeJson.Write(Fixtures.SingleBox())));
+            Assert.Contains("\"format\":" + GenomeJson.FormatVersion, GenomeJson.Write(Fixtures.SingleBox()));
         }
 
         [Fact]
@@ -452,9 +453,16 @@ namespace Evosim.Core.Tests
         }
 
         [Fact]
-        public void AFamilyGenomeWithoutItsRegistryOrItsFormDoesNotDevelop()
+        public void AFamilyGenomeWithoutItsFormDoesNotDevelopAndWithoutARegistryDevelopsOnTheCatalogue()
         {
-            Assert.Throws<ArgumentException>(() => Developer.Develop(FamilyGenome(Egg, withChild: false)));
+            // D233's genes piece: development's fallback is the catalogue, which answers geometry for
+            // every id the build knows, so a family genome develops with no registry passed, to the
+            // same body as with one. Membership is the world's to judge, in Genome.Validate.
+            Phenotype fallback = Developer.Develop(FamilyGenome(Egg, withChild: false));
+            Phenotype passed = Developer.Develop(FamilyGenome(Egg, withChild: false), shapes: FamilyRegistry);
+            Assert.Equal(passed.Parts[0].HalfExtents, fallback.Parts[0].HalfExtents);
+            Assert.Equal(passed.Parts[0].Form, fallback.Parts[0].Form);
+
             Assert.Throws<ArgumentException>(
                 () => Developer.Develop(FamilyGenome(PartForm.None, withChild: false), shapes: FamilyRegistry));
         }

@@ -494,6 +494,13 @@ namespace Evosim.Farm
                       " at " + F(config.Mutation.LifespanChance)
                     : "off") +
                 RoundFiftyNineToken(config) +
+
+                // D233's two, on the end and only when a world departs from the recorded one, so
+                // every other line is what it was.
+                (config.Shapes.ToString() != PartShapeRegistry.Standard.ToString()
+                    ? " · shapes " + string.Join(",", config.ShapeIds)
+                    : "") +
+                (config.Mutation.FormChance > 0f ? " · form mut " + F(config.Mutation.FormChance) : "") +
                 " · configHash `" + config.Hash() + "`" +
                 // D159's exchange, after the hash because it is a farm setting and no part of the
                 // config, and only in a migrating world, so every other line is what it was. A lone

@@ -100,6 +100,11 @@ namespace Evosim.Farm
             // joins a mirrored part where its twin is joined.
             Flag("EVOSIM_REFLECT_MIRRORED_ANCHORS", (s, v) => s.ReflectMirroredAnchors = v),
 
+            // D233: the shapes the world allows, comma-separated ids in their order ("box,sphere,
+            // capsule,superellipsoid"). Unset is box, sphere and capsule, every recorded world. An id
+            // the catalogue does not know, or one named twice, is refused here.
+            Custom("EVOSIM_SHAPES", (s, env) => s.ShapeIds = ShapeIdsOf(env, "EVOSIM_SHAPES")),
+
             // D109: the matter seeded as islands, founders planted in them, and the light's shade
             // map from the same noise, drifting or not. Every default is the recorded world.
             Num("EVOSIM_MATTER_ISLANDS", 0f, (s, v) => s.MatterIslands = v),
@@ -480,6 +485,10 @@ namespace Evosim.Farm
             Num("EVOSIM_MODULE_DROP", D.ModuleDropReserveSeconds, (s, v) => s.ModuleDrop = v),
             Num("EVOSIM_MODULE_DROP_AFTER", D.ModuleDropAfterSeconds, (s, v) => s.ModuleDropAfter = v),
             Num("EVOSIM_MODULE_MUT", MutationRates.Default.ModuleGeneMutationChance, (s, v) => s.ModuleMutation = v),
+
+            // D233: the chance per generation that a family part steps its three form genes. 0 is
+            // the recorded world, and draws nothing.
+            Num("EVOSIM_FORM_CHANCE", MutationRates.Default.FormChance, (s, v) => s.FormChance = v),
 
             // D106 items 1, 3 and 4's ten. Every one of them is off or neutral by default, so a
             // launcher that names none of them runs the world it always ran: health is present
@@ -885,6 +894,7 @@ namespace Evosim.Farm
             config.Development.FloorsWeighRigidGroups = s.RigidFloors;
             config.Development.ScaleLengthensOnce = s.ScaleLengthensOnce;
             config.Development.ReflectMirroredAnchors = s.ReflectMirroredAnchors;
+            config.ShapeIds = s.ShapeIds;
 
             config.MatterIslandWavelengthMetres = s.MatterIslands;
             config.MatterIslandCover = s.MatterIslandCover;
@@ -1026,6 +1036,7 @@ namespace Evosim.Farm
             config.ModuleDropReserveSeconds = s.ModuleDrop;
             config.ModuleDropAfterSeconds = s.ModuleDropAfter;
             config.Mutation.ModuleGeneMutationChance = s.ModuleMutation;
+            config.Mutation.FormChance = s.FormChance;
 
             config.HealthPerCubicMetre = s.Health;
             config.HealingPerSecond = s.Healing;
@@ -1207,6 +1218,37 @@ namespace Evosim.Farm
 
             throw new ArgumentException(
                 name + " is '" + raw + "', which is none of 'cells', 'vertices' or 'grid'.");
+        }
+
+        /// <summary>
+        /// D233's shape list: comma-separated ids in their order, box, sphere and capsule when unset.
+        /// Each id must be in <see cref="PartShapeRegistry.Catalogue"/> and named once, or the launch is
+        /// refused here rather than at the first read of <see cref="RunConfig.Shapes"/>.
+        /// </summary>
+        private static string[] ShapeIdsOf(Lookup env, string name)
+        {
+            string raw = env(name);
+            if (string.IsNullOrWhiteSpace(raw)) return EnvSettings.StandardShapeIds();
+
+            string[] parts = raw.Split(',');
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < parts.Length; i++)
+            {
+                parts[i] = parts[i].Trim();
+                if (!PartShapeRegistry.Catalogue.Contains(parts[i]))
+                {
+                    throw new ArgumentException(
+                        name + " names '" + parts[i] + "', which is not a shape this build knows. Known: " +
+                        PartShapeRegistry.Catalogue + ".");
+                }
+
+                if (!seen.Add(parts[i]))
+                {
+                    throw new ArgumentException(name + " names '" + parts[i] + "' twice.");
+                }
+            }
+
+            return parts;
         }
 
         /// <summary>D192's seed overrides: a comma-separated list, empty when unset; each entry is RunConfig's to judge.</summary>
@@ -1507,6 +1549,13 @@ namespace Evosim.Farm
         public float MatterIslandDepth;
         public float MatterIslandMargin;
         public string[] SeedOverrides = Array.Empty<string>();
+
+        /// <summary>D233's shape list — <c>EVOSIM_SHAPES</c>. Box, sphere and capsule unless named.</summary>
+        public string[] ShapeIds = StandardShapeIds();
+
+        /// <summary>The recorded world's list, a fresh array each call so no caller can edit another's.</summary>
+        public static string[] StandardShapeIds() =>
+            new[] { Evosim.Core.ShapeIds.Box, Evosim.Core.ShapeIds.Sphere, Evosim.Core.ShapeIds.Capsule };
         public bool FoundersFollowMatter;
         public bool FoundersFollowFood;
 
@@ -1872,6 +1921,9 @@ namespace Evosim.Farm
         public float ModuleDrop;
         public float ModuleDropAfter;
         public float ModuleMutation;
+
+        /// <summary>D233's form walk — <c>EVOSIM_FORM_CHANCE</c>. 0 draws nothing.</summary>
+        public float FormChance;
         public float Health;
         public float Healing;
         public float HealingCost;

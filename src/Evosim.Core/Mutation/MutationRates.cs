@@ -150,6 +150,32 @@
         [Tunable("mutation")]
         public float ShapeChance { get; set; } = 0.02f;
 
+        /// <summary>
+        /// Chance a part of a shape that takes a form steps all three of its form genes — D233.
+        /// Per node, like <see cref="ShapeChance"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Zero by default, and zero means no draw at all.</b> <c>Mutator.MutateNode</c> tests this
+        /// against zero before it rolls anything, so a world that leaves it alone takes exactly the
+        /// numbers out of its stream that a world without the family takes, and a genome that holds a
+        /// family part is mutated no differently from one that holds a box. Only a part whose shape
+        /// <see cref="PartShape.TakesForm"/> is rolled for.
+        /// </para>
+        /// <para>
+        /// When it fires, profile, section and taper each take one step: a Gaussian of
+        /// <see cref="ScalarStdDev"/> on the log of the gene, folded back into the gene's range by
+        /// reflection (<c>Mutator.StepFormGene</c>). The step is on the log because the ranges are
+        /// ratios, so the same rate moves a gene a similar share of its range wherever it sits.
+        /// </para>
+        /// <para>
+        /// ⚠ Unmeasured (§5A.10). A part entering the family takes the member nearest the shape it
+        /// left with no draw, so this rate is only about how fast the walk moves once it is there.
+        /// </para>
+        /// </remarks>
+        [Tunable("mutation")]
+        public float FormChance { get; set; }
+
         /// <summary>Chance a part changes what it is made of — §5A.3.</summary>
         /// <remarks>
         /// <b>Deliberately the rarest operator here, and it has to be.</b> It is one of the two

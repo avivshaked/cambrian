@@ -369,8 +369,8 @@ namespace Evosim.Core
         /// </param>
         /// <param name="shapes">
         /// Geometry to re-measure the scaled parts with. Defaults to
-        /// <see cref="PartShapeRegistry.Standard"/>; a run using custom shapes must pass its own,
-        /// exactly as <see cref="Developer.Develop"/> demands.
+        /// <see cref="PartShapeRegistry.Catalogue"/>, which answers geometry for every shape the build
+        /// knows (D233); a run passes its own world list, exactly as <see cref="Developer.Develop"/> does.
         /// </param>
         /// <remarks>
         /// <para>
@@ -421,7 +421,7 @@ namespace Evosim.Core
             // arithmetic on the same extents.
             if (linear == 1f) return this;
 
-            shapes = shapes ?? PartShapeRegistry.Standard;
+            shapes = shapes ?? PartShapeRegistry.Catalogue;
 
             var scaled = new Phenotype
             {
