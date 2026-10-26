@@ -15,11 +15,11 @@ namespace Evosim.Nursery.Tests
     {
         private static readonly string Configs = Path.Combine(Recipe.RepoRootAbove(AppContext.BaseDirectory), "rounds", "nursery", "configs");
 
-        /// <summary>Each new file and the file it was made from (round 60's format, kept beside it).</summary>
+        /// <summary>Each new file and the file it was made from (the pace build's move of integration-1's files, kept beside it).</summary>
         [Theory]
-        [InlineData("b2885199f9213276", "a8cbe76c9532bc71")]
-        [InlineData("cd9cc88c0054cf90", "2b125f6cbda84a01")]
-        [InlineData("9fa947462638667c", "e80c201e54b3963f")]
+        [InlineData("613ca725c30288c0", "b2885199f9213276")]
+        [InlineData("ba387b3293d820e0", "cd9cc88c0054cf90")]
+        [InlineData("9d9aca71c61bd36c", "9fa947462638667c")]
         public void ARound62ConfigLoadsAndIsNamedByItsHash(string name, string parent)
         {
             string text = File.ReadAllText(Path.Combine(Configs, name + ".json"));
@@ -31,6 +31,7 @@ namespace Evosim.Nursery.Tests
             // The tunables the build added since round 60 stand at their defaults, so the world is the parent's.
             var d = new RunConfig();
             Assert.Equal(d.ReefShape, c.ReefShape);
+            Assert.Equal(1f, c.PaceFactor);
             Assert.False(c.Development.ReflectMirroredAnchors);
             Assert.False(c.Development.ScaleLengthensOnce);
             Assert.False(c.PlantsKeepMatter);

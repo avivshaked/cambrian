@@ -42,7 +42,11 @@ namespace Evosim.Dynamics
 
         public SolverConfig Config { get; }
 
-        /// <summary>Simulated seconds stepped.</summary>
+        /// <summary>
+        /// Simulated seconds stepped, in world seconds: the sum of <see cref="SolverConfig.ClockStepSeconds"/>,
+        /// which is the physics step at a pace factor of 1 and a step over the factor above it (D239).
+        /// The current is pinned and sampled at this clock.
+        /// </summary>
         public double ElapsedSeconds { get; private set; }
 
         /// <summary>Steps taken.</summary>
@@ -238,7 +242,8 @@ namespace Evosim.Dynamics
             // (logbook/specs/farm-physics-speed-read.md P1).
             long t4 = t3;
 
-            ElapsedSeconds += dt;
+            // D239: the clock is world time, so a step is dt over the pace factor, and dt itself at 1.
+            ElapsedSeconds += Config.ClockStepSeconds;
             Steps++;
 
             AfterStep();

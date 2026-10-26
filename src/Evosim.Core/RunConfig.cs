@@ -522,8 +522,8 @@ namespace Evosim.Core
 
         /// <summary>
         /// The metabolic step the trickle's bound is read against — the 0.5 s both engines step
-        /// the world at (<c>DividesTheMetabolicStep</c>'s constant, stated again rather than
-        /// shared because that one is local to its method).
+        /// the world at (the metabolic step <c>EnvBinding.ResolvePhysicsStep</c> divides, stated
+        /// again rather than shared).
         /// </summary>
         private const float MetabolicStepForTheTrickle = 0.5f;
 
@@ -3888,7 +3888,8 @@ namespace Evosim.Core
 
         /// <summary>
         /// The physics timestep the run integrated at, seconds — DESIGN.md §6.2's queued item,
-        /// closed. Must divide the 0.5 s metabolic step exactly.
+        /// closed. Must divide 0.5 s times <see cref="PaceFactor"/> exactly, which at the factor's
+        /// default of 1 is the 0.5 s metabolic step.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -3915,20 +3916,63 @@ namespace Evosim.Core
         /// search cannot nudge; <c>RunConfigTests.NudgeFloat</c> halves and doubles for it.
         /// <c>EVOSIM_DT</c> in the header, where it prints as <c>dt=</c>.
         /// </para>
+        /// <para>
+        /// <b>The exact division is checked where the factor is known.</b> The legal set is
+        /// 0.5·k/n, and a setter cannot see <see cref="PaceFactor"/>, which may be assigned after
+        /// it. So this setter refuses only a step that is not a positive finite number, and
+        /// <c>EnvBinding.ResolvePhysicsStep</c> refuses one that does not divide 0.5·k, by name,
+        /// at every launch, resume and window. At k = 1 that is the rule above, unchanged.
+        /// </para>
         /// </remarks>
         [Tunable("physics", Unit = "s")]
         public float PhysicsStepSeconds
         {
             get => _physicsStepSeconds;
-            set => _physicsStepSeconds = DividesTheMetabolicStep(value)
+            set => _physicsStepSeconds = IsAPhysicsStep(value)
                 ? value
                 : throw new ArgumentOutOfRangeException(
                     nameof(PhysicsStepSeconds), value,
-                    "Must be in (0, 0.5] and divide the 0.5 s metabolic step exactly: 0.01, " +
-                    "0.02, 0.025, 0.05, 0.1, 0.125, 0.25 or 0.5.");
+                    "Must be a positive finite number of seconds that divides 0.5 s times the pace " +
+                    "factor exactly: at a factor of 1, one of 0.01, 0.02, 0.025, 0.05, 0.1, 0.125, " +
+                    "0.25 or 0.5.");
         }
 
         private float _physicsStepSeconds = 0.01f;
+
+        /// <summary>
+        /// The pace factor k, D239: how many seconds of physics one world second holds. 1 is every
+        /// world recorded before it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Core keeps world seconds and does not read this.</b> <c>World.Step(0.5f)</c> still
+        /// advances the world by half a world second, and every rate here (upkeep, the mouth,
+        /// healing, growth, gestation, the age hazard, the remains window) keeps its meaning per
+        /// world second. The factor is read by the farm: it sets how many physics steps a
+        /// metabolic step holds (0.5·k / <see cref="PhysicsStepSeconds"/>), puts the solver's
+        /// clock and the water it samples into world time, and so makes a swimmer stroke k times
+        /// as often, and a leaf sink k times as far, in a world second, with no force changed.
+        /// </para>
+        /// <para>
+        /// <b>Refused rather than clamped</b>: below 1, or not a finite number, because a factor
+        /// under 1 would need a physics step that does not exist at the metabolic clock and a
+        /// non-finite one is no clock. In the config so that the hash tells two paces apart, and a
+        /// checkpoint cannot be resumed at another one. <c>EVOSIM_PACE_FACTOR</c>.
+        /// </para>
+        /// </remarks>
+        [Tunable("physics")]
+        public float PaceFactor
+        {
+            get => _paceFactor;
+            set => _paceFactor = value >= 1f && !float.IsInfinity(value) && !float.IsNaN(value)
+                ? value
+                : throw new ArgumentOutOfRangeException(
+                    nameof(PaceFactor), value,
+                    "The pace factor is a finite number of at least 1: one world second holds that " +
+                    "many seconds of physics, and a factor below 1 would slow the physics against the economy.");
+        }
+
+        private float _paceFactor = 1f;
 
         /// <summary>
         /// Whether the drive impulse limiter applies at every step rather than only above dt 0.01
@@ -4334,20 +4378,12 @@ namespace Evosim.Core
         }
 
         /// <summary>
-        /// The rule <c>Ecosystem.ConfigurePhysicsStep</c> enforces, stated once here so the two
-        /// cannot drift — same bound, same tolerance.
+        /// The part of <c>Ecosystem.ConfigurePhysicsStep</c>'s rule that does not depend on the
+        /// pace factor: a positive finite number. That the step divides 0.5·k exactly, with the
+        /// same tolerance as before, is <c>EnvBinding.ResolvePhysicsStep</c>'s, which knows k.
         /// </summary>
-        private static bool DividesTheMetabolicStep(float dt)
-        {
-            const float metabolicStepSeconds = 0.5f;
-
-            if (!(dt > 0f) || dt > metabolicStepSeconds) return false;
-
-            float steps = metabolicStepSeconds / dt;
-            int rounded = (int)Math.Round(steps);
-
-            return rounded >= 1 && Math.Abs(steps - rounded) <= 1e-4f;
-        }
+        private static bool IsAPhysicsStep(float dt) =>
+            dt > 0f && !float.IsInfinity(dt) && !float.IsNaN(dt);
 
         /// <summary>
         /// A stable digest of everything above — the <c>configHash</c> of §7.

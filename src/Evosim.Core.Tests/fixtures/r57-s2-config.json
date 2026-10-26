@@ -1,6 +1,6 @@
 {
   "format": 2,
-  "configHash": "cd9cc88c0054cf90",
+  "configHash": "ba387b3293d820e0",
   "assay": {
     "inoculateAtSeconds": 0,
     "inoculateCount": 5,
@@ -284,6 +284,7 @@
     "dragLimitAtEveryStep": false,
     "dragLimitByWeldedBody": false,
     "driveLimitAtEveryStep": false,
+    "paceFactor": 1,
     "physicsStepSeconds": 0.01
   },
   "population": {

@@ -158,7 +158,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
                 .Replace(
                     " · configHash ",
                     " · modules add=0 drop=0 after=0 mut=0" + MouthToken + SupportToken + ContactToken + ReproductionToken + Round51Token + " · configHash ")
-                .Replace("`ff557bce2685293a`", "`1fa0b21e4065eafa`");
+                .Replace("`ff557bce2685293a`", "`20f7587b780d886c`");
 
             Assert.Equal(expected, Round42HeaderLine(threads: 24, engineVersion: "9.9.9.9"));
         }
@@ -198,7 +198,7 @@ harness per body-step: 11.5 µs (2,309,857,800 body-steps).
             Assert.Contains(" · reach off · floors per part · matter uniform · founders anywhere · endowment off · founder cap off · shade off · ", line);
             Assert.Contains(" · matter-mix 2 m2/s · area 2200 m2 · ", line);
 
-            Assert.EndsWith(" · configHash `1fa0b21e4065eafa`", line);
+            Assert.EndsWith(" · configHash `20f7587b780d886c`", line);
 
             // D110, off: the light is the orientation average, printed beside the cap.
             Assert.Contains(" · silhouette on · light averaged · ", line);

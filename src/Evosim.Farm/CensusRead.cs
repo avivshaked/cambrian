@@ -126,9 +126,9 @@ namespace Evosim.Farm
             }
 
             CheckpointHeader header = CheckpointReader.ReadHeader(checkpoint);
-            float physicsDt = EnvBinding.ResolvePhysicsStep(header.PhysicsStepSeconds, out int stepsPerMetabolic);
+            float physicsDt = EnvBinding.ResolvePhysicsStep(header.PhysicsStepSeconds, Config.PaceFactor, out int stepsPerMetabolic);
 
-            RunManifest build = Manifest.Build(Settings, Config.Hash(), null, physicsDt, stepsPerMetabolic, 1);
+            RunManifest build = Manifest.Build(Settings, Config.Hash(), null, physicsDt, stepsPerMetabolic, 1, Config.PaceFactor);
             FilmWindow.SourceComparison sources = FilmWindow.CompareSources(
                 header, Config.Hash(), build.CoreHash, build.DynamicsHash, build.FarmHash);
 

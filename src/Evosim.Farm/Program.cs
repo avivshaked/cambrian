@@ -341,7 +341,20 @@ namespace Evosim.Farm
                 ? resume.PhysicsStepSeconds
                 : settings.PhysicsDt;
 
-            physicsDt = EnvBinding.ResolvePhysicsStep(physicsDt, out int stepsPerMetabolic);
+            // D239. The factor is the config's: a resumed world's own, never the launcher's, so a
+            // resume cannot step at another pace than the checkpoint was written at.
+            physicsDt = EnvBinding.ResolvePhysicsStep(physicsDt, config.PaceFactor, out int stepsPerMetabolic);
+
+            if (resume != null && resume.StepsPerMetabolicStep != stepsPerMetabolic)
+            {
+                throw new ArgumentException(
+                    "The checkpoint was written at " + resume.StepsPerMetabolicStep.ToString(CultureInfo.InvariantCulture) +
+                    " physics steps a metabolic step (dt " + resume.PhysicsStepSeconds.ToString(CultureInfo.InvariantCulture) +
+                    " s), and this world's pace factor of " + config.PaceFactor.ToString(CultureInfo.InvariantCulture) +
+                    " gives " + stepsPerMetabolic.ToString(CultureInfo.InvariantCulture) + ". A world is resumed at the pace factor " +
+                    "it was written at (EVOSIM_PACE_FACTOR is part of the config hash).");
+            }
+
             int threads = settings.ResolveThreads();
 
             // The same count for Core's own per-cell loops as for the body pass. Core defaults to
@@ -444,7 +457,7 @@ namespace Evosim.Farm
             if (pool != null) TricklePoolFiles.Write(dir.Path, pool.Lines, pool.IndexText);
 
             RunManifest manifest = Manifest.Build(
-                settings, config.Hash(), inoculumHash, physicsDt, stepsPerMetabolic, threads);
+                settings, config.Hash(), inoculumHash, physicsDt, stepsPerMetabolic, threads, config.PaceFactor);
 
             Manifest.RecordBed(manifest, world.Bed);
             manifest.TestCheckpointStallMs = settings.TestCheckpointStallMs;
@@ -515,7 +528,14 @@ namespace Evosim.Farm
             FarmConsole.Out.WriteLine(
                 "threads:       " + threads.ToString(CultureInfo.InvariantCulture) +
                 "   dt " + physicsDt.ToString(CultureInfo.InvariantCulture) +
-                " s, metabolic step " + (stepsPerMetabolic * physicsDt).ToString(CultureInfo.InvariantCulture) + " s");
+                " s, metabolic step " +
+                (config.PaceFactor == 1f
+                    ? stepsPerMetabolic * physicsDt
+                    : EnvBinding.MetabolicStepSeconds).ToString(CultureInfo.InvariantCulture) + " s" +
+                (config.PaceFactor == 1f
+                    ? ""
+                    : ", pace factor " + config.PaceFactor.ToString(CultureInfo.InvariantCulture) + " (" +
+                      stepsPerMetabolic.ToString(CultureInfo.InvariantCulture) + " physics steps a metabolic step)"));
 
             if (resume != null)
             {

@@ -151,11 +151,12 @@ namespace Evosim.Farm.Tests
         }
 
         /// <summary>
-        /// D227: the stats row carries <c>mouthBlows</c> and <c>mouthBlowsFinishing</c> only with the bite damage dial
-        /// off 1, and a world with the dial at 1 writes the columns it wrote before.
+        /// D227, D239: the stats row carries <c>mouthBlows</c> and <c>mouthBlowsFinishing</c> whenever contact eating is
+        /// on, at the bite damage dial's 1 as well as off it (before D239 the dial at 1 left them out), and a world with
+        /// contact eating off writes neither, as before.
         /// </summary>
         [Fact]
-        public void TheStatsRowCarriesTheMouthBlowColumnsOnlyWithTheDamageDialOffOne()
+        public void TheStatsRowCarriesTheMouthBlowColumnsWheneverContactEatingIsOn()
         {
             foreach (float scale in new[] { 1f, 4f })
             {
@@ -181,13 +182,37 @@ namespace Evosim.Farm.Tests
                 JsonNode last = Json.Parse(rows[rows.Length - 1]);
 
                 Assert.True(last.Has("biteKeptLeaves"), "the contact-eating columns are on the row");
-                Assert.Equal(scale != 1f, last.Has("mouthBlows"));
-                Assert.Equal(scale != 1f, last.Has("mouthBlowsFinishing"));
-                if (scale != 1f)
+                Assert.True(last.Has("mouthBlows"), "mouthBlows is on the row at a dial of " + scale);
+                Assert.True(last.Has("mouthBlowsFinishing"), "mouthBlowsFinishing is on the row at a dial of " + scale);
+                Assert.Equal((double)world.MouthBlows, last["mouthBlows"].AsDouble());
+                Assert.Equal((double)world.MouthBlowsFinishing, last["mouthBlowsFinishing"].AsDouble());
+            }
+
+            // Contact eating off: the whole contact-eating block is absent, these two with it.
+            {
+                string scratch = SimulationTests.Scratch("mouth-blows-no-contact");
+                RunConfig config = RemainsFixtures.Config(contactEating: false);
+
+                var world = new World(config, 1UL);
+                RunDirectory dir = RunDirectory.Create(scratch, config, DateTime.UtcNow);
+                string statsPath;
+
+                using (dir)
+                using (var sim = new Simulation(world, 1UL, 0.02f, 25, threads: 2, runDirectory: dir.Path))
                 {
-                    Assert.Equal((double)world.MouthBlows, last["mouthBlows"].AsDouble());
-                    Assert.Equal((double)world.MouthBlowsFinishing, last["mouthBlowsFinishing"].AsDouble());
+                    for (int i = 0; i < 20; i++) sim.Step();
+
+                    var report = new Report(Path.Combine(scratch, "report.md"), sim.Config);
+                    new Sampler().Write(sim, dir, report.Columns);
+                    statsPath = Path.Combine(dir.Path, "stats.jsonl");
                 }
+
+                string[] rows = JsonlWriter.ReadRows(statsPath);
+                JsonNode last = Json.Parse(rows[rows.Length - 1]);
+
+                Assert.False(last.Has("biteKeptLeaves"));
+                Assert.False(last.Has("mouthBlows"));
+                Assert.False(last.Has("mouthBlowsFinishing"));
             }
         }
 

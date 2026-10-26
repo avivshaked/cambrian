@@ -281,6 +281,11 @@ namespace Evosim.Farm
             // D190: the desert's own burial, outside the islands' influx; below 0 is the recorded world.
             Num("EVOSIM_MATTER_BURIAL_DESERT", D.MatterBurialDesertPerSecond, (s, v) => s.MatterBurialDesert = v),
             Num("EVOSIM_DT", DefaultPhysicsStepSeconds, (s, v) => s.PhysicsDt = v),
+
+            // D239: how many seconds of physics one world second holds. 1 is the recorded world;
+            // RunConfig refuses a value below 1 or not finite, and ResolvePhysicsStep refuses a dt
+            // that does not divide 0.5 s times it.
+            Num("EVOSIM_PACE_FACTOR", D.PaceFactor, (s, v) => s.PaceFactor = v),
             Num("EVOSIM_SPECIES_THETA", D.SpeciesDriftThreshold, (s, v) => s.SpeciesTheta = v),
             Num("EVOSIM_PATCHES", D.HorizontalPatches, (s, v) => s.Patches = v),
             Num("EVOSIM_PATCHES_ACROSS", D.PatchesAcross, (s, v) => s.PatchesAcross = v),
@@ -670,25 +675,62 @@ namespace Evosim.Farm
         /// integrates at and not the one the launcher asked for. The metabolic step is fixed at
         /// <see cref="MetabolicStepSeconds"/> and is not a tunable in either engine.
         /// </remarks>
-        public static float ResolvePhysicsStep(float dt, out int stepsPerMetabolicStep)
+        public static float ResolvePhysicsStep(float dt, out int stepsPerMetabolicStep) =>
+            ResolvePhysicsStep(dt, 1f, out stepsPerMetabolicStep);
+
+        /// <summary>
+        /// <see cref="ResolvePhysicsStep(float, out int)"/> at a pace factor k (D239): a metabolic
+        /// step of 0.5 world seconds holds 0.5·k physics seconds, so the step must divide 0.5·k
+        /// exactly, with the same tolerance, and the steps in a metabolic step are 0.5·k / dt.
+        /// </summary>
+        /// <remarks>
+        /// <b>At k = 1 nothing is multiplied</b>, so every dt accepted before gives the same steps,
+        /// to the bit. A k below 1 or not finite is refused by name. The refusal for a dt lists the
+        /// steps that do divide 0.5·k, which are 0.01·k, 0.02·k, 0.025·k, 0.05·k, 0.1·k, 0.125·k,
+        /// 0.25·k and 0.5·k (those of the 50, 25, 20, 10, 5, 4, 2 and 1 steps a metabolic step
+        /// holds at k = 1), though any other whole division is accepted.
+        /// </remarks>
+        public static float ResolvePhysicsStep(float dt, float paceFactor, out int stepsPerMetabolicStep)
         {
-            if (!(dt > 0f) || dt > MetabolicStepSeconds)
+            if (!(paceFactor >= 1f) || float.IsInfinity(paceFactor))
             {
-                throw new ArgumentOutOfRangeException(nameof(dt), dt, "Must be in (0, 0.5].");
+                throw new ArgumentOutOfRangeException(
+                    nameof(paceFactor), paceFactor,
+                    "The pace factor (EVOSIM_PACE_FACTOR) must be a finite number of at least 1.");
             }
 
-            float steps = MetabolicStepSeconds / dt;
+            // The physics seconds one metabolic step holds: 0.5 at k = 1, untouched by a multiplication.
+            float span = paceFactor == 1f ? MetabolicStepSeconds : MetabolicStepSeconds * paceFactor;
+
+            if (!(dt > 0f) || dt > span)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(dt), dt,
+                    paceFactor == 1f
+                        ? "Must be in (0, 0.5]."
+                        : "Must be in (0, " + Allowed(span) + "] at a pace factor of " + Allowed(paceFactor) + ".");
+            }
+
+            float steps = span / dt;
             int rounded = (int)Math.Round(steps);
             if (rounded < 1 || Math.Abs(steps - rounded) > 1e-4f)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(dt), dt,
-                    "Must divide the 0.5 s metabolic step exactly: 0.01, 0.02, 0.025, 0.05, 0.1, 0.125, 0.25 or 0.5.");
+                    paceFactor == 1f
+                        ? "Must divide the 0.5 s metabolic step exactly: 0.01, 0.02, 0.025, 0.05, 0.1, 0.125, 0.25 or 0.5."
+                        : "Must divide 0.5 s times the pace factor (" + Allowed(paceFactor) + ", so " + Allowed(span) +
+                          " s) exactly: " + Allowed(span / 50f) + ", " + Allowed(span / 25f) + ", " +
+                          Allowed(span / 20f) + ", " + Allowed(span / 10f) + ", " + Allowed(span / 5f) + ", " +
+                          Allowed(span / 4f) + ", " + Allowed(span / 2f) + " or " + Allowed(span) + ".");
             }
 
             stepsPerMetabolicStep = rounded;
             return dt;
         }
+
+        private static string Allowed(float value) =>
+            value.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture);
 
         /// <summary>
         /// The <see cref="RunConfig"/> the settings build — <c>EvolutionRun.RunBody</c>'s
@@ -698,7 +740,7 @@ namespace Evosim.Farm
         {
             if (s == null) throw new ArgumentNullException(nameof(s));
 
-            float physicsDt = ResolvePhysicsStep(s.PhysicsDt, out _);
+            float physicsDt = ResolvePhysicsStep(s.PhysicsDt, s.PaceFactor, out _);
 
             var config = new RunConfig
             {
@@ -863,6 +905,7 @@ namespace Evosim.Farm
             config.SharedSpace = s.SharedSpace;
             config.OffspringDispersalMetres = s.OffspringDispersal;
             config.PhysicsStepSeconds = physicsDt;
+            config.PaceFactor = s.PaceFactor;
             config.FloorClosesAfterSeconds = s.FloorCloses;
             config.FoundingTricklePerSecond = s.Trickle;
 
@@ -1669,6 +1712,9 @@ namespace Evosim.Farm
         public float MatterBurial;
         public float MatterBurialDesert;
         public float PhysicsDt;
+
+        /// <summary>D239's pace factor k, <c>EVOSIM_PACE_FACTOR</c>; 1 is the recorded world.</summary>
+        public float PaceFactor;
         public float SpeciesTheta;
         public float Patches;
         public float PatchesAcross;

@@ -58,7 +58,7 @@ namespace Evosim.Farm.Tests
         /// world, filed under a new name. <c>scratch/r45-build</c>'s regress is what says the
         /// world did not move — every shared field of a 1,000 s run identical at every sample.
         /// </remarks>
-        private const string Round42ConfigHash = "1fa0b21e4065eafa";
+        private const string Round42ConfigHash = "20f7587b780d886c";
 
         /// <summary>Round 42 seed 1's environment, from <c>rounds/launch-r42.ps1</c>.</summary>
         /// <remarks>
@@ -629,6 +629,61 @@ namespace Evosim.Farm.Tests
             Assert.Equal(25, steps);
             Assert.Throws<ArgumentOutOfRangeException>(
                 () => EnvBinding.ResolvePhysicsStep(0.03f, out _));
+        }
+
+        /// <summary>
+        /// D239: the metabolic step stays 0.5 world seconds, which is 0.5 x k physics seconds, so a step
+        /// must divide 0.5 x k. Pace factor 1 is the old rule.
+        /// </summary>
+        [Fact]
+        public void ThePaceFactorWidensTheSpanThePhysicsStepMustDivide()
+        {
+            Assert.Equal(0.01f, EnvBinding.ResolvePhysicsStep(0.01f, 3f, out int steps));
+            Assert.Equal(150, steps);
+            Assert.Equal(0.03f, EnvBinding.ResolvePhysicsStep(0.03f, 3f, out steps));
+            Assert.Equal(50, steps);
+
+            var refused = Assert.Throws<ArgumentOutOfRangeException>(
+                () => EnvBinding.ResolvePhysicsStep(0.04f, 3f, out _));
+            Assert.Contains("1.5", refused.Message);
+
+            Assert.Equal(25, Steps(0.02f, 1f));
+            Assert.Throws<ArgumentOutOfRangeException>(() => EnvBinding.ResolvePhysicsStep(0.03f, 1f, out _));
+        }
+
+        [Theory]
+        [InlineData(0.5f)]
+        [InlineData(0f)]
+        [InlineData(-1f)]
+        [InlineData(float.NaN)]
+        [InlineData(float.PositiveInfinity)]
+        public void APaceFactorBelowOneOrNotFiniteIsRefused(float k)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => EnvBinding.ResolvePhysicsStep(0.01f, k, out _));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new RunConfig { PaceFactor = k });
+        }
+
+        [Fact]
+        public void ThePaceFactorReachesTheConfigFromTheEnvironmentAndMovesTheHash()
+        {
+            var block = new Dictionary<string, string> { { "EVOSIM_DT", "0.01" }, { "EVOSIM_PACE_FACTOR", "3" } };
+            EnvSettings s = EnvBinding.Read(EnvBinding.Of(block));
+            Assert.Equal(3f, s.PaceFactor);
+
+            RunConfig paced = EnvBinding.BuildConfig(s);
+            Assert.Equal(3f, paced.PaceFactor);
+
+            var plain = new Dictionary<string, string> { { "EVOSIM_DT", "0.01" } };
+            RunConfig unpaced = EnvBinding.BuildConfig(EnvBinding.Read(EnvBinding.Of(plain)));
+            Assert.Equal(1f, unpaced.PaceFactor);
+            Assert.NotEqual(unpaced.Hash(), paced.Hash());
+            Assert.Empty(EnvBinding.UnknownNames(block.Keys));
+        }
+
+        private static int Steps(float dt, float k)
+        {
+            EnvBinding.ResolvePhysicsStep(dt, k, out int steps);
+            return steps;
         }
 
         // ------------------------------------------------------------------ helpers

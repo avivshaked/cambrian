@@ -196,9 +196,15 @@ namespace Evosim.Farm
             int stepsPerMetabolic = (int)Math.Round(EnvBinding.MetabolicStepSeconds / physicsDt);
             float metabolicStep = stepsPerMetabolic * physicsDt;
 
+            // D239. Above a pace factor of 1 the metabolic step is still 0.5 world seconds, and the
+            // physics step is named beside the factor; at 1 the line is every recorded header's.
+            bool paced = config.PaceFactor != 1f;
+            if (paced) metabolicStep = EnvBinding.MetabolicStepSeconds;
+
             return
                 "engine=" + (engine ?? RunManifest.EngineName) + " " + (engineVersion ?? "unknown") +
                 " · dt=" + F(physicsDt) +
+                (paced ? " · pace factor " + F(config.PaceFactor) : "") +
                 " · metabolic step " + F(metabolicStep) +
                 " s · seed " + s.Seed.ToString(Inv) + " · idle " + F(s.Idle) + " W/N·m · power " +
                 F(s.MinPower) + "-" + F(s.MaxPower) +

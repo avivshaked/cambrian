@@ -116,7 +116,8 @@ namespace Evosim.Farm
             long metaboliseStarted = NotePhase(PhaseFinite, checkStarted);
             long nestedAtEntry = _worldTicks + _phaseTicks[PhaseGrowth];
 
-            float seconds = StepsPerMetabolicStep * PhysicsDt;
+            // World seconds (D239): steps times dt at a pace factor of 1, and the metabolic step itself above it.
+            float seconds = WorldSecondsPerMetabolicStep;
 
             double speedSum = 0d;
             double fastest = 0d;
@@ -309,10 +310,15 @@ namespace Evosim.Farm
             // ago, and until this runs the creature has drag and lit area from its new size and
             // mass and anchors from its old one. Counted in simulated seconds, never against a
             // wall clock.
+            //
+            // D239: `seconds` is world seconds, so this clock and the cadence it is held against are
+            // both world time and the growth step stays at GrowthStepSeconds of world whatever the
+            // pace factor. Half a physics step, the epsilon's meaning, is half of WorldSecondsPerStep.
             _sinceGrowthStep += seconds;
 
             float growthStep = Config.GrowthStepSeconds;
-            if (_sinceGrowthStep + GrowthStepEpsilon >= growthStep)
+            float epsilon = PaceFactor == 1f ? GrowthStepEpsilon : GrowthStepEpsilon / PaceFactor;
+            if (_sinceGrowthStep + epsilon >= growthStep)
             {
                 // What actually elapsed, not what was asked for: D106's drop clock counts
                 // continuous seconds under a line, and a clock fed the nominal cadence would

@@ -57,6 +57,14 @@ namespace Evosim.Dynamics
             bool accelerating = config.FluidAccelerationCoefficient > 0 && current != null;
             bool holding = config.WaterHoldSeconds > 0;
 
+            // D239. The field is sampled at the world clock and answers in metres per world second;
+            // the solver steps physics seconds, so what it is given is the velocity over k and the
+            // acceleration over k squared. At a pace factor of 1 nothing is divided at all, so the
+            // arrays hold the floats widened and the step is the one it always was.
+            bool paced = config.PaceFactor != 1.0;
+            double velocityDivisor = config.PaceFactor;
+            double accelerationDivisor = config.PaceFactor * config.PaceFactor;
+
             if (current == null)
             {
                 // Still water, the spike's case: both arrays are zero from construction and
@@ -83,12 +91,8 @@ namespace Evosim.Dynamics
                 if (!holding && transport && accelerating)
                 {
                     current.VelocityAndAccelerationAt(x, y, z, seconds, out water, out Float3 flowAcceleration);
-                    body.Water[3 * i] = water.X;
-                    body.Water[3 * i + 1] = water.Y;
-                    body.Water[3 * i + 2] = water.Z;
-                    body.WaterAcceleration[3 * i] = flowAcceleration.X;
-                    body.WaterAcceleration[3 * i + 1] = flowAcceleration.Y;
-                    body.WaterAcceleration[3 * i + 2] = flowAcceleration.Z;
+                    Store(body.Water, 3 * i, water, paced, velocityDivisor);
+                    Store(body.WaterAcceleration, 3 * i, flowAcceleration, paced, accelerationDivisor);
                     continue;
                 }
 
@@ -120,9 +124,7 @@ namespace Evosim.Dynamics
                         : current.VelocityAt(y, seconds, body.Patch, patchCount);
                 }
 
-                body.Water[3 * i] = water.X;
-                body.Water[3 * i + 1] = water.Y;
-                body.Water[3 * i + 2] = water.Z;
+                Store(body.Water, 3 * i, water, paced, velocityDivisor);
 
                 if (!accelerating) continue;
 
@@ -130,10 +132,27 @@ namespace Evosim.Dynamics
                     ? body.HeldWaterAcceleration
                     : current.AccelerationAt(x, y, z, seconds);
 
-                body.WaterAcceleration[3 * i] = acceleration.X;
-                body.WaterAcceleration[3 * i + 1] = acceleration.Y;
-                body.WaterAcceleration[3 * i + 2] = acceleration.Z;
+                Store(body.WaterAcceleration, 3 * i, acceleration, paced, accelerationDivisor);
             }
+        }
+
+        /// <summary>
+        /// Writes a sampled vector into one of a body's arrays: the floats widened as they always
+        /// were, or, in a paced world, divided by the pace factor's power in double (D239).
+        /// </summary>
+        private static void Store(double[] into, int at, Float3 value, bool paced, double divisor)
+        {
+            if (!paced)
+            {
+                into[at] = value.X;
+                into[at + 1] = value.Y;
+                into[at + 2] = value.Z;
+                return;
+            }
+
+            into[at] = value.X / divisor;
+            into[at + 1] = value.Y / divisor;
+            into[at + 2] = value.Z / divisor;
         }
     }
 }

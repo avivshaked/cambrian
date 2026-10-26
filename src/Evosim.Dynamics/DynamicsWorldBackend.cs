@@ -109,7 +109,7 @@ namespace Evosim.Dynamics
         /// </remarks>
         internal void BackendAdvanceClock()
         {
-            ElapsedSeconds += Config.StepSeconds;
+            ElapsedSeconds += Config.ClockStepSeconds;
             Steps++;
         }
 

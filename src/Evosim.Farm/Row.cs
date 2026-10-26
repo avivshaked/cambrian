@@ -515,7 +515,7 @@ namespace Evosim.Farm
 
             double workShare = spend > 0d ? workSpend / spend : 0d;
             double residual = world.EnergyIn > 0d ? 100d * world.AuditResidual / world.EnergyIn : 0d;
-            double seconds = sim.StepsPerMetabolicStep * sim.PhysicsDt;
+            double seconds = sim.WorldSecondsPerMetabolicStep;
 
             double edibleHere = world.Nutrients.EdibleDensityAt((float)meanDepth, 0);
             double refugeStock = FloorStock(world.Nutrients);
@@ -1020,13 +1020,12 @@ namespace Evosim.Farm
                         w.Field("biteStore", world.BiteStoreTakenJoules);
                     }
 
-                    // D227. Only with the bite damage dial off 1: the mouth's blows that did damage, and those that
-                    // finished the part they touched, cumulative.
-                    if (world.Config.BiteDamageScale != 1f)
-                    {
-                        w.Field("mouthBlows", world.MouthBlows)
-                            .Field("mouthBlowsFinishing", world.MouthBlowsFinishing);
-                    }
+                    // D227, written whenever contact eating is on (D239: the pace screen reads the grazer contact
+                    // share and the kills a grazer-second off it at every dial): the mouth's blows that did damage,
+                    // and those that finished the part they touched, cumulative. Before D239 these two were written
+                    // only with the bite damage dial off 1; a run from then on has the columns at every dial.
+                    w.Field("mouthBlows", world.MouthBlows)
+                        .Field("mouthBlowsFinishing", world.MouthBlowsFinishing);
 
                     // D232. Only with the kill swallowed into a gut: the joules the living hold in guts now (as they
                     // stand), then cumulative: the kills swallowed and the joules swallowed, the joules digested and
