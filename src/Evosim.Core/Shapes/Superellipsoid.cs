@@ -398,8 +398,8 @@ namespace Evosim.Core
         private static readonly Double3[] ClipDirections = BuildClipDirections();
 
         /// <summary>
-        /// The passes of Dykstra's projection in the reference build (<see cref="ContactCore(Float3, bool, out double, out double, out double)"/>
-        /// with its flag set), and the most in the fallback a point takes if the exact clip ever gives up.
+        /// The most passes of Dykstra's projection in the fallback a point takes if the exact clip ever gives up. A
+        /// reference build (<see cref="ContactCore(Float3, int, out double, out double, out double)"/>) names its own.
         /// </summary>
         public const int ContactClipPasses = 200;
 
@@ -515,16 +515,92 @@ namespace Evosim.Core
         /// </para>
         /// </remarks>
         public Double3[] ContactCore(Float3 halfExtents, out double margin, out double bulge, out double shortfall) =>
-            ContactCore(halfExtents, false, out margin, out bulge, out shortfall);
+            ContactCore(halfExtents, 0, out margin, out bulge, out shortfall);
 
         /// <summary>
-        /// <see cref="ContactCore(Float3, out double, out double, out double)"/>, with <paramref name="reference"/> true
-        /// building each point by Dykstra's projection run to its 200 passes and the polish to its 200, with no exit:
-        /// the build the exact clip is held against.
+        /// <see cref="ContactCore(Float3, out double, out double, out double)"/>, built by Dykstra's projection run to
+        /// <paramref name="referencePasses"/> passes and the polish to as many, with no exit, when that is above zero:
+        /// a reference for the exact clip. At zero, the exact clip, as the one-line overload builds.
         /// </summary>
         public Double3[] ContactCore(
-            Float3 halfExtents, bool reference, out double margin, out double bulge, out double shortfall) =>
-            BuildContactCore(halfExtents, reference, null, out margin, out bulge, out shortfall);
+            Float3 halfExtents, int referencePasses, out double margin, out double bulge, out double shortfall) =>
+            BuildContactCore(halfExtents, referencePasses, null, out margin, out bulge, out shortfall);
+
+        /// <summary>
+        /// What a reader needs to check that each point of the core at <paramref name="halfExtents"/> is the nearest
+        /// point of the inner body to its start, with no reference build: the start, the point, the planes the exact
+        /// clip held at the end (their normals and offsets <c>h(u) − margin</c>), and how far the point stands outside
+        /// the farthest of all the clipping planes. The conditions it supports are KKT's: the point is inside every
+        /// plane, each held plane passes through it, and the start less the point is a combination of the held normals
+        /// with no negative weight. For a convex set they prove the point nearest.
+        /// </summary>
+        public ContactClipCertificate ContactClipDetail(Float3 halfExtents)
+        {
+            var work = new ClipWork(CoreLattice.Length);
+            Double3[] points = BuildContactCore(halfExtents, 0, work, out double margin, out _, out _);
+
+            var normals = new Double3[points.Length][];
+            var offsets = new double[points.Length][];
+            var worst = new double[points.Length];
+            for (int i = 0; i < points.Length; i++)
+            {
+                int held = work.Held[i];
+                normals[i] = new Double3[held];
+                offsets[i] = new double[held];
+                for (int j = 0; j < held; j++)
+                {
+                    int d = work.HeldPlanes[i][j];
+                    normals[i][j] = ClipDirections[d];
+                    offsets[i][j] = work.Solid[d] - margin;
+                }
+
+                worst[i] = work.Solid == null ? 0.0 : WorstExcess(points[i], work.Solid, margin);
+            }
+
+            return new ContactClipCertificate(work.Starts, points, normals, offsets, worst, work.Tolerance, margin, work.Fallbacks);
+        }
+
+        /// <summary>The record <see cref="ContactClipDetail"/> returns. Its arrays are its own; nothing else holds them.</summary>
+        public sealed class ContactClipCertificate
+        {
+            /// <summary>Each point's start: the surface point moved inward along its normal by the margin.</summary>
+            public readonly Double3[] Starts;
+
+            /// <summary>Each point as the exact clip left it.</summary>
+            public readonly Double3[] Points;
+
+            /// <summary>The normals of the planes each point's clip held at the end: none, one, two or three.</summary>
+            public readonly Double3[][] HeldNormals;
+
+            /// <summary>The offsets <c>h(u) − margin</c> of those planes, in the same order.</summary>
+            public readonly double[][] HeldOffsets;
+
+            /// <summary>How far each point stands outside the farthest of all the clipping planes; at most 0 inside.</summary>
+            public readonly double[] WorstExcess;
+
+            /// <summary>The tolerance the clip met, metres: <see cref="ContactClipTolerance"/> of the form's size.</summary>
+            public readonly double Tolerance;
+
+            /// <summary>The margin the core was built at, metres.</summary>
+            public readonly double Margin;
+
+            /// <summary>How many points fell back to Dykstra's projection. Their held planes are not a certificate.</summary>
+            public readonly int Fallbacks;
+
+            public ContactClipCertificate(
+                Double3[] starts, Double3[] points, Double3[][] heldNormals, double[][] heldOffsets, double[] worstExcess,
+                double tolerance, double margin, int fallbacks)
+            {
+                Starts = starts;
+                Points = points;
+                HeldNormals = heldNormals;
+                HeldOffsets = heldOffsets;
+                WorstExcess = worstExcess;
+                Tolerance = tolerance;
+                Margin = margin;
+                Fallbacks = fallbacks;
+            }
+        }
 
         /// <summary>
         /// What the exact clip did for each point of the core at <paramref name="halfExtents"/>, for a reader: the steps
@@ -540,7 +616,7 @@ namespace Evosim.Core
         public string ContactClipReport(Float3 halfExtents)
         {
             var work = new ClipWork(CoreLattice.Length);
-            BuildContactCore(halfExtents, false, work, out double margin, out _, out _);
+            BuildContactCore(halfExtents, 0, work, out double margin, out _, out _);
 
             int[] held = new int[4];
             int most = 0, total = 0, predictedOver = 0;
@@ -574,7 +650,11 @@ namespace Evosim.Core
         private sealed class ClipWork
         {
             public readonly int[] Steps, Held;
+            public readonly int[][] HeldPlanes;
             public readonly double[] Angle;
+            public readonly Double3[] Starts;
+            public double[] Solid;
+            public double Tolerance;
             public int Fallbacks;
 
             public ClipWork(int points)
@@ -582,11 +662,14 @@ namespace Evosim.Core
                 Steps = new int[points];
                 Held = new int[points];
                 Angle = new double[points];
+                Starts = new Double3[points];
+                HeldPlanes = new int[points][];
+                for (int i = 0; i < points; i++) HeldPlanes[i] = new int[3];
             }
         }
 
         private Double3[] BuildContactCore(
-            Float3 halfExtents, bool reference, ClipWork work, out double margin, out double bulge, out double shortfall)
+            Float3 halfExtents, int referencePasses, ClipWork work, out double margin, out double bulge, out double shortfall)
         {
             double a = AbsA(halfExtents), b = AbsB(halfExtents), c = AbsC(halfExtents);
             var points = new Double3[CoreLattice.Length];
@@ -615,22 +698,33 @@ namespace Evosim.Core
             margin = ContactMarginBackoff * Math.Max(0.0, Math.Min(Math.Min(a, Math.Min(b, c)), Inradius(solid, b * (1.0 + Math.Abs(_centreFactor)))));
             double tolerance = ContactClipTolerance * Math.Max(a, Math.Max(b, c));
             var corrections = new Double3[ClipDirections.Length];
+            if (work != null)
+            {
+                work.Solid = solid;
+                work.Tolerance = tolerance;
+            }
+
             for (int attempt = 0; ; attempt++)
             {
+                if (work != null) work.Fallbacks = 0;
+
                 for (int i = 0; i < points.Length; i++)
                 {
                     Double3 start = surface[i] - normals[i] * margin;
-                    if (reference)
+                    if (referencePasses > 0)
                     {
-                        points[i] = Clip(start, solid, margin, corrections, tolerance, true);
+                        points[i] = Clip(start, solid, margin, corrections, tolerance, true, referencePasses);
                         continue;
                     }
 
-                    bool exact = Nearest(start, solid, margin, tolerance, out points[i], out int steps, out int held, out double angle);
-                    if (!exact) points[i] = Clip(start, solid, margin, corrections, tolerance, false);
+                    bool exact = Nearest(
+                        start, solid, margin, tolerance, work?.HeldPlanes[i],
+                        out points[i], out int steps, out int held, out double angle);
+                    if (!exact) points[i] = Clip(start, solid, margin, corrections, tolerance, false, ContactClipPasses);
 
                     if (work != null)
                     {
+                        work.Starts[i] = start;
                         work.Steps[i] = steps;
                         work.Held[i] = held;
                         work.Angle[i] = angle;
@@ -751,7 +845,7 @@ namespace Evosim.Core
         /// </para>
         /// </remarks>
         private static bool Nearest(
-            Double3 start, double[] solid, double margin, double tolerance,
+            Double3 start, double[] solid, double margin, double tolerance, int[] heldPlanes,
             out Double3 nearest, out int steps, out int heldCount, out double smallestAngle)
         {
             Span<int> held = stackalloc int[3];
@@ -780,6 +874,7 @@ namespace Evosim.Core
                     nearest = x;
                     heldCount = count;
                     smallestAngle = SmallestAngle(held, count);
+                    if (heldPlanes != null) for (int i = 0; i < count; i++) heldPlanes[i] = held[i];
                     return true;
                 }
 
@@ -830,6 +925,7 @@ namespace Evosim.Core
             nearest = x;
             heldCount = count;
             smallestAngle = SmallestAngle(held, count);
+            if (heldPlanes != null) for (int i = 0; i < count; i++) heldPlanes[i] = held[i];
             return false;
         }
 
@@ -915,7 +1011,7 @@ namespace Evosim.Core
         /// clip, and the fallback of a point the exact clip gives up on. The half-spaces <c>x·u ≤ h(u) − margin</c>
         /// over <see cref="ClipDirections"/>, for at most <see cref="ContactClipPasses"/> passes, stopping after a pass
         /// that moves it by no more than <paramref name="tolerance"/> unless <paramref name="fullPasses"/>, then
-        /// <see cref="Feasible"/>.
+        /// <see cref="Feasible"/>. The reference build runs <paramref name="passes"/> of each with no exit.
         /// </summary>
         /// <remarks>
         /// Plain cyclic projection ends somewhere in the intersection, not at its nearest point: a box's corner
@@ -925,12 +1021,12 @@ namespace Evosim.Core
         /// body, and stays where it is; a sharp corner's goes to the inner body's corner, as a box's core's does.
         /// </remarks>
         private static Double3 Clip(
-            Double3 point, double[] solid, double margin, Double3[] corrections, double tolerance, bool fullPasses)
+            Double3 point, double[] solid, double margin, Double3[] corrections, double tolerance, bool fullPasses, int passes)
         {
             Array.Clear(corrections, 0, corrections.Length);
             double still = tolerance * tolerance;
 
-            for (int pass = 0; pass < ContactClipPasses; pass++)
+            for (int pass = 0; pass < passes; pass++)
             {
                 double moved = 0.0;
                 for (int d = 0; d < ClipDirections.Length; d++)
@@ -950,7 +1046,7 @@ namespace Evosim.Core
                 if (!fullPasses && moved <= still) break;
             }
 
-            return Feasible(point, solid, margin, tolerance, fullPasses);
+            return Feasible(point, solid, margin, tolerance, fullPasses, fullPasses ? passes : ContactPolishPasses);
         }
 
         /// <summary>
@@ -960,9 +1056,9 @@ namespace Evosim.Core
         /// ends inside. Unless <paramref name="fullPasses"/>, it stops once the point stands inside every plane to
         /// within <paramref name="tolerance"/>, read before each pass; how far a pass moved it is never the test.
         /// </summary>
-        private static Double3 Feasible(Double3 point, double[] solid, double margin, double tolerance, bool fullPasses)
+        private static Double3 Feasible(Double3 point, double[] solid, double margin, double tolerance, bool fullPasses, int passes)
         {
-            for (int pass = 0; pass < ContactPolishPasses; pass++)
+            for (int pass = 0; pass < passes; pass++)
             {
                 if (!fullPasses && WorstExcess(point, solid, margin) <= tolerance) break;
 

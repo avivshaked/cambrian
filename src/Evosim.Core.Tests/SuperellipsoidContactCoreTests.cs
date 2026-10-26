@@ -331,37 +331,131 @@ namespace Evosim.Core.Tests
         // ---------------------------------------------------------------- the clip's exit and the cache
 
         [Fact]
-        public void TheExactClipIsWithinATenMillionthOfTheSizeOfTheFullPassBuildForEveryFormAndNeverFallsBack()
+        public void EveryExactClipPointCarriesTheKktCertificateOfTheNearestPointAndNoFormFallsBack()
         {
-            // The coordinator's rulings of 2026-10-25: the exact clip solves for the nearest point that Dykstra's
-            // projection approaches. Its build stands within 1e-7 of the size of the reference build, Dykstra's run to
-            // all 200 passes and the polish to all 200; its margin is the same; its bulge stays under the limit; and
-            // no point of any form falls back to Dykstra's.
+            // The coordinator's ruling of 2026-10-26: proof that each point is the nearest point of the inner body to its
+            // start, needing no reference build. Inside every clipping plane to the tolerance; every held plane through
+            // the point to the tolerance; and the start less the point a combination of the held normals, by least
+            // squares, with no weight below -1e-12 and a misfit of at most 1e-9 of the size. Those are KKT's conditions,
+            // and for a convex set they make the point the nearest.
             double size = Math.Max(Halves.X, Math.Max(Halves.Y, Halves.Z));
-            double worst = 0.0;
-            string worstForm = null;
+
+            foreach (PartForm form in FormsAndTheBoxLimit())
+            {
+                Superellipsoid.ContactClipCertificate certificate = new Superellipsoid(form).ContactClipDetail(Halves);
+                Assert.Equal(0, certificate.Fallbacks);
+
+                double worstExcess = double.NegativeInfinity, worstMisfit = 0.0, leastWeight = double.PositiveInfinity, worstOff = 0.0;
+                for (int i = 0; i < certificate.Points.Length; i++)
+                {
+                    Double3 point = certificate.Points[i];
+                    Double3[] held = certificate.HeldNormals[i];
+
+                    Assert.True(
+                        certificate.WorstExcess[i] <= certificate.Tolerance,
+                        $"{form}: point {i} stands {certificate.WorstExcess[i]} outside a clipping plane");
+                    worstExcess = Math.Max(worstExcess, certificate.WorstExcess[i]);
+
+                    for (int j = 0; j < held.Length; j++)
+                    {
+                        double off = Math.Abs(Double3.Dot(point, held[j]) - certificate.HeldOffsets[i][j]);
+                        Assert.True(off <= certificate.Tolerance, $"{form}: point {i} is {off} off its held plane {j}");
+                        worstOff = Math.Max(worstOff, off);
+                    }
+
+                    Double3 residual = certificate.Starts[i] - point;
+                    double[] weights = LeastSquares(held, residual);
+                    Double3 fit = residual;
+                    for (int j = 0; j < held.Length; j++)
+                    {
+                        Assert.True(weights[j] >= -1e-12, $"{form}: point {i} has the weight {weights[j]} on held plane {j}");
+                        leastWeight = Math.Min(leastWeight, weights[j]);
+                        fit = fit - held[j] * weights[j];
+                    }
+
+                    Assert.True(fit.Length <= 1e-9 * size, $"{form}: point {i} misses the cone of its held normals by {fit.Length}");
+                    worstMisfit = Math.Max(worstMisfit, fit.Length);
+                }
+
+                _output.WriteLine(
+                    $"{form}: worst excess {worstExcess:E3} m, worst held-plane offset {worstOff:E3} m, " +
+                    $"least weight {(double.IsPositiveInfinity(leastWeight) ? 0.0 : leastWeight):E3} m, worst misfit {worstMisfit:E3} m " +
+                    $"(tolerance {certificate.Tolerance:E3} m)");
+            }
+        }
+
+        /// <summary>The weights of <paramref name="normals"/> (none to three) that fit <paramref name="target"/> best, by the normal equations.</summary>
+        private static double[] LeastSquares(Double3[] normals, Double3 target)
+        {
+            int k = normals.Length;
+            var weights = new double[k];
+            if (k == 0) return weights;
+
+            var g = new double[k, k];
+            var r = new double[k];
+            for (int i = 0; i < k; i++)
+            {
+                r[i] = Double3.Dot(normals[i], target);
+                for (int j = 0; j < k; j++) g[i, j] = Double3.Dot(normals[i], normals[j]);
+            }
+
+            if (k == 1)
+            {
+                weights[0] = r[0] / g[0, 0];
+                return weights;
+            }
+
+            if (k == 2)
+            {
+                double det2 = g[0, 0] * g[1, 1] - g[0, 1] * g[1, 0];
+                weights[0] = (r[0] * g[1, 1] - g[0, 1] * r[1]) / det2;
+                weights[1] = (g[0, 0] * r[1] - r[0] * g[1, 0]) / det2;
+                return weights;
+            }
+
+            double det = Det3(g, -1, null);
+            for (int c = 0; c < 3; c++) weights[c] = Det3(g, c, r) / det;
+            return weights;
+        }
+
+        // The determinant of a 3 by 3 matrix, with column `column` replaced by `values` when it is 0 to 2.
+        private static double Det3(double[,] m, int column, double[] values)
+        {
+            double At(int i, int j) => j == column ? values[i] : m[i, j];
+            return At(0, 0) * (At(1, 1) * At(2, 2) - At(1, 2) * At(2, 1))
+                 - At(0, 1) * (At(1, 0) * At(2, 2) - At(1, 2) * At(2, 0))
+                 + At(0, 2) * (At(1, 0) * At(2, 1) - At(1, 1) * At(2, 0));
+        }
+
+        [Fact]
+        public void TheExactClipIsWithinATenMillionthOfTheSizeOfADykstraBuildOfTwoThousandPasses()
+        {
+            // The coordinator's rulings of 2026-10-26: the reference is Dykstra's projection run to 2,000 passes and the
+            // polish to 2,000, since at 200 it had not converged on a smooth form; the bound of 1e-7 of the size is kept.
+            // Every form's gap is written before the bound is asserted, so a failure names them all; the margin is the
+            // same; the bulge stays under the limit.
+            double size = Math.Max(Halves.X, Math.Max(Halves.Y, Halves.Z));
+            var over = new List<string>();
 
             foreach (PartForm form in FormsAndTheBoxLimit())
             {
                 var shape = new Superellipsoid(form);
-                Double3[] exit = shape.ContactCore(Halves, false, out double exitMargin, out double exitBulge, out _);
-                Double3[] full = shape.ContactCore(Halves, true, out double fullMargin, out double fullBulge, out _);
+                Double3[] exact = shape.ContactCore(Halves, 0, out double exactMargin, out double exactBulge, out _);
+                Double3[] reference = shape.ContactCore(Halves, 2000, out double referenceMargin, out double referenceBulge, out _);
 
-                Assert.Equal(fullMargin, exitMargin);
+                Assert.Equal(referenceMargin, exactMargin);
 
                 double apart = 0.0;
-                for (int i = 0; i < exit.Length; i++) apart = Math.Max(apart, (exit[i] - full[i]).Length);
-                if (apart > worst) { worst = apart; worstForm = form.ToString(); }
+                for (int i = 0; i < exact.Length; i++) apart = Math.Max(apart, (exact[i] - reference[i]).Length);
 
-                string report = shape.ContactClipReport(Halves);
-                _output.WriteLine($"{form}: exact against the reference {apart:E3} m; bulge {exitBulge:E3} m against {fullBulge:E3} m; {report}");
-                Assert.True(apart <= 1e-7 * size, $"{form}: the exact build stands {apart} from the reference");
-                Assert.EndsWith("fallbacks 0", report);
-                Assert.True(exitBulge <= Superellipsoid.ContactBulgeLimit * exitMargin, $"{form}: the exit build's bulge {exitBulge}");
-                Assert.True(exitBulge <= 2e-3 * size, $"{form}: the exit build's bulge {exitBulge} is past the sampling's error");
+                _output.WriteLine($"{form}: exact against 2,000 passes {apart:E3} m; bulge {exactBulge:E3} m against {referenceBulge:E3} m");
+                if (apart > 1e-7 * size) over.Add($"{form} by {apart:E3} m");
+
+                Assert.True(exactBulge <= Superellipsoid.ContactBulgeLimit * exactMargin, $"{form}: the exact build's bulge {exactBulge}");
+                Assert.True(exactBulge <= 2e-3 * size, $"{form}: the exact build's bulge {exactBulge} is past the sampling's error");
             }
 
-            _output.WriteLine($"worst: {worst:E3} m at {worstForm}");
+            Assert.True(over.Count == 0, "the exact build stands past 1e-7 of the size from the reference for: " + string.Join("; ", over));
         }
 
         private static void SameBuild(ContactCoreBuild expected, ContactCoreBuild actual, string what)
@@ -434,8 +528,8 @@ namespace Evosim.Core.Tests
         {
             // A reading, not a check: one isolated build of a form not built before in this process, timed alone on a
             // quiet lane, after a different form has warmed the code. The least of three tries of each is reported.
-            new Superellipsoid(new PartForm(0.9f, 1.1f, 1.2f)).ContactCore(Halves, false, out _, out _, out _);
-            new Superellipsoid(new PartForm(0.9f, 1.1f, 1.2f)).ContactCore(Halves, true, out _, out _, out _);
+            new Superellipsoid(new PartForm(0.9f, 1.1f, 1.2f)).ContactCore(Halves, 0, out _, out _, out _);
+            new Superellipsoid(new PartForm(0.9f, 1.1f, 1.2f)).ContactCore(Halves, 200, out _, out _, out _);
 
             foreach (PartForm form in new[] { Egg, new PartForm(0.1f, 0.1f, 1f), new PartForm(1f, 2f, 4f) })
             {
@@ -443,11 +537,11 @@ namespace Evosim.Core.Tests
                 for (int attempt = 0; attempt < 3; attempt++)
                 {
                     var clock = System.Diagnostics.Stopwatch.StartNew();
-                    new Superellipsoid(form).ContactCore(Halves, false, out _, out _, out _);
+                    new Superellipsoid(form).ContactCore(Halves, 0, out _, out _, out _);
                     exit = Math.Min(exit, clock.Elapsed.TotalMilliseconds);
 
                     clock.Restart();
-                    new Superellipsoid(form).ContactCore(Halves, true, out _, out _, out _);
+                    new Superellipsoid(form).ContactCore(Halves, 200, out _, out _, out _);
                     full = Math.Min(full, clock.Elapsed.TotalMilliseconds);
                 }
 
