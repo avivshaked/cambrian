@@ -181,6 +181,53 @@ growth then spends at once. Under the law that payment buys a climb of up to 1.5
 bodies at their adult directly when the tank means "grown". Tank genomes from the pools carry no gene and are given
 the start value. This and 6d's pace seam both touch the tanks' placement, so I'll put it to 6d with the pace questions.
 
+## The two clocks
+
+The owner ruled the growth rule on 2026-10-26 (D241) and asked that the design consider the physics clock and the
+metabolic clock.
+
+**Growth ticks in world seconds, on metabolic steps, at any pace factor.** Core's `World.Step` takes the step's world
+seconds, 0.5 at any k: on branch `pace`, `Metabolise` passes `WorldSecondsPerMetabolicStep`
+(`src/Evosim.Farm/Metabolise.cs:120` there). So the allowance a step is the rate times 0.5 world seconds, whatever the
+physics did inside the step. At the pace factor k, the k × 0.5 / dt physics steps between two metabolic steps all see
+the same body. A climb of T world seconds is T / 0.5 metabolic steps (240 at T = 120 s) and k times as many physics
+seconds. Nothing in the rate law reads the physics clock, so it needs no k-dependent constant, which is the scaling
+audit's finding for every other price (`logbook/specs/scaling-audit.md`).
+
+**The resize seam sits between physics steps.** Core moves the joules and scales the phenotype at once. The physics
+body follows only when the harness applies it, every `GrowthStepSeconds` (10 s), also counted in world seconds
+(`_sinceGrowthStep += seconds`, `Metabolise.cs`). It happens after `World.Step` and before the next physics step.
+`Creature.Resize` (`src/Evosim.Dynamics/Creature.Growth.cs`) rewrites in one derivation every link's volume, both
+masses, the inertia tensor, both joint anchors and frames, and the drag panels. The root stays where it is and the
+rest follows the new anchors outward.
+
+Between applications the body carries its new size's drag and lit area but its old mass and anchors. That is today's
+seam, and the climb keeps it. What changes is how large each application is:
+- **Today** a newborn grazer's whole growth lands in one resize, from 0.65 to 1, about a 15 % change in length
+  (0.65^⅓ = 0.87) (derived).
+- **At T = 120 s** the first 10 s of the climb moves r = (m/M)^¼ by about 0.016. Length goes as r^(4/3), so that is
+  about a 2.4 % change in length a resize, and less as the body nears its adult (derived).
+
+The climb splits one large jump into many small ones. That should be easier on the solver, since a large resize is
+where joint spin-up and divergence come from (logbook/0059, 0077; inference). The harness's `MaxResizeJumpMetres` and
+the `diverged` count read it in the screens.
+
+The resize keeps the root's velocity and spin to the bit, and the joint coordinates and rates. The links' velocities
+are re-derived from them, so linear momentum jumps with the mass and angular momentum with the geometry
+(`Creature.Growth.cs`'s remarks, read). That is today's behaviour, and the climb makes each jump small.
+
+**T in units of the body's metabolic clock.** The owner ruled one T for all bodies, in world seconds. A body's own
+metabolic time is its tissue over its upkeep, how long its standing cost takes to spend its own body's worth:
+- A grazer's is about 59 s at birth (36.7 J over 0.62 W) and 62 s as an adult (56 J over 0.908 W) (derived).
+- A leaf's is 125 to 170 s, from the code's 500 J of tissue a cubic metre against 3 to 4 W a cubic metre
+  (`RunConfig.GrowthReserveFloor`'s remark).
+
+So T = 60, 120 and 240 s is about 1, 2 and 4 metabolic times for a grazer, and about 0.4 to 1.9 for a leaf, whose
+climb from 0.19 also takes 1.58 T. One T for all gives the fast-living grazer the longer childhood in its own time,
+and the leaf the shorter. A rule written in metabolic times instead would make T scale as the body's tissue over its
+upkeep, close to West, Brown and Enquist's M^¼ (inference). The screens read the result in both units, world seconds
+and metabolic times, so the owner can see which one the winning T is simple in.
+
 ## The machine
 
 Applying growth to the physics took 0.47 % of t3's wall (measured: 55.6 s of 11,761 s, `wallHarnessGrowthMs`). That
