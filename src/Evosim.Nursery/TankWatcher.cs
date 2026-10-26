@@ -457,6 +457,47 @@ namespace Evosim.Nursery
             }
             return others;
         }
+
+        /// <summary>
+        /// Every living body that is not a member, with its genome and the solver's pose of each of its links (none while the solver holds no
+        /// body for it): what a film draws the leaf tank's leaves from (D235's graft film). A copy; the genome is the organism's own object.
+        /// </summary>
+        public IReadOnlyList<OtherBodyPose> OtherPoses()
+        {
+            var members = new HashSet<long>();
+            foreach (Organism o in _focal) if (o != null) members.Add(o.Id);
+            var others = new List<OtherBodyPose>();
+            foreach (Organism o in _world.Living)
+            {
+                if (members.Contains(o.Id)) continue;
+                LinkPose[] poses = Array.Empty<LinkPose>();
+                if (_sim.TryPose(o.Id, out Creature c))
+                {
+                    poses = new LinkPose[c.Links];
+                    for (int l = 0; l < c.Links; l++)
+                    {
+                        poses[l] = new LinkPose(c.Position[3 * l], c.Position[3 * l + 1], c.Position[3 * l + 2],
+                            c.Rotation[4 * l], c.Rotation[4 * l + 1], c.Rotation[4 * l + 2], c.Rotation[4 * l + 3]);
+                    }
+                }
+
+                others.Add(new OtherBodyPose(o.Id, o.Genome, poses));
+            }
+            return others;
+        }
+    }
+
+    /// <summary>One living body that is not a member, its genome, and the solver's pose of each link (<see cref="EpisodeProbe.OtherPoses"/>).</summary>
+    public readonly struct OtherBodyPose
+    {
+        public readonly long Id;
+        public readonly Genome Genome;
+        public readonly LinkPose[] Poses;
+
+        public OtherBodyPose(long id, Genome genome, LinkPose[] poses)
+        {
+            Id = id; Genome = genome; Poses = poses;
+        }
     }
 
     /// <summary>One living body that is not a member, as it now stands: its id, its place as the world last knew it, its tissue flags and its joules. A copy.</summary>
