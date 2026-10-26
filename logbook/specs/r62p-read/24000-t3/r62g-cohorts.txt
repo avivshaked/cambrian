@@ -1,0 +1,8 @@
+r62p-t3-6201
+  born 3000-6000: n 95 (bred 60), mouthed kids/body 0.80, bred ones 0.55
+  born 6000-9000: n 241 (bred 200), mouthed kids/body 0.98, bred ones 0.88
+  born 9000-12000: n 242 (bred 209), mouthed kids/body 0.80, bred ones 0.59
+  born 12000-15000: n 328 (bred 294), mouthed kids/body 1.09, bred ones 0.93
+  born 15000-18000: n 472 (bred 432), mouthed kids/body 0.79, bred ones 0.59
+  born 18000-21000: n 454 (bred 412), mouthed kids/body 1.09, bred ones 0.83
+  born 21000-24000: n 1000 (bred 958), mouthed kids/body 0.84, bred ones 0.78
