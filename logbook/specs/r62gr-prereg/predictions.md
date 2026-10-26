@@ -91,8 +91,14 @@ These are guesses unless marked derived.
 
 The four worlds run at the pace factor 1. `r62p-t3` reached 24,000 s in 3.3 hours beside two other worlds (measured).
 Applying growth took 0.47 % of its wall. The climb resizes a leaf about 19 times at T = 120 s and 38 at T = 240 s,
-so that share may rise to about 9 and 18 % (a guess). With a fourth world in the group, it takes about 4.5 to 5.5
-hours (guess). The coordinator's exit stands: after 12,000 s, a world under 0.6 times real time for an hour is
+so that share may rise to about 9 and 18 % (a guess).
+
+The group runs on logical 22 to 31 at 10 threads, which leaves 16 to 21 for the theatre's one Unity (the
+coordinator's ruling of 2026-10-26). A card group is bit-identical at any thread count, so the results do not move.
+The pace does. The host's share of the wall was 39 to 42 % in `r62p-t3` and `r62kg-6201` (measured), so 10 threads
+against 14 cost 13 to 25 % of pace (derived, if the host part scales with threads). I expect about 1.1 to 1.2 times
+real time early and 0.9 to 1.0 late, and 5.5 to 7 hours in all (guess). If a world runs under 0.7 times real time for
+an hour, the theatre gives way first. The coordinator's exit stands: after 12,000 s, a world under 0.6 times real time for an hour is
 stopped with `scripts/stop-arm.ps1` and read at its stop second.
 
 ## What would change the plan
