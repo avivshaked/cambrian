@@ -265,13 +265,14 @@ The owner ruled that the time to adulthood and the founders' threshold are settl
 groups do it, each pre-registered before it launches, on t3's world (`rounds/env-r62p-t3.ps1`: the thrust arm, the
 kill gut, the newborn reserve at 0.5). The gene evolves inside every arm.
 
-**Group 1: the time to adulthood.** Three worlds on seed 6201, to 24,000 world seconds, with G starting at 30 s:
+**Group 1: the time to adulthood.** Four worlds on seed 6201, to 24,000 world seconds, with G starting at 30 s. Its pre-registration is `logbook/specs/r62gr-prereg/predictions.md`:
 
 | World | T |
 |---|---|
 | `r62gr-t60-6201` | 60 s |
 | `r62gr-t120-6201` | 120 s |
 | `r62gr-t240-6201` | 240 s |
+| `r62gr-t120s-6201` | 120 s, with the juvenile-strength switch on |
 
 The controls are `r62p-t3-6201` (T = 0, today's growth) and `r62cs-w500-6201`. The deciding numbers are D222's
 tests, the share of bred grazers that never ate, their age at death, intake over upkeep, and the leaf stand against
@@ -282,7 +283,7 @@ wall pace, plus the cost of applying growth (the machine, above), so about 3.5 t
 
 **Group 2: the starting threshold.** Three worlds at the winning T, with G starting at 0 (the range's floor, 1 s), 30
 and 60 s. The question is whether the start matters once the gene evolves: whether the three converge on one value,
-and how long that takes. A fourth world runs at the winning T with the juvenile-strength switch on, the start at 30 s.
+and how long that takes. The juvenile-strength switch is on or off in it by group 1's rule.
 
 The farm's header gives T in both units: world seconds, and the consumer's metabolic time, which it computes from the
 world's own cell table (tissue J/m³ over upkeep W/m³).
