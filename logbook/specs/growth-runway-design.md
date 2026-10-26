@@ -87,8 +87,8 @@ that, and G = 30 s covers it with room at any T.
 
 A newborn that does eat grows out of its meal at the law's rate. It reaches adulthood in about T, so long as its intake
 covers its upkeep and its allowance. It is smaller meanwhile, with limbs of about 0.87 to 1 of an adult's length and
-its drive's power unscaled (`Phenotype.Scaled`). Whether a small body swims slower or faster than an adult is not
-measured.
+its drive's power an adult's (`Phenotype.Scaled`), unless the juvenile-strength switch below scales it. Whether a
+small body swims slower or faster than an adult is not measured; the switch's still-water test measures it.
 
 ## Is a separate runway floor still needed?
 
@@ -178,8 +178,10 @@ structure as well as in the cap.
 The nursery trains under every condition set for the world, so it gains the rate law and the gene with the rest. Its
 tanks (`Evosim.Nursery.LeafTank`, `Tank`) start a body grown by paying it the tissue it owes as reserve, which its
 growth then spends at once. Under the law that payment buys a climb of up to 1.58 T instead. The seam is to place tank
-bodies at their adult directly when the tank means "grown". Tank genomes from the pools carry no gene and are given
-the start value. This and 6d's pace seam both touch the tanks' placement, so I'll put it to 6d with the pace questions.
+bodies at their adult directly when the tank means "grown", which b4's build gives as `MakeAdult(Organism)`. It
+gifts the tissue with no spend on any ledger, so a tank's record says so. Tank genomes from the pools carry no gene
+and are given the start value. 6d takes the placement change; it does not collide with the pace seam, which touches
+only the step count and the clocks.
 
 ## The two clocks
 
@@ -229,6 +231,26 @@ and the leaf the shorter. A rule written in metabolic times instead would make T
 upkeep, close to West, Brown and Enquist's M^¼ (inference). The screens read the result in both units, world seconds
 and metabolic times, so the owner can see which one the winning T is simple in.
 
+## Juvenile strength
+
+A body scaled to a fraction of its adult copies the adult's joint torque capacity (`Power`) unchanged. So a
+two-thirds-size juvenile has an adult's torque on smaller limbs. Under a climb, bodies spend minutes at that size, so
+the coordinator asked for a switch (the text is b4's, accepted by the coordinator):
+
+- **The switch.** `RunConfig.JuvenileStrengthScales`, env `EVOSIM_JUVENILE_STRENGTH`, off by default. With it on, a
+  scaled body's `Power` scales as muscle does. Force goes with cross-section (L²) and the moment arm with L, so torque
+  goes as L³, the mass fraction. The idle bill reads `Power`, so it falls with it.
+- **Where it acts.** Wherever a body is scaled, through `Phenotype.ScaledFor(config, linear)`: growth, conception, the
+  newborn, the module rule, and the checkpoint's rebuild, so a resumed juvenile comes back at its scaled strength.
+  The theatre keeps today's scaling until its own piece of work.
+- **Nothing else needs scaling** (b4's survey). `Power` is the only absolute strength a part has. Lift is in kg/m³ of
+  displaced water. Attack, intake and protection are per m² of part area, toughness per m³, and a grip is the
+  anchoring cell's N/m² times area. The drive genes are times and fractions. All of these already grow with the
+  geometry `Phenotype.Scaled` re-measures.
+- **Its tests.** A still-water test measures a 0.65-fraction juvenile's speed and stroke work a second under the same
+  brain, with the switch off and on. The growth screens carry one arm with it on at the winning T (below), so the
+  owner's question is measured in the world.
+
 ## The machine
 
 Applying growth to the physics took 0.47 % of t3's wall (measured: 55.6 s of 11,761 s, `wallHarnessGrowthMs`). That
@@ -260,7 +282,10 @@ wall pace, plus the cost of applying growth (the machine, above), so about 3.5 t
 
 **Group 2: the starting threshold.** Three worlds at the winning T, with G starting at 0 (the range's floor, 1 s), 30
 and 60 s. The question is whether the start matters once the gene evolves: whether the three converge on one value,
-and how long that takes.
+and how long that takes. A fourth world runs at the winning T with the juvenile-strength switch on, the start at 30 s.
+
+The farm's header gives T in both units: world seconds, and the consumer's metabolic time, which it computes from the
+world's own cell table (tissue J/m³ over upkeep W/m³).
 
 The world rules are the owner's: the rate law itself, the single-dial τ against the M^¼ form, and the adult breeding
 gate. The numbers the screens settle are T and G's start.
