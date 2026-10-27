@@ -1,0 +1,36 @@
+== round 62 grazer health (D215): born share at 12000,12000; own-kill share per 3000 s from 12000 to 12000 s
+   The own-kill share is a PROXY, an upper bound on the grazers' intake from their own kills: the corpse joules
+   grazers' kills founded (kept at 1 - waste) over every mouth's kept intake. The record does not say which corpse
+   a mouth ate. Accepted for test 3's trend in round 62 (the coordinator, 2026-10-23); its level is not a measurement.
+
+r62gr2-g1-6201  (read to 12000 s; joulesPerUnit 100, intakeWasteFraction 0.2)
+   second  living  founded   born born share
+    12000      18        7     11      0.611
+    12000      18        7     11      0.611
+  contact eating (D219-D221): part 2 is the kept intake bitten off the living over all kept intake
+            bin    living J      kept J   share    graz-s
+  test 3: no bin with kept intake
+
+r62gr2-g60-6201  (read to 12000 s; joulesPerUnit 100, intakeWasteFraction 0.2)
+   second  living  founded   born born share
+    12000       9        5      4      0.444
+    12000       9        5      4      0.444
+  contact eating (D219-D221): part 2 is the kept intake bitten off the living over all kept intake
+            bin    living J      kept J   share    graz-s
+  test 3: no bin with kept intake
+
+r62gr-t60-6202  (read to 12000 s; joulesPerUnit 100, intakeWasteFraction 0.2)
+   second  living  founded   born born share
+    12000      29       18     11      0.379
+    12000      29       18     11      0.379
+  contact eating (D219-D221): part 2 is the kept intake bitten off the living over all kept intake
+            bin    living J      kept J   share    graz-s
+  test 3: no bin with kept intake
+
+r62gr-t120-6202  (read to 12000 s; joulesPerUnit 100, intakeWasteFraction 0.2)
+   second  living  founded   born born share
+    12000      21       14      7      0.333
+    12000      21       14      7      0.333
+  contact eating (D219-D221): part 2 is the kept intake bitten off the living over all kept intake
+            bin    living J      kept J   share    graz-s
+  test 3: no bin with kept intake
